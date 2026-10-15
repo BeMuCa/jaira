@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
 	"github.com/BeMuCa/jaira/core/mod"
+	"github.com/BeMuCa/jaira/core/shipped"
 )
 
 // Action is what Install did with one file.
@@ -19,7 +21,12 @@ const (
 	// Unchanged: the file is already byte-identical to the embedded one. A
 	// second run of Install reports nothing but these.
 	Unchanged Action = "unchanged"
-	// Skipped: the file differs from the embedded one, so somebody edited it.
+	// Updated: the file was a version an earlier jaira shipped, so jaira wrote it
+	// and nobody edited it; it was replaced with this binary's version without
+	// --force.
+	Updated Action = "updated"
+	// Skipped: the file differs from the embedded one and from every version
+	// jaira shipped, so somebody edited it.
 	// It is left exactly as it is and reported, because silently replacing an
 	// adjusted role is the one failure this command must never have.
 	Skipped Action = "skipped"
@@ -44,9 +51,14 @@ type Result struct {
 // not be an error, while a file that differs is somebody's own version and must
 // not be touched. Only --force collapses the last case back into a write.
 //
+// A file that differs but equals a version an earlier jaira shipped is not an
+// edit: an old binary wrote it. It is replaced and reported as Updated, without
+// --force. With dryRun nothing is written or repaired; the results say what
+// would happen.
+//
 // The mods are written only with mods set: they are Claude Code plugin
 // folders, and a harness that does not load them would hold files nothing reads.
-func install(dstSkillsDir string, force, mods bool) ([]Result, error) {
+func install(dstSkillsDir string, force, mods, dryRun bool) ([]Result, error) {
 	roles, err := Builtins()
 	if err != nil {
 		return nil, err
@@ -63,7 +75,7 @@ func install(dstSkillsDir string, force, mods bool) ([]Result, error) {
 			// from a caller, so the destination is fixed at compile time and
 			// stays under dstSkillsDir by construction.
 			dst := filepath.Join(dstSkillsDir, r.ID, filepath.FromSlash(rel))
-			action, err := writeFile(dst, want, force)
+			action, err := writeFile(dst, want, roleKey(r.ID, rel), force, dryRun)
 			if err != nil {
 				return out, err
 			}
@@ -87,7 +99,7 @@ func install(dstSkillsDir string, force, mods bool) ([]Result, error) {
 				return out, err
 			}
 			dst := filepath.Join(dstSkillsDir, m.ID, filepath.FromSlash(rel))
-			action, err := writeFile(dst, want, force)
+			action, err := writeFile(dst, want, modKey(m.ID, rel), force, dryRun)
 			if err != nil {
 				return out, err
 			}
@@ -97,23 +109,43 @@ func install(dstSkillsDir string, force, mods bool) ([]Result, error) {
 	return out, nil
 }
 
-// writeFile applies the three-way comparison to one file.
-func writeFile(dst string, want []byte, force bool) (Action, error) {
+// roleKey and modKey are a file's path in the jaira repository: the key the
+// list of shipped versions (core/shipped) holds it under. They sit next to the
+// go:embed directories they mirror.
+func roleKey(id, rel string) string { return "core/role/" + path.Join(builtinDir, id, rel) }
+func modKey(id, rel string) string  { return "core/mod/builtin/" + id + "/" + rel }
+
+// writeFile applies the comparison to one file; key is its path in the jaira
+// repository.
+func writeFile(dst string, want []byte, key string, force, dryRun bool) (Action, error) {
 	have, readErr := os.ReadFile(dst)
 	existed := readErr == nil
 	if !existed && !errors.Is(readErr, os.ErrNotExist) {
 		return "", readErr
 	}
 	mode := modeOf(dst)
-	switch {
-	case existed && bytes.Equal(have, want):
+	if existed && bytes.Equal(have, want) {
 		// The bytes are ours, so the mode is ours: a copy that arrived without
 		// its execute bit — a plain cp, an unzip, a checkout on a filesystem
 		// that drops the bit — is repaired here, because nothing is written
 		// for it below.
+		if dryRun {
+			return Unchanged, nil
+		}
 		return Unchanged, os.Chmod(dst, mode)
-	case existed && !force:
-		return Skipped, nil
+	}
+	action := Written
+	if existed {
+		if shipped.Known(key, have) {
+			action = Updated
+		} else if !force {
+			return Skipped, nil
+		} else {
+			action = Overwritten
+		}
+	}
+	if dryRun {
+		return action, nil
 	}
 	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		return "", err
@@ -128,10 +160,7 @@ func writeFile(dst string, want []byte, force bool) (Action, error) {
 	if err := os.Chmod(dst, mode); err != nil {
 		return "", err
 	}
-	if existed {
-		return Overwritten, nil
-	}
-	return Written, nil
+	return action, nil
 }
 
 // modeOf picks the permissions one installed file gets.
@@ -159,6 +188,7 @@ func SkippedAny(results []Result) bool {
 }
 
 // Install is install for this agent: with the mods where it loads them.
-func (a Agent) Install(dstSkillsDir string, force bool) ([]Result, error) {
-	return install(dstSkillsDir, force, a.Mods)
+// With dryRun it reports what would happen and writes nothing.
+func (a Agent) Install(dstSkillsDir string, force, dryRun bool) ([]Result, error) {
+	return install(dstSkillsDir, force, a.Mods, dryRun)
 }
