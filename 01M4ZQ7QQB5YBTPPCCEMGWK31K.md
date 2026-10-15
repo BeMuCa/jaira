@@ -22,7 +22,7 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T13:09:08Z
+updated-at: 2026-10-15T13:09:10Z
 updated-by: BeMuCa
 ---
 
@@ -46,7 +46,7 @@ updated-by: BeMuCa
 
 - [x] Test zuerst, core/ticket/archiveref_test.go (neu): Fake-Recorder refRec (Record/RecordFiled/RecordDelete merken den letzten Inhalt). TestArchivePutsTheArchivedLineOnTheRefOnly: Archive(id) -> der RecordFiled-Inhalt dekodiert (ParseDoc+Decode) mit Archived == '<yyyy-mm-dd heute> <Actor>' und gleichem updated-at wie die Datei; die Datei in .jaira/archive/ ist byte-gleich zur Datei vor dem Verschieben und hat keinen archived-Key (DoD 1)
 - [x] Test zuerst, gleiche Datei: TestAnArchivedRefOnlyTicketIsOffTheListButStillLoads: s.Source = refSource (core/ticket/trim_test.go:218) mit einem Ticket mit Archived und einem ohne -> List() nennt nur das ohne; Load(Handle des archivierten) liefert es mit ReadOnly und Archived (DoD 1; List ist, was board, list, next und resume lesen)
-- [ ] Test zuerst, gleiche Datei: TestRestoreTakesTheArchivedLineOffTheRef (Archive, dann Restore(datei) -> letzter Record-Inhalt == Bytes der wiederhergestellten Datei, ohne archived-Key) und TestRestoreDoesNotWriteOverANewerRef (refRec implementiert CheckFresh und meldet ErrStale -> Restore gibt dst UND einen Fehler mit errors.Is(err, ErrStale) zurueck, Datei liegt in tickets/, kein Record) (DoD 2)
+- [~] Test zuerst, gleiche Datei: TestRestoreTakesTheArchivedLineOffTheRef (Archive, dann Restore(datei) -> letzter Record-Inhalt == Bytes der wiederhergestellten Datei, ohne archived-Key) und TestRestoreDoesNotWriteOverANewerRef (refRec implementiert CheckFresh und meldet ErrStale -> Restore gibt dst UND einen Fehler mit errors.Is(err, ErrStale) zurueck, Datei liegt in tickets/, kein Record) (DoD 2)
 - [ ] core/ticket, Feld: FieldArchived = "archived" in schema.go neben FieldTags; Ticket.Archived string (Kommentar: Wert '<yyyy-mm-dd> <wer>', leer = nicht archiviert, steht nur im Inhalt auf dem Ref); decodeFields liest es (schema.go ~640). Nicht in canonicalOrder
 - [ ] core/ticket, Archive: Store.Archive (store.go:330) gibt RecordFiled die Dateibytes plus Zeile archived (Doc.SetScalar, Wert heute + ' ' + s.Actor, getrimmt); die Datei in .jaira/archive/ und updated-at/updated-by bleiben unberuehrt. Logbook (store.go:402) bleibt bei recordFiled. Doc-Kommentar von Archive (store.go:297-300) um den Ref ergaenzen
 - [ ] core/ticket, List und Restore: Store.List (store.go:867) haengt nur Extras ohne Archived an. Store.Restore (store.go:634): nur fuer eine Datei, die aus ArchiveDir kam, nach dem Rename Load(id), s.CheckFresh, dann s.record(id, Dateibytes); Rueckgabe dst plus dieser Fehler (ErrStale/ErrNotRecorded). Logbook- und Milestone-Restore unveraendert. Tests aus Schritt 1-3 muessen kompilieren (go vet ./core/ticket/)
