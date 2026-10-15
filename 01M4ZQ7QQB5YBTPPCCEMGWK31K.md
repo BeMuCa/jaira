@@ -22,7 +22,8 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T12:05:20Z
+updated-at: 2026-10-15T12:36:24Z
+updated-by: BeMuCa
 ---
 
 # Ein archiviertes Ticket verschwindet sofort von allen Boards, nicht erst wenn der Snapshot den Ref abraeumt
