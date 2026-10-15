@@ -2,3 +2,4 @@
 - `jaira next` and `jaira resume` now print one line on stderr when a newer release is out; tell the user and run `jaira self upgrade` (stdout and `--json` are unchanged, `JAIRA_NO_UPDATE_CHECK=1` silences it).
 - ! Run `jaira update` in each repository: the agent block in CLAUDE.md/AGENTS.md then tells agents to tell the user when `jaira next` or `jaira resume` reports a newer release and to name `jaira self upgrade`.
 - When a note line starts `- ! `, act on it: `jaira update` now prints such changes as `  ! <text>` instead of `  - <text>`.
+- Press `w` on the launcher to read the release notes of every version, newest first; lines marked `!` are changes you must act on and stand out in bold.
