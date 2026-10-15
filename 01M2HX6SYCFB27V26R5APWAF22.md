@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T13:29:40Z
+updated-at: 2026-10-15T13:30:28Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -39,11 +39,11 @@ executed-by: sonnet
 review-summary: |-
   [DEFEKT] README.md:118 "It ends with a line for each part that is behind" und core/release/notes/PWAF22.md:5 "Read the last lines of a plain 'jaira update'" sind falsch: internal/cli/update.go:187 druckt die Hinweiszeilen VOR "Nothing has changed since..." (update.go:189) bzw. vor der Liste "What's changed since then:". Nach einem Upgrade stehen sie also ueber einer langen Notizliste, nie am Ende. Fix: beide Texte umformulieren, z.B. README "After the line about the jaira section it prints one line for each part that is behind ...", Notiz "Look for the 'roles:' and 'lanes:' lines a plain 'jaira update' now prints: ...". Code nicht verschieben (Notizblock = T8A8KM).
   [NACHFOLGER] internal/cli/self.go:203 + :241 warnSetupFailed: 'self upgrade --version' auf ein Release ohne --roles (z.B. zurueck auf 0.5.1) -> Kind scheitert mit unknown flag, die Zeile nennt 'jaira update --roles', das es dort nicht gibt. Alternative: Kind auslassen, wenn das gepinnte Release aelter als release.Current ist, oder dann 'jaira update' nennen.
-  [NACHFOLGER] core/lane/refresh.go:58-70: ein done.md, das lane.Load per Korrektur (core/lane/corrections.go doneDoorway) schon repariert hat, ist keine ausgelieferte Version -> 'update --lanes' meldet es fuer immer als 'edited here', Exit 3. Alternative: die korrigierten Bytes ins Manifest (scripts/shipped-history.sh) oder in RefreshShipped als bekannt werten.
-  [NACHFOLGER] core/lane/refresh.go:58 und core/role/install.go:146 vergleichen rohe Bytes: CRLF-Checkout (Git for Windows autocrlf, Lanes/Rollen unter git) trifft nie das Manifest -> 'edited', Exit 3. Alternative: vor shipped.Known \r\n normalisieren wie core/lane/corrections.go:219.
+  [NACHFOLGER] core/lane/refresh.go:59-70: ein done.md, das lane.Load per Korrektur (core/lane/corrections.go doneDoorway) schon repariert hat, ist keine ausgelieferte Version -> 'update --lanes' meldet es fuer immer als 'edited here', Exit 3. Alternative: die korrigierten Bytes ins Manifest (scripts/shipped-history.sh) oder in RefreshShipped als bekannt werten.
+  [NACHFOLGER] core/lane/refresh.go:61 und core/role/install.go:147 vergleichen rohe Bytes: CRLF-Checkout (Git for Windows autocrlf, Lanes/Rollen unter git) trifft nie das Manifest -> 'edited', Exit 3. Alternative: vor shipped.Known \r\n normalisieren wie core/lane/corrections.go:219.
   [NACHFOLGER] core/role/install.go:86-92 schreibt jaira/SKILL.md immer. 'roles install --agent copilot --project' in einem Repo mit nur .claude/skills/jaira (wie diesem) schreibt .github/skills/jaira; Copilot liest beide (target.go:51 AlsoProject) -> jaira doppelt registriert. Der Schutz InstalledIn (target.go:109) prueft nur Rollen. Alternative: jaira/SKILL.md auslassen, wenn ein Also-Ordner es schon hat.
   [NACHFOLGER] core/role/target.go Behind + install(): fehlende Dateien zaehlen als 'aelter' und werden geschrieben. Wer z.B. jaira-cockpit (Plugin mit Hooks) absichtlich geloescht hat, bekommt es durch jeden 'self upgrade' still zurueck, und Hinweis/Warnung bleiben an. Frage an Berk beim signoff; Alternative: nur Dateien in schon vorhandenen Rollen-/Mod-Ordnern schreiben und zaehlen.
-  [NACHFOLGER] internal/cli/update.go:89-90 und README.md:131 '--dry-run ... writes nothing': lane.Load (refresh.go:39, update.go:131) kann eine einmalige Korrektur bzw. den Erst-Aufbau schreiben, openStore bindet den Merge-Treiber. Nur Randfall. Alternative: 'writes none of the files it reports' oder den Randfall nennen.
+  [NACHFOLGER] internal/cli/update.go:89-90 und README.md:131-133 '--dry-run ... writes nothing': lane.Load (refresh.go:39, update.go:131) kann eine einmalige Korrektur bzw. den Erst-Aufbau schreiben, openStore bindet den Merge-Treiber. Nur Randfall. Alternative: 'writes none of the files it reports' oder den Randfall nennen.
   [NACHFOLGER] core/role/install.go:120-124: Kommentar 'They sit next to the go:embed directories they mirror' stimmt fuer modKey nicht (liegt in core/role, spiegelt core/mod/builtin). Alternative: mod.Key(id, rel) in core/mod/mod.go neben dessen embed, oder Kommentar korrigieren.
   [NACHFOLGER] internal/cli/roles.go:131 setzt updateInProgress nur, um die Skills-Warnung stumm zu schalten; der Name fuehrt jetzt in die Irre. Alternative: in setupInProgress umbenennen (update.go, roles.go, skillsnudge.go).
   [NACHFOLGER] internal/cli/self.go:69-79 Long nennt nicht, dass upgrade danach 'jaira update --roles' des neuen Binaries startet (README/COMMANDS tun es). Alternative: ein Satz im Long.
@@ -161,3 +161,10 @@ Warnung: skills-check entfernt, 'jaira list' 1. Lauf = genau 1 stderr-Zeile 'jai
 'self upgrade' (Kopie 9.9.8 -> 9.9.9) exit 0: Binary == 9.9.9-Bytes, 'bringing your setup in step with 9.9.9: jaira update --roles', 'updated .../jaira-role-acceptance/SKILL.md', Tester skipped+unveraendert. --json: setup (Objekt) + setup_exit 3. Ausserhalb Board: 'no board here: only your personal skills directories were checked', exit 0.
 Beobachtung (kein Defekt hier): Notes-Block listet bei Fake-Version 9.9.9 alle Notes ab 0.1.0.
 Transkripte: scratchpad/pwaf22/hand/transcript-*.txt
+- **2026-10-15 13:30 · BeMuCa** — critique (1. Durchgang): ein Defekt, Art (b) falsche Aussage in Doku und Release-Notiz.
+- README.md:118 'It ends with a line for each part that is behind' und core/release/notes/PWAF22.md:5 'Read the last lines of a plain jaira update' sind falsch.
+- Grund: internal/cli/update.go:187 druckt hintLines VOR 'Nothing has changed since...' (update.go:189) bzw. vor 'What's changed since then:' und der Notizliste. Nach einem Upgrade stehen die Hinweise ueber einer langen Liste.
+- Fix: nur Text. README z.B. 'After the line about the jaira section it prints one line for each part that is behind ...'; Notiz-Zeile 5 z.B. 'Look for the roles: and lanes: lines a plain jaira update now prints: ...'. Notiz bleibt eine Zeile, Anweisung, wahr.
+- Code NICHT verschieben: der Notizblock in update.go gehoert T8A8KM (Brief).
+Geprueft und ohne Befund: gofmt/go build/go vet sauber; Manifest mit scripts/shipped-history.sh byte-gleich nachgebaut (471 Zeilen); core/role/jaira/SKILL.md == .claude/skills/jaira/SKILL.md; keine Umbenennung in core/lane/builtin, Skript verliert also keine Lane-Versionen.
+Bestehende Tests (statisch, kein go test): keiner bricht. roles_test 'X written' passt weiter zur neuen Summenzeile; role_test prueft keine Dateizahl; update_test/sharestate laufen mit release.Current=dev bzw. isoliertem HOME/JAIRA_HOME (main_test.go TestMain); alle echten self-upgrade-Tests stubben runUpgraded oder pruefen die Ausgabe nicht (sharestate_test.go:95, exec von 'new-bytes' scheitert nur mit Warnung).
