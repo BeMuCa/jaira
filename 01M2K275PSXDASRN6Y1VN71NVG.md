@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T12:19:23Z
+updated-at: 2026-10-15T12:19:38Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
@@ -56,3 +56,4 @@ claimed-at: 2026-10-15T12:19:23Z
 - **2026-10-13 12:02 · BeMuCa** — Ueberschneidung mit E70WYN (Milestone umbenennen, 2026-10-13): E70WYN nimmt einen alten Namen von anderen Klonen, indem sein Ref STEHEN bleibt und markiert wird - 'status: filed' plus neue Zeile 'renamed-to: <neu>' - derselbe Weg wie jaira logbook. Es wurde KEIN Ref-Loeschen gebaut; die delete-Frage hier bleibt offen.
 Fuer delete wichtig: ein geloeschter Ref erreicht keinen Klon, der die Datei schon hat (refsync IncomingMilestones loescht nie). Eine Marke erreicht ihn.
 Neu durch E70WYN: Milestone.HoldsName() - eine Marke mit renamed-to haelt den Namen NICHT (nichts zum Zurueckholen), eine reine filed-Marke weiter schon. Falls delete eine Marke nutzt, ist das die Stelle fuer 'Name wieder frei'.
+- **2026-10-15 12:19 · BeMuCa** — Berk, 15.10., in seinen Worten: "Wir sollten auch umsetzen, dass die Milestones als Ganzes vom Board kommen, damit wir, wenn die fertig sind, keine Reste da uebrig haben." Gemeint: ist ein Milestone fertig, nimmt EIN Befehl den Milestone und seine fertigen Tickets zusammen vom Board - kein Milestone mehr im Picker oder auf der Roadmap, keins seiner fertigen Tickets mehr auf dem Board. Unfertige Tickets werden nicht abgelegt: jaira sagt welche und laesst sie stehen. Dazu, Lehre vom 14.10.: wir haben die Refs von sechs Test-Milestones auf origin geloescht; Alex' Klon hatte die Dateien noch, sein jaira hat sie um 20:20 neu migriert und als neue ID-Refs wieder hochgeschoben. Ein delete, das nur den Ref wegnimmt, macht jeder Klon mit der Datei rueckgaengig - das Loeschen braucht eine Marke, die jeder Klon befolgt. Ticket von Alex auf BeMuCa uebernommen, weil Berk es fuer das naechste Release will.
