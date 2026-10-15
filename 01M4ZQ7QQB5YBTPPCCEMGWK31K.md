@@ -22,7 +22,7 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T13:19:27Z
+updated-at: 2026-10-15T13:19:30Z
 updated-by: BeMuCa
 ---
 
@@ -54,7 +54,7 @@ updated-by: BeMuCa
 - [x] Test zuerst, gleiche Datei: TestARestoredTicketComesBackOnTheOtherBoard: wie oben archivieren, dann ada runAndSend restore <datei> -> ada-Ref ohne 'archived:'; grace fetch -> list --json nennt den Handle wieder (DoD 2)
 - [x] internal/cli umsetzen: archive.go Textausgabe (:86-88) bekommt, nur wenn refs.Usable() == nil, die Zeile 'Every other board drops it at its next fetch; committing .jaira/archive/<datei> only keeps the record in the repository.' --json bleibt gleich. restore RunE (archive.go:127): dst leer -> not_archived wie heute; dst gesetzt + Fehler -> warnRef auf stderr, restore gilt als gelungen. show (tickets.go:787-794): bei t.Archived != '' die Zeile 'off the board: archived <wert>, only on its ref' und im --json der Key 'archived'. Long-Hilfe von archive und restore um je einen Satz zum Ref ergaenzen
 - [x] Doku, die dadurch falsch wird, nachziehen (kein Code): RecordFiled-Kommentar core/refsync/refsync.go:166-179, README.md:579-584 (archive nimmt das Ticket sofort von allen Boards, logbook wie bisher), docs/COMMANDS.md:155 (archive) und :158 (restore nimmt die Zeile vom Ref)
-- [ ] core/release/notes/GWK31K.md: genau eine '- '-Zeile, nie umbrochen, als Anweisung: wer mit 'jaira archive <id>' archiviert, nimmt das Ticket beim naechsten fetch von jedem Board, ohne Commit; 'jaira restore <datei>' bringt es ueberall zurueck, 'jaira show <id>' sagt archived; das Committen von .jaira/archive/<datei> haelt nur den Eintrag im Repository fest
+- [x] core/release/notes/GWK31K.md: genau eine '- '-Zeile, nie umbrochen, als Anweisung: wer mit 'jaira archive <id>' archiviert, nimmt das Ticket beim naechsten fetch von jedem Board, ohne Commit; 'jaira restore <datei>' bringt es ueberall zurueck, 'jaira show <id>' sagt archived; das Committen von .jaira/archive/<datei> haelt nur den Eintrag im Repository fest
 - [ ] Pruefen ohne go test (Berk verbietet es): gofmt -l core internal leer, go vet ./... (kompiliert die neuen Tests mit), go build -race -o /tmp/claude-1000/-home-berk-git-jAIra/a751ce77-35ca-405d-9c2e-d6ae252f56ea/scratchpad/gwk31k/jaira ./cmd/jaira
 - [ ] fetch-Bericht: refsync.Incoming liest auch archived (Arrival.Archived, json 'archived'); printArrivals (internal/cli/fetch.go ~272) zeigt bei einem markierten Ref 'archived' statt der Lane, announceArrivals meldet ihn nicht als 'a ticket is yours'; Test in internal/cli/archiveref_test.go (grace fetch nennt den Handle mit 'archived')
 
