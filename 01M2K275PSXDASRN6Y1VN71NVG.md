@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T12:37:59Z
+updated-at: 2026-10-15T12:38:01Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
@@ -44,6 +44,7 @@ claimed-at: 2026-10-15T12:19:23Z
 - [ ] Fuehrt der Milestone noch ein Ticket, das die Terminal-Lane nicht erreicht hat, legt 'jaira logbook <milestone>' gar nichts ab - weder ein Ticket noch den Milestone -, nennt jedes solche Ticket mit seiner Lane und endet mit Exit 3 (milestone_unfinished)
 - [ ] 'jaira milestone delete <milestone>' loescht einen falschen Milestone fuer alle Klone: der Ref wird NICHT entfernt, er bekommt eine Marke ('status: filed' plus 'deleted: <datum> <wer>'), und die Datei hier ist weg. Ein zweiter Klon, der die Datei hat - als <name>-<ID>.md oder im alten Format <name>.md -, verliert sie beim naechsten 'jaira fetch' und schiebt sie nie wieder hoch, auch nicht aus einem noch wartenden Schreibvorgang. Belegt durch einen Zwei-Klon-Test fuer beide Dateiformen
 - [ ] core/release/notes/N71NVG.md hat je eine '- '-Zeile (eine Zeile, nie umbrochen) fuer jede Aenderung, die ein Benutzer merkt: logbook <milestone> legt die Tickets mit ab, 'jaira milestone delete', und 'jaira fetch' meldet geloeschte Milestones
+- [ ] Loeschen laesst die Tickets des Milestones unberuehrt (die Ausgabe nennt, wie viele ihre Gruppe verlieren), haengt Nachfolger auf der Roadmap an seine Vorgaenger um wie 'milestone set --no-roadmap', gibt den Namen frei und verweigert einen abgelegten Milestone (Exit 3)
 
 ## Options
 
