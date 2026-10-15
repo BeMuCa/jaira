@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T13:14:40Z
+updated-at: 2026-10-15T13:15:33Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -38,7 +38,8 @@ claimed-at: 2026-10-15T13:12:45Z
 
 ## Definition of Done
 
-- [ ] 'jaira update' bringt mit den entsprechenden Schaltern Agent-Block, Rollen und Lanes in einem Aufruf auf den Stand des installierten Binaries. Nachgestellt an einem Board, dessen Block, Rollen und Lanes alle drei veraltet sind.
+- [x] 'jaira update' bringt mit den entsprechenden Schaltern Agent-Block, Rollen und Lanes in einem Aufruf auf den Stand des installierten Binaries. Nachgestellt an einem Board, dessen Block, Rollen und Lanes alle drei veraltet sind.
+  proof: internal/cli/update.go:125 (RefreshShipped vor lane.Load), internal/cli/updatesetup.go:58 refreshRoles; Test TestUpdateRolesLanesBringsAStaleBoardUpToDate (updatesetup_test.go:99); Handlauf 15.10. Block+Rollen+Lane veraltet -> 'update --roles --lanes' alle drei aktuell (Notiz 13:14)
 - [ ] Der Aufruf ohne Schalter aendert sein Verhalten nicht still: was er heute tut, tut er weiterhin, und alles darueber hinaus wird ausdruecklich verlangt. Die Entscheidung steht begruendet im Ticket, nicht nur im Code.
 - [ ] Der Befehl sagt vor dem Schreiben, was er anfassen wuerde, und was er auslaesst weil ein Mensch es geaendert hat - wie 'jaira roles install' es schon tut.
 - [ ] Eine Zeile je Aenderung in core/release/notes/PWAF22.md, als Anweisung an den Leser formuliert und wahr
