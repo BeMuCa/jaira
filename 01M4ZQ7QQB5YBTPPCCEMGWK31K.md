@@ -22,7 +22,7 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T13:39:49Z
+updated-at: 2026-10-15T13:39:51Z
 updated-by: BeMuCa
 outcome-what: "'jaira archive' schreibt auf den Ref den Dateiinhalt plus eine Zeile 'archived: <datum> <wer>' (core/ticket/store.go recordArchived); die Datei in .jaira/archive/ bleibt byte-gleich. Store.List laesst ref-only Tickets mit dieser Zeile weg, also auch board, list, next, resume. 'jaira restore' schreibt die Datei ohne Zeile zurueck auf den Ref (nach CheckFresh; ist der Ref neuer, warnt es nur). show und fetch nennen ein archiviertes Ticket 'archived', fetch meldet es nicht als 'a ticket is yours'. archive sagt, dass das Committen nur den Eintrag festhaelt. Doku und Release-Notiz."
 outcome-why: "Bisher schrieb archive den unveraenderten Inhalt auf den Ref. Jeder andere Klon zeigte das Ticket weiter, bis der Snapshot-Lauf (alle 72 h) den Ref abraeumte, und das erst nach Commit und Merge der Archiv-Datei. Berk will, dass Archivieren wie create wirkt: sofort beim naechsten fetch, ohne Commit."
@@ -41,7 +41,7 @@ round: 2
 - [x] 'jaira restore' eines archivierten Tickets entfernt die Markierung auf dem Ref wieder, sodass es ueberall zurueckkommt; Test
   proof: Store.Restore re-records the unmarked file; tests core/ticket/archiveref_test.go:113,142 + internal/cli/archiveref_test.go:95
 - [x] Archivieren pusht die Markierung sofort auf den Ref, wie 'jaira create' ein neues Ticket pusht: ein anderer Klon sieht das Ticket nach seinem naechsten fetch nicht mehr, ohne dass die Archiv-Datei committet ist. Die Ausgabe von 'jaira archive' sagt, dass das Committen von .jaira/archive/<datei> nur den Eintrag im Repository festhaelt; Test
-  proof: push via recordFiled->Record dirty->afterCommand->flushRefs (internal/cli/root.go:106, refs.go:204-207,246-252); archive output lines internal/cli/archive.go:94-104 (untracked: 'only keeps the record'; tracked: 'a branch that has this file shows it until this move is committed and merged there'); tests internal/cli/archiveref_test.go:65, :131
+  proof: push via recordFiled->Record dirty->afterCommand->flushRefs (internal/cli/root.go:106, refs.go:204-207,246-252); archive output lines internal/cli/archive.go:94-104 (untracked: 'only keeps the record'; tracked: 'a branch that has this file shows it until this move is committed and merged there'); tests internal/cli/archiveref_test.go:56, :122
 - [x] Eine Zeile in core/release/notes/<ID>.md
   proof: core/release/notes/GWK31K.md
 
