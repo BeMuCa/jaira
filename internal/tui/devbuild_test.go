@@ -29,7 +29,10 @@ func TestVersionLineNamesADevBuildWithoutAnUpgradeClaim(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	line := versionLine()
+	line, pill := versionLine()
+	if pill != "" {
+		t.Errorf("pill = %q on a dev build, want none", pill)
+	}
 	if !strings.Contains(line, "jaira dev") {
 		t.Errorf("versionLine() = %q on a dev build, want it to name the build", line)
 	}

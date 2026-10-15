@@ -72,6 +72,9 @@ var (
 	styAsks      = lipgloss.NewStyle().Foreground(colWarn).Bold(true)
 	styReview    = lipgloss.NewStyle().Foreground(colAccent).Bold(true)
 	styDoing     = lipgloss.NewStyle().Foreground(colAgentic).Bold(true)
+	// The release pill: a newer release exists. Filled, so it is the one
+	// thing on the head that reads as a badge rather than as text.
+	styPill = lipgloss.NewStyle().Background(colAccent).Foreground(lipgloss.Color("16")).Padding(0, 1)
 )
 
 const minColWidth = 22
@@ -228,6 +231,9 @@ func (m *Model) renderBoard() string {
 	// shares) so that a line can be hung underneath it without pushing the
 	// board bar down.
 	head := truncate(m.versionLine, m.width)
+	if m.releasePill != "" {
+		head += "\n" + m.releasePill
+	}
 	b.WriteString(head + "\n")
 	b.WriteString(m.header())
 	b.WriteString("\n")
