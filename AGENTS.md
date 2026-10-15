@@ -77,6 +77,8 @@ Working a ticket:
   id — so nothing needs to be typed here; it is written onto the ticket once,
   when the ticket leaves the board
 - `jaira resume` — work left in progress, with everything recorded about it
+- when jaira reports a newer release (`jaira next` and `jaira resume` print it
+  on stderr), tell the user and name `jaira self upgrade`
 - **every commit names the ticket id** — `fix(A3K9QP): ...`. jaira derives a
   ticket's commit list from two sources: the history of the ticket file itself,
   and the commits that name its id. The first source is thin by design (see the
