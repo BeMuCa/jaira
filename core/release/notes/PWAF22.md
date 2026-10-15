@@ -1,0 +1,1 @@
+- Run 'jaira roles install' after an upgrade without --force: a file equal to a version an earlier jaira shipped is now replaced and reported as updated, and --force is only needed for a file you edited yourself.
