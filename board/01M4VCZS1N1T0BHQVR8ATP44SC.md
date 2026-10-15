@@ -1,7 +1,7 @@
 ---
 id: 01M4VCZS1N1T0BHQVR8ATP44SC
 title: "Rollen-Skripte starten Tabs auch auf nativem Windows (Git Bash): kein python3, WSL nicht an .exe erkannt"
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -30,8 +30,11 @@ commits:
   - b20ff5a637e9f829d9e72bf50bfb4cc7fc626ca8
   - 469b9b57ed1cf44391e18b9144360932976dd010
   - 4f1f517e7ee61d7185f73d5d2e78fe83e045b305
+  - ada444bc1615b2f9cb26697277c2ba9d5527ccba
+  - 98e822f431702c17e867e982d3cffcfb7df3ee34
+  - 4a5b95f4e7705ea2f704dcf3b3c86190abf309ba
 created-at: 2026-10-13T19:49:16Z
-updated-at: 2026-10-13T21:37:08Z
+updated-at: 2026-10-14T17:55:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59767
 claimed-at: 2026-10-13T21:10:22Z

@@ -21,7 +21,7 @@ related: []
 follows: 01M2HW4788Z5G0M05G3PJDXV60
 commits: []
 created-at: 2026-10-13T13:48:57Z
-updated-at: 2026-10-13T14:16:16Z
+updated-at: 2026-10-14T14:08:43Z
 assignee: BeMuCa
 updated-by: BeMuCa
 ---
@@ -43,4 +43,4 @@ updated-by: BeMuCa
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-14 14:08 · BeMuCa** — Dritte Variante am 14.10.: D0SAHM stand auf Berks Board in signoff, obwohl es laengst abgenommen und abgelegt war (logbook bemuca-20261013, per PR #74 in master). Grund: Der Haupt-Checkout /home/berk/git/jAIra stand noch auf dem alten master fa222c5d, und dort lag eine veraltete, geaenderte Kopie .jaira/tickets/...D0SAHM...md mit status: signoff. Den Ref refs/jaira/tickets/<ULID> gibt es nach dem Ablegen nicht mehr, also kann 'zeig den Stand des Refs' hier nicht helfen. Das Board muss auch erkennen: Datei ohne Ref, deren Ticket upstream im Logbuch liegt -> als abgelegt bzw. veraltet zeigen statt als offen. Behoben fuer heute durch git stash der veralteten Kopien + git pull master.

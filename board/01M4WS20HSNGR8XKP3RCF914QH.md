@@ -1,7 +1,7 @@
 ---
 id: 01M4WS20HSNGR8XKP3RCF914QH
 title: "Epics: Funktionen als eigene Art auf eigenen Refs, nicht als Ticket"
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,9 +21,14 @@ tags:
   - cli
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 9cb410a7308b86cbbd9ab4e473c3b082f1aa3912
+  - a38191796f2ded3b7bee8e9f75b0ed6ffd727100
+  - 4400dddb45f47992d6404e44c3547e332e96f835
+  - 340e08250907e8af7d60f71e9c96d0324624daee
+  - d5b28056f3692f24ff2b74e7eb99ca46d6360a50
 created-at: 2026-10-14T08:39:27Z
-updated-at: 2026-10-14T13:33:08Z
+updated-at: 2026-10-14T14:56:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96726
 claimed-at: 2026-10-14T13:23:08Z
