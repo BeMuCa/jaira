@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T13:11:15Z
+updated-at: 2026-10-15T13:12:25Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -65,7 +65,7 @@ claimed-at: 2026-10-15T13:03:19Z
 - [x] 8 internal/cli/skillsnudge.go: nudgeSkillsIfStale in openStore after nudgeIfStale - personal dirs only, once per version via JAIRA_HOME/skills-check/version, stderr only, silent on dev/update/roles install; tests first in skillsnudge_test.go (own HOME/USERPROFILE/JAIRA_HOME); release-note line
 - [x] 9 ship the jaira skill (driver decided yes, see note) - core/role/jaira/SKILL.md embedded and installed beside the roles (not a role), test keeps .claude/skills/jaira/SKILL.md byte-equal, manifest regenerated, .gitattributes, README.md:649/683 + docs/AGENTS.md:263/271; release-note line
 - [x] 10 docs: README (Upgrading, Bringing a board up to date, Roles) and docs/COMMANDS.md:130 name --roles/--lanes/--dry-run and what self upgrade now runs
-- [ ] 11 reproduce DoD 1 by hand: scratch build with -ldflags version, HOME/JAIRA_HOME in the scratchpad, scratch board with stale block/roles/lane; update --dry-run, update --roles --lanes, rerun; skills warning once; transcript in a note, DoD proofs ticked
+- [~] 11 reproduce DoD 1 by hand: scratch build with -ldflags version, HOME/JAIRA_HOME in the scratchpad, scratch board with stale block/roles/lane; update --dry-run, update --roles --lanes, rerun; skills warning once; transcript in a note, DoD proofs ticked
 
 ## Progress
 - **2026-10-13 20:51 · BeMuCa** — Berk 2026-10-13: nach einem Upgrade sollen die jaira-Skills immer neu installiert werden und jaira update automatisch laufen (DoD 5 und 6). Anlass: am 13.10. war ~/.claude/skills/jaira-role-pr noch vom 06.10. und kannte das Ablegen vor dem PR nicht - Alex musste im PR #74 nachfordern. Weder git pull noch jaira update ziehen die Rollen-Skills heute nach (jaira roles install --help). Gehoert mit T8A8KM zusammen.
