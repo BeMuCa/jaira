@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T12:35:10Z
+updated-at: 2026-10-15T12:35:30Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -88,3 +88,10 @@ claimed-at: 2026-10-15T12:05:54Z
 - Exit 3 des Kinds (eine Datei von Hand geaendert) ist kein Fehler des Upgrades: Exit 0, die Zeilen des Kinds nennen, was uebersprungen wurde. JSON: 'setup' (Ausgabe des Kinds) und 'setup_exit'.
 - Test: Variable runUpgraded (wie selfExecutable, self.go:21) + Fake-Release ueber JAIRA_RELEASE_API/JAIRA_RELEASE_DOWNLOADS. Dazu ein unix-Test, der ein Shell-Skript als neues Binary wirklich ausfuehrt.
 - Nicht drin: die Verweigerung fuer Dev-Builds (self.go:80-84, 'a dev build has no published release'). Offene Frage an Berk.
+- **2026-10-15 12:35 · BeMuCa** — Entscheidung DoD 6 - Warnung bei aelteren Skills: einmal je Binary-Version, auf stderr.
+- 'aelter' heisst: eine Datei, die 'jaira update --roles' schreiben oder ersetzen wuerde - sie fehlt, oder sie ist eine frueher ausgelieferte Version. Von Hand geaenderte Dateien sind NICHT aelter.
+- Geprueft werden nur die persoenlichen Ordner (~/.claude/skills, ~/.copilot/skills), in denen Rollen liegen. Projekt-Skills reisen mit dem Repo; die erreicht der bestehende Hinweis 'run jaira update' (nudgeIfStale) und die Hinweiszeile von update.
+- Wo: openStore (internal/cli/root.go:252), direkt nach nudgeIfStale. Nicht im TUI (board.go:22 und home.go:49 gehen nicht durch openStore). Nie auf stdout, auch nicht bei --json.
+- 'einmal': Stempel $JAIRA_HOME/skills-check/version (release.Stamp/Stamped). Steht dort die laufende Version, kostet es eine kleine Datei lesen - die Startzeit bleibt.
+- Der Text nennt 'jaira update --roles'. Still bei dev-Builds und waehrend 'update' und 'roles install' (die sind die Abhilfe).
+- Kein Ueberlapp mit T8A8KM: das zeigt Release-Notizen (TUI-Popup, Pille, Hervorhebung in update). Dies hier sagt nur, dass Skills nachzuziehen sind.
