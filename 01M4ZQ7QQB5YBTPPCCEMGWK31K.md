@@ -1,7 +1,7 @@
 ---
 id: 01M4ZQ7QQB5YBTPPCCEMGWK31K
 title: "Ein archiviertes Ticket verschwindet sofort von allen Boards, nicht erst wenn der Snapshot den Ref abraeumt"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -22,8 +22,12 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T13:19:44Z
+updated-at: 2026-10-15T13:22:37Z
 updated-by: BeMuCa
+outcome-what: "'jaira archive' schreibt auf den Ref den Dateiinhalt plus eine Zeile 'archived: <datum> <wer>' (core/ticket/store.go recordArchived); die Datei in .jaira/archive/ bleibt byte-gleich. Store.List laesst ref-only Tickets mit dieser Zeile weg, also auch board, list, next, resume. 'jaira restore' schreibt die Datei ohne Zeile zurueck auf den Ref (nach CheckFresh; ist der Ref neuer, warnt es nur). show und fetch nennen ein archiviertes Ticket 'archived', fetch meldet es nicht als 'a ticket is yours'. archive sagt, dass das Committen nur den Eintrag festhaelt. Doku und Release-Notiz."
+outcome-why: "Bisher schrieb archive den unveraenderten Inhalt auf den Ref. Jeder andere Klon zeigte das Ticket weiter, bis der Snapshot-Lauf (alle 72 h) den Ref abraeumte, und das erst nach Commit und Merge der Archiv-Datei. Berk will, dass Archivieren wie create wirkt: sofort beim naechsten fetch, ohne Commit."
+outcome-resolves: "DoD 1: Markierung im Ref-Inhalt (store.go Archive->recordArchived), Ausblenden an der einen Stelle Store.List, die board/list/next/resume lesen; Tests core/ticket/archiveref_test.go:44,87 und internal/cli/archiveref_test.go:65. DoD 2: Restore nimmt die Zeile per record wieder vom Ref; Tests archiveref_test.go:113,142 und cli :104. DoD 3: der Ref wird schon im selben Befehl gesendet (afterCommand->flushRefs); der cli-Test prueft, dass der andere Klon es ohne committete Archiv-Datei verliert; Ausgabezeile archive.go:91. DoD 4: core/release/notes/GWK31K.md. Handtest zweier Klone ueber ein lokales bare repo: B sieht nach fetch nichts mehr, nach restore beides wieder."
+executed-by: sonnet
 ---
 
 # Ein archiviertes Ticket verschwindet sofort von allen Boards, nicht erst wenn der Snapshot den Ref abraeumt
