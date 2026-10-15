@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T12:36:39Z
+updated-at: 2026-10-15T12:46:54Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -124,3 +124,8 @@ claimed-at: 2026-10-15T12:36:39Z
 - einmalige stderr-Zeile je Version, wenn persoenliche Skills aelter sind.
 - (nur mit Schritt 9) roles install schreibt den jaira-Skill mit.
 Wortlaut steht im Design (Scratchpad design.md, je Schritt). Kein '- !'-Marker - der gehoert zu T8A8KM.
+- **2026-10-15 12:46 · BeMuCa** — Entscheidung jaira-Skill (Treiber, 15.10.): Schritt 9 wird gebaut, ohne auf Berk zu warten.
+- Grund 1: DoD 6 nennt den jaira-Skill ausdruecklich. Ohne eingebettete Kopie kann das Binary ihn weder pruefen noch nachziehen.
+- Grund 2: Berk am 14.10.: nach einem Upgrade sollen die jaira-Skills immer neu installiert werden. Der jaira-Skill ist der, der sich am oeftesten aendert.
+- Folge, die Berk beim signoff zuruecknehmen kann: 'jaira roles install --project' schreibt in jedem Repo auch .claude/skills/jaira/SKILL.md. Der Schritt ist ein eigener Commit und laesst sich allein zuruecknehmen.
+- Offen fuer Berk (nicht in diesem Ticket): die Dev-Build-Verweigerung von 'self upgrade' (self.go:80-84), und Rollen, die mit --into installiert wurden (update --roles und die Warnung sehen sie nicht).
