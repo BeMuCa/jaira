@@ -22,7 +22,7 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T12:56:45Z
+updated-at: 2026-10-15T12:56:53Z
 updated-by: BeMuCa
 ---
 
@@ -79,3 +79,15 @@ updated-by: BeMuCa
 - Push (DoD 3): passiert schon heute vor Prozessende. recordFiled -> refsync.Record setzt dirty (refsync.go:124-141) -> Execute ruft afterCommand -> flushRefs (root.go:103-106, refs.go:204-207, 246-252). create schickt synchron in fileOnRefOnly (refs.go:83-110), nur weil es danach die Datei loescht. Kein neuer Push-Code. TUI-Taste x (internal/tui/model.go:2192) geht durch dieselbe Store.Archive. Im Test ersetzt runAndSend afterCommand (internal/cli/milestoneref_test.go:17-25).
 - Ausgabe archive (internal/cli/archive.go:86-88): neue Zeile nur wenn refs.Usable() == nil. Ohne Remote waere 'jedes Board laesst es beim naechsten fetch fallen' falsch.
 - --json von archive bleibt gleich: der Satz ist Rat fuer Menschen. Ob gesendet wurde, steht wie bei jedem Schreiben auf stderr (flushRefs/warnRef, refs.go:246-358).
+- **2026-10-15 12:56 · BeMuCa** — pre-process, Teil 3 - Gleichzeitigkeit, Logbook, N71NVG, bekannte Luecken:
+- A archiviert, B schreibt dasselbe Ticket. B hat dafuer eine Datei: geteilter Branch oder --steal. Beide leasen denselben SHA.
+- Der zweite Push wird abgewiesen und VERWORFEN (core/outbox/outbox.go:424-427, 470-479). Tickets werden dabei nicht gemergt, nur Milestones und Epics (refsync.go:680-691).
+- B zuerst: As Marke kommt nie an. A sieht '<h> was not sent: <B ...>' (refs.go:262-272). Ticket bleibt ueberall sichtbar - die sichere Richtung. Neu archivieren: restore (schreibt nicht, Ref ist neuer) -> pull -> archive.
+- A zuerst: Bs naechster Schreibvorgang nach seinem fetch ist nicht stale (gleicher updated-at) und ersetzt den Ref-Inhalt. Marke weg, Ticket wieder sichtbar. Dasselbe last-writer-wins wie fuer jedes Feld auf dem Ref.
+- core/merge: Die Marke steht fast nie in einer Datei in tickets/. Wenn doch (nach pull eines markierten Refs), nimmt mergeScalar die einseitige Aenderung (core/merge/merge.go:155-158, 250-262). Kein Code, kein Test geplant.
+- Ausser Scope: die Marke gegen Bs spaeteren Push schuetzen. Braucht Merge-on-reject fuer Tickets (wie mergeRefused, refsync.go:705ff) oder eine Sperre in Record wie N71NVGs ErrMilestoneDeleted. Folgeticket, falls gewuenscht.
+- Logbook (store.go:402) ruft recordFiled weiter unmarkiert, ausser Scope. Die Zeile wuerde dort genauso passen. Aber das kehrt die Begruendung in RecordFiled (refsync.go:166-179, README.md:579-584: Ref sichtbar lassen, damit niemand fertige Arbeit doppelt aufschreibt) auch fuer fertige Arbeit um. Berks Entscheidung.
+- Bekannt, nicht in der DoD, kein Code: 'jaira fetch' listet markierte Refs weiter, und 'a ticket is yours' kann fuer ein markiertes Ticket feuern (internal/cli/fetch.go:211-229, 272-291). Ein Link auf ein anderswo archiviertes Ticket heisst dort 'unknown' statt 'archive'; Satisfied bleibt false wie beim Archivierer (core/link/link.go:304-313).
+- N71NVG: nichts im Code geteilt. Milestones haben ein eigenes Format (core/milestone: 'status: filed' + 'deleted:'), Tickets gehen ueber core/ticket.Doc, und status heisst dort Lane. Ein gemeinsamer Helper muesste nach Art verzweigen - kein Gewinn, nur Kopplung.
+- Geteilt ist die Regel 'der Ref bleibt stehen und bekommt eine Zeile' und die Wertform '<yyyy-mm-dd> <wer>'. GWK31K braucht keinen Code von N71NVG.
+- Merge-Risiko mit N71NVG nur in der Doku: beide aendern docs/COMMANDS.md (N71NVG :138/:157, GWK31K :155/:158) und README.md.
