@@ -22,7 +22,7 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T13:53:50Z
+updated-at: 2026-10-15T13:54:00Z
 updated-by: BeMuCa
 outcome-what: "'jaira archive' schreibt auf den Ref den Dateiinhalt plus eine Zeile 'archived: <datum> <wer>' (core/ticket/store.go Archive -> recordFiled mit Markwert; Logbook gibt '' und bleibt unmarkiert); die Datei in .jaira/archive/ bleibt byte-gleich. Store.List laesst ref-only Tickets mit dieser Zeile weg, also auch board, list, next, resume. 'jaira restore' schreibt die Datei ohne Zeile zurueck auf den Ref (nach CheckFresh; ist der Ref neuer, bleibt er stehen und restore warnt mit 'jaira pull <h>'). show (nur ref-only) und fetch nennen ein archiviertes Ticket 'archived', fetch meldet es nicht als 'a ticket is yours'. archive sagt bei ungetrackter Datei, dass das Committen nur den Eintrag festhaelt, bei getrackter, dass ein Branch mit der Datei es bis zum Merge zeigt. Doku und zwei Release-Zeilen."
 outcome-why: "Bisher schrieb archive den unveraenderten Inhalt auf den Ref. Jeder andere Klon zeigte das Ticket weiter, bis der Snapshot-Lauf (alle 72 h) den Ref abraeumte, und das erst nach Commit und Merge der Archiv-Datei. Berk will, dass Archivieren wie create wirkt: sofort beim naechsten fetch, ohne Commit."
@@ -69,7 +69,7 @@ review-check: |-
   6. jaira create "Probe archiv" --goal g --context c --dod d --assignee ada  -> 'Created <H>  Probe archiv' und 'On its ref, not on your disk ...'. Dann: H=<H>
   7. jaira pull $H  -> '<H> is yours: Probe archiv'.
   8. cd .. && git clone -q origin.git B && cd B && git config user.name bob && jaira init >/dev/null  -> keine Ausgabe. B ist jetzt bob, ein Teammate.
-  9. jaira fetch && jaira list  -> '<H>   backlog      Probe archiv new ref-only', darunter Backlog mit '<H>  Probe archiv ... ada [DoD 0/1] [pull it]'.
+  9. jaira fetch && jaira list  -> zuerst einmalig 'jaira: registered the field-aware merge driver for this clone', dann '<H>   backlog      Probe archiv new ref-only', darunter Backlog mit '<H>  Probe archiv ... ada [DoD 0/1] [pull it]'.
   10. cd ../A && jaira archive $H  -> drei Zeilen: 'Archived <H>  Probe archiv', 'Moved to .jaira/archive — restore it with ...', 'Every other board drops it at its next fetch; committing .jaira/archive/<datei> only keeps the record in the repository.'
   11. git status --short .jaira  -> nur '?? .jaira/archive/'. Nichts committet.
   12. cd ../B && jaira fetch && jaira list  -> '<H>   archived     Probe archiv new ref-only', dann 'No tickets match.'
