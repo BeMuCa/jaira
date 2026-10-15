@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-15T12:19:47Z
+updated-at: 2026-10-15T12:19:49Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -60,3 +60,8 @@ Pro Baum heisst: jeder Worktree mit altem Stempel zeigt es einmal; ein neuer Wor
 Der Schwanz '. X available - run: jaira self upgrade' faellt weg: Pille und Zeile wuerden sonst dasselbe zweimal sagen. Den Befehl nennt der Agent (DoD 2). Wer den Hinweis fuer Menschen behalten will, setzt ihn gedimmt neben die Pille - Geschmacksfrage fuer critique/Berk, kein Blocker.
 renderBoard zaehlt die Kopfzeilen schon (view.go:256 headLines): eine zweite Zeile im head kostet die Spalten automatisch eine Reihe. P1AE82 ist gelandet (fac61b4e), die Version steht links oben; TestBoardVersionSitsInTheTopLeftCorner haelt die Zeile darunter frei.
 Der Launcher bekommt die Pille auch: er zeigt dieselbe Versionszeile, und ohne den weggefallenen Schwanz verloere er sonst die Info.
+- **2026-10-15 12:19 · BeMuCa** — Agent-Ausgabe (DoD 2): eine Zeile auf stderr bei 'jaira next' (alle Varianten, vor dem --per-lane-Zweig, flow.go:407) und 'jaira resume'. Das sind die Befehle, mit denen eine Sitzung startet.
+stderr, weil stdout das JSON ist, das ein Agent parst - dieselbe Regel wie nudgeIfStale (update.go:28). Der Stop-Hook (hook.go:44) leitet stderr nach /dev/null und bleibt unberuehrt.
+Nicht auf jedem Befehl: genau das war der Grund fuer die bisherige CLI-Stille (Kommentar update.go:31-36). Dieser Kommentar und die Doku von versionLine/PollCache werden falsch und muessen mitgeaendert werden.
+next/resume rufen dafuer PollCache auf. Erst dadurch stimmt Berks Satz vom 13.10. ('prueft, sobald jaira laeuft'): heute prueft NUR der TUI, wer nur per Agent arbeitet, erfuhr nie von einem Release. Kosten: hoechstens ein abgekoppelter Kindprozess je 24h; JAIRA_NO_UPDATE_CHECK=1 schaltet ab; Testbinaries spawnen nie (cache.go:144).
+Der Agent-Block ist englisch, der Satz aus der DoD steht dort als 'when jaira reports a newer release ..., tell the user and name jaira self upgrade', direkt nach dem jaira-resume-Punkt (announce.go:110). Die Bloecke in CLAUDE.md/AGENTS.md dieses Repos werden mit der frisch gebauten Binary neu erzeugt (Vorbild 81eccd1f).
