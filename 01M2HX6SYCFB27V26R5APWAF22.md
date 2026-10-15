@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T12:56:13Z
+updated-at: 2026-10-15T12:56:51Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -58,7 +58,7 @@ claimed-at: 2026-10-15T12:51:30Z
 - [x] 2 core/role/install.go: writeFile recognises an older shipped version (new Action Updated, written without --force) + dryRun param on install/Agent.Install; fixture core/role/testdata (v0.4.0 jaira-role-acceptance SKILL.md); tests first: TestEveryInstalledFileIsAShippedVersion, TestInstallReplacesAnOlderShippedVersion, TestInstallDryRunWritesNothing; internal/cli/roles.go: printRoleResults/roleResultsJSON extracted, 'updated' lines + count, help text; release-note line
 - [x] 3 core/lane/refresh.go: RefreshShipped(root, dryRun) - unchanged / updated (older shipped version) / skipped (edited), only lanes the board holds and jaira ships; fixture core/lane/testdata (catalogue testing.md before 2fb8f177); tests first incl. TestEveryBuiltinLaneIsAShippedVersion
 - [x] 4 core/role/target.go: Installed(root) []Target (own project dir per agent, then personal; only dirs already holding roles; deduped) + Behind(results); tests first
-- [ ] 5 core/board/announce.go: PreviewAgentFiles(root, choice, lanes) by threading dry through announceIn/announceInAgentFile/removeBlock/setClaudeImport (lines 397-576 only, not agentNote); test: preview names what the write does and writes nothing
+- [~] 5 core/board/announce.go: PreviewAgentFiles(root, choice, lanes) by threading dry through announceIn/announceInAgentFile/removeBlock/setClaudeImport (lines 397-576 only, not agentNote); test: preview names what the write does and writes nothing
 - [ ] 6a internal/cli: 'jaira update --roles --lanes' (new updatesetup.go; update.go flags/Long/RunE 80-127 only, never 128-139): lanes refreshed before lane.Load, roles where installed, --roles works outside a board (personal only), JSON keys roles/lanes/skipped only when asked, exit 3 via named return+defer; tests first incl. DoD-1 reproduction TestUpdateRolesLanesBringsAStaleBoardUpToDate and TestUpdateWithoutSwitchesWritesOnlyTheBlock; two release-note lines
 - [ ] 6b internal/cli: 'jaira update --dry-run' (would-lines, 'nothing was written (--dry-run)', no stamp, same exit code, return before the notes block) + read-only hint lines of the bare call when roles/lanes are behind; tests first: TestUpdateDryRunWritesNothing, TestUpdateDryRunExitCodeMatchesTheRealRun, TestUpdateWithoutSwitchesNamesWhatIsBehind; two release-note lines
 - [ ] 7 internal/cli/self.go: after Replace run the NEW binary '<target> -C <dir> update --roles [--json]' through seam var runUpgraded; child exit 3 is not a failure; JSON setup/setup_exit; no lanes; tests first in self_test.go (recorder seam + unix test executing a shell-script payload); release-note line
