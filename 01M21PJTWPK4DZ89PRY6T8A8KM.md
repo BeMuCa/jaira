@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-15T13:31:44Z
+updated-at: 2026-10-15T13:32:49Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -148,3 +148,4 @@ Frage an Berk (kein Rueckweg): Pille nur '^ <version>' (wie gebaut) oder dahinte
 - **2026-10-15 12:57 · BeMuCa** — critique-Runde 1 behoben: README, COMMANDS.md, view.go-Kommentar, Notes-Zeile 4; Commit a47d6d25
 - **2026-10-15 12:59 · BeMuCa** — critique Runde 2: alle vier DEFECTs aus Runde 1 in a47d6d25 behoben, jeder neue Satz gegen den Code geprueft (versionLine, warnNewerRelease nur in next/resume auf stderr, PollCache liefert bei JAIRA_NO_UPDATE_CHECK=1 known=false, writeNotes druckt '  ! <text>', headLines zaehlt die Pillen-Zeile). Keine neuen Befunde. Nachfolger-Punkt T8A8KM.md:4 damit erledigt, vier Nachfolger bleiben. Weiter zu optimize.
 - **2026-10-15 13:08 · BeMuCa** — optimize: notes-seen liegt jetzt in core/release neben dem Stempel (NotesSeen/MarkNotesSeen, gemeinsame private readVersion/writeCurrent; Stamped/Stamp nur noch Einzeiler, Signatur und Verhalten gleich - fuer den PWAF22-Merge). Der dev-Waechter bleibt bewusst im TUI (markSeen), nicht in MarkNotesSeen: Stamp hat auch keinen, release bleibt reine Datei-I/O. '+N more' und CLAUDE.md-Wortlaut sind keine Aufraeumarbeit und bleiben Nachfolger.
+- **2026-10-15 13:32 · BeMuCa** — Treiber: Stand bei signoff. Offen fuer Berk: (1) go test ./... -race laeuft erst in der Hauptsession vor dem PR (DoD 1 bis dahin offen, keiner der ~20 neuen Tests ist gelaufen). (2) Pille ohne 'jaira self upgrade'-Hinweis im TUI (Option A gebaut) oder gedimmter Hinweis daneben (B). (3) Erster Versionswechsel nach Auslieferung: kein Popup, wenn jaira update vor dem ersten TUI-Start lief - bewusst annehmen oder Folgeticket. Nachfolger aus review: Launcher-Hinweiszeile faellt bei ~22 Zeilen Hoehe mit Pille eine Zeile frueher weg (Launcher misst seine Hoehe nicht, vorbestehend); '+N more' im Notes-Fenster fehlt; wrap() frisst Doppel-Leerzeichen; ctrl+c im Popup wirkungslos wie in Hilfe/Legende.
