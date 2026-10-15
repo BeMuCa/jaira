@@ -2,6 +2,7 @@
 color: 136
 created-at: 2026-10-13T06:41:19Z
 goal: Testing
+status: filed
 ---
 
 # test-milestone
