@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-15T12:20:08Z
+updated-at: 2026-10-15T12:20:10Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -73,3 +73,9 @@ Neu nur release.Important(change) (text, ok): Praefix '! ' MIT Leerzeichen; '!te
 Hervorhebung: im TUI farbig (colWarn, fett, Bullet '!'); in 'jaira update' ohne ANSI als '  ! <text>' statt '  - <text>', weil die Ausgabe auch Agenten und Pipes lesen.
 Hinweis: alte Binaries lesen neue Notes nie (go:embed). 'Bleibt fuer alte Binaries normal' ist damit ein Formatversprechen fuer Menschen und Werkzeuge, kein Laufzeitfall. Der Test belegt es an changeLines.
 Doku: Abschnitt 'Client-facing changes go in core/release/notes/' steht in CLAUDE.md UND AGENTS.md, beide ausserhalb des jaira-Blocks; dazu der Kommentar an changeLines. Workflows (.github/workflows/release-notes.yaml) verschieben nur Dateien und lesen das Format nicht.
+- **2026-10-15 12:20 · BeMuCa** — Kollisionen mit PWAF22 (dort noch kein Code, gleiche Basis 0aefa5c1):
+(1) internal/cli/update.go - hier nur der Kommentar update.go:31-36 und die Notes-Schleife update.go:132-137, die zu writeNotes(w, notes) wird. PWAF22 baut RunE um; ein kleiner Konflikt dort ist wahrscheinlich.
+(2) core/release/release.go - newer wird Newer (exportiert). PWAF22 braucht fuer 'Skills aelter als Binary' evtl. denselben Versionsvergleich: dann Newer nutzen statt einen zweiten zu bauen.
+(3) core/board/announce.go agentNote - eine Zeile nach dem jaira-resume-Punkt. Aendert PWAF22 den Block auch, nach dem Merge die Bloecke in CLAUDE.md/AGENTS.md neu erzeugen.
+(4) Release-Notes: je eigene Datei, kein Konflikt.
+Prozess: DoD 1 verlangt 'go test ./... -race gruen', die Implementierer duerfen auf Berks Anweisung kein go test laufen lassen - den Beleg muss die testing-Lane oder CI liefern.
