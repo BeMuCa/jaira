@@ -1,0 +1,1 @@
+- When a newer release is out, the board head and the launcher show a pill `^ <version>` under the version instead of "<version> available - run: jaira self upgrade"; run `jaira self upgrade` when you see it.

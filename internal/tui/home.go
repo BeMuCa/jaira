@@ -82,6 +82,9 @@ type Home struct {
 	// indicator drawn in the top left corner, computed once at construction —
 	// see versionLine() in updatecheck.go for why not on every render.
 	versionLine string
+	// releasePill is the "^ <version>" badge under it when a newer release is
+	// known, empty otherwise.
+	releasePill string
 
 	width, height int
 }
@@ -131,7 +134,8 @@ func NewHome(extraRoots []string) (*Home, error) {
 	if err != nil {
 		return nil, err
 	}
-	h := &Home{lanes: lanes, versionLine: versionLine()}
+	h := &Home{lanes: lanes}
+	h.versionLine, h.releasePill = versionLine()
 
 	seen := map[string]bool{}
 	add := func(root string) {
@@ -347,6 +351,9 @@ func (h *Home) render() string {
 	// The running version, top left, above everything else — the same corner
 	// renderBoard puts it in, so it is in one place on every screen.
 	b.WriteString(truncate(h.versionLine, h.width) + "\n")
+	if h.releasePill != "" {
+		b.WriteString(h.releasePill + "\n")
+	}
 
 	// Header: the wordmark with the icon beside it, centred as a block. This is
 	// the one screen that is looked at rather than worked in, so it is allowed

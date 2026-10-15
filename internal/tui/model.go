@@ -285,6 +285,9 @@ type Model struct {
 	// since which jaira binary is running is a machine-level fact, not a
 	// per-board one.
 	versionLine string
+	// releasePill is the "^ <version>" badge under it when a newer release is
+	// known, empty otherwise.
+	releasePill string
 
 	width, height int
 }
@@ -315,7 +318,8 @@ func New(s *ticket.Store) (*Model, error) {
 	// its 1-9 binding work from the very first frame — a board that has to be
 	// opened once with 'p' before it knows its own neighbours is the bug this
 	// exists to fix.
-	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), versionLine: versionLine(), darkBG: true, glow: true}
+	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), darkBG: true, glow: true}
+	m.versionLine, m.releasePill = versionLine()
 	m.me = identity.Current(s.Root)
 	// Mutations from the board record who made them, the same as the CLI's.
 	s.Actor = m.me
