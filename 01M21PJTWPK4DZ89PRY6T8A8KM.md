@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-15T13:31:38Z
+updated-at: 2026-10-15T13:31:40Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -55,6 +55,12 @@ review-gaps: |-
   Offen aus critique, Frage an Berk: Pille ohne 'jaira self upgrade'-Hinweis daneben (Option A gebaut).
   Behauptet, aber nicht im Diff: nichts gefunden.
 test-verdict: "pass: gate OK (gofmt, vet, build auf 77106675), go test nicht gelaufen (Anweisung Berk); DoD 2-5 per Handtest mit 0.5.2-Binary bestaetigt (Pille Launcher+Board, stderr-Zeile next/resume, JSON sauber, Popup einmalig und notes-seen unveraendert beim Wiederoeffnen, w-Liste, ! in update und TUI), Testcode gelesen; DoD 1 nur bis zum go test -race der Hauptsession offen"
+review-verdict: |-
+  Der Diff erfuellt DoD 2-5 und den Code-Teil von DoD 1. Ich habe alle Wege mit gebauten 0.5.1/0.5.2-Binaries auf einem Board ohne Remote durchgespielt: Pille auf Board und Launcher; stderr-Zeile bei next und resume, nicht bei list, nicht im --json-stdout, nicht mit JAIRA_NO_UPDATE_CHECK=1; Popup einmal, esc schreibt notes-seen, kein zweites Popup; Popup ueber notes-seen nach jaira update; '  ! ' in jaira update; w auf dem Launcher.
+  Keine blockierenden Defekte; die Befunde a-f sind klein.
+  DoD 1 bleibt OFFEN, bis go test ./... -race in der Hauptsession gruen ist. Das ist zugleich der erste Lauf aller neuen Tests - ob sie bestehen, weiss ich nicht.
+  Empfehlung: annehmen, wenn der Race-Lauf gruen ist; die Erstwechsel-Luecke aus DoD 3 bewusst akzeptieren oder als Nachfolger anlegen.
+review-round: 2
 ---
 
 # Eine Pille unter der Version zeigt, dass ein neues Release da ist
