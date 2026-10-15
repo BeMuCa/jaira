@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T12:38:07Z
+updated-at: 2026-10-15T12:38:25Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
@@ -60,3 +60,13 @@ claimed-at: 2026-10-15T12:19:23Z
 Fuer delete wichtig: ein geloeschter Ref erreicht keinen Klon, der die Datei schon hat (refsync IncomingMilestones loescht nie). Eine Marke erreicht ihn.
 Neu durch E70WYN: Milestone.HoldsName() - eine Marke mit renamed-to haelt den Namen NICHT (nichts zum Zurueckholen), eine reine filed-Marke weiter schon. Falls delete eine Marke nutzt, ist das die Stelle fuer 'Name wieder frei'.
 - **2026-10-15 12:19 · BeMuCa** — Berk, 15.10., in seinen Worten: "Wir sollten auch umsetzen, dass die Milestones als Ganzes vom Board kommen, damit wir, wenn die fertig sind, keine Reste da uebrig haben." Gemeint: ist ein Milestone fertig, nimmt EIN Befehl den Milestone und seine fertigen Tickets zusammen vom Board - kein Milestone mehr im Picker oder auf der Roadmap, keins seiner fertigen Tickets mehr auf dem Board. Unfertige Tickets werden nicht abgelegt: jaira sagt welche und laesst sie stehen. Dazu, Lehre vom 14.10.: wir haben die Refs von sechs Test-Milestones auf origin geloescht; Alex' Klon hatte die Dateien noch, sein jaira hat sie um 20:20 neu migriert und als neue ID-Refs wieder hochgeschoben. Ein delete, das nur den Ref wegnimmt, macht jeder Klon mit der Datei rueckgaengig - das Loeschen braucht eine Marke, die jeder Klon befolgt. Ticket von Alex auf BeMuCa uebernommen, weil Berk es fuer das naechste Release will.
+- **2026-10-15 12:38 · BeMuCa** — pre-process, Teil 1 - Milestone samt Tickets ablegen. Entscheidung und warum:
+- Kein neuer Befehl. 'jaira logbook <milestone>' (internal/cli/logbook.go logbookMilestone ~346) legt kuenftig auch die Tickets ab. Der Befehl heisst schon 'vom Board nehmen'; ein zweiter Befehl wuerde zwei Wege fuer dasselbe schaffen.
+- Die Sperre bleibt wie heute: ein Mitglied auf dem Board, das die Terminal-Lane nicht erreicht hat -> Exit 3 milestone_unfinished, alle genannt, NICHTS abgelegt. Ablegen trotz offener Tickets wuerde Tickets ohne Gruppe zuruecklassen - genau die Reste, die Berk nicht will.
+- Reihenfolge: erst die Tickets (StampCommits + s.Logbook, wie logbookOut), dann der Milestone. Bricht ein Lauf mittendrin ab, steht der Milestone noch da; der zweite Lauf zaehlt schon abgelegte Tickets als fertig (s.Load findet sie nicht mehr, Extra blendet FiledAwayIDs aus: core/refsync/refsync.go:1500ff).
+- Erster Fehler bricht ab (kein Weiterlaufen wie FileLane). Grund: einfacher, und der Neustart ist sicher.
+- Ein Mitglied, das nur auf seinem Ref liegt (t.ReadOnly), wird NICHT abgelegt und nicht als Sperre gezaehlt. Das ist meist ein Ticket, das auf einem PR-Branch schon abgelegt ist und dessen Ref erst beim Merge verschwindet. Es ist nicht Sache dieses Klons (wie filesInLane in core/ticket/trim.go:27). Die Ausgabe nennt es (--json: ref_only).
+- Ein Ticket, das AUCH in einem zweiten, offenen Milestone steht: wird trotzdem abgelegt (es ist fertig). Die Zeile im zweiten Milestone bleibt stehen, dessen Sperre zaehlt es als fertig (logbook.go: s.Load-Fehler -> continue). Das ist heute schon so bei 'jaira logbook <id>'. Kein Extra-Code.
+- Gleicher Ordner fuer alles: logbookFolder() einmal vor der Schleife ausrechnen.
+- --json bekommt 'tickets' (gleiche Form wie 'filed' bei logbook --all, trimmedJSON in internal/cli/flow.go:857) und 'ref_only' (Handles). 'count' bleibt die Zahl der Mitglieder.
+- Bestehender Test TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack (internal/cli/milestones_test.go:333) bricht dann: sein Farb-Check verlangt, dass das done-Ticket noch auf dem Board steht. Umbauen: Ticket mit 'jaira restore <ticketdatei>' zurueckholen und dann pruefen, dass es keine Milestone-Farbe traegt.
