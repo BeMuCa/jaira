@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T13:15:43Z
+updated-at: 2026-10-15T13:15:45Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -48,7 +48,8 @@ claimed-at: 2026-10-15T13:12:45Z
   proof: core/release/notes/PWAF22.md: 8 Zeilen, je eine pro Aenderung (roles install, update --roles, --lanes, --dry-run, nackter update, self upgrade, Warnung, jaira-Skill)
 - [x] jaira self upgrade fuehrt danach jaira update und die Rollen-Installation an den Orten aus, an denen Rollen installiert sind (global und/oder im Projekt), und sagt, was es angefasst hat; Test
   proof: internal/cli/self.go:33 runUpgraded + :203 '<ziel> -C <dir> update --roles' nach Replace; Tests TestSelfUpgradeRunsTheNewBinarysUpdateRoles (self_test.go:364), TestSelfUpgradeExecutesTheReplacedBinary (:462); Handlauf mit Fake-Release-Server: 9.9.8->9.9.9, Kind zog persoenliche Skills nach, editierte Datei skipped, exit 0
-- [ ] Sind installierte Skills (jaira, jaira-role-*) aelter als das laufende Binary, warnt jaira einmal und nennt den Befehl, der sie nachzieht; Test
+- [x] Sind installierte Skills (jaira, jaira-role-*) aelter als das laufende Binary, warnt jaira einmal und nennt den Befehl, der sie nachzieht; Test
+  proof: internal/cli/skillsnudge.go:21 nudgeSkillsIfStale aus openStore, einmal je Version (JAIRA_HOME/skills-check), stderr, nennt 'jaira update --roles'; jaira-Skill eingebettet core/role/jaira/SKILL.md; Tests TestSkillsNudgeWarnsOnceAboutOlderPersonalSkills (skillsnudge_test.go:34), TestSkillsNudgeIgnoresAnEditedSkill (:51); Handlauf: erste 'jaira list' eine Zeile, zweite nichts
 
 ## Options
 
