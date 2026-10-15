@@ -1,7 +1,7 @@
 ---
 id: 01M2HX6SYCFB27V26R5APWAF22
 title: "jaira update bringt das ganze Setup nach, nicht nur den Textblock"
-status: optimize
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Nach einem Upgrade des Binaries genuegt ein Befehl, um ein Board nachzuziehen: Agent-Block, Rollen und Lanes - und er sagt vorher, was er anfassen wuerde."
@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T14:20:56Z
+updated-at: 2026-10-15T14:21:55Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
