@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T13:24:55Z
+updated-at: 2026-10-15T13:25:14Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
@@ -124,3 +124,11 @@ Neu durch E70WYN: Milestone.HoldsName() - eine Marke mit renamed-to haelt den Na
 Alter Namens-Ref prueft ref.Deleted() ODER MilestoneDeleted(ref.ID), vor adoptOldRef - sonst haette AdoptOld in die ID-Datei geschrieben.
 milestones.go migrateMilestones meldet entfernte Namen jetzt per warnRef (milestones_deleted), sonst verschwaende die Datei dort still.
 - **2026-10-15 13:14 · BeMuCa** — Handtest des Treibers auf 74520aea (Scratch-Repos mit lokalem bare-Remote, Skripte in $S/n71nvg/hand/): (a) ada loescht 'wrong', grace fetch -> 'Milestones deleted elsewhere', Datei weg; graces naechster Schreibbefehl bringt keinen Ref zurueck. (b) 14.10.-Nachbau: grace hat ein altes test.md, ada loescht test -> grace fetch entfernt test.md, kein neuer Ref auf origin, LegacyID-Ref bleibt Marke. (d) Klon mit installiertem 0.5.1: meldet 'filed elsewhere', blendet aus, schreibt nichts zurueck. logbook <milestone>: ein offenes Ticket -> Exit 3, nichts abgelegt; alle fertig -> Milestone + 3 Tickets in ada-20261015/, Board leer. Befund, nicht N71NVG: auf einem ZWEITEN Klon stehen die abgelegten Tickets weiter als ref-only [pull it] im Done, bis der Branch landet und 'jaira snapshot' ihre Refs abraeumt - dasselbe wie 'jaira logbook <id>' heute, gewollt (das Ticket bleibt sichtbar, bis der Code da ist).
+- **2026-10-15 13:25 · BeMuCa** — critique Runde 1: fuenf DEFECTs, zurueck nach in-progress.
+- Stiller Verwurf in mergeRefused (core/refsync/refsync.go:819): verwirft eine Loeschmarke einen wartenden Schreibvorgang, druckt flushRefs (internal/cli/refs.go:269-275) 'your edit stays queued and is merged into it at the next send' - falsch, der Eintrag ist weg. Die Datei verschwindet still; der naechste fetch nennt den Milestone nicht unter 'deleted elsewhere', weil removeMilestoneFiles nichts mehr findet. Im TUI ebenso (Flush vor FetchMilestones, internal/tui/refs.go:85-99). Aendern: mergeRefused meldet 'geloescht' -> Report.Deleted; flushRefs druckt 'jaira: <name> was deleted elsewhere; your edit was dropped with it' (outcome deleted); TUI haengt den Namen an 'milestones deleted elsewhere'; der Test fuer Fall (c) prueft den Report. Warum: Kernwert - wer editiert hat, muss erfahren, dass sein Milestone geloescht ist.
+- internal/cli/milestones.go:415-418: newMilestoneDeleteCmd sitzt zwischen Kommentar und Funktion parseMilestoneNames -> Kommentar beschreibt die falsche Funktion. Befehl vor den Kommentar verschieben.
+- internal/cli/milestones.go:490-499: Nachfolger-Ausgabe nimmt names[id] aus LoadAll; ein abgelegter Vorgaenger (genau, was logbook <milestone> jetzt erzeugt) ergibt 'c now comes after ' mit Leerstelle. Auf das Token zurueckfallen.
+- docs/AGENTS.md:179-180 'leaves the board only through jaira logbook' ist seit delete falsch; :174 Liste der schreibenden Befehle um delete ergaenzen.
+- .claude/skills/jaira/SKILL.md:252-253 'nothing of the group stays on the board' - ein fertiges Ref-only-Mitglied bleibt stehen; Vorbehalt wie in der logbook-Hilfe.
+DECISION (blockiert nicht, offen seit Notiz 12:44): delete ohne Rueckfrage, anders als 'jaira delete <id>'. Empfehlung: so lassen.
+Stehen gelassen: Marke statt Ref-Loeschen und Deleted() als einziges Praedikat (Notiz 12:40) - richtig, alle Wege in refsync/Migrate fragen es, internal/cli prueft nichts selbst; Ticket-Schleife im CLI statt FileLane, erster Fehler bricht ab (Notiz 12:38); stilles Migrate-Ablegen unter lockAndMigrate - CLI meldet ueber migrateMilestones/migrateHeld (Notiz 13:07), TUI ist bei Moved genauso still, LegacyID-Grenze bekannt (Notiz 12:41); announce.go/CLAUDE.md/AGENTS.md/fetch.go/tui/refs.go sind minimal geaendert.
