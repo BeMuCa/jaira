@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T12:19:12Z
+updated-at: 2026-10-15T12:19:14Z
 updated-by: BeMuCa
 ---
 
@@ -44,7 +44,7 @@ updated-by: BeMuCa
 ## Options
 
 - [ ] brainstorm
-- [ ] planning
+- [x] planning
 
 ## Plan
 
