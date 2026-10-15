@@ -93,7 +93,7 @@ func TestSkillsNudgeSilentDuringUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("update --roles: %v\n%s", err, out)
 	}
-	if strings.Contains(stderr+out, "older than this jaira") {
+	if strings.Contains(stderr+setupOutput(out), "older than this jaira") {
 		t.Errorf("update warned about what it is fixing: %q %q", stderr, out)
 	}
 }

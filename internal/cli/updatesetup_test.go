@@ -96,6 +96,30 @@ func (st *staleSetup) blockCurrent(t *testing.T) bool {
 	return cur
 }
 
+// setupOutput is what a plain-text update printed before its release-notes
+// block. The notes are not the setup's: under a test version every shipped note
+// is printed, and they quote the very words (would, jaira update --roles) the
+// setup lines are checked for.
+func setupOutput(out string) string {
+	cut := len(out)
+	for _, m := range []string{"\nWhat's changed since then:", "\nNothing has changed since"} {
+		if i := strings.Index(out, m); i >= 0 && i < cut {
+			cut = i
+		}
+	}
+	return out[:cut]
+}
+
+// hasLine reports whether a line of out starts with prefix.
+func hasLine(out, prefix string) bool {
+	for _, l := range strings.Split(out, "\n") {
+		if strings.HasPrefix(l, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
 func TestUpdateRolesLanesBringsAStaleBoardUpToDate(t *testing.T) {
 	st := newStaleSetup(t)
 
@@ -104,7 +128,7 @@ func TestUpdateRolesLanesBringsAStaleBoardUpToDate(t *testing.T) {
 		t.Fatalf("update --roles --lanes: %v\n%s", err, out)
 	}
 	for _, p := range []string{st.projRole, st.homeRole, st.lan} {
-		if !strings.Contains(out, "updated "+p) {
+		if !hasLine(setupOutput(out), "updated "+p) {
 			t.Errorf("output does not name %s as updated:\n%s", p, out)
 		}
 	}
@@ -122,10 +146,11 @@ func TestUpdateRolesLanesBringsAStaleBoardUpToDate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("second run: %v\n%s", err, out)
 	}
-	if strings.Contains(out, "updated /") || strings.Contains(out, "would ") {
+	head := setupOutput(out)
+	if hasLine(head, "updated ") || hasLine(head, "would ") {
 		t.Errorf("second run still updated something:\n%s", out)
 	}
-	if !strings.Contains(out, "lanes: 0 updated") {
+	if !hasLine(head, "lanes: 0 updated") {
 		t.Errorf("second run lane summary:\n%s", out)
 	}
 }
@@ -181,7 +206,7 @@ func TestUpdateLanesSkipsAnEditedLaneAndExitsThree(t *testing.T) {
 	if string(mustRead(t, st.lan)) != string(edited) {
 		t.Error("the edited lane file was touched")
 	}
-	if !strings.Contains(out, "skipped "+st.lan) {
+	if !hasLine(setupOutput(out), "skipped "+st.lan) {
 		t.Errorf("output does not name the skipped lane:\n%s", out)
 	}
 }
@@ -194,7 +219,7 @@ func TestUpdateRolesOutsideABoardUpdatesPersonalSkillsOnly(t *testing.T) {
 	if err != nil {
 		t.Fatalf("update --roles outside a board: %v\n%s", err, out)
 	}
-	if !strings.Contains(out, "no board here") {
+	if !hasLine(setupOutput(out), "no board here") {
 		t.Errorf("output lacks the no-board line:\n%s", out)
 	}
 	if string(mustRead(t, st.homeRole)) == string(st.roleOld) {
