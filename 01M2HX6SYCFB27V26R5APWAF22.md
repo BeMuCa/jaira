@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T13:38:54Z
+updated-at: 2026-10-15T13:43:21Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -38,6 +38,11 @@ outcome-resolves: "DoD 1: 'update --roles --lanes' - Handlauf an einem Board mit
 executed-by: sonnet
 review-summary: none
 round: 2
+review-gaps: |-
+  Entfernt: (1) nudgeSkillsIfStale (internal/cli/skillsnudge.go) baute die Schleife role.Installed + Install(dry) nach, die refreshRoles (internal/cli/updatesetup.go) schon hat - ruft jetzt refreshRoles("", true); gleiche Aufrufe in gleicher Reihenfolge, gleicher Abbruch ohne Stempel bei Fehler. (2) anySkipped hatte genau einen Aufrufer, updateSetup.skipped, das nur weiterleitete - Rumpf in skipped() gezogen. (3) core/board/preview_test.go writeAgentFile war gleich mit writeFile (core/board/agentfile_test.go:10) - geloescht, Aufruf geht auf writeFile. (4) Falscher Kommentar core/role/install.go:120-122 ('sit next to the go:embed directories') stimmte fuer modKey nicht - korrigiert (war ein critique-Nachfolger).
+  Erwogen, gelassen: Builtins-nach-ID-Map jetzt dreimal (core/lane/lane.go:552, :779, refresh.go:219), es gibt keinen Helfer zum Aufrufen - ein neuer wuerde Altcode anfassen; printLaneResults/printRoleResults und laneResultsJSON/roleResultsJSON sind gleich gebaut, aber andere Typen und Keys; die Trockenlauf-Zeile 'Would tell your agents' (update.go) ist announceLine (internal/cli/announce.go:8) mit anderem Verb - announceLine hat zwei Aufrufer, ein dry-Parameter waere Umbau; hintLines laedt die Lanes ein zweites Mal (RefreshShipped -> Load), nur im nackten update, kein heisser Pfad; printRoleResults baut je Trockenlauf-Zeile eine kleine Map - vernachlaessigbar; der Kommentar ueber setupArgs (self.go) wiederholt die Doku von warnSetupFailed - harmlos; Tests: newStaleSetup liest das v0.4.0-Fixture mit os.ReadFile neben mustRead, olderShipped (skillsnudge_test.go) liest dasselbe Fixture.
+  Altbestand gesehen, gelassen: JAIRA_HOME-Aufloesung sechsfach (settings.Path, selfupdate.Path, core/project/project.go:29, core/identity/identity.go:95, core/lane/lane.go:478, core/ticket/store.go:767); Builtins-nach-ID-Map in lane.go zweimal.
+  Kein Fund aendert Verhalten. Kein go test gelaufen (Anweisung); gofmt/vet/build auf exportierter Kopie gruen.
 ---
 
 # jaira update bringt das ganze Setup nach, nicht nur den Textblock
