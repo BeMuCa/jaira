@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T13:59:57Z
+updated-at: 2026-10-15T14:05:53Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -180,3 +180,10 @@ Bestehende Tests (statisch, kein go test): keiner bricht. roles_test 'X written'
 - core/lane: Builtins-nach-ID-Map steht dreimal (lane.go:552, lane.go:779, refresh.go:219). Ein Helfer builtinsByID() in core/lane wuerde alle drei ersetzen.
 - internal/cli/update.go Trockenlauf: 'Would tell your agents about this board' baut announceLine (announce.go:8) mit anderem Verb nach. announceLine hat zwei Aufrufer (tickets.go:122, update.go:181).
 - Tests: das Fixture core/role/testdata/jaira-role-acceptance-SKILL-v0.4.0.md wird zweimal gelesen (updatesetup_test.go newStaleSetup, skillsnudge_test.go olderShipped). Ein Helfer reicht.
+- **2026-10-15 14:05 · BeMuCa** — review: zwei neue Tests werden im Race-Lauf rot. Nicht gelaufen (Anweisung) - aus dem Code gelesen und mit einem Binary in Version 1.0.0 nachgestellt (scratchpad/pwaf22/rv/sim.sh).
+- Ursache: die Tests setzen release.Current=1.0.0. 1.0.0 ist kein Release, also druckt jeder 'jaira update' ohne --json ALLE Release-Notizen (selectSince, core/release/release.go:154), auch core/release/notes/PWAF22.md.
+- (1) TestUpdateRolesLanesBringsAStaleBoardUpToDate (internal/cli/updatesetup_test.go, zweiter Lauf) prueft !strings.Contains(out, "would "). Die Notizen enthalten 'it would write' (PWAF22.md Zeile 4) und zwei aeltere Zeilen mit 'would'. Nachgestellt: 7 Treffer.
+- (2) TestUpdateWithoutSwitchesSaysNothingWhenCurrent (internal/cli/updatedry_test.go) verlangt, dass 'jaira update --roles' und '--lanes' im Output fehlen. PWAF22.md nennt beide. Nachgestellt: 4 bzw. 2 Treffer, 0 Hinweiszeilen.
+- (3) TestUpdateWithoutSwitchesNamesWhatIsBehind besteht dadurch leer: dieselben Strings kommen auch aus den Notizen, nicht nur aus den Hinweiszeilen.
+- Produktcode ist richtig. Fix: nur den Teil vor "What's changed since then" pruefen, oder Zeilen pruefen, die mit 'roles: ' / 'lanes: ' / 'would ' / 'updated ' ANFANGEN.
+- Klein, gleiche Runde: editedError (internal/cli/updatesetup.go) und README nennen 'jaira roles install --force'. So allein endet es mit Exit 2 'choose exactly one of --project, --global or --into'. Die Zeile je Ordner ('edited files in ...: jaira roles install --project --force') stimmt.
