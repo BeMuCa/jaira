@@ -22,7 +22,7 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T12:56:06Z
+updated-at: 2026-10-15T12:56:43Z
 updated-by: BeMuCa
 ---
 
@@ -59,3 +59,14 @@ updated-by: BeMuCa
 
 ## Progress
 - **2026-10-15 12:37 · BeMuCa** — Berk am 15.10.: 'Archiv sollte auch wie Ticket funktionieren, damit jeder es schnell genug sieht.' Seine Frage, ob Tickets erst nach einem Commit fuer andere sichtbar sind: nein. 'jaira create' legt das Ticket auf seinen Ref und pusht ihn sofort; andere sehen es beim naechsten fetch, ohne Commit. Archivieren muss genauso gehen: die Markierung kommt auf den Ref und wird sofort gepusht, andere sehen das Ticket beim naechsten fetch verschwinden, ohne dass die Archiv-Datei vorher committet sein muss. Das Committen der Archiv-Datei haelt danach nur den Eintrag im Repository fest; niemandes Sicht wartet darauf.
+- **2026-10-15 12:56 · BeMuCa** — pre-process, Teil 1 - die Marke und wo sie steht:
+- Marke = neue Frontmatter-Zeile 'archived: <yyyy-mm-dd> <wer>', z.B. 'archived: 2026-10-15 BeMuCa'. Leer oder fehlend = nicht archiviert.
+- Nicht 'status: archived': status ist bei Tickets die Lane (core/ticket/schema.go:19), und restore muss die Lane unveraendert zurueckgeben. Wertform wie N71NVGs 'deleted: <datum> <wer>'.
+- Unbekannte Keys ueberleben jedes Schreiben: geschrieben wird ueber Doc, nie ueber das Struct (core/ticket/frontmatter.go:1-13, schema.go:216-218). Lesen braucht trotzdem ein Feld: Ticket.Archived (string) + FieldArchived, dekodiert in decodeFields (schema.go ~640).
+- Die Marke steht NUR im Inhalt auf dem Ref. Die Datei in .jaira/archive/ bleibt byte-gleich, updated-at/updated-by bleiben gleich.
+- Warum nur auf dem Ref: Datei und Ref haben denselben updated-at. CheckFresh vergleicht nur updated-at (core/refsync/refsync.go:1205-1230), also wird ein restore nicht als stale verweigert. Und keine Datei bekommt je eine Restzeile: Doc kann keinen Key loeschen (frontmatter.go hat kein Delete; merge.go:386-392 schreibt sogar bewusst leer statt zu loeschen).
+- Archive (core/ticket/store.go:330): RecordFiled bekommt Dateibytes + Zeile statt nur Dateibytes.
+- Restore (store.go:634): schreibt heute GAR NICHTS auf den Ref. Neu, nur fuer ein Ticket aus .jaira/archive/: nach dem Zurueckschieben CheckFresh, dann record(Dateibytes) -> Ref wieder ohne Zeile, kommt ueberall zurueck. Ist der Ref neuer (jemand schrieb seitdem), wird nichts geschrieben: Datei ist zurueck, CLI warnt mit dem ErrStale-Text ('jaira pull').
+- Restore-CLI (internal/cli/archive.go:127) macht heute aus jedem Fehler not_archived. Darum gibt Restore dst + Fehler zurueck, und die CLI warnt nur, wenn dst gesetzt ist.
+- Kein Ref mehr (Snapshot hat ihn abgeraeumt): record legt ihn neu an (Lease ''), das Ticket ist dann wie gepullt. Ohne Remote macht Record nichts (refsync.go:124-131).
+- Snapshot kopiert den Ref-Inhalt nach board/ im Branch jaira/board (core/snapshot/snapshot.go:17-27): die Sicherung sagt dann auch archiviert, richtig so. Der Reaper prueft nur Pfade .jaira/archive/<id>* (core/gitref/gitref.go:770-786), unveraendert.
