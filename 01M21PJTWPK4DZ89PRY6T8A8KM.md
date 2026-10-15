@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-15T13:08:17Z
+updated-at: 2026-10-15T13:08:51Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -125,3 +125,4 @@ Bewusst stehen gelassen: Luecke beim ersten Versionswechsel (Notiz 2026-10-15 12
 Frage an Berk (kein Rueckweg): Pille nur '^ <version>' (wie gebaut) oder dahinter gedimmt 'jaira self upgrade' in derselben Reihe? Wer nie mit Agenten arbeitet, sieht den Befehl sonst nur einmal in Release-Note-Zeile 1. Empfehlung critique: so lassen.
 - **2026-10-15 12:57 · BeMuCa** — critique-Runde 1 behoben: README, COMMANDS.md, view.go-Kommentar, Notes-Zeile 4; Commit a47d6d25
 - **2026-10-15 12:59 · BeMuCa** — critique Runde 2: alle vier DEFECTs aus Runde 1 in a47d6d25 behoben, jeder neue Satz gegen den Code geprueft (versionLine, warnNewerRelease nur in next/resume auf stderr, PollCache liefert bei JAIRA_NO_UPDATE_CHECK=1 known=false, writeNotes druckt '  ! <text>', headLines zaehlt die Pillen-Zeile). Keine neuen Befunde. Nachfolger-Punkt T8A8KM.md:4 damit erledigt, vier Nachfolger bleiben. Weiter zu optimize.
+- **2026-10-15 13:08 · BeMuCa** — optimize: notes-seen liegt jetzt in core/release neben dem Stempel (NotesSeen/MarkNotesSeen, gemeinsame private readVersion/writeCurrent; Stamped/Stamp nur noch Einzeiler, Signatur und Verhalten gleich - fuer den PWAF22-Merge). Der dev-Waechter bleibt bewusst im TUI (markSeen), nicht in MarkNotesSeen: Stamp hat auch keinen, release bleibt reine Datei-I/O. '+N more' und CLAUDE.md-Wortlaut sind keine Aufraeumarbeit und bleiben Nachfolger.
