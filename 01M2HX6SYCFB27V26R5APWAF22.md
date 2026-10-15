@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T14:39:55Z
+updated-at: 2026-10-15T14:39:58Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -51,14 +51,36 @@ review-summary: |-
   - Doku: README, docs/COMMANDS.md, docs/AGENTS.md. 8 Zeilen in core/release/notes/PWAF22.md. .gitattributes haelt Manifest, Test-Fixtures und beide jaira-Skill-Kopien auf LF.
 round: 3
 review-gaps: |-
-  optimize 2 (nur c3ab3695 gelesen): nichts geaendert, kein Commit.
-  - Duplikat: kein vorhandener Helfer in internal/cli/*_test.go schneidet Output ab oder prueft Zeilenanfaenge (grep: lanes_test.go:674 pathLines nur fuer Catalogue/Project; Inline-Schleifen stalefile_test.go:51, milestoneref_test.go:598 - alt, gelassen). setupOutput/hasLine sind also neu, nicht doppelt.
-  - setupOutput kennt die zwei Ueberschriften aus internal/cli/update.go:189/192 als Literale. Eine gemeinsame Konstante ginge nur durch den Notizblock (T8A8KM-Bereich) - gelassen. T8A8KM (77106675) druckt sie unveraendert (update.go:129/132 dort).
-  - editedError-Text vs. Zeile je Ordner (updatesetup.go:93, genauer Befehl aus UpdateCommand) und roles.go:218: verschiedene Faelle, kein Test prueft den Text - gelassen.
-  - Toter Code: keiner. Beide Helfer haben Aufrufer, strings-Import in allen drei Testdateien weiter benutzt.
-  - Fluff: strings.Contains('jaira update --roles/--lanes') in TestUpdateWithoutSwitchesSaysNothingWhenCurrent deckt sich heute mit hasLine('roles: '/'lanes: ') - gelassen, Streichen macht den Test schwaecher, nicht gleich. setupOutput nimmt die fruehere Marke; da update.go:188-192 nur eine druckt, ginge es 2 Zeilen kuerzer - gelassen, robust gegen Umordnen.
-  - Kosten: setupOutput(out) je Schleifendurchlauf neu (updatedry_test.go:44/79, updatesetup_test.go:131) - nur Tests, gelassen.
-  - README-Umbruch laesst die kurze Zeile 'replaces it. --dry-run prints the' - rendert gleich, gelassen.
+  DEFEKTE: keine neuen gefunden.
+
+  DIE ZWEI DEFEKTE AUS RUNDE 1:
+  - (1) Tests, die am Notizblock rot geworden waeren: behoben. setupOutput schneidet an "\nWhat's changed since then:" / "\nNothing has changed since" (genau die Zeilen aus internal/cli/update.go:189/192). hasLine prueft Zeilenanfaenge ('updated ', 'would ', 'roles: ', 'lanes: ').
+  - Nachgestellt am Scratch-Board: 2. Lauf von 'update --roles --lanes' - vor dem Notizblock 0 Zeilen mit 'updated '/'would ', 'lanes: 0 updated' steht da; die ganze Ausgabe haette 7 Treffer fuer 'would '. Nackter update bei aktuellem Setup: vor dem Notizblock 0 Hinweise, die ganze Ausgabe enthaelt 4x 'jaira update --roles'.
+  - TestUpdateWithoutSwitchesNamesWhatIsBehind prueft jetzt wirklich: 'roles: '/'lanes: ' am Zeilenanfang kommen in einem nackten update nur aus hintLines.
+  - (2) Befehl, der mit Exit 2 endet: behoben. editedError (internal/cli/updatesetup.go:65), README.md:131-133, PWAF22.md Zeilen 1 und 8. Laufen lassen: 'jaira roles install --project --force' Exit 0 und ersetzt die Datei; 'jaira lanes use testing --force' Exit 0 und setzt die Lane zurueck. Nacktes 'roles install --force' weiter Exit 2.
+  - Der Fix bringt keinen neuen Fehler: gelesen, Handlauf sauber, gofmt/go vet ./.../go build ./... sauber, keine Namenskollision der neuen Test-Helfer mit T8A8KM (77106675).
+  - go test ist NICHT gelaufen (Anweisung). Ob die Suite gruen ist, sagt erst der Race-Lauf der Hauptsitzung.
+
+  KLEIN (kein Grund zum Zurueckschicken):
+  - DoD-Belege 1 und 2 nennen alte Zeilennummern: updatesetup_test.go:99 ist jetzt :123, :133 ist jetzt :158. Die Testnamen stimmen.
+  - editedError nennt nur '--project --force' / '--global --force'. Fuer .github/skills braeuchte es zusaetzlich '--agent copilot'. Die Zeile je Ordner ('edited files in ...') nennt den genauen Befehl.
+  - roles install setzt jetzt updateInProgress. Das schaltet auch den Board-Hinweis 'set up by an older version' waehrend 'roles install --project' stumm. Steht nirgends.
+  - --dry-run-Zaehlzeilen sagen 'N updated' bzw. 'lanes: 1 updated', obwohl nichts geschrieben wurde; Schlusszeile von self upgrade nennt weiter nur 'jaira update'. Beide schon als Nachfolger in 'Treiber zu review 1'.
+
+  NICHT UEBERZEUGEND (aus Runde 1, unveraendert):
+  - DoD 3 ('sagt vor dem Schreiben') nur mit --dry-run. Der echte Lauf sagt es danach. Bewusst so entschieden (Notiz 12:34).
+  - DoD 6: die Warnung kommt nur ueber openStore. Das TUI zeigt nichts. Ist der erste Befehl nach einem Upgrade ein Agent mit --json, landet die einzige Warnung in dessen stderr.
+  - self upgrade in einem Repo schreibt dort jetzt den Block (CLAUDE.md/AGENTS.md) und .claude/skills. Das tat es vorher nie; der Arbeitsbaum wird schmutzig. Von DoD 5 verlangt, aber neu.
+
+  FRAGEN AN BERK:
+  - Dev-Build: 'self upgrade' verweigert weiterhin ('a dev build has no published release'). Unveraendert.
+  - Rollen, die mit --into installiert wurden: update --roles und die Warnung sehen sie nicht.
+  - Fehlende Dateien zaehlen als 'aelter'. Ein absichtlich geloeschtes jaira-cockpit (15 Dateien, Plugin mit Hooks) kommt mit jedem update --roles und jedem self upgrade zurueck.
+  - Das erste Upgrade AUF dieses Release macht noch das alte Binary - ohne Setup. Release-Notiz Zeile 6 sagt das richtig, README.md:77-83 nicht.
+  - 'roles install --project' schreibt jetzt in jedem Repo auch .claude/skills/jaira/SKILL.md (Treiber-Entscheidung 12:46, eigener Commit be857988, allein ruecknehmbar).
+  - Jeder PR, der eine Rolle, Lane, das Mod oder den jaira-Skill aendert, muss core/shipped/shipped.sha256 neu erzeugen (Tests erzwingen es). Wer .claude/skills/jaira/SKILL.md aendert, muss sie auch nach core/role/jaira/SKILL.md kopieren. Zwei solche PRs kollidieren im Manifest.
+  - internal/cli/update.go aendert auch T8A8KM. Die Hunks liegen direkt nebeneinander. Merge-Konflikt zu erwarten.
+  - Weitere Nachfolger stehen in den Notizen 'Nachfolger (critique)' (13:30) und 'Nachfolger (optimize)' (13:43) - hier nicht wiederholt.
 test-verdict: "pass: testing 2 on c3ab3695: gofmt/vet/build clean on exported HEAD; changed assertions hold on cut output (first run 3 updated lines, second run 0 updated/would + 'lanes: 0 updated', old whole-output check fails there: 7 'would ' hits; hints, dry-run, skipped, no board here, current setup silent); exit 3 prints new editedError and 'roles install --global --force' runs rc 0 and replaces the edited file; go test nicht gelaufen (Anweisung)"
 review-verdict: |-
   - Der Produktcode erfuellt DoD 1-6. Meine Schritte unten liefen im Scratchpad komplett sauber: ein Aufruf bringt Block, Projekt- und persoenliche Rollen, jaira-Skill und testing-Lane auf Stand; die editierte Datei bleibt unberuehrt (Exit 3); --dry-run schreibt nichts; self upgrade startet das neue Binary.
