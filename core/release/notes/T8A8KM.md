@@ -1,1 +1,2 @@
 - When a newer release is out, the board head and the launcher show a pill `^ <version>` under the version instead of "<version> available - run: jaira self upgrade"; run `jaira self upgrade` when you see it.
+- `jaira next` and `jaira resume` now print one line on stderr when a newer release is out; tell the user and run `jaira self upgrade` (stdout and `--json` are unchanged, `JAIRA_NO_UPDATE_CHECK=1` silences it).

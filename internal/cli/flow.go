@@ -378,6 +378,7 @@ skipping this command.`,
 			if err != nil {
 				return err
 			}
+			warnNewerRelease(cmd.ErrOrStderr())
 			env, tickets, err := loadEnv(s)
 			if err != nil {
 				return err

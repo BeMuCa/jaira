@@ -30,11 +30,10 @@ var updateInProgress bool
 // parses.
 //
 // Whether a newer *release* is published is a separate question this
-// function deliberately does not answer: that lives in the TUI's persistent
-// version indicator (internal/tui) instead, so CLI commands — the surface
-// agents and scripts drive — stay silent about it. See core/selfupdate/
-// cache.go for the cache both surfaces would read if a CLI-side nudge were
-// ever wanted again.
+// function deliberately does not answer: the TUI's pill (internal/tui) shows
+// it, and 'jaira next' and 'jaira resume' print it (warnNewerRelease). Not
+// every command, because a line on each of them is noise for the scripts
+// that drive the CLI.
 func nudgeIfStale(s *ticket.Store) {
 	if release.Current == "dev" || updateInProgress {
 		return

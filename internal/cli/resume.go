@@ -81,6 +81,7 @@ can carry on rather than starting by working out where things were left.`,
 			if err != nil {
 				return err
 			}
+			warnNewerRelease(cmd.ErrOrStderr())
 			lanes, err := lane.Load(s.Root)
 			if err != nil {
 				return err
