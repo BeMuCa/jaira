@@ -129,7 +129,7 @@ func popupBoard(t *testing.T, current, stamp, seen string) *Model {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	for name, v := range map[string]string{"version": stamp, seenFile: seen} {
+	for name, v := range map[string]string{"version": stamp, "notes-seen": seen} {
 		if v != "" {
 			if err := os.WriteFile(filepath.Join(dir, name), []byte(v+"\n"), 0o644); err != nil {
 				t.Fatal(err)
@@ -175,8 +175,13 @@ func TestPopupClosesAndStaysClosedUntilTheNextVersion(t *testing.T) {
 	if m.mode != modeBoard || m.notes != nil {
 		t.Fatalf("esc left mode %v, notes %v", m.mode, m.notes)
 	}
-	if got := readSeen(dir); got != "0.5.1" {
+	if got := release.NotesSeen(dir); got != "0.5.1" {
 		t.Fatalf("notes-seen = %q, want 0.5.1", got)
+	}
+	// Written without the newline markSeen adds, so a rewrite on open shows.
+	seenPath := filepath.Join(dir, "notes-seen")
+	if err := os.WriteFile(seenPath, []byte("0.5.1"), 0o644); err != nil {
+		t.Fatal(err)
 	}
 	again, err := New(m.store)
 	if err != nil {
@@ -184,6 +189,9 @@ func TestPopupClosesAndStaysClosedUntilTheNextVersion(t *testing.T) {
 	}
 	if again.mode == modeReleaseNotes {
 		t.Fatal("the popup came back for the same version")
+	}
+	if b, _ := os.ReadFile(seenPath); string(b) != "0.5.1" {
+		t.Errorf("opening the board rewrote an up-to-date notes-seen: %q", b)
 	}
 
 	setReleaseCurrent(t, "0.5.2")
@@ -202,7 +210,7 @@ func TestNoPopupOnAFreshBoardOrDevBuild(t *testing.T) {
 	if fresh.mode == modeReleaseNotes {
 		t.Error("a fresh board opened the popup")
 	}
-	if got := readSeen(fresh.store.StateDir()); got != "0.5.1" {
+	if got := release.NotesSeen(fresh.store.StateDir()); got != "0.5.1" {
 		t.Errorf("a fresh board should be marked seen, notes-seen = %q", got)
 	}
 
@@ -210,7 +218,7 @@ func TestNoPopupOnAFreshBoardOrDevBuild(t *testing.T) {
 	if dev.mode == modeReleaseNotes {
 		t.Error("a dev build opened the popup")
 	}
-	if got := readSeen(dev.store.StateDir()); got != "0.4.0" {
+	if got := release.NotesSeen(dev.store.StateDir()); got != "0.4.0" {
 		t.Errorf("a dev build must not write notes-seen, got %q", got)
 	}
 }

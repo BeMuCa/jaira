@@ -88,6 +88,26 @@ func TestStampRoundTripsThroughStamped(t *testing.T) {
 	}
 }
 
+func TestNotesSeenIsItsOwnFileBesideTheStamp(t *testing.T) {
+	orig := Current
+	Current = "1.2.3"
+	t.Cleanup(func() { Current = orig })
+
+	dir := filepath.Join(t.TempDir(), "nested", "state")
+	if got := NotesSeen(dir); got != "" {
+		t.Fatalf("NotesSeen(no file) = %q, want empty", got)
+	}
+	if err := MarkNotesSeen(dir); err != nil {
+		t.Fatalf("MarkNotesSeen: %v", err)
+	}
+	if got := NotesSeen(dir); got != Current {
+		t.Fatalf("NotesSeen(after MarkNotesSeen) = %q, want %q", got, Current)
+	}
+	if got := Stamped(dir); got != "" {
+		t.Fatalf("MarkNotesSeen wrote the stamp: Stamped = %q", got)
+	}
+}
+
 func TestEmbeddedNotesParseToAtLeastOneRealEntry(t *testing.T) {
 	notes := Notes()
 	if len(notes) == 0 {
