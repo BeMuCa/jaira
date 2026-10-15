@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T13:15:41Z
+updated-at: 2026-10-15T13:15:43Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -46,7 +46,8 @@ claimed-at: 2026-10-15T13:12:45Z
   proof: jaira update --dry-run: update.go:135 PreviewAgentFiles, updatesetup.go would-Zeilen + 'nothing was written (--dry-run)', gleicher Exit-Code; Tests TestUpdateDryRunWritesNothing (updatedry_test.go:20), TestUpdateDryRunExitCodeMatchesTheRealRun (:50); Handlauf: exit 3, keine Datei geaendert, Stempel unveraendert
 - [x] Eine Zeile je Aenderung in core/release/notes/PWAF22.md, als Anweisung an den Leser formuliert und wahr
   proof: core/release/notes/PWAF22.md: 8 Zeilen, je eine pro Aenderung (roles install, update --roles, --lanes, --dry-run, nackter update, self upgrade, Warnung, jaira-Skill)
-- [ ] jaira self upgrade fuehrt danach jaira update und die Rollen-Installation an den Orten aus, an denen Rollen installiert sind (global und/oder im Projekt), und sagt, was es angefasst hat; Test
+- [x] jaira self upgrade fuehrt danach jaira update und die Rollen-Installation an den Orten aus, an denen Rollen installiert sind (global und/oder im Projekt), und sagt, was es angefasst hat; Test
+  proof: internal/cli/self.go:33 runUpgraded + :203 '<ziel> -C <dir> update --roles' nach Replace; Tests TestSelfUpgradeRunsTheNewBinarysUpdateRoles (self_test.go:364), TestSelfUpgradeExecutesTheReplacedBinary (:462); Handlauf mit Fake-Release-Server: 9.9.8->9.9.9, Kind zog persoenliche Skills nach, editierte Datei skipped, exit 0
 - [ ] Sind installierte Skills (jaira, jaira-role-*) aelter als das laufende Binary, warnt jaira einmal und nennt den Befehl, der sie nachzieht; Test
 
 ## Options
