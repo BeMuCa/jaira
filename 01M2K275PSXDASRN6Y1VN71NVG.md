@@ -1,7 +1,7 @@
 ---
 id: 01M2K275PSXDASRN6Y1VN71NVG
 title: "Ein fertiger Milestone geht ins Archiv, und ein falscher laesst sich loeschen"
-status: testing
+status: review
 ready: true
 creator: Alexander Sacharov
 assignee: BeMuCa
@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T13:45:35Z
+updated-at: 2026-10-15T13:46:11Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
