@@ -1,7 +1,7 @@
 ---
 id: 01M4ZQ7QQB5YBTPPCCEMGWK31K
 title: "Ein archiviertes Ticket verschwindet sofort von allen Boards, nicht erst wenn der Snapshot den Ref abraeumt"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -22,12 +22,12 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T14:10:32Z
+updated-at: 2026-10-15T14:10:45Z
 updated-by: BeMuCa
 outcome-what: "'jaira archive' schreibt auf den Ref den Dateiinhalt plus eine Zeile 'archived: <datum> <wer>' (core/ticket/store.go Archive -> recordFiled mit Markwert; Logbook gibt '' und bleibt unmarkiert); die Datei in .jaira/archive/ bleibt byte-gleich. Store.List laesst ref-only Tickets mit dieser Zeile weg, also auch board, list, next, resume. 'jaira restore' schreibt die Datei ohne Zeile zurueck auf den Ref (nach CheckFresh; ist der Ref neuer, bleibt er stehen und restore warnt mit 'jaira pull <h>'). show (nur ref-only) und fetch nennen ein archiviertes Ticket 'archived', fetch meldet es nicht als 'a ticket is yours'. archive sagt bei ungetrackter Datei, dass das Committen nur den Eintrag festhaelt, bei getrackter, dass ein Branch mit der Datei es bis zum Merge zeigt. Doku und zwei Release-Zeilen."
 outcome-why: "Bisher schrieb archive den unveraenderten Inhalt auf den Ref. Jeder andere Klon zeigte das Ticket weiter, bis der Snapshot-Lauf (alle 72 h) den Ref abraeumte, und das erst nach Commit und Merge der Archiv-Datei. Berk will, dass Archivieren wie create wirkt: sofort beim naechsten fetch, ohne Commit."
 outcome-resolves: "DoD 1: Markierung im Ref-Inhalt (store.go Archive -> recordFiled), Ausblenden an der einen Stelle Store.List, die board/list/next/resume lesen; Tests core/ticket/archiveref_test.go und internal/cli/archiveref_test.go (TestAnArchivedTicketLeavesTheOtherBoardAtItsNextFetch). DoD 2: Restore nimmt die Zeile per record wieder vom Ref; Tests TestRestoreTakesTheArchivedLineOffTheRef, TestRestoreDoesNotWriteOverANewerRef, TestARestoredTicketComesBackOnTheOtherBoard. DoD 3: der Ref wird im selben Befehl gesendet (afterCommand -> flushRefs); der cli-Test prueft, dass der andere Klon es ohne committete Archiv-Datei verliert; die Ausgabe sagt es, getrackt und ungetrackt getrennt (TestArchivingATrackedTicketSaysABranchKeepsShowingIt). DoD 4: core/release/notes/GWK31K.md. Handtest zweier Klone ueber ein lokales bare repo: B sieht nach fetch nichts mehr, nach restore beides wieder."
-executed-by: sonnet
+executed-by: opus
 review-summary: "LOOP: core/release/notes/GWK31K.md:3 still says unscoped 'pull takes the archive mark off its ref' - false for a clone that has the ticket as a file (pass-3 case a): pull there is refresh/no-op (core/refsync/refsync.go:1385-1386, refresh writes only the file), the ref keeps the mark, and that reader is sent here because 'jaira fetch' lists the ticket as 'archived' on every clone (internal/cli/fetch.go:290, docs/COMMANDS.md:155). Pass 3 asked for 'release line 3 with the same scope' as pull.go:41/COMMANDS.md:163. Replace with one line: '- Pull an archived ticket that is not here as a file with `jaira pull <id>` to put it back: pull takes the archive mark off its ref, and every board that has it only on its ref shows it again at its next `jaira fetch`; for a ticket you already have as a file, its ref keeps the mark until your next write from that file.'"
 round: 5
 review-gaps: |-
