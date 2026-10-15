@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T13:28:48Z
+updated-at: 2026-10-15T13:29:56Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
@@ -140,3 +140,4 @@ Stehen gelassen: Marke statt Ref-Loeschen und Deleted() als einziges Praedikat (
 - core/milestone/migrate.go:78-83: DeletedOnRef exportiert, ein Aufrufer im Paket -> klein schreiben oder inline wie tip.
 - core/refsync/refsync.go:307, internal/cli/fetch.go:149: 6- bzw. 7-Tupel statt refsync.MilestonesFetched -> eigenes Ticket (fetch.go geteilt).
 - **2026-10-15 13:28 · BeMuCa** — Reparatur Runde 1: L1 (Report.Deleted, flushRefs-Zeile, TUI-Flash), L2, L3, L8 (delete --json = milestoneJSON + deleted + successors), L9 (milestones_deleted mit Namen, ein Helper reportDeleted), L4, L5 behoben; Release-Note-Zeilen angepasst. Tests nicht gelaufen (go test verboten), nur vet/build/gofmt. Nicht angefasst: L6, L7, L10, L11.
+- **2026-10-15 13:29 · BeMuCa** — Handtest des Treibers auf 5aefcc81: Fall c zeigt jetzt 'jaira: wrong was deleted elsewhere; your edit was dropped with it' statt 'stays queued'. L3: a abgelegt, b geloescht -> 'c now comes after 72KB3A' (ID-Token statt Leerstelle). delete --json: milestoneJSON + deleted + successors, tickets ist Liste, count Zahl. Unbekannt -> Exit 5, abgelegt -> Exit 3.
