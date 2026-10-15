@@ -22,7 +22,7 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T12:37:45Z
+updated-at: 2026-10-15T12:56:06Z
 updated-by: BeMuCa
 ---
 
@@ -43,6 +43,19 @@ updated-by: BeMuCa
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] Test zuerst, core/ticket/archiveref_test.go (neu): Fake-Recorder refRec (Record/RecordFiled/RecordDelete merken den letzten Inhalt). TestArchivePutsTheArchivedLineOnTheRefOnly: Archive(id) -> der RecordFiled-Inhalt dekodiert (ParseDoc+Decode) mit Archived == '<yyyy-mm-dd heute> <Actor>' und gleichem updated-at wie die Datei; die Datei in .jaira/archive/ ist byte-gleich zur Datei vor dem Verschieben und hat keinen archived-Key (DoD 1)
+- [ ] Test zuerst, gleiche Datei: TestAnArchivedRefOnlyTicketIsOffTheListButStillLoads: s.Source = refSource (core/ticket/trim_test.go:218) mit einem Ticket mit Archived und einem ohne -> List() nennt nur das ohne; Load(Handle des archivierten) liefert es mit ReadOnly und Archived (DoD 1; List ist, was board, list, next und resume lesen)
+- [ ] Test zuerst, gleiche Datei: TestRestoreTakesTheArchivedLineOffTheRef (Archive, dann Restore(datei) -> letzter Record-Inhalt == Bytes der wiederhergestellten Datei, ohne archived-Key) und TestRestoreDoesNotWriteOverANewerRef (refRec implementiert CheckFresh und meldet ErrStale -> Restore gibt dst UND einen Fehler mit errors.Is(err, ErrStale) zurueck, Datei liegt in tickets/, kein Record) (DoD 2)
+- [ ] core/ticket, Feld: FieldArchived = "archived" in schema.go neben FieldTags; Ticket.Archived string (Kommentar: Wert '<yyyy-mm-dd> <wer>', leer = nicht archiviert, steht nur im Inhalt auf dem Ref); decodeFields liest es (schema.go ~640). Nicht in canonicalOrder
+- [ ] core/ticket, Archive: Store.Archive (store.go:330) gibt RecordFiled die Dateibytes plus Zeile archived (Doc.SetScalar, Wert heute + ' ' + s.Actor, getrimmt); die Datei in .jaira/archive/ und updated-at/updated-by bleiben unberuehrt. Logbook (store.go:402) bleibt bei recordFiled. Doc-Kommentar von Archive (store.go:297-300) um den Ref ergaenzen
+- [ ] core/ticket, List und Restore: Store.List (store.go:867) haengt nur Extras ohne Archived an. Store.Restore (store.go:634): nur fuer eine Datei, die aus ArchiveDir kam, nach dem Rename Load(id), s.CheckFresh, dann s.record(id, Dateibytes); Rueckgabe dst plus dieser Fehler (ErrStale/ErrNotRecorded). Logbook- und Milestone-Restore unveraendert. Tests aus Schritt 1-3 muessen kompilieren (go vet ./core/ticket/)
+- [ ] Test zuerst, internal/cli/archiveref_test.go (neu), mit twoBoards, runAndSend, aTicket, handleFromList, gitOut (internal/cli/milestoneref_test.go) und jsonCLI (internal/cli/tags_test.go:64): TestAnArchivedTicketLeavesTheOtherBoardAtItsNextFetch: ada aTicket + pull; grace fetch -> list --json nennt den Handle (Vorbedingung); ada runAndSend archive <h> -> Ausgabe enthaelt 'only keeps the record in the repository'; gitref.Repo{Dir: ada, Remote: origin}.Read(id) traegt 'archived:'; git ls-files .jaira/archive in ada leer (nichts committet); grace fetch -> list --json nennt ihn nicht mehr; grace show <h> enthaelt 'archived' (DoD 1, 3)
+- [ ] Test zuerst, gleiche Datei: TestARestoredTicketComesBackOnTheOtherBoard: wie oben archivieren, dann ada runAndSend restore <datei> -> ada-Ref ohne 'archived:'; grace fetch -> list --json nennt den Handle wieder (DoD 2)
+- [ ] internal/cli umsetzen: archive.go Textausgabe (:86-88) bekommt, nur wenn refs.Usable() == nil, die Zeile 'Every other board drops it at its next fetch; committing .jaira/archive/<datei> only keeps the record in the repository.' --json bleibt gleich. restore RunE (archive.go:127): dst leer -> not_archived wie heute; dst gesetzt + Fehler -> warnRef auf stderr, restore gilt als gelungen. show (tickets.go:787-794): bei t.Archived != '' die Zeile 'off the board: archived <wert>, only on its ref' und im --json der Key 'archived'. Long-Hilfe von archive und restore um je einen Satz zum Ref ergaenzen
+- [ ] Doku, die dadurch falsch wird, nachziehen (kein Code): RecordFiled-Kommentar core/refsync/refsync.go:166-179, README.md:579-584 (archive nimmt das Ticket sofort von allen Boards, logbook wie bisher), docs/COMMANDS.md:155 (archive) und :158 (restore nimmt die Zeile vom Ref)
+- [ ] core/release/notes/GWK31K.md: genau eine '- '-Zeile, nie umbrochen, als Anweisung: wer mit 'jaira archive <id>' archiviert, nimmt das Ticket beim naechsten fetch von jedem Board, ohne Commit; 'jaira restore <datei>' bringt es ueberall zurueck, 'jaira show <id>' sagt archived; das Committen von .jaira/archive/<datei> haelt nur den Eintrag im Repository fest
+- [ ] Pruefen ohne go test (Berk verbietet es): gofmt -l core internal leer, go vet ./... (kompiliert die neuen Tests mit), go build -race -o /tmp/claude-1000/-home-berk-git-jAIra/a751ce77-35ca-405d-9c2e-d6ae252f56ea/scratchpad/gwk31k/jaira ./cmd/jaira
 
 ## Progress
 - **2026-10-15 12:37 · BeMuCa** — Berk am 15.10.: 'Archiv sollte auch wie Ticket funktionieren, damit jeder es schnell genug sieht.' Seine Frage, ob Tickets erst nach einem Commit fuer andere sichtbar sind: nein. 'jaira create' legt das Ticket auf seinen Ref und pusht ihn sofort; andere sehen es beim naechsten fetch, ohne Commit. Archivieren muss genauso gehen: die Markierung kommt auf den Ref und wird sofort gepusht, andere sehen das Ticket beim naechsten fetch verschwinden, ohne dass die Archiv-Datei vorher committet sein muss. Das Committen der Archiv-Datei haelt danach nur den Eintrag im Repository fest; niemandes Sicht wartet darauf.
