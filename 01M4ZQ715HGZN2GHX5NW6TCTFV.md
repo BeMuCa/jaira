@@ -26,7 +26,8 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-15T12:04:57Z
+updated-at: 2026-10-15T12:19:30Z
+updated-by: BeMuCa
 ---
 
 # Ist der letzte Ticket eines Milestones fertig, schlaegt jaira den PR mit /jaira-role-pr vor und bietet an, den Milestone abzulegen
