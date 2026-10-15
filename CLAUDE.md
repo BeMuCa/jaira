@@ -248,6 +248,8 @@ The format is a line scan, and breaking it silently corrupts what users read:
 
 - One change is exactly one line starting `- `. Never wrap it across two lines —
   a wrapped line is read as two separate, incomplete changes.
+- A line starting `- ! ` marks a change the reader must act on. `jaira update`
+  and the TUI show it highlighted; to every other reader it stays a plain line.
 - Everything else in the file — prose, blank lines, HTML comments — is ignored.
 - No version heading. A note file never says which release it belongs to.
 

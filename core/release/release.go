@@ -103,7 +103,8 @@ func Important(change string) (string, bool) {
 }
 
 // changeLines is parseNotes for a note file, which has no headings: every
-// "- " line is one change.
+// "- " line is one change. A line "- ! text" is the change "! text": the
+// marker for a change the reader must act on, read back by Important.
 func changeLines(s string) []string {
 	var out []string
 	for _, line := range strings.Split(s, "\n") {
