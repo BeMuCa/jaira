@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T12:38:25Z
+updated-at: 2026-10-15T12:40:49Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
@@ -70,3 +70,13 @@ Neu durch E70WYN: Milestone.HoldsName() - eine Marke mit renamed-to haelt den Na
 - Gleicher Ordner fuer alles: logbookFolder() einmal vor der Schleife ausrechnen.
 - --json bekommt 'tickets' (gleiche Form wie 'filed' bei logbook --all, trimmedJSON in internal/cli/flow.go:857) und 'ref_only' (Handles). 'count' bleibt die Zahl der Mitglieder.
 - Bestehender Test TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack (internal/cli/milestones_test.go:333) bricht dann: sein Farb-Check verlangt, dass das done-Ticket noch auf dem Board steht. Umbauen: Ticket mit 'jaira restore <ticketdatei>' zurueckholen und dann pruefen, dass es keine Milestone-Farbe traegt.
+- **2026-10-15 12:40 · BeMuCa** — pre-process, Teil 2 - Loeschen mit Marke. Warum keine Ref-Loeschung:
+- 14.10.: Refs von sechs Test-Milestones auf origin geloescht. Alex' Klon hatte alte <name>.md-Dateien; milestone.Migrate (core/milestone/migrate.go:132) fand keinen Ref unter LegacyID(name) und hat sie als neue ID-Refs wieder hochgeschoben. Ein geloeschter Ref sagt keinem Klon etwas; eine Marke erreicht jeden.
+- Marke = der Ref bleibt stehen, Inhalt bekommt 'status: filed' UND 'deleted: <yyyy-mm-dd> <wer>'. 'status: filed' allein reicht fuer alte 0.5.x-Klone: die blenden ihn aus (LoadAll), schreiben ihn ueber ihre Datei (IncomingMilestones) und verweigern Edits (FiledError). Merge (Adopt) behaelt beide Zeilen, weil nur eine Seite sie geaendert hat (core/milestone/adopt.go:91ff).
+- 'deleted:' braucht es trotzdem: sonst meldet fetch 'filed elsewhere' und restore-Hinweise zeigen auf ein Logbuch, in dem nichts liegt. Neue Klone LOESCHEN die Datei, statt sie markiert liegen zu lassen.
+- Kein 'status: deleted': alte Klone kennen nur 'filed' und wuerden den Milestone wieder zeigen.
+- EIN Praedikat: (*Milestone).Deleted() in core/milestone/milestone.go (Feld DeletedOn aus der deleted:-Zeile). refsync.(*Syncer).MilestoneDeleted(id) liest den Ref und fragt nur dieses Praedikat. Migrate fragt es ueber ein optionales Interface am Recorder (wie oldRefTip/oldRefHistory in migrate.go).
+- Wo geprueft wird, alles mit demselben Praedikat: (1) IncomingMilestones - Marke kommt an -> jede Datei mit dieser ID hier weg (ID-Name und altes <name>.md), VOR der Pending- und Gleichheitspruefung; (2) Migrate - altes <name>.md, dessen LegacyID-Ref eine Marke ist -> Datei weg, nicht migrieren, nichts einreihen; (3) mergeRefused - ein abgewiesener Schreibvorgang trifft auf eine Marke -> Eintrag verwerfen, Datei weg; (4) Syncer.RecordMilestone - Schreiben ueber einen markierten Ref wird nie eingereiht (ErrMilestoneDeleted), ausser der Inhalt ist selbst die Marke. (4) ist das Sicherheitsnetz fuer jeden Schreibweg (Edit, Rename, restore, AdoptOld).
+- Warum (4) noetig ist: Flush holt Refs (Repo.Fetch), ohne IncomingMilestones zu laufen. Danach kann ein Klon die noch lebende Datei bearbeiten; der Lease waere dann der Marken-SHA und der Push wuerde die Marke ueberschreiben.
+- Der Name wird frei, ohne neuen Code: CheckFree (core/milestone/write.go:214) fragt nur LoadAll, und Create wuerfelt eine neue ID, solange HasMilestoneRef(ID) stimmt - die Marke belegt die alte ID fuer immer.
+- Milestone.HoldsName() aus der E70WYN-Notiz gibt es nicht (grep leer). Der Paket-Kommentar core/milestone/milestone.go:19-21 sagt schon: ein abgelegter Milestone haelt seinen Namen nicht.
