@@ -5,7 +5,7 @@ status: pre-process
 ready: true
 creator: Alexander Sacharov
 assignee: BeMuCa
-goal: "Wer eine Runde Arbeit abgeschlossen hat, nimmt ihren Milestone in einem Griff vom Board - Datei und Ref weg, Inhalt weiter lesbar - und wer sich vertan hat, loescht ihn ganz."
+goal: "Wer eine Runde Arbeit abgeschlossen hat, nimmt ihren Milestone samt seinen fertigen Tickets in einem Griff vom Board, und wer einen Milestone falsch angelegt hat, loescht ihn so, dass er auf keinem Klon zurueckkommt."
 context: |-
   Milestones entstehen in 0YGWXQ (.jaira/milestones/<name>.md plus refs/jaira/milestones/<name>). Es gibt keinen Weg, einen wieder wegzubekommen.
 
@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T12:38:01Z
+updated-at: 2026-10-15T12:38:07Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
