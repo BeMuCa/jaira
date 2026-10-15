@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-15T12:32:46Z
+updated-at: 2026-10-15T12:32:51Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -88,3 +88,4 @@ Doku: Abschnitt 'Client-facing changes go in core/release/notes/' steht in CLAUD
 (3) core/board/announce.go agentNote - eine Zeile nach dem jaira-resume-Punkt. Aendert PWAF22 den Block auch, nach dem Merge die Bloecke in CLAUDE.md/AGENTS.md neu erzeugen.
 (4) Release-Notes: je eigene Datei, kein Konflikt.
 Prozess: DoD 1 verlangt 'go test ./... -race gruen', die Implementierer duerfen auf Berks Anweisung kein go test laufen lassen - den Beleg muss die testing-Lane oder CI liefern.
+- **2026-10-15 12:32 · BeMuCa** — Schritt 1-4 fertig. Agent-Block-Regeneration auf Scratch-Kopie (jaira update dort); Diff in CLAUDE.md/AGENTS.md war genau die eine neue Blockzeile, nichts sonst. Kein go test gelaufen, nur gofmt/vet/build pro Commit. Pille ist leer ausser bei bekanntem neueren Release (release.Newer statt '!=').
