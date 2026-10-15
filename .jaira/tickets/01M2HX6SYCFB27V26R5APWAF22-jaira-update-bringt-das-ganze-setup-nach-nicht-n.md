@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T12:56:54Z
+updated-at: 2026-10-15T13:01:52Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -59,7 +59,7 @@ claimed-at: 2026-10-15T12:51:30Z
 - [x] 3 core/lane/refresh.go: RefreshShipped(root, dryRun) - unchanged / updated (older shipped version) / skipped (edited), only lanes the board holds and jaira ships; fixture core/lane/testdata (catalogue testing.md before 2fb8f177); tests first incl. TestEveryBuiltinLaneIsAShippedVersion
 - [x] 4 core/role/target.go: Installed(root) []Target (own project dir per agent, then personal; only dirs already holding roles; deduped) + Behind(results); tests first
 - [x] 5 core/board/announce.go: PreviewAgentFiles(root, choice, lanes) by threading dry through announceIn/announceInAgentFile/removeBlock/setClaudeImport (lines 397-576 only, not agentNote); test: preview names what the write does and writes nothing
-- [ ] 6a internal/cli: 'jaira update --roles --lanes' (new updatesetup.go; update.go flags/Long/RunE 80-127 only, never 128-139): lanes refreshed before lane.Load, roles where installed, --roles works outside a board (personal only), JSON keys roles/lanes/skipped only when asked, exit 3 via named return+defer; tests first incl. DoD-1 reproduction TestUpdateRolesLanesBringsAStaleBoardUpToDate and TestUpdateWithoutSwitchesWritesOnlyTheBlock; two release-note lines
+- [x] 6a internal/cli: 'jaira update --roles --lanes' (new updatesetup.go; update.go flags/Long/RunE 80-127 only, never 128-139): lanes refreshed before lane.Load, roles where installed, --roles works outside a board (personal only), JSON keys roles/lanes/skipped only when asked, exit 3 via named return+defer; tests first incl. DoD-1 reproduction TestUpdateRolesLanesBringsAStaleBoardUpToDate and TestUpdateWithoutSwitchesWritesOnlyTheBlock; two release-note lines
 - [ ] 6b internal/cli: 'jaira update --dry-run' (would-lines, 'nothing was written (--dry-run)', no stamp, same exit code, return before the notes block) + read-only hint lines of the bare call when roles/lanes are behind; tests first: TestUpdateDryRunWritesNothing, TestUpdateDryRunExitCodeMatchesTheRealRun, TestUpdateWithoutSwitchesNamesWhatIsBehind; two release-note lines
 - [ ] 7 internal/cli/self.go: after Replace run the NEW binary '<target> -C <dir> update --roles [--json]' through seam var runUpgraded; child exit 3 is not a failure; JSON setup/setup_exit; no lanes; tests first in self_test.go (recorder seam + unix test executing a shell-script payload); release-note line
 - [ ] 8 internal/cli/skillsnudge.go: nudgeSkillsIfStale in openStore after nudgeIfStale - personal dirs only, once per version via JAIRA_HOME/skills-check/version, stderr only, silent on dev/update/roles install; tests first in skillsnudge_test.go (own HOME/USERPROFILE/JAIRA_HOME); release-note line
@@ -130,3 +130,4 @@ Wortlaut steht im Design (Scratchpad design.md, je Schritt). Kein '- !'-Marker -
 - Folge, die Berk beim signoff zuruecknehmen kann: 'jaira roles install --project' schreibt in jedem Repo auch .claude/skills/jaira/SKILL.md. Der Schritt ist ein eigener Commit und laesst sich allein zuruecknehmen.
 - Offen fuer Berk (nicht in diesem Ticket): die Dev-Build-Verweigerung von 'self upgrade' (self.go:80-84), und Rollen, die mit --into installiert wurden (update --roles und die Warnung sehen sie nicht).
 - **2026-10-15 12:50 · BeMuCa** — Schritt 1-2: das Manifest hat 438 Zeilen (48824 Bytes), erzeugt mit scripts/shipped-history.sh auf dem Worktree. Skript braucht bash (Prozess-Substitution), kein sh. Mod-Dateien types/index.d.ts sind im Manifest (core/mod/mod.go ueberspringt nur .claude-plugin/types, nicht types/). Die .gitattributes-Pins fuer core/role/testdata und core/lane/testdata stehen schon in Schritt 1.
+- **2026-10-15 12:57 · BeMuCa** — Step 5: dry chooseAgentFiles skips setClaudeImport when the dry removeBlock said CLAUDE.md would be deleted (file still exists in dry, real run finds none) - else preview would add an import line the write never does. Covered by 'agents, claude file deleted' case. Step 4 --done tick raced the --doing call once; retried.
