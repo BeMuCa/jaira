@@ -22,7 +22,7 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T12:36:24Z
+updated-at: 2026-10-15T12:37:17Z
 updated-by: BeMuCa
 ---
 
@@ -45,4 +45,4 @@ updated-by: BeMuCa
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-15 12:37 · BeMuCa** — Berk am 15.10.: 'Archiv sollte auch wie Ticket funktionieren, damit jeder es schnell genug sieht.' Seine Frage, ob Tickets erst nach einem Commit fuer andere sichtbar sind: nein. 'jaira create' legt das Ticket auf seinen Ref und pusht ihn sofort; andere sehen es beim naechsten fetch, ohne Commit. Archivieren muss genauso gehen: die Markierung kommt auf den Ref und wird sofort gepusht, andere sehen das Ticket beim naechsten fetch verschwinden, ohne dass die Archiv-Datei vorher committet sein muss. Das Committen der Archiv-Datei haelt danach nur den Eintrag im Repository fest; niemandes Sicht wartet darauf.
