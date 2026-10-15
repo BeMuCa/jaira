@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T13:43:21Z
+updated-at: 2026-10-15T13:43:23Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -175,3 +175,7 @@ Bestehende Tests (statisch, kein go test): keiner bricht. roles_test 'X written'
 - roles.go:131: updateInProgress nur zum Stummschalten gesetzt; in setupInProgress umbenennen.
 - self.go:69-79 Long: nennt den 'update --roles'-Schritt nicht. Ein Satz.
 - **2026-10-15 13:33 · BeMuCa** — Treiber zu critique 1: zurueck nach in-progress nur fuer den Textdefekt (README.md:118, Notiz-Zeile 5). Dazu, vom Treiber gefunden, gleiche Klasse: die self-upgrade-Notiz verspricht 'update --roles' gleich nach der Installation - beim Sprung von 0.5.1 auf dieses Release laeuft aber noch der self upgrade des ALTEN Binaries, der das nicht tut. Die Zeile muss sagen: ab dem naechsten Upgrade; diesmal 'jaira update --roles' selbst laufen lassen. Alle [NACHFOLGER] bleiben Nachfolger.
+- **2026-10-15 13:43 · BeMuCa** — Nachfolger (optimize): nicht geaendert, weil kein reiner Drop-in.
+- core/lane: Builtins-nach-ID-Map steht dreimal (lane.go:552, lane.go:779, refresh.go:219). Ein Helfer builtinsByID() in core/lane wuerde alle drei ersetzen.
+- internal/cli/update.go Trockenlauf: 'Would tell your agents about this board' baut announceLine (announce.go:8) mit anderem Verb nach. announceLine hat zwei Aufrufer (tickets.go:122, update.go:181).
+- Tests: das Fixture core/role/testdata/jaira-role-acceptance-SKILL-v0.4.0.md wird zweimal gelesen (updatesetup_test.go newStaleSetup, skillsnudge_test.go olderShipped). Ein Helfer reicht.
