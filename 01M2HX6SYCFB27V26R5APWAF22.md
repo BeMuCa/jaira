@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T13:45:11Z
+updated-at: 2026-10-15T13:47:43Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -43,6 +43,7 @@ review-gaps: |-
   Erwogen, gelassen: Builtins-nach-ID-Map jetzt dreimal (core/lane/lane.go:552, :779, refresh.go:219), es gibt keinen Helfer zum Aufrufen - ein neuer wuerde Altcode anfassen; printLaneResults/printRoleResults und laneResultsJSON/roleResultsJSON sind gleich gebaut, aber andere Typen und Keys; die Trockenlauf-Zeile 'Would tell your agents' (update.go) ist announceLine (internal/cli/announce.go:8) mit anderem Verb - announceLine hat zwei Aufrufer, ein dry-Parameter waere Umbau; hintLines laedt die Lanes ein zweites Mal (RefreshShipped -> Load), nur im nackten update, kein heisser Pfad; printRoleResults baut je Trockenlauf-Zeile eine kleine Map - vernachlaessigbar; der Kommentar ueber setupArgs (self.go) wiederholt die Doku von warnSetupFailed - harmlos; Tests: newStaleSetup liest das v0.4.0-Fixture mit os.ReadFile neben mustRead, olderShipped (skillsnudge_test.go) liest dasselbe Fixture.
   Altbestand gesehen, gelassen: JAIRA_HOME-Aufloesung sechsfach (settings.Path, selfupdate.Path, core/project/project.go:29, core/identity/identity.go:95, core/lane/lane.go:478, core/ticket/store.go:767); Builtins-nach-ID-Map in lane.go zweimal.
   Kein Fund aendert Verhalten. Kein go test gelaufen (Anweisung); gofmt/vet/build auf exportierter Kopie gruen.
+test-verdict: "pass: gofmt/vet/build gruen auf Export von HEAD 3218b63a, go test nicht gelaufen (Anweisung) - die neuen Tests sind geschrieben+kompiliert, nicht gelaufen; DoD 1-6 am Baum geprueft (Proofs/Tests gelesen); Handlaeufe auf Scratch-Build 9.9.9: nackter update schreibt nur Block, --dry-run schreibt nichts (exit 3), update --roles --lanes zieht Block/Rollen/jaira-Skill/Lane nach und skippt editierte Datei (exit 3, 2. Lauf nur unchanged+skipped), ausserhalb Board nur persoenlich, Skills-Hinweis einmal auf stderr (--json valide), self upgrade 9.9.8->9.9.9 ruft Kind update --roles (exit 0, --json setup/setup_exit=3); Release-Notiz 8 Zeilen stimmen"
 ---
 
 # jaira update bringt das ganze Setup nach, nicht nur den Textblock
