@@ -1,7 +1,7 @@
 ---
 id: 01M21PJTWPK4DZ89PRY6T8A8KM
 title: "Eine Pille unter der Version zeigt, dass ein neues Release da ist"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -21,10 +21,24 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-15T12:42:07Z
+updated-at: 2026-10-15T12:55:53Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
+outcome-what: "Pille '^ <version>' unter der Versionszeile auf Launcher und Boardkopf, wenn der 24h-Cache ein neueres Release kennt (internal/tui/updatecheck.go versionLine -> line, pill). jaira next und jaira resume nennen ein neueres Release in einer stderr-Zeile (internal/cli/newerrelease.go), der Agent-Block sagt Agenten, es dem Nutzer zu sagen und jaira self upgrade zu nennen (core/board/announce.go). Nach einem Versionswechsel zeigt das Board einmal ein Popup mit den Release-Notes seit der zuletzt gelesenen Version (internal/tui/releasenotes.go, Datei notes-seen im StateDir unter JAIRA_HOME). Zeilen '- ! <text>' gelten als wichtig (release.Important): jaira update druckt sie als '  ! <text>', der TUI fett in Warnfarbe; CLAUDE.md/AGENTS.md nennen die Markierung. Taste w auf dem Launcher zeigt alle Release-Notes, neueste zuerst."
+outcome-why: "Berk will ohne Nachsehen merken, dass ein neues Release da ist (Kontext 08.09.); wer nur ueber Agenten arbeitet, sah es bisher nie, weil nur der TUI den Cache las. Nach einem Upgrade soll das Team erfahren, was sich geaendert hat, und wichtige Aenderungen (Anlass: EBTX6X aendert das Milestone-Format) sollen auffallen (Berk 14.10.)."
+outcome-resolves: "DoD 1: Pille nur bei bekanntem Cache und release.Newer(latest, Current), nicht bei gleich/aelter/unbekannt/dev - TestReleasePillOnlyForANewerKnownRelease, Handtest a; der verlangte go test ./... -race ist NICHT gelaufen (Anweisung Berk), DoD 1 bleibt bis zum Lauf in der Hauptsession offen. DoD 2: warnNewerRelease in next/resume, stdout und --json unberuehrt, plus Agent-Block-Punkt - TestNextAndResumeNameANewerReleaseOnStderr, TestAgentNoteTellsAgentsToReportANewerRelease, Handtest a. DoD 3: notesBase(current, seen, stamped) entscheidet, New() oeffnet das Popup, esc/q/enter schreibt notes-seen, danach kein Popup bis zur naechsten Version - TestNotesBase, TestPopupClosesAndStaysClosedUntilTheNextVersion, Handtest b. Bekannte Luecke: beim ersten Versionswechsel nach Auslieferung zeigt der TUI kein Popup, wenn jaira update vorher lief (notes-seen fehlt noch, der Stempel ist der Fallback); jaira update hat dieselben Notes dann gedruckt. DoD 4: release.Important, writeNotes in update.go, styImportant, Abschnitt in CLAUDE.md/AGENTS.md - TestImportantMarker, TestUpdateNotesMarkImportantLines, Handtest d. DoD 5: Taste w, Hinweiszeile 'w release notes' - TestHomeWOpensReleaseNotesNewestFirst, TestHomeHintNamesTheReleaseNotesKey, Handtest c. Alle Tests geschrieben und per go vet kompiliert, keiner ausgefuehrt."
+executed-by: sonnet
+review-summary: |-
+  DEFECT README.md:77-85 says the release check shows "in the footer" as "jaira v0.1.0 . v0.2.0 available - run: jaira self upgrade" and "never as a line from a CLI command" - false since this branch (pill under the version top left, next/resume print a stderr line); rewrite the paragraph: version top left of launcher and board, "jaira 0.1.0 . up to date" or "jaira 0.1.0" with a pill "^ 0.2.0" under it (then run jaira self upgrade); of the CLI commands only jaira next and jaira resume mention it, one line on stderr, stdout and --json unchanged; JAIRA_NO_UPDATE_CHECK=1 turns it off, the version still shows without "up to date" and without the pill
+  DEFECT docs/COMMANDS.md:131 (jaira self upgrade row) says "shown as a status line in the launcher's and the board's footer - never printed by a CLI command, which stay quiet on purpose" - false since this branch; replace with "shown as a pill ^ <version> under the version at the top left of the launcher and the board, and as one stderr line from jaira next and jaira resume; every other command stays quiet on purpose"
+  DEFECT internal/tui/view.go:230-234 comment says the version row exists "so that a line can be hung underneath it without pushing the board bar down" - the pill now hangs there and pushes the head line and the board bar down one row; reword: "...so the release pill (see versionLine) hangs underneath it, between the version and the head line rather than between the head line and the board bar; headLines below counts it, so the columns give up that row"
+  NACHFOLGER internal/tui/releasenotes.go:147-150 openReleaseNotes rewrites notes-seen on every board open once seen==current (base "" -> markSeen); the plan said only when seen != current - read seen once and call markSeen only if seen != release.Current
+  NACHFOLGER internal/tui/releasenotes.go:99-121 readSeen/markSeen repeat core/release/release.go:177-191 Stamped/Stamp (one-line version file in the StateDir) in another package - move them beside Stamped/Stamp as release.NotesSeen(dir)/release.MarkNotesSeen(dir), so jaira update can reach the file too if the first-change gap is ever closed
+  NACHFOLGER internal/tui/releasenotes.go:82-93 notesView.render cuts the notes at height without saying how much is below; clipToWindow (view.go:1491-1500) and clipPane (view.go:1443-1446) always name it - when end < len(all), lead the hint with "+N more"
+  NACHFOLGER CLAUDE.md:251 and AGENTS.md:204 "marks a change the reader must act on" does not separate a "- ! " line from the rule that every line is already an instruction (what the reader must DO differently) - say when to use it: a change that needs an action before jaira works as described again (a command to run in every repository, a changed file format); use it sparingly
+  NACHFOLGER core/release/notes/T8A8KM.md:4 "When a note line starts `- ! `, act on it" addresses note authors; the reader sees "  ! <text>" in jaira update and a bold "!" line on the board, never "- ! " - write it as "Act on every change jaira update prints as `  ! <text>` (bold on the board): it is marked as one that needs you to do something"
+  QUESTION internal/tui/updatecheck.go:66-67 the TUI now shows only "^ <version>"; the old "run: jaira self upgrade" is gone from every screen, so a person who never uses an agent learns the command once, from release note line 1 - keep pill only (as built, Berk's exact text) or add a dimmed "jaira self upgrade" after the pill on the same row (no extra row, ~20 columns); planner left this to critique/Berk (note 2026-10-15 12:19)
 ---
 
 # Eine Pille unter der Version zeigt, dass ein neues Release da ist
