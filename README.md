@@ -76,13 +76,14 @@ never overwrites a file another tool owns.
 
 jaira checks for a new release at most once a day, in the background, and
 never on the command path: nothing you run ever waits on the network for
-this. The result shows up as a small status line in the footer of the
-launcher and the board — `jaira v0.1.0 · up to date` or
-`jaira v0.1.0 · v0.2.0 available — run: jaira self upgrade` — never as a
-line from a CLI command, which stay quiet so a script or an agent driving
-jaira is never interrupted by it. Set `JAIRA_NO_UPDATE_CHECK=1` to turn the
-check off entirely; the version still shows, just without the "up to
-date"/"available" half.
+this. When a newer one is known, the launcher and the board show a pill
+`^ 0.2.0` under the version at the top left — run `jaira self upgrade` to
+install it — and `jaira next` and `jaira resume` print one line on stderr
+saying so. Their stdout and `--json` stay clean, so a script or an agent
+driving jaira is never disturbed by it; every other command stays quiet.
+When you are up to date the version reads `jaira 0.1.0 · up to date`. Set
+`JAIRA_NO_UPDATE_CHECK=1` to turn the check off entirely: no pill, no
+stderr line, no "up to date"; the version still shows.
 
 This is different from `jaira update`, just below, which is about a
 *repository's* board setup and downloads nothing.

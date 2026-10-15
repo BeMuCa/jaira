@@ -230,8 +230,8 @@ func (m *Model) renderBoard() string {
 	// The running version, top left, before anything on the board is read —
 	// see versionLine() in updatecheck.go for what it says. It gets a row of
 	// its own rather than the head line's left end (which the ticket count
-	// shares) so that a line can be hung underneath it without pushing the
-	// board bar down.
+	// shares) so that the release pill can hang underneath it; the pill
+	// pushes the head line and the board bar down one row (headLines counts it).
 	head := truncate(m.versionLine, m.width)
 	if m.releasePill != "" {
 		head += "\n" + m.releasePill
