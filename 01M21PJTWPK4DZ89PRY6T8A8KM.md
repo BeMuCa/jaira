@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-15T12:04:38Z
+updated-at: 2026-10-15T12:19:32Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -49,3 +49,9 @@ related:
 ## Progress
 - **2026-10-13 20:51 · BeMuCa** — Berk 2026-10-13: der Agent soll einen auf ein neues Release ansprechen (DoD 2). Zur Frage 'feste Uhrzeit?': nein - core/selfupdate/cache.go PollCache prueft, sobald jaira laeuft und die letzte Pruefung aelter als 24 h ist (MaxAge, cache.go:20); wer erst spaeter online kommt, bekommt die Pruefung dann. Das Upgrade selbst bleibt ein Befehl (jaira self upgrade), es laeuft nicht von allein. Gehoert zu PWAF22: nach dem Upgrade muessen Block und Skills nachgezogen werden.
 - **2026-10-14 07:47 · BeMuCa** — Berk 2026-10-14: 'das will ich haben' - nach Upgrade/Update ein Popup mit den Release-Notes, wichtige Aenderungen staerker markiert, und ein Hotkey im Launcher, der die Release-Notes zeigt (DoD 3-5). Teil davon gibt es schon: die CLI mahnt 'jaira update' an (internal/cli/update.go:53), 'jaira update' druckt die Notizen seit der letzten Version (update.go:94-95). Anlass: EBTX6X aendert das Milestone-Format, und das Team muss es erfahren. Formatwechsel fuer alte Builds und Agenten: eigenes Ticket, folgt EBTX6X.
+- **2026-10-15 12:19 · BeMuCa** — Popup-Merker (DoD 3): neue Datei 'notes-seen' im StateDir des Boards, neben dem Stempel 'version' (StateDir = JAIRA_HOME bzw. ~/.jaira + state/<arbeitsbaum>, core/ticket/store.go:701). Eine Zeile: die Version, deren Notes zuletzt geschlossen wurden.
+Warum dort: pro Nutzer und pro Arbeitsbaum wie der Stempel, nie im Repo. 'Ich habe die Notes gelesen' darf nicht per git reisen - sonst quittiert ein Teammitglied fuer alle. Eine Zeile, von Hand editierbar, kein Merge-Konflikt moeglich.
+Warum nicht der Stempel allein: 'jaira update' stempelt (update.go:112), und PWAF22 laesst 'self upgrade' update automatisch laufen. Danach ist Stamped==Current und Since(Stamped) leer - der TUI wuesste nicht mehr, ab welcher Version.
+Regel: base = notes-seen; fehlt die Datei, base = Stempel. Popup nur wenn release.Newer(Current, base) und base nicht 'dev'. Geschrieben wird notes-seen beim Schliessen des Popups und wenn es nichts zu zeigen gibt. 'jaira update' schreibt es NICHT.
+Bekannte Luecke: fehlt notes-seen UND hat update schon gestempelt (nur beim allerersten Wechsel, bevor der TUI auf diesem Baum je lief), kommt kein Popup. Die Notes hat update dann schon gedruckt.
+Pro Baum heisst: jeder Worktree mit altem Stempel zeigt es einmal; ein neuer Worktree (kein Stempel) nie. Nur in New (model.go:313), nicht in switchBoard: ein per 1-9 gewechseltes Board zeigt es beim naechsten Oeffnen.
