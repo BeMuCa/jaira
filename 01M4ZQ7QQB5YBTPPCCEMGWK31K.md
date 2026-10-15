@@ -22,7 +22,7 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T14:55:10Z
+updated-at: 2026-10-15T14:55:19Z
 updated-by: BeMuCa
 outcome-what: "'jaira archive' schreibt auf den Ref den Dateiinhalt plus eine Zeile 'archived: <datum> <wer>' (core/ticket/store.go Archive -> recordFiled mit Markwert; Logbook gibt '' und bleibt unmarkiert); die Datei in .jaira/archive/ bleibt byte-gleich. Store.List laesst ref-only Tickets mit dieser Zeile weg, also auch board, list, next, resume. 'jaira restore' schreibt die Datei ohne Zeile zurueck auf den Ref (nach CheckFresh; ist der Ref neuer, bleibt er stehen und restore warnt mit 'jaira pull <h>'). 'jaira pull' eines markierten Refs leert die Zeile auf dem Ref und in der Datei (refresh: nur in der Datei), damit eine Datei nie eine Marke traegt; pull sagt es. show (nur ref-only) und fetch nennen ein archiviertes Ticket 'archived', fetch meldet es nicht als 'a ticket is yours'. archive sagt bei ungetrackter Datei, dass das Committen nur den Eintrag festhaelt, bei getrackter, dass ein Branch mit der Datei es bis zum Merge zeigt. Doku (README, COMMANDS.md, Hilfen, Kommentare) und drei Release-Zeilen."
 outcome-why: "Bisher schrieb archive den unveraenderten Inhalt auf den Ref. Jeder andere Klon zeigte das Ticket weiter, bis der Snapshot-Lauf (alle 72 h) den Ref abraeumte, und das erst nach Commit und Merge der Archiv-Datei. Berk will, dass Archivieren wie create wirkt: sofort beim naechsten fetch, ohne Commit."
@@ -52,11 +52,17 @@ review-gaps: |-
   DoD 1-4: im Diff nachgelesen und am Binary nachgestellt, erfuellt. Release-Notiz: 3 Zeilen, je '- ', nicht umbrochen, als Anweisung.
 test-verdict: "pass: go test was NOT run by Berk's order; ran instead gate.sh at d7f65e38 (gofmt+vet incl. test compile+build OK) and hand tests under scratchpad with isolated HOME: twoclones (B loses/regains archived tickets in list/next/resume), defect flow (pull of archived ref empties mark in ref+file, other clone sees it, archive+restore from 2nd clone reveals it again), show/fetch wording, board via tmux (archived absent, back after restore+fetch), tracked-file archive wording."
 review-verdict: |-
-  Der Normalfall erfuellt DoD 1-4. Selbst durchgespielt mit lokalem bare repo und zwei Klonen: archive -> Ref auf origin traegt sofort die Zeile, Archiv-Datei ungetrackt; B fetch 'archived', list/next/resume leer; restore -> B sieht es wieder.
-  Ein echter Defekt im Randfall 'Datei von einem markierten Ref gepullt': restore meldet Erfolg, laesst das Ticket aber auf allen anderen Boards verborgen, und drei Doku-Saetze plus die Release-Notiz sagen das Gegenteil.
-  Meine Empfehlung: nicht so annehmen. Entweder zurueck nach in-progress (pull schreibt 'archived' leer, kleiner Fix), oder Berk nimmt den Randfall bewusst als Nachfolger und die drei Saetze werden eingeschraenkt.
-  Sonst keine Funde. Unsicher bin ich nur beim Snapshot-Nachfolger, den habe ich nur gelesen, nicht ausprobiert.
-review-round: 2
+  Der Diff erfuellt DoD 1-4.
+  Selbst nachgestellt mit HEAD d7f65e38, lokalem bare repo und Klonen A, B, A2, A3:
+  archive auf A -> B zeigt beim fetch 'archived', list 'No tickets match.', next und list --actionable ohne das Ticket.
+  restore auf A -> B sieht es wieder.
+  pull auf A2 (gleiche Person) -> Marke weg, Datei hat 'archived: ""', B sieht es wieder.
+  restore gegen einen neueren Ref warnt und endet mit rc 0.
+  go vet und gofmt sauber, auf einer Kopie im scratchpad. go test nicht gelaufen (Berks Verbot).
+  Ein Fund, kein Datenverlust: das Board (TUI) meldet ein anderswo archiviertes Ticket als 'is yours', obwohl die Karte weg ist. Nicht neu, aber der Diff flickt dieselbe Stelle in der CLI und vergisst die TUI. Fix: eine Zeile.
+  Empfehlung: annehmbar. Den Board-Fund entweder als kurze Runde in in-progress (eine Zeile plus Test) oder bewusst als Nachfolger. Ich wuerde die eine Zeile noch mitnehmen.
+  Unsicher: die Desktop-Meldung kenne ich nur aus dem Code, gesehen habe ich sie nicht.
+review-round: 6
 review-check: |-
   Alles in /tmp/gwk31k-check, eigenes HOME, eigener Binary. Ein frisches Terminal; am Ende schliessen. <H> ist der Handle aus Schritt 6, <datum> das Datum von heute.
   1. mkdir -p /tmp/gwk31k-check && cd /home/berk/git/jAIra-GWK31K && go build -o /tmp/gwk31k-check/jaira ./cmd/jaira  -> keine Ausgabe.
