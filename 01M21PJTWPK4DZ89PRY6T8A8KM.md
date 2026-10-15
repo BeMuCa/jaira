@@ -1,7 +1,7 @@
 ---
 id: 01M21PJTWPK4DZ89PRY6T8A8KM
 title: "Eine Pille unter der Version zeigt, dass ein neues Release da ist"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-15T12:55:58Z
+updated-at: 2026-10-15T12:56:45Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -39,6 +39,7 @@ review-summary: |-
   NACHFOLGER CLAUDE.md:251 and AGENTS.md:204 "marks a change the reader must act on" does not separate a "- ! " line from the rule that every line is already an instruction (what the reader must DO differently) - say when to use it: a change that needs an action before jaira works as described again (a command to run in every repository, a changed file format); use it sparingly
   NACHFOLGER core/release/notes/T8A8KM.md:4 "When a note line starts `- ! `, act on it" addresses note authors; the reader sees "  ! <text>" in jaira update and a bold "!" line on the board, never "- ! " - write it as "Act on every change jaira update prints as `  ! <text>` (bold on the board): it is marked as one that needs you to do something"
   QUESTION internal/tui/updatecheck.go:66-67 the TUI now shows only "^ <version>"; the old "run: jaira self upgrade" is gone from every screen, so a person who never uses an agent learns the command once, from release note line 1 - keep pill only (as built, Berk's exact text) or add a dimmed "jaira self upgrade" after the pill on the same row (no extra row, ~20 columns); planner left this to critique/Berk (note 2026-10-15 12:19)
+round: 2
 ---
 
 # Eine Pille unter der Version zeigt, dass ein neues Release da ist
