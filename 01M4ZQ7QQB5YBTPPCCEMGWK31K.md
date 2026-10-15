@@ -22,16 +22,66 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T13:44:12Z
+updated-at: 2026-10-15T13:53:41Z
 updated-by: BeMuCa
 outcome-what: "'jaira archive' schreibt auf den Ref den Dateiinhalt plus eine Zeile 'archived: <datum> <wer>' (core/ticket/store.go Archive -> recordFiled mit Markwert; Logbook gibt '' und bleibt unmarkiert); die Datei in .jaira/archive/ bleibt byte-gleich. Store.List laesst ref-only Tickets mit dieser Zeile weg, also auch board, list, next, resume. 'jaira restore' schreibt die Datei ohne Zeile zurueck auf den Ref (nach CheckFresh; ist der Ref neuer, bleibt er stehen und restore warnt mit 'jaira pull <h>'). show (nur ref-only) und fetch nennen ein archiviertes Ticket 'archived', fetch meldet es nicht als 'a ticket is yours'. archive sagt bei ungetrackter Datei, dass das Committen nur den Eintrag festhaelt, bei getrackter, dass ein Branch mit der Datei es bis zum Merge zeigt. Doku und zwei Release-Zeilen."
 outcome-why: "Bisher schrieb archive den unveraenderten Inhalt auf den Ref. Jeder andere Klon zeigte das Ticket weiter, bis der Snapshot-Lauf (alle 72 h) den Ref abraeumte, und das erst nach Commit und Merge der Archiv-Datei. Berk will, dass Archivieren wie create wirkt: sofort beim naechsten fetch, ohne Commit."
 outcome-resolves: "DoD 1: Markierung im Ref-Inhalt (store.go Archive -> recordFiled), Ausblenden an der einen Stelle Store.List, die board/list/next/resume lesen; Tests core/ticket/archiveref_test.go und internal/cli/archiveref_test.go (TestAnArchivedTicketLeavesTheOtherBoardAtItsNextFetch). DoD 2: Restore nimmt die Zeile per record wieder vom Ref; Tests TestRestoreTakesTheArchivedLineOffTheRef, TestRestoreDoesNotWriteOverANewerRef, TestARestoredTicketComesBackOnTheOtherBoard. DoD 3: der Ref wird im selben Befehl gesendet (afterCommand -> flushRefs); der cli-Test prueft, dass der andere Klon es ohne committete Archiv-Datei verliert; die Ausgabe sagt es, getrackt und ungetrackt getrennt (TestArchivingATrackedTicketSaysABranchKeepsShowingIt). DoD 4: core/release/notes/GWK31K.md. Handtest zweier Klone ueber ein lokales bare repo: B sieht nach fetch nichts mehr, nach restore beides wieder."
 executed-by: sonnet
-review-summary: none
+review-summary: |-
+  'jaira archive' schreibt auf den Ref den Dateiinhalt plus eine Zeile 'archived: <datum> <wer>' und sendet ihn im selben Befehl (store.go:193 recordFiled mit Markwert, :344).
+  Die Datei in .jaira/archive/ bleibt byte-gleich, updated-at bleibt gleich. Darum gilt ein spaeteres restore nicht als stale.
+  Store.List laesst ref-only Tickets mit dieser Zeile weg (store.go:907). Das ist die eine Stelle, ueber die Board (TUI), list, next und resume lesen.
+  Load findet sie weiter: 'jaira show' sagt 'off the board: archived <datum> <wer>, only on its ref', show --json traegt 'archived'.
+  'jaira restore' einer Datei aus .jaira/archive/ schreibt sie nach CheckFresh unveraendert, also ohne Zeile, zurueck auf den Ref. Ist der Ref neuer, bleibt er stehen; restore warnt auf stderr, rc 0.
+  'jaira fetch' zeigt bei markiertem Ref 'archived' statt der Lane, fetch --json traegt 'archived', und es kommt kein 'a ticket is yours'.
+  Die archive-Ausgabe trennt: ungetrackte Datei -> 'Every other board drops it ...; committing ... only keeps the record'; getrackte -> 'a branch that has this file shows it until this move is committed and merged there'. Ohne Remote keine Zeile.
+  Logbook bleibt unmarkiert. Dazu Hilfe, README, docs/COMMANDS.md, refsync-Kommentar und zwei Release-Zeilen.
 round: 2
-review-gaps: "folded recordArchived into recordFiled (core/ticket/store.go:193, one nil check/ReadFile/ErrNotRecorded pair; third arg is the archived value: Archive :344 passes '<date> <who>', Logbook :416 passes ''), chosen over 'recordFiled takes the bytes' because that moves the ReadFile and its ErrNotRecorded wrap into both callers and reads the file with no recorder; restore warning internal/cli/archive.go:154 uses the existing ticket.IDFromFilename (id.go:70) instead of filepath.Base(dst)[:26] - same handle for every name jaira writes, no panic on a short hand-named file - and inlines the one-use handle var; internal/cli/archiveref_test.go archivedOnAda uses the existing ticketByHandle (milestones_test.go:297) instead of ticket.At+Load, ticket import dropped. Left: Restore's ReadFile/ParseDoc/Decode/CheckFresh (store.go:712-727) - the same inline triple Load, LoadAnywhere and Mutate use, no helper exists, and Load(id) would go through resolve and the index cache, so not a cleanup; onBoard (cli archiveref_test.go:12) - handleFromList keys by title and fatals when missing, no bool helper exists; refRec (core/ticket/archiveref_test.go:15) - no other fake Recorder in core/ticket tests; no cost issue (Archive/Restore read once, List filter is one pass); outcome-what/-resolves still name recordArchived and pre-fold test lines - outcome is in-progress's field, not rewritten here (DoD proofs updated)"
+review-gaps: |-
+  DEFEKT (Randfall, von Hand nachgestellt, Schritte 16-19 im review-check):
+  - Eine Datei, die von einem markierten Ref gepullt wurde, traegt 'archived: <datum> <wer>' fuer immer.
+  - Jeder Schreibvorgang aus ihr (move, archive) haelt den Ref markiert: das Ticket wird gearbeitet und ist auf allen anderen Boards unsichtbar.
+  - 'jaira restore' dieser Datei meldet 'Restored ... to the board.' ohne Warnung, schickt aber die Zeile mit (store.go:727 sendet raw). Auf dem anderen Klon: fetch 'archived', list 'No tickets match.'
+  - Weg dorthin ohne --steal: der Archivierer selbst auf einem zweiten Klon macht 'jaira pull <h>' (ErrTaken trifft nur andere). pull sagt nichts von archived; 'jaira show' dort nennt es nur noch in --json.
+  - Fuer diesen Fall falsch: docs/COMMANDS.md restore-Zeile ('A ticket's archived line comes off its ref the same way'), README.md:586-587 ('jaira restore takes the line off again'), Release-Notiz Zeile 1 ('brings it back on every board'), restore-Hilfe.
+  - Pre-process Teil 2 hat nur angenommen: '--steal, fuer alle anderen bleibt sie verborgen'. Den eigenen zweiten Klon und das still falsche restore nicht.
+  - Fix-Idee: pull/refresh schreibt 'archived' leer in die Datei (Doc kann keinen Key loeschen; leer dekodiert als nicht archiviert). Nur Restore zu flicken reicht nicht: jeder spaetere Schreibvorgang aus der Datei markiert wieder.
+  NACHFOLGER (aus dem Code gelesen, nicht ausprobiert):
+  - gitref.Landed (gitref.go:770) findet mit 'rev-list -- .jaira/archive/<id>*' auch den Commit, der die Datei wieder entfernt. Ist die Archiv-Datei einmal auf master, raeumt der naechste Snapshot-Lauf den Ref auch nach einem restore ab; ref-only Boards verlieren das Ticket bis der restore gemergt ist. Nicht neu durch diesen Diff, schraenkt aber 'brings it back on every board' ein.
+  - docs/COMMANDS.md archive-Zeile sagt nicht 'nur mit Remote' (die Hilfe sagt es).
+  Trade-offs, auf denen ich stehe: last-writer-wins auf dem Ref (Teil 3); ein Branch mit getrackter Datei zeigt das Ticket bis zum Merge (Nachfolger 1, K6BGB0); Logbook unmarkiert; die getrackte Ausgabe weicht bewusst vom DoD-3-Satz ab (critique LOOP 1), weil der Satz dort falsch waere.
+  Nicht geprueft: go test (Berks Verbot). Die Tests existieren (core archiveref_test.go 44/87/113/142, cli 56/95/122). go vet ./core/... ./internal/... sauber, gofmt -l leer, Build ok.
 test-verdict: "pass: go test NOT run (Berk's order); ran instead gate (gofmt+go vet incl. test compile+go build at bb0facc1, OK) and hand tests on scratch two-clone setup: archive hides ticket on other clone at fetch (list/next/resume/board), restore brings back, show/fetch say archived, tracked/untracked output texts, stale-restore warning. All DoD 1-4 verified against tree."
+review-verdict: |-
+  Der Normalfall erfuellt DoD 1-4. Selbst durchgespielt mit lokalem bare repo und zwei Klonen: archive -> Ref auf origin traegt sofort die Zeile, Archiv-Datei ungetrackt; B fetch 'archived', list/next/resume leer; restore -> B sieht es wieder.
+  Ein echter Defekt im Randfall 'Datei von einem markierten Ref gepullt': restore meldet Erfolg, laesst das Ticket aber auf allen anderen Boards verborgen, und drei Doku-Saetze plus die Release-Notiz sagen das Gegenteil.
+  Meine Empfehlung: nicht so annehmen. Entweder zurueck nach in-progress (pull schreibt 'archived' leer, kleiner Fix), oder Berk nimmt den Randfall bewusst als Nachfolger und die drei Saetze werden eingeschraenkt.
+  Sonst keine Funde. Unsicher bin ich nur beim Snapshot-Nachfolger, den habe ich nur gelesen, nicht ausprobiert.
+review-round: 2
+review-check: |-
+  Alles in /tmp/gwk31k-check, eigenes HOME, eigener Binary. Ein frisches Terminal; am Ende schliessen. <H> ist der Handle aus Schritt 6, <datum> das Datum von heute.
+  1. mkdir -p /tmp/gwk31k-check && cd /home/berk/git/jAIra-GWK31K && go build -o /tmp/gwk31k-check/jaira ./cmd/jaira  -> keine Ausgabe.
+  2. cd /tmp/gwk31k-check && mkdir -p home && export HOME=/tmp/gwk31k-check/home JAIRA_HOME=/tmp/gwk31k-check/home/.jaira GIT_CONFIG_NOSYSTEM=1 PATH=/tmp/gwk31k-check:$PATH && which jaira  -> /tmp/gwk31k-check/jaira
+  3. git config --global user.name ada && git config --global user.email ada@example.invalid && git config --global init.defaultBranch master  -> keine Ausgabe.
+  4. git init -q --bare origin.git && git clone -q origin.git A 2>/dev/null && cd A && git commit -q --allow-empty -m init  -> keine Ausgabe.
+  5. jaira init >/dev/null && jaira share >/dev/null && git add .jaira .gitignore && git commit -q -m board && git push -q origin master  -> keine Ausgabe.
+  6. jaira create "Probe archiv" --goal g --context c --dod d --assignee ada  -> 'Created <H>  Probe archiv' und 'On its ref, not on your disk ...'. Dann: H=<H>
+  7. jaira pull $H  -> '<H> is yours: Probe archiv'.
+  8. cd .. && git clone -q origin.git B && cd B && git config user.name bob && jaira init >/dev/null  -> keine Ausgabe. B ist jetzt bob, ein Teammate.
+  9. jaira fetch && jaira list  -> '<H>   backlog      Probe archiv new ref-only', darunter Backlog mit '<H>  Probe archiv ... ada [DoD 0/1] [pull it]'.
+  10. cd ../A && jaira archive $H  -> drei Zeilen: 'Archived <H>  Probe archiv', 'Moved to .jaira/archive — restore it with ...', 'Every other board drops it at its next fetch; committing .jaira/archive/<datei> only keeps the record in the repository.'
+  11. git status --short .jaira  -> nur '?? .jaira/archive/'. Nichts committet.
+  12. cd ../B && jaira fetch && jaira list  -> '<H>   archived     Probe archiv new ref-only', dann 'No tickets match.'
+  13. jaira show $H | head -1  -> 'off the board: archived <datum> ada, only on its ref'
+  14. cd ../A && jaira restore $(ls .jaira/archive/)  -> 'Restored <datei> to the board.'
+  15. cd ../B && jaira fetch && jaira list  -> '<H>   backlog      Probe archiv new ref-only', und Backlog zeigt '<H>' wieder. Bis hier: so soll es sein.
+  Der Defekt aus review-gaps:
+  16. cd ../A && jaira archive $H  -> letzte Zeile wieder 'Every other board drops it ...'.
+  17. cd ../B && git config user.name ada && jaira fetch && jaira pull $H && grep '^archived' .jaira/tickets/*.md  -> '<H> is yours ...' und am Ende 'archived: <datum> ada'. B ist jetzt ada auf einem zweiten Klon; die Datei traegt die Marke.
+  18. jaira archive $H && jaira restore $(ls .jaira/archive/)  -> endet mit 'Restored <datei> to the board.', keine Warnung.
+  19. cd ../A && jaira fetch && jaira list  -> '<H>   archived ...' und 'No tickets match.' Das ist der Defekt: nach dem restore muesste A das Ticket als ref-only sehen.
+  20. cd / && rm -rf /tmp/gwk31k-check, dann das Terminal schliessen (HOME und PATH sind darin umgestellt).
 ---
 
 # Ein archiviertes Ticket verschwindet sofort von allen Boards, nicht erst wenn der Snapshot den Ref abraeumt
