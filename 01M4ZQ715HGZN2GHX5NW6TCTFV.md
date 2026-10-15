@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-15T12:19:30Z
+updated-at: 2026-10-15T12:20:18Z
 updated-by: BeMuCa
 ---
 
@@ -49,4 +49,10 @@ updated-by: BeMuCa
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-15 12:20 · BeMuCa** — Berk am 15.10. (Ergaenzung): '6TCTFV soll auch umgesetzt werden! Weil dann kann ein Milestone-Block als ein PR reinkommen. Alternativ gibt es aber auch noch die Option, dass man Tickets immer noch einzeln reinmergen will und Milestones nur als eine Sammlung nutzt; fuer den Fall kann man Milestones auch wieder loeschen.'
+Daraus zwei Arbeitsweisen, beide muessen gehen:
+- Block: der Milestone kommt als EIN PR. Ist sein letztes Ticket fertig, schlaegt jaira '/jaira-role-pr' fuer alle seine Tickets zusammen vor und danach das Ablegen des Milestones nach dem Merge.
+- Einzeln: jedes Ticket bekommt seinen eigenen PR, der Milestone ist nur eine Sammlung. Jedes Ticket, das done oder signoff erreicht, bekommt einen Vorschlag '/jaira-role-pr <id>'. Ist der Milestone komplett, bietet jaira an, ihn abzulegen oder zu loeschen, und schlaegt KEINEN Block-PR vor.
+Wie ein Milestone sagt, welche Arbeitsweise gilt (z.B. Feld 'pr: block|single' per milestone create/set, mit Default), entscheidet pre-process. Ist der Default nicht offensichtlich: Empfehlung + Frage an Berk ueber die human-Lane.
+Den PR oeffnet nie jaira oder ein Agent von sich aus: er wird nur vorgeschlagen; ein Mensch oeffnet ihn mit /jaira-role-pr.
+Parallel: N71NVG baut das Ablegen/Loeschen eines fertigen Milestones samt Tickets. Hier nur Vorschlaege mit den Kommandos, die auf master existieren ('jaira logbook <milestone>').
