@@ -28,7 +28,17 @@ type updateSetup struct {
 
 // skipped reports whether a file was left alone because a person edited it.
 func (u *updateSetup) skipped() bool {
-	return anySkipped(u.roleRuns, u.laneResults)
+	for _, r := range u.roleRuns {
+		if role.SkippedAny(r.results) {
+			return true
+		}
+	}
+	for _, l := range u.laneResults {
+		if l.Action == lane.RefreshSkipped {
+			return true
+		}
+	}
+	return false
 }
 
 // json adds the keys of the switches that were given to the payload a bare update emits.
@@ -122,20 +132,6 @@ func laneResultsJSON(results []lane.Refreshed) []map[string]any {
 		out = append(out, map[string]any{"lane": r.ID, "path": r.Path, "action": r.Action})
 	}
 	return out
-}
-
-func anySkipped(runs []roleRun, lanes []lane.Refreshed) bool {
-	for _, r := range runs {
-		if role.SkippedAny(r.results) {
-			return true
-		}
-	}
-	for _, l := range lanes {
-		if l.Action == lane.RefreshSkipped {
-			return true
-		}
-	}
-	return false
 }
 
 // hintLines says, for the parts a bare update did not touch, that they are behind and which
