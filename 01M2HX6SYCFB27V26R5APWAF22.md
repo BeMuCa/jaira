@@ -1,7 +1,7 @@
 ---
 id: 01M2HX6SYCFB27V26R5APWAF22
 title: "jaira update bringt das ganze Setup nach, nicht nur den Textblock"
-status: review
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Nach einem Upgrade des Binaries genuegt ein Befehl, um ein Board nachzuziehen: Agent-Block, Rollen und Lanes - und er sagt vorher, was er anfassen wuerde."
@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T14:11:08Z
+updated-at: 2026-10-15T14:11:10Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -48,7 +48,7 @@ review-summary: |-
   - 'jaira self upgrade': startet nach dem Ersetzen das NEUE Binary als Kindprozess: '<ziel> -C <dir> update --roles'. Exit 3 des Kinds ist kein Fehler. Startet es nicht: eine Warnzeile, Upgrade bleibt Exit 0. JSON bekommt 'setup' und 'setup_exit'. Lanes nicht.
   - Warnung: internal/cli/skillsnudge.go, aufgerufen aus openStore. Einmal je Binary-Version (Stempel $JAIRA_HOME/skills-check/version) eine stderr-Zeile, wenn persoenliche Skills fehlen oder alt sind. Still bei dev-Build, update und roles install.
   - Doku: README, docs/COMMANDS.md, docs/AGENTS.md. 8 Zeilen in core/release/notes/PWAF22.md.
-round: 2
+round: 3
 review-gaps: |-
   DEFEKT (Notiz 'review:' geschrieben):
   - Zwei neue Tests werden im Race-Lauf rot. Nicht gelaufen; gelesen und mit einem Binary in Version 1.0.0 nachgestellt.
