@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T13:15:38Z
+updated-at: 2026-10-15T13:15:41Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -44,7 +44,8 @@ claimed-at: 2026-10-15T13:12:45Z
   proof: Entscheidung als Notiz 12:34 'Entscheidung DoD 2'; update.go: ohne --roles/--lanes nur Block+Stempel, JSON unveraendert; Test TestUpdateWithoutSwitchesWritesOnlyTheBlock (updatesetup_test.go:133); Handlauf: nackter update aendert nur CLAUDE.md/AGENTS.md (sha vorher/nachher)
 - [x] Der Befehl sagt vor dem Schreiben, was er anfassen wuerde, und was er auslaesst weil ein Mensch es geaendert hat - wie 'jaira roles install' es schon tut.
   proof: jaira update --dry-run: update.go:135 PreviewAgentFiles, updatesetup.go would-Zeilen + 'nothing was written (--dry-run)', gleicher Exit-Code; Tests TestUpdateDryRunWritesNothing (updatedry_test.go:20), TestUpdateDryRunExitCodeMatchesTheRealRun (:50); Handlauf: exit 3, keine Datei geaendert, Stempel unveraendert
-- [ ] Eine Zeile je Aenderung in core/release/notes/PWAF22.md, als Anweisung an den Leser formuliert und wahr
+- [x] Eine Zeile je Aenderung in core/release/notes/PWAF22.md, als Anweisung an den Leser formuliert und wahr
+  proof: core/release/notes/PWAF22.md: 8 Zeilen, je eine pro Aenderung (roles install, update --roles, --lanes, --dry-run, nackter update, self upgrade, Warnung, jaira-Skill)
 - [ ] jaira self upgrade fuehrt danach jaira update und die Rollen-Installation an den Orten aus, an denen Rollen installiert sind (global und/oder im Projekt), und sagt, was es angefasst hat; Test
 - [ ] Sind installierte Skills (jaira, jaira-role-*) aelter als das laufende Binary, warnt jaira einmal und nennt den Befehl, der sie nachzieht; Test
 
