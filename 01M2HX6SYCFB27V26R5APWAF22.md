@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T12:49:25Z
+updated-at: 2026-10-15T12:49:38Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -55,7 +55,7 @@ claimed-at: 2026-10-15T12:36:39Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 - [x] 1 core/shipped: manifest core/shipped/shipped.sha256 ('<sha256>  <repo path>' per version of every installed file) + shipped.go Known(path,b)/Line(path,b) + scripts/shipped-history.sh (bash, --full-history -m, maps lanes/<id>.md and .claude/skills/jaira history, refuses shallow clones, adds working-tree versions) + .gitattributes eol=lf pins; tests first: well-formed lines, Known per path+bytes, every listed path exists
-- [ ] 2 core/role/install.go: writeFile recognises an older shipped version (new Action Updated, written without --force) + dryRun param on install/Agent.Install; fixture core/role/testdata (v0.4.0 jaira-role-acceptance SKILL.md); tests first: TestEveryInstalledFileIsAShippedVersion, TestInstallReplacesAnOlderShippedVersion, TestInstallDryRunWritesNothing; internal/cli/roles.go: printRoleResults/roleResultsJSON extracted, 'updated' lines + count, help text; release-note line
+- [~] 2 core/role/install.go: writeFile recognises an older shipped version (new Action Updated, written without --force) + dryRun param on install/Agent.Install; fixture core/role/testdata (v0.4.0 jaira-role-acceptance SKILL.md); tests first: TestEveryInstalledFileIsAShippedVersion, TestInstallReplacesAnOlderShippedVersion, TestInstallDryRunWritesNothing; internal/cli/roles.go: printRoleResults/roleResultsJSON extracted, 'updated' lines + count, help text; release-note line
 - [ ] 3 core/lane/refresh.go: RefreshShipped(root, dryRun) - unchanged / updated (older shipped version) / skipped (edited), only lanes the board holds and jaira ships; fixture core/lane/testdata (catalogue testing.md before 2fb8f177); tests first incl. TestEveryBuiltinLaneIsAShippedVersion
 - [ ] 4 core/role/target.go: Installed(root) []Target (own project dir per agent, then personal; only dirs already holding roles; deduped) + Behind(results); tests first
 - [ ] 5 core/board/announce.go: PreviewAgentFiles(root, choice, lanes) by threading dry through announceIn/announceInAgentFile/removeBlock/setClaudeImport (lines 397-576 only, not agentNote); test: preview names what the write does and writes nothing
