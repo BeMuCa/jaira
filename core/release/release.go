@@ -64,7 +64,7 @@ func composeNotes(md string, fsys fs.FS) []Entry {
 			versions = append(versions, d.Name())
 		}
 	}
-	sort.Slice(versions, func(i, j int) bool { return newer(versions[i], versions[j]) })
+	sort.Slice(versions, func(i, j int) bool { return Newer(versions[i], versions[j]) })
 	for _, v := range versions {
 		out = append(out, entryOf(fsys, path.Join(notesDir, v), v))
 	}
@@ -82,8 +82,8 @@ func entryOf(fsys fs.FS, dir, version string) Entry {
 	return e
 }
 
-// newer compares two X.Y.Z versions number by number.
-func newer(a, b string) bool {
+// Newer reports whether version a is newer than b, comparing X.Y.Z numbers one by one.
+func Newer(a, b string) bool {
 	as, bs := strings.Split(a, "."), strings.Split(b, ".")
 	for i := 0; i < len(as) && i < len(bs); i++ {
 		x, _ := strconv.Atoi(as[i])
@@ -93,6 +93,13 @@ func newer(a, b string) bool {
 		}
 	}
 	return len(as) > len(bs)
+}
+
+// Important splits the marker off a change: a line written "- ! text" is read
+// by changeLines as the plain change "! text", and Important returns text.
+// The marker is "! " with the space; "!text" is not one.
+func Important(change string) (string, bool) {
+	return strings.CutPrefix(change, "! ")
 }
 
 // changeLines is parseNotes for a note file, which has no headings: every
