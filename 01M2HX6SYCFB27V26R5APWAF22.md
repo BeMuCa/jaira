@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T12:35:32Z
+updated-at: 2026-10-15T12:35:35Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -101,3 +101,13 @@ claimed-at: 2026-10-15T12:05:54Z
 - Installiert NEBEN den Rollen wie das cockpit-Mod, KEINE Rolle: 'roles list' zeigt ihn nicht, InstalledIn zaehlt ihn nicht. Sonst wuerde 'update --roles' in diesem Repo alle Rollen nach .claude/skills schreiben.
 - Die 33 alten Versionen aus .claude/skills/jaira kommen unter dem neuen Pfad in die Liste - Berks von Hand kopierte ~/.claude/skills/jaira wird damit erkannt.
 - Folge, die Berk bestaetigen sollte: 'jaira roles install --project' schreibt in jedem Repo auch .claude/skills/jaira/SKILL.md.
+- **2026-10-15 12:35 · BeMuCa** — Entscheidung DoD 4 - Release-Notizen, je Schritt eine Zeile in core/release/notes/PWAF22.md, im selben Commit wie der Code:
+- roles install: Datei gleich einer frueheren ausgelieferten Version wird ohne --force ersetzt und als 'updated' gemeldet.
+- update --roles (wo installiert; ausserhalb eines Boards nur persoenlich).
+- update --lanes (bearbeitete Lane: genannt, nicht angefasst, Exit 3).
+- update --dry-run.
+- nackter update: schreibt weiter nur den Block, nennt aber, was zurueckhaengt.
+- self upgrade fuehrt danach 'jaira update --roles' des neuen Binaries aus; Lanes bleiben Handarbeit.
+- einmalige stderr-Zeile je Version, wenn persoenliche Skills aelter sind.
+- (nur mit Schritt 9) roles install schreibt den jaira-Skill mit.
+Wortlaut steht im Design (Scratchpad design.md, je Schritt). Kein '- !'-Marker - der gehoert zu T8A8KM.
