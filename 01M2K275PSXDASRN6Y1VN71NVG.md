@@ -4,7 +4,7 @@ title: "Ein fertiger Milestone geht ins Archiv, und ein falscher laesst sich loe
 status: backlog
 ready: true
 creator: Alexander Sacharov
-assignee: Alexander Sacharov
+assignee: BeMuCa
 goal: "Wer eine Runde Arbeit abgeschlossen hat, nimmt ihren Milestone in einem Griff vom Board - Datei und Ref weg, Inhalt weiter lesbar - und wer sich vertan hat, loescht ihn ganz."
 context: |-
   Milestones entstehen in 0YGWXQ (.jaira/milestones/<name>.md plus refs/jaira/milestones/<name>). Es gibt keinen Weg, einen wieder wegzubekommen.
@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-13T12:02:08Z
+updated-at: 2026-10-15T12:19:10Z
 updated-by: BeMuCa
 ---
 
