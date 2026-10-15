@@ -1,7 +1,7 @@
 ---
 id: 01M2K275PSXDASRN6Y1VN71NVG
 title: "Ein fertiger Milestone geht ins Archiv, und ein falscher laesst sich loeschen"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: BeMuCa
@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T13:25:16Z
+updated-at: 2026-10-15T13:25:55Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
@@ -46,6 +46,7 @@ review-summary: |-
   [NACHFOLGER] internal/cli/milestones.go:749-753 reportDropped — stderr-JSON-Schluessel 'milestones_dropped' mit Dateinamen, waehrend migrateMilestones (:764-767) und fetch fuer dasselbe Ereignis 'milestones_deleted' mit Namen nehmen; ein reportDeleted(names) fuer beide Stellen.
   [NACHFOLGER] core/milestone/migrate.go:78-83 — DeletedOnRef ist exportiert, hat aber nur einen Aufrufer im eigenen Paket (der Test ist package milestone); klein schreiben oder wie tip in Migrate inline.
   [NACHFOLGER] core/refsync/refsync.go:307 + internal/cli/fetch.go:149 — IncomingMilestones gibt jetzt sechs, fetchMilestones sieben Werte zurueck (fuenfmal nil im Frueh-Return), obwohl refsync.MilestonesFetched genau diese Felder hat; die Struktur zurueckgeben. Eigenes Ticket, weil fetch.go geteilter Code ist.
+round: 2
 ---
 
 # Ein fertiger Milestone geht ins Archiv, und ein falscher laesst sich loeschen
