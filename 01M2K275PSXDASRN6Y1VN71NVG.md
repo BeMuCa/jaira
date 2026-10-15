@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T13:45:29Z
+updated-at: 2026-10-15T13:45:31Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
@@ -65,7 +65,8 @@ review-gaps: |-
   proof: TestADeletedMilestoneLeavesTheOtherCloneAndStaysDeleted milestoneref_test.go:1058 (ID-Datei), TestAnOldFileOfADeletedMilestoneIsNotPushedAgain :1140 (altes Format), TestAQueuedWriteDoesNotBringADeletedMilestoneBack milestoneid_test.go:563 (kompiliert, nicht ausgefuehrt); Handtest case-b-d.sh/case-c.sh: Ref bleibt als Marke 'status: filed + deleted: <datum> ada', grace fetch entfernt Datei, kein Wiederhochschieben, queued edit verworfen mit Meldung
 - [x] core/release/notes/N71NVG.md hat je eine '- '-Zeile (eine Zeile, nie umbrochen) fuer jede Aenderung, die ein Benutzer merkt: logbook <milestone> legt die Tickets mit ab, 'jaira milestone delete', und 'jaira fetch' meldet geloeschte Milestones
   proof: core/release/notes/N71NVG.md: 3 einzeilige '- '-Zeilen (logbook <milestone>, fetch, milestone delete); Wortlaut stimmt mit Handtest-Ausgabe ueberein (Not filed, deleted elsewhere, 'was deleted elsewhere; your edit was dropped with it')
-- [ ] Loeschen laesst die Tickets des Milestones unberuehrt (die Ausgabe nennt, wie viele ihre Gruppe verlieren), haengt Nachfolger auf der Roadmap an seine Vorgaenger um wie 'milestone set --no-roadmap', gibt den Namen frei und verweigert einen abgelegten Milestone (Exit 3)
+- [x] Loeschen laesst die Tickets des Milestones unberuehrt (die Ausgabe nennt, wie viele ihre Gruppe verlieren), haengt Nachfolger auf der Roadmap an seine Vorgaenger um wie 'milestone set --no-roadmap', gibt den Namen frei und verweigert einen abgelegten Milestone (Exit 3)
+  proof: TestDeleteTakesAMilestoneOffAndLeavesItsTickets milestones_test.go:1194, TestDeleteRewiresTheRoadmap :1243, TestADeletedNameIsFreeAgain core/milestone/write_test.go:427, TestDeleteRefusesAFiledMilestone :1312 (kompiliert, nicht ausgefuehrt); Handtest case-t1.sh/case-l3.sh: '1 ticket(s) stay where they are', Ticket bleibt auf dem Board, 'keepme' nach Loeschen neu anlegbar (neue ID), 'c now comes after DDZ20W', abgelegt -> Exit 3
 
 ## Options
 
