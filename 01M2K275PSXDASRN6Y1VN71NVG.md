@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T13:46:11Z
+updated-at: 2026-10-15T14:02:58Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
@@ -34,7 +34,19 @@ outcome-what: "'jaira logbook <milestone>' legt den fertigen Milestone jetzt sam
 outcome-why: "Berk (15.10.): ein fertiger Milestone soll als Ganzes vom Board, ohne Reste. Und am 14.10. kamen sechs auf origin geloeschte Test-Milestones zurueck, weil Alex' Klon die alten Dateien neu migriert und hochgeschoben hat - ein Loeschen, das nur den Ref nimmt, macht jeder Klon mit der Datei rueckgaengig."
 outcome-resolves: "DoD 1/4: logbookMilestone (internal/cli/logbook.go) prueft wie bisher alle Mitglieder, legt dann erst die Tickets und zuletzt den Milestone in denselben Ordner (TestFilingAMilestoneFilesItsFinishedTickets, TestARefusedMilestoneFilingFilesNoTicket, TestAMilestoneFilingFinishesWhatAnEarlierRunStarted, TestFilingAMilestoneLeavesATicketThatIsOnlyOnItsRef). DoD 5: Marke statt Ref-Loeschen, ein Praedikat Deleted(), an allen Schreibwegen von refsync und in Migrate befolgt (5+1 refsync-Tests, TestMigrateDropsAnOldFileWhoseMilestoneWasDeleted, Zwei-Klon-Tests TestADeletedMilestoneLeavesTheOtherCloneAndStaysDeleted und TestAnOldFileOfADeletedMilestoneIsNotPushedAgain = 14.10.). DoD 7: milestone.Delete haengt Nachfolger um, laesst Tickets, verweigert abgelegte (TestDelete*). DoD 6: drei Zeilen in core/release/notes/N71NVG.md. Tests geschrieben und kompiliert (go vet), nicht ausgefuehrt (Berks Anweisung); Handtest des Treibers siehe Notiz."
 executed-by: sonnet
-review-summary: none
+review-summary: |-
+  Zwei Dinge sind gebaut.
+
+  (1) 'jaira logbook <milestone>' legt jetzt den Milestone UND seine Tickets ab: erst jedes Mitglied, das in diesem Klon als Datei liegt (Commits gestempelt wie bei 'jaira logbook <id>'), dann den Milestone - alles in denselben Ordner .jaira/logbook/<kuerzel>-<datum>/, der Milestone unter milestones/. Die Sperre ist unveraendert: steht noch ein Mitglied vor der Terminal-Lane, wird gar nichts abgelegt, Exit 3 (milestone_unfinished), jedes offene Ticket mit seiner Lane genannt. Ein fertiges Mitglied, das dieser Klon nur auf seinem Ref sieht, wird nicht abgelegt, sondern genannt ('Not filed: ...', --json ref_only). Scheitert ein Ticket unterwegs, steht der Milestone noch und derselbe Befehl macht weiter. --json hat neu 'tickets' und 'ref_only'.
+
+  (2) Neu 'jaira milestone delete <milestone>'. Der Ref wird NICHT geloescht, sondern bekommt eine Marke: 'status: filed' plus 'deleted: <datum> <wer>', Ticketzeilen bleiben. Die Datei hier geht, die Tickets bleiben unberuehrt (Ausgabe nennt die Zahl), Roadmap-Nachfolger haengen danach an den Vorgaengern, ein abgelegter Milestone wird verweigert (Exit 3), der Name ist wieder frei. Jeder Klon befolgt die Marke ueber EIN Praedikat, Milestone.Deleted():
+  - 'jaira fetch' und die TUI entfernen die Datei, auch ein altes <name>.md, und melden 'Milestones deleted elsewhere' (--json milestones_deleted).
+  - Migrate migriert ein altes <name>.md eines geloeschten Milestones nicht mehr, sondern entfernt es.
+  - Ein wartender Schreibvorgang, den die Marke abweist, wird verworfen ('was deleted elsewhere; your edit was dropped with it').
+  - Ein neuer Schreibvorgang ueber einen schon bekannten Marken-Ref wird gar nicht erst eingereiht.
+  Alte 0.5.x-Klone verstehen nur 'status: filed' und blenden ihn aus.
+
+  Dazu: Hilfe, README, docs/COMMANDS.md, docs/AGENTS.md, Agent-Block (announce.go; CLAUDE.md/AGENTS.md von Hand, der Milestone-Absatz ist byte-gleich mit dem, was 'jaira init' schreibt), Skill, drei Zeilen Release-Notiz und 26 neue Go-Tests (nur kompiliert).
 round: 2
 review-gaps: |-
   removed: core/milestone/write.go Edit (:122) and Delete (:162) carried the same reattach loop - now one helper closeChain next to ReattachSuccessors (core/milestone/layout.go:278) (L7)
