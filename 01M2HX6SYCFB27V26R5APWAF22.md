@@ -1,7 +1,7 @@
 ---
 id: 01M2HX6SYCFB27V26R5APWAF22
 title: "jaira update bringt das ganze Setup nach, nicht nur den Textblock"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Nach einem Upgrade des Binaries genuegt ein Befehl, um ein Board nachzuziehen: Agent-Block, Rollen und Lanes - und er sagt vorher, was er anfassen wuerde."
@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T13:33:14Z
+updated-at: 2026-10-15T13:33:17Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -47,6 +47,7 @@ review-summary: |-
   [NACHFOLGER] core/role/install.go:120-124: Kommentar 'They sit next to the go:embed directories they mirror' stimmt fuer modKey nicht (liegt in core/role, spiegelt core/mod/builtin). Alternative: mod.Key(id, rel) in core/mod/mod.go neben dessen embed, oder Kommentar korrigieren.
   [NACHFOLGER] internal/cli/roles.go:131 setzt updateInProgress nur, um die Skills-Warnung stumm zu schalten; der Name fuehrt jetzt in die Irre. Alternative: in setupInProgress umbenennen (update.go, roles.go, skillsnudge.go).
   [NACHFOLGER] internal/cli/self.go:69-79 Long nennt nicht, dass upgrade danach 'jaira update --roles' des neuen Binaries startet (README/COMMANDS tun es). Alternative: ein Satz im Long.
+round: 2
 ---
 
 # jaira update bringt das ganze Setup nach, nicht nur den Textblock
