@@ -1,7 +1,7 @@
 ---
 id: 01M4ZQ7QQB5YBTPPCCEMGWK31K
 title: "Ein archiviertes Ticket verschwindet sofort von allen Boards, nicht erst wenn der Snapshot den Ref abraeumt"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -22,14 +22,14 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T14:58:41Z
+updated-at: 2026-10-15T14:58:58Z
 updated-by: BeMuCa
 outcome-what: "'jaira archive' schreibt auf den Ref den Dateiinhalt plus eine Zeile 'archived: <datum> <wer>' (core/ticket/store.go Archive -> recordFiled mit Markwert; Logbook gibt '' und bleibt unmarkiert); die Datei in .jaira/archive/ bleibt byte-gleich. Store.List laesst ref-only Tickets mit dieser Zeile weg, also auch board, list, next, resume. 'jaira restore' schreibt die Datei ohne Zeile zurueck auf den Ref (nach CheckFresh; ist der Ref neuer, bleibt er stehen und restore warnt mit 'jaira pull <h>'). 'jaira pull' eines markierten Refs leert die Zeile auf dem Ref und in der Datei (refresh: nur in der Datei), damit eine Datei nie eine Marke traegt; pull sagt es. show (nur ref-only) und fetch nennen ein archiviertes Ticket 'archived', fetch meldet es nicht als 'a ticket is yours'. archive sagt bei ungetrackter Datei, dass das Committen nur den Eintrag festhaelt, bei getrackter, dass ein Branch mit der Datei es bis zum Merge zeigt. Doku (README, COMMANDS.md, Hilfen, Kommentare) und drei Release-Zeilen."
 outcome-why: "Bisher schrieb archive den unveraenderten Inhalt auf den Ref. Jeder andere Klon zeigte das Ticket weiter, bis der Snapshot-Lauf (alle 72 h) den Ref abraeumte, und das erst nach Commit und Merge der Archiv-Datei. Berk will, dass Archivieren wie create wirkt: sofort beim naechsten fetch, ohne Commit."
 outcome-resolves: "DoD 1: Markierung im Ref-Inhalt (store.go Archive -> recordFiled), Ausblenden an der einen Stelle Store.List, die board/list/next/resume lesen; Tests core/ticket/archiveref_test.go und internal/cli/archiveref_test.go (TestAnArchivedTicketLeavesTheOtherBoardAtItsNextFetch). DoD 2: Restore nimmt die Zeile per record wieder vom Ref; damit das auch fuer eine gepullte Datei gilt, leert pull die Marke (core/refsync/refsync.go unmark; TestPullTakesTheArchiveMarkOff, TestRefreshWritesTheFileWithoutTheArchiveMark); Tests TestRestoreTakesTheArchivedLineOffTheRef, TestRestoreDoesNotWriteOverANewerRef, TestARestoredTicketComesBackOnTheOtherBoard. DoD 3: der Ref wird im selben Befehl gesendet (afterCommand -> flushRefs); der cli-Test prueft, dass der andere Klon es ohne committete Archiv-Datei verliert; die Ausgabe sagt es, getrackt und ungetrackt getrennt (TestArchivingATrackedTicketSaysABranchKeepsShowingIt). DoD 4: core/release/notes/GWK31K.md. go test nie gelaufen (Berks Verbot): gate (gofmt/vet/build) je Commit, alle neuen Tests von Hand gegen den Code verfolgt, Handtests zweier/dreier Klone ueber ein lokales bare repo inkl. Board per tmux."
 executed-by: opus
 review-summary: "LOOP (comment only, behaviour right): internal/tui/refs.go:157-158 'An archived ticket is off the board; announcing it as mine would point at a card that is not there' is false on a board that has the ticket file (case a of critique 3): Incoming reports Archived for that ref too (core/refsync/refsync.go:944-1009, Local=true), the card stays until the archive move is merged, and the condition still skips it - correctly, like internal/cli/fetch.go:216. Write instead: '// An archived ticket is not announced as mine, as jaira fetch does not (internal/cli/fetch.go:216): on a board that has it only on its ref the card has just gone.' Same class in internal/tui/refs_test.go:234-235 'A ticket archived on another board is off this one too': scope it to the case the test builds (Local false): 'A ticket archived on another board that this board has only on its ref is off it, so the board must not say it is mine.'"
-round: 7
+round: 8
 review-gaps: |-
   1. FUND: Das Board (TUI) meldet ein anderswo archiviertes Ticket als deins.
   internal/tui/refs.go:157 prueft nur 'a.Mine && a.Changed'. Die CLI hat dafuer 'a.Archived != ""' bekommen (internal/cli/fetch.go:216), die TUI nicht.
