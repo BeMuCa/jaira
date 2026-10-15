@@ -10,6 +10,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+
+	"github.com/BeMuCa/jaira/core/release"
 )
 
 func makeBoard(t *testing.T, root, name string) string {
@@ -398,5 +400,54 @@ func TestHomeStatsCountLogbookEntriesPerDayAcrossBoards(t *testing.T) {
 	h.Update(tea.KeyPressMsg{Code: 's', Text: "s"})
 	if out := stripANSI(h.render()); strings.Contains(out, "logbook entries per day") {
 		t.Errorf("second s did not hide the chart:\n%s", out)
+	}
+}
+
+// lineIndex is the row whose whole text is want, or -1.
+func lineIndex(out, want string) int {
+	for i, l := range strings.Split(out, "\n") {
+		if strings.TrimSpace(l) == want {
+			return i
+		}
+	}
+	return -1
+}
+
+func TestHomeWOpensReleaseNotesNewestFirst(t *testing.T) {
+	all := release.Since("")
+	if len(all) < 2 {
+		t.Skip("needs at least two releases with notes")
+	}
+	root := t.TempDir()
+	h := newHome(t, []string{makeBoard(t, root, "alpha")}, 120, 4000)
+
+	h.Update(tea.KeyPressMsg{Code: 'w', Text: "w"})
+	if h.notes == nil {
+		t.Fatal("w did not open the release notes")
+	}
+	out := stripANSI(h.render())
+	newest, older := lineIndex(out, all[0].Version), lineIndex(out, all[1].Version)
+	if newest < 0 || older < 0 || newest > older {
+		t.Fatalf("want %s before %s, got rows %d and %d:\n%s", all[0].Version, all[1].Version, newest, older, out)
+	}
+
+	h.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
+	if h.notes != nil || !strings.Contains(stripANSI(h.render()), "alpha") {
+		t.Error("esc did not return to the project list")
+	}
+}
+
+func TestHomeHintNamesTheReleaseNotesKey(t *testing.T) {
+	root := t.TempDir()
+	for _, w := range []int{120, 40} {
+		out := stripANSI(newHome(t, []string{makeBoard(t, root, "alpha")}, w, 40).render())
+		if !strings.Contains(out, "w release notes") {
+			t.Errorf("width %d: hint line does not name %q:\n%s", w, "w release notes", out)
+		}
+		for _, l := range strings.Split(out, "\n") {
+			if lipgloss.Width(l) > w {
+				t.Errorf("width %d: line is %d wide: %q", w, lipgloss.Width(l), l)
+			}
+		}
 	}
 }
