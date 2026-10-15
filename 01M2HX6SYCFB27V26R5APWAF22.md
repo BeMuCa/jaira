@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T12:56:54Z
+updated-at: 2026-10-15T12:57:06Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -130,3 +130,4 @@ Wortlaut steht im Design (Scratchpad design.md, je Schritt). Kein '- !'-Marker -
 - Folge, die Berk beim signoff zuruecknehmen kann: 'jaira roles install --project' schreibt in jedem Repo auch .claude/skills/jaira/SKILL.md. Der Schritt ist ein eigener Commit und laesst sich allein zuruecknehmen.
 - Offen fuer Berk (nicht in diesem Ticket): die Dev-Build-Verweigerung von 'self upgrade' (self.go:80-84), und Rollen, die mit --into installiert wurden (update --roles und die Warnung sehen sie nicht).
 - **2026-10-15 12:50 · BeMuCa** — Schritt 1-2: das Manifest hat 438 Zeilen (48824 Bytes), erzeugt mit scripts/shipped-history.sh auf dem Worktree. Skript braucht bash (Prozess-Substitution), kein sh. Mod-Dateien types/index.d.ts sind im Manifest (core/mod/mod.go ueberspringt nur .claude-plugin/types, nicht types/). Die .gitattributes-Pins fuer core/role/testdata und core/lane/testdata stehen schon in Schritt 1.
+- **2026-10-15 12:57 · BeMuCa** — Step 5: dry chooseAgentFiles skips setClaudeImport when the dry removeBlock said CLAUDE.md would be deleted (file still exists in dry, real run finds none) - else preview would add an import line the write never does. Covered by 'agents, claude file deleted' case. Step 4 --done tick raced the --doing call once; retried.
