@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T13:07:53Z
+updated-at: 2026-10-15T13:07:56Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
@@ -104,3 +104,6 @@ Neu durch E70WYN: Milestone.HoldsName() - eine Marke mit renamed-to haelt den Na
 - 'jaira milestone delete' fragt nicht nach, auch nicht bei einem Milestone mit Tickets. Die Marke behaelt die Ticketzeilen, der Inhalt ist also auf dem Ref noch lesbar. Empfehlung: keine Rueckfrage, kein --force; die Ausgabe nennt die Zahl der Tickets.
 - Kein 'jaira restore' fuer einen geloeschten Milestone. Loeschen ist fuer Fehler; wer ihn wieder will, legt ihn neu an.
 - **2026-10-15 12:56 · BeMuCa** — Korrektur zu Notiz [E]: ein Mitglied, das hier nur auf seinem Ref liegt, haelt die Sperre WEITER, wenn es die Terminal-Lane nicht erreicht hat - die Sperre ist unveraendert (s.Load liest auch Ref-only-Tickets). Nur ein FERTIGES Ref-only-Mitglied wird nicht abgelegt, sondern genannt (ref_only). Das passt zu DoD 4: offene Arbeit, egal wo die Datei liegt, haelt den Milestone.
+- **2026-10-15 13:07 · BeMuCa** — Schritt 4: mergeRefused verwirft den Eintrag bei jeder Marke als Gewinner, auch wenn der Eintrag selbst eine Marke war (zwei Klone loeschen gleichzeitig) - die Marke steht dann schon, nichts zu mergen.
+Alter Namens-Ref prueft ref.Deleted() ODER MilestoneDeleted(ref.ID), vor adoptOldRef - sonst haette AdoptOld in die ID-Datei geschrieben.
+milestones.go migrateMilestones meldet entfernte Namen jetzt per warnRef (milestones_deleted), sonst verschwaende die Datei dort still.
