@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T14:02:58Z
+updated-at: 2026-10-15T14:03:00Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
@@ -49,16 +49,17 @@ review-summary: |-
   Dazu: Hilfe, README, docs/COMMANDS.md, docs/AGENTS.md, Agent-Block (announce.go; CLAUDE.md/AGENTS.md von Hand, der Milestone-Absatz ist byte-gleich mit dem, was 'jaira init' schreibt), Skill, drei Zeilen Release-Notiz und 26 neue Go-Tests (nur kompiliert).
 round: 2
 review-gaps: |-
-  removed: core/milestone/write.go Edit (:122) and Delete (:162) carried the same reattach loop - now one helper closeChain next to ReattachSuccessors (core/milestone/layout.go:278) (L7)
-  removed: core/milestone/migrate.go DeletedOnRef (exported, one caller) inlined as the type assertion at :178, the same shape StaleOld/tip use; its unit test TestDeletedOnRefIsFalseForARecorderThatKnowsNoRefs went with it - both branches stay covered by TestMigrateDropsAnOldFileWhoseMilestoneWasDeleted (marked test.md vs unmarked alpha.md) and every Migrate test on a plain fakeRec (L10)
-  removed: internal/cli/logbook.go:465 hand-written nil-to-[] for ref_only replaced by the existing strOrEmpty (internal/cli/tags.go:103)
-  left: L11 - IncomingMilestones/fetchMilestones 6-/7-tuples instead of refsync.MilestonesFetched; fetch.go is shared, own ticket
-  left: milestone.Result.Dropped holds file names and two callers trim .md (core/refsync/refsync.go:541, internal/cli/milestones.go:752 reportDropped). Holding names would drop reportDropped, but sort.Strings orders 'a-b.md' before 'a.md' and 'a' before 'a-b', so output order would change - not a cleanup
-  left: internal/tui/refs.go:135 append(append([]string{}, ...)) - slices.Concat needs a new import in a shared file
-  left: core/refsync/refsync.go mergeRefused parses the winner twice (new Deleted check, pre-existing name line) and RecordMilestone reads the ref twice per write (MilestoneDeleted, MilestoneSHA) - neither path is hot, folding them touches pre-existing lines
-  left: internal/cli/fetch.go:216 printDeletedMilestones repeats the heading-plus-names shape of printMilestones/printFiledMilestones - the file's own pattern, no shared printer exists
-  left: internal/cli/logbook.go ticket loop StampCommits+Logbook instead of FileLane - settled by critique (note 12:38)
-  checked, kept: appendNew (core/refsync/refsync.go:471), removeMilestoneFiles, outboxLen, incomingDeleted - grep found no existing equivalent; nothing this ticket added is uncalled, nothing it orphaned
+  Kein DEFECT gefunden. Kleineres, nach Gewicht:
+  - Die Go-Tests (26 neue, dazu umgebaute) wurden NIE ausgefuehrt, nur kompiliert: go vet ./... gruen, go build gruen, gofmt -l leer. Auch ich habe sie nicht laufen lassen (Berks Anweisung). Bis die volle Race-Suite vor dem PR laeuft, belegen nur die Handtests das Verhalten.
+  - TUI nicht im laufenden Binary geprueft: die Meldung 'milestones deleted elsewhere' und Kartenfarbe/M-Picker nach delete oder logbook. Nur der Code ist gelesen; LoadAll ist die eine Quelle.
+  - Board OHNE Remote: 'milestone delete' sagt 'Its ref stays up marked deleted, so every clone drops it'. Dort gibt es keinen Ref, und auch nach einem spaeteren 'jaira share' wird keine Marke nachgeschickt. Dasselbe Muster wie die alte logbook-Zeile 'Its ref stays up marked filed'.
+  - 'Logged milestone X (N ticket(s))' zaehlt alle Mitglieder, auch die nicht abgelegten ref-only (testing-Notiz).
+  - Die logbook-Hilfe verspricht 'running the same command again finishes it'. Scheitert ein Ticket an CheckFresh (Datei aelter als ihr Ref), scheitert auch der zweite Lauf, bis jemand 'jaira pull <id>' macht.
+  - Netz-Fall, im Binary gesehen: Klon kennt die Marke schon, die Datei lebt noch. 'milestone set x --goal ...' meldet dann 'updated' und die Warnung '... could not be queued for the remote: the milestone was deleted: <ID>'. Das nennt die ID statt des Namens, und 'updated' heisst hier eine Aenderung, die nirgends hingeht. Der naechste fetch entfernt die Datei.
+  - Ein Klon, der offline ein altes test.md migriert hat, bekommt beim naechsten Senden 'test was deleted elsewhere; your edit was dropped with it', obwohl er nichts editiert hat. Im Ergebnis richtig, im Wortlaut schief.
+  - Alte 0.5.1-Klone, geprueft mit dem installierten 0.5.1: Sie melden den geloeschten Milestone als 'filed elsewhere', mit Restore-Hinweis auf ein Logbuch, in dem nichts liegt. Die markierte Datei liegt bei ihnen unsichtbar auf der Platte, bis sie updaten. Zurueckgeschoben haben sie ihn nicht.
+  - 'jaira milestone --help' (internal/cli/milestones.go:66-67) sagt nur 'files it once all its tickets are finished', nicht dass die Tickets mitgehen. Unvollstaendig, nicht falsch.
+  - jaira web (internal/cli/web.go:115-121, webPush) meldet einen von der Marke verworfenen Schreibvorgang als '<name> is rejected', nicht als geloescht. Vor dem Ticket da; critique Runde 2 hat es gesehen und nicht erhoben.
 test-verdict: "pass: check.sh RC 0 (vet=0 build=0 gofmt=ok); Go-Tests nur kompiliert (go vet), NICHT ausgefuehrt (Berks Anordnung, Hauptsession faehrt die volle Race-Suite); DoD 1-7 verifiziert (2,3 neu geprueft, bleiben); Handtests case-b-d, case-c, case-logbook, case-l3, case-t1 (ref-only, Name frei), case-t2 (--json Exit 3) auf HEAD gelaufen"
 ---
 
