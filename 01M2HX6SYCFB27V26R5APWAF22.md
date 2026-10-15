@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T14:40:08Z
+updated-at: 2026-10-15T14:43:32Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -97,7 +97,7 @@ review-check: "Alles laeuft in einem eigenen Ordner /tmp/pwaf22-check. Unten ste
 ## Definition of Done
 
 - [x] 'jaira update' bringt mit den entsprechenden Schaltern Agent-Block, Rollen und Lanes in einem Aufruf auf den Stand des installierten Binaries. Nachgestellt an einem Board, dessen Block, Rollen und Lanes alle drei veraltet sind.
-  proof: internal/cli/update.go:125 (RefreshShipped vor lane.Load), internal/cli/updatesetup.go:68 refreshRoles; Test TestUpdateRolesLanesBringsAStaleBoardUpToDate (updatesetup_test.go:99); Handlauf 15.10. Block+Rollen+Lane veraltet -> 'update --roles --lanes' alle drei aktuell (Notiz 13:14, testing-Lauf 13:47)
+  proof: internal/cli/update.go:125 (RefreshShipped vor lane.Load), internal/cli/updatesetup.go:68 refreshRoles; Test TestUpdateRolesLanesBringsAStaleBoardUpToDate (updatesetup_test.go:123); Handlauf 15.10. Block+Rollen+Lane veraltet -> 'update --roles --lanes' alle drei aktuell (Notiz 13:14, testing-Laeufe 13:47 und 14:23)
 - [x] Der Aufruf ohne Schalter aendert sein Verhalten nicht still: was er heute tut, tut er weiterhin, und alles darueber hinaus wird ausdruecklich verlangt. Die Entscheidung steht begruendet im Ticket, nicht nur im Code.
   proof: Entscheidung als Notiz 12:34 'Entscheidung DoD 2'; update.go: ohne --roles/--lanes nur Block+Stempel, JSON unveraendert; Test TestUpdateWithoutSwitchesWritesOnlyTheBlock (updatesetup_test.go:133); Handlauf: nackter update aendert nur CLAUDE.md/AGENTS.md (sha vorher/nachher)
 - [x] Der Befehl sagt vor dem Schreiben, was er anfassen wuerde, und was er auslaesst weil ein Mensch es geaendert hat - wie 'jaira roles install' es schon tut.
