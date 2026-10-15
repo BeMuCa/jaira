@@ -41,7 +41,7 @@ func TestUpdateDryRunWritesNothing(t *testing.T) {
 	}
 	for _, want := range []string{"would update " + st.projRole, "would update " + st.homeRole, "would update " + st.lan,
 		"Would tell your agents about this board: CLAUDE.md (updated)", "nothing was written (--dry-run)"} {
-		if !strings.Contains(out, want) {
+		if !hasLine(setupOutput(out), want) {
 			t.Errorf("output lacks %q:\n%s", want, out)
 		}
 	}
@@ -75,8 +75,8 @@ func TestUpdateWithoutSwitchesNamesWhatIsBehind(t *testing.T) {
 	if err != nil {
 		t.Fatalf("update: %v\n%s", err, out)
 	}
-	for _, want := range []string{"'jaira update --roles'", "'jaira update --lanes'"} {
-		if !strings.Contains(out, want) {
+	for _, want := range []string{"roles: ", "lanes: "} {
+		if !hasLine(setupOutput(out), want) {
 			t.Errorf("output lacks the hint %q:\n%s", want, out)
 		}
 	}
@@ -94,7 +94,8 @@ func TestUpdateWithoutSwitchesSaysNothingWhenCurrent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("update: %v\n%s", err, out)
 	}
-	if strings.Contains(out, "jaira update --roles") || strings.Contains(out, "jaira update --lanes") {
+	if head := setupOutput(out); hasLine(head, "roles: ") || hasLine(head, "lanes: ") ||
+		strings.Contains(head, "jaira update --roles") || strings.Contains(head, "jaira update --lanes") {
 		t.Errorf("a current setup got a hint:\n%s", out)
 	}
 }

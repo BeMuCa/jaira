@@ -62,7 +62,7 @@ func (u *updateSetup) json(m map[string]any) map[string]any {
 // editedError is the refusal of an update that left an edited file alone.
 func editedError() error {
 	return fail(ExitValidation, "edited",
-		"some files were edited here and left alone; 'jaira roles install --force' and 'jaira lanes use <id> --force' replace them")
+		"some files were edited here and left alone; 'jaira roles install --project --force' (or '--global --force') and 'jaira lanes use <id> --force' replace them")
 }
 
 func refreshRoles(root string, dryRun bool) ([]roleRun, error) {

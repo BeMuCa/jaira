@@ -129,7 +129,8 @@ jaira update --dry-run --roles --lanes   # list what would be written, write not
 and works outside a board too, for your personal skills only. A file that is an
 older version of one jaira shipped is replaced without `--force`. A file you
 edited is named and left alone, and the command exits 3; `jaira roles install
---force` or `jaira lanes use <id> --force` replaces it. `--dry-run` prints the
+--project --force` (or `--global --force`) or `jaira lanes use <id> --force`
+replaces it. `--dry-run` prints the
 same lines as "would ..." with the same exit code and does not even stamp the
 version.
 

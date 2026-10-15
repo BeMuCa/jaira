@@ -1,8 +1,8 @@
-- Run 'jaira roles install' after an upgrade without --force: a file equal to a version an earlier jaira shipped is now replaced and reported as updated, and --force is only needed for a file you edited yourself.
+- Run 'jaira roles install --project' (or '--global') after an upgrade without --force: a file equal to a version an earlier jaira shipped is now replaced and reported as updated, and --force is only needed for a file you edited yourself.
 - Run 'jaira update --roles' after an upgrade to bring the jaira skills up to date wherever they are installed — this repository's skills directory and your personal one; outside a board it updates the personal one only.
 - Run 'jaira update --lanes' to replace this board's lane files that are an older version of a lane jaira ships; a lane file you edited is named, left alone, and makes the command exit 3.
 - Add --dry-run to 'jaira update' to see which files it would write and which it would leave alone because you edited them, before anything is written.
 - Look for the 'roles:' and 'lanes:' lines a plain 'jaira update' now prints: it still writes only the jaira section, and those lines say when roles or lanes are behind and which switch brings them up.
 - From the next upgrade on, 'jaira self upgrade' runs the new binary's 'jaira update --roles' right after installing it (the upgrade to this release is done by the old binary, which does not): after this upgrade run 'jaira update --roles' yourself, and 'jaira update --lanes' for the lanes, which self upgrade never touches.
 - Watch stderr for one line, once per new jaira version, saying your personal jaira skills are older than the binary; run the 'jaira update --roles' it names.
-- Stop copying .claude/skills/jaira by hand: 'jaira roles install' and 'jaira update --roles' now write the jaira skill as <skills>/jaira/SKILL.md beside the roles; a copy you edited is left alone like any role file.
+- Stop copying .claude/skills/jaira by hand: 'jaira roles install --project' (or '--global') and 'jaira update --roles' now write the jaira skill as <skills>/jaira/SKILL.md beside the roles; a copy you edited is left alone like any role file.
