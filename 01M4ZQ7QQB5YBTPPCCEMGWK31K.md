@@ -22,7 +22,7 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T13:14:28Z
+updated-at: 2026-10-15T13:14:31Z
 updated-by: BeMuCa
 ---
 
@@ -92,3 +92,4 @@ updated-by: BeMuCa
 - N71NVG: nichts im Code geteilt. Milestones haben ein eigenes Format (core/milestone: 'status: filed' + 'deleted:'), Tickets gehen ueber core/ticket.Doc, und status heisst dort Lane. Ein gemeinsamer Helper muesste nach Art verzweigen - kein Gewinn, nur Kopplung.
 - Geteilt ist die Regel 'der Ref bleibt stehen und bekommt eine Zeile' und die Wertform '<yyyy-mm-dd> <wer>'. GWK31K braucht keinen Code von N71NVG.
 - Merge-Risiko mit N71NVG nur in der Doku: beide aendern docs/COMMANDS.md (N71NVG :138/:157, GWK31K :155/:158) und README.md.
+- **2026-10-15 13:14 · BeMuCa** — Treiber nach Handtest des Core-Commits 4deebea5 (zwei Klone ueber ein lokales bare repo): list/next/resume auf B blenden beide archivierten Tickets aus, restore bringt sie zurueck. ABER B's 'jaira fetch' meldete danach weiter 'W9SM3S todo Probe todo @you new ref-only' - der Bericht nennt die alte Lane eines archivierten Tickets, und announceArrivals kann dafuer 'a ticket is yours' ausloesen. Darum Plan-Schritt 13: fetch sagt 'archived'. Nicht gemacht (Nachfolger): ein Klon, der das Ticket als Datei hat, wird nicht ueber Departed() informiert; Departed() reagiert nur auf einen verschwundenen Ref.
