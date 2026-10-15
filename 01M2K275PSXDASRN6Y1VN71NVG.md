@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T12:52:02Z
+updated-at: 2026-10-15T12:56:01Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
@@ -103,3 +103,4 @@ Neu durch E70WYN: Milestone.HoldsName() - eine Marke mit renamed-to haelt den Na
 - Ein Mitglied, das nur auf seinem Ref liegt (Datei auf einem fremden Branch), haelt das Ablegen NICHT auf: Milestone wird abgelegt, das Ticket genannt und stehen gelassen. Alternative waere: verweigern, bis es gepullt ist. Empfehlung: so lassen - meist ist es auf einem PR-Branch schon abgelegt und verschwindet beim Merge.
 - 'jaira milestone delete' fragt nicht nach, auch nicht bei einem Milestone mit Tickets. Die Marke behaelt die Ticketzeilen, der Inhalt ist also auf dem Ref noch lesbar. Empfehlung: keine Rueckfrage, kein --force; die Ausgabe nennt die Zahl der Tickets.
 - Kein 'jaira restore' fuer einen geloeschten Milestone. Loeschen ist fuer Fehler; wer ihn wieder will, legt ihn neu an.
+- **2026-10-15 12:56 · BeMuCa** — Korrektur zu Notiz [E]: ein Mitglied, das hier nur auf seinem Ref liegt, haelt die Sperre WEITER, wenn es die Terminal-Lane nicht erreicht hat - die Sperre ist unveraendert (s.Load liest auch Ref-only-Tickets). Nur ein FERTIGES Ref-only-Mitglied wird nicht abgelegt, sondern genannt (ref_only). Das passt zu DoD 4: offene Arbeit, egal wo die Datei liegt, haelt den Milestone.
