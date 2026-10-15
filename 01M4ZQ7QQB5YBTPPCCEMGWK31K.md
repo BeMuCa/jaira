@@ -22,7 +22,7 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T13:19:39Z
+updated-at: 2026-10-15T13:19:41Z
 updated-by: BeMuCa
 ---
 
@@ -34,7 +34,8 @@ updated-by: BeMuCa
   proof: core/ticket/store.go:359 (Archive->recordArchived) and :923 (List hides marked ref-only); tests core/ticket/archiveref_test.go:44,87 + internal/cli/archiveref_test.go:65
 - [x] 'jaira restore' eines archivierten Tickets entfernt die Markierung auf dem Ref wieder, sodass es ueberall zurueckkommt; Test
   proof: Store.Restore re-records the unmarked file; tests core/ticket/archiveref_test.go:113,142 + internal/cli/archiveref_test.go:104
-- [ ] Archivieren pusht die Markierung sofort auf den Ref, wie 'jaira create' ein neues Ticket pusht: ein anderer Klon sieht das Ticket nach seinem naechsten fetch nicht mehr, ohne dass die Archiv-Datei committet ist. Die Ausgabe von 'jaira archive' sagt, dass das Committen von .jaira/archive/<datei> nur den Eintrag im Repository festhaelt; Test
+- [x] Archivieren pusht die Markierung sofort auf den Ref, wie 'jaira create' ein neues Ticket pusht: ein anderer Klon sieht das Ticket nach seinem naechsten fetch nicht mehr, ohne dass die Archiv-Datei committet ist. Die Ausgabe von 'jaira archive' sagt, dass das Committen von .jaira/archive/<datei> nur den Eintrag im Repository festhaelt; Test
+  proof: push via recordFiled->Record dirty->afterCommand->flushRefs (internal/cli/root.go:106, refs.go:204-207,246-252); archive output line internal/cli/archive.go:91-93; test internal/cli/archiveref_test.go:65 (other clone drops it, git ls-files .jaira/archive empty)
 - [ ] Eine Zeile in core/release/notes/<ID>.md
 
 ## Options
