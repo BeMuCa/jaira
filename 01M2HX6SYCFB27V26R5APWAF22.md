@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T12:35:30Z
+updated-at: 2026-10-15T12:35:32Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -95,3 +95,9 @@ claimed-at: 2026-10-15T12:05:54Z
 - 'einmal': Stempel $JAIRA_HOME/skills-check/version (release.Stamp/Stamped). Steht dort die laufende Version, kostet es eine kleine Datei lesen - die Startzeit bleibt.
 - Der Text nennt 'jaira update --roles'. Still bei dev-Builds und waehrend 'update' und 'roles install' (die sind die Abhilfe).
 - Kein Ueberlapp mit T8A8KM: das zeigt Release-Notizen (TUI-Popup, Pille, Hervorhebung in update). Dies hier sagt nur, dass Skills nachzuziehen sind.
+- **2026-10-15 12:35 · BeMuCa** — Entscheidung jaira-Skill (Schritt 9, braucht Berks Ja): das Binary liefert ihn mit.
+- Heute: .claude/skills/jaira/SKILL.md liegt nur im Repo. 'roles install' schreibt ihn nicht (README.md:683). Das Binary kennt ihn nicht - ohne das kann DoD 6 ihn nicht pruefen und keinen Befehl nennen.
+- go:embed kann nicht nach ../ greifen. Daher eine Kopie unter core/role/jaira/SKILL.md, die eingebettet wird. Ein Test verlangt, dass .claude/skills/jaira/SKILL.md byte-gleich ist (sonst: eine bearbeiten, ueber die andere kopieren).
+- Installiert NEBEN den Rollen wie das cockpit-Mod, KEINE Rolle: 'roles list' zeigt ihn nicht, InstalledIn zaehlt ihn nicht. Sonst wuerde 'update --roles' in diesem Repo alle Rollen nach .claude/skills schreiben.
+- Die 33 alten Versionen aus .claude/skills/jaira kommen unter dem neuen Pfad in die Liste - Berks von Hand kopierte ~/.claude/skills/jaira wird damit erkannt.
+- Folge, die Berk bestaetigen sollte: 'jaira roles install --project' schreibt in jedem Repo auch .claude/skills/jaira/SKILL.md.
