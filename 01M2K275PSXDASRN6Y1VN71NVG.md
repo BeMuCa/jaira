@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T12:19:38Z
+updated-at: 2026-10-15T12:34:09Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
@@ -36,7 +36,7 @@ claimed-at: 2026-10-15T12:19:23Z
 
 ## Definition of Done
 
-- [ ] Ein fertiger Milestone laesst sich in einem Griff archivieren: Datei und Ref verschwinden vom Board, der Inhalt bleibt lesbar - nach dem Vorbild von jaira logbook
+- [ ] 'jaira logbook <milestone>' nimmt einen fertigen Milestone in einem Griff vom Board: erst jedes seiner Tickets, das in diesem Klon als Datei auf dem Board liegt (Commits gestempelt wie bei 'jaira logbook <id>'), dann den Milestone selbst - alles in denselben Ordner .jaira/logbook/<wer>-<datum>/ (der Milestone unter milestones/). Danach steht keins seiner Tickets mehr auf dem Board ausser einem, dessen Datei nur auf seinem Ref liegt (es liegt auf einem fremden Branch); die Ausgabe nennt es. --json nennt die abgelegten Tickets
 - [ ] Ein archivierter Milestone faerbt keine Kartenkante mehr und steht nicht im M-Picker
 - [ ] Es gibt einen Weg zurueck, wie 'jaira restore' ihn fuer Tickets hat
 - [ ] Archivieren sagt es, wenn der Milestone noch unerledigte Tickets fuehrt, und archiviert die Tickets nicht mit
