@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-15T12:20:05Z
+updated-at: 2026-10-15T12:20:08Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -68,3 +68,8 @@ Der Agent-Block ist englisch, der Satz aus der DoD steht dort als 'when jaira re
 - **2026-10-15 12:20 · BeMuCa** — Launcher-Taste (DoD 5): 'w' (what's new). Auf dem Launcher belegt: a r s x d q j k enter esc ctrl+c (home.go:258-305).
 'n' waere frei auf dem Launcher, heisst auf dem Board aber 'neues Ticket' (model.go:1645); 'v' ist auf dem Board die Pipeline (model.go:1587). Beide haetten je nach Bildschirm zwei Bedeutungen. 'w' ist auf Launcher und Board frei (nur die Pipeline nutzt es als WASD-hoch, eigener Bildschirm).
 Inhalt: release.Since('') - alle Releases, leere weggelassen, neueste zuerst (composeNotes sortiert absteigend, NOTES.md ist absteigend). Derselbe notesView zeigt die Notes im Popup (DoD 3) und hier.
+- **2026-10-15 12:20 · BeMuCa** — Marker '- ! <text>' (DoD 4): changeLines (release.go:100) bleibt unveraendert und liefert daraus die Change '! <text>'. Jede Binary liest die Zeile also als normale Aenderung; das Format bleibt 'eine Zeile, die mit - beginnt'.
+Neu nur release.Important(change) (text, ok): Praefix '! ' MIT Leerzeichen; '!text' zaehlt nicht. Kein neues Feld an release.Entry und kein neues JSON-Feld: 'jaira update --json' traegt '! <text>' roh in 'changes', ein Agent sieht das Zeichen.
+Hervorhebung: im TUI farbig (colWarn, fett, Bullet '!'); in 'jaira update' ohne ANSI als '  ! <text>' statt '  - <text>', weil die Ausgabe auch Agenten und Pipes lesen.
+Hinweis: alte Binaries lesen neue Notes nie (go:embed). 'Bleibt fuer alte Binaries normal' ist damit ein Formatversprechen fuer Menschen und Werkzeuge, kein Laufzeitfall. Der Test belegt es an changeLines.
+Doku: Abschnitt 'Client-facing changes go in core/release/notes/' steht in CLAUDE.md UND AGENTS.md, beide ausserhalb des jaira-Blocks; dazu der Kommentar an changeLines. Workflows (.github/workflows/release-notes.yaml) verschieben nur Dateien und lesen das Format nicht.
