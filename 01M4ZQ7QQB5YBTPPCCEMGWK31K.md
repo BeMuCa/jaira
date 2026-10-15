@@ -22,7 +22,7 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T14:55:19Z
+updated-at: 2026-10-15T14:55:37Z
 updated-by: BeMuCa
 outcome-what: "'jaira archive' schreibt auf den Ref den Dateiinhalt plus eine Zeile 'archived: <datum> <wer>' (core/ticket/store.go Archive -> recordFiled mit Markwert; Logbook gibt '' und bleibt unmarkiert); die Datei in .jaira/archive/ bleibt byte-gleich. Store.List laesst ref-only Tickets mit dieser Zeile weg, also auch board, list, next, resume. 'jaira restore' schreibt die Datei ohne Zeile zurueck auf den Ref (nach CheckFresh; ist der Ref neuer, bleibt er stehen und restore warnt mit 'jaira pull <h>'). 'jaira pull' eines markierten Refs leert die Zeile auf dem Ref und in der Datei (refresh: nur in der Datei), damit eine Datei nie eine Marke traegt; pull sagt es. show (nur ref-only) und fetch nennen ein archiviertes Ticket 'archived', fetch meldet es nicht als 'a ticket is yours'. archive sagt bei ungetrackter Datei, dass das Committen nur den Eintrag festhaelt, bei getrackter, dass ein Branch mit der Datei es bis zum Merge zeigt. Doku (README, COMMANDS.md, Hilfen, Kommentare) und drei Release-Zeilen."
 outcome-why: "Bisher schrieb archive den unveraenderten Inhalt auf den Ref. Jeder andere Klon zeigte das Ticket weiter, bis der Snapshot-Lauf (alle 72 h) den Ref abraeumte, und das erst nach Commit und Merge der Archiv-Datei. Berk will, dass Archivieren wie create wirkt: sofort beim naechsten fetch, ohne Commit."
@@ -64,28 +64,33 @@ review-verdict: |-
   Unsicher: die Desktop-Meldung kenne ich nur aus dem Code, gesehen habe ich sie nicht.
 review-round: 6
 review-check: |-
-  Alles in /tmp/gwk31k-check, eigenes HOME, eigener Binary. Ein frisches Terminal; am Ende schliessen. <H> ist der Handle aus Schritt 6, <datum> das Datum von heute.
+  Alles in /tmp/gwk31k-check, mit eigenem HOME und eigenem Binary. Ein frisches Terminal, am Ende schliessen. <H> ist der Handle aus Schritt 6.
   1. mkdir -p /tmp/gwk31k-check && cd /home/berk/git/jAIra-GWK31K && go build -o /tmp/gwk31k-check/jaira ./cmd/jaira  -> keine Ausgabe.
   2. cd /tmp/gwk31k-check && mkdir -p home && export HOME=/tmp/gwk31k-check/home JAIRA_HOME=/tmp/gwk31k-check/home/.jaira GIT_CONFIG_NOSYSTEM=1 PATH=/tmp/gwk31k-check:$PATH && which jaira  -> /tmp/gwk31k-check/jaira
-  3. git config --global user.name ada && git config --global user.email ada@example.invalid && git config --global init.defaultBranch master  -> keine Ausgabe.
+  3. git config --global user.name ada && git config --global user.email ada@example.invalid && git config --global init.defaultBranch master && mkdir -p $JAIRA_HOME && echo '{"notify-off": true}' > $JAIRA_HOME/settings.json  -> keine Ausgabe. Keine Desktop-Meldungen.
   4. git init -q --bare origin.git && git clone -q origin.git A 2>/dev/null && cd A && git commit -q --allow-empty -m init  -> keine Ausgabe.
   5. jaira init >/dev/null && jaira share >/dev/null && git add .jaira .gitignore && git commit -q -m board && git push -q origin master  -> keine Ausgabe.
-  6. jaira create "Probe archiv" --goal g --context c --dod d --assignee ada  -> 'Created <H>  Probe archiv' und 'On its ref, not on your disk ...'. Dann: H=<H>
-  7. jaira pull $H  -> '<H> is yours: Probe archiv'.
-  8. cd .. && git clone -q origin.git B && cd B && git config user.name bob && jaira init >/dev/null  -> keine Ausgabe. B ist jetzt bob, ein Teammate.
-  9. jaira fetch && jaira list  -> zuerst einmalig 'jaira: registered the field-aware merge driver for this clone', dann '<H>   backlog      Probe archiv new ref-only', darunter Backlog mit '<H>  Probe archiv ... ada [DoD 0/1] [pull it]'.
+  6. H=$(jaira create "Probe archiv" --goal g --context c --dod d --assignee ada | awk '/^Created/{print $2}') && echo $H  -> ein Handle mit 6 Zeichen, z.B. YK9S6K.
+  7. jaira pull $H  -> '<H> is yours: Probe archiv', darunter der Pfad und 'commit it with the work, ...'.
+  8. cd .. && git clone -q origin.git B && cd B && git config user.name bob && jaira init >/dev/null  -> keine Ausgabe. B ist bob, ein Teammate.
+  9. jaira fetch && jaira list  -> 'jaira: registered the field-aware merge driver for this clone', '<H>   backlog      Probe archiv new ref-only', dann 'Backlog' mit '<H>     Probe archiv ... ada [DoD 0/1] [pull it]'.
   10. cd ../A && jaira archive $H  -> drei Zeilen: 'Archived <H>  Probe archiv', 'Moved to .jaira/archive — restore it with ...', 'Every other board drops it at its next fetch; committing .jaira/archive/<datei> only keeps the record in the repository.'
   11. git status --short .jaira  -> nur '?? .jaira/archive/'. Nichts committet.
   12. cd ../B && jaira fetch && jaira list  -> '<H>   archived     Probe archiv new ref-only', dann 'No tickets match.'
-  13. jaira show $H | head -1  -> 'off the board: archived <datum> ada, only on its ref'
+  13. jaira show $H | head -1  -> 'off the board: archived <datum von heute> ada, only on its ref'
   14. cd ../A && jaira restore $(ls .jaira/archive/)  -> 'Restored <datei> to the board.'
-  15. cd ../B && jaira fetch && jaira list  -> '<H>   backlog      Probe archiv new ref-only', und Backlog zeigt '<H>' wieder. Bis hier: so soll es sein.
-  Der Defekt aus review-gaps:
-  16. cd ../A && jaira archive $H  -> letzte Zeile wieder 'Every other board drops it ...'.
-  17. cd ../B && git config user.name ada && jaira fetch && jaira pull $H && grep '^archived' .jaira/tickets/*.md  -> '<H> is yours ...' und am Ende 'archived: <datum> ada'. B ist jetzt ada auf einem zweiten Klon; die Datei traegt die Marke.
-  18. jaira archive $H && jaira restore $(ls .jaira/archive/)  -> endet mit 'Restored <datei> to the board.', keine Warnung.
-  19. cd ../A && jaira fetch && jaira list  -> '<H>   archived ...' und 'No tickets match.' Das ist der Defekt: nach dem restore muesste A das Ticket als ref-only sehen.
-  20. cd / && rm -rf /tmp/gwk31k-check, dann das Terminal schliessen (HOME und PATH sind darin umgestellt).
+  15. cd ../B && jaira fetch && jaira list  -> '<H>   backlog      Probe archiv new ref-only', Backlog zeigt '<H>' wieder.
+  Pull auf einem zweiten Klon derselben Person:
+  16. cd ../A && jaira archive $H | tail -1  -> 'Every other board drops it at its next fetch; ...'
+  17. cd .. && git clone -q origin.git A2 && cd A2 && jaira init >/dev/null && jaira fetch && jaira list  -> 'registered ...', '<H>   archived     Probe archiv @you new ref-only', 'No tickets match.' A2 ist wieder ada.
+  18. jaira pull $H  -> erste Zeile '<H> was archived (<datum> ada); pulling it took the mark off its ref.', dann '<H> is yours: Probe archiv'.
+  19. grep '^archived' .jaira/tickets/*.md  -> 'archived: ""' (leer, kein Datum).
+  20. cd ../B && jaira fetch && jaira list  -> '<H>   backlog      Probe archiv new ref-only', Backlog zeigt '<H>' wieder.
+  Der Fund aus review-gaps (Board):
+  21. cd .. && git clone -q origin.git A3 && cd A3 && jaira init >/dev/null && jaira fetch >/dev/null && jaira list | grep Probe  -> 'jaira: registered ...' und '  <H>     Probe archiv ... ada [DoD 0/1] [pull it]'.
+  22. cd ../A2 && jaira archive $H | tail -1  -> 'Every other board drops it at its next fetch; ...'
+  23. cd ../A3 && jaira board  -> oben rechts '0 tickets', 'Backlog 0', unten links '● <H> is yours: Probe archiv'. Das ist der Fund: Karte weg, Meldung sagt 'deins'. Mit q schliessen.
+  24. cd / && rm -rf /tmp/gwk31k-check, dann das Terminal schliessen (HOME und PATH sind darin umgestellt).
 ---
 
 # Ein archiviertes Ticket verschwindet sofort von allen Boards, nicht erst wenn der Snapshot den Ref abraeumt
