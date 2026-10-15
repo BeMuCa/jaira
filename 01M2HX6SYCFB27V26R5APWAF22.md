@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T14:08:01Z
+updated-at: 2026-10-15T14:08:03Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -50,10 +50,33 @@ review-summary: |-
   - Doku: README, docs/COMMANDS.md, docs/AGENTS.md. 8 Zeilen in core/release/notes/PWAF22.md.
 round: 2
 review-gaps: |-
-  Entfernt: (1) nudgeSkillsIfStale (internal/cli/skillsnudge.go) baute die Schleife role.Installed + Install(dry) nach, die refreshRoles (internal/cli/updatesetup.go) schon hat - ruft jetzt refreshRoles("", true); gleiche Aufrufe in gleicher Reihenfolge, gleicher Abbruch ohne Stempel bei Fehler. (2) anySkipped hatte genau einen Aufrufer, updateSetup.skipped, das nur weiterleitete - Rumpf in skipped() gezogen. (3) core/board/preview_test.go writeAgentFile war gleich mit writeFile (core/board/agentfile_test.go:10) - geloescht, Aufruf geht auf writeFile. (4) Falscher Kommentar core/role/install.go:120-122 ('sit next to the go:embed directories') stimmte fuer modKey nicht - korrigiert (war ein critique-Nachfolger).
-  Erwogen, gelassen: Builtins-nach-ID-Map jetzt dreimal (core/lane/lane.go:552, :779, refresh.go:219), es gibt keinen Helfer zum Aufrufen - ein neuer wuerde Altcode anfassen; printLaneResults/printRoleResults und laneResultsJSON/roleResultsJSON sind gleich gebaut, aber andere Typen und Keys; die Trockenlauf-Zeile 'Would tell your agents' (update.go) ist announceLine (internal/cli/announce.go:8) mit anderem Verb - announceLine hat zwei Aufrufer, ein dry-Parameter waere Umbau; hintLines laedt die Lanes ein zweites Mal (RefreshShipped -> Load), nur im nackten update, kein heisser Pfad; printRoleResults baut je Trockenlauf-Zeile eine kleine Map - vernachlaessigbar; der Kommentar ueber setupArgs (self.go) wiederholt die Doku von warnSetupFailed - harmlos; Tests: newStaleSetup liest das v0.4.0-Fixture mit os.ReadFile neben mustRead, olderShipped (skillsnudge_test.go) liest dasselbe Fixture.
-  Altbestand gesehen, gelassen: JAIRA_HOME-Aufloesung sechsfach (settings.Path, selfupdate.Path, core/project/project.go:29, core/identity/identity.go:95, core/lane/lane.go:478, core/ticket/store.go:767); Builtins-nach-ID-Map in lane.go zweimal.
-  Kein Fund aendert Verhalten. Kein go test gelaufen (Anweisung); gofmt/vet/build auf exportierter Kopie gruen.
+  DEFEKT (Notiz 'review:' geschrieben):
+  - Zwei neue Tests werden im Race-Lauf rot. Nicht gelaufen; gelesen und mit einem Binary in Version 1.0.0 nachgestellt.
+  - TestUpdateRolesLanesBringsAStaleBoardUpToDate (internal/cli/updatesetup_test.go), zweiter Lauf: sucht 'would ' im ganzen Output. update druckt bei Version 1.0.0 alle Release-Notizen, und die enthalten 'would'.
+  - TestUpdateWithoutSwitchesSaysNothingWhenCurrent (internal/cli/updatedry_test.go): verlangt, dass 'jaira update --roles/--lanes' fehlt. Die Zeilen in PWAF22.md nennen genau das.
+  - TestUpdateWithoutSwitchesNamesWhatIsBehind besteht nur leer: dieselben Strings stehen auch in den Notizen.
+  - Der Produktcode ist hier richtig. Nur die Pruefungen muessen auf Zeilenanfaenge schauen ('roles: ', 'lanes: ', 'would ') oder auf den Teil vor "What's changed since then".
+
+  KLEIN (falscher Hinweistext):
+  - editedError (internal/cli/updatesetup.go) und README nennen 'jaira roles install --force'. So allein: Exit 2 'choose exactly one of --project, --global or --into'. Die Zeile je Ordner nennt den richtigen Befehl.
+  - Im Trockenlauf sagen die Zaehlzeilen '1 updated' / 'N written', obwohl nichts geschrieben wurde. Erst die letzte Zeile sagt es.
+  - Die Schlusszeile von self upgrade sagt weiter nur "run 'jaira update' in each repository" - ohne --roles und --lanes.
+
+  NICHT UEBERZEUGEND:
+  - DoD 3 ('sagt vor dem Schreiben') nur mit --dry-run. Der echte Lauf sagt es danach. Bewusst so entschieden (Notiz 12:34).
+  - DoD 6: die Warnung kommt nur ueber openStore. Das TUI zeigt nichts. Der erste Befehl nach einem Upgrade ist oft ein Agent mit --json - dann landet die einzige Warnung in dessen stderr, kein Mensch sieht sie.
+  - self upgrade in einem Repo schreibt dort jetzt den Block in CLAUDE.md/AGENTS.md und .claude/skills. Das tat es vorher nie; der Arbeitsbaum wird schmutzig. Von DoD 5 verlangt, aber neu.
+  - Jeder PR, der eine Rolle, Lane, das Mod oder den jaira-Skill aendert, muss shipped.sha256 neu erzeugen (ein Test erzwingt es). Zwei solche PRs koennen dort kollidieren.
+  - internal/cli/update.go aendert auch T8A8KM. Die Hunks liegen direkt nebeneinander (Basis-Zeilen 107-130 hier, 130-148 dort). Merge-Konflikt zu erwarten.
+
+  FRAGEN AN BERK:
+  - Dev-Build: 'self upgrade' verweigert weiterhin ('a dev build has no published release'). Unveraendert.
+  - Rollen, die mit --into installiert wurden: update --roles und die Warnung sehen sie nicht. Nachgestellt.
+  - Fehlende Dateien zaehlen als 'aelter'. Ein absichtlich geloeschtes jaira-cockpit (15 Dateien, Plugin mit Hooks) kommt mit jedem update --roles und jedem self upgrade zurueck. Nachgestellt.
+  - Das erste Upgrade AUF dieses Release macht noch das alte Binary - ohne Setup. Release-Notiz Zeile 6 sagt das richtig, README nicht.
+  - 'roles install --project' schreibt jetzt in jedem Repo auch .claude/skills/jaira/SKILL.md (Treiber-Entscheidung 12:46, eigener Commit be857988, allein ruecknehmbar).
+  - Weitere Nachfolger: Notizen 13:30 (critique) und 13:43 (optimize) - u.a. self upgrade --version auf ein Release ohne --roles, done.md nach der Korrektur gilt als edited, CRLF-Checkouts, Copilot sieht jaira doppelt, --dry-run kann ueber lane.Load doch schreiben.
+  - Die alte review-gaps-Fassung von optimize ist hiermit ersetzt; was optimize entfernt hat, steht in Commit 3218b63a.
 test-verdict: "pass: gofmt/vet/build gruen auf Export von HEAD 3218b63a, go test nicht gelaufen (Anweisung) - die neuen Tests sind geschrieben+kompiliert, nicht gelaufen; DoD 1-6 am Baum geprueft (Proofs/Tests gelesen); Handlaeufe auf Scratch-Build 9.9.9: nackter update schreibt nur Block, --dry-run schreibt nichts (exit 3), update --roles --lanes zieht Block/Rollen/jaira-Skill/Lane nach und skippt editierte Datei (exit 3, 2. Lauf nur unchanged+skipped), ausserhalb Board nur persoenlich, Skills-Hinweis einmal auf stderr (--json valide), self upgrade 9.9.8->9.9.9 ruft Kind update --roles (exit 0, --json setup/setup_exit=3); Release-Notiz 8 Zeilen stimmen"
 ---
 
