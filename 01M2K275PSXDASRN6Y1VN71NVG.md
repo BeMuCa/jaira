@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T12:40:49Z
+updated-at: 2026-10-15T12:41:07Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
@@ -80,3 +80,15 @@ Neu durch E70WYN: Milestone.HoldsName() - eine Marke mit renamed-to haelt den Na
 - Warum (4) noetig ist: Flush holt Refs (Repo.Fetch), ohne IncomingMilestones zu laufen. Danach kann ein Klon die noch lebende Datei bearbeiten; der Lease waere dann der Marken-SHA und der Push wuerde die Marke ueberschreiben.
 - Der Name wird frei, ohne neuen Code: CheckFree (core/milestone/write.go:214) fragt nur LoadAll, und Create wuerfelt eine neue ID, solange HasMilestoneRef(ID) stimmt - die Marke belegt die alte ID fuer immer.
 - Milestone.HoldsName() aus der E70WYN-Notiz gibt es nicht (grep leer). Der Paket-Kommentar core/milestone/milestone.go:19-21 sagt schon: ein abgelegter Milestone haelt seinen Namen nicht.
+- **2026-10-15 12:41 · BeMuCa** — pre-process, Teil 3 - die Faelle beim Loeschen, durchgespielt:
+- (a) Klon B hat <name>-<ID>.md, holt die Marke: IncomingMilestones entfernt die Datei, meldet sie (fetch: 'deleted elsewhere', --json milestones_deleted). Nichts wird eingereiht.
+- (b) Klon B hat altes <name>.md mit LegacyID = markierte ID: IncomingMilestones entfernt es schon beim fetch (milestoneFiles rechnet die LegacyID aus). Offline-Weg: Migrate sieht die Marke ueber MilestoneDeleted und entfernt die Datei statt sie zu migrieren (Result.Dropped).
+- (c) B hat einen Schreibvorgang in der Outbox, als die Marke ankommt: der Push wird abgewiesen (Lease passt nicht), mergeRefused sieht die Marke und verwirft den Eintrag. Hat B den Marken-Ref schon geholt und schreibt danach: RecordMilestone verweigert (ErrMilestoneDeleted, als Warnung).
+- (d) alter 0.5.x-Klon: sieht 'status: filed', blendet aus, schreibt die markierte Datei ueber seine. Ein Merge dort behaelt beide Zeilen; schlimmstenfalls schiebt er eine Marke mit mehr Ticketzeilen hoch - bleibt eine Marke. Nach dem Update entfernt der neue Code die markierte Datei.
+- (e) Name frei: siehe Teil 2, kein Code noetig.
+- (f) Nachfolger: delete nutzt ReattachSuccessors (core/milestone/layout.go:245) wie Edit beim Unplace (write.go:113ff) - wer nach dem geloeschten kam, kommt nach dessen Vorgaengern.
+- (g) Mitglieder: Tickets bleiben unberuehrt (Mitgliedschaft steht nur in der Milestone-Datei). Ausgabe nennt die Zahl. Die Marke behaelt die Ticketzeilen - der Ref ist ein lesbarer Nachweis.
+- (h) abgelegter Milestone: Load+Filed -> FiledError -> editRefusal (Exit 3); im eigenen Logbuch -> refuseIfFiled (Exit 3, 'restore zuerst'). Unbekannt -> Exit 5.
+- Reihenfolge in milestone.Delete: unter dem Lock (lockAndMigrate) erst die Marke einreihen (rec.RecordMilestone). Schlaegt das fehl -> normaler Fehler (KEIN RecordError, sonst stuft warnIfRecordOnly ihn zur Warnung herab und die CLI meldet einen Loeschvorgang, der nicht passiert ist), nichts geaendert. Dann Nachfolger speichern, dann die Datei loeschen.
+- Bekannte Grenze: wer nach dem Loeschen von Hand ein altes <name>.md mit demselben Namen anlegt, verliert es an Migrate (gleiche LegacyID). Nicht unterscheidbar von Alex' altem Rest; 'jaira milestone create' ist der Weg (neue Zufalls-ID).
+- Gleiches Loch gibt es heute schon fuer 'filed' (Edit auf einer lebenden Datei, deren geholter Ref filed sagt). Nicht in diesem Ticket; das Netz (4) greift nur fuer deleted.
