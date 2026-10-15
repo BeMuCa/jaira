@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-15T12:39:33Z
+updated-at: 2026-10-15T12:39:35Z
 updated-by: BeMuCa
 ---
 
@@ -37,7 +37,7 @@ updated-by: BeMuCa
 - [ ] Block (Milestone mit 'pr: block'): Ist nach 'jaira move <id> --to <Endlane>' oder 'jaira logbook <id>' jedes Ticket des Milestones in der Endlane oder vom Board (dieselbe Regel wie 'jaira logbook <milestone>'), druckt jaira zwei Zeilen: 'Milestone <m> is complete. Next: one pull request for all its tickets. Only a person opens it: /jaira-role-pr <alle Handles>' und 'Once that pull request is merged, take milestone <m> off the board: jaira logbook <m>'; --json traegt beide unter 'suggestions' (kind pull_request mit by person, kind file_milestone mit after merge); Tests TestMoveCompletingABlockMilestoneSuggestsOnePullRequestAndFiling, TestLogbookOfABlockTicketSuggestsTheBlockPullRequest
 - [ ] jaira-dispatcher, jaira-worker und jaira-teamlead geben jede Vorschlagszeile von jaira ('suggestions' aus move/logbook, beim Teamlead auch aus 'jaira milestone ls --json') woertlich an den Menschen weiter und rufen /jaira-role-pr nie selbst auf; Test TestRolesPassThePRSuggestionOnAndNeverRunIt
 - [ ] jaira-role-pr nimmt mehrere Tickets bzw. einen Milestone und legt alle angenommenen Tickets vor dem Push ab; ein genanntes Ticket ohne Commit auf dem Branch ist ein Befund (Stopp vor dem Push); fuer einen bestehenden PR/MR aktualisiert er Titel und Beschreibung aus den Tickets (gh pr edit / glab mr update), aber nur wenn ein Mensch ihn aufrief; Test TestPRTakesSeveralTicketsOrAMilestone
-- [ ] Eine Zeile in core/release/notes/<ID>.md
+- [ ] Je eine Zeile pro sichtbarer Aenderung in core/release/notes/6TCTFV.md: --pr, Vorschlaege bei move, bei logbook <id>, in milestone ls, Weitergabe durch die Rollen, jaira-role-pr mit mehreren Tickets
 
 ## Options
 
