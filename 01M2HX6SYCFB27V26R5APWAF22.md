@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T14:05:53Z
+updated-at: 2026-10-15T14:08:01Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -36,7 +36,18 @@ outcome-what: "'jaira update' hat drei neue Schalter: --roles zieht Rollen, cock
 outcome-why: "Nach einem Upgrade hing jedes Board an drei Stellen zurueck und brauchte drei Befehle; Berk will, dass Skills nach einem Upgrade immer nachgezogen werden. Am 14.10. meldete 'roles install --global' 11 Dateien als 'edited here', die byte-gleich mit frueher ausgelieferten Versionen waren - ein automatischer Lauf haette genau die still ausgelassen. Der nackte Aufruf bleibt gleich, weil Lane-Dateien unter git dem Team gehoeren und Gewohnheitsnutzer nichts Neues geschrieben bekommen sollen."
 outcome-resolves: "DoD 1: 'update --roles --lanes' - Handlauf an einem Board mit veraltetem Block, Rollen und Lane bringt alle drei auf den Stand (Notiz 13:14, TestUpdateRolesLanesBringsAStaleBoardUpToDate). DoD 2: nackter Aufruf schreibt nur Block+Stempel, Entscheidung als Notiz. DoD 3: --dry-run mit gleichen Zeilen und Exit-Code, schreibt nichts. DoD 4: core/release/notes/PWAF22.md. DoD 5: self upgrade fuehrt '<neues Binary> -C <dir> update --roles' aus - Handlauf gegen Fake-Release-Server. DoD 6: nudgeSkillsIfStale warnt einmal je Version und nennt 'jaira update --roles'; der jaira-Skill ist dafuer eingebettet. Tests geschrieben und kompiliert (go vet), aber auf Berks Anweisung noch nicht ausgefuehrt - der Race-Lauf der Hauptsitzung steht aus."
 executed-by: sonnet
-review-summary: none
+review-summary: |-
+  - Neue Liste core/shipped/shipped.sha256: ein sha256 je Version jeder Datei, die jaira installiert (Rollen, cockpit-Mod, jaira-Skill, eingebaute Lanes). Erzeugt aus der git-Historie mit scripts/shipped-history.sh, ins Binary eingebettet, gelesen von core/shipped (Known).
+  - 'jaira roles install': eine Datei, die gleich einer frueher ausgelieferten Version ist, gilt nicht mehr als 'edited'. Sie wird ohne --force ersetzt und als 'updated' gemeldet. Die Zaehlzeile hat jetzt 'N updated'.
+  - Der jaira-Skill ist eingebettet (core/role/jaira/SKILL.md; ein Test haelt ihn byte-gleich mit .claude/skills/jaira/SKILL.md). roles install schreibt ihn als <skills>/jaira/SKILL.md mit. Er ist keine Rolle.
+  - 'jaira update --roles': installiert nach in jedem Skills-Ordner, der schon Rollen haelt - Projekt (.claude/skills, .github/skills) und persoenlich (~/.claude/skills, ~/.copilot/skills). Ausserhalb eines Boards nur persoenlich.
+  - 'jaira update --lanes': core/lane/refresh.go ersetzt Lane-Dateien des Boards, die eine alte ausgelieferte Version sind. Laeuft vor lane.Load, damit der Block die neuen Lanes beschreibt. Eigene Lanes bleiben unberuehrt.
+  - Eine von Hand geaenderte Datei: Zeile 'skipped ... (edited here ...)', nichts angefasst, Exit 3.
+  - 'jaira update --dry-run': Zeilen 'would update/write', Vorschau des Blocks (board.PreviewAgentFiles), kein Versionsstempel, gleicher Exit-Code, letzte Zeile 'nothing was written (--dry-run)'.
+  - Nackter 'jaira update': schreibt weiter nur Block und Stempel. Neu: zwei reine Hinweiszeilen 'roles: N file(s) ...' und 'lanes: N lane file(s) ...'. JSON unveraendert.
+  - 'jaira self upgrade': startet nach dem Ersetzen das NEUE Binary als Kindprozess: '<ziel> -C <dir> update --roles'. Exit 3 des Kinds ist kein Fehler. Startet es nicht: eine Warnzeile, Upgrade bleibt Exit 0. JSON bekommt 'setup' und 'setup_exit'. Lanes nicht.
+  - Warnung: internal/cli/skillsnudge.go, aufgerufen aus openStore. Einmal je Binary-Version (Stempel $JAIRA_HOME/skills-check/version) eine stderr-Zeile, wenn persoenliche Skills fehlen oder alt sind. Still bei dev-Build, update und roles install.
+  - Doku: README, docs/COMMANDS.md, docs/AGENTS.md. 8 Zeilen in core/release/notes/PWAF22.md.
 round: 2
 review-gaps: |-
   Entfernt: (1) nudgeSkillsIfStale (internal/cli/skillsnudge.go) baute die Schleife role.Installed + Install(dry) nach, die refreshRoles (internal/cli/updatesetup.go) schon hat - ruft jetzt refreshRoles("", true); gleiche Aufrufe in gleicher Reihenfolge, gleicher Abbruch ohne Stempel bei Fehler. (2) anySkipped hatte genau einen Aufrufer, updateSetup.skipped, das nur weiterleitete - Rumpf in skipped() gezogen. (3) core/board/preview_test.go writeAgentFile war gleich mit writeFile (core/board/agentfile_test.go:10) - geloescht, Aufruf geht auf writeFile. (4) Falscher Kommentar core/role/install.go:120-122 ('sit next to the go:embed directories') stimmte fuer modKey nicht - korrigiert (war ein critique-Nachfolger).
