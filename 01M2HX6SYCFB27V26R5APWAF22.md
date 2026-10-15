@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T12:34:53Z
+updated-at: 2026-10-15T12:35:08Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -75,3 +75,9 @@ claimed-at: 2026-10-15T12:05:54Z
 - Aktuell gehalten: ein Test je Paket verlangt, dass jede Datei, die dieses Binary installiert, gelistet ist, und druckt die fehlenden Zeilen. Das Skript nimmt auch die Dateien im Arbeitsbaum mit.
 - Verworfen: alte Inhalte einbetten (Megabytes; lane/corrections.go macht das fuer EINE Datei). Verworfen: Install-Protokoll im Zielordner - hilft nicht fuer Dateien, die alte Binaries schon geschrieben haben.
 - sha256 statt git-Blob-ID: mit sha256sum nachpruefbar, gleiches Format wie checksums.txt der Releases, unabhaengig vom git-Objektformat.
+- **2026-10-15 12:35 · BeMuCa** — Entscheidung Lanes: 'jaira update --lanes' nutzt dieselbe Liste ausgelieferter Versionen wie die Rollen, nicht lanesEquivalent.
+- Gleich der eingebauten Lane: unchanged. Gleich einer frueher ausgelieferten Version: wird ersetzt ('updated'). Sonst: 'skipped', nichts angefasst, Exit 3.
+- Nur Lanes, die das Board hat UND die jaira einbaut. Eigene Lanes und Lanes, die das Board nicht hat, bleiben unberuehrt (hinzufuegen ist 'jaira lanes add').
+- Warum nicht lanesEquivalent (core/lane/lane.go:893): es vergleicht Verhalten, nicht Bytes. Ein umformulierter Prompt waere 'gleich' und wuerde ueberschrieben. Und es braeuchte die alten Inhalte.
+- Auf diesem Board: optimize und testing = alte Katalog-Version aus lanes/ -> werden ersetzt. critique ist von Hand geaendert (X9GJ51, 'notes' in input-requires) -> skipped.
+- Der Kern liegt in core/lane (RefreshShipped). 0S1A7M ('lanes use --all') kann ihn spaeter mit einem force-Parameter nach aussen geben. 0S1A7M wird hier NICHT umgesetzt.
