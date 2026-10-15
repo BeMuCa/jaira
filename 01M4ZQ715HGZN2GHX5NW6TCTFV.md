@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-15T12:39:35Z
+updated-at: 2026-10-15T12:39:48Z
 updated-by: BeMuCa
 ---
 
@@ -38,6 +38,11 @@ updated-by: BeMuCa
 - [ ] jaira-dispatcher, jaira-worker und jaira-teamlead geben jede Vorschlagszeile von jaira ('suggestions' aus move/logbook, beim Teamlead auch aus 'jaira milestone ls --json') woertlich an den Menschen weiter und rufen /jaira-role-pr nie selbst auf; Test TestRolesPassThePRSuggestionOnAndNeverRunIt
 - [ ] jaira-role-pr nimmt mehrere Tickets bzw. einen Milestone und legt alle angenommenen Tickets vor dem Push ab; ein genanntes Ticket ohne Commit auf dem Branch ist ein Befund (Stopp vor dem Push); fuer einen bestehenden PR/MR aktualisiert er Titel und Beschreibung aus den Tickets (gh pr edit / glab mr update), aber nur wenn ein Mensch ihn aufrief; Test TestPRTakesSeveralTicketsOrAMilestone
 - [ ] Je eine Zeile pro sichtbarer Aenderung in core/release/notes/6TCTFV.md: --pr, Vorschlaege bei move, bei logbook <id>, in milestone ls, Weitergabe durch die Rollen, jaira-role-pr mit mehreren Tickets
+- [ ] Ein Milestone sagt mit 'pr: block' oder 'pr: single', wie seine Tickets reinkommen; gesetzt mit 'jaira milestone create|set <name> --pr <mode>', ein anderer Wert wird abgelehnt (exit 2); ohne Zeile gilt single (auch fuer jede alte Datei), ein unbekannter Wert in der Datei wird als single gelesen; 'milestone ls --json' traegt 'pr'; Tests TestCreateAndSetWriteThePRMode, TestPRRefusesAnUnknownMode, TestAMilestoneWithoutPRIsSingle
+- [ ] Einzeln: Erreicht ein Ticket per 'jaira move' die Abnahme-Lane (requires-human-exit, keine Frage-Lane; hier signoff) oder die Endlane, druckt jaira 'Next: the pull request. Only a person opens it: /jaira-role-pr <id>' und --json 'suggestions' (kind pull_request, by person) — auch ohne Milestone; ein Ticket in einem Milestone mit pr: block bekommt diese Zeile nicht; Tests TestMoveToSignoffSuggestsThePullRequest, TestMoveJSONCarriesSuggestions, TestBlockMilestoneIncompleteSuggestsNothing
+- [ ] Einzeln, Milestone komplett: Ist ein Milestone ohne pr: block nach move oder logbook <id> komplett, bietet jaira nur 'jaira logbook <m>' an und schlaegt KEINEN Block-PR vor; 'jaira logbook <m>' nimmt den vorgeschlagenen Befehl an; Tests TestSingleMilestoneCompleteOffersFilingAndNoBlockPullRequest, TestLogbookOfTheLastTicketOffersToFileTheMilestone, TestSuggestedFilingIsAccepted
+- [ ] Abnahme- und Endlane werden an ihren Eigenschaften erkannt, nicht am Namen; ein leerer oder abgelegter Milestone schlaegt nie etwas vor; ein Ticket in mehreren Milestones bekommt die Zeilen jedes kompletten Milestones; Tests TestLanesAreFoundByWhatTheyDoNotByName, TestEmptyMilestoneIsNeverComplete, TestFiledMilestoneSuggestsNothing, TestTicketInTwoMilestones
+- [ ] 'jaira milestone ls' zeigt fuer jeden kompletten Milestone dieselben Zeilen (--json: 'suggestions' am Milestone), weil das Annehmen in der TUI nichts druckt; Test TestLsCarriesTheSuggestionsOfACompleteMilestone
 
 ## Options
 
