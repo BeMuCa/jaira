@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T14:03:00Z
+updated-at: 2026-10-15T14:03:02Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
@@ -61,6 +61,19 @@ review-gaps: |-
   - 'jaira milestone --help' (internal/cli/milestones.go:66-67) sagt nur 'files it once all its tickets are finished', nicht dass die Tickets mitgehen. Unvollstaendig, nicht falsch.
   - jaira web (internal/cli/web.go:115-121, webPush) meldet einen von der Marke verworfenen Schreibvorgang als '<name> is rejected', nicht als geloescht. Vor dem Ticket da; critique Runde 2 hat es gesehen und nicht erhoben.
 test-verdict: "pass: check.sh RC 0 (vet=0 build=0 gofmt=ok); Go-Tests nur kompiliert (go vet), NICHT ausgefuehrt (Berks Anordnung, Hauptsession faehrt die volle Race-Suite); DoD 1-7 verifiziert (2,3 neu geprueft, bleiben); Handtests case-b-d, case-c, case-logbook, case-l3, case-t1 (ref-only, Name frei), case-t2 (--json Exit 3) auf HEAD gelaufen"
+review-verdict: |-
+  Der Diff erfuellt DoD 1-7. Kein DEFECT gefunden. Empfehlung: signoff, mit der vollen Race-Suite vor dem PR.
+
+  Von Hand im gebauten Binary (go build -race, Scratch-Repos, lokales bare-Remote) geprueft:
+  - Teil A, ohne Remote: ein offenes Ticket -> Exit 3, Ticket und Lane genannt, nichts abgelegt. Danach Milestone + 3 Tickets in einem Ordner, Board und 'milestone ls' leer. restore holt Ticket und Milestone zurueck. delete laesst die Tickets stehen, der Name ist wieder frei, abgelegt -> Exit 3, unbekannt -> Exit 5.
+  - Teil B, zwei Klone: Der Ref bleibt als Marke stehen. graces fetch entfernt die Datei und nennt sie. Ihre naechsten Schreibvorgaenge bringen nichts zurueck. Ihre wartende Bearbeitung wird mit Meldung verworfen. Das Netz in RecordMilestone greift. Roadmap-Nachfolger werden umgehaengt. --json ist so, wie die Release-Notiz es sagt.
+  - Der 14.10. in drei Varianten nachgestellt: fetch, offline migriert, und ein Klon mit dem installierten 0.5.1. In keiner kam test auf das Remote zurueck.
+
+  Wo ich unsicher bin:
+  (1) Die Go-Tests sind nie gelaufen. Das Urteil stuetzt sich auf Handtests und Lesen.
+  (2) Die TUI habe ich nicht im Binary gesehen.
+  (3) Berks Satz 'jaira sagt welche und laesst sie stehen' traegt zwei Lesarten: Gebaut ist (DoD 4) 'alles verweigern, solange ein Ticket offen ist'. Die andere waere 'Milestone und Fertiges ablegen, Offenes ohne Gruppe stehen lassen'. Das muss Berk bestaetigen.
+review-round: 2
 ---
 
 # Ein fertiger Milestone geht ins Archiv, und ein falscher laesst sich loeschen
