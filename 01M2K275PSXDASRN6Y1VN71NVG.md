@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T12:37:57Z
+updated-at: 2026-10-15T12:37:59Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
@@ -43,7 +43,7 @@ claimed-at: 2026-10-15T12:19:23Z
   proof: internal/cli/archive.go:160-182 unfileMilestone; TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack (internal/cli/milestones_test.go:333, Restore ab :407); Ticket: core/ticket/store.go:634 Restore, TestRestoreFindsLoggedTicket (core/ticket/logbook_test.go:108)
 - [ ] Fuehrt der Milestone noch ein Ticket, das die Terminal-Lane nicht erreicht hat, legt 'jaira logbook <milestone>' gar nichts ab - weder ein Ticket noch den Milestone -, nennt jedes solche Ticket mit seiner Lane und endet mit Exit 3 (milestone_unfinished)
 - [ ] 'jaira milestone delete <milestone>' loescht einen falschen Milestone fuer alle Klone: der Ref wird NICHT entfernt, er bekommt eine Marke ('status: filed' plus 'deleted: <datum> <wer>'), und die Datei hier ist weg. Ein zweiter Klon, der die Datei hat - als <name>-<ID>.md oder im alten Format <name>.md -, verliert sie beim naechsten 'jaira fetch' und schiebt sie nie wieder hoch, auch nicht aus einem noch wartenden Schreibvorgang. Belegt durch einen Zwei-Klon-Test fuer beide Dateiformen
-- [ ] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das, was ein Benutzer davon merkt
+- [ ] core/release/notes/N71NVG.md hat je eine '- '-Zeile (eine Zeile, nie umbrochen) fuer jede Aenderung, die ein Benutzer merkt: logbook <milestone> legt die Tickets mit ab, 'jaira milestone delete', und 'jaira fetch' meldet geloeschte Milestones
 
 ## Options
 
