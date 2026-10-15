@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T13:01:52Z
+updated-at: 2026-10-15T13:02:12Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -60,7 +60,7 @@ claimed-at: 2026-10-15T12:51:30Z
 - [x] 4 core/role/target.go: Installed(root) []Target (own project dir per agent, then personal; only dirs already holding roles; deduped) + Behind(results); tests first
 - [x] 5 core/board/announce.go: PreviewAgentFiles(root, choice, lanes) by threading dry through announceIn/announceInAgentFile/removeBlock/setClaudeImport (lines 397-576 only, not agentNote); test: preview names what the write does and writes nothing
 - [x] 6a internal/cli: 'jaira update --roles --lanes' (new updatesetup.go; update.go flags/Long/RunE 80-127 only, never 128-139): lanes refreshed before lane.Load, roles where installed, --roles works outside a board (personal only), JSON keys roles/lanes/skipped only when asked, exit 3 via named return+defer; tests first incl. DoD-1 reproduction TestUpdateRolesLanesBringsAStaleBoardUpToDate and TestUpdateWithoutSwitchesWritesOnlyTheBlock; two release-note lines
-- [ ] 6b internal/cli: 'jaira update --dry-run' (would-lines, 'nothing was written (--dry-run)', no stamp, same exit code, return before the notes block) + read-only hint lines of the bare call when roles/lanes are behind; tests first: TestUpdateDryRunWritesNothing, TestUpdateDryRunExitCodeMatchesTheRealRun, TestUpdateWithoutSwitchesNamesWhatIsBehind; two release-note lines
+- [~] 6b internal/cli: 'jaira update --dry-run' (would-lines, 'nothing was written (--dry-run)', no stamp, same exit code, return before the notes block) + read-only hint lines of the bare call when roles/lanes are behind; tests first: TestUpdateDryRunWritesNothing, TestUpdateDryRunExitCodeMatchesTheRealRun, TestUpdateWithoutSwitchesNamesWhatIsBehind; two release-note lines
 - [ ] 7 internal/cli/self.go: after Replace run the NEW binary '<target> -C <dir> update --roles [--json]' through seam var runUpgraded; child exit 3 is not a failure; JSON setup/setup_exit; no lanes; tests first in self_test.go (recorder seam + unix test executing a shell-script payload); release-note line
 - [ ] 8 internal/cli/skillsnudge.go: nudgeSkillsIfStale in openStore after nudgeIfStale - personal dirs only, once per version via JAIRA_HOME/skills-check/version, stderr only, silent on dev/update/roles install; tests first in skillsnudge_test.go (own HOME/USERPROFILE/JAIRA_HOME); release-note line
 - [ ] 9 ship the jaira skill (driver decided yes, see note) - core/role/jaira/SKILL.md embedded and installed beside the roles (not a role), test keeps .claude/skills/jaira/SKILL.md byte-equal, manifest regenerated, .gitattributes, README.md:649/683 + docs/AGENTS.md:263/271; release-note line
