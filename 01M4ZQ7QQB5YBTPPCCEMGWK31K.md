@@ -1,7 +1,7 @@
 ---
 id: 01M4ZQ7QQB5YBTPPCCEMGWK31K
 title: "Ein archiviertes Ticket verschwindet sofort von allen Boards, nicht erst wenn der Snapshot den Ref abraeumt"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -22,7 +22,7 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T13:30:00Z
+updated-at: 2026-10-15T13:31:46Z
 updated-by: BeMuCa
 outcome-what: "'jaira archive' schreibt auf den Ref den Dateiinhalt plus eine Zeile 'archived: <datum> <wer>' (core/ticket/store.go recordArchived); die Datei in .jaira/archive/ bleibt byte-gleich. Store.List laesst ref-only Tickets mit dieser Zeile weg, also auch board, list, next, resume. 'jaira restore' schreibt die Datei ohne Zeile zurueck auf den Ref (nach CheckFresh; ist der Ref neuer, warnt es nur). show und fetch nennen ein archiviertes Ticket 'archived', fetch meldet es nicht als 'a ticket is yours'. archive sagt, dass das Committen nur den Eintrag festhaelt. Doku und Release-Notiz."
 outcome-why: "Bisher schrieb archive den unveraenderten Inhalt auf den Ref. Jeder andere Klon zeigte das Ticket weiter, bis der Snapshot-Lauf (alle 72 h) den Ref abraeumte, und das erst nach Commit und Merge der Archiv-Datei. Berk will, dass Archivieren wie create wirkt: sofort beim naechsten fetch, ohne Commit."
@@ -31,6 +31,7 @@ executed-by: sonnet
 review-summary: |-
   internal/cli/archive.go:92 (auch :24-26, README.md:580-582, docs/COMMANDS.md:155, core/release/notes/GWK31K.md) behauptet 'every other board drops it ... without a commit / committing only keeps the record' - falsch fuer jedes Ticket, dessen Datei im Branch getrackt ist (origin/master: 28 Ticket-Dateien, 27 davon backlog): Klone mit der Datei zeigen es weiter, bis das Verschieben committet und gemergt ist (Teil 2). Statt dessen: archive.go:92 die Zeile nur drucken, wenn !(&gitrepo.Repo{Dir: s.Root}).Tracks(t.Path) (core/gitrepo/git.go:49; der Index nennt den alten Pfad nach os.Rename weiter), sonst 'Clones that have this file keep showing it until this move is committed and merged.'; Doku/Hilfe/Notiz sagen 'every board that has it only on its ref'; README: den Satz hinter '...write it down a second time.' als Ausnahme stellen (wie refsync.go:175-177), heute bezieht sich 'At that moment' auf restore
   internal/cli/archive.go:141-145 die restore-Warnung sagt bei ErrStale 'so other boards still hide it' und haengt den StaleError-Text an, der mit 'then run this again' endet (refsync.go:1183) - beides falsch: ein neuerer Ref heisst, jemand hat das Ticket seit dem Archivieren geschrieben (ohne Marke, Teil 3), und ein zweites restore scheitert mit not_archived. Statt dessen: bei errors.Is(err, ticket.ErrStale) 'restored here; its ref was written since the archive and was left as it is - jaira pull <h> brings this file up to it' ohne %v; den heutigen Text nur fuer ErrNotRecorded
+round: 2
 ---
 
 # Ein archiviertes Ticket verschwindet sofort von allen Boards, nicht erst wenn der Snapshot den Ref abraeumt
@@ -42,7 +43,7 @@ review-summary: |-
 - [x] 'jaira restore' eines archivierten Tickets entfernt die Markierung auf dem Ref wieder, sodass es ueberall zurueckkommt; Test
   proof: Store.Restore re-records the unmarked file; tests core/ticket/archiveref_test.go:113,142 + internal/cli/archiveref_test.go:104
 - [x] Archivieren pusht die Markierung sofort auf den Ref, wie 'jaira create' ein neues Ticket pusht: ein anderer Klon sieht das Ticket nach seinem naechsten fetch nicht mehr, ohne dass die Archiv-Datei committet ist. Die Ausgabe von 'jaira archive' sagt, dass das Committen von .jaira/archive/<datei> nur den Eintrag im Repository festhaelt; Test
-  proof: push via recordFiled->Record dirty->afterCommand->flushRefs (internal/cli/root.go:106, refs.go:204-207,246-252); archive output line internal/cli/archive.go:91-93; test internal/cli/archiveref_test.go:65 (other clone drops it, git ls-files .jaira/archive empty)
+  proof: push via recordFiled->Record dirty->afterCommand->flushRefs (internal/cli/root.go:106, refs.go:204-207,246-252); archive output lines internal/cli/archive.go:94-104 (untracked: 'only keeps the record'; tracked: 'a branch that has this file shows it until this move is committed and merged there'); tests internal/cli/archiveref_test.go:65, :131
 - [x] Eine Zeile in core/release/notes/<ID>.md
   proof: core/release/notes/GWK31K.md
 
