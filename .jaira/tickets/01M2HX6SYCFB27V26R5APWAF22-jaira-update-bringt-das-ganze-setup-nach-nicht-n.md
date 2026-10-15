@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T13:11:15Z
+updated-at: 2026-10-15T13:33:17Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -31,19 +31,41 @@ context: |-
 
   Dazu kommt seit Commit 42d8253: die Lane-Dateien dieses Boards liegen unter git. Ein rechnerweiter Lauf macht damit Arbeitsbaeume in mehreren Repositories schmutzig, nicht nur Dateien im Heimverzeichnis.
 claimed-by: EE-3NX6GL3-3760272
-claimed-at: 2026-10-15T13:03:19Z
+claimed-at: 2026-10-15T13:26:24Z
+outcome-what: "'jaira update' hat drei neue Schalter: --roles zieht Rollen, cockpit-Mod und jaira-Skill dort nach, wo die Rollen schon liegen (Projekt + persoenlich; ausserhalb eines Boards nur persoenlich); --lanes ersetzt Lane-Dateien des Boards, die eine frueher ausgelieferte Version sind; --dry-run sagt vorher, was geschrieben und was ausgelassen wuerde. Ohne Schalter schreibt update weiter nur den Block und nennt in einer Hinweiszeile, was zurueckhaengt. Neue Liste core/shipped/shipped.sha256 (jede je ausgelieferte Version, aus git erzeugt mit scripts/shipped-history.sh): eine Datei gleich einer alten Version gilt nicht mehr als 'edited' und wird ohne --force ersetzt ('updated') - auch in 'jaira roles install'. 'jaira self upgrade' startet danach das NEUE Binary mit 'update --roles'. Einmal je Version eine stderr-Zeile, wenn persoenliche Skills aelter sind. Der jaira-Skill ist jetzt eingebettet (core/role/jaira/SKILL.md, per Test gleich .claude/skills/jaira/SKILL.md) und wird neben den Rollen installiert. README, docs/COMMANDS.md, docs/AGENTS.md, 8 Release-Notiz-Zeilen."
+outcome-why: "Nach einem Upgrade hing jedes Board an drei Stellen zurueck und brauchte drei Befehle; Berk will, dass Skills nach einem Upgrade immer nachgezogen werden. Am 14.10. meldete 'roles install --global' 11 Dateien als 'edited here', die byte-gleich mit frueher ausgelieferten Versionen waren - ein automatischer Lauf haette genau die still ausgelassen. Der nackte Aufruf bleibt gleich, weil Lane-Dateien unter git dem Team gehoeren und Gewohnheitsnutzer nichts Neues geschrieben bekommen sollen."
+outcome-resolves: "DoD 1: 'update --roles --lanes' - Handlauf an einem Board mit veraltetem Block, Rollen und Lane bringt alle drei auf den Stand (Notiz 13:14, TestUpdateRolesLanesBringsAStaleBoardUpToDate). DoD 2: nackter Aufruf schreibt nur Block+Stempel, Entscheidung als Notiz. DoD 3: --dry-run mit gleichen Zeilen und Exit-Code, schreibt nichts. DoD 4: core/release/notes/PWAF22.md. DoD 5: self upgrade fuehrt '<neues Binary> -C <dir> update --roles' aus - Handlauf gegen Fake-Release-Server. DoD 6: nudgeSkillsIfStale warnt einmal je Version und nennt 'jaira update --roles'; der jaira-Skill ist dafuer eingebettet. Tests geschrieben und kompiliert (go vet), aber auf Berks Anweisung noch nicht ausgefuehrt - der Race-Lauf der Hauptsitzung steht aus."
+executed-by: sonnet
+review-summary: |-
+  [DEFEKT] README.md:118 "It ends with a line for each part that is behind" und core/release/notes/PWAF22.md:5 "Read the last lines of a plain 'jaira update'" sind falsch: internal/cli/update.go:187 druckt die Hinweiszeilen VOR "Nothing has changed since..." (update.go:189) bzw. vor der Liste "What's changed since then:". Nach einem Upgrade stehen sie also ueber einer langen Notizliste, nie am Ende. Fix: beide Texte umformulieren, z.B. README "After the line about the jaira section it prints one line for each part that is behind ...", Notiz "Look for the 'roles:' and 'lanes:' lines a plain 'jaira update' now prints: ...". Code nicht verschieben (Notizblock = T8A8KM).
+  [NACHFOLGER] internal/cli/self.go:203 + :241 warnSetupFailed: 'self upgrade --version' auf ein Release ohne --roles (z.B. zurueck auf 0.5.1) -> Kind scheitert mit unknown flag, die Zeile nennt 'jaira update --roles', das es dort nicht gibt. Alternative: Kind auslassen, wenn das gepinnte Release aelter als release.Current ist, oder dann 'jaira update' nennen.
+  [NACHFOLGER] core/lane/refresh.go:59-70: ein done.md, das lane.Load per Korrektur (core/lane/corrections.go doneDoorway) schon repariert hat, ist keine ausgelieferte Version -> 'update --lanes' meldet es fuer immer als 'edited here', Exit 3. Alternative: die korrigierten Bytes ins Manifest (scripts/shipped-history.sh) oder in RefreshShipped als bekannt werten.
+  [NACHFOLGER] core/lane/refresh.go:61 und core/role/install.go:147 vergleichen rohe Bytes: CRLF-Checkout (Git for Windows autocrlf, Lanes/Rollen unter git) trifft nie das Manifest -> 'edited', Exit 3. Alternative: vor shipped.Known \r\n normalisieren wie core/lane/corrections.go:219.
+  [NACHFOLGER] core/role/install.go:86-92 schreibt jaira/SKILL.md immer. 'roles install --agent copilot --project' in einem Repo mit nur .claude/skills/jaira (wie diesem) schreibt .github/skills/jaira; Copilot liest beide (target.go:51 AlsoProject) -> jaira doppelt registriert. Der Schutz InstalledIn (target.go:109) prueft nur Rollen. Alternative: jaira/SKILL.md auslassen, wenn ein Also-Ordner es schon hat.
+  [NACHFOLGER] core/role/target.go Behind + install(): fehlende Dateien zaehlen als 'aelter' und werden geschrieben. Wer z.B. jaira-cockpit (Plugin mit Hooks) absichtlich geloescht hat, bekommt es durch jeden 'self upgrade' still zurueck, und Hinweis/Warnung bleiben an. Frage an Berk beim signoff; Alternative: nur Dateien in schon vorhandenen Rollen-/Mod-Ordnern schreiben und zaehlen.
+  [NACHFOLGER] internal/cli/update.go:89-90 und README.md:131-133 '--dry-run ... writes nothing': lane.Load (refresh.go:39, update.go:131) kann eine einmalige Korrektur bzw. den Erst-Aufbau schreiben, openStore bindet den Merge-Treiber. Nur Randfall. Alternative: 'writes none of the files it reports' oder den Randfall nennen.
+  [NACHFOLGER] core/role/install.go:120-124: Kommentar 'They sit next to the go:embed directories they mirror' stimmt fuer modKey nicht (liegt in core/role, spiegelt core/mod/builtin). Alternative: mod.Key(id, rel) in core/mod/mod.go neben dessen embed, oder Kommentar korrigieren.
+  [NACHFOLGER] internal/cli/roles.go:131 setzt updateInProgress nur, um die Skills-Warnung stumm zu schalten; der Name fuehrt jetzt in die Irre. Alternative: in setupInProgress umbenennen (update.go, roles.go, skillsnudge.go).
+  [NACHFOLGER] internal/cli/self.go:69-79 Long nennt nicht, dass upgrade danach 'jaira update --roles' des neuen Binaries startet (README/COMMANDS tun es). Alternative: ein Satz im Long.
+round: 2
 ---
 
 # jaira update bringt das ganze Setup nach, nicht nur den Textblock
 
 ## Definition of Done
 
-- [ ] 'jaira update' bringt mit den entsprechenden Schaltern Agent-Block, Rollen und Lanes in einem Aufruf auf den Stand des installierten Binaries. Nachgestellt an einem Board, dessen Block, Rollen und Lanes alle drei veraltet sind.
-- [ ] Der Aufruf ohne Schalter aendert sein Verhalten nicht still: was er heute tut, tut er weiterhin, und alles darueber hinaus wird ausdruecklich verlangt. Die Entscheidung steht begruendet im Ticket, nicht nur im Code.
-- [ ] Der Befehl sagt vor dem Schreiben, was er anfassen wuerde, und was er auslaesst weil ein Mensch es geaendert hat - wie 'jaira roles install' es schon tut.
-- [ ] Eine Zeile je Aenderung in core/release/notes/PWAF22.md, als Anweisung an den Leser formuliert und wahr
-- [ ] jaira self upgrade fuehrt danach jaira update und die Rollen-Installation an den Orten aus, an denen Rollen installiert sind (global und/oder im Projekt), und sagt, was es angefasst hat; Test
-- [ ] Sind installierte Skills (jaira, jaira-role-*) aelter als das laufende Binary, warnt jaira einmal und nennt den Befehl, der sie nachzieht; Test
+- [x] 'jaira update' bringt mit den entsprechenden Schaltern Agent-Block, Rollen und Lanes in einem Aufruf auf den Stand des installierten Binaries. Nachgestellt an einem Board, dessen Block, Rollen und Lanes alle drei veraltet sind.
+  proof: internal/cli/update.go:125 (RefreshShipped vor lane.Load), internal/cli/updatesetup.go:58 refreshRoles; Test TestUpdateRolesLanesBringsAStaleBoardUpToDate (updatesetup_test.go:99); Handlauf 15.10. Block+Rollen+Lane veraltet -> 'update --roles --lanes' alle drei aktuell (Notiz 13:14)
+- [x] Der Aufruf ohne Schalter aendert sein Verhalten nicht still: was er heute tut, tut er weiterhin, und alles darueber hinaus wird ausdruecklich verlangt. Die Entscheidung steht begruendet im Ticket, nicht nur im Code.
+  proof: Entscheidung als Notiz 12:34 'Entscheidung DoD 2'; update.go: ohne --roles/--lanes nur Block+Stempel, JSON unveraendert; Test TestUpdateWithoutSwitchesWritesOnlyTheBlock (updatesetup_test.go:133); Handlauf: nackter update aendert nur CLAUDE.md/AGENTS.md (sha vorher/nachher)
+- [x] Der Befehl sagt vor dem Schreiben, was er anfassen wuerde, und was er auslaesst weil ein Mensch es geaendert hat - wie 'jaira roles install' es schon tut.
+  proof: jaira update --dry-run: update.go:135 PreviewAgentFiles, updatesetup.go would-Zeilen + 'nothing was written (--dry-run)', gleicher Exit-Code; Tests TestUpdateDryRunWritesNothing (updatedry_test.go:20), TestUpdateDryRunExitCodeMatchesTheRealRun (:50); Handlauf: exit 3, keine Datei geaendert, Stempel unveraendert
+- [x] Eine Zeile je Aenderung in core/release/notes/PWAF22.md, als Anweisung an den Leser formuliert und wahr
+  proof: core/release/notes/PWAF22.md: 8 Zeilen, je eine pro Aenderung (roles install, update --roles, --lanes, --dry-run, nackter update, self upgrade, Warnung, jaira-Skill)
+- [x] jaira self upgrade fuehrt danach jaira update und die Rollen-Installation an den Orten aus, an denen Rollen installiert sind (global und/oder im Projekt), und sagt, was es angefasst hat; Test
+  proof: internal/cli/self.go:33 runUpgraded + :203 '<ziel> -C <dir> update --roles' nach Replace; Tests TestSelfUpgradeRunsTheNewBinarysUpdateRoles (self_test.go:364), TestSelfUpgradeExecutesTheReplacedBinary (:462); Handlauf mit Fake-Release-Server: 9.9.8->9.9.9, Kind zog persoenliche Skills nach, editierte Datei skipped, exit 0
+- [x] Sind installierte Skills (jaira, jaira-role-*) aelter als das laufende Binary, warnt jaira einmal und nennt den Befehl, der sie nachzieht; Test
+  proof: internal/cli/skillsnudge.go:21 nudgeSkillsIfStale aus openStore, einmal je Version (JAIRA_HOME/skills-check), stderr, nennt 'jaira update --roles'; jaira-Skill eingebettet core/role/jaira/SKILL.md; Tests TestSkillsNudgeWarnsOnceAboutOlderPersonalSkills (skillsnudge_test.go:34), TestSkillsNudgeIgnoresAnEditedSkill (:51); Handlauf: erste 'jaira list' eine Zeile, zweite nichts
 
 ## Options
 
@@ -65,7 +87,7 @@ claimed-at: 2026-10-15T13:03:19Z
 - [x] 8 internal/cli/skillsnudge.go: nudgeSkillsIfStale in openStore after nudgeIfStale - personal dirs only, once per version via JAIRA_HOME/skills-check/version, stderr only, silent on dev/update/roles install; tests first in skillsnudge_test.go (own HOME/USERPROFILE/JAIRA_HOME); release-note line
 - [x] 9 ship the jaira skill (driver decided yes, see note) - core/role/jaira/SKILL.md embedded and installed beside the roles (not a role), test keeps .claude/skills/jaira/SKILL.md byte-equal, manifest regenerated, .gitattributes, README.md:649/683 + docs/AGENTS.md:263/271; release-note line
 - [x] 10 docs: README (Upgrading, Bringing a board up to date, Roles) and docs/COMMANDS.md:130 name --roles/--lanes/--dry-run and what self upgrade now runs
-- [ ] 11 reproduce DoD 1 by hand: scratch build with -ldflags version, HOME/JAIRA_HOME in the scratchpad, scratch board with stale block/roles/lane; update --dry-run, update --roles --lanes, rerun; skills warning once; transcript in a note, DoD proofs ticked
+- [x] 11 reproduce DoD 1 by hand: scratch build with -ldflags version, HOME/JAIRA_HOME in the scratchpad, scratch board with stale block/roles/lane; update --dry-run, update --roles --lanes, rerun; skills warning once; transcript in a note, DoD proofs ticked
 
 ## Progress
 - **2026-10-13 20:51 · BeMuCa** — Berk 2026-10-13: nach einem Upgrade sollen die jaira-Skills immer neu installiert werden und jaira update automatisch laufen (DoD 5 und 6). Anlass: am 13.10. war ~/.claude/skills/jaira-role-pr noch vom 06.10. und kannte das Ablegen vor dem PR nicht - Alex musste im PR #74 nachfordern. Weder git pull noch jaira update ziehen die Rollen-Skills heute nach (jaira roles install --help). Gehoert mit T8A8KM zusammen.
@@ -132,3 +154,29 @@ Wortlaut steht im Design (Scratchpad design.md, je Schritt). Kein '- !'-Marker -
 - **2026-10-15 12:50 · BeMuCa** — Schritt 1-2: das Manifest hat 438 Zeilen (48824 Bytes), erzeugt mit scripts/shipped-history.sh auf dem Worktree. Skript braucht bash (Prozess-Substitution), kein sh. Mod-Dateien types/index.d.ts sind im Manifest (core/mod/mod.go ueberspringt nur .claude-plugin/types, nicht types/). Die .gitattributes-Pins fuer core/role/testdata und core/lane/testdata stehen schon in Schritt 1.
 - **2026-10-15 12:57 · BeMuCa** — Step 5: dry chooseAgentFiles skips setClaudeImport when the dry removeBlock said CLAUDE.md would be deleted (file still exists in dry, real run finds none) - else preview would add an import line the write never does. Covered by 'agents, claude file deleted' case. Step 4 --done tick raced the --doing call once; retried.
 - **2026-10-15 13:08 · BeMuCa** — Step 7: existing pin test (--version --json) now stubs runUpgraded; a real exec of the 'pin-bytes' payload would put a stderr line into the combined output and break the JSON parse. Step 8: stamp is written even when nothing is behind (once per version, not once per warning); Behind also counts Written files, so a newly shipped role missing in an installed dir warns too.
+- **2026-10-15 13:14 · BeMuCa** — Schritt 11 von Hand, Scratch-Build 9.9.8/9.9.9, HOME+JAIRA_HOME im Scratchpad, Fake-Release-Server 127.0.0.1:8765.
+bare 'jaira update' exit 0: nur Block neu, Rollen/Lane-Dateien byte-gleich (sha vorher/nachher); Hints 'roles: 3 file(s) are older ... update --roles' + 'lanes: 1 lane file(s) ... update --lanes'.
+'update --roles --lanes --dry-run' exit 3: 'would update' je Lane/Projekt-Rolle/persoenliche Rolle/jaira skill, 'skipped .../jaira-role-tester/SKILL.md (edited here; --force to replace)', 'nothing was written (--dry-run)'; keine Datei geaendert, Stempel (auf 9.9.7 gesetzt) unveraendert.
+'update --roles --lanes' exit 3: 4x 'updated' (testing.md, acceptance projekt+persoenlich, jaira/SKILL.md), tester skipped+unveraendert, danach cmp == eingebettete Bytes. Zweiter Lauf: 0 updated, nur unchanged + das eine skipped, exit 3. --json: stdout gueltig, Keys roles/lanes/skipped=true.
+Warnung: skills-check entfernt, 'jaira list' 1. Lauf = genau 1 stderr-Zeile 'jaira: the jaira skills in .../.claude/skills are older than this jaira (9.9.9) — run jaira update --roles ...', 2. Lauf 0 Byte; 'list --json' stdout gueltiges JSON.
+'self upgrade' (Kopie 9.9.8 -> 9.9.9) exit 0: Binary == 9.9.9-Bytes, 'bringing your setup in step with 9.9.9: jaira update --roles', 'updated .../jaira-role-acceptance/SKILL.md', Tester skipped+unveraendert. --json: setup (Objekt) + setup_exit 3. Ausserhalb Board: 'no board here: only your personal skills directories were checked', exit 0.
+Beobachtung (kein Defekt hier): Notes-Block listet bei Fake-Version 9.9.9 alle Notes ab 0.1.0.
+Transkripte: scratchpad/pwaf22/hand/transcript-*.txt
+- **2026-10-15 13:30 · BeMuCa** — critique (1. Durchgang): ein Defekt, Art (b) falsche Aussage in Doku und Release-Notiz.
+- README.md:118 'It ends with a line for each part that is behind' und core/release/notes/PWAF22.md:5 'Read the last lines of a plain jaira update' sind falsch.
+- Grund: internal/cli/update.go:187 druckt hintLines VOR 'Nothing has changed since...' (update.go:189) bzw. vor 'What's changed since then:' und der Notizliste. Nach einem Upgrade stehen die Hinweise ueber einer langen Liste.
+- Fix: nur Text. README z.B. 'After the line about the jaira section it prints one line for each part that is behind ...'; Notiz-Zeile 5 z.B. 'Look for the roles: and lanes: lines a plain jaira update now prints: ...'. Notiz bleibt eine Zeile, Anweisung, wahr.
+- Code NICHT verschieben: der Notizblock in update.go gehoert T8A8KM (Brief).
+Geprueft und ohne Befund: gofmt/go build/go vet sauber; Manifest mit scripts/shipped-history.sh byte-gleich nachgebaut (471 Zeilen); core/role/jaira/SKILL.md == .claude/skills/jaira/SKILL.md; keine Umbenennung in core/lane/builtin, Skript verliert also keine Lane-Versionen.
+Bestehende Tests (statisch, kein go test): keiner bricht. roles_test 'X written' passt weiter zur neuen Summenzeile; role_test prueft keine Dateizahl; update_test/sharestate laufen mit release.Current=dev bzw. isoliertem HOME/JAIRA_HOME (main_test.go TestMain); alle echten self-upgrade-Tests stubben runUpgraded oder pruefen die Ausgabe nicht (sharestate_test.go:95, exec von 'new-bytes' scheitert nur mit Warnung).
+- **2026-10-15 13:30 · BeMuCa** — Nachfolger (critique): kein Grund zum Zurueckschicken, als Folge-Tickets oder signoff-Fragen.
+- self.go:203/:241: 'self upgrade --version' auf ein Release ohne --roles (z.B. 0.5.1) -> Kind scheitert, Zeile nennt 'jaira update --roles', das es dort nicht gibt. Kind auslassen, wenn gepinnt aelter als release.Current.
+- refresh.go:59-70: done.md, das die Korrektur doneDoorway (corrections.go) schon repariert hat, ist keine ausgelieferte Version -> 'update --lanes' meldet 'edited', Exit 3, fuer immer. Korrigierte Bytes als bekannt werten.
+- refresh.go:61, install.go:147: rohe Bytes; CRLF-Checkout (autocrlf, Dateien unter git) gilt nie als ausgeliefert. \r\n normalisieren wie corrections.go:219.
+- install.go:86-92: jaira/SKILL.md immer geschrieben; 'roles install --agent copilot --project' neben .claude/skills/jaira -> Copilot sieht jaira doppelt (target.go:51, InstalledIn prueft nur Rollen).
+- Behind/install: fehlende Dateien gelten als 'aelter'. Absichtlich geloeschtes jaira-cockpit (Plugin mit Hooks) kommt mit jedem 'self upgrade' still zurueck. Frage an Berk.
+- update.go:89-90, README.md:131-133 '--dry-run writes nothing': lane.Load kann Korrektur/Erst-Aufbau schreiben, openStore bindet Merge-Treiber. Randfall; Wortlaut einschraenken.
+- install.go:120-124: Kommentar 'sit next to the go:embed directories' stimmt fuer modKey nicht. mod.Key in core/mod oder Kommentar fixen.
+- roles.go:131: updateInProgress nur zum Stummschalten gesetzt; in setupInProgress umbenennen.
+- self.go:69-79 Long: nennt den 'update --roles'-Schritt nicht. Ein Satz.
+- **2026-10-15 13:33 · BeMuCa** — Treiber zu critique 1: zurueck nach in-progress nur fuer den Textdefekt (README.md:118, Notiz-Zeile 5). Dazu, vom Treiber gefunden, gleiche Klasse: die self-upgrade-Notiz verspricht 'update --roles' gleich nach der Installation - beim Sprung von 0.5.1 auf dieses Release laeuft aber noch der self upgrade des ALTEN Binaries, der das nicht tut. Die Zeile muss sagen: ab dem naechsten Upgrade; diesmal 'jaira update --roles' selbst laufen lassen. Alle [NACHFOLGER] bleiben Nachfolger.

@@ -115,8 +115,9 @@ lanes and lists what changed since the version that last ran there. Commit
 that section along with your next change, or leave it — it is only the agents'
 copy of the rules.
 
-That is all a plain `jaira update` writes. It ends with a line for each part
-that is behind — roles, lanes — naming the switch that brings it up:
+That is all a plain `jaira update` writes. Right after the jaira-section line it
+prints a line for each part that is behind — roles, lanes — naming the switch
+that brings it up:
 
 ```bash
 jaira update --roles            # skills already installed here and in ~/: roles, cockpit mod, jaira skill
