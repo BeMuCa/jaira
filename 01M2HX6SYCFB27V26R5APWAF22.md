@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T13:08:34Z
+updated-at: 2026-10-15T13:08:40Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -131,3 +131,4 @@ Wortlaut steht im Design (Scratchpad design.md, je Schritt). Kein '- !'-Marker -
 - Offen fuer Berk (nicht in diesem Ticket): die Dev-Build-Verweigerung von 'self upgrade' (self.go:80-84), und Rollen, die mit --into installiert wurden (update --roles und die Warnung sehen sie nicht).
 - **2026-10-15 12:50 · BeMuCa** — Schritt 1-2: das Manifest hat 438 Zeilen (48824 Bytes), erzeugt mit scripts/shipped-history.sh auf dem Worktree. Skript braucht bash (Prozess-Substitution), kein sh. Mod-Dateien types/index.d.ts sind im Manifest (core/mod/mod.go ueberspringt nur .claude-plugin/types, nicht types/). Die .gitattributes-Pins fuer core/role/testdata und core/lane/testdata stehen schon in Schritt 1.
 - **2026-10-15 12:57 · BeMuCa** — Step 5: dry chooseAgentFiles skips setClaudeImport when the dry removeBlock said CLAUDE.md would be deleted (file still exists in dry, real run finds none) - else preview would add an import line the write never does. Covered by 'agents, claude file deleted' case. Step 4 --done tick raced the --doing call once; retried.
+- **2026-10-15 13:08 · BeMuCa** — Step 7: existing pin test (--version --json) now stubs runUpgraded; a real exec of the 'pin-bytes' payload would put a stderr line into the combined output and break the JSON parse. Step 8: stamp is written even when nothing is behind (once per version, not once per warning); Behind also counts Written files, so a newly shipped role missing in an installed dir warns too.
