@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T12:34:51Z
+updated-at: 2026-10-15T12:34:53Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -67,3 +67,11 @@ claimed-at: 2026-10-15T12:05:54Z
 - Gleicher Exit-Code wie der echte Lauf (3, wenn etwas uebersprungen wuerde). So macht es schon 'jaira move --dry-run' (internal/cli/flow.go:317) und 'sync-tasks --dry-run'.
 - Verworfen: immer erst einen Plan drucken und dann schreiben - das 'vorher' waere nur die Reihenfolge der Zeilen. Verworfen: Rueckfrage j/n - haelt Agenten an.
 - Bekannte Grenze: mit --lanes --dry-run zeigt die Block-Vorschau den Block fuer die Lanes von jetzt, nicht fuer die erneuerten.
+- **2026-10-15 12:34 · BeMuCa** — Entscheidung 'von Hand geaendert' (die 11 falsch als edited gemeldeten Dateien vom 14.10.): eine Datei gilt nur dann als von Hand geaendert, wenn ihre Bytes KEINE Version sind, die jaira je ausgeliefert hat.
+- Heute: core/role/install.go:101 writeFile vergleicht nur mit den Bytes DIESES Binaries. Eine Datei einer aelteren Version gilt als 'edited' und wird uebersprungen.
+- Neu: core/shipped/shipped.sha256, eine Zeile '<sha256>  <Pfad im Repo>' je Version jeder installierten Datei (Rollen, cockpit-Mod, jaira-Skill, eingebaute Lanes). Per go:embed im Binary, ca. 430 Zeilen, ca. 45 KB.
+- Erzeugt aus der git-Historie mit scripts/shipped-history.sh: --full-history -m (sonst fehlen 22 Versionen aus Merge-Aufloesungen), verweigert flache Klone.
+- Historie: Rollen seit b9eae909 (v0.2.0) in core/role/builtin, vorher nie im Binary. Lanes seit v0.1.0 in core/lane/builtin. critique/optimize/testing lagen vorher in lanes/ (Katalog, verschoben in 2fb8f177) - deren Versionen zaehlen mit.
+- Aktuell gehalten: ein Test je Paket verlangt, dass jede Datei, die dieses Binary installiert, gelistet ist, und druckt die fehlenden Zeilen. Das Skript nimmt auch die Dateien im Arbeitsbaum mit.
+- Verworfen: alte Inhalte einbetten (Megabytes; lane/corrections.go macht das fuer EINE Datei). Verworfen: Install-Protokoll im Zielordner - hilft nicht fuer Dateien, die alte Binaries schon geschrieben haben.
+- sha256 statt git-Blob-ID: mit sha256sum nachpruefbar, gleiches Format wie checksums.txt der Releases, unabhaengig vom git-Objektformat.
