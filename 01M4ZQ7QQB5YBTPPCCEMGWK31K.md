@@ -22,7 +22,7 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T12:37:17Z
+updated-at: 2026-10-15T12:37:19Z
 updated-by: BeMuCa
 ---
 
@@ -32,7 +32,7 @@ updated-by: BeMuCa
 
 - [ ] Archivieren schreibt eine Markierung in den Inhalt auf dem Ref (z.B. 'status: archived', wie 'filed' bei Milestones); board, list, next und resume blenden ein ref-only Ticket mit dieser Markierung aus; Test
 - [ ] 'jaira restore' eines archivierten Tickets entfernt die Markierung auf dem Ref wieder, sodass es ueberall zurueckkommt; Test
-- [ ] Die Ausgabe von 'jaira archive' sagt, dass .jaira/archive/<datei> committet werden muss (wie beim logbook), oder das Ticket begruendet, warum nicht
+- [ ] Archivieren pusht die Markierung sofort auf den Ref, wie 'jaira create' ein neues Ticket pusht: ein anderer Klon sieht das Ticket nach seinem naechsten fetch nicht mehr, ohne dass die Archiv-Datei committet ist. Die Ausgabe von 'jaira archive' sagt, dass das Committen von .jaira/archive/<datei> nur den Eintrag im Repository festhaelt; Test
 - [ ] Eine Zeile in core/release/notes/<ID>.md
 
 ## Options
