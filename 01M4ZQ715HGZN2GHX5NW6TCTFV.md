@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-15T12:39:01Z
+updated-at: 2026-10-15T12:39:03Z
 updated-by: BeMuCa
 ---
 
@@ -55,7 +55,7 @@ updated-by: BeMuCa
 - [ ] Schritt 5 (jaira logbook <id>): kleiner Hook in logbookOut — erst Tests (TestLogbookOfTheLastTicketOffersToFileTheMilestone, TestLogbookJSONCarriesSuggestions, TestSuggestedFilingIsAccepted, TestLogbookOfABlockTicketSuggestsTheBlockPullRequest); docs logbook-Zeile; Release-Zeile; check.sh
 - [ ] Schritt 6 (jaira milestone ls): komplette Milestones bekommen dieselben Zeilen, --json 'suggestions' pro Milestone — erst Test TestLsCarriesTheSuggestionsOfACompleteMilestone; docs ls-Zeile; Release-Zeile; check.sh
 - [ ] Schritt 7 (Rollen): jaira-dispatcher, jaira-worker, jaira-teamlead geben jaira-Vorschlaege woertlich weiter und rufen /jaira-role-pr nie auf; Teamlead liest 'jaira milestone ls --json' — erst Pin-Test core/role/prsuggest_test.go TestRolesPassThePRSuggestionOnAndNeverRunIt; Release-Zeile; check.sh
-- [ ] Schritt 8 (Rolle jaira-role-pr): nimmt mehrere Tickets oder einen Milestone; Ticket ohne Commit auf dem Branch = Befund, Stopp vor dem Push; offener PR/MR per 'gh pr edit'/'glab mr update' aktualisiert, nur wenn ein Mensch aufrief — erst Pin-Test TestPRTakesSeveralTicketsOrAMilestone, TestPRFilesTheTicketsAwayBeforeThePush bleibt gruen; Release-Zeile; check.sh
+- [ ] Schritt 8 (Rolle jaira-role-pr): nimmt mehrere Tickets oder einen Milestone; Ticket ohne Commit auf dem Branch = Befund, Stopp vor dem Push; offener PR/MR per 'gh pr edit'/'glab mr update' aktualisiert, nur wenn ein Mensch aufrief — erst Pin-Test TestPRTakesSeveralTicketsOrAMilestone; die Strings, die TestPRFilesTheTicketsAwayBeforeThePush (core/role/role_test.go:504) prueft, bleiben stehen; Release-Zeile; check.sh
 - [ ] Schritt 9: Handtest mit einem Build aus dem Branch in einem Scratch-Repo ausserhalb von /home/berk/git (HOME und JAIRA_HOME dort): kein Milestone, single, block; menschlich und --json; das vorgeschlagene 'jaira logbook <m>' laeuft durch — Ergebnis als jaira note
 
 ## Progress
