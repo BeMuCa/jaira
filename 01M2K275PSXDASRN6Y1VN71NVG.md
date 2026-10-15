@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T13:32:45Z
+updated-at: 2026-10-15T13:32:48Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
@@ -130,3 +130,4 @@ Stehen gelassen: Marke statt Ref-Loeschen und Deleted() als einziges Praedikat (
 - core/refsync/refsync.go:307, internal/cli/fetch.go:149: 6- bzw. 7-Tupel statt refsync.MilestonesFetched -> eigenes Ticket (fetch.go geteilt).
 - **2026-10-15 13:28 · BeMuCa** — Reparatur Runde 1: L1 (Report.Deleted, flushRefs-Zeile, TUI-Flash), L2, L3, L8 (delete --json = milestoneJSON + deleted + successors), L9 (milestones_deleted mit Namen, ein Helper reportDeleted), L4, L5 behoben; Release-Note-Zeilen angepasst. Tests nicht gelaufen (go test verboten), nur vet/build/gofmt. Nicht angefasst: L6, L7, L10, L11.
 - **2026-10-15 13:29 · BeMuCa** — Handtest des Treibers auf 5aefcc81: Fall c zeigt jetzt 'jaira: wrong was deleted elsewhere; your edit was dropped with it' statt 'stays queued'. L3: a abgelegt, b geloescht -> 'c now comes after 72KB3A' (ID-Token statt Leerstelle). delete --json: milestoneJSON + deleted + successors, tickets ist Liste, count Zahl. Unbekannt -> Exit 5, abgelegt -> Exit 3.
+- **2026-10-15 13:32 · BeMuCa** — critique Runde 2: nichts Neues. Geprueft nur die Funde aus Runde 1 gegen 82943724 + 5aefcc81. L1 behoben: mergeRefused meldet deleted -> Report.Deleted, flushRefs (internal/cli/refs.go:263-267) druckt 'was deleted elsewhere; your edit was dropped with it' (outcome deleted), TUI haengt dropped an 'milestones deleted elsewhere' (internal/tui/refs.go:91-102,135). L2 behoben (eigener Kommentar fuer newMilestoneDeleteCmd :415, parseMilestoneNames hat seinen zurueck). L3 behoben (Token-Fallback :493-497). L4 behoben; die neue Behauptung 'delete verweigert doppelten Namen' stimmt: milestone.Delete -> Load -> AmbiguousError -> editRefusal/refuseAmbiguous. L5 behoben, deckt sich mit der logbook-Hilfe (logbook.go:59-62); SKILL.md hat keine eingebettete Kopie. L8 behoben (milestoneJSON + deleted + successors; 'file' nennt den alten Pfad, stehen gelassen - so von Runde 1 verlangt). L9 behoben (reportDeleted fuer beide Stellen, Dropped sind alte <name>.md, TrimSuffix ergibt den Namen; kein Test/Doku nennt noch milestones_dropped). Release-Note-Zeilen stimmen mit Code ueberein. Offen: L6 DECISION (Rueckfrage bei delete) weiter fuer Berk, blockiert nicht; L7, L10, L11 bleiben in der Nachfolger-Notiz. Gesehen, nicht erhoben (vor dem Ticket da, kein Runde-1-Fund): internal/cli/web.go:116 webPush und internal/cli/refs.go:90 fileOnRefOnly behandeln Report.Deleted nicht eigens (web meldet 'is rejected', fileOnRefOnly ueberspringt fremde Reports still wie schon bei Merged).
