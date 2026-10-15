@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T14:08:03Z
+updated-at: 2026-10-15T14:08:05Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -78,6 +78,12 @@ review-gaps: |-
   - Weitere Nachfolger: Notizen 13:30 (critique) und 13:43 (optimize) - u.a. self upgrade --version auf ein Release ohne --roles, done.md nach der Korrektur gilt als edited, CRLF-Checkouts, Copilot sieht jaira doppelt, --dry-run kann ueber lane.Load doch schreiben.
   - Die alte review-gaps-Fassung von optimize ist hiermit ersetzt; was optimize entfernt hat, steht in Commit 3218b63a.
 test-verdict: "pass: gofmt/vet/build gruen auf Export von HEAD 3218b63a, go test nicht gelaufen (Anweisung) - die neuen Tests sind geschrieben+kompiliert, nicht gelaufen; DoD 1-6 am Baum geprueft (Proofs/Tests gelesen); Handlaeufe auf Scratch-Build 9.9.9: nackter update schreibt nur Block, --dry-run schreibt nichts (exit 3), update --roles --lanes zieht Block/Rollen/jaira-Skill/Lane nach und skippt editierte Datei (exit 3, 2. Lauf nur unchanged+skipped), ausserhalb Board nur persoenlich, Skills-Hinweis einmal auf stderr (--json valide), self upgrade 9.9.8->9.9.9 ruft Kind update --roles (exit 0, --json setup/setup_exit=3); Release-Notiz 8 Zeilen stimmen"
+review-verdict: |-
+  - Der Produktcode erfuellt DoD 1-6. Meine Schritte unten liefen im Scratchpad komplett sauber: ein Aufruf bringt Block, Projekt- und persoenliche Rollen, jaira-Skill und testing-Lane auf Stand; die editierte Datei bleibt unberuehrt (Exit 3); --dry-run schreibt nichts; self upgrade startet das neue Binary.
+  - Manifest geprueft: scripts/shipped-history.sh baut core/shipped/shipped.sha256 byte-gleich nach. Beide Fixtures stehen drin. gofmt, go vet und go build sauber.
+  - ABER: zwei neue Tests werden im Race-Lauf rot (siehe Luecken). Kein Produktfehler, trotzdem so nicht mergebar. Empfehlung: zurueck nach in-progress, nur die Pruefungen in den zwei Tests korrigieren (plus der Hinweistext 'jaira roles install --force').
+  - Unsicher: ich habe kein go test laufen lassen (Anweisung). Die Vorhersage stuetzt sich auf Lesen und Nachstellen mit einem Binary in Version 1.0.0. Weitere Fehler, die nur der Race-Lauf zeigt, kann ich nicht ausschliessen.
+review-round: 2
 ---
 
 # jaira update bringt das ganze Setup nach, nicht nur den Textblock
