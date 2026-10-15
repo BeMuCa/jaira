@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-15T12:19:32Z
+updated-at: 2026-10-15T12:19:47Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -55,3 +55,8 @@ Warum nicht der Stempel allein: 'jaira update' stempelt (update.go:112), und PWA
 Regel: base = notes-seen; fehlt die Datei, base = Stempel. Popup nur wenn release.Newer(Current, base) und base nicht 'dev'. Geschrieben wird notes-seen beim Schliessen des Popups und wenn es nichts zu zeigen gibt. 'jaira update' schreibt es NICHT.
 Bekannte Luecke: fehlt notes-seen UND hat update schon gestempelt (nur beim allerersten Wechsel, bevor der TUI auf diesem Baum je lief), kommt kein Popup. Die Notes hat update dann schon gedruckt.
 Pro Baum heisst: jeder Worktree mit altem Stempel zeigt es einmal; ein neuer Worktree (kein Stempel) nie. Nur in New (model.go:313), nicht in switchBoard: ein per 1-9 gewechseltes Board zeigt es beim naechsten Oeffnen.
+- **2026-10-15 12:19 · BeMuCa** — Pille (DoD 1): versionLine ruft selfupdate.PollCache weiter genau einmal, bei der Konstruktion (home.go:134, model.go:318). Kein Netz, kein Blockieren: PollCache liest nur update-check.json und startet bei >24h einen abgekoppelten Kindprozess (core/selfupdate/cache.go:181).
+'Neuer' per release.Newer (bisher unexportiertes newer, release.go:86), nicht per '!='. Ein Cache mit aelterer Version als die laufende Binary darf keine Pille zeigen - heute sagt versionLine in dem Fall faelschlich 'available'.
+Der Schwanz '. X available - run: jaira self upgrade' faellt weg: Pille und Zeile wuerden sonst dasselbe zweimal sagen. Den Befehl nennt der Agent (DoD 2). Wer den Hinweis fuer Menschen behalten will, setzt ihn gedimmt neben die Pille - Geschmacksfrage fuer critique/Berk, kein Blocker.
+renderBoard zaehlt die Kopfzeilen schon (view.go:256 headLines): eine zweite Zeile im head kostet die Spalten automatisch eine Reihe. P1AE82 ist gelandet (fac61b4e), die Version steht links oben; TestBoardVersionSitsInTheTopLeftCorner haelt die Zeile darunter frei.
+Der Launcher bekommt die Pille auch: er zeigt dieselbe Versionszeile, und ohne den weggefallenen Schwanz verloere er sonst die Info.
