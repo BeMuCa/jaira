@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T13:42:57Z
+updated-at: 2026-10-15T13:45:22Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
@@ -53,7 +53,8 @@ review-gaps: |-
 
 ## Definition of Done
 
-- [ ] 'jaira logbook <milestone>' nimmt einen fertigen Milestone in einem Griff vom Board: erst jedes seiner Tickets, das in diesem Klon als Datei auf dem Board liegt (Commits gestempelt wie bei 'jaira logbook <id>'), dann den Milestone selbst - alles in denselben Ordner .jaira/logbook/<wer>-<datum>/ (der Milestone unter milestones/). Danach steht keins seiner Tickets mehr auf dem Board ausser einem, dessen Datei nur auf seinem Ref liegt (es liegt auf einem fremden Branch); die Ausgabe nennt es. --json nennt die abgelegten Tickets
+- [x] 'jaira logbook <milestone>' nimmt einen fertigen Milestone in einem Griff vom Board: erst jedes seiner Tickets, das in diesem Klon als Datei auf dem Board liegt (Commits gestempelt wie bei 'jaira logbook <id>'), dann den Milestone selbst - alles in denselben Ordner .jaira/logbook/<wer>-<datum>/ (der Milestone unter milestones/). Danach steht keins seiner Tickets mehr auf dem Board ausser einem, dessen Datei nur auf seinem Ref liegt (es liegt auf einem fremden Branch); die Ausgabe nennt es. --json nennt die abgelegten Tickets
+  proof: internal/cli/logbook.go (milestone branch); TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack milestones_test.go:333, TestFilingAMilestoneLeavesATicketThatIsOnlyOnItsRef milestoneref_test.go:1005 (kompiliert, nicht ausgefuehrt); Handtest case-logbook.sh/case-t1.sh: 3 Tickets+Milestone in ada-20261015/ (milestones/), Board leer, ref-only fertige Mitglieder unter 'Not filed' genannt, --json tickets/ref_only
 - [x] Ein abgelegter Milestone faerbt keine Kartenkante mehr, steht nicht im M-Picker und nicht auf der Milestone Roadmap
   proof: core/milestone/milestone.go:359 LoadAll laesst 'status: filed' aus; internal/tui/model.go:404-409 baut Kartenkanten/M-Picker (mstones) und Roadmap (milestones, internal/tui/layer.go:149) nur daraus; TestLoadAllLeavesOutAFiledMilestone (core/milestone/milestone_test.go:306), TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack (internal/cli/milestones_test.go:333)
 - [x] Es gibt einen Weg zurueck wie fuer Tickets: 'jaira restore <name>-<ID>.md' holt den abgelegten Milestone mit Ticketliste und Farbe zurueck, und jedes mit abgelegte Ticket kommt mit 'jaira restore <ticketdatei>' zurueck
