@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T12:50:40Z
+updated-at: 2026-10-15T12:55:25Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -31,7 +31,7 @@ context: |-
 
   Dazu kommt seit Commit 42d8253: die Lane-Dateien dieses Boards liegen unter git. Ein rechnerweiter Lauf macht damit Arbeitsbaeume in mehreren Repositories schmutzig, nicht nur Dateien im Heimverzeichnis.
 claimed-by: EE-3NX6GL3-3760272
-claimed-at: 2026-10-15T12:36:39Z
+claimed-at: 2026-10-15T12:51:30Z
 ---
 
 # jaira update bringt das ganze Setup nach, nicht nur den Textblock
@@ -56,7 +56,7 @@ claimed-at: 2026-10-15T12:36:39Z
 
 - [x] 1 core/shipped: manifest core/shipped/shipped.sha256 ('<sha256>  <repo path>' per version of every installed file) + shipped.go Known(path,b)/Line(path,b) + scripts/shipped-history.sh (bash, --full-history -m, maps lanes/<id>.md and .claude/skills/jaira history, refuses shallow clones, adds working-tree versions) + .gitattributes eol=lf pins; tests first: well-formed lines, Known per path+bytes, every listed path exists
 - [x] 2 core/role/install.go: writeFile recognises an older shipped version (new Action Updated, written without --force) + dryRun param on install/Agent.Install; fixture core/role/testdata (v0.4.0 jaira-role-acceptance SKILL.md); tests first: TestEveryInstalledFileIsAShippedVersion, TestInstallReplacesAnOlderShippedVersion, TestInstallDryRunWritesNothing; internal/cli/roles.go: printRoleResults/roleResultsJSON extracted, 'updated' lines + count, help text; release-note line
-- [ ] 3 core/lane/refresh.go: RefreshShipped(root, dryRun) - unchanged / updated (older shipped version) / skipped (edited), only lanes the board holds and jaira ships; fixture core/lane/testdata (catalogue testing.md before 2fb8f177); tests first incl. TestEveryBuiltinLaneIsAShippedVersion
+- [x] 3 core/lane/refresh.go: RefreshShipped(root, dryRun) - unchanged / updated (older shipped version) / skipped (edited), only lanes the board holds and jaira ships; fixture core/lane/testdata (catalogue testing.md before 2fb8f177); tests first incl. TestEveryBuiltinLaneIsAShippedVersion
 - [ ] 4 core/role/target.go: Installed(root) []Target (own project dir per agent, then personal; only dirs already holding roles; deduped) + Behind(results); tests first
 - [ ] 5 core/board/announce.go: PreviewAgentFiles(root, choice, lanes) by threading dry through announceIn/announceInAgentFile/removeBlock/setClaudeImport (lines 397-576 only, not agentNote); test: preview names what the write does and writes nothing
 - [ ] 6a internal/cli: 'jaira update --roles --lanes' (new updatesetup.go; update.go flags/Long/RunE 80-127 only, never 128-139): lanes refreshed before lane.Load, roles where installed, --roles works outside a board (personal only), JSON keys roles/lanes/skipped only when asked, exit 3 via named return+defer; tests first incl. DoD-1 reproduction TestUpdateRolesLanesBringsAStaleBoardUpToDate and TestUpdateWithoutSwitchesWritesOnlyTheBlock; two release-note lines
@@ -129,3 +129,4 @@ Wortlaut steht im Design (Scratchpad design.md, je Schritt). Kein '- !'-Marker -
 - Grund 2: Berk am 14.10.: nach einem Upgrade sollen die jaira-Skills immer neu installiert werden. Der jaira-Skill ist der, der sich am oeftesten aendert.
 - Folge, die Berk beim signoff zuruecknehmen kann: 'jaira roles install --project' schreibt in jedem Repo auch .claude/skills/jaira/SKILL.md. Der Schritt ist ein eigener Commit und laesst sich allein zuruecknehmen.
 - Offen fuer Berk (nicht in diesem Ticket): die Dev-Build-Verweigerung von 'self upgrade' (self.go:80-84), und Rollen, die mit --into installiert wurden (update --roles und die Warnung sehen sie nicht).
+- **2026-10-15 12:50 · BeMuCa** — Schritt 1-2: das Manifest hat 438 Zeilen (48824 Bytes), erzeugt mit scripts/shipped-history.sh auf dem Worktree. Skript braucht bash (Prozess-Substitution), kein sh. Mod-Dateien types/index.d.ts sind im Manifest (core/mod/mod.go ueberspringt nur .claude-plugin/types, nicht types/). Die .gitattributes-Pins fuer core/role/testdata und core/lane/testdata stehen schon in Schritt 1.
