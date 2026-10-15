@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-15T12:42:02Z
+updated-at: 2026-10-15T12:42:05Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -38,7 +38,7 @@ related:
 - [x] Nach einem Upgrade oder 'jaira update' zeigt der TUI einmal ein Popup mit den Release-Notes seit der Version, die zuletzt auf diesem Board lief; eine Taste schliesst es; bis zum naechsten Versionswechsel erscheint es nicht wieder; Test
   proof: internal/tui/releasenotes.go:124 notesBase, :140 openReleaseNotes; TestNotesBase, TestPopupAfterUpgradeShowsNotesSinceTheStamp, TestPopupClosesAndStaysClosedUntilTheNextVersion (written, compiled by go vet, not run); hand test (b) on a scratch board without remote: popup, esc writes notes-seen 0.5.2, restart no popup
 - [x] Eine Release-Note-Zeile kann als wichtig markiert werden (Vorschlag: '- ! <text>', bleibt fuer alte Binaries eine normale Zeile); sie steht im Popup und in der Ausgabe von 'jaira update' hervorgehoben; der Abschnitt zu core/release/notes/ in CLAUDE.md nennt die Markierung; Test
-  proof: core/release/release.go:101 Important, internal/cli/update.go writeNotes, internal/tui/releasenotes.go:15,60 styImportant; TestImportantMarker, TestUpdateNotesMarkImportantLines, TestNotesViewMarksImportantLines (written, compiled by go vet, not run); hand test (d) in hand test in /tmp/claude-1000/-home-berk-git-jAIra/a751ce77-35ca-405d-9c2e-d6ae252f56ea/scratchpad/t8a8km/hand: ' ! ' line in jaira update, bold colour 214 in popup
+  proof: core/release/release.go:101 Important, internal/cli/update.go writeNotes, internal/tui/releasenotes.go:15,60 styImportant; TestImportantMarker, TestUpdateNotesMarkImportantLines, TestNotesViewMarksImportantLines (written, compiled by go vet, not run); hand test (d) on a scratch board without remote: ' ! ' line in jaira update, bold colour 214 in popup
 - [x] Auf der Launcher-Seite oeffnet ein Hotkey die Release-Notes (neueste Version zuerst); die Hilfezeile nennt die Taste; Test
   proof: internal/tui/home.go:283 key w, :425 hint; TestHomeWOpensReleaseNotesNewestFirst, TestHomeHintNamesTheReleaseNotesKey (written, compiled by go vet, not run); hand test (c) in hand test in /tmp/claude-1000/-home-berk-git-jAIra/a751ce77-35ca-405d-9c2e-d6ae252f56ea/scratchpad/t8a8km/hand
 
