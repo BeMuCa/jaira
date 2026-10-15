@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-15T12:20:36Z
+updated-at: 2026-10-15T12:38:52Z
 updated-by: BeMuCa
 ---
 
@@ -47,6 +47,16 @@ updated-by: BeMuCa
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] Schritt 1 (core/milestone): Feld 'pr: block|single' — erst Tests core/milestone/pr_test.go (TestPRLineIsReadAndRewrittenInPlace, TestAMilestoneWithoutPRIsSingle, TestUnknownPRValueReadsAsSingle, TestParsePRRefusesAnUnknownMode, TestAdoptTakesAPRChangeFromTheOldSide), dann neue Datei pr.go (PRBlock, PRSingle, Block(), SetPR, ParsePR) + Feld PR im Struct und 'case "pr"' in parse(); check.sh
+- [ ] Schritt 2 (CLI): 'milestone create/set --pr block|single' (falscher Wert exit 2), milestoneJSON traegt immer 'pr', 'milestone ls' markiert 'pr: block' — erst Tests internal/cli/milestonepr_test.go; docs/COMMANDS.md Zeilen create/set/ls; erste Zeile in core/release/notes/6TCTFV.md; check.sh
+- [ ] Schritt 3 (neues Paket core/suggest): AfterMove, AfterLogbook, ForMilestone, Complete, Lines, fileMilestoneCommand — erst Tests core/suggest/suggest_test.go (12 Tests laut design.md, u.a. Block komplett, Einzeln komplett, leer, abgelegt, zwei Milestones, Lanes nach Eigenschaft); check.sh
+- [ ] Schritt 4 (jaira move): kleiner Hook in flow.go newMoveCmd — Zeilen nach nextStepLine, --json 'suggestions' nur wenn nicht leer — erst Tests internal/cli/prsuggest_test.go (TestMoveToSignoffSuggestsThePullRequest, TestMoveJSONCarriesSuggestions, TestMoveCompletingABlockMilestoneSuggestsOnePullRequestAndFiling, TestMoveIntoAnAgenticLaneSuggestsNothing); docs move-Zeile; Release-Zeile; check.sh
+- [ ] Schritt 5 (jaira logbook <id>): kleiner Hook in logbookOut — erst Tests (TestLogbookOfTheLastTicketOffersToFileTheMilestone, TestLogbookJSONCarriesSuggestions, TestSuggestedFilingIsAccepted, TestLogbookOfABlockTicketSuggestsTheBlockPullRequest); docs logbook-Zeile; Release-Zeile; check.sh
+- [ ] Schritt 6 (jaira milestone ls): komplette Milestones bekommen dieselben Zeilen, --json 'suggestions' pro Milestone — erst Test TestLsCarriesTheSuggestionsOfACompleteMilestone; docs ls-Zeile; Release-Zeile; check.sh
+- [ ] Schritt 7 (Rollen): jaira-dispatcher, jaira-worker, jaira-teamlead geben jaira-Vorschlaege woertlich weiter und rufen /jaira-role-pr nie auf; Teamlead liest 'jaira milestone ls --json' — erst Pin-Test core/role/prsuggest_test.go TestRolesPassThePRSuggestionOnAndNeverRunIt; Release-Zeile; check.sh
+- [ ] Schritt 8 (Rolle jaira-role-pr): nimmt mehrere Tickets oder einen Milestone; Ticket ohne Commit auf dem Branch = Befund, Stopp vor dem Push; offener PR/MR per 'gh pr edit'/'glab mr update' aktualisiert, nur wenn ein Mensch aufrief — erst Pin-Test TestPRTakesSeveralTicketsOrAMilestone, TestPRFilesTheTicketsAwayBeforeThePush bleibt gruen; Release-Zeile; check.sh
+- [ ] Schritt 9: Handtest mit Build aus dem Branch auf Scratch-Repo unter $S (kein Milestone, single, block; menschlich und --json; vorgeschlagenes 'jaira logbook <m>' laeuft durch) — Ergebnis als jaira note
 
 ## Progress
 - **2026-10-15 12:20 · BeMuCa** — Berk am 15.10. (Ergaenzung): '6TCTFV soll auch umgesetzt werden! Weil dann kann ein Milestone-Block als ein PR reinkommen. Alternativ gibt es aber auch noch die Option, dass man Tickets immer noch einzeln reinmergen will und Milestones nur als eine Sammlung nutzt; fuer den Fall kann man Milestones auch wieder loeschen.'
