@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T13:10:28Z
+updated-at: 2026-10-15T13:10:31Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -63,7 +63,7 @@ claimed-at: 2026-10-15T13:03:19Z
 - [x] 6b internal/cli: 'jaira update --dry-run' (would-lines, 'nothing was written (--dry-run)', no stamp, same exit code, return before the notes block) + read-only hint lines of the bare call when roles/lanes are behind; tests first: TestUpdateDryRunWritesNothing, TestUpdateDryRunExitCodeMatchesTheRealRun, TestUpdateWithoutSwitchesNamesWhatIsBehind; two release-note lines
 - [x] 7 internal/cli/self.go: after Replace run the NEW binary '<target> -C <dir> update --roles [--json]' through seam var runUpgraded; child exit 3 is not a failure; JSON setup/setup_exit; no lanes; tests first in self_test.go (recorder seam + unix test executing a shell-script payload); release-note line
 - [x] 8 internal/cli/skillsnudge.go: nudgeSkillsIfStale in openStore after nudgeIfStale - personal dirs only, once per version via JAIRA_HOME/skills-check/version, stderr only, silent on dev/update/roles install; tests first in skillsnudge_test.go (own HOME/USERPROFILE/JAIRA_HOME); release-note line
-- [~] 9 ship the jaira skill (driver decided yes, see note) - core/role/jaira/SKILL.md embedded and installed beside the roles (not a role), test keeps .claude/skills/jaira/SKILL.md byte-equal, manifest regenerated, .gitattributes, README.md:649/683 + docs/AGENTS.md:263/271; release-note line
+- [x] 9 ship the jaira skill (driver decided yes, see note) - core/role/jaira/SKILL.md embedded and installed beside the roles (not a role), test keeps .claude/skills/jaira/SKILL.md byte-equal, manifest regenerated, .gitattributes, README.md:649/683 + docs/AGENTS.md:263/271; release-note line
 - [ ] 10 docs: README (Upgrading, Bringing a board up to date, Roles) and docs/COMMANDS.md:130 name --roles/--lanes/--dry-run and what self upgrade now runs
 - [ ] 11 reproduce DoD 1 by hand: scratch build with -ldflags version, HOME/JAIRA_HOME in the scratchpad, scratch board with stale block/roles/lane; update --dry-run, update --roles --lanes, rerun; skills warning once; transcript in a note, DoD proofs ticked
 
