@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T14:18:12Z
+updated-at: 2026-10-15T14:20:56Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -39,33 +39,14 @@ executed-by: sonnet
 review-summary: none
 round: 3
 review-gaps: |-
-  DEFEKT (Notiz 'review:' geschrieben):
-  - Zwei neue Tests werden im Race-Lauf rot. Nicht gelaufen; gelesen und mit einem Binary in Version 1.0.0 nachgestellt.
-  - TestUpdateRolesLanesBringsAStaleBoardUpToDate (internal/cli/updatesetup_test.go), zweiter Lauf: sucht 'would ' im ganzen Output. update druckt bei Version 1.0.0 alle Release-Notizen, und die enthalten 'would'.
-  - TestUpdateWithoutSwitchesSaysNothingWhenCurrent (internal/cli/updatedry_test.go): verlangt, dass 'jaira update --roles/--lanes' fehlt. Die Zeilen in PWAF22.md nennen genau das.
-  - TestUpdateWithoutSwitchesNamesWhatIsBehind besteht nur leer: dieselben Strings stehen auch in den Notizen.
-  - Der Produktcode ist hier richtig. Nur die Pruefungen muessen auf Zeilenanfaenge schauen ('roles: ', 'lanes: ', 'would ') oder auf den Teil vor "What's changed since then".
-
-  KLEIN (falscher Hinweistext):
-  - editedError (internal/cli/updatesetup.go) und README nennen 'jaira roles install --force'. So allein: Exit 2 'choose exactly one of --project, --global or --into'. Die Zeile je Ordner nennt den richtigen Befehl.
-  - Im Trockenlauf sagen die Zaehlzeilen '1 updated' / 'N written', obwohl nichts geschrieben wurde. Erst die letzte Zeile sagt es.
-  - Die Schlusszeile von self upgrade sagt weiter nur "run 'jaira update' in each repository" - ohne --roles und --lanes.
-
-  NICHT UEBERZEUGEND:
-  - DoD 3 ('sagt vor dem Schreiben') nur mit --dry-run. Der echte Lauf sagt es danach. Bewusst so entschieden (Notiz 12:34).
-  - DoD 6: die Warnung kommt nur ueber openStore. Das TUI zeigt nichts. Der erste Befehl nach einem Upgrade ist oft ein Agent mit --json - dann landet die einzige Warnung in dessen stderr, kein Mensch sieht sie.
-  - self upgrade in einem Repo schreibt dort jetzt den Block in CLAUDE.md/AGENTS.md und .claude/skills. Das tat es vorher nie; der Arbeitsbaum wird schmutzig. Von DoD 5 verlangt, aber neu.
-  - Jeder PR, der eine Rolle, Lane, das Mod oder den jaira-Skill aendert, muss shipped.sha256 neu erzeugen (ein Test erzwingt es). Zwei solche PRs koennen dort kollidieren.
-  - internal/cli/update.go aendert auch T8A8KM. Die Hunks liegen direkt nebeneinander (Basis-Zeilen 107-130 hier, 130-148 dort). Merge-Konflikt zu erwarten.
-
-  FRAGEN AN BERK:
-  - Dev-Build: 'self upgrade' verweigert weiterhin ('a dev build has no published release'). Unveraendert.
-  - Rollen, die mit --into installiert wurden: update --roles und die Warnung sehen sie nicht. Nachgestellt.
-  - Fehlende Dateien zaehlen als 'aelter'. Ein absichtlich geloeschtes jaira-cockpit (15 Dateien, Plugin mit Hooks) kommt mit jedem update --roles und jedem self upgrade zurueck. Nachgestellt.
-  - Das erste Upgrade AUF dieses Release macht noch das alte Binary - ohne Setup. Release-Notiz Zeile 6 sagt das richtig, README nicht.
-  - 'roles install --project' schreibt jetzt in jedem Repo auch .claude/skills/jaira/SKILL.md (Treiber-Entscheidung 12:46, eigener Commit be857988, allein ruecknehmbar).
-  - Weitere Nachfolger: Notizen 13:30 (critique) und 13:43 (optimize) - u.a. self upgrade --version auf ein Release ohne --roles, done.md nach der Korrektur gilt als edited, CRLF-Checkouts, Copilot sieht jaira doppelt, --dry-run kann ueber lane.Load doch schreiben.
-  - Die alte review-gaps-Fassung von optimize ist hiermit ersetzt; was optimize entfernt hat, steht in Commit 3218b63a.
+  optimize 2 (nur c3ab3695 gelesen): nichts geaendert, kein Commit.
+  - Duplikat: kein vorhandener Helfer in internal/cli/*_test.go schneidet Output ab oder prueft Zeilenanfaenge (grep: lanes_test.go:674 pathLines nur fuer Catalogue/Project; Inline-Schleifen stalefile_test.go:51, milestoneref_test.go:598 - alt, gelassen). setupOutput/hasLine sind also neu, nicht doppelt.
+  - setupOutput kennt die zwei Ueberschriften aus internal/cli/update.go:189/192 als Literale. Eine gemeinsame Konstante ginge nur durch den Notizblock (T8A8KM-Bereich) - gelassen. T8A8KM (77106675) druckt sie unveraendert (update.go:129/132 dort).
+  - editedError-Text vs. Zeile je Ordner (updatesetup.go:93, genauer Befehl aus UpdateCommand) und roles.go:218: verschiedene Faelle, kein Test prueft den Text - gelassen.
+  - Toter Code: keiner. Beide Helfer haben Aufrufer, strings-Import in allen drei Testdateien weiter benutzt.
+  - Fluff: strings.Contains('jaira update --roles/--lanes') in TestUpdateWithoutSwitchesSaysNothingWhenCurrent deckt sich heute mit hasLine('roles: '/'lanes: ') - gelassen, Streichen macht den Test schwaecher, nicht gleich. setupOutput nimmt die fruehere Marke; da update.go:188-192 nur eine druckt, ginge es 2 Zeilen kuerzer - gelassen, robust gegen Umordnen.
+  - Kosten: setupOutput(out) je Schleifendurchlauf neu (updatedry_test.go:44/79, updatesetup_test.go:131) - nur Tests, gelassen.
+  - README-Umbruch laesst die kurze Zeile 'replaces it. --dry-run prints the' - rendert gleich, gelassen.
 test-verdict: "pass: gofmt/vet/build gruen auf Export von HEAD 3218b63a, go test nicht gelaufen (Anweisung) - die neuen Tests sind geschrieben+kompiliert, nicht gelaufen; DoD 1-6 am Baum geprueft (Proofs/Tests gelesen); Handlaeufe auf Scratch-Build 9.9.9: nackter update schreibt nur Block, --dry-run schreibt nichts (exit 3), update --roles --lanes zieht Block/Rollen/jaira-Skill/Lane nach und skippt editierte Datei (exit 3, 2. Lauf nur unchanged+skipped), ausserhalb Board nur persoenlich, Skills-Hinweis einmal auf stderr (--json valide), self upgrade 9.9.8->9.9.9 ruft Kind update --roles (exit 0, --json setup/setup_exit=3); Release-Notiz 8 Zeilen stimmen"
 review-verdict: |-
   - Der Produktcode erfuellt DoD 1-6. Meine Schritte unten liefen im Scratchpad komplett sauber: ein Aufruf bringt Block, Projekt- und persoenliche Rollen, jaira-Skill und testing-Lane auf Stand; die editierte Datei bleibt unberuehrt (Exit 3); --dry-run schreibt nichts; self upgrade startet das neue Binary.
