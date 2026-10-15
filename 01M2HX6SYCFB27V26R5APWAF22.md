@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T12:06:04Z
+updated-at: 2026-10-15T12:34:51Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -56,3 +56,14 @@ claimed-at: 2026-10-15T12:05:54Z
 
 ## Progress
 - **2026-10-13 20:51 · BeMuCa** — Berk 2026-10-13: nach einem Upgrade sollen die jaira-Skills immer neu installiert werden und jaira update automatisch laufen (DoD 5 und 6). Anlass: am 13.10. war ~/.claude/skills/jaira-role-pr noch vom 06.10. und kannte das Ablegen vor dem PR nicht - Alex musste im PR #74 nachfordern. Weder git pull noch jaira update ziehen die Rollen-Skills heute nach (jaira roles install --help). Gehoert mit T8A8KM zusammen.
+- **2026-10-15 12:34 · BeMuCa** — Entscheidung DoD 2 - der nackte Aufruf: 'jaira update' ohne Schalter schreibt weiter NUR den Agent-Block und stempelt die Version, wie heute.
+- Neue Schalter: --roles (Skills dort, wo die Rollen schon liegen: Projekt-Ordner dieses Boards + persoenlicher Ordner), --lanes (Lane-Dateien dieses Boards, die eine alte ausgelieferte Version sind), --dry-run.
+- Kein --all: 'jaira update --roles --lanes' ist schon ein Aufruf.
+- Kein --force an update: veraltete Dateien brauchen es nicht mehr. Eine selbst geaenderte Datei ersetzt man gezielt mit 'jaira roles install --force' oder 'jaira lanes use <id> --force'.
+- Ohne Schalter kommt hoechstens eine Hinweiszeile dazu ('N Dateien sind aelter - jaira update --roles'). Sie schreibt nichts. Das JSON des nackten Aufrufs bleibt gleich.
+- Grund: wer update gewohnheitsmaessig laeuft, bekommt nichts Neues geschrieben. Lane-Dateien liegen auf manchen Boards unter git und gehoeren dem Team.
+- **2026-10-15 12:34 · BeMuCa** — Entscheidung DoD 3 - 'vorher sagen': 'jaira update --dry-run' zeigt, was passieren wuerde, und schreibt nichts.
+- Gleiche Zeilen wie der echte Lauf, nur 'would update/write' statt 'updated/written'. 'skipped ... (edited here; ...)' wie bei 'jaira roles install'. Letzte Zeile: 'nothing was written (--dry-run)'.
+- Gleicher Exit-Code wie der echte Lauf (3, wenn etwas uebersprungen wuerde). So macht es schon 'jaira move --dry-run' (internal/cli/flow.go:317) und 'sync-tasks --dry-run'.
+- Verworfen: immer erst einen Plan drucken und dann schreiben - das 'vorher' waere nur die Reihenfolge der Zeilen. Verworfen: Rueckfrage j/n - haelt Agenten an.
+- Bekannte Grenze: mit --lanes --dry-run zeigt die Block-Vorschau den Block fuer die Lanes von jetzt, nicht fuer die erneuerten.
