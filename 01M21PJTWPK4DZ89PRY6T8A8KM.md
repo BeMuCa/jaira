@@ -1,7 +1,7 @@
 ---
 id: 01M21PJTWPK4DZ89PRY6T8A8KM
 title: "Eine Pille unter der Version zeigt, dass ein neues Release da ist"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-15T12:57:41Z
+updated-at: 2026-10-15T12:58:05Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
