@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T14:34:43Z
+updated-at: 2026-10-15T14:39:55Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -36,7 +36,19 @@ outcome-what: "'jaira update' hat drei neue Schalter: --roles zieht Rollen, cock
 outcome-why: "Nach einem Upgrade hing jedes Board an drei Stellen zurueck und brauchte drei Befehle; Berk will, dass Skills nach einem Upgrade immer nachgezogen werden. Am 14.10. meldete 'roles install --global' 11 Dateien als 'edited here', die byte-gleich mit frueher ausgelieferten Versionen waren - ein automatischer Lauf haette genau die still ausgelassen. Der nackte Aufruf bleibt gleich, weil Lane-Dateien unter git dem Team gehoeren und Gewohnheitsnutzer nichts Neues geschrieben bekommen sollen."
 outcome-resolves: "DoD 1: 'update --roles --lanes' - Handlauf an einem Board mit veraltetem Block, Rollen und Lane bringt alle drei auf den Stand (Notiz 13:14, TestUpdateRolesLanesBringsAStaleBoardUpToDate). DoD 2: nackter Aufruf schreibt nur Block+Stempel, Entscheidung als Notiz. DoD 3: --dry-run mit gleichen Zeilen und Exit-Code, schreibt nichts. DoD 4: core/release/notes/PWAF22.md. DoD 5: self upgrade fuehrt '<neues Binary> -C <dir> update --roles' aus - Handlauf gegen Fake-Release-Server. DoD 6: nudgeSkillsIfStale warnt einmal je Version und nennt 'jaira update --roles'; der jaira-Skill ist dafuer eingebettet. Tests geschrieben und kompiliert (go vet), aber auf Berks Anweisung noch nicht ausgefuehrt - der Race-Lauf der Hauptsitzung steht aus."
 executed-by: sonnet
-review-summary: none
+review-summary: |-
+  - Neue Liste core/shipped/shipped.sha256 (471 Zeilen): ein sha256 je Version jeder Datei, die jaira je installiert hat (Rollen, cockpit-Mod, jaira-Skill, eingebaute Lanes). Erzeugt aus der git-Historie mit scripts/shipped-history.sh, ins Binary eingebettet, gelesen von core/shipped (Known).
+  - 'jaira roles install': eine Datei gleich einer frueher ausgelieferten Version gilt nicht mehr als 'edited'. Sie wird ohne --force ersetzt, Zeile 'updated <pfad>'. Die Zaehlzeile hat jetzt 'N updated'.
+  - Der jaira-Skill ist eingebettet (core/role/jaira/SKILL.md; ein Test haelt ihn byte-gleich mit .claude/skills/jaira/SKILL.md). roles install schreibt ihn als <skills>/jaira/SKILL.md mit. Er ist keine Rolle.
+  - 'jaira update --roles': installiert nach in jedem Skills-Ordner, der schon Rollen haelt - Projekt (.claude/skills, .github/skills) und persoenlich (~/.claude/skills, ~/.copilot/skills). Ausserhalb eines Boards nur persoenlich ('no board here: ...').
+  - 'jaira update --lanes': core/lane/refresh.go ersetzt Lane-Dateien des Boards, die eine alte ausgelieferte Version sind. Laeuft vor lane.Load, damit der Block die neuen Lanes beschreibt. Eigene Lanes bleiben unberuehrt.
+  - Eine von Hand geaenderte Datei: Zeile 'skipped ... (edited here ...)', nicht angefasst, Exit 3. Die stderr-Zeile nennt 'jaira roles install --project --force' (or '--global --force') und 'jaira lanes use <id> --force'.
+  - 'jaira update --dry-run': Zeilen 'would update/write', Vorschau des Blocks (board.PreviewAgentFiles), kein Versionsstempel, gleicher Exit-Code, letzte Zeile 'nothing was written (--dry-run)'.
+  - Nackter 'jaira update': schreibt weiter nur Block und Stempel. Neu: direkt nach der Block-Zeile zwei reine Hinweiszeilen 'roles: N file(s) ...' und 'lanes: N lane file(s) ...'. JSON unveraendert.
+  - 'jaira self upgrade': startet nach dem Ersetzen das NEUE Binary als Kindprozess: '<ziel> -C <dir> update --roles' (--json wird weitergereicht; JSON bekommt 'setup' und 'setup_exit'). Exit 3 des Kinds ist kein Fehler. Startet es nicht: eine Warnzeile, Upgrade bleibt Exit 0. Lanes nicht.
+  - Warnung: internal/cli/skillsnudge.go, aufgerufen aus openStore. Einmal je Binary-Version (Stempel $JAIRA_HOME/skills-check/version) eine stderr-Zeile, wenn persoenliche Skills fehlen oder alt sind. Still bei dev-Build, waehrend update und waehrend roles install.
+  - Fix aus Review-Runde 1 (c3ab3695): die neuen Tests pruefen nur noch den Teil der Ausgabe vor dem Notizblock (setupOutput) und Zeilenanfaenge (hasLine). editedError, README.md:131-133 und Notiz-Zeilen 1 und 8 nennen jetzt lauffaehige Befehle.
+  - Doku: README, docs/COMMANDS.md, docs/AGENTS.md. 8 Zeilen in core/release/notes/PWAF22.md. .gitattributes haelt Manifest, Test-Fixtures und beide jaira-Skill-Kopien auf LF.
 round: 3
 review-gaps: |-
   optimize 2 (nur c3ab3695 gelesen): nichts geaendert, kein Commit.
