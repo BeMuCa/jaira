@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-15T12:41:22Z
+updated-at: 2026-10-15T12:41:24Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -95,3 +95,4 @@ Doku: Abschnitt 'Client-facing changes go in core/release/notes/' steht in CLAUD
 Prozess: DoD 1 verlangt 'go test ./... -race gruen', die Implementierer duerfen auf Berks Anweisung kein go test laufen lassen - den Beleg muss die testing-Lane oder CI liefern.
 - **2026-10-15 12:32 · BeMuCa** — Schritt 1-4 fertig. Agent-Block-Regeneration auf Scratch-Kopie (jaira update dort); Diff in CLAUDE.md/AGENTS.md war genau die eine neue Blockzeile, nichts sonst. Kein go test gelaufen, nur gofmt/vet/build pro Commit. Pille ist leer ausser bei bekanntem neueren Release (release.Newer statt '!=').
 - **2026-10-15 12:37 · BeMuCa** — Schritt 5-7: Marker-Doku nur in CLAUDE.md und AGENTS.md (NOTES.md ist geschlossene Historie, Workflows lesen das Format nicht). Taste w auf Launcher und Board frei geprueft (nur pipeline.go:300 als WASD, eigener Bildschirm). Popup: bestehende tui-Tests rufen New mit weder Stempel noch notes-seen auf (Init stempelt nicht, nur cli/tickets.go und browse.go), notesBase liefert dort leer, also kein Popup. markSeen schreibt auch bei Current leer nicht.
+- **2026-10-15 12:41 · BeMuCa** — Handtest 8 (0.5.2-Binary per -X main.version, Scratch-Repo ohne Remote): Cache faken = JAIRA_HOME/update-check.json mit frischem checked_at, sonst startet PollCache einen Refresh (der hat bei fehlendem Cache real 0.5.1 geschrieben). Stempel liegt in JAIRA_HOME/state/repo-*/version, notes-seen daneben. Launcher = nacktes jaira; Board = jaira board. Popup nach Versionswechsel listet den Abschnitt Unreleased (alle Dateien in core/release/notes/), nicht nur T8A8KM. Nach jaira update erscheint kein Popup (Stempel == current), bestaetigt. Alle Faelle a-d bestanden, GATE OK auf HEAD; go test -race nicht gelaufen.
