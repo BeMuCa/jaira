@@ -1,7 +1,7 @@
 ---
 id: 01M4ZQ715HGZN2GHX5NW6TCTFV
 title: "Ist der letzte Ticket eines Milestones fertig, schlaegt jaira den PR mit /jaira-role-pr vor und bietet an, den Milestone abzulegen"
-status: todo
+status: pre-process
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-15T12:20:34Z
+updated-at: 2026-10-15T12:20:36Z
 updated-by: BeMuCa
 ---
 
