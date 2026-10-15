@@ -22,7 +22,7 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T13:39:51Z
+updated-at: 2026-10-15T13:40:15Z
 updated-by: BeMuCa
 outcome-what: "'jaira archive' schreibt auf den Ref den Dateiinhalt plus eine Zeile 'archived: <datum> <wer>' (core/ticket/store.go recordArchived); die Datei in .jaira/archive/ bleibt byte-gleich. Store.List laesst ref-only Tickets mit dieser Zeile weg, also auch board, list, next, resume. 'jaira restore' schreibt die Datei ohne Zeile zurueck auf den Ref (nach CheckFresh; ist der Ref neuer, warnt es nur). show und fetch nennen ein archiviertes Ticket 'archived', fetch meldet es nicht als 'a ticket is yours'. archive sagt, dass das Committen nur den Eintrag festhaelt. Doku und Release-Notiz."
 outcome-why: "Bisher schrieb archive den unveraenderten Inhalt auf den Ref. Jeder andere Klon zeigte das Ticket weiter, bis der Snapshot-Lauf (alle 72 h) den Ref abraeumte, und das erst nach Commit und Merge der Archiv-Datei. Berk will, dass Archivieren wie create wirkt: sofort beim naechsten fetch, ohne Commit."
@@ -30,6 +30,7 @@ outcome-resolves: "DoD 1: Markierung im Ref-Inhalt (store.go Archive->recordArch
 executed-by: opus
 review-summary: none
 round: 2
+review-gaps: "folded recordArchived into recordFiled (core/ticket/store.go:193, one nil check/ReadFile/ErrNotRecorded pair; third arg is the archived value: Archive :344 passes '<date> <who>', Logbook :416 passes ''), chosen over 'recordFiled takes the bytes' because that moves the ReadFile and its ErrNotRecorded wrap into both callers and reads the file with no recorder; restore warning internal/cli/archive.go:154 uses the existing ticket.IDFromFilename (id.go:70) instead of filepath.Base(dst)[:26] - same handle for every name jaira writes, no panic on a short hand-named file - and inlines the one-use handle var; internal/cli/archiveref_test.go archivedOnAda uses the existing ticketByHandle (milestones_test.go:297) instead of ticket.At+Load, ticket import dropped. Left: Restore's ReadFile/ParseDoc/Decode/CheckFresh (store.go:712-727) - the same inline triple Load, LoadAnywhere and Mutate use, no helper exists, and Load(id) would go through resolve and the index cache, so not a cleanup; onBoard (cli archiveref_test.go:12) - handleFromList keys by title and fatals when missing, no bool helper exists; refRec (core/ticket/archiveref_test.go:15) - no other fake Recorder in core/ticket tests; no cost issue (Archive/Restore read once, List filter is one pass); outcome-what/-resolves still name recordArchived and pre-fold test lines - outcome is in-progress's field, not rewritten here (DoD proofs updated)"
 ---
 
 # Ein archiviertes Ticket verschwindet sofort von allen Boards, nicht erst wenn der Snapshot den Ref abraeumt
