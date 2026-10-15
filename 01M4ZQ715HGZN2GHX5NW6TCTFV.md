@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-15T12:20:31Z
+updated-at: 2026-10-15T12:20:34Z
 updated-by: BeMuCa
 ---
 
@@ -42,7 +42,7 @@ updated-by: BeMuCa
 ## Options
 
 - [ ] brainstorm
-- [ ] planning
+- [x] planning
 
 ## Plan
 
