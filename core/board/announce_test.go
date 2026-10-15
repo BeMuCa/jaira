@@ -183,3 +183,13 @@ func TestAgentNoteNamesTheMilestoneCommands(t *testing.T) {
 		}
 	}
 }
+
+// TestAgentNoteTellsAgentsToReportANewerRelease guards the line that makes an
+// agent pass on the stderr line 'jaira next' and 'jaira resume' print.
+func TestAgentNoteTellsAgentsToReportANewerRelease(t *testing.T) {
+	for _, want := range []string{"newer release", "jaira self upgrade"} {
+		if !strings.Contains(agentNote, want) {
+			t.Errorf("agentNote does not mention %q", want)
+		}
+	}
+}

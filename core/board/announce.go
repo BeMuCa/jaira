@@ -108,6 +108,8 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  id — so nothing needs to be typed here; it is written onto the ticket once,\n" +
 	"  when the ticket leaves the board\n" +
 	"- `jaira resume` — work left in progress, with everything recorded about it\n" +
+	"- when jaira reports a newer release (`jaira next` and `jaira resume` print it\n" +
+	"  on stderr), tell the user and name `jaira self upgrade`\n" +
 	"- **every commit names the ticket id** — `fix(A3K9QP): ...`. jaira derives a\n" +
 	"  ticket's commit list from two sources: the history of the ticket file itself,\n" +
 	"  and the commits that name its id. The first source is thin by design (see the\n" +
