@@ -126,6 +126,9 @@ unchanged and exits 0. Neither is a file identical to a version an earlier
 jaira shipped: it is replaced and reported as updated, without --force.`,
 		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			// --project opens the store below; it must not warn about the skills it is installing.
+			updateInProgress = true
+			defer func() { updateInProgress = false }()
 			agent, ok := role.AgentNamed(agentName)
 			if !ok {
 				return fail(ExitUsage, "usage", "unknown agent %q; known agents: %s", agentName, role.AgentNames())
