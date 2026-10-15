@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T13:14:22Z
+updated-at: 2026-10-15T13:14:46Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
@@ -107,3 +107,4 @@ Neu durch E70WYN: Milestone.HoldsName() - eine Marke mit renamed-to haelt den Na
 - **2026-10-15 13:07 · BeMuCa** — Schritt 4: mergeRefused verwirft den Eintrag bei jeder Marke als Gewinner, auch wenn der Eintrag selbst eine Marke war (zwei Klone loeschen gleichzeitig) - die Marke steht dann schon, nichts zu mergen.
 Alter Namens-Ref prueft ref.Deleted() ODER MilestoneDeleted(ref.ID), vor adoptOldRef - sonst haette AdoptOld in die ID-Datei geschrieben.
 milestones.go migrateMilestones meldet entfernte Namen jetzt per warnRef (milestones_deleted), sonst verschwaende die Datei dort still.
+- **2026-10-15 13:14 · BeMuCa** — Handtest des Treibers auf 74520aea (Scratch-Repos mit lokalem bare-Remote, Skripte in $S/n71nvg/hand/): (a) ada loescht 'wrong', grace fetch -> 'Milestones deleted elsewhere', Datei weg; graces naechster Schreibbefehl bringt keinen Ref zurueck. (b) 14.10.-Nachbau: grace hat ein altes test.md, ada loescht test -> grace fetch entfernt test.md, kein neuer Ref auf origin, LegacyID-Ref bleibt Marke. (d) Klon mit installiertem 0.5.1: meldet 'filed elsewhere', blendet aus, schreibt nichts zurueck. logbook <milestone>: ein offenes Ticket -> Exit 3, nichts abgelegt; alle fertig -> Milestone + 3 Tickets in ada-20261015/, Board leer. Befund, nicht N71NVG: auf einem ZWEITEN Klon stehen die abgelegten Tickets weiter als ref-only [pull it] im Done, bis der Branch landet und 'jaira snapshot' ihre Refs abraeumt - dasselbe wie 'jaira logbook <id>' heute, gewollt (das Ticket bleibt sichtbar, bis der Code da ist).
