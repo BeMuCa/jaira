@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T13:25:14Z
+updated-at: 2026-10-15T13:25:16Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
@@ -132,3 +132,9 @@ milestones.go migrateMilestones meldet entfernte Namen jetzt per warnRef (milest
 - .claude/skills/jaira/SKILL.md:252-253 'nothing of the group stays on the board' - ein fertiges Ref-only-Mitglied bleibt stehen; Vorbehalt wie in der logbook-Hilfe.
 DECISION (blockiert nicht, offen seit Notiz 12:44): delete ohne Rueckfrage, anders als 'jaira delete <id>'. Empfehlung: so lassen.
 Stehen gelassen: Marke statt Ref-Loeschen und Deleted() als einziges Praedikat (Notiz 12:40) - richtig, alle Wege in refsync/Migrate fragen es, internal/cli prueft nichts selbst; Ticket-Schleife im CLI statt FileLane, erster Fehler bricht ab (Notiz 12:38); stilles Migrate-Ablegen unter lockAndMigrate - CLI meldet ueber migrateMilestones/migrateHeld (Notiz 13:07), TUI ist bei Moved genauso still, LegacyID-Grenze bekannt (Notiz 12:41); announce.go/CLAUDE.md/AGENTS.md/fetch.go/tui/refs.go sind minimal geaendert.
+- **2026-10-15 13:25 · BeMuCa** — Nachfolger: (critique Runde 1, schicken nicht zurueck)
+- core/milestone/write.go:168-175: Delete kopiert die Umhaenge-Schleife aus Edit (:122-128) -> ein Helfer neben ReattachSuccessors (layout.go:245).
+- internal/cli/milestones.go:480-486: delete --json 'tickets' ist eine Zahl, sonst ueberall die Liste ('count' ist die Zahl) -> milestoneJSON + deleted + successors. Am besten in dieser Runde mitnehmen, spaeter bricht es JSON.
+- internal/cli/milestones.go:749-753: reportDropped nutzt 'milestones_dropped' (Dateinamen), migrateMilestones/fetch 'milestones_deleted' (Namen) fuer dasselbe -> ein reportDeleted.
+- core/milestone/migrate.go:78-83: DeletedOnRef exportiert, ein Aufrufer im Paket -> klein schreiben oder inline wie tip.
+- core/refsync/refsync.go:307, internal/cli/fetch.go:149: 6- bzw. 7-Tupel statt refsync.MilestonesFetched -> eigenes Ticket (fetch.go geteilt).
