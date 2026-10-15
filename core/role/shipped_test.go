@@ -52,6 +52,9 @@ func TestEveryInstalledFileIsAShippedVersion(t *testing.T) {
 			}
 		}
 	}
+	if !shipped.Known(jairaSkillKey, jairaSkill) {
+		missing = append(missing, shipped.Line(jairaSkillKey, jairaSkill))
+	}
 	mods, err := mod.Builtins()
 	if err != nil {
 		t.Fatal(err)
@@ -72,7 +75,7 @@ func TestEveryInstalledFileIsAShippedVersion(t *testing.T) {
 			len(missing), strings.Join(missing, "\n"))
 	}
 	// the hard-coded prefixes must name real files
-	for _, key := range []string{roleKey(acceptanceID, acceptanceRel), modKey(mods[0].ID, mods[0].Files[0])} {
+	for _, key := range []string{jairaSkillKey, roleKey(acceptanceID, acceptanceRel), modKey(mods[0].ID, mods[0].Files[0])} {
 		if _, err := os.Stat(filepath.Join("..", "..", filepath.FromSlash(key))); err != nil {
 			t.Errorf("key %s names no file in the repository: %v", key, err)
 		}

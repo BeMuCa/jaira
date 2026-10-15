@@ -43,7 +43,8 @@ type Result struct {
 
 // install writes every embedded role into dstSkillsDir as
 // <dstSkillsDir>/<role-id>/<file>, and every embedded mod as
-// <dstSkillsDir>/<mod-id>/<file>, and reports what happened to each file.
+// <dstSkillsDir>/<mod-id>/<file>, and the jaira skill as
+// <dstSkillsDir>/jaira/SKILL.md, and reports what happened to each file.
 //
 // The comparison is against the embedded bytes, not os.Stat as lane.Export
 // does. Stat answers two questions — there or not — and this needs three: a
@@ -82,6 +83,13 @@ func install(dstSkillsDir string, force, mods, dryRun bool) ([]Result, error) {
 			out = append(out, Result{Role: r.ID, Path: dst, Action: action})
 		}
 	}
+	// The jaira skill goes beside the roles but is not one of them.
+	dst := filepath.Join(dstSkillsDir, "jaira", "SKILL.md")
+	action, err := writeFile(dst, jairaSkill, jairaSkillKey, force, dryRun)
+	if err != nil {
+		return out, err
+	}
+	out = append(out, Result{Role: "jaira", Path: dst, Action: action})
 	// The mods jaira ships go beside the roles: a plugin folder in a skills
 	// directory is one Claude Code loads by itself, so this is their install.
 	// Same three-way comparison, so an edited mod file is left alone too.

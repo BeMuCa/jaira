@@ -98,7 +98,8 @@ func newRolesInstallCmd() *cobra.Command {
 		Use:   "install --project|--global|--into <dir> [--agent <name>]",
 		Short: "Write the role prompts into a skills directory",
 		Long: `Writes every built-in role as <skills>/<role-id>/SKILL.md, together with any
-files the role ships beside its prompt, and the jaira-cockpit mod as
+files the role ships beside its prompt, the jaira skill as <skills>/jaira/SKILL.md
+(not a role: it teaches the agent the CLI), and the jaira-cockpit mod as
 <skills>/jaira-cockpit/ — a Claude Code plugin folder, which Claude Code loads
 by itself from the next session on (from .claude/skills once you trust the
 workspace). It keeps a teamlead chat readable and shows what waits on the
