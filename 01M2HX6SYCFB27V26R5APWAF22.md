@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T14:21:55Z
+updated-at: 2026-10-15T14:22:56Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -47,7 +47,7 @@ review-gaps: |-
   - Fluff: strings.Contains('jaira update --roles/--lanes') in TestUpdateWithoutSwitchesSaysNothingWhenCurrent deckt sich heute mit hasLine('roles: '/'lanes: ') - gelassen, Streichen macht den Test schwaecher, nicht gleich. setupOutput nimmt die fruehere Marke; da update.go:188-192 nur eine druckt, ginge es 2 Zeilen kuerzer - gelassen, robust gegen Umordnen.
   - Kosten: setupOutput(out) je Schleifendurchlauf neu (updatedry_test.go:44/79, updatesetup_test.go:131) - nur Tests, gelassen.
   - README-Umbruch laesst die kurze Zeile 'replaces it. --dry-run prints the' - rendert gleich, gelassen.
-test-verdict: "pass: gofmt/vet/build gruen auf Export von HEAD 3218b63a, go test nicht gelaufen (Anweisung) - die neuen Tests sind geschrieben+kompiliert, nicht gelaufen; DoD 1-6 am Baum geprueft (Proofs/Tests gelesen); Handlaeufe auf Scratch-Build 9.9.9: nackter update schreibt nur Block, --dry-run schreibt nichts (exit 3), update --roles --lanes zieht Block/Rollen/jaira-Skill/Lane nach und skippt editierte Datei (exit 3, 2. Lauf nur unchanged+skipped), ausserhalb Board nur persoenlich, Skills-Hinweis einmal auf stderr (--json valide), self upgrade 9.9.8->9.9.9 ruft Kind update --roles (exit 0, --json setup/setup_exit=3); Release-Notiz 8 Zeilen stimmen"
+test-verdict: "pass: testing 2 on c3ab3695: gofmt/vet/build clean on exported HEAD; changed assertions hold on cut output (first run 3 updated lines, second run 0 updated/would + 'lanes: 0 updated', old whole-output check fails there: 7 'would ' hits; hints, dry-run, skipped, no board here, current setup silent); exit 3 prints new editedError and 'roles install --global --force' runs rc 0 and replaces the edited file; go test nicht gelaufen (Anweisung)"
 review-verdict: |-
   - Der Produktcode erfuellt DoD 1-6. Meine Schritte unten liefen im Scratchpad komplett sauber: ein Aufruf bringt Block, Projekt- und persoenliche Rollen, jaira-Skill und testing-Lane auf Stand; die editierte Datei bleibt unberuehrt (Exit 3); --dry-run schreibt nichts; self upgrade startet das neue Binary.
   - Manifest geprueft: scripts/shipped-history.sh baut core/shipped/shipped.sha256 byte-gleich nach. Beide Fixtures stehen drin. gofmt, go vet und go build sauber.
