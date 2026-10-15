@@ -1,7 +1,7 @@
 ---
 id: 01M4ZQ7QQB5YBTPPCCEMGWK31K
 title: "Ein archiviertes Ticket verschwindet sofort von allen Boards, nicht erst wenn der Snapshot den Ref abraeumt"
-status: todo
+status: pre-process
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -22,7 +22,7 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T12:37:37Z
+updated-at: 2026-10-15T12:37:45Z
 updated-by: BeMuCa
 ---
 
