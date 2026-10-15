@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T12:35:59Z
+updated-at: 2026-10-15T12:36:39Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -31,7 +31,7 @@ context: |-
 
   Dazu kommt seit Commit 42d8253: die Lane-Dateien dieses Boards liegen unter git. Ein rechnerweiter Lauf macht damit Arbeitsbaeume in mehreren Repositories schmutzig, nicht nur Dateien im Heimverzeichnis.
 claimed-by: EE-3NX6GL3-3760272
-claimed-at: 2026-10-15T12:05:54Z
+claimed-at: 2026-10-15T12:36:39Z
 ---
 
 # jaira update bringt das ganze Setup nach, nicht nur den Textblock
