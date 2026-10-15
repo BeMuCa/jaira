@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T13:33:07Z
+updated-at: 2026-10-15T13:41:59Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
@@ -36,6 +36,17 @@ outcome-resolves: "DoD 1/4: logbookMilestone (internal/cli/logbook.go) prueft wi
 executed-by: sonnet
 review-summary: none
 round: 2
+review-gaps: |-
+  removed: core/milestone/write.go Edit (:122) and Delete (:162) carried the same reattach loop - now one helper closeChain next to ReattachSuccessors (core/milestone/layout.go:278) (L7)
+  removed: core/milestone/migrate.go DeletedOnRef (exported, one caller) inlined as the type assertion at :178, the same shape StaleOld/tip use; its unit test TestDeletedOnRefIsFalseForARecorderThatKnowsNoRefs went with it - both branches stay covered by TestMigrateDropsAnOldFileWhoseMilestoneWasDeleted (marked test.md vs unmarked alpha.md) and every Migrate test on a plain fakeRec (L10)
+  removed: internal/cli/logbook.go:465 hand-written nil-to-[] for ref_only replaced by the existing strOrEmpty (internal/cli/tags.go:103)
+  left: L11 - IncomingMilestones/fetchMilestones 6-/7-tuples instead of refsync.MilestonesFetched; fetch.go is shared, own ticket
+  left: milestone.Result.Dropped holds file names and two callers trim .md (core/refsync/refsync.go:541, internal/cli/milestones.go:752 reportDropped). Holding names would drop reportDropped, but sort.Strings orders 'a-b.md' before 'a.md' and 'a' before 'a-b', so output order would change - not a cleanup
+  left: internal/tui/refs.go:135 append(append([]string{}, ...)) - slices.Concat needs a new import in a shared file
+  left: core/refsync/refsync.go mergeRefused parses the winner twice (new Deleted check, pre-existing name line) and RecordMilestone reads the ref twice per write (MilestoneDeleted, MilestoneSHA) - neither path is hot, folding them touches pre-existing lines
+  left: internal/cli/fetch.go:216 printDeletedMilestones repeats the heading-plus-names shape of printMilestones/printFiledMilestones - the file's own pattern, no shared printer exists
+  left: internal/cli/logbook.go ticket loop StampCommits+Logbook instead of FileLane - settled by critique (note 12:38)
+  checked, kept: appendNew (core/refsync/refsync.go:471), removeMilestoneFiles, outboxLen, incomingDeleted - grep found no existing equivalent; nothing this ticket added is uncalled, nothing it orphaned
 ---
 
 # Ein fertiger Milestone geht ins Archiv, und ein falscher laesst sich loeschen
