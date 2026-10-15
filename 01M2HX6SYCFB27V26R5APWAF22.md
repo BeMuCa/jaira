@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T12:35:08Z
+updated-at: 2026-10-15T12:35:10Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -81,3 +81,10 @@ claimed-at: 2026-10-15T12:05:54Z
 - Warum nicht lanesEquivalent (core/lane/lane.go:893): es vergleicht Verhalten, nicht Bytes. Ein umformulierter Prompt waere 'gleich' und wuerde ueberschrieben. Und es braeuchte die alten Inhalte.
 - Auf diesem Board: optimize und testing = alte Katalog-Version aus lanes/ -> werden ersetzt. critique ist von Hand geaendert (X9GJ51, 'notes' in input-requires) -> skipped.
 - Der Kern liegt in core/lane (RefreshShipped). 0S1A7M ('lanes use --all') kann ihn spaeter mit einem force-Parameter nach aussen geben. 0S1A7M wird hier NICHT umgesetzt.
+- **2026-10-15 12:35 · BeMuCa** — Entscheidung DoD 5 - self upgrade: nach dem Ersetzen startet 'jaira self upgrade' das NEUE Binary am Zielpfad als Kindprozess: '<ziel> -C <dir> update --roles' (plus --json, wenn das Upgrade --json hat).
+- Warum Kindprozess: der laufende Prozess ist danach immer noch das alte Binary (internal/cli/self.go:170). Was er aus seinem eigenen embed schreibt, ist die alte Version.
+- Im Board: Agent-Block + Skills (Projekt + persoenlich). Ausserhalb eines Boards: 'update --roles' zieht nur die persoenlichen Skills nach und sagt das.
+- Lanes NICHT: sie liegen auf manchen Boards unter git und gehoeren dem Team. Ein Upgrade auf einem Rechner soll den Ablauf aller nicht still aendern. Die Hinweiszeile von update nennt veraltete Lanes.
+- Exit 3 des Kinds (eine Datei von Hand geaendert) ist kein Fehler des Upgrades: Exit 0, die Zeilen des Kinds nennen, was uebersprungen wurde. JSON: 'setup' (Ausgabe des Kinds) und 'setup_exit'.
+- Test: Variable runUpgraded (wie selfExecutable, self.go:21) + Fake-Release ueber JAIRA_RELEASE_API/JAIRA_RELEASE_DOWNLOADS. Dazu ein unix-Test, der ein Shell-Skript als neues Binary wirklich ausfuehrt.
+- Nicht drin: die Verweigerung fuer Dev-Builds (self.go:80-84, 'a dev build has no published release'). Offene Frage an Berk.
