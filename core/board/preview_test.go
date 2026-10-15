@@ -7,13 +7,6 @@ import (
 	"testing"
 )
 
-func writeAgentFile(t *testing.T, root, name, body string) {
-	t.Helper()
-	if err := os.WriteFile(filepath.Join(root, name), []byte(body), 0o644); err != nil {
-		t.Fatal(err)
-	}
-}
-
 // snapshot lists every file under root with its bytes.
 func snapshot(t *testing.T, root string) map[string]string {
 	t.Helper()
@@ -51,7 +44,7 @@ func TestPreviewAgentFilesSaysWhatTheWriteDoesAndWritesNothing(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			root := t.TempDir()
 			for name, body := range c.files {
-				writeAgentFile(t, root, name, body)
+				writeFile(t, root, name, body)
 			}
 			before := snapshot(t, root)
 

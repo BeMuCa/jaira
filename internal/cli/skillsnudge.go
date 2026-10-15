@@ -31,18 +31,14 @@ func nudgeSkillsIfStale() {
 	if release.Stamped(stamp) == release.Current {
 		return
 	}
-	targets, err := role.Installed("")
+	runs, err := refreshRoles("", true)
 	if err != nil {
 		return
 	}
 	var behind []string
-	for _, t := range targets {
-		results, err := t.Agent.Install(t.Dir, false, true)
-		if err != nil {
-			return
-		}
-		if role.Behind(results) > 0 {
-			behind = append(behind, t.Dir)
+	for _, r := range runs {
+		if role.Behind(r.results) > 0 {
+			behind = append(behind, r.target.Dir)
 		}
 	}
 	// Stamped even when nothing is behind: one check per version, not one per command.

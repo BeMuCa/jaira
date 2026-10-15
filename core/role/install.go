@@ -118,8 +118,8 @@ func install(dstSkillsDir string, force, mods, dryRun bool) ([]Result, error) {
 }
 
 // roleKey and modKey are a file's path in the jaira repository: the key the
-// list of shipped versions (core/shipped) holds it under. They sit next to the
-// go:embed directories they mirror.
+// list of shipped versions (core/shipped) holds it under. roleKey builds on
+// this package's go:embed directory; modKey spells out core/mod's.
 func roleKey(id, rel string) string { return "core/role/" + path.Join(builtinDir, id, rel) }
 func modKey(id, rel string) string  { return "core/mod/builtin/" + id + "/" + rel }
 
