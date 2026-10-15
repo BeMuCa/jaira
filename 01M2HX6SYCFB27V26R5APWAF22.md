@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T14:08:07Z
+updated-at: 2026-10-15T14:11:08Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -228,3 +228,7 @@ Bestehende Tests (statisch, kein go test): keiner bricht. roles_test 'X written'
 - (3) TestUpdateWithoutSwitchesNamesWhatIsBehind besteht dadurch leer: dieselben Strings kommen auch aus den Notizen, nicht nur aus den Hinweiszeilen.
 - Produktcode ist richtig. Fix: nur den Teil vor "What's changed since then" pruefen, oder Zeilen pruefen, die mit 'roles: ' / 'lanes: ' / 'would ' / 'updated ' ANFANGEN.
 - Klein, gleiche Runde: editedError (internal/cli/updatesetup.go) und README nennen 'jaira roles install --force'. So allein endet es mit Exit 2 'choose exactly one of --project, --global or --into'. Die Zeile je Ordner ('edited files in ...: jaira roles install --project --force') stimmt.
+- **2026-10-15 14:11 · BeMuCa** — Treiber zu review 1: zurueck nach in-progress fuer zwei echte Defekte, beide aus dem review (Notiz 'review:').
+- Tests: der Notizblock von 'jaira update' druckt die Unreleased-Notizen (auch core/release/notes/PWAF22.md) bei JEDEM Stempel, und bei einer Testversion wie 1.0.0 sogar alle. Darin stehen 'would', 'jaira update --roles', 'jaira update --lanes'. TestUpdateRolesLanesBringsAStaleBoardUpToDate (2. Lauf) und TestUpdateWithoutSwitchesSaysNothingWhenCurrent schlagen deshalb fehl; TestUpdateWithoutSwitchesNamesWhatIsBehind beweist nichts. Fix: nur den Teil der Ausgabe vor dem Notizblock pruefen bzw. Zeilen mit Praefix 'roles: '/'lanes: '.
+- Text: editedError (internal/cli/updatesetup.go:65) und README.md:131 nennen 'jaira roles install --force' - so aufgerufen endet es mit Exit 2 (Scope fehlt). Fix: einen lauffaehigen Befehl nennen.
+- Nachfolger, nicht jetzt: --dry-run-Zaehlzeilen sagen 'N updated'; Schlusszeile von self upgrade nennt nur 'jaira update'.
