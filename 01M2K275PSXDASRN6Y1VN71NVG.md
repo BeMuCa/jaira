@@ -1,7 +1,7 @@
 ---
 id: 01M2K275PSXDASRN6Y1VN71NVG
 title: "Ein fertiger Milestone geht ins Archiv, und ein falscher laesst sich loeschen"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: BeMuCa
@@ -26,10 +26,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T13:14:46Z
+updated-at: 2026-10-15T13:15:25Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
+outcome-what: "'jaira logbook <milestone>' legt den fertigen Milestone jetzt samt seinen fertigen Tickets (Commits gestempelt) in EINEN Logbuch-Ordner ab; ein offenes Mitglied -> Exit 3, nichts abgelegt; ein fertiges Mitglied nur auf seinem Ref wird genannt (ref_only). Neu 'jaira milestone delete <milestone>': der Ref bleibt stehen und traegt eine Loeschmarke (status: filed + deleted: <datum> <wer>), die Datei geht, Tickets bleiben, Roadmap-Nachfolger werden umgehaengt, abgelegte werden verweigert. refsync befolgt die Marke: fetch entfernt die Datei (auch ein altes <name>.md) und meldet es, RecordMilestone verweigert lebende Schreibvorgaenge ueber einer Marke, mergeRefused verwirft wartende, Migrate holt eine alte Datei nicht zurueck. Hilfe, Doku, Agent-Block, Release-Notizen."
+outcome-why: "Berk (15.10.): ein fertiger Milestone soll als Ganzes vom Board, ohne Reste. Und am 14.10. kamen sechs auf origin geloeschte Test-Milestones zurueck, weil Alex' Klon die alten Dateien neu migriert und hochgeschoben hat - ein Loeschen, das nur den Ref nimmt, macht jeder Klon mit der Datei rueckgaengig."
+outcome-resolves: "DoD 1/4: logbookMilestone (internal/cli/logbook.go) prueft wie bisher alle Mitglieder, legt dann erst die Tickets und zuletzt den Milestone in denselben Ordner (TestFilingAMilestoneFilesItsFinishedTickets, TestARefusedMilestoneFilingFilesNoTicket, TestAMilestoneFilingFinishesWhatAnEarlierRunStarted, TestFilingAMilestoneLeavesATicketThatIsOnlyOnItsRef). DoD 5: Marke statt Ref-Loeschen, ein Praedikat Deleted(), an allen Schreibwegen von refsync und in Migrate befolgt (5+1 refsync-Tests, TestMigrateDropsAnOldFileWhoseMilestoneWasDeleted, Zwei-Klon-Tests TestADeletedMilestoneLeavesTheOtherCloneAndStaysDeleted und TestAnOldFileOfADeletedMilestoneIsNotPushedAgain = 14.10.). DoD 7: milestone.Delete haengt Nachfolger um, laesst Tickets, verweigert abgelegte (TestDelete*). DoD 6: drei Zeilen in core/release/notes/N71NVG.md. Tests geschrieben und kompiliert (go vet), nicht ausgefuehrt (Berks Anweisung); Handtest des Treibers siehe Notiz."
+executed-by: sonnet
 ---
 
 # Ein fertiger Milestone geht ins Archiv, und ein falscher laesst sich loeschen
