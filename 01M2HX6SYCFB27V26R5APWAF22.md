@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T14:24:23Z
+updated-at: 2026-10-15T14:34:43Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -31,7 +31,7 @@ context: |-
 
   Dazu kommt seit Commit 42d8253: die Lane-Dateien dieses Boards liegen unter git. Ein rechnerweiter Lauf macht damit Arbeitsbaeume in mehreren Repositories schmutzig, nicht nur Dateien im Heimverzeichnis.
 claimed-by: EE-3NX6GL3-3760272
-claimed-at: 2026-10-15T14:24:23Z
+claimed-at: 2026-10-15T14:34:43Z
 outcome-what: "'jaira update' hat drei neue Schalter: --roles zieht Rollen, cockpit-Mod und jaira-Skill dort nach, wo die Rollen schon liegen (Projekt + persoenlich; ausserhalb eines Boards nur persoenlich); --lanes ersetzt Lane-Dateien des Boards, die eine frueher ausgelieferte Version sind; --dry-run sagt vorher, was geschrieben und was ausgelassen wuerde. Ohne Schalter schreibt update weiter nur den Block und nennt in einer Hinweiszeile, was zurueckhaengt. Neue Liste core/shipped/shipped.sha256 (jede je ausgelieferte Version, aus git erzeugt mit scripts/shipped-history.sh): eine Datei gleich einer alten Version gilt nicht mehr als 'edited' und wird ohne --force ersetzt ('updated') - auch in 'jaira roles install'. 'jaira self upgrade' startet danach das NEUE Binary mit 'update --roles'. Einmal je Version eine stderr-Zeile, wenn persoenliche Skills aelter sind. Der jaira-Skill ist jetzt eingebettet (core/role/jaira/SKILL.md, per Test gleich .claude/skills/jaira/SKILL.md) und wird neben den Rollen installiert. README, docs/COMMANDS.md, docs/AGENTS.md, 8 Release-Notiz-Zeilen."
 outcome-why: "Nach einem Upgrade hing jedes Board an drei Stellen zurueck und brauchte drei Befehle; Berk will, dass Skills nach einem Upgrade immer nachgezogen werden. Am 14.10. meldete 'roles install --global' 11 Dateien als 'edited here', die byte-gleich mit frueher ausgelieferten Versionen waren - ein automatischer Lauf haette genau die still ausgelassen. Der nackte Aufruf bleibt gleich, weil Lane-Dateien unter git dem Team gehoeren und Gewohnheitsnutzer nichts Neues geschrieben bekommen sollen."
 outcome-resolves: "DoD 1: 'update --roles --lanes' - Handlauf an einem Board mit veraltetem Block, Rollen und Lane bringt alle drei auf den Stand (Notiz 13:14, TestUpdateRolesLanesBringsAStaleBoardUpToDate). DoD 2: nackter Aufruf schreibt nur Block+Stempel, Entscheidung als Notiz. DoD 3: --dry-run mit gleichen Zeilen und Exit-Code, schreibt nichts. DoD 4: core/release/notes/PWAF22.md. DoD 5: self upgrade fuehrt '<neues Binary> -C <dir> update --roles' aus - Handlauf gegen Fake-Release-Server. DoD 6: nudgeSkillsIfStale warnt einmal je Version und nennt 'jaira update --roles'; der jaira-Skill ist dafuer eingebettet. Tests geschrieben und kompiliert (go vet), aber auf Berks Anweisung noch nicht ausgefuehrt - der Race-Lauf der Hauptsitzung steht aus."
