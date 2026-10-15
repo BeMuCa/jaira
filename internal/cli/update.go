@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -81,7 +82,12 @@ personal one. Outside a board it does the personal one only. --lanes replaces
 every lane file on this board that is an older version of a lane jaira ships.
 A file you edited — one that is no version jaira ever shipped — is never
 replaced: it is named, and the command exits 3. Without --roles or --lanes only
-the jaira section is written, as before.
+the jaira section is written, as before, and it says when roles or lanes are
+behind.
+
+--dry-run says what would be written and what would be left alone, and writes
+nothing — not even the version stamp. With --lanes the preview of the jaira
+section is computed from the lanes as they are now.
 
 This neither downloads anything nor upgrades the jaira binary itself; it
 brings a board's own setup up to date with whichever binary you already have
@@ -100,7 +106,7 @@ installed.`,
 			defer func() { updateInProgress = false }()
 			s, err := openStore()
 			if errors.Is(err, ticket.ErrNoStore) && setup.roles && !setup.lanes && agentFile == "" {
-				return updatePersonalRoles(cmd)
+				return updatePersonalRoles(cmd, setup.dry)
 			}
 			if err != nil {
 				return err
@@ -116,7 +122,7 @@ installed.`,
 
 			if setup.lanes {
 				// Before the Load below, so the section describes the refreshed lanes.
-				if setup.laneResults, err = lane.RefreshShipped(s.Root, false); err != nil {
+				if setup.laneResults, err = lane.RefreshShipped(s.Root, setup.dry); err != nil {
 					return err
 				}
 			}
@@ -125,7 +131,9 @@ installed.`,
 			boardLanes, _ := lane.Load(s.Root)
 			var notesWritten []string
 			var noteErr error
-			if agentFile != "" {
+			if setup.dry {
+				notesWritten, noteErr = board.PreviewAgentFiles(s.Root, agentFile, boardLanes.Facts())
+			} else if agentFile != "" {
 				notesWritten, noteErr = board.ChooseAgentFiles(s.Root, agentFile, boardLanes.Facts())
 			} else {
 				notesWritten, noteErr = board.AnnounceInAgentFiles(s.Root, boardLanes.Facts())
@@ -134,14 +142,16 @@ installed.`,
 				return fail(ExitError, "prepare_failed", "could not update an agent instruction file: %v", noteErr)
 			}
 			if setup.roles {
-				if setup.roleRuns, err = refreshRoles(s.Root, false); err != nil {
+				if setup.roleRuns, err = refreshRoles(s.Root, setup.dry); err != nil {
 					return err
 				}
 			}
 			// Stamp last: if the note had failed, the board would not actually
 			// be prepared by this version, and must not claim to be.
-			if err := release.Stamp(s.StateDir()); err != nil {
-				return err
+			if !setup.dry {
+				if err := release.Stamp(s.StateDir()); err != nil {
+					return err
+				}
 			}
 
 			w := cmd.OutOrStdout()
@@ -154,7 +164,18 @@ installed.`,
 			}
 
 			if setup.lanes {
-				printLaneResults(w, setup.laneResults, false)
+				printLaneResults(w, setup.laneResults, setup.dry)
+			}
+			if setup.dry {
+				if len(notesWritten) > 0 {
+					fmt.Fprintf(w, "Would tell your agents about this board: %s\n", strings.Join(notesWritten, ", "))
+				}
+				if setup.roles {
+					printRoleRuns(w, setup.roleRuns, s.Root, true)
+				}
+				fmt.Fprint(w, hintLines(s.Root, setup.roles, setup.lanes))
+				fmt.Fprintln(w, "nothing was written (--dry-run)")
+				return nil
 			}
 
 			if line := announceLine(notesWritten); line != "" {
@@ -163,6 +184,7 @@ installed.`,
 			if setup.roles {
 				printRoleRuns(w, setup.roleRuns, s.Root, false)
 			}
+			fmt.Fprint(w, hintLines(s.Root, setup.roles, setup.lanes))
 			if len(notes) == 0 {
 				fmt.Fprintf(w, "\nNothing has changed since the version that last set this board up.\n")
 				return nil
@@ -180,6 +202,7 @@ installed.`,
 	cmd.Flags().StringVar(&agentFile, "agent-file", "", "where the jaira section lives: agents (AGENTS.md), claude (CLAUDE.md) or both")
 	cmd.Flags().BoolVar(&setup.roles, "roles", false, "also bring the jaira skills up to date wherever they are installed: this repository's skills directory and your personal one")
 	cmd.Flags().BoolVar(&setup.lanes, "lanes", false, "also replace this board's lane files that are an older version of a lane jaira ships")
+	cmd.Flags().BoolVar(&setup.dry, "dry-run", false, "say what would be written and what is left alone, and write nothing")
 	return cmd
 }
 

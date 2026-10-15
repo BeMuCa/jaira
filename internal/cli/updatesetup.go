@@ -21,9 +21,9 @@ type roleRun struct {
 // beyond the jaira section: the lane files and the skills directories. The zero value is
 // a bare 'jaira update', which does neither.
 type updateSetup struct {
-	roles, lanes bool
-	laneResults  []lane.Refreshed
-	roleRuns     []roleRun
+	roles, lanes, dry bool
+	laneResults       []lane.Refreshed
+	roleRuns          []roleRun
 }
 
 // skipped reports whether a file was left alone because a person edited it.
@@ -42,6 +42,9 @@ func (u *updateSetup) json(m map[string]any) map[string]any {
 	}
 	if u.roles || u.lanes {
 		m["skipped"] = u.skipped()
+	}
+	if u.dry {
+		m["dry_run"] = true
 	}
 	return m
 }
@@ -135,14 +138,46 @@ func anySkipped(runs []roleRun, lanes []lane.Refreshed) bool {
 	return false
 }
 
+// hintLines says, for the parts a bare update did not touch, that they are behind and which
+// switch brings them up. It writes nothing and ignores every error of its own probes: a
+// hint must never fail an update.
+func hintLines(root string, roles, lanes bool) string {
+	var out string
+	if !roles {
+		if runs, err := refreshRoles(root, true); err == nil {
+			n := 0
+			for _, r := range runs {
+				n += role.Behind(r.results)
+			}
+			if n > 0 {
+				out += fmt.Sprintf("roles: %d file(s) are older than this jaira — 'jaira update --roles' brings them up (add --dry-run to list them)\n", n)
+			}
+		}
+	}
+	if !lanes {
+		if res, err := lane.RefreshShipped(root, true); err == nil {
+			n := 0
+			for _, r := range res {
+				if r.Action == lane.RefreshUpdated {
+					n++
+				}
+			}
+			if n > 0 {
+				out += fmt.Sprintf("lanes: %d lane file(s) are an older version jaira shipped — 'jaira update --lanes' brings them up (add --dry-run to list them)\n", n)
+			}
+		}
+	}
+	return out
+}
+
 // updatePersonalRoles is 'jaira update --roles' outside a board: the personal skills
 // directories only.
-func updatePersonalRoles(cmd *cobra.Command) (err error) {
-	runs, err := refreshRoles("", false)
+func updatePersonalRoles(cmd *cobra.Command, dryRun bool) (err error) {
+	runs, err := refreshRoles("", dryRun)
 	if err != nil {
 		return err
 	}
-	u := &updateSetup{roles: true, roleRuns: runs}
+	u := &updateSetup{roles: true, dry: dryRun, roleRuns: runs}
 	defer func() {
 		if err == nil && u.skipped() {
 			err = editedError()
@@ -153,6 +188,9 @@ func updatePersonalRoles(cmd *cobra.Command) (err error) {
 		return emit(w, u.json(map[string]any{"root": "", "version": release.Current}))
 	}
 	fmt.Fprintln(w, "no board here: only your personal skills directories were checked")
-	printRoleRuns(w, runs, "", false)
+	printRoleRuns(w, runs, "", dryRun)
+	if dryRun {
+		fmt.Fprintln(w, "nothing was written (--dry-run)")
+	}
 	return nil
 }
