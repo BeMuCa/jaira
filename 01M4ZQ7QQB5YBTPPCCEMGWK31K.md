@@ -1,7 +1,7 @@
 ---
 id: 01M4ZQ7QQB5YBTPPCCEMGWK31K
 title: "Ein archiviertes Ticket verschwindet sofort von allen Boards, nicht erst wenn der Snapshot den Ref abraeumt"
-status: optimize
+status: testing
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -22,7 +22,7 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T14:40:45Z
+updated-at: 2026-10-15T14:41:04Z
 updated-by: BeMuCa
 outcome-what: "'jaira archive' schreibt auf den Ref den Dateiinhalt plus eine Zeile 'archived: <datum> <wer>' (core/ticket/store.go Archive -> recordFiled mit Markwert; Logbook gibt '' und bleibt unmarkiert); die Datei in .jaira/archive/ bleibt byte-gleich. Store.List laesst ref-only Tickets mit dieser Zeile weg, also auch board, list, next, resume. 'jaira restore' schreibt die Datei ohne Zeile zurueck auf den Ref (nach CheckFresh; ist der Ref neuer, bleibt er stehen und restore warnt mit 'jaira pull <h>'). show (nur ref-only) und fetch nennen ein archiviertes Ticket 'archived', fetch meldet es nicht als 'a ticket is yours'. archive sagt bei ungetrackter Datei, dass das Committen nur den Eintrag festhaelt, bei getrackter, dass ein Branch mit der Datei es bis zum Merge zeigt. Doku und zwei Release-Zeilen."
 outcome-why: "Bisher schrieb archive den unveraenderten Inhalt auf den Ref. Jeder andere Klon zeigte das Ticket weiter, bis der Snapshot-Lauf (alle 72 h) den Ref abraeumte, und das erst nach Commit und Merge der Archiv-Datei. Berk will, dass Archivieren wie create wirkt: sofort beim naechsten fetch, ohne Commit."
