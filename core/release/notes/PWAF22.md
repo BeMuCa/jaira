@@ -3,3 +3,4 @@
 - Run 'jaira update --lanes' to replace this board's lane files that are an older version of a lane jaira ships; a lane file you edited is named, left alone, and makes the command exit 3.
 - Add --dry-run to 'jaira update' to see which files it would write and which it would leave alone because you edited them, before anything is written.
 - Read the last lines of a plain 'jaira update': it still writes only the jaira section, and now says when roles or lanes are behind and which switch brings them up.
+- Expect 'jaira self upgrade' to run the new binary's 'jaira update --roles' right after it installs it: the board you are in gets its jaira section and your installed skills are brought up to date, and it prints what it touched; run 'jaira update --lanes' yourself for the lanes.

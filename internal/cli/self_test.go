@@ -10,11 +10,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -252,6 +254,7 @@ func TestSelfUpgradeVersionPinsInstallsExactRelease(t *testing.T) {
 	setCurrent(t, "1.0.0")
 	hits := selfTestRelease(t, "v1.3.0", "latest-bytes", "v1.1.0", "pin-bytes")
 	target := selfUpgradeTarget(t)
+	recordUpgraded(t, "", 0, nil)
 
 	out, err := runSelf(t, t.TempDir(), "upgrade", "--version", "v1.1.0", "--json")
 	if err != nil {
@@ -332,5 +335,149 @@ func TestSelfUpgradeRefusalWritesNothingBeforeReturningTheError(t *testing.T) {
 	}
 	if out != "" {
 		t.Errorf("output = %q, want nothing written on a refusal", out)
+	}
+}
+
+// upgradedCall is what a recordUpgraded stand-in saw.
+type upgradedCall struct {
+	calls  int
+	target string
+	args   []string
+}
+
+// recordUpgraded swaps runUpgraded for a stand-in that notes its arguments,
+// writes stdout to the child's stdout and returns code, err.
+func recordUpgraded(t *testing.T, stdout string, code int, err error) *upgradedCall {
+	t.Helper()
+	got := &upgradedCall{}
+	prev := runUpgraded
+	runUpgraded = func(target string, args []string, so, _ io.Writer) (int, error) {
+		got.calls++
+		got.target, got.args = target, args
+		io.WriteString(so, stdout)
+		return code, err
+	}
+	t.Cleanup(func() { runUpgraded = prev })
+	return got
+}
+
+func TestSelfUpgradeRunsTheNewBinarysUpdateRoles(t *testing.T) {
+	setCurrent(t, "1.0.0")
+	selfTestRelease(t, "v1.3.0", "latest-bytes", "v1.1.0", "pin-bytes")
+	target := selfUpgradeTarget(t)
+	got := recordUpgraded(t, "setup ran\n", 0, nil)
+	dir := t.TempDir()
+
+	out, err := runSelf(t, dir, "upgrade")
+	if err != nil {
+		t.Fatalf("self upgrade: %v\n%s", err, out)
+	}
+	if got.calls != 1 || got.target != target {
+		t.Fatalf("runUpgraded called %d time(s) with %q, want once with %q", got.calls, got.target, target)
+	}
+	if want := []string{"-C", dir, "update", "--roles"}; !slices.Equal(got.args, want) {
+		t.Errorf("args = %q, want %q (no --lanes: lanes are team-shared files)", got.args, want)
+	}
+	ran := strings.Index(out, "setup ran")
+	last := strings.Index(out, "run 'jaira update' in each repository to bring its board setup in step.")
+	if ran < 0 || last < 0 || ran > last {
+		t.Errorf("want the setup's output before the closing line, got:\n%s", out)
+	}
+}
+
+func TestSelfUpgradeJSONCarriesTheSetup(t *testing.T) {
+	setCurrent(t, "1.0.0")
+	selfTestRelease(t, "v1.3.0", "latest-bytes", "v1.1.0", "pin-bytes")
+	selfUpgradeTarget(t)
+	got := recordUpgraded(t, `{"roles":[]}`, 0, nil)
+
+	out, err := runSelf(t, t.TempDir(), "upgrade", "--json")
+	if err != nil {
+		t.Fatalf("self upgrade --json: %v\n%s", err, out)
+	}
+	if !slices.Contains(got.args, "--json") {
+		t.Errorf("args = %q, want --json passed on", got.args)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(out), &payload); err != nil {
+		t.Fatalf("stdout was not a single JSON object: %v\n%s", err, out)
+	}
+	if _, ok := payload["setup"].(map[string]any); !ok {
+		t.Errorf("setup = %v, want the child's JSON object", payload["setup"])
+	}
+	if payload["setup_exit"] != float64(0) {
+		t.Errorf("setup_exit = %v, want 0", payload["setup_exit"])
+	}
+}
+
+func TestSelfUpgradeSetupThatSkippedIsNotAFailure(t *testing.T) {
+	setCurrent(t, "1.0.0")
+	selfTestRelease(t, "v1.3.0", "latest-bytes", "v1.1.0", "pin-bytes")
+	selfUpgradeTarget(t)
+	recordUpgraded(t, "", 3, nil)
+
+	out, err := runSelf(t, t.TempDir(), "upgrade")
+	if err != nil {
+		t.Fatalf("a child that exited 3 must not fail the upgrade: %v\n%s", err, out)
+	}
+	if strings.Contains(out, "failed") {
+		t.Errorf("exit 3 printed a failure line:\n%s", out)
+	}
+}
+
+func TestSelfUpgradeSetupThatCouldNotStartStillSucceeds(t *testing.T) {
+	setCurrent(t, "1.0.0")
+	selfTestRelease(t, "v1.3.0", "latest-bytes", "v1.1.0", "pin-bytes")
+	selfUpgradeTarget(t)
+	recordUpgraded(t, "", -1, errors.New("boom"))
+
+	out, err := runSelf(t, t.TempDir(), "upgrade")
+	if err != nil {
+		t.Fatalf("the binary was replaced, so the upgrade must exit 0: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "jaira update --roles") || !strings.Contains(out, "boom") {
+		t.Errorf("want a line naming 'jaira update --roles' and the cause, got:\n%s", out)
+	}
+}
+
+func TestSelfUpgradeRunsNoSetupWhenNothingWasInstalled(t *testing.T) {
+	setCurrent(t, "1.3.0")
+	selfTestRelease(t, "v1.3.0", "latest-bytes", "v1.1.0", "pin-bytes")
+	selfUpgradeTarget(t)
+	got := recordUpgraded(t, "", 0, nil)
+
+	for _, args := range [][]string{{"upgrade"}, {"upgrade", "--check"}} {
+		if out, err := runSelf(t, t.TempDir(), args...); err != nil {
+			t.Fatalf("self %v: %v\n%s", args, err, out)
+		}
+	}
+	if got.calls != 0 {
+		t.Errorf("runUpgraded called %d time(s), want 0", got.calls)
+	}
+}
+
+// TestSelfUpgradeExecutesTheReplacedBinary proves the setup comes from the
+// new bytes at target, not from the running process: the payload is a script
+// that records its arguments.
+func TestSelfUpgradeExecutesTheReplacedBinary(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the stand-in release payload is a shell script")
+	}
+	setCurrent(t, "1.0.0")
+	selfTestRelease(t, "v1.3.0", "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$JAIRA_TEST_ARGS\"\n", "v1.1.0", "pin-bytes")
+	selfUpgradeTarget(t)
+	argsFile := filepath.Join(t.TempDir(), "args")
+	t.Setenv("JAIRA_TEST_ARGS", argsFile)
+	dir := t.TempDir()
+
+	if out, err := runSelf(t, dir, "upgrade"); err != nil {
+		t.Fatalf("self upgrade: %v\n%s", err, out)
+	}
+	b, err := os.ReadFile(argsFile)
+	if err != nil {
+		t.Fatalf("the replaced binary did not run: %v", err)
+	}
+	if want := []string{"-C", dir, "update", "--roles"}; !slices.Equal(strings.Fields(string(b)), want) {
+		t.Errorf("replaced binary got %q, want %q", strings.Fields(string(b)), want)
 	}
 }
