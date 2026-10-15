@@ -22,7 +22,7 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T14:16:27Z
+updated-at: 2026-10-15T14:16:44Z
 updated-by: BeMuCa
 outcome-what: "'jaira archive' schreibt auf den Ref den Dateiinhalt plus eine Zeile 'archived: <datum> <wer>' (core/ticket/store.go Archive -> recordFiled mit Markwert; Logbook gibt '' und bleibt unmarkiert); die Datei in .jaira/archive/ bleibt byte-gleich. Store.List laesst ref-only Tickets mit dieser Zeile weg, also auch board, list, next, resume. 'jaira restore' schreibt die Datei ohne Zeile zurueck auf den Ref (nach CheckFresh; ist der Ref neuer, bleibt er stehen und restore warnt mit 'jaira pull <h>'). show (nur ref-only) und fetch nennen ein archiviertes Ticket 'archived', fetch meldet es nicht als 'a ticket is yours'. archive sagt bei ungetrackter Datei, dass das Committen nur den Eintrag festhaelt, bei getrackter, dass ein Branch mit der Datei es bis zum Merge zeigt. Doku und zwei Release-Zeilen."
 outcome-why: "Bisher schrieb archive den unveraenderten Inhalt auf den Ref. Jeder andere Klon zeigte das Ticket weiter, bis der Snapshot-Lauf (alle 72 h) den Ref abraeumte, und das erst nach Commit und Merge der Archiv-Datei. Berk will, dass Archivieren wie create wirkt: sofort beim naechsten fetch, ohne Commit."
@@ -30,20 +30,7 @@ outcome-resolves: "DoD 1: Markierung im Ref-Inhalt (store.go Archive -> recordFi
 executed-by: opus
 review-summary: "none"
 round: 5
-review-gaps: |-
-  DEFEKT (Randfall, von Hand nachgestellt, Schritte 16-19 im review-check):
-  - Eine Datei, die von einem markierten Ref gepullt wurde, traegt 'archived: <datum> <wer>' fuer immer.
-  - Jeder Schreibvorgang aus ihr (move, archive) haelt den Ref markiert: das Ticket wird gearbeitet und ist auf allen anderen Boards unsichtbar.
-  - 'jaira restore' dieser Datei meldet 'Restored ... to the board.' ohne Warnung, schickt aber die Zeile mit (store.go:727 sendet raw). Auf dem anderen Klon: fetch 'archived', list 'No tickets match.'
-  - Weg dorthin ohne --steal: der Archivierer selbst auf einem zweiten Klon macht 'jaira pull <h>' (ErrTaken trifft nur andere). pull sagt nichts von archived; 'jaira show' dort nennt es nur noch in --json.
-  - Fuer diesen Fall falsch: docs/COMMANDS.md restore-Zeile ('A ticket's archived line comes off its ref the same way'), README.md:586-587 ('jaira restore takes the line off again'), Release-Notiz Zeile 1 ('brings it back on every board'), restore-Hilfe.
-  - Pre-process Teil 2 hat nur angenommen: '--steal, fuer alle anderen bleibt sie verborgen'. Den eigenen zweiten Klon und das still falsche restore nicht.
-  - Fix-Idee: pull/refresh schreibt 'archived' leer in die Datei (Doc kann keinen Key loeschen; leer dekodiert als nicht archiviert). Nur Restore zu flicken reicht nicht: jeder spaetere Schreibvorgang aus der Datei markiert wieder.
-  NACHFOLGER (aus dem Code gelesen, nicht ausprobiert):
-  - gitref.Landed (gitref.go:770) findet mit 'rev-list -- .jaira/archive/<id>*' auch den Commit, der die Datei wieder entfernt. Ist die Archiv-Datei einmal auf master, raeumt der naechste Snapshot-Lauf den Ref auch nach einem restore ab; ref-only Boards verlieren das Ticket bis der restore gemergt ist. Nicht neu durch diesen Diff, schraenkt aber 'brings it back on every board' ein.
-  - docs/COMMANDS.md archive-Zeile sagt nicht 'nur mit Remote' (die Hilfe sagt es).
-  Trade-offs, auf denen ich stehe: last-writer-wins auf dem Ref (Teil 3); ein Branch mit getrackter Datei zeigt das Ticket bis zum Merge (Nachfolger 1, K6BGB0); Logbook unmarkiert; die getrackte Ausgabe weicht bewusst vom DoD-3-Satz ab (critique LOOP 1), weil der Satz dort falsch waere.
-  Nicht geprueft: go test (Berks Verbot). Die Tests existieren (core archiveref_test.go 44/87/113/142, cli 56/95/122). go vet ./core/... ./internal/... sauber, gofmt -l leer, Build ok.
+review-gaps: "Pass 1 (bb0facc1): folded recordArchived into recordFiled (core/ticket/store.go:193, third arg is the archived value); restore warning uses ticket.IDFromFilename instead of filepath.Base(dst)[:26]; cli archivedOnAda uses ticketByHandle. Left: Restore's inline ReadFile/ParseDoc/Decode/CheckFresh (same triple as Load/Mutate, no helper), onBoard, refRec, no cost issue. Pass 2 (2a357d71..a09c39c9): TestRefreshWritesTheFileWithoutTheArchiveMark takes tk from Mutate instead of a second Load, as TestPullLeavesAStaleFileWithAnUnsentWriteAlone does. Left: markRef - no refsync test helper writes a ref with given content (tests do Repo.Read/Write inline; olderStamp/withTag/withAssignee only edit text; cli archivedOnAda is another package), two callers; refresh block - its ParseDoc err guard cannot fail (refTicket parsed the same bytes) but an explicit return is longer, re-serialising only when marked keeps an unmarked file byte-equal to the ref, and refresh runs only on a manual pull; unmark - no existing read-and-empty helper (merge.set only writes), two callers; nothing orphaned (Pulled.Unarchived read at pull.go:97; show --json archived at tickets.go:791 still reachable for files a 0.5.1 build pulled); the stale-file setup shared with TestPullLeavesAStaleFileWithAnUnsentWriteAlone is not extracted - two callers that differ in the unsent note, and the old test is outside this change. Found, not a cleanup (see note optimize 2): TestPullOfAnUnmarkedRefAddsNoArchivedLine fails as written (refsync_test.go:953, title 'never archived' contains 'archived'); pull.go:41 help paragraph is one unwrapped line."
 test-verdict: "pass: go test NOT run (Berk's order); ran instead gate (gofmt+go vet incl. test compile+go build at bb0facc1, OK) and hand tests on scratch two-clone setup: archive hides ticket on other clone at fetch (list/next/resume/board), restore brings back, show/fetch say archived, tracked/untracked output texts, stale-restore warning. All DoD 1-4 verified against tree."
 review-verdict: |-
   Der Normalfall erfuellt DoD 1-4. Selbst durchgespielt mit lokalem bare repo und zwei Klonen: archive -> Ref auf origin traegt sofort die Zeile, Archiv-Datei ungetrackt; B fetch 'archived', list/next/resume leer; restore -> B sieht es wieder.
