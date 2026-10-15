@@ -174,18 +174,34 @@ func selectSince(all []Entry, stamped string) []Entry {
 // Stamped reads <dir>/version, trimmed. Errors are deliberately swallowed: a
 // missing or unreadable stamp is indistinguishable from "never recorded" for
 // every purpose this serves.
-func Stamped(dir string) string {
-	b, err := os.ReadFile(filepath.Join(dir, "version"))
+func Stamped(dir string) string { return readVersion(dir, "version") }
+
+// Stamp records Current as the version that last prepared dir.
+func Stamp(dir string) error { return writeCurrent(dir, "version") }
+
+// NotesSeen reads <dir>/notes-seen: the last version whose release notes the
+// user closed in the TUI, "" when none. It sits next to the stamp, per working
+// tree and never in git: "I read them" is one person's fact, not the team's.
+func NotesSeen(dir string) string { return readVersion(dir, "notes-seen") }
+
+// MarkNotesSeen records Current as the version whose release notes were read.
+func MarkNotesSeen(dir string) error { return writeCurrent(dir, "notes-seen") }
+
+// readVersion reads the one-line version file <dir>/<name>, trimmed; a
+// missing or unreadable file is "".
+func readVersion(dir, name string) string {
+	b, err := os.ReadFile(filepath.Join(dir, name))
 	if err != nil {
 		return ""
 	}
 	return strings.TrimSpace(string(b))
 }
 
-// Stamp records Current as the version that last prepared dir.
-func Stamp(dir string) error {
+// writeCurrent writes Current as the one-line version file <dir>/<name>,
+// creating dir.
+func writeCurrent(dir, name string) error {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(dir, "version"), []byte(Current+"\n"), 0o644)
+	return os.WriteFile(filepath.Join(dir, name), []byte(Current+"\n"), 0o644)
 }
