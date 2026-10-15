@@ -2,6 +2,7 @@
 color: 40
 created-at: 2026-10-13T06:49:19Z
 goal: second
+status: filed
 ---
 
 # second-milestone
