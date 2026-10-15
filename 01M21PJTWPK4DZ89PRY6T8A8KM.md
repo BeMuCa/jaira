@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-15T12:59:39Z
+updated-at: 2026-10-15T12:59:41Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -123,3 +123,4 @@ Bewusst stehen gelassen: Luecke beim ersten Versionswechsel (Notiz 2026-10-15 12
 - core/release/notes/T8A8KM.md:4: "When a note line starts `- ! `, act on it" spricht Notiz-Autoren an; der Leser sieht '  ! <text>' in jaira update und eine fette '!'-Zeile im Board, nie '- ! '. Umschreiben: "Act on every change jaira update prints as `  ! <text>` (bold on the board): it is marked as one that needs you to do something".
 Frage an Berk (kein Rueckweg): Pille nur '^ <version>' (wie gebaut) oder dahinter gedimmt 'jaira self upgrade' in derselben Reihe? Wer nie mit Agenten arbeitet, sieht den Befehl sonst nur einmal in Release-Note-Zeile 1. Empfehlung critique: so lassen.
 - **2026-10-15 12:57 · BeMuCa** — critique-Runde 1 behoben: README, COMMANDS.md, view.go-Kommentar, Notes-Zeile 4; Commit a47d6d25
+- **2026-10-15 12:59 · BeMuCa** — critique Runde 2: alle vier DEFECTs aus Runde 1 in a47d6d25 behoben, jeder neue Satz gegen den Code geprueft (versionLine, warnNewerRelease nur in next/resume auf stderr, PollCache liefert bei JAIRA_NO_UPDATE_CHECK=1 known=false, writeNotes druckt '  ! <text>', headLines zaehlt die Pillen-Zeile). Keine neuen Befunde. Nachfolger-Punkt T8A8KM.md:4 damit erledigt, vier Nachfolger bleiben. Weiter zu optimize.
