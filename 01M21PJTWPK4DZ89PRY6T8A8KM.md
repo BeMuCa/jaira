@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-15T12:55:56Z
+updated-at: 2026-10-15T12:55:58Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -115,3 +115,10 @@ Prozess: DoD 1 verlangt 'go test ./... -race gruen', die Implementierer duerfen 
 2. docs/COMMANDS.md:131 (Zeile jaira self upgrade): "shown as a status line in the launcher's and the board's footer - never printed by a CLI command, which stay quiet on purpose" ersetzen durch "shown as a pill ^ <version> under the version at the top left of the launcher and the board, and as one stderr line from jaira next and jaira resume; every other command stays quiet on purpose".
 3. internal/tui/view.go:230-234 Kommentar: "without pushing the board bar down" stimmt nicht mehr - die Pille schiebt Kopfzeile und Board-Leiste eine Reihe nach unten. Umschreiben: die Zeile steht allein, damit die Release-Pille (siehe versionLine) darunter haengt, zwischen Version und Kopfzeile statt zwischen Kopfzeile und Board-Leiste; headLines unten zaehlt sie, die Spalten geben die Reihe ab.
 Bewusst stehen gelassen: Luecke beim ersten Versionswechsel (Notiz 2026-10-15 12:19) - EBTX6X, der Anlass, ist schon in 0.5.0 (core/release/notes/0.5.0/EBTX6X.md); die Luecke trifft jeden Arbeitsbaum hoechstens einmal, jaira update druckt dann dieselben Notes; Release-Note-Zeile 6 stimmt fuer jedes spaetere Upgrade. update.go nur writeNotes + Kommentar (Notiz PWAF22-Kollisionen). Taste w, Marker ohne neues Feld (Notizen 12:20).
+- **2026-10-15 12:55 · BeMuCa** — Nachfolger:
+- internal/tui/releasenotes.go:147-150: openReleaseNotes schreibt notes-seen bei jedem Board-Oeffnen neu, sobald seen==current (base leer -> markSeen). Plan sagte: nur wenn seen != current. seen einmal lesen, markSeen nur bei seen != release.Current.
+- internal/tui/releasenotes.go:99-121: readSeen/markSeen wiederholen core/release/release.go:177-191 (Stamped/Stamp, eine Versionszeile im StateDir) in einem anderen Paket. Neben Stamped/Stamp verschieben, z.B. release.NotesSeen(dir)/release.MarkNotesSeen(dir); dann kann auch jaira update die Datei erreichen, falls die Luecke beim ersten Wechsel je geschlossen wird.
+- internal/tui/releasenotes.go:82-93: notesView.render schneidet bei height ab und sagt nicht, wie viel darunter steht. clipToWindow (view.go:1491-1500) und clipPane (view.go:1443-1446) nennen es immer. Bei end < len(all) "+N more" vor den Hinweis setzen.
+- CLAUDE.md:251 und AGENTS.md:204: "marks a change the reader must act on" trennt '- ! ' nicht von der Regel, dass jede Zeile schon eine Anweisung ist. Sagen, wann: eine Aenderung, nach der jaira erst nach einer Handlung wieder wie beschrieben arbeitet (Befehl in jedem Repo, geaendertes Dateiformat); sparsam.
+- core/release/notes/T8A8KM.md:4: "When a note line starts `- ! `, act on it" spricht Notiz-Autoren an; der Leser sieht '  ! <text>' in jaira update und eine fette '!'-Zeile im Board, nie '- ! '. Umschreiben: "Act on every change jaira update prints as `  ! <text>` (bold on the board): it is marked as one that needs you to do something".
+Frage an Berk (kein Rueckweg): Pille nur '^ <version>' (wie gebaut) oder dahinter gedimmt 'jaira self upgrade' in derselben Reihe? Wer nie mit Agenten arbeitet, sieht den Befehl sonst nur einmal in Release-Note-Zeile 1. Empfehlung critique: so lassen.
