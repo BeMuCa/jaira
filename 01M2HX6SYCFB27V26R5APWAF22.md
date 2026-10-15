@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T12:05:51Z
+updated-at: 2026-10-15T12:05:54Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -30,6 +30,8 @@ context: |-
   Aber dieselbe Liste zeigt, warum ein rechnerweiter Lauf heute gefaehrlich waere: drei der acht Eintraege sind Wegwerf-Boards, die testing-Worker im Laufe des Tages unter /tmp/claude-*/scratchpad/ angelegt haben - sandbox, board74, board. Sie stehen dauerhaft in der Liste, obwohl ihre Verzeichnisse Muell sind. Ein Befehl, der ueber alle Boards laeuft, laeuft zuerst in diese hinein.
 
   Dazu kommt seit Commit 42d8253: die Lane-Dateien dieses Boards liegen unter git. Ein rechnerweiter Lauf macht damit Arbeitsbaeume in mehreren Repositories schmutzig, nicht nur Dateien im Heimverzeichnis.
+claimed-by: EE-3NX6GL3-3760272
+claimed-at: 2026-10-15T12:05:54Z
 ---
 
 # jaira update bringt das ganze Setup nach, nicht nur den Textblock
