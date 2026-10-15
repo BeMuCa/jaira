@@ -22,7 +22,7 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T12:56:43Z
+updated-at: 2026-10-15T12:56:45Z
 updated-by: BeMuCa
 ---
 
@@ -70,3 +70,12 @@ updated-by: BeMuCa
 - Restore-CLI (internal/cli/archive.go:127) macht heute aus jedem Fehler not_archived. Darum gibt Restore dst + Fehler zurueck, und die CLI warnt nur, wenn dst gesetzt ist.
 - Kein Ref mehr (Snapshot hat ihn abgeraeumt): record legt ihn neu an (Lease ''), das Ticket ist dann wie gepullt. Ohne Remote macht Record nichts (refsync.go:124-131).
 - Snapshot kopiert den Ref-Inhalt nach board/ im Branch jaira/board (core/snapshot/snapshot.go:17-27): die Sicherung sagt dann auch archiviert, richtig so. Der Reaper prueft nur Pfade .jaira/archive/<id>* (core/gitref/gitref.go:770-786), unveraendert.
+- **2026-10-15 12:56 · BeMuCa** — pre-process, Teil 2 - wer was sieht, Push, Ausgabe:
+- Ausblenden an EINER Stelle: Store.List (core/ticket/store.go:860-867) haengt nur Extras ohne Archived an. Durch List lesen: list und next (loadEnv, internal/cli/root.go:288), resume (internal/cli/resume.go:88), Board-TUI (internal/tui/model.go:420, home.go:167).
+- Nicht in refsync.Extra: Extra bedient auch Load (fromSource, store.go:1160). Dann saehe 'jaira show <h>' nur 'not found'.
+- show: Load findet das Ticket weiter (ReadOnly; Schreiben wird mit 'pull it first' verweigert). show sagt eine Zeile 'off the board: archived <wert>', --json bekommt 'archived'. Grund: wer es gestern sah, erfaehrt, was passiert ist.
+- pull: unveraendert. Archivieren braucht eine Datei (onlyOnRef, store.go:166-179), also meist ein pull -> assignee = Archivierer -> andere bekommen ErrTaken (refsync.go:1364-1372). Mit --steal kommt die Datei samt Zeile; dort ist sie eine Datei und wird gezeigt, fuer alle anderen bleibt sie verborgen. Randfall, kein Code.
+- Klon mit Datei in tickets/: fetch schreibt nie Ticket-Dateien (Incoming refsync.go:936-999; Kommentar internal/cli/fetch.go:132-137). Extra ueberspringt lokale IDs (refsync.go:1536-1541). Er sieht weiter seine Datei, bis der Branch mit dem Verschieben gemergt ist. pull schreibt nur eine aeltere Datei um (refresh refsync.go:1284-1323, isStale nach updated-at); die Marke aendert updated-at nicht. Nichts wird ueberschrieben, nichts geht verloren. DoD 1 verlangt nur ref-only.
+- Push (DoD 3): passiert schon heute vor Prozessende. recordFiled -> refsync.Record setzt dirty (refsync.go:124-141) -> Execute ruft afterCommand -> flushRefs (root.go:103-106, refs.go:204-207, 246-252). create schickt synchron in fileOnRefOnly (refs.go:83-110), nur weil es danach die Datei loescht. Kein neuer Push-Code. TUI-Taste x (internal/tui/model.go:2192) geht durch dieselbe Store.Archive. Im Test ersetzt runAndSend afterCommand (internal/cli/milestoneref_test.go:17-25).
+- Ausgabe archive (internal/cli/archive.go:86-88): neue Zeile nur wenn refs.Usable() == nil. Ohne Remote waere 'jedes Board laesst es beim naechsten fetch fallen' falsch.
+- --json von archive bleibt gleich: der Satz ist Rat fuer Menschen. Ob gesendet wurde, steht wie bei jedem Schreiben auf stderr (flushRefs/warnRef, refs.go:246-358).
