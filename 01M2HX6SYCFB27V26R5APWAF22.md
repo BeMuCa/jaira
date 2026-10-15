@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T13:30:28Z
+updated-at: 2026-10-15T13:30:31Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -168,3 +168,13 @@ Transkripte: scratchpad/pwaf22/hand/transcript-*.txt
 - Code NICHT verschieben: der Notizblock in update.go gehoert T8A8KM (Brief).
 Geprueft und ohne Befund: gofmt/go build/go vet sauber; Manifest mit scripts/shipped-history.sh byte-gleich nachgebaut (471 Zeilen); core/role/jaira/SKILL.md == .claude/skills/jaira/SKILL.md; keine Umbenennung in core/lane/builtin, Skript verliert also keine Lane-Versionen.
 Bestehende Tests (statisch, kein go test): keiner bricht. roles_test 'X written' passt weiter zur neuen Summenzeile; role_test prueft keine Dateizahl; update_test/sharestate laufen mit release.Current=dev bzw. isoliertem HOME/JAIRA_HOME (main_test.go TestMain); alle echten self-upgrade-Tests stubben runUpgraded oder pruefen die Ausgabe nicht (sharestate_test.go:95, exec von 'new-bytes' scheitert nur mit Warnung).
+- **2026-10-15 13:30 · BeMuCa** — Nachfolger (critique): kein Grund zum Zurueckschicken, als Folge-Tickets oder signoff-Fragen.
+- self.go:203/:241: 'self upgrade --version' auf ein Release ohne --roles (z.B. 0.5.1) -> Kind scheitert, Zeile nennt 'jaira update --roles', das es dort nicht gibt. Kind auslassen, wenn gepinnt aelter als release.Current.
+- refresh.go:59-70: done.md, das die Korrektur doneDoorway (corrections.go) schon repariert hat, ist keine ausgelieferte Version -> 'update --lanes' meldet 'edited', Exit 3, fuer immer. Korrigierte Bytes als bekannt werten.
+- refresh.go:61, install.go:147: rohe Bytes; CRLF-Checkout (autocrlf, Dateien unter git) gilt nie als ausgeliefert. \r\n normalisieren wie corrections.go:219.
+- install.go:86-92: jaira/SKILL.md immer geschrieben; 'roles install --agent copilot --project' neben .claude/skills/jaira -> Copilot sieht jaira doppelt (target.go:51, InstalledIn prueft nur Rollen).
+- Behind/install: fehlende Dateien gelten als 'aelter'. Absichtlich geloeschtes jaira-cockpit (Plugin mit Hooks) kommt mit jedem 'self upgrade' still zurueck. Frage an Berk.
+- update.go:89-90, README.md:131-133 '--dry-run writes nothing': lane.Load kann Korrektur/Erst-Aufbau schreiben, openStore bindet Merge-Treiber. Randfall; Wortlaut einschraenken.
+- install.go:120-124: Kommentar 'sit next to the go:embed directories' stimmt fuer modKey nicht. mod.Key in core/mod oder Kommentar fixen.
+- roles.go:131: updateInProgress nur zum Stummschalten gesetzt; in setupInProgress umbenennen.
+- self.go:69-79 Long: nennt den 'update --roles'-Schritt nicht. Ein Satz.
