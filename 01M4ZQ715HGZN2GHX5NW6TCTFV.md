@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-15T12:39:48Z
+updated-at: 2026-10-15T12:40:21Z
 updated-by: BeMuCa
 ---
 
@@ -71,3 +71,19 @@ Daraus zwei Arbeitsweisen, beide muessen gehen:
 Wie ein Milestone sagt, welche Arbeitsweise gilt (z.B. Feld 'pr: block|single' per milestone create/set, mit Default), entscheidet pre-process. Ist der Default nicht offensichtlich: Empfehlung + Frage an Berk ueber die human-Lane.
 Den PR oeffnet nie jaira oder ein Agent von sich aus: er wird nur vorgeschlagen; ein Mensch oeffnet ihn mit /jaira-role-pr.
 Parallel: N71NVG baut das Ablegen/Loeschen eines fertigen Milestones samt Tickets. Hier nur Vorschlaege mit den Kommandos, die auf master existieren ('jaira logbook <milestone>').
+- **2026-10-15 12:40 · BeMuCa** — pre-process, Grundlagen des Plans:
+- Feld: 'pr: block|single' im Milestone-Frontmatter, gebaut wie 'goal' (core/milestone/milestone.go:405, :533). Gesetzt per 'milestone create|set --pr'.
+- Default: keine Zeile = single. Grund 1: alte Milestones (ram-cpu, milestone-roadmap) kamen Ticket fuer Ticket rein; als block gelesen wuerden sie schon gemergte Tickets nochmal als PR vorschlagen. Grund 2: hier hat jedes Ticket seinen eigenen Branch (Dispatcher 'One worktree per ticket'); ein Block-PR braucht alle auf einem Branch, das muss man bewusst wollen. Grund 3: das TUI-Formular (internal/tui/layer.go:457) schreibt keine Zeile, CLI und TUI stimmen so ohne TUI-Aenderung ueberein.
+- OFFEN fuer Berk: soll 'milestone create' ohne --pr trotzdem 'pr: block' schreiben? Sein erster Satz nennt Block. Aenderung waere eine Zeile an der create-Stelle plus layer.go:457.
+- Fertig = genau die Regel von 'jaira logbook <milestone>' (internal/cli/logbook.go:393-404): Ticket in der Endlane oder nicht mehr auf dem Board. Dazu: ein leerer Milestone ist nie fertig.
+- Ausloeser ist ein Zustand, kein Uebergang: 'logbook <id>' nimmt nur Tickets aus der Endlane, macht also nie etwas neu fertig. Nach move, logbook <id> und milestone ls wird gefragt: ist der Milestone jetzt komplett? Die Zeile kann sich wiederholen (z.B. bei jedem logbook in jaira-role-pr) - harmlos, sie bleibt wahr bis zum Ablegen.
+- Einzel-Vorschlag bei move in die Abnahme-Lane (requires-human-exit, keine Frage-Lane, nicht agentisch - dieselbe Lesart wie core/lane/lane.go:652) oder in die Endlane. Lanes nach Eigenschaft, nie nach Namen.
+- Ticket ohne Milestone bekommt den Einzel-Vorschlag. Grund: das Beispiel im Kontext (6ESQWR in signoff). single heisst 'Milestone ist nur Sammlung', Mitgliedschaft aendert also nichts. Kostet keinen Code: Bedingung ist nur 'in keinem Block-Milestone'.
+- Logik in neuem Paket core/suggest: core/move/move.go:1-7 sagt, Regeln nach einem Move gehoeren in core, damit die TUI-Schreibstellen sie spaeter teilen.
+- logbookMilestone wird NICHT umgebaut, dort baut N71NVG. TestSuggestedFilingIsAccepted pinnt, dass jaira nur ein Ablegen vorschlaegt, das 'jaira logbook <m>' annimmt.
+- N71NVG steckt hier ein: Befehlsname nur in core/suggest fileMilestoneCommand (eine Zeile). Loeschen bei single: ein Eintrag mehr in ForMilestone plus ein Fall in Line.
+- --json: 'suggestions' nur wenn nicht leer; jede bestehende Ausgabe bleibt gleich (wie filed_on_entry, internal/cli/flow.go:239).
+- milestone ls bekommt die Zeilen, weil Annehmen in der TUI (internal/tui/signoff.go:187) der uebliche Weg nach done ist und nichts druckt. Der Teamlead liest 'milestone ls --json'.
+- jaira-worker mitgenommen: Schwesterrolle des Dispatchers, verschiebt Tickets selbst; ohne ihn ginge die Zeile bei Worker-Tickets verloren.
+- Unveraendert: core/board/announce.go (sagt schon 'jaira logbook <milestone>'), core/milestone/adopt.go (merged jedes Frontmatter-Feld generisch, adopt.go:84), nextStepLine, move.Move.
+- Ausgelassen, Folge-Tickets: TUI-Schreibstellen (signoff.go:187, model.go:1949, :2004); 'jaira logbook --all'; Tickets eines Block-Milestones auf einen Branch bringen (jaira-role-pr meldet ein Ticket ohne Commit auf dem Branch und stoppt).
