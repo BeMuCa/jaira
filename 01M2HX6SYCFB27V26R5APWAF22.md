@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T13:15:33Z
+updated-at: 2026-10-15T13:15:36Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -40,7 +40,8 @@ claimed-at: 2026-10-15T13:12:45Z
 
 - [x] 'jaira update' bringt mit den entsprechenden Schaltern Agent-Block, Rollen und Lanes in einem Aufruf auf den Stand des installierten Binaries. Nachgestellt an einem Board, dessen Block, Rollen und Lanes alle drei veraltet sind.
   proof: internal/cli/update.go:125 (RefreshShipped vor lane.Load), internal/cli/updatesetup.go:58 refreshRoles; Test TestUpdateRolesLanesBringsAStaleBoardUpToDate (updatesetup_test.go:99); Handlauf 15.10. Block+Rollen+Lane veraltet -> 'update --roles --lanes' alle drei aktuell (Notiz 13:14)
-- [ ] Der Aufruf ohne Schalter aendert sein Verhalten nicht still: was er heute tut, tut er weiterhin, und alles darueber hinaus wird ausdruecklich verlangt. Die Entscheidung steht begruendet im Ticket, nicht nur im Code.
+- [x] Der Aufruf ohne Schalter aendert sein Verhalten nicht still: was er heute tut, tut er weiterhin, und alles darueber hinaus wird ausdruecklich verlangt. Die Entscheidung steht begruendet im Ticket, nicht nur im Code.
+  proof: Entscheidung als Notiz 12:34 'Entscheidung DoD 2'; update.go: ohne --roles/--lanes nur Block+Stempel, JSON unveraendert; Test TestUpdateWithoutSwitchesWritesOnlyTheBlock (updatesetup_test.go:133); Handlauf: nackter update aendert nur CLAUDE.md/AGENTS.md (sha vorher/nachher)
 - [ ] Der Befehl sagt vor dem Schreiben, was er anfassen wuerde, und was er auslaesst weil ein Mensch es geaendert hat - wie 'jaira roles install' es schon tut.
 - [ ] Eine Zeile je Aenderung in core/release/notes/PWAF22.md, als Anweisung an den Leser formuliert und wahr
 - [ ] jaira self upgrade fuehrt danach jaira update und die Rollen-Installation an den Orten aus, an denen Rollen installiert sind (global und/oder im Projekt), und sagt, was es angefasst hat; Test
