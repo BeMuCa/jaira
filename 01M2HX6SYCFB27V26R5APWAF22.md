@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T14:16:13Z
+updated-at: 2026-10-15T14:16:15Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -221,3 +221,4 @@ Bestehende Tests (statisch, kein go test): keiner bricht. roles_test 'X written'
 - Tests: der Notizblock von 'jaira update' druckt die Unreleased-Notizen (auch core/release/notes/PWAF22.md) bei JEDEM Stempel, und bei einer Testversion wie 1.0.0 sogar alle. Darin stehen 'would', 'jaira update --roles', 'jaira update --lanes'. TestUpdateRolesLanesBringsAStaleBoardUpToDate (2. Lauf) und TestUpdateWithoutSwitchesSaysNothingWhenCurrent schlagen deshalb fehl; TestUpdateWithoutSwitchesNamesWhatIsBehind beweist nichts. Fix: nur den Teil der Ausgabe vor dem Notizblock pruefen bzw. Zeilen mit Praefix 'roles: '/'lanes: '.
 - Text: editedError (internal/cli/updatesetup.go:65) und README.md:131 nennen 'jaira roles install --force' - so aufgerufen endet es mit Exit 2 (Scope fehlt). Fix: einen lauffaehigen Befehl nennen.
 - Nachfolger, nicht jetzt: --dry-run-Zaehlzeilen sagen 'N updated'; Schlusszeile von self upgrade nennt nur 'jaira update'.
+- **2026-10-15 14:16 · BeMuCa** — critique 3: nichts gefunden, gelesen nur Notiz 'review:'/'Treiber zu review 1' und c3ab3695. Tests: setupOutput schneidet an '\nWhat's changed since then:'/'\nNothing has changed since' - genau die Zeilen aus internal/cli/update.go:189/192 (auf T8A8KM unveraendert), Setup-Zeilen werden davor gedruckt. hasLine-Praefixe passen zu den echten Zeilen (printLaneResults/printRoleResults/hintLines/updatePersonalRoles); 'roles: '/'lanes: ' kommen in einem nackten update nur aus hintLines, die Pruefungen sind also nicht leer. go vet ./internal/cli/ sauber. Text: editedError, README.md:131-133 und PWAF22.md Zeilen 1/8 nennen jetzt '--project --force' bzw. '--project'/'--global' - lauffaehig; Notiz-Datei 8 Zeilen, jede '- ', keine umbrochen. [NACHFOLGER] aus Treiber zu review 1 bleiben offen.
