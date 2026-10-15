@@ -60,6 +60,7 @@ const (
 	modeLinks
 	modeUsers
 	modeLayer
+	modeReleaseNotes
 )
 
 // Model is the board's state.
@@ -288,6 +289,9 @@ type Model struct {
 	// releasePill is the "^ <version>" badge under it when a newer release is
 	// known, empty otherwise.
 	releasePill string
+	// notes is the release-notes popup shown once after a version change,
+	// nil when closed; see openReleaseNotes.
+	notes *notesView
 
 	width, height int
 }
@@ -336,6 +340,7 @@ func New(s *ticket.Store) (*Model, error) {
 	if err := m.reload(); err != nil {
 		return nil, err
 	}
+	m.openReleaseNotes()
 	return m, nil
 }
 
@@ -1318,6 +1323,14 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		switch s {
 		case "esc", "t", "q":
 			m.mode = m.returnTo
+		}
+		return m, nil
+
+	case modeReleaseNotes:
+		if m.notes.key(s) {
+			markSeen(m.store.StateDir())
+			m.notes = nil
+			m.mode = modeBoard
 		}
 		return m, nil
 

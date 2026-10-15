@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -89,4 +91,70 @@ func (v *notesView) render(width, height int) string {
 	b.WriteString(strings.Join(all[v.scroll:end], "\n"))
 	b.WriteString("\n\n" + styMeta.Render("j/k scroll · esc close"))
 	return b.String()
+}
+
+// seenFile records, per working tree and next to the "version" stamp, the last
+// version whose release notes the user closed. It lives in the state directory,
+// never in git: "I read them" is one person's fact, not the team's.
+const seenFile = "notes-seen"
+
+// readSeen reads <dir>/notes-seen, trimmed; a missing file is "".
+func readSeen(dir string) string {
+	b, err := os.ReadFile(filepath.Join(dir, seenFile))
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(b))
+}
+
+// markSeen records the running version as read. A dev build has no version to
+// record, so it writes nothing. Best effort: failing to remember means the
+// popup shows once more, which is not worth an error on a board.
+func markSeen(dir string) {
+	if release.Current == "dev" || release.Current == "" {
+		return
+	}
+	if os.MkdirAll(dir, 0o755) != nil {
+		return
+	}
+	_ = os.WriteFile(filepath.Join(dir, seenFile), []byte(release.Current+"\n"), 0o644)
+}
+
+// notesBase is the version whose notes the popup should show everything after,
+// or "" for no popup. The seen record wins; without one the board's stamp
+// stands in. A stamp of "" (a board never prepared) or "dev" says nothing about
+// what the user last saw, and a base that is not older than current is a
+// downgrade or no change.
+func notesBase(current, seen, stamped string) string {
+	if current == "dev" || seen == current {
+		return ""
+	}
+	base := seen
+	if base == "" {
+		base = stamped
+	}
+	if base == "" || base == "dev" || !release.Newer(current, base) {
+		return ""
+	}
+	return base
+}
+
+// openReleaseNotes shows the notes since the last version the user read, once,
+// when the board opens. Called from New only: a board reached with 1-9 shows it
+// the next time it is opened.
+func (m *Model) openReleaseNotes() {
+	dir := m.store.StateDir()
+	base := notesBase(release.Current, readSeen(dir), release.Stamped(dir))
+	if base == "" {
+		markSeen(dir)
+		return
+	}
+	entries := release.Since(base)
+	if len(entries) == 0 {
+		markSeen(dir)
+		return
+	}
+	m.notes = newNotesView("What is new since "+base, entries)
+	m.returnTo = modeBoard
+	m.mode = modeReleaseNotes
 }

@@ -144,6 +144,8 @@ func (m *Model) render() string {
 		return m.modal(m.renderMessage())
 	case modeLegend:
 		return m.modal(m.renderLegend())
+	case modeReleaseNotes:
+		return m.modal(m.notes.render(max(20, m.width-12), m.modalContent()))
 	case modeMilestones:
 		return m.modal(m.renderMilestones())
 	case modeUsers:

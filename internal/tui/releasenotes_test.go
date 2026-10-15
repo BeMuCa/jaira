@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -91,5 +93,124 @@ func TestNotesViewScrollsAndCloses(t *testing.T) {
 		if !v.key(k) {
 			t.Errorf("%s did not close the view", k)
 		}
+	}
+}
+
+func TestNotesBase(t *testing.T) {
+	for _, c := range []struct {
+		name, current, seen, stamped, want string
+	}{
+		{"dev build", "dev", "0.5.0", "0.5.0", ""},
+		{"seen equals current", "0.5.1", "0.5.1", "0.4.0", ""},
+		{"seen is older", "0.5.1", "0.5.0", "0.5.1", "0.5.0"},
+		{"seen wins over an older stamp", "0.5.1", "0.5.0", "0.3.0", "0.5.0"},
+		{"no seen, old stamp", "0.5.1", "", "0.5.0", "0.5.0"},
+		{"no seen, stamp equals current", "0.5.1", "", "0.5.1", ""},
+		{"neither", "0.5.1", "", "", ""},
+		{"stamp is dev", "0.5.1", "", "dev", ""},
+		{"seen is dev", "0.5.1", "dev", "0.5.0", ""},
+		{"downgrade", "0.5.0", "0.5.1", "0.5.1", ""},
+		{"numbers, not text", "0.10.0", "0.9.0", "", "0.9.0"},
+	} {
+		if got := notesBase(c.current, c.seen, c.stamped); got != c.want {
+			t.Errorf("%s: notesBase(%q, %q, %q) = %q, want %q", c.name, c.current, c.seen, c.stamped, got, c.want)
+		}
+	}
+}
+
+// popupBoard builds a board whose state directory holds the given stamp and
+// notes-seen record ("" leaves the file out) and opens it as the real
+// constructor does, under a binary of the given version.
+func popupBoard(t *testing.T, current, stamp, seen string) *Model {
+	t.Helper()
+	setReleaseCurrent(t, current)
+	s := newTestStore(t)
+	dir := s.StateDir()
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for name, v := range map[string]string{"version": stamp, seenFile: seen} {
+		if v != "" {
+			if err := os.WriteFile(filepath.Join(dir, name), []byte(v+"\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	m, err := New(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m.width, m.height = 120, 40
+	return m
+}
+
+func TestPopupAfterUpgradeShowsNotesSinceTheStamp(t *testing.T) {
+	m := popupBoard(t, "0.5.1", "0.5.0", "")
+	if m.mode != modeReleaseNotes || m.notes == nil {
+		t.Fatalf("mode = %v, want the release-notes popup", m.mode)
+	}
+	out := stripANSI(m.render())
+	if !strings.Contains(out, "What is new since 0.5.0") || !strings.Contains(out, "0.5.1") {
+		t.Errorf("popup does not name the versions:\n%s", out)
+	}
+}
+
+func TestPopupAfterUpdateReadsTheSeenRecord(t *testing.T) {
+	// 'jaira update' already stamped the board with the running version; the
+	// seen record is what remembers where the user stopped reading.
+	m := popupBoard(t, "0.5.1", "0.5.1", "0.5.0")
+	if m.mode != modeReleaseNotes {
+		t.Fatalf("mode = %v, want the release-notes popup", m.mode)
+	}
+	if !strings.Contains(stripANSI(m.render()), "What is new since 0.5.0") {
+		t.Errorf("popup should start at the seen version:\n%s", stripANSI(m.render()))
+	}
+}
+
+func TestPopupClosesAndStaysClosedUntilTheNextVersion(t *testing.T) {
+	m := popupBoard(t, "0.5.1", "0.5.0", "")
+	dir := m.store.StateDir()
+
+	press(m, "esc")
+	if m.mode != modeBoard || m.notes != nil {
+		t.Fatalf("esc left mode %v, notes %v", m.mode, m.notes)
+	}
+	if got := readSeen(dir); got != "0.5.1" {
+		t.Fatalf("notes-seen = %q, want 0.5.1", got)
+	}
+	again, err := New(m.store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if again.mode == modeReleaseNotes {
+		t.Fatal("the popup came back for the same version")
+	}
+
+	setReleaseCurrent(t, "0.5.2")
+	next, err := New(m.store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if next.mode != modeReleaseNotes {
+		t.Fatal("the next version did not show the popup")
+	}
+}
+
+func TestNoPopupOnAFreshBoardOrDevBuild(t *testing.T) {
+	// A board nothing ever stamped has no "before" to show changes since.
+	fresh := popupBoard(t, "0.5.1", "", "")
+	if fresh.mode == modeReleaseNotes {
+		t.Error("a fresh board opened the popup")
+	}
+	if got := readSeen(fresh.store.StateDir()); got != "0.5.1" {
+		t.Errorf("a fresh board should be marked seen, notes-seen = %q", got)
+	}
+
+	dev := popupBoard(t, "dev", "0.5.0", "0.4.0")
+	if dev.mode == modeReleaseNotes {
+		t.Error("a dev build opened the popup")
+	}
+	if got := readSeen(dev.store.StateDir()); got != "0.4.0" {
+		t.Errorf("a dev build must not write notes-seen, got %q", got)
 	}
 }

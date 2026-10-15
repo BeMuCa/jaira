@@ -3,3 +3,4 @@
 - ! Run `jaira update` in each repository: the agent block in CLAUDE.md/AGENTS.md then tells agents to tell the user when `jaira next` or `jaira resume` reports a newer release and to name `jaira self upgrade`.
 - When a note line starts `- ! `, act on it: `jaira update` now prints such changes as `  ! <text>` instead of `  - <text>`.
 - Press `w` on the launcher to read the release notes of every version, newest first; lines marked `!` are changes you must act on and stand out in bold.
+- After an upgrade the board opens once with a popup of the release notes since the last version you read here; press esc, q or enter to close it, and `w` on the launcher reopens the notes any time.
