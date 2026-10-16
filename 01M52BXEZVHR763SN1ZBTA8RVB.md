@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-16T12:45:13Z
-updated-at: 2026-10-16T13:00:05Z
+updated-at: 2026-10-16T13:00:42Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-613775
 claimed-at: 2026-10-16T12:46:01Z
@@ -30,6 +30,7 @@ outcome-resolves: "Hauptboard ohne Overlay mit allen 10 Lane-Titeln ganz, Links-
 review-summary: none
 round: 2
 review-gaps: "none removed. Considered: scripts/demoworld.sh finish() vs the sign ticket's moves (sign stops in signoff without a commit; genuinely differ); impl_id via 'jaira json get' beside mk's pre-existing sed extraction (left mk alone, pre-existing); newest-release lookup has no shell twin in scripts/ or .github/; shotgen's named keys left/up/down/enter/esc unused by the recipes but kept, the patch was asked for as is (critique note); internal/tui/lanes_test.go key helpers are test-only and not importable from a main"
+test-verdict: "pass: gofmt leer, go vet ./... RC=0, go build ./... und ./scripts/... RC=0, sh -n und Python-Parse sauber (kein go test, Hausregel); DoD 1-5 im Baum geprueft (16/16 Features mit Use case, D0SAHM/NA413Y belegen Roadmap/Live-Board, Bilder byte-gleich mit den angesehenen Renders, README:23/107, diff --check RC=0, 56 Fences, 10/10 Bildpfade); scripts/demoworld.sh von HEAD in frischem Verzeichnis gebaut und alle vier Ansichten gerendert: 0x 'jaira dev', alle 10 Lane-Titel ganz, Roadmap 2/2 1/4 1/2 0/3"
 ---
 
 # README zeigt die Features mit Use cases und frischen Screenshots
