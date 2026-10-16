@@ -2,10 +2,16 @@ package tui
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/BeMuCa/jaira/core/release"
 	"github.com/BeMuCa/jaira/core/selfupdate"
 )
+
+// versionEvery is how often an open board reads the release cache again. A
+// minute against an hourly check: the read is one small file, and a refresh
+// the tick started is on screen by the next read instead of an hour later.
+const versionEvery = time.Minute
 
 // versionLine renders the persistent "which version am I, and is a newer one
 // published" indicator drawn at the top left of the board's project head and
@@ -20,13 +26,13 @@ import (
 // under a wrapping hint bar is not where anyone looks for an identity. Why
 // it gets a row of its own up there is at the two call sites.
 //
-// It is meant to be computed once, at construction (see Home.versionLine and
-// Model.versionLine), rather than on every render: selfupdate.PollCache also
-// decides whether to touch the cache and spawn a detached refresh when it is
-// stale (see core/selfupdate/cache.go's own doc comments for why), and a
-// bubbletea program can render dozens of times per keypress — nothing here
-// needs to run more than once per session to stay correct within the ~24h
-// staleness window PollCache itself enforces.
+// It is computed at construction (see Home.versionLine and Model.versionLine)
+// and, on the board, again by the tick once versionEvery has passed — never on
+// every render: selfupdate.PollCache also decides whether to touch the cache
+// and spawn a detached refresh when it is stale (see
+// core/selfupdate/cache.go's own doc comments for why), and a bubbletea
+// program can render dozens of times per keypress. The launcher reads it once:
+// it has no tick and is left for a board within moments.
 //
 // This is the TUI's own read of the cache. The CLI reads it too, but only in
 // 'jaira next' and 'jaira resume' (see internal/cli/newerrelease.go), the

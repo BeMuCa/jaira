@@ -17,12 +17,15 @@ type Check struct {
 }
 
 // MaxAge is how long a cached Check is trusted before it counts as stale.
-const MaxAge = 24 * time.Hour
+// An hour, so a release reaches a session that is already running within the
+// hour it is known, not the next day (T8A8KM; it was a day before). A refresh
+// is one detached HTTPS request, at most one an hour per machine.
+const MaxAge = time.Hour
 
 // Path is where the cache file lives: JAIRA_HOME if set, else ~/.jaira,
 // never inside a repository. Which release is published is a fact about the
 // machine, not about a working tree — putting it per-tree would make
-// someone with ten clones run ten checks a day for the same answer.
+// someone with ten clones run ten checks an hour for the same answer.
 func Path() string {
 	if v := os.Getenv("JAIRA_HOME"); v != "" {
 		return filepath.Join(v, "update-check.json")
@@ -191,7 +194,7 @@ func PollCache() (latest string, known bool) {
 		// entry (carrying whatever Latest it already had, possibly none), so
 		// every other caller in the same window sees a fresh cache and skips
 		// its own spawn. The child overwrites this with the real answer
-		// moments later; if it dies first, the worst case is one missed day
+		// moments later; if it dies first, the worst case is one missed hour
 		// of the indicator updating, which is the correct trade against ever
 		// blocking on the network.
 		_ = Write(Check{CheckedAt: time.Now().UTC(), Latest: c.Latest})

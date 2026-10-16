@@ -16,7 +16,7 @@ import (
 //
 // A dev build says nothing, and so does a cache that was never written — the
 // same rules as the TUI's pill. Reading the cache also refreshes it in the
-// background when it is more than a day old (selfupdate.PollCache), which is
+// background when it is more than an hour old (selfupdate.PollCache), which is
 // the only thing that checks for a release on a machine that never opens the
 // TUI.
 func warnNewerRelease(w io.Writer) {

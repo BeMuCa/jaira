@@ -82,7 +82,7 @@ personal ones — are brought up to date. Lanes are not touched; run
 left alone, and the upgrade still succeeds. If that step cannot run, you get one
 line saying so and the command to run yourself.
 
-jaira checks for a new release at most once a day, in the background, and
+jaira checks for a new release at most once an hour, in the background, and
 never on the command path: nothing you run ever waits on the network for
 this. When a newer one is known, the launcher and the board show a pill
 `^ 0.2.0` under the version at the top left — run `jaira self upgrade` to
