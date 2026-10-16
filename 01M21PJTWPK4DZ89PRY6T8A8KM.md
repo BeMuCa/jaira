@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-16T09:04:37Z
+updated-at: 2026-10-16T09:05:15Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -169,3 +169,4 @@ Verworfen: (a) Cockpit-Band mit Update-Knopf - nur Claude Code mit installiertem
 Cockpit vertraegt die Zeile: otherRefusal (core/mod/builtin/jaira-cockpit/hooks/board.ts:205) springt beim Fehler-JSON zur ersten Zeile mit '{'.
 Offenes Board: liest den Cache bisher nur beim Start (versionLine in New); mit 1h waere 'stuendlich' fuer ein den ganzen Tag offenes Board falsch. Darum liest der 2s-Tick ihn hoechstens jede Minute neu (eine 60-Byte-Datei). Der Launcher hat keinen Tick und lebt kurz - bleibt beim Lesen beim Start.
 Ja-Pfad: self upgrade ruft ab PWAF22 schon 'update --roles' der neuen Binary; --lanes faellt nie in self upgrade (PWAF22-Entscheidung: Lane-Dateien liegen im Repo). Darum nennt die Zeile beide Befehle, statt self upgrade zu erweitern.
+- **2026-10-16 09:05 · BeMuCa** — PWAF22-Merge (git merge --no-ff feat/PWAF22-update-brings-setup, Basis beider Branches 0aefa5c1): automatisch gemergt README.md, core/board/announce.go, core/board/announce_test.go, internal/cli/self.go, internal/cli/update.go. Ein Konflikt, woertlich: 'CONFLICT (content): Merge conflict in docs/COMMANDS.md' - Zeilen 130/131 (jaira update, jaira self upgrade). HEAD: update-Zeile alt, self-upgrade-Zeile mit Pille und stderr aus next/resume. PWAF22: update-Zeile mit --roles/--lanes/--dry-run, self-upgrade-Zeile 'then run the new binary's jaira update --roles', aber noch mit dem alten Satz 'status line in the launcher's and the board's footer - never printed by a CLI command'. Geloest: update-Zeile von PWAF22; self-upgrade-Zeile von HEAD plus PWAF22s Halbsatz 'then run the new binary's jaira update --roles'. update.go nach dem Merge geprueft: PWAF22s RunE ruft writeNotes (T8A8KM) weiter auf, update.go:193. gofmt/vet/build auf dem Merge sauber.
