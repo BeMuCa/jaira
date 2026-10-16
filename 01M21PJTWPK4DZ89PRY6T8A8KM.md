@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-16T09:17:08Z
+updated-at: 2026-10-16T09:17:10Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -171,3 +171,4 @@ Ja-Pfad: self upgrade ruft ab PWAF22 schon 'update --roles' der neuen Binary; --
 - **2026-10-16 09:14 · BeMuCa** — critique (Runde 3, erster Durchgang ueber bafe48d4..04fd7346 und die Merge-Aufloesung): internal/cli/flow.go:56 (move), internal/cli/claim.go:98, internal/cli/flow.go:381 (next), internal/cli/resume.go:84: warnNewerRelease laeuft VOR der Arbeit, also steht die Release-Zeile bei einem fehlgeschlagenen Befehl vor dem strukturierten --json-Fehler auf stderr. Genau dieses stderr liest das Cockpit bei einem fehlgeschlagenen Accept/Give back (core/mod/builtin/jaira-cockpit/hooks/register.tsx:327 und :483; withoutWarnings in board.ts:189 kennt nur die Zeile 'this board was set up by an older version') - die Band-Meldung begaenne mit der Release-Zeile statt mit dem Fehler. Statt dessen: warnNewerRelease aus dem PostRun der vier Befehle rufen; cobra ruft PostRun nur, wenn RunE nil lieferte (cobra command.go:1015-1026), die Zeile folgt also einem erfolgreichen Befehl und steht nie vor einem Fehler. Kein TS-Eingriff ins Cockpit noetig. Test: ein fehlschlagendes 'move --to <unbekannte Lane> --json' bei bekanntem neueren Release - stderr enthaelt die Release-Zeile nicht.
 Stehen gelassen: Tick-Neulesen im Board (folgt dem Muster fullReparseEvery/fullAt, model.go tickMsg); vier Aufrufstellen statt Allowlist im Root-PreRun (Notiz Entscheidung Zustellung 16.10.); Agent-Block-Wortlaut; Merge-Aufloesung COMMANDS.md.
 - **2026-10-16 09:16 · BeMuCa** — critique Runde 3 behoben: warnNewerRelease ist jetzt PostRun (Signatur func(cmd, args)) der vier Befehle statt Aufruf oben im RunE. Geprueft: cobra command.go:1015-1026 ruft PostRun nur nach RunE == nil; next/resume liefern auch ohne Arbeit exit 0, die Zeile fehlt dort also nicht. Handtest: fehlgeschlagenes move --json -> stderr ist reines JSON; fehlgeschlagenes claim (fremder Claim) -> keine Zeile; erfolgreiche Befehle -> Zeile nach der Ausgabe.
+- **2026-10-16 09:17 · BeMuCa** — critique Runde 4: einziger Befund aus Runde 3 (Release-Zeile vor dem Fehler) in 4236b927 behoben - PostRun an flow.go:48/:377, resume.go:79, claim.go:93, Inline-Aufrufe entfernt, TestReleaseLineNeverStandsBeforeAnError deckt den Fehlerfall. Nichts Neues. Weiter zu optimize.
