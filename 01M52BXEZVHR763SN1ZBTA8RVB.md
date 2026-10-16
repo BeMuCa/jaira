@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-16T12:45:13Z
-updated-at: 2026-10-16T12:59:35Z
+updated-at: 2026-10-16T13:00:03Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-613775
 claimed-at: 2026-10-16T12:46:01Z
@@ -29,6 +29,7 @@ outcome-why: "Die README zeigte alte Bilder und verschwieg Roadmap, Live-Board u
 outcome-resolves: "Hauptboard ohne Overlay mit allen 10 Lane-Titeln ganz, Links-Fenster als eigenes Bild beim Links-Text, keine 'dev'-Version; scripts/demoworld.sh baut Welt und shotgen mit Release-Version, sodass jeder die Bilder nachbauen kann"
 review-summary: none
 round: 2
+review-gaps: "none removed. Considered: scripts/demoworld.sh finish() vs the sign ticket's moves (sign stops in signoff without a commit; genuinely differ); impl_id via 'jaira json get' beside mk's pre-existing sed extraction (left mk alone, pre-existing); newest-release lookup has no shell twin in scripts/ or .github/; shotgen's named keys left/up/down/enter/esc unused by the recipes but kept, the patch was asked for as is (critique note); internal/tui/lanes_test.go key helpers are test-only and not importable from a main"
 ---
 
 # README zeigt die Features mit Use cases und frischen Screenshots
