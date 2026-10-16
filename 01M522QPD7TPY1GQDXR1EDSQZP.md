@@ -15,7 +15,7 @@ related: []
 follows: 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-16T10:04:46Z
-updated-at: 2026-10-16T12:52:22Z
+updated-at: 2026-10-16T12:54:56Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-482020
@@ -25,7 +25,7 @@ outcome-why: "Die stderr-Zeile erreicht nur Sitzungen, die gerade jaira-Befehle 
 outcome-resolves: "DoD 1: Hinweis mit Update und Verwerfen (Dismiss), Update = Vorschau dann Ja-Pfad, Verwerfen nur fuer genau diese Version; claude plugin test 157 pass. DoD 2: stderr-Zeile und Agenten-Block verlangen die Vorschau vor der Frage; Go-Tests auf die eine Zeile und den Block."
 review-summary: "none"
 review-gaps: "nothing removed in round 2: the release line has one producer (internal/cli/newerrelease.go:47) and the block one (core/board/announce.go:112), CLAUDE.md/AGENTS.md are generated from it; releaseLineOf in newerrelease_test.go has two callers; dryRunFailed has one caller. Round 1 still stands: jairaHome() is the one shared JAIRA_HOME lookup; pre-existing metrics.csv under HOME/.jaira left alone (noted as follow-up candidate)"
-test-verdict: "pass: go build ./... ok, go test -race -count=1 ./... RC=0 (32 ok, 0 FAIL); claude plugin validate passed, claude plugin test 155 pass 0 fail (12 in 'a newer jaira release'); DoD 1 proof lines checked in the tree; yes-path run with real binaries built as 0.5.1/0.6.0 against a local stub release in a scratch HOME/JAIRA_HOME: check + dry-run wrote nothing (snapshot equal), self upgrade replaced only the scratch binary, update --roles --lanes ran; ~/.local/bin/jaira unchanged; not seen: the band live in a Claude Code terminal"
+test-verdict: "pass (round 2, efa8e9cd): go build ok, go test -race -count=1 ./... RC=0 (32 ok, 0 FAIL); claude plugin validate passed, claude plugin test 157 pass 0 fail; DoD 1+2 proof lines checked in the tree; scratch with real binaries (0.5.1 -> stub release 0.6.0, scratch HOME/JAIRA_HOME): jaira next prints the new one-line instruction, the agent's two previews (self upgrade --check, update --roles --lanes --dry-run) left the snapshot unchanged; round 1 yes-path run stands; not seen: the band live in a Claude Code terminal"
 review-verdict: "The diff meets the definition of done: a newer release gets a line with Update and Dismiss, Update shows a preview and writes only after 'Update to X', Dismiss hides exactly that version, and 12 cockpit tests cover it (7 of them fail without the change; 155 pass, 0 fail). One small defect - gap 1, the release-host override warning is dropped from the result pane - is worth a one-line fix but I would not hold the merge for it; gaps 2-4 are edges. Merge after T8A8KM and PWAF22."
 review-round: 1
 review-check: |-
