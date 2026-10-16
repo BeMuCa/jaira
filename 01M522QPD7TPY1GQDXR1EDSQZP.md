@@ -15,7 +15,7 @@ related: []
 follows: 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-16T10:04:46Z
-updated-at: 2026-10-16T11:34:10Z
+updated-at: 2026-10-16T11:34:12Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-482020
@@ -62,3 +62,4 @@ review-summary: none
 - node 24 laedt hooks/board.ts direkt (Type-Stripping): offeredRelease/upgradeCheckOf auf der echten Ausgabe geprueft.
 - tsc (npx typescript@5.6.3, tsconfig ausserhalb des Mod-Ordners): hooks/ und types/ fehlerfrei; tests/board.test.ts hat 5 alte Fehler (doppeltes toasts im World-Typ Z.42/69/142, Mounted.input Z.780/782) - nicht von hier, nicht angefasst.
 Bekannte Grenze: die Vorschau ist der dry-run des HEUTE installierten jaira; was erst das neue Binary mitbringt, steht nicht darin (self upgrade laesst danach ohnehin das neue 'update --roles' laufen). Ein Upgrade im Terminal waehrend der Sitzung: das Cockpit merkt sich die Version je Sitzung, der Hinweis bleibt, bis Update gedrueckt wird - dann sagt --check 'already the latest' und der Hinweis geht.
+- **2026-10-16 11:34 · BeMuCa** — critique (erster Pass, ganzer Diff 9d2cfd51): kein Befund. Geprueft und stehen gelassen: (1) eigener Pane cockpit-upgrade statt $.ui.ask wie beim Cache-Guard - ask ist der AskUserQuestion-Dialog fuer eine kurze Frage mit 'Other'-Freitext; die Vorschau ist mehrzeilig und folgt dem Muster des Explanation-Panes (Wahl in einem Pane mit Fokus). (2) run+output statt des jaira()-Helfers, weil die Vorschau stdout braucht und jaira() nur ok/why liefert. (3) 'update --roles --lanes' nach 'self upgrade' wiederholt --roles: noetig, weil ein Upgrade von 0.5.1 vom alten Binary gemacht wird, das update --roles noch nicht startet (Release-Notiz PWAF22). (4) Dismiss im Store statt in ~/.jaira: Entscheidung 3 oben.
