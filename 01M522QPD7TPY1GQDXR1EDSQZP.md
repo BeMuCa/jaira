@@ -1,7 +1,7 @@
 ---
 id: 01M522QPD7TPY1GQDXR1EDSQZP
 title: "Cockpit-Band: Update-Hinweis mit Knopf 'Update' und Knopf 'Verwerfen'"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Wenn eine neue jaira-Version da ist, zeigt das Cockpit-Band einen Hinweis mit zwei Knoepfen: Update (fuehrt den Ja-Pfad aus) und Verwerfen (blendet den Hinweis fuer diese Version aus)"
@@ -15,11 +15,14 @@ related: []
 follows: 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-16T10:04:46Z
-updated-at: 2026-10-16T11:32:42Z
+updated-at: 2026-10-16T11:32:52Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-482020
 claimed-at: 2026-10-16T11:16:45Z
+outcome-what: "jaira-cockpit-Band: neue Zeile 'jaira X is released (this is Y)' mit [ Update ] und Dismiss, sobald der Release-Cache ($JAIRA_HOME|~/.jaira/update-check.json) eine neuere Version als 'jaira --version' kennt; jede Minute neu gelesen. Update: 'jaira self upgrade --check --json' und 'jaira update --roles --lanes --dry-run', Ergebnis im Pane cockpit-upgrade (Cancel hat den Fokus); erst 'Update to X' dort fuehrt 'jaira self upgrade' und dann 'jaira update --roles --lanes' aus und zeigt die Ausgabe. Dismiss legt die Version im Store (dismissed-release) ab: diese Version nie wieder, die naechste schon. Helfer offeredRelease/upgradeCheckOf in board.ts, Woerter in texts.ts, State release/upgrade im Vertrag, 12 Tests, README-Absatz, Release-Notiz, shipped.sha256 neu."
+outcome-why: "Die stderr-Zeile nach next/resume/claim/move erreicht nur Sitzungen, die gerade jaira-Befehle fahren; das Band erreicht jede Sitzung mit offenem Cockpit. Berk wollte den Knopf, mit Vorschau vor jedem Schreiben und einem Verwerfen, das sich die Version merkt."
+outcome-resolves: "DoD 1: Hinweis mit Update und Verwerfen (Dismiss) bei neuerer Version, Update = Vorschau dann Ja-Pfad, Verwerfen nur fuer genau diese Version; getestet mit claude plugin test (155 pass) und einem node-Lauf der Helfer auf echter jaira-Ausgabe."
 ---
 
 # Cockpit-Band: Update-Hinweis mit Knopf 'Update' und Knopf 'Verwerfen'
