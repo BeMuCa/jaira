@@ -77,6 +77,9 @@ type World = {
   // it, unless upgradeFails.
   latest: string
   upgradeFails: boolean
+  // How `jaira update --roles --lanes --dry-run` exits: 0, 3 (an edited
+  // file it would leave alone) or 2 (a jaira without --roles).
+  dryRunExit: number
 }
 
 const LANES = {
@@ -151,6 +154,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     nextFails: false,
     latest: '0.3.7',
     upgradeFails: false,
+    dryRunExit: 0,
     remotes: 'origin\tgit@github.com:acme/repo.git (fetch)\norigin\tgit@github.com:acme/repo.git (push)\nupstream\thttps://github.com/upstream/repo.git (fetch)\n',
   }
   const hasBoard = opts.board ?? true
@@ -230,7 +234,16 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'jaira' && args[0] === 'self') {
       const from = w.version
       w.version = w.latest
-      return ok(`upgraded jaira ${from} -> ${w.latest} (/home/a/.local/bin/jaira)\nbringing your setup in step with ${w.latest}: jaira update --roles\n`)
+      // jaira names a release host override on stderr, after the upgrade.
+      const stdout = `upgraded jaira ${from} -> ${w.latest} (/home/a/.local/bin/jaira)\nbringing your setup in step with ${w.latest}: jaira update --roles\n`
+      return { value: { exitCode: 0, stdout, stderr: 'warning: release host overridden by JAIRA_RELEASE_API=http://127.0.0.1:8765/api\n', isStdoutTruncated: false, isStderrTruncated: false } }
+    }
+    if (cmd === 'jaira' && args[0] === 'update' && args.includes('--dry-run') && w.dryRunExit === 2) {
+      return { value: { exitCode: 2, stdout: '', stderr: 'jaira: unknown flag: --roles\n', isStdoutTruncated: false, isStderrTruncated: false } }
+    }
+    if (cmd === 'jaira' && args[0] === 'update' && args.includes('--dry-run') && w.dryRunExit === 3) {
+      const stdout = 'skipped /repo/.claude/skills/jaira-worker/SKILL.md (edited)\nnothing was written (--dry-run)\n'
+      return { value: { exitCode: 3, stdout, stderr: "jaira: some files were edited here and left alone; 'jaira roles install --project --force' (or '--global --force') and 'jaira lanes use <id> --force' replace them\n", isStdoutTruncated: false, isStderrTruncated: false } }
     }
     if (cmd === 'jaira' && args[0] === 'update' && args.includes('--dry-run')) return ok(`${OLDER}\nskills in /repo/.claude/skills: 3 would be updated\nlanes: critique would be updated\nnothing was written (--dry-run)\n`)
     if (cmd === 'jaira' && args[0] === 'update') return ok('skills in /repo/.claude/skills: 3 updated\nlanes: critique updated\n')
@@ -1640,8 +1653,40 @@ describe('a newer jaira release', () => {
     expect(w.opened.at(-1)).toEqual({ id: 'cockpit-message', title: 'jaira updated to 0.6.0', focus: true })
     const result = await $.ui.mount(MESSAGE('jaira updated to 0.6.0'))
     expect(await result.find({ type: 'Text', text: /^upgraded jaira 0\.5\.1 -> 0\.6\.0[\s\S]*lanes: critique updated$/ })).toBeDefined()
+    // What self upgrade says on stderr is shown too: a release host override
+    // must never pass quietly.
+    expect(await result.find({ type: 'Text', text: /\nwarning: release host overridden by JAIRA_RELEASE_API=http:\/\/127\.0\.0\.1:8765\/api\n/ })).toBeDefined()
     // jaira is asked again which it is: 0.6.0 now, nothing left to offer.
     expect(await offered($)).toBeUndefined()
+  })
+
+  test('a dry run that gives no preview is shown as the error it is, and no update is offered', async ($, on) => {
+    const w = world(on)
+    w.version = '0.5.1'
+    w.latest = '0.6.0'
+    w.dryRunExit = 2
+    released(w, '0.6.0')
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'release-update' })
+    expect(writes(w)).toEqual(['self upgrade --check --json', 'update --roles --lanes --dry-run'])
+    expect(w.opened).toEqual([{ id: 'cockpit-message', title: 'Update jaira failed', focus: true }])
+    const pane = await $.ui.mount(MESSAGE('Update jaira failed'))
+    expect(await pane.find({ type: 'Text', text: "Nothing was written and no update is offered: 'jaira update --roles --lanes --dry-run' gave no preview. It said:\njaira: unknown flag: --roles" })).toBeDefined()
+    expect(await pane.find({ key: 'upgrade-confirm' })).toBeUndefined()
+  })
+
+  test('a dry run that would leave an edited file alone is a preview, and the update is offered', async ($, on) => {
+    const w = world(on)
+    w.version = '0.5.1'
+    w.latest = '0.6.0'
+    w.dryRunExit = 3
+    released(w, '0.6.0')
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'release-update' })
+    expect(w.opened).toEqual([{ id: 'cockpit-upgrade', title: TITLE, focus: true }])
+    const pane = await $.ui.mount(UPGRADE(TITLE))
+    expect(await pane.find({ type: 'Text', text: /^skipped \/repo\/\.claude\/skills\/jaira-worker\/SKILL\.md \(edited\)[\s\S]*some files were edited here and left alone/ })).toBeDefined()
+    expect(await pane.find({ key: 'upgrade-confirm' })).toBeDefined()
   })
 
   test('an upgrade jaira refuses is shown whole, and the setup is not touched', async ($, on) => {

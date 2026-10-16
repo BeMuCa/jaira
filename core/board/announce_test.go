@@ -186,9 +186,13 @@ func TestAgentNoteNamesTheMilestoneCommands(t *testing.T) {
 
 // TestAgentNoteTellsAgentsToAskAboutANewerRelease guards the line that makes
 // an agent act on the stderr line 'jaira next', 'resume', 'claim' and 'move'
-// print: ask first, and only on a yes run the upgrade and the setup after it.
+// print: show the user both previews, ask, and only on a yes run the upgrade
+// and the setup after it.
 func TestAgentNoteTellsAgentsToAskAboutANewerRelease(t *testing.T) {
-	for _, want := range []string{"newer release", "ask the user", "Only on a yes", "jaira self upgrade", "jaira update --roles --lanes"} {
+	for _, want := range []string{
+		"newer release", "`jaira self upgrade --check`", "`jaira update --roles --lanes --dry-run`", "show the user",
+		"ask the user", "Only on a yes", "`jaira self upgrade`", "`jaira update --roles --lanes`",
+	} {
 		if !strings.Contains(agentNote, want) {
 			t.Errorf("agentNote does not mention %q", want)
 		}

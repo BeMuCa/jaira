@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
@@ -10,9 +11,24 @@ import (
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
-// releaseLineWants is what the stderr line must carry: the release, that the
-// agent asks before anything runs, and the two commands a yes runs.
-var releaseLineWants = []string{"1.3.0", "ask the user", "jaira self upgrade", "jaira update --roles --lanes"}
+// releaseLineWants is what the stderr line must carry: the release, the two
+// previews the agent shows the user before it asks, that it asks before
+// anything is written, and the two commands a yes runs.
+var releaseLineWants = []string{
+	"1.3.0", "jaira self upgrade --check", "jaira update --roles --lanes --dry-run", "show the user",
+	"ask the user", "only on yes run 'jaira self upgrade', then 'jaira update --roles --lanes'",
+}
+
+// releaseLineOf is the one stderr line that names the release: what the agent
+// must do stands on that line whole, so it reads as one instruction.
+func releaseLineOf(stderr string) string {
+	for _, l := range strings.Split(stderr, "\n") {
+		if strings.Contains(l, "is released") {
+			return l
+		}
+	}
+	return ""
+}
 
 // backlogTicket files one ticket in backlog and returns its handle, so claim
 // and move have something to act on.
@@ -62,9 +78,10 @@ func TestNextAndResumeNameANewerReleaseOnStderr(t *testing.T) {
 
 	for _, args := range [][]string{{"next"}, {"next", "--json"}, {"next", "--per-lane", "--json"}, {"resume"}} {
 		stdout, stderr := runSplit(t, dir, args...)
+		line := releaseLineOf(stderr)
 		for _, want := range releaseLineWants {
-			if !bytes.Contains([]byte(stderr), []byte(want)) {
-				t.Errorf("jaira %v: stderr = %q, want it to name %q", args, stderr, want)
+			if !strings.Contains(line, want) {
+				t.Errorf("jaira %v: stderr = %q, want its release line to name %q", args, stderr, want)
 			}
 		}
 		if bytes.Contains([]byte(stdout), []byte("1.3.0")) {
@@ -91,9 +108,10 @@ func TestClaimAndMoveAskAboutANewerReleaseOnStderr(t *testing.T) {
 
 	for _, args := range [][]string{{"claim", h, "--session", "me"}, {"move", h, "--to", "backlog"}, {"move", h, "--to", "backlog", "--json"}} {
 		stdout, stderr := runSplit(t, dir, args...)
+		line := releaseLineOf(stderr)
 		for _, want := range releaseLineWants {
-			if !bytes.Contains([]byte(stderr), []byte(want)) {
-				t.Errorf("jaira %v: stderr = %q, want it to name %q", args, stderr, want)
+			if !strings.Contains(line, want) {
+				t.Errorf("jaira %v: stderr = %q, want its release line to name %q", args, stderr, want)
 			}
 		}
 		if bytes.Contains([]byte(stdout), []byte("1.3.0")) {
