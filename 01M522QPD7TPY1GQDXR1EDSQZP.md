@@ -15,7 +15,7 @@ related: []
 follows: 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-16T10:04:46Z
-updated-at: 2026-10-16T12:52:04Z
+updated-at: 2026-10-16T12:52:06Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-482020
@@ -97,3 +97,4 @@ Bekannte Grenze: die Vorschau ist der dry-run des HEUTE installierten jaira; was
 Kept here because review-gaps replaces it: optimize's review-gaps was "nothing removed: the one duplicate (JAIRA_HOME-or-~/.jaira in settingsJson) is already folded into jairaHome(); every new text key and helper has a caller; considered one helper for 'stdout+stderr without warnings' in previewUpgrade/upgradeJaira - two callers with different fallbacks, left; pre-existing and left alone: metrics.csv is read and written under HOME/.jaira, not JAIRA_HOME". critique's review-summary was "none".
 - **2026-10-16 12:45 · BeMuCa** — decision (Berk 'Finish alles', Hauptsitzung mit den empfohlenen Optionen): (1) gap 1 - stderr von self upgrade kommt ins Ergebnis-Pane. (2) Dry-run-Exit pruefen: schlaegt der Dry-run fehl, zeigt das Pane den Fehler und bietet kein 'Update to X'. (3) Dismiss bleibt nur im Band. (4) Neu: auch der Agenten-Weg zeigt vorher eine Vorschau - stderr-Zeile (internal/cli/newerrelease.go) und Agenten-Block (core/board/announce.go) sagen: erst 'jaira self upgrade --check' und 'jaira update --roles --lanes --dry-run', dem User zeigen, fragen, erst auf Ja die echten Befehle.
 - **2026-10-16 12:45 · BeMuCa** — follow-up candidates (kein Ticket, Berk): (a) once() gibt die Update-Sperre nach BUSY_MS=20s frei, 'jaira self upgrade' darf 300s laufen - ein zweiter Druck waehrend eines langsamen Downloads kann eine zweite Vorschau und ein zweites Upgrade starten; (b) bei brew/go-install-Builds zeigt das Pane die Vorschau und 'Update to X', das nur scheitern kann - install_method steht schon im --check-JSON und koennte das vorher sagen; (c) vorher schon da: metrics.csv wird unter HOME/.jaira gelesen und geschrieben, nicht unter JAIRA_HOME (core/mod/builtin/jaira-cockpit/hooks/register.tsx, writeMetrics und der Ticket-Pane).
+- **2026-10-16 12:52 · BeMuCa** — critique (Runde 2, nur efa8e9cd - die neue Arbeit; Runde 1 hatte keinen Befund): kein Befund. Geprueft: stderr-Zeile und Agenten-Block sagen dasselbe in derselben Reihenfolge (Vorschau, zeigen, fragen, erst auf Ja schreiben); die Zeile bleibt ein Fprintf mit einem \n. Exit 3 als Vorschau gelten lassen: update gibt editedError (ExitValidation=3) zurueck, nachdem es die ganze Vorschau gedruckt hat (internal/cli/update.go:115), das ist keine gescheiterte Vorschau. Die beiden Randfaelle 20s-Sperre und brew/go-install-Vorschau sind laut Berk Folge-Kandidaten, nicht Befunde.
