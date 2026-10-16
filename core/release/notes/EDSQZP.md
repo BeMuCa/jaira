@@ -1,0 +1,1 @@
+- When the jaira-cockpit band says a newer jaira is released, press Update to see what it would change (nothing is written until you confirm in that pane with `Update to <version>`, which runs `jaira self upgrade` and then `jaira update --roles --lanes`), or press Dismiss to hide the notice for exactly that version until the next one is out.
