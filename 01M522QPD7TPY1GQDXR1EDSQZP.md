@@ -15,7 +15,9 @@ related: []
 follows: 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-16T10:04:46Z
-updated-at: 2026-10-16T10:04:46Z
+updated-at: 2026-10-16T11:16:43Z
+assignee: BeMuCa
+updated-by: BeMuCa
 ---
 
 # Cockpit-Band: Update-Hinweis mit Knopf 'Update' und Knopf 'Verwerfen'
