@@ -5,9 +5,11 @@
 // the finished screen from it needs a terminal emulator; the models already
 // know what the screen says.
 //
-//	go run ./scripts/shotgen <board-path> <view> <cols> <rows>
+//	go run ./scripts/shotgen <board-path> <view> <cols> <rows> [key...]
 //
-// Views: home, board, pipeline, signoff, edit.
+// Views: home, board, pipeline, signoff, edit, roadmap. Each key after <rows>
+// is pressed in order once the view is open: right, left, down, up, enter,
+// esc, or a single character.
 package main
 
 import (
@@ -24,7 +26,7 @@ import (
 
 func main() {
 	if len(os.Args) < 5 {
-		fmt.Fprintln(os.Stderr, "usage: shotgen <board-path> <view> <cols> <rows>")
+		fmt.Fprintln(os.Stderr, "usage: shotgen <board-path> <view> <cols> <rows> [key...]")
 		os.Exit(2)
 	}
 	dir, view := os.Args[1], os.Args[2]
@@ -72,8 +74,21 @@ func main() {
 	case "edit":
 		m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 		key('e')
+	case "roadmap":
+		key('L')
 	default:
 		die(fmt.Errorf("unknown view %q", view))
+	}
+	named := map[string]rune{"right": tea.KeyRight, "left": tea.KeyLeft, "down": tea.KeyDown, "up": tea.KeyUp, "enter": tea.KeyEnter, "esc": tea.KeyEscape}
+	for _, k := range os.Args[5:] {
+		r := []rune(k)
+		if c, ok := named[k]; ok {
+			m.Update(tea.KeyPressMsg{Code: c})
+		} else if len(r) == 1 {
+			key(r[0])
+		} else {
+			die(fmt.Errorf("unknown key %q", k))
+		}
 	}
 	fmt.Print(m.View().Content)
 }
