@@ -15,7 +15,7 @@ related: []
 follows: 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-16T10:04:46Z
-updated-at: 2026-10-16T12:52:09Z
+updated-at: 2026-10-16T12:52:19Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-482020
@@ -24,13 +24,7 @@ outcome-what: "Runde 1: jaira-cockpit-Band zeigt bei neuerer Version (Release-Ca
 outcome-why: "Die stderr-Zeile erreicht nur Sitzungen, die gerade jaira-Befehle fahren; das Band erreicht jede Sitzung mit offenem Cockpit. Berk wollte den Knopf mit Vorschau vor jedem Schreiben und einem Verwerfen, das sich die Version merkt - und dieselbe Vorschau auch auf dem Agenten-Weg ('kein Dry run noetig?')."
 outcome-resolves: "DoD 1: Hinweis mit Update und Verwerfen (Dismiss), Update = Vorschau dann Ja-Pfad, Verwerfen nur fuer genau diese Version; claude plugin test 157 pass. DoD 2: stderr-Zeile und Agenten-Block verlangen die Vorschau vor der Frage; Go-Tests auf die eine Zeile und den Block."
 review-summary: "none"
-review-gaps: |-
-  1. Small defect: after a successful upgrade the result pane shows only the stdout of 'jaira self upgrade' (register.tsx upgradeJaira, the show(...) line; up.stderr is never used). Its stderr is where Go prints 'warning: release host overridden by JAIRA_RELEASE_API/...' (internal/cli/self.go, after 'upgraded jaira'), a line the Go comment says must never pass quietly. Only matters with an override variable set; the fix is adding up.stderr to the shown text.
-  2. Edge: once() frees the Update lock after BUSY_MS = 20 s, but 'jaira self upgrade' may run up to 300 s. During a slow download the band's Update can be pressed again, which can open a second preview and start a second 'self upgrade' at the same time.
-  3. UX: a Homebrew or 'go install' build gets the whole preview and an 'Update to X' button that can only fail. The --check JSON already carries install_method and could say so before the pane opens (the refusal is shown whole, a test covers it).
-  4. The dry run's exit code is not checked. When it fails - e.g. a jaira older than PWAF22 has no 'update --roles', possible when a newer cockpit sits beside an older binary; MIN_JAIRA stays 0.3.7 - its error text appears under 'what that would change'. The yes path still works because the new binary runs the setup.
-  5. Merge order, not a flaw in the diff: this branch is stacked on T8A8KM and PWAF22 (their commits are on it, not on master), and the cockpit needs their Go side (hourly cache, 'update --roles --lanes --dry-run'). Merge those first, or this PR carries them.
-  6. DoD wording: the button says 'Dismiss', not 'Verwerfen' (texts.ts: every cockpit text is English) - a recorded decision. 'Node-Lauf': claude plugin test runs each file in a child of the Claude Code binary, not in Node; the Node 24 run of board.ts was scratch only (I reproduced it).
+review-gaps: "nothing removed in round 2: the release line has one producer (internal/cli/newerrelease.go:47) and the block one (core/board/announce.go:112), CLAUDE.md/AGENTS.md are generated from it; releaseLineOf in newerrelease_test.go has two callers; dryRunFailed has one caller. Round 1 still stands: jairaHome() is the one shared JAIRA_HOME lookup; pre-existing metrics.csv under HOME/.jaira left alone (noted as follow-up candidate)"
 test-verdict: "pass: go build ./... ok, go test -race -count=1 ./... RC=0 (32 ok, 0 FAIL); claude plugin validate passed, claude plugin test 155 pass 0 fail (12 in 'a newer jaira release'); DoD 1 proof lines checked in the tree; yes-path run with real binaries built as 0.5.1/0.6.0 against a local stub release in a scratch HOME/JAIRA_HOME: check + dry-run wrote nothing (snapshot equal), self upgrade replaced only the scratch binary, update --roles --lanes ran; ~/.local/bin/jaira unchanged; not seen: the band live in a Claude Code terminal"
 review-verdict: "The diff meets the definition of done: a newer release gets a line with Update and Dismiss, Update shows a preview and writes only after 'Update to X', Dismiss hides exactly that version, and 12 cockpit tests cover it (7 of them fail without the change; 155 pass, 0 fail). One small defect - gap 1, the release-host override warning is dropped from the result pane - is worth a one-line fix but I would not hold the merge for it; gaps 2-4 are edges. Merge after T8A8KM and PWAF22."
 review-round: 1
