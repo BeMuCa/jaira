@@ -86,9 +86,12 @@ jaira checks for a new release at most once an hour, in the background, and
 never on the command path: nothing you run ever waits on the network for
 this. When a newer one is known, the launcher and the board show a pill
 `^ 0.2.0` under the version at the top left — run `jaira self upgrade` to
-install it — and `jaira next` and `jaira resume` print one line on stderr
-saying so. Their stdout and `--json` stay clean, so a script or an agent
-driving jaira is never disturbed by it; every other command stays quiet.
+install it; an open board picks it up without a restart. `jaira next`,
+`jaira resume`, `jaira claim` and `jaira move` print one line on stderr saying
+so, which tells an agent to ask you whether to update and, only on a yes, to
+run `jaira self upgrade` and then `jaira update --roles --lanes`. Their stdout
+and `--json` stay clean, so a script or an agent driving jaira is never
+disturbed by it; every other command stays quiet.
 When you are up to date the version reads `jaira 0.1.0 · up to date`. Set
 `JAIRA_NO_UPDATE_CHECK=1` to turn the check off entirely: no pill, no
 stderr line, no "up to date"; the version still shows.

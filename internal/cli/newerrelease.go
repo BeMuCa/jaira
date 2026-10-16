@@ -9,10 +9,17 @@ import (
 )
 
 // warnNewerRelease writes one line when the release cache knows a release
-// newer than this binary, so an agent that never sees the TUI's pill still
-// tells the user. It is called by 'jaira next' and 'jaira resume' only, the
-// commands a session starts with, and with the command's stderr: stdout is the
-// payload an agent parses.
+// newer than this binary, so an agent that never sees the TUI's pill asks the
+// user whether to update, and runs the upgrade only on a yes. It is called by
+// 'jaira next' and 'jaira resume', the commands a session starts with, and by
+// 'jaira claim' and 'jaira move', which a session already running calls at
+// every ticket and every lane — so a release that becomes known mid-session
+// reaches it at its next step. Always with the command's stderr: stdout is
+// the payload an agent parses.
+//
+// The line names both commands a yes runs: 'jaira self upgrade' brings the
+// binary and, from PWAF22 on, the skills ('update --roles'); the lane files
+// stay a step of their own, 'jaira update --roles --lanes' in the repository.
 //
 // A dev build says nothing, and so does a cache that was never written — the
 // same rules as the TUI's pill. Reading the cache also refreshes it in the
@@ -27,5 +34,5 @@ func warnNewerRelease(w io.Writer) {
 	if !known || !release.Newer(latest, release.Current) {
 		return
 	}
-	fmt.Fprintf(w, "jaira: jaira %s is released (this is %s) - tell the user; 'jaira self upgrade' installs it\n", latest, release.Current)
+	fmt.Fprintf(w, "jaira: jaira %s is released (this is %s) - ask the user whether to update; on yes run 'jaira self upgrade', then 'jaira update --roles --lanes'\n", latest, release.Current)
 }

@@ -35,10 +35,11 @@ const versionEvery = time.Minute
 // it has no tick and is left for a board within moments.
 //
 // This is the TUI's own read of the cache. The CLI reads it too, but only in
-// 'jaira next' and 'jaira resume' (see internal/cli/newerrelease.go), the
-// commands an agent session starts with: a line on every 'jaira list' would
-// be noise for the scripts that drive the CLI. The person actually watching
-// a screen is the one this is for.
+// 'jaira next', 'jaira resume', 'jaira claim' and 'jaira move' (see
+// internal/cli/newerrelease.go), the commands an agent session runs at every
+// ticket and lane: a line on every 'jaira list' would be noise for the scripts
+// that drive the CLI. The person actually watching a screen is the one this
+// is for.
 //
 // A cache that has never been written to at all — never checked, or the
 // check is disabled via JAIRA_NO_UPDATE_CHECK — reports the running version

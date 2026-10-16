@@ -53,6 +53,7 @@ one the real move would have returned.`,
 			if to == "" {
 				return fail(ExitUsage, "usage", "--to is required")
 			}
+			warnNewerRelease(cmd.ErrOrStderr())
 			t, err := s.Load(args[0])
 			if err != nil {
 				return err
