@@ -2463,6 +2463,42 @@ describe('the workers tab', () => {
     expect(reads()).toBe(before + 2)
   })
 
+  test('a read still running when the tab changes or the pane closes starts no frames: nothing is read after Close', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' }]
+    await startSession($)
+    const reads = () => ran(w, 'herdr', 'tab', 'list').length
+    // Lets the plugin run until its read of Herdr's tabs is held.
+    const held = async () => {
+      for (let i = 0; i < 50 && w.heldTabs!.length === 0; i++) await w.clock.advance(0)
+      expect(w.heldTabs!.length).toBe(1)
+    }
+    // Lets the held read go, and the plugin finish what it did with it.
+    const release = async () => {
+      w.heldTabs!.shift()!()
+      for (let i = 0; i < 50; i++) await w.clock.advance(0)
+    }
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const pane = await $.ui.mount(OVERVIEW)
+    w.heldTabs = []
+    // Workers pressed, its read hangs; Queue is shown before it ends.
+    const workers = pane.press({ key: 'overview-tab-workers' }).then(() => undefined)
+    await held()
+    await pane.press({ key: 'overview-tab-queue' })
+    await release()
+    await workers
+    // Workers again, and the pane closed while its read hangs.
+    const again = pane.press({ key: 'overview-tab-workers' }).then(() => undefined)
+    await held()
+    await pane.press({ key: 'overview-close' })
+    await release()
+    await again
+    w.heldTabs = undefined
+    const before = reads()
+    await w.clock.advance(20_000)
+    expect(reads()).toBe(before)
+  })
+
   test('the frames stop when another tab is shown and when the pane closes', async ($, on) => {
     const w = world(on, { herdr: true })
     w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' }]

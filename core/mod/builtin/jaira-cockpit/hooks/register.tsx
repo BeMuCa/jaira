@@ -112,6 +112,8 @@ const chats = new Map<string, number>()
 // board the Overview was opened on.
 let frames: { cancel: () => void } | undefined
 let overviewDir: string | undefined
+// Whether the Overview pane is on screen: placed by its open, until it closes.
+let overviewOpen = false
 // Whether the Workers tab is reading the board right now: a read that takes
 // longer than READ_FRAMES is not started a second time beside it.
 let reading = false
@@ -633,6 +635,7 @@ async function openOverview($: EngineInterface, dir: string): Promise<void> {
   await update($, overviewAtom, () => view)
   const opened = await $.ui.open({ id: OVERVIEW, title: overviewWords.title, focus: true, closeOnEscape: true })
   // Unplaced, the pane is not drawn and hears no close: no frames for it.
+  overviewOpen = opened.isPlaced
   if (!opened.isPlaced) {
     $.ui.toast(overviewWords.noRoom)
     return stopFrames()
@@ -646,6 +649,8 @@ async function showTab($: EngineInterface, tab: OverviewTab): Promise<void> {
   await update($, overviewTabAtom, () => tab)
   if (tab !== 'workers') return stopFrames()
   await readWorkers($)
+  // The person may have shown another tab or closed the pane while it read.
+  if (!overviewOpen || (await read($, overviewTabAtom)) !== 'workers') return
   frames ??= $.clock.every(FRAME_MS, () => void frame($))
 }
 
@@ -1372,6 +1377,7 @@ export const register: Register = (on, options) => {
   on('ui.render', { component: 'Pane', requestId: OVERVIEW }, async ($, e) =>
     drawOverview($.ui.resolve(e), await read($, overviewAtom), { tab: await read($, overviewTabAtom), folded: await read($, overviewFoldedAtom), people: await read($, overviewPeopleAtom) }, {
       close: () => {
+        overviewOpen = false
         stopFrames()
         void $.ui.close({ id: OVERVIEW })
       },
@@ -1392,7 +1398,10 @@ export const register: Register = (on, options) => {
   // The Workers tab's frames stop with the pane when the person closes it;
   // its own Close button stops them itself, as this hook does not hear it.
   on('ui.close', async ($, e, next) => {
-    if (e.id === OVERVIEW) stopFrames()
+    if (e.id === OVERVIEW) {
+      overviewOpen = false
+      stopFrames()
+    }
     return next(e)
   }).catch(($, e, next) => next(e))
 
