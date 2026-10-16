@@ -125,9 +125,8 @@ export const overviewWords = {
   tabQueue: 'Queue',
   tabLog: 'Log',
   tabWorkers: 'Workers',
-  stateWorking: 'working',
-  stateIdle: 'resting',
-  stateQuestion: 'waits for an answer',
+  // What a figure on the Workers tab is doing, beneath it in so many words.
+  states: { working: 'working', idle: 'resting', question: 'waits for an answer' },
   noWorkers: 'No agent on the board right now.',
   everybody: 'All',
   none: 'none',

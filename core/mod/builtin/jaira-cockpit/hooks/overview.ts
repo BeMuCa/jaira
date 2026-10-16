@@ -222,7 +222,7 @@ export function pickOf(ids: readonly string[], kept: Readonly<Record<string, str
 export type Spot = { lane: string; x: number }
 
 // How far a figure walks in one frame, as a share of its track.
-export const WALK_STEP = 1 / 40
+const WALK_STEP = 1 / 40
 
 // One frame on from `where`. A ticket not seen before stands where its
 // progress puts it. One whose progress moved walks towards it. One whose

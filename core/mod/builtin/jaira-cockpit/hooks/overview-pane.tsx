@@ -25,7 +25,7 @@ export type OverviewTab = 'queue' | 'log' | 'workers'
 // The Workers tab: its figures (null: the board could not be read), where
 // each ticket's figures stand on their track, each ticket's colour and hat,
 // the frame the animation is at, and the pane's room, in cells.
-export type WorkersScene = {
+type WorkersScene = {
   walkers: Walker[] | null
   where: Record<string, Spot>
   colors: Record<string, string>
@@ -49,8 +49,6 @@ const LEGS = { stand: '  ▘▘ ▝▝  ', step: '  ▝▘ ▘▝  ', sit: '  �
 // head, arms, legs, and the line that says who it is.
 const TRACK = 7
 
-const stateWords = { working: w.stateWorking, idle: w.stateIdle, question: w.stateQuestion }
-
 function put(row: Cell[], x: number, text: string, style: Style = {}): void {
   ;[...text].forEach((ch, i) => {
     if (x + i >= 0 && x + i < row.length) row[x + i] = { ch, ...style }
@@ -61,7 +59,7 @@ function put(row: Cell[], x: number, text: string, style: Style = {}): void {
 // the room's height. On each, the left wall is the lane its ticket stands
 // in, the right one the lane it goes to; the crab stands as far between as
 // it has come, and the line beneath says who, doing what, on which ticket.
-export function trackRows(scene: WorkersScene): Cell[][] {
+function trackRows(scene: WorkersScene): Cell[][] {
   const { walkers, where, colors, hats, frame, columns } = scene
   const width = Math.max(columns, SPRITE + 6)
   const n = walkers?.length ?? 0
@@ -95,7 +93,7 @@ export function trackRows(scene: WorkersScene): Cell[][] {
     put(track[top + 3]!, x, ARMS[f.state === 'working' && !walking ? Math.floor(frame / 2) % 2 : 0]!, look)
     if (f.state === 'working') put(track[top + 2]!, x + 9, SPINNER[frame % SPINNER.length]!, { color: colors[f.id] })
     put(track[top + 4]!, x, f.state === 'idle' && !walking ? LEGS.sit : walking && frame % 2 === 1 ? LEGS.step : LEGS.stand, look)
-    const words = `${f.id} · ${stateWords[f.state]} · `
+    const words = `${f.id} · ${w.states[f.state]} · `
     const caption = words + f.title.slice(0, Math.max(0, width - 4 - words.length))
     put(track[top + 5]!, Math.max(2, Math.min(x, width - 2 - caption.length)), caption)
     rows.push(...track)
