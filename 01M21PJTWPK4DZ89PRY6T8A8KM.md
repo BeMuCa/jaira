@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-16T09:05:31Z
+updated-at: 2026-10-16T09:05:33Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -82,7 +82,8 @@ claimed-at: 2026-10-16T09:01:29Z
   proof: internal/tui/home.go:283 key w, :425 hint; TestHomeWOpensReleaseNotesNewestFirst, TestHomeHintNamesTheReleaseNotesKey (written, compiled by go vet, not run); hand test (c) on a scratch board without remote
 - [ ] Die Release-Pruefung laeuft stuendlich statt taeglich: core/selfupdate MaxAge = 1h, Doku und Kommentare sagen nirgends mehr 24h/taeglich; ein offenes Board liest den Cache regelmaessig neu, so dass die Pille ohne Neustart erscheint; Test
 - [ ] Eine laufende Agent-Sitzung erfaehrt ein neueres Release ohne Neustart: ausser jaira next/resume nennen es auch jaira claim und jaira move auf stderr (stdout/--json unberuehrt) und sagen, den Nutzer zu fragen und erst auf ein Ja 'jaira self upgrade', dann 'jaira update --roles --lanes' auszufuehren; der Agent-Block sagt dasselbe (einmal fragen, ohne Ja nichts ausfuehren); Test
-- [ ] PWAF22 (Branch feat/PWAF22-update-brings-setup) ist in diesen Branch gemergt, nicht nach master; Konflikte geloest und am Ticket notiert; gofmt/vet/build sauber
+- [x] PWAF22 (Branch feat/PWAF22-update-brings-setup) ist in diesen Branch gemergt, nicht nach master; Konflikte geloest und am Ticket notiert; gofmt/vet/build sauber
+  proof: Merge-Commit bc3c1496 (merge(T8A8KM): bring in PWAF22 ...), Konflikt nur docs/COMMANDS.md:130-131, als Notiz; gofmt/vet/build sauber auf bc3c1496
 - [ ] Die CPU-Kosten der stuendlichen Pruefung sind gemessen (oder begruendet geschaetzt) und stehen als Notiz am Ticket
 
 ## Options
