@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-16T09:01:31Z
+updated-at: 2026-10-16T09:02:45Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -80,6 +80,10 @@ claimed-at: 2026-10-16T09:01:29Z
   proof: core/release/release.go:101 Important, internal/cli/update.go writeNotes, internal/tui/releasenotes.go:15,60 styImportant; TestImportantMarker, TestUpdateNotesMarkImportantLines, TestNotesViewMarksImportantLines (written, compiled by go vet, not run); hand test (d) on a scratch board without remote: ' ! ' line in jaira update, bold colour 214 in popup
 - [x] Auf der Launcher-Seite oeffnet ein Hotkey die Release-Notes (neueste Version zuerst); die Hilfezeile nennt die Taste; Test
   proof: internal/tui/home.go:283 key w, :425 hint; TestHomeWOpensReleaseNotesNewestFirst, TestHomeHintNamesTheReleaseNotesKey (written, compiled by go vet, not run); hand test (c) on a scratch board without remote
+- [ ] Die Release-Pruefung laeuft stuendlich statt taeglich: core/selfupdate MaxAge = 1h, Doku und Kommentare sagen nirgends mehr 24h/taeglich; ein offenes Board liest den Cache regelmaessig neu, so dass die Pille ohne Neustart erscheint; Test
+- [ ] Eine laufende Agent-Sitzung erfaehrt ein neueres Release ohne Neustart: ausser jaira next/resume nennen es auch jaira claim und jaira move auf stderr (stdout/--json unberuehrt) und sagen, den Nutzer zu fragen und erst auf ein Ja 'jaira self upgrade', dann 'jaira update --roles --lanes' auszufuehren; der Agent-Block sagt dasselbe (einmal fragen, ohne Ja nichts ausfuehren); Test
+- [ ] PWAF22 (Branch feat/PWAF22-update-brings-setup) ist in diesen Branch gemergt, nicht nach master; Konflikte geloest und am Ticket notiert; gofmt/vet/build sauber
+- [ ] Die CPU-Kosten der stuendlichen Pruefung sind gemessen (oder begruendet geschaetzt) und stehen als Notiz am Ticket
 
 ## Options
 
