@@ -15,11 +15,11 @@ related: []
 follows: 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-16T10:04:46Z
-updated-at: 2026-10-16T12:55:01Z
+updated-at: 2026-10-16T12:59:08Z
 assignee: BeMuCa
 updated-by: BeMuCa
-claimed-by: EE-3NX6GL3-482020
-claimed-at: 2026-10-16T11:16:45Z
+claimed-by: EE-3NX6GL3-682638
+claimed-at: 2026-10-16T12:59:08Z
 outcome-what: "Runde 1: jaira-cockpit-Band zeigt bei neuerer Version (Release-Cache $JAIRA_HOME|~/.jaira/update-check.json gegen 'jaira --version', jede Minute gelesen) 'jaira X is released (this is Y)' mit [ Update ] und Dismiss. Update: 'jaira self upgrade --check --json' + 'jaira update --roles --lanes --dry-run', Vorschau im Pane cockpit-upgrade (Cancel hat den Fokus), erst 'Update to X' fuehrt 'jaira self upgrade' und 'jaira update --roles --lanes' aus. Dismiss merkt die Version im Store. Runde 2: Ergebnis-Pane zeigt auch stderr von self upgrade (Host-Override-Warnung); ein Dry-run mit Exit ausser 0/3 oeffnet das Fehler-Pane statt der Vorschau und bietet kein Update an. Agenten-Weg: stderr-Zeile (internal/cli/newerrelease.go) und Agenten-Block (core/board/announce.go, CLAUDE.md, AGENTS.md) sagen jetzt: erst --check und --dry-run laufen lassen, dem User zeigen, fragen, erst auf Ja die echten Befehle. README, docs/COMMANDS.md, zwei Release-Notiz-Zeilen, shipped.sha256 neu."
 outcome-why: "Die stderr-Zeile erreicht nur Sitzungen, die gerade jaira-Befehle fahren; das Band erreicht jede Sitzung mit offenem Cockpit. Berk wollte den Knopf mit Vorschau vor jedem Schreiben und einem Verwerfen, das sich die Version merkt - und dieselbe Vorschau auch auf dem Agenten-Weg ('kein Dry run noetig?')."
 outcome-resolves: "DoD 1: Hinweis mit Update und Verwerfen (Dismiss), Update = Vorschau dann Ja-Pfad, Verwerfen nur fuer genau diese Version; claude plugin test 157 pass. DoD 2: stderr-Zeile und Agenten-Block verlangen die Vorschau vor der Frage; Go-Tests auf die eine Zeile und den Block."
