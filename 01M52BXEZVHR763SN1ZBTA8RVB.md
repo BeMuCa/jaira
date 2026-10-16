@@ -1,7 +1,7 @@
 ---
 id: 01M52BXEZVHR763SN1ZBTA8RVB
 title: README zeigt die Features mit Use cases und frischen Screenshots
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -20,10 +20,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-16T12:45:13Z
-updated-at: 2026-10-16T12:57:22Z
+updated-at: 2026-10-16T12:57:31Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-613775
 claimed-at: 2026-10-16T12:46:01Z
+outcome-what: "README: Features-Abschnitt mit 16 Funktionen und Use cases; vier frische Bilder (board-main, board-links, launcher, milestone-roadmap) mit jaira 0.5.1; shotgen-Tasten/roadmap, termshot-Grundfarben und die Demo-Welt-Extras ins Repo"
+outcome-why: "Die README zeigte alte Bilder und verschwieg Roadmap, Live-Board und weitere Funktionen; die Bilder vom Vortag hatten 'jaira dev', einen abgeschnittenen Done-Titel und ein Links-Fenster mitten im Hauptbild"
+outcome-resolves: "Hauptboard ohne Overlay mit allen 10 Lane-Titeln ganz, Links-Fenster als eigenes Bild beim Links-Text, keine 'dev'-Version; scripts/demoworld.sh baut Welt und shotgen mit Release-Version, sodass jeder die Bilder nachbauen kann"
 ---
 
 # README zeigt die Features mit Use cases und frischen Screenshots
