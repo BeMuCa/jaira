@@ -6,7 +6,7 @@
 // `$` lives there.
 
 import type { ElementTable } from 'claude-code'
-import { clockOf, HISTORY_DAYS, type Overview, type Row } from './overview.ts'
+import { clockOf, HISTORY_DAYS, slotOf, SPINNER, type Overview, type Row, type Walker, type Workers } from './overview.ts'
 import { overviewWords as w } from './texts.ts'
 
 const SEP = ' | '
@@ -21,18 +21,20 @@ const GROUP = { working: 'claude', queue: 'suggestion', parked: 'warning' } as c
 const PEOPLE = ['cyan', 'magenta', 'green', 'cyanBright', 'magentaBright', 'greenBright']
 
 function personColor(name: string): string {
-  let h = 0x811c9dc5
-  for (const c of name) h = Math.imul(h ^ c.codePointAt(0)!, 0x01000193)
-  return PEOPLE[(h >>> 0) % PEOPLE.length]!
+  return PEOPLE[slotOf(name, PEOPLE.length)]!
 }
 
-type OverviewTab = 'queue' | 'log'
+export type OverviewTab = 'queue' | 'log' | 'workers'
+// The Workers tab: who stands where (null: the board could not be read),
+// where each ticket's figures are on their walk, each ticket's colour, and
+// the frame the spinner and the walk are at.
+export type WorkersScene = { view: Workers | null; where: Record<string, number>; colors: Record<string, string>; frame: number }
 // `people`: the names the Log is filtered to; empty shows everybody.
 type OverviewState = { tab: OverviewTab; folded: Record<string, boolean>; people: string[] }
 type OverviewActions = { close: () => void; tab: (tab: OverviewTab) => void; fold: (key: string) => void; person: (name: string) => void; everybody: () => void }
 
 // `view` null: the board could not be read.
-export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview | null, state: OverviewState, act: OverviewActions) {
+export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview | null, state: OverviewState, act: OverviewActions, scene: WorkersScene) {
   const person = (who: string) => <Text key="who" color={personColor(who)}>{who}</Text>
   const closeButton = <Button key="overview-close" label={w.close} onPress={act.close} />
   if (view === null) return <Box flexDirection="column"><Text dimColor>{w.unread}</Text>{closeButton}</Box>
@@ -96,13 +98,49 @@ export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview
       </Box>
     )),
   ]
+  // The Workers tab: the stations side by side, each figure standing above
+  // the station it has walked to, so the ◯ of every station line up beneath.
+  const workers = () => {
+    const { view: board, where, colors, frame } = scene
+    if (board === null) return [<Text key="workers-unread" dimColor>{w.unread}</Text>]
+    const all = board.stations.flatMap((s, i) => (board.at[s] ?? []).map(f => ({ f, lane: i })))
+    const width = Math.max(13, ...board.stations.map(s => s.length + 4))
+    const figure = ({ f, lane }: { f: Walker; lane: number }, n: number) => {
+      const color = colors[f.id]
+      const walking = (where[f.id] ?? lane) !== lane
+      const glyph = f.state === 'working' ? SPINNER[(frame + n) % SPINNER.length] : SPINNER[0]
+      return (
+        <Box key={`walker-${f.id}-${f.kind}-${n}`} flexDirection="column">
+          {f.state === 'question' ? <Text bold color="warning">  ?</Text> : null}
+          <Text dimColor={f.state === 'idle'}>
+            <Text color={color} bold={f.state !== 'idle'}>{glyph} {f.id}</Text>
+            {f.state === 'idle' ? <Text dimColor> z z</Text> : null}
+            {walking ? <Text dimColor>{(where[f.id] ?? lane) < lane ? ' »' : ' «'}</Text> : null}
+          </Text>
+        </Box>
+      )
+    }
+    return [
+      <Box key="stations" flexDirection="row" flexWrap="wrap" alignItems="flex-end" marginTop={1}>
+        {board.stations.map((s, i) => (
+          <Box key={`station-${s}`} flexDirection="column" width={width}>
+            {all.map((x, n) => ((where[x.f.id] ?? x.lane) === i ? figure(x, n) : null))}
+            <Text><Text bold>◯</Text> {s}{i < board.stations.length - 1 ? <Text dimColor> ─</Text> : null}</Text>
+          </Box>
+        ))}
+      </Box>,
+      all.length === 0 ? <Text key="workers-none" dimColor>{w.noWorkers}</Text> : null,
+      <Box key="legend" marginTop={1}><Text dimColor>{w.legend}</Text></Box>,
+    ]
+  }
   return (
     <Box flexDirection="column">
       <Box flexDirection="row" columnGap={2}>
         {tabButton('queue', w.tabQueue)}
         {tabButton('log', w.tabLog)}
+        {tabButton('workers', w.tabWorkers)}
       </Box>
-      {state.tab === 'queue' ? queue : log}
+      {state.tab === 'queue' ? queue : state.tab === 'log' ? log : workers()}
       {closeButton}
     </Box>
   )

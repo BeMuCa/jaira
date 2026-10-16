@@ -5,7 +5,8 @@
 // a session: so it is the same after a night, a restart or another session.
 // register.tsx runs the commands; this file only reads what they printed.
 
-import { isPersons, oneLine, parse, type Lane } from './board.ts'
+import { isPersons, oneLine, parse, PERSONS_TABS, type Agent, type Lane } from './board.ts'
+import type { Tab } from './sessions.ts'
 
 export type Row = {
   id: string
@@ -108,3 +109,98 @@ export function overviewOf(lanesJson: string, listJson: string, nextJson: string
   }
   return { working, queue, parked, history }
 }
+
+// ── the Workers tab: every agent on the board as a figure at a station ────
+
+// How an agent reads: at work, resting with its tab open, or standing with
+// a question its ticket carries for a person.
+export type WorkerState = 'working' | 'idle' | 'question'
+// One figure: an agent, or a ticket waiting on a person's answer with no
+// agent on it. `kind` is what its Herdr tab is labelled after the id
+// (`worker`, `review`, …), or `agent` for a subagent of this session.
+export type Walker = { id: string; kind: string; state: WorkerState }
+// The stations in board order, and who stands at each, by the lane of the
+// ticket the figure works on.
+export type Workers = { stations: string[]; at: Record<string, Walker[]> }
+
+// A subagent at work: running a turn, about to, or held on its own work.
+const RUNNING = new Set(['pending', 'running', 'waiting'])
+
+// The stations are the lanes something happens in: every agent's lane and
+// every person's, in board order; backlog, todo, blocked and done are not.
+// A Herdr tab spawn.sh labelled `<id>/<kind>` is an agent, at work while
+// Herdr says so and resting otherwise; a subagent of this session whose
+// description or name carries the id is one too, resting between turns and
+// gone once it ended. A Discuss or Explain tab is the person's own chat, not
+// an agent. A ticket whose question is open stands with it, agent or not.
+// An agent on a ticket in no station's lane is not drawn.
+export function workersOf(lanesJson: string, listJson: string, tabs: readonly Tab[], agents: readonly Agent[]): Workers {
+  const stations = (parse<{ lanes: Lane[] }>(lanesJson)?.lanes ?? [])
+    .filter(l => l.terminal !== true && (l.agentic || isPersons(l)))
+    .map(l => l.id)
+  const tickets = parse<{ tickets: (Ticket & { question?: string })[] }>(listJson)?.tickets ?? []
+  const at: Record<string, Walker[]> = Object.fromEntries(stations.map(s => [s, []]))
+  for (const t of tickets) {
+    const here = at[t.status]
+    if (here === undefined) continue
+    const asks = oneLine(t.question) !== ''
+    const state = (working: boolean): WorkerState => (asks ? 'question' : working ? 'working' : 'idle')
+    const walkers: Walker[] = []
+    for (const tab of tabs) {
+      const [id = '', kind = ''] = tab.label.split('/')
+      if (id === t.handle && kind !== '' && !PERSONS_TABS.has(kind)) walkers.push({ id, kind, state: state(tab.agent_status === 'working') })
+    }
+    for (const a of agents) {
+      if (!`${a.description} ${a.name ?? ''}`.includes(t.handle)) continue
+      if (RUNNING.has(a.status) || a.status === 'idle') walkers.push({ id: t.handle, kind: 'agent', state: state(RUNNING.has(a.status)) })
+    }
+    if (walkers.length === 0 && asks) walkers.push({ id: t.handle, kind: 'question', state: 'question' })
+    here.push(...walkers)
+  }
+  return { stations, at }
+}
+
+// The colours a ticket's figures wear. ANSI names, as a person's colour in
+// the Log: the terminal's own scheme keeps them readable.
+export const TICKET_COLORS = ['cyan', 'magenta', 'green', 'cyanBright', 'magentaBright', 'greenBright']
+
+// A name's slot among `n`, derived from the name and nothing else.
+export function slotOf(name: string, n: number): number {
+  let h = 0x811c9dc5
+  for (const c of name) h = Math.imul(h ^ c.codePointAt(0)!, 0x01000193)
+  return (h >>> 0) % n
+}
+
+// Each ticket's colour. One that already has one keeps it while it stays on
+// the board; a new one starts at its name's slot and moves on to the next
+// colour no other ticket wears. Only with more tickets than colours do two
+// share one, and then by name alone.
+export function colorsOf(ids: readonly string[], kept: Readonly<Record<string, string>>, palette: readonly string[] = TICKET_COLORS): Record<string, string> {
+  const colors: Record<string, string> = {}
+  for (const id of ids) if (kept[id] !== undefined && palette.includes(kept[id]!)) colors[id] = kept[id]!
+  for (const id of [...ids].sort()) {
+    if (colors[id] !== undefined) continue
+    const used = new Set(Object.values(colors))
+    const start = slotOf(id, palette.length)
+    const free = palette.map((_, i) => palette[(start + i) % palette.length]!).find(c => !used.has(c))
+    colors[id] = free ?? palette[start]!
+  }
+  return colors
+}
+
+// Where each ticket's figures stand, as a station's index: the station its
+// lane is for a ticket not seen before, and one station nearer it for one
+// that walks — so a ticket that changed lanes crosses every station between.
+export function stepOf(where: Readonly<Record<string, number>>, workers: Workers): Record<string, number> {
+  const next: Record<string, number> = {}
+  workers.stations.forEach((station, i) => {
+    for (const { id } of workers.at[station] ?? []) {
+      const from = where[id] ?? i
+      next[id] = from === i ? i : from + Math.sign(i - from)
+    }
+  })
+  return next
+}
+
+// A working figure turns through these, one each frame.
+export const SPINNER = ['✻', '✳', '✶', '✢']

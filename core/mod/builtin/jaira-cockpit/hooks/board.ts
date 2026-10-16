@@ -61,7 +61,7 @@ export function isPersons(lane: Lane): boolean {
 export type Agent = { description: string; name?: string; status: string }
 
 // The chats a person opens from the band are theirs, not an agent at work.
-const PERSONS_TABS = new Set(['explain', 'discuss'])
+export const PERSONS_TABS = new Set(['explain', 'discuss'])
 const WORKING = new Set(['pending', 'running', 'waiting'])
 
 // The tickets waiting in a lane a person owns: those of the person this

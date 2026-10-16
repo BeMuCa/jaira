@@ -14,8 +14,8 @@ import {
 } from './filter.ts'
 import { body, source } from './frame.ts'
 import { add, appended, emptyTotals, row, rowsOf, type Totals } from './metrics.ts'
-import { overviewOf } from './overview.ts'
-import { drawOverview } from './overview-pane.tsx'
+import { colorsOf, overviewOf, stepOf, workersOf } from './overview.ts'
+import { drawOverview, type OverviewTab } from './overview-pane.tsx'
 import {
   backMessage, carrierOf, carrierTab, chooseWorker, DEFAULT_CONTEXT_SHARE, isExpired, RECORD_PREFIX, selfLine, startOf, tabsOf,
   workerLines, type Role, type SessionRecord,
@@ -61,6 +61,10 @@ const overviewAtom = atom({ plugin: 'jaira-cockpit', key: 'overview' } as const,
 const overviewTabAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewTab' } as const, 'queue')
 const overviewFoldedAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewFolded' } as const, {})
 const overviewPeopleAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewPeople' } as const, [])
+const workersAtom = atom({ plugin: 'jaira-cockpit', key: 'workers' } as const, null)
+const workersWhereAtom = atom({ plugin: 'jaira-cockpit', key: 'workersWhere' } as const, {})
+const workersColorsAtom = atom({ plugin: 'jaira-cockpit', key: 'workersColors' } as const, {})
+const workersFrameAtom = atom({ plugin: 'jaira-cockpit', key: 'workersFrame' } as const, 0)
 
 const PANE = 'cockpit-ticket'
 const MESSAGE = 'cockpit-message'
@@ -71,6 +75,12 @@ const OVERVIEW = 'cockpit-overview'
 const BAND_TICKETS = 3
 // How long a pressed row stays locked when its action has not ended by then.
 const BUSY_MS = 20_000
+// The Workers tab's frame: the spinner turns each frame, a walking figure
+// crosses one station every WALK_FRAMES, and the board is read again every
+// READ_FRAMES, so a ticket that changed lanes walks without a reopening.
+const FRAME_MS = 250
+const WALK_FRAMES = 2
+const READ_FRAMES = 20
 // Between the parts of a line: the band's one separator.
 const SEP = ' | '
 
@@ -95,6 +105,8 @@ let threads: Thread[] = []
 // The Explain and Discuss chats this session opened, by their tab's label
 // (`<id>/explain`), with when: the tab goes once the chat has done its part.
 const chats = new Map<string, number>()
+// The Workers tab's frames, running while it is open and shown.
+let frames: { cancel: () => void } | undefined
 
 // ── shared helpers ───────────────────────────────────────────────────────
 
@@ -607,6 +619,53 @@ async function openOverview($: EngineInterface, dir: string): Promise<void> {
   await update($, overviewAtom, () => view)
   const opened = await $.ui.open({ id: OVERVIEW, title: overviewWords.title, focus: true, closeOnEscape: true })
   if (!opened.isPlaced) $.ui.toast(overviewWords.noRoom)
+  await showTab($, await read($, overviewTabAtom))
+}
+
+// A tab of the Overview pane; Workers reads who stands where and starts its
+// frames, every other tab stops them.
+async function showTab($: EngineInterface, tab: OverviewTab): Promise<void> {
+  await update($, overviewTabAtom, () => tab)
+  if (tab !== 'workers') return stopFrames()
+  await readWorkers($)
+  frames ??= $.clock.every(FRAME_MS, () => void frame($))
+}
+
+function stopFrames(): void {
+  frames?.cancel()
+  frames = undefined
+}
+
+async function frame($: EngineInterface): Promise<void> {
+  const n = await update($, workersFrameAtom, f => f + 1)
+  if (n % READ_FRAMES === 0) await readWorkers($)
+  if (n % WALK_FRAMES !== 0) return
+  const view = await read($, workersAtom)
+  if (view !== null) await update($, workersWhereAtom, where => stepOf(where, view))
+}
+
+// Who stands at which station: the board, Herdr's tabs and this session's
+// subagents, as the band counts them. A figure seen before keeps where it
+// has walked to and its colour; one gone drops out of both.
+async function readWorkers($: EngineInterface): Promise<void> {
+  const dir = board?.dir
+  if (dir === undefined || dir === null) return
+  const [lanes, list] = await Promise.all([run($, ['jaira', 'lanes', '--json'], dir), run($, ['jaira', 'list', '--json'], dir)])
+  if (lanes?.exitCode !== 0 || list?.exitCode !== 0) {
+    await update($, workersAtom, () => null)
+    return
+  }
+  const bin = await herdr($)
+  const tabs = bin === undefined ? undefined : await run($, [bin, 'tab', 'list'], dir)
+  let agents: Agent[] = []
+  try {
+    agents = await $.agent.list()
+  } catch {}
+  const view = workersOf(lanes.stdout, list.stdout, tabs?.exitCode === 0 ? tabsOf(tabs.stdout) : [], agents)
+  const ids = [...new Set(Object.values(view.at).flat().map(f => f.id))]
+  await update($, workersAtom, () => view)
+  await update($, workersColorsAtom, kept => colorsOf(ids, kept))
+  await update($, workersWhereAtom, where => Object.fromEntries(Object.entries(where).filter(([id]) => ids.includes(id))))
 }
 
 // A decision is read once: the pane shows it, the band lets it go.
@@ -1294,12 +1353,22 @@ export const register: Register = (on, options) => {
 
   on('ui.render', { component: 'Pane', requestId: OVERVIEW }, async ($, e) =>
     drawOverview($.ui.resolve(e), await read($, overviewAtom), { tab: await read($, overviewTabAtom), folded: await read($, overviewFoldedAtom), people: await read($, overviewPeopleAtom) }, {
-      close: () => void $.ui.close({ id: OVERVIEW }),
-      tab: tab => void update($, overviewTabAtom, () => tab),
+      close: () => {
+        stopFrames()
+        void $.ui.close({ id: OVERVIEW })
+      },
+      tab: tab => void showTab($, tab),
       fold: key => void update($, overviewFoldedAtom, f => ({ ...f, [key]: !f[key] })),
       person: name => void update($, overviewPeopleAtom, p => (p.includes(name) ? p.filter(x => x !== name) : [...p, name])),
       everybody: () => void update($, overviewPeopleAtom, () => []),
-    }))
+    }, { view: await read($, workersAtom), where: await read($, workersWhereAtom), colors: await read($, workersColorsAtom), frame: await read($, workersFrameAtom) }))
+
+  // The Workers tab's frames stop with the pane when the person closes it;
+  // its own Close button stops them itself, as this hook does not hear it.
+  on('ui.close', async ($, e, next) => {
+    if (e.id === OVERVIEW) stopFrames()
+    return next(e)
+  }).catch(($, e, next) => next(e))
 
   on('ui.render', { component: 'Pane', requestId: MESSAGE }, async ($, e) => {
     const message = await read($, messageAtom)

@@ -2007,7 +2007,7 @@ describe('the overview', () => {
     const texts = (await pane.findAll({ type: 'Text' })).map(x => x.text)
     // Queue is the open tab: one section beneath the other, each heading a fold button with its count.
     const labels = (await pane.findAll({ type: 'Button' } as never)).map(b => (b.props as { label: string }).label)
-    expect(labels).toEqual(['Queue', 'Log', '▾ In work (1)', '▾ Queue (1)', '▾ Put back (2)', 'Close'])
+    expect(labels).toEqual(['Queue', 'Log', 'Workers', '▾ In work (1)', '▾ Queue (1)', '▾ Put back (2)', 'Close'])
     expect((await pane.findAll({ type: 'Box' })).filter(b => 'width' in b.props)).toEqual([])
     expect(texts).not.toContain('Created and put back, last 7 days')
     expect(texts).toContain('T8QS1Y | in-progress | filter')
@@ -2151,7 +2151,7 @@ describe('the overview', () => {
     expect(await pane.find({ key: 'overview-people-all' })).toBeUndefined()
     await pane.press({ key: 'overview-tab-log' })
     const labels = (await pane.findAll({ type: 'Button' } as never)).map(b => (b.props as { label: string }).label)
-    expect(labels).toEqual(['Queue', 'Log', 'All', 'Alex', 'Berk', 'Carla', 'Close'])
+    expect(labels).toEqual(['Queue', 'Log', 'Workers', 'All', 'Alex', 'Berk', 'Carla', 'Close'])
     // A name button is drawn in that person's colour.
     expect((await pane.find({ type: 'Text', text: /^Berk$/ }))?.props.color).toBeDefined()
     const handles = async () => (await pane.findAll({ type: 'Text', text: /^\d\d:\d\d {2}/ })).map(x => x.text.slice(7, 13))
@@ -2182,5 +2182,165 @@ describe('the overview', () => {
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'overview' })
     expect(await (await $.ui.mount(OVERVIEW)).find({ type: 'Text', text: /could not be read/ })).toBeDefined()
+  })
+})
+
+describe('the workers tab', () => {
+  // Every Text the Workers tab draws, top to bottom.
+  const workersTab = async ($: Test$) => {
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const pane = await $.ui.mount(OVERVIEW)
+    await pane.press({ key: 'overview-tab-workers' })
+    return pane
+  }
+  // Each line as drawn, not the parts inside it: findAll gives a Text before
+  // the Texts within it, whose text its own contains.
+  const textsOf = async (pane: Awaited<ReturnType<typeof workersTab>>) => {
+    const lines: string[] = []
+    let line = ''
+    for (const { text } of await pane.findAll({ type: 'Text' })) {
+      if (text !== '' && line.includes(text)) line = line.replace(text, '')
+      else lines.push((line = text))
+    }
+    return lines
+  }
+  // The figures standing at each station: the lines drawn above its ◯.
+  const stationsOf = (texts: string[]) => {
+    const at: Record<string, string[]> = {}
+    let here: string[] = []
+    for (const x of texts) {
+      const station = /^◯ ([a-z-]+)/.exec(x)
+      if (station !== null) {
+        at[station[1]!] = here
+        here = []
+      } else if (/^[✻✳✶✢ ] |^ {2}\?$/.test(x)) here.push(x)
+    }
+    return at
+  }
+  const colorOf = async (pane: Awaited<ReturnType<typeof workersTab>>, id: string) =>
+    ((await pane.findAll({ type: 'Text' })).find(x => 'color' in x.props && new RegExp(`^[✻✳✶✢] ${id}$`).test(x.text))?.props as { color?: string } | undefined)?.color
+
+  test('every agent stands at the station of its ticket\'s lane, in the state it is in', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tickets = [
+      HUMAN,
+      { ...WORKING, assignee: 'Alex' },
+      { handle: 'R1R1R1', title: 'judged', status: 'review', question: '' },
+      { handle: 'D1D1D1', title: 'finished', status: 'done', question: '' },
+    ]
+    w.tabs = [
+      { tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' },
+      { tab_id: 'w1:t2', label: 'R1R1R1/review', agent_status: 'idle' },
+      // A person's own chat is not an agent, and a finished ticket has no station.
+      { tab_id: 'w1:t3', label: 'T8QS1Y/explain', agent_status: 'working' },
+      { tab_id: 'w1:t4', label: 'D1D1D1/worker', agent_status: 'idle' },
+    ]
+    await startSession($)
+    const pane = await workersTab($)
+    const texts = await textsOf(pane)
+    // The stations are the agents' lanes and the person's, in board order; done is none.
+    expect(texts.filter(x => x.startsWith('◯'))).toEqual(['◯ in-progress ─', '◯ critique ─', '◯ review ─', '◯ signoff ─', '◯ human'])
+    expect(stationsOf(texts)).toEqual({
+      'in-progress': ['✻ T8QS1Y'],
+      critique: [],
+      review: ['✻ R1R1R1 z z'],
+      signoff: [],
+      // A ticket with an open question stands with it, agent or not.
+      human: ['  ?', '✻ K7P2QX'],
+    })
+    expect(await pane.find({ type: 'Text', text: '✻ at work · z z resting · ? waits for a person' })).toBeDefined()
+  })
+
+  test('a subagent of this session stands at its ticket too, at work or resting', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...WORKING, assignee: 'Alex' }, { handle: 'C1C1C1', title: 'judged', status: 'critique', question: '' }]
+    w.agents = [
+      { id: 'a1', description: 'work lane in-progress of T8QS1Y', type: 'claude', status: 'running' },
+      { id: 'a2', description: 'critique C1C1C1', type: 'claude', status: 'idle' },
+      { id: 'a3', description: 'old run of C1C1C1', type: 'claude', status: 'completed' },
+    ]
+    await startSession($)
+    const at = stationsOf(await textsOf(await workersTab($)))
+    expect(at['in-progress']).toEqual(['✻ T8QS1Y'])
+    expect(at.critique).toEqual(['✻ C1C1C1 z z'])
+  })
+
+  test('two tickets at work never share a colour, and each keeps its own on every read', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tickets = [{ ...WORKING, assignee: 'Alex' }, { handle: 'C1C1C1', title: 'judged', status: 'critique', question: '' }]
+    w.tabs = [
+      { tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' },
+      { tab_id: 'w1:t2', label: 'C1C1C1/worker', agent_status: 'working' },
+    ]
+    await startSession($)
+    const pane = await workersTab($)
+    const first = { T8QS1Y: await colorOf(pane, 'T8QS1Y'), C1C1C1: await colorOf(pane, 'C1C1C1') }
+    expect(first.T8QS1Y).toBeDefined()
+    expect(first.T8QS1Y).not.toBe(first.C1C1C1)
+    // Six more tickets join: the first two keep theirs, and the six that fit wear six apart.
+    const more = ['A1A1A1', 'A2A2A2', 'A3A3A3', 'A4A4A4']
+    w.tickets = [...w.tickets, ...more.map(handle => ({ handle, title: handle, status: 'in-progress', question: '' }))]
+    w.tabs = [...w.tabs, ...more.map((id, i) => ({ tab_id: `w1:x${i}`, label: `${id}/worker`, agent_status: 'working' }))]
+    await w.clock.advance(5000)
+    expect(await colorOf(pane, 'T8QS1Y')).toBe(first.T8QS1Y)
+    expect(await colorOf(pane, 'C1C1C1')).toBe(first.C1C1C1)
+    const colors = await Promise.all(['T8QS1Y', 'C1C1C1', ...more].map(id => colorOf(pane, id)))
+    expect(new Set(colors).size).toBe(6)
+  })
+
+  test('a working figure turns each frame; a resting one does not', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tickets = [{ ...WORKING, assignee: 'Alex' }, { handle: 'C1C1C1', title: 'judged', status: 'critique', question: '' }]
+    w.tabs = [
+      { tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' },
+      { tab_id: 'w1:t2', label: 'C1C1C1/worker', agent_status: 'idle' },
+    ]
+    await startSession($)
+    const pane = await workersTab($)
+    const seen: string[] = []
+    for (let i = 0; i < 4; i++) {
+      const at = stationsOf(await textsOf(pane))
+      seen.push(at['in-progress']![0]!)
+      expect(at.critique).toEqual(['✻ C1C1C1 z z'])
+      await w.clock.advance(250)
+    }
+    expect(seen).toEqual(['✻ T8QS1Y', '✳ T8QS1Y', '✶ T8QS1Y', '✢ T8QS1Y'])
+  })
+
+  test('a ticket that changed lanes walks there one station at a time', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tickets = [{ ...WORKING, assignee: 'Alex' }]
+    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/review', agent_status: 'idle' }]
+    await startSession($)
+    const pane = await workersTab($)
+    expect(stationsOf(await textsOf(pane))['in-progress']).toEqual(['✻ T8QS1Y z z'])
+    w.tickets = [{ ...WORKING, status: 'review' }]
+    // The board is read again after 5 s; the figure leaves at once and crosses critique.
+    await w.clock.advance(5000)
+    expect(stationsOf(await textsOf(pane)).critique).toEqual(['✻ T8QS1Y z z »'])
+    await w.clock.advance(500)
+    const at = stationsOf(await textsOf(pane))
+    expect(at.critique).toEqual([])
+    expect(at.review).toEqual(['✻ T8QS1Y z z'])
+  })
+
+  test('the frames stop when another tab is shown and when the pane closes', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' }]
+    await startSession($)
+    const reads = () => ran(w, 'herdr', 'tab', 'list').length
+    const pane = await workersTab($)
+    let before = reads()
+    await w.clock.advance(5000)
+    expect(reads()).toBe(before + 1)
+    await pane.press({ key: 'overview-tab-queue' })
+    before = reads()
+    await w.clock.advance(20_000)
+    expect(reads()).toBe(before)
+    await pane.press({ key: 'overview-tab-workers' })
+    await pane.press({ key: 'overview-close' })
+    before = reads()
+    await w.clock.advance(20_000)
+    expect(reads()).toBe(before)
   })
 })
