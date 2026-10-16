@@ -1,0 +1,96 @@
+---
+id: 01M4ZQ715HGZN2GHX5NW6TCTFV
+title: "Ist der letzte Ticket eines Milestones fertig, schlaegt jaira den PR mit /jaira-role-pr vor und bietet an, den Milestone abzulegen"
+status: human
+ready: true
+creator: BeMuCa
+assignee: BeMuCa
+goal: "Sobald alle Tickets eines Milestones fertig sind, sagt jaira (und jeder Teamlead/Dispatcher) dem Menschen: jetzt PR mit /jaira-role-pr, und danach den Milestone ablegen. Geoeffnet wird der PR weiter nur, wenn ein Mensch die Rolle aufruft"
+context: |-
+  Was heute falsch ist: Der PR-Skill (jaira-role-pr) wird oft vergessen. Keine Lane loest ihn aus, und kein Bericht schlaegt ihn vor.
+  Beispiel aus einer anderen Session (requirementsgenie, Ticket 6ESQWR): Das Ticket kam in signoff an, und niemand schlug '/jaira-role-pr 6ESQWR' vor. Der MR !56 musste von Hand nachgezogen werden.
+  Absicht von jaira, und die bleibt: Den PR oeffnet nur ein Mensch. jaira-role-pr SKILL.md:11 'Opening the pull request is the maintainer's call, and typing /jaira-role-pr is how they give it'; :16 von einem Agenten aufgerufen pusht er nur. Dispatcher :409 und Teamlead :167 oeffnen nie einen PR.
+  Berk am 15.10.: 'wenn wir die Tickets, die unter einem Milestone stehen, alle fertiggestellt haben, ein PR vorschlagen und anbieten, das mit dem jaira pr skill zu machen.'
+  Berk fragte auch, warum fertige Milestones (milestone-roadmap, ram-cpu) noch auf der Roadmap stehen. Ablegen geht schon mit 'jaira logbook <milestone>' (Ref traegt dann status: filed), aber niemand schlaegt es vor.
+  Andere Ideen, die verworfen bzw. eingeordnet wurden:
+  - nur eine Memory-Regel fuer eine Session: zu schmal
+  - CLAUDE.md jaira:local: gilt nur fuer ein Repo
+  - PostToolUse-Hook: zerbrechlich, nur Claude Code
+  Gewaehlt: in jaira selbst. Die CLI-Ausgabe erreicht jeden Agenten, nicht nur Claude (Projekt-Constraint 'CLI must be usable by any bash-capable agent').
+  Verwandt: 3SJMV8 (PR-Abschnitt im jaira-Skill), N71NVG (fertigen Milestone archivieren).
+definition-of-done: "Macht ein 'jaira move <id> --to done' oder 'jaira logbook <id>' den letzten offenen Ticket eines Milestones fertig, druckt jaira eine Zeile: PR mit '/jaira-role-pr <ids>' vorschlagen und danach 'jaira logbook <milestone>'; --json traegt es als Feld; Test"
+tags: []
+blocked-by: []
+related:
+  - 01M4VGHHEKBXMV9120AD3SJMV8
+  - 01M2K275PSXDASRN6Y1VN71NVG
+commits: []
+created-at: 2026-10-15T12:04:57Z
+updated-at: 2026-10-15T12:43:02Z
+updated-by: BeMuCa
+question: |-
+  Welche Arbeitsweise bekommt ein NEUER Milestone, wenn beim Anlegen niemand --pr angibt?
+  A) single: es wird keine pr:-Zeile geschrieben. Block-PR nur mit 'jaira milestone create|set <m> --pr block'. (Empfehlung pre-process: hier hat jedes Ticket seinen eigenen Branch, ein Block-PR braucht alle auf einem Branch.)
+  B) block: 'milestone create' und das TUI-Formular (internal/tui/layer.go:457) schreiben 'pr: block'. Wer einzeln mergt, setzt --pr single. (Meine Empfehlung: dein erster Satz nennt den Block, und ein Opt-in wird vergessen wie heute der PR-Skill.)
+  Fest in beiden Faellen: eine alte Datei ohne pr:-Zeile gilt als single (ram-cpu, milestone-roadmap kamen Ticket fuer Ticket rein).
+  Ausserdem so geplant, sag nur wenn nicht: ein Ticket OHNE Milestone bekommt beim Erreichen von signoff oder done die Zeile '/jaira-role-pr <id>' (das 6ESQWR-Beispiel aus dem Kontext). Kostet auf jedem Board eine Zeile mehr bei solchen Moves.
+  Antwort: A oder B.
+---
+
+# Ist der letzte Ticket eines Milestones fertig, schlaegt jaira den PR mit /jaira-role-pr vor und bietet an, den Milestone abzulegen
+
+## Definition of Done
+
+- [ ] Block (Milestone mit 'pr: block'): Ist nach 'jaira move <id> --to <Endlane>' oder 'jaira logbook <id>' jedes Ticket des Milestones in der Endlane oder vom Board (dieselbe Regel wie 'jaira logbook <milestone>'), druckt jaira zwei Zeilen: 'Milestone <m> is complete. Next: one pull request for all its tickets. Only a person opens it: /jaira-role-pr <alle Handles>' und 'Once that pull request is merged, take milestone <m> off the board: jaira logbook <m>'; --json traegt beide unter 'suggestions' (kind pull_request mit by person, kind file_milestone mit after merge); Tests TestMoveCompletingABlockMilestoneSuggestsOnePullRequestAndFiling, TestLogbookOfABlockTicketSuggestsTheBlockPullRequest
+- [ ] jaira-dispatcher, jaira-worker und jaira-teamlead geben jede Vorschlagszeile von jaira ('suggestions' aus move/logbook, beim Teamlead auch aus 'jaira milestone ls --json') woertlich an den Menschen weiter und rufen /jaira-role-pr nie selbst auf; Test TestRolesPassThePRSuggestionOnAndNeverRunIt
+- [ ] jaira-role-pr nimmt mehrere Tickets bzw. einen Milestone und legt alle angenommenen Tickets vor dem Push ab; ein genanntes Ticket ohne Commit auf dem Branch ist ein Befund (Stopp vor dem Push); fuer einen bestehenden PR/MR aktualisiert er Titel und Beschreibung aus den Tickets (gh pr edit / glab mr update), aber nur wenn ein Mensch ihn aufrief; Test TestPRTakesSeveralTicketsOrAMilestone
+- [ ] Je eine Zeile pro sichtbarer Aenderung in core/release/notes/6TCTFV.md: --pr, Vorschlaege bei move, bei logbook <id>, in milestone ls, Weitergabe durch die Rollen, jaira-role-pr mit mehreren Tickets
+- [ ] Ein Milestone sagt mit 'pr: block' oder 'pr: single', wie seine Tickets reinkommen; gesetzt mit 'jaira milestone create|set <name> --pr <mode>', ein anderer Wert wird abgelehnt (exit 2); ohne Zeile gilt single (auch fuer jede alte Datei), ein unbekannter Wert in der Datei wird als single gelesen; 'milestone ls --json' traegt 'pr'; Tests TestCreateAndSetWriteThePRMode, TestPRRefusesAnUnknownMode, TestAMilestoneWithoutPRIsSingle
+- [ ] Einzeln: Erreicht ein Ticket per 'jaira move' die Abnahme-Lane (requires-human-exit, keine Frage-Lane; hier signoff) oder die Endlane, druckt jaira 'Next: the pull request. Only a person opens it: /jaira-role-pr <id>' und --json 'suggestions' (kind pull_request, by person) — auch ohne Milestone; ein Ticket in einem Milestone mit pr: block bekommt diese Zeile nicht; Tests TestMoveToSignoffSuggestsThePullRequest, TestMoveJSONCarriesSuggestions, TestBlockMilestoneIncompleteSuggestsNothing
+- [ ] Einzeln, Milestone komplett: Ist ein Milestone ohne pr: block nach move oder logbook <id> komplett, bietet jaira nur 'jaira logbook <m>' an und schlaegt KEINEN Block-PR vor; 'jaira logbook <m>' nimmt den vorgeschlagenen Befehl an; Tests TestSingleMilestoneCompleteOffersFilingAndNoBlockPullRequest, TestLogbookOfTheLastTicketOffersToFileTheMilestone, TestSuggestedFilingIsAccepted
+- [ ] Abnahme- und Endlane werden an ihren Eigenschaften erkannt, nicht am Namen; ein leerer oder abgelegter Milestone schlaegt nie etwas vor; ein Ticket in mehreren Milestones bekommt die Zeilen jedes kompletten Milestones; Tests TestLanesAreFoundByWhatTheyDoNotByName, TestEmptyMilestoneIsNeverComplete, TestFiledMilestoneSuggestsNothing, TestTicketInTwoMilestones
+- [ ] 'jaira milestone ls' zeigt fuer jeden kompletten Milestone dieselben Zeilen (--json: 'suggestions' am Milestone), weil das Annehmen in der TUI nichts druckt; Test TestLsCarriesTheSuggestionsOfACompleteMilestone
+
+## Options
+
+- [ ] brainstorm
+- [x] planning
+
+## Plan
+
+<Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] Schritt 1 (core/milestone): Feld 'pr: block|single' — erst Tests core/milestone/pr_test.go (TestPRLineIsReadAndRewrittenInPlace, TestAMilestoneWithoutPRIsSingle, TestUnknownPRValueReadsAsSingle, TestParsePRRefusesAnUnknownMode, TestAdoptTakesAPRChangeFromTheOldSide), dann neue Datei pr.go (PRBlock, PRSingle, Block(), SetPR, ParsePR) + Feld PR im Struct und 'case "pr"' in parse(); check.sh
+- [ ] Schritt 2 (CLI): 'milestone create/set --pr block|single' (falscher Wert exit 2), milestoneJSON traegt immer 'pr', 'milestone ls' markiert 'pr: block' — erst Tests internal/cli/milestonepr_test.go; docs/COMMANDS.md Zeilen create/set/ls; erste Zeile in core/release/notes/6TCTFV.md; check.sh
+- [ ] Schritt 3 (neues Paket core/suggest): AfterMove, AfterLogbook, ForMilestone, Complete, Lines, fileMilestoneCommand — erst Tests core/suggest/suggest_test.go: TestTicketReachingAcceptanceGetsItsOwnPullRequest, TestTicketReachingTheTerminalLaneGetsItsOwnPullRequest, TestNoSuggestionOnAnyOtherLane, TestBlockMilestoneCompleteSuggestsOnePullRequestThenFiling, TestBlockMilestoneIncompleteSuggestsNothing, TestSingleMilestoneCompleteOffersFilingAndNoBlockPullRequest, TestMembersOffTheBoardCountAsFinished, TestEmptyMilestoneIsNeverComplete, TestFiledMilestoneSuggestsNothing, TestTicketInTwoMilestones, TestLanesAreFoundByWhatTheyDoNotByName, TestAfterLogbookSuggestsOnlyForMilestones, TestLinesSayOnlyAPersonOpensThePullRequest; check.sh
+- [ ] Schritt 4 (jaira move): kleiner Hook in flow.go newMoveCmd — Zeilen nach nextStepLine, --json 'suggestions' nur wenn nicht leer — erst Tests internal/cli/prsuggest_test.go (TestMoveToSignoffSuggestsThePullRequest, TestMoveJSONCarriesSuggestions, TestMoveCompletingABlockMilestoneSuggestsOnePullRequestAndFiling, TestMoveIntoAnAgenticLaneSuggestsNothing); docs move-Zeile; Release-Zeile; check.sh
+- [ ] Schritt 5 (jaira logbook <id>): kleiner Hook in logbookOut — erst Tests (TestLogbookOfTheLastTicketOffersToFileTheMilestone, TestLogbookJSONCarriesSuggestions, TestSuggestedFilingIsAccepted, TestLogbookOfABlockTicketSuggestsTheBlockPullRequest); docs logbook-Zeile; Release-Zeile; check.sh
+- [ ] Schritt 6 (jaira milestone ls): komplette Milestones bekommen dieselben Zeilen, --json 'suggestions' pro Milestone — erst Test TestLsCarriesTheSuggestionsOfACompleteMilestone; docs ls-Zeile; Release-Zeile; check.sh
+- [ ] Schritt 7 (Rollen): jaira-dispatcher, jaira-worker, jaira-teamlead geben jaira-Vorschlaege woertlich weiter und rufen /jaira-role-pr nie auf; Teamlead liest 'jaira milestone ls --json' — erst Pin-Test core/role/prsuggest_test.go TestRolesPassThePRSuggestionOnAndNeverRunIt; Release-Zeile; check.sh
+- [ ] Schritt 8 (Rolle jaira-role-pr): nimmt mehrere Tickets oder einen Milestone; Ticket ohne Commit auf dem Branch = Befund, Stopp vor dem Push; offener PR/MR per 'gh pr edit'/'glab mr update' aktualisiert, nur wenn ein Mensch aufrief — erst Pin-Test TestPRTakesSeveralTicketsOrAMilestone; die Strings, die TestPRFilesTheTicketsAwayBeforeThePush (core/role/role_test.go:504) prueft, bleiben stehen; Release-Zeile; check.sh
+- [ ] Schritt 9: Handtest mit einem Build aus dem Branch in einem Scratch-Repo ausserhalb von /home/berk/git (HOME und JAIRA_HOME dort): kein Milestone, single, block; menschlich und --json; das vorgeschlagene 'jaira logbook <m>' laeuft durch — Ergebnis als jaira note
+
+## Progress
+- **2026-10-15 12:20 · BeMuCa** — Berk am 15.10. (Ergaenzung): '6TCTFV soll auch umgesetzt werden! Weil dann kann ein Milestone-Block als ein PR reinkommen. Alternativ gibt es aber auch noch die Option, dass man Tickets immer noch einzeln reinmergen will und Milestones nur als eine Sammlung nutzt; fuer den Fall kann man Milestones auch wieder loeschen.'
+Daraus zwei Arbeitsweisen, beide muessen gehen:
+- Block: der Milestone kommt als EIN PR. Ist sein letztes Ticket fertig, schlaegt jaira '/jaira-role-pr' fuer alle seine Tickets zusammen vor und danach das Ablegen des Milestones nach dem Merge.
+- Einzeln: jedes Ticket bekommt seinen eigenen PR, der Milestone ist nur eine Sammlung. Jedes Ticket, das done oder signoff erreicht, bekommt einen Vorschlag '/jaira-role-pr <id>'. Ist der Milestone komplett, bietet jaira an, ihn abzulegen oder zu loeschen, und schlaegt KEINEN Block-PR vor.
+Wie ein Milestone sagt, welche Arbeitsweise gilt (z.B. Feld 'pr: block|single' per milestone create/set, mit Default), entscheidet pre-process. Ist der Default nicht offensichtlich: Empfehlung + Frage an Berk ueber die human-Lane.
+Den PR oeffnet nie jaira oder ein Agent von sich aus: er wird nur vorgeschlagen; ein Mensch oeffnet ihn mit /jaira-role-pr.
+Parallel: N71NVG baut das Ablegen/Loeschen eines fertigen Milestones samt Tickets. Hier nur Vorschlaege mit den Kommandos, die auf master existieren ('jaira logbook <milestone>').
+- **2026-10-15 12:40 · BeMuCa** — pre-process, Grundlagen des Plans:
+- Feld: 'pr: block|single' im Milestone-Frontmatter, gebaut wie 'goal' (core/milestone/milestone.go:405, :533). Gesetzt per 'milestone create|set --pr'.
+- Default: keine Zeile = single. Grund 1: alte Milestones (ram-cpu, milestone-roadmap) kamen Ticket fuer Ticket rein; als block gelesen wuerden sie schon gemergte Tickets nochmal als PR vorschlagen. Grund 2: hier hat jedes Ticket seinen eigenen Branch (Dispatcher 'One worktree per ticket'); ein Block-PR braucht alle auf einem Branch, das muss man bewusst wollen. Grund 3: das TUI-Formular (internal/tui/layer.go:457) schreibt keine Zeile, CLI und TUI stimmen so ohne TUI-Aenderung ueberein.
+- OFFEN fuer Berk: soll 'milestone create' ohne --pr trotzdem 'pr: block' schreiben? Sein erster Satz nennt Block. Aenderung waere eine Zeile an der create-Stelle plus layer.go:457.
+- Fertig = genau die Regel von 'jaira logbook <milestone>' (internal/cli/logbook.go:393-404): Ticket in der Endlane oder nicht mehr auf dem Board. Dazu: ein leerer Milestone ist nie fertig.
+- Ausloeser ist ein Zustand, kein Uebergang: 'logbook <id>' nimmt nur Tickets aus der Endlane, macht also nie etwas neu fertig. Nach move, logbook <id> und milestone ls wird gefragt: ist der Milestone jetzt komplett? Die Zeile kann sich wiederholen (z.B. bei jedem logbook in jaira-role-pr) - harmlos, sie bleibt wahr bis zum Ablegen.
+- Einzel-Vorschlag bei move in die Abnahme-Lane (requires-human-exit, keine Frage-Lane, nicht agentisch - dieselbe Lesart wie core/lane/lane.go:652) oder in die Endlane. Lanes nach Eigenschaft, nie nach Namen.
+- Ticket ohne Milestone bekommt den Einzel-Vorschlag. Grund: das Beispiel im Kontext (6ESQWR in signoff). single heisst 'Milestone ist nur Sammlung', Mitgliedschaft aendert also nichts. Kostet keinen Code: Bedingung ist nur 'in keinem Block-Milestone'.
+- Logik in neuem Paket core/suggest: core/move/move.go:1-7 sagt, Regeln nach einem Move gehoeren in core, damit die TUI-Schreibstellen sie spaeter teilen.
+- logbookMilestone wird NICHT umgebaut, dort baut N71NVG. TestSuggestedFilingIsAccepted pinnt, dass jaira nur ein Ablegen vorschlaegt, das 'jaira logbook <m>' annimmt.
+- N71NVG steckt hier ein: Befehlsname nur in core/suggest fileMilestoneCommand (eine Zeile). Loeschen bei single: ein Eintrag mehr in ForMilestone plus ein Fall in Line.
+- --json: 'suggestions' nur wenn nicht leer; jede bestehende Ausgabe bleibt gleich (wie filed_on_entry, internal/cli/flow.go:239).
+- milestone ls bekommt die Zeilen, weil Annehmen in der TUI (internal/tui/signoff.go:187) der uebliche Weg nach done ist und nichts druckt. Der Teamlead liest 'milestone ls --json'.
+- jaira-worker mitgenommen: Schwesterrolle des Dispatchers, verschiebt Tickets selbst; ohne ihn ginge die Zeile bei Worker-Tickets verloren.
+- Unveraendert: core/board/announce.go (sagt schon 'jaira logbook <milestone>'), core/milestone/adopt.go (merged jedes Frontmatter-Feld generisch, adopt.go:84), nextStepLine, move.Move.
+- Ausgelassen, Folge-Tickets: TUI-Schreibstellen (signoff.go:187, model.go:1949, :2004); 'jaira logbook --all'; Tickets eines Block-Milestones auf einen Branch bringen (jaira-role-pr meldet ein Ticket ohne Commit auf dem Branch und stoppt).
