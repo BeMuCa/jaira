@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-16T09:17:12Z
+updated-at: 2026-10-16T09:17:40Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -31,22 +31,7 @@ outcome-resolves: "DoD 1: Pille nur bei bekanntem neueren Release - TestReleaseP
 executed-by: sonnet
 review-summary: "none"
 round: 4
-review-gaps: |-
-  Pro DoD-Punkt:
-  DoD 1 - Code erfuellt (updatecheck.go:48-71, view.go:235-238, home.go:368-371); TestReleasePillOnlyForANewerKnownRelease deckt neuer/gleich/unbekannt plus aelter/abgeschaltet. OFFEN: go test ./... -race ist nicht gelaufen (Anweisung Berk); der Haken ist zu Recht leer.
-  DoD 2 - erfuellt (newerrelease.go:22, flow.go:381, resume.go:84, announce.go:111-112). Tests geschrieben, nicht gelaufen.
-  DoD 3 - erfuellt, mit einer dokumentierten Luecke: beim ersten Versionswechsel nach Auslieferung kommt KEIN Popup, wenn jaira update vor dem ersten TUI-Start lief (notes-seen fehlt, Stempel == Version). Nachgestellt: jaira-051 init, jaira-052 update, jaira-052 board -> kein Popup, notes-seen wird stumm 0.5.2. jaira update hat die Notes dann gedruckt. Ausserdem: das Popup gilt pro Board/Worktree (wer 5 Boards hat, sieht dieselben Notes 5 mal), nicht auf dem Launcher, nicht beim Wechsel per 1-9 - passt zu 'auf diesem Board' in der DoD. Tests nicht gelaufen.
-  DoD 4 - erfuellt (release.go:101, update.go:144-155, releasenotes.go:13/63, CLAUDE.md:251-252, AGENTS.md:204-205). Tests nicht gelaufen.
-  DoD 5 - erfuellt (home.go:283, home.go:425). Tests nicht gelaufen.
-  Kleine Befunde, kein Blocker:
-  a) Launcher: die Pille kostet eine Zeile auf einem Bildschirm, der seine Hoehe nicht misst. Bei 120x22 und zwei Boards faellt die Tastenzeile (mit 'w release notes') unten raus; mit JAIRA_NO_UPDATE_CHECK=1 ist sie da. Bei 20-21 Zeilen war das schon vorher so, jetzt eine Zeile frueher.
-  b) Notes-Ansicht (Popup und w) sagt nicht, dass unten mehr kommt (kein '+N more'); steht schon als Nachfolger.
-  c) wrap() faltet doppelte Leerzeichen: im Popup steht '` ! <text>`' statt '`  ! <text>`'. Nur Optik.
-  d) ctrl+c tut im Popup nichts (wie in Hilfe und Legende); das Popup kommt aber ungefragt beim Start.
-  e) Belege in DoD 3/4 zeigen auf alte Zeilen: releasenotes.go:124/:140 sind jetzt :110/:127, :15,60 jetzt :13/:63.
-  f) Keiner der rund 20 neuen oder geaenderten Tests ist je gelaufen; go vet kompiliert sie nur (go vet ./... und gofmt -l bei mir sauber).
-  Offen aus critique, Frage an Berk: Pille ohne 'jaira self upgrade'-Hinweis daneben (Option A gebaut).
-  Behauptet, aber nicht im Diff: nichts gefunden.
+review-gaps: "Runde 3 (Diff bc3c1496..4236b927), nichts entfernt. Betrachtet und gelassen: (1) backlogTicket (internal/cli/newerrelease_test.go:19) vs createTicket (internal/cli/epics_test.go:34): createTicket geht ueber 'jaira create' mit goal/context/dod und JSON, backlogTicket legt per s.Create direkt an wie claimFixture (claimrelease_test.go:11) und dryrun_test.go:27 - beide Muster stehen im Repo, Umbau braechte nichts. (2) Paar 'm.versionLine, m.releasePill = versionLine(); m.versionAt = time.Now()' steht zweimal (model.go New und tickMsg) - zwei Zeilen, eine Methode dafuer waere ein reiner Weiterleiter. (3) versionAt/versionEvery folgen fullAt/fullReparseEvery im selben tickMsg, kein zweites Muster. (4) Kosten: tickMsg vergleicht alle 2 s eine Zeit, liest einmal pro Minute eine 60-Byte-Datei - nicht heiss. (5) Toter Code: der io-Import in newerrelease.go ist mit der PostRun-Signatur weg; sonst nichts verwaist."
 test-verdict: "pass: gate OK (gofmt, vet, build auf 77106675), go test nicht gelaufen (Anweisung Berk); DoD 2-5 per Handtest mit 0.5.2-Binary bestaetigt (Pille Launcher+Board, stderr-Zeile next/resume, JSON sauber, Popup einmalig und notes-seen unveraendert beim Wiederoeffnen, w-Liste, ! in update und TUI), Testcode gelesen; DoD 1 nur bis zum go test -race der Hauptsession offen"
 review-verdict: |-
   Der Diff erfuellt DoD 2-5 und den Code-Teil von DoD 1. Ich habe alle Wege mit gebauten 0.5.1/0.5.2-Binaries auf einem Board ohne Remote durchgespielt: Pille auf Board und Launcher; stderr-Zeile bei next und resume, nicht bei list, nicht im --json-stdout, nicht mit JAIRA_NO_UPDATE_CHECK=1; Popup einmal, esc schreibt notes-seen, kein zweites Popup; Popup ueber notes-seen nach jaira update; '  ! ' in jaira update; w auf dem Launcher.
