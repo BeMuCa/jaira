@@ -1,7 +1,7 @@
 ---
 id: 01M522QPD7TPY1GQDXR1EDSQZP
 title: "Cockpit-Band: Update-Hinweis mit Knopf 'Update' und Knopf 'Verwerfen'"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Wenn eine neue jaira-Version da ist, zeigt das Cockpit-Band einen Hinweis mit zwei Knoepfen: Update (fuehrt den Ja-Pfad aus) und Verwerfen (blendet den Hinweis fuer diese Version aus)"
@@ -15,14 +15,14 @@ related: []
 follows: 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-16T10:04:46Z
-updated-at: 2026-10-16T12:51:33Z
+updated-at: 2026-10-16T12:51:36Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-482020
 claimed-at: 2026-10-16T11:16:45Z
-outcome-what: "jaira-cockpit-Band: neue Zeile 'jaira X is released (this is Y)' mit [ Update ] und Dismiss, sobald der Release-Cache ($JAIRA_HOME|~/.jaira/update-check.json) eine neuere Version als 'jaira --version' kennt; jede Minute neu gelesen. Update: 'jaira self upgrade --check --json' und 'jaira update --roles --lanes --dry-run', Ergebnis im Pane cockpit-upgrade (Cancel hat den Fokus); erst 'Update to X' dort fuehrt 'jaira self upgrade' und dann 'jaira update --roles --lanes' aus und zeigt die Ausgabe. Dismiss legt die Version im Store (dismissed-release) ab: diese Version nie wieder, die naechste schon. Helfer offeredRelease/upgradeCheckOf in board.ts, Woerter in texts.ts, State release/upgrade im Vertrag, 12 Tests, README-Absatz, Release-Notiz, shipped.sha256 neu."
-outcome-why: "Die stderr-Zeile nach next/resume/claim/move erreicht nur Sitzungen, die gerade jaira-Befehle fahren; das Band erreicht jede Sitzung mit offenem Cockpit. Berk wollte den Knopf, mit Vorschau vor jedem Schreiben und einem Verwerfen, das sich die Version merkt."
-outcome-resolves: "DoD 1: Hinweis mit Update und Verwerfen (Dismiss) bei neuerer Version, Update = Vorschau dann Ja-Pfad, Verwerfen nur fuer genau diese Version; getestet mit claude plugin test (155 pass) und einem node-Lauf der Helfer auf echter jaira-Ausgabe."
+outcome-what: "Runde 1: jaira-cockpit-Band zeigt bei neuerer Version (Release-Cache $JAIRA_HOME|~/.jaira/update-check.json gegen 'jaira --version', jede Minute gelesen) 'jaira X is released (this is Y)' mit [ Update ] und Dismiss. Update: 'jaira self upgrade --check --json' + 'jaira update --roles --lanes --dry-run', Vorschau im Pane cockpit-upgrade (Cancel hat den Fokus), erst 'Update to X' fuehrt 'jaira self upgrade' und 'jaira update --roles --lanes' aus. Dismiss merkt die Version im Store. Runde 2: Ergebnis-Pane zeigt auch stderr von self upgrade (Host-Override-Warnung); ein Dry-run mit Exit ausser 0/3 oeffnet das Fehler-Pane statt der Vorschau und bietet kein Update an. Agenten-Weg: stderr-Zeile (internal/cli/newerrelease.go) und Agenten-Block (core/board/announce.go, CLAUDE.md, AGENTS.md) sagen jetzt: erst --check und --dry-run laufen lassen, dem User zeigen, fragen, erst auf Ja die echten Befehle. README, docs/COMMANDS.md, zwei Release-Notiz-Zeilen, shipped.sha256 neu."
+outcome-why: "Die stderr-Zeile erreicht nur Sitzungen, die gerade jaira-Befehle fahren; das Band erreicht jede Sitzung mit offenem Cockpit. Berk wollte den Knopf mit Vorschau vor jedem Schreiben und einem Verwerfen, das sich die Version merkt - und dieselbe Vorschau auch auf dem Agenten-Weg ('kein Dry run noetig?')."
+outcome-resolves: "DoD 1: Hinweis mit Update und Verwerfen (Dismiss), Update = Vorschau dann Ja-Pfad, Verwerfen nur fuer genau diese Version; claude plugin test 157 pass. DoD 2: stderr-Zeile und Agenten-Block verlangen die Vorschau vor der Frage; Go-Tests auf die eine Zeile und den Block."
 review-summary: "The jaira-cockpit frame gets a release line. With every board refresh (once a minute) the cockpit reads jaira's own release cache ($JAIRA_HOME or ~/.jaira/update-check.json, field latest - written by the hourly check of the TUI and next/resume/claim/move) and compares it with 'jaira --version', read once per session. When the cache names a newer x.y.z that is not the version stored as dismissed, the frame shows 'jaira X is released (this is Y)  [ Update ]  Dismiss'. No board, a dev build, no or unreadable cache, or the same version: no line, and the cockpit starts no check of its own. Dismiss stores X in the cockpit's store (kept across sessions): X stays hidden, a later release shows again. Update runs 'jaira self upgrade --check --json' (writes only the cache); if that finds nothing newer, a toast says so and the line goes. Otherwise it runs 'jaira update --roles --lanes --dry-run' and opens a pane 'Update jaira Y -> X?' with the dry run's output, Cancel focused. Only 'Update to X' in that pane writes: 'jaira self upgrade' (5 min timeout), then 'jaira update --roles --lanes', then it re-reads the version and shows both outputs; a refused upgrade shows as 'Update jaira failed' and the setup step is skipped. Also: settings.json now read through a shared jairaHome() helper, 12 tests, a README paragraph, release note EDSQZP.md, shipped.sha256 regenerated."
 review-gaps: |-
   1. Small defect: after a successful upgrade the result pane shows only the stdout of 'jaira self upgrade' (register.tsx upgradeJaira, the show(...) line; up.stderr is never used). Its stderr is where Go prints 'warning: release host overridden by JAIRA_RELEASE_API/...' (internal/cli/self.go, after 'upgraded jaira'), a line the Go comment says must never pass quietly. Only matters with an override variable set; the fix is adding up.stderr to the shown text.
