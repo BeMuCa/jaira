@@ -20,8 +20,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-16T12:45:13Z
-updated-at: 2026-10-16T12:45:59Z
+updated-at: 2026-10-16T12:46:01Z
 updated-by: BeMuCa
+claimed-by: EE-3NX6GL3-613775
+claimed-at: 2026-10-16T12:46:01Z
 ---
 
 # README zeigt die Features mit Use cases und frischen Screenshots
