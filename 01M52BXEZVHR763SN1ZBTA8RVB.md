@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-16T12:45:13Z
-updated-at: 2026-10-16T12:56:48Z
+updated-at: 2026-10-16T12:56:50Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-613775
 claimed-at: 2026-10-16T12:46:01Z
@@ -38,7 +38,8 @@ claimed-at: 2026-10-16T12:46:01Z
   proof: docs/img/board-main.png (board 170 26 z right right), launcher.png (home 110 24), milestone-roadmap.png (roadmap 100 24) aus scripts/demoworld.sh frisch; sha256 bf3fffc9 != board.png 1dd568e7, 0fdba535 != home.png d2c803ef, 629eb98a != vorheriges 9a96dedf; 'jaira dev' 0 Treffer, Kopf 'jaira 0.5.1'; alle 10 Lane-Titel ganz (Bild angesehen)
 - [x] Ein Screenshot zeigt das Links-Fenster, ohne dass das Hauptboard-Bild dadurch verdeckt ist
   proof: README.md:23 board-main.png ohne Overlay; README.md:107 board-links.png als eigenes Bild beim Links-Satz unter 'Follow-ups link themselves'
-- [ ] git diff --check sauber, Code-Fences in README.md gerade, jedes Bild in der README verlinkt existiert
+- [x] git diff --check sauber, Code-Fences in README.md gerade, jedes Bild in der README verlinkt existiert
+  proof: git diff --check exit 0; grep -c '^```' README.md = 56 (gerade); 10 von 10 img-src in README.md existieren (Skript-Schleife)
 
 ## Options
 
