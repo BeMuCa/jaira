@@ -1,7 +1,7 @@
 ---
 id: 01M52C52KX820CPG5ZW8F80QZT
 title: "Cockpit: Worker als farbige Claude-Icons auf einer Lane-Spur im Overview"
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Das Overview-Pane des cockpits hat einen Tab 'Workers', der das ganze Pane füllt: die Lanes als Stationen über die volle Breite, jeder Agent als Claude-Code-Pixelkrebs (Clawd) aus Blockzeichen in der Farbe seines Tickets, mit eigenem Hut und dem Handle darunter. Wechselt das Ticket die Lane, läuft der Krebs mit Laufzyklus hinüber; working bewegt die Arme, idle sitzt gedimmt mit z z, eine offene Frage steht als (?) über dem Hut."
@@ -21,21 +21,21 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-16T12:49:22Z
-updated-at: 2026-10-16T13:29:30Z
+updated-at: 2026-10-16T13:46:43Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-51728
-claimed-at: 2026-10-16T12:50:47Z
-outcome-what: "Workers-Tab neu: eine Spur pro Agent über die volle Pane-Höhe, links die Lane des Tickets, rechts seine next_lane; darin der Claude-Krebs aus Blockzeichen in Ticketfarbe mit eigenem Hut, so weit rechts wie Plan/DoD abgehakt sind, darunter 'Handle · working|resting|waits for an answer · Titel'; läuft mit Beinzyklus, beim Lanewechsel bis zur rechten Wand, dann rücken die Wände; readWorkers liest das Verzeichnis aus openOverview"
-outcome-why: "Alex sah die Stationen-Version laufen und verstand nichts; er will auf einen Blick lesen, wer was tut und wie weit, ohne Legende"
+claimed-by: DESKTOP-RFTCH11-817409
+claimed-at: 2026-10-16T13:32:33Z
+outcome-what: "Review-Lücken 1-3 behoben: Overview ohne Platz startet keine Frames (stopFrames statt showTab), readWorkers startet kein zweites Lesen neben einem laufenden, Wandnamen bekommen je die halbe Zeile"
+outcome-why: "Ein nicht platziertes Pane hört kein ui.close, der Takt lief sonst bis Sessionende; langsames Board hätte Lesungen gestapelt; schmale Panes ließen die Namen zusammenlaufen"
 outcome-resolves: F80QZT
-review-summary: "none"
-round: 3
-review-gaps: "trackRows, WorkersScene (overview-pane.tsx) und WALK_STEP (overview.ts) nicht mehr exportiert - niemand importiert sie; stateWords-Umweg gestrichen, texts.ts hält states { working, idle, question } direkt. Gesucht nach Fortschritts-Zählung (superseded/plan_items/dod_items) in hooks/: progressOf ist die einzige. Gelassen: Lauf-Runs-Zusammenfassung im Zeichnen, nur dort gebraucht. Proofs geprüft: trackRows, pickOf, progressOf, stepOf bestehen weiter."
-test-verdict: "pass: go build ./... rc=0, go test -race -count=1 ./... rc=0, claude plugin test 149 pass rc=0, plugin validate passed, tsc 5.6 strict rc=0; DoD 1-6 je über den genannten Test geprüft; Workers-Tab per Scratch-Test über 4 Frames gerendert: Spinner ✻→✳→✶→✢, idle 'z z', ?-Blase in warning über K7P2QX in human, T8QS1Y läuft in-progress → critique (»)→ review. Nicht geprüft: das echte TUI per --plugin-dir (Bildschirm nicht headless steuerbar) und ob ui.close beim Schließen durch die Person (Escape) feuert"
-review-verdict: "Diff erfüllt alle 6 DoD-Punkte; claude plugin test 149 pass selbst nachgelaufen. Keine Defekte, zwei kleine Unsicherheiten (Subagent-Status idle, board?.dir statt dir) und Escape-Stopp nur live prüfbar. Annehmen nach Live-Blick."
-review-round: 2
-review-check: "1. claude --plugin-dir /home/alex/projects/.worktrees/jaira-cockpit-worker-icons/core/mod/builtin/jaira-cockpit im Repo jaira starten  2. im cockpit-Band auf Overview drücken, dann auf den Tab Workers  3. sehen: Zeile ◯ brainstorm ─ ◯ pre-process ─ ◯ in-progress … ◯ human … ◯ signoff, darunter Legende '✻ at work · z z resting · ? waits for a person'  4. in einem zweiten Terminal einen Agenten an ein Ticket setzen (z. B. /jaira-role-lane <id> critique): über seiner Lane steht ein ✻ <ID>, das sich dreht (✻✳✶✢), in eigener Farbe  5. jaira move <id> --to <spätere Lane>: binnen ~5 s läuft das ✻ Station für Station hinüber, mit » daneben  6. jaira set <id> question=\"x\": über der Figur erscheint ein gelbes ?  7. Tab Queue drücken, dann Escape: Pane zu, kein Flackern mehr im Terminal (Takt gestoppt). Automatisch: cd core/mod/builtin/jaira-cockpit && claude plugin test . → describe 'the workers tab', 149 pass"
+review-summary: "Das Overview-Pane des Cockpits hat einen dritten Tab 'Workers'. Er liest jaira lanes/list, Herdr-Tabs und die Subagenten dieser Session und macht daraus eine Figur pro Agent (oder pro Ticket mit offener Frage) in agentischen und Personen-Lanes (overview.ts workersOf). Jede Figur bekommt eine eigene Spur über die volle Pane-Breite und -Höhe (bodyColumns, bodyRows minus Tab- und Close-Zeile): links beschriftet die aktuelle Lane, rechts next_lane, dazwischen Clawd aus Blockzeichen mit Hut, darunter 'Handle · working|resting|waits for an answer · Titel' (overview-pane.tsx trackRows). Farbe (6) und Hut (8) pro Ticket über pickOf: Hash als Start, nächste freie, gemerkt in Atomen, solange das Ticket da ist. x = Anteil erledigter Plan-Punkte, sonst DoD, abgelöste zählen nicht (progressOf). Ein 250-ms-Takt über $.clock.every bewegt die Figur um 1/40 Spur pro Frame (stepOf), bei Lanewechsel erst zur rechten Wand, dann rücken die Wände; alle 20 Frames wird das Board neu gelesen. Der Takt stoppt bei Tabwechsel, beim eigenen Close-Button und beim ui.close des Panes. readWorkers liest das Verzeichnis aus openOverview. Nebenbei: der Herdr/Subagent-Lesecode aus refreshBoard ist in agentsOf herausgezogen, personColor nutzt dieselbe Palette und denselben Hash (slotOf). Release-Notiz core/release/notes/F80QZT.md."
+round: 4
+review-gaps: "1. Takt ohne sichtbares Pane: openOverview ruft showTab auch dann, wenn $.ui.open isPlaced=false meldet (register.tsx:632-633, nur Toast 'noRoom'). Stand der gemerkte Tab auf workers, läuft $.clock.every weiter, und weil nie ein ui.close für das Pane kommt, stoppt ihn nichts: alle 5 s jaira lanes + jaira list + herdr tab list, bis die Session endet. Ob ein nicht platziertes Pane später doch noch erscheint, habe ich nicht geprüft — darum unsicher, nicht sicher. Fix wäre eine Zeile: showTab nur bei isPlaced, sonst stopFrames. 2. Klein: frame() wartet nicht auf einen laufenden readWorkers; braucht das Lesen auf einem großen Board länger als 5 s, überlappen sich zwei Lesungen. Folgen nur doppelte Prozesse, kein falsches Bild. 3. Klein: bei schmalem Pane können linke und rechte Wandbeschriftung in Zeile 0 übereinander schreiben (keine Kürzung). Sonst deckt der Diff jede DoD-Zeile; 152 Tests grün, plugin validate grün; die Felder plan_items, dod_items, next_lane, question liefert jaira list --json tatsächlich, 'superseded' ist der echte Zustandsname aus core/ticket/schema.go."
+test-verdict: "pass: go build ./... rc=0, go test -race -count=1 ./... rc=0, claude plugin test 152 pass rc=0, plugin validate passed, tsc 5.6 strict rc=0; DoD 1-7 über die genannten Tests/Stellen geprüft; Scratch-Render 160x40 (3 Spuren je 12 Zeilen, Wände, Hüte, z z, (?), Klartext-Zeilen) und 100x20 (18 Zeilen = bodyRows-2, Titel an der Wand gekürzt, nichts über 100 Zellen). Nicht geprüft: echtes TUI per --plugin-dir und Escape-Schließen (nicht headless)"
+review-verdict: "Diff erfüllt alle 7 DoD-Punkte, Tests und Validate grün. Ein plausibler Defekt (Punkt 1 der Lücken: Takt läuft weiter, wenn das Pane keinen Platz bekam) — klein, eine Zeile, aber vor dem Merge beheben oder bewusst annehmen. Keine Annahme ohne diesen Blick."
+review-round: 3
+review-check: "1. Im Worktree starten: claude --plugin-dir /home/alex/projects/.worktrees/jaira-cockpit-worker-icons/core/mod/builtin/jaira-cockpit  2. Einen Ticket-Agenten laufen lassen (z. B. /jaira-role-lane <id> pre-process in einem Subagenten) 3. Im Cockpit-Band 'Overview' drücken, dann Tab 'Workers'  4. Erwartet: eine Spur pro Agent über die ganze Pane-Höhe, links fett die Lane des Tickets, rechts gedimmt die nächste Lane, ein farbiger Krebs mit Hut, Funke dreht sich, darunter '<HANDLE> · working · <Titel>'  5. Im zweiten Terminal 'jaira dod <id> 1 --done --plan' (oder DoD) — innerhalb von ~5 s läuft der Krebs nach rechts, Beine wechseln  6. 'jaira move <id> --to <nächste Lane>' — Krebs läuft zur rechten Wand, die Beschriftung rückt nach links, er startet links neu  7. Tab 'Queue' drücken, dann Pane schließen — kein Flackern mehr. Ohne laufenden Agenten zeigt der Tab 'No agent on the board right now.' Automatisch: cd core/mod/builtin/jaira-cockpit && claude plugin test . → 152 pass, describe 'the workers tab'."
 ---
 
 # Cockpit: Worker als farbige Claude-Icons auf einer Lane-Spur im Overview
@@ -49,13 +49,15 @@ review-check: "1. claude --plugin-dir /home/alex/projects/.worktrees/jaira-cockp
 - [x] Farbe und Hut eines Tickets bleiben zwischen zwei Aktualisierungen gleich
   proof: pickOf keeps picks from atoms workersColors/workersHats (core/mod/builtin/jaira-cockpit/hooks/register.tsx readWorkers); same test after the 5 s re-read
 - [x] Tests in tests/ decken Platzierung, Hut- und Farbvergabe, Fortschritt→Spalte, Laufzyklus und das Rücken der Wände ab; Release-Notiz in core/release/notes/<ID>.md
-  proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts describe 'the workers tab' (9 tests; claude plugin test 152 pass rc=0); core/release/notes/F80QZT.md
+  proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts describe 'the workers tab' (12 tests; claude plugin test 155 pass rc=0); core/release/notes/F80QZT.md
 - [x] Die Spalte des Krebses folgt dem Fortschritt in der Lane (Plan-Häkchen/Plan, sonst DoD, sonst linke Wand) und wird Spalte für Spalte angelaufen, die Beinzeile wechselt dabei zwischen zwei Frames; beim Lanewechsel läuft er zur rechten Wand, die Wände rücken (alte rechte = neue linke), er startet links neu (Timer per $.clock.every, gestoppt beim Schließen und Tabwechsel)
   proof: core/mod/builtin/jaira-cockpit/hooks/overview.ts progressOf, stepOf; core/mod/builtin/jaira-cockpit/tests/board.test.ts 'the workers tab > the crab stands as far across as its ticket has come…', '…walks there column by column, its legs stepping', '…the walls move along, and it starts again at the left', '…the frames stop when another tab is shown and when the pane closes'
 - [x] Drei Zustände am Sprite: working (Arme bewegen sich, Funke), idle (sitzt, gedimmt, z z über dem Hut), Frage ((?) über dem Hut in Warnfarbe); unter dem Krebs eine Zeile 'Handle · working|resting|waits for an answer · Titel gekürzt'; Test deckt die Zuordnung ab
   proof: core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx trackRows (ARMS, LEGS.sit, '(?)', 'z z', caption); core/mod/builtin/jaira-cockpit/tests/board.test.ts 'the workers tab > working moves its arms in place; resting sits still', '…one track per figure…' (captions, z z, (?))
 - [x] readWorkers liest das Verzeichnis, das openOverview bekommt, nicht board?.dir (review-Lücke 1)
   proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx openOverview sets overviewDir, readWorkers reads it
+- [x] Takt startet nur, wenn das Overview-Pane platziert ist; zwei Lesungen des Boards überlappen nie; die Wandnamen einer Spur überschreiben sich auch bei schmalem Pane nicht (review-Lücken 1-3)
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx openOverview (stopFrames when !isPlaced), readWorkers (reading); core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx trackRows (room); tests 'the workers tab > an Overview with no room to show it starts no frames…', '…a read of the board still running is not started a second time', '…on a narrow pane the walls' names are cut…' (155 pass)
 
 ## Options
 
@@ -65,6 +67,13 @@ review-check: "1. claude --plugin-dir /home/alex/projects/.worktrees/jaira-cockp
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [x] Test: Pane ohne Platz startet keinen Takt (rot)
+- [x] openOverview startet die Frames nur bei isPlaced, sonst stopFrames
+- [x] Test: ein Lesen, das noch läuft, wird nicht ein zweites Mal gestartet
+- [x] readWorkers überspringt, solange eins läuft
+- [x] Test + Fix: Wandnamen gekürzt, rechte nie über der linken
+- [x] plugin test, validate, tsc, go test grün; Release-Notiz geprüft
 
 ## Progress
 - **2026-10-16 12:50 · Alexander Sacharov** — parent session: jaira-28
@@ -93,3 +102,11 @@ core/mod/builtin/jaira-cockpit/hooks/overview.ts colorsOf(palette=TICKET_COLORS)
 - **2026-10-16 13:22 · Alexander Sacharov** — decision: Zustandswörter auf Englisch (working / resting / waits for an answer), wie alle cockpit-Texte in texts.ts - Projektsprache Englisch; jaira-28 nannte russische Beispiele nur für die Bedeutung. Fortschritt: abgelöste Punkte ([-]) zählen weder als erledigt noch zur Summe. In Lanes nach in-progress ist die DoD meist voll, der Krebs steht dort an der rechten Wand = 'bereit für die nächste Lane'. Lanewechsel: Krebs läuft erst bis zur rechten Wand, dann springen die Wände um und er startet links, dann läuft er zu seinem Fortschritt. Geschwindigkeit 1/40 der Spur pro 250-ms-Frame. Eine Spur pro Figur (Agent oder Ticket mit offener Frage); Position, Farbe und Hut je Ticket. Legende entfällt, die Bildunterschrift sagt es.
 - **2026-10-16 13:28 · Alexander Sacharov** — in-progress Runde 3 (Spuren-Layout): Holst aus Zellen in overview-pane.tsx trackRows, Modell in overview.ts (workersOf -> Walker[] mit lane/next/title/progress, progressOf, pickOf für Farbe+Hut, stepOf mit Spot {lane,x}). Spurhöhe = (bodyRows-2 - Regeln)/n, mindestens 7 Zeilen; mehr Figuren als Platz -> Pane scrollt. Fließkomma: beim Hinauslaufen wird x knapp unter 1 auf 1 gesetzt, sonst käme der Wandwechsel nie. Tests 152 pass, validate, tsc grün.
 - **2026-10-16 13:28 · Alexander Sacharov** — critique Runde 3 (Spuren): ganzer Diff 0763467b gelesen. Zellen-Holst in trackRows ist die einfachste Form, die spaltengenaues Laufen erlaubt (Box-Layout kann keine Bruchteil-Spalten); pickOf ersetzt colorsOf statt daneben zu stehen; Modell bleibt in overview.ts, Zeichnung in overview-pane.tsx wie bisher. none. Für optimize: trackRows und WALK_STEP sind exportiert, ohne dass jemand sie importiert.
+- **2026-10-16 13:33 · Alexander Sacharov** — review (frische Sicht): alle DoD gedeckt, 152 Tests grün. Plausibler Defekt: register.tsx:632-633 startet den Workers-Takt auch bei isPlaced=false; dann stoppt ihn nichts. Ein-Zeilen-Fix: showTab nur bei isPlaced. Siehe review-gaps.
+- **2026-10-16 13:33 · Alexander Sacharov** — Frage an Alex (worker, nach review Runde 2): review fand einen plausiblen Defekt - Takt läuft weiter, wenn das Pane keinen Platz bekam (isPlaced=false) und der gemerkte Tab Workers ist; dann alle 5 s jaira lanes/list + herdr tab list bis Sessionende. Optionen: 1) (empfohlen) zurück nach in-progress, Lücke 1 beheben (showTab nur bei isPlaced, sonst stopFrames) plus 2 (kein zweites Lesen, solange eins läuft) und 3 (Wandnamen kürzen, damit sie sich nicht überschreiben), dann wieder bis signoff; ~20 min. 2) so annehmen, Lücken als bekannt hinnehmen.
+- **2026-10-16 13:41 · Alexander Sacharov** — explain: Review fand einen plausiblen Defekt: openOverview startet den Workers-Takt (register.tsx:632-633) auch dann, wenn das Pane keinen Platz bekam (isPlaced=false), und nichts stoppt ihn danach.
+Warum: Läuft der gemerkte Tab auf Workers, laufen alle 5 s jaira lanes, jaira list und herdr tab list bis zum Sessionende weiter, ohne dass jemand das Pane sieht.
+1) Zurück nach in-progress: showTab nur bei isPlaced, sonst stopFrames; dazu kein zweites Lesen, solange eins läuft, und Wandnamen kürzen; ca. 20 min [give back]
+2) So annehmen und die Lücken als bekannt hinnehmen [accept]
+Empfehlung: 1 - der Fix ist eine Zeile, und der Dauerlauf ohne sichtbares Pane ist ein echter, vermeidbarer Ressourcenverbrauch.
+- **2026-10-16 13:41 · Alexander Sacharov** — Alex' Wahl 2026-10-16 (über jaira-28): Option 1 - zurück nach in-progress, review-Lücken 1-3 beheben. Plan als einzelne Punkte, live abgehakt (Alex sieht den Krebs dabei laufen).

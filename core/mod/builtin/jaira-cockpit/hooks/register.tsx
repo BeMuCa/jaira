@@ -112,6 +112,9 @@ const chats = new Map<string, number>()
 // board the Overview was opened on.
 let frames: { cancel: () => void } | undefined
 let overviewDir: string | undefined
+// Whether the Workers tab is reading the board right now: a read that takes
+// longer than READ_FRAMES is not started a second time beside it.
+let reading = false
 
 // ── shared helpers ───────────────────────────────────────────────────────
 
@@ -629,7 +632,11 @@ async function openOverview($: EngineInterface, dir: string): Promise<void> {
   const view = ok ? overviewOf(lanes.stdout, list.stdout, next.stdout, await $.clock.now()) : null
   await update($, overviewAtom, () => view)
   const opened = await $.ui.open({ id: OVERVIEW, title: overviewWords.title, focus: true, closeOnEscape: true })
-  if (!opened.isPlaced) $.ui.toast(overviewWords.noRoom)
+  // Unplaced, the pane is not drawn and hears no close: no frames for it.
+  if (!opened.isPlaced) {
+    $.ui.toast(overviewWords.noRoom)
+    return stopFrames()
+  }
   await showTab($, await read($, overviewTabAtom))
 }
 
@@ -659,7 +666,16 @@ async function frame($: EngineInterface): Promise<void> {
 // its colour and its hat; one gone drops out of all three.
 async function readWorkers($: EngineInterface): Promise<void> {
   const dir = overviewDir
-  if (dir === undefined) return
+  if (dir === undefined || reading) return
+  reading = true
+  try {
+    await readWorkersIn($, dir)
+  } finally {
+    reading = false
+  }
+}
+
+async function readWorkersIn($: EngineInterface, dir: string): Promise<void> {
   const [lanes, list] = await Promise.all([run($, ['jaira', 'lanes', '--json'], dir), run($, ['jaira', 'list', '--json'], dir)])
   if (lanes?.exitCode !== 0 || list?.exitCode !== 0) {
     await update($, workersAtom, () => null)

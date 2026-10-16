@@ -72,6 +72,10 @@ type World = {
   // The forge answers `repo view` but refuses `pr list`.
   prListFails: boolean
   nextFails: boolean
+  // The terminal has no room for a pane: $.ui.open places nothing.
+  noRoom?: boolean
+  // When set, every `herdr tab list` waits here until the test lets it go.
+  heldTabs?: (() => void)[]
 }
 
 const LANES = {
@@ -164,7 +168,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
   on('ui.open', ($, e) => {
     const { id, title, focus } = e as unknown as { id: string; title?: string; focus?: boolean }
     w.opened.push({ id, ...(title !== undefined ? { title } : {}), ...(focus ? { focus } : {}) })
-    return { value: { isPlaced: true } }
+    return { value: { isPlaced: !w.noRoom } }
   })
   on('ui.close', ($, e) => {
     w.closed.push((e as unknown as { id: string }).id)
@@ -202,6 +206,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
   on('process.run', async ($, e) => {
     w.ran.push([...e.argv, `@${e.init?.cwd ?? ''}`])
     if (w.held && e.argv[0] === 'jaira' && e.argv[1] === 'move') await new Promise<void>(go => w.held!.push(go))
+    if (w.heldTabs && e.argv[1] === 'tab' && e.argv[2] === 'list') await new Promise<void>(go => w.heldTabs!.push(go))
     const ok = (stdout = '') => ({ value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
     const [cmd, ...args] = e.argv
     if (cmd === 'jaira' && args[0] === 'lanes') return ok(JSON.stringify(w.oldJaira ? { lanes: LANES.lanes.map(({ human_exit, ...l }) => l) } : LANES))
@@ -2363,6 +2368,20 @@ describe('the workers tab', () => {
     expect(crabAt(track)).toBe(column(0))
   })
 
+  test('on a narrow pane the walls\' names are cut to half the line each, never written over each other', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tickets = [{ ...WORKING, assignee: 'Alex', next_lane: 'critique' }]
+    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' }]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const narrow = { ...(OVERVIEW as { props: object }), props: { ...(OVERVIEW as { props: object }).props, bodyColumns: 24 } } as never
+    const pane = await $.ui.mount(narrow)
+    await pane.press({ key: 'overview-tab-workers' })
+    const top = (await pane.findAll({ type: 'Text' })).map(x => x.text).find(t => t.startsWith('┃ ') && t.length === 24)
+    // 24 cells: nine for each name, the walls and the gaps around them.
+    expect(top).toBe('┃ in-progre  critique  ┃')
+  })
+
   test('a subagent of this session has a track too, at work or resting', async ($, on) => {
     const w = world(on)
     w.tickets = [{ ...WORKING, assignee: 'Alex' }, { handle: 'C1C1C1', title: 'judged', status: 'critique', question: '' }]
@@ -2381,6 +2400,37 @@ describe('the workers tab', () => {
     w.tickets = [WORKING]
     await startSession($)
     expect(await (await workersTab($)).find({ type: 'Text', text: 'No agent on the board right now.' })).toBeDefined()
+  })
+
+  test('an Overview with no room to show it starts no frames, even on the Workers tab', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' }]
+    await startSession($)
+    const pane = await workersTab($)
+    await pane.press({ key: 'overview-close' })
+    w.noRoom = true
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const before = ran(w, 'herdr', 'tab', 'list').length
+    await w.clock.advance(20_000)
+    expect(ran(w, 'herdr', 'tab', 'list').length).toBe(before)
+  })
+
+  test('a read of the board still running is not started a second time', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' }]
+    await startSession($)
+    await workersTab($)
+    const reads = () => ran(w, 'herdr', 'tab', 'list').length
+    const before = reads()
+    w.heldTabs = []
+    // Two reads due, the first one hanging: only one asked.
+    await w.clock.advance(10_000)
+    expect(reads()).toBe(before + 1)
+    // Once it ends, the next one is asked when it is due.
+    w.heldTabs.shift()!()
+    w.heldTabs = undefined
+    await w.clock.advance(5000)
+    expect(reads()).toBe(before + 2)
   })
 
   test('the frames stop when another tab is shown and when the pane closes', async ($, on) => {

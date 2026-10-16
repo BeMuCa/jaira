@@ -81,8 +81,10 @@ function trackRows(scene: WorkersScene): Cell[][] {
       put(line, 0, '┃', { dim: true })
       put(line, width - 1, '┃', { dim: true })
     }
-    put(track[0]!, 2, spot.lane, { bold: true })
-    put(track[0]!, width - 3 - right.length, right, { dim: true })
+    // Each wall's name has half the line, so neither ever writes over the other.
+    const room = Math.floor((width - 6) / 2)
+    put(track[0]!, 2, spot.lane.slice(0, room), { bold: true })
+    put(track[0]!, width - 3 - Math.min(right.length, room), right.slice(0, room), { dim: true })
     const x = 2 + Math.round(spot.x * (width - 4 - SPRITE))
     const top = height - 6
     const look: Style = { color: colors[f.id], bold: f.state !== 'idle', dim: f.state === 'idle' }
