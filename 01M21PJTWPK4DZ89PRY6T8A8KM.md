@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-16T09:17:42Z
+updated-at: 2026-10-16T09:21:20Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -32,7 +32,7 @@ executed-by: sonnet
 review-summary: "none"
 round: 4
 review-gaps: "Runde 3 (Diff bc3c1496..4236b927), nichts entfernt. Betrachtet und gelassen: (1) backlogTicket (internal/cli/newerrelease_test.go:19) vs createTicket (internal/cli/epics_test.go:34): createTicket geht ueber 'jaira create' mit goal/context/dod und JSON, backlogTicket legt per s.Create direkt an wie claimFixture (claimrelease_test.go:11) und dryrun_test.go:27 - beide Muster stehen im Repo, Umbau braechte nichts. (2) Paar 'm.versionLine, m.releasePill = versionLine(); m.versionAt = time.Now()' steht zweimal (model.go New und tickMsg) - zwei Zeilen, eine Methode dafuer waere ein reiner Weiterleiter. (3) versionAt/versionEvery folgen fullAt/fullReparseEvery im selben tickMsg, kein zweites Muster. (4) Kosten: tickMsg vergleicht alle 2 s eine Zeit, liest einmal pro Minute eine 60-Byte-Datei - nicht heiss. (5) Toter Code: der io-Import in newerrelease.go ist mit der PostRun-Signatur weg; sonst nichts verwaist."
-test-verdict: "pass: gate OK (gofmt, vet, build auf 77106675), go test nicht gelaufen (Anweisung Berk); DoD 2-5 per Handtest mit 0.5.2-Binary bestaetigt (Pille Launcher+Board, stderr-Zeile next/resume, JSON sauber, Popup einmalig und notes-seen unveraendert beim Wiederoeffnen, w-Liste, ! in update und TUI), Testcode gelesen; DoD 1 nur bis zum go test -race der Hauptsession offen"
+test-verdict: "fail: go test -race -count=1 ./... RC=1 - core/lane TestRefreshShipped* (4 Tests, aus dem PWAF22-Merge) rot; alle anderen 31 Pakete ok, darunter internal/cli, internal/tui, core/selfupdate, core/board, core/release"
 review-verdict: |-
   Der Diff erfuellt DoD 2-5 und den Code-Teil von DoD 1. Ich habe alle Wege mit gebauten 0.5.1/0.5.2-Binaries auf einem Board ohne Remote durchgespielt: Pille auf Board und Launcher; stderr-Zeile bei next und resume, nicht bei list, nicht im --json-stdout, nicht mit JAIRA_NO_UPDATE_CHECK=1; Popup einmal, esc schreibt notes-seen, kein zweites Popup; Popup ueber notes-seen nach jaira update; '  ! ' in jaira update; w auf dem Launcher.
   Keine blockierenden Defekte; die Befunde a-f sind klein.
