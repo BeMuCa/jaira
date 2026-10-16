@@ -5,7 +5,7 @@ status: signoff
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
-goal: "Steht im Cache ein neueres Release als die laufende Binary, zeigt der Projektkopf unter der Versionszeile eine kleine Pille mit der Zielversion"
+goal: "Steht im Cache ein neueres Release als die laufende Binary, zeigt der Projektkopf unter der Versionszeile eine kleine Pille mit der Zielversion, und eine laufende Agent-Sitzung fragt den Nutzer, ob aktualisiert wird; geprueft wird stuendlich"
 context: |-
   Berk am 08.09.: 'einmal woechentlich soll gechecked werden ob eine neue Version existiert und wenn ja soll im Projektfenster unter der Version ein kleines Pille sein'.
   Der Check existiert schon und muss NICHT gebaut werden. core/selfupdate/cache.go: MaxAge ist 24h, PollCache liest den Cache, stempelt ihn bei Ablauf frisch und startet einen abgekoppelten Kindprozess 'jaira self upgrade --check --json'. Der holt per HTTPS https://api.github.com/repos/BeMuCa/jaira/releases/latest. Kein git, kein Blockieren der UI.
@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-16T09:02:45Z
+updated-at: 2026-10-16T09:02:47Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
