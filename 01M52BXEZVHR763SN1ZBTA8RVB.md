@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-16T12:45:13Z
-updated-at: 2026-10-16T12:56:44Z
+updated-at: 2026-10-16T12:56:46Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-613775
 claimed-at: 2026-10-16T12:46:01Z
@@ -34,7 +34,8 @@ claimed-at: 2026-10-16T12:46:01Z
   proof: README.md:34 '## Features': 16 Eintraege (README.md:36-125), 16 Zeilen ' - Use case:' (awk-Zaehlung des Abschnitts); Liste = features.md des frueheren Agents, gleiche 16 Themen
 - [x] Milestone-Roadmap und Live-Board ohne Neuladen stehen in der README, mit Quelle in core/release/notes belegt
   proof: README.md:36 Milestone Roadmap <- core/release/notes/0.5.0/D0SAHM.md (L, Bubbles, enter, b, --after); README.md:113 Live board <- core/release/notes/0.5.0/NA413Y.md (changed ticket within 2 seconds)
-- [ ] Drei neue Screenshots (Hauptboard, Launcher, Milestone-Roadmap mit Fortschritt): frisch gerendert, sha256 anders als die alten Bilder, kein abgeschnittener Spaltenname, keine 'dev'-Version
+- [x] Drei neue Screenshots (Hauptboard, Launcher, Milestone-Roadmap mit Fortschritt): frisch gerendert, sha256 anders als die alten Bilder, kein abgeschnittener Spaltenname, keine 'dev'-Version
+  proof: docs/img/board-main.png (board 170 26 z right right), launcher.png (home 110 24), milestone-roadmap.png (roadmap 100 24) aus scripts/demoworld.sh frisch; sha256 bf3fffc9 != board.png 1dd568e7, 0fdba535 != home.png d2c803ef, 629eb98a != vorheriges 9a96dedf; 'jaira dev' 0 Treffer, Kopf 'jaira 0.5.1'; alle 10 Lane-Titel ganz (Bild angesehen)
 - [ ] Ein Screenshot zeigt das Links-Fenster, ohne dass das Hauptboard-Bild dadurch verdeckt ist
 - [ ] git diff --check sauber, Code-Fences in README.md gerade, jedes Bild in der README verlinkt existiert
 
