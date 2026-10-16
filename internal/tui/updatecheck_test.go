@@ -211,6 +211,39 @@ func TestBoardHeadCarriesTheVersionIndicator(t *testing.T) {
 	}
 }
 
+// TestOpenBoardPicksUpANewerReleaseWithoutRestart is the hourly check seen
+// from a board left open: a release that becomes known after the board was
+// opened shows as a pill on a later tick, without reopening the board.
+func TestOpenBoardPicksUpANewerReleaseWithoutRestart(t *testing.T) {
+	setReleaseCurrent(t, "1.0.0")
+	s := newTestStore(t)
+	t.Setenv("JAIRA_NO_UPDATE_CHECK", "")
+	if err := selfupdate.Write(selfupdate.Check{CheckedAt: time.Now().UTC(), Latest: "1.0.0"}); err != nil {
+		t.Fatal(err)
+	}
+	m, err := New(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.releasePill != "" {
+		t.Fatalf("pill = %q at construction, want none while up to date", m.releasePill)
+	}
+
+	if err := selfupdate.Write(selfupdate.Check{CheckedAt: time.Now().UTC(), Latest: "1.3.0"}); err != nil {
+		t.Fatal(err)
+	}
+	m.Update(tickMsg(time.Now()))
+	if m.releasePill != "" {
+		t.Errorf("pill = %q right after construction, want the cache read again only after versionEvery", m.releasePill)
+	}
+
+	m.versionAt = time.Now().Add(-versionEvery)
+	m.Update(tickMsg(time.Now()))
+	if got := stripANSI(m.releasePill); !strings.Contains(got, "^ 1.3.0") {
+		t.Errorf("pill = %q after versionEvery, want '^ 1.3.0'", got)
+	}
+}
+
 // TestBoardVersionSitsInTheTopLeftCorner is the placement the ticket asks for,
 // stated as geometry rather than as "somewhere in the output": the version is
 // the board's very first row, flush against the left edge, above the head line
