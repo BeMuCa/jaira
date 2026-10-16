@@ -15,7 +15,7 @@ related: []
 follows: 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-16T10:04:46Z
-updated-at: 2026-10-16T11:37:07Z
+updated-at: 2026-10-16T11:43:13Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-482020
@@ -65,3 +65,11 @@ test-verdict: "pass: go build ./... ok, go test -race -count=1 ./... RC=0 (32 ok
 - tsc (npx typescript@5.6.3, tsconfig ausserhalb des Mod-Ordners): hooks/ und types/ fehlerfrei; tests/board.test.ts hat 5 alte Fehler (doppeltes toasts im World-Typ Z.42/69/142, Mounted.input Z.780/782) - nicht von hier, nicht angefasst.
 Bekannte Grenze: die Vorschau ist der dry-run des HEUTE installierten jaira; was erst das neue Binary mitbringt, steht nicht darin (self upgrade laesst danach ohnehin das neue 'update --roles' laufen). Ein Upgrade im Terminal waehrend der Sitzung: das Cockpit merkt sich die Version je Sitzung, der Hinweis bleibt, bis Update gedrueckt wird - dann sagt --check 'already the latest' und der Hinweis geht.
 - **2026-10-16 11:34 · BeMuCa** — critique (erster Pass, ganzer Diff 9d2cfd51): kein Befund. Geprueft und stehen gelassen: (1) eigener Pane cockpit-upgrade statt $.ui.ask wie beim Cache-Guard - ask ist der AskUserQuestion-Dialog fuer eine kurze Frage mit 'Other'-Freitext; die Vorschau ist mehrzeilig und folgt dem Muster des Explanation-Panes (Wahl in einem Pane mit Fokus). (2) run+output statt des jaira()-Helfers, weil die Vorschau stdout braucht und jaira() nur ok/why liefert. (3) 'update --roles --lanes' nach 'self upgrade' wiederholt --roles: noetig, weil ein Upgrade von 0.5.1 vom alten Binary gemacht wird, das update --roles noch nicht startet (Release-Notiz PWAF22). (4) Dismiss im Store statt in ~/.jaira: Entscheidung 3 oben.
+- **2026-10-16 11:43 · BeMuCa** — review (fresh context, diff 9d2cfd51): checked by running, not only reading.
+- claude plugin test in core/mod/builtin/jaira-cockpit: 155 pass, 0 fail.
+- Counter-check in a scratch copy with the pre-change register.tsx: 7 of the 12 new tests fail (the 5 'no notice' cases pass either way, as the implementer said).
+- scripts/shipped-history.sh regenerated into scratch: identical to core/shipped/shipped.sha256.
+- node 24 on hooks/board.ts: offeredRelease/upgradeCheckOf as claimed, 0.10.0 counts as newer than 0.9.9.
+- Go side matches: core/selfupdate/cache.go Path() (JAIRA_HOME or ~/.jaira/update-check.json, field latest); internal/cli/self.go --check --json fields current/latest/up_to_date; --check is not refused for Homebrew/go install, only the real upgrade is.
+- The worktree_diff of the payload was only untracked .jaira/milestones/*.md - not this ticket.
+Kept here because review-gaps replaces it: optimize's review-gaps was "nothing removed: the one duplicate (JAIRA_HOME-or-~/.jaira in settingsJson) is already folded into jairaHome(); every new text key and helper has a caller; considered one helper for 'stdout+stderr without warnings' in previewUpgrade/upgradeJaira - two callers with different fallbacks, left; pre-existing and left alone: metrics.csv is read and written under HOME/.jaira, not JAIRA_HOME". critique's review-summary was "none".
