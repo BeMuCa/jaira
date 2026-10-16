@@ -939,7 +939,9 @@ terminal lane for `logbook-days` days (28 by default; see **Keys**).
 and says how many older entries it left out; `--since 10d` picks another window
 and `--since 0` lists everything.
 
-A ticket sent back to an earlier lane gets a `round:` field that starts at 2 and grows by one with every send-back (parking in blocked does not count); `review-round:` records which round each review verdict judged.
+A ticket sent back to an earlier lane gets a `round:` field that starts at 2 and
+grows by one with every send-back (parking in blocked does not count);
+`review-round:` records which round each review verdict judged.
 
 ## Commands
 
@@ -995,7 +997,11 @@ jaira completion <shell>   print the completion script for bash, fish, powershel
 jaira help <command>       the full help of one command, the same as <command> --help
 ```
 
-On a ticket branch (e.g. `feat/f914qh`), `jaira create` sets `--follows` to that ticket by itself and says so; `--follows none` makes the new ticket unrelated. Tag colours live once per board in the hand-editable `.jaira/tags` file, one `name: <ansi256>` line per tag; jaira adds a line only for a tag name it has not seen yet.
+On a ticket branch (e.g. `feat/f914qh`), `jaira create` sets `--follows` to that
+ticket by itself and says so; `--follows none` makes the new ticket unrelated.
+Tag colours live once per board in the hand-editable `.jaira/tags` file, one
+`name: <ansi256>` line per tag; jaira adds a line only for a tag name it has not
+seen yet.
 
 Full reference: **[docs/COMMANDS.md](docs/COMMANDS.md)**.
 
