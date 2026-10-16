@@ -1,7 +1,7 @@
 ---
 id: 01M21PJTWPK4DZ89PRY6T8A8KM
 title: "Eine Pille unter der Version zeigt, dass ein neues Release da ist"
-status: testing
+status: in-progress
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-16T09:21:22Z
+updated-at: 2026-10-16T09:21:24Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -30,7 +30,7 @@ outcome-why: "Berk will ohne Nachsehen merken, dass ein neues Release da ist (08
 outcome-resolves: "DoD 1: Pille nur bei bekanntem neueren Release - TestReleasePillOnlyForANewerKnownRelease; go test -race laeuft in der testing-Lane. DoD 2/7: warnNewerRelease in next/resume/claim/move, stdout/--json unberuehrt, Text fragt und nennt beide Befehle; Agent-Block 'ask the user once ... Only on a yes' - TestClaimAndMoveAskAboutANewerReleaseOnStderr, TestNextAndResumeNameANewerReleaseOnStderr, TestAgentNoteTellsAgentsToAskAboutANewerRelease, Handtest. DoD 3-5 unveraendert (Popup, Marker, Taste w). DoD 6: MaxAge = time.Hour, Board-Tick liest neu - TestStaleAtThresholds, TestOpenBoardPicksUpANewerReleaseWithoutRestart, Handtest tmux (Pille nach 61 s ohne Neustart). DoD 8: Merge bc3c1496, Konflikt als Notiz. DoD 9: Messung als Notiz, ~35 ms CPU je Pruefung, <1 s CPU/Tag."
 executed-by: sonnet
 review-summary: "none"
-round: 4
+round: 5
 review-gaps: "Runde 3 (Diff bc3c1496..4236b927), nichts entfernt. Betrachtet und gelassen: (1) backlogTicket (internal/cli/newerrelease_test.go:19) vs createTicket (internal/cli/epics_test.go:34): createTicket geht ueber 'jaira create' mit goal/context/dod und JSON, backlogTicket legt per s.Create direkt an wie claimFixture (claimrelease_test.go:11) und dryrun_test.go:27 - beide Muster stehen im Repo, Umbau braechte nichts. (2) Paar 'm.versionLine, m.releasePill = versionLine(); m.versionAt = time.Now()' steht zweimal (model.go New und tickMsg) - zwei Zeilen, eine Methode dafuer waere ein reiner Weiterleiter. (3) versionAt/versionEvery folgen fullAt/fullReparseEvery im selben tickMsg, kein zweites Muster. (4) Kosten: tickMsg vergleicht alle 2 s eine Zeit, liest einmal pro Minute eine 60-Byte-Datei - nicht heiss. (5) Toter Code: der io-Import in newerrelease.go ist mit der PostRun-Signatur weg; sonst nichts verwaist."
 test-verdict: "fail: go test -race -count=1 ./... RC=1 - core/lane TestRefreshShipped* (4 Tests, aus dem PWAF22-Merge) rot; alle anderen 31 Pakete ok, darunter internal/cli, internal/tui, core/selfupdate, core/board, core/release"
 review-verdict: |-
