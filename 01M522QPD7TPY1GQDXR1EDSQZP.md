@@ -15,7 +15,7 @@ related: []
 follows: 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-16T10:04:46Z
-updated-at: 2026-10-16T12:45:22Z
+updated-at: 2026-10-16T12:45:31Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-482020
@@ -90,3 +90,4 @@ Bekannte Grenze: die Vorschau ist der dry-run des HEUTE installierten jaira; was
 - Go side matches: core/selfupdate/cache.go Path() (JAIRA_HOME or ~/.jaira/update-check.json, field latest); internal/cli/self.go --check --json fields current/latest/up_to_date; --check is not refused for Homebrew/go install, only the real upgrade is.
 - The worktree_diff of the payload was only untracked .jaira/milestones/*.md - not this ticket.
 Kept here because review-gaps replaces it: optimize's review-gaps was "nothing removed: the one duplicate (JAIRA_HOME-or-~/.jaira in settingsJson) is already folded into jairaHome(); every new text key and helper has a caller; considered one helper for 'stdout+stderr without warnings' in previewUpgrade/upgradeJaira - two callers with different fallbacks, left; pre-existing and left alone: metrics.csv is read and written under HOME/.jaira, not JAIRA_HOME". critique's review-summary was "none".
+- **2026-10-16 12:45 · BeMuCa** — decision (Berk 'Finish alles', Hauptsitzung mit den empfohlenen Optionen): (1) gap 1 - stderr von self upgrade kommt ins Ergebnis-Pane. (2) Dry-run-Exit pruefen: schlaegt der Dry-run fehl, zeigt das Pane den Fehler und bietet kein 'Update to X'. (3) Dismiss bleibt nur im Band. (4) Neu: auch der Agenten-Weg zeigt vorher eine Vorschau - stderr-Zeile (internal/cli/newerrelease.go) und Agenten-Block (core/board/announce.go) sagen: erst 'jaira self upgrade --check' und 'jaira update --roles --lanes --dry-run', dem User zeigen, fragen, erst auf Ja die echten Befehle.
