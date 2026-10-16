@@ -81,10 +81,13 @@ func main() {
 	}
 	named := map[string]rune{"right": tea.KeyRight, "left": tea.KeyLeft, "down": tea.KeyDown, "up": tea.KeyUp, "enter": tea.KeyEnter, "esc": tea.KeyEscape}
 	for _, k := range os.Args[5:] {
+		r := []rune(k)
 		if c, ok := named[k]; ok {
 			m.Update(tea.KeyPressMsg{Code: c})
+		} else if len(r) == 1 {
+			key(r[0])
 		} else {
-			key([]rune(k)[0])
+			die(fmt.Errorf("unknown key %q", k))
 		}
 	}
 	fmt.Print(m.View().Content)

@@ -66,8 +66,8 @@ jaira="$dir/bin/jaira"
 (cd "$repo" && go build -o "$jaira" ./cmd/jaira)
 
 # shotgen renders the screenshots. It carries the newest release's version, set
-# the way release builds set it, so the corner of every image reads "jaira
-# 0.5.1" and not "jaira dev", which is a build nobody can install.
+# the way release builds set it, so the corner of every image names that
+# release and not "jaira dev", which is a build nobody can install.
 version=$(ls "$repo/core/release/notes" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' |
 	sort -t. -k1,1n -k2,2n -k3,3n | tail -1)
 (cd "$repo" && go build -ldflags "-X github.com/BeMuCa/jaira/core/release.Current=$version" \
