@@ -108,6 +108,30 @@ func TestClaimAndMoveAskAboutANewerReleaseOnStderr(t *testing.T) {
 	}
 }
 
+// TestReleaseLineNeverStandsBeforeAnError: a command that fails says only
+// why. Under --json its stderr is the structured error a caller parses — the
+// cockpit shows a failed move's stderr as its message — so the release line
+// waits for a command that worked.
+func TestReleaseLineNeverStandsBeforeAnError(t *testing.T) {
+	setCurrent(t, "1.0.0")
+	t.Setenv("JAIRA_USER", "berk")
+	dir, s := updateTestStore(t)
+	h := backlogTicket(t, s)
+	cacheLatest(t, "1.3.0")
+
+	root := newRoot("test")
+	var out, errOut bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&errOut)
+	root.SetArgs([]string{"-C", dir, "move", h, "--to", "no-such-lane", "--json"})
+	if err := root.Execute(); err == nil {
+		t.Fatalf("move to an unknown lane succeeded:\n%s", out.String())
+	}
+	if bytes.Contains(errOut.Bytes(), []byte("1.3.0")) {
+		t.Errorf("stderr of a failed move = %q, want no release line", errOut.String())
+	}
+}
+
 func TestNoReleaseLineWhenUpToDateUnknownOrDev(t *testing.T) {
 	cases := []struct {
 		name, current, latest string

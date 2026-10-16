@@ -89,13 +89,13 @@ would let two sessions work the same ticket with nothing anywhere saying so.
 --release gives a claim up: your own at any time, somebody else's only once it
 has expired — that clears an abandoned claim's warning without waiting. A claim
 another session is actively renewing is refused.`,
-		Args: exactArgs(1),
+		Args:    exactArgs(1),
+		PostRun: warnNewerRelease,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
 			if err != nil {
 				return err
 			}
-			warnNewerRelease(cmd.ErrOrStderr())
 			if sessionID == "" {
 				sessionID = session.DefaultID()
 			}

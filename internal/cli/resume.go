@@ -75,13 +75,13 @@ A session that ends abruptly leaves tickets mid-flight: a plan step marked as in
 progress, a claim that has expired, a ticket parked in a working lane. This
 gathers them with their progress notes and the step each was on, so a new session
 can carry on rather than starting by working out where things were left.`,
-		Args: noArgs(),
+		Args:    noArgs(),
+		PostRun: warnNewerRelease,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			s, err := openStore()
 			if err != nil {
 				return err
 			}
-			warnNewerRelease(cmd.ErrOrStderr())
 			lanes, err := lane.Load(s.Root)
 			if err != nil {
 				return err
