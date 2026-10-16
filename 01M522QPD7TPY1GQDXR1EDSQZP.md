@@ -15,7 +15,7 @@ related: []
 follows: 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-16T10:04:46Z
-updated-at: 2026-10-16T12:59:43Z
+updated-at: 2026-10-16T12:59:45Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-682638
@@ -29,13 +29,16 @@ test-verdict: "pass (round 2, efa8e9cd): go build ok, go test -race -count=1 ./.
 review-verdict: "The diff meets both definition-of-done items, and I found no defect that should block it. Checked by running, not only reading: (a) claude plugin test: 157 pass, 0 fail, 14 tests in 'a newer jaira release'. (b) This branch built as 0.5.1 into scratch, with a cache naming 9.9.9: 'jaira next --json' prints one stderr line naming check, dry-run, show, ask and only-on-yes, and stdout is clean. (c) The committed CLAUDE.md and AGENTS.md agent blocks are byte-identical to what that build writes. (d) 'update --roles --lanes --dry-run' wrote nothing (before/after snapshot equal). (e) shipped.sha256 regenerated in scratch is identical to the committed file. (f) gofmt and vet are clean. (g) node 24 on board.ts: offeredRelease (newer, dismissed, next after a dismissed one, same, dev, 0.10.0 vs 0.9.9) and upgradeCheckOf behave as claimed. Not checked by me: the cockpit in a live Claude Code session, and the Go test suite (not run, by the owner's rule). The gaps are small: (1) and (2) are cosmetic, and (3) is already known. Merge after T8A8KM and PWAF22: the branch stacks on them."
 review-round: 2
 review-check: |-
-  1. cd /home/berk/git/jAIra-EDSQZP/core/mod/builtin/jaira-cockpit && claude plugin test  -> ends with '155 pass' and '0 fail'; the block 'a newer jaira release' has 12 (pass) lines (notice, preview + Cancel, yes path, refused upgrade, Dismiss, next session).
-  2. Hand check, nothing is replaced: mkdir -p /tmp/jh && echo '{"checked_at":"2026-10-16T09:00:00Z","latest":"9.9.9"}' > /tmp/jh/update-check.json
-  3. cd /home/berk/git/jAIra-EDSQZP && JAIRA_HOME=/tmp/jh claude --plugin-dir core/mod/builtin/jaira-cockpit  -> the jaira-cockpit frame shows 'jaira 9.9.9 is released (this is 0.5.1) [ Update ] Dismiss'. (Not verified by me: whether your installed cockpit loads beside it; if you see two frames, use the one with this line.)
-  4. Press Dismiss -> the line is gone and the notice says 'jaira 9.9.9 dismissed: the band offers the next release again'.
-  5. Change 9.9.9 to 9.9.10 in /tmp/jh/update-check.json and wait up to one minute -> the line is back, now with 9.9.10.
-  6. Press Update -> while 0.5.1 is still the newest real release: no pane opens, the notice says 'jaira 0.5.1 is already the latest release', the line is gone, and /tmp/jh/update-check.json now says latest 0.5.1. sha256sum ~/.local/bin/jaira is the same before and after.
-  7. The preview pane and 'Update to X' need a real release newer than yours; step 1 covers them (tests 'Update path with preview' and 'the yes in the pane').
+  1. cd /home/berk/git/jAIra-EDSQZP/core/mod/builtin/jaira-cockpit && claude plugin test  -> it ends with '157 pass' and '0 fail', and 14 lines start with '(pass) a newer jaira release >'.
+  2. Agent line, in scratch only, nothing installed is replaced: cd /home/berk/git/jAIra-EDSQZP && go build -ldflags '-X main.version=0.5.1' -o /tmp/jh/bin/jaira ./cmd/jaira   (always -o into /tmp, never ~/.local/bin)
+  3. mkdir -p /tmp/jh/home/jh /tmp/jh/repo && echo "{\"checked_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"latest\":\"9.9.9\"}" > /tmp/jh/home/jh/update-check.json   (a fresh checked_at stops a real release check from overwriting 9.9.9)
+  4. cd /tmp/jh/repo && git init -q && git commit -q --allow-empty -m init
+  5. export HOME=/tmp/jh/home JAIRA_HOME=/tmp/jh/home/jh JAIRA_RELEASE_API=http://127.0.0.1:9/x && /tmp/jh/bin/jaira init && /tmp/jh/bin/jaira next --json >/dev/null  -> exactly one line on screen: "jaira: jaira 9.9.9 is released (this is 0.5.1) - run 'jaira self upgrade --check' and 'jaira update --roles --lanes --dry-run', show the user what they report and ask the user whether to update; only on yes run 'jaira self upgrade', then 'jaira update --roles --lanes'"
+  6. grep -n 'newer release' -A5 /tmp/jh/repo/CLAUDE.md  -> the same six lines as grep -n 'newer release' -A5 /home/berk/git/jAIra-EDSQZP/CLAUDE.md (check, dry-run, show, ask once, only on a yes).
+  7. Cockpit, live (not run by me in this review): in a NEW terminal (without the exports from step 5): mkdir -p /tmp/jc && echo '{"checked_at":"2026-10-16T12:00:00Z","latest":"9.9.9"}' > /tmp/jc/update-check.json && cd /home/berk/git/jAIra-EDSQZP && JAIRA_HOME=/tmp/jc claude --plugin-dir core/mod/builtin/jaira-cockpit  -> the jaira-cockpit frame shows 'jaira 9.9.9 is released (this is 0.5.1) [ Update ] Dismiss'. If your installed cockpit also loads, use the frame that has this line.
+  8. Press Dismiss -> the line goes, and the notice says 'jaira 9.9.9 dismissed: the band offers the next release again'. Change 9.9.9 to 9.9.10 in /tmp/jc/update-check.json and wait up to one minute -> the line comes back with 9.9.10.
+  9. Press Update -> while 0.5.1 is still the newest real release, no pane opens, the notice says 'jaira 0.5.1 is already the latest release', and the line goes. Run sha256sum ~/.local/bin/jaira before and after: the same hash both times.
+  10. The preview pane, the dry-run error pane and 'Update to X' need a real release newer than yours. Step 1 covers them (tests 'Update path with preview', 'the yes in the pane', 'a dry run that gives no preview', 'an upgrade jaira refuses').
 round: 2
 ---
 
