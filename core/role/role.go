@@ -35,6 +35,19 @@ var builtinFS embed.FS
 
 const builtinDir = "builtin"
 
+// jairaSkill is the skill that teaches an agent to work a jaira board. It is not
+// a role — nothing in Builtins lists it — but it is written beside the roles,
+// as <skills>/jaira/SKILL.md. The repository's own sessions read
+// .claude/skills/jaira/SKILL.md; go:embed cannot reach out of this directory, so
+// the binary carries a copy and a test keeps the two equal.
+//
+//go:embed jaira/SKILL.md
+var jairaSkill []byte
+
+// jairaSkillKey is its path in the jaira repository, the key core/shipped holds
+// its versions under.
+const jairaSkillKey = "core/role/jaira/SKILL.md"
+
 // Role is one agent prompt, with every file that belongs to it.
 type Role struct {
 	// ID is the directory name, and therefore the name the harness invokes:

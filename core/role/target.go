@@ -125,6 +125,69 @@ func InstalledIn(dirs []string) (string, error) {
 	return "", nil
 }
 
+// Target is one skills directory jaira's roles are already installed in.
+type Target struct {
+	Agent  Agent
+	Dir    string
+	Global bool
+}
+
+// Installed returns every directory the built-in roles already sit in: each agent's own
+// directory in the repository at root (none when root is ""), then each agent's personal
+// one. A directory holding none of them is not listed — writing into it would be a first
+// install, which is 'jaira roles install' and a choice, not an update. A directory reached
+// twice (a board rooted at the home directory) is listed once.
+func Installed(root string) ([]Target, error) {
+	var out []Target
+	seen := map[string]bool{}
+	add := func(a Agent, dir string, global bool) error {
+		dir = filepath.Clean(dir)
+		if seen[dir] {
+			return nil
+		}
+		found, err := InstalledIn([]string{dir})
+		if err != nil {
+			return err
+		}
+		if found == "" {
+			return nil
+		}
+		seen[dir] = true
+		out = append(out, Target{Agent: a, Dir: dir, Global: global})
+		return nil
+	}
+	if root != "" {
+		for _, a := range agents {
+			dir, _ := a.ProjectTarget(root)
+			if err := add(a, dir, false); err != nil {
+				return nil, err
+			}
+		}
+	}
+	for _, a := range agents {
+		dir, _, err := a.GlobalTarget()
+		if err != nil {
+			return nil, err
+		}
+		if err := add(a, dir, true); err != nil {
+			return nil, err
+		}
+	}
+	return out, nil
+}
+
+// Behind counts the files an install would write or replace: missing ones and older
+// shipped versions. Edited files are not behind; they are the person's.
+func Behind(results []Result) int {
+	n := 0
+	for _, r := range results {
+		if r.Action == Written || r.Action == Updated {
+			n++
+		}
+	}
+	return n
+}
+
 // Dirs lists, for a flag's help, the directory each agent writes in one scope:
 // "claude: .claude/skills, copilot: .github/skills", or with ~/ for global.
 func Dirs(global bool) string {

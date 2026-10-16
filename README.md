@@ -74,6 +74,14 @@ release, including going back to an older one. A Homebrew or `go install`
 build is refused with the right command for that install instead — jaira
 never overwrites a file another tool owns.
 
+Once the new binary is in place, `self upgrade` runs that new binary's
+`jaira update --roles` and prints what it did: a board you are in gets its
+jaira section, and the skills already installed — this repository's and your
+personal ones — are brought up to date. Lanes are not touched; run
+`jaira update --lanes` for those. If you edited a skill file, it is named and
+left alone, and the upgrade still succeeds. If that step cannot run, you get one
+line saying so and the command to run yourself.
+
 jaira checks for a new release at most once a day, in the background, and
 never on the command path: nothing you run ever waits on the network for
 this. When a newer one is known, the launcher and the board show a pill
@@ -107,6 +115,29 @@ It rewrites the jaira section of `CLAUDE.md`/`AGENTS.md` for this board's
 lanes and lists what changed since the version that last ran there. Commit
 that section along with your next change, or leave it — it is only the agents'
 copy of the rules.
+
+That is all a plain `jaira update` writes. Right after the jaira-section line it
+prints a line for each part that is behind — roles, lanes — naming the switch
+that brings it up:
+
+```bash
+jaira update --roles            # skills already installed here and in ~/: roles, cockpit mod, jaira skill
+jaira update --lanes            # this board's lane files that are an older shipped version
+jaira update --dry-run --roles --lanes   # list what would be written, write nothing
+```
+
+`--roles` never installs for the first time — `jaira roles install` does that —
+and works outside a board too, for your personal skills only. A file that is an
+older version of one jaira shipped is replaced without `--force`. A file you
+edited is named and left alone, and the command exits 3; `jaira roles install
+--project --force` (or `--global --force`) or `jaira lanes use <id> --force`
+replaces it. `--dry-run` prints the
+same lines as "would ..." with the same exit code and does not even stamp the
+version.
+
+Once per jaira version, any board command prints one line on stderr when the
+jaira skills in your personal skills directory are older than the binary,
+and names `jaira update --roles`.
 
 **No update path changes whether the board is shared.** `jaira update`,
 `jaira self upgrade`, `go install` of a newer build, the first command after
@@ -647,8 +678,8 @@ about two processes interleaving.
 
 ## With Claude Code
 
-Install the skill from `.claude/skills/jaira/` and Claude will use the CLI
-directly. Optionally install `hooks/sync-tasks.sh` as a `PostToolUse` hook on the
+Install the skill with `jaira roles install` (it writes `jaira/SKILL.md`
+beside the roles) and Claude will use the CLI directly. Optionally install `hooks/sync-tasks.sh` as a `PostToolUse` hook on the
 task tools to mirror Claude's task list into the backlog.
 
 Mirrored tickets land in the backlog behind the gate. Lane movement is
@@ -675,13 +706,16 @@ clone) writes the agent prompts that drive a board into your skills directory.
 `--agent copilot` writes them where GitHub Copilot reads skills —
 `.github/skills` or `~/.copilot/skills` — instead of Claude Code's; see
 [docs/AGENTS.md](docs/AGENTS.md).
-They are compiled into the binary, so they match the version you run. Run it
-again after an upgrade: a prompt you have edited is left alone and reported,
-and `--force` replaces it too.
+They are compiled into the binary, so they match the version you run. After an
+upgrade, `jaira update --roles` brings them up to date wherever they are
+already installed, and `jaira self upgrade` runs it for you. Running
+`roles install` again does the same for one directory. Neither needs `--force`
+for a file that is an older version jaira shipped; a prompt you have edited is
+left alone and reported, and `--force` replaces it too.
 
 | Skill | What it does |
 |---|---|
-| `jaira` | Teaches the agent the CLI. Ships in `.claude/skills/jaira/`, not through `roles install`. |
+| `jaira` | Teaches the agent the CLI. Not a role, but `roles install` writes it beside them as `jaira/SKILL.md`. |
 | `/jaira-teamlead` | Plans with you and starts one dispatcher per ticket. Writes no code. |
 | `/jaira-dispatcher <id>` | Carries one ticket lane by lane to the next lane a person owns, one worker per lane. |
 | `/jaira-worker <id>` | Opt-in alternative to the dispatcher: carries the ticket through every lane itself, and only a lane marked `context: fresh` gets a new agent. |

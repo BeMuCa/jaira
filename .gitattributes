@@ -37,3 +37,16 @@ core/hook/example/*.sh text eol=lf
 # \r into the page and make that diff fail on a tree nobody changed, so the
 # whole front end — sources, lock file and build — is pinned.
 core/web/ui/** text eol=lf
+
+# The list of every shipped version of every installed file is embedded and
+# compared by hash; the fixtures the tests hold against it are older versions of
+# those files. A CRLF checkout changes every hash.
+core/shipped/shipped.sha256 text eol=lf
+core/role/testdata/** text eol=lf
+core/lane/testdata/** text eol=lf
+
+# The jaira skill: core/role/jaira/SKILL.md is embedded and installed beside the
+# roles, and a test holds it byte-equal to the copy this repository's own
+# sessions read. CRLF on either side would make them differ on Windows.
+core/role/jaira/SKILL.md text eol=lf
+.claude/skills/jaira/SKILL.md text eol=lf
