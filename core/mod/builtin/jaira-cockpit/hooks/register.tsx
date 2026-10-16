@@ -669,25 +669,21 @@ async function readWorkers($: EngineInterface): Promise<void> {
   if (dir === undefined || reading) return
   reading = true
   try {
-    await readWorkersIn($, dir)
+    const [lanes, list] = await Promise.all([run($, ['jaira', 'lanes', '--json'], dir), run($, ['jaira', 'list', '--json'], dir)])
+    if (lanes?.exitCode !== 0 || list?.exitCode !== 0) {
+      await update($, workersAtom, () => null)
+      return
+    }
+    const { tabs, agents } = await agentsOf($, dir)
+    const walkers = workersOf(lanes.stdout, list.stdout, tabs, agents)
+    const ids = [...new Set(walkers.map(f => f.id))]
+    await update($, workersAtom, () => walkers)
+    await update($, workersColorsAtom, kept => pickOf(ids, kept, COLORS))
+    await update($, workersHatsAtom, kept => pickOf(ids, kept, Object.keys(HATS)))
+    await update($, workersWhereAtom, where => Object.fromEntries(Object.entries(where).filter(([id]) => ids.includes(id))))
   } finally {
     reading = false
   }
-}
-
-async function readWorkersIn($: EngineInterface, dir: string): Promise<void> {
-  const [lanes, list] = await Promise.all([run($, ['jaira', 'lanes', '--json'], dir), run($, ['jaira', 'list', '--json'], dir)])
-  if (lanes?.exitCode !== 0 || list?.exitCode !== 0) {
-    await update($, workersAtom, () => null)
-    return
-  }
-  const { tabs, agents } = await agentsOf($, dir)
-  const walkers = workersOf(lanes.stdout, list.stdout, tabs, agents)
-  const ids = [...new Set(walkers.map(f => f.id))]
-  await update($, workersAtom, () => walkers)
-  await update($, workersColorsAtom, kept => pickOf(ids, kept, COLORS))
-  await update($, workersHatsAtom, kept => pickOf(ids, kept, Object.keys(HATS)))
-  await update($, workersWhereAtom, where => Object.fromEntries(Object.entries(where).filter(([id]) => ids.includes(id))))
 }
 
 // A decision is read once: the pane shows it, the band lets it go.
