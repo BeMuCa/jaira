@@ -20,17 +20,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-16T12:45:13Z
-updated-at: 2026-10-16T12:59:15Z
+updated-at: 2026-10-16T12:59:33Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-613775
 claimed-at: 2026-10-16T12:46:01Z
 outcome-what: "README: Features-Abschnitt mit 16 Funktionen und Use cases; vier frische Bilder (board-main, board-links, launcher, milestone-roadmap) mit jaira 0.5.1; shotgen-Tasten/roadmap, termshot-Grundfarben und die Demo-Welt-Extras ins Repo"
 outcome-why: "Die README zeigte alte Bilder und verschwieg Roadmap, Live-Board und weitere Funktionen; die Bilder vom Vortag hatten 'jaira dev', einen abgeschnittenen Done-Titel und ein Links-Fenster mitten im Hauptbild"
 outcome-resolves: "Hauptboard ohne Overlay mit allen 10 Lane-Titeln ganz, Links-Fenster als eigenes Bild beim Links-Text, keine 'dev'-Version; scripts/demoworld.sh baut Welt und shotgen mit Release-Version, sodass jeder die Bilder nachbauen kann"
-review-summary: |-
-  scripts/demoworld.sh:68-69 the comment says the corner reads "jaira 0.5.1" — false from the next release on; say "jaira <newest release>" instead
-  scripts/shotgen/main.go:83 a key word that is neither named nor one character presses its first letter ("rigth" -> r) and "" panics on [rune]0; die on any word that is not named and not exactly one rune
-  README.md: the two added paragraphs after the logbook section (round:/review-round:) and after the Commands block (follows/tag colours) are single 200-300 character lines; the rest of the README wraps prose at about 80 columns — wrap them the same way
+review-summary: none
 round: 2
 ---
 
@@ -70,3 +67,4 @@ round: 2
 - **2026-10-16 12:57 · BeMuCa** — in-progress: Funde neben dem Ticket, NICHT behoben (Berk entscheidet ob Ticket): (a) TUI zeichnet die Link-Linien der Cursor-Karte quer ueber die senkrechten Titel schmaler Lanes (z) - deshalb steht der Cursor im board-main auf einer Karte ohne Links ('right right' = Todo-Karte). (b) Im z-Modus bleiben bei 170 Spalten ~20 Spalten rechts leer; Blocked erscheint erst ab 168 Spalten, darunter scrollt das Board seitlich - das war Done='one'. (c) --blocked-by mit Handle: 'jaira links <blocker>' und das Links-Fenster listen den wartenden Ticket NICHT unter blocking (getestet: MEN5J3 --blocked-by KSWEQM), nur die volle ID wirkt; linklines.go loest Handles dagegen auf. (d) docs/img/pipeline.png (alt, nicht Teil des Tickets) zeigt 'Implementi…' und 'Human Revi…' abgeschnitten. (e) Bei 170x24 enden die Lane-Kaesten ungleich hoch; 26 Zeilen sind sauber. Sackgasse: python3 findet PIL nicht, wenn HOME in den Scratchpad zeigt - PYTHONUSERBASE=/home/berk/.local setzen.
 - **2026-10-16 12:58 · BeMuCa** — critique pass 1: (1) demoworld.sh Kommentar nennt 0.5.1 fest -> 'jaira <newest release>'; (2) shotgen: unbekanntes Mehrzeichen-Wort drueckt still seinen ersten Buchstaben, '' panict -> die, wenn nicht benannt und nicht genau ein Zeichen; (3) README: zwei neue Absaetze (round:, follows/tag colours) sind Einzeilen mit 200-300 Zeichen -> auf ~80 umbrechen wie der Rest. Stehen gelassen: named-Map mit left/up/down/enter/esc und termshot 40-47/100-107/39/49 obwohl die Rezepte sie nicht brauchen - der Auftrag verlangte die Patches so ins Repo; board-links-Bild unter 'Follow-ups link themselves' statt eigenem 17. Feature, weil der Abschnitt genau die 16 der Liste haben soll.
 - **2026-10-16 12:59 · BeMuCa** — in-progress Runde 2: alle drei Critique-Funde behoben - demoworld.sh Kommentar ohne feste Version; shotgen stirbt bei unbekanntem Tastenwort (getestet: 'rigth' und '' -> exit 1); zwei README-Absaetze auf 80 umbrochen. board-main/board-links mit neuem shotgen neu gerendert: byte-gleich (cmp), Proofs bleiben gueltig.
+- **2026-10-16 12:59 · BeMuCa** — critique pass 2: die drei Funde aus pass 1 sind beantwortet (e7de6169), die Reparatur bringt keinen neuen Fehler; nichts weiter.
