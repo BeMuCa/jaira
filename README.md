@@ -806,6 +806,13 @@ changes for anybody.
   that is the decision (it accepts only on your explicit yes), sends your
   session one line, and the frame offers **Read decision**. Each tab closes
   once its note is there.
+- When jaira's hourly release check knows a newer jaira than the one on
+  `PATH`, the frame says so with **Update** and **Dismiss**. Update runs
+  `jaira self upgrade --check` and `jaira update --roles --lanes --dry-run`
+  and shows what they report in a pane; only **Update to <version>** there
+  replaces the binary (`jaira self upgrade`) and brings this repository's
+  skills and lane files up to date (`jaira update --roles --lanes`). Dismiss
+  hides the notice for exactly that version; the next release shows it again.
 - The frame's last line shows the context size and how long the prompt cache
   stays warm, `/compact advised` and a cold cache in the warning colour; a
   prompt of yours onto a cold cache with a large context is held with a
