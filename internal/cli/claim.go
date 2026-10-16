@@ -95,6 +95,7 @@ another session is actively renewing is refused.`,
 			if err != nil {
 				return err
 			}
+			warnNewerRelease(cmd.ErrOrStderr())
 			if sessionID == "" {
 				sessionID = session.DefaultID()
 			}

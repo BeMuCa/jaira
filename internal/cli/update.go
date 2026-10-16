@@ -34,9 +34,9 @@ var updateInProgress bool
 //
 // Whether a newer *release* is published is a separate question this
 // function deliberately does not answer: the TUI's pill (internal/tui) shows
-// it, and 'jaira next' and 'jaira resume' print it (warnNewerRelease). Not
-// every command, because a line on each of them is noise for the scripts
-// that drive the CLI.
+// it, and 'jaira next', 'jaira resume', 'jaira claim' and 'jaira move' print
+// it (warnNewerRelease). Not every command, because a line on each of them is
+// noise for the scripts that drive the CLI.
 func nudgeIfStale(s *ticket.Store) {
 	if release.Current == "dev" || updateInProgress {
 		return

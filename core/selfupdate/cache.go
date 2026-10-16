@@ -168,7 +168,8 @@ func isTestBinary(exe string) bool {
 //
 // This is the one non-network entry point a consumer should read through
 // instead of composing Read/Stale/Write/SpawnRefresh itself — its consumers
-// are the TUI's version indicator and 'jaira next' / 'jaira resume'. It
+// are the TUI's version indicator and 'jaira next' / 'resume' / 'claim' /
+// 'move'. It
 // never blocks on the network: a stale cache gets touched and handed to a
 // detached child (see SpawnRefresh's own doc comment for why),
 // and this function returns immediately with whatever was already known,
