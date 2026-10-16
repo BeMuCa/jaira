@@ -15,7 +15,7 @@ related: []
 follows: 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-16T10:04:46Z
-updated-at: 2026-10-16T12:51:14Z
+updated-at: 2026-10-16T12:51:33Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-482020
@@ -70,7 +70,7 @@ round: 2
 - [x] release note core/release/notes/EDSQZP.md, shipped.sha256 neu, Ja-Pfad mit echtem Binary gegen Stub-Release in Scratch-JAIRA_HOME pruefen
 - [x] Cockpit: stderr von self upgrade ins Ergebnis-Pane (gap 1); Dry-run mit Exit ausser 0/3 -> Fehler-Pane, kein 'Update to X'; Tests
 - [x] Agenten-Weg: newerrelease.go-Zeile und announce.go-Block auf check + dry-run + zeigen + fragen; Tests-Wants ergaenzen; CLAUDE.md/AGENTS.md mit jaira update dieses Branches neu; README/COMMANDS.md nachziehen
-- [~] Release-Notiz zweite Zeile, shipped.sha256 neu, gofmt/vet/build, Commit
+- [x] Release-Notiz zweite Zeile, shipped.sha256 neu, gofmt/vet/build, Commit
 
 ## Progress
 - **2026-10-16 11:20 · BeMuCa** — Entscheidungen vor der Arbeit (keine offen fuer Berk, alle aus Code/Ticket/Default gesetzt):
