@@ -1,9 +1,14 @@
 package cli
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"time"
@@ -19,6 +24,25 @@ import (
 // time a process does it, because the first run's .old-<pid> is still there
 // and still locked.
 var selfExecutable = os.Executable
+
+// runUpgraded runs the binary just installed at target with args and returns
+// its exit code. The running process is the old binary — whatever it wrote
+// from its own embedded files would be the old version — so the setup has to
+// come from the new one. A variable so a test can watch the call instead of
+// executing the stand-in bytes a fake release serves.
+var runUpgraded = func(target string, args []string, stdout, stderr io.Writer) (int, error) {
+	c := exec.Command(target, args...)
+	c.Stdout, c.Stderr = stdout, stderr
+	err := c.Run()
+	var ee *exec.ExitError
+	if errors.As(err, &ee) {
+		return ee.ExitCode(), nil
+	}
+	if err != nil {
+		return -1, err
+	}
+	return 0, nil
+}
 
 // newSelfCmd groups operations on the jaira binary itself, as distinct from
 // 'jaira update', which re-applies a board's setup and downloads nothing —
@@ -172,8 +196,21 @@ pins (or downgrades to) an exact release.`,
 			}
 			_ = selfupdate.Write(selfupdate.Check{CheckedAt: now, Latest: rel.Version})
 
+			// Exit 3 from the child means it skipped edited files and already
+			// said which; only a child that did not run at all, or failed
+			// otherwise, is worth a line here. The binary was replaced either
+			// way, so the upgrade itself still succeeds.
+			setupArgs := []string{"-C", g.dir, "update", "--roles"}
 			if g.jsonOut {
-				return emit(w, payload(true))
+				p := payload(true)
+				var setupOut bytes.Buffer
+				code, err := runUpgraded(target, append(setupArgs, "--json"), &setupOut, cmd.ErrOrStderr())
+				warnSetupFailed(cmd.ErrOrStderr(), rel.Version, code, err)
+				if json.Valid(setupOut.Bytes()) {
+					p["setup"] = json.RawMessage(bytes.TrimSpace(setupOut.Bytes()))
+				}
+				p["setup_exit"] = code
+				return emit(w, p)
 			}
 			fmt.Fprintf(w, "upgraded jaira %s -> %s (%s)\n", release.Current, rel.Version, target)
 			// A binary was just replaced with bytes from somewhere other than
@@ -184,6 +221,9 @@ pins (or downgrades to) an exact release.`,
 			for _, o := range selfupdate.Overridden() {
 				fmt.Fprintf(cmd.ErrOrStderr(), "warning: release host overridden by %s\n", o)
 			}
+			fmt.Fprintf(w, "bringing your setup in step with %s: jaira update --roles\n", rel.Version)
+			code, err := runUpgraded(target, setupArgs, w, cmd.ErrOrStderr())
+			warnSetupFailed(cmd.ErrOrStderr(), rel.Version, code, err)
 			fmt.Fprintf(w, "run 'jaira update' in each repository to bring its board setup in step.\n")
 			return nil
 		},
@@ -191,4 +231,19 @@ pins (or downgrades to) an exact release.`,
 	cmd.Flags().BoolVar(&check, "check", false, "report what is available and install nothing")
 	cmd.Flags().StringVar(&pinVersion, "version", "", "install this exact release, including an older one")
 	return cmd
+}
+
+// warnSetupFailed says the new binary's setup did not complete: it did not
+// start, or it exited with something other than 0. Exit 3 is not that — the
+// child skipped edited files and already named them. It is a warning, not an
+// error: the binary was replaced, so exiting non-zero would make an agent
+// retry an upgrade that already happened.
+func warnSetupFailed(w io.Writer, version string, code int, err error) {
+	if err == nil && (code == 0 || code == ExitValidation) {
+		return
+	}
+	if err == nil {
+		err = fmt.Errorf("exit %d", code)
+	}
+	fmt.Fprintf(w, "jaira: setting up with %s failed (%v) — run 'jaira update --roles' yourself\n", version, err)
 }
