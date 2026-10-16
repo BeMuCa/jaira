@@ -16,6 +16,10 @@ export type Overview = {
   working: OverviewRow[]; queue: OverviewRow[]; parked: OverviewRow[]; history: { day: string; events: OverviewEvent[] }[]
 }
 
+// What the Workers tab draws: these mirror hooks/overview.ts.
+export type Walker = { id: string; state: 'working' | 'idle' | 'question'; lane: string; next: string; title: string; progress: number }
+export type Spot = { lane: string; x: number }
+
 declare module 'claude-code' {
   interface PluginState {
     'jaira-cockpit': {
@@ -56,9 +60,17 @@ declare module 'claude-code' {
       overview: Overview | null
       // The Overview pane's tab, its folded sections and the people its Log
       // is filtered to, kept for the session across closing and opening it.
-      overviewTab: 'queue' | 'log'
+      overviewTab: 'queue' | 'log' | 'workers'
       overviewFolded: Record<string, boolean>
       overviewPeople: string[]
+      // The Workers tab: its figures, read while it is open; where each
+      // ticket's figures stand on their track; each ticket's colour and hat,
+      // kept while it stays on the board; and the frame the animation is at.
+      workers: Walker[] | null
+      workersWhere: Record<string, Spot>
+      workersColors: Record<string, string>
+      workersHats: Record<string, string>
+      workersFrame: number
     }
   }
 }
