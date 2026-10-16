@@ -20,13 +20,17 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-16T12:45:13Z
-updated-at: 2026-10-16T12:57:31Z
+updated-at: 2026-10-16T12:58:29Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-613775
 claimed-at: 2026-10-16T12:46:01Z
 outcome-what: "README: Features-Abschnitt mit 16 Funktionen und Use cases; vier frische Bilder (board-main, board-links, launcher, milestone-roadmap) mit jaira 0.5.1; shotgen-Tasten/roadmap, termshot-Grundfarben und die Demo-Welt-Extras ins Repo"
 outcome-why: "Die README zeigte alte Bilder und verschwieg Roadmap, Live-Board und weitere Funktionen; die Bilder vom Vortag hatten 'jaira dev', einen abgeschnittenen Done-Titel und ein Links-Fenster mitten im Hauptbild"
 outcome-resolves: "Hauptboard ohne Overlay mit allen 10 Lane-Titeln ganz, Links-Fenster als eigenes Bild beim Links-Text, keine 'dev'-Version; scripts/demoworld.sh baut Welt und shotgen mit Release-Version, sodass jeder die Bilder nachbauen kann"
+review-summary: |-
+  scripts/demoworld.sh:68-69 the comment says the corner reads "jaira 0.5.1" — false from the next release on; say "jaira <newest release>" instead
+  scripts/shotgen/main.go:83 a key word that is neither named nor one character presses its first letter ("rigth" -> r) and "" panics on [rune]0; die on any word that is not named and not exactly one rune
+  README.md: the two added paragraphs after the logbook section (round:/review-round:) and after the Commands block (follows/tag colours) are single 200-300 character lines; the rest of the README wraps prose at about 80 columns — wrap them the same way
 ---
 
 # README zeigt die Features mit Use cases und frischen Screenshots
