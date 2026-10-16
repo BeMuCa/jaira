@@ -62,7 +62,8 @@ export type Agent = { description: string; name?: string; status: string }
 
 // The chats a person opens from the band are theirs, not an agent at work.
 export const PERSONS_TABS = new Set(['explain', 'discuss'])
-const WORKING = new Set(['pending', 'running', 'waiting'])
+// A subagent at work: running a turn, about to, or held on its own work.
+export const WORKING = new Set(['pending', 'running', 'waiting'])
 
 // The tickets waiting in a lane a person owns: those of the person this
 // session is (`me`, their name and aliases from `jaira whoami`) or of nobody,

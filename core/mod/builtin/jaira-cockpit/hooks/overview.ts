@@ -5,7 +5,7 @@
 // a session: so it is the same after a night, a restart or another session.
 // register.tsx runs the commands; this file only reads what they printed.
 
-import { isPersons, oneLine, parse, PERSONS_TABS, type Agent, type Lane } from './board.ts'
+import { isPersons, oneLine, parse, PERSONS_TABS, WORKING, type Agent, type Lane } from './board.ts'
 import type { Tab } from './sessions.ts'
 
 export type Row = {
@@ -40,6 +40,7 @@ type Ticket = {
   updated_at?: string
   updated_by?: string
   blocked_reason?: string
+  question?: string
 }
 
 const two = (n: number) => String(n).padStart(2, '0')
@@ -122,9 +123,6 @@ export type Walker = { id: string; state: WorkerState }
 // ticket the figure works on.
 export type Workers = { stations: string[]; at: Record<string, Walker[]> }
 
-// A subagent at work: running a turn, about to, or held on its own work.
-const RUNNING = new Set(['pending', 'running', 'waiting'])
-
 // The stations are the lanes something happens in: every agent's lane and
 // every person's, in board order; backlog, todo, blocked and done are not.
 // A Herdr tab spawn.sh labelled `<id>/<kind>` is an agent, at work while
@@ -137,7 +135,7 @@ export function workersOf(lanesJson: string, listJson: string, tabs: readonly Ta
   const stations = (parse<{ lanes: Lane[] }>(lanesJson)?.lanes ?? [])
     .filter(l => l.terminal !== true && (l.agentic || isPersons(l)))
     .map(l => l.id)
-  const tickets = parse<{ tickets: (Ticket & { question?: string })[] }>(listJson)?.tickets ?? []
+  const tickets = parse<{ tickets: Ticket[] }>(listJson)?.tickets ?? []
   const at: Record<string, Walker[]> = Object.fromEntries(stations.map(s => [s, []]))
   for (const t of tickets) {
     const here = at[t.status]
@@ -151,7 +149,7 @@ export function workersOf(lanesJson: string, listJson: string, tabs: readonly Ta
     }
     for (const a of agents) {
       if (!`${a.description} ${a.name ?? ''}`.includes(t.handle)) continue
-      if (RUNNING.has(a.status) || a.status === 'idle') walkers.push({ id: t.handle, state: state(RUNNING.has(a.status)) })
+      if (WORKING.has(a.status) || a.status === 'idle') walkers.push({ id: t.handle, state: state(WORKING.has(a.status)) })
     }
     if (walkers.length === 0 && asks) walkers.push({ id: t.handle, state: 'question' })
     here.push(...walkers)

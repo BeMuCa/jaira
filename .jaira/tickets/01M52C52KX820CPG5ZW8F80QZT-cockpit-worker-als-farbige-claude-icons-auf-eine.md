@@ -1,7 +1,7 @@
 ---
 id: 01M52C52KX820CPG5ZW8F80QZT
 title: "Cockpit: Worker als farbige Claude-Icons auf einer Lane-Spur im Overview"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Das Overview-Pane des cockpits bekommt einen dritten Tab 'Workers': die Lanes als Stationen (◯ lane ─ ◯ lane), jeder Agent als ✻ in der Farbe seines Tickets mit dem 6-stelligen Handle an der Station seiner Lane; wechselt das Ticket die Lane, läuft das ✻ sichtbar hinüber. working dreht sich, idle schläft gedimmt, eine offene Frage steht als ?-Blase darüber."
@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-16T12:49:22Z
-updated-at: 2026-10-16T13:07:36Z
+updated-at: 2026-10-16T13:08:57Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-51728
@@ -29,12 +29,9 @@ claimed-at: 2026-10-16T12:50:47Z
 outcome-what: "Overview im cockpit hat einen dritten Tab Workers: Lanes als Stationen, jeder Agent ein ✻ in Ticketfarbe mit Handle, dreht bei working, z z bei idle, ?-Blase bei offener Frage, läuft beim Lanewechsel Station für Station; Timer 250 ms nur solange der Tab offen ist, Board alle 5 s neu gelesen"
 outcome-why: "Bei 5 parallelen Workern sah Alex nur eine Zahl im Band und Textzeilen im workers-Tool, nicht wer an welchem Ticket in welcher Lane steht; Alex wollte es verspielt, wie ein kleines Spiel"
 outcome-resolves: F80QZT
-review-summary: |-
-  core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx:21 PEOPLE ist dieselbe Liste wie TICKET_COLORS in overview.ts - eine Palette behalten, personColor nimmt sie
-  core/mod/builtin/jaira-cockpit/hooks/register.tsx readWorkers wiederholt das Lesen von Herdr-Tabs und $.agent.list aus refreshBoard (register.tsx ~252-260) - einen Helfer agentsOf($, dir) für beide
-  core/mod/builtin/jaira-cockpit/hooks/overview.ts Walker.kind liest niemand außer dem React-Key, den n schon eindeutig macht - Feld streichen, auch in types/index.d.ts
-  core/mod/builtin/jaira-cockpit/hooks/overview.ts colorsOf(palette=TICKET_COLORS): der Parameter hat keinen Aufrufer, der ihn setzt - streichen
+review-summary: none
 round: 2
+review-gaps: "overview.ts RUNNING war eine Kopie von WORKING in board.ts:66 - entfernt, WORKING exportiert und genutzt; Ticket-Typ in overview.ts bekommt question statt Schnitttyp im parse. Gelassen: workersOf und snapshotOf lesen Tab-Labels beide per split('/'), zählen aber nach verschiedenen Regeln (Band nur working, Workers-Tab auch idle, laut decision-Notiz); readWorkers liest jaira lanes alle 5 s mit, billig und hält das Overview-Muster (openOverview liest auch alles neu). Kein toter Code gefunden."
 ---
 
 # Cockpit: Worker als farbige Claude-Icons auf einer Lane-Spur im Overview
@@ -79,3 +76,4 @@ core/mod/builtin/jaira-cockpit/hooks/register.tsx readWorkers wiederholt das Les
 core/mod/builtin/jaira-cockpit/hooks/overview.ts Walker.kind liest niemand außer dem React-Key, den n schon eindeutig macht - Feld streichen, auch in types/index.d.ts
 core/mod/builtin/jaira-cockpit/hooks/overview.ts colorsOf(palette=TICKET_COLORS): der Parameter hat keinen Aufrufer, der ihn setzt - streichen
 - **2026-10-16 13:07 · Alexander Sacharov** — in-progress Runde 2: alle 4 critique-Funde umgesetzt - eine Palette COLORS (overview.ts) für Personen und Tickets, agentsOf($, dir) in register.tsx für refreshBoard und readWorkers, Walker.kind und colorsOf-palette gestrichen. Tests 149 pass, validate, tsc grün. Proofs geprüft: zeigen weiter auf existierende Namen.
+- **2026-10-16 13:07 · Alexander Sacharov** — critique Runde 2: die 4 Funde aus Runde 1 sind in a37f79b5 umgesetzt (Palette, agentsOf, kind, palette-Param); nur dieser Diff gelesen, nichts Neues. none.
