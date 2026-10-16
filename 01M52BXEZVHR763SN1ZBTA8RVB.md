@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-16T12:45:13Z
-updated-at: 2026-10-16T12:47:54Z
+updated-at: 2026-10-16T12:48:05Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-613775
 claimed-at: 2026-10-16T12:46:01Z
@@ -45,7 +45,7 @@ claimed-at: 2026-10-16T12:46:01Z
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] shotgen: roadmap-View und Tasten nach <rows> aus dem Scratch-Overlay in scripts/shotgen/main.go uebernehmen
+- [~] shotgen: roadmap-View und Tasten nach <rows> aus dem Scratch-Overlay in scripts/shotgen/main.go uebernehmen
 - [ ] termshot.py: SGR 30-37/90-97/40-47/100-107/39/49 aus dem Overlay in scripts/termshot.py uebernehmen
 - [ ] demoworld.sh: Milestones, fertige Tickets und Links aus add-world.sh einbauen; Render-Rezept mit Release-Version und allen vier Bildern
 - [ ] Demo-Welt frisch bauen, vier Bilder rendern (board-main, board-links, launcher, milestone-roadmap) mit jaira 0.5.1 und ohne abgeschnittenen Lane-Titel
