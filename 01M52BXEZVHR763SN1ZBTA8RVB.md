@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-16T12:45:13Z
-updated-at: 2026-10-16T12:56:41Z
+updated-at: 2026-10-16T12:56:44Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-613775
 claimed-at: 2026-10-16T12:46:01Z
@@ -32,7 +32,8 @@ claimed-at: 2026-10-16T12:46:01Z
 
 - [x] README hat einen Abschnitt mit allen 16 Features aus der Liste, jedes mit einer Zeile 'Use case:' in einfachem technischem Englisch
   proof: README.md:34 '## Features': 16 Eintraege (README.md:36-125), 16 Zeilen ' - Use case:' (awk-Zaehlung des Abschnitts); Liste = features.md des frueheren Agents, gleiche 16 Themen
-- [ ] Milestone-Roadmap und Live-Board ohne Neuladen stehen in der README, mit Quelle in core/release/notes belegt
+- [x] Milestone-Roadmap und Live-Board ohne Neuladen stehen in der README, mit Quelle in core/release/notes belegt
+  proof: README.md:36 Milestone Roadmap <- core/release/notes/0.5.0/D0SAHM.md (L, Bubbles, enter, b, --after); README.md:113 Live board <- core/release/notes/0.5.0/NA413Y.md (changed ticket within 2 seconds)
 - [ ] Drei neue Screenshots (Hauptboard, Launcher, Milestone-Roadmap mit Fortschritt): frisch gerendert, sha256 anders als die alten Bilder, kein abgeschnittener Spaltenname, keine 'dev'-Version
 - [ ] Ein Screenshot zeigt das Links-Fenster, ohne dass das Hauptboard-Bild dadurch verdeckt ist
 - [ ] git diff --check sauber, Code-Fences in README.md gerade, jedes Bild in der README verlinkt existiert
