@@ -44,6 +44,7 @@ export const t = {
   upgrading: (to: string) => `updating jaira to ${to}...`,
   upgraded: (to: string) => `jaira updated to ${to}`,
   noRoomUpdate: 'No room for a pane here: widen the terminal and press Update again.',
+  dryRunFailed: "Nothing was written and no update is offered: 'jaira update --roles --lanes --dry-run' gave no preview. It said:",
   close: 'Close',
   bandTitle: 'jaira-cockpit',
   noRoom: 'No room for a pane here: widen the terminal and press Give back again.',

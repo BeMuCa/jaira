@@ -78,9 +78,11 @@ Working a ticket:
   when the ticket leaves the board
 - `jaira resume` — work left in progress, with everything recorded about it
 - when jaira reports a newer release (`jaira next`, `resume`, `claim` and `move`
-  print it on stderr), ask the user once whether to update. Only on a yes run
-  `jaira self upgrade`, then `jaira update --roles --lanes`; without one run
-  neither, and after a no do not ask again in this session
+  print it on stderr), first run `jaira self upgrade --check` and
+  `jaira update --roles --lanes --dry-run`, which write nothing,
+  show the user what they report and ask the user once whether to update.
+  Only on a yes run `jaira self upgrade`, then `jaira update --roles --lanes`;
+  without one run neither, and after a no do not ask again in this session
 - **every commit names the ticket id** — `fix(A3K9QP): ...`. jaira derives a
   ticket's commit list from two sources: the history of the ticket file itself,
   and the commits that name its id. The first source is thin by design (see the

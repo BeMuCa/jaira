@@ -88,8 +88,10 @@ this. When a newer one is known, the launcher and the board show a pill
 `^ 0.2.0` under the version at the top left — run `jaira self upgrade` to
 install it; an open board picks it up without a restart. `jaira next`,
 `jaira resume`, `jaira claim` and `jaira move` print one line on stderr saying
-so, which tells an agent to ask you whether to update and, only on a yes, to
-run `jaira self upgrade` and then `jaira update --roles --lanes`. Their stdout
+so, which tells an agent to show you what `jaira self upgrade --check` and
+`jaira update --roles --lanes --dry-run` report, ask you whether to update
+and, only on a yes, run `jaira self upgrade` and then
+`jaira update --roles --lanes`. Their stdout
 and `--json` stay clean, so a script or an agent driving jaira is never
 disturbed by it; every other command stays quiet.
 When you are up to date the version reads `jaira 0.1.0 · up to date`. Set

@@ -364,6 +364,9 @@ async function previewUpgrade($: EngineInterface, dir: string): Promise<void> {
   }
   const dry = await run($, ['jaira', 'update', '--roles', '--lanes', '--dry-run'], dir, 30_000)
   const preview = dry === undefined ? 'jaira did not run' : withoutWarnings(`${dry.stdout}\n${dry.stderr}`)
+  // Exit 3 is a preview too: it names the edited files an update leaves
+  // alone. Anything else is no preview, and without one nothing is offered.
+  if (dry?.exitCode !== 0 && dry?.exitCode !== 3) return fail($, t.updateJaira, `${t.dryRunFailed}\n${preview}`)
   await update($, upgradeAtom, () => ({ from: check.current, to: check.latest, preview }))
   const opened = await $.ui.open({ id: UPGRADE, title: t.upgradeTitle(check.current, check.latest), focus: true, closeOnEscape: true })
   if (!opened.isPlaced) await fail($, t.updateJaira, t.noRoomUpdate)
@@ -382,7 +385,7 @@ async function upgradeJaira($: EngineInterface, dir: string, to: string): Promis
   await checkVersion($, dir)
   await refreshRelease($)
   await update($, noticeAtom, () => null)
-  await show($, t.upgraded(to), withoutWarnings(`${up.stdout}\n${setup === undefined ? 'jaira update did not run' : `${setup.stdout}\n${setup.stderr}`}`))
+  await show($, t.upgraded(to), withoutWarnings(`${up.stdout}\n${up.stderr}\n${setup === undefined ? 'jaira update did not run' : `${setup.stdout}\n${setup.stderr}`}`))
 }
 
 async function noteOn($: EngineInterface, dir: string, id: string, kind: 'explain' | 'decision') {
