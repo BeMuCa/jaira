@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/img/home.png" alt="jaira: the launcher, with every board and what each one needs" width="80%">
+  <img src="docs/img/launcher.png" alt="The jaira launcher: a list of boards, each with its open tickets and how many wait for you" width="80%">
 </p>
 
 A kanban board for the work you do with coding agents, stored as markdown files
@@ -20,7 +20,7 @@ repo/                              ~/.jaira/
 └── src/                           └── state/<worktree>/   sessions, locks
 ```
 
-<img src="docs/img/board.png" alt="The board" width="100%">
+<img src="docs/img/board-main.png" alt="The board: ten lanes from Backlog to Blocked, with tickets in Backlog, Todo, Implementing, Human Review, Done and Blocked" width="100%">
 
 One window over every project, with the whole flow on one screen: a dot per
 ticket, agents counted per step, and the arrow lit where work just moved:
@@ -30,6 +30,99 @@ ticket, agents counted per step, and the arrow lit where work just moved:
 The repository holds only tickets. Everything ephemeral (what each session is
 focused on, write locks) lives under your home directory, so `.jaira/` never
 mixes committed content with scratch state.
+
+## Features
+
+- **Milestone Roadmap.** Press `L` on the board. Each milestone on the roadmap
+  is a bubble, filled as far as its tickets are done, with arrows from what
+  comes first to what comes after. `enter` on a bubble shows the milestone's
+  goal and tickets; `b` there shows the board filtered to it. Put a milestone
+  on the roadmap with `jaira milestone create <name> --goal <text> --after <a,b>`;
+  `--after ""` starts a swimlane of its own, and without `--after` it stays off.
+  - Use case: see how far each round of work is, and which round comes next.
+
+  <img src="docs/img/milestone-roadmap.png" alt="The Milestone Roadmap: cart-basics with 2 of 2 tickets done, then payments-v1 with 1 of 4, then webhooks with 1 of 2, and sessions with 0 of 3 in a second swimlane" width="70%">
+
+- **Cockpit in Claude Code.** A frame titled `jaira-cockpit` above the prompt
+  counts the agents at work and the tickets waiting for you, with Accept, Give
+  back, Explain and Discuss for each. `jaira roles install --force` installs
+  it; start a new session after. See
+  [the cockpit](#the-cockpit-a-claude-code-mod-for-the-session-you-work-from).
+  - Use case: accept or return finished work without leaving your Claude Code
+    session.
+- **Explanation pane.** In the cockpit, Read explanation shows a review
+  finding, why it counts, and its options as numbered rows. Press a number, or
+  the arrow keys and Enter, or write your own answer; the choice lands on the
+  ticket as a `decision:` note.
+  - Use case: answer a review finding in a few keys, with the answer kept on
+    the ticket.
+- **Overview pane.** The cockpit's Overview button shows In work, Queue and Put
+  back. Its Log tab lists what was created or put back in the last seven days,
+  and filters by person, each person in their own colour.
+  - Use case: see what runs, what is next and what was parked, in one place.
+- **Epics and `jaira web`.** `jaira epic create`, `add`, `ls` and `show` group
+  tickets into features and count done X of Y, follow-ups included. `jaira web`
+  opens a page on 127.0.0.1: drag tickets onto epics, click one to read its
+  goal, context, definition of done and notes. Epics need a repository with a
+  remote.
+  - Use case: sort a backlog into features with the mouse, then see how far
+    each feature is.
+- **Lanes are agent steps.** A lane can carry a prompt, a model tier and the
+  fields it must produce. A lane a person owns is marked, and an agent cannot
+  move work on out of it. See [Lanes are pipeline stages](#lanes-are-pipeline-stages).
+  - Use case: a cheap model implements, a strong model reviews, a person
+    accepts.
+- **One agent per ticket.** Set `"dispatch": "worker"` in
+  `~/.jaira/settings.json`, or switch "Agents per ticket" under `S` on the
+  board, then run `jaira roles install --force`. One agent then carries a whole
+  ticket through every lane; only the fresh-context lane (`review` on the
+  shipped board) gets a new agent.
+  - Use case: keep one agent's context from plan to tests, instead of a new
+    agent per lane.
+- **Several milestones at once.** `M` on the board opens the milestone picker.
+  Tick milestones with space and press enter to see the tickets of all of them.
+  - Use case: look at the tickets of two releases side by side.
+- **Tickets are markdown files in git.** One call files a complete ticket:
+  `jaira create <title> --goal … --context … --dod …`. Then
+  `jaira dod <id> <n> --done --proof "<file:line or test>"` ticks a criterion
+  and says what makes it true.
+  - Use case: months later, read what a ticket was for and what proved it done.
+- **Board filter.** `/` filters the board. `key:value` narrows to one field,
+  such as `lane:`, `assignee:`, `tag:` or `milestone:`; spaces combine, a comma
+  means or.
+  - Use case: `lane:done milestone:webhooks` lists what is finished in one
+    milestone.
+- **Tags with colours.** `jaira tags` lists the tags the board already uses;
+  `jaira tag <id> <name>…` adds one. The colours live in the hand-editable
+  `.jaira/tags`, one `name: <ansi256>` line per tag.
+  - Use case: a team reuses one name per subject, so a tag filter finds every
+    ticket.
+- **Follow-ups link themselves.** On a branch named after a ticket (e.g.
+  `feat/f914qh`), `jaira create` links the new ticket to that one and says so;
+  `--follows none` turns it off. Press `l` on a card to see every ticket linked
+  to it, for example what it waits on, what it blocks, and what follows it.
+  - Use case: a problem found while working a ticket stays tied to the ticket
+    it came from.
+
+  <img src="docs/img/board-links.png" alt="The board with the Links window open on one ticket: the ticket it blocks, a related ticket, and a follow-up" width="100%">
+- **Send-back rounds.** A ticket sent back to an earlier lane gets `round:`,
+  which starts at 2 and grows with every send-back. Each review verdict records
+  `review-round:`, the round it judged.
+  - Use case: tell a current review verdict from one an earlier round left
+    behind.
+- **Live board.** An open board shows a changed ticket within 2 seconds, without
+  a reload.
+  - Use case: keep the board open on a second screen and watch agents move
+    cards.
+- **Scriptable.** Every read command takes `--json`, and the exit codes are a
+  stable contract. `jaira json get <path>` reads one JSON field in a shell
+  script, without jq or python3.
+  - Use case: any bash-capable agent or CI job reads and moves tickets.
+- **Windows and GitHub Copilot.** Install on Windows with one PowerShell line
+  (see [Install](#install)). `jaira roles install --agent copilot` writes the
+  roles where GitHub Copilot reads skills.
+  - Use case: a teammate on Windows, or one who uses Copilot, works the same
+    board.
 
 ## Install
 
@@ -761,6 +854,8 @@ changes for anybody.
   Berk, Carla`) that opens to show them, with **Discuss** only, and count no
   more as waiting for you. When a button fails, the error opens whole in a
   pane of its own.
+- The **Overview** button opens a board view with In work, Queue and Put back
+  columns; its Log tab filters by person, each person in their own colour.
 - A verdict with a reservation gets **Explain**, an open question **Discuss**:
   each opens a Herdr tab of its own. The Explain chat writes its explanation
   onto the ticket and the frame offers it as **Read explanation**. The Discuss
@@ -768,6 +863,8 @@ changes for anybody.
   that is the decision (it accepts only on your explicit yes), sends your
   session one line, and the frame offers **Read decision**. Each tab closes
   once its note is there.
+- The explanation pane shows a finding with numbered options; pick one with the
+  arrow keys and Enter, and the pick lands on the ticket as a `decision:` note.
 - The frame's last line shows the context size and how long the prompt cache
   stays warm, `/compact advised` and a cold cache in the warning colour; a
   prompt of yours onto a cold cache with a large context is held with a
@@ -842,6 +939,8 @@ terminal lane for `logbook-days` days (28 by default; see **Keys**).
 and says how many older entries it left out; `--since 10d` picks another window
 and `--since 0` lists everything.
 
+A ticket sent back to an earlier lane gets a `round:` field that starts at 2 and grows by one with every send-back (parking in blocked does not count); `review-round:` records which round each review verdict judged.
+
 ## Commands
 
 ```
@@ -895,6 +994,8 @@ jaira json get <path>      print one field of the JSON on stdin, for shell scrip
 jaira completion <shell>   print the completion script for bash, fish, powershell or zsh
 jaira help <command>       the full help of one command, the same as <command> --help
 ```
+
+On a ticket branch (e.g. `feat/f914qh`), `jaira create` sets `--follows` to that ticket by itself and says so; `--follows none` makes the new ticket unrelated. Tag colours live once per board in the hand-editable `.jaira/tags` file, one `name: <ansi256>` line per tag; jaira adds a line only for a tag name it has not seen yet.
 
 Full reference: **[docs/COMMANDS.md](docs/COMMANDS.md)**.
 
