@@ -42,11 +42,11 @@ func boardWithTesting(t *testing.T) (string, string) {
 	t.Helper()
 	t.Setenv("JAIRA_HOME", t.TempDir())
 	root := setUpBoard(t)
-	offer, err := Load("")
+	set, err := Load(root)
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, _, _, err := Add(root, offer, "testing")
+	p, _, _, err := Add(root, set, "testing")
 	if err != nil {
 		t.Fatal(err)
 	}
