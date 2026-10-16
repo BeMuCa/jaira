@@ -15,7 +15,7 @@ related: []
 follows: 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-16T10:04:46Z
-updated-at: 2026-10-16T11:34:48Z
+updated-at: 2026-10-16T11:36:59Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-482020
@@ -25,6 +25,7 @@ outcome-why: "Die stderr-Zeile nach next/resume/claim/move erreicht nur Sitzunge
 outcome-resolves: "DoD 1: Hinweis mit Update und Verwerfen (Dismiss) bei neuerer Version, Update = Vorschau dann Ja-Pfad, Verwerfen nur fuer genau diese Version; getestet mit claude plugin test (155 pass) und einem node-Lauf der Helfer auf echter jaira-Ausgabe."
 review-summary: none
 review-gaps: "nothing removed: the one duplicate (JAIRA_HOME-or-~/.jaira in settingsJson) is already folded into jairaHome(); every new text key and helper has a caller; considered one helper for 'stdout+stderr without warnings' in previewUpgrade/upgradeJaira (register.tsx:366,385) - two callers with different fallbacks, left; pre-existing and left alone: metrics.csv is read and written under HOME/.jaira, not JAIRA_HOME (register.tsx:913,1429)"
+test-verdict: "pass: go build ./... ok, go test -race -count=1 ./... RC=0 (32 ok, 0 FAIL); claude plugin validate passed, claude plugin test 155 pass 0 fail (12 in 'a newer jaira release'); DoD 1 proof lines checked in the tree; yes-path run with real binaries built as 0.5.1/0.6.0 against a local stub release in a scratch HOME/JAIRA_HOME: check + dry-run wrote nothing (snapshot equal), self upgrade replaced only the scratch binary, update --roles --lanes ran; ~/.local/bin/jaira unchanged; not seen: the band live in a Claude Code terminal"
 ---
 
 # Cockpit-Band: Update-Hinweis mit Knopf 'Update' und Knopf 'Verwerfen'
