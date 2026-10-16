@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-16T12:45:13Z
-updated-at: 2026-10-16T12:57:19Z
+updated-at: 2026-10-16T12:57:22Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-613775
 claimed-at: 2026-10-16T12:46:01Z
@@ -55,7 +55,7 @@ claimed-at: 2026-10-16T12:46:01Z
 - [x] demoworld.sh: Milestones, fertige Tickets und Links aus add-world.sh einbauen; Render-Rezept mit Release-Version und allen vier Bildern
 - [x] Demo-Welt frisch bauen, vier Bilder rendern (board-main, board-links, launcher, milestone-roadmap) mit jaira 0.5.1 und ohne abgeschnittenen Lane-Titel
 - [x] README: board-main.png auf den Board-Platz, board-links.png zum Links-Satz unter Follow-ups
-- [ ] Pruefen: diff --check, Fences, Bildpfade, file, sha256, Bilder ansehen; gofmt/vet/build; commit
+- [x] Pruefen: diff --check, Fences, Bildpfade, file, sha256, Bilder ansehen; gofmt/vet/build; commit
 
 ## Progress
 - **2026-10-16 12:47 · BeMuCa** — Entscheidungen vor der Arbeit (ohne Berk getroffen, Gruende): (1) 'die Liste' der 16 Features = features.md des frueheren Agents im Session-Scratchpad; README-Abschnitt hat genau diese 16. (2) add-world.sh (Milestones, fertige Tickets, Links) wird in scripts/demoworld.sh eingebaut, sonst kann niemand Roadmap- und Links-Bild nachbauen. (3) Version im Bild: shotgen mit -ldflags '-X github.com/BeMuCa/jaira/core/release.Current=0.5.1' und JAIRA_NO_UPDATE_CHECK=1 -> Kopfzeile 'jaira 0.5.1', kein Netz, kein Cache. main.version wirkt auf shotgen nicht, es ist ein eigenes main. (4) Hero oben bleibt launcher.png; board-main.png ersetzt den Board-Platz (frueher board.png, Zeile 23); board-links.png wandert mit dem 'Press l'-Satz unter das Feature 'Follow-ups link themselves'. (5) docs/img/board.png und home.png bleiben liegen, Berk entscheidet.
