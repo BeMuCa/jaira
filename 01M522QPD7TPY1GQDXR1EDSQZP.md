@@ -1,7 +1,7 @@
 ---
 id: 01M522QPD7TPY1GQDXR1EDSQZP
 title: "Cockpit-Band: Update-Hinweis mit Knopf 'Update' und Knopf 'Verwerfen'"
-status: signoff
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Wenn eine neue jaira-Version da ist, zeigt das Cockpit-Band einen Hinweis mit zwei Knoepfen: Update (fuehrt den Ja-Pfad aus) und Verwerfen (blendet den Hinweis fuer diese Version aus)"
@@ -15,7 +15,7 @@ related: []
 follows: 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-16T10:04:46Z
-updated-at: 2026-10-16T11:43:47Z
+updated-at: 2026-10-16T12:45:22Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-482020
@@ -42,6 +42,7 @@ review-check: |-
   5. Change 9.9.9 to 9.9.10 in /tmp/jh/update-check.json and wait up to one minute -> the line is back, now with 9.9.10.
   6. Press Update -> while 0.5.1 is still the newest real release: no pane opens, the notice says 'jaira 0.5.1 is already the latest release', the line is gone, and /tmp/jh/update-check.json now says latest 0.5.1. sha256sum ~/.local/bin/jaira is the same before and after.
   7. The preview pane and 'Update to X' need a real release newer than yours; step 1 covers them (tests 'Update path with preview' and 'the yes in the pane').
+round: 2
 ---
 
 # Cockpit-Band: Update-Hinweis mit Knopf 'Update' und Knopf 'Verwerfen'
