@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-16T12:45:13Z
-updated-at: 2026-10-16T12:55:23Z
+updated-at: 2026-10-16T12:55:25Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-613775
 claimed-at: 2026-10-16T12:46:01Z
@@ -49,7 +49,7 @@ claimed-at: 2026-10-16T12:46:01Z
 - [x] termshot.py: SGR 30-37/90-97/40-47/100-107/39/49 aus dem Overlay in scripts/termshot.py uebernehmen
 - [x] demoworld.sh: Milestones, fertige Tickets und Links aus add-world.sh einbauen; Render-Rezept mit Release-Version und allen vier Bildern
 - [x] Demo-Welt frisch bauen, vier Bilder rendern (board-main, board-links, launcher, milestone-roadmap) mit jaira 0.5.1 und ohne abgeschnittenen Lane-Titel
-- [ ] README: board-main.png auf den Board-Platz, board-links.png zum Links-Satz unter Follow-ups
+- [~] README: board-main.png auf den Board-Platz, board-links.png zum Links-Satz unter Follow-ups
 - [ ] Pruefen: diff --check, Fences, Bildpfade, file, sha256, Bilder ansehen; gofmt/vet/build; commit
 
 ## Progress
