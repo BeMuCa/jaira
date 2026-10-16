@@ -4,6 +4,7 @@ import type { BoardView, CacheState, ThreadTally } from '../types'
 import {
   branchesFor, carrierBranch, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, dispatchLane, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
   explanationNotes, explanationOf, isOlder, lanesOf, MIN_JAIRA, nextToStart, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
+  offeredRelease, upgradeCheckOf,
   type Action, type Agent, type Option, type Waiting,
 } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
@@ -61,6 +62,8 @@ const overviewAtom = atom({ plugin: 'jaira-cockpit', key: 'overview' } as const,
 const overviewTabAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewTab' } as const, 'queue')
 const overviewFoldedAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewFolded' } as const, {})
 const overviewPeopleAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewPeople' } as const, [])
+const releaseAtom = atom({ plugin: 'jaira-cockpit', key: 'release' } as const, null)
+const upgradeAtom = atom({ plugin: 'jaira-cockpit', key: 'upgrade' } as const, null)
 
 const PANE = 'cockpit-ticket'
 const MESSAGE = 'cockpit-message'
@@ -68,6 +71,13 @@ const GIVE_BACK = 'cockpit-give-back'
 const EXPLANATION = 'cockpit-explanation'
 const ANSWER = 'cockpit-answer'
 const OVERVIEW = 'cockpit-overview'
+const UPGRADE = 'cockpit-upgrade'
+// The store key of the release the person dismissed: kept across sessions,
+// so that release is never offered again, and a newer one is.
+const DISMISSED_RELEASE = 'dismissed-release'
+// The release row's key among the pressed rows: Update and the yes in its
+// pane lock it as a ticket's buttons lock its row.
+const RELEASE = 'release'
 const BAND_TICKETS = 3
 // How long a pressed row stays locked when its action has not ended by then.
 const BUSY_MS = 20_000
@@ -83,6 +93,9 @@ let board: { dir: string; repo: string } | null | undefined
 // aliases; undefined until asked, and when jaira could not say.
 let me: string[] | undefined
 let meAsked = false
+// The jaira on PATH, by `jaira --version`: read once a session and again
+// after an update from the band; undefined for a dev build.
+let installed: string | undefined
 // The ticket this session carries, read off the line that started it.
 let carrying: { ticket: string; role: Role; lane: string } | undefined
 let lastAnswerAt: number | undefined
@@ -148,6 +161,12 @@ async function run($: EngineInterface, argv: string[], cwd: string, timeoutMs = 
 // backslashes: forward ones are read alike by Windows and by Git Bash.
 async function home($: EngineInterface): Promise<string> {
   return ((await $.env.get('HOME')) || (await $.env.get('USERPROFILE')) || '').replaceAll('\\', '/')
+}
+
+// Where jaira keeps the person's own files, as jaira finds it: JAIRA_HOME,
+// else ~/.jaira.
+async function jairaHome($: EngineInterface): Promise<string> {
+  return (await $.env.get('JAIRA_HOME')) || `${await home($)}/.jaira`
 }
 
 // ── the noise filter ─────────────────────────────────────────────────────
@@ -244,6 +263,7 @@ async function refreshBoard($: EngineInterface): Promise<void> {
     await update($, boardAtom, () => null)
     return
   }
+  await refreshRelease($)
   const [lanes, list] = await Promise.all([
     run($, ['jaira', 'lanes', '--json'], board.dir),
     run($, ['jaira', 'list', '--json'], board.dir),
@@ -303,8 +323,69 @@ async function refreshBoard($: EngineInterface): Promise<void> {
 // needs is said out loud, with both versions, before a press fails on it.
 async function checkVersion($: EngineInterface, dir: string): Promise<void> {
   const r = await run($, ['jaira', '--version'], dir)
-  const installed = r?.exitCode === 0 ? versionOf(r.stdout) : undefined
+  installed = r?.exitCode === 0 ? versionOf(r.stdout) : undefined
   if (installed !== undefined && isOlder(installed, MIN_JAIRA)) await say($, t.tooOld(installed, MIN_JAIRA))
+}
+
+// Each minute with the board, as the TUI reads it: the release jaira's own
+// cache knows, offered while it is newer than the jaira installed and not the
+// one dismissed. The hourly check of the TUI and of next/resume/claim/move
+// writes that cache, so the cockpit starts no check of its own.
+async function refreshRelease($: EngineInterface): Promise<void> {
+  let cache: string | undefined
+  try {
+    cache = await $.fs.read(`${await jairaHome($)}/update-check.json`)
+  } catch {}
+  const dismissed = (await $.store.get(DISMISSED_RELEASE)) as string | undefined
+  const offer = offeredRelease(installed, cache, dismissed) ?? null
+  await update($, releaseAtom, () => offer)
+}
+
+// Dismiss: this release is not offered again, in this session or a later
+// one; the next one is.
+async function dismissRelease($: EngineInterface, version: string): Promise<void> {
+  await $.store.set(DISMISSED_RELEASE, version)
+  await update($, releaseAtom, () => null)
+  await say($, t.dismissed(version))
+}
+
+// Update, before anything is written: what is released, and what bringing
+// this repository's setup up to date would change. The check only refreshes
+// the release cache and the dry run writes nothing; the pane asks before the
+// binary is replaced.
+async function previewUpgrade($: EngineInterface, dir: string): Promise<void> {
+  const r = await run($, ['jaira', 'self', 'upgrade', '--check', '--json'], dir, 30_000)
+  const check = r?.exitCode === 0 ? upgradeCheckOf(r.stdout) : undefined
+  if (check === undefined) return fail($, t.updateJaira, withoutWarnings(output(r)))
+  if (check.upToDate) {
+    installed = check.current
+    await refreshRelease($)
+    return say($, t.upToDate(check.current))
+  }
+  const dry = await run($, ['jaira', 'update', '--roles', '--lanes', '--dry-run'], dir, 30_000)
+  const preview = dry === undefined ? 'jaira did not run' : withoutWarnings(`${dry.stdout}\n${dry.stderr}`)
+  // Exit 3 is a preview too: it names the edited files an update leaves
+  // alone. Anything else is no preview, and without one nothing is offered.
+  if (dry?.exitCode !== 0 && dry?.exitCode !== 3) return fail($, t.updateJaira, `${t.dryRunFailed}\n${preview}`)
+  await update($, upgradeAtom, () => ({ from: check.current, to: check.latest, preview }))
+  const opened = await $.ui.open({ id: UPGRADE, title: t.upgradeTitle(check.current, check.latest), focus: true, closeOnEscape: true })
+  if (!opened.isPlaced) await fail($, t.updateJaira, t.noRoomUpdate)
+}
+
+// Update, on the person's yes in that pane: the binary, then this
+// repository's skills and lane files — the two commands the line after
+// next/resume/claim/move names.
+async function upgradeJaira($: EngineInterface, dir: string, to: string): Promise<void> {
+  await $.ui.close({ id: UPGRADE })
+  await update($, upgradeAtom, () => null)
+  await say($, t.upgrading(to))
+  const up = await run($, ['jaira', 'self', 'upgrade'], dir, 300_000)
+  if (up?.exitCode !== 0) return fail($, t.updateJaira, withoutWarnings(output(up)))
+  const setup = await run($, ['jaira', 'update', '--roles', '--lanes'], dir, 60_000)
+  await checkVersion($, dir)
+  await refreshRelease($)
+  await update($, noticeAtom, () => null)
+  await show($, t.upgraded(to), withoutWarnings(`${up.stdout}\n${up.stderr}\n${setup === undefined ? 'jaira update did not run' : `${setup.stdout}\n${setup.stderr}`}`))
 }
 
 async function noteOn($: EngineInterface, dir: string, id: string, kind: 'explain' | 'decision') {
@@ -494,9 +575,8 @@ async function afterAccept($: EngineInterface, id: string, terminal: string): Pr
 // The person's jaira settings, where jaira reads them: JAIRA_HOME, else
 // ~/.jaira. undefined where there is no file.
 async function settingsJson($: EngineInterface): Promise<string | undefined> {
-  const dir = (await $.env.get('JAIRA_HOME')) || `${await home($)}/.jaira`
   try {
-    return await $.fs.read(`${dir}/settings.json`)
+    return await $.fs.read(`${await jairaHome($)}/settings.json`)
   } catch {
     return undefined
   }
@@ -1052,6 +1132,7 @@ export const register: Register = (on, options) => {
     const expanded = await read($, expandedAtom)
     const theirsOpen = await read($, theirsOpenAtom)
     const busy = await read($, busyAtom)
+    const release = await read($, releaseAtom)
     await read($, minuteAtom)
     const now = await $.clock.now()
     const waiting = view?.waiting ?? []
@@ -1065,7 +1146,7 @@ export const register: Register = (on, options) => {
       ...(view !== null ? [t.workers(view.counts.worker), t.reviews(view.counts.review), t.waitingFor(view.counts.person)] : []),
       ...(used !== '' ? [used] : []),
     ]
-    if (head.length === 0 && waiting.length === 0 && theirs.length === 0 && decisions.length === 0 && !hasCache && !hasThreads && notice === null) return next(e)
+    if (head.length === 0 && waiting.length === 0 && theirs.length === 0 && decisions.length === 0 && !hasCache && !hasThreads && notice === null && release === null) return next(e)
     const table = $.ui.resolve(e)
     const { Box, Button, Text } = table
     // Mobile has no text field: there the band offers no Give back.
@@ -1092,6 +1173,15 @@ export const register: Register = (on, options) => {
         {/* What just happened on top, this person's own work below it, the
             teammates' tickets last of all lists. */}
         {notice !== null ? <Text dimColor wrap="truncate-end">{notice}</Text> : null}
+        {release !== null && board
+          ? (
+            <Box flexDirection="row">
+              <Text color="warning" wrap="truncate-end">{t.released(release.latest, release.installed)}{' '}</Text>
+              <Button key="release-update" label={t.update} plain={plain} onPress={() => void once($, RELEASE, () => previewUpgrade($, board!.dir))}><Text color="success" dimColor={busy[RELEASE] !== undefined}>{bracketed(t.update)}</Text></Button>
+              <Button key="release-dismiss" label={t.dismiss} onPress={() => void dismissRelease($, release.latest)} />
+            </Box>
+          )
+          : null}
         {waiting.length > 0 ? <Box marginTop={1}><Text bold>{t.waiting}</Text></Box> : null}
         {shown.map(w => (
           <Box key={`row-${w.id}`} flexDirection="column">
@@ -1309,6 +1399,25 @@ export const register: Register = (on, options) => {
         <Text bold>{message?.title ?? ''}</Text>
         <Text wrap="wrap">{message?.text ?? ''}</Text>
         <Button key="message-close" label={t.close} onPress={() => void $.ui.close({ id: MESSAGE })} />
+      </Box>
+    )
+  })
+
+  // Update's preview, and the one press that writes: Cancel holds the focus,
+  // so an Enter pressed once too often writes nothing.
+  on('ui.render', { component: 'Pane', requestId: UPGRADE }, async ($, e) => {
+    const u = await read($, upgradeAtom)
+    const { Box, Button, Text } = $.ui.resolve(e)
+    if (u === null || !board) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
+    const dir = board.dir
+    return (
+      <Box flexDirection="column">
+        <Text wrap="wrap">{t.upgradeIntro(u.from, u.to)}</Text>
+        <Text wrap="wrap">{u.preview}</Text>
+        <Box flexDirection="row" marginTop={1}>
+          <Button key="upgrade-confirm" label={t.confirmUpgrade(u.to)} onPress={() => void once($, RELEASE, () => upgradeJaira($, dir, u.to))} />
+          <Button key="upgrade-cancel" label={t.cancel} autoFocus onPress={() => void $.ui.close({ id: UPGRADE })} />
+        </Box>
       </Box>
     )
   })

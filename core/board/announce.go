@@ -108,6 +108,12 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  id — so nothing needs to be typed here; it is written onto the ticket once,\n" +
 	"  when the ticket leaves the board\n" +
 	"- `jaira resume` — work left in progress, with everything recorded about it\n" +
+	"- when jaira reports a newer release (`jaira next`, `resume`, `claim` and `move`\n" +
+	"  print it on stderr), first run `jaira self upgrade --check` and\n" +
+	"  `jaira update --roles --lanes --dry-run`, which write nothing,\n" +
+	"  show the user what they report and ask the user once whether to update.\n" +
+	"  Only on a yes run `jaira self upgrade`, then `jaira update --roles --lanes`;\n" +
+	"  without one run neither, and after a no do not ask again in this session\n" +
 	"- **every commit names the ticket id** — `fix(A3K9QP): ...`. jaira derives a\n" +
 	"  ticket's commit list from two sources: the history of the ticket file itself,\n" +
 	"  and the commits that name its id. The first source is thin by design (see the\n" +
@@ -397,34 +403,56 @@ func chosenAgentFiles(root string) []string {
 // AnnounceInAgentFiles writes the note into the agent instruction files that
 // carry it — see chosenAgentFiles.
 func AnnounceInAgentFiles(root string, lanes []LaneFact) (written []string, err error) {
-	return announceIn(root, chosenAgentFiles(root), lanes)
+	return announceIn(root, chosenAgentFiles(root), lanes, false)
+}
+
+// PreviewAgentFiles reports what AnnounceInAgentFiles (choice "") or ChooseAgentFiles(choice)
+// would write, in the same words, and writes nothing.
+func PreviewAgentFiles(root, choice string, lanes []LaneFact) ([]string, error) {
+	if choice == "" {
+		return announceIn(root, chosenAgentFiles(root), lanes, true)
+	}
+	return chooseAgentFiles(root, choice, lanes, true)
 }
 
 // ChooseAgentFiles puts the note into the files of one choice and takes it out
 // of the others, so the next write without a choice keeps to it.
 func ChooseAgentFiles(root, choice string, lanes []LaneFact) (written []string, err error) {
+	return chooseAgentFiles(root, choice, lanes, false)
+}
+
+func chooseAgentFiles(root, choice string, lanes []LaneFact, dry bool) (written []string, err error) {
 	keep, ok := agentFileChoices[choice]
 	if !ok {
 		return nil, fmt.Errorf("unknown agent file %q: want %s, %s or %s",
 			choice, AgentFileAgents, AgentFileClaude, AgentFileBoth)
 	}
-	written, err = announceIn(root, keep, lanes)
+	written, err = announceIn(root, keep, lanes, dry)
 	if err != nil {
 		return written, err
 	}
+	claudeGone := false
 	for _, name := range agentFiles {
 		if slices.Contains(keep, name) {
 			continue
 		}
-		action, rerr := removeBlock(filepath.Join(root, name))
+		action, rerr := removeBlock(filepath.Join(root, name), dry)
 		if rerr != nil {
 			return written, rerr
 		}
 		if action != "" {
 			written = append(written, name+" ("+action+")")
 		}
+		// A dry run leaves the file the real run would have deleted, and
+		// setClaudeImport would then report an import into it.
+		if dry && name == "CLAUDE.md" && action == "deleted" {
+			claudeGone = true
+		}
 	}
-	action, ierr := setClaudeImport(filepath.Join(root, "CLAUDE.md"), choice == AgentFileAgents)
+	if claudeGone {
+		return written, nil
+	}
+	action, ierr := setClaudeImport(filepath.Join(root, "CLAUDE.md"), choice == AgentFileAgents, dry)
 	if ierr != nil {
 		return written, ierr
 	}
@@ -437,7 +465,7 @@ func ChooseAgentFiles(root, choice string, lanes []LaneFact) (written []string, 
 // removeBlock takes the managed block out of a file and deletes the file when
 // nothing else is left in it — a file holding only jaira's block is one jaira
 // created, and an empty CLAUDE.md would still hide AGENTS.md from Claude Code.
-func removeBlock(path string) (action string, err error) {
+func removeBlock(path string, dry bool) (action string, err error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -466,16 +494,20 @@ func removeBlock(path string) (action string, err error) {
 	}
 	rest += after
 	if strings.TrimSpace(rest) == "" {
-		if err := os.Remove(path); err != nil {
-			return "", err
+		if !dry {
+			if err := os.Remove(path); err != nil {
+				return "", err
+			}
 		}
 		return "deleted", nil
 	}
 	if strings.TrimSpace(s[:start]) == "" {
 		rest = strings.TrimLeft(rest, "\n")
 	}
-	if err := os.WriteFile(path, []byte(rest), 0o644); err != nil {
-		return "", err
+	if !dry {
+		if err := os.WriteFile(path, []byte(rest), 0o644); err != nil {
+			return "", err
+		}
 	}
 	return "block removed", nil
 }
@@ -483,7 +515,7 @@ func removeBlock(path string) (action string, err error) {
 // setClaudeImport adds or removes jaira's import of AGENTS.md in an existing
 // CLAUDE.md. It never creates the file: with no CLAUDE.md, Claude Code reads
 // AGENTS.md on its own. An import the user wrote themselves is left alone.
-func setClaudeImport(path string, want bool) (action string, err error) {
+func setClaudeImport(path string, want bool, dry bool) (action string, err error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -503,6 +535,9 @@ func setClaudeImport(path string, want bool) (action string, err error) {
 	default:
 		return "", nil
 	}
+	if dry {
+		return action, nil
+	}
 	return action, os.WriteFile(path, []byte(s), 0o644)
 }
 
@@ -515,9 +550,9 @@ func hasLine(s, line string) bool {
 	return false
 }
 
-func announceIn(root string, names []string, lanes []LaneFact) (written []string, err error) {
+func announceIn(root string, names []string, lanes []LaneFact, dry bool) (written []string, err error) {
 	for _, name := range names {
-		path, action, ferr := announceInAgentFile(root, name, lanes)
+		path, action, ferr := announceInAgentFile(root, name, lanes, dry)
 		if ferr != nil {
 			return written, ferr
 		}
@@ -532,7 +567,7 @@ func announceIn(root string, names []string, lanes []LaneFact) (written []string
 //
 // It reports what it did rather than doing it quietly, because editing a file
 // the user wrote is not something a tool should do invisibly.
-func announceInAgentFile(root, name string, lanes []LaneFact) (path string, action string, err error) {
+func announceInAgentFile(root, name string, lanes []LaneFact, dry bool) (path string, action string, err error) {
 	path = filepath.Join(root, name)
 	note := agentNote + laneSection(lanes)
 	block := jairaMarkerStart + "\n" + note + "\n" + jairaMarkerEnd + "\n"
@@ -542,8 +577,10 @@ func announceInAgentFile(root, name string, lanes []LaneFact) (path string, acti
 		if !os.IsNotExist(readErr) {
 			return path, "", readErr
 		}
-		if err := os.WriteFile(path, []byte(block), 0o644); err != nil {
-			return path, "", err
+		if !dry {
+			if err := os.WriteFile(path, []byte(block), 0o644); err != nil {
+				return path, "", err
+			}
 		}
 		return path, "created", nil
 	}
@@ -557,8 +594,10 @@ func announceInAgentFile(root, name string, lanes []LaneFact) (path string, acti
 		if updated == s {
 			return path, "unchanged", nil
 		}
-		if err := os.WriteFile(path, []byte(updated), 0o644); err != nil {
-			return path, "", err
+		if !dry {
+			if err := os.WriteFile(path, []byte(updated), 0o644); err != nil {
+				return path, "", err
+			}
 		}
 		return path, "updated", nil
 	}
@@ -569,8 +608,10 @@ func announceInAgentFile(root, name string, lanes []LaneFact) (path string, acti
 	} else if !strings.HasSuffix(s, "\n\n") {
 		sep = "\n"
 	}
-	if err := os.WriteFile(path, []byte(s+sep+block), 0o644); err != nil {
-		return path, "", err
+	if !dry {
+		if err := os.WriteFile(path, []byte(s+sep+block), 0o644); err != nil {
+			return path, "", err
+		}
 	}
 	return path, "appended", nil
 }

@@ -44,7 +44,8 @@ command is safe to retry.
 --dry-run answers "would this be refused, and why" without writing anything: the
 same fields are staged in memory, the same gates run, and the exit code is the
 one the real move would have returned.`,
-		Args: exactArgs(1),
+		Args:    exactArgs(1),
+		PostRun: warnNewerRelease,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
 			if err != nil {
@@ -372,7 +373,8 @@ in a terminal lane, and not waiting on an unresolved dependency.
 This is a convenience for the happy path. It is not the enforcement point —
 'jaira move' re-checks everything, because nothing prevents a caller from
 skipping this command.`,
-		Args: noArgs(),
+		Args:    noArgs(),
+		PostRun: warnNewerRelease,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			s, err := openStore()
 			if err != nil {

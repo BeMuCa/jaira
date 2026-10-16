@@ -72,6 +72,9 @@ var (
 	styAsks      = lipgloss.NewStyle().Foreground(colWarn).Bold(true)
 	styReview    = lipgloss.NewStyle().Foreground(colAccent).Bold(true)
 	styDoing     = lipgloss.NewStyle().Foreground(colAgentic).Bold(true)
+	// The release pill: a newer release exists. Filled, so it is the one
+	// thing on the head that reads as a badge rather than as text.
+	styPill = lipgloss.NewStyle().Background(colAccent).Foreground(lipgloss.Color("16")).Padding(0, 1)
 )
 
 const minColWidth = 22
@@ -141,6 +144,8 @@ func (m *Model) render() string {
 		return m.modal(m.renderMessage())
 	case modeLegend:
 		return m.modal(m.renderLegend())
+	case modeReleaseNotes:
+		return m.modal(m.notes.render(max(20, m.width-12), m.modalContent()))
 	case modeMilestones:
 		return m.modal(m.renderMilestones())
 	case modeUsers:
@@ -225,9 +230,12 @@ func (m *Model) renderBoard() string {
 	// The running version, top left, before anything on the board is read —
 	// see versionLine() in updatecheck.go for what it says. It gets a row of
 	// its own rather than the head line's left end (which the ticket count
-	// shares) so that a line can be hung underneath it without pushing the
-	// board bar down.
+	// shares) so that the release pill can hang underneath it; the pill
+	// pushes the head line and the board bar down one row (headLines counts it).
 	head := truncate(m.versionLine, m.width)
+	if m.releasePill != "" {
+		head += "\n" + m.releasePill
+	}
 	b.WriteString(head + "\n")
 	b.WriteString(m.header())
 	b.WriteString("\n")

@@ -29,6 +29,12 @@ declare module 'claude-code' {
       paneTicket: string | null
       // Moves once a minute, so the cache countdown redraws.
       minute: number
+      // A newer jaira release the band offers Update and Dismiss for, with
+      // the version installed; null when there is none or it was dismissed.
+      release: { installed: string; latest: string } | null
+      // What the update pane shows before anything is written: the versions
+      // and what 'jaira update --roles --lanes --dry-run' said.
+      upgrade: { from: string; to: string; preview: string } | null
       // The last thing a button did, shown under the band until the next.
       notice: string | null
       // What the message pane shows: an error, or an explanation, whole.

@@ -12,6 +12,7 @@ import (
 
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/project"
+	"github.com/BeMuCa/jaira/core/release"
 	"github.com/BeMuCa/jaira/core/session"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -82,6 +83,11 @@ type Home struct {
 	// indicator drawn in the top left corner, computed once at construction —
 	// see versionLine() in updatecheck.go for why not on every render.
 	versionLine string
+	// releasePill is the "^ <version>" badge under it when a newer release is
+	// known, empty otherwise.
+	releasePill string
+	// notes is the release-notes screen opened with w, nil when closed.
+	notes *notesView
 
 	width, height int
 }
@@ -131,7 +137,8 @@ func NewHome(extraRoots []string) (*Home, error) {
 	if err != nil {
 		return nil, err
 	}
-	h := &Home{lanes: lanes, versionLine: versionLine()}
+	h := &Home{lanes: lanes}
+	h.versionLine, h.releasePill = versionLine()
 
 	seen := map[string]bool{}
 	add := func(root string) {
@@ -226,6 +233,12 @@ func (h *Home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return h, nil
 		}
+		if h.notes != nil {
+			if h.notes.key(cmdKey(msg)) {
+				h.notes = nil
+			}
+			return h, nil
+		}
 		if h.board != nil {
 			done, cmd := h.board.key(cmdKey(msg))
 			if done {
@@ -266,6 +279,9 @@ func (h *Home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return h, nil
 		case "s":
 			h.stats = !h.stats
+			return h, nil
+		case "w":
+			h.notes = newNotesView("Release notes", release.Since(""))
 			return h, nil
 		case "x":
 			// Opens a screen rather than acting: removing a board is the one
@@ -328,6 +344,9 @@ func (h *Home) render() string {
 	if h.drop != nil {
 		return h.drop.render(h.width, h.height)
 	}
+	if h.notes != nil {
+		return h.notes.render(h.width, h.height)
+	}
 	if h.board != nil {
 		return h.board.render(h.width, h.height)
 	}
@@ -347,6 +366,9 @@ func (h *Home) render() string {
 	// The running version, top left, above everything else — the same corner
 	// renderBoard puts it in, so it is in one place on every screen.
 	b.WriteString(truncate(h.versionLine, h.width) + "\n")
+	if h.releasePill != "" {
+		b.WriteString(h.releasePill + "\n")
+	}
 
 	// Header: the wordmark with the icon beside it, centred as a block. This is
 	// the one screen that is looked at rather than worked in, so it is allowed
@@ -400,7 +422,7 @@ func (h *Home) render() string {
 		}
 	}
 
-	for _, l := range wrapHints([]string{"enter open", "s stats", "a add a board", "x remove a board", "d default board", "r refresh", "q quit"}, max(1, h.width)) {
+	for _, l := range wrapHints([]string{"enter open", "s stats", "a add a board", "x remove a board", "d default board", "w release notes", "r refresh", "q quit"}, max(1, h.width)) {
 		b.WriteString("\n" + centre.Render(styMeta.Render(l)))
 	}
 	// Nothing above measures its own height, unlike every other self-contained

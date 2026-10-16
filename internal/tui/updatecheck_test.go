@@ -23,12 +23,15 @@ func TestVersionLineNeverCheckedShowsVersionAlone(t *testing.T) {
 	t.Setenv("JAIRA_HOME", t.TempDir())
 	t.Setenv("JAIRA_NO_UPDATE_CHECK", "") // re-enable; TestMain disables by default
 
-	line := versionLine()
+	line, pill := versionLine()
 	if !strings.Contains(line, "jaira 1.0.0") {
 		t.Errorf("versionLine() = %q, want it to name the running version", line)
 	}
 	if strings.Contains(line, "up to date") || strings.Contains(line, "available") {
 		t.Errorf("versionLine() = %q, must not claim a checked state when the cache has never been written", line)
+	}
+	if pill != "" {
+		t.Errorf("pill = %q, want none when the cache has never been written", pill)
 	}
 }
 
@@ -40,9 +43,12 @@ func TestVersionLineUpToDate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	line := versionLine()
+	line, pill := versionLine()
 	if !strings.Contains(line, "jaira 1.0.0") || !strings.Contains(line, "up to date") {
 		t.Errorf("versionLine() = %q, want it to say up to date", line)
+	}
+	if pill != "" {
+		t.Errorf("pill = %q, want none at the same version", pill)
 	}
 }
 
@@ -54,9 +60,47 @@ func TestVersionLineUpdateAvailable(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	line := versionLine()
-	if !strings.Contains(line, "1.3.0") || !strings.Contains(line, "jaira self upgrade") {
-		t.Errorf("versionLine() = %q, want it to name the available release and 'jaira self upgrade'", line)
+	line, pill := versionLine()
+	if got := stripANSI(line); got != "jaira 1.0.0" {
+		t.Errorf("versionLine() = %q, want the version alone on its line", got)
+	}
+	if got := stripANSI(pill); !strings.Contains(got, "^ 1.3.0") {
+		t.Errorf("pill = %q, want it to name the newer release as '^ 1.3.0'", got)
+	}
+}
+
+// TestReleasePillOnlyForANewerKnownRelease is the three cases of the ticket
+// plus the two ways of not knowing: a newer cached release gets a pill, and
+// nothing else does — in particular not a cache older than the running binary,
+// which the old "!=" check reported as an available upgrade.
+func TestReleasePillOnlyForANewerKnownRelease(t *testing.T) {
+	cases := []struct {
+		name  string
+		cache string // empty: never written
+		off   string // JAIRA_NO_UPDATE_CHECK
+		want  string
+	}{
+		{"newer", "1.3.0", "", "^ 1.3.0"},
+		{"same", "1.0.0", "", ""},
+		{"never checked", "", "", ""},
+		{"older", "0.9.0", "", ""},
+		{"check disabled", "1.3.0", "1", ""},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			setReleaseCurrent(t, "1.0.0")
+			t.Setenv("JAIRA_HOME", t.TempDir())
+			t.Setenv("JAIRA_NO_UPDATE_CHECK", c.off)
+			if c.cache != "" {
+				if err := selfupdate.Write(selfupdate.Check{CheckedAt: time.Now().UTC(), Latest: c.cache}); err != nil {
+					t.Fatal(err)
+				}
+			}
+			_, pill := versionLine()
+			if got := strings.TrimSpace(stripANSI(pill)); got != c.want {
+				t.Errorf("pill = %q, want %q", got, c.want)
+			}
+		})
 	}
 }
 
@@ -71,12 +115,12 @@ func TestVersionLineDisabledShowsVersionAlone(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	line := versionLine()
+	line, pill := versionLine()
 	if !strings.Contains(line, "jaira 1.0.0") {
 		t.Errorf("versionLine() = %q, want it to name the running version", line)
 	}
-	if strings.Contains(line, "1.3.0") || strings.Contains(line, "available") {
-		t.Errorf("versionLine() = %q, JAIRA_NO_UPDATE_CHECK=1 must suppress the available half", line)
+	if strings.Contains(line, "1.3.0") || strings.Contains(line, "available") || pill != "" {
+		t.Errorf("versionLine() = %q, %q; JAIRA_NO_UPDATE_CHECK=1 must suppress the available half", line, pill)
 	}
 }
 
@@ -106,6 +150,34 @@ func TestHomeHeadCarriesTheVersionIndicator(t *testing.T) {
 	}
 }
 
+// TestHomeHeadCarriesTheReleasePill asserts the launcher draws the pill on
+// the row under the version, once.
+func TestHomeHeadCarriesTheReleasePill(t *testing.T) {
+	setReleaseCurrent(t, "1.0.0")
+	t.Setenv("JAIRA_HOME", t.TempDir())
+	t.Setenv("JAIRA_NO_UPDATE_CHECK", "")
+	if err := selfupdate.Write(selfupdate.Check{CheckedAt: time.Now().UTC(), Latest: "1.3.0"}); err != nil {
+		t.Fatal(err)
+	}
+
+	h, err := NewHome(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h.width, h.height = 100, 30
+	out := h.render()
+	lines := strings.Split(out, "\n")
+	if got := stripANSI(lines[0]); !strings.HasPrefix(got, "jaira 1.0.0") {
+		t.Errorf("home first line = %q, want the version", got)
+	}
+	if got := stripANSI(lines[1]); !strings.Contains(got, "^ 1.3.0") {
+		t.Errorf("home second line = %q, want the release pill", got)
+	}
+	if strings.Count(out, "^ 1.3.0") != 1 {
+		t.Errorf("home = %q, want the pill exactly once", out)
+	}
+}
+
 // TestBoardHeadCarriesTheVersionIndicator asserts the board's top left corner
 // carries the indicator and its status bar no longer does. Until P1AE82 the
 // line sat in the status bar; it says which binary is running, which is asked
@@ -127,12 +199,48 @@ func TestBoardHeadCarriesTheVersionIndicator(t *testing.T) {
 		t.Fatal(err)
 	}
 	m.width, m.height = 150, 32
-	first := strings.Split(m.renderBoard(), "\n")[0]
-	if !strings.Contains(first, "1.3.0") || !strings.Contains(first, "jaira self upgrade") {
-		t.Errorf("board first line = %q, want the version indicator naming the available release", first)
+	lines := strings.Split(m.renderBoard(), "\n")
+	if got := stripANSI(lines[0]); !strings.HasPrefix(got, "jaira 1.0.0") {
+		t.Errorf("board first line = %q, want the version indicator", got)
+	}
+	if got := stripANSI(lines[1]); !strings.Contains(got, "^ 1.3.0") {
+		t.Errorf("board second line = %q, want the release pill under the version", got)
 	}
 	if sb := m.statusBar(); strings.Contains(sb, "1.3.0") || strings.Contains(sb, "jaira 1.0.0") {
 		t.Errorf("status bar = %q, want no version indicator", sb)
+	}
+}
+
+// TestOpenBoardPicksUpANewerReleaseWithoutRestart is the hourly check seen
+// from a board left open: a release that becomes known after the board was
+// opened shows as a pill on a later tick, without reopening the board.
+func TestOpenBoardPicksUpANewerReleaseWithoutRestart(t *testing.T) {
+	setReleaseCurrent(t, "1.0.0")
+	s := newTestStore(t)
+	t.Setenv("JAIRA_NO_UPDATE_CHECK", "")
+	if err := selfupdate.Write(selfupdate.Check{CheckedAt: time.Now().UTC(), Latest: "1.0.0"}); err != nil {
+		t.Fatal(err)
+	}
+	m, err := New(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.releasePill != "" {
+		t.Fatalf("pill = %q at construction, want none while up to date", m.releasePill)
+	}
+
+	if err := selfupdate.Write(selfupdate.Check{CheckedAt: time.Now().UTC(), Latest: "1.3.0"}); err != nil {
+		t.Fatal(err)
+	}
+	m.Update(tickMsg(time.Now()))
+	if m.releasePill != "" {
+		t.Errorf("pill = %q right after construction, want the cache read again only after versionEvery", m.releasePill)
+	}
+
+	m.versionAt = time.Now().Add(-versionEvery)
+	m.Update(tickMsg(time.Now()))
+	if got := stripANSI(m.releasePill); !strings.Contains(got, "^ 1.3.0") {
+		t.Errorf("pill = %q after versionEvery, want '^ 1.3.0'", got)
 	}
 }
 

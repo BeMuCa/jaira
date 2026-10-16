@@ -511,3 +511,25 @@ export function isOlder(version: string, min: string): boolean {
   for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return a[i]! < b[i]!
   return false
 }
+
+// The release the band offers an update to: the one the release cache names
+// (`update-check.json`, written by `jaira self upgrade --check` — the hourly
+// check the TUI and next/resume/claim/move start), when it is newer than the
+// jaira installed and not the one the person dismissed. undefined in every
+// other case: a dev build, a cache never written, the same version.
+export function offeredRelease(
+  installed: string | undefined, cacheJson: string | undefined, dismissed: string | undefined,
+): { installed: string; latest: string } | undefined {
+  const latest = parse<{ latest?: unknown }>(cacheJson ?? '')?.latest
+  if (installed === undefined || typeof latest !== 'string' || !/^\d+\.\d+\.\d+$/.test(latest)) return undefined
+  if (!isOlder(installed, latest) || latest === dismissed) return undefined
+  return { installed, latest }
+}
+
+// What `jaira self upgrade --check --json` answered: the version installed,
+// the latest release, and whether they are the same.
+export function upgradeCheckOf(json: string): { current: string; latest: string; upToDate: boolean } | undefined {
+  const c = parse<{ current?: unknown; latest?: unknown; up_to_date?: unknown }>(withoutWarnings(json))
+  if (typeof c?.current !== 'string' || typeof c.latest !== 'string') return undefined
+  return { current: c.current, latest: c.latest, upToDate: c.up_to_date === true }
+}

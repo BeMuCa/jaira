@@ -60,6 +60,7 @@ const (
 	modeLinks
 	modeUsers
 	modeLayer
+	modeReleaseNotes
 )
 
 // Model is the board's state.
@@ -279,12 +280,20 @@ type Model struct {
 	laneStart int
 
 	// versionLine is the persistent "which version, is there an update"
-	// indicator drawn in the board's top left corner, computed once at
-	// construction — see versionLine() in updatecheck.go for why not on
-	// every render. It survives switchBoard,
-	// since which jaira binary is running is a machine-level fact, not a
-	// per-board one.
+	// indicator drawn in the board's top left corner, computed at
+	// construction and again by the tick once versionAt is versionEvery old
+	// — see versionLine() in updatecheck.go for why not on every render. It
+	// survives switchBoard, since which jaira binary is running is a
+	// machine-level fact, not a per-board one.
 	versionLine string
+	// releasePill is the "^ <version>" badge under it when a newer release is
+	// known, empty otherwise.
+	releasePill string
+	// versionAt is when versionLine and releasePill were last computed.
+	versionAt time.Time
+	// notes is the release-notes popup shown once after a version change,
+	// nil when closed; see openReleaseNotes.
+	notes *notesView
 
 	width, height int
 }
@@ -315,7 +324,9 @@ func New(s *ticket.Store) (*Model, error) {
 	// its 1-9 binding work from the very first frame — a board that has to be
 	// opened once with 'p' before it knows its own neighbours is the bug this
 	// exists to fix.
-	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), versionLine: versionLine(), darkBG: true, glow: true}
+	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), darkBG: true, glow: true}
+	m.versionLine, m.releasePill = versionLine()
+	m.versionAt = time.Now()
 	m.me = identity.Current(s.Root)
 	// Mutations from the board record who made them, the same as the CLI's.
 	s.Actor = m.me
@@ -332,6 +343,7 @@ func New(s *ticket.Store) (*Model, error) {
 	if err := m.reload(); err != nil {
 		return nil, err
 	}
+	m.openReleaseNotes()
 	return m, nil
 }
 
@@ -1056,6 +1068,13 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.store.ForgetAll()
 			m.fullAt = time.Now()
 		}
+		// The release cache is read again here, not only at construction: the
+		// check runs hourly, and a board left open all day would otherwise
+		// never show a release published after it was opened.
+		if time.Since(m.versionAt) >= versionEvery {
+			m.versionLine, m.releasePill = versionLine()
+			m.versionAt = time.Now()
+		}
 		// Preserve the cursor and any open pane across a background refresh.
 		_ = m.reload()
 		return m, tick()
@@ -1314,6 +1333,14 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		switch s {
 		case "esc", "t", "q":
 			m.mode = m.returnTo
+		}
+		return m, nil
+
+	case modeReleaseNotes:
+		if m.notes.key(s) {
+			markSeen(m.store.StateDir())
+			m.notes = nil
+			m.mode = modeBoard
 		}
 		return m, nil
 
