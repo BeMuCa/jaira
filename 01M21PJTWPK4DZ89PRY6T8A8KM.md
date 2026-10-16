@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-16T09:16:55Z
+updated-at: 2026-10-16T09:17:08Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -29,7 +29,7 @@ outcome-what: "Pille '^ <version>' unter der Versionszeile auf Launcher und Boar
 outcome-why: "Berk will ohne Nachsehen merken, dass ein neues Release da ist (08.09.); wer nur ueber Agenten arbeitet, sah es nie, weil nur der TUI den Cache las. Am 16.10. verlangt: stuendlich statt taeglich pruefen, laufende Claude-Sitzungen sollen es direkt erfahren und den Nutzer fragen, und erst auf sein Ja das Upgrade samt PWAF22-Setup ausfuehren. Nach einem Upgrade soll das Team erfahren, was sich geaendert hat, wichtige Aenderungen sollen auffallen (Berk 14.10.)."
 outcome-resolves: "DoD 1: Pille nur bei bekanntem neueren Release - TestReleasePillOnlyForANewerKnownRelease; go test -race laeuft in der testing-Lane. DoD 2/7: warnNewerRelease in next/resume/claim/move, stdout/--json unberuehrt, Text fragt und nennt beide Befehle; Agent-Block 'ask the user once ... Only on a yes' - TestClaimAndMoveAskAboutANewerReleaseOnStderr, TestNextAndResumeNameANewerReleaseOnStderr, TestAgentNoteTellsAgentsToAskAboutANewerRelease, Handtest. DoD 3-5 unveraendert (Popup, Marker, Taste w). DoD 6: MaxAge = time.Hour, Board-Tick liest neu - TestStaleAtThresholds, TestOpenBoardPicksUpANewerReleaseWithoutRestart, Handtest tmux (Pille nach 61 s ohne Neustart). DoD 8: Merge bc3c1496, Konflikt als Notiz. DoD 9: Messung als Notiz, ~35 ms CPU je Pruefung, <1 s CPU/Tag."
 executed-by: sonnet
-review-summary: "internal/cli/flow.go:56 (move), internal/cli/claim.go:98, internal/cli/flow.go:381 (next), internal/cli/resume.go:84: warnNewerRelease laeuft VOR der Arbeit, also steht die Release-Zeile bei einem fehlgeschlagenen Befehl vor dem strukturierten --json-Fehler auf stderr. Genau dieses stderr liest das Cockpit bei einem fehlgeschlagenen Accept/Give back (core/mod/builtin/jaira-cockpit/hooks/register.tsx:327 und :483; withoutWarnings in board.ts:189 kennt nur die Zeile 'this board was set up by an older version') - die Band-Meldung begaenne mit der Release-Zeile statt mit dem Fehler. Statt dessen: warnNewerRelease aus dem PostRun der vier Befehle rufen; cobra ruft PostRun nur, wenn RunE nil lieferte (cobra command.go:1015-1026), die Zeile folgt also einem erfolgreichen Befehl und steht nie vor einem Fehler. Kein TS-Eingriff ins Cockpit noetig. Test: ein fehlschlagendes 'move --to <unbekannte Lane> --json' bei bekanntem neueren Release - stderr enthaelt die Release-Zeile nicht."
+review-summary: "none"
 round: 4
 review-gaps: |-
   Pro DoD-Punkt:
