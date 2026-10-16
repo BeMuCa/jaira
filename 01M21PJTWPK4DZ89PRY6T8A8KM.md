@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-16T09:45:10Z
+updated-at: 2026-10-16T09:45:18Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -38,7 +38,15 @@ review-summary: |-
   - PWAF22 ist hineingemergt (bc3c1496, Konflikt nur docs/COMMANDS.md), dazu ein Testfix fuer PWAF22s core/lane/refresh_test.go (2c8f49e6).
   - Doku: README, docs/COMMANDS.md, Marker-Regel in CLAUDE.md und AGENTS.md, 7 Zeilen in core/release/notes/T8A8KM.md.
 round: 5
-review-gaps: "Runde 3 (Diff bc3c1496..4236b927), nichts entfernt. Betrachtet und gelassen: (1) backlogTicket (internal/cli/newerrelease_test.go:19) vs createTicket (internal/cli/epics_test.go:34): createTicket geht ueber 'jaira create' mit goal/context/dod und JSON, backlogTicket legt per s.Create direkt an wie claimFixture (claimrelease_test.go:11) und dryrun_test.go:27 - beide Muster stehen im Repo, Umbau braechte nichts. (2) Paar 'm.versionLine, m.releasePill = versionLine(); m.versionAt = time.Now()' steht zweimal (model.go New und tickMsg) - zwei Zeilen, eine Methode dafuer waere ein reiner Weiterleiter. (3) versionAt/versionEvery folgen fullAt/fullReparseEvery im selben tickMsg, kein zweites Muster. (4) Kosten: tickMsg vergleicht alle 2 s eine Zeit, liest einmal pro Minute eine 60-Byte-Datei - nicht heiss. (5) Toter Code: der io-Import in newerrelease.go ist mit der PostRun-Signatur weg; sonst nichts verwaist."
+review-gaps: |-
+  Keine Defekte im Code gefunden. Offen oder unbewiesen:
+  1. PWAF22 ist nur auf diesem Branch gruen. feat/PWAF22-update-brings-setup hat in core/lane/refresh_test.go (boardWithTesting) noch Load("") - ein PWAF22-PR allein waere rot. Der Fix 2c8f49e6 steht nur hier. Wie PWAF22 landet, muss ein Mensch entscheiden.
+  2. Unteragenten: die Zeile sagt 'ask the user', aber Lane-Worker sehen sie bei jedem claim/move und duerfen den Menschen nie selbst fragen (jaira-role-lane: 'You never ask the person yourself'). Der Agent-Block sagt nicht, was ein Unteragent damit tut. Jede Unteragent-Sitzung ist eine eigene Sitzung, 'nach Nein nicht wieder fragen' greift dort nicht. Wie Agenten wirklich reagieren, ist ungetestet. Nachfolger-Vorschlag: die Rollen-Skills reichen die Zeile im Bericht nach oben, statt zu fragen.
+  3. Wer jaira move von Hand ruft, liest 'ask the user whether to update' - ein Text an einen Agenten. Klein.
+  4. Erstwechsel-Luecke (DoD 3) bleibt: laeuft jaira update vor dem ersten Board-Start auf einem Arbeitsbaum, kommt kein Popup. Release-Note-Zeile 3 ('! Run jaira update in each repository') laedt genau zu dieser Reihenfolge ein. jaira update druckt dann dieselben Notes. Seit 15.10. offen.
+  5. Ja-Pfad nicht durchgespielt (self upgrade laedt aus dem Netz und ersetzt die Binary). Geprueft habe ich nur, dass 'jaira update --roles --lanes --dry-run' mit der 0.5.2-Binary laeuft (rc 0).
+  6. Uebernommen, nicht blockierend: kein '+N more' im Notes-Fenster; ctrl+c im Popup wirkungslos; Launcher-Hinweiszeile faellt mit Pille eine Zeile frueher weg; CLAUDE.md sagt nicht, wann '- ! ' zu nehmen ist.
+  go test -race habe ich nicht laufen lassen (Anweisung). test-verdict meldet RC=0 auf 2c8f49e6 = HEAD.
 test-verdict: "pass: go test -race -count=1 ./... auf 2c8f49e6 RC=0 (32 Pakete ok, 0 FAIL, kein DATA RACE); gofmt/vet/build sauber; DoD 1-9 im Baum geprueft; Handtests mit 0.5.2-Binary auf Scratch-Board ohne Remote: Cache 9.9.9 -> next/resume/claim/move drucken die Frage-Zeile nach ihrer Ausgabe, fehlgeschlagenes move --json/claim ohne Zeile, Cache 0.5.2 und list -> nichts; Cache 61 min alt -> Kind holte 0.5.1, 59 min -> unberuehrt; tmux-Board zeigt Pille '^ 9.9.9' 61 s nach Start ohne Neustart; jaira update nach Merge druckt '  ! '-Zeilen; CPU gemessen (Notiz). Nicht ausgefuehrt: der Ja-Pfad selbst (jaira self upgrade ersetzt die Binary, laedt aus dem Netz)"
 review-verdict: |-
   Der Diff erfuellt DoD 2-5 und den Code-Teil von DoD 1. Ich habe alle Wege mit gebauten 0.5.1/0.5.2-Binaries auf einem Board ohne Remote durchgespielt: Pille auf Board und Launcher; stderr-Zeile bei next und resume, nicht bei list, nicht im --json-stdout, nicht mit JAIRA_NO_UPDATE_CHECK=1; Popup einmal, esc schreibt notes-seen, kein zweites Popup; Popup ueber notes-seen nach jaira update; '  ! ' in jaira update; w auf dem Launcher.
