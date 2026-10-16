@@ -15,7 +15,7 @@ related: []
 follows: 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-16T10:04:46Z
-updated-at: 2026-10-16T11:20:52Z
+updated-at: 2026-10-16T11:21:03Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-482020
@@ -36,6 +36,12 @@ claimed-at: 2026-10-16T11:16:45Z
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] board.ts: releaseOf(cache json) und offeredRelease(installed, latest, dismissed); texts.ts: Woerter fuer Hinweis, Vorschau, Ergebnis
+- [ ] register.tsx: Cache jede Minute lesen (jairaHome geteilt mit settingsJson), Hinweiszeile mit Update und Dismiss im Band, Dismiss merkt Version im Store
+- [ ] register.tsx: Update = self upgrade --check --json + update --roles --lanes --dry-run, Pane mit Vorschau; Bestaetigen = self upgrade + update --roles --lanes; types/index.d.ts
+- [ ] tests/board.test.ts: Hinweis, Update mit Vorschau, nichts vor Bestaetigung, Ja-Pfad, Dismiss fuer genau diese Version; claude plugin test + validate
+- [ ] release note core/release/notes/EDSQZP.md, shipped.sha256 neu, Ja-Pfad mit echtem Binary gegen Stub-Release in Scratch-JAIRA_HOME pruefen
 
 ## Progress
 - **2026-10-16 11:20 · BeMuCa** — Entscheidungen vor der Arbeit (keine offen fuer Berk, alle aus Code/Ticket/Default gesetzt):
