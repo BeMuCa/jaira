@@ -20,7 +20,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-16T12:45:13Z
-updated-at: 2026-10-16T12:45:13Z
+updated-at: 2026-10-16T12:45:59Z
+updated-by: BeMuCa
 ---
 
 # README zeigt die Features mit Use cases und frischen Screenshots
