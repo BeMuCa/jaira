@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-16T09:10:24Z
+updated-at: 2026-10-16T09:10:26Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -84,7 +84,8 @@ claimed-at: 2026-10-16T09:01:29Z
 - [ ] Eine laufende Agent-Sitzung erfaehrt ein neueres Release ohne Neustart: ausser jaira next/resume nennen es auch jaira claim und jaira move auf stderr (stdout/--json unberuehrt) und sagen, den Nutzer zu fragen und erst auf ein Ja 'jaira self upgrade', dann 'jaira update --roles --lanes' auszufuehren; der Agent-Block sagt dasselbe (einmal fragen, ohne Ja nichts ausfuehren); Test
 - [x] PWAF22 (Branch feat/PWAF22-update-brings-setup) ist in diesen Branch gemergt, nicht nach master; Konflikte geloest und am Ticket notiert; gofmt/vet/build sauber
   proof: Merge-Commit bc3c1496 (merge(T8A8KM): bring in PWAF22 ...), Konflikt nur docs/COMMANDS.md:130-131, als Notiz; gofmt/vet/build sauber auf bc3c1496
-- [ ] Die CPU-Kosten der stuendlichen Pruefung sind gemessen (oder begruendet geschaetzt) und stehen als Notiz am Ticket
+- [x] Die CPU-Kosten der stuendlichen Pruefung sind gemessen (oder begruendet geschaetzt) und stehen als Notiz am Ticket
+  proof: Notiz 'CPU-Kosten stuendlich, GEMESSEN 16.10.': ~35 ms CPU je Pruefung, <1 s/Tag stuendlich; Cache-Lesen pro Befehl im Rauschen
 
 ## Options
 
