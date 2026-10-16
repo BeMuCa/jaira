@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-16T09:21:20Z
+updated-at: 2026-10-16T09:21:22Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -157,3 +157,4 @@ Ja-Pfad: self upgrade ruft ab PWAF22 schon 'update --roles' der neuen Binary; --
 Stehen gelassen: Tick-Neulesen im Board (folgt dem Muster fullReparseEvery/fullAt, model.go tickMsg); vier Aufrufstellen statt Allowlist im Root-PreRun (Notiz Entscheidung Zustellung 16.10.); Agent-Block-Wortlaut; Merge-Aufloesung COMMANDS.md.
 - **2026-10-16 09:16 · BeMuCa** — critique Runde 3 behoben: warnNewerRelease ist jetzt PostRun (Signatur func(cmd, args)) der vier Befehle statt Aufruf oben im RunE. Geprueft: cobra command.go:1015-1026 ruft PostRun nur nach RunE == nil; next/resume liefern auch ohne Arbeit exit 0, die Zeile fehlt dort also nicht. Handtest: fehlgeschlagenes move --json -> stderr ist reines JSON; fehlgeschlagenes claim (fremder Claim) -> keine Zeile; erfolgreiche Befehle -> Zeile nach der Ausgabe.
 - **2026-10-16 09:17 · BeMuCa** — critique Runde 4: einziger Befund aus Runde 3 (Release-Zeile vor dem Fehler) in 4236b927 behoben - PostRun an flow.go:48/:377, resume.go:79, claim.go:93, Inline-Aufrufe entfernt, TestReleaseLineNeverStandsBeforeAnError deckt den Fehlerfall. Nichts Neues. Weiter zu optimize.
+- **2026-10-16 09:21 · BeMuCa** — testing: go test -race -count=1 ./... auf 4236b927 -> RC=1. Woertlich: '--- FAIL: TestRefreshShippedUpdatesAnOlderShippedLane (0.05s) / refresh_test.go:98: lane "testing" is already part of this project' (gleich fuer TestRefreshShippedLeavesAnEditedLaneAlone :132, TestRefreshShippedIgnoresLanesItDoesNotShip :151, TestRefreshShippedDryRunWritesNothing :173), 'FAIL github.com/BeMuCa/jaira/core/lane 2.644s'. Nicht durch den Merge verursacht: ein git archive von feat/PWAF22-update-brings-setup allein scheitert identisch. Ursache: core/lane/refresh_test.go boardWithTesting reicht Add das Angebot Load("") statt der Board-Menge; testing ist ein Built-in (core/lane/builtin/27-testing.md), also immer schon 'part of' dieser Menge (order.go:224). cli/lanes.go:115-119 und order_test.go:139-143 rufen Add mit Load(root). Fix: set, err := Load(root); Add(root, set, "testing") - auf der Scratch-Kopie von PWAF22 geprueft, go test -race ./core/lane/ ok. Die PWAF22-Tests sind auf deren Branch nie gelaufen (Regel: go test erst vor dem PR). Berk muss denselben Einzeiler auch auf feat/PWAF22-update-brings-setup haben, sonst ist der PWAF22-PR allein rot.
