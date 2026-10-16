@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-16T12:45:13Z
-updated-at: 2026-10-16T13:08:08Z
+updated-at: 2026-10-16T13:08:19Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-613775
 claimed-at: 2026-10-16T12:46:01Z
@@ -73,3 +73,4 @@ review-check: "1. cd /home/berk/git/jAIra-readme-refresh  2. README.md oeffnen, 
 - **2026-10-16 12:58 · BeMuCa** — critique pass 1: (1) demoworld.sh Kommentar nennt 0.5.1 fest -> 'jaira <newest release>'; (2) shotgen: unbekanntes Mehrzeichen-Wort drueckt still seinen ersten Buchstaben, '' panict -> die, wenn nicht benannt und nicht genau ein Zeichen; (3) README: zwei neue Absaetze (round:, follows/tag colours) sind Einzeilen mit 200-300 Zeichen -> auf ~80 umbrechen wie der Rest. Stehen gelassen: named-Map mit left/up/down/enter/esc und termshot 40-47/100-107/39/49 obwohl die Rezepte sie nicht brauchen - der Auftrag verlangte die Patches so ins Repo; board-links-Bild unter 'Follow-ups link themselves' statt eigenem 17. Feature, weil der Abschnitt genau die 16 der Liste haben soll.
 - **2026-10-16 12:59 · BeMuCa** — in-progress Runde 2: alle drei Critique-Funde behoben - demoworld.sh Kommentar ohne feste Version; shotgen stirbt bei unbekanntem Tastenwort (getestet: 'rigth' und '' -> exit 1); zwei README-Absaetze auf 80 umbrochen. board-main/board-links mit neuem shotgen neu gerendert: byte-gleich (cmp), Proofs bleiben gueltig.
 - **2026-10-16 12:59 · BeMuCa** — critique pass 2: die drei Funde aus pass 1 sind beantwortet (e7de6169), die Reparatur bringt keinen neuen Fehler; nichts weiter.
+- **2026-10-16 13:08 · BeMuCa** — review (frischer Kontext): Freigabe empfohlen, alle 5 DoD-Punkte halten. Nachbau geprueft in frischer Demo-Welt: launcher.png bytegleich, die anderen drei bildgleich mit anderen zufaelligen IDs. Fund neben dem Ticket, NICHT behoben: shotgen-Ansicht 'signoff' (scripts/shotgen/main.go, Schleife mit key('l')) geht mit l nach rechts, l oeffnet aber seit dem Links-Fenster dieses Fenster (internal/tui/model.go:1614) - die Ansicht endet im Links-Fenster, docs/img/signoff.png ist nicht nachbaubar; der neue Kommentar in demoworld.sh verweist trotzdem darauf. Kandidat fuer ein eigenes Ticket. Offen fuer Berk: docs/img/board.png und home.png loeschen (nirgends mehr verlinkt)?
