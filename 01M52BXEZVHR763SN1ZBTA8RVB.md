@@ -1,7 +1,7 @@
 ---
 id: 01M52BXEZVHR763SN1ZBTA8RVB
 title: README zeigt die Features mit Use cases und frischen Screenshots
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-16T12:45:13Z
-updated-at: 2026-10-16T12:58:31Z
+updated-at: 2026-10-16T12:58:33Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-613775
 claimed-at: 2026-10-16T12:46:01Z
@@ -31,6 +31,7 @@ review-summary: |-
   scripts/demoworld.sh:68-69 the comment says the corner reads "jaira 0.5.1" — false from the next release on; say "jaira <newest release>" instead
   scripts/shotgen/main.go:83 a key word that is neither named nor one character presses its first letter ("rigth" -> r) and "" panics on [rune]0; die on any word that is not named and not exactly one rune
   README.md: the two added paragraphs after the logbook section (round:/review-round:) and after the Commands block (follows/tag colours) are single 200-300 character lines; the rest of the README wraps prose at about 80 columns — wrap them the same way
+round: 2
 ---
 
 # README zeigt die Features mit Use cases und frischen Screenshots
