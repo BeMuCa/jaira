@@ -1,7 +1,7 @@
 ---
 id: 01M21PJTWPK4DZ89PRY6T8A8KM
 title: "Eine Pille unter der Version zeigt, dass ein neues Release da ist"
-status: signoff
+status: pre-process
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-16T09:03:01Z
+updated-at: 2026-10-16T09:03:07Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -37,7 +37,7 @@ review-summary: |-
   4. Marker: eine Notes-Zeile '- ! text' bleibt fuer jeden Leser eine normale Zeile; release.Important (release.go:101) erkennt sie. jaira update druckt sie als '  ! text', Popup und Launcher fett orange. CLAUDE.md/AGENTS.md nennen die Markierung im Notes-Abschnitt.
   5. Launcher: Taste w zeigt alle Release-Notes, neueste zuerst, scrollbar mit j/k; die Hinweiszeile nennt 'w release notes'.
   Dazu README, docs/COMMANDS.md, Kommentare und sechs Zeilen in core/release/notes/T8A8KM.md. internal/cli/update.go nur writeNotes + Kommentar (wegen PWAF22).
-round: 2
+round: 3
 review-gaps: |-
   Pro DoD-Punkt:
   DoD 1 - Code erfuellt (updatecheck.go:48-71, view.go:235-238, home.go:368-371); TestReleasePillOnlyForANewerKnownRelease deckt neuer/gleich/unbekannt plus aelter/abgeschaltet. OFFEN: go test ./... -race ist nicht gelaufen (Anweisung Berk); der Haken ist zu Recht leer.
