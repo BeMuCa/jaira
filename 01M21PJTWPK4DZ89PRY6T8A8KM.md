@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-16T09:12:00Z
+updated-at: 2026-10-16T09:12:02Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -82,7 +82,8 @@ claimed-at: 2026-10-16T09:01:29Z
   proof: internal/tui/home.go:283 key w, :425 hint; TestHomeWOpensReleaseNotesNewestFirst, TestHomeHintNamesTheReleaseNotesKey (written, compiled by go vet, not run); hand test (c) on a scratch board without remote
 - [x] Die Release-Pruefung laeuft stuendlich statt taeglich: core/selfupdate MaxAge = 1h, Doku und Kommentare sagen nirgends mehr 24h/taeglich; ein offenes Board liest den Cache regelmaessig neu, so dass die Pille ohne Neustart erscheint; Test
   proof: core/selfupdate/cache.go:22 MaxAge = time.Hour; internal/tui/model.go tickMsg liest neu nach versionEvery (internal/tui/updatecheck.go:14); TestStaleAtThresholds, TestOpenBoardPicksUpANewerReleaseWithoutRestart; Handtest: Cache 61 min alt -> neu gestempelt, Kind schrieb 0.5.1 nach 0.25 s, 59 min -> unberuehrt; tmux-Board mit 0.5.2 gestartet 09:10:51, Cache 9.9.9 um 09:10:56, Pille '^ 9.9.9' um 09:11:52 ohne Neustart
-- [ ] Eine laufende Agent-Sitzung erfaehrt ein neueres Release ohne Neustart: ausser jaira next/resume nennen es auch jaira claim und jaira move auf stderr (stdout/--json unberuehrt) und sagen, den Nutzer zu fragen und erst auf ein Ja 'jaira self upgrade', dann 'jaira update --roles --lanes' auszufuehren; der Agent-Block sagt dasselbe (einmal fragen, ohne Ja nichts ausfuehren); Test
+- [x] Eine laufende Agent-Sitzung erfaehrt ein neueres Release ohne Neustart: ausser jaira next/resume nennen es auch jaira claim und jaira move auf stderr (stdout/--json unberuehrt) und sagen, den Nutzer zu fragen und erst auf ein Ja 'jaira self upgrade', dann 'jaira update --roles --lanes' auszufuehren; der Agent-Block sagt dasselbe (einmal fragen, ohne Ja nichts ausfuehren); Test
+  proof: internal/cli/newerrelease.go warnNewerRelease, Aufrufe claim.go (nach openStore) und flow.go (move, nach --to-Pruefung); core/board/announce.go Punkt 'ask the user once ... Only on a yes'; CLAUDE.md/AGENTS.md neu erzeugt; TestClaimAndMoveAskAboutANewerReleaseOnStderr, TestNextAndResumeNameANewerReleaseOnStderr, TestNoReleaseLineWhenUpToDateUnknownOrDev, TestAgentNoteTellsAgentsToAskAboutANewerRelease; Handtest: Cache 9.9.9 -> next/resume/claim/move drucken die Zeile, move --json stdout ist JSON; Cache 0.5.2 und jaira list -> nichts
 - [x] PWAF22 (Branch feat/PWAF22-update-brings-setup) ist in diesen Branch gemergt, nicht nach master; Konflikte geloest und am Ticket notiert; gofmt/vet/build sauber
   proof: Merge-Commit bc3c1496 (merge(T8A8KM): bring in PWAF22 ...), Konflikt nur docs/COMMANDS.md:130-131, als Notiz; gofmt/vet/build sauber auf bc3c1496
 - [x] Die CPU-Kosten der stuendlichen Pruefung sind gemessen (oder begruendet geschaetzt) und stehen als Notiz am Ticket
