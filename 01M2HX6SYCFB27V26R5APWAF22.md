@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-16T11:19:25Z
+updated-at: 2026-10-16T13:17:02Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -238,3 +238,4 @@ Bestehende Tests (statisch, kein go test): keiner bricht. roles_test 'X written'
 - Text: editedError (internal/cli/updatesetup.go:65) und README.md:131 nennen 'jaira roles install --force' - so aufgerufen endet es mit Exit 2 (Scope fehlt). Fix: einen lauffaehigen Befehl nennen.
 - Nachfolger, nicht jetzt: --dry-run-Zaehlzeilen sagen 'N updated'; Schlusszeile von self upgrade nennt nur 'jaira update'.
 - **2026-10-15 14:16 · BeMuCa** — critique 3: nichts gefunden, gelesen nur Notiz 'review:'/'Treiber zu review 1' und c3ab3695. Tests: setupOutput schneidet an '\nWhat's changed since then:'/'\nNothing has changed since' - genau die Zeilen aus internal/cli/update.go:189/192 (auf T8A8KM unveraendert), Setup-Zeilen werden davor gedruckt. hasLine-Praefixe passen zu den echten Zeilen (printLaneResults/printRoleResults/hintLines/updatePersonalRoles); 'roles: '/'lanes: ' kommen in einem nackten update nur aus hintLines, die Pruefungen sind also nicht leer. go vet ./internal/cli/ sauber. Text: editedError, README.md:131-133 und PWAF22.md Zeilen 1/8 nennen jetzt '--project --force' bzw. '--project'/'--global' - lauffaehig; Notiz-Datei 8 Zeilen, jede '- ', keine umbrochen. [NACHFOLGER] aus Treiber zu review 1 bleiben offen.
+- **2026-10-16 13:17 · BeMuCa** — Berk accepted (16.10.: 'alle auf done setzen und dann PR!'), Claude executed the move to done
