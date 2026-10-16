@@ -15,7 +15,7 @@ related: []
 follows: 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-16T10:04:46Z
-updated-at: 2026-10-16T12:50:44Z
+updated-at: 2026-10-16T12:51:12Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-482020
@@ -50,7 +50,7 @@ round: 2
 ## Definition of Done
 
 - [x] Band zeigt bei neuerer Version Hinweis mit Knopf Update und Knopf Verwerfen; Update fuehrt Vorschau und danach Ja-Pfad aus; Verwerfen unterdrueckt den Hinweis fuer genau diese Version; Test mit Node-Lauf im Cockpit
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1177 band row Update/Dismiss, :356 previewUpgrade (self upgrade --check --json + update --roles --lanes --dry-run, pane), :375 upgradeJaira (self upgrade + update --roles --lanes, only from the pane's yes), :346 dismissRelease (store dismissed-release), board.ts:520 offeredRelease; tests/board.test.ts:1559 describe 'a newer jaira release' (12 tests) - claude plugin test: 155 pass 0 fail; node 24 run of board.ts on real jaira output in scratch
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1180 band row Update/Dismiss, :356 previewUpgrade (self upgrade --check --json + update --roles --lanes --dry-run, pane; :369 no preview -> error pane, no 'Update to X'), :378 upgradeJaira (self upgrade + update --roles --lanes, only from the pane's yes, stdout and stderr shown), :346 dismissRelease (store dismissed-release), board.ts:520 offeredRelease; tests/board.test.ts:1572 describe 'a newer jaira release' (14 tests) - claude plugin test: 157 pass 0 fail; node 24 run of board.ts on real jaira output in scratch
 - [ ] Agenten-Weg mit Vorschau: stderr-Zeile (internal/cli/newerrelease.go) und Agenten-Block (core/board/announce.go) sagen: erst 'jaira self upgrade --check' und 'jaira update --roles --lanes --dry-run', dem User zeigen was sich aendert, fragen, erst auf Ja 'jaira self upgrade' und 'jaira update --roles --lanes'; Zeile bleibt eine Zeile; CLAUDE.md/AGENTS.md neu erzeugt
 
 ## Options
