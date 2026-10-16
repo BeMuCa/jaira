@@ -6,7 +6,7 @@
 // `$` lives there.
 
 import type { ElementTable } from 'claude-code'
-import { clockOf, COLORS, HISTORY_DAYS, slotOf, SPINNER, type Overview, type Row, type Walker, type Workers } from './overview.ts'
+import { clockOf, COLORS, HATS, HISTORY_DAYS, slotOf, SPINNER, type Overview, type Row, type Spot, type Walker } from './overview.ts'
 import { overviewWords as w } from './texts.ts'
 
 const SEP = ' | '
@@ -22,10 +22,87 @@ function personColor(name: string): string {
 }
 
 export type OverviewTab = 'queue' | 'log' | 'workers'
-// The Workers tab: who stands where (null: the board could not be read),
-// where each ticket's figures are on their walk, each ticket's colour, and
-// the frame the spinner and the walk are at.
-export type WorkersScene = { view: Workers | null; where: Record<string, number>; colors: Record<string, string>; frame: number }
+// The Workers tab: its figures (null: the board could not be read), where
+// each ticket's figures stand on their track, each ticket's colour and hat,
+// the frame the animation is at, and the pane's room, in cells.
+export type WorkersScene = {
+  walkers: Walker[] | null
+  where: Record<string, Spot>
+  colors: Record<string, string>
+  hats: Record<string, string>
+  frame: number
+  columns: number
+  rows: number
+}
+
+// ── the Workers tab's drawing: rows of cells, so a figure moves by columns ─
+
+type Style = { color?: string; dim?: boolean; bold?: boolean }
+type Cell = Style & { ch: string }
+
+// Claude Code's own crab, Clawd, nine cells wide, a spark's cell beside it.
+const SPRITE = 10
+const HEAD = ' ▐▛███▜▌ '
+const ARMS = ['▝▜█████▛▘', '▗▜█████▛▖']
+const LEGS = { stand: '  ▘▘ ▝▝  ', step: '  ▝▘ ▘▝  ', sit: '  ▀▀▀▀▀  ' }
+// A track's lines: the walls' names, what floats above the hat, the hat,
+// head, arms, legs, and the line that says who it is.
+const TRACK = 7
+
+const stateWords = { working: w.stateWorking, idle: w.stateIdle, question: w.stateQuestion }
+
+function put(row: Cell[], x: number, text: string, style: Style = {}): void {
+  ;[...text].forEach((ch, i) => {
+    if (x + i >= 0 && x + i < row.length) row[x + i] = { ch, ...style }
+  })
+}
+
+// The tracks, one per figure, top to bottom with a rule between, sharing
+// the room's height. On each, the left wall is the lane its ticket stands
+// in, the right one the lane it goes to; the crab stands as far between as
+// it has come, and the line beneath says who, doing what, on which ticket.
+export function trackRows(scene: WorkersScene): Cell[][] {
+  const { walkers, where, colors, hats, frame, columns } = scene
+  const width = Math.max(columns, SPRITE + 6)
+  const n = walkers?.length ?? 0
+  const height = Math.max(TRACK, Math.floor((scene.rows - (n - 1)) / Math.max(n, 1)))
+  const blank = () => Array.from({ length: width }, () => ({ ch: ' ' }) as Cell)
+  const rows: Cell[][] = []
+  ;(walkers ?? []).forEach((f, k) => {
+    if (k > 0) {
+      const rule = blank()
+      put(rule, 0, '─'.repeat(width), { dim: true })
+      rows.push(rule)
+    }
+    const track = Array.from({ length: height }, blank)
+    const spot = where[f.id] ?? { lane: f.lane, x: f.progress }
+    const leaving = spot.lane !== f.lane
+    const walking = leaving || spot.x !== f.progress
+    const right = leaving ? f.lane : f.next || '—'
+    for (const line of track) {
+      put(line, 0, '┃', { dim: true })
+      put(line, width - 1, '┃', { dim: true })
+    }
+    put(track[0]!, 2, spot.lane, { bold: true })
+    put(track[0]!, width - 3 - right.length, right, { dim: true })
+    const x = 2 + Math.round(spot.x * (width - 4 - SPRITE))
+    const top = height - 6
+    const look: Style = { color: colors[f.id], bold: f.state !== 'idle', dim: f.state === 'idle' }
+    if (f.state === 'question') put(track[top]!, x + 3, '(?)', { color: 'warning', bold: true })
+    if (f.state === 'idle') put(track[top]!, x + 5, 'z z', { dim: true })
+    put(track[top + 1]!, x + 1, HATS[hats[f.id] ?? ''] ?? '', look)
+    put(track[top + 2]!, x, HEAD, look)
+    put(track[top + 3]!, x, ARMS[f.state === 'working' && !walking ? Math.floor(frame / 2) % 2 : 0]!, look)
+    if (f.state === 'working') put(track[top + 2]!, x + 9, SPINNER[frame % SPINNER.length]!, { color: colors[f.id] })
+    put(track[top + 4]!, x, f.state === 'idle' && !walking ? LEGS.sit : walking && frame % 2 === 1 ? LEGS.step : LEGS.stand, look)
+    const words = `${f.id} · ${stateWords[f.state]} · `
+    const caption = words + f.title.slice(0, Math.max(0, width - 4 - words.length))
+    put(track[top + 5]!, Math.max(2, Math.min(x, width - 2 - caption.length)), caption)
+    rows.push(...track)
+  })
+  return rows
+}
+
 // `people`: the names the Log is filtered to; empty shows everybody.
 type OverviewState = { tab: OverviewTab; folded: Record<string, boolean>; people: string[] }
 type OverviewActions = { close: () => void; tab: (tab: OverviewTab) => void; fold: (key: string) => void; person: (name: string) => void; everybody: () => void }
@@ -95,40 +172,25 @@ export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview
       </Box>
     )),
   ]
-  // The Workers tab: the stations side by side, each figure standing above
-  // the station it has walked to, so the ◯ of every station line up beneath.
+  // The Workers tab: each row of cells one line, its runs of one style each.
   const workers = () => {
-    const { view: board, where, colors, frame } = scene
-    if (board === null) return [<Text key="workers-unread" dimColor>{w.unread}</Text>]
-    const all = board.stations.flatMap((s, i) => (board.at[s] ?? []).map(f => ({ f, lane: i })))
-    const width = Math.max(13, ...board.stations.map(s => s.length + 4))
-    const figure = ({ f, lane }: { f: Walker; lane: number }, n: number) => {
-      const color = colors[f.id]
-      const walking = (where[f.id] ?? lane) !== lane
-      const glyph = f.state === 'working' ? SPINNER[(frame + n) % SPINNER.length] : SPINNER[0]
+    if (scene.walkers === null) return [<Text key="workers-unread" dimColor>{w.unread}</Text>]
+    if (scene.walkers.length === 0) return [<Text key="workers-none" dimColor>{w.noWorkers}</Text>]
+    return trackRows(scene).map((row, y) => {
+      const runs: { text: string; style: Style }[] = []
+      for (const { ch, ...style } of row) {
+        const last = runs.at(-1)
+        if (last && last.style.color === style.color && last.style.dim === style.dim && last.style.bold === style.bold) last.text += ch
+        else runs.push({ text: ch, style })
+      }
       return (
-        <Box key={`walker-${f.id}-${n}`} flexDirection="column">
-          {f.state === 'question' ? <Text bold color="warning">  ?</Text> : null}
-          <Text dimColor={f.state === 'idle'}>
-            <Text color={color} bold={f.state !== 'idle'}>{glyph} {f.id}</Text>
-            {f.state === 'idle' ? <Text dimColor> z z</Text> : null}
-            {walking ? <Text dimColor>{(where[f.id] ?? lane) < lane ? ' »' : ' «'}</Text> : null}
-          </Text>
-        </Box>
+        <Text key={`track-${y}`} wrap="truncate">
+          {runs.map((r, i) => (r.style.color || r.style.dim || r.style.bold
+            ? <Text key={`run-${i}`} color={r.style.color} dimColor={r.style.dim} bold={r.style.bold}>{r.text}</Text>
+            : r.text))}
+        </Text>
       )
-    }
-    return [
-      <Box key="stations" flexDirection="row" flexWrap="wrap" alignItems="flex-end" marginTop={1}>
-        {board.stations.map((s, i) => (
-          <Box key={`station-${s}`} flexDirection="column" width={width}>
-            {all.map((x, n) => ((where[x.f.id] ?? x.lane) === i ? figure(x, n) : null))}
-            <Text><Text bold>◯</Text> {s}{i < board.stations.length - 1 ? <Text dimColor> ─</Text> : null}</Text>
-          </Box>
-        ))}
-      </Box>,
-      all.length === 0 ? <Text key="workers-none" dimColor>{w.noWorkers}</Text> : null,
-      <Box key="legend" marginTop={1}><Text dimColor>{w.legend}</Text></Box>,
-    ]
+    })
   }
   return (
     <Box flexDirection="column">

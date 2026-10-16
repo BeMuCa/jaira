@@ -17,8 +17,8 @@ export type Overview = {
 }
 
 // What the Workers tab draws: these mirror hooks/overview.ts.
-export type Walker = { id: string; state: 'working' | 'idle' | 'question' }
-export type Workers = { stations: string[]; at: Record<string, Walker[]> }
+export type Walker = { id: string; state: 'working' | 'idle' | 'question'; lane: string; next: string; title: string; progress: number }
+export type Spot = { lane: string; x: number }
 
 declare module 'claude-code' {
   interface PluginState {
@@ -63,13 +63,13 @@ declare module 'claude-code' {
       overviewTab: 'queue' | 'log' | 'workers'
       overviewFolded: Record<string, boolean>
       overviewPeople: string[]
-      // The Workers tab: who stands at which station, read while it is open;
-      // where each ticket's figures have walked to, by station index; each
-      // ticket's colour, kept while it stays on the board; and the frame the
-      // spinner and the walk are at.
-      workers: Workers | null
-      workersWhere: Record<string, number>
+      // The Workers tab: its figures, read while it is open; where each
+      // ticket's figures stand on their track; each ticket's colour and hat,
+      // kept while it stays on the board; and the frame the animation is at.
+      workers: Walker[] | null
+      workersWhere: Record<string, Spot>
       workersColors: Record<string, string>
+      workersHats: Record<string, string>
       workersFrame: number
     }
   }

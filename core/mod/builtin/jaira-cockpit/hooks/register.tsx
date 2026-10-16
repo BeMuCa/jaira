@@ -14,7 +14,7 @@ import {
 } from './filter.ts'
 import { body, source } from './frame.ts'
 import { add, appended, emptyTotals, row, rowsOf, type Totals } from './metrics.ts'
-import { colorsOf, overviewOf, stepOf, workersOf } from './overview.ts'
+import { COLORS, HATS, overviewOf, pickOf, stepOf, workersOf } from './overview.ts'
 import { drawOverview, type OverviewTab } from './overview-pane.tsx'
 import {
   backMessage, carrierOf, carrierTab, chooseWorker, DEFAULT_CONTEXT_SHARE, isExpired, RECORD_PREFIX, selfLine, startOf, tabsOf,
@@ -64,6 +64,7 @@ const overviewPeopleAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewPeople'
 const workersAtom = atom({ plugin: 'jaira-cockpit', key: 'workers' } as const, null)
 const workersWhereAtom = atom({ plugin: 'jaira-cockpit', key: 'workersWhere' } as const, {})
 const workersColorsAtom = atom({ plugin: 'jaira-cockpit', key: 'workersColors' } as const, {})
+const workersHatsAtom = atom({ plugin: 'jaira-cockpit', key: 'workersHats' } as const, {})
 const workersFrameAtom = atom({ plugin: 'jaira-cockpit', key: 'workersFrame' } as const, 0)
 
 const PANE = 'cockpit-ticket'
@@ -75,12 +76,14 @@ const OVERVIEW = 'cockpit-overview'
 const BAND_TICKETS = 3
 // How long a pressed row stays locked when its action has not ended by then.
 const BUSY_MS = 20_000
-// The Workers tab's frame: the spinner turns each frame, a walking figure
-// crosses one station every WALK_FRAMES, and the board is read again every
-// READ_FRAMES, so a ticket that changed lanes walks without a reopening.
+// The Workers tab's frame: the figures move each frame, and the board is
+// read again every READ_FRAMES, so a ticket that moved on walks without a
+// reopening.
 const FRAME_MS = 250
-const WALK_FRAMES = 2
 const READ_FRAMES = 20
+// The Overview pane's own rows, beside the Workers tab's tracks: its tab
+// row and its Close button.
+const OVERVIEW_ROWS = 2
 // Between the parts of a line: the band's one separator.
 const SEP = ' | '
 
@@ -105,8 +108,10 @@ let threads: Thread[] = []
 // The Explain and Discuss chats this session opened, by their tab's label
 // (`<id>/explain`), with when: the tab goes once the chat has done its part.
 const chats = new Map<string, number>()
-// The Workers tab's frames, running while it is open and shown.
+// The Workers tab's frames, running while it is open and shown, and the
+// board the Overview was opened on.
 let frames: { cancel: () => void } | undefined
+let overviewDir: string | undefined
 
 // ── shared helpers ───────────────────────────────────────────────────────
 
@@ -614,6 +619,7 @@ async function toggleMore($: EngineInterface, open: boolean): Promise<void> {
 // The Overview pane, on the board as it is now: read afresh at each press.
 // A command that failed leaves the pane saying so, not half a board.
 async function openOverview($: EngineInterface, dir: string): Promise<void> {
+  overviewDir = dir
   const [lanes, list, next] = await Promise.all([
     run($, ['jaira', 'lanes', '--json'], dir),
     run($, ['jaira', 'list', '--json'], dir),
@@ -644,27 +650,27 @@ function stopFrames(): void {
 async function frame($: EngineInterface): Promise<void> {
   const n = await update($, workersFrameAtom, f => f + 1)
   if (n % READ_FRAMES === 0) await readWorkers($)
-  if (n % WALK_FRAMES !== 0) return
-  const view = await read($, workersAtom)
-  if (view !== null) await update($, workersWhereAtom, where => stepOf(where, view))
+  const walkers = await read($, workersAtom)
+  if (walkers !== null) await update($, workersWhereAtom, where => stepOf(where, walkers))
 }
 
-// Who stands at which station: the board, Herdr's tabs and this session's
-// subagents, as the band counts them. A figure seen before keeps where it
-// has walked to and its colour; one gone drops out of both.
+// Who is on the board: its tickets, Herdr's tabs and this session's
+// subagents. A ticket seen before keeps where its figures have walked to,
+// its colour and its hat; one gone drops out of all three.
 async function readWorkers($: EngineInterface): Promise<void> {
-  const dir = board?.dir
-  if (dir === undefined || dir === null) return
+  const dir = overviewDir
+  if (dir === undefined) return
   const [lanes, list] = await Promise.all([run($, ['jaira', 'lanes', '--json'], dir), run($, ['jaira', 'list', '--json'], dir)])
   if (lanes?.exitCode !== 0 || list?.exitCode !== 0) {
     await update($, workersAtom, () => null)
     return
   }
   const { tabs, agents } = await agentsOf($, dir)
-  const view = workersOf(lanes.stdout, list.stdout, tabs, agents)
-  const ids = [...new Set(Object.values(view.at).flat().map(f => f.id))]
-  await update($, workersAtom, () => view)
-  await update($, workersColorsAtom, kept => colorsOf(ids, kept))
+  const walkers = workersOf(lanes.stdout, list.stdout, tabs, agents)
+  const ids = [...new Set(walkers.map(f => f.id))]
+  await update($, workersAtom, () => walkers)
+  await update($, workersColorsAtom, kept => pickOf(ids, kept, COLORS))
+  await update($, workersHatsAtom, kept => pickOf(ids, kept, Object.keys(HATS)))
   await update($, workersWhereAtom, where => Object.fromEntries(Object.entries(where).filter(([id]) => ids.includes(id))))
 }
 
@@ -1361,7 +1367,15 @@ export const register: Register = (on, options) => {
       fold: key => void update($, overviewFoldedAtom, f => ({ ...f, [key]: !f[key] })),
       person: name => void update($, overviewPeopleAtom, p => (p.includes(name) ? p.filter(x => x !== name) : [...p, name])),
       everybody: () => void update($, overviewPeopleAtom, () => []),
-    }, { view: await read($, workersAtom), where: await read($, workersWhereAtom), colors: await read($, workersColorsAtom), frame: await read($, workersFrameAtom) }))
+    }, {
+      walkers: await read($, workersAtom),
+      where: await read($, workersWhereAtom),
+      colors: await read($, workersColorsAtom),
+      hats: await read($, workersHatsAtom),
+      frame: await read($, workersFrameAtom),
+      columns: e.props.bodyColumns,
+      rows: e.props.scroll.bodyRows - OVERVIEW_ROWS,
+    }))
 
   // The Workers tab's frames stop with the pane when the person closes it;
   // its own Close button stops them itself, as this hook does not hear it.
