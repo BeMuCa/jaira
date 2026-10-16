@@ -96,7 +96,8 @@ function trackRows(scene: WorkersScene): Cell[][] {
     if (f.state === 'working') put(track[top + 2]!, x + 9, SPINNER[frame % SPINNER.length]!, { color: colors[f.id] })
     put(track[top + 4]!, x, f.state === 'idle' && !walking ? LEGS.sit : walking && frame % 2 === 1 ? LEGS.step : LEGS.stand, look)
     const words = `${f.id} · ${w.states[f.state]} · `
-    const caption = words + f.title.slice(0, Math.max(0, width - 4 - words.length))
+    // Cut to the track, words included: on a narrow pane it ends before the wall.
+    const caption = (words + f.title).slice(0, width - 4)
     put(track[top + 5]!, Math.max(2, Math.min(x, width - 2 - caption.length)), caption)
     rows.push(...track)
   })

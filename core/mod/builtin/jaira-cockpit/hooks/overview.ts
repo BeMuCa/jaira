@@ -201,12 +201,19 @@ export function slotOf(name: string, n: number): number {
 }
 
 // Each ticket's pick from `choices`, a colour or a hat. One that already
-// has one keeps it while it stays on the board; a new one starts at its
+// has one keeps it while it stays on the board and no other ticket holds
+// it too; a new one, or the later by name of two sharing one, starts at its
 // name's slot and moves on to the next choice no other ticket has. Only
 // with more tickets than choices do two share one, and then by name alone.
 export function pickOf(ids: readonly string[], kept: Readonly<Record<string, string>>, choices: readonly string[]): Record<string, string> {
   const picks: Record<string, string> = {}
-  for (const id of ids) if (kept[id] !== undefined && choices.includes(kept[id]!)) picks[id] = kept[id]!
+  const held = new Set<string>()
+  for (const id of [...ids].sort()) {
+    const pick = kept[id]
+    if (pick === undefined || !choices.includes(pick) || held.has(pick)) continue
+    picks[id] = pick
+    held.add(pick)
+  }
   for (const id of [...ids].sort()) {
     if (picks[id] !== undefined) continue
     const used = new Set(Object.values(picks))

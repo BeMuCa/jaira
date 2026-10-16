@@ -2303,6 +2303,24 @@ describe('the workers tab', () => {
     expect(new Set(after.map(l => l.hat)).size).toBe(6)
   })
 
+  test('once a ticket leaves, two that had to share a colour never keep sharing it', async ($, on) => {
+    const w = world(on, { herdr: true })
+    const ids = ['AAAAAA', 'BBBBBB', 'CCCCCC', 'DDDDDD', 'EEEEEE', 'FFFFFF', 'GGGGGG']
+    const board = (on: string[]) => {
+      w.tickets = on.map(handle => ({ handle, title: handle, status: 'in-progress', question: '' }))
+      w.tabs = on.map((id, i) => ({ tab_id: `w1:t${i}`, label: `${id}/worker`, agent_status: 'working' }))
+    }
+    board(ids)
+    await startSession($)
+    const pane = await workersTab($)
+    const colors = async () => (await pane.findAll({ type: 'Text' })).filter(x => x.text.includes('▐▛███▜▌') && x.text.length < WIDTH).map(x => (x.props as { color?: string }).color)
+    // Seven tickets, six colours: two share one.
+    expect(new Set(await colors()).size).toBe(6)
+    board(ids.filter(id => id !== 'BBBBBB'))
+    await w.clock.advance(5000)
+    expect(new Set(await colors()).size).toBe(6)
+  })
+
   test('working moves its arms in place; resting sits still', async ($, on) => {
     const w = world(on, { herdr: true })
     w.tickets = [{ ...WORKING, assignee: 'Alex' }, { handle: 'C1C1C1', title: 'judged', status: 'critique', question: '' }]
@@ -2380,6 +2398,18 @@ describe('the workers tab', () => {
     const top = (await pane.findAll({ type: 'Text' })).map(x => x.text).find(t => t.startsWith('┃ ') && t.length === 24)
     // 24 cells: nine for each name, the walls and the gaps around them.
     expect(top).toBe('┃ in-progre  critique  ┃')
+  })
+
+  test('on a pane too narrow for it, the line beneath the crab ends before the right wall', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tickets = [HUMAN]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const narrow = { ...(OVERVIEW as { props: object }), props: { ...(OVERVIEW as { props: object }).props, bodyColumns: 30 } } as never
+    const pane = await $.ui.mount(narrow)
+    await pane.press({ key: 'overview-tab-workers' })
+    const caption = (await pane.findAll({ type: 'Text' })).map(x => x.text).find(t => t.includes('K7P2QX ·') && t.length === 30)
+    expect(caption).toBe('┃ K7P2QX · waits for an answ ┃')
   })
 
   test('a subagent of this session has a track too, at work or resting', async ($, on) => {
