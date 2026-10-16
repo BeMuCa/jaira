@@ -1,7 +1,7 @@
 ---
 id: 01M52BXEZVHR763SN1ZBTA8RVB
 title: README zeigt die Features mit Use cases und frischen Screenshots
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-16T12:45:13Z
-updated-at: 2026-10-16T12:59:13Z
+updated-at: 2026-10-16T12:59:15Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-613775
 claimed-at: 2026-10-16T12:46:01Z
