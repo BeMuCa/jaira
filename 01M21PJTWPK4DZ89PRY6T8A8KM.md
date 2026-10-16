@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-16T09:24:11Z
+updated-at: 2026-10-16T09:24:20Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -91,7 +91,7 @@ claimed-at: 2026-10-16T09:01:29Z
 - [x] [DoD 7] Agent-Block core/board/announce.go: Punkt zu 'newer release' umschreiben: einmal fragen, nur auf Ja jaira self upgrade und dann jaira update --roles --lanes, nach Nein nicht wieder fragen; Test TestAgentNoteTellsAgentsToReportANewerRelease anpassen. CLAUDE.md/AGENTS.md dieses Repos mit frisch gebauter Binary auf einer Scratch-Kopie neu erzeugen und nur die Blockzeilen uebernehmen
 - [x] [DoD 6,7] Doku: README.md (Abschnitt self upgrade, 'at most once a day'), docs/COMMANDS.md Zeile jaira self upgrade; core/release/notes/T8A8KM.md: Zeile next/resume und '! Run jaira update'-Zeile auf claim/move + Fragen + Befehle umschreiben, neue Zeile stuendlich; je Aenderung eine Zeile, als Anweisung
 - [x] [DoD 9] CPU messen: /usr/bin/time -v auf 'jaira self upgrade --check --json' (der stuendliche Kindprozess, mehrere Laeufe) und Kosten von PollCache pro Befehl (jaira next --json im Scratch-Board, JAIRA_NO_UPDATE_CHECK=1 gegen aus, je 50 Laeufe); Ergebnis als Notiz
-- [ ] Pruefung: je Commit gofmt -l/vet/build; Handtest mit -X main.version=0.5.2 gebauter Binary in Scratch-Board ohne Remote, JAIRA_HOME/HOME im Scratchpad: Cache 9.9.9 -> claim/move/next/resume drucken die Zeile, Cache 0.5.2 -> nichts; TUI in tmux: Cache 0.5.2 beim Start, dann 9.9.9 schreiben, nach >60s Pille sichtbar ohne Neustart. Einmal am Ende go test -race ./... auf dem fertigen Baum, Schwanz woertlich
+- [x] Pruefung: je Commit gofmt -l/vet/build; Handtest mit -X main.version=0.5.2 gebauter Binary in Scratch-Board ohne Remote, JAIRA_HOME/HOME im Scratchpad: Cache 9.9.9 -> claim/move/next/resume drucken die Zeile, Cache 0.5.2 -> nichts; TUI in tmux: Cache 0.5.2 beim Start, dann 9.9.9 schreiben, nach >60s Pille sichtbar ohne Neustart. Einmal am Ende go test -race ./... auf dem fertigen Baum, Schwanz woertlich
 - [x] [DoD 1,8] Merge-Folge: core/lane/refresh_test.go boardWithTesting reicht Add die Board-Menge Load(root) statt des Angebots Load('') (PWAF22-Test, auf seinem Branch nie gelaufen); go test -race ./core/lane/ gruen; dann einmal go test -race -count=1 ./... auf dem fertigen Baum
 
 ## Progress
