@@ -15,7 +15,7 @@ related: []
 follows: 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-16T10:04:46Z
-updated-at: 2026-10-16T13:00:07Z
+updated-at: 2026-10-16T13:18:02Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-682638
@@ -105,3 +105,4 @@ Kept here because review-gaps replaces it: optimize's review-gaps was "nothing r
 - ~/.local/bin/jaira sha256 8b2014bd... before and after.
 - worktree_diff of the payload was only the untracked .jaira/milestones/*.md, which is not this ticket.
 Minor gaps only (see review-gaps): the result title says updated even if the setup step failed; the 'write nothing' wording ignores the cache file that --check rewrites. The two follow-up candidates (20s lock, brew/go-install) are still unfiled.
+- **2026-10-16 13:18 · BeMuCa** — Berk accepted (16.10.: 'alle auf done setzen und dann PR!'), Claude executed the move to done
