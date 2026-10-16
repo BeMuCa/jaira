@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-16T09:12:14Z
+updated-at: 2026-10-16T09:12:25Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -75,7 +75,7 @@ claimed-at: 2026-10-16T09:01:29Z
 - [x] Ein Agent, der mit jaira arbeitet, erfaehrt von einem neueren Release und sagt es dem Nutzer: jaira nennt es in einer Ausgabe, die ein Agent sieht (z.B. jaira resume/next), und der Agent-Block sagt 'meldet jaira ein neueres Release, sag es dem Nutzer und nenne jaira self upgrade'; Test
   proof: internal/cli/newerrelease.go warnNewerRelease (next flow.go, resume.go, claim.go, move flow.go), core/board/announce.go Punkt 'newer release'; TestNextAndResumeNameANewerReleaseOnStderr, TestNoReleaseLineWhenUpToDateUnknownOrDev, TestAgentNoteTellsAgentsToAskAboutANewerRelease; hand test (a) on a scratch board without remote
 - [x] Nach einem Upgrade oder 'jaira update' zeigt der TUI einmal ein Popup mit den Release-Notes seit der Version, die zuletzt auf diesem Board lief; eine Taste schliesst es; bis zum naechsten Versionswechsel erscheint es nicht wieder; Test
-  proof: internal/tui/releasenotes.go:124 notesBase, :140 openReleaseNotes; TestNotesBase, TestPopupAfterUpgradeShowsNotesSinceTheStamp, TestPopupClosesAndStaysClosedUntilTheNextVersion (written, compiled by go vet, not run); hand test (b) on a scratch board without remote: popup, esc writes notes-seen 0.5.2, restart no popup
+  proof: internal/tui/releasenotes.go:110 notesBase, :127 openReleaseNotes; TestNotesBase, TestPopupAfterUpgradeShowsNotesSinceTheStamp, TestPopupClosesAndStaysClosedUntilTheNextVersion; hand test (b) on a scratch board without remote: popup, esc writes notes-seen 0.5.2, restart no popup
 - [x] Eine Release-Note-Zeile kann als wichtig markiert werden (Vorschlag: '- ! <text>', bleibt fuer alte Binaries eine normale Zeile); sie steht im Popup und in der Ausgabe von 'jaira update' hervorgehoben; der Abschnitt zu core/release/notes/ in CLAUDE.md nennt die Markierung; Test
   proof: core/release/release.go:101 Important, internal/cli/update.go writeNotes, internal/tui/releasenotes.go:15,60 styImportant; TestImportantMarker, TestUpdateNotesMarkImportantLines, TestNotesViewMarksImportantLines (written, compiled by go vet, not run); hand test (d) on a scratch board without remote: ' ! ' line in jaira update, bold colour 214 in popup
 - [x] Auf der Launcher-Seite oeffnet ein Hotkey die Release-Notes (neueste Version zuerst); die Hilfezeile nennt die Taste; Test
