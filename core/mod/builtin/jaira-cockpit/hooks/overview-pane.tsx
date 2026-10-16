@@ -6,7 +6,7 @@
 // `$` lives there.
 
 import type { ElementTable } from 'claude-code'
-import { clockOf, HISTORY_DAYS, slotOf, SPINNER, type Overview, type Row, type Walker, type Workers } from './overview.ts'
+import { clockOf, COLORS, HISTORY_DAYS, slotOf, SPINNER, type Overview, type Row, type Walker, type Workers } from './overview.ts'
 import { overviewWords as w } from './texts.ts'
 
 const SEP = ' | '
@@ -16,12 +16,9 @@ const SEP = ' | '
 const GROUP = { working: 'claude', queue: 'suggestion', parked: 'warning' } as const
 
 // A person's colour, derived from the name and nothing else: the same person
-// reads the same in both tabs and after every reopening. ANSI names, apart
-// from the group colours, which the terminal's own scheme keeps readable.
-const PEOPLE = ['cyan', 'magenta', 'green', 'cyanBright', 'magentaBright', 'greenBright']
-
+// reads the same in both tabs and after every reopening.
 function personColor(name: string): string {
-  return PEOPLE[slotOf(name, PEOPLE.length)]!
+  return COLORS[slotOf(name, COLORS.length)]!
 }
 
 export type OverviewTab = 'queue' | 'log' | 'workers'
@@ -110,7 +107,7 @@ export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview
       const walking = (where[f.id] ?? lane) !== lane
       const glyph = f.state === 'working' ? SPINNER[(frame + n) % SPINNER.length] : SPINNER[0]
       return (
-        <Box key={`walker-${f.id}-${f.kind}-${n}`} flexDirection="column">
+        <Box key={`walker-${f.id}-${n}`} flexDirection="column">
           {f.state === 'question' ? <Text bold color="warning">  ?</Text> : null}
           <Text dimColor={f.state === 'idle'}>
             <Text color={color} bold={f.state !== 'idle'}>{glyph} {f.id}</Text>

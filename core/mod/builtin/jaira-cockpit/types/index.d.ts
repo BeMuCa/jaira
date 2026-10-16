@@ -17,7 +17,7 @@ export type Overview = {
 }
 
 // What the Workers tab draws: these mirror hooks/overview.ts.
-export type Walker = { id: string; kind: string; state: 'working' | 'idle' | 'question' }
+export type Walker = { id: string; state: 'working' | 'idle' | 'question' }
 export type Workers = { stations: string[]; at: Record<string, Walker[]> }
 
 declare module 'claude-code' {

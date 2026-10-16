@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-16T12:49:22Z
-updated-at: 2026-10-16T13:05:51Z
+updated-at: 2026-10-16T13:07:36Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-51728
@@ -29,6 +29,12 @@ claimed-at: 2026-10-16T12:50:47Z
 outcome-what: "Overview im cockpit hat einen dritten Tab Workers: Lanes als Stationen, jeder Agent ein ✻ in Ticketfarbe mit Handle, dreht bei working, z z bei idle, ?-Blase bei offener Frage, läuft beim Lanewechsel Station für Station; Timer 250 ms nur solange der Tab offen ist, Board alle 5 s neu gelesen"
 outcome-why: "Bei 5 parallelen Workern sah Alex nur eine Zahl im Band und Textzeilen im workers-Tool, nicht wer an welchem Ticket in welcher Lane steht; Alex wollte es verspielt, wie ein kleines Spiel"
 outcome-resolves: F80QZT
+review-summary: |-
+  core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx:21 PEOPLE ist dieselbe Liste wie TICKET_COLORS in overview.ts - eine Palette behalten, personColor nimmt sie
+  core/mod/builtin/jaira-cockpit/hooks/register.tsx readWorkers wiederholt das Lesen von Herdr-Tabs und $.agent.list aus refreshBoard (register.tsx ~252-260) - einen Helfer agentsOf($, dir) für beide
+  core/mod/builtin/jaira-cockpit/hooks/overview.ts Walker.kind liest niemand außer dem React-Key, den n schon eindeutig macht - Feld streichen, auch in types/index.d.ts
+  core/mod/builtin/jaira-cockpit/hooks/overview.ts colorsOf(palette=TICKET_COLORS): der Parameter hat keinen Aufrufer, der ihn setzt - streichen
+round: 2
 ---
 
 # Cockpit: Worker als farbige Claude-Icons auf einer Lane-Spur im Overview
@@ -68,3 +74,8 @@ outcome-resolves: F80QZT
 - **2026-10-16 12:55 · Alexander Sacharov** — decision: Timer geht. Plugin-API hat $.clock.every(ms, fn) mit cancel(), und update(atom) zeichnet die Leser neu (plugin-authoring types, clock.every; register.tsx:949 nutzt es schon für das Band). Also echte Frames: ein Takt-Atom, 250 ms, läuft nur solange Overview offen und Tab Workers aktiv; ui.close für cockpit-overview und Tabwechsel stoppen ihn. Board wird in dem Tab alle 5 s neu gelesen, damit ein Lanewechsel ohne Neuöffnen sichtbar wird.
 - **2026-10-16 12:55 · Alexander Sacharov** — decision: Stationen = alle agentischen Lanes plus die Lanes einer Person (human, signoff), in Board-Reihenfolge; backlog/todo/blocked/done nicht. Frage-Zustand: Ticket hat question gesetzt (auch ohne laufenden Agenten, z. B. in human), oder Subagent status 'waiting'. Idle: Herdr-Tab <id>/... offen, agent_status nicht working. Laufen: eine Station pro Takt-Schritt von der alten zur neuen Lane, Position je Ticket im Atom gemerkt.
 - **2026-10-16 13:05 · Alexander Sacharov** — Gefunden: ein ui.close-Hook des Plugins hört das eigene $.ui.close nicht (im Test belegt, Timer lief weiter). Darum stoppt der Close-Knopf die Frames selbst; der Hook bleibt für das Schließen durch die Person (Escape/Close-Marke). Frage-Figur dreht sich nicht, nur working dreht. Agent eines Tickets in backlog/todo wird nicht gezeichnet (keine Station). Geprüft: claude plugin test 149 pass, plugin validate passed, tsc 5.6 strict ohne Fehler.
+- **2026-10-16 13:06 · Alexander Sacharov** — critique (Runde 1): core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx:21 PEOPLE ist dieselbe Liste wie TICKET_COLORS in overview.ts - eine Palette behalten, personColor nimmt sie
+core/mod/builtin/jaira-cockpit/hooks/register.tsx readWorkers wiederholt das Lesen von Herdr-Tabs und $.agent.list aus refreshBoard (register.tsx ~252-260) - einen Helfer agentsOf($, dir) für beide
+core/mod/builtin/jaira-cockpit/hooks/overview.ts Walker.kind liest niemand außer dem React-Key, den n schon eindeutig macht - Feld streichen, auch in types/index.d.ts
+core/mod/builtin/jaira-cockpit/hooks/overview.ts colorsOf(palette=TICKET_COLORS): der Parameter hat keinen Aufrufer, der ihn setzt - streichen
+- **2026-10-16 13:07 · Alexander Sacharov** — in-progress Runde 2: alle 4 critique-Funde umgesetzt - eine Palette COLORS (overview.ts) für Personen und Tickets, agentsOf($, dir) in register.tsx für refreshBoard und readWorkers, Walker.kind und colorsOf-palette gestrichen. Tests 149 pass, validate, tsc grün. Proofs geprüft: zeigen weiter auf existierende Namen.

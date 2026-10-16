@@ -18,7 +18,7 @@ import { colorsOf, overviewOf, stepOf, workersOf } from './overview.ts'
 import { drawOverview, type OverviewTab } from './overview-pane.tsx'
 import {
   backMessage, carrierOf, carrierTab, chooseWorker, DEFAULT_CONTEXT_SHARE, isExpired, RECORD_PREFIX, selfLine, startOf, tabsOf,
-  workerLines, type Role, type SessionRecord,
+  workerLines, type Role, type SessionRecord, type Tab,
 } from './sessions.ts'
 import { overviewWords, t } from './texts.ts'
 import { classifyPrompt, file, listThreads, parseFiling, tally, type Thread } from './threads.ts'
@@ -246,6 +246,18 @@ async function findBoard($: EngineInterface): Promise<{ dir: string; repo: strin
   return null
 }
 
+// Workers and reviews are the agents that run: Herdr tabs (none where there
+// is no Herdr or its list failed), and this session's own subagents.
+async function agentsOf($: EngineInterface, dir: string): Promise<{ bin: string | undefined; tabs: Tab[]; agents: Agent[] }> {
+  const bin = await herdr($)
+  const listed = bin === undefined ? undefined : await run($, [bin, 'tab', 'list'], dir)
+  let agents: Agent[] = []
+  try {
+    agents = await $.agent.list()
+  } catch {}
+  return { bin, tabs: listed?.exitCode === 0 ? tabsOf(listed.stdout) : [], agents }
+}
+
 async function refreshBoard($: EngineInterface): Promise<void> {
   if (await carries($)) return
   if (board === undefined) {
@@ -261,20 +273,13 @@ async function refreshBoard($: EngineInterface): Promise<void> {
     run($, ['jaira', 'list', '--json'], board.dir),
   ])
   if (lanes?.exitCode !== 0 || list?.exitCode !== 0) return
-  // Workers and reviews are the agents that run: Herdr tabs, and this
-  // session's own subagents where there is no Herdr.
-  const bin = await herdr($)
-  const tabs = bin === undefined ? undefined : await run($, [bin, 'tab', 'list'], board.dir)
-  let agents: Agent[] = []
-  try {
-    agents = await $.agent.list()
-  } catch {}
+  const { bin, tabs, agents } = await agentsOf($, board.dir)
   if (!meAsked) {
     meAsked = true
     const who = await run($, ['jaira', 'whoami', '--json'], board.dir)
     me = who?.exitCode === 0 ? whoOf(who.stdout) : undefined
   }
-  const view: BoardView = snapshotOf(lanes.stdout, list.stdout, tabs?.exitCode === 0 ? tabsOf(tabs.stdout) : [], agents, me)
+  const view: BoardView = snapshotOf(lanes.stdout, list.stdout, tabs, agents, me)
   await update($, boardAtom, () => view)
   // What an Explain chat wrote back onto the tickets the band shows, Explain
   // or not: an explanation stays readable after a later round, only asking
@@ -293,7 +298,7 @@ async function refreshBoard($: EngineInterface): Promise<void> {
   // chat whose question went away without one is done too. Its tab goes, but
   // only once its agent stopped working: a Discuss chat notes the decision
   // first and then still moves the ticket and tells this session.
-  const open = bin !== undefined && tabs?.exitCode === 0 ? tabsOf(tabs.stdout) : []
+  const open = tabs
   for (const [label, since] of chats) {
     const [id = '', kind] = label.split('/')
     const tab = open.find(x => x.label === label)
@@ -655,13 +660,8 @@ async function readWorkers($: EngineInterface): Promise<void> {
     await update($, workersAtom, () => null)
     return
   }
-  const bin = await herdr($)
-  const tabs = bin === undefined ? undefined : await run($, [bin, 'tab', 'list'], dir)
-  let agents: Agent[] = []
-  try {
-    agents = await $.agent.list()
-  } catch {}
-  const view = workersOf(lanes.stdout, list.stdout, tabs?.exitCode === 0 ? tabsOf(tabs.stdout) : [], agents)
+  const { tabs, agents } = await agentsOf($, dir)
+  const view = workersOf(lanes.stdout, list.stdout, tabs, agents)
   const ids = [...new Set(Object.values(view.at).flat().map(f => f.id))]
   await update($, workersAtom, () => view)
   await update($, workersColorsAtom, kept => colorsOf(ids, kept))

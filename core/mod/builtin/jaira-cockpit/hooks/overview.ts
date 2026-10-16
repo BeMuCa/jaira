@@ -116,9 +116,8 @@ export function overviewOf(lanesJson: string, listJson: string, nextJson: string
 // a question its ticket carries for a person.
 export type WorkerState = 'working' | 'idle' | 'question'
 // One figure: an agent, or a ticket waiting on a person's answer with no
-// agent on it. `kind` is what its Herdr tab is labelled after the id
-// (`worker`, `review`, …), or `agent` for a subagent of this session.
-export type Walker = { id: string; kind: string; state: WorkerState }
+// agent on it.
+export type Walker = { id: string; state: WorkerState }
 // The stations in board order, and who stands at each, by the lane of the
 // ticket the figure works on.
 export type Workers = { stations: string[]; at: Record<string, Walker[]> }
@@ -148,21 +147,22 @@ export function workersOf(lanesJson: string, listJson: string, tabs: readonly Ta
     const walkers: Walker[] = []
     for (const tab of tabs) {
       const [id = '', kind = ''] = tab.label.split('/')
-      if (id === t.handle && kind !== '' && !PERSONS_TABS.has(kind)) walkers.push({ id, kind, state: state(tab.agent_status === 'working') })
+      if (id === t.handle && kind !== '' && !PERSONS_TABS.has(kind)) walkers.push({ id, state: state(tab.agent_status === 'working') })
     }
     for (const a of agents) {
       if (!`${a.description} ${a.name ?? ''}`.includes(t.handle)) continue
-      if (RUNNING.has(a.status) || a.status === 'idle') walkers.push({ id: t.handle, kind: 'agent', state: state(RUNNING.has(a.status)) })
+      if (RUNNING.has(a.status) || a.status === 'idle') walkers.push({ id: t.handle, state: state(RUNNING.has(a.status)) })
     }
-    if (walkers.length === 0 && asks) walkers.push({ id: t.handle, kind: 'question', state: 'question' })
+    if (walkers.length === 0 && asks) walkers.push({ id: t.handle, state: 'question' })
     here.push(...walkers)
   }
   return { stations, at }
 }
 
-// The colours a ticket's figures wear. ANSI names, as a person's colour in
-// the Log: the terminal's own scheme keeps them readable.
-export const TICKET_COLORS = ['cyan', 'magenta', 'green', 'cyanBright', 'magentaBright', 'greenBright']
+// The colours a person's name in the Log and a ticket's figures wear. ANSI
+// names, apart from the group colours, which the terminal's own scheme
+// keeps readable.
+export const COLORS = ['cyan', 'magenta', 'green', 'cyanBright', 'magentaBright', 'greenBright']
 
 // A name's slot among `n`, derived from the name and nothing else.
 export function slotOf(name: string, n: number): number {
@@ -175,15 +175,15 @@ export function slotOf(name: string, n: number): number {
 // the board; a new one starts at its name's slot and moves on to the next
 // colour no other ticket wears. Only with more tickets than colours do two
 // share one, and then by name alone.
-export function colorsOf(ids: readonly string[], kept: Readonly<Record<string, string>>, palette: readonly string[] = TICKET_COLORS): Record<string, string> {
+export function colorsOf(ids: readonly string[], kept: Readonly<Record<string, string>>): Record<string, string> {
   const colors: Record<string, string> = {}
-  for (const id of ids) if (kept[id] !== undefined && palette.includes(kept[id]!)) colors[id] = kept[id]!
+  for (const id of ids) if (kept[id] !== undefined && COLORS.includes(kept[id]!)) colors[id] = kept[id]!
   for (const id of [...ids].sort()) {
     if (colors[id] !== undefined) continue
     const used = new Set(Object.values(colors))
-    const start = slotOf(id, palette.length)
-    const free = palette.map((_, i) => palette[(start + i) % palette.length]!).find(c => !used.has(c))
-    colors[id] = free ?? palette[start]!
+    const start = slotOf(id, COLORS.length)
+    const free = COLORS.map((_, i) => COLORS[(start + i) % COLORS.length]!).find(c => !used.has(c))
+    colors[id] = free ?? COLORS[start]!
   }
   return colors
 }
