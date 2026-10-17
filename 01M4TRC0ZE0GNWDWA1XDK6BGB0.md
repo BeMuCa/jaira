@@ -21,7 +21,7 @@ related: []
 follows: 01M2HW4788Z5G0M05G3PJDXV60
 commits: []
 created-at: 2026-10-13T13:48:57Z
-updated-at: 2026-10-17T20:50:27Z
+updated-at: 2026-10-17T20:50:29Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-297639
@@ -67,3 +67,4 @@ Gewaehlt: B (Nutzerentscheidung 2026-10-17): newest wins in List und show, Marke
 - **2026-10-17 20:49 · berkc** — In-progress: Store.List ersetzt Datei-Tickets, deren Ref nach isStale weiter ist, durch das Ref-Ticket (BehindRef, Path=Datei); show nutzt Store.Newest nur fuer Tickets auf dem Board (nicht Logbuch). Schreibseite war schon sicher (Mutate/Archive/Logbook/move rufen CheckFresh -> StaleError, exit 3); der Test prueft das am selben Fall, Ref-SHA unveraendert. Manuell nachgestellt mit zwei Worktrees eines Temp-Repos: main zeigt todo + [behind ref: pull it], note verweigert, Ref-SHA gleich; nach pull Marker weg. Gleiches-Sekunde-Grenzfall: isStale vergleicht updated_at mit Sekundenaufloesung - zwei Schreibvorgaenge in derselben Sekunde gelten nicht als 'weiter' (bestehende Grenze von pull/CheckFresh, nicht neu).
 - **2026-10-17 20:49 · berkc** — critique: store.go newest vereinfachen - ReadOnly-Filter und Kopie entfernen, ts direkt an Ahead (Begruendung im review-summary). Ahead/Extra teilen sich eine fast gleiche Lese-und-Decode-Schleife: das ist Sache der optimize-Lane, hier stehen gelassen. Load bleibt bewusst bei der Datei (siehe Plan-Notiz).
 - **2026-10-17 20:50 · berkc** — in-progress (Runde 2): store.go newest vereinfacht wie von critique verlangt; Tests gruen.
+- **2026-10-17 20:50 · berkc** — critique Runde 2: nichts mehr - newest ist jetzt drei Zeilen; Load bleibt bewusst Datei (Plan-Notiz); die doppelte Decode-Schleife Ahead/Extra geht an optimize.
