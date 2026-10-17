@@ -4,7 +4,7 @@ title: "Der Teamlead legt Tickets auf das Board, das zum Thema passt, und der Wo
 status: backlog
 ready: true
 creator: BeMuCa
-assignee: BeMuCa
+assignee: Alexander Sacharov
 goal: "Aus einer Bitte wie 'in der Datenbank fuer user eine Spalte hinzufuegen' legt der Teamlead ein Ticket an, waehlt das passende Board (hier backend), und der jaira-worker bekommt Ticket und Board und treibt es durch dessen Lanes"
 context: |-
   Was heute fehlt: Der Teamlead (Skill jaira-teamlead) legt Tickets auf dem einen Board des Repos an. Ein Board pro Thema gibt es noch nicht (S0EG0M baut es).
@@ -18,7 +18,8 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:43Z
-updated-at: 2026-10-14T12:18:43Z
+updated-at: 2026-10-17T12:36:12Z
+updated-by: Alexander Sacharov
 ---
 
 # Der Teamlead legt Tickets auf das Board, das zum Thema passt, und der Worker faehrt sie durch dessen Lanes
@@ -39,4 +40,4 @@ updated-at: 2026-10-14T12:18:43Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-17 12:36 · Alexander Sacharov** — Alexander Sacharov took this ticket over from BeMuCa
