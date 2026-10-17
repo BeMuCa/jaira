@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T14:38:24Z
+updated-at: 2026-10-17T14:38:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-66355
 claimed-at: 2026-10-17T14:11:12Z
@@ -36,6 +36,7 @@ review-gaps: "1) Pane-id reuse (plausible, not verified): a record outlives its 
 test-verdict: "pass: go vet + go test ./... -race RC=0; DoD 1-5 checked in the tree (proof lines re-read after the last edit); live run on a scratch fork clone with real gh and herdr.exe: feat/rftqkp (merged #87) worktree and branch removed, untracked .jaira/ let through, gone pane's record dropped, an unmerged ticket printed as waiting, --dry-run changed nothing; with no record the script exits before any gh call"
 review-verdict: "Approve with one reservation. The diff meets all four DoD items and the safety checks (merged head, done lane, dirty worktree, own/main worktree) are sound and tested. Not fully sure about gap 1: if herdr can reuse pane ids after a restart, reap.sh can close a stranger's tab. A label check before 'tab close' would remove that risk — worth deciding before signoff."
 review-round: 5
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-yd4be9 && go test ./core/role -run 'Reap|Spawn|Teamlead' -count=1 — expect 'ok' (about 50s).  2. In a Herdr session, from the main checkout, start a worker with core/role/builtin/jaira-dispatcher/scripts/spawn.sh <slug> <ID> worker . — then ls .git/jaira/panes/ shows one file with pane=, ticket=, lane=, worktree= lines.  3. Run .claude/skills/jaira-dispatcher/scripts/reap.sh --dry-run — expect 'waiting <ID>: feat/<slug> has no merged pull request'.  4. For a ticket that is done and whose PR is merged, run reap.sh --dry-run — expect 'would close <ID>/<lane> <pane>', 'would remove <worktree>', 'would delete branch feat/<slug>'; nothing changes.  5. Run reap.sh without --dry-run — the tabs close, git worktree list no longer shows the worktree, git branch no longer shows the branch.  6. Restart herdr, open a new tab, then check whether its pane id equals an old id in .git/jaira/panes/ — if yes, gap 1 is real."
 ---
 
 # Worker-Tabs und ihre Arbeitsbaeume schliessen sich, sobald der Pull Request ihres Tickets gemergt ist
