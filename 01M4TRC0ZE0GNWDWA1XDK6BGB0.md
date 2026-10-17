@@ -1,7 +1,7 @@
 ---
 id: 01M4TRC0ZE0GNWDWA1XDK6BGB0
 title: "Das Board zeigt den Stand des Refs, wenn die Ticket-Datei dahinter zurueckliegt"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Board, 'jaira list' und 'jaira show' zeigen den neuesten Stand eines Tickets: liegt die Datei im Checkout hinter ihrem Ref, den des Refs, mit einem Kennzeichen, dass 'jaira pull' faellig ist - und ein Schreiben auf die veraltete Datei bleibt verweigert."
@@ -21,7 +21,7 @@ related: []
 follows: 01M2HW4788Z5G0M05G3PJDXV60
 commits: []
 created-at: 2026-10-13T13:48:57Z
-updated-at: 2026-10-17T20:49:54Z
+updated-at: 2026-10-17T20:49:56Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-297639
@@ -30,6 +30,7 @@ outcome-what: "Board, jaira list und jaira show zeigen bei einer Ticket-Datei, d
 outcome-why: "Ein in einem anderen Worktree oder von einem Teammitglied bewegtes Ticket stand hier in seiner alten Lane; die Erkennung (isStale, wie bei pull) gab es schon, sie wurde nur beim Lesen nicht genutzt."
 outcome-resolves: K6BGB0; deckt JDXV60 DoD 1 fuer den Ref-Fall ab
 review-summary: "core/ticket/store.go newest: der ReadOnly-Filter und die files-Kopie sind ueberfluessig - List ruft newest bevor die Ref-only-Tickets angehaengt werden, und ein ReadOnly-Ticket aus Newest(show) hat dasselbe updated_at wie sein Ref, ist also nie 'ahead'; ts direkt an Ahead geben"
+round: 2
 ---
 
 # Das Board zeigt den Stand des Refs, wenn die Ticket-Datei dahinter zurueckliegt
