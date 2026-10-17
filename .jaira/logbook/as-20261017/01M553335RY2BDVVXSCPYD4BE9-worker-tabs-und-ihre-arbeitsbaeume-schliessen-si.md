@@ -1,7 +1,7 @@
 ---
 id: 01M553335RY2BDVVXSCPYD4BE9
 title: "Worker-Tabs und ihre Arbeitsbaeume schliessen sich, sobald der Pull Request ihres Tickets gemergt ist"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,22 +21,31 @@ tags: []
 blocked-by: []
 related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
-commits: []
+commits:
+  - 5c5207ba673bd66309c9dd205631a022f0754f27
+  - f67638bcc0ff5138b5cee2a94d7e3f1153de77a1
+  - 780ea6ead79c3eb05499d815a29d75bb2656f258
+  - 99f394bd09b19540e2ae9e25c9227527c47ef9f8
+  - 439f8801fcd687553057d4c04c222b1c3a106611
+  - 94bd83c316c5982f2f020e74b9cf11b1d336b008
+  - 53a367083206e67921d18e9b11af9c196d3619b2
+  - e0bbc68e81007b2767529edf416b667e680190f7
+  - 2b84c3a086ed54735b725dc79db16c71b08d7943
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:58:18Z
+updated-at: 2026-10-17T18:59:22Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
 outcome-what: "reap.sh closes a recorded tab only when 'herdr tab get' still labels it <ticket>/<lane> (also under --dry-run); keeps every ticket when herdr does not answer, git status fails or a worktree has a detached HEAD; records go only after tabs, worktree and branch all went, so a failed removal is retried next round; reap.sh committed executable. Tests in core/role/reap_test.go for each."
 outcome-why: "Given back from signoff twice and from review: a pane id alone could close another ticket's tab; a record removed first left a failed remove standing forever; an unreachable herdr made open tabs look closed; a detached HEAD worktree lost its commits; the in-repo reap.sh was not executable."
 outcome-resolves: "Goal of YD4BE9: after the PR is merged, all tabs started for the ticket close and its worktree and branch go without anyone cleaning up by hand - without closing a stranger's tab, losing a tab it cannot see, or losing a commit."
-review-summary: "spawn.sh now writes one small file per tab it opens (pane, ticket, lane, worktree) under <git common dir>/jaira/panes/. New core/role/builtin/jaira-dispatcher/scripts/reap.sh reads those files, groups them by ticket and asks GitHub (gh pr list --head <branch> --state merged, against the fork's parent when origin is a fork) or GitLab (glab) for a merged pull request. Only when the PR is merged, the ticket is done or filed away, the local branch is not past the merged head, the worktrees are clean (untracked .jaira/ files aside) and herdr answers does it close each recorded tab whose label is still <ticket>/<lane>, remove the worktree (never the main one or the one it runs in), delete the branch with -D and only then drop the records; any failure keeps the records so the next round retries. Otherwise it prints 'waiting' or 'kept <ticket>: <reason>'. --dry-run asks the same questions and prints 'would ...'. The teamlead skill runs it every round and reports closed/kept lines; the 'worktree until done' paragraph now says reap.sh does it. Seven Go tests in core/role/reap_test.go drive the real scripts against a real git repo with herdr/gh/jaira stubs. Release note core/release/notes/YD4BE9.md."
+review-summary: "spawn.sh now writes one record file per tab (pane, ticket, lane, worktree) under <git common dir>/jaira/panes/. New jaira-dispatcher/scripts/reap.sh reads those records, groups them by ticket and asks gh/glab whether the branch has a merged PR (fork clones ask the parent repo). Only when the PR is merged, the ticket is done or filed away, the local branch is not past the merged head, and every worktree is clean, on a branch and herdr answers, it closes the tabs still labelled <ticket>/<lane>, removes the worktree and deletes the branch with -D; records go only after all of that succeeded, so a failure is retried next round. Anything else prints 'waiting' or 'kept <ticket>: <reason>'. --dry-run prints the same with 'would'. The teamlead skill runs it every round and reports closed/kept; reap.sh ships as 100755; release note added."
 round: 9
-review-gaps: "Minor, none blocks: (1) a ticket worktree left in detached HEAD (e.g. a rebase paused with a clean tree) yields no branch name; reap.sh falls back to feat/<ticket>, the head check passes when that branch is gone, and 'worktree remove --force' drops the detached commits (reap.sh:124-126,151,190). (2) a ticket worktree directory deleted by hand but not pruned is skipped at reap.sh:118, so 'branch -D' then fails because git still sees the branch checked out there - 'kept ... deleting branch failed' every round until 'git worktree prune'. (3) reap.sh is committed as 100644 while spawn.sh and run-lane.sh are 100755; install.go:143 sets 0755 on every .sh, so the installed copy runs, only the in-repo copy does not. (4) GitLab path (glab, forks) is untested live, as the notes already say. The four DoD items are met by the diff; the outcome's claims (label check incl. dry-run, keep on herdr/git status failure, records last) are all in reap.sh:62,158,163,174-177,206 and covered by tests."
-test-verdict: "pass: go test ./... -race rc=0, go vet clean; DoD 1-5 verified; live on a scratch clone (real gh, feat/rftqkp = merged #87): HERDR_BIN_PATH=/nonexistent -> 'kept RFTQKP: herdr not reachable', record and worktree stay; real herdr.exe -> tab labelled RFTQKP/worker closed, worktree removed, branch deleted, record gone, rc=0"
-review-verdict: "Approve. The diff meets all definition-of-done items, the round-2 send-back (herdr not reachable) is fixed and tested, go test ./core/role/ passes (re-run here). The gaps left are edge cases that keep or lose nothing committed on a branch, except gap 1 (detached HEAD), which is unlikely on a ticket already done and merged. Not verified by me against real herdr or gh - that rests on the testing notes."
-review-round: 8
-review-check: "1. cd /home/alex/projects/.worktrees/jaira-yd4be9  2. go test ./core/role/ -run 'Reap|Spawn|Teamlead' -count=1 -v  -> 7 tests PASS, among them TestReapKeepsWhatIsNotFinished/herdr_not_reachable and TestReapLeavesATabItDidNotOpen  3. ls $(git rev-parse --git-common-dir)/jaira/panes/  -> one file per tab spawned since this version; cat one: pane=, ticket=, lane=, worktree= lines  4. bash core/role/builtin/jaira-dispatcher/scripts/reap.sh --dry-run  -> only 'waiting <ID>: ... no merged pull request', 'kept ...' or 'would close/remove/delete' lines; nothing changes (tabs still open, git worktree list unchanged)  5. after a real merge of a done ticket: run it without --dry-run -> 'closed <ID>/<lane> <pane>', 'removed <worktree>', 'deleted branch feat/<id>'; that ticket's tabs are gone in herdr and git worktree list no longer shows it"
+review-gaps: "All 7 DoD items are met by the diff; no blocking defect found. Small open points: (1) a hand-deleted worktree that was never pruned prints 'kept ... deleting branch failed' every round until 'git worktree prune' (known, left open by the teamlead). (2) GitLab path not run live; in a GitLab fork glab is asked without a target project, so a merged MR on the upstream is not found and the ticket stays 'waiting' (safe, only not cleaned). (3) a transient 'herdr pane get' failure for a tab that is still open reads as 'tab gone' - the tab stays, but its worktree is removed under it; the herdr probe per round makes this unlikely. (4) A branch also checked out in a worktree without a record is not removed and 'branch -D' then fails every round (kept, not lost)."
+test-verdict: "pass: go test ./... -race rc=0; DoD 1-7 verified in the tree; TestReapKeepsWhatIsNotFinished/detached_HEAD fails on the previous reap.sh and passes now; git ls-files -s shows reap.sh 100755; live herdr/gh behaviour unchanged since round 8's live run"
+review-verdict: "approve: the diff matches the definition of done; every path that could lose work (dirty, detached, past merged head, given back, herdr down) keeps and names it, and tests cover each. go test ./core/role/ ok (53s). The open points are cleanup misses, none removes work."
+review-round: 9
+review-check: "1. cd into a jaira repo where a ticket worktree from spawn.sh exists and its PR is merged and the ticket done/filed  2. run: ls $(git rev-parse --git-common-dir)/jaira/panes/ - one file per tab spawn.sh opened  3. run: ~/.claude/skills/jaira-dispatcher/scripts/reap.sh --dry-run - you see 'would close <TICKET>/<lane> <pane>', 'would remove <worktree>', 'would delete branch feat/<id>'; tickets still open show 'waiting ...'  4. run it without --dry-run - the tabs close, 'git worktree list' no longer shows the worktree, 'git branch' no longer shows the branch, the record files are gone  5. without a live setup: go test ./core/role/ -run 'Reap|Spawn|Teamlead' -count=1 prints ok"
 ---
 
 # Worker-Tabs und ihre Arbeitsbaeume schliessen sich, sobald der Pull Request ihres Tickets gemergt ist
@@ -114,3 +123,11 @@ Empfehlung: 1 - die Label-Pruefung ist billig und nimmt das einzige Risiko weg, 
 - **2026-10-17 16:55 · Alexander Sacharov** — review round 3: approve. Minor gaps in review-gaps (detached HEAD worktree, unpruned missing worktree, reap.sh file mode 100644, GitLab untested); none blocks. Tests re-run: go test ./core/role/ ok.
 - **2026-10-17 16:56 · Alexander Sacharov** — teamlead (jaira-79) before acceptance: close review gaps (1) detached HEAD worktree is never removed - named and kept like uncommitted changes, test; (3) commit reap.sh as 100755. Gaps (2) unpruned hand-deleted worktree -> 'deleting branch failed' each round until 'git worktree prune', and (4) GitLab path untested live, stay open.
 - **2026-10-17 16:58 · Alexander Sacharov** — round 8: detached HEAD is checked per worktree beside the dirty check, not by the branch lookup - the lookup falls back to <prefix>/<ticket> and the head check then passes when that branch is gone, which is how the commits got lost. Test verified to fail on the previous reap.sh. Left open as asked: (2) a hand-deleted, unpruned worktree prints 'kept ... deleting branch failed' every round until 'git worktree prune'; (4) GitLab untested live.
+- **2026-10-17 16:58 · Alexander Sacharov** — critique round 8: none - the detached check sits in the per-worktree loop that already keeps dirty worktrees, the place the teamlead asked for ('like uncommitted changes').
+- **2026-10-17 17:02 · Alexander Sacharov** — review round 4 (fresh agent): approve. 9 commits = git log master..HEAD, no commits_unavailable. Checked: jaira show of a filed ticket returns status done (rc 0), unknown ticket rc 5 - matches reap.sh:141-147. Gaps are cleanup misses only (unpruned worktree, GitLab fork lookup, transient pane get, unrecorded worktree holding the branch); none removes work.
+- **2026-10-17 18:52 · Alexander Sacharov** — explain: Der Review gibt grünes Licht: alle 7 Punkte der Definition of Done sind erfüllt, kein blockierender Fehler. Offen bleiben vier kleine Aufräum-Lücken (nicht gelöschter Worktree ohne 'git worktree prune', GitLab-Pfad nicht live getestet, kurzer 'herdr pane get'-Fehler, Branch in unregistriertem Worktree).
+Warum: Keine der Lücken löscht Arbeit - im Fehlerfall bleibt etwas liegen und wird benannt, statt verloren zu gehen. Die Lücken (1) und (2) hat das Teamlead bewusst offen gelassen.
+1) Zurückgeben und die Lücken (3)/(4) noch schließen, z. B. 'herdr pane get' vor dem Entfernen wiederholen [give back]
+2) Ticket so annehmen und die vier Lücken als bekannte Grenzen stehen lassen [accept]
+Empfehlung: 2 - Der Reviewer sagt approve, alle Wege mit Verlustrisiko sind durch Tests abgedeckt, und die Restlücken kosten höchstens einen späteren Handgriff.
+- **2026-10-17 18:58 · Alexander Sacharov** — decision: 2) Ticket so annehmen und die vier Lücken als bekannte Grenzen stehen lassen
