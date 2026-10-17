@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:49:16Z
+updated-at: 2026-10-17T16:49:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
@@ -105,3 +105,4 @@ Empfehlung: 1 - die Label-Pruefung ist billig und nimmt das einzige Risiko weg, 
 - **2026-10-17 16:41 · Alexander Sacharov** — review handed to a fresh agent via run-lane.sh --no-worktree in this worktree (round 2 of review); testing changed no code, ticket file left modified.
 - **2026-10-17 16:44 · Alexander Sacharov** — review round 2: send back. reap.sh reads 'herdr not reachable' as 'tab already gone' (reap.sh:168-170): with HERDR_BIN_PATH unset/wrong it removes the worktree, deletes the branch and drops the record, rc=0, no kept line - a still open tab then has no record and is never closed. Reproduced in a scratch repo with HERDR_BIN_PATH=/nonexistent/herdr. Fix: probe herdr once before the loop, keep everything with 'kept <ticket>: herdr not reachable' when it does not answer, plus a test. Everything else checked: round-6 label check and late record removal correct, tests pass.
 - **2026-10-17 16:49 · Alexander Sacharov** — round 7 (review round 2 send-back): reap.sh probes 'herdr tab list' once per round (only when records exist) and keeps every merged ticket with 'kept <t>: herdr not reachable' when it fails - a closed tab and an unreachable herdr look alike through 'pane get'. Probe sits after the dirty check so a kept reason for real work still wins. Also review gap 3: git status now runs on its own, a failure keeps the ticket. Dead end: 'grep <<<"$st"' on an empty status yields one empty line and read every clean worktree as dirty - printf '%s' instead.
+- **2026-10-17 16:49 · Alexander Sacharov** — critique round 7: none. Let stand: herdr down keeps per ticket rather than aborting the run - 'waiting' lines still print and a forge error still reads per ticket; one probe per round, only when records exist.
