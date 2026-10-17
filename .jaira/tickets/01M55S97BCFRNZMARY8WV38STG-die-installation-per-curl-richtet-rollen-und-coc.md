@@ -1,7 +1,7 @@
 ---
 id: 01M55S97BCFRNZMARY8WV38STG
 title: "Die Installation per curl richtet Rollen und Cockpit gleich mit ein und zeigt dabei, was sie tut"
-status: critique
+status: testing
 ready: true
 creator: berkc
 assignee: berkc
@@ -24,13 +24,16 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T20:36:33Z
-updated-at: 2026-10-17T20:38:42Z
+updated-at: 2026-10-17T20:39:14Z
 updated-by: berkc
 claimed-by: berk-ca-283567
 claimed-at: 2026-10-17T20:37:26Z
 outcome-what: "install.sh/install.ps1 run 'roles install --global' after the binary, with download bar, status line, summary, JAIRA_NO_ROLES opt-out"
 outcome-why: curl install left roles and Cockpit missing; nobody was told to run a second command
 outcome-resolves: "install.sh verified against the 0.5.3 release (fresh, rerun, opt-out, failure); install.ps1 written to match but not run"
+review-summary: "install.sh echo \"$out\" can mangle backslashes in dash; fixed with printf. Nothing else."
+review-gaps: none
+test-verdict: "pass: sh -n ok; install.sh run piped (no TTY, no bar), under pty (bar shown), rerun 0 written/35 unchanged, JAIRA_NO_ROLES skip, read-only ~/.claude failure printed verbatim with binary still installed. install.ps1 NOT run (no pwsh)."
 ---
 
 # Die Installation per curl richtet Rollen und Cockpit gleich mit ein und zeigt dabei, was sie tut

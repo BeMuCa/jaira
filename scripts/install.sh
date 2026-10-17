@@ -113,11 +113,11 @@ if [ -n "${JAIRA_NO_ROLES:-}" ]; then
 fi
 echo "Setting up the skills and the Cockpit…"
 if out=$("$INSTALL_DIR/jaira" roles install --global 2>&1); then
-	echo "✓ $(echo "$out" | grep ' written, ' | tail -n1)"
+	echo "✓ $(printf '%s\n' "$out" | grep ' written, ' | tail -n1)"
 	echo "active now: the jaira role skills and the Cockpit in ~/.claude/skills"
 	echo "the Cockpit loads in your next Claude Code session"
 else
 	echo "✗ could not set up the skills and the Cockpit:" >&2
-	echo "$out" >&2
+	printf '%s\n' "$out" >&2
 	echo "the binary is installed; retry with: jaira roles install --global" >&2
 fi
