@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:44:26Z
+updated-at: 2026-10-17T16:44:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
@@ -36,7 +36,7 @@ review-gaps: "1) herdr unreachable is read as 'tab already gone' (reap.sh:168-17
 test-verdict: "pass: go test ./... -race rc=0; DoD 1-5 verified in the tree; live on a scratch clone with real herdr.exe and gh (feat/rftqkp = merged #87): dry-run and run close only the tab labelled RFTQKP/worker, a stranger-labelled tab recorded as RFTQKP/review stays open, records gone, worktree and branch removed, rc=0; failed-remove retry covered by TestReapComesBackToAWorktreeItCouldNotRemove"
 review-verdict: "Send back. The round-6 fixes are in and work (label check, records kept until removal succeeds, dry-run behind the label check), DoD 1-5 are met and 'go test ./core/role -run Reap|Spawn|Teamlead' passes. But gap 1 is a real defect, reproduced: if reap.sh cannot reach herdr it removes the worktree and drops the record of a tab that may still be open, so that tab is never closed. Small fix (one probe before the loop, one test)."
 review-round: 7
-review-check: "1. cd /home/alex/projects/.worktrees/jaira-yd4be9 && go test ./core/role -run 'Reap|Spawn|Teamlead' -count=1 — expect 'ok' (about 50s).  2. In a Herdr session, from the main checkout, start a worker with core/role/builtin/jaira-dispatcher/scripts/spawn.sh <slug> <ID> worker . — then ls .git/jaira/panes/ shows one file with pane=, ticket=, lane=, worktree= lines.  3. Run .claude/skills/jaira-dispatcher/scripts/reap.sh --dry-run — expect 'waiting <ID>: feat/<slug> has no merged pull request'.  4. For a ticket that is done and whose PR is merged, run reap.sh --dry-run — expect 'would close <ID>/<lane> <pane>', 'would remove <worktree>', 'would delete branch feat/<slug>'; nothing changes.  5. Run reap.sh without --dry-run — the tabs close, git worktree list no longer shows the worktree, git branch no longer shows the branch.  6. Restart herdr, open a new tab, then check whether its pane id equals an old id in .git/jaira/panes/ — if yes, gap 1 is real."
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-yd4be9 && go test ./core/role -run 'Reap|Spawn|Teamlead' -count=1 - expect 'ok' (about 50s).  2. To see gap 1: in a scratch repo with a worktree on feat/ab12cd, a record file .git/jaira/panes/w1_p1 (pane=w1:p1, ticket=AB12CD, lane=worker, worktree=<wt>), a gh stub answering the branch tip as merged headRefOid and a jaira wrapper whose 'show' exits 5, run: HERDR_BIN_PATH=/nonexistent/herdr bash core/role/builtin/jaira-dispatcher/scripts/reap.sh - you see 'removed <wt>' and 'deleted branch feat/ab12cd', and ls .git/jaira/panes is empty. Expected after a fix: 'kept AB12CD: herdr not reachable', worktree and record still there.  3. After a fix, live in Herdr: spawn a worker with spawn.sh, merge its PR, move the ticket to done, run reap.sh --dry-run then reap.sh - the tab closes, git worktree list and git branch no longer show it."
 ---
 
 # Worker-Tabs und ihre Arbeitsbaeume schliessen sich, sobald der Pull Request ihres Tickets gemergt ist
