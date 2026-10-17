@@ -24,7 +24,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T20:36:33Z
-updated-at: 2026-10-17T23:47:49Z
+updated-at: 2026-10-17T23:48:12Z
 updated-by: berkc
 claimed-by: berk-ca-283567
 claimed-at: 2026-10-17T20:37:26Z
@@ -46,7 +46,8 @@ round: 2
 
 - [x] install.sh installiert nach dem Binary die Rollen und das Cockpit global, mit Fortschrittsbalken beim Download und je einer Statuszeile fuer Skills und Cockpit
   proof: scripts/install.sh run vs real 0.5.3 release in temp HOME: 35 written then 0 written/35 unchanged; JAIRA_NO_ROLES skips; install.ps1 unrun (no pwsh)
-- [ ] install.ps1 does the same as install.sh
+- [x] install.ps1 does the same as install.sh
+  proof: scripts/install.ps1 Install-Jaira tail; NOT run, no pwsh
 - [ ] An opt-out env var installs only the binary
 - [ ] A second run is idempotent and reports unchanged files instead of an error
 - [ ] Release note in core/release/notes/<ID>.md
