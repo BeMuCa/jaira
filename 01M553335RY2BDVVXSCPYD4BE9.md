@@ -23,14 +23,14 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:59:59Z
+updated-at: 2026-10-17T17:02:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
 outcome-what: "reap.sh closes a recorded tab only when 'herdr tab get' still labels it <ticket>/<lane> (also under --dry-run); keeps every ticket when herdr does not answer, git status fails or a worktree has a detached HEAD; records go only after tabs, worktree and branch all went, so a failed removal is retried next round; reap.sh committed executable. Tests in core/role/reap_test.go for each."
 outcome-why: "Given back from signoff twice and from review: a pane id alone could close another ticket's tab; a record removed first left a failed remove standing forever; an unreachable herdr made open tabs look closed; a detached HEAD worktree lost its commits; the in-repo reap.sh was not executable."
 outcome-resolves: "Goal of YD4BE9: after the PR is merged, all tabs started for the ticket close and its worktree and branch go without anyone cleaning up by hand - without closing a stranger's tab, losing a tab it cannot see, or losing a commit."
-review-summary: "none"
+review-summary: "spawn.sh now writes one record file per tab (pane, ticket, lane, worktree) under <git common dir>/jaira/panes/. New jaira-dispatcher/scripts/reap.sh reads those records, groups them by ticket and asks gh/glab whether the branch has a merged PR (fork clones ask the parent repo). Only when the PR is merged, the ticket is done or filed away, the local branch is not past the merged head, and every worktree is clean, on a branch and herdr answers, it closes the tabs still labelled <ticket>/<lane>, removes the worktree and deletes the branch with -D; records go only after all of that succeeded, so a failure is retried next round. Anything else prints 'waiting' or 'kept <ticket>: <reason>'. --dry-run prints the same with 'would'. The teamlead skill runs it every round and reports closed/kept; reap.sh ships as 100755; release note added."
 round: 9
 review-gaps: "none - two lines and a usage bullet; nothing duplicated"
 test-verdict: "pass: go test ./... -race rc=0; DoD 1-7 verified in the tree; TestReapKeepsWhatIsNotFinished/detached_HEAD fails on the previous reap.sh and passes now; git ls-files -s shows reap.sh 100755; live herdr/gh behaviour unchanged since round 8's live run"
