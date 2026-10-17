@@ -24,13 +24,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T20:36:33Z
-updated-at: 2026-10-17T20:38:42Z
+updated-at: 2026-10-17T20:39:02Z
 updated-by: berkc
 claimed-by: berk-ca-283567
 claimed-at: 2026-10-17T20:37:26Z
 outcome-what: "install.sh/install.ps1 run 'roles install --global' after the binary, with download bar, status line, summary, JAIRA_NO_ROLES opt-out"
 outcome-why: curl install left roles and Cockpit missing; nobody was told to run a second command
 outcome-resolves: "install.sh verified against the 0.5.3 release (fresh, rerun, opt-out, failure); install.ps1 written to match but not run"
+review-summary: "install.sh echo \"$out\" can mangle backslashes in dash; fixed with printf. Nothing else."
 ---
 
 # Die Installation per curl richtet Rollen und Cockpit gleich mit ein und zeigt dabei, was sie tut
