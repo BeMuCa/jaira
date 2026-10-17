@@ -27,7 +27,7 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:17:25Z
+updated-at: 2026-10-17T12:17:29Z
 updated-by: Alexander Sacharov
 ---
 
@@ -36,7 +36,7 @@ updated-by: Alexander Sacharov
 ## Definition of Done
 
 - [ ] Entscheidungen stehen als decision-Notes am Ticket (Ablage .jaira/boards/<name>/lanes/, Feld board:, Boardwechsel, Migration); keine eigene Spec, Alexander hat die Richtung am 17.10. vorgegeben
-- [ ] Ein Repo mit zwei Boards (z.B. backend und ui) zeigt in der TUI jedes mit seinen eigenen Lanes; ein Ticket erscheint nur auf seinem Board; Test
+- [ ] TUI: Shift+F waehlt ein Board; das Board zeigt dann dessen Lanes und nur dessen Tickets; ohne Wahl das heutige Board; Test. Mehr TUI-Darstellung nicht
 - [ ] jaira create, list, next und show nehmen ein Board (z.B. --board ui); ohne Angabe gilt das heutige Board, nichts aendert sich still; Test
 - [ ] Ein bestehendes Einzel-Board laeuft nach dem Update unveraendert weiter; Test
 - [ ] Eine Zeile in core/release/notes/<ID>.md
