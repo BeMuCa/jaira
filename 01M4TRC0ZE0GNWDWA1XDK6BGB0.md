@@ -21,7 +21,7 @@ related: []
 follows: 01M2HW4788Z5G0M05G3PJDXV60
 commits: []
 created-at: 2026-10-13T13:48:57Z
-updated-at: 2026-10-17T20:49:09Z
+updated-at: 2026-10-17T20:49:10Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-297639
@@ -46,7 +46,7 @@ claimed-at: 2026-10-17T20:39:34Z
 
 - [x] ticket: Feld BehindRef am Ticket (Laufzeit, kein Frontmatter) und optionales Interface AheadSource; Store.List ersetzt Datei-Tickets, deren Ref weiter ist, durch das Ref-Ticket (Path bleibt die Datei, BehindRef=true); Store.Newest(t) fuer show
 - [x] refsync: Syncer.Ahead(files) - ListHashes + extraCache nach Ref-Hash + ReadMany nur fuer neue Hashes, Urteil per isStale (dieselbe Definition wie pull/CheckFresh)
-- [ ] Ausgabe: TUI-Karte Kennzeichen 'pull due', jaira list Zeile [behind ref - pull], JSON behind-ref, show-Text Zeile; Load bleibt Datei
+- [x] Ausgabe: TUI-Karte Kennzeichen 'pull due', jaira list Zeile [behind ref - pull], JSON behind-ref, show-Text Zeile; Load bleibt Datei
 - [ ] Tests: refsync (Datei hinter Ref -> List zeigt Ref-Lane+BehindRef; Mutate verweigert mit ErrStale, Ref unveraendert), TUI-Karte zeigt Kennzeichen
 - [ ] go vet + go test -race; manuell mit zwei Worktrees eines Temp-Repos; Release-Notiz core/release/notes/K6BGB0.md
 
