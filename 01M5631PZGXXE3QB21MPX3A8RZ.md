@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T23:27:12Z
-updated-at: 2026-10-17T23:36:48Z
+updated-at: 2026-10-17T23:36:55Z
 updated-by: berkc
 outcome-what: boardFit budgets columns at rendered width (no +2)
 outcome-why: lipgloss v2 Width includes border; the +2 left blank strip on the right
@@ -43,3 +43,4 @@ outcome-resolves: board row fills terminal width within <full columns cells
 
 ## Progress
 - **2026-10-17 23:28 · berkc** — berkc took this ticket over from BeMuCa
+- **2026-10-17 23:36 · berkc** — critique: diff is 5 constant edits in boardFit + test; thin/full cost now rendered width, card-link spots and tagbox bounds already used real widths (lipgloss.Width), tagbox_test bound updated to colW. Nothing simpler.
