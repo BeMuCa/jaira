@@ -4,7 +4,7 @@ title: "Die Installation per curl richtet Rollen und Cockpit gleich mit ein und 
 status: backlog
 ready: true
 creator: berkc
-assignee: BeMuCa
+assignee: berkc
 goal: "Wer jaira mit dem curl-Einzeiler (scripts/install.sh) oder install.ps1 installiert, hat danach Binary, Rollen-Skills und Cockpit eingerichtet, ohne einen zweiten Befehl, und sieht dabei Fortschritt: Download-Balken, 'Setting up the skills', 'Setting up the Cockpit'."
 context: |-
   Was heute ist: scripts/install.sh (Zeile ~86-94) und scripts/install.ps1 hoeren auf, sobald das Binary liegt. Rollen und Cockpit kommen erst mit 'jaira roles install --global', und das sagt niemandem jemand.
@@ -24,7 +24,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T20:36:33Z
-updated-at: 2026-10-17T20:36:33Z
+updated-at: 2026-10-17T20:37:24Z
+updated-by: berkc
 ---
 
 # Die Installation per curl richtet Rollen und Cockpit gleich mit ein und zeigt dabei, was sie tut
@@ -47,4 +48,4 @@ Release-Note in core/release/notes/<ID>.md
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-17 20:37 · berkc** — berkc took this ticket over from BeMuCa
