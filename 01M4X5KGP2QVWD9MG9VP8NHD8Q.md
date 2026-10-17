@@ -18,7 +18,7 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:43Z
-updated-at: 2026-10-17T14:15:21Z
+updated-at: 2026-10-17T14:15:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-61927
 claimed-at: 2026-10-17T14:05:53Z
@@ -31,7 +31,7 @@ review-gaps: "none for the DoD. Looked at: setUp is only called for today's boar
 test-verdict: "pass: go vet + go test -race ./... green (RC=0); DoD 1-6 checked in the tree (DoD 1 proof line updated to boards.go:154 after the shift); scratch repo: jaira init writes .jaira/lanes/description with the code sentence, CLAUDE.md and AGENTS.md name jaira boards, jaira boards lists default with it and video with its own"
 review-verdict: "Approve. All six DoD items are met by the diff. go vet ./... and go test ./... pass on d3fd367c. By hand in scratch repos: jaira init with built-in lanes writes .jaira/lanes/description and jaira boards shows it for default; init with a default-board.md writes none and boards says where to write it; a named board with its own description and a ticket shows '1 open' and its text."
 review-round: 4
-review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/b && cd /tmp/b && git init && git commit --allow-empty -m init && /tmp/jaira init  3. mkdir -p .jaira/boards/video/lanes && cp .jaira/lanes/*.md .jaira/boards/video/lanes/  4. echo 'Videos made from demos' > .jaira/boards/video/lanes/description  5. /tmp/jaira boards - you see 'default 0 open no description yet — write one into .jaira/lanes/description' and 'video 0 open Videos made from demos'  6. /tmp/jaira create x --board video --goal g --context c --dod d, then /tmp/jaira boards - video now says 1 open  7. /tmp/jaira roles install, then open the installed jaira-teamlead SKILL.md - section 'A new ticket goes on the board its subject belongs to' is there"
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-8nhd8q && go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/b && cd /tmp/b && git init && git commit --allow-empty -m init && /tmp/jaira init  3. cat .jaira/lanes/description - you see: Changes to this repository's code: features, fixes, refactors, tests and docs.  4. mkdir -p .jaira/boards/video/lanes && cp .jaira/lanes/*.md .jaira/lanes/order .jaira/boards/video/lanes/ && echo 'Videos made from demos' > .jaira/boards/video/lanes/description  5. /tmp/jaira create x --board video --goal g --context c --dod d  6. /tmp/jaira boards - you see 'default 0 open Changes to this repository's code...' and 'video 1 open Videos made from demos'  7. in the worktree: grep -n 'jaira boards' CLAUDE.md - the new entry under 'Capturing and picking work' names --board and set board="
 ---
 
 # Der Teamlead legt Tickets auf das Board, das zum Thema passt, und der Worker faehrt sie durch dessen Lanes
