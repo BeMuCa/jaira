@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T14:35:47Z
+updated-at: 2026-10-17T14:36:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-66355
 claimed-at: 2026-10-17T14:11:12Z
@@ -83,3 +83,4 @@ test-verdict: "pass: go vet + go test ./... -race RC=0; DoD 1-5 checked in the t
 - **2026-10-17 14:31 · Alexander Sacharov** — testing: live run on a scratch clone (real gh, real herdr.exe, feat/rftqkp at 1e2ace72 = merged #87): with only origin=sashasoft90/jaira every ticket prints 'waiting ... no merged pull request' - gh pr list picks the fork. With an upstream remote added it works: dry-run listed, real run removed worktree (untracked .jaira/x.md let through) and deleted the branch, pane already gone -> record dropped, rc=0. Fix: resolve the target repo once like jaira-role-pr (gh repo view <origin url> --json isFork,parent,nameWithOwner; fork -> parent) and pass --repo to gh pr list. Suite: go test ./... -race rc=0.
 - **2026-10-17 14:33 · Alexander Sacharov** — testing fix: reap.sh resolves the PR repo once (gh repo view <origin url>: fork -> parent, else nameWithOwner) and passes --repo; live run on the scratch fork clone without upstream remote now removes feat/rftqkp's worktree and branch. GitLab forks still ask glab without a target project - not exercised, no GitLab remote here.
 - **2026-10-17 14:33 · Alexander Sacharov** — critique round 4 (after testing fix): none; the repo lookup mirrors jaira-role-pr's ladder rungs 1-2, rung 3 (a board remote naming a third repo) is not needed to find a merged PR.
+- **2026-10-17 14:36 · Alexander Sacharov** — review handed to a fresh agent via run-lane.sh --no-worktree in this worktree; testing lane changed no code, ticket file left modified for the next code commit or the logbook commit.
