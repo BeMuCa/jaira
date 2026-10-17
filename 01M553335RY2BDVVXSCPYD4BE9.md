@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:44:23Z
+updated-at: 2026-10-17T16:44:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
@@ -34,8 +34,8 @@ review-summary: "spawn.sh now writes one file per tab under <git common dir>/jai
 round: 7
 review-gaps: "1) herdr unreachable is read as 'tab already gone' (reap.sh:168-170). When HERDR_BIN_PATH is unset or wrong - a teamlead session outside Herdr, where plain 'herdr' is not on PATH under WSL - 'pane get' fails, tab is empty, the record goes into gone[], the worktree is removed with --force, the branch deleted, the record rm'd, rc=0. The live tab stays open and now has no record, so no later round ever closes it: the exact leak this ticket exists to stop, and silent. Reproduced on a scratch repo with HERDR_BIN_PATH=/nonexistent/herdr: output 'removed <wt>' / 'deleted branch feat/ab12cd', records gone, no 'kept' line. Fix: probe herdr once before the loop (e.g. 'herdr tab list' or command -v) and, when it does not answer, print 'kept <ticket>: herdr not reachable' and touch nothing; plus a test. 2) No test covers herdr missing. 3) Minor: a failing 'git status' in the dirty check (pipeline ends in || true) reads as clean."
 test-verdict: "pass: go test ./... -race rc=0; DoD 1-5 verified in the tree; live on a scratch clone with real herdr.exe and gh (feat/rftqkp = merged #87): dry-run and run close only the tab labelled RFTQKP/worker, a stranger-labelled tab recorded as RFTQKP/review stays open, records gone, worktree and branch removed, rc=0; failed-remove retry covered by TestReapComesBackToAWorktreeItCouldNotRemove"
-review-verdict: "Approve with one reservation. The diff meets all four DoD items and the safety checks (merged head, done lane, dirty worktree, own/main worktree) are sound and tested. Not fully sure about gap 1: if herdr can reuse pane ids after a restart, reap.sh can close a stranger's tab. A label check before 'tab close' would remove that risk — worth deciding before signoff."
-review-round: 5
+review-verdict: "Send back. The round-6 fixes are in and work (label check, records kept until removal succeeds, dry-run behind the label check), DoD 1-5 are met and 'go test ./core/role -run Reap|Spawn|Teamlead' passes. But gap 1 is a real defect, reproduced: if reap.sh cannot reach herdr it removes the worktree and drops the record of a tab that may still be open, so that tab is never closed. Small fix (one probe before the loop, one test)."
+review-round: 7
 review-check: "1. cd /home/alex/projects/.worktrees/jaira-yd4be9 && go test ./core/role -run 'Reap|Spawn|Teamlead' -count=1 — expect 'ok' (about 50s).  2. In a Herdr session, from the main checkout, start a worker with core/role/builtin/jaira-dispatcher/scripts/spawn.sh <slug> <ID> worker . — then ls .git/jaira/panes/ shows one file with pane=, ticket=, lane=, worktree= lines.  3. Run .claude/skills/jaira-dispatcher/scripts/reap.sh --dry-run — expect 'waiting <ID>: feat/<slug> has no merged pull request'.  4. For a ticket that is done and whose PR is merged, run reap.sh --dry-run — expect 'would close <ID>/<lane> <pane>', 'would remove <worktree>', 'would delete branch feat/<slug>'; nothing changes.  5. Run reap.sh without --dry-run — the tabs close, git worktree list no longer shows the worktree, git branch no longer shows the branch.  6. Restart herdr, open a new tab, then check whether its pane id equals an old id in .git/jaira/panes/ — if yes, gap 1 is real."
 ---
 
