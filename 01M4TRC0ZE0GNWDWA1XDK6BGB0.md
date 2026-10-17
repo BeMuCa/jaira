@@ -21,7 +21,7 @@ related: []
 follows: 01M2HW4788Z5G0M05G3PJDXV60
 commits: []
 created-at: 2026-10-13T13:48:57Z
-updated-at: 2026-10-17T20:54:33Z
+updated-at: 2026-10-17T20:59:37Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-297639
@@ -40,7 +40,7 @@ test-verdict: "fail: liegen Datei und Ref in derselben Sekunde (updated-at gleic
 ## Definition of Done
 
 - [x] Liegt die Datei eines Tickets hinter seinem Ref, zeigt das Board auf der Karte den Stand des Refs oder ein Kennzeichen dafuer; 'jaira list' und 'jaira show' sagen es ebenso; ein Test baut genau diesen Fall
-  proof: internal/cli/stalefile_test.go TestListAndShowGiveTheRefStateOfAFileBehindIt; internal/tui/checklist_test.go TestCardMarksAFileBehindItsRef; core/ticket/store.go Store.newest/Newest; core/refsync/refsync.go Syncer.Ahead
+  proof: internal/cli/stalefile_test.go TestListAndShowGiveTheRefStateOfAFileBehindIt + TestAFileBehindItsRefWithinTheSameSecondIsStillBehind; internal/tui/checklist_test.go TestCardMarksAFileBehindItsRef; core/ticket/store.go Store.newest/Newest; core/refsync/refsync.go Syncer.Ahead/isStale
 - [x] go test ./... -race gruen; Release-Notiz unter core/release/notes/
   proof: go vet ./... && go test -race ./... all ok 2026-10-17; core/release/notes/K6BGB0.md
 
