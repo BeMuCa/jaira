@@ -4,7 +4,7 @@ title: Eine Lane kann einen Skill starten statt nur einen Prompt zu tragen
 status: backlog
 ready: true
 creator: berkc
-assignee: BeMuCa
+assignee: berkc
 goal: "Eine Lane-Datei kann einen Skill nennen (z.B. ponytail zum Aufraeumen von Code als Testing- oder Optimize-Lane); 'jaira show --for-lane' gibt ihn aus und der Agent ruft genau diesen Skill auf."
 context: |-
   Ausloeser: Berk am 17.10.: 'Wir sollten eine Lane anlegen koennen, die nur einen Skill ausfuehrt, z.B. ponytail (Skill zum Code-Aufraeumen) als Testing-Lane.'
@@ -22,7 +22,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T20:49:21Z
-updated-at: 2026-10-17T20:49:21Z
+updated-at: 2026-10-17T23:48:25Z
+updated-by: berkc
 ---
 
 # Eine Lane kann einen Skill starten statt nur einen Prompt zu tragen
