@@ -19,7 +19,7 @@ context: |-
   - wie TUI und Launcher mehrere Boards eines Repos zeigen
   - wie es mit dem heutigen Einzel-Board vertraeglich bleibt (Berks Regel: ein Update darf nichts verschwinden lassen)
   Haengt am Ticket-Schema (BGZ0SW, NFJCTK): eine Lane eines solchen Boards muss eigene Felder erklaeren koennen.
-definition-of-done: "Design als Spec unter docs/superpowers/specs/, von Berk freigegeben: Ablage der Boards, Board-Feld am Ticket, Anzeige in TUI und Launcher, Migration des heutigen Boards"
+definition-of-done: "Mehrere Boards pro Repo laufen (Lanes unter .jaira/boards/<name>/lanes/, Feld board:), create/list/next --board, set board=, TUI Shift+F, Einzel-Board unveraendert; Entscheidungen als decision-Notes statt Spec (Alexander, 17.10.)"
 tags: []
 blocked-by: []
 related:
@@ -27,7 +27,7 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:51:08Z
+updated-at: 2026-10-17T12:52:21Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-67696
 claimed-at: 2026-10-17T12:50:10Z
