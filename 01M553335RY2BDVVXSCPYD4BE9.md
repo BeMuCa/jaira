@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:54:58Z
+updated-at: 2026-10-17T16:55:02Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
@@ -107,3 +107,4 @@ Empfehlung: 1 - die Label-Pruefung ist billig und nimmt das einzige Risiko weg, 
 - **2026-10-17 16:49 · Alexander Sacharov** — round 7 (review round 2 send-back): reap.sh probes 'herdr tab list' once per round (only when records exist) and keeps every merged ticket with 'kept <t>: herdr not reachable' when it fails - a closed tab and an unreachable herdr look alike through 'pane get'. Probe sits after the dirty check so a kept reason for real work still wins. Also review gap 3: git status now runs on its own, a failure keeps the ticket. Dead end: 'grep <<<"$st"' on an empty status yields one empty line and read every clean worktree as dirty - printf '%s' instead.
 - **2026-10-17 16:49 · Alexander Sacharov** — critique round 7: none. Let stand: herdr down keeps per ticket rather than aborting the run - 'waiting' lines still print and a forge error still reads per ticket; one probe per round, only when records exist.
 - **2026-10-17 16:51 · Alexander Sacharov** — testing round 8: pass - the review's reproduction (HERDR_BIN_PATH=/nonexistent) now keeps everything; same record then reaped with real herdr. Review goes to a new fresh agent (round 3 of review).
+- **2026-10-17 16:55 · Alexander Sacharov** — review round 3: approve. Minor gaps in review-gaps (detached HEAD worktree, unpruned missing worktree, reap.sh file mode 100644, GitLab untested); none blocks. Tests re-run: go test ./core/role/ ok.
