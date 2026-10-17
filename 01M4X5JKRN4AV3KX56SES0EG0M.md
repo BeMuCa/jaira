@@ -27,7 +27,7 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:42:57Z
+updated-at: 2026-10-17T12:43:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-73711
 claimed-at: 2026-10-17T12:17:54Z
@@ -96,3 +96,4 @@ core/lane/boards.go BoardsDir/BoardLanesDir haben keinen Aufrufer ausserhalb des
 - **2026-10-17 12:39 · Alexander Sacharov** — review (frische Session): zwei Fehler im Umfang. (1) TUI-Anlegen per n und Follow-up auf einem mit F gewaehlten Board schreibt kein board: - Ticket landet auf dem heutigen Board, ggf. in einer Lane, die es dort nicht gibt (internal/tui/model.go createTicket, internal/tui/followup.go followUpFields). (2) jaira validate kennt nur .jaira/lanes/ und meldet Tickets in board-eigenen Lanes als error, Exit 3 (internal/cli/validate.go:35); im Temp-Repo nachgestellt. Klein: TUI-Link-Index nur aus dem gefilterten Board. Empfehlung zurueck nach in-progress.
 - **2026-10-17 12:39 · Alexander Sacharov** — Worker: Review-Agent hat mit Verdikt 'Nicht fertig' (Gaps 1-3) nach signoff bewegt; zurueck nach in-progress fuer Gap 1 (TUI n/Follow-up ohne board:), Gap 2 (validate brettweit), Gap 3 (TUI-Link-Index aus gefilterten Tickets).
 - **2026-10-17 12:42 · Alexander Sacharov** — Review-Gaps 1-3 behoben: TUI n und Follow-up schreiben board: des mit F gewaehlten Boards (internal/tui/model.go createTicket, followup.go followUpFields; nur wenn nicht leer, weil Store.Create leere Felder als 'board: ""' schreibt). validate prueft per validate.TicketsOnBoards jedes Ticket gegen die Lanes seines Boards; Board ohne Lane-Dateien = Fehler unknown_lane am Feld board. TUI: m.allTickets fuer Link-Index und gateEnv.All, m.tickets bleibt das gezeigte Board. Tests: TestValidateChecksEachTicketAgainstItsBoard, TestShiftFPicksABoard (createTicket-Teil).
+- **2026-10-17 12:43 · Alexander Sacharov** — critique (Runde 4): internal/cli/resume.go und internal/cli/validate.go bauen je denselben Cache Lanes-pro-Board; eine Funktion lane.LanesOf(root) in core/lane/boards.go, beide rufen sie
