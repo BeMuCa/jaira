@@ -1,7 +1,7 @@
 ---
 id: 01M4X5JKRN4AV3KX56SES0EG0M
 title: "Ein Repo kann mehrere Boards haben, jedes mit eigenen Lanes fuer sein Thema"
-status: critique
+status: done
 ready: true
 creator: BeMuCa
 assignee: Alexander Sacharov
@@ -25,19 +25,28 @@ blocked-by: []
 related:
   - 01M4X5J1QRR70AM2B2JPBGZ0SW
   - 01M11YYR0SMVCXNQPZ68NFJCTK
-commits: []
+commits:
+  - 60649cafc3cd922cf78965309e56f53a77bb2b17
+  - d9e95e127935052cb5c72c6ee713c7a0ee5a8f01
+  - 110de23cdb88a39b5892e74421eb4adc32f99f7b
+  - 1cf4699a471fd3e7134c98aa0ca749f8d999b183
+  - 247cffb2739ed02a935a5a493732050e4ed29f5a
+  - 321ae0ad5ea5d4cc04bebac623ef86c6726953c5
+  - c160454c98d5fd6bdf1435f5a6d0810e6e8d5cc2
+  - 15f4f6594d508074f765e7a35de6e1af2abdb116
+  - 6977903dad034208ce013a39f01e4f9ea053f6ae
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T13:04:14Z
+updated-at: 2026-10-17T14:03:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-67696
 claimed-at: 2026-10-17T12:50:10Z
 outcome-what: "Mehrere Boards pro Repo: core/lane/boards.go (LoadBoard, Boards, NormalizeBoard), Feld board: im Ticket, --board an create/list/next, Einzelticket-Kommandos lesen das Board vom Ticket, set board=<name> mit Fallback auf die erste Lane, TUI-Taste F"
 outcome-why: "Ein Repo braucht Boards mit eigenen Lanes neben den SWE-Lanes, z.B. ein video-Board in demo-video fuer eine Designerin"
 outcome-resolves: "S0EG0M: alle sechs DoD-Punkte, Tests in internal/cli/boards_test.go und internal/tui/boards_test.go"
-review-summary: "Ein Repo kann jetzt mehrere Boards haben. Ein weiteres Board ist ein Ordner .jaira/boards/<name>/lanes/ mit Lane-Dateien und order (core/lane/boards.go: LoadBoard, Boards, NormalizeBoard, BoardOf, LanesOf); ein unbekannter Name ist Exit 2 und nennt die vorhandenen Boards, nichts wird automatisch angelegt. Ein Ticket traegt das Feld board: (core/ticket/schema.go); fehlt es, gilt .jaira/lanes/ wie bisher - bestehende Boards brauchen keine Migration. create/list/next nehmen --board und zeigen ohne es nur das heutige Board; show/move/dod/set/tags/logbook <id> lesen das Board vom Ticket (envFor in internal/cli/root.go). jaira set <id> board=<name> wechselt das Board und setzt den Status auf die erste Lane des neuen Boards, wenn die alte dort fehlt, mit Meldung. validate, resume und der Merge-Driver messen jedes Ticket an den Lanes seines eigenen Boards. TUI: F schaltet reihum durch die Boards, zeigt deren Lanes und nur deren Tickets; n und Follow-up schreiben board: des gezeigten Boards. Release-Note in core/release/notes/S0EG0M.md."
+review-summary: "Runde 7 (Taste b): keine Befunde. b auf der Board-Ebene war frei; die Detailansicht (model.go modeDetail, b = Blocker folgen) und die Milestone-Ebene (layer.go keyLayer) kehren vor der Board-Ebene zurueck, die Bedeutungen ueberschneiden sich nicht. Bewusst stehen gelassen (decision Alexander): derselbe Buchstabe heisst auf dem Board 'naechstes Board' und im offenen Ticket 'Blocker folgen'."
 round: 7
-review-gaps: "Keine Luecke im DoD; kleinere Grenzen: (1) Board-weites Ablegen ins Logbook arbeitet nach Lane-ID ueber alle Boards: jaira logbook ohne id (internal/cli/logbook.go:136) und der Sweep beim Eintritt in eine Lane (core/lane/settle.go:18, s.FileLane(l.ID)) legen jedes Ticket mit dieser Status-ID ab, auch eines auf einem anderen Board, in dem die Lane gleich heisst aber nicht terminal ist; Tickets in einer anders benannten Terminal-Lane eines benannten Boards erreicht jaira logbook ohne id nie. Als bewusste Grenze notiert (brettweite Kommandos bleiben auf dem heutigen Board), steht aber nirgends fuer den Nutzer. (2) Verschwindet der lanes/-Ordner eines Boards, verweigern show und move dessen Tickets mit Exit 2; nur set <id> board=default holt sie zurueck, validate meldet es - im Temp-Repo nachgestellt, funktioniert, ist aber nur aus der Fehlermeldung nicht ableitbar. (3) kosmetisch: set board=default hinterlaesst 'board: \"\"', set board=video schreibt 'board: \"video\"' in Anfuehrungszeichen, create schreibt 'board: video' ohne - drei Schreibweisen fuer eine Sache im Frontmatter."
-test-verdict: "pass (Runde 3): go test -race ./... RC=0; TestMergeDriverUsesTheTicketsBoard rot ohne Fix, gruen mit; DoD 1-6 unveraendert gedeckt (boards_test.go cli+tui)"
+review-gaps: "Runde 4 (Taste b): nichts zu entfernen - eine Zeile case, Hilfe, Note und Test umbenannt. Frueheres siehe Notes."
+test-verdict: "pass (Runde 4, Taste b): go clean -testcache; go test -race ./... RC=0; TestBPicksABoard und TestBOnASingleBoardExplains druecken b durch die echte Tastendispatch; TestHelpExplainsEveryCardMark gruen (Hilfe 'p b' haelt das 60-Zeilen-Fenster)"
 review-verdict: "Die Diff erfuellt alle sechs DoD-Punkte; go test ./... gruen; create/list/next --board, Tippfehler-Board (Exit 2, kein Ordner angelegt), set board= hin und zurueck mit Landen in der ersten Lane und validate im Temp-Repo mit dem gebauten Binary nachgestellt. Die Gaps der beiden frueheren Reviews (TUI n/Follow-up, validate, Link-Index, Merge-Driver, Frontmatter-DoD) sind behoben. Offen nur Grenzen fuer brettweites Logbook-Ablegen und kosmetische board:-Schreibweisen - nicht blockierend. Annehmbar."
 review-round: 6
 review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/r && cd /tmp/r && git init && git commit --allow-empty -m i && /tmp/jaira init  3. mkdir -p .jaira/boards/video/lanes && cp .jaira/lanes/*.md .jaira/boards/video/lanes/ (oder eigene Lane-Dateien)  4. /tmp/jaira create V1 --board video --goal g --context c --dod d  -> das Ticket hat 'board: video'  5. /tmp/jaira list  -> V1 fehlt; /tmp/jaira list --board video -> V1 steht da  6. /tmp/jaira list --board vidoe -> 'no such board \"vidoe\"; boards here: default, video', Exit 2, kein Ordner vidoe entsteht  7. /tmp/jaira set <V1-id> board=default -> 'Updated', ggf. 'Board default has no lane ...; ... is now in backlog'  8. /tmp/jaira tui (bzw. jaira), F druecken -> Kopfzeile zeigt 'board: video', nur dessen Lanes und Tickets; nochmal F -> zurueck zum heutigen Board"
@@ -110,3 +119,4 @@ Warum: Das Logbook kann ein Ticket auf einem anderen Board ablegen, wenn dessen 
 Empfehlung: 2 - alle sechs DoD-Punkte sind erfuellt, go test ./... ist gruen, und der Reviewer nennt das Ergebnis annehmbar.
 - **2026-10-17 12:57 · Alexander Sacharov** — Abnahmeseite: https://claude.ai/artifact/HdF2uR51Qm7NkPg23nMiX9 (5 Personenschritte TUI, 2 Maschinenchecks gruen; Demo-Repo ~/.claude/acceptance/jaira/feat-s0eg0m/demo, Binaer daneben)
 - **2026-10-17 13:02 · Alexander Sacharov** — decision 17.10.: Taste b statt F, Alexander (F/f haben schon andere Bedeutungen, f = Follow-up in der Detailansicht). Weitergegeben von der Teamlead-Session jaira-79.
+- **2026-10-17 14:02 · Alexander Sacharov** — decision: 2) So annehmen und die Grenzen als bekannt stehen lassen, sie sind nicht blockierend
