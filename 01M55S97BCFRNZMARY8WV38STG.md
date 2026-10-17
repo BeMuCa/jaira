@@ -24,7 +24,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T20:36:33Z
-updated-at: 2026-10-17T23:48:12Z
+updated-at: 2026-10-17T23:48:23Z
 updated-by: berkc
 claimed-by: berk-ca-283567
 claimed-at: 2026-10-17T20:37:26Z
@@ -48,8 +48,10 @@ round: 2
   proof: scripts/install.sh run vs real 0.5.3 release in temp HOME: 35 written then 0 written/35 unchanged; JAIRA_NO_ROLES skips; install.ps1 unrun (no pwsh)
 - [x] install.ps1 does the same as install.sh
   proof: scripts/install.ps1 Install-Jaira tail; NOT run, no pwsh
-- [ ] An opt-out env var installs only the binary
-- [ ] A second run is idempotent and reports unchanged files instead of an error
+- [x] An opt-out env var installs only the binary
+  proof: install.sh: JAIRA_NO_ROLES=1 run, no ~/.claude created; =0 installs roles
+- [x] A second run is idempotent and reports unchanged files instead of an error
+  proof: dash rerun: 0 written, 35 unchanged
 - [ ] Release note in core/release/notes/<ID>.md
 install.ps1 tut dasselbe
 Ein Opt-out per Umgebungsvariable laesst nur das Binary installieren
