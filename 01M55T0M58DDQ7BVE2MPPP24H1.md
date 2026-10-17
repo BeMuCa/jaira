@@ -4,7 +4,7 @@ title: "Ein Interview-Skill fragt den Menschen aus und baut daraus Board, Projek
 status: backlog
 ready: true
 creator: berkc
-assignee: BeMuCa
+assignee: berkc
 goal: "Ein neuer Role-Skill (Arbeitsname /jaira-role-interview) fuehrt ein Interview mit dem Menschen, hilft ihm seine Absicht klar zu denken, und legt danach Board (Lanes), Projekt-Setup und Milestones genau passend an."
 context: |-
   Ausloeser: Berk am 17.10.: 'Interview Mode skill, um Board-, Projekt- und Milestone-Erstellung zu unterstuetzen. Aehnlicher Prompting-Stil wie unser Brainstorming-Skill, aber kombiniert mit einem besseren Interview-Stil, der beim Nutzer Gedanken anstoesst und seine Absichten herausfindet. Dann soll der Agent ein Board anlegen, das genau seinen Beduerfnissen entspricht.'
@@ -23,7 +23,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T20:49:20Z
-updated-at: 2026-10-17T20:49:20Z
+updated-at: 2026-10-17T23:48:15Z
+updated-by: berkc
 ---
 
 # Ein Interview-Skill fragt den Menschen aus und baut daraus Board, Projekt und Milestones, die zu seinem Vorhaben passen
