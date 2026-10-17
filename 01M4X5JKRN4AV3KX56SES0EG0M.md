@@ -27,7 +27,7 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:56:00Z
+updated-at: 2026-10-17T12:56:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-67696
 claimed-at: 2026-10-17T12:50:10Z
@@ -40,7 +40,7 @@ review-gaps: "Keine Luecke im DoD; kleinere Grenzen: (1) Board-weites Ablegen in
 test-verdict: "pass (Runde 3): go test -race ./... RC=0; TestMergeDriverUsesTheTicketsBoard rot ohne Fix, gruen mit; DoD 1-6 unveraendert gedeckt (boards_test.go cli+tui)"
 review-verdict: "Die Diff erfuellt alle sechs DoD-Punkte; go test ./... gruen; create/list/next --board, Tippfehler-Board (Exit 2, kein Ordner angelegt), set board= hin und zurueck mit Landen in der ersten Lane und validate im Temp-Repo mit dem gebauten Binary nachgestellt. Die Gaps der beiden frueheren Reviews (TUI n/Follow-up, validate, Link-Index, Merge-Driver, Frontmatter-DoD) sind behoben. Offen nur Grenzen fuer brettweites Logbook-Ablegen und kosmetische board:-Schreibweisen - nicht blockierend. Annehmbar."
 review-round: 6
-review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. In einem leeren Git-Repo: /tmp/jaira init, dann mkdir -p .jaira/boards/video/lanes und drei Dateien skript.md, bau.md, done.md mit Frontmatter 'id: <name>' (done.md zusaetzlich 'terminal: true') und eine Datei order mit skript, bau, done je Zeile  3. /tmp/jaira create 'Szene A' --board video -> 'In skript'  4. /tmp/jaira list -> Szene A fehlt; /tmp/jaira list --board video -> Szene A in skript  5. /tmp/jaira list --board vidoe -> 'no such board \"vidoe\"; boards here: default, video', echo $? zeigt 2  6. /tmp/jaira move <id> --to bau, dann /tmp/jaira set <id> board=default -> 'Board default has no lane \"bau\"; <id> is now in <erste Lane>'  7. /tmp/jaira validate -> keine error-Zeile  8. /tmp/jaira (TUI), F druecken -> Kopfzeile 'board: video', nur Lanes skript/bau/done; noch einmal F -> zurueck auf das heutige Board"
+review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/r && cd /tmp/r && git init && git commit --allow-empty -m i && /tmp/jaira init  3. mkdir -p .jaira/boards/video/lanes && cp .jaira/lanes/*.md .jaira/boards/video/lanes/ (oder eigene Lane-Dateien)  4. /tmp/jaira create V1 --board video --goal g --context c --dod d  -> das Ticket hat 'board: video'  5. /tmp/jaira list  -> V1 fehlt; /tmp/jaira list --board video -> V1 steht da  6. /tmp/jaira list --board vidoe -> 'no such board \"vidoe\"; boards here: default, video', Exit 2, kein Ordner vidoe entsteht  7. /tmp/jaira set <V1-id> board=default -> 'Updated', ggf. 'Board default has no lane ...; ... is now in backlog'  8. /tmp/jaira tui (bzw. jaira), F druecken -> Kopfzeile zeigt 'board: video', nur dessen Lanes und Tickets; nochmal F -> zurueck zum heutigen Board"
 ---
 
 # Ein Repo kann mehrere Boards haben, jedes mit eigenen Lanes fuer sein Thema
