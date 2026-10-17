@@ -1,7 +1,7 @@
 ---
 id: 01M4X5JKRN4AV3KX56SES0EG0M
 title: "Ein Repo kann mehrere Boards haben, jedes mit eigenen Lanes fuer sein Thema"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 assignee: Alexander Sacharov
@@ -27,7 +27,7 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:29:54Z
+updated-at: 2026-10-17T12:29:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-73711
 claimed-at: 2026-10-17T12:17:54Z
@@ -40,6 +40,7 @@ review-summary: |-
   internal/cli/checklist.go:137, tags.go:320: lane.LoadBoard direkt - unbekanntes Board gibt dort Exit 1 statt 2; denselben Helfer nehmen
   internal/cli/root.go onBoard und internal/tui/model.go reload filtern beide mit NormalizeBoard(t.Board) == board - eine Funktion lane.BoardOf(t) dafuer
   core/lane/boards.go BoardsDir/BoardLanesDir haben keinen Aufrufer ausserhalb des Pakets - klein schreiben
+round: 2
 ---
 
 # Ein Repo kann mehrere Boards haben, jedes mit eigenen Lanes fuer sein Thema
