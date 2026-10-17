@@ -18,7 +18,7 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:43Z
-updated-at: 2026-10-17T14:03:07Z
+updated-at: 2026-10-17T14:05:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-65566
 claimed-at: 2026-10-17T12:36:37Z
@@ -74,3 +74,4 @@ Warum: Ohne Beschreibung fragt der Teamlead bei jedem create nach dem Board, bis
 1) Zurueckgeben: Beschreibung fuer das Default-Board und 'jaira boards'/--board im CLAUDE.md-Block ergaenzen [give back]
 2) Annehmen wie es ist, die Folgepunkte separat behandeln (die Beschreibung bei Bedarf fuer demo-video schreiben) [accept]
 Empfehlung: 2 - Nichts blockiert die DoD, die Luecken sind bewusst ausgelassen und gehoeren nicht in dieses Ticket.
+- **2026-10-17 14:05 · Alexander Sacharov** — decision: 1) Zurueckgeben: Beschreibung fuer das Default-Board und 'jaira boards'/--board im CLAUDE.md-Block ergaenzen
