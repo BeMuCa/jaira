@@ -18,7 +18,7 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:43Z
-updated-at: 2026-10-17T12:36:12Z
+updated-at: 2026-10-17T12:36:14Z
 updated-by: Alexander Sacharov
 ---
 
@@ -29,6 +29,7 @@ updated-by: Alexander Sacharov
 - [ ] Jedes Board traegt eine kurze Beschreibung seines Themas, die der Teamlead liest; Test
 - [ ] Der Teamlead legt ein Ticket mit Board an und nennt seine Wahl mit Grund; passt kein Board, fragt er den Menschen statt zu raten
 - [ ] jaira-worker und Dispatcher lesen das Board vom Ticket und arbeiten dessen Lanes ab, nicht die des Standard-Boards; Test
+- [ ] Eine Zeile in core/release/notes/8NHD8Q.md
 
 ## Options
 
