@@ -17,6 +17,7 @@ import (
 
 	"github.com/BeMuCa/jaira/core/release"
 	"github.com/BeMuCa/jaira/core/selfupdate"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // selfExecutable is the binary 'self upgrade' replaces. Tests point it at a
@@ -201,8 +202,14 @@ pins (or downgrades to) an exact release.`,
 			// otherwise, is worth a line here. The binary was replaced either
 			// way, so the upgrade itself still succeeds.
 			setupArgs := []string{"-C", g.dir, "update", "--roles"}
+			// A pinned older release may not know 'update --roles' at all, and
+			// its skills are older than the ones installed: leave the setup alone.
+			downgrade := !release.Newer(rel.Version, release.Current)
 			if g.jsonOut {
 				p := payload(true)
+				if downgrade {
+					return emit(w, p)
+				}
 				var setupOut bytes.Buffer
 				code, err := runUpgraded(target, append(setupArgs, "--json"), &setupOut, cmd.ErrOrStderr())
 				warnSetupFailed(cmd.ErrOrStderr(), rel.Version, code, err)
@@ -221,10 +228,18 @@ pins (or downgrades to) an exact release.`,
 			for _, o := range selfupdate.Overridden() {
 				fmt.Fprintf(cmd.ErrOrStderr(), "warning: release host overridden by %s\n", o)
 			}
+			if downgrade {
+				fmt.Fprintf(w, "%s is older than %s: your skills and boards are left as they are\n", rel.Version, release.Current)
+				return nil
+			}
 			fmt.Fprintf(w, "bringing your setup in step with %s: jaira update --roles\n", rel.Version)
 			code, err := runUpgraded(target, setupArgs, w, cmd.ErrOrStderr())
 			warnSetupFailed(cmd.ErrOrStderr(), rel.Version, code, err)
-			fmt.Fprintf(w, "run 'jaira update' in each repository to bring its board setup in step.\n")
+			if _, err := ticket.Discover(g.dir); err == nil {
+				fmt.Fprintf(w, "this repository is done; run 'jaira update' in each of your other repositories to bring its board setup in step.\n")
+			} else {
+				fmt.Fprintf(w, "run 'jaira update' in each repository to bring its board setup in step.\n")
+			}
 			return nil
 		},
 	}

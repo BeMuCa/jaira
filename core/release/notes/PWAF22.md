@@ -6,3 +6,4 @@
 - From the next upgrade on, 'jaira self upgrade' runs the new binary's 'jaira update --roles' right after installing it (the upgrade to this release is done by the old binary, which does not): after this upgrade run 'jaira update --roles' yourself, and 'jaira update --lanes' for the lanes, which self upgrade never touches.
 - Watch stderr for one line, once per new jaira version, saying your personal jaira skills are older than the binary; run the 'jaira update --roles' it names.
 - Stop copying .claude/skills/jaira by hand: 'jaira roles install --project' (or '--global') and 'jaira update --roles' now write the jaira skill as <skills>/jaira/SKILL.md beside the roles; a copy you edited is left alone like any role file.
+- Expect 'jaira self upgrade --version <older release>' to leave your skills and boards alone: it only replaces the binary, because an older jaira may not know 'jaira update --roles'.

@@ -142,7 +142,13 @@ func selfUpgradeTarget(t *testing.T) string {
 	prev := selfExecutable
 	selfExecutable = func() (string, error) { return target, nil }
 	t.Cleanup(func() { selfExecutable = prev })
-	return target
+	// self upgrade resolves symlinks before it replaces anything, and on macOS
+	// the temp directory itself is one (/var -> /private/var).
+	resolved, err := filepath.EvalSymlinks(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return resolved
 }
 
 func TestSelfUpgradeUpToDateWritesNoFile(t *testing.T) {
@@ -479,5 +485,43 @@ func TestSelfUpgradeExecutesTheReplacedBinary(t *testing.T) {
 	}
 	if want := []string{"-C", dir, "update", "--roles"}; !slices.Equal(strings.Fields(string(b)), want) {
 		t.Errorf("replaced binary got %q, want %q", strings.Fields(string(b)), want)
+	}
+}
+
+func TestSelfUpgradeToAnOlderReleaseLeavesTheSetupAlone(t *testing.T) {
+	setCurrent(t, "1.2.0")
+	selfTestRelease(t, "v1.3.0", "latest-bytes", "v1.1.0", "pin-bytes")
+	selfUpgradeTarget(t)
+	got := recordUpgraded(t, "", 0, nil)
+
+	out, err := runSelf(t, t.TempDir(), "upgrade", "--version", "v1.1.0")
+	if err != nil {
+		t.Fatalf("self upgrade --version v1.1.0: %v\n%s", err, out)
+	}
+	if got.calls != 0 {
+		t.Errorf("runUpgraded called %d time(s), want none: an older release may not know 'update --roles'", got.calls)
+	}
+	if strings.Contains(out, "jaira update") {
+		t.Errorf("a downgrade must not name a command the older binary may lack, got:\n%s", out)
+	}
+}
+
+func TestSelfUpgradeInsideABoardSaysThisRepositoryIsDone(t *testing.T) {
+	setCurrent(t, "1.0.0")
+	selfTestRelease(t, "v1.3.0", "latest-bytes", "v1.1.0", "pin-bytes")
+	selfUpgradeTarget(t)
+	recordUpgraded(t, "", 0, nil)
+	dir := t.TempDir()
+	gitRun(t, dir, "init", "--quiet")
+	if out, err := runCLI(t, dir, "init"); err != nil {
+		t.Fatalf("init: %v\n%s", err, out)
+	}
+
+	out, err := runSelf(t, dir, "upgrade")
+	if err != nil {
+		t.Fatalf("self upgrade: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "this repository is done; run 'jaira update' in each of your other repositories") {
+		t.Errorf("want the closing line to exclude the repository just set up, got:\n%s", out)
 	}
 }
