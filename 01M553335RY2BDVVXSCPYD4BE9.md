@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T14:19:36Z
+updated-at: 2026-10-17T14:19:39Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-66355
 claimed-at: 2026-10-17T14:11:12Z
@@ -67,3 +67,4 @@ claimed-at: 2026-10-17T14:11:12Z
 5) Dirty = git status --porcelain without untracked files under .jaira/ (AYBDJ2's rule). The main worktree is never removed, only its panes closed. The reaper never closes its own pane (HERDR_PANE_ID).
 6) Close by tab (pane get -> tab_id -> tab close), the same call run-lane.sh already uses; a pane already gone just drops its registry file.
 7) Launcher entry in ~/.jaira/projects.json is AYBDJ2's half, not built here.
+- **2026-10-17 14:19 · Alexander Sacharov** — found out: gh pr list --head finds a fork's merged PR, gh pr view <branch> does not. macOS bash 3.2 rules out declare -A/mapfile in reap.sh. Reap tests skip on Windows: Git Bash /c/... vs git.exe C:\ paths never compare. Old tabs/worktrees from before this change have no record and are not reaped - close those by hand once.
