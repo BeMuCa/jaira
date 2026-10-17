@@ -18,7 +18,7 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:43Z
-updated-at: 2026-10-17T14:05:53Z
+updated-at: 2026-10-17T14:06:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-61927
 claimed-at: 2026-10-17T14:05:53Z
@@ -77,3 +77,4 @@ Empfehlung: 2 - Nichts blockiert die DoD, die Luecken sind bewusst ausgelassen u
 - **2026-10-17 14:05 · Alexander Sacharov** — decision: 1) Zurueckgeben: Beschreibung fuer das Default-Board und 'jaira boards'/--board im CLAUDE.md-Block ergaenzen
 - **2026-10-17 14:05 · Alexander Sacharov** — Given back from signoff: 1) Zurueckgeben: Beschreibung fuer das Default-Board und 'jaira boards'/--board im CLAUDE.md-Block ergaenzen
 - **2026-10-17 14:05 · Alexander Sacharov** — cockpit: given back to a new worker - old worker's prompt cache cold for 14 min
+- **2026-10-17 14:06 · Alexander Sacharov** — decision round 3 (worker): the default board's description is written by the code, not by hand per repo: when a board's first lane directory is set up from the built-in lanes (lane.setUp), a 'description' file goes in beside order - 'Changes to this repository's code: features, fixes, refactors, tests and docs.' Not when the lanes come from a person's default-board.md: those may be any board, a guessed sentence would send tickets to the wrong lanes. Not in 'jaira update': it cannot tell built-in lanes from chosen ones on an existing board. This repo gets the file by hand (.jaira/lanes is tracked here); demo-video needs one line written there by hand - outside this worktree.
