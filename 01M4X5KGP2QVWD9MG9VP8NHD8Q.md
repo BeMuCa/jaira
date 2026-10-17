@@ -18,7 +18,7 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:43Z
-updated-at: 2026-10-17T12:46:19Z
+updated-at: 2026-10-17T12:46:22Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-65566
 claimed-at: 2026-10-17T12:36:37Z
@@ -28,6 +28,7 @@ outcome-resolves: "DoD 1: jaira boards + TestBoardsListsEveryBoardWithItsDescrip
 review-summary: "none"
 round: 2
 review-gaps: "none removed. Considered: the TUI's board cycle (internal/tui/model.go:2233) lists the same names but for switching, not counting - no shared helper worth it; boards.go loads today's lanes twice (loadEnv, then boardLanes for default) and loadEnv builds a link index it does not use - left, same as 'jaira tags' does and on a command run once before a create; reusing readIDList for the description is the existing trim-and-skip-blank reader, not a copy"
+test-verdict: "pass: go vet + go test -race ./... green (RC=0); DoD 1-4 verified in the tree (TestBoardsListsEveryBoardWithItsDescription, TestWorkerPathRunsTheTicketsBoard, TestRolesWorkTheTicketsBoard, notes file); built binary on a scratch repo: 'jaira boards' lists default + video with descriptions, a missing one names .jaira/lanes/description, --for-lane on the video ticket gives the video lane's tier"
 ---
 
 # Der Teamlead legt Tickets auf das Board, das zum Thema passt, und der Worker faehrt sie durch dessen Lanes
