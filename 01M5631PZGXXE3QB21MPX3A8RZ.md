@@ -4,7 +4,7 @@ title: "Das Board laesst rechts einen leeren Streifen, weil jede Spalte zwei Zel
 status: backlog
 ready: true
 creator: berkc
-assignee: BeMuCa
+assignee: berkc
 goal: Die Lanes fuellen die ganze Terminalbreite; rechts bleibt hoechstens der Rest einer ganzzahligen Teilung frei.
 context: |-
   Was heute ist: Berk am 18.10. mit Screenshot - rechts neben Blocked ein leerer Streifen von etwa 25 Zellen, egal wie breit das Fenster ist.
@@ -18,7 +18,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T23:27:12Z
-updated-at: 2026-10-17T23:27:12Z
+updated-at: 2026-10-17T23:28:04Z
+updated-by: berkc
 ---
 
 # Das Board laesst rechts einen leeren Streifen, weil jede Spalte zwei Zellen Abstand eingeplant bekommt, die nie gezeichnet werden
@@ -37,4 +38,4 @@ updated-at: 2026-10-17T23:27:12Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-17 23:28 · berkc** — berkc took this ticket over from BeMuCa
