@@ -23,14 +23,14 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:51:04Z
+updated-at: 2026-10-17T16:54:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
 outcome-what: "reap.sh closes a recorded tab only when 'herdr tab get' still labels it <ticket>/<lane> (also under --dry-run); keeps every ticket when herdr does not answer or git status fails; records go only after tabs, worktree and branch all went, so a failed removal is retried next round. Tests in core/role/reap_test.go for each."
 outcome-why: "Given back from signoff, then from review: a pane id alone could close another ticket's tab after herdr reuses ids; a record removed before the worktree left a failed remove standing forever; and with herdr unreachable an open tab read as closed, so its worktree and record went and the tab was never closed."
 outcome-resolves: "Goal of YD4BE9: after the PR is merged, all tabs started for the ticket close and its worktree and branch go without anyone cleaning up by hand - without closing a stranger's tab, and without losing track of a tab it could not see."
-review-summary: "none"
+review-summary: "spawn.sh now writes one small file per tab it opens (pane, ticket, lane, worktree) under <git common dir>/jaira/panes/. New core/role/builtin/jaira-dispatcher/scripts/reap.sh reads those files, groups them by ticket and asks GitHub (gh pr list --head <branch> --state merged, against the fork's parent when origin is a fork) or GitLab (glab) for a merged pull request. Only when the PR is merged, the ticket is done or filed away, the local branch is not past the merged head, the worktrees are clean (untracked .jaira/ files aside) and herdr answers does it close each recorded tab whose label is still <ticket>/<lane>, remove the worktree (never the main one or the one it runs in), delete the branch with -D and only then drop the records; any failure keeps the records so the next round retries. Otherwise it prints 'waiting' or 'kept <ticket>: <reason>'. --dry-run asks the same questions and prints 'would ...'. The teamlead skill runs it every round and reports closed/kept lines; the 'worktree until done' paragraph now says reap.sh does it. Seven Go tests in core/role/reap_test.go drive the real scripts against a real git repo with herdr/gh/jaira stubs. Release note core/release/notes/YD4BE9.md."
 round: 8
 review-gaps: "none - one probe and one guard added, nothing duplicated (no other script probes herdr reachability; spawn.sh fails on its own tab create)"
 test-verdict: "pass: go test ./... -race rc=0, go vet clean; DoD 1-5 verified; live on a scratch clone (real gh, feat/rftqkp = merged #87): HERDR_BIN_PATH=/nonexistent -> 'kept RFTQKP: herdr not reachable', record and worktree stay; real herdr.exe -> tab labelled RFTQKP/worker closed, worktree removed, branch deleted, record gone, rc=0"
