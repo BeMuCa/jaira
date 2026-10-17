@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:58:02Z
+updated-at: 2026-10-17T16:58:05Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
@@ -48,7 +48,7 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-yd4be9  2. go test ./c
 - [x] Ein Skript (z.B. scripts/reap.sh neben spawn.sh) schliesst fuer jedes Ticket mit gemergtem PR alle seine Panes und entfernt Worktree und lokalen Branch; mit --dry-run zeigt es nur, was es taete; Test
   proof: core/role/builtin/jaira-dispatcher/scripts/reap.sh:179-182 (tab closed only when 'herdr tab get' labels it <ticket>/<lane>),194,205 (worktree remove, branch -D), :210 records go only after all succeeded; --dry-run prints 'would ...'; tests core/role/reap_test.go TestReapClosesAMergedTicket, TestReapNeverRemovesTheWorktreeItRunsIn, TestReapLeavesATabItDidNotOpen, TestReapComesBackToAWorktreeItCouldNotRemove
 - [x] Ein Worktree mit nicht committeten Aenderungen oder ein nicht gemergter Branch wird nicht angefasst, das Skript nennt ihn und den Grund; Test
-  proof: core/role/builtin/jaira-dispatcher/scripts/reap.sh:135 'waiting' (no merged PR), :143,153,160,163 'kept <ticket>: <reason>' (back in a lane, not at merged head, uncommitted changes or git status failed, herdr not reachable); test core/role/reap_test.go TestReapKeepsWhatIsNotFinished
+  proof: core/role/builtin/jaira-dispatcher/scripts/reap.sh:136 'waiting' (no merged PR), :144,154,164,167 'kept <ticket>: <reason>' (back in a lane, not at merged head, uncommitted changes or git status failed, herdr not reachable); test core/role/reap_test.go TestReapKeepsWhatIsNotFinished
 - [x] Der Teamlead-Skill ruft das Skript bei jeder Runde auf und meldet, was geschlossen wurde
   proof: core/role/builtin/jaira-teamlead/SKILL.md:26-38 (reap.sh every round, report closed/kept); test core/role/reap_test.go TestTeamleadReapsEveryRound
 - [x] Eine Zeile in core/release/notes/<ID>.md
