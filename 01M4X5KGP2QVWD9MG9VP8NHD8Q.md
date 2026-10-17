@@ -18,7 +18,7 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:43Z
-updated-at: 2026-10-17T14:15:15Z
+updated-at: 2026-10-17T14:15:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-61927
 claimed-at: 2026-10-17T14:05:53Z
@@ -27,7 +27,7 @@ outcome-why: "With several boards per repo (S0EG0M) nothing told a teamlead or a
 outcome-resolves: "DoD 1: jaira boards + TestBoardsListsEveryBoardWithItsDescription; DoD 2: teamlead SKILL.md; DoD 3: dispatcher/worker skills + TestWorkerPathRunsTheTicketsBoard, TestRolesWorkTheTicketsBoard; DoD 4: release note; DoD 5: lane.setUp writeDefaultDescription + TestOnlyABuiltinBoardIsDescribedOnSetUp; DoD 6: announce.go agentNote + TestAgentNoteNamesTheBoards"
 review-summary: "Round 3 adds the two things signoff sent back. (1) When a repo's first lane directory is set up from the built-in lanes (lane.setUp, i.e. jaira init or the first command on a fresh board), a plain-text file .jaira/lanes/description is written beside order: 'Changes to this repository's code: features, fixes, refactors, tests and docs.' It is not written when the lanes come from a person's default-board.md (could be a board for anything), and an existing description is never overwritten. This repo got the file by hand. (2) The generated jaira block in CLAUDE.md/AGENTS.md (core/board/announce.go agentNote) gains one entry: jaira boards, read it before create when there is more than default, create --board, --board on list/next, set board= to move. --help, docs/COMMANDS.md and two new release-note lines say the same. Rounds 1-2 (jaira boards command, teamlead/dispatcher/worker skills) are unchanged since the last approval apart from the S0EG0M merge."
 round: 4
-review-gaps: "none: round-3 diff (afa29f77, d3fd367c) checked - no write-if-absent helper exists to reuse (only inline O_EXCL in core/ticket/store.go and internal/tui/lanes.go, different jobs), nothing orphaned, no forwarding wrappers"
+review-gaps: "none for the DoD. Looked at: setUp is only called for today's board (lane.go:566), so a named board never gets the code description; ProjectLanesActive globs *.md, so a description file alone does not count as a set-up lane dir; CLAUDE.md and AGENTS.md blocks are identical to agentNote. Known and accepted, not a defect: a repo whose lanes already exist (e.g. demo-video) gets no description until someone writes the line - the second release-note line tells them to."
 test-verdict: "pass: go vet + go test -race ./... green (RC=0); DoD 1-6 checked in the tree (DoD 1 proof line updated to boards.go:154 after the shift); scratch repo: jaira init writes .jaira/lanes/description with the code sentence, CLAUDE.md and AGENTS.md name jaira boards, jaira boards lists default with it and video with its own"
 review-verdict: "Approve. The diff matches all four DoD items; go test ./internal/cli ./core/role ./core/lane passes; by hand in a scratch repo 'jaira boards' (text and --json) lists both boards with open counts and descriptions, and 'jaira set <id> board=video' moves a ticket across, falling back to the first lane when the target board lacks its lane. No defects found in the change itself; gaps above are follow-ups."
 review-round: 2
