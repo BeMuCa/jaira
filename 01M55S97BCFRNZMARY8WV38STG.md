@@ -1,7 +1,7 @@
 ---
 id: 01M55S97BCFRNZMARY8WV38STG
 title: "Die Installation per curl richtet Rollen und Cockpit gleich mit ein und zeigt dabei, was sie tut"
-status: testing
+status: in-progress
 ready: true
 creator: berkc
 assignee: berkc
@@ -24,7 +24,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T20:36:33Z
-updated-at: 2026-10-17T23:29:31Z
+updated-at: 2026-10-17T23:29:33Z
 updated-by: berkc
 claimed-by: berk-ca-283567
 claimed-at: 2026-10-17T20:37:26Z
@@ -37,6 +37,7 @@ test-verdict: "pass: sh -n ok; install.sh run piped (no TTY, no bar), under pty 
 review-verdict: "send back: install.sh meets the goal and was verified end to end (dash, fresh/rerun/opt-out/failure/pty); install.ps1 failure path is likely broken on PS 5.1 and the ticket's DoD 2-5 are untracked, so not ready for signoff"
 review-round: 1
 review-check: "1. cd into the jaira checkout on branch feat/v38stg  2. mkdir -p /tmp/jt/home  3. HOME=/tmp/jt/home JAIRA_INSTALL_DIR=/tmp/jt/bin sh scripts/install.sh  4. you see a #### progress bar, then 'Setting up the skills and the Cockpit…' and '✓ 35 written, 0 unchanged, ...'  5. ls /tmp/jt/home/.claude/skills shows jaira-cockpit and jaira-role-* folders  6. run step 3 again: line reads '✓ 0 written, 35 unchanged', exit 0  7. HOME=/tmp/jt/home2 JAIRA_NO_ROLES=1 JAIRA_INSTALL_DIR=/tmp/jt/bin2 sh scripts/install.sh: last line 'skipped the skills and the Cockpit ...', /tmp/jt/home2 has no .claude  8. On Windows PowerShell 5.1: make %USERPROFILE%\\.claude read-only, run scripts/install.ps1 - expected 'FAILED to set up ...' plus retry hint, not a red NativeCommandError  9. Normal Windows run: 'OK 35 written, ...' and jaira-cockpit in %USERPROFILE%\\.claude\\skills"
+round: 2
 ---
 
 # Die Installation per curl richtet Rollen und Cockpit gleich mit ein und zeigt dabei, was sie tut
