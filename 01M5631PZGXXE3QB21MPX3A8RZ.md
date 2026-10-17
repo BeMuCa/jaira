@@ -18,11 +18,12 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T23:27:12Z
-updated-at: 2026-10-17T23:36:55Z
+updated-at: 2026-10-17T23:37:29Z
 updated-by: berkc
 outcome-what: boardFit budgets columns at rendered width (no +2)
 outcome-why: lipgloss v2 Width includes border; the +2 left blank strip on the right
 outcome-resolves: board row fills terminal width within <full columns cells
+review-summary: none
 ---
 
 # Das Board laesst rechts einen leeren Streifen, weil jede Spalte zwei Zellen Abstand eingeplant bekommt, die nie gezeichnet werden
