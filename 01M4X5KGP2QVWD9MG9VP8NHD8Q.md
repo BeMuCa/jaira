@@ -18,7 +18,7 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:43Z
-updated-at: 2026-10-17T14:05:39Z
+updated-at: 2026-10-17T14:05:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-65566
 claimed-at: 2026-10-17T12:36:37Z
@@ -76,3 +76,4 @@ Warum: Ohne Beschreibung fragt der Teamlead bei jedem create nach dem Board, bis
 Empfehlung: 2 - Nichts blockiert die DoD, die Luecken sind bewusst ausgelassen und gehoeren nicht in dieses Ticket.
 - **2026-10-17 14:05 · Alexander Sacharov** — decision: 1) Zurueckgeben: Beschreibung fuer das Default-Board und 'jaira boards'/--board im CLAUDE.md-Block ergaenzen
 - **2026-10-17 14:05 · Alexander Sacharov** — Given back from signoff: 1) Zurueckgeben: Beschreibung fuer das Default-Board und 'jaira boards'/--board im CLAUDE.md-Block ergaenzen
+- **2026-10-17 14:05 · Alexander Sacharov** — cockpit: given back to a new worker - old worker's prompt cache cold for 14 min
