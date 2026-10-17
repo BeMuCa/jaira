@@ -24,7 +24,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T20:36:33Z
-updated-at: 2026-10-17T23:48:47Z
+updated-at: 2026-10-17T23:48:49Z
 updated-by: berkc
 claimed-by: berk-ca-283567
 claimed-at: 2026-10-17T20:37:26Z
@@ -32,7 +32,7 @@ outcome-what: "install scripts run roles install --global; ps1 failure branch fi
 outcome-why: curl install left roles and Cockpit missing
 outcome-resolves: "install.sh verified; install.ps1 not run"
 review-summary: "none"
-review-gaps: "1) scripts/install.ps1:150 - Install-Jaira sets $ErrorActionPreference='Stop' (line 83); under Windows PowerShell 5.1 '& $exe ... 2>&1' turns the first stderr line into a terminating NativeCommandError, and jaira writes its failure ('jaira: mkdir ...: permission denied') to stderr only - so the FAILED/retry branch (153-157) is unreachable on 5.1; the user gets a raw exception with no retry hint. Not run (no pwsh here) - from known PS 5.1 behaviour, unverified. Fix: set $ErrorActionPreference='Continue' around that call. 2) Ticket DoD: only item 1 is a checkbox; items 2-5 (install.ps1, opt-out, idempotent, release note) are plain lines in the body, so they were never ticked with proof and the done-gate will not check them. Re-enter them via the CLI and tick each. 3) DoD 1 asks for one status line each for skills and Cockpit; the script prints one combined line (deliberate, see note 20:38) - either split or have the DoD amended by the owner. Everything else verified working on install.sh."
+review-gaps: "none"
 test-verdict: "pass: sh -n ok; install.sh run piped (no TTY, no bar), under pty (bar shown), rerun 0 written/35 unchanged, JAIRA_NO_ROLES skip, read-only ~/.claude failure printed verbatim with binary still installed. install.ps1 NOT run (no pwsh)."
 review-verdict: "send back: install.sh meets the goal and was verified end to end (dash, fresh/rerun/opt-out/failure/pty); install.ps1 failure path is likely broken on PS 5.1 and the ticket's DoD 2-5 are untracked, so not ready for signoff"
 review-round: 1
