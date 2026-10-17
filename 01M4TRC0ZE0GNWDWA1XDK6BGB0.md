@@ -21,7 +21,7 @@ related: []
 follows: 01M2HW4788Z5G0M05G3PJDXV60
 commits: []
 created-at: 2026-10-13T13:48:57Z
-updated-at: 2026-10-17T20:52:46Z
+updated-at: 2026-10-17T20:52:48Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-297639
@@ -70,3 +70,4 @@ Gewaehlt: B (Nutzerentscheidung 2026-10-17): newest wins in List und show, Marke
 - **2026-10-17 20:49 · berkc** — critique: store.go newest vereinfachen - ReadOnly-Filter und Kopie entfernen, ts direkt an Ahead (Begruendung im review-summary). Ahead/Extra teilen sich eine fast gleiche Lese-und-Decode-Schleife: das ist Sache der optimize-Lane, hier stehen gelassen. Load bleibt bewusst bei der Datei (siehe Plan-Notiz).
 - **2026-10-17 20:50 · berkc** — in-progress (Runde 2): store.go newest vereinfacht wie von critique verlangt; Tests gruen.
 - **2026-10-17 20:50 · berkc** — critique Runde 2: nichts mehr - newest ist jetzt drei Zeilen; Load bleibt bewusst Datei (Plan-Notiz); die doppelte Decode-Schleife Ahead/Extra geht an optimize.
+- **2026-10-17 20:52 · berkc** — testing: Zwei-Worktree-Nachstellung ohne Pause (repro.sh): pull in main 20:51:52, move --to todo in wt2 20:51:52, danach 'jaira note' in main: Noted, exit 0, Ref danach 'status: backlog updated-at 20:51:53' - der todo-Stand ist still weg. Mit dem installierten 0.5.2 genauso, also vorbestehend: isStale vergleicht updated-at mit Sekundenaufloesung und urteilt bei Gleichstand 'nicht hinter'. Vorschlag: bei gleichem updated-at und anderen Bytes als die Ref-Spitze entscheidet die Herkunft - die Datei ist hinter dem Ref, wenn ihr Blob von dem Ref aus erreichbar ist (frueherer Stand). Das Muster gibt es schon: gitref.Repo.MilestoneHad (rev-list --objects) fuer Meilensteine; isStale ist die eine Definition fuer pull, CheckFresh und Ahead, dort einbauen.
