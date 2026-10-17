@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T14:38:35Z
+updated-at: 2026-10-17T16:33:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-66355
 claimed-at: 2026-10-17T14:11:12Z
@@ -88,3 +88,8 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-yd4be9 && go test ./co
 - **2026-10-17 14:33 · Alexander Sacharov** — critique round 4 (after testing fix): none; the repo lookup mirrors jaira-role-pr's ladder rungs 1-2, rung 3 (a board remote naming a third repo) is not needed to find a merged PR.
 - **2026-10-17 14:36 · Alexander Sacharov** — review handed to a fresh agent via run-lane.sh --no-worktree in this worktree; testing lane changed no code, ticket file left modified for the next code commit or the logbook commit.
 - **2026-10-17 14:38 · Alexander Sacharov** — review: approve with reservation. reap.sh closes a tab by pane id alone; records outlive their tabs (run-lane.sh closes lane tabs early), so if herdr reuses pane ids after a restart a stranger's tab gets closed. Suggested fix: match the tab label '<ticket>/<lane>' from 'herdr pane get' before 'tab close'. Not verified against real herdr. Minor: records are rm'd before 'git worktree remove' — a failed remove is never retried.
+- **2026-10-17 16:33 · Alexander Sacharov** — explain: reap.sh schliesst einen Tab nur anhand der Pane-Id. Die Records ueberleben ihre Tabs oft um Tage, und nach einem herdr-Neustart koennten dieselben Ids neu vergeben werden.
+Warum: Dann schliesst reap.sh einen fremden Tab, womoeglich den lebenden Worker eines anderen Tickets. Ausserdem wird der Record vor 'git worktree remove' geloescht, schlaegt das Entfernen fehl, bleiben Worktree und Branch fuer immer stehen.
+1) Zurueckgeben: vor 'tab close' das Tab-Label aus 'herdr pane get' mit '<ticket>/<lane>' vergleichen und den Record erst nach erfolgreichem 'git worktree remove' loeschen [give back]
+2) So annehmen: alle vier DoD-Punkte sind erfuellt, die Id-Wiederverwendung ist nicht belegt, die Luecken bleiben offen [accept]
+Empfehlung: 1 - die Label-Pruefung ist billig und nimmt das einzige Risiko weg, bei dem ein fremder Tab verloren gehen kann.
