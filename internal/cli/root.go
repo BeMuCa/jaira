@@ -373,18 +373,16 @@ func boardLanes(s *ticket.Store, board string) (*lane.Set, error) {
 
 // onBoard keeps the tickets of board — "" or "default" for today's — so a
 // ticket of another board never shows up in a lane its board does not have.
-func onBoard(ts []*ticket.Ticket, board string) ([]*ticket.Ticket, error) {
-	board, err := lane.NormalizeBoard(board)
-	if err != nil {
-		return nil, fail(ExitUsage, "usage", "%v", err)
-	}
+// board has been through loadBoardEnv, which refuses a malformed name.
+func onBoard(ts []*ticket.Ticket, board string) []*ticket.Ticket {
+	board, _ = lane.NormalizeBoard(board)
 	out := ts[:0:0]
 	for _, t := range ts {
 		if lane.BoardOf(t) == board {
 			out = append(out, t)
 		}
 	}
-	return out, nil
+	return out
 }
 
 // boardLabel names a board for a person: today's board has no name on disk.

@@ -27,20 +27,15 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:31:18Z
+updated-at: 2026-10-17T12:31:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-73711
 claimed-at: 2026-10-17T12:17:54Z
 outcome-what: "Mehrere Boards pro Repo: core/lane/boards.go (LoadBoard, Boards, NormalizeBoard), Feld board: im Ticket, --board an create/list/next, Einzelticket-Kommandos lesen das Board vom Ticket, set board=<name> mit Fallback auf die erste Lane, TUI-Taste F"
 outcome-why: "Ein Repo braucht Boards mit eigenen Lanes neben den SWE-Lanes, z.B. ein video-Board in demo-video fuer eine Designerin"
 outcome-resolves: "S0EG0M: alle sechs DoD-Punkte, Tests in internal/cli/boards_test.go und internal/tui/boards_test.go"
-review-summary: |-
-  internal/cli/tickets.go set: der board-Zweig steht zwischen dem mode-Kommentar und if k == FieldMode - der Kommentar beschreibt jetzt den falschen Block; board-Zweig vor den mode-Kommentar ziehen
-  internal/cli/tickets.go create und set: loadBoardEnv/envFor lesen alle Tickets (s.List) nur fuer die Lanes - ein Helfer boardLanes(root, board) in root.go, der ErrNoSuchBoard auf Exit 2 abbildet, statt dessen; loadBoardEnv benutzt ihn selbst
-  internal/cli/checklist.go:137, tags.go:320: lane.LoadBoard direkt - unbekanntes Board gibt dort Exit 1 statt 2; denselben Helfer nehmen
-  internal/cli/root.go onBoard und internal/tui/model.go reload filtern beide mit NormalizeBoard(t.Board) == board - eine Funktion lane.BoardOf(t) dafuer
-  core/lane/boards.go BoardsDir/BoardLanesDir haben keinen Aufrufer ausserhalb des Pakets - klein schreiben
-round: 2
+review-summary: "internal/cli/root.go onBoard: der Fehlerzweig ist unerreichbar - beide Aufrufer (list, next) haben den Namen schon durch loadBoardEnv geprueft; onBoard gibt nur die Liste zurueck"
+round: 3
 ---
 
 # Ein Repo kann mehrere Boards haben, jedes mit eigenen Lanes fuer sein Thema
@@ -92,3 +87,4 @@ internal/cli/tickets.go create und set: loadBoardEnv/envFor lesen alle Tickets (
 internal/cli/checklist.go:137, tags.go:320: lane.LoadBoard direkt - unbekanntes Board gibt dort Exit 1 statt 2; denselben Helfer nehmen
 internal/cli/root.go onBoard und internal/tui/model.go reload filtern beide mit NormalizeBoard(t.Board) == board - eine Funktion lane.BoardOf(t) dafuer
 core/lane/boards.go BoardsDir/BoardLanesDir haben keinen Aufrufer ausserhalb des Pakets - klein schreiben
+- **2026-10-17 12:31 · Alexander Sacharov** — critique (Runde 2): internal/cli/root.go onBoard: der Fehlerzweig ist unerreichbar - beide Aufrufer (list, next) haben den Namen schon durch loadBoardEnv geprueft; onBoard gibt nur die Liste zurueck. Sonst nichts: boardLanes, BoardOf und die set-Reihenfolge aus Runde 1 sind erledigt.

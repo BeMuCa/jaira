@@ -615,9 +615,7 @@ func newListCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if all, err = onBoard(all, board); err != nil {
-				return err
-			}
+			all = onBoard(all, board)
 			// The index is built whether or not --milestone was given, so the
 			// JSON rows can say which milestones a ticket is in — an agent
 			// reading the board needs that as much as a person looking at the

@@ -381,9 +381,7 @@ skipping this command.`,
 			if err != nil {
 				return err
 			}
-			if tickets, err = onBoard(tickets, board); err != nil {
-				return err
-			}
+			tickets = onBoard(tickets, board)
 			var ready []*ticket.Ticket
 			for _, t := range tickets {
 				if laneFilter != "" && t.Status != laneFilter {
