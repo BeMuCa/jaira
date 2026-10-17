@@ -27,7 +27,7 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:33:31Z
+updated-at: 2026-10-17T12:35:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-73711
 claimed-at: 2026-10-17T12:17:54Z
@@ -37,6 +37,7 @@ outcome-resolves: "S0EG0M: alle sechs DoD-Punkte, Tests in internal/cli/boards_t
 review-summary: "Keine Befunde in Runde 3: Form passt zum Bestand (LoadBoard neben Load mit gemeinsamem assemble, boardLanes wie loadEnv als CLI-Helfer, board: wie mode als Frontmatter-Skalar). Bewusst stehen gelassen (Note 'Stand'): brettweite Kommandos bleiben auf dem heutigen Board."
 round: 3
 review-gaps: "indexByID (core/lane/lane.go) ersetzt die dreifach kopierte builtinByID-Schleife (Load, migrateLegacy, LoadBoard); hasLaneFiles (core/lane/boards.go) fuer die doppelte Glob-Pruefung in Boards und LoadBoard; boardLabel mit einem Aufrufer durch cmp.Or ersetzt. Stehen gelassen: ProjectLanesActive prueft dasselbe mit Stat+Glob (vorbestehend); resume laedt Lanes pro Board mit Cache, kein Mehraufwand auf heissem Pfad."
+test-verdict: "pass: go test -race ./... nach go clean -testcache RC=0; DoD 2-6 im Baum geprueft (boards_test.go in cli und tui laufen gruen, release note da); Binaer auf Scratch-Repo: create/list/next --board video, unbekanntes Board Exit 2 mit Liste, move/claim/dod/note/tag auf video-Ticket, set board=video landet in backlog mit Meldung, board= zurueck. TUI-Taste F nur ueber Tests (echte Tastendispatch), nicht interaktiv"
 ---
 
 # Ein Repo kann mehrere Boards haben, jedes mit eigenen Lanes fuer sein Thema
