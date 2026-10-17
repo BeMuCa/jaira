@@ -1,7 +1,7 @@
 ---
 id: 01M4X5JKRN4AV3KX56SES0EG0M
 title: "Ein Repo kann mehrere Boards haben, jedes mit eigenen Lanes fuer sein Thema"
-status: signoff
+status: done
 ready: true
 creator: BeMuCa
 assignee: Alexander Sacharov
@@ -25,9 +25,18 @@ blocked-by: []
 related:
   - 01M4X5J1QRR70AM2B2JPBGZ0SW
   - 01M11YYR0SMVCXNQPZ68NFJCTK
-commits: []
+commits:
+  - 60649cafc3cd922cf78965309e56f53a77bb2b17
+  - d9e95e127935052cb5c72c6ee713c7a0ee5a8f01
+  - 110de23cdb88a39b5892e74421eb4adc32f99f7b
+  - 1cf4699a471fd3e7134c98aa0ca749f8d999b183
+  - 247cffb2739ed02a935a5a493732050e4ed29f5a
+  - 321ae0ad5ea5d4cc04bebac623ef86c6726953c5
+  - c160454c98d5fd6bdf1435f5a6d0810e6e8d5cc2
+  - 15f4f6594d508074f765e7a35de6e1af2abdb116
+  - 6977903dad034208ce013a39f01e4f9ea053f6ae
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T13:06:19Z
+updated-at: 2026-10-17T14:03:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-67696
 claimed-at: 2026-10-17T12:50:10Z
@@ -110,3 +119,4 @@ Warum: Das Logbook kann ein Ticket auf einem anderen Board ablegen, wenn dessen 
 Empfehlung: 2 - alle sechs DoD-Punkte sind erfuellt, go test ./... ist gruen, und der Reviewer nennt das Ergebnis annehmbar.
 - **2026-10-17 12:57 · Alexander Sacharov** — Abnahmeseite: https://claude.ai/artifact/HdF2uR51Qm7NkPg23nMiX9 (5 Personenschritte TUI, 2 Maschinenchecks gruen; Demo-Repo ~/.claude/acceptance/jaira/feat-s0eg0m/demo, Binaer daneben)
 - **2026-10-17 13:02 · Alexander Sacharov** — decision 17.10.: Taste b statt F, Alexander (F/f haben schon andere Bedeutungen, f = Follow-up in der Detailansicht). Weitergegeben von der Teamlead-Session jaira-79.
+- **2026-10-17 14:02 · Alexander Sacharov** — decision: 2) So annehmen und die Grenzen als bekannt stehen lassen, sie sind nicht blockierend
