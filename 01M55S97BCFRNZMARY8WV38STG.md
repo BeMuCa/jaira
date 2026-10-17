@@ -24,7 +24,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T20:36:33Z
-updated-at: 2026-10-17T23:29:19Z
+updated-at: 2026-10-17T23:29:31Z
 updated-by: berkc
 claimed-by: berk-ca-283567
 claimed-at: 2026-10-17T20:37:26Z
@@ -62,3 +62,4 @@ Release-Note in core/release/notes/<ID>.md
 ## Progress
 - **2026-10-17 20:37 · berkc** — berkc took this ticket over from BeMuCa
 - **2026-10-17 20:38 · berkc** — One roles install call writes skills+cockpit (no separate flag), so one honest step 'Setting up the skills and the Cockpit'. Progress bar: curl only, only when stderr is a TTY. Opt-out JAIRA_NO_ROLES. install.ps1 unverified: no pwsh on this box.
+- **2026-10-17 23:29 · berkc** — review (fresh context) sends back: (1) install.ps1:150 under PS 5.1 with ErrorActionPreference=Stop, '& $exe roles install --global 2>&1' throws on jaira's stderr failure line, so the FAILED/retry branch never runs - wrap the call with ErrorActionPreference='Continue' (unverified, no pwsh); (2) DoD items 2-5 are plain body lines, not checkboxes - re-enter and tick with proof; (3) DoD wants a separate status line for skills and Cockpit, script prints one combined line - split or get the DoD amended. install.sh itself verified: dash fresh=35 written, rerun=0 written/35 unchanged, JAIRA_NO_ROLES skip, pty bar, read-only ~/.claude prints error + retry, exit 0.
