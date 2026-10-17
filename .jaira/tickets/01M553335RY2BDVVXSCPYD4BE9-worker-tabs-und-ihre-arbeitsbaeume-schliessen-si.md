@@ -1,7 +1,7 @@
 ---
 id: 01M553335RY2BDVVXSCPYD4BE9
 title: "Worker-Tabs und ihre Arbeitsbaeume schliessen sich, sobald der Pull Request ihres Tickets gemergt ist"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T14:33:29Z
+updated-at: 2026-10-17T14:34:21Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-66355
 claimed-at: 2026-10-17T14:11:12Z
@@ -31,8 +31,8 @@ outcome-what: "spawn.sh writes a record per tab (pane, ticket, lane, worktree) u
 outcome-why: "Worker, dispatcher and review tabs and their worktrees stayed open after the work was merged; nobody watched or closed them, and spawn.sh never recorded which tab belonged to which ticket."
 outcome-resolves: "Goal of YD4BE9: after the PR is merged, all tabs started for the ticket close and its worktree and branch go without anyone cleaning up by hand - at the next teamlead round."
 review-summary: "none"
-round: 4
-review-gaps: "none - checked: forge ladder exists only as prose in jaira-role-pr and as TS in jaira-cockpit (hooks), no shell to call; tab close by tab_id is the same two calls as run-lane.sh:144-149, left as is (separate scripts, no shared lib among them); per-ticket rescans of the records are O(n^2) over a handful of files, not worth a cache"
+round: 5
+review-gaps: "reap.sh exits before any forge call when jaira/panes/ holds no record (was: gh repo view every round once the directory existed). Left: tab close duplicated from run-lane.sh:144-149 (two calls, separate scripts); O(n^2) record rescans over a handful of files"
 test-verdict: "fail: in a fork clone without an 'upstream' remote reap.sh asks gh about the fork, finds no merged PR and never reaps"
 ---
 
@@ -82,3 +82,4 @@ test-verdict: "fail: in a fork clone without an 'upstream' remote reap.sh asks g
 - **2026-10-17 14:29 · Alexander Sacharov** — critique round 3: none. Let stand: tab-close lines duplicated from run-lane.sh (same two calls, separate scripts); stale records of tickets never merged stay as 'waiting' lines - harmless, teamlead does not report them.
 - **2026-10-17 14:31 · Alexander Sacharov** — testing: live run on a scratch clone (real gh, real herdr.exe, feat/rftqkp at 1e2ace72 = merged #87): with only origin=sashasoft90/jaira every ticket prints 'waiting ... no merged pull request' - gh pr list picks the fork. With an upstream remote added it works: dry-run listed, real run removed worktree (untracked .jaira/x.md let through) and deleted the branch, pane already gone -> record dropped, rc=0. Fix: resolve the target repo once like jaira-role-pr (gh repo view <origin url> --json isFork,parent,nameWithOwner; fork -> parent) and pass --repo to gh pr list. Suite: go test ./... -race rc=0.
 - **2026-10-17 14:33 · Alexander Sacharov** — testing fix: reap.sh resolves the PR repo once (gh repo view <origin url>: fork -> parent, else nameWithOwner) and passes --repo; live run on the scratch fork clone without upstream remote now removes feat/rftqkp's worktree and branch. GitLab forks still ask glab without a target project - not exercised, no GitLab remote here.
+- **2026-10-17 14:33 · Alexander Sacharov** — critique round 4 (after testing fix): none; the repo lookup mirrors jaira-role-pr's ladder rungs 1-2, rung 3 (a board remote naming a third repo) is not needed to find a merged PR.

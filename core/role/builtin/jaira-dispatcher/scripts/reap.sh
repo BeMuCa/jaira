@@ -54,7 +54,8 @@ root="$(cd "$(git -C "${1:-$PWD}" rev-parse --show-toplevel)" && pwd -P)"
 herdr="${HERDR_BIN_PATH:-herdr}"
 common="$(git -C "$root" rev-parse --git-common-dir)"
 panes="$(cd "$root" && cd "$common" && pwd)/jaira/panes"
-[ -d "$panes" ] || exit 0
+# No record, nothing to ask the forge about: the round costs nothing.
+ls "$panes"/* >/dev/null 2>&1 || exit 0
 # Physical paths throughout: on macOS the temp directory is a symlink, and git
 # reports the resolved path where cd keeps the one it was given.
 main="$(cd "$(git -C "$root" worktree list --porcelain | sed -n '1s/^worktree //p')" && pwd -P)"
