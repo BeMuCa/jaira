@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:54:51Z
+updated-at: 2026-10-17T16:54:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
@@ -34,8 +34,8 @@ review-summary: "spawn.sh now writes one small file per tab it opens (pane, tick
 round: 8
 review-gaps: "Minor, none blocks: (1) a ticket worktree left in detached HEAD (e.g. a rebase paused with a clean tree) yields no branch name; reap.sh falls back to feat/<ticket>, the head check passes when that branch is gone, and 'worktree remove --force' drops the detached commits (reap.sh:124-126,151,190). (2) a ticket worktree directory deleted by hand but not pruned is skipped at reap.sh:118, so 'branch -D' then fails because git still sees the branch checked out there - 'kept ... deleting branch failed' every round until 'git worktree prune'. (3) reap.sh is committed as 100644 while spawn.sh and run-lane.sh are 100755; install.go:143 sets 0755 on every .sh, so the installed copy runs, only the in-repo copy does not. (4) GitLab path (glab, forks) is untested live, as the notes already say. The four DoD items are met by the diff; the outcome's claims (label check incl. dry-run, keep on herdr/git status failure, records last) are all in reap.sh:62,158,163,174-177,206 and covered by tests."
 test-verdict: "pass: go test ./... -race rc=0, go vet clean; DoD 1-5 verified; live on a scratch clone (real gh, feat/rftqkp = merged #87): HERDR_BIN_PATH=/nonexistent -> 'kept RFTQKP: herdr not reachable', record and worktree stay; real herdr.exe -> tab labelled RFTQKP/worker closed, worktree removed, branch deleted, record gone, rc=0"
-review-verdict: "Send back. The round-6 fixes are in and work (label check, records kept until removal succeeds, dry-run behind the label check), DoD 1-5 are met and 'go test ./core/role -run Reap|Spawn|Teamlead' passes. But gap 1 is a real defect, reproduced: if reap.sh cannot reach herdr it removes the worktree and drops the record of a tab that may still be open, so that tab is never closed. Small fix (one probe before the loop, one test)."
-review-round: 7
+review-verdict: "Approve. The diff meets all definition-of-done items, the round-2 send-back (herdr not reachable) is fixed and tested, go test ./core/role/ passes (re-run here). The gaps left are edge cases that keep or lose nothing committed on a branch, except gap 1 (detached HEAD), which is unlikely on a ticket already done and merged. Not verified by me against real herdr or gh - that rests on the testing notes."
+review-round: 8
 review-check: "1. cd /home/alex/projects/.worktrees/jaira-yd4be9 && go test ./core/role -run 'Reap|Spawn|Teamlead' -count=1 - expect 'ok' (about 50s).  2. To see gap 1: in a scratch repo with a worktree on feat/ab12cd, a record file .git/jaira/panes/w1_p1 (pane=w1:p1, ticket=AB12CD, lane=worker, worktree=<wt>), a gh stub answering the branch tip as merged headRefOid and a jaira wrapper whose 'show' exits 5, run: HERDR_BIN_PATH=/nonexistent/herdr bash core/role/builtin/jaira-dispatcher/scripts/reap.sh - you see 'removed <wt>' and 'deleted branch feat/ab12cd', and ls .git/jaira/panes is empty. Expected after a fix: 'kept AB12CD: herdr not reachable', worktree and record still there.  3. After a fix, live in Herdr: spawn a worker with spawn.sh, merge its PR, move the ticket to done, run reap.sh --dry-run then reap.sh - the tab closes, git worktree list and git branch no longer show it."
 ---
 
