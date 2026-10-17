@@ -24,7 +24,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T20:36:33Z
-updated-at: 2026-10-17T20:38:28Z
+updated-at: 2026-10-17T20:38:31Z
 updated-by: berkc
 claimed-by: berk-ca-283567
 claimed-at: 2026-10-17T20:37:26Z
@@ -34,7 +34,8 @@ claimed-at: 2026-10-17T20:37:26Z
 
 ## Definition of Done
 
-- [ ] install.sh installiert nach dem Binary die Rollen und das Cockpit global, mit Fortschrittsbalken beim Download und je einer Statuszeile fuer Skills und Cockpit
+- [x] install.sh installiert nach dem Binary die Rollen und das Cockpit global, mit Fortschrittsbalken beim Download und je einer Statuszeile fuer Skills und Cockpit
+  proof: scripts/install.sh run vs real 0.5.3 release in temp HOME: 35 written then 0 written/35 unchanged; JAIRA_NO_ROLES skips; install.ps1 unrun (no pwsh)
 install.ps1 tut dasselbe
 Ein Opt-out per Umgebungsvariable laesst nur das Binary installieren
 Ein zweiter Lauf ist idempotent und meldet unveraenderte Dateien statt Fehler
