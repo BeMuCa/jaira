@@ -24,7 +24,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T20:36:33Z
-updated-at: 2026-10-17T23:51:48Z
+updated-at: 2026-10-17T23:51:51Z
 updated-by: berkc
 claimed-by: berk-ca-283567
 claimed-at: 2026-10-17T20:37:26Z
@@ -32,7 +32,7 @@ outcome-what: "install scripts run roles install --global; ps1 failure branch fi
 outcome-why: curl install left roles and Cockpit missing
 outcome-resolves: "install.sh verified; install.ps1 not run"
 review-summary: "install.sh and install.ps1 now run 'jaira roles install --global' after placing the binary, as ONE step 'Setting up the skills and the Cockpit…' (roles install has no flag to split them - checked with --help), print the 'N written, M unchanged' line, what is active, and that the Cockpit loads next Claude Code session. Failure is printed with the command's own output and does not undo the binary install. JAIRA_NO_ROLES=1 (only exactly 1) skips it. install.sh shows a curl --progress-bar for the archive only when stderr is a TTY; install.ps1 turns the IWR progress bar on for the archive when [Environment]::UserInteractive. ps1 switches ErrorActionPreference to Continue around the native call and back to Stop (function-local, cannot leak into the caller session under irm|iex). README and release note V38STG.md updated."
-review-gaps: "none"
+review-gaps: "1) install.ps1:112 re-enables the Invoke-WebRequest progress bar for the 5.3MB archive, which the file's own comment at install.ps1:84-85 says makes a PS 5.1 download crawl; UserInteractive is true for every irm|iex user, so all Windows PowerShell 5.1 installs take this path - speed unmeasured (no pwsh here). 2) If a user has edited an installed role, roles install exits 3 (34 unchanged, 1 skipped): install.sh:117-121 / install.ps1:160-163 then print 'could not set up' and 'retry with: jaira roles install --global', which fails the same way again; jaira's own line does say --force. 3) PS 5.1 '2>&1 | Out-String' renders stderr as ErrorRecords ('jaira : ... + CategoryInfo ... NativeCommandError') in the failure text - cosmetic, unverified. 4) Ticket body still has four stray untagged DoD lines under the 5 parsed items (leftover of round 1); parsed DoD is correct. 5) DoD 1 asked for one status line each for skills and Cockpit; one combined line shipped - justified, roles install --help shows no flag to split them. install.ps1 entirely unrun."
 test-verdict: "pass: sh -n, dash runs: fresh 35 written, rerun 0 written/35 unchanged, NO_ROLES=1 skips, =0 installs, read-only failure printed. install.ps1 NOT run (no pwsh)."
 review-verdict: "send back: install.sh meets the goal and was verified end to end (dash, fresh/rerun/opt-out/failure/pty); install.ps1 failure path is likely broken on PS 5.1 and the ticket's DoD 2-5 are untracked, so not ready for signoff"
 review-round: 1
