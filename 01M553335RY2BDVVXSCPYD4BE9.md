@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:49:31Z
+updated-at: 2026-10-17T16:50:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
@@ -33,7 +33,7 @@ outcome-resolves: "Goal of YD4BE9: after the PR is merged, all tabs started for 
 review-summary: "none"
 round: 8
 review-gaps: "none - one probe and one guard added, nothing duplicated (no other script probes herdr reachability; spawn.sh fails on its own tab create)"
-test-verdict: "pass: go test ./... -race rc=0; DoD 1-5 verified in the tree; live on a scratch clone with real herdr.exe and gh (feat/rftqkp = merged #87): dry-run and run close only the tab labelled RFTQKP/worker, a stranger-labelled tab recorded as RFTQKP/review stays open, records gone, worktree and branch removed, rc=0; failed-remove retry covered by TestReapComesBackToAWorktreeItCouldNotRemove"
+test-verdict: "pass: go test ./... -race rc=0, go vet clean; DoD 1-5 verified; live on a scratch clone (real gh, feat/rftqkp = merged #87): HERDR_BIN_PATH=/nonexistent -> 'kept RFTQKP: herdr not reachable', record and worktree stay; real herdr.exe -> tab labelled RFTQKP/worker closed, worktree removed, branch deleted, record gone, rc=0"
 review-verdict: "Send back. The round-6 fixes are in and work (label check, records kept until removal succeeds, dry-run behind the label check), DoD 1-5 are met and 'go test ./core/role -run Reap|Spawn|Teamlead' passes. But gap 1 is a real defect, reproduced: if reap.sh cannot reach herdr it removes the worktree and drops the record of a tab that may still be open, so that tab is never closed. Small fix (one probe before the loop, one test)."
 review-round: 7
 review-check: "1. cd /home/alex/projects/.worktrees/jaira-yd4be9 && go test ./core/role -run 'Reap|Spawn|Teamlead' -count=1 - expect 'ok' (about 50s).  2. To see gap 1: in a scratch repo with a worktree on feat/ab12cd, a record file .git/jaira/panes/w1_p1 (pane=w1:p1, ticket=AB12CD, lane=worker, worktree=<wt>), a gh stub answering the branch tip as merged headRefOid and a jaira wrapper whose 'show' exits 5, run: HERDR_BIN_PATH=/nonexistent/herdr bash core/role/builtin/jaira-dispatcher/scripts/reap.sh - you see 'removed <wt>' and 'deleted branch feat/ab12cd', and ls .git/jaira/panes is empty. Expected after a fix: 'kept AB12CD: herdr not reachable', worktree and record still there.  3. After a fix, live in Herdr: spawn a worker with spawn.sh, merge its PR, move the ticket to done, run reap.sh --dry-run then reap.sh - the tab closes, git worktree list and git branch no longer show it."
