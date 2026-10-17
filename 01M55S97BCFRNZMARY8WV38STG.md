@@ -1,7 +1,7 @@
 ---
 id: 01M55S97BCFRNZMARY8WV38STG
 title: "Die Installation per curl richtet Rollen und Cockpit gleich mit ein und zeigt dabei, was sie tut"
-status: todo
+status: in-progress
 ready: true
 creator: berkc
 assignee: berkc
@@ -24,7 +24,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T20:36:33Z
-updated-at: 2026-10-17T20:38:31Z
+updated-at: 2026-10-17T20:38:34Z
 updated-by: berkc
 claimed-by: berk-ca-283567
 claimed-at: 2026-10-17T20:37:26Z
