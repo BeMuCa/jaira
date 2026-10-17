@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T14:38:21Z
+updated-at: 2026-10-17T14:38:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-66355
 claimed-at: 2026-10-17T14:11:12Z
@@ -34,6 +34,8 @@ review-summary: "spawn.sh now writes one small file per tab it opens (pane, tick
 round: 5
 review-gaps: "1) Pane-id reuse (plausible, not verified): a record outlives its tab by days — run-lane.sh closes a lane tab as soon as the lane ends, but the record stays until the PR merges. reap.sh then closes whatever tab now has that pane id, checking nothing else. If herdr restarts in between (Windows reboot) and hands out the same ids again, reap closes an unrelated tab, possibly another ticket's live worker. Cheap fix: compare the tab label from 'herdr pane get' with the recorded '<ticket>/<lane>' before 'tab close'. Whether herdr ids repeat after a restart was not checked — the tests use a stub that numbers p1, p2... 2) The records are deleted before 'git worktree remove'. If remove fails, the error goes to stderr and the next round has no record, so the worktree and branch stay for good with nothing on stdout saying so. 3) Records of tickets that never merge (abandoned, closed PR) are never cleaned up: one gh call and one 'waiting' line per ticket every round, for ever. 4) Tests stub herdr, gh and 'jaira show'; glab and the real herdr JSON paths (result.pane.tab_id is the same path run-lane.sh already uses) are not covered by a test. All four DoD items are met by the diff; go test ./core/role -run 'Reap|Spawn|Teamlead' passes (52s)."
 test-verdict: "pass: go vet + go test ./... -race RC=0; DoD 1-5 checked in the tree (proof lines re-read after the last edit); live run on a scratch fork clone with real gh and herdr.exe: feat/rftqkp (merged #87) worktree and branch removed, untracked .jaira/ let through, gone pane's record dropped, an unmerged ticket printed as waiting, --dry-run changed nothing; with no record the script exits before any gh call"
+review-verdict: "Approve with one reservation. The diff meets all four DoD items and the safety checks (merged head, done lane, dirty worktree, own/main worktree) are sound and tested. Not fully sure about gap 1: if herdr can reuse pane ids after a restart, reap.sh can close a stranger's tab. A label check before 'tab close' would remove that risk — worth deciding before signoff."
+review-round: 5
 ---
 
 # Worker-Tabs und ihre Arbeitsbaeume schliessen sich, sobald der Pull Request ihres Tickets gemergt ist
