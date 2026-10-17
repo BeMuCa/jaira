@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T14:21:32Z
+updated-at: 2026-10-17T14:21:35Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-66355
 claimed-at: 2026-10-17T14:11:12Z
@@ -57,7 +57,7 @@ claimed-at: 2026-10-17T14:11:12Z
 - [x] scripts/reap.sh: registry -> merged check -> close tabs, remove worktree and branch; --dry-run; skip dirty/unmerged/came-back with reason
 - [x] Go tests in core/role/role_test.go with herdr, gh and jaira stubs over a real git repo
 - [x] teamlead SKILL.md: run reap.sh every round, report; reconcile the 'worktree until done' paragraph; dispatcher/worker mention
-- [ ] release note core/release/notes/YD4BE9.md
+- [x] release note core/release/notes/YD4BE9.md
 
 ## Progress
 - **2026-10-17 14:11 · Alexander Sacharov** — parent session: jaira-79
