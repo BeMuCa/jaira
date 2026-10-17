@@ -24,7 +24,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T20:36:33Z
-updated-at: 2026-10-17T23:51:53Z
+updated-at: 2026-10-17T23:51:55Z
 updated-by: berkc
 claimed-by: berk-ca-283567
 claimed-at: 2026-10-17T20:37:26Z
@@ -36,7 +36,7 @@ review-gaps: "1) install.ps1:112 re-enables the Invoke-WebRequest progress bar f
 test-verdict: "pass: sh -n, dash runs: fresh 35 written, rerun 0 written/35 unchanged, NO_ROLES=1 skips, =0 installs, read-only failure printed. install.ps1 NOT run (no pwsh)."
 review-verdict: "Approve with gaps. install.sh verified under dash against the real v0.5.3 release: fresh 35 written exit 0, rerun 0 written/35 unchanged exit 0, JAIRA_NO_ROLES=1 skips and creates no ~/.claude, JAIRA_NO_ROLES=0 installs, read-only ~/.claude prints the permission-denied error plus retry hint and still exits 0 with the binary in place. Round-1 findings are fixed in the diff (EAP Continue around the native call, =1 only). install.ps1 judged by reading only - unsure about the 5.1 progress-bar slowdown (gap 1); a person should try it on Windows before accepting."
 review-round: 2
-review-check: "1. cd into the jaira checkout on branch feat/v38stg  2. mkdir -p /tmp/jt/home  3. HOME=/tmp/jt/home JAIRA_INSTALL_DIR=/tmp/jt/bin sh scripts/install.sh  4. you see a #### progress bar, then 'Setting up the skills and the Cockpit…' and '✓ 35 written, 0 unchanged, ...'  5. ls /tmp/jt/home/.claude/skills shows jaira-cockpit and jaira-role-* folders  6. run step 3 again: line reads '✓ 0 written, 35 unchanged', exit 0  7. HOME=/tmp/jt/home2 JAIRA_NO_ROLES=1 JAIRA_INSTALL_DIR=/tmp/jt/bin2 sh scripts/install.sh: last line 'skipped the skills and the Cockpit ...', /tmp/jt/home2 has no .claude  8. On Windows PowerShell 5.1: make %USERPROFILE%\\.claude read-only, run scripts/install.ps1 - expected 'FAILED to set up ...' plus retry hint, not a red NativeCommandError  9. Normal Windows run: 'OK 35 written, ...' and jaira-cockpit in %USERPROFILE%\\.claude\\skills"
+review-check: "1. mkdir -p /tmp/jt/h  2. env -i PATH=/usr/bin:/bin HOME=/tmp/jt/h JAIRA_INSTALL_DIR=/tmp/jt/bin dash scripts/install.sh  -> see a progress bar only if run in a terminal, then 'Setting up the skills and the Cockpit…' and '✓ 35 written, 0 unchanged, 0 skipped, 0 overwritten'  3. run step 2 again -> '✓ 0 written, 35 unchanged, ...', exit 0  4. rm -rf /tmp/jt/h2; mkdir /tmp/jt/h2; same command with HOME=/tmp/jt/h2 JAIRA_NO_ROLES=1 -> 'skipped the skills and the Cockpit (JAIRA_NO_ROLES=1)', and ls -a /tmp/jt/h2 shows no .claude  5. Windows, in Windows PowerShell 5.1 (not pwsh): $env:JAIRA_INSTALL_DIR=\"$env:TEMP\\jt\"; Get-Content scripts\\install.ps1 -Raw | iex  -> a progress bar during the download; note how many seconds it takes (gap 1: should not crawl), then 'Setting up the skills and the Cockpit...' and 'OK N written, ...'  6. Run step 5 again -> 'OK 0 written, 35 unchanged...'  7. Optional failure check on Windows: add a line to %USERPROFILE%\\.claude\\skills\\jaira-worker\\SKILL.md and rerun step 5 -> 'FAILED to set up...' with jaira's text; the shell window must stay open (no exit) and jaira.exe must still be in $env:TEMP\\jt  8. rm -rf /tmp/jt"
 round: 2
 ---
 
