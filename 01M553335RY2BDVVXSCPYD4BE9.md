@@ -1,7 +1,7 @@
 ---
 id: 01M553335RY2BDVVXSCPYD4BE9
 title: "Worker-Tabs und ihre Arbeitsbaeume schliessen sich, sobald der Pull Request ihres Tickets gemergt ist"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,11 +23,11 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:38:34Z
+updated-at: 2026-10-17T16:39:53Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
-outcome-what: "reap.sh closes a recorded tab only when 'herdr tab get' still labels it <ticket>/<lane> - a reused pane id in a stranger's tab drops the record and closes nothing; records go only after tabs, worktree and branch all went, so a failed git worktree remove or branch -D is retried next round. Two new tests in core/role/reap_test.go."
+outcome-what: "reap.sh closes a recorded tab only when 'herdr tab get' still labels it <ticket>/<lane> - a reused pane id in a stranger's tab drops the record and closes nothing, and --dry-run applies the same check; records go only after tabs, worktree and branch all went, so a failed git worktree remove or branch -D is retried next round. Two new tests in core/role/reap_test.go."
 outcome-why: "Given back from signoff: records outlive tabs by days and herdr may reuse ids after a restart, so a pane id alone could close another ticket's live worker; and a record removed before the worktree left a failed remove standing forever."
 outcome-resolves: "Goal of YD4BE9: after the PR is merged, all tabs started for the ticket close and its worktree and branch go without anyone cleaning up by hand - now without risk of closing a tab that is not the ticket's, and with retries when removal fails."
 review-summary: "none"
