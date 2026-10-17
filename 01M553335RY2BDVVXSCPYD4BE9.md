@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:58:09Z
+updated-at: 2026-10-17T16:58:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
@@ -55,7 +55,8 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-yd4be9  2. go test ./c
   proof: core/release/notes/YD4BE9.md
 - [x] Ein Worktree im detached HEAD wird nie entfernt - reap.sh nennt ihn und den Grund; Test
   proof: core/role/builtin/jaira-dispatcher/scripts/reap.sh:161 'kept <ticket>: <wt> has a detached HEAD'; test core/role/reap_test.go TestReapKeepsWhatIsNotFinished/detached_HEAD
-- [ ] reap.sh ist im Repo ausfuehrbar (100755) wie spawn.sh und run-lane.sh
+- [x] reap.sh ist im Repo ausfuehrbar (100755) wie spawn.sh und run-lane.sh
+  proof: git ls-files -s core/role/builtin/jaira-dispatcher/scripts/reap.sh -> 100755
 
 ## Options
 
