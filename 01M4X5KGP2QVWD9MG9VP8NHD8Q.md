@@ -18,14 +18,14 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:43Z
-updated-at: 2026-10-17T14:12:00Z
+updated-at: 2026-10-17T14:12:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-61927
 claimed-at: 2026-10-17T14:05:53Z
 outcome-what: "New command 'jaira boards' lists every board with open tickets and its description, read from a plain-text 'description' file in the board's lanes dir (core/lane/boards.go). A board set up from the built-in lanes now gets the description 'Changes to this repository's code: ...' (lane.setUp); this repo has it in .jaira/lanes/description. The teamlead skill reads 'jaira boards' before every create; dispatcher and worker read 'board' off the ticket and pass --board. The generated CLAUDE.md/AGENTS.md block names 'jaira boards', --board and set board=."
 outcome-why: "With several boards per repo (S0EG0M) nothing told a teamlead or any other agent which board a subject belongs to, the default board had no description so the teamlead would ask on every create, and dispatcher's 'next --per-lane' saw only today's board."
 outcome-resolves: "DoD 1: jaira boards + TestBoardsListsEveryBoardWithItsDescription; DoD 2: teamlead SKILL.md; DoD 3: dispatcher/worker skills + TestWorkerPathRunsTheTicketsBoard, TestRolesWorkTheTicketsBoard; DoD 4: release note; DoD 5: lane.setUp writeDefaultDescription + TestOnlyABuiltinBoardIsDescribedOnSetUp; DoD 6: announce.go agentNote + TestAgentNoteNamesTheBoards"
-review-summary: "internal/cli/boards.go Long text still says a description is 'written by hand' only; say, as docs/COMMANDS.md now does, that a board set up from the built-in lanes starts with one saying it is for code"
+review-summary: "none"
 round: 4
 review-gaps: "Nothing blocks the DoD. Minor: (1) In any repo with a second board the default board has no description until someone writes .jaira/lanes/description, so by the skill's own rule the teamlead asks the person on every create until then - intended, but worth knowing for demo-video. (2) DoD 2 is proven only by string-presence tests on SKILL.md; real teamlead behaviour is untested by nature. (3) The generated CLAUDE.md agent block does not mention 'jaira boards' or --board, so an agent outside the roles never learns of other boards (already noted as left out). (4) A ticket whose board directory was removed is counted on no row of 'jaira boards'. (5) Testing found 'jaira validate' reports tickets on named boards as read-only - S0EG0M code, outside this ticket."
 test-verdict: "pass: go vet + go test -race ./... green (RC=0); DoD 1-4 verified in the tree (TestBoardsListsEveryBoardWithItsDescription, TestWorkerPathRunsTheTicketsBoard, TestRolesWorkTheTicketsBoard, notes file); built binary on a scratch repo: 'jaira boards' lists default + video with descriptions, a missing one names .jaira/lanes/description, --for-lane on the video ticket gives the video lane's tier"
