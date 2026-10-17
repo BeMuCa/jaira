@@ -18,7 +18,7 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:43Z
-updated-at: 2026-10-17T12:42:14Z
+updated-at: 2026-10-17T12:42:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-65566
 claimed-at: 2026-10-17T12:36:37Z
@@ -52,3 +52,4 @@ claimed-at: 2026-10-17T12:36:37Z
 - **2026-10-17 12:36 · Alexander Sacharov** — parent session: jaira-79
 - **2026-10-17 12:38 · Alexander Sacharov** — found: show/--for-lane/move/resume already read the board off the ticket (S0EG0M). Blind to other boards: 'next --per-lane' and 'list' without --board (default board only), 'lanes' (no --board). No command lists the boards.
 - **2026-10-17 12:38 · Alexander Sacharov** — decision (worker, no open decision left for a person): the description is a plain-text file 'description' in the board's lanes directory, beside 'order' - .jaira/lanes/description for today's board, .jaira/boards/<name>/lanes/description for a named one. Why: same idiom as order/corrections, hand-editable, and the lanes dir is what a board is. New command 'jaira boards' (like 'jaira tags') lists name, open tickets and description, --json too. Teamlead: one board -> no choice to name; several -> name the board and the reason in one line; none fits or descriptions missing -> ask the person as a choice. Dispatcher/worker: read 'board' from 'jaira show <id> --json' and pass --board to 'next --per-lane'.
+- **2026-10-17 12:42 · Alexander Sacharov** — left out on purpose: the generated agent block in CLAUDE.md still describes only today's lanes and does not name 'jaira boards'; jaira-role-logbook-summary reads 'jaira list --json' (today's board only). Both are outside this DoD. Description lives in the lanes dir, so 'jaira lanes set --clear' (removes the default board dir) would take today's description with it.
