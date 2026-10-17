@@ -18,7 +18,7 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:43Z
-updated-at: 2026-10-17T14:11:04Z
+updated-at: 2026-10-17T14:11:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-61927
 claimed-at: 2026-10-17T14:05:53Z
@@ -48,7 +48,8 @@ review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/b && cd /tmp
   proof: core/release/notes/8NHD8Q.md:1
 - [x] Das Default-Board bekommt beim Einrichten aus den eingebauten Lanes eine Beschreibung; dieses Repo hat eine; Test
   proof: core/lane/lane.go:757 setUp; .jaira/lanes/description; tests TestOnlyABuiltinBoardIsDescribedOnSetUp, TestBoardsListsEveryBoardWithItsDescription
-- [ ] Der CLAUDE.md-Agentenblock nennt 'jaira boards' und --board; Test
+- [x] Der CLAUDE.md-Agentenblock nennt 'jaira boards' und --board; Test
+  proof: core/board/announce.go:79; CLAUDE.md/AGENTS.md regenerated; test TestAgentNoteNamesTheBoards
 
 ## Options
 
