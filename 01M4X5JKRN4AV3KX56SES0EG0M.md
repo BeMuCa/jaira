@@ -27,7 +27,7 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:25:20Z
+updated-at: 2026-10-17T12:25:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-73711
 claimed-at: 2026-10-17T12:17:54Z
@@ -61,7 +61,7 @@ claimed-at: 2026-10-17T12:17:54Z
 - [x] core/ticket: Feld board (FieldBoard, Ticket.Board)
 - [x] cli: lanesFor/envFor per Board; create/list/next --board; show/move/dod/claim lesen das Board vom Ticket
 - [x] cli: set board=<name> mit Fallback auf erste Lane und Meldung
-- [ ] tui: Shift+F waehlt Board, Lanes und Tickets gefiltert
+- [~] tui: Shift+F waehlt Board, Lanes und Tickets gefiltert
 - [ ] Tests + Release-Note
 
 ## Progress
