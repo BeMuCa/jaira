@@ -21,7 +21,7 @@ related: []
 follows: 01M2HW4788Z5G0M05G3PJDXV60
 commits: []
 created-at: 2026-10-13T13:48:57Z
-updated-at: 2026-10-17T20:50:31Z
+updated-at: 2026-10-17T20:51:08Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-297639
@@ -31,6 +31,7 @@ outcome-why: "Ein in einem anderen Worktree oder von einem Teammitglied bewegtes
 outcome-resolves: K6BGB0; deckt JDXV60 DoD 1 fuer den Ref-Fall ab
 review-summary: "none"
 round: 2
+review-gaps: "Entfernt: die doppelte Lese-und-Decode-Schleife in Syncer.Ahead und Syncer.Extra -> ein Helfer decodeRefs (core/refsync/refsync.go). Stehen gelassen: ein zweites 'git for-each-ref' pro List (Ahead und Extra fragen getrennt) - gemessen ~2 ms bei 60 Refs, 20 Aufrufe 45 ms; ein Teilen der Hashes haette die TicketSource-Signatur geaendert. Kein toter Code: BehindRef wird von list, show, JSON und Karte gelesen."
 ---
 
 # Das Board zeigt den Stand des Refs, wenn die Ticket-Datei dahinter zurueckliegt
