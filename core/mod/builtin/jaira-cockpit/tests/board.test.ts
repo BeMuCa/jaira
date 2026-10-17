@@ -1608,6 +1608,14 @@ describe('a newer jaira release', () => {
     })
   }
 
+  test('no notice: JAIRA_NO_UPDATE_CHECK=1, even with a cache naming a newer release', async ($, on) => {
+    const w = world(on, { env: { HOME: '/home/a', JAIRA_NO_UPDATE_CHECK: '1' } })
+    w.version = '0.5.1'
+    released(w, '0.6.0')
+    await startSession($)
+    expect(await offered($)).toBeUndefined()
+  })
+
   test('the cache is read where JAIRA_HOME puts it', async ($, on) => {
     const w = world(on, { env: { HOME: '/home/a', JAIRA_HOME: '/srv/jaira' } })
     w.version = '0.5.1'

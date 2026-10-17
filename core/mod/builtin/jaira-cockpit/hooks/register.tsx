@@ -332,6 +332,8 @@ async function checkVersion($: EngineInterface, dir: string): Promise<void> {
 // one dismissed. The hourly check of the TUI and of next/resume/claim/move
 // writes that cache, so the cockpit starts no check of its own.
 async function refreshRelease($: EngineInterface): Promise<void> {
+  // Off for the cockpit as for the TUI: a cache left from before still names a release.
+  if ((await $.env.get('JAIRA_NO_UPDATE_CHECK')) === '1') return update($, releaseAtom, () => null)
   let cache: string | undefined
   try {
     cache = await $.fs.read(`${await jairaHome($)}/update-check.json`)
