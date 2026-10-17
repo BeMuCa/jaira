@@ -21,7 +21,7 @@ related: []
 follows: 01M2HW4788Z5G0M05G3PJDXV60
 commits: []
 created-at: 2026-10-13T13:48:57Z
-updated-at: 2026-10-17T20:49:12Z
+updated-at: 2026-10-17T20:49:14Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-297639
@@ -48,7 +48,7 @@ claimed-at: 2026-10-17T20:39:34Z
 - [x] refsync: Syncer.Ahead(files) - ListHashes + extraCache nach Ref-Hash + ReadMany nur fuer neue Hashes, Urteil per isStale (dieselbe Definition wie pull/CheckFresh)
 - [x] Ausgabe: TUI-Karte Kennzeichen 'pull due', jaira list Zeile [behind ref - pull], JSON behind-ref, show-Text Zeile; Load bleibt Datei
 - [x] Tests: refsync (Datei hinter Ref -> List zeigt Ref-Lane+BehindRef; Mutate verweigert mit ErrStale, Ref unveraendert), TUI-Karte zeigt Kennzeichen
-- [ ] go vet + go test -race; manuell mit zwei Worktrees eines Temp-Repos; Release-Notiz core/release/notes/K6BGB0.md
+- [x] go vet + go test -race; manuell mit zwei Worktrees eines Temp-Repos; Release-Notiz core/release/notes/K6BGB0.md
 
 ## Progress
 - **2026-10-14 14:08 · BeMuCa** — Dritte Variante am 14.10.: D0SAHM stand auf Berks Board in signoff, obwohl es laengst abgenommen und abgelegt war (logbook bemuca-20261013, per PR #74 in master). Grund: Der Haupt-Checkout /home/berk/git/jAIra stand noch auf dem alten master fa222c5d, und dort lag eine veraltete, geaenderte Kopie .jaira/tickets/...D0SAHM...md mit status: signoff. Den Ref refs/jaira/tickets/<ULID> gibt es nach dem Ablegen nicht mehr, also kann 'zeig den Stand des Refs' hier nicht helfen. Das Board muss auch erkennen: Datei ohne Ref, deren Ticket upstream im Logbuch liegt -> als abgelegt bzw. veraltet zeigen statt als offen. Behoben fuer heute durch git stash der veralteten Kopien + git pull master.
