@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:54:55Z
+updated-at: 2026-10-17T16:54:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
@@ -36,7 +36,7 @@ review-gaps: "Minor, none blocks: (1) a ticket worktree left in detached HEAD (e
 test-verdict: "pass: go test ./... -race rc=0, go vet clean; DoD 1-5 verified; live on a scratch clone (real gh, feat/rftqkp = merged #87): HERDR_BIN_PATH=/nonexistent -> 'kept RFTQKP: herdr not reachable', record and worktree stay; real herdr.exe -> tab labelled RFTQKP/worker closed, worktree removed, branch deleted, record gone, rc=0"
 review-verdict: "Approve. The diff meets all definition-of-done items, the round-2 send-back (herdr not reachable) is fixed and tested, go test ./core/role/ passes (re-run here). The gaps left are edge cases that keep or lose nothing committed on a branch, except gap 1 (detached HEAD), which is unlikely on a ticket already done and merged. Not verified by me against real herdr or gh - that rests on the testing notes."
 review-round: 8
-review-check: "1. cd /home/alex/projects/.worktrees/jaira-yd4be9 && go test ./core/role -run 'Reap|Spawn|Teamlead' -count=1 - expect 'ok' (about 50s).  2. To see gap 1: in a scratch repo with a worktree on feat/ab12cd, a record file .git/jaira/panes/w1_p1 (pane=w1:p1, ticket=AB12CD, lane=worker, worktree=<wt>), a gh stub answering the branch tip as merged headRefOid and a jaira wrapper whose 'show' exits 5, run: HERDR_BIN_PATH=/nonexistent/herdr bash core/role/builtin/jaira-dispatcher/scripts/reap.sh - you see 'removed <wt>' and 'deleted branch feat/ab12cd', and ls .git/jaira/panes is empty. Expected after a fix: 'kept AB12CD: herdr not reachable', worktree and record still there.  3. After a fix, live in Herdr: spawn a worker with spawn.sh, merge its PR, move the ticket to done, run reap.sh --dry-run then reap.sh - the tab closes, git worktree list and git branch no longer show it."
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-yd4be9  2. go test ./core/role/ -run 'Reap|Spawn|Teamlead' -count=1 -v  -> 7 tests PASS, among them TestReapKeepsWhatIsNotFinished/herdr_not_reachable and TestReapLeavesATabItDidNotOpen  3. ls $(git rev-parse --git-common-dir)/jaira/panes/  -> one file per tab spawned since this version; cat one: pane=, ticket=, lane=, worktree= lines  4. bash core/role/builtin/jaira-dispatcher/scripts/reap.sh --dry-run  -> only 'waiting <ID>: ... no merged pull request', 'kept ...' or 'would close/remove/delete' lines; nothing changes (tabs still open, git worktree list unchanged)  5. after a real merge of a done ticket: run it without --dry-run -> 'closed <ID>/<lane> <pane>', 'removed <worktree>', 'deleted branch feat/<id>'; that ticket's tabs are gone in herdr and git worktree list no longer shows it"
 ---
 
 # Worker-Tabs und ihre Arbeitsbaeume schliessen sich, sobald der Pull Request ihres Tickets gemergt ist
