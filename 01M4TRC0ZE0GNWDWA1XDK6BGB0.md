@@ -21,9 +21,11 @@ related: []
 follows: 01M2HW4788Z5G0M05G3PJDXV60
 commits: []
 created-at: 2026-10-13T13:48:57Z
-updated-at: 2026-10-17T20:39:33Z
+updated-at: 2026-10-17T20:39:34Z
 assignee: berkc
 updated-by: berkc
+claimed-by: berk-ca-297639
+claimed-at: 2026-10-17T20:39:34Z
 ---
 
 # Das Board zeigt den Stand des Refs, wenn die Ticket-Datei dahinter zurueckliegt
