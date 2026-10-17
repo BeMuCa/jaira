@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T20:49:21Z
-updated-at: 2026-10-17T23:48:39Z
+updated-at: 2026-10-17T23:48:41Z
 updated-by: berkc
 ---
 
@@ -31,6 +31,9 @@ updated-by: berkc
 ## Definition of Done
 
 - [ ] Eine Lane-Datei kann 'skill: <name>' tragen, 'jaira lanes' validiert es
+- [ ] 'jaira show <id> --for-lane <lane> --json' gibt den Skill aus, und der Agent-Block sagt, dass er dann aufzurufen ist
+- [ ] Ein Beispiel-Lane-Template mit Skill ist dokumentiert
+- [ ] Test; Release-Note
 'jaira show <id> --for-lane <lane> --json' gibt den Skill aus, und der Agent-Block sagt, dass er dann aufzurufen ist
 Ein Beispiel-Lane-Template mit Skill ist dokumentiert
 Test; Release-Note
