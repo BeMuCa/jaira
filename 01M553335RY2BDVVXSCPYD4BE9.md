@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:33:52Z
+updated-at: 2026-10-17T16:33:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-66355
 claimed-at: 2026-10-17T14:11:12Z
@@ -94,3 +94,4 @@ Warum: Dann schliesst reap.sh einen fremden Tab, womoeglich den lebenden Worker 
 2) So annehmen: alle vier DoD-Punkte sind erfuellt, die Id-Wiederverwendung ist nicht belegt, die Luecken bleiben offen [accept]
 Empfehlung: 1 - die Label-Pruefung ist billig und nimmt das einzige Risiko weg, bei dem ein fremder Tab verloren gehen kann.
 - **2026-10-17 16:33 · Alexander Sacharov** — decision: 1) Zurueckgeben: vor 'tab close' das Tab-Label aus 'herdr pane get' mit '<ticket>/<lane>' vergleichen und den Record erst nach erfolgreichem 'git worktree remove' loeschen
+- **2026-10-17 16:33 · Alexander Sacharov** — Given back from signoff: 1) Zurueckgeben: vor 'tab close' das Tab-Label aus 'herdr pane get' mit '<ticket>/<lane>' vergleichen und den Record erst nach erfolgreichem 'git worktree remove' loeschen
