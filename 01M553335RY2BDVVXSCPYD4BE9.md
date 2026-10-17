@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:56:18Z
+updated-at: 2026-10-17T16:56:22Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
@@ -53,6 +53,7 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-yd4be9  2. go test ./c
   proof: core/role/builtin/jaira-teamlead/SKILL.md:26-38 (reap.sh every round, report closed/kept); test core/role/reap_test.go TestTeamleadReapsEveryRound
 - [x] Eine Zeile in core/release/notes/<ID>.md
   proof: core/release/notes/YD4BE9.md
+- [ ] Ein Worktree im detached HEAD wird nie entfernt - reap.sh nennt ihn und den Grund; Test
 
 ## Options
 
