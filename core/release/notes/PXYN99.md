@@ -1,0 +1,1 @@
+- The launcher's project list now counts the tickets that live only on their ref, and counts a ticket on a named board against that board's lanes, so each row shows the same open and total as `jaira list` — expect much higher numbers on boards that looked nearly empty.

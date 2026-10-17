@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -12,7 +13,9 @@ import (
 
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/project"
+	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/session"
+	"github.com/BeMuCa/jaira/core/settings"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -89,26 +92,11 @@ type Home struct {
 // refresh rebuilds the list, including anything just added, and reports how many
 // of them were not already known.
 func (h *Home) refresh(extra []string) int {
-	seen := map[string]bool{}
-	var entries []HomeEntry
-	add := func(root string) {
-		abs := project.Canonical(root)
-		if seen[abs] {
-			return
-		}
-		seen[abs] = true
-		entries = append(entries, describe(abs, h.lanes))
-	}
 	before := map[string]bool{}
 	for _, e := range h.entries {
 		before[project.Canonical(e.Root)] = true
 	}
-	for _, p := range project.Load() {
-		add(p.Root)
-	}
-	for _, r := range extra {
-		add(r)
-	}
+	entries := describeAll(boardRoots(extra), h.lanes)
 	h.entries = entries
 	if h.idx >= len(h.entries) {
 		h.idx = max(0, len(h.entries)-1)
@@ -122,6 +110,27 @@ func (h *Home) refresh(extra []string) int {
 	return added
 }
 
+// boardRoots is every registered board followed by extra, each once, in
+// canonical form.
+func boardRoots(extra []string) []string {
+	seen := map[string]bool{}
+	var out []string
+	add := func(root string) {
+		abs := project.Canonical(root)
+		if !seen[abs] {
+			seen[abs] = true
+			out = append(out, abs)
+		}
+	}
+	for _, p := range project.Load() {
+		add(p.Root)
+	}
+	for _, r := range extra {
+		add(r)
+	}
+	return out
+}
+
 // NewHome builds the launcher from the registry plus anything discovered below
 // the working directory.
 func NewHome(extraRoots []string) (*Home, error) {
@@ -133,30 +142,40 @@ func NewHome(extraRoots []string) (*Home, error) {
 	}
 	h := &Home{lanes: lanes, versionLine: versionLine()}
 
-	seen := map[string]bool{}
-	add := func(root string) {
-		abs := project.Canonical(root)
-		if seen[abs] {
-			return
-		}
-		seen[abs] = true
-		h.entries = append(h.entries, describe(abs, lanes))
-	}
-	for _, p := range project.Load() {
-		add(p.Root)
-	}
-	for _, r := range extraRoots {
-		add(r)
-	}
+	h.entries = describeAll(boardRoots(extraRoots), lanes)
 	if wd, err := os.Getwd(); err == nil {
 		h.startDir = wd
 	}
 	return h, nil
 }
 
+// describeAll reads every board's counts at once, in the order given.
+//
+// One goroutine per board: since a board's tickets live on refs, reading one
+// is a few git calls, and ten boards read one after the other would make the
+// launcher wait for all of them in a row.
+func describeAll(roots []string, lanes *lane.Set) []HomeEntry {
+	out := make([]HomeEntry, len(roots))
+	var wg sync.WaitGroup
+	for i, root := range roots {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			out[i] = describe(root, lanes)
+		}()
+	}
+	wg.Wait()
+	return out
+}
+
 // describe reads one board's counts. A board that cannot be read is listed with
 // its error rather than dropped: a project vanishing silently from the launcher
 // is worse than one that says what is wrong with it.
+//
+// It counts what 'jaira list' counts: the ticket files and the tickets that
+// live only on their ref, each once. Those are most of a board's tickets — a
+// ticket stays on its ref until it is filed away — so a launcher reading only
+// the disk showed a board with refs and no files as empty.
 func describe(root string, lanes *lane.Set) HomeEntry {
 	e := HomeEntry{Root: root, Name: filepath.Base(root)}
 	s, err := ticket.At(root)
@@ -164,6 +183,9 @@ func describe(root string, lanes *lane.Set) HomeEntry {
 		e.Err = err
 		return e
 	}
+	// Read through the same syncer the CLI attaches, which hands List the
+	// tickets with no file here. Nothing is written through it.
+	s.Source = refsync.New(s, settings.Load().RemoteFor(s.Root), "")
 	tickets, err := s.List()
 	if err != nil {
 		if pe, ok := err.(*ticket.PartialError); ok {
@@ -175,8 +197,25 @@ func describe(root string, lanes *lane.Set) HomeEntry {
 	}
 	e.Total = len(tickets)
 	e.Logged = s.LoggedPerDay(time.Now(), logbookDays)
+	// A ticket runs through the lanes of its own board, so it is open or
+	// waiting by those. Today's board keeps the catalogue it was always
+	// counted against; a named board is read as it stands. A named board that
+	// cannot be read falls back to the catalogue rather than hiding its tickets.
+	boards := map[string]*lane.Set{"": lanes}
+	lanesOf := func(t *ticket.Ticket) *lane.Set {
+		b := lane.BoardOf(t)
+		if set, ok := boards[b]; ok {
+			return set
+		}
+		set, err := lane.LoadBoard(root, b)
+		if err != nil {
+			set = lanes
+		}
+		boards[b] = set
+		return set
+	}
 	for _, t := range tickets {
-		l, known := lanes.Get(t.Status)
+		l, known := lanesOf(t).Get(t.Status)
 		if !known || !l.Terminal {
 			e.Open++
 		}
