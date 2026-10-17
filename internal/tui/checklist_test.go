@@ -197,11 +197,14 @@ func TestArchiveFromTheBoard(t *testing.T) {
 func TestCardMarksAFileBehindItsRef(t *testing.T) {
 	m := newTestModel(t, 150, 32)
 	tk := withChecklists("no checklists here\n")
-	if out := stripANSI(m.renderCard(tk, 40, false)); strings.Contains(out, "behind") {
+	if out := stripANSI(m.renderCard(tk, 40, false)); strings.Contains(out, "⇣") {
 		t.Errorf("a current card is marked behind:\n%s", out)
 	}
 	tk.BehindRef = true
-	if out := stripANSI(m.renderCard(tk, 40, false)); !strings.Contains(out, "⇣ behind") {
-		t.Errorf("a card behind its ref is not marked:\n%s", out)
+	// 24 is a narrow column; the mark has to survive it whole.
+	for _, w := range []int{40, 24} {
+		if out := stripANSI(m.renderCard(tk, w, false)); !strings.Contains(out, "⇣ pull") {
+			t.Errorf("a card behind its ref is not marked at width %d:\n%s", w, out)
+		}
 	}
 }

@@ -761,9 +761,11 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 	}
 	// The file here is older than its ref, so the card shows the ref's state
 	// — a move made in another worktree or by a teammate — and says the file
-	// needs a pull before anything here can write it.
+	// needs a pull before anything here can write it. First, because it says
+	// whose state every other flag on the card describes, and a narrow column
+	// truncates from the end.
 	if t.BehindRef {
-		flags = append(flags, styAsks.Render("⇣ behind"))
+		flags = append([]string{styAsks.Render("⇣ pull")}, flags...)
 	}
 	// Written here, not yet on the remote. It is not an error and not a
 	// conflict: the ticket is correct on this machine and has not left it, and

@@ -14,6 +14,7 @@ package refsync
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -76,6 +77,13 @@ type Syncer struct {
 	// an equal hash needs no read and no decode, and no safety net behind it.
 	extraMu    sync.Mutex
 	extraCache map[string]extraEntry
+
+	// hadMu guards hadCache: whether the ref has carried a file's bytes
+	// before, keyed by ticket id and a digest of both sides. isStale asks it
+	// on every listing of a tied file, and the answer only changes when one
+	// of the two does, so a steady board runs no git for it.
+	hadMu    sync.Mutex
+	hadCache map[string]bool
 }
 
 type extraEntry struct {
@@ -1222,8 +1230,34 @@ func (y *Syncer) isStale(file, ref *ticket.Ticket, refContent []byte) bool {
 	if file.Doc() == nil {
 		return false
 	}
-	b := file.Doc().Bytes()
-	return !bytes.Equal(b, refContent) && y.Repo.Had(file.ID, b)
+	return y.hadBefore(file.ID, file.Doc().Bytes(), refContent)
+}
+
+// hadBefore reports whether file is a state the ref carried before it came to
+// hold ref. Line endings do not count: a checkout with core.autocrlf holds
+// every ticket with CRLF while the ref holds LF, and that is the same ticket.
+// The answer is cached per pair of contents.
+func (y *Syncer) hadBefore(id string, file, ref []byte) bool {
+	lf := bytes.ReplaceAll(file, []byte("\r\n"), []byte("\n"))
+	if bytes.Equal(lf, bytes.ReplaceAll(ref, []byte("\r\n"), []byte("\n"))) {
+		return false
+	}
+	f, r := sha256.Sum256(file), sha256.Sum256(ref)
+	key := id + string(f[:]) + string(r[:])
+	y.hadMu.Lock()
+	v, ok := y.hadCache[key]
+	y.hadMu.Unlock()
+	if ok {
+		return v
+	}
+	v = y.Repo.Had(id, file) || (len(lf) != len(file) && y.Repo.Had(id, lf))
+	y.hadMu.Lock()
+	if y.hadCache == nil {
+		y.hadCache = map[string]bool{}
+	}
+	y.hadCache[key] = v
+	y.hadMu.Unlock()
+	return v
 }
 
 // CheckFresh refuses a write whose file is older than the ticket's ref. It
@@ -1611,6 +1645,13 @@ func (y *Syncer) Ahead(files []*ticket.Ticket) map[string]*ticket.Ticket {
 	out := map[string]*ticket.Ticket{}
 	for _, f := range files {
 		if e, ok := y.extraCache[f.ID]; ok && e.hash == hashes[f.ID] && y.isStale(f, e.t, e.content) {
+			// A write still queued here is not behind: pull refuses it
+			// (ErrUnsent) and the next send settles it, so the card keeps
+			// the file and its unsent mark rather than asking for a pull
+			// that will not happen.
+			if _, pending := y.Pending(f.ID); pending {
+				continue
+			}
 			out[f.ID] = e.t.Clone()
 		}
 	}
