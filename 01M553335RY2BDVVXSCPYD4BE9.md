@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:58:35Z
+updated-at: 2026-10-17T16:58:38Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
@@ -32,7 +32,7 @@ outcome-why: "Given back from signoff twice and from review: a pane id alone cou
 outcome-resolves: "Goal of YD4BE9: after the PR is merged, all tabs started for the ticket close and its worktree and branch go without anyone cleaning up by hand - without closing a stranger's tab, losing a tab it cannot see, or losing a commit."
 review-summary: "none"
 round: 9
-review-gaps: "Minor, none blocks: (1) a ticket worktree left in detached HEAD (e.g. a rebase paused with a clean tree) yields no branch name; reap.sh falls back to feat/<ticket>, the head check passes when that branch is gone, and 'worktree remove --force' drops the detached commits (reap.sh:124-126,151,190). (2) a ticket worktree directory deleted by hand but not pruned is skipped at reap.sh:118, so 'branch -D' then fails because git still sees the branch checked out there - 'kept ... deleting branch failed' every round until 'git worktree prune'. (3) reap.sh is committed as 100644 while spawn.sh and run-lane.sh are 100755; install.go:143 sets 0755 on every .sh, so the installed copy runs, only the in-repo copy does not. (4) GitLab path (glab, forks) is untested live, as the notes already say. The four DoD items are met by the diff; the outcome's claims (label check incl. dry-run, keep on herdr/git status failure, records last) are all in reap.sh:62,158,163,174-177,206 and covered by tests."
+review-gaps: "none - two lines and a usage bullet; nothing duplicated"
 test-verdict: "pass: go test ./... -race rc=0, go vet clean; DoD 1-5 verified; live on a scratch clone (real gh, feat/rftqkp = merged #87): HERDR_BIN_PATH=/nonexistent -> 'kept RFTQKP: herdr not reachable', record and worktree stay; real herdr.exe -> tab labelled RFTQKP/worker closed, worktree removed, branch deleted, record gone, rc=0"
 review-verdict: "Approve. The diff meets all definition-of-done items, the round-2 send-back (herdr not reachable) is fixed and tested, go test ./core/role/ passes (re-run here). The gaps left are edge cases that keep or lose nothing committed on a branch, except gap 1 (detached HEAD), which is unlikely on a ticket already done and merged. Not verified by me against real herdr or gh - that rests on the testing notes."
 review-round: 8
