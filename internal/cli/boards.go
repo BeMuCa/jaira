@@ -21,7 +21,8 @@ Read this before creating a ticket in a repository with more than one board,
 and file the ticket on the board whose description its subject matches
 ('jaira create --board <name>'). A description is one plain-text file,
 'description', in the board's lanes directory beside its order file, written
-by hand; a board without one says where it goes. Writes nothing.`,
+by hand — a board set up from the built-in lanes starts with one saying it is
+for code; a board without one says where it goes. Writes nothing.`,
 		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			s, err := openStore()
