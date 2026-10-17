@@ -186,6 +186,11 @@ func (m *Model) followUpFields(src *ticket.Ticket, lead string) (map[string]stri
 		ticket.FieldCreatedAt: ticket.FormatTime(now),
 		ticket.FieldUpdatedAt: ticket.FormatTime(now),
 	}
+	// A follow-up stays on the board its ticket is shown on; today's board
+	// writes no board: line, as the CLI's create does not.
+	if m.boardName != "" {
+		fields[ticket.FieldBoard] = m.boardName
+	}
 	lists := map[string][]string{ticket.FieldBlockedBy: nil, ticket.FieldCommits: nil}
 	body := "# Follow-up: " + src.Title + "\n\n" +
 		"## Definition of Done\n\n- [ ] <What must be true that is not true yet>\n\n## Progress\n\n"

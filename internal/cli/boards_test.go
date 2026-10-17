@@ -178,3 +178,16 @@ func TestSingleBoardRunsUnchanged(t *testing.T) {
 		t.Errorf("a single board grew a boards/ directory: %v", err)
 	}
 }
+
+// validate judges each ticket by its own board's lanes: a ticket in a lane
+// only its board has is valid, not read-only.
+func TestValidateChecksEachTicketAgainstItsBoard(t *testing.T) {
+	dir := newTwoBoards(t)
+	jsonCLI(t, dir, "create", "intro", "--board", "video", "--goal", "g", "--context", "c", "--dod", "d", "--assignee", "berk")
+	v := jsonCLI(t, dir, "validate")
+	for _, p := range v["problems"].([]any) {
+		if p.(map[string]any)["code"] == "unknown_lane" {
+			t.Errorf("validate calls a video ticket's lane unknown: %v", p)
+		}
+	}
+}

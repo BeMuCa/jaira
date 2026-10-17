@@ -59,6 +59,19 @@ func TestShiftFPicksABoard(t *testing.T) {
 		t.Errorf("the video board shows today's lanes or tickets:\n%s", out)
 	}
 
+	// A ticket captured on the video board belongs to it and stays in view.
+	m.createTicket("Outro video")
+	found := false
+	for _, tk := range m.tickets {
+		if tk.Title == "Outro video" {
+			found = tk.Board == "video"
+		}
+	}
+	if !found {
+		t.Errorf("a ticket created on the video board is not on it")
+	}
+	m.mode = modeBoard
+
 	press(m, "F")
 	out = stripANSI(m.render())
 	if strings.Contains(out, "board: video") || !strings.Contains(out, "Refactor") {
