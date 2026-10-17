@@ -21,7 +21,7 @@ related: []
 follows: 01M2HW4788Z5G0M05G3PJDXV60
 commits: []
 created-at: 2026-10-13T13:48:57Z
-updated-at: 2026-10-17T23:36:21Z
+updated-at: 2026-10-17T23:36:23Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-297639
@@ -35,6 +35,7 @@ review-gaps: "1 (defect, performance): core/refsync/refsync.go:1215-1227 isStale
 test-verdict: "pass: go vet + go test -race ./... nach go clean -testcache RC=0; DoD 1-2 im Baum geprueft; zwei Worktrees eines Temp-Repos mit Branch-Binary, mit und ohne Sekundenabstand: main zeigt todo + [behind ref: pull it], show behind-ref true, note exit 3, Ref unveraendert"
 review-verdict: "Send back to in-progress. Correctness holds. The definition of done is met: card, list, show and JSON all show the ref state with a marker, there are tests, and writes on a behind file are still refused with the ref unchanged. The same-second tie-break is right and fixes a silent-regression bug that exists on master. I could not make it call a newer local write behind in the normal flow, because the local ref is written in the same command: three set calls in one second (aaa, then bbb, then aaa) were not flagged as behind. The one theoretical miss is an A-B-A sequence while the ref write is still queued, and that fixes itself at the next flush. What blocks it: the history lookup is not cached and runs every 2 seconds, blocking the board, for every tied ticket whose bytes differ from its ref. That is routine for CRLF checkouts on Windows. A small memo fixes it. go vet, go test ./... and go test -race ./... all pass."
 review-round: 3
+review-check: "1. cd /home/berkc/code/X_General/jaira-K6BGB0 && go build -o /tmp/jk ./cmd/jaira   2. S=$(mktemp -d); export HOME=$S/home JAIRA_HOME=$S/home/.jaira JAIRA_NO_FETCH=1 JAIRA_USER=ada; mkdir -p $HOME; cd $S && git init -q --bare remote.git && git clone -q remote.git main && cd main && git config user.name ada && git config user.email a@x && git commit -q --allow-empty -m init && git push -q origin HEAD:master   3. /tmp/jk init; /tmp/jk share; git add -A; git commit -qm board; git push -q origin HEAD   4. H=$(/tmp/jk create demo --goal g --context c --dod d | awk '/^Created/{print $2}'); /tmp/jk pull $H; git add -A; git commit -qm pull; git worktree add -q ../wt2 -b feat/x   5. In a second terminal with the same exports: cd $S/main && /tmp/jk, press Enter to open the board. The demo card is in Backlog with no marker.   6. In the first terminal: cd $S/wt2 && /tmp/jk move $H --to todo --force   7. Watch the board. Within about 2 seconds the card moves to Todo and shows '⇣ behind' (it may be cut off as '⇣ beh…' on a narrow column).   8. cd $S/main && /tmp/jk list. The row ends with [behind ref: pull it]. Then /tmp/jk show $H. There is a 'behind' line telling you to run jaira pull.   9. /tmp/jk note $H x. It is refused with 'older than its ref' and exit 3. git cat-file -p refs/jaira/tickets/<ID>:<ID>.md still says status: todo.   10. /tmp/jk pull $H, then /tmp/jk list. The marker is gone and the board card loses its flag.   11. Same-second case: go test ./internal/cli -run TestAFileBehindItsRefWithinTheSameSecondIsStillBehind -v prints PASS. On master, running the same flow within one second lets the note through and turns the ref back to backlog."
 ---
 
 # Das Board zeigt den Stand des Refs, wenn die Ticket-Datei dahinter zurueckliegt
