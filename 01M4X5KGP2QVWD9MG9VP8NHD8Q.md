@@ -18,7 +18,7 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:43Z
-updated-at: 2026-10-17T14:15:28Z
+updated-at: 2026-10-17T14:25:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-61927
 claimed-at: 2026-10-17T14:05:53Z
@@ -84,3 +84,8 @@ Empfehlung: 2 - Nichts blockiert die DoD, die Luecken sind bewusst ausgelassen u
 - **2026-10-17 14:06 · Alexander Sacharov** — decision round 3 (worker): the default board's description is written by the code, not by hand per repo: when a board's first lane directory is set up from the built-in lanes (lane.setUp), a 'description' file goes in beside order - 'Changes to this repository's code: features, fixes, refactors, tests and docs.' Not when the lanes come from a person's default-board.md: those may be any board, a guessed sentence would send tickets to the wrong lanes. Not in 'jaira update': it cannot tell built-in lanes from chosen ones on an existing board. This repo gets the file by hand (.jaira/lanes is tracked here); demo-video needs one line written there by hand - outside this worktree.
 - **2026-10-17 14:11 · Alexander Sacharov** — critique round 3 (first pass on afa29f77): one finding - internal/cli/boards.go --help says only 'written by hand', drifts from docs/COMMANDS.md; align it. Let stand: writeDefaultDescription as a one-caller helper in boards.go (keeps description knowledge beside descriptionFileName rather than in lane.go); the Stat check keeps a hand-written file a person put there before the lanes existed.
 - **2026-10-17 14:12 · Alexander Sacharov** — critique round 3 pass 2: the --help finding is addressed in d3fd367c; nothing else read, nothing left.
+- **2026-10-17 14:25 · Alexander Sacharov** — explain: Der Reviewer hat nichts Offenes gefunden: alle sechs DoD-Punkte sind erfuellt, go vet und go test laufen durch. Bekannt und bewusst akzeptiert: ein Repo, dessen Lanes schon existieren (z. B. demo-video), bekommt keine Beschreibung automatisch.
+Warum: Ohne Beschreibung des Default-Boards waehlt der Teamlead das Board nicht sicher; dort muss einmal von Hand eine Zeile geschrieben werden, die Release-Note sagt das.
+1) Ticket so annehmen, die Zeile fuer demo-video spaeter von Hand schreiben [accept]
+2) Zurueckgeben, damit jaira update auch bestehenden Boards eine Beschreibung schreibt [give back]
+Empfehlung: 1 - die Entscheidung in Runde 3 war bewusst, jaira update kann eingebaute von gewaehlten Lanes nicht unterscheiden.
