@@ -190,3 +190,18 @@ func TestArchiveFromTheBoard(t *testing.T) {
 		t.Fatalf("archive holds %v (err %v), want one file", names, err)
 	}
 }
+
+// K6BGB0: a card whose file is older than its ref shows the ref's state and
+// says so, or the person reads a lane this checkout has not caught up with as
+// where the ticket stands.
+func TestCardMarksAFileBehindItsRef(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	tk := withChecklists("no checklists here\n")
+	if out := stripANSI(m.renderCard(tk, 40, false)); strings.Contains(out, "behind") {
+		t.Errorf("a current card is marked behind:\n%s", out)
+	}
+	tk.BehindRef = true
+	if out := stripANSI(m.renderCard(tk, 40, false)); !strings.Contains(out, "⇣ behind") {
+		t.Errorf("a card behind its ref is not marked:\n%s", out)
+	}
+}

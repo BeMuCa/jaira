@@ -123,6 +123,14 @@ type TicketSource interface {
 	Extra(have map[string]bool) ([]*Ticket, error)
 }
 
+// AheadSource is what a TicketSource implements when it can tell that a file
+// here is older than the ticket's ref.
+type AheadSource interface {
+	// Ahead returns, keyed by id, the ticket the ref carries for each of files
+	// whose ref was written after the file.
+	Ahead(files []*Ticket) map[string]*Ticket
+}
+
 // ErrOnRefOnly means the ticket exists for this board but not as a file here,
 // so it cannot be written to until somebody pulls it.
 //
@@ -856,6 +864,7 @@ func (s *Store) List() ([]*Ticket, error) {
 		problems = append(problems, s.dupIDs...)
 	}
 	problems = append(problems, s.offBoardDuplicates(out)...)
+	s.newest(out)
 	// And then whatever the board can see without having a file for it. Added
 	// here rather than by each caller: list, next, the board and the task
 	// mirror all read through this one function, and a caller that forgot would
@@ -1047,6 +1056,46 @@ func (s *Store) extra(have map[string]bool) []*Ticket {
 		t.ReadOnly = true
 	}
 	return out
+}
+
+// newest replaces, in place, each ticket whose file is older than its ref with
+// what the ref says, marked BehindRef. A move made in another worktree or by a
+// teammate then shows on this board without a pull; the file stays where it
+// is, and every write — which reads the file, never this — is refused until
+// it is pulled.
+//
+// Only readers come here. Load keeps reading the file, because Archive,
+// Logbook and the move gate check what Load gave them against the ref, and the
+// ref's own state would pass that check and file away the old file.
+func (s *Store) newest(ts []*Ticket) {
+	a, ok := s.Source.(AheadSource)
+	if !ok {
+		return
+	}
+	var files []*Ticket
+	for _, t := range ts {
+		if !t.ReadOnly {
+			files = append(files, t)
+		}
+	}
+	if len(files) == 0 {
+		return
+	}
+	ahead := a.Ahead(files)
+	for i, t := range ts {
+		if r, ok := ahead[t.ID]; ok && !t.ReadOnly {
+			r.Path, r.BehindRef = t.Path, true
+			ts[i] = r
+		}
+	}
+}
+
+// Newest is t as a reader should show it: the ref's state when the file t was
+// read from is older than its ref, t itself otherwise.
+func (s *Store) Newest(t *Ticket) *Ticket {
+	ts := []*Ticket{t}
+	s.newest(ts)
+	return ts[0]
 }
 
 // Load reads one ticket in full, resolving an exact ID or unambiguous prefix.

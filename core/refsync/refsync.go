@@ -1575,6 +1575,54 @@ func (y *Syncer) Extra(have map[string]bool) ([]*ticket.Ticket, error) {
 	return out, nil
 }
 
+// Ahead reports, for each of the given ticket files, the ticket its ref
+// carries when the ref is ahead of the file — "ahead" exactly as pull and
+// CheckFresh judge it (isStale). It satisfies ticket.AheadSource.
+//
+// It runs on the board's two-second refresh, so it costs one 'git
+// for-each-ref' and reads only refs whose hash it has not decoded before,
+// sharing Extra's cache: a hash is a content address.
+func (y *Syncer) Ahead(files []*ticket.Ticket) map[string]*ticket.Ticket {
+	if y == nil || y.Usable() != nil || len(files) == 0 {
+		return nil
+	}
+	hashes, err := y.Repo.ListHashes()
+	if err != nil {
+		return nil
+	}
+	y.extraMu.Lock()
+	defer y.extraMu.Unlock()
+	if y.extraCache == nil {
+		y.extraCache = map[string]extraEntry{}
+	}
+	var wanted []string
+	for _, f := range files {
+		if h, ok := hashes[f.ID]; ok && y.extraCache[f.ID].hash != h {
+			wanted = append(wanted, f.ID)
+		}
+	}
+	contents, err := y.Repo.ReadMany(wanted)
+	if err != nil {
+		return nil
+	}
+	for _, id := range wanted {
+		var t *ticket.Ticket
+		if d, err := ticket.ParseDoc(contents[id]); err == nil {
+			if tk, err := ticket.Decode(d, ""); err == nil {
+				t = tk
+			}
+		}
+		y.extraCache[id] = extraEntry{hash: hashes[id], t: t}
+	}
+	out := map[string]*ticket.Ticket{}
+	for _, f := range files {
+		if e, ok := y.extraCache[f.ID]; ok && e.hash == hashes[f.ID] && isStale(f, e.t) {
+			out[f.ID] = e.t.Clone()
+		}
+	}
+	return out
+}
+
 // Departure is a ticket whose ref is gone while the file is still here.
 type Departure struct {
 	ID    string `json:"id"`

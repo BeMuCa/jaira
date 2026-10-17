@@ -759,6 +759,12 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 	if t.ReadOnly {
 		flags = append(flags, styAsks.Render("⇢ pull"))
 	}
+	// The file here is older than its ref, so the card shows the ref's state
+	// — a move made in another worktree or by a teammate — and says the file
+	// needs a pull before anything here can write it.
+	if t.BehindRef {
+		flags = append(flags, styAsks.Render("⇣ behind"))
+	}
 	// Written here, not yet on the remote. It is not an error and not a
 	// conflict: the ticket is correct on this machine and has not left it, and
 	// the next command with a route sends it. Saying so is what keeps the

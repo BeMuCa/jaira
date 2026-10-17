@@ -1,0 +1,1 @@
+- When a ticket file in your checkout is older than its ref, the board, `jaira list` and `jaira show` now show the ref's lane and state and mark the ticket (`⇣ behind` on the card, `[behind ref: pull it]` in list, `behind-ref: true` in JSON) — run `jaira pull <id>` before writing it, writes stay refused until you do.
