@@ -1,7 +1,7 @@
 ---
 id: 01M4TRC0ZE0GNWDWA1XDK6BGB0
 title: "Das Board zeigt den Stand des Refs, wenn die Ticket-Datei dahinter zurueckliegt"
-status: optimize
+status: testing
 ready: true
 creator: BeMuCa
 goal: "Board, 'jaira list' und 'jaira show' zeigen den neuesten Stand eines Tickets: liegt die Datei im Checkout hinter ihrem Ref, den des Refs, mit einem Kennzeichen, dass 'jaira pull' faellig ist - und ein Schreiben auf die veraltete Datei bleibt verweigert."
@@ -21,7 +21,7 @@ related: []
 follows: 01M2HW4788Z5G0M05G3PJDXV60
 commits: []
 created-at: 2026-10-13T13:48:57Z
-updated-at: 2026-10-17T20:54:31Z
+updated-at: 2026-10-17T20:54:33Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-297639
