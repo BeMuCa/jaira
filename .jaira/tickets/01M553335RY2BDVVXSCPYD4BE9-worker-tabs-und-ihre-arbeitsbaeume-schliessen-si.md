@@ -23,18 +23,15 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T14:27:49Z
+updated-at: 2026-10-17T14:29:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-66355
 claimed-at: 2026-10-17T14:11:12Z
 outcome-what: "spawn.sh writes a record per tab (pane, ticket, lane, worktree) under <git common dir>/jaira/panes/; new jaira-dispatcher/scripts/reap.sh closes every recorded tab of a ticket that is done with a merged PR, removes its worktree and local branch, --dry-run prints only; keeps and names a ticket not done, without merged PR, with commits past the PR head, or with uncommitted changes. Teamlead skill runs it every round. Tests in core/role/reap_test.go."
 outcome-why: "Worker, dispatcher and review tabs and their worktrees stayed open after the work was merged; nobody watched or closed them, and spawn.sh never recorded which tab belonged to which ticket."
 outcome-resolves: "Goal of YD4BE9: after the PR is merged, all tabs started for the ticket close and its worktree and branch go without anyone cleaning up by hand - at the next teamlead round."
-review-summary: |-
-  core/role/builtin/jaira-dispatcher/scripts/reap.sh:105-122 checks the lane before the merge, so every ticket still in flight prints 'kept X: in <lane>, not done' each round and the teamlead skill tells it to report every kept line - noise every round. Check the merge first and print an unmerged branch as 'waiting <t>: ...' (still named, DoD 3), keep 'kept' for the merged-but-not-safe cases; teamlead SKILL.md reports closed and kept only
-  core/role/builtin/jaira-dispatcher/scripts/reap.sh:126-128 reports 'has commits the merged pull request does not' also when the PR head is simply not fetched locally (merge-base fails); say 'is not at the merged head <sha>' which is true in both cases
-  core/role/builtin/jaira-dispatcher/scripts/reap.sh:98 only the main worktree is protected; run from a ticket worktree the script would remove the directory it runs in. Treat $root like $main in the script and drop the prose warning in jaira-teamlead/SKILL.md
-round: 2
+review-summary: "core/role/builtin/jaira-dispatcher/scripts/reap.sh:49 takes $PWD as root; started in a subdirectory of a ticket worktree it does not recognise the worktree it stands in and removes it. Use git rev-parse --show-toplevel"
+round: 3
 ---
 
 # Worker-Tabs und ihre Arbeitsbaeume schliessen sich, sobald der Pull Request ihres Tickets gemergt ist
@@ -79,3 +76,4 @@ round: 2
 7) Launcher entry in ~/.jaira/projects.json is AYBDJ2's half, not built here.
 - **2026-10-17 14:19 · Alexander Sacharov** — found out: gh pr list --head finds a fork's merged PR, gh pr view <branch> does not. macOS bash 3.2 rules out declare -A/mapfile in reap.sh. Reap tests skip on Windows: Git Bash /c/... vs git.exe C:\ paths never compare. Old tabs/worktrees from before this change have no record and are not reaped - close those by hand once.
 - **2026-10-17 14:22 · Alexander Sacharov** — critique round 1: (1) reap.sh checks the lane before the merge -> every in-flight ticket prints a kept line each round; check merge first, unmerged prints 'waiting', teamlead reports closed+kept only. (2) 'has commits the merged PR does not' is wrong when the PR head is just not fetched -> 'is not at the merged head <sha>'. (3) protect $root like $main, drop the prose warning. Let stand: tab-close code duplicated from run-lane.sh (two lines, same pattern); shell script instead of Go in jaira logbook - the ticket asks for a script beside spawn.sh.
+- **2026-10-17 14:28 · Alexander Sacharov** — critique round 2: reap.sh root was $PWD, not the worktree top -> started in a subdirectory it removed its own worktree. Fixed with rev-parse --show-toplevel, test extended (runs from <wt>/sub). Round 1 findings verified fixed in f67638bc.

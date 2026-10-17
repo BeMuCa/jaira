@@ -289,8 +289,8 @@ func TestTeamleadReapsEveryRound(t *testing.T) {
 	}
 }
 
-// Run from inside the ticket's own worktree, reap.sh closes the tabs but
-// leaves the directory it runs in standing.
+// Run from inside the ticket's own worktree — a subdirectory of it, even —
+// reap.sh closes the tabs but leaves the worktree it runs in standing.
 func TestReapNeverRemovesTheWorktreeItRunsIn(t *testing.T) {
 	t.Parallel()
 	r := newReapRig(t)
@@ -298,7 +298,12 @@ func TestReapNeverRemovesTheWorktreeItRunsIn(t *testing.T) {
 	if out := r.run(t, r.wt, "reap.sh", "--dry-run"); strings.Contains(out, "would remove") || strings.Contains(out, "would delete") {
 		t.Errorf("--dry-run promises what the run will not do:\n%s", out)
 	}
-	out := r.run(t, r.wt, "reap.sh")
+	sub := filepath.Join(r.wt, "sub")
+	r.write(t, filepath.Join(sub, ".keep"), "")
+	r.git(t, r.wt, "add", "sub")
+	r.git(t, r.wt, "commit", "-q", "-m", "sub")
+	r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+	out := r.run(t, sub, "reap.sh")
 	if r.closedTabs() != "tp1\ntp2" {
 		t.Errorf("closed tabs %q, want tp1 and tp2\n%s", r.closedTabs(), out)
 	}

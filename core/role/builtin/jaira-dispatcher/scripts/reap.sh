@@ -48,7 +48,9 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-root="$(cd "${1:-$PWD}" && pwd -P)"
+# The worktree's top, not the directory: started in a subdirectory, it would
+# otherwise not know the worktree it stands in.
+root="$(cd "$(git -C "${1:-$PWD}" rev-parse --show-toplevel)" && pwd -P)"
 herdr="${HERDR_BIN_PATH:-herdr}"
 common="$(git -C "$root" rev-parse --git-common-dir)"
 panes="$(cd "$root" && cd "$common" && pwd)/jaira/panes"
