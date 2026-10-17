@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:41:52Z
+updated-at: 2026-10-17T16:41:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
@@ -102,3 +102,4 @@ Empfehlung: 1 - die Label-Pruefung ist billig und nimmt das einzige Risiko weg, 
 - **2026-10-17 16:38 · Alexander Sacharov** — testing round 6: live on a scratch clone (real herdr.exe, gh against BeMuCa/jaira, feat/rftqkp = merged #87): tab labelled RFTQKP/worker closed, tab labelled ZZ99ZZ/worker but recorded as RFTQKP/review left open, records both gone, worktree removed, branch deleted, rc=0. Finding: --dry-run printed 'would close RFTQKP/review w3:pJ1' for the stranger's tab - the dry branch sits before the label check. Fix: look the tab and its label up first, then print 'would close' or close.
 - **2026-10-17 16:40 · Alexander Sacharov** — critique round 6: none - the dry branch now sits behind the label check, one line moved; dry-run therefore asks herdr too, which is read-only.
 - **2026-10-17 16:41 · Alexander Sacharov** — testing round 7: pass, same live run as round 6 - --dry-run now lists only the labelled tab. Scratch tabs created for the run are closed again.
+- **2026-10-17 16:41 · Alexander Sacharov** — review handed to a fresh agent via run-lane.sh --no-worktree in this worktree (round 2 of review); testing changed no code, ticket file left modified.
