@@ -27,7 +27,7 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:17:29Z
+updated-at: 2026-10-17T12:17:32Z
 updated-by: Alexander Sacharov
 ---
 
@@ -40,6 +40,7 @@ updated-by: Alexander Sacharov
 - [ ] jaira create, list, next und show nehmen ein Board (z.B. --board ui); ohne Angabe gilt das heutige Board, nichts aendert sich still; Test
 - [ ] Ein bestehendes Einzel-Board laeuft nach dem Update unveraendert weiter; Test
 - [ ] Eine Zeile in core/release/notes/<ID>.md
+- [ ] Ein Ticket wechselt das Board mit jaira set <id> board=<name>; existiert seine Lane dort nicht, landet es in der ersten Lane des neuen Boards und jaira sagt das; Test
 
 ## Options
 
