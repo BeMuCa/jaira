@@ -1,7 +1,7 @@
 ---
 id: 01M4TRC0ZE0GNWDWA1XDK6BGB0
 title: "Das Board zeigt den Stand des Refs, wenn die Ticket-Datei dahinter zurueckliegt"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Board, 'jaira list' und 'jaira show' zeigen den neuesten Stand eines Tickets: liegt die Datei im Checkout hinter ihrem Ref, den des Refs, mit einem Kennzeichen, dass 'jaira pull' faellig ist - und ein Schreiben auf die veraltete Datei bleibt verweigert."
@@ -21,11 +21,14 @@ related: []
 follows: 01M2HW4788Z5G0M05G3PJDXV60
 commits: []
 created-at: 2026-10-13T13:48:57Z
-updated-at: 2026-10-17T20:49:18Z
+updated-at: 2026-10-17T20:49:22Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-297639
 claimed-at: 2026-10-17T20:39:34Z
+outcome-what: "Board, jaira list und jaira show zeigen bei einer Ticket-Datei, die hinter ihrem Ref liegt, den Stand des Refs und markieren sie (Karte '⇣ behind', Zeile '[behind ref: pull it]', JSON behind-ref, show-Zeile 'behind')."
+outcome-why: "Ein in einem anderen Worktree oder von einem Teammitglied bewegtes Ticket stand hier in seiner alten Lane; die Erkennung (isStale, wie bei pull) gab es schon, sie wurde nur beim Lesen nicht genutzt."
+outcome-resolves: K6BGB0; deckt JDXV60 DoD 1 fuer den Ref-Fall ab
 ---
 
 # Das Board zeigt den Stand des Refs, wenn die Ticket-Datei dahinter zurueckliegt
@@ -59,3 +62,4 @@ claimed-at: 2026-10-17T20:39:34Z
 Optionen: (A) nur Kennzeichen an der Karte, Datei-Stand bleibt sichtbar - billig, aber Board zeigt weiter die falsche Lane. (B) Board/list/show zeigen den Stand des Refs plus Kennzeichen 'Datei veraltet' - zeigt die echte Lane, Schreiben bleibt an der Datei und wird von CheckFresh verweigert. (C) automatisch pullen beim Lesen - schreibt Dateien ohne Befehl, verletzt 'Lesen schreibt nie'.
 Gewaehlt: B (Nutzerentscheidung 2026-10-17): newest wins in List und show, Marker an Karte/Zeile/JSON. Load bleibt bei der Datei, weil Archive/Logbook/move den geladenen Ticket gegen CheckFresh pruefen - ein Ref-Ticket dort wuerde die Pruefung bestehen und die alte Datei ablegen.
 - **2026-10-17 20:40 · berkc** — Plan-Begruendung: Load wird NICHT umgestellt. Archive, Logbook und der move-Gate laden per Load und pruefen danach CheckFresh(t) - wuerde Load das Ref-Ticket liefern, bestuende es die Pruefung (gleiches updated_at) und Archive wuerde die alte Datei ablegen und deren Stand per RecordFiled auf den Ref schreiben. Deshalb nur List (Board, list, next, web) und show ueber Store.Newest. Mutate liest unter Lock die Datei neu und ruft CheckFresh -> StaleError; das bleibt die Schreib-Sperre. Separates optionales Interface statt Extra-Signatur zu aendern: ein zusaetzliches 'git for-each-ref' pro List, Decodes nur bei neuem Ref-Hash (extraCache geteilt). Nicht abgedeckt: D0SAHM-Variante (Datei ohne Ref, Ticket upstream abgelegt) - dort gibt es keinen Ref zum Vergleichen.
+- **2026-10-17 20:49 · berkc** — In-progress: Store.List ersetzt Datei-Tickets, deren Ref nach isStale weiter ist, durch das Ref-Ticket (BehindRef, Path=Datei); show nutzt Store.Newest nur fuer Tickets auf dem Board (nicht Logbuch). Schreibseite war schon sicher (Mutate/Archive/Logbook/move rufen CheckFresh -> StaleError, exit 3); der Test prueft das am selben Fall, Ref-SHA unveraendert. Manuell nachgestellt mit zwei Worktrees eines Temp-Repos: main zeigt todo + [behind ref: pull it], note verweigert, Ref-SHA gleich; nach pull Marker weg. Gleiches-Sekunde-Grenzfall: isStale vergleicht updated_at mit Sekundenaufloesung - zwei Schreibvorgaenge in derselben Sekunde gelten nicht als 'weiter' (bestehende Grenze von pull/CheckFresh, nicht neu).
