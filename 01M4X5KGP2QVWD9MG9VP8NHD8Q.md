@@ -18,7 +18,7 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:43Z
-updated-at: 2026-10-17T14:13:17Z
+updated-at: 2026-10-17T14:13:21Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-61927
 claimed-at: 2026-10-17T14:05:53Z
@@ -28,7 +28,7 @@ outcome-resolves: "DoD 1: jaira boards + TestBoardsListsEveryBoardWithItsDescrip
 review-summary: "none"
 round: 4
 review-gaps: "none: round-3 diff (afa29f77, d3fd367c) checked - no write-if-absent helper exists to reuse (only inline O_EXCL in core/ticket/store.go and internal/tui/lanes.go, different jobs), nothing orphaned, no forwarding wrappers"
-test-verdict: "pass: go vet + go test -race ./... green (RC=0); DoD 1-4 verified in the tree (TestBoardsListsEveryBoardWithItsDescription, TestWorkerPathRunsTheTicketsBoard, TestRolesWorkTheTicketsBoard, notes file); built binary on a scratch repo: 'jaira boards' lists default + video with descriptions, a missing one names .jaira/lanes/description, --for-lane on the video ticket gives the video lane's tier"
+test-verdict: "pass: go vet + go test -race ./... green (RC=0); DoD 1-6 checked in the tree (DoD 1 proof line updated to boards.go:154 after the shift); scratch repo: jaira init writes .jaira/lanes/description with the code sentence, CLAUDE.md and AGENTS.md name jaira boards, jaira boards lists default with it and video with its own"
 review-verdict: "Approve. The diff matches all four DoD items; go test ./internal/cli ./core/role ./core/lane passes; by hand in a scratch repo 'jaira boards' (text and --json) lists both boards with open counts and descriptions, and 'jaira set <id> board=video' moves a ticket across, falling back to the first lane when the target board lacks its lane. No defects found in the change itself; gaps above are follow-ups."
 review-round: 2
 review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/b && cd /tmp/b && git init && git commit --allow-empty -m init && /tmp/jaira init  3. mkdir -p .jaira/boards/video/lanes && cp .jaira/lanes/*.md .jaira/boards/video/lanes/  4. echo 'Videos made from demos' > .jaira/boards/video/lanes/description  5. /tmp/jaira boards - you see 'default 0 open no description yet — write one into .jaira/lanes/description' and 'video 0 open Videos made from demos'  6. /tmp/jaira create x --board video --goal g --context c --dod d, then /tmp/jaira boards - video now says 1 open  7. /tmp/jaira roles install, then open the installed jaira-teamlead SKILL.md - section 'A new ticket goes on the board its subject belongs to' is there"
