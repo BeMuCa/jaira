@@ -4,7 +4,7 @@ title: "Ein Repo kann mehrere Boards haben, jedes mit eigenen Lanes fuer sein Th
 status: backlog
 ready: true
 creator: BeMuCa
-assignee: BeMuCa
+assignee: Alexander Sacharov
 goal: "In einem Repo laufen mehrere Boards nebeneinander (z.B. backend, ui, video), jedes mit eigenen Lanes; ein Ticket gehoert genau einem Board und laeuft durch dessen Lanes"
 context: |-
   Was heute fehlt: Ein Repo hat genau ein Board. Ein Board ist sein Lane-Ordner (.jaira/lanes/, siehe README 'A board is its lane directory'). Alle Tickets laufen durch dieselben Lanes.
@@ -27,7 +27,8 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-14T12:18:13Z
+updated-at: 2026-10-17T12:17:23Z
+updated-by: Alexander Sacharov
 ---
 
 # Ein Repo kann mehrere Boards haben, jedes mit eigenen Lanes fuer sein Thema
@@ -50,4 +51,4 @@ updated-at: 2026-10-14T12:18:13Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-17 12:17 · Alexander Sacharov** — Alexander Sacharov took this ticket over from BeMuCa
