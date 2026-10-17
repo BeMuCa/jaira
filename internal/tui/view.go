@@ -180,7 +180,7 @@ type boardWindow struct {
 	start int          // first rendered lane, an index into m.cols
 	end   int          // one past the last rendered lane
 	thin  map[int]bool // lanes drawn at thinColWidth because they hold no tickets
-	colW  int          // content width of every other column
+	colW  int          // rendered width (border included) of every other column
 }
 
 // boardFit is the single place that decides how the lanes are laid out: which
@@ -192,12 +192,12 @@ func (m *Model) boardFit(width int) boardWindow {
 	costs := make([]int, len(m.cols))
 	thin := map[int]bool{}
 	for i, c := range m.cols {
-		// A column is budgeted at its width plus two cells — the margin the
-		// full columns have always been laid out with.
-		costs[i] = minColWidth + 2
+		// A column is budgeted at its rendered width: lipgloss's Width is the
+		// whole box, border included, and the columns are joined with no gap.
+		costs[i] = minColWidth
 		if m.thinEmpty && len(c.tickets) == 0 {
 			thin[i] = true
-			costs[i] = thinColWidth + 2
+			costs[i] = thinColWidth
 		}
 	}
 	start, end := fitWindow(m.laneIdx, costs, width)
@@ -208,14 +208,14 @@ func (m *Model) boardFit(width int) boardWindow {
 	full, thinCells := 0, 0
 	for i := start; i < end; i++ {
 		if thin[i] {
-			thinCells += thinColWidth + 2
+			thinCells += thinColWidth
 		} else {
 			full++
 		}
 	}
 	colW := minColWidth
 	if full > 0 {
-		colW = max(minColWidth, (width-thinCells)/full-2)
+		colW = max(minColWidth, (width-thinCells)/full)
 	}
 	return boardWindow{start: start, end: end, thin: thin, colW: colW}
 }
