@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -75,7 +76,7 @@ func TestHomeCountsTicketsThatLiveOnlyOnTheirRef(t *testing.T) {
 		t.Fatal(err)
 	}
 	// The case from demo-video: refs, and not a single ticket file.
-	if e := describe(bob.Root, catalogue(t)); e.Err != nil || e.Total != 2 || e.Open != 1 {
+	if e := describe(bob.Root, catalogue(t), true); e.Err != nil || e.Total != 2 || e.Open != 1 {
 		t.Fatalf("a board with refs and no files: %d open / %d (err %v), want 1 open / 2", e.Open, e.Total, e.Err)
 	}
 
@@ -84,7 +85,7 @@ func TestHomeCountsTicketsThatLiveOnlyOnTheirRef(t *testing.T) {
 	if _, err := bobSync.Flush(); err != nil {
 		t.Fatal(err)
 	}
-	e := describe(bob.Root, catalogue(t))
+	e := describe(bob.Root, catalogue(t), true)
 	if e.Err != nil || e.Total != 3 || e.Open != 2 {
 		t.Errorf("got %d open / %d (err %v), want 2 open / 3", e.Open, e.Total, e.Err)
 	}
@@ -127,7 +128,7 @@ func TestHomeCountsATicketAgainstItsOwnBoard(t *testing.T) {
 	createTicket(t, s, "out", "published", "video")
 	createTicket(t, s, "today's board", "backlog", "")
 
-	e := describe(dir, catalogue(t))
+	e := describe(dir, catalogue(t), true)
 	if e.Err != nil || e.Total != 4 || e.Open != 3 || e.Waiting != 1 {
 		t.Errorf("got %d open / %d, %d waiting (err %v), want 3 open / 4, 1 waiting", e.Open, e.Total, e.Waiting, e.Err)
 	}
@@ -141,4 +142,32 @@ func catalogue(t *testing.T) *lane.Set {
 		t.Fatal(err)
 	}
 	return lanes
+}
+
+// Counting reads every board's refs, so it runs after the first frame. Until
+// it is in, a row says so instead of showing the files on disk: that count is
+// a wrong number that then jumps, on a board living on refs often "0 / 0".
+func TestHomeShowsAPlaceholderUntilItHasCounted(t *testing.T) {
+	root := t.TempDir()
+	dir := makeBoard(t, root, "repo")
+	s, err := ticket.At(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	createTicket(t, s, "on disk", "backlog", "")
+
+	h := newHome(t, []string{dir}, 100, 30)
+	out := stripANSI(h.render())
+	if !strings.Contains(out, "… open") || strings.Contains(out, "open /") {
+		t.Fatalf("before counting, the row shows a count instead of the placeholder:\n%s", out)
+	}
+	if !strings.Contains(out, "repo") {
+		t.Fatalf("the board's name is missing before counting:\n%s", out)
+	}
+
+	h.Update(h.Init()())
+	out = stripANSI(h.render())
+	if !strings.Contains(out, "1 open / 1") || strings.Contains(out, "… open") {
+		t.Errorf("after counting, the row does not show the count:\n%s", out)
+	}
 }

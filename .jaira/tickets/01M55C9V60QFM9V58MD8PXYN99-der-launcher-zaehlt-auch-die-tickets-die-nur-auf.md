@@ -1,7 +1,7 @@
 ---
 id: 01M55C9V60QFM9V58MD8PXYN99
 title: "Der Launcher zaehlt auch die Tickets, die nur auf ihrem Ref liegen"
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -20,16 +20,17 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T16:49:42Z
-updated-at: 2026-10-17T17:05:17Z
+updated-at: 2026-10-17T17:13:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54481
 claimed-at: 2026-10-17T16:55:23Z
-outcome-what: "Der Launcher liest jedes Repo ueber denselben refsync-Source wie 'jaira list', zaehlt also Tickets nur auf dem Ref mit (jedes einmal), prueft ein Ticket mit board: gegen die Lanes seines Boards und liest alle Repos parallel."
-outcome-why: "Seit Tickets bis zum Logbook auf ihrem Ref leben, zeigte der Launcher fast nichts (demo-video 0/0 bei 13 Refs); Board-Tickets zaehlten gegen fremde Lanes."
-outcome-resolves: "Launcher-Zeile = 'jaira list'-Zahlen; Startbild mit 10 Repos gleich schnell (Median 124 -> 119 ms)."
+outcome-what: "Der Launcher liest jedes Repo ueber denselben refsync-Source wie 'jaira list' (Tickets nur auf dem Ref zaehlen mit, jedes einmal), prueft ein Ticket mit board: gegen die Lanes seines Boards, und zaehlt im Hintergrund: das erste Bild zeigt Name, Reihenfolge, Fehler und '… open', die Zahlen kommen per tea.Cmd nach."
+outcome-why: "Seit Tickets bis zum Logbook auf ihrem Ref leben, zeigte der Launcher fast nichts (demo-video 0/0 bei 13 Refs); Refs lesen kostet ~80 ms, die das erste Bild nicht tragen darf (Constraint 'Instant startup', Entscheidung Teamlead 17.10.)."
+outcome-resolves: "Launcher-Zeile = 'jaira list'-Zahlen; erstes Bild gleich schnell (Median ~55 ms), Zaehler stehen nach ~0,25 s."
 review-summary: none
-round: 2
+round: 3
 review-gaps: "describeAll: wg.Add/Done durch wg.Go ersetzt (Go 1.26). Gesucht und nichts gefunden: kein anderer Fan-out-Helfer in core/internal; Test-Helfer refClone/createTicket haben kein Gegenstueck (refs_test.go baut seine Klone in Closures). Stehen gelassen: lanesOf-Closure in describe, weil lane.LanesOf fuer das Standard-Board Load(root) ruft, das das Board anlegen kann."
+test-verdict: "fail: Suite gruen (go test ./... -race, RC=0), DoD 1/2/4/5 im Baum geprueft; DoD 3 nicht erfuellt - Startbild 10 Repos warm: vorher Median 48 ms, nachher 128 ms"
 ---
 
 # Der Launcher zaehlt auch die Tickets, die nur auf ihrem Ref liegen
@@ -37,15 +38,15 @@ review-gaps: "describeAll: wg.Add/Done durch wg.Go ersetzt (Go 1.26). Gesucht un
 ## Definition of Done
 
 - [x] describe zaehlt Tickets auf der Platte und auf refs/jaira/tickets/ zusammen, jedes Ticket genau einmal; Zahlen gleich wie 'jaira list --json' im selben Repo; Test
-  proof: internal/tui/home.go:182; TestHomeCountsTicketsThatLiveOnlyOnTheirRef (internal/tui/home_refs_test.go:57); live: demo-video 13, jaira 73, genie-world 7 = jaira list --json
+  proof: internal/tui/home.go:223; TestHomeCountsTicketsThatLiveOnlyOnTheirRef (internal/tui/home_refs_test.go:58); live: demo-video 13, jaira 73, genie-world 7 = jaira list --json
 - [x] Ein Repo ohne Ticket-Dateien, aber mit Refs (wie demo-video) zeigt seine offenen Tickets statt '0 open / 0'; Test
-  proof: TestHomeCountsTicketsThatLiveOnlyOnTheirRef (home_refs_test.go:79, refs ohne Dateien -> 1 open / 2); live demo-video 4/13 statt 0/0
+  proof: TestHomeCountsTicketsThatLiveOnlyOnTheirRef (home_refs_test.go:58, Refs ohne Dateien -> 1 open / 2); live demo-video 4/13 statt 0/0
 - [x] Startbild mit 10 Repos baut sich nicht spuerbar langsamer auf als vorher; gemessene Zeit vor/nach als proof
-  proof: describeAll internal/tui/home.go:155; NewHome ueber 10 echte Repos, 5 Laeufe: vorher 120/123/186/165/125 ms (Median 124), nachher 105/119/144/99/164 ms (Median 119)
+  proof: countBoards internal/tui/home.go:181, Platzhalter home.go:460, TestHomeShowsAPlaceholderUntilItHasCounted (home_refs_test.go:150). 10 echte Repos, Aufwaermlauf + 15 Laeufe, alt/neu abwechselnd, 2 Runden: erstes Bild alt Median 55/57 ms, neu 55/54 ms; Zaehler stehen neu nach Median 261/231 ms
 - [x] Eine Zeile in core/release/notes/<ID>.md
-  proof: core/release/notes/PXYN99.md
+  proof: core/release/notes/PXYN99.md (2 Zeilen)
 - [x] Ein Ticket mit board: zaehlt gegen die Lanes seines Boards (terminal/human dort), nicht gegen die des Standard-Boards; Test
-  proof: internal/tui/home.go:198; TestHomeCountsATicketAgainstItsOwnBoard (home_refs_test.go:104)
+  proof: internal/tui/home.go:250; TestHomeCountsATicketAgainstItsOwnBoard (home_refs_test.go:105)
 
 ## Options
 
@@ -63,3 +64,9 @@ review-gaps: "describeAll: wg.Add/Done durch wg.Go ersetzt (Go 1.26). Gesucht un
 - **2026-10-17 17:01 · Alexander Sacharov** — critique: internal/tui/home.go:188 baut refsync.New+RemoteFor von Hand; internal/tui/refs.go:41 newSyncer tut genau das im selben Paket - newSyncer(s, "") nehmen
 internal/tui/home.go:204 baut einen eigenen Cache Board->Lanes; core/lane/boards.go:162 lane.LanesOf tut das schon - fuer benannte Boards LanesOf(root) nehmen, Standard-Board und nil weiter auf den Katalog
 - **2026-10-17 17:02 · Alexander Sacharov** — critique Runde 2: beide Befunde behoben (newSyncer, lane.LanesOf); nichts weiter. Ungebremste Goroutinen in describeAll bewusst stehen gelassen: eine pro registriertem Repo, ~10.
+- **2026-10-17 17:08 · Alexander Sacharov** — testing: DoD 3 war falsch belegt. Die erste Vorher-Messung (124 ms) enthielt den kalten ersten Lauf. Fair gemessen (NewHome, echte 10 Repos, 1 Aufwaermlauf + 15 Laeufe, alt/neu abwechselnd, 2 Runden): alt min 38 / Median 53 bzw. 43 ms, neu min 102-107 / Median 124 bzw. 132 ms. Ursache requirementsgenie: 159 Refs, describe ~99 ms, davon git cat-file --batch ~50 ms und ParseDoc+Decode der 159 Tickets ~85 ms (Disk-List 35 ms). Parallelisierung hilft nur bis zum langsamsten Repo. Ohne Entscheidung geht es nicht weiter - siehe Frage.
+- **2026-10-17 17:08 · Alexander Sacharov** — Frage (DoD 3, Startzeit): Refs lesen kostet beim Start ~80 ms (10 Repos, warm: Median 48 -> 128 ms; requirementsgenie mit 159 Refs allein ~100 ms). Wie weiter?
+1. (Empfohlen) Asynchron: Startbild sofort mit den Zahlen von der Platte (so schnell wie vorher), die Ref-Zahlen kommen ~0,1 s spaeter per tea.Cmd und ersetzen sie. Kosten: Zahlen springen beim Start einmal; ca. 40 Zeilen.
+2. Hinnehmen: Startbild ~130 ms statt ~50 ms, kein weiterer Code; DoD 3 wird mit diesen Zahlen belegt.
+3. Zaehl-Cache auf der Platte (State-Dir, Schluessel = Ref-Hashes): warm schnell, kalt weiter langsam; neue State-Datei, mehr Code.
+- **2026-10-17 17:09 · Alexander Sacharov** — decision (Teamlead, 17.10., Grund: Constraint 'Instant startup'): Variante 1, asynchron. Bis die Ref-Zahlen da sind, zeigt die Zeile keinen Platten-Stand, sondern einen Platzhalter ('… open'), damit nie eine falsche Zahl wie 0/0 aufblitzt und springt. Name, Reihenfolge und Fehlerzeile ('unreadable') sofort wie bisher. DoD 3 wird mit dem Zeitpunkt 'erstes Bild' belegt, als zweite Zahl, wann die Zaehler stehen.
