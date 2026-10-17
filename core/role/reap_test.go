@@ -249,6 +249,13 @@ func TestReapKeepsWhatIsNotFinished(t *testing.T) {
 				r.write(t, filepath.Join(r.wt, "README"), "changed\n")
 			}, "kept AB12CD: " + r0 + " has uncommitted changes: README",
 		},
+		"detached HEAD": {
+			func(t *testing.T, r *reapRig) {
+				r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+				r.write(t, r.shown, `{"status":"done"}`)
+				r.git(t, r.wt, "checkout", "-q", "--detach")
+			}, "kept AB12CD: " + r0 + " has a detached HEAD",
+		},
 		"committed after the merge": {
 			func(t *testing.T, r *reapRig) {
 				r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))

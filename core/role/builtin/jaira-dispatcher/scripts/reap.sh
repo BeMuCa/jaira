@@ -21,6 +21,7 @@ alone as 'waiting'. A merged one is kept, with the reason printed, when
     never fetched,
   - one of its worktrees has changes that are not committed (untracked files
     under .jaira/ do not count),
+  - one of its worktrees has a detached HEAD,
   - the ticket is back on the board in a lane other than done,
   - herdr does not answer, so an open tab cannot be told from a closed one.
 
@@ -155,6 +156,9 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
 
   dirty=""
   for w in "${wts[@]+"${wts[@]}"}"; do
+    # A detached HEAD — a rebase paused, a commit checked out — may carry
+    # commits no branch holds, and removing the worktree would lose them.
+    if ! git -C "$w" symbolic-ref -q HEAD >/dev/null; then dirty="$w has a detached HEAD"; break; fi
     if ! st="$(git -C "$w" status --porcelain)"; then dirty="git status failed in $w"; break; fi
     d="$(printf '%s' "$st" | grep -v '^?? \.jaira/' | cut -c4- | head -3 | tr '\n' ' ' || true)"
     if [ -n "$d" ]; then dirty="$w has uncommitted changes: $d"; break; fi
