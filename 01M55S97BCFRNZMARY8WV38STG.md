@@ -24,14 +24,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T20:36:33Z
-updated-at: 2026-10-17T20:39:14Z
+updated-at: 2026-10-17T23:29:09Z
 updated-by: berkc
 claimed-by: berk-ca-283567
 claimed-at: 2026-10-17T20:37:26Z
 outcome-what: "install.sh/install.ps1 run 'roles install --global' after the binary, with download bar, status line, summary, JAIRA_NO_ROLES opt-out"
 outcome-why: curl install left roles and Cockpit missing; nobody was told to run a second command
 outcome-resolves: "install.sh verified against the 0.5.3 release (fresh, rerun, opt-out, failure); install.ps1 written to match but not run"
-review-summary: "install.sh echo \"$out\" can mangle backslashes in dash; fixed with printf. Nothing else."
+review-summary: "install.sh: after installing the binary, runs 'jaira roles install --global' and prints 'Setting up the skills and the Cockpit…', then '✓ <N written, M unchanged…>' plus what is active, or on failure the jaira error on stderr and a retry hint (exit stays 0, binary kept). Download shows curl --progress-bar only when stderr is a TTY. JAIRA_NO_ROLES (any non-empty value) skips the step. install.ps1 mirrors this (progress only when UserInteractive). README + release note describe it."
 review-gaps: none
 test-verdict: "pass: sh -n ok; install.sh run piped (no TTY, no bar), under pty (bar shown), rerun 0 written/35 unchanged, JAIRA_NO_ROLES skip, read-only ~/.claude failure printed verbatim with binary still installed. install.ps1 NOT run (no pwsh)."
 ---
