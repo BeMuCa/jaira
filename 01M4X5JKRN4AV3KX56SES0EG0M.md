@@ -27,7 +27,7 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:53:33Z
+updated-at: 2026-10-17T12:53:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-67696
 claimed-at: 2026-10-17T12:50:10Z
@@ -37,7 +37,7 @@ outcome-resolves: "S0EG0M: alle sechs DoD-Punkte, Tests in internal/cli/boards_t
 review-summary: "Runde 6: keine Befunde. mergeBoard liest das Board aus ours wie der Rest des Treibers seine Seite liest; fehlt das Board auf der Platte, scheitert LoadBoard und git meldet einen Konflikt - die sichere Seite, wie bei jedem Treiberfehler."
 round: 6
 review-gaps: "Runde 3: nichts zu entfernen - mergeBoard hat einen Aufrufer und ist vier Zeilen; ein zweiter Parameter theirs wurde vor dem Commit schon gestrichen. Frueheres siehe Notes."
-test-verdict: "pass (Runde 2): go clean -testcache; go test -race ./... RC=0; DoD 2-6 im Baum (boards_test.go cli+tui gruen, neu TestValidateChecksEachTicketAgainstItsBoard und createTicket-Teil von TestShiftFPicksABoard); Binaer: video-Ticket in Lane script, jaira validate RC=0 ohne unknown_lane (Review-Gap 2 behoben). TUI-Taste F und n nur ueber Tests"
+test-verdict: "pass (Runde 3): go test -race ./... RC=0; TestMergeDriverUsesTheTicketsBoard rot ohne Fix, gruen mit; DoD 1-6 unveraendert gedeckt (boards_test.go cli+tui)"
 review-verdict: "Alle sechs DoD-Punkte sind im Diff erfuellt und im Temp-Repo nachgestellt (create/list/next --board, Tippfehler Exit 2, set board= mit Fallback-Meldung, validate gruen, go test ./... gruen). Nicht ganz fertig wegen Gap 1: der Merge-Driver entscheidet Status-Konflikte auf benannten Boards nach den falschen Lanes - fuer ein Repo mit parallelen Sessions der Fall, fuer den das Feature gebaut ist. Empfehlung: Gap 1 und 2 vor dem Annehmen beheben (zusammen ca. 30 Minuten), oder bewusst als Folgearbeit annehmen."
 review-round: 5
 review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. In einem leeren Git-Repo: /tmp/jaira init, dann mkdir -p .jaira/boards/video/lanes und drei Dateien skript.md, bau.md, done.md mit Frontmatter 'id: <name>' (done.md zusaetzlich 'terminal: true') und eine Datei order mit skript, bau, done je Zeile  3. /tmp/jaira create 'Szene A' --board video -> 'In skript'  4. /tmp/jaira list -> Szene A fehlt; /tmp/jaira list --board video -> Szene A in skript  5. /tmp/jaira list --board vidoe -> 'no such board \"vidoe\"; boards here: default, video', echo $? zeigt 2  6. /tmp/jaira move <id> --to bau, dann /tmp/jaira set <id> board=default -> 'Board default has no lane \"bau\"; <id> is now in <erste Lane>'  7. /tmp/jaira validate -> keine error-Zeile  8. /tmp/jaira (TUI), F druecken -> Kopfzeile 'board: video', nur Lanes skript/bau/done; noch einmal F -> zurueck auf das heutige Board"
