@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:34:08Z
+updated-at: 2026-10-17T16:34:42Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
@@ -96,3 +96,4 @@ Empfehlung: 1 - die Label-Pruefung ist billig und nimmt das einzige Risiko weg, 
 - **2026-10-17 16:33 · Alexander Sacharov** — decision: 1) Zurueckgeben: vor 'tab close' das Tab-Label aus 'herdr pane get' mit '<ticket>/<lane>' vergleichen und den Record erst nach erfolgreichem 'git worktree remove' loeschen
 - **2026-10-17 16:33 · Alexander Sacharov** — Given back from signoff: 1) Zurueckgeben: vor 'tab close' das Tab-Label aus 'herdr pane get' mit '<ticket>/<lane>' vergleichen und den Record erst nach erfolgreichem 'git worktree remove' loeschen
 - **2026-10-17 16:34 · Alexander Sacharov** — cockpit: given back to a new worker - old worker's prompt cache cold for 55 min
+- **2026-10-17 16:34 · Alexander Sacharov** — round 6 found out: the tab label lives on 'herdr tab get <tab>' -> result.tab.label (checked on real herdr.exe: w3:tGH -> 'YD4BE9/worker'); 'pane get' carries no label. spawn.sh labels '<ticket>/<lane>' exactly as the record's ticket and lane fields, so reap compares against those, case kept. A label that does not match means our tab is gone and the id belongs to someone else: drop the record, close nothing.
