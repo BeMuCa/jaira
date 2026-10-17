@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T20:49:20Z
-updated-at: 2026-10-17T23:48:15Z
+updated-at: 2026-10-17T23:48:37Z
 updated-by: berkc
 ---
 
@@ -32,6 +32,10 @@ updated-by: berkc
 ## Definition of Done
 
 - [ ] Der Skill liegt unter core/role/builtin/ und wird von 'jaira roles install' mitinstalliert
+- [ ] Er stellt eine Frage pro Runde und fasst vor jedem Schreiben zusammen, was er anlegen wird, und wartet auf ein Ja
+- [ ] Er legt am Ende Board-Lanes, Milestones und ggf. Epics nur ueber die jaira-CLI an
+- [ ] Ein Probelauf in einem Temp-Repo ist im Ticket beschrieben: Fragen, Antworten, entstandenes Board
+- [ ] Release-Note
 Er stellt eine Frage pro Runde und fasst vor jedem Schreiben zusammen, was er anlegen wird, und wartet auf ein Ja
 Er legt am Ende Board-Lanes, Milestones und ggf. Epics nur ueber die jaira-CLI an
 Ein Probelauf in einem Temp-Repo ist im Ticket beschrieben: Fragen, Antworten, entstandenes Board
