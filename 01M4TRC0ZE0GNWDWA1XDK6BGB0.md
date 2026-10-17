@@ -21,7 +21,7 @@ related: []
 follows: 01M2HW4788Z5G0M05G3PJDXV60
 commits: []
 created-at: 2026-10-13T13:48:57Z
-updated-at: 2026-10-17T20:59:37Z
+updated-at: 2026-10-17T20:59:39Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-297639
@@ -32,7 +32,7 @@ outcome-resolves: K6BGB0; deckt JDXV60 DoD 1 fuer den Ref-Fall ab
 review-summary: "none"
 round: 3
 review-gaps: "Runde 3: MilestoneHad und das neue Had teilen sich had(ref, content) statt die rev-list-Schleife zu verdoppeln. Unveraendert stehen gelassen: zweites for-each-ref pro List (~2 ms bei 60 Refs). Kein toter Code: das alte freie isStale ist ersetzt, alle drei Aufrufer nutzen die Methode."
-test-verdict: "fail: liegen Datei und Ref in derselben Sekunde (updated-at gleich), gilt die Datei nicht als hinter dem Ref - Board zeigt den alten Stand und ein note schreibt ihn still auf den Ref zurueck (todo -> backlog)"
+test-verdict: "pass: go vet + go test -race ./... nach go clean -testcache RC=0; DoD 1-2 im Baum geprueft; zwei Worktrees eines Temp-Repos mit Branch-Binary, mit und ohne Sekundenabstand: main zeigt todo + [behind ref: pull it], show behind-ref true, note exit 3, Ref unveraendert"
 ---
 
 # Das Board zeigt den Stand des Refs, wenn die Ticket-Datei dahinter zurueckliegt
