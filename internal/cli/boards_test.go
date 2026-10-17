@@ -191,3 +191,29 @@ func TestValidateChecksEachTicketAgainstItsBoard(t *testing.T) {
 		}
 	}
 }
+
+// The merge driver measures progress in the ticket's own board's lanes:
+// today's board knows neither script nor render, and would keep ours however
+// far the other side got.
+func TestMergeDriverUsesTheTicketsBoard(t *testing.T) {
+	dir := newTwoBoards(t)
+	doc := func(status string) string {
+		return "---\nid: 01M4X5JKRN4AV3KX56SES0EG0M\ntitle: t\nboard: video\nstatus: " + status +
+			"\ncreated-at: 2026-10-17T12:00:00Z\nupdated-at: 2026-10-17T12:00:00Z\n---\n"
+	}
+	paths := map[string]string{}
+	for side, status := range map[string]string{"base": "done", "ours": "script", "theirs": "render"} {
+		p := filepath.Join(t.TempDir(), side+".md")
+		if err := os.WriteFile(p, []byte(doc(status)), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		paths[side] = p
+	}
+	if out, err := runCLI(t, dir, "merge-driver", paths["base"], paths["ours"], paths["theirs"]); err != nil {
+		t.Fatalf("merge-driver: %v\n%s", err, out)
+	}
+	got, _ := os.ReadFile(paths["ours"])
+	if !strings.Contains(string(got), "status: render") {
+		t.Errorf("the further lane on the video board did not win:\n%s", got)
+	}
+}
