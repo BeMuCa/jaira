@@ -27,14 +27,14 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:50:10Z
+updated-at: 2026-10-17T12:50:14Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-67696
 claimed-at: 2026-10-17T12:50:10Z
 outcome-what: "Mehrere Boards pro Repo: core/lane/boards.go (LoadBoard, Boards, NormalizeBoard), Feld board: im Ticket, --board an create/list/next, Einzelticket-Kommandos lesen das Board vom Ticket, set board=<name> mit Fallback auf die erste Lane, TUI-Taste F"
 outcome-why: "Ein Repo braucht Boards mit eigenen Lanes neben den SWE-Lanes, z.B. ein video-Board in demo-video fuer eine Designerin"
 outcome-resolves: "S0EG0M: alle sechs DoD-Punkte, Tests in internal/cli/boards_test.go und internal/tui/boards_test.go"
-review-summary: "Runde 5: keine Befunde. lane.LanesOf ersetzt beide Caches; TicketsOnBoards haelt Tickets() als Einzelboard-Huelle, damit die bestehenden Tests unveraendert bleiben. Bekannte Grenze (Note Stand): ein Blocker auf einem anderen Board wird im Link-Index mit den Lanes des gezeigten Boards beurteilt."
+review-summary: "Ein Repo kann jetzt neben .jaira/lanes/ weitere Boards unter .jaira/boards/<name>/lanes/ haben (core/lane/boards.go: LoadBoard, Boards, NormalizeBoard, BoardOf, LanesOf). Ein Ticket traegt das Feld board: (core/ticket/schema.go); fehlt es, gilt das heutige Board - bestehende Boards laufen ohne Migration. create/list/next nehmen --board (unbekannter Name: Exit 2 mit Liste der Boards); show/move/dod/claim/set/logbook <id> lesen die Lanes vom Board des Tickets (envFor in internal/cli/root.go). set board=<name> wechselt das Board; fehlt die Lane dort, setzt jaira status auf die erste Lane des neuen Boards und sagt das (landed_in im JSON). validate und resume pruefen jedes Ticket gegen sein eigenes Board. TUI: F schaltet reihum durch die Boards, zeigt deren Lanes und nur deren Tickets, Kopfzeile 'board: <name>'; n und Follow-up schreiben das gezeigte Board ins Ticket. Brettweite Kommandos (logbook --all, milestone, sync, archive, tags-Liste, links, lanes, merge-driver) bleiben auf dem heutigen Board."
 round: 5
 review-gaps: "Runde 2: Caches in resume/validate zu lane.LanesOf zusammengelegt (in critique schon erledigt); err-Zweig in LanesOf entfernt, LoadBoard gibt bei Fehler ohnehin nil. Stehen gelassen: validate laedt die heutigen Lanes einmal fuer link.Build und einmal ueber LanesOf - einmal pro Lauf, kein heisser Pfad. Runde 1: siehe Note (indexByID, hasLaneFiles, boardLabel)."
 test-verdict: "pass (Runde 2): go clean -testcache; go test -race ./... RC=0; DoD 2-6 im Baum (boards_test.go cli+tui gruen, neu TestValidateChecksEachTicketAgainstItsBoard und createTicket-Teil von TestShiftFPicksABoard); Binaer: video-Ticket in Lane script, jaira validate RC=0 ohne unknown_lane (Review-Gap 2 behoben). TUI-Taste F und n nur ueber Tests"
