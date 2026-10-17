@@ -27,7 +27,7 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T13:06:19Z
+updated-at: 2026-10-17T14:02:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-67696
 claimed-at: 2026-10-17T12:50:10Z
@@ -110,3 +110,4 @@ Warum: Das Logbook kann ein Ticket auf einem anderen Board ablegen, wenn dessen 
 Empfehlung: 2 - alle sechs DoD-Punkte sind erfuellt, go test ./... ist gruen, und der Reviewer nennt das Ergebnis annehmbar.
 - **2026-10-17 12:57 · Alexander Sacharov** — Abnahmeseite: https://claude.ai/artifact/HdF2uR51Qm7NkPg23nMiX9 (5 Personenschritte TUI, 2 Maschinenchecks gruen; Demo-Repo ~/.claude/acceptance/jaira/feat-s0eg0m/demo, Binaer daneben)
 - **2026-10-17 13:02 · Alexander Sacharov** — decision 17.10.: Taste b statt F, Alexander (F/f haben schon andere Bedeutungen, f = Follow-up in der Detailansicht). Weitergegeben von der Teamlead-Session jaira-79.
+- **2026-10-17 14:02 · Alexander Sacharov** — decision: 2) So annehmen und die Grenzen als bekannt stehen lassen, sie sind nicht blockierend
