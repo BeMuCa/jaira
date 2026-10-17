@@ -1,7 +1,7 @@
 ---
 id: 01M553335RY2BDVVXSCPYD4BE9
 title: "Worker-Tabs und ihre Arbeitsbaeume schliessen sich, sobald der Pull Request ihres Tickets gemergt ist"
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:38:31Z
+updated-at: 2026-10-17T16:38:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
@@ -31,7 +31,7 @@ outcome-what: "reap.sh closes a recorded tab only when 'herdr tab get' still lab
 outcome-why: "Given back from signoff: records outlive tabs by days and herdr may reuse ids after a restart, so a pane id alone could close another ticket's live worker; and a record removed before the worktree left a failed remove standing forever."
 outcome-resolves: "Goal of YD4BE9: after the PR is merged, all tabs started for the ticket close and its worktree and branch go without anyone cleaning up by hand - now without risk of closing a tab that is not the ticket's, and with retries when removal fails."
 review-summary: "none"
-round: 6
+round: 7
 review-gaps: "none - no other script reads a tab label ('tab get' is new here); the per-tab rm the change removed has no leftover; 'gone' differs from 'recs' only by the reaper's own pane, so it is not a duplicate list"
 test-verdict: "fail: reap.sh --dry-run prints 'would close' for a tab whose label names another ticket, which the real run then leaves open"
 review-verdict: "Approve with one reservation. The diff meets all four DoD items and the safety checks (merged head, done lane, dirty worktree, own/main worktree) are sound and tested. Not fully sure about gap 1: if herdr can reuse pane ids after a restart, reap.sh can close a stranger's tab. A label check before 'tab close' would remove that risk — worth deciding before signoff."
