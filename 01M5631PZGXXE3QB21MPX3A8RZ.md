@@ -1,7 +1,7 @@
 ---
 id: 01M5631PZGXXE3QB21MPX3A8RZ
 title: "Das Board laesst rechts einen leeren Streifen, weil jede Spalte zwei Zellen Abstand eingeplant bekommt, die nie gezeichnet werden"
-status: todo
+status: in-progress
 ready: true
 creator: berkc
 assignee: berkc
@@ -18,8 +18,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T23:27:12Z
-updated-at: 2026-10-17T23:30:26Z
+updated-at: 2026-10-17T23:30:28Z
 updated-by: berkc
+outcome-what: boardFit budgets columns at rendered width (no +2)
+outcome-why: lipgloss v2 Width includes border; the +2 left blank strip on the right
+outcome-resolves: board row fills terminal width within <full columns cells
 ---
 
 # Das Board laesst rechts einen leeren Streifen, weil jede Spalte zwei Zellen Abstand eingeplant bekommt, die nie gezeichnet werden
