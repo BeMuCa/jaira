@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T14:35:36Z
+updated-at: 2026-10-17T14:35:39Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-66355
 claimed-at: 2026-10-17T14:11:12Z
@@ -33,7 +33,7 @@ outcome-resolves: "Goal of YD4BE9: after the PR is merged, all tabs started for 
 review-summary: "none"
 round: 5
 review-gaps: "reap.sh exits before any forge call when jaira/panes/ holds no record (was: gh repo view every round once the directory existed). Left: tab close duplicated from run-lane.sh:144-149 (two calls, separate scripts); O(n^2) record rescans over a handful of files"
-test-verdict: "fail: in a fork clone without an 'upstream' remote reap.sh asks gh about the fork, finds no merged PR and never reaps"
+test-verdict: "pass: go vet + go test ./... -race RC=0; DoD 1-5 checked in the tree (proof lines re-read after the last edit); live run on a scratch fork clone with real gh and herdr.exe: feat/rftqkp (merged #87) worktree and branch removed, untracked .jaira/ let through, gone pane's record dropped, an unmerged ticket printed as waiting, --dry-run changed nothing; with no record the script exits before any gh call"
 ---
 
 # Worker-Tabs und ihre Arbeitsbaeume schliessen sich, sobald der Pull Request ihres Tickets gemergt ist
