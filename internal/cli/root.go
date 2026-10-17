@@ -279,10 +279,28 @@ func bestEffortRoot() string {
 	return s.Root
 }
 
-// loadEnv assembles the state gates need.
+// loadEnv assembles the state gates need, against today's board.
 func loadEnv(s *ticket.Store) (gate.Env, []*ticket.Ticket, error) {
-	lanes, err := lane.Load(s.Root)
+	return loadBoardEnv(s, "")
+}
+
+// envFor is loadEnv against the board t runs on: a command on one ticket
+// judges it by its own board's lanes, whatever board it was typed on.
+func envFor(s *ticket.Store, t *ticket.Ticket) (gate.Env, error) {
+	env, _, err := loadBoardEnv(s, t.Board)
+	return env, err
+}
+
+// loadBoardEnv is loadEnv against board's lanes. The tickets it returns are
+// every board's: a blocker or a parent may sit on another board, and the
+// link index has to find it. Commands that show one board filter with
+// onBoard.
+func loadBoardEnv(s *ticket.Store, board string) (gate.Env, []*ticket.Ticket, error) {
+	lanes, err := lane.LoadBoard(s.Root, board)
 	if err != nil {
+		if errors.Is(err, lane.ErrNoSuchBoard) {
+			return gate.Env{}, nil, fail(ExitUsage, "no_such_board", "%v", err)
+		}
 		return gate.Env{}, nil, err
 	}
 	all, err := s.List()
@@ -341,4 +359,28 @@ func identity() string {
 // carries your email and git carries your name.
 func identityAliases() []string {
 	return coreidentity.Aliases(g.dir)
+}
+
+// onBoard keeps the tickets of board — "" or "default" for today's — so a
+// ticket of another board never shows up in a lane its board does not have.
+func onBoard(ts []*ticket.Ticket, board string) ([]*ticket.Ticket, error) {
+	board, err := lane.NormalizeBoard(board)
+	if err != nil {
+		return nil, fail(ExitUsage, "usage", "%v", err)
+	}
+	out := ts[:0:0]
+	for _, t := range ts {
+		if b, _ := lane.NormalizeBoard(t.Board); b == board {
+			out = append(out, t)
+		}
+	}
+	return out, nil
+}
+
+// boardLabel names a board for a person: today's board has no name on disk.
+func boardLabel(board string) string {
+	if board == "" {
+		return lane.DefaultBoardName
+	}
+	return board
 }

@@ -169,10 +169,10 @@ func branchTicket(s *ticket.Store) (id, branch string) {
 
 func newCreateCmd() *cobra.Command {
 	var (
-		title, goalV, contextV, assignee, laneID, tier, body, follows, parent string
-		blockedBy, tags, related, dods                                        []string
-		ready                                                                 bool
-		mine                                                                  bool
+		title, goalV, contextV, assignee, laneID, tier, body, follows, parent, board string
+		blockedBy, tags, related, dods                                               []string
+		ready                                                                        bool
+		mine                                                                         bool
 	)
 	cmd := &cobra.Command{
 		Use:   "create <title>",
@@ -206,10 +206,14 @@ already know it is yours; --assignee wins over it.`,
 			if title == "" {
 				title = strings.Join(args, " ")
 			}
-			lanes, err := lane.Load(s.Root)
+			if board, err = lane.NormalizeBoard(board); err != nil {
+				return fail(ExitUsage, "usage", "%v", err)
+			}
+			env, _, err := loadBoardEnv(s, board)
 			if err != nil {
 				return err
 			}
+			lanes := env.Lanes
 			target := laneID
 			if target == "" {
 				target = lanes.Default().ID
@@ -307,6 +311,11 @@ already know it is yours; --assignee wins over it.`,
 				ticket.FieldModelTier: tier,
 				ticket.FieldCreatedAt: ticket.FormatTime(now),
 				ticket.FieldUpdatedAt: ticket.FormatTime(now),
+			}
+			// Today's board writes no board: line, so a ticket created on it
+			// is the same file it always was.
+			if board != "" {
+				fields[ticket.FieldBoard] = board
 			}
 			// Tags are normalized before they are written, so the board never
 			// carries "UI" and "ui" as two subjects, and registered before the
@@ -453,6 +462,7 @@ already know it is yours; --assignee wins over it.`,
 	f.StringVar(&assignee, "assignee", "", "human who owns the outcome (otherwise set when someone pulls the ticket into work)")
 	f.BoolVar(&mine, "mine", false, "assign the ticket to you now; --assignee wins over it")
 	f.StringVar(&laneID, "lane", "", "lane to create in (default: backlog)")
+	f.StringVar(&board, "board", "", boardFlagUsage)
 	f.StringVar(&tier, "tier", "", "model tier alias for agentic lanes")
 	f.StringVar(&body, "body", "", "markdown body")
 	f.StringSliceVar(&blockedBy, "blocked-by", nil, "ticket ids that must finish first")
@@ -593,7 +603,7 @@ func missingFields(t *ticket.Ticket) []string {
 }
 
 func newListCmd() *cobra.Command {
-	var laneFilter, assigneeFilter, query, tagFilter, milestoneFilter string
+	var laneFilter, assigneeFilter, query, tagFilter, milestoneFilter, board string
 	var actionableOnly bool
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -604,8 +614,11 @@ func newListCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			env, all, err := loadEnv(s)
+			env, all, err := loadBoardEnv(s, board)
 			if err != nil {
+				return err
+			}
+			if all, err = onBoard(all, board); err != nil {
 				return err
 			}
 			// The index is built whether or not --milestone was given, so the
@@ -666,8 +679,12 @@ func newListCmd() *cobra.Command {
 	f.StringVar(&milestoneFilter, "milestone", "", "only tickets in this milestone")
 	f.StringVarP(&query, "query", "q", "", "substring match over title, goal and id")
 	f.BoolVar(&actionableOnly, "actionable", false, "only tickets that could be started right now")
+	f.StringVar(&board, "board", "", boardFlagUsage)
 	return cmd
 }
+
+// boardFlagUsage is the one wording of --board on every command that takes it.
+const boardFlagUsage = "the board to use, a directory under .jaira/boards/ (default: today's board, .jaira/lanes/)"
 
 func matches(t *ticket.Ticket, q string) bool {
 	q = strings.ToLower(q)
@@ -768,7 +785,7 @@ many there are as notes_total.`,
 			if err != nil {
 				return err
 			}
-			env, _, err := loadEnv(s)
+			env, err := envFor(s, t)
 			if err != nil {
 				return err
 			}
@@ -860,6 +877,8 @@ func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env, notesLast int, kid
 		}
 		fmt.Fprintf(w, "%-10s %s\n", k, v)
 	}
+	// Only a ticket off today's board says so: row() skips the empty value.
+	row("board", t.Board)
 	row("lane", t.Status)
 	row("assignee", t.Assignee)
 	row("creator", t.Creator)
@@ -1020,20 +1039,33 @@ its end. Review fields keep their history across loop rounds that way.`,
 			if err != nil {
 				return err
 			}
-			lanes, err := lane.Load(s.Root)
-			if err != nil {
-				return err
+			// A board change is exempt: it is how a ticket whose board went
+			// away, or whose lane its board lacks, gets back onto a board.
+			changesBoard := false
+			for _, a := range assignments {
+				if k, _, _ := strings.Cut(a, "="); strings.TrimSpace(k) == ticket.FieldBoard {
+					changesBoard = true
+				}
 			}
-			if _, known := lanes.Get(cur.Status); !known && cur.Status != "" {
-				return &codedError{
-					code:   ExitValidation,
-					reason: "unknown_lane",
-					message: fmt.Sprintf(
-						"%s sits in unrecognized lane %q and is read-only; install that lane file first",
-						ticket.Handle(cur.ID), cur.Status),
+			if !changesBoard {
+				curEnv, err := envFor(s, cur)
+				if err != nil {
+					return err
+				}
+				if _, known := curEnv.Lanes.Get(cur.Status); !known && cur.Status != "" {
+					return &codedError{
+						code:   ExitValidation,
+						reason: "unknown_lane",
+						message: fmt.Sprintf(
+							"%s sits in unrecognized lane %q and is read-only; install that lane file first",
+							ticket.Handle(cur.ID), cur.Status),
+					}
 				}
 			}
 
+			// landed says where a board change put a ticket whose lane the new
+			// board does not have; empty when its lane came along.
+			landed := ""
 			t, err := s.Mutate(id, func(t *ticket.Ticket) error {
 				for _, a := range assignments {
 					k, v, ok := strings.Cut(a, "=")
@@ -1091,6 +1123,27 @@ its end. Review fields keep their history across loop rounds that way.`,
 					// worse than no mode at all: the person believes a human
 					// is asked before each increment while the worker,
 					// comparing against exactly one word, commits as usual.
+					// board is checked against the disk, and a ticket whose
+					// lane the new board lacks is put in that board's first
+					// lane: a ticket in a lane its board does not have is
+					// read-only, and nothing could move it out again.
+					if k == ticket.FieldBoard {
+						board, err := lane.NormalizeBoard(v)
+						if err != nil {
+							return fail(ExitUsage, "usage", "%v", err)
+						}
+						env, _, err := loadBoardEnv(s, board)
+						if err != nil {
+							return err
+						}
+						if _, ok := env.Lanes.Get(t.Status); !ok && len(env.Lanes.Lanes) > 0 {
+							landed = env.Lanes.Lanes[0].ID
+							if err := t.Doc().SetScalar(ticket.FieldStatus, landed); err != nil {
+								return err
+							}
+						}
+						v = board
+					}
 					if k == ticket.FieldMode {
 						canon, ok := ticket.CanonicalMode(v)
 						if !ok {
@@ -1122,14 +1175,22 @@ its end. Review fields keep their history across loop rounds that way.`,
 			if err != nil {
 				return err
 			}
-			env, _, err := loadEnv(s)
+			env, err := envFor(s, t)
 			if err != nil {
 				return err
 			}
 			if g.jsonOut {
-				return emit(cmd.OutOrStdout(), ticketJSON(t, env.Lanes))
+				j := ticketJSON(t, env.Lanes)
+				if landed != "" {
+					j["landed_in"] = landed
+				}
+				return emit(cmd.OutOrStdout(), j)
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Updated %s\n", ticket.Handle(t.ID))
+			if landed != "" {
+				fmt.Fprintf(cmd.OutOrStdout(), "Board %s has no lane %q; %s is now in %s, its first lane\n",
+					boardLabel(t.Board), cur.Status, ticket.Handle(t.ID), landed)
+			}
 			if miss := missingFields(t); len(miss) > 0 {
 				fmt.Fprintf(cmd.OutOrStdout(), "Still needed before it can start: %s\n", strings.Join(miss, ", "))
 			}
@@ -1548,6 +1609,7 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		"id":                 t.ID,
 		"handle":             ticket.Handle(t.ID),
 		"title":              t.Title,
+		"board":              t.Board,
 		"status":             t.Status,
 		"status_known":       known,
 		"ready":              gate.Ready(t),

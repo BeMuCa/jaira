@@ -58,6 +58,14 @@ const (
 	FieldMode      = "mode"
 	FieldClaimedAt = "claimed-at"
 
+	// FieldBoard names the board whose lanes this ticket runs through: a
+	// directory under .jaira/boards/ (see core/lane.LoadBoard). Absent or
+	// empty is the board the repository has always had, .jaira/lanes/ — which
+	// is why a board from before there were several needs no migration.
+	// Changing boards is this one line rather than a rename, so it never
+	// meets a concurrent edit as a rename/modify conflict.
+	FieldBoard = "board"
+
 	// The outcome is three flat keys rather than a nested mapping. Nesting would
 	// force the writer to rewrite an indented block to change one field, and the
 	// merge driver resolves per top-level key — flat keys keep both operations
@@ -178,7 +186,7 @@ func CanonicalMode(v string) (string, bool) {
 // canonicalOrder is the order in which fields are written into a new ticket.
 // Existing files are never reordered; this only shapes files jaira creates.
 var canonicalOrder = []string{
-	FieldID, FieldTitle, FieldStatus, FieldReady,
+	FieldID, FieldTitle, FieldBoard, FieldStatus, FieldReady,
 	FieldCreator, FieldAssignee, FieldExecutedBy,
 	FieldGoal, FieldContext, FieldDoD,
 	FieldTags, FieldBlockedBy, FieldBlockedReason, FieldParent, FieldRelated, FieldFollows, FieldCommits, FieldModelTier,
@@ -232,6 +240,7 @@ type Ticket struct {
 	ModelTier  string
 	Question   string
 	Mode       string
+	Board      string
 	ClaimedBy  string
 	ClaimedAt  time.Time
 	CreatedAt  time.Time
@@ -659,6 +668,7 @@ func decodeFields(d *Doc, f *Fields, path string) (*Ticket, error) {
 	t.ModelTier = str(FieldModelTier)
 	t.Question = str(FieldQuestion)
 	t.Mode = str(FieldMode)
+	t.Board = str(FieldBoard)
 	t.ClaimedBy = str(FieldClaimedBy)
 	t.BlockedBy = list(FieldBlockedBy)
 	t.Tags = list(FieldTags)
