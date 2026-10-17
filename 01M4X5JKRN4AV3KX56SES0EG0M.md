@@ -27,14 +27,14 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:35:44Z
+updated-at: 2026-10-17T12:38:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-73711
 claimed-at: 2026-10-17T12:17:54Z
 outcome-what: "Mehrere Boards pro Repo: core/lane/boards.go (LoadBoard, Boards, NormalizeBoard), Feld board: im Ticket, --board an create/list/next, Einzelticket-Kommandos lesen das Board vom Ticket, set board=<name> mit Fallback auf die erste Lane, TUI-Taste F"
 outcome-why: "Ein Repo braucht Boards mit eigenen Lanes neben den SWE-Lanes, z.B. ein video-Board in demo-video fuer eine Designerin"
 outcome-resolves: "S0EG0M: alle sechs DoD-Punkte, Tests in internal/cli/boards_test.go und internal/tui/boards_test.go"
-review-summary: "Keine Befunde in Runde 3: Form passt zum Bestand (LoadBoard neben Load mit gemeinsamem assemble, boardLanes wie loadEnv als CLI-Helfer, board: wie mode als Frontmatter-Skalar). Bewusst stehen gelassen (Note 'Stand'): brettweite Kommandos bleiben auf dem heutigen Board."
+review-summary: "Ein Repo kann neben .jaira/lanes/ weitere Boards unter .jaira/boards/<name>/lanes/ haben (core/lane/boards.go: LoadBoard, Boards, NormalizeBoard; Load und LoadBoard teilen assemble). Ein Ticket traegt sein Board im Frontmatter-Feld board:; fehlt es, gehoert es zum heutigen Board, bestehende Boards brauchen keine Migration. create/list/next nehmen --board (unbekannter oder falsch geschriebener Name: Exit 2 mit Liste der Boards). Kommandos auf ein Ticket (show, move, dod, set, claim, resume, logbook <id>) laden die Lanes des Boards des Tickets ueber envFor/boardLanes. jaira set <id> board=<name> wechselt das Board und setzt das Ticket in die erste Lane des neuen Boards, wenn seine Lane dort fehlt, mit Meldung bzw. landed_in im JSON. TUI: F schaltet reihum durch die Boards, zeigt deren Lanes und nur deren Tickets, im Kopf steht board: <name>. Tests: internal/cli/boards_test.go, internal/tui/boards_test.go; go test fuer cli, tui und core ist gruen."
 round: 3
 review-gaps: "indexByID (core/lane/lane.go) ersetzt die dreifach kopierte builtinByID-Schleife (Load, migrateLegacy, LoadBoard); hasLaneFiles (core/lane/boards.go) fuer die doppelte Glob-Pruefung in Boards und LoadBoard; boardLabel mit einem Aufrufer durch cmp.Or ersetzt. Stehen gelassen: ProjectLanesActive prueft dasselbe mit Stat+Glob (vorbestehend); resume laedt Lanes pro Board mit Cache, kein Mehraufwand auf heissem Pfad."
 test-verdict: "pass: go test -race ./... nach go clean -testcache RC=0; DoD 2-6 im Baum geprueft (boards_test.go in cli und tui laufen gruen, release note da); Binaer auf Scratch-Repo: create/list/next --board video, unbekanntes Board Exit 2 mit Liste, move/claim/dod/note/tag auf video-Ticket, set board=video landet in backlog mit Meldung, board= zurueck. TUI-Taste F nur ueber Tests (echte Tastendispatch), nicht interaktiv"
