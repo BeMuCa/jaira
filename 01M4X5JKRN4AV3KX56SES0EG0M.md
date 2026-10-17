@@ -27,10 +27,10 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:46:35Z
+updated-at: 2026-10-17T12:50:10Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-73711
-claimed-at: 2026-10-17T12:17:54Z
+claimed-by: DESKTOP-RFTCH11-67696
+claimed-at: 2026-10-17T12:50:10Z
 outcome-what: "Mehrere Boards pro Repo: core/lane/boards.go (LoadBoard, Boards, NormalizeBoard), Feld board: im Ticket, --board an create/list/next, Einzelticket-Kommandos lesen das Board vom Ticket, set board=<name> mit Fallback auf die erste Lane, TUI-Taste F"
 outcome-why: "Ein Repo braucht Boards mit eigenen Lanes neben den SWE-Lanes, z.B. ein video-Board in demo-video fuer eine Designerin"
 outcome-resolves: "S0EG0M: alle sechs DoD-Punkte, Tests in internal/cli/boards_test.go und internal/tui/boards_test.go"
