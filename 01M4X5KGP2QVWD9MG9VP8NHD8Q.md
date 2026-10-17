@@ -18,7 +18,7 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:43Z
-updated-at: 2026-10-17T12:42:11Z
+updated-at: 2026-10-17T12:42:14Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-65566
 claimed-at: 2026-10-17T12:36:37Z
@@ -34,7 +34,8 @@ claimed-at: 2026-10-17T12:36:37Z
   proof: core/role/builtin/jaira-teamlead/SKILL.md:89 'A new ticket goes on the board its subject belongs to'; TestRolesWorkTheTicketsBoard
 - [x] jaira-worker und Dispatcher lesen das Board vom Ticket und arbeiten dessen Lanes ab, nicht die des Standard-Boards; Test
   proof: core/role/builtin/jaira-dispatcher/SKILL.md:230, jaira-worker/SKILL.md:127; tests TestWorkerPathRunsTheTicketsBoard, TestRolesWorkTheTicketsBoard
-- [ ] Eine Zeile in core/release/notes/8NHD8Q.md
+- [x] Eine Zeile in core/release/notes/8NHD8Q.md
+  proof: core/release/notes/8NHD8Q.md:1
 
 ## Options
 
