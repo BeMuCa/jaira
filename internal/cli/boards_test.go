@@ -179,6 +179,71 @@ func TestSingleBoardRunsUnchanged(t *testing.T) {
 	}
 }
 
+// jaira boards is what a teamlead reads to choose a board: every board, today's
+// as "default", with its open tickets and its description — today's board set
+// up from the built-ins says it is for code, a description wrapped by hand
+// reads back as one line, a missing one says where it goes.
+func TestBoardsListsEveryBoardWithItsDescription(t *testing.T) {
+	dir := newTwoBoards(t)
+	desc := filepath.Join(dir, ticket.DirName, "boards", "video", "lanes", "description")
+	if err := os.WriteFile(desc, []byte("Videos made from demos:\n  script, render.\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	jsonCLI(t, dir, "create", "intro", "--board", "video", "--goal", "g", "--context", "c", "--dod", "d")
+
+	v := jsonCLI(t, dir, "boards")
+	rows := v["boards"].([]any)
+	if len(rows) != 2 {
+		t.Fatalf("boards: %v, want default and video", rows)
+	}
+	def, vid := rows[0].(map[string]any), rows[1].(map[string]any)
+	if def["name"] != "default" || def["description"] != "Changes to this repository's code: features, fixes, refactors, tests and docs." || def["open"] != float64(0) {
+		t.Errorf("default row: %v", def)
+	}
+	if vid["name"] != "video" || vid["description"] != "Videos made from demos: script, render." || vid["open"] != float64(1) || vid["description_file"] != desc {
+		t.Errorf("video row: %v", vid)
+	}
+
+	if err := os.Remove(desc); err != nil {
+		t.Fatal(err)
+	}
+	out, err := runCLI(t, dir, "boards")
+	if err != nil {
+		t.Fatalf("boards: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "no description yet — write one into .jaira/boards/video/lanes/description") {
+		t.Errorf("a board without a description does not say where it goes:\n%s", out)
+	}
+}
+
+// What a worker or a dispatcher runs on a ticket of another board works that
+// board's lanes: next --per-lane --board finds it in its own lane, and the
+// lane's brief and the move come from the ticket's board without --board.
+func TestWorkerPathRunsTheTicketsBoard(t *testing.T) {
+	dir := newTwoBoards(t)
+	render := filepath.Join(dir, ticket.DirName, "boards", "video", "lanes", "render.md")
+	body := "---\nid: render\nname: Render\nafter: script\nprecedence: 20\nagentic: true\nmodel-tier: cheap\noutput-produces: [outcome-what]\n---\n\n# Prompt\n\nRender the film.\n"
+	if err := os.WriteFile(render, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	h := jsonCLI(t, dir, "create", "intro", "--board", "video", "--goal", "g", "--context", "c", "--dod", "d", "--assignee", "berk")["handle"].(string)
+	if out, err := runCLI(t, dir, "move", h, "--to", "render"); err != nil {
+		t.Fatalf("move to render: %v\n%s", err, out)
+	}
+
+	per := jsonCLI(t, dir, "next", "--per-lane", "--board", "video")
+	if per["count"] != float64(1) || per["lanes"].([]any)[0].(map[string]any)["lane"] != "render" {
+		t.Errorf("next --per-lane --board video: %v, want the ticket in render", per)
+	}
+	if per := jsonCLI(t, dir, "next", "--per-lane"); per["count"] != float64(0) {
+		t.Errorf("next --per-lane on today's board handed out the video ticket: %v", per)
+	}
+	brief := jsonCLI(t, dir, "show", h, "--for-lane", "render")
+	if !strings.Contains(brief["prompt"].(string), "Render the film.") || brief["model_tier"] != "cheap" {
+		t.Errorf("--for-lane render: %v, want the video board's render lane", brief)
+	}
+}
+
 // validate judges each ticket by its own board's lanes: a ticket in a lane
 // only its board has is valid, not read-only.
 func TestValidateChecksEachTicketAgainstItsBoard(t *testing.T) {

@@ -750,6 +750,14 @@ func setUp(root string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	// The built-ins are a board for code, and saying so is what lets a
+	// teamlead tell it from a second board in the same repository. Lanes from
+	// a default board could be a board for anything: those get no guess.
+	if len(db.Lanes) == 0 {
+		if err := writeDefaultDescription(root); err != nil {
+			return nil, err
+		}
+	}
 	warnings = append(warnings, fmt.Sprintf(
 		"set up %s with %d lane(s) from %s — this board's lanes are its own now; 'jaira lanes' lists them, 'jaira lanes add|remove' changes them",
 		ProjectLanesDir(root), len(written), source))

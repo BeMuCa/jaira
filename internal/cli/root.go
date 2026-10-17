@@ -200,6 +200,7 @@ Exit codes:
 		newLinksCmd(),
 		newSetCmd(),
 		newTagsCmd(),
+		newBoardsCmd(),
 		newTagCmd(),
 		newMilestoneCmd(),
 		newEpicCmd(),

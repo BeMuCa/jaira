@@ -226,9 +226,16 @@ anything acts on it — the same rule as step 4 above.
 
 ```bash
 jaira claim <id>                              # before anything else
-jaira next --per-lane --json                  # which lane is next, and whose
+jaira show <id> --json                        # board, status, next_lane
+jaira next --per-lane --board <board> --json  # which lane is next, and whose
 jaira show <id> --for-lane <lane> --json      # the worker's whole brief
 ```
+
+The lanes are those of the ticket's board: `board` in `jaira show <id>
+--json`, `default` where it is empty. `show`, `move` and `--for-lane` read it
+off the ticket by themselves; `next` and `list` show today's board unless
+`--board` names another, and without it a ticket on another board is not in
+them at all.
 
 `show --for-lane` already assembles the lane prompt, the bounded input, the
 model tier and the outputs the lane owes back. Do not write a brief of your

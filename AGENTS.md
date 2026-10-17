@@ -45,6 +45,12 @@ Capturing and picking work:
   (follow-ups counted); an epic is a description plus a ticket list on its own
   ref, not a ticket. `jaira epic show <name>` lists its tickets, `jaira epic add
   <name> <id>...` sorts tickets in, `jaira epic ls --unassigned` lists the rest
+- `jaira boards` — the boards of this repository and what each is for. A ticket
+  runs through the lanes of the board it is on, so where this lists more than
+  `default`, **read it before you create one** and file the ticket on the board
+  its subject belongs to: `jaira create --board <name>`. `list` and `next` show
+  today's board; `--board <name>` shows another, and `jaira set <id>
+  board=<name>` moves a ticket across
 
 Working a ticket:
 

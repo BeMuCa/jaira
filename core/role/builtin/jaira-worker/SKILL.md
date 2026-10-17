@@ -121,8 +121,15 @@ never out of the line that started you.
 
 ```bash
 jaira claim <id>              # before anything else; other sessions read this board
-jaira show <id> --json        # status, next_lane, mode, notes
+jaira show <id> --json        # board, status, next_lane, mode, notes
 ```
+
+The lanes are those of the ticket's board — `board` in that payload,
+`default` where it is empty — not necessarily today's. `show`, `move` and
+`--for-lane` read it off the ticket by themselves; `next`, `list` and
+`lanes` show today's board, so `next` and `list` need `--board <board>`, and
+a lane's `context` comes from its `--for-lane` payload, not from `jaira
+lanes`.
 
 Then, until you stop:
 
@@ -136,7 +143,7 @@ Then, until you stop:
    wanting). Every lane's prompt applies to you as written — the critique lane
    is not lighter because you wrote the code.
 3. **Is `next_lane` marked fresh?** (`context: fresh` in its `--for-lane`
-   payload, `fresh` in `jaira lanes`.) Then it is not yours. Move the ticket
+   payload.) Then it is not yours. Move the ticket
    into it and hand it to a new agent — see "The fresh lane" below.
 4. **Is `next_lane` a lane a person owns?** Deliver into it and stop. `human`
    takes a ticket only with an open question (`--question`); `next_lane`

@@ -378,6 +378,28 @@ func TestWorkerNamesScriptsThatShip(t *testing.T) {
 	}
 }
 
+// A ticket on another board runs through that board's lanes only if the
+// roles that carry it say where its board comes from: the teamlead reads
+// jaira boards before it creates one, and the dispatcher and the worker list
+// with the ticket's --board, since next and list show today's board.
+func TestRolesWorkTheTicketsBoard(t *testing.T) {
+	for role, want := range map[string][]string{
+		"jaira-teamlead":   {"jaira boards", "--board <name>", "do not guess"},
+		"jaira-dispatcher": {"jaira next --per-lane --board <board> --json", "`board` in `jaira show <id>\n--json`"},
+		"jaira-worker":     {"`board` in that payload", "`--board <board>`"},
+	} {
+		b, err := File(role, skillFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, w := range want {
+			if !strings.Contains(string(b), w) {
+				t.Errorf("%s does not say %q", role, w)
+			}
+		}
+	}
+}
+
 // The Discuss chat brings its decision back: a note, a move back that jaira
 // takes for a ticket that already has its outcome, and a line to the session
 // that opened it. A move line carrying --what/--why/--resolves is refused for
