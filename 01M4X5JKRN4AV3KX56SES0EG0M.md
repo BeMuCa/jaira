@@ -1,7 +1,7 @@
 ---
 id: 01M4X5JKRN4AV3KX56SES0EG0M
 title: "Ein Repo kann mehrere Boards haben, jedes mit eigenen Lanes fuer sein Thema"
-status: signoff
+status: in-progress
 ready: true
 creator: BeMuCa
 assignee: Alexander Sacharov
@@ -27,7 +27,7 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:51:04Z
+updated-at: 2026-10-17T12:51:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-67696
 claimed-at: 2026-10-17T12:50:10Z
@@ -35,7 +35,7 @@ outcome-what: "Mehrere Boards pro Repo: core/lane/boards.go (LoadBoard, Boards, 
 outcome-why: "Ein Repo braucht Boards mit eigenen Lanes neben den SWE-Lanes, z.B. ein video-Board in demo-video fuer eine Designerin"
 outcome-resolves: "S0EG0M: alle sechs DoD-Punkte, Tests in internal/cli/boards_test.go und internal/tui/boards_test.go"
 review-summary: "Ein Repo kann jetzt neben .jaira/lanes/ weitere Boards unter .jaira/boards/<name>/lanes/ haben (core/lane/boards.go: LoadBoard, Boards, NormalizeBoard, BoardOf, LanesOf). Ein Ticket traegt das Feld board: (core/ticket/schema.go); fehlt es, gilt das heutige Board - bestehende Boards laufen ohne Migration. create/list/next nehmen --board (unbekannter Name: Exit 2 mit Liste der Boards); show/move/dod/claim/set/logbook <id> lesen die Lanes vom Board des Tickets (envFor in internal/cli/root.go). set board=<name> wechselt das Board; fehlt die Lane dort, setzt jaira status auf die erste Lane des neuen Boards und sagt das (landed_in im JSON). validate und resume pruefen jedes Ticket gegen sein eigenes Board. TUI: F schaltet reihum durch die Boards, zeigt deren Lanes und nur deren Tickets, Kopfzeile 'board: <name>'; n und Follow-up schreiben das gezeigte Board ins Ticket. Brettweite Kommandos (logbook --all, milestone, sync, archive, tags-Liste, links, lanes, merge-driver) bleiben auf dem heutigen Board."
-round: 5
+round: 6
 review-gaps: "1) Merge-Driver (internal/cli/mergedriver.go:55) laedt nur die Lanes des heutigen Boards. core/merge/merge.go mergeStatus vergleicht Precedence: fuer ein Ticket auf einem benannten Board sind dessen Lanes dort unbekannt (-1), also 'kept ours' egal welche Seite weiter ist - oder, wenn eine Lane-ID zufaellig auch im heutigen Board existiert (z.B. human), wird nach der falschen Reihenfolge entschieden und Fortschritt kann zurueckgedreht werden. Fix klein: Board aus ours/theirs-Frontmatter lesen und lane.LoadBoard(root, board) nehmen. Verletzt die Concurrency-Vorgabe, steht aber nicht ausdruecklich im DoD. 2) Frontmatter definition-of-done steht noch auf dem alten Text 'Design als Spec unter docs/superpowers/specs/, von Berk freigegeben' - der Body-DoD und die decision-Notes sagen etwas anderes; wer das Feld liest, sieht einen nie erfuellten DoD. Fix: jaira set S0EG0M definition-of-done=... 3) Klein/kosmetisch: set board=default hinterlaesst 'board: \"\"' statt die Zeile zu entfernen; harmlos, BoardOf liest es als heutiges Board."
 test-verdict: "pass (Runde 2): go clean -testcache; go test -race ./... RC=0; DoD 2-6 im Baum (boards_test.go cli+tui gruen, neu TestValidateChecksEachTicketAgainstItsBoard und createTicket-Teil von TestShiftFPicksABoard); Binaer: video-Ticket in Lane script, jaira validate RC=0 ohne unknown_lane (Review-Gap 2 behoben). TUI-Taste F und n nur ueber Tests"
 review-verdict: "Alle sechs DoD-Punkte sind im Diff erfuellt und im Temp-Repo nachgestellt (create/list/next --board, Tippfehler Exit 2, set board= mit Fallback-Meldung, validate gruen, go test ./... gruen). Nicht ganz fertig wegen Gap 1: der Merge-Driver entscheidet Status-Konflikte auf benannten Boards nach den falschen Lanes - fuer ein Repo mit parallelen Sessions der Fall, fuer den das Feature gebaut ist. Empfehlung: Gap 1 und 2 vor dem Annehmen beheben (zusammen ca. 30 Minuten), oder bewusst als Folgearbeit annehmen."
