@@ -142,3 +142,19 @@ func Description(root, name string) string {
 	lines, _ := readIDList(DescriptionPath(root, name))
 	return strings.Join(lines, " ")
 }
+
+// LanesOf returns a lookup of each ticket's own board's lanes in root, each
+// board loaded once, for a command that walks tickets of every board. A
+// board that cannot be loaded gives nil.
+func LanesOf(root string) func(*ticket.Ticket) *Set {
+	boards := map[string]*Set{}
+	return func(t *ticket.Ticket) *Set {
+		b := BoardOf(t)
+		if set, ok := boards[b]; ok {
+			return set
+		}
+		set, _ := LoadBoard(root, b)
+		boards[b] = set
+		return set
+	}
+}
