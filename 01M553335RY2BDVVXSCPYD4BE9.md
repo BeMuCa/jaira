@@ -23,14 +23,14 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:41:56Z
+updated-at: 2026-10-17T16:44:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
 outcome-what: "reap.sh closes a recorded tab only when 'herdr tab get' still labels it <ticket>/<lane> - a reused pane id in a stranger's tab drops the record and closes nothing, and --dry-run applies the same check; records go only after tabs, worktree and branch all went, so a failed git worktree remove or branch -D is retried next round. Two new tests in core/role/reap_test.go."
 outcome-why: "Given back from signoff: records outlive tabs by days and herdr may reuse ids after a restart, so a pane id alone could close another ticket's live worker; and a record removed before the worktree left a failed remove standing forever."
 outcome-resolves: "Goal of YD4BE9: after the PR is merged, all tabs started for the ticket close and its worktree and branch go without anyone cleaning up by hand - now without risk of closing a tab that is not the ticket's, and with retries when removal fails."
-review-summary: "none"
+review-summary: "spawn.sh now writes one file per tab under <git common dir>/jaira/panes/ (pane, ticket, lane, worktree). New reap.sh beside it reads those files, groups them by ticket, asks gh (or glab) whether the ticket's branch has a merged PR - for a fork clone it asks the parent repo - and only then checks: ticket in done or filed away, local branch at or behind the merged head, worktree without uncommitted changes (untracked .jaira/ ignored). If all hold it closes each recorded tab whose herdr label still reads <ticket>/<lane>, removes the worktree (never the main one or its own), deletes the branch with -D, and deletes the records only when all of that worked, so a failure is retried next round. --dry-run prints 'would ...' lines after the same checks. The teamlead skill runs reap.sh every round and reports closed/kept lines; release note added. 6 Go tests in core/role/reap_test.go with herdr/gh/jaira stubs."
 round: 7
 review-gaps: "none - one line moved, nothing added"
 test-verdict: "pass: go test ./... -race rc=0; DoD 1-5 verified in the tree; live on a scratch clone with real herdr.exe and gh (feat/rftqkp = merged #87): dry-run and run close only the tab labelled RFTQKP/worker, a stranger-labelled tab recorded as RFTQKP/review stays open, records gone, worktree and branch removed, rc=0; failed-remove retry covered by TestReapComesBackToAWorktreeItCouldNotRemove"
