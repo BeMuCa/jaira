@@ -27,7 +27,7 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T13:04:37Z
+updated-at: 2026-10-17T13:06:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-67696
 claimed-at: 2026-10-17T12:50:10Z
@@ -37,7 +37,7 @@ outcome-resolves: "S0EG0M: alle sechs DoD-Punkte, Tests in internal/cli/boards_t
 review-summary: "Runde 7 (Taste b): keine Befunde. b auf der Board-Ebene war frei; die Detailansicht (model.go modeDetail, b = Blocker folgen) und die Milestone-Ebene (layer.go keyLayer) kehren vor der Board-Ebene zurueck, die Bedeutungen ueberschneiden sich nicht. Bewusst stehen gelassen (decision Alexander): derselbe Buchstabe heisst auf dem Board 'naechstes Board' und im offenen Ticket 'Blocker folgen'."
 round: 7
 review-gaps: "Runde 4 (Taste b): nichts zu entfernen - eine Zeile case, Hilfe, Note und Test umbenannt. Frueheres siehe Notes."
-test-verdict: "pass (Runde 3): go test -race ./... RC=0; TestMergeDriverUsesTheTicketsBoard rot ohne Fix, gruen mit; DoD 1-6 unveraendert gedeckt (boards_test.go cli+tui)"
+test-verdict: "pass (Runde 4, Taste b): go clean -testcache; go test -race ./... RC=0; TestBPicksABoard und TestBOnASingleBoardExplains druecken b durch die echte Tastendispatch; TestHelpExplainsEveryCardMark gruen (Hilfe 'p b' haelt das 60-Zeilen-Fenster)"
 review-verdict: "Die Diff erfuellt alle sechs DoD-Punkte; go test ./... gruen; create/list/next --board, Tippfehler-Board (Exit 2, kein Ordner angelegt), set board= hin und zurueck mit Landen in der ersten Lane und validate im Temp-Repo mit dem gebauten Binary nachgestellt. Die Gaps der beiden frueheren Reviews (TUI n/Follow-up, validate, Link-Index, Merge-Driver, Frontmatter-DoD) sind behoben. Offen nur Grenzen fuer brettweites Logbook-Ablegen und kosmetische board:-Schreibweisen - nicht blockierend. Annehmbar."
 review-round: 6
 review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/r && cd /tmp/r && git init && git commit --allow-empty -m i && /tmp/jaira init  3. mkdir -p .jaira/boards/video/lanes && cp .jaira/lanes/*.md .jaira/boards/video/lanes/ (oder eigene Lane-Dateien)  4. /tmp/jaira create V1 --board video --goal g --context c --dod d  -> das Ticket hat 'board: video'  5. /tmp/jaira list  -> V1 fehlt; /tmp/jaira list --board video -> V1 steht da  6. /tmp/jaira list --board vidoe -> 'no such board \"vidoe\"; boards here: default, video', Exit 2, kein Ordner vidoe entsteht  7. /tmp/jaira set <V1-id> board=default -> 'Updated', ggf. 'Board default has no lane ...; ... is now in backlog'  8. /tmp/jaira tui (bzw. jaira), F druecken -> Kopfzeile zeigt 'board: video', nur dessen Lanes und Tickets; nochmal F -> zurueck zum heutigen Board"
