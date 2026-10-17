@@ -24,7 +24,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T20:36:33Z
-updated-at: 2026-10-17T20:38:22Z
+updated-at: 2026-10-17T20:38:28Z
 updated-by: berkc
 claimed-by: berk-ca-283567
 claimed-at: 2026-10-17T20:37:26Z
@@ -51,3 +51,4 @@ Release-Note in core/release/notes/<ID>.md
 
 ## Progress
 - **2026-10-17 20:37 · berkc** — berkc took this ticket over from BeMuCa
+- **2026-10-17 20:38 · berkc** — One roles install call writes skills+cockpit (no separate flag), so one honest step 'Setting up the skills and the Cockpit'. Progress bar: curl only, only when stderr is a TTY. Opt-out JAIRA_NO_ROLES. install.ps1 unverified: no pwsh on this box.
