@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T23:27:12Z
-updated-at: 2026-10-17T23:37:44Z
+updated-at: 2026-10-17T23:37:47Z
 updated-by: berkc
 outcome-what: boardFit budgets columns at rendered width (no +2)
 outcome-why: lipgloss v2 Width includes border; the +2 left blank strip on the right
