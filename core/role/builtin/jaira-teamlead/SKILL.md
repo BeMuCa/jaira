@@ -31,12 +31,11 @@ Then clear away what is finished, every round, before you start anything:
 
 It closes every tab `spawn.sh` opened for a ticket whose pull request is
 merged — worker, dispatcher, lane and review agents alike — and removes that
-ticket's worktree and local branch. It keeps a ticket that is not done, whose
-branch holds commits past the merged head, or whose worktree has uncommitted
-changes, and prints why. Tell the person, in one line each, what it closed and
-what it kept; nothing either way: say nothing. `--dry-run` shows the same
-without doing it. Run it from the repository, never from a worktree it may
-remove.
+ticket's worktree and local branch. A merged ticket it keeps — not done, its
+branch past the merged head, or uncommitted changes in its worktree — comes
+with the reason. Tell the person, in one line each, what it `closed` and what
+it `kept`; `waiting` lines are work in flight and not news; nothing either way:
+say nothing. `--dry-run` shows the same without doing it.
 
 Then name what happened on the board in the last seven days, newest day
 first, with who did it — the person slept, and what a session filed at night

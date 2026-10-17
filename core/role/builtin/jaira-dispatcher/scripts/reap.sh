@@ -12,12 +12,13 @@ Reads the tabs spawn.sh recorded under the repository's git directory
 (jaira/panes/) and, for every ticket whose pull request is merged, closes its
 tabs, removes its worktree with 'git worktree remove' and deletes its local
 branch. Nothing else is ever touched: a tab spawn.sh did not start has no
-record, and the repository's main worktree is never removed.
+record, and neither the main worktree nor the one this runs in is removed.
 
-A ticket is kept, with the reason printed, when
-  - its branch has no merged pull request (gh on GitHub, glab on GitLab;
-    'git config jaira.forge' settles a host that names neither),
-  - its local branch holds commits the merged pull request does not,
+A ticket whose branch has no merged pull request yet (gh on GitHub, glab on
+GitLab; 'git config jaira.forge' settles a host that names neither) is left
+alone as 'waiting'. A merged one is kept, with the reason printed, when
+  - its local branch is not at the merged head: commits past it, or the head
+    never fetched,
   - one of its worktrees has changes that are not committed (untracked files
     under .jaira/ do not count),
   - the ticket is back on the board in a lane other than done.
@@ -26,7 +27,8 @@ A ticket is kept, with the reason printed, when
   -h, --help  This text.
 
 Output: one line per thing done — 'closed <ticket>/<lane> <pane>', 'removed
-<worktree>', 'deleted branch <branch>' — or 'kept <ticket>: <reason>'; with
+<worktree>', 'deleted branch <branch>' — or 'waiting <ticket>: <reason>' and
+'kept <ticket>: <reason>'; with
 --dry-run the first three start with 'would'. Exit 0 also when something was
 kept: keeping is the answer, not a failure.
 
@@ -95,12 +97,22 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
     w="$(field worktree "$f")"
     [ -d "$w" ] || continue
     w="$(cd "$w" && pwd -P)"
-    [ "$w" = "$main" ] && continue
+    # Neither the main worktree nor the one this runs in is ever removed.
+    { [ "$w" = "$main" ] || [ "$w" = "$root" ]; } && continue
     case " ${wts[*]-} " in *" $w "*) continue ;; esac
     wts+=("$w")
     [ -n "$branch" ] || branch="$(git -C "$w" symbolic-ref --short HEAD 2>/dev/null || true)"
   done
   [ -n "$branch" ] || branch="${JAIRA_BRANCH_PREFIX:-feat}/$(printf '%s' "$t" | tr '[:upper:]' '[:lower:]')"
+
+  if [ -z "$forge" ]; then
+    echo "kept $t: cannot tell the forge from origin; set it with 'git config jaira.forge github' (or gitlab)"; continue
+  fi
+  if ! head="$(merged_head "$branch" 2>/dev/null)"; then
+    echo "kept $t: asking $forge about $branch failed"; continue
+  fi
+  # Work still under way, the usual case: named, but not as something kept.
+  if [ -z "$head" ]; then echo "waiting $t: $branch has no merged pull request"; continue; fi
 
   # A merged pull request is not the end when the ticket came back: a person
   # gave it back and its worker answers there. Filed away reads as done; a
@@ -113,19 +125,12 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
     echo "kept $t: jaira show $t failed (exit $rc)"; continue
   fi
 
-  if [ -z "$forge" ]; then
-    echo "kept $t: cannot tell the forge from origin; set it with 'git config jaira.forge github' (or gitlab)"; continue
-  fi
-  if ! head="$(merged_head "$branch" 2>/dev/null)"; then
-    echo "kept $t: asking $forge about $branch failed"; continue
-  fi
-  if [ -z "$head" ]; then echo "kept $t: $branch has no merged pull request"; continue; fi
-
   # A squash or rebase merge leaves the branch unmerged in git's eyes, so the
-  # pull request's head is the measure: anything past it was never merged.
+  # pull request's head is the measure: anything past it was never merged. A
+  # head that was never fetched cannot be compared either, and is kept alike.
   if tip="$(git -C "$root" rev-parse --verify -q "refs/heads/$branch")" \
     && [ "$tip" != "$head" ] && ! git -C "$root" merge-base --is-ancestor "$tip" "$head" 2>/dev/null; then
-    echo "kept $t: $branch has commits the merged pull request does not"; continue
+    echo "kept $t: $branch is not at the merged head ${head:0:12}"; continue
   fi
 
   dirty=""
@@ -158,10 +163,15 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
     # --force for the untracked .jaira/ files the check above lets through.
     git -C "$root" worktree remove --force "$w" >/dev/null && echo "removed $w"
   done
-  if git -C "$root" show-ref -q --verify "refs/heads/$branch"; then
+  # A branch checked out in a worktree that stays — the main one, or the one
+  # this runs in — stays with it.
+  if git -C "$root" show-ref -q --verify "refs/heads/$branch" \
+    && [ "$(git -C "$root" symbolic-ref -q --short HEAD)" != "$branch" ] \
+    && [ "$(git -C "$main" symbolic-ref -q --short HEAD)" != "$branch" ]; then
     if [ -n "$dry" ]; then echo "would delete branch $branch"
     # -D, because a squash merge is no merge to git; the head check above
     # stands in for the one -d would make.
     else git -C "$root" branch -D "$branch" >/dev/null && echo "deleted branch $branch"; fi
   fi
 done
+exit 0

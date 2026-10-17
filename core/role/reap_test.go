@@ -230,26 +230,26 @@ func TestReapKeepsWhatIsNotFinished(t *testing.T) {
 		why   string
 	}{
 		"not merged": {
-			func(t *testing.T, r *reapRig) {}, "feat/ab12cd has no merged pull request",
+			func(t *testing.T, r *reapRig) {}, "waiting AB12CD: feat/ab12cd has no merged pull request",
 		},
 		"uncommitted": {
 			func(t *testing.T, r *reapRig) {
 				r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
 				r.write(t, filepath.Join(r.wt, "README"), "changed\n")
-			}, r0 + " has uncommitted changes: README",
+			}, "kept AB12CD: " + r0 + " has uncommitted changes: README",
 		},
 		"committed after the merge": {
 			func(t *testing.T, r *reapRig) {
 				r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
 				r.write(t, filepath.Join(r.wt, "README"), "later\n")
 				r.git(t, r.wt, "commit", "-q", "-am", "later")
-			}, "feat/ab12cd has commits the merged pull request does not",
+			}, "kept AB12CD: feat/ab12cd is not at the merged head",
 		},
 		"given back": {
 			func(t *testing.T, r *reapRig) {
 				r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
 				r.write(t, r.shown, `{"status":"in-progress"}`)
-			}, "the ticket is in in-progress, not done",
+			}, "kept AB12CD: the ticket is in in-progress, not done",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -257,7 +257,7 @@ func TestReapKeepsWhatIsNotFinished(t *testing.T) {
 			r := newReapRig(t)
 			c.setup(t, r)
 			out := r.run(t, r.repo, "reap.sh")
-			want := "kept AB12CD: " + strings.ReplaceAll(c.why, r0, r.wt)
+			want := strings.ReplaceAll(c.why, r0, r.wt)
 			if !strings.Contains(out, want) {
 				t.Errorf("want %q, got:\n%s", want, out)
 			}
@@ -286,5 +286,23 @@ func TestTeamleadReapsEveryRound(t *testing.T) {
 	}
 	if _, err := File("jaira-dispatcher", "scripts/reap.sh"); err != nil {
 		t.Errorf("jaira-dispatcher/scripts/reap.sh does not ship: %v", err)
+	}
+}
+
+// Run from inside the ticket's own worktree, reap.sh closes the tabs but
+// leaves the directory it runs in standing.
+func TestReapNeverRemovesTheWorktreeItRunsIn(t *testing.T) {
+	t.Parallel()
+	r := newReapRig(t)
+	r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+	if out := r.run(t, r.wt, "reap.sh", "--dry-run"); strings.Contains(out, "would remove") || strings.Contains(out, "would delete") {
+		t.Errorf("--dry-run promises what the run will not do:\n%s", out)
+	}
+	out := r.run(t, r.wt, "reap.sh")
+	if r.closedTabs() != "tp1\ntp2" {
+		t.Errorf("closed tabs %q, want tp1 and tp2\n%s", r.closedTabs(), out)
+	}
+	if _, err := os.Stat(r.wt); err != nil || strings.Contains(out, "removed") {
+		t.Errorf("removed the worktree it runs in (%v):\n%s", err, out)
 	}
 }
