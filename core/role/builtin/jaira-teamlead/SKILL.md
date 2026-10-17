@@ -28,6 +28,20 @@ on them never reaches you.
 Never plan from memory of an earlier turn. The board changed: other sessions
 write it too.
 
+Then clear away what is finished, every round, before you start anything:
+
+```bash
+.claude/skills/jaira-dispatcher/scripts/reap.sh   # ~/.claude/skills/... when installed globally
+```
+
+It closes every tab `spawn.sh` opened for a ticket whose pull request is
+merged — worker, dispatcher, lane and review agents alike — and removes that
+ticket's worktree and local branch. A merged ticket it keeps — not done, its
+branch past the merged head, or uncommitted changes in its worktree — comes
+with the reason. Tell the person, in one line each, what it `closed` and what
+it `kept`; `waiting` lines are work in flight and not news; nothing either way:
+say nothing. `--dry-run` shows the same without doing it.
+
 Then name what happened on the board in the last seven days, newest day
 first, with who did it — the person slept, and what a session filed at night
 is otherwise lost to them. The source is the one the cockpit's Overview pane
@@ -231,13 +245,15 @@ The cockpit's Give back button decides by itself. When you send it back:
 
 The limit is a share of the model's context window, the cockpit's setting
 `workerContextShare` (percent, default 50), never a fixed number of tokens: a
-large task on a large window keeps its worker. Close the tab for good when the
-ticket reaches `done`.
+large task on a large window keeps its worker. The tab closes for good when
+`reap.sh` finds the ticket done and its pull request merged; you do not close it
+by hand.
 
-Its worktree outlives it, and by longer than the pull request: leave that until
-the ticket is in `done`. Review comments come back to the branch and want
-somewhere to land, and a merged pull request is not the end of that — a ticket
-that has not been accepted can still come back.
+Its worktree outlives it, and by longer than the pull request: `reap.sh` removes
+it only when both hold — the ticket in `done` and the pull request merged.
+Review comments come back to the branch and want somewhere to land, and a
+merged pull request is not the end of that — a ticket that has not been
+accepted can still come back.
 
 A new worker needs nothing from the old one: the decisions are in `jaira note`,
 the criteria in the definition of done, the change in git, the argument in the

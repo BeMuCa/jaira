@@ -161,6 +161,21 @@ if [ -n "${HERDR_WORKSPACE_ID:-}" ]; then ws=(--workspace "$HERDR_WORKSPACE_ID")
 pane="$("$herdr" tab create ${ws[@]+"${ws[@]}"} --cwd "$cwd" --label "$ticket/$lane" --no-focus \
   | jaira json get result.root_pane.pane_id)"
 
+# Which tab belongs to which ticket, for reap.sh: it closes them once the
+# ticket's pull request is merged, and the pane id printed below is gone from
+# every record by then. One file per pane, so two spawns at once never write
+# the same file. Under the repository's git directory, not in the worktree:
+# shared by every worktree of the repository, machine-local like the pane id
+# itself, and never in git status. Written now, before claude is up, so a tab
+# left standing by a failed start is reaped as well. A directory outside any
+# repository has no git directory and no pull request to wait for: no file.
+if common="$(git -C "$wt" rev-parse --git-common-dir 2>/dev/null)" \
+  && gitdir="$(cd "$wt" && cd "$common" && pwd)"; then
+  mkdir -p "$gitdir/jaira/panes"
+  printf 'pane=%s\nticket=%s\nlane=%s\nworktree=%s\n' "$pane" "$ticket" "$lane" "$wt" \
+    > "$gitdir/jaira/panes/$(printf '%s' "$pane" | tr -c 'A-Za-z0-9_.-' '_')"
+fi
+
 # <explain> and <discuss> write a few lines for a person, so they start on the
 # chat model 'jaira roles list' names for this board (its .jaira/chat-model,
 # else this machine's settings.json) rather than the account's default model,
