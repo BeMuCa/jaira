@@ -1,7 +1,7 @@
 ---
 id: 01M4X5KGP2QVWD9MG9VP8NHD8Q
 title: "Der Teamlead legt Tickets auf das Board, das zum Thema passt, und der Worker faehrt sie durch dessen Lanes"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 assignee: Alexander Sacharov
@@ -18,13 +18,13 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:43Z
-updated-at: 2026-10-17T14:11:07Z
+updated-at: 2026-10-17T14:11:21Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-61927
 claimed-at: 2026-10-17T14:05:53Z
-outcome-what: "New command 'jaira boards' lists every board with open tickets and its description, read from a plain-text 'description' file in the board's lanes dir (core/lane/boards.go Description/DescriptionPath). The teamlead skill reads it before every create and names board plus reason, or asks when none fits; dispatcher and worker skills read 'board' off the ticket and pass --board to next/list."
-outcome-why: "With several boards per repo (S0EG0M) nothing told a teamlead which board a subject belongs to, and dispatcher's 'next --per-lane' saw only today's board, so a ticket on another board was invisible to it."
-outcome-resolves: "DoD 1: jaira boards + TestBoardsListsEveryBoardWithItsDescription; DoD 2: teamlead SKILL.md section 'A new ticket goes on the board its subject belongs to'; DoD 3: dispatcher/worker skill text + TestWorkerPathRunsTheTicketsBoard, TestRolesWorkTheTicketsBoard; DoD 4: core/release/notes/8NHD8Q.md"
+outcome-what: "New command 'jaira boards' lists every board with open tickets and its description, read from a plain-text 'description' file in the board's lanes dir (core/lane/boards.go). A board set up from the built-in lanes now gets the description 'Changes to this repository's code: ...' (lane.setUp); this repo has it in .jaira/lanes/description. The teamlead skill reads 'jaira boards' before every create; dispatcher and worker read 'board' off the ticket and pass --board. The generated CLAUDE.md/AGENTS.md block names 'jaira boards', --board and set board=."
+outcome-why: "With several boards per repo (S0EG0M) nothing told a teamlead or any other agent which board a subject belongs to, the default board had no description so the teamlead would ask on every create, and dispatcher's 'next --per-lane' saw only today's board."
+outcome-resolves: "DoD 1: jaira boards + TestBoardsListsEveryBoardWithItsDescription; DoD 2: teamlead SKILL.md; DoD 3: dispatcher/worker skills + TestWorkerPathRunsTheTicketsBoard, TestRolesWorkTheTicketsBoard; DoD 4: release note; DoD 5: lane.setUp writeDefaultDescription + TestOnlyABuiltinBoardIsDescribedOnSetUp; DoD 6: announce.go agentNote + TestAgentNoteNamesTheBoards"
 review-summary: "New command 'jaira boards' (internal/cli/boards.go) lists today's board as 'default' plus every board under .jaira/boards/, each with its open tickets (not in its terminal lane) and a description read from a hand-written plain-text file 'description' in the board's lanes dir (core/lane/boards.go Description/DescriptionPath; wrapped lines joined into one); a board without one prints where to write it; --json gives name/open/description/description_file. The teamlead skill now runs 'jaira boards' before every create: one board - nothing to choose; one description fits - create with --board and name board plus the quoted description; none, two, or a missing description - ask the person. Teamlead also re-runs next/list with --board per extra board. Dispatcher and worker skills read 'board' from 'jaira show --json' and pass --board to 'next --per-lane'/'list'; worker no longer reads 'fresh' from 'jaira lanes' (today's board only). Docs, README and release note added; tests: TestBoardsListsEveryBoardWithItsDescription, TestWorkerPathRunsTheTicketsBoard, TestRolesWorkTheTicketsBoard."
 round: 3
 review-gaps: "Nothing blocks the DoD. Minor: (1) In any repo with a second board the default board has no description until someone writes .jaira/lanes/description, so by the skill's own rule the teamlead asks the person on every create until then - intended, but worth knowing for demo-video. (2) DoD 2 is proven only by string-presence tests on SKILL.md; real teamlead behaviour is untested by nature. (3) The generated CLAUDE.md agent block does not mention 'jaira boards' or --board, so an agent outside the roles never learns of other boards (already noted as left out). (4) A ticket whose board directory was removed is counted on no row of 'jaira boards'. (5) Testing found 'jaira validate' reports tickets on named boards as read-only - S0EG0M code, outside this ticket."
