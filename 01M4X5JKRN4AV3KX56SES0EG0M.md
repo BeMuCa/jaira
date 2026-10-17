@@ -27,7 +27,7 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:56:04Z
+updated-at: 2026-10-17T12:56:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-67696
 claimed-at: 2026-10-17T12:50:10Z
@@ -100,3 +100,4 @@ core/lane/boards.go BoardsDir/BoardLanesDir haben keinen Aufrufer ausserhalb des
 - **2026-10-17 12:50 · Alexander Sacharov** — review (frische Session, Runde 2): DoD 1-6 erfuellt und im Temp-Repo nachgestellt, go test ./... gruen. Offen: (1) internal/cli/mergedriver.go:55 merged Status-Konflikte eines Tickets auf benanntem Board mit den Lanes des heutigen Boards (core/merge/merge.go mergeStatus, Precedence -1 bzw. falsche Reihenfolge) - Fix: Board aus dem Frontmatter lesen, lane.LoadBoard. (2) Frontmatter definition-of-done traegt noch den alten Spec-Text von Berk. (3) kosmetisch: set board=default laesst 'board: ""' stehen. Nach signoff, Person entscheidet: Gap 1+2 jetzt beheben oder annehmen.
 - **2026-10-17 12:51 · Alexander Sacharov** — Worker: zweiter Review (Verdikt 'nicht ganz fertig') hat nach signoff bewegt; zurueck nach in-progress fuer Gap 1 (Merge-Driver nimmt die Lanes des heutigen Boards) und Gap 2 (Frontmatter definition-of-done veraltet). Gap 3 (board: "" nach set board=default) bleibt: BoardOf liest es als heutiges Board, Doc hat kein Entfernen eines Felds.
 - **2026-10-17 12:53 · Alexander Sacharov** — Review-2-Gaps: Gap 1 behoben - merge-driver laedt die Lanes des Boards aus ours (internal/cli/mergedriver.go mergeBoard), Test TestMergeDriverUsesTheTicketsBoard (gegengeprueft: rot ohne Fix; erste Fassung mit 'done' war nicht trennscharf, weil done auch auf dem heutigen Board liegt). Wechselt eine Seite das Board, gilt das Board von ours. Gap 2: definition-of-done im Frontmatter neu gesetzt.
+- **2026-10-17 12:56 · Alexander Sacharov** — review (frische Session, Runde 3): DoD 1-6 erfuellt, go test ./... gruen, im Temp-Repo mit gebautem Binary nachgestellt. Fruehere Gaps behoben. Nicht blockierend offen: brettweites Logbook-Ablegen (logbook.go:136, lane/settle.go:18) arbeitet nach Lane-ID ueber alle Boards; Ticket eines verschwundenen Boards nur per set board=default rettbar; board:-Feld in drei Schreibweisen (leer-quoted, quoted, unquoted). Verdikt: annehmbar.
