@@ -1,7 +1,7 @@
 ---
 id: 01M55C9V60QFM9V58MD8PXYN99
 title: "Der Launcher zaehlt auch die Tickets, die nur auf ihrem Ref liegen"
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -18,9 +18,14 @@ tags:
   - tui
 blocked-by: []
 related: []
-commits: []
+commits:
+  - a51bf3026a48d70037745ab646694789790f0ceb
+  - 3385ffcac3e0c91cb256dce48f2887d28c737dcb
+  - 35ad5dcec4499746fec0e6da2ba2b38f6c55c29b
+  - 65bd1ede07900f56c52e8bf578933412aa1f0827
+  - ded927e367ad5bbff29682c02ee7b50f739477cb
 created-at: 2026-10-17T16:49:42Z
-updated-at: 2026-10-17T17:18:26Z
+updated-at: 2026-10-17T19:01:25Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54481
 claimed-at: 2026-10-17T16:55:23Z
@@ -76,3 +81,9 @@ internal/tui/home.go:204 baut einen eigenen Cache Board->Lanes; core/lane/boards
 - **2026-10-17 17:13 · Alexander Sacharov** — critique Runde 3 (async): passt zum vorhandenen Muster fetchRefs in internal/tui/refs.go (Arbeit als tea.Cmd, Ergebnis als Msg). Bewusst stehen gelassen: (a) ein aelterer Zaehllauf, der nach einem neueren ankommt, ueberschreibt dessen Zahlen - beide liegen Sekundenbruchteile auseinander, ein Generationszaehler waere Code fuer keinen sichtbaren Fall; (b) 'r' und Hinzufuegen zeigen kurz wieder '… open' - so verlangt es die Entscheidung des Teamleads (nie eine Zahl, die springt).
 - **2026-10-17 17:17 · Alexander Sacharov** — review: Abnahme empfohlen. Offen fuer die Person: Release-Note Zeile 1 verspricht 'same as jaira list', der Launcher summiert aber alle Boards, jaira list zeigt nur today's board (onBoard, internal/cli/root.go:378). Eine Wortaenderung in core/release/notes/PXYN99.md.
 - **2026-10-17 17:18 · Alexander Sacharov** — Review-Gaps nach Teamlead (17.10.): Gap 1 behoben - Release-Note sagt jetzt 'as jaira list, summed over jaira boards' (Launcher summiert alle Boards, jaira list zeigt nur today's board). Gap 2 (aelterer Zaehllauf kann nach doppeltem r einen frischeren ueberschreiben, bis zum naechsten r) und Gap 3 (today's board zaehlt gegen den Katalog lane.Load(""), so schon vor diesem Diff) bleiben bewusst stehen.
+- **2026-10-17 18:59 · Alexander Sacharov** — explain: Der Launcher zaehlt jetzt auch Tickets, die nur auf ihrem Ref liegen, im Hintergrund, und zeigt bis dahin '… open'. Die Release-Note ist korrigiert ('summed over jaira boards'); offen bleiben zwei kleine, bewusst stehengelassene Punkte.
+Warum: Zahlen im Launcher stimmen jetzt mit jaira list ueberein, ohne den ersten Bildaufbau zu bremsen. Die Reste (aelterer Zaehllauf ueberschreibt nach doppeltem r einen neueren; today's board zaehlt gegen den Katalog) sind selten und nicht neu.
+1) Ticket so annehmen, die zwei Restpunkte bleiben bewusst offen [accept]
+2) Zurueckgeben: Generationszaehler gegen das Ueberschreiben durch einen aelteren Zaehllauf einbauen [give back]
+Empfehlung: 1 - der Fehler zeigt sich nur bei schnellem doppeltem r und heilt beim naechsten r, ein Zaehler waere Code fuer fast keinen sichtbaren Fall.
+- **2026-10-17 19:00 · Alexander Sacharov** — decision: 1) Ticket so annehmen, die zwei Restpunkte bleiben bewusst offen
