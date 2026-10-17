@@ -1,7 +1,7 @@
 ---
 id: 01M4X5KGP2QVWD9MG9VP8NHD8Q
 title: "Der Teamlead legt Tickets auf das Board, das zum Thema passt, und der Worker faehrt sie durch dessen Lanes"
-status: testing
+status: review
 ready: true
 creator: BeMuCa
 assignee: Alexander Sacharov
@@ -18,7 +18,7 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:43Z
-updated-at: 2026-10-17T12:46:22Z
+updated-at: 2026-10-17T12:46:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-65566
 claimed-at: 2026-10-17T12:36:37Z
