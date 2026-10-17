@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T14:38:28Z
+updated-at: 2026-10-17T14:38:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-66355
 claimed-at: 2026-10-17T14:11:12Z
@@ -87,3 +87,4 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-yd4be9 && go test ./co
 - **2026-10-17 14:33 · Alexander Sacharov** — testing fix: reap.sh resolves the PR repo once (gh repo view <origin url>: fork -> parent, else nameWithOwner) and passes --repo; live run on the scratch fork clone without upstream remote now removes feat/rftqkp's worktree and branch. GitLab forks still ask glab without a target project - not exercised, no GitLab remote here.
 - **2026-10-17 14:33 · Alexander Sacharov** — critique round 4 (after testing fix): none; the repo lookup mirrors jaira-role-pr's ladder rungs 1-2, rung 3 (a board remote naming a third repo) is not needed to find a merged PR.
 - **2026-10-17 14:36 · Alexander Sacharov** — review handed to a fresh agent via run-lane.sh --no-worktree in this worktree; testing lane changed no code, ticket file left modified for the next code commit or the logbook commit.
+- **2026-10-17 14:38 · Alexander Sacharov** — review: approve with reservation. reap.sh closes a tab by pane id alone; records outlive their tabs (run-lane.sh closes lane tabs early), so if herdr reuses pane ids after a restart a stranger's tab gets closed. Suggested fix: match the tab label '<ticket>/<lane>' from 'herdr pane get' before 'tab close'. Not verified against real herdr. Minor: records are rm'd before 'git worktree remove' — a failed remove is never retried.
