@@ -27,7 +27,7 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:32:05Z
+updated-at: 2026-10-17T12:33:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-73711
 claimed-at: 2026-10-17T12:17:54Z
@@ -36,6 +36,7 @@ outcome-why: "Ein Repo braucht Boards mit eigenen Lanes neben den SWE-Lanes, z.B
 outcome-resolves: "S0EG0M: alle sechs DoD-Punkte, Tests in internal/cli/boards_test.go und internal/tui/boards_test.go"
 review-summary: "Keine Befunde in Runde 3: Form passt zum Bestand (LoadBoard neben Load mit gemeinsamem assemble, boardLanes wie loadEnv als CLI-Helfer, board: wie mode als Frontmatter-Skalar). Bewusst stehen gelassen (Note 'Stand'): brettweite Kommandos bleiben auf dem heutigen Board."
 round: 3
+review-gaps: "indexByID (core/lane/lane.go) ersetzt die dreifach kopierte builtinByID-Schleife (Load, migrateLegacy, LoadBoard); hasLaneFiles (core/lane/boards.go) fuer die doppelte Glob-Pruefung in Boards und LoadBoard; boardLabel mit einem Aufrufer durch cmp.Or ersetzt. Stehen gelassen: ProjectLanesActive prueft dasselbe mit Stat+Glob (vorbestehend); resume laedt Lanes pro Board mit Cache, kein Mehraufwand auf heissem Pfad."
 ---
 
 # Ein Repo kann mehrere Boards haben, jedes mit eigenen Lanes fuer sein Thema
