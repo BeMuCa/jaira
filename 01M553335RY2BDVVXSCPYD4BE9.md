@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:44:29Z
+updated-at: 2026-10-17T16:44:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
@@ -103,3 +103,4 @@ Empfehlung: 1 - die Label-Pruefung ist billig und nimmt das einzige Risiko weg, 
 - **2026-10-17 16:40 · Alexander Sacharov** — critique round 6: none - the dry branch now sits behind the label check, one line moved; dry-run therefore asks herdr too, which is read-only.
 - **2026-10-17 16:41 · Alexander Sacharov** — testing round 7: pass, same live run as round 6 - --dry-run now lists only the labelled tab. Scratch tabs created for the run are closed again.
 - **2026-10-17 16:41 · Alexander Sacharov** — review handed to a fresh agent via run-lane.sh --no-worktree in this worktree (round 2 of review); testing changed no code, ticket file left modified.
+- **2026-10-17 16:44 · Alexander Sacharov** — review round 2: send back. reap.sh reads 'herdr not reachable' as 'tab already gone' (reap.sh:168-170): with HERDR_BIN_PATH unset/wrong it removes the worktree, deletes the branch and drops the record, rc=0, no kept line - a still open tab then has no record and is never closed. Reproduced in a scratch repo with HERDR_BIN_PATH=/nonexistent/herdr. Fix: probe herdr once before the loop, keep everything with 'kept <ticket>: herdr not reachable' when it does not answer, plus a test. Everything else checked: round-6 label check and late record removal correct, tests pass.
