@@ -32,8 +32,12 @@ by hand; a board without one says where it goes. Writes nothing.`,
 			if err != nil {
 				return err
 			}
+			type boardRow struct {
+				name, description, file string
+				open                    int
+			}
 			names := append([]string{lane.DefaultBoardName}, lane.Boards(s.Root)...)
-			rows := make([]map[string]any, 0, len(names))
+			rows := make([]boardRow, 0, len(names))
 			for _, name := range names {
 				lanes, err := boardLanes(s, name)
 				if err != nil {
@@ -47,28 +51,31 @@ by hand; a board without one says where it goes. Writes nothing.`,
 						open++
 					}
 				}
-				rows = append(rows, map[string]any{
-					"name":             name,
-					"open":             open,
-					"description":      lane.Description(s.Root, name),
-					"description_file": lane.DescriptionPath(s.Root, name),
+				rows = append(rows, boardRow{
+					name: name, open: open,
+					description: lane.Description(s.Root, name),
+					file:        lane.DescriptionPath(s.Root, name),
 				})
 			}
 
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
-				return emit(w, map[string]any{"boards": rows, "count": len(rows)})
+				arr := make([]map[string]any, 0, len(rows))
+				for _, r := range rows {
+					arr = append(arr, map[string]any{
+						"name": r.name, "open": r.open,
+						"description": r.description, "description_file": r.file,
+					})
+				}
+				return emit(w, map[string]any{"boards": arr, "count": len(arr)})
 			}
 			for _, r := range rows {
-				desc := r["description"].(string)
+				desc := r.description
 				if desc == "" {
-					rel, err := filepath.Rel(s.Root, r["description_file"].(string))
-					if err != nil {
-						rel = r["description_file"].(string)
-					}
+					rel, _ := filepath.Rel(s.Root, r.file)
 					desc = "no description yet — write one into " + filepath.ToSlash(rel)
 				}
-				fmt.Fprintf(w, "  %-16s %3d open   %s\n", r["name"], r["open"], desc)
+				fmt.Fprintf(w, "  %-16s %3d open   %s\n", r.name, r.open, desc)
 			}
 			return nil
 		},

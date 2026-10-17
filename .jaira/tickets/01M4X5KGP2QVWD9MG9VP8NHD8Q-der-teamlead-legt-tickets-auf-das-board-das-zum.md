@@ -18,13 +18,15 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:43Z
-updated-at: 2026-10-17T12:42:45Z
+updated-at: 2026-10-17T12:43:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-65566
 claimed-at: 2026-10-17T12:36:37Z
 outcome-what: "New command 'jaira boards' lists every board with open tickets and its description, read from a plain-text 'description' file in the board's lanes dir (core/lane/boards.go Description/DescriptionPath). The teamlead skill reads it before every create and names board plus reason, or asks when none fits; dispatcher and worker skills read 'board' off the ticket and pass --board to next/list."
 outcome-why: "With several boards per repo (S0EG0M) nothing told a teamlead which board a subject belongs to, and dispatcher's 'next --per-lane' saw only today's board, so a ticket on another board was invisible to it."
 outcome-resolves: "DoD 1: jaira boards + TestBoardsListsEveryBoardWithItsDescription; DoD 2: teamlead SKILL.md section 'A new ticket goes on the board its subject belongs to'; DoD 3: dispatcher/worker skill text + TestWorkerPathRunsTheTicketsBoard, TestRolesWorkTheTicketsBoard; DoD 4: core/release/notes/8NHD8Q.md"
+review-summary: "internal/cli/boards.go builds map[string]any rows and then type-asserts them back for the text output, and guards filepath.Rel against an error that cannot occur for a path built under s.Root; use a small row struct as tags.go does with tagCount, filled once, and emit the JSON from it"
+round: 2
 ---
 
 # Der Teamlead legt Tickets auf das Board, das zum Thema passt, und der Worker faehrt sie durch dessen Lanes
@@ -57,3 +59,4 @@ outcome-resolves: "DoD 1: jaira boards + TestBoardsListsEveryBoardWithItsDescrip
 - **2026-10-17 12:38 · Alexander Sacharov** — decision (worker, no open decision left for a person): the description is a plain-text file 'description' in the board's lanes directory, beside 'order' - .jaira/lanes/description for today's board, .jaira/boards/<name>/lanes/description for a named one. Why: same idiom as order/corrections, hand-editable, and the lanes dir is what a board is. New command 'jaira boards' (like 'jaira tags') lists name, open tickets and description, --json too. Teamlead: one board -> no choice to name; several -> name the board and the reason in one line; none fits or descriptions missing -> ask the person as a choice. Dispatcher/worker: read 'board' from 'jaira show <id> --json' and pass --board to 'next --per-lane'.
 - **2026-10-17 12:42 · Alexander Sacharov** — left out on purpose: the generated agent block in CLAUDE.md still describes only today's lanes and does not name 'jaira boards'; jaira-role-logbook-summary reads 'jaira list --json' (today's board only). Both are outside this DoD. Description lives in the lanes dir, so 'jaira lanes set --clear' (removes the default board dir) would take today's description with it.
 - **2026-10-17 12:42 · Alexander Sacharov** — correction to the last note: 'jaira lanes set --clear' removes the default-board template file, not .jaira/lanes/, so it does not touch a description. Ignore that sentence.
+- **2026-10-17 12:43 · Alexander Sacharov** — critique round 1: boards.go - replace map rows + type assertions with a row struct (pattern: tagCount in tags.go) and drop the filepath.Rel error fallback. Let stand: reusing readIDList for the description (it is exactly trim-and-drop-blank-lines), the double load of today's lanes (loadEnv + boardLanes), the skill texts.
