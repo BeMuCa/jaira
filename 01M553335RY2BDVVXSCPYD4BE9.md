@@ -1,7 +1,7 @@
 ---
 id: 01M553335RY2BDVVXSCPYD4BE9
 title: "Worker-Tabs und ihre Arbeitsbaeume schliessen sich, sobald der Pull Request ihres Tickets gemergt ist"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:33:49Z
+updated-at: 2026-10-17T16:33:52Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-66355
 claimed-at: 2026-10-17T14:11:12Z
@@ -31,7 +31,7 @@ outcome-what: "spawn.sh writes a record per tab (pane, ticket, lane, worktree) u
 outcome-why: "Worker, dispatcher and review tabs and their worktrees stayed open after the work was merged; nobody watched or closed them, and spawn.sh never recorded which tab belonged to which ticket."
 outcome-resolves: "Goal of YD4BE9: after the PR is merged, all tabs started for the ticket close and its worktree and branch go without anyone cleaning up by hand - at the next teamlead round."
 review-summary: "spawn.sh now writes one small file per tab it opens (pane, ticket, lane, worktree) into <git common dir>/jaira/panes/, shared by all worktrees and invisible to git status. New jaira-dispatcher/scripts/reap.sh reads those files, groups them by ticket, and for each ticket asks gh/glab (on the fork's parent when origin is a fork) for a merged PR of its branch. Only when the PR is merged, the ticket is done or already filed away (jaira show exit 5), the local branch is not past the PR head, and no worktree has uncommitted changes (untracked .jaira/ ignored) does it close the tabs via herdr, git worktree remove --force the worktrees, and branch -D the branch; it never removes the main worktree or the one it runs in, never closes its own pane, and --dry-run prints 'would ...' only. Every other case prints 'waiting <ticket>: ...' or 'kept <ticket>: <reason>'. The teamlead skill runs it at the start of every round and reports closed/kept lines; the old text 'close the tab by hand when done' is replaced. Release note added. 5 commits, all name YD4BE9; worktree_diff carries only unrelated .jaira/milestones files."
-round: 5
+round: 6
 review-gaps: "1) Pane-id reuse (plausible, not verified): a record outlives its tab by days — run-lane.sh closes a lane tab as soon as the lane ends, but the record stays until the PR merges. reap.sh then closes whatever tab now has that pane id, checking nothing else. If herdr restarts in between (Windows reboot) and hands out the same ids again, reap closes an unrelated tab, possibly another ticket's live worker. Cheap fix: compare the tab label from 'herdr pane get' with the recorded '<ticket>/<lane>' before 'tab close'. Whether herdr ids repeat after a restart was not checked — the tests use a stub that numbers p1, p2... 2) The records are deleted before 'git worktree remove'. If remove fails, the error goes to stderr and the next round has no record, so the worktree and branch stay for good with nothing on stdout saying so. 3) Records of tickets that never merge (abandoned, closed PR) are never cleaned up: one gh call and one 'waiting' line per ticket every round, for ever. 4) Tests stub herdr, gh and 'jaira show'; glab and the real herdr JSON paths (result.pane.tab_id is the same path run-lane.sh already uses) are not covered by a test. All four DoD items are met by the diff; go test ./core/role -run 'Reap|Spawn|Teamlead' passes (52s)."
 test-verdict: "pass: go vet + go test ./... -race RC=0; DoD 1-5 checked in the tree (proof lines re-read after the last edit); live run on a scratch fork clone with real gh and herdr.exe: feat/rftqkp (merged #87) worktree and branch removed, untracked .jaira/ let through, gone pane's record dropped, an unmerged ticket printed as waiting, --dry-run changed nothing; with no record the script exits before any gh call"
 review-verdict: "Approve with one reservation. The diff meets all four DoD items and the safety checks (merged head, done lane, dirty worktree, own/main worktree) are sound and tested. Not fully sure about gap 1: if herdr can reuse pane ids after a restart, reap.sh can close a stranger's tab. A label check before 'tab close' would remove that risk — worth deciding before signoff."
