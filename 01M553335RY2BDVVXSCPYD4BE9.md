@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:37:21Z
+updated-at: 2026-10-17T16:37:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
@@ -98,3 +98,4 @@ Empfehlung: 1 - die Label-Pruefung ist billig und nimmt das einzige Risiko weg, 
 - **2026-10-17 16:34 · Alexander Sacharov** — cockpit: given back to a new worker - old worker's prompt cache cold for 55 min
 - **2026-10-17 16:34 · Alexander Sacharov** — round 6 found out: the tab label lives on 'herdr tab get <tab>' -> result.tab.label (checked on real herdr.exe: w3:tGH -> 'YD4BE9/worker'); 'pane get' carries no label. spawn.sh labels '<ticket>/<lane>' exactly as the record's ticket and lane fields, so reap compares against those, case kept. A label that does not match means our tab is gone and the id belongs to someone else: drop the record, close nothing.
 - **2026-10-17 16:36 · Alexander Sacharov** — round 6 (given back from signoff): records are no longer removed per tab but all at the end, and only when tabs, worktree and branch all went - a failed remove or branch -D prints 'kept' and the next round retries. The reaper's own pane record is still left alone. Tests verified to fail on the previous reap.sh (both new ones) and pass now.
+- **2026-10-17 16:37 · Alexander Sacharov** — critique round 5 (after the signoff give-back): none. Let stand: a branch -D that fails after its worktree went is retried under the default prefix/<ticket> name, since the worktree that named the branch is gone - spawn.sh names the branch that way, so only a hand-renamed branch would be missed. Label read per record (two herdr calls) instead of one 'tab list': the per-pane path is the one run-lane.sh already uses.
