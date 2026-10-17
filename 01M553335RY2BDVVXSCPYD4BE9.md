@@ -1,7 +1,7 @@
 ---
 id: 01M553335RY2BDVVXSCPYD4BE9
 title: "Worker-Tabs und ihre Arbeitsbaeume schliessen sich, sobald der Pull Request ihres Tickets gemergt ist"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,13 +23,13 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:36:58Z
+updated-at: 2026-10-17T16:37:02Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
-outcome-what: "spawn.sh writes a record per tab (pane, ticket, lane, worktree) under <git common dir>/jaira/panes/; new jaira-dispatcher/scripts/reap.sh closes every recorded tab of a ticket that is done with a merged PR, removes its worktree and local branch, --dry-run prints only; keeps and names a ticket not done, without merged PR, with commits past the PR head, or with uncommitted changes. Teamlead skill runs it every round. Tests in core/role/reap_test.go."
-outcome-why: "Worker, dispatcher and review tabs and their worktrees stayed open after the work was merged; nobody watched or closed them, and spawn.sh never recorded which tab belonged to which ticket."
-outcome-resolves: "Goal of YD4BE9: after the PR is merged, all tabs started for the ticket close and its worktree and branch go without anyone cleaning up by hand - at the next teamlead round."
+outcome-what: "reap.sh closes a recorded tab only when 'herdr tab get' still labels it <ticket>/<lane> - a reused pane id in a stranger's tab drops the record and closes nothing; records go only after tabs, worktree and branch all went, so a failed git worktree remove or branch -D is retried next round. Two new tests in core/role/reap_test.go."
+outcome-why: "Given back from signoff: records outlive tabs by days and herdr may reuse ids after a restart, so a pane id alone could close another ticket's live worker; and a record removed before the worktree left a failed remove standing forever."
+outcome-resolves: "Goal of YD4BE9: after the PR is merged, all tabs started for the ticket close and its worktree and branch go without anyone cleaning up by hand - now without risk of closing a tab that is not the ticket's, and with retries when removal fails."
 review-summary: "spawn.sh now writes one small file per tab it opens (pane, ticket, lane, worktree) into <git common dir>/jaira/panes/, shared by all worktrees and invisible to git status. New jaira-dispatcher/scripts/reap.sh reads those files, groups them by ticket, and for each ticket asks gh/glab (on the fork's parent when origin is a fork) for a merged PR of its branch. Only when the PR is merged, the ticket is done or already filed away (jaira show exit 5), the local branch is not past the PR head, and no worktree has uncommitted changes (untracked .jaira/ ignored) does it close the tabs via herdr, git worktree remove --force the worktrees, and branch -D the branch; it never removes the main worktree or the one it runs in, never closes its own pane, and --dry-run prints 'would ...' only. Every other case prints 'waiting <ticket>: ...' or 'kept <ticket>: <reason>'. The teamlead skill runs it at the start of every round and reports closed/kept lines; the old text 'close the tab by hand when done' is replaced. Release note added. 5 commits, all name YD4BE9; worktree_diff carries only unrelated .jaira/milestones files."
 round: 6
 review-gaps: "1) Pane-id reuse (plausible, not verified): a record outlives its tab by days — run-lane.sh closes a lane tab as soon as the lane ends, but the record stays until the PR merges. reap.sh then closes whatever tab now has that pane id, checking nothing else. If herdr restarts in between (Windows reboot) and hands out the same ids again, reap closes an unrelated tab, possibly another ticket's live worker. Cheap fix: compare the tab label from 'herdr pane get' with the recorded '<ticket>/<lane>' before 'tab close'. Whether herdr ids repeat after a restart was not checked — the tests use a stub that numbers p1, p2... 2) The records are deleted before 'git worktree remove'. If remove fails, the error goes to stderr and the next round has no record, so the worktree and branch stay for good with nothing on stdout saying so. 3) Records of tickets that never merge (abandoned, closed PR) are never cleaned up: one gh call and one 'waiting' line per ticket every round, for ever. 4) Tests stub herdr, gh and 'jaira show'; glab and the real herdr JSON paths (result.pane.tab_id is the same path run-lane.sh already uses) are not covered by a test. All four DoD items are met by the diff; go test ./core/role -run 'Reap|Spawn|Teamlead' passes (52s)."
