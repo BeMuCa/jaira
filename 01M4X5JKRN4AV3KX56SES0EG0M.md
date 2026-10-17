@@ -27,7 +27,7 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:55:57Z
+updated-at: 2026-10-17T12:56:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-67696
 claimed-at: 2026-10-17T12:50:10Z
@@ -38,8 +38,8 @@ review-summary: "Ein Repo kann jetzt mehrere Boards haben. Ein weiteres Board is
 round: 6
 review-gaps: "Keine Luecke im DoD; kleinere Grenzen: (1) Board-weites Ablegen ins Logbook arbeitet nach Lane-ID ueber alle Boards: jaira logbook ohne id (internal/cli/logbook.go:136) und der Sweep beim Eintritt in eine Lane (core/lane/settle.go:18, s.FileLane(l.ID)) legen jedes Ticket mit dieser Status-ID ab, auch eines auf einem anderen Board, in dem die Lane gleich heisst aber nicht terminal ist; Tickets in einer anders benannten Terminal-Lane eines benannten Boards erreicht jaira logbook ohne id nie. Als bewusste Grenze notiert (brettweite Kommandos bleiben auf dem heutigen Board), steht aber nirgends fuer den Nutzer. (2) Verschwindet der lanes/-Ordner eines Boards, verweigern show und move dessen Tickets mit Exit 2; nur set <id> board=default holt sie zurueck, validate meldet es - im Temp-Repo nachgestellt, funktioniert, ist aber nur aus der Fehlermeldung nicht ableitbar. (3) kosmetisch: set board=default hinterlaesst 'board: \"\"', set board=video schreibt 'board: \"video\"' in Anfuehrungszeichen, create schreibt 'board: video' ohne - drei Schreibweisen fuer eine Sache im Frontmatter."
 test-verdict: "pass (Runde 3): go test -race ./... RC=0; TestMergeDriverUsesTheTicketsBoard rot ohne Fix, gruen mit; DoD 1-6 unveraendert gedeckt (boards_test.go cli+tui)"
-review-verdict: "Alle sechs DoD-Punkte sind im Diff erfuellt und im Temp-Repo nachgestellt (create/list/next --board, Tippfehler Exit 2, set board= mit Fallback-Meldung, validate gruen, go test ./... gruen). Nicht ganz fertig wegen Gap 1: der Merge-Driver entscheidet Status-Konflikte auf benannten Boards nach den falschen Lanes - fuer ein Repo mit parallelen Sessions der Fall, fuer den das Feature gebaut ist. Empfehlung: Gap 1 und 2 vor dem Annehmen beheben (zusammen ca. 30 Minuten), oder bewusst als Folgearbeit annehmen."
-review-round: 5
+review-verdict: "Die Diff erfuellt alle sechs DoD-Punkte; go test ./... gruen; create/list/next --board, Tippfehler-Board (Exit 2, kein Ordner angelegt), set board= hin und zurueck mit Landen in der ersten Lane und validate im Temp-Repo mit dem gebauten Binary nachgestellt. Die Gaps der beiden frueheren Reviews (TUI n/Follow-up, validate, Link-Index, Merge-Driver, Frontmatter-DoD) sind behoben. Offen nur Grenzen fuer brettweites Logbook-Ablegen und kosmetische board:-Schreibweisen - nicht blockierend. Annehmbar."
+review-round: 6
 review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. In einem leeren Git-Repo: /tmp/jaira init, dann mkdir -p .jaira/boards/video/lanes und drei Dateien skript.md, bau.md, done.md mit Frontmatter 'id: <name>' (done.md zusaetzlich 'terminal: true') und eine Datei order mit skript, bau, done je Zeile  3. /tmp/jaira create 'Szene A' --board video -> 'In skript'  4. /tmp/jaira list -> Szene A fehlt; /tmp/jaira list --board video -> Szene A in skript  5. /tmp/jaira list --board vidoe -> 'no such board \"vidoe\"; boards here: default, video', echo $? zeigt 2  6. /tmp/jaira move <id> --to bau, dann /tmp/jaira set <id> board=default -> 'Board default has no lane \"bau\"; <id> is now in <erste Lane>'  7. /tmp/jaira validate -> keine error-Zeile  8. /tmp/jaira (TUI), F druecken -> Kopfzeile 'board: video', nur Lanes skript/bau/done; noch einmal F -> zurueck auf das heutige Board"
 ---
 
