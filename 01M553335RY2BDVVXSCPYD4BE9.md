@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:58:41Z
+updated-at: 2026-10-17T16:59:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
@@ -33,7 +33,7 @@ outcome-resolves: "Goal of YD4BE9: after the PR is merged, all tabs started for 
 review-summary: "none"
 round: 9
 review-gaps: "none - two lines and a usage bullet; nothing duplicated"
-test-verdict: "pass: go test ./... -race rc=0, go vet clean; DoD 1-5 verified; live on a scratch clone (real gh, feat/rftqkp = merged #87): HERDR_BIN_PATH=/nonexistent -> 'kept RFTQKP: herdr not reachable', record and worktree stay; real herdr.exe -> tab labelled RFTQKP/worker closed, worktree removed, branch deleted, record gone, rc=0"
+test-verdict: "pass: go test ./... -race rc=0; DoD 1-7 verified in the tree; TestReapKeepsWhatIsNotFinished/detached_HEAD fails on the previous reap.sh and passes now; git ls-files -s shows reap.sh 100755; live herdr/gh behaviour unchanged since round 8's live run"
 review-verdict: "Approve. The diff meets all definition-of-done items, the round-2 send-back (herdr not reachable) is fixed and tested, go test ./core/role/ passes (re-run here). The gaps left are edge cases that keep or lose nothing committed on a branch, except gap 1 (detached HEAD), which is unlikely on a ticket already done and merged. Not verified by me against real herdr or gh - that rests on the testing notes."
 review-round: 8
 review-check: "1. cd /home/alex/projects/.worktrees/jaira-yd4be9  2. go test ./core/role/ -run 'Reap|Spawn|Teamlead' -count=1 -v  -> 7 tests PASS, among them TestReapKeepsWhatIsNotFinished/herdr_not_reachable and TestReapLeavesATabItDidNotOpen  3. ls $(git rev-parse --git-common-dir)/jaira/panes/  -> one file per tab spawned since this version; cat one: pane=, ticket=, lane=, worktree= lines  4. bash core/role/builtin/jaira-dispatcher/scripts/reap.sh --dry-run  -> only 'waiting <ID>: ... no merged pull request', 'kept ...' or 'would close/remove/delete' lines; nothing changes (tabs still open, git worktree list unchanged)  5. after a real merge of a done ticket: run it without --dry-run -> 'closed <ID>/<lane> <pane>', 'removed <worktree>', 'deleted branch feat/<id>'; that ticket's tabs are gone in herdr and git worktree list no longer shows it"
