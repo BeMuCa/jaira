@@ -1,7 +1,7 @@
 ---
 id: 01M4TRC0ZE0GNWDWA1XDK6BGB0
 title: "Das Board zeigt den Stand des Refs, wenn die Ticket-Datei dahinter zurueckliegt"
-status: critique
+status: testing
 ready: true
 creator: BeMuCa
 goal: "Board, 'jaira list' und 'jaira show' zeigen den neuesten Stand eines Tickets: liegt die Datei im Checkout hinter ihrem Ref, den des Refs, mit einem Kennzeichen, dass 'jaira pull' faellig ist - und ein Schreiben auf die veraltete Datei bleibt verweigert."
@@ -21,7 +21,7 @@ related: []
 follows: 01M2HW4788Z5G0M05G3PJDXV60
 commits: []
 created-at: 2026-10-13T13:48:57Z
-updated-at: 2026-10-17T20:50:20Z
+updated-at: 2026-10-17T20:51:10Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-297639
@@ -29,8 +29,9 @@ claimed-at: 2026-10-17T20:39:34Z
 outcome-what: "Board, jaira list und jaira show zeigen bei einer Ticket-Datei, die hinter ihrem Ref liegt, den Stand des Refs und markieren sie (Karte '⇣ behind', Zeile '[behind ref: pull it]', JSON behind-ref, show-Zeile 'behind')."
 outcome-why: "Ein in einem anderen Worktree oder von einem Teammitglied bewegtes Ticket stand hier in seiner alten Lane; die Erkennung (isStale, wie bei pull) gab es schon, sie wurde nur beim Lesen nicht genutzt."
 outcome-resolves: K6BGB0; deckt JDXV60 DoD 1 fuer den Ref-Fall ab
-review-summary: "core/ticket/store.go newest: der ReadOnly-Filter und die files-Kopie sind ueberfluessig - List ruft newest bevor die Ref-only-Tickets angehaengt werden, und ein ReadOnly-Ticket aus Newest(show) hat dasselbe updated_at wie sein Ref, ist also nie 'ahead'; ts direkt an Ahead geben"
+review-summary: "none"
 round: 2
+review-gaps: "Entfernt: die doppelte Lese-und-Decode-Schleife in Syncer.Ahead und Syncer.Extra -> ein Helfer decodeRefs (core/refsync/refsync.go). Stehen gelassen: ein zweites 'git for-each-ref' pro List (Ahead und Extra fragen getrennt) - gemessen ~2 ms bei 60 Refs, 20 Aufrufe 45 ms; ein Teilen der Hashes haette die TicketSource-Signatur geaendert. Kein toter Code: BehindRef wird von list, show, JSON und Karte gelesen."
 ---
 
 # Das Board zeigt den Stand des Refs, wenn die Ticket-Datei dahinter zurueckliegt
@@ -67,3 +68,4 @@ Gewaehlt: B (Nutzerentscheidung 2026-10-17): newest wins in List und show, Marke
 - **2026-10-17 20:49 · berkc** — In-progress: Store.List ersetzt Datei-Tickets, deren Ref nach isStale weiter ist, durch das Ref-Ticket (BehindRef, Path=Datei); show nutzt Store.Newest nur fuer Tickets auf dem Board (nicht Logbuch). Schreibseite war schon sicher (Mutate/Archive/Logbook/move rufen CheckFresh -> StaleError, exit 3); der Test prueft das am selben Fall, Ref-SHA unveraendert. Manuell nachgestellt mit zwei Worktrees eines Temp-Repos: main zeigt todo + [behind ref: pull it], note verweigert, Ref-SHA gleich; nach pull Marker weg. Gleiches-Sekunde-Grenzfall: isStale vergleicht updated_at mit Sekundenaufloesung - zwei Schreibvorgaenge in derselben Sekunde gelten nicht als 'weiter' (bestehende Grenze von pull/CheckFresh, nicht neu).
 - **2026-10-17 20:49 · berkc** — critique: store.go newest vereinfachen - ReadOnly-Filter und Kopie entfernen, ts direkt an Ahead (Begruendung im review-summary). Ahead/Extra teilen sich eine fast gleiche Lese-und-Decode-Schleife: das ist Sache der optimize-Lane, hier stehen gelassen. Load bleibt bewusst bei der Datei (siehe Plan-Notiz).
 - **2026-10-17 20:50 · berkc** — in-progress (Runde 2): store.go newest vereinfacht wie von critique verlangt; Tests gruen.
+- **2026-10-17 20:50 · berkc** — critique Runde 2: nichts mehr - newest ist jetzt drei Zeilen; Load bleibt bewusst Datei (Plan-Notiz); die doppelte Decode-Schleife Ahead/Extra geht an optimize.

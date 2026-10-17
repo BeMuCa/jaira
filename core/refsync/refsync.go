@@ -1548,23 +1548,8 @@ func (y *Syncer) Extra(have map[string]bool) ([]*ticket.Ticket, error) {
 		}
 		wanted = append(wanted, id)
 	}
-	contents, err := y.Repo.ReadMany(wanted)
-	if err != nil {
+	if err := y.decodeRefs(wanted, hashes); err != nil {
 		return nil, err
-	}
-	for _, id := range wanted {
-		content, ok := contents[id]
-		if !ok {
-			delete(y.extraCache, id)
-			continue
-		}
-		var t *ticket.Ticket
-		if d, err := ticket.ParseDoc(content); err == nil { // a ref whose tree is not a ticket is not this tool's
-			if tk, err := ticket.Decode(d, ""); err == nil {
-				t = tk
-			}
-		}
-		y.extraCache[id] = extraEntry{hash: hashes[id], t: t}
 	}
 	var out []*ticket.Ticket
 	for _, id := range kept {
@@ -1601,18 +1586,8 @@ func (y *Syncer) Ahead(files []*ticket.Ticket) map[string]*ticket.Ticket {
 			wanted = append(wanted, f.ID)
 		}
 	}
-	contents, err := y.Repo.ReadMany(wanted)
-	if err != nil {
+	if err := y.decodeRefs(wanted, hashes); err != nil {
 		return nil
-	}
-	for _, id := range wanted {
-		var t *ticket.Ticket
-		if d, err := ticket.ParseDoc(contents[id]); err == nil {
-			if tk, err := ticket.Decode(d, ""); err == nil {
-				t = tk
-			}
-		}
-		y.extraCache[id] = extraEntry{hash: hashes[id], t: t}
 	}
 	out := map[string]*ticket.Ticket{}
 	for _, f := range files {
@@ -1621,6 +1596,30 @@ func (y *Syncer) Ahead(files []*ticket.Ticket) map[string]*ticket.Ticket {
 		}
 	}
 	return out
+}
+
+// decodeRefs reads the wanted refs in one git invocation and caches each
+// decoded ticket under its hash. The caller holds extraMu.
+func (y *Syncer) decodeRefs(wanted []string, hashes map[string]string) error {
+	contents, err := y.Repo.ReadMany(wanted)
+	if err != nil {
+		return err
+	}
+	for _, id := range wanted {
+		content, ok := contents[id]
+		if !ok {
+			delete(y.extraCache, id)
+			continue
+		}
+		var t *ticket.Ticket
+		if d, err := ticket.ParseDoc(content); err == nil { // a ref whose tree is not a ticket is not this tool's
+			if tk, err := ticket.Decode(d, ""); err == nil {
+				t = tk
+			}
+		}
+		y.extraCache[id] = extraEntry{hash: hashes[id], t: t}
+	}
+	return nil
 }
 
 // Departure is a ticket whose ref is gone while the file is still here.
