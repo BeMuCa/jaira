@@ -1,7 +1,7 @@
 ---
 id: 01M4X5KGP2QVWD9MG9VP8NHD8Q
 title: "Der Teamlead legt Tickets auf das Board, das zum Thema passt, und der Worker faehrt sie durch dessen Lanes"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 assignee: Alexander Sacharov
@@ -18,7 +18,7 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:43Z
-updated-at: 2026-10-17T12:43:12Z
+updated-at: 2026-10-17T12:43:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-65566
 claimed-at: 2026-10-17T12:36:37Z
@@ -26,6 +26,7 @@ outcome-what: "New command 'jaira boards' lists every board with open tickets an
 outcome-why: "With several boards per repo (S0EG0M) nothing told a teamlead which board a subject belongs to, and dispatcher's 'next --per-lane' saw only today's board, so a ticket on another board was invisible to it."
 outcome-resolves: "DoD 1: jaira boards + TestBoardsListsEveryBoardWithItsDescription; DoD 2: teamlead SKILL.md section 'A new ticket goes on the board its subject belongs to'; DoD 3: dispatcher/worker skill text + TestWorkerPathRunsTheTicketsBoard, TestRolesWorkTheTicketsBoard; DoD 4: core/release/notes/8NHD8Q.md"
 review-summary: "internal/cli/boards.go builds map[string]any rows and then type-asserts them back for the text output, and guards filepath.Rel against an error that cannot occur for a path built under s.Root; use a small row struct as tags.go does with tagCount, filled once, and emit the JSON from it"
+round: 2
 ---
 
 # Der Teamlead legt Tickets auf das Board, das zum Thema passt, und der Worker faehrt sie durch dessen Lanes
