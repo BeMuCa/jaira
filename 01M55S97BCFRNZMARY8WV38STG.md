@@ -24,8 +24,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T20:36:33Z
-updated-at: 2026-10-17T20:37:24Z
+updated-at: 2026-10-17T20:37:26Z
 updated-by: berkc
+claimed-by: berk-ca-283567
+claimed-at: 2026-10-17T20:37:26Z
 ---
 
 # Die Installation per curl richtet Rollen und Cockpit gleich mit ein und zeigt dabei, was sie tut
