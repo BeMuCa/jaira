@@ -18,7 +18,7 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:43Z
-updated-at: 2026-10-17T14:07:00Z
+updated-at: 2026-10-17T14:11:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-61927
 claimed-at: 2026-10-17T14:05:53Z
@@ -46,7 +46,8 @@ review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/b && cd /tmp
   proof: core/role/builtin/jaira-dispatcher/SKILL.md:230, jaira-worker/SKILL.md:127; tests TestWorkerPathRunsTheTicketsBoard, TestRolesWorkTheTicketsBoard
 - [x] Eine Zeile in core/release/notes/8NHD8Q.md
   proof: core/release/notes/8NHD8Q.md:1
-- [ ] Das Default-Board bekommt beim Einrichten aus den eingebauten Lanes eine Beschreibung; dieses Repo hat eine; Test
+- [x] Das Default-Board bekommt beim Einrichten aus den eingebauten Lanes eine Beschreibung; dieses Repo hat eine; Test
+  proof: core/lane/lane.go:757 setUp; .jaira/lanes/description; tests TestOnlyABuiltinBoardIsDescribedOnSetUp, TestBoardsListsEveryBoardWithItsDescription
 - [ ] Der CLAUDE.md-Agentenblock nennt 'jaira boards' und --board; Test
 
 ## Options
