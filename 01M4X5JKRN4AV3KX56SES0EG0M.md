@@ -1,7 +1,7 @@
 ---
 id: 01M4X5JKRN4AV3KX56SES0EG0M
 title: "Ein Repo kann mehrere Boards haben, jedes mit eigenen Lanes fuer sein Thema"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 assignee: Alexander Sacharov
@@ -27,7 +27,7 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:31:37Z
+updated-at: 2026-10-17T12:31:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-73711
 claimed-at: 2026-10-17T12:17:54Z
@@ -35,7 +35,7 @@ outcome-what: "Mehrere Boards pro Repo: core/lane/boards.go (LoadBoard, Boards, 
 outcome-why: "Ein Repo braucht Boards mit eigenen Lanes neben den SWE-Lanes, z.B. ein video-Board in demo-video fuer eine Designerin"
 outcome-resolves: "S0EG0M: alle sechs DoD-Punkte, Tests in internal/cli/boards_test.go und internal/tui/boards_test.go"
 review-summary: "internal/cli/root.go onBoard: der Fehlerzweig ist unerreichbar - beide Aufrufer (list, next) haben den Namen schon durch loadBoardEnv geprueft; onBoard gibt nur die Liste zurueck"
-round: 2
+round: 3
 ---
 
 # Ein Repo kann mehrere Boards haben, jedes mit eigenen Lanes fuer sein Thema
