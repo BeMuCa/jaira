@@ -262,6 +262,15 @@ func TestReapKeepsWhatIsNotFinished(t *testing.T) {
 				r.write(t, r.shown, `{"status":"in-progress"}`)
 			}, "kept AB12CD: the ticket is in in-progress, not done",
 		},
+		// Outside Herdr, or with a stale HERDR_BIN_PATH, an open tab looks
+		// closed: everything stays until herdr answers.
+		"herdr not reachable": {
+			func(t *testing.T, r *reapRig) {
+				r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+				r.write(t, r.shown, `{"status":"done"}`)
+				r.env = append(r.env, "HERDR_BIN_PATH="+filepath.Join(r.repo, "no-herdr"))
+			}, "kept AB12CD: herdr not reachable",
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()

@@ -21,7 +21,8 @@ alone as 'waiting'. A merged one is kept, with the reason printed, when
     never fetched,
   - one of its worktrees has changes that are not committed (untracked files
     under .jaira/ do not count),
-  - the ticket is back on the board in a lane other than done.
+  - the ticket is back on the board in a lane other than done,
+  - herdr does not answer, so an open tab cannot be told from a closed one.
 
   --dry-run   Print what would be closed and removed, change nothing.
   -h, --help  This text.
@@ -56,6 +57,9 @@ common="$(git -C "$root" rev-parse --git-common-dir)"
 panes="$(cd "$root" && cd "$common" && pwd)/jaira/panes"
 # No record, nothing to ask the forge about: the round costs nothing.
 ls "$panes"/* >/dev/null 2>&1 || exit 0
+# A herdr that does not answer cannot tell a closed tab from an open one; read
+# as closed, it would cost the worktree and the record of a tab still open.
+herdr_up=""; "$herdr" tab list >/dev/null 2>&1 && herdr_up=1
 # Physical paths throughout: on macOS the temp directory is a symlink, and git
 # reports the resolved path where cd keeps the one it was given.
 main="$(cd "$(git -C "$root" worktree list --porcelain | sed -n '1s/^worktree //p')" && pwd -P)"
@@ -151,10 +155,12 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
 
   dirty=""
   for w in "${wts[@]+"${wts[@]}"}"; do
-    d="$(git -C "$w" status --porcelain | grep -v '^?? \.jaira/' | cut -c4- | head -3 | tr '\n' ' ' || true)"
+    if ! st="$(git -C "$w" status --porcelain)"; then dirty="git status failed in $w"; break; fi
+    d="$(printf '%s' "$st" | grep -v '^?? \.jaira/' | cut -c4- | head -3 | tr '\n' ' ' || true)"
     if [ -n "$d" ]; then dirty="$w has uncommitted changes: $d"; break; fi
   done
   if [ -n "$dirty" ]; then echo "kept $t: ${dirty% }"; continue; fi
+  if [ -z "$herdr_up" ]; then echo "kept $t: herdr not reachable ($herdr)"; continue; fi
 
   failed=""; gone=()
   for f in "${recs[@]}"; do
