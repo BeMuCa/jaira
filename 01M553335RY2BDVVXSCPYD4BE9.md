@@ -1,7 +1,7 @@
 ---
 id: 01M553335RY2BDVVXSCPYD4BE9
 title: "Worker-Tabs und ihre Arbeitsbaeume schliessen sich, sobald der Pull Request ihres Tickets gemergt ist"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:56:15Z
+updated-at: 2026-10-17T16:56:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
@@ -31,7 +31,7 @@ outcome-what: "reap.sh closes a recorded tab only when 'herdr tab get' still lab
 outcome-why: "Given back from signoff, then from review: a pane id alone could close another ticket's tab after herdr reuses ids; a record removed before the worktree left a failed remove standing forever; and with herdr unreachable an open tab read as closed, so its worktree and record went and the tab was never closed."
 outcome-resolves: "Goal of YD4BE9: after the PR is merged, all tabs started for the ticket close and its worktree and branch go without anyone cleaning up by hand - without closing a stranger's tab, and without losing track of a tab it could not see."
 review-summary: "spawn.sh now writes one small file per tab it opens (pane, ticket, lane, worktree) under <git common dir>/jaira/panes/. New core/role/builtin/jaira-dispatcher/scripts/reap.sh reads those files, groups them by ticket and asks GitHub (gh pr list --head <branch> --state merged, against the fork's parent when origin is a fork) or GitLab (glab) for a merged pull request. Only when the PR is merged, the ticket is done or filed away, the local branch is not past the merged head, the worktrees are clean (untracked .jaira/ files aside) and herdr answers does it close each recorded tab whose label is still <ticket>/<lane>, remove the worktree (never the main one or the one it runs in), delete the branch with -D and only then drop the records; any failure keeps the records so the next round retries. Otherwise it prints 'waiting' or 'kept <ticket>: <reason>'. --dry-run asks the same questions and prints 'would ...'. The teamlead skill runs it every round and reports closed/kept lines; the 'worktree until done' paragraph now says reap.sh does it. Seven Go tests in core/role/reap_test.go drive the real scripts against a real git repo with herdr/gh/jaira stubs. Release note core/release/notes/YD4BE9.md."
-round: 8
+round: 9
 review-gaps: "Minor, none blocks: (1) a ticket worktree left in detached HEAD (e.g. a rebase paused with a clean tree) yields no branch name; reap.sh falls back to feat/<ticket>, the head check passes when that branch is gone, and 'worktree remove --force' drops the detached commits (reap.sh:124-126,151,190). (2) a ticket worktree directory deleted by hand but not pruned is skipped at reap.sh:118, so 'branch -D' then fails because git still sees the branch checked out there - 'kept ... deleting branch failed' every round until 'git worktree prune'. (3) reap.sh is committed as 100644 while spawn.sh and run-lane.sh are 100755; install.go:143 sets 0755 on every .sh, so the installed copy runs, only the in-repo copy does not. (4) GitLab path (glab, forks) is untested live, as the notes already say. The four DoD items are met by the diff; the outcome's claims (label check incl. dry-run, keep on herdr/git status failure, records last) are all in reap.sh:62,158,163,174-177,206 and covered by tests."
 test-verdict: "pass: go test ./... -race rc=0, go vet clean; DoD 1-5 verified; live on a scratch clone (real gh, feat/rftqkp = merged #87): HERDR_BIN_PATH=/nonexistent -> 'kept RFTQKP: herdr not reachable', record and worktree stay; real herdr.exe -> tab labelled RFTQKP/worker closed, worktree removed, branch deleted, record gone, rc=0"
 review-verdict: "Approve. The diff meets all definition-of-done items, the round-2 send-back (herdr not reachable) is fixed and tested, go test ./core/role/ passes (re-run here). The gaps left are edge cases that keep or lose nothing committed on a branch, except gap 1 (detached HEAD), which is unlikely on a ticket already done and merged. Not verified by me against real herdr or gh - that rests on the testing notes."
