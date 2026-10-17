@@ -117,3 +117,28 @@ func hasLaneFiles(dir string) bool {
 	m, _ := filepath.Glob(filepath.Join(dir, "*.md"))
 	return len(m) > 0
 }
+
+// descriptionFileName holds what a board is for, in plain text beside its
+// order file: .jaira/lanes/description for today's board,
+// .jaira/boards/<name>/lanes/description for a named one. It is what a
+// teamlead reads to put a ticket on the board its subject belongs to. Plain
+// text for the same reason order is: a "*.md" file there would be a lane.
+const descriptionFileName = "description"
+
+// DescriptionPath is where board name's description lives, whether or not it
+// has one yet — so a listing can say where to write it.
+func DescriptionPath(root, name string) string {
+	name, _ = NormalizeBoard(name)
+	if name == "" {
+		return filepath.Join(ProjectLanesDir(root), descriptionFileName)
+	}
+	return filepath.Join(boardLanesDir(root, name), descriptionFileName)
+}
+
+// Description is board name's description on one line: its lines trimmed and
+// joined by a space, so a description wrapped by hand still reads as the one
+// sentence it is. "" when the board has none.
+func Description(root, name string) string {
+	lines, _ := readIDList(DescriptionPath(root, name))
+	return strings.Join(lines, " ")
+}

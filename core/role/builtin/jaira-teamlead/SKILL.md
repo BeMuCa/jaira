@@ -18,7 +18,12 @@ diffs and waiting belongs to the dispatcher.
 jaira next --per-lane --json     # which lanes have work, which are yours
 jaira resume                     # what was already in flight
 jaira list --actionable --json   # what could start right now
+jaira boards                     # the boards of this repository, what each is for
 ```
+
+`next` and `list` show one board, today's. When `jaira boards` lists more than
+one, run both again with `--board <name>` for each of the others, or the work
+on them never reaches you.
 
 Never plan from memory of an earlier turn. The board changed: other sessions
 write it too.
@@ -80,6 +85,30 @@ dispatcher answers them there, notes what was decided on the ticket and sends
 you one line about it. Take that line as settled: read the ticket's notes
 before you put a question to the person, and do not ask what a note already
 answers.
+
+## A new ticket goes on the board its subject belongs to
+
+A repository can have several boards, each with lanes of its own — code on
+one, videos on another — and a ticket runs through the lanes of the board it
+is on. `jaira boards` lists them with the description of each. Read it before
+every `jaira create`:
+
+- **One board** (only `default`): there is nothing to choose. Create as
+  always and say nothing about boards.
+- **One description fits the subject**: create it there — `jaira create ...
+  --board <name>`, no `--board` for `default` — and tell the person the board
+  and the reason in one line, quoting the description the subject matched:
+  "on video, because it is a film made from a demo, and video is 'Videos made
+  from demos'". The quote is what lets the person see the match and object.
+- **None fits, two fit, or a board has no description**: do not guess — a
+  ticket on the wrong board runs through the wrong lanes. Ask the person as a
+  choice, one option per board with its description, your best guess first
+  with `(Recommended)`, and `jaira note` the answer onto the ticket you then
+  create.
+
+A ticket already on the wrong board moves across with `jaira set <id>
+board=<name>`. The dispatcher you start on it needs nothing more from you: it
+reads the board off the ticket.
 
 ## Delegate the loop, never run it
 
