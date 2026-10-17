@@ -21,7 +21,7 @@ related: []
 follows: 01M2HW4788Z5G0M05G3PJDXV60
 commits: []
 created-at: 2026-10-13T13:48:57Z
-updated-at: 2026-10-17T20:59:41Z
+updated-at: 2026-10-17T23:35:49Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-297639
@@ -29,7 +29,7 @@ claimed-at: 2026-10-17T20:39:34Z
 outcome-what: "Board, jaira list und jaira show zeigen bei einer Ticket-Datei, die hinter ihrem Ref liegt, den Stand des Refs und markieren sie (Karte '⇣ behind', Zeile '[behind ref: pull it]', JSON behind-ref, show-Zeile 'behind')."
 outcome-why: "Ein in einem anderen Worktree oder von einem Teammitglied bewegtes Ticket stand hier in seiner alten Lane; die Erkennung (isStale, wie bei pull) gab es schon, sie wurde nur beim Lesen nicht genutzt."
 outcome-resolves: K6BGB0; deckt JDXV60 DoD 1 fuer den Ref-Fall ab
-review-summary: "none"
+review-summary: "Store.List now asks the ref syncer (new Syncer.Ahead, one extra git for-each-ref per List plus a cat-file only for ref hashes not yet cached) which ticket files are older than their ref, and swaps those tickets for the ref's ticket, keeping the file path and setting a runtime-only BehindRef flag. The card shows a flag, jaira list adds [behind ref: pull it], JSON gets behind-ref, and jaira show swaps in the ref state too (only for tickets still on the board, via Store.Newest). Load and Mutate still read the file, so writes on a behind file are still refused by CheckFresh (exit 3) and the ref does not move. Second part: isStale now handles same-second ties. When updated-at is equal and the file bytes differ from the ref bytes, it calls the new gitref.Repo.Had (git hash-object + git rev-list --objects on the ticket ref) and treats the file as behind if the ref ever held those exact bytes. That closes a real bug on master: there, a move in another worktree in the same second as the last local write was read as current, and the next note silently put the old lane back on the ref. Reproduced on the master binary: ref todo became backlog after a note."
 round: 3
 review-gaps: "Runde 3: MilestoneHad und das neue Had teilen sich had(ref, content) statt die rev-list-Schleife zu verdoppeln. Unveraendert stehen gelassen: zweites for-each-ref pro List (~2 ms bei 60 Refs). Kein toter Code: das alte freie isStale ist ersetzt, alle drei Aufrufer nutzen die Methode."
 test-verdict: "pass: go vet + go test -race ./... nach go clean -testcache RC=0; DoD 1-2 im Baum geprueft; zwei Worktrees eines Temp-Repos mit Branch-Binary, mit und ohne Sekundenabstand: main zeigt todo + [behind ref: pull it], show behind-ref true, note exit 3, Ref unveraendert"
