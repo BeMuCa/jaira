@@ -1,7 +1,7 @@
 ---
 id: 01M553335RY2BDVVXSCPYD4BE9
 title: "Worker-Tabs und ihre Arbeitsbaeume schliessen sich, sobald der Pull Request ihres Tickets gemergt ist"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T14:22:27Z
+updated-at: 2026-10-17T14:22:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-66355
 claimed-at: 2026-10-17T14:11:12Z
@@ -34,6 +34,7 @@ review-summary: |-
   core/role/builtin/jaira-dispatcher/scripts/reap.sh:105-122 checks the lane before the merge, so every ticket still in flight prints 'kept X: in <lane>, not done' each round and the teamlead skill tells it to report every kept line - noise every round. Check the merge first and print an unmerged branch as 'waiting <t>: ...' (still named, DoD 3), keep 'kept' for the merged-but-not-safe cases; teamlead SKILL.md reports closed and kept only
   core/role/builtin/jaira-dispatcher/scripts/reap.sh:126-128 reports 'has commits the merged pull request does not' also when the PR head is simply not fetched locally (merge-base fails); say 'is not at the merged head <sha>' which is true in both cases
   core/role/builtin/jaira-dispatcher/scripts/reap.sh:98 only the main worktree is protected; run from a ticket worktree the script would remove the directory it runs in. Treat $root like $main in the script and drop the prose warning in jaira-teamlead/SKILL.md
+round: 2
 ---
 
 # Worker-Tabs und ihre Arbeitsbaeume schliessen sich, sobald der Pull Request ihres Tickets gemergt ist
