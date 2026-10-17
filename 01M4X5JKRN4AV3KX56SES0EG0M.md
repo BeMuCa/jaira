@@ -27,7 +27,7 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:55:54Z
+updated-at: 2026-10-17T12:55:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-67696
 claimed-at: 2026-10-17T12:50:10Z
@@ -36,7 +36,7 @@ outcome-why: "Ein Repo braucht Boards mit eigenen Lanes neben den SWE-Lanes, z.B
 outcome-resolves: "S0EG0M: alle sechs DoD-Punkte, Tests in internal/cli/boards_test.go und internal/tui/boards_test.go"
 review-summary: "Ein Repo kann jetzt mehrere Boards haben. Ein weiteres Board ist ein Ordner .jaira/boards/<name>/lanes/ mit Lane-Dateien und order (core/lane/boards.go: LoadBoard, Boards, NormalizeBoard, BoardOf, LanesOf); ein unbekannter Name ist Exit 2 und nennt die vorhandenen Boards, nichts wird automatisch angelegt. Ein Ticket traegt das Feld board: (core/ticket/schema.go); fehlt es, gilt .jaira/lanes/ wie bisher - bestehende Boards brauchen keine Migration. create/list/next nehmen --board und zeigen ohne es nur das heutige Board; show/move/dod/set/tags/logbook <id> lesen das Board vom Ticket (envFor in internal/cli/root.go). jaira set <id> board=<name> wechselt das Board und setzt den Status auf die erste Lane des neuen Boards, wenn die alte dort fehlt, mit Meldung. validate, resume und der Merge-Driver messen jedes Ticket an den Lanes seines eigenen Boards. TUI: F schaltet reihum durch die Boards, zeigt deren Lanes und nur deren Tickets; n und Follow-up schreiben board: des gezeigten Boards. Release-Note in core/release/notes/S0EG0M.md."
 round: 6
-review-gaps: "Runde 3: nichts zu entfernen - mergeBoard hat einen Aufrufer und ist vier Zeilen; ein zweiter Parameter theirs wurde vor dem Commit schon gestrichen. Frueheres siehe Notes."
+review-gaps: "Keine Luecke im DoD; kleinere Grenzen: (1) Board-weites Ablegen ins Logbook arbeitet nach Lane-ID ueber alle Boards: jaira logbook ohne id (internal/cli/logbook.go:136) und der Sweep beim Eintritt in eine Lane (core/lane/settle.go:18, s.FileLane(l.ID)) legen jedes Ticket mit dieser Status-ID ab, auch eines auf einem anderen Board, in dem die Lane gleich heisst aber nicht terminal ist; Tickets in einer anders benannten Terminal-Lane eines benannten Boards erreicht jaira logbook ohne id nie. Als bewusste Grenze notiert (brettweite Kommandos bleiben auf dem heutigen Board), steht aber nirgends fuer den Nutzer. (2) Verschwindet der lanes/-Ordner eines Boards, verweigern show und move dessen Tickets mit Exit 2; nur set <id> board=default holt sie zurueck, validate meldet es - im Temp-Repo nachgestellt, funktioniert, ist aber nur aus der Fehlermeldung nicht ableitbar. (3) kosmetisch: set board=default hinterlaesst 'board: \"\"', set board=video schreibt 'board: \"video\"' in Anfuehrungszeichen, create schreibt 'board: video' ohne - drei Schreibweisen fuer eine Sache im Frontmatter."
 test-verdict: "pass (Runde 3): go test -race ./... RC=0; TestMergeDriverUsesTheTicketsBoard rot ohne Fix, gruen mit; DoD 1-6 unveraendert gedeckt (boards_test.go cli+tui)"
 review-verdict: "Alle sechs DoD-Punkte sind im Diff erfuellt und im Temp-Repo nachgestellt (create/list/next --board, Tippfehler Exit 2, set board= mit Fallback-Meldung, validate gruen, go test ./... gruen). Nicht ganz fertig wegen Gap 1: der Merge-Driver entscheidet Status-Konflikte auf benannten Boards nach den falschen Lanes - fuer ein Repo mit parallelen Sessions der Fall, fuer den das Feature gebaut ist. Empfehlung: Gap 1 und 2 vor dem Annehmen beheben (zusammen ca. 30 Minuten), oder bewusst als Folgearbeit annehmen."
 review-round: 5
