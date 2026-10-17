@@ -21,7 +21,7 @@ related: []
 follows: 01M2HW4788Z5G0M05G3PJDXV60
 commits: []
 created-at: 2026-10-13T13:48:57Z
-updated-at: 2026-10-17T20:49:16Z
+updated-at: 2026-10-17T20:49:18Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-297639
@@ -34,7 +34,8 @@ claimed-at: 2026-10-17T20:39:34Z
 
 - [x] Liegt die Datei eines Tickets hinter seinem Ref, zeigt das Board auf der Karte den Stand des Refs oder ein Kennzeichen dafuer; 'jaira list' und 'jaira show' sagen es ebenso; ein Test baut genau diesen Fall
   proof: internal/cli/stalefile_test.go TestListAndShowGiveTheRefStateOfAFileBehindIt; internal/tui/checklist_test.go TestCardMarksAFileBehindItsRef; core/ticket/store.go Store.newest/Newest; core/refsync/refsync.go Syncer.Ahead
-- [ ] go test ./... -race gruen; Release-Notiz unter core/release/notes/
+- [x] go test ./... -race gruen; Release-Notiz unter core/release/notes/
+  proof: go vet ./... && go test -race ./... all ok 2026-10-17; core/release/notes/K6BGB0.md
 
 ## Options
 
