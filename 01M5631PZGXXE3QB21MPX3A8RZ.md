@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T23:27:12Z
-updated-at: 2026-10-17T23:30:15Z
+updated-at: 2026-10-17T23:30:26Z
 updated-by: berkc
 ---
 
@@ -26,7 +26,8 @@ updated-by: berkc
 
 ## Definition of Done
 
-- [ ] boardFit plant jede Spalte mit ihrer gezeichneten Breite ein; ein Test misst, dass die gezeichnete Board-Zeile bei mehreren Breiten und mit duennen Lanes die Terminalbreite bis auf weniger als die Zahl der vollen Spalten ausfuellt und nie ueberschreitet; go test ./... gruen; Release-Note
+- [x] boardFit plant jede Spalte mit ihrer gezeichneten Breite ein; ein Test misst, dass die gezeichnete Board-Zeile bei mehreren Breiten und mit duennen Lanes die Terminalbreite bis auf weniger als die Zahl der vollen Spalten ausfuellt und nie ueberschreitet; go test ./... gruen; Release-Note
+  proof: internal/tui/view.go boardFit; TestBoardRowFillsTerminalWidth
 
 ## Options
 
