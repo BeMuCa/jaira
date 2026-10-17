@@ -1,7 +1,7 @@
 ---
 id: 01M5631PZGXXE3QB21MPX3A8RZ
 title: "Das Board laesst rechts einen leeren Streifen, weil jede Spalte zwei Zellen Abstand eingeplant bekommt, die nie gezeichnet werden"
-status: backlog
+status: todo
 ready: true
 creator: berkc
 assignee: berkc
@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T23:27:12Z
-updated-at: 2026-10-17T23:30:06Z
+updated-at: 2026-10-17T23:30:12Z
 updated-by: berkc
 ---
 
