@@ -4,7 +4,7 @@ title: "Das Board zeigt den Stand des Refs, wenn die Ticket-Datei dahinter zurue
 status: brainstorm
 ready: true
 creator: BeMuCa
-goal: "Ein Mensch sieht auf dem Board die Lane, in der ein Ticket wirklich steht, auch wenn die Datei in seinem Checkout veraltet ist."
+goal: "Board, 'jaira list' und 'jaira show' zeigen den neuesten Stand eines Tickets: liegt die Datei im Checkout hinter ihrem Ref, den des Refs, mit einem Kennzeichen, dass 'jaira pull' faellig ist - und ein Schreiben auf die veraltete Datei bleibt verweigert."
 context: |-
   Am 2026-10-13 stand D0SAHM auf Berks Board (Haupt-Checkout /home/berk/git/jAIra) in in-progress. Sein Ref refs/jaira/tickets/01M1KFMETY9MKH4V38TVD0SAHM sagte schon signoff.
   Grund: Board und 'jaira list' lesen die Datei im Checkout, und die lag hinter dem Ref. Gearbeitet wurde das Ticket in einem anderen Worktree (/home/berk/git/jAIra-D0SAHM).
@@ -21,7 +21,7 @@ related: []
 follows: 01M2HW4788Z5G0M05G3PJDXV60
 commits: []
 created-at: 2026-10-13T13:48:57Z
-updated-at: 2026-10-17T20:39:59Z
+updated-at: 2026-10-17T20:40:11Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-297639
