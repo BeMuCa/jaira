@@ -1704,7 +1704,7 @@ func (m *Model) renderHelp() string {
 			{"x", "archive the selected ticket (restore brings it back)"},
 			{"X", "on an open ticket: delete its file, after typing the handle back"},
 			{"r", "reload from disk now"},
-			{"p F", "switch to another board; F: this repository's next board, its own lanes and only its tickets"},
+			{"p b", "switch to another board; b: this repository's next board, its own lanes and only its tickets"},
 			{"x", "in that list: remove a board, choosing what goes (default no)"},
 			{"S", "settings: lanes (read a prompt, use it, publish it), the default board, and how many days of the logbook the terminal lane shows"},
 		}},

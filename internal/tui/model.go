@@ -101,7 +101,7 @@ type Model struct {
 	mode   mode
 	filter string
 	// boardName is which of the repository's boards is shown: "" is today's,
-	// .jaira/lanes/, otherwise a directory under .jaira/boards/. F picks it.
+	// .jaira/lanes/, otherwise a directory under .jaira/boards/. b picks it.
 	boardName string
 	// allTickets is every board's tickets, m.tickets only the shown board's:
 	// a blocker or a parent may sit on another board, and the link index has
@@ -1631,7 +1631,9 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		} else {
 			m.openTicks(modeMilestones, "milestone")
 		}
-	case "F":
+	case "b":
+		// Not F: f is the follow-up on an open ticket. b there follows a
+		// blocker, which is the detail view's own key and never reaches here.
 		m.nextBoard()
 	case "u":
 		// Next to the milestone picker in purpose: narrowing the board to
@@ -2141,7 +2143,7 @@ func (m *Model) createTicket(title string) {
 		ticket.FieldCreatedAt: ticket.FormatTime(now),
 		ticket.FieldUpdatedAt: ticket.FormatTime(now),
 	}
-	// On a board picked with F the ticket belongs to that board; today's
+	// On a board picked with b the ticket belongs to that board; today's
 	// board writes no board: line, as the CLI's create does not.
 	if m.boardName != "" {
 		fields[ticket.FieldBoard] = m.boardName

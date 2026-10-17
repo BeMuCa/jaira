@@ -1,3 +1,3 @@
 - Give a repository a second board by putting its lane files (and an `order` file) in `.jaira/boards/<name>/lanes/`; `jaira create --board <name>` files a ticket there (it carries `board: <name>`), `jaira list --board <name>` and `jaira next --board <name>` read it, and without `--board` everything stays on today's board in `.jaira/lanes/`.
 - Move a ticket to another board with `jaira set <id> board=<name>` (`board=default` brings it back); if its lane does not exist there, it lands in that board's first lane and jaira says so.
-- Press `F` on the board to switch to the repository's next board — its own lanes and only its tickets — and again to come back.
+- Press `b` on the board to switch to the repository's next board — its own lanes and only its tickets — and again to come back.
