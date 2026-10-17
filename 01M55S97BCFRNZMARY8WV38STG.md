@@ -24,14 +24,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T20:36:33Z
-updated-at: 2026-10-17T23:48:55Z
+updated-at: 2026-10-17T23:51:48Z
 updated-by: berkc
 claimed-by: berk-ca-283567
 claimed-at: 2026-10-17T20:37:26Z
 outcome-what: "install scripts run roles install --global; ps1 failure branch fixed, opt-out only =1"
 outcome-why: curl install left roles and Cockpit missing
 outcome-resolves: "install.sh verified; install.ps1 not run"
-review-summary: "none"
+review-summary: "install.sh and install.ps1 now run 'jaira roles install --global' after placing the binary, as ONE step 'Setting up the skills and the Cockpit…' (roles install has no flag to split them - checked with --help), print the 'N written, M unchanged' line, what is active, and that the Cockpit loads next Claude Code session. Failure is printed with the command's own output and does not undo the binary install. JAIRA_NO_ROLES=1 (only exactly 1) skips it. install.sh shows a curl --progress-bar for the archive only when stderr is a TTY; install.ps1 turns the IWR progress bar on for the archive when [Environment]::UserInteractive. ps1 switches ErrorActionPreference to Continue around the native call and back to Stop (function-local, cannot leak into the caller session under irm|iex). README and release note V38STG.md updated."
 review-gaps: "none"
 test-verdict: "pass: sh -n, dash runs: fresh 35 written, rerun 0 written/35 unchanged, NO_ROLES=1 skips, =0 installs, read-only failure printed. install.ps1 NOT run (no pwsh)."
 review-verdict: "send back: install.sh meets the goal and was verified end to end (dash, fresh/rerun/opt-out/failure/pty); install.ps1 failure path is likely broken on PS 5.1 and the ticket's DoD 2-5 are untracked, so not ready for signoff"
