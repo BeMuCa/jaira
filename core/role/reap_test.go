@@ -17,6 +17,7 @@ type reapRig struct {
 	closed                  string // every tab the herdr stub closed, a line each
 	merged                  string // what the gh stub answers for feat/ab12cd
 	shown                   string // what 'jaira show AB12CD --json' answers; absent: not found
+	labels                  string // the label of each pane's tab, a file per pane
 	env                     []string
 }
 
@@ -44,6 +45,7 @@ func newReapRig(t *testing.T) *reapRig {
 		closed:  filepath.Join(tmp, "closed"),
 		merged:  filepath.Join(tmp, "merged.json"),
 		shown:   filepath.Join(tmp, "shown.json"),
+		labels:  filepath.Join(tmp, "labels"),
 	}
 	r.wt = filepath.Join(tmp, "src", ".worktrees", "jaira-ab12cd")
 	if _, err := install(r.scripts, false, true); err != nil {
@@ -53,12 +55,17 @@ func newReapRig(t *testing.T) *reapRig {
 
 	bin := filepath.Join(tmp, "bin")
 	stubs := map[string]string{
-		// A pane per tab create, numbered; its tab is t<pane>.
+		// A pane per tab create, numbered; its tab is t<pane>, and the tab's
+		// label is kept in labels/<pane>.
 		"herdr": `#!/usr/bin/env bash
 n="` + tmp + `/panes-made"
+l="` + r.labels + `"
 case "$1 $2" in
-  "tab create") echo x >> "$n"; echo "{\"result\":{\"root_pane\":{\"pane_id\":\"p$(wc -l < "$n" | tr -d ' ')\"}}}" ;;
+  "tab create") echo x >> "$n"; p="p$(wc -l < "$n" | tr -d ' ')"
+                while [ $# -gt 0 ]; do [ "$1" = --label ] && { mkdir -p "$l"; echo "$2" > "$l/$p"; }; shift; done
+                echo "{\"result\":{\"root_pane\":{\"pane_id\":\"$p\"}}}" ;;
   "pane get")   echo "{\"result\":{\"pane\":{\"agent\":\"claude\",\"agent_status\":\"idle\",\"tab_id\":\"t$3\"}}}" ;;
+  "tab get")    echo "{\"result\":{\"tab\":{\"tab_id\":\"$3\",\"label\":\"$(cat "$l/${3#t}")\"}}}" ;;
   "tab close")  echo "$3" >> "` + r.closed + `" ;;
 esac
 `,
@@ -272,6 +279,62 @@ func TestReapKeepsWhatIsNotFinished(t *testing.T) {
 				t.Errorf("the worktree went: %v", err)
 			}
 		})
+	}
+}
+
+// herdr gives a closed tab's ids out again after a restart: a record whose
+// pane now sits in a tab labelled for something else closes nothing, and
+// goes, since the tab it named is gone.
+func TestReapLeavesATabItDidNotOpen(t *testing.T) {
+	t.Parallel()
+	r := newReapRig(t)
+	r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+	r.write(t, r.shown, `{"status":"done"}`)
+	r.write(t, filepath.Join(r.labels, "p2"), "ZZ99ZZ/worker\n")
+
+	out := r.run(t, r.repo, "reap.sh")
+	if got := r.closedTabs(); got != "tp1" {
+		t.Errorf("closed tabs %q, want only tp1\n%s", got, out)
+	}
+	if _, err := os.Stat(r.wt); !os.IsNotExist(err) {
+		t.Errorf("worktree still there (%v):\n%s", err, out)
+	}
+	if recs := r.records(t); len(recs) != 0 {
+		t.Errorf("records left: %v", recs)
+	}
+}
+
+// A worktree git will not remove keeps its records, its branch with them, and
+// the next round finishes what this one could not.
+func TestReapComesBackToAWorktreeItCouldNotRemove(t *testing.T) {
+	t.Parallel()
+	r := newReapRig(t)
+	r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+	r.write(t, r.shown, `{"status":"done"}`)
+	// A locked worktree resists a single --force.
+	r.git(t, r.repo, "worktree", "lock", r.wt)
+
+	out := r.run(t, r.repo, "reap.sh")
+	if !strings.Contains(out, "kept AB12CD: removing "+r.wt+" failed") {
+		t.Errorf("no reason given:\n%s", out)
+	}
+	if len(r.records(t)) != 2 {
+		t.Errorf("records went with the worktree still there: %v", r.records(t))
+	}
+	if b := r.git(t, r.repo, "branch", "--list", "feat/ab12cd"); b == "" {
+		t.Errorf("branch went with its worktree still there:\n%s", out)
+	}
+
+	r.git(t, r.repo, "worktree", "unlock", r.wt)
+	out = r.run(t, r.repo, "reap.sh")
+	if _, err := os.Stat(r.wt); !os.IsNotExist(err) {
+		t.Errorf("the next round left the worktree (%v):\n%s", err, out)
+	}
+	if b := r.git(t, r.repo, "branch", "--list", "feat/ab12cd"); b != "" {
+		t.Errorf("the next round left the branch: %q\n%s", b, out)
+	}
+	if recs := r.records(t); len(recs) != 0 {
+		t.Errorf("records left: %v", recs)
 	}
 }
 

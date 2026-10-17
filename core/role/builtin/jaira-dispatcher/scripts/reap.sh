@@ -156,20 +156,24 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
   done
   if [ -n "$dirty" ]; then echo "kept $t: ${dirty% }"; continue; fi
 
-  failed=""
+  failed=""; gone=()
   for f in "${recs[@]}"; do
     pane="$(field pane "$f")"; lane="$(field lane "$f")"
     if [ "$pane" = "${HERDR_PANE_ID:-}" ]; then continue; fi
+    gone+=("$f")
     if [ -n "$dry" ]; then echo "would close $t/$lane $pane"; continue; fi
-    # The person may have closed the tab already; that is the job done.
+    # The person may have closed the tab already; that is the job done. A
+    # record outlives its tab by days, and herdr hands its ids out again after
+    # a restart: a tab not labelled as spawn.sh labelled ours is somebody
+    # else's, and ours is gone.
     tab="$("$herdr" pane get "$pane" 2>/dev/null | jaira json get result.pane.tab_id 2>/dev/null || true)"
-    if [ -n "$tab" ]; then
+    if [ -n "$tab" ] && [ "$("$herdr" tab get "$tab" 2>/dev/null | jaira json get result.tab.label 2>/dev/null || true)" \
+      = "$(field ticket "$f")/$lane" ]; then
       if ! "$herdr" tab close "$tab" >/dev/null 2>&1; then
         echo "kept $t: closing $pane failed"; failed=1; break
       fi
       echo "closed $t/$lane $pane"
     fi
-    rm -f "$f"
   done
   # A tab still open has claude sitting in the worktree: leave it standing.
   [ -z "$failed" ] || continue
@@ -177,17 +181,22 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
   for w in "${wts[@]+"${wts[@]}"}"; do
     if [ -n "$dry" ]; then echo "would remove $w"; continue; fi
     # --force for the untracked .jaira/ files the check above lets through.
-    git -C "$root" worktree remove --force "$w" >/dev/null && echo "removed $w"
+    if git -C "$root" worktree remove --force "$w" >/dev/null; then echo "removed $w"
+    else echo "kept $t: removing $w failed"; failed=1; fi
   done
   # A branch checked out in a worktree that stays — the main one, or the one
   # this runs in — stays with it.
-  if git -C "$root" show-ref -q --verify "refs/heads/$branch" \
+  if [ -z "$failed" ] && git -C "$root" show-ref -q --verify "refs/heads/$branch" \
     && [ "$(git -C "$root" symbolic-ref -q --short HEAD)" != "$branch" ] \
     && [ "$(git -C "$main" symbolic-ref -q --short HEAD)" != "$branch" ]; then
     if [ -n "$dry" ]; then echo "would delete branch $branch"
     # -D, because a squash merge is no merge to git; the head check above
     # stands in for the one -d would make.
-    else git -C "$root" branch -D "$branch" >/dev/null && echo "deleted branch $branch"; fi
+    elif git -C "$root" branch -D "$branch" >/dev/null; then echo "deleted branch $branch"
+    else echo "kept $t: deleting branch $branch failed"; failed=1; fi
   fi
+  # The records go last: one left behind brings the next round back to what
+  # failed, where a record gone first left the worktree standing for good.
+  [ -n "$dry$failed" ] || rm -f "${gone[@]+"${gone[@]}"}"
 done
 exit 0
