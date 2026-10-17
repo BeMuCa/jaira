@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T17:02:34Z
+updated-at: 2026-10-17T17:02:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
@@ -115,3 +115,4 @@ Empfehlung: 1 - die Label-Pruefung ist billig und nimmt das einzige Risiko weg, 
 - **2026-10-17 16:56 · Alexander Sacharov** — teamlead (jaira-79) before acceptance: close review gaps (1) detached HEAD worktree is never removed - named and kept like uncommitted changes, test; (3) commit reap.sh as 100755. Gaps (2) unpruned hand-deleted worktree -> 'deleting branch failed' each round until 'git worktree prune', and (4) GitLab path untested live, stay open.
 - **2026-10-17 16:58 · Alexander Sacharov** — round 8: detached HEAD is checked per worktree beside the dirty check, not by the branch lookup - the lookup falls back to <prefix>/<ticket> and the head check then passes when that branch is gone, which is how the commits got lost. Test verified to fail on the previous reap.sh. Left open as asked: (2) a hand-deleted, unpruned worktree prints 'kept ... deleting branch failed' every round until 'git worktree prune'; (4) GitLab untested live.
 - **2026-10-17 16:58 · Alexander Sacharov** — critique round 8: none - the detached check sits in the per-worktree loop that already keeps dirty worktrees, the place the teamlead asked for ('like uncommitted changes').
+- **2026-10-17 17:02 · Alexander Sacharov** — review round 4 (fresh agent): approve. 9 commits = git log master..HEAD, no commits_unavailable. Checked: jaira show of a filed ticket returns status done (rc 0), unknown ticket rc 5 - matches reap.sh:141-147. Gaps are cleanup misses only (unpruned worktree, GitLab fork lookup, transient pane get, unrecorded worktree holding the branch); none removes work.
