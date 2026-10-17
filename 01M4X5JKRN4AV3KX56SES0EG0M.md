@@ -27,14 +27,14 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:53:40Z
+updated-at: 2026-10-17T12:55:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-67696
 claimed-at: 2026-10-17T12:50:10Z
 outcome-what: "Mehrere Boards pro Repo: core/lane/boards.go (LoadBoard, Boards, NormalizeBoard), Feld board: im Ticket, --board an create/list/next, Einzelticket-Kommandos lesen das Board vom Ticket, set board=<name> mit Fallback auf die erste Lane, TUI-Taste F"
 outcome-why: "Ein Repo braucht Boards mit eigenen Lanes neben den SWE-Lanes, z.B. ein video-Board in demo-video fuer eine Designerin"
 outcome-resolves: "S0EG0M: alle sechs DoD-Punkte, Tests in internal/cli/boards_test.go und internal/tui/boards_test.go"
-review-summary: "Runde 6: keine Befunde. mergeBoard liest das Board aus ours wie der Rest des Treibers seine Seite liest; fehlt das Board auf der Platte, scheitert LoadBoard und git meldet einen Konflikt - die sichere Seite, wie bei jedem Treiberfehler."
+review-summary: "Ein Repo kann jetzt mehrere Boards haben. Ein weiteres Board ist ein Ordner .jaira/boards/<name>/lanes/ mit Lane-Dateien und order (core/lane/boards.go: LoadBoard, Boards, NormalizeBoard, BoardOf, LanesOf); ein unbekannter Name ist Exit 2 und nennt die vorhandenen Boards, nichts wird automatisch angelegt. Ein Ticket traegt das Feld board: (core/ticket/schema.go); fehlt es, gilt .jaira/lanes/ wie bisher - bestehende Boards brauchen keine Migration. create/list/next nehmen --board und zeigen ohne es nur das heutige Board; show/move/dod/set/tags/logbook <id> lesen das Board vom Ticket (envFor in internal/cli/root.go). jaira set <id> board=<name> wechselt das Board und setzt den Status auf die erste Lane des neuen Boards, wenn die alte dort fehlt, mit Meldung. validate, resume und der Merge-Driver messen jedes Ticket an den Lanes seines eigenen Boards. TUI: F schaltet reihum durch die Boards, zeigt deren Lanes und nur deren Tickets; n und Follow-up schreiben board: des gezeigten Boards. Release-Note in core/release/notes/S0EG0M.md."
 round: 6
 review-gaps: "Runde 3: nichts zu entfernen - mergeBoard hat einen Aufrufer und ist vier Zeilen; ein zweiter Parameter theirs wurde vor dem Commit schon gestrichen. Frueheres siehe Notes."
 test-verdict: "pass (Runde 3): go test -race ./... RC=0; TestMergeDriverUsesTheTicketsBoard rot ohne Fix, gruen mit; DoD 1-6 unveraendert gedeckt (boards_test.go cli+tui)"
