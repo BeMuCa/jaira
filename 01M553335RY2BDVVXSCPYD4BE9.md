@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T14:21:25Z
+updated-at: 2026-10-17T14:21:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-66355
 claimed-at: 2026-10-17T14:11:12Z
@@ -41,7 +41,8 @@ claimed-at: 2026-10-17T14:11:12Z
   proof: core/role/builtin/jaira-dispatcher/scripts/reap.sh 'kept <ticket>: <reason>' for no merged PR, commits past the PR head, uncommitted changes, ticket back in a lane; test core/role/reap_test.go TestReapKeepsWhatIsNotFinished
 - [x] Der Teamlead-Skill ruft das Skript bei jeder Runde auf und meldet, was geschlossen wurde
   proof: core/role/builtin/jaira-teamlead/SKILL.md:26-39 (reap.sh every round, report closed/kept); test core/role/reap_test.go TestTeamleadReapsEveryRound
-- [ ] Eine Zeile in core/release/notes/<ID>.md
+- [x] Eine Zeile in core/release/notes/<ID>.md
+  proof: core/release/notes/YD4BE9.md
 
 ## Options
 
