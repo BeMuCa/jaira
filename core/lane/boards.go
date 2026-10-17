@@ -40,18 +40,15 @@ func NormalizeBoard(name string) (string, error) {
 	return name, nil
 }
 
-// BoardsDir holds every board a repository has beyond today's, one directory
+// boardsDir holds every board a repository has beyond today's, one directory
 // per board, each with a lanes/ directory of its own.
-func BoardsDir(root string) string {
+func boardsDir(root string) string {
 	return filepath.Join(root, ticket.DirName, "boards")
 }
 
-// BoardLanesDir is where the lanes of board name live: today's for "".
-func BoardLanesDir(root, name string) string {
-	if name == "" {
-		return ProjectLanesDir(root)
-	}
-	return filepath.Join(BoardsDir(root), name, "lanes")
+// boardLanesDir is where the lanes of the named board name live.
+func boardLanesDir(root, name string) string {
+	return filepath.Join(boardsDir(root), name, "lanes")
 }
 
 // Boards lists the named boards of root, sorted. A board is there when its
@@ -60,7 +57,7 @@ func Boards(root string) []string {
 	if root == "" {
 		return nil
 	}
-	entries, err := os.ReadDir(BoardsDir(root))
+	entries, err := os.ReadDir(boardsDir(root))
 	if err != nil {
 		return nil
 	}
@@ -69,7 +66,7 @@ func Boards(root string) []string {
 		if !e.IsDir() || !boardNameRe.MatchString(e.Name()) || e.Name() == DefaultBoardName {
 			continue
 		}
-		if m, _ := filepath.Glob(filepath.Join(BoardLanesDir(root, e.Name()), "*.md")); len(m) > 0 {
+		if m, _ := filepath.Glob(filepath.Join(boardLanesDir(root, e.Name()), "*.md")); len(m) > 0 {
 			out = append(out, e.Name())
 		}
 	}
@@ -94,7 +91,7 @@ func LoadBoard(root, name string) (*Set, error) {
 	if name == "" {
 		return Load(root)
 	}
-	dir := BoardLanesDir(root, name)
+	dir := boardLanesDir(root, name)
 	if m, _ := filepath.Glob(filepath.Join(dir, "*.md")); root == "" || len(m) == 0 {
 		return nil, fmt.Errorf("%w %q; boards here: %s", ErrNoSuchBoard, name, strings.Join(append([]string{DefaultBoardName}, Boards(root)...), ", "))
 	}
@@ -109,4 +106,11 @@ func LoadBoard(root, name string) (*Set, error) {
 	lanes, warnings := readLaneDir(dir, nil, builtinByID)
 	orderIDs, _ := readIDList(filepath.Join(dir, orderFileName))
 	return assemble(lanes, orderIDs, warnings), nil
+}
+
+// BoardOf is the board t runs on, "" for today's — however its board: line
+// spells that.
+func BoardOf(t *ticket.Ticket) string {
+	b, _ := NormalizeBoard(t.Board)
+	return b
 }

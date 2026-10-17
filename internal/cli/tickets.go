@@ -206,14 +206,11 @@ already know it is yours; --assignee wins over it.`,
 			if title == "" {
 				title = strings.Join(args, " ")
 			}
-			if board, err = lane.NormalizeBoard(board); err != nil {
-				return fail(ExitUsage, "usage", "%v", err)
-			}
-			env, _, err := loadBoardEnv(s, board)
+			lanes, err := boardLanes(s, board)
 			if err != nil {
 				return err
 			}
-			lanes := env.Lanes
+			board, _ = lane.NormalizeBoard(board)
 			target := laneID
 			if target == "" {
 				target = lanes.Default().ID
@@ -1048,11 +1045,11 @@ its end. Review fields keep their history across loop rounds that way.`,
 				}
 			}
 			if !changesBoard {
-				curEnv, err := envFor(s, cur)
+				lanes, err := boardLanes(s, cur.Board)
 				if err != nil {
 					return err
 				}
-				if _, known := curEnv.Lanes.Get(cur.Status); !known && cur.Status != "" {
+				if _, known := lanes.Get(cur.Status); !known && cur.Status != "" {
 					return &codedError{
 						code:   ExitValidation,
 						reason: "unknown_lane",
@@ -1116,13 +1113,6 @@ its end. Review fields keep their history across loop rounds that way.`,
 							v = old + "\n" + v
 						}
 					}
-					// mode is the one scalar with a closed set of values, and
-					// it is checked here — after --append has folded in what
-					// was already there — so that no path can store a value
-					// the worker will not recognise. A typo stored silently is
-					// worse than no mode at all: the person believes a human
-					// is asked before each increment while the worker,
-					// comparing against exactly one word, commits as usual.
 					// board is checked against the disk, and a ticket whose
 					// lane the new board lacks is put in that board's first
 					// lane: a ticket in a lane its board does not have is
@@ -1132,18 +1122,25 @@ its end. Review fields keep their history across loop rounds that way.`,
 						if err != nil {
 							return fail(ExitUsage, "usage", "%v", err)
 						}
-						env, _, err := loadBoardEnv(s, board)
+						lanes, err := boardLanes(s, board)
 						if err != nil {
 							return err
 						}
-						if _, ok := env.Lanes.Get(t.Status); !ok && len(env.Lanes.Lanes) > 0 {
-							landed = env.Lanes.Lanes[0].ID
+						if _, ok := lanes.Get(t.Status); !ok && len(lanes.Lanes) > 0 {
+							landed = lanes.Lanes[0].ID
 							if err := t.Doc().SetScalar(ticket.FieldStatus, landed); err != nil {
 								return err
 							}
 						}
 						v = board
 					}
+					// mode is the one scalar with a closed set of values, and
+					// it is checked here — after --append has folded in what
+					// was already there — so that no path can store a value
+					// the worker will not recognise. A typo stored silently is
+					// worse than no mode at all: the person believes a human
+					// is asked before each increment while the worker,
+					// comparing against exactly one word, commits as usual.
 					if k == ticket.FieldMode {
 						canon, ok := ticket.CanonicalMode(v)
 						if !ok {

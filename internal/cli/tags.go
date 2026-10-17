@@ -317,7 +317,7 @@ colour cannot be meant for several.`,
 			if err != nil {
 				return err
 			}
-			lanes, err := lane.LoadBoard(s.Root, cur.Board)
+			lanes, err := boardLanes(s, cur.Board)
 			if err != nil {
 				return err
 			}

@@ -296,11 +296,8 @@ func envFor(s *ticket.Store, t *ticket.Ticket) (gate.Env, error) {
 // link index has to find it. Commands that show one board filter with
 // onBoard.
 func loadBoardEnv(s *ticket.Store, board string) (gate.Env, []*ticket.Ticket, error) {
-	lanes, err := lane.LoadBoard(s.Root, board)
+	lanes, err := boardLanes(s, board)
 	if err != nil {
-		if errors.Is(err, lane.ErrNoSuchBoard) {
-			return gate.Env{}, nil, fail(ExitUsage, "no_such_board", "%v", err)
-		}
 		return gate.Env{}, nil, err
 	}
 	all, err := s.List()
@@ -361,6 +358,19 @@ func identityAliases() []string {
 	return coreidentity.Aliases(g.dir)
 }
 
+// boardLanes is lane.LoadBoard for a command: a board name that is malformed
+// or has nothing behind it is a usage error, exit 2.
+func boardLanes(s *ticket.Store, board string) (*lane.Set, error) {
+	if _, err := lane.NormalizeBoard(board); err != nil {
+		return nil, fail(ExitUsage, "usage", "%v", err)
+	}
+	lanes, err := lane.LoadBoard(s.Root, board)
+	if errors.Is(err, lane.ErrNoSuchBoard) {
+		return nil, fail(ExitUsage, "no_such_board", "%v", err)
+	}
+	return lanes, err
+}
+
 // onBoard keeps the tickets of board — "" or "default" for today's — so a
 // ticket of another board never shows up in a lane its board does not have.
 func onBoard(ts []*ticket.Ticket, board string) ([]*ticket.Ticket, error) {
@@ -370,7 +380,7 @@ func onBoard(ts []*ticket.Ticket, board string) ([]*ticket.Ticket, error) {
 	}
 	out := ts[:0:0]
 	for _, t := range ts {
-		if b, _ := lane.NormalizeBoard(t.Board); b == board {
+		if lane.BoardOf(t) == board {
 			out = append(out, t)
 		}
 	}

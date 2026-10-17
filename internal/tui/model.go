@@ -441,7 +441,7 @@ func (m *Model) reload() error {
 	// this one does not have.
 	m.tickets = tickets[:0:0]
 	for _, t := range tickets {
-		if b, _ := lane.NormalizeBoard(t.Board); b == m.boardName {
+		if lane.BoardOf(t) == m.boardName {
 			m.tickets = append(m.tickets, t)
 		}
 	}

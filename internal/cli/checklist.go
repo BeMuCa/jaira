@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/BeMuCa/jaira/core/gate"
-	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/ticket"
 	"github.com/spf13/cobra"
 )
@@ -134,7 +133,7 @@ line rather than stacking a second one.`,
 			if err != nil {
 				return err
 			}
-			lanes, err := lane.LoadBoard(s.Root, cur.Board)
+			lanes, err := boardLanes(s, cur.Board)
 			if err != nil {
 				return err
 			}
