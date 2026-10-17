@@ -95,6 +95,13 @@ func HasErrors(ps []Problem) bool {
 // right answer for a caller that has no store and the reason a filed-away
 // blocker used to be reported as unreachable.
 func Tickets(ts []*ticket.Ticket, lanes *lane.Set, known func(id string) bool) []Problem {
+	return TicketsOnBoards(ts, func(*ticket.Ticket) *lane.Set { return lanes }, known)
+}
+
+// TicketsOnBoards is Tickets for a repository with several boards: each
+// ticket's lane is checked against lanesOf(t), the lanes of its own board,
+// and nil there means its board has no lanes at all.
+func TicketsOnBoards(ts []*ticket.Ticket, lanesOf func(*ticket.Ticket) *lane.Set, known func(id string) bool) []Problem {
 	if known == nil {
 		known = func(string) bool { return false }
 	}
@@ -146,7 +153,10 @@ func Tickets(ts []*ticket.Ticket, lanes *lane.Set, known func(id string) bool) [
 				"no title, and no level-one heading in the body to fall back to")
 		}
 
-		if _, known := lanes.Get(t.Status); !known {
+		if lanes := lanesOf(t); lanes == nil {
+			add(CodeUnknownLane, SeverityError, ticket.FieldBoard,
+				"board %q has no lane files under .jaira/boards/, so this ticket is read-only and invisible to the pipeline", t.Board)
+		} else if _, known := lanes.Get(t.Status); !known {
 			add(CodeUnknownLane, SeverityError, ticket.FieldStatus,
 				"lane %q is not installed, so this ticket is read-only and invisible to the pipeline", t.Status)
 		}
@@ -269,8 +279,10 @@ func Tickets(ts []*ticket.Ticket, lanes *lane.Set, known func(id string) bool) [
 				if !ok {
 					continue
 				}
-				if l, known := lanes.Get(ref.Status); known && l.Terminal {
-					continue
+				if refLanes := lanesOf(ref); refLanes != nil {
+					if l, known := refLanes.Get(ref.Status); known && l.Terminal {
+						continue
+					}
 				}
 				seen[m] = true
 				// The same handle can turn up in both context and note; only

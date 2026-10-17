@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/BeMuCa/jaira/core/gate"
-	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/ticket"
 	"github.com/spf13/cobra"
 )
@@ -134,7 +133,7 @@ line rather than stacking a second one.`,
 			if err != nil {
 				return err
 			}
-			lanes, err := lane.Load(s.Root)
+			lanes, err := boardLanes(s, cur.Board)
 			if err != nil {
 				return err
 			}
@@ -195,7 +194,7 @@ line rather than stacking a second one.`,
 				items = t.PlanItems
 			}
 			if g.jsonOut {
-				env, _, err := loadEnv(s)
+				env, err := envFor(s, t)
 				if err != nil {
 					return err
 				}
@@ -258,7 +257,7 @@ func addChecklistItems(cmd *cobra.Command, id string, sec ticket.Section, items 
 		return err
 	}
 	if g.jsonOut {
-		env, _, err := loadEnv(s)
+		env, err := envFor(s, t)
 		if err != nil {
 			return err
 		}
@@ -317,7 +316,7 @@ func setOption(cmd *cobra.Command, id, name string, on bool) error {
 		return err
 	}
 	if g.jsonOut {
-		env, _, err := loadEnv(s)
+		env, err := envFor(s, t)
 		if err != nil {
 			return err
 		}
