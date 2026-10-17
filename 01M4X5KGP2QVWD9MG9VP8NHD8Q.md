@@ -18,7 +18,7 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:43Z
-updated-at: 2026-10-17T12:51:17Z
+updated-at: 2026-10-17T14:03:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-65566
 claimed-at: 2026-10-17T12:36:37Z
@@ -69,3 +69,8 @@ review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/b && cd /tmp
 - **2026-10-17 12:46 · Alexander Sacharov** — testing: found outside this change (S0EG0M's code): 'jaira validate' checks every ticket against today's lanes, so a ticket on a named board is reported 'lane "cut" is not installed, so this ticket is read-only' - seen on a scratch board with a ticket in video/cut. Worker/dispatcher do not run validate, so this ticket's DoD is not touched; not fixed here.
 - **2026-10-17 12:48 · Alexander Sacharov** — review (fresh context): approve. Tests pass, jaira boards and set board= checked by hand in a scratch repo. Follow-ups only, see review-gaps: default board needs .jaira/lanes/description or the teamlead asks on every create; CLAUDE.md agent block does not name jaira boards.
 - **2026-10-17 12:51 · Alexander Sacharov** — done: the validate finding from testing is fixed on feat/s0eg0m (321ae0ad, c160454c: validate checks each ticket against its own board) and merged here in 0ab71820. Conflicts in core/lane/boards.go and internal/cli/boards_test.go were both appends at the file end; kept both. go vet + go test -race ./... green after the merge (RC=0).
+- **2026-10-17 14:03 · Alexander Sacharov** — explain: Der Reviewer hat die Aenderung freigegeben (alle vier DoD-Punkte erfuellt, Tests gruen). Offen bleiben nur kleine Folgepunkte: Das Default-Board hat ohne Datei .jaira/lanes/description keine Beschreibung, und der CLAUDE.md-Agentenblock nennt 'jaira boards' nicht.
+Warum: Ohne Beschreibung fragt der Teamlead bei jedem create nach dem Board, bis jemand die Datei schreibt. Ein Agent ausserhalb der Rollen erfaehrt nie von weiteren Boards.
+1) Zurueckgeben: Beschreibung fuer das Default-Board und 'jaira boards'/--board im CLAUDE.md-Block ergaenzen [give back]
+2) Annehmen wie es ist, die Folgepunkte separat behandeln (die Beschreibung bei Bedarf fuer demo-video schreiben) [accept]
+Empfehlung: 2 - Nichts blockiert die DoD, die Luecken sind bewusst ausgelassen und gehoeren nicht in dieses Ticket.
