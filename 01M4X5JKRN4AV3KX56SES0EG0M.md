@@ -27,7 +27,7 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:29:18Z
+updated-at: 2026-10-17T12:29:21Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-73711
 claimed-at: 2026-10-17T12:17:54Z
@@ -76,3 +76,4 @@ claimed-at: 2026-10-17T12:17:54Z
 - **2026-10-17 12:19 · Alexander Sacharov** — decision: jaira list und next ohne --board zeigen nur Tickets des heutigen Boards, wie die TUI ohne Wahl. Kommandos auf ein einzelnes Ticket (show, move, dod, claim, set, note) brauchen kein --board: sie lesen das Board vom Ticket und pruefen es gegen dessen Lanes.
 - **2026-10-17 12:19 · Alexander Sacharov** — decision: Boardwechsel ist jaira set <id> board=<name>, eine Zeile im Frontmatter. Gibt es die Lane des Tickets im neuen Board nicht, setzt jaira status auf die erste Lane in der order des neuen Boards und sagt das auf stdout.
 - **2026-10-17 12:23 · Alexander Sacharov** — Stand: core/lane/boards.go (LoadBoard, Boards, NormalizeBoard) und Feld board in core/ticket/schema.go fertig; CLI-Helfer loadBoardEnv/envFor/onBoard in internal/cli/root.go. Brettweite Kommandos (logbook ohne id, milestone, tags-Liste, sync, archive, validate, links, lanes) bleiben bewusst auf dem heutigen Board - nicht im DoD. Bekannte Grenze: link.Build beurteilt einen Blocker auf einem anderen Board mit den Lanes des gerade geladenen Boards.
+- **2026-10-17 12:29 · Alexander Sacharov** — decision: TUI zeigt neben dem Repo-Namen 'board: <name>', solange nicht das heutige Board offen ist - ohne die Zeile sieht man nach F nicht, welches Board man vor sich hat. F schaltet reihum (heute, dann die anderen nach Name), statt eines Auswahlfensters: kleiner, und bei zwei, drei Boards gleich schnell. Die Hilfe fuehrt F in der Zeile von p, weil eine eigene Zeile '@name' aus dem 60-Zeilen-Fenster von TestHelpExplainsEveryCardMark schob.
