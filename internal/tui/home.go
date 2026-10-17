@@ -13,9 +13,7 @@ import (
 
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/project"
-	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/session"
-	"github.com/BeMuCa/jaira/core/settings"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -183,9 +181,9 @@ func describe(root string, lanes *lane.Set) HomeEntry {
 		e.Err = err
 		return e
 	}
-	// Read through the same syncer the CLI attaches, which hands List the
+	// Read through the same syncer the board attaches, which hands List the
 	// tickets with no file here. Nothing is written through it.
-	s.Source = refsync.New(s, settings.Load().RemoteFor(s.Root), "")
+	newSyncer(s, "")
 	tickets, err := s.List()
 	if err != nil {
 		if pe, ok := err.(*ticket.PartialError); ok {
@@ -201,18 +199,15 @@ func describe(root string, lanes *lane.Set) HomeEntry {
 	// waiting by those. Today's board keeps the catalogue it was always
 	// counted against; a named board is read as it stands. A named board that
 	// cannot be read falls back to the catalogue rather than hiding its tickets.
-	boards := map[string]*lane.Set{"": lanes}
+	boardLanes := lane.LanesOf(root)
 	lanesOf := func(t *ticket.Ticket) *lane.Set {
-		b := lane.BoardOf(t)
-		if set, ok := boards[b]; ok {
+		if lane.BoardOf(t) == "" {
+			return lanes
+		}
+		if set := boardLanes(t); set != nil {
 			return set
 		}
-		set, err := lane.LoadBoard(root, b)
-		if err != nil {
-			set = lanes
-		}
-		boards[b] = set
-		return set
+		return lanes
 	}
 	for _, t := range tickets {
 		l, known := lanesOf(t).Get(t.Status)
