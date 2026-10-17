@@ -1,7 +1,7 @@
 ---
 id: 01M4X5JKRN4AV3KX56SES0EG0M
 title: "Ein Repo kann mehrere Boards haben, jedes mit eigenen Lanes fuer sein Thema"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 assignee: Alexander Sacharov
@@ -27,10 +27,13 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:25:23Z
+updated-at: 2026-10-17T12:29:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-73711
 claimed-at: 2026-10-17T12:17:54Z
+outcome-what: "Mehrere Boards pro Repo: core/lane/boards.go (LoadBoard, Boards, NormalizeBoard), Feld board: im Ticket, --board an create/list/next, Einzelticket-Kommandos lesen das Board vom Ticket, set board=<name> mit Fallback auf die erste Lane, TUI-Taste F"
+outcome-why: "Ein Repo braucht Boards mit eigenen Lanes neben den SWE-Lanes, z.B. ein video-Board in demo-video fuer eine Designerin"
+outcome-resolves: "S0EG0M: alle sechs DoD-Punkte, Tests in internal/cli/boards_test.go und internal/tui/boards_test.go"
 ---
 
 # Ein Repo kann mehrere Boards haben, jedes mit eigenen Lanes fuer sein Thema
@@ -39,12 +42,14 @@ claimed-at: 2026-10-17T12:17:54Z
 
 - [x] Entscheidungen stehen als decision-Notes am Ticket (Ablage .jaira/boards/<name>/lanes/, Feld board:, Boardwechsel, Migration); keine eigene Spec, Alexander hat die Richtung am 17.10. vorgegeben
   proof: decision-Notes vom 17.10. am Ticket (Ablage, Name/Existenz, Feld board:/Migration, list/next-Default, Boardwechsel)
-- [ ] TUI: Shift+F waehlt ein Board; das Board zeigt dann dessen Lanes und nur dessen Tickets; ohne Wahl das heutige Board; Test. Mehr TUI-Darstellung nicht
+- [x] TUI: Shift+F waehlt ein Board; das Board zeigt dann dessen Lanes und nur dessen Tickets; ohne Wahl das heutige Board; Test. Mehr TUI-Darstellung nicht
+  proof: internal/tui/boards_test.go TestShiftFPicksABoard, TestShiftFOnASingleBoardExplains; internal/tui/model.go nextBoard und Filter in reload()
 - [x] jaira create, list, next und show nehmen ein Board (z.B. --board ui); ohne Angabe gilt das heutige Board, nichts aendert sich still; Test
   proof: internal/cli/boards_test.go TestCreateListNextTakeABoard, TestUnknownBoardIsRefused; --board in internal/cli/tickets.go (create, list) und flow.go (next); show liest das Board vom Ticket (envFor, internal/cli/root.go)
 - [x] Ein bestehendes Einzel-Board laeuft nach dem Update unveraendert weiter; Test
   proof: internal/cli/boards_test.go TestSingleBoardRunsUnchanged; ohne board: gilt lane.Load wie bisher (core/lane/boards.go LoadBoard)
-- [ ] Eine Zeile in core/release/notes/<ID>.md
+- [x] Eine Zeile in core/release/notes/<ID>.md
+  proof: core/release/notes/S0EG0M.md
 - [x] Ein Ticket wechselt das Board mit jaira set <id> board=<name>; existiert seine Lane dort nicht, landet es in der ersten Lane des neuen Boards und jaira sagt das; Test
   proof: internal/cli/boards_test.go TestSetBoardMovesToFirstLaneWhenItsLaneIsMissing; internal/cli/tickets.go set: FieldBoard-Zweig
 
@@ -61,8 +66,8 @@ claimed-at: 2026-10-17T12:17:54Z
 - [x] core/ticket: Feld board (FieldBoard, Ticket.Board)
 - [x] cli: lanesFor/envFor per Board; create/list/next --board; show/move/dod/claim lesen das Board vom Ticket
 - [x] cli: set board=<name> mit Fallback auf erste Lane und Meldung
-- [~] tui: Shift+F waehlt Board, Lanes und Tickets gefiltert
-- [ ] Tests + Release-Note
+- [x] tui: Shift+F waehlt Board, Lanes und Tickets gefiltert
+- [x] Tests + Release-Note
 
 ## Progress
 - **2026-10-17 12:17 · Alexander Sacharov** — Alexander Sacharov took this ticket over from BeMuCa
@@ -74,3 +79,4 @@ claimed-at: 2026-10-17T12:17:54Z
 - **2026-10-17 12:19 · Alexander Sacharov** — decision: jaira list und next ohne --board zeigen nur Tickets des heutigen Boards, wie die TUI ohne Wahl. Kommandos auf ein einzelnes Ticket (show, move, dod, claim, set, note) brauchen kein --board: sie lesen das Board vom Ticket und pruefen es gegen dessen Lanes.
 - **2026-10-17 12:19 · Alexander Sacharov** — decision: Boardwechsel ist jaira set <id> board=<name>, eine Zeile im Frontmatter. Gibt es die Lane des Tickets im neuen Board nicht, setzt jaira status auf die erste Lane in der order des neuen Boards und sagt das auf stdout.
 - **2026-10-17 12:23 · Alexander Sacharov** — Stand: core/lane/boards.go (LoadBoard, Boards, NormalizeBoard) und Feld board in core/ticket/schema.go fertig; CLI-Helfer loadBoardEnv/envFor/onBoard in internal/cli/root.go. Brettweite Kommandos (logbook ohne id, milestone, tags-Liste, sync, archive, validate, links, lanes) bleiben bewusst auf dem heutigen Board - nicht im DoD. Bekannte Grenze: link.Build beurteilt einen Blocker auf einem anderen Board mit den Lanes des gerade geladenen Boards.
+- **2026-10-17 12:29 · Alexander Sacharov** — decision: TUI zeigt neben dem Repo-Namen 'board: <name>', solange nicht das heutige Board offen ist - ohne die Zeile sieht man nach F nicht, welches Board man vor sich hat. F schaltet reihum (heute, dann die anderen nach Name), statt eines Auswahlfensters: kleiner, und bei zwei, drei Boards gleich schnell. Die Hilfe fuehrt F in der Zeile von p, weil eine eigene Zeile '@name' aus dem 60-Zeilen-Fenster von TestHelpExplainsEveryCardMark schob.

@@ -9,6 +9,7 @@
 package tui
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -97,12 +98,15 @@ type Model struct {
 	laneIdx int
 	cardIdx int
 
-	mode     mode
-	filter   string
-	input    string // shared line-editor buffer for filter/create
-	message  string
-	isErr    bool
-	warnings []string
+	mode   mode
+	filter string
+	// boardName is which of the repository's boards is shown: "" is today's,
+	// .jaira/lanes/, otherwise a directory under .jaira/boards/. F picks it.
+	boardName string
+	input     string // shared line-editor buffer for filter/create
+	message   string
+	isErr     bool
+	warnings  []string
 
 	// scroll tracks the first visible card per lane so long lanes can be paged
 	// without losing the cursor.
@@ -371,6 +375,7 @@ func (m *Model) switchBoard(root string) tea.Cmd {
 	m.pending = nil
 	m.follow = nil
 	m.filter, m.input = "", ""
+	m.boardName = ""
 	m.projects = project.Load()
 	if err := m.reload(); err != nil {
 		m.notify(err.Error(), true)
@@ -390,7 +395,14 @@ func (m *Model) switchBoard(root string) tea.Cmd {
 // view, keeps edits made entirely outside this process (a git pull, another
 // session, a hand edit) on the same path as our own.
 func (m *Model) reload() error {
-	lanes, err := lane.Load(m.store.Root)
+	lanes, err := lane.LoadBoard(m.store.Root, m.boardName)
+	if errors.Is(err, lane.ErrNoSuchBoard) {
+		// Its lanes went away under the open board: today's board is what
+		// is left to show, and the person is told why the view changed.
+		m.notify(err.Error(), true)
+		m.boardName = ""
+		lanes, err = lane.Load(m.store.Root)
+	}
 	if err != nil {
 		return err
 	}
@@ -425,7 +437,14 @@ func (m *Model) reload() error {
 		}
 		m.warnings = append(m.warnings, pe.Problems...)
 	}
-	m.tickets = tickets
+	// Only this board's tickets: a ticket of another board sits in lanes
+	// this one does not have.
+	m.tickets = tickets[:0:0]
+	for _, t := range tickets {
+		if b, _ := lane.NormalizeBoard(t.Board); b == m.boardName {
+			m.tickets = append(m.tickets, t)
+		}
+	}
 	m.loadLogbook()
 	if sess, err := session.Load(m.store); err == nil {
 		m.sessions = sess
@@ -1607,6 +1626,8 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		} else {
 			m.openTicks(modeMilestones, "milestone")
 		}
+	case "F":
+		m.nextBoard()
 	case "u":
 		// Next to the milestone picker in purpose: narrowing the board to
 		// some of the people on it, through the same one filter.
@@ -2202,4 +2223,27 @@ func (m *Model) archiveSelected() {
 	m.detail = nil
 	m.notify(fmt.Sprintf("Archived %s.\n\nNothing was deleted — bring it back with:\n\n  jaira restore %s",
 		ticket.Handle(t.ID), filepath.Base(dst)), false)
+}
+
+// nextBoard shows the repository's next board, in the order today's board
+// first and then the others by name, wrapping around. With only today's board
+// there is nothing to switch to, and the note says how another one comes
+// about.
+func (m *Model) nextBoard() {
+	boards := append([]string{""}, lane.Boards(m.store.Root)...)
+	if len(boards) == 1 {
+		m.notify("This repository has one board.\n\nAnother is a directory of lane files: .jaira/boards/<name>/lanes/.", false)
+		return
+	}
+	next := boards[0]
+	for i, b := range boards {
+		if b == m.boardName {
+			next = boards[(i+1)%len(boards)]
+		}
+	}
+	m.boardName = next
+	m.laneIdx, m.cardIdx = 0, 0
+	if err := m.reload(); err != nil {
+		m.notify(err.Error(), true)
+	}
 }
