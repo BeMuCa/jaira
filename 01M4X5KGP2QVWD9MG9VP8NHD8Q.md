@@ -18,7 +18,7 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:43Z
-updated-at: 2026-10-17T12:43:50Z
+updated-at: 2026-10-17T12:44:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-65566
 claimed-at: 2026-10-17T12:36:37Z
@@ -27,6 +27,7 @@ outcome-why: "With several boards per repo (S0EG0M) nothing told a teamlead whic
 outcome-resolves: "DoD 1: jaira boards + TestBoardsListsEveryBoardWithItsDescription; DoD 2: teamlead SKILL.md section 'A new ticket goes on the board its subject belongs to'; DoD 3: dispatcher/worker skill text + TestWorkerPathRunsTheTicketsBoard, TestRolesWorkTheTicketsBoard; DoD 4: core/release/notes/8NHD8Q.md"
 review-summary: "none"
 round: 2
+review-gaps: "none removed. Considered: the TUI's board cycle (internal/tui/model.go:2233) lists the same names but for switching, not counting - no shared helper worth it; boards.go loads today's lanes twice (loadEnv, then boardLanes for default) and loadEnv builds a link index it does not use - left, same as 'jaira tags' does and on a command run once before a create; reusing readIDList for the description is the existing trim-and-skip-blank reader, not a copy"
 ---
 
 # Der Teamlead legt Tickets auf das Board, das zum Thema passt, und der Worker faehrt sie durch dessen Lanes
