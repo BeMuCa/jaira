@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T14:19:20Z
+updated-at: 2026-10-17T14:19:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-66355
 claimed-at: 2026-10-17T14:11:12Z
@@ -37,7 +37,8 @@ claimed-at: 2026-10-17T14:11:12Z
   proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:174 (record under git common dir jaira/panes/<pane>); test core/role/reap_test.go TestSpawnRecordsItsTabForReap
 - [x] Ein Skript (z.B. scripts/reap.sh neben spawn.sh) schliesst fuer jedes Ticket mit gemergtem PR alle seine Panes und entfernt Worktree und lokalen Branch; mit --dry-run zeigt es nur, was es taete; Test
   proof: core/role/builtin/jaira-dispatcher/scripts/reap.sh:146,159,165 (tab close, worktree remove, branch -D), --dry-run prints 'would ...'; test core/role/reap_test.go TestReapClosesAMergedTicket
-- [ ] Ein Worktree mit nicht committeten Aenderungen oder ein nicht gemergter Branch wird nicht angefasst, das Skript nennt ihn und den Grund; Test
+- [x] Ein Worktree mit nicht committeten Aenderungen oder ein nicht gemergter Branch wird nicht angefasst, das Skript nennt ihn und den Grund; Test
+  proof: core/role/builtin/jaira-dispatcher/scripts/reap.sh 'kept <ticket>: <reason>' for no merged PR, commits past the PR head, uncommitted changes, ticket back in a lane; test core/role/reap_test.go TestReapKeepsWhatIsNotFinished
 - [ ] Der Teamlead-Skill ruft das Skript bei jeder Runde auf und meldet, was geschlossen wurde
 - [ ] Eine Zeile in core/release/notes/<ID>.md
 
