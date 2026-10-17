@@ -384,11 +384,3 @@ func onBoard(ts []*ticket.Ticket, board string) []*ticket.Ticket {
 	}
 	return out
 }
-
-// boardLabel names a board for a person: today's board has no name on disk.
-func boardLabel(board string) string {
-	if board == "" {
-		return lane.DefaultBoardName
-	}
-	return board
-}

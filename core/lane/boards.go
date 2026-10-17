@@ -66,7 +66,7 @@ func Boards(root string) []string {
 		if !e.IsDir() || !boardNameRe.MatchString(e.Name()) || e.Name() == DefaultBoardName {
 			continue
 		}
-		if m, _ := filepath.Glob(filepath.Join(boardLanesDir(root, e.Name()), "*.md")); len(m) > 0 {
+		if hasLaneFiles(boardLanesDir(root, e.Name())) {
 			out = append(out, e.Name())
 		}
 	}
@@ -92,18 +92,14 @@ func LoadBoard(root, name string) (*Set, error) {
 		return Load(root)
 	}
 	dir := boardLanesDir(root, name)
-	if m, _ := filepath.Glob(filepath.Join(dir, "*.md")); root == "" || len(m) == 0 {
+	if root == "" || !hasLaneFiles(dir) {
 		return nil, fmt.Errorf("%w %q; boards here: %s", ErrNoSuchBoard, name, strings.Join(append([]string{DefaultBoardName}, Boards(root)...), ", "))
 	}
 	builtins, err := Builtins()
 	if err != nil {
 		return nil, err
 	}
-	builtinByID := make(map[string]*Lane, len(builtins))
-	for _, l := range builtins {
-		builtinByID[l.ID] = l
-	}
-	lanes, warnings := readLaneDir(dir, nil, builtinByID)
+	lanes, warnings := readLaneDir(dir, nil, indexByID(builtins))
 	orderIDs, _ := readIDList(filepath.Join(dir, orderFileName))
 	return assemble(lanes, orderIDs, warnings), nil
 }
@@ -113,4 +109,11 @@ func LoadBoard(root, name string) (*Set, error) {
 func BoardOf(t *ticket.Ticket) string {
 	b, _ := NormalizeBoard(t.Board)
 	return b
+}
+
+// hasLaneFiles reports whether dir holds a lane file: what makes a directory
+// under .jaira/boards/ a board.
+func hasLaneFiles(dir string) bool {
+	m, _ := filepath.Glob(filepath.Join(dir, "*.md"))
+	return len(m) > 0
 }

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"cmp"
 	"fmt"
 	"io"
 	"os"
@@ -1184,7 +1185,7 @@ its end. Review fields keep their history across loop rounds that way.`,
 			fmt.Fprintf(cmd.OutOrStdout(), "Updated %s\n", ticket.Handle(t.ID))
 			if landed != "" {
 				fmt.Fprintf(cmd.OutOrStdout(), "Board %s has no lane %q; %s is now in %s, its first lane\n",
-					boardLabel(t.Board), cur.Status, ticket.Handle(t.ID), landed)
+					cmp.Or(t.Board, lane.DefaultBoardName), cur.Status, ticket.Handle(t.ID), landed)
 			}
 			if miss := missingFields(t); len(miss) > 0 {
 				fmt.Fprintf(cmd.OutOrStdout(), "Still needed before it can start: %s\n", strings.Join(miss, ", "))

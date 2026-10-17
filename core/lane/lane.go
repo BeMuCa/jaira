@@ -549,10 +549,7 @@ func Load(root string) (*Set, error) {
 	if err != nil {
 		return nil, err
 	}
-	builtinByID := make(map[string]*Lane, len(builtins))
-	for _, l := range builtins {
-		builtinByID[l.ID] = l
-	}
+	builtinByID := indexByID(builtins)
 
 	var warnings []string
 	var lanes []*Lane
@@ -782,10 +779,7 @@ func migrateLegacy(root string) []string {
 	if err != nil {
 		return []string{fmt.Sprintf("could not read the built-in lanes to migrate %s: %v", dir, err)}
 	}
-	builtinByID := make(map[string]*Lane, len(builtins))
-	for _, l := range builtins {
-		builtinByID[l.ID] = l
-	}
+	builtinByID := indexByID(builtins)
 	removed := map[string]bool{}
 	if ids, err := readIDList(removedPath(root)); err == nil {
 		for _, id := range ids {
@@ -1157,6 +1151,15 @@ func (s *Set) Columns(statuses []string) []*Lane {
 	sort.Strings(unknown)
 	for _, u := range unknown {
 		out = append(out, Passthrough(u))
+	}
+	return out
+}
+
+// indexByID maps each lane's id to the lane.
+func indexByID(lanes []*Lane) map[string]*Lane {
+	out := make(map[string]*Lane, len(lanes))
+	for _, l := range lanes {
+		out[l.ID] = l
 	}
 	return out
 }
