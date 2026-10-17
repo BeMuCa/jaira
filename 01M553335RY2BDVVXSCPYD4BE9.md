@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:55:18Z
+updated-at: 2026-10-17T16:56:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
@@ -108,3 +108,4 @@ Empfehlung: 1 - die Label-Pruefung ist billig und nimmt das einzige Risiko weg, 
 - **2026-10-17 16:49 · Alexander Sacharov** — critique round 7: none. Let stand: herdr down keeps per ticket rather than aborting the run - 'waiting' lines still print and a forge error still reads per ticket; one probe per round, only when records exist.
 - **2026-10-17 16:51 · Alexander Sacharov** — testing round 8: pass - the review's reproduction (HERDR_BIN_PATH=/nonexistent) now keeps everything; same record then reaped with real herdr. Review goes to a new fresh agent (round 3 of review).
 - **2026-10-17 16:55 · Alexander Sacharov** — review round 3: approve. Minor gaps in review-gaps (detached HEAD worktree, unpruned missing worktree, reap.sh file mode 100644, GitLab untested); none blocks. Tests re-run: go test ./core/role/ ok.
+- **2026-10-17 16:56 · Alexander Sacharov** — teamlead (jaira-79) before acceptance: close review gaps (1) detached HEAD worktree is never removed - named and kept like uncommitted changes, test; (3) commit reap.sh as 100755. Gaps (2) unpruned hand-deleted worktree -> 'deleting branch failed' each round until 'git worktree prune', and (4) GitLab path untested live, stay open.
