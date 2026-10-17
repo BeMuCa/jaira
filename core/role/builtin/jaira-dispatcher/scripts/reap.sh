@@ -69,12 +69,25 @@ if [ -z "$forge" ]; then
   esac
 fi
 
+# Where the pull requests are, as jaira-role-pr settles it: origin's own
+# repository, or its parent when origin is a fork. Named, never left to gh: in
+# a fork clone without an upstream remote gh asks the fork, which has none.
+repo=""
+if [ "$forge" = github ] && origin="$(git -C "$root" remote get-url origin 2>/dev/null)" \
+  && view="$(gh repo view "$origin" --json isFork,parent,nameWithOwner 2>/dev/null)"; then
+  if [ "$(jaira json get isFork --default false <<<"$view")" = true ]; then
+    repo="$(jaira json get parent.owner.login <<<"$view")/$(jaira json get parent.name <<<"$view")"
+  else
+    repo="$(jaira json get nameWithOwner <<<"$view")"
+  fi
+fi
+
 # The head commit of the branch's merged pull request, or nothing. 'gh pr view
 # <branch>' finds nothing in a fork clone, where the pull request lives on the
 # upstream; 'gh pr list --head' finds it there as well.
 merged_head() {
   case "$forge" in
-    github) (cd "$root" && gh pr list --head "$1" --state merged --limit 1 --json headRefOid) \
+    github) (cd "$root" && gh pr list --head "$1" --state merged --limit 1 --json headRefOid ${repo:+--repo "$repo"}) \
               | jaira json get 0.headRefOid --default "" ;;
     gitlab) (cd "$root" && glab mr list --source-branch "$1" --merged -F json) \
               | jaira json get 0.sha --default "" ;;

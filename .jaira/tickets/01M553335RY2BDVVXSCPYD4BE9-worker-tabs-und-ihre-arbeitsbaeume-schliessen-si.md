@@ -23,15 +23,17 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T14:29:26Z
+updated-at: 2026-10-17T14:33:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-66355
 claimed-at: 2026-10-17T14:11:12Z
 outcome-what: "spawn.sh writes a record per tab (pane, ticket, lane, worktree) under <git common dir>/jaira/panes/; new jaira-dispatcher/scripts/reap.sh closes every recorded tab of a ticket that is done with a merged PR, removes its worktree and local branch, --dry-run prints only; keeps and names a ticket not done, without merged PR, with commits past the PR head, or with uncommitted changes. Teamlead skill runs it every round. Tests in core/role/reap_test.go."
 outcome-why: "Worker, dispatcher and review tabs and their worktrees stayed open after the work was merged; nobody watched or closed them, and spawn.sh never recorded which tab belonged to which ticket."
 outcome-resolves: "Goal of YD4BE9: after the PR is merged, all tabs started for the ticket close and its worktree and branch go without anyone cleaning up by hand - at the next teamlead round."
-review-summary: "core/role/builtin/jaira-dispatcher/scripts/reap.sh:49 takes $PWD as root; started in a subdirectory of a ticket worktree it does not recognise the worktree it stands in and removes it. Use git rev-parse --show-toplevel"
-round: 3
+review-summary: "none"
+round: 4
+review-gaps: "none - checked: forge ladder exists only as prose in jaira-role-pr and as TS in jaira-cockpit (hooks), no shell to call; tab close by tab_id is the same two calls as run-lane.sh:144-149, left as is (separate scripts, no shared lib among them); per-ticket rescans of the records are O(n^2) over a handful of files, not worth a cache"
+test-verdict: "fail: in a fork clone without an 'upstream' remote reap.sh asks gh about the fork, finds no merged PR and never reaps"
 ---
 
 # Worker-Tabs und ihre Arbeitsbaeume schliessen sich, sobald der Pull Request ihres Tickets gemergt ist
@@ -77,3 +79,6 @@ round: 3
 - **2026-10-17 14:19 · Alexander Sacharov** — found out: gh pr list --head finds a fork's merged PR, gh pr view <branch> does not. macOS bash 3.2 rules out declare -A/mapfile in reap.sh. Reap tests skip on Windows: Git Bash /c/... vs git.exe C:\ paths never compare. Old tabs/worktrees from before this change have no record and are not reaped - close those by hand once.
 - **2026-10-17 14:22 · Alexander Sacharov** — critique round 1: (1) reap.sh checks the lane before the merge -> every in-flight ticket prints a kept line each round; check merge first, unmerged prints 'waiting', teamlead reports closed+kept only. (2) 'has commits the merged PR does not' is wrong when the PR head is just not fetched -> 'is not at the merged head <sha>'. (3) protect $root like $main, drop the prose warning. Let stand: tab-close code duplicated from run-lane.sh (two lines, same pattern); shell script instead of Go in jaira logbook - the ticket asks for a script beside spawn.sh.
 - **2026-10-17 14:28 · Alexander Sacharov** — critique round 2: reap.sh root was $PWD, not the worktree top -> started in a subdirectory it removed its own worktree. Fixed with rev-parse --show-toplevel, test extended (runs from <wt>/sub). Round 1 findings verified fixed in f67638bc.
+- **2026-10-17 14:29 · Alexander Sacharov** — critique round 3: none. Let stand: tab-close lines duplicated from run-lane.sh (same two calls, separate scripts); stale records of tickets never merged stay as 'waiting' lines - harmless, teamlead does not report them.
+- **2026-10-17 14:31 · Alexander Sacharov** — testing: live run on a scratch clone (real gh, real herdr.exe, feat/rftqkp at 1e2ace72 = merged #87): with only origin=sashasoft90/jaira every ticket prints 'waiting ... no merged pull request' - gh pr list picks the fork. With an upstream remote added it works: dry-run listed, real run removed worktree (untracked .jaira/x.md let through) and deleted the branch, pane already gone -> record dropped, rc=0. Fix: resolve the target repo once like jaira-role-pr (gh repo view <origin url> --json isFork,parent,nameWithOwner; fork -> parent) and pass --repo to gh pr list. Suite: go test ./... -race rc=0.
+- **2026-10-17 14:33 · Alexander Sacharov** — testing fix: reap.sh resolves the PR repo once (gh repo view <origin url>: fork -> parent, else nameWithOwner) and passes --repo; live run on the scratch fork clone without upstream remote now removes feat/rftqkp's worktree and branch. GitLab forks still ask glab without a target project - not exercised, no GitLab remote here.

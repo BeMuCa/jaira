@@ -62,9 +62,13 @@ case "$1 $2" in
   "tab close")  echo "$3" >> "` + r.closed + `" ;;
 esac
 `,
+		// origin is a fork: the pull requests are asked for on its parent.
 		"gh": `#!/usr/bin/env bash
 case "$*" in
-  "pr list --head feat/ab12cd --state merged"*) cat "` + r.merged + `" 2>/dev/null || echo '[]' ;;
+  "repo view git@github.com:someone/jaira.git --json"*)
+    echo '{"isFork":true,"nameWithOwner":"someone/jaira","parent":{"name":"jaira","owner":{"login":"upstream"}}}' ;;
+  "pr list --head feat/ab12cd --state merged --limit 1 --json headRefOid --repo upstream/jaira")
+    cat "` + r.merged + `" 2>/dev/null || echo '[]' ;;
   *) echo "unexpected gh $*" >&2; exit 1 ;;
 esac
 `,
