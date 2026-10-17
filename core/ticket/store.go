@@ -1072,18 +1072,9 @@ func (s *Store) newest(ts []*Ticket) {
 	if !ok {
 		return
 	}
-	var files []*Ticket
-	for _, t := range ts {
-		if !t.ReadOnly {
-			files = append(files, t)
-		}
-	}
-	if len(files) == 0 {
-		return
-	}
-	ahead := a.Ahead(files)
+	ahead := a.Ahead(ts)
 	for i, t := range ts {
-		if r, ok := ahead[t.ID]; ok && !t.ReadOnly {
+		if r, ok := ahead[t.ID]; ok {
 			r.Path, r.BehindRef = t.Path, true
 			ts[i] = r
 		}
