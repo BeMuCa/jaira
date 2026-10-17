@@ -67,6 +67,15 @@ func TestSinceUnknownStampReturnsEverything(t *testing.T) {
 	}
 }
 
+func TestSinceStampOfAReleaseWithoutNotesStopsAtTheOlderOne(t *testing.T) {
+	all := parseNotes(fixture)
+	got := sinceEntries(all, "0.0.5")
+	want := all[:1]
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("sinceEntries(all, 0.0.5) = %#v, want %#v", got, want)
+	}
+}
+
 func TestStampedOnMissingFileReturnsEmpty(t *testing.T) {
 	dir := t.TempDir()
 	if got := Stamped(dir); got != "" {

@@ -164,7 +164,9 @@ func selectSince(all []Entry, stamped string) []Entry {
 		return all
 	}
 	for i, e := range all {
-		if e.Version == stamped {
+		// A release that shipped without a single note has no entry of its
+		// own; it still ends the selection at the first older release.
+		if e.Version == stamped || (e.Version != "Unreleased" && !Newer(e.Version, stamped)) {
 			return all[:i]
 		}
 	}
