@@ -21,7 +21,7 @@ related: []
 follows: 01M2HW4788Z5G0M05G3PJDXV60
 commits: []
 created-at: 2026-10-13T13:48:57Z
-updated-at: 2026-10-17T20:49:22Z
+updated-at: 2026-10-17T20:49:52Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-297639
@@ -29,6 +29,7 @@ claimed-at: 2026-10-17T20:39:34Z
 outcome-what: "Board, jaira list und jaira show zeigen bei einer Ticket-Datei, die hinter ihrem Ref liegt, den Stand des Refs und markieren sie (Karte '⇣ behind', Zeile '[behind ref: pull it]', JSON behind-ref, show-Zeile 'behind')."
 outcome-why: "Ein in einem anderen Worktree oder von einem Teammitglied bewegtes Ticket stand hier in seiner alten Lane; die Erkennung (isStale, wie bei pull) gab es schon, sie wurde nur beim Lesen nicht genutzt."
 outcome-resolves: K6BGB0; deckt JDXV60 DoD 1 fuer den Ref-Fall ab
+review-summary: "core/ticket/store.go newest: der ReadOnly-Filter und die files-Kopie sind ueberfluessig - List ruft newest bevor die Ref-only-Tickets angehaengt werden, und ein ReadOnly-Ticket aus Newest(show) hat dasselbe updated_at wie sein Ref, ist also nie 'ahead'; ts direkt an Ahead geben"
 ---
 
 # Das Board zeigt den Stand des Refs, wenn die Ticket-Datei dahinter zurueckliegt
