@@ -21,7 +21,7 @@ related: []
 follows: 01M2HW4788Z5G0M05G3PJDXV60
 commits: []
 created-at: 2026-10-13T13:48:57Z
-updated-at: 2026-10-17T20:54:25Z
+updated-at: 2026-10-17T20:54:27Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-297639
@@ -72,3 +72,4 @@ Gewaehlt: B (Nutzerentscheidung 2026-10-17): newest wins in List und show, Marke
 - **2026-10-17 20:50 · berkc** — critique Runde 2: nichts mehr - newest ist jetzt drei Zeilen; Load bleibt bewusst Datei (Plan-Notiz); die doppelte Decode-Schleife Ahead/Extra geht an optimize.
 - **2026-10-17 20:52 · berkc** — testing: Zwei-Worktree-Nachstellung ohne Pause (repro.sh): pull in main 20:51:52, move --to todo in wt2 20:51:52, danach 'jaira note' in main: Noted, exit 0, Ref danach 'status: backlog updated-at 20:51:53' - der todo-Stand ist still weg. Mit dem installierten 0.5.2 genauso, also vorbestehend: isStale vergleicht updated-at mit Sekundenaufloesung und urteilt bei Gleichstand 'nicht hinter'. Vorschlag: bei gleichem updated-at und anderen Bytes als die Ref-Spitze entscheidet die Herkunft - die Datei ist hinter dem Ref, wenn ihr Blob von dem Ref aus erreichbar ist (frueherer Stand). Das Muster gibt es schon: gitref.Repo.MilestoneHad (rev-list --objects) fuer Meilensteine; isStale ist die eine Definition fuer pull, CheckFresh und Ahead, dort einbauen.
 - **2026-10-17 20:54 · berkc** — in-progress (Runde 3, nach testing): isStale ist jetzt eine Syncer-Methode isStale(file, ref, refContent). Ungleiche Stempel entscheiden wie bisher. Bei gleichem updated-at: die Datei ist hinter dem Ref, wenn ihre Bytes andere sind als die der Ref-Spitze und ihr Blob von dem Ref aus erreichbar ist (gitref.Repo.Had, gleiche Logik wie MilestoneHad, beide jetzt ueber had(ref, content)). Wirkt fuer pull, CheckFresh und Ahead zugleich. Kosten auf dem Tick: der Bytevergleich mit dem gecachten Ref-Inhalt (extraEntry.content) kostet nichts; hash-object + rev-list laufen nur bei Gleichstand UND anderen Bytes, also nur fuer genau so eine Datei bis zum pull. Test: TestAFileBehindItsRefWithinTheSameSecondIsStillBehind (ohne Fix rot: show status backlog, note nicht verweigert). repro.sh ohne Pause: note jetzt exit 3, Ref bleibt todo.
+- **2026-10-17 20:54 · berkc** — critique Runde 3: nichts. Der Gleichstand wird dort entschieden, wo 'hinter dem Ref' schon definiert ist (isStale), und mit dem vorhandenen Muster (MilestoneHad -> had); keine zweite Definition. Der Doc()==nil-Schutz in isStale bleibt: guenstig, und ein Ticket ohne Doc darf nicht in eine Panik laufen.
