@@ -180,8 +180,9 @@ func TestSingleBoardRunsUnchanged(t *testing.T) {
 }
 
 // jaira boards is what a teamlead reads to choose a board: every board, today's
-// as "default", with its open tickets and its description — a description
-// wrapped by hand read back as one line, a missing one saying where it goes.
+// as "default", with its open tickets and its description — today's board set
+// up from the built-ins says it is for code, a description wrapped by hand
+// reads back as one line, a missing one says where it goes.
 func TestBoardsListsEveryBoardWithItsDescription(t *testing.T) {
 	dir := newTwoBoards(t)
 	desc := filepath.Join(dir, ticket.DirName, "boards", "video", "lanes", "description")
@@ -196,18 +197,21 @@ func TestBoardsListsEveryBoardWithItsDescription(t *testing.T) {
 		t.Fatalf("boards: %v, want default and video", rows)
 	}
 	def, vid := rows[0].(map[string]any), rows[1].(map[string]any)
-	if def["name"] != "default" || def["description"] != "" || def["open"] != float64(0) {
+	if def["name"] != "default" || def["description"] != "Changes to this repository's code: features, fixes, refactors, tests and docs." || def["open"] != float64(0) {
 		t.Errorf("default row: %v", def)
 	}
 	if vid["name"] != "video" || vid["description"] != "Videos made from demos: script, render." || vid["open"] != float64(1) || vid["description_file"] != desc {
 		t.Errorf("video row: %v", vid)
 	}
 
+	if err := os.Remove(desc); err != nil {
+		t.Fatal(err)
+	}
 	out, err := runCLI(t, dir, "boards")
 	if err != nil {
 		t.Fatalf("boards: %v\n%s", err, out)
 	}
-	if !strings.Contains(out, "no description yet — write one into .jaira/lanes/description") {
+	if !strings.Contains(out, "no description yet — write one into .jaira/boards/video/lanes/description") {
 		t.Errorf("a board without a description does not say where it goes:\n%s", out)
 	}
 }

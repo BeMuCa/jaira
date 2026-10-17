@@ -125,6 +125,19 @@ func hasLaneFiles(dir string) bool {
 // text for the same reason order is: a "*.md" file there would be a lane.
 const descriptionFileName = "description"
 
+// builtinDescription is what a board set up from the built-in lanes is for.
+const builtinDescription = "Changes to this repository's code: features, fixes, refactors, tests and docs."
+
+// writeDefaultDescription gives today's board builtinDescription, unless it
+// already has a description of its own.
+func writeDefaultDescription(root string) error {
+	path := DescriptionPath(root, "")
+	if _, err := os.Stat(path); err == nil {
+		return nil
+	}
+	return os.WriteFile(path, []byte(builtinDescription+"\n"), 0o644)
+}
+
 // DescriptionPath is where board name's description lives, whether or not it
 // has one yet — so a listing can say where to write it.
 func DescriptionPath(root, name string) string {
