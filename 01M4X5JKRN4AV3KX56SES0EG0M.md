@@ -27,8 +27,10 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:17:35Z
+updated-at: 2026-10-17T12:17:54Z
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-73711
+claimed-at: 2026-10-17T12:17:54Z
 ---
 
 # Ein Repo kann mehrere Boards haben, jedes mit eigenen Lanes fuer sein Thema
