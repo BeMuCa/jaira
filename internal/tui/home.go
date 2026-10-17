@@ -156,11 +156,7 @@ func describeAll(roots []string, lanes *lane.Set) []HomeEntry {
 	out := make([]HomeEntry, len(roots))
 	var wg sync.WaitGroup
 	for i, root := range roots {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			out[i] = describe(root, lanes)
-		}()
+		wg.Go(func() { out[i] = describe(root, lanes) })
 	}
 	wg.Wait()
 	return out

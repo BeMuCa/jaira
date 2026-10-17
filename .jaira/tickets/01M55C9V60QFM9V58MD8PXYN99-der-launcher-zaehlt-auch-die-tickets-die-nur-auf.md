@@ -1,7 +1,7 @@
 ---
 id: 01M55C9V60QFM9V58MD8PXYN99
 title: "Der Launcher zaehlt auch die Tickets, die nur auf ihrem Ref liegen"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -20,17 +20,16 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T16:49:42Z
-updated-at: 2026-10-17T17:02:32Z
+updated-at: 2026-10-17T17:05:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54481
 claimed-at: 2026-10-17T16:55:23Z
 outcome-what: "Der Launcher liest jedes Repo ueber denselben refsync-Source wie 'jaira list', zaehlt also Tickets nur auf dem Ref mit (jedes einmal), prueft ein Ticket mit board: gegen die Lanes seines Boards und liest alle Repos parallel."
 outcome-why: "Seit Tickets bis zum Logbook auf ihrem Ref leben, zeigte der Launcher fast nichts (demo-video 0/0 bei 13 Refs); Board-Tickets zaehlten gegen fremde Lanes."
 outcome-resolves: "Launcher-Zeile = 'jaira list'-Zahlen; Startbild mit 10 Repos gleich schnell (Median 124 -> 119 ms)."
-review-summary: |-
-  internal/tui/home.go:188 baut refsync.New+RemoteFor von Hand; internal/tui/refs.go:41 newSyncer tut genau das im selben Paket - newSyncer(s, "") nehmen
-  internal/tui/home.go:204 baut einen eigenen Cache Board->Lanes; core/lane/boards.go:162 lane.LanesOf tut das schon - fuer benannte Boards LanesOf(root) nehmen, Standard-Board und nil weiter auf den Katalog
+review-summary: none
 round: 2
+review-gaps: "describeAll: wg.Add/Done durch wg.Go ersetzt (Go 1.26). Gesucht und nichts gefunden: kein anderer Fan-out-Helfer in core/internal; Test-Helfer refClone/createTicket haben kein Gegenstueck (refs_test.go baut seine Klone in Closures). Stehen gelassen: lanesOf-Closure in describe, weil lane.LanesOf fuer das Standard-Board Load(root) ruft, das das Board anlegen kann."
 ---
 
 # Der Launcher zaehlt auch die Tickets, die nur auf ihrem Ref liegen
@@ -38,7 +37,7 @@ round: 2
 ## Definition of Done
 
 - [x] describe zaehlt Tickets auf der Platte und auf refs/jaira/tickets/ zusammen, jedes Ticket genau einmal; Zahlen gleich wie 'jaira list --json' im selben Repo; Test
-  proof: internal/tui/home.go:186; TestHomeCountsTicketsThatLiveOnlyOnTheirRef (internal/tui/home_refs_test.go:57); live: demo-video 13, jaira 73, genie-world 7 = jaira list --json
+  proof: internal/tui/home.go:182; TestHomeCountsTicketsThatLiveOnlyOnTheirRef (internal/tui/home_refs_test.go:57); live: demo-video 13, jaira 73, genie-world 7 = jaira list --json
 - [x] Ein Repo ohne Ticket-Dateien, aber mit Refs (wie demo-video) zeigt seine offenen Tickets statt '0 open / 0'; Test
   proof: TestHomeCountsTicketsThatLiveOnlyOnTheirRef (home_refs_test.go:79, refs ohne Dateien -> 1 open / 2); live demo-video 4/13 statt 0/0
 - [x] Startbild mit 10 Repos baut sich nicht spuerbar langsamer auf als vorher; gemessene Zeit vor/nach als proof
@@ -46,7 +45,7 @@ round: 2
 - [x] Eine Zeile in core/release/notes/<ID>.md
   proof: core/release/notes/PXYN99.md
 - [x] Ein Ticket mit board: zaehlt gegen die Lanes seines Boards (terminal/human dort), nicht gegen die des Standard-Boards; Test
-  proof: internal/tui/home.go:202; TestHomeCountsATicketAgainstItsOwnBoard (home_refs_test.go:104)
+  proof: internal/tui/home.go:198; TestHomeCountsATicketAgainstItsOwnBoard (home_refs_test.go:104)
 
 ## Options
 
@@ -63,3 +62,4 @@ round: 2
 - **2026-10-17 16:57 · Alexander Sacharov** — Messung vorher (NewHome, echte 10 Repos aus ~/.jaira/projects.json, 5 Laeufe, WSL): 120/123/186/165/125 ms, Median 124 ms; demo-video 0/0, jaira 28/28. Gemessen mit einem Wegwerf-Test (internal/tui/zz_timing_test.go, nicht committet) mit JAIRA_HOME=~/.jaira.
 - **2026-10-17 17:01 · Alexander Sacharov** — critique: internal/tui/home.go:188 baut refsync.New+RemoteFor von Hand; internal/tui/refs.go:41 newSyncer tut genau das im selben Paket - newSyncer(s, "") nehmen
 internal/tui/home.go:204 baut einen eigenen Cache Board->Lanes; core/lane/boards.go:162 lane.LanesOf tut das schon - fuer benannte Boards LanesOf(root) nehmen, Standard-Board und nil weiter auf den Katalog
+- **2026-10-17 17:02 · Alexander Sacharov** — critique Runde 2: beide Befunde behoben (newSyncer, lane.LanesOf); nichts weiter. Ungebremste Goroutinen in describeAll bewusst stehen gelassen: eine pro registriertem Repo, ~10.
