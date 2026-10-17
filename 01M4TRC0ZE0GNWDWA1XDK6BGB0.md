@@ -21,7 +21,7 @@ related: []
 follows: 01M2HW4788Z5G0M05G3PJDXV60
 commits: []
 created-at: 2026-10-13T13:48:57Z
-updated-at: 2026-10-17T20:40:28Z
+updated-at: 2026-10-17T20:40:30Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-297639
@@ -56,3 +56,4 @@ claimed-at: 2026-10-17T20:39:34Z
 - **2026-10-17 20:39 · berkc** — Brainstorm (2026-10-17, entschieden vom Nutzer): Was falsch ist laut Code: Store.List zeigt fuer jede Ticket-Datei die Datei; Syncer.Extra (core/refsync/refsync.go) ueberspringt jeden Ref, fuer den eine Datei existiert ('if local[id] || filed[id] continue'). Liegt die Datei hinter dem Ref, zeigen Board, list und show die alte Lane. 'jaira pull' erkennt den Fall schon mit isStale (refsync.go: ref.updated_at strikt nach file.updated_at) - dieselbe Definition wie CheckFresh. Schreibseite: Mutate/Archive/Logbook rufen schon CheckFresh und verweigern mit StaleError ('run jaira pull'), ein Schreiben auf eine veraltete Datei kann den Ref also heute schon nicht still zurueckdrehen.
 Optionen: (A) nur Kennzeichen an der Karte, Datei-Stand bleibt sichtbar - billig, aber Board zeigt weiter die falsche Lane. (B) Board/list/show zeigen den Stand des Refs plus Kennzeichen 'Datei veraltet' - zeigt die echte Lane, Schreiben bleibt an der Datei und wird von CheckFresh verweigert. (C) automatisch pullen beim Lesen - schreibt Dateien ohne Befehl, verletzt 'Lesen schreibt nie'.
 Gewaehlt: B (Nutzerentscheidung 2026-10-17): newest wins in List und show, Marker an Karte/Zeile/JSON. Load bleibt bei der Datei, weil Archive/Logbook/move den geladenen Ticket gegen CheckFresh pruefen - ein Ref-Ticket dort wuerde die Pruefung bestehen und die alte Datei ablegen.
+- **2026-10-17 20:40 · berkc** — Plan-Begruendung: Load wird NICHT umgestellt. Archive, Logbook und der move-Gate laden per Load und pruefen danach CheckFresh(t) - wuerde Load das Ref-Ticket liefern, bestuende es die Pruefung (gleiches updated_at) und Archive wuerde die alte Datei ablegen und deren Stand per RecordFiled auf den Ref schreiben. Deshalb nur List (Board, list, next, web) und show ueber Store.Newest. Mutate liest unter Lock die Datei neu und ruft CheckFresh -> StaleError; das bleibt die Schreib-Sperre. Separates optionales Interface statt Extra-Signatur zu aendern: ein zusaetzliches 'git for-each-ref' pro List, Decodes nur bei neuem Ref-Hash (extraCache geteilt). Nicht abgedeckt: D0SAHM-Variante (Datei ohne Ref, Ticket upstream abgelegt) - dort gibt es keinen Ref zum Vergleichen.
