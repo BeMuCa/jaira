@@ -27,7 +27,7 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T13:03:59Z
+updated-at: 2026-10-17T13:04:03Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-67696
 claimed-at: 2026-10-17T12:50:10Z
@@ -59,7 +59,8 @@ review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/r && cd /tmp
   proof: core/release/notes/S0EG0M.md
 - [x] Ein Ticket wechselt das Board mit jaira set <id> board=<name>; existiert seine Lane dort nicht, landet es in der ersten Lane des neuen Boards und jaira sagt das; Test
   proof: internal/cli/boards_test.go TestSetBoardMovesToFirstLaneWhenItsLaneIsMissing; internal/cli/tickets.go set: FieldBoard-Zweig
-- [ ] Board wechselt mit b statt F; Hilfe, Release-Note und Test nennen b; Test
+- [x] Board wechselt mit b statt F; Hilfe, Release-Note und Test nennen b; Test
+  proof: internal/tui/model.go case "b" (Board-Ebene) -> nextBoard; Hilfe internal/tui/view.go Zeile 'p b'; core/release/notes/S0EG0M.md Zeile 3; Test internal/tui/boards_test.go TestBPicksABoard (press b)
 
 ## Options
 
