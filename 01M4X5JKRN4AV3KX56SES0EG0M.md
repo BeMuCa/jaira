@@ -27,7 +27,7 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:39:05Z
+updated-at: 2026-10-17T12:39:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-73711
 claimed-at: 2026-10-17T12:17:54Z
@@ -93,3 +93,4 @@ internal/cli/checklist.go:137, tags.go:320: lane.LoadBoard direkt - unbekanntes 
 internal/cli/root.go onBoard und internal/tui/model.go reload filtern beide mit NormalizeBoard(t.Board) == board - eine Funktion lane.BoardOf(t) dafuer
 core/lane/boards.go BoardsDir/BoardLanesDir haben keinen Aufrufer ausserhalb des Pakets - klein schreiben
 - **2026-10-17 12:31 · Alexander Sacharov** — critique (Runde 2): internal/cli/root.go onBoard: der Fehlerzweig ist unerreichbar - beide Aufrufer (list, next) haben den Namen schon durch loadBoardEnv geprueft; onBoard gibt nur die Liste zurueck. Sonst nichts: boardLanes, BoardOf und die set-Reihenfolge aus Runde 1 sind erledigt.
+- **2026-10-17 12:39 · Alexander Sacharov** — review (frische Session): zwei Fehler im Umfang. (1) TUI-Anlegen per n und Follow-up auf einem mit F gewaehlten Board schreibt kein board: - Ticket landet auf dem heutigen Board, ggf. in einer Lane, die es dort nicht gibt (internal/tui/model.go createTicket, internal/tui/followup.go followUpFields). (2) jaira validate kennt nur .jaira/lanes/ und meldet Tickets in board-eigenen Lanes als error, Exit 3 (internal/cli/validate.go:35); im Temp-Repo nachgestellt. Klein: TUI-Link-Index nur aus dem gefilterten Board. Empfehlung zurueck nach in-progress.
