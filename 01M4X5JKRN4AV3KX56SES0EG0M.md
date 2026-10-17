@@ -27,14 +27,14 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:44:31Z
+updated-at: 2026-10-17T12:44:35Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-73711
 claimed-at: 2026-10-17T12:17:54Z
 outcome-what: "Mehrere Boards pro Repo: core/lane/boards.go (LoadBoard, Boards, NormalizeBoard), Feld board: im Ticket, --board an create/list/next, Einzelticket-Kommandos lesen das Board vom Ticket, set board=<name> mit Fallback auf die erste Lane, TUI-Taste F"
 outcome-why: "Ein Repo braucht Boards mit eigenen Lanes neben den SWE-Lanes, z.B. ein video-Board in demo-video fuer eine Designerin"
 outcome-resolves: "S0EG0M: alle sechs DoD-Punkte, Tests in internal/cli/boards_test.go und internal/tui/boards_test.go"
-review-summary: "internal/cli/resume.go und internal/cli/validate.go bauen je denselben Cache Lanes-pro-Board; eine Funktion lane.LanesOf(root) in core/lane/boards.go, beide rufen sie"
+review-summary: "Runde 5: keine Befunde. lane.LanesOf ersetzt beide Caches; TicketsOnBoards haelt Tickets() als Einzelboard-Huelle, damit die bestehenden Tests unveraendert bleiben. Bekannte Grenze (Note Stand): ein Blocker auf einem anderen Board wird im Link-Index mit den Lanes des gezeigten Boards beurteilt."
 round: 5
 review-gaps: "1) Fehler TUI: n (createTicket, internal/tui/model.go:2122) und Follow-up (followUpFields, internal/tui/followup.go:173) schreiben auf einem mit F gewaehlten Board status=erste Lane dieses Boards, aber kein board:. Das Ticket gehoert damit zum heutigen Board, verschwindet sofort aus der Ansicht, und hat das heutige Board diese Lane nicht (z.B. 'script'), ist es read-only. Fix: fields[ticket.FieldBoard]=m.boardName, wenn nicht leer; Test in internal/tui/boards_test.go. 2) Fehler: jaira validate laedt nur das heutige Board (internal/cli/validate.go:35) und meldet jedes Ticket in einer Lane, die nur sein Board hat, als error 'lane is not installed ... read-only', Exit 3. Nachgestellt im Temp-Repo: Board video mit Lane script, Ticket dorthin bewegt -> validate exit 3. Die Note 'Stand' nennt validate bewusst brettweit, die Folge (falscher Fehler auf einem gueltigen Repo) steht dort nicht. 3) Kleiner: Die TUI baut den Link-Index aus den gefilterten Tickets (model.go linkIndex mit m.tickets), die CLI aus allen Boards; ein Blocker auf einem anderen Board erscheint in der TUI als unbekannt. 4) Bewusst ausgelassen laut Notes, kein Befund: logbook ohne id, milestone, sync, archive, lanes, links, merge-driver bleiben auf dem heutigen Board. DoD 1-6 sind durch den Diff gedeckt; DoD 1 weicht vom urspruenglichen DoD-Text (Spec von Berk freigegeben) ab, per decision-Note von Alexander am 17.10."
 test-verdict: "pass: go test -race ./... nach go clean -testcache RC=0; DoD 2-6 im Baum geprueft (boards_test.go in cli und tui laufen gruen, release note da); Binaer auf Scratch-Repo: create/list/next --board video, unbekanntes Board Exit 2 mit Liste, move/claim/dod/note/tag auf video-Ticket, set board=video landet in backlog mit Meldung, board= zurueck. TUI-Taste F nur ueber Tests (echte Tastendispatch), nicht interaktiv"
