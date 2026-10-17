@@ -107,8 +107,8 @@ esac
 
 # Roles and cockpit: one command writes both, so it is one step, not two. A
 # failure here is printed as it came and does not undo the install above.
-if [ -n "${JAIRA_NO_ROLES:-}" ]; then
-	echo "skipped the skills and the Cockpit (JAIRA_NO_ROLES is set) — run: jaira roles install --global"
+if [ "${JAIRA_NO_ROLES:-}" = "1" ]; then
+	echo "skipped the skills and the Cockpit (JAIRA_NO_ROLES=1) — run: jaira roles install --global"
 	exit 0
 fi
 echo "Setting up the skills and the Cockpit…"

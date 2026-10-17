@@ -142,13 +142,18 @@ function Install-Jaira {
 
 	# One command writes the role skills and the cockpit, so it is one step. A
 	# failure is printed as it came and does not undo the install above.
-	if ($env:JAIRA_NO_ROLES) {
-		Write-Host 'skipped the skills and the Cockpit (JAIRA_NO_ROLES is set) - run: jaira roles install --global'
+	if ($env:JAIRA_NO_ROLES -eq "1") {
+		Write-Host 'skipped the skills and the Cockpit (JAIRA_NO_ROLES=1) - run: jaira roles install --global'
 		return
 	}
 	Write-Host 'Setting up the skills and the Cockpit...'
+	# 'Stop' would turn the stderr of a native command into a terminating
+	# error in Windows PowerShell 5.1 and skip the failure branch below.
+	$ErrorActionPreference = 'Continue'
 	$out = & $exe roles install --global 2>&1 | Out-String
-	if ($LASTEXITCODE -eq 0) {
+	$code = $LASTEXITCODE
+	$ErrorActionPreference = 'Stop'
+	if ($code -eq 0) {
 		Write-Host ('OK ' + (($out -split "`r?`n" | Where-Object { $_ -match ' written, ' } | Select-Object -Last 1)))
 		Write-Host 'active now: the jaira role skills and the Cockpit in ~\.claude\skills'
 		Write-Host 'the Cockpit loads in your next Claude Code session'
