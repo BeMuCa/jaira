@@ -80,6 +80,10 @@ type World = {
   // How `jaira update --roles --lanes --dry-run` exits: 0, 3 (an edited
   // file it would leave alone) or 2 (a jaira without --roles).
   dryRunExit: number
+  // The terminal has no room for a pane: $.ui.open places nothing.
+  noRoom?: boolean
+  // When set, every `herdr tab list` waits here until the test lets it go.
+  heldTabs?: (() => void)[]
 }
 
 const LANES = {
@@ -177,7 +181,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
   on('ui.open', ($, e) => {
     const { id, title, focus } = e as unknown as { id: string; title?: string; focus?: boolean }
     w.opened.push({ id, ...(title !== undefined ? { title } : {}), ...(focus ? { focus } : {}) })
-    return { value: { isPlaced: true } }
+    return { value: { isPlaced: !w.noRoom } }
   })
   on('ui.close', ($, e) => {
     w.closed.push((e as unknown as { id: string }).id)
@@ -215,6 +219,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
   on('process.run', async ($, e) => {
     w.ran.push([...e.argv, `@${e.init?.cwd ?? ''}`])
     if (w.held && e.argv[0] === 'jaira' && e.argv[1] === 'move') await new Promise<void>(go => w.held!.push(go))
+    if (w.heldTabs && e.argv[1] === 'tab' && e.argv[2] === 'list') await new Promise<void>(go => w.heldTabs!.push(go))
     const ok = (stdout = '') => ({ value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
     const [cmd, ...args] = e.argv
     if (cmd === 'jaira' && args[0] === 'lanes') return ok(JSON.stringify(w.oldJaira ? { lanes: LANES.lanes.map(({ human_exit, ...l }) => l) } : LANES))
@@ -2230,7 +2235,7 @@ describe('the overview', () => {
     const texts = (await pane.findAll({ type: 'Text' })).map(x => x.text)
     // Queue is the open tab: one section beneath the other, each heading a fold button with its count.
     const labels = (await pane.findAll({ type: 'Button' } as never)).map(b => (b.props as { label: string }).label)
-    expect(labels).toEqual(['Queue', 'Log', '▾ In work (1)', '▾ Queue (1)', '▾ Put back (2)', 'Close'])
+    expect(labels).toEqual(['Queue', 'Log', 'Workers', '▾ In work (1)', '▾ Queue (1)', '▾ Put back (2)', 'Close'])
     expect((await pane.findAll({ type: 'Box' })).filter(b => 'width' in b.props)).toEqual([])
     expect(texts).not.toContain('Created and put back, last 7 days')
     expect(texts).toContain('T8QS1Y | in-progress | filter')
@@ -2374,7 +2379,7 @@ describe('the overview', () => {
     expect(await pane.find({ key: 'overview-people-all' })).toBeUndefined()
     await pane.press({ key: 'overview-tab-log' })
     const labels = (await pane.findAll({ type: 'Button' } as never)).map(b => (b.props as { label: string }).label)
-    expect(labels).toEqual(['Queue', 'Log', 'All', 'Alex', 'Berk', 'Carla', 'Close'])
+    expect(labels).toEqual(['Queue', 'Log', 'Workers', 'All', 'Alex', 'Berk', 'Carla', 'Close'])
     // A name button is drawn in that person's colour.
     expect((await pane.find({ type: 'Text', text: /^Berk$/ }))?.props.color).toBeDefined()
     const handles = async () => (await pane.findAll({ type: 'Text', text: /^\d\d:\d\d {2}/ })).map(x => x.text.slice(7, 13))
@@ -2405,5 +2410,335 @@ describe('the overview', () => {
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'overview' })
     expect(await (await $.ui.mount(OVERVIEW)).find({ type: 'Text', text: /could not be read/ })).toBeDefined()
+  })
+})
+
+describe('the workers tab', () => {
+  const WIDTH = 160
+  const workersTab = async ($: Test$) => {
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const pane = await $.ui.mount(OVERVIEW)
+    await pane.press({ key: 'overview-tab-workers' })
+    return pane
+  }
+  type Pane = Awaited<ReturnType<typeof workersTab>>
+  // The tracks as drawn, top to bottom, each a list of its lines: findAll
+  // gives a line's Text before the runs within it, so only whole lines of the
+  // pane's width are taken, and the rule between two tracks splits them.
+  const tracksOf = async (pane: Pane) => {
+    const lines = (await pane.findAll({ type: 'Text' })).map(x => x.text)
+    const tracks: string[][] = [[]]
+    let skip = 0
+    for (const line of lines) {
+      if (skip > 0 && line.length < WIDTH) continue
+      if (line.length !== WIDTH) continue
+      skip = 1
+      if (/^─+$/.test(line)) tracks.push([])
+      else tracks.at(-1)!.push(line)
+    }
+    return tracks.filter(t => t.length > 0)
+  }
+  // Where a track's crab stands: the column its head starts at.
+  const crabAt = (track: string[]) => track.map(l => l.indexOf('▐▛███▜▌')).find(i => i >= 0)! - 1
+  const walls = (track: string[]) => track[0]!.slice(1, -1).trim().split(/\s{2,}/)
+  // The column a share of the way across puts the crab at, as the pane draws
+  // it 160 cells wide: two cells inside the wall, ten the crab and its spark.
+  const column = (x: number) => 2 + Math.round(x * (WIDTH - 4 - 10))
+  const plan = (done: number, of: number) => Array.from({ length: of }, (_, i) => ({ done: i < done, state: i < done ? 'done' : 'todo' }))
+
+  test('one track per figure fills the pane, walled by its lane and the next, with who does what in plain words', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tickets = [
+      HUMAN,
+      { ...WORKING, assignee: 'Alex', next_lane: 'critique' },
+      { handle: 'R1R1R1', title: 'judged', status: 'review', next_lane: 'signoff', question: '' },
+      { handle: 'D1D1D1', title: 'finished', status: 'done', question: '' },
+    ]
+    w.tabs = [
+      { tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' },
+      { tab_id: 'w1:t2', label: 'R1R1R1/review', agent_status: 'idle' },
+      // A person's own chat is not an agent, and a finished ticket has no lane to stand in.
+      { tab_id: 'w1:t3', label: 'T8QS1Y/explain', agent_status: 'working' },
+      { tab_id: 'w1:t4', label: 'D1D1D1/worker', agent_status: 'idle' },
+    ]
+    await startSession($)
+    const tracks = await tracksOf(await workersTab($))
+    // Board order of the lanes; 40 rows less the tab row and Close: 38, two of them rules.
+    expect(tracks.map(walls)).toEqual([['in-progress', 'critique'], ['review', 'signoff'], ['human', 'review']])
+    expect(tracks.map(t => t.length)).toEqual([12, 12, 12])
+    const said = tracks.map(t => t.at(-1)!.slice(1, -1).trim())
+    expect(said).toEqual(['T8QS1Y · working · filter', 'R1R1R1 · resting · judged', 'K7P2QX · waits for an answer · tags popup'])
+    // Resting sits with z z above its hat; a question stands with (?) above it.
+    expect(tracks[1]!.some(l => l.includes('z z'))).toBe(true)
+    expect(tracks[1]!.some(l => l.includes('▀▀▀▀▀'))).toBe(true)
+    expect(tracks[2]!.some(l => l.includes('(?)'))).toBe(true)
+    expect(tracks[0]!.some(l => l.includes('(?)') || l.includes('z z'))).toBe(false)
+  })
+
+  test('the crab stands as far across as its ticket has come: its plan, else its definition of done, else at the left wall', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tickets = [
+      { handle: 'A1A1A1', title: 'a', status: 'in-progress', question: '', plan_items: plan(1, 4), dod_items: plan(0, 2) },
+      { handle: 'B1B1B1', title: 'b', status: 'in-progress', question: '', plan_items: [], dod_items: [...plan(1, 2), { done: false, state: 'superseded' }] },
+      { handle: 'C1C1C1', title: 'c', status: 'in-progress', question: '' },
+      { handle: 'E1E1E1', title: 'e', status: 'in-progress', question: '', dod_items: plan(3, 3) },
+    ]
+    w.tabs = w.tickets.map((t, i) => ({ tab_id: `w1:t${i}`, label: `${(t as { handle: string }).handle}/worker`, agent_status: 'working' }))
+    await startSession($)
+    const tracks = await tracksOf(await workersTab($))
+    expect(tracks.map(crabAt)).toEqual([column(1 / 4), column(1 / 2), column(0), column(1)])
+  })
+
+  test('two tickets never wear the same colour or hat, and each keeps both on every read', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tickets = [{ ...WORKING, assignee: 'Alex' }, { handle: 'C1C1C1', title: 'judged', status: 'critique', question: '' }]
+    w.tabs = [
+      { tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' },
+      { tab_id: 'w1:t2', label: 'C1C1C1/worker', agent_status: 'working' },
+    ]
+    await startSession($)
+    const pane = await workersTab($)
+    // Each track's head in its colour, and the hat on the line above it.
+    const looks = async () => {
+      const heads = (await pane.findAll({ type: 'Text' })).filter(x => x.text.includes('▐▛███▜▌') && x.text.length < WIDTH)
+      const tracks = await tracksOf(pane)
+      return tracks.map((t, i) => {
+        const x = crabAt(t)
+        const head = t.findIndex(l => l.includes('▐▛███▜▌'))
+        return { color: (heads[i]!.props as { color?: string }).color, hat: t[head - 1]!.slice(x + 1, x + 8) }
+      })
+    }
+    const first = await looks()
+    expect(first[0]!.color).toBeDefined()
+    expect(first[0]!.color).not.toBe(first[1]!.color)
+    expect(first[0]!.hat.trim()).not.toBe('')
+    expect(first[0]!.hat).not.toBe(first[1]!.hat)
+    // Four more join: the first two keep theirs, and all six differ in both.
+    const more = ['A1A1A1', 'A2A2A2', 'A3A3A3', 'A4A4A4']
+    w.tickets = [...w.tickets, ...more.map(handle => ({ handle, title: handle, status: 'in-progress', question: '' }))]
+    w.tabs = [...w.tabs, ...more.map((id, i) => ({ tab_id: `w1:x${i}`, label: `${id}/worker`, agent_status: 'working' }))]
+    await w.clock.advance(5000)
+    const after = await looks()
+    const byId = (await tracksOf(pane)).map(t => t.at(-1)!.slice(1, -1).trim().slice(0, 6))
+    expect(after[byId.indexOf('T8QS1Y')]).toEqual(first[0])
+    expect(after[byId.indexOf('C1C1C1')]).toEqual(first[1])
+    expect(new Set(after.map(l => l.color)).size).toBe(6)
+    expect(new Set(after.map(l => l.hat)).size).toBe(6)
+  })
+
+  test('once a ticket leaves, two that had to share a colour never keep sharing it', async ($, on) => {
+    const w = world(on, { herdr: true })
+    const ids = ['AAAAAA', 'BBBBBB', 'CCCCCC', 'DDDDDD', 'EEEEEE', 'FFFFFF', 'GGGGGG']
+    const board = (on: string[]) => {
+      w.tickets = on.map(handle => ({ handle, title: handle, status: 'in-progress', question: '' }))
+      w.tabs = on.map((id, i) => ({ tab_id: `w1:t${i}`, label: `${id}/worker`, agent_status: 'working' }))
+    }
+    board(ids)
+    await startSession($)
+    const pane = await workersTab($)
+    const colors = async () => (await pane.findAll({ type: 'Text' })).filter(x => x.text.includes('▐▛███▜▌') && x.text.length < WIDTH).map(x => (x.props as { color?: string }).color)
+    // Seven tickets, six colours: two share one.
+    expect(new Set(await colors()).size).toBe(6)
+    board(ids.filter(id => id !== 'BBBBBB'))
+    await w.clock.advance(5000)
+    expect(new Set(await colors()).size).toBe(6)
+  })
+
+  test('working moves its arms in place; resting sits still', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tickets = [{ ...WORKING, assignee: 'Alex' }, { handle: 'C1C1C1', title: 'judged', status: 'critique', question: '' }]
+    w.tabs = [
+      { tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' },
+      { tab_id: 'w1:t2', label: 'C1C1C1/worker', agent_status: 'idle' },
+    ]
+    await startSession($)
+    const pane = await workersTab($)
+    const seen: string[][] = []
+    for (let i = 0; i < 4; i++) {
+      seen.push((await tracksOf(pane)).map(t => t.slice(0, -1).join('\n')))
+      await w.clock.advance(250)
+    }
+    expect(new Set(seen.map(s => s[0]!.replace(/[✻✳✶✢]/g, ''))).size).toBe(2)
+    expect(new Set(seen.map(s => s[1]!)).size).toBe(1)
+  })
+
+  test('a ticket that came further walks there column by column, its legs stepping', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tickets = [{ ...WORKING, assignee: 'Alex', next_lane: 'critique', plan_items: plan(0, 2) }]
+    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' }]
+    await startSession($)
+    const pane = await workersTab($)
+    expect(crabAt((await tracksOf(pane))[0]!)).toBe(column(0))
+    w.tickets = [{ ...WORKING, assignee: 'Alex', next_lane: 'critique', plan_items: plan(1, 2) }]
+    // Read again after 5 s: one step on in that frame, one each frame after.
+    await w.clock.advance(5000)
+    const steps: number[] = []
+    const legs: string[] = []
+    for (let i = 0; i < 3; i++) {
+      const track = (await tracksOf(pane))[0]!
+      steps.push(crabAt(track))
+      legs.push(track.at(-2)!.slice(crabAt(track), crabAt(track) + 9))
+      await w.clock.advance(250)
+    }
+    expect(steps).toEqual([column(1 / 40), column(2 / 40), column(3 / 40)])
+    expect(legs[0]).not.toBe(legs[1])
+    expect(legs[0]).toBe(legs[2])
+    // It stops where its progress puts it.
+    await w.clock.advance(250 * 30)
+    expect(crabAt((await tracksOf(pane))[0]!)).toBe(column(1 / 2))
+  })
+
+  test('a ticket that moved on walks to the right wall, the walls move along, and it starts again at the left', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tickets = [{ ...WORKING, assignee: 'Alex', next_lane: 'critique', plan_items: plan(1, 2) }]
+    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' }]
+    await startSession($)
+    const pane = await workersTab($)
+    w.tickets = [{ ...WORKING, status: 'critique', next_lane: 'review', plan_items: plan(0, 2) }]
+    await w.clock.advance(5000)
+    let track = (await tracksOf(pane))[0]!
+    expect(walls(track)).toEqual(['in-progress', 'critique'])
+    expect(crabAt(track)).toBeGreaterThan(column(1 / 2))
+    for (let i = 0; i < 40 && walls(track)[0] === 'in-progress'; i++) {
+      expect(crabAt(track)).toBeLessThanOrEqual(column(1))
+      await w.clock.advance(250)
+      track = (await tracksOf(pane))[0]!
+    }
+    // The old right wall is the left one now, and the crab is back at it.
+    expect(walls(track)).toEqual(['critique', 'review'])
+    expect(crabAt(track)).toBe(column(0))
+  })
+
+  test('on a narrow pane the walls\' names are cut to half the line each, never written over each other', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tickets = [{ ...WORKING, assignee: 'Alex', next_lane: 'critique' }]
+    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' }]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const narrow = { ...(OVERVIEW as { props: object }), props: { ...(OVERVIEW as { props: object }).props, bodyColumns: 24 } } as never
+    const pane = await $.ui.mount(narrow)
+    await pane.press({ key: 'overview-tab-workers' })
+    const top = (await pane.findAll({ type: 'Text' })).map(x => x.text).find(t => t.startsWith('┃ ') && t.length === 24)
+    // 24 cells: nine for each name, the walls and the gaps around them.
+    expect(top).toBe('┃ in-progre  critique  ┃')
+  })
+
+  test('on a pane too narrow for it, the line beneath the crab ends before the right wall', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tickets = [HUMAN]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const narrow = { ...(OVERVIEW as { props: object }), props: { ...(OVERVIEW as { props: object }).props, bodyColumns: 30 } } as never
+    const pane = await $.ui.mount(narrow)
+    await pane.press({ key: 'overview-tab-workers' })
+    const caption = (await pane.findAll({ type: 'Text' })).map(x => x.text).find(t => t.includes('K7P2QX ·') && t.length === 30)
+    expect(caption).toBe('┃ K7P2QX · waits for an answ ┃')
+  })
+
+  test('a subagent of this session has a track too, at work or resting', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...WORKING, assignee: 'Alex' }, { handle: 'C1C1C1', title: 'judged', status: 'critique', question: '' }]
+    w.agents = [
+      { id: 'a1', description: 'work lane in-progress of T8QS1Y', type: 'claude', status: 'running' },
+      { id: 'a2', description: 'critique C1C1C1', type: 'claude', status: 'idle' },
+      { id: 'a3', description: 'old run of C1C1C1', type: 'claude', status: 'completed' },
+    ]
+    await startSession($)
+    const said = (await tracksOf(await workersTab($))).map(t => t.at(-1)!.slice(1, -1).trim())
+    expect(said).toEqual(['T8QS1Y · working · filter', 'C1C1C1 · resting · judged'])
+  })
+
+  test('nobody on the board says so', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tickets = [WORKING]
+    await startSession($)
+    expect(await (await workersTab($)).find({ type: 'Text', text: 'No agent on the board right now.' })).toBeDefined()
+  })
+
+  test('an Overview with no room to show it starts no frames, even on the Workers tab', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' }]
+    await startSession($)
+    const pane = await workersTab($)
+    await pane.press({ key: 'overview-close' })
+    w.noRoom = true
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const before = ran(w, 'herdr', 'tab', 'list').length
+    await w.clock.advance(20_000)
+    expect(ran(w, 'herdr', 'tab', 'list').length).toBe(before)
+  })
+
+  test('a read of the board still running is not started a second time', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' }]
+    await startSession($)
+    await workersTab($)
+    const reads = () => ran(w, 'herdr', 'tab', 'list').length
+    const before = reads()
+    w.heldTabs = []
+    // Two reads due, the first one hanging: only one asked.
+    await w.clock.advance(10_000)
+    expect(reads()).toBe(before + 1)
+    // Once it ends, the next one is asked when it is due.
+    w.heldTabs.shift()!()
+    w.heldTabs = undefined
+    await w.clock.advance(5000)
+    expect(reads()).toBe(before + 2)
+  })
+
+  test('a read still running when the tab changes or the pane closes starts no frames: nothing is read after Close', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' }]
+    await startSession($)
+    const reads = () => ran(w, 'herdr', 'tab', 'list').length
+    // Lets the plugin run until its read of Herdr's tabs is held.
+    const held = async () => {
+      for (let i = 0; i < 50 && w.heldTabs!.length === 0; i++) await w.clock.advance(0)
+      expect(w.heldTabs!.length).toBe(1)
+    }
+    // Lets the held read go, and the plugin finish what it did with it.
+    const release = async () => {
+      w.heldTabs!.shift()!()
+      for (let i = 0; i < 50; i++) await w.clock.advance(0)
+    }
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const pane = await $.ui.mount(OVERVIEW)
+    w.heldTabs = []
+    // Workers pressed, its read hangs; Queue is shown before it ends.
+    const workers = pane.press({ key: 'overview-tab-workers' }).then(() => undefined)
+    await held()
+    await pane.press({ key: 'overview-tab-queue' })
+    await release()
+    await workers
+    // Workers again, and the pane closed while its read hangs.
+    const again = pane.press({ key: 'overview-tab-workers' }).then(() => undefined)
+    await held()
+    await pane.press({ key: 'overview-close' })
+    await release()
+    await again
+    w.heldTabs = undefined
+    const before = reads()
+    await w.clock.advance(20_000)
+    expect(reads()).toBe(before)
+  })
+
+  test('the frames stop when another tab is shown and when the pane closes', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' }]
+    await startSession($)
+    const reads = () => ran(w, 'herdr', 'tab', 'list').length
+    const pane = await workersTab($)
+    let before = reads()
+    await w.clock.advance(5000)
+    expect(reads()).toBe(before + 1)
+    await pane.press({ key: 'overview-tab-queue' })
+    before = reads()
+    await w.clock.advance(20_000)
+    expect(reads()).toBe(before)
+    await pane.press({ key: 'overview-tab-workers' })
+    await pane.press({ key: 'overview-close' })
+    before = reads()
+    await w.clock.advance(20_000)
+    expect(reads()).toBe(before)
   })
 })

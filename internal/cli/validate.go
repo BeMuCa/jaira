@@ -54,7 +54,8 @@ because capture is meant to be cheap. Use --strict to fail on those too.`,
 			// dangling, and reporting it as an error made finishing work look
 			// like breaking it.
 			ix := link.Build(s, lanes, tickets)
-			problems := validate.Tickets(tickets, lanes, ix.Known)
+			// Each ticket is checked against its own board's lanes.
+			problems := validate.TicketsOnBoards(tickets, lane.LanesOf(s.Root), ix.Known)
 			// A lane whose context: nobody can read is the one lane-file
 			// mistake reported here: it decides which agent judges the work,
 			// and it fails quietly — the lane still loads and runs fresh.

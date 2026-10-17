@@ -549,10 +549,7 @@ func Load(root string) (*Set, error) {
 	if err != nil {
 		return nil, err
 	}
-	builtinByID := make(map[string]*Lane, len(builtins))
-	for _, l := range builtins {
-		builtinByID[l.ID] = l
-	}
+	builtinByID := indexByID(builtins)
 
 	var warnings []string
 	var lanes []*Lane
@@ -579,7 +576,13 @@ func Load(root string) (*Set, error) {
 		lanes, w = readLaneDir(ProjectLanesDir(root), nil, builtinByID)
 		warnings = append(warnings, w...)
 	}
+	orderIDs, _ := LoadOrder(root)
+	return assemble(lanes, orderIDs, warnings), nil
+}
 
+// assemble orders lanes and applies the board-wide rules every board shares,
+// whichever directory its lanes came from: Load's and LoadBoard's common tail.
+func assemble(lanes []*Lane, orderIDs []string, warnings []string) *Set {
 	ordered, orderWarn := order(lanes)
 
 	// A board's order file decides column order — after: is a hint for where
@@ -587,7 +590,7 @@ func Load(root string) (*Set, error) {
 	// So with an order file, a dangling anchor is not worth a warning: the
 	// lane it pointed at was removed, and the order file already says where
 	// everything goes. Without one, the anchors are all there is.
-	if orderIDs, err := LoadOrder(root); err == nil && len(orderIDs) > 0 {
+	if len(orderIDs) > 0 {
 		var applyWarn []string
 		ordered, applyWarn = applyOrder(ordered, orderIDs)
 		warnings = append(warnings, applyWarn...)
@@ -617,7 +620,7 @@ func Load(root string) (*Set, error) {
 	for _, l := range ordered {
 		set.byID[l.ID] = l
 	}
-	return set, nil
+	return set
 }
 
 // ContextInvalidMessage says what is wrong with a lane whose context: value is
@@ -747,6 +750,14 @@ func setUp(root string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	// The built-ins are a board for code, and saying so is what lets a
+	// teamlead tell it from a second board in the same repository. Lanes from
+	// a default board could be a board for anything: those get no guess.
+	if len(db.Lanes) == 0 {
+		if err := writeDefaultDescription(root); err != nil {
+			return nil, err
+		}
+	}
 	warnings = append(warnings, fmt.Sprintf(
 		"set up %s with %d lane(s) from %s — this board's lanes are its own now; 'jaira lanes' lists them, 'jaira lanes add|remove' changes them",
 		ProjectLanesDir(root), len(written), source))
@@ -776,10 +787,7 @@ func migrateLegacy(root string) []string {
 	if err != nil {
 		return []string{fmt.Sprintf("could not read the built-in lanes to migrate %s: %v", dir, err)}
 	}
-	builtinByID := make(map[string]*Lane, len(builtins))
-	for _, l := range builtins {
-		builtinByID[l.ID] = l
-	}
+	builtinByID := indexByID(builtins)
 	removed := map[string]bool{}
 	if ids, err := readIDList(removedPath(root)); err == nil {
 		for _, id := range ids {
@@ -1151,6 +1159,15 @@ func (s *Set) Columns(statuses []string) []*Lane {
 	sort.Strings(unknown)
 	for _, u := range unknown {
 		out = append(out, Passthrough(u))
+	}
+	return out
+}
+
+// indexByID maps each lane's id to the lane.
+func indexByID(lanes []*Lane) map[string]*Lane {
+	out := make(map[string]*Lane, len(lanes))
+	for _, l := range lanes {
+		out[l.ID] = l
 	}
 	return out
 }

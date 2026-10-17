@@ -200,6 +200,7 @@ Exit codes:
 		newLinksCmd(),
 		newSetCmd(),
 		newTagsCmd(),
+		newBoardsCmd(),
 		newTagCmd(),
 		newMilestoneCmd(),
 		newEpicCmd(),
@@ -280,9 +281,24 @@ func bestEffortRoot() string {
 	return s.Root
 }
 
-// loadEnv assembles the state gates need.
+// loadEnv assembles the state gates need, against today's board.
 func loadEnv(s *ticket.Store) (gate.Env, []*ticket.Ticket, error) {
-	lanes, err := lane.Load(s.Root)
+	return loadBoardEnv(s, "")
+}
+
+// envFor is loadEnv against the board t runs on: a command on one ticket
+// judges it by its own board's lanes, whatever board it was typed on.
+func envFor(s *ticket.Store, t *ticket.Ticket) (gate.Env, error) {
+	env, _, err := loadBoardEnv(s, t.Board)
+	return env, err
+}
+
+// loadBoardEnv is loadEnv against board's lanes. The tickets it returns are
+// every board's: a blocker or a parent may sit on another board, and the
+// link index has to find it. Commands that show one board filter with
+// onBoard.
+func loadBoardEnv(s *ticket.Store, board string) (gate.Env, []*ticket.Ticket, error) {
+	lanes, err := boardLanes(s, board)
 	if err != nil {
 		return gate.Env{}, nil, err
 	}
@@ -342,4 +358,31 @@ func identity() string {
 // carries your email and git carries your name.
 func identityAliases() []string {
 	return coreidentity.Aliases(g.dir)
+}
+
+// boardLanes is lane.LoadBoard for a command: a board name that is malformed
+// or has nothing behind it is a usage error, exit 2.
+func boardLanes(s *ticket.Store, board string) (*lane.Set, error) {
+	if _, err := lane.NormalizeBoard(board); err != nil {
+		return nil, fail(ExitUsage, "usage", "%v", err)
+	}
+	lanes, err := lane.LoadBoard(s.Root, board)
+	if errors.Is(err, lane.ErrNoSuchBoard) {
+		return nil, fail(ExitUsage, "no_such_board", "%v", err)
+	}
+	return lanes, err
+}
+
+// onBoard keeps the tickets of board — "" or "default" for today's — so a
+// ticket of another board never shows up in a lane its board does not have.
+// board has been through loadBoardEnv, which refuses a malformed name.
+func onBoard(ts []*ticket.Ticket, board string) []*ticket.Ticket {
+	board, _ = lane.NormalizeBoard(board)
+	out := ts[:0:0]
+	for _, t := range ts {
+		if lane.BoardOf(t) == board {
+			out = append(out, t)
+		}
+	}
+	return out
 }

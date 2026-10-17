@@ -198,3 +198,19 @@ func TestAgentNoteTellsAgentsToAskAboutANewerRelease(t *testing.T) {
 		}
 	}
 }
+
+// TestAgentNoteNamesTheBoards guards the entry that tells an agent outside the
+// roles that a repository can have more than one board: without it, it files
+// every ticket on today's board and runs it through lanes not meant for it.
+func TestAgentNoteNamesTheBoards(t *testing.T) {
+	for _, want := range []string{
+		"`jaira boards`",
+		"`jaira create --board <name>`",
+		"`--board <name>`",
+		"board=<name>`",
+	} {
+		if !strings.Contains(agentNote, want) {
+			t.Errorf("agentNote does not contain %s", want)
+		}
+	}
+}

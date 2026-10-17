@@ -996,6 +996,9 @@ func (m *Model) header() string {
 		}
 		left = styLaneTitle.Render(name)
 	}
+	if m.boardName != "" {
+		left += styMeta.Render("   board: " + m.boardName)
+	}
 	if m.filter != "" {
 		// As typed, not %q: a filter quotes names with a space in them, and
 		// %q would print those quotes back escaped.
@@ -1709,7 +1712,7 @@ func (m *Model) renderHelp() string {
 			{"x", "archive the selected ticket (restore brings it back)"},
 			{"X", "on an open ticket: delete its file, after typing the handle back"},
 			{"r", "reload from disk now"},
-			{"p", "switch to another board"},
+			{"p b", "switch to another board; b: this repository's next board, its own lanes and only its tickets"},
 			{"x", "in that list: remove a board, choosing what goes (default no)"},
 			{"S", "settings: lanes (read a prompt, use it, publish it), the default board, and how many days of the logbook the terminal lane shows"},
 		}},

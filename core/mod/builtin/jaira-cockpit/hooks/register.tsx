@@ -15,11 +15,11 @@ import {
 } from './filter.ts'
 import { body, source } from './frame.ts'
 import { add, appended, emptyTotals, row, rowsOf, type Totals } from './metrics.ts'
-import { overviewOf } from './overview.ts'
-import { drawOverview } from './overview-pane.tsx'
+import { COLORS, HATS, overviewOf, pickOf, stepOf, workersOf } from './overview.ts'
+import { drawOverview, type OverviewTab } from './overview-pane.tsx'
 import {
   backMessage, carrierOf, carrierTab, chooseWorker, DEFAULT_CONTEXT_SHARE, isExpired, RECORD_PREFIX, selfLine, startOf, tabsOf,
-  workerLines, type Role, type SessionRecord,
+  workerLines, type Role, type SessionRecord, type Tab,
 } from './sessions.ts'
 import { overviewWords, t } from './texts.ts'
 import { classifyPrompt, file, listThreads, parseFiling, tally, type Thread } from './threads.ts'
@@ -64,6 +64,11 @@ const overviewFoldedAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewFolded'
 const overviewPeopleAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewPeople' } as const, [])
 const releaseAtom = atom({ plugin: 'jaira-cockpit', key: 'release' } as const, null)
 const upgradeAtom = atom({ plugin: 'jaira-cockpit', key: 'upgrade' } as const, null)
+const workersAtom = atom({ plugin: 'jaira-cockpit', key: 'workers' } as const, null)
+const workersWhereAtom = atom({ plugin: 'jaira-cockpit', key: 'workersWhere' } as const, {})
+const workersColorsAtom = atom({ plugin: 'jaira-cockpit', key: 'workersColors' } as const, {})
+const workersHatsAtom = atom({ plugin: 'jaira-cockpit', key: 'workersHats' } as const, {})
+const workersFrameAtom = atom({ plugin: 'jaira-cockpit', key: 'workersFrame' } as const, 0)
 
 const PANE = 'cockpit-ticket'
 const MESSAGE = 'cockpit-message'
@@ -81,6 +86,14 @@ const RELEASE = 'release'
 const BAND_TICKETS = 3
 // How long a pressed row stays locked when its action has not ended by then.
 const BUSY_MS = 20_000
+// The Workers tab's frame: the figures move each frame, and the board is
+// read again every READ_FRAMES, so a ticket that moved on walks without a
+// reopening.
+const FRAME_MS = 250
+const READ_FRAMES = 20
+// The Overview pane's own rows, beside the Workers tab's tracks: its tab
+// row and its Close button.
+const OVERVIEW_ROWS = 2
 // Between the parts of a line: the band's one separator.
 const SEP = ' | '
 
@@ -108,6 +121,15 @@ let threads: Thread[] = []
 // The Explain and Discuss chats this session opened, by their tab's label
 // (`<id>/explain`), with when: the tab goes once the chat has done its part.
 const chats = new Map<string, number>()
+// The Workers tab's frames, running while it is open and shown, and the
+// board the Overview was opened on.
+let frames: { cancel: () => void } | undefined
+let overviewDir: string | undefined
+// Whether the Overview pane is on screen: placed by its open, until it closes.
+let overviewOpen = false
+// Whether the Workers tab is reading the board right now: a read that takes
+// longer than READ_FRAMES is not started a second time beside it.
+let reading = false
 
 // ── shared helpers ───────────────────────────────────────────────────────
 
@@ -253,6 +275,18 @@ async function findBoard($: EngineInterface): Promise<{ dir: string; repo: strin
   return null
 }
 
+// Workers and reviews are the agents that run: Herdr tabs (none where there
+// is no Herdr or its list failed), and this session's own subagents.
+async function agentsOf($: EngineInterface, dir: string): Promise<{ bin: string | undefined; tabs: Tab[]; agents: Agent[] }> {
+  const bin = await herdr($)
+  const listed = bin === undefined ? undefined : await run($, [bin, 'tab', 'list'], dir)
+  let agents: Agent[] = []
+  try {
+    agents = await $.agent.list()
+  } catch {}
+  return { bin, tabs: listed?.exitCode === 0 ? tabsOf(listed.stdout) : [], agents }
+}
+
 async function refreshBoard($: EngineInterface): Promise<void> {
   if (await carries($)) return
   if (board === undefined) {
@@ -269,20 +303,13 @@ async function refreshBoard($: EngineInterface): Promise<void> {
     run($, ['jaira', 'list', '--json'], board.dir),
   ])
   if (lanes?.exitCode !== 0 || list?.exitCode !== 0) return
-  // Workers and reviews are the agents that run: Herdr tabs, and this
-  // session's own subagents where there is no Herdr.
-  const bin = await herdr($)
-  const tabs = bin === undefined ? undefined : await run($, [bin, 'tab', 'list'], board.dir)
-  let agents: Agent[] = []
-  try {
-    agents = await $.agent.list()
-  } catch {}
+  const { bin, tabs, agents } = await agentsOf($, board.dir)
   if (!meAsked) {
     meAsked = true
     const who = await run($, ['jaira', 'whoami', '--json'], board.dir)
     me = who?.exitCode === 0 ? whoOf(who.stdout) : undefined
   }
-  const view: BoardView = snapshotOf(lanes.stdout, list.stdout, tabs?.exitCode === 0 ? tabsOf(tabs.stdout) : [], agents, me)
+  const view: BoardView = snapshotOf(lanes.stdout, list.stdout, tabs, agents, me)
   await update($, boardAtom, () => view)
   // What an Explain chat wrote back onto the tickets the band shows, Explain
   // or not: an explanation stays readable after a later round, only asking
@@ -301,7 +328,7 @@ async function refreshBoard($: EngineInterface): Promise<void> {
   // chat whose question went away without one is done too. Its tab goes, but
   // only once its agent stopped working: a Discuss chat notes the decision
   // first and then still moves the ticket and tells this session.
-  const open = bin !== undefined && tabs?.exitCode === 0 ? tabsOf(tabs.stdout) : []
+  const open = tabs
   for (const [label, since] of chats) {
     const [id = '', kind] = label.split('/')
     const tab = open.find(x => x.label === label)
@@ -679,6 +706,7 @@ async function toggleMore($: EngineInterface, open: boolean): Promise<void> {
 // The Overview pane, on the board as it is now: read afresh at each press.
 // A command that failed leaves the pane saying so, not half a board.
 async function openOverview($: EngineInterface, dir: string): Promise<void> {
+  overviewDir = dir
   const [lanes, list, next] = await Promise.all([
     run($, ['jaira', 'lanes', '--json'], dir),
     run($, ['jaira', 'list', '--json'], dir),
@@ -688,7 +716,61 @@ async function openOverview($: EngineInterface, dir: string): Promise<void> {
   const view = ok ? overviewOf(lanes.stdout, list.stdout, next.stdout, await $.clock.now()) : null
   await update($, overviewAtom, () => view)
   const opened = await $.ui.open({ id: OVERVIEW, title: overviewWords.title, focus: true, closeOnEscape: true })
-  if (!opened.isPlaced) $.ui.toast(overviewWords.noRoom)
+  // Unplaced, the pane is not drawn and hears no close: no frames for it.
+  overviewOpen = opened.isPlaced
+  if (!opened.isPlaced) {
+    $.ui.toast(overviewWords.noRoom)
+    return stopFrames()
+  }
+  await showTab($, await read($, overviewTabAtom))
+}
+
+// A tab of the Overview pane; Workers reads who stands where and starts its
+// frames, every other tab stops them.
+async function showTab($: EngineInterface, tab: OverviewTab): Promise<void> {
+  await update($, overviewTabAtom, () => tab)
+  if (tab !== 'workers') return stopFrames()
+  await readWorkers($)
+  // The person may have shown another tab or closed the pane while it read.
+  if (!overviewOpen || (await read($, overviewTabAtom)) !== 'workers') return
+  frames ??= $.clock.every(FRAME_MS, () => void frame($))
+}
+
+function stopFrames(): void {
+  frames?.cancel()
+  frames = undefined
+}
+
+async function frame($: EngineInterface): Promise<void> {
+  const n = await update($, workersFrameAtom, f => f + 1)
+  if (n % READ_FRAMES === 0) await readWorkers($)
+  const walkers = await read($, workersAtom)
+  if (walkers !== null) await update($, workersWhereAtom, where => stepOf(where, walkers))
+}
+
+// Who is on the board: its tickets, Herdr's tabs and this session's
+// subagents. A ticket seen before keeps where its figures have walked to,
+// its colour and its hat; one gone drops out of all three.
+async function readWorkers($: EngineInterface): Promise<void> {
+  const dir = overviewDir
+  if (dir === undefined || reading) return
+  reading = true
+  try {
+    const [lanes, list] = await Promise.all([run($, ['jaira', 'lanes', '--json'], dir), run($, ['jaira', 'list', '--json'], dir)])
+    if (lanes?.exitCode !== 0 || list?.exitCode !== 0) {
+      await update($, workersAtom, () => null)
+      return
+    }
+    const { tabs, agents } = await agentsOf($, dir)
+    const walkers = workersOf(lanes.stdout, list.stdout, tabs, agents)
+    const ids = [...new Set(walkers.map(f => f.id))]
+    await update($, workersAtom, () => walkers)
+    await update($, workersColorsAtom, kept => pickOf(ids, kept, COLORS))
+    await update($, workersHatsAtom, kept => pickOf(ids, kept, Object.keys(HATS)))
+    await update($, workersWhereAtom, where => Object.fromEntries(Object.entries(where).filter(([id]) => ids.includes(id))))
+  } finally {
+    reading = false
+  }
 }
 
 // A decision is read once: the pane shows it, the band lets it go.
@@ -1386,12 +1468,34 @@ export const register: Register = (on, options) => {
 
   on('ui.render', { component: 'Pane', requestId: OVERVIEW }, async ($, e) =>
     drawOverview($.ui.resolve(e), await read($, overviewAtom), { tab: await read($, overviewTabAtom), folded: await read($, overviewFoldedAtom), people: await read($, overviewPeopleAtom) }, {
-      close: () => void $.ui.close({ id: OVERVIEW }),
-      tab: tab => void update($, overviewTabAtom, () => tab),
+      close: () => {
+        overviewOpen = false
+        stopFrames()
+        void $.ui.close({ id: OVERVIEW })
+      },
+      tab: tab => void showTab($, tab),
       fold: key => void update($, overviewFoldedAtom, f => ({ ...f, [key]: !f[key] })),
       person: name => void update($, overviewPeopleAtom, p => (p.includes(name) ? p.filter(x => x !== name) : [...p, name])),
       everybody: () => void update($, overviewPeopleAtom, () => []),
+    }, {
+      walkers: await read($, workersAtom),
+      where: await read($, workersWhereAtom),
+      colors: await read($, workersColorsAtom),
+      hats: await read($, workersHatsAtom),
+      frame: await read($, workersFrameAtom),
+      columns: e.props.bodyColumns,
+      rows: e.props.scroll.bodyRows - OVERVIEW_ROWS,
     }))
+
+  // The Workers tab's frames stop with the pane when the person closes it;
+  // its own Close button stops them itself, as this hook does not hear it.
+  on('ui.close', async ($, e, next) => {
+    if (e.id === OVERVIEW) {
+      overviewOpen = false
+      stopFrames()
+    }
+    return next(e)
+  }).catch(($, e, next) => next(e))
 
   on('ui.render', { component: 'Pane', requestId: MESSAGE }, async ($, e) => {
     const message = await read($, messageAtom)

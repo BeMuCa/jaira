@@ -76,6 +76,12 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  (follow-ups counted); an epic is a description plus a ticket list on its own\n" +
 	"  ref, not a ticket. `jaira epic show <name>` lists its tickets, `jaira epic add\n" +
 	"  <name> <id>...` sorts tickets in, `jaira epic ls --unassigned` lists the rest\n" +
+	"- `jaira boards` — the boards of this repository and what each is for. A ticket\n" +
+	"  runs through the lanes of the board it is on, so where this lists more than\n" +
+	"  `default`, **read it before you create one** and file the ticket on the board\n" +
+	"  its subject belongs to: `jaira create --board <name>`. `list` and `next` show\n" +
+	"  today's board; `--board <name>` shows another, and `jaira set <id>\n" +
+	"  board=<name>` moves a ticket across\n" +
 	"\n" +
 	"Working a ticket:\n" +
 	"\n" +

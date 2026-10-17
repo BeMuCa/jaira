@@ -139,6 +139,10 @@ export const overviewWords = {
   parked: 'Put back',
   tabQueue: 'Queue',
   tabLog: 'Log',
+  tabWorkers: 'Workers',
+  // What a figure on the Workers tab is doing, beneath it in so many words.
+  states: { working: 'working', idle: 'resting', question: 'waits for an answer' },
+  noWorkers: 'No agent on the board right now.',
   everybody: 'All',
   none: 'none',
   history: (days: number) => `Created and put back, last ${days} days`,

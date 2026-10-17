@@ -18,10 +18,29 @@ diffs and waiting belongs to the dispatcher.
 jaira next --per-lane --json     # which lanes have work, which are yours
 jaira resume                     # what was already in flight
 jaira list --actionable --json   # what could start right now
+jaira boards                     # the boards of this repository, what each is for
 ```
+
+`next` and `list` show one board, today's. When `jaira boards` lists more than
+one, run both again with `--board <name>` for each of the others, or the work
+on them never reaches you.
 
 Never plan from memory of an earlier turn. The board changed: other sessions
 write it too.
+
+Then clear away what is finished, every round, before you start anything:
+
+```bash
+.claude/skills/jaira-dispatcher/scripts/reap.sh   # ~/.claude/skills/... when installed globally
+```
+
+It closes every tab `spawn.sh` opened for a ticket whose pull request is
+merged — worker, dispatcher, lane and review agents alike — and removes that
+ticket's worktree and local branch. A merged ticket it keeps — not done, its
+branch past the merged head, or uncommitted changes in its worktree — comes
+with the reason. Tell the person, in one line each, what it `closed` and what
+it `kept`; `waiting` lines are work in flight and not news; nothing either way:
+say nothing. `--dry-run` shows the same without doing it.
 
 Then name what happened on the board in the last seven days, newest day
 first, with who did it — the person slept, and what a session filed at night
@@ -80,6 +99,30 @@ dispatcher answers them there, notes what was decided on the ticket and sends
 you one line about it. Take that line as settled: read the ticket's notes
 before you put a question to the person, and do not ask what a note already
 answers.
+
+## A new ticket goes on the board its subject belongs to
+
+A repository can have several boards, each with lanes of its own — code on
+one, videos on another — and a ticket runs through the lanes of the board it
+is on. `jaira boards` lists them with the description of each. Read it before
+every `jaira create`:
+
+- **One board** (only `default`): there is nothing to choose. Create as
+  always and say nothing about boards.
+- **One description fits the subject**: create it there — `jaira create ...
+  --board <name>`, no `--board` for `default` — and tell the person the board
+  and the reason in one line, quoting the description the subject matched:
+  "on video, because it is a film made from a demo, and video is 'Videos made
+  from demos'". The quote is what lets the person see the match and object.
+- **None fits, two fit, or a board has no description**: do not guess — a
+  ticket on the wrong board runs through the wrong lanes. Ask the person as a
+  choice, one option per board with its description, your best guess first
+  with `(Recommended)`, and `jaira note` the answer onto the ticket you then
+  create.
+
+A ticket already on the wrong board moves across with `jaira set <id>
+board=<name>`. The dispatcher you start on it needs nothing more from you: it
+reads the board off the ticket.
 
 ## Delegate the loop, never run it
 
@@ -202,13 +245,15 @@ The cockpit's Give back button decides by itself. When you send it back:
 
 The limit is a share of the model's context window, the cockpit's setting
 `workerContextShare` (percent, default 50), never a fixed number of tokens: a
-large task on a large window keeps its worker. Close the tab for good when the
-ticket reaches `done`.
+large task on a large window keeps its worker. The tab closes for good when
+`reap.sh` finds the ticket done and its pull request merged; you do not close it
+by hand.
 
-Its worktree outlives it, and by longer than the pull request: leave that until
-the ticket is in `done`. Review comments come back to the branch and want
-somewhere to land, and a merged pull request is not the end of that — a ticket
-that has not been accepted can still come back.
+Its worktree outlives it, and by longer than the pull request: `reap.sh` removes
+it only when both hold — the ticket in `done` and the pull request merged.
+Review comments come back to the branch and want somewhere to land, and a
+merged pull request is not the end of that — a ticket that has not been
+accepted can still come back.
 
 A new worker needs nothing from the old one: the decisions are in `jaira note`,
 the criteria in the definition of done, the change in git, the argument in the

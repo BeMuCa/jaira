@@ -58,7 +58,7 @@ one the real move would have returned.`,
 			if err != nil {
 				return err
 			}
-			env, _, err := loadEnv(s)
+			env, err := envFor(s, t)
 			if err != nil {
 				return err
 			}
@@ -204,8 +204,7 @@ one the real move would have returned.`,
 				Reason:       reason,
 				Stage:        staged,
 				Reload: func() (gate.Env, error) {
-					env, _, err := loadEnv(s)
-					return env, err
+					return envFor(s, t)
 				},
 				ClaimOnPull: false,
 				Folder:      logbookFolder(),
@@ -362,7 +361,7 @@ func bullets(vs gate.Violations) string {
 }
 
 func newNextCmd() *cobra.Command {
-	var laneFilter, assigneeFilter string
+	var laneFilter, assigneeFilter, board string
 	var all, perLane bool
 	cmd := &cobra.Command{
 		Use:   "next",
@@ -380,10 +379,11 @@ skipping this command.`,
 			if err != nil {
 				return err
 			}
-			env, tickets, err := loadEnv(s)
+			env, tickets, err := loadBoardEnv(s, board)
 			if err != nil {
 				return err
 			}
+			tickets = onBoard(tickets, board)
 			var ready []*ticket.Ticket
 			for _, t := range tickets {
 				if laneFilter != "" && t.Status != laneFilter {
@@ -436,6 +436,7 @@ skipping this command.`,
 	cmd.Flags().BoolVar(&all, "all", false, "list every actionable ticket instead of just the next one")
 	cmd.Flags().BoolVar(&perLane, "per-lane", false,
 		"one ticket per lane that has work waiting, in pipeline order")
+	cmd.Flags().StringVar(&board, "board", "", boardFlagUsage)
 	return cmd
 }
 

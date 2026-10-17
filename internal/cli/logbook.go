@@ -280,7 +280,7 @@ func logbookOut(s *ticket.Store, idArg string, w io.Writer) error {
 		}
 		return err
 	}
-	env, _, err := loadEnv(s)
+	env, err := envFor(s, t)
 	if err != nil {
 		return err
 	}

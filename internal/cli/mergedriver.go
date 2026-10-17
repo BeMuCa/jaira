@@ -52,7 +52,10 @@ func newMergeDriverCmd() *cobra.Command {
 			// Git invokes the merge driver with the working tree as cwd, but there
 			// is no Store here — only three file paths — so the root has to be
 			// discovered rather than taken from one already in hand.
-			lanes, err := lane.Load(bestEffortRoot())
+			// Progress is measured in the ticket's own board's lanes: a lane
+			// of another board is unknown to today's, and an id both boards
+			// carry may sit in a different place on each.
+			lanes, err := lane.LoadBoard(bestEffortRoot(), mergeBoard(ours))
 			if err != nil {
 				return err
 			}
@@ -278,4 +281,16 @@ being discarded.`,
 	cmd.Flags().BoolVar(&takeOurs, "take-ours", false, "keep this side's values")
 	cmd.Flags().BoolVar(&takeTheirs, "take-theirs", false, "adopt the incoming values")
 	return cmd
+}
+
+// mergeBoard is the board the ticket runs on, read from our side. When the
+// other side moved it to another board the two disagree, and ours is used:
+// there is no one order to measure progress across two boards in.
+func mergeBoard(ours []byte) string {
+	d, err := ticket.ParseDoc(ours)
+	if err != nil {
+		return ""
+	}
+	b, _, _ := d.Scalar(ticket.FieldBoard)
+	return b
 }

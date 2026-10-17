@@ -53,7 +53,7 @@ rather than adjectives, no jargon and no preamble.`,
 				return err
 			}
 			if g.jsonOut {
-				env, _, err := loadEnv(s)
+				env, err := envFor(s, t)
 				if err != nil {
 					return err
 				}
@@ -82,10 +82,10 @@ can carry on rather than starting by working out where things were left.`,
 			if err != nil {
 				return err
 			}
-			lanes, err := lane.Load(s.Root)
-			if err != nil {
-				return err
-			}
+			// Each ticket is judged by its own board's lanes. A board that
+			// has gone away leaves its tickets unjudged by lane, as an
+			// unknown lane would.
+			lanesOf := lane.LanesOf(s.Root)
 			all, err := s.List()
 			if err != nil {
 				if pe, ok := err.(*ticket.PartialError); ok {
@@ -103,7 +103,11 @@ can carry on rather than starting by working out where things were left.`,
 			}
 			var out []inflight
 			for _, t := range all {
-				l, known := lanes.Get(t.Status)
+				var l *lane.Lane
+				known := false
+				if set := lanesOf(t); set != nil {
+					l, known = set.Get(t.Status)
+				}
 				var why, step string
 				for _, it := range t.PlanItems {
 					if it.State == ticket.StateDoing {

@@ -374,3 +374,39 @@ func TestFreshBoardGetsOnlyTheDefaultLanes(t *testing.T) {
 		}
 	}
 }
+
+// A board set up from the built-ins says it is for code, which is what a
+// teamlead tells it from a second board by. Lanes picked in a default board
+// could be a board for anything, so that board gets no guessed description.
+func TestOnlyABuiltinBoardIsDescribedOnSetUp(t *testing.T) {
+	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
+	for _, tc := range []struct {
+		name, defaultBoard, want string
+	}{
+		{"built-ins", "", builtinDescription},
+		{"default board", "---\nlanes: [backlog, todo, done]\n---\n", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "default-board.md")
+			if tc.defaultBoard != "" {
+				if err := os.WriteFile(path, []byte(tc.defaultBoard), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			t.Setenv("JAIRA_DEFAULT_BOARD", path)
+			root := t.TempDir()
+			if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := Load(root); err != nil {
+				t.Fatal(err)
+			}
+			if !ProjectLanesActive(root) {
+				t.Fatal("the board was not set up")
+			}
+			if got := Description(root, ""); got != tc.want {
+				t.Errorf("description = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
