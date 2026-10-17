@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T17:02:23Z
+updated-at: 2026-10-17T17:02:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
@@ -32,7 +32,7 @@ outcome-why: "Given back from signoff twice and from review: a pane id alone cou
 outcome-resolves: "Goal of YD4BE9: after the PR is merged, all tabs started for the ticket close and its worktree and branch go without anyone cleaning up by hand - without closing a stranger's tab, losing a tab it cannot see, or losing a commit."
 review-summary: "spawn.sh now writes one record file per tab (pane, ticket, lane, worktree) under <git common dir>/jaira/panes/. New jaira-dispatcher/scripts/reap.sh reads those records, groups them by ticket and asks gh/glab whether the branch has a merged PR (fork clones ask the parent repo). Only when the PR is merged, the ticket is done or filed away, the local branch is not past the merged head, and every worktree is clean, on a branch and herdr answers, it closes the tabs still labelled <ticket>/<lane>, removes the worktree and deletes the branch with -D; records go only after all of that succeeded, so a failure is retried next round. Anything else prints 'waiting' or 'kept <ticket>: <reason>'. --dry-run prints the same with 'would'. The teamlead skill runs it every round and reports closed/kept; reap.sh ships as 100755; release note added."
 round: 9
-review-gaps: "none - two lines and a usage bullet; nothing duplicated"
+review-gaps: "All 7 DoD items are met by the diff; no blocking defect found. Small open points: (1) a hand-deleted worktree that was never pruned prints 'kept ... deleting branch failed' every round until 'git worktree prune' (known, left open by the teamlead). (2) GitLab path not run live; in a GitLab fork glab is asked without a target project, so a merged MR on the upstream is not found and the ticket stays 'waiting' (safe, only not cleaned). (3) a transient 'herdr pane get' failure for a tab that is still open reads as 'tab gone' - the tab stays, but its worktree is removed under it; the herdr probe per round makes this unlikely. (4) A branch also checked out in a worktree without a record is not removed and 'branch -D' then fails every round (kept, not lost)."
 test-verdict: "pass: go test ./... -race rc=0; DoD 1-7 verified in the tree; TestReapKeepsWhatIsNotFinished/detached_HEAD fails on the previous reap.sh and passes now; git ls-files -s shows reap.sh 100755; live herdr/gh behaviour unchanged since round 8's live run"
 review-verdict: "Approve. The diff meets all definition-of-done items, the round-2 send-back (herdr not reachable) is fixed and tested, go test ./core/role/ passes (re-run here). The gaps left are edge cases that keep or lose nothing committed on a branch, except gap 1 (detached HEAD), which is unlikely on a ticket already done and merged. Not verified by me against real herdr or gh - that rests on the testing notes."
 review-round: 8
