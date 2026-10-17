@@ -81,6 +81,9 @@ type Syncer struct {
 type extraEntry struct {
 	hash string
 	t    *ticket.Ticket // nil: the ref held something that is not a ticket
+	// content is the ref's bytes, which Ahead compares a file with when the
+	// two carry the same updated-at.
+	content []byte
 }
 
 // Dirty reports whether this process queued a write. A caller uses it to decide
@@ -1202,9 +1205,25 @@ func (y *Syncer) refTicket(id string) (*ticket.Ticket, []byte) {
 
 // isStale is the one definition of "older than its ref": the ref was written
 // strictly after the file. A file or ref without a timestamp gives no verdict.
-func isStale(file, ref *ticket.Ticket) bool {
-	return ref != nil && !file.UpdatedAt.IsZero() && !ref.UpdatedAt.IsZero() &&
-		ref.UpdatedAt.After(file.UpdatedAt)
+//
+// The stamp has second resolution, so two writes in one second — a pull here
+// and a move in another worktree right after — tie, and a tie used to read as
+// current: the next write here put the older state back on the ref. On a tie
+// the history decides instead: a file whose bytes differ from the ref's and
+// are a state the ref has carried before is behind it. refContent is the
+// ref's bytes.
+func (y *Syncer) isStale(file, ref *ticket.Ticket, refContent []byte) bool {
+	if ref == nil || file.UpdatedAt.IsZero() || ref.UpdatedAt.IsZero() {
+		return false
+	}
+	if !ref.UpdatedAt.Equal(file.UpdatedAt) {
+		return ref.UpdatedAt.After(file.UpdatedAt)
+	}
+	if file.Doc() == nil {
+		return false
+	}
+	b := file.Doc().Bytes()
+	return !bytes.Equal(b, refContent) && y.Repo.Had(file.ID, b)
 }
 
 // CheckFresh refuses a write whose file is older than the ticket's ref. It
@@ -1225,7 +1244,7 @@ func (y *Syncer) CheckFresh(t *ticket.Ticket) error {
 	if y == nil || t == nil || y.Usable() != nil {
 		return nil
 	}
-	if ref, _ := y.refTicket(t.ID); isStale(t, ref) {
+	if ref, content := y.refTicket(t.ID); y.isStale(t, ref, content) {
 		return &StaleError{ID: t.ID, File: t, Ref: ref}
 	}
 	return nil
@@ -1292,7 +1311,7 @@ func (y *Syncer) refresh(id, path string) (*Pulled, error) {
 	}
 	out.Title = file.Title
 	ref, content := y.refTicket(id)
-	if !isStale(file, ref) {
+	if !y.isStale(file, ref, content) {
 		return out, nil
 	}
 	if _, pending := y.Pending(id); pending {
@@ -1591,7 +1610,7 @@ func (y *Syncer) Ahead(files []*ticket.Ticket) map[string]*ticket.Ticket {
 	}
 	out := map[string]*ticket.Ticket{}
 	for _, f := range files {
-		if e, ok := y.extraCache[f.ID]; ok && e.hash == hashes[f.ID] && isStale(f, e.t) {
+		if e, ok := y.extraCache[f.ID]; ok && e.hash == hashes[f.ID] && y.isStale(f, e.t, e.content) {
 			out[f.ID] = e.t.Clone()
 		}
 	}
@@ -1617,7 +1636,7 @@ func (y *Syncer) decodeRefs(wanted []string, hashes map[string]string) error {
 				t = tk
 			}
 		}
-		y.extraCache[id] = extraEntry{hash: hashes[id], t: t}
+		y.extraCache[id] = extraEntry{hash: hashes[id], t: t, content: content}
 	}
 	return nil
 }

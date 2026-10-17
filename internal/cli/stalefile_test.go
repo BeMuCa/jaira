@@ -198,3 +198,56 @@ func TestListAndShowGiveTheRefStateOfAFileBehindIt(t *testing.T) {
 		t.Errorf("still marked behind after the pull:\n%s", out)
 	}
 }
+
+// K6BGB0: the stamp has second resolution, so a pull here and a move in
+// another worktree within one second carry the same updated-at. That tie read
+// as current: the board kept the old lane and the next note here put the old
+// state back on the ref, silently. On a tie the ref's history decides — the
+// file holds a state the ref has carried before, so it is behind.
+func TestAFileBehindItsRefWithinTheSameSecondIsStillBehind(t *testing.T) {
+	t.Setenv("JAIRA_USER", "ada")
+	clone := cloneWithRemotes(t, "origin")
+	h := ticketIn(t, clone, "same second")
+	if out, err := runCLI(t, clone, "pull", h); err != nil {
+		t.Fatalf("pull: %v\n%s", err, out)
+	}
+	s, err := ticket.At(clone)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tk, err := s.Load(h)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// What another worktree's move writes within the same second: the lane
+	// changes, the stamp does not.
+	repo := &gitref.Repo{Dir: clone}
+	old, lease, err := repo.Read(tk.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	moved := strings.Replace(string(old), "\nstatus: backlog\n", "\nstatus: todo\n", 1)
+	if moved == string(old) {
+		t.Fatalf("no status line to move:\n%s", old)
+	}
+	sha, err := repo.Write(tk.ID, []byte(moved), lease)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if out, _ := runCLI(t, clone, "show", h, "--json"); !strings.Contains(out, `"behind-ref": true`) || !strings.Contains(out, `"status": "todo"`) {
+		t.Errorf("show does not give the ref's state of a file behind it in the same second:\n%s", out)
+	}
+	if _, err := runCLI(t, clone, "note", h, "lost"); !errors.Is(err, ticket.ErrStale) {
+		t.Fatalf("a note on a file behind its ref in the same second was not refused as stale: %v", err)
+	}
+	if got, _ := repo.SHA(tk.ID); got != sha {
+		t.Errorf("the ref moved: %s, was %s", got, sha)
+	}
+	if out, err := runCLI(t, clone, "pull", h); err != nil || !strings.Contains(out, "was behind its ref") {
+		t.Fatalf("pull did not bring the file up: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, clone, "note", h, "after the pull"); err != nil {
+		t.Fatalf("a note after the pull was refused: %v\n%s", err, out)
+	}
+}

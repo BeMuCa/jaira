@@ -1,7 +1,7 @@
 ---
 id: 01M4TRC0ZE0GNWDWA1XDK6BGB0
 title: "Das Board zeigt den Stand des Refs, wenn die Ticket-Datei dahinter zurueckliegt"
-status: testing
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Board, 'jaira list' und 'jaira show' zeigen den neuesten Stand eines Tickets: liegt die Datei im Checkout hinter ihrem Ref, den des Refs, mit einem Kennzeichen, dass 'jaira pull' faellig ist - und ein Schreiben auf die veraltete Datei bleibt verweigert."
@@ -21,7 +21,7 @@ related: []
 follows: 01M2HW4788Z5G0M05G3PJDXV60
 commits: []
 created-at: 2026-10-13T13:48:57Z
-updated-at: 2026-10-17T20:51:10Z
+updated-at: 2026-10-17T20:54:15Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-297639
@@ -30,8 +30,9 @@ outcome-what: "Board, jaira list und jaira show zeigen bei einer Ticket-Datei, d
 outcome-why: "Ein in einem anderen Worktree oder von einem Teammitglied bewegtes Ticket stand hier in seiner alten Lane; die Erkennung (isStale, wie bei pull) gab es schon, sie wurde nur beim Lesen nicht genutzt."
 outcome-resolves: K6BGB0; deckt JDXV60 DoD 1 fuer den Ref-Fall ab
 review-summary: "none"
-round: 2
+round: 3
 review-gaps: "Entfernt: die doppelte Lese-und-Decode-Schleife in Syncer.Ahead und Syncer.Extra -> ein Helfer decodeRefs (core/refsync/refsync.go). Stehen gelassen: ein zweites 'git for-each-ref' pro List (Ahead und Extra fragen getrennt) - gemessen ~2 ms bei 60 Refs, 20 Aufrufe 45 ms; ein Teilen der Hashes haette die TicketSource-Signatur geaendert. Kein toter Code: BehindRef wird von list, show, JSON und Karte gelesen."
+test-verdict: "fail: liegen Datei und Ref in derselben Sekunde (updated-at gleich), gilt die Datei nicht als hinter dem Ref - Board zeigt den alten Stand und ein note schreibt ihn still auf den Ref zurueck (todo -> backlog)"
 ---
 
 # Das Board zeigt den Stand des Refs, wenn die Ticket-Datei dahinter zurueckliegt
@@ -69,3 +70,5 @@ Gewaehlt: B (Nutzerentscheidung 2026-10-17): newest wins in List und show, Marke
 - **2026-10-17 20:49 · berkc** — critique: store.go newest vereinfachen - ReadOnly-Filter und Kopie entfernen, ts direkt an Ahead (Begruendung im review-summary). Ahead/Extra teilen sich eine fast gleiche Lese-und-Decode-Schleife: das ist Sache der optimize-Lane, hier stehen gelassen. Load bleibt bewusst bei der Datei (siehe Plan-Notiz).
 - **2026-10-17 20:50 · berkc** — in-progress (Runde 2): store.go newest vereinfacht wie von critique verlangt; Tests gruen.
 - **2026-10-17 20:50 · berkc** — critique Runde 2: nichts mehr - newest ist jetzt drei Zeilen; Load bleibt bewusst Datei (Plan-Notiz); die doppelte Decode-Schleife Ahead/Extra geht an optimize.
+- **2026-10-17 20:52 · berkc** — testing: Zwei-Worktree-Nachstellung ohne Pause (repro.sh): pull in main 20:51:52, move --to todo in wt2 20:51:52, danach 'jaira note' in main: Noted, exit 0, Ref danach 'status: backlog updated-at 20:51:53' - der todo-Stand ist still weg. Mit dem installierten 0.5.2 genauso, also vorbestehend: isStale vergleicht updated-at mit Sekundenaufloesung und urteilt bei Gleichstand 'nicht hinter'. Vorschlag: bei gleichem updated-at und anderen Bytes als die Ref-Spitze entscheidet die Herkunft - die Datei ist hinter dem Ref, wenn ihr Blob von dem Ref aus erreichbar ist (frueherer Stand). Das Muster gibt es schon: gitref.Repo.MilestoneHad (rev-list --objects) fuer Meilensteine; isStale ist die eine Definition fuer pull, CheckFresh und Ahead, dort einbauen.
+- **2026-10-17 20:54 · berkc** — in-progress (Runde 3, nach testing): isStale ist jetzt eine Syncer-Methode isStale(file, ref, refContent). Ungleiche Stempel entscheiden wie bisher. Bei gleichem updated-at: die Datei ist hinter dem Ref, wenn ihre Bytes andere sind als die der Ref-Spitze und ihr Blob von dem Ref aus erreichbar ist (gitref.Repo.Had, gleiche Logik wie MilestoneHad, beide jetzt ueber had(ref, content)). Wirkt fuer pull, CheckFresh und Ahead zugleich. Kosten auf dem Tick: der Bytevergleich mit dem gecachten Ref-Inhalt (extraEntry.content) kostet nichts; hash-object + rev-list laufen nur bei Gleichstand UND anderen Bytes, also nur fuer genau so eine Datei bis zum pull. Test: TestAFileBehindItsRefWithinTheSameSecondIsStillBehind (ohne Fix rot: show status backlog, note nicht verweigert). repro.sh ohne Pause: note jetzt exit 3, Ref bleibt todo.
