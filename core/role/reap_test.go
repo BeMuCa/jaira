@@ -292,6 +292,9 @@ func TestReapLeavesATabItDidNotOpen(t *testing.T) {
 	r.write(t, r.shown, `{"status":"done"}`)
 	r.write(t, filepath.Join(r.labels, "p2"), "ZZ99ZZ/worker\n")
 
+	if out := r.run(t, r.repo, "reap.sh", "--dry-run"); strings.Contains(out, "p2") {
+		t.Errorf("--dry-run promises to close a tab the run leaves open:\n%s", out)
+	}
 	out := r.run(t, r.repo, "reap.sh")
 	if got := r.closedTabs(); got != "tp1" {
 		t.Errorf("closed tabs %q, want only tp1\n%s", got, out)

@@ -161,7 +161,6 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
     pane="$(field pane "$f")"; lane="$(field lane "$f")"
     if [ "$pane" = "${HERDR_PANE_ID:-}" ]; then continue; fi
     gone+=("$f")
-    if [ -n "$dry" ]; then echo "would close $t/$lane $pane"; continue; fi
     # The person may have closed the tab already; that is the job done. A
     # record outlives its tab by days, and herdr hands its ids out again after
     # a restart: a tab not labelled as spawn.sh labelled ours is somebody
@@ -169,6 +168,7 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
     tab="$("$herdr" pane get "$pane" 2>/dev/null | jaira json get result.pane.tab_id 2>/dev/null || true)"
     if [ -n "$tab" ] && [ "$("$herdr" tab get "$tab" 2>/dev/null | jaira json get result.tab.label 2>/dev/null || true)" \
       = "$(field ticket "$f")/$lane" ]; then
+      if [ -n "$dry" ]; then echo "would close $t/$lane $pane"; continue; fi
       if ! "$herdr" tab close "$tab" >/dev/null 2>&1; then
         echo "kept $t: closing $pane failed"; failed=1; break
       fi
