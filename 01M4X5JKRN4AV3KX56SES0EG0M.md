@@ -27,7 +27,7 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:25:07Z
+updated-at: 2026-10-17T12:25:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-73711
 claimed-at: 2026-10-17T12:17:54Z
@@ -57,7 +57,7 @@ claimed-at: 2026-10-17T12:17:54Z
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] core/lane: LoadBoard(root,name), BoardLanesDir, Boards(root), ValidBoardName; Load teilt den Rest mit LoadBoard
+- [x] core/lane: LoadBoard(root,name), BoardLanesDir, Boards(root), ValidBoardName; Load teilt den Rest mit LoadBoard
 - [ ] core/ticket: Feld board (FieldBoard, Ticket.Board)
 - [~] cli: lanesFor/envFor per Board; create/list/next --board; show/move/dod/claim lesen das Board vom Ticket
 - [ ] cli: set board=<name> mit Fallback auf erste Lane und Meldung
