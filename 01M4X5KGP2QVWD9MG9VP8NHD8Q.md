@@ -18,7 +18,7 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:43Z
-updated-at: 2026-10-17T14:12:27Z
+updated-at: 2026-10-17T14:13:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-61927
 claimed-at: 2026-10-17T14:05:53Z
@@ -39,7 +39,7 @@ review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/b && cd /tmp
 ## Definition of Done
 
 - [x] Jedes Board traegt eine kurze Beschreibung seines Themas, die der Teamlead liest; Test
-  proof: core/lane/boards.go:141 Description; internal/cli/boards.go jaira boards; test TestBoardsListsEveryBoardWithItsDescription
+  proof: core/lane/boards.go:154 Description; internal/cli/boards.go jaira boards; test TestBoardsListsEveryBoardWithItsDescription
 - [x] Der Teamlead legt ein Ticket mit Board an und nennt seine Wahl mit Grund; passt kein Board, fragt er den Menschen statt zu raten
   proof: core/role/builtin/jaira-teamlead/SKILL.md:89 'A new ticket goes on the board its subject belongs to'; TestRolesWorkTheTicketsBoard
 - [x] jaira-worker und Dispatcher lesen das Board vom Ticket und arbeiten dessen Lanes ab, nicht die des Standard-Boards; Test
