@@ -27,7 +27,7 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:50:20Z
+updated-at: 2026-10-17T12:50:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-67696
 claimed-at: 2026-10-17T12:50:10Z
@@ -40,7 +40,7 @@ review-gaps: "1) Merge-Driver (internal/cli/mergedriver.go:55) laedt nur die Lan
 test-verdict: "pass (Runde 2): go clean -testcache; go test -race ./... RC=0; DoD 2-6 im Baum (boards_test.go cli+tui gruen, neu TestValidateChecksEachTicketAgainstItsBoard und createTicket-Teil von TestShiftFPicksABoard); Binaer: video-Ticket in Lane script, jaira validate RC=0 ohne unknown_lane (Review-Gap 2 behoben). TUI-Taste F und n nur ueber Tests"
 review-verdict: "Alle sechs DoD-Punkte sind im Diff erfuellt und im Temp-Repo nachgestellt (create/list/next --board, Tippfehler Exit 2, set board= mit Fallback-Meldung, validate gruen, go test ./... gruen). Nicht ganz fertig wegen Gap 1: der Merge-Driver entscheidet Status-Konflikte auf benannten Boards nach den falschen Lanes - fuer ein Repo mit parallelen Sessions der Fall, fuer den das Feature gebaut ist. Empfehlung: Gap 1 und 2 vor dem Annehmen beheben (zusammen ca. 30 Minuten), oder bewusst als Folgearbeit annehmen."
 review-round: 5
-review-check: "1. cd /home/alex/projects/.worktrees/jaira-s0eg0m && go build -o /tmp/jb ./cmd/jaira  2. mkdir /tmp/mb && cd /tmp/mb && git init -q && git commit -q --allow-empty -m i && /tmp/jb init  3. mkdir -p .jaira/boards/video/lanes && cp .jaira/lanes/backlog.md .jaira/lanes/done.md .jaira/boards/video/lanes/ && sed 's/^id: todo/id: script/' .jaira/lanes/todo.md > .jaira/boards/video/lanes/script.md && printf 'backlog\\nscript\\ndone\\n' > .jaira/boards/video/lanes/order  4. /tmp/jb create 'vid' --board video --goal g --context c --dod d -> 'Created <ID>'  5. /tmp/jb list -> vid fehlt; /tmp/jb list --board video -> vid steht in Backlog  6. /tmp/jb list --board vidoe -> Exit 2, nennt 'default, video'  7. /tmp/jb set <ID> assignee=T && /tmp/jb move <ID> --to script && /tmp/jb show <ID> -> Zeilen 'board video', 'lane script'  8. /tmp/jb set <ID> board=default -> 'Board default has no lane \"script\"; <ID> is now in backlog'  9. /tmp/jb set <ID> board=video && /tmp/jb move <ID> --to script && /tmp/jb validate -> heute: error 'lane \"script\" is not installed', Exit 3 (Gap 2)  10. /tmp/jb (TUI) -> F druecken: Kopf zeigt 'board: video', Spalten Backlog/Script/Done, nur vid; nochmal F -> zurueck  11. auf video n druecken, Titel tippen, Enter -> heute verschwindet das neue Ticket aus der Ansicht (Gap 1)"
+review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. In einem leeren Git-Repo: /tmp/jaira init, dann mkdir -p .jaira/boards/video/lanes und drei Dateien skript.md, bau.md, done.md mit Frontmatter 'id: <name>' (done.md zusaetzlich 'terminal: true') und eine Datei order mit skript, bau, done je Zeile  3. /tmp/jaira create 'Szene A' --board video -> 'In skript'  4. /tmp/jaira list -> Szene A fehlt; /tmp/jaira list --board video -> Szene A in skript  5. /tmp/jaira list --board vidoe -> 'no such board \"vidoe\"; boards here: default, video', echo $? zeigt 2  6. /tmp/jaira move <id> --to bau, dann /tmp/jaira set <id> board=default -> 'Board default has no lane \"bau\"; <id> is now in <erste Lane>'  7. /tmp/jaira validate -> keine error-Zeile  8. /tmp/jaira (TUI), F druecken -> Kopfzeile 'board: video', nur Lanes skript/bau/done; noch einmal F -> zurueck auf das heutige Board"
 ---
 
 # Ein Repo kann mehrere Boards haben, jedes mit eigenen Lanes fuer sein Thema
