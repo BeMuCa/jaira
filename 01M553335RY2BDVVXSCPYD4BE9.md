@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T16:45:15Z
+updated-at: 2026-10-17T16:48:46Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
@@ -46,7 +46,7 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-yd4be9 && go test ./co
 - [x] spawn.sh schreibt beim Start Pane-ID, Ticket-ID, Rolle und Worktree in eine Datei, die das Aufraeum-Skript liest; Test
   proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:174 (record under git common dir jaira/panes/<pane>); test core/role/reap_test.go TestSpawnRecordsItsTabForReap
 - [x] Ein Skript (z.B. scripts/reap.sh neben spawn.sh) schliesst fuer jedes Ticket mit gemergtem PR alle seine Panes und entfernt Worktree und lokalen Branch; mit --dry-run zeigt es nur, was es taete; Test
-  proof: core/role/builtin/jaira-dispatcher/scripts/reap.sh:169-172 (tab closed only when 'herdr tab get' labels it <ticket>/<lane>),184,195 (worktree remove, branch -D), :200 records go only after all succeeded; --dry-run prints 'would ...'; tests core/role/reap_test.go TestReapClosesAMergedTicket, TestReapNeverRemovesTheWorktreeItRunsIn, TestReapLeavesATabItDidNotOpen, TestReapComesBackToAWorktreeItCouldNotRemove
+  proof: core/role/builtin/jaira-dispatcher/scripts/reap.sh:175-178 (tab closed only when 'herdr tab get' labels it <ticket>/<lane>),190,201 (worktree remove, branch -D), :206 records go only after all succeeded; --dry-run prints 'would ...'; tests core/role/reap_test.go TestReapClosesAMergedTicket, TestReapNeverRemovesTheWorktreeItRunsIn, TestReapLeavesATabItDidNotOpen, TestReapComesBackToAWorktreeItCouldNotRemove
 - [x] Ein Worktree mit nicht committeten Aenderungen oder ein nicht gemergter Branch wird nicht angefasst, das Skript nennt ihn und den Grund; Test
   proof: core/role/builtin/jaira-dispatcher/scripts/reap.sh:131 'waiting' (no merged PR), :139,149,157 'kept <ticket>: <reason>' (back in a lane, not at merged head, uncommitted changes); test core/role/reap_test.go TestReapKeepsWhatIsNotFinished
 - [x] Der Teamlead-Skill ruft das Skript bei jeder Runde auf und meldet, was geschlossen wurde
