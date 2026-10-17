@@ -27,7 +27,7 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T13:04:29Z
+updated-at: 2026-10-17T13:04:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-67696
 claimed-at: 2026-10-17T12:50:10Z
@@ -36,7 +36,7 @@ outcome-why: "Ein Repo braucht Boards mit eigenen Lanes neben den SWE-Lanes, z.B
 outcome-resolves: "S0EG0M: alle sechs DoD-Punkte, Tests in internal/cli/boards_test.go und internal/tui/boards_test.go"
 review-summary: "Runde 7 (Taste b): keine Befunde. b auf der Board-Ebene war frei; die Detailansicht (model.go modeDetail, b = Blocker folgen) und die Milestone-Ebene (layer.go keyLayer) kehren vor der Board-Ebene zurueck, die Bedeutungen ueberschneiden sich nicht. Bewusst stehen gelassen (decision Alexander): derselbe Buchstabe heisst auf dem Board 'naechstes Board' und im offenen Ticket 'Blocker folgen'."
 round: 7
-review-gaps: "Keine Luecke im DoD; kleinere Grenzen: (1) Board-weites Ablegen ins Logbook arbeitet nach Lane-ID ueber alle Boards: jaira logbook ohne id (internal/cli/logbook.go:136) und der Sweep beim Eintritt in eine Lane (core/lane/settle.go:18, s.FileLane(l.ID)) legen jedes Ticket mit dieser Status-ID ab, auch eines auf einem anderen Board, in dem die Lane gleich heisst aber nicht terminal ist; Tickets in einer anders benannten Terminal-Lane eines benannten Boards erreicht jaira logbook ohne id nie. Als bewusste Grenze notiert (brettweite Kommandos bleiben auf dem heutigen Board), steht aber nirgends fuer den Nutzer. (2) Verschwindet der lanes/-Ordner eines Boards, verweigern show und move dessen Tickets mit Exit 2; nur set <id> board=default holt sie zurueck, validate meldet es - im Temp-Repo nachgestellt, funktioniert, ist aber nur aus der Fehlermeldung nicht ableitbar. (3) kosmetisch: set board=default hinterlaesst 'board: \"\"', set board=video schreibt 'board: \"video\"' in Anfuehrungszeichen, create schreibt 'board: video' ohne - drei Schreibweisen fuer eine Sache im Frontmatter."
+review-gaps: "Runde 4 (Taste b): nichts zu entfernen - eine Zeile case, Hilfe, Note und Test umbenannt. Frueheres siehe Notes."
 test-verdict: "pass (Runde 3): go test -race ./... RC=0; TestMergeDriverUsesTheTicketsBoard rot ohne Fix, gruen mit; DoD 1-6 unveraendert gedeckt (boards_test.go cli+tui)"
 review-verdict: "Die Diff erfuellt alle sechs DoD-Punkte; go test ./... gruen; create/list/next --board, Tippfehler-Board (Exit 2, kein Ordner angelegt), set board= hin und zurueck mit Landen in der ersten Lane und validate im Temp-Repo mit dem gebauten Binary nachgestellt. Die Gaps der beiden frueheren Reviews (TUI n/Follow-up, validate, Link-Index, Merge-Driver, Frontmatter-DoD) sind behoben. Offen nur Grenzen fuer brettweites Logbook-Ablegen und kosmetische board:-Schreibweisen - nicht blockierend. Annehmbar."
 review-round: 6
