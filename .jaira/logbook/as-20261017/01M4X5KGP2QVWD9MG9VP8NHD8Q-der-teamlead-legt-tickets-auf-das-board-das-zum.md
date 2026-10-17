@@ -1,7 +1,7 @@
 ---
 id: 01M4X5KGP2QVWD9MG9VP8NHD8Q
 title: "Der Teamlead legt Tickets auf das Board, das zum Thema passt, und der Worker faehrt sie durch dessen Lanes"
-status: critique
+status: done
 ready: true
 creator: BeMuCa
 assignee: Alexander Sacharov
@@ -16,22 +16,27 @@ tags: []
 blocked-by: []
 related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
-commits: []
+commits:
+  - ede007482ee42110619fa9c85a1d4df7b840c719
+  - 227ade34cedd9bc2af11205d0eda2f9081db9c77
+  - 0ab71820f4b448d3335a83337e824340a81c327e
+  - afa29f7742e0c8ec73a7b7915b9e1ff11bf1f764
+  - d3fd367c4395d0c00f23e03946009388c1229183
 created-at: 2026-10-14T12:18:43Z
-updated-at: 2026-10-17T14:12:00Z
+updated-at: 2026-10-17T16:33:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-61927
 claimed-at: 2026-10-17T14:05:53Z
 outcome-what: "New command 'jaira boards' lists every board with open tickets and its description, read from a plain-text 'description' file in the board's lanes dir (core/lane/boards.go). A board set up from the built-in lanes now gets the description 'Changes to this repository's code: ...' (lane.setUp); this repo has it in .jaira/lanes/description. The teamlead skill reads 'jaira boards' before every create; dispatcher and worker read 'board' off the ticket and pass --board. The generated CLAUDE.md/AGENTS.md block names 'jaira boards', --board and set board=."
 outcome-why: "With several boards per repo (S0EG0M) nothing told a teamlead or any other agent which board a subject belongs to, the default board had no description so the teamlead would ask on every create, and dispatcher's 'next --per-lane' saw only today's board."
 outcome-resolves: "DoD 1: jaira boards + TestBoardsListsEveryBoardWithItsDescription; DoD 2: teamlead SKILL.md; DoD 3: dispatcher/worker skills + TestWorkerPathRunsTheTicketsBoard, TestRolesWorkTheTicketsBoard; DoD 4: release note; DoD 5: lane.setUp writeDefaultDescription + TestOnlyABuiltinBoardIsDescribedOnSetUp; DoD 6: announce.go agentNote + TestAgentNoteNamesTheBoards"
-review-summary: "internal/cli/boards.go Long text still says a description is 'written by hand' only; say, as docs/COMMANDS.md now does, that a board set up from the built-in lanes starts with one saying it is for code"
+review-summary: "Round 3 adds the two things signoff sent back. (1) When a repo's first lane directory is set up from the built-in lanes (lane.setUp, i.e. jaira init or the first command on a fresh board), a plain-text file .jaira/lanes/description is written beside order: 'Changes to this repository's code: features, fixes, refactors, tests and docs.' It is not written when the lanes come from a person's default-board.md (could be a board for anything), and an existing description is never overwritten. This repo got the file by hand. (2) The generated jaira block in CLAUDE.md/AGENTS.md (core/board/announce.go agentNote) gains one entry: jaira boards, read it before create when there is more than default, create --board, --board on list/next, set board= to move. --help, docs/COMMANDS.md and two new release-note lines say the same. Rounds 1-2 (jaira boards command, teamlead/dispatcher/worker skills) are unchanged since the last approval apart from the S0EG0M merge."
 round: 4
-review-gaps: "Nothing blocks the DoD. Minor: (1) In any repo with a second board the default board has no description until someone writes .jaira/lanes/description, so by the skill's own rule the teamlead asks the person on every create until then - intended, but worth knowing for demo-video. (2) DoD 2 is proven only by string-presence tests on SKILL.md; real teamlead behaviour is untested by nature. (3) The generated CLAUDE.md agent block does not mention 'jaira boards' or --board, so an agent outside the roles never learns of other boards (already noted as left out). (4) A ticket whose board directory was removed is counted on no row of 'jaira boards'. (5) Testing found 'jaira validate' reports tickets on named boards as read-only - S0EG0M code, outside this ticket."
-test-verdict: "pass: go vet + go test -race ./... green (RC=0); DoD 1-4 verified in the tree (TestBoardsListsEveryBoardWithItsDescription, TestWorkerPathRunsTheTicketsBoard, TestRolesWorkTheTicketsBoard, notes file); built binary on a scratch repo: 'jaira boards' lists default + video with descriptions, a missing one names .jaira/lanes/description, --for-lane on the video ticket gives the video lane's tier"
-review-verdict: "Approve. The diff matches all four DoD items; go test ./internal/cli ./core/role ./core/lane passes; by hand in a scratch repo 'jaira boards' (text and --json) lists both boards with open counts and descriptions, and 'jaira set <id> board=video' moves a ticket across, falling back to the first lane when the target board lacks its lane. No defects found in the change itself; gaps above are follow-ups."
-review-round: 2
-review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/b && cd /tmp/b && git init && git commit --allow-empty -m init && /tmp/jaira init  3. mkdir -p .jaira/boards/video/lanes && cp .jaira/lanes/*.md .jaira/boards/video/lanes/  4. echo 'Videos made from demos' > .jaira/boards/video/lanes/description  5. /tmp/jaira boards - you see 'default 0 open no description yet — write one into .jaira/lanes/description' and 'video 0 open Videos made from demos'  6. /tmp/jaira create x --board video --goal g --context c --dod d, then /tmp/jaira boards - video now says 1 open  7. /tmp/jaira roles install, then open the installed jaira-teamlead SKILL.md - section 'A new ticket goes on the board its subject belongs to' is there"
+review-gaps: "none for the DoD. Looked at: setUp is only called for today's board (lane.go:566), so a named board never gets the code description; ProjectLanesActive globs *.md, so a description file alone does not count as a set-up lane dir; CLAUDE.md and AGENTS.md blocks are identical to agentNote. Known and accepted, not a defect: a repo whose lanes already exist (e.g. demo-video) gets no description until someone writes the line - the second release-note line tells them to."
+test-verdict: "pass: go vet + go test -race ./... green (RC=0); DoD 1-6 checked in the tree (DoD 1 proof line updated to boards.go:154 after the shift); scratch repo: jaira init writes .jaira/lanes/description with the code sentence, CLAUDE.md and AGENTS.md name jaira boards, jaira boards lists default with it and video with its own"
+review-verdict: "Approve. All six DoD items are met by the diff. go vet ./... and go test ./... pass on d3fd367c. By hand in scratch repos: jaira init with built-in lanes writes .jaira/lanes/description and jaira boards shows it for default; init with a default-board.md writes none and boards says where to write it; a named board with its own description and a ticket shows '1 open' and its text."
+review-round: 4
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-8nhd8q && go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/b && cd /tmp/b && git init && git commit --allow-empty -m init && /tmp/jaira init  3. cat .jaira/lanes/description - you see: Changes to this repository's code: features, fixes, refactors, tests and docs.  4. mkdir -p .jaira/boards/video/lanes && cp .jaira/lanes/*.md .jaira/lanes/order .jaira/boards/video/lanes/ && echo 'Videos made from demos' > .jaira/boards/video/lanes/description  5. /tmp/jaira create x --board video --goal g --context c --dod d  6. /tmp/jaira boards - you see 'default 0 open Changes to this repository's code...' and 'video 1 open Videos made from demos'  7. in the worktree: grep -n 'jaira boards' CLAUDE.md - the new entry under 'Capturing and picking work' names --board and set board="
 ---
 
 # Der Teamlead legt Tickets auf das Board, das zum Thema passt, und der Worker faehrt sie durch dessen Lanes
@@ -39,7 +44,7 @@ review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/b && cd /tmp
 ## Definition of Done
 
 - [x] Jedes Board traegt eine kurze Beschreibung seines Themas, die der Teamlead liest; Test
-  proof: core/lane/boards.go:141 Description; internal/cli/boards.go jaira boards; test TestBoardsListsEveryBoardWithItsDescription
+  proof: core/lane/boards.go:154 Description; internal/cli/boards.go jaira boards; test TestBoardsListsEveryBoardWithItsDescription
 - [x] Der Teamlead legt ein Ticket mit Board an und nennt seine Wahl mit Grund; passt kein Board, fragt er den Menschen statt zu raten
   proof: core/role/builtin/jaira-teamlead/SKILL.md:89 'A new ticket goes on the board its subject belongs to'; TestRolesWorkTheTicketsBoard
 - [x] jaira-worker und Dispatcher lesen das Board vom Ticket und arbeiten dessen Lanes ab, nicht die des Standard-Boards; Test
@@ -83,3 +88,10 @@ Empfehlung: 2 - Nichts blockiert die DoD, die Luecken sind bewusst ausgelassen u
 - **2026-10-17 14:05 · Alexander Sacharov** — cockpit: given back to a new worker - old worker's prompt cache cold for 14 min
 - **2026-10-17 14:06 · Alexander Sacharov** — decision round 3 (worker): the default board's description is written by the code, not by hand per repo: when a board's first lane directory is set up from the built-in lanes (lane.setUp), a 'description' file goes in beside order - 'Changes to this repository's code: features, fixes, refactors, tests and docs.' Not when the lanes come from a person's default-board.md: those may be any board, a guessed sentence would send tickets to the wrong lanes. Not in 'jaira update': it cannot tell built-in lanes from chosen ones on an existing board. This repo gets the file by hand (.jaira/lanes is tracked here); demo-video needs one line written there by hand - outside this worktree.
 - **2026-10-17 14:11 · Alexander Sacharov** — critique round 3 (first pass on afa29f77): one finding - internal/cli/boards.go --help says only 'written by hand', drifts from docs/COMMANDS.md; align it. Let stand: writeDefaultDescription as a one-caller helper in boards.go (keeps description knowledge beside descriptionFileName rather than in lane.go); the Stat check keeps a hand-written file a person put there before the lanes existed.
+- **2026-10-17 14:12 · Alexander Sacharov** — critique round 3 pass 2: the --help finding is addressed in d3fd367c; nothing else read, nothing left.
+- **2026-10-17 14:25 · Alexander Sacharov** — explain: Der Reviewer hat nichts Offenes gefunden: alle sechs DoD-Punkte sind erfuellt, go vet und go test laufen durch. Bekannt und bewusst akzeptiert: ein Repo, dessen Lanes schon existieren (z. B. demo-video), bekommt keine Beschreibung automatisch.
+Warum: Ohne Beschreibung des Default-Boards waehlt der Teamlead das Board nicht sicher; dort muss einmal von Hand eine Zeile geschrieben werden, die Release-Note sagt das.
+1) Ticket so annehmen, die Zeile fuer demo-video spaeter von Hand schreiben [accept]
+2) Zurueckgeben, damit jaira update auch bestehenden Boards eine Beschreibung schreibt [give back]
+Empfehlung: 1 - die Entscheidung in Runde 3 war bewusst, jaira update kann eingebaute von gewaehlten Lanes nicht unterscheiden.
+- **2026-10-17 16:32 · Alexander Sacharov** — decision: 1) Ticket so annehmen, die Zeile fuer demo-video spaeter von Hand schreiben
