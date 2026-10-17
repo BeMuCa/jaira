@@ -1,7 +1,7 @@
 ---
 id: 01M55C9V60QFM9V58MD8PXYN99
 title: "Der Launcher zaehlt auch die Tickets, die nur auf ihrem Ref liegen"
-status: critique
+status: signoff
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -20,17 +20,20 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T16:49:42Z
-updated-at: 2026-10-17T17:13:23Z
+updated-at: 2026-10-17T17:18:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54481
 claimed-at: 2026-10-17T16:55:23Z
 outcome-what: "Der Launcher liest jedes Repo ueber denselben refsync-Source wie 'jaira list' (Tickets nur auf dem Ref zaehlen mit, jedes einmal), prueft ein Ticket mit board: gegen die Lanes seines Boards, und zaehlt im Hintergrund: das erste Bild zeigt Name, Reihenfolge, Fehler und '… open', die Zahlen kommen per tea.Cmd nach."
 outcome-why: "Seit Tickets bis zum Logbook auf ihrem Ref leben, zeigte der Launcher fast nichts (demo-video 0/0 bei 13 Refs); Refs lesen kostet ~80 ms, die das erste Bild nicht tragen darf (Constraint 'Instant startup', Entscheidung Teamlead 17.10.)."
 outcome-resolves: "Launcher-Zeile = 'jaira list'-Zahlen; erstes Bild gleich schnell (Median ~55 ms), Zaehler stehen nach ~0,25 s."
-review-summary: none
+review-summary: "Der Launcher liest jedes Repo jetzt ueber den refsync-Source (newSyncer als Store.Source, nur lokale Refs, kein Netz), also zaehlt s.List() auch Tickets, die nur auf refs/jaira/tickets/ liegen, dedupliziert gegen Dateien und Logbook. Ein Ticket mit board: wird gegen die Lanes seines Boards (lane.LanesOf) auf terminal/human geprueft, today's board weiter gegen den Katalog. Das Zaehlen laeuft parallel (ein Goroutine pro Repo, describeAll) und im Hintergrund: NewHome/refresh liefern sofort Name, Fehler, Agents und '… open', countBoards() als tea.Cmd (Init, r, a, Entfernen) liefert homeCountedMsg, das per Root einsortiert wird. Drei neue Tests in internal/tui/home_refs_test.go; release note core/release/notes/PXYN99.md."
 round: 3
-review-gaps: "describeAll: wg.Add/Done durch wg.Go ersetzt (Go 1.26). Gesucht und nichts gefunden: kein anderer Fan-out-Helfer in core/internal; Test-Helfer refClone/createTicket haben kein Gegenstueck (refs_test.go baut seine Klone in Closures). Stehen gelassen: lanesOf-Closure in describe, weil lane.LanesOf fuer das Standard-Board Load(root) ruft, das das Board anlegen kann."
-test-verdict: "fail: Suite gruen (go test ./... -race, RC=0), DoD 1/2/4/5 im Baum geprueft; DoD 3 nicht erfuellt - Startbild 10 Repos warm: vorher Median 48 ms, nachher 128 ms"
+review-gaps: "1) Release-Note Zeile 1 sagt 'each row shows the same open and total as jaira list' - stimmt nur ohne benannte Boards. jaira list filtert per onBoard (internal/cli/root.go:378) auf today's board; der Launcher summiert alle Boards (bewusst, Notiz 16:56 'Launcher-Zeile = ganzes Repo'). Auf einem Repo mit board:-Tickets weichen die Zahlen ab, auch vom DoD-Wortlaut 'Zahlen gleich wie jaira list --json'. Live-Belege (demo-video 13, jaira 73) gelten, weil dort keine board:-Tickets liegen. Vorschlag: Note-Zeile auf 'same as jaira list summed over jaira boards' aendern. 2) Kleines Rennen: zwei countBoards-Laeufe (z.B. r zweimal schnell) - kommt der aeltere spaeter an, ueberschreibt counted() die frischeren Zahlen per Root. Selten, harmlos bis zum naechsten r. 3) today's board zaehlt weiter gegen den Katalog lane.Load(\"\") statt die eigenen .jaira/lanes des Repos - vorher schon so, nicht von diesem Diff."
+test-verdict: "pass: go test ./... -race RC=0 (vor Commit 65bd1ede, Code seitdem unveraendert); DoD 1-5 im Baum geprueft, die drei Proof-Tests gruen; Binary im pty auf echten 10 Repos: erstes Bild '… open' ueberall, 'unreadable' sofort bei requirementsgenie, zweites Bild demo-video 4 open / 13, jaira 69 open / 73"
+review-verdict: "Diff erfuellt den Kern: Ref-Tickets zaehlen mit, jedes einmal, ohne Netz, erstes Bild nicht langsamer; go vet sauber, go test -race ./internal/tui gruen. Abnahme empfohlen mit einer Korrektur an der Release-Note (Gap 1): 'gleich wie jaira list' gilt nur fuer Repos ohne benannte Boards. Gaps 2/3 sind klein bzw. nicht neu."
+review-round: 3
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-pxyn99 && go build -o /tmp/jaira-pxyn99 ./cmd/jaira  2. /tmp/jaira-pxyn99 (ohne Argumente, Launcher 'Projects:')  3. Erstes Bild: jede Zeile zeigt kurz '… open', nach ~0,3 s Zahlen  4. Zeile demo-video zeigt 13 offene/gesamte Zahlen statt '0 open / 0'  5. In zweitem Terminal: cd ~/projects/demo-video && jaira list --json | grep '\"count\"' - gleiche Zahl als Total  6. Im Launcher r druecken: wieder kurz '… open', dann dieselben Zahlen  7. Benannte Boards: go test ./internal/tui -run 'TestHome' -v - TestHomeCountsATicketAgainstItsOwnBoard PASS"
 ---
 
 # Der Launcher zaehlt auch die Tickets, die nur auf ihrem Ref liegen
@@ -70,3 +73,6 @@ internal/tui/home.go:204 baut einen eigenen Cache Board->Lanes; core/lane/boards
 2. Hinnehmen: Startbild ~130 ms statt ~50 ms, kein weiterer Code; DoD 3 wird mit diesen Zahlen belegt.
 3. Zaehl-Cache auf der Platte (State-Dir, Schluessel = Ref-Hashes): warm schnell, kalt weiter langsam; neue State-Datei, mehr Code.
 - **2026-10-17 17:09 · Alexander Sacharov** — decision (Teamlead, 17.10., Grund: Constraint 'Instant startup'): Variante 1, asynchron. Bis die Ref-Zahlen da sind, zeigt die Zeile keinen Platten-Stand, sondern einen Platzhalter ('… open'), damit nie eine falsche Zahl wie 0/0 aufblitzt und springt. Name, Reihenfolge und Fehlerzeile ('unreadable') sofort wie bisher. DoD 3 wird mit dem Zeitpunkt 'erstes Bild' belegt, als zweite Zahl, wann die Zaehler stehen.
+- **2026-10-17 17:13 · Alexander Sacharov** — critique Runde 3 (async): passt zum vorhandenen Muster fetchRefs in internal/tui/refs.go (Arbeit als tea.Cmd, Ergebnis als Msg). Bewusst stehen gelassen: (a) ein aelterer Zaehllauf, der nach einem neueren ankommt, ueberschreibt dessen Zahlen - beide liegen Sekundenbruchteile auseinander, ein Generationszaehler waere Code fuer keinen sichtbaren Fall; (b) 'r' und Hinzufuegen zeigen kurz wieder '… open' - so verlangt es die Entscheidung des Teamleads (nie eine Zahl, die springt).
+- **2026-10-17 17:17 · Alexander Sacharov** — review: Abnahme empfohlen. Offen fuer die Person: Release-Note Zeile 1 verspricht 'same as jaira list', der Launcher summiert aber alle Boards, jaira list zeigt nur today's board (onBoard, internal/cli/root.go:378). Eine Wortaenderung in core/release/notes/PXYN99.md.
+- **2026-10-17 17:18 · Alexander Sacharov** — Review-Gaps nach Teamlead (17.10.): Gap 1 behoben - Release-Note sagt jetzt 'as jaira list, summed over jaira boards' (Launcher summiert alle Boards, jaira list zeigt nur today's board). Gap 2 (aelterer Zaehllauf kann nach doppeltem r einen frischeren ueberschreiben, bis zum naechsten r) und Gap 3 (today's board zaehlt gegen den Katalog lane.Load(""), so schon vor diesem Diff) bleiben bewusst stehen.
