@@ -27,7 +27,7 @@ related:
   - 01M11YYR0SMVCXNQPZ68NFJCTK
 commits: []
 created-at: 2026-10-14T12:18:13Z
-updated-at: 2026-10-17T12:53:26Z
+updated-at: 2026-10-17T12:53:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-67696
 claimed-at: 2026-10-17T12:50:10Z
@@ -36,7 +36,7 @@ outcome-why: "Ein Repo braucht Boards mit eigenen Lanes neben den SWE-Lanes, z.B
 outcome-resolves: "S0EG0M: alle sechs DoD-Punkte, Tests in internal/cli/boards_test.go und internal/tui/boards_test.go"
 review-summary: "Runde 6: keine Befunde. mergeBoard liest das Board aus ours wie der Rest des Treibers seine Seite liest; fehlt das Board auf der Platte, scheitert LoadBoard und git meldet einen Konflikt - die sichere Seite, wie bei jedem Treiberfehler."
 round: 6
-review-gaps: "1) Merge-Driver (internal/cli/mergedriver.go:55) laedt nur die Lanes des heutigen Boards. core/merge/merge.go mergeStatus vergleicht Precedence: fuer ein Ticket auf einem benannten Board sind dessen Lanes dort unbekannt (-1), also 'kept ours' egal welche Seite weiter ist - oder, wenn eine Lane-ID zufaellig auch im heutigen Board existiert (z.B. human), wird nach der falschen Reihenfolge entschieden und Fortschritt kann zurueckgedreht werden. Fix klein: Board aus ours/theirs-Frontmatter lesen und lane.LoadBoard(root, board) nehmen. Verletzt die Concurrency-Vorgabe, steht aber nicht ausdruecklich im DoD. 2) Frontmatter definition-of-done steht noch auf dem alten Text 'Design als Spec unter docs/superpowers/specs/, von Berk freigegeben' - der Body-DoD und die decision-Notes sagen etwas anderes; wer das Feld liest, sieht einen nie erfuellten DoD. Fix: jaira set S0EG0M definition-of-done=... 3) Klein/kosmetisch: set board=default hinterlaesst 'board: \"\"' statt die Zeile zu entfernen; harmlos, BoardOf liest es als heutiges Board."
+review-gaps: "Runde 3: nichts zu entfernen - mergeBoard hat einen Aufrufer und ist vier Zeilen; ein zweiter Parameter theirs wurde vor dem Commit schon gestrichen. Frueheres siehe Notes."
 test-verdict: "pass (Runde 2): go clean -testcache; go test -race ./... RC=0; DoD 2-6 im Baum (boards_test.go cli+tui gruen, neu TestValidateChecksEachTicketAgainstItsBoard und createTicket-Teil von TestShiftFPicksABoard); Binaer: video-Ticket in Lane script, jaira validate RC=0 ohne unknown_lane (Review-Gap 2 behoben). TUI-Taste F und n nur ueber Tests"
 review-verdict: "Alle sechs DoD-Punkte sind im Diff erfuellt und im Temp-Repo nachgestellt (create/list/next --board, Tippfehler Exit 2, set board= mit Fallback-Meldung, validate gruen, go test ./... gruen). Nicht ganz fertig wegen Gap 1: der Merge-Driver entscheidet Status-Konflikte auf benannten Boards nach den falschen Lanes - fuer ein Repo mit parallelen Sessions der Fall, fuer den das Feature gebaut ist. Empfehlung: Gap 1 und 2 vor dem Annehmen beheben (zusammen ca. 30 Minuten), oder bewusst als Folgearbeit annehmen."
 review-round: 5
