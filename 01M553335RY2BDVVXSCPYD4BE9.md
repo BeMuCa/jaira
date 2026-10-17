@@ -23,7 +23,7 @@ related:
   - 01M4X5GJ1ME88ER0DDB2AYBDJ2
 commits: []
 created-at: 2026-10-17T14:08:43Z
-updated-at: 2026-10-17T17:02:30Z
+updated-at: 2026-10-17T17:02:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9571
 claimed-at: 2026-10-17T16:34:08Z
@@ -36,7 +36,7 @@ review-gaps: "All 7 DoD items are met by the diff; no blocking defect found. Sma
 test-verdict: "pass: go test ./... -race rc=0; DoD 1-7 verified in the tree; TestReapKeepsWhatIsNotFinished/detached_HEAD fails on the previous reap.sh and passes now; git ls-files -s shows reap.sh 100755; live herdr/gh behaviour unchanged since round 8's live run"
 review-verdict: "approve: the diff matches the definition of done; every path that could lose work (dirty, detached, past merged head, given back, herdr down) keeps and names it, and tests cover each. go test ./core/role/ ok (53s). The open points are cleanup misses, none removes work."
 review-round: 9
-review-check: "1. cd /home/alex/projects/.worktrees/jaira-yd4be9  2. go test ./core/role/ -run 'Reap|Spawn|Teamlead' -count=1 -v  -> 7 tests PASS, among them TestReapKeepsWhatIsNotFinished/herdr_not_reachable and TestReapLeavesATabItDidNotOpen  3. ls $(git rev-parse --git-common-dir)/jaira/panes/  -> one file per tab spawned since this version; cat one: pane=, ticket=, lane=, worktree= lines  4. bash core/role/builtin/jaira-dispatcher/scripts/reap.sh --dry-run  -> only 'waiting <ID>: ... no merged pull request', 'kept ...' or 'would close/remove/delete' lines; nothing changes (tabs still open, git worktree list unchanged)  5. after a real merge of a done ticket: run it without --dry-run -> 'closed <ID>/<lane> <pane>', 'removed <worktree>', 'deleted branch feat/<id>'; that ticket's tabs are gone in herdr and git worktree list no longer shows it"
+review-check: "1. cd into a jaira repo where a ticket worktree from spawn.sh exists and its PR is merged and the ticket done/filed  2. run: ls $(git rev-parse --git-common-dir)/jaira/panes/ - one file per tab spawn.sh opened  3. run: ~/.claude/skills/jaira-dispatcher/scripts/reap.sh --dry-run - you see 'would close <TICKET>/<lane> <pane>', 'would remove <worktree>', 'would delete branch feat/<id>'; tickets still open show 'waiting ...'  4. run it without --dry-run - the tabs close, 'git worktree list' no longer shows the worktree, 'git branch' no longer shows the branch, the record files are gone  5. without a live setup: go test ./core/role/ -run 'Reap|Spawn|Teamlead' -count=1 prints ok"
 ---
 
 # Worker-Tabs und ihre Arbeitsbaeume schliessen sich, sobald der Pull Request ihres Tickets gemergt ist
