@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-17T23:27:12Z
-updated-at: 2026-10-17T23:59:56Z
+updated-at: 2026-10-18T00:00:01Z
 updated-by: berkc
 outcome-what: boardFit budgets columns at rendered width (no +2)
 outcome-why: lipgloss v2 Width includes border; the +2 left blank strip on the right
@@ -50,3 +50,4 @@ review-check: "1. cd /home/berkc/code/X_General/jaira-X3A8RZ && go test ./intern
 ## Progress
 - **2026-10-17 23:28 · berkc** — berkc took this ticket over from BeMuCa
 - **2026-10-17 23:36 · berkc** — critique: diff is 5 constant edits in boardFit + test; thin/full cost now rendered width, card-link spots and tagbox bounds already used real widths (lipgloss.Width), tagbox_test bound updated to colW. Nothing simpler.
+- **2026-10-18 00:00 · berkc** — review: approved. Pre-existing on master, not this ticket: '+N more' line renders one row below the other columns' bottom border.
