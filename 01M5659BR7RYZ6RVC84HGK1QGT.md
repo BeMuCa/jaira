@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:20Z
-updated-at: 2026-10-18T00:39:54Z
+updated-at: 2026-10-18T00:39:56Z
 updated-by: berkc
 claimed-by: berk-ca-703016
 claimed-at: 2026-10-18T00:32:08Z
@@ -32,7 +32,8 @@ claimed-at: 2026-10-18T00:32:08Z
 
 - [x] Popup und 'w' zeigen genau eine Version pro Seite, die neueste zuerst, mit Kopfzeile Version und Position (z.B. 0.5.4 · 1/12)
   proof: internal/tui/releasenotes.go:90 header + lines() one entry; TestNotesViewStartsOnTheNewestAndPagesOneVersionAtATime, TestHomeWOpensReleaseNotesNewestFirst
-- [ ] Pfeil links/rechts (und h/l) blaettert zur aelteren/neueren Version, an den Enden passiert nichts
+- [x] Pfeil links/rechts (und h/l) blaettert zur aelteren/neueren Version, an den Enden passiert nichts
+  proof: internal/tui/releasenotes.go:42-49; TestNotesViewStartsOnTheNewestAndPagesOneVersionAtATime (ends: right at newest, left at oldest)
 - [ ] Nach einem Upgrade ueber mehrere Versionen sieht man, wie viele davon ungelesen sind
 - [ ] Test pinnt Startseite und Blaettern; Release-Note
 
