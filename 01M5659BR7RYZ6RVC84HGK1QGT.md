@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:20Z
-updated-at: 2026-10-18T00:49:54Z
+updated-at: 2026-10-18T00:49:56Z
 updated-by: berkc
 claimed-by: berk-ca-703016
 claimed-at: 2026-10-18T00:32:08Z
@@ -32,6 +32,7 @@ review-gaps: "none blocking. Checked: (1) real release build — simulated the r
 test-verdict: "pass: go vet + go test -race ./... RC=0 after go clean -testcache; DoD 1-4 verified in tree (proof lines + named tests run -v); tmux: w at 120x40 and 40x20 pages Unreleased 1/25 -> 0.5.3 2/25 and back, popup (0.5.3 build, stamp 0.5.0) '· 4 unread', 1/4..4/4, h past oldest stays 4/4, q closes and writes notes-seen 0.5.3"
 review-verdict: "approve: the diff meets all four DoD items; go vet ./... clean, go test -race ./... all ok; behaviour confirmed in tmux on a dev build (w) and a simulated release build (popup). No defects introduced."
 review-round: 1
+review-check: "1. cd /home/berkc/code/X_General/jaira-T8A8KM && go build -ldflags '-X main.version=0.5.3' -o /tmp/jgk ./cmd/jaira  2. JAIRA_NO_FETCH=1 JAIRA_NO_UPDATE_CHECK=1 /tmp/jgk  (from any repo with a board)  3. press w: the screen shows 'Release notes', then one header line 'Unreleased · 1/25' (dev tree; a release shows the newest version) and only that version's changes  4. press ← (or h): header becomes '0.5.3 · 2/25' and only 0.5.3's changes show  5. press → (or l) twice: back to 1/25, the second press does nothing  6. press j a few times on a long page: it scrolls; press ←: the next page starts at its top  7. press esc: back to the launcher  8. popup: in ~/.jaira/state/board-*/ of a board write 0.5.0 into 'version' and delete 'notes-seen', open that board: popup title 'What is new since 0.5.0 · N unread', header '<newest> · 1/N'; press esc, then 'cat notes-seen' in that folder shows the running version  9. go test ./internal/tui -run 'NotesView|ReleaseNotes|Popup' passes"
 ---
 
 # Die Release-Notes zeigen eine Version pro Seite, die neueste zuerst, und links/rechts blaettert zwischen den Versionen
