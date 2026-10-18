@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:20Z
-updated-at: 2026-10-18T00:41:22Z
+updated-at: 2026-10-18T00:46:51Z
 updated-by: berkc
 claimed-by: berk-ca-703016
 claimed-at: 2026-10-18T00:32:08Z
@@ -29,6 +29,7 @@ outcome-why: "Berk: notes should be split per version, newest by default, compac
 outcome-resolves: "DoD 1-4: one version per page with position header in popup and 'w'; left/right/h/l paging with inert ends; unread count in popup title; tests pin start page and paging, release note written."
 review-summary: "No findings. Paging lives in notesView (internal/tui/releasenotes.go) as one index 'at' beside the existing scroll — no new type, both callers (home.go w, model.go popup) unchanged. h/left, l/right match browse.go:109 and dropboard.go:96. The two 'at >= len(entries)' guards cover an empty entry list, which newNotesView accepts from home.go; kept rather than relying on NOTES.md never being empty. Popup-only-unread is the decision in the first note; not reopened."
 review-gaps: "Inlined the one-caller notesView.header into render (internal/tui/releasenotes.go:101), which also dropped its duplicate empty-list guard; DoD 1 proof updated. No duplication found: browse.go/dropboard.go share only the key names, not a pager. Nothing orphaned; no hot path."
+test-verdict: "pass: go vet + go test -race ./... RC=0 after go clean -testcache; DoD 1-4 verified in tree (proof lines + named tests run -v); tmux: w at 120x40 and 40x20 pages Unreleased 1/25 -> 0.5.3 2/25 and back, popup (0.5.3 build, stamp 0.5.0) '· 4 unread', 1/4..4/4, h past oldest stays 4/4, q closes and writes notes-seen 0.5.3"
 ---
 
 # Die Release-Notes zeigen eine Version pro Seite, die neueste zuerst, und links/rechts blaettert zwischen den Versionen
