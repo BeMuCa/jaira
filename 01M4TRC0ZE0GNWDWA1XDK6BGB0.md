@@ -21,7 +21,7 @@ related: []
 follows: 01M2HW4788Z5G0M05G3PJDXV60
 commits: []
 created-at: 2026-10-13T13:48:57Z
-updated-at: 2026-10-17T23:56:10Z
+updated-at: 2026-10-18T00:04:22Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-297639
@@ -29,7 +29,7 @@ claimed-at: 2026-10-17T20:39:34Z
 outcome-what: "Board, jaira list und jaira show zeigen bei einer Ticket-Datei, die hinter ihrem Ref liegt, den Stand des Refs und markieren sie (Karte '⇣ behind', Zeile '[behind ref: pull it]', JSON behind-ref, show-Zeile 'behind')."
 outcome-why: "Ein in einem anderen Worktree oder von einem Teammitglied bewegtes Ticket stand hier in seiner alten Lane; die Erkennung (isStale, wie bei pull) gab es schon, sie wurde nur beim Lesen nicht genutzt."
 outcome-resolves: K6BGB0; deckt JDXV60 DoD 1 fuer den Ref-Fall ab
-review-summary: "none"
+review-summary: "Store.List (and so board, jaira list, jaira show) now asks the ref source via a new optional AheadSource interface which ticket files are older than their refs and swaps in the ref's ticket, keeping the file path and marking BehindRef. Output: card '⇣ pull' placed first, list '[behind ref: pull it]', JSON behind-ref, show row 'behind'. Load/Mutate still read the file, so every write goes through CheckFresh on the file bytes and is refused. isStale became a Syncer method used by CheckFresh, pull and Ahead alike: a same-second updated-at tie is broken by asking git whether the file's bytes are a blob the ref carried before (new gitref Repo.Had); CRLF-only differences count as equal; results cached per (id, sha256 file, sha256 ref). Ahead shares Extra's hash cache (one for-each-ref per listing, ReadMany only for new hashes) and skips tickets with an unsent queued write. Two release-note lines."
 round: 4
 review-gaps: "Runde 4: nichts entfernt. Stehen gelassen: zweiter Had-Aufruf fuer die LF-Form einer CRLF-Datei (nur bei CR in der Datei, gecacht); zweites for-each-ref pro List (~2 ms bei 60 Refs)."
 test-verdict: "pass: go vet + go test -race ./... RC=0; Review-Befunde 1-3 je mit Test (ohne Fix rot); Zwei-Worktree-Nachstellung im selben Sekundentakt mit Branch-Binary: list [behind ref: pull it], show todo/behind-ref true, note exit 3, Ref unveraendert"
