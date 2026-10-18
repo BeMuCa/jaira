@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:20Z
-updated-at: 2026-10-18T00:32:48Z
+updated-at: 2026-10-18T00:32:57Z
 updated-by: berkc
 claimed-by: berk-ca-703016
 claimed-at: 2026-10-18T00:32:08Z
@@ -45,4 +45,4 @@ claimed-at: 2026-10-18T00:32:08Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-18 00:32 · berkc** — Decided (open point in context): the popup after an upgrade pages only the unread versions (release.Since(base)), starts on the newest, and its title says how many: 'What is new since 0.5.0 · 3 unread'; the page header is '0.5.4 · 1/3'. 'w' pages every version, '0.5.3 · 1/12'. Why: the popup's job is the unread, 'w' already keeps the whole history one key away; marking unread pages inside a 12-page popup would add a second concept for the same count. Direction per DoD 2: left/h = older (next page number), right/l = newer; ends do nothing. j/k scrolling stays for a version longer than the screen and resets on a page change. Brainstorm and planning options unticked, so the ticket goes todo -> in-progress directly.
