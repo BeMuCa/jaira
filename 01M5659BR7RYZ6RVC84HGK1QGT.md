@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:20Z
-updated-at: 2026-10-18T00:49:50Z
+updated-at: 2026-10-18T00:49:52Z
 updated-by: berkc
 claimed-by: berk-ca-703016
 claimed-at: 2026-10-18T00:32:08Z
@@ -28,7 +28,7 @@ outcome-what: "Release notes view (internal/tui/releasenotes.go) shows one versi
 outcome-why: "Berk: notes should be split per version, newest by default, compact, with left/right to navigate; the long single list after a multi-version upgrade was hard to read."
 outcome-resolves: "DoD 1-4: one version per page with position header in popup and 'w'; left/right/h/l paging with inert ends; unread count in popup title; tests pin start page and paging, release note written."
 review-summary: "internal/tui/releasenotes.go: notesView now holds an index 'at' (0 = newest) and renders only entries[at] — a header line '<version> · i/n' under the title, that version's changes (! lines still styled), and the hint '←/→ older/newer · j/k scroll · esc close' (truncated to width). left/h moves to the older entry, right/l to the newer, both inert at the ends, and a page change resets scroll to 0; j/k/pgup/pgdown scroll inside a page as before. The board popup (openReleaseNotes) still pages release.Since(base), i.e. only versions newer than the seen record or stamp, and its title gains '· N unread'; markSeen on close is unchanged (records release.Current). The launcher's w still opens every version (release.Since(\"\")). Tests updated in home_test.go and releasenotes_test.go, plus core/release/notes/GK1QGT.md with two one-line notes."
-review-gaps: "Inlined the one-caller notesView.header into render (internal/tui/releasenotes.go:101), which also dropped its duplicate empty-list guard; DoD 1 proof updated. No duplication found: browse.go/dropboard.go share only the key names, not a pager. Nothing orphaned; no hot path."
+review-gaps: "none blocking. Checked: (1) real release build — simulated the release-notes workflow (loose notes moved into notes/0.5.4/, built -X main.version=0.5.4, board stamped 0.5.0, no notes-seen): popup reads 'What is new since 0.5.0 · 4 unread', pages 0.5.4 · 1/4 … 0.5.1, no Unreleased page; so the 'N unread counts Unreleased' effect is dev-tree-only. Residual, pre-existing and outside this ticket: a release tag built from a merge commit that also carries a loose note merged to master after the release branch was cut would show an 'Unreleased' page and count it. (2) markSeen: after esc, notes-seen = 0.5.4. (3) 0 entries: header and body skipped (v.at >= len guard); the popup never opens with 0 anyway. (4) long page: j scrolls and clamps, page change resets scroll. (5) 40x14 terminal: header, wrapped changes and hint fit; 30x h stops at 25/25. (6) keys: h/l/left/right were unbound in the notes view on both board (model.go modeReleaseNotes) and launcher (home.go h.notes branch, which returns before board keys), so no conflict. Minor: the hint names esc only though q/enter also close (pre-existing); with height < 6 render emits more lines than height (pre-existing, body floor of 1)."
 test-verdict: "pass: go vet + go test -race ./... RC=0 after go clean -testcache; DoD 1-4 verified in tree (proof lines + named tests run -v); tmux: w at 120x40 and 40x20 pages Unreleased 1/25 -> 0.5.3 2/25 and back, popup (0.5.3 build, stamp 0.5.0) '· 4 unread', 1/4..4/4, h past oldest stays 4/4, q closes and writes notes-seen 0.5.3"
 ---
 
