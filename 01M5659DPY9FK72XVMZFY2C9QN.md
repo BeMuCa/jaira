@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:22Z
-updated-at: 2026-10-18T00:32:01Z
+updated-at: 2026-10-18T00:32:03Z
 updated-by: berkc
 ---
 
@@ -32,6 +32,7 @@ updated-by: berkc
 - [ ] 'jaira boards types' listet die mitgelieferten Typen mit einer Zeile Beschreibung
 - [ ] Ein Board ohne --type bekommt die eingebauten Code-Lanes
 - [ ] Tests; Release-Note
+- [ ] 'boards create' verlangt eine Beschreibung (--description), die sagt, welche Tickets auf dieses Board gehoeren; ohne sie exit 2 mit Hinweis, wofuer der Teamlead sie braucht
 
 ## Options
 
