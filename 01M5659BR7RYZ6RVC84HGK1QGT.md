@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:20Z
-updated-at: 2026-10-18T00:39:58Z
+updated-at: 2026-10-18T00:40:00Z
 updated-by: berkc
 claimed-by: berk-ca-703016
 claimed-at: 2026-10-18T00:32:08Z
@@ -36,7 +36,8 @@ claimed-at: 2026-10-18T00:32:08Z
   proof: internal/tui/releasenotes.go:42-49; TestNotesViewStartsOnTheNewestAndPagesOneVersionAtATime (ends: right at newest, left at oldest)
 - [x] Nach einem Upgrade ueber mehrere Versionen sieht man, wie viele davon ungelesen sind
   proof: internal/tui/releasenotes.go:164 title '· N unread'; TestPopupAfterAnUpgradeAcrossVersionsCountsTheUnreadAndPagesThem
-- [ ] Test pinnt Startseite und Blaettern; Release-Note
+- [x] Test pinnt Startseite und Blaettern; Release-Note
+  proof: internal/tui/releasenotes_test.go:39,201; internal/tui/home_test.go:416; core/release/notes/GK1QGT.md
 
 ## Options
 
