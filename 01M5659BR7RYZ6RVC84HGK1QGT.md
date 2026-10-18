@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:20Z
-updated-at: 2026-10-18T00:40:00Z
+updated-at: 2026-10-18T00:40:02Z
 updated-by: berkc
 claimed-by: berk-ca-703016
 claimed-at: 2026-10-18T00:32:08Z
@@ -50,3 +50,4 @@ claimed-at: 2026-10-18T00:32:08Z
 
 ## Progress
 - **2026-10-18 00:32 · berkc** — Decided (open point in context): the popup after an upgrade pages only the unread versions (release.Since(base)), starts on the newest, and its title says how many: 'What is new since 0.5.0 · 3 unread'; the page header is '0.5.4 · 1/3'. 'w' pages every version, '0.5.3 · 1/12'. Why: the popup's job is the unread, 'w' already keeps the whole history one key away; marking unread pages inside a 12-page popup would add a second concept for the same count. Direction per DoD 2: left/h = older (next page number), right/l = newer; ends do nothing. j/k scrolling stays for a version longer than the screen and resets on a page change. Brainstorm and planning options unticked, so the ticket goes todo -> in-progress directly.
+- **2026-10-18 00:40 · berkc** — Found out: release.Since(base) includes the Unreleased entry whenever note files sit directly in core/release/notes/, so a local build (tmux, -X main.version=0.5.3, stamp 0.5.0) says '4 unread' with an 'Unreleased' first page. A cut release has no loose note files, so real builds count only versions. Left as is: Since is T8A8KM's selection, not this ticket's.
