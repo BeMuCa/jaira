@@ -425,10 +425,14 @@ func TestHomeWOpensReleaseNotesNewestFirst(t *testing.T) {
 	if h.notes == nil {
 		t.Fatal("w did not open the release notes")
 	}
-	out := stripANSI(h.render())
-	newest, older := lineIndex(out, all[0].Version), lineIndex(out, all[1].Version)
-	if newest < 0 || older < 0 || newest > older {
-		t.Fatalf("want %s before %s, got rows %d and %d:\n%s", all[0].Version, all[1].Version, newest, older, out)
+	// One version per page, the newest first; left pages to the older one.
+	first := fmt.Sprintf("%s · 1/%d", all[0].Version, len(all))
+	if out := stripANSI(h.render()); !strings.Contains(out, first) || lineIndex(out, all[1].Version) >= 0 {
+		t.Fatalf("want only %q on the first page:\n%s", first, out)
+	}
+	h.Update(tea.KeyPressMsg{Code: tea.KeyLeft})
+	if out, second := stripANSI(h.render()), fmt.Sprintf("%s · 2/%d", all[1].Version, len(all)); !strings.Contains(out, second) {
+		t.Fatalf("left did not page to %q:\n%s", second, out)
 	}
 
 	h.Update(tea.KeyPressMsg{Code: tea.KeyEsc})

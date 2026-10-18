@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,7 +22,7 @@ func fixtureNotes() []release.Entry {
 func TestNotesViewMarksImportantLines(t *testing.T) {
 	v := newNotesView("Release notes", fixtureNotes())
 	out := stripANSI(v.render(60, 30))
-	for _, want := range []string{"! run jaira update now", "- a plain change", "- an older change", "0.5.2", "0.5.1"} {
+	for _, want := range []string{"! run jaira update now", "- a plain change", "0.5.2"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q:\n%s", want, out)
 		}
@@ -30,8 +31,50 @@ func TestNotesViewMarksImportantLines(t *testing.T) {
 		t.Errorf("the marker was printed as a bullet and a marker:\n%s", out)
 	}
 	// An important line is its own styled run, not part of the plain ones.
-	if lines := v.lines(60); lipgloss.Width(lines[1]) != lipgloss.Width("! run jaira update now") {
-		t.Errorf("important line was padded: %q", lines[1])
+	if lines := v.lines(60); lipgloss.Width(lines[0]) != lipgloss.Width("! run jaira update now") {
+		t.Errorf("important line was padded: %q", lines[0])
+	}
+}
+
+func TestNotesViewStartsOnTheNewestAndPagesOneVersionAtATime(t *testing.T) {
+	v := newNotesView("Release notes", []release.Entry{
+		{Version: "0.5.3", Changes: []string{"newest change"}},
+		{Version: "0.5.2", Changes: []string{"middle change"}},
+		{Version: "0.5.1", Changes: []string{"oldest change"}},
+	})
+	page := func() string { return stripANSI(v.render(60, 30)) }
+	want := func(step, header, change string, absent ...string) {
+		t.Helper()
+		out := page()
+		if !strings.Contains(out, header) || !strings.Contains(out, change) {
+			t.Fatalf("%s: want %q and %q:\n%s", step, header, change, out)
+		}
+		for _, a := range absent {
+			if strings.Contains(out, a) {
+				t.Fatalf("%s: %q is on another page:\n%s", step, a, out)
+			}
+		}
+	}
+
+	want("start", "0.5.3 · 1/3", "newest change", "middle change", "oldest change", "0.5.2")
+	v.key("right") // already the newest: nothing happens
+	want("right at the newest", "0.5.3 · 1/3", "newest change")
+	v.key("left")
+	want("left", "0.5.2 · 2/3", "middle change", "newest change", "oldest change")
+	v.key("h")
+	want("h", "0.5.1 · 3/3", "oldest change", "middle change")
+	v.key("left") // already the oldest
+	want("left at the oldest", "0.5.1 · 3/3", "oldest change")
+	v.key("l")
+	want("l", "0.5.2 · 2/3", "middle change")
+	v.key("right")
+	want("right", "0.5.3 · 1/3", "newest change")
+
+	// A page change starts the next version at its top.
+	v.scroll = 5
+	v.key("left")
+	if v.scroll != 0 {
+		t.Errorf("scroll = %d after paging, want 0", v.scroll)
 	}
 }
 
@@ -152,6 +195,25 @@ func TestPopupAfterUpgradeShowsNotesSinceTheStamp(t *testing.T) {
 	out := stripANSI(m.render())
 	if !strings.Contains(out, "What is new since 0.5.0") || !strings.Contains(out, "0.5.1") {
 		t.Errorf("popup does not name the versions:\n%s", out)
+	}
+}
+
+func TestPopupAfterAnUpgradeAcrossVersionsCountsTheUnreadAndPagesThem(t *testing.T) {
+	unread := release.Since("0.5.0")
+	if len(unread) < 3 {
+		t.Skip("needs at least three releases after 0.5.0")
+	}
+	m := popupBoard(t, "0.5.3", "0.5.0", "")
+	out := stripANSI(m.render())
+	title := fmt.Sprintf("What is new since 0.5.0 · %d unread", len(unread))
+	first := fmt.Sprintf("%s · 1/%d", unread[0].Version, len(unread))
+	if !strings.Contains(out, title) || !strings.Contains(out, first) {
+		t.Fatalf("want %q and %q:\n%s", title, first, out)
+	}
+	press(m, "h")
+	second := fmt.Sprintf("%s · 2/%d", unread[1].Version, len(unread))
+	if out := stripANSI(m.render()); m.mode != modeReleaseNotes || !strings.Contains(out, second) {
+		t.Fatalf("h did not page to %q (mode %v):\n%s", second, m.mode, out)
 	}
 }
 

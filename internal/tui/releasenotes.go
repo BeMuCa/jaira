@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -12,13 +13,17 @@ import (
 // colour, bold, so it stands out from the plain changes around it.
 var styImportant = lipgloss.NewStyle().Foreground(colWarn).Bold(true)
 
-// notesView is a scrollable list of release notes, one block per version. The
-// launcher's "w" opens it with every release; the popup after a version change
-// opens it with the releases since the last one the user read.
+// notesView shows release notes one version per page, the newest first:
+// left/h pages to the older version, right/l back to the newer one, and j/k
+// scroll a version longer than the screen. The launcher's "w" opens it with
+// every release; the popup after a version change opens it with the releases
+// since the last one the user read.
 type notesView struct {
 	title   string
 	entries []release.Entry
-	scroll  int
+	// at is the version on screen, an index into entries: 0 is the newest.
+	at     int
+	scroll int
 	// page is how far pgup/pgdown move: the body height of the last render.
 	page int
 }
@@ -28,11 +33,20 @@ func newNotesView(title string, entries []release.Entry) *notesView {
 }
 
 // key handles one key and reports whether the view asked to be closed.
-// Scrolling uses the same keys the help screen does.
+// Scrolling uses the same keys the help screen does; paging past either end
+// does nothing.
 func (v *notesView) key(k string) (done bool) {
 	switch k {
 	case "esc", "q", "enter":
 		return true
+	case "left", "h":
+		if v.at < len(v.entries)-1 {
+			v.at, v.scroll = v.at+1, 0
+		}
+	case "right", "l":
+		if v.at > 0 {
+			v.at, v.scroll = v.at-1, 0
+		}
 	case "down", "j":
 		v.scroll++
 	case "up", "k":
@@ -47,38 +61,45 @@ func (v *notesView) key(k string) (done bool) {
 	return false
 }
 
-// lines lays the notes out for width. Each line is styled on its own, so a
-// wrapped change never leaves a padded block behind a prefix.
+// lines lays out the changes of the version on screen for width. Each line is
+// styled on its own, so a wrapped change never leaves a padded block behind a
+// prefix.
 func (v *notesView) lines(width int) []string {
+	if v.at >= len(v.entries) {
+		return nil
+	}
 	var out []string
-	for i, e := range v.entries {
-		if i > 0 {
-			out = append(out, "")
+	for _, c := range v.entries[v.at].Changes {
+		text, important := release.Important(c)
+		bullet, sty := "- ", lipgloss.NewStyle()
+		if important {
+			bullet, sty = "! ", styImportant
 		}
-		out = append(out, styLaneTitle.Render(e.Version))
-		for _, c := range e.Changes {
-			text, important := release.Important(c)
-			bullet, sty := "- ", lipgloss.NewStyle()
-			if important {
-				bullet, sty = "! ", styImportant
+		for j, l := range strings.Split(wrap(text, max(1, width-2), 0), "\n") {
+			lead := "  "
+			if j == 0 {
+				lead = bullet
 			}
-			for j, l := range strings.Split(wrap(text, max(1, width-2), 0), "\n") {
-				lead := "  "
-				if j == 0 {
-					lead = bullet
-				}
-				out = append(out, sty.Render(lead+l))
-			}
+			out = append(out, sty.Render(lead+l))
 		}
 	}
 	return out
 }
 
-// render draws the title, the visible slice of the notes and the key hint,
-// at most height lines. The scroll offset is clamped here, where the length is
-// known.
+// header names the version on screen and where it sits: "0.5.4 · 1/12".
+func (v *notesView) header(width int) string {
+	if v.at >= len(v.entries) {
+		return ""
+	}
+	pos := fmt.Sprintf(" · %d/%d", v.at+1, len(v.entries))
+	return styLaneTitle.Render(truncate(v.entries[v.at].Version, max(1, width-lipgloss.Width(pos)))) + styMeta.Render(pos)
+}
+
+// render draws the title, the version header, the visible slice of its
+// changes and the key hint, at most height lines. The scroll offset is clamped
+// here, where the length is known.
 func (v *notesView) render(width, height int) string {
-	body := max(1, height-4)
+	body := max(1, height-5)
 	v.page = max(1, body-1)
 	all := v.lines(width)
 	v.scroll = min(v.scroll, max(0, len(all)-body))
@@ -86,8 +107,9 @@ func (v *notesView) render(width, height int) string {
 
 	var b strings.Builder
 	b.WriteString(styLaneTitle.Render(truncate(v.title, width)) + "\n\n")
+	b.WriteString(v.header(width) + "\n")
 	b.WriteString(strings.Join(all[v.scroll:end], "\n"))
-	b.WriteString("\n\n" + styMeta.Render("j/k scroll · esc close"))
+	b.WriteString("\n\n" + styMeta.Render(truncate("←/→ older/newer · j/k scroll · esc close", width)))
 	return b.String()
 }
 
@@ -139,7 +161,7 @@ func (m *Model) openReleaseNotes() {
 		markSeen(dir)
 		return
 	}
-	m.notes = newNotesView("What is new since "+base, entries)
+	m.notes = newNotesView(fmt.Sprintf("What is new since %s · %d unread", base, len(entries)), entries)
 	m.returnTo = modeBoard
 	m.mode = modeReleaseNotes
 }
