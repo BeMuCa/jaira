@@ -1,7 +1,7 @@
 ---
 id: 01M5659BR7RYZ6RVC84HGK1QGT
 title: "Die Release-Notes zeigen eine Version pro Seite, die neueste zuerst, und links/rechts blaettert zwischen den Versionen"
-status: review
+status: signoff
 ready: true
 creator: berkc
 assignee: berkc
@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:20Z
-updated-at: 2026-10-18T00:49:56Z
+updated-at: 2026-10-18T00:50:01Z
 updated-by: berkc
 claimed-by: berk-ca-703016
 claimed-at: 2026-10-18T00:32:08Z
