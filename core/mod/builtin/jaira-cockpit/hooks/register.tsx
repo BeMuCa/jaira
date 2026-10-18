@@ -3,7 +3,7 @@ import type { EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
 import {
   branchesFor, carrierBranch, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, dispatchLane, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
-  explanationNotes, explanationOf, isOlder, lanesOf, MIN_JAIRA, nextToStart, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
+  explanationNotes, explanationOf, isOlder, lanesOf, MIN_JAIRA, otherBoardsOf, nextToStart, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   type Action, type Agent, type Option, type Waiting,
 } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
@@ -278,9 +278,10 @@ async function refreshBoard($: EngineInterface): Promise<void> {
     await update($, boardAtom, () => null)
     return
   }
-  const [lanes, list] = await Promise.all([
+  const [lanes, list, boards] = await Promise.all([
     run($, ['jaira', 'lanes', '--json'], board.dir),
     run($, ['jaira', 'list', '--json'], board.dir),
+    run($, ['jaira', 'boards', '--json'], board.dir),
   ])
   if (lanes?.exitCode !== 0 || list?.exitCode !== 0) return
   const { bin, tabs, agents } = await agentsOf($, board.dir)
@@ -290,6 +291,23 @@ async function refreshBoard($: EngineInterface): Promise<void> {
     me = who?.exitCode === 0 ? whoOf(who.stdout) : undefined
   }
   const view: BoardView = snapshotOf(lanes.stdout, list.stdout, tabs, agents, me)
+  // Every other board of the repository, each by its own lanes: a ticket
+  // there waits in a lane today's board may not have. A board whose read
+  // fails — a jaira whose lanes take no --board — is left out, not the band.
+  const b = board
+  for (const name of boards?.exitCode === 0 ? otherBoardsOf(boards.stdout) : []) {
+    const [l, li] = await Promise.all([
+      run($, ['jaira', 'lanes', '--board', name, '--json'], b.dir),
+      run($, ['jaira', 'list', '--board', name, '--json'], b.dir),
+    ])
+    if (l?.exitCode !== 0 || li?.exitCode !== 0) continue
+    const other = snapshotOf(l.stdout, li.stdout, tabs, agents, me)
+    view.waiting.push(...other.waiting)
+    view.theirs.push(...other.theirs)
+    view.counts.worker += other.counts.worker
+    view.counts.review += other.counts.review
+    view.counts.person += other.counts.person
+  }
   await update($, boardAtom, () => view)
   // What an Explain chat wrote back onto the tickets the band shows, Explain
   // or not: an explanation stays readable after a later round, only asking
