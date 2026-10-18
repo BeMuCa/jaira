@@ -1,7 +1,7 @@
 ---
 id: 01M5659BR7RYZ6RVC84HGK1QGT
 title: "Die Release-Notes zeigen eine Version pro Seite, die neueste zuerst, und links/rechts blaettert zwischen den Versionen"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: berkc
@@ -20,10 +20,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:20Z
-updated-at: 2026-10-18T00:40:02Z
+updated-at: 2026-10-18T00:40:04Z
 updated-by: berkc
 claimed-by: berk-ca-703016
 claimed-at: 2026-10-18T00:32:08Z
+outcome-what: "Release notes view (internal/tui/releasenotes.go) shows one version per page with header 'version · n/N', newest first; left/h older, right/l newer, no-op at ends; j/k scroll within a page and reset on page change; popup title adds '· N unread'. Tests + release note GK1QGT.md."
+outcome-why: "Berk: notes should be split per version, newest by default, compact, with left/right to navigate; the long single list after a multi-version upgrade was hard to read."
+outcome-resolves: "DoD 1-4: one version per page with position header in popup and 'w'; left/right/h/l paging with inert ends; unread count in popup title; tests pin start page and paging, release note written."
 ---
 
 # Die Release-Notes zeigen eine Version pro Seite, die neueste zuerst, und links/rechts blaettert zwischen den Versionen
