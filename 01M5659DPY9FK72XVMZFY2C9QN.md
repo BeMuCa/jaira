@@ -4,7 +4,7 @@ title: Ein zweites Board laesst sich mit einem Befehl aus einem Board-Typ anlege
 status: backlog
 ready: true
 creator: berkc
-assignee: BeMuCa
+assignee: berkc
 goal: "'jaira boards create <name> --type <typ>' legt ein Board mit den Lanes und der Beschreibung eines Board-Typs an (z.B. code, research, content), und jaira liefert ein paar Typen mit."
 context: |-
   Berk am 18.10.: 'Im Moment haben wir nur 1 Board. Wir wollen mehrere Board-Typen ermoeglichen.'
@@ -20,7 +20,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:22Z
-updated-at: 2026-10-18T00:06:22Z
+updated-at: 2026-10-18T00:32:01Z
+updated-by: berkc
 ---
 
 # Ein zweites Board laesst sich mit einem Befehl aus einem Board-Typ anlegen statt Lane-Dateien von Hand zu kopieren
