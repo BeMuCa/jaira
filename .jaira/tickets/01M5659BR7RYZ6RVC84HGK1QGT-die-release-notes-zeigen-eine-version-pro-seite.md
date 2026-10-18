@@ -1,7 +1,7 @@
 ---
 id: 01M5659BR7RYZ6RVC84HGK1QGT
 title: "Die Release-Notes zeigen eine Version pro Seite, die neueste zuerst, und links/rechts blaettert zwischen den Versionen"
-status: critique
+status: testing
 ready: true
 creator: berkc
 assignee: berkc
@@ -20,13 +20,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:20Z
-updated-at: 2026-10-18T00:40:04Z
+updated-at: 2026-10-18T00:41:22Z
 updated-by: berkc
 claimed-by: berk-ca-703016
 claimed-at: 2026-10-18T00:32:08Z
 outcome-what: "Release notes view (internal/tui/releasenotes.go) shows one version per page with header 'version · n/N', newest first; left/h older, right/l newer, no-op at ends; j/k scroll within a page and reset on page change; popup title adds '· N unread'. Tests + release note GK1QGT.md."
 outcome-why: "Berk: notes should be split per version, newest by default, compact, with left/right to navigate; the long single list after a multi-version upgrade was hard to read."
 outcome-resolves: "DoD 1-4: one version per page with position header in popup and 'w'; left/right/h/l paging with inert ends; unread count in popup title; tests pin start page and paging, release note written."
+review-summary: "No findings. Paging lives in notesView (internal/tui/releasenotes.go) as one index 'at' beside the existing scroll — no new type, both callers (home.go w, model.go popup) unchanged. h/left, l/right match browse.go:109 and dropboard.go:96. The two 'at >= len(entries)' guards cover an empty entry list, which newNotesView accepts from home.go; kept rather than relying on NOTES.md never being empty. Popup-only-unread is the decision in the first note; not reopened."
+review-gaps: "Inlined the one-caller notesView.header into render (internal/tui/releasenotes.go:101), which also dropped its duplicate empty-list guard; DoD 1 proof updated. No duplication found: browse.go/dropboard.go share only the key names, not a pager. Nothing orphaned; no hot path."
 ---
 
 # Die Release-Notes zeigen eine Version pro Seite, die neueste zuerst, und links/rechts blaettert zwischen den Versionen
@@ -34,7 +36,7 @@ outcome-resolves: "DoD 1-4: one version per page with position header in popup a
 ## Definition of Done
 
 - [x] Popup und 'w' zeigen genau eine Version pro Seite, die neueste zuerst, mit Kopfzeile Version und Position (z.B. 0.5.4 · 1/12)
-  proof: internal/tui/releasenotes.go:90 header + lines() one entry; TestNotesViewStartsOnTheNewestAndPagesOneVersionAtATime, TestHomeWOpensReleaseNotesNewestFirst
+  proof: internal/tui/releasenotes.go:101-104 header 'version · n/N' + lines() one entry; TestNotesViewStartsOnTheNewestAndPagesOneVersionAtATime, TestHomeWOpensReleaseNotesNewestFirst
 - [x] Pfeil links/rechts (und h/l) blaettert zur aelteren/neueren Version, an den Enden passiert nichts
   proof: internal/tui/releasenotes.go:42-49; TestNotesViewStartsOnTheNewestAndPagesOneVersionAtATime (ends: right at newest, left at oldest)
 - [x] Nach einem Upgrade ueber mehrere Versionen sieht man, wie viele davon ungelesen sind

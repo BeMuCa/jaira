@@ -86,16 +86,7 @@ func (v *notesView) lines(width int) []string {
 	return out
 }
 
-// header names the version on screen and where it sits: "0.5.4 · 1/12".
-func (v *notesView) header(width int) string {
-	if v.at >= len(v.entries) {
-		return ""
-	}
-	pos := fmt.Sprintf(" · %d/%d", v.at+1, len(v.entries))
-	return styLaneTitle.Render(truncate(v.entries[v.at].Version, max(1, width-lipgloss.Width(pos)))) + styMeta.Render(pos)
-}
-
-// render draws the title, the version header, the visible slice of its
+// render draws the title, the version and its position ("0.5.4 · 1/12"), the visible slice of its
 // changes and the key hint, at most height lines. The scroll offset is clamped
 // here, where the length is known.
 func (v *notesView) render(width, height int) string {
@@ -107,7 +98,11 @@ func (v *notesView) render(width, height int) string {
 
 	var b strings.Builder
 	b.WriteString(styLaneTitle.Render(truncate(v.title, width)) + "\n\n")
-	b.WriteString(v.header(width) + "\n")
+	if v.at < len(v.entries) {
+		pos := fmt.Sprintf(" · %d/%d", v.at+1, len(v.entries))
+		b.WriteString(styLaneTitle.Render(truncate(v.entries[v.at].Version, max(1, width-lipgloss.Width(pos)))) + styMeta.Render(pos))
+	}
+	b.WriteString("\n")
 	b.WriteString(strings.Join(all[v.scroll:end], "\n"))
 	b.WriteString("\n\n" + styMeta.Render(truncate("←/→ older/newer · j/k scroll · esc close", width)))
 	return b.String()
