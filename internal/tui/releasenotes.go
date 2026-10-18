@@ -86,9 +86,9 @@ func (v *notesView) lines(width int) []string {
 	return out
 }
 
-// render draws the title, the version and its position ("0.5.4 · 1/12"), the visible slice of its
-// changes and the key hint, at most height lines. The scroll offset is clamped
-// here, where the length is known.
+// render draws the title, the version and its position ("0.5.4 · 1/12"), the
+// visible slice of its changes and the key hint, at most height lines. The
+// scroll offset is clamped here, where the length is known.
 func (v *notesView) render(width, height int) string {
 	body := max(1, height-5)
 	v.page = max(1, body-1)
