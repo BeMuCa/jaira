@@ -4,7 +4,7 @@ title: "Die Release-Notes zeigen eine Version pro Seite, die neueste zuerst, und
 status: backlog
 ready: true
 creator: berkc
-assignee: BeMuCa
+assignee: berkc
 goal: "Wer die Release-Notes liest (Popup nach einem Upgrade und 'w' im Launcher), sieht zuerst nur die neueste Version kurz und knapp und blaettert mit links/rechts zu aelteren und zurueck."
 context: |-
   Berk am 18.10.: 'Ich wuerde es pro Version aufteilen. Standardmaessig die neueste sehen, kurz, kompakt, praezise. Dann mit links oder rechts zwischen den Versionen navigieren.'
@@ -20,7 +20,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:20Z
-updated-at: 2026-10-18T00:06:20Z
+updated-at: 2026-10-18T00:32:00Z
+updated-by: berkc
 ---
 
 # Die Release-Notes zeigen eine Version pro Seite, die neueste zuerst, und links/rechts blaettert zwischen den Versionen
