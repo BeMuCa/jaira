@@ -20,8 +20,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:20Z
-updated-at: 2026-10-18T00:32:00Z
+updated-at: 2026-10-18T00:32:08Z
 updated-by: berkc
+claimed-by: berk-ca-703016
+claimed-at: 2026-10-18T00:32:08Z
 ---
 
 # Die Release-Notes zeigen eine Version pro Seite, die neueste zuerst, und links/rechts blaettert zwischen den Versionen
