@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -66,9 +65,10 @@ Stop it with Ctrl-C.`,
 				return fail(ExitError, "listen", "cannot listen on 127.0.0.1:%d: %v", port, err)
 			}
 			// A log that cannot be opened costs the record, not the page: the
-			// command warns and serves on without one.
+			// command warns and serves on, writing what it would have logged
+			// to stderr as it did before there was a log.
 			logPath := filepath.Join(s.StateDir(), "web.log")
-			logger := web.NewLogger(io.Discard)
+			logger := web.NewLogger(cmd.ErrOrStderr())
 			if logFile, err := web.OpenLog(logPath); err != nil {
 				fmt.Fprintf(cmd.ErrOrStderr(), "jaira web: cannot open the log %s (%v); running without one\n", logPath, err)
 				logPath = ""
