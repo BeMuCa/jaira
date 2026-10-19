@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T06:45:49Z
+updated-at: 2026-10-19T06:46:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16821
 claimed-at: 2026-10-19T06:27:46Z
@@ -78,3 +78,4 @@ mode: conversational
 - **2026-10-19 06:43 · Alexander Sacharov** — DoD 4: R im Board und in der Detailansicht; leere Begruendung laesst den Prompt offen (ohne Grund = x). Art auf dem Board immer wontfix. Hilfe: x und R teilen eine Zeile, weil TestHelpExplainsEveryCardMark bei 60 Zeilen Hoehe sonst '@name' abschneidet. README/COMMANDS.md schon hier ergaenzt, weil TestEveryCommandIsDocumented sonst rot ist.
 - **2026-10-19 06:44 · Alexander Sacharov** — Alex (via jaira-a7) hat DoD 4 abgenommen. Weiter mit DoD 5 (archive-Liste, show).
 - **2026-10-19 06:45 · Alexander Sacharov** — DoD 5: archive --json behaelt 'archived' als Namensliste und bekommt daneben 'rejected' (Datei -> kind/why/by/at), damit bestehende Leser nicht brechen. show --json hat jetzt immer einen 'rejected'-Block (leer, wenn nicht abgelehnt), wie 'outcome'.
+- **2026-10-19 06:46 · Alexander Sacharov** — Alex (via jaira-a7) hat DoD 5 abgenommen; ab jetzt keine Diff-Stopps pro Punkt mehr, Ticket bis signoff tragen. Commit-Zeilen weiter an jaira-a7, Alex committet.
