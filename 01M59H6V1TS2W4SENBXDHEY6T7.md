@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T13:47:50Z
+updated-at: 2026-10-19T13:47:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-27212
 claimed-at: 2026-10-19T13:47:43Z
@@ -32,6 +32,8 @@ review-summary: "jaira web oeffnet beim Start <StateDir>/web.log (ausserhalb des
 review-gaps: "1 (blockiert Push, nicht Code): die in d89bb20c committete Ticketdatei enthaelt private Daten gegen Alex' Regel vom 19.10. - fremder Projektname (requirementsgenie, requirementsgenie-harness) im Kontext Zeile 14-15 und Note 12:48, PIDs 17706/92131, Home-Pfad /home/alex/.jaira/state/... in Note 12:54. Laut Entscheidung 13:46 gibt Alex die Bereinigung selbst frei; bis dahin weder Branch noch Ref pushen. 2 (klein): der Kommentar an logKeep verspricht, dass ein wochenlang offener Lauf die Platte nie fuellt - rotiert wird aber nur beim Start; waehrend eines Laufs waechst das Log unbegrenzt (praktisch klein: ein dauerhaft scheiternder Fetch ~1 Zeile/min). 3 (klein): kann web.log nicht geoeffnet werden, startet jaira web gar nicht (fail 'log') - frueher lief es ohne; ein nicht beschreibbares State-Verzeichnis ist jetzt fatal. Sonst: DoD 1-3 und 5 vom Diff gedeckt; DoD 4 per Entscheidung als Note geschlossen, Ursache nicht gefunden. GOOS=windows go build ./... ok, go vet ok, go test -race ./core/web ok."
 test-verdict: "pass: go test -race -count=1 ./... RC=0; DoD 1,2,3,5 verified in the tree and live (scratch binary: log path printed, 404 and SIGHUP logged; headless Chrome: banner appears ~10 s after the command is killed, disappears after restart); DoD 4 needs a log from Alex' own run"
 question: ""
+review-verdict: "Der Code erfuellt die Definition of Done; keine Defekte gefunden, nur zwei kleine Unschaerfen (Kommentar zu Rotation, Log-Fehler ist fatal). Nicht pushbar, solange die privaten Daten in der committeten Ticketdatei stehen - das entscheidet Alex (Note 13:46)."
+review-round: 1
 ---
 
 # jaira web schreibt mit, was passiert, und ein Absturz hinterlaesst seine Ursache
