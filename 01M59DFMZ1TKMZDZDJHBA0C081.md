@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T06:36:46Z
+updated-at: 2026-10-19T06:37:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16821
 claimed-at: 2026-10-19T06:27:46Z
@@ -72,3 +72,4 @@ mode: conversational
 - **2026-10-19 06:33 · Alexander Sacharov** — decision (Alex via jaira-a7): Q3 -> Option 1: flache Keys rejected-kind, rejected-why, rejected-by, rejected-at wie outcome-*. DoD 1/5 'rejected.kind/why/by/at' und 'rejected-Block' sind damit diese vier Keys.
 - **2026-10-19 06:35 · Alexander Sacharov** — scope (Teamlead via jaira-a7): Web-Portal-Teil von DoD 5 wandert nach TPCKZB (Web-Filter, parallel auf feat/tpckzb) - zwei Branches an core/web gleichzeitig wuerden kollidieren. TPCKZB zeigt rejected-* an, wenn vorhanden. Hier wird core/web nicht angefasst.
 - **2026-10-19 06:36 · Alexander Sacharov** — decision (worker): --duplicate-of verlinkt ueber related (bestehendes Feld, von beiden Seiten sichtbar) statt eines fuenften Keys - Alex hat genau vier rejected-* Keys entschieden. Das Original wird mit LoadAnywhere gesucht, damit ein Duplikat eines schon abgelegten Tickets geht. Doc.Remove (frontmatter.go) ist neu: restore nimmt die Keys ganz ab statt sie leer stehen zu lassen. DoD 1-3 in einem Schritt gebaut, weil sie ein Befehl sind.
+- **2026-10-19 06:37 · Alexander Sacharov** — Alex (via jaira-a7) hat DoD 1-3 abgenommen; nicht committen, Alex committet selbst. Weiter mit DoD 4 (Taste R).
