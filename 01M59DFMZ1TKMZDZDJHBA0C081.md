@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T08:20:15Z
+updated-at: 2026-10-19T08:20:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35137
 claimed-at: 2026-10-19T08:18:23Z
@@ -38,8 +38,8 @@ review-summary: "jaira reject <id> --why <text> --force schreibt rejected-kind/w
 round: 4
 review-gaps: "Blockierend: nichts. (1) Die Aenderungen aus optimize, Runde 3 und Runde 4 (store.go, reject.go, reject_test.go, model.go, tui/reject_test.go, Release-Note) sind weiter uncommittet - ohne Commit fehlen sie im Merge, siehe review-check Schritt 0. (2) Kosmetisch, nicht DoD: restore laesst den related-Eintrag aus --duplicate-of stehen; R stempelt mit dem beim Druecken gehaltenen t (Mutate liest aber frisch, MergeCommits vereinigt, also kein Verlust). Der entfernte nil-Guard in confirmReject ist sicher: modeReject wird nur ueber startReject betreten, das rejecting setzt."
 test-verdict: "pass (Runde 4): go clean -testcache; go test ./... -race RC=0; TestRejectOnTheBoardStampsCommits gruen und mit auskommentierter StampCommits-Zeile rot (FAIL) - die Pruefung haengt wirklich an der Aenderung. DoD 1-8 wie Runde 3."
-review-verdict: "approve - DoD 1-8 im Diff belegt, go vet sauber, go test ./... -race gruen, End-to-end in einem Wegwerf-Repo nachgespielt (Exit 3/2/5/2/0, archive, show, restore). Vor dem Merge muessen die uncommitteten Aenderungen committet werden."
-review-round: 3
+review-verdict: "approve: DoD 1-9 im Diff belegt; go vet und go test ./... -race gruen; TestRejectOnTheBoardStampsCommits ohne die StampCommits-Zeile rot gesehen; per Binary nachgespielt: Selbst-Duplikat Exit 2, mehrzeiliger Grund als 'a b c' eingerueckt im Archiv, show zeigt rejected und den gestempelten Commit."
+review-round: 4
 review-check: "0. Erst committen, im Worktree /home/alex/projects/.worktrees/jaira-a0c081: git add core/release/notes/A0C081.md core/ticket/store.go internal/cli/reject.go internal/cli/reject_test.go internal/tui/model.go .jaira/tickets/01M59DFMZ1TKMZDZDJHBA0C081-ein-ticket-laesst-sich-mit-grund-ablehnen-jaira.md && git commit -m 'fix(A0C081): reject folds a multi-line reason and refuses a duplicate of itself before it writes'  1. go build -o /tmp/jr ./cmd/jaira  2. In einem leeren Git-Repo: /tmp/jr init, dann zwei Tickets mit /tmp/jr create anlegen (Handles A und B)  3. /tmp/jr reject A --why x -> Exit 3, Meldung nennt 'jaira move A --to human --question'  4. /tmp/jr reject A --force -> Exit 2 'reject needs --why'  5. /tmp/jr reject A --why x --duplicate-of A --force -> Exit 2 'cannot be a duplicate of itself'; ZZZZZZ statt A -> Exit 5  6. /tmp/jr reject A --why $'nicht\\nmehr noetig' --duplicate-of B --force -> 'Rejected A (duplicate)'  7. /tmp/jr archive -> unter der Datei eine eingerueckte Zeile 'rejected duplicate: nicht mehr noetig (<du>, <datum>)'  8. /tmp/jr show A -> Zeile 'rejected duplicate: ...'  9. /tmp/jr restore <datei> -> grep rejected .jaira/tickets/* findet nichts  10. /tmp/jr im Repo starten, Ticket waehlen, R druecken, Grund tippen, Enter -> Ticket verschwindet, Meldung 'Rejected ...' mit restore-Befehl"
 ---
 
