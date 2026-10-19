@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T18:36:25Z
+updated-at: 2026-10-19T19:29:04Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-25649
@@ -80,3 +80,4 @@ claimed-at: 2026-10-19T18:18:27Z
 - **2026-10-19 18:33 · Alexander Sacharov** — decision (Alex via Teamlead, 19.10.2026): Schritt 1 (DoD 1+8) angenommen. Konfliktmarker englisch: '<!-- jaira: changed at the same time -->' plus sichtbare fette Zeile - ersetzt den deutschen Wortlaut der Entscheidung von 06:48.
 - **2026-10-19 18:34 · Alexander Sacharov** — Merge: Texte werden ueber plain() verglichen - eine Ueberschrift '# <eigener Titel>' am Textanfang wird durch titleMark ersetzt. Sonst wuerde ein Umbenennen (das die Ueberschrift mit aendert) auf einem Klon und ein neuer Absatz auf dem anderen als Konflikt gelten. Erster Entwurf mit Sonderfaellen fuer 'ours hat nur umbenannt' war unlesbar, deshalb verworfen. Konfliktblock: '<!-- jaira: changed at the same time -->' + fette sichtbare Zeile + fremder Wert + End-Kommentar; leerer fremder Wert erscheint als '(empty)'.
 - **2026-10-19 18:36 · Alexander Sacharov** — Kritik Stueck 2: retitle und plain entschieden 'ist die erste Ueberschrift der Titel?' verschieden (oneLine nur auf einer Seite). Jetzt ein Helfer titleLine(), beide nutzen ihn; TestTheTitleHeadingIsFoundOneWay.
+- **2026-10-19 19:29 · Alexander Sacharov** — decision (Alex via Teamlead, 19.10.2026): Schritt 2 (DoD 4, Merge-Konfliktblock inkl. titleLine-Fix) angenommen; weiter mit Schritt 3 (CLI).
