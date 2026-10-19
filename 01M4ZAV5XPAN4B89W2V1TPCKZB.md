@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:49:41Z
+updated-at: 2026-10-19T06:49:44Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -95,3 +95,4 @@ Ich nehme A: die Datenmenge ist klein, Filtern im Browser ist sofort, die URL tr
 - **2026-10-19 06:46 · Alexander Sacharov** — critique Runde 1 umgesetzt: link.PlaceOf exportiert (core/link/link.go:196) und in web_source.go benutzt; Ortsbezeichnungen als PLACE_LABELS in entities/ticket/model/place.ts, TicketCard und TicketDetails lesen sie. Proofs 3/4/7 auf neue Zeilen gesetzt.
 - **2026-10-19 06:46 · Alexander Sacharov** — critique Runde 2: beide Befunde aus Runde 1 erledigt (filedPlace weg, link.PlaceOf benutzt; PLACE_LABELS in beiden Komponenten). Nichts weiter — gemaess Lane-Regel nur diese Stellen gelesen.
 - **2026-10-19 06:48 · Alexander Sacharov** — decision (Alex, 19.10.2026 via teamlead jaira-a7): 'lanes must be told apart by colour' im Web. Vorgaben: kein neues Lane-Frontmatter-Feld ohne Rueckfrage; Quelle selbst waehlen (z.B. feste Palette nach Lane-Reihenfolge des Boards, terminal/human erkennbar); lesbar in hellem und dunklem Theme. Heute: .jaira/lanes/*.md tragen keine Farbe; die TUI wechselt nur einen Lane-Schatten (internal/tui/view.go:656 laneShade).
+- **2026-10-19 06:49 · Alexander Sacharov** — testing Runde 1: go vet ./... RC=0, go test -count=1 -race ./... RC=0, npm ci && npm run build laesst dist unveraendert (CI-Check web-dist). Headless-Chrome auf diesem Repo: ?all=1&q=web&person=Alexander+Sacharov zeigt 3 Karten mit Ort (ref, logbook); ?all=1&date=filed&from=2026-10-17&to=2026-10-17 zeigt genau 8NHD8Q und S0EG0M (Ordner as-20261017). Playwright auf Scratch-Board mit abgelehntem Archiv-Ticket: Schalter setzt ?all=1, Karte nicht ziehbar, Dialog zeigt 'in the archive' und 'Rejected: wontfix | Ada Lovelace,10/2/26 | nobody needs it'. Befunde: 1) DoD 9 (Lane-Farben) ist neu und offen. 2) TicketDetails.svelte: zwischen rejected.by und Datum fehlt das Leerzeichen nach dem Komma (Svelte schneidet das Leerzeichen am Ende des {#if}-Blocks ab) — als {', '} schreiben.
