@@ -1,7 +1,7 @@
 ---
 id: 01M4ZAV5XPAN4B89W2V1TPCKZB
 title: "Web-Seite: Filter und Tickets aus Logbook und Archiv anzeigen"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Auf der Seite von 'jaira web' sieht man jedes Ticket, das es je gab — offen, nur auf dem Ref, im Logbuch oder im Archiv — und filtert es nach Text, Lane, Tag, Person und Datum, mit den Filtern in der URL."
@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:45:02Z
+updated-at: 2026-10-19T06:45:05Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -33,6 +33,7 @@ outcome-resolves: "GET /api/unassigned?all=1 und neue Kartenfelder (web_source.g
 review-summary: |-
   internal/cli/web_source.go filedPlace copies core/link/link.go:196 placeOf line for line — export it as link.PlaceOf and call it from web_source.go
   core/web/ui/src/entities/ticket/ui/TicketCard.svelte PLACES and the place lines in widgets/ticket-details/ui/TicketDetails.svelte name the same four places in two wordings — export one label map from entities/ticket/model/place.ts beside isFiled and use it in both
+round: 2
 ---
 
 # Web-Seite: Filter und Tickets aus Logbook und Archiv anzeigen
