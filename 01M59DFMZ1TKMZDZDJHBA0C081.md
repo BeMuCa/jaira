@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T07:04:21Z
+updated-at: 2026-10-19T07:04:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9569
 claimed-at: 2026-10-19T07:04:10Z
@@ -40,6 +40,7 @@ review-gaps: "1) Die Aenderungen der optimize-Lane (archiveTarget-Extraktion in 
 test-verdict: "pass: go clean -testcache; go test ./... -race RC=0. DoD 1-3, 5 auf einem Scratch-Board mit dem gebauten Binaer gesehen: reject ohne --force RC=3 mit human-Weg, ohne --why RC=2, --duplicate-of ZZZZZZ RC=5, mit --duplicate-of: kind duplicate + related, archive-Liste und show zeigen 'duplicate: gleiches Thema (Alexander Sacharov, 2026-10-19)', restore RC=0 und 0 rejected-Zeilen im Ticket. DoD 4 (Taste R) nur ueber die Modell-Tests (TestRejectOnTheBoardWritesTheReason, ...Cancelled...), kein interaktives Terminal hier. DoD 6: notes/A0C081.md, Agent-Block, Skill im Baum."
 review-verdict: "Der Diff erfuellt alle sechs DoD-Punkte; per Hand nachgeprueft: Exit 2/3/5, duplicate+related, archive-Liste, show, restore nimmt die Felder ab, Sonderzeichen und Umlaute im Grund werden korrekt als YAML geschrieben. go vet und go test ./core/... ./internal/... -race gruen. Keine Defekte, die zurueckschicken rechtfertigen. Vor dem Annehmen: die uncommitteten optimize-Aenderungen committen (Gap 1). Gap 2 (mehrzeiliger Grund in der Archiv-Liste) ist kosmetisch - Mensch entscheidet, ob es hier noch rein soll."
 review-round: 2
+review-check: "0. Zuerst die liegengebliebenen optimize-Aenderungen committen: git add core/ticket/store.go internal/cli/reject_test.go internal/tui/model.go .jaira/tickets/01M59DFMZ1TKMZDZDJHBA0C081-ein-ticket-laesst-sich-mit-grund-ablehnen-jaira.md && git commit -m 'refactor(A0C081): one archive-target check for archive and reject'  1. go build -o /tmp/jaira ./cmd/jaira  2. In einem Wegwerf-Repo: git init, /tmp/jaira init, zwei Tickets mit /tmp/jaira create 'a' --goal g --context c --dod d anlegen (Handles merken: A und B)  3. /tmp/jaira reject A -> Exit 2, Meldung 'reject needs --why'  4. /tmp/jaira reject A --why x -> Exit 3, Meldung nennt 'jaira move A --to human --question'  5. /tmp/jaira reject A --why 'doppelt' --duplicate-of ZZZZZZ --force -> Exit 5  6. /tmp/jaira reject A --why 'doppelt' --duplicate-of B --force -> 'Rejected A (duplicate)'  7. /tmp/jaira archive -> unter der Datei die Zeile 'rejected duplicate: doppelt (<du>, <datum>)'  8. /tmp/jaira show A -> Zeilen 'related B' und 'rejected duplicate: doppelt ...'  9. /tmp/jaira restore <datei aus Schritt 7> und dann grep rejected .jaira/tickets/*A* -> keine Treffer  10. /tmp/jaira oeffnen, B markieren, R druecken, 'ueberholt' tippen, Enter -> Meldung 'Rejected B: ueberholt', B ist vom Board weg; dasselbe in einer offenen Detailansicht, dort bricht esc ab und das Ticket bleibt."
 ---
 
 # Ein Ticket laesst sich mit Grund ablehnen: jaira reject, und das Archiv sagt warum
