@@ -1,7 +1,7 @@
 ---
 id: 01M59DFMZ1TKMZDZDJHBA0C081
 title: "Ein Ticket laesst sich mit Grund ablehnen: jaira reject, und das Archiv sagt warum"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -26,14 +26,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T20:47:14Z
+updated-at: 2026-10-19T20:47:28Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-4026"
 claimed-at: 2026-10-19T20:44:55Z
 mode: conversational
-outcome-what: "Neuer Befehl jaira reject <id> --why [--kind wontfix|obsolete] [--duplicate-of] [--force] schreibt rejected-kind/why/by/at (bei --duplicate-of auch rejected-duplicate-of) und archiviert ueber Store.Archive; Taste R auf dem Board; archive-Liste und show zeigen den Grund und das Original; restore nimmt die Felder und den related-Link aus --duplicate-of ab (Doc.Remove)."
+outcome-what: "Neuer Befehl jaira reject <id> --why [--kind wontfix|obsolete] [--duplicate-of] [--force] schreibt rejected-kind/why/by/at (bei --duplicate-of auch rejected-duplicate-of, und rejected-linked, wenn reject den related-Link selbst anlegt) und archiviert ueber Store.Archive; Taste R auf dem Board; archive-Liste und show zeigen den Grund und das Original; restore nimmt die Felder ab und den related-Link nur, wenn reject ihn angelegt hat (Doc.Remove)."
 outcome-why: "Ein abgelehntes Ticket sah im Archiv genauso aus wie ein weggeraeumtes; Monate spaeter liess sich nicht sagen, ob es Duplikat, verworfen oder ueberholt war."
-outcome-resolves: "DoD 1-3: internal/cli/reject.go + Store.Reject, Tests in internal/cli/reject_test.go; DoD 4: modeReject in internal/tui/model.go, internal/tui/reject_test.go; DoD 5: archivedRejections/rejectionLine, unreject; DoD 6: release note, agent block, Skill, go test ./... -race gruen; DoD 7-9: Faltung, Selbst-Duplikat, R stempelt; DoD 10: rejected-duplicate-of + unreject."
+outcome-resolves: "DoD 1-3: internal/cli/reject.go + Store.Reject, Tests in internal/cli/reject_test.go; DoD 4: modeReject in internal/tui/model.go, internal/tui/reject_test.go; DoD 5: archivedRejections/rejectionLine, unreject; DoD 6: release note, agent block, Skill, go test ./... -race gruen; DoD 7-9: Faltung, Selbst-Duplikat, R stempelt; DoD 10: rejected-duplicate-of + unreject; DoD 11: rejected-linked, TestRestoreKeepsALinkThatWasThereBefore."
 review-summary: "Runde 5 (uncommittet, 8 Dateien): --duplicate-of schreibt jetzt einen fuenften Key rejected-duplicate-of: <volle ID> (core/ticket/store.go Store.Reject, immer, auch wenn der related-Link schon bestand); RejectedFields hat ihn, Rejection.DuplicateOf liest ihn. restore (unreject) liest den Key vor dem Abnehmen und loescht genau diesen Eintrag aus related, ein anderer related-Eintrag bleibt. show und archive schreiben 'duplicate of <handle>: why', --json beider Befehle hat 'duplicate_of'. Dazu eine weitere Release-Note-Zeile, COMMANDS.md, Hilfetext von reject und jaira-Skill. Damit ist die Rueckgabe aus signoff (restore laesst related stehen) behoben."
 round: 6
 review-gaps: "1) Die Aenderungen aus Runde 5 sind nicht committet (git status: 8 Dateien) - ohne Commit fehlen sie im Merge; Commit-Zeile in review-check Schritt 0. 2) Bekannt und von Alex akzeptiert (Notiz 18:17): ein related-Link zum Original, der schon vor dem reject bestand, geht beim restore mit. 3) Kosmetisch: duplicate_of in --json ist die volle ID, der Text zeigt den Handle - wie related ueberall. Keine Defekte gefunden."
