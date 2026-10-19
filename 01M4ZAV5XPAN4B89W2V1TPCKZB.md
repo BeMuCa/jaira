@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:44:33Z
+updated-at: 2026-10-19T06:44:58Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -30,6 +30,9 @@ claimed-at: 2026-10-19T06:35:35Z
 outcome-what: "jaira web: Filterleiste (Text, Lane, Tag, Person, Datumsbereich) ueber beiden Spalten, Schalter 'All tickets ever' listet Board, Ref, Logbuch und Archiv mit Ort; Detail zeigt Ort und Ablehnung; Filter im URL-Query"
 outcome-why: "Alex will jedes Ticket, das es je gab, auf der Seite sehen und nach Personen, Datum und Lane filtern; bisher zeigte die Seite nur offene Tickets ohne Filter"
 outcome-resolves: "GET /api/unassigned?all=1 und neue Kartenfelder (web_source.go cards/rejection), Filtermodell features/filter-tickets mit URL-Abgleich, TestWebListsFiledTicketsAndOpensThem; DoD 1-8 mit Proofs"
+review-summary: |-
+  internal/cli/web_source.go filedPlace copies core/link/link.go:196 placeOf line for line — export it as link.PlaceOf and call it from web_source.go
+  core/web/ui/src/entities/ticket/ui/TicketCard.svelte PLACES and the place lines in widgets/ticket-details/ui/TicketDetails.svelte name the same four places in two wordings — export one label map from entities/ticket/model/place.ts beside isFiled and use it in both
 ---
 
 # Web-Seite: Filter und Tickets aus Logbook und Archiv anzeigen
