@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T06:56:53Z
+updated-at: 2026-10-19T06:59:25Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16821
 claimed-at: 2026-10-19T06:27:46Z
@@ -36,6 +36,7 @@ outcome-why: "Ein abgelehntes Ticket sah im Archiv genauso aus wie ein weggeraeu
 outcome-resolves: "DoD 1-3: internal/cli/reject.go + Store.Reject, Tests in internal/cli/reject_test.go; DoD 4: modeReject in internal/tui/model.go, internal/tui/reject_test.go; DoD 5: archivedRejections/rejectionLine, unreject; DoD 6: release note, agent block, Skill, go test ./... -race gruen."
 review-summary: none
 round: 2
+review-gaps: "Entfernt: doppelte Archiv-Ziel-Pruefung in Store.Reject und Store.Archive -> eine Funktion archiveTarget (core/ticket/store.go); toter nil-Zweig in confirmReject (rejecting ist immer gesetzt, startReject setzt es); eigener ReadFile/ParseDoc/Decode im Test-Helfer archivedTicket -> ticket.LoadHeader. Gelassen: questionLane (einziger Aufrufer, aber benennt einen Zweck), rejectionLine/rejectionJSON (zwei Aufrufer: show und archive), die 'Moved to ... restore'-Zeile in reject.go doppelt die aus archive.go (zwei Zeilen, nicht wert eine Funktion)."
 ---
 
 # Ein Ticket laesst sich mit Grund ablehnen: jaira reject, und das Archiv sagt warum
