@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T08:16:27Z
+updated-at: 2026-10-19T08:17:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-24710
 claimed-at: 2026-10-19T07:38:42Z
@@ -63,7 +63,8 @@ review-check: "0. Erst committen, im Worktree /home/alex/projects/.worktrees/jai
   proof: core/ticket/store.go Store.Reject faltet why (strings.Fields); internal/cli/reject.go ebenso; test TestRejectFoldsAMultiLineReason
 - [x] --duplicate-of auf das Ticket selbst endet mit Exit 2, geprueft bevor etwas gestempelt oder geschrieben wird
   proof: internal/cli/reject.go: LoadAnywhere + orig.ID == t.ID -> ExitUsage vor StampCommits; test TestRejectAsADuplicateOfItselfIsAUsageError
-- [ ] R auf dem Board stempelt vor dem Ablehnen die Commits wie 'jaira reject', damit ein abgelehntes Ticket seine commits-Liste hat
+- [x] R auf dem Board stempelt vor dem Ablehnen die Commits wie 'jaira reject', damit ein abgelehntes Ticket seine commits-Liste hat
+  proof: internal/tui/model.go confirmReject: StampCommits(t, m.gateEnv().DeriveCommits) vor Store.Reject; test TestRejectOnTheBoardStampsCommits (ohne die Zeile rot)
 
 ## Options
 
@@ -111,3 +112,4 @@ Empfehlung: 1 - die Luecken sind nicht blockierend und bei x und archive schon g
 - **2026-10-19 08:15 · Alexander Sacharov** — decision: 2) Zurueckgeben: R auf dem Board soll auch Commits stempeln, damit abgelehnte Tickets eine commits-Liste haben
 - **2026-10-19 08:15 · Alexander Sacharov** — Given back from signoff: 2) Zurueckgeben: R auf dem Board soll auch Commits stempeln, damit abgelehnte Tickets eine commits-Liste haben
 - **2026-10-19 08:15 · Alexander Sacharov** — cockpit: given back to the old worker - tab alive, cache warm for 25 more min, context 236k
+- **2026-10-19 08:17 · Alexander Sacharov** — in-progress (Runde 4, aus signoff zurueck): confirmReject stempelt best-effort wie die CLI und wie x es nicht tut; x bleibt unveraendert (nicht Teil der Rueckgabe). Test TestRejectOnTheBoardStampsCommits mit echtem git-Repo, ohne die Zeile rot gesehen. go clean -testcache; go test ./... -race RC=0.
