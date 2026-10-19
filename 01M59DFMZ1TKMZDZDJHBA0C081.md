@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T07:32:16Z
+updated-at: 2026-10-19T07:32:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9569
 claimed-at: 2026-10-19T07:04:10Z
@@ -59,6 +59,8 @@ review-check: "0. Zuerst die liegengebliebenen optimize-Aenderungen committen: g
   proof: internal/cli/archive.go archivedRejections; internal/cli/tickets.go rejectionLine/rejectionJSON; core/ticket/store.go unreject; tests TestArchiveListAndShowSayWhyATicketWasRejected, TestAnArchivedTicketIsNotShownAsRejected, TestRestoreTakesTheRejectionOff
 - [x] Release-Note core/release/notes/<ID>.md, Agent-Block/jaira-Skill nennen reject; go test ./... -race gruen
   proof: core/release/notes/A0C081.md; core/board/announce.go + CLAUDE.md/AGENTS.md (TestAgentNoteNamesReject); .claude/skills/jaira/SKILL.md 'Taking a ticket off the board'; go test ./... -race exit 0
+- [ ] Ein mehrzeiliger Grund wird beim Schreiben auf eine Zeile gefaltet; 'jaira archive' behaelt die Einrueckung
+- [ ] --duplicate-of auf das Ticket selbst endet mit Exit 2, geprueft bevor etwas gestempelt oder geschrieben wird
 
 ## Options
 
