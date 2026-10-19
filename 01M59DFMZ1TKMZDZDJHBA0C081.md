@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T07:34:10Z
+updated-at: 2026-10-19T07:35:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9569
 claimed-at: 2026-10-19T07:04:10Z
@@ -36,7 +36,7 @@ outcome-why: "Ein abgelehntes Ticket sah im Archiv genauso aus wie ein weggeraeu
 outcome-resolves: "DoD 1-3: internal/cli/reject.go + Store.Reject, Tests in internal/cli/reject_test.go; DoD 4: modeReject in internal/tui/model.go, internal/tui/reject_test.go; DoD 5: archivedRejections/rejectionLine, unreject; DoD 6: release note, agent block, Skill, go test ./... -race gruen."
 review-summary: "none"
 round: 3
-review-gaps: "1) Die Aenderungen der optimize-Lane (archiveTarget-Extraktion in core/ticket/store.go, toter nil-Zweig in internal/tui/model.go, LoadHeader im Test internal/cli/reject_test.go) sind NICHT committet - sie liegen nur im Worktree; ohne Commit geht der Branch ohne sie raus. 2) Ein mehrzeiliger Grund (--why mit Zeilenumbruch, in der Shell moeglich; die TUI faltet auf eine Zeile) bricht die Einrueckung in 'jaira archive': die zweite Zeile steht ohne Einzug an Spalte 0 und sieht aus wie ein eigener Eintrag. Kosmetisch, keine DoD verletzt. 3) Klein: der CLI-Pfad stempelt Commits (StampCommits) bevor Reject prueft, ob es ueberhaupt geht - scheitert Reject (Archivname belegt, --duplicate-of auf sich selbst), hat das Ticket trotzdem eine geaenderte Datei; 'jaira archive' macht es genauso. --duplicate-of auf sich selbst endet mit Exit 1 statt Exit 2 (Usage). 4) Beobachtet, nicht geprueft: 'jaira restore' entfernt rejected-* nur aus der Datei auf der Platte, nicht vom Ref - das ist das bestehende Verhalten von restore fuer archivierte Tickets und nicht neu."
+review-gaps: "Runde 3: Store.Reject sucht das Original nicht mehr selbst (LoadAnywhere lief nach dem CLI-Fix doppelt) - der Aufrufer loest duplicateOf vor dem Schreiben auf, Store.Reject nimmt die volle id. Gelassen: das Falten des Grundes steht in Store.Reject (Schreibweg, gilt fuer jeden Aufrufer) und in der CLI (damit die Ausgabe zeigt, was gespeichert wurde) - eine Zeile, keine Funktion wert."
 test-verdict: "pass: go clean -testcache; go test ./... -race RC=0. DoD 1-3, 5 auf einem Scratch-Board mit dem gebauten Binaer gesehen: reject ohne --force RC=3 mit human-Weg, ohne --why RC=2, --duplicate-of ZZZZZZ RC=5, mit --duplicate-of: kind duplicate + related, archive-Liste und show zeigen 'duplicate: gleiches Thema (Alexander Sacharov, 2026-10-19)', restore RC=0 und 0 rejected-Zeilen im Ticket. DoD 4 (Taste R) nur ueber die Modell-Tests (TestRejectOnTheBoardWritesTheReason, ...Cancelled...), kein interaktives Terminal hier. DoD 6: notes/A0C081.md, Agent-Block, Skill im Baum."
 review-verdict: "Der Diff erfuellt alle sechs DoD-Punkte; per Hand nachgeprueft: Exit 2/3/5, duplicate+related, archive-Liste, show, restore nimmt die Felder ab, Sonderzeichen und Umlaute im Grund werden korrekt als YAML geschrieben. go vet und go test ./core/... ./internal/... -race gruen. Keine Defekte, die zurueckschicken rechtfertigen. Vor dem Annehmen: die uncommitteten optimize-Aenderungen committen (Gap 1). Gap 2 (mehrzeiliger Grund in der Archiv-Liste) ist kosmetisch - Mensch entscheidet, ob es hier noch rein soll."
 review-round: 2
