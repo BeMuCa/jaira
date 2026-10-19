@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:57:07Z
+updated-at: 2026-10-19T06:58:51Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -30,7 +30,7 @@ claimed-at: 2026-10-19T06:35:35Z
 outcome-what: "jaira web: Filterleiste, Schalter 'All tickets ever' (Board, Ref, Logbuch, Archiv mit Ort), Ablehnung im Detail, Filter im URL-Query; dazu Lane-Farben an Badge und Lane-Filter aus der Board-Reihenfolge (GET /api/lanes)"
 outcome-why: "Alex will jedes Ticket, das es je gab, auf der Seite sehen und nach Personen, Datum und Lane filtern; bisher zeigte die Seite nur offene Tickets ohne Filter"
 outcome-resolves: "GET /api/unassigned?all=1 und neue Kartenfelder (web_source.go cards/rejection), Filtermodell features/filter-tickets mit URL-Abgleich, TestWebListsFiledTicketsAndOpensThem; DoD 1-8 mit Proofs"
-review-summary: none
+review-summary: "jaira web bekommt eine Filterleiste ueber beiden Spalten (Text ueber Titel/Ziel/ID, Lane, Tag, Person = creator|assignee|updated_by, Datumsbereich auf erstellt/geaendert/abgelegt), alles UND-verknuepft und im Browser gefiltert; der Zustand steht per history.replaceState im URL-Query. Der Schalter 'All tickets ever' ruft GET /api/unassigned?all=1: der Server (internal/cli/web_source.go cards) liefert dann auch fertige Board-Tickets, Ref-Tickets und alle Tickets aus .jaira/logbook und .jaira/archive ohne Epic, jedes mit place, abgelegte nach Ablagedatum sortiert (Logbuch-Ordnerdatum bzw. rejected-at). Abgelegte Karten sind nicht ziehbar; die Detailansicht zeigt den Ort und bei abgelehnten Archiv-Tickets rejected-kind/why/by/at (direkt aus dem Frontmatter gelesen, damit schema.go fuer A0C081 frei bleibt). Neu GET /api/lanes: Lanes in Board-Reihenfolge mit kind; LaneBadge faerbt Badge und Lane-Filter in oklch (Arbeits-Lanes nach Position, human amber, terminal gruen, parking rot). link.placeOf wurde zu link.PlaceOf exportiert. Release-Note und web --help ergaenzt."
 round: 3
 review-gaps: "Runde 2: webSource.Lanes iteriert set.Lanes statt IDs()+Get; ReviewPage reicht fetchLanes() per .then(setLanes) durch statt einer untypisierten Hilfsvariable; ungenutzten Re-Export Lane aus entities/lane entfernt. Gesucht: keine bestehende Lane-Farbe im Web; die TUI-laneShade ist ein Wechselschatten, kein Farbschema, also keine Doppelung. Gelassen: GET /api/lanes laeuft bei jedem Minuten-Reload mit (lane.Load, billig)."
 test-verdict: "pass: go vet ./... RC=0, go test -count=1 -race ./... RC=0, dist matches npm ci && npm run build; DoD 1-9 verified in headless Chrome/Playwright on this repo and a scratch board with a rejected archive ticket"
