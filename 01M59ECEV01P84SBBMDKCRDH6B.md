@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T20:48:46Z
+updated-at: 2026-10-19T20:48:49Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-52791
@@ -62,7 +62,8 @@ round: 2
   proof: core/epic/epic.go SetBody(); TestSetKeepsTheMembers
 - [x] Eine Zeile '- <volle 26-stellige ULID> ...' im Epic-Text, geschrieben ueber 'epic set --body' oder das Web-Formular, bleibt Text: sie macht das Ticket nicht still zum Mitglied und verschwindet nicht aus dem Text; Test
   proof: core/epic/epic.go asText() in SetBody; TestATicketIDInTheTextStaysText; headless Chromium: '- <ULID> see this one' saved via the form reads back as '* <ULID> see this one', members unchanged
-- [ ] Nach einem 409 kann man im Web-Formular weiterarbeiten: das Getippte bleibt stehen, das Formular kennt den neuen Stand, und ein bewusstes zweites Speichern geht durch statt wieder 409; Test
+- [x] Nach einem 409 kann man im Web-Formular weiterarbeiten: das Getippte bleibt stehen, das Formular kennt den neuen Stand, und ein bewusstes zweites Speichern geht durch statt wieder 409; Test
+  proof: core/web/ui/src/features/edit-epic/model/edit.ts rebase()+editOf(), used in EditEpicForm.svelte submit(); edit.test.ts 'a refused save keeps the typing and saves against the new state' (npm test, CI web-dist); headless Chromium: 409 message names the changes, typed title/text kept, untouched description adopted, 2nd Save -> 200
 
 ## Options
 
