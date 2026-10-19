@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T18:34:48Z
+updated-at: 2026-10-19T18:34:52Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-25649
@@ -38,7 +38,8 @@ claimed-at: 2026-10-19T18:18:27Z
   proof: core/epic/epic.go Set(); TestSetKeepsTheMembers, TestSetRetitlesAndWritesOnlyWhatChanged
 - [ ] 'jaira epic set <name> --title <...> --description <...>' aendert eines oder beides; unbekanntes Epic Exit 5; ohne beide Flags Exit 2
 - [ ] Web: eine Route (z.B. PATCH /api/epics/{name}) und in der UI ein Bearbeiten-Knopf am Epic, Titel und Beschreibung editierbar, Speichern zeigt sofort den neuen Stand
-- [ ] Hat jemand das Epic zwischenzeitlich geaendert, geht keine der beiden Aenderungen still verloren (Test)
+- [x] Hat jemand das Epic zwischenzeitlich geaendert, geht keine der beiden Aenderungen still verloren (Test)
+  proof: core/epic/epic.go Merge()+clash(); TestMergeKeepsBothSidesOfOneField, TestMergeTellsARetitleFromATextEdit, TestSetRefusesAStaleBase
 - [ ] core/release/notes/<ID>.md; go test ./... -race gruen
 - [ ] Web zeigt den ganzen Markdown-Text eines Epics gerendert; 'jaira epic show' gibt ihn ebenfalls aus
 - [ ] Der Text ist standardmaessig eingeklappt (die description-Zeile bleibt sichtbar) und klappt per Klick auf
