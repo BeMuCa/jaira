@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T08:18:23Z
+updated-at: 2026-10-19T08:20:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35137
 claimed-at: 2026-10-19T08:18:23Z
@@ -34,7 +34,7 @@ mode: conversational
 outcome-what: "Neuer Befehl jaira reject <id> --why [--kind wontfix|obsolete] [--duplicate-of] [--force] schreibt rejected-kind/why/by/at und archiviert ueber Store.Archive; Taste R auf dem Board; archive-Liste und show zeigen den Grund; restore nimmt die Felder ab (Doc.Remove)."
 outcome-why: "Ein abgelehntes Ticket sah im Archiv genauso aus wie ein weggeraeumtes; Monate spaeter liess sich nicht sagen, ob es Duplikat, verworfen oder ueberholt war."
 outcome-resolves: "DoD 1-3: internal/cli/reject.go + Store.Reject, Tests in internal/cli/reject_test.go; DoD 4: modeReject in internal/tui/model.go, internal/tui/reject_test.go; DoD 5: archivedRejections/rejectionLine, unreject; DoD 6: release note, agent block, Skill, go test ./... -race gruen."
-review-summary: "none"
+review-summary: "jaira reject <id> --why <text> --force schreibt rejected-kind/why/by/at (flache Keys) aufs Ticket, stempelt vorher die Commits und archiviert es; ohne --force Exit 3 mit Weg ueber human --question, ohne --why Exit 2, --duplicate-of wird vor jedem Schreiben aufgeloest (Exit 5 unbekannt, Exit 2 sich selbst) und setzt kind=duplicate plus related. Store.Reject faltet den Grund auf eine Zeile und prueft das Archiv-Ziel (neuer Helfer archiveTarget, den Archive mitbenutzt) bevor es mutiert. Taste R auf Board und Detailansicht fragt eine Zeile Grund, stempelt jetzt wie die CLI die Commits (Rueckgabe aus signoff) und lehnt mit wontfix ab; x archiviert weiter nur. jaira archive zeigt eine eingerueckte rejected-Zeile pro Datei (und rejected in --json), jaira show eine rejected-Zeile, restore nimmt die Keys ab. Release-Note, Agent-Block und Skill nennen reject."
 round: 4
 review-gaps: "Runde 4: nichts - eine Zeile StampCommits ueber das bestehende gateEnv().DeriveCommits, kein eigener git-Aufruf."
 test-verdict: "pass (Runde 4): go clean -testcache; go test ./... -race RC=0; TestRejectOnTheBoardStampsCommits gruen und mit auskommentierter StampCommits-Zeile rot (FAIL) - die Pruefung haengt wirklich an der Aenderung. DoD 1-8 wie Runde 3."
