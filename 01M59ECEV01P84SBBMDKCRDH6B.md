@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T20:41:58Z
+updated-at: 2026-10-19T20:42:01Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-52791
@@ -105,3 +105,4 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-crdh6b && go build -o 
 - **2026-10-19 20:29 · Alexander Sacharov** — critique-Lane (Worker, Diff gelesen ohne dist): kein offener Fund. Losgelassen, weil es dem optimize-Lane gehoert: edit()/Set geben bei einem Fehler das gelesene Epic zurueck, kein Aufrufer liest es.
 - **2026-10-19 20:31 · Alexander Sacharov** — testing: alles gruen, siehe test-verdict. Einziger Konsolen-Eintrag im Browser ist der erwartete 409.
 - **2026-10-19 20:36 · Alexander Sacharov** — Abnahme-Seite: https://claude.ai/artifact/FTJQKnj5LLAFS1RzzGfMbm (4 Personen-Schritte statt 9 review-check-Schritten, 3 Maschinen-Checks gruen). Wegwerf-Board dafuer unter ~/.claude/acceptance/jaira/feat-crdh6b/board, Binary daneben. Review-Luecken offen fuer Alex: (1) eine Textzeile '- <volle 26-stellige ULID>' wird als Mitglied gelesen; (2) nach einem 409 bleibt das Formular auf dem alten base, nur Cancel+Edit hilft, Getipptes geht dabei verloren.
+- **2026-10-19 20:42 · Alexander Sacharov** — decision (Alex via Teamlead, 19.10.2026): aus signoff zurueck nach in-progress. Beide Review-Luecken werden in DIESEM Ticket gefixt (DoD 9 ULID-Zeile im Text, DoD 10 409-Schleife im Formular), kein Folgeticket. Gleicher Worker (jaira-crdh6b-bb, Cache warm, 255k/1000k).
