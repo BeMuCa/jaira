@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T20:26:34Z
+updated-at: 2026-10-19T20:27:53Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-25649
@@ -90,3 +90,4 @@ claimed-at: 2026-10-19T18:18:27Z
 - **2026-10-19 20:20 · Alexander Sacharov** — decision (Alex via Teamlead, 19.10.2026): Schritt 3 (CLI, inkl. Text()/ErrNoTitle-Fixes) angenommen. Schritte 4-6 ohne Zwischenstopp: am Ende EIN Gesamt-Diff und EINE Commit-Zeile fuer alles, was dann noch uncommittet ist. critique/optimize/testing/review laufen wie vorgesehen; mode bleibt conversational (Alex committet selbst).
 - **2026-10-19 20:22 · Alexander Sacharov** — Set: Text wird vor dem Titel geschrieben und retitle laeuft immer (titleLine prueft gegen den alten Titel). Grund: das Web-Formular schickt Titel + geaenderten Text; vorher blieb dann '# Alter Titel' im Text stehen. Web: EpicEdit mit Zeigern + base; ErrChanged -> web.ErrConflict (409, 'reload'), ErrNoTitle -> ErrInvalid (400). Epic-JSON hat body (roh, fuers Formular) und text (Epic.Text, zum Rendern).
 - **2026-10-19 20:26 · Alexander Sacharov** — UI live geprueft (headless Chromium via uv run --with playwright, Scratch-Board mit bare remote unter dem Scratchpad): Text eingeklappt, description sichtbar, Klick rendert ## Goal/**link**/Liste; Edit->Save zeigt neuen Titel und Absatz sofort; Formular offen + PATCH von aussen -> Save zeigt die 409-Meldung im Formular. Formular schickt nur geaenderte Felder + base, damit eine fremde Aenderung an einem nicht angefassten Feld keinen 409 ausloest. svelte-check: nur der bekannte vite.config.ts-Fehler (node:url). dist neu gebaut mit npm ci && npm run build. 'jaira web --help' nennt jetzt Edit.
+- **2026-10-19 20:27 · Alexander Sacharov** — Kritik Stueck 4-6: json-Tags an epic.Fields entfernt (kein Leser, core/web hat eigene EpicFields); 'jaira web --help'-Absatz auf ~80 Spalten neu umbrochen und nennt das eingeklappte Text-Feld. Daneben-Kritik damit fertig, alle Funde umgesetzt.
