@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T20:26:16Z
+updated-at: 2026-10-19T20:26:20Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-25649
@@ -42,7 +42,8 @@ claimed-at: 2026-10-19T18:18:27Z
   proof: core/web/web.go handleSetEpic (PATCH /api/epics/{name}); internal/cli/web_source.go SetEpic; core/web/ui/src/features/edit-epic/ui/EditEpicForm.svelte; TestWebRewritesAnEpicAndRefusesAStaleEditor; headless Chromium: Edit->Save shows new title and text at once
 - [x] Hat jemand das Epic zwischenzeitlich geaendert, geht keine der beiden Aenderungen still verloren (Test)
   proof: core/epic Merge()+clash(): TestMergeKeepsBothSidesOfOneField, TestMergeTellsARetitleFromATextEdit; Set Base: TestSetRefusesAStaleBase; web 409: TestWebRewritesAnEpicAndRefusesAStaleEditor
-- [ ] core/release/notes/<ID>.md; go test ./... -race gruen
+- [x] core/release/notes/<ID>.md; go test ./... -race gruen
+  proof: core/release/notes/CRDH6B.md; go test -race -count=1 ./... RC=0; go vet ./... RC=0
 - [ ] Web zeigt den ganzen Markdown-Text eines Epics gerendert; 'jaira epic show' gibt ihn ebenfalls aus
 - [ ] Der Text ist standardmaessig eingeklappt (die description-Zeile bleibt sichtbar) und klappt per Klick auf
 - [x] Beim Schreiben des Textes bleiben die Mitgliedszeilen des Epics unangetastet (Test)
