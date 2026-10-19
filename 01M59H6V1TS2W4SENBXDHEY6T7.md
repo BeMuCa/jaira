@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T12:56:20Z
+updated-at: 2026-10-19T12:56:40Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79475
 claimed-at: 2026-10-19T12:47:47Z
@@ -29,6 +29,7 @@ outcome-what: "jaira web schreibt Fehlerantworten (>=400), fehlgeschlagene Fetch
 outcome-why: "Alex' 'jaira web' fiel aus, und es gab keine Spur: nichts wurde geloggt, stderr ging mit dem Terminal verloren, und die Seite stand still, ohne es zu sagen."
 outcome-resolves: "Ein Ausfall von jaira web hinterlaesst jetzt seine Ursache in einer Datei, und die Seite meldet ihn sichtbar."
 review-summary: none
+review-gaps: "removed recorder.Unwrap (nothing uses http.ResponseController here) and the test-only syncBuffer (log.Logger serialises writes, tests are single-goroutine); left NewLogger (it fixes the timestamp flags for CLI and tests) and logf's nil check (Server.Log is optional, existing tests run without it)"
 ---
 
 # jaira web schreibt mit, was passiert, und ein Absturz hinterlaesst seine Ursache
