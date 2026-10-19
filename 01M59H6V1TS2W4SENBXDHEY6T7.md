@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T14:28:06Z
+updated-at: 2026-10-19T14:28:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-27212
 claimed-at: 2026-10-19T13:47:43Z
@@ -89,3 +89,4 @@ Empfehlung: 1 - die Bereinigung ist ohnehin vor dem Push noetig, und die beiden 
 - **2026-10-19 14:27 · Alexander Sacharov** — decision: 1) Zurueckgeben: Ticketdatei bereinigen, Kommentar korrigieren, Log-Fehler nur warnen statt abbrechen
 - **2026-10-19 14:28 · Alexander Sacharov** — Given back from signoff: 1) Zurueckgeben: Ticketdatei bereinigen, Kommentar korrigieren, Log-Fehler nur warnen statt abbrechen
 - **2026-10-19 14:28 · Alexander Sacharov** — cockpit: given back to the old worker - tab alive, cache warm for 21 more min, context 132k
+- **2026-10-19 14:28 · Alexander Sacharov** — Runde 2 (Rueckgabe aus signoff, Alex Option 1): Bereinigung der Ticketdatei freigegeben durch Alex' Entscheidung im Cockpit - Hand-Edit als Ausnahme von 'nur CLI', weil jaira note nichts aendern kann; die Branch-Commits werden vor jedem Push per filter-branch neu geschrieben. Dazu logKeep-Kommentar korrigieren und ein nicht oeffnbares web.log nur warnen statt abbrechen.
