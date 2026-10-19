@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T14:23:51Z
+updated-at: 2026-10-19T14:27:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-27212
 claimed-at: 2026-10-19T13:47:43Z
@@ -85,3 +85,4 @@ Warum: Mit den privaten Daten darf weder Branch noch Ref gepusht werden, Alex' R
 2) Zurueckgeben: nur die Ticketdatei bereinigen, die zwei kleinen Punkte bleiben [give back]
 3) So annehmen; Bereinigung gibt Alex selbst im Worker-Tab frei, kleine Punkte bleiben stehen [accept]
 Empfehlung: 1 - die Bereinigung ist ohnehin vor dem Push noetig, und die beiden kleinen Punkte sind in derselben Runde billig zu beheben.
+- **2026-10-19 14:27 · Alexander Sacharov** — decision: 1) Zurueckgeben: Ticketdatei bereinigen, Kommentar korrigieren, Log-Fehler nur warnen statt abbrechen
