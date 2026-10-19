@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T08:20:30Z
+updated-at: 2026-10-19T13:46:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35137
 claimed-at: 2026-10-19T08:18:23Z
@@ -115,3 +115,8 @@ Empfehlung: 1 - die Luecken sind nicht blockierend und bei x und archive schon g
 - **2026-10-19 08:17 · Alexander Sacharov** — in-progress (Runde 4, aus signoff zurueck): confirmReject stempelt best-effort wie die CLI und wie x es nicht tut; x bleibt unveraendert (nicht Teil der Rueckgabe). Test TestRejectOnTheBoardStampsCommits mit echtem git-Repo, ohne die Zeile rot gesehen. go clean -testcache; go test ./... -race RC=0.
 - **2026-10-19 08:17 · Alexander Sacharov** — critique (Runde 4): eine Zeile, gleicher Aufruf wie settlePrepare/CLI - none.
 - **2026-10-19 08:20 · Alexander Sacharov** — review (fresh context, Runde 3): approve. Runde-4-Rueckgabe (R stempelt Commits) im Diff, Test ohne die Zeile rot gesehen, -race gruen, CLI per Binary nachgespielt. Offen nur: Aenderungen seit 4e6d036e uncommittet - Commit-Zeile in review-check Schritt 0.
+- **2026-10-19 13:46 · Alexander Sacharov** — explain: Der Reviewer hat nichts Blockierendes gefunden (approve, DoD 1-9 belegt, Tests gruen). Offen sind nur zwei Kleinigkeiten: restore laesst den related-Eintrag aus --duplicate-of stehen, und R auf dem Board stempelt mit dem beim Druecken gehaltenen Stand (ohne Verlust).
+Warum: Beides aendert nichts an der Aufgabe (Ablehnen mit Grund, Grund bleibt im Archiv); der Hinweis auf uncommittete Aenderungen ist ueberholt, sie liegen schon in 41b46cf2.
+1) Ticket so annehmen, die zwei Kleinigkeiten bleiben wie sie sind [accept]
+2) Zurueckgeben: restore soll den related-Eintrag nach --duplicate-of wieder entfernen [give back]
+Empfehlung: 1 - die Kleinigkeiten sind kosmetisch, nicht Teil der DoD, und ein weiterer Durchlauf kostet mehr als er bringt.
