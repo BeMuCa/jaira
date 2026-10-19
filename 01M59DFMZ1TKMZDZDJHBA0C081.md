@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T18:25:26Z
+updated-at: 2026-10-19T18:25:30Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-24398"
 claimed-at: 2026-10-19T18:18:21Z
@@ -136,3 +136,4 @@ Empfehlung: 1 - die Kleinigkeiten sind kosmetisch und nicht Teil der DoD, ein we
 - **2026-10-19 18:21 · Alexander Sacharov** — in-progress (Runde 5, aus signoff zurueck): rejected-duplicate-of (5. Key, in RejectedFields, damit unreject ihn mit abnimmt) wird bei --duplicate-of immer geschrieben, auch wenn der related-Link schon bestand (Option 1). unreject liest ihn vor dem Abnehmen und loescht genau diesen Eintrag aus related; ein anderer related-Eintrag bleibt (Test). show/archive: 'duplicate of <handle>: why', --json 'duplicate_of'. Weitere Release-Note-Zeile statt die erste umzuschreiben. go vet, go clean -testcache, go test ./... -race RC=0.
 - **2026-10-19 18:22 · Alexander Sacharov** — critique (Runde 5): liest nur die Antwort auf die Rueckgabe (rejected-duplicate-of + unreject + Anzeige). Passt zu outcome-*/RejectedFields-Muster, unreject nimmt den Key ueber RejectedFields ohne Sonderweg ab. Linkverlust bei vorher bestehendem related ist von Alex akzeptiert (Notiz 18:17) - none. Keine Critique-daneben gestartet: Alex hat ab DoD 5 die Diff-Stopps aufgehoben, die Aenderung war eine Datei-Runde.
 - **2026-10-19 18:23 · Alexander Sacharov** — testing (Runde 5): pass, Details in test-verdict. Kein 'jaira relate' vorhanden - Nachbar-Link per 'jaira set related=' gesetzt.
+- **2026-10-19 18:25 · Alexander Sacharov** — review (fresh context, Runde 4): approve. DoD 10 (rejected-duplicate-of, restore nimmt genau den Link ab, show/archive nennen das Original) im worktree_diff belegt, Tests -race gruen, per Binary nachgespielt (restore laesst die Datei bis auf updated-by wie vorher). Offen: Runde 5 uncommittet - Commit-Zeile in review-check Schritt 0.
