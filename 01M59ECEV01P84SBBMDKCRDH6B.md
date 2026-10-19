@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T20:29:03Z
+updated-at: 2026-10-19T20:29:53Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-25649
@@ -32,6 +32,7 @@ outcome-what: "core/epic: Body/Text/SetBody/Set with Patch+Base, Merge keeps bot
 outcome-why: "An epic could not be changed after it was created, and its markdown text below the frontmatter was invisible in the web (requirementsgenie epic anforderungen-im-chat)"
 outcome-resolves: "DoD 1-8: Set/SetBody keep member lines (TestSetKeepsTheMembers), epic set exits 5/2 (TestEpicSetRewritesTheTextNotTheMembers), web edit + 409 (TestWebRewritesAnEpicAndRefusesAStaleEditor), merge clash block (TestMergeKeepsBothSidesOfOneField), text rendered and folded (headless Chromium), release note, race suite green"
 review-summary: "none - the critique beside the work raised 7 findings over 4 pieces (retitle with unchanged body, shared edit() helper, one titleLine rule, Text() display form, ErrNoTitle, Fields json tags, help wrap); all applied, see notes 'Kritik Stueck 1-6'. Shape fits: edit() as Assign's twin, web keeps its own EpicFields/EpicEdit like web.Epic, features/edit-epic mirrors features/create-epic."
+review-gaps: "removed: edit()/Set returned the epic as read alongside an error, no caller read it (CLI and web discard it) - now nil, doc trimmed, TestSetRefusesAStaleBase reads the ref instead. Searched for an existing comment stripper, blank-line trim and file-or-stdin helper: none to reuse (stdin read is the 2-copy pattern of internal/cli/sync.go:117, left). Left: Epics() computes Body()+Text() per epic on each minute reload - a few string ops, not worth caching."
 ---
 
 # Titel und Beschreibung eines Epics lassen sich im Web und mit jaira epic set aendern
