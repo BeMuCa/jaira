@@ -24,7 +24,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T06:46:42Z
+updated-at: 2026-10-19T06:46:45Z
 updated-by: Alexander Sacharov
 ---
 
@@ -62,3 +62,4 @@ updated-by: Alexander Sacharov
 - **2026-10-19 06:45 · Alexander Sacharov** — Befund (Teamlead, 19.10.2026): Epic 'anforderungen-im-chat' in ~/projects/requirementsgenie traegt ~95 Zeilen Markdown unter dem Frontmatter (## Ziel, ## Ausgangslage, ...): git -C ~/projects/requirementsgenie show refs/jaira/epics/anforderungen-im-chat:anforderungen-im-chat.md. Das Web zeigt nur die einzeilige Frontmatter-description. Ursache: core/epic/epic.go FromBytes behaelt unter dem Frontmatter nur Mitgliedszeilen; EpicList.svelte:29 rendert nur epic.description.
 - **2026-10-19 06:45 · Alexander Sacharov** — decision (Alex, 19.10.2026): 'Beschreibung bearbeiten' heisst in diesem Ticket der Markdown-Text unter dem Frontmatter, nicht nur die description-Zeile. Mitgliedszeilen bleiben beim Schreiben unangetastet. Der Text wird gerendert angezeigt und ist standardmaessig eingeklappt.
 - **2026-10-19 06:45 · Alexander Sacharov** — Reihenfolge (Teamlead): blocked-by TPCKZB (gleiche core/web/ui-Dateien, feat/tpckzb in-progress). Jetzt nur brainstorm/plan; kein Code, bevor TPCKZB auf master ist.
+- **2026-10-19 06:46 · Alexander Sacharov** — decision (Worker, aus Code/Default): 'description' bleibt die einzeilige Frontmatter-Zeile (sichtbar im eingeklappten Zustand), der Text heisst 'body'. CLI bekommt dafuer --body und --body-file (- = stdin) neben --title/--description; Web-Formular hat alle drei Felder. Grund: die Zeile und der Text sind zwei Dinge auf dem Ref; ein Flag fuer beides wuerde eins davon ueberschreiben.
