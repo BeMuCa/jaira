@@ -1,7 +1,7 @@
 ---
 id: 01M59H6V1TS2W4SENBXDHEY6T7
 title: "jaira web schreibt mit, was passiert, und ein Absturz hinterlaesst seine Ursache"
-status: review
+status: signoff
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T14:38:57Z
+updated-at: 2026-10-19T14:39:03Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-82583
 claimed-at: 2026-10-19T14:38:38Z
