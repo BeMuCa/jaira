@@ -24,7 +24,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T06:45:41Z
+updated-at: 2026-10-19T06:45:44Z
 updated-by: Alexander Sacharov
 ---
 
@@ -37,6 +37,9 @@ updated-by: Alexander Sacharov
 - [ ] Web: eine Route (z.B. PATCH /api/epics/{name}) und in der UI ein Bearbeiten-Knopf am Epic, Titel und Beschreibung editierbar, Speichern zeigt sofort den neuen Stand
 - [ ] Hat jemand das Epic zwischenzeitlich geaendert, geht keine der beiden Aenderungen still verloren (Test)
 - [ ] core/release/notes/<ID>.md; go test ./... -race gruen
+- [ ] Web zeigt den ganzen Markdown-Text eines Epics gerendert; 'jaira epic show' gibt ihn ebenfalls aus
+- [ ] Der Text ist standardmaessig eingeklappt (die description-Zeile bleibt sichtbar) und klappt per Klick auf
+- [ ] Beim Schreiben des Textes bleiben die Mitgliedszeilen des Epics unangetastet (Test)
 
 ## Options
 
