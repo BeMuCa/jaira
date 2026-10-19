@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T20:47:11Z
+updated-at: 2026-10-19T20:47:14Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-4026"
 claimed-at: 2026-10-19T20:44:55Z
@@ -148,3 +148,4 @@ Empfehlung: 1 - alle DoD sind belegt, Tests laufen gruen, und der Linkverlust wu
 - **2026-10-19 20:43 · Alexander Sacharov** — Given back from signoff: 2) Zurueckgeben und den vorher bestehenden related-Link beim restore erhalten
 - **2026-10-19 20:43 · Alexander Sacharov** — cockpit: given back to a new worker - old worker's prompt cache cold for 77 min
 - **2026-10-19 20:44 · Alexander Sacharov** — decision (Alex direkt, 19.10.2026) zur Rueckgabe 20:43: sechster Key rejected-linked: true, nur geschrieben, wenn reject den related-Eintrag selbst angelegt hat; restore nimmt den related-Eintrag nur dann ab. rejected-duplicate-of bleibt immer (show/archive nennen das Original).
+- **2026-10-19 20:47 · Alexander Sacharov** — in-progress (Runde 6, aus signoff zurueck): rejected-linked: true als sechster Key in RejectedFields, damit unreject ihn ueber dieselbe Schleife abnimmt. Nicht im Rejection-Struct: nur unreject liest ihn, show/archive brauchen ihn nicht. Release-Note-Zeile 5 umgeschrieben (sie war unveroeffentlicht und sagte jetzt das Gegenteil). go vet; go clean -testcache; go test ./... -race RC=0.
