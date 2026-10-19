@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { NoteItem, type TicketDetail } from '@/entities/ticket';
+  import { NoteItem, PLACE_LABELS, type TicketDetail } from '@/entities/ticket';
   import { dateTime } from '@/shared/lib';
 
   let { ticket, onclose }: { ticket: TicketDetail; onclose: () => void } = $props();
@@ -16,9 +16,7 @@
   <header>
     <span class="handle">{ticket.handle}</span>
     <span class="lane">{ticket.lane}</span>
-    {#if ticket.place === 'logbook'}<span class="where">filed in the logbook</span>
-    {:else if ticket.place === 'archive'}<span class="where">archived</span>
-    {:else if ticket.place === 'ref'}<span class="where">only on its ref</span>{/if}
+    {#if ticket.place !== 'board'}<span class="where">{PLACE_LABELS[ticket.place]}</span>{/if}
     <button class="close" onclick={onclose} aria-label="Close">×</button>
   </header>
   <h2 id="ticket-title">{ticket.title}</h2>

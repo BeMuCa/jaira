@@ -1,8 +1,6 @@
 <script lang="ts">
-  import type { Place, Ticket } from '../model/types';
-
-  // Where a ticket off the board lies, as the card says it.
-  const PLACES: Record<Place, string> = { board: 'on the board', ref: 'only on its ref', logbook: 'in the logbook', archive: 'in the archive' };
+  import type { Ticket } from '../model/types';
+  import { PLACE_LABELS } from '../model/place';
 
   let { ticket, draggable = false, ondragstart, onopen }: {
     ticket: Ticket;
@@ -24,7 +22,7 @@
   <button class="title" onclick={() => onopen?.(ticket.id)}>{ticket.title}</button>
   <span class="lane">{ticket.lane}</span>
   {#if ticket.place && ticket.place !== 'board'}
-    <span class="where">{PLACES[ticket.place]}{#if ticket.rejected} · rejected: {ticket.rejected}{/if}</span>
+    <span class="where">{PLACE_LABELS[ticket.place]}{#if ticket.rejected} · rejected: {ticket.rejected}{/if}</span>
   {/if}
   {#if !ticket.direct}<span class="via">via follows/parent</span>{/if}
 </li>

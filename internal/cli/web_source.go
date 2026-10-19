@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"sync"
 	"time"
 
@@ -137,7 +136,7 @@ func (w *webSource) cards(all []*ticket.Ticket, ix *link.Index) map[string]web.T
 		if err != nil {
 			continue
 		}
-		place := filedPlace(path)
+		place := link.PlaceOf(path)
 		c := card(t, place)
 		c.Done = ix.Satisfied(id)
 		if place == link.PlaceLogbook {
@@ -157,15 +156,6 @@ func card(t *ticket.Ticket, place link.Place) web.Ticket {
 		Creator: t.Creator, Assignee: t.Assignee, UpdatedBy: t.UpdatedBy,
 		CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt,
 	}
-}
-
-// filedPlace tells the archive from the logbook by the path a filed ticket
-// lies at.
-func filedPlace(path string) link.Place {
-	if strings.Contains(filepath.ToSlash(path), "/"+ticket.ArchiveSubdir+"/") {
-		return link.PlaceArchive
-	}
-	return link.PlaceLogbook
 }
 
 // rejection reads what 'jaira reject' wrote onto a ticket, nil when it was
@@ -214,7 +204,7 @@ func (w *webSource) Ticket(id string) (web.TicketDetail, error) {
 	case t.ReadOnly:
 		place = link.PlaceRef
 	case w.s.FiledAwayIDs()[t.ID] == path:
-		place = filedPlace(path)
+		place = link.PlaceOf(path)
 	}
 	d := web.TicketDetail{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Status, Place: string(place), Goal: t.Goal, Context: t.Context}
 	if place == link.PlaceArchive {

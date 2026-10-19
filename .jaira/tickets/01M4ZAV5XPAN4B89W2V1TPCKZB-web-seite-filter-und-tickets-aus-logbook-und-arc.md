@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:44:33Z
+updated-at: 2026-10-19T06:46:11Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -30,6 +30,10 @@ claimed-at: 2026-10-19T06:35:35Z
 outcome-what: "jaira web: Filterleiste (Text, Lane, Tag, Person, Datumsbereich) ueber beiden Spalten, Schalter 'All tickets ever' listet Board, Ref, Logbuch und Archiv mit Ort; Detail zeigt Ort und Ablehnung; Filter im URL-Query"
 outcome-why: "Alex will jedes Ticket, das es je gab, auf der Seite sehen und nach Personen, Datum und Lane filtern; bisher zeigte die Seite nur offene Tickets ohne Filter"
 outcome-resolves: "GET /api/unassigned?all=1 und neue Kartenfelder (web_source.go cards/rejection), Filtermodell features/filter-tickets mit URL-Abgleich, TestWebListsFiledTicketsAndOpensThem; DoD 1-8 mit Proofs"
+review-summary: |-
+  internal/cli/web_source.go filedPlace copies core/link/link.go:196 placeOf line for line — export it as link.PlaceOf and call it from web_source.go
+  core/web/ui/src/entities/ticket/ui/TicketCard.svelte PLACES and the place lines in widgets/ticket-details/ui/TicketDetails.svelte name the same four places in two wordings — export one label map from entities/ticket/model/place.ts beside isFiled and use it in both
+round: 2
 ---
 
 # Web-Seite: Filter und Tickets aus Logbook und Archiv anzeigen
@@ -41,15 +45,15 @@ outcome-resolves: "GET /api/unassigned?all=1 und neue Kartenfelder (web_source.g
 - [x] Filter nach Lane, Tag und Person (creator, assignee, zuletzt geaendert von) - mehrere Filter wirken zusammen (UND)
   proof: core/web/ui/src/features/filter-tickets/model/filter.ts:70-84 matches() ANDs lane, tag and person (creator|assignee|updated_by); FilterBar.svelte selects
 - [x] Tickets aus .jaira/logbook/ sind auf der Seite sichtbar und öffnen sich in der Detailansicht
-  proof: internal/cli/web_source.go:121 cards() reads the logbook; TestWebListsFiledTicketsAndOpensThem; live: ?all=1 on this repo lists 129 logbook tickets, 8NHD8Q opens with place logbook
+  proof: internal/cli/web_source.go:120 cards() reads the logbook; TestWebListsFiledTicketsAndOpensThem; live: ?all=1 on this repo lists 129 logbook tickets, 8NHD8Q opens with place logbook
 - [x] Tickets aus .jaira/archive/ sind auf der Seite sichtbar und öffnen sich in der Detailansicht
-  proof: internal/cli/web_source.go:121 cards() reads the archive; TestWebListsFiledTicketsAndOpensThem; live: 5 archive tickets listed
+  proof: internal/cli/web_source.go:120 cards() reads the archive; TestWebListsFiledTicketsAndOpensThem; live: 5 archive tickets listed
 - [x] core/release/notes/<ID>.md beschreibt die neuen Filter und Ansichten
   proof: core/release/notes/TPCKZB.md
 - [x] Filter nach Datum: Zeitraum von-bis auf erstellt, zuletzt geaendert und abgelegt (Logbuch-Datum)
   proof: core/web/ui/src/features/filter-tickets/model/filter.ts:78 date range on created/updated/filed; filed_at from ticket.LogbookFolderDay (web_source.go cards) or rejected-at
 - [x] Ein abgelehntes Ticket im Archiv zeigt rejected-kind und rejected-why
-  proof: internal/cli/web_source.go:175 rejection(); TicketDetails.svelte:25; TestWebListsFiledTicketsAndOpensThem checks kind and why
+  proof: internal/cli/web_source.go:165 rejection(); TicketDetails.svelte:23; TestWebListsFiledTicketsAndOpensThem checks kind and why
 - [x] Die gesetzten Filter stehen in der URL; ein Link zeigt dieselbe gefilterte Liste
   proof: core/web/ui/src/features/filter-tickets/model/filter.ts fromQuery/toQuery; ReviewPage.svelte:26 reads, :40 writes via history.replaceState
 
@@ -86,3 +90,5 @@ Ich nehme A: die Datenmenge ist klein, Filtern im Browser ist sofort, die URL tr
 - **2026-10-19 06:37 · Alexander Sacharov** — decision (worker, aus Code/Default): Die Filterleiste steht ueber beiden Spalten und wirkt auf beide — auf 'Tickets in no epic' und auf die Ticketzeilen jeder Epic-Karte. Der Schalter 'alle Tickets aller Zeiten' fuegt der linken Liste die abgelegten Tickets ohne Epic hinzu (Epic-Karten zaehlen abgelegte schon heute). Jede Karte zeigt, wo sie liegt: Board / Ref / Logbuch / Archiv. Abgelegte Karten lassen sich nicht ziehen. Personenfilter: EIN Feld 'Person', trifft wenn creator ODER assignee ODER updated_by passt — 'filter by people' ohne drei Dropdowns. Datumsfilter: Auswahl des Feldes (erstellt / geaendert / abgelegt) plus von/bis. Abgelegt-Datum: Logbuch = Datum aus dem Ordnernamen; Archiv = rejected-at, wenn gesetzt, sonst keins. Die Snapshot-Branch (core/snapshot) ist ein Backup und bleibt aussen vor.
 - **2026-10-19 06:40 · Alexander Sacharov** — Go-Seite steht: web.Ticket traegt place/tags/creator/assignee/updated_by/created_at/updated_at/filed_at/rejected, GET /api/unassigned?all=1 liefert zusaetzlich fertige Board-Tickets und alle abgelegten ohne Epic; TicketDetail traegt place und rejected. rejected-* wird in internal/cli/web_source.go:rejection per Doc.Fields gelesen — schema.go bleibt fuer A0C081 frei; nach dessen Merge kann rejection() auf t.Rejected umgestellt werden. Test: TestWebListsFiledTicketsAndOpensThem. Als naechstes UI.
 - **2026-10-19 06:43 · Alexander Sacharov** — UI fertig. Kein JS-Testrunner im Repo (package.json hat nur vite build); filter.ts wurde mit einem Wegwerf-Skript unter node --experimental-strip-types gegen 15 Faelle geprueft (Text, Lane, Tag, Person, Datum je Feld, URL-Roundtrip, ohne filed_at). svelte-check: 0 Warnungen; der eine Fehler in vite.config.ts (node:url-Typen) besteht schon auf master. Live auf diesem Repo: ?all=1 = 222 Tickets in 0,19 s. Die Seite selbst wurde nicht im Browser angesehen — das ist fuer die Abnahme.
+- **2026-10-19 06:45 · Alexander Sacharov** — critique (Runde 1): 1) filedPlace in internal/cli/web_source.go ist eine Kopie von placeOf in core/link/link.go:196 — exportieren (link.PlaceOf) statt kopieren. 2) Ortsbezeichnungen stehen doppelt (TicketCard PLACES, TicketDetails if-Kette) — eine Map in entities/ticket/model/place.ts. Stehen gelassen: cards() liest bei jedem /api/epics alle abgelegten Header (gemessen 0,08 s bei 134 Dateien); rejection() liest die Archivdatei ein zweites Mal — beides klein, und rejection() wird nach A0C081 durch t.Rejected ersetzbar; die Doppelung epic.Unassigned / everything-Zweig bleibt, damit die Standardliste genau 'jaira epic ls --unassigned' entspricht.
+- **2026-10-19 06:46 · Alexander Sacharov** — critique Runde 1 umgesetzt: link.PlaceOf exportiert (core/link/link.go:196) und in web_source.go benutzt; Ortsbezeichnungen als PLACE_LABELS in entities/ticket/model/place.ts, TicketCard und TicketDetails lesen sie. Proofs 3/4/7 auf neue Zeilen gesetzt.
