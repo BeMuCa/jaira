@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:46:58Z
+updated-at: 2026-10-19T06:48:56Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -55,6 +55,7 @@ review-gaps: "dropped the re-exports nobody imports (Place, Rejection from entit
   proof: internal/cli/web_source.go:165 rejection(); TicketDetails.svelte:23; TestWebListsFiledTicketsAndOpensThem checks kind and why
 - [x] Die gesetzten Filter stehen in der URL; ein Link zeigt dieselbe gefilterte Liste
   proof: core/web/ui/src/features/filter-tickets/model/filter.ts fromQuery/toQuery; ReviewPage.svelte:26 reads, :40 writes via history.replaceState
+- [ ] Jede Lane hat im Web eine eigene Farbe — dieselbe am Lane-Badge jedes Tickets und im Lane-Filter; die Farbe einer Lane ist stabil (gleiche Lane, gleiche Farbe bei jedem Laden)
 
 ## Options
 
