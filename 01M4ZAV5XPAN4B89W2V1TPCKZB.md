@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:43:39Z
+updated-at: 2026-10-19T06:43:50Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -33,7 +33,8 @@ claimed-at: 2026-10-19T06:35:35Z
 
 ## Definition of Done
 
-- [ ] Auf der Seite gibt es ein Textfeld, das Tickets nach Titel, Ziel und ID filtert
+- [x] Auf der Seite gibt es ein Textfeld, das Tickets nach Titel, Ziel und ID filtert
+  proof: core/web/ui/src/features/filter-tickets/model/filter.ts:71 (title/goal/handle/id, any case), FilterBar.svelte Search field
 - [ ] Filter nach Lane, Tag und Person (creator, assignee, zuletzt geaendert von) - mehrere Filter wirken zusammen (UND)
 - [ ] Tickets aus .jaira/logbook/ sind auf der Seite sichtbar und öffnen sich in der Detailansicht
 - [ ] Tickets aus .jaira/archive/ sind auf der Seite sichtbar und öffnen sich in der Detailansicht
