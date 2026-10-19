@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T06:31:53Z
+updated-at: 2026-10-19T06:32:25Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16821
 claimed-at: 2026-10-19T06:27:46Z
@@ -59,3 +59,4 @@ mode: conversational
 - **2026-10-19 06:28 · Alexander Sacharov** — question 1 (an jaira-a7): Der Mechanismus aus VW1WB1 ist 'Interactive' (core/gate/gate.go:395) - nur das Board setzt ihn, jeder CLI-Aufruf gilt als Agent. Damit widersprechen sich DoD 1 (CLI reject klappt) und DoD 3 (Agent Exit 3). Optionen: 1) (Recommended) CLI reject ohne --force -> Exit 3 mit Hinweis auf human --question bzw. das Board; ein Mensch in der Shell nimmt --force, genau wie heute bei move aus human. 2) CLI reject nur ueber das Board, kein --force-Weg - DoD 1 gilt dann fuer den Store-Befehl, den das Board aufruft. 3) CLI reject immer erlaubt, DoD 3 faellt weg - Agenten werden nur per Skill-Regel abgehalten.
 - **2026-10-19 06:28 · Alexander Sacharov** — question 2 (an jaira-a7): Welche Taste lehnt auf dem Board ab? 1) (Recommended) eigene Taste R (in der Detailansicht und auf dem Board frei), fragt nach einer Zeile Grund; x bleibt reines Archivieren - Aufraeumen und Ablehnen bleiben getrennt, wie der Kommentar model.go:1532 es fuer x verlangt. 2) x fragt nach einem Grund, leer = nur archivieren - eine Taste weniger, aber jedes Archivieren bekommt eine Frage dazwischen.
 - **2026-10-19 06:31 · Alexander Sacharov** — decision (Alex via jaira-a7, 19.10.2026): Q1 -> Option 1: CLI reject ohne --force -> Exit 3, Meldung nennt human --question und das Board; ein Mensch in der Shell nimmt --force, wie bei move aus human. Q2 -> Option 1: eigene Taste R fragt nach einer Zeile Grund; x bleibt reines Archivieren.
+- **2026-10-19 06:32 · Alexander Sacharov** — question 3 (an jaira-a7): Kontext/DoD verlangen einen Block 'rejected:' mit kind/why/by/at. Das Format kennt aber nur flache Top-Level-Keys: core/ticket/schema.go:69-72 begruendet, warum outcome-what/why/resolves flach sind (Merge-Driver loest pro Top-Level-Key, ein Feld = eine Zeile), und der Writer (core/ticket/frontmatter.go SetScalar/SetList) kann keine verschachtelten Mappings schreiben. Optionen: 1) (Recommended) flache Keys rejected-kind, rejected-why, rejected-by, rejected-at - wie outcome-*, kein neuer Writer, 'jaira set' und Merge-Driver funktionieren sofort. 2) verschachtelter Block 'rejected:' wie im Ticket - braucht einen neuen Block-Writer im Frontmatter-Code und weicht von der Regel in schema.go ab.
