@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T08:17:52Z
+updated-at: 2026-10-19T08:17:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-24710
 claimed-at: 2026-10-19T07:38:42Z
@@ -37,7 +37,7 @@ outcome-resolves: "DoD 1-3: internal/cli/reject.go + Store.Reject, Tests in inte
 review-summary: "none"
 round: 4
 review-gaps: "Runde 4: nichts - eine Zeile StampCommits ueber das bestehende gateEnv().DeriveCommits, kein eigener git-Aufruf."
-test-verdict: "pass (Runde 3): go clean -testcache; go test ./... -race RC=0. Scratch-Board mit gebautem Binaer: --duplicate-of auf sich selbst -> 'cannot be a duplicate of itself' RC=2; --why 'eins\\nzwei' -> archive zeigt '    rejected wontfix: eins zwei (...)' eingerueckt. Unveraenderte Datei nach Exit 2 belegt TestRejectAsADuplicateOfItselfIsAUsageError. DoD 1-6 wie Runde 1, Tests weiter gruen."
+test-verdict: "pass (Runde 4): go clean -testcache; go test ./... -race RC=0; TestRejectOnTheBoardStampsCommits gruen und mit auskommentierter StampCommits-Zeile rot (FAIL) - die Pruefung haengt wirklich an der Aenderung. DoD 1-8 wie Runde 3."
 review-verdict: "approve - DoD 1-8 im Diff belegt, go vet sauber, go test ./... -race gruen, End-to-end in einem Wegwerf-Repo nachgespielt (Exit 3/2/5/2/0, archive, show, restore). Vor dem Merge muessen die uncommitteten Aenderungen committet werden."
 review-round: 3
 review-check: "0. Erst committen, im Worktree /home/alex/projects/.worktrees/jaira-a0c081: git add core/release/notes/A0C081.md core/ticket/store.go internal/cli/reject.go internal/cli/reject_test.go internal/tui/model.go .jaira/tickets/01M59DFMZ1TKMZDZDJHBA0C081-ein-ticket-laesst-sich-mit-grund-ablehnen-jaira.md && git commit -m 'fix(A0C081): reject folds a multi-line reason and refuses a duplicate of itself before it writes'  1. go build -o /tmp/jr ./cmd/jaira  2. In einem leeren Git-Repo: /tmp/jr init, dann zwei Tickets mit /tmp/jr create anlegen (Handles A und B)  3. /tmp/jr reject A --why x -> Exit 3, Meldung nennt 'jaira move A --to human --question'  4. /tmp/jr reject A --force -> Exit 2 'reject needs --why'  5. /tmp/jr reject A --why x --duplicate-of A --force -> Exit 2 'cannot be a duplicate of itself'; ZZZZZZ statt A -> Exit 5  6. /tmp/jr reject A --why $'nicht\\nmehr noetig' --duplicate-of B --force -> 'Rejected A (duplicate)'  7. /tmp/jr archive -> unter der Datei eine eingerueckte Zeile 'rejected duplicate: nicht mehr noetig (<du>, <datum>)'  8. /tmp/jr show A -> Zeile 'rejected duplicate: ...'  9. /tmp/jr restore <datei> -> grep rejected .jaira/tickets/* findet nichts  10. /tmp/jr im Repo starten, Ticket waehlen, R druecken, Grund tippen, Enter -> Ticket verschwindet, Meldung 'Rejected ...' mit restore-Befehl"
