@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T20:48:30Z
+updated-at: 2026-10-19T20:50:09Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-4026"
 claimed-at: 2026-10-19T20:44:55Z
@@ -34,7 +34,7 @@ mode: conversational
 outcome-what: "Neuer Befehl jaira reject <id> --why [--kind wontfix|obsolete] [--duplicate-of] [--force] schreibt rejected-kind/why/by/at (bei --duplicate-of auch rejected-duplicate-of, und rejected-linked, wenn reject den related-Link selbst anlegt) und archiviert ueber Store.Archive; Taste R auf dem Board; archive-Liste und show zeigen den Grund und das Original; restore nimmt die Felder ab und den related-Link nur, wenn reject ihn angelegt hat (Doc.Remove)."
 outcome-why: "Ein abgelehntes Ticket sah im Archiv genauso aus wie ein weggeraeumtes; Monate spaeter liess sich nicht sagen, ob es Duplikat, verworfen oder ueberholt war."
 outcome-resolves: "DoD 1-3: internal/cli/reject.go + Store.Reject, Tests in internal/cli/reject_test.go; DoD 4: modeReject in internal/tui/model.go, internal/tui/reject_test.go; DoD 5: archivedRejections/rejectionLine, unreject; DoD 6: release note, agent block, Skill, go test ./... -race gruen; DoD 7-9: Faltung, Selbst-Duplikat, R stempelt; DoD 10: rejected-duplicate-of + unreject; DoD 11: rejected-linked, TestRestoreKeepsALinkThatWasThereBefore."
-review-summary: "none"
+review-summary: "jaira reject <id> --why [--kind wontfix|obsolete] [--duplicate-of <id>] --force schreibt rejected-kind/why/by/at (Grund auf eine Zeile gefaltet) ins Frontmatter, stempelt vorher die Commits und archiviert ueber Store.Archive; ohne --force Exit 3 mit dem Weg ueber den human-Lane, ohne --why Exit 2, unbekanntes Original Exit 5, Selbst-Duplikat Exit 2 - alles vor dem ersten Schreiben geprueft. --duplicate-of schreibt zusaetzlich rejected-duplicate-of und haengt das Original an related; nur wenn der Link neu ist, markiert rejected-linked: true. Taste R auf Board und Detail macht dasselbe mit einzeiliger Begruendung. jaira archive (zweite Zeile je Datei) und jaira show (Zeile + rejected-Objekt in --json, mit duplicate_of) zeigen den Grund; jaira restore nimmt alle rejected-* ab und den related-Link nur, wenn rejected-linked ihn als von reject angelegt ausweist. Release-Note, CLAUDE.md-Agentblock, Skill und COMMANDS.md nennen reject."
 round: 6
 review-gaps: "none - Runde 6 fuegt einen Key, zwei Bedingungen und einen Test hinzu; der Test baut sein Original selbst statt den Aufbau von TestRestoreTakesTheDuplicateLinkOff zu teilen, weil er nur eines braucht und ein Helfer fuer zwei Aufrufer mehr Zeilen kostet"
 test-verdict: "pass: go vet + go clean -testcache + go test ./... -race RC=0; TestRestoreKeepsALinkThatWasThereBefore rot ohne den Fix; Binary auf Scratch-Board: related-Link vor reject bleibt nach restore stehen (kein rejected-linked geschrieben), neuer Link wird mit rejected-linked: \"true\" geschrieben und von restore abgenommen; show nennt 'duplicate of <handle>'"
