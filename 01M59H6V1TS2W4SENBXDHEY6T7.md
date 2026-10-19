@@ -21,8 +21,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T12:47:44Z
+updated-at: 2026-10-19T12:47:47Z
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-79475
+claimed-at: 2026-10-19T12:47:47Z
 ---
 
 # jaira web schreibt mit, was passiert, und ein Absturz hinterlaesst seine Ursache
