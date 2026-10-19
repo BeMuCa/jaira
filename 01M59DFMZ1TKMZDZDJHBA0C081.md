@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T08:17:38Z
+updated-at: 2026-10-19T08:17:42Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-24710
 claimed-at: 2026-10-19T07:38:42Z
@@ -113,3 +113,4 @@ Empfehlung: 1 - die Luecken sind nicht blockierend und bei x und archive schon g
 - **2026-10-19 08:15 · Alexander Sacharov** — Given back from signoff: 2) Zurueckgeben: R auf dem Board soll auch Commits stempeln, damit abgelehnte Tickets eine commits-Liste haben
 - **2026-10-19 08:15 · Alexander Sacharov** — cockpit: given back to the old worker - tab alive, cache warm for 25 more min, context 236k
 - **2026-10-19 08:17 · Alexander Sacharov** — in-progress (Runde 4, aus signoff zurueck): confirmReject stempelt best-effort wie die CLI und wie x es nicht tut; x bleibt unveraendert (nicht Teil der Rueckgabe). Test TestRejectOnTheBoardStampsCommits mit echtem git-Repo, ohne die Zeile rot gesehen. go clean -testcache; go test ./... -race RC=0.
+- **2026-10-19 08:17 · Alexander Sacharov** — critique (Runde 4): eine Zeile, gleicher Aufruf wie settlePrepare/CLI - none.
