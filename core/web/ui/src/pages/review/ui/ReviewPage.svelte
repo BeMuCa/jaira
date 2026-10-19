@@ -3,6 +3,7 @@
   import { fetchEpics, type Epic } from '@/entities/epic';
   import { fetchTicket, fetchUnassigned, type Ticket, type TicketDetail } from '@/entities/ticket';
   import { fetchSync, type SyncState } from '@/entities/sync';
+  import { fetchLanes, setLanes } from '@/entities/lane';
   import { assignToEpic, removeFromEpic } from '@/features/assign-to-epic';
   import { createEpic } from '@/features/create-epic';
   import { FilterBar, choices, fromQuery, matches, narrows, toQuery } from '@/features/filter-tickets';
@@ -49,7 +50,9 @@
 
   async function load() {
     try {
-      [epics, unassigned, sync] = await Promise.all([fetchEpics(), fetchUnassigned(filter.all), fetchSync()]);
+      let lanes;
+      [epics, unassigned, sync, lanes] = await Promise.all([fetchEpics(), fetchUnassigned(filter.all), fetchSync(), fetchLanes()]);
+      setLanes(lanes);
       error = '';
     } catch (e) {
       error = (e as Error).message;
@@ -102,7 +105,7 @@
     onopen={open}
     onremove={(epic, id) => change(() => removeFromEpic(epic, id))}
   />
-  <EpicList epics={shownEpics} onopen={open} oncreate={create} onassign={(epic, id, from) => change(() => assignToEpic(epic, id, from))} />
+  <EpicList epics={shownEpics} expanded={narrows(filter)} onopen={open} oncreate={create} onassign={(epic, id, from) => change(() => assignToEpic(epic, id, from))} />
 </main>
 
 <dialog bind:this={dialog} onclose={() => (opened = null)}>

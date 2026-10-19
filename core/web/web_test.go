@@ -49,6 +49,7 @@ func (f *fakeSource) CreateEpic(name, title, description string) error {
 	f.assigned = append(f.assigned, "+"+name+"/"+title+"/"+description)
 	return nil
 }
+func (f *fakeSource) Lanes() ([]Lane, error) { return nil, f.err }
 func (f *fakeSource) Ticket(id string) (TicketDetail, error) {
 	if id != "A" {
 		return TicketDetail{}, fmt.Errorf("ticket %s: %w", id, ErrNotFound)
@@ -104,6 +105,9 @@ func TestEmptyListsAreArrays(t *testing.T) {
 	h := (&Server{Source: &fakeSource{epics: []Epic{{Name: "x"}}}}).Handler()
 	if got := strings.TrimSpace(do(t, h, "GET", "/api/unassigned", "").Body.String()); got != "[]" {
 		t.Fatalf("unassigned = %s", got)
+	}
+	if got := strings.TrimSpace(do(t, h, "GET", "/api/lanes", "").Body.String()); got != "[]" {
+		t.Fatalf("lanes = %s", got)
 	}
 	if got := do(t, h, "GET", "/api/epics", "").Body.String(); !strings.Contains(got, `"tickets":[]`) {
 		t.Fatalf("epics = %s", got)

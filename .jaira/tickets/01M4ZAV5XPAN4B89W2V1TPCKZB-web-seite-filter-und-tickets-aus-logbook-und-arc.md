@@ -1,7 +1,7 @@
 ---
 id: 01M4ZAV5XPAN4B89W2V1TPCKZB
 title: "Web-Seite: Filter und Tickets aus Logbook und Archiv anzeigen"
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Auf der Seite von 'jaira web' sieht man jedes Ticket, das es je gab — offen, nur auf dem Ref, im Logbuch oder im Archiv — und filtert es nach Text, Lane, Tag, Person und Datum, mit den Filtern in der URL."
@@ -22,17 +22,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:46:58Z
+updated-at: 2026-10-19T06:54:20Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
 claimed-at: 2026-10-19T06:35:35Z
-outcome-what: "jaira web: Filterleiste (Text, Lane, Tag, Person, Datumsbereich) ueber beiden Spalten, Schalter 'All tickets ever' listet Board, Ref, Logbuch und Archiv mit Ort; Detail zeigt Ort und Ablehnung; Filter im URL-Query"
+outcome-what: "jaira web: Filterleiste, Schalter 'All tickets ever' (Board, Ref, Logbuch, Archiv mit Ort), Ablehnung im Detail, Filter im URL-Query; dazu Lane-Farben an Badge und Lane-Filter aus der Board-Reihenfolge (GET /api/lanes)"
 outcome-why: "Alex will jedes Ticket, das es je gab, auf der Seite sehen und nach Personen, Datum und Lane filtern; bisher zeigte die Seite nur offene Tickets ohne Filter"
 outcome-resolves: "GET /api/unassigned?all=1 und neue Kartenfelder (web_source.go cards/rejection), Filtermodell features/filter-tickets mit URL-Abgleich, TestWebListsFiledTicketsAndOpensThem; DoD 1-8 mit Proofs"
 review-summary: none
-round: 2
+round: 3
 review-gaps: "dropped the re-exports nobody imports (Place, Rejection from entities/ticket; DateField, Filter, emptyFilter from features/filter-tickets) — dist unchanged. Searched for duplicates: logbook date reuses ticket.LogbookFolderDay, place uses link.PlaceOf, nothing in shared/lib formats a local yyyy-mm-dd, so day() in filter.ts stays. Left: cards() reads every filed header on each /api/epics and /api/unassigned (0.08-0.19 s for 222 tickets, once a minute) and rejection() rereads archive files; both small, critique let them stand."
+test-verdict: "fail: DoD 9 (Lane-Farben, von Alex am 19.10. nachgereicht) fehlt; DoD 1-8 gruen"
 ---
 
 # Web-Seite: Filter und Tickets aus Logbook und Archiv anzeigen
@@ -55,6 +56,8 @@ review-gaps: "dropped the re-exports nobody imports (Place, Rejection from entit
   proof: internal/cli/web_source.go:165 rejection(); TicketDetails.svelte:23; TestWebListsFiledTicketsAndOpensThem checks kind and why
 - [x] Die gesetzten Filter stehen in der URL; ein Link zeigt dieselbe gefilterte Liste
   proof: core/web/ui/src/features/filter-tickets/model/filter.ts fromQuery/toQuery; ReviewPage.svelte:26 reads, :40 writes via history.replaceState
+- [x] Jede Lane hat im Web eine eigene Farbe — dieselbe am Lane-Badge jedes Tickets und im Lane-Filter; die Farbe einer Lane ist stabil (gleiche Lane, gleiche Farbe bei jedem Laden)
+  proof: core/web/ui/src/entities/lane/model/colour.svelte.ts laneColour (board order via GET /api/lanes, internal/cli/web_source.go Lanes, TestWebListsLanesInBoardOrderWithKind); LaneBadge in TicketCard/TicketDetails, FilterBar lane select; checked light+dark in headless Chrome
 
 ## Options
 
@@ -92,3 +95,6 @@ Ich nehme A: die Datenmenge ist klein, Filtern im Browser ist sofort, die URL tr
 - **2026-10-19 06:45 · Alexander Sacharov** — critique (Runde 1): 1) filedPlace in internal/cli/web_source.go ist eine Kopie von placeOf in core/link/link.go:196 — exportieren (link.PlaceOf) statt kopieren. 2) Ortsbezeichnungen stehen doppelt (TicketCard PLACES, TicketDetails if-Kette) — eine Map in entities/ticket/model/place.ts. Stehen gelassen: cards() liest bei jedem /api/epics alle abgelegten Header (gemessen 0,08 s bei 134 Dateien); rejection() liest die Archivdatei ein zweites Mal — beides klein, und rejection() wird nach A0C081 durch t.Rejected ersetzbar; die Doppelung epic.Unassigned / everything-Zweig bleibt, damit die Standardliste genau 'jaira epic ls --unassigned' entspricht.
 - **2026-10-19 06:46 · Alexander Sacharov** — critique Runde 1 umgesetzt: link.PlaceOf exportiert (core/link/link.go:196) und in web_source.go benutzt; Ortsbezeichnungen als PLACE_LABELS in entities/ticket/model/place.ts, TicketCard und TicketDetails lesen sie. Proofs 3/4/7 auf neue Zeilen gesetzt.
 - **2026-10-19 06:46 · Alexander Sacharov** — critique Runde 2: beide Befunde aus Runde 1 erledigt (filedPlace weg, link.PlaceOf benutzt; PLACE_LABELS in beiden Komponenten). Nichts weiter — gemaess Lane-Regel nur diese Stellen gelesen.
+- **2026-10-19 06:48 · Alexander Sacharov** — decision (Alex, 19.10.2026 via teamlead jaira-a7): 'lanes must be told apart by colour' im Web. Vorgaben: kein neues Lane-Frontmatter-Feld ohne Rueckfrage; Quelle selbst waehlen (z.B. feste Palette nach Lane-Reihenfolge des Boards, terminal/human erkennbar); lesbar in hellem und dunklem Theme. Heute: .jaira/lanes/*.md tragen keine Farbe; die TUI wechselt nur einen Lane-Schatten (internal/tui/view.go:656 laneShade).
+- **2026-10-19 06:49 · Alexander Sacharov** — testing Runde 1: go vet ./... RC=0, go test -count=1 -race ./... RC=0, npm ci && npm run build laesst dist unveraendert (CI-Check web-dist). Headless-Chrome auf diesem Repo: ?all=1&q=web&person=Alexander+Sacharov zeigt 3 Karten mit Ort (ref, logbook); ?all=1&date=filed&from=2026-10-17&to=2026-10-17 zeigt genau 8NHD8Q und S0EG0M (Ordner as-20261017). Playwright auf Scratch-Board mit abgelehntem Archiv-Ticket: Schalter setzt ?all=1, Karte nicht ziehbar, Dialog zeigt 'in the archive' und 'Rejected: wontfix | Ada Lovelace,10/2/26 | nobody needs it'. Befunde: 1) DoD 9 (Lane-Farben) ist neu und offen. 2) TicketDetails.svelte: zwischen rejected.by und Datum fehlt das Leerzeichen nach dem Komma (Svelte schneidet das Leerzeichen am Ende des {#if}-Blocks ab) — als {', '} schreiben.
+- **2026-10-19 06:54 · Alexander Sacharov** — decision (worker, DoD 9): Farbquelle = Lane-Reihenfolge des Boards, kein Frontmatter-Feld. GET /api/lanes liefert Lanes in Board-Reihenfolge mit kind (work/human/terminal/parking; human = requires-human-exit ODER requires-question, wie der Agent-Block in CLAUDE.md es markiert). Die Seite faerbt in oklch: Arbeits-Lanes bekommen der Reihe nach 9 Farbtoene (240,165,290,110,340,215,190,265,315 — wechselnd, damit Nachbarn sich unterscheiden; in-progress bewusst magenta statt blau, weil backlog blau ist), die 10. grau, dann wieder von vorn; human = amber 70, terminal = gruen 145, parking = rot 25. Helligkeit/Chroma aus dem Theme (--lane-l/--lane-c in app/styles.css), Licht und Dunkel per Screenshot geprueft. Eine Lane eines anderen Boards bleibt gedaempft (--muted). Grenze: aendert jemand die Lane-Reihenfolge, wechseln die Farben der Arbeits-Lanes mit. Ausserdem: Epic-Karten klappen ihre Ticketliste auf, solange ein Filter eingrenzt (sonst blieben Treffer zugeklappt); testing-Befund 2 (Komma ohne Leerzeichen) behoben.

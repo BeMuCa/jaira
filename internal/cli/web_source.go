@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/BeMuCa/jaira/core/epic"
+	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/link"
 	"github.com/BeMuCa/jaira/core/ticket"
 	"github.com/BeMuCa/jaira/core/web"
@@ -217,6 +218,33 @@ func (w *webSource) Ticket(id string) (web.TicketDetail, error) {
 		d.Notes = append(d.Notes, web.Note{At: n.At, Author: n.Author, Text: n.Text})
 	}
 	return d, nil
+}
+
+// Lanes is the board's lanes in its order, each with the kind the page
+// colours it by.
+func (w *webSource) Lanes() ([]web.Lane, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	set, err := lane.Load(w.s.Root)
+	if err != nil {
+		return nil, err
+	}
+	var out []web.Lane
+	for _, id := range set.IDs() {
+		l, _ := set.Get(id)
+		kind := web.LaneWork
+		switch {
+		case l.Terminal:
+			kind = web.LaneTerminal
+		case l.RequiresBlockedReason:
+			kind = web.LaneParking
+		case l.RequiresHumanExit || l.RequiresQuestion:
+			// a person's lane, as the agent block in CLAUDE.md marks it
+			kind = web.LaneHuman
+		}
+		out = append(out, web.Lane{ID: l.ID, Name: l.Name, Kind: kind})
+	}
+	return out, nil
 }
 
 // CreateEpic starts an empty epic, the name normalised the way 'jaira epic

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { byBoardOrder, laneColour } from '@/entities/lane';
   import { emptyFilter, narrows, type Filter } from '../model/filter';
 
   let { filter = $bindable(), lanes, tags, people }: {
@@ -12,9 +13,9 @@
 <form class="filters" role="search" onsubmit={(e) => e.preventDefault()}>
   <label class="q">Search <input type="search" bind:value={filter.q} placeholder="title, goal or id" /></label>
   <label>Lane
-    <select bind:value={filter.lane}>
+    <select bind:value={filter.lane} class="lane" style:border-left-color={filter.lane ? laneColour(filter.lane) : undefined}>
       <option value="">any</option>
-      {#each lanes as l (l)}<option value={l}>{l}</option>{/each}
+      {#each byBoardOrder(lanes) as l (l)}<option value={l} style:color={laneColour(l)}>● {l}</option>{/each}
     </select>
   </label>
   <label>Tag
@@ -57,4 +58,5 @@
   .all { display: flex; gap: 0.35rem; align-items: center; color: var(--text); }
   .all small { color: var(--muted); }
   button { cursor: pointer; }
+  .lane { border-left-width: 6px; }
 </style>

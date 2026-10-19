@@ -76,6 +76,23 @@ type Epic struct {
 	Tickets     []Ticket `json:"tickets"`
 }
 
+// Lane is one lane of the board, in the board's order. Kind is what the
+// page colours by beside the position: work, human (a person moves it on),
+// terminal or parking.
+type Lane struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Kind string `json:"kind"`
+}
+
+// The kinds a Lane has.
+const (
+	LaneWork     = "work"
+	LaneHuman    = "human"
+	LaneTerminal = "terminal"
+	LaneParking  = "parking"
+)
+
 // Check is one item of a ticket's definition of done.
 type Check struct {
 	Text string `json:"text"`
@@ -114,6 +131,7 @@ type Source interface {
 	// in no epic that ever was — finished, logged and archived ones too.
 	Unassigned(all bool) ([]Ticket, error)
 	Ticket(id string) (TicketDetail, error)
+	Lanes() ([]Lane, error)
 	CreateEpic(name, title, description string) error
 	// Assign puts a ticket into epic; with from set it takes it out of that
 	// epic as well, which is a move.
@@ -214,6 +232,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/epics", s.handleEpics)
 	mux.HandleFunc("GET /api/unassigned", s.handleUnassigned)
 	mux.HandleFunc("GET /api/tickets/{id}", s.handleTicket)
+	mux.HandleFunc("GET /api/lanes", s.handleLanes)
 	mux.HandleFunc("POST /api/epics", s.handleCreateEpic)
 	mux.HandleFunc("POST /api/epics/{name}/tickets", s.handleAssign)
 	mux.HandleFunc("DELETE /api/epics/{name}/tickets/{id}", s.handleUnassign)
@@ -319,6 +338,18 @@ func (s *Server) handleTicket(w http.ResponseWriter, r *http.Request) {
 		t.Notes = []Note{}
 	}
 	writeJSON(w, http.StatusOK, t)
+}
+
+func (s *Server) handleLanes(w http.ResponseWriter, _ *http.Request) {
+	lanes, err := s.Source.Lanes()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	if lanes == nil {
+		lanes = []Lane{}
+	}
+	writeJSON(w, http.StatusOK, lanes)
 }
 
 func (s *Server) handleCreateEpic(w http.ResponseWriter, r *http.Request) {

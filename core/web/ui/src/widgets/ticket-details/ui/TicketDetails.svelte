@@ -1,5 +1,6 @@
 <script lang="ts">
   import { NoteItem, PLACE_LABELS, type TicketDetail } from '@/entities/ticket';
+  import { LaneBadge } from '@/entities/lane';
   import { dateTime } from '@/shared/lib';
 
   let { ticket, onclose }: { ticket: TicketDetail; onclose: () => void } = $props();
@@ -15,7 +16,7 @@
 <article aria-labelledby="ticket-title">
   <header>
     <span class="handle">{ticket.handle}</span>
-    <span class="lane">{ticket.lane}</span>
+    <LaneBadge lane={ticket.lane} />
     {#if ticket.place !== 'board'}<span class="where">{PLACE_LABELS[ticket.place]}</span>{/if}
     <button class="close" onclick={onclose} aria-label="Close">×</button>
   </header>
@@ -24,7 +25,7 @@
     <section class="rejected" aria-label="Rejected">
       <strong>Rejected: {ticket.rejected.kind}</strong>
       {#if ticket.rejected.by || ticket.rejected.at}
-        <small>{ticket.rejected.by ?? ''}{#if ticket.rejected.by && ticket.rejected.at}, {/if}{#if ticket.rejected.at}{dateTime(ticket.rejected.at)}{/if}</small>
+        <small>{ticket.rejected.by ?? ''}{#if ticket.rejected.by && ticket.rejected.at}{', '}{/if}{#if ticket.rejected.at}{dateTime(ticket.rejected.at)}{/if}</small>
       {/if}
       {#if ticket.rejected.why}<p class="text">{ticket.rejected.why}</p>{/if}
     </section>
@@ -58,7 +59,6 @@
   article { display: grid; gap: 0.25rem; }
   header { display: flex; gap: 0.75rem; align-items: baseline; }
   .handle { font-family: ui-monospace, monospace; color: var(--muted); }
-  .lane { font-size: 0.85rem; padding: 0 0.4rem; border: 1px solid var(--line); border-radius: 4px; }
   .where { font-size: 0.85rem; color: var(--muted); }
   .rejected { display: grid; gap: 0.15rem; padding: 0.5rem 0.75rem; border: 1px solid var(--error); border-radius: 6px; }
   .rejected small { color: var(--muted); }

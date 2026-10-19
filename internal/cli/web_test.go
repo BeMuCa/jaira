@@ -282,3 +282,34 @@ func TestWebListsFiledTicketsAndOpensThem(t *testing.T) {
 		t.Errorf("open detail place = %q", d.Place)
 	}
 }
+
+// The page colours lanes by the board's order and their kind, so the lanes
+// come in that order with the kind of each.
+func TestWebListsLanesInBoardOrderWithKind(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("JAIRA_HOME", filepath.Join(dir, "home"))
+	if out, err := runCLI(t, dir, "init"); err != nil {
+		t.Fatalf("init: %v\n%s", err, out)
+	}
+	g.dir = dir
+	s, err := openStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var lanes []web.Lane
+	webGet(t, (&web.Server{Source: newWebSource(s)}).Handler(), "/api/lanes", &lanes)
+	kind := map[string]string{}
+	var order []string
+	for _, l := range lanes {
+		kind[l.ID] = l.Kind
+		order = append(order, l.ID)
+	}
+	if len(order) == 0 || order[0] != "backlog" {
+		t.Fatalf("lanes = %v; want the board's order, backlog first", order)
+	}
+	for id, want := range map[string]string{"backlog": "work", "human": "human", "signoff": "human", "done": "terminal", "blocked": "parking"} {
+		if kind[id] != want {
+			t.Errorf("%s is %q, want %q", id, kind[id], want)
+		}
+	}
+}

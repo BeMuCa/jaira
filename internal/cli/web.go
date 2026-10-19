@@ -46,6 +46,11 @@ in the logbook or the archive — each saying where it lies; a filed ticket
 opens but cannot be dragged. The filters stay in the address, so a link shows
 the same list.
 
+Every lane has a colour of its own, the same on each ticket's badge and in
+the lane filter: the lanes where agents work take theirs from their place in
+the board's order, a lane a person moves on is amber, the terminal lane green
+and the parking lane red.
+
 There is no server: the page lives as long as this command runs, and it reads
 and writes the same refs the CLI does. A drop writes the epic's ref and pushes
 it at once; every minute the command fetches, so what a teammate sorted arrives

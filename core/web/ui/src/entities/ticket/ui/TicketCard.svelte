@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Ticket } from '../model/types';
   import { PLACE_LABELS } from '../model/place';
+  import { LaneBadge } from '@/entities/lane';
 
   let { ticket, draggable = false, ondragstart, onopen }: {
     ticket: Ticket;
@@ -20,7 +21,7 @@
 >
   <span class="handle">{ticket.handle}</span>
   <button class="title" onclick={() => onopen?.(ticket.id)}>{ticket.title}</button>
-  <span class="lane">{ticket.lane}</span>
+  <LaneBadge lane={ticket.lane} />
   {#if ticket.place && ticket.place !== 'board'}
     <span class="where">{PLACE_LABELS[ticket.place]}{#if ticket.rejected} · rejected: {ticket.rejected}{/if}</span>
   {/if}
@@ -43,7 +44,6 @@
   .handle { font-family: ui-monospace, monospace; color: var(--muted); }
   .title { all: unset; cursor: pointer; overflow-wrap: anywhere; }
   .title:hover, .title:focus-visible { text-decoration: underline; }
-  .lane { font-size: 0.8rem; color: var(--muted); }
   .via, .where { grid-column: 2 / -1; font-size: 0.75rem; color: var(--muted); }
   .done .title { text-decoration: line-through; color: var(--muted); }
   .indirect { border-style: dashed; }
