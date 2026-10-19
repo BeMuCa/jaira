@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T13:47:46Z
+updated-at: 2026-10-19T13:47:50Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-27212
 claimed-at: 2026-10-19T13:47:43Z
@@ -29,7 +29,7 @@ outcome-what: "jaira web schreibt Fehlerantworten (>=400), fehlgeschlagene Fetch
 outcome-why: "Alex' 'jaira web' fiel aus, und es gab keine Spur: nichts wurde geloggt, stderr ging mit dem Terminal verloren, und die Seite stand still, ohne es zu sagen."
 outcome-resolves: "Ein Ausfall von jaira web hinterlaesst jetzt seine Ursache in einer Datei, und die Seite meldet ihn sichtbar."
 review-summary: "jaira web oeffnet beim Start <StateDir>/web.log (ausserhalb des Repos, ab 1 MB beim naechsten Start nach web.log.1 verschoben) und druckt 'jaira web: log <pfad>'. Eine Middleware um alle Routen (core/web/log.go logged) schreibt jede Antwort >=400 mit Methode, Pfad, Status und den ersten 512 Byte des Fehlerbodys ins Log, faengt Handler-Panics ab, loggt sie mit Stack und antwortet 500 statt die Verbindung zu kappen. Fetch und Push laufen durch recovered(): eine Panic wird zum Fehler mit Stack, wird geloggt und landet in PushError, die Loop-Goroutine laeuft weiter. http.Server.ErrorLog zeigt auf dasselbe Log; SIGTERM/SIGHUP beenden wie Ctrl-C und das Signal steht im Log. Die Seite fragt alle 10 s /api/sync ab; scheitert das, erscheint ein rotes Banner 'has not answered since HH:MM', das beim naechsten Erfolg verschwindet und alles neu laedt. dist ist neu gebaut, Release Note mit zwei Zeilen vorhanden."
-review-gaps: "removed recorder.Unwrap (nothing uses http.ResponseController here) and the test-only syncBuffer (log.Logger serialises writes, tests are single-goroutine); left NewLogger (it fixes the timestamp flags for CLI and tests) and logf's nil check (Server.Log is optional, existing tests run without it)"
+review-gaps: "1 (blockiert Push, nicht Code): die in d89bb20c committete Ticketdatei enthaelt private Daten gegen Alex' Regel vom 19.10. - fremder Projektname (requirementsgenie, requirementsgenie-harness) im Kontext Zeile 14-15 und Note 12:48, PIDs 17706/92131, Home-Pfad /home/alex/.jaira/state/... in Note 12:54. Laut Entscheidung 13:46 gibt Alex die Bereinigung selbst frei; bis dahin weder Branch noch Ref pushen. 2 (klein): der Kommentar an logKeep verspricht, dass ein wochenlang offener Lauf die Platte nie fuellt - rotiert wird aber nur beim Start; waehrend eines Laufs waechst das Log unbegrenzt (praktisch klein: ein dauerhaft scheiternder Fetch ~1 Zeile/min). 3 (klein): kann web.log nicht geoeffnet werden, startet jaira web gar nicht (fail 'log') - frueher lief es ohne; ein nicht beschreibbares State-Verzeichnis ist jetzt fatal. Sonst: DoD 1-3 und 5 vom Diff gedeckt; DoD 4 per Entscheidung als Note geschlossen, Ursache nicht gefunden. GOOS=windows go build ./... ok, go vet ok, go test -race ./core/web ok."
 test-verdict: "pass: go test -race -count=1 ./... RC=0; DoD 1,2,3,5 verified in the tree and live (scratch binary: log path printed, 404 and SIGHUP logged; headless Chrome: banner appears ~10 s after the command is killed, disappears after restart); DoD 4 needs a log from Alex' own run"
 question: ""
 ---
