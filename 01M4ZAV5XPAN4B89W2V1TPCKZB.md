@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:40:24Z
+updated-at: 2026-10-19T06:40:27Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -73,3 +73,4 @@ C) Eigene Seite /all. Von Alex ausgeschlossen (gleiche Liste, Schalter).
 
 Ich nehme A: die Datenmenge ist klein, Filtern im Browser ist sofort, die URL traegt den Zustand ohne Server-Logik.
 - **2026-10-19 06:37 · Alexander Sacharov** — decision (worker, aus Code/Default): Die Filterleiste steht ueber beiden Spalten und wirkt auf beide — auf 'Tickets in no epic' und auf die Ticketzeilen jeder Epic-Karte. Der Schalter 'alle Tickets aller Zeiten' fuegt der linken Liste die abgelegten Tickets ohne Epic hinzu (Epic-Karten zaehlen abgelegte schon heute). Jede Karte zeigt, wo sie liegt: Board / Ref / Logbuch / Archiv. Abgelegte Karten lassen sich nicht ziehen. Personenfilter: EIN Feld 'Person', trifft wenn creator ODER assignee ODER updated_by passt — 'filter by people' ohne drei Dropdowns. Datumsfilter: Auswahl des Feldes (erstellt / geaendert / abgelegt) plus von/bis. Abgelegt-Datum: Logbuch = Datum aus dem Ordnernamen; Archiv = rejected-at, wenn gesetzt, sonst keins. Die Snapshot-Branch (core/snapshot) ist ein Backup und bleibt aussen vor.
+- **2026-10-19 06:40 · Alexander Sacharov** — Go-Seite steht: web.Ticket traegt place/tags/creator/assignee/updated_by/created_at/updated_at/filed_at/rejected, GET /api/unassigned?all=1 liefert zusaetzlich fertige Board-Tickets und alle abgelegten ohne Epic; TicketDetail traegt place und rejected. rejected-* wird in internal/cli/web_source.go:rejection per Doc.Fields gelesen — schema.go bleibt fuer A0C081 frei; nach dessen Merge kann rejection() auf t.Rejected umgestellt werden. Test: TestWebListsFiledTicketsAndOpensThem. Als naechstes UI.
