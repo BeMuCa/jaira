@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T06:37:58Z
+updated-at: 2026-10-19T06:43:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16821
 claimed-at: 2026-10-19T06:27:46Z
@@ -43,7 +43,8 @@ mode: conversational
   proof: core/ticket/store.go Store.Reject (LoadAnywhere, related); test TestRejectDuplicateOfLinksTheOriginal, TestRejectDuplicateOfAnUnknownTicketIsNotFound
 - [x] Ein Agent wird mit Exit 3 abgewiesen und die Meldung nennt den Weg ueber human --question
   proof: internal/cli/reject.go !force -> ExitValidation needs_human, questionLane; test TestRejectWithoutForceSendsAnAgentToTheHumanLane
-- [ ] Auf dem Board laesst sich ein Ticket mit einer einzeiligen Begruendung ablehnen
+- [x] Auf dem Board laesst sich ein Ticket mit einer einzeiligen Begruendung ablehnen
+  proof: internal/tui/model.go startReject/confirmReject, Taste R (Board + Detail); tests TestRejectOnTheBoardWritesTheReason, TestRejectCanBeCancelledFromAnOpenTicket
 - [ ] 'jaira archive' (Liste) und 'jaira show' zeigen rejected-kind und rejected-why; 'jaira restore' nimmt die rejected-* Felder wieder ab
 - [ ] Release-Note core/release/notes/<ID>.md, Agent-Block/jaira-Skill nennen reject; go test ./... -race gruen
 
@@ -58,7 +59,7 @@ mode: conversational
 
 - [x] Schema: Felder rejected-kind/why/by/at in core/ticket/schema.go, Ticket.Rejected, Store.Reject (schreibt Felder, ruft Archive) und Store.Restore entfernt sie
 - [x] CLI: internal/cli/reject.go - --why Pflicht (Exit 2), --kind wontfix|obsolete, --duplicate-of (Exit 5 bei unbekannter id, related setzen), ohne --force Exit 3 mit Weg ueber human --question
-- [ ] TUI: Taste R fragt eine Zeile Grund und ruft Store.Reject; x bleibt archivieren
+- [x] TUI: Taste R fragt eine Zeile Grund und ruft Store.Reject; x bleibt archivieren
 - [ ] Anzeige: jaira archive (Liste) und jaira show zeigen kind und why (Web-Portal: TPCKZB)
 - [ ] Release-Note, Agent-Block, jaira-Skill; go test ./... -race
 
@@ -73,3 +74,4 @@ mode: conversational
 - **2026-10-19 06:35 · Alexander Sacharov** — scope (Teamlead via jaira-a7): Web-Portal-Teil von DoD 5 wandert nach TPCKZB (Web-Filter, parallel auf feat/tpckzb) - zwei Branches an core/web gleichzeitig wuerden kollidieren. TPCKZB zeigt rejected-* an, wenn vorhanden. Hier wird core/web nicht angefasst.
 - **2026-10-19 06:36 · Alexander Sacharov** — decision (worker): --duplicate-of verlinkt ueber related (bestehendes Feld, von beiden Seiten sichtbar) statt eines fuenften Keys - Alex hat genau vier rejected-* Keys entschieden. Das Original wird mit LoadAnywhere gesucht, damit ein Duplikat eines schon abgelegten Tickets geht. Doc.Remove (frontmatter.go) ist neu: restore nimmt die Keys ganz ab statt sie leer stehen zu lassen. DoD 1-3 in einem Schritt gebaut, weil sie ein Befehl sind.
 - **2026-10-19 06:37 · Alexander Sacharov** — Alex (via jaira-a7) hat DoD 1-3 abgenommen; nicht committen, Alex committet selbst. Weiter mit DoD 4 (Taste R).
+- **2026-10-19 06:43 · Alexander Sacharov** — DoD 4: R im Board und in der Detailansicht; leere Begruendung laesst den Prompt offen (ohne Grund = x). Art auf dem Board immer wontfix. Hilfe: x und R teilen eine Zeile, weil TestHelpExplainsEveryCardMark bei 60 Zeilen Hoehe sonst '@name' abschneidet. README/COMMANDS.md schon hier ergaenzt, weil TestEveryCommandIsDocumented sonst rot ist.
