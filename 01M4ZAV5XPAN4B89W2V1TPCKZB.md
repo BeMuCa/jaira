@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T07:43:59Z
+updated-at: 2026-10-19T07:44:02Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-70156
@@ -32,7 +32,7 @@ outcome-why: "Alex will jedes Ticket, das es je gab, auf der Seite sehen und nac
 outcome-resolves: "GET /api/unassigned?all=1 und neue Kartenfelder (web_source.go cards/rejection), Filtermodell features/filter-tickets mit URL-Abgleich, TestWebListsFiledTicketsAndOpensThem; DoD 1-8 mit Proofs"
 review-summary: "jaira web bekommt eine Filterleiste ueber beiden Spalten (Text ueber Titel/Ziel/ID/Handle, Lane, Tag, Person = creator ODER assignee ODER updated_by, Datumsbereich auf erstellt/geaendert/abgelegt), alles UND-verknuepft und im Browser gefiltert (features/filter-tickets/model/filter.ts). Der Zustand steht per history.replaceState in der URL. Der Schalter 'All tickets ever' ruft GET /api/unassigned?all=1: internal/cli/web_source.go cards() baut Karten aus Board, Refs und allen abgelegten Tickets (Store.FiledAwayIDs, nur Header), Logbuch-Datum aus dem Ordnernamen, Archiv-Datum aus rejected-at; abgelegte Karten sind nicht ziehbar. Die Detailansicht zeigt Ort und bei abgelehnten Archiv-Tickets rejected-kind/why/by/at (direkt aus dem Frontmatter gelesen, schema.go unberuehrt wegen A0C081). Neues GET /api/lanes liefert die Lanes in Board-Reihenfolge mit kind; LaneBadge faerbt per oklch: Arbeits-Lanes nach Position (9 Toene + grau), human amber, terminal gruen, parking rot, Helligkeit je Theme. Nachbesserung aus signoff: load() zaehlt Ladevorgaenge, nur der letzte schreibt; EpicList merkt sich Hand-Auf/Zuklappen je Epic und stellt es nach dem Leeren eines Filters wieder her. link.placeOf als PlaceOf exportiert und wiederverwendet."
 round: 4
-review-gaps: "Runde 3: nichts zu entfernen — die Reparatur fuegt einen Zaehler und eine Map hinzu, beides wird gebraucht; keine bestehende Abbruchlogik in shared/api, die man haette nehmen koennen."
+review-gaps: "1) Mehrere Boards: webSource.Lanes() laedt nur lane.Load(root) = Default-Board. Ein Ticket auf einem anderen Board (jaira create --board, seit S0EG0M moeglich) mit einer Lane, die das Default-Board nicht hat, bekommt var(--muted) — DoD 9 'jede Lane hat eine eigene Farbe' gilt also nur fuer Ein-Board-Repos. Heute hat dieses Repo nur 'default', daher nicht blockierend; die Notiz vom 06:54 nennt die Grenze. 2) Archiv-Tickets ohne rejected-at (live: 5 von 5 im Repo) haben kein filed_at und fallen bei Datum='filed away' aus jedem Bereich — so gewollt (decision 06:37), aber fuer den Nutzer unsichtbar. 3) cards() liest bei jedem /api/epics und /api/unassigned alle ~134 abgelegten Header, Archivdateien zusaetzlich ein zweites Mal — gemessen klein, waechst mit dem Logbuch. 4) Kein JS-Test fuer filter.ts im Repo (nur ein Wegwerf-Skript laut Notiz); Go-Seite durch TestWebListsFiledTicketsAndOpensThem, TestWebListsLanesInBoardOrderWithKind, TestUnassignedAllReachesTheSource gedeckt."
 test-verdict: "pass: go vet RC=0, go test -count=1 -race ./... RC=0, dist matches npm ci+build; DoD 10/11 exercised in Playwright (delayed ?all=1 race, hand-unfolded epic across filter set/clear)"
 review-verdict: "Der Diff erfuellt alle neun DoD-Punkte; Outcome und Diff stimmen ueberein. Keine Defekte, die eine Rueckgabe rechtfertigen - nur die zwei kleinen UI-Unschoenheiten aus review-gaps. Unsicher bleibt nur die Optik im Browser, die ich nicht selbst angesehen habe (testing hat Headless-Chrome/Playwright-Laeufe notiert)."
 review-round: 3
