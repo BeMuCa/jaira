@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T06:32:25Z
+updated-at: 2026-10-19T06:33:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16821
 claimed-at: 2026-10-19T06:27:46Z
@@ -60,3 +60,4 @@ mode: conversational
 - **2026-10-19 06:28 · Alexander Sacharov** — question 2 (an jaira-a7): Welche Taste lehnt auf dem Board ab? 1) (Recommended) eigene Taste R (in der Detailansicht und auf dem Board frei), fragt nach einer Zeile Grund; x bleibt reines Archivieren - Aufraeumen und Ablehnen bleiben getrennt, wie der Kommentar model.go:1532 es fuer x verlangt. 2) x fragt nach einem Grund, leer = nur archivieren - eine Taste weniger, aber jedes Archivieren bekommt eine Frage dazwischen.
 - **2026-10-19 06:31 · Alexander Sacharov** — decision (Alex via jaira-a7, 19.10.2026): Q1 -> Option 1: CLI reject ohne --force -> Exit 3, Meldung nennt human --question und das Board; ein Mensch in der Shell nimmt --force, wie bei move aus human. Q2 -> Option 1: eigene Taste R fragt nach einer Zeile Grund; x bleibt reines Archivieren.
 - **2026-10-19 06:32 · Alexander Sacharov** — question 3 (an jaira-a7): Kontext/DoD verlangen einen Block 'rejected:' mit kind/why/by/at. Das Format kennt aber nur flache Top-Level-Keys: core/ticket/schema.go:69-72 begruendet, warum outcome-what/why/resolves flach sind (Merge-Driver loest pro Top-Level-Key, ein Feld = eine Zeile), und der Writer (core/ticket/frontmatter.go SetScalar/SetList) kann keine verschachtelten Mappings schreiben. Optionen: 1) (Recommended) flache Keys rejected-kind, rejected-why, rejected-by, rejected-at - wie outcome-*, kein neuer Writer, 'jaira set' und Merge-Driver funktionieren sofort. 2) verschachtelter Block 'rejected:' wie im Ticket - braucht einen neuen Block-Writer im Frontmatter-Code und weicht von der Regel in schema.go ab.
+- **2026-10-19 06:33 · Alexander Sacharov** — decision (Alex via jaira-a7): Q3 -> Option 1: flache Keys rejected-kind, rejected-why, rejected-by, rejected-at wie outcome-*. DoD 1/5 'rejected.kind/why/by/at' und 'rejected-Block' sind damit diese vier Keys.
