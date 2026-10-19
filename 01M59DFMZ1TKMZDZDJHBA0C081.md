@@ -1,7 +1,7 @@
 ---
 id: 01M59DFMZ1TKMZDZDJHBA0C081
 title: "Ein Ticket laesst sich mit Grund ablehnen: jaira reject, und das Archiv sagt warum"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -26,11 +26,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T06:46:41Z
+updated-at: 2026-10-19T06:48:40Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16821
 claimed-at: 2026-10-19T06:27:46Z
 mode: conversational
+outcome-what: "Neuer Befehl jaira reject <id> --why [--kind wontfix|obsolete] [--duplicate-of] [--force] schreibt rejected-kind/why/by/at und archiviert ueber Store.Archive; Taste R auf dem Board; archive-Liste und show zeigen den Grund; restore nimmt die Felder ab (Doc.Remove)."
+outcome-why: "Ein abgelehntes Ticket sah im Archiv genauso aus wie ein weggeraeumtes; Monate spaeter liess sich nicht sagen, ob es Duplikat, verworfen oder ueberholt war."
+outcome-resolves: "DoD 1-3: internal/cli/reject.go + Store.Reject, Tests in internal/cli/reject_test.go; DoD 4: modeReject in internal/tui/model.go, internal/tui/reject_test.go; DoD 5: archivedRejections/rejectionLine, unreject; DoD 6: release note, agent block, Skill, go test ./... -race gruen."
 ---
 
 # Ein Ticket laesst sich mit Grund ablehnen: jaira reject, und das Archiv sagt warum
@@ -47,7 +50,8 @@ mode: conversational
   proof: internal/tui/model.go startReject/confirmReject, Taste R (Board + Detail); tests TestRejectOnTheBoardWritesTheReason, TestRejectCanBeCancelledFromAnOpenTicket
 - [x] 'jaira archive' (Liste) und 'jaira show' zeigen rejected-kind und rejected-why; 'jaira restore' nimmt die rejected-* Felder wieder ab
   proof: internal/cli/archive.go archivedRejections; internal/cli/tickets.go rejectionLine/rejectionJSON; core/ticket/store.go unreject; tests TestArchiveListAndShowSayWhyATicketWasRejected, TestAnArchivedTicketIsNotShownAsRejected, TestRestoreTakesTheRejectionOff
-- [ ] Release-Note core/release/notes/<ID>.md, Agent-Block/jaira-Skill nennen reject; go test ./... -race gruen
+- [x] Release-Note core/release/notes/<ID>.md, Agent-Block/jaira-Skill nennen reject; go test ./... -race gruen
+  proof: core/release/notes/A0C081.md; core/board/announce.go + CLAUDE.md/AGENTS.md (TestAgentNoteNamesReject); .claude/skills/jaira/SKILL.md 'Taking a ticket off the board'; go test ./... -race exit 0
 
 ## Options
 
@@ -62,7 +66,7 @@ mode: conversational
 - [x] CLI: internal/cli/reject.go - --why Pflicht (Exit 2), --kind wontfix|obsolete, --duplicate-of (Exit 5 bei unbekannter id, related setzen), ohne --force Exit 3 mit Weg ueber human --question
 - [x] TUI: Taste R fragt eine Zeile Grund und ruft Store.Reject; x bleibt archivieren
 - [x] Anzeige: jaira archive (Liste) und jaira show zeigen kind und why (Web-Portal: TPCKZB)
-- [ ] Release-Note, Agent-Block, jaira-Skill; go test ./... -race
+- [x] Release-Note, Agent-Block, jaira-Skill; go test ./... -race
 
 ## Progress
 - **2026-10-19 06:27 · Alexander Sacharov** — parent session: jaira-a7
