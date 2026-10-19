@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T20:51:12Z
+updated-at: 2026-10-19T20:51:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11846
 claimed-at: 2026-10-19T20:45:53Z
@@ -32,8 +32,8 @@ review-summary: "jaira web schreibt jetzt ein Log nach ~/.jaira/state/<arbeitsba
 review-gaps: "Kein Code-Defekt. Runde 3 (ErrorLog-Fallback nach stderr, internal/cli/web.go:71) ist umgesetzt. Offen, nicht Code: die Commits d89bb20c und b2389dea enthalten in der Ticketdatei weiter fremden Projektnamen, PIDs und einen Home-Pfad (HEAD und Arbeitsbaum sind sauber) - laut Entscheidung 14:34 schreibt Alex die History selbst um, bis dahin nicht pushen. Hinweis: worktree_diff zeigt nur fremde, ungetrackte .jaira/milestones/-Dateien, nichts von diesem Ticket. Nicht durch einen Test gedeckt: der stderr-Fallback (nur live geprueft, Note 20:47)."
 test-verdict: "pass: go test -race -count=1 ./... RC=0; Proof-Tests (Panic/ErrorAnswers/FailedFetchAndPush) PASS; DoD-Proofs auf aktuelle Zeilen korrigiert (log.go:64, web.go:137,153, ReviewPage.svelte:96); live: schreibgeschuetztes State-Verzeichnis -> Warnung, Log-Zeilen auf stderr, /api/sync 200"
 question: ""
-review-verdict: "Der Diff erfuellt DoD 1-5, keine Defekte; die drei Rueckgabepunkte aus signoff (Kommentar, Warnen statt Abbrechen, Ticketdatei an HEAD) sind erledigt. Push erst nach Alex' History-Bereinigung (Note 14:34)."
-review-round: 2
+review-verdict: "Diff erfuellt DoD 1-3 und 5, DoD 4 per Entscheidung als Note geschlossen; keine Defekte gefunden. go test -race ./core/web ./internal/cli gruen, GOOS=windows baut. Vor dem Push muss die History-Bereinigung laufen."
+review-round: 3
 review-check: "1. go build -o ./jw ./cmd/jaira   2. ./jw web --no-open   3. Zweite Ausgabezeile lautet 'jaira web: log <pfad>/web.log' - Pfad und Port merken   4. Zweites Terminal: curl -s http://127.0.0.1:<port>/api/tickets/NOPE - Antwort ist 404 'not found'   5. tail <pfad>/web.log zeigt 'started on ...' und 'GET /api/tickets/NOPE: 404 {...not found}' mit Uhrzeit   6. Adresse im Browser oeffnen, dann im ersten Terminal Ctrl-C   7. Binnen 10 s erscheint oben ein rotes Banner 'jaira web has not answered since HH:MM'   8. tail web.log zeigt 'stopped by signal interrupt'   9. Panic-Pfad hat keinen Handweg: go test ./core/web -run 'TestPanic|TestFailedFetch' -v - beide PASS"
 round: 3
 ---
