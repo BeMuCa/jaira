@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T19:30:03Z
+updated-at: 2026-10-19T19:31:30Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-25649
@@ -82,3 +82,4 @@ claimed-at: 2026-10-19T18:18:27Z
 - **2026-10-19 18:34 · Alexander Sacharov** — Merge: Texte werden ueber plain() verglichen - eine Ueberschrift '# <eigener Titel>' am Textanfang wird durch titleMark ersetzt. Sonst wuerde ein Umbenennen (das die Ueberschrift mit aendert) auf einem Klon und ein neuer Absatz auf dem anderen als Konflikt gelten. Erster Entwurf mit Sonderfaellen fuer 'ours hat nur umbenannt' war unlesbar, deshalb verworfen. Konfliktblock: '<!-- jaira: changed at the same time -->' + fette sichtbare Zeile + fremder Wert + End-Kommentar; leerer fremder Wert erscheint als '(empty)'.
 - **2026-10-19 18:36 · Alexander Sacharov** — Kritik Stueck 2: retitle und plain entschieden 'ist die erste Ueberschrift der Titel?' verschieden (oneLine nur auf einer Seite). Jetzt ein Helfer titleLine(), beide nutzen ihn; TestTheTitleHeadingIsFoundOneWay.
 - **2026-10-19 19:29 · Alexander Sacharov** — decision (Alex via Teamlead, 19.10.2026): Schritt 2 (DoD 4, Merge-Konfliktblock inkl. titleLine-Fix) angenommen; weiter mit Schritt 3 (CLI).
+- **2026-10-19 19:31 · Alexander Sacharov** — Kritik Stueck 3: (1) Epic.Text() = Body ohne die Titel-Ueberschrift (titleLine) und ohne <!-- -->-Kommentare; 'epic show' und spaeter die gerenderte Web-Ansicht nutzen Text, --json/Formular/Base bleiben bei Body (exakter Round-Trip). Ein frisch angelegtes Epic hat damit keinen Text. (2) leerer --title: epic.ErrNoTitle aus Set (gilt auch fuer Web), epicFail -> Exit 2. Vorher meldete die CLI faelschlich 'Nothing to do'.
