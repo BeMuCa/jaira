@@ -7,12 +7,17 @@
   let { epics, expanded = false, onassign, oncreate, onopen }: {
     epics: Epic[];
     // Open every epic's ticket list: a filter's matches must not hide folded.
+    // Unset again, each epic is back as the person left it.
     expanded?: boolean;
     // from is the epic the ticket was dragged out of, empty from the left.
     onassign: (epic: string, id: string, from: string) => void;
     oncreate: (name: string, title: string, description: string) => Promise<void>;
     onopen: (id: string) => void;
   } = $props();
+
+  // Which epics the person unfolded by hand, by name. Only a toggle made
+  // while nothing is forced open counts: the page's own opening is not theirs.
+  let unfolded = $state<Record<string, boolean>>({});
 </script>
 
 <section>
@@ -29,7 +34,10 @@
           <EpicProgress done={epic.done} total={epic.total} />
         </header>
         {#if epic.description}<p class="desc">{epic.description}</p>{/if}
-        <details open={expanded}>
+        <details
+          open={expanded || !!unfolded[epic.name]}
+          ontoggle={(e) => !expanded && (unfolded[epic.name] = e.currentTarget.open)}
+        >
           <summary>{epic.tickets.length} tickets</summary>
           <ul>
             {#each epic.tickets as ticket (ticket.id)}

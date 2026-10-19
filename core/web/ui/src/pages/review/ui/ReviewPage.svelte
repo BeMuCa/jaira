@@ -48,12 +48,20 @@
     untrack(load);
   });
 
+  // Loads overlap — the switch, the minute's reload, a drop — and they need
+  // not answer in order. Only the one started last may write the page, or a
+  // slow answer to the switch's old position would put it back.
+  let loads = 0;
   async function load() {
+    const n = ++loads;
     try {
-      [epics, unassigned, sync] = await Promise.all([fetchEpics(), fetchUnassigned(filter.all), fetchSync(), fetchLanes().then(setLanes)]);
+      const answers = await Promise.all([fetchEpics(), fetchUnassigned(filter.all), fetchSync(), fetchLanes()]);
+      if (n !== loads) return;
+      [epics, unassigned, sync] = answers;
+      setLanes(answers[3]);
       error = '';
     } catch (e) {
-      error = (e as Error).message;
+      if (n === loads) error = (e as Error).message;
     }
   }
 
