@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T06:36:33Z
+updated-at: 2026-10-19T06:36:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16821
 claimed-at: 2026-10-19T06:27:46Z
@@ -41,7 +41,8 @@ mode: conversational
   proof: internal/cli/reject.go newRejectCmd; core/ticket/store.go Store.Reject; tests TestRejectWritesTheReasonAndArchives, TestRejectWithoutWhyIsAUsageError
 - [x] --duplicate-of <id> setzt kind=duplicate und verlinkt das Original; eine unbekannte id wird mit Exit 5 abgelehnt
   proof: core/ticket/store.go Store.Reject (LoadAnywhere, related); test TestRejectDuplicateOfLinksTheOriginal, TestRejectDuplicateOfAnUnknownTicketIsNotFound
-- [ ] Ein Agent wird mit Exit 3 abgewiesen und die Meldung nennt den Weg ueber human --question
+- [x] Ein Agent wird mit Exit 3 abgewiesen und die Meldung nennt den Weg ueber human --question
+  proof: internal/cli/reject.go !force -> ExitValidation needs_human, questionLane; test TestRejectWithoutForceSendsAnAgentToTheHumanLane
 - [ ] Auf dem Board laesst sich ein Ticket mit einer einzeiligen Begruendung ablehnen
 - [ ] 'jaira archive' (Liste) und 'jaira show' zeigen rejected-kind und rejected-why; 'jaira restore' nimmt die rejected-* Felder wieder ab
 - [ ] Release-Note core/release/notes/<ID>.md, Agent-Block/jaira-Skill nennen reject; go test ./... -race gruen
