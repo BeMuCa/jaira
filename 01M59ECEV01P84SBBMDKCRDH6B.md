@@ -1,7 +1,7 @@
 ---
 id: 01M59ECEV01P84SBBMDKCRDH6B
 title: Titel und Beschreibung eines Epics lassen sich im Web und mit jaira epic set aendern
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,14 +23,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T20:48:53Z
+updated-at: 2026-10-19T20:49:04Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-52791
 claimed-at: 2026-10-19T20:32:26Z
-outcome-what: "core/epic: Body/Text/SetBody/Set with Patch+Base, Merge keeps both sides of a field in a marked block; CLI 'jaira epic set' and body in 'epic show'/--json; web PATCH /api/epics/{name} (409 on stale base) with an Edit form and the text rendered folded under the description"
-outcome-why: "An epic could not be changed after it was created, and its markdown text below the frontmatter was invisible in the web (requirementsgenie epic anforderungen-im-chat)"
-outcome-resolves: "DoD 1-8: Set/SetBody keep member lines (TestSetKeepsTheMembers), epic set exits 5/2 (TestEpicSetRewritesTheTextNotTheMembers), web edit + 409 (TestWebRewritesAnEpicAndRefusesAStaleEditor), merge clash block (TestMergeKeepsBothSidesOfOneField), text rendered and folded (headless Chromium), release note, race suite green"
+outcome-what: "core/epic: Body/Text/SetBody/Set with Patch+Base, Merge keeps both sides of a field in a marked block, a '- <ticket id>' line in the text is stored as '* <id>' and stays text; CLI 'jaira epic set' and body in 'epic show'/--json; web PATCH /api/epics/{name} (409 on stale base) with an Edit form that, after a 409, keeps the typing, takes the new state as base and saves on the second try; text rendered folded under the description; npm test in CI"
+outcome-why: "An epic could not be changed after it was created, its markdown text was invisible in the web, and review round 1 found a ticket id in the text turned into a member and a form stuck in 409"
+outcome-resolves: "DoD 1-10: TestSetKeepsTheMembers, TestEpicSetRewritesTheTextNotTheMembers, TestWebRewritesAnEpicAndRefusesAStaleEditor, TestMergeKeepsBothSidesOfOneField, TestATicketIDInTheTextStaysText, edit.test.ts (npm test), headless Chromium for folding/rendering/409 retry, release note, race suite green"
 review-summary: "core/epic gets Body() (text under the frontmatter without member lines), Text() (Body without the title heading and HTML comments, for display), SetBody() (new text, member lines appended verbatim in order) and Set(store, refs, name, Patch) - one locked write through a new edit() helper that Assign now shares too; Patch.Base refuses with ErrChanged when a field being changed differs from what the editor read, an empty title gives ErrNoTitle, a heading '# <old title>' is renamed along. Merge now also merges the text; where both clones changed the same field (title, description, text) ours wins and theirs is appended to the text in a '<!-- jaira: changed at the same time -->' block with a visible bold line; a retitle is not counted as a text edit (titleMark). CLI: 'jaira epic set <name> --title/--description/--body/--body-file <path|->' (exit 5 unknown, 2 without flags or with empty title), 'epic show' prints Text(), --json carries body. Web: PATCH /api/epics/{name} with base (409 via web.ErrConflict, 400 on empty title), Epic JSON has body+text, EpicList shows the text folded under the description rendered via renderMarkdown, an Edit button opens features/edit-epic/EditEpicForm which sends only changed fields plus base. dist rebuilt, release note CRDH6B.md with 4 lines."
 review-gaps: "Not blocking, both narrow: (1) a line in the text that looks like a member line ('- <full 26-char ULID> ...') is taken by Body()/FromBytes as a member - writing such a list item via 'epic set --body' or the web form silently adds that ticket to the epic and the line vanishes from the text (core/epic/epic.go Body + FromBytes:176). Short handles are not affected (ParseMember needs a full ULID). (2) After a 409 the form stays open with the old base, so every further Save answers 409 again; the only way out is Cancel + Edit, which drops what was typed - the person has to copy their text out first (EditEpicForm.svelte base is fixed at open). Claims in outcome-resolves are backed by the diff; go test ./core/epic ./core/web ./internal/cli re-run green here. Nothing committed yet: commits=[], all work is in the worktree on top of feat/tpckzb."
 test-verdict: "pass: go vet ./... RC=0, go test -race -count=1 ./... RC=0 (31 packages ok), npm ci && npm run build leaves dist identical; DoD 1-8 checked against their tests; scratch board with bare remote: epic set exits 5 (unknown) / 2 (no flag, empty title), member line kept on the ref; headless Chromium: text folded under the visible description, opens rendered (h2, bold, list), Edit->Save shows new title+paragraph at once, save after a change behind the open form shows the 409 message in the form"
