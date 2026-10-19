@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T20:47:50Z
+updated-at: 2026-10-19T20:47:59Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-4026"
 claimed-at: 2026-10-19T20:44:55Z
@@ -36,7 +36,7 @@ outcome-why: "Ein abgelehntes Ticket sah im Archiv genauso aus wie ein weggeraeu
 outcome-resolves: "DoD 1-3: internal/cli/reject.go + Store.Reject, Tests in internal/cli/reject_test.go; DoD 4: modeReject in internal/tui/model.go, internal/tui/reject_test.go; DoD 5: archivedRejections/rejectionLine, unreject; DoD 6: release note, agent block, Skill, go test ./... -race gruen; DoD 7-9: Faltung, Selbst-Duplikat, R stempelt; DoD 10: rejected-duplicate-of + unreject; DoD 11: rejected-linked, TestRestoreKeepsALinkThatWasThereBefore."
 review-summary: "none"
 round: 6
-review-gaps: "1) Die Aenderungen aus Runde 5 sind nicht committet (git status: 8 Dateien) - ohne Commit fehlen sie im Merge; Commit-Zeile in review-check Schritt 0. 2) Bekannt und von Alex akzeptiert (Notiz 18:17): ein related-Link zum Original, der schon vor dem reject bestand, geht beim restore mit. 3) Kosmetisch: duplicate_of in --json ist die volle ID, der Text zeigt den Handle - wie related ueberall. Keine Defekte gefunden."
+review-gaps: "none - Runde 6 fuegt einen Key, zwei Bedingungen und einen Test hinzu; der Test baut sein Original selbst statt den Aufbau von TestRestoreTakesTheDuplicateLinkOff zu teilen, weil er nur eines braucht und ein Helfer fuer zwei Aufrufer mehr Zeilen kostet"
 test-verdict: "pass: go vet + go clean -testcache + go test ./... -race RC=0; DoD 10 im Baum geprueft (store.go:389, :783, tickets.go rejectionLine/JSON); Binary auf Scratch-Board: reject --duplicate-of schreibt rejected-duplicate-of, archive/show nennen 'duplicate of J5AR30', --json duplicate_of; restore nimmt Key und Original-Link ab, ein vorher gesetzter related-Link auf ein anderes Ticket bleibt"
 review-verdict: "approve: DoD 1-10 belegt; DoD 10 im worktree_diff, TestRestoreTakesTheDuplicateLinkOff deckt 'nur dieser Eintrag'. go vet und go test -race fuer core/ticket, internal/cli, internal/tui, core/merge gruen. Per Binary nachgespielt: reject --duplicate-of -> archive/show 'duplicate of <handle>', beide --json mit duplicate_of; restore -> Datei bis auf updated-by identisch mit vorher, kein leeres related. Blockierend nur: erst committen."
 review-round: 5
