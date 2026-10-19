@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T20:43:24Z
+updated-at: 2026-10-19T20:43:28Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-24398"
 claimed-at: 2026-10-19T18:18:21Z
@@ -143,3 +143,4 @@ Warum: Ohne Commit fehlt Runde 5 im Merge, und die Rueckgabe aus signoff waere w
 2) Zurueckgeben und den vorher bestehenden related-Link beim restore erhalten [give back]
 Empfehlung: 1 - alle DoD sind belegt, Tests laufen gruen, und der Linkverlust wurde bereits bewusst akzeptiert.
 - **2026-10-19 20:43 · Alexander Sacharov** — decision: 2) Zurueckgeben und den vorher bestehenden related-Link beim restore erhalten
+- **2026-10-19 20:43 · Alexander Sacharov** — Given back from signoff: 2) Zurueckgeben und den vorher bestehenden related-Link beim restore erhalten
