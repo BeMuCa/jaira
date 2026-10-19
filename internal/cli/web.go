@@ -33,10 +33,13 @@ func newWebCmd() *cobra.Command {
 epics, each with its description and how many of its tickets are done; on the
 left are the open tickets that belong to no epic. Drag a ticket onto an epic to
 put it there, onto another epic to move it, or back to the left to take it out;
-"+ New epic" starts one, as 'jaira epic create' does. A ticket that counts only
-because it follows a member has no line of its own and cannot be dragged.
-Click a ticket to read it: goal, context, definition of done and every note,
-rendered as markdown, without leaving the page. Nothing is edited there.
+"+ New epic" starts one, as 'jaira epic create' does, and "Edit" on an epic
+rewrites its title, description and text, as 'jaira epic set' does. Its text
+sits folded under the description; click "Text" to read it. A ticket that
+counts only because it follows a member has no line of its own and cannot be
+dragged. Click a ticket to read it: goal, context, definition of done and
+every note, rendered as markdown, without leaving the page. Nothing is edited
+there.
 
 The bar above both columns filters them: a search over title, goal and id, a
 lane, a tag, a person (who created it, is assigned it or changed it last), and

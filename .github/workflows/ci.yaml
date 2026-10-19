@@ -27,7 +27,8 @@ jobs:
 
   # The page 'jaira web' serves is committed as a build (core/web/ui/dist):
   # go:embed reads the disk and 'go install' has no Node. This rebuilds it from
-  # the Svelte sources and fails when the committed build is not what they make.
+  # the Svelte sources and fails when the committed build is not what they make,
+  # and runs the page's own unit tests (npm test).
   web-dist:
     runs-on: ubuntu-latest
     steps:
@@ -40,6 +41,8 @@ jobs:
       - run: npm ci
         working-directory: core/web/ui
       - run: npm run build
+        working-directory: core/web/ui
+      - run: npm test
         working-directory: core/web/ui
       - name: The committed build matches the sources
         run: |

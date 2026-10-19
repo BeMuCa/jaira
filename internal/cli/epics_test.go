@@ -153,3 +153,36 @@ func TestAnEpicIsReportedByItsName(t *testing.T) {
 		t.Errorf("epic advice talks about a file it does not have: %q", a)
 	}
 }
+
+// 'epic set' rewrites what an epic says and nothing else: the members stay,
+// the text comes back out of 'epic show', and a name nobody created or a call
+// that names nothing to set is refused with the code a script branches on.
+func TestEpicSetRewritesTheTextNotTheMembers(t *testing.T) {
+	ada, _ := twoBoards(t)
+	a := createTicket(t, ada, "One")
+	jsonOf(t, ada, "epic", "create", "feature", a, "--title", "Old")
+
+	if out, err := runCLIStdin(t, ada, "## Goal\n\nlog in by link\n", "epic", "set", "feature", "--title", "New", "--description", "one line", "--body-file", "-"); err != nil {
+		t.Fatalf("set: %v\n%s", err, out)
+	}
+	flushRefs()
+	got := jsonOf(t, ada, "epic", "show", "feature")
+	if got["title"] != "New" || got["description"] != "one line" || got["body"] != "## Goal\n\nlog in by link" {
+		t.Errorf("after set: %v", got)
+	}
+	if m := got["members"].([]any); len(m) != 1 {
+		t.Errorf("members = %v; want %s alone", m, ticket.Handle(a))
+	}
+	if out, _ := runCLI(t, ada, "epic", "show", "feature"); !strings.Contains(out, "log in by link") {
+		t.Errorf("show does not print the text:\n%s", out)
+	}
+	if _, err := runCLI(t, ada, "epic", "set", "nothing-here", "--title", "x"); exitCode(err) != ExitNotFound {
+		t.Errorf("unknown epic: exit %d, want %d", exitCode(err), ExitNotFound)
+	}
+	if _, err := runCLI(t, ada, "epic", "set", "feature", "--title", ""); exitCode(err) != ExitUsage {
+		t.Errorf("empty title: exit %d, want %d", exitCode(err), ExitUsage)
+	}
+	if _, err := runCLI(t, ada, "epic", "set", "feature"); exitCode(err) != ExitUsage {
+		t.Errorf("no flag: exit %d, want %d", exitCode(err), ExitUsage)
+	}
+}
