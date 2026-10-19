@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T13:48:04Z
+updated-at: 2026-10-19T14:23:51Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-27212
 claimed-at: 2026-10-19T13:47:43Z
@@ -79,3 +79,9 @@ review-check: "1. cd in den Worktree und: go build -o /tmp/jw ./cmd/jaira   2. /
 - **2026-10-19 13:00 · Alexander Sacharov** — testing: go test -race -count=1 ./... RC=0. Headless Chrome gegen ein Scratch-Binary: Seite ohne Banner; Befehl beendet -> nach ~10 s Banner 'jaira web has not answered since <Zeit> - is the command still running? ...'; Befehl neu gestartet -> Banner weg. Bereinigung der Notes/Kontext (Option 2 von Alex via jaira-8b): Hand-Edit der Ticketdatei wurde in dieser Session vom Berechtigungs-Klassifikator abgelehnt - nicht ausgefuehrt, liegt bei jaira-8b/Alex.
 - **2026-10-19 13:46 · Alexander Sacharov** — decision (Alex via jaira-8b, 19.10.): DoD 4 Option 2 - mit Note schliessen. Nicht reproduziert; ab diesem Build steht jede Ursache eines Ausfalls (Fehlerantwort, Fetch/Push-Fehler, Panic mit Stack, beendendes Signal) in der beim Start genannten Logdatei. Datenbereinigung: Alex gibt sie selbst im Worker-Tab frei; bis dahin weder Branch noch Ref pushen.
 - **2026-10-19 13:48 · Alexander Sacharov** — review (frisch): Code deckt DoD 1-3,5; keine Defekte. Blockierend fuer Push: private Daten (fremder Projektname, PIDs, Home-Pfad) in der committeten Ticketdatei (d89bb20c, Kontext + Notes 12:48/12:54) - Bereinigung liegt laut 13:46 bei Alex. Klein: logKeep-Kommentar ueberverspricht (Rotation nur beim Start); nicht oeffnbares web.log macht jaira web jetzt fatal.
+- **2026-10-19 14:23 · Alexander Sacharov** — explain: Der Code erfuellt die Definition of Done, es gibt keine Defekte. Aber die in d89bb20c committete Ticketdatei enthaelt private Daten (fremder Projektname, PIDs, Home-Pfad), dazu zwei kleine Unschaerfen: der logKeep-Kommentar verspricht mehr Rotation, als es gibt, und ein nicht oeffnbares web.log macht jaira web fatal.
+Warum: Mit den privaten Daten darf weder Branch noch Ref gepusht werden, Alex' Regel vom 19.10. Die kleinen Punkte sind kein Risiko, aber der Kommentar luegt und ein nicht beschreibbares State-Verzeichnis verhindert jetzt den Start.
+1) Zurueckgeben: Ticketdatei bereinigen, Kommentar korrigieren, Log-Fehler nur warnen statt abbrechen [give back]
+2) Zurueckgeben: nur die Ticketdatei bereinigen, die zwei kleinen Punkte bleiben [give back]
+3) So annehmen; Bereinigung gibt Alex selbst im Worker-Tab frei, kleine Punkte bleiben stehen [accept]
+Empfehlung: 1 - die Bereinigung ist ohnehin vor dem Push noetig, und die beiden kleinen Punkte sind in derselben Runde billig zu beheben.
