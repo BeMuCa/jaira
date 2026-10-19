@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T20:49:19Z
+updated-at: 2026-10-19T20:49:51Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-52791
@@ -32,7 +32,7 @@ outcome-what: "core/epic: Body/Text/SetBody/Set with Patch+Base, Merge keeps bot
 outcome-why: "An epic could not be changed after it was created, its markdown text was invisible in the web, and review round 1 found a ticket id in the text turned into a member and a form stuck in 409"
 outcome-resolves: "DoD 1-10: TestSetKeepsTheMembers, TestEpicSetRewritesTheTextNotTheMembers, TestWebRewritesAnEpicAndRefusesAStaleEditor, TestMergeKeepsBothSidesOfOneField, TestATicketIDInTheTextStaysText, edit.test.ts (npm test), headless Chromium for folding/rendering/409 retry, release note, race suite green"
 review-summary: "none - round 2 read only the change answering review round 1: core/epic/epic.go asText (one rule, ParseMember, in the one write path SetBody), features/edit-epic/model/edit.ts beside features/filter-tickets/model/filter.ts (same FSD place for pure logic), npm test + CI step needed to make the TS test a real one; round-1 findings all applied (notes 'Kritik Stueck 1-6')"
-review-gaps: "Not blocking, both narrow: (1) a line in the text that looks like a member line ('- <full 26-char ULID> ...') is taken by Body()/FromBytes as a member - writing such a list item via 'epic set --body' or the web form silently adds that ticket to the epic and the line vanishes from the text (core/epic/epic.go Body + FromBytes:176). Short handles are not affected (ParseMember needs a full ULID). (2) After a 409 the form stays open with the old base, so every further Save answers 409 again; the only way out is Cancel + Edit, which drops what was typed - the person has to copy their text out first (EditEpicForm.svelte base is fixed at open). Claims in outcome-resolves are backed by the diff; go test ./core/epic ./core/web ./internal/cli re-run green here. Nothing committed yet: commits=[], all work is in the worktree on top of feat/tpckzb."
+review-gaps: "round 2: dropped the EpicFields re-export from features/edit-epic/index.ts (no reader outside the feature). Round 1 still stands: removed the epic-on-error return of edit()/Set. Left: asText re-trims the line it got from ParseMember - two string ops on a write path, not worth a second return value."
 test-verdict: "pass: go vet ./... RC=0, go test -race -count=1 ./... RC=0 (31 packages ok), npm ci && npm run build leaves dist identical; DoD 1-8 checked against their tests; scratch board with bare remote: epic set exits 5 (unknown) / 2 (no flag, empty title), member line kept on the ref; headless Chromium: text folded under the visible description, opens rendered (h2, bold, list), Edit->Save shows new title+paragraph at once, save after a change behind the open form shows the 409 message in the form"
 review-verdict: "The diff meets all 8 DoD items; no defect that breaks a DoD item found. Two small gaps above, neither needs to block acceptance - (1) could become a follow-up if epic texts ever list full ticket ids. Still to do outside this lane: commit the worktree (conversational mode, Alex commits) and open the PR only after TPCKZB's."
 review-round: 1
