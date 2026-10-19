@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T07:39:46Z
+updated-at: 2026-10-19T07:39:50Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -56,7 +56,7 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-tpckzb && go run ./cmd
 - [x] Filter nach Datum: Zeitraum von-bis auf erstellt, zuletzt geaendert und abgelegt (Logbuch-Datum)
   proof: core/web/ui/src/features/filter-tickets/model/filter.ts:78 date range on created/updated/filed; filed_at from ticket.LogbookFolderDay (web_source.go cards) or rejected-at
 - [x] Ein abgelehntes Ticket im Archiv zeigt rejected-kind und rejected-why
-  proof: internal/cli/web_source.go:165 rejection(); TicketDetails.svelte:23; TestWebListsFiledTicketsAndOpensThem checks kind and why
+  proof: internal/cli/web_source.go:166 rejection(); TicketDetails.svelte:24; TestWebListsFiledTicketsAndOpensThem checks kind and why
 - [x] Die gesetzten Filter stehen in der URL; ein Link zeigt dieselbe gefilterte Liste
   proof: core/web/ui/src/features/filter-tickets/model/filter.ts fromQuery/toQuery; ReviewPage.svelte:26 reads, :40 writes via history.replaceState
 - [x] Jede Lane hat im Web eine eigene Farbe — dieselbe am Lane-Badge jedes Tickets und im Lane-Filter; die Farbe einer Lane ist stabil (gleiche Lane, gleiche Farbe bei jedem Laden)
