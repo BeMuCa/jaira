@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T20:45:39Z
+updated-at: 2026-10-19T20:45:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-82583
 claimed-at: 2026-10-19T14:38:38Z
@@ -101,3 +101,4 @@ Warum: Ohne Log sollen wenigstens die Server-Meldungen auf stderr bleiben, wie v
 Empfehlung: 2 - DoD 1-5 sind erfuellt, der io.Discard-Fall tritt nur bei unoeffnbarem Log auf und das Ticket soll nicht weiter wachsen.
 - **2026-10-19 20:45 · Alexander Sacharov** — decision: 1) Zurueckgeben: ErrorLog auf einen stderr-Logger statt io.Discard setzen, dann erneut pruefen
 - **2026-10-19 20:45 · Alexander Sacharov** — Given back from signoff: 1) Zurueckgeben: ErrorLog auf einen stderr-Logger statt io.Discard setzen, dann erneut pruefen
+- **2026-10-19 20:45 · Alexander Sacharov** — cockpit: given back to a new worker - the old worker has no Herdr tab open any more
