@@ -24,7 +24,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T06:46:49Z
+updated-at: 2026-10-19T06:46:52Z
 updated-by: Alexander Sacharov
 ---
 
@@ -64,3 +64,4 @@ updated-by: Alexander Sacharov
 - **2026-10-19 06:45 · Alexander Sacharov** — Reihenfolge (Teamlead): blocked-by TPCKZB (gleiche core/web/ui-Dateien, feat/tpckzb in-progress). Jetzt nur brainstorm/plan; kein Code, bevor TPCKZB auf master ist.
 - **2026-10-19 06:46 · Alexander Sacharov** — decision (Worker, aus Code/Default): 'description' bleibt die einzeilige Frontmatter-Zeile (sichtbar im eingeklappten Zustand), der Text heisst 'body'. CLI bekommt dafuer --body und --body-file (- = stdin) neben --title/--description; Web-Formular hat alle drei Felder. Grund: die Zeile und der Text sind zwei Dinge auf dem Ref; ein Flag fuer beides wuerde eins davon ueberschreiben.
 - **2026-10-19 06:46 · Alexander Sacharov** — decision (Worker): Body = alle Zeilen unter dem Frontmatter ausser '- <id>'-Mitgliedszeilen. SetBody setzt die Mitgliedszeilen in alter Reihenfolge ans Ende hinter den neuen Text. Bei heutigem Layout (## Tickets + Kommentar am Ende, Mitglieder darunter) bleibt die Datei damit gleich aufgebaut. Ein '# <Titel>' als erste Ueberschrift im Body wird bei --title mit umbenannt, wenn sie dem alten Titel entsprach.
+- **2026-10-19 06:46 · Alexander Sacharov** — decision (Worker): lokale Gleichzeitigkeit (Web-Formular offen, CLI aendert dasselbe Epic) -> PATCH traegt 'base' = die Werte, die der Editor gelesen hat; ein Feld, das der Editor aendern will und das sich seitdem geaendert hat -> 409 + aktueller Stand, nichts geschrieben. CLI-set schreibt unter dem Lock auf den aktuellen Stand und braucht kein base.
