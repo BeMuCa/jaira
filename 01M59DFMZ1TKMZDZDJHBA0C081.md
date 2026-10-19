@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T06:33:24Z
+updated-at: 2026-10-19T06:35:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16821
 claimed-at: 2026-10-19T06:27:46Z
@@ -41,7 +41,7 @@ mode: conversational
 - [ ] --duplicate-of <id> setzt kind=duplicate und verlinkt das Original; eine unbekannte id wird mit Exit 5 abgelehnt
 - [ ] Ein Agent wird mit Exit 3 abgewiesen und die Meldung nennt den Weg ueber human --question
 - [ ] Auf dem Board laesst sich ein Ticket mit einer einzeiligen Begruendung ablehnen
-- [ ] 'jaira archive' (Liste), 'jaira show' und das Web-Portal zeigen kind und why; 'jaira restore' nimmt den rejected-Block wieder ab
+- [ ] 'jaira archive' (Liste) und 'jaira show' zeigen rejected-kind und rejected-why; 'jaira restore' nimmt die rejected-* Felder wieder ab
 - [ ] Release-Note core/release/notes/<ID>.md, Agent-Block/jaira-Skill nennen reject; go test ./... -race gruen
 
 ## Options
