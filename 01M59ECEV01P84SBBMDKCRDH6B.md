@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T20:29:57Z
+updated-at: 2026-10-19T20:31:38Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-25649
@@ -33,6 +33,7 @@ outcome-why: "An epic could not be changed after it was created, and its markdow
 outcome-resolves: "DoD 1-8: Set/SetBody keep member lines (TestSetKeepsTheMembers), epic set exits 5/2 (TestEpicSetRewritesTheTextNotTheMembers), web edit + 409 (TestWebRewritesAnEpicAndRefusesAStaleEditor), merge clash block (TestMergeKeepsBothSidesOfOneField), text rendered and folded (headless Chromium), release note, race suite green"
 review-summary: "none - the critique beside the work raised 7 findings over 4 pieces (retitle with unchanged body, shared edit() helper, one titleLine rule, Text() display form, ErrNoTitle, Fields json tags, help wrap); all applied, see notes 'Kritik Stueck 1-6'. Shape fits: edit() as Assign's twin, web keeps its own EpicFields/EpicEdit like web.Epic, features/edit-epic mirrors features/create-epic."
 review-gaps: "removed: edit()/Set returned the epic as read alongside an error, no caller read it (CLI and web discard it) - now nil, doc trimmed, TestSetRefusesAStaleBase reads the ref instead. Searched for an existing comment stripper, blank-line trim and file-or-stdin helper: none to reuse (stdin read is the 2-copy pattern of internal/cli/sync.go:117, left). Left: Epics() computes Body()+Text() per epic on each minute reload - a few string ops, not worth caching."
+test-verdict: "pass: go vet ./... RC=0, go test -race -count=1 ./... RC=0 (31 packages ok), npm ci && npm run build leaves dist identical; DoD 1-8 checked against their tests; scratch board with bare remote: epic set exits 5 (unknown) / 2 (no flag, empty title), member line kept on the ref; headless Chromium: text folded under the visible description, opens rendered (h2, bold, list), Edit->Save shows new title+paragraph at once, save after a change behind the open form shows the 409 message in the form"
 ---
 
 # Titel und Beschreibung eines Epics lassen sich im Web und mit jaira epic set aendern
