@@ -21,14 +21,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T20:49:37Z
+updated-at: 2026-10-19T20:51:09Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11846
 claimed-at: 2026-10-19T20:45:53Z
 outcome-what: "jaira web schreibt Fehlerantworten (>=400), fehlgeschlagene Fetches/Pushes, Panics mit Stack und das beendende Signal mit Zeit nach ~/.jaira/state/<baum>/web.log und nennt den Pfad beim Start; eine Panic im Handler antwortet 500 statt die Verbindung zu kappen; die Seite zeigt nach spaetestens 10 s ein Banner, wenn der Befehl nicht mehr antwortet."
 outcome-why: "Alex' 'jaira web' fiel aus, und es gab keine Spur: nichts wurde geloggt, stderr ging mit dem Terminal verloren, und die Seite stand still, ohne es zu sagen."
 outcome-resolves: "Ein Ausfall von jaira web hinterlaesst jetzt seine Ursache in einer Datei, und die Seite meldet ihn sichtbar."
-review-summary: "none"
+review-summary: "jaira web schreibt jetzt ein Log nach ~/.jaira/state/<arbeitsbaum>/web.log (beim Start ab 1 MB nach web.log.1 rotiert) und nennt den Pfad beim Start. Eine Middleware um alle Handler loggt jede Antwort >=400 mit dem Anfang des Fehlerkoerpers und faengt Panics ab: Stack ins Log, Antwort 500 statt gekappter Verbindung. Fetch und Push laufen hinter recover(), Fehlschlaege und Panics landen im Log und im Sync-Status, die Fetch-Schleife laeuft weiter. SIGTERM/SIGHUP beenden wie Ctrl-C, das Signal steht im Log. Laesst sich das Log nicht oeffnen, warnt der Befehl und loggt (inkl. http.Server-ErrorLog) nach stderr weiter. Die Seite fragt alle 10 s /api/sync; scheitert das, zeigt sie oben ein rotes Banner 'has not answered since HH:MM' und laedt beim naechsten Erfolg alles neu. Release Note vorhanden."
 review-gaps: "none - Runde 3 aendert nur den Fallback-Logger (internal/cli/web.go:71); der io-Import fiel mit io.Discard weg"
 test-verdict: "pass: go test -race -count=1 ./... RC=0; Proof-Tests (Panic/ErrorAnswers/FailedFetchAndPush) PASS; DoD-Proofs auf aktuelle Zeilen korrigiert (log.go:64, web.go:137,153, ReviewPage.svelte:96); live: schreibgeschuetztes State-Verzeichnis -> Warnung, Log-Zeilen auf stderr, /api/sync 200"
 question: ""
