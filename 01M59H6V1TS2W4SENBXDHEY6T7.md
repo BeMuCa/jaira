@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T20:49:19Z
+updated-at: 2026-10-19T20:49:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11846
 claimed-at: 2026-10-19T20:45:53Z
@@ -30,7 +30,7 @@ outcome-why: "Alex' 'jaira web' fiel aus, und es gab keine Spur: nichts wurde ge
 outcome-resolves: "Ein Ausfall von jaira web hinterlaesst jetzt seine Ursache in einer Datei, und die Seite meldet ihn sichtbar."
 review-summary: "none"
 review-gaps: "none - Runde 3 aendert nur den Fallback-Logger (internal/cli/web.go:71); der io-Import fiel mit io.Discard weg"
-test-verdict: "pass: go test -race -count=1 ./... RC=0; Runde 2 live: schreibgeschuetztes State-Verzeichnis -> Warnung 'cannot open the log ...; running without one', /api/sync 200; Ticketdatei frei von Projektname, PIDs, Home-Pfaden"
+test-verdict: "pass: go test -race -count=1 ./... RC=0; Proof-Tests (Panic/ErrorAnswers/FailedFetchAndPush) PASS; DoD-Proofs auf aktuelle Zeilen korrigiert (log.go:64, web.go:137,153, ReviewPage.svelte:96); live: schreibgeschuetztes State-Verzeichnis -> Warnung, Log-Zeilen auf stderr, /api/sync 200"
 question: ""
 review-verdict: "Der Diff erfuellt DoD 1-5, keine Defekte; die drei Rueckgabepunkte aus signoff (Kommentar, Warnen statt Abbrechen, Ticketdatei an HEAD) sind erledigt. Push erst nach Alex' History-Bereinigung (Note 14:34)."
 review-round: 2
