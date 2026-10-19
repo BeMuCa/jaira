@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T21:22:16Z
-updated-at: 2026-10-19T21:22:39Z
+updated-at: 2026-10-19T21:22:41Z
 updated-by: Alexander Sacharov
 ---
 
@@ -46,4 +46,4 @@ updated-by: Alexander Sacharov
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-19 21:22 · Alexander Sacharov** — Teamlead 19.10.2026: der Worktree startet auf dem lokalen master 7f008dec, upstream/master ist weiter (36bde2df, release 0.5.4). Vor dem ersten Commit auf upstream/master aufsetzen und dort greppen - sonst fehlen die neuesten Logbook-Dateien.
