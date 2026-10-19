@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T20:49:12Z
+updated-at: 2026-10-19T20:49:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11846
 claimed-at: 2026-10-19T20:45:53Z
@@ -45,7 +45,7 @@ round: 3
 - [x] Jede Anfrage mit Fehlerstatus (>=400), jeder fehlgeschlagene Fetch/Push und jede Panic wird mit Zeit und Ursache in eine Logdatei geschrieben; 'jaira web' nennt beim Start ihren Pfad
   proof: core/web/log.go:64 logged + core/web/web.go:137,153 + internal/cli/web.go:88; TestErrorAnswersAreLogged, TestFailedFetchAndPushAreLogged
 - [x] Eine Panic in einem Handler wird abgefangen (500 + Stacktrace im Log), der Server laeuft weiter; Test
-  proof: core/web/log.go:63 logged; TestPanicAnswers500AndIsLogged
+  proof: core/web/log.go:64 logged; TestPanicAnswers500AndIsLogged
 - [x] Die Seite zeigt sichtbar an, wenn sie den Server nicht mehr erreicht, statt still stehenzubleiben
   proof: core/web/ui/src/pages/review/ui/ReviewPage.svelte:68 heartbeat, :97 banner
 - [x] Die Ursache von Alex' Ausfall ist mit dem Log gefunden und behoben, oder als Note mit dem Logauszug festgehalten
