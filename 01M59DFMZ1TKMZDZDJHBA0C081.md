@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T18:21:47Z
+updated-at: 2026-10-19T18:21:51Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-24398"
 claimed-at: 2026-10-19T18:18:21Z
@@ -133,3 +133,4 @@ Empfehlung: 1 - die Kleinigkeiten sind kosmetisch und nicht Teil der DoD, ein we
 - **2026-10-19 14:17 · Alexander Sacharov** — question 4 (an jaira-a7): restore soll den related-Eintrag aus --duplicate-of entfernen - aber das Ticket haelt nicht fest, WELCHER related-Eintrag von reject kam (genau vier rejected-* Keys, Original steht nur in related). Optionen: 1) (Recommended) fuenfter Key rejected-duplicate-of: <ID>, nur bei duplicate geschrieben; restore nimmt ihn und genau diesen related-Eintrag ab; show/archive koennen das Original nennen. Preis: ein related-Link, der schon VOR dem reject bestand, geht beim restore mit. 2) Kein neuer Key: restore entfernt bei rejected-kind=duplicate den zuletzt angehaengten related-Eintrag - vier Keys bleiben, aber es ist geraten (falsch, wenn related nach dem reject noch geaendert wurde). 3) Wie 1, aber reject schreibt rejected-duplicate-of nur, wenn es den Link selbst angelegt hat - kein Linkverlust, aber show nennt das Original nicht immer.
 - **2026-10-19 18:17 · Alexander Sacharov** — decision (Alex via Teamlead, 19.10.2026) zu question 4: Option 1. reject schreibt bei --duplicate-of einen fuenften Key rejected-duplicate-of: <ID>; restore nimmt ihn und genau diesen related-Eintrag ab; show/Archiv nennen das Original. In Kauf genommen: ein related-Link, der schon vor dem reject bestand, geht beim restore mit.
 - **2026-10-19 18:18 · Alexander Sacharov** — parent session: jaira-20
+- **2026-10-19 18:21 · Alexander Sacharov** — in-progress (Runde 5, aus signoff zurueck): rejected-duplicate-of (5. Key, in RejectedFields, damit unreject ihn mit abnimmt) wird bei --duplicate-of immer geschrieben, auch wenn der related-Link schon bestand (Option 1). unreject liest ihn vor dem Abnehmen und loescht genau diesen Eintrag aus related; ein anderer related-Eintrag bleibt (Test). show/archive: 'duplicate of <handle>: why', --json 'duplicate_of'. Weitere Release-Note-Zeile statt die erste umzuschreiben. go vet, go clean -testcache, go test ./... -race RC=0.
