@@ -218,16 +218,7 @@ func archivedNames(s *ticket.Store) ([]string, error) {
 func archivedRejections(s *ticket.Store, names []string) map[string]ticket.Rejection {
 	out := map[string]ticket.Rejection{}
 	for _, n := range names {
-		path := filepath.Join(s.ArchiveDir(), n)
-		raw, err := os.ReadFile(path)
-		if err != nil {
-			continue
-		}
-		d, err := ticket.ParseDoc(raw)
-		if err != nil {
-			continue
-		}
-		t, err := ticket.Decode(d, path)
+		t, err := ticket.LoadHeader(filepath.Join(s.ArchiveDir(), n))
 		if err != nil || t.Rejected.Kind == "" {
 			continue
 		}

@@ -348,6 +348,19 @@ func (s *Store) Reject(id, kind, why, duplicateOf string, now time.Time) (string
 		}
 		duplicateOf, kind = orig.ID, RejectDuplicate
 	}
+	// Archive refuses a name the archive already holds, and by then the
+	// rejection would be written onto a ticket still on the board. Asked
+	// first, the refusal leaves the ticket as it was.
+	path, err := s.resolve(id)
+	if err != nil {
+		return "", err
+	}
+	if real, err := filepath.EvalSymlinks(path); err == nil {
+		path = real
+	}
+	if _, err := os.Stat(filepath.Join(s.ArchiveDir(), filepath.Base(path))); err == nil {
+		return "", fmt.Errorf("%s already exists in the archive", filepath.Base(path))
+	}
 	t, err := s.Mutate(id, func(t *Ticket) error {
 		if duplicateOf == t.ID {
 			return fmt.Errorf("%s cannot be a duplicate of itself", Handle(t.ID))

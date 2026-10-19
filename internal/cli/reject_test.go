@@ -207,3 +207,22 @@ func TestAnArchivedTicketIsNotShownAsRejected(t *testing.T) {
 		t.Errorf("show calls a plain archive rejected:\n%s", out)
 	}
 }
+
+// Archive refuses a file name the archive already holds; reject must find
+// that out before it writes, or the ticket stays on the board marked rejected.
+func TestRejectIntoAnOccupiedArchiveWritesNothing(t *testing.T) {
+	dir, id := dodTestStore(t)
+	file := filepath.Base(ticketFiles(t, dir)[0])
+	if err := os.MkdirAll(filepath.Join(dir, ".jaira", "archive"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, ".jaira", "archive", file), []byte("---\nid: x\nstatus: todo\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := runCLI(t, dir, "reject", id, "--why", "x", "--force"); err == nil {
+		t.Fatal("reject into an occupied archive succeeded")
+	}
+	if tk := mustLoad(t, dir, id); tk.Rejected.Kind != "" {
+		t.Errorf("the refused reject left a rejection on the board: %+v", tk.Rejected)
+	}
+}
