@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T12:55:05Z
+updated-at: 2026-10-19T12:55:09Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79475
 claimed-at: 2026-10-19T12:47:47Z
@@ -36,7 +36,7 @@ claimed-at: 2026-10-19T12:47:47Z
 - [x] Eine Panic in einem Handler wird abgefangen (500 + Stacktrace im Log), der Server laeuft weiter; Test
   proof: core/web/log.go:63 logged; TestPanicAnswers500AndIsLogged
 - [x] Die Seite zeigt sichtbar an, wenn sie den Server nicht mehr erreicht, statt still stehenzubleiben
-  proof: core/web/ui/src/pages/review/ui/ReviewPage.svelte:67 heartbeat, :97 banner
+  proof: core/web/ui/src/pages/review/ui/ReviewPage.svelte:68 heartbeat, :97 banner
 - [ ] Die Ursache von Alex' Ausfall ist mit dem Log gefunden und behoben, oder als Note mit dem Logauszug festgehalten
 - [x] core/release/notes/<ID>.md; go test ./... -race gruen
   proof: core/release/notes/HEY6T7.md; go test -race ./... exit 0
