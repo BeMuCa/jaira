@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T07:44:06Z
+updated-at: 2026-10-19T07:44:09Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-70156
@@ -36,7 +36,7 @@ review-gaps: "1) Mehrere Boards: webSource.Lanes() laedt nur lane.Load(root) = D
 test-verdict: "pass: go vet RC=0, go test -count=1 -race ./... RC=0, dist matches npm ci+build; DoD 10/11 exercised in Playwright (delayed ?all=1 race, hand-unfolded epic across filter set/clear)"
 review-verdict: "Der Diff erfuellt DoD 1-11; keine Fehler gefunden. go vet und go test (core/web, core/link, internal/cli) gruen, npm ci+build laesst dist unveraendert, live auf diesem Repo: /api/lanes in Board-Reihenfolge mit richtigen kinds, ?all=1 = 221 Karten (129 logbook, 5 archive, 59 ref, 28 board), keine Duplikate. Einzige echte Einschraenkung: Lane-Farben kennen nur das Default-Board (Gap 1). Die Optik im Browser habe ich nicht selbst angesehen, nur die API."
 review-round: 4
-review-check: "1. cd /home/alex/projects/.worktrees/jaira-tpckzb && go run ./cmd/jaira web  2. die ausgegebene Adresse im Browser oeffnen: ueber beiden Spalten steht eine Leiste Search / Lane / Tag / Person / Date / 'All tickets ever'  3. 'web' ins Suchfeld tippen: beide Spalten schrumpfen, die Adresszeile zeigt ?q=web  4. Haken 'All tickets ever' setzen: links erscheinen viele Tickets mit Zusatzzeile 'in the logbook' bzw. 'in the archive', Adresse enthaelt all=1  5. Date auf 'filed away', von und bis 2026-10-17: es bleiben 8NHD8Q und S0EG0M  6. 8NHD8Q anklicken: Dialog zeigt farbiges Lane-Badge 'done' (gruen) und 'in the logbook'  7. eine logbook-Karte ziehen wollen: sie laesst sich nicht greifen  8. Lane-Auswahl oeffnen: jede Lane hat einen farbigen Punkt, dieselbe Farbe wie die Badges; Seite neu laden (F5): Filter und Farben sind unveraendert  9. Adresse kopieren, in neuem Tab oeffnen: dieselbe gefilterte Liste. Abgelehntes Archiv-Ticket: go test ./internal/cli -run TestWebListsFiledTicketsAndOpensThem (prueft kind und why)"
+review-check: "1. Im Worktree: go build -o /tmp/jaira ./cmd/jaira && /tmp/jaira web  2. Seite oeffnet sich: oben eine Filterleiste (Search, Lane, Tag, Person, Date, 'All tickets ever'); jedes Lane-Badge ist farbig, human/signoff amber, done gruen  3. 'web' ins Suchfeld tippen: beide Spalten schrumpfen, die Adresszeile zeigt ?q=web  4. Adresse kopieren, in neuem Tab oeffnen: dieselbe gefilterte Liste  5. 'All tickets ever' ankreuzen: links erscheinen Karten mit 'in the logbook' / 'in the archive'; sie lassen sich nicht auf ein Epic ziehen  6. Eine Logbuch-Karte anklicken (z.B. 8NHD8Q): Dialog oeffnet mit 'in the logbook'  7. Date auf 'filed away', von=bis=2026-10-17: nur 8NHD8Q und S0EG0M bleiben  8. Clear druecken, ein Epic von Hand aufklappen, Filter setzen und wieder leeren: das Epic ist weiter offen  9. Dunkles Theme im System einschalten: Lane-Farben bleiben lesbar"
 ---
 
 # Web-Seite: Filter und Tickets aus Logbook und Archiv anzeigen
