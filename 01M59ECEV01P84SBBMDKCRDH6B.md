@@ -19,12 +19,11 @@ definition-of-done: "core/epic: eine Funktion schreibt Titel und/oder Beschreibu
 tags:
   - web
   - cli
-blocked-by:
-  - TPCKZB
+blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T18:17:54Z
+updated-at: 2026-10-19T18:18:04Z
 updated-by: Alexander Sacharov
 mode: conversational
 ---
