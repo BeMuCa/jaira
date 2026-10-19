@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T18:25:16Z
+updated-at: 2026-10-19T18:25:19Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-24398"
 claimed-at: 2026-10-19T18:18:21Z
@@ -36,7 +36,7 @@ outcome-why: "Ein abgelehntes Ticket sah im Archiv genauso aus wie ein weggeraeu
 outcome-resolves: "DoD 1-3: internal/cli/reject.go + Store.Reject, Tests in internal/cli/reject_test.go; DoD 4: modeReject in internal/tui/model.go, internal/tui/reject_test.go; DoD 5: archivedRejections/rejectionLine, unreject; DoD 6: release note, agent block, Skill, go test ./... -race gruen; DoD 7-9: Faltung, Selbst-Duplikat, R stempelt; DoD 10: rejected-duplicate-of + unreject."
 review-summary: "Runde 5 (uncommittet, 8 Dateien): --duplicate-of schreibt jetzt einen fuenften Key rejected-duplicate-of: <volle ID> (core/ticket/store.go Store.Reject, immer, auch wenn der related-Link schon bestand); RejectedFields hat ihn, Rejection.DuplicateOf liest ihn. restore (unreject) liest den Key vor dem Abnehmen und loescht genau diesen Eintrag aus related, ein anderer related-Eintrag bleibt. show und archive schreiben 'duplicate of <handle>: why', --json beider Befehle hat 'duplicate_of'. Dazu eine weitere Release-Note-Zeile, COMMANDS.md, Hilfetext von reject und jaira-Skill. Damit ist die Rueckgabe aus signoff (restore laesst related stehen) behoben."
 round: 5
-review-gaps: "none - kein bestehender Helfer zum Entfernen eines related-Eintrags (grep slices.Delete/remove/without in core/ticket, internal/cli); unreject nimmt den neuen Key ueber RejectedFields ab, kein Sonderweg; nichts verwaist"
+review-gaps: "1) Die Aenderungen aus Runde 5 sind nicht committet (git status: 8 Dateien) - ohne Commit fehlen sie im Merge; Commit-Zeile in review-check Schritt 0. 2) Bekannt und von Alex akzeptiert (Notiz 18:17): ein related-Link zum Original, der schon vor dem reject bestand, geht beim restore mit. 3) Kosmetisch: duplicate_of in --json ist die volle ID, der Text zeigt den Handle - wie related ueberall. Keine Defekte gefunden."
 test-verdict: "pass: go vet + go clean -testcache + go test ./... -race RC=0; DoD 10 im Baum geprueft (store.go:389, :783, tickets.go rejectionLine/JSON); Binary auf Scratch-Board: reject --duplicate-of schreibt rejected-duplicate-of, archive/show nennen 'duplicate of J5AR30', --json duplicate_of; restore nimmt Key und Original-Link ab, ein vorher gesetzter related-Link auf ein anderes Ticket bleibt"
 review-verdict: "approve: DoD 1-9 im Diff belegt; go vet und go test ./... -race gruen; TestRejectOnTheBoardStampsCommits ohne die StampCommits-Zeile rot gesehen; per Binary nachgespielt: Selbst-Duplikat Exit 2, mehrzeiliger Grund als 'a b c' eingerueckt im Archiv, show zeigt rejected und den gestempelten Commit."
 review-round: 4
