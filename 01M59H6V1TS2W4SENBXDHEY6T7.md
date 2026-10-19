@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T14:38:50Z
+updated-at: 2026-10-19T14:38:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-82583
 claimed-at: 2026-10-19T14:38:38Z
@@ -34,7 +34,7 @@ test-verdict: "pass: go test -race -count=1 ./... RC=0; Runde 2 live: schreibges
 question: ""
 review-verdict: "Der Diff erfuellt DoD 1-5, keine Defekte; die drei Rueckgabepunkte aus signoff (Kommentar, Warnen statt Abbrechen, Ticketdatei an HEAD) sind erledigt. Push erst nach Alex' History-Bereinigung (Note 14:34)."
 review-round: 2
-review-check: "1. cd in den Worktree und: go build -o /tmp/jw ./cmd/jaira   2. /tmp/jw web --no-open   3. Die Ausgabe hat eine zweite Zeile 'jaira web: log <pfad>/web.log' - Pfad merken   4. In zweitem Terminal: curl -s http://127.0.0.1:<port>/api/tickets/NOPE   5. tail <pfad>/web.log zeigt 'started on ...' und 'GET /api/tickets/NOPE: 404 {...not found}' mit Zeitstempel   6. Die Seite im Browser oeffnen (Adresse aus Schritt 3), dann im ersten Terminal Ctrl-C   7. Nach spaetestens 10 s steht oben ein rotes Banner 'jaira web has not answered since HH:MM'   8. Schritt 2 erneut starten (gleicher Port ist nicht garantiert - dann neuen Tab oeffnen); bei gleichem Port verschwindet das Banner binnen 10 s   9. tail web.log zeigt 'stopped by signal interrupt'   Panic-Pfad hat keinen Handweg: go test ./core/web -run 'TestPanic|TestFailedFetch' -v"
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-hey6t7 && go build -o /tmp/jw ./cmd/jaira   2. /tmp/jw web --no-open   3. Zweite Ausgabezeile lautet 'jaira web: log <pfad>/web.log' - Pfad und Port merken   4. Zweites Terminal: curl -s http://127.0.0.1:<port>/api/tickets/NOPE - Antwort ist 404 'not found'   5. tail <pfad>/web.log zeigt 'started on ...' und 'GET /api/tickets/NOPE: 404 {...not found}' mit Uhrzeit   6. Adresse im Browser oeffnen, dann im ersten Terminal Ctrl-C   7. Binnen 10 s erscheint oben ein rotes Banner 'jaira web has not answered since HH:MM'   8. tail web.log zeigt 'stopped by signal interrupt'   9. Panic-Pfad hat keinen Handweg: go test ./core/web -run 'TestPanic|TestFailedFetch' -v - beide PASS"
 round: 2
 ---
 
