@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:44:03Z
+updated-at: 2026-10-19T06:44:06Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -45,7 +45,8 @@ claimed-at: 2026-10-19T06:35:35Z
   proof: core/release/notes/TPCKZB.md
 - [x] Filter nach Datum: Zeitraum von-bis auf erstellt, zuletzt geaendert und abgelegt (Logbuch-Datum)
   proof: core/web/ui/src/features/filter-tickets/model/filter.ts:78 date range on created/updated/filed; filed_at from ticket.LogbookFolderDay (web_source.go cards) or rejected-at
-- [ ] Ein abgelehntes Ticket im Archiv zeigt rejected-kind und rejected-why
+- [x] Ein abgelehntes Ticket im Archiv zeigt rejected-kind und rejected-why
+  proof: internal/cli/web_source.go:175 rejection(); TicketDetails.svelte:25; TestWebListsFiledTicketsAndOpensThem checks kind and why
 - [ ] Die gesetzten Filter stehen in der URL; ein Link zeigt dieselbe gefilterte Liste
 
 ## Options
