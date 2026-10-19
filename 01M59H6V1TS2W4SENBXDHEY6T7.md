@@ -21,14 +21,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T20:48:09Z
+updated-at: 2026-10-19T20:48:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11846
 claimed-at: 2026-10-19T20:45:53Z
 outcome-what: "jaira web schreibt Fehlerantworten (>=400), fehlgeschlagene Fetches/Pushes, Panics mit Stack und das beendende Signal mit Zeit nach ~/.jaira/state/<baum>/web.log und nennt den Pfad beim Start; eine Panic im Handler antwortet 500 statt die Verbindung zu kappen; die Seite zeigt nach spaetestens 10 s ein Banner, wenn der Befehl nicht mehr antwortet."
 outcome-why: "Alex' 'jaira web' fiel aus, und es gab keine Spur: nichts wurde geloggt, stderr ging mit dem Terminal verloren, und die Seite stand still, ohne es zu sagen."
 outcome-resolves: "Ein Ausfall von jaira web hinterlaesst jetzt seine Ursache in einer Datei, und die Seite meldet ihn sichtbar."
-review-summary: "jaira web schreibt jetzt ein Log nach <StateDir>/web.log (pro Arbeitsbaum unter ~/.jaira/state, ausserhalb des Repos) und nennt den Pfad beim Start. Eine Middleware um alle Routen schreibt jede Antwort >=400 mit den ersten 512 Byte des Fehlerkoerpers ins Log, faengt Panics ab, loggt sie mit Stack und antwortet 500, statt die Verbindung zu kappen. Fetch und Push laufen in recovered(): Fehler und Panics landen im Log und im Sync-Status, die Fetch-Schleife laeuft weiter. SIGTERM und SIGHUP beenden den Befehl wie Ctrl-C, Start und Stop (mit Signal) stehen im Log. Beim Start rotiert eine Datei ueber 1 MB nach web.log.1. Laesst sich das Log nicht oeffnen, warnt der Befehl auf stderr und laeuft ohne. Die Seite fragt alle 10 s /api/sync ab; scheitert das, zeigt sie ein rotes Banner 'has not answered since HH:MM', beim naechsten Erfolg verschwindet es und die Seite liest alles neu."
+review-summary: "none"
 review-gaps: "Kein Code-Defekt. (1) Klein: kann web.log nicht geoeffnet werden, bekommt http.Server ErrorLog=io.Discard - dessen eigene Meldungen (Accept-Fehler u.a.), die vorher auf stderr gingen, sind dann ganz weg (internal/cli/web.go:71,99); ein Logger auf stderr statt io.Discard waere gleich billig. (2) Nicht Code: die Commits d89bb20c und b2389dea enthalten in der Ticketdatei weiter den fremden Projektnamen, PIDs und einen Home-Pfad; HEAD ist sauber. Laut Entscheidung 14:34 schreibt Alex History und Ticket-Ref selbst um - bis dahin nicht pushen. go test -race ./core/web ./internal/cli gruen, GOOS=windows/darwin bauen."
 test-verdict: "pass: go test -race -count=1 ./... RC=0; Runde 2 live: schreibgeschuetztes State-Verzeichnis -> Warnung 'cannot open the log ...; running without one', /api/sync 200; Ticketdatei frei von Projektname, PIDs, Home-Pfaden"
 question: ""
