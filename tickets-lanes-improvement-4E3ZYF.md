@@ -1,6 +1,7 @@
 ---
 color: 63
 created-at: 2026-10-18T21:53:29Z
+goal: Tickets und Lanes sind leichter anzulegen, zu ordnen und abzunehmen: Lane-Vorlagen, Reihenfolge, Benachrichtigung, Human Review mit Testschritten.
 ---
 
 # tickets-lanes-improvement
