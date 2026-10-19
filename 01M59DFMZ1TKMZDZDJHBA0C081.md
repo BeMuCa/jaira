@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T08:15:11Z
+updated-at: 2026-10-19T08:15:14Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-24710
 claimed-at: 2026-10-19T07:38:42Z
@@ -108,3 +108,4 @@ Warum: Ohne Commit fehlen store.go, reject.go, model.go und die Release-Note im 
 2) Zurueckgeben: R auf dem Board soll auch Commits stempeln, damit abgelehnte Tickets eine commits-Liste haben [give back]
 Empfehlung: 1 - die Luecken sind nicht blockierend und bei x und archive schon genauso, ein eigener Umbau waere Scope-Wachstum.
 - **2026-10-19 08:15 · Alexander Sacharov** — decision: 2) Zurueckgeben: R auf dem Board soll auch Commits stempeln, damit abgelehnte Tickets eine commits-Liste haben
+- **2026-10-19 08:15 · Alexander Sacharov** — Given back from signoff: 2) Zurueckgeben: R auf dem Board soll auch Commits stempeln, damit abgelehnte Tickets eine commits-Liste haben
