@@ -1,7 +1,7 @@
 ---
 id: 01M59H6V1TS2W4SENBXDHEY6T7
 title: "jaira web schreibt mit, was passiert, und ein Absturz hinterlaesst seine Ursache"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T14:27:54Z
+updated-at: 2026-10-19T14:27:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-27212
 claimed-at: 2026-10-19T13:47:43Z
@@ -35,6 +35,7 @@ question: ""
 review-verdict: "Der Code erfuellt die Definition of Done; keine Defekte gefunden, nur zwei kleine Unschaerfen (Kommentar zu Rotation, Log-Fehler ist fatal). Nicht pushbar, solange die privaten Daten in der committeten Ticketdatei stehen - das entscheidet Alex (Note 13:46)."
 review-round: 1
 review-check: "1. cd in den Worktree und: go build -o /tmp/jw ./cmd/jaira   2. /tmp/jw web --no-open   3. Die Ausgabe hat eine zweite Zeile 'jaira web: log <pfad>/web.log' - Pfad merken   4. In zweitem Terminal: curl -s http://127.0.0.1:<port>/api/tickets/NOPE   5. tail <pfad>/web.log zeigt 'started on ...' und 'GET /api/tickets/NOPE: 404 {...not found}' mit Zeitstempel   6. Die Seite im Browser oeffnen (Adresse aus Schritt 3), dann im ersten Terminal Ctrl-C   7. Nach spaetestens 10 s steht oben ein rotes Banner 'jaira web has not answered since HH:MM'   8. Schritt 2 erneut starten (gleicher Port ist nicht garantiert - dann neuen Tab oeffnen); bei gleichem Port verschwindet das Banner binnen 10 s   9. tail web.log zeigt 'stopped by signal interrupt'   Panic-Pfad hat keinen Handweg: go test ./core/web -run 'TestPanic|TestFailedFetch' -v"
+round: 2
 ---
 
 # jaira web schreibt mit, was passiert, und ein Absturz hinterlaesst seine Ursache
