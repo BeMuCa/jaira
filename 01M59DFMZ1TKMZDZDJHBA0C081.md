@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T07:39:09Z
+updated-at: 2026-10-19T07:39:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-24710
 claimed-at: 2026-10-19T07:38:42Z
@@ -101,3 +101,4 @@ review-check: "0. Erst committen, im Worktree /home/alex/projects/.worktrees/jai
 - **2026-10-19 07:32 · Alexander Sacharov** — decision (Alex via jaira-a7): beide review-gaps hier beheben - (1) ein mehrzeiliger --why wird beim Schreiben auf eine Zeile gefaltet, damit 'jaira archive' eingerueckt bleibt; (2) --duplicate-of auf das Ticket selbst ist Exit 2 und wird vor dem Commit-Stempeln geprueft. Eine kombinierte Commit-Zeile (optimize + diese Fixes) an jaira-a7.
 - **2026-10-19 07:33 · Alexander Sacharov** — in-progress (Runde 3, review-gaps): Grund wird in Store.Reject gefaltet (gilt fuer CLI und TUI) und in der CLI vor der Ausgabe; --duplicate-of wird in der CLI vor StampCommits aufgeloest (Exit 5 unbekannt, Exit 2 sich selbst), der Selbst-Check in Store.Reject bleibt fuer andere Aufrufer. DoD-2-Proof nachgezogen, weil die Exit-5-Pruefung von Store.Reject in die CLI gewandert ist. go clean -testcache; go test ./... -race RC=0.
 - **2026-10-19 07:34 · Alexander Sacharov** — critique (Runde 3): liest nur die Antwort auf die review-gaps. Beide Gaps behoben, Fix bricht keine DoD - none.
+- **2026-10-19 07:39 · Alexander Sacharov** — review (fresh context, Runde 2): approve. DoD 1-8 im Diff belegt; go vet, go test ./... -race gruen; end-to-end per Binary nachgespielt (Exit 3/2/5/2/0, archive, show, restore). Nicht blockierend: R auf dem Board stempelt keine Commits (wie x), CLI stempelt vor einem spaeter scheiternden Reject (wie archive), restore laesst related aus --duplicate-of stehen. Offen: optimize+Runde-3-Aenderungen uncommittet - Commit-Zeile in review-check Schritt 0.
