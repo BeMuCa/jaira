@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T07:44:09Z
+updated-at: 2026-10-19T07:44:13Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-70156
@@ -119,3 +119,4 @@ Empfehlung: 1 - Beide Punkte sind klein und nicht blockierend, der Diff erfuellt
 - **2026-10-19 07:40 · Alexander Sacharov** — Rueckgabe aus signoff umgesetzt (DoD 10, 11): load() zaehlt Ladevorgaenge, nur der zuletzt gestartete schreibt die Seite (auch Fehler und Lanes); EpicList merkt sich je Epic, was die Person von Hand auf-/zugeklappt hat, und zeigt das wieder, sobald kein Filter mehr eingrenzt — Toggles waehrend des erzwungenen Aufklappens zaehlen nicht. Proofs 3/4/7/8 auf neue Zeilen gesetzt.
 - **2026-10-19 07:40 · Alexander Sacharov** — critique Runde 4: nur die Reparatur 0f1b2e4d gelesen (ReviewPage load-Zaehler, EpicList unfolded) — keine Befunde.
 - **2026-10-19 07:41 · Alexander Sacharov** — testing Runde 3: vet/race RC=0, dist synchron; Playwright gegen jaira web auf diesem Repo: verzoegerte ?all=1-Antwort nach Ein-Aus des Schalters zeigt keine Logbuch-Karte; von Hand aufgeklapptes Epic bleibt nach Filter setzen+leeren offen, von Hand zugeklapptes bleibt zu.
+- **2026-10-19 07:44 · Alexander Sacharov** — review (fresh context): DoD 1-11 vom Diff gedeckt, Tests gruen, dist synchron, API live geprueft. Gap: Lanes() kennt nur das Default-Board — Lanes anderer Boards werden grau statt farbig. Nicht blockierend, solange das Repo ein Board hat.
