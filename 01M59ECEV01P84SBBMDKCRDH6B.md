@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T20:53:38Z
+updated-at: 2026-10-19T20:55:05Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-52791
@@ -36,7 +36,7 @@ review-gaps: "No blocker. (1) Layout drift: when Merge (push race) has to rewrit
 test-verdict: "pass (round 2): go vet ./... RC=0, go test -race -count=1 ./... RC=0 (31 packages ok), npm test 2/2 pass, npm ci && npm run build rebuilt dist to match sources, svelte-check 0 warnings (only the known vite.config.ts node:url error); DoD 1-10 against their tests; headless Chromium on a scratch board: 409 after a change behind the open form names the changed fields, keeps typed title and text, adopts the untouched description, second Save answers 200 and writes; '- <ULID> ...' typed in the form reads back as '* <ULID> ...' with members unchanged"
 review-verdict: "The diff meets DoD 1-10. Re-ran: go vet + go test -count=1 for core/epic, core/web, internal/cli green; npm test 2/2 green; npm run build reproduces the committed dist byte for byte. Writes go through the existing Origin check (any non-GET). Gaps are edge cases, not defects against the DoD - accept."
 review-round: 2
-review-check: "1. cd /home/alex/projects/.worktrees/jaira-crdh6b && go build -o /tmp/jaira-crdh6b ./cmd/jaira   2. In a scratch repo with a remote and a board: /tmp/jaira-crdh6b epic create demo --title Demo   3. /tmp/jaira-crdh6b epic set demo --body $'## Goal\\n- 01M59ECEV01P84SBBMDKCRDH6B see this'  -> prints 'Epic \"demo\" rewritten'   4. /tmp/jaira-crdh6b epic show demo -> shows '## Goal' and '* 01M59ECEV01P84SBBMDKCRDH6B see this' and '0 of 0 done' (the id did NOT become a member)   5. /tmp/jaira-crdh6b epic set demo -> exit 2; epic set nope --title x -> exit 5   6. /tmp/jaira-crdh6b web, open the page: under Demo click 'Text' -> rendered heading and list; click 'Edit', change the title, Save -> new title shows at once   7. Open Edit again, in a second terminal run 'epic set demo --title Other', then change the title in the form and Save -> red message names the title change, your typing stays; Save again -> 200, your title wins."
+review-check: "1. go build -o /tmp/jaira-crdh6b ./cmd/jaira   2. In a scratch repo with a remote and a board: /tmp/jaira-crdh6b epic create demo --title Demo   3. /tmp/jaira-crdh6b epic set demo --body $'## Goal\\n- 01M59ECEV01P84SBBMDKCRDH6B see this'  -> prints 'Epic \"demo\" rewritten'   4. /tmp/jaira-crdh6b epic show demo -> shows '## Goal' and '* 01M59ECEV01P84SBBMDKCRDH6B see this' and '0 of 0 done' (the id did NOT become a member)   5. /tmp/jaira-crdh6b epic set demo -> exit 2; epic set nope --title x -> exit 5   6. /tmp/jaira-crdh6b web, open the page: under Demo click 'Text' -> rendered heading and list; click 'Edit', change the title, Save -> new title shows at once   7. Open Edit again, in a second terminal run 'epic set demo --title Other', then change the title in the form and Save -> red message names the title change, your typing stays; Save again -> 200, your title wins."
 round: 2
 ---
 
