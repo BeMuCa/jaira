@@ -107,6 +107,3 @@ func (r *recorder) Write(b []byte) (int, error) {
 	}
 	return r.ResponseWriter.Write(b)
 }
-
-// Unwrap lets http.ResponseController reach the connection underneath.
-func (r *recorder) Unwrap() http.ResponseWriter { return r.ResponseWriter }

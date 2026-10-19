@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"testing"
 )
 
@@ -15,26 +14,8 @@ type panicSource struct{ fakeSource }
 
 func (panicSource) Epics() ([]Epic, error) { panic("boom in Epics") }
 
-// syncBuffer is a log target the race detector accepts from several goroutines.
-type syncBuffer struct {
-	mu sync.Mutex
-	b  bytes.Buffer
-}
-
-func (s *syncBuffer) Write(p []byte) (int, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.b.Write(p)
-}
-
-func (s *syncBuffer) String() string {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.b.String()
-}
-
 func TestPanicAnswers500AndIsLogged(t *testing.T) {
-	var buf syncBuffer
+	var buf bytes.Buffer
 	h := (&Server{Source: &panicSource{}, Log: NewLogger(&buf)}).Handler()
 
 	w := do(t, h, "GET", "/api/epics", "")
@@ -52,7 +33,7 @@ func TestPanicAnswers500AndIsLogged(t *testing.T) {
 }
 
 func TestErrorAnswersAreLogged(t *testing.T) {
-	var buf syncBuffer
+	var buf bytes.Buffer
 	h := (&Server{Source: &fakeSource{}, Log: NewLogger(&buf)}).Handler()
 
 	do(t, h, "GET", "/api/tickets/Z", "")
@@ -67,7 +48,7 @@ func TestErrorAnswersAreLogged(t *testing.T) {
 }
 
 func TestFailedFetchAndPushAreLogged(t *testing.T) {
-	var buf syncBuffer
+	var buf bytes.Buffer
 	s := &Server{
 		Source: &fakeSource{},
 		Fetch:  func() error { return errors.New("remote gone") },
