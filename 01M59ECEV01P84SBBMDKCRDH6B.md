@@ -24,7 +24,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T06:45:44Z
+updated-at: 2026-10-19T06:46:42Z
 updated-by: Alexander Sacharov
 ---
 
@@ -49,6 +49,13 @@ updated-by: Alexander Sacharov
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] core/epic: Body() = alle Nicht-Mitgliedszeilen unter dem Frontmatter; SetBody(text) schreibt Frontmatter + Text + Mitgliedszeilen in alter Reihenfolge; Set(store, refs, name, Patch{Title,Description,Body *string, Base}) unter dem epics-Lock; Tests
+- [ ] core/epic Merge: Body wie title/description mergen; gleichzeitige Aenderung desselben Feldes nach Entscheidung (siehe Frage); Test
+- [ ] CLI: 'jaira epic set <name> --title --description --body --body-file <pfad|->' (Exit 5 unbekannt, Exit 2 ohne Flag); 'epic show' gibt den Text aus, --json mit body; Tests
+- [ ] Web: Epic-JSON bekommt body; PATCH /api/epics/{name} mit base (was der Editor gelesen hat) -> 409 wenn inzwischen geaendert; Source.SetEpic in internal/cli/web_source.go; Tests
+- [ ] UI: EpicList zeigt description-Zeile, Text gerendert (shared/lib/markdown) und eingeklappt; Bearbeiten-Knopf -> Formular Titel/description/Text; Speichern laedt Epics neu
+- [ ] core/release/notes/CRDH6B.md; go test ./... -race; UI-Build/Tests
 
 ## Progress
 - **2026-10-19 06:45 · Alexander Sacharov** — parent session: jaira-a7
