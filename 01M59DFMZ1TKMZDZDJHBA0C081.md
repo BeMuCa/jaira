@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T07:32:19Z
+updated-at: 2026-10-19T07:33:50Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9569
 claimed-at: 2026-10-19T07:04:10Z
@@ -50,7 +50,7 @@ review-check: "0. Zuerst die liegengebliebenen optimize-Aenderungen committen: g
 - [x] 'jaira reject <id> --why <text>' schreibt rejected.kind/why/by/at ins Frontmatter und verschiebt das Ticket nach .jaira/archive/; ohne --why Exit 2
   proof: internal/cli/reject.go newRejectCmd; core/ticket/store.go Store.Reject; tests TestRejectWritesTheReasonAndArchives, TestRejectWithoutWhyIsAUsageError
 - [x] --duplicate-of <id> setzt kind=duplicate und verlinkt das Original; eine unbekannte id wird mit Exit 5 abgelehnt
-  proof: core/ticket/store.go Store.Reject (LoadAnywhere, related); test TestRejectDuplicateOfLinksTheOriginal, TestRejectDuplicateOfAnUnknownTicketIsNotFound
+  proof: internal/cli/reject.go --duplicate-of via LoadAnywhere vor dem Stempeln (Exit 5); core/ticket/store.go Store.Reject setzt duplicate + related; tests TestRejectDuplicateOfLinksTheOriginal, TestRejectDuplicateOfAnUnknownTicketIsNotFound
 - [x] Ein Agent wird mit Exit 3 abgewiesen und die Meldung nennt den Weg ueber human --question
   proof: internal/cli/reject.go !force -> ExitValidation needs_human, questionLane; test TestRejectWithoutForceSendsAnAgentToTheHumanLane
 - [x] Auf dem Board laesst sich ein Ticket mit einer einzeiligen Begruendung ablehnen
@@ -59,8 +59,10 @@ review-check: "0. Zuerst die liegengebliebenen optimize-Aenderungen committen: g
   proof: internal/cli/archive.go archivedRejections; internal/cli/tickets.go rejectionLine/rejectionJSON; core/ticket/store.go unreject; tests TestArchiveListAndShowSayWhyATicketWasRejected, TestAnArchivedTicketIsNotShownAsRejected, TestRestoreTakesTheRejectionOff
 - [x] Release-Note core/release/notes/<ID>.md, Agent-Block/jaira-Skill nennen reject; go test ./... -race gruen
   proof: core/release/notes/A0C081.md; core/board/announce.go + CLAUDE.md/AGENTS.md (TestAgentNoteNamesReject); .claude/skills/jaira/SKILL.md 'Taking a ticket off the board'; go test ./... -race exit 0
-- [ ] Ein mehrzeiliger Grund wird beim Schreiben auf eine Zeile gefaltet; 'jaira archive' behaelt die Einrueckung
-- [ ] --duplicate-of auf das Ticket selbst endet mit Exit 2, geprueft bevor etwas gestempelt oder geschrieben wird
+- [x] Ein mehrzeiliger Grund wird beim Schreiben auf eine Zeile gefaltet; 'jaira archive' behaelt die Einrueckung
+  proof: core/ticket/store.go Store.Reject faltet why (strings.Fields); internal/cli/reject.go ebenso; test TestRejectFoldsAMultiLineReason
+- [x] --duplicate-of auf das Ticket selbst endet mit Exit 2, geprueft bevor etwas gestempelt oder geschrieben wird
+  proof: internal/cli/reject.go: LoadAnywhere + orig.ID == t.ID -> ExitUsage vor StampCommits; test TestRejectAsADuplicateOfItselfIsAUsageError
 
 ## Options
 
@@ -97,3 +99,4 @@ review-check: "0. Zuerst die liegengebliebenen optimize-Aenderungen committen: g
 - **2026-10-19 06:56 · Alexander Sacharov** — critique (Runde 2): beide Befunde aus Runde 1 umgesetzt (4e6d036e) - nichts mehr. Beobachtet, nicht als Befund (bricht keine DoD): Store.Reject ruft jetzt s.resolve vor Mutate; fuer ein Ticket, das nur auf seinem Ref liegt, kommt damit 'not found' statt Mutates 'pull it first' - die CLI laedt vorher mit s.Load und meldet das schon dort.
 - **2026-10-19 07:04 · Alexander Sacharov** — review (fresh context): DoD 1-6 erfuellt, per Hand geprueft, Tests -race gruen. Offen fuer den Menschen: optimize-Aenderungen (store.go archiveTarget, model.go, reject_test.go) sind uncommittet - Commit-Zeile steht in review-check Schritt 0. Kosmetisch: mehrzeiliger --why bricht die Einrueckung in 'jaira archive'.
 - **2026-10-19 07:32 · Alexander Sacharov** — decision (Alex via jaira-a7): beide review-gaps hier beheben - (1) ein mehrzeiliger --why wird beim Schreiben auf eine Zeile gefaltet, damit 'jaira archive' eingerueckt bleibt; (2) --duplicate-of auf das Ticket selbst ist Exit 2 und wird vor dem Commit-Stempeln geprueft. Eine kombinierte Commit-Zeile (optimize + diese Fixes) an jaira-a7.
+- **2026-10-19 07:33 · Alexander Sacharov** — in-progress (Runde 3, review-gaps): Grund wird in Store.Reject gefaltet (gilt fuer CLI und TUI) und in der CLI vor der Ausgabe; --duplicate-of wird in der CLI vor StampCommits aufgeloest (Exit 5 unbekannt, Exit 2 sich selbst), der Selbst-Check in Store.Reject bleibt fuer andere Aufrufer. DoD-2-Proof nachgezogen, weil die Exit-5-Pruefung von Store.Reject in die CLI gewandert ist. go clean -testcache; go test ./... -race RC=0.
