@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:55:27Z
+updated-at: 2026-10-19T06:56:57Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -33,7 +33,7 @@ outcome-resolves: "GET /api/unassigned?all=1 und neue Kartenfelder (web_source.g
 review-summary: none
 round: 3
 review-gaps: "Runde 2: webSource.Lanes iteriert set.Lanes statt IDs()+Get; ReviewPage reicht fetchLanes() per .then(setLanes) durch statt einer untypisierten Hilfsvariable; ungenutzten Re-Export Lane aus entities/lane entfernt. Gesucht: keine bestehende Lane-Farbe im Web; die TUI-laneShade ist ein Wechselschatten, kein Farbschema, also keine Doppelung. Gelassen: GET /api/lanes laeuft bei jedem Minuten-Reload mit (lane.Load, billig)."
-test-verdict: "fail: DoD 9 (Lane-Farben, von Alex am 19.10. nachgereicht) fehlt; DoD 1-8 gruen"
+test-verdict: "pass: go vet ./... RC=0, go test -count=1 -race ./... RC=0, dist matches npm ci && npm run build; DoD 1-9 verified in headless Chrome/Playwright on this repo and a scratch board with a rejected archive ticket"
 ---
 
 # Web-Seite: Filter und Tickets aus Logbook und Archiv anzeigen
