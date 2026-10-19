@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T18:18:33Z
+updated-at: 2026-10-19T18:18:46Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-24398"
 claimed-at: 2026-10-19T18:18:21Z
@@ -65,6 +65,7 @@ review-check: "0. Committen: git add core/release/notes/A0C081.md core/ticket/st
   proof: internal/cli/reject.go: LoadAnywhere + orig.ID == t.ID -> ExitUsage vor StampCommits; test TestRejectAsADuplicateOfItselfIsAUsageError
 - [x] R auf dem Board stempelt vor dem Ablehnen die Commits wie 'jaira reject', damit ein abgelehntes Ticket seine commits-Liste hat
   proof: internal/tui/model.go confirmReject: StampCommits(t, m.gateEnv().DeriveCommits) vor Store.Reject; test TestRejectOnTheBoardStampsCommits (ohne die Zeile rot)
+- [ ] --duplicate-of schreibt rejected-duplicate-of: <ID>; 'jaira restore' nimmt den Key und genau diesen related-Eintrag ab; show und archive nennen das Original
 
 ## Options
 
