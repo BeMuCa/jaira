@@ -24,7 +24,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T06:48:30Z
+updated-at: 2026-10-19T18:17:54Z
 updated-by: Alexander Sacharov
 mode: conversational
 ---
@@ -68,3 +68,4 @@ mode: conversational
 - **2026-10-19 06:46 · Alexander Sacharov** — decision (Worker): lokale Gleichzeitigkeit (Web-Formular offen, CLI aendert dasselbe Epic) -> PATCH traegt 'base' = die Werte, die der Editor gelesen hat; ein Feld, das der Editor aendern will und das sich seitdem geaendert hat -> 409 + aktueller Stand, nichts geschrieben. CLI-set schreibt unter dem Lock auf den aktuellen Stand und braucht kein base.
 - **2026-10-19 06:47 · Alexander Sacharov** — Frage an Teamlead/Alex (offen): Zwei Klone aendern denselben Epic-Text gleichzeitig; refsync verliert das Rennen und ruft epic.Merge. Heute gewinnt dort 'ours' still - verletzt DoD 4. Optionen: 1) (empfohlen) Konfliktmarker: der Text wird ours, der fremde Text bleibt darunter in einem markierten Block '<!-- jaira: gleichzeitig geaendert, bitte zusammenfuehren -->' - sichtbar im Web und im Diff, kein Verlust, ~30 Zeilen. 2) Zeilenweiser 3-Wege-Merge (diff3 selbst gebaut) - nicht-ueberlappende Aenderungen fliessen still zusammen, nur echte Ueberlappung braucht Marker; deutlich mehr Code. 3) ours gewinnt, theirs geht verloren wie heute - einfach, aber DoD 4 muesste umformuliert werden. Fuer Titel/description (einzeilig) gilt bei 1) dasselbe: ours gewinnt, der fremde Wert landet im Konfliktblock.
 - **2026-10-19 06:48 · Alexander Sacharov** — decision (Alex via Teamlead, 19.10.2026): Option 1. Gleichzeitige Aenderung desselben Feldes in epic.Merge: ours wird der Wert/Text, theirs bleibt darunter im Body in einem markierten Konfliktblock '<!-- jaira: gleichzeitig geaendert -->' erhalten - gilt fuer Body, Titel und description. Nichts geht still verloren.
+- **2026-10-19 18:17 · Alexander Sacharov** — decision (Alex via Teamlead, 19.10.2026): nicht auf master warten. feat/crdh6b wird auf feat/tpckzb aufgebaut (Worktree steht heute auf 7f008dec = master, noch kein eigener Commit: zuerst 'git reset --keep feat/tpckzb'). Code ab jetzt erlaubt. PR von CRDH6B erst nach dem PR von TPCKZB oeffnen; im Push-Bericht sagen, dass der Branch gestapelt ist.
