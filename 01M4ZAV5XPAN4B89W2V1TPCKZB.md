@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:37:36Z
+updated-at: 2026-10-19T06:37:40Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -67,3 +67,4 @@ B) Filter serverseitig (?q=&tag=&lane=...), wie 'jaira list'. Kostet: Filterlogi
 C) Eigene Seite /all. Von Alex ausgeschlossen (gleiche Liste, Schalter).
 
 Ich nehme A: die Datenmenge ist klein, Filtern im Browser ist sofort, die URL traegt den Zustand ohne Server-Logik.
+- **2026-10-19 06:37 · Alexander Sacharov** — decision (worker, aus Code/Default): Die Filterleiste steht ueber beiden Spalten und wirkt auf beide — auf 'Tickets in no epic' und auf die Ticketzeilen jeder Epic-Karte. Der Schalter 'alle Tickets aller Zeiten' fuegt der linken Liste die abgelegten Tickets ohne Epic hinzu (Epic-Karten zaehlen abgelegte schon heute). Jede Karte zeigt, wo sie liegt: Board / Ref / Logbuch / Archiv. Abgelegte Karten lassen sich nicht ziehen. Personenfilter: EIN Feld 'Person', trifft wenn creator ODER assignee ODER updated_by passt — 'filter by people' ohne drei Dropdowns. Datumsfilter: Auswahl des Feldes (erstellt / geaendert / abgelegt) plus von/bis. Abgelegt-Datum: Logbuch = Datum aus dem Ordnernamen; Archiv = rejected-at, wenn gesetzt, sonst keins. Die Snapshot-Branch (core/snapshot) ist ein Backup und bleibt aussen vor.
