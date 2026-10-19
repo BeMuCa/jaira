@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T20:31:38Z
+updated-at: 2026-10-19T20:31:42Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-25649
@@ -98,3 +98,4 @@ test-verdict: "pass: go vet ./... RC=0, go test -race -count=1 ./... RC=0 (31 pa
 - **2026-10-19 20:26 · Alexander Sacharov** — UI live geprueft (headless Chromium via uv run --with playwright, Scratch-Board mit bare remote unter dem Scratchpad): Text eingeklappt, description sichtbar, Klick rendert ## Goal/**link**/Liste; Edit->Save zeigt neuen Titel und Absatz sofort; Formular offen + PATCH von aussen -> Save zeigt die 409-Meldung im Formular. Formular schickt nur geaenderte Felder + base, damit eine fremde Aenderung an einem nicht angefassten Feld keinen 409 ausloest. svelte-check: nur der bekannte vite.config.ts-Fehler (node:url). dist neu gebaut mit npm ci && npm run build. 'jaira web --help' nennt jetzt Edit.
 - **2026-10-19 20:27 · Alexander Sacharov** — Kritik Stueck 4-6: json-Tags an epic.Fields entfernt (kein Leser, core/web hat eigene EpicFields); 'jaira web --help'-Absatz auf ~80 Spalten neu umbrochen und nennt das eingeklappte Text-Feld. Daneben-Kritik damit fertig, alle Funde umgesetzt.
 - **2026-10-19 20:29 · Alexander Sacharov** — critique-Lane (Worker, Diff gelesen ohne dist): kein offener Fund. Losgelassen, weil es dem optimize-Lane gehoert: edit()/Set geben bei einem Fehler das gelesene Epic zurueck, kein Aufrufer liest es.
+- **2026-10-19 20:31 · Alexander Sacharov** — testing: alles gruen, siehe test-verdict. Einziger Konsolen-Eintrag im Browser ist der erwartete 409.
