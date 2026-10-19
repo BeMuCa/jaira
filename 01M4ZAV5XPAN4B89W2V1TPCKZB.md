@@ -1,7 +1,7 @@
 ---
 id: 01M4ZAV5XPAN4B89W2V1TPCKZB
 title: "Web-Seite: Filter und Tickets aus Logbook und Archiv anzeigen"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Auf der Seite von 'jaira web' sieht man jedes Ticket, das es je gab — offen, nur auf dem Ref, im Logbuch oder im Archiv — und filtert es nach Text, Lane, Tag, Person und Datum, mit den Filtern in der URL."
@@ -22,11 +22,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:44:22Z
+updated-at: 2026-10-19T06:44:33Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
 claimed-at: 2026-10-19T06:35:35Z
+outcome-what: "jaira web: Filterleiste (Text, Lane, Tag, Person, Datumsbereich) ueber beiden Spalten, Schalter 'All tickets ever' listet Board, Ref, Logbuch und Archiv mit Ort; Detail zeigt Ort und Ablehnung; Filter im URL-Query"
+outcome-why: "Alex will jedes Ticket, das es je gab, auf der Seite sehen und nach Personen, Datum und Lane filtern; bisher zeigte die Seite nur offene Tickets ohne Filter"
+outcome-resolves: "GET /api/unassigned?all=1 und neue Kartenfelder (web_source.go cards/rejection), Filtermodell features/filter-tickets mit URL-Abgleich, TestWebListsFiledTicketsAndOpensThem; DoD 1-8 mit Proofs"
 ---
 
 # Web-Seite: Filter und Tickets aus Logbook und Archiv anzeigen
