@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T13:46:28Z
+updated-at: 2026-10-19T13:47:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35137
 claimed-at: 2026-10-19T08:18:23Z
@@ -120,3 +120,8 @@ Warum: Beides aendert nichts an der Aufgabe (Ablehnen mit Grund, Grund bleibt im
 1) Ticket so annehmen, die zwei Kleinigkeiten bleiben wie sie sind [accept]
 2) Zurueckgeben: restore soll den related-Eintrag nach --duplicate-of wieder entfernen [give back]
 Empfehlung: 1 - die Kleinigkeiten sind kosmetisch, nicht Teil der DoD, und ein weiterer Durchlauf kostet mehr als er bringt.
+- **2026-10-19 13:47 · Alexander Sacharov** — explain: Der Reviewer hat nichts Blockierendes gefunden (approve, DoD 1-9 belegt, go vet und go test -race gruen). Offen sind zwei kosmetische Kleinigkeiten: restore laesst den related-Eintrag aus --duplicate-of stehen, und R auf dem Board stempelt mit dem beim Druecken gehaltenen Stand (ohne Verlust).
+Warum: Beides aendert nichts am Kern der Aufgabe (mit Grund ablehnen, Grund bleibt im Archiv); der Hinweis auf uncommittete Aenderungen ist ueberholt, sie liegen schon in 41b46cf2.
+1) Ticket so annehmen, die zwei Kleinigkeiten bleiben wie sie sind [accept]
+2) Zurueckgeben: restore soll den related-Eintrag nach --duplicate-of wieder entfernen [give back]
+Empfehlung: 1 - die Kleinigkeiten sind kosmetisch und nicht Teil der DoD, ein weiterer Durchlauf kostet mehr als er bringt.
