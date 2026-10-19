@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T12:49:11Z
+updated-at: 2026-10-19T12:49:14Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79475
 claimed-at: 2026-10-19T12:47:47Z
@@ -46,7 +46,7 @@ claimed-at: 2026-10-19T12:47:47Z
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] core/web/log.go: Logger (Datei, Rotation), recover-Middleware, Fehlerstatus-Logging, Loop/Fetch/Push-Fehler + recover
+- [~] core/web/log.go: Logger (Datei, Rotation), recover-Middleware, Fehlerstatus-Logging, Loop/Fetch/Push-Fehler + recover
 - [ ] internal/cli/web.go: Log oeffnen, Pfad beim Start nennen, Fetch-Timeout
 - [ ] Tests: Panic -> 500 + Stack im Log, Server laeuft weiter; >=400 und Fetch-Fehler im Log
 - [ ] UI: Herzschlag + Banner 'antwortet nicht mehr', dist neu bauen
