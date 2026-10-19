@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T07:43:34Z
+updated-at: 2026-10-19T07:43:59Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-70156
@@ -30,7 +30,7 @@ claimed-at: 2026-10-19T07:43:34Z
 outcome-what: "jaira web: Filterleiste, Schalter 'All tickets ever' (Board, Ref, Logbuch, Archiv mit Ort), Ablehnung im Detail, Filter im URL-Query; dazu Lane-Farben an Badge und Lane-Filter aus der Board-Reihenfolge (GET /api/lanes)"
 outcome-why: "Alex will jedes Ticket, das es je gab, auf der Seite sehen und nach Personen, Datum und Lane filtern; bisher zeigte die Seite nur offene Tickets ohne Filter"
 outcome-resolves: "GET /api/unassigned?all=1 und neue Kartenfelder (web_source.go cards/rejection), Filtermodell features/filter-tickets mit URL-Abgleich, TestWebListsFiledTicketsAndOpensThem; DoD 1-8 mit Proofs"
-review-summary: "none"
+review-summary: "jaira web bekommt eine Filterleiste ueber beiden Spalten (Text ueber Titel/Ziel/ID/Handle, Lane, Tag, Person = creator ODER assignee ODER updated_by, Datumsbereich auf erstellt/geaendert/abgelegt), alles UND-verknuepft und im Browser gefiltert (features/filter-tickets/model/filter.ts). Der Zustand steht per history.replaceState in der URL. Der Schalter 'All tickets ever' ruft GET /api/unassigned?all=1: internal/cli/web_source.go cards() baut Karten aus Board, Refs und allen abgelegten Tickets (Store.FiledAwayIDs, nur Header), Logbuch-Datum aus dem Ordnernamen, Archiv-Datum aus rejected-at; abgelegte Karten sind nicht ziehbar. Die Detailansicht zeigt Ort und bei abgelehnten Archiv-Tickets rejected-kind/why/by/at (direkt aus dem Frontmatter gelesen, schema.go unberuehrt wegen A0C081). Neues GET /api/lanes liefert die Lanes in Board-Reihenfolge mit kind; LaneBadge faerbt per oklch: Arbeits-Lanes nach Position (9 Toene + grau), human amber, terminal gruen, parking rot, Helligkeit je Theme. Nachbesserung aus signoff: load() zaehlt Ladevorgaenge, nur der letzte schreibt; EpicList merkt sich Hand-Auf/Zuklappen je Epic und stellt es nach dem Leeren eines Filters wieder her. link.placeOf als PlaceOf exportiert und wiederverwendet."
 round: 4
 review-gaps: "Runde 3: nichts zu entfernen — die Reparatur fuegt einen Zaehler und eine Map hinzu, beides wird gebraucht; keine bestehende Abbruchlogik in shared/api, die man haette nehmen koennen."
 test-verdict: "pass: go vet RC=0, go test -count=1 -race ./... RC=0, dist matches npm ci+build; DoD 10/11 exercised in Playwright (delayed ?all=1 race, hand-unfolded epic across filter set/clear)"
