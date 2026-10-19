@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T18:25:33Z
+updated-at: 2026-10-19T19:29:16Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-24398"
 claimed-at: 2026-10-19T18:18:21Z
@@ -137,3 +137,8 @@ Empfehlung: 1 - die Kleinigkeiten sind kosmetisch und nicht Teil der DoD, ein we
 - **2026-10-19 18:22 · Alexander Sacharov** — critique (Runde 5): liest nur die Antwort auf die Rueckgabe (rejected-duplicate-of + unreject + Anzeige). Passt zu outcome-*/RejectedFields-Muster, unreject nimmt den Key ueber RejectedFields ohne Sonderweg ab. Linkverlust bei vorher bestehendem related ist von Alex akzeptiert (Notiz 18:17) - none. Keine Critique-daneben gestartet: Alex hat ab DoD 5 die Diff-Stopps aufgehoben, die Aenderung war eine Datei-Runde.
 - **2026-10-19 18:23 · Alexander Sacharov** — testing (Runde 5): pass, Details in test-verdict. Kein 'jaira relate' vorhanden - Nachbar-Link per 'jaira set related=' gesetzt.
 - **2026-10-19 18:25 · Alexander Sacharov** — review (fresh context, Runde 4): approve. DoD 10 (rejected-duplicate-of, restore nimmt genau den Link ab, show/archive nennen das Original) im worktree_diff belegt, Tests -race gruen, per Binary nachgespielt (restore laesst die Datei bis auf updated-by wie vorher). Offen: Runde 5 uncommittet - Commit-Zeile in review-check Schritt 0.
+- **2026-10-19 19:29 · Alexander Sacharov** — explain: Der Reviewer hat nichts Defektes gefunden (approve), aber die Aenderungen aus Runde 5 sind noch nicht committet (8 Dateien im Worktree). Ein Detail ist bekannt: ein related-Link zum Original, der schon vor dem reject bestand, geht beim restore mit verloren.
+Warum: Ohne Commit fehlt Runde 5 im Merge, und die Rueckgabe aus signoff waere wieder offen. Der Linkverlust ist von Alex schon akzeptiert und betrifft nur einen seltenen Fall.
+1) Ticket so annehmen: die Commit-Zeile aus review-check Schritt 0 ausfuehren, dann abnehmen [accept]
+2) Zurueckgeben und den vorher bestehenden related-Link beim restore erhalten [give back]
+Empfehlung: 1 - alle DoD sind belegt, Tests laufen gruen, und der Linkverlust wurde bereits bewusst akzeptiert.
