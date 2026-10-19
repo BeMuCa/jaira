@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T20:44:58Z
+updated-at: 2026-10-19T20:45:02Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-4026"
 claimed-at: 2026-10-19T20:44:55Z
@@ -67,6 +67,7 @@ review-check: "0. Committen: git add .claude/skills/jaira/SKILL.md core/release/
   proof: internal/tui/model.go confirmReject: StampCommits(t, m.gateEnv().DeriveCommits) vor Store.Reject; test TestRejectOnTheBoardStampsCommits (ohne die Zeile rot)
 - [x] --duplicate-of schreibt rejected-duplicate-of: <ID>; 'jaira restore' nimmt den Key und genau diesen related-Eintrag ab; show und archive nennen das Original
   proof: core/ticket/store.go:389 Store.Reject schreibt rejected-duplicate-of; core/ticket/store.go:783 unreject nimmt genau diesen related-Eintrag ab; internal/cli/tickets.go rejectionLine 'duplicate of <handle>' + rejectionJSON duplicate_of; tests TestRestoreTakesTheDuplicateLinkOff (ohne den Fix rot), TestRejectDuplicateOfLinksTheOriginal
+- [ ] Ein related-Link zum Original, der schon vor reject --duplicate-of bestand, bleibt nach restore stehen (rejected-linked: true nur, wenn reject ihn angelegt hat)
 
 ## Options
 
