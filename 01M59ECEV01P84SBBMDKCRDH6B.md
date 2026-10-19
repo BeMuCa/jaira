@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T20:22:07Z
+updated-at: 2026-10-19T20:22:11Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-25649
@@ -60,7 +60,7 @@ claimed-at: 2026-10-19T18:18:27Z
 - [x] core/epic Merge: Body wie title/description mergen; gleichzeitige Aenderung desselben Feldes nach Entscheidung (siehe Frage); Test
 - [x] CLI: 'jaira epic set <name> --title --description --body --body-file <pfad|->' (Exit 5 unbekannt, Exit 2 ohne Flag); 'epic show' gibt den Text aus, --json mit body; Tests
 - [x] Web: Epic-JSON bekommt body; PATCH /api/epics/{name} mit base (was der Editor gelesen hat) -> 409 wenn inzwischen geaendert; Source.SetEpic in internal/cli/web_source.go; Tests
-- [ ] UI: EpicList zeigt description-Zeile, Text gerendert (shared/lib/markdown) und eingeklappt; Bearbeiten-Knopf -> Formular Titel/description/Text; Speichern laedt Epics neu
+- [~] UI: EpicList zeigt description-Zeile, Text gerendert (shared/lib/markdown) und eingeklappt; Bearbeiten-Knopf -> Formular Titel/description/Text; Speichern laedt Epics neu
 - [ ] core/release/notes/CRDH6B.md; go test ./... -race; UI-Build/Tests
 
 ## Progress
