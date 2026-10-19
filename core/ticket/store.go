@@ -315,15 +315,9 @@ func (s *Store) Archive(id string) (string, error) {
 	if err := os.MkdirAll(s.ArchiveDir(), 0o755); err != nil {
 		return "", err
 	}
-	// Resolve symlinks first: archiving through a link would otherwise move the
-	// link and orphan the file it pointed at.
-	src, err := filepath.EvalSymlinks(t.Path)
+	src, dst, err := s.archiveTarget(t.Path)
 	if err != nil {
-		src = t.Path
-	}
-	dst := filepath.Join(s.ArchiveDir(), filepath.Base(src))
-	if _, err := os.Stat(dst); err == nil {
-		return "", fmt.Errorf("%s already exists in the archive", filepath.Base(dst))
+		return "", err
 	}
 	if err := os.Rename(src, dst); err != nil {
 		return "", err
@@ -331,22 +325,37 @@ func (s *Store) Archive(id string) (string, error) {
 	return dst, s.recordFiled(t.ID, dst)
 }
 
+// archiveTarget is where Archive moves the file at path, refusing a name the
+// archive already holds. Symlinks are resolved first: archiving through a link
+// would otherwise move the link and orphan the file it pointed at.
+func (s *Store) archiveTarget(path string) (src, dst string, err error) {
+	src, err = filepath.EvalSymlinks(path)
+	if err != nil {
+		src = path
+	}
+	dst = filepath.Join(s.ArchiveDir(), filepath.Base(src))
+	if _, err := os.Stat(dst); err == nil {
+		return "", "", fmt.Errorf("%s already exists in the archive", filepath.Base(dst))
+	}
+	return src, dst, nil
+}
+
 // Reject writes why nobody will do a ticket onto it and archives it, returning
-// its new path. duplicateOf, when set, makes the kind RejectDuplicate and
-// relates the ticket to the original, which must exist on the board or among
-// the filed-away ones.
+// its new path. duplicateOf, when set, is the original's full id, resolved by
+// the caller before anything is written; it makes the kind RejectDuplicate and
+// relates the ticket to the original.
 //
 // It archives through Archive rather than a second move of its own: a rejected
 // ticket lies where an archived one lies, and 'jaira restore' brings both back
 // the same way. Whether the caller may reject at all is decided above this
 // line, as it is for delete.
 func (s *Store) Reject(id, kind, why, duplicateOf string, now time.Time) (string, error) {
+	// One line, however it was typed: the archive listing prints the reason
+	// indented under its file, and a second line would read as an entry of
+	// its own.
+	why = strings.Join(strings.Fields(why), " ")
 	if duplicateOf != "" {
-		orig, _, err := s.LoadAnywhere(duplicateOf)
-		if err != nil {
-			return "", err
-		}
-		duplicateOf, kind = orig.ID, RejectDuplicate
+		kind = RejectDuplicate
 	}
 	// Archive refuses a name the archive already holds, and by then the
 	// rejection would be written onto a ticket still on the board. Asked
@@ -355,11 +364,8 @@ func (s *Store) Reject(id, kind, why, duplicateOf string, now time.Time) (string
 	if err != nil {
 		return "", err
 	}
-	if real, err := filepath.EvalSymlinks(path); err == nil {
-		path = real
-	}
-	if _, err := os.Stat(filepath.Join(s.ArchiveDir(), filepath.Base(path))); err == nil {
-		return "", fmt.Errorf("%s already exists in the archive", filepath.Base(path))
+	if _, _, err := s.archiveTarget(path); err != nil {
+		return "", err
 	}
 	t, err := s.Mutate(id, func(t *Ticket) error {
 		if duplicateOf == t.ID {

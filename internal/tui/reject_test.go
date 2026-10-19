@@ -2,6 +2,7 @@ package tui
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -62,5 +63,37 @@ func TestRejectCanBeCancelledFromAnOpenTicket(t *testing.T) {
 	}
 	if got.Rejected.Kind != "" {
 		t.Errorf("esc left a rejection behind: %+v", got.Rejected)
+	}
+}
+
+// R stamps the commits git knows for the ticket before it leaves the board,
+// as 'jaira reject' does, so a rejected ticket keeps its commit list.
+func TestRejectOnTheBoardStampsCommits(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	t.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)
+	t.Setenv("GIT_CONFIG_SYSTEM", os.DevNull)
+	run := func(args ...string) {
+		cmd := exec.Command("git", append([]string{"-C", m.store.Root}, args...)...)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	run("init", "-q")
+	run("config", "user.email", "t@example.com")
+	run("config", "user.name", "t")
+	m.laneIdx, m.cardIdx = 0, 0
+	sel := m.selected()
+	run("commit", "--allow-empty", "-q", "-m", "fix("+ticket.Handle(sel.ID)+"): tried it")
+
+	m.Update(tea.KeyPressMsg{Code: 'R', Text: "R"})
+	typeInto(m, "doch nicht")
+	m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+
+	tk, err := ticket.LoadHeader(filepath.Join(m.store.ArchiveDir(), filepath.Base(sel.Path)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(tk.Commits) != 1 {
+		t.Errorf("commits = %v, want the one commit naming %s", tk.Commits, ticket.Handle(sel.ID))
 	}
 }

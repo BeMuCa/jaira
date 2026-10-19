@@ -16,15 +16,7 @@ func archivedTicket(t *testing.T, dir, id string) *ticket.Ticket {
 	if err != nil || len(m) != 1 {
 		t.Fatalf("archive holds %v for %s (%v)", m, id, err)
 	}
-	raw, err := os.ReadFile(m[0])
-	if err != nil {
-		t.Fatal(err)
-	}
-	d, err := ticket.ParseDoc(raw)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tk, err := ticket.Decode(d, m[0])
+	tk, err := ticket.LoadHeader(m[0])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -224,5 +216,43 @@ func TestRejectIntoAnOccupiedArchiveWritesNothing(t *testing.T) {
 	}
 	if tk := mustLoad(t, dir, id); tk.Rejected.Kind != "" {
 		t.Errorf("the refused reject left a rejection on the board: %+v", tk.Rejected)
+	}
+}
+
+// A reason typed over several lines is written as one, or the archive listing
+// prints its second line where the next file's name belongs.
+func TestRejectFoldsAMultiLineReason(t *testing.T) {
+	dir, id := dodTestStore(t)
+	if out, err := runCLI(t, dir, "reject", id, "--why", "erste Zeile\nzweite  Zeile\n", "--force"); err != nil {
+		t.Fatalf("reject: %v\n%s", err, out)
+	}
+	if got := archivedTicket(t, dir, id).Rejected.Why; got != "erste Zeile zweite Zeile" {
+		t.Errorf("why = %q, want it on one line", got)
+	}
+	out, err := runCLI(t, dir, "archive")
+	if err != nil {
+		t.Fatalf("archive: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "    rejected wontfix: erste Zeile zweite Zeile") {
+		t.Errorf("the reason is not one indented line:\n%s", out)
+	}
+}
+
+func TestRejectAsADuplicateOfItselfIsAUsageError(t *testing.T) {
+	dir, id := dodTestStore(t)
+	before, err := os.ReadFile(ticketFiles(t, dir)[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = runCLI(t, dir, "reject", id, "--why", "x", "--duplicate-of", ticket.Handle(id), "--force")
+	if exitCode(err) != ExitUsage {
+		t.Fatalf("exit %d, want %d (%v)", exitCode(err), ExitUsage, err)
+	}
+	after, err := os.ReadFile(ticketFiles(t, dir)[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(after) != string(before) {
+		t.Errorf("the refused reject changed the ticket file:\n%s", after)
 	}
 }

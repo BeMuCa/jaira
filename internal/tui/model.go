@@ -2284,14 +2284,14 @@ func (m *Model) startReject(t *ticket.Ticket) {
 // leaves the prompt open: rejecting without one is archiving, and x does that.
 func (m *Model) confirmReject() {
 	t, why := m.rejecting, strings.TrimSpace(m.input)
-	if t == nil {
-		m.mode = modeBoard
-		return
-	}
 	if why == "" {
 		return
 	}
 	m.input, m.rejecting = "", nil
+	// Stamped before the ticket leaves the board, as 'jaira reject' does:
+	// a rejected ticket's commits are the record of what was tried.
+	// Best-effort, like there — finding none must not stop the rejection.
+	_, _ = m.store.StampCommits(t, m.gateEnv().DeriveCommits)
 	dst, err := m.store.Reject(t.ID, ticket.RejectWontfix, why, "", time.Now())
 	if err != nil {
 		m.mode = m.returnTo

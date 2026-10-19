@@ -34,7 +34,7 @@ rejects with a one-line reason; in a shell, a person passes --force.
 'jaira restore' brings a rejected ticket back and takes the rejection off it.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			why = strings.TrimSpace(why)
+			why = strings.Join(strings.Fields(why), " ")
 			if why == "" {
 				return fail(ExitUsage, "usage", "reject needs --why <text>: the reason is the whole point of rejecting rather than archiving")
 			}
@@ -63,16 +63,28 @@ rejects with a one-line reason; in a shell, a person passes --force.
 						handle, lane, handle, lane),
 				}
 			}
+			// Resolved before anything is stamped or written, so a wrong
+			// original leaves the ticket exactly as it was.
+			if duplicateOf != "" {
+				orig, _, err := s.LoadAnywhere(duplicateOf)
+				if errors.Is(err, ticket.ErrNotFound) {
+					return &codedError{code: ExitNotFound, reason: "not_found",
+						message: fmt.Sprintf("--duplicate-of %s: no such ticket on the board or filed away", duplicateOf)}
+				}
+				if err != nil {
+					return err
+				}
+				if orig.ID == t.ID {
+					return fail(ExitUsage, "usage", "%s cannot be a duplicate of itself", ticket.Handle(t.ID))
+				}
+				duplicateOf = orig.ID
+			}
 			// Stamped before the ticket leaves the board, as archive does.
 			if env, _, envErr := loadEnv(s); envErr == nil {
 				_, _ = s.StampCommits(t, env.DeriveCommits)
 			}
 			dst, err := s.Reject(t.ID, kind, why, duplicateOf, time.Now())
 			if err != nil {
-				if errors.Is(err, ticket.ErrNotFound) && duplicateOf != "" {
-					return &codedError{code: ExitNotFound, reason: "not_found",
-						message: fmt.Sprintf("--duplicate-of %s: no such ticket on the board or filed away", duplicateOf)}
-				}
 				return err
 			}
 			if duplicateOf != "" {
