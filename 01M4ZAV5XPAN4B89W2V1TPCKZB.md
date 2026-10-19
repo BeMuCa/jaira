@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:46:04Z
+updated-at: 2026-10-19T06:46:08Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -91,3 +91,4 @@ Ich nehme A: die Datenmenge ist klein, Filtern im Browser ist sofort, die URL tr
 - **2026-10-19 06:40 · Alexander Sacharov** — Go-Seite steht: web.Ticket traegt place/tags/creator/assignee/updated_by/created_at/updated_at/filed_at/rejected, GET /api/unassigned?all=1 liefert zusaetzlich fertige Board-Tickets und alle abgelegten ohne Epic; TicketDetail traegt place und rejected. rejected-* wird in internal/cli/web_source.go:rejection per Doc.Fields gelesen — schema.go bleibt fuer A0C081 frei; nach dessen Merge kann rejection() auf t.Rejected umgestellt werden. Test: TestWebListsFiledTicketsAndOpensThem. Als naechstes UI.
 - **2026-10-19 06:43 · Alexander Sacharov** — UI fertig. Kein JS-Testrunner im Repo (package.json hat nur vite build); filter.ts wurde mit einem Wegwerf-Skript unter node --experimental-strip-types gegen 15 Faelle geprueft (Text, Lane, Tag, Person, Datum je Feld, URL-Roundtrip, ohne filed_at). svelte-check: 0 Warnungen; der eine Fehler in vite.config.ts (node:url-Typen) besteht schon auf master. Live auf diesem Repo: ?all=1 = 222 Tickets in 0,19 s. Die Seite selbst wurde nicht im Browser angesehen — das ist fuer die Abnahme.
 - **2026-10-19 06:45 · Alexander Sacharov** — critique (Runde 1): 1) filedPlace in internal/cli/web_source.go ist eine Kopie von placeOf in core/link/link.go:196 — exportieren (link.PlaceOf) statt kopieren. 2) Ortsbezeichnungen stehen doppelt (TicketCard PLACES, TicketDetails if-Kette) — eine Map in entities/ticket/model/place.ts. Stehen gelassen: cards() liest bei jedem /api/epics alle abgelegten Header (gemessen 0,08 s bei 134 Dateien); rejection() liest die Archivdatei ein zweites Mal — beides klein, und rejection() wird nach A0C081 durch t.Rejected ersetzbar; die Doppelung epic.Unassigned / everything-Zweig bleibt, damit die Standardliste genau 'jaira epic ls --unassigned' entspricht.
+- **2026-10-19 06:46 · Alexander Sacharov** — critique Runde 1 umgesetzt: link.PlaceOf exportiert (core/link/link.go:196) und in web_source.go benutzt; Ortsbezeichnungen als PLACE_LABELS in entities/ticket/model/place.ts, TicketCard und TicketDetails lesen sie. Proofs 3/4/7 auf neue Zeilen gesetzt.
