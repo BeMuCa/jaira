@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T20:33:54Z
+updated-at: 2026-10-19T20:36:02Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-52791
@@ -102,3 +102,4 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-crdh6b && go build -o 
 - **2026-10-19 20:27 · Alexander Sacharov** — Kritik Stueck 4-6: json-Tags an epic.Fields entfernt (kein Leser, core/web hat eigene EpicFields); 'jaira web --help'-Absatz auf ~80 Spalten neu umbrochen und nennt das eingeklappte Text-Feld. Daneben-Kritik damit fertig, alle Funde umgesetzt.
 - **2026-10-19 20:29 · Alexander Sacharov** — critique-Lane (Worker, Diff gelesen ohne dist): kein offener Fund. Losgelassen, weil es dem optimize-Lane gehoert: edit()/Set geben bei einem Fehler das gelesene Epic zurueck, kein Aufrufer liest es.
 - **2026-10-19 20:31 · Alexander Sacharov** — testing: alles gruen, siehe test-verdict. Einziger Konsolen-Eintrag im Browser ist der erwartete 409.
+- **2026-10-19 20:36 · Alexander Sacharov** — Abnahme-Seite: https://claude.ai/artifact/FTJQKnj5LLAFS1RzzGfMbm (4 Personen-Schritte statt 9 review-check-Schritten, 3 Maschinen-Checks gruen). Wegwerf-Board dafuer unter ~/.claude/acceptance/jaira/feat-crdh6b/board, Binary daneben. Review-Luecken offen fuer Alex: (1) eine Textzeile '- <volle 26-stellige ULID>' wird als Mitglied gelesen; (2) nach einem 409 bleibt das Formular auf dem alten base, nur Cancel+Edit hilft, Getipptes geht dabei verloren.
