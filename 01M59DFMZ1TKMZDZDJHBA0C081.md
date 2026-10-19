@@ -1,7 +1,7 @@
 ---
 id: 01M59DFMZ1TKMZDZDJHBA0C081
 title: "Ein Ticket laesst sich mit Grund ablehnen: jaira reject, und das Archiv sagt warum"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T07:04:34Z
+updated-at: 2026-10-19T07:32:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9569
 claimed-at: 2026-10-19T07:04:10Z
@@ -35,7 +35,7 @@ outcome-what: "Neuer Befehl jaira reject <id> --why [--kind wontfix|obsolete] [-
 outcome-why: "Ein abgelehntes Ticket sah im Archiv genauso aus wie ein weggeraeumtes; Monate spaeter liess sich nicht sagen, ob es Duplikat, verworfen oder ueberholt war."
 outcome-resolves: "DoD 1-3: internal/cli/reject.go + Store.Reject, Tests in internal/cli/reject_test.go; DoD 4: modeReject in internal/tui/model.go, internal/tui/reject_test.go; DoD 5: archivedRejections/rejectionLine, unreject; DoD 6: release note, agent block, Skill, go test ./... -race gruen."
 review-summary: "Neuer Befehl 'jaira reject <id> --why <text> --force' (internal/cli/reject.go): schreibt vier flache Keys rejected-kind/why/by/at per Store.Reject (core/ticket/store.go) und archiviert dann ueber Store.Archive - derselbe Weg wie 'jaira archive'. --kind wontfix|obsolete (Default wontfix); --duplicate-of loest das Original ueber LoadAnywhere auf, setzt kind=duplicate und traegt es in related ein (unbekannt -> Exit 5, sich selbst -> Exit 1). Ohne --why Exit 2, ohne --force Exit 3 mit der fertigen 'jaira move ... --to human --question'-Zeile (Lane wird aus dem Board gelesen: questionLane). Vor dem Schreiben prueft Reject, ob der Name im Archiv schon belegt ist (archiveTarget, von Archive mitgenutzt), sodass eine Ablehnung nie auf einem Ticket landet, das auf dem Board bleibt. TUI: Taste R (Board und Detailansicht) oeffnet eine Zeile fuer den Grund, leerer Grund laesst die Zeile offen, esc bricht ab; x archiviert weiter ohne Frage. 'jaira archive' listet unter jeder abgelehnten Datei eine Zeile 'rejected <kind>: <why> (<by>, <datum>)' und im --json ein rejected-Objekt pro Datei; 'jaira show' hat eine rejected-Zeile und in --json immer ein rejected-Objekt. 'jaira restore' entfernt die rejected-* Keys (neues Doc.Remove) bevor die Datei zurueckgeht. rejected-why ist im Merge-Driver ein Prosa-Feld. Agent-Block, AGENTS.md/CLAUDE.md, Skill, README, COMMANDS.md und die Release-Note nennen reject."
-round: 2
+round: 3
 review-gaps: "1) Die Aenderungen der optimize-Lane (archiveTarget-Extraktion in core/ticket/store.go, toter nil-Zweig in internal/tui/model.go, LoadHeader im Test internal/cli/reject_test.go) sind NICHT committet - sie liegen nur im Worktree; ohne Commit geht der Branch ohne sie raus. 2) Ein mehrzeiliger Grund (--why mit Zeilenumbruch, in der Shell moeglich; die TUI faltet auf eine Zeile) bricht die Einrueckung in 'jaira archive': die zweite Zeile steht ohne Einzug an Spalte 0 und sieht aus wie ein eigener Eintrag. Kosmetisch, keine DoD verletzt. 3) Klein: der CLI-Pfad stempelt Commits (StampCommits) bevor Reject prueft, ob es ueberhaupt geht - scheitert Reject (Archivname belegt, --duplicate-of auf sich selbst), hat das Ticket trotzdem eine geaenderte Datei; 'jaira archive' macht es genauso. --duplicate-of auf sich selbst endet mit Exit 1 statt Exit 2 (Usage). 4) Beobachtet, nicht geprueft: 'jaira restore' entfernt rejected-* nur aus der Datei auf der Platte, nicht vom Ref - das ist das bestehende Verhalten von restore fuer archivierte Tickets und nicht neu."
 test-verdict: "pass: go clean -testcache; go test ./... -race RC=0. DoD 1-3, 5 auf einem Scratch-Board mit dem gebauten Binaer gesehen: reject ohne --force RC=3 mit human-Weg, ohne --why RC=2, --duplicate-of ZZZZZZ RC=5, mit --duplicate-of: kind duplicate + related, archive-Liste und show zeigen 'duplicate: gleiches Thema (Alexander Sacharov, 2026-10-19)', restore RC=0 und 0 rejected-Zeilen im Ticket. DoD 4 (Taste R) nur ueber die Modell-Tests (TestRejectOnTheBoardWritesTheReason, ...Cancelled...), kein interaktives Terminal hier. DoD 6: notes/A0C081.md, Agent-Block, Skill im Baum."
 review-verdict: "Der Diff erfuellt alle sechs DoD-Punkte; per Hand nachgeprueft: Exit 2/3/5, duplicate+related, archive-Liste, show, restore nimmt die Felder ab, Sonderzeichen und Umlaute im Grund werden korrekt als YAML geschrieben. go vet und go test ./core/... ./internal/... -race gruen. Keine Defekte, die zurueckschicken rechtfertigen. Vor dem Annehmen: die uncommitteten optimize-Aenderungen committen (Gap 1). Gap 2 (mehrzeiliger Grund in der Archiv-Liste) ist kosmetisch - Mensch entscheidet, ob es hier noch rein soll."
