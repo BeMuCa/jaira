@@ -48,14 +48,25 @@ should never have existed. It asks for the handle typed back first.`,
 				if err != nil {
 					return err
 				}
+				rejected := archivedRejections(s, names)
 				if g.jsonOut {
-					return emit(w, map[string]any{"archived": names, "count": len(names)})
+					// rejected is keyed by file and holds only the rejected
+					// ones, so archived stays the list of names it always was.
+					byFile := map[string]map[string]string{}
+					for n, r := range rejected {
+						byFile[n] = rejectionJSON(r)
+					}
+					return emit(w, map[string]any{"archived": names, "count": len(names), "rejected": byFile})
 				}
 				if len(names) == 0 {
 					fmt.Fprintf(w, "The archive is empty.\n")
 					return nil
 				}
 				for _, n := range names {
+					if r, ok := rejected[n]; ok {
+						fmt.Fprintf(w, "%s\n    rejected %s\n", n, rejectionLine(r))
+						continue
+					}
 					fmt.Fprintf(w, "%s\n", n)
 				}
 				fmt.Fprintf(w, "\n%d archived. Bring one back with 'jaira restore <file>'.\n", len(names))
@@ -199,4 +210,28 @@ func archivedNames(s *ticket.Store) ([]string, error) {
 	}
 	sort.Strings(out)
 	return out, nil
+}
+
+// archivedRejections reads the rejection off every archived file that carries
+// one. A file that will not parse is listed without one rather than failing
+// the listing: the archive is where damaged tickets end up, too.
+func archivedRejections(s *ticket.Store, names []string) map[string]ticket.Rejection {
+	out := map[string]ticket.Rejection{}
+	for _, n := range names {
+		path := filepath.Join(s.ArchiveDir(), n)
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		d, err := ticket.ParseDoc(raw)
+		if err != nil {
+			continue
+		}
+		t, err := ticket.Decode(d, path)
+		if err != nil || t.Rejected.Kind == "" {
+			continue
+		}
+		out[n] = t.Rejected
+	}
+	return out
 }

@@ -161,7 +161,29 @@ const (
 	// (core/tag), because a colour is a fact about the tag rather than about the
 	// ticket wearing it.
 	FieldTags = "tags"
+
+	// The rejection is four flat keys for the same reason the outcome is
+	// three: one field, one line, one key for the merge driver. They are
+	// written once, by 'jaira reject', just before the ticket is archived,
+	// and are what tells a rejected ticket apart from one merely tidied away
+	// — months later, the archive has to say whether it was a duplicate, not
+	// worth doing, or overtaken. 'jaira restore' takes them off again.
+	FieldRejectedKind = "rejected-kind"
+	FieldRejectedWhy  = "rejected-why"
+	FieldRejectedBy   = "rejected-by"
+	FieldRejectedAt   = "rejected-at"
 )
+
+// The values FieldRejectedKind takes. Duplicate is never chosen directly: it
+// is what naming the original sets, so a duplicate always says of what.
+const (
+	RejectWontfix   = "wontfix"
+	RejectDuplicate = "duplicate"
+	RejectObsolete  = "obsolete"
+)
+
+// RejectedFields are the keys a rejection writes, in the order it writes them.
+var RejectedFields = []string{FieldRejectedKind, FieldRejectedWhy, FieldRejectedBy, FieldRejectedAt}
 
 // ModeConversational is the one non-empty value FieldMode takes. A worker
 // compares against exactly this word, which is why 'jaira set' refuses
@@ -289,6 +311,10 @@ type Ticket struct {
 	ReviewRound int
 
 	Outcome Outcome
+
+	// Rejected is why nobody will do this ticket; its Kind is empty on a
+	// ticket that was never rejected.
+	Rejected Rejection
 
 	// DoDItems are the checkboxes under a "Definition of Done" heading in the
 	// body. A checklist is how people actually write acceptance criteria, and
@@ -568,6 +594,15 @@ func (o Outcome) Filled() bool {
 		strings.TrimSpace(o.Resolves) != ""
 }
 
+// Rejection is what 'jaira reject' wrote: which kind of no, why, who said it
+// and when.
+type Rejection struct {
+	Kind string
+	Why  string
+	By   string
+	At   time.Time
+}
+
 // Doc exposes the underlying document for mutation.
 func (t *Ticket) Doc() *Doc { return t.doc }
 
@@ -678,6 +713,12 @@ func decodeFields(d *Doc, f *Fields, path string) (*Ticket, error) {
 		What:     str(FieldOutcomeWhat),
 		Why:      str(FieldOutcomeWhy),
 		Resolves: str(FieldOutcomeResolves),
+	}
+	t.Rejected = Rejection{
+		Kind: str(FieldRejectedKind),
+		Why:  str(FieldRejectedWhy),
+		By:   str(FieldRejectedBy),
+		At:   parseTime(str(FieldRejectedAt)),
 	}
 	t.CreatedAt = parseTime(str(FieldCreatedAt))
 	t.UpdatedAt = parseTime(str(FieldUpdatedAt))

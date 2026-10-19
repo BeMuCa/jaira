@@ -364,6 +364,30 @@ func (d *Doc) setScalarWholeEntry(key, val string, node *ast.MappingValueNode) e
 	return nil
 }
 
+// Remove deletes a top-level key and every source line its value occupies. A
+// key that is not there is no error: the caller wants it gone, and it is.
+func (d *Doc) Remove(key string) error {
+	node, err := d.find(key)
+	if err != nil || node == nil {
+		return err
+	}
+	keyTok := node.Key.GetToken()
+	if keyTok == nil || keyTok.Position == nil {
+		return fmt.Errorf("ticket: no source position for %q", key)
+	}
+	lines := strings.Split(d.fm, "\n")
+	start := keyTok.Position.Line - 1
+	if start < 0 || start >= len(lines) {
+		return fmt.Errorf("ticket: %q reports line %d, outside the frontmatter", key, keyTok.Position.Line)
+	}
+	end := max(blockExtent(lines, start), lastLine(node.Value)-1)
+	if end >= len(lines) {
+		return fmt.Errorf("ticket: %q spans lines %d-%d, outside the frontmatter", key, start+1, end+1)
+	}
+	d.fm = strings.Join(append(lines[:start:start], lines[end+1:]...), "\n")
+	return nil
+}
+
 // scalarSourceLen measures how many bytes of src the scalar occupies, so the
 // splice replaces exactly the value and not any trailing comment.
 func scalarSourceLen(src, value string) (int, error) {

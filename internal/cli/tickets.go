@@ -934,6 +934,9 @@ func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env, notesLast int, kid
 	if t.Question != "" {
 		row("question", t.Question)
 	}
+	if t.Rejected.Kind != "" {
+		row("rejected", rejectionLine(t.Rejected))
+	}
 	if t.Outcome.What != "" || t.Outcome.Why != "" || t.Outcome.Resolves != "" {
 		fmt.Fprintf(w, "\nOutcome\n")
 		row("  what", t.Outcome.What)
@@ -1635,6 +1638,7 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 			"summary": t.ReviewSummary, "gaps": t.ReviewGaps,
 			"verdict": t.ReviewVerdict, "check": t.ReviewCheck,
 		},
+		"rejected": rejectionJSON(t.Rejected),
 		// Where this goes when the current step is finished, so the route is not
 		// re-derived by every caller from the column order and the ticket's
 		// Options. Empty when there is nowhere left to go.
@@ -1729,4 +1733,31 @@ func resolveRef(s *ticket.Store, ref string) (string, error) {
 			"%q does not name a ticket here, so the link would point at nothing", ref)
 	}
 	return t.ID, nil
+}
+
+// rejectionLine is a rejection on one line — "wontfix: why (by, date)" — the
+// way show and the archive listing print it.
+func rejectionLine(r ticket.Rejection) string {
+	line := r.Kind + ": " + r.Why
+	var who []string
+	if r.By != "" {
+		who = append(who, r.By)
+	}
+	if !r.At.IsZero() {
+		who = append(who, r.At.Format("2006-01-02"))
+	}
+	if len(who) > 0 {
+		line += " (" + strings.Join(who, ", ") + ")"
+	}
+	return line
+}
+
+// rejectionJSON is the rejection for --json; every key is empty on a ticket
+// nobody rejected, as the outcome's are on a ticket nobody finished.
+func rejectionJSON(r ticket.Rejection) map[string]string {
+	at := ""
+	if !r.At.IsZero() {
+		at = r.At.UTC().Format(time.RFC3339)
+	}
+	return map[string]string{"kind": r.Kind, "why": r.Why, "by": r.By, "at": at}
 }

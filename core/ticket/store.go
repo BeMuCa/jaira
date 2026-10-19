@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -328,6 +329,49 @@ func (s *Store) Archive(id string) (string, error) {
 		return "", err
 	}
 	return dst, s.recordFiled(t.ID, dst)
+}
+
+// Reject writes why nobody will do a ticket onto it and archives it, returning
+// its new path. duplicateOf, when set, makes the kind RejectDuplicate and
+// relates the ticket to the original, which must exist on the board or among
+// the filed-away ones.
+//
+// It archives through Archive rather than a second move of its own: a rejected
+// ticket lies where an archived one lies, and 'jaira restore' brings both back
+// the same way. Whether the caller may reject at all is decided above this
+// line, as it is for delete.
+func (s *Store) Reject(id, kind, why, duplicateOf string, now time.Time) (string, error) {
+	if duplicateOf != "" {
+		orig, _, err := s.LoadAnywhere(duplicateOf)
+		if err != nil {
+			return "", err
+		}
+		duplicateOf, kind = orig.ID, RejectDuplicate
+	}
+	t, err := s.Mutate(id, func(t *Ticket) error {
+		if duplicateOf == t.ID {
+			return fmt.Errorf("%s cannot be a duplicate of itself", Handle(t.ID))
+		}
+		d := t.Doc()
+		for _, kv := range [][2]string{
+			{FieldRejectedKind, kind},
+			{FieldRejectedWhy, why},
+			{FieldRejectedBy, s.Actor},
+			{FieldRejectedAt, now.UTC().Format(time.RFC3339)},
+		} {
+			if err := d.SetScalar(kv[0], kv[1]); err != nil {
+				return err
+			}
+		}
+		if duplicateOf != "" && !slices.Contains(t.Related, duplicateOf) {
+			return d.SetList(FieldRelated, append(slices.Clone(t.Related), duplicateOf))
+		}
+		return nil
+	})
+	if err != nil && !errors.Is(err, ErrNotRecorded) {
+		return "", err
+	}
+	return s.Archive(t.ID)
 }
 
 // Delete removes a ticket's file and returns the path it was at.
@@ -683,10 +727,43 @@ func (s *Store) Restore(name string) (string, error) {
 	if _, err := os.Stat(dst); err == nil {
 		return "", fmt.Errorf("%s is already on the board", base)
 	}
+	if err := unreject(src); err != nil {
+		return "", err
+	}
 	if err := os.Rename(src, dst); err != nil {
 		return "", err
 	}
 	return dst, nil
+}
+
+// unreject takes a rejection off a file about to go back on the board: a
+// ticket somebody restored is a ticket somebody wants after all, and a
+// rejection left on it would say the opposite. A file that carries none is
+// left byte for byte as it is.
+func unreject(path string) error {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	d, err := ParseDoc(raw)
+	if err != nil {
+		// Not a ticket this code can rewrite; restoring it as it is beats
+		// refusing to restore it at all.
+		return nil
+	}
+	changed := false
+	for _, key := range RejectedFields {
+		if d.Has(key) {
+			if err := d.Remove(key); err != nil {
+				return err
+			}
+			changed = true
+		}
+	}
+	if !changed {
+		return nil
+	}
+	return WriteAtomic(path, d.Bytes())
 }
 
 // SessionsDir is where this working tree's session state lives, outside the repo.
