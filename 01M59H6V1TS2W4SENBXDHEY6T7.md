@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T20:48:50Z
+updated-at: 2026-10-19T20:49:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11846
 claimed-at: 2026-10-19T20:45:53Z
@@ -43,7 +43,7 @@ round: 3
 ## Definition of Done
 
 - [x] Jede Anfrage mit Fehlerstatus (>=400), jeder fehlgeschlagene Fetch/Push und jede Panic wird mit Zeit und Ursache in eine Logdatei geschrieben; 'jaira web' nennt beim Start ihren Pfad
-  proof: core/web/log.go:63 logged + core/web/web.go:135,151 + internal/cli/web.go:88; TestErrorAnswersAreLogged, TestFailedFetchAndPushAreLogged
+  proof: core/web/log.go:64 logged + core/web/web.go:137,153 + internal/cli/web.go:88; TestErrorAnswersAreLogged, TestFailedFetchAndPushAreLogged
 - [x] Eine Panic in einem Handler wird abgefangen (500 + Stacktrace im Log), der Server laeuft weiter; Test
   proof: core/web/log.go:63 logged; TestPanicAnswers500AndIsLogged
 - [x] Die Seite zeigt sichtbar an, wenn sie den Server nicht mehr erreicht, statt still stehenzubleiben
