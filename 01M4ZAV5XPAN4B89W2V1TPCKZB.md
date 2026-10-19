@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:43:53Z
+updated-at: 2026-10-19T06:43:56Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -37,7 +37,8 @@ claimed-at: 2026-10-19T06:35:35Z
   proof: core/web/ui/src/features/filter-tickets/model/filter.ts:71 (title/goal/handle/id, any case), FilterBar.svelte Search field
 - [x] Filter nach Lane, Tag und Person (creator, assignee, zuletzt geaendert von) - mehrere Filter wirken zusammen (UND)
   proof: core/web/ui/src/features/filter-tickets/model/filter.ts:70-84 matches() ANDs lane, tag and person (creator|assignee|updated_by); FilterBar.svelte selects
-- [ ] Tickets aus .jaira/logbook/ sind auf der Seite sichtbar und öffnen sich in der Detailansicht
+- [x] Tickets aus .jaira/logbook/ sind auf der Seite sichtbar und öffnen sich in der Detailansicht
+  proof: internal/cli/web_source.go:121 cards() reads the logbook; TestWebListsFiledTicketsAndOpensThem; live: ?all=1 on this repo lists 129 logbook tickets, 8NHD8Q opens with place logbook
 - [ ] Tickets aus .jaira/archive/ sind auf der Seite sichtbar und öffnen sich in der Detailansicht
 - [x] core/release/notes/<ID>.md beschreibt die neuen Filter und Ansichten
   proof: core/release/notes/TPCKZB.md
