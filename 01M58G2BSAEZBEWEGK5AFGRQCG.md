@@ -20,7 +20,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:14Z
-updated-at: 2026-10-18T21:53:14Z
+updated-at: 2026-10-19T08:34:30Z
+updated-by: berkc
 ---
 
 # Eine kaputte Lane-Datei verschwindet still aus den Settings, und das Lane-Formular fragt Felder ab, die niemand versteht
