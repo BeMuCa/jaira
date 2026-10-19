@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T06:50:10Z
+updated-at: 2026-10-19T06:51:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16821
 claimed-at: 2026-10-19T06:27:46Z
@@ -88,3 +88,4 @@ round: 2
 - **2026-10-19 06:45 · Alexander Sacharov** — DoD 5: archive --json behaelt 'archived' als Namensliste und bekommt daneben 'rejected' (Datei -> kind/why/by/at), damit bestehende Leser nicht brechen. show --json hat jetzt immer einen 'rejected'-Block (leer, wenn nicht abgelehnt), wie 'outcome'.
 - **2026-10-19 06:46 · Alexander Sacharov** — Alex (via jaira-a7) hat DoD 5 abgenommen; ab jetzt keine Diff-Stopps pro Punkt mehr, Ticket bis signoff tragen. Commit-Zeilen weiter an jaira-a7, Alex committet.
 - **2026-10-19 06:50 · Alexander Sacharov** — critique (Runde 1): 2 Befunde - (1) archive.go archivedRejections -> ticket.LoadHeader statt eigenem ReadFile/ParseDoc/Decode; (2) Store.Reject: Archiv-Ziel vor dem Mutate pruefen, sonst bleibt bei Archive-Fehler ein abgelehntes Ticket auf dem Board. Stehen gelassen: questionLane in reject.go (kein bestehender Helfer fuer die Frage-Lane gefunden); show --json mit immer vorhandenem rejected-Block (wie outcome); TUI-R ohne StampCommits (wie x/archiveSelected).
+- **2026-10-19 06:51 · Alexander Sacharov** — in-progress (Runde 2): beide critique-Befunde umgesetzt - archivedRejections nimmt ticket.LoadHeader; Store.Reject prueft das Archiv-Ziel vor dem Mutate (Test TestRejectIntoAnOccupiedArchiveWritesNothing). go test ./internal/... ./core/... -race exit 0.
