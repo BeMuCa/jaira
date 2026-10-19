@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T13:46:14Z
+updated-at: 2026-10-19T13:46:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79475
 claimed-at: 2026-10-19T12:47:47Z
@@ -31,7 +31,7 @@ outcome-resolves: "Ein Ausfall von jaira web hinterlaesst jetzt seine Ursache in
 review-summary: none
 review-gaps: "removed recorder.Unwrap (nothing uses http.ResponseController here) and the test-only syncBuffer (log.Logger serialises writes, tests are single-goroutine); left NewLogger (it fixes the timestamp flags for CLI and tests) and logf's nil check (Server.Log is optional, existing tests run without it)"
 test-verdict: "pass: go test -race -count=1 ./... RC=0; DoD 1,2,3,5 verified in the tree and live (scratch binary: log path printed, 404 and SIGHUP logged; headless Chrome: banner appears ~10 s after the command is killed, disappears after restart); DoD 4 needs a log from Alex' own run"
-question: "DoD 4 (Ursache von Alex' Ausfall) braucht einen Logauszug. 1 (empfohlen): Alex laesst den neuen Build von diesem Branch laufen, bis die Seite wieder ausfaellt, und gibt den Logauszug aus der beim Start genannten Datei - dann Ursache beheben oder als Note festhalten. 2: DoD 4 jetzt als Note schliessen ('nicht reproduziert; ab jetzt steht jede Ursache im Log') und den Rest ausliefern. 3: DoD 4 als eigenes Folge-Ticket abtrennen."
+question: ""
 ---
 
 # jaira web schreibt mit, was passiert, und ein Absturz hinterlaesst seine Ursache
