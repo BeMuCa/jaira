@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:36:00Z
+updated-at: 2026-10-19T06:37:36Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -54,3 +54,16 @@ claimed-at: 2026-10-19T06:35:35Z
 ## Progress
 - **2026-10-19 06:35 · Alexander Sacharov** — parent session: jaira-a7
 - **2026-10-19 06:35 · Alexander Sacharov** — decision (Alex, 19.10.2026 via teamlead jaira-a7): 'we must see ALL tickets that ever existed and filter by people, date or lane.' Abgelegte Tickets (logbook, archive, refs) kommen in DIESELBE Liste mit einem Schalter 'alle Tickets aller Zeiten'; jedes zeigt, wo es liegt — keine eigene Ansicht. Damit sind die brainstorm-Fragen beantwortet. Offen fuer den Plan: genaue Personenfelder, Server-API vs. Filtern im Browser. core/ticket/store.go Archive/Restore nicht anfassen — A0C081 aendert sie; rejected-kind/why/by/at (flache Keys aus A0C081) anzeigen, wenn vorhanden, nicht auf den Merge warten.
+- **2026-10-19 06:37 · Alexander Sacharov** — brainstorm — was der Code zeigt:
+- core/web/web.go hat nur /api/epics und /api/unassigned; internal/cli/web_source.go baut sie aus boardIndex + epic.Unassigned — also nur Tickets unter .jaira/tickets/ und ref-only (Store.List haengt Source.Extra an).
+- Die Detailansicht kann abgelegte Tickets schon: webSource.Ticket nutzt Store.LoadAnywhere (Board, dann logbook, dann archive). Es fehlt nur ein Weg dorthin.
+- Filed-Tickets findet Store.FiledAwayIDs() (archive + alle logbook-Ordner, auch der Legacy-Name); Logbuch-Datum steckt im Ordnernamen, ticket.LogbookFolderDay liest es.
+- rejected-* gibt es auf master noch nicht (A0C081 ist uncommitted in ../jaira-a0c081, fuegt Ticket.Rejected in core/ticket/schema.go hinzu). Lesbar ohne schema.go anzufassen: Doc.Fields().Scalar("rejected-kind").
+- Groesse heute: 134 abgelegte + ~29 offene Tickets.
+
+Wege:
+A) Ein Endpoint GET /api/tickets?all=1 liefert jede Karte mit den Filterfeldern (lane, tags, creator, assignee, updated_by, created/updated/filed, place); gefiltert wird im Browser, Filter im URL-Query. Kostet: ein Endpoint, eine Filterleiste. Gibt: sofortiges Filtern, kein Request pro Tastendruck; bei tausenden Tickets wird die Antwort gross.
+B) Filter serverseitig (?q=&tag=&lane=...), wie 'jaira list'. Kostet: Filterlogik in Go doppelt zu 'jaira list' oder deren Refactor; jeder Tastendruck ein Request mit Board-Scan. Gibt: kleine Antworten.
+C) Eigene Seite /all. Von Alex ausgeschlossen (gleiche Liste, Schalter).
+
+Ich nehme A: die Datenmenge ist klein, Filtern im Browser ist sofort, die URL traegt den Zustand ohne Server-Logik.
