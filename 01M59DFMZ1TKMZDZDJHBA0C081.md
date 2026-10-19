@@ -1,7 +1,7 @@
 ---
 id: 01M59DFMZ1TKMZDZDJHBA0C081
 title: "Ein Ticket laesst sich mit Grund ablehnen: jaira reject, und das Archiv sagt warum"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T08:15:07Z
+updated-at: 2026-10-19T08:15:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-24710
 claimed-at: 2026-10-19T07:38:42Z
@@ -35,7 +35,7 @@ outcome-what: "Neuer Befehl jaira reject <id> --why [--kind wontfix|obsolete] [-
 outcome-why: "Ein abgelehntes Ticket sah im Archiv genauso aus wie ein weggeraeumtes; Monate spaeter liess sich nicht sagen, ob es Duplikat, verworfen oder ueberholt war."
 outcome-resolves: "DoD 1-3: internal/cli/reject.go + Store.Reject, Tests in internal/cli/reject_test.go; DoD 4: modeReject in internal/tui/model.go, internal/tui/reject_test.go; DoD 5: archivedRejections/rejectionLine, unreject; DoD 6: release note, agent block, Skill, go test ./... -race gruen."
 review-summary: "Neuer Befehl 'jaira reject <id> --why <text> --force' (--kind wontfix|obsolete, --duplicate-of <id>) schreibt flache Frontmatter-Felder rejected-kind/why/by/at und archiviert ueber Store.Archive; ohne --force Exit 3 mit Hinweis auf 'move --to human --question'. --duplicate-of wird vor jedem Schreiben aufgeloest (unbekannt Exit 5, sich selbst Exit 2) und setzt related. Ein mehrzeiliger Grund wird auf eine Zeile gefaltet (CLI und Store). Taste R auf Board und in der Detailansicht fragt eine Zeile Grund; x archiviert weiter nur. 'jaira archive' zeigt eine eingerueckte Zeile 'rejected <kind>: <why> (by, date)' und ein rejected-Objekt in --json; 'jaira show' eine rejected-Zeile; 'jaira restore' entfernt die rejected-* Felder. Ein belegter Archivname wird vor dem Schreiben geprueft (archiveTarget, geteilt mit Archive). Release-Note, Agent-Block und Skill nennen reject."
-round: 3
+round: 4
 review-gaps: "Keine blockierenden. Klein, nicht im DoD: (1) 'R' auf dem Board stempelt keine Commits, die CLI schon - wie heute schon bei 'x', also konsistent, aber ein auf dem Board abgelehntes Ticket landet ohne commits-Liste im Archiv. (2) Die CLI stempelt Commits vor Store.Reject; scheitert reject danach am belegten Archivnamen, bleibt die commits-Liste am Ticket (gleiches Verhalten wie 'jaira archive'). (3) 'restore' nimmt rejected-* ab, laesst den related-Link aus --duplicate-of aber stehen - vermutlich gewollt. (4) Die Aenderungen aus optimize und Runde 3 (store.go, reject.go, reject_test.go, model.go, Release-Note) sind noch nicht committet."
 test-verdict: "pass (Runde 3): go clean -testcache; go test ./... -race RC=0. Scratch-Board mit gebautem Binaer: --duplicate-of auf sich selbst -> 'cannot be a duplicate of itself' RC=2; --why 'eins\\nzwei' -> archive zeigt '    rejected wontfix: eins zwei (...)' eingerueckt. Unveraenderte Datei nach Exit 2 belegt TestRejectAsADuplicateOfItselfIsAUsageError. DoD 1-6 wie Runde 1, Tests weiter gruen."
 review-verdict: "approve - DoD 1-8 im Diff belegt, go vet sauber, go test ./... -race gruen, End-to-end in einem Wegwerf-Repo nachgespielt (Exit 3/2/5/2/0, archive, show, restore). Vor dem Merge muessen die uncommitteten Aenderungen committet werden."
