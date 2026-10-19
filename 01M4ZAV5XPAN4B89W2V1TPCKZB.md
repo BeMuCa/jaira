@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T07:38:31Z
+updated-at: 2026-10-19T07:38:37Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -111,3 +111,4 @@ Warum: Beides ist nur Kosmetik und kein Datenverlust - die Liste stimmt nach dem
 Empfehlung: 1 - Beide Punkte sind klein und nicht blockierend, der Diff erfuellt alle neun DoD-Punkte.
 - **2026-10-19 07:38 · Alexander Sacharov** — decision: 2) Zurueckgeben: Wettlauf in ReviewPage.svelte load() beheben und Epic-Aufklappzustand beim Leeren des Filters erhalten
 - **2026-10-19 07:38 · Alexander Sacharov** — Given back from signoff: 2) Zurueckgeben: Wettlauf in ReviewPage.svelte load() beheben und Epic-Aufklappzustand beim Leeren des Filters erhalten
+- **2026-10-19 07:38 · Alexander Sacharov** — cockpit: given back to the old worker - tab alive, cache warm for 23 more min, context 233k
