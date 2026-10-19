@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T13:47:57Z
+updated-at: 2026-10-19T13:48:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-27212
 claimed-at: 2026-10-19T13:47:43Z
@@ -78,3 +78,4 @@ review-check: "1. cd in den Worktree und: go build -o /tmp/jw ./cmd/jaira   2. /
 - **2026-10-19 12:56 · Alexander Sacharov** — critique (Runde 1, ganzer Diff): nichts. Bewusst stehen gelassen: (a) bei Ausfall zeigt die Seite Banner UND die 'Failed to fetch'-Zeile aus load() - das Banner erklaert die Zeile, ein Zusammenlegen waere mehr Code; (b) recovered() um Fetch/Push, obwohl fetchInChild kaum panict - eine Panic in der Loop-Goroutine beendet sonst den Prozess, DoD 1 verlangt jede Panic; (c) kein bestehendes Log-Muster im Repo (grep log.New/slog leer), also kein Duplikat; (d) SIGHUP wird unter Windows nie geliefert, schadet dort nicht.
 - **2026-10-19 13:00 · Alexander Sacharov** — testing: go test -race -count=1 ./... RC=0. Headless Chrome gegen ein Scratch-Binary: Seite ohne Banner; Befehl beendet -> nach ~10 s Banner 'jaira web has not answered since <Zeit> - is the command still running? ...'; Befehl neu gestartet -> Banner weg. Bereinigung der Notes/Kontext (Option 2 von Alex via jaira-8b): Hand-Edit der Ticketdatei wurde in dieser Session vom Berechtigungs-Klassifikator abgelehnt - nicht ausgefuehrt, liegt bei jaira-8b/Alex.
 - **2026-10-19 13:46 · Alexander Sacharov** — decision (Alex via jaira-8b, 19.10.): DoD 4 Option 2 - mit Note schliessen. Nicht reproduziert; ab diesem Build steht jede Ursache eines Ausfalls (Fehlerantwort, Fetch/Push-Fehler, Panic mit Stack, beendendes Signal) in der beim Start genannten Logdatei. Datenbereinigung: Alex gibt sie selbst im Worker-Tab frei; bis dahin weder Branch noch Ref pushen.
+- **2026-10-19 13:48 · Alexander Sacharov** — review (frisch): Code deckt DoD 1-3,5; keine Defekte. Blockierend fuer Push: private Daten (fremder Projektname, PIDs, Home-Pfad) in der committeten Ticketdatei (d89bb20c, Kontext + Notes 12:48/12:54) - Bereinigung liegt laut 13:46 bei Alex. Klein: logKeep-Kommentar ueberverspricht (Rotation nur beim Start); nicht oeffnbares web.log macht jaira web jetzt fatal.
