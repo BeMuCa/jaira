@@ -21,14 +21,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T14:34:57Z
+updated-at: 2026-10-19T14:35:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-27212
 claimed-at: 2026-10-19T13:47:43Z
 outcome-what: "jaira web schreibt Fehlerantworten (>=400), fehlgeschlagene Fetches/Pushes, Panics mit Stack und das beendende Signal mit Zeit nach ~/.jaira/state/<baum>/web.log und nennt den Pfad beim Start; eine Panic im Handler antwortet 500 statt die Verbindung zu kappen; die Seite zeigt nach spaetestens 10 s ein Banner, wenn der Befehl nicht mehr antwortet."
 outcome-why: "Alex' 'jaira web' fiel aus, und es gab keine Spur: nichts wurde geloggt, stderr ging mit dem Terminal verloren, und die Seite stand still, ohne es zu sagen."
 outcome-resolves: "Ein Ausfall von jaira web hinterlaesst jetzt seine Ursache in einer Datei, und die Seite meldet ihn sichtbar."
-review-summary: "jaira web oeffnet beim Start <StateDir>/web.log (ausserhalb des Repos, ab 1 MB beim naechsten Start nach web.log.1 verschoben) und druckt 'jaira web: log <pfad>'. Eine Middleware um alle Routen (core/web/log.go logged) schreibt jede Antwort >=400 mit Methode, Pfad, Status und den ersten 512 Byte des Fehlerbodys ins Log, faengt Handler-Panics ab, loggt sie mit Stack und antwortet 500 statt die Verbindung zu kappen. Fetch und Push laufen durch recovered(): eine Panic wird zum Fehler mit Stack, wird geloggt und landet in PushError, die Loop-Goroutine laeuft weiter. http.Server.ErrorLog zeigt auf dasselbe Log; SIGTERM/SIGHUP beenden wie Ctrl-C und das Signal steht im Log. Die Seite fragt alle 10 s /api/sync ab; scheitert das, erscheint ein rotes Banner 'has not answered since HH:MM', das beim naechsten Erfolg verschwindet und alles neu laedt. dist ist neu gebaut, Release Note mit zwei Zeilen vorhanden."
+review-summary: "none"
 review-gaps: "1 (blockiert Push, nicht Code): die in d89bb20c committete Ticketdatei enthaelt private Daten gegen Alex' Regel vom 19.10. - fremder Projektname im Kontext und in einer Note, PIDs, ein Home-Pfad. 2 (klein): der logKeep-Kommentar verspricht Rotation waehrend eines Laufs, die es nicht gibt. 3 (klein): ein nicht oeffnbares web.log macht jaira web fatal."
 test-verdict: "pass: go test -race -count=1 ./... RC=0; DoD 1,2,3,5 verified in the tree and live (scratch binary: log path printed, 404 and SIGHUP logged; headless Chrome: banner appears ~10 s after the command is killed, disappears after restart); DoD 4 needs a log from Alex' own run"
 question: ""
