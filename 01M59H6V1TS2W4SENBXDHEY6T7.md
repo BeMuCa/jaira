@@ -1,7 +1,7 @@
 ---
 id: 01M59H6V1TS2W4SENBXDHEY6T7
 title: "jaira web schreibt mit, was passiert, und ein Absturz hinterlaesst seine Ursache"
-status: optimize
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T20:48:39Z
+updated-at: 2026-10-19T20:48:50Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11846
 claimed-at: 2026-10-19T20:45:53Z
@@ -29,7 +29,7 @@ outcome-what: "jaira web schreibt Fehlerantworten (>=400), fehlgeschlagene Fetch
 outcome-why: "Alex' 'jaira web' fiel aus, und es gab keine Spur: nichts wurde geloggt, stderr ging mit dem Terminal verloren, und die Seite stand still, ohne es zu sagen."
 outcome-resolves: "Ein Ausfall von jaira web hinterlaesst jetzt seine Ursache in einer Datei, und die Seite meldet ihn sichtbar."
 review-summary: "none"
-review-gaps: "Kein Code-Defekt. (1) Klein: kann web.log nicht geoeffnet werden, bekommt http.Server ErrorLog=io.Discard - dessen eigene Meldungen (Accept-Fehler u.a.), die vorher auf stderr gingen, sind dann ganz weg (internal/cli/web.go:71,99); ein Logger auf stderr statt io.Discard waere gleich billig. (2) Nicht Code: die Commits d89bb20c und b2389dea enthalten in der Ticketdatei weiter den fremden Projektnamen, PIDs und einen Home-Pfad; HEAD ist sauber. Laut Entscheidung 14:34 schreibt Alex History und Ticket-Ref selbst um - bis dahin nicht pushen. go test -race ./core/web ./internal/cli gruen, GOOS=windows/darwin bauen."
+review-gaps: "none - Runde 3 aendert nur den Fallback-Logger (internal/cli/web.go:71); der io-Import fiel mit io.Discard weg"
 test-verdict: "pass: go test -race -count=1 ./... RC=0; Runde 2 live: schreibgeschuetztes State-Verzeichnis -> Warnung 'cannot open the log ...; running without one', /api/sync 200; Ticketdatei frei von Projektname, PIDs, Home-Pfaden"
 question: ""
 review-verdict: "Der Diff erfuellt DoD 1-5, keine Defekte; die drei Rueckgabepunkte aus signoff (Kommentar, Warnen statt Abbrechen, Ticketdatei an HEAD) sind erledigt. Push erst nach Alex' History-Bereinigung (Note 14:34)."
