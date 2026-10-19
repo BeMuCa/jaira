@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T21:22:16Z
-updated-at: 2026-10-19T21:25:11Z
+updated-at: 2026-10-19T21:25:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10599
 claimed-at: 2026-10-19T21:22:42Z
@@ -52,3 +52,4 @@ claimed-at: 2026-10-19T21:22:42Z
 - **2026-10-19 21:22 · Alexander Sacharov** — parent session: jaira-20
 - **2026-10-19 21:25 · Alexander Sacharov** — decision (Ref-Weg, aus dem Code geklaert): ein Ticket-Ref ist eine Commit-Kette, jeder Commit hat genau eine Datei <ULID>.md als ganzen Baum (core/gitref/gitref.go refWrite/commitFile). jaira schreibt einen Ref nur aus dem Outbox, und nur fuer Tickets, die hier geschrieben wurden - ein Ref, fuer den nichts in der Queue liegt, wird von keinem jaira-Aufruf ueberschrieben. Weg also ohne CLI: hash-object + mktree + commit-tree -p <alter Ref> + git push upstream <neu>:<ref> --force-with-lease=<ref>:<alt>, danach update-ref lokal. Das ist ein normaler Commit oben drauf (fast-forward), keine Historie umgeschrieben. jaira pull scheidet aus: es claimt und aendert damit assignee auf dem Ref.
 - **2026-10-19 21:25 · Alexander Sacharov** — decision: updated_at bleibt unveraendert (DoD 3: nur Namen ersetzt). Restrisiko: ein Klon, der eine alte Kopie derselben Datei auf der Platte hat und nach einem fetch darauf schreibt, schickt den alten Text mit gueltigem Lease wieder hoch (CheckFresh vergleicht nur updated_at). Betrifft nur Tickets, die auch als Datei auf master liegen; mit dem Merge dieses PRs ist auch die master-Kopie sauber. Pruefung nach dem Push: git show auf jeden Ref.
+- **2026-10-19 21:25 · Alexander Sacharov** — question (vor dem Plan, an Alex): Umfang. Gezaehlt auf master+Refs: 1) drei weitere Namen eigener Projekte, die NICHT in ~/.jaira/foreign-names stehen (je 1 Fundstelle, eine davon auch auf einem Ref), dazu ein Compose-Praefix und ein Herdr-Workspace-Label, die vom Hauptnamen abgeleitet sind. 2) der GitLab-Host der Firma, 11 Stellen. 3) drei Dateien ausserhalb .jaira/ nennen einen Listen-Namen (.planning/HANDOFF.md, internal/cli/staleclaim_test.go, scripts/migrate-tickets.py). Optionen je Punkt: F1 a) mitnehmen und die drei Namen in ~/.jaira/foreign-names ergaenzen [empfohlen] b) nur die Liste. F2 a) Host neutral ersetzen ('ein firmeneigenes GitLab') [empfohlen] b) Host bleibt. F3 a) mitnehmen, DoD-Punkt dazu [empfohlen] b) eigenes Ticket c) bleibt.
