@@ -21,7 +21,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T07:32:24Z
+updated-at: 2026-10-19T12:47:44Z
+updated-by: Alexander Sacharov
 ---
 
 # jaira web schreibt mit, was passiert, und ein Absturz hinterlaesst seine Ursache
