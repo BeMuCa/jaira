@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T19:31:30Z
+updated-at: 2026-10-19T20:20:37Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-25649
@@ -83,3 +83,4 @@ claimed-at: 2026-10-19T18:18:27Z
 - **2026-10-19 18:36 · Alexander Sacharov** — Kritik Stueck 2: retitle und plain entschieden 'ist die erste Ueberschrift der Titel?' verschieden (oneLine nur auf einer Seite). Jetzt ein Helfer titleLine(), beide nutzen ihn; TestTheTitleHeadingIsFoundOneWay.
 - **2026-10-19 19:29 · Alexander Sacharov** — decision (Alex via Teamlead, 19.10.2026): Schritt 2 (DoD 4, Merge-Konfliktblock inkl. titleLine-Fix) angenommen; weiter mit Schritt 3 (CLI).
 - **2026-10-19 19:31 · Alexander Sacharov** — Kritik Stueck 3: (1) Epic.Text() = Body ohne die Titel-Ueberschrift (titleLine) und ohne <!-- -->-Kommentare; 'epic show' und spaeter die gerenderte Web-Ansicht nutzen Text, --json/Formular/Base bleiben bei Body (exakter Round-Trip). Ein frisch angelegtes Epic hat damit keinen Text. (2) leerer --title: epic.ErrNoTitle aus Set (gilt auch fuer Web), epicFail -> Exit 2. Vorher meldete die CLI faelschlich 'Nothing to do'.
+- **2026-10-19 20:20 · Alexander Sacharov** — decision (Alex via Teamlead, 19.10.2026): Schritt 3 (CLI, inkl. Text()/ErrNoTitle-Fixes) angenommen. Schritte 4-6 ohne Zwischenstopp: am Ende EIN Gesamt-Diff und EINE Commit-Zeile fuer alles, was dann noch uncommittet ist. critique/optimize/testing/review laufen wie vorgesehen; mode bleibt conversational (Alex committet selbst).
