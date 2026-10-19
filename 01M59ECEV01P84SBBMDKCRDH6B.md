@@ -24,7 +24,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T06:46:45Z
+updated-at: 2026-10-19T06:46:49Z
 updated-by: Alexander Sacharov
 ---
 
@@ -63,3 +63,4 @@ updated-by: Alexander Sacharov
 - **2026-10-19 06:45 · Alexander Sacharov** — decision (Alex, 19.10.2026): 'Beschreibung bearbeiten' heisst in diesem Ticket der Markdown-Text unter dem Frontmatter, nicht nur die description-Zeile. Mitgliedszeilen bleiben beim Schreiben unangetastet. Der Text wird gerendert angezeigt und ist standardmaessig eingeklappt.
 - **2026-10-19 06:45 · Alexander Sacharov** — Reihenfolge (Teamlead): blocked-by TPCKZB (gleiche core/web/ui-Dateien, feat/tpckzb in-progress). Jetzt nur brainstorm/plan; kein Code, bevor TPCKZB auf master ist.
 - **2026-10-19 06:46 · Alexander Sacharov** — decision (Worker, aus Code/Default): 'description' bleibt die einzeilige Frontmatter-Zeile (sichtbar im eingeklappten Zustand), der Text heisst 'body'. CLI bekommt dafuer --body und --body-file (- = stdin) neben --title/--description; Web-Formular hat alle drei Felder. Grund: die Zeile und der Text sind zwei Dinge auf dem Ref; ein Flag fuer beides wuerde eins davon ueberschreiben.
+- **2026-10-19 06:46 · Alexander Sacharov** — decision (Worker): Body = alle Zeilen unter dem Frontmatter ausser '- <id>'-Mitgliedszeilen. SetBody setzt die Mitgliedszeilen in alter Reihenfolge ans Ende hinter den neuen Text. Bei heutigem Layout (## Tickets + Kommentar am Ende, Mitglieder darunter) bleibt die Datei damit gleich aufgebaut. Ein '# <Titel>' als erste Ueberschrift im Body wird bei --title mit umbenannt, wenn sie dem alten Titel entsprach.
