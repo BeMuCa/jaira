@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T18:22:55Z
+updated-at: 2026-10-19T18:23:22Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-24398"
 claimed-at: 2026-10-19T18:18:21Z
@@ -37,7 +37,7 @@ outcome-resolves: "DoD 1-3: internal/cli/reject.go + Store.Reject, Tests in inte
 review-summary: "none"
 round: 5
 review-gaps: "none - kein bestehender Helfer zum Entfernen eines related-Eintrags (grep slices.Delete/remove/without in core/ticket, internal/cli); unreject nimmt den neuen Key ueber RejectedFields ab, kein Sonderweg; nichts verwaist"
-test-verdict: "pass (Runde 4): go clean -testcache; go test ./... -race RC=0; TestRejectOnTheBoardStampsCommits gruen und mit auskommentierter StampCommits-Zeile rot (FAIL) - die Pruefung haengt wirklich an der Aenderung. DoD 1-8 wie Runde 3."
+test-verdict: "pass: go vet + go clean -testcache + go test ./... -race RC=0; DoD 10 im Baum geprueft (store.go:389, :783, tickets.go rejectionLine/JSON); Binary auf Scratch-Board: reject --duplicate-of schreibt rejected-duplicate-of, archive/show nennen 'duplicate of J5AR30', --json duplicate_of; restore nimmt Key und Original-Link ab, ein vorher gesetzter related-Link auf ein anderes Ticket bleibt"
 review-verdict: "approve: DoD 1-9 im Diff belegt; go vet und go test ./... -race gruen; TestRejectOnTheBoardStampsCommits ohne die StampCommits-Zeile rot gesehen; per Binary nachgespielt: Selbst-Duplikat Exit 2, mehrzeiliger Grund als 'a b c' eingerueckt im Archiv, show zeigt rejected und den gestempelten Commit."
 review-round: 4
 review-check: "0. Committen: git add core/release/notes/A0C081.md core/ticket/store.go internal/cli/reject.go internal/cli/reject_test.go internal/tui/model.go internal/tui/reject_test.go .jaira/tickets/01M59DFMZ1TKMZDZDJHBA0C081-ein-ticket-laesst-sich-mit-grund-ablehnen-jaira.md && git commit -m 'fix(A0C081): R on the board stamps commits, reasons fold to one line, a self-duplicate is exit 2'  1. go build -o /tmp/jaira ./cmd/jaira  2. in einem leeren Test-Repo: git init, /tmp/jaira init, /tmp/jaira create Test --goal g --context c --dod d --assignee du  3. git commit --allow-empty -m 'fix(<ID>): tried'  4. /tmp/jaira reject <ID> --why x -> Exit 3, Meldung nennt human --question  5. /tmp/jaira reject <ID> --why x --duplicate-of <ID> --force -> 'cannot be a duplicate of itself', Exit 2, Ticket unveraendert  6. /tmp/jaira reject <ID> --why $'a\\nb' --force -> 'Rejected <ID> (wontfix)'  7. /tmp/jaira archive -> unter dem Dateinamen eine eingerueckte Zeile 'rejected wontfix: a b (...)'  8. /tmp/jaira show <ID> -> Zeile rejected und Zeile commits mit dem Commit aus Schritt 3  9. Board: /tmp/jaira oeffnen, auf einer Karte R druecken, Grund tippen, Enter -> Meldung 'Rejected ...', Karte ist weg; /tmp/jaira archive zeigt den Grund"
