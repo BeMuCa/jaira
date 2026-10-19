@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T14:17:11Z
+updated-at: 2026-10-19T14:17:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35137
 claimed-at: 2026-10-19T08:18:23Z
@@ -126,3 +126,4 @@ Warum: Beides aendert nichts am Kern der Aufgabe (mit Grund ablehnen, Grund blei
 2) Zurueckgeben: restore soll den related-Eintrag nach --duplicate-of wieder entfernen [give back]
 Empfehlung: 1 - die Kleinigkeiten sind kosmetisch und nicht Teil der DoD, ein weiterer Durchlauf kostet mehr als er bringt.
 - **2026-10-19 14:17 · Alexander Sacharov** — decision: 2) Zurueckgeben: restore soll den related-Eintrag nach --duplicate-of wieder entfernen
+- **2026-10-19 14:17 · Alexander Sacharov** — Given back from signoff: 2) Zurueckgeben: restore soll den related-Eintrag nach --duplicate-of wieder entfernen
