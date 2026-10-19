@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:14Z
-updated-at: 2026-10-19T08:34:30Z
+updated-at: 2026-10-19T08:34:33Z
 updated-by: berkc
 ---
 
@@ -32,6 +32,8 @@ updated-by: berkc
 - [ ] Die unveraendert gespeicherte Vorlage legt keine Lane an (oder fragt nach); Test
 - [ ] Liste in der Notiz: jedes Feld der Vorlage mit behalten/weglassen/Default und Grund; die Vorlage folgt der Liste
 - [ ] Release-Note-Zeile in core/release/notes/<ID>.md
+- [ ] Beim Anlegen wird die id aus dem Namen erzeugt (klein, Bindestriche, eindeutig); wer keine id schreibt, bekommt trotzdem eine gueltige Lane; Test
+- [ ] after ist optional: eine Lane ohne after landet ans Ende von .jaira/lanes/order und laesst sich frei verschieben; nur Lanes mit einer echten Muss-Reihenfolge tragen after; Test
 
 ## Options
 
