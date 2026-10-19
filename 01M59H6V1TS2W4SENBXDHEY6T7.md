@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T14:39:03Z
+updated-at: 2026-10-19T20:43:50Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-82583
 claimed-at: 2026-10-19T14:38:38Z
@@ -94,3 +94,8 @@ Empfehlung: 1 - die Bereinigung ist ohnehin vor dem Push noetig, und die beiden 
 - **2026-10-19 14:34 · Alexander Sacharov** — decision (Alex via jaira-8b, 19.10.): auch die History des Ticket-Refs wird bereinigt und nach upstream force-gepusht. Ein Agent fuehrt weder Umschreiben noch Force-Push aus (Klassifikator lehnt beides ab, Alex' Regel): Alex startet das vorbereitete Skript (Backup-Refs, filter-branch fuer Branch und Ticket-Ref, Trockenpruefung) selbst und pusht danach mit --force-with-lease. Skript in einem Wegwerf-Klon getestet: alle Versionen frei von den Strings, Branch ausserhalb der Ticketdatei unveraendert.
 - **2026-10-19 14:35 · Alexander Sacharov** — critique Runde 2 (nur die drei Review-Punkte): alle beantwortet - Kommentar stimmt (log.go:16), Log-Fehler warnt (cli/web.go:72), Ticketdatei sauber. Nichts Neues.
 - **2026-10-19 14:38 · Alexander Sacharov** — review Runde 2 (frisch): DoD erfuellt, keine Defekte. Offen nur: History-Bereinigung vor Push (Alex, 14:34); klein: ErrorLog=io.Discard, wenn das Log nicht aufgeht.
+- **2026-10-19 20:43 · Alexander Sacharov** — explain: Der Review fand keinen Code-Defekt, nur zwei Kleinigkeiten: Laesst sich web.log nicht oeffnen, bekommt http.Server ErrorLog=io.Discard, und dessen eigene Meldungen (z.B. Accept-Fehler) sind ganz weg (internal/cli/web.go:71,99). Ausserdem stehen in den Commits d89bb20c und b2389dea in der Ticketdatei noch ein fremder Projektname, PIDs und ein Home-Pfad.
+Warum: Ohne Log sollen wenigstens die Server-Meldungen auf stderr bleiben, wie vor der Aenderung. Die History darf mit fremden Daten nicht gepusht werden.
+1) Zurueckgeben: ErrorLog auf einen stderr-Logger statt io.Discard setzen, dann erneut pruefen [give back]
+2) Annehmen wie es ist; Alex bereinigt die History (Skript, force-with-lease) vor dem Push, ErrorLog bleibt als bekannte Kleinigkeit [accept]
+Empfehlung: 2 - DoD 1-5 sind erfuellt, der io.Discard-Fall tritt nur bei unoeffnbarem Log auf und das Ticket soll nicht weiter wachsen.
