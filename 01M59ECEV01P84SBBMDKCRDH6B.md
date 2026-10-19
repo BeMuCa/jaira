@@ -1,7 +1,7 @@
 ---
 id: 01M59ECEV01P84SBBMDKCRDH6B
 title: Titel und Beschreibung eines Epics lassen sich im Web und mit jaira epic set aendern
-status: critique
+status: optimize
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T20:29:00Z
+updated-at: 2026-10-19T20:29:03Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-25649
