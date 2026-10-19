@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:35:38Z
+updated-at: 2026-10-19T06:35:50Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -50,3 +50,4 @@ claimed-at: 2026-10-19T06:35:35Z
 
 ## Progress
 - **2026-10-19 06:35 · Alexander Sacharov** — parent session: jaira-a7
+- **2026-10-19 06:35 · Alexander Sacharov** — decision (Alex, 19.10.2026 via teamlead jaira-a7): 'we must see ALL tickets that ever existed and filter by people, date or lane.' Abgelegte Tickets (logbook, archive, refs) kommen in DIESELBE Liste mit einem Schalter 'alle Tickets aller Zeiten'; jedes zeigt, wo es liegt — keine eigene Ansicht. Damit sind die brainstorm-Fragen beantwortet. Offen fuer den Plan: genaue Personenfelder, Server-API vs. Filtern im Browser. core/ticket/store.go Archive/Restore nicht anfassen — A0C081 aendert sie; rejected-kind/why/by/at (flache Keys aus A0C081) anzeigen, wenn vorhanden, nicht auf den Merge warten.
