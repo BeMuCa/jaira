@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:45:58Z
+updated-at: 2026-10-19T06:46:01Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -47,7 +47,7 @@ round: 2
 - [x] Tickets aus .jaira/logbook/ sind auf der Seite sichtbar und öffnen sich in der Detailansicht
   proof: internal/cli/web_source.go:120 cards() reads the logbook; TestWebListsFiledTicketsAndOpensThem; live: ?all=1 on this repo lists 129 logbook tickets, 8NHD8Q opens with place logbook
 - [x] Tickets aus .jaira/archive/ sind auf der Seite sichtbar und öffnen sich in der Detailansicht
-  proof: internal/cli/web_source.go:121 cards() reads the archive; TestWebListsFiledTicketsAndOpensThem; live: 5 archive tickets listed
+  proof: internal/cli/web_source.go:120 cards() reads the archive; TestWebListsFiledTicketsAndOpensThem; live: 5 archive tickets listed
 - [x] core/release/notes/<ID>.md beschreibt die neuen Filter und Ansichten
   proof: core/release/notes/TPCKZB.md
 - [x] Filter nach Datum: Zeitraum von-bis auf erstellt, zuletzt geaendert und abgelegt (Logbuch-Datum)
