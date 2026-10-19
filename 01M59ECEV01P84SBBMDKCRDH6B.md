@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T20:36:02Z
+updated-at: 2026-10-19T20:41:58Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-52791
@@ -59,6 +59,8 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-crdh6b && go build -o 
   proof: EpicList.svelte details.text without open, .desc outside it; headless Chromium: folded on load, opens on click
 - [x] Beim Schreiben des Textes bleiben die Mitgliedszeilen des Epics unangetastet (Test)
   proof: core/epic/epic.go SetBody(); TestSetKeepsTheMembers
+- [ ] Eine Zeile '- <volle 26-stellige ULID> ...' im Epic-Text, geschrieben ueber 'epic set --body' oder das Web-Formular, bleibt Text: sie macht das Ticket nicht still zum Mitglied und verschwindet nicht aus dem Text; Test
+- [ ] Nach einem 409 kann man im Web-Formular weiterarbeiten: das Getippte bleibt stehen, das Formular kennt den neuen Stand, und ein bewusstes zweites Speichern geht durch statt wieder 409; Test
 
 ## Options
 
