@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:58:59Z
+updated-at: 2026-10-19T06:59:02Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -36,6 +36,7 @@ review-gaps: "Keine Luecke gegen die DoD 1-9. Klein, nicht blockierend: 1) Revie
 test-verdict: "pass: go vet ./... RC=0, go test -count=1 -race ./... RC=0, dist matches npm ci && npm run build; DoD 1-9 verified in headless Chrome/Playwright on this repo and a scratch board with a rejected archive ticket"
 review-verdict: "Der Diff erfuellt alle neun DoD-Punkte; Outcome und Diff stimmen ueberein. Keine Defekte, die eine Rueckgabe rechtfertigen - nur die zwei kleinen UI-Unschoenheiten aus review-gaps. Unsicher bleibt nur die Optik im Browser, die ich nicht selbst angesehen habe (testing hat Headless-Chrome/Playwright-Laeufe notiert)."
 review-round: 3
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-tpckzb && go run ./cmd/jaira web  2. die ausgegebene Adresse im Browser oeffnen: ueber beiden Spalten steht eine Leiste Search / Lane / Tag / Person / Date / 'All tickets ever'  3. 'web' ins Suchfeld tippen: beide Spalten schrumpfen, die Adresszeile zeigt ?q=web  4. Haken 'All tickets ever' setzen: links erscheinen viele Tickets mit Zusatzzeile 'in the logbook' bzw. 'in the archive', Adresse enthaelt all=1  5. Date auf 'filed away', von und bis 2026-10-17: es bleiben 8NHD8Q und S0EG0M  6. 8NHD8Q anklicken: Dialog zeigt farbiges Lane-Badge 'done' (gruen) und 'in the logbook'  7. eine logbook-Karte ziehen wollen: sie laesst sich nicht greifen  8. Lane-Auswahl oeffnen: jede Lane hat einen farbigen Punkt, dieselbe Farbe wie die Badges; Seite neu laden (F5): Filter und Farben sind unveraendert  9. Adresse kopieren, in neuem Tab oeffnen: dieselbe gefilterte Liste. Abgelehntes Archiv-Ticket: go test ./internal/cli -run TestWebListsFiledTicketsAndOpensThem (prueft kind und why)"
 ---
 
 # Web-Seite: Filter und Tickets aus Logbook und Archiv anzeigen
