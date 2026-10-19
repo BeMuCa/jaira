@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:35:53Z
+updated-at: 2026-10-19T06:35:57Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -38,6 +38,9 @@ claimed-at: 2026-10-19T06:35:35Z
 - [ ] Tickets aus .jaira/logbook/ sind auf der Seite sichtbar und öffnen sich in der Detailansicht
 - [ ] Tickets aus .jaira/archive/ sind auf der Seite sichtbar und öffnen sich in der Detailansicht
 - [ ] core/release/notes/<ID>.md beschreibt die neuen Filter und Ansichten
+- [ ] Filter nach Datum: Zeitraum von-bis auf erstellt, zuletzt geaendert und abgelegt (Logbuch-Datum)
+- [ ] Ein abgelehntes Ticket im Archiv zeigt rejected-kind und rejected-why
+- [ ] Die gesetzten Filter stehen in der URL; ein Link zeigt dieselbe gefilterte Liste
 
 ## Options
 
