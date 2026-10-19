@@ -1,0 +1,3 @@
+- In `jaira web`, narrow both columns with the filter bar above them: a search over title, goal and id, a lane, a tag, a person (who created it, is assigned it or changed it last) and a date range on created, last changed or filed away; every filter set narrows the list further.
+- Tick "All tickets ever" in `jaira web` to list every ticket in no epic that ever existed — finished ones, those only on a ref, and those filed under `.jaira/logbook/` and `.jaira/archive/` — each saying where it lies; click one to read it, and an archived ticket that was rejected shows its kind and reason.
+- Copy the address of a filtered `jaira web` page to share that exact list: the filters and the switch are kept in the URL.

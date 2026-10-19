@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/BeMuCa/jaira/core/ticket"
 	"github.com/BeMuCa/jaira/core/web"
 )
 
@@ -185,5 +188,97 @@ func TestWebCreatesMovesRemovesAndOpens(t *testing.T) {
 	}
 	if last := d.Notes[len(d.Notes)-1]; last.Text != "**bold** and <script>alert(1)</script>" || last.Author == "" || last.At.IsZero() {
 		t.Fatalf("last note = %+v; want the text verbatim with its author and time", last)
+	}
+}
+
+// fileAway moves a board ticket's file to dir under .jaira, as filing it
+// does, with extra frontmatter lines put in before the closing delimiter.
+func fileAway(t *testing.T, s *ticket.Store, id, dir, extra string) {
+	t.Helper()
+	var from string
+	entries, err := os.ReadDir(s.TicketsDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range entries {
+		if ticket.IDFromFilename(e.Name()) == id {
+			from = filepath.Join(s.TicketsDir(), e.Name())
+		}
+	}
+	raw, err := os.ReadFile(from)
+	if err != nil {
+		t.Fatal(err)
+	}
+	src := strings.Replace(string(raw), "\n---\n", "\n"+extra+"---\n", 1)
+	to := filepath.Join(s.Root, ticket.DirName, dir, filepath.Base(from))
+	if err := os.MkdirAll(filepath.Dir(to), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(to, []byte(src), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(from); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// all=1 lists every ticket that ever was: the logbook and the archive beside
+// the board, each saying where it lies, the logbook's with the day it was
+// filed and a rejected one with its kind; each of them opens, and the opened
+// archive ticket says why it was rejected.
+func TestWebListsFiledTicketsAndOpensThem(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("JAIRA_USER", "Ada Lovelace")
+	t.Setenv("JAIRA_HOME", filepath.Join(dir, "home"))
+	if out, err := runCLI(t, dir, "init"); err != nil {
+		t.Fatalf("init: %v\n%s", err, out)
+	}
+	open := createTicket(t, dir, "Still open", "--tag", "web")
+	logged := createTicket(t, dir, "Long done")
+	rejected := createTicket(t, dir, "Never")
+
+	g.dir = dir
+	s, err := openStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	fileAway(t, s, logged, filepath.Join(ticket.LogbookSubdir, "al-20261001"), "")
+	fileAway(t, s, rejected, ticket.ArchiveSubdir,
+		"rejected-kind: wontfix\nrejected-why: nobody needs it\nrejected-by: Ada Lovelace\nrejected-at: 2026-10-02T09:00:00Z\n")
+	h := (&web.Server{Source: newWebSource(s)}).Handler()
+
+	var loose []web.Ticket
+	webGet(t, h, "/api/unassigned", &loose)
+	if len(loose) != 1 || loose[0].ID != open || loose[0].Place != "board" || loose[0].Creator != "Ada Lovelace" || loose[0].Goal != "g" || len(loose[0].Tags) != 1 {
+		t.Fatalf("unassigned = %+v; want only %s, on the board, with its creator and tag", loose, open)
+	}
+
+	webGet(t, h, "/api/unassigned?all=1", &loose)
+	got := map[string]web.Ticket{}
+	for _, c := range loose {
+		got[c.ID] = c
+	}
+	if len(loose) != 3 {
+		t.Fatalf("all = %+v; want 3 tickets", loose)
+	}
+	if c := got[logged]; c.Place != "logbook" || c.FiledAt.Format("2006-01-02") != "2026-10-01" {
+		t.Errorf("logged = %+v; want place logbook, filed 2026-10-01", c)
+	}
+	if c := got[rejected]; c.Place != "archive" || c.Rejected != "wontfix" || c.FiledAt.Format("2006-01-02") != "2026-10-02" {
+		t.Errorf("rejected = %+v; want place archive, rejected wontfix, filed 2026-10-02", c)
+	}
+
+	var d web.TicketDetail
+	webGet(t, h, "/api/tickets/"+logged, &d)
+	if d.Place != "logbook" || d.Rejected != nil {
+		t.Errorf("logged detail = %+v", d)
+	}
+	webGet(t, h, "/api/tickets/"+rejected, &d)
+	if d.Place != "archive" || d.Rejected == nil || d.Rejected.Kind != "wontfix" || d.Rejected.Why != "nobody needs it" {
+		t.Errorf("rejected detail = %+v; want its rejection", d)
+	}
+	webGet(t, h, "/api/tickets/"+open, &d)
+	if d.Place != "board" {
+		t.Errorf("open detail place = %q", d.Place)
 	}
 }

@@ -4,7 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"sort"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/BeMuCa/jaira/core/epic"
 	"github.com/BeMuCa/jaira/core/link"
@@ -43,35 +47,154 @@ func (w *webSource) board() ([]*ticket.Ticket, *link.Index, []*epic.Epic, error)
 func (w *webSource) Epics() ([]web.Epic, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	_, ix, epics, err := w.board()
+	all, ix, epics, err := w.board()
 	if err != nil {
 		return nil, err
 	}
+	cards := w.cards(all, ix)
 	out := make([]web.Epic, 0, len(epics))
 	for _, e := range epics {
 		p := epic.Count(e, ix)
 		v := web.Epic{Name: e.Name, Title: e.Title, Description: e.Description, Done: p.Done, Total: p.Total}
 		for _, t := range p.Tickets {
-			v.Tickets = append(v.Tickets, web.Ticket{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Lane, Done: t.Done, Direct: t.Direct})
+			c, ok := cards[t.ID]
+			if !ok {
+				c = web.Ticket{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Lane}
+			}
+			c.Done, c.Direct = t.Done, t.Direct
+			v.Tickets = append(v.Tickets, c)
 		}
 		out = append(out, v)
 	}
 	return out, nil
 }
 
-func (w *webSource) Unassigned() ([]web.Ticket, error) {
+func (w *webSource) Unassigned(everything bool) ([]web.Ticket, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	all, ix, epics, err := w.board()
 	if err != nil {
 		return nil, err
 	}
-	loose := epic.Unassigned(epics, ix, all)
-	out := make([]web.Ticket, 0, len(loose))
-	for _, t := range loose {
-		out = append(out, web.Ticket{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Status, Direct: true})
+	cards := w.cards(all, ix)
+	if !everything {
+		loose := epic.Unassigned(epics, ix, all)
+		out := make([]web.Ticket, 0, len(loose))
+		for _, t := range loose {
+			out = append(out, cards[t.ID])
+		}
+		return out, nil
 	}
-	return out, nil
+	// Every ticket no epic counts, the board's in its own order and the
+	// filed ones after them, most recently filed first.
+	var members []string
+	for _, e := range epics {
+		members = append(members, e.Members()...)
+	}
+	in := map[string]bool{}
+	for _, id := range epic.Covered(members, ix) {
+		in[id] = true
+	}
+	var out, filed []web.Ticket
+	for _, t := range all {
+		if !in[t.ID] {
+			out = append(out, cards[t.ID])
+		}
+	}
+	for _, c := range cards {
+		if !in[c.ID] && (c.Place == string(link.PlaceLogbook) || c.Place == string(link.PlaceArchive)) {
+			filed = append(filed, c)
+		}
+	}
+	sort.Slice(filed, func(i, j int) bool {
+		if !filed[i].FiledAt.Equal(filed[j].FiledAt) {
+			return filed[i].FiledAt.After(filed[j].FiledAt)
+		}
+		return filed[i].ID > filed[j].ID
+	})
+	return append(out, filed...), nil
+}
+
+// cards is every ticket this clone knows as the page lists it, by id: the
+// board and the refs from all, the logbook and the archive read here. A filed
+// ticket is read for its frontmatter only, as the link index reads it.
+func (w *webSource) cards(all []*ticket.Ticket, ix *link.Index) map[string]web.Ticket {
+	out := make(map[string]web.Ticket, len(all))
+	for _, t := range all {
+		place := link.PlaceBoard
+		if t.ReadOnly {
+			place = link.PlaceRef
+		}
+		c := card(t, place)
+		c.Done = ix.Satisfied(t.ID)
+		out[t.ID] = c
+	}
+	for id, path := range w.s.FiledAwayIDs() {
+		if _, ok := out[id]; ok {
+			continue // on the board and filed at once; the board's copy wins, as 'jaira show' has it
+		}
+		t, err := ticket.LoadHeader(path)
+		if err != nil {
+			continue
+		}
+		place := filedPlace(path)
+		c := card(t, place)
+		c.Done = ix.Satisfied(id)
+		if place == link.PlaceLogbook {
+			c.FiledAt, _ = ticket.LogbookFolderDay(filepath.Base(filepath.Dir(path)), time.Local)
+		} else if r := rejection(path); r != nil {
+			c.Rejected, c.FiledAt = r.Kind, r.At
+		}
+		out[id] = c
+	}
+	return out
+}
+
+func card(t *ticket.Ticket, place link.Place) web.Ticket {
+	return web.Ticket{
+		ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Status, Direct: true,
+		Place: string(place), Goal: t.Goal, Tags: t.Tags,
+		Creator: t.Creator, Assignee: t.Assignee, UpdatedBy: t.UpdatedBy,
+		CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt,
+	}
+}
+
+// filedPlace tells the archive from the logbook by the path a filed ticket
+// lies at.
+func filedPlace(path string) link.Place {
+	if strings.Contains(filepath.ToSlash(path), "/"+ticket.ArchiveSubdir+"/") {
+		return link.PlaceArchive
+	}
+	return link.PlaceLogbook
+}
+
+// rejection reads what 'jaira reject' wrote onto a ticket, nil when it was
+// never rejected. The keys are read straight off the frontmatter rather than
+// through ticket.Ticket, so a ticket rejected by a newer build shows its
+// reason here too.
+func rejection(path string) *web.Rejection {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	d, err := ticket.ParseDoc(raw)
+	if err != nil {
+		return nil
+	}
+	f, err := d.Fields()
+	if err != nil {
+		return nil
+	}
+	str := func(key string) string {
+		v, _, _ := f.Scalar(key)
+		return v
+	}
+	r := &web.Rejection{Kind: str("rejected-kind"), Why: str("rejected-why"), By: str("rejected-by")}
+	if r.Kind == "" {
+		return nil
+	}
+	r.At, _ = time.Parse(time.RFC3339, str("rejected-at"))
+	return r
 }
 
 // Ticket is one ticket opened on the page, read the way 'jaira show' reads
@@ -79,14 +202,24 @@ func (w *webSource) Unassigned() ([]web.Ticket, error) {
 func (w *webSource) Ticket(id string) (web.TicketDetail, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	t, _, err := w.s.LoadAnywhere(id)
+	t, path, err := w.s.LoadAnywhere(id)
 	if err != nil {
 		if errors.Is(err, ticket.ErrNotFound) {
 			return web.TicketDetail{}, fmt.Errorf("ticket %s: %w", id, web.ErrNotFound)
 		}
 		return web.TicketDetail{}, err
 	}
-	d := web.TicketDetail{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Status, Goal: t.Goal, Context: t.Context}
+	place := link.PlaceBoard
+	switch {
+	case t.ReadOnly:
+		place = link.PlaceRef
+	case w.s.FiledAwayIDs()[t.ID] == path:
+		place = filedPlace(path)
+	}
+	d := web.TicketDetail{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Status, Place: string(place), Goal: t.Goal, Context: t.Context}
+	if place == link.PlaceArchive {
+		d.Rejected = rejection(path)
+	}
 	for _, it := range t.DoDItems {
 		d.DoD = append(d.DoD, web.Check{Text: it.Text, Done: it.Checked()})
 	}

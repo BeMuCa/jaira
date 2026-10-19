@@ -38,6 +38,14 @@ because it follows a member has no line of its own and cannot be dragged.
 Click a ticket to read it: goal, context, definition of done and every note,
 rendered as markdown, without leaving the page. Nothing is edited there.
 
+The bar above both columns filters them: a search over title, goal and id, a
+lane, a tag, a person (who created it, is assigned it or changed it last), and
+a date range on created, last changed or filed away. "All tickets ever" adds
+every ticket in no epic that ever existed — finished, only on a ref, or filed
+in the logbook or the archive — each saying where it lies; a filed ticket
+opens but cannot be dragged. The filters stay in the address, so a link shows
+the same list.
+
 There is no server: the page lives as long as this command runs, and it reads
 and writes the same refs the CLI does. A drop writes the epic's ref and pushes
 it at once; every minute the command fetches, so what a teammate sorted arrives

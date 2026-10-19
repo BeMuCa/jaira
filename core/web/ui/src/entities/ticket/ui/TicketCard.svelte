@@ -1,5 +1,8 @@
 <script lang="ts">
-  import type { Ticket } from '../model/types';
+  import type { Place, Ticket } from '../model/types';
+
+  // Where a ticket off the board lies, as the card says it.
+  const PLACES: Record<Place, string> = { board: 'on the board', ref: 'only on its ref', logbook: 'in the logbook', archive: 'in the archive' };
 
   let { ticket, draggable = false, ondragstart, onopen }: {
     ticket: Ticket;
@@ -20,6 +23,9 @@
   <span class="handle">{ticket.handle}</span>
   <button class="title" onclick={() => onopen?.(ticket.id)}>{ticket.title}</button>
   <span class="lane">{ticket.lane}</span>
+  {#if ticket.place && ticket.place !== 'board'}
+    <span class="where">{PLACES[ticket.place]}{#if ticket.rejected} · rejected: {ticket.rejected}{/if}</span>
+  {/if}
   {#if !ticket.direct}<span class="via">via follows/parent</span>{/if}
 </li>
 
@@ -40,7 +46,7 @@
   .title { all: unset; cursor: pointer; overflow-wrap: anywhere; }
   .title:hover, .title:focus-visible { text-decoration: underline; }
   .lane { font-size: 0.8rem; color: var(--muted); }
-  .via { grid-column: 2 / -1; font-size: 0.75rem; color: var(--muted); }
+  .via, .where { grid-column: 2 / -1; font-size: 0.75rem; color: var(--muted); }
   .done .title { text-decoration: line-through; color: var(--muted); }
   .indirect { border-style: dashed; }
 </style>
