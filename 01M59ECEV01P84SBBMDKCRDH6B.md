@@ -23,11 +23,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T20:31:46Z
+updated-at: 2026-10-19T20:32:26Z
 updated-by: Alexander Sacharov
 mode: conversational
-claimed-by: DESKTOP-RFTCH11-25649
-claimed-at: 2026-10-19T18:18:27Z
+claimed-by: DESKTOP-RFTCH11-52791
+claimed-at: 2026-10-19T20:32:26Z
 outcome-what: "core/epic: Body/Text/SetBody/Set with Patch+Base, Merge keeps both sides of a field in a marked block; CLI 'jaira epic set' and body in 'epic show'/--json; web PATCH /api/epics/{name} (409 on stale base) with an Edit form and the text rendered folded under the description"
 outcome-why: "An epic could not be changed after it was created, and its markdown text below the frontmatter was invisible in the web (requirementsgenie epic anforderungen-im-chat)"
 outcome-resolves: "DoD 1-8: Set/SetBody keep member lines (TestSetKeepsTheMembers), epic set exits 5/2 (TestEpicSetRewritesTheTextNotTheMembers), web edit + 409 (TestWebRewritesAnEpicAndRefusesAStaleEditor), merge clash block (TestMergeKeepsBothSidesOfOneField), text rendered and folded (headless Chromium), release note, race suite green"
