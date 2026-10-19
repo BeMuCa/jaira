@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T07:44:02Z
+updated-at: 2026-10-19T07:44:06Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-70156
@@ -34,8 +34,8 @@ review-summary: "jaira web bekommt eine Filterleiste ueber beiden Spalten (Text 
 round: 4
 review-gaps: "1) Mehrere Boards: webSource.Lanes() laedt nur lane.Load(root) = Default-Board. Ein Ticket auf einem anderen Board (jaira create --board, seit S0EG0M moeglich) mit einer Lane, die das Default-Board nicht hat, bekommt var(--muted) — DoD 9 'jede Lane hat eine eigene Farbe' gilt also nur fuer Ein-Board-Repos. Heute hat dieses Repo nur 'default', daher nicht blockierend; die Notiz vom 06:54 nennt die Grenze. 2) Archiv-Tickets ohne rejected-at (live: 5 von 5 im Repo) haben kein filed_at und fallen bei Datum='filed away' aus jedem Bereich — so gewollt (decision 06:37), aber fuer den Nutzer unsichtbar. 3) cards() liest bei jedem /api/epics und /api/unassigned alle ~134 abgelegten Header, Archivdateien zusaetzlich ein zweites Mal — gemessen klein, waechst mit dem Logbuch. 4) Kein JS-Test fuer filter.ts im Repo (nur ein Wegwerf-Skript laut Notiz); Go-Seite durch TestWebListsFiledTicketsAndOpensThem, TestWebListsLanesInBoardOrderWithKind, TestUnassignedAllReachesTheSource gedeckt."
 test-verdict: "pass: go vet RC=0, go test -count=1 -race ./... RC=0, dist matches npm ci+build; DoD 10/11 exercised in Playwright (delayed ?all=1 race, hand-unfolded epic across filter set/clear)"
-review-verdict: "Der Diff erfuellt alle neun DoD-Punkte; Outcome und Diff stimmen ueberein. Keine Defekte, die eine Rueckgabe rechtfertigen - nur die zwei kleinen UI-Unschoenheiten aus review-gaps. Unsicher bleibt nur die Optik im Browser, die ich nicht selbst angesehen habe (testing hat Headless-Chrome/Playwright-Laeufe notiert)."
-review-round: 3
+review-verdict: "Der Diff erfuellt DoD 1-11; keine Fehler gefunden. go vet und go test (core/web, core/link, internal/cli) gruen, npm ci+build laesst dist unveraendert, live auf diesem Repo: /api/lanes in Board-Reihenfolge mit richtigen kinds, ?all=1 = 221 Karten (129 logbook, 5 archive, 59 ref, 28 board), keine Duplikate. Einzige echte Einschraenkung: Lane-Farben kennen nur das Default-Board (Gap 1). Die Optik im Browser habe ich nicht selbst angesehen, nur die API."
+review-round: 4
 review-check: "1. cd /home/alex/projects/.worktrees/jaira-tpckzb && go run ./cmd/jaira web  2. die ausgegebene Adresse im Browser oeffnen: ueber beiden Spalten steht eine Leiste Search / Lane / Tag / Person / Date / 'All tickets ever'  3. 'web' ins Suchfeld tippen: beide Spalten schrumpfen, die Adresszeile zeigt ?q=web  4. Haken 'All tickets ever' setzen: links erscheinen viele Tickets mit Zusatzzeile 'in the logbook' bzw. 'in the archive', Adresse enthaelt all=1  5. Date auf 'filed away', von und bis 2026-10-17: es bleiben 8NHD8Q und S0EG0M  6. 8NHD8Q anklicken: Dialog zeigt farbiges Lane-Badge 'done' (gruen) und 'in the logbook'  7. eine logbook-Karte ziehen wollen: sie laesst sich nicht greifen  8. Lane-Auswahl oeffnen: jede Lane hat einen farbigen Punkt, dieselbe Farbe wie die Badges; Seite neu laden (F5): Filter und Farben sind unveraendert  9. Adresse kopieren, in neuem Tab oeffnen: dieselbe gefilterte Liste. Abgelehntes Archiv-Ticket: go test ./internal/cli -run TestWebListsFiledTicketsAndOpensThem (prueft kind und why)"
 ---
 
