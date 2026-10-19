@@ -26,7 +26,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T06:27:18Z
+updated-at: 2026-10-19T06:27:44Z
+updated-by: Alexander Sacharov
 ---
 
 # Ein Ticket laesst sich mit Grund ablehnen: jaira reject, und das Archiv sagt warum
