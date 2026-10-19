@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T18:18:37Z
+updated-at: 2026-10-19T18:19:54Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-25649
@@ -71,3 +71,4 @@ claimed-at: 2026-10-19T18:18:27Z
 - **2026-10-19 06:48 · Alexander Sacharov** — decision (Alex via Teamlead, 19.10.2026): Option 1. Gleichzeitige Aenderung desselben Feldes in epic.Merge: ours wird der Wert/Text, theirs bleibt darunter im Body in einem markierten Konfliktblock '<!-- jaira: gleichzeitig geaendert -->' erhalten - gilt fuer Body, Titel und description. Nichts geht still verloren.
 - **2026-10-19 18:17 · Alexander Sacharov** — decision (Alex via Teamlead, 19.10.2026): nicht auf master warten. feat/crdh6b wird auf feat/tpckzb aufgebaut (Worktree steht heute auf 7f008dec = master, noch kein eigener Commit: zuerst 'git reset --keep feat/tpckzb'). Code ab jetzt erlaubt. PR von CRDH6B erst nach dem PR von TPCKZB oeffnen; im Push-Bericht sagen, dass der Branch gestapelt ist.
 - **2026-10-19 18:18 · Alexander Sacharov** — parent session: jaira-20
+- **2026-10-19 18:19 · Alexander Sacharov** — Branch auf feat/tpckzb gestapelt per 'git merge --ff-only feat/tpckzb' (reset --keep wurde vom Auto-Mode verweigert; ff ist gleichwertig, weil HEAD=master Vorfahre von feat/tpckzb war). Stand 0f1b2e4d.
