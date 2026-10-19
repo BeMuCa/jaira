@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T07:32:12Z
+updated-at: 2026-10-19T07:32:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9569
 claimed-at: 2026-10-19T07:04:10Z
@@ -94,3 +94,4 @@ review-check: "0. Zuerst die liegengebliebenen optimize-Aenderungen committen: g
 - **2026-10-19 06:51 · Alexander Sacharov** — in-progress (Runde 2): beide critique-Befunde umgesetzt - archivedRejections nimmt ticket.LoadHeader; Store.Reject prueft das Archiv-Ziel vor dem Mutate (Test TestRejectIntoAnOccupiedArchiveWritesNothing). go test ./internal/... ./core/... -race exit 0.
 - **2026-10-19 06:56 · Alexander Sacharov** — critique (Runde 2): beide Befunde aus Runde 1 umgesetzt (4e6d036e) - nichts mehr. Beobachtet, nicht als Befund (bricht keine DoD): Store.Reject ruft jetzt s.resolve vor Mutate; fuer ein Ticket, das nur auf seinem Ref liegt, kommt damit 'not found' statt Mutates 'pull it first' - die CLI laedt vorher mit s.Load und meldet das schon dort.
 - **2026-10-19 07:04 · Alexander Sacharov** — review (fresh context): DoD 1-6 erfuellt, per Hand geprueft, Tests -race gruen. Offen fuer den Menschen: optimize-Aenderungen (store.go archiveTarget, model.go, reject_test.go) sind uncommittet - Commit-Zeile steht in review-check Schritt 0. Kosmetisch: mehrzeiliger --why bricht die Einrueckung in 'jaira archive'.
+- **2026-10-19 07:32 · Alexander Sacharov** — decision (Alex via jaira-a7): beide review-gaps hier beheben - (1) ein mehrzeiliger --why wird beim Schreiben auf eine Zeile gefaltet, damit 'jaira archive' eingerueckt bleibt; (2) --duplicate-of auf das Ticket selbst ist Exit 2 und wird vor dem Commit-Stempeln geprueft. Eine kombinierte Commit-Zeile (optimize + diese Fixes) an jaira-a7.
