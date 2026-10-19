@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:58:55Z
+updated-at: 2026-10-19T06:58:59Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -34,6 +34,8 @@ review-summary: "jaira web bekommt eine Filterleiste ueber beiden Spalten (Text 
 round: 3
 review-gaps: "Keine Luecke gegen die DoD 1-9. Klein, nicht blockierend: 1) ReviewPage.svelte load(): schaltet man 'All tickets ever' schnell um, kann eine spaete Antwort von ?all=1 eine neuere von ?all=0 ueberschreiben (kein Abbruch/Versionszaehler) - die Liste zeigt dann abgelegte Tickets bei ausgeschaltetem Schalter bis zum naechsten Minuten-Reload. 2) EpicList <details open={expanded}>: Filter setzen und wieder leeren klappt auch Epics zu, die man von Hand aufgeklappt hatte. 3) Epics() liest jetzt bei jedem Minuten-Reload alle abgelegten Header (cards) - in den Notizen gemessen 0,08 s, akzeptiert. 4) Lane-Farben haengen an der Reihenfolge der Lanes; in Notiz und Release-Note offen benannt. Kein JS-Test fuer filter.ts im Repo (nur Wegwerf-Skript laut Notiz). Geprueft: go vet, go test core/web internal/cli core/link gruen; npm run build laesst core/web/ui/dist unveraendert."
 test-verdict: "pass: go vet ./... RC=0, go test -count=1 -race ./... RC=0, dist matches npm ci && npm run build; DoD 1-9 verified in headless Chrome/Playwright on this repo and a scratch board with a rejected archive ticket"
+review-verdict: "Der Diff erfuellt alle neun DoD-Punkte; Outcome und Diff stimmen ueberein. Keine Defekte, die eine Rueckgabe rechtfertigen - nur die zwei kleinen UI-Unschoenheiten aus review-gaps. Unsicher bleibt nur die Optik im Browser, die ich nicht selbst angesehen habe (testing hat Headless-Chrome/Playwright-Laeufe notiert)."
+review-round: 3
 ---
 
 # Web-Seite: Filter und Tickets aus Logbook und Archiv anzeigen
