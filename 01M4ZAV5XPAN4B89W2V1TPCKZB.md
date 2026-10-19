@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:59:10Z
+updated-at: 2026-10-19T07:34:38Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -104,3 +104,8 @@ Ich nehme A: die Datenmenge ist klein, Filtern im Browser ist sofort, die URL tr
 - **2026-10-19 06:54 · Alexander Sacharov** — critique Runde 3 (neuer Umfang, Diff f91dfe19 vollstaendig gelesen): keine Befunde. Stehen gelassen: kind-Regel in web_source.go Lanes liest dieselben Felder wie lane.Facts/core/board/announce.go (requires-human-exit oder requires-question = Lane einer Person) — Facts() zu nehmen spart nichts, es ist dieselbe Abbildung; Lane-Filter bietet weiter die Lanes der Tickets an (choices), jetzt in Board-Reihenfolge, damit auch Lanes anderer Boards filterbar bleiben.
 - **2026-10-19 06:57 · Alexander Sacharov** — testing Runde 2: vet/race-Suite RC=0, dist unveraendert nach npm ci+build. Playwright: Lane-Farben bei zwei Ladevorgaengen identisch (backlog 240, todo 290, critique 215, testing 265, human/signoff 70, done 145); Lane-Filter ?lane=backlog setzt URL, Rahmen und Option in derselben Farbe wie das Badge; 8NHD8Q aus dem Logbuch oeffnet mit 'done in the logbook'; Scratch-Board: abgelehntes Archiv-Ticket zeigt 'Rejected: wontfix | Ada Lovelace, 10/2/26, 11:00 AM | nobody needs it' (Leerzeichen-Befund behoben), Karte nicht ziehbar.
 - **2026-10-19 06:59 · Alexander Sacharov** — review (fresh context): DoD 1-9 vom Diff gedeckt, Tests gruen, dist synchron. Zwei kleine Nachbesserungen moeglich, nicht blockierend: Wettlauf beim schnellen Umschalten von 'All tickets ever' (spaete Antwort ueberschreibt neuere) und details open={expanded} klappt Hand-Aufgeklapptes beim Leeren des Filters zu.
+- **2026-10-19 07:34 · Alexander Sacharov** — explain: Der Review findet keine Luecke gegen die DoD 1-9, nur zwei kleine UI-Unschoenheiten: Beim schnellen Umschalten von 'All tickets ever' kann eine spaete Antwort eine neuere ueberschreiben, und beim Leeren des Filters klappen Epics zu, die man von Hand geoeffnet hatte.
+Warum: Beides ist nur Kosmetik und kein Datenverlust - die Liste stimmt nach dem naechsten Minuten-Reload wieder, und die Epics lassen sich neu aufklappen. Offen bleibt nur die Optik im Browser, die der Reviewer nicht selbst angesehen hat.
+1) Ticket so annehmen und die zwei Unschoenheiten stehen lassen [accept]
+2) Zurueckgeben: Wettlauf in ReviewPage.svelte load() beheben und Epic-Aufklappzustand beim Leeren des Filters erhalten [give back]
+Empfehlung: 1 - Beide Punkte sind klein und nicht blockierend, der Diff erfuellt alle neun DoD-Punkte.
