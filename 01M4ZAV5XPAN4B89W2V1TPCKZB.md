@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T07:40:18Z
+updated-at: 2026-10-19T07:40:21Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -117,3 +117,4 @@ Empfehlung: 1 - Beide Punkte sind klein und nicht blockierend, der Diff erfuellt
 - **2026-10-19 07:38 · Alexander Sacharov** — Given back from signoff: 2) Zurueckgeben: Wettlauf in ReviewPage.svelte load() beheben und Epic-Aufklappzustand beim Leeren des Filters erhalten
 - **2026-10-19 07:38 · Alexander Sacharov** — cockpit: given back to the old worker - tab alive, cache warm for 23 more min, context 233k
 - **2026-10-19 07:40 · Alexander Sacharov** — Rueckgabe aus signoff umgesetzt (DoD 10, 11): load() zaehlt Ladevorgaenge, nur der zuletzt gestartete schreibt die Seite (auch Fehler und Lanes); EpicList merkt sich je Epic, was die Person von Hand auf-/zugeklappt hat, und zeigt das wieder, sobald kein Filter mehr eingrenzt — Toggles waehrend des erzwungenen Aufklappens zaehlen nicht. Proofs 3/4/7/8 auf neue Zeilen gesetzt.
+- **2026-10-19 07:40 · Alexander Sacharov** — critique Runde 4: nur die Reparatur 0f1b2e4d gelesen (ReviewPage load-Zaehler, EpicList unfolded) — keine Befunde.
