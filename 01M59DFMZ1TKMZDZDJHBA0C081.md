@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T07:04:24Z
+updated-at: 2026-10-19T07:04:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9569
 claimed-at: 2026-10-19T07:04:10Z
@@ -93,3 +93,4 @@ review-check: "0. Zuerst die liegengebliebenen optimize-Aenderungen committen: g
 - **2026-10-19 06:50 · Alexander Sacharov** — critique (Runde 1): 2 Befunde - (1) archive.go archivedRejections -> ticket.LoadHeader statt eigenem ReadFile/ParseDoc/Decode; (2) Store.Reject: Archiv-Ziel vor dem Mutate pruefen, sonst bleibt bei Archive-Fehler ein abgelehntes Ticket auf dem Board. Stehen gelassen: questionLane in reject.go (kein bestehender Helfer fuer die Frage-Lane gefunden); show --json mit immer vorhandenem rejected-Block (wie outcome); TUI-R ohne StampCommits (wie x/archiveSelected).
 - **2026-10-19 06:51 · Alexander Sacharov** — in-progress (Runde 2): beide critique-Befunde umgesetzt - archivedRejections nimmt ticket.LoadHeader; Store.Reject prueft das Archiv-Ziel vor dem Mutate (Test TestRejectIntoAnOccupiedArchiveWritesNothing). go test ./internal/... ./core/... -race exit 0.
 - **2026-10-19 06:56 · Alexander Sacharov** — critique (Runde 2): beide Befunde aus Runde 1 umgesetzt (4e6d036e) - nichts mehr. Beobachtet, nicht als Befund (bricht keine DoD): Store.Reject ruft jetzt s.resolve vor Mutate; fuer ein Ticket, das nur auf seinem Ref liegt, kommt damit 'not found' statt Mutates 'pull it first' - die CLI laedt vorher mit s.Load und meldet das schon dort.
+- **2026-10-19 07:04 · Alexander Sacharov** — review (fresh context): DoD 1-6 erfuellt, per Hand geprueft, Tests -race gruen. Offen fuer den Menschen: optimize-Aenderungen (store.go archiveTarget, model.go, reject_test.go) sind uncommittet - Commit-Zeile steht in review-check Schritt 0. Kosmetisch: mehrzeiliger --why bricht die Einrueckung in 'jaira archive'.
