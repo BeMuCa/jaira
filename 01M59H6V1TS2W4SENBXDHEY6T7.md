@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T12:48:48Z
+updated-at: 2026-10-19T12:48:52Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79475
 claimed-at: 2026-10-19T12:47:47Z
@@ -49,3 +49,4 @@ claimed-at: 2026-10-19T12:47:47Z
 ## Progress
 - **2026-10-19 12:47 · Alexander Sacharov** — parent session: jaira-8b
 - **2026-10-19 12:48 · Alexander Sacharov** — decision (worker, keine offenen Entscheidungen fuer Alex): Log nach <StateDir>/web.log (pro Arbeitsbaum unter ~/.jaira/state/..., ausserhalb des Repos - landet nie in einem Commit); beim Start rotiert ab 1 MB nach web.log.1, damit es nicht waechst. Panic: eigenes recover-Middleware (net/http faengt Handler-Panics zwar selbst, schreibt aber nur nach stderr und kappt die Verbindung ohne 500) plus recover in Loop/FetchNow, denn eine Panic dort beendet den Prozess. Seite: Herzschlag auf /api/sync alle 10 s; scheitert er, ein Banner 'jaira web antwortet nicht mehr seit HH:MM' oben, verschwindet beim naechsten Erfolg und laedt dann neu. Fetch-Kind bekommt einen Timeout (2 min), damit ein haengender git fetch nicht still stehenbleibt.
+- **2026-10-19 12:48 · Alexander Sacharov** — Befund 19.10. 14:48: Alex' heutiger 'jaira web' ist PID 92131 (gestartet 09:50, cwd requirementsgenie-harness, Port 58300) - nicht mehr PID 17706 von 08:58, der lief also zwischen 09:32 und 09:50 nicht weiter oder wurde neu gestartet. 92131 antwortet auf /api/sync, /api/epics, /api/unassigned und / mit 200, last_fetch 14:48. Ursache ohne Log nicht feststellbar.
