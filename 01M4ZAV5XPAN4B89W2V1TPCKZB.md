@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T07:39:56Z
+updated-at: 2026-10-19T07:39:59Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -63,7 +63,8 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-tpckzb && go run ./cmd
   proof: core/web/ui/src/entities/lane/model/colour.svelte.ts laneColour (board order via GET /api/lanes, internal/cli/web_source.go Lanes, TestWebListsLanesInBoardOrderWithKind); LaneBadge in TicketCard/TicketDetails, FilterBar lane select; checked light+dark in headless Chrome
 - [x] Schnelles Umschalten von 'All tickets ever': nur die Antwort des letzten Ladens gilt, eine spaete aeltere ueberschreibt sie nicht
   proof: core/web/ui/src/pages/review/ui/ReviewPage.svelte:54-59 only the last load writes; Playwright: ?all=1 delayed 1.5 s, switch on then off, no logbook card afterwards
-- [ ] Ein von Hand aufgeklapptes Epic bleibt aufgeklappt (und ein zugeklapptes zu), nachdem ein Filter gesetzt und wieder geleert wurde
+- [x] Ein von Hand aufgeklapptes Epic bleibt aufgeklappt (und ein zugeklapptes zu), nachdem ein Filter gesetzt und wieder geleert wurde
+  proof: core/web/ui/src/widgets/epic-list/ui/EpicList.svelte:20,39 unfolded by hand per epic; Playwright: unfolded stays open and folded stays closed after a filter is set and cleared
 
 ## Options
 
