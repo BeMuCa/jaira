@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T07:39:50Z
+updated-at: 2026-10-19T07:39:53Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -58,7 +58,7 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-tpckzb && go run ./cmd
 - [x] Ein abgelehntes Ticket im Archiv zeigt rejected-kind und rejected-why
   proof: internal/cli/web_source.go:166 rejection(); TicketDetails.svelte:24; TestWebListsFiledTicketsAndOpensThem checks kind and why
 - [x] Die gesetzten Filter stehen in der URL; ein Link zeigt dieselbe gefilterte Liste
-  proof: core/web/ui/src/features/filter-tickets/model/filter.ts fromQuery/toQuery; ReviewPage.svelte:26 reads, :40 writes via history.replaceState
+  proof: core/web/ui/src/features/filter-tickets/model/filter.ts fromQuery/toQuery; ReviewPage.svelte:27 reads, :41 writes via history.replaceState
 - [x] Jede Lane hat im Web eine eigene Farbe — dieselbe am Lane-Badge jedes Tickets und im Lane-Filter; die Farbe einer Lane ist stabil (gleiche Lane, gleiche Farbe bei jedem Laden)
   proof: core/web/ui/src/entities/lane/model/colour.svelte.ts laneColour (board order via GET /api/lanes, internal/cli/web_source.go Lanes, TestWebListsLanesInBoardOrderWithKind); LaneBadge in TicketCard/TicketDetails, FilterBar lane select; checked light+dark in headless Chrome
 - [ ] Schnelles Umschalten von 'All tickets ever': nur die Antwort des letzten Ladens gilt, eine spaete aeltere ueberschreibt sie nicht
