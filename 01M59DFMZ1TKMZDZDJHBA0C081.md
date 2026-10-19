@@ -1,7 +1,7 @@
 ---
 id: 01M59DFMZ1TKMZDZDJHBA0C081
 title: "Ein Ticket laesst sich mit Grund ablehnen: jaira reject, und das Archiv sagt warum"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T06:51:32Z
+updated-at: 2026-10-19T06:51:35Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16821
 claimed-at: 2026-10-19T06:27:46Z
