@@ -50,9 +50,7 @@
 
   async function load() {
     try {
-      let lanes;
-      [epics, unassigned, sync, lanes] = await Promise.all([fetchEpics(), fetchUnassigned(filter.all), fetchSync(), fetchLanes()]);
-      setLanes(lanes);
+      [epics, unassigned, sync] = await Promise.all([fetchEpics(), fetchUnassigned(filter.all), fetchSync(), fetchLanes().then(setLanes)]);
       error = '';
     } catch (e) {
       error = (e as Error).message;

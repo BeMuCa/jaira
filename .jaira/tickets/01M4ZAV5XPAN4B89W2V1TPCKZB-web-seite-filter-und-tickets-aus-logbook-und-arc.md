@@ -1,7 +1,7 @@
 ---
 id: 01M4ZAV5XPAN4B89W2V1TPCKZB
 title: "Web-Seite: Filter und Tickets aus Logbook und Archiv anzeigen"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Auf der Seite von 'jaira web' sieht man jedes Ticket, das es je gab — offen, nur auf dem Ref, im Logbuch oder im Archiv — und filtert es nach Text, Lane, Tag, Person und Datum, mit den Filtern in der URL."
@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:54:20Z
+updated-at: 2026-10-19T06:55:27Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -32,7 +32,7 @@ outcome-why: "Alex will jedes Ticket, das es je gab, auf der Seite sehen und nac
 outcome-resolves: "GET /api/unassigned?all=1 und neue Kartenfelder (web_source.go cards/rejection), Filtermodell features/filter-tickets mit URL-Abgleich, TestWebListsFiledTicketsAndOpensThem; DoD 1-8 mit Proofs"
 review-summary: none
 round: 3
-review-gaps: "dropped the re-exports nobody imports (Place, Rejection from entities/ticket; DateField, Filter, emptyFilter from features/filter-tickets) — dist unchanged. Searched for duplicates: logbook date reuses ticket.LogbookFolderDay, place uses link.PlaceOf, nothing in shared/lib formats a local yyyy-mm-dd, so day() in filter.ts stays. Left: cards() reads every filed header on each /api/epics and /api/unassigned (0.08-0.19 s for 222 tickets, once a minute) and rejection() rereads archive files; both small, critique let them stand."
+review-gaps: "Runde 2: webSource.Lanes iteriert set.Lanes statt IDs()+Get; ReviewPage reicht fetchLanes() per .then(setLanes) durch statt einer untypisierten Hilfsvariable; ungenutzten Re-Export Lane aus entities/lane entfernt. Gesucht: keine bestehende Lane-Farbe im Web; die TUI-laneShade ist ein Wechselschatten, kein Farbschema, also keine Doppelung. Gelassen: GET /api/lanes laeuft bei jedem Minuten-Reload mit (lane.Load, billig)."
 test-verdict: "fail: DoD 9 (Lane-Farben, von Alex am 19.10. nachgereicht) fehlt; DoD 1-8 gruen"
 ---
 
@@ -98,3 +98,4 @@ Ich nehme A: die Datenmenge ist klein, Filtern im Browser ist sofort, die URL tr
 - **2026-10-19 06:48 · Alexander Sacharov** — decision (Alex, 19.10.2026 via teamlead jaira-a7): 'lanes must be told apart by colour' im Web. Vorgaben: kein neues Lane-Frontmatter-Feld ohne Rueckfrage; Quelle selbst waehlen (z.B. feste Palette nach Lane-Reihenfolge des Boards, terminal/human erkennbar); lesbar in hellem und dunklem Theme. Heute: .jaira/lanes/*.md tragen keine Farbe; die TUI wechselt nur einen Lane-Schatten (internal/tui/view.go:656 laneShade).
 - **2026-10-19 06:49 · Alexander Sacharov** — testing Runde 1: go vet ./... RC=0, go test -count=1 -race ./... RC=0, npm ci && npm run build laesst dist unveraendert (CI-Check web-dist). Headless-Chrome auf diesem Repo: ?all=1&q=web&person=Alexander+Sacharov zeigt 3 Karten mit Ort (ref, logbook); ?all=1&date=filed&from=2026-10-17&to=2026-10-17 zeigt genau 8NHD8Q und S0EG0M (Ordner as-20261017). Playwright auf Scratch-Board mit abgelehntem Archiv-Ticket: Schalter setzt ?all=1, Karte nicht ziehbar, Dialog zeigt 'in the archive' und 'Rejected: wontfix | Ada Lovelace,10/2/26 | nobody needs it'. Befunde: 1) DoD 9 (Lane-Farben) ist neu und offen. 2) TicketDetails.svelte: zwischen rejected.by und Datum fehlt das Leerzeichen nach dem Komma (Svelte schneidet das Leerzeichen am Ende des {#if}-Blocks ab) — als {', '} schreiben.
 - **2026-10-19 06:54 · Alexander Sacharov** — decision (worker, DoD 9): Farbquelle = Lane-Reihenfolge des Boards, kein Frontmatter-Feld. GET /api/lanes liefert Lanes in Board-Reihenfolge mit kind (work/human/terminal/parking; human = requires-human-exit ODER requires-question, wie der Agent-Block in CLAUDE.md es markiert). Die Seite faerbt in oklch: Arbeits-Lanes bekommen der Reihe nach 9 Farbtoene (240,165,290,110,340,215,190,265,315 — wechselnd, damit Nachbarn sich unterscheiden; in-progress bewusst magenta statt blau, weil backlog blau ist), die 10. grau, dann wieder von vorn; human = amber 70, terminal = gruen 145, parking = rot 25. Helligkeit/Chroma aus dem Theme (--lane-l/--lane-c in app/styles.css), Licht und Dunkel per Screenshot geprueft. Eine Lane eines anderen Boards bleibt gedaempft (--muted). Grenze: aendert jemand die Lane-Reihenfolge, wechseln die Farben der Arbeits-Lanes mit. Ausserdem: Epic-Karten klappen ihre Ticketliste auf, solange ein Filter eingrenzt (sonst blieben Treffer zugeklappt); testing-Befund 2 (Komma ohne Leerzeichen) behoben.
+- **2026-10-19 06:54 · Alexander Sacharov** — critique Runde 3 (neuer Umfang, Diff f91dfe19 vollstaendig gelesen): keine Befunde. Stehen gelassen: kind-Regel in web_source.go Lanes liest dieselben Felder wie lane.Facts/core/board/announce.go (requires-human-exit oder requires-question = Lane einer Person) — Facts() zu nehmen spart nichts, es ist dieselbe Abbildung; Lane-Filter bietet weiter die Lanes der Tickets an (choices), jetzt in Board-Reihenfolge, damit auch Lanes anderer Boards filterbar bleiben.

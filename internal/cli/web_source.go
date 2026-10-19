@@ -230,8 +230,7 @@ func (w *webSource) Lanes() ([]web.Lane, error) {
 		return nil, err
 	}
 	var out []web.Lane
-	for _, id := range set.IDs() {
-		l, _ := set.Get(id)
+	for _, l := range set.Lanes {
 		kind := web.LaneWork
 		switch {
 		case l.Terminal:
