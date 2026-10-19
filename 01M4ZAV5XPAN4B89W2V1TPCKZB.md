@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:46:36Z
+updated-at: 2026-10-19T06:46:54Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -32,6 +32,7 @@ outcome-why: "Alex will jedes Ticket, das es je gab, auf der Seite sehen und nac
 outcome-resolves: "GET /api/unassigned?all=1 und neue Kartenfelder (web_source.go cards/rejection), Filtermodell features/filter-tickets mit URL-Abgleich, TestWebListsFiledTicketsAndOpensThem; DoD 1-8 mit Proofs"
 review-summary: none
 round: 2
+review-gaps: "dropped the re-exports nobody imports (Place, Rejection from entities/ticket; DateField, Filter, emptyFilter from features/filter-tickets) — dist unchanged. Searched for duplicates: logbook date reuses ticket.LogbookFolderDay, place uses link.PlaceOf, nothing in shared/lib formats a local yyyy-mm-dd, so day() in filter.ts stays. Left: cards() reads every filed header on each /api/epics and /api/unassigned (0.08-0.19 s for 222 tickets, once a minute) and rejection() rereads archive files; both small, critique let them stand."
 ---
 
 # Web-Seite: Filter und Tickets aus Logbook und Archiv anzeigen
