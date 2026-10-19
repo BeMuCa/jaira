@@ -1,7 +1,7 @@
 ---
 id: 01M59DFMZ1TKMZDZDJHBA0C081
 title: "Ein Ticket laesst sich mit Grund ablehnen: jaira reject, und das Archiv sagt warum"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T06:50:07Z
+updated-at: 2026-10-19T06:50:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16821
 claimed-at: 2026-10-19T06:27:46Z
@@ -37,6 +37,7 @@ outcome-resolves: "DoD 1-3: internal/cli/reject.go + Store.Reject, Tests in inte
 review-summary: |-
   internal/cli/archive.go archivedRejections liest jede Datei voll mit os.ReadFile+ParseDoc+Decode; core/ticket/store.go LoadHeader ist genau fuer das Durchkaemmen eines Ordners gebaut (liest nur das Frontmatter) - archivedRejections soll ticket.LoadHeader(path) nehmen
   core/ticket/store.go Store.Reject schreibt die rejected-* Felder (Mutate) und archiviert erst danach; scheitert Archive (z.B. gleicher Dateiname schon in .jaira/archive/), bleibt ein als abgelehnt markiertes Ticket auf dem Board - vor dem Mutate pruefen, ob das Ziel im Archiv frei ist, wie Archive es tut
+round: 2
 ---
 
 # Ein Ticket laesst sich mit Grund ablehnen: jaira reject, und das Archiv sagt warum
