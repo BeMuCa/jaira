@@ -4,7 +4,7 @@ title: "Web-Seite: Filter und Tickets aus Logbook und Archiv anzeigen"
 status: backlog
 ready: true
 creator: Alexander Sacharov
-goal: "Auf der Seite von 'jaira web' lassen sich Tickets filtern, und abgelegte Tickets aus .jaira/logbook/ und .jaira/archive/ sind dort sichtbar."
+goal: "Auf der Seite von 'jaira web' sieht man jedes Ticket, das es je gab — offen, nur auf dem Ref, im Logbuch oder im Archiv — und filtert es nach Text, Lane, Tag, Person und Datum, mit den Filtern in der URL."
 context: |-
   Was heute fehlt:
   - 'jaira web' zeigt nur offene Tickets: die Liste 'Tickets in no epic' und die Epics (core/web/web.go, Routen /api/epics und /api/unassigned).
@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:37:40Z
+updated-at: 2026-10-19T06:37:43Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
