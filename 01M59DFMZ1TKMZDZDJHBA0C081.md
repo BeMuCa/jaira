@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T18:22:35Z
+updated-at: 2026-10-19T18:22:51Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-24398"
 claimed-at: 2026-10-19T18:18:21Z
@@ -36,7 +36,7 @@ outcome-why: "Ein abgelehntes Ticket sah im Archiv genauso aus wie ein weggeraeu
 outcome-resolves: "DoD 1-3: internal/cli/reject.go + Store.Reject, Tests in internal/cli/reject_test.go; DoD 4: modeReject in internal/tui/model.go, internal/tui/reject_test.go; DoD 5: archivedRejections/rejectionLine, unreject; DoD 6: release note, agent block, Skill, go test ./... -race gruen; DoD 7-9: Faltung, Selbst-Duplikat, R stempelt; DoD 10: rejected-duplicate-of + unreject."
 review-summary: "none"
 round: 5
-review-gaps: "Blockierend: nichts. (1) Die Aenderungen aus optimize, Runde 3 und Runde 4 (store.go, reject.go, reject_test.go, model.go, tui/reject_test.go, Release-Note) sind weiter uncommittet - ohne Commit fehlen sie im Merge, siehe review-check Schritt 0. (2) Kosmetisch, nicht DoD: restore laesst den related-Eintrag aus --duplicate-of stehen; R stempelt mit dem beim Druecken gehaltenen t (Mutate liest aber frisch, MergeCommits vereinigt, also kein Verlust). Der entfernte nil-Guard in confirmReject ist sicher: modeReject wird nur ueber startReject betreten, das rejecting setzt."
+review-gaps: "none - kein bestehender Helfer zum Entfernen eines related-Eintrags (grep slices.Delete/remove/without in core/ticket, internal/cli); unreject nimmt den neuen Key ueber RejectedFields ab, kein Sonderweg; nichts verwaist"
 test-verdict: "pass (Runde 4): go clean -testcache; go test ./... -race RC=0; TestRejectOnTheBoardStampsCommits gruen und mit auskommentierter StampCommits-Zeile rot (FAIL) - die Pruefung haengt wirklich an der Aenderung. DoD 1-8 wie Runde 3."
 review-verdict: "approve: DoD 1-9 im Diff belegt; go vet und go test ./... -race gruen; TestRejectOnTheBoardStampsCommits ohne die StampCommits-Zeile rot gesehen; per Binary nachgespielt: Selbst-Duplikat Exit 2, mehrzeiliger Grund als 'a b c' eingerueckt im Archiv, show zeigt rejected und den gestempelten Commit."
 review-round: 4
