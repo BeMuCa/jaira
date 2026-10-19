@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T07:39:16Z
+updated-at: 2026-10-19T07:40:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-24710
 claimed-at: 2026-10-19T07:38:42Z
@@ -102,3 +102,8 @@ review-check: "0. Erst committen, im Worktree /home/alex/projects/.worktrees/jai
 - **2026-10-19 07:33 · Alexander Sacharov** — in-progress (Runde 3, review-gaps): Grund wird in Store.Reject gefaltet (gilt fuer CLI und TUI) und in der CLI vor der Ausgabe; --duplicate-of wird in der CLI vor StampCommits aufgeloest (Exit 5 unbekannt, Exit 2 sich selbst), der Selbst-Check in Store.Reject bleibt fuer andere Aufrufer. DoD-2-Proof nachgezogen, weil die Exit-5-Pruefung von Store.Reject in die CLI gewandert ist. go clean -testcache; go test ./... -race RC=0.
 - **2026-10-19 07:34 · Alexander Sacharov** — critique (Runde 3): liest nur die Antwort auf die review-gaps. Beide Gaps behoben, Fix bricht keine DoD - none.
 - **2026-10-19 07:39 · Alexander Sacharov** — review (fresh context, Runde 2): approve. DoD 1-8 im Diff belegt; go vet, go test ./... -race gruen; end-to-end per Binary nachgespielt (Exit 3/2/5/2/0, archive, show, restore). Nicht blockierend: R auf dem Board stempelt keine Commits (wie x), CLI stempelt vor einem spaeter scheiternden Reject (wie archive), restore laesst related aus --duplicate-of stehen. Offen: optimize+Runde-3-Aenderungen uncommittet - Commit-Zeile in review-check Schritt 0.
+- **2026-10-19 07:40 · Alexander Sacharov** — explain: Review sagt approve: DoD 1-8 sind belegt, Tests und End-to-end laufen gruen. Offen sind nur kleine Punkte und die noch nicht committeten Aenderungen aus optimize und Runde 3.
+Warum: Ohne Commit fehlen store.go, reject.go, model.go und die Release-Note im Merge. Die kleinen Punkte (R stempelt keine Commits, restore laesst related stehen) brechen keine DoD und verhalten sich wie bei x und archive.
+1) Ticket annehmen, vorher die Aenderungen mit der Zeile aus review-check Schritt 0 committen [accept]
+2) Zurueckgeben: R auf dem Board soll auch Commits stempeln, damit abgelehnte Tickets eine commits-Liste haben [give back]
+Empfehlung: 1 - die Luecken sind nicht blockierend und bei x und archive schon genauso, ein eigener Umbau waere Scope-Wachstum.
