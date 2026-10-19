@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T12:55:12Z
+updated-at: 2026-10-19T12:55:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79475
 claimed-at: 2026-10-19T12:47:47Z
@@ -65,3 +65,4 @@ outcome-resolves: "Ein Ausfall von jaira web hinterlaesst jetzt seine Ursache in
 - **2026-10-19 12:48 · Alexander Sacharov** — Befund 19.10. 14:48: Alex' heutiger 'jaira web' ist PID 92131 (gestartet 09:50, cwd requirementsgenie-harness, Port 58300) - nicht mehr PID 17706 von 08:58, der lief also zwischen 09:32 und 09:50 nicht weiter oder wurde neu gestartet. 92131 antwortet auf /api/sync, /api/epics, /api/unassigned und / mit 200, last_fetch 14:48. Ursache ohne Log nicht feststellbar.
 - **2026-10-19 12:50 · Alexander Sacharov** — Fetch-Timeout verworfen (Note von vorhin): ein abgebrochenes 'jaira fetch' mitten im Ref-Schreiben ist riskanter als ein haengendes, und das DoD verlangt ihn nicht. Stattdessen faengt 'jaira web' jetzt SIGTERM und SIGHUP wie Ctrl-C und schreibt das Signal ins Log - ein geschlossenes Terminal ist ein Kandidat fuer Alex' Ausfall.
 - **2026-10-19 12:54 · Alexander Sacharov** — Live geprueft (Scratch-Binary, dieses Repo, Port 58411): Start druckt 'jaira web: log /home/alex/.jaira/state/jaira-hey6t7-888112df/web.log'; Log hat 'started on ... (pid ...)', 'GET /api/tickets/NOPE: 404 {...not found}', 'stopped by signal hangup'. DoD 4 bleibt offen: die Ursache braucht einen Logauszug von Alex' eigenem Lauf mit dem neuen Build.
+- **2026-10-19 12:55 · Alexander Sacharov** — Regel von Alex (via jaira-8b, 19.10.): keine anderen Projektnamen und keine privaten Daten (Home-Pfade, PIDs, Hostnamen) in Code, Tests, Commits, Release Notes oder Notes. Neutrale Beispiele nehmen (temporaeres Repo, example.com). Commits enden mit 'AlSa', kein Co-Authored-By.
