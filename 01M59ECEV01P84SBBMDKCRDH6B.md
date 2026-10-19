@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T20:42:06Z
+updated-at: 2026-10-19T20:43:02Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-52791
@@ -107,3 +107,4 @@ round: 2
 - **2026-10-19 20:31 · Alexander Sacharov** — testing: alles gruen, siehe test-verdict. Einziger Konsolen-Eintrag im Browser ist der erwartete 409.
 - **2026-10-19 20:36 · Alexander Sacharov** — Abnahme-Seite: https://claude.ai/artifact/FTJQKnj5LLAFS1RzzGfMbm (4 Personen-Schritte statt 9 review-check-Schritten, 3 Maschinen-Checks gruen). Wegwerf-Board dafuer unter ~/.claude/acceptance/jaira/feat-crdh6b/board, Binary daneben. Review-Luecken offen fuer Alex: (1) eine Textzeile '- <volle 26-stellige ULID>' wird als Mitglied gelesen; (2) nach einem 409 bleibt das Formular auf dem alten base, nur Cancel+Edit hilft, Getipptes geht dabei verloren.
 - **2026-10-19 20:42 · Alexander Sacharov** — decision (Alex via Teamlead, 19.10.2026): aus signoff zurueck nach in-progress. Beide Review-Luecken werden in DIESEM Ticket gefixt (DoD 9 ULID-Zeile im Text, DoD 10 409-Schleife im Formular), kein Folgeticket. Gleicher Worker (jaira-crdh6b-bb, Cache warm, 255k/1000k).
+- **2026-10-19 20:43 · Alexander Sacharov** — decision (Worker) DoD 9: SetBody schreibt eine Textzeile, die ParseMember als Mitglied laese ('- <ULID>'), als '* <ULID> ...' - in Markdown derselbe Aufzaehlungspunkt, fuer FromBytes aber Text. Verworfen: Mitglieder nur noch unter einer Marke/Ueberschrift lesen - das aendert das Dateiformat fuer handgeschriebene Epics mit Mitgliedern zwischen Prosa (TestEditsKeepEveryOtherLine). Folge: im Formular steht die Zeile danach mit '*'. DoD 10: nach 409 laedt die Seite neu, das Formular nimmt den neuen Stand als base, behaelt das Getippte, nennt die Felder, die sich geaendert haben, und das zweite Save geht durch. Logik als reine TS-Funktionen in features/edit-epic/model/edit.ts, getestet mit node --test (--experimental-strip-types), 'npm test' + CI-Schritt im web-dist-Job, weil das Repo bisher keinen JS-Testlauf hat.
