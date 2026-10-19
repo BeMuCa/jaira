@@ -26,8 +26,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T06:27:44Z
+updated-at: 2026-10-19T06:27:46Z
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-16821
+claimed-at: 2026-10-19T06:27:46Z
 ---
 
 # Ein Ticket laesst sich mit Grund ablehnen: jaira reject, und das Archiv sagt warum
