@@ -1,0 +1,2 @@
+- When `jaira web` stops working for you, read the log whose path it prints at start (`jaira web: log …`, under `~/.jaira/state/`): every error answer, failed fetch or push, crash with its stack, and the signal that ended the command are written there with their time; a crash inside a request now answers 500 and the page keeps running.
+- Watch for the red banner at the top of the `jaira web` page: it now says within ten seconds when the command no longer answers, instead of the page silently standing still, and rereads everything once it answers again.

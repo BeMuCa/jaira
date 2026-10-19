@@ -9,15 +9,21 @@
   import { UnassignedList } from '@/widgets/unassigned-list';
   import { SyncStatus } from '@/widgets/sync-status';
   import { TicketDetails } from '@/widgets/ticket-details';
+  import { clock } from '@/shared/lib';
 
   // The server fetches once a minute; the page rereads on the same beat, so
   // what a teammate changed shows up without a reload.
   const REFRESH_MS = 60_000;
+  // How often the page asks whether 'jaira web' still answers. Short, so a
+  // page whose command is gone says so before anybody drags onto it.
+  const HEARTBEAT_MS = 10_000;
 
   let epics = $state<Epic[]>([]);
   let unassigned = $state<Ticket[]>([]);
   let sync = $state<SyncState>({});
   let error = $state('');
+  // When the page last failed to reach the command; null while it answers.
+  let lostSince = $state<string | null>(null);
   let opened = $state<TicketDetail | null>(null);
   let dialog = $state<HTMLDialogElement>();
 
@@ -57,10 +63,29 @@
     }
   }
 
+  // On the way back the page rereads everything: what it shows is from
+  // before the gap, and the command may be a new one on a fresh board.
+  async function heartbeat() {
+    try {
+      sync = await fetchSync();
+    } catch {
+      lostSince ??= new Date().toISOString();
+      return;
+    }
+    if (lostSince) {
+      lostSince = null;
+      await load();
+    }
+  }
+
   onMount(() => {
     load();
     const t = setInterval(load, REFRESH_MS);
-    return () => clearInterval(t);
+    const h = setInterval(heartbeat, HEARTBEAT_MS);
+    return () => {
+      clearInterval(t);
+      clearInterval(h);
+    };
   });
 </script>
 
@@ -68,6 +93,11 @@
   <h1>jaira</h1>
   <SyncStatus {sync} />
 </header>
+{#if lostSince}
+  <p class="lost" role="alert">
+    jaira web has not answered since {clock(lostSince)} — is the command still running? What you see may be out of date; retrying every {HEARTBEAT_MS / 1000} s.
+  </p>
+{/if}
 {#if error}<p class="error" role="alert">{error}</p>{/if}
 <main>
   <UnassignedList tickets={unassigned} onopen={open} onremove={(epic, id) => change(() => removeFromEpic(epic, id))} />
@@ -86,6 +116,13 @@
   main { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem; }
   @media (max-width: 720px) { main { grid-template-columns: 1fr; } }
   .error { color: var(--error); }
+  .lost {
+    margin: 1rem 0 0;
+    padding: 0.6rem 0.9rem;
+    color: var(--error);
+    border: 1px solid var(--error);
+    border-radius: 8px;
+  }
   dialog {
     width: min(48rem, calc(100vw - 2rem));
     max-height: calc(100vh - 4rem);

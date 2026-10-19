@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log"
 	"net"
 	"net/http"
 	"strings"
@@ -107,6 +108,9 @@ type Server struct {
 	// queued. Either may be nil on a board with no remote.
 	Fetch func() error
 	Push  func() error
+	// Log records every error answer, failed fetch or push, and panic, with
+	// its time and cause. nil records nothing.
+	Log *log.Logger
 
 	mu   sync.Mutex
 	sync Sync
@@ -128,7 +132,10 @@ func (s *Server) FetchNow() {
 	if s.Fetch == nil {
 		return
 	}
-	err := s.Fetch()
+	err := recovered(s.Fetch)
+	if err != nil {
+		s.logf("fetch failed: %v", err)
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.sync.LastFetch = time.Now()
@@ -141,7 +148,10 @@ func (s *Server) pushNow() error {
 	}
 	s.pushing.Lock()
 	defer s.pushing.Unlock()
-	err := s.Push()
+	err := recovered(s.Push)
+	if err != nil {
+		s.logf("push failed: %v", err)
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.sync.LastPush = time.Now()
@@ -194,7 +204,7 @@ func (s *Server) Handler() http.Handler {
 		panic(err)
 	}
 	mux.Handle("GET /", http.FileServerFS(dist))
-	return guard(mux)
+	return s.logged(guard(mux))
 }
 
 func guard(next http.Handler) http.Handler {

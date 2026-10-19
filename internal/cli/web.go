@@ -8,7 +8,9 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -44,6 +46,10 @@ it at once; every minute the command fetches, so what a teammate sorted arrives
 without a reload. The page shows when it last synchronised. A push that fails
 stays queued and goes out with the next change.
 
+Every answer with an error, every failed fetch or push and every crash is
+written with its time and cause to a log outside the repository; the command
+prints its path when it starts.
+
 The page answers only on loopback and only to requests that name a loopback
 host, so neither another machine nor another web site can reach it.
 
@@ -58,7 +64,14 @@ Stop it with Ctrl-C.`,
 			if err != nil {
 				return fail(ExitError, "listen", "cannot listen on 127.0.0.1:%d: %v", port, err)
 			}
-			srv := &web.Server{Source: newWebSource(s)}
+			logPath := filepath.Join(s.StateDir(), "web.log")
+			logFile, err := web.OpenLog(logPath)
+			if err != nil {
+				return fail(ExitError, "log", "cannot open the log %s: %v", logPath, err)
+			}
+			defer logFile.Close()
+			logger := web.NewLogger(logFile)
+			srv := &web.Server{Source: newWebSource(s), Log: logger}
 			if refs.Usable() == nil {
 				root := s.Root
 				srv.Fetch = func() error { return fetchInChild(root) }
@@ -66,6 +79,8 @@ Stop it with Ctrl-C.`,
 			}
 			url := "http://" + l.Addr().String() + "/"
 			fmt.Fprintf(cmd.OutOrStdout(), "jaira web: %s  (Ctrl-C to stop)\n", url)
+			fmt.Fprintf(cmd.OutOrStdout(), "jaira web: log %s\n", logPath)
+			logger.Printf("started on %s (pid %d, %s)", url, os.Getpid(), s.Root)
 			if !noOpen {
 				if err := web.OpenBrowser(url); err != nil {
 					fmt.Fprintf(cmd.ErrOrStderr(), "jaira web: could not open a browser (%v); open the address above\n", err)
@@ -74,16 +89,20 @@ Stop it with Ctrl-C.`,
 
 			stop := make(chan struct{})
 			go srv.Loop(webFetchEvery, stop)
-			hs := &http.Server{Handler: srv.Handler(), ReadHeaderTimeout: 10 * time.Second}
+			hs := &http.Server{Handler: srv.Handler(), ReadHeaderTimeout: 10 * time.Second, ErrorLog: logger}
 			served := make(chan error, 1)
 			go func() { served <- hs.Serve(l) }()
 
 			sig := make(chan os.Signal, 1)
-			signal.Notify(sig, os.Interrupt)
+			// A closed terminal (SIGHUP) or a kill (SIGTERM) ends the command as
+			// Ctrl-C does, but through here, so the log says which of them it was.
+			signal.Notify(sig, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 			defer signal.Stop(sig)
 			select {
-			case <-sig:
+			case got := <-sig:
+				logger.Printf("stopped by signal %v", got)
 			case err = <-served:
+				logger.Printf("stopped: %v", err)
 			}
 			close(stop)
 			_ = hs.Close()
