@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T14:35:08Z
+updated-at: 2026-10-19T14:35:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-27212
 claimed-at: 2026-10-19T13:47:43Z
@@ -92,3 +92,4 @@ Empfehlung: 1 - die Bereinigung ist ohnehin vor dem Push noetig, und die beiden 
 - **2026-10-19 14:28 · Alexander Sacharov** — Runde 2 (Rueckgabe aus signoff, Alex Option 1): Bereinigung der Ticketdatei freigegeben durch Alex' Entscheidung im Cockpit - Hand-Edit als Ausnahme von 'nur CLI', weil jaira note nichts aendern kann; die Branch-Commits werden vor jedem Push per filter-branch neu geschrieben. Dazu logKeep-Kommentar korrigieren und ein nicht oeffnbares web.log nur warnen statt abbrechen.
 - **2026-10-19 14:30 · Alexander Sacharov** — Runde 2 umgesetzt: logKeep-Kommentar sagt jetzt, dass nur beim Start rotiert wird (core/web/log.go:14). Ein nicht oeffnbares web.log warnt auf stderr ('cannot open the log ...; running without one') und der Server laeuft ohne Log weiter (internal/cli/web.go:70) - live geprueft mit schreibgeschuetztem State-Verzeichnis: Warnung, /api/sync 200. Ticketdatei bereinigt (Kontext + zwei Notes + review-gaps), auch der aktuelle Stand auf dem Ticket-Ref ist sauber; die aeltere Ref-History enthaelt die Daten weiter (siehe Report).
 - **2026-10-19 14:34 · Alexander Sacharov** — decision (Alex via jaira-8b, 19.10.): auch die History des Ticket-Refs wird bereinigt und nach upstream force-gepusht. Ein Agent fuehrt weder Umschreiben noch Force-Push aus (Klassifikator lehnt beides ab, Alex' Regel): Alex startet das vorbereitete Skript (Backup-Refs, filter-branch fuer Branch und Ticket-Ref, Trockenpruefung) selbst und pusht danach mit --force-with-lease. Skript in einem Wegwerf-Klon getestet: alle Versionen frei von den Strings, Branch ausserhalb der Ticketdatei unveraendert.
+- **2026-10-19 14:35 · Alexander Sacharov** — critique Runde 2 (nur die drei Review-Punkte): alle beantwortet - Kommentar stimmt (log.go:16), Log-Fehler warnt (cli/web.go:72), Ticketdatei sauber. Nichts Neues.
