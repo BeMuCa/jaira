@@ -2,7 +2,7 @@
 id: 01M4ZAV5XPAN4B89W2V1TPCKZB
 title: "Web-Seite: Filter und Tickets aus Logbook und Archiv anzeigen"
 status: backlog
-ready: false
+ready: true
 creator: Alexander Sacharov
 goal: "Auf der Seite von 'jaira web' lassen sich Tickets filtern, und abgelegte Tickets aus .jaira/logbook/ und .jaira/archive/ sind dort sichtbar."
 context: |-
@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:35:50Z
+updated-at: 2026-10-19T06:35:53Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -34,7 +34,7 @@ claimed-at: 2026-10-19T06:35:35Z
 ## Definition of Done
 
 - [ ] Auf der Seite gibt es ein Textfeld, das Tickets nach Titel, Ziel und ID filtert
-- [ ] Auf der Seite lässt sich nach Tag filtern
+- [ ] Filter nach Lane, Tag und Person (creator, assignee, zuletzt geaendert von) - mehrere Filter wirken zusammen (UND)
 - [ ] Tickets aus .jaira/logbook/ sind auf der Seite sichtbar und öffnen sich in der Detailansicht
 - [ ] Tickets aus .jaira/archive/ sind auf der Seite sichtbar und öffnen sich in der Detailansicht
 - [ ] core/release/notes/<ID>.md beschreibt die neuen Filter und Ansichten
