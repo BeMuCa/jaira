@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T18:21:59Z
+updated-at: 2026-10-19T18:22:02Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-25649
@@ -42,7 +42,8 @@ claimed-at: 2026-10-19T18:18:27Z
 - [ ] core/release/notes/<ID>.md; go test ./... -race gruen
 - [ ] Web zeigt den ganzen Markdown-Text eines Epics gerendert; 'jaira epic show' gibt ihn ebenfalls aus
 - [ ] Der Text ist standardmaessig eingeklappt (die description-Zeile bleibt sichtbar) und klappt per Klick auf
-- [ ] Beim Schreiben des Textes bleiben die Mitgliedszeilen des Epics unangetastet (Test)
+- [x] Beim Schreiben des Textes bleiben die Mitgliedszeilen des Epics unangetastet (Test)
+  proof: core/epic/epic.go SetBody(); TestSetKeepsTheMembers
 
 ## Options
 
