@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T20:50:13Z
+updated-at: 2026-10-19T20:50:16Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-4026"
 claimed-at: 2026-10-19T20:44:55Z
@@ -38,8 +38,8 @@ review-summary: "jaira reject <id> --why [--kind wontfix|obsolete] [--duplicate-
 round: 6
 review-gaps: "1) Blockierend vor signoff: Runde 6 (DoD 10+11: rejected-duplicate-of, rejected-linked, unreject, beide Restore-Tests) liegt nur im worktree, nicht committed - ohne Commit fehlt sie im PR. 2) Nicht blockierend: rejected-linked ist ein neues Frontmatter-Feld, wird aber weder in core/release/notes/A0C081.md noch in docs/COMMANDS.md oder im Skill beim Namen genannt; wer die Datei von Hand liest, sieht rejected-linked: \"true\" ohne Erklaerung (die Note beschreibt nur das Verhalten). 3) Randfall, bewusst hingenommen: setzt jemand den related-Link zum Original erst NACH dem reject von Hand, nimmt restore ihn trotzdem ab, weil rejected-linked schon true ist."
 test-verdict: "pass: go vet + go clean -testcache + go test ./... -race RC=0; TestRestoreKeepsALinkThatWasThereBefore rot ohne den Fix; Binary auf Scratch-Board: related-Link vor reject bleibt nach restore stehen (kein rejected-linked geschrieben), neuer Link wird mit rejected-linked: \"true\" geschrieben und von restore abgenommen; show nennt 'duplicate of <handle>'"
-review-verdict: "approve: DoD 1-10 belegt; DoD 10 im worktree_diff, TestRestoreTakesTheDuplicateLinkOff deckt 'nur dieser Eintrag'. go vet und go test -race fuer core/ticket, internal/cli, internal/tui, core/merge gruen. Per Binary nachgespielt: reject --duplicate-of -> archive/show 'duplicate of <handle>', beide --json mit duplicate_of; restore -> Datei bis auf updated-by identisch mit vorher, kein leeres related. Blockierend nur: erst committen."
-review-round: 5
+review-verdict: "approve mit Bedingung: DoD 1-11 durch Diff und Tests belegt; go vet + go test -race ./core/... ./internal/... gruen. Per Binary nachgespielt: reject --duplicate-of ohne vorherigen Link -> rejected-linked: \"true\", restore leert related; mit vorherigem Link (jaira set related=) -> kein rejected-linked, restore laesst den Link stehen; archive/show nennen 'duplicate of <handle>', --json duplicate_of. Vor signoff muss Runde 6 committed werden (Gap 1); Gap 2 ist eine Doku-Zeile und kann mit in denselben Commit."
+review-round: 6
 review-check: "0. Committen: git add .claude/skills/jaira/SKILL.md core/release/notes/A0C081.md core/ticket/schema.go core/ticket/store.go docs/COMMANDS.md internal/cli/reject.go internal/cli/reject_test.go internal/cli/tickets.go .jaira/tickets/01M59DFMZ1TKMZDZDJHBA0C081-ein-ticket-laesst-sich-mit-grund-ablehnen-jaira.md && git commit -m 'fix(A0C081): a duplicate rejection names its original, and restore takes that related link off'  1. go build -o /tmp/jaira ./cmd/jaira  2. leeres Test-Repo: git init, git commit --allow-empty -m init, /tmp/jaira init  3. /tmp/jaira create Original --goal g --context c --dod d --assignee me und /tmp/jaira create Dup ... -> zwei Handles A und B  4. /tmp/jaira reject B --why same --duplicate-of A --force -> 'Rejected B (duplicate)'  5. /tmp/jaira archive -> eingerueckte Zeile 'rejected duplicate of A: same (...)'  6. /tmp/jaira show B -> Zeile 'rejected   duplicate of A: same'  7. /tmp/jaira restore <Dateiname aus Schritt 4> -> 'Restored'  8. /tmp/jaira show B --json | jq .related -> leer, kein Link auf A mehr"
 ---
 
