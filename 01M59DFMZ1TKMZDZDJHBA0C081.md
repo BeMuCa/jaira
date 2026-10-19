@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T06:35:41Z
+updated-at: 2026-10-19T06:35:44Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16821
 claimed-at: 2026-10-19T06:27:46Z
@@ -56,7 +56,7 @@ mode: conversational
 - [ ] Schema: Felder rejected-kind/why/by/at in core/ticket/schema.go, Ticket.Rejected, Store.Reject (schreibt Felder, ruft Archive) und Store.Restore entfernt sie
 - [ ] CLI: internal/cli/reject.go - --why Pflicht (Exit 2), --kind wontfix|obsolete, --duplicate-of (Exit 5 bei unbekannter id, related setzen), ohne --force Exit 3 mit Weg ueber human --question
 - [ ] TUI: Taste R fragt eine Zeile Grund und ruft Store.Reject; x bleibt archivieren
-- [ ] Anzeige: jaira archive (Liste), jaira show, Web-Portal zeigen kind und why
+- [ ] Anzeige: jaira archive (Liste) und jaira show zeigen kind und why (Web-Portal: TPCKZB)
 - [ ] Release-Note, Agent-Block, jaira-Skill; go test ./... -race
 
 ## Progress
