@@ -13,7 +13,8 @@ import (
 
 // logKeep is how large the log may grow before the next start moves it aside
 // to <path>.1. One old file is kept: enough to read what happened before a
-// restart, and a page left open for weeks never fills the disk.
+// restart. A run in progress is not rotated; it writes a line per error, so
+// even a fetch failing every minute adds well under a megabyte a day.
 const logKeep = 1 << 20
 
 // OpenLog opens the log 'jaira web' writes at path, for appending.

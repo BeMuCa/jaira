@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -64,13 +65,17 @@ Stop it with Ctrl-C.`,
 			if err != nil {
 				return fail(ExitError, "listen", "cannot listen on 127.0.0.1:%d: %v", port, err)
 			}
+			// A log that cannot be opened costs the record, not the page: the
+			// command warns and serves on without one.
 			logPath := filepath.Join(s.StateDir(), "web.log")
-			logFile, err := web.OpenLog(logPath)
-			if err != nil {
-				return fail(ExitError, "log", "cannot open the log %s: %v", logPath, err)
+			logger := web.NewLogger(io.Discard)
+			if logFile, err := web.OpenLog(logPath); err != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "jaira web: cannot open the log %s (%v); running without one\n", logPath, err)
+				logPath = ""
+			} else {
+				defer logFile.Close()
+				logger = web.NewLogger(logFile)
 			}
-			defer logFile.Close()
-			logger := web.NewLogger(logFile)
 			srv := &web.Server{Source: newWebSource(s), Log: logger}
 			if refs.Usable() == nil {
 				root := s.Root
@@ -79,7 +84,9 @@ Stop it with Ctrl-C.`,
 			}
 			url := "http://" + l.Addr().String() + "/"
 			fmt.Fprintf(cmd.OutOrStdout(), "jaira web: %s  (Ctrl-C to stop)\n", url)
-			fmt.Fprintf(cmd.OutOrStdout(), "jaira web: log %s\n", logPath)
+			if logPath != "" {
+				fmt.Fprintf(cmd.OutOrStdout(), "jaira web: log %s\n", logPath)
+			}
 			logger.Printf("started on %s (pid %d, %s)", url, os.Getpid(), s.Root)
 			if !noOpen {
 				if err := web.OpenBrowser(url); err != nil {
