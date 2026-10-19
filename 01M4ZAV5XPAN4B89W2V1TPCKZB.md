@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:44:16Z
+updated-at: 2026-10-19T06:44:19Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -61,7 +61,7 @@ claimed-at: 2026-10-19T06:35:35Z
 
 - [x] core/web: Ticket bekommt place, tags, creator, assignee, updated_by, created_at, updated_at, filed_at, filed; GET /api/unassigned?all=1; TicketDetail bekommt place + rejected
 - [x] internal/cli/web_source.go: Karten aus Board+Ref+Logbuch+Archiv fuellen, rejected-* ueber Doc.Fields lesen, Tests
-- [~] UI: features/filter-tickets (Text, Lane, Tag, Person, Datum, Schalter), Zustand im URL-Query, wirkt auf beide Spalten; Ort-Badge; abgelegte nicht ziehbar; Detail zeigt Ort und Ablehnung
+- [x] UI: features/filter-tickets (Text, Lane, Tag, Person, Datum, Schalter), Zustand im URL-Query, wirkt auf beide Spalten; Ort-Badge; abgelegte nicht ziehbar; Detail zeigt Ort und Ablehnung
 - [ ] UI bauen (dist committed), web --help und core/release/notes/TPCKZB.md
 
 ## Progress
