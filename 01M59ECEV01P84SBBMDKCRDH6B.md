@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T20:24:28Z
+updated-at: 2026-10-19T20:24:32Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-25649
@@ -61,7 +61,7 @@ claimed-at: 2026-10-19T18:18:27Z
 - [x] CLI: 'jaira epic set <name> --title --description --body --body-file <pfad|->' (Exit 5 unbekannt, Exit 2 ohne Flag); 'epic show' gibt den Text aus, --json mit body; Tests
 - [x] Web: Epic-JSON bekommt body; PATCH /api/epics/{name} mit base (was der Editor gelesen hat) -> 409 wenn inzwischen geaendert; Source.SetEpic in internal/cli/web_source.go; Tests
 - [x] UI: EpicList zeigt description-Zeile, Text gerendert (shared/lib/markdown) und eingeklappt; Bearbeiten-Knopf -> Formular Titel/description/Text; Speichern laedt Epics neu
-- [ ] core/release/notes/CRDH6B.md; go test ./... -race; UI-Build/Tests
+- [~] core/release/notes/CRDH6B.md; go test ./... -race; UI-Build/Tests
 
 ## Progress
 - **2026-10-19 06:45 · Alexander Sacharov** — parent session: jaira-a7
