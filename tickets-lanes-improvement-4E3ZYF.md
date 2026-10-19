@@ -3,7 +3,7 @@ color: 63
 created-at: 2026-10-18T21:53:29Z
 ---
 
-# lane-einstellungen
+# tickets-lanes-improvement
 
 <!-- One ticket id per line. Move the unfinished ones into the next
      milestone's file when this one is done. -->
