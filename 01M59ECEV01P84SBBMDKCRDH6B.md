@@ -24,7 +24,8 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T06:43:02Z
+updated-at: 2026-10-19T06:45:21Z
+updated-by: Alexander Sacharov
 ---
 
 # Titel und Beschreibung eines Epics lassen sich im Web und mit jaira epic set aendern
