@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T08:15:19Z
+updated-at: 2026-10-19T08:16:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-24710
 claimed-at: 2026-10-19T07:38:42Z
@@ -63,6 +63,7 @@ review-check: "0. Erst committen, im Worktree /home/alex/projects/.worktrees/jai
   proof: core/ticket/store.go Store.Reject faltet why (strings.Fields); internal/cli/reject.go ebenso; test TestRejectFoldsAMultiLineReason
 - [x] --duplicate-of auf das Ticket selbst endet mit Exit 2, geprueft bevor etwas gestempelt oder geschrieben wird
   proof: internal/cli/reject.go: LoadAnywhere + orig.ID == t.ID -> ExitUsage vor StampCommits; test TestRejectAsADuplicateOfItselfIsAUsageError
+- [ ] R auf dem Board stempelt vor dem Ablehnen die Commits wie 'jaira reject', damit ein abgelehntes Ticket seine commits-Liste hat
 
 ## Options
 
