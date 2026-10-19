@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T06:48:40Z
+updated-at: 2026-10-19T06:50:03Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16821
 claimed-at: 2026-10-19T06:27:46Z
@@ -34,6 +34,9 @@ mode: conversational
 outcome-what: "Neuer Befehl jaira reject <id> --why [--kind wontfix|obsolete] [--duplicate-of] [--force] schreibt rejected-kind/why/by/at und archiviert ueber Store.Archive; Taste R auf dem Board; archive-Liste und show zeigen den Grund; restore nimmt die Felder ab (Doc.Remove)."
 outcome-why: "Ein abgelehntes Ticket sah im Archiv genauso aus wie ein weggeraeumtes; Monate spaeter liess sich nicht sagen, ob es Duplikat, verworfen oder ueberholt war."
 outcome-resolves: "DoD 1-3: internal/cli/reject.go + Store.Reject, Tests in internal/cli/reject_test.go; DoD 4: modeReject in internal/tui/model.go, internal/tui/reject_test.go; DoD 5: archivedRejections/rejectionLine, unreject; DoD 6: release note, agent block, Skill, go test ./... -race gruen."
+review-summary: |-
+  internal/cli/archive.go archivedRejections liest jede Datei voll mit os.ReadFile+ParseDoc+Decode; core/ticket/store.go LoadHeader ist genau fuer das Durchkaemmen eines Ordners gebaut (liest nur das Frontmatter) - archivedRejections soll ticket.LoadHeader(path) nehmen
+  core/ticket/store.go Store.Reject schreibt die rejected-* Felder (Mutate) und archiviert erst danach; scheitert Archive (z.B. gleicher Dateiname schon in .jaira/archive/), bleibt ein als abgelehnt markiertes Ticket auf dem Board - vor dem Mutate pruefen, ob das Ziel im Archiv frei ist, wie Archive es tut
 ---
 
 # Ein Ticket laesst sich mit Grund ablehnen: jaira reject, und das Archiv sagt warum
