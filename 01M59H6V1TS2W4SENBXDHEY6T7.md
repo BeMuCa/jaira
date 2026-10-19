@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T20:51:19Z
+updated-at: 2026-10-19T20:51:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11846
 claimed-at: 2026-10-19T20:45:53Z
@@ -105,3 +105,4 @@ Empfehlung: 2 - DoD 1-5 sind erfuellt, der io.Discard-Fall tritt nur bei unoeffn
 - **2026-10-19 20:47 · Alexander Sacharov** — Runde 3 (Rueckgabe aus signoff, ErrorLog): geht web.log nicht auf, schreibt der Logger nach stderr statt io.Discard (internal/cli/web.go:71) - http.Server-Meldungen, Fehlerantworten, Panics und das Signal bleiben sichtbar wie vor dem Log. Live geprueft mit schreibgeschuetztem State-Verzeichnis: Warnung, dann 'started on', '404 ...', 'stopped by signal terminated' auf stderr; /api/sync 200. go test -race ./... RC=0.
 - **2026-10-19 20:48 · Alexander Sacharov** — critique Runde 3 (nur der ErrorLog-Befund aus signoff 20:43): beantwortet - Fallback-Logger schreibt nach cmd.ErrOrStderr() (internal/cli/web.go:71), io-Import entfaellt. Nichts Neues.
 - **2026-10-19 20:49 · Alexander Sacharov** — testing Runde 3: Suite gruen, Proof-Tests PASS. DoD-Proofs 1-3 zeigten seit Runde 2 eine Zeile zu hoch (log.go:63 ist Kommentar, logged steht auf :64; web.go 135/151 -> 137/153; Banner :97 -> :96) - korrigiert. review-check enthielt einen Home-Pfad (aus Review Runde 2) - neutralisiert, bevor er in einem Commit blieb.
+- **2026-10-19 20:51 · Alexander Sacharov** — review Runde 3 (frisch): DoD erfuellt, keine Defekte; ErrorLog-Fallback nach stderr umgesetzt. Offen nur die History-Bereinigung vor dem Push (Alex, 14:34). worktree_diff enthaelt nur fremde ungetrackte .jaira/milestones/-Dateien.
