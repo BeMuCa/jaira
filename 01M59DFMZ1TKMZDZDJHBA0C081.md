@@ -26,14 +26,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T18:21:54Z
+updated-at: 2026-10-19T18:22:10Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-24398"
 claimed-at: 2026-10-19T18:18:21Z
 mode: conversational
-outcome-what: "Neuer Key rejected-duplicate-of bei --duplicate-of; restore nimmt ihn und den related-Link ab; show/archive nennen das Original"
-outcome-why: "Rueckgabe aus signoff: restore liess den related-Eintrag aus --duplicate-of stehen"
-outcome-resolves: "DoD 10"
+outcome-what: "Neuer Befehl jaira reject <id> --why [--kind wontfix|obsolete] [--duplicate-of] [--force] schreibt rejected-kind/why/by/at (bei --duplicate-of auch rejected-duplicate-of) und archiviert ueber Store.Archive; Taste R auf dem Board; archive-Liste und show zeigen den Grund und das Original; restore nimmt die Felder und den related-Link aus --duplicate-of ab (Doc.Remove)."
+outcome-why: "Ein abgelehntes Ticket sah im Archiv genauso aus wie ein weggeraeumtes; Monate spaeter liess sich nicht sagen, ob es Duplikat, verworfen oder ueberholt war."
+outcome-resolves: "DoD 1-3: internal/cli/reject.go + Store.Reject, Tests in internal/cli/reject_test.go; DoD 4: modeReject in internal/tui/model.go, internal/tui/reject_test.go; DoD 5: archivedRejections/rejectionLine, unreject; DoD 6: release note, agent block, Skill, go test ./... -race gruen; DoD 7-9: Faltung, Selbst-Duplikat, R stempelt; DoD 10: rejected-duplicate-of + unreject."
 review-summary: "jaira reject <id> --why <text> --force schreibt rejected-kind/why/by/at (flache Keys) aufs Ticket, stempelt vorher die Commits und archiviert es; ohne --force Exit 3 mit Weg ueber human --question, ohne --why Exit 2, --duplicate-of wird vor jedem Schreiben aufgeloest (Exit 5 unbekannt, Exit 2 sich selbst) und setzt kind=duplicate plus related. Store.Reject faltet den Grund auf eine Zeile und prueft das Archiv-Ziel (neuer Helfer archiveTarget, den Archive mitbenutzt) bevor es mutiert. Taste R auf Board und Detailansicht fragt eine Zeile Grund, stempelt jetzt wie die CLI die Commits (Rueckgabe aus signoff) und lehnt mit wontfix ab; x archiviert weiter nur. jaira archive zeigt eine eingerueckte rejected-Zeile pro Datei (und rejected in --json), jaira show eine rejected-Zeile, restore nimmt die Keys ab. Release-Note, Agent-Block und Skill nennen reject."
 round: 5
 review-gaps: "Blockierend: nichts. (1) Die Aenderungen aus optimize, Runde 3 und Runde 4 (store.go, reject.go, reject_test.go, model.go, tui/reject_test.go, Release-Note) sind weiter uncommittet - ohne Commit fehlen sie im Merge, siehe review-check Schritt 0. (2) Kosmetisch, nicht DoD: restore laesst den related-Eintrag aus --duplicate-of stehen; R stempelt mit dem beim Druecken gehaltenen t (Mutate liest aber frisch, MergeCommits vereinigt, also kein Verlust). Der entfernte nil-Guard in confirmReject ist sicher: modeReject wird nur ueber startReject betreten, das rejecting setzt."
