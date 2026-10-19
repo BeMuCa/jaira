@@ -1,7 +1,7 @@
 ---
 id: 01M4ZAV5XPAN4B89W2V1TPCKZB
 title: "Web-Seite: Filter und Tickets aus Logbook und Archiv anzeigen"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Auf der Seite von 'jaira web' sieht man jedes Ticket, das es je gab — offen, nur auf dem Ref, im Logbuch oder im Archiv — und filtert es nach Text, Lane, Tag, Person und Datum, mit den Filtern in der URL."
@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:46:11Z
+updated-at: 2026-10-19T06:46:58Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -30,10 +30,9 @@ claimed-at: 2026-10-19T06:35:35Z
 outcome-what: "jaira web: Filterleiste (Text, Lane, Tag, Person, Datumsbereich) ueber beiden Spalten, Schalter 'All tickets ever' listet Board, Ref, Logbuch und Archiv mit Ort; Detail zeigt Ort und Ablehnung; Filter im URL-Query"
 outcome-why: "Alex will jedes Ticket, das es je gab, auf der Seite sehen und nach Personen, Datum und Lane filtern; bisher zeigte die Seite nur offene Tickets ohne Filter"
 outcome-resolves: "GET /api/unassigned?all=1 und neue Kartenfelder (web_source.go cards/rejection), Filtermodell features/filter-tickets mit URL-Abgleich, TestWebListsFiledTicketsAndOpensThem; DoD 1-8 mit Proofs"
-review-summary: |-
-  internal/cli/web_source.go filedPlace copies core/link/link.go:196 placeOf line for line — export it as link.PlaceOf and call it from web_source.go
-  core/web/ui/src/entities/ticket/ui/TicketCard.svelte PLACES and the place lines in widgets/ticket-details/ui/TicketDetails.svelte name the same four places in two wordings — export one label map from entities/ticket/model/place.ts beside isFiled and use it in both
+review-summary: none
 round: 2
+review-gaps: "dropped the re-exports nobody imports (Place, Rejection from entities/ticket; DateField, Filter, emptyFilter from features/filter-tickets) — dist unchanged. Searched for duplicates: logbook date reuses ticket.LogbookFolderDay, place uses link.PlaceOf, nothing in shared/lib formats a local yyyy-mm-dd, so day() in filter.ts stays. Left: cards() reads every filed header on each /api/epics and /api/unassigned (0.08-0.19 s for 222 tickets, once a minute) and rejection() rereads archive files; both small, critique let them stand."
 ---
 
 # Web-Seite: Filter und Tickets aus Logbook und Archiv anzeigen
@@ -92,3 +91,4 @@ Ich nehme A: die Datenmenge ist klein, Filtern im Browser ist sofort, die URL tr
 - **2026-10-19 06:43 · Alexander Sacharov** — UI fertig. Kein JS-Testrunner im Repo (package.json hat nur vite build); filter.ts wurde mit einem Wegwerf-Skript unter node --experimental-strip-types gegen 15 Faelle geprueft (Text, Lane, Tag, Person, Datum je Feld, URL-Roundtrip, ohne filed_at). svelte-check: 0 Warnungen; der eine Fehler in vite.config.ts (node:url-Typen) besteht schon auf master. Live auf diesem Repo: ?all=1 = 222 Tickets in 0,19 s. Die Seite selbst wurde nicht im Browser angesehen — das ist fuer die Abnahme.
 - **2026-10-19 06:45 · Alexander Sacharov** — critique (Runde 1): 1) filedPlace in internal/cli/web_source.go ist eine Kopie von placeOf in core/link/link.go:196 — exportieren (link.PlaceOf) statt kopieren. 2) Ortsbezeichnungen stehen doppelt (TicketCard PLACES, TicketDetails if-Kette) — eine Map in entities/ticket/model/place.ts. Stehen gelassen: cards() liest bei jedem /api/epics alle abgelegten Header (gemessen 0,08 s bei 134 Dateien); rejection() liest die Archivdatei ein zweites Mal — beides klein, und rejection() wird nach A0C081 durch t.Rejected ersetzbar; die Doppelung epic.Unassigned / everything-Zweig bleibt, damit die Standardliste genau 'jaira epic ls --unassigned' entspricht.
 - **2026-10-19 06:46 · Alexander Sacharov** — critique Runde 1 umgesetzt: link.PlaceOf exportiert (core/link/link.go:196) und in web_source.go benutzt; Ortsbezeichnungen als PLACE_LABELS in entities/ticket/model/place.ts, TicketCard und TicketDetails lesen sie. Proofs 3/4/7 auf neue Zeilen gesetzt.
+- **2026-10-19 06:46 · Alexander Sacharov** — critique Runde 2: beide Befunde aus Runde 1 erledigt (filedPlace weg, link.PlaceOf benutzt; PLACE_LABELS in beiden Komponenten). Nichts weiter — gemaess Lane-Regel nur diese Stellen gelesen.
