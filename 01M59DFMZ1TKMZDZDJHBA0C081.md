@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T06:59:29Z
+updated-at: 2026-10-19T07:00:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16821
 claimed-at: 2026-10-19T06:27:46Z
@@ -37,6 +37,7 @@ outcome-resolves: "DoD 1-3: internal/cli/reject.go + Store.Reject, Tests in inte
 review-summary: none
 round: 2
 review-gaps: "Entfernt: doppelte Archiv-Ziel-Pruefung in Store.Reject und Store.Archive -> eine Funktion archiveTarget (core/ticket/store.go); toter nil-Zweig in confirmReject (rejecting ist immer gesetzt, startReject setzt es); eigener ReadFile/ParseDoc/Decode im Test-Helfer archivedTicket -> ticket.LoadHeader. Gelassen: questionLane (einziger Aufrufer, aber benennt einen Zweck), rejectionLine/rejectionJSON (zwei Aufrufer: show und archive), die 'Moved to ... restore'-Zeile in reject.go doppelt die aus archive.go (zwei Zeilen, nicht wert eine Funktion)."
+test-verdict: "pass: go clean -testcache; go test ./... -race RC=0. DoD 1-3, 5 auf einem Scratch-Board mit dem gebauten Binaer gesehen: reject ohne --force RC=3 mit human-Weg, ohne --why RC=2, --duplicate-of ZZZZZZ RC=5, mit --duplicate-of: kind duplicate + related, archive-Liste und show zeigen 'duplicate: gleiches Thema (Alexander Sacharov, 2026-10-19)', restore RC=0 und 0 rejected-Zeilen im Ticket. DoD 4 (Taste R) nur ueber die Modell-Tests (TestRejectOnTheBoardWritesTheReason, ...Cancelled...), kein interaktives Terminal hier. DoD 6: notes/A0C081.md, Agent-Block, Skill im Baum."
 ---
 
 # Ein Ticket laesst sich mit Grund ablehnen: jaira reject, und das Archiv sagt warum
