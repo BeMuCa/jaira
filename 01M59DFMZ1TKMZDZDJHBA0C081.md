@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T20:48:03Z
+updated-at: 2026-10-19T20:48:26Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-4026"
 claimed-at: 2026-10-19T20:44:55Z
@@ -37,7 +37,7 @@ outcome-resolves: "DoD 1-3: internal/cli/reject.go + Store.Reject, Tests in inte
 review-summary: "none"
 round: 6
 review-gaps: "none - Runde 6 fuegt einen Key, zwei Bedingungen und einen Test hinzu; der Test baut sein Original selbst statt den Aufbau von TestRestoreTakesTheDuplicateLinkOff zu teilen, weil er nur eines braucht und ein Helfer fuer zwei Aufrufer mehr Zeilen kostet"
-test-verdict: "pass: go vet + go clean -testcache + go test ./... -race RC=0; DoD 10 im Baum geprueft (store.go:389, :783, tickets.go rejectionLine/JSON); Binary auf Scratch-Board: reject --duplicate-of schreibt rejected-duplicate-of, archive/show nennen 'duplicate of J5AR30', --json duplicate_of; restore nimmt Key und Original-Link ab, ein vorher gesetzter related-Link auf ein anderes Ticket bleibt"
+test-verdict: "pass: go vet + go clean -testcache + go test ./... -race RC=0; TestRestoreKeepsALinkThatWasThereBefore rot ohne den Fix; Binary auf Scratch-Board: related-Link vor reject bleibt nach restore stehen (kein rejected-linked geschrieben), neuer Link wird mit rejected-linked: \"true\" geschrieben und von restore abgenommen; show nennt 'duplicate of <handle>'"
 review-verdict: "approve: DoD 1-10 belegt; DoD 10 im worktree_diff, TestRestoreTakesTheDuplicateLinkOff deckt 'nur dieser Eintrag'. go vet und go test -race fuer core/ticket, internal/cli, internal/tui, core/merge gruen. Per Binary nachgespielt: reject --duplicate-of -> archive/show 'duplicate of <handle>', beide --json mit duplicate_of; restore -> Datei bis auf updated-by identisch mit vorher, kein leeres related. Blockierend nur: erst committen."
 review-round: 5
 review-check: "0. Committen: git add .claude/skills/jaira/SKILL.md core/release/notes/A0C081.md core/ticket/schema.go core/ticket/store.go docs/COMMANDS.md internal/cli/reject.go internal/cli/reject_test.go internal/cli/tickets.go .jaira/tickets/01M59DFMZ1TKMZDZDJHBA0C081-ein-ticket-laesst-sich-mit-grund-ablehnen-jaira.md && git commit -m 'fix(A0C081): a duplicate rejection names its original, and restore takes that related link off'  1. go build -o /tmp/jaira ./cmd/jaira  2. leeres Test-Repo: git init, git commit --allow-empty -m init, /tmp/jaira init  3. /tmp/jaira create Original --goal g --context c --dod d --assignee me und /tmp/jaira create Dup ... -> zwei Handles A und B  4. /tmp/jaira reject B --why same --duplicate-of A --force -> 'Rejected B (duplicate)'  5. /tmp/jaira archive -> eingerueckte Zeile 'rejected duplicate of A: same (...)'  6. /tmp/jaira show B -> Zeile 'rejected   duplicate of A: same'  7. /tmp/jaira restore <Dateiname aus Schritt 4> -> 'Restored'  8. /tmp/jaira show B --json | jq .related -> leer, kein Link auf A mehr"
