@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T06:43:33Z
+updated-at: 2026-10-19T06:43:39Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74288
@@ -37,7 +37,8 @@ claimed-at: 2026-10-19T06:35:35Z
 - [ ] Filter nach Lane, Tag und Person (creator, assignee, zuletzt geaendert von) - mehrere Filter wirken zusammen (UND)
 - [ ] Tickets aus .jaira/logbook/ sind auf der Seite sichtbar und öffnen sich in der Detailansicht
 - [ ] Tickets aus .jaira/archive/ sind auf der Seite sichtbar und öffnen sich in der Detailansicht
-- [ ] core/release/notes/<ID>.md beschreibt die neuen Filter und Ansichten
+- [x] core/release/notes/<ID>.md beschreibt die neuen Filter und Ansichten
+  proof: core/release/notes/TPCKZB.md
 - [ ] Filter nach Datum: Zeitraum von-bis auf erstellt, zuletzt geaendert und abgelegt (Logbuch-Datum)
 - [ ] Ein abgelehntes Ticket im Archiv zeigt rejected-kind und rejected-why
 - [ ] Die gesetzten Filter stehen in der URL; ein Link zeigt dieselbe gefilterte Liste
