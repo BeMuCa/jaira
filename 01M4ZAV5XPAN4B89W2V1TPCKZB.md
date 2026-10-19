@@ -22,7 +22,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-15T08:28:46Z
+updated-at: 2026-10-19T06:35:30Z
+assignee: Alexander Sacharov
+updated-by: Alexander Sacharov
 ---
 
 # Web-Seite: Filter und Tickets aus Logbook und Archiv anzeigen
