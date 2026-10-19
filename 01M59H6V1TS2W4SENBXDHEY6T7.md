@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T14:35:23Z
+updated-at: 2026-10-19T14:36:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-27212
 claimed-at: 2026-10-19T13:47:43Z
@@ -30,7 +30,7 @@ outcome-why: "Alex' 'jaira web' fiel aus, und es gab keine Spur: nichts wurde ge
 outcome-resolves: "Ein Ausfall von jaira web hinterlaesst jetzt seine Ursache in einer Datei, und die Seite meldet ihn sichtbar."
 review-summary: "none"
 review-gaps: "none: Runde 2 hat nur Kommentar und einen Fehlerzweig geaendert; der io.Discard-Logger ist noetig, weil ErrorLog und die Start/Stop-Zeilen einen Logger brauchen"
-test-verdict: "pass: go test -race -count=1 ./... RC=0; DoD 1,2,3,5 verified in the tree and live (scratch binary: log path printed, 404 and SIGHUP logged; headless Chrome: banner appears ~10 s after the command is killed, disappears after restart); DoD 4 needs a log from Alex' own run"
+test-verdict: "pass: go test -race -count=1 ./... RC=0; Runde 2 live: schreibgeschuetztes State-Verzeichnis -> Warnung 'cannot open the log ...; running without one', /api/sync 200; Ticketdatei frei von Projektname, PIDs, Home-Pfaden"
 question: ""
 review-verdict: "Der Code erfuellt die Definition of Done; keine Defekte gefunden, nur zwei kleine Unschaerfen (Kommentar zu Rotation, Log-Fehler ist fatal). Nicht pushbar, solange die privaten Daten in der committeten Ticketdatei stehen - das entscheidet Alex (Note 13:46)."
 review-round: 1
