@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T06:27:49Z
+updated-at: 2026-10-19T06:28:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16821
 claimed-at: 2026-10-19T06:27:46Z
@@ -54,3 +54,4 @@ claimed-at: 2026-10-19T06:27:46Z
 
 ## Progress
 - **2026-10-19 06:27 · Alexander Sacharov** — parent session: jaira-a7
+- **2026-10-19 06:28 · Alexander Sacharov** — decision (worker, settled): Art waehlt --kind wontfix|obsolete, Default wontfix; --duplicate-of setzt duplicate und verbietet --kind. Auf dem Board wird mit Default wontfix abgelehnt - eine Zeile Grund reicht (DoD 4).
