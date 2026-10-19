@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T20:26:23Z
+updated-at: 2026-10-19T20:26:27Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-25649
@@ -46,7 +46,8 @@ claimed-at: 2026-10-19T18:18:27Z
   proof: core/release/notes/CRDH6B.md; go test -race -count=1 ./... RC=0; go vet ./... RC=0
 - [x] Web zeigt den ganzen Markdown-Text eines Epics gerendert; 'jaira epic show' gibt ihn ebenfalls aus
   proof: EpicList.svelte {@html renderMarkdown(epic.text)}; internal/cli/epics.go epic show prints e.Text(); TestEpicSetRewritesTheTextNotTheMembers
-- [ ] Der Text ist standardmaessig eingeklappt (die description-Zeile bleibt sichtbar) und klappt per Klick auf
+- [x] Der Text ist standardmaessig eingeklappt (die description-Zeile bleibt sichtbar) und klappt per Klick auf
+  proof: EpicList.svelte details.text without open, .desc outside it; headless Chromium: folded on load, opens on click
 - [x] Beim Schreiben des Textes bleiben die Mitgliedszeilen des Epics unangetastet (Test)
   proof: core/epic/epic.go SetBody(); TestSetKeepsTheMembers
 
