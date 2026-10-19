@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T20:26:20Z
+updated-at: 2026-10-19T20:26:23Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-25649
@@ -44,7 +44,8 @@ claimed-at: 2026-10-19T18:18:27Z
   proof: core/epic Merge()+clash(): TestMergeKeepsBothSidesOfOneField, TestMergeTellsARetitleFromATextEdit; Set Base: TestSetRefusesAStaleBase; web 409: TestWebRewritesAnEpicAndRefusesAStaleEditor
 - [x] core/release/notes/<ID>.md; go test ./... -race gruen
   proof: core/release/notes/CRDH6B.md; go test -race -count=1 ./... RC=0; go vet ./... RC=0
-- [ ] Web zeigt den ganzen Markdown-Text eines Epics gerendert; 'jaira epic show' gibt ihn ebenfalls aus
+- [x] Web zeigt den ganzen Markdown-Text eines Epics gerendert; 'jaira epic show' gibt ihn ebenfalls aus
+  proof: EpicList.svelte {@html renderMarkdown(epic.text)}; internal/cli/epics.go epic show prints e.Text(); TestEpicSetRewritesTheTextNotTheMembers
 - [ ] Der Text ist standardmaessig eingeklappt (die description-Zeile bleibt sichtbar) und klappt per Klick auf
 - [x] Beim Schreiben des Textes bleiben die Mitgliedszeilen des Epics unangetastet (Test)
   proof: core/epic/epic.go SetBody(); TestSetKeepsTheMembers
