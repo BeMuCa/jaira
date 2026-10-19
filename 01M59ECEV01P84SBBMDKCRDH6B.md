@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T18:22:47Z
+updated-at: 2026-10-19T18:24:13Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-25649
@@ -75,3 +75,4 @@ claimed-at: 2026-10-19T18:18:27Z
 - **2026-10-19 18:18 · Alexander Sacharov** — parent session: jaira-20
 - **2026-10-19 18:19 · Alexander Sacharov** — Branch auf feat/tpckzb gestapelt per 'git merge --ff-only feat/tpckzb' (reset --keep wurde vom Auto-Mode verweigert; ff ist gleichwertig, weil HEAD=master Vorfahre von feat/tpckzb war). Stand 0f1b2e4d.
 - **2026-10-19 18:22 · Alexander Sacharov** — Schritt 1 fertig (Set/Body/SetBody). Body = Text unter Frontmatter ohne Mitgliedszeilen, Leerzeilen am Rand getrimmt; SetBody schreibt Front + Leerzeile + Text + Leerzeile + Mitgliedszeilen -> New()-Layout bleibt byte-gleich. Set schreibt nichts, wenn Fields() gleich bleibt (auch wenn SetBody Mitgliedszeilen nach unten sortiert haette). Leerer --title wird ignoriert (Titel kann nicht leer werden). UI-Hinweis fuer spaeter: renderMarkdown escaped rohes HTML -> der '<!-- One ticket id per line -->'-Kommentar jedes Epics wuerde als Text erscheinen; fuer den Epic-Text HTML-Kommentare vor dem Rendern entfernen. Deshalb wird der Konfliktblock (Schritt 2) neben dem Kommentar-Marker auch eine sichtbare fette Zeile tragen.
+- **2026-10-19 18:24 · Alexander Sacharov** — Kritik (daneben) Stueck 1 umgesetzt: (1) Set behandelt einen Body, der dem aktuellen gleicht (nach cleanBody), als unveraendert -> retitle laeuft auch, wenn das Web-Formular alle drei Felder schickt; Test in TestSetRetitlesAndWritesOnlyWhatChanged. (2) Set und Assign teilen jetzt edit(s, r, name, change) (Lock, Load, RecordEpic nur bei Aenderung); Create bleibt eigen, weil es 'nicht vorhanden' prueft. Hinweis fuer Web: epic.ErrChanged auf das bestehende web.ErrConflict (409) abbilden, keinen zweiten 409-Pfad.
