@@ -26,10 +26,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T18:17:46Z
+updated-at: 2026-10-19T18:18:21Z
 updated-by: Alexander Sacharov
-claimed-by: ""
-claimed-at: ""
+claimed-by: "DESKTOP-RFTCH11-24398"
+claimed-at: 2026-10-19T18:18:21Z
 mode: conversational
 outcome-what: "Neuer Befehl jaira reject <id> --why [--kind wontfix|obsolete] [--duplicate-of] [--force] schreibt rejected-kind/why/by/at und archiviert ueber Store.Archive; Taste R auf dem Board; archive-Liste und show zeigen den Grund; restore nimmt die Felder ab (Doc.Remove)."
 outcome-why: "Ein abgelehntes Ticket sah im Archiv genauso aus wie ein weggeraeumtes; Monate spaeter liess sich nicht sagen, ob es Duplikat, verworfen oder ueberholt war."
