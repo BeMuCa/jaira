@@ -1,7 +1,7 @@
 ---
 id: 01M59ECEV01P84SBBMDKCRDH6B
 title: Titel und Beschreibung eines Epics lassen sich im Web und mit jaira epic set aendern
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T20:42:01Z
+updated-at: 2026-10-19T20:42:06Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-52791
@@ -37,6 +37,7 @@ test-verdict: "pass: go vet ./... RC=0, go test -race -count=1 ./... RC=0 (31 pa
 review-verdict: "The diff meets all 8 DoD items; no defect that breaks a DoD item found. Two small gaps above, neither needs to block acceptance - (1) could become a follow-up if epic texts ever list full ticket ids. Still to do outside this lane: commit the worktree (conversational mode, Alex commits) and open the PR only after TPCKZB's."
 review-round: 1
 review-check: "1. cd /home/alex/projects/.worktrees/jaira-crdh6b && go build -o /tmp/jaira-crdh6b ./cmd/jaira  2. /tmp/jaira-crdh6b epic ls - pick any epic name, call it E  3. /tmp/jaira-crdh6b epic set E --body $'## Goal\\nfirst **bold** line' - prints 'Epic \"E\" rewritten on refs/jaira/epics/E'  4. /tmp/jaira-crdh6b epic show E - you see '## Goal' and the bold line under the description, and the same tickets as before  5. /tmp/jaira-crdh6b epic set E - exits 2 with 'nothing to set'; /tmp/jaira-crdh6b epic set nosuch --title x - exits 5  6. /tmp/jaira-crdh6b web, open the page - under E's description a folded 'Text'; click it - '## Goal' renders as a heading, the line in bold  7. click 'Edit', change the title, Save - the new title shows at once  8. click 'Edit' again, leave the form open; in a terminal run /tmp/jaira-crdh6b epic set E --title other; back in the form change the title, Save - a red message 'was changed since you opened it' appears and nothing is overwritten  9. merge conflict block: go test ./core/epic -run TestMergeKeepsBothSidesOfOneField -v (no UI path, needs two clones)"
+round: 2
 ---
 
 # Titel und Beschreibung eines Epics lassen sich im Web und mit jaira epic set aendern
