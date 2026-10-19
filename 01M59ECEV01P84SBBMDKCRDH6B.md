@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T18:34:52Z
+updated-at: 2026-10-19T18:34:56Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-25649
@@ -78,3 +78,4 @@ claimed-at: 2026-10-19T18:18:27Z
 - **2026-10-19 18:22 · Alexander Sacharov** — Schritt 1 fertig (Set/Body/SetBody). Body = Text unter Frontmatter ohne Mitgliedszeilen, Leerzeilen am Rand getrimmt; SetBody schreibt Front + Leerzeile + Text + Leerzeile + Mitgliedszeilen -> New()-Layout bleibt byte-gleich. Set schreibt nichts, wenn Fields() gleich bleibt (auch wenn SetBody Mitgliedszeilen nach unten sortiert haette). Leerer --title wird ignoriert (Titel kann nicht leer werden). UI-Hinweis fuer spaeter: renderMarkdown escaped rohes HTML -> der '<!-- One ticket id per line -->'-Kommentar jedes Epics wuerde als Text erscheinen; fuer den Epic-Text HTML-Kommentare vor dem Rendern entfernen. Deshalb wird der Konfliktblock (Schritt 2) neben dem Kommentar-Marker auch eine sichtbare fette Zeile tragen.
 - **2026-10-19 18:24 · Alexander Sacharov** — Kritik (daneben) Stueck 1 umgesetzt: (1) Set behandelt einen Body, der dem aktuellen gleicht (nach cleanBody), als unveraendert -> retitle laeuft auch, wenn das Web-Formular alle drei Felder schickt; Test in TestSetRetitlesAndWritesOnlyWhatChanged. (2) Set und Assign teilen jetzt edit(s, r, name, change) (Lock, Load, RecordEpic nur bei Aenderung); Create bleibt eigen, weil es 'nicht vorhanden' prueft. Hinweis fuer Web: epic.ErrChanged auf das bestehende web.ErrConflict (409) abbilden, keinen zweiten 409-Pfad.
 - **2026-10-19 18:33 · Alexander Sacharov** — decision (Alex via Teamlead, 19.10.2026): Schritt 1 (DoD 1+8) angenommen. Konfliktmarker englisch: '<!-- jaira: changed at the same time -->' plus sichtbare fette Zeile - ersetzt den deutschen Wortlaut der Entscheidung von 06:48.
+- **2026-10-19 18:34 · Alexander Sacharov** — Merge: Texte werden ueber plain() verglichen - eine Ueberschrift '# <eigener Titel>' am Textanfang wird durch titleMark ersetzt. Sonst wuerde ein Umbenennen (das die Ueberschrift mit aendert) auf einem Klon und ein neuer Absatz auf dem anderen als Konflikt gelten. Erster Entwurf mit Sonderfaellen fuer 'ours hat nur umbenannt' war unlesbar, deshalb verworfen. Konfliktblock: '<!-- jaira: changed at the same time -->' + fette sichtbare Zeile + fremder Wert + End-Kommentar; leerer fremder Wert erscheint als '(empty)'.
