@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T12:59:08Z
+updated-at: 2026-10-19T13:00:13Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79475
 claimed-at: 2026-10-19T12:47:47Z
@@ -71,3 +71,4 @@ test-verdict: "pass: go test -race -count=1 ./... RC=0; DoD 1,2,3,5 verified in 
 - **2026-10-19 12:55 · Alexander Sacharov** — Regel von Alex (via jaira-8b, 19.10.): keine anderen Projektnamen und keine privaten Daten (Home-Pfade, PIDs, Hostnamen) in Code, Tests, Commits, Release Notes oder Notes. Neutrale Beispiele nehmen (temporaeres Repo, example.com). Commits enden mit 'AlSa', kein Co-Authored-By.
 - **2026-10-19 12:55 · Alexander Sacharov** — Frage an jaira-8b (offen): zwei fruehere Notes und der Kontext enthalten private Daten, jaira note kann nichts aendern. 1 (empfohlen) Stellen per Hand neutralisieren, mit dem naechsten Code-Commit; 2 zusaetzlich Ref neu schreiben; 3 so lassen.
 - **2026-10-19 12:56 · Alexander Sacharov** — critique (Runde 1, ganzer Diff): nichts. Bewusst stehen gelassen: (a) bei Ausfall zeigt die Seite Banner UND die 'Failed to fetch'-Zeile aus load() - das Banner erklaert die Zeile, ein Zusammenlegen waere mehr Code; (b) recovered() um Fetch/Push, obwohl fetchInChild kaum panict - eine Panic in der Loop-Goroutine beendet sonst den Prozess, DoD 1 verlangt jede Panic; (c) kein bestehendes Log-Muster im Repo (grep log.New/slog leer), also kein Duplikat; (d) SIGHUP wird unter Windows nie geliefert, schadet dort nicht.
+- **2026-10-19 13:00 · Alexander Sacharov** — testing: go test -race -count=1 ./... RC=0. Headless Chrome gegen ein Scratch-Binary: Seite ohne Banner; Befehl beendet -> nach ~10 s Banner 'jaira web has not answered since <Zeit> - is the command still running? ...'; Befehl neu gestartet -> Banner weg. Bereinigung der Notes/Kontext (Option 2 von Alex via jaira-8b): Hand-Edit der Ticketdatei wurde in dieser Session vom Berechtigungs-Klassifikator abgelehnt - nicht ausgefuehrt, liegt bei jaira-8b/Alex.
