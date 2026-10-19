@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T12:55:30Z
+updated-at: 2026-10-19T12:55:51Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79475
 claimed-at: 2026-10-19T12:47:47Z
@@ -66,3 +66,4 @@ outcome-resolves: "Ein Ausfall von jaira web hinterlaesst jetzt seine Ursache in
 - **2026-10-19 12:50 · Alexander Sacharov** — Fetch-Timeout verworfen (Note von vorhin): ein abgebrochenes 'jaira fetch' mitten im Ref-Schreiben ist riskanter als ein haengendes, und das DoD verlangt ihn nicht. Stattdessen faengt 'jaira web' jetzt SIGTERM und SIGHUP wie Ctrl-C und schreibt das Signal ins Log - ein geschlossenes Terminal ist ein Kandidat fuer Alex' Ausfall.
 - **2026-10-19 12:54 · Alexander Sacharov** — Live geprueft (Scratch-Binary, dieses Repo, Port 58411): Start druckt 'jaira web: log /home/alex/.jaira/state/jaira-hey6t7-888112df/web.log'; Log hat 'started on ... (pid ...)', 'GET /api/tickets/NOPE: 404 {...not found}', 'stopped by signal hangup'. DoD 4 bleibt offen: die Ursache braucht einen Logauszug von Alex' eigenem Lauf mit dem neuen Build.
 - **2026-10-19 12:55 · Alexander Sacharov** — Regel von Alex (via jaira-8b, 19.10.): keine anderen Projektnamen und keine privaten Daten (Home-Pfade, PIDs, Hostnamen) in Code, Tests, Commits, Release Notes oder Notes. Neutrale Beispiele nehmen (temporaeres Repo, example.com). Commits enden mit 'AlSa', kein Co-Authored-By.
+- **2026-10-19 12:55 · Alexander Sacharov** — Frage an jaira-8b (offen): zwei fruehere Notes und der Kontext enthalten private Daten, jaira note kann nichts aendern. 1 (empfohlen) Stellen per Hand neutralisieren, mit dem naechsten Code-Commit; 2 zusaetzlich Ref neu schreiben; 3 so lassen.
