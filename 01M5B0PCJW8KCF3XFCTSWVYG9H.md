@@ -23,10 +23,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T21:22:16Z
-updated-at: 2026-10-19T21:25:28Z
+updated-at: 2026-10-19T21:25:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10599
 claimed-at: 2026-10-19T21:22:42Z
+question: "Umfang: weitere Projektnamen, Firmen-GitLab-Host, Dateien ausserhalb .jaira/ - siehe letzte Note"
 ---
 
 # Tickets und Logbook nennen keine anderen Projekte mehr
