@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T21:22:16Z
-updated-at: 2026-10-21T08:05:26Z
+updated-at: 2026-10-21T08:33:50Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-145108
 claimed-at: 2026-10-21T07:48:28Z
@@ -76,3 +76,4 @@ mode: conversational
 - **2026-10-21 08:01 · Alexander Sacharov** — decision (Alex, 2026-10-21, ueber Teamlead): Diff unter .jaira/ (25 Dateien, nur Ersetzungen) freigegeben - weiter mit den 4 Dateien ausserhalb .jaira/ und go test, dann Refs lokal neu bauen und Diff zeigen; Push der Refs erst nach zweiter Freigabe.
 - **2026-10-21 08:04 · Alexander Sacharov** — Ausserhalb .jaira auch: core/role/builtin/jaira-role-pr/SKILL.md:84 nannte den Firmen-Host als Beispiel fuer eine Forge ohne github/gitlab im Namen -> git.example.de (gleiche Aussage). Kein Release-Note: kein Nutzer muss etwas anders tun. Neuer Fund, nicht in der Entscheidung vom 21.10.: das Kurzwort 'req board'/'req-Board' fuer das Board des Kollegen (Abkuerzung des Hauptnamens), 8x in .jaira/logbook (bemuca-2026090x), ~15x in .planning/. Frage an Parent gestellt.
 - **2026-10-21 08:05 · Alexander Sacharov** — Refs: 9 neue Commits lokal gebaut (Elternteil = heutiger upstream-Stand, je eine Datei, gleiche Ersatzpaare), noch NICHT gepusht und lokale Refs nicht umgestellt. Zuordnung alt->neu: Scratchpad refnew.txt dieser Session; ist sie weg, neu bauen. Der eigene Ref dieses Tickets ist sauber (jaira schreibt ihn selbst). Warte auf zweite Freigabe fuer den Push.
+- **2026-10-21 08:33 · Alexander Sacharov** — decision (Alex, 2026-10-21, ueber Teamlead): das Kuerzel 'req board' / 'req-Board' wird UEBERALL ersetzt (.jaira/ und .planning/, ca. 23 Stellen), Ersatz: 'Testprojekt' (z.B. 'das Board des Testprojekts' / 'Testprojekt-Board', passend gebeugt).
