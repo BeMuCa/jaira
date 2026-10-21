@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T21:22:16Z
-updated-at: 2026-10-21T07:52:33Z
+updated-at: 2026-10-21T07:52:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-145108
 claimed-at: 2026-10-21T07:48:28Z
@@ -49,6 +49,14 @@ mode: conversational
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] ~/.jaira/foreign-names um die drei weiteren Projektnamen ergaenzen (Rechner-lokal, nicht im Repo)
+- [ ] Fundstellen-Liste: Listen-Namen, abgeleitete Kuerzel (Compose-/Worktree-Praefix, zwei Seitennamen, Workspace-Label) und Firmen-Host - auf dem Branch und auf jedem Ref
+- [ ] Ersetzungen unter .jaira/ auf dem Branch, Satz fuer Satz von Hand (python-Skript mit exakten Alt/Neu-Paaren im Scratchpad); word-diff pruefen -> DoD 1, 3
+- [ ] Die vier Dateien ausserhalb .jaira/ (drei aus der Entscheidung plus ein Testkommentar in internal/tui/home_refs_test.go); go test der beiden Pakete -> DoD 5
+- [ ] Ref-Inhalte: dieselben Paare auf den aktuellen Inhalt jedes betroffenen Refs anwenden, je Ref einen neuen Commit oben drauf bauen (hash-object/mktree/commit-tree), lokal noch nicht pushen; diff zeigen
+- [ ] Nach Freigabe: git push upstream <neu>:<ref> --force-with-lease=<ref>:<alt> je Ref, update-ref lokal, danach git show auf upstream pruefen -> DoD 2
+- [ ] Commit-Nachricht, Notes und PR-Text gegen die Liste greppen -> DoD 4
 
 ## Progress
 - **2026-10-19 21:22 · Alexander Sacharov** — Teamlead 19.10.2026: der Worktree startet auf dem lokalen master 7f008dec, upstream/master ist weiter (36bde2df, release 0.5.4). Vor dem ersten Commit auf upstream/master aufsetzen und dort greppen - sonst fehlen die neuesten Logbook-Dateien.
