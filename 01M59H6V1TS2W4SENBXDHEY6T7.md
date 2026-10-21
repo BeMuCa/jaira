@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-21T07:47:59Z
+updated-at: 2026-10-21T07:52:42Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11846
 claimed-at: 2026-10-19T20:45:53Z
@@ -112,3 +112,4 @@ Warum: Refs und Commits sind oeffentlich, sobald sie gepusht sind - was einmal d
 2) Ticket so annehmen, die History schreibt Alex selbst um, bis dahin nicht pushen [accept]
 3) Zurueckgeben und einen Test fuer den stderr-Fallback (internal/cli/web.go:71) ergaenzen [give back]
 Empfehlung: 2 - der Code hat keinen Defekt, und die Bereinigung ist laut Entscheidung 14:34 ohnehin Alex' eigener Schritt vor dem Push.
+- **2026-10-21 07:52 · Alexander Sacharov** — decision: 1) History der beiden Commits bereinigen lassen und das Ticket zurueckgeben
