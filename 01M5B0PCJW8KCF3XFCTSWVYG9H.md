@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T21:22:16Z
-updated-at: 2026-10-21T07:52:36Z
+updated-at: 2026-10-21T07:52:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-145108
 claimed-at: 2026-10-21T07:48:28Z
@@ -39,7 +39,7 @@ mode: conversational
 - [ ] Der aktuelle Inhalt jedes Refs unter refs/jaira/ enthaelt keinen Namen aus der Liste, auf upstream geprueft nach dem Push
 - [ ] Jeder ersetzte Satz bleibt verstaendlich; kein Feld ausser dem Namen ist veraendert (git diff --word-diff zeigt nur Namensersetzungen)
 - [ ] Commit-Nachrichten, Ticket-Notes und PR-Text dieses Tickets nennen keinen der Namen
-- [ ] Die drei Dateien ausserhalb .jaira/ (.planning/HANDOFF.md, internal/cli/staleclaim_test.go, scripts/migrate-tickets.py) nennen keinen Namen aus der Liste mehr; go test ./internal/cli/ bleibt gruen
+- [ ] Die Dateien ausserhalb .jaira/ (.planning/HANDOFF.md, internal/cli/staleclaim_test.go, internal/tui/home_refs_test.go, scripts/migrate-tickets.py) nennen keinen Namen aus der Liste mehr; go test ./internal/cli/ ./internal/tui/ bleibt gruen
 
 ## Options
 
