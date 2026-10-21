@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-21T07:51:57Z
+updated-at: 2026-10-21T07:52:06Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-4026"
 claimed-at: 2026-10-19T20:44:55Z
@@ -158,3 +158,4 @@ Warum: Ohne Commit fehlt Runde 6 im PR, und die Annahme betraefe Code, der nie a
 Empfehlung: 1 - die Doku-Zeile kostet Minuten und geht in denselben Commit, danach ist nichts mehr offen.
 - **2026-10-21 07:51 · Alexander Sacharov** — decision: 1) Zurueckgeben: Runde 6 committen und eine Zeile zu rejected-linked in Release-Note und docs/COMMANDS.md ergaenzen
 - **2026-10-21 07:51 · Alexander Sacharov** — Given back from signoff: 1) Zurueckgeben: Runde 6 committen und eine Zeile zu rejected-linked in Release-Note und docs/COMMANDS.md ergaenzen
+- **2026-10-21 07:52 · Alexander Sacharov** — cockpit: given back to a new worker - the old worker has no Herdr tab open any more
