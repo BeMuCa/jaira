@@ -1,7 +1,7 @@
 ---
 id: 01M5B0PCJW8KCF3XFCTSWVYG9H
 title: Tickets und Logbook nennen keine anderen Projekte mehr
-status: todo
+status: pre-process
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T21:22:16Z
-updated-at: 2026-10-21T07:52:30Z
+updated-at: 2026-10-21T07:52:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-145108
 claimed-at: 2026-10-21T07:48:28Z
