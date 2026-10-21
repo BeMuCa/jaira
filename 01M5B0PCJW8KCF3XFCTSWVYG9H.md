@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T21:22:16Z
-updated-at: 2026-10-21T08:04:16Z
+updated-at: 2026-10-21T08:04:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-145108
 claimed-at: 2026-10-21T07:48:28Z
@@ -74,3 +74,4 @@ mode: conversational
 - **2026-10-21 07:55 · Alexander Sacharov** — in-progress, Schritt 3 fertig: 25 Dateien unter .jaira/ ersetzt (78 Zeilen), Ersatzpaare als feste Liste im Scratchpad dieser Session, auf Branch und spaeter auf Refs dieselben. Warte (conversational) auf Freigabe des Diffs, bevor Dateien ausserhalb .jaira und Refs drankommen. Gefundene Falle: das Paar fuer den Unterstrich-Praefix greift auch in einer Note dieses Tickets - per Hand korrigiert.
 - **2026-10-21 07:55 · Alexander Sacharov** — question an jaira-46 (Parent): Diff der .jaira/-Ersetzungen freigeben? 1) Ja, weiter [empfohlen] 2) Formulierungen aendern. Warte auf Antwort.
 - **2026-10-21 08:01 · Alexander Sacharov** — decision (Alex, 2026-10-21, ueber Teamlead): Diff unter .jaira/ (25 Dateien, nur Ersetzungen) freigegeben - weiter mit den 4 Dateien ausserhalb .jaira/ und go test, dann Refs lokal neu bauen und Diff zeigen; Push der Refs erst nach zweiter Freigabe.
+- **2026-10-21 08:04 · Alexander Sacharov** — Ausserhalb .jaira auch: core/role/builtin/jaira-role-pr/SKILL.md:84 nannte den Firmen-Host als Beispiel fuer eine Forge ohne github/gitlab im Namen -> git.example.de (gleiche Aussage). Kein Release-Note: kein Nutzer muss etwas anders tun. Neuer Fund, nicht in der Entscheidung vom 21.10.: das Kurzwort 'req board'/'req-Board' fuer das Board des Kollegen (Abkuerzung des Hauptnamens), 8x in .jaira/logbook (bemuca-2026090x), ~15x in .planning/. Frage an Parent gestellt.
