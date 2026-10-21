@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-19T20:51:31Z
+updated-at: 2026-10-21T07:47:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11846
 claimed-at: 2026-10-19T20:45:53Z
@@ -106,3 +106,9 @@ Empfehlung: 2 - DoD 1-5 sind erfuellt, der io.Discard-Fall tritt nur bei unoeffn
 - **2026-10-19 20:48 · Alexander Sacharov** — critique Runde 3 (nur der ErrorLog-Befund aus signoff 20:43): beantwortet - Fallback-Logger schreibt nach cmd.ErrOrStderr() (internal/cli/web.go:71), io-Import entfaellt. Nichts Neues.
 - **2026-10-19 20:49 · Alexander Sacharov** — testing Runde 3: Suite gruen, Proof-Tests PASS. DoD-Proofs 1-3 zeigten seit Runde 2 eine Zeile zu hoch (log.go:63 ist Kommentar, logged steht auf :64; web.go 135/151 -> 137/153; Banner :97 -> :96) - korrigiert. review-check enthielt einen Home-Pfad (aus Review Runde 2) - neutralisiert, bevor er in einem Commit blieb.
 - **2026-10-19 20:51 · Alexander Sacharov** — review Runde 3 (frisch): DoD erfuellt, keine Defekte; ErrorLog-Fallback nach stderr umgesetzt. Offen nur die History-Bereinigung vor dem Push (Alex, 14:34). worktree_diff enthaelt nur fremde ungetrackte .jaira/milestones/-Dateien.
+- **2026-10-21 07:47 · Alexander Sacharov** — explain: Der Code ist in Ordnung, alle Punkte der Definition of Done sind erfuellt. Offen ist nur die History: zwei Commits (d89bb20c, b2389dea) enthalten in der Ticketdatei weiter einen fremden Projektnamen, PIDs und einen Home-Pfad; HEAD und Arbeitsbaum sind sauber.
+Warum: Refs und Commits sind oeffentlich, sobald sie gepusht sind - was einmal drin steht, geht nicht mehr zurueck. Zusaetzlich ist der stderr-Fallback nur live geprueft, kein Test deckt ihn.
+1) History der beiden Commits bereinigen lassen und das Ticket zurueckgeben [give back]
+2) Ticket so annehmen, die History schreibt Alex selbst um, bis dahin nicht pushen [accept]
+3) Zurueckgeben und einen Test fuer den stderr-Fallback (internal/cli/web.go:71) ergaenzen [give back]
+Empfehlung: 2 - der Code hat keinen Defekt, und die Bereinigung ist laut Entscheidung 14:34 ohnehin Alex' eigener Schritt vor dem Push.
