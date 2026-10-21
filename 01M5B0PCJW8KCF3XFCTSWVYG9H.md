@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T21:22:16Z
-updated-at: 2026-10-21T07:53:00Z
+updated-at: 2026-10-21T07:53:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-145108
 claimed-at: 2026-10-21T07:48:28Z
@@ -50,7 +50,7 @@ mode: conversational
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [~] ~/.jaira/foreign-names um die drei weiteren Projektnamen ergaenzen (Rechner-lokal, nicht im Repo)
+- [x] ~/.jaira/foreign-names um die drei weiteren Projektnamen ergaenzen (Rechner-lokal, nicht im Repo)
 - [ ] Fundstellen-Liste: Listen-Namen, abgeleitete Kuerzel (Compose-/Worktree-Praefix, zwei Seitennamen, Workspace-Label) und Firmen-Host - auf dem Branch und auf jedem Ref
 - [ ] Ersetzungen unter .jaira/ auf dem Branch, Satz fuer Satz von Hand (python-Skript mit exakten Alt/Neu-Paaren im Scratchpad); word-diff pruefen -> DoD 1, 3
 - [ ] Die vier Dateien ausserhalb .jaira/ (drei aus der Entscheidung plus ein Testkommentar in internal/tui/home_refs_test.go); go test der beiden Pakete -> DoD 5
