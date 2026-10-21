@@ -1,7 +1,7 @@
 ---
 id: 01M59H6V1TS2W4SENBXDHEY6T7
 title: "jaira web schreibt mit, was passiert, und ein Absturz hinterlaesst seine Ursache"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-21T07:52:42Z
+updated-at: 2026-10-21T07:52:46Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11846
 claimed-at: 2026-10-19T20:45:53Z
@@ -35,7 +35,7 @@ question: ""
 review-verdict: "Diff erfuellt DoD 1-3 und 5, DoD 4 per Entscheidung als Note geschlossen; keine Defekte gefunden. go test -race ./core/web ./internal/cli gruen, GOOS=windows baut. Vor dem Push muss die History-Bereinigung laufen."
 review-round: 3
 review-check: "1. go build -o /tmp/jw ./cmd/jaira  2. in einem Testrepo: /tmp/jw web --no-open - die zweite Zeile lautet 'jaira web: log .../web.log'  3. curl http://127.0.0.1:<port>/api/tickets/NOPE - im Log steht 'GET /api/tickets/NOPE: 404 ...' mit Zeit  4. Seite im Browser oeffnen, dann den Befehl mit Ctrl-C beenden - nach hoechstens 10 s erscheint oben das rote Banner 'jaira web has not answered since ...'  5. Befehl neu starten - Banner verschwindet, im Log steht 'stopped by signal interrupt'  6. Panic-Pfad hat keinen Handweg: go test ./core/web -run 'TestPanic|TestFailedFetch' deckt ihn"
-round: 3
+round: 4
 ---
 
 # jaira web schreibt mit, was passiert, und ein Absturz hinterlaesst seine Ursache
