@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T21:22:16Z
-updated-at: 2026-10-21T07:54:49Z
+updated-at: 2026-10-21T07:55:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-145108
 claimed-at: 2026-10-21T07:48:28Z
@@ -35,7 +35,8 @@ mode: conversational
 
 ## Definition of Done
 
-- [ ] git grep -iE -f ~/.jaira/foreign-names auf dem Branch findet unter .jaira/ nichts mehr
+- [x] git grep -iE -f ~/.jaira/foreign-names auf dem Branch findet unter .jaira/ nichts mehr
+  proof: grep -rniE -f ~/.jaira/foreign-names .jaira -> exit 1 (keine Treffer, inkl. der drei neuen Namen); ebenso Praefix, Workspace-Label und Firmen-Host
 - [ ] Der aktuelle Inhalt jedes Refs unter refs/jaira/ enthaelt keinen Namen aus der Liste, auf upstream geprueft nach dem Push
 - [ ] Jeder ersetzte Satz bleibt verstaendlich; kein Feld ausser dem Namen ist veraendert (git diff --word-diff zeigt nur Namensersetzungen)
 - [ ] Commit-Nachrichten, Ticket-Notes und PR-Text dieses Tickets nennen keinen der Namen
@@ -67,4 +68,4 @@ mode: conversational
 - **2026-10-21 07:47 · Alexander Sacharov** — decision (Alex, 2026-10-21, ueber Teamlead) zum Umfang: F1 a) die drei weiteren Projektnamen samt abgeleitetem Compose-Praefix und Workspace-Label mitnehmen und die drei Namen in ~/.jaira/foreign-names ergaenzen. F2 a) den Firmen-GitLab-Host neutral ersetzen ('ein firmeneigenes GitLab'). F3 a) die drei Dateien ausserhalb .jaira/ (.planning/HANDOFF.md, internal/cli/staleclaim_test.go, scripts/migrate-tickets.py) hier mitnehmen, DoD-Punkt dazu. Frage damit geschlossen.
 - **2026-10-21 07:48 · Alexander Sacharov** — Teamlead jaira-46, 2026-10-21: alter Worker-Tab (w3:tJ3) geschlossen - Session nicht mehr erreichbar (ListAgents kennt sie nicht, workers-Tool: Kontext unbekannt). Neuer Worker in derselben Worktree, Parent jaira-46. Der Ref dieses Tickets war lokal kaputt (leeres git-Objekt nach WSL-Absturz), von upstream neu geholt.
 - **2026-10-21 07:48 · Alexander Sacharov** — parent session: jaira-46
-- **2026-10-21 07:52 · Alexander Sacharov** — plan (pre-process): Ersatz nach festen Regeln, damit die Pruefung nach DoD 3 mechanisch geht. Hauptname -> 'ein anderes Projekt' in der passenden Beugung; Video-Repo -> 'das Video-Projekt'; die drei Zusatznamen -> 'ein anderes Projekt' bzw. bei der Registry-Aufzaehlung 'zwei Repos eines Kollegen'; Compose-/Worktree-Praefix 'rg_'/'rg-' -> '<projekt>_'/'<projekt>-'; die zwei Seitennamen aus build.py -> 'projekt-summary'/'projekt-jira'; Workspace-Label -> 'das Label des anderen Projekts'; Firmen-Host -> 'ein firmeneigenes GitLab' (in URLs: git.example.de, wie schon in einem Test verwendet). Vierte Datei ausserhalb .jaira gefunden: internal/tui/home_refs_test.go:78, nur ein Kommentar - zu DoD 5 dazugenommen. Abgeleitete Kuerzel und Host stehen NICHT in der Liste (das Label ist ein Allerweltswort, das Praefix zwei Buchstaben) - sie werden mit eigenem grep geprueft.
+- **2026-10-21 07:52 · Alexander Sacharov** — plan (pre-process): Ersatz nach festen Regeln, damit die Pruefung nach DoD 3 mechanisch geht. Hauptname -> 'ein anderes Projekt' in der passenden Beugung; Video-Repo -> 'das Video-Projekt'; die drei Zusatznamen -> 'ein anderes Projekt' bzw. bei der Registry-Aufzaehlung 'zwei Repos eines Kollegen'; Compose-/Worktree-Praefix (zwei Buchstaben) -> '<projekt>_'/'<projekt>-'; die zwei Seitennamen aus build.py -> 'projekt-summary'/'projekt-jira'; Workspace-Label -> 'das Label des anderen Projekts'; Firmen-Host -> 'ein firmeneigenes GitLab' (in URLs: git.example.de, wie schon in einem Test verwendet). Vierte Datei ausserhalb .jaira gefunden: internal/tui/home_refs_test.go:78, nur ein Kommentar - zu DoD 5 dazugenommen. Abgeleitete Kuerzel und Host stehen NICHT in der Liste (das Label ist ein Allerweltswort, das Praefix zwei Buchstaben) - sie werden mit eigenem grep geprueft.
