@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-21T07:54:24Z
+updated-at: 2026-10-21T07:54:27Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-150007"
 claimed-at: 2026-10-21T07:52:10Z
@@ -162,3 +162,4 @@ Empfehlung: 1 - die Doku-Zeile kostet Minuten und geht in denselben Commit, dana
 - **2026-10-21 07:51 · Alexander Sacharov** — Given back from signoff: 1) Zurueckgeben: Runde 6 committen und eine Zeile zu rejected-linked in Release-Note und docs/COMMANDS.md ergaenzen
 - **2026-10-21 07:52 · Alexander Sacharov** — cockpit: given back to a new worker - the old worker has no Herdr tab open any more
 - **2026-10-21 07:54 · Alexander Sacharov** — in-progress (Runde 7, aus signoff zurueck): rejected-linked in Release-Note-Zeile 5 und docs/COMMANDS.md:159 beim Namen genannt (wann geschrieben, dass restore related nur dann abnimmt). Keine Codeaenderung. Committet auf Alex' Entscheidung 07:51 ('Runde 6 committen') - trotz mode=conversational, weil die Rueckgabe das Committen selbst verlangt. go vet; go clean -testcache; go test ./... -race RC=0.
+- **2026-10-21 07:54 · Alexander Sacharov** — critique (Runde 7): liest nur die Antwort auf die Rueckgabe - zwei Doku-Zeilen (Release-Note 5, COMMANDS.md:159), die rejected-linked so beschreiben, wie store.go:396/787 es tun. Skill nennt rejected-linked nicht: Agenten lehnen nicht ab (Exit 3), die Zeile waere dort Ballast - none.
