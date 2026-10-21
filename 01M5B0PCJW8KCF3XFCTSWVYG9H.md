@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T21:22:16Z
-updated-at: 2026-10-21T08:34:51Z
+updated-at: 2026-10-21T08:35:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-145108
 claimed-at: 2026-10-21T07:48:28Z
@@ -79,3 +79,4 @@ mode: conversational
 - **2026-10-21 08:33 · Alexander Sacharov** — decision (Alex, 2026-10-21, ueber Teamlead): das Kuerzel 'req board' / 'req-Board' wird UEBERALL ersetzt (.jaira/ und .planning/, ca. 23 Stellen), Ersatz: 'Testprojekt' (z.B. 'das Board des Testprojekts' / 'Testprojekt-Board', passend gebeugt).
 - **2026-10-21 08:34 · Alexander Sacharov** — Kuerzel ersetzt wie entschieden: 8x 'req-Board' -> 'Testprojekt-Board' (.jaira/logbook/bemuca-2026090x), 14x 'req board' -> 'test project board' (.planning/STATE.md, .planning/quick/*/SUMMARY.md). Keine Treffer auf den 103 Refs, die 9 neu gebauten Commits bleiben gueltig. Push wartet weiter auf Freigabe.
 - **2026-10-21 08:34 · Alexander Sacharov** — decision (Alex, 2026-10-21, ueber Teamlead): Push der 9 Ticket-Refs auf upstream freigegeben - nachdem 'req board' auch in den Refs durch 'Testprojekt' ersetzt ist; kein erneutes Vorlegen noetig.
+- **2026-10-21 08:35 · Alexander Sacharov** — Push der 9 Refs: vom auto-mode-Klassifikator dieser Session abgelehnt ([Git Destructive], wegen --force-with-lease). Nicht umgangen. Fertiges Skript fuer Alex: Scratchpad push-refs.sh dieser Session (9x git push --force-with-lease + update-ref, alle fast-forward). DoD 2 wartet darauf.
