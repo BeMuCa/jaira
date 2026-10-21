@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-21T07:54:31Z
+updated-at: 2026-10-21T07:54:37Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-150007"
 claimed-at: 2026-10-21T07:52:10Z
@@ -36,7 +36,7 @@ outcome-why: "Ein abgelehntes Ticket sah im Archiv genauso aus wie ein weggeraeu
 outcome-resolves: "DoD 1-3: internal/cli/reject.go + Store.Reject, Tests in internal/cli/reject_test.go; DoD 4: modeReject in internal/tui/model.go, internal/tui/reject_test.go; DoD 5: archivedRejections/rejectionLine, unreject; DoD 6: release note, agent block, Skill, go test ./... -race gruen; DoD 7-9: Faltung, Selbst-Duplikat, R stempelt; DoD 10: rejected-duplicate-of + unreject; DoD 11: rejected-linked, TestRestoreKeepsALinkThatWasThereBefore."
 review-summary: "none"
 round: 7
-review-gaps: "1) Blockierend vor signoff: Runde 6 (DoD 10+11: rejected-duplicate-of, rejected-linked, unreject, beide Restore-Tests) liegt nur im worktree, nicht committed - ohne Commit fehlt sie im PR. 2) Nicht blockierend: rejected-linked ist ein neues Frontmatter-Feld, wird aber weder in core/release/notes/A0C081.md noch in docs/COMMANDS.md oder im Skill beim Namen genannt; wer die Datei von Hand liest, sieht rejected-linked: \"true\" ohne Erklaerung (die Note beschreibt nur das Verhalten). 3) Randfall, bewusst hingenommen: setzt jemand den related-Link zum Original erst NACH dem reject von Hand, nimmt restore ihn trotzdem ab, weil rejected-linked schon true ist."
+review-gaps: "none - Runde 7 aendert nur zwei Doku-Zeilen; nichts dupliziert, nichts verwaist"
 test-verdict: "pass: go vet + go clean -testcache + go test ./... -race RC=0; TestRestoreKeepsALinkThatWasThereBefore rot ohne den Fix; Binary auf Scratch-Board: related-Link vor reject bleibt nach restore stehen (kein rejected-linked geschrieben), neuer Link wird mit rejected-linked: \"true\" geschrieben und von restore abgenommen; show nennt 'duplicate of <handle>'"
 review-verdict: "approve mit Bedingung: DoD 1-11 durch Diff und Tests belegt; go vet + go test -race ./core/... ./internal/... gruen. Per Binary nachgespielt: reject --duplicate-of ohne vorherigen Link -> rejected-linked: \"true\", restore leert related; mit vorherigem Link (jaira set related=) -> kein rejected-linked, restore laesst den Link stehen; archive/show nennen 'duplicate of <handle>', --json duplicate_of. Vor signoff muss Runde 6 committed werden (Gap 1); Gap 2 ist eine Doku-Zeile und kann mit in denselben Commit."
 review-round: 6
