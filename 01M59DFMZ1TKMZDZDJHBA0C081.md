@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-21T07:56:54Z
+updated-at: 2026-10-21T07:56:57Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-150007"
 claimed-at: 2026-10-21T07:52:10Z
@@ -40,7 +40,7 @@ review-gaps: "1) Branch nicht gepusht: origin/feat/a0c081 steht auf 41b46cf2, lo
 test-verdict: "pass: go vet + go clean -testcache + go test ./... -race RC=0 (nach der Doku-Aenderung, kein Code seitdem); DoD 12 im Baum (Release-Note Zeile 5, COMMANDS.md:159, Commit 269380b0); per Binary auf Scratch-Board: reject --duplicate-of ohne vorherigen Link schreibt rejected-linked \"true\" und restore nimmt related ab, mit vorherigem Link kein rejected-linked und related bleibt - wie die Doku sagt"
 review-verdict: "approve: der Diff erfuellt alle 12 DoD-Punkte, go vet und go test ./... -race gruen, Exit 3/2/5, Faltung, Archiv-Anzeige und restore (Link nur bei rejected-linked) per gebautem Binary bestaetigt. Vor dem PR muss der Branch gepusht werden (Gap 1)."
 review-round: 7
-review-check: "0. Committen (Runde 6 liegt nur im worktree): git add .claude/skills/jaira/SKILL.md core/release/notes/A0C081.md core/ticket/schema.go core/ticket/store.go docs/COMMANDS.md internal/cli/reject.go internal/cli/reject_test.go internal/cli/tickets.go .jaira/tickets/01M59DFMZ1TKMZDZDJHBA0C081-ein-ticket-laesst-sich-mit-grund-ablehnen-jaira.md && git commit -m 'fix(A0C081): a duplicate rejection names its original, and restore takes only the link it made off'  1. go build -o /tmp/jaira ./cmd/jaira  2. leeres Repo: mkdir /tmp/r && cd /tmp/r && git init && git commit --allow-empty -m init && /tmp/jaira init  3. dreimal /tmp/jaira create <Titel> --goal g --context c --dod d --assignee me -> Handles A, B, C  4. /tmp/jaira set C related=A  5. /tmp/jaira reject B --why same --duplicate-of A --force und dasselbe fuer C -> je 'Moved to .jaira/archive'  6. /tmp/jaira archive -> unter jeder Datei 'rejected duplicate of A: same (...)'  7. grep rejected-linked .jaira/archive/*.md -> nur die Datei von B hat die Zeile  8. /tmp/jaira restore <Datei B> und <Datei C>  9. /tmp/jaira show B --json | jq .related -> []  10. /tmp/jaira show C --json | jq .related -> [die ID von A], der alte Link blieb  11. ohne --force: /tmp/jaira reject A --why x; echo $? -> 3 und die Meldung nennt 'jaira move A --to human --question'"
+review-check: "0. git push origin feat/a0c081 - danach zeigt 'git log origin/feat/a0c081 -1 --oneline' 269380b0. 1. go build -o /tmp/j ./cmd/jaira 2. in einem leeren Repo: git init; git commit --allow-empty -m i; /tmp/j init; /tmp/j create orig; /tmp/j create dup (Handles notieren: A, B) 3. /tmp/j reject B --why x -> Exit 3, Meldung nennt 'jaira move B --to human --question' 4. /tmp/j reject B --why x --force --duplicate-of B -> Exit 2 'cannot be a duplicate of itself' 5. /tmp/j reject B --why 'zwei<Enter>zeilen' --force --duplicate-of A -> 'Rejected B (duplicate)' 6. /tmp/j archive -> unter der Datei: 'rejected duplicate of A: zwei zeilen (<du>, <datum>)' 7. /tmp/j restore <datei> -> in .jaira/tickets/<B>.md kein rejected-* Key mehr, related leer 8. im TUI (/tmp/j) auf einem Ticket R druecken, Grund tippen, Enter -> Hinweis 'Rejected ...', Ticket weg vom Board, in /tmp/j archive mit wontfix."
 ---
 
 # Ein Ticket laesst sich mit Grund ablehnen: jaira reject, und das Archiv sagt warum
