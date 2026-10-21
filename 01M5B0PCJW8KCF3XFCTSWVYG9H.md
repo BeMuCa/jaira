@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T21:22:16Z
-updated-at: 2026-10-21T07:47:44Z
+updated-at: 2026-10-21T07:48:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10599
 claimed-at: 2026-10-19T21:22:42Z
@@ -56,3 +56,4 @@ mode: conversational
 - **2026-10-19 21:25 · Alexander Sacharov** — decision: updated_at bleibt unveraendert (DoD 3: nur Namen ersetzt). Restrisiko: ein Klon, der eine alte Kopie derselben Datei auf der Platte hat und nach einem fetch darauf schreibt, schickt den alten Text mit gueltigem Lease wieder hoch (CheckFresh vergleicht nur updated_at). Betrifft nur Tickets, die auch als Datei auf master liegen; mit dem Merge dieses PRs ist auch die master-Kopie sauber. Pruefung nach dem Push: git show auf jeden Ref.
 - **2026-10-19 21:25 · Alexander Sacharov** — question (vor dem Plan, an Alex): Umfang. Gezaehlt auf master+Refs: 1) drei weitere Namen eigener Projekte, die NICHT in ~/.jaira/foreign-names stehen (je 1 Fundstelle, eine davon auch auf einem Ref), dazu ein Compose-Praefix und ein Herdr-Workspace-Label, die vom Hauptnamen abgeleitet sind. 2) der GitLab-Host der Firma, 11 Stellen. 3) drei Dateien ausserhalb .jaira/ nennen einen Listen-Namen (.planning/HANDOFF.md, internal/cli/staleclaim_test.go, scripts/migrate-tickets.py). Optionen je Punkt: F1 a) mitnehmen und die drei Namen in ~/.jaira/foreign-names ergaenzen [empfohlen] b) nur die Liste. F2 a) Host neutral ersetzen ('ein firmeneigenes GitLab') [empfohlen] b) Host bleibt. F3 a) mitnehmen, DoD-Punkt dazu [empfohlen] b) eigenes Ticket c) bleibt.
 - **2026-10-21 07:47 · Alexander Sacharov** — decision (Alex, 2026-10-21, ueber Teamlead) zum Umfang: F1 a) die drei weiteren Projektnamen samt abgeleitetem Compose-Praefix und Workspace-Label mitnehmen und die drei Namen in ~/.jaira/foreign-names ergaenzen. F2 a) den Firmen-GitLab-Host neutral ersetzen ('ein firmeneigenes GitLab'). F3 a) die drei Dateien ausserhalb .jaira/ (.planning/HANDOFF.md, internal/cli/staleclaim_test.go, scripts/migrate-tickets.py) hier mitnehmen, DoD-Punkt dazu. Frage damit geschlossen.
+- **2026-10-21 07:48 · Alexander Sacharov** — Teamlead jaira-46, 2026-10-21: alter Worker-Tab (w3:tJ3) geschlossen - Session nicht mehr erreichbar (ListAgents kennt sie nicht, workers-Tool: Kontext unbekannt). Neuer Worker in derselben Worktree, Parent jaira-46. Der Ref dieses Tickets war lokal kaputt (leeres git-Objekt nach WSL-Absturz), von upstream neu geholt.
