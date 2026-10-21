@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-21T07:55:06Z
+updated-at: 2026-10-21T07:56:47Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-150007"
 claimed-at: 2026-10-21T07:52:10Z
@@ -34,7 +34,7 @@ mode: conversational
 outcome-what: "Neuer Befehl jaira reject <id> --why [--kind wontfix|obsolete] [--duplicate-of] [--force] schreibt rejected-kind/why/by/at (bei --duplicate-of auch rejected-duplicate-of, und rejected-linked, wenn reject den related-Link selbst anlegt) und archiviert ueber Store.Archive; Taste R auf dem Board; archive-Liste und show zeigen den Grund und das Original; restore nimmt die Felder ab und den related-Link nur, wenn reject ihn angelegt hat (Doc.Remove)."
 outcome-why: "Ein abgelehntes Ticket sah im Archiv genauso aus wie ein weggeraeumtes; Monate spaeter liess sich nicht sagen, ob es Duplikat, verworfen oder ueberholt war."
 outcome-resolves: "DoD 1-3: internal/cli/reject.go + Store.Reject, Tests in internal/cli/reject_test.go; DoD 4: modeReject in internal/tui/model.go, internal/tui/reject_test.go; DoD 5: archivedRejections/rejectionLine, unreject; DoD 6: release note, agent block, Skill, go test ./... -race gruen; DoD 7-9: Faltung, Selbst-Duplikat, R stempelt; DoD 10: rejected-duplicate-of + unreject; DoD 11: rejected-linked, TestRestoreKeepsALinkThatWasThereBefore."
-review-summary: "none"
+review-summary: "Neuer Befehl 'jaira reject <id> --why <text> --force' (internal/cli/reject.go) schreibt flache Frontmatter-Keys rejected-kind/why/by/at (bei --duplicate-of zusaetzlich rejected-duplicate-of und, nur wenn reject den related-Link selbst anlegt, rejected-linked) und archiviert ueber Store.Archive (core/ticket/store.go Store.Reject). Der Grund wird auf eine Zeile gefaltet; Archivname-Kollision, unbekanntes Original (Exit 5) und Selbst-Duplikat (Exit 2) werden vor jedem Schreiben geprueft. Ohne --force Exit 3 mit dem Weg ueber die Frage-Lane. Im TUI fragt R (Board und Detail) eine Zeile Grund, stempelt Commits und lehnt als wontfix ab. 'jaira archive' zeigt pro abgelehnter Datei eine zweite Zeile, 'jaira show' eine rejected-Zeile, --json je ein rejected-Objekt. 'jaira restore' nimmt alle rejected-* Keys ab (neues Doc.Remove) und den related-Link nur bei rejected-linked. Dazu Merge-Driver (rejected-why als Prosa), Agent-Block, Skill, README, COMMANDS.md, Release-Note."
 round: 7
 review-gaps: "none - Runde 7 aendert nur zwei Doku-Zeilen; nichts dupliziert, nichts verwaist"
 test-verdict: "pass: go vet + go clean -testcache + go test ./... -race RC=0 (nach der Doku-Aenderung, kein Code seitdem); DoD 12 im Baum (Release-Note Zeile 5, COMMANDS.md:159, Commit 269380b0); per Binary auf Scratch-Board: reject --duplicate-of ohne vorherigen Link schreibt rejected-linked \"true\" und restore nimmt related ab, mit vorherigem Link kein rejected-linked und related bleibt - wie die Doku sagt"
