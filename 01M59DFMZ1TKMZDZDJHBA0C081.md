@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-21T07:57:04Z
+updated-at: 2026-10-21T14:58:14Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-150007"
 claimed-at: 2026-10-21T07:52:10Z
@@ -165,3 +165,8 @@ Empfehlung: 1 - die Doku-Zeile kostet Minuten und geht in denselben Commit, dana
 - **2026-10-21 07:54 · Alexander Sacharov** — critique (Runde 7): liest nur die Antwort auf die Rueckgabe - zwei Doku-Zeilen (Release-Note 5, COMMANDS.md:159), die rejected-linked so beschreiben, wie store.go:396/787 es tun. Skill nennt rejected-linked nicht: Agenten lehnen nicht ab (Exit 3), die Zeile waere dort Ballast - none.
 - **2026-10-21 07:55 · Alexander Sacharov** — testing (Runde 7): pass. Beobachtet: der Writer schreibt rejected-linked: "true" (gequotet), die Doku sagt rejected-linked: true - gleiche Bedeutung, kein Befund.
 - **2026-10-21 07:57 · Alexander Sacharov** — review (fresh context, Runde 7): approve. DoD 1-12 im Diff 7f008dec..269380b0 belegt, go test ./... -race gruen, per Binary nachgespielt (Exit 3/2/5, Faltung, archive-Zeile, restore nimmt related nur bei rejected-linked ab, vorher bestehender Link bleibt). Offen: Branch nicht gepusht (origin auf 41b46cf2). Nebenbefund: Restore schreibt unreject vor dem Rename - scheitert der Rename, verliert die Archivdatei ihre Begruendung.
+- **2026-10-21 14:58 · Alexander Sacharov** — explain: Der Review gibt approve: alle 12 DoD-Punkte sind im Diff belegt, Tests laufen gruen. Offen sind zwei Kleinigkeiten: der Branch ist nicht gepusht (origin steht auf 41b46cf2, lokal 269380b0), und Store.Restore schreibt das Entfernen der Begruendung vor dem Umbenennen der Datei.
+Warum: Ohne Push fehlen Runde 6/7 auf dem Remote und der PR waere unvollstaendig. Scheitert beim Restore das Umbenennen, liegt die Datei ohne Begruendung im Archiv - selten, und kein DoD-Punkt.
+1) Zurueckgeben: Restore so aendern, dass erst umbenannt und dann die Begruendung entfernt wird [give back]
+2) So annehmen: nur den Branch pushen, das Restore-Risiko bleibt als bekannte Kleinigkeit [accept]
+Empfehlung: 2 - der Restore-Fehler tritt nur bei einem scheiternden Rename auf und gehoert nicht zur Definition of Done; der Push ist die einzige echte Voraussetzung.
