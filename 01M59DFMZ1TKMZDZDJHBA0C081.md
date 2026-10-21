@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-21T07:53:59Z
+updated-at: 2026-10-21T07:54:02Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-150007"
 claimed-at: 2026-10-21T07:52:10Z
@@ -69,7 +69,8 @@ review-check: "0. Committen (Runde 6 liegt nur im worktree): git add .claude/ski
   proof: core/ticket/store.go:389 Store.Reject schreibt rejected-duplicate-of; core/ticket/store.go:783 unreject nimmt genau diesen related-Eintrag ab; internal/cli/tickets.go rejectionLine 'duplicate of <handle>' + rejectionJSON duplicate_of; tests TestRestoreTakesTheDuplicateLinkOff (ohne den Fix rot), TestRejectDuplicateOfLinksTheOriginal
 - [x] Ein related-Link zum Original, der schon vor reject --duplicate-of bestand, bleibt nach restore stehen (rejected-linked: true nur, wenn reject ihn angelegt hat)
   proof: core/ticket/store.go:396 Store.Reject schreibt rejected-linked nur bei neuem Link; core/ticket/store.go:787 unreject nimmt related nur dann ab; test TestRestoreKeepsALinkThatWasThereBefore (ohne den Fix rot), TestRestoreTakesTheDuplicateLinkOff
-- [ ] rejected-linked steht in der Release-Note und in docs/COMMANDS.md, Runde 6 ist committet
+- [x] rejected-linked steht in der Release-Note und in docs/COMMANDS.md, Runde 6 ist committet
+  proof: core/release/notes/A0C081.md Zeile 5; docs/COMMANDS.md:159 (jaira reject); go test ./... -race exit 0
 
 ## Options
 
