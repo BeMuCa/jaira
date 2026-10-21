@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-21T07:56:57Z
+updated-at: 2026-10-21T07:57:01Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-150007"
 claimed-at: 2026-10-21T07:52:10Z
@@ -164,3 +164,4 @@ Empfehlung: 1 - die Doku-Zeile kostet Minuten und geht in denselben Commit, dana
 - **2026-10-21 07:54 · Alexander Sacharov** — in-progress (Runde 7, aus signoff zurueck): rejected-linked in Release-Note-Zeile 5 und docs/COMMANDS.md:159 beim Namen genannt (wann geschrieben, dass restore related nur dann abnimmt). Keine Codeaenderung. Committet auf Alex' Entscheidung 07:51 ('Runde 6 committen') - trotz mode=conversational, weil die Rueckgabe das Committen selbst verlangt. go vet; go clean -testcache; go test ./... -race RC=0.
 - **2026-10-21 07:54 · Alexander Sacharov** — critique (Runde 7): liest nur die Antwort auf die Rueckgabe - zwei Doku-Zeilen (Release-Note 5, COMMANDS.md:159), die rejected-linked so beschreiben, wie store.go:396/787 es tun. Skill nennt rejected-linked nicht: Agenten lehnen nicht ab (Exit 3), die Zeile waere dort Ballast - none.
 - **2026-10-21 07:55 · Alexander Sacharov** — testing (Runde 7): pass. Beobachtet: der Writer schreibt rejected-linked: "true" (gequotet), die Doku sagt rejected-linked: true - gleiche Bedeutung, kein Befund.
+- **2026-10-21 07:57 · Alexander Sacharov** — review (fresh context, Runde 7): approve. DoD 1-12 im Diff 7f008dec..269380b0 belegt, go test ./... -race gruen, per Binary nachgespielt (Exit 3/2/5, Faltung, archive-Zeile, restore nimmt related nur bei rejected-linked ab, vorher bestehender Link bleibt). Offen: Branch nicht gepusht (origin auf 41b46cf2). Nebenbefund: Restore schreibt unreject vor dem Rename - scheitert der Rename, verliert die Archivdatei ihre Begruendung.
