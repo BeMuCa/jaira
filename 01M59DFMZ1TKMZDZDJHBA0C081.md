@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-19T20:50:27Z
+updated-at: 2026-10-21T07:48:04Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-4026"
 claimed-at: 2026-10-19T20:44:55Z
@@ -151,3 +151,8 @@ Empfehlung: 1 - alle DoD sind belegt, Tests laufen gruen, und der Linkverlust wu
 - **2026-10-19 20:47 · Alexander Sacharov** — in-progress (Runde 6, aus signoff zurueck): rejected-linked: true als sechster Key in RejectedFields, damit unreject ihn ueber dieselbe Schleife abnimmt. Nicht im Rejection-Struct: nur unreject liest ihn, show/archive brauchen ihn nicht. Release-Note-Zeile 5 umgeschrieben (sie war unveroeffentlicht und sagte jetzt das Gegenteil). go vet; go clean -testcache; go test ./... -race RC=0.
 - **2026-10-19 20:47 · Alexander Sacharov** — critique (Runde 6): liest nur rejected-linked. Sechster Key ist Alex' Wahl (Notiz 19.10. Runde 6); er laeuft ueber RejectedFields wie die anderen und braucht keinen Sonderweg zum Abnehmen. Fehler von d.Scalar ignoriert: ein von Hand kaputter Wert laesst den Link stehen - die sichere Seite. Kein Feld im Rejection-Struct, weil nur unreject ihn liest - none.
 - **2026-10-19 20:50 · Alexander Sacharov** — review Runde 6: approve mit Bedingung. Runde 6 (rejected-duplicate-of/rejected-linked) liegt uncommitted im worktree und muss vor signoff committed werden - Zeile in review-check Schritt 0. Nicht blockierend: rejected-linked wird in Release-Note/COMMANDS.md nicht beim Namen genannt.
+- **2026-10-21 07:48 · Alexander Sacharov** — explain: Die Arbeit ist fachlich fertig und belegt (DoD 1-11, Tests gruen), aber Runde 6 (rejected-duplicate-of, rejected-linked, restore-Tests) liegt nur im worktree und ist nicht committed. Das neue Feld rejected-linked steht ausserdem in keiner Doku.
+Warum: Ohne Commit fehlt Runde 6 im PR, und die Annahme betraefe Code, der nie ankommt. Wer die Ticketdatei von Hand liest, sieht rejected-linked: "true" ohne Erklaerung.
+1) Zurueckgeben: Runde 6 committen und eine Zeile zu rejected-linked in Release-Note und docs/COMMANDS.md ergaenzen [give back]
+2) Runde 6 so committen und annehmen, die Doku-Luecke bleibt offen [accept]
+Empfehlung: 1 - die Doku-Zeile kostet Minuten und geht in denselben Commit, danach ist nichts mehr offen.
