@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-21T07:53:01Z
+updated-at: 2026-10-21T07:55:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-154400
 claimed-at: 2026-10-21T07:53:01Z
@@ -115,3 +115,4 @@ Empfehlung: 2 - der Code hat keinen Defekt, und die Bereinigung ist laut Entsche
 - **2026-10-21 07:52 · Alexander Sacharov** — decision: 1) History der beiden Commits bereinigen lassen und das Ticket zurueckgeben
 - **2026-10-21 07:52 · Alexander Sacharov** — Given back from signoff: 1) History der beiden Commits bereinigen lassen und das Ticket zurueckgeben
 - **2026-10-21 07:52 · Alexander Sacharov** — cockpit: given back to a new worker - the old worker has no Herdr tab open any more
+- **2026-10-21 07:55 · Alexander Sacharov** — Runde 4 (History-Bereinigung, Entscheidung 21.10. 07:52): Stand - Branch feat/hey6t7 nicht gepusht, 4 Commits, Ticketdatei in d89bb20c und b2389dea unsauber. Ticket-Ref liegt schon auf upstream: 63 von 102 Versionen enthalten die Daten (Kontext Zeile 14-15, Notes 12:48 und 12:54, review-check und review-gaps); die Spitze ist sauber. Geplant: Skript im Scratchpad, das beide linearen Historien per commit-tree neu baut (Autor/Datum bleiben, Backup unter refs/backup/hey6t7/*, Trockenpruefung: keine Treffer, Baeume der Spitzen gleich), dann Force-Push des Refs durch Alex. Schon das Schreiben der Skriptdatei hat der Berechtigungs-Klassifikator abgelehnt (Git Destructive) - nicht umgangen, liegt bei Alex.
