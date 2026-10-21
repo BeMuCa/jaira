@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T21:22:16Z
-updated-at: 2026-10-21T07:55:32Z
+updated-at: 2026-10-21T07:55:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-145108
 claimed-at: 2026-10-21T07:48:28Z
@@ -71,3 +71,4 @@ mode: conversational
 - **2026-10-21 07:48 · Alexander Sacharov** — parent session: jaira-46
 - **2026-10-21 07:52 · Alexander Sacharov** — plan (pre-process): Ersatz nach festen Regeln, damit die Pruefung nach DoD 3 mechanisch geht. Hauptname -> 'ein anderes Projekt' in der passenden Beugung; Video-Repo -> 'das Video-Projekt'; die drei Zusatznamen -> 'ein anderes Projekt' bzw. bei der Registry-Aufzaehlung 'zwei Repos eines Kollegen'; Compose-/Worktree-Praefix (zwei Buchstaben) -> '<projekt>_'/'<projekt>-'; die zwei Seitennamen aus build.py -> 'projekt-summary'/'projekt-jira'; Workspace-Label -> 'das Label des anderen Projekts'; Firmen-Host -> 'ein firmeneigenes GitLab' (in URLs: git.example.de, wie schon in einem Test verwendet). Vierte Datei ausserhalb .jaira gefunden: internal/tui/home_refs_test.go:78, nur ein Kommentar - zu DoD 5 dazugenommen. Abgeleitete Kuerzel und Host stehen NICHT in der Liste (das Label ist ein Allerweltswort, das Praefix zwei Buchstaben) - sie werden mit eigenem grep geprueft.
 - **2026-10-21 07:55 · Alexander Sacharov** — in-progress, Schritt 3 fertig: 25 Dateien unter .jaira/ ersetzt (78 Zeilen), Ersatzpaare als feste Liste im Scratchpad dieser Session, auf Branch und spaeter auf Refs dieselben. Warte (conversational) auf Freigabe des Diffs, bevor Dateien ausserhalb .jaira und Refs drankommen. Gefundene Falle: das Paar fuer den Unterstrich-Praefix greift auch in einer Note dieses Tickets - per Hand korrigiert.
+- **2026-10-21 07:55 · Alexander Sacharov** — question an jaira-46 (Parent): Diff der .jaira/-Ersetzungen freigeben? 1) Ja, weiter [empfohlen] 2) Formulierungen aendern. Warte auf Antwort.
