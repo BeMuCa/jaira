@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-21T07:56:51Z
+updated-at: 2026-10-21T07:56:54Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-150007"
 claimed-at: 2026-10-21T07:52:10Z
@@ -38,8 +38,8 @@ review-summary: "Neuer Befehl 'jaira reject <id> --why <text> --force' (internal
 round: 7
 review-gaps: "1) Branch nicht gepusht: origin/feat/a0c081 steht auf 41b46cf2, lokal 269380b0 - Runde 6/7 (rejected-duplicate-of, rejected-linked, Doku) fehlt auf dem Remote. 2) Store.Restore schreibt unreject in die Archivdatei, bevor es umbenennt: scheitert os.Rename, liegt die Datei ohne Begruendung im Archiv (selten, nicht DoD). 3) R auf dem Board kennt nur wontfix - so in DoD 4 entschieden (Notiz 06:28). Sonst nichts: DoD 1-12 im Diff belegt, per Binary nachgespielt."
 test-verdict: "pass: go vet + go clean -testcache + go test ./... -race RC=0 (nach der Doku-Aenderung, kein Code seitdem); DoD 12 im Baum (Release-Note Zeile 5, COMMANDS.md:159, Commit 269380b0); per Binary auf Scratch-Board: reject --duplicate-of ohne vorherigen Link schreibt rejected-linked \"true\" und restore nimmt related ab, mit vorherigem Link kein rejected-linked und related bleibt - wie die Doku sagt"
-review-verdict: "approve mit Bedingung: DoD 1-11 durch Diff und Tests belegt; go vet + go test -race ./core/... ./internal/... gruen. Per Binary nachgespielt: reject --duplicate-of ohne vorherigen Link -> rejected-linked: \"true\", restore leert related; mit vorherigem Link (jaira set related=) -> kein rejected-linked, restore laesst den Link stehen; archive/show nennen 'duplicate of <handle>', --json duplicate_of. Vor signoff muss Runde 6 committed werden (Gap 1); Gap 2 ist eine Doku-Zeile und kann mit in denselben Commit."
-review-round: 6
+review-verdict: "approve: der Diff erfuellt alle 12 DoD-Punkte, go vet und go test ./... -race gruen, Exit 3/2/5, Faltung, Archiv-Anzeige und restore (Link nur bei rejected-linked) per gebautem Binary bestaetigt. Vor dem PR muss der Branch gepusht werden (Gap 1)."
+review-round: 7
 review-check: "0. Committen (Runde 6 liegt nur im worktree): git add .claude/skills/jaira/SKILL.md core/release/notes/A0C081.md core/ticket/schema.go core/ticket/store.go docs/COMMANDS.md internal/cli/reject.go internal/cli/reject_test.go internal/cli/tickets.go .jaira/tickets/01M59DFMZ1TKMZDZDJHBA0C081-ein-ticket-laesst-sich-mit-grund-ablehnen-jaira.md && git commit -m 'fix(A0C081): a duplicate rejection names its original, and restore takes only the link it made off'  1. go build -o /tmp/jaira ./cmd/jaira  2. leeres Repo: mkdir /tmp/r && cd /tmp/r && git init && git commit --allow-empty -m init && /tmp/jaira init  3. dreimal /tmp/jaira create <Titel> --goal g --context c --dod d --assignee me -> Handles A, B, C  4. /tmp/jaira set C related=A  5. /tmp/jaira reject B --why same --duplicate-of A --force und dasselbe fuer C -> je 'Moved to .jaira/archive'  6. /tmp/jaira archive -> unter jeder Datei 'rejected duplicate of A: same (...)'  7. grep rejected-linked .jaira/archive/*.md -> nur die Datei von B hat die Zeile  8. /tmp/jaira restore <Datei B> und <Datei C>  9. /tmp/jaira show B --json | jq .related -> []  10. /tmp/jaira show C --json | jq .related -> [die ID von A], der alte Link blieb  11. ohne --force: /tmp/jaira reject A --why x; echo $? -> 3 und die Meldung nennt 'jaira move A --to human --question'"
 ---
 
