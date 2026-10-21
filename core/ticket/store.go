@@ -342,8 +342,10 @@ func (s *Store) archiveTarget(path string) (src, dst string, err error) {
 
 // Reject writes why nobody will do a ticket onto it and archives it, returning
 // its new path. duplicateOf, when set, is the original's full id, resolved by
-// the caller before anything is written; it makes the kind RejectDuplicate and
-// relates the ticket to the original.
+// the caller before anything is written; it makes the kind RejectDuplicate,
+// names the original in FieldRejectedDuplicateOf and relates the ticket to it,
+// marking FieldRejectedLinked when that link is new, so restore takes off only
+// what the rejection put there.
 //
 // It archives through Archive rather than a second move of its own: a rejected
 // ticket lies where an archived one lies, and 'jaira restore' brings both back
@@ -382,10 +384,19 @@ func (s *Store) Reject(id, kind, why, duplicateOf string, now time.Time) (string
 				return err
 			}
 		}
-		if duplicateOf != "" && !slices.Contains(t.Related, duplicateOf) {
-			return d.SetList(FieldRelated, append(slices.Clone(t.Related), duplicateOf))
+		if duplicateOf == "" {
+			return nil
 		}
-		return nil
+		if err := d.SetScalar(FieldRejectedDuplicateOf, duplicateOf); err != nil {
+			return err
+		}
+		if slices.Contains(t.Related, duplicateOf) {
+			return nil
+		}
+		if err := d.SetScalar(FieldRejectedLinked, "true"); err != nil {
+			return err
+		}
+		return d.SetList(FieldRelated, append(slices.Clone(t.Related), duplicateOf))
 	})
 	if err != nil && !errors.Is(err, ErrNotRecorded) {
 		return "", err
@@ -757,8 +768,9 @@ func (s *Store) Restore(name string) (string, error) {
 
 // unreject takes a rejection off a file about to go back on the board: a
 // ticket somebody restored is a ticket somebody wants after all, and a
-// rejection left on it would say the opposite. A file that carries none is
-// left byte for byte as it is.
+// rejection left on it would say the opposite. The link a duplicate rejection
+// added to related goes with it; one that was there before the rejection
+// stays. A file that carries none is left byte for byte as it is.
 func unreject(path string) error {
 	raw, err := os.ReadFile(path)
 	if err != nil {
@@ -771,6 +783,19 @@ func unreject(path string) error {
 		return nil
 	}
 	changed := false
+	orig, _, _ := d.Scalar(FieldRejectedDuplicateOf)
+	if linked, _, _ := d.Scalar(FieldRejectedLinked); orig != "" && linked == "true" {
+		related, err := d.List(FieldRelated)
+		if err != nil {
+			return err
+		}
+		if i := slices.Index(related, orig); i >= 0 {
+			if err := d.SetList(FieldRelated, slices.Delete(related, i, i+1)); err != nil {
+				return err
+			}
+			changed = true
+		}
+	}
 	for _, key := range RejectedFields {
 		if d.Has(key) {
 			if err := d.Remove(key); err != nil {

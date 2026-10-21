@@ -433,7 +433,8 @@ A ticket that will not be done — not worth it, a duplicate, overtaken — is
 **rejected**, not archived: `jaira reject <handle> --why <text>` writes
 `rejected-kind`, `rejected-why`, `rejected-by` and `rejected-at` onto it and
 archives it, so the archive still says why months later. `--kind obsolete`
-or `--duplicate-of <handle>`; the default kind is wontfix. Rejecting is a
+or `--duplicate-of <handle>`, which also writes `rejected-duplicate-of`; the
+default kind is wontfix. Rejecting is a
 person's decision and the command refuses you (exit 3) without `--force`,
 which is not yours to pass: move the ticket to the human lane with
 `--question "reject? reason: ..."` and let a person reject it — on the board

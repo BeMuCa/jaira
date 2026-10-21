@@ -23,8 +23,9 @@ and archives it, exactly as 'jaira archive' does. Archived alone, a ticket
 looks the same as one merely tidied away; rejected, the archive says why.
 
 --kind is wontfix (the default) or obsolete. --duplicate-of <id> names the
-original instead: the kind becomes duplicate and the original goes into
-related.
+original instead: the kind becomes duplicate, the original goes into
+related and into rejected-duplicate-of. 'jaira restore' takes both off again,
+but keeps a related link that was there before the rejection.
 
 Rejecting is a person's decision. Without --force the command refuses (exit 3)
 and says what an agent does instead: move the ticket to human with

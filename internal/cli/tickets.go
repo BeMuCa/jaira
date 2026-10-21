@@ -1738,7 +1738,11 @@ func resolveRef(s *ticket.Store, ref string) (string, error) {
 // rejectionLine is a rejection on one line — "wontfix: why (by, date)" — the
 // way show and the archive listing print it.
 func rejectionLine(r ticket.Rejection) string {
-	line := r.Kind + ": " + r.Why
+	line := r.Kind
+	if r.DuplicateOf != "" {
+		line += " of " + ticket.Handle(r.DuplicateOf)
+	}
+	line += ": " + r.Why
 	var who []string
 	if r.By != "" {
 		who = append(who, r.By)
@@ -1759,5 +1763,5 @@ func rejectionJSON(r ticket.Rejection) map[string]string {
 	if !r.At.IsZero() {
 		at = r.At.UTC().Format(time.RFC3339)
 	}
-	return map[string]string{"kind": r.Kind, "why": r.Why, "by": r.By, "at": at}
+	return map[string]string{"kind": r.Kind, "why": r.Why, "by": r.By, "at": at, "duplicate_of": r.DuplicateOf}
 }

@@ -81,6 +81,96 @@ func TestRejectDuplicateOfLinksTheOriginal(t *testing.T) {
 	if len(tk.Related) != 1 || tk.Related[0] != orig.ID {
 		t.Errorf("related = %v, want the original %s", tk.Related, orig.ID)
 	}
+	if tk.Rejected.DuplicateOf != orig.ID {
+		t.Errorf("rejected-duplicate-of = %q, want %s", tk.Rejected.DuplicateOf, orig.ID)
+	}
+}
+
+// Restore takes off the link the rejection made and only that one: a related
+// entry somebody set for another reason stays.
+func TestRestoreTakesTheDuplicateLinkOff(t *testing.T) {
+	dir, id := dodTestStore(t)
+	s, err := ticket.At(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ids []string
+	for i, title := range []string{"the original", "a neighbour"} {
+		tk, err := s.Create(map[string]string{
+			ticket.FieldID:     ticket.NewID(time.Now().Add(time.Duration(i+1) * time.Second)),
+			ticket.FieldTitle:  title,
+			ticket.FieldStatus: "backlog",
+		}, nil, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		ids = append(ids, tk.ID)
+	}
+	orig, neighbour := ids[0], ids[1]
+	if _, err := s.Mutate(id, func(tk *ticket.Ticket) error {
+		return tk.Doc().SetList(ticket.FieldRelated, []string{neighbour})
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if out, err := runCLI(t, dir, "reject", id, "--why", "same thing", "--duplicate-of", ticket.Handle(orig), "--force"); err != nil {
+		t.Fatalf("reject: %v\n%s", err, out)
+	}
+	out, err := runCLI(t, dir, "archive")
+	if err != nil {
+		t.Fatalf("archive: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "duplicate of "+ticket.Handle(orig)) {
+		t.Errorf("the archive listing does not name the original:\n%s", out)
+	}
+
+	file := filepath.Base(archivedTicket(t, dir, id).Path)
+	if out, err := runCLI(t, dir, "restore", file); err != nil {
+		t.Fatalf("restore: %v\n%s", err, out)
+	}
+	tk := mustLoad(t, dir, id)
+	if len(tk.Related) != 1 || tk.Related[0] != neighbour {
+		t.Errorf("related = %v, want only the neighbour %s", tk.Related, neighbour)
+	}
+	if tk.Rejected != (ticket.Rejection{}) {
+		t.Errorf("rejection survived the restore: %+v", tk.Rejected)
+	}
+}
+
+func TestRestoreKeepsALinkThatWasThereBefore(t *testing.T) {
+	dir, id := dodTestStore(t)
+	s, err := ticket.At(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	orig, err := s.Create(map[string]string{
+		ticket.FieldID:     ticket.NewID(time.Now().Add(time.Second)),
+		ticket.FieldTitle:  "the original",
+		ticket.FieldStatus: "backlog",
+	}, nil, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Mutate(id, func(tk *ticket.Ticket) error {
+		return tk.Doc().SetList(ticket.FieldRelated, []string{orig.ID})
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if out, err := runCLI(t, dir, "reject", id, "--why", "same thing", "--duplicate-of", ticket.Handle(orig.ID), "--force"); err != nil {
+		t.Fatalf("reject: %v\n%s", err, out)
+	}
+	archived := archivedTicket(t, dir, id)
+	if archived.Rejected.DuplicateOf != orig.ID {
+		t.Errorf("rejected-duplicate-of = %q, want %s", archived.Rejected.DuplicateOf, orig.ID)
+	}
+	file := filepath.Base(archived.Path)
+	if out, err := runCLI(t, dir, "restore", file); err != nil {
+		t.Fatalf("restore: %v\n%s", err, out)
+	}
+	if tk := mustLoad(t, dir, id); len(tk.Related) != 1 || tk.Related[0] != orig.ID {
+		t.Errorf("related = %v, want the link that was there before, %s", tk.Related, orig.ID)
+	}
 }
 
 func TestRejectDuplicateOfAnUnknownTicketIsNotFound(t *testing.T) {

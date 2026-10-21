@@ -162,16 +162,23 @@ const (
 	// ticket wearing it.
 	FieldTags = "tags"
 
-	// The rejection is four flat keys for the same reason the outcome is
-	// three: one field, one line, one key for the merge driver. They are
-	// written once, by 'jaira reject', just before the ticket is archived,
-	// and are what tells a rejected ticket apart from one merely tidied away
-	// — months later, the archive has to say whether it was a duplicate, not
-	// worth doing, or overtaken. 'jaira restore' takes them off again.
+	// The rejection is flat keys for the same reason the outcome is: one
+	// field, one line, one key for the merge driver. They are written once,
+	// by 'jaira reject', just before the ticket is archived, and are what
+	// tells a rejected ticket apart from one merely tidied away — months
+	// later, the archive has to say whether it was a duplicate, not worth
+	// doing, or overtaken. 'jaira restore' takes them off again.
 	FieldRejectedKind = "rejected-kind"
 	FieldRejectedWhy  = "rejected-why"
 	FieldRejectedBy   = "rejected-by"
 	FieldRejectedAt   = "rejected-at"
+	// FieldRejectedDuplicateOf names the original of a duplicate. The link
+	// itself lives in related, where both tickets see it.
+	FieldRejectedDuplicateOf = "rejected-duplicate-of"
+	// FieldRejectedLinked is "true" when the rejection put the original into
+	// related itself. Only then does restore take the link off again: one
+	// somebody set before the rejection is theirs, not the rejection's.
+	FieldRejectedLinked = "rejected-linked"
 )
 
 // The values FieldRejectedKind takes. Duplicate is never chosen directly: it
@@ -183,7 +190,7 @@ const (
 )
 
 // RejectedFields are the keys a rejection writes, in the order it writes them.
-var RejectedFields = []string{FieldRejectedKind, FieldRejectedWhy, FieldRejectedBy, FieldRejectedAt}
+var RejectedFields = []string{FieldRejectedKind, FieldRejectedWhy, FieldRejectedBy, FieldRejectedAt, FieldRejectedDuplicateOf, FieldRejectedLinked}
 
 // ModeConversational is the one non-empty value FieldMode takes. A worker
 // compares against exactly this word, which is why 'jaira set' refuses
@@ -601,6 +608,8 @@ type Rejection struct {
 	Why  string
 	By   string
 	At   time.Time
+	// DuplicateOf is the original's id when Kind is RejectDuplicate.
+	DuplicateOf string
 }
 
 // Doc exposes the underlying document for mutation.
@@ -715,10 +724,11 @@ func decodeFields(d *Doc, f *Fields, path string) (*Ticket, error) {
 		Resolves: str(FieldOutcomeResolves),
 	}
 	t.Rejected = Rejection{
-		Kind: str(FieldRejectedKind),
-		Why:  str(FieldRejectedWhy),
-		By:   str(FieldRejectedBy),
-		At:   parseTime(str(FieldRejectedAt)),
+		Kind:        str(FieldRejectedKind),
+		Why:         str(FieldRejectedWhy),
+		By:          str(FieldRejectedBy),
+		At:          parseTime(str(FieldRejectedAt)),
+		DuplicateOf: str(FieldRejectedDuplicateOf),
 	}
 	t.CreatedAt = parseTime(str(FieldCreatedAt))
 	t.UpdatedAt = parseTime(str(FieldUpdatedAt))
