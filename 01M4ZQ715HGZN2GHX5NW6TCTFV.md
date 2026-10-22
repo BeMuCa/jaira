@@ -1,7 +1,7 @@
 ---
 id: 01M4ZQ715HGZN2GHX5NW6TCTFV
 title: "Ist der letzte Ticket eines Milestones fertig, schlaegt jaira den PR mit /jaira-role-pr vor und bietet an, den Milestone abzulegen"
-status: human
+status: pre-process
 ready: true
 creator: BeMuCa
 assignee: berkc
@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-22T00:15:51Z
+updated-at: 2026-10-22T00:15:53Z
 updated-by: berkc
 question: |-
   Welche Arbeitsweise bekommt ein NEUER Milestone, wenn beim Anlegen niemand --pr angibt?
@@ -35,6 +35,7 @@ question: |-
   Fest in beiden Faellen: eine alte Datei ohne pr:-Zeile gilt als single (ram-cpu, milestone-roadmap kamen Ticket fuer Ticket rein).
   Ausserdem so geplant, sag nur wenn nicht: ein Ticket OHNE Milestone bekommt beim Erreichen von signoff oder done die Zeile '/jaira-role-pr <id>' (das 6ESQWR-Beispiel aus dem Kontext). Kostet auf jedem Board eine Zeile mehr bei solchen Moves.
   Antwort: A oder B.
+round: 2
 ---
 
 # Ist der letzte Ticket eines Milestones fertig, schlaegt jaira den PR mit /jaira-role-pr vor und bietet an, den Milestone abzulegen
