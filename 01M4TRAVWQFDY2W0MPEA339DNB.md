@@ -20,9 +20,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:19Z
-updated-at: 2026-10-22T07:52:38Z
+updated-at: 2026-10-22T07:55:10Z
 assignee: BeMuCa
 updated-by: BeMuCa
+claimed-by: EE-3NX6GL3-4187593
+claimed-at: 2026-10-22T07:55:10Z
 ---
 
 # Ein Testbuild von jaira laesst sich starten, ohne dass er Refs ins Remote sendet
