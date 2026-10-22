@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T20:51:24Z
-updated-at: 2026-10-22T08:11:10Z
+updated-at: 2026-10-22T08:13:54Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4188296
@@ -29,6 +29,7 @@ outcome-resolves: "DoD 1: SKILL.md section 'Making a pull request'. DoD 2: the p
 executed-by: claude-sonnet
 review-summary: none
 round: 2
+review-gaps: "SKILL.md 'Making a pull request': folded the lead paragraph and 'One chore commit per ticket, all before the push' into one sentence and dropped the reason it repeated (code and tickets arrive in the same merge), which 'Taking a ticket off the board' (SKILL.md:439-442) already gives and points here from; dropped the teammate-sees-it sentence, a restatement of that reason. Steps, order, role pointer and the role's who-opens rule unchanged. core/board/announce_test.go: corrected the test comment, which said filing before the push is only written in the PR role, false once this change put it in the skill and the block line; now says the details are only in the role. Left: the four-line command block duplicates core/role/builtin/jaira-role-pr/SKILL.md:186-191 but DoD 1 demands it; the details (which handles, pull first, no --all) stay only in the role. TestAgentNoteNamesThePullRequestRole duplicates no test or helper: core/board/announce_test.go has no shared helper, and each TestAgentNoteNames* guards its own line with strings.Contains, as this one does. announce.go, CLAUDE.md, AGENTS.md and core/release/notes/3SJMV8.md: nothing to remove. No dead code, no cost path (prose and a constant)."
 ---
 
 # Der jaira-Skill sagt, wie ein PR mit seinen Tickets entsteht, und verweist auf die PR-Rolle
