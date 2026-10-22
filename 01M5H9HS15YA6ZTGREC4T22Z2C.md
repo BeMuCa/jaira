@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T07:52:29Z
-updated-at: 2026-10-22T08:04:07Z
+updated-at: 2026-10-22T08:04:11Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4193148
@@ -32,7 +32,8 @@ claimed-at: 2026-10-22T07:55:54Z
   proof: .github/workflows/ci.yaml job mentions; scripts/check-mentions.sh scan_added + commit loop; shell test cases 2,4,5,6,8
 - [x] scripts/check-mentions.sh macht dieselbe Pruefung lokal, liest die Liste aus $XDG_CONFIG_HOME/jaira/mention-denylist (Fallback ~/.config/jaira/mention-denylist), und docs/COMMANDS.md sagt, wie man es als pre-commit- und pre-push-Hook einhaengt
   proof: scripts/check-mentions.sh:22-27 (XDG list, fallback HOME/.config); docs/COMMANDS.md section 'Keeping a name out of the repository'
-- [ ] core/role/builtin/jaira-role-pr/SKILL.md:84 nennt keinen Firmen-Host mehr, sondern ein generisches Beispiel
+- [x] core/role/builtin/jaira-role-pr/SKILL.md:84 nennt keinen Firmen-Host mehr, sondern ein generisches Beispiel
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:84 now git.example.com
 - [ ] go test ./... -race gruen; Release-Notiz unter core/release/notes/
 
 ## Options
