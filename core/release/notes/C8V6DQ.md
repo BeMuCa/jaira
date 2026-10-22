@@ -1,2 +1,2 @@
 - Watch the band that runs round a card: teal while an agent works it, violet while a fresh agent reviews it, amber while it waits for you — press `c` to stop it moving; `c` no longer tints the selected card in its tag's colour.
-- Keep claiming tickets from Claude Code as before: a claim now carries the Claude Code session id, so a session's second `jaira claim` is no longer refused as somebody else's, and the board on that machine keeps the band past the 30-minute lease for as long as the agent's process runs.
+- Run agents from Claude Code as before: `jaira claim` now remembers the session's process on this machine, so the board there keeps a worked card's band past the 30-minute lease for as long as that agent runs.

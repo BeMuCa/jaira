@@ -65,10 +65,3 @@ func TestAClaimWithoutAnAgentProcessRemovesTheOldRecord(t *testing.T) {
 		t.Error("a claim with no agent process inherited the earlier one's")
 	}
 }
-
-func TestDefaultIDReadsClaudeCodesSession(t *testing.T) {
-	t.Setenv("CLAUDE_CODE_SESSION_ID", "15e0b874-a533")
-	if got := DefaultID(); got != "15e0b874-a533" {
-		t.Errorf("DefaultID = %q, want Claude Code's session id", got)
-	}
-}
