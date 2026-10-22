@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T07:52:29Z
-updated-at: 2026-10-22T08:24:24Z
+updated-at: 2026-10-22T08:24:27Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4193148
@@ -27,6 +27,7 @@ outcome-why: "The list of forbidden strings cannot live in the repo, or it would
 outcome-resolves: "DoD 1: job mentions + scripts/check-mentions.sh, exit 2 with a message when the list is missing. DoD 2: the script's local list source and the hook section in docs/COMMANDS.md. DoD 3: SKILL.md:84 names git.example.com. DoD 4: release note core/release/notes/T22Z2C.md written; the full race suite is the maintainer's before the PR."
 review-summary: none
 round: 2
+review-gaps: "Removed: the $diff temp file and its trap entry - the diff now pipes into added_lines (only awk in the pipe, so no shell state is lost; pipefail keeps a failing git diff fatal), and scan_added lost its argument. Folded the two copies of the denylist normalizer (tr -d CR, drop blank lines) into one filter after if/elif/fi. Rewrapped the ci.yaml mentions comment (first line was 102 chars). Left: the base/head/usage/bad/footer idiom shared with scripts/check-ticket-commits.sh - two standalone CI scripts, a sourced helper for six lines would be a new abstraction; the mentions job's own checkout next to ticket-commits - a separate job is its own status check, merging them changes what CI reports; the --staged and range branches repeating the two git diff calls - unifying changes the printed 'file N of' label for --staged or needs a label parameter; the w_up/tr ident loop - unrolling duplicates the sed; four git calls per commit and sed per hit (critique let stand, PRs small, hits rare); the up-front invalid-regex check - matches() ignores grep's exit 2, so it is not redundant; sub(/\\t$/) in added_lines - live, git appends a tab to a +++ path with a space."
 ---
 
 # CI und ein lokaler Hook lehnen Commits ab, die Arbeitgeber- oder Kundennamen tragen
