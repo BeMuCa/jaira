@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:21Z
-updated-at: 2026-10-22T08:18:24Z
+updated-at: 2026-10-22T08:19:28Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4187645
@@ -27,18 +27,7 @@ claimed-at: 2026-10-22T07:55:10Z
 outcome-what: "A source build from a regular git checkout now shows dev-<7-char commit>, plus -dirty when the checkout had any uncommitted or untracked file, in 'jaira --version' and the TUI header, via release.Display() (core/release/release.go); release.Current stays \"dev\", a release build shows its tag unchanged, and the release note and the Display comment name the limits (linked worktree and go run show plain dev, a worktree nested in a checkout shows the outer checkout's commit)."
 outcome-why: "A bare 'dev' looked the same for every self-built binary, so nobody could tell which build was running; Go already records the commit, so showing it needs no build-command change."
 outcome-resolves: "DoD 1: Display/displayFrom feed cobra's Version (internal/cli/root.go:101) and versionLine (internal/tui/updatecheck.go:58); TestDisplayFrom covers release, clean, dirty and no-vcs cases; checked on real binaries built from a plain clone. DoD 2: release note core/release/notes/VHTE7X.md is in; the race suite is left to the maintainer before the PR."
-review-summary: |-
-  Neu: release.Display() (core/release/release.go:43-79).
-  Liest per debug.ReadBuildInfo die Go-Stempel vcs.revision und vcs.modified.
-  Ist release.Current nicht 'dev' (Release, -ldflags): Current kommt unveraendert zurueck.
-  Ist es 'dev' und Go hat eine Revision gestempelt: 'dev-<7 Zeichen>', bei vcs.modified=true dazu '-dirty'.
-  Ohne Revision bleibt es 'dev'.
-  Verdrahtet an zwei Stellen:
-  - internal/cli/root.go:101 gibt Display() an cobra als Version -> 'jaira --version'.
-  - internal/tui/updatecheck.go:57 nutzt es in der Versionszeile oben links (Board und Startbildschirm).
-  release.Current selbst bleibt 'dev'. Board-Stempel, self upgrade, update und market vergleichen weiter mit Current.
-  Test: TestDisplayFrom (core/release/display_test.go), vier Faelle: Release, sauber, dirty, ohne VCS-Daten.
-  Release-Notiz: core/release/notes/VHTE7X.md, eine Zeile.
+review-summary: none
 review-gaps: "1. Defekt, neu durch diesen Diff: falscher Commit bei einem Worktree INNERHALB eines Checkouts.\n   Beispiel: <checkout>/.claude/worktrees/<name> - dort legt Claude Code seine Worktrees an (.gitignore:25).\n   Go findet dann das .git-Verzeichnis des aeusseren Checkouts und stempelt dessen HEAD.\n   Nachgestellt: Worktree-HEAD b0fcf07, Binary sagt 'jaira version dev-d23f19f'.\n   Mit geaenderter main.go im Worktree: trotzdem kein '-dirty'.\n   Vorher stand dort nur 'dev' - unergiebig, aber nicht falsch.\n2. Release-Notiz verspricht zu viel: 'A jaira you built yourself now names its commit'.\n   Stimmt nicht fuer: Build aus einem verlinkten Worktree wie /home/berk/git/jAIra-<ID> (.git ist eine Datei -> plain 'dev'), den Fall aus Punkt 1, und 'go run ./cmd/jaira' (plain 'dev').\n   Die Grenze steht nur in den Ticket-Notizen - weder in der Notiz noch im Kommentar an Display.\n3. '-dirty' heisst: 'git status --porcelain' ist nicht leer (GOROOT/src/cmd/go/internal/vcs/vcs.go:233).\n   Eine unversionierte Datei oder eine geaenderte Ticketdatei unter .jaira/ reicht.\n   /home/berk/git/jAIra hat gerade 12 solche Eintraege, alle unter .jaira/ -> ein Build dort zeigt '-dirty' ohne Codeaenderung.\n   Nicht falsch, aber die Notiz sollte es nicht als Code-Aenderung lesen lassen.\n4. Veralteter Kommentar: internal/tui/updatecheck.go:39 zitiert die Zeile noch als \"jaira dev\".\n5. Klein, kein Rueckgabegrund: kein Test bricht, wenn root.go:101 oder updatecheck.go:57 wieder plain Current zeigen.\n   Grund: Testbinaries tragen ohne -buildvcs=true keine VCS-Daten (GOROOT/src/cmd/go/internal/load/pkg.go:2506), Display() ist im Test immer 'dev'.\n   TestDisplayFrom deckt die Logik, nicht die Verdrahtung.\n6. DoD 2 offen: 'go test ./... -race' ist nicht gelaufen (Hausregel: erst beim Maintainer vor dem PR)."
 test-verdict: "pass: gates green (gofmt/vet/build, targeted tests); real builds show dev-d23f19f, dev-d23f19f-dirty, 0.9.9; TUI header dev-d23f19f / jaira 0.9.9; release note 1 line. Full race suite (DoD 2) open for maintainer before PR."
 review-verdict: |-
