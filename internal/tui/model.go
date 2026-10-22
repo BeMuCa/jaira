@@ -123,15 +123,26 @@ type Model struct {
 	// the dark default, which is what the rest of the palette already assumes.
 	darkBG bool
 
-	// glow fills the selected card in its tag's colour instead of a neutral
-	// grey. On by default: the fill is there either way, and carrying the tag's
-	// hue in it costs nothing and says more. Session-only, for the same reason
-	// thinEmpty is — see the note there.
-	glow bool
+	// anim runs the snake round the cards being worked (snake.go); off, it
+	// stands still. On by default. Session-only, for the same reason thinEmpty
+	// is — see the note there.
+	anim bool
+	// animStart is the clock the snake's position is read from, animPhase that
+	// position as of the last frame, and animPending that a frame is already
+	// on its way, so a second loop is never started beside the first.
+	animStart   time.Time
+	animPhase   int
+	animPending bool
+	// lastRender is how long the last View took; the frame loop spaces its
+	// frames by it.
+	lastRender time.Duration
+	// liveClaims holds the tickets whose claim is past its lease but whose
+	// agent process is still running here, read on every reload.
+	liveClaims map[string]bool
 
-	// trueColor says the terminal can show 24-bit colour, which decides how far
-	// the glow is mixed. Reported by Bubble Tea on start; a terminal that says
-	// nothing is treated as palette-only, the safe direction.
+	// trueColor says the terminal can show 24-bit colour, which decides how a
+	// milestone bubble's fill is mixed. Reported by Bubble Tea on start; a
+	// terminal that says nothing is treated as palette-only, the safe direction.
 	trueColor bool
 
 	// detailScroll is the first visible line of the open ticket. The detail pane
@@ -332,7 +343,7 @@ func New(s *ticket.Store) (*Model, error) {
 	// its 1-9 binding work from the very first frame — a board that has to be
 	// opened once with 'p' before it knows its own neighbours is the bug this
 	// exists to fix.
-	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), darkBG: true, glow: true}
+	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), darkBG: true, anim: true, animStart: time.Now()}
 	m.versionLine, m.releasePill = versionLine()
 	m.versionAt = time.Now()
 	m.me = identity.Current(s.Root)
@@ -467,6 +478,7 @@ func (m *Model) reload() error {
 		m.sessions = sess
 	}
 	m.refMarks()
+	m.refreshLiveClaims()
 	m.rebuild()
 	m.refreshLiveBoards()
 	m.refreshLayer()
@@ -898,7 +910,7 @@ func (m *Model) Init() tea.Cmd {
 	// Asked for explicitly: the selection fill has a direction, and without an
 	// answer the board keeps the dark default and would paint a black block on
 	// a light terminal.
-	return tea.Batch(tick(), waitForChange(m.watch), fetchRefs(m.refSync), refTick(), tea.RequestBackgroundColor)
+	return tea.Batch(tick(), waitForChange(m.watch), fetchRefs(m.refSync), refTick(), tea.RequestBackgroundColor, m.animKick())
 }
 
 // startWatching subscribes to changes in the ticket and session directories.
@@ -1101,7 +1113,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		// Preserve the cursor and any open pane across a background refresh.
 		_ = m.reload()
-		return m, tick()
+		return m, tea.Batch(tick(), m.animKick())
+
+	case animFrameMsg:
+		return m, m.frame()
 
 	case refTickMsg:
 		return m, tea.Batch(fetchRefs(m.refSync), refTick())
@@ -1166,7 +1181,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyPressMsg:
-		return m.key(msg)
+		// A key can bring the board back on screen or switch the snake on,
+		// and either may need the frame loop running again.
+		next, cmd := m.key(msg)
+		return next, tea.Batch(cmd, m.animKick())
 
 	// A paste arrives as an event of its own, never as a key, so it needs a
 	// branch of its own: the terminal wraps a bracketed paste in its own escape
@@ -1643,7 +1661,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// Next to v: both are about what the screen shows, not about a ticket.
 		m.toggleEmptyLanes()
 	case "c":
-		m.toggleGlow()
+		m.toggleAnim()
 	case "t":
 		// The legend for the colour a tagged card's box is drawn in. It is
 		// drawn over the board, so it has to record what it is covering.
@@ -1722,13 +1740,6 @@ func (m *Model) moveLane(d int) {
 	m.laneIdx = (m.laneIdx + d + len(m.cols)) % len(m.cols)
 	m.cardIdx = 0
 	m.clampCursor()
-}
-
-// toggleGlow flips whether the selected card is filled in its tag's colour or
-// in neutral grey. The fill itself is not in question — only its hue — so the
-// cursor stays exactly as findable either way.
-func (m *Model) toggleGlow() {
-	m.glow = !m.glow
 }
 
 // toggleEmptyLanes flips whether lanes holding no tickets are drawn thin.

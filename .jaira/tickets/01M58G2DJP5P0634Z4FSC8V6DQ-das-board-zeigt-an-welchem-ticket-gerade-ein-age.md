@@ -1,0 +1,76 @@
+---
+id: 01M58G2DJP5P0634Z4FSC8V6DQ
+title: "Das Board zeigt, an welchem Ticket gerade ein Agent arbeitet, mit einem umlaufenden Rahmen pro Zustand"
+status: review
+ready: true
+creator: berkc
+assignee: berkc
+goal: "Auf einen Blick sehen, welche Tickets gerade bearbeitet werden (Agent arbeitet, wartet auf Menschen, Review), damit niemand zweimal dasselbe Ticket anfasst."
+context: |-
+  Wunsch von berkc: eine einfarbige 'Schlange', die um die Karte laeuft, solange ein Agent das Ticket bearbeitet; andere Farbe fuer 'Mensch gefragt' und fuer Review; stoppt der Agent, verschwindet sie.
+  Es gibt schon die Daten dafuer: jaira claim setzt claimed-by/claimed-at, ein Lease von 30 Minuten (jaira claim --help). Der TUI blendet diese Felder heute aus (internal/tui/view.go:1175).
+  Also kein neues Tag noetig: Rahmen an = Claim lebt (juenger als 30 min); Farbe aus der Lane (agentic / requires-question / fresh review).
+  Offen: ein Agent erneuert den Claim heute nicht von selbst - ohne Erneuerung erlischt der Rahmen nach 30 min mitten in der Arbeit. Klaeren, ob jaira move/note/dod den Claim erneuern.
+  Animation kostet CPU: der TUI tickt alle 2s (tickMsg); ein Lauflicht braucht schnellere Frames nur fuer die betroffenen Karten - mit ram-cpu-Milestone abwaegen.
+  Claim ist nur Hinweis, keine Sperre; precedence (Merge-Rang) wird dadurch NICHT ueberfluessig, weil sie Git-Merges von Ticketdateien entscheidet.
+definition-of-done: "Eine Karte mit lebendem Claim hat einen sichtbaren Rahmen, ohne Claim keinen; Test in internal/tui"
+tags:
+  - tui
+blocked-by: []
+related: []
+commits: []
+created-at: 2026-10-18T21:53:16Z
+updated-at: 2026-10-22T00:49:06Z
+updated-by: berkc
+claimed-by: berk-ca-1882178
+claimed-at: 2026-10-22T00:22:42Z
+outcome-what: "Karten mit lebendem Claim oder in einer Menschen-Lane tragen eine umlaufende Farbschlange (Agent tuerkis, Review violett, Mensch bernstein); c haelt sie an (statt Glow); jaira claim merkt sich lokal die PID der Claude-Sitzung, das Board verlaengert die Anzeige, solange sie lebt; session.DefaultID liest CLAUDE_CODE_SESSION_ID; Bildtakt passt sich der Renderzeit an (0,9 % CPU bei 100 animierten Karten)"
+outcome-why: "berkc will sehen, welche Tickets gerade bearbeitet werden und auf wen sie warten, damit niemand ein bearbeitetes Ticket anfasst; der 30-min-Lease allein liess die Anzeige mitten in der Arbeit erloeschen"
+outcome-resolves: C8V6DQ
+review-summary: none
+review-gaps: "optimize: removed the doubled lease test in internal/tui/snake.go (claimInLease, used by claimLive and refreshLiveClaims). Left: the same lease expression in internal/cli/claim.go:25 and resume.go:125 is pre-existing and not touched by this change; JAIRA_HOME lookup repeated in core/session/claimproc.go follows the per-package pattern of settings, project, identity and selfupdate; toggleAnim is a one-line wrapper like toggleEmptyLanes beside it. No dead code: palette.go keeps paletteRGB/nearestPalette/cubeLevels because internal/tui/layerdraw.go:357-361 uses them; trueColor stays for the same reason. No cost issue: animating() walks the visible columns once per key and frame."
+test-verdict: "pass: go vet + go test -race ./... green after go clean -testcache (RC=0), GOOS=windows/darwin builds; DoD 1-6 verified in the tree; exercised on a scratch board with 100 tickets in tmux: teal snake on claimed cards, kept past the lease while CLAUDE_PID 1979 runs, gone once its record names a dead pid or is removed; violet in Review, amber in HITL; c stops it; legend line under ?; CPU 0.90% for the animation (note of 22.10.)"
+---
+
+# Das Board zeigt, an welchem Ticket gerade ein Agent arbeitet, mit einem umlaufenden Rahmen pro Zustand
+
+## Definition of Done
+
+- [x] Eine Karte mit lebendem Claim hat einen sichtbaren Rahmen, ohne Claim keinen; Test in internal/tui
+  proof: internal/tui/snake_test.go TestAClaimedCardCarriesTheAgentSnake
+- [x] Die Farbe unterscheidet Agent arbeitet / wartet auf Menschen / Review und steht in der Legende (?)
+  proof: internal/tui/snake.go snakeOf/snakeColour; TestTheSnakeColourFollowsTheLane; Legende internal/tui/view.go ('▬▬▬ worked')
+- [x] Der Rahmen bleibt, solange der Agent lebt: der Claim speichert Rechner und Prozess der Sitzung; nach 30 min prueft jaira auf demselben Rechner, ob der Prozess noch laeuft, und verlaengert dann; von anderen Rechnern zaehlt eine Erneuerung auf dem Ref; Test
+  proof: core/session/claimproc.go RecordClaimProcess/ClaimProcessAlive (CLAUDE_PID, /proc comm); TestAClaimLivesAsLongAsItsAgentProcess; TestAnExpiredClaimKeepsTheSnakeOnlyWhileItsAgentLives; TestClaimRecordsTheAgentProcessAndReleaseForgetsIt
+- [x] 100 Karten mit Animation brauchen hoechstens 1 % CPU (gemessen, Zahl in der Notiz); die Animation laeuft nur, wenn sie eingeschaltet ist
+  proof: Messung in der Notiz vom 22.10.2026: 0,90 % fuer die Animation bei 100 animierten Karten (frameCostFactor 250, internal/tui/snake.go); TestTheFrameLoopEndsWhenNothingIsWorked
+- [x] Release-Note-Zeile in core/release/notes/<ID>.md
+  proof: core/release/notes/C8V6DQ.md
+- [x] Die Taste c schaltet die Animation an/aus; das bisherige c (toggleGlow, internal/tui/model.go:1618, Hervorhebung der gewaehlten Karte) wird entfernt; Hilfe nennt c neu; Test
+  proof: internal/tui/model.go case "c" -> toggleAnim; glow.go entfernt (palette.go behaelt die Palettenhilfen fuer die Roadmap); TestCStopsTheSnakeWithoutHidingIt
+
+## Options
+
+- [ ] brainstorm
+- [x] planning
+
+## Plan
+
+<Steps, in order — filled in by the pre-process step, or by you.>
+
+- [x] ClaimTTL nach core/ticket verschieben (TUI darf internal/cli nicht importieren); cli behaelt einen Alias
+- [x] session.DefaultID liest CLAUDE_CODE_SESSION_ID (Claude Code setzt CLAUDE_SESSION_ID nicht; sonst hat jeder Bash-Aufruf eine eigene Session-ID und der zweite claim sieht einen fremden Claim)
+- [x] jaira claim schreibt ~/.jaira/claims/<ULID> mit Session, PID (CLAUDE_PID oder JAIRA_AGENT_PID) und Prozessname; --release und ein Claim ohne PID loeschen die Datei
+- [x] core: Lebt-Pruefung (Unix kill 0 plus Prozessname aus /proc wenn vorhanden; Windows: nie lebendig) mit Test
+- [x] TUI: Zustand pro Karte (Mensch / Review / Agent / keiner) aus Lane und Claim; liveClaims einmal pro reload
+- [x] TUI: Schlange auf dem Rand des Kartenbands zeichnen (Zellen per ansi.Cut, Text behaelt Farben); Test auf Position und Farbe
+- [x] TUI: Animations-Takt adaptiv (naechster Frame = 100x letzte Renderzeit, min 120 ms, max 1 s), nur solange eine sichtbare Karte animiert; Phase aus der Uhr
+- [x] c schaltet die Animation; Glow (glow.go, m.glow, selectionFill-Glow) und seine Tests entfernen; Hilfe, Tastenzeile und Legende anpassen
+- [x] CPU messen: 100 Tickets, alle animiert, tmux, 60 s /proc-CPU des Prozesses; Zahl in die Notiz
+- [x] Release-Note C8V6DQ.md
+
+## Progress
+- **2026-10-19 08:34 · berkc** — Vorgaben von berkc am 19.10.2026: max 1 % CPU bei 100 animierten Karten; c schaltet die Animation, das alte Glow-c entfaellt; der Rahmen wird nicht stur nach 30 min geloescht, sondern verlaengert, solange der Agent, der das Ticket bewegt hat, noch arbeitet. Idee fuer 'lebt noch': jaira claim/move schreibt host + PID der Claude-Sitzung ins Ticket; derselbe Rechner prueft mit kill -0, andere Rechner sehen nur den Ref und verlassen sich auf Erneuerung. Offen: welcher PID die Sitzung ist (jaira laeuft als Kind der Agenten-Shell).
+- **2026-10-22 00:23 · berkc** — Plan-Begruendung: (1) Karten haben keinen Rahmen mehr, sondern sind 3-zeilige Baender mit je einer Farbzelle links/rechts (view.go renderCardBlock); die Schlange laeuft deshalb ueber die aeusseren Zellen des Bands (oben, rechte Zelle, unten, linke Zelle; Umfang 2w+2). (2) Gemessen: ein Board-Render mit 106 Tickets kostet 4,5 ms (Profil: renderColumn 68 %, davon Karten 30 %). 1 % CPU = 10 ms/s, also hoechstens ~2 volle Renders pro Sekunde. Statt eines fehleranfaelligen Caches haelt der Takt das Budget selbst ein: naechster Frame = 100 x letzte Renderzeit. Die Schlange bewegt sich nach der Uhr (1 Zelle / 100 ms), springt bei langsamem Takt also mehrere Zellen statt langsamer zu werden. (3) Lebendig-Pruefung nur auf demselben Rechner: CLAUDE_PID ist in jeder Bash-Umgebung von Claude Code gesetzt (geprueft: CLAUDE_PID=1979, comm 'claude'). Die PID liegt lokal in ~/.jaira/claims/, nicht im Ticket, weil sie auf anderen Rechnern nichts bedeutet und sonst jeder Claim den Ref aendert. Andere Rechner sehen nur claimed-at (30-min-Lease). (4) Farben: Mensch gefragt = Lane mit requires-question oder requires-human-exit (unabhaengig vom Claim, die Arbeit wartet auf einen Menschen); sonst lebender Claim in einer Lane mit frischem Kontext = Review; sonst lebender Claim = Agent. Terminal-Lanes nie. (5) jaira next/claim (ClaimActive) bleiben beim 30-min-Lease; nur die Anzeige verlaengert bei lebender PID - sonst haette diese Aenderung auch die Steal-Regeln geaendert.
+- **2026-10-22 00:42 · berkc** — CPU gemessen am 22.10.2026, tmux 200x50, Board mit 100 Tickets in in-progress, alle mit frischem Claim (alle animiert), /proc/<pid>/stat utime+stime ueber je 60 s: Faktor 100 / 100 ms pro Zelle: Animation an 3,78 %, aus 1,75 % -> Animation kostet 2,0 %, zu viel (der Renderer von Bubble Tea kostet etwa so viel wie unser render). Faktor 250 / 250 ms pro Zelle: an 2,62 %, aus 1,72 % -> Animation kostet 0,90 %. Die 1,7 % ohne Animation sind der 2-s-Reload mit 100 Tickets und gehoeren nicht zu diesem Ticket (siehe ram-cpu-Milestone). Messskript: tmux + jaira board, 6 s Anlauf, dann 60 s an, c, 60 s aus.
+- **2026-10-22 00:43 · berkc** — critique: geprueft und stehen gelassen - (1) Bestehendes Muster core/session (Session-Records mit Host/PID) waere der naheliegende Ort fuer die PID, liegt aber pro Arbeitsbaum (Store.StateDir, core/ticket/store.go:704): das Board im Haupt-Checkout saehe Claims aus einem Worktree nicht. Darum ~/.jaira/claims/ (pro Rechner, ueber alle Worktrees), Code trotzdem in core/session. (2) JAIRA_AGENT_PID neben CLAUDE_PID ist nicht spekulativ: CLAUDE.md verlangt, dass jeder bash-faehige Agent die CLI nutzen kann. (3) Prozessnamen-Vergleich schuetzt gegen wiederverwendete PIDs, nur wo /proc existiert; sonst gilt die PID allein. (4) Menschen-Lanes animieren ohne Claim, wie von berkc gewuenscht; dadurch laeuft die Schleife dauerhaft, sobald ein Ticket in HITL/Human Review liegt - das Budget haelt der adaptive Takt ein (Messung in der Notiz). (5) jaira next/claim behalten den 30-min-Lease (Plan-Notiz Punkt 5).

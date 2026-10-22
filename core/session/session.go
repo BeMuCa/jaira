@@ -119,9 +119,11 @@ func Remove(s *ticket.Store, id string) error {
 
 // DefaultID prefers an identifier supplied by the harness, falling back to
 // something stable for the shell so repeated calls update one record rather than
-// littering the directory.
+// littering the directory. Claude Code sets CLAUDE_CODE_SESSION_ID; without it
+// every Bash call would get its own id, and a session's second claim would read
+// its own first one as somebody else's.
 func DefaultID() string {
-	for _, k := range []string{"CLAUDE_SESSION_ID", "JAIRA_SESSION_ID", "TERM_SESSION_ID"} {
+	for _, k := range []string{"CLAUDE_CODE_SESSION_ID", "CLAUDE_SESSION_ID", "JAIRA_SESSION_ID", "TERM_SESSION_ID"} {
 		if v := os.Getenv(k); v != "" {
 			return sanitize(v)
 		}

@@ -95,7 +95,9 @@ const thinColWidth = 4
 // that already fit themselves lose nothing to this; the ones that never did
 // stop being able to break the layout at all.
 func (m *Model) View() tea.View {
+	start := time.Now()
 	out := m.render()
+	m.lastRender = time.Since(start)
 	if m.width > 0 && m.height > 0 {
 		out = clampBlock(out, m.width, m.height)
 	}
@@ -613,12 +615,10 @@ func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected, alt bool) str
 	slots := m.cardColors(t)
 	right := m.milestoneColors(t)
 
-	// The selection fill and the glow still follow the first tag alone: the
-	// card is filled in one colour, and slot 1 is the ticket's primary one.
 	bgParams := ""
 	switch {
 	case selected:
-		_, bgParams = m.selectionFill(slots[0].colour, slots[0].coloured)
+		_, bgParams = m.selectionFill()
 	case m.isLogged(t):
 		bgParams = m.logbookShade(alt)
 	default:
@@ -637,8 +637,16 @@ func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected, alt bool) str
 	inner := max(1, w-2)
 	content := strings.TrimSuffix(m.renderCard(t, inner, selected), "\n")
 
+	lines := strings.Split(content, "\n")
+	var snake map[int]map[int]bool
+	var snakeBG string
+	if k := m.snakeOf(t); k != snakeNone {
+		snake = m.snakeCells(t.ID, w, len(lines))
+		snakeBG = snakeParams(k)
+	}
+
 	var b strings.Builder
-	for i, line := range strings.Split(content, "\n") {
+	for i, line := range lines {
 		// A slot with no colour — an absent tag, or a tag with no registry
 		// line — gets the card's own shade, so the text still lines up with
 		// every other card in the lane.
@@ -649,6 +657,24 @@ func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected, alt bool) str
 		rightParams := bgParams
 		if right[i].coloured {
 			rightParams = "5;" + strconv.Itoa(right[i].colour)
+		}
+		if row := snake[i]; row != nil {
+			if row[0] {
+				barParams = snakeBG
+			}
+			if row[w-1] {
+				rightParams = snakeBG
+			}
+			b.WriteString(paintRow(barParams, " "))
+			b.WriteString(paintCells(padDisplay(line, inner), inner, func(c int) string {
+				if row[c+1] {
+					return snakeBG
+				}
+				return bgParams
+			}))
+			b.WriteString(paintRow(rightParams, " "))
+			b.WriteString("\n")
+			continue
 		}
 		b.WriteString(paintRow(barParams, " "))
 		b.WriteString(paintRow(bgParams, padDisplay(line, inner)))
@@ -1058,9 +1084,9 @@ func (m *Model) statusBar() string {
 	if m.thinEmpty {
 		zHint = "z widen empty"
 	}
-	cHint := "c glow"
-	if m.glow {
-		cHint = "c plain"
+	cHint := "c animate"
+	if m.anim {
+		cHint = "c still"
 	}
 	keys := []string{"enter open", "l links", "v compact", zHint, cHint, "t tags", "u users", "M milestones", "L roadmap", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
 	prefix := ""
@@ -1705,7 +1731,7 @@ func (m *Model) renderHelp() string {
 			{"esc", "clear the filter"},
 			{"y", "copy the full ticket id (detail pane)"},
 			{"z", "draw lanes with no tickets thin (press again to widen them)"},
-			{"c", "fill the selected card in its tag's colour (press again for plain grey)"},
+			{"c", "stop or start the band running round the cards being worked on"},
 			{"L", "the milestone roadmap (its keys are further down)"},
 		}},
 		{"Change things", [][2]string{
@@ -1763,6 +1789,7 @@ func (m *Model) renderHelp() string {
 		{styAgentic.Render("sonnet"), "the model that last ran a lane on it"},
 		{styMeta.Render("@name"), "who owns the outcome"},
 		{styOK.Render("⎙ filed 4 Oct"), "in the logbook, filed that day: read-only, 'jaira restore' brings it back"},
+		{snakeLegend(snakeAgent, "▬") + snakeLegend(snakeReview, "▬") + snakeLegend(snakeHuman, "▬") + " worked", "a band runs round the card: an agent works it, a fresh agent reviews it, or it waits for a person (c stops it moving)"},
 	} {
 		fmt.Fprintf(&b, "  %s  %s\n", padDisplay(k[0], 11), styledWrap(styMeta, k[1], max(9, m.width-17), 15))
 	}

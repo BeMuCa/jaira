@@ -466,7 +466,7 @@ func TestStackedCardsAlternateTheirShade(t *testing.T) {
 
 	// And the selection sits above both, or the cursor is lost on whichever
 	// shade happens to match it.
-	_, sel := m.selectionFill(0, false)
+	_, sel := m.selectionFill()
 	if sel == a || sel == b {
 		t.Errorf("the neutral selection fill %q is also a lane shade", sel)
 	}
