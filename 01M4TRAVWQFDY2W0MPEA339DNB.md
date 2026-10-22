@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:19Z
-updated-at: 2026-10-22T08:47:09Z
+updated-at: 2026-10-22T08:49:00Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4187593
@@ -31,7 +31,7 @@ outcome-resolves: "Mit JAIRA_NO_PUSH=1 sendet weder TUI noch CLI Refs, beide sag
 review-summary: "none"
 round: 3
 review-gaps: "none removed (optimize pass 2, judged 547dbae2; 06df4134/769c2110 cleared by pass 1). Considered and left: (1) core/gitref/main_test.go and core/snapshot/main_test.go are the same file as the 21 other main_test.go - Go needs one TestMain per package, nothing to share. (2) internal/cli/snapshot.go:55-57 next to the gates at core/gitref/gitref.go:707,:928 and core/refsync/refsync.go:649 - not a duplicate: it runs before the stamp at internal/cli/snapshot.go:77 and before the unchanged-tree return at core/snapshot/snapshot.go:176, which never reaches PushBranch (:185). (3) maybeSnapshot guard internal/cli/snapshot.go:127 is not made redundant by :55 - bgrun writes the stamp in the parent before the child starts (core/bgrun/bgrun.go:122). (4) core/snapshot has no ErrPushOff handling the up-front guard could have orphaned (grep). (5) internal/tui/devbuild_test.go:101-104 Setenv of JAIRA_HOME, JAIRA_NO_UPDATE_CHECK and JAIRA_NO_PUSH='' are not needed today (release.Current is dev, testhome unsets the switch) but match the neighbours at :23-24 and :48-49 and keep the test off the network under a non-dev build - kept. (6) internal/testhome/testhome.go:44 uses the literal JAIRA_NO_PUSH, not gitref.PushDisableEnv - its neighbours are literals and testhome imports no core package - kept. Ran: JAIRA_NO_PUSH=1 go test ./core/snapshot ./core/gitref ./core/refsync -count=1 ok; go test ./internal/tui -run TestVersionLineNamesTheNoPushSwitch ok."
-test-verdict: "pass: gofmt/vet/build clean, 3 change tests green under -race; DoD 1 verified (tree+tests+scratch binary), DoD 2 NOT ticked: full race suite NOT run, pending for the maintainer; exercised on scratch board w/ local bare remote: pull, snapshot, create, note, TUI, unset-then-send"
+test-verdict: "pass: gofmt/vet/build clean, targeted race tests ok with and without JAIRA_NO_PUSH; snapshot (incl --drop) refuses up front rc=1 with stamp+remote unchanged; move prints one stderr line, remote unchanged, next write without switch sends; full race suite NOT run (pending for maintainer), DoD 2 left unticked"
 review-verdict: "back to in-progress. DoD 1 holds. I ran it on a scratch board whose only remote is a local bare repo: create, note, pull, release, snapshot, snapshot --drop and the TUI left git ls-remote unchanged, and after unsetting the switch one note sent the queued ticket. The gate covers every sending path: only two git push calls exist and all HTTP is GET. One defect sends it back: with JAIRA_NO_PUSH=1 exported the test suite fails (gap 1), which is the condition this switch creates and what DoD 2 checks. Gaps 2-7 are smaller; 2 is a design question for the maintainer. DoD 2 is still open: the full race suite has not run."
 review-round: 2
 review-check: |-
