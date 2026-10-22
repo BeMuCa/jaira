@@ -1,7 +1,7 @@
 ---
 id: 01M4TRAVWQFDY2W0MPEA339DNB
 title: "Ein Testbuild von jaira laesst sich starten, ohne dass er Refs ins Remote sendet"
-status: critique
+status: optimize
 ready: true
 creator: BeMuCa
 goal: "Wer einen ungeprueften Build gegen einen echten Checkout startet, kann das Senden an das Remote abschalten."
@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:19Z
-updated-at: 2026-10-22T08:16:22Z
+updated-at: 2026-10-22T08:17:58Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4187593
@@ -65,3 +65,4 @@ Checked and let stand: gate in the two git push calls (the only "push" literals:
 Correction to the 08:02 note: a ticket created with the switch does go out - its outbox entry stays queued and the next writing command (or the board) sends it, so the ref appears (TestFlushWithTheNoPushSwitchKeepsTheQueue proves the queue part). Only the file stays on disk, as offline; fileOnRefOnly's doc (internal/cli/refs.go:75-77) accepts that and 'jaira release X' removes it. Standing on that note's "Not changed (same as offline)": let stand.
 - **2026-10-22 08:12 · BeMuCa** — Round 2 (critique fixes): noRefReason deliberately has NO queue promise (differs from critique advice) - it also feeds jaira create stdout and whoami, where nothing is queued; the promise lives only in flushRefs (refs.go:254). Residual: create still prints two lines with the switch on (stdout: state + 'once sending is on again, release...'; stderr from flushRefs: queue promise) - different content, not suppressed, since flushRefs cannot know create already spoke. maybeSnapshot early return untested (needs SpawnRun scaffolding). jaira share spawns a background snapshot child that pushes jaira/board a moment later - when diffing ls-remote, sleep after share before taking the baseline.
 - **2026-10-22 08:16 · BeMuCa** — critique (pass 2): read only the pass-1 findings and 769c2110, nothing found. (1) release note now English, one line, an instruction - resolved. (2) docs/COMMANDS.md:163 full stop after '--quiet skips it.', promise rewritten to what holds (pull/release/snapshot refused, queued write goes out with the next writing command once unset) - resolved. (3) core/gitref/gitref.go:84 sentinel names only the state, like its siblings; the queue promise now lives only in flushRefs (internal/cli/refs.go:254-257), which runs only when this process queued something - resolved. (4) create's advice says 'once sending is on again' (tickets.go:444-446); stdout and stderr now carry different content - resolved. Residual (a), two lines on create, let stand: the stderr queue promise is true for create too, and the 08:02 note is wrong on this point. From reading the code, not from a run: create saves, store.go:237 calls Record, refsync.go:139 queues the entry, and Flush returns ErrPushOff at refsync.go:649 before it reads the queue. So the next writing command without the switch sends the ref, the file stays until 'jaira release', the same as offline. (5) internal/cli/snapshot.go:124 returns early on gitref.PushDisabled() - resolved. Residual (b), no test for that guard, let stand: not part of the definition of done (its Flush test is TestFlushWithTheNoPushSwitchKeepsTheQueue), the child's push is blocked in gitref anyway, and a test would need SpawnRun scaffolding; the testing lane may weigh it. 'jaira: gitref: sending is off (JAIRA_NO_PUSH=1): the change stays queued ...' let stand: sentinels with their package prefix already reach users in written lines (pull.go:69 '%s: %v' with refsync.ErrUnsent, pull.go:52, refs.go:260, root.go:157). Rewording it like noRefReason (refs.go:162) would be polish, not a definition-of-done gap.
+- **2026-10-22 08:17 · BeMuCa** — Treiber: der Move nach optimize (08:16:43Z) wurde auf dem Ref abgewiesen ('BeMuCa wrote it first, it is now in critique, at 08:16:22Z'). Der Gewinner war der eigene letzte Schreibvorgang der Critique-Pass-2-Session aus demselben Worktree (Ref-Commit 9fa3f608, nur status/updated-at verschieden). Ursache nicht untersucht; nach jaira fetch traegt dieser Note-Schreibvorgang den lokalen Stand (optimize) wieder aufs Ref.
