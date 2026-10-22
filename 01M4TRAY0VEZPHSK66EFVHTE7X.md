@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:21Z
-updated-at: 2026-10-22T08:22:36Z
+updated-at: 2026-10-22T08:23:47Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4187645
@@ -29,7 +29,7 @@ outcome-why: "A bare 'dev' looked the same for every self-built binary, so nobod
 outcome-resolves: "DoD 1: Display/displayFrom feed cobra's Version (internal/cli/root.go:101) and versionLine (internal/tui/updatecheck.go:58); TestDisplayFrom covers release, clean, dirty and no-vcs cases; checked on real binaries built from a plain clone. DoD 2: release note core/release/notes/VHTE7X.md is in; the race suite is left to the maintainer before the PR."
 review-summary: none
 review-gaps: "none. Pass 2 read only 60535592 (text). Fluff: no new comment restates code; the second -dirty clause in the Display comment (core/release/release.go:48-49) and the parenthetical in internal/tui/updatecheck.go:39-40 qualify, they do not repeat. Duplication: release note (users) and Display comment (maintainers) state the worktree limit once each for different readers; README.md:51-55 has no checkout-build section it would belong in instead. Now false: nothing - checked against GOROOT 1.26.5: vcs/vcs.go:218 (.git must be a directory), vcs/vcs.go:233 (git status --porcelain, so untracked files count), work/build.go:470,699 (only go build/install set AutoVCS, so go run shows plain dev). Note is still 1 line starting '- '. Left: the short reflowed comment line internal/tui/updatecheck.go:41 (cosmetic); README.md:54 'go install .../cmd/jaira@latest' builds from the module cache, gets no vcs stamp and shows plain dev (load/pkg.go:2512, read not run) - the note does not claim that case, outside this ticket."
-test-verdict: "pass: gates green (gofmt/vet/build, targeted tests); real builds show dev-d23f19f, dev-d23f19f-dirty, 0.9.9; TUI header dev-d23f19f / jaira 0.9.9; release note 1 line. Full race suite (DoD 2) open for maintainer before PR."
+test-verdict: "pass: pass 2 on 60535592. gofmt/vet/build clean; release TestDisplayFrom|TestNotesUnchanged|TestComposeNotes, tui Dev|Version, cli Version|Root ok. Note VHTE7X.md 1 line, 1 '- '. Plain clone: dev-6053559; +untracked file: dev-6053559-dirty; go run: dev; linked worktree: dev; -X main.version=0.9.9: 0.9.9. DoD 2 race suite is the maintainer's before the PR (not run)."
 review-verdict: |-
   Empfehlung: zurueck nach in-progress, kleine Nacharbeit ohne neue Logik.
   Kernfall stimmt, am echten Binary aus einem normalen Clone geprueft:
