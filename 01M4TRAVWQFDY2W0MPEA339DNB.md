@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:19Z
-updated-at: 2026-10-22T08:01:53Z
+updated-at: 2026-10-22T08:01:55Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4187593
@@ -47,7 +47,7 @@ claimed-at: 2026-10-22T07:55:10Z
 - [x] core/gitref: PushDisableEnv = JAIRA_NO_PUSH, ErrPushOff, PushDisabled(); pushRefspec und PushBranch (die einzigen zwei git push im Binary) brechen davor ab - deckt pull, release, snapshot und Epic-Rebase ohne weitere Stellen
 - [x] core/refsync Syncer.Flush: bei PushDisabled vor dem Fetch nil, gitref.ErrPushOff zurueck - die Queue bleibt wie offline, nichts geht verloren
 - [x] CLI: flushRefs (internal/cli/refs.go:250) gibt die eine stderr-Zeile aus; fileOnRefOnly/putOnRef reichen ErrPushOff als why durch; webPush zeigt es
-- [ ] TUI internal/tui/refs.go:85: ErrPushOff aus Flush ist kein Fehler, der Fetch laeuft weiter; Hinweis in der Versionszeile (versionLine, Home und Model)
+- [x] TUI internal/tui/refs.go:85: ErrPushOff aus Flush ist kein Fehler, der Fetch laeuft weiter; Hinweis in der Versionszeile (versionLine, Home und Model)
 - [ ] docs/COMMANDS.md neben JAIRA_NO_UPDATE_CHECK, core/release/notes/339DNB.md
 
 ## Progress
