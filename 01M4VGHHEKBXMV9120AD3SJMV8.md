@@ -1,8 +1,8 @@
 ---
 id: 01M4VGHHEKBXMV9120AD3SJMV8
 title: "Der jaira-Skill sagt, wie ein PR mit seinen Tickets entsteht, und verweist auf die PR-Rolle"
-status: backlog
-ready: false
+status: todo
+ready: true
 creator: BeMuCa
 goal: "Ein Agent, der fuer ein jaira-Repo einen PR vorbereitet, legt die angenommenen Tickets auf dem Branch ins Logbuch, bevor er pusht, weil der jaira-Skill es ihm sagt."
 context: |-
@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T20:51:24Z
-updated-at: 2026-10-22T07:55:16Z
+updated-at: 2026-10-22T07:55:22Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4188296
