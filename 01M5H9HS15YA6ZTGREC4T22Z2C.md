@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T07:52:29Z
-updated-at: 2026-10-22T07:59:03Z
+updated-at: 2026-10-22T08:00:42Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4193148
@@ -44,3 +44,4 @@ claimed-at: 2026-10-22T07:55:54Z
 
 ## Progress
 - **2026-10-22 07:59 · BeMuCa** — Driver decisions before in-progress: (1) pre-process skipped, the Options checklist does not tick planning; the method is in this note. (2) SKILL.md:83 example host becomes git.example.com, not gitlab.example.com: rule 4 there is for a host that says neither github nor gitlab, so an example containing 'gitlab' would fall under rule 3. (3) The check prints only where a hit is (file:line, or short sha plus field), never the matched text or the pattern: on a public repo the CI log would otherwise repeat the mention. (4) Diff is base...head (merge base), so lines master changed after the branch point are not blamed on the PR; --no-renames so a renamed file's new path and content count as added. (5) pre-commit has no commit range yet, so the script takes --staged: index diff plus the author/committer ident git would use. (6) Found: 5 of the last 8 merged PRs come from a fork (sashasoft90); GitHub passes no secrets to pull_request runs from forks, so as decided the job fails on each of those PRs - question for Berk once it works.
+- **2026-10-22 08:00 · BeMuCa** — Verified in GitHub docs (using-secrets-in-github-actions): 'With the exception of GITHUB_TOKEN, secrets are not passed to the runner' when the workflow is triggered from a forked repository. So under the pull_request trigger the mentions job sees an empty MENTION_DENYLIST on every fork PR and fails by design.
