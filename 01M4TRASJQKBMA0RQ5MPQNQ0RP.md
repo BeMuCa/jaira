@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:17Z
-updated-at: 2026-10-22T07:57:57Z
+updated-at: 2026-10-22T07:58:51Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4189248
@@ -31,7 +31,8 @@ claimed-at: 2026-10-22T07:55:22Z
 
 ## Definition of Done
 
-- [ ] Fuer eine Lane mit nur requires-question sagt der Block: eine Person beantwortet die Frage, danach schiebt der Agent weiter; fuer requires-human-exit bleibt 'never out'; ein Test in core/board deckt beide Faelle
+- [x] Fuer eine Lane mit nur requires-question sagt der Block: eine Person beantwortet die Frage, danach schiebt der Agent weiter; fuer requires-human-exit bleibt 'never out'; ein Test in core/board deckt beide Faelle
+  proof: core/board/announce.go:249; TestLaneSectionQuestionLaneIsLeftByTheAgentAcceptanceLaneIsNot (core/board/lanesection_test.go:197)
 - [ ] go test ./... -race gruen; Release-Notiz unter core/release/notes/; der CLAUDE.md-Block dieses Repos ist neu erzeugt
 
 ## Options
