@@ -1,7 +1,7 @@
 ---
 id: 01M4TRAVWQFDY2W0MPEA339DNB
 title: "Ein Testbuild von jaira laesst sich starten, ohne dass er Refs ins Remote sendet"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Wer einen ungeprueften Build gegen einen echten Checkout startet, kann das Senden an das Remote abschalten."
@@ -20,11 +20,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:19Z
-updated-at: 2026-10-22T08:02:04Z
+updated-at: 2026-10-22T08:03:05Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4187593
 claimed-at: 2026-10-22T07:55:10Z
+outcome-what: "JAIRA_NO_PUSH=1 sperrt die beiden git-push-Aufrufe in core/gitref (ErrPushOff); Syncer.Flush meldet das vor dem Fetch und laesst die Outbox unberuehrt. Die CLI nennt es in einer stderr-Zeile, das TUI in der Versionszeile."
+outcome-why: "Ein Testbuild auf einem echten Checkout veroeffentlichte alles, was er schreibt; bisher schuetzte nur eine Board-Kopie ohne Remote."
+outcome-resolves: "Mit JAIRA_NO_PUSH=1 sendet weder TUI noch CLI Refs, beide sagen es sichtbar; TestNoPushSwitchRefusesEverySendingPath und TestFlushWithTheNoPushSwitchKeepsTheQueue belegen, dass nichts rausgeht und die Warteschlange bleibt."
 ---
 
 # Ein Testbuild von jaira laesst sich starten, ohne dass er Refs ins Remote sendet
