@@ -1,7 +1,7 @@
 ---
 id: 01M5659BR7RYZ6RVC84HGK1QGT
 title: "Die Release-Notes zeigen eine Version pro Seite, die neueste zuerst, und links/rechts blaettert zwischen den Versionen"
-status: testing
+status: signoff
 ready: true
 creator: berkc
 assignee: berkc
@@ -20,15 +20,19 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:20Z
-updated-at: 2026-10-18T00:41:22Z
+updated-at: 2026-10-18T00:50:01Z
 updated-by: berkc
 claimed-by: berk-ca-703016
 claimed-at: 2026-10-18T00:32:08Z
 outcome-what: "Release notes view (internal/tui/releasenotes.go) shows one version per page with header 'version · n/N', newest first; left/h older, right/l newer, no-op at ends; j/k scroll within a page and reset on page change; popup title adds '· N unread'. Tests + release note GK1QGT.md."
 outcome-why: "Berk: notes should be split per version, newest by default, compact, with left/right to navigate; the long single list after a multi-version upgrade was hard to read."
 outcome-resolves: "DoD 1-4: one version per page with position header in popup and 'w'; left/right/h/l paging with inert ends; unread count in popup title; tests pin start page and paging, release note written."
-review-summary: "No findings. Paging lives in notesView (internal/tui/releasenotes.go) as one index 'at' beside the existing scroll — no new type, both callers (home.go w, model.go popup) unchanged. h/left, l/right match browse.go:109 and dropboard.go:96. The two 'at >= len(entries)' guards cover an empty entry list, which newNotesView accepts from home.go; kept rather than relying on NOTES.md never being empty. Popup-only-unread is the decision in the first note; not reopened."
-review-gaps: "Inlined the one-caller notesView.header into render (internal/tui/releasenotes.go:101), which also dropped its duplicate empty-list guard; DoD 1 proof updated. No duplication found: browse.go/dropboard.go share only the key names, not a pager. Nothing orphaned; no hot path."
+review-summary: "internal/tui/releasenotes.go: notesView now holds an index 'at' (0 = newest) and renders only entries[at] — a header line '<version> · i/n' under the title, that version's changes (! lines still styled), and the hint '←/→ older/newer · j/k scroll · esc close' (truncated to width). left/h moves to the older entry, right/l to the newer, both inert at the ends, and a page change resets scroll to 0; j/k/pgup/pgdown scroll inside a page as before. The board popup (openReleaseNotes) still pages release.Since(base), i.e. only versions newer than the seen record or stamp, and its title gains '· N unread'; markSeen on close is unchanged (records release.Current). The launcher's w still opens every version (release.Since(\"\")). Tests updated in home_test.go and releasenotes_test.go, plus core/release/notes/GK1QGT.md with two one-line notes."
+review-gaps: "none blocking. Checked: (1) real release build — simulated the release-notes workflow (loose notes moved into notes/0.5.4/, built -X main.version=0.5.4, board stamped 0.5.0, no notes-seen): popup reads 'What is new since 0.5.0 · 4 unread', pages 0.5.4 · 1/4 … 0.5.1, no Unreleased page; so the 'N unread counts Unreleased' effect is dev-tree-only. Residual, pre-existing and outside this ticket: a release tag built from a merge commit that also carries a loose note merged to master after the release branch was cut would show an 'Unreleased' page and count it. (2) markSeen: after esc, notes-seen = 0.5.4. (3) 0 entries: header and body skipped (v.at >= len guard); the popup never opens with 0 anyway. (4) long page: j scrolls and clamps, page change resets scroll. (5) 40x14 terminal: header, wrapped changes and hint fit; 30x h stops at 25/25. (6) keys: h/l/left/right were unbound in the notes view on both board (model.go modeReleaseNotes) and launcher (home.go h.notes branch, which returns before board keys), so no conflict. Minor: the hint names esc only though q/enter also close (pre-existing); with height < 6 render emits more lines than height (pre-existing, body floor of 1)."
+test-verdict: "pass: go vet + go test -race ./... RC=0 after go clean -testcache; DoD 1-4 verified in tree (proof lines + named tests run -v); tmux: w at 120x40 and 40x20 pages Unreleased 1/25 -> 0.5.3 2/25 and back, popup (0.5.3 build, stamp 0.5.0) '· 4 unread', 1/4..4/4, h past oldest stays 4/4, q closes and writes notes-seen 0.5.3"
+review-verdict: "approve: the diff meets all four DoD items; go vet ./... clean, go test -race ./... all ok; behaviour confirmed in tmux on a dev build (w) and a simulated release build (popup). No defects introduced."
+review-round: 1
+review-check: "1. cd /home/berkc/code/X_General/jaira-T8A8KM && go build -ldflags '-X main.version=0.5.3' -o /tmp/jgk ./cmd/jaira  2. JAIRA_NO_FETCH=1 JAIRA_NO_UPDATE_CHECK=1 /tmp/jgk  (from any repo with a board)  3. press w: the screen shows 'Release notes', then one header line 'Unreleased · 1/25' (dev tree; a release shows the newest version) and only that version's changes  4. press ← (or h): header becomes '0.5.3 · 2/25' and only 0.5.3's changes show  5. press → (or l) twice: back to 1/25, the second press does nothing  6. press j a few times on a long page: it scrolls; press ←: the next page starts at its top  7. press esc: back to the launcher  8. popup: in ~/.jaira/state/board-*/ of a board write 0.5.0 into 'version' and delete 'notes-seen', open that board: popup title 'What is new since 0.5.0 · N unread', header '<newest> · 1/N'; press esc, then 'cat notes-seen' in that folder shows the running version  9. go test ./internal/tui -run 'NotesView|ReleaseNotes|Popup' passes"
 ---
 
 # Die Release-Notes zeigen eine Version pro Seite, die neueste zuerst, und links/rechts blaettert zwischen den Versionen

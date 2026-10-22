@@ -159,11 +159,13 @@ this note from outside the block.
 
 ## This board's lanes
 
-Order: backlog → brainstorm → todo → pre-process → in-progress → critique → optimize → testing → human → review → signoff → done → blocked
+Order: ideas → backlog → brainstorm → todo → pre-process → in-progress → critique → optimize → testing → human → review → signoff → done → blocked
 Loop: critique sends work back to in-progress, and that repeats until critique has nothing left to say.
 Loop: optimize sends work back to in-progress, and that repeats until optimize has nothing left to say.
 Loop: testing sends work back to in-progress, and that repeats until testing has nothing left to say.
 
+- `ideas` — no agent step; move through it
+  Ideas that are not ripe for the backlog yet.
 - `backlog` — no agent step; move through it
   Captured but not yet specified enough to work on.
 - `brainstorm` — yours to work; tier strong; must produce goal
