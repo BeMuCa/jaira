@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:19Z
-updated-at: 2026-10-22T08:40:41Z
+updated-at: 2026-10-22T08:40:44Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4187593
@@ -56,8 +56,8 @@ review-check: |-
 
 - [x] Mit gesetztem Schalter sendet weder das TUI noch die CLI Refs; beide sagen sichtbar, dass nicht gesendet wird; ein Test belegt, dass Flush dann nicht laeuft
   proof: core/gitref/gitref.go:84,707,928 ErrPushOff+PushDisabled in pushRefspec/PushBranch; core/refsync/refsync.go:649 Flush early return; internal/cli/refs.go:254 flushRefs stderr line; internal/cli/snapshot.go:53-55 snapshot refuses up front (before stamp); internal/cli/snapshot.go:124 maybeSnapshot skips; internal/tui/updatecheck.go:48 version line; tests TestNoPushSwitchRefusesEverySendingPath, TestFlushWithTheNoPushSwitchKeepsTheQueue, TestVersionLineNamesTheNoPushSwitch; suite green with the switch exported (internal/testhome/testhome.go Run unsets it)
-- [ ] Der Schalter steht in docs/COMMANDS.md; go test ./... -race gruen; Release-Notiz unter core/release/notes/
-  proof: docs/COMMANDS.md:163 jaira fetch row; core/release/notes/339DNB.md; race suite pending (maintainer)
+- [~] Der Schalter steht in docs/COMMANDS.md; go test ./... -race gruen; Release-Notiz unter core/release/notes/
+  proof: docs/COMMANDS.md:163 jaira fetch row; core/release/notes/339DNB.md; JAIRA_NO_PUSH=1 go test ./core/snapshot ./core/gitref ./core/refsync ok; full race suite pending (maintainer)
 
 ## Options
 
