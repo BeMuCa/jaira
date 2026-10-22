@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:21Z
-updated-at: 2026-10-22T08:06:38Z
+updated-at: 2026-10-22T08:07:44Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4187645
@@ -29,6 +29,7 @@ outcome-why: "A bare 'dev' looked the same for every self-built binary, so nobod
 outcome-resolves: "DoD 1: Display/displayFrom feed both cobra's Version (internal/cli/root.go:101) and versionLine (internal/tui/updatecheck.go:57); TestDisplayFrom covers release, clean, dirty and no-vcs cases; checked on real binaries built from a plain git clone. DoD 2's race suite is left to the maintainer before the PR; the release note is core/release/notes/VHTE7X.md."
 review-summary: none
 review-gaps: "none. Duplication: no other ReadBuildInfo/vcs.revision/BuildSetting reader in the repo; core/gitrepo/git.go:155 shortSHA does the same 7-char cut but is unexported in a package that shells out to git, and core/release imports nothing of it, so the two lines in displayFrom stay rather than coupling release to gitrepo. Dead code: none orphaned; newRoot(version) and Execute(version) still use their parameter. Fluff: the nil guard in Display is needed (ReadBuildInfo returns nil when !ok); the len(rev)>7 guard is real for non-git VCS (svn revisions are short numbers); displayFrom's current parameter is the test seam critique let stand. Cost: Display runs once per process (root.go:101) and once per TUI model build (model.go:326, home.go:145), not per render; ReadBuildInfo measured ~3us per call. Left for review as critique recorded: internal/tui/updatecheck.go:39-41 comment still quotes the dev line as \"jaira dev\"."
+test-verdict: "pass: gates green (gofmt/vet/build, targeted tests); real builds show dev-d23f19f, dev-d23f19f-dirty, 0.9.9; TUI header dev-d23f19f / jaira 0.9.9; release note 1 line. Full race suite (DoD 2) open for maintainer before PR."
 ---
 
 # Ein selbst gebauter jaira zeigt, aus welchem Commit er stammt
