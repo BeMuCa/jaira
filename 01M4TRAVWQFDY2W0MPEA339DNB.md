@@ -1,7 +1,7 @@
 ---
 id: 01M4TRAVWQFDY2W0MPEA339DNB
 title: "Ein Testbuild von jaira laesst sich starten, ohne dass er Refs ins Remote sendet"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Wer einen ungeprueften Build gegen einen echten Checkout startet, kann das Senden an das Remote abschalten."
@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:19Z
-updated-at: 2026-10-22T08:09:13Z
+updated-at: 2026-10-22T08:09:49Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4187593
@@ -34,6 +34,7 @@ review-summary: |-
   core/gitref/gitref.go:84 ErrPushOff promises "the change stays queued and goes out with the first command run without it", but it is also returned by writes that never queue - Syncer.Pull (core/refsync/refsync.go:1399), Syncer.Release (:1482), snapshot PushBranch/Drop (core/snapshot/snapshot.go:185/:275) - so 'jaira pull X' prints that promise and nothing ever goes out; and a queued write goes out only with a command that writes (internal/cli/refs.go:250 Dirty) or the board, not with 'jaira list'. Make the sentinel name the state only, like its siblings ("gitref: sending is off (JAIRA_NO_PUSH=1)"), and say "stays queued" only where an outbox entry exists: an ErrPushOff branch in flushRefs (internal/cli/refs.go:253, which also stops calling a deliberate switch "warning: ... could not be sent") and its own sentence in noRefReason (internal/cli/refs.go:161) like the ErrNoGit branch beside it.
   internal/cli/tickets.go:429/:438 with internal/cli/refs.go:255 - 'jaira create' with the switch prints the same ErrPushOff sentence twice (stdout reason, stderr flushRefs warning), then "once the remote works, 'jaira release X' puts it on its ref" - the remote works, the switch is the condition. With the gitref fix the two lines say different things (file stays here / write queued); for ErrPushOff let :438 say "once sending is on again" instead of "once the remote works".
   internal/cli/snapshot.go:122 maybeSnapshot still spawns the background snapshot with the switch on: bgrun stamps before the run (core/bgrun/bgrun.go:123), the child inherits JAIRA_NO_PUSH and fails at PushBranch (core/snapshot/snapshot.go:185), so one run of a test build uses up the 72h backup slot (core/snapshot/snapshot.go:54) and no backup is made - return early there on gitref.PushDisabled(), beside the Usable check.
+round: 2
 ---
 
 # Ein Testbuild von jaira laesst sich starten, ohne dass er Refs ins Remote sendet
