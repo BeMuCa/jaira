@@ -17,7 +17,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T07:52:29Z
-updated-at: 2026-10-22T07:52:29Z
+updated-at: 2026-10-22T07:54:49Z
+assignee: BeMuCa
+updated-by: BeMuCa
 ---
 
 # CI und ein lokaler Hook lehnen Commits ab, die Arbeitgeber- oder Kundennamen tragen
