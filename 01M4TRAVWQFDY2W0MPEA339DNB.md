@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:19Z
-updated-at: 2026-10-22T08:03:05Z
+updated-at: 2026-10-22T08:09:10Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4187593
@@ -28,6 +28,12 @@ claimed-at: 2026-10-22T07:55:10Z
 outcome-what: "JAIRA_NO_PUSH=1 sperrt die beiden git-push-Aufrufe in core/gitref (ErrPushOff); Syncer.Flush meldet das vor dem Fetch und laesst die Outbox unberuehrt. Die CLI nennt es in einer stderr-Zeile, das TUI in der Versionszeile."
 outcome-why: "Ein Testbuild auf einem echten Checkout veroeffentlichte alles, was er schreibt; bisher schuetzte nur eine Board-Kopie ohne Remote."
 outcome-resolves: "Mit JAIRA_NO_PUSH=1 sendet weder TUI noch CLI Refs, beide sagen es sichtbar; TestNoPushSwitchRefusesEverySendingPath und TestFlushWithTheNoPushSwitchKeepsTheQueue belegen, dass nichts rausgeht und die Warteschlange bleibt."
+review-summary: |-
+  core/release/notes/339DNB.md:1 is German; every other note (core/release/notes/0.3.7..0.5.4/*.md) is English and jaira update shows it to every user - rewrite it in English as one "- " instruction line, without the "everything stays queued" promise (see core/gitref finding).
+  docs/COMMANDS.md:163 the new sentence is glued onto "`--quiet` skips it" with no full stop - end that sentence first, as the self upgrade row does at :132 ("...on purpose. `JAIRA_NO_UPDATE_CHECK=1` turns the check off."), and say queued writes wait while pull, release and snapshot are refused, instead of "writes stay queued and go out with the first run without it".
+  core/gitref/gitref.go:84 ErrPushOff promises "the change stays queued and goes out with the first command run without it", but it is also returned by writes that never queue - Syncer.Pull (core/refsync/refsync.go:1399), Syncer.Release (:1482), snapshot PushBranch/Drop (core/snapshot/snapshot.go:185/:275) - so 'jaira pull X' prints that promise and nothing ever goes out; and a queued write goes out only with a command that writes (internal/cli/refs.go:250 Dirty) or the board, not with 'jaira list'. Make the sentinel name the state only, like its siblings ("gitref: sending is off (JAIRA_NO_PUSH=1)"), and say "stays queued" only where an outbox entry exists: an ErrPushOff branch in flushRefs (internal/cli/refs.go:253, which also stops calling a deliberate switch "warning: ... could not be sent") and its own sentence in noRefReason (internal/cli/refs.go:161) like the ErrNoGit branch beside it.
+  internal/cli/tickets.go:429/:438 with internal/cli/refs.go:255 - 'jaira create' with the switch prints the same ErrPushOff sentence twice (stdout reason, stderr flushRefs warning), then "once the remote works, 'jaira release X' puts it on its ref" - the remote works, the switch is the condition. With the gitref fix the two lines say different things (file stays here / write queued); for ErrPushOff let :438 say "once sending is on again" instead of "once the remote works".
+  internal/cli/snapshot.go:122 maybeSnapshot still spawns the background snapshot with the switch on: bgrun stamps before the run (core/bgrun/bgrun.go:123), the child inherits JAIRA_NO_PUSH and fails at PushBranch (core/snapshot/snapshot.go:185), so one run of a test build uses up the 72h backup slot (core/snapshot/snapshot.go:54) and no backup is made - return early there on gitref.PushDisabled(), beside the Usable check.
 ---
 
 # Ein Testbuild von jaira laesst sich starten, ohne dass er Refs ins Remote sendet
