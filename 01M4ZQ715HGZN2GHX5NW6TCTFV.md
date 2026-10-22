@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-22T00:15:30Z
+updated-at: 2026-10-22T00:15:51Z
 updated-by: berkc
 question: |-
   Welche Arbeitsweise bekommt ein NEUER Milestone, wenn beim Anlegen niemand --pr angibt?
@@ -94,3 +94,4 @@ Parallel: N71NVG baut das Ablegen/Loeschen eines fertigen Milestones samt Ticket
 - jaira-worker mitgenommen: Schwesterrolle des Dispatchers, verschiebt Tickets selbst; ohne ihn ginge die Zeile bei Worker-Tickets verloren.
 - Unveraendert: core/board/announce.go (sagt schon 'jaira logbook <milestone>'), core/milestone/adopt.go (merged jedes Frontmatter-Feld generisch, adopt.go:84), nextStepLine, move.Move.
 - Ausgelassen, Folge-Tickets: TUI-Schreibstellen (signoff.go:187, model.go:1949, :2004); 'jaira logbook --all'; Tickets eines Block-Milestones auf einen Branch bringen (jaira-role-pr meldet ein Ticket ohne Commit auf dem Branch und stoppt).
+- **2026-10-22 00:15 · berkc** — Antwort von berkc am 22.10.2026 auf die Frage A/B: Alarm in beiden Faellen - wenn ein Ticket fertig ist UND wenn ein Milestone fertig ist. PRs pro Ticket entfallen; der PR entsteht pro Milestone ('we can skip the single ticket prs and wait for milestone'). Damit gibt es kein single/block-Attribut mehr: jeder Milestone bekommt beim Abschluss einen PR ueber alle seine Tickets. Ein Ticket ohne Milestone: offen, ob es einen eigenen PR bekommt - beim Planen pruefen und notfalls nachfragen. Folge: alle Tickets eines Milestones muessen auf einem Branch landen (siehe Plan-Notiz: heute hat jedes Ticket seinen eigenen Branch). Verwandt: 80MGXT (Worktree weg bei done, Branch bleibt bis zum Milestone-Merge).
