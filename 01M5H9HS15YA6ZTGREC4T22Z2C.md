@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T07:52:29Z
-updated-at: 2026-10-22T08:04:03Z
+updated-at: 2026-10-22T08:04:07Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4193148
@@ -30,7 +30,8 @@ claimed-at: 2026-10-22T07:55:54Z
 
 - [x] Ein CI-Job in .github/workflows/ci.yaml prueft bei jedem PR den Diff gegen master und Author-/Committer-E-Mail jedes Commits gegen die Regex-Liste aus dem Secret MENTION_DENYLIST und schlaegt bei einem Treffer mit Zeile und Commit fehl; fehlt das Secret, schlaegt der Job mit einer klaren Meldung fehl statt still zu bestehen
   proof: .github/workflows/ci.yaml job mentions; scripts/check-mentions.sh scan_added + commit loop; shell test cases 2,4,5,6,8
-- [ ] scripts/check-mentions.sh macht dieselbe Pruefung lokal, liest die Liste aus $XDG_CONFIG_HOME/jaira/mention-denylist (Fallback ~/.config/jaira/mention-denylist), und docs/COMMANDS.md sagt, wie man es als pre-commit- und pre-push-Hook einhaengt
+- [x] scripts/check-mentions.sh macht dieselbe Pruefung lokal, liest die Liste aus $XDG_CONFIG_HOME/jaira/mention-denylist (Fallback ~/.config/jaira/mention-denylist), und docs/COMMANDS.md sagt, wie man es als pre-commit- und pre-push-Hook einhaengt
+  proof: scripts/check-mentions.sh:22-27 (XDG list, fallback HOME/.config); docs/COMMANDS.md section 'Keeping a name out of the repository'
 - [ ] core/role/builtin/jaira-role-pr/SKILL.md:84 nennt keinen Firmen-Host mehr, sondern ein generisches Beispiel
 - [ ] go test ./... -race gruen; Release-Notiz unter core/release/notes/
 
