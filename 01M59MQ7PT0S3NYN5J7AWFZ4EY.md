@@ -1,7 +1,7 @@
 ---
 id: 01M59MQ7PT0S3NYN5J7AWFZ4EY
 title: Neue Lanes starten aus einer Vorlage pro Lane-Art statt aus einer Datei mit allen Feldern
-status: backlog
+status: ideas
 ready: true
 creator: berkc
 assignee: berkc
@@ -20,8 +20,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T08:33:47Z
-updated-at: 2026-10-22T00:15:34Z
+updated-at: 2026-10-22T00:15:37Z
 updated-by: berkc
+round: 2
 ---
 
 # Neue Lanes starten aus einer Vorlage pro Lane-Art statt aus einer Datei mit allen Feldern
