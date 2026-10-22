@@ -1,7 +1,7 @@
 ---
 id: 01M5H9HS15YA6ZTGREC4T22Z2C
 title: "CI und ein lokaler Hook lehnen Commits ab, die Arbeitgeber- oder Kundennamen tragen"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Kein Commit, keine Datei und keine Ticket-Notiz im Repo nennt Berks Arbeitgeber oder Kunden - weder im Inhalt noch in Author-/Committer-E-Mail - und die Pipeline weist einen PR ab, der es doch tut."
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T07:52:29Z
-updated-at: 2026-10-22T08:12:37Z
+updated-at: 2026-10-22T08:13:33Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4193148
@@ -33,6 +33,7 @@ review-summary: |-
   scripts/check-mentions.sh commit loop: `git log -1 --format=%B "$c" | matches` under pipefail - grep -q exits on the first match, git log dies of SIGPIPE (141), the pipeline returns 141, '&& hit' is skipped and '|| true' swallows it, so a hit passes silently. Probe: hit on line 1 of a ~150 KB message, rc=0 in 5 of 5 runs (flaky at 100 KB, caught up to 70 KB). Use a here-string, no pipe: `matches <<<"$(git log -1 --format=%B "$c")" && hit ...`; same for %ae, %ce and the git var line.
   docs/COMMANDS.md: the new section sits between '## Agent plumbing' and '## Keys', inside the binary's reference, while its first line says it is not part of the binary. Move it to the end of the file, after '## Keys'.
   .github/workflows/ci.yaml mentions comment: names what a pull request adds and who authored and committed it; the script also checks commit messages - add 'and its commit messages'.
+round: 2
 ---
 
 # CI und ein lokaler Hook lehnen Commits ab, die Arbeitgeber- oder Kundennamen tragen
