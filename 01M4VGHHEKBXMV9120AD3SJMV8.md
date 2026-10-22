@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T20:51:24Z
-updated-at: 2026-10-22T08:00:50Z
+updated-at: 2026-10-22T08:00:53Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4188296
@@ -35,7 +35,8 @@ claimed-at: 2026-10-22T07:55:16Z
   proof: .claude/skills/jaira/SKILL.md:439 (direct push vs PR)
 - [x] Der Agent-Block (core/board/announce.go) nennt /jaira-role-pr fuer PRs in einer Zeile; CLAUDE.md und AGENTS.md neu erzeugt; ein Test prueft die Zeile
   proof: core/board/announce.go:145; TestAgentNoteNamesThePullRequestRole; CLAUDE.md/AGENTS.md regenerated
-- [ ] Ein frischer Subagent mit dem Auftrag 'mach einen PR fuer Ticket X' beschreibt das Ablegen vor dem Push, ohne dass man es ihm sagt; das Ergebnis steht als Notiz am Ticket
+- [x] Ein frischer Subagent mit dem Auftrag 'mach einen PR fuer Ticket X' beschreibt das Ablegen vor dem Push, ohne dass man es ihm sagt; das Ergebnis steht als Notiz am Ticket
+  proof: jaira note on 3SJMV8, 2026-10-22: fresh-subagent PR experiment
 
 ## Options
 
