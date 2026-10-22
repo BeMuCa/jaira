@@ -1,7 +1,7 @@
 ---
 id: 01M4VGHHEKBXMV9120AD3SJMV8
 title: "Der jaira-Skill sagt, wie ein PR mit seinen Tickets entsteht, und verweist auf die PR-Rolle"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Ein Agent, der fuer ein jaira-Repo einen PR vorbereitet, legt die angenommenen Tickets auf dem Branch ins Logbuch, bevor er pusht, weil der jaira-Skill es ihm sagt."
@@ -18,11 +18,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T20:51:24Z
-updated-at: 2026-10-22T08:01:09Z
+updated-at: 2026-10-22T08:01:14Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4188296
 claimed-at: 2026-10-22T07:55:16Z
+outcome-what: "The jaira skill (.claude/skills/jaira/SKILL.md) gets a section 'Making a pull request': accepted tickets are filed away on the PR branch with jaira pull, jaira logbook and one chore commit each before the push, and it points to /jaira-role-pr. The 'logbook waits on the push' paragraph now separates a direct push from a PR. The agent block (core/board/announce.go) gets one line naming /jaira-role-pr, guarded by TestAgentNoteNamesThePullRequestRole; CLAUDE.md and AGENTS.md regenerated with a build of this branch; release note core/release/notes/3SJMV8.md."
+outcome-why: "PR #74 was opened while its tickets still sat in signoff and got 'changes requested'. The filing rule existed only in the PR role; the jaira skill said the opposite (log only after the push) and neither the skill nor the agent block named the role."
+outcome-resolves: "DoD 1: SKILL.md section 'Making a pull request'. DoD 2: the paragraph in 'Taking a ticket off the board' distinguishes direct push and PR. DoD 3: announce.go bullet + TestAgentNoteNamesThePullRequestRole + regenerated CLAUDE.md/AGENTS.md. DoD 4: a fresh subagent told only to make a PR described filing before the push; result in a note on the ticket."
+executed-by: claude-sonnet
 ---
 
 # Der jaira-Skill sagt, wie ein PR mit seinen Tickets entsteht, und verweist auf die PR-Rolle
