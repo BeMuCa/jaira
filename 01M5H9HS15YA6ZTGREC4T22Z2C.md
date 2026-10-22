@@ -1,7 +1,7 @@
 ---
 id: 01M5H9HS15YA6ZTGREC4T22Z2C
 title: "CI und ein lokaler Hook lehnen Commits ab, die Arbeitgeber- oder Kundennamen tragen"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Kein Commit, keine Datei und keine Ticket-Notiz im Repo nennt Berks Arbeitgeber oder Kunden - weder im Inhalt noch in Author-/Committer-E-Mail - und die Pipeline weist einen PR ab, der es doch tut."
@@ -17,11 +17,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T07:52:29Z
-updated-at: 2026-10-22T08:04:11Z
+updated-at: 2026-10-22T08:05:14Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4193148
 claimed-at: 2026-10-22T07:55:54Z
+outcome-what: "Added scripts/check-mentions.sh and a CI job 'mentions' in .github/workflows/ci.yaml: a pull request fails when an added line, a file name, an author or committer email, or a commit message matches the denylist (secret MENTION_DENYLIST in CI, ~/.config/jaira/mention-denylist locally); --staged checks the index and git's ident for a pre-commit hook. A hit prints only where it is, never the text or the pattern. docs/COMMANDS.md explains the list and the pre-commit/pre-push hooks. The PR role's example host is now git.example.com."
+outcome-why: "The list of forbidden strings cannot live in the repo, or it would itself be the mention, so CI reads it from a secret and the local hooks from a file outside the repo. The CI log of a public repo must not repeat the mention, so the script names only file:line or the commit."
+outcome-resolves: "DoD 1: job mentions + scripts/check-mentions.sh, exit 2 with a message when the list is missing. DoD 2: the script's local list source and the hook section in docs/COMMANDS.md. DoD 3: SKILL.md:84 names git.example.com. DoD 4: release note core/release/notes/T22Z2C.md written; the full race suite is the maintainer's before the PR."
 ---
 
 # CI und ein lokaler Hook lehnen Commits ab, die Arbeitgeber- oder Kundennamen tragen
