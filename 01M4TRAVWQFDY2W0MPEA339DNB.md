@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:19Z
-updated-at: 2026-10-22T07:58:41Z
+updated-at: 2026-10-22T07:58:45Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4187593
@@ -51,4 +51,4 @@ claimed-at: 2026-10-22T07:55:10Z
 - [ ] docs/COMMANDS.md neben JAIRA_NO_UPDATE_CHECK, core/release/notes/339DNB.md
 
 ## Progress
-
+- **2026-10-22 07:58 · BeMuCa** — Plan vom Treiber geschrieben (pre-process wurde von next_lane uebersprungen, in-progress meldete 'missing: plan'). Warum der Schalter in core/gitref und nicht nur an den drei Flush-Aufrufen: der Kontext nennt nur internal/cli/refs.go:88/:248 und internal/tui/refs.go:78, aber es gibt mehr Sendewege - internal/cli/web.go:109 (webPush), Syncer.Pull/Release (core/refsync/refsync.go:1395/:1478 schreiben den Ref direkt), der Snapshot (core/snapshot/snapshot.go:185 PushBranch, :252/:275 Delete) und rebaseEpic (core/refsync/epic.go:113). Alle laufen durch genau zwei git-push-Aufrufe: core/gitref/gitref.go PushBranch und pushRefspec. Flush prueft zusaetzlich frueh, damit die Outbox wie offline erhalten bleibt und kein Fetch/keine Warnung pro Eintrag entsteht.
