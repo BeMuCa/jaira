@@ -18,9 +18,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T20:51:24Z
-updated-at: 2026-10-22T07:52:41Z
+updated-at: 2026-10-22T07:55:16Z
 assignee: BeMuCa
 updated-by: BeMuCa
+claimed-by: EE-3NX6GL3-4188296
+claimed-at: 2026-10-22T07:55:16Z
 ---
 
 # Der jaira-Skill sagt, wie ein PR mit seinen Tickets entsteht, und verweist auf die PR-Rolle
