@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:19Z
-updated-at: 2026-10-22T08:17:58Z
+updated-at: 2026-10-22T08:21:03Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4187593
@@ -30,6 +30,7 @@ outcome-why: "Ein Testbuild auf einem echten Checkout veroeffentlichte alles, wa
 outcome-resolves: "Mit JAIRA_NO_PUSH=1 sendet weder TUI noch CLI Refs, beide sagen es sichtbar; TestNoPushSwitchRefusesEverySendingPath und TestFlushWithTheNoPushSwitchKeepsTheQueue belegen, dass nichts rausgeht und die Warteschlange bleibt."
 review-summary: none
 round: 2
+review-gaps: "none removed. Considered and left: (1) PushDisabled core/gitref/gitref.go:701 vs bgrun.Task.Disabled core/bgrun/bgrun.go:68, selfupdate.Disabled core/selfupdate/cache.go:107, snapshot.Disabled core/snapshot/schedule.go:55 - same one-line ==\"1\" idiom, no shared helper to call; bgrun is for background tasks, importing it into gitref for one line would be a misfit. (2) gate in pushRefspec/PushBranch gitref.go:707,928 plus Flush early return core/refsync/refsync.go:649 - not duplicates: without the Flush return each entry would come back Failed (core/outbox/outbox.go:486 knows only ErrOffline/ErrNoGit). (3) env name as literal in ErrPushOff gitref.go:84 and noRefReason internal/cli/refs.go:162, constant in internal/tui/updatecheck.go:49 - left, literal is greppable and the test checks it. (4) dead code: none - new imports used (internal/cli/tickets.go errors+gitref, internal/cli/snapshot.go, internal/tui/updatecheck.go); ErrPushOff branches in noRefReason and tickets.go:444 reachable via fileOnRefOnly -> Flush (refs.go:90). (5) fluff: versionLine/versionLineBase split updatecheck.go:46-54 settled by critique; when var tickets.go:444 matches clears beside it; two warnRef branches in flushRefs refs.go:254-262 carry different text, folding is not simpler; empty commit core/gitref/gitref_test.go:360 kept so PushBranch gets a real commit and the unchanged-remote check has teeth. (6) cost: one os.Getenv per Flush/TUI tick; versionLine computed once at construction (internal/tui/home.go:145, model.go:326); nothing to hoist. No pre-existing dead code noticed in the touched code."
 ---
 
 # Ein Testbuild von jaira laesst sich starten, ohne dass er Refs ins Remote sendet
