@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:17Z
-updated-at: 2026-10-22T07:57:38Z
+updated-at: 2026-10-22T07:57:42Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4189248
@@ -44,7 +44,7 @@ claimed-at: 2026-10-22T07:55:22Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 - [x] Test first in core/board/announce_test.go: a question-only lane's line says a person answers and the agent moves on after the answer (no 'never out'); a requires-human-exit lane keeps 'you may move work in, or send it back to an earlier lane, never on'
-- [ ] Change the f.Question case text in core/board/announce.go laneSection; check the static line 'An agent cannot move work on out of the human review lane' (announce.go:149) for consistency
+- [x] Change the f.Question case text in core/board/announce.go laneSection; check the static line 'An agent cannot move work on out of the human review lane' (announce.go:149) for consistency
 - [ ] Release note core/release/notes/QNQ0RP.md, one '- ' line written as an instruction
 - [ ] Build the branch binary, run its update in the worktree (HOME/JAIRA_HOME in scratchpad, JAIRA_NO_FETCH=1), keep the regenerated CLAUDE.md/AGENTS.md block
 
