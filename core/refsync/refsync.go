@@ -14,6 +14,7 @@ package refsync
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -76,11 +77,21 @@ type Syncer struct {
 	// an equal hash needs no read and no decode, and no safety net behind it.
 	extraMu    sync.Mutex
 	extraCache map[string]extraEntry
+
+	// hadMu guards hadCache: whether the ref has carried a file's bytes
+	// before, keyed by ticket id and a digest of both sides. isStale asks it
+	// on every listing of a tied file, and the answer only changes when one
+	// of the two does, so a steady board runs no git for it.
+	hadMu    sync.Mutex
+	hadCache map[string]bool
 }
 
 type extraEntry struct {
 	hash string
 	t    *ticket.Ticket // nil: the ref held something that is not a ticket
+	// content is the ref's bytes, which Ahead compares a file with when the
+	// two carry the same updated-at.
+	content []byte
 }
 
 // Dirty reports whether this process queued a write. A caller uses it to decide
@@ -1202,9 +1213,51 @@ func (y *Syncer) refTicket(id string) (*ticket.Ticket, []byte) {
 
 // isStale is the one definition of "older than its ref": the ref was written
 // strictly after the file. A file or ref without a timestamp gives no verdict.
-func isStale(file, ref *ticket.Ticket) bool {
-	return ref != nil && !file.UpdatedAt.IsZero() && !ref.UpdatedAt.IsZero() &&
-		ref.UpdatedAt.After(file.UpdatedAt)
+//
+// The stamp has second resolution, so two writes in one second — a pull here
+// and a move in another worktree right after — tie, and a tie used to read as
+// current: the next write here put the older state back on the ref. On a tie
+// the history decides instead: a file whose bytes differ from the ref's and
+// are a state the ref has carried before is behind it. refContent is the
+// ref's bytes.
+func (y *Syncer) isStale(file, ref *ticket.Ticket, refContent []byte) bool {
+	if ref == nil || file.UpdatedAt.IsZero() || ref.UpdatedAt.IsZero() {
+		return false
+	}
+	if !ref.UpdatedAt.Equal(file.UpdatedAt) {
+		return ref.UpdatedAt.After(file.UpdatedAt)
+	}
+	if file.Doc() == nil {
+		return false
+	}
+	return y.hadBefore(file.ID, file.Doc().Bytes(), refContent)
+}
+
+// hadBefore reports whether file is a state the ref carried before it came to
+// hold ref. Line endings do not count: a checkout with core.autocrlf holds
+// every ticket with CRLF while the ref holds LF, and that is the same ticket.
+// The answer is cached per pair of contents.
+func (y *Syncer) hadBefore(id string, file, ref []byte) bool {
+	lf := bytes.ReplaceAll(file, []byte("\r\n"), []byte("\n"))
+	if bytes.Equal(lf, bytes.ReplaceAll(ref, []byte("\r\n"), []byte("\n"))) {
+		return false
+	}
+	f, r := sha256.Sum256(file), sha256.Sum256(ref)
+	key := id + string(f[:]) + string(r[:])
+	y.hadMu.Lock()
+	v, ok := y.hadCache[key]
+	y.hadMu.Unlock()
+	if ok {
+		return v
+	}
+	v = y.Repo.Had(id, file) || (len(lf) != len(file) && y.Repo.Had(id, lf))
+	y.hadMu.Lock()
+	if y.hadCache == nil {
+		y.hadCache = map[string]bool{}
+	}
+	y.hadCache[key] = v
+	y.hadMu.Unlock()
+	return v
 }
 
 // CheckFresh refuses a write whose file is older than the ticket's ref. It
@@ -1225,7 +1278,7 @@ func (y *Syncer) CheckFresh(t *ticket.Ticket) error {
 	if y == nil || t == nil || y.Usable() != nil {
 		return nil
 	}
-	if ref, _ := y.refTicket(t.ID); isStale(t, ref) {
+	if ref, content := y.refTicket(t.ID); y.isStale(t, ref, content) {
 		return &StaleError{ID: t.ID, File: t, Ref: ref}
 	}
 	return nil
@@ -1292,7 +1345,7 @@ func (y *Syncer) refresh(id, path string) (*Pulled, error) {
 	}
 	out.Title = file.Title
 	ref, content := y.refTicket(id)
-	if !isStale(file, ref) {
+	if !y.isStale(file, ref, content) {
 		return out, nil
 	}
 	if _, pending := y.Pending(id); pending {
@@ -1548,9 +1601,69 @@ func (y *Syncer) Extra(have map[string]bool) ([]*ticket.Ticket, error) {
 		}
 		wanted = append(wanted, id)
 	}
+	if err := y.decodeRefs(wanted, hashes); err != nil {
+		return nil, err
+	}
+	var out []*ticket.Ticket
+	for _, id := range kept {
+		if e, ok := y.extraCache[id]; ok && e.t != nil {
+			out = append(out, e.t.Clone())
+		}
+	}
+	return out, nil
+}
+
+// Ahead reports, for each of the given ticket files, the ticket its ref
+// carries when the ref is ahead of the file — "ahead" exactly as pull and
+// CheckFresh judge it (isStale). It satisfies ticket.AheadSource.
+//
+// It runs on the board's two-second refresh, so it costs one 'git
+// for-each-ref' and reads only refs whose hash it has not decoded before,
+// sharing Extra's cache: a hash is a content address.
+func (y *Syncer) Ahead(files []*ticket.Ticket) map[string]*ticket.Ticket {
+	if y == nil || y.Usable() != nil || len(files) == 0 {
+		return nil
+	}
+	hashes, err := y.Repo.ListHashes()
+	if err != nil {
+		return nil
+	}
+	y.extraMu.Lock()
+	defer y.extraMu.Unlock()
+	if y.extraCache == nil {
+		y.extraCache = map[string]extraEntry{}
+	}
+	var wanted []string
+	for _, f := range files {
+		if h, ok := hashes[f.ID]; ok && y.extraCache[f.ID].hash != h {
+			wanted = append(wanted, f.ID)
+		}
+	}
+	if err := y.decodeRefs(wanted, hashes); err != nil {
+		return nil
+	}
+	out := map[string]*ticket.Ticket{}
+	for _, f := range files {
+		if e, ok := y.extraCache[f.ID]; ok && e.hash == hashes[f.ID] && y.isStale(f, e.t, e.content) {
+			// A write still queued here is not behind: pull refuses it
+			// (ErrUnsent) and the next send settles it, so the card keeps
+			// the file and its unsent mark rather than asking for a pull
+			// that will not happen.
+			if _, pending := y.Pending(f.ID); pending {
+				continue
+			}
+			out[f.ID] = e.t.Clone()
+		}
+	}
+	return out
+}
+
+// decodeRefs reads the wanted refs in one git invocation and caches each
+// decoded ticket under its hash. The caller holds extraMu.
+func (y *Syncer) decodeRefs(wanted []string, hashes map[string]string) error {
 	contents, err := y.Repo.ReadMany(wanted)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	for _, id := range wanted {
 		content, ok := contents[id]
@@ -1564,15 +1677,9 @@ func (y *Syncer) Extra(have map[string]bool) ([]*ticket.Ticket, error) {
 				t = tk
 			}
 		}
-		y.extraCache[id] = extraEntry{hash: hashes[id], t: t}
+		y.extraCache[id] = extraEntry{hash: hashes[id], t: t, content: content}
 	}
-	var out []*ticket.Ticket
-	for _, id := range kept {
-		if e, ok := y.extraCache[id]; ok && e.t != nil {
-			out = append(out, e.t.Clone())
-		}
-	}
-	return out, nil
+	return nil
 }
 
 // Departure is a ticket whose ref is gone while the file is still here.

@@ -744,6 +744,11 @@ func printTable(w io.Writer, ts []*ticket.Ticket, env gate.Env) {
 			if t.ReadOnly {
 				flags += " [pull it]"
 			}
+			// The file here is older than its ref: the row shows the ref's
+			// state, and a write is refused until the file is pulled up.
+			if t.BehindRef {
+				flags += " [behind ref: pull it]"
+			}
 			fmt.Fprintf(w, "  %-10s %-52s %s%s\n", ticket.Handle(t.ID), truncate(t.Title, 52), t.Assignee, flags)
 		}
 	}
@@ -780,6 +785,11 @@ many there are as notes_total.`,
 			t, path, err := s.LoadAnywhere(args[0])
 			if err != nil {
 				return err
+			}
+			// On the board, the newest state: a file older than its ref shows
+			// what the ref says, marked, the way list and the board do.
+			if filedAway(t, path) == "" {
+				t = s.Newest(t)
 			}
 			env, err := envFor(s, t)
 			if err != nil {
@@ -876,6 +886,9 @@ func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env, notesLast int, kid
 	// Only a ticket off today's board says so: row() skips the empty value.
 	row("board", t.Board)
 	row("lane", t.Status)
+	if t.BehindRef {
+		row("behind", "the file here is older than its ref; this is the ref's state — run 'jaira pull "+ticket.Handle(t.ID)+"' before writing")
+	}
 	row("assignee", t.Assignee)
 	row("creator", t.Creator)
 	row("updated by", t.UpdatedBy)
@@ -1623,6 +1636,7 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		"status_known":       known,
 		"ready":              gate.Ready(t),
 		"on-ref-only":        t.ReadOnly,
+		"behind-ref":         t.BehindRef,
 		"creator":            t.Creator,
 		"assignee":           t.Assignee,
 		"executed_by":        t.ExecutedBy,
