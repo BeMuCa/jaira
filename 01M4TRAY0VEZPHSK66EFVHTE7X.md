@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:21Z
-updated-at: 2026-10-22T07:55:48Z
+updated-at: 2026-10-22T08:00:04Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4187645
@@ -43,4 +43,4 @@ claimed-at: 2026-10-22T07:55:10Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-22 08:00 · BeMuCa** — Go does not stamp vcs.* when built from a linked git worktree (.git is a file): the worktree binary prints plain dev. Verified dev-<sha>, dev-<sha>-dirty and 0.9.9 on a scratch repo copy instead. Display() is shown only; release.Current stays dev (checked in market, update, self, updatecheck). root.go passes release.Display() into newRoot at Execute, not inside newRoot, so tests calling newRoot("test") are untouched.
