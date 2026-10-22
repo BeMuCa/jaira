@@ -1,7 +1,7 @@
 ---
 id: 01M5H9HS15YA6ZTGREC4T22Z2C
 title: "CI und ein lokaler Hook lehnen Commits ab, die Arbeitgeber- oder Kundennamen tragen"
-status: optimize
+status: testing
 ready: true
 creator: BeMuCa
 goal: "Kein Commit, keine Datei und keine Ticket-Notiz im Repo nennt Berks Arbeitgeber oder Kunden - weder im Inhalt noch in Author-/Committer-E-Mail - und die Pipeline weist einen PR ab, der es doch tut."
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T07:52:29Z
-updated-at: 2026-10-22T08:24:27Z
+updated-at: 2026-10-22T08:25:10Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4193148
