@@ -1,7 +1,7 @@
 ---
 id: 01M4TRAVWQFDY2W0MPEA339DNB
 title: "Ein Testbuild von jaira laesst sich starten, ohne dass er Refs ins Remote sendet"
-status: review
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Wer einen ungeprueften Build gegen einen echten Checkout startet, kann das Senden an das Remote abschalten."
@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:19Z
-updated-at: 2026-10-22T08:37:39Z
+updated-at: 2026-10-22T08:39:01Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4187593
@@ -29,7 +29,7 @@ outcome-what: "JAIRA_NO_PUSH=1 sperrt die beiden git-push-Aufrufe in core/gitref
 outcome-why: "Ein Testbuild auf einem echten Checkout veroeffentlichte alles, was er schreibt; bisher schuetzte nur eine Board-Kopie ohne Remote."
 outcome-resolves: "Mit JAIRA_NO_PUSH=1 sendet weder TUI noch CLI Refs, beide sagen es sichtbar; TestNoPushSwitchRefusesEverySendingPath und TestFlushWithTheNoPushSwitchKeepsTheQueue belegen, dass nichts rausgeht und die Warteschlange bleibt."
 review-summary: "JAIRA_NO_PUSH=1 blocks the only two git push calls in the binary: PushBranch and pushRefspec in core/gitref/gitref.go return ErrPushOff. Every ref write goes through those two (ticket, milestone, epic, delete, the snapshot branch). So jaira pull, release, snapshot and snapshot --drop are refused with 'jaira: gitref: sending is off (JAIRA_NO_PUSH=1)', exit 1, before they change anything. Syncer.Flush (core/refsync/refsync.go:649) returns ErrPushOff before its fetch, so queued writes stay in the outbox untouched, like offline. CLI: after a write, one stderr line says the change stays queued (internal/cli/refs.go:254). jaira create keeps the file and says why (refs.go:161, tickets.go:444). The background snapshot is not spawned (internal/cli/snapshot.go:124). TUI: fetchRefs ignores ErrPushOff, so fetching still works, and the top-left version line reads 'jaira dev · sending off (JAIRA_NO_PUSH=1)' (internal/tui/updatecheck.go:48). With the switch unset, the next writing command sends the whole queue. Docs: end of the jaira fetch row, docs/COMMANDS.md:163. Release note: core/release/notes/339DNB.md. Tests: TestNoPushSwitchRefusesEverySendingPath, TestFlushWithTheNoPushSwitchKeepsTheQueue, TestTheFileModeReasonNamesTheSendSwitch."
-round: 2
+round: 3
 review-gaps: "(1) BLOCKING - the test suite breaks while the switch is exported. internal/testhome/testhome.go:43 unsets only JAIRA_DEFAULT_BOARD and JAIRA_LANES_DIR, and core/gitref and core/snapshot have no TestMain. Run here: JAIRA_NO_PUSH=1 go test ./core/snapshot ./core/gitref ./core/refsync -count=1 gives 6, 12 and 33 failures, all 'gitref: sending is off (JAIRA_NO_PUSH=1)'; without the switch all three are ok. A contributor who keeps the switch on in his shell - the person it is for - gets a red suite, and DoD 2 (go test ./... -race green) fails under exactly that condition. Fix: unset JAIRA_NO_PUSH in testhome.Run, plus a TestMain (or t.Setenv) for core/gitref and core/snapshot. (2) Question for the maintainer, not a DoD defect: the switch delays publishing, it does not prevent it. A test build's writes wait in $JAIRA_HOME/state/<tree>/outbox/ and the next writing command of any build without the switch sends them. If the test build wrote garbage, nothing says how to see or drop that queue. It is only safe if JAIRA_HOME also points at a scratch dir. (3) jaira snapshot with the switch on an unchanged tree prints 'already current', exit 0, and no word about the switch (core/snapshot/snapshot.go:172 returns before PushBranch; reap's Delete fails silently at :252). Release note and docs say snapshot is 'refused'. (4) A foreground jaira snapshot with the switch still writes the stamp first (internal/cli/snapshot.go:74), so the automatic backup waits 3 days after the switch is unset. The critique fixed this only for the background spawn. (5) Docs: the switch is at the end of the long jaira fetch cell (docs/COMMANDS.md:163), not next to JAIRA_NO_UPDATE_CHECK (:132, self upgrade row) as decided. Hard to find. (6) The TUI notice is appended last, and truncate() cuts it first on a narrow terminal when an update notice is in front of it (internal/tui/view.go:230, home.go:430). (7) No test for the maybeSnapshot guard or the version-line notice (the notes say so)."
 test-verdict: "pass: gofmt/vet/build clean, 3 change tests green under -race; DoD 1 verified (tree+tests+scratch binary), DoD 2 NOT ticked: full race suite NOT run, pending for the maintainer; exercised on scratch board w/ local bare remote: pull, snapshot, create, note, TUI, unset-then-send"
 review-verdict: "back to in-progress. DoD 1 holds. I ran it on a scratch board whose only remote is a local bare repo: create, note, pull, release, snapshot, snapshot --drop and the TUI left git ls-remote unchanged, and after unsetting the switch one note sent the queued ticket. The gate covers every sending path: only two git push calls exist and all HTTP is GET. One defect sends it back: with JAIRA_NO_PUSH=1 exported the test suite fails (gap 1), which is the condition this switch creates and what DoD 2 checks. Gaps 2-7 are smaller; 2 is a design question for the maintainer. DoD 2 is still open: the full race suite has not run."
