@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T20:51:24Z
-updated-at: 2026-10-22T07:59:14Z
+updated-at: 2026-10-22T07:59:17Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4188296
@@ -47,4 +47,4 @@ claimed-at: 2026-10-22T07:55:16Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-22 07:59 · BeMuCa** — Items 1-3 done in worktree, uncommitted. 'jaira update' with scratch HOME touched only CLAUDE.md and AGENTS.md (one bullet each). Test needs the literal with closing backtick: `/jaira-role-pr`.
