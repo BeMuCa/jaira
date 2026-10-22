@@ -1,7 +1,7 @@
 ---
 id: 01M4TRASJQKBMA0RQ5MPQNQ0RP
 title: "Der Agent-Block sagt, dass ein Agent ein Ticket aus human weiterschiebt, sobald die Frage beantwortet ist"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Was der erzeugte Agent-Block ueber die human-Lane sagt, stimmt mit ihrem Gate ueberein."
@@ -20,11 +20,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:17Z
-updated-at: 2026-10-22T07:58:51Z
+updated-at: 2026-10-22T07:59:01Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4189248
 claimed-at: 2026-10-22T07:55:22Z
+outcome-what: "The generated agent block now says a question-only lane (human) is a person's to answer, after which the agent moves the ticket on itself; a requires-human-exit lane (signoff) keeps 'never on'. The static line says 'a lane that waits for a person's acceptance' instead of 'the human review lane'. CLAUDE.md and AGENTS.md are regenerated."
+outcome-why: "The block said an agent may never move work out of human, although that lane has no human-exit gate and the same block says to continue once the human has answered; agents refused to move on after a person's answer."
+outcome-resolves: "The block now matches the human lane's gate and its own later paragraph; TestLaneSectionQuestionLaneIsLeftByTheAgentAcceptanceLaneIsNot covers the question-only and the requires-human-exit lane."
 ---
 
 # Der Agent-Block sagt, dass ein Agent ein Ticket aus human weiterschiebt, sobald die Frage beantwortet ist
