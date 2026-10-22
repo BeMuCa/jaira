@@ -1,7 +1,7 @@
 ---
 id: 01M4VGHHEKBXMV9120AD3SJMV8
 title: "Der jaira-Skill sagt, wie ein PR mit seinen Tickets entsteht, und verweist auf die PR-Rolle"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Ein Agent, der fuer ein jaira-Repo einen PR vorbereitet, legt die angenommenen Tickets auf dem Branch ins Logbuch, bevor er pusht, weil der jaira-Skill es ihm sagt."
@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T20:51:24Z
-updated-at: 2026-10-22T08:06:48Z
+updated-at: 2026-10-22T08:07:27Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4188296
@@ -32,6 +32,7 @@ review-summary: |-
   .claude/skills/jaira/SKILL.md:476-477 "The pull request itself is the maintainer's to open, not yours." is this repository's own house rule (CLAUDE.md:207-224, behind jaira:local) copied into a skill every jaira repository reads, and it contradicts the role the same paragraph points to, which opens the PR when a person invoked it (core/role/builtin/jaira-role-pr/SKILL.md:10-13, 269-288). Replace that sentence with the role's rule: "It opens the pull request only when a person invoked it; started by an agent, it pushes and hands the create line back for a person to run."
   .claude/skills/jaira/SKILL.md:469, 470 and 473 write `<ID>` for the value 467-468 call `<handle>`; the skill uses `<handle>` 40 times, and `<ID>` elsewhere (207, 252, 254) means a milestone's ID. Use `<handle>` in all three: it matches the pathspec (a ticket file ends in <handle>-<slug>.md) and is what commit subjects carry (fix(A3K9QP)).
   core/board/announce.go:145 (and its copies in CLAUDE.md and AGENTS.md) says what a Claude Code skill does rather than what the reader does, is the only entry in the block that names a slash command (an AGENTS.md reader without `jaira roles install` has no /jaira-role-pr), and leaves out "on the branch". Replace with "- a pull request: file accepted tickets on its branch before the push (`/jaira-role-pr`)" and regenerate CLAUDE.md/AGENTS.md as before (scratch-HOME `jaira update` with a build of this branch); TestAgentNoteNamesThePullRequestRole keeps passing because the literal stays.
+round: 2
 ---
 
 # Der jaira-Skill sagt, wie ein PR mit seinen Tickets entsteht, und verweist auf die PR-Rolle
