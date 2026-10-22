@@ -334,8 +334,8 @@ func TestColumnDrawsEveryCardItCountsInFull(t *testing.T) {
 					w, h, got, shown, out)
 			}
 			for _, l := range strings.Split(out, "\n") {
-				if got := len([]rune(l)); got > win.colW+2 {
-					t.Errorf("w=%d h=%d: column line %d wide, want at most %d: %q", w, h, got, win.colW+2, l)
+				if got := len([]rune(l)); got > win.colW {
+					t.Errorf("w=%d h=%d: column line %d wide, want at most %d: %q", w, h, got, win.colW, l)
 				}
 			}
 		}

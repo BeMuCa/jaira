@@ -1,0 +1,1 @@
+- Das Board fuellt jetzt die ganze Terminalbreite: rechts neben der letzten Lane bleibt kein leerer Streifen mehr, die vollen Lanes sind entsprechend breiter.
