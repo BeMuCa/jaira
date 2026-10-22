@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:19Z
-updated-at: 2026-10-22T08:02:02Z
+updated-at: 2026-10-22T08:02:04Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4187593
@@ -54,3 +54,4 @@ claimed-at: 2026-10-22T07:55:10Z
 
 ## Progress
 - **2026-10-22 07:58 · BeMuCa** — Plan vom Treiber geschrieben (pre-process wurde von next_lane uebersprungen, in-progress meldete 'missing: plan'). Warum der Schalter in core/gitref und nicht nur an den drei Flush-Aufrufen: der Kontext nennt nur internal/cli/refs.go:88/:248 und internal/tui/refs.go:78, aber es gibt mehr Sendewege - internal/cli/web.go:109 (webPush), Syncer.Pull/Release (core/refsync/refsync.go:1395/:1478 schreiben den Ref direkt), der Snapshot (core/snapshot/snapshot.go:185 PushBranch, :252/:275 Delete) und rebaseEpic (core/refsync/epic.go:113). Alle laufen durch genau zwei git-push-Aufrufe: core/gitref/gitref.go PushBranch und pushRefspec. Flush prueft zusaetzlich frueh, damit die Outbox wie offline erhalten bleibt und kein Fetch/keine Warnung pro Eintrag entsteht.
+- **2026-10-22 08:02 · BeMuCa** — Dead end/why: gate sits in the two git push calls of core/gitref (not at the three Flush callers) because pull/release/snapshot/epic-rebase push directly. Flush returns ErrPushOff BEFORE Fetch and before the empty-outbox check, so TUI ticks hit it every time - fetchRefs therefore treats it as no error. Known gap: a ticket created with the switch on is a plain file (create path files on disk when Flush errors), not queued; a later command does not send it, 'jaira release <id>' does. Not changed (same as offline). No TUI/CLI unit test for versionLine/noRefReason.
