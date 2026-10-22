@@ -19,9 +19,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:21Z
-updated-at: 2026-10-22T07:52:35Z
+updated-at: 2026-10-22T07:55:10Z
 assignee: BeMuCa
 updated-by: BeMuCa
+claimed-by: EE-3NX6GL3-4187645
+claimed-at: 2026-10-22T07:55:10Z
 ---
 
 # Ein selbst gebauter jaira zeigt, aus welchem Commit er stammt
