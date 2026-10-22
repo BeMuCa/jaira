@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:19Z
-updated-at: 2026-10-22T08:02:00Z
+updated-at: 2026-10-22T08:02:02Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4187593
@@ -34,6 +34,7 @@ claimed-at: 2026-10-22T07:55:10Z
 - [x] Mit gesetztem Schalter sendet weder das TUI noch die CLI Refs; beide sagen sichtbar, dass nicht gesendet wird; ein Test belegt, dass Flush dann nicht laeuft
   proof: core/gitref/gitref.go PushDisabled/ErrPushOff in pushRefspec+PushBranch, core/refsync/refsync.go Flush early return; tests TestNoPushSwitchRefusesEverySendingPath, TestFlushWithTheNoPushSwitchKeepsTheQueue; internal/tui/updatecheck.go versionLine; internal/cli/refs.go noRefReason
 - [ ] Der Schalter steht in docs/COMMANDS.md; go test ./... -race gruen; Release-Notiz unter core/release/notes/
+  proof: docs/COMMANDS.md jaira fetch row; core/release/notes/339DNB.md; race suite pending
 
 ## Options
 
