@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T07:52:29Z
-updated-at: 2026-10-22T08:16:34Z
+updated-at: 2026-10-22T08:19:05Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4193148
@@ -25,14 +25,7 @@ claimed-at: 2026-10-22T07:55:54Z
 outcome-what: "Added scripts/check-mentions.sh and a CI job 'mentions' in .github/workflows/ci.yaml: a pull request fails when an added line, a file name, an author or committer email, or a commit message matches the denylist (secret MENTION_DENYLIST in CI, ~/.config/jaira/mention-denylist locally); --staged checks the index and git's ident for a pre-commit hook. A hit prints only where it is, never the text or the pattern. docs/COMMANDS.md explains the list and the pre-commit/pre-push hooks. The PR role's example host is now git.example.com."
 outcome-why: "The list of forbidden strings cannot live in the repo, or it would itself be the mention, so CI reads it from a secret and the local hooks from a file outside the repo. The CI log of a public repo must not repeat the mention, so the script names only file:line or the commit."
 outcome-resolves: "DoD 1: job mentions + scripts/check-mentions.sh, exit 2 with a message when the list is missing. DoD 2: the script's local list source and the hook section in docs/COMMANDS.md. DoD 3: SKILL.md:84 names git.example.com. DoD 4: release note core/release/notes/T22Z2C.md written; the full race suite is the maintainer's before the PR."
-review-summary: |-
-  scripts/check-mentions.sh added_lines: file names come only from '+++' headers, and git writes none for an empty new file or a binary file - probe: empty acme-corp-empty.txt and binary acme-corp.bin both exit 0 (the 08:03 note says an empty one is caught). Take names from `git -c core.quotePath=false diff --name-only --no-renames --diff-filter=d <range>` (with --cached for --staged) and grep that list; drop the awk path-only entry. quotePath=false also fixes non-ASCII names: pattern 'acmé' misses the file acmé-corp.txt today because the header path is octal-quoted.
-  scripts/check-mentions.sh added_lines: `print p ":" substr($0, 2) > adds` matches the path again on every added line, so one matching file name prints one hit per line (probe: 3-line acme-corp.txt prints 4 hits), and a '^' anchor never reaches the content. Write only substr($0, 2) to $adds; the name list from the finding above checks each name once.
-  scripts/check-mentions.sh added_lines: /^\+\+\+ / also fires on an added line whose content starts with '++ ' - probe: real.txt with '++ b/fake' on line 2 and a hit on line 4 reports 'fake:3'. Treat '+++' as a header only between 'diff --git' and the first '@@' (h=1 on /^diff --git /, h=0 on /^@@ /, content rule !h && /^\+/). Also pass --no-prefix to both git diff calls and drop sub(/^b\//): with a user's diff.mnemonicPrefix=true, --staged reports 'i/staged.txt:1' today.
-  scripts/check-mentions.sh scan_added: for a file-name hit the printed location is the mention itself (probe prints 'acme-corp.txt: ...' and 'acme-corp.txt:1: ...'), against decision (3) of the 07:59 note. When the path itself matches, print its number in the name list instead ('file 3 of git diff --name-only <base>...<head>: its name matches') and use that number in place of the path for its content hits.
-  scripts/check-mentions.sh commit loop: `git log -1 --format=%B "$c" | matches` under pipefail - grep -q exits on the first match, git log dies of SIGPIPE (141), the pipeline returns 141, '&& hit' is skipped and '|| true' swallows it, so a hit passes silently. Probe: hit on line 1 of a ~150 KB message, rc=0 in 5 of 5 runs (flaky at 100 KB, caught up to 70 KB). Use a here-string, no pipe: `matches <<<"$(git log -1 --format=%B "$c")" && hit ...`; same for %ae, %ce and the git var line.
-  docs/COMMANDS.md: the new section sits between '## Agent plumbing' and '## Keys', inside the binary's reference, while its first line says it is not part of the binary. Move it to the end of the file, after '## Keys'.
-  .github/workflows/ci.yaml mentions comment: names what a pull request adds and who authored and committed it; the script also checks commit messages - add 'and its commit messages'.
+review-summary: none
 round: 2
 ---
 
