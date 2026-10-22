@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:17Z
-updated-at: 2026-10-22T08:03:19Z
+updated-at: 2026-10-22T08:04:25Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4189248
@@ -28,6 +28,7 @@ claimed-at: 2026-10-22T07:55:22Z
 outcome-what: "The generated agent block now says a question-only lane (human) is a person's to answer, after which the agent moves the ticket on itself; a requires-human-exit lane (signoff) keeps 'never on'. The static line says 'a lane that waits for a person's acceptance' instead of 'the human review lane'. CLAUDE.md and AGENTS.md are regenerated."
 outcome-why: "The block said an agent may never move work out of human, although that lane has no human-exit gate and the same block says to continue once the human has answered; agents refused to move on after a person's answer."
 outcome-resolves: "The block now matches the human lane's gate and its own later paragraph; TestLaneSectionQuestionLaneIsLeftByTheAgentAcceptanceLaneIsNot covers the question-only and the requires-human-exit lane."
+review-summary: "critique 1: none. The human mark still says how work enters (the appended 'only with an open question (--question)'); 'move the ticket on yourself' matches the decision and the later 'continue once the human has answered'. The static line 'a lane that waits for a person's acceptance' is accurate: on a stock board only signoff has requires-human-exit (core/lane/builtin/45-signoff.md:8). The new test overlaps lanesection_test.go:46 and :173 and stays because the DoD asks for one test over both cases. Release note is one instruction line."
 ---
 
 # Der Agent-Block sagt, dass ein Agent ein Ticket aus human weiterschiebt, sobald die Frage beantwortet ist
