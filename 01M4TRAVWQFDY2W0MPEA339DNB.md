@@ -1,7 +1,7 @@
 ---
 id: 01M4TRAVWQFDY2W0MPEA339DNB
 title: "Ein Testbuild von jaira laesst sich starten, ohne dass er Refs ins Remote sendet"
-status: review
+status: signoff
 ready: true
 creator: BeMuCa
 goal: "Wer einen ungeprueften Build gegen einen echten Checkout startet, kann das Senden an das Remote abschalten."
@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:19Z
-updated-at: 2026-10-22T08:59:50Z
+updated-at: 2026-10-22T09:00:56Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4187593
