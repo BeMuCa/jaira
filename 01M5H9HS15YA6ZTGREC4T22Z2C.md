@@ -1,7 +1,7 @@
 ---
 id: 01M5H9HS15YA6ZTGREC4T22Z2C
 title: "CI und ein lokaler Hook lehnen Commits ab, die Arbeitgeber- oder Kundennamen tragen"
-status: testing
+status: human
 ready: true
 creator: BeMuCa
 goal: "Kein Commit, keine Datei und keine Ticket-Notiz im Repo nennt Berks Arbeitgeber oder Kunden - weder im Inhalt noch in Author-/Committer-E-Mail - und die Pipeline weist einen PR ab, der es doch tut."
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T07:52:29Z
-updated-at: 2026-10-22T08:27:50Z
+updated-at: 2026-10-22T08:28:12Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4193148
@@ -29,6 +29,7 @@ review-summary: none
 round: 2
 review-gaps: "Removed: the $diff temp file and its trap entry - the diff now pipes into added_lines (only awk in the pipe, so no shell state is lost; pipefail keeps a failing git diff fatal), and scan_added lost its argument. Folded the two copies of the denylist normalizer (tr -d CR, drop blank lines) into one filter after if/elif/fi. Rewrapped the ci.yaml mentions comment (first line was 102 chars). Left: the base/head/usage/bad/footer idiom shared with scripts/check-ticket-commits.sh - two standalone CI scripts, a sourced helper for six lines would be a new abstraction; the mentions job's own checkout next to ticket-commits - a separate job is its own status check, merging them changes what CI reports; the --staged and range branches repeating the two git diff calls - unifying changes the printed 'file N of' label for --staged or needs a label parameter; the w_up/tr ident loop - unrolling duplicates the sed; four git calls per commit and sed per hit (critique let stand, PRs small, hits rare); the up-front invalid-regex check - matches() ignores grep's exit 2, so it is not redundant; sub(/\\t$/) in added_lines - live, git appends a tab to a +++ path with a space."
 test-verdict: "pass: gofmt/vet/build clean, touched-package tests green, DoD 1-3 verified in tree, shell test 27/27, hooks exercised on scratch fixture; DoD4 race-suite half NOT verified (maintainer)"
+question: "Fork-PRs (5 der letzten 8, sashasoft90) bekommen unter pull_request keine Secrets: der Job mentions sieht MENTION_DENYLIST leer und schlaegt bei JEDEM Fork-PR fehl (wie entschieden; blockiert nichts, master hat keine Required Checks). A) so lassen - Fork-PRs zeigen immer einen roten mentions-Check, geprueft wird dort nur lokal per Hook; kostet nichts, aber der Check sagt bei Forks nichts. B) eigener Workflow .github/workflows/mentions.yaml auf pull_request_target mit permissions: contents: read - checkt master aus, holt die PR-Commits nur als Daten (git fetch pull/N/head), fuehrt master's Skript aus; das Secret ist dann auch fuer Forks da, und Release-Notiz-PRs (paths-ignore in ci.yaml) werden mitgeprueft. Kostet: weicht von 'Job in ci.yaml' ab, eine Aenderung am Skript wirkt erst nach dem Merge, und 'nie PR-Code ausfuehren' muss in dem Workflow fuer immer gelten, sonst bekommt ein fremder PR Secrets. Empfehlung B. A oder B?"
 ---
 
 # CI und ein lokaler Hook lehnen Commits ab, die Arbeitgeber- oder Kundennamen tragen
