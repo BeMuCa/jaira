@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:21Z
-updated-at: 2026-10-22T08:16:03Z
+updated-at: 2026-10-22T08:16:13Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4187645
@@ -86,3 +86,4 @@ review-check: "Alles in einem Wegwerf-Ordner. Kein echtes Board, kein Netz.\n\n1
 - **2026-10-22 08:04 · BeMuCa** — critique pass 1: none. Let stand: Display/displayFrom split is the test seam for debug.ReadBuildInfo, not speculative; Current stays dev and root.go wires Display at Execute (standing on note 1); no ldflags commit var, worktree builds show plain dev (standing on note 2). Considered and rejected: showing bi.Main.Version, which Go 1.26.5 already stamps (cmd/go/internal/load/pkg.go:2603-2612) - it is a pseudo-version without the 'dev' prefix the DoD asks for, and a build at a tagged commit would read exactly like the release. Left for review, not a critique finding: internal/tui/updatecheck.go:39 comment still quotes the dev line as "jaira dev".
 - **2026-10-22 08:06 · BeMuCa** — optimize: Display() is not on a hot path - versionLine is computed once at Model/Home construction (internal/tui/model.go:326, home.go:145), never per render, and debug.ReadBuildInfo costs ~3us (measured with a scratch loop), so caching its result would be speculative.
 - **2026-10-22 08:08 · BeMuCa** — optimize pass 1 review-gaps (kept here because review overwrites the field): none. core/gitrepo/git.go:155 shortSHA also cuts 7 chars but is unexported in a package that shells out to git, so displayFrom keeps its own two lines rather than coupling release to gitrepo. testing pass 1: pass on clone builds (dev-d23f19f, dev-d23f19f-dirty, 0.9.9) and the TUI header on a scratch board; full race suite (DoD 2) left for the maintainer before the PR.
+- **2026-10-22 08:16 · BeMuCa** — review: zurueck nach in-progress empfohlen. (1) Build in einem Worktree INNERHALB eines Checkouts (z.B. <checkout>/.claude/worktrees/nt, .gitignore:25) zeigt den Commit des aeusseren Checkouts: nachgestellt Worktree-HEAD b0fcf07, Binary 'jaira version dev-d23f19f', mit geaenderter main.go kein -dirty - Go findet das aeussere .git-Verzeichnis. (2) Release-Notiz core/release/notes/VHTE7X.md verspricht den Commit ohne Einschraenkung; verlinkter Worktree und 'go run ./cmd/jaira' zeigen plain dev, Fall (1) einen falschen Commit. (3) -dirty kommt schon von einer geaenderten Ticketdatei unter .jaira/ oder einer unversionierten Datei (git status --porcelain). (4) Kommentar internal/tui/updatecheck.go:39 zitiert noch 'jaira dev'. Abhilfe ohne neue Logik: Grenze in Notiz-Zeile und Display-Kommentar nennen, Kommentar :39 nachziehen. Commit auch in Worktree-Builds (per -ldflags aus einem Build-Skript) waere ein eigenes Ticket, Berks Entscheidung.
