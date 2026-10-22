@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:17Z
-updated-at: 2026-10-22T07:57:54Z
+updated-at: 2026-10-22T07:57:57Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4189248
@@ -49,4 +49,4 @@ claimed-at: 2026-10-22T07:55:22Z
 - [x] Build the branch binary, run its update in the worktree (HOME/JAIRA_HOME in scratchpad, JAIRA_NO_FETCH=1), keep the regenerated CLAUDE.md/AGENTS.md block
 
 ## Progress
-
+- **2026-10-22 07:57 · BeMuCa** — Test put in lanesection_test.go beside the other laneSection tests (announce_test.go has none); the old assertion there ('never out') was updated. Static line 'human review lane' reworded to 'a lane that waits for a person's acceptance' because the static half is board-agnostic and 'human' is also a lane id. Update on the worktree touched only AGENTS.md and CLAUDE.md.
