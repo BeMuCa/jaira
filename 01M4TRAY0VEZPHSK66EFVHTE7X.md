@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:21Z
-updated-at: 2026-10-22T08:06:16Z
+updated-at: 2026-10-22T08:06:19Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4187645
@@ -52,3 +52,4 @@ review-gaps: "none. Duplication: no other ReadBuildInfo/vcs.revision/BuildSettin
 - **2026-10-22 08:00 · BeMuCa** — Go does not stamp vcs.* when built from a linked git worktree (.git is a file): the worktree binary prints plain dev. Verified dev-<sha>, dev-<sha>-dirty and 0.9.9 on a scratch repo copy instead. Display() is shown only; release.Current stays dev (checked in market, update, self, updatecheck). root.go passes release.Display() into newRoot at Execute, not inside newRoot, so tests calling newRoot("test") are untouched.
 - **2026-10-22 08:00 · BeMuCa** — Why a worktree build shows plain dev: Go 1.26.5 finds a git root only where .git is a DIRECTORY (GOROOT/src/cmd/go/internal/vcs/vcs.go:218, rootName{".git", isDir: true}); a linked worktree has a .git FILE, so nothing is stamped and -buildvcs=true stays silent. Same tree built in the main checkout /home/berk/git/jAIra stamps vcs.revision/modified. Answers the context's open 'Build aus einem Worktree?' question. Not worked around: an ldflags commit var would need a changed build command, outside this ticket.
 - **2026-10-22 08:04 · BeMuCa** — critique pass 1: none. Let stand: Display/displayFrom split is the test seam for debug.ReadBuildInfo, not speculative; Current stays dev and root.go wires Display at Execute (standing on note 1); no ldflags commit var, worktree builds show plain dev (standing on note 2). Considered and rejected: showing bi.Main.Version, which Go 1.26.5 already stamps (cmd/go/internal/load/pkg.go:2603-2612) - it is a pseudo-version without the 'dev' prefix the DoD asks for, and a build at a tagged commit would read exactly like the release. Left for review, not a critique finding: internal/tui/updatecheck.go:39 comment still quotes the dev line as "jaira dev".
+- **2026-10-22 08:06 · BeMuCa** — optimize: Display() is not on a hot path - versionLine is computed once at Model/Home construction (internal/tui/model.go:326, home.go:145), never per render, and debug.ReadBuildInfo costs ~3us (measured with a scratch loop), so caching its result would be speculative.
