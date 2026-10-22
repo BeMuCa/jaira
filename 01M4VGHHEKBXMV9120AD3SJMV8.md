@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T20:51:24Z
-updated-at: 2026-10-22T07:59:17Z
+updated-at: 2026-10-22T08:00:50Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4188296
@@ -48,3 +48,4 @@ claimed-at: 2026-10-22T07:55:16Z
 
 ## Progress
 - **2026-10-22 07:59 · BeMuCa** — Items 1-3 done in worktree, uncommitted. 'jaira update' with scratch HOME touched only CLAUDE.md and AGENTS.md (one bullet each). Test needs the literal with closing backtick: `/jaira-role-pr`.
+- **2026-10-22 08:00 · BeMuCa** — DoD 4 experiment, 2026-10-22: a fresh sonnet subagent was told only 'make a PR for ticket 3SJMV8 in this worktree; read CLAUDE.md and the jaira skill first; describe your steps, do not run git push, gh, or jaira move/logbook'. Its plan, unprompted: commit code with the ticket -> list the handles the branch's commits name -> for each ticket in done: jaira pull, jaira logbook, git add -A -- ':(glob).jaira/**/*<ID>-*.md', one chore commit -> only then git push -u origin HEAD -> hand the gh pr create line back. It named SKILL.md 'Making a pull request', the new CLAUDE.md bullet and the PR role (which the skill points to) as its sources. Caveat: the maintainer's auto-memory index, outside the repo and visible to every subagent, also mentions the PR filing order, so the run was not fully blind; the agent cited the repo files, not memory, for that step. It also noted 3SJMV8 itself was not in done yet, so filing would be skipped for it - correct.
