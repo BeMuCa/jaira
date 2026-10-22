@@ -131,8 +131,10 @@ curl -fsSL https://raw.githubusercontent.com/BeMuCa/jaira/master/scripts/install
 ```
 
 That downloads the latest release for your OS, verifies its checksum, and puts
-the binary in `~/.local/bin` (override with `JAIRA_INSTALL_DIR`). On Windows,
-in PowerShell:
+the binary in `~/.local/bin` (override with `JAIRA_INSTALL_DIR`), then runs
+`jaira roles install --global` so the role skills and the cockpit are in
+`~/.claude/skills` (set `JAIRA_NO_ROLES=1` to install only the binary). On
+Windows, in PowerShell:
 
 ```powershell
 irm https://raw.githubusercontent.com/BeMuCa/jaira/master/scripts/install.ps1 | iex
@@ -140,8 +142,8 @@ irm https://raw.githubusercontent.com/BeMuCa/jaira/master/scripts/install.ps1 | 
 
 That does the same for Windows: `jaira.exe` goes to
 `%LOCALAPPDATA%\Programs\jaira` (override with `JAIRA_INSTALL_DIR`), which it
-adds to your user `PATH` — no admin rights, and running it again updates in
-place. Or build from source:
+adds to your user `PATH` and sets up the roles the same way — no admin rights,
+and running it again updates in place. Or build from source:
 
 ```bash
 go install github.com/BeMuCa/jaira/cmd/jaira@latest
