@@ -4,7 +4,7 @@ title: "Ist der letzte Ticket eines Milestones fertig, schlaegt jaira den PR mit
 status: human
 ready: true
 creator: BeMuCa
-assignee: BeMuCa
+assignee: berkc
 goal: "Sobald alle Tickets eines Milestones fertig sind, sagt jaira (und jeder Teamlead/Dispatcher) dem Menschen: jetzt PR mit /jaira-role-pr, und danach den Milestone ablegen. Geoeffnet wird der PR weiter nur, wenn ein Mensch die Rolle aufruft"
 context: |-
   Was heute falsch ist: Der PR-Skill (jaira-role-pr) wird oft vergessen. Keine Lane loest ihn aus, und kein Bericht schlaegt ihn vor.
@@ -26,8 +26,8 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-15T12:43:02Z
-updated-by: BeMuCa
+updated-at: 2026-10-22T00:15:30Z
+updated-by: berkc
 question: |-
   Welche Arbeitsweise bekommt ein NEUER Milestone, wenn beim Anlegen niemand --pr angibt?
   A) single: es wird keine pr:-Zeile geschrieben. Block-PR nur mit 'jaira milestone create|set <m> --pr block'. (Empfehlung pre-process: hier hat jedes Ticket seinen eigenen Branch, ein Block-PR braucht alle auf einem Branch.)
