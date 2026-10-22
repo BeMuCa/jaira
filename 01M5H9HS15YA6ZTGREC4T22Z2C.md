@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T07:52:29Z
-updated-at: 2026-10-22T08:15:47Z
+updated-at: 2026-10-22T08:15:49Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4193148
@@ -69,3 +69,4 @@ scripts/check-mentions.sh commit loop: `git log -1 --format=%B "$c" | matches` u
 docs/COMMANDS.md: the new section sits between '## Agent plumbing' and '## Keys', inside the binary's reference, while its first line says it is not part of the binary. Move it to the end of the file, after '## Keys'.
 .github/workflows/ci.yaml mentions comment: names what a pull request adds and who authored and committed it; the script also checks commit messages - add 'and its commit messages'.
 Let stand: per-commit git calls (same loop shape as scripts/check-ticket-commits.sh, PRs are small); the two parallel temp files for path:line (grep stays the matcher); the rc check in scan_added (a grep I/O error must not pass); base...head and --no-renames (07:59 note item 4); --staged (item 5); hit prints only the location for emails and messages (item 3); fork PRs failing (item 6 and the 08:00 note: the driver's question for the maintainer). Probes ran against a scratch repo with MENTION_DENYLIST=acme-corp, not against this board.
+- **2026-10-22 08:15 · BeMuCa** — round 2: names now come from git diff --name-only (catches empty/binary/non-ASCII files), matching names print as 'file N' since the name is the mention; commit fields via here-strings because pipefail + grep -q SIGPIPE hid hits on large messages. Self-check with pattern equal to the docs example (the sample word) hits docs/COMMANDS.md itself - inherent, use a non-matching pattern to check exit 0.
