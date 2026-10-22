@@ -487,3 +487,5 @@ afd1893709c3092889828b53e2b31ec7b7024d3fe439d2a3b68a04b6b811c622  core/role/buil
 c3a6fecf557b658f79ed5ebf99e8ebd6b6231d644afa4b84460b723cdc02412c  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 a8c1ffbb2767b0fb9abada6b92bdbeef60eca35cfe6b5e6df7af1514869d02a5  core/mod/builtin/jaira-cockpit/hooks/texts.ts
 e691a37c728256b57683c2d8c84c5250fa764cb69e85b42c94646c12d8830373  core/mod/builtin/jaira-cockpit/types/index.d.ts
+cb5daa4b1f288df17d0706281bdc9b087e1dfa79b792ff94a529410983dded0b  core/mod/builtin/jaira-cockpit/hooks/board.ts
+f879e5b41437697e175fa56e9f55c0f79598a05af0407d1a9cbb90a5e835db8e  core/mod/builtin/jaira-cockpit/hooks/register.tsx
