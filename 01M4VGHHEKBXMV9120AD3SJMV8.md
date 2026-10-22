@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T20:51:24Z
-updated-at: 2026-10-22T08:24:41Z
+updated-at: 2026-10-22T08:24:44Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4188296
@@ -33,6 +33,19 @@ review-gaps: "1. The DoD 4 proof does not show the change caused the behaviour. 
 test-verdict: "pass: gofmt/vet/build clean, core/board race green (full suite deferred to maintainer by house rule); all 4 DoD items + release note verified in tree; scratch-copy jaira update leaves tree clean and restores the /jaira-role-pr line in CLAUDE.md and AGENTS.md after hand deletion"
 review-verdict: "DoD 1-3 are met and verified. No defect found in the shipped text. The 'same merge' claim holds: jaira logbook keeps the ref with the final state (core/ticket/store.go:402 -> core/refsync/refsync.go:166-182), and the chore commit carries the rename tickets/ -> logbook/ (probe run on a scratch clone). The new text agrees with core/role/builtin/jaira-role-pr/SKILL.md. A jaira update with a build of this branch leaves CLAUDE.md and AGENTS.md unchanged, so the committed block is what update writes; the jaira:local parts are untouched. The release note is one '- ' line, an instruction, and shows under Unreleased in update. DoD 4 is ticked on evidence that does not discriminate: my control on the old text produced the same plan (gap 1). Recommendation: signoff, with that stated; the person decides whether DoD 4 counts. Gaps 2, 4 and 5 are follow-up material, not blockers. I am unsure only about DoD 4, not about the text."
 review-round: 2
+review-check: |-
+  1. cd ~/git/jAIra-3SJMV8 && git diff 36bde2df..HEAD -- .claude/skills/jaira/SKILL.md  -> you see a new paragraph starting 'On a pull request the order turns round' and a new section '## Making a pull request' with four commands (jaira pull, jaira logbook, git add, git commit) and a pointer to /jaira-role-pr.
+  2. go test ./core/board -run TestAgentNoteNamesThePullRequestRole -count=1  -> prints 'ok'.
+  3. go build -o /tmp/jaira-3sj ./cmd/jaira  -> no output.
+  4. rm -rf /tmp/sj && git clone -q ~/git/jAIra-3SJMV8 /tmp/sj && cd /tmp/sj && git remote remove origin  -> a scratch copy with no remote. Use only this copy for the next steps, never your real board.
+  5. mkdir -p /tmp/sjhome && J="env HOME=/tmp/sjhome JAIRA_HOME=/tmp/sjhome/.jaira JAIRA_NO_FETCH=1 /tmp/jaira-3sj"
+  6. $J update | grep -A1 Unreleased  -> under 'Unreleased' you see the line 'Run `jaira update` and re-copy the jaira skill so agents learn to file accepted tickets away on the PR branch, before the push, via `/jaira-role-pr`.'
+  7. git status --short  -> prints nothing: CLAUDE.md and AGENTS.md were already exactly what update writes.
+  8. grep -n jaira-role-pr CLAUDE.md AGENTS.md  -> one line in each: '- a pull request: file accepted tickets on its branch before the push (`/jaira-role-pr`)'.
+  9. Try the four commands on a throwaway ticket: git checkout -q -b feat/probe && $J create probe --goal g --context c --dod d --follows none  -> it prints 'Created <HANDLE>'; note the six-letter handle.
+  10. echo x > probe.txt && git add probe.txt .jaira/tickets/ && git commit -qm "feat(<HANDLE>): probe" && $J dod <HANDLE> 1 --done --proof probe.txt:1 && $J move <HANDLE> --to done --force --what w --why y --resolves r  -> last line '<HANDLE> → done'.
+  11. $J logbook <HANDLE> && git add -A -- ':(glob).jaira/**/*<HANDLE>-*.md' && git commit -qm "chore(<HANDLE>): file the ticket away with its commits stamped" && git show --stat --oneline HEAD  -> one file, renamed from .jaira/tickets/ to .jaira/logbook/<you>-<date>/ (shown as '{tickets => logbook/...}' or similar). (jaira pull is skipped here: without a remote it exits 1 'does not carry tickets on refs'.)
+  12. Optional, for gap 1: git diff 36bde2df..HEAD -- .jaira/tickets/ | grep -n 'chore-Commit'  -> the ticket's own DoD 1 line already lists the steps, which is why a subagent asked to PR this ticket is not a blind test.
 ---
 
 # Der jaira-Skill sagt, wie ein PR mit seinen Tickets entsteht, und verweist auf die PR-Rolle
