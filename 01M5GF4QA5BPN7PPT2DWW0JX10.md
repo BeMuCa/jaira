@@ -22,7 +22,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:10:58Z
-updated-at: 2026-10-22T00:10:58Z
+updated-at: 2026-10-22T00:11:21Z
+updated-by: berkc
 ---
 
 # Eine Lane Feature Ideas sammelt unreife Ideen vor dem Backlog; Brainstorm macht daraus verlinkte Backlog-Tickets
