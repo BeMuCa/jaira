@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T20:51:24Z
-updated-at: 2026-10-22T07:59:00Z
+updated-at: 2026-10-22T07:59:04Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4188296
@@ -31,7 +31,8 @@ claimed-at: 2026-10-22T07:55:16Z
 
 - [x] SKILL.md hat einen Abschnitt zum PR: angenommene Tickets werden auf dem PR-Branch mit jaira pull, jaira logbook und einem chore-Commit pro Ticket abgelegt, bevor gepusht wird; er verweist auf /jaira-role-pr
   proof: .claude/skills/jaira/SKILL.md:459 (section Making a pull request)
-- [ ] Der Satz 'the logbook waits on [the push]' (SKILL.md:427) widerspricht dem nicht mehr: er unterscheidet direkten Push und PR
+- [x] Der Satz 'the logbook waits on [the push]' (SKILL.md:427) widerspricht dem nicht mehr: er unterscheidet direkten Push und PR
+  proof: .claude/skills/jaira/SKILL.md:439 (direct push vs PR)
 - [ ] Der Agent-Block (core/board/announce.go) nennt /jaira-role-pr fuer PRs in einer Zeile; CLAUDE.md und AGENTS.md neu erzeugt; ein Test prueft die Zeile
 - [ ] Ein frischer Subagent mit dem Auftrag 'mach einen PR fuer Ticket X' beschreibt das Ablegen vor dem Push, ohne dass man es ihm sagt; das Ergebnis steht als Notiz am Ticket
 
