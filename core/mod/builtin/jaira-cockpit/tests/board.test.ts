@@ -22,6 +22,9 @@ type World = {
   agents: { id: string; description: string; type: string; status: string; name?: string }[]
   // `jaira lanes --json` of a build before human_exit.
   oldJaira: boolean
+  // The repository's boards besides today's, as `jaira boards --json` names
+  // them; one without lanes is a board whose `lanes --board` read fails.
+  boards: Record<string, { lanes?: unknown[]; tickets: unknown[] }>
   asked: string[]
   answer: string
   model: string
@@ -92,7 +95,7 @@ const LANES = {
     { id: 'critique', agentic: true, context: '' },
     { id: 'review', agentic: true, context: 'fresh' },
     { id: 'signoff', agentic: false, context: '', human_exit: true },
-    { id: 'human', agentic: false, context: '', human_exit: true },
+    { id: 'human', agentic: false, context: '', human_exit: false, requires_question: true },
     { id: 'done', agentic: false, context: '', terminal: true },
   ],
 }
@@ -127,6 +130,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     held: undefined,
     agents: [],
     oldJaira: false,
+    boards: {},
     asked: [],
     answer: '',
     model: '',
@@ -222,7 +226,12 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (w.heldTabs && e.argv[1] === 'tab' && e.argv[2] === 'list') await new Promise<void>(go => w.heldTabs!.push(go))
     const ok = (stdout = '') => ({ value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
     const [cmd, ...args] = e.argv
-    if (cmd === 'jaira' && args[0] === 'lanes') return ok(JSON.stringify(w.oldJaira ? { lanes: LANES.lanes.map(({ human_exit, ...l }) => l) } : LANES))
+    const on = args.includes('--board') ? w.boards[args[args.indexOf('--board') + 1] ?? ''] : undefined
+    if (cmd === 'jaira' && args[0] === 'boards') return ok(JSON.stringify({ boards: ['default', ...Object.keys(w.boards)].map(name => ({ name })) }))
+    if (cmd === 'jaira' && args.includes('--board') && (on === undefined || (args[0] === 'lanes' && on.lanes === undefined))) return failed('jaira: unknown flag: --board')
+    if (cmd === 'jaira' && args[0] === 'lanes' && on !== undefined) return ok(JSON.stringify({ lanes: on.lanes }))
+    if (cmd === 'jaira' && args[0] === 'list' && on !== undefined) return ok(JSON.stringify({ count: on.tickets.length, tickets: on.tickets }))
+    if (cmd === 'jaira' && args[0] === 'lanes') return ok(JSON.stringify(w.oldJaira ? { lanes: LANES.lanes.map(({ human_exit, requires_question, ...l }) => l) } : LANES))
     if (cmd === 'jaira' && args[0] === 'list') return ok(JSON.stringify({ count: w.tickets.length, tickets: w.tickets }))
     if (cmd === 'jaira' && args[0] === 'move' && args.includes('--dry-run')) {
       const error = (w.warns ? `${OLDER}\n` : '') + JSON.stringify({ error: { code: 3, reason: 'gate_refused', violations: w.refusals } })
@@ -373,6 +382,40 @@ describe('waiting for you', () => {
     expect((await ui.find({ type: 'Text', text: /MG677R \| signoff \| approve mit Vorbehalt/ }))).toBeDefined()
     expect((await ui.find({ type: 'Text', text: /K7P2QX \| human/ }))).toBeDefined()
     expect(await ui.find({ text: /T8QS1Y/ })).toBeUndefined()
+  })
+
+  test('tickets waiting on another board are listed too, each by its own board\'s lanes', async ($, on) => {
+    const w = world(on)
+    w.boards.video = {
+      lanes: [
+        { id: 'script', agentic: true, context: '' },
+        { id: 'approve', agentic: false, context: '', human_exit: true },
+        { id: 'ask', agentic: false, context: '', requires_question: true },
+        { id: 'done', agentic: false, context: '', terminal: true },
+      ],
+      tickets: [
+        { handle: 'S0EG0M', title: 'intro', status: 'approve', next_lane: 'done', question: '', review: {} },
+        { handle: 'V1D3OQ', title: 'outro', status: 'ask', next_lane: 'script', question: 'Musik oder Stille?', review: {} },
+        { handle: 'V2R3ND', title: 'credits', status: 'script', question: '', review: {} },
+      ],
+    }
+    await startSession($)
+    expect(await headLine($)).toBe('0 worker | 0 review | 4 waiting for you | 5h 34%')
+    await (await $.ui.mount(BAND)).press({ key: 'more' })
+    const ui = await $.ui.mount(BAND)
+    expect(await ui.find({ type: 'Text', text: /S0EG0M \| approve/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /V1D3OQ \| ask/ })).toBeDefined()
+    expect(await ui.find({ key: 'accept-S0EG0M' })).toBeDefined()
+    expect(await ui.find({ key: 'accept-V1D3OQ' })).toBeUndefined()
+    expect(await ui.find({ text: /V2R3ND/ })).toBeUndefined()
+    expect(ran(w, 'jaira', 'list', '--board', 'video').length).toBeGreaterThan(0)
+  })
+
+  test('a board whose lanes cannot be read is left out, not the band', async ($, on) => {
+    const w = world(on)
+    w.boards.video = { tickets: [{ handle: 'S0EG0M', title: 'intro', status: 'approve', next_lane: 'done', question: '', review: {} }] }
+    await startSession($)
+    expect(await headLine($)).toBe('0 worker | 0 review | 2 waiting for you | 5h 34%')
   })
 
   test('Accept moves the ticket to done in its own worktree', async ($, on) => {

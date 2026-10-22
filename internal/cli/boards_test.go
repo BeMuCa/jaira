@@ -282,3 +282,30 @@ func TestMergeDriverUsesTheTicketsBoard(t *testing.T) {
 		t.Errorf("the further lane on the video board did not win:\n%s", got)
 	}
 }
+
+// lanes --board reads another board's lanes, which is how the cockpit tells
+// whose lane a ticket there waits in; a board with nothing behind it is a
+// usage error, as on list. requires_question names the human lane, which
+// human_exit does not.
+func TestLanesTakeABoard(t *testing.T) {
+	dir := newTwoBoards(t)
+	ids := func(v map[string]any) map[string]map[string]any {
+		out := map[string]map[string]any{}
+		for _, row := range v["lanes"].([]any) {
+			l := row.(map[string]any)
+			out[l["id"].(string)] = l
+		}
+		return out
+	}
+	video := ids(jsonCLI(t, dir, "lanes", "--board", "video"))
+	if len(video) != 3 || video["script"] == nil || video["render"] == nil || video["done"] == nil {
+		t.Errorf("lanes --board video: %v, want script, render and done", video)
+	}
+	today := ids(jsonCLI(t, dir, "lanes"))
+	if today["script"] != nil || today["human"]["requires_question"] != true || today["signoff"]["requires_question"] != false {
+		t.Errorf("lanes: script %v, human %v, signoff %v; want no script, requires_question on human only", today["script"], today["human"], today["signoff"])
+	}
+	if _, err := runCLI(t, dir, "lanes", "--board", "vidoe"); exitCode(err) != ExitUsage {
+		t.Errorf("lanes --board vidoe: exit %d (%v), want %d", exitCode(err), err, ExitUsage)
+	}
+}

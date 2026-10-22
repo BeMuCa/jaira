@@ -25,7 +25,7 @@ export type Waiting = {
 
 export type Counts = { worker: number; review: number; person: number }
 
-export type Lane = { id: string; agentic: boolean; terminal?: boolean; context: string; human_exit?: boolean }
+export type Lane = { id: string; agentic: boolean; terminal?: boolean; context: string; human_exit?: boolean; requires_question?: boolean }
 type Ticket = {
   handle: string
   title: string
@@ -54,8 +54,20 @@ export const oneLine = (s: string | undefined) => (s ?? '').replace(/\s+/g, ' ')
 // whose lane is whose: then the shipped board's person lanes are taken.
 const PERSON_LANES = new Set(['human', 'signoff'])
 
+// A person's lane: one only a person moves work out of (signoff), or one
+// where work waits for a person's answer (human), which jaira marks
+// requires_question and not human_exit.
 export function isPersons(lane: Lane): boolean {
-  return lane.human_exit ?? PERSON_LANES.has(lane.id)
+  if (lane.human_exit === undefined && lane.requires_question === undefined) return PERSON_LANES.has(lane.id)
+  return lane.human_exit === true || lane.requires_question === true
+}
+
+// The boards `jaira boards --json` names besides today's, whose tickets the
+// band reads with --board. Today's board is read without it, so a jaira
+// that knows no boards still shows that one.
+export function otherBoardsOf(boardsJson: string): string[] {
+  const boards = parse<{ boards?: { name?: string }[] }>(withoutWarnings(boardsJson))?.boards ?? []
+  return boards.map(b => (b.name ?? '').trim()).filter(n => n !== '' && n !== 'default')
 }
 
 export type Agent = { description: string; name?: string; status: string }

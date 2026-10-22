@@ -1198,6 +1198,7 @@ its end. Review fields keep their history across loop rounds that way.`,
 }
 
 func newLanesCmd() *cobra.Command {
+	var board string
 	cmd := &cobra.Command{
 		Use:   "lanes",
 		Short: "List the installed lanes",
@@ -1207,6 +1208,15 @@ func newLanesCmd() *cobra.Command {
 			// useful for writing a project's first lane file — so the root is
 			// best-effort rather than required.
 			lanes, err := lane.Load(bestEffortRoot())
+			// Another board's lanes need the board they live in: --board is
+			// what lets the cockpit tell whose lane a ticket there sits in.
+			if board != "" {
+				s, serr := openStore()
+				if serr != nil {
+					return serr
+				}
+				lanes, err = boardLanes(s, board)
+			}
 			if err != nil {
 				return err
 			}
@@ -1247,11 +1257,13 @@ func newLanesCmd() *cobra.Command {
 						"agentic": l.Agentic, "terminal": l.Terminal,
 						"model_tier": l.ModelTier, "builtin": l.Builtin,
 						"context": l.Context, "context_implied": l.ContextImplied, "context_invalid": l.ContextInvalid,
-						// Whose lane it is: true where a person alone moves work out
-						// (signoff, human). The cockpit mod's "waiting for you" band
-						// reads it rather than knowing lane names.
-						"human_exit":     l.RequiresHumanExit,
-						"input_requires": l.InputRequires, "output_produces": l.OutputProduces,
+						// Whose lane it is: human_exit where a person alone moves work
+						// out (signoff), requires_question where work waits for a
+						// person's answer (human). The cockpit mod's "waiting for you"
+						// band reads both rather than knowing lane names.
+						"human_exit":        l.RequiresHumanExit,
+						"requires_question": l.RequiresQuestion,
+						"input_requires":    l.InputRequires, "output_produces": l.OutputProduces,
 						"source": l.Source, "prompt": l.Prompt, "creator": l.Creator,
 					})
 				}
@@ -1320,6 +1332,7 @@ The loop for building a lane or a default board by hand, no TUI required:
 		newLanesUseCmd(), newLanesPublishCmd(), newLanesAdoptCmd(), newLanesDefaultCmd(),
 		newLanesAddCmd(), newLanesRemoveCmd(), newLanesMoveCmd(), newLanesMarketCmd(),
 	)
+	cmd.Flags().StringVar(&board, "board", "", boardFlagUsage)
 	return cmd
 }
 
