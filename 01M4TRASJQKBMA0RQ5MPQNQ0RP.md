@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:17Z
-updated-at: 2026-10-22T08:14:21Z
+updated-at: 2026-10-22T08:14:23Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4189248
@@ -37,6 +37,18 @@ review-gaps: |-
 test-verdict: "testing 1: pass: gofmt/vet/build clean, go test -race ./core/board ok (TestLaneSection* incl. new QuestionLane test pass); release note is one '- ' line; CLAUDE.md/AGENTS.md byte-identical to branch binary's update output on a remote-less scratch repo; human line says person answers then agent moves on, signoff keeps 'never on'; scratch gate: human->review dry-run allowed w/o --force, signoff->done dry-run refused (human checkpoint). Full race suite (DoD 2) left to maintainer before PR, so DoD 2 not fully tickable."
 review-verdict: "review 1: The diff implements the maintainer's decision exactly. A question-only lane is a person's to answer, and the agent moves on after the answer. A requires-human-exit lane keeps 'you may move work in, or send it back to an earlier lane, never on'. Both agree with the later paragraph and with the gate. The test covers both cases, the block is regenerated and the release note is in form. No reason to send it back to in-progress. Only DoD 2's full race suite is still open, for the maintainer to run before the PR."
 review-round: 1
+review-check: |-
+  1. cd /home/berk/git/jAIra-QNQ0RP
+  2. go test -race -count=1 ./core/board -run TestLaneSection -v | tail -3 — you see '--- PASS: TestLaneSectionQuestionLaneIsLeftByTheAgentAcceptanceLaneIsNot', then 'PASS', then 'ok  github.com/BeMuCa/jaira/core/board'.
+  3. S=$(mktemp -d) && go build -o $S/jaira ./cmd/jaira — no output.
+  4. mkdir $S/board && git archive HEAD | tar -x -C $S/board — copies the branch without .git.
+  5. git show origin/master:CLAUDE.md > $S/board/CLAUDE.md — puts the OLD block back, so the update has something to change.
+  6. cd $S/board && git init -q && git add -A && git -c user.name=t -c user.email=t@example.invalid commit -qm init — a board copy with no remote (`git remote` prints nothing).
+  7. HOME=$S JAIRA_HOME=$S/jh JAIRA_NO_FETCH=1 $S/jaira update >/dev/null — exits without an error.
+  8. grep -n -e '^- .human' -e '^- .signoff' -e 'cannot move work on out' CLAUDE.md — you see three lines: 'An agent cannot move work on out of a lane that waits for a person's acceptance — a person accepts it there.'; '- `human` — **a person's to answer** — once they have answered, you move the ticket on yourself; only with an open question ...'; '- `signoff` — **a person's, not yours** — you may move work in, or send it back to an earlier lane, never on'.
+  9. git diff --stat — only CLAUDE.md, 2 insertions and 2 deletions.
+  10. cmp CLAUDE.md /home/berk/git/jAIra-QNQ0RP/CLAUDE.md — no output, so the committed CLAUDE.md is exactly what update writes.
+  11. cd / && rm -rf $S
 ---
 
 # Der Agent-Block sagt, dass ein Agent ein Ticket aus human weiterschiebt, sobald die Frage beantwortet ist
