@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T20:51:24Z
-updated-at: 2026-10-22T08:01:14Z
+updated-at: 2026-10-22T08:06:46Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4188296
@@ -27,6 +27,11 @@ outcome-what: "The jaira skill (.claude/skills/jaira/SKILL.md) gets a section 'M
 outcome-why: "PR #74 was opened while its tickets still sat in signoff and got 'changes requested'. The filing rule existed only in the PR role; the jaira skill said the opposite (log only after the push) and neither the skill nor the agent block named the role."
 outcome-resolves: "DoD 1: SKILL.md section 'Making a pull request'. DoD 2: the paragraph in 'Taking a ticket off the board' distinguishes direct push and PR. DoD 3: announce.go bullet + TestAgentNoteNamesThePullRequestRole + regenerated CLAUDE.md/AGENTS.md. DoD 4: a fresh subagent told only to make a PR described filing before the push; result in a note on the ticket."
 executed-by: claude-sonnet
+review-summary: |-
+  .claude/skills/jaira/SKILL.md:435-441 says the rule three times and calls the PR case "the exception, and only apparently", which contradicts itself; "the logbook waits until the code is pushed" (436) repeats "so the logbook waits on it" one sentence later. Instead: make 435-437 read "this board exists to prevent. That is the order for a direct push to the default branch. Do not push on your own initiative; the push is the user's call, so the logbook waits on it." and replace the paragraph 438-441 with "On a pull request the order turns round, for the same reason: the code reaches the default branch only when the pull request merges, so file the accepted tickets on its branch *before* pushing it — they arrive in that same merge. See **Making a pull request**."
+  .claude/skills/jaira/SKILL.md:476-477 "The pull request itself is the maintainer's to open, not yours." is this repository's own house rule (CLAUDE.md:207-224, behind jaira:local) copied into a skill every jaira repository reads, and it contradicts the role the same paragraph points to, which opens the PR when a person invoked it (core/role/builtin/jaira-role-pr/SKILL.md:10-13, 269-288). Replace that sentence with the role's rule: "It opens the pull request only when a person invoked it; started by an agent, it pushes and hands the create line back for a person to run."
+  .claude/skills/jaira/SKILL.md:469, 470 and 473 write `<ID>` for the value 467-468 call `<handle>`; the skill uses `<handle>` 40 times, and `<ID>` elsewhere (207, 252, 254) means a milestone's ID. Use `<handle>` in all three: it matches the pathspec (a ticket file ends in <handle>-<slug>.md) and is what commit subjects carry (fix(A3K9QP)).
+  core/board/announce.go:145 (and its copies in CLAUDE.md and AGENTS.md) says what a Claude Code skill does rather than what the reader does, is the only entry in the block that names a slash command (an AGENTS.md reader without `jaira roles install` has no /jaira-role-pr), and leaves out "on the branch". Replace with "- a pull request: file accepted tickets on its branch before the push (`/jaira-role-pr`)" and regenerate CLAUDE.md/AGENTS.md as before (scratch-HOME `jaira update` with a build of this branch); TestAgentNoteNamesThePullRequestRole keeps passing because the literal stays.
 ---
 
 # Der jaira-Skill sagt, wie ein PR mit seinen Tickets entsteht, und verweist auf die PR-Rolle
