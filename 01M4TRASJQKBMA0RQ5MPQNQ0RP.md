@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:17Z
-updated-at: 2026-10-22T08:04:27Z
+updated-at: 2026-10-22T08:06:44Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4189248
@@ -29,6 +29,7 @@ outcome-what: "The generated agent block now says a question-only lane (human) i
 outcome-why: "The block said an agent may never move work out of human, although that lane has no human-exit gate and the same block says to continue once the human has answered; agents refused to move on after a person's answer."
 outcome-resolves: "The block now matches the human lane's gate and its own later paragraph; TestLaneSectionQuestionLaneIsLeftByTheAgentAcceptanceLaneIsNot covers the question-only and the requires-human-exit lane."
 review-summary: "critique 1: none. The human mark still says how work enters (the appended 'only with an open question (--question)'); 'move the ticket on yourself' matches the decision and the later 'continue once the human has answered'. The static line 'a lane that waits for a person's acceptance' is accurate: on a stock board only signoff has requires-human-exit (core/lane/builtin/45-signoff.md:8). The new test overlaps lanesection_test.go:46 and :173 and stays because the DoD asks for one test over both cases. Release note is one instruction line."
+review-gaps: "optimize 1: simplified TestLaneSectionQuestionLaneIsLeftByTheAgentAcceptanceLaneIsNot (core/board/lanesection_test.go:197) - the line-split loop, its two once-used vars and the 'never out' negative check gave way to two Contains checks anchored on the line prefix, the style of the neighbour test at :173; the anchored check already rules out the old mark (mutation-checked: old human text and a cut signoff mark both fail it). Both cases stay in one test, as the DoD asks. Left: overlap with :46 and :173 (DoD wants this test; critique let it stand); docs/AGENTS.md:218 and the role skills that say no agent leaves human are hand-written, outside this ticket's generated block, already noted by critique as a follow-up. No duplication, dead code or cost in announce.go - two string literals changed, switch order unchanged."
 ---
 
 # Der Agent-Block sagt, dass ein Agent ein Ticket aus human weiterschiebt, sobald die Frage beantwortet ist
