@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:30Z
-updated-at: 2026-10-22T00:32:04Z
+updated-at: 2026-10-22T00:32:05Z
 updated-by: berkc
 ---
 
@@ -43,4 +43,4 @@ updated-by: berkc
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-22 00:32 · berkc** — Recherche 22.10.2026 (Webquellen: ai-week-frankfurt.com, ai-week-frankfurt.com/hack, ai-hub-frankfurt.de/en/events-en/). Der 'AI Hub Hackathon' ist der AI Week Hack am Fr 30.10.2026 in The Squaire (Flughafen Frankfurt), Teil der AI Week Frankfurt 26.-30.10., veranstaltet von AI Hub Frankfurt. Ablauf: 09:00 Einlass, 10:00 Kick-off, 10:15-16:00 bauen, 16:00 Demos, 17:00 Finale, 18:00 Builders Night - also ~6 Stunden Bauzeit. Zwei Wege: (1) Open Build Floor - ohne festes Thema (Agent, Produkt, Automatisierung, Arbeit oder Spass), jedes Modell/Stack, Credits von Grokbot/Cursor, Glassflow, Wispr Flow, Exa, Netlify, Firecrawl, Render; getragen von AI Hub Frankfurt und Cursor Community Frankfurt; nur Ticket noetig. (2) OpenAI Codex Enterprise Hackathon - nur mit Bewerbung (~100 Teilnehmer), echte Business-Challenges von Condor (Airline), FraAlliance (Joint Venture Fraport + Lufthansa fuer den Betrieb am Flughafen FRA) und KfW IPEX-Bank (Export- und Projektfinanzierung); OpenAI-API-Credits, Codex; getragen von statworx und OpenAI. Welche Firma welche Challenge stellt und Preise: nicht veroeffentlicht. Sponsoren der Woche: STADA, Equinix, Commerzbank, DekaBank, Helaba, Merck, Dataiku, HP & NVIDIA, Metzler, TD SYNNEX, Heraeus, KfW IPEX-Bank, statworx u.a.; Donnerstag ist Banking & Finance. Wahrscheinliche Themen (abgeleitet, nicht bestaetigt): Luftfahrt/Flughafenbetrieb (FraAlliance arbeitet laut Presse 12/2025 an KI fuer Engpaesse im Terminal, Wartezeiten an der Sicherheitskontrolle, Passagierlenkung, digitalem Zwilling, Computer Vision fuer Turnaround-Ereignisse), Airline-Kundenservice und Stoerungsmanagement (Condor: Umbuchung bei Verspaetung, Kundenkommunikation), Finanzierung (KfW IPEX: Dokumentenpruefung, Risiko-/Due-Diligence-Zusammenfassungen, ESG-Pruefung von Projekten). Produktart in 6 Stunden: Agent oder interne Web-App mit Demo, nicht SaaS mit Abrechnung. Vorbereitung daraus: Builder-Board mit Auth-Stub, Backend (API + LLM-Aufruf + Dokumenten-/Datenimport), Svelte-UI mit fester Komponentensammlung, Deploy auf Netlify/Render (Credits vorhanden); Ideen-Board mit Vorlagen fuer die drei Branchen.
