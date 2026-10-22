@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:21Z
-updated-at: 2026-10-22T08:00:04Z
+updated-at: 2026-10-22T08:00:09Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4187645
@@ -30,7 +30,8 @@ claimed-at: 2026-10-22T07:55:10Z
 
 ## Definition of Done
 
-- [ ] Ein lokaler Build zeigt bei 'jaira --version' und im Projektkopf 'dev' plus Kurz-Commit, und ob der Baum Aenderungen hatte; ein Release-Build zeigt unveraendert seinen Tag; ein Test deckt beide Faelle
+- [x] Ein lokaler Build zeigt bei 'jaira --version' und im Projektkopf 'dev' plus Kurz-Commit, und ob der Baum Aenderungen hatte; ein Release-Build zeigt unveraendert seinen Tag; ein Test deckt beide Faelle
+  proof: core/release/release.go:Display/displayFrom + core/release/display_test.go TestDisplayFrom
 - [ ] go test ./... -race gruen; Release-Notiz unter core/release/notes/
 
 ## Options
