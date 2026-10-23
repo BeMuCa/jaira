@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T08:26:42Z
-updated-at: 2026-10-23T15:26:24Z
+updated-at: 2026-10-23T15:26:26Z
 assignee: BeMuCa
 updated-by: BeMuCa
 ---
@@ -41,4 +41,4 @@ updated-by: BeMuCa
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-23 15:26 · BeMuCa** — Feedback 23.10. (Punkt 12): auf dem Board stehen 7 verwaiste Claims mit Rechnernamen drin. Beim Fix mitdenken: ein verwaister Claim mit altem Format soll beim naechsten claim desselben Tickets als abgelaufen gelten (stale), damit niemand --steal braucht.
