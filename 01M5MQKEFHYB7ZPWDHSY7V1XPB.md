@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:47Z
-updated-at: 2026-10-23T16:29:14Z
+updated-at: 2026-10-23T16:29:18Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54254
@@ -45,6 +45,7 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-parent-auto  2. go tes
   proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:111 (exit 2 before tab create); TestSpawnParentIsTheCallerAndAnUnknownOneStops
 - [x] Worker/Dispatcher leiten bei unerreichbarem Parent nicht an einen anderen Peer um, sondern fragen im eigenen Tab
   proof: core/role/builtin/jaira-worker/SKILL.md:255, core/role/builtin/jaira-dispatcher/SKILL.md:192
+- [ ] spawn.sh --no-parent startet Dispatcher/Worker ohne Parent; das Cockpit übergibt es beim Start nach Accept
 
 ## Options
 
