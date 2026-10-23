@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:52Z
-updated-at: 2026-10-23T16:09:33Z
+updated-at: 2026-10-23T16:09:38Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54412
@@ -28,7 +28,7 @@ outcome-why: Worker bumpten Version und Changelog pro Ticket und formatierten da
 outcome-resolves: "DoD 1 (Rolle fasst Version/Changelog nicht an, wenn .jaira/release teamlead sagt) und DoD 2 (nur eigene geänderte Dateien formatieren)"
 review-summary: "Neue Board-Datei .jaira/release (eine Zeile, # Kommentare erlaubt): steht dort 'teamlead', liefert settings.ReleaseFor teamlead, sonst worker (Standard, auch bei Tippfehler). 'jaira roles list' zeigt das als release/release_source in --json und als Zeile 'release: …' im Text, --help nennt die Datei. jaira-worker und jaira-role-lane lesen den Wert und fassen bei teamlead weder Versionsfeld noch Changelog noch Tag an – das sticht auch eine Repo-Anweisung, die pro Änderung bumpt. Beide Rollen sagen zusätzlich ohne Einstellung: nur eigene Pfade an den Formatter (git diff --name-only --diff-filter=d HEAD + git ls-files --others --exclude-standard), nie task code:format/ruff format ./npm run format. Nebenbei: Zeilen-Scan von BoardChatModel in boardLine() ausgelagert und mitbenutzt. Release-Note core/release/notes/SJ16MC.md mit zwei Zeilen."
 round: 2
-review-gaps: "internal/cli/roles.go: bestEffortRoot (walks up to find .jaira) einmal statt zweimal; boardLine-Duplikat schon in critique gefaltet; ReleaseWorker/ReleaseTeamlead beide benutzt, nichts verwaist; Rollentext in jaira-worker und jaira-role-lane bewusst doppelt (jede Rolle wird einzeln gelesen, wie die Commit-Regeln)"
+review-gaps: "Nichts blockiert. Drei Kleinigkeiten: 1) Groß-/Kleinschreibung: 'Teamlead' in .jaira/release fällt still auf worker zurück (getestet) – sichtbar nur über release_source='the default'; strings.EqualFold wäre billig. 2) Auf einem noch nicht geteilten Board ist .jaira/ gitignored (git check-ignore bestätigt) – die Release-Note sagt 'commit it', das geht erst nach 'jaira share'; die Einstellung wirkt lokal trotzdem. 3) 'git ls-files --others --exclude-standard' listet alle unversionierten Dateien, auch die einer anderen Session im selben Worktree – der Rollentext sagt 'your new files', der Befehl filtert das nicht."
 test-verdict: "pass: go build/vet + go test -race ./... green (RC=0); DoD 1-2 in the tree (proof lines checked); scratch board: no file → worker (the default), '# who\\nteamlead' → teamlead from .jaira/release, typo 'teamlaed' → worker"
 ---
 
