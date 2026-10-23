@@ -26,8 +26,8 @@ spawn.sh [--no-worktree] [--parent <session> | --no-parent] <slug> <ticket-id> <
                   passed on as its uds: address, and one that names no running
                   session stops the spawn before a tab is made.
   --no-parent     No parent at all, not even this session: the dispatcher or
-                  worker asks in its own tab. The cockpit passes it when it
-                  starts the next ticket after Accept.
+                  worker asks in its own tab. The cockpit passes it whenever
+                  it starts a dispatcher or worker itself.
   -h, --help      This text.
 
 Five lane names are special. <dispatch> starts the dispatcher itself in the tab
