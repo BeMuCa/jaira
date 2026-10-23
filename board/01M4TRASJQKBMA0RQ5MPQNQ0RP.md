@@ -1,7 +1,7 @@
 ---
 id: 01M4TRASJQKBMA0RQ5MPQNQ0RP
 title: "Der Agent-Block sagt, dass ein Agent ein Ticket aus human weiterschiebt, sobald die Frage beantwortet ist"
-status: backlog
+status: done
 ready: true
 creator: BeMuCa
 goal: "Was der erzeugte Agent-Block ueber die human-Lane sagt, stimmt mit ihrem Gate ueberein."
@@ -18,18 +18,48 @@ tags:
   - docs
 blocked-by: []
 related: []
-commits: []
+commits:
+  - cf90ff961554bbededbb0f0cec12301863288e68
+  - 075aed7a1149586400f13a1c0d241390b7c7ff12
+  - 878ae7e777bdba21d5be6c6c4c19cb8d2f5c4e81
 created-at: 2026-10-13T13:48:17Z
-updated-at: 2026-10-13T14:16:38Z
+updated-at: 2026-10-23T11:29:54Z
 assignee: BeMuCa
 updated-by: BeMuCa
+claimed-by: EE-3NX6GL3-4189248
+claimed-at: 2026-10-22T07:55:22Z
+outcome-what: "The generated agent block now says a question-only lane (human) is a person's to answer, after which the agent moves the ticket on itself; a requires-human-exit lane (signoff) keeps 'never on'. The static line says 'a lane that waits for a person's acceptance' instead of 'the human review lane'. CLAUDE.md and AGENTS.md are regenerated."
+outcome-why: "The block said an agent may never move work out of human, although that lane has no human-exit gate and the same block says to continue once the human has answered; agents refused to move on after a person's answer."
+outcome-resolves: "The block now matches the human lane's gate and its own later paragraph; TestLaneSectionQuestionLaneIsLeftByTheAgentAcceptanceLaneIsNot covers the question-only and the requires-human-exit lane."
+review-summary: |-
+  critique 1: none. The human mark still says how work enters (the appended 'only with an open question (--question)'); 'move the ticket on yourself' matches the decision and the later 'continue once the human has answered'. The static line 'a lane that waits for a person's acceptance' is accurate: on a stock board only signoff has requires-human-exit (core/lane/builtin/45-signoff.md:8). The new test overlaps lanesection_test.go:46 and :173 and stays because the DoD asks for one test over both cases. Release note is one instruction line.
+  review 1: Two text changes in core/board/announce.go, both rendered into the jaira block of CLAUDE.md and AGENTS.md. (1) A lane with only requires-question (stock board: `human`) used to share signoff's wording 'a person's, not yours — you may move work in, never out'; it now reads '**a person's to answer** — once they have answered, you move the ticket on yourself' (announce.go:249), still followed by 'only with an open question (`--question`); without one, work passes it by'. A requires-human-exit lane (stock board: `signoff`) keeps 'a person's, not yours — you may move work in, or send it back to an earlier lane, never on' (announce.go:247, unchanged, still checked first). (2) The static line 'An agent cannot move work on out of the human review lane' now says 'out of a lane that waits for a person's acceptance' (announce.go:149), so it no longer reads as lane id `human`. Both now match the gate - only requires-human-exit refuses a forward move (core/gate/gate.go:395), and human has only requires-question (core/lane/builtin/30-human.md:8) - and the block's own later paragraph 'continue once the human has answered'. New test TestLaneSectionQuestionLaneIsLeftByTheAgentAcceptanceLaneIsNot (core/board/lanesection_test.go:197) pins both lane lines; the older test at :173 carries the new human text. Repo CLAUDE.md and AGENTS.md regenerated; release note core/release/notes/QNQ0RP.md is one '- ' line.
+review-gaps: |-
+  optimize 1: simplified TestLaneSectionQuestionLaneIsLeftByTheAgentAcceptanceLaneIsNot (core/board/lanesection_test.go:197) - the line-split loop, its two once-used vars and the 'never out' negative check gave way to two Contains checks anchored on the line prefix, the style of the neighbour test at :173; the anchored check already rules out the old mark (mutation-checked: old human text and a cut signoff mark both fail it). Both cases stay in one test, as the DoD asks. Left: overlap with :46 and :173 (DoD wants this test; critique let it stand); docs/AGENTS.md:218 and the role skills that say no agent leaves human are hand-written, outside this ticket's generated block, already noted by critique as a follow-up. No duplication, dead code or cost in announce.go - two string literals changed, switch order unchanged.
+  review 1: No defect found in the diff. Checked: gofmt -l empty, go vet and go build green; go test -race -count=1 ./core/board ok. Mutations: the old human text put back fails the new test at lanesection_test.go:203; merging the HumanExit and Question cases fails it at :206. The branch binary's `jaira update` on a remote-less copy carrying master's CLAUDE.md and AGENTS.md changes exactly two lines in each, and the result is byte-identical to the committed files. On that copy a human->review dry-run is allowed without --force, and signoff->done is refused with 'is a human checkpoint'. Open, not a defect of the diff: DoD 2's go test ./... -race (maintainer, before the PR); the tui suite was not run. Minor: the new test repeats what lanesection_test.go:46 and :173 already pin; it stays because the DoD asks for one test over both cases. Outside this diff: the shipped role skills still say no agent leaves human (core/role/builtin/jaira-worker/SKILL.md:291, jaira-dispatcher/SKILL.md:429, jaira-teamlead/SKILL.md:207, jaira-role-acceptance/SKILL.md:200) - confirmed, already a recorded follow-up. Also pre-existing and out of scope: the gate does not check that the question was answered (the human->review dry-run passed while the question was still open), so 'once they have answered' is an instruction only.
+test-verdict: "testing 1: pass: gofmt/vet/build clean, go test -race ./core/board ok (TestLaneSection* incl. new QuestionLane test pass); release note is one '- ' line; CLAUDE.md/AGENTS.md byte-identical to branch binary's update output on a remote-less scratch repo; human line says person answers then agent moves on, signoff keeps 'never on'; scratch gate: human->review dry-run allowed w/o --force, signoff->done dry-run refused (human checkpoint). Full race suite (DoD 2) left to maintainer before PR, so DoD 2 not fully tickable."
+review-verdict: "review 1: The diff implements the maintainer's decision exactly. A question-only lane is a person's to answer, and the agent moves on after the answer. A requires-human-exit lane keeps 'you may move work in, or send it back to an earlier lane, never on'. Both agree with the later paragraph and with the gate. The test covers both cases, the block is regenerated and the release note is in form. No reason to send it back to in-progress. Only DoD 2's full race suite is still open, for the maintainer to run before the PR."
+review-round: 1
+review-check: |-
+  1. cd /home/berk/git/jAIra-QNQ0RP
+  2. go test -race -count=1 ./core/board -run TestLaneSection -v | tail -3 — you see '--- PASS: TestLaneSectionQuestionLaneIsLeftByTheAgentAcceptanceLaneIsNot', then 'PASS', then 'ok  github.com/BeMuCa/jaira/core/board'.
+  3. S=$(mktemp -d) && go build -o $S/jaira ./cmd/jaira — no output.
+  4. mkdir $S/board && git archive HEAD | tar -x -C $S/board — copies the branch without .git.
+  5. git show origin/master:CLAUDE.md > $S/board/CLAUDE.md — puts the OLD block back, so the update has something to change.
+  6. cd $S/board && git init -q && git add -A && git -c user.name=t -c user.email=t@example.invalid commit -qm init — a board copy with no remote (`git remote` prints nothing).
+  7. HOME=$S JAIRA_HOME=$S/jh JAIRA_NO_FETCH=1 $S/jaira update >/dev/null — exits without an error.
+  8. grep -n -e '^- .human' -e '^- .signoff' -e 'cannot move work on out' CLAUDE.md — you see three lines: 'An agent cannot move work on out of a lane that waits for a person's acceptance — a person accepts it there.'; '- `human` — **a person's to answer** — once they have answered, you move the ticket on yourself; only with an open question ...'; '- `signoff` — **a person's, not yours** — you may move work in, or send it back to an earlier lane, never on'.
+  9. git diff --stat — only CLAUDE.md, 2 insertions and 2 deletions.
+  10. cmp CLAUDE.md /home/berk/git/jAIra-QNQ0RP/CLAUDE.md — no output, so the committed CLAUDE.md is exactly what update writes.
+  11. cd / && rm -rf $S
 ---
 
 # Der Agent-Block sagt, dass ein Agent ein Ticket aus human weiterschiebt, sobald die Frage beantwortet ist
 
 ## Definition of Done
 
-- [ ] Fuer eine Lane mit nur requires-question sagt der Block: eine Person beantwortet die Frage, danach schiebt der Agent weiter; fuer requires-human-exit bleibt 'never out'; ein Test in core/board deckt beide Faelle
+- [x] Fuer eine Lane mit nur requires-question sagt der Block: eine Person beantwortet die Frage, danach schiebt der Agent weiter; fuer requires-human-exit bleibt 'never out'; ein Test in core/board deckt beide Faelle
+  proof: core/board/announce.go:249; TestLaneSectionQuestionLaneIsLeftByTheAgentAcceptanceLaneIsNot (core/board/lanesection_test.go:197)
 - [ ] go test ./... -race gruen; Release-Notiz unter core/release/notes/; der CLAUDE.md-Block dieses Repos ist neu erzeugt
 
 ## Options
@@ -41,5 +71,14 @@ updated-by: BeMuCa
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-## Progress
+- [x] Test first in core/board/announce_test.go: a question-only lane's line says a person answers and the agent moves on after the answer (no 'never out'); a requires-human-exit lane keeps 'you may move work in, or send it back to an earlier lane, never on'
+- [x] Change the f.Question case text in core/board/announce.go laneSection; check the static line 'An agent cannot move work on out of the human review lane' (announce.go:149) for consistency
+- [x] Release note core/release/notes/QNQ0RP.md, one '- ' line written as an instruction
+- [x] Build the branch binary, run its update in the worktree (HOME/JAIRA_HOME in scratchpad, JAIRA_NO_FETCH=1), keep the regenerated CLAUDE.md/AGENTS.md block
 
+## Progress
+- **2026-10-22 07:57 · BeMuCa** — Test put in lanesection_test.go beside the other laneSection tests (announce_test.go has none); the old assertion there ('never out') was updated. Static line 'human review lane' reworded to 'a lane that waits for a person's acceptance' because the static half is board-agnostic and 'human' is also a lane id. Update on the worktree touched only AGENTS.md and CLAUDE.md.
+- **2026-10-22 08:03 · BeMuCa** — critique 1: nothing to send back. (1) human mark: dropping 'you may move work in' loses nothing - the appended mark 'only with an open question (`--question`)' still says how work enters; 'move the ticket on yourself' mirrors the decision and the later paragraph 'continue once the human has answered'. (2) static line 'a lane that waits for a person's acceptance' is accurate: on a stock board only signoff has requires-human-exit (core/lane/builtin/45-signoff.md:8, description 'waiting for a person to accept it'); the old 'human review lane' meant signoff by its display name 'Human Review' but reads as lane id human inside the block, so the rewording is right. README.md:820, docs/AGENTS.md:218 and .claude/skills/jaira/SKILL.md:376 say 'human review lane' = signoff and do not contradict. (3) test: TestLaneSectionQuestionLaneIsLeftByTheAgentAcceptanceLaneIsNot overlaps lanesection_test.go:46 and :173, which pin the same marks; let stand - the DoD asks for one test over both cases and its failure message names the rule. (4) release note: one '- ' line, instruction form, same shape as earlier 'Run `jaira update` so ...' notes. Outside this ticket's goal (the generated block), for a follow-up: shipped role skills still say no agent leaves human - core/role/builtin/jaira-worker/SKILL.md:290-291 and jaira-dispatcher/SKILL.md:428-429 'you may deliver into one, never out of it' for (human, signoff); jaira-teamlead/SKILL.md:207 'You never move a ticket out of a human lane'; jaira-role-acceptance/SKILL.md:199-200 'an agent cannot leave a human lane otherwise' (without --force). The 2026-10-12 critique on 4R72WD let worker/dispatcher stand as describing the stop, not the gate; under this decision they now also forbid the move after the answer.
+- **2026-10-22 08:09 · BeMuCa** — testing 1 passed on a remote-less scratch copy: human->review dry-run allowed without --force, signoff->done refused. DoD 2 stays open only for the full go test ./... -race, which the maintainer runs once before the PR. Follow-up not filed yet (outside this ticket's generated block): core/role/builtin/jaira-worker/SKILL.md:291, jaira-dispatcher/SKILL.md:429, jaira-teamlead/SKILL.md:207 and jaira-role-acceptance/SKILL.md:200 still say no agent moves a ticket out of human.
+- **2026-10-22 08:15 · BeMuCa** — In signoff after review 1 (no defect). Ticket file carries critique-to-review writes uncommitted in the worktree, by the rule that bookkeeping-only lanes commit nothing; the logbook commit takes it along. Open: DoD 2 waits only for the maintainer's full go test ./... -race.
+- **2026-10-23 11:29 · BeMuCa** — Berk accepted the agent-block change on 2026-10-23 and asked for the four role skills to say the same inside this ticket: worker and dispatcher (deliver into signoff never out; human = bring the question, move on once the answer is a note), teamlead (never out of signoff; out of human after the answer), acceptance (--force only for signoff, plain move out of human). The gate still does not check that an answer exists before leaving human; that stays an instruction, not a rule.
