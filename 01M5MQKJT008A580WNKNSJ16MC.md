@@ -17,9 +17,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:52Z
-updated-at: 2026-10-23T15:56:28Z
+updated-at: 2026-10-23T15:56:31Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-54412
+claimed-at: 2026-10-23T15:56:31Z
 ---
 
 # Worker-Rolle: kein Version-Bump/Changelog, nur eigene Dateien formatieren
