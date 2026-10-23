@@ -836,3 +836,26 @@ func TestSpawnStopsBeforeATabWhenJairaIsTooOld(t *testing.T) {
 		t.Errorf("Herdr was called before the check: %s", b)
 	}
 }
+
+// Both roles that change code — the worker through every lane, the lane agent
+// through one — ask the board who owns the version and the changelog, and
+// format only the files they changed: a bump or a whole-tree format in every
+// ticket conflicts with every other ticket merged into the same build.
+func TestCodeChangingRolesLeaveTheReleaseAndFormatOnlyTheirFiles(t *testing.T) {
+	for _, id := range []string{"jaira-worker", "jaira-role-lane"} {
+		body, err := File(id, "SKILL.md")
+		if err != nil {
+			t.Fatal(err)
+		}
+		text := string(body)
+		for _, want := range []string{
+			"jaira roles list --json | jaira json get release",
+			"`teamlead`",
+			"git diff --name-only --diff-filter=d HEAD",
+		} {
+			if !strings.Contains(text, want) {
+				t.Errorf("%s does not say %q", id, want)
+			}
+		}
+	}
+}

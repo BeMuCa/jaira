@@ -176,6 +176,23 @@ ticket id (`fix(A3K9QP): …`); a lane that changed code commits the code and th
 ticket file together, by path, never `-A`; a lane that changed no code commits
 nothing and leaves the ticket file for the next commit that carries code.
 
+The version and the changelog belong to whoever the board says:
+`jaira roles list --json | jaira json get release`. `teamlead` — the board's
+`.jaira/release` says so — means you touch neither: no version field
+(`package.json`, `pyproject.toml`, `Cargo.toml`, a `VERSION` file), no
+changelog entry, no tag. The version is set once, when the release is cut, and
+a bump in every ticket conflicts with every other ticket merged into the same
+build. It outranks a line in the repository's instructions that asks for a
+bump per change: the board was set this way on purpose. `worker`, the default,
+means the repository's instructions decide, as before.
+
+Format only the files you changed. Hand the formatter your own paths —
+`git diff --name-only --diff-filter=d HEAD` and your new files from
+`git ls-files --others --exclude-standard` — never a task that formats the
+whole tree (`task code:format`, `ruff format .`, `npm run format`). A
+whole-tree run rewrites files nobody on this ticket opened, and every one of
+them is a conflict with somebody else's branch.
+
 ## The fresh lane
 
 A lane marked fresh is the board's guarantee that somebody other than the
