@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:47Z
-updated-at: 2026-10-23T16:36:25Z
+updated-at: 2026-10-23T16:36:29Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68768
@@ -32,7 +32,7 @@ review-gaps: "No DoD gap. Minor, not blocking: (1) two running sessions with the
 test-verdict: "pass: go test ./... green (RC=0), cockpit 'claude plugin test' 158 pass; DoD 1-4 checked in the tree; --no-parent covered by TestSpawnParentIsTheCallerAndAnUnknownOneStops (worker typed without --parent while the caller's socket is in the env), not run live because it would open a real tab"
 review-verdict: "The diff meets all four DoD items; go test ./core/role and cockpit 'claude plugin test .' (158 pass) green; spawn.sh refuses a stale name and a dead uds: with exit 2 before a tab, checked by hand. Approve; the two minor gaps can stay."
 review-round: 4
-review-check: "1. go test ./core/role -run TestSpawn -count=1 -> ok  2. In a Claude session with Herdr: spawn.sh --parent nobody-9f x1 X1 worker; echo $? -> message '--parent nobody-9f: no running session has that name...' and 2, no new Herdr tab  3. Same without --parent on a real ticket id: the new tab's first line reads /jaira-worker <id> --parent uds:<your session's socket>  4. Cockpit: Accept a ticket so the next one starts; the new dispatcher tab's line carries no --parent and asks in its own tab"
+review-check: "1. In a Claude session in this worktree run: bash core/role/builtin/jaira-dispatcher/scripts/spawn.sh --no-worktree --parent lead-9f x7 X7 worker ; echo $?  -> message '--parent lead-9f: no running session has that name ...' and 2, no Herdr tab opens.  2. Same with --parent uds:/nope.sock -> 'no session listens there' and 2.  3. go test ./core/role -run TestSpawn -> ok (covers: no --parent passes uds:<caller socket> for worker and dispatch; review lane gets none; --no-parent gets none).  4. In the cockpit (claude --plugin-dir core/mod/builtin/jaira-cockpit, inside Herdr) accept a ticket so the next one starts -> the new tab's first line is '/jaira-dispatcher <id>' with no --parent.  5. As teamlead, run spawn.sh <slug> <id> dispatch without --parent -> the tab's line ends in '--parent uds:/run/user/.../<pid>.sock'."
 ---
 
 # spawn.sh: Parent-Session selbst ermitteln, ein unerreichbarer Parent bricht laut ab
