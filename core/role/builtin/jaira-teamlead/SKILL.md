@@ -165,7 +165,8 @@ It sends its questions to you instead of into its own tab, because spawn.sh
 passes on your session's messaging socket as its parent by itself. Do not
 pass `--parent <your-name>`: your name changes when you restart or are
 compacted, and a name from your own summary is the old one — spawn.sh refuses
-a name no running session has, and the socket never goes stale. Never call
+a name no running session has, while the socket stays valid for as long as
+your session runs, compaction included. Never call
 `claude --permission-mode ...` yourself: the permission classifier refuses it as
 "Create Unsafe Agents", and two dispatchers lost their tabs to that on
 2026-09-14. And `command -v herdr` is not the test for whether Herdr is here —
