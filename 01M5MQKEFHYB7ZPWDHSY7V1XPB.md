@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:47Z
-updated-at: 2026-10-23T16:29:21Z
+updated-at: 2026-10-23T16:31:41Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54254
@@ -45,7 +45,8 @@ review-check: "1. go test ./core/role -run TestSpawn -count=1 -> ok  2. In a Cla
   proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:111 (exit 2 before tab create); TestSpawnParentIsTheCallerAndAnUnknownOneStops
 - [x] Worker/Dispatcher leiten bei unerreichbarem Parent nicht an einen anderen Peer um, sondern fragen im eigenen Tab
   proof: core/role/builtin/jaira-worker/SKILL.md:255, core/role/builtin/jaira-dispatcher/SKILL.md:192
-- [ ] spawn.sh --no-parent startet Dispatcher/Worker ohne Parent; das Cockpit übergibt es beim Start nach Accept
+- [x] spawn.sh --no-parent startet Dispatcher/Worker ohne Parent; das Cockpit übergibt es beim Start nach Accept
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:518 (Accept -> next) and :841 (give back); spawn.sh --no-parent; TestSpawnParentIsTheCallerAndAnUnknownOneStops, cockpit board.test.ts 158 pass
 
 ## Options
 
