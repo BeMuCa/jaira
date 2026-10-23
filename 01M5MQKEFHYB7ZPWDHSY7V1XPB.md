@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:47Z
-updated-at: 2026-10-23T16:06:58Z
+updated-at: 2026-10-23T16:08:16Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54254
@@ -29,6 +29,7 @@ outcome-resolves: workers report to the session that started them; an unreachabl
 review-summary: "none"
 round: 2
 review-gaps: "spawn.sh: single-use $sessions inlined into the loop; nothing duplicated (registry lookup exists nowhere else; cockpit register.tsx:608 builds the same uds: for discuss, kept); no dead code"
+test-verdict: "pass: go test ./core/role ./internal/cli green (RC=0), full ./... green before optimize; live: spawn.sh --parent <unknown name> and --parent uds:<missing> both exit 2 with the message and open no tab; this session's name resolves through ~/.claude/sessions to its own CLAUDE_CODE_MESSAGING_SOCKET"
 ---
 
 # spawn.sh: Parent-Session selbst ermitteln, ein unerreichbarer Parent bricht laut ab
