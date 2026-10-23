@@ -170,14 +170,20 @@ const chatModelHeader = `# The model jaira's cockpit starts its explain and disc
 // BoardChatModel returns the model the board at root names, or "" when it
 // names none, or names something that is not a model name.
 func BoardChatModel(root string) string {
-	b, err := os.ReadFile(BoardChatModelPath(root))
+	return modelName(boardLine(BoardChatModelPath(root)))
+}
+
+// boardLine returns the first line of a one-line board file that is neither
+// blank nor a # comment, trimmed, or "" when there is none or no file.
+func boardLine(path string) string {
+	b, err := os.ReadFile(path)
 	if err != nil {
 		return ""
 	}
 	for _, line := range strings.Split(string(b), "\n") {
 		line = strings.TrimSpace(line)
 		if line != "" && !strings.HasPrefix(line, "#") {
-			return modelName(line)
+			return line
 		}
 	}
 	return ""
@@ -254,19 +260,8 @@ func BoardReleasePath(root string) string {
 // repository's own instructions say. A typo falls back to it too, like
 // DispatchMode, rather than stopping a worker from starting.
 func ReleaseFor(root string) (owner, source string) {
-	if root != "" {
-		if b, err := os.ReadFile(BoardReleasePath(root)); err == nil {
-			for _, line := range strings.Split(string(b), "\n") {
-				line = strings.TrimSpace(line)
-				if line == "" || strings.HasPrefix(line, "#") {
-					continue
-				}
-				if line == ReleaseTeamlead {
-					return ReleaseTeamlead, "from .jaira/release, shared with the board"
-				}
-				break
-			}
-		}
+	if root != "" && boardLine(BoardReleasePath(root)) == ReleaseTeamlead {
+		return ReleaseTeamlead, "from .jaira/release, shared with the board"
 	}
 	return ReleaseWorker, "the default"
 }
