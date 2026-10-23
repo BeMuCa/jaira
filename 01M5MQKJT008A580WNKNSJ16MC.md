@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:52Z
-updated-at: 2026-10-23T16:09:38Z
+updated-at: 2026-10-23T16:09:43Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54412
@@ -30,6 +30,8 @@ review-summary: "Neue Board-Datei .jaira/release (eine Zeile, # Kommentare erlau
 round: 2
 review-gaps: "Nichts blockiert. Drei Kleinigkeiten: 1) Groß-/Kleinschreibung: 'Teamlead' in .jaira/release fällt still auf worker zurück (getestet) – sichtbar nur über release_source='the default'; strings.EqualFold wäre billig. 2) Auf einem noch nicht geteilten Board ist .jaira/ gitignored (git check-ignore bestätigt) – die Release-Note sagt 'commit it', das geht erst nach 'jaira share'; die Einstellung wirkt lokal trotzdem. 3) 'git ls-files --others --exclude-standard' listet alle unversionierten Dateien, auch die einer anderen Session im selben Worktree – der Rollentext sagt 'your new files', der Befehl filtert das nicht."
 test-verdict: "pass: go build/vet + go test -race ./... green (RC=0); DoD 1-2 in the tree (proof lines checked); scratch board: no file → worker (the default), '# who\\nteamlead' → teamlead from .jaira/release, typo 'teamlaed' → worker"
+review-verdict: "Der Diff erfüllt beide DoD-Punkte; go test ./core/settings ./core/role ./internal/cli grün; Verhalten auf einem Scratch-Board nachgeprüft (Standard worker, teamlead mit Kommentar und Leerzeichen erkannt, validate meckert nicht). Keine Defekte, nur die drei kleinen Punkte aus review-gaps – keiner davon ein Grund zum Zurückschicken."
+review-round: 2
 ---
 
 # Worker-Rolle: kein Version-Bump/Changelog, nur eigene Dateien formatieren
