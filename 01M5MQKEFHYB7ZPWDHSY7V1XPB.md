@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:47Z
-updated-at: 2026-10-23T16:32:57Z
+updated-at: 2026-10-23T16:34:28Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54254
@@ -29,7 +29,7 @@ outcome-resolves: workers report to the session that started them; an unreachabl
 review-summary: "none"
 round: 4
 review-gaps: "none: --no-parent adds one flag and one condition; no duplicate, no dead code; DoD 1-2 proofs re-pointed after the help text grew"
-test-verdict: "pass: go test ./core/role ./internal/cli green (RC=0), full ./... green before optimize; live: spawn.sh --parent <unknown name> and --parent uds:<missing> both exit 2 with the message and open no tab; this session's name resolves through ~/.claude/sessions to its own CLAUDE_CODE_MESSAGING_SOCKET"
+test-verdict: "pass: go test ./... green (RC=0), cockpit 'claude plugin test' 158 pass; DoD 1-4 checked in the tree; --no-parent covered by TestSpawnParentIsTheCallerAndAnUnknownOneStops (worker typed without --parent while the caller's socket is in the env), not run live because it would open a real tab"
 review-verdict: "The diff meets all three DoD items and the tests pass; no defect found in spawn.sh. Not unconditional: the person should decide whether cockpit Accept -> next starting a dispatcher that reports to their own chat is wanted (gap 1) — if not, the cockpit needs --parent '' or spawn.sh needs a way to opt out."
 review-round: 2
 review-check: "1. go test ./core/role -run TestSpawn -count=1 -> ok  2. In a Claude session with Herdr: spawn.sh --parent nobody-9f x1 X1 worker; echo $? -> message '--parent nobody-9f: no running session has that name...' and 2, no new Herdr tab  3. Same without --parent on a real ticket id: the new tab's first line reads /jaira-worker <id> --parent uds:<your session's socket>  4. Cockpit: Accept a ticket so the next one starts; the new dispatcher tab's line carries no --parent and asks in its own tab"
