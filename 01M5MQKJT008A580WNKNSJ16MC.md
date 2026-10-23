@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:52Z
-updated-at: 2026-10-23T16:05:50Z
+updated-at: 2026-10-23T16:06:04Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54412
@@ -28,6 +28,7 @@ outcome-why: Worker bumpten Version und Changelog pro Ticket und formatierten da
 outcome-resolves: "DoD 1 (Rolle fasst Version/Changelog nicht an, wenn .jaira/release teamlead sagt) und DoD 2 (nur eigene geänderte Dateien formatieren)"
 review-summary: none
 round: 2
+review-gaps: "internal/cli/roles.go: bestEffortRoot (walks up to find .jaira) einmal statt zweimal; boardLine-Duplikat schon in critique gefaltet; ReleaseWorker/ReleaseTeamlead beide benutzt, nichts verwaist; Rollentext in jaira-worker und jaira-role-lane bewusst doppelt (jede Rolle wird einzeln gelesen, wie die Commit-Regeln)"
 ---
 
 # Worker-Rolle: kein Version-Bump/Changelog, nur eigene Dateien formatieren
