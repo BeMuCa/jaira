@@ -537,9 +537,13 @@ esac
 			t.Errorf("spawn.sh %s without --parent did not pass the caller's socket:\n%s", lane, out)
 		}
 	}
-	// A lane that takes no parent gets none.
+	// A lane that takes no parent gets none, and --no-parent — what the
+	// cockpit passes, so the worker stays in its own tab — none either.
 	if out, err := run("ab12cd", "ab12cd", "review"); err != nil || strings.Contains(out, "--parent") {
 		t.Errorf("spawn.sh review: %v\n%s", err, out)
+	}
+	if out, err := run("--no-parent", "ab12cd", "ab12cd", "worker"); err != nil || !strings.Contains(out, "/jaira-worker ab12cd\n") {
+		t.Errorf("spawn.sh --no-parent worker: %v\n%s", err, out)
 	}
 
 	for _, parent := range []string{"lead-9f", "uds:" + filepath.ToSlash(filepath.Join(t.TempDir(), "gone.sock"))} {

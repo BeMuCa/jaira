@@ -1176,7 +1176,7 @@ describe('after Accept', () => {
     expect(prLane(w)).toEqual([])
     expect(ran(w, 'jaira', 'next')).toEqual([['jaira', 'next', '--all', '--json', '@/repo']])
     // T8QS1Y has a worker tab already: never a second agent on it.
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, 'ab12cd', 'AB12CD', 'worker', '/repo', '@/repo']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-parent', 'ab12cd', 'AB12CD', 'worker', '/repo', '@/repo']])
     expect(w.opened).toEqual([])
   })
 
@@ -1185,7 +1185,7 @@ describe('after Accept', () => {
     w.next = ['AB12CD']
     await press($)
     expect(ran(w, 'gh', 'pr')).toEqual([])
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-parent', 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
   })
 
   test('GitLab, by jaira.forge or by host, asks glab', async ($, on) => {
@@ -1220,7 +1220,7 @@ describe('after Accept', () => {
     await press($)
     expect(ran(w, 'gh', 'pr')).toEqual([])
     expect(prLane(w)).toEqual([])
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-parent', 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
     expect(w.toasts.at(-1)).toBe('MG677R accepted; AB12CD started in a Herdr tab; no pull request for feat/mg677r yet: T8QS1Y not in done')
   })
 
@@ -1310,7 +1310,7 @@ describe('after Accept', () => {
     w.next = ['AB12CD']
     await press($)
     expect(ran(w, 'git', 'log')).toEqual([])
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-parent', 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
     expect(w.toasts.at(-1)).toContain('Pull requests go to upstream/repo, and no remote here points at it')
   })
 
@@ -1321,7 +1321,7 @@ describe('after Accept', () => {
     w.next = ['AB12CD']
     await press($)
     expect(prLane(w)).toEqual([])
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-parent', 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
     expect(ran(w, 'jaira', 'move', 'MG677R').map(r => r[5])).toEqual(['--dry-run', '--force'])
     expect(w.opened).toEqual([])
     expect(w.toasts.at(-1)).toBe('MG677R accepted; AB12CD started in a Herdr tab; pull requests not checked (gh repo view: gh: command not found)')
@@ -1334,7 +1334,7 @@ describe('after Accept', () => {
     w.next = ['AB12CD']
     await press($)
     expect(prLane(w)).toEqual([])
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-parent', 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
     expect(w.toasts.at(-1)).toContain('pull requests not checked (gh: HTTP 401')
   })
 
@@ -1529,7 +1529,7 @@ describe('give back', () => {
     const spawn = w.ran.findIndex(r => r[1] === SPAWN)
     expect(w.ran[close]?.[3]).toBe('w1:t9')
     expect(close).toBeLessThan(spawn)
-    expect(w.ran[spawn]?.slice(0, 6)).toEqual(['bash', SPAWN, 'mg677r', 'MG677R', 'worker', '/repo'])
+    expect(w.ran[spawn]?.slice(0, 7)).toEqual(['bash', SPAWN, '--no-parent', 'mg677r', 'MG677R', 'worker', '/repo'])
     expect(ran(w, 'herdr', 'pane', 'send-text')).toEqual([])
     expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to a new worker - old worker\'s prompt cache cold for 10 min')
   })
@@ -1544,7 +1544,7 @@ describe('give back', () => {
     await giveBack($, w)
     expect(ran(w, 'herdr', 'pane', 'send-keys')).toEqual([])
     expect(ran(w, 'herdr', 'tab', 'close')[0]?.[3]).toBe('w1:t9')
-    expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 6)).toEqual(['bash', SPAWN, 'mg677r', 'MG677R', 'worker', '/repo'])
+    expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 7)).toEqual(['bash', SPAWN, '--no-parent', 'mg677r', 'MG677R', 'worker', '/repo'])
     expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to a new worker - tab alive, cache warm for 40 more min, context 80k, but its pane took no text')
   })
 })
