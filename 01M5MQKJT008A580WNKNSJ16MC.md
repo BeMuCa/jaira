@@ -1,7 +1,7 @@
 ---
 id: 01M5MQKJT008A580WNKNSJ16MC
 title: "Worker-Rolle: kein Version-Bump/Changelog, nur eigene Dateien formatieren"
-status: review
+status: signoff
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Worker ändert weder Version noch Changelog des Repos und formatiert nur Dateien, die er selbst geändert hat."
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:52Z
-updated-at: 2026-10-23T16:09:50Z
+updated-at: 2026-10-23T16:09:57Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54412
