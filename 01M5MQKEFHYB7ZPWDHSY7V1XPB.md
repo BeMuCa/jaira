@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:47Z
-updated-at: 2026-10-23T16:04:00Z
+updated-at: 2026-10-23T16:04:03Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54254
@@ -50,3 +50,4 @@ claimed-at: 2026-10-23T15:56:29Z
 decision: an explicit --parent is checked before a tab is made. uds:<path> must be a live socket (test -S). A plain name is resolved through Claude Code's session registry (~/.claude/sessions/<pid>.json: name + messagingSocketPath) to its uds: address, so the worker gets the stable address, not the name; a name not found there, or no registry, aborts with exit 2. The registry is internal to Claude Code and undocumented — the only way a script can see what ListAgents sees.
 decision: the automatic parent applies only to the lanes dispatch and worker (what the ticket is about). discuss keeps its parent only when one is passed: the cockpit starts it, and sending its decision somewhere new would change that button's behaviour.
 decision: worker/dispatcher SKILL.md get an explicit rule: a parent SendMessage cannot reach is never replaced by another peer; ask in the own tab (AskUserQuestion) and note that the parent was unreachable.
+- **2026-10-23 16:04 · Alexander Sacharov** — found: Claude Code keeps a registry of running sessions in ~/.claude/sessions/<pid>.json (name, messagingSocketPath, nameSince); the name in it changes, the socket path is per process. The 'oldest peer' fallback was never written in any SKILL.md — the workers improvised it when SendMessage failed, so the fix is an explicit prohibition, not removing a rule. -e instead of -S on the socket: unverified how a native Windows claude's messaging address looks to Git Bash; -S could stop every cockpit Discuss there.
