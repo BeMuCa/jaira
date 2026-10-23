@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:52Z
-updated-at: 2026-10-23T16:01:00Z
+updated-at: 2026-10-23T16:03:23Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54412
@@ -29,7 +29,8 @@ mode: conversational
 
 ## Definition of Done
 
-- [ ] Rolle sagt: Version/Changelog nicht anfassen, wenn das Repo es dem Teamlead überlässt (Einstellung)
+- [x] Rolle sagt: Version/Changelog nicht anfassen, wenn das Repo es dem Teamlead überlässt (Einstellung)
+  proof: core/role/builtin/jaira-worker/SKILL.md:179, core/role/builtin/jaira-role-lane/SKILL.md:97; setting core/settings/settings.go:256 (ReleaseFor, .jaira/release); TestReleaseDefaultsToTheWorker, TestRolesListReportsTheBoardsRelease, TestCodeChangingRolesLeaveTheReleaseAndFormatOnlyTheirFiles
 - [ ] Rolle sagt: nur eigene geänderte Dateien formatieren
 
 ## Options
