@@ -228,6 +228,49 @@ func modelName(v string) string {
 	return v
 }
 
+// The two values of the board's release file.
+const (
+	ReleaseWorker   = "worker"
+	ReleaseTeamlead = "teamlead"
+)
+
+// releaseFile is the board's answer to who touches the repository's version
+// and changelog: "teamlead" when they are set once, at release, by whoever
+// cuts it; "worker" when every ticket brings its own. A board file and not a
+// field in settings.json, because it is a property of the repository — one
+// machine's answer would reach every other repository on it, which is how
+// "remote" once broke boards that had no upstream.
+const releaseFile = "release"
+
+// BoardReleasePath is where the board at root says who owns the release.
+func BoardReleasePath(root string) string {
+	return filepath.Join(root, ticket.DirName, releaseFile)
+}
+
+// ReleaseFor returns ReleaseTeamlead when the board at root names it, and
+// ReleaseWorker otherwise, with where it came from in words a person can read.
+// Worker is the default because it is what ran before there was a choice:
+// every ticket may bump the version and write the changelog itself, as the
+// repository's own instructions say. A typo falls back to it too, like
+// DispatchMode, rather than stopping a worker from starting.
+func ReleaseFor(root string) (owner, source string) {
+	if root != "" {
+		if b, err := os.ReadFile(BoardReleasePath(root)); err == nil {
+			for _, line := range strings.Split(string(b), "\n") {
+				line = strings.TrimSpace(line)
+				if line == "" || strings.HasPrefix(line, "#") {
+					continue
+				}
+				if line == ReleaseTeamlead {
+					return ReleaseTeamlead, "from .jaira/release, shared with the board"
+				}
+				break
+			}
+		}
+	}
+	return ReleaseWorker, "the default"
+}
+
 // The two values of Dispatch.
 const (
 	DispatchLanes  = "lanes"
