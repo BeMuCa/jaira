@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:52Z
-updated-at: 2026-10-23T16:09:46Z
+updated-at: 2026-10-23T16:09:50Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54412
@@ -66,3 +66,4 @@ review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/rb && cd /tm
 - **2026-10-23 16:04 · Alexander Sacharov** — decision (parent requirementsgenie-92): Diff abgenommen inkl. teamlead > Repo-Anweisung; Commit 16353616 vom Parent. Ab jetzt ohne Zwischenfreigabe bis signoff, Commits selbst (Ticket-ID, ohne Co-Authored-By).
 - **2026-10-23 16:04 · Alexander Sacharov** — critique: ReleaseFor dupliziert den Zeilen-Scan von BoardChatModel (gleiche Datei) — gemeinsamer Helfer boardLine(path). Sonst nichts: release_source folgt chat_model_source/python_source; doppelter Rollentext folgt den schon doppelten Commit-Regeln; Dispatcher-Pfad deckt jaira-role-lane ab.
 - **2026-10-23 16:05 · Alexander Sacharov** — critique Runde 2: nichts mehr — boardLine-Fund in 6a87d6b9 behoben.
+- **2026-10-23 16:09 · Alexander Sacharov** — review (fresh): ok, keine Rücksendung. Kleinigkeiten für signoff: 'Teamlead' groß geschrieben → still worker; .jaira/release auf ungeteiltem Board gitignored; ls-files --others nimmt auch fremde unversionierte Dateien mit.
