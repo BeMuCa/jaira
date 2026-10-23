@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:47Z
-updated-at: 2026-10-23T16:32:32Z
+updated-at: 2026-10-23T16:32:43Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54254
@@ -40,7 +40,7 @@ review-check: "1. go test ./core/role -run TestSpawn -count=1 -> ok  2. In a Cla
 ## Definition of Done
 
 - [x] Ohne --parent trägt spawn.sh die aufrufende Session als Parent ein
-  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:92 (uds:$CLAUDE_CODE_MESSAGING_SOCKET for dispatch/worker); TestSpawnParentIsTheCallerAndAnUnknownOneStops
+  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:97 (uds:$CLAUDE_CODE_MESSAGING_SOCKET for dispatch/worker); TestSpawnParentIsTheCallerAndAnUnknownOneStops
 - [x] Ein --parent, den ListAgents nicht kennt, bricht den Spawn mit klarer Meldung ab
   proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:111 (exit 2 before tab create); TestSpawnParentIsTheCallerAndAnUnknownOneStops
 - [x] Worker/Dispatcher leiten bei unerreichbarem Parent nicht an einen anderen Peer um, sondern fragen im eigenen Tab
