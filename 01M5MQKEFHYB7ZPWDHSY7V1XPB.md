@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:47Z
-updated-at: 2026-10-23T16:08:39Z
+updated-at: 2026-10-23T16:11:43Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54254
@@ -26,7 +26,7 @@ claimed-at: 2026-10-23T15:56:29Z
 outcome-what: "spawn.sh passes the calling session's messaging socket (uds:) as parent for dispatch/worker, resolves a --parent name through Claude Code's session registry and refuses an unknown one with exit 2 before opening a tab; worker/dispatcher roles forbid rerouting to another peer"
 outcome-why: "a teamlead's session name changes on restart or compaction, so workers started with the old name reported to whichever peer they picked"
 outcome-resolves: workers report to the session that started them; an unreachable parent is caught at spawn time
-review-summary: "none"
+review-summary: "spawn.sh now fills --parent itself for the lanes dispatch and worker: it takes CLAUDE_CODE_MESSAGING_SOCKET of the calling Claude session and types /jaira-dispatcher|/jaira-worker <id> --parent uds:<socket>. An explicit --parent is checked before any Herdr tab is made: uds:<path> must exist (test -e), a plain name is looked up in ~/.claude/sessions/*.json (name -> messagingSocketPath) and passed on as uds:<socket>; neither found -> exit 2 with a message naming the parent. worker and dispatcher SKILL.md now forbid sending to another peer when the parent is unreachable (note it, ask in own tab); teamlead SKILL.md tells the teamlead to leave --parent out. Release note core/release/notes/7V1XPB.md, 3 lines. New test TestSpawnParentIsTheCallerAndAnUnknownOneStops; go test ./core/role passes with and without the socket in the env."
 round: 2
 review-gaps: "spawn.sh: single-use $sessions inlined into the loop; nothing duplicated (registry lookup exists nowhere else; cockpit register.tsx:608 builds the same uds: for discuss, kept); no dead code"
 test-verdict: "pass: go test ./core/role ./internal/cli green (RC=0), full ./... green before optimize; live: spawn.sh --parent <unknown name> and --parent uds:<missing> both exit 2 with the message and open no tab; this session's name resolves through ~/.claude/sessions to its own CLAUDE_CODE_MESSAGING_SOCKET"
