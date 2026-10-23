@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:09Z
-updated-at: 2026-10-23T21:04:32Z
+updated-at: 2026-10-23T21:04:39Z
 updated-by: berkc
 ---
 
@@ -41,4 +41,4 @@ updated-by: berkc
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-23 21:04 · berkc** — Entscheidung berkc 23.10.2026: b bleibt fuer Boards (KVMG0K). Der Sprung vom Ticket aufs Board (Filter zuruecksetzen) bekommt eine andere Taste - im brainstorm/pre-process vorschlagen.
