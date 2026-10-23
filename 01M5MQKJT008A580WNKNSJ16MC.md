@@ -17,7 +17,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:52Z
-updated-at: 2026-10-23T15:55:52Z
+updated-at: 2026-10-23T15:56:28Z
+assignee: Alexander Sacharov
+updated-by: Alexander Sacharov
 ---
 
 # Worker-Rolle: kein Version-Bump/Changelog, nur eigene Dateien formatieren
