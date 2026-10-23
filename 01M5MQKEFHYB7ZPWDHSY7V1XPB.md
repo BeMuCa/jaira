@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:47Z
-updated-at: 2026-10-23T16:11:43Z
+updated-at: 2026-10-23T16:11:46Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54254
@@ -28,7 +28,7 @@ outcome-why: "a teamlead's session name changes on restart or compaction, so wor
 outcome-resolves: workers report to the session that started them; an unreachable parent is caught at spawn time
 review-summary: "spawn.sh now fills --parent itself for the lanes dispatch and worker: it takes CLAUDE_CODE_MESSAGING_SOCKET of the calling Claude session and types /jaira-dispatcher|/jaira-worker <id> --parent uds:<socket>. An explicit --parent is checked before any Herdr tab is made: uds:<path> must exist (test -e), a plain name is looked up in ~/.claude/sessions/*.json (name -> messagingSocketPath) and passed on as uds:<socket>; neither found -> exit 2 with a message naming the parent. worker and dispatcher SKILL.md now forbid sending to another peer when the parent is unreachable (note it, ask in own tab); teamlead SKILL.md tells the teamlead to leave --parent out. Release note core/release/notes/7V1XPB.md, 3 lines. New test TestSpawnParentIsTheCallerAndAnUnknownOneStops; go test ./core/role passes with and without the socket in the env."
 round: 2
-review-gaps: "spawn.sh: single-use $sessions inlined into the loop; nothing duplicated (registry lookup exists nowhere else; cockpit register.tsx:608 builds the same uds: for discuss, kept); no dead code"
+review-gaps: "1) Unmentioned behaviour change in the cockpit: Accept -> next ticket (core/mod/builtin/jaira-cockpit/hooks/register.tsx:515) runs spawn.sh <id> <id> dispatch|worker without --parent. Before: that dispatcher asked in its own tab. Now spawn.sh inherits the person's CLAUDE_CODE_MESSAGING_SOCKET (the mod reads the same variable at :608, so it is in its env) and the dispatcher sends its questions via SendMessage into the person's chat. Likely wanted, but the ticket kept discuss unchanged precisely to avoid changing a cockpit button, and neither the notes nor the release note mention this one. Not verified live. 2) 'refuses one that is gone' only holds if the socket file was removed: test -e accepts a socket file a crashed session left behind, and a registry <pid>.json of a dead pid still resolves. Chosen on purpose (-e for Windows), but the release note promises more. 3) DoD 2 says 'ListAgents does not know'; the check reads Claude Code's undocumented session registry instead — the notes say so, acceptable, but it breaks silently if Claude Code changes that format (then every --parent <name> exits 2, the safe direction)."
 test-verdict: "pass: go test ./core/role ./internal/cli green (RC=0), full ./... green before optimize; live: spawn.sh --parent <unknown name> and --parent uds:<missing> both exit 2 with the message and open no tab; this session's name resolves through ~/.claude/sessions to its own CLAUDE_CODE_MESSAGING_SOCKET"
 ---
 
