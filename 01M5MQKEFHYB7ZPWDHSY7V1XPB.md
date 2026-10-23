@@ -1,7 +1,7 @@
 ---
 id: 01M5MQKEFHYB7ZPWDHSY7V1XPB
 title: "spawn.sh: Parent-Session selbst ermitteln, ein unerreichbarer Parent bricht laut ab"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Worker und Dispatcher melden sich immer bei der Session, die sie gestartet hat — auch nach Neustart oder Komprimierung des Teamleads."
@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:47Z
-updated-at: 2026-10-23T16:05:02Z
+updated-at: 2026-10-23T16:05:06Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54254
@@ -27,6 +27,7 @@ outcome-what: "spawn.sh passes the calling session's messaging socket (uds:) as 
 outcome-why: "a teamlead's session name changes on restart or compaction, so workers started with the old name reported to whichever peer they picked"
 outcome-resolves: workers report to the session that started them; an unreachable parent is caught at spawn time
 review-summary: "core/role/builtin/jaira-teamlead/SKILL.md:154 says the socket 'never goes stale' — false: it dies with the session (a restart gets a new PID and socket). Say it stays valid as long as your session runs, through compaction"
+round: 2
 ---
 
 # spawn.sh: Parent-Session selbst ermitteln, ein unerreichbarer Parent bricht laut ab
