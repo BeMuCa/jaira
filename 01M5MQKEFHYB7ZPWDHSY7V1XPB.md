@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:47Z
-updated-at: 2026-10-23T16:32:43Z
+updated-at: 2026-10-23T16:32:48Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54254
@@ -42,7 +42,7 @@ review-check: "1. go test ./core/role -run TestSpawn -count=1 -> ok  2. In a Cla
 - [x] Ohne --parent trägt spawn.sh die aufrufende Session als Parent ein
   proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:97 (uds:$CLAUDE_CODE_MESSAGING_SOCKET for dispatch/worker); TestSpawnParentIsTheCallerAndAnUnknownOneStops
 - [x] Ein --parent, den ListAgents nicht kennt, bricht den Spawn mit klarer Meldung ab
-  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:111 (exit 2 before tab create); TestSpawnParentIsTheCallerAndAnUnknownOneStops
+  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:116 (exit 2 before tab create); TestSpawnParentIsTheCallerAndAnUnknownOneStops
 - [x] Worker/Dispatcher leiten bei unerreichbarem Parent nicht an einen anderen Peer um, sondern fragen im eigenen Tab
   proof: core/role/builtin/jaira-worker/SKILL.md:255, core/role/builtin/jaira-dispatcher/SKILL.md:192
 - [x] spawn.sh --no-parent startet Dispatcher/Worker ohne Parent; das Cockpit übergibt es beim Start nach Accept
