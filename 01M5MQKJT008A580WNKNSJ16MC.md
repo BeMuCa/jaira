@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:52Z
-updated-at: 2026-10-23T16:07:44Z
+updated-at: 2026-10-23T16:09:33Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54412
@@ -26,7 +26,7 @@ mode: conversational
 outcome-what: "Board-Datei .jaira/release (teamlead|worker, Standard worker) über settings.ReleaseFor, in 'jaira roles list' als release/release_source; jaira-worker und jaira-role-lane lassen bei teamlead Version, Changelog und Tags in Ruhe und formatieren immer nur eigene Dateien"
 outcome-why: Worker bumpten Version und Changelog pro Ticket und formatierten das ganze Repo — jeder Merge mehrerer Tickets auf einen Abnahmestand gab Konflikte; bisher per Hinweis an jeden Worker gelöst
 outcome-resolves: "DoD 1 (Rolle fasst Version/Changelog nicht an, wenn .jaira/release teamlead sagt) und DoD 2 (nur eigene geänderte Dateien formatieren)"
-review-summary: none
+review-summary: "Neue Board-Datei .jaira/release (eine Zeile, # Kommentare erlaubt): steht dort 'teamlead', liefert settings.ReleaseFor teamlead, sonst worker (Standard, auch bei Tippfehler). 'jaira roles list' zeigt das als release/release_source in --json und als Zeile 'release: …' im Text, --help nennt die Datei. jaira-worker und jaira-role-lane lesen den Wert und fassen bei teamlead weder Versionsfeld noch Changelog noch Tag an – das sticht auch eine Repo-Anweisung, die pro Änderung bumpt. Beide Rollen sagen zusätzlich ohne Einstellung: nur eigene Pfade an den Formatter (git diff --name-only --diff-filter=d HEAD + git ls-files --others --exclude-standard), nie task code:format/ruff format ./npm run format. Nebenbei: Zeilen-Scan von BoardChatModel in boardLine() ausgelagert und mitbenutzt. Release-Note core/release/notes/SJ16MC.md mit zwei Zeilen."
 round: 2
 review-gaps: "internal/cli/roles.go: bestEffortRoot (walks up to find .jaira) einmal statt zweimal; boardLine-Duplikat schon in critique gefaltet; ReleaseWorker/ReleaseTeamlead beide benutzt, nichts verwaist; Rollentext in jaira-worker und jaira-role-lane bewusst doppelt (jede Rolle wird einzeln gelesen, wie die Commit-Regeln)"
 test-verdict: "pass: go build/vet + go test -race ./... green (RC=0); DoD 1-2 in the tree (proof lines checked); scratch board: no file → worker (the default), '# who\\nteamlead' → teamlead from .jaira/release, typo 'teamlaed' → worker"
