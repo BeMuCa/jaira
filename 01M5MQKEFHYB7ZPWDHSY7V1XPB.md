@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:47Z
-updated-at: 2026-10-23T16:11:50Z
+updated-at: 2026-10-23T16:11:54Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54254
@@ -32,6 +32,7 @@ review-gaps: "1) Unmentioned behaviour change in the cockpit: Accept -> next tic
 test-verdict: "pass: go test ./core/role ./internal/cli green (RC=0), full ./... green before optimize; live: spawn.sh --parent <unknown name> and --parent uds:<missing> both exit 2 with the message and open no tab; this session's name resolves through ~/.claude/sessions to its own CLAUDE_CODE_MESSAGING_SOCKET"
 review-verdict: "The diff meets all three DoD items and the tests pass; no defect found in spawn.sh. Not unconditional: the person should decide whether cockpit Accept -> next starting a dispatcher that reports to their own chat is wanted (gap 1) — if not, the cockpit needs --parent '' or spawn.sh needs a way to opt out."
 review-round: 2
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-parent-auto  2. go test ./core/role -run 'TestSpawnParent|TestSpawn' -count=1 -> ok  3. In a Claude session with Herdr: bash core/role/builtin/jaira-dispatcher/scripts/spawn.sh --parent nobody-9f x1 X1 worker; echo $? -> message '--parent nobody-9f: no running session has that name...' and 2, no new Herdr tab  4. Same without --parent on a real ticket id: the new tab's first line reads /jaira-worker <id> --parent uds:/tmp/... (your session's socket)  5. Cockpit: Accept a ticket so the next one starts; in the new dispatcher tab check whether the line carries --parent uds:... — that is gap 1, decide whether you want it."
 ---
 
 # spawn.sh: Parent-Session selbst ermitteln, ein unerreichbarer Parent bricht laut ab
