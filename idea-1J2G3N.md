@@ -1,6 +1,7 @@
 ---
 color: 45
 created-at: 2026-10-23T11:16:01Z
+after: []
 ---
 
 # idea
