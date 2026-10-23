@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:52Z
-updated-at: 2026-10-23T16:06:08Z
+updated-at: 2026-10-23T16:07:38Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54412
@@ -29,6 +29,7 @@ outcome-resolves: "DoD 1 (Rolle fasst Version/Changelog nicht an, wenn .jaira/re
 review-summary: none
 round: 2
 review-gaps: "internal/cli/roles.go: bestEffortRoot (walks up to find .jaira) einmal statt zweimal; boardLine-Duplikat schon in critique gefaltet; ReleaseWorker/ReleaseTeamlead beide benutzt, nichts verwaist; Rollentext in jaira-worker und jaira-role-lane bewusst doppelt (jede Rolle wird einzeln gelesen, wie die Commit-Regeln)"
+test-verdict: "pass: go build/vet + go test -race ./... green (RC=0); DoD 1-2 in the tree (proof lines checked); scratch board: no file → worker (the default), '# who\\nteamlead' → teamlead from .jaira/release, typo 'teamlaed' → worker"
 ---
 
 # Worker-Rolle: kein Version-Bump/Changelog, nur eigene Dateien formatieren
