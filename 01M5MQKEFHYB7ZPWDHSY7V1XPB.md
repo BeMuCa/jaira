@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:47Z
-updated-at: 2026-10-23T16:36:17Z
+updated-at: 2026-10-23T16:36:21Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68768
@@ -28,7 +28,7 @@ outcome-why: "a teamlead's session name changes on restart or compaction, so wor
 outcome-resolves: workers report to the session that started them; an unreachable parent is caught at spawn time
 review-summary: "spawn.sh started a worker/dispatcher with whatever --parent name it was given; a stale name (teamlead restarted/compacted) made workers improvise and report to the oldest peer. Now: without --parent, spawn.sh passes the calling session's own messaging socket (uds:$CLAUDE_CODE_MESSAGING_SOCKET) as parent for the dispatch and worker lanes. An explicit --parent is checked before any tab is made: uds:<path> must exist, a name is looked up in Claude Code's session registry (~/.claude/sessions/<pid>.json) and replaced by that session's uds: address; unknown -> exit 2 with a message naming it. New --no-parent switch; the cockpit passes it on both of its own starts (next ticket after Accept, register.tsx:518; give-back worker, :841) so those agents keep asking in their own tab. worker/dispatcher SKILL.md forbid rerouting to another peer when the parent is unreachable (note on ticket, ask in own tab); teamlead SKILL.md now says: pass no --parent. Four release-note lines in core/release/notes/7V1XPB.md."
 round: 4
-review-gaps: "none: --no-parent adds one flag and one condition; no duplicate, no dead code; DoD 1-2 proofs re-pointed after the help text grew"
+review-gaps: "No DoD gap. Minor, not blocking: (1) two running sessions with the same name -> the name lookup silently takes the first registry file in glob order; ListAgents would show both. (2) the 'session is running' test is only [ -e socket ]; on this machine all 88 dead registry entries had their socket removed, so normal exit is covered, but a SIGKILLed session leaving its socket file behind would pass (unverified). (3) DoD 3 (no rerouting to another peer) is SKILL.md prose only, no test can hold it - inherent to a prompt rule."
 test-verdict: "pass: go test ./... green (RC=0), cockpit 'claude plugin test' 158 pass; DoD 1-4 checked in the tree; --no-parent covered by TestSpawnParentIsTheCallerAndAnUnknownOneStops (worker typed without --parent while the caller's socket is in the env), not run live because it would open a real tab"
 review-verdict: "The diff meets all three DoD items and the tests pass; no defect found in spawn.sh. Not unconditional: the person should decide whether cockpit Accept -> next starting a dispatcher that reports to their own chat is wanted (gap 1) — if not, the cockpit needs --parent '' or spawn.sh needs a way to opt out."
 review-round: 2
