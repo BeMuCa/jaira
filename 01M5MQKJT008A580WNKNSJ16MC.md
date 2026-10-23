@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:52Z
-updated-at: 2026-10-23T16:09:43Z
+updated-at: 2026-10-23T16:09:46Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54412
@@ -32,6 +32,7 @@ review-gaps: "Nichts blockiert. Drei Kleinigkeiten: 1) Groß-/Kleinschreibung: '
 test-verdict: "pass: go build/vet + go test -race ./... green (RC=0); DoD 1-2 in the tree (proof lines checked); scratch board: no file → worker (the default), '# who\\nteamlead' → teamlead from .jaira/release, typo 'teamlaed' → worker"
 review-verdict: "Der Diff erfüllt beide DoD-Punkte; go test ./core/settings ./core/role ./internal/cli grün; Verhalten auf einem Scratch-Board nachgeprüft (Standard worker, teamlead mit Kommentar und Leerzeichen erkannt, validate meckert nicht). Keine Defekte, nur die drei kleinen Punkte aus review-gaps – keiner davon ein Grund zum Zurückschicken."
 review-round: 2
+review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/rb && cd /tmp/rb && git init && /tmp/jaira init  3. /tmp/jaira roles list | tail -1 → 'release: worker — … (the default)'  4. echo teamlead > .jaira/release  5. /tmp/jaira roles list --json | /tmp/jaira json get release → 'teamlead'  6. /tmp/jaira roles list | tail -1 → '(from .jaira/release, shared with the board)'  7. Rollentext lesen: core/role/builtin/jaira-worker/SKILL.md ab Zeile 179 und core/role/builtin/jaira-role-lane/SKILL.md ab Zeile 97 – Abschnitt Version/Changelog und 'format only the files you changed'"
 ---
 
 # Worker-Rolle: kein Version-Bump/Changelog, nur eigene Dateien formatieren
