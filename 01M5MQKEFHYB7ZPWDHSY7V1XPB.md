@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:47Z
-updated-at: 2026-10-23T16:12:38Z
+updated-at: 2026-10-23T16:29:10Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54254
@@ -65,3 +65,4 @@ decision: worker/dispatcher SKILL.md get an explicit rule: a parent SendMessage 
 - **2026-10-23 16:08 · Alexander Sacharov** — verified: SendMessage accepts a uds:<socket path> address — a progress line sent that way reached the parent session's inbox (success, msg delivered). The tool's own description mentions only names, so this was the open risk of the uds: approach.
 - **2026-10-23 16:11 · Alexander Sacharov** — review: DoD met, tests green. Open for the person: cockpit Accept -> next (register.tsx:515) now silently starts the dispatcher with the person's session as parent, so its questions arrive in the person's chat instead of its own tab — not mentioned in notes or release note. Decide whether that is wanted.
 - **2026-10-23 16:12 · Alexander Sacharov** — open for the person (review gap 1): cockpit Accept -> next (register.tsx:515) runs spawn.sh dispatch|worker without --parent, so that dispatcher now reports into the person's own chat instead of asking in its tab. 1) keep it, add a release-note line (recommended) 2) cockpit opts out explicitly, spawn.sh gets a no-parent switch. Sent to the parent session.
+- **2026-10-23 16:29 · Alexander Sacharov** — decision (person, via parent session): option 2 — a dispatcher/worker the cockpit starts stays in its own tab. The cockpit (register.tsx:515) passes an explicit no-parent, spawn.sh gets --no-parent for it.
