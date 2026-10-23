@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:47Z
-updated-at: 2026-10-23T16:06:43Z
+updated-at: 2026-10-23T16:06:47Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54254
@@ -37,7 +37,7 @@ round: 2
 - [x] Ohne --parent trägt spawn.sh die aufrufende Session als Parent ein
   proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:92 (uds:$CLAUDE_CODE_MESSAGING_SOCKET for dispatch/worker); TestSpawnParentIsTheCallerAndAnUnknownOneStops
 - [x] Ein --parent, den ListAgents nicht kennt, bricht den Spawn mit klarer Meldung ab
-  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:94 (exit 2 before tab create); TestSpawnParentIsTheCallerAndAnUnknownOneStops
+  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:111 (exit 2 before tab create); TestSpawnParentIsTheCallerAndAnUnknownOneStops
 - [x] Worker/Dispatcher leiten bei unerreichbarem Parent nicht an einen anderen Peer um, sondern fragen im eigenen Tab
   proof: core/role/builtin/jaira-worker/SKILL.md:254, core/role/builtin/jaira-dispatcher/SKILL.md:192
 
