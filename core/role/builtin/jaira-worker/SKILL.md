@@ -242,15 +242,20 @@ yes-or-no is a choice too.
 
 **Where it goes depends on who started you:**
 
-- **Started with `--parent <session>`** — `/jaira-worker <id> --parent <name>`,
-  which is what `spawn.sh --parent <name> <slug> <id> worker` types: a teamlead
+- **Started with `--parent <session>`** — `/jaira-worker <id> --parent <session>`,
+  which is what `spawn.sh <slug> <id> worker` types with the caller's own
+  session as `<session>`, usually a `uds:` address: a teamlead
   opens your own Herdr tab that way. You never ask the person yourself.
   Write the question and its numbered options onto the ticket with
-  `jaira note`, send the same to `<name>` with `SendMessage`, and end your
+  `jaira note`, send the same to `<session>` with `SendMessage`, and end your
   turn. The answer comes back as a message and is on the ticket as a note by
   then. Write the parent's name onto the ticket the first time you read it
-  (`jaira note <id> "parent session: <name>"`): a worker restarted after
-  `jaira resume` has no starting line to read it from.
+  (`jaira note <id> "parent session: <session>"`): a worker restarted after
+  `jaira resume` has no starting line to read it from. A parent `SendMessage`
+  cannot reach is not replaced by another peer — not the oldest, not the
+  likeliest: another teamlead would get your reports and yours would not.
+  Note on the ticket that the parent was unreachable, then ask in your own
+  tab, as the next case says.
 - **No parent, and `AskUserQuestion` in your session** — the person started
   you directly. Ask with it.
 - **No `AskUserQuestion` at all** — started as a subagent or headless. The

@@ -1,0 +1,3 @@
+- Start a dispatcher or worker with `spawn.sh <slug> <ticket-id> dispatch|worker` and leave `--parent` out: it now reports to the session that ran it, by that session's messaging socket, so a teamlead that restarted or was compacted still gets its workers' questions; run `jaira roles install` again to get it.
+- A `--parent` that names no running session now stops `spawn.sh` with exit 2 before it opens a tab; a name is passed on as that session's `uds:` address, so pass the name `ListAgents` shows now, never one from an older summary.
+- Workers and dispatchers whose parent cannot be reached no longer send their questions to another session; they note it on the ticket and ask in their own tab.
