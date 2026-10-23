@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:47Z
-updated-at: 2026-10-23T16:04:33Z
+updated-at: 2026-10-23T16:04:59Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54254
@@ -26,6 +26,7 @@ claimed-at: 2026-10-23T15:56:29Z
 outcome-what: "spawn.sh passes the calling session's messaging socket (uds:) as parent for dispatch/worker, resolves a --parent name through Claude Code's session registry and refuses an unknown one with exit 2 before opening a tab; worker/dispatcher roles forbid rerouting to another peer"
 outcome-why: "a teamlead's session name changes on restart or compaction, so workers started with the old name reported to whichever peer they picked"
 outcome-resolves: workers report to the session that started them; an unreachable parent is caught at spawn time
+review-summary: "core/role/builtin/jaira-teamlead/SKILL.md:154 says the socket 'never goes stale' — false: it dies with the session (a restart gets a new PID and socket). Say it stays valid as long as your session runs, through compaction"
 ---
 
 # spawn.sh: Parent-Session selbst ermitteln, ein unerreichbarer Parent bricht laut ab
