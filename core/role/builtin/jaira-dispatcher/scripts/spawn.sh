@@ -87,7 +87,6 @@ fi
 # later is a worker that has already done its work for nobody. -e and not -S:
 # what a native Windows claude listens on need not look like a socket to Git
 # Bash, and a check that fails there would stop every spawn the cockpit makes.
-sessions="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/sessions"
 if [ -z "$parent" ] && { [ "$lane" = dispatch ] || [ "$lane" = worker ]; } \
   && [ -e "${CLAUDE_CODE_MESSAGING_SOCKET:-}" ]; then
   parent="uds:$CLAUDE_CODE_MESSAGING_SOCKET"
@@ -102,7 +101,7 @@ case "$parent" in
     } ;;
   *)
     sock=""
-    for f in "$sessions"/*.json; do
+    for f in "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/sessions/*.json; do
       [ -f "$f" ] || continue
       [ "$(jaira json get name --default '' <"$f" 2>/dev/null)" = "$parent" ] || continue
       addr="$(jaira json get messagingSocketPath --default '' <"$f" 2>/dev/null)"
