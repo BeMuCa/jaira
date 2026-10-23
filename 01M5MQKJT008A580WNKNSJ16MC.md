@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:52Z
-updated-at: 2026-10-23T16:04:47Z
+updated-at: 2026-10-23T16:04:51Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54412
@@ -58,3 +58,4 @@ review-summary: core/settings/settings.go ReleaseFor repeats the first-non-comme
 - **2026-10-23 15:59 · Alexander Sacharov** — decision (parent requirementsgenie-92, 23.10.): Option 1 — Board-Datei .jaira/release, eine Zeile teamlead|worker, committed; Standard worker (heutiges Verhalten). Rolle liest sie über 'jaira roles list --json'. requirementsgenie setzt danach teamlead.
 - **2026-10-23 16:03 · Alexander Sacharov** — Formatieren ohne Einstellung: immer nur eigene Pfade (git diff --name-only --diff-filter=d HEAD + ls-files --others). Kein TUI-Schalter für .jaira/release — Datei von Hand, wie lanes/order; erst bauen, wenn jemand ihn vermisst. 'teamlead' sticht ausdrücklich eine Repo-Anweisung, die pro Änderung bumpt (sonst wäre die Einstellung in requirementsgenie wirkungslos). Eine Datei mit 'worker' meldet source 'the default', weil sie dasselbe bewirkt.
 - **2026-10-23 16:04 · Alexander Sacharov** — decision (parent requirementsgenie-92): Diff abgenommen inkl. teamlead > Repo-Anweisung; Commit 16353616 vom Parent. Ab jetzt ohne Zwischenfreigabe bis signoff, Commits selbst (Ticket-ID, ohne Co-Authored-By).
+- **2026-10-23 16:04 · Alexander Sacharov** — critique: ReleaseFor dupliziert den Zeilen-Scan von BoardChatModel (gleiche Datei) — gemeinsamer Helfer boardLine(path). Sonst nichts: release_source folgt chat_model_source/python_source; doppelter Rollentext folgt den schon doppelten Commit-Regeln; Dispatcher-Pfad deckt jaira-role-lane ab.
