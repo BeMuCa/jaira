@@ -1,7 +1,7 @@
 ---
 id: 01M5MQKJT008A580WNKNSJ16MC
 title: "Worker-Rolle: kein Version-Bump/Changelog, nur eigene Dateien formatieren"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Worker ändert weder Version noch Changelog des Repos und formatiert nur Dateien, die er selbst geändert hat."
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:52Z
-updated-at: 2026-10-23T16:04:51Z
+updated-at: 2026-10-23T16:04:55Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54412
@@ -27,6 +27,7 @@ outcome-what: "Board-Datei .jaira/release (teamlead|worker, Standard worker) üb
 outcome-why: Worker bumpten Version und Changelog pro Ticket und formatierten das ganze Repo — jeder Merge mehrerer Tickets auf einen Abnahmestand gab Konflikte; bisher per Hinweis an jeden Worker gelöst
 outcome-resolves: "DoD 1 (Rolle fasst Version/Changelog nicht an, wenn .jaira/release teamlead sagt) und DoD 2 (nur eigene geänderte Dateien formatieren)"
 review-summary: core/settings/settings.go ReleaseFor repeats the first-non-comment-line scan of BoardChatModel in the same file; pull it into one boardLine(path) helper both call
+round: 2
 ---
 
 # Worker-Rolle: kein Version-Bump/Changelog, nur eigene Dateien formatieren
