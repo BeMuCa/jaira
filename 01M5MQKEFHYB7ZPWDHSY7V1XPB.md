@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:47Z
-updated-at: 2026-10-23T16:06:50Z
+updated-at: 2026-10-23T16:06:54Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54254
@@ -28,6 +28,7 @@ outcome-why: "a teamlead's session name changes on restart or compaction, so wor
 outcome-resolves: workers report to the session that started them; an unreachable parent is caught at spawn time
 review-summary: "none"
 round: 2
+review-gaps: "spawn.sh: single-use $sessions inlined into the loop; nothing duplicated (registry lookup exists nowhere else; cockpit register.tsx:608 builds the same uds: for discuss, kept); no dead code"
 ---
 
 # spawn.sh: Parent-Session selbst ermitteln, ein unerreichbarer Parent bricht laut ab
