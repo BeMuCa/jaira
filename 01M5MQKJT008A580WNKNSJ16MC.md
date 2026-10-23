@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:52Z
-updated-at: 2026-10-23T16:04:25Z
+updated-at: 2026-10-23T16:04:47Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54412
@@ -26,6 +26,7 @@ mode: conversational
 outcome-what: "Board-Datei .jaira/release (teamlead|worker, Standard worker) über settings.ReleaseFor, in 'jaira roles list' als release/release_source; jaira-worker und jaira-role-lane lassen bei teamlead Version, Changelog und Tags in Ruhe und formatieren immer nur eigene Dateien"
 outcome-why: Worker bumpten Version und Changelog pro Ticket und formatierten das ganze Repo — jeder Merge mehrerer Tickets auf einen Abnahmestand gab Konflikte; bisher per Hinweis an jeden Worker gelöst
 outcome-resolves: "DoD 1 (Rolle fasst Version/Changelog nicht an, wenn .jaira/release teamlead sagt) und DoD 2 (nur eigene geänderte Dateien formatieren)"
+review-summary: core/settings/settings.go ReleaseFor repeats the first-non-comment-line scan of BoardChatModel in the same file; pull it into one boardLine(path) helper both call
 ---
 
 # Worker-Rolle: kein Version-Bump/Changelog, nur eigene Dateien formatieren
