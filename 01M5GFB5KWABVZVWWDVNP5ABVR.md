@@ -21,8 +21,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:30Z
-updated-at: 2026-10-23T21:04:35Z
+updated-at: 2026-10-23T21:05:01Z
 updated-by: berkc
+claimed-by: berk-ca-162190
+claimed-at: 2026-10-23T21:05:01Z
 ---
 
 # Hackathon-Boards: Ideen-Pipeline, Auswahl durch den Menschen und Builder-Pipeline, verbunden ueber den Teamlead
