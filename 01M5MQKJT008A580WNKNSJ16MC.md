@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:52Z
-updated-at: 2026-10-23T16:03:36Z
+updated-at: 2026-10-23T16:04:19Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54412
@@ -53,3 +53,4 @@ mode: conversational
 - **2026-10-23 15:57 · Alexander Sacharov** — question (open decision): Wo lebt die Einstellung 'Version/Changelog gehört dem Teamlead'? 1) (Recommended) Board-Datei .jaira/release (eine Zeile teamlead|worker, committed, wie .jaira/chat-model) — gilt für alle im Repo, Rolle liest sie über 'jaira roles list --json | jaira json get release'; Standard worker = heutiges Verhalten. 2) ~/.jaira/settings.json 'release' — pro Maschine, wie im Ticket vorgeschlagen; gilt dann aber für jedes Repo auf der Maschine (dasselbe Problem wie 'remote'). 3) Keine Einstellung in jaira: Rolle sagt nur 'wenn CLAUDE.md/AGENTS.md des Repos Version/Changelog dem Release überlässt, nicht anfassen' — kein Go-Code. Formatieren (DoD 2) ist nicht offen: nur 'git diff --name-only' der eigenen Änderung an den Formatter, ohne Einstellung.
 - **2026-10-23 15:59 · Alexander Sacharov** — decision (parent requirementsgenie-92, 23.10.): Option 1 — Board-Datei .jaira/release, eine Zeile teamlead|worker, committed; Standard worker (heutiges Verhalten). Rolle liest sie über 'jaira roles list --json'. requirementsgenie setzt danach teamlead.
 - **2026-10-23 16:03 · Alexander Sacharov** — Formatieren ohne Einstellung: immer nur eigene Pfade (git diff --name-only --diff-filter=d HEAD + ls-files --others). Kein TUI-Schalter für .jaira/release — Datei von Hand, wie lanes/order; erst bauen, wenn jemand ihn vermisst. 'teamlead' sticht ausdrücklich eine Repo-Anweisung, die pro Änderung bumpt (sonst wäre die Einstellung in requirementsgenie wirkungslos). Eine Datei mit 'worker' meldet source 'the default', weil sie dasselbe bewirkt.
+- **2026-10-23 16:04 · Alexander Sacharov** — decision (parent requirementsgenie-92): Diff abgenommen inkl. teamlead > Repo-Anweisung; Commit 16353616 vom Parent. Ab jetzt ohne Zwischenfreigabe bis signoff, Commits selbst (Ticket-ID, ohne Co-Authored-By).
