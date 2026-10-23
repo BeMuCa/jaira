@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:52Z
-updated-at: 2026-10-23T15:59:24Z
+updated-at: 2026-10-23T15:59:45Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54412
@@ -40,6 +40,11 @@ mode: conversational
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] core/settings: Board-Datei .jaira/release lesen (BoardRelease), Standard worker, Tippfehler = worker
+- [ ] jaira roles list: release + release_source in --json und Textausgabe, --help nennt die Datei
+- [ ] Rollen jaira-worker + jaira-role-lane: Abschnitt Version/Changelog (liest release) und Formatieren nur eigener Dateien
+- [ ] Tests (settings, roles list, Rollentext) + core/release/notes/SJ16MC.md
 
 ## Progress
 - **2026-10-23 15:56 · Alexander Sacharov** — parent session: requirementsgenie-92
