@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:52Z
-updated-at: 2026-10-23T15:57:01Z
+updated-at: 2026-10-23T15:59:16Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54412
@@ -43,3 +43,4 @@ claimed-at: 2026-10-23T15:56:31Z
 ## Progress
 - **2026-10-23 15:56 · Alexander Sacharov** — parent session: requirementsgenie-92
 - **2026-10-23 15:57 · Alexander Sacharov** — question (open decision): Wo lebt die Einstellung 'Version/Changelog gehört dem Teamlead'? 1) (Recommended) Board-Datei .jaira/release (eine Zeile teamlead|worker, committed, wie .jaira/chat-model) — gilt für alle im Repo, Rolle liest sie über 'jaira roles list --json | jaira json get release'; Standard worker = heutiges Verhalten. 2) ~/.jaira/settings.json 'release' — pro Maschine, wie im Ticket vorgeschlagen; gilt dann aber für jedes Repo auf der Maschine (dasselbe Problem wie 'remote'). 3) Keine Einstellung in jaira: Rolle sagt nur 'wenn CLAUDE.md/AGENTS.md des Repos Version/Changelog dem Release überlässt, nicht anfassen' — kein Go-Code. Formatieren (DoD 2) ist nicht offen: nur 'git diff --name-only' der eigenen Änderung an den Formatter, ohne Einstellung.
+- **2026-10-23 15:59 · Alexander Sacharov** — decision (parent requirementsgenie-92, 23.10.): Option 1 — Board-Datei .jaira/release, eine Zeile teamlead|worker, committed; Standard worker (heutiges Verhalten). Rolle liest sie über 'jaira roles list --json'. requirementsgenie setzt danach teamlead.
