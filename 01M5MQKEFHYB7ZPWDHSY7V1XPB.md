@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:47Z
-updated-at: 2026-10-23T16:36:29Z
+updated-at: 2026-10-23T16:36:36Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68768
@@ -70,3 +70,4 @@ decision: worker/dispatcher SKILL.md get an explicit rule: a parent SendMessage 
 - **2026-10-23 16:29 · Alexander Sacharov** — decision (person, via parent session): option 2 — a dispatcher/worker the cockpit starts stays in its own tab. The cockpit (register.tsx:515) passes an explicit no-parent, spawn.sh gets --no-parent for it.
 - **2026-10-23 16:31 · Alexander Sacharov** — the give-back path (register.tsx:841, a new worker when the person sends a ticket back) also starts a worker from the person's session; the decision 'a worker the cockpit starts stays in its own tab' covers it, so it passes --no-parent too. Discuss (register.tsx:612) keeps its explicit uds: parent — unchanged. Cockpit tests: 'claude plugin test .' in core/mod/builtin/jaira-cockpit.
 - **2026-10-23 16:32 · Alexander Sacharov** — critique round 2: --no-parent help names only Accept, the give-back path passes it too; reword. Left alone: an older spawn.sh would refuse --no-parent as an unknown flag, but 'jaira roles install' writes the cockpit and spawn.sh together (internal/cli/roles.go:100), so they cannot drift apart.
+- **2026-10-23 16:36 · Alexander Sacharov** — review (fresh context): DoD met, tests green, stale-name and dead-uds refusal checked by hand. Minor, left open: same-name sessions take the first registry hit; a SIGKILLed session's leftover socket file would pass the -e check (unverified).
