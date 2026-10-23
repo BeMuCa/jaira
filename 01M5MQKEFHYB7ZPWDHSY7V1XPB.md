@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:47Z
-updated-at: 2026-10-23T16:36:13Z
+updated-at: 2026-10-23T16:36:17Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68768
@@ -26,7 +26,7 @@ claimed-at: 2026-10-23T16:36:13Z
 outcome-what: "spawn.sh passes the calling session's messaging socket (uds:) as parent for dispatch/worker, resolves a --parent name through Claude Code's session registry and refuses an unknown one with exit 2 before opening a tab; worker/dispatcher roles forbid rerouting to another peer"
 outcome-why: "a teamlead's session name changes on restart or compaction, so workers started with the old name reported to whichever peer they picked"
 outcome-resolves: workers report to the session that started them; an unreachable parent is caught at spawn time
-review-summary: "none"
+review-summary: "spawn.sh started a worker/dispatcher with whatever --parent name it was given; a stale name (teamlead restarted/compacted) made workers improvise and report to the oldest peer. Now: without --parent, spawn.sh passes the calling session's own messaging socket (uds:$CLAUDE_CODE_MESSAGING_SOCKET) as parent for the dispatch and worker lanes. An explicit --parent is checked before any tab is made: uds:<path> must exist, a name is looked up in Claude Code's session registry (~/.claude/sessions/<pid>.json) and replaced by that session's uds: address; unknown -> exit 2 with a message naming it. New --no-parent switch; the cockpit passes it on both of its own starts (next ticket after Accept, register.tsx:518; give-back worker, :841) so those agents keep asking in their own tab. worker/dispatcher SKILL.md forbid rerouting to another peer when the parent is unreachable (note on ticket, ask in own tab); teamlead SKILL.md now says: pass no --parent. Four release-note lines in core/release/notes/7V1XPB.md."
 round: 4
 review-gaps: "none: --no-parent adds one flag and one condition; no duplicate, no dead code; DoD 1-2 proofs re-pointed after the help text grew"
 test-verdict: "pass: go test ./... green (RC=0), cockpit 'claude plugin test' 158 pass; DoD 1-4 checked in the tree; --no-parent covered by TestSpawnParentIsTheCallerAndAnUnknownOneStops (worker typed without --parent while the caller's socket is in the env), not run live because it would open a real tab"
