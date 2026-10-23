@@ -18,7 +18,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T08:26:42Z
-updated-at: 2026-10-22T08:26:42Z
+updated-at: 2026-10-23T15:26:24Z
+assignee: BeMuCa
+updated-by: BeMuCa
 ---
 
 # Die Session-ID traegt keinen Rechnernamen mehr
