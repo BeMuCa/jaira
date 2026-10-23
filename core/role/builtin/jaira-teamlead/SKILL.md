@@ -154,15 +154,19 @@ way its workers do. Start it with
 `.claude/skills/jaira-dispatcher/scripts/spawn.sh` — `~/.claude/skills/...` when
 the roles were installed globally — rather than assembling the calls yourself,
 and read `herdr --skill` only if you have to go around the script. Pass
-`dispatch` as the lane and your own session name as the parent:
-`spawn.sh --parent <your-name> <slug> <ticket-id> dispatch`, with the ticket
+`dispatch` as the lane and no parent:
+`spawn.sh <slug> <ticket-id> dispatch`, with the ticket
 id in lower case as the slug — the dispatcher's workers derive their worktree
 from it, and any other slug puts them on a second copy of the ticket where
 your answer never arrives. That lane name
 is what makes the tab run `/jaira-dispatcher <ticket-id>`; any other name starts
 a single-lane worker instead, and you get a lane where you wanted a dispatcher.
-`--parent` is what sends its questions to you instead of into its own tab;
-your name is the one `ListAgents` gives as "This session is …". Never call
+It sends its questions to you instead of into its own tab, because spawn.sh
+passes on your session's messaging socket as its parent by itself. Do not
+pass `--parent <your-name>`: your name changes when you restart or are
+compacted, and a name from your own summary is the old one — spawn.sh refuses
+a name no running session has, while the socket stays valid for as long as
+your session runs, compaction included. Never call
 `claude --permission-mode ...` yourself: the permission classifier refuses it as
 "Create Unsafe Agents", and two dispatchers lost their tabs to that on
 2026-09-14. And `command -v herdr` is not the test for whether Herdr is here —

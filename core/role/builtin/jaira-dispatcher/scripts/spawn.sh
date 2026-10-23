@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Worktree + Herdr pane + claude + role prompt for one jaira lane.
-# Usage: spawn.sh [--no-worktree] [--parent <session>] <slug> <ticket-id> <lane> [repo-root]
+# Usage: spawn.sh [--no-worktree] [--parent <session> | --no-parent] <slug> <ticket-id> <lane> [repo-root]
 # Prints the pane id on stdout; everything else goes to stderr.
 set -euo pipefail
 
 usage() {
   cat <<'USAGE'
-spawn.sh [--no-worktree] [--parent <session>] <slug> <ticket-id> <lane> [repo-root]
+spawn.sh [--no-worktree] [--parent <session> | --no-parent] <slug> <ticket-id> <lane> [repo-root]
 
   --no-worktree   Start the worker in the repository directory itself: no
                   worktree, no branch of its own. For a one-lane job that
@@ -18,10 +18,16 @@ spawn.sh [--no-worktree] [--parent <session>] <slug> <ticket-id> <lane> [repo-ro
                   unused: it names a worktree, and there is none.
                   JAIRA_NO_WORKTREE=1 in the environment does the same.
   --parent <s>    Only with the lane <dispatch>, <worker> or <discuss>: the
-                  session of whoever starts it (a teamlead's name, as
-                  ListAgents shows it, or its uds: address). A dispatcher or
-                  worker hands its questions there instead of asking the person
-                  in its own tab; a discuss chat sends it the decision.
+                  session of whoever starts it (a name, as ListAgents shows
+                  it, or a uds: address). A dispatcher or worker hands its
+                  questions there instead of asking the person in its own tab;
+                  a discuss chat sends it the decision. Without it, <dispatch>
+                  and <worker> get the session this script runs in. A name is
+                  passed on as its uds: address, and one that names no running
+                  session stops the spawn before a tab is made.
+  --no-parent     No parent at all, not even this session: the dispatcher or
+                  worker asks in its own tab. The cockpit passes it whenever
+                  it starts a dispatcher or worker itself.
   -h, --help      This text.
 
 Five lane names are special. <dispatch> starts the dispatcher itself in the tab
@@ -47,10 +53,12 @@ USAGE
 # one day start with a dash.
 no_worktree="${JAIRA_NO_WORKTREE:-}"
 parent=""
+no_parent=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --no-worktree) no_worktree=1; shift ;;
-    --parent)      parent="${2:?--parent needs a session name}"; shift 2 ;;
+    --parent)      parent="${2:?--parent needs a session name}"; no_parent=""; shift 2 ;;
+    --no-parent)   parent=""; no_parent=1; shift ;;
     -h|--help)     usage; exit 0 ;;
     --)            shift; break ;;
     -*)            echo "unknown flag: $1" >&2; usage >&2; exit 2 ;;
@@ -72,6 +80,46 @@ if ! jaira json get ok --default ok <<<'{}' >/dev/null 2>&1; then
        "install the new jaira first, then run 'jaira roles install' again" >&2
   exit 1
 fi
+
+# The parent is an address, never a name. A session's name changes when it is
+# restarted or compacted, and a worker started with the old one reports into
+# the void — or, worse, to whichever peer it picks instead. The messaging
+# socket belongs to the process and outlives a rename; Claude Code exports it
+# into every command its session runs, so the caller is found without asking.
+# A name given by hand is looked up in the registry Claude Code keeps of its
+# running sessions, one <pid>.json each, and passed on as that session's
+# socket. Checked here, before a tab exists: a parent found unreachable only
+# later is a worker that has already done its work for nobody. -e and not -S:
+# what a native Windows claude listens on need not look like a socket to Git
+# Bash, and a check that fails there would stop every spawn the cockpit makes.
+if [ -z "$parent" ] && [ -z "$no_parent" ] && { [ "$lane" = dispatch ] || [ "$lane" = worker ]; } \
+  && [ -e "${CLAUDE_CODE_MESSAGING_SOCKET:-}" ]; then
+  parent="uds:$CLAUDE_CODE_MESSAGING_SOCKET"
+fi
+case "$parent" in
+  "") ;;
+  uds:*)
+    [ -e "${parent#uds:}" ] || {
+      echo "--parent $parent: no session listens there. Leave --parent out to" \
+           "report to this session, or pass a name ListAgents shows" >&2
+      exit 2
+    } ;;
+  *)
+    sock=""
+    for f in "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/sessions/*.json; do
+      [ -f "$f" ] || continue
+      [ "$(jaira json get name --default '' <"$f" 2>/dev/null)" = "$parent" ] || continue
+      addr="$(jaira json get messagingSocketPath --default '' <"$f" 2>/dev/null)"
+      if [ -e "$addr" ]; then sock="$addr"; break; fi
+    done
+    [ -n "$sock" ] || {
+      echo "--parent $parent: no running session has that name. A name changes" \
+           "when its session restarts or is compacted: leave --parent out to" \
+           "report to this session, or pass the name ListAgents shows now" >&2
+      exit 2
+    }
+    parent="uds:$sock" ;;
+esac
 
 # Beside the repository, never inside it: a worktree under the repo is a second
 # copy of the sources on a different branch, and grep -r / find / ls -R walk
