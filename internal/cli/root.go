@@ -264,6 +264,7 @@ func openStore() (*ticket.Store, error) {
 	attachRefs(s)
 	bindDriverIfShared(s)
 	nudgeIfStale(s)
+	nudgeSkillsIfStale()
 	return s, nil
 }
 

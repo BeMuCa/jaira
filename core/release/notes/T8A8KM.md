@@ -1,0 +1,8 @@
+- When a newer release is out, the board head and the launcher show a pill `^ <version>` under the version instead of "<version> available - run: jaira self upgrade"; run `jaira self upgrade` when you see it.
+- Expect `jaira next`, `jaira resume`, `jaira claim` and `jaira move` to print one line on stderr when a newer release is out; it asks the agent to ask you whether to update, and only on your yes to run `jaira self upgrade` and then `jaira update --roles --lanes` (stdout and `--json` are unchanged, `JAIRA_NO_UPDATE_CHECK=1` silences it).
+- ! Run `jaira update` in each repository: the agent block in CLAUDE.md/AGENTS.md then tells agents to ask you once whether to update when jaira reports a newer release, and to run `jaira self upgrade` and `jaira update --roles --lanes` only on your yes.
+- Act on every change `jaira update` prints as `  ! <text>` instead of `  - <text>`: it marks a change you must do something about.
+- Press `w` on the launcher to read the release notes of every version, newest first; lines marked `!` are changes you must act on and stand out in bold.
+- After an upgrade the board opens once with a popup of the release notes since the last version you read here; press esc, q or enter to close it, and `w` on the launcher reopens the notes any time.
+- Expect a new release to show up within the hour: jaira checks hourly instead of daily, in the background, and an open board shows the pill without a restart; `JAIRA_NO_UPDATE_CHECK=1` still turns the check off.
+- Expect 'jaira update' and the release-notes popup to show only the releases after yours, also when your version shipped without notes of its own; before, they showed the whole history.

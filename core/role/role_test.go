@@ -136,7 +136,7 @@ func TestCrossReferencesCarryThePrefix(t *testing.T) {
 
 func TestInstallWritesEveryFile(t *testing.T) {
 	dir := t.TempDir()
-	results, err := install(dir, false, true)
+	results, err := install(dir, false, true, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,10 +180,10 @@ func TestInstallWritesEveryFile(t *testing.T) {
 
 func TestSecondRunChangesNothing(t *testing.T) {
 	dir := t.TempDir()
-	if _, err := install(dir, false, true); err != nil {
+	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
-	results, err := install(dir, false, true)
+	results, err := install(dir, false, true, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -199,7 +199,7 @@ func TestSecondRunChangesNothing(t *testing.T) {
 
 func TestEditedFileIsLeftAloneAndReported(t *testing.T) {
 	dir := t.TempDir()
-	if _, err := install(dir, false, true); err != nil {
+	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
 	mine := filepath.Join(dir, "jaira-role-lane", skillFile)
@@ -208,7 +208,7 @@ func TestEditedFileIsLeftAloneAndReported(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	results, err := install(dir, false, true)
+	results, err := install(dir, false, true, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -222,7 +222,7 @@ func TestEditedFileIsLeftAloneAndReported(t *testing.T) {
 		t.Error("the edited file was overwritten without --force")
 	}
 
-	results, err = install(dir, true, true)
+	results, err = install(dir, true, true, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -247,7 +247,7 @@ func TestInstallRestoresTheExecuteBit(t *testing.T) {
 		t.Skip("no POSIX execute bit on windows")
 	}
 	dir := t.TempDir()
-	if _, err := install(dir, false, true); err != nil {
+	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
 	script := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
@@ -256,7 +256,7 @@ func TestInstallRestoresTheExecuteBit(t *testing.T) {
 	if err := os.Chmod(script, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := install(dir, false, true); err != nil {
+	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
 	if fi, err := os.Stat(script); err != nil {
@@ -269,7 +269,7 @@ func TestInstallRestoresTheExecuteBit(t *testing.T) {
 	if err := os.WriteFile(script, []byte("#!/bin/sh\necho mine\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := install(dir, true, true); err != nil {
+	if _, err := install(dir, true, true, false); err != nil {
 		t.Fatal(err)
 	}
 	fi, err := os.Stat(script)
@@ -295,7 +295,7 @@ func TestEmbeddedScriptsParse(t *testing.T) {
 		t.Skipf("no bash on this machine: %v", err)
 	}
 	dir := t.TempDir()
-	if _, err := install(dir, false, true); err != nil {
+	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
 
@@ -410,7 +410,7 @@ func TestSpawnDiscussReturnsItsDecision(t *testing.T) {
 		t.Skipf("no bash on this machine: %v", err)
 	}
 	dir := t.TempDir()
-	if _, err := install(dir, false, true); err != nil {
+	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
 	typed := filepath.Join(t.TempDir(), "typed")
@@ -467,7 +467,7 @@ func TestSpawnTypesTheRoleForItsLaneName(t *testing.T) {
 	}
 	path := jairaPath(t)
 	dir := t.TempDir()
-	if _, err := install(dir, false, true); err != nil {
+	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
 	typed := filepath.Join(t.TempDir(), "typed")
@@ -563,7 +563,7 @@ func TestSpawnChatsStartOnTheChatModelWithTheirBrief(t *testing.T) {
 	}
 	path := jairaPath(t)
 	dir := t.TempDir()
-	if _, err := install(dir, false, true); err != nil {
+	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
 	bin := t.TempDir()
@@ -673,7 +673,7 @@ func TestSpawnStartsClaudeWhereItsShellRuns(t *testing.T) {
 	}
 	path := jairaPath(t)
 	dir := t.TempDir()
-	if _, err := install(dir, false, true); err != nil {
+	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
 	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
@@ -807,7 +807,7 @@ func TestSpawnStopsBeforeATabWhenJairaIsTooOld(t *testing.T) {
 		t.Skipf("no bash on this machine: %v", err)
 	}
 	dir := t.TempDir()
-	if _, err := install(dir, false, true); err != nil {
+	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
 	bin := t.TempDir()

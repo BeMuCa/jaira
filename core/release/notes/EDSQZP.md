@@ -1,0 +1,3 @@
+- When the jaira-cockpit band says a newer jaira is released, press Update to see what it would change (nothing is written until you confirm in that pane with `Update to <version>`, which runs `jaira self upgrade` and then `jaira update --roles --lanes`), or press Dismiss to hide the notice for exactly that version until the next one is out.
+- Expect an agent told of a newer jaira to show you first what `jaira self upgrade --check` and `jaira update --roles --lanes --dry-run` report and only then ask whether to update; run `jaira update` in each repository so the agent block in CLAUDE.md/AGENTS.md says so as well.
+- Set JAIRA_NO_UPDATE_CHECK=1 to keep the cockpit band from offering a release too, not only the board and the CLI.

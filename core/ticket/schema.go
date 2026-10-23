@@ -273,6 +273,11 @@ type Ticket struct {
 	// work. It is shown like any other ticket and refused by every write, so a
 	// reader never has half a board and a writer never half-applies a change.
 	ReadOnly bool
+	// BehindRef means the file here is older than the ticket's ref, and what
+	// this ticket says is the ref's state, not the file's. Readers show the
+	// newest state; every write still reads the file and is refused until
+	// 'jaira pull' brings it up.
+	BehindRef bool
 	// ReviewVerdict is the reviewer's conclusion, distinct from the
 	// implementer's own account in Outcome.
 	ReviewVerdict string

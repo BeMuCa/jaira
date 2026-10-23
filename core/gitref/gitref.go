@@ -868,12 +868,23 @@ func namesFrom(out, prefix string, refOf func(string) string) []string {
 // key has carried: its blob is reachable from the ref. False when there is no
 // ref, and on any error.
 func (r *Repo) MilestoneHad(key string, content []byte) bool {
+	return r.had(MilestoneRefName(key), content)
+}
+
+// Had reports whether content is a state the ref of this ticket has carried:
+// its blob is reachable from the ref. False when there is no ref, and on any
+// error.
+func (r *Repo) Had(id string, content []byte) bool {
+	return r.had(RefName(id), content)
+}
+
+func (r *Repo) had(ref string, content []byte) bool {
 	want, _, err := r.run(string(content), "hash-object", "--stdin")
 	if err != nil {
 		return false
 	}
 	want = strings.TrimSpace(want)
-	out, _, err := r.run("", "rev-list", "--objects", MilestoneRefName(key))
+	out, _, err := r.run("", "rev-list", "--objects", ref)
 	if err != nil || want == "" {
 		return false
 	}

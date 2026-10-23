@@ -48,7 +48,7 @@ func newReapRig(t *testing.T) *reapRig {
 		labels:  filepath.Join(tmp, "labels"),
 	}
 	r.wt = filepath.Join(tmp, "src", ".worktrees", "jaira-ab12cd")
-	if _, err := install(r.scripts, false, true); err != nil {
+	if _, err := install(r.scripts, false, true, false); err != nil {
 		t.Fatal(err)
 	}
 	r.scripts = filepath.Join(r.scripts, "jaira-dispatcher", "scripts")

@@ -6,7 +6,9 @@
 # architecture, verifies its checksum, and puts jaira.exe in
 # %LOCALAPPDATA%\Programs\jaira (override with JAIRA_INSTALL_DIR), then adds
 # that directory to the user PATH. No admin rights, nothing beyond Windows
-# PowerShell 5.1. Run it again to update in place.
+# PowerShell 5.1. Run it again to update in place. Then it runs
+# `jaira roles install --global` so the role skills and the cockpit are set up
+# too; JAIRA_NO_ROLES=1 installs only the binary.
 #
 # Everything lives in functions and errors are thrown, never `exit`ed: under
 # `irm | iex` the script runs inside the caller's session, and an exit would
@@ -83,6 +85,7 @@ function Install-Jaira {
 	# and redraws its progress bar so often that a download crawls.
 	[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 	$ProgressPreference = 'SilentlyContinue'
+	$interactive = [Environment]::UserInteractive
 
 	$repo = 'BeMuCa/jaira'
 	$installDir = $env:JAIRA_INSTALL_DIR
@@ -104,7 +107,11 @@ function Install-Jaira {
 	New-Item -ItemType Directory -Path $tmp | Out-Null
 	try {
 		Write-Host "downloading jaira $tag (windows/$arch)..."
+		# Only the archive is big enough for a progress bar, and only when a
+		# person is watching.
+		if ($interactive) { $ProgressPreference = 'Continue' }
 		Invoke-WebRequest -UseBasicParsing "$base/$archive" -OutFile (Join-Path $tmp $archive)
+		$ProgressPreference = 'SilentlyContinue'
 		Invoke-WebRequest -UseBasicParsing "$base/checksums.txt" -OutFile (Join-Path $tmp 'checksums.txt')
 		Test-JairaChecksum (Join-Path $tmp $archive) (Join-Path $tmp 'checksums.txt')
 
@@ -131,6 +138,29 @@ function Install-Jaira {
 		Send-JairaEnvChange
 		$env:Path = $env:Path.TrimEnd(';') + ';' + $installDir
 		Write-Host "added $installDir to your user PATH - new terminals pick it up"
+	}
+
+	# One command writes the role skills and the cockpit, so it is one step. A
+	# failure is printed as it came and does not undo the install above.
+	if ($env:JAIRA_NO_ROLES -eq "1") {
+		Write-Host 'skipped the skills and the Cockpit (JAIRA_NO_ROLES=1) - run: jaira roles install --global'
+		return
+	}
+	Write-Host 'Setting up the skills and the Cockpit...'
+	# 'Stop' would turn the stderr of a native command into a terminating
+	# error in Windows PowerShell 5.1 and skip the failure branch below.
+	$ErrorActionPreference = 'Continue'
+	$out = & $exe roles install --global 2>&1 | Out-String
+	$code = $LASTEXITCODE
+	$ErrorActionPreference = 'Stop'
+	if ($code -eq 0) {
+		Write-Host ('OK ' + (($out -split "`r?`n" | Where-Object { $_ -match ' written, ' } | Select-Object -Last 1)))
+		Write-Host 'active now: the jaira role skills and the Cockpit in ~\.claude\skills'
+		Write-Host 'the Cockpit loads in your next Claude Code session'
+	} else {
+		Write-Host 'FAILED to set up the skills and the Cockpit:'
+		Write-Host $out
+		Write-Host 'the binary is installed; retry with: jaira roles install --global'
 	}
 }
 

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/img/home.png" alt="jaira: the launcher, with every board and what each one needs" width="80%">
+  <img src="docs/img/launcher.png" alt="The jaira launcher: a list of boards, each with its open tickets and how many wait for you" width="80%">
 </p>
 
 A kanban board for the work you do with coding agents, stored as markdown files
@@ -20,7 +20,7 @@ repo/                              ~/.jaira/
 └── src/                           └── state/<worktree>/   sessions, locks
 ```
 
-<img src="docs/img/board.png" alt="The board" width="100%">
+<img src="docs/img/board-main.png" alt="The board: ten lanes from Backlog to Blocked, with tickets in Backlog, Todo, Implementing, Human Review, Done and Blocked" width="100%">
 
 One window over every project, with the whole flow on one screen: a dot per
 ticket, agents counted per step, and the arrow lit where work just moved:
@@ -31,6 +31,99 @@ The repository holds only tickets. Everything ephemeral (what each session is
 focused on, write locks) lives under your home directory, so `.jaira/` never
 mixes committed content with scratch state.
 
+## Features
+
+- **Milestone Roadmap.** Press `L` on the board. Each milestone on the roadmap
+  is a bubble, filled as far as its tickets are done, with arrows from what
+  comes first to what comes after. `enter` on a bubble shows the milestone's
+  goal and tickets; `b` there shows the board filtered to it. Put a milestone
+  on the roadmap with `jaira milestone create <name> --goal <text> --after <a,b>`;
+  `--after ""` starts a swimlane of its own, and without `--after` it stays off.
+  - Use case: see how far each round of work is, and which round comes next.
+
+  <img src="docs/img/milestone-roadmap.png" alt="The Milestone Roadmap: cart-basics with 2 of 2 tickets done, then payments-v1 with 1 of 4, then webhooks with 1 of 2, and sessions with 0 of 3 in a second swimlane" width="70%">
+
+- **Cockpit in Claude Code.** A frame titled `jaira-cockpit` above the prompt
+  counts the agents at work and the tickets waiting for you, with Accept, Give
+  back, Explain and Discuss for each. `jaira roles install --force` installs
+  it; start a new session after. See
+  [the cockpit](#the-cockpit-a-claude-code-mod-for-the-session-you-work-from).
+  - Use case: accept or return finished work without leaving your Claude Code
+    session.
+- **Explanation pane.** In the cockpit, Read explanation shows a review
+  finding, why it counts, and its options as numbered rows. Press a number, or
+  the arrow keys and Enter, or write your own answer; the choice lands on the
+  ticket as a `decision:` note.
+  - Use case: answer a review finding in a few keys, with the answer kept on
+    the ticket.
+- **Overview pane.** The cockpit's Overview button shows In work, Queue and Put
+  back. Its Log tab lists what was created or put back in the last seven days,
+  and filters by person, each person in their own colour.
+  - Use case: see what runs, what is next and what was parked, in one place.
+- **Epics and `jaira web`.** `jaira epic create`, `add`, `ls` and `show` group
+  tickets into features and count done X of Y, follow-ups included. `jaira web`
+  opens a page on 127.0.0.1: drag tickets onto epics, click one to read its
+  goal, context, definition of done and notes. Epics need a repository with a
+  remote.
+  - Use case: sort a backlog into features with the mouse, then see how far
+    each feature is.
+- **Lanes are agent steps.** A lane can carry a prompt, a model tier and the
+  fields it must produce. A lane a person owns is marked, and an agent cannot
+  move work on out of it. See [Lanes are pipeline stages](#lanes-are-pipeline-stages).
+  - Use case: a cheap model implements, a strong model reviews, a person
+    accepts.
+- **One agent per ticket.** Set `"dispatch": "worker"` in
+  `~/.jaira/settings.json`, or switch "Agents per ticket" under `S` on the
+  board, then run `jaira roles install --force`. One agent then carries a whole
+  ticket through every lane; only the fresh-context lane (`review` on the
+  shipped board) gets a new agent.
+  - Use case: keep one agent's context from plan to tests, instead of a new
+    agent per lane.
+- **Several milestones at once.** `M` on the board opens the milestone picker.
+  Tick milestones with space and press enter to see the tickets of all of them.
+  - Use case: look at the tickets of two releases side by side.
+- **Tickets are markdown files in git.** One call files a complete ticket:
+  `jaira create <title> --goal … --context … --dod …`. Then
+  `jaira dod <id> <n> --done --proof "<file:line or test>"` ticks a criterion
+  and says what makes it true.
+  - Use case: months later, read what a ticket was for and what proved it done.
+- **Board filter.** `/` filters the board. `key:value` narrows to one field,
+  such as `lane:`, `assignee:`, `tag:` or `milestone:`; spaces combine, a comma
+  means or.
+  - Use case: `lane:done milestone:webhooks` lists what is finished in one
+    milestone.
+- **Tags with colours.** `jaira tags` lists the tags the board already uses;
+  `jaira tag <id> <name>…` adds one. The colours live in the hand-editable
+  `.jaira/tags`, one `name: <ansi256>` line per tag.
+  - Use case: a team reuses one name per subject, so a tag filter finds every
+    ticket.
+- **Follow-ups link themselves.** On a branch named after a ticket (e.g.
+  `feat/f914qh`), `jaira create` links the new ticket to that one and says so;
+  `--follows none` turns it off. Press `l` on a card to see every ticket linked
+  to it, for example what it waits on, what it blocks, and what follows it.
+  - Use case: a problem found while working a ticket stays tied to the ticket
+    it came from.
+
+  <img src="docs/img/board-links.png" alt="The board with the Links window open on one ticket: the ticket it blocks, a related ticket, and a follow-up" width="100%">
+- **Send-back rounds.** A ticket sent back to an earlier lane gets `round:`,
+  which starts at 2 and grows with every send-back. Each review verdict records
+  `review-round:`, the round it judged.
+  - Use case: tell a current review verdict from one an earlier round left
+    behind.
+- **Live board.** An open board shows a changed ticket within 2 seconds, without
+  a reload.
+  - Use case: keep the board open on a second screen and watch agents move
+    cards.
+- **Scriptable.** Every read command takes `--json`, and the exit codes are a
+  stable contract. `jaira json get <path>` reads one JSON field in a shell
+  script, without jq or python3.
+  - Use case: any bash-capable agent or CI job reads and moves tickets.
+- **Windows and GitHub Copilot.** Install on Windows with one PowerShell line
+  (see [Install](#install)). `jaira roles install --agent copilot` writes the
+  roles where GitHub Copilot reads skills.
+  - Use case: a teammate on Windows, or one who uses Copilot, works the same
+    board.
+
 ## Install
 
 ```bash
@@ -38,8 +131,10 @@ curl -fsSL https://raw.githubusercontent.com/BeMuCa/jaira/master/scripts/install
 ```
 
 That downloads the latest release for your OS, verifies its checksum, and puts
-the binary in `~/.local/bin` (override with `JAIRA_INSTALL_DIR`). On Windows,
-in PowerShell:
+the binary in `~/.local/bin` (override with `JAIRA_INSTALL_DIR`), then runs
+`jaira roles install --global` so the role skills and the cockpit are in
+`~/.claude/skills` (set `JAIRA_NO_ROLES=1` to install only the binary). On
+Windows, in PowerShell:
 
 ```powershell
 irm https://raw.githubusercontent.com/BeMuCa/jaira/master/scripts/install.ps1 | iex
@@ -47,8 +142,8 @@ irm https://raw.githubusercontent.com/BeMuCa/jaira/master/scripts/install.ps1 | 
 
 That does the same for Windows: `jaira.exe` goes to
 `%LOCALAPPDATA%\Programs\jaira` (override with `JAIRA_INSTALL_DIR`), which it
-adds to your user `PATH` — no admin rights, and running it again updates in
-place. Or build from source:
+adds to your user `PATH` and sets up the roles the same way — no admin rights,
+and running it again updates in place. Or build from source:
 
 ```bash
 go install github.com/BeMuCa/jaira/cmd/jaira@latest
@@ -74,15 +169,29 @@ release, including going back to an older one. A Homebrew or `go install`
 build is refused with the right command for that install instead — jaira
 never overwrites a file another tool owns.
 
-jaira checks for a new release at most once a day, in the background, and
+Once the new binary is in place, `self upgrade` runs that new binary's
+`jaira update --roles` and prints what it did: a board you are in gets its
+jaira section, and the skills already installed — this repository's and your
+personal ones — are brought up to date. Lanes are not touched; run
+`jaira update --lanes` for those. If you edited a skill file, it is named and
+left alone, and the upgrade still succeeds. If that step cannot run, you get one
+line saying so and the command to run yourself.
+
+jaira checks for a new release at most once an hour, in the background, and
 never on the command path: nothing you run ever waits on the network for
-this. The result shows up as a small status line in the footer of the
-launcher and the board — `jaira v0.1.0 · up to date` or
-`jaira v0.1.0 · v0.2.0 available — run: jaira self upgrade` — never as a
-line from a CLI command, which stay quiet so a script or an agent driving
-jaira is never interrupted by it. Set `JAIRA_NO_UPDATE_CHECK=1` to turn the
-check off entirely; the version still shows, just without the "up to
-date"/"available" half.
+this. When a newer one is known, the launcher and the board show a pill
+`^ 0.2.0` under the version at the top left — run `jaira self upgrade` to
+install it; an open board picks it up without a restart. `jaira next`,
+`jaira resume`, `jaira claim` and `jaira move` print one line on stderr saying
+so, which tells an agent to show you what `jaira self upgrade --check` and
+`jaira update --roles --lanes --dry-run` report, ask you whether to update
+and, only on a yes, run `jaira self upgrade` and then
+`jaira update --roles --lanes`. Their stdout
+and `--json` stay clean, so a script or an agent driving jaira is never
+disturbed by it; every other command stays quiet.
+When you are up to date the version reads `jaira 0.1.0 · up to date`. Set
+`JAIRA_NO_UPDATE_CHECK=1` to turn the check off entirely: no pill, no
+stderr line, no "up to date"; the version still shows.
 
 This is different from `jaira update`, just below, which is about a
 *repository's* board setup and downloads nothing.
@@ -106,6 +215,29 @@ It rewrites the jaira section of `CLAUDE.md`/`AGENTS.md` for this board's
 lanes and lists what changed since the version that last ran there. Commit
 that section along with your next change, or leave it — it is only the agents'
 copy of the rules.
+
+That is all a plain `jaira update` writes. Right after the jaira-section line it
+prints a line for each part that is behind — roles, lanes — naming the switch
+that brings it up:
+
+```bash
+jaira update --roles            # skills already installed here and in ~/: roles, cockpit mod, jaira skill
+jaira update --lanes            # this board's lane files that are an older shipped version
+jaira update --dry-run --roles --lanes   # list what would be written, write nothing
+```
+
+`--roles` never installs for the first time — `jaira roles install` does that —
+and works outside a board too, for your personal skills only. A file that is an
+older version of one jaira shipped is replaced without `--force`. A file you
+edited is named and left alone, and the command exits 3; `jaira roles install
+--project --force` (or `--global --force`) or `jaira lanes use <id> --force`
+replaces it. `--dry-run` prints the
+same lines as "would ..." with the same exit code and does not even stamp the
+version.
+
+Once per jaira version, any board command prints one line on stderr when the
+jaira skills in your personal skills directory are older than the binary,
+and names `jaira update --roles`.
 
 **No update path changes whether the board is shared.** `jaira update`,
 `jaira self upgrade`, `go install` of a newer build, the first command after
@@ -646,8 +778,8 @@ about two processes interleaving.
 
 ## With Claude Code
 
-Install the skill from `.claude/skills/jaira/` and Claude will use the CLI
-directly. Optionally install `hooks/sync-tasks.sh` as a `PostToolUse` hook on the
+Install the skill with `jaira roles install` (it writes `jaira/SKILL.md`
+beside the roles) and Claude will use the CLI directly. Optionally install `hooks/sync-tasks.sh` as a `PostToolUse` hook on the
 task tools to mirror Claude's task list into the backlog.
 
 Mirrored tickets land in the backlog behind the gate. Lane movement is
@@ -674,13 +806,16 @@ clone) writes the agent prompts that drive a board into your skills directory.
 `--agent copilot` writes them where GitHub Copilot reads skills —
 `.github/skills` or `~/.copilot/skills` — instead of Claude Code's; see
 [docs/AGENTS.md](docs/AGENTS.md).
-They are compiled into the binary, so they match the version you run. Run it
-again after an upgrade: a prompt you have edited is left alone and reported,
-and `--force` replaces it too.
+They are compiled into the binary, so they match the version you run. After an
+upgrade, `jaira update --roles` brings them up to date wherever they are
+already installed, and `jaira self upgrade` runs it for you. Running
+`roles install` again does the same for one directory. Neither needs `--force`
+for a file that is an older version jaira shipped; a prompt you have edited is
+left alone and reported, and `--force` replaces it too.
 
 | Skill | What it does |
 |---|---|
-| `jaira` | Teaches the agent the CLI. Ships in `.claude/skills/jaira/`, not through `roles install`. |
+| `jaira` | Teaches the agent the CLI. Not a role, but `roles install` writes it beside them as `jaira/SKILL.md`. |
 | `/jaira-teamlead` | Plans with you and starts one dispatcher per ticket. Writes no code. |
 | `/jaira-dispatcher <id>` | Carries one ticket lane by lane to the next lane a person owns, one worker per lane. |
 | `/jaira-worker <id>` | Opt-in alternative to the dispatcher: carries the ticket through every lane itself, and only a lane marked `context: fresh` gets a new agent. |
@@ -761,6 +896,8 @@ changes for anybody.
   Berk, Carla`) that opens to show them, with **Discuss** only, and count no
   more as waiting for you. When a button fails, the error opens whole in a
   pane of its own.
+- The **Overview** button opens a board view with In work, Queue and Put back
+  columns; its Log tab filters by person, each person in their own colour.
 - A verdict with a reservation gets **Explain**, an open question **Discuss**:
   each opens a Herdr tab of its own. The Explain chat writes its explanation
   onto the ticket and the frame offers it as **Read explanation**. The Discuss
@@ -768,6 +905,15 @@ changes for anybody.
   that is the decision (it accepts only on your explicit yes), sends your
   session one line, and the frame offers **Read decision**. Each tab closes
   once its note is there.
+- The explanation pane shows a finding with numbered options; pick one with the
+  arrow keys and Enter, and the pick lands on the ticket as a `decision:` note.
+- When jaira's hourly release check knows a newer jaira than the one on
+  `PATH`, the frame says so with **Update** and **Dismiss**. Update runs
+  `jaira self upgrade --check` and `jaira update --roles --lanes --dry-run`
+  and shows what they report in a pane; only **Update to <version>** there
+  replaces the binary (`jaira self upgrade`) and brings this repository's
+  skills and lane files up to date (`jaira update --roles --lanes`). Dismiss
+  hides the notice for exactly that version; the next release shows it again.
 - The frame's last line shows the context size and how long the prompt cache
   stays warm, `/compact advised` and a cold cache in the warning colour; a
   prompt of yours onto a cold cache with a large context is held with a
@@ -842,6 +988,10 @@ terminal lane for `logbook-days` days (28 by default; see **Keys**).
 and says how many older entries it left out; `--since 10d` picks another window
 and `--since 0` lists everything.
 
+A ticket sent back to an earlier lane gets a `round:` field that starts at 2 and
+grows by one with every send-back (parking in blocked does not count);
+`review-round:` records which round each review verdict judged.
+
 ## Commands
 
 ```
@@ -896,6 +1046,12 @@ jaira json get <path>      print one field of the JSON on stdin, for shell scrip
 jaira completion <shell>   print the completion script for bash, fish, powershell or zsh
 jaira help <command>       the full help of one command, the same as <command> --help
 ```
+
+On a ticket branch (e.g. `feat/f914qh`), `jaira create` sets `--follows` to that
+ticket by itself and says so; `--follows none` makes the new ticket unrelated.
+Tag colours live once per board in the hand-editable `.jaira/tags` file, one
+`name: <ansi256>` line per tag; jaira adds a line only for a tag name it has not
+seen yet.
 
 Full reference: **[docs/COMMANDS.md](docs/COMMANDS.md)**.
 

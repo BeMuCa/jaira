@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+	"testing/fstest"
 )
 
 const fixture = `<!-- format notes, ignored -->
@@ -66,6 +67,15 @@ func TestSinceUnknownStampReturnsEverything(t *testing.T) {
 	}
 }
 
+func TestSinceStampOfAReleaseWithoutNotesStopsAtTheOlderOne(t *testing.T) {
+	all := parseNotes(fixture)
+	got := sinceEntries(all, "0.0.5")
+	want := all[:1]
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("sinceEntries(all, 0.0.5) = %#v, want %#v", got, want)
+	}
+}
+
 func TestStampedOnMissingFileReturnsEmpty(t *testing.T) {
 	dir := t.TempDir()
 	if got := Stamped(dir); got != "" {
@@ -84,6 +94,26 @@ func TestStampRoundTripsThroughStamped(t *testing.T) {
 	}
 	if got := Stamped(dir); got != Current {
 		t.Fatalf("Stamped(after Stamp) = %q, want %q", got, Current)
+	}
+}
+
+func TestNotesSeenIsItsOwnFileBesideTheStamp(t *testing.T) {
+	orig := Current
+	Current = "1.2.3"
+	t.Cleanup(func() { Current = orig })
+
+	dir := filepath.Join(t.TempDir(), "nested", "state")
+	if got := NotesSeen(dir); got != "" {
+		t.Fatalf("NotesSeen(no file) = %q, want empty", got)
+	}
+	if err := MarkNotesSeen(dir); err != nil {
+		t.Fatalf("MarkNotesSeen: %v", err)
+	}
+	if got := NotesSeen(dir); got != Current {
+		t.Fatalf("NotesSeen(after MarkNotesSeen) = %q, want %q", got, Current)
+	}
+	if got := Stamped(dir); got != "" {
+		t.Fatalf("MarkNotesSeen wrote the stamp: Stamped = %q", got)
 	}
 }
 
@@ -132,5 +162,48 @@ func TestSinceDropsEntriesWithoutChanges(t *testing.T) {
 	}
 	if got := sinceEntries(all, ""); !reflect.DeepEqual(got, want) {
 		t.Fatalf("sinceEntries(all, \"\") = %#v, want %#v", got, want)
+	}
+}
+
+func TestNewerComparesNumberByNumber(t *testing.T) {
+	for _, c := range []struct {
+		a, b string
+		want bool
+	}{
+		{"0.10.0", "0.9.0", true},
+		{"0.9.0", "0.10.0", false},
+		{"1.2.3", "1.2.3", false},
+	} {
+		if got := Newer(c.a, c.b); got != c.want {
+			t.Errorf("Newer(%q, %q) = %v, want %v", c.a, c.b, got, c.want)
+		}
+	}
+}
+
+func TestImportantMarker(t *testing.T) {
+	for _, c := range []struct {
+		in   string
+		text string
+		ok   bool
+	}{
+		{"! a", "a", true},
+		{"a", "a", false},
+		{"!a", "!a", false},
+	} {
+		text, ok := Important(c.in)
+		if ok != c.ok || (ok && text != c.text) {
+			t.Errorf("Important(%q) = %q, %v; want %q, %v", c.in, text, ok, c.text, c.ok)
+		}
+	}
+}
+
+// Every binary reads "- ! a" as the ordinary change "! a": the format stays
+// "one line starting with - ".
+func TestImportantLineStaysAPlainChange(t *testing.T) {
+	fsys := fstest.MapFS{"notes/X.md": {Data: []byte("- ! a\n")}}
+	got := composeNotes("", fsys)
+	want := []Entry{{Version: "Unreleased", Changes: []string{"! a"}}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("composeNotes = %#v, want %#v", got, want)
 	}
 }

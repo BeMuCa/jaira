@@ -47,12 +47,12 @@ func TestUnselectedCardsAreNotFilled(t *testing.T) {
 func TestFillFollowsTerminalBackground(t *testing.T) {
 	m := newTestModel(t, 120, 40)
 
-	if _, code := m.selectionFill(0, false); code != "5;"+selBgDark {
+	if _, code := m.selectionFill(); code != "5;"+selBgDark {
 		t.Errorf("default fill is %q, want the dark-terminal one %q", code, "5;"+selBgDark)
 	}
 
 	m.Update(tea.BackgroundColorMsg{Color: white{}})
-	if _, code := m.selectionFill(0, false); code != "5;"+selBgLight {
+	if _, code := m.selectionFill(); code != "5;"+selBgLight {
 		t.Errorf("fill on a light terminal is %q, want %q", code, "5;"+selBgLight)
 	}
 	if strings.Contains(m.View().Content, fillMark(selBgDark)) {
