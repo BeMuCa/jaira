@@ -66,9 +66,10 @@ release_source.`,
 			// this list to know what it can start, and which of two it starts
 			// for a ticket is the same question.
 			cur := settings.Load()
-			chat, chatSource := cur.ChatModelFor(bestEffortRoot())
+			root := bestEffortRoot()
+			chat, chatSource := cur.ChatModelFor(root)
 			py, pySource := cur.PythonCommand()
-			release, releaseSource := settings.ReleaseFor(bestEffortRoot())
+			release, releaseSource := settings.ReleaseFor(root)
 			if g.jsonOut {
 				arr := make([]map[string]any, 0, len(roles))
 				for _, r := range roles {
