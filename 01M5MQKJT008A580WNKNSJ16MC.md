@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:52Z
-updated-at: 2026-10-23T16:04:55Z
+updated-at: 2026-10-23T16:05:28Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54412
@@ -35,7 +35,7 @@ round: 2
 ## Definition of Done
 
 - [x] Rolle sagt: Version/Changelog nicht anfassen, wenn das Repo es dem Teamlead überlässt (Einstellung)
-  proof: core/role/builtin/jaira-worker/SKILL.md:179, core/role/builtin/jaira-role-lane/SKILL.md:97; setting core/settings/settings.go:256 (ReleaseFor, .jaira/release); TestReleaseDefaultsToTheWorker, TestRolesListReportsTheBoardsRelease, TestCodeChangingRolesLeaveTheReleaseAndFormatOnlyTheirFiles
+  proof: core/role/builtin/jaira-worker/SKILL.md:179, core/role/builtin/jaira-role-lane/SKILL.md:97; setting core/settings/settings.go:262 (ReleaseFor, .jaira/release); TestReleaseDefaultsToTheWorker, TestRolesListReportsTheBoardsRelease, TestCodeChangingRolesLeaveTheReleaseAndFormatOnlyTheirFiles
 - [x] Rolle sagt: nur eigene geänderte Dateien formatieren
   proof: core/role/builtin/jaira-worker/SKILL.md:189, core/role/builtin/jaira-role-lane/SKILL.md:106; TestCodeChangingRolesLeaveTheReleaseAndFormatOnlyTheirFiles
 
