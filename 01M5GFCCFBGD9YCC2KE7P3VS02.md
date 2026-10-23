@@ -18,7 +18,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:09Z
-updated-at: 2026-10-22T00:15:09Z
+updated-at: 2026-10-23T21:04:32Z
+updated-by: berkc
 ---
 
 # Ein verlinktes Ticket oeffnet sich aus dem Links-Fenster auch dann, wenn der Filter es verbirgt
