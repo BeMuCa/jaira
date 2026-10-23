@@ -1,7 +1,7 @@
 ---
 id: 01M5MQKEFHYB7ZPWDHSY7V1XPB
 title: "spawn.sh: Parent-Session selbst ermitteln, ein unerreichbarer Parent bricht laut ab"
-status: optimize
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Worker und Dispatcher melden sich immer bei der Session, die sie gestartet hat — auch nach Neustart oder Komprimierung des Teamleads."
@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:47Z
-updated-at: 2026-10-23T16:32:52Z
+updated-at: 2026-10-23T16:32:57Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54254
