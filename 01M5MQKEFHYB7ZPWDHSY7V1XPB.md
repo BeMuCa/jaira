@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:47Z
-updated-at: 2026-10-23T16:36:21Z
+updated-at: 2026-10-23T16:36:25Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68768
@@ -30,8 +30,8 @@ review-summary: "spawn.sh started a worker/dispatcher with whatever --parent nam
 round: 4
 review-gaps: "No DoD gap. Minor, not blocking: (1) two running sessions with the same name -> the name lookup silently takes the first registry file in glob order; ListAgents would show both. (2) the 'session is running' test is only [ -e socket ]; on this machine all 88 dead registry entries had their socket removed, so normal exit is covered, but a SIGKILLed session leaving its socket file behind would pass (unverified). (3) DoD 3 (no rerouting to another peer) is SKILL.md prose only, no test can hold it - inherent to a prompt rule."
 test-verdict: "pass: go test ./... green (RC=0), cockpit 'claude plugin test' 158 pass; DoD 1-4 checked in the tree; --no-parent covered by TestSpawnParentIsTheCallerAndAnUnknownOneStops (worker typed without --parent while the caller's socket is in the env), not run live because it would open a real tab"
-review-verdict: "The diff meets all three DoD items and the tests pass; no defect found in spawn.sh. Not unconditional: the person should decide whether cockpit Accept -> next starting a dispatcher that reports to their own chat is wanted (gap 1) — if not, the cockpit needs --parent '' or spawn.sh needs a way to opt out."
-review-round: 2
+review-verdict: "The diff meets all four DoD items; go test ./core/role and cockpit 'claude plugin test .' (158 pass) green; spawn.sh refuses a stale name and a dead uds: with exit 2 before a tab, checked by hand. Approve; the two minor gaps can stay."
+review-round: 4
 review-check: "1. go test ./core/role -run TestSpawn -count=1 -> ok  2. In a Claude session with Herdr: spawn.sh --parent nobody-9f x1 X1 worker; echo $? -> message '--parent nobody-9f: no running session has that name...' and 2, no new Herdr tab  3. Same without --parent on a real ticket id: the new tab's first line reads /jaira-worker <id> --parent uds:<your session's socket>  4. Cockpit: Accept a ticket so the next one starts; the new dispatcher tab's line carries no --parent and asks in its own tab"
 ---
 
