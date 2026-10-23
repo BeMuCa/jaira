@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:47Z
-updated-at: 2026-10-23T16:08:23Z
+updated-at: 2026-10-23T16:08:39Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54254
@@ -59,3 +59,4 @@ decision: the automatic parent applies only to the lanes dispatch and worker (wh
 decision: worker/dispatcher SKILL.md get an explicit rule: a parent SendMessage cannot reach is never replaced by another peer; ask in the own tab (AskUserQuestion) and note that the parent was unreachable.
 - **2026-10-23 16:04 · Alexander Sacharov** — found: Claude Code keeps a registry of running sessions in ~/.claude/sessions/<pid>.json (name, messagingSocketPath, nameSince); the name in it changes, the socket path is per process. The 'oldest peer' fallback was never written in any SKILL.md — the workers improvised it when SendMessage failed, so the fix is an explicit prohibition, not removing a rule. -e instead of -S on the socket: unverified how a native Windows claude's messaging address looks to Git Bash; -S could stop every cockpit Discuss there.
 - **2026-10-23 16:05 · Alexander Sacharov** — critique: teamlead SKILL.md claims the socket never goes stale; it is per process, so it survives compaction and a rename but not a restart. Reword. Left alone on purpose: name resolution through the session registry stays (DoD 2 allows names ListAgents knows; refusing all names would break existing --parent <name> callers); cockpit's own uds: for discuss in register.tsx:608 is the same pattern, not a duplicate to remove.
+- **2026-10-23 16:08 · Alexander Sacharov** — verified: SendMessage accepts a uds:<socket path> address — a progress line sent that way reached the parent session's inbox (success, msg delivered). The tool's own description mentions only names, so this was the open risk of the uds: approach.
