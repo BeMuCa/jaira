@@ -18,7 +18,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:47Z
-updated-at: 2026-10-23T15:55:47Z
+updated-at: 2026-10-23T15:56:27Z
+assignee: Alexander Sacharov
+updated-by: Alexander Sacharov
 ---
 
 # spawn.sh: Parent-Session selbst ermitteln, ein unerreichbarer Parent bricht laut ab
