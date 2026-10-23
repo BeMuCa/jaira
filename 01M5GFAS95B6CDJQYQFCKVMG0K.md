@@ -17,7 +17,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:17Z
-updated-at: 2026-10-22T00:14:17Z
+updated-at: 2026-10-23T21:04:30Z
+updated-by: berkc
 ---
 
 # Boards wechseln mit Shift+Pfeil und ein Board-Fenster auf b mit aktiven Boards, Ersteller und Lanes
