@@ -1,6 +1,7 @@
 package role
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -426,7 +427,8 @@ esac
 		t.Fatal(err)
 	}
 	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
-	cmd := exec.Command(bash, spawn, "--no-worktree", "--parent", "uds:/tmp/cc-socks/7.sock", "ab12cd", "AB12CD", "discuss")
+	sock := fakeSocket(t)
+	cmd := exec.Command(bash, spawn, "--no-worktree", "--parent", "uds:"+sock, "ab12cd", "AB12CD", "discuss")
 	cmd.Dir = t.TempDir()
 	cmd.Env = append(os.Environ(), "TMPDIR="+t.TempDir(), "HERDR_ENV=1", "HERDR_BIN_PATH="+stub, "HERDR_WORKSPACE_ID=", "PATH="+jairaPath(t))
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -441,7 +443,7 @@ esac
 		`jaira note AB12CD "decision: `,
 		"jaira set AB12CD question=",
 		"jaira move AB12CD --to in-progress (",
-		"SendMessage an uds:/tmp/cc-socks/7.sock",
+		"SendMessage an uds:" + sock,
 	} {
 		if !strings.Contains(line, want) {
 			t.Errorf("discuss prompt lacks %q:\n%s", want, line)
@@ -453,6 +455,109 @@ esac
 	}
 	if move, _, _ := strings.Cut(line[at:], "("); strings.Contains(move, "--what") || strings.Contains(move, "--force") {
 		t.Errorf("the move back must be a bare move, jaira refuses outcome flags on a ticket with an outcome: %q", move)
+	}
+}
+
+// fakeSocket stands in for a session's messaging socket. spawn.sh asks only
+// that the address exists, so a plain file does.
+func fakeSocket(t *testing.T) string {
+	t.Helper()
+	sock := filepath.Join(t.TempDir(), "77.sock")
+	if err := os.WriteFile(sock, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return sock
+}
+
+// sessionRegistry writes a Claude Code config directory whose session
+// registry holds one running session by that name, and returns the directory
+// and the session's socket.
+func sessionRegistry(t *testing.T, name string) (config, sock string) {
+	t.Helper()
+	config = t.TempDir()
+	sock = fakeSocket(t)
+	if err := os.MkdirAll(filepath.Join(config, "sessions"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	entry := `{"pid":77,"name":"` + name + `","messagingSocketPath":"` + filepath.ToSlash(sock) + `"}`
+	if err := os.WriteFile(filepath.Join(config, "sessions", "77.json"), []byte(entry), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return config, filepath.ToSlash(sock)
+}
+
+// A worker reports to the session that started it, and finds it by itself:
+// without --parent, spawn.sh passes on the caller's own messaging socket. A
+// --parent that names no running session — a name from before the
+// teamlead restarted — stops the spawn before a tab exists, instead of a
+// worker that later reports to nobody (7V1XPB).
+func TestSpawnParentIsTheCallerAndAnUnknownOneStops(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	path := jairaPath(t)
+	dir := t.TempDir()
+	if _, err := install(dir, false, true); err != nil {
+		t.Fatal(err)
+	}
+	calls := filepath.Join(t.TempDir(), "calls")
+	stub := filepath.Join(t.TempDir(), "herdr")
+	script := `#!/usr/bin/env bash
+echo "$1 $2" >> "` + calls + `"
+case "$1 $2" in
+  "tab create") echo '{"result":{"root_pane":{"pane_id":"p1"}}}' ;;
+  "pane get")   echo '{"result":{"pane":{"agent":"claude","agent_status":"idle","tab_id":"t1"}}}' ;;
+  "pane send-text") printf '%s\n' "$4" >> "` + calls + `" ;;
+esac
+`
+	if err := os.WriteFile(stub, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+	config, _ := sessionRegistry(t, "lead")
+	own := filepath.ToSlash(fakeSocket(t))
+	run := func(args ...string) (string, error) {
+		_ = os.Remove(calls)
+		cmd := exec.Command(bash, append([]string{spawn, "--no-worktree"}, args...)...)
+		cmd.Dir = t.TempDir()
+		cmd.Env = append(os.Environ(), "TMPDIR="+t.TempDir(), "HERDR_ENV=1", "HERDR_BIN_PATH="+stub, "HERDR_WORKSPACE_ID=", "PATH="+path,
+			"CLAUDE_CONFIG_DIR="+config, "CLAUDE_CODE_MESSAGING_SOCKET="+own)
+		out, err := cmd.CombinedOutput()
+		got, _ := os.ReadFile(calls)
+		return string(out) + string(got), err
+	}
+
+	for _, lane := range []string{"worker", "dispatch"} {
+		out, err := run("ab12cd", "ab12cd", lane)
+		if err != nil {
+			t.Fatalf("spawn.sh %s without --parent: %v\n%s", lane, err, out)
+		}
+		if !strings.Contains(out, " ab12cd --parent uds:"+own+"\n") {
+			t.Errorf("spawn.sh %s without --parent did not pass the caller's socket:\n%s", lane, out)
+		}
+	}
+	// A lane that takes no parent gets none, and --no-parent — what the
+	// cockpit passes, so the worker stays in its own tab — none either.
+	if out, err := run("ab12cd", "ab12cd", "review"); err != nil || strings.Contains(out, "--parent") {
+		t.Errorf("spawn.sh review: %v\n%s", err, out)
+	}
+	if out, err := run("--no-parent", "ab12cd", "ab12cd", "worker"); err != nil || !strings.Contains(out, "/jaira-worker ab12cd\n") {
+		t.Errorf("spawn.sh --no-parent worker: %v\n%s", err, out)
+	}
+
+	for _, parent := range []string{"lead-9f", "uds:" + filepath.ToSlash(filepath.Join(t.TempDir(), "gone.sock"))} {
+		out, err := run("--parent", parent, "ab12cd", "ab12cd", "worker")
+		var exit *exec.ExitError
+		if !errors.As(err, &exit) || exit.ExitCode() != 2 {
+			t.Errorf("--parent %s: want exit 2, got %v\n%s", parent, err, out)
+		}
+		if strings.Contains(out, "tab create") {
+			t.Errorf("--parent %s: a tab was made before the parent was refused:\n%s", parent, out)
+		}
+		if !strings.Contains(out, "--parent "+parent+": no ") {
+			t.Errorf("--parent %s: the refusal does not name it:\n%s", parent, out)
+		}
 	}
 }
 
@@ -483,9 +588,11 @@ esac
 		t.Fatal(err)
 	}
 	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+	// "lead" is a name, and the worker gets the address it stands for.
+	config, sock := sessionRegistry(t, "lead")
 	for lane, want := range map[string]string{
-		"worker":   "/jaira-worker ab12cd --parent lead",
-		"dispatch": "/jaira-dispatcher ab12cd --parent lead",
+		"worker":   "/jaira-worker ab12cd --parent uds:" + sock,
+		"dispatch": "/jaira-dispatcher ab12cd --parent uds:" + sock,
 		"review":   "/jaira-role-lane ab12cd review",
 		// A person's chats, which the cockpit mod opens: a plain request,
 		// never a role, so the tab answers and never works the ticket.
@@ -498,7 +605,7 @@ esac
 		_ = os.Remove(typed)
 		cmd := exec.Command(bash, spawn, "--no-worktree", "--parent", "lead", "ab12cd", "ab12cd", lane)
 		cmd.Dir = t.TempDir()
-		cmd.Env = append(os.Environ(), "TMPDIR="+t.TempDir(), "HERDR_ENV=1", "HERDR_BIN_PATH="+stub, "HERDR_WORKSPACE_ID=", "PATH="+path)
+		cmd.Env = append(os.Environ(), "TMPDIR="+t.TempDir(), "HERDR_ENV=1", "HERDR_BIN_PATH="+stub, "HERDR_WORKSPACE_ID=", "PATH="+path, "CLAUDE_CONFIG_DIR="+config)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			t.Fatalf("spawn.sh %s: %v\n%s", lane, err, out)
 		}
