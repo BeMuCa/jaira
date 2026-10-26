@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:51Z
-updated-at: 2026-10-26T20:11:51Z
+updated-at: 2026-10-26T20:11:54Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-268570
@@ -27,6 +27,7 @@ outcome-resolves: "A person's chat \"accept\" needed --force, which printed \"Ov
 review-summary: |-
   critique pass 1: SEND BACK. (1) .claude/skills/jaira/SKILL.md:376-384 and docs/AGENTS.md:221-224 still tell agents to carry out a spoken acceptance with jaira move --to done --force; rewrite both to jaira accept <id> --by <person>, as A0C081 did for reject. (2) core/move/move.go adds a generic Record hook with one caller; drop it and write accepted-by, accepted-at and the note inside Move when req.AcceptedBy is set, like ClaimOnPull, so the gate bypass cannot be passed without its record. (3) The seen-not-fixed items (acceptance role still forces; TUI force notice; TUI a key writes no accepted-by) go to the maintainer as proposed follow-ups.
   critique pass 2: NOTHING LEFT. Round 2 (5fcb8f6c) fixed both pass-1 findings: the jaira skill and docs/AGENTS.md teach jaira accept <id> --by <person> instead of move --force, matching the teamlead role; core/move/move.go writes accepted-by, accepted-at and the note inside the move only when AcceptedBy is set, after the gate (a refused accept writes nothing) and before lane settle (a ticket filed on entry carries the record). accept.go is the only caller that sets AcceptedBy, so the TUI and plain move paths are unchanged.
+  critique pass 3: NOTHING LEFT. 94f60039 removes only duplicate test checks and swaps the uncatchable ticket-count checks for before/after byte comparisons, so every demand stays pinned: accept and its record, no --by (exit 2), not in a human-exit lane (exit 3), other gates refuse without an acceptance, plain move out of signoff refused, and the single overrode: line before the move line.
 round: 3
 review-gaps: "optimize pass 1: SEND BACK, test-only removals. TestForcedMoveNamesOverriddenCodesOnOneLine copies the setup and run of TestForcedMoveEndsOnItsSuccessLine (fold it in, fix the line-11 comment); core/gate/humanexit_test.go:62-64 repeats TestHumanExitLaneStillRefusesForward; the ticketFiles count checks in internal/cli/accept_test.go cannot fail because an accepted ticket stays in .jaira/tickets, so they move to the existing readTicketFile before/after comparison. Production code: nothing to remove."
 ---
