@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:53Z
-updated-at: 2026-10-26T19:18:00Z
+updated-at: 2026-10-26T19:18:02Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-264760
@@ -59,3 +59,23 @@ Plan-Sperre bei UNVOLLSTAENDIGER DoD: entfaellt auch. Begruendung:
 - Behalten wuerde nur zusaetzliche Bullets und einen zweiten Code liefern, und eine Regel "Plan sperrt nur, wenn die DoD auch sperrt" - ein Gate, das von einem anderen Gate abhaengt.
 - Einziger Fall, in dem sie allein sperren wuerde: eine Ziellane mit requires-nonmodel-signal: false. Die hat die Beleg-Pflicht bewusst abgewaehlt; dort per Plan weiter zu sperren widerspricht dieser Wahl.
 - Vorschlag: der Hinweis erscheint nur bei einem Move, der landet. Eine Ablehnung sagt schon, was zu tun ist.
+- **2026-10-26 19:18 · BeMuCa** — BRAINSTORM 3/3 - Beruehrungspunkte fuer pre-process (nur gefunden, nichts geaendert).
+Code:
+- core/gate/gate.go:404-432: Block und Kommentar weg oder umbauen; der Hinweis darf kein Violation sein, sonst zeigt die TUI ihn als Ablehnung (Vorpruefung model.go:1982, signoff.go:177).
+- core/gate/gate.go:35 CodePlanIncomplete: wird nicht mehr ausgegeben; pre-process entscheidet: loeschen (plan_test.go benutzt ihn) oder behalten. Kein anderer Verbraucher: core/mod (Cockpit) verzweigt nicht darauf, board.ts:213-225; refusalCode flow.go:345-352 kennt ihn nicht.
+- core/ticket/schema.go:579 PlanComplete() liefert die offenen Texte, aber keine Nummern; der Hinweis braucht die Nummer fuer 'jaira dod <id> <n> --done --plan'.
+- core/move/move.go:58-70 Result + move.go:139-146: Hinweis hier eintragen, dann bekommen alle vier Schreibstellen ihn.
+- internal/cli/flow.go:246-252 Text: Hinweis VOR der Zeile "X -> done" ausgeben (Regel BDV0HM dort: die letzte Zeile ist der Move).
+- internal/cli/flow.go:232-244 JSON: neuer Schluessel. Vgl. offenes Ticket 01M26PW18D... "Bei --json steht eine Warnung im JSON, nicht auf einem zweiten Stream".
+- internal/cli/flow.go:320-341 reportDryRun: Hinweis optional auch hier.
+- TUI: internal/tui/model.go:2012-2027 (normaler Move, notify(...,false)), model.go:2072-2090 (forceMove), signoff.go:196-214 (Accept-Meldung).
+- internal/cli/tickets.go:1615-1619 plan_complete im JSON: bleibt wahr, keine Aenderung.
+Tests:
+- core/gate/plan_test.go:36-63 TestUnfinishedPlanBlocksTerminalLane: dreht sich um (kein Refuse, Hinweis nennt "implement"); Kommentar 36-40 wird falsch. plan_test.go:67-104 pruefen nur "kein CodePlanIncomplete" - an den Konstanten-Entscheid anpassen.
+- core/ticket/superseded_test.go:80 nutzt PlanComplete: unberuehrt.
+Text, der falsch wird:
+- .claude/skills/jaira/SKILL.md:105-107; README.md:247-249; docs/AGENTS.md:227-228; core/lane/builtin/50-done.md:11 (description).
+- Bestehende Boards tragen die alte done-Beschreibung in .jaira/lanes/done.md:11. Ob das eine Correction braucht (core/lane/corrections.go) oder stehen bleiben darf: pre-process entscheidet.
+- NICHT anfassen: core/lane/corrections.go:94 doneDoorway (woertliche Kopie einer ausgelieferten Lane, Geschichte), core/move/oldboard_test.go:29 (Fixture), core/release/NOTES.md:117 (geschlossen).
+- core/board/announce.go:98-104 bleibt wahr; hoechstens ein Halbsatz "ein offener Plan-Schritt wird nur gemeldet".
+- Release-Notiz core/release/notes/NJBTVC.md (geaenderte Move-Ausgabe, Move wird nicht mehr abgelehnt).
