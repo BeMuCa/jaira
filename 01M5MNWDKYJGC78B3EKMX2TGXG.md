@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:44Z
-updated-at: 2026-10-26T20:02:38Z
+updated-at: 2026-10-26T20:02:41Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-252449
@@ -32,18 +32,23 @@ test-verdict: "pass: gofmt/vet/build clean, go test -race ./core/role ok; teamle
 review-verdict: "Ready for signoff once the pre-PR race suite has run. The diff does what DoD 1 and 2 ask: worker and dispatcher look the teamlead's address up before every send instead of freezing the start value, TestTeamleadFollowsARestart covers the address change (passes with -race, gofmt and vet clean), and the '! <command>' rule is in all three skills. All five round-1 gaps are closed and were re-verified by running the script, the installer and one SendMessage to a stale socket. Two small wording gaps in jaira-teamlead/SKILL.md (exit 2 of --here, the one-slot limit) are worth a line but do not block. DoD 3's 'go test ./... -race' is still open and must run before the PR."
 review-round: 3
 review-check: |-
-  1. cd /home/berk/git/jAIra-X2TGXG && go test ./core/role -run 'TestTeamleadFollowsARestart|TestWorkerNamesScriptsThatShip' -count=1 -> you see 'ok  github.com/BeMuCa/jaira/core/role'.
-  2. Make a throwaway repo. Never do the next steps in your real clone: --here writes .git/jaira/teamlead into whatever repo you stand in. rm -rf /tmp/tl && mkdir /tmp/tl && cd /tmp/tl && git init -q repo && cd repo && git -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m x
-  3. T=/home/berk/git/jAIra-X2TGXG/core/role/builtin/jaira-dispatcher/scripts/teamlead.sh; touch /tmp/tl/a.sock /tmp/tl/b.sock   (plain files stand in for sockets)
-  4. CLAUDE_CODE_MESSAGING_SOCKET=/tmp/tl/a.sock bash $T --here; cat .git/jaira/teamlead -> you see uds:/tmp/tl/a.sock
-  5. The restart: rm /tmp/tl/a.sock; CLAUDE_CODE_MESSAGING_SOCKET=/tmp/tl/b.sock bash $T --here; bash $T uds:/tmp/tl/a.sock -> you see uds:/tmp/tl/b.sock
-  6. The old lead is alive again: touch /tmp/tl/a.sock; bash $T uds:/tmp/tl/a.sock -> you see uds:/tmp/tl/a.sock
-  7. CLAUDE_CODE_MESSAGING_SOCKET= bash $T --here; echo $? -> you see 'teamlead.sh: CLAUDE_CODE_MESSAGING_SOCKET is empty or names no socket; this session cannot be reached' and then 2
-  8. Crash gap: python3 -c "import socket,time;s=socket.socket(socket.AF_UNIX);s.bind('/tmp/tl/c.sock');s.listen(1);time.sleep(60)" & sleep 1; kill -9 $!; ls -l /tmp/tl/c.sock; bash $T uds:/tmp/tl/c.sock -> the socket file is still listed after the kill, and the script prints uds:/tmp/tl/c.sock (the dead one), not the recorded uds:/tmp/tl/b.sock
-  9. Second-teamlead gap: touch /tmp/tl/x.sock; CLAUDE_CODE_MESSAGING_SOCKET=/tmp/tl/x.sock bash $T --here; rm /tmp/tl/a.sock; bash $T uds:/tmp/tl/a.sock -> you see uds:/tmp/tl/x.sock (the other lead), not uds:/tmp/tl/b.sock
-  10. Release-note gap: cd /home/berk/git/jAIra-X2TGXG && go build -o /tmp/tl/jaira-new ./cmd/jaira && jaira roles install --into /tmp/tl/skills && /tmp/tl/jaira-new roles install --into /tmp/tl/skills -> among the lines: 'written .../jaira-dispatcher/scripts/teamlead.sh' and 'skipped .../SKILL.md (edited here; --force to replace)' for jaira-dispatcher, jaira-teamlead and jaira-worker
-  11. cat /home/berk/git/jAIra-X2TGXG/core/release/notes/X2TGXG.md -> two lines, each one line starting '- '; both say 'jaira roles install' without --force
-  12. rm -rf /tmp/tl
+  1. cd /home/berk/git/jAIra-X2TGXG && go test ./core/role -run 'TestTeamleadFollowsARestart|TestWorkerNamesScriptsThatShip|TestCrossReferencesCarryThePrefix' -count=1 -> you see 'ok  github.com/BeMuCa/jaira/core/role'.
+  2. WARNING: 'teamlead.sh --here' writes .git/jaira/teamlead into whatever git repository you run it in. Never run it inside your real clone - only in the throwaway repo from step 3.
+  3. rm -rf /tmp/tl && mkdir /tmp/tl && cd /tmp/tl && git init -q repo && cd repo && git -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m x -> you are now in /tmp/tl/repo; stay there until step 13.
+  4. T=/home/berk/git/jAIra-X2TGXG/core/role/builtin/jaira-dispatcher/scripts/teamlead.sh; touch /tmp/tl/a.sock /tmp/tl/b.sock -> no output. Plain files stand in for sockets: the script only checks that the file exists.
+  5. Teamlead A records itself: CLAUDE_CODE_MESSAGING_SOCKET=/tmp/tl/a.sock bash $T --here; cat .git/jaira/teamlead -> you see uds:/tmp/tl/a.sock
+  6. The restart: rm /tmp/tl/a.sock; CLAUDE_CODE_MESSAGING_SOCKET=/tmp/tl/b.sock bash $T --here; bash $T uds:/tmp/tl/a.sock -> you see uds:/tmp/tl/b.sock (the worker holding the old A is sent to B).
+  7. A name passes through: bash $T lead-9f -> you see lead-9f
+  8. A live parent keeps its reports: touch /tmp/tl/a.sock; bash $T uds:/tmp/tl/a.sock -> you see uds:/tmp/tl/a.sock
+  9. A real crash: python3 -c "import socket,time;s=socket.socket(socket.AF_UNIX);s.bind('/tmp/tl/c.sock');s.listen(1);time.sleep(60)" & sleep 1; kill -9 $!; ls -l /tmp/tl/c.sock; bash $T uds:/tmp/tl/c.sock; bash $T --recorded -> ls still lists c.sock (its line starts with 's'); the first script call prints uds:/tmp/tl/c.sock (the dead one - SendMessage to it fails with ECONNREFUSED); --recorded prints uds:/tmp/tl/b.sock, where the skill sends next.
+  10. Record's socket gone: rm /tmp/tl/b.sock; bash $T --recorded; echo $? -> no address, only 1
+  11. No socket: CLAUDE_CODE_MESSAGING_SOCKET= bash $T --here; echo $? -> you see 'teamlead.sh: CLAUDE_CODE_MESSAGING_SOCKET is empty or names no socket; this session cannot be reached' and then 2
+  12. git status --short -> prints nothing (the record never shows in git status).
+  13. cat /home/berk/git/jAIra-X2TGXG/core/release/notes/X2TGXG.md -> exactly two lines, each starting '- Run `jaira roles install --force`'
+  14. Why --force: cd /home/berk/git/jAIra-X2TGXG && go build -o /tmp/tl/jaira-new ./cmd/jaira && jaira roles install --into /tmp/tl/skills >/dev/null; /tmp/tl/jaira-new roles install --into /tmp/tl/skills | grep -v unchanged -> 'written .../jaira-dispatcher/scripts/teamlead.sh' and 'skipped .../SKILL.md (edited here; --force to replace)' for jaira-dispatcher, jaira-teamlead and jaira-worker.
+  15. /tmp/tl/jaira-new roles install --force --into /tmp/tl/skills | grep -v unchanged; ls -l /tmp/tl/skills/jaira-dispatcher/scripts/teamlead.sh -> 'overwritten .../SKILL.md' for those three, and teamlead.sh starts with -rwxr-xr-x
+  16. grep -n 'teamlead.sh\|! <command>' /home/berk/git/jAIra-X2TGXG/core/role/builtin/jaira-*/SKILL.md -> teamlead: '--here' in the round block (line 35) and the '! <command>' rule (line 84); worker (262, 279, 288) and dispatcher (178, 199, 209): the '! <command>' paragraph, 'teamlead.sh <session>' and '--recorded'.
+  17. rm -rf /tmp/tl
 ---
 
 # Ein Worker findet seinen Teamlead nach einem Neustart wieder, und eine Frage an die Person kommt als fertige Zeile
