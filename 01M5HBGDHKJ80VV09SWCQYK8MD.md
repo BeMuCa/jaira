@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T08:26:42Z
-updated-at: 2026-10-26T19:36:27Z
+updated-at: 2026-10-26T19:43:05Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: qyk8md-driver
@@ -26,7 +26,10 @@ claimed-at: 2026-10-26T19:11:29Z
 outcome-what: "Session ids are now a random six-character token kept once per machine in machine-id under JAIRA_HOME or ~/.jaira, plus the parent pid; the hostname is only compared, never written. An old-format claim that names this machine counts as abandoned at once."
 outcome-why: "claimed-by is committed with the ticket, so a hostname in it published the machine name, and on the maintainer's machine his employer, in ticket files and refs."
 outcome-resolves: "No new claimed-by carries a hostname; old claims from other machines still block until ClaimTTL; this machine's own old claims need no --steal after the update."
-review-summary: none
+review-summary: |-
+  Session ids no longer contain the machine's name. When none of CLAUDE_SESSION_ID, JAIRA_SESSION_ID or TERM_SESSION_ID is set, DefaultID (core/session/session.go) now builds the id as <token>-<parent pid> instead of <hostname>-<parent pid>. The token is six random characters (the random tail of a fresh ULID), made on first use and kept in the file machine-id under JAIRA_HOME, else ~/.jaira; if that file cannot be written, the word 'local' stands in. That id is what 'jaira claim' writes as claimed-by, so a committed ticket now shows e.g. 'claimed-by: KZ78NQ-616260'.
+  The hostname is still read, but only to recognise the old form: LegacyLocal (session.go) is true for '<this machine's hostname, sanitized>-<digits>'. ClaimActive and StaleClaim (internal/cli/claim.go) treat such a claim as abandoned at once, because nothing on this machine writes that form any more: 'jaira claim' takes it over without --steal and prints the usual 'carries an abandoned claim by ...' line, and 'jaira next' stops skipping the ticket. An old-format claim from another machine is compared as a plain string, as before, and blocks until the 30-minute ClaimTTL.
+  Tests: TestDefaultIDCarriesNoHostname and TestLegacyLocal (core/session/machine_test.go), TestLegacyHostnameClaims (internal/cli/staleclaim_test.go). Release note: core/release/notes/QYK8MD.md, one line. Old claimed-by values already on master are not touched (history rewrite, out of scope).
 round: 3
 review-gaps: |-
   pass 2 (4529c17b only): nothing new to remove. Both pass-1 fixes landed: core/session/session.go:170-171 LegacyLocal now reads 'return id == prefix' (same results, sanitize caps at 48 ASCII bytes); core/session/machine_test.go:43-46 adds the two host-built negatives only when the sanitized hostname is at most 43 characters (44 would also be safe, critique pass 3; a conservative bound, not a cleanup)
