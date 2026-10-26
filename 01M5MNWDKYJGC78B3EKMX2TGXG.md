@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:44Z
-updated-at: 2026-10-26T19:53:38Z
+updated-at: 2026-10-26T19:55:41Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-252449
@@ -28,7 +28,7 @@ outcome-resolves: "A worker started under a teamlead that later restarted reache
 review-summary: "none"
 round: 3
 review-gaps: "61be772b only. Removed: teamlead.sh's closing case printed $arg in three places (uds-live branch, catch-all name branch, recorded || echo); now one guarded line (a uds: parent whose socket is gone and a live record -> exit 0) and one echo, same output and exit code in 13 old-vs-new cases (live/gone parent, name, --recorded, no/live/dead/garbage record, outside a repo). In TestTeamleadFollowsARestart the --recorded success check now uses the existing want helper instead of its own run/compare. Considered and left: recorded() (two callers, not a forwarder); the --recorded block (recorded || exit 1; exit 0 is explicit; recorded; exit would lean on set -e); [ -n \"$record\" ] inside recorded() is redundant with [ -f ] but was moved, not added; the exit-1 --recorded check beside the exit-2 --here loop (two shapes, a helper for two uses is not cheaper); the second (jaira note <id> \"parent session: <new>\") in each SKILL.md paragraph repeats the one eight lines up but keeps the command next to the step an agent acts on; the worker/dispatcher wording is duplicated by design (each skill installs alone); the release-note --force lines are needed (review gap 1)."
-test-verdict: "pass: gofmt/vet/build clean, go test -race ./core/role ok; teamlead.sh installed executable next to spawn.sh; restart play A->B (incl. 2nd worktree), A back, both gone, exit codes, outside-repo all as specified; DoD 1+2 proofs present; release note 2 single lines OK. DoD 3 suite part waits for pre-PR run. Not verified: stale socket file left by crashed claude (liveness is -e)."
+test-verdict: "pass: gofmt/vet/build clean, go test -race ./core/role ok; teamlead.sh function pass (restart A->B->A, name unchanged, --recorded crash fallback exit 0/1, real kill -9 stale socket: parent prints dead A, --recorded prints live B, --here empty exit 2, --help 0, no arg 2, outside git unchanged/exit 1) and roles install --force over an older install lands the branch SKILL.md x3 + executable teamlead.sh; DoD 1+2 proofs confirmed; DoD 3 suite half waits for the pre-PR run"
 review-verdict: "Back to in-progress. For a clean restart the change works: the script does what its plan says, DoD 1 and 2 are met, and the test covers the address change. But the release note's instruction does not install the changed skills (verified), the skill and usage texts promise that a second teamlead never gets another's workers, which a run disproves (verified), and the crash half of the goal still ends in 'parent unreachable' whenever the dead socket file stays (OS behaviour verified, Claude Code's own cleanup not). Fix gaps 1 and 3; gap 2 is a small addition worth making in the same round. DoD 3's full race suite is still open."
 review-round: 2
 review-check: |-
