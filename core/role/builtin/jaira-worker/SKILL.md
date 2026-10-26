@@ -192,6 +192,8 @@ guarantee is gone and nobody can see that it is.
 4. It moved the ticket on to a person's lane: stop. It sent the work back: the
    ticket is in an agentic lane again and yours — carry on with the loop, and
    the fresh lane gets a **new** agent next time, never the one from before.
+   A `note:` line in its `review-gaps` is not work for you: it stays a line,
+   and no ticket is created from it — the person decides that at acceptance.
 
 It runs in your directory, not a worktree of its own: what it judges includes
 your uncommitted work, and while it runs you write nothing.

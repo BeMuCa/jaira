@@ -180,7 +180,8 @@ Per ticket, three lines and no more:
 
 - what changed
 - which lane it sits in now
-- what is open, and whether it needs them
+- what is open, and whether it needs them — a `note:` line in `review-gaps`
+  is open for them to decide, never a ticket you create
 
 Then one concrete next action. If nothing needs the human, say what you are
 starting next and start it — do not ask permission for work already on the
