@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:56Z
-updated-at: 2026-10-26T19:43:28Z
+updated-at: 2026-10-26T19:43:30Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-374545
@@ -47,7 +47,7 @@ claimed-at: 2026-10-26T19:21:26Z
 - [x] core/gitref: Worktrees() per git worktree list --porcelain; abgelegte Dateien eines Branches per einem git ls-tree -r <rev> -- .jaira/logbook .jaira/archive (id -> Pfad + Blob); Header der Kandidaten-Blobs per einem cat-file --batch wie ReadMany
 - [x] core/refsync: Syncer erfuellt das Interface - FiledAwayIDs der anderen Worktrees + Landing-Branches (settings.Landing, gesetzt in internal/cli/refs.go attachRefs und internal/tui/refs.go newSyncer); Regel: anderswo abgelegt UND updated-at der Datei hier strikt aelter; Landing-Ergebnis nach Rev-SHA cachen
 - [x] Kostentest mit GIT_TRACE: ein zweites List ohne Aenderung startet hoechstens 2 zusaetzliche git-Prozesse und keinen pro Ticket
-- [ ] Entfernen-Hinweis an einer Stelle fuer CLI und TUI: nicht getrackt -> rm <pfad>; auf diesem Branch getrackt -> git restore <pfad>, dann git merge <landing> (nur im Worktree abgelegt: git restore <pfad>, geht mit dem Merge des ablegenden Branches); nur beim Ausgeben berechnet, nie im Board-Tick
+- [x] Entfernen-Hinweis an einer Stelle fuer CLI und TUI: nicht getrackt -> rm <pfad>; auf diesem Branch getrackt -> git restore <pfad>, dann git merge <landing> (nur im Worktree abgelegt: git restore <pfad>, geht mit dem Merge des ablegenden Branches); nur beim Ausgeben berechnet, nie im Board-Tick
 - [ ] gate.Actionable gibt false fuer so ein Ticket (jaira next, list --actionable)
 - [ ] jaira list: Text - raus aus der Lane, eigener Block am Ende mit Ort + Befehl; JSON - eigenes Array filed_elsewhere, nicht in tickets und count
 - [ ] jaira show: Zeile ueber dem Detail (Ort + Befehl); JSON-Felder filed_elsewhere und remove_stale
