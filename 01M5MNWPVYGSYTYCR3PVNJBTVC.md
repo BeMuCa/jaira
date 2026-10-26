@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:53Z
-updated-at: 2026-10-26T19:26:12Z
+updated-at: 2026-10-26T19:26:15Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-264760
@@ -30,6 +30,7 @@ claimed-at: 2026-10-26T19:12:35Z
 - [ ] move.Result.Hints fuellen bei Move in Ziellane
 - [ ] CLI Text+JSON+dry-run zeigen den Hinweis
 - [ ] TUI: model.go zwei Pfade + signoff Accept zeigen den Hinweis
+- [ ] Tests: plan_test.go drehen, move-Test fuer Hinweis
 
 ## Definition of Done
 
