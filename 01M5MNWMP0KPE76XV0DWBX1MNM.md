@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWMP0KPE76XV0DWBX1MNM
 title: "jaira accept <id> --by <person>: eine Abnahme auf Wort der Person, die festhaelt, wer abgenommen hat"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Sagt eine Person im Chat 'accept', fuehrt der Agent die Abnahme ehrlich aus: ein Befehl nimmt das Ticket aus signoff, schreibt auf das Ticket, wer wann abgenommen hat, und die Ausgabe liest sich als Erfolg - nicht als uebergangene Verweigerung."
@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:51Z
-updated-at: 2026-10-26T19:45:37Z
+updated-at: 2026-10-26T19:45:39Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-268570
@@ -25,6 +25,7 @@ outcome-what: "Added `jaira accept <id> --by <person>`: it moves a ticket out of
 outcome-why: "The acceptance rides on the request, not on the ticket, so a ticket restored into signoff with an old accepted-by still waits for a person. It is written inside the move (move.Request.Record), so a refusal by any other gate writes nothing. accept stays on the normal move path, so every other gate still applies."
 outcome-resolves: "A person's chat \"accept\" needed --force, which printed \"Overrode N gate refusal(s)\" and recorded no acceptor. accept now succeeds with a success line and records who accepted and when."
 review-summary: "critique pass 1: SEND BACK. (1) .claude/skills/jaira/SKILL.md:376-384 and docs/AGENTS.md:221-224 still tell agents to carry out a spoken acceptance with jaira move --to done --force; rewrite both to jaira accept <id> --by <person>, as A0C081 did for reject. (2) core/move/move.go adds a generic Record hook with one caller; drop it and write accepted-by, accepted-at and the note inside Move when req.AcceptedBy is set, like ClaimOnPull, so the gate bypass cannot be passed without its record. (3) The seen-not-fixed items (acceptance role still forces; TUI force notice; TUI a key writes no accepted-by) go to the maintainer as proposed follow-ups."
+round: 2
 ---
 
 # jaira accept <id> --by <person>: eine Abnahme auf Wort der Person, die festhaelt, wer abgenommen hat
