@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T08:26:42Z
-updated-at: 2026-10-26T19:33:59Z
+updated-at: 2026-10-26T19:35:25Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: qyk8md-driver
@@ -31,6 +31,7 @@ round: 3
 review-gaps: |-
   pass 2 (4529c17b only): nothing new to remove. Both pass-1 fixes landed: core/session/session.go:170-171 LegacyLocal now reads 'return id == prefix' (same results, sanitize caps at 48 ASCII bytes); core/session/machine_test.go:43-46 adds the two host-built negatives only when the sanitized hostname is at most 43 characters (44 would also be safe, critique pass 3; a conservative bound, not a cleanup)
   let stand (pass 1, not reopened): sanitizeForTest (internal/cli/staleclaim_test.go:159) is a deliberate frozen copy of the format old builds wrote; the JAIRA_HOME-else-~/.jaira lookup in machineToken is the seventh private copy with no shared helper, merging them is its own ticket; LegacyLocal sits in both ClaimActive and StaleClaim (internal/cli/claim.go:29 and :54) because those two were already separate; internal/cli/flow.go:398 reads machine-id once per actionable ticket, hoisting it is optional; Session.Host (core/session/session.go:28) is pre-existing dead code, left alone
+test-verdict: "pass: gofmt/vet/build clean, race tests core/session + cli (LegacyHostname|Claim|Stale) ok, release note is one line; token claims, foreign/own-old/stale old-format claims behave on a scratch board; full suite pending pre-PR run"
 ---
 
 # Die Session-ID traegt keinen Rechnernamen mehr
