@@ -18,7 +18,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:41Z
-updated-at: 2026-10-23T15:25:41Z
+updated-at: 2026-10-26T19:07:53Z
+assignee: BeMuCa
+updated-by: BeMuCa
 ---
 
 # spawn.sh startet Worker-Tabs im Berechtigungsmodus der Person und merkt, wenn der Prompt nicht ankommt
