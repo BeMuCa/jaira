@@ -6,6 +6,7 @@
   import { fetchLanes, setLanes } from '@/entities/lane';
   import { assignToEpic, removeFromEpic } from '@/features/assign-to-epic';
   import { createEpic } from '@/features/create-epic';
+  import { setEpic, type EpicEdit } from '@/features/edit-epic';
   import { FilterBar, choices, fromQuery, matches, narrows, toQuery } from '@/features/filter-tickets';
   import { EpicList } from '@/widgets/epic-list';
   import { UnassignedList } from '@/widgets/unassigned-list';
@@ -89,6 +90,16 @@
     await load();
   }
 
+  // A refused edit reloads as well: a 409 means somebody else changed the
+  // epic, and the page should show what it says now behind the open form.
+  async function edit(name: string, e: EpicEdit) {
+    try {
+      sync = await setEpic(name, e);
+    } finally {
+      await load();
+    }
+  }
+
   async function open(id: string) {
     try {
       opened = await fetchTicket(id);
@@ -141,7 +152,7 @@
     onopen={open}
     onremove={(epic, id) => change(() => removeFromEpic(epic, id))}
   />
-  <EpicList epics={shownEpics} expanded={narrows(filter)} onopen={open} oncreate={create} onassign={(epic, id, from) => change(() => assignToEpic(epic, id, from))} />
+  <EpicList epics={shownEpics} expanded={narrows(filter)} onopen={open} oncreate={create} onedit={edit} onassign={(epic, id, from) => change(() => assignToEpic(epic, id, from))} />
 </main>
 
 <dialog bind:this={dialog} onclose={() => (opened = null)}>

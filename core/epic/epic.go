@@ -24,6 +24,7 @@ package epic
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -215,6 +216,122 @@ func (e *Epic) setField(key, value string) {
 	e.lines = slices.Insert(e.lines, end, key+": "+value)
 }
 
+// bodyStart is the first line below the frontmatter: where the text a person
+// reads begins.
+func (e *Epic) bodyStart() int {
+	if end, ok := e.frontEnd(); ok {
+		return end + 1
+	}
+	return 0
+}
+
+// Body is the markdown below the frontmatter, every member line taken out and
+// the blank lines around it trimmed: the text a person wrote about the
+// feature. The member lines are the list, and the list is edited with Add and
+// Remove, not as text.
+func (e *Epic) Body() string {
+	var text []string
+	for _, line := range e.lines[e.bodyStart():] {
+		if _, ok := milestone.ParseMember(line); !ok {
+			text = append(text, line)
+		}
+	}
+	return trimBlank(text)
+}
+
+// SetBody replaces the text below the frontmatter. The member lines are kept
+// verbatim and in their order, after the new text: whatever the text says, the
+// list is what it was.
+func (e *Epic) SetBody(text string) {
+	start := e.bodyStart()
+	lines := slices.Clone(e.lines[:start])
+	if start > 0 {
+		lines = append(lines, "")
+	}
+	if text = cleanBody(text); text != "" {
+		for _, line := range strings.Split(text, "\n") {
+			lines = append(lines, asText(line))
+		}
+		lines = append(lines, "")
+	}
+	for _, line := range e.lines[start:] {
+		if _, ok := milestone.ParseMember(line); ok {
+			lines = append(lines, line)
+		}
+	}
+	e.lines = lines
+}
+
+// asText keeps a line of text from being read as a member: "- <ticket id>"
+// below the frontmatter is the list, so a list item in the text that starts
+// with a full ticket id would put that ticket in the epic and vanish from the
+// text. "* " is the same list item in markdown and no member line.
+func asText(line string) string {
+	if _, ok := milestone.ParseMember(line); ok {
+		indent := line[:len(line)-len(strings.TrimLeft(line, " \t"))]
+		return indent + "* " + strings.TrimPrefix(strings.TrimLeft(line, " \t"), "- ")
+	}
+	return line
+}
+
+// titleLine finds the heading the text opens with when it is the title: New
+// writes one. It is the one place that decides it, for retitle and for
+// Merge, so a rename and a merge cannot disagree about which line it is.
+func (e *Epic) titleLine() (int, bool) {
+	for i := e.bodyStart(); i < len(e.lines); i++ {
+		line := strings.TrimSpace(e.lines[i])
+		if line == "" {
+			continue
+		}
+		heading, ok := strings.CutPrefix(line, "# ")
+		return i, ok && oneLine(heading) == oneLine(e.Title)
+	}
+	return 0, false
+}
+
+// retitle renames that heading along with the title: a heading left on the
+// old name would contradict the title above it. A heading a person changed is
+// theirs and stays. Call it before the title changes.
+func (e *Epic) retitle(title string) {
+	if i, ok := e.titleLine(); ok {
+		e.lines = slices.Clone(e.lines)
+		e.lines[i] = "# " + oneLine(title)
+	}
+}
+
+// comment is an HTML comment, over as many lines as it runs.
+var comment = regexp.MustCompile(`(?s)<!--.*?-->`)
+
+// gap is the run of blank lines a dropped comment leaves.
+var gap = regexp.MustCompile(`\n{3,}`)
+
+// Text is the body as a person reads it beside the title: the heading that
+// only repeats the title and the comments meant for whoever edits the file
+// left out. Body is what an editor gets, so that a round trip keeps them.
+func (e *Epic) Text() string {
+	c := *e
+	if i, ok := e.titleLine(); ok {
+		c.lines = slices.Delete(slices.Clone(e.lines), i, i+1)
+	}
+	return cleanBody(gap.ReplaceAllString(comment.ReplaceAllString(c.Body(), ""), "\n\n"))
+}
+
+// cleanBody is a text as Body would read it back: a form's line endings made
+// plain and the blank lines around it dropped.
+func cleanBody(text string) string {
+	return trimBlank(strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n"))
+}
+
+func trimBlank(lines []string) string {
+	for len(lines) > 0 && strings.TrimSpace(lines[0]) == "" {
+		lines = lines[1:]
+	}
+	for len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == "" {
+		lines = lines[:len(lines)-1]
+	}
+	return strings.Join(lines, "\n")
+}
+
 // Bytes renders the epic as the file its ref carries.
 func (e *Epic) Bytes() []byte {
 	var b strings.Builder
@@ -227,12 +344,19 @@ func (e *Epic) Bytes() []byte {
 
 // Merge rebases an edit that lost the race for the ref. base is what the edit
 // started from, ours the edit, theirs what the remote holds now. The result is
-// theirs with our member additions and removals applied, and our title and
-// description where we changed them — so two people sorting tickets into one
-// epic at once both get their tickets in, and nobody's hand edit is lost.
+// theirs with our member additions and removals applied, and our title,
+// description and text where we changed them — so two people sorting tickets
+// into one epic at once both get their tickets in, and nobody's hand edit is
+// lost.
+//
+// Where both sides changed the same field to different values, ours is kept
+// and theirs goes below the text in a marked block, for a person to merge by
+// hand: a person's text has no right answer a machine can pick, and dropping
+// either side would lose what somebody wrote without anybody knowing.
 func Merge(name string, base, ours, theirs []byte) []byte {
 	b, o := FromBytes(name, base), FromBytes(name, ours)
 	out := FromBytes(name, theirs)
+	t := out.Fields()
 	for _, id := range o.members {
 		if !b.Has(id) {
 			out.Add(id)
@@ -243,15 +367,140 @@ func Merge(name string, base, ours, theirs []byte) []byte {
 			out.Remove(id)
 		}
 	}
-	if o.Title != b.Title {
-		out.Title = o.Title
-		out.setField("title", o.Title)
+	var clashes []string
+	pick := func(field, base, ours, theirs string) string {
+		if ours == base {
+			return theirs
+		}
+		if theirs != base && theirs != ours {
+			clashes = append(clashes, clash(field, strings.Replace(theirs, titleMark, "# "+t.Title, 1)))
+		}
+		return ours
 	}
-	if o.Description != b.Description {
-		out.Description = o.Description
-		out.setField("description", o.Description)
+	title := pick("title", b.Title, o.Title, t.Title)
+	description := pick("description", b.Description, o.Description, t.Description)
+	text := pick("text", b.plain(), o.plain(), out.plain())
+	if rest, ok := strings.CutPrefix(text, titleMark); ok {
+		text = "# " + title + rest
+	}
+	if len(clashes) > 0 {
+		text = strings.Join(append([]string{text}, clashes...), "\n\n")
+	}
+	if title != t.Title {
+		out.Title = title
+		out.setField("title", title)
+	}
+	if description != t.Description {
+		out.Description = description
+		out.setField("description", description)
+	}
+	if text != t.Body {
+		out.SetBody(text)
 	}
 	return out.Bytes()
+}
+
+// titleMark stands in for a heading that is the epic's own title while two
+// texts are compared, so that a retitle, which renames that heading, is no
+// edit of the text: a new title on one clone and a new paragraph on the other
+// do not clash over a line only one of them meant to touch.
+const titleMark = "# \x00"
+
+// plain is the text with a heading that is the title made neutral.
+func (e *Epic) plain() string {
+	i, ok := e.titleLine()
+	if !ok {
+		return e.Body()
+	}
+	c := *e
+	c.lines = slices.Clone(e.lines)
+	c.lines[i] = titleMark
+	return c.Body()
+}
+
+// clash marks what the other side wrote into a field both sides changed. The
+// comment lines find it in a diff; the bold line says it on the page, which
+// shows no comment.
+func clash(field, theirs string) string {
+	if theirs == "" {
+		theirs = "(empty)"
+	}
+	return "<!-- jaira: changed at the same time -->\n" +
+		"**Changed at the same time on another clone. Their " + field + " was:**\n\n" +
+		theirs + "\n\n" +
+		"<!-- jaira: end of the other clone's " + field + ". Merge it into the epic by hand, then delete this block. -->"
+}
+
+// ErrChanged means the epic was changed since the editor read it, in a field
+// the editor meant to change. Nothing was written.
+var ErrChanged = errors.New("epic changed since it was read")
+
+// ErrNoTitle means an edit would leave the epic without a title; the name is
+// not one, it is where the epic is kept.
+var ErrNoTitle = errors.New("an epic's title cannot be empty")
+
+// Fields are what a person writes about an epic: the title, the one-line
+// description and the text below them.
+type Fields struct {
+	Title, Description, Body string
+}
+
+// Fields reads the three back.
+func (e *Epic) Fields() Fields {
+	return Fields{Title: e.Title, Description: e.Description, Body: e.Body()}
+}
+
+// Patch is an edit of an epic: a nil field is left as it is.
+type Patch struct {
+	Title, Description, Body *string
+	// Base is what the editor read before it changed anything; nil writes
+	// onto whatever is there. With it, a field the patch changes that is no
+	// longer what Base says refuses the whole write with ErrChanged, so an
+	// editor that sat open while somebody else saved cannot overwrite them.
+	Base *Fields
+}
+
+// Set rewrites an epic's title, description and text, in one write of its ref
+// and leaving its members as they are. It returns the epic as it stands
+// afterwards and whether anything was written.
+func Set(s *ticket.Store, r Refs, name string, p Patch) (*Epic, bool, error) {
+	var written bool
+	e, err := edit(s, r, name, func(e *Epic) (bool, error) {
+		now := e.Fields()
+		if b := p.Base; b != nil {
+			if p.Title != nil && now.Title != b.Title ||
+				p.Description != nil && now.Description != b.Description ||
+				p.Body != nil && now.Body != b.Body {
+				return false, fmt.Errorf("%w: %s", ErrChanged, name)
+			}
+		}
+		if p.Title != nil && oneLine(*p.Title) == "" {
+			return false, ErrNoTitle
+		}
+		// The text goes first and the title after it, so a heading that
+		// still carries the old title is renamed whether the text came
+		// along or not. A form sends the text back as it read it; that is
+		// no new text and leaves the member lines where they are.
+		if p.Body != nil && cleanBody(*p.Body) != now.Body {
+			e.SetBody(*p.Body)
+		}
+		if p.Title != nil {
+			if title := oneLine(*p.Title); title != e.Title {
+				e.retitle(title)
+				e.Title = title
+				e.setField("title", title)
+			}
+		}
+		if p.Description != nil {
+			if d := oneLine(*p.Description); d != e.Description {
+				e.Description = d
+				e.setField("description", d)
+			}
+		}
+		written = e.Fields() != now
+		return written, nil
+	})
+	return e, written, err
 }
 
 // Load reads one epic.
@@ -317,36 +566,53 @@ func Create(s *ticket.Store, r Refs, name, title, description string, ids []stri
 // that actually changed; nothing is written when none did. ids must be full
 // ticket ids.
 func Assign(s *ticket.Store, r Refs, name string, ids []string, add bool) (*Epic, []string, error) {
+	var changed []string
+	e, err := edit(s, r, name, func(e *Epic) (bool, error) {
+		for _, id := range ids {
+			var ok bool
+			if add {
+				ok = e.Add(id)
+			} else {
+				ok = e.Remove(id)
+			}
+			if ok {
+				changed = append(changed, id)
+			}
+		}
+		return len(changed) > 0, nil
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	return e, changed, nil
+}
+
+// edit is one change of an existing epic under the epics lock: read it, let
+// change apply itself, and write the ref only when change says it changed
+// something. A change that fails writes nothing.
+func edit(s *ticket.Store, r Refs, name string, change func(*Epic) (bool, error)) (*Epic, error) {
 	if r == nil {
-		return nil, nil, ErrNoRefs
+		return nil, ErrNoRefs
 	}
 	unlock, err := s.Lock(lockName)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	defer unlock()
 	e, err := Load(r, name)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	var changed []string
-	for _, id := range ids {
-		var ok bool
-		if add {
-			ok = e.Add(id)
-		} else {
-			ok = e.Remove(id)
-		}
-		if ok {
-			changed = append(changed, id)
-		}
+	changed, err := change(e)
+	if err != nil {
+		return nil, err
 	}
-	if len(changed) > 0 {
+	if changed {
 		if err := r.RecordEpic(name, e.Bytes()); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 	}
-	return e, changed, nil
+	return e, nil
 }
 
 // Ticket is one ticket counted towards an epic.

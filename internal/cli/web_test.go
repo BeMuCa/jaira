@@ -313,3 +313,54 @@ func TestWebListsLanesInBoardOrderWithKind(t *testing.T) {
 		}
 	}
 }
+
+// The page rewrites an epic through the same call 'jaira epic set' makes and
+// reads the new state straight back. An editor that sat open while the CLI
+// changed the same epic is refused with 409 and writes nothing, so neither
+// change is lost; the members are untouched by either.
+func TestWebRewritesAnEpicAndRefusesAStaleEditor(t *testing.T) {
+	ada, grace := twoBoards(t)
+	a := createTicket(t, ada, "Login form")
+	jsonOf(t, ada, "epic", "create", "magic-login", a, "--title", "Login")
+
+	g.dir = ada
+	s, err := openStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := (&web.Server{Source: newWebSource(s), Push: webPush}).Handler()
+	var epics []web.Epic
+	webGet(t, h, "/api/epics", &epics)
+	read, _ := json.Marshal(web.EpicFields{Title: epics[0].Title, Description: epics[0].Description, Body: epics[0].Body})
+
+	edit := `{"title":"Anmeldung","description":"per Link","body":"# Login\n\n## Ziel\n\nkein Passwort","base":` + string(read) + `}`
+	if w := webDo(t, h, "PATCH", "/api/epics/magic-login", edit); w.Code != 200 {
+		t.Fatalf("edit: %d %s", w.Code, w.Body)
+	}
+	webGet(t, h, "/api/epics", &epics)
+	if e := epics[0]; e.Title != "Anmeldung" || e.Description != "per Link" || e.Body != "# Anmeldung\n\n## Ziel\n\nkein Passwort" || e.Text != "## Ziel\n\nkein Passwort" || len(e.Tickets) != 1 {
+		t.Fatalf("after the edit: %+v", e)
+	}
+
+	if out, err := runAndSend(t, ada, "epic", "set", "magic-login", "--body", "from the CLI"); err != nil {
+		t.Fatalf("set: %v\n%s", err, out)
+	}
+	stale := `{"body":"from a stale editor","base":` + string(read) + `}`
+	if w := webDo(t, h, "PATCH", "/api/epics/magic-login", stale); w.Code != http.StatusConflict || !strings.Contains(w.Body.String(), "open it again") {
+		t.Fatalf("stale editor: %d %s; want 409 saying to open it again", w.Code, w.Body)
+	}
+	if w := webDo(t, h, "PATCH", "/api/epics/no-such", `{"title":"x"}`); w.Code != http.StatusNotFound {
+		t.Fatalf("unknown epic: %d %s", w.Code, w.Body)
+	}
+	if w := webDo(t, h, "PATCH", "/api/epics/magic-login", `{"title":"  "}`); w.Code != http.StatusBadRequest {
+		t.Fatalf("empty title: %d %s", w.Code, w.Body)
+	}
+
+	if out, err := runCLI(t, grace, "fetch"); err != nil {
+		t.Fatalf("fetch: %v\n%s", err, out)
+	}
+	got := jsonOf(t, grace, "epic", "show", "magic-login")
+	if got["body"] != "from the CLI" || got["title"] != "Anmeldung" || len(got["members"].([]any)) != 1 {
+		t.Fatalf("grace sees %v", got)
+	}
+}

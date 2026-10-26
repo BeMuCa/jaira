@@ -55,7 +55,7 @@ func (w *webSource) Epics() ([]web.Epic, error) {
 	out := make([]web.Epic, 0, len(epics))
 	for _, e := range epics {
 		p := epic.Count(e, ix)
-		v := web.Epic{Name: e.Name, Title: e.Title, Description: e.Description, Done: p.Done, Total: p.Total}
+		v := web.Epic{Name: e.Name, Title: e.Title, Description: e.Description, Body: e.Body(), Text: e.Text(), Done: p.Done, Total: p.Total}
 		for _, t := range p.Tickets {
 			c, ok := cards[t.ID]
 			if !ok {
@@ -258,6 +258,29 @@ func (w *webSource) CreateEpic(raw, title, description string) error {
 	_, err = epic.Create(w.s, epicRefs(), name, title, description, nil)
 	if errors.Is(err, epic.ErrExists) {
 		return fmt.Errorf("epic %s: %w", name, web.ErrExists)
+	}
+	return err
+}
+
+// SetEpic rewrites an epic's title, description and text through epic.Set,
+// the call 'jaira epic set' makes. The page always sends what it read, so an
+// editor left open while somebody else saved answers 409 instead of
+// overwriting them.
+func (w *webSource) SetEpic(name string, edit web.EpicEdit) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	p := epic.Patch{Title: edit.Title, Description: edit.Description, Body: edit.Body}
+	if b := edit.Base; b != nil {
+		p.Base = &epic.Fields{Title: b.Title, Description: b.Description, Body: b.Body}
+	}
+	_, _, err := epic.Set(w.s, epicRefs(), name, p)
+	switch {
+	case errors.Is(err, epic.ErrNotFound):
+		return fmt.Errorf("no epic %s: %w", name, web.ErrNotFound)
+	case errors.Is(err, epic.ErrChanged):
+		return fmt.Errorf("%s was changed since you opened it; open it again to see what it says now: %w", name, web.ErrConflict)
+	case errors.Is(err, epic.ErrNoTitle):
+		return fmt.Errorf("%v: %w", err, web.ErrInvalid)
 	}
 	return err
 }

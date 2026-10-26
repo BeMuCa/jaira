@@ -67,14 +67,36 @@ type Rejection struct {
 	At   time.Time `json:"at,omitzero"`
 }
 
-// Epic is one function of the product with its progress.
+// Epic is one function of the product with its progress. Body is its
+// markdown text as the file has it, for the editor; Text is the same as a
+// person reads it, without the heading that repeats the title and without
+// comments, for the page.
 type Epic struct {
 	Name        string   `json:"name"`
 	Title       string   `json:"title"`
 	Description string   `json:"description"`
+	Body        string   `json:"body"`
+	Text        string   `json:"text"`
 	Done        int      `json:"done"`
 	Total       int      `json:"total"`
 	Tickets     []Ticket `json:"tickets"`
+}
+
+// EpicFields are what a person writes about an epic.
+type EpicFields struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Body        string `json:"body"`
+}
+
+// EpicEdit rewrites an epic: a nil field stays as it is. Base is what the
+// editor read; a field it changes that somebody else changed since is
+// refused with ErrConflict, and nothing is written.
+type EpicEdit struct {
+	Title       *string     `json:"title"`
+	Description *string     `json:"description"`
+	Body        *string     `json:"body"`
+	Base        *EpicFields `json:"base"`
 }
 
 // Lane is one lane of the board, in the board's order. Kind is what the
@@ -134,6 +156,7 @@ type Source interface {
 	Ticket(id string) (TicketDetail, error)
 	Lanes() ([]Lane, error)
 	CreateEpic(name, title, description string) error
+	SetEpic(name string, edit EpicEdit) error
 	// Assign puts a ticket into epic; with from set it takes it out of that
 	// epic as well, which is a move.
 	Assign(epic, from, ticketID string) error
@@ -244,6 +267,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/tickets/{id}", s.handleTicket)
 	mux.HandleFunc("GET /api/lanes", s.handleLanes)
 	mux.HandleFunc("POST /api/epics", s.handleCreateEpic)
+	mux.HandleFunc("PATCH /api/epics/{name}", s.handleSetEpic)
 	mux.HandleFunc("POST /api/epics/{name}/tickets", s.handleAssign)
 	mux.HandleFunc("DELETE /api/epics/{name}/tickets/{id}", s.handleUnassign)
 	mux.HandleFunc("GET /api/sync", s.handleSync)
@@ -373,6 +397,15 @@ func (s *Server) handleCreateEpic(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.write(w, s.Source.CreateEpic(body.Name, body.Title, body.Description))
+}
+
+func (s *Server) handleSetEpic(w http.ResponseWriter, r *http.Request) {
+	var edit EpicEdit
+	if err := json.NewDecoder(r.Body).Decode(&edit); err != nil || edit.Title == nil && edit.Description == nil && edit.Body == nil {
+		writeError(w, http.StatusBadRequest, fmt.Errorf(`want {"title": ..., "description": ..., "body": ..., "base": <what the editor read>}`))
+		return
+	}
+	s.write(w, s.Source.SetEpic(r.PathValue("name"), edit))
 }
 
 func (s *Server) handleAssign(w http.ResponseWriter, r *http.Request) {

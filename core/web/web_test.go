@@ -49,6 +49,13 @@ func (f *fakeSource) CreateEpic(name, title, description string) error {
 	f.assigned = append(f.assigned, "+"+name+"/"+title+"/"+description)
 	return nil
 }
+func (f *fakeSource) SetEpic(name string, edit EpicEdit) error {
+	if edit.Base != nil && edit.Base.Title != "Login" {
+		return fmt.Errorf("epic %s: %w", name, ErrConflict)
+	}
+	f.assigned = append(f.assigned, "="+name+"/"+*edit.Title)
+	return nil
+}
 func (f *fakeSource) Lanes() ([]Lane, error) { return nil, f.err }
 func (f *fakeSource) Ticket(id string) (TicketDetail, error) {
 	if id != "A" {
@@ -183,16 +190,19 @@ func TestMoveRemoveCreate(t *testing.T) {
 		{"POST", "/api/epics", `{"name":"pay","title":"Pay","description":"d"}`, 200},
 		{"POST", "/api/epics", `{"name":"login"}`, 409},
 		{"POST", "/api/epics", `{"title":"no name"}`, 400},
+		{"PATCH", "/api/epics/login", `{"title":"Anmeldung","base":{"title":"Login"}}`, 200},
+		{"PATCH", "/api/epics/login", `{"title":"Anmeldung","base":{"title":"Stale"}}`, 409},
+		{"PATCH", "/api/epics/login", `{"base":{"title":"Login"}}`, 400},
 	} {
 		if w := do(t, h, c.method, c.target, c.body); w.Code != c.code {
 			t.Errorf("%s %s %s: %d %s; want %d", c.method, c.target, c.body, w.Code, w.Body, c.code)
 		}
 	}
-	want := []string{"old>login/B", "-login/B", "+pay/Pay/d"}
+	want := []string{"old>login/B", "-login/B", "+pay/Pay/d", "=login/Anmeldung"}
 	if fmt.Sprint(src.assigned) != fmt.Sprint(want) {
 		t.Errorf("writes = %v; want %v", src.assigned, want)
 	}
-	if pushes != 5 {
+	if pushes != 7 {
 		t.Errorf("pushes = %d; want one per write that reached the source", pushes)
 	}
 }
