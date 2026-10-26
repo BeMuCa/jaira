@@ -16,7 +16,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:07Z
-updated-at: 2026-10-23T15:26:07Z
+updated-at: 2026-10-26T19:12:42Z
+assignee: BeMuCa
+updated-by: BeMuCa
 ---
 
 # Die Testing-Lane verlangt keinen vollen Suite-Lauf mehr; die Suite laeuft einmal vor dem PR
