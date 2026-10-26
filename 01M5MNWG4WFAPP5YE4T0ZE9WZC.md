@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWG4WFAPP5YE4T0ZE9WZC
 title: "Eine Erlaubnisliste im Repo laesst Worker arbeiten, ohne bei jedem Befehl zu fragen"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Worker und Subagenten fragen nur bei wirklich kritischen Befehlen (rm, push, reset --hard, kill-server) nach; alles, was eine Lane braucht, ist im Repo erlaubt, und die Doku sagt, wo Verbots- und Erlaubnislisten liegen und welche Settings ein Worktree liest."
@@ -16,14 +16,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:47Z
-updated-at: 2026-10-26T19:52:03Z
+updated-at: 2026-10-26T19:52:26Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-253301
 claimed-at: 2026-10-26T19:10:55Z
-outcome-what: "Added a committed .claude/settings.json. permissions.allow covers the lane commands: go build/vet/test, gofmt, the git commands lanes use, every jaira subcommand, tmux, the read/copy tools, rm -r /tmp/*, Edit(/**). permissions.ask: git push, gh pr create. permissions.deny: rm -rf/-fr, git reset --hard, git filter-branch, gh pr merge, tmux kill-server. README: '### Permissions in a worktree' under With Claude Code (which settings a worktree reads, trust, autoMode, /permissions), plus a paragraph under Development on what this repo's file allows, asks for and denies. No release note: nothing a jaira user runs changes."
-outcome-why: "Workers stopped to ask for routine lane commands (go build, git commit, jaira move/dod), because the repo carried no permission rules, and the user settings' autoMode.allow takes prose for the classifier, not patterns. A deny list a teamlead put into a worktree was never read, and nothing said which file a worktree reads. The maintainer's rule: critical commands ask, not forbid."
-outcome-resolves: "DoD 1 (reworded per the human answer): .claude/settings.json:38, where push and PR create ask, the rest is denied, rm -rf even under /tmp. DoD 2: README.md:672, the worktree reads its own settings.json, but settings.local.json and trust come from the main checkout's root. DoD 3: a fresh headless sonnet worker on a scratch board ran the in-progress lane with 0 permission denials (note on ZE9WZC). Shell expansions such as the lane prompt's --commits \"$(git rev-parse HEAD)\" always ask; follow-up W9AVBE."
+outcome-what: "Added a committed .claude/settings.json. permissions.allow covers the lane commands: go build/vet/test, gofmt, the git commands lanes use, every jaira subcommand, tmux, the read/copy tools, Edit(/**). permissions.ask: git push, gh pr create. permissions.deny: rm -rf/-fr, git reset --hard, git filter-branch, gh pr merge, tmux kill-server. README: '### Permissions in a worktree' under With Claude Code (which settings a worktree reads, trust, autoMode, /permissions), plus a paragraph under Development on what this repo's file allows, asks for and denies. No release note: nothing a jaira user runs changes."
+outcome-why: "Workers stopped to ask for routine lane commands (go build, git commit, jaira move/dod), because the repo carried no permission rules, and the user settings' autoMode.allow takes prose for the classifier, not patterns. A settings.local.json a teamlead put into a worktree was never read, and nothing said which file a worktree reads. The maintainer's rule: critical commands ask, not forbid."
+outcome-resolves: "DoD 1: .claude/settings.json:37, where push and PR create ask and the rest is denied, rm -rf even under /tmp. DoD 2: README.md:675, the worktree reads its own settings.json, but settings.local.json and trust come from the main checkout's root. DoD 3: a fresh headless sonnet worker on a scratch board ran the in-progress lane with 0 permission denials (note on ZE9WZC). Testing found the rm -r /tmp/* allow never matched (paths outside the working directory are refused), so it was dropped. Shell expansions such as the lane prompt's --commits \"$(git rev-parse HEAD)\" always ask; follow-up W9AVBE."
 review-summary: "none"
 round: 5
 question: "Should .claude/settings.json deny or ask for git push and gh pr create? The goal says workers ask (\"fragen nach\"), DoD 1 says forbid (\"verbietet\"); today both are denied. (B, recommended) Move both to permissions.ask and keep gh pr merge denied: /jaira-role-pr and your own session work again, with a prompt on every push and every PR create that no allow can silence; DoD 1 then says \"asks\" for these two. (A) Keep deny: a deny beats every allow, settings.local.json included, so neither /jaira-role-pr (SKILL.md:212 push, :308 create) nor your own Claude session can push in this repo; you push from your terminal, and README.md:1121 / CLAUDE.md:223 (\"an agent pushes its branch\") must be reworded. Either way a headless worker run with --permission-prompts none is refused, because that flag turns every ask into a denial. B or A?"
