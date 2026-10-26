@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:44Z
-updated-at: 2026-10-26T19:17:53Z
+updated-at: 2026-10-26T19:17:56Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-252449
@@ -52,3 +52,4 @@ claimed-at: 2026-10-26T19:10:49Z
 
 ## Progress
 - **2026-10-26 19:15 · BeMuCa** — design (driver, pre-process skipped by ticket options): the record is one file, <git common dir>/jaira/teamlead, beside spawn.sh's jaira/panes/ - shared by every worktree, machine-local, never in git status. Parent first, record second: a parent whose uds: socket still exists keeps the reports, so a second live teamlead on the same clone never takes another's workers (the rule in both SKILL.md files). Only a gone socket is replaced, and only by the address the teamlead wrote itself on start - not a guess among peers. Rejected: a Go command over RepoStateDir (binary change and new CLI surface for one file); record-first (would route a live teamlead's reports to a second one); spawn.sh writing the record (a dispatcher calling spawn.sh would overwrite it).
+- **2026-10-26 19:17 · BeMuCa** — Decision: TestCrossReferencesCarryThePrefix read 'scripts/teamlead.sh' as a bare /teamlead role reference; added an exemption for a path segment '/scripts' in the test rather than renaming the script.
