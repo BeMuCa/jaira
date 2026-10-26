@@ -75,6 +75,10 @@ done
 
 slug="${1:?slug}"; ticket="${2:?ticket id}"; lane="${3:?lane}"
 root="${4:-$PWD}"
+# In the shell's own spelling, as the worktree beside it is: under Git Bash a
+# root handed in as C:\... would otherwise reach .jaira/worktree-setup next to
+# a /c/... worktree. Where root already is an absolute path, nothing changes.
+root="$(cd "$root" && pwd)" || { echo "no such directory: ${4:-$PWD}" >&2; exit 1; }
 herdr="${HERDR_BIN_PATH:-herdr}"
 [ "${HERDR_ENV:-}" = 1 ] || { echo "not inside a Herdr pane" >&2; exit 1; }
 

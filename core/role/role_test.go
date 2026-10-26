@@ -916,7 +916,16 @@ esac
 			t.Fatalf("spawn.sh: %v\n%s", err, out)
 		}
 		got, _ := os.ReadFile(args)
-		if want := strings.Join([]string{wt, "ab12cd", off, root}, "\n") + "\n"; string(got) != want {
+		// Both paths in the shell's own spelling: under Git Bash that is
+		// /tmp/... for the C:\... Go hands in, and never the two mixed.
+		shell := func(dir string) string {
+			b, err := exec.Command(bash, "-c", `cd "$1" && pwd`, "bash", dir).Output()
+			if err != nil {
+				t.Fatalf("pwd in %s: %v", dir, err)
+			}
+			return strings.TrimSpace(string(b))
+		}
+		if want := strings.Join([]string{shell(wt), "ab12cd", off, shell(root)}, "\n") + "\n"; string(got) != want {
 			t.Errorf("the setup got\n%s\nwant worktree, slug, offset %s and root:\n%s", got, off, want)
 		}
 		if env, _ := os.ReadFile(filepath.Join(wt, ".env")); string(env) != "FROM_SETUP=1\n" {
