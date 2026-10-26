@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:53Z
-updated-at: 2026-10-26T19:33:20Z
+updated-at: 2026-10-26T19:33:45Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-264760
@@ -99,3 +99,4 @@ Text, der falsch wird:
 - Release-Notiz core/release/notes/NJBTVC.md (geaenderte Move-Ausgabe, Move wird nicht mehr abgelehnt).
 - **2026-10-26 19:24 · BeMuCa** — Driver: DoD um 3 Punkte ergaenzt, die der Brainstorm vorgeschlagen hat (nur-DoD-Ablehnung, Hinweis in Text/JSON/TUI, Doku). DoD-Punkt 2 (go test ./... -race) laeuft einmal vor dem PR, nicht in einer Lane.
 - **2026-10-26 19:28 · BeMuCa** — in-progress: CodePlanIncomplete entfernt (nichts emittiert es mehr, kein anderer Verbraucher). Hinweis = gate.OpenPlanHints -> move.Result.Hints (nur bei Ziellane, vor settle berechnet) -> CLI 'Note:' vor der Move-Zeile + JSON 'hints'; TUI-Meldung an 3 Stellen. Dry-run bewusst unveraendert (sagt nur 'would be allowed'). Gate-/Move-Test: die nackte Fixture loest andere Gates aus (assignee, commits, Outputs), daher pruefen die Tests nur, dass der Plan nicht darunter ist; der Move-Test nutzt --force. Nicht von Hand gegen CLI/TUI gelaufen. Boards mit alter done-Beschreibung (.jaira/lanes/done.md) nicht angefasst.
+- **2026-10-26 19:33 · BeMuCa** — Driver: der in-progress-Worker hat die Plan-Schritte von Hand unter ## Plan verschoben. Grund: 'jaira dod --plan --add' schrieb sie bei einem Plan mit Platzhalter-Text als erste Checkliste oben in den Body, sie zaehlten dann als DoD 1-7. Nicht auf einer Board-Kopie nachgestellt; moeglicher Folge-Bug.
