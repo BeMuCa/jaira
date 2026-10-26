@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:58Z
-updated-at: 2026-10-26T19:51:49Z
+updated-at: 2026-10-26T19:51:52Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: x6hb6v-driver
@@ -29,7 +29,8 @@ claimed-at: 2026-10-26T19:50:01Z
 
 - [x] Der Einzeiler leitet den Lanewechsel aus dem Board ab, nicht aus dem Berichtstext; nennt der Text eine Lane, die das Ticket nicht hat, erscheint kein Wechsel
   proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx lanesNow()/shorten(), digest.ts digest(text, laneChange)
-- [ ] Ein Test deckt die drei beobachteten Fehlfaelle ab
+- [x] Ein Test deckt die drei beobachteten Fehlfaelle ab
+  proof: tests/cockpit.test.ts 'the lane in the line comes from the board' (4 tests)
 - [ ] Release-Notiz unter core/release/notes/
 
 ## Options
