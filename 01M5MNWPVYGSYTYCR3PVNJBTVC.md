@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:53Z
-updated-at: 2026-10-26T20:21:16Z
+updated-at: 2026-10-26T20:21:22Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-650718
@@ -33,6 +33,21 @@ review-gaps: |-
   Removed: hintMessage (internal/tui/model.go, a one-line forward to strings.Join) - inlined as strings.Join(res.Hints, "\n") at model.go:2012, model.go:2084, signoff.go:206; stale clause in the comment above core/move/move_test.go:178 ('the plan must not be among the overridden ones' described the Overrode loop critique 1 dropped). Considered and left: gate.OpenPlanHints (core/gate/gate.go:691) vs ticket.PlanComplete (core/ticket/schema.go:579) - PlanComplete returns texts without step numbers, the hint needs the number for 'jaira dod <id> <n> --done --plan', and PlanComplete keeps its caller internal/cli/tickets.go:1615; the DoD refusal loop (core/gate/gate.go:358-385) has the same skip-settled-and-number shape but yields Violations with other wording - a shared helper for two sites would be a new abstraction; folding the hint into settleMessage (internal/tui/model.go:2121) - it reports a settle, and the three sites already compose hint-then-trim the same way; no notify/flash helper (model.go:1856, :1016) covers composing the text. Dead code: CodePlanIncomplete already removed, no other reference in Go, cockpit or docs; remaining 'the plan finished' text is history (core/lane/corrections.go:94, core/move/oldboard_test.go:29) and this repo's own .jaira/lanes/done.md:11, which the release note covers. Cost: OpenPlanHints runs once per terminal move (core/move/move.go:149), nothing to hoist.
   review: Nothing that blocks. Minor: (1) On a board whose terminal lane has logbook-on-entry: true, the same move files the ticket, and the command the hint names then fails - reproduced on a scratch board: "jaira: ticket: not found: XMGWDM", exit 5. The shipped done lane does not file on entry, so only opted-in lanes hit it; release-note line 1 ("tick it afterwards") is wrong there as well. (2) No automated test pins the CLI output (Note: line before the move line - the BDV0HM "last line is the move" rule - and the warnings key) or the three TUI messages; checked by hand only. (3) 'jaira dod --help' (internal/cli/checklist.go:37-38) still says an in-progress item means "a ticket carrying one cannot enter a terminal lane"; read with --plan that is now false. Not one of the four files DoD 5 names. (4) Cosmetic: docs/AGENTS.md:228 not re-wrapped. Outside this diff, reproduced: 'jaira dod <id> --plan --add' on a fresh ticket (Plan holds only the placeholder) writes the steps at the top of the body, not under ## Plan (driver note 19:33). DoD 2: test half open by design (full race suite before the PR); release-note half holds - two lines, each one unwrapped line starting '- ', written as instructions, no version heading.
 test-verdict: "pass: gofmt/vet/build clean, core/gate+move+lane and cli Move|Flow race tests green, DoD 1/3/4/5 verified in tree, behaviour exercised on scratch board (CLI text Note: before move line, --json warnings, DoD refusal without plan step, TUI NOTE message); DoD 2 left open for the pre-PR full race suite"
+review-verdict: "review: The diff meets DoD 1, 3, 4, 5 and the release-note half of DoD 2; no blocking defect. Checked by hand on a scratch board: Note: line before the move line, warnings in --json, DoD-only refusal, TUI move and signoff accept both show the hint; the installed 0.5.4 refuses the same ticket. The gate tests fail with the plan gate put back. Recommend signoff; the gaps are optional follow-ups."
+review-round: 2
+review-check: |-
+  1. cd /home/berk/git/jAIra-NJBTVC && go build -o /tmp/njbtvc/jaira ./cmd/jaira
+  2. mkdir -p /tmp/njbtvc/repo && cd /tmp/njbtvc/repo && git init -q && git commit -q --allow-empty -m init
+  3. export JAIRA_NO_FETCH=1 JAIRA_HOME=/tmp/njbtvc/jhome; J=/tmp/njbtvc/jaira; $J init
+  4. $J create "plan probe" --goal g --context c --dod "the criterion" - note the 6-letter handle it prints; it is ID below
+  5. sed -i 's/^<Steps, in order.*/- [x] write the spec\n- [ ] implement/' .jaira/tickets/*.md - two plan steps under ## Plan, step 2 open (by hand: 'jaira dod --plan --add' puts them in the wrong place on a fresh ticket, a separate bug)
+  6. $J set ID assignee="$(git config user.name)" outcome-what=w outcome-why=y outcome-resolves=r
+  7. $J dod ID 1 --done --proof x
+  8. git commit -q --allow-empty -m "feat(ID): probe"
+  9. $J move ID --to done - you see: Note: step 2 ("implement") of the plan is still open; mark it with 'jaira dod ID 2 --done --plan' - and as the LAST line: ID → done. (~/.local/bin/jaira refuses this same move with "the plan is not finished".)
+  10. $J move ID --to backlog; $J move ID --to done --json - the JSON has "warnings": ["step 2 (\"implement\") of the plan is still open; ..."]
+  11. $J move ID --to backlog; $J dod ID 1 --todo; $J move ID --to done; echo $? - refused, exit 3, exactly one bullet "the definition of done is not met: criterion 1 ...", nothing about the plan
+  12. $J dod ID 1 --done --proof x; $J move ID --to signoff; run $J, press Enter on the project list, press the Right arrow 7 times to the "Human Review" column, Enter, then a - a NOTE box says "Accepted ID into Done." and below it the step 2 line from 9
 ---
 
 # Ein offener Plan-Punkt sperrt die Ziellane nicht mehr, wenn die Definition of Done erfuellt ist
