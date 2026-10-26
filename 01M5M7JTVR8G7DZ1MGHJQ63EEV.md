@@ -1,8 +1,8 @@
 ---
 id: 01M5M7JTVR8G7DZ1MGHJQ63EEV
 title: "Tickets im Cockpit einzeln abarbeiten: Ticket aufklappen, Details rechts, Accept/Deny darunter"
-status: backlog
-ready: false
+status: brainstorm
+ready: true
 creator: BeMuCa
 goal: "A person works off waiting tickets in the cockpit one by one: expanding a ticket opens a pane with id, one-liner, how it was implemented, information and open questions, with Accept and Deny beneath."
 context: |-
@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T11:15:50Z
-updated-at: 2026-10-26T19:10:36Z
+updated-at: 2026-10-26T19:12:29Z
 assignee: BeMuCa
 updated-by: BeMuCa
 ---
