@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWDKYJGC78B3EKMX2TGXG
 title: "Ein Worker findet seinen Teamlead nach einem Neustart wieder, und eine Frage an die Person kommt als fertige Zeile"
-status: testing
+status: review
 ready: true
 creator: BeMuCa
 goal: "Nach einem Crash oder Neustart des Teamleads erreichen die Nachrichten der Worker ihn weiter, ohne dass jemand den neuen Namen von Hand nachreicht; und eine Frage, die nur die Person per Kommando loesen kann, kommt mit der Zeile, die sie tippen muss."
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:44Z
-updated-at: 2026-10-26T19:36:30Z
+updated-at: 2026-10-26T19:36:32Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-252449
