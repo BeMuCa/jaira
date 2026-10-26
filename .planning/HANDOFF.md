@@ -142,8 +142,8 @@ die 12 ältesten liegen im Logbuch (bemuca-20260903/). In signoff warten
 NJPQWE, 76WCCW und KA9CFA. Später am Abend dazu: NJPQWE Runde 5 (gestapelte
 Karten teilen sich eine Border-Reihe — die "Lücke" waren zwei Glyph-Reihen;
 pro weiterer Karte wird eine Zeile frei); Board-Registry von 7 Dummy-Boards
-bereinigt (bleiben: LHChecker, jAIra, localhtml — requirementsgenie liegt
-nicht unter ~/git und war nie registriert); LHChecker + localhtml per
+bereinigt (bleiben: jAIra und zwei Repos eines Kollegen — ein weiteres Projekt liegt
+nicht unter ~/git und war nie registriert); die zwei Repos des Kollegen per
 'jaira update' refreshed (Babysit-Sätze drin, dort NICHT committet — Berks
 Repos). Deren done.md hat noch KEIN holds — Cap dort ist Berks Zuruf.
 

@@ -6,7 +6,7 @@ ready: true
 creator: Alexander Sacharov
 goal: "Wer ein Ticket anlegt, sieht in derselben Zeile, ob es auf einem Ref liegt oder als Datei; ein Datei-Ticket kommt mit einem Befehl auf seinen Ref; und ein Befehl sagt, in welchem Modus dieses Board laeuft und warum."
 context: |-
-  Alex hat am 2026-09-14 eine Stunde verloren, weil siebzehn Tickets auf dem requirementsgenie-Board still als Datei angelegt wurden statt auf ihren Refs. Kein Befehl hat das gesagt, und zurueck ging es auch nicht.
+  Alex hat am 2026-09-14 eine Stunde verloren, weil siebzehn Tickets auf dem Board eines anderen Projekts still als Datei angelegt wurden statt auf ihren Refs. Kein Befehl hat das gesagt, und zurueck ging es auch nicht.
 
   Die Ursache selbst - der Remote-Name gilt pro Rechner statt pro Board - ist 9ET6NC und wird dort behoben. Dieses Ticket ist alles andere: dass derselbe Fehler wieder eine Stunde kosten wuerde, auch wenn er aus einem anderen Grund auftritt.
 

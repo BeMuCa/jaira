@@ -86,7 +86,7 @@ func TestNextNamesTheCommandThatClearsAnAbandonedClaim(t *testing.T) {
 	h := ticket.Handle(tk.ID)
 	if _, err := s.Mutate(tk.ID, func(x *ticket.Ticket) error {
 		// Specified, so 'next' hands it out, and claimed by a session that died
-		// eleven hours ago — the requirementsgenie board's case.
+		// eleven hours ago — the case of a board in another project.
 		for f, v := range map[string]string{
 			ticket.FieldGoal: "g", ticket.FieldDoD: "d", ticket.FieldContext: "c",
 			ticket.FieldAssignee: "berk", ticket.FieldClaimedBy: "dead-session",

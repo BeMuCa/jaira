@@ -75,7 +75,7 @@ func TestHomeCountsTicketsThatLiveOnlyOnTheirRef(t *testing.T) {
 	if _, err := bobSync.Incoming(); err != nil {
 		t.Fatal(err)
 	}
-	// The case from demo-video: refs, and not a single ticket file.
+	// The case from the video project: refs, and not a single ticket file.
 	if e := describe(bob.Root, catalogue(t), true); e.Err != nil || e.Total != 2 || e.Open != 1 {
 		t.Fatalf("a board with refs and no files: %d open / %d (err %v), want 1 open / 2", e.Open, e.Total, e.Err)
 	}

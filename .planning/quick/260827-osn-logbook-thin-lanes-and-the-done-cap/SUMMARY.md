@@ -17,7 +17,7 @@ Unreleased (PR #5, after v0.1.0), so a rename with no migration owed. `sync`
 implied a server and collided with `sync-tasks`. `.jaira/sync/` →
 `.jaira/logbook/`, `Store.Sync` → `Store.Logbook`, JSON `synced` → `logged` /
 `logbook`. `Restore` still reads the old folder name — one exists in the
-wild, `alsa-20260823` on his req board — and a test builds one by hand.
+wild, `alsa-20260823` on his test project board — and a test builds one by hand.
 
 `archive --help` now says it stamps commits (it has since PR #5) and says in
 one sentence which command is for what: archive for a ticket not being
@@ -87,7 +87,7 @@ for when a ticket entered its lane.
   lane artifacts, `NFJCTK` a lane schema, `B4MGTP` a ticket's foldable
   history, and `SPDWGH` above.
 - **Blocked by the permission classifier:** untracking `.jaira/lanes/` on his
-  req board (`git rm --cached` in another repository). He has the two
+  test project board (`git rm --cached` in another repository). He has the two
   commands to run himself.
 
 ## Third message: the injection is gone
@@ -95,7 +95,7 @@ for when a ticket entered its lane.
 - **`ETR0PX` (`ef8f2d9`), at signoff.** `jaira update` re-added `/.jaira/` to a
   shared board's .gitignore — measured on two scratch boards. It writes the
   agent note only now. This was the blocker for deploying the board-aware
-  block to his req board, whose CLAUDE.md still carries the old block.
+  block to his test project board, whose CLAUDE.md still carries the old block.
 - **`BNZERQ` (`743737f`, `61789a2`), at signoff.** A board is its lane directory.
   `Load` no longer injects the ten shipped lanes under a board's files; a
   board opened for the first time gets its files written (default board or
@@ -106,10 +106,10 @@ for when a ticket entered its lane.
   shipped one with `--force`), `n` writes into the board's own directory.
   Verified on four scratch scenarios and on this repository's own board,
   which migrated (deleted its `removed`) and was silent on the second run.
-  **His req board will migrate on its next jaira command** — eight shipped
+  **His test project board will migrate on its next jaira command** — eight shipped
   lane files written beside its three, `removed` deleted, one message.
 - `QA3GN1` is a symptom of the above: parked, `blocked-by BNZERQ`.
-- His req board's `.jaira/lanes/` untracked and ignored — staged there, not
+- His test project board's `.jaira/lanes/` untracked and ignored — staged there, not
   committed (his call).
 - The brainstorm on the schema (lanes, ticket shape, TUI forms) is postponed
   at his request: too much clutter in one go.
@@ -137,7 +137,7 @@ for when a ticket entered its lane.
 - `human` is marked "a person's, never out" in the managed block but only
   `signoff` carries `requires-human-exit`; the gate lets an agent leave
   `human`. Proved with `--dry-run` on this board. Not yet a ticket.
-- His req board tracks `.jaira/lanes/{critique,optimize,review}.md`, `order`
+- His test project board tracks `.jaira/lanes/{critique,optimize,review}.md`, `order`
   and `removed` in git — his personal board structure is in the shared repo.
   `jaira share` was never run there (the `/.jaira/` ignore line is commented
   out by hand), so `AddLanesIgnore` never fired. His call.
