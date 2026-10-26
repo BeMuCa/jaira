@@ -16,7 +16,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:01Z
-updated-at: 2026-10-23T15:26:01Z
+updated-at: 2026-10-26T19:08:15Z
+assignee: BeMuCa
+updated-by: BeMuCa
 ---
 
 # Die Warnung 'Board von aelterer Version eingerichtet' kommt einmal, nicht bei jedem Aufruf
