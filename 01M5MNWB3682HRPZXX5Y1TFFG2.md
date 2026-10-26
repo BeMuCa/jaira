@@ -20,7 +20,7 @@ commits:
   - 4b920015d063527e9d48d75cc242d8342bf17d2e
   - 1c4ef1ae3addca1b8809f93613402b0a2c14b73a
 created-at: 2026-10-23T15:25:41Z
-updated-at: 2026-10-26T19:43:36Z
+updated-at: 2026-10-26T19:50:20Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: driver-1TFFG2
@@ -30,6 +30,7 @@ outcome-why: "A worker tab stopped at its first Bash question, once for 49 minut
 outcome-resolves: "DoD 1: settings.PermissionModeFor, permission_mode in spawn.sh and usage(), TestPermissionModeFor, TestSpawnStartsClaudeInThePersonsPermissionMode. DoD 2: the arrival check after send-keys (exit 1 or 4), TestSpawnChecksThePromptArrived. DoD 3: Herdr-stub tests and core/release/notes/1TFFG2.md exist, go test ./core/role -race green; the full go test ./... -race is left for the run before the PR."
 review-summary: none
 round: 2
+review-gaps: "removed: in spawn.sh's arrival check the rule 'done counts only after an idle start' stood twice (in the poll loop's case and again in a fix-up line after it); it is now one line inside the loop, which also drops the started variable (st already holds it). Removed the permission_mode=\"\" initialiser, assigned unconditionally two lines on. newSpawnRig returns its struct directly instead of through a variable used once. Considered and left: the two-line pane-state read now in both poll loops of spawn.sh (a shared function would run it in a command substitution, where set -e no longer stops on a failing 'herdr pane get', so a cleanup would change the exit); run-lane.sh:88 reads agent_status for a different job (watching, not starting); no Go helper for the claude config dir existed (core/role/target.go and core/lane/lane.go resolve other directories), so PermissionModeFor reading it itself is not a duplicate; the permission-mode case allowlist in spawn.sh (critique pass 2 let it stand as the shell guard); state=\"\" before the arrival loop (left is never below 5, but set -u would stop on it if that ever changed); the second read() in TestRolesListReportsTheDispatchSetting (one more roles list run, test only); the 'still idle' wording when a done start stays done (behaviour, not cleanup); the stub line copied into six existing spawn tests (critique note (d))."
 ---
 
 # spawn.sh startet Worker-Tabs im Berechtigungsmodus der Person und merkt, wenn der Prompt nicht ankommt
