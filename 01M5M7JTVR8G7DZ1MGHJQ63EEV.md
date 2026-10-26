@@ -1,7 +1,7 @@
 ---
 id: 01M5M7JTVR8G7DZ1MGHJQ63EEV
 title: "Tickets im Cockpit einzeln abarbeiten: Ticket aufklappen, Details rechts, Accept/Deny darunter"
-status: brainstorm
+status: human
 ready: true
 creator: BeMuCa
 goal: "A person works off the tickets waiting for them one at a time in the cockpit: pressing a ticket in the band opens its pane with title, goal, how it was done, what the review found, the DoD and the open question, read from the ticket's existing fields, with Accept, Give back (Deny), Explain or Discuss beneath, each doing what the band's button does today."
@@ -16,9 +16,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T11:15:50Z
-updated-at: 2026-10-26T19:20:23Z
+updated-at: 2026-10-26T19:20:30Z
 assignee: BeMuCa
 updated-by: BeMuCa
+question: |-
+  1. Pane content: (a) existing fields only, long ones folded, mixed languages; (b) an agent writes a short card per ticket in your language, as in the chat walkthrough, at one model call per ticket; (c) (a) now and (b) later only if (a) reads badly. Recommended (c).
+  2. The open question of a signoff ticket: (a) you read it out of the verdict and newest notes in the pane; (b) the review lane writes it into the existing question field, which the band already shows with Discuss (overlaps ZWK0PF); (c) a new field of its own. Recommended (b), as its own follow-up.
+  3. Opening a ticket from the band: (a) the ticket's ID in the row becomes a button; (b) (a) plus digits 1-3 from an empty prompt, at the cost that a prompt starting with a digit presses the row instead. Recommended (a).
+  4. After Accept or Deny in the pane: (a) the pane closes; (b) the pane moves on to the next waiting ticket. Recommended (b).
 ---
 
 # Tickets im Cockpit einzeln abarbeiten: Ticket aufklappen, Details rechts, Accept/Deny darunter
