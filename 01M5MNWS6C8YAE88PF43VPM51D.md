@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWS6C8YAE88PF43VPM51D
 title: "Ein Checkout, dessen Ticket anderswo abgelegt wurde, zeigt es als abgelegt statt als geaendert"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Nach jaira logbook in einem Worktree verwirrt die alte Ticketdatei in den anderen Worktrees und im Haupt-Checkout niemanden mehr: sie gilt als abgelegt, und jaira bietet an, sie zu entfernen."
@@ -16,11 +16,20 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:56Z
-updated-at: 2026-10-26T19:45:11Z
+updated-at: 2026-10-26T19:53:16Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-374545
 claimed-at: 2026-10-26T19:21:26Z
+outcome-what: "jaira list, jaira show and the board recognise a ticket file whose ticket was filed away (logbook/archive) in another worktree or already on the landing branch, and treat it as filed: list puts it in a 'Filed elsewhere' block and a filed_elsewhere JSON array outside tickets/count, show prints where it was filed and the removal command (JSON filed_elsewhere, remove_stale), the board moves the card to the logbook foot uncounted and read-only, and next / list --actionable skip it."
+outcome-why: "Only a copy whose updated-at is strictly older than the filed copy's is marked, so a restored copy or one edited after the filing stays open. The check reads existing worktrees and the landing branch (two git processes per listing, none per ticket, cached), with no file-format change; the removal command is printed for a person to run (rm for an untracked copy, git restore plus git merge <landing> for a tracked one) because jaira delete would also take down the ref before the ticket has landed."
+outcome-resolves: "After jaira logbook in one worktree, the other worktrees and the main checkout no longer show the old ticket file as open work, no longer count it or hand it to jaira next, and say how to remove the stale copy."
+review-summary: |-
+  core/ticket/store.go:1024 marks inside Store.List, so every List caller pays the git check: loadBoardEnv (internal/cli/root.go:305) runs it for set/move/dod/logbook/archive, contrary to the in-progress note 'writes pay no git call'. Measured with GIT_TRACE on a scratch board: 'jaira set' 5 -> 7 git processes, 'jaira show' 5 -> 9 because the check runs twice (tickets.go:815, then envFor -> List). Drop the call from List and call s.MarkFiledElsewhere(all...) where the mark is read: list after loadBoardEnv (tickets.go:615), next (flow.go:380), the TUI reload after m.store.List() (model.go:442); show keeps its single call at tickets.go:815.
+  core/refsync/filedelsewhere.go:131 RemoveHint returns a bare 'git restore <path>' for a tracked copy filed in another worktree, printed as 'remove the copy here with:' (tickets.go:779, tickets.go:846, internal/tui/logbook.go:72). On a committed, unmodified copy - the DoD fixture's state - that is a no-op: ran it on a scratch board, the file stays and stays marked. Add the plan's second half: the copy leaves with the merge of the branch that filed it, naming that branch from the 'branch refs/heads/...' line of the worktree list --porcelain output Worktrees() (core/gitref/gitref.go:620) already reads.
+  core/refsync/filedelsewhere.go:51 looks for the other board at the worktree root (ticket.At(dir)) and skips itself by comparing that root with Store.Root (:46), so a board inited in a subdirectory (jaira init uses the cwd, Discover walks up) is never found in another worktree - while the landing half finds it (FiledOn's ls-tree pathspec resolves relative to Store.Root, checked). Take prefix = filepath.Rel(own worktree entry, Store.Root) from the same Worktrees() list, look in filepath.Join(dir, prefix), skip the own entry. No extra git call.
+  core/gitref/gitref.go:591 FiledBlob.Path is set and never read, and ReadBlobs (:616) is a one-line export of catBatch with one caller. Let FiledOn read the matched blobs itself (idOf returns "" for an id the caller does not want) and return id -> bytes; drop FiledBlob and ReadBlobs.
+  core/release/notes/VPM51D.md:1 is 662 characters (the longest line in core/release/notes; next is 573) and packs four changes, where the plan asked one '- ' line per change. Split it: (a) list, show and the board show a stale copy as filed elsewhere with the command beside it, nothing is deleted, a restored or later-edited copy stays open; (b) jaira next and list --actionable skip it. Line 2 (JSON) stays.
 ---
 
 # Ein Checkout, dessen Ticket anderswo abgelegt wurde, zeigt es als abgelegt statt als geaendert
