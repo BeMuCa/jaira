@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:53Z
-updated-at: 2026-10-26T19:44:56Z
+updated-at: 2026-10-26T19:45:01Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-650718
@@ -39,7 +39,7 @@ round: 2
 ## Definition of Done
 
 - [x] Ein Move in eine Ziellane mit vollstaendiger DoD und offenem Plan-Punkt wird nicht mehr abgelehnt; die Ausgabe nennt den offenen Plan-Punkt als Hinweis; ein Test deckt den Fall
-  proof: core/gate/plan_test.go TestOpenPlanDoesNotRefuseTheMove (CheckAdvance Err()==nil), core/move/move_test.go Hints check
+  proof: core/gate/plan_test.go TestUnfinishedPlanDoesNotBlockTerminalLane (CheckAdvance Err()==nil); core/move/move_test.go Hints check
 - [ ] go test ./... -race gruen; Release-Notiz unter core/release/notes/
   proof: release note core/release/notes/NJBTVC.md exists; full race suite still to run
 - [x] Bei unvollstaendiger DoD nennt die Ablehnung nur die offenen DoD-Punkte, keinen Plan-Schritt mehr
