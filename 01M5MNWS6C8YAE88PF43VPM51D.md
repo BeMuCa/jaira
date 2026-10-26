@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWS6C8YAE88PF43VPM51D
 title: "Ein Checkout, dessen Ticket anderswo abgelegt wurde, zeigt es als abgelegt statt als geaendert"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Nach jaira logbook in einem Worktree verwirrt die alte Ticketdatei in den anderen Worktrees und im Haupt-Checkout niemanden mehr: sie gilt als abgelegt, und jaira bietet an, sie zu entfernen."
@@ -16,13 +16,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:56Z
-updated-at: 2026-10-26T19:56:51Z
+updated-at: 2026-10-26T19:57:29Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-374545
 claimed-at: 2026-10-26T19:21:26Z
 outcome-what: "jaira list, jaira show and the board recognise a ticket file whose ticket was filed away (logbook/archive) in another worktree or already on the landing branch, and treat it as filed: list puts it in a 'Filed elsewhere' block and a filed_elsewhere JSON array outside tickets/count, show prints where it was filed and the removal command (JSON filed_elsewhere, remove_stale), the board moves the card to the logbook foot uncounted and read-only, and next / list --actionable skip it."
-outcome-why: "Only a copy whose updated-at is strictly older than the filed copy's is marked, so a restored copy or one edited after the filing stays open. The check reads existing worktrees and the landing branch (two git processes per listing, none per ticket, cached), with no file-format change; the removal command is printed for a person to run (rm for an untracked copy, git restore plus git merge <landing> for a tracked one) because jaira delete would also take down the ref before the ticket has landed."
+outcome-why: "Only a copy whose updated-at is strictly older than the filed copy's is marked, so a restored copy or one edited after the filing stays open. The check runs only where the mark is read (list, show, next, board reload), reads existing worktrees and the landing branch with a fixed number of git processes, none per ticket, and changes no file format. The removal command is printed for a person to run (rm for an untracked copy; for a tracked one git restore plus git merge of the branch that filed it, or of the landing branch), because jaira delete would also take down the ref before the ticket has landed and git rm would conflict with the next merge."
 outcome-resolves: "After jaira logbook in one worktree, the other worktrees and the main checkout no longer show the old ticket file as open work, no longer count it or hand it to jaira next, and say how to remove the stale copy."
 review-summary: |-
   core/ticket/store.go:1024 marks inside Store.List, so every List caller pays the git check: loadBoardEnv (internal/cli/root.go:305) runs it for set/move/dod/logbook/archive, contrary to the in-progress note 'writes pay no git call'. Measured with GIT_TRACE on a scratch board: 'jaira set' 5 -> 7 git processes, 'jaira show' 5 -> 9 because the check runs twice (tickets.go:815, then envFor -> List). Drop the call from List and call s.MarkFiledElsewhere(all...) where the mark is read: list after loadBoardEnv (tickets.go:615), next (flow.go:380), the TUI reload after m.store.List() (model.go:442); show keeps its single call at tickets.go:815.
