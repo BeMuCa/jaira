@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWXXDF88R7DQFDKRNQRJB
 title: "Die Warnung 'Board von aelterer Version eingerichtet' kommt einmal, nicht bei jedem Aufruf"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Wer jaira update noch nicht laufen liess, hoert es einmal pro Board und Version - nicht vor jeder Ausgabe, wo Agenten es mitparsen und Menschen es ueberlesen."
@@ -16,11 +16,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:01Z
-updated-at: 2026-10-26T20:09:15Z
+updated-at: 2026-10-26T20:09:30Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: rnqrjb-driver
 claimed-at: 2026-10-26T20:09:15Z
+outcome-what: "nudgeIfStale (internal/cli/update.go) prints the 'board was set up by an older version' hint once per board and binary version: a 'nudged' marker file beside the version stamp (core/release Nudged/MarkNudged) remembers which version it was shown for. jaira update and the stamp are unchanged."
+outcome-why: "The hint appeared on stderr before every command, even with --json, so agents filtered it away and people stopped reading it."
+outcome-resolves: "DoD 1: the hint no longer repeats on every call; a new binary version shows it once again; afterwards jaira update's own report (previous version + what changed) is where staleness surfaces. Covered by TestNudgeIfStaleShowsOncePerBoardAndVersion and TestUpdateAfterShownHintStillReportsPreviousAndStamps. No --verbose flag exists, so none was added."
 ---
 
 # Die Warnung 'Board von aelterer Version eingerichtet' kommt einmal, nicht bei jedem Aufruf
