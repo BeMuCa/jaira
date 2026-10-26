@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:51Z
-updated-at: 2026-10-26T19:14:19Z
+updated-at: 2026-10-26T19:15:40Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-268570
@@ -42,4 +42,4 @@ claimed-at: 2026-10-26T19:13:06Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-26 19:15 · BeMuCa** — Driver: pre-process passed by (planning option unticked), so in-progress works from the driver's brief instead of a plan. DoD 4's race suite is run once before the PR, not in lanes; the lanes only write its release note.
