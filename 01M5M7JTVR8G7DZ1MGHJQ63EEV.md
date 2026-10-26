@@ -16,7 +16,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T11:15:50Z
-updated-at: 2026-10-23T11:15:50Z
+updated-at: 2026-10-26T19:08:32Z
+assignee: BeMuCa
+updated-by: BeMuCa
 ---
 
 # Tickets im Cockpit einzeln abarbeiten: Ticket aufklappen, Details rechts, Accept/Deny darunter
