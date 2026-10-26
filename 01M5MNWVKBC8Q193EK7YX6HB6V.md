@@ -16,7 +16,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:58Z
-updated-at: 2026-10-23T15:25:58Z
+updated-at: 2026-10-26T19:08:09Z
+assignee: BeMuCa
+updated-by: BeMuCa
 ---
 
 # Die Einzeiler des Cockpits nennen die Lane, in der das Ticket wirklich steht
