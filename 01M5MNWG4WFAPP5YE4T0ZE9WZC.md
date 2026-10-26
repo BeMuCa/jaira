@@ -1,8 +1,8 @@
 ---
 id: 01M5MNWG4WFAPP5YE4T0ZE9WZC
 title: "Eine Erlaubnisliste im Repo laesst Worker arbeiten, ohne bei jedem Befehl zu fragen"
-status: backlog
-ready: false
+status: todo
+ready: true
 creator: BeMuCa
 goal: "Worker und Subagenten fragen nur bei wirklich kritischen Befehlen (rm, push, reset --hard, kill-server) nach; alles, was eine Lane braucht, ist im Repo erlaubt, und die Doku sagt, wo Verbots- und Erlaubnislisten liegen und welche Settings ein Worktree liest."
 context: |-
@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:47Z
-updated-at: 2026-10-26T19:10:55Z
+updated-at: 2026-10-26T19:10:58Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-253301
