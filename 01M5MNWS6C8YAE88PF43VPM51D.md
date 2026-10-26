@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:56Z
-updated-at: 2026-10-26T19:43:42Z
+updated-at: 2026-10-26T19:44:48Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-374545
@@ -50,7 +50,7 @@ claimed-at: 2026-10-26T19:21:26Z
 - [x] Entfernen-Hinweis an einer Stelle fuer CLI und TUI: nicht getrackt -> rm <pfad>; auf diesem Branch getrackt -> git restore <pfad>, dann git merge <landing> (nur im Worktree abgelegt: git restore <pfad>, geht mit dem Merge des ablegenden Branches); nur beim Ausgeben berechnet, nie im Board-Tick
 - [x] gate.Actionable gibt false fuer so ein Ticket (jaira next, list --actionable)
 - [x] jaira list: Text - raus aus der Lane, eigener Block am Ende mit Ort + Befehl; JSON - eigenes Array filed_elsewhere, nicht in tickets und count
-- [ ] jaira show: Zeile ueber dem Detail (Ort + Befehl); JSON-Felder filed_elsewhere und remove_stale
+- [x] jaira show: Zeile ueber dem Detail (Ort + Befehl); JSON-Felder filed_elsewhere und remove_stale
 - [ ] Board: reload schiebt solche Tickets an den Logbuch-Fuss der Terminal-Lane (m.logged/m.loggedDay), Lane-Zaehler ohne sie; Flag 'filed elsewhere'; refuseLogged nennt den Entfernen-Befehl statt jaira restore; openDetail laedt die Datei voll; ein Render-Test, mit -run gelaufen
 - [ ] Release-Notiz core/release/notes/VPM51D.md: je Aenderung eine '- '-Zeile als Anweisung (Anzeige in list/show/Board, JSON-Felder, next ueberspringt)
 - [ ] gofmt -l . leer, go vet ./..., go build ./...; neue Tests der beruehrten Pakete mit -run gruen
