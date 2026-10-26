@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T08:26:42Z
-updated-at: 2026-10-26T19:20:58Z
+updated-at: 2026-10-26T19:22:43Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: qyk8md-driver
@@ -30,6 +30,7 @@ review-summary: |-
   internal/cli/claim.go StaleClaim: the new session.LegacyLocal branch (8 lines) repeats the zero-timestamp and age handling that follow it; delete it and widen the existing age test instead: if d := time.Since(t.ClaimedAt); d > ClaimTTL || session.LegacyLocal(t.ClaimedBy) { return t.ClaimedBy, d, true } - same results, a zero timestamp still returns 0 from the branch above
   core/session/session.go machineToken: ticket.NewID(time.Now())[20:] plus a comment explaining the slice restates ticket.Handle (core/ticket/id.go:88, whose doc already says the tail is the random part) - use ticket.Handle(ticket.NewID(time.Now())) and drop the comment
   core/session/machine_test.go TestDefaultIDCarriesNoHostname looks for the raw hostname, but the old build wrote sanitize(hostname) - a hostname with a dot (macOS name.local, any FQDN) passes this test on the old code too, so it does not prove the definition of done there; compare against sanitize(host)
+round: 2
 ---
 
 # Die Session-ID traegt keinen Rechnernamen mehr
