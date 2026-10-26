@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:56Z
-updated-at: 2026-10-26T19:35:18Z
+updated-at: 2026-10-26T19:35:42Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-374545
@@ -57,3 +57,12 @@ claimed-at: 2026-10-26T19:21:26Z
 
 ## Progress
 - **2026-10-26 19:21 · BeMuCa** — Planning option ticked by the driver: the in-progress lane is cheap tier and the ticket needs a design decision first (what the remote carries after jaira logbook, and where board/list/show detect it). Pre-process runs at strong tier.
+- **2026-10-26 19:35 · BeMuCa** — pre-process, Befund + Entwurf:
+- Was der Remote nach logbook/archive traegt: Der Ref bleibt stehen und bekommt die Endbytes der abgelegten Datei: RecordFiled ruft nur Record (core/refsync/refsync.go:166-182). Ein 'filed'-Marker steht nicht darin, anders als bei Meilensteinen (internal/cli/logbook.go:340ff).
+- logbook/archive stempeln vorher die Commits per Mutate, und das setzt updated-at auf jetzt (core/ticket/store.go:1468, logbook.go:302, archive.go:85). Die abgelegte Kopie ist also juenger als jede alte Kopie anderswo.
+- Der Ref geht erst, wenn das Ticket auf einem Landing-Branch abgelegt liegt: snapshot reap (core/snapshot/snapshot.go:239-258) mit gitref.Landed (core/gitref/gitref.go:765-790, es zaehlen nur logbook/archive-Pfade).
+- Ein anderer Checkout sieht also einen von zwei Zustaenden: (S1) der Ref steht mit dem Endstand, die Ablage liegt nur im ablegenden Worktree/Branch. (S2) der Ref ist weg, die Ablage liegt auf dem Landing-Branch (origin/master). S2 ist der D0SAHM-Fall aus K6BGB0.
+- Was es schon gibt: offBoardDuplicates (store.go:995-1041) gilt nur, wenn beide Kopien im selben Checkout liegen. Es warnt nur und raet bewusst nicht. Bleibt unveraendert, IDs, die hier abgelegt sind, sind keine Kandidaten. Departed (refsync.go:1597) heisst 'Ref gesehen und jetzt weg'. Es erscheint nur in fetch/validate (fetch.go:98, validate.go:84) und sagt nicht, wohin das Ticket ging.
+- Gewaehlte Erkennung: (a) andere Worktrees per git worktree list, darin deren FiledAwayIDs auf der Platte, auch uncommittet. Deckt S1 fuer Worktrees ab, also den DoD-Testfall. (b) Landing-Branches (settings.Landing, core/settings/settings.go:481): ein ls-tree auf .jaira/logbook und .jaira/archive. Deckt S2 ab, mit derselben Definition wie Landed/reap/Stranded.
+- Regel: markiert nur, wenn updated-at der Datei hier STRIKT aelter ist als das der abgelegten Kopie. Eine restore-Kopie hat dasselbe updated-at (Restore bewegt nur, store.go:708-772) und wird nicht markiert. Wer nach dem Ablegen hier schreibt, macht sie neuer, und sie wird auch nicht markiert.
+- Verworfen: (C) ein 'filed'-Marker im Ticket/Ref wie bei Meilensteinen. Er wuerde auch fremde Clones vor dem Merge abdecken, ist aber eine Formataenderung (restore, merge, validate muessten ihn kennen). (D) alle Remote-Branches scannen: ein ls-tree pro Branch pro CLI-Aufruf, und 'sofort starten' waere dahin. (E) git log --all ueber die History: dann wuerden auch Tickets als abgelegt gelten, die spaeter zurueckgeholt wurden.
