@@ -25,7 +25,8 @@ h1{font-size:1.5rem;font-weight:600;margin:0;text-wrap:balance}
 h2{font-size:1.15rem;font-weight:600;margin:0;text-wrap:balance}
 h3{font-size:.8rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px}
 .sub{color:var(--muted);margin:4px 0 0;max-width:75ch}
-code{font-family:var(--mono);font-size:.86em;background:var(--code-bg);padding:1px 4px;border-radius:3px;overflow-wrap:anywhere}
+code{font-family:var(--mono);font-size:.86em;background:var(--code-bg);padding:1px 4px;border-radius:3px;overflow-wrap:anywhere;cursor:copy}
+code.copied{outline:2px solid var(--ok)}
 button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:6px;padding:4px 10px}
 button:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .strip{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:12px;border-bottom:1px solid var(--line);margin-bottom:16px;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
@@ -164,7 +165,7 @@ let db = null;
 let block = (() => { try { return localStorage.getItem('acc-block') || String(DATA.blocks[0].n); } catch { return String(DATA.blocks[0].n); } })();
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const fmt = s => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/(https?:\/\/[^\s,)<]+)/g, '<code>$1</code>');
+const fmt = s => esc(s).replace(/\n/g, '<br>').replace(/`([^`]+)`/g, '<code>$1</code>').replace(/(https?:\/\/[^\s,)<]+)/g, '<code>$1</code>');
 const roundOf = ids => Math.max(1, ...ids.map(id => T[id]?.round || 1));
 const allSteps = () => DATA.blocks.flatMap(b => b.steps);
 const chip = id => `<a class="chip" href="#t-${esc(id)}">${esc(id)}</a>`;
@@ -285,4 +286,8 @@ render();
   }, err => { status.textContent = L.store + (err?.code || '?'); });
   listen('results', results); listen('comments', comments); listen('notes', notes);
 })();
+document.addEventListener('click', e => {
+  const c = e.target.closest('code'); if (!c) return;
+  try { navigator.clipboard.writeText(c.textContent); c.classList.add('copied'); setTimeout(() => c.classList.remove('copied'), 900); } catch {}
+});
 </script>
