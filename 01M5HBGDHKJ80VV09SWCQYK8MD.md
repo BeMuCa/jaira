@@ -1,7 +1,7 @@
 ---
 id: 01M5HBGDHKJ80VV09SWCQYK8MD
 title: Die Session-ID traegt keinen Rechnernamen mehr
-status: optimize
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "claimed-by und jede andere Stelle, die eine Session benennt, enthalten keinen Hostnamen: ein Teammitglied kann aus einem Ticket nicht ablesen, auf welcher Maschine es bearbeitet wurde."
@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T08:26:42Z
-updated-at: 2026-10-26T19:29:10Z
+updated-at: 2026-10-26T19:29:41Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: qyk8md-driver
@@ -27,7 +27,7 @@ outcome-what: "Session ids are now a random six-character token kept once per ma
 outcome-why: "claimed-by is committed with the ticket, so a hostname in it published the machine name, and on the maintainer's machine his employer, in ticket files and refs."
 outcome-resolves: "No new claimed-by carries a hostname; old claims from other machines still block until ClaimTTL; this machine's own old claims need no --steal after the update."
 review-summary: none
-round: 2
+round: 3
 review-gaps: |-
   fix (test bug, not a cleanup): core/session/machine_test.go:43 TestLegacyLocal fails on any machine whose hostname is 46 or more characters. sanitize cuts sanitize(host+"-") and sanitize(host+"-12x4") at 48, which leaves exactly the form LegacyLocal rightly accepts as an old local id (checked with a scratch copy of sanitize and LegacyLocal: lengths 46, 47 and 49 fail, 3 passes; the suite passes on this machine). Use those two host-built negatives only when the sanitized hostname is at most 43 characters.
   fix (cleanup): core/session/session.go:170-171 LegacyLocal. sanitize already caps its output at 48 ASCII bytes, so len(prefix) >= 48 means == 48 and prefix[:48] is prefix: write 'return id == prefix'. Same results.
