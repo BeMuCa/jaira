@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:58Z
-updated-at: 2026-10-26T20:20:12Z
+updated-at: 2026-10-26T20:20:15Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: x6hb6v-driver
@@ -32,6 +32,8 @@ review-gaps: |-
   3. Kein Repo-Test fuer das erste Sehen in refreshBoard (klein): die neuen Tests setzen die Basis mit einem ersten Bericht. Ich habe den Pfad in einer Scratch-Kopie mit einem Wegwerf-Test geprueft (Sitzungsstart sieht in-progress, Move nach critique, Turn-Ende, Bericht zeigt 'in-progress → critique'; zweiter Bericht ohne Lane) - gruen. Ebenso dort: ein Fehlschlag-Bericht startet kein 'jaira show'.
   Sonst nichts gefunden: alle drei DoD-Punkte erfuellt, die Outcome-Angaben stimmen mit dem Diff.
 test-verdict: "pass: cockpit 164/164, validate ok, gofmt/vet/build clean, 4 new tests cover the 3 observed cases + positive; jaira show --json status verified on default and second board"
+review-verdict: "Freigabe mit kleinem Vorbehalt. Der Diff erfuellt alle drei DoD-Punkte; Fehler habe ich keine gefunden. Geprueft: 164 Cockpit-Tests gruen; die vier neuen Tests schlagen gegen den alten Code von master fehl, sie schuetzen die Aenderung also wirklich; gofmt, go vet, go build sauber; 'jaira show --json' kostet ca. 0,1 s pro Bericht. Vorbehalt: Wortlaut der Release-Notiz (Luecke 1) und die Bedeutung 'seit dem letzten Bericht' (Luecke 2) - beides sollte die Person kennen, beides blockiert nicht. Nicht geprueft: das Verhalten in einer echten Claude-Code-Sitzung (nur im Test-Harness)."
+review-round: 2
 ---
 
 # Die Einzeiler des Cockpits nennen die Lane, in der das Ticket wirklich steht
