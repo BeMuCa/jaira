@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:53Z
-updated-at: 2026-10-26T19:26:15Z
+updated-at: 2026-10-26T19:26:18Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-264760
@@ -31,6 +31,7 @@ claimed-at: 2026-10-26T19:12:35Z
 - [ ] CLI Text+JSON+dry-run zeigen den Hinweis
 - [ ] TUI: model.go zwei Pfade + signoff Accept zeigen den Hinweis
 - [ ] Tests: plan_test.go drehen, move-Test fuer Hinweis
+- [ ] Docs (SKILL, README, AGENTS, 50-done) + Release-Notiz
 
 ## Definition of Done
 
