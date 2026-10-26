@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWPVYGSYTYCR3PVNJBTVC
 title: "Ein offener Plan-Punkt sperrt die Ziellane nicht mehr, wenn die Definition of Done erfuellt ist"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Ob ein Ticket in die Ziellane darf, entscheidet allein die Definition of Done; ein offener Plan-Schritt sperrt nicht mehr, sondern wird beim gelungenen Move als Hinweis genannt - der Plan ist die Methode, die DoD das Ergebnis."
@@ -17,11 +17,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:53Z
-updated-at: 2026-10-26T19:28:45Z
+updated-at: 2026-10-26T19:33:20Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-264760
 claimed-at: 2026-10-26T19:12:35Z
+outcome-what: "Ein Move in eine Ziellane wird nicht mehr wegen eines offenen Plan-Schritts abgelehnt; nur noch das DoD-Gate entscheidet, bei unvollstaendiger DoD erscheinen nur DoD-Punkte. Offene Plan-Schritte kommen als Hinweis zurueck: gate.OpenPlanHints, move.Result.Hints, 'Note:'-Zeilen vor der Move-Zeile in der CLI, 'hints' im JSON, in der TUI-Meldung (applyMove, forceMove, signoff accept). CodePlanIncomplete entfernt; Doku (SKILL.md, README.md, docs/AGENTS.md, 50-done.md) und Release-Notiz angepasst."
+outcome-why: "Plan und DoD sind zwei getrennte Listen; denselben Haken setzt derselbe Worker, der Plan-Haken ist kein unabhaengiger Beleg. Die Sperre hielt GH0GKD mit DoD 9/9 vor done fest, weil ein erledigter Plan-Schritt nicht abgehakt war."
+outcome-resolves: "DoD 1: TestMoveIntoDoneWithOpenPlanStepCarriesAHint + TestUnfinishedPlanDoesNotBlockTerminalLane; DoD 3: TestUnfinishedPlanAddsNothingToDoDRefusal; DoD 4: internal/cli/flow.go, internal/tui/model.go, internal/tui/signoff.go; DoD 5: die vier Doku-Dateien; DoD 2: Release-Notiz core/release/notes/NJBTVC.md, die volle Race-Suite laeuft vor dem PR."
 ---
 
 # Ein offener Plan-Punkt sperrt die Ziellane nicht mehr, wenn die Definition of Done erfuellt ist
