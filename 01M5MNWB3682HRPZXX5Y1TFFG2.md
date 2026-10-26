@@ -19,11 +19,11 @@ related: []
 commits:
   - 4b920015d063527e9d48d75cc242d8342bf17d2e
 created-at: 2026-10-23T15:25:41Z
-updated-at: 2026-10-26T19:40:38Z
+updated-at: 2026-10-26T19:41:13Z
 assignee: BeMuCa
 updated-by: BeMuCa
-claimed-by: EE-3NX6GL3-253833
-claimed-at: 2026-10-26T19:10:59Z
+claimed-by: driver-1TFFG2
+claimed-at: 2026-10-26T19:41:13Z
 outcome-what: "spawn.sh starts claude with --permission-mode taken from the board's .jaira/permission-mode, else permissions.defaultMode in settings.json, else auto when settings.json has an autoMode key, else no flag; a board bypassPermissions or an unknown value is ignored with a stderr line. After the enter it polls Herdr's agent_status: working means the prompt arrived (exit 0), still idle means 'prompt not received' (exit 1, tab left open), blocked means an approval dialog waits (pane printed, exit 3)."
 outcome-why: "Worker tabs stood at their first Bash question in plain claude, once for 49 minutes, and in 1NATKP the role prompt never arrived while spawn.sh reported success."
 outcome-resolves: "DoD 1: the permission_mode block and usage() in spawn.sh, TestSpawnStartsClaudeInThePersonsPermissionMode. DoD 2: the arrival check after send-keys, TestSpawnChecksThePromptArrived. DoD 3: Herdr-stub tests and core/release/notes/1TFFG2.md exist, go test ./core/role -race green; the full go test ./... -race is left for the run before the PR."
