@@ -44,6 +44,13 @@ starts it when a person accepted a ticket whose branch has no pull request yet,
 and nothing else may.
 Every other lane name starts /jaira-role-lane <ticket-id> <lane>.
 
+A new worktree is set up by the repository's own .jaira/worktree-setup when it
+is there and executable, called as
+  .jaira/worktree-setup <worktree> <slug> <port-offset 1-40> <repo-root>
+and spawn.sh then writes nothing into the worktree itself. Without it, a .env in
+the repository is copied and four port lines are appended. A setup that fails,
+or is there but not executable, stops the spawn before a tab opens.
+
 Environment: JAIRA_BRANCH_PREFIX (default feat), JAIRA_NO_WORKTREE,
 HERDR_BIN_PATH, HERDR_WORKSPACE_ID.
 USAGE
@@ -139,16 +146,46 @@ else
 fi
 
 if [ ! -d "$wt" ]; then
+  # A repository that knows what its worktrees need says so in an executable
+  # .jaira/worktree-setup, and then spawn.sh writes nothing into the worktree
+  # itself. One that is there but not executable is a forgotten chmod, not a
+  # repository without setup: falling back to the .env below would hand the
+  # worker the wrong ports without a word. Refused before anything is made.
+  setup="$root/.jaira/worktree-setup"
+  if [ -e "$setup" ] && [ ! -x "$setup" ]; then
+    echo "$setup is not executable: chmod +x it, or remove it" \
+         "to have spawn.sh write the worktree's .env itself" >&2
+    exit 1
+  fi
+
   # feat/, the prefix this board's own branches use. A repository that names
   # them differently sets JAIRA_BRANCH_PREFIX rather than editing this script.
-  git -C "$root" worktree add "$wt" -b "${JAIRA_BRANCH_PREFIX:-feat}/$slug" >&2
+  branch="${JAIRA_BRANCH_PREFIX:-feat}/$slug"
+  git -C "$root" worktree add "$wt" -b "$branch" >&2
 
+  # Deterministic per-slug port offset, so two workers never share a stack.
+  # 0 stays free: it belongs to the main directory's own stack. It stays here
+  # even when the repository sets up its own worktree: that two workers never
+  # share a stack is the one thing a single repository's script cannot promise.
+  off=$(( ( $(printf '%s' "$slug" | cksum | cut -d' ' -f1) % 40 ) + 1 ))
+
+  if [ -x "$setup" ]; then
+    # Its output goes to stderr: stdout carries the pane id and nothing else.
+    # A setup that fails takes its worktree and branch with it, before any tab
+    # opens — a worktree left standing would skip the setup on the next try,
+    # since only a missing directory is set up.
+    rc=0
+    "$setup" "$wt" "$slug" "$off" "$root" >&2 || rc=$?
+    if [ "$rc" != 0 ]; then
+      git -C "$root" worktree remove --force "$wt" >&2 || true
+      git -C "$root" branch -D "$branch" >&2 || true
+      echo "$setup $wt $slug $off $root failed (exit $rc):" \
+           "no worker started, worktree and branch $branch removed again" >&2
+      exit 1
+    fi
   # Only a repo that carries a container stack needs its own ports. A repo
   # without a .env has nothing to offset, and must not fail here.
-  if [ -f "$root/.env" ]; then
-    # Deterministic per-slug port offset, so two workers never share a stack.
-    # 0 stays free: it belongs to the main directory's own stack.
-    off=$(( ( $(printf '%s' "$slug" | cksum | cut -d' ' -f1) % 40 ) + 1 ))
+  elif [ -f "$root/.env" ]; then
     cp "$root/.env" "$wt/.env"
     {
       echo
