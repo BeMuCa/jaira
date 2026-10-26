@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:58Z
-updated-at: 2026-10-26T19:51:54Z
+updated-at: 2026-10-26T19:51:56Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: x6hb6v-driver
@@ -45,3 +45,4 @@ claimed-at: 2026-10-26T19:50:01Z
 
 ## Progress
 - **2026-10-26 19:48 · BeMuCa** — driver: pre-process is not ticked for this ticket (Options), so the design is written here. Why not 'previous poll vs now': refreshBoard reads jaira list --json every 60 s and after every turn; a subagent works for minutes, so the poll sees its moves long before its report arrives - 'last poll vs now' would show no change almost always. Design instead: register.tsx keeps one map handle -> lane 'as of the last report about this ticket'. refreshBoard only ADDS tickets it has not seen yet (first sight), never overwrites. On a report, shorten() reads jaira list --json fresh (default board plus the other boards refreshBoard reads), emits '<before> -> <now>' when both are known and differ, then stores <now>. The report text is no longer read for lanes at all (laneOf/ARROW/INTO/LANES go), so a lane only the text names can never show up. Verdict stays text-derived: not in the DoD, not one of the observed failures.
+- **2026-10-26 19:51 · BeMuCa** — lanesNow() liest bei jedem Bericht frisch; in shorten wird board nicht gecacht (sonst entfiele checkVersion in refreshBoard). Bei Lesefehler einer Nebenboard-Liste: gar kein Lanewechsel.
