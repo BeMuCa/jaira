@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:56Z
-updated-at: 2026-10-26T19:37:01Z
+updated-at: 2026-10-26T19:40:02Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-374545
@@ -40,7 +40,7 @@ claimed-at: 2026-10-26T19:21:26Z
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] Failing-Test zuerst (internal/cli, neue Datei): Bare-Remote + Clone + git worktree add (Helfer wie cloneWithRemotes/runCLI); Ticket im Haupt-Checkout gepullt und committet, im Worktree move --force nach done + jaira logbook; im Haupt-Checkout zeigen list, list --json, list --actionable --json, show, show --json es als abgelegt mit Entfernen-Befehl, und die Datei ist noch da
+- [~] Failing-Test zuerst (internal/cli, neue Datei): Bare-Remote + Clone + git worktree add (Helfer wie cloneWithRemotes/runCLI); Ticket im Haupt-Checkout gepullt und committet, im Worktree move --force nach done + jaira logbook; im Haupt-Checkout zeigen list, list --json, list --actionable --json, show, show --json es als abgelegt mit Entfernen-Befehl, und die Datei ist noch da
 - [ ] Zweiter Fall im selben Test (D0SAHM): Logbuch-Commit des Worktrees landet auf origin/master, Worktree entfernt, Ref weg (snapshot --drop); Haupt-Checkout auf altem Commit zeigt es weiter als abgelegt, gefunden auf dem Landing-Branch
 - [ ] Gegenfaelle im Test: per jaira restore zurueckgeholte Kopie (gleiches updated-at) und eine nach dem Ablegen beschriebene Kopie (neueres updated-at) werden NICHT markiert; stale Kopie mindestens 1 s aelter als die abgelegte
 - [ ] core/ticket: Laufzeitfeld am Ticket (wo abgelegt: Worktree-Pfad oder Landing-Branch + Pfad) und optionales Interface an Store.Source; Store.List markiert Datei-Tickets (nicht ReadOnly, nicht hier abgelegt); Store-Methode fuer ein einzelnes Ticket (show)
