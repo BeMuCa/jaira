@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T08:26:42Z
-updated-at: 2026-10-26T19:43:05Z
+updated-at: 2026-10-26T19:43:17Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: qyk8md-driver
@@ -32,8 +32,12 @@ review-summary: |-
   Tests: TestDefaultIDCarriesNoHostname and TestLegacyLocal (core/session/machine_test.go), TestLegacyHostnameClaims (internal/cli/staleclaim_test.go). Release note: core/release/notes/QYK8MD.md, one line. Old claimed-by values already on master are not touched (history rewrite, out of scope).
 round: 3
 review-gaps: |-
-  pass 2 (4529c17b only): nothing new to remove. Both pass-1 fixes landed: core/session/session.go:170-171 LegacyLocal now reads 'return id == prefix' (same results, sanitize caps at 48 ASCII bytes); core/session/machine_test.go:43-46 adds the two host-built negatives only when the sanitized hostname is at most 43 characters (44 would also be safe, critique pass 3; a conservative bound, not a cleanup)
-  let stand (pass 1, not reopened): sanitizeForTest (internal/cli/staleclaim_test.go:159) is a deliberate frozen copy of the format old builds wrote; the JAIRA_HOME-else-~/.jaira lookup in machineToken is the seventh private copy with no shared helper, merging them is its own ticket; LegacyLocal sits in both ClaimActive and StaleClaim (internal/cli/claim.go:29 and :54) because those two were already separate; internal/cli/flow.go:398 reads machine-id once per actionable ticket, hoisting it is optional; Session.Host (core/session/session.go:28) is pre-existing dead code, left alone
+  No blocker. DoD 3 is open on purpose: the full go test ./... -race runs once before the PR (house rule); its release-note half is done.
+  1. DoD 2, read literally, says an old hostname claim keeps counting as another session's claim. That holds for other machines. For THIS machine's old claims the code goes further: they count as abandoned at once. That is what the 23.10 note on this ticket asked for, so it is a decision, not a defect - but the DoD text and the code differ here, and signoff should know.
+  2. LegacyLocal matches on the hostname alone. Another machine with the same hostname (default names like 'localhost' or 'ubuntu', cloned VMs) that still runs an old build: its live claims look abandoned here. Only while old builds are still around; claims are advisory. (From the code, not reproduced.)
+  3. The token is per home directory, not per machine, despite the file name machine-id. A ~/.jaira shared by several machines (NFS home, dotfiles sync) gives them one token; two sessions then collide only if the parent pid is equal too. The old hostname form kept them apart. (From the code.)
+  4. The 'local' fallback (no home directory) is the same word on every such machine, so 'local-<pid>' can collide across machines. Rare: the ticket store itself falls back into the repo in that case. (From the code.)
+  5. First-use race, let stand by critique: two jaira processes creating machine-id in the same instant can each use a different token once. A claim taken in that call then looks foreign to its own shell until ClaimTTL or --steal - the critique note's 'self-heals on the next read' is true for the token, not for that claim. Very rare; not worth code now. (From the code, not reproduced.)
 test-verdict: "pass: gofmt/vet/build clean, race tests core/session + cli (LegacyHostname|Claim|Stale) ok, release note is one line; token claims, foreign/own-old/stale old-format claims behave on a scratch board; full suite pending pre-PR run"
 ---
 
