@@ -21,9 +21,10 @@ tags:
   - cli
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 54583386ee67ebdcf5f4cf6d9b4dee8715a9a39d
 created-at: 2026-10-19T06:43:02Z
-updated-at: 2026-10-19T21:17:07Z
+updated-at: 2026-10-26T15:34:46Z
 updated-by: Alexander Sacharov
 mode: conversational
 claimed-by: DESKTOP-RFTCH11-52791

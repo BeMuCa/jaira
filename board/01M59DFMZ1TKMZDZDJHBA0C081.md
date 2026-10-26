@@ -1,7 +1,7 @@
 ---
 id: 01M59DFMZ1TKMZDZDJHBA0C081
 title: "Ein Ticket laesst sich mit Grund ablehnen: jaira reject, und das Archiv sagt warum"
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,9 +24,13 @@ tags:
   - tui
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 189f2dfce44f208e653a9d30969e42e0198883f8
+  - 4e6d036e7c9bac4f864a06e45014332fc11751a1
+  - 41b46cf2995217e165409d7e7ab095d18e26cc48
+  - 269380b080847887f2ecc26c7d4f577202f61916
 created-at: 2026-10-19T06:27:18Z
-updated-at: 2026-10-21T14:58:14Z
+updated-at: 2026-10-26T15:34:36Z
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-150007"
 claimed-at: 2026-10-21T07:52:10Z
@@ -170,3 +174,9 @@ Warum: Ohne Push fehlen Runde 6/7 auf dem Remote und der PR waere unvollstaendig
 1) Zurueckgeben: Restore so aendern, dass erst umbenannt und dann die Begruendung entfernt wird [give back]
 2) So annehmen: nur den Branch pushen, das Restore-Risiko bleibt als bekannte Kleinigkeit [accept]
 Empfehlung: 2 - der Restore-Fehler tritt nur bei einem scheiternden Rename auf und gehoert nicht zur Definition of Done; der Push ist die einzige echte Voraussetzung.
+- **2026-10-26 15:14 · Alexander Sacharov** — explain: Der Review gibt approve: alle 12 DoD-Punkte sind im Diff belegt, go test ./... -race ist gruen. Offen sind zwei Kleinigkeiten: der Branch ist nicht gepusht (origin steht auf 41b46cf2, lokal 269380b0), und Store.Restore entfernt die Begruendung, bevor die Datei umbenannt wird.
+Warum: Ohne Push fehlen Runde 6/7 auf dem Remote und der PR waere unvollstaendig. Scheitert beim Restore das Umbenennen, liegt die Datei ohne Begruendung im Archiv - selten, und kein DoD-Punkt.
+1) Zurueckgeben: Restore so aendern, dass erst umbenannt und dann die Begruendung entfernt wird [give back]
+2) So annehmen: nur den Branch pushen, das Restore-Risiko bleibt als bekannte Kleinigkeit [accept]
+Empfehlung: 2 - der Restore-Fehler tritt nur bei einem scheiternden Rename auf und gehoert nicht zur Definition of Done; der Push ist die einzige echte Voraussetzung.
+- **2026-10-26 15:17 · Alexander Sacharov** — decision: 2) So annehmen: nur den Branch pushen, das Restore-Risiko bleibt als bekannte Kleinigkeit

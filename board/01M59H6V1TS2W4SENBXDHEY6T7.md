@@ -1,7 +1,7 @@
 ---
 id: 01M59H6V1TS2W4SENBXDHEY6T7
 title: "jaira web schreibt mit, was passiert, und ein Absturz hinterlaesst seine Ursache"
-status: in-progress
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,22 +19,26 @@ tags:
   - web
 blocked-by: []
 related: []
-commits: []
+commits:
+  - b755555829c37ac17cc9f7ae6bddb1e5bcbb6ceb
+  - 42de9a812d7eba463fba4ce3e1962b2ceaa9c090
+  - 0c5975c78653a56ba7c3234a4b226ba64b26c8c4
+  - 1a9ffe743562c03242eb68f6d8b36466621b22ef
 created-at: 2026-10-19T07:32:24Z
-updated-at: 2026-10-21T12:25:05Z
+updated-at: 2026-10-26T15:34:28Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-154400
-claimed-at: 2026-10-21T07:53:01Z
+claimed-by: DESKTOP-RFTCH11-17051
+claimed-at: 2026-10-26T07:39:36Z
 outcome-what: "jaira web schreibt Fehlerantworten (>=400), fehlgeschlagene Fetches/Pushes, Panics mit Stack und das beendende Signal mit Zeit nach ~/.jaira/state/<baum>/web.log und nennt den Pfad beim Start; eine Panic im Handler antwortet 500 statt die Verbindung zu kappen; die Seite zeigt nach spaetestens 10 s ein Banner, wenn der Befehl nicht mehr antwortet."
 outcome-why: "Alex' 'jaira web' fiel aus, und es gab keine Spur: nichts wurde geloggt, stderr ging mit dem Terminal verloren, und die Seite stand still, ohne es zu sagen."
 outcome-resolves: "Ein Ausfall von jaira web hinterlaesst jetzt seine Ursache in einer Datei, und die Seite meldet ihn sichtbar."
-review-summary: "jaira web schreibt jetzt ein Log nach ~/.jaira/state/<arbeitsbaum>/web.log (beim Start ab 1 MB nach web.log.1 rotiert) und nennt den Pfad beim Start. Eine Middleware um alle Handler loggt jede Antwort >=400 mit dem Anfang des Fehlerkoerpers und faengt Panics ab: Stack ins Log, Antwort 500 statt gekappter Verbindung. Fetch und Push laufen hinter recover(), Fehlschlaege und Panics landen im Log und im Sync-Status, die Fetch-Schleife laeuft weiter. SIGTERM/SIGHUP beenden wie Ctrl-C, das Signal steht im Log. Laesst sich das Log nicht oeffnen, warnt der Befehl und loggt (inkl. http.Server-ErrorLog) nach stderr weiter. Die Seite fragt alle 10 s /api/sync; scheitert das, zeigt sie oben ein rotes Banner 'has not answered since HH:MM' und laedt beim naechsten Erfolg alles neu. Release Note vorhanden."
-review-gaps: "Kein Code-Defekt. Runde 3 (ErrorLog-Fallback nach stderr, internal/cli/web.go:71) ist umgesetzt. Offen, nicht Code: die Commits d89bb20c und b2389dea enthalten in der Ticketdatei weiter fremden Projektnamen, PIDs und einen Home-Pfad (HEAD und Arbeitsbaum sind sauber) - laut Entscheidung 14:34 schreibt Alex die History selbst um, bis dahin nicht pushen. Hinweis: worktree_diff zeigt nur fremde, ungetrackte .jaira/milestones/-Dateien, nichts von diesem Ticket. Nicht durch einen Test gedeckt: der stderr-Fallback (nur live geprueft, Note 20:47)."
-test-verdict: "pass: go test -race -count=1 ./... RC=0; Proof-Tests (Panic/ErrorAnswers/FailedFetchAndPush) PASS; DoD-Proofs auf aktuelle Zeilen korrigiert (log.go:64, web.go:137,153, ReviewPage.svelte:96); live: schreibgeschuetztes State-Verzeichnis -> Warnung, Log-Zeilen auf stderr, /api/sync 200"
+review-summary: "jaira web schreibt jetzt nach <StateDir>/web.log (ausserhalb des Repos, beim Start ab 1 MB nach web.log.1 rotiert) und nennt den Pfad beim Start. Eine Middleware um alle Handler loggt jede Antwort >=400 mit den ersten 512 Byte des Bodys und faengt Panics: Stack ins Log, 500 an die Seite, Server laeuft weiter. Fetch und Push laufen unter recover und werden bei Fehler geloggt. SIGTERM/SIGHUP beenden wie Ctrl-C und das Signal steht im Log. Geht die Datei nicht auf, warnt der Befehl und loggt nach stderr. Die Seite fragt alle 10 s /api/sync; scheitert das, steht oben ein Banner 'has not answered since HH:MM', beim naechsten Erfolg verschwindet es und die Seite laedt neu. Runde 4 aenderte keinen Code: die 4 Branch-Commits sind neu geschrieben, Baum der Spitze identisch mit dem Backup."
+review-gaps: "Code: keine Defekte. Klein, bekannt: der stderr-Fallback bei nicht oeffnbarem Log (internal/cli/web.go:71) ist nur live geprueft, kein Test. Blockierend fuer den Push, nicht fuer den Code: der Ticket-Ref refs/jaira/tickets/01M59H6V1TS2W4SENBXDHEY6T7 enthaelt in aelteren Versionen weiter den fremden Projektnamen/PID/Home-Pfad; laut Note 26.10. 07:40 wird er bewusst erst nach diesem Move neu geschrieben, der Force-Push bleibt Alex' Schritt. Branch feat/hey6t7: alle 4 Commits sauber (grep ueber git show), kein Co-Authored-By."
+test-verdict: "pass: go test -race -count=1 ./... RC=0; Proof-Zeilen DoD 1-3,5 im Baum nachgeprueft (log.go:64, web.go:137/153, cli/web.go:88, ReviewPage.svelte:68/96, release note da); Baum unveraendert seit dem Live-Lauf in Runde 3; Branch-History frei von den privaten Strings (alle 4 Commits geprueft)."
 question: ""
-review-verdict: "Diff erfuellt DoD 1-3 und 5, DoD 4 per Entscheidung als Note geschlossen; keine Defekte gefunden. go test -race ./core/web ./internal/cli gruen, GOOS=windows baut. Vor dem Push muss die History-Bereinigung laufen."
-review-round: 3
-review-check: "1. go build -o /tmp/jw ./cmd/jaira  2. in einem Testrepo: /tmp/jw web --no-open - die zweite Zeile lautet 'jaira web: log .../web.log'  3. curl http://127.0.0.1:<port>/api/tickets/NOPE - im Log steht 'GET /api/tickets/NOPE: 404 ...' mit Zeit  4. Seite im Browser oeffnen, dann den Befehl mit Ctrl-C beenden - nach hoechstens 10 s erscheint oben das rote Banner 'jaira web has not answered since ...'  5. Befehl neu starten - Banner verschwindet, im Log steht 'stopped by signal interrupt'  6. Panic-Pfad hat keinen Handweg: go test ./core/web -run 'TestPanic|TestFailedFetch' deckt ihn"
+review-verdict: "approve - DoD 1-5 vom Diff gedeckt, go test -race fuer core/web und internal/cli gruen, GOOS=windows go build ok; Branch-History sauber. Vor dem Push muss der Ticket-Ref noch bereinigt werden."
+review-round: 4
+review-check: "1. go test -race -count=1 ./core/web -run 'Panic|ErrorAnswers|FailedFetch|OpenLog' - alle PASS. 2. go build -o /tmp/jw ./cmd/jaira, dann in einem Repo mit Board: /tmp/jw web --no-open - zweite Zeile 'jaira web: log ~/.jaira/state/.../web.log'. 3. Seite oeffnen, curl http://127.0.0.1:<port>/api/tickets/NOPE - in web.log steht 'GET /api/tickets/NOPE: 404 ...'. 4. Befehl mit Ctrl-C beenden - Log endet mit 'stopped by signal interrupt'; Seite zeigt nach ~10 s das rote Banner 'jaira web has not answered since ...'. 5. Befehl neu starten - Banner verschwindet. 6. git log -p master..feat/hey6t7 -- .jaira/tickets - keine fremden Projektnamen, PIDs oder Home-Pfade."
 round: 4
 ---
 
@@ -117,3 +121,15 @@ Empfehlung: 2 - der Code hat keinen Defekt, und die Bereinigung ist laut Entsche
 - **2026-10-21 07:52 · Alexander Sacharov** — cockpit: given back to a new worker - the old worker has no Herdr tab open any more
 - **2026-10-21 07:55 · Alexander Sacharov** — Runde 4 (History-Bereinigung, Entscheidung 21.10. 07:52): Stand - Branch feat/hey6t7 nicht gepusht, 4 Commits, Ticketdatei in d89bb20c und b2389dea unsauber. Ticket-Ref liegt schon auf upstream: 63 von 102 Versionen enthalten die Daten (Kontext Zeile 14-15, Notes 12:48 und 12:54, review-check und review-gaps); die Spitze ist sauber. Geplant: Skript im Scratchpad, das beide linearen Historien per commit-tree neu baut (Autor/Datum bleiben, Backup unter refs/backup/hey6t7/*, Trockenpruefung: keine Treffer, Baeume der Spitzen gleich), dann Force-Push des Refs durch Alex. Schon das Schreiben der Skriptdatei hat der Berechtigungs-Klassifikator abgelehnt (Git Destructive) - nicht umgangen, liegt bei Alex.
 - **2026-10-21 12:25 · Alexander Sacharov** — decision (Alex, 21.10.): der Worker darf das Bereinigungsskript schreiben, im Wegwerf-Klon pruefen und lokal ausfuehren (Branch + Ticket-Ref). Force-Push des Refs nach upstream bleibt Alex' Schritt.
+- **2026-10-26 07:40 · Alexander Sacharov** — parent session: jaira-7a
+- **2026-10-26 07:40 · Alexander Sacharov** — Runde 4, Stand 26.10.: Branch feat/hey6t7 ist lokal schon neu geschrieben (Backup refs/backup/hey6t7/branch): alle 4 Commits sauber, Baum der Spitze identisch, Autor/Datum erhalten, nicht gepusht. Ticket-Ref noch NICHT: 63 Versionen unsauber (Backup refs/backup/hey6t7/ticket liegt schon). Reihenfolge bewusst: der Ref wird erst als letzter Schritt neu geschrieben, nachdem review das Ticket nach signoff gelegt hat - jeder jaira-Schreibvorgang pusht den Ref mit --force-with-lease und wuerde nach dem Umschreiben am alten upstream-Stand abprallen.
+- **2026-10-26 07:41 · Alexander Sacharov** — critique Runde 4: nichts. Kein Code geaendert (Baeume gleich); stehe auf critique Runde 3 (20:48) fuer den Code und auf Alex' Entscheidung 21.10. 12:25 fuer die Bereinigung.
+- **2026-10-26 07:45 · Alexander Sacharov** — review Runde 4 (frisch): Code unveraendert gegenueber Runde 3 (Baum gleich dem Backup refs/backup/hey6t7/branch), keine Defekte; Branch-Commits frei von fremden Daten. Ticket-Ref hat noch unsaubere aeltere Versionen - Umschreiben nach diesem Move, Force-Push durch Alex. worktree_diff enthaelt nur fremde ungetrackte .jaira/milestones/-Dateien.
+- **2026-10-26 07:45 · Alexander Sacharov** — Runde 4 Abschluss: Ticket-Ref wird jetzt lokal per commit-tree neu geschrieben (Autor/Datum/Message je Version erhalten, nur die Ticketdatei neutralisiert: Kontext 2 Zeilen, Notes 12:48 und 12:54, review-gaps, Home-Pfad in review-check). Im Wegwerf-Klon geprueft: 63 von 115 Versionen bereinigt, danach 0 Treffer, Spitze inhaltsgleich. Alter Stand bleibt als refs/backup/hey6t7/ticket-<sha8>. Diese Note ist der letzte Schreibvorgang vor dem Umschreiben - bis Alex den Ref mit --force-with-lease nach upstream pusht, prallt jeder jaira-Schreibvorgang auf dieses Ticket am alten upstream-Stand ab.
+- **2026-10-26 09:28 · Alexander Sacharov** — History-Bereinigung abgeschlossen (26.10.): Alex hat den bereinigten Ticket-Ref nach upstream force-gepusht, upstream und lokal auf 5d390373. Frisch aus upstream geprueft: 123 Versionen, 0 Treffer auf fremden Projektnamen, PIDs, Home-Pfad; Commit-Messages sauber. Backups lokal: refs/backup/hey6t7/{branch,ticket,ticket-ee400d86,ticket-clean}. feat/hey6t7 (4 saubere Commits) bleibt ungepusht bis zu Alex' Signoff.
+- **2026-10-26 15:14 · Alexander Sacharov** — explain: Der Review findet keine Defekte im Code. Einzige kleine Luecke: der Rueckfall auf stderr, wenn das Log nicht geoeffnet werden kann (internal/cli/web.go:71), wurde nur live geprueft, ein Test fehlt.
+Warum: Ohne Test koennte eine spaetere Aenderung diesen Rueckfall stillschweigend kaputtmachen; er ist aber ein seltener Randfall. Die History-Bereinigung des Ticket-Refs ist laut Note vom 26.10. 09:28 bereits erledigt.
+1) Test fuer den stderr-Rueckfall nachliefern und dann erneut reviewen [give back]
+2) Ticket so annehmen, die Luecke ist klein und live geprueft [accept]
+Empfehlung: 2 - Code ist ohne Defekte, DoD 1-5 sind gedeckt, und die fehlende Testabdeckung eines Randfalls rechtfertigt keine weitere Runde.
+- **2026-10-26 15:16 · Alexander Sacharov** — decision: 2) Ticket so annehmen, die Luecke ist klein und live geprueft
