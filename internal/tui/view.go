@@ -164,6 +164,10 @@ func (m *Model) render() string {
 		return m.renderBoard() // picker is drawn into the status bar
 	case modeDelete:
 		return m.renderDelete()
+	case modeReject:
+		if m.returnTo == modeDetail && m.detail != nil {
+			return m.clipToWindow(m.detailBody(m.detail, max(20, m.width)), m.rejectPrompt()+" · esc cancel")
+		}
 	case modeDropBoard:
 		if m.drop != nil {
 			return m.drop.render(m.width, m.height)
@@ -1031,6 +1035,9 @@ func (m *Model) statusBar() string {
 	if m.mode == modeCreate {
 		return truncate(styHelpKey.Render("new: ")+m.input+stySelected.Render("▏"), m.width)
 	}
+	if m.mode == modeReject {
+		return truncate(m.rejectPrompt(), m.width)
+	}
 
 	// Hints are dropped from the right as the terminal narrows, rather than
 	// letting the bar wrap and push the board off-screen.
@@ -1097,11 +1104,20 @@ func (m *Model) renderDelete() string {
 	return m.clipToWindow(m.detailBody(m.detail, max(20, m.width)), prompt+" · esc cancel")
 }
 
+// rejectPrompt is the line R opens, asking for the reason.
+func (m *Model) rejectPrompt() string {
+	handle := ""
+	if m.rejecting != nil {
+		handle = ticket.Handle(m.rejecting.ID)
+	}
+	return styWarn.Render("reject "+handle+" — why: ") + m.input + stySelected.Render("▏")
+}
+
 // detailHints names the actions an open ticket offers. Basic movement (arrows,
 // jk, paging) is deliberately not listed: the footer names actions, the help
 // screen teaches movement. b appears only when there is a blocker to jump to.
 func (m *Model) detailHints(t *ticket.Ticket) string {
-	hint := "e fields · E editor · y copy id · m move · l links · n follow-up · X delete"
+	hint := "e fields · E editor · y copy id · m move · l links · n follow-up · R reject · X delete"
 	if len(t.BlockedBy) > 0 {
 		hint += " · b blocked-by"
 	}
@@ -1701,7 +1717,7 @@ func (m *Model) renderHelp() string {
 			{"a f", "accept, or raise a follow-up (on a ticket awaiting sign-off)"},
 			{"m", "move the selected ticket to another lane"},
 			{"f", "override a move the gate refused, after confirming with y"},
-			{"x", "archive the selected ticket (restore brings it back)"},
+			{"x R", "archive the selected ticket; R: reject it with a one-line reason (restore brings either back)"},
 			{"X", "on an open ticket: delete its file, after typing the handle back"},
 			{"r", "reload from disk now"},
 			{"p b", "switch to another board; b: this repository's next board, its own lanes and only its tickets"},

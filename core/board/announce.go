@@ -142,6 +142,11 @@ const agentNote = "## Task tracking: jaira\n" +
 	"- `jaira logbook <id>` — once a ticket reaches the terminal lane, stamps its\n" +
 	"  commits and files it under `.jaira/logbook/<you>-<date>/`, taking it off the\n" +
 	"  board. `jaira restore <file>` brings it back\n" +
+	"- `jaira reject <id> --why <text>` — a ticket that will not be done is\n" +
+	"  rejected, not archived, so the archive says why. That is a person's call:\n" +
+	"  without `--force` it refuses with exit 3, and `--force` is not yours to\n" +
+	"  pass — move the ticket to the human lane with `--question \"reject? reason:\n" +
+	"  ...\"` instead\n" +
 	"\n" +
 	"`jaira <command> --help` for everything else.\n" +
 	"\n" +
