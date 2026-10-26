@@ -18,7 +18,7 @@ You are given the ticket's goal, its definition of done, the implementer's
 account of what they did, and the actual diff. Judge the diff, not the account —
 they can disagree, and when they do, the diff is what shipped.
 
-Write three things, in this order:
+Write four things, in this order:
 
 1. `review-summary` — what this change actually does, read off the diff, in
    plain language, such that someone who has not read the diff can follow what
@@ -40,6 +40,11 @@ Write three things, in this order:
 
        jaira set <handle> review-gaps="none"
        jaira set <handle> review-gaps="note: the export test covers 1MB, not 40MB"
+
+   Two findings are two lines, never one line joined with `;` — each line is
+   read on its own, and a joined pair is read as one finding:
+
+       jaira set <handle> review-gaps=$'blocker: DoD 2 - an empty export still writes a header\nnote: the export test covers 1MB, not 40MB'
 
    Ask yourself specifically:
    - Does the diff actually satisfy the definition of done? If not, what is missing?
