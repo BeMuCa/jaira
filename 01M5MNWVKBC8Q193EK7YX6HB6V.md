@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:58Z
-updated-at: 2026-10-26T20:20:15Z
+updated-at: 2026-10-26T20:20:18Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: x6hb6v-driver
@@ -34,6 +34,23 @@ review-gaps: |-
 test-verdict: "pass: cockpit 164/164, validate ok, gofmt/vet/build clean, 4 new tests cover the 3 observed cases + positive; jaira show --json status verified on default and second board"
 review-verdict: "Freigabe mit kleinem Vorbehalt. Der Diff erfuellt alle drei DoD-Punkte; Fehler habe ich keine gefunden. Geprueft: 164 Cockpit-Tests gruen; die vier neuen Tests schlagen gegen den alten Code von master fehl, sie schuetzen die Aenderung also wirklich; gofmt, go vet, go build sauber; 'jaira show --json' kostet ca. 0,1 s pro Bericht. Vorbehalt: Wortlaut der Release-Notiz (Luecke 1) und die Bedeutung 'seit dem letzten Bericht' (Luecke 2) - beides sollte die Person kennen, beides blockiert nicht. Nicht geprueft: das Verhalten in einer echten Claude-Code-Sitzung (nur im Test-Harness)."
 review-round: 2
+review-check: |-
+  Dauer ca. 10 Minuten. Du tauschst kurz dein globales Cockpit gegen das aus diesem Build und stellst es am Ende zurueck; starte in der Zeit keine anderen Claude-Sitzungen.
+  1. cd /home/berk/git/jAIra-X6HB6V && go build -o /tmp/x6/jaira ./cmd/jaira
+  2. /tmp/x6/jaira roles install --into /tmp/x6/skills  -> letzte Zeile 'roles in /tmp/x6/skills'; der Ordner /tmp/x6/skills/jaira-cockpit existiert.
+  3. mv ~/.claude/skills/jaira-cockpit /tmp/x6/cockpit-alt && cp -r /tmp/x6/skills/jaira-cockpit ~/.claude/skills/
+  4. grep -c laneChangeOf ~/.claude/skills/jaira-cockpit/hooks/digest.ts  -> gibt 1 aus (das neue Cockpit ist drin).
+  5. Board-Kopie ohne Remote: mkdir -p /tmp/x6/repo && cd /tmp/x6/repo && git init -q && jaira init
+  6. jaira create Probe --goal Probe --context Probe --dod Probe, dann jaira list  -> merk dir das 6-stellige Handle, unten H.
+  7. jaira move H --to todo  -> 'H → todo'.
+  8. cd /tmp/x6/repo && claude  -> dem Ordner vertrauen.
+  9. Tippe: 'Starte einen Hintergrund-Agenten. Er fuehrt jaira move H --to in-progress aus und antwortet danach nur mit diesem Satz: Ticket H: jaira list -> human, done -> in-progress, moved to review.'
+  10. Wenn er fertig ist, siehst du genau eine Zeile: '[shortened by jaira-cockpit] H · todo → in-progress — full report: /cockpit report H'. Es darf NICHT 'list → human', 'done → in-progress' oder 'review' darin stehen.
+  11. Tippe: 'Starte noch einen Hintergrund-Agenten. Er verschiebt nichts und antwortet nur: Ticket H moved to review.'
+  12. Du siehst: '[shortened by jaira-cockpit] H — full report: /cockpit report H' - ohne Lane, weil das Ticket noch in in-progress steht (jaira show H zeigt 'lane in-progress').
+  13. /cockpit report H  -> zeigt beide Berichte im vollen Wortlaut.
+  14. Zurueckstellen: claude beenden, dann rm -rf ~/.claude/skills/jaira-cockpit && mv /tmp/x6/cockpit-alt ~/.claude/skills/jaira-cockpit
+  Nur per Test pruefbar: cd /home/berk/git/jAIra-X6HB6V/core/mod/builtin/jaira-cockpit && claude plugin test . 2>&1 | tail -4  -> '164 pass, 0 fail'; der Block 'the lane in the line comes from the board' (4 Tests) deckt die drei beobachteten Faelle ab. Das erste Sehen beim Sitzungsstart deckt nur Schritt 10 ab, kein Repo-Test.
 ---
 
 # Die Einzeiler des Cockpits nennen die Lane, in der das Ticket wirklich steht
