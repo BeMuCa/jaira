@@ -20,11 +20,11 @@ commits:
   - 4b920015d063527e9d48d75cc242d8342bf17d2e
   - 1c4ef1ae3addca1b8809f93613402b0a2c14b73a
 created-at: 2026-10-23T15:25:41Z
-updated-at: 2026-10-26T20:23:32Z
+updated-at: 2026-10-26T20:25:33Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: driver-1TFFG2
-claimed-at: 2026-10-26T20:23:29Z
+claimed-at: 2026-10-26T20:25:33Z
 outcome-what: "spawn.sh starts every tab's claude in the person's permission mode (settings.PermissionModeFor: board .jaira/permission-mode without bypassPermissions, then permissions.defaultMode in the claude settings.json, then auto for an autoMode key; shown by jaira roles list as permission_mode and permission_mode_source). After the enter it checks Herdr's agent_status: exit 0 working, exit 1 'prompt not received in <pane>' (tab stays open, message fits the cockpit's 160-char cut), exit 4 an approval dialog waits (pane printed). The cockpit takes exit 4 as a started worker or chat at all four spawn.sh call sites and says a dialog waits in its tab; giveBack records a new worker, not nobody."
 outcome-why: "Worker tabs stood at their first Bash question, once for 49 minutes, and in 1NATKP spawn.sh reported success though the prompt never arrived. The cockpit would otherwise have read the new exit 4 as a failure and written 'given back to nobody' while a worker ran."
 outcome-resolves: "DoD 1: settings.PermissionModeFor, permission_mode in spawn.sh and usage(), TestPermissionModeFor, TestSpawnStartsClaudeInThePersonsPermissionMode. DoD 2: the arrival check after send-keys (exit 1 or 4), TestSpawnChecksThePromptArrived, and the cockpit reporting exit 4 as a dialog (board.test.ts). DoD 3: Herdr-stub tests and core/release/notes/1TFFG2.md exist; core/role -race green, claude plugin test 163 pass; the full go test ./... -race is left for the run before the PR."
