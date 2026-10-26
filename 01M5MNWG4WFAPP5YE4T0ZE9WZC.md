@@ -16,9 +16,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:47Z
-updated-at: 2026-10-26T19:07:58Z
+updated-at: 2026-10-26T19:10:55Z
 assignee: BeMuCa
 updated-by: BeMuCa
+claimed-by: EE-3NX6GL3-253301
+claimed-at: 2026-10-26T19:10:55Z
 ---
 
 # Eine Erlaubnisliste im Repo laesst Worker arbeiten, ohne bei jedem Befehl zu fragen
