@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:56Z
-updated-at: 2026-10-26T19:35:42Z
+updated-at: 2026-10-26T19:35:45Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-374545
@@ -66,3 +66,11 @@ claimed-at: 2026-10-26T19:21:26Z
 - Gewaehlte Erkennung: (a) andere Worktrees per git worktree list, darin deren FiledAwayIDs auf der Platte, auch uncommittet. Deckt S1 fuer Worktrees ab, also den DoD-Testfall. (b) Landing-Branches (settings.Landing, core/settings/settings.go:481): ein ls-tree auf .jaira/logbook und .jaira/archive. Deckt S2 ab, mit derselben Definition wie Landed/reap/Stranded.
 - Regel: markiert nur, wenn updated-at der Datei hier STRIKT aelter ist als das der abgelegten Kopie. Eine restore-Kopie hat dasselbe updated-at (Restore bewegt nur, store.go:708-772) und wird nicht markiert. Wer nach dem Ablegen hier schreibt, macht sie neuer, und sie wird auch nicht markiert.
 - Verworfen: (C) ein 'filed'-Marker im Ticket/Ref wie bei Meilensteinen. Er wuerde auch fremde Clones vor dem Merge abdecken, ist aber eine Formataenderung (restore, merge, validate muessten ihn kennen). (D) alle Remote-Branches scannen: ein ls-tree pro Branch pro CLI-Aufruf, und 'sofort starten' waere dahin. (E) git log --all ueber die History: dann wuerden auch Tickets als abgelegt gelten, die spaeter zurueckgeholt wurden.
+- **2026-10-26 19:35 · BeMuCa** — pre-process, Entfernen-Befehl + Luecken:
+- jaira delete verworfen: es loescht auch den Ref (RecordDelete, core/ticket/store.go:419-436). In S1 nimmt das den Ref weg, bevor das Ticket gelandet ist, entgegen refsync.go:166-179. Ausserdem verweigert es Tickets, auf die andere zeigen (internal/cli/delete.go referencesTo), und ist fuer 'haette nie existieren sollen' gedacht.
+- Gewaehlt: git-Befehle je Zustand, geprueft mit gitrepo.Tracks (core/gitrepo/git.go:49). Nicht getrackt: rm <pfad>. Getrackt: git restore <pfad>, dann git merge <landing>. Das ist der Handfix von D0SAHM (stash + pull master). jaira druckt schon jetzt git-Befehle aus, siehe internal/cli/share.go:78.
+- git rm auf einer getrackten Datei verworfen: der naechste Merge des Landing-Branches gibt dann einen rename/delete-Konflikt.
+- Luecke: ein anderer CLONE legt ab, und sein Branch ist noch nicht gemergt. Das sieht man hier nicht, ohne Marker im Ref. Der Ref zeigt den Endstand in done. Das passt zur Absicht von RecordFiled (bis zum Landen sichtbar bleiben).
+- Luecke: eine stale Kopie aus derselben Sekunde wie das Ablegen wird verpasst (updated-at hat Sekundenaufloesung). Darum muss der Test 1 s Abstand halten oder updated-at in der Fixture setzen.
+- K6BGB0 (PR #91, nicht auf master) aendert dieselben Stellen: Ticket-Laufzeitfeld, list-Flags, ticketJSON, Karten-Flags und Store.List 'newest'. Egal, wer zuerst merged: die Abgelegt-Pruefung laeuft auf der Datei, vor 'newest', und ein markiertes Ticket wird nicht durch den Ref-Stand ersetzt.
+- Nicht im Plan, Kandidat fuer ein Folgeticket: in S2 (Ref weg) geht ein Schreiben auf eine markierte Kopie durch und legt den Ref neu an. Das Ticket lebt dann wieder auf. Ausserdem zaehlt der Blocker-Index (link.Build) eine markierte Kopie weiter als offen, und web (internal/cli/web_source.go) ist nicht angefasst.
