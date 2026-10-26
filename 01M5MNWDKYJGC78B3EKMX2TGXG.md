@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:44Z
-updated-at: 2026-10-26T19:11:16Z
+updated-at: 2026-10-26T19:15:22Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-252449
@@ -40,6 +40,13 @@ claimed-at: 2026-10-26T19:10:49Z
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] teamlead.sh in core/role/builtin/jaira-dispatcher/scripts/: '--here [repo]' writes uds:$CLAUDE_CODE_MESSAGING_SOCKET to <git common dir>/jaira/teamlead (exit 2 without a live socket); '<parent> [repo]' prints the parent while it is a uds: address whose socket exists, else the recorded address when its socket exists, else the parent unchanged
+- [ ] Go test in core/role/role_test.go: record A; A gone and B recorded (also from a second worktree) -> B; A alive and B recorded -> A; both gone -> A; --here without a socket -> exit 2
+- [ ] jaira-teamlead/SKILL.md: run 'teamlead.sh --here' first thing in every session
+- [ ] jaira-worker/SKILL.md and jaira-dispatcher/SKILL.md: before every SendMessage to the parent run 'teamlead.sh <session>' and send to what it prints; a changed address is noted as the new parent; the 'no other peer' rule names the recorded teamlead as the only replacement
+- [ ] jaira-worker/SKILL.md and jaira-dispatcher/SKILL.md: a question only the person can resolve by running a command carries the ready-to-type '! <command>' line
+- [ ] core/release/notes/X2TGXG.md; gofmt/vet/build; go test ./core/role -run <touched tests>; commit code together with the ticket file
 
 ## Progress
 
