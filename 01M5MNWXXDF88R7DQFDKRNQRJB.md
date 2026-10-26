@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:01Z
-updated-at: 2026-10-26T20:09:06Z
+updated-at: 2026-10-26T20:09:08Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: rnqrjb-driver
@@ -47,3 +47,4 @@ claimed-at: 2026-10-26T20:06:42Z
 
 ## Progress
 - **2026-10-26 20:07 · BeMuCa** — Ticket opts out of brainstorm and planning (Options unchecked), so next_lane jumps todo -> in-progress; the driver wrote the plan. Interpretation taken: 'danach nur noch bei jaira update selbst' = after the one shown hint, the staleness only surfaces through jaira update's own report (previous version + what changed); update already suppresses the nudge via updateInProgress. There is no --verbose flag (global flags are -C and --json), so none is added.
+- **2026-10-26 20:09 · BeMuCa** — Marker is a separate file <stateDir>/nudged holding the binary version; the version stamp itself is not touched, so jaira update still reads the true previous version. Marker write errors are swallowed (hint then just repeats).
