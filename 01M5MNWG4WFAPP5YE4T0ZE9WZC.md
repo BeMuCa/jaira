@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:47Z
-updated-at: 2026-10-26T20:06:02Z
+updated-at: 2026-10-26T20:06:27Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-253301
@@ -38,7 +38,7 @@ test-verdict: "pass: gofmt/vet/build clean, settings.json valid JSON; DoD 1-3 ho
 ## Definition of Done
 
 - [x] Eine committete .claude/settings.json erlaubt die Befehle der Lanes (go build/vet/test/gofmt, git add/commit/status/diff/log/show/worktree/branch/fetch/stash, alle jaira-Unterbefehle, mkdir/cp/ls/cat/grep/find, tmux ohne kill-server), fragt bei git push und gh pr create nach und verbietet rm -rf (auch im Scratchpad), git reset --hard, git filter-branch, gh pr merge, tmux kill-server
-  proof: .claude/settings.json:37
+  proof: .claude/settings.json:4-48 (allow 4-36, ask 37-40, deny 41-48)
 - [x] docs/COMMANDS.md oder README sagt: Worktrees lesen die Settings des Haupt-Checkouts; eine Verbotsliste gehoert in dessen settings.local.json oder in die User-Settings
   proof: README.md:675
 - [x] Ein frischer Worker auf einem Scratch-Board faehrt eine Lane ohne eine einzige Rueckfrage durch; das Ergebnis steht als Notiz am Ticket
