@@ -16,9 +16,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:51Z
-updated-at: 2026-10-26T19:08:02Z
+updated-at: 2026-10-26T19:13:06Z
 assignee: BeMuCa
 updated-by: BeMuCa
+claimed-by: EE-3NX6GL3-268570
+claimed-at: 2026-10-26T19:13:06Z
 ---
 
 # jaira accept <id> --by <person>: eine Abnahme auf Wort der Person, die festhaelt, wer abgenommen hat
