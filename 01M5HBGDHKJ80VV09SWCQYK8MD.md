@@ -1,7 +1,7 @@
 ---
 id: 01M5HBGDHKJ80VV09SWCQYK8MD
 title: Die Session-ID traegt keinen Rechnernamen mehr
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "claimed-by und jede andere Stelle, die eine Session benennt, enthalten keinen Hostnamen: ein Teammitglied kann aus einem Ticket nicht ablesen, auf welcher Maschine es bearbeitet wurde."
@@ -18,11 +18,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T08:26:42Z
-updated-at: 2026-10-26T19:15:28Z
+updated-at: 2026-10-26T19:15:30Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: qyk8md-driver
 claimed-at: 2026-10-26T19:11:29Z
+outcome-what: "Session ids are now a random six-character token kept once per machine in machine-id under JAIRA_HOME or ~/.jaira, plus the parent pid; the hostname is only compared, never written. An old-format claim that names this machine counts as abandoned at once."
+outcome-why: "claimed-by is committed with the ticket, so a hostname in it published the machine name, and on the maintainer's machine his employer, in ticket files and refs."
+outcome-resolves: "No new claimed-by carries a hostname; old claims from other machines still block until ClaimTTL; this machine's own old claims need no --steal after the update."
 ---
 
 # Die Session-ID traegt keinen Rechnernamen mehr
