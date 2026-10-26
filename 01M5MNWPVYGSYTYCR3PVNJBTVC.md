@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:53Z
-updated-at: 2026-10-26T19:24:08Z
+updated-at: 2026-10-26T19:24:11Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-264760
@@ -30,6 +30,9 @@ claimed-at: 2026-10-26T19:12:35Z
 
 - [ ] Ein Move in eine Ziellane mit vollstaendiger DoD und offenem Plan-Punkt wird nicht mehr abgelehnt; die Ausgabe nennt den offenen Plan-Punkt als Hinweis; ein Test deckt den Fall
 - [ ] go test ./... -race gruen; Release-Notiz unter core/release/notes/
+- [ ] Bei unvollstaendiger DoD nennt die Ablehnung nur die offenen DoD-Punkte, keinen Plan-Schritt mehr
+- [ ] Der Hinweis erscheint in der Textausgabe, im JSON und beim Move aus der TUI, das Annehmen in signoff eingeschlossen
+- [ ] Die Texte, die das Plan-Gate beschreiben (.claude/skills/jaira/SKILL.md, README.md, docs/AGENTS.md, core/lane/builtin/50-done.md), sagen nichts Falsches mehr
 
 ## Options
 
