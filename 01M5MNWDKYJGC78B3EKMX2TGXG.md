@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:44Z
-updated-at: 2026-10-26T19:33:11Z
+updated-at: 2026-10-26T19:35:12Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-252449
@@ -28,6 +28,7 @@ outcome-resolves: "teamlead.sh prints the parent while its socket exists and the
 review-summary: none
 round: 2
 review-gaps: "reused fakeSocket (core/role/role_test.go) in TestTeamleadFollowsARestart instead of its own sock/mk closures, which duplicated it. Left: the git-common-dir lookup and the -e socket check that spawn.sh and reap.sh also carry - the shipped scripts never source each other (run-lane.sh only runs spawn.sh), and a shared file for two lines would be a new shipped script; the usage header, which matches spawn.sh and reap.sh; the test's git closure, since reapRig.git belongs to a rig this test does not build; the two uds: liveness lines in teamlead.sh (a helper is not shorter); the redundant [ -n \"$record\" ] before [ -f \"$record\" ]; the near-identical '! <command>' and teamlead.sh paragraphs in the worker and dispatcher SKILL.md, separate skills as before; 'wrote it there itself on start' in both SKILL.md, narrower than the every-round record but not false"
+test-verdict: "pass: gofmt/vet/build clean, go test -race ./core/role ok; teamlead.sh installed executable next to spawn.sh; restart play A->B (incl. 2nd worktree), A back, both gone, exit codes, outside-repo all as specified; DoD 1+2 proofs present; release note 2 single lines OK. DoD 3 suite part waits for pre-PR run. Not verified: stale socket file left by crashed claude (liveness is -e)."
 ---
 
 # Ein Worker findet seinen Teamlead nach einem Neustart wieder, und eine Frage an die Person kommt als fertige Zeile
