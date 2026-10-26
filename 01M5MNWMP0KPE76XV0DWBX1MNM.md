@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:51Z
-updated-at: 2026-10-26T19:20:33Z
+updated-at: 2026-10-26T19:20:35Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-268570
@@ -31,7 +31,8 @@ claimed-at: 2026-10-26T19:13:06Z
   proof: internal/cli/accept.go; TestAcceptMovesOutOfSignoffAndRecordsWho, TestAcceptReachesATicketFiledOnEntry
 - [x] Die Ausgabe eines --force-Moves nennt die uebergangenen Gates in einer Zeile als 'uebergangen', nicht im Wortlaut der Verweigerung
   proof: internal/cli/flow.go:250 (violationCodes); TestForcedMoveNamesOverriddenCodesOnOneLine
-- [ ] jaira-teamlead/SKILL.md sagt: ein getipptes 'accept <id>' der Person ist die Abnahme und wird mit jaira accept ausgefuehrt
+- [x] jaira-teamlead/SKILL.md sagt: ein getipptes 'accept <id>' der Person ist die Abnahme und wird mit jaira accept ausgefuehrt
+  proof: core/role/builtin/jaira-teamlead/SKILL.md:211
 - [ ] go test ./... -race gruen; Release-Notiz unter core/release/notes/
 
 ## Options
