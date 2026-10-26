@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:01Z
-updated-at: 2026-10-26T20:06:48Z
+updated-at: 2026-10-26T20:07:47Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: rnqrjb-driver
@@ -38,6 +38,11 @@ claimed-at: 2026-10-26T20:06:42Z
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] core/release/release.go: beside Stamped/Stamp add a marker file in the same state dir that records which binary version the stale-board hint was last shown for (read swallowing errors like Stamped; write like Stamp)
+- [ ] internal/cli/update.go nudgeIfStale: after the stamp check, stay silent when the marker already names release.Current; otherwise print the line and write the marker. No --verbose flag exists, none is added; jaira update keeps reporting the previous version and what changed
+- [ ] internal/cli/update_test.go: second nudge on the same board and version is silent; a different binary version nudges once again; jaira update after a shown hint still reports previous version and stamps
+- [ ] core/release/notes/RNQRJB.md: one '- ' line written as an instruction; update the nudgeIfStale doc comment
 
 ## Progress
 
