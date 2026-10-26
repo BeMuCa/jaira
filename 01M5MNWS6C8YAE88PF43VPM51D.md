@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWS6C8YAE88PF43VPM51D
 title: "Ein Checkout, dessen Ticket anderswo abgelegt wurde, zeigt es als abgelegt statt als geaendert"
-status: testing
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Nach jaira logbook in einem Worktree verwirrt die alte Ticketdatei in den anderen Worktrees und im Haupt-Checkout niemanden mehr: sie gilt als abgelegt, und jaira bietet an, sie zu entfernen."
@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:56Z
-updated-at: 2026-10-26T20:22:33Z
+updated-at: 2026-10-26T20:22:36Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-374545
@@ -25,7 +25,7 @@ outcome-what: "jaira list, jaira show and the board recognise a ticket file whos
 outcome-why: "Only a copy whose updated-at is strictly older than the filed copy's is marked, so a restored copy or one edited after the filing stays open. The check runs only where the mark is read (list, show, next, board reload), reads existing worktrees and the landing branch with a fixed number of git processes, none per ticket, and changes no file format. The removal command is printed for a person to run: rm for an untracked copy; for a tracked one git restore plus git merge of the landing branch, once the branch that filed it is on it. jaira delete would also take down the ref before the ticket has landed, git rm would conflict with the next merge, and merging the filing feature branch here would land its other files without a PR."
 outcome-resolves: "After jaira logbook in one worktree, the other worktrees and the main checkout no longer show the old ticket file as open work, no longer count it or hand it to jaira next, and say how to remove the stale copy."
 review-summary: none
-round: 4
+round: 5
 review-gaps: "removed: FiledElsewhere called y.landing() once per stale copy found in another worktree and again for the landing pass; with no landing-branches configured each call is a git symbolic-ref, so N stale copies cost N+1 processes on every list/show/next and board reload. Now resolved once at the top (scratch board, 3 stale copies, next --json: 12 -> 9 git processes, symbolic-ref 4 -> 1; list/show text and JSON byte-identical to before). Fixed the filedMu comment, which left out filedOut. Left: catBatch is the cat-file --batch pass pulled out of ReadMany, not a second copy; Worktrees() is the only worktree enumeration in the repo; filedelsewhere.go reuses Store.FiledAwayIDs, ticket.LoadHeader and gitrepo.Tracks rather than redoing them; FiledOn and Landed both name .jaira/logbook and .jaira/archive but ask different things (blob contents vs the commit that filed it). FiledElsewhere.Branch is still read by RemoveHint to merge the landing branch the copy was found on, so it is not dead after round 3. landing() keeps its nil guard on an optional func field (2 callers, like IsMine). The 5 s cache carries weight on the board's 2 s reload. realPath is close to the unexported project.canonical (core/project/project.go:104), but exporting it across packages for 4 lines is not worth it. RemoveHint still costs a Tracks call plus one landing resolve per stale copy it prints; that is the print-time-only design critique accepted. Test helpers mustFindFiledFile (one caller) and setUpdatedAt left as they are; stalefile_test.go rewrites updated-at inline too (already on master, not touched)."
 test-verdict: "fail: a copy filed in another worktree whose filing already reached the landing branch is still described as 'not yet merged into origin/master' (core/refsync/filedelsewhere.go:47-83 worktree pass runs before the landing pass, which skips ids already marked)"
 ---
