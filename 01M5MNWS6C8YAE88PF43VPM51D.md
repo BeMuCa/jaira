@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:56Z
-updated-at: 2026-10-26T19:21:51Z
+updated-at: 2026-10-26T19:21:58Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-374545
@@ -41,4 +41,4 @@ claimed-at: 2026-10-26T19:21:26Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-26 19:21 · BeMuCa** — Planning option ticked by the driver: the in-progress lane is cheap tier and the ticket needs a design decision first (what the remote carries after jaira logbook, and where board/list/show detect it). Pre-process runs at strong tier.
