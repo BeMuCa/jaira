@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:47Z
-updated-at: 2026-10-26T19:31:04Z
+updated-at: 2026-10-26T19:33:23Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-253301
@@ -24,12 +24,7 @@ claimed-at: 2026-10-26T19:10:55Z
 outcome-what: "Added a committed .claude/settings.json. permissions.allow covers the lane commands: go build/vet/test, gofmt, the git commands lanes use, every jaira subcommand, tmux, the read/copy tools, rm -r /tmp/*, Edit(/**). permissions.deny: rm -rf/-fr, git push, git reset --hard, git filter-branch, gh pr create/merge, tmux kill-server. README: '### Permissions in a worktree' under With Claude Code (which settings a worktree reads, trust, autoMode, /permissions), plus a paragraph under Development on what this repo's file allows and denies and why rm -rf is denied even under /tmp. No release note: nothing a jaira user runs changes."
 outcome-why: "Workers stopped to ask for routine lane commands (go build, git commit, jaira move/dod), because the repo carried no permission rules, and the user settings' autoMode.allow takes prose for the classifier, not patterns. A deny list a teamlead put into a worktree was never read, and nothing said which file a worktree reads."
 outcome-resolves: "DoD 1: .claude/settings.json:3. Deny is checked before allow, so rm -rf is denied everywhere and rm -r /tmp/* is allowed. DoD 2: README.md:672, the worktree reads its own settings.json, but settings.local.json and trust come from the main checkout's root. DoD 3: a fresh headless sonnet worker on a scratch board ran the in-progress lane with 0 permission denials (note on ZE9WZC). Shell expansions such as the lane prompt's --commits \"$(git rev-parse HEAD)\" always ask; follow-up W9AVBE. Open: critique finding 1, deny or ask for git push / gh pr create, for the maintainer."
-review-summary: |-
-  .claude/settings.json:41,44 deny `git push` and `gh pr create`, and a deny in this file beats every allow, settings.local.json included: /jaira-role-pr (core/role/builtin/jaira-role-pr/SKILL.md:212 "git push -u origin HEAD", :308 gh pr create when a person invoked it) and README.md:1138 / CLAUDE.md:223 ("An agent pushes its branch") can no longer run in this repo, not even from the maintainer's own session. The goal says these commands should ask ("fragen nach"), the DoD says forbid ("verbietet"). Maintainer decides: keep deny, or move them to `permissions.ask` (question on the human move).
-  core/release/notes/ZE9WZC.md: delete it. A binary user can observe nothing new: .claude/settings.json is this source repo's file, no go:embed reads .claude/, and `jaira update` would tell every user "The repo now ships" a file their repo does not have (CLAUDE.md: "Does not count: ... anything a user cannot observe from outside the binary").
-  README.md:674-678 repeat the allow/deny lists of .claude/settings.json and already differ from it (no `git config user.email`, no `rm -fr`). Replace the five bullets with one sentence: the lists live in .claude/settings.json, and /permissions shows them (README.md:701 already says so). Keep only what the JSON cannot say.
-  README.md:670-702 puts one sentence per line; ten lines run past 80 columns, the longest is 167. The README wraps prose into paragraphs at 80 columns (e.g. the `jaira hook print` paragraph, README.md:661-668). Rewrap the subsection as paragraphs.
-  README.md:670 puts the subsection under "## With Claude Code", which is for people using jaira in their own repo. This .claude/settings.json (go build, gofmt, ...) exists only in the jaira source repo. Move the part on what this repo allows and denies under "## Development" (README.md:1100), next to the push rule at README.md:1138 that it has to agree with. Keep "Which settings a worktree reads" (README.md:686-692) under With Claude Code.
+review-summary: ".claude/settings.json:41,44 deny `git push` and `gh pr create`, and a deny in this file beats every allow, settings.local.json included: /jaira-role-pr (core/role/builtin/jaira-role-pr/SKILL.md:212 \"git push -u origin HEAD\", :308 gh pr create when a person invoked it) and README.md:1121 / CLAUDE.md:223 (\"An agent pushes its branch\") can no longer run in this repo, not even from the maintainer's own session. The goal says these commands should ask (\"fragen nach\"), DoD 1 says forbid (\"verbietet\"). Maintainer decides: keep deny, or move both to `permissions.ask` and keep `gh pr merge` denied (question on the human move)."
 round: 2
 ---
 
