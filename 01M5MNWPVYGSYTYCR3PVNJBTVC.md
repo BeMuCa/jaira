@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:53Z
-updated-at: 2026-10-26T19:44:54Z
+updated-at: 2026-10-26T19:44:56Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-650718
@@ -45,7 +45,7 @@ round: 2
 - [x] Bei unvollstaendiger DoD nennt die Ablehnung nur die offenen DoD-Punkte, keinen Plan-Schritt mehr
   proof: core/gate/plan_test.go TestUnfinishedPlanAddsNothingToDoDRefusal
 - [x] Der Hinweis erscheint in der Textausgabe, im JSON und beim Move aus der TUI, das Annehmen in signoff eingeschlossen
-  proof: internal/cli/flow.go Note: lines + hints JSON; internal/tui/model.go applyMove/forceMove; internal/tui/signoff.go accept (compiled; output not run by hand)
+  proof: internal/cli/flow.go Note: lines + warnings JSON; internal/tui/model.go applyMove/forceMove; internal/tui/signoff.go accept (compiled; output not run by hand)
 - [x] Die Texte, die das Plan-Gate beschreiben (.claude/skills/jaira/SKILL.md, README.md, docs/AGENTS.md, core/lane/builtin/50-done.md), sagen nichts Falsches mehr
   proof: SKILL.md, README.md, docs/AGENTS.md, core/lane/builtin/50-done.md
 
