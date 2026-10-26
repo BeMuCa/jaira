@@ -3,7 +3,6 @@ id: 01M5X2M6KY8X6H5Z04FKMHY047
 title: "Acceptance page: a click on a code span copies it; line breaks in step text show"
 status: done
 ready: true
-creator: Alexander Sacharov
 goal: "A person running an acceptance page copies the exact text a step tells them to send with one click, and a step written as numbered sub-steps shows one sub-step per line."
 context: |-
   Steps that tell a person to send a sentence put it in backticks, so it renders as <code>. Copying it means selecting by hand, and a selection easily misses the first or last character.
@@ -14,11 +13,10 @@ tags:
   - acceptance
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 5dd939eb961806df0eee523b7e8cfc9d02045512
 created-at: 2026-10-26T21:42:22Z
-updated-at: 2026-10-26T21:43:58Z
-assignee: Alexander Sacharov
-updated-by: Alexander Sacharov
+updated-at: 2026-10-26T21:44:02Z
 outcome-what: Click on a code span copies it; newlines in step text become line breaks
 outcome-why: Copying sentences to send by hand missed characters; numbered sub-steps ran together
 outcome-resolves: "template.html: cursor:copy, click handler, fmt newline"
