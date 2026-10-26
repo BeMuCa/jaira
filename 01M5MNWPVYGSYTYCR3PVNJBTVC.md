@@ -85,7 +85,7 @@ review-check: |-
 - **2026-10-26 19:17 · BeMuCa** — BRAINSTORM 1/3 - Befund im Code.
 - core/gate/gate.go:417-431: jede Ziellane (target.Terminal) verweigert mit CodePlanIncomplete, eine Meldung pro offenem Plan-Schritt. Die DoD spielt dabei keine Rolle.
 - Die DoD-Sperre steht davor, gate.go:358-385, haengt aber an target.RequiresNonModelSignal, nicht an Terminal. Das ist per Default dasselbe (core/lane/lane.go:344), eine Lane kann es abwaehlen.
-- Folge: DoD 9/9 + ein offener Plan-Schritt = Ablehnung. So bei GH0GKD (requirementsgenie): offen war Schritt 30 "R6-13 Abnahme-Vorbereitung", die Arbeit war laut Notiz 23.10. 07:56 erledigt, nur nicht abgehakt.
+- Folge: DoD 9/9 + ein offener Plan-Schritt = Ablehnung. So bei GH0GKD (ein anderes Projekt): offen war Schritt 30 "R6-13 Abnahme-Vorbereitung", die Arbeit war laut Notiz 23.10. 07:56 erledigt, nur nicht abgehakt.
 - Der TUI-Accept in signoff (internal/tui/signoff.go:177-183) hat kein Override: die Person kommt nur weiter, indem sie den Plan-Schritt abhakt.
 - Der Kommentar gate.go:404-416 begruendet die Sperre mit "erst Design fertig, nicht gebaut". Aber Plan-Haken und DoD-Haken setzt derselbe Worker selbst. Der Plan-Haken ist kein unabhaengiger Beleg, er faengt nur das Vergessen eines zweiten Hakens.
 - Die Doku ist gespalten. Agent-Block core/board/announce.go:98-104 (-> CLAUDE.md/AGENTS.md): die DoD ist das, was das Gate der Ziellane liest; der Plan ist eine zweite, getrennte Liste. Dagegen sagen die Plan-Sperre ausdruecklich an: .claude/skills/jaira/SKILL.md:105-107, README.md:247-249, docs/AGENTS.md:227-228, core/lane/builtin/50-done.md:11.
