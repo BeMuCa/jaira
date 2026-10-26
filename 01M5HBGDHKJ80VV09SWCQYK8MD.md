@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T08:26:42Z
-updated-at: 2026-10-26T19:15:30Z
+updated-at: 2026-10-26T19:20:43Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: qyk8md-driver
@@ -26,6 +26,10 @@ claimed-at: 2026-10-26T19:11:29Z
 outcome-what: "Session ids are now a random six-character token kept once per machine in machine-id under JAIRA_HOME or ~/.jaira, plus the parent pid; the hostname is only compared, never written. An old-format claim that names this machine counts as abandoned at once."
 outcome-why: "claimed-by is committed with the ticket, so a hostname in it published the machine name, and on the maintainer's machine his employer, in ticket files and refs."
 outcome-resolves: "No new claimed-by carries a hostname; old claims from other machines still block until ClaimTTL; this machine's own old claims need no --steal after the update."
+review-summary: |-
+  internal/cli/claim.go StaleClaim: the new session.LegacyLocal branch (8 lines) repeats the zero-timestamp and age handling that follow it; delete it and widen the existing age test instead: if d := time.Since(t.ClaimedAt); d > ClaimTTL || session.LegacyLocal(t.ClaimedBy) { return t.ClaimedBy, d, true } - same results, a zero timestamp still returns 0 from the branch above
+  core/session/session.go machineToken: ticket.NewID(time.Now())[20:] plus a comment explaining the slice restates ticket.Handle (core/ticket/id.go:88, whose doc already says the tail is the random part) - use ticket.Handle(ticket.NewID(time.Now())) and drop the comment
+  core/session/machine_test.go TestDefaultIDCarriesNoHostname looks for the raw hostname, but the old build wrote sanitize(hostname) - a hostname with a dot (macOS name.local, any FQDN) passes this test on the old code too, so it does not prove the definition of done there; compare against sanitize(host)
 ---
 
 # Die Session-ID traegt keinen Rechnernamen mehr
