@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWVKBC8Q193EK7YX6HB6V
 title: "Die Einzeiler des Cockpits nennen die Lane, in der das Ticket wirklich steht"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Die Kurzfassung eines Agentenberichts im Cockpit stimmt mit dem Board ueberein: sie nennt den tatsaechlichen Lanewechsel, oder keinen."
@@ -16,14 +16,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:58Z
-updated-at: 2026-10-26T19:59:12Z
+updated-at: 2026-10-26T20:00:07Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: x6hb6v-driver
 claimed-at: 2026-10-26T19:57:50Z
-outcome-what: "Der Cockpit-Einzeiler (core/mod/builtin/jaira-cockpit/hooks/digest.ts) liest keine Lane mehr aus dem Berichtstext; register.tsx liest beim Bericht `jaira list --json` aller Boards frisch (lanesNow) und zeigt 'vorher → jetzt' aus der Map lastSeen, nur wenn beide bekannt sind und sich unterscheiden."
-outcome-why: "Der Text nannte beilaeufig beliebige Lanes ('list -> human', 'done -> in-progress', 'moved to review'), sodass der Einzeiler falsche oder nie betretene Lanes zeigte; refreshBoard ergaenzt lastSeen nur beim ersten Auftauchen, damit der Vergleich nicht schon die neue Lane enthaelt, wenn ein minutenlang arbeitender Subagent berichtet."
-outcome-resolves: "Der Einzeiler stimmt mit dem Board ueberein: der echte Wechsel oder keiner. Vier neue Tests in core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts decken die drei beobachteten Faelle und den positiven Fall ab; Release-Notiz core/release/notes/X6HB6V.md."
+outcome-what: "Der Cockpit-Einzeiler zeigt 'vorher → jetzt' nur noch aus dem Board: shorten() in core/mod/builtin/jaira-cockpit/hooks/register.tsx liest die Lane des einen Tickets per `jaira show <id> --json`, erst nachdem digest() ein Ticket und keinen Fehlschlag gefunden hat (digest ist jetzt async). Die Lane, die der Berichtstext nennt, wird nie gelesen; laneChangeOf liegt in digest.ts."
+outcome-why: "Der Berichtstext nannte beliebige Lanes ('list -> human', 'done -> in-progress', 'moved to review'), die das Ticket nie hatte; das Board ist die einzige Quelle, die stimmt. lastSeen wird nur beim ersten Auftauchen und bei Berichten gesetzt, weil refreshBoard jede Minute liest und ein minutenlang arbeitender Subagent sonst nie einen Wechsel zeigte."
+outcome-resolves: "Der Einzeiler stimmt mit dem Board ueberein: der echte Wechsel oder keiner. Vier Tests in core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts ('the lane in the line comes from the board') decken die drei beobachteten Faelle und den positiven Fall ab; Release-Notiz core/release/notes/X6HB6V.md."
 review-summary: |-
   core/mod/builtin/jaira-cockpit/hooks/register.tsx:199 reads the board (lanesNow) before digest knows there is a ticket: every failure or ticket-less report spawns jaira list + jaira boards + one list per side board, and a failure session.receive passes on whole reaches prompt.submit and does it all again. Instead make digest's laneChange parameter async (digest.ts:79-86, (ticket) => Promise<string | undefined>, awaited after the isFailure/ticketOf checks) so the board is read only for a report that will be shortened.
   core/mod/builtin/jaira-cockpit/hooks/register.tsx:213-230 lanesNow repeats refreshBoard's list+boards+per-board loop (register.tsx:313-337) with a different failure rule (undefined vs continue). Replace it with one `jaira show <ticket> --json` and its `status`, as noteOn already does (register.tsx:388): Store.Load resolves an id on every board (core/ticket/store.go:1174); checked on a scratch board, a ticket on board "ops" is absent from `jaira list --json` while `jaira show <id> --json` returns status=backlog, board=ops. lanesNow, its board loop and the side-board failure rule then go.
