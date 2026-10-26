@@ -48,7 +48,13 @@ from as chat_model_source.
 
 And which command the roles run their Python scripts with: JAIRA_PYTHON first,
 then "python" in settings.json, else python3 — carried as python, and where it
-came from as python_source. A command, so "uv run python" works too.`,
+came from as python_source. A command, so "uv run python" works too.
+
+And who touches the repository's version and changelog: "teamlead" when the
+board's .jaira/release says so — one line, committed, shared with everybody
+on the board — and "worker" otherwise, every ticket bringing its own as the
+repository's instructions say. Carried as release, and where it came from as
+release_source.`,
 		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			roles, err := role.Builtins()
@@ -60,8 +66,10 @@ came from as python_source. A command, so "uv run python" works too.`,
 			// this list to know what it can start, and which of two it starts
 			// for a ticket is the same question.
 			cur := settings.Load()
-			chat, chatSource := cur.ChatModelFor(bestEffortRoot())
+			root := bestEffortRoot()
+			chat, chatSource := cur.ChatModelFor(root)
 			py, pySource := cur.PythonCommand()
+			release, releaseSource := settings.ReleaseFor(root)
 			if g.jsonOut {
 				arr := make([]map[string]any, 0, len(roles))
 				for _, r := range roles {
@@ -74,6 +82,7 @@ came from as python_source. A command, so "uv run python" works too.`,
 					"roles": arr, "dispatch": cur.DispatchMode(), "dispatch_role": cur.DispatchRole(),
 					"chat_model": chat, "chat_model_source": chatSource,
 					"python": py, "python_source": pySource,
+					"release": release, "release_source": releaseSource,
 				})
 			}
 			fmt.Fprintf(w, "%-24s %s\n", "ID", "DESCRIPTION")
@@ -85,6 +94,7 @@ came from as python_source. A command, so "uv run python" works too.`,
 			fmt.Fprintf(w, "chat model: %s — what the cockpit's explain and discuss chats start on (%s)\n",
 				cmp.Or(chat, "account default"), chatSource)
 			fmt.Fprintf(w, "python: %s — what the roles run their Python scripts with (%s)\n", py, pySource)
+			fmt.Fprintf(w, "release: %s — who touches the version and the changelog (%s)\n", release, releaseSource)
 			return nil
 		},
 	}

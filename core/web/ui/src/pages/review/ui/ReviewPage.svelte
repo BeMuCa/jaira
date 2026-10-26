@@ -1,10 +1,12 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { fetchEpics, type Epic } from '@/entities/epic';
   import { fetchTicket, fetchUnassigned, type Ticket, type TicketDetail } from '@/entities/ticket';
   import { fetchSync, type SyncState } from '@/entities/sync';
+  import { fetchLanes, setLanes } from '@/entities/lane';
   import { assignToEpic, removeFromEpic } from '@/features/assign-to-epic';
   import { createEpic } from '@/features/create-epic';
+  import { FilterBar, choices, fromQuery, matches, narrows, toQuery } from '@/features/filter-tickets';
   import { EpicList } from '@/widgets/epic-list';
   import { UnassignedList } from '@/widgets/unassigned-list';
   import { SyncStatus } from '@/widgets/sync-status';
@@ -26,13 +28,46 @@
   let lostSince = $state<string | null>(null);
   let opened = $state<TicketDetail | null>(null);
   let dialog = $state<HTMLDialogElement>();
+  // The filter starts from the address and is written back to it, so a link
+  // opens the same list.
+  let filter = $state(fromQuery(location.search));
 
+  const options = $derived(choices([...unassigned, ...epics.flatMap((e) => e.tickets)]));
+  const shown = $derived(unassigned.filter((t) => matches(t, filter)));
+  // An epic none of whose tickets match has nothing to show while a filter
+  // narrows the page; unfiltered, every epic stays, empty ones too.
+  const shownEpics = $derived(
+    epics
+      .map((e) => ({ ...e, tickets: e.tickets.filter((t) => matches(t, filter)) }))
+      .filter((e) => !narrows(filter) || e.tickets.length > 0),
+  );
+
+  $effect(() => {
+    const q = toQuery(filter);
+    if (q !== location.search) history.replaceState(null, '', location.pathname + q + location.hash);
+  });
+
+  // Loads at once, and again whenever the switch flips: it changes what the
+  // server is asked for.
+  $effect(() => {
+    void filter.all;
+    untrack(load);
+  });
+
+  // Loads overlap — the switch, the minute's reload, a drop — and they need
+  // not answer in order. Only the one started last may write the page, or a
+  // slow answer to the switch's old position would put it back.
+  let loads = 0;
   async function load() {
+    const n = ++loads;
     try {
-      [epics, unassigned, sync] = await Promise.all([fetchEpics(), fetchUnassigned(), fetchSync()]);
+      const answers = await Promise.all([fetchEpics(), fetchUnassigned(filter.all), fetchSync(), fetchLanes()]);
+      if (n !== loads) return;
+      [epics, unassigned, sync] = answers;
+      setLanes(answers[3]);
       error = '';
     } catch (e) {
-      error = (e as Error).message;
+      if (n === loads) error = (e as Error).message;
     }
   }
 
@@ -79,7 +114,6 @@
   }
 
   onMount(() => {
-    load();
     const t = setInterval(load, REFRESH_MS);
     const h = setInterval(heartbeat, HEARTBEAT_MS);
     return () => {
@@ -98,10 +132,16 @@
     jaira web has not answered since {clock(lostSince)} — is the command still running? What you see may be out of date; retrying every {HEARTBEAT_MS / 1000} s.
   </p>
 {/if}
+<FilterBar bind:filter lanes={options.lanes} tags={options.tags} people={options.people} />
 {#if error}<p class="error" role="alert">{error}</p>{/if}
 <main>
-  <UnassignedList tickets={unassigned} onopen={open} onremove={(epic, id) => change(() => removeFromEpic(epic, id))} />
-  <EpicList {epics} onopen={open} oncreate={create} onassign={(epic, id, from) => change(() => assignToEpic(epic, id, from))} />
+  <UnassignedList
+    tickets={shown}
+    empty={narrows(filter) ? 'No ticket in no epic matches the filter.' : 'Every open ticket belongs to an epic.'}
+    onopen={open}
+    onremove={(epic, id) => change(() => removeFromEpic(epic, id))}
+  />
+  <EpicList epics={shownEpics} expanded={narrows(filter)} onopen={open} oncreate={create} onassign={(epic, id, from) => change(() => assignToEpic(epic, id, from))} />
 </main>
 
 <dialog bind:this={dialog} onclose={() => (opened = null)}>
