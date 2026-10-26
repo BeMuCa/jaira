@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:51Z
-updated-at: 2026-10-26T19:15:40Z
+updated-at: 2026-10-26T19:20:24Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-268570
@@ -27,7 +27,8 @@ claimed-at: 2026-10-26T19:13:06Z
 
 ## Definition of Done
 
-- [ ] jaira accept <id> --by <person> bewegt ein Ticket aus signoff in seine naechste Lane ohne --force, schreibt accepted-by und accepted-at auf das Ticket und eine Notiz 'accepted by <person>'; ohne --by wird abgelehnt
+- [x] jaira accept <id> --by <person> bewegt ein Ticket aus signoff in seine naechste Lane ohne --force, schreibt accepted-by und accepted-at auf das Ticket und eine Notiz 'accepted by <person>'; ohne --by wird abgelehnt
+  proof: internal/cli/accept.go; TestAcceptMovesOutOfSignoffAndRecordsWho, TestAcceptReachesATicketFiledOnEntry
 - [ ] Die Ausgabe eines --force-Moves nennt die uebergangenen Gates in einer Zeile als 'uebergangen', nicht im Wortlaut der Verweigerung
 - [ ] jaira-teamlead/SKILL.md sagt: ein getipptes 'accept <id>' der Person ist die Abnahme und wird mit jaira accept ausgefuehrt
 - [ ] go test ./... -race gruen; Release-Notiz unter core/release/notes/
