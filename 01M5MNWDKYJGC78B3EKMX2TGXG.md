@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWDKYJGC78B3EKMX2TGXG
 title: "Ein Worker findet seinen Teamlead nach einem Neustart wieder, und eine Frage an die Person kommt als fertige Zeile"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Nach einem Crash oder Neustart des Teamleads erreichen die Nachrichten der Worker ihn weiter, ohne dass jemand den neuen Namen von Hand nachreicht; und eine Frage, die nur die Person per Kommando loesen kann, kommt mit der Zeile, die sie tippen muss."
@@ -17,11 +17,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:44Z
-updated-at: 2026-10-26T19:17:56Z
+updated-at: 2026-10-26T19:18:36Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-252449
 claimed-at: 2026-10-26T19:10:49Z
+outcome-what: "Added core/role/builtin/jaira-dispatcher/scripts/teamlead.sh: a teamlead records its messaging socket with --here on start, and a worker or dispatcher runs it with its --parent before every SendMessage to get the address to send to; the teamlead, worker and dispatcher skills say so, and the worker and dispatcher skills make a question that needs a command from the person carry a ready '! <command>' line."
+outcome-why: "After a restart the teamlead has a new socket and name, the --parent a worker was started with names the dead one, and its reports went nowhere until someone handed each worker the new name; and a question that needed a command from the person came without the line to type, which cost a round."
+outcome-resolves: "teamlead.sh prints the parent while its socket exists and the address the teamlead recorded once it is gone, covered by TestTeamleadFollowsARestart (restart from a second worktree, second live teamlead keeps its reports, both gone, --here without a socket); the '! <command>' rule is in both SKILL.md files; release note in core/release/notes/X2TGXG.md."
 ---
 
 # Ein Worker findet seinen Teamlead nach einem Neustart wieder, und eine Frage an die Person kommt als fertige Zeile
