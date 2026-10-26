@@ -16,10 +16,15 @@ type fakeSource struct {
 	unassigned []Ticket
 	assigned   []string
 	err        error
+	// all is what the last Unassigned call was asked for.
+	all bool
 }
 
-func (f *fakeSource) Epics() ([]Epic, error)        { return f.epics, f.err }
-func (f *fakeSource) Unassigned() ([]Ticket, error) { return f.unassigned, f.err }
+func (f *fakeSource) Epics() ([]Epic, error) { return f.epics, f.err }
+func (f *fakeSource) Unassigned(all bool) ([]Ticket, error) {
+	f.all = all
+	return f.unassigned, f.err
+}
 func (f *fakeSource) Assign(epic, from, id string) error {
 	if f.err != nil {
 		return f.err
@@ -44,6 +49,7 @@ func (f *fakeSource) CreateEpic(name, title, description string) error {
 	f.assigned = append(f.assigned, "+"+name+"/"+title+"/"+description)
 	return nil
 }
+func (f *fakeSource) Lanes() ([]Lane, error) { return nil, f.err }
 func (f *fakeSource) Ticket(id string) (TicketDetail, error) {
 	if id != "A" {
 		return TicketDetail{}, fmt.Errorf("ticket %s: %w", id, ErrNotFound)
@@ -100,8 +106,24 @@ func TestEmptyListsAreArrays(t *testing.T) {
 	if got := strings.TrimSpace(do(t, h, "GET", "/api/unassigned", "").Body.String()); got != "[]" {
 		t.Fatalf("unassigned = %s", got)
 	}
+	if got := strings.TrimSpace(do(t, h, "GET", "/api/lanes", "").Body.String()); got != "[]" {
+		t.Fatalf("lanes = %s", got)
+	}
 	if got := do(t, h, "GET", "/api/epics", "").Body.String(); !strings.Contains(got, `"tickets":[]`) {
 		t.Fatalf("epics = %s", got)
+	}
+}
+
+// all=1 asks the source for every ticket that ever was; anything else, for
+// the open ones only.
+func TestUnassignedAllReachesTheSource(t *testing.T) {
+	src := &fakeSource{}
+	h := (&Server{Source: src}).Handler()
+	for target, want := range map[string]bool{"/api/unassigned?all=1": true, "/api/unassigned": false, "/api/unassigned?all=yes": false} {
+		do(t, h, "GET", target, "")
+		if src.all != want {
+			t.Errorf("GET %s: all = %v, want %v", target, src.all, want)
+		}
 	}
 }
 

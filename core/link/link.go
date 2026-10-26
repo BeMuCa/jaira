@@ -192,8 +192,8 @@ func (ix *Index) terminal(laneID string) bool {
 	return ok && l.Terminal
 }
 
-// placeOf reads the place out of a filed ticket's path.
-func placeOf(path string) Place {
+// PlaceOf reads the place out of a filed ticket's path.
+func PlaceOf(path string) Place {
 	if strings.Contains(filepath.ToSlash(path), "/"+ticket.ArchiveSubdir+"/") {
 		return PlaceArchive
 	}
@@ -280,7 +280,7 @@ func (ix *Index) place(id string) (Ref, bool) {
 		}
 		return Ref{ID: id, Place: PlaceUnknown}, false
 	}
-	ref := Ref{ID: id, Place: placeOf(path), Path: path}
+	ref := Ref{ID: id, Place: PlaceOf(path), Path: path}
 	// The logbook only ever receives finished work, so a ticket found there
 	// is done before its file is read at all. The archive is a drawer, not a
 	// verdict, so that one has to be opened — by Lookup, not here.

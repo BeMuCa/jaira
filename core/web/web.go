@@ -40,6 +40,30 @@ type Ticket struct {
 	// Direct is false for a ticket that belongs to an epic only because it
 	// follows, or is a child of, one of its members.
 	Direct bool `json:"direct"`
+	// Place is where the ticket lies: board, ref, logbook or archive. A
+	// filed ticket is shown, never dragged.
+	Place string `json:"place"`
+	// The fields the page filters by.
+	Goal      string    `json:"goal,omitzero"`
+	Tags      []string  `json:"tags,omitempty"`
+	Creator   string    `json:"creator,omitzero"`
+	Assignee  string    `json:"assignee,omitzero"`
+	UpdatedBy string    `json:"updated_by,omitzero"`
+	CreatedAt time.Time `json:"created_at,omitzero"`
+	UpdatedAt time.Time `json:"updated_at,omitzero"`
+	// FiledAt is the day it left the board: the logbook folder's date, or
+	// for the archive the day it was rejected. Zero when nobody knows.
+	FiledAt time.Time `json:"filed_at,omitzero"`
+	// Rejected is the kind of no, for a ticket 'jaira reject' archived.
+	Rejected string `json:"rejected,omitzero"`
+}
+
+// Rejection is why nobody will do a ticket, as 'jaira reject' wrote it.
+type Rejection struct {
+	Kind string    `json:"kind"`
+	Why  string    `json:"why"`
+	By   string    `json:"by,omitzero"`
+	At   time.Time `json:"at,omitzero"`
 }
 
 // Epic is one function of the product with its progress.
@@ -51,6 +75,23 @@ type Epic struct {
 	Total       int      `json:"total"`
 	Tickets     []Ticket `json:"tickets"`
 }
+
+// Lane is one lane of the board, in the board's order. Kind is what the
+// page colours by beside the position: work, human (a person moves it on),
+// terminal or parking.
+type Lane struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Kind string `json:"kind"`
+}
+
+// The kinds a Lane has.
+const (
+	LaneWork     = "work"
+	LaneHuman    = "human"
+	LaneTerminal = "terminal"
+	LaneParking  = "parking"
+)
 
 // Check is one item of a ticket's definition of done.
 type Check struct {
@@ -71,10 +112,13 @@ type TicketDetail struct {
 	Handle  string  `json:"handle"`
 	Title   string  `json:"title"`
 	Lane    string  `json:"lane"`
+	Place   string  `json:"place"`
 	Goal    string  `json:"goal"`
 	Context string  `json:"context"`
 	DoD     []Check `json:"dod"`
 	Notes   []Note  `json:"notes"`
+	// Rejected is nil for a ticket that was never rejected.
+	Rejected *Rejection `json:"rejected,omitempty"`
 }
 
 // Source is where the page's data comes from and where a change goes.
@@ -83,8 +127,11 @@ type TicketDetail struct {
 // is Push's job, so a remote that is down never makes the change itself fail.
 type Source interface {
 	Epics() ([]Epic, error)
-	Unassigned() ([]Ticket, error)
+	// Unassigned is the open tickets in no epic; with all set, every ticket
+	// in no epic that ever was — finished, logged and archived ones too.
+	Unassigned(all bool) ([]Ticket, error)
 	Ticket(id string) (TicketDetail, error)
+	Lanes() ([]Lane, error)
 	CreateEpic(name, title, description string) error
 	// Assign puts a ticket into epic; with from set it takes it out of that
 	// epic as well, which is a move.
@@ -185,6 +232,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/epics", s.handleEpics)
 	mux.HandleFunc("GET /api/unassigned", s.handleUnassigned)
 	mux.HandleFunc("GET /api/tickets/{id}", s.handleTicket)
+	mux.HandleFunc("GET /api/lanes", s.handleLanes)
 	mux.HandleFunc("POST /api/epics", s.handleCreateEpic)
 	mux.HandleFunc("POST /api/epics/{name}/tickets", s.handleAssign)
 	mux.HandleFunc("DELETE /api/epics/{name}/tickets/{id}", s.handleUnassign)
@@ -242,8 +290,8 @@ func (s *Server) handleEpics(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, epics)
 }
 
-func (s *Server) handleUnassigned(w http.ResponseWriter, _ *http.Request) {
-	tickets, err := s.Source.Unassigned()
+func (s *Server) handleUnassigned(w http.ResponseWriter, r *http.Request) {
+	tickets, err := s.Source.Unassigned(r.URL.Query().Get("all") == "1")
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -290,6 +338,18 @@ func (s *Server) handleTicket(w http.ResponseWriter, r *http.Request) {
 		t.Notes = []Note{}
 	}
 	writeJSON(w, http.StatusOK, t)
+}
+
+func (s *Server) handleLanes(w http.ResponseWriter, _ *http.Request) {
+	lanes, err := s.Source.Lanes()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	if lanes == nil {
+		lanes = []Lane{}
+	}
+	writeJSON(w, http.StatusOK, lanes)
 }
 
 func (s *Server) handleCreateEpic(w http.ResponseWriter, r *http.Request) {
