@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:51Z
-updated-at: 2026-10-26T20:16:28Z
+updated-at: 2026-10-26T20:20:32Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-268570
@@ -32,6 +32,7 @@ round: 3
 review-gaps: |-
   optimize pass 1: SEND BACK, test-only removals. TestForcedMoveNamesOverriddenCodesOnOneLine copies the setup and run of TestForcedMoveEndsOnItsSuccessLine (fold it in, fix the line-11 comment); core/gate/humanexit_test.go:62-64 repeats TestHumanExitLaneStillRefusesForward; the ticketFiles count checks in internal/cli/accept_test.go cannot fail because an accepted ticket stays in .jaira/tickets, so they move to the existing readTicketFile before/after comparison. Production code: nothing to remove.
   optimize pass 2: none. 94f60039 completed pass 1 list (forced-move tests folded, humanexit_test.go duplicate dropped, refused accepts compared byte for byte); the last-line bullet check in forceorder_test.go stays per the driver note. Production code unchanged since pass 1, which found nothing to remove.
+test-verdict: "pass: gates green (build/vet/gofmt, race tests of cli/gate/move/role/ticket all ok), DoD 1-3 verified in the tree, accept + forced move exercised on a scratch board; full ./... race suite NOT run (house rule), DoD 4 stays open"
 ---
 
 # jaira accept <id> --by <person>: eine Abnahme auf Wort der Person, die festhaelt, wer abgenommen hat
