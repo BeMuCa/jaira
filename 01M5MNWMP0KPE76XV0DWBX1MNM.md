@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:51Z
-updated-at: 2026-10-26T20:11:56Z
+updated-at: 2026-10-26T20:13:40Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-268570
@@ -64,3 +64,4 @@ review-gaps: "optimize pass 1: SEND BACK, test-only removals. TestForcedMoveName
 - **2026-10-26 20:03 · BeMuCa** — round 3: test-only dedupe per optimize note; merged forced-move checks into one test, dropped redundant gate block, accept tests now compare ticket bytes before/after
 - **2026-10-26 20:09 · BeMuCa** — critique (pass 3, round-3 diff 94f60039 only): NOTHING LEFT. The test edit answers optimize's findings and keeps every pin: accept out of signoff + accepted-by/accepted-at/note (accept_test.go:66-113, untouched); no --by -> exit 2 and refused outside a human-exit lane -> exit 3, both now byte-identical before/after (accept_test.go:115-138, stronger than the ticketFiles count that could not fail); other gates refuse with no acceptance written (142-152); plain move out of signoff refused (accept_test.go:156-162 + humanexit_test.go:19-29, which the dropped lines 62-64 repeated exactly); --force prints one 'overrode:' line first, codes unique, no bullets, success line last (forceorder_test.go:37-57; DoD 2 proof re-pointed). Focused tests green, gofmt clean. Let stand: forceorder_test.go:12 comment line is 112 chars (cosmetic). For optimize pass 2: its 'drop lines 45-47' (now forceorder_test.go:55-57) was not done and round 3 does not say why; not strictly subsumed by the '  - ' check, its call. Optional, not a finding: accept_test.go:148-151 could compare bytes like 123/135 (move.go:117-123 refuses before any write) so a future Stage in accept could not write a claim unseen.
 - **2026-10-26 20:11 · BeMuCa** — Driver: round 3 kept the last-line refusal-bullet check in forceorder_test.go on purpose: the new no-bullet check only matches lines starting with two spaces and a dash, so it does not cover an unindented dash line on its own.
+- **2026-10-26 20:13 · BeMuCa** — optimize (pass 2): NOTHING LEFT. 94f60039 did pass 1's list: forced-move tests folded into TestForcedMoveEndsOnItsSuccessLine with the comment fixed and DoD 2 proof re-pointed; humanexit_test.go:62-64 gone; accept_test.go refusals compare readTicketFile bytes before/after; ticketFiles in accept_test.go stays only at :107, where it is needed (accepted() alone would pass an unfiled ticket). Last-line bullet check (forceorder_test.go:55-57) kept per driver note. Left: forceorder_test.go:37 first half overlaps line 41's prefix check but only changes which message fails, a nit. Production code unchanged since pass 1. gofmt/vet clean; focused accept/forced-move/human-exit tests green.
