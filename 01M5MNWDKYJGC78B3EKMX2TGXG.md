@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:44Z
-updated-at: 2026-10-26T19:44:06Z
+updated-at: 2026-10-26T19:44:08Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-252449
@@ -35,6 +35,8 @@ review-gaps: |-
   5. Minor: in jaira-teamlead/SKILL.md the paragraph 'It closes every tab...' now follows a block of two commands; 'It' means reap.sh only.
   6. Still open by the maintainer's rule: DoD 3's 'go test ./... -race' has not run; it waits for the one full race suite before the PR. Ran here: gofmt -l . empty; go vet ./core/role and go build ./... green; go test ./core/role -run 'TestTeamleadFollowsARestart|TestCrossReferencesCarryThePrefix|TestWorkerNamesScriptsThatShip|TestBuiltinsAreTheShippedRoles' -count=1 ok.
 test-verdict: "pass: gofmt/vet/build clean, go test -race ./core/role ok; teamlead.sh installed executable next to spawn.sh; restart play A->B (incl. 2nd worktree), A back, both gone, exit codes, outside-repo all as specified; DoD 1+2 proofs present; release note 2 single lines OK. DoD 3 suite part waits for pre-PR run. Not verified: stale socket file left by crashed claude (liveness is -e)."
+review-verdict: "Back to in-progress. For a clean restart the change works: the script does what its plan says, DoD 1 and 2 are met, and the test covers the address change. But the release note's instruction does not install the changed skills (verified), the skill and usage texts promise that a second teamlead never gets another's workers, which a run disproves (verified), and the crash half of the goal still ends in 'parent unreachable' whenever the dead socket file stays (OS behaviour verified, Claude Code's own cleanup not). Fix gaps 1 and 3; gap 2 is a small addition worth making in the same round. DoD 3's full race suite is still open."
+review-round: 2
 ---
 
 # Ein Worker findet seinen Teamlead nach einem Neustart wieder, und eine Frage an die Person kommt als fertige Zeile
