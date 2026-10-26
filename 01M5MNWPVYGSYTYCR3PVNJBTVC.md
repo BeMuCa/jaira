@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWPVYGSYTYCR3PVNJBTVC
 title: "Ein offener Plan-Punkt sperrt die Ziellane nicht mehr, wenn die Definition of Done erfuellt ist"
-status: testing
+status: review
 ready: true
 creator: BeMuCa
 goal: "Ob ein Ticket in die Ziellane darf, entscheidet allein die Definition of Done; ein offener Plan-Schritt sperrt nicht mehr, sondern wird beim gelungenen Move als Hinweis genannt - der Plan ist die Methode, die DoD das Ergebnis."
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:53Z
-updated-at: 2026-10-26T20:05:54Z
+updated-at: 2026-10-26T20:11:25Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-650718
