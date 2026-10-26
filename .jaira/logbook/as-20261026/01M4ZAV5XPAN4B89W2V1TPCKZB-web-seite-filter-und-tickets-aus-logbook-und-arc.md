@@ -1,7 +1,7 @@
 ---
 id: 01M4ZAV5XPAN4B89W2V1TPCKZB
 title: "Web-Seite: Filter und Tickets aus Logbook und Archiv anzeigen"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 goal: "Auf der Seite von 'jaira web' sieht man jedes Ticket, das es je gab — offen, nur auf dem Ref, im Logbuch oder im Archiv — und filtert es nach Text, Lane, Tag, Person und Datum, mit den Filtern in der URL."
@@ -20,23 +20,29 @@ tags:
   - web
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 81e879edddaa9ec09580e350ca003f5d24c9792f
+  - 88485c08046c7d91d5c0d5293a21e6420df990d7
+  - e3e04825231a5f92b25b7de41074604a5a256430
+  - f91dfe193091bc40ebce3205aea52ae612fc0f52
+  - fc676257cfb6921a55bd0a9a8dd0085e513809b0
+  - 0f1b2e4d22cf953d4c54376118c2647901ad3d21
 created-at: 2026-10-15T08:28:46Z
-updated-at: 2026-10-19T07:40:06Z
+updated-at: 2026-10-26T15:34:18Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-74288
-claimed-at: 2026-10-19T06:35:35Z
+claimed-by: DESKTOP-RFTCH11-70156
+claimed-at: 2026-10-19T07:43:34Z
 outcome-what: "jaira web: Filterleiste, Schalter 'All tickets ever' (Board, Ref, Logbuch, Archiv mit Ort), Ablehnung im Detail, Filter im URL-Query; dazu Lane-Farben an Badge und Lane-Filter aus der Board-Reihenfolge (GET /api/lanes)"
 outcome-why: "Alex will jedes Ticket, das es je gab, auf der Seite sehen und nach Personen, Datum und Lane filtern; bisher zeigte die Seite nur offene Tickets ohne Filter"
 outcome-resolves: "GET /api/unassigned?all=1 und neue Kartenfelder (web_source.go cards/rejection), Filtermodell features/filter-tickets mit URL-Abgleich, TestWebListsFiledTicketsAndOpensThem; DoD 1-8 mit Proofs"
-review-summary: "jaira web bekommt eine Filterleiste ueber beiden Spalten (Text ueber Titel/Ziel/ID, Lane, Tag, Person = creator|assignee|updated_by, Datumsbereich auf erstellt/geaendert/abgelegt), alles UND-verknuepft und im Browser gefiltert; der Zustand steht per history.replaceState im URL-Query. Der Schalter 'All tickets ever' ruft GET /api/unassigned?all=1: der Server (internal/cli/web_source.go cards) liefert dann auch fertige Board-Tickets, Ref-Tickets und alle Tickets aus .jaira/logbook und .jaira/archive ohne Epic, jedes mit place, abgelegte nach Ablagedatum sortiert (Logbuch-Ordnerdatum bzw. rejected-at). Abgelegte Karten sind nicht ziehbar; die Detailansicht zeigt den Ort und bei abgelehnten Archiv-Tickets rejected-kind/why/by/at (direkt aus dem Frontmatter gelesen, damit schema.go fuer A0C081 frei bleibt). Neu GET /api/lanes: Lanes in Board-Reihenfolge mit kind; LaneBadge faerbt Badge und Lane-Filter in oklch (Arbeits-Lanes nach Position, human amber, terminal gruen, parking rot). link.placeOf wurde zu link.PlaceOf exportiert. Release-Note und web --help ergaenzt."
+review-summary: "jaira web bekommt eine Filterleiste ueber beiden Spalten (Text ueber Titel/Ziel/ID/Handle, Lane, Tag, Person = creator ODER assignee ODER updated_by, Datumsbereich auf erstellt/geaendert/abgelegt), alles UND-verknuepft und im Browser gefiltert (features/filter-tickets/model/filter.ts). Der Zustand steht per history.replaceState in der URL. Der Schalter 'All tickets ever' ruft GET /api/unassigned?all=1: internal/cli/web_source.go cards() baut Karten aus Board, Refs und allen abgelegten Tickets (Store.FiledAwayIDs, nur Header), Logbuch-Datum aus dem Ordnernamen, Archiv-Datum aus rejected-at; abgelegte Karten sind nicht ziehbar. Die Detailansicht zeigt Ort und bei abgelehnten Archiv-Tickets rejected-kind/why/by/at (direkt aus dem Frontmatter gelesen, schema.go unberuehrt wegen A0C081). Neues GET /api/lanes liefert die Lanes in Board-Reihenfolge mit kind; LaneBadge faerbt per oklch: Arbeits-Lanes nach Position (9 Toene + grau), human amber, terminal gruen, parking rot, Helligkeit je Theme. Nachbesserung aus signoff: load() zaehlt Ladevorgaenge, nur der letzte schreibt; EpicList merkt sich Hand-Auf/Zuklappen je Epic und stellt es nach dem Leeren eines Filters wieder her. link.placeOf als PlaceOf exportiert und wiederverwendet."
 round: 4
-review-gaps: "Keine Luecke gegen die DoD 1-9. Klein, nicht blockierend: 1) ReviewPage.svelte load(): schaltet man 'All tickets ever' schnell um, kann eine spaete Antwort von ?all=1 eine neuere von ?all=0 ueberschreiben (kein Abbruch/Versionszaehler) - die Liste zeigt dann abgelegte Tickets bei ausgeschaltetem Schalter bis zum naechsten Minuten-Reload. 2) EpicList <details open={expanded}>: Filter setzen und wieder leeren klappt auch Epics zu, die man von Hand aufgeklappt hatte. 3) Epics() liest jetzt bei jedem Minuten-Reload alle abgelegten Header (cards) - in den Notizen gemessen 0,08 s, akzeptiert. 4) Lane-Farben haengen an der Reihenfolge der Lanes; in Notiz und Release-Note offen benannt. Kein JS-Test fuer filter.ts im Repo (nur Wegwerf-Skript laut Notiz). Geprueft: go vet, go test core/web internal/cli core/link gruen; npm run build laesst core/web/ui/dist unveraendert."
-test-verdict: "pass: go vet ./... RC=0, go test -count=1 -race ./... RC=0, dist matches npm ci && npm run build; DoD 1-9 verified in headless Chrome/Playwright on this repo and a scratch board with a rejected archive ticket"
-review-verdict: "Der Diff erfuellt alle neun DoD-Punkte; Outcome und Diff stimmen ueberein. Keine Defekte, die eine Rueckgabe rechtfertigen - nur die zwei kleinen UI-Unschoenheiten aus review-gaps. Unsicher bleibt nur die Optik im Browser, die ich nicht selbst angesehen habe (testing hat Headless-Chrome/Playwright-Laeufe notiert)."
-review-round: 3
-review-check: "1. cd /home/alex/projects/.worktrees/jaira-tpckzb && go run ./cmd/jaira web  2. die ausgegebene Adresse im Browser oeffnen: ueber beiden Spalten steht eine Leiste Search / Lane / Tag / Person / Date / 'All tickets ever'  3. 'web' ins Suchfeld tippen: beide Spalten schrumpfen, die Adresszeile zeigt ?q=web  4. Haken 'All tickets ever' setzen: links erscheinen viele Tickets mit Zusatzzeile 'in the logbook' bzw. 'in the archive', Adresse enthaelt all=1  5. Date auf 'filed away', von und bis 2026-10-17: es bleiben 8NHD8Q und S0EG0M  6. 8NHD8Q anklicken: Dialog zeigt farbiges Lane-Badge 'done' (gruen) und 'in the logbook'  7. eine logbook-Karte ziehen wollen: sie laesst sich nicht greifen  8. Lane-Auswahl oeffnen: jede Lane hat einen farbigen Punkt, dieselbe Farbe wie die Badges; Seite neu laden (F5): Filter und Farben sind unveraendert  9. Adresse kopieren, in neuem Tab oeffnen: dieselbe gefilterte Liste. Abgelehntes Archiv-Ticket: go test ./internal/cli -run TestWebListsFiledTicketsAndOpensThem (prueft kind und why)"
+review-gaps: "1) Mehrere Boards: webSource.Lanes() laedt nur lane.Load(root) = Default-Board. Ein Ticket auf einem anderen Board (jaira create --board, seit S0EG0M moeglich) mit einer Lane, die das Default-Board nicht hat, bekommt var(--muted) — DoD 9 'jede Lane hat eine eigene Farbe' gilt also nur fuer Ein-Board-Repos. Heute hat dieses Repo nur 'default', daher nicht blockierend; die Notiz vom 06:54 nennt die Grenze. 2) Archiv-Tickets ohne rejected-at (live: 5 von 5 im Repo) haben kein filed_at und fallen bei Datum='filed away' aus jedem Bereich — so gewollt (decision 06:37), aber fuer den Nutzer unsichtbar. 3) cards() liest bei jedem /api/epics und /api/unassigned alle ~134 abgelegten Header, Archivdateien zusaetzlich ein zweites Mal — gemessen klein, waechst mit dem Logbuch. 4) Kein JS-Test fuer filter.ts im Repo (nur ein Wegwerf-Skript laut Notiz); Go-Seite durch TestWebListsFiledTicketsAndOpensThem, TestWebListsLanesInBoardOrderWithKind, TestUnassignedAllReachesTheSource gedeckt."
+test-verdict: "pass: go vet RC=0, go test -count=1 -race ./... RC=0, dist matches npm ci+build; DoD 10/11 exercised in Playwright (delayed ?all=1 race, hand-unfolded epic across filter set/clear)"
+review-verdict: "Der Diff erfuellt DoD 1-11; keine Fehler gefunden. go vet und go test (core/web, core/link, internal/cli) gruen, npm ci+build laesst dist unveraendert, live auf diesem Repo: /api/lanes in Board-Reihenfolge mit richtigen kinds, ?all=1 = 221 Karten (129 logbook, 5 archive, 59 ref, 28 board), keine Duplikate. Einzige echte Einschraenkung: Lane-Farben kennen nur das Default-Board (Gap 1). Die Optik im Browser habe ich nicht selbst angesehen, nur die API."
+review-round: 4
+review-check: "1. Im Worktree: go build -o /tmp/jaira ./cmd/jaira && /tmp/jaira web  2. Seite oeffnet sich: oben eine Filterleiste (Search, Lane, Tag, Person, Date, 'All tickets ever'); jedes Lane-Badge ist farbig, human/signoff amber, done gruen  3. 'web' ins Suchfeld tippen: beide Spalten schrumpfen, die Adresszeile zeigt ?q=web  4. Adresse kopieren, in neuem Tab oeffnen: dieselbe gefilterte Liste  5. 'All tickets ever' ankreuzen: links erscheinen Karten mit 'in the logbook' / 'in the archive'; sie lassen sich nicht auf ein Epic ziehen  6. Eine Logbuch-Karte anklicken (z.B. 8NHD8Q): Dialog oeffnet mit 'in the logbook'  7. Date auf 'filed away', von=bis=2026-10-17: nur 8NHD8Q und S0EG0M bleiben  8. Clear druecken, ein Epic von Hand aufklappen, Filter setzen und wieder leeren: das Epic ist weiter offen  9. Dunkles Theme im System einschalten: Lane-Farben bleiben lesbar"
 ---
 
 # Web-Seite: Filter und Tickets aus Logbook und Archiv anzeigen
@@ -117,3 +123,6 @@ Empfehlung: 1 - Beide Punkte sind klein und nicht blockierend, der Diff erfuellt
 - **2026-10-19 07:38 · Alexander Sacharov** — Given back from signoff: 2) Zurueckgeben: Wettlauf in ReviewPage.svelte load() beheben und Epic-Aufklappzustand beim Leeren des Filters erhalten
 - **2026-10-19 07:38 · Alexander Sacharov** — cockpit: given back to the old worker - tab alive, cache warm for 23 more min, context 233k
 - **2026-10-19 07:40 · Alexander Sacharov** — Rueckgabe aus signoff umgesetzt (DoD 10, 11): load() zaehlt Ladevorgaenge, nur der zuletzt gestartete schreibt die Seite (auch Fehler und Lanes); EpicList merkt sich je Epic, was die Person von Hand auf-/zugeklappt hat, und zeigt das wieder, sobald kein Filter mehr eingrenzt — Toggles waehrend des erzwungenen Aufklappens zaehlen nicht. Proofs 3/4/7/8 auf neue Zeilen gesetzt.
+- **2026-10-19 07:40 · Alexander Sacharov** — critique Runde 4: nur die Reparatur 0f1b2e4d gelesen (ReviewPage load-Zaehler, EpicList unfolded) — keine Befunde.
+- **2026-10-19 07:41 · Alexander Sacharov** — testing Runde 3: vet/race RC=0, dist synchron; Playwright gegen jaira web auf diesem Repo: verzoegerte ?all=1-Antwort nach Ein-Aus des Schalters zeigt keine Logbuch-Karte; von Hand aufgeklapptes Epic bleibt nach Filter setzen+leeren offen, von Hand zugeklapptes bleibt zu.
+- **2026-10-19 07:44 · Alexander Sacharov** — review (fresh context): DoD 1-11 vom Diff gedeckt, Tests gruen, dist synchron, API live geprueft. Gap: Lanes() kennt nur das Default-Board — Lanes anderer Boards werden grau statt farbig. Nicht blockierend, solange das Repo ein Board hat.
