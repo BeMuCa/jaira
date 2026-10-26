@@ -18,11 +18,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T08:26:42Z
-updated-at: 2026-10-26T19:44:37Z
+updated-at: 2026-10-26T19:44:48Z
 assignee: BeMuCa
 updated-by: BeMuCa
-claimed-by: qyk8md-driver
-claimed-at: 2026-10-26T19:11:29Z
+claimed-by: ""
+claimed-at: ""
 outcome-what: "Session ids are now a random six-character token kept once per machine in machine-id under JAIRA_HOME or ~/.jaira, plus the parent pid; the hostname is only compared, never written. An old-format claim that names this machine counts as abandoned at once."
 outcome-why: "claimed-by is committed with the ticket, so a hostname in it published the machine name, and on the maintainer's machine his employer, in ticket files and refs."
 outcome-resolves: "No new claimed-by carries a hostname; old claims from other machines still block until ClaimTTL; this machine's own old claims need no --steal after the update."
