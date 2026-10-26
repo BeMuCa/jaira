@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWDKYJGC78B3EKMX2TGXG
 title: "Ein Worker findet seinen Teamlead nach einem Neustart wieder, und eine Frage an die Person kommt als fertige Zeile"
-status: review
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Nach einem Crash oder Neustart des Teamleads erreichen die Nachrichten der Worker ihn weiter, ohne dass jemand den neuen Namen von Hand nachreicht; und eine Frage, die nur die Person per Kommando loesen kann, kommt mit der Zeile, die sie tippen muss."
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:44Z
-updated-at: 2026-10-26T19:45:41Z
+updated-at: 2026-10-26T19:45:44Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-252449
@@ -26,7 +26,7 @@ outcome-what: "Added core/role/builtin/jaira-dispatcher/scripts/teamlead.sh: a t
 outcome-why: "After a restart or resume the teamlead has a new socket and name, the --parent a worker was started with names the dead one, and its reports went nowhere until someone handed each worker the new name; and a question that needed a command from the person came without the line to type, which cost a round."
 outcome-resolves: "teamlead.sh prints the parent while its socket exists and the address the teamlead recorded once it is gone, covered by TestTeamleadFollowsARestart (restart from a second worktree, second live teamlead keeps its reports, both gone, --here without a socket); the '! <command>' rule is in the worker, dispatcher and teamlead SKILL.md; release note in core/release/notes/X2TGXG.md."
 review-summary: "Adds core/role/builtin/jaira-dispatcher/scripts/teamlead.sh, shipped and installed executable beside spawn.sh. 'teamlead.sh --here' writes uds:$CLAUDE_CODE_MESSAGING_SOCKET into <git common dir>/jaira/teamlead - one file per clone, shared by every worktree, outside git status, written to a temp file and moved over; exit 2 when the socket variable is empty, names no file, or there is no repository. 'teamlead.sh <parent>' prints the parent while it is a uds: address whose socket file exists, else the recorded address when its socket file exists, else the parent unchanged. The teamlead skill now runs --here every round beside reap.sh. The worker and dispatcher skills run 'teamlead.sh <session>' before every SendMessage to the parent, send to what it prints, and note a changed address as the new parent. All three skills gain the '! <command>' rule: worker and dispatcher put the ready line into a question only the person can settle by a command, the teamlead passes it on verbatim. role_test.go ships the script, exempts '/scripts/teamlead' from the prefix check, and adds TestTeamleadFollowsARestart (record; old socket gone and new one recorded from a second worktree; a name as parent; old parent alive again keeps its reports; both gone; --here without a socket). Release note core/release/notes/X2TGXG.md, two lines. Net effect: after a clean teamlead restart, workers started before it find the new teamlead without anyone handing them its name."
-round: 2
+round: 3
 review-gaps: |-
   1. The release note leaves the feature switched off. 'Run `jaira roles install` again' skips all three changed SKILL.md files: base build 13aaa578, then this build, into one --into dir printed 'skipped .../jaira-worker/SKILL.md (edited here; --force to replace)', the same for jaira-dispatcher and jaira-teamlead, '1 written, 32 unchanged, 3 skipped', and 'some roles were edited here and left alone'. Only teamlead.sh lands, so no teamlead runs --here and no worker asks it. Both lines need `jaira roles install --force` (add `--global` if installed globally), as several earlier notes say.
   2. The crash half of the goal is not met. Liveness is [ -e socket ]. Shown here: a unix socket whose owner got kill -9 stays on disk with nothing listening (ss -xl), and teamlead.sh then prints that dead parent although a live address is recorded; the worker falls back to 'parent unreachable', as before. Claude Code names its socket $XDG_RUNTIME_DIR/cc-socks/<pid>.sock (read from its bundle); whether a new claude removes a crashed one's file is unverified. The teamlead skill itself names 'the human can kill your session, start a new teamlead' as the case. Small fix: when SendMessage to the printed address fails, fall back to the recorded one (a mode of teamlead.sh that skips the parent), one sentence in each skill, one test case.
