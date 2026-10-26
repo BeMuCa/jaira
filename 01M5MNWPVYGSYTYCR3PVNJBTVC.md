@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:53Z
-updated-at: 2026-10-26T19:17:57Z
+updated-at: 2026-10-26T19:18:00Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-264760
@@ -49,3 +49,13 @@ claimed-at: 2026-10-26T19:12:35Z
 - Der Kommentar gate.go:404-416 begruendet die Sperre mit "erst Design fertig, nicht gebaut". Aber Plan-Haken und DoD-Haken setzt derselbe Worker selbst. Der Plan-Haken ist kein unabhaengiger Beleg, er faengt nur das Vergessen eines zweiten Hakens.
 - Die Doku ist gespalten. Agent-Block core/board/announce.go:98-104 (-> CLAUDE.md/AGENTS.md): die DoD ist das, was das Gate der Ziellane liest; der Plan ist eine zweite, getrennte Liste. Dagegen sagen die Plan-Sperre ausdruecklich an: .claude/skills/jaira/SKILL.md:105-107, README.md:247-249, docs/AGENTS.md:227-228, core/lane/builtin/50-done.md:11.
 - Einen Kanal fuer "Move gelungen, aber mit Hinweis" gibt es heute nicht: gate.Violation ist nur Ablehnung (gate.go:41-51), move.Result hat Refused/Overrode/Trimmed/SettleErr (core/move/move.go:58-70).
+- **2026-10-26 19:18 · BeMuCa** — BRAINSTORM 2/3 - Optionen und Entscheidung.
+(a) Plan-Sperre weg, offene Plan-Schritte als Hinweiszeile beim gelungenen Move. Kosten: ein neuer Hinweis-Kanal in move.Result, Ausgabe in CLI (Text + JSON) und an drei TUI-Stellen. Gibt auf: die harte Sperre bei vergessenem Haken - die faengt aber keine echte Luecke, die DoD-Sperre und signoff/review bleiben.
+(b) Beim Abschluss den letzten Plan-Schritt automatisch abhaken. Kosten: jaira schreibt einen Haken, den niemand gesetzt hat - die Datei behauptet Arbeit ohne Beleg. Trifft nur "der letzte" Schritt; offen kann jeder sein (Schritt 3 von 5). Alle abhaken waere Faelschen. Im Worker-Skill statt im Code hilft es der Person in der TUI nicht. Verworfen.
+(c) Plan-Sperre ersatzlos streichen, kein Hinweis. Am billigsten (Block loeschen, Test drehen). Gibt auf: den sichtbaren Hinweis, den die DoD des Tickets ausdruecklich verlangt. Verworfen.
+Entscheidung: (a). Die DoD ist das Ergebnis und allein das Gate; der Plan ist die Methode und wird nur gemeldet. Das passt zu dem, was der Agent-Block heute schon sagt.
+Plan-Sperre bei UNVOLLSTAENDIGER DoD: entfaellt auch. Begruendung:
+- Die DoD-Sperre lehnt dann sowieso ab (CodeNeedsSignal je offenem Kriterium, gate.go:362-375; ohne DoD-Liste gate.go:376-383).
+- Behalten wuerde nur zusaetzliche Bullets und einen zweiten Code liefern, und eine Regel "Plan sperrt nur, wenn die DoD auch sperrt" - ein Gate, das von einem anderen Gate abhaengt.
+- Einziger Fall, in dem sie allein sperren wuerde: eine Ziellane mit requires-nonmodel-signal: false. Die hat die Beleg-Pflicht bewusst abgewaehlt; dort per Plan weiter zu sperren widerspricht dieser Wahl.
+- Vorschlag: der Hinweis erscheint nur bei einem Move, der landet. Eine Ablehnung sagt schon, was zu tun ist.
