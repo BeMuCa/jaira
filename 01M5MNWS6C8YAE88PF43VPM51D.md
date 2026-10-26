@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWS6C8YAE88PF43VPM51D
 title: "Ein Checkout, dessen Ticket anderswo abgelegt wurde, zeigt es als abgelegt statt als geaendert"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Nach jaira logbook in einem Worktree verwirrt die alte Ticketdatei in den anderen Worktrees und im Haupt-Checkout niemanden mehr: sie gilt als abgelegt, und jaira bietet an, sie zu entfernen."
@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:56Z
-updated-at: 2026-10-26T20:07:42Z
+updated-at: 2026-10-26T20:08:23Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-374545
@@ -27,7 +27,7 @@ outcome-resolves: "After jaira logbook in one worktree, the other worktrees and 
 review-summary: |-
   core/refsync/filedelsewhere.go:157 (round 3): RemoveHint now returns a sentence for a tracked copy filed in another worktree ('once that branch is merged into origin/master, run: git restore <p> && git merge origin/master'), but every reader presents it as a command: JSON remove_stale (release note line 4: 'the command to run'; on a scratch board bash -c "$remove_stale" gives 'once: command not found', exit 127), the TUI 'To remove the copy, run:' (internal/tui/logbook.go:72), list/show 'remove the copy here with:'. On a worktree with a detached HEAD, Where names no branch, so 'that branch' points at nothing. Keep RemoveHint a bare command in every case: for Branch == '' return the same 'git restore <p> && git merge <landing[0]>' as the landing case, and put the condition into Where in FiledElsewhere (filedelsewhere.go:72; resolve y.landing() before the worktree loop): 'the worktree <dir> on branch work, not merged into origin/master yet' (detached HEAD: 'the worktree <dir>, not merged into origin/master yet').
   internal/cli/filedelsewhere_test.go:145 still says the copy leaves with the merge of 'work', which round 3 removed. Fix the comment, move the 'once that branch is merged into' assertions at :146,162 to the new Where text, and assert that list, show and remove_stale do not contain 'git merge work' and that remove_stale is the command alone.
-round: 3
+round: 4
 ---
 
 # Ein Checkout, dessen Ticket anderswo abgelegt wurde, zeigt es als abgelegt statt als geaendert
