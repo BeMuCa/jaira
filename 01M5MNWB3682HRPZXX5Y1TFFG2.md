@@ -20,7 +20,7 @@ commits:
   - 4b920015d063527e9d48d75cc242d8342bf17d2e
   - 1c4ef1ae3addca1b8809f93613402b0a2c14b73a
 created-at: 2026-10-23T15:25:41Z
-updated-at: 2026-10-26T19:51:04Z
+updated-at: 2026-10-26T19:54:33Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: driver-1TFFG2
@@ -31,6 +31,7 @@ outcome-resolves: "DoD 1: settings.PermissionModeFor, permission_mode in spawn.s
 review-summary: none
 round: 2
 review-gaps: "removed: in spawn.sh's arrival check the rule 'done counts only after an idle start' stood twice (in the poll loop's case and again in a fix-up line after it); it is now one line inside the loop, which also drops the started variable (st already holds it). Removed the permission_mode=\"\" initialiser, assigned unconditionally two lines on. newSpawnRig returns its struct directly instead of through a variable used once. Considered and left: the two-line pane-state read now in both poll loops of spawn.sh (a shared function would run it in a command substitution, where set -e no longer stops on a failing 'herdr pane get', so a cleanup would change the exit); run-lane.sh:88 reads agent_status for a different job (watching, not starting); no Go helper for the claude config dir existed (core/role/target.go and core/lane/lane.go resolve other directories), so PermissionModeFor reading it itself is not a duplicate; the permission-mode case allowlist in spawn.sh (critique pass 2 let it stand as the shell guard); state=\"\" before the arrival loop (left is never below 5, but set -u would stop on it if that ever changed); the second read() in TestRolesListReportsTheDispatchSetting (one more roles list run, test only); the 'still idle' wording when a done start stays done (behaviour, not cleanup); the stub line copied into six existing spawn tests (critique note (d))."
+test-verdict: "pass: gofmt/vet/build clean; -race core/settings, core/role, internal/cli TestRoles ok; TestPermissionModeFor, both spawn tests, roles-list test pass; built binary roles list shows auto/acceptEdits/plan/bypass-ignored correctly; stubbed spawn.sh: working exit 0 + 'pane run ... claude --permission-mode auto', idle exit 1 'prompt not received', blocked exit 4 with pane; DoD 3 go test ./... -race deferred to pre-PR run"
 ---
 
 # spawn.sh startet Worker-Tabs im Berechtigungsmodus der Person und merkt, wenn der Prompt nicht ankommt
