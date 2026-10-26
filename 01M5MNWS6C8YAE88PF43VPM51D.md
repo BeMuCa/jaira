@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:56Z
-updated-at: 2026-10-26T20:02:07Z
+updated-at: 2026-10-26T20:03:45Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-374545
@@ -86,3 +86,4 @@ round: 3
 - **2026-10-26 19:56 · BeMuCa** — in-progress round 2: marking moved out of Store.List into the readers (list, next, TUI reload, show once); GIT_TRACE on a scratch board with a worktree: set 6 -> 6 git processes (was 8 with round 1), show 6 -> 8 with exactly one worktree list. Worktree-filed tracked copy now gets 'git restore <path> && git merge <branch>' like the landing case (Branch set from the worktree list branch line); git rm and jaira delete stay rejected for the reasons in the pre-process note. FiledOn takes idOf returning empty to skip an id, so only undecided ids are read from the landing branch; returning every blob would read the whole logbook. Own worktree root for the relative board path is the longest worktree root holding the board, no extra git call. Release note line 1 split in three one-line changes.
 - **2026-10-26 19:56 · BeMuCa** — Correction to the previous note: round 1's set count was not measured here; critique measured 5 -> 7 on its board.
 - **2026-10-26 20:01 · BeMuCa** — critique (pass 2): findings 1, 3, 4, 5 of pass 1 are addressed (1: List no longer marks, list/next/TUI reload/show mark; 3: board path taken relative to the longest worktree root holding it; 4: FiledOn returns id->bytes, idOf empty skips; 5: three one-line changes). One finding left, from the fix to 2: filedelsewhere.go:143 prints 'git restore <path> && git merge <other worktree's branch>'. Reproduced on a scratch board with the DoD's two-worktree case: jaira logbook does not commit, so 'git merge work' on master says 'Already up to date' and the file stays; after the worktree commits, the same command fast-forwards master onto 'work' and lands its other files without a PR. Fix: keep Branch for the landing case only (schema.go:883 as in round 1), name the worktree's branch in Where ('the worktree <dir> on branch work'), and have the printed line say the copy leaves once that branch is merged into the landing branch rather than offering a merge here; update the 'git merge work' assertions at filedelsewhere_test.go:146,162. Let stand: no test for a subdirectory board (DoD asks only for the two-worktree test; the 19:56 in-progress note records the design); everything pass 1 let stand (critique note 19:53, pre-process 19:35, in-progress 19:43).
+- **2026-10-26 20:03 · BeMuCa** — driver: round 3 (38404272) verified by the driver - gofmt empty, vet/build green, internal/cli filed-elsewhere tests (5) and core/refsync, gitref, ticket, gate plus the tui -run tests ok. Its worker left no report.
