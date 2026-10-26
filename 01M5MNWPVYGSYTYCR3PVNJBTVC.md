@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:53Z
-updated-at: 2026-10-26T19:40:24Z
+updated-at: 2026-10-26T19:40:40Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-264760
@@ -105,3 +105,4 @@ Text, der falsch wird:
 - **2026-10-26 19:24 · BeMuCa** — Driver: DoD um 3 Punkte ergaenzt, die der Brainstorm vorgeschlagen hat (nur-DoD-Ablehnung, Hinweis in Text/JSON/TUI, Doku). DoD-Punkt 2 (go test ./... -race) laeuft einmal vor dem PR, nicht in einer Lane.
 - **2026-10-26 19:28 · BeMuCa** — in-progress: CodePlanIncomplete entfernt (nichts emittiert es mehr, kein anderer Verbraucher). Hinweis = gate.OpenPlanHints -> move.Result.Hints (nur bei Ziellane, vor settle berechnet) -> CLI 'Note:' vor der Move-Zeile + JSON 'hints'; TUI-Meldung an 3 Stellen. Dry-run bewusst unveraendert (sagt nur 'would be allowed'). Gate-/Move-Test: die nackte Fixture loest andere Gates aus (assignee, commits, Outputs), daher pruefen die Tests nur, dass der Plan nicht darunter ist; der Move-Test nutzt --force. Nicht von Hand gegen CLI/TUI gelaufen. Boards mit alter done-Beschreibung (.jaira/lanes/done.md) nicht angefasst.
 - **2026-10-26 19:33 · BeMuCa** — Driver: der in-progress-Worker hat die Plan-Schritte von Hand unter ## Plan verschoben. Grund: 'jaira dod --plan --add' schrieb sie bei einem Plan mit Platzhalter-Text als erste Checkliste oben in den Body, sie zaehlten dann als DoD 1-7. Nicht auf einer Board-Kopie nachgestellt; moeglicher Folge-Bug.
+- **2026-10-26 19:40 · BeMuCa** — critique 1: (1) core/gate/plan_test.go:51/:73 - use the passing-into-done setup from core/gate/commits_test.go:108-124 (status signoff, commits set, Actor a, Interactive) and assert Err()==nil resp. exactly one CodeNeedsSignal instead of filtering refusal texts for plan/implement; checked in a scratch copy, passes on 6caff07d and fails on its parent; then drop the Overrode loop core/move/move_test.go:193-197, keep the Hints check, Force stays like :139/:158. (2) internal/cli/flow.go:239 JSON key hints -> warnings, the key lanes.go:130, tickets.go:1282/1369, market.go:53 already use for non-fatal lines on success; text Note: line stays (brainstorm 3/3). (3) core/release/notes/NJBTVC.md: rewrite as an instruction, replacement text in review-summary; add a second line telling old boards to delete ', the plan finished if there is one' from .jaira/lanes/done.md (precedent 0.5.3/8NHD8Q.md). Left alone: dry-run without hint (stand on in-progress note 19:28, dry-run reports neither trimmed nor filed either, flow.go:322-347); no correction for old done.md (corrections.go only removes one frontmatter field); hintMessage wrapper and gate.OpenPlanHints placement; doc texts.
