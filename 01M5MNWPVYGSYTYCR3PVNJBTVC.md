@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:53Z
-updated-at: 2026-10-26T19:24:11Z
+updated-at: 2026-10-26T19:24:13Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-264760
@@ -82,3 +82,4 @@ Text, der falsch wird:
 - NICHT anfassen: core/lane/corrections.go:94 doneDoorway (woertliche Kopie einer ausgelieferten Lane, Geschichte), core/move/oldboard_test.go:29 (Fixture), core/release/NOTES.md:117 (geschlossen).
 - core/board/announce.go:98-104 bleibt wahr; hoechstens ein Halbsatz "ein offener Plan-Schritt wird nur gemeldet".
 - Release-Notiz core/release/notes/NJBTVC.md (geaenderte Move-Ausgabe, Move wird nicht mehr abgelehnt).
+- **2026-10-26 19:24 · BeMuCa** — Driver: DoD um 3 Punkte ergaenzt, die der Brainstorm vorgeschlagen hat (nur-DoD-Ablehnung, Hinweis in Text/JSON/TUI, Doku). DoD-Punkt 2 (go test ./... -race) laeuft einmal vor dem PR, nicht in einer Lane.
