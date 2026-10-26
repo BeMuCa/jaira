@@ -1,8 +1,8 @@
 ---
 id: 01M5MNWB3682HRPZXX5Y1TFFG2
 title: "spawn.sh startet Worker-Tabs im Berechtigungsmodus der Person und merkt, wenn der Prompt nicht ankommt"
-status: backlog
-ready: false
+status: todo
+ready: true
 creator: BeMuCa
 goal: "Ein von spawn.sh gestarteter Worker- oder Review-Tab arbeitet sofort los: er haengt nicht an der ersten Bash-Rueckfrage, und spawn.sh meldet 'up' erst, wenn der Rollen-Prompt wirklich angekommen ist."
 context: |-
@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:41Z
-updated-at: 2026-10-26T19:10:59Z
+updated-at: 2026-10-26T19:11:08Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-253833
