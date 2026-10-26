@@ -120,6 +120,31 @@ func TestRolesListReportsTheDispatchSetting(t *testing.T) {
 	if p["chat_model"] != "haiku" || !strings.Contains(fmt.Sprint(p["chat_model_source"]), ".jaira/chat-model") {
 		t.Errorf("on a board with its own model: chat_model=%v source=%v, want haiku from .jaira/chat-model", p["chat_model"], p["chat_model_source"])
 	}
+	if p["release"] != "worker" {
+		t.Errorf("a board without .jaira/release: release=%v, want worker", p["release"])
+	}
+}
+
+// The worker and the lane read who touches the version and the changelog off
+// 'roles list': the board's .jaira/release, worker without it.
+func TestRolesListReportsTheBoardsRelease(t *testing.T) {
+	t.Setenv("JAIRA_HOME", t.TempDir())
+	board := lanesTestProject(t)
+	if err := os.WriteFile(settings.BoardReleasePath(board), []byte("teamlead\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, err := runCLI(t, board, "--json", "roles", "list")
+	var p map[string]any
+	if err != nil || json.Unmarshal([]byte(out), &p) != nil {
+		t.Fatalf("roles list --json on a board: %v\n%s", err, out)
+	}
+	if p["release"] != "teamlead" || !strings.Contains(fmt.Sprint(p["release_source"]), ".jaira/release") {
+		t.Errorf("release=%v source=%v, want teamlead from .jaira/release", p["release"], p["release_source"])
+	}
+	out, err = runCLI(t, board, "roles", "list")
+	if err != nil || !strings.Contains(out, "release: teamlead") {
+		t.Errorf("roles list does not say who owns the release: %v\n%s", err, out)
+	}
 }
 
 // --project with no agent directory in the repository still lands somewhere an

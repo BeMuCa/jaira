@@ -319,3 +319,19 @@ func TestCRLFAndBOMTolerated(t *testing.T) {
 		t.Error("write failed")
 	}
 }
+
+func TestRemoveTakesTheWholeEntry(t *testing.T) {
+	src := "---\nid: a\ntags:\n- x\n- y\nwhy: |-\n  one\n  two\nstatus: todo\n---\nbody\n"
+	d, err := ParseDoc([]byte(src))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, k := range []string{"tags", "why", "absent"} {
+		if err := d.Remove(k); err != nil {
+			t.Fatalf("remove %s: %v", k, err)
+		}
+	}
+	if want := "---\nid: a\nstatus: todo\n---\nbody\n"; d.String() != want {
+		t.Errorf("got\n%q\nwant\n%q", d.String(), want)
+	}
+}

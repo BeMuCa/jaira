@@ -209,6 +209,7 @@ Exit codes:
 		newArchiveCmd(),
 		newRestoreCmd(),
 		newDeleteCmd(),
+		newRejectCmd(),
 		newLogbookCmd(),
 		newNoteCmd(),
 		newResumeCmd(),
