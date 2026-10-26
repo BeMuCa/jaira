@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T08:26:42Z
-updated-at: 2026-10-26T19:20:43Z
+updated-at: 2026-10-26T19:20:58Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: qyk8md-driver
@@ -54,3 +54,4 @@ review-summary: |-
 ## Progress
 - **2026-10-23 15:26 · BeMuCa** — Feedback 23.10. (Punkt 12): auf dem Board stehen 7 verwaiste Claims mit Rechnernamen drin. Beim Fix mitdenken: ein verwaister Claim mit altem Format soll beim naechsten claim desselben Tickets als abgelaufen gelten (stale), damit niemand --steal braucht.
 - **2026-10-26 19:14 · BeMuCa** — Driver: pre-process skipped (option planning not ticked). Design handed to in-progress: random 6-char token once per machine in JAIRA_HOME or ~/.jaira, DefaultID = token-ppid, env overrides unchanged. Orphaned old-format = a claim in the old hostname-digits form that names THIS machine: no session here can renew it any more, so it counts as stale even within ClaimTTL. Old-format claims from other machines stay foreign until ClaimTTL, as before (plain string compare). The old claims on master are all older than ClaimTTL and were already stale by time. Claimed with JAIRA_SESSION_ID set to a neutral name so this ticket carries no hostname.
+- **2026-10-26 19:20 · BeMuCa** — critique (pass 1, whole diff): three findings, all clear fixes, see review-summary. (1) internal/cli/claim.go StaleClaim: drop the separate LegacyLocal branch and add '|| session.LegacyLocal(t.ClaimedBy)' to the existing 'd > ClaimTTL' test - same results, the zero-timestamp branch above already returns 0. (2) core/session/session.go machineToken: use ticket.Handle(ticket.NewID(time.Now())) instead of the [20:] slice and its comment. (3) core/session/machine_test.go: look for sanitize(host), not the raw hostname - the old build wrote the sanitized form, so a dotted hostname (name.local, FQDN) passes the current test on the old code too. Let stand, so later passes need not reopen them: LegacyLocal treating any this-machine '<host>-<digits>' claim as abandoned at once, standing on BeMuCa's note of 23.10 that asked for exactly that (an old build still running on the same machine would be walked over, but self upgrade replaces the binary in place, so that overlap is near zero); the token written with plain os.WriteFile rather than O_EXCL create - two jaira processes starting in the same microseconds on a machine with no machine-id yet could each keep a different token for one call, which self-heals on the next read and was judged not worth the extra code; sanitizeForTest in internal/cli/staleclaim_test.go copying session.sanitize is left to the optimize lane.
