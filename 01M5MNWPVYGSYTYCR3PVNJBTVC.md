@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:53Z
-updated-at: 2026-10-26T19:28:00Z
+updated-at: 2026-10-26T19:28:03Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-264760
@@ -29,7 +29,8 @@ claimed-at: 2026-10-26T19:12:35Z
 - [x] Gate: Plan-Sperre in gate.go entfernen, Hinweis-Helfer OpenPlanHints
   proof: core/move/move_test.go TestMoveIntoDoneWithOpenPlanStepCarriesAHint; core/gate/plan_test.go TestUnfinishedPlanDoesNotBlockTerminalLane
 - [ ] move.Result.Hints fuellen bei Move in Ziellane
-- [ ] CLI Text+JSON+dry-run zeigen den Hinweis
+- [x] CLI Text+JSON+dry-run zeigen den Hinweis
+  proof: core/gate/plan_test.go TestUnfinishedPlanAddsNothingToDoDRefusal
 - [ ] TUI: model.go zwei Pfade + signoff Accept zeigen den Hinweis
 - [ ] Tests: plan_test.go drehen, move-Test fuer Hinweis
 - [ ] Docs (SKILL, README, AGENTS, 50-done) + Release-Notiz
