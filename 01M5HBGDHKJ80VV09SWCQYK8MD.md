@@ -1,7 +1,7 @@
 ---
 id: 01M5HBGDHKJ80VV09SWCQYK8MD
 title: Die Session-ID traegt keinen Rechnernamen mehr
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "claimed-by und jede andere Stelle, die eine Session benennt, enthalten keinen Hostnamen: ein Teammitglied kann aus einem Ticket nicht ablesen, auf welcher Maschine es bearbeitet wurde."
@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T08:26:42Z
-updated-at: 2026-10-26T19:29:41Z
+updated-at: 2026-10-26T19:30:28Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: qyk8md-driver
