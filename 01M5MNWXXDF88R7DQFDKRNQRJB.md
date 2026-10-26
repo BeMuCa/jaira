@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:01Z
-updated-at: 2026-10-26T20:09:30Z
+updated-at: 2026-10-26T20:12:37Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: rnqrjb-driver
@@ -51,3 +51,4 @@ outcome-resolves: "DoD 1: the hint no longer repeats on every call; a new binary
 ## Progress
 - **2026-10-26 20:07 · BeMuCa** — Ticket opts out of brainstorm and planning (Options unchecked), so next_lane jumps todo -> in-progress; the driver wrote the plan. Interpretation taken: 'danach nur noch bei jaira update selbst' = after the one shown hint, the staleness only surfaces through jaira update's own report (previous version + what changed); update already suppresses the nudge via updateInProgress. There is no --verbose flag (global flags are -C and --json), so none is added.
 - **2026-10-26 20:09 · BeMuCa** — Marker is a separate file <stateDir>/nudged holding the binary version; the version stamp itself is not touched, so jaira update still reads the true previous version. Marker write errors are swallowed (hint then just repeats).
+- **2026-10-26 20:12 · BeMuCa** — critique 1: one must-fix. README.md:97 says the newer binary 'says so on every command' - this change makes that false; reword to once per board and jaira version, on the first command after the upgrade. Optional: internal/cli/update.go:24 is 88 chars in a paragraph wrapped at ~78 (reflow); core/release/notes/RNQRJB.md could say 'run jaira update when you see it, it will not remind you again' instead of 'to see the previous version' (update rewrites CLAUDE.md/AGENTS.md, it is not a status query). Checked and let stand, do not reopen: separate nudged file beside version (DoD names the place; stamp untouched keeps update's previous true, note 20:09); scope is per working tree because StateDir is per tree (core/ticket/store.go:822) - a fresh git worktree shows the hint once; RepoStateDir would make it once per clone but would sit apart from the stamp the DoD ties it to; Nudged/MarkNudged copy Stamped/Stamp except the file name - folding them into one helper would refactor existing code; no --verbose (note 20:07); swallowed write error (note 20:09); TUI (jaira, jaira board) never goes through openStore so it cannot use up the one hint unseen; scripts/lane-eval/clone.sh:55 and the cockpit OLDER_BUILD filter stay needed because the line still appears once.
