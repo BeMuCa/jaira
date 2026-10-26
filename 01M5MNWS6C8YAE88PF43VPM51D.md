@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:56Z
-updated-at: 2026-10-26T19:43:09Z
+updated-at: 2026-10-26T19:43:11Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-374545
@@ -42,7 +42,7 @@ claimed-at: 2026-10-26T19:21:26Z
 
 - [x] Failing-Test zuerst (internal/cli, neue Datei): Bare-Remote + Clone + git worktree add (Helfer wie cloneWithRemotes/runCLI); Ticket im Haupt-Checkout gepullt und committet, im Worktree move --force nach done + jaira logbook; im Haupt-Checkout zeigen list, list --json, list --actionable --json, show, show --json es als abgelegt mit Entfernen-Befehl, und die Datei ist noch da
 - [x] Zweiter Fall im selben Test (D0SAHM): Logbuch-Commit des Worktrees landet auf origin/master, Worktree entfernt, Ref weg (snapshot --drop); Haupt-Checkout auf altem Commit zeigt es weiter als abgelegt, gefunden auf dem Landing-Branch
-- [ ] Gegenfaelle im Test: per jaira restore zurueckgeholte Kopie (gleiches updated-at) und eine nach dem Ablegen beschriebene Kopie (neueres updated-at) werden NICHT markiert; stale Kopie mindestens 1 s aelter als die abgelegte
+- [x] Gegenfaelle im Test: per jaira restore zurueckgeholte Kopie (gleiches updated-at) und eine nach dem Ablegen beschriebene Kopie (neueres updated-at) werden NICHT markiert; stale Kopie mindestens 1 s aelter als die abgelegte
 - [ ] core/ticket: Laufzeitfeld am Ticket (wo abgelegt: Worktree-Pfad oder Landing-Branch + Pfad) und optionales Interface an Store.Source; Store.List markiert Datei-Tickets (nicht ReadOnly, nicht hier abgelegt); Store-Methode fuer ein einzelnes Ticket (show)
 - [ ] core/gitref: Worktrees() per git worktree list --porcelain; abgelegte Dateien eines Branches per einem git ls-tree -r <rev> -- .jaira/logbook .jaira/archive (id -> Pfad + Blob); Header der Kandidaten-Blobs per einem cat-file --batch wie ReadMany
 - [ ] core/refsync: Syncer erfuellt das Interface - FiledAwayIDs der anderen Worktrees + Landing-Branches (settings.Landing, gesetzt in internal/cli/refs.go attachRefs und internal/tui/refs.go newSyncer); Regel: anderswo abgelegt UND updated-at der Datei hier strikt aelter; Landing-Ergebnis nach Rev-SHA cachen
