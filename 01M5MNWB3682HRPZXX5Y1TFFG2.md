@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:41Z
-updated-at: 2026-10-26T19:16:56Z
+updated-at: 2026-10-26T19:25:56Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-253833
@@ -29,7 +29,8 @@ claimed-at: 2026-10-26T19:10:59Z
 
 ## Definition of Done
 
-- [ ] spawn.sh gibt claude den Berechtigungsmodus der startenden Person mit (--permission-mode, aus den User-Settings oder einem Board-Setting), und sagt im Hilfetext, welcher
+- [x] spawn.sh gibt claude den Berechtigungsmodus der startenden Person mit (--permission-mode, aus den User-Settings oder einem Board-Setting), und sagt im Hilfetext, welcher
+  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh permission_mode block + usage(); TestSpawnStartsClaudeInThePersonsPermissionMode
 - [ ] spawn.sh prueft nach dem Start, dass der Rollen-Prompt angekommen ist (die erste Ausgabe der Rolle im Pane), und meldet sonst 'Prompt nicht angekommen' statt 'up'; ein wartender Freigabe-Dialog wird als solcher gemeldet
 - [ ] Ein Test mit einem Herdr-Stub deckt beide Faelle ab; go test ./... -race gruen; Release-Notiz unter core/release/notes/
 
