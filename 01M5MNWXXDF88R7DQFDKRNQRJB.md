@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWXXDF88R7DQFDKRNQRJB
 title: "Die Warnung 'Board von aelterer Version eingerichtet' kommt einmal, nicht bei jedem Aufruf"
-status: critique
+status: human
 ready: true
 creator: BeMuCa
 goal: "Wer jaira update noch nicht laufen liess, hoert es einmal pro Board und Version - nicht vor jeder Ausgabe, wo Agenten es mitparsen und Menschen es ueberlesen."
@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:01Z
-updated-at: 2026-10-26T20:25:06Z
+updated-at: 2026-10-26T20:25:10Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: rnqrjb-driver
@@ -28,6 +28,7 @@ review-summary: |-
   critique 1: README.md:97 still says a newer binary on an older board 'says so on every command' - false after this change; reword to once per board and jaira version, on the first command after the upgrade. Optional: reflow the nudgeIfStale doc comment (internal/cli/update.go:20-26, line 24 is 88 chars); make core/release/notes/RNQRJB.md tell the reader to act on the hint because it will not repeat, rather than 'run jaira update to see the previous version' (update rewrites CLAUDE.md/AGENTS.md, it is not a status query).
   critique 2: round-1 findings handled (README.md:97-98, update.go comment reflow, release note). Open: callers that run jaira with --json and discard stderr use up the one hint unseen - the jaira-cockpit poll (core/mod/builtin/jaira-cockpit/hooks/register.tsx:281-285, every 60s and after each turn) and the dispatcher scripts run-lane.sh/reap.sh. Reproduced on a scratch board: a 'list --json 2>/dev/null' wrote nudged, the next visible 'list' printed nothing. Fix needs a design choice (cockpit forwards the line vs. --json neither prints nor consumes it) - sent to human.
 round: 2
+question: "Kritik 2: Aufrufer mit --json, die stderr wegwerfen (Cockpit-Poll alle 60s: core/mod/builtin/jaira-cockpit/hooks/register.tsx:281; Dispatcher run-lane.sh, reap.sh), verbrauchen den einen Hinweis - niemand sieht ihn (auf Scratch-Board nachgestellt). Welcher Weg? A) Das Cockpit zeigt die Zeile als Notice per say(), wie checkVersion - deckt nur das Cockpit ab. B) Bei --json wird der Hinweis weder gedruckt noch als gezeigt gemerkt; er kommt beim ersten Aufruf ohne --json - deckt alle --json-Aufrufer ab, kehrt aber 'regardless of --json' (Kommentar in internal/cli/update.go) um und nimmt PW18DT (Warnungen bei --json) ein Stueck vorweg. Empfehlung: B."
 ---
 
 # Die Warnung 'Board von aelterer Version eingerichtet' kommt einmal, nicht bei jedem Aufruf
