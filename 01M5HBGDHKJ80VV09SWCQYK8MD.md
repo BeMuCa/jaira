@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T08:26:42Z
-updated-at: 2026-10-26T19:43:19Z
+updated-at: 2026-10-26T19:43:32Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: qyk8md-driver
@@ -41,6 +41,27 @@ review-gaps: |-
 test-verdict: "pass: gofmt/vet/build clean, race tests core/session + cli (LegacyHostname|Claim|Stale) ok, release note is one line; token claims, foreign/own-old/stale old-format claims behave on a scratch board; full suite pending pre-PR run"
 review-verdict: "Ready for signoff once DoD 3's full race suite has run green; by house rule that run happens once before the PR, so DoD 3 is still open and is the only thing missing. The diff does what DoD 1 and 2 ask: no new session id carries the hostname (TestDefaultIDCarriesNoHostname fails when the old DefaultID is put back, checked), foreign old-format claims still block until ClaimTTL, and this machine's own old claims are taken over without --steal, as the 23.10 note asked (TestLegacyHostnameClaims fails without the LegacyLocal check, checked). Gaps 1-5 are edge cases or a decision to confirm; none needs a change before merge. gofmt -l empty, go vet ./... and go build ./... green, go test -race ./core/session and ./internal/cli -run 'LegacyHostname|Claim|Stale' green, scratch-board run matches the review-check below."
 review-round: 3
+review-check: |-
+  Run in one terminal, in order; every step uses the same shell.
+  1. S=$(mktemp -d)   -> nothing printed; a scratch folder
+  2. cd /home/berk/git/jAIra-QYK8MD && go build -o "$S/jaira" ./cmd/jaira   -> nothing printed
+  3. mkdir -p "$S/home" "$S/jhome" "$S/board" && cd "$S/board" && git init -q && git commit -q --allow-empty -m init   -> nothing printed; a git repo with no remote
+  4. j() { env -u CLAUDE_SESSION_ID -u JAIRA_SESSION_ID -u TERM_SESSION_ID HOME="$S/home" JAIRA_HOME="$S/jhome" JAIRA_NO_FETCH=1 "$S/jaira" "$@"; }   -> nothing printed; 'j' is now the new binary on the scratch home
+  5. j init   -> last line: Run 'jaira share' when you want your team to have it.
+  6. j create probe --goal g --context c --dod d   -> first line: Created <HANDLE>  probe
+  7. ID=<the HANDLE from step 6>
+  8. j claim $ID   -> Claimed <HANDLE> until HH:MM
+  9. grep claimed-by .jaira/tickets/*.md   -> claimed-by: <6 characters>-<digits>, for example KZ78NQ-616260
+  10. cat "$S/jhome/machine-id"   -> the same 6 characters as in step 9
+  11. grep -ci "$(hostname)" .jaira/tickets/*.md   -> 0
+  12. j claim $ID --session host-a-4242 --steal   -> Claimed ... (pretends an old build on ANOTHER machine holds the ticket)
+  13. j claim $ID; echo $?   -> jaira: <HANDLE> is claimed by host-a-4242 (moments ago); pass --steal to take it anyway, then 3
+  14. j claim $ID --session "$(hostname)-4242" --steal   -> Claimed ... (pretends an old build on THIS machine holds it; if 'hostname' prints a dot, use "$(hostname | tr . -)-4242")
+  15. j claim $ID; echo $?   -> Claimed <HANDLE> until HH:MM, then: <HANDLE> carries an abandoned claim by <your hostname>-4242, last renewed moments ago, then 0 - no --steal needed
+  16. grep claimed-by .jaira/tickets/*.md   -> the token form again, same 6 characters as step 10
+  17. cd /home/berk/git/jAIra-QYK8MD && go test ./core/session ./internal/cli -run 'TestDefaultIDCarriesNoHostname|TestLegacyLocal|TestLegacyHostnameClaims' -count=1   -> two lines starting with ok
+  18. rm -rf "$S"   -> scratch gone
+  DoD 3 is not checked by this: it needs the full go test ./... -race run before the PR.
 ---
 
 # Die Session-ID traegt keinen Rechnernamen mehr
