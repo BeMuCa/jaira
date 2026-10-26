@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:47Z
-updated-at: 2026-10-26T20:04:46Z
+updated-at: 2026-10-26T20:06:02Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-253301
@@ -30,7 +30,7 @@ question: "Should .claude/settings.json deny or ask for git push and gh pr creat
 review-gaps: |-
   Removed: README.md:1127 "The lists live in that file;" - it restated the sentence before it, which already names .claude/settings.json; the paragraph is rewrapped at 80 columns with every code span kept on one line. Left: Bash(head *), Bash(tail *), Bash(wc *) - Claude Code already runs them without a prompt (built-in read-only set), like the DoD-named ls/cat/grep, but the file is the list of what the lanes run, and "go build ./... 2>&1 | tail -20" (an allowed command piped into tail) was never measured without the rule. Left: Bash(git ls-tree *) - no lane prompt or role skill names it, but the docs do not say whether read-only git covers it, so dropping it could add a prompt, which is a behaviour change, not a cleanup. Left: every DoD-named rule; /permissions named in both README places (two audiences; critique pass 1 asked for the pointer). Duplication: no other file in the repo documents Claude Code permissions or worktree settings. Dead code: nothing orphaned; the deleted release note core/release/notes/ZE9WZC.md has no references left. Cost: nothing to do (config and docs). For review, not a cleanup: README.md:672-675 says a worktree reads its own .claude/settings.json and "a deny list dropped into a worktree is never read" - true for settings.local.json in a CLI worktree; a desktop-app worktree session reads settings from the main checkout root.
   optimize pass 2 (judged 22649bd5 only): nothing removed. 22649bd5 dropped Bash(rm -r /tmp/*) and left no orphan: no other rule, README sentence or file outside .jaira names rm -r or clearing a scratch board (grep); README.md:1128-1130 now ends at 'cannot be written.' and still holds, because DoD 1 now demands rm -rf denied in the scratchpad too and 'a deny beats every allow' is why nobody can add that exception. Left: README.md:673-677 names .claude/settings.local.json three times; the 'never read' line is the consequence the ticket was filed for and DoD 2's proof (README.md:675), not a repeat. 22649bd5 settles pass 1's 'for review' wording point (the line now names settings.local.json instead of 'a deny list'); pass 1's desktop-app worktree point is untouched and still the review lane's. No line this change added passes 80 columns (README.md:1139 at 81 columns is from 8081e7da); .claude/settings.json parses as JSON. Proof lines unchanged: .claude/settings.json:37, README.md:675.
-test-verdict: "fail: gates green and DoD 1-3 hold as written, but in a headless probe on the current .claude/settings.json the allow rule Bash(rm -r /tmp/*) never matches - rm -r on a /tmp path was denied 3 of 3 times (go build/jaira list/git status/gofmt ran; push, gh pr create/merge, reset --hard, rm -rf, kill-server denied as expected)"
+test-verdict: "pass: gofmt/vet/build clean, settings.json valid JSON; DoD 1-3 hold on the tree; headless haiku probe on current rules ran go build, go vet, jaira list, git status, git log, gofmt, mkdir and left git push, gh pr create, gh pr merge, git reset --hard, git filter-branch, rm -rf, tmux kill-server in permission_denials (7 of 7 as expected)"
 ---
 
 # Eine Erlaubnisliste im Repo laesst Worker arbeiten, ohne bei jedem Befehl zu fragen
