@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:53Z
-updated-at: 2026-10-26T19:55:17Z
+updated-at: 2026-10-26T19:57:35Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-650718
@@ -27,6 +27,7 @@ outcome-why: "Plan und DoD sind zwei getrennte Listen; denselben Haken setzt der
 outcome-resolves: "DoD 1: TestMoveIntoDoneWithOpenPlanStepCarriesAHint + TestUnfinishedPlanDoesNotBlockTerminalLane; DoD 3: TestUnfinishedPlanAddsNothingToDoDRefusal; DoD 4: internal/cli/flow.go, internal/tui/model.go, internal/tui/signoff.go; DoD 5: die vier Doku-Dateien; DoD 2: Release-Notiz core/release/notes/NJBTVC.md, die volle Race-Suite laeuft vor dem PR."
 review-summary: none
 round: 2
+review-gaps: "Removed: hintMessage (internal/tui/model.go, a one-line forward to strings.Join) - inlined as strings.Join(res.Hints, \"\\n\") at model.go:2012, model.go:2084, signoff.go:206; stale clause in the comment above core/move/move_test.go:178 ('the plan must not be among the overridden ones' described the Overrode loop critique 1 dropped). Considered and left: gate.OpenPlanHints (core/gate/gate.go:691) vs ticket.PlanComplete (core/ticket/schema.go:579) - PlanComplete returns texts without step numbers, the hint needs the number for 'jaira dod <id> <n> --done --plan', and PlanComplete keeps its caller internal/cli/tickets.go:1615; the DoD refusal loop (core/gate/gate.go:358-385) has the same skip-settled-and-number shape but yields Violations with other wording - a shared helper for two sites would be a new abstraction; folding the hint into settleMessage (internal/tui/model.go:2121) - it reports a settle, and the three sites already compose hint-then-trim the same way; no notify/flash helper (model.go:1856, :1016) covers composing the text. Dead code: CodePlanIncomplete already removed, no other reference in Go, cockpit or docs; remaining 'the plan finished' text is history (core/lane/corrections.go:94, core/move/oldboard_test.go:29) and this repo's own .jaira/lanes/done.md:11, which the release note covers. Cost: OpenPlanHints runs once per terminal move (core/move/move.go:149), nothing to hoist."
 ---
 
 # Ein offener Plan-Punkt sperrt die Ziellane nicht mehr, wenn die Definition of Done erfuellt ist
