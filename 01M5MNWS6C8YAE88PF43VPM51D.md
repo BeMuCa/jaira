@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWS6C8YAE88PF43VPM51D
 title: "Ein Checkout, dessen Ticket anderswo abgelegt wurde, zeigt es als abgelegt statt als geaendert"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Nach jaira logbook in einem Worktree verwirrt die alte Ticketdatei in den anderen Worktrees und im Haupt-Checkout niemanden mehr: sie gilt als abgelegt, und jaira bietet an, sie zu entfernen."
@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:56Z
-updated-at: 2026-10-26T19:53:27Z
+updated-at: 2026-10-26T19:54:04Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-374545
@@ -30,6 +30,7 @@ review-summary: |-
   core/refsync/filedelsewhere.go:51 looks for the other board at the worktree root (ticket.At(dir)) and skips itself by comparing that root with Store.Root (:46), so a board inited in a subdirectory (jaira init uses the cwd, Discover walks up) is never found in another worktree - while the landing half finds it (FiledOn's ls-tree pathspec resolves relative to Store.Root, checked). Take prefix = filepath.Rel(own worktree entry, Store.Root) from the same Worktrees() list, look in filepath.Join(dir, prefix), skip the own entry. No extra git call.
   core/gitref/gitref.go:591 FiledBlob.Path is set and never read, and ReadBlobs (:616) is a one-line export of catBatch with one caller. Let FiledOn read the matched blobs itself (idOf returns "" for an id the caller does not want) and return id -> bytes; drop FiledBlob and ReadBlobs.
   core/release/notes/VPM51D.md:1 is 662 characters (the longest line in core/release/notes; next is 573) and packs four changes, where the plan asked one '- ' line per change. Split it: (a) list, show and the board show a stale copy as filed elsewhere with the command beside it, nothing is deleted, a restored or later-edited copy stays open; (b) jaira next and list --actionable skip it. Line 2 (JSON) stays.
+round: 2
 ---
 
 # Ein Checkout, dessen Ticket anderswo abgelegt wurde, zeigt es als abgelegt statt als geaendert
