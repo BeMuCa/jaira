@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:58Z
-updated-at: 2026-10-26T19:57:11Z
+updated-at: 2026-10-26T19:57:21Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: x6hb6v-driver
@@ -55,3 +55,4 @@ review-summary: |-
 ## Progress
 - **2026-10-26 19:48 · BeMuCa** — driver: pre-process is not ticked for this ticket (Options), so the design is written here. Why not 'previous poll vs now': refreshBoard reads jaira list --json every 60 s and after every turn; a subagent works for minutes, so the poll sees its moves long before its report arrives - 'last poll vs now' would show no change almost always. Design instead: register.tsx keeps one map handle -> lane 'as of the last report about this ticket'. refreshBoard only ADDS tickets it has not seen yet (first sight), never overwrites. On a report, shorten() reads jaira list --json fresh (default board plus the other boards refreshBoard reads), emits '<before> -> <now>' when both are known and differ, then stores <now>. The report text is no longer read for lanes at all (laneOf/ARROW/INTO/LANES go), so a lane only the text names can never show up. Verdict stays text-derived: not in the DoD, not one of the observed failures.
 - **2026-10-26 19:51 · BeMuCa** — lanesNow() liest bei jedem Bericht frisch; in shorten wird board nicht gecacht (sonst entfiele checkVersion in refreshBoard). Bei Lesefehler einer Nebenboard-Liste: gar kein Lanewechsel.
+- **2026-10-26 19:57 · BeMuCa** — critique (first pass): five findings, all in review-summary. (1+2, one fix) read the lane only once digest has found a ticket and no failure — make digest's laneChange callback async — and read it with one 'jaira show <ticket> --json' (status) instead of lanesNow: show resolves the id on every board (core/ticket/store.go:1174; checked on a scratch board: an 'ops' ticket is missing from 'jaira list --json' but 'jaira show <id> --json' gives status and board), so the copy of refreshBoard's board loop and its separate failure rule go, and failure reports (which shorten sees twice, session.receive then prompt.submit) spawn no jaira at all. (3) laneChangeOf to digest.ts — it formats the line, board.ts parses jaira. (4) release note as an instruction, and not 'as of the last report' (the first report compares with first sight). (5) cockpit.test.ts first(): drop the no-op lanes/to parameters. Let stand: lastSeen seeded at first sight and updated only on reports (driver note 19:48) — found no case where it shows a lane the ticket did not take; no board cache in shorten (note 19:51); verdict stays text-derived (19:48); the edits to the existing tests drop only the text-derived lane, every verdict/question/failure/usage/marker assertion is unchanged.
