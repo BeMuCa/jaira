@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:53Z
-updated-at: 2026-10-26T19:33:45Z
+updated-at: 2026-10-26T19:40:24Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-264760
@@ -25,6 +25,11 @@ claimed-at: 2026-10-26T19:12:35Z
 outcome-what: "Ein Move in eine Ziellane wird nicht mehr wegen eines offenen Plan-Schritts abgelehnt; nur noch das DoD-Gate entscheidet, bei unvollstaendiger DoD erscheinen nur DoD-Punkte. Offene Plan-Schritte kommen als Hinweis zurueck: gate.OpenPlanHints, move.Result.Hints, 'Note:'-Zeilen vor der Move-Zeile in der CLI, 'hints' im JSON, in der TUI-Meldung (applyMove, forceMove, signoff accept). CodePlanIncomplete entfernt; Doku (SKILL.md, README.md, docs/AGENTS.md, 50-done.md) und Release-Notiz angepasst."
 outcome-why: "Plan und DoD sind zwei getrennte Listen; denselben Haken setzt derselbe Worker, der Plan-Haken ist kein unabhaengiger Beleg. Die Sperre hielt GH0GKD mit DoD 9/9 vor done fest, weil ein erledigter Plan-Schritt nicht abgehakt war."
 outcome-resolves: "DoD 1: TestMoveIntoDoneWithOpenPlanStepCarriesAHint + TestUnfinishedPlanDoesNotBlockTerminalLane; DoD 3: TestUnfinishedPlanAddsNothingToDoDRefusal; DoD 4: internal/cli/flow.go, internal/tui/model.go, internal/tui/signoff.go; DoD 5: die vier Doku-Dateien; DoD 2: Release-Notiz core/release/notes/NJBTVC.md, die volle Race-Suite laeuft vor dem PR."
+review-summary: |-
+  core/gate/plan_test.go:51 and :73 judge a bare fixture that other gates refuse anyway and only filter the refusals for "plan"/"implement", so no test shows the DoD-1 move landing unrefused; use the setup core/gate/commits_test.go:108-124 already uses for a passing move into done (tk.Status="signoff", tk.Commits={"a1b2c3d"}, Request{To:"done", Actor:"a", Interactive:true}) and assert CheckAdvance(...).Err()==nil at :51 and len(vs)==1 && vs[0].Code==CodeNeedsSignal at :73 (both checked in a scratch copy: pass on 6caff07d, fail on its parent); the Overrode loop in core/move/move_test.go:193-197 then repeats the gate test and goes, the move test keeps only its Hints check (Force there matches its siblings :139 and :158)
+  internal/cli/flow.go:239 adds a JSON key "hints" beside the key "warnings" that other commands already use for non-fatal lines on a command that succeeded (internal/cli/lanes.go:130, internal/cli/tickets.go:1282 and :1369, internal/cli/market.go:53) and that backlog ticket 01M26PW18D proposes for next --json; name it "warnings", so an agent reads one key for "it worked, but look at this" (the text line "Note:" before the move line stays, per brainstorm note 3/3)
+  core/release/notes/NJBTVC.md:1 records a change instead of telling the reader what to do, and contradicts itself ("tick the plan steps you did ..., but the move now lands anyway"); length is not the problem (notes in 0.5.3/ run to 1000 chars). Replace with: - Expect a move into done to land once every definition-of-done item is ticked, even with a plan step still open: each open step is printed as a `Note:` line before the move line (`warnings` in `--json`, and in the TUI message, accepting in signoff included) — tick it afterwards with `jaira dod <id> <n> --done --plan` if that work was done.
+  core/release/notes/NJBTVC.md: add a second line for boards that keep the old done description (in-progress left them untouched, which stays; precedent 0.5.3/8NHD8Q.md line 2): - On a board set up before this version, delete ", the plan finished if there is one" from the `description:` line of `.jaira/lanes/done.md` (and of `.jaira/boards/<name>/lanes/done.md`): it still says an open plan step keeps a ticket out of done.
 ---
 
 # Ein offener Plan-Punkt sperrt die Ziellane nicht mehr, wenn die Definition of Done erfuellt ist
