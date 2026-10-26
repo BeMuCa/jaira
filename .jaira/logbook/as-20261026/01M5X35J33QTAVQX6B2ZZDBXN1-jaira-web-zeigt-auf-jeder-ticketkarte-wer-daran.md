@@ -1,7 +1,7 @@
 ---
 id: 01M5X35J33QTAVQX6B2ZZDBXN1
 title: "jaira web zeigt auf jeder Ticketkarte, wer daran arbeitet"
-status: testing
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -18,18 +18,36 @@ tags:
   - web
 blocked-by: []
 related: []
-commits: []
+commits:
+  - c0ae756953f44ce6981202d927cec98d200834c7
+  - 600a89ecdec00bd0065f90ec7cb79d38d5226089
+  - ab18b38cb32d5d35a583a36c33fdd9a3f228c82f
 created-at: 2026-10-26T21:51:50Z
-updated-at: 2026-10-26T22:18:18Z
+updated-at: 2026-10-26T22:41:05Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-72427
-claimed-at: 2026-10-26T21:52:15Z
+claimed-by: DESKTOP-RFTCH11-75425
+claimed-at: 2026-10-26T22:22:49Z
 mode: ""
 outcome-what: "Ticketkarten in jaira web zeigen den assignee (max 20 Zeichen, voller Name im Tooltip; entities/ticket/model/assignee.ts). Lane-, Tag- und Person-Filter nehmen mehrere Werte als Chips, ein Klick macht 'nicht X' (features/filter-tickets/model/filter.ts, ui/ChipSelect.svelte); Link ?lane=a&not-lane=b, alte ?lane=x-Links gehen weiter."
 outcome-why: "Alex wollte bei einem Epic mit 124 Tickets sehen, wer welches hat, und Listen wie 'alle Lanes ausser done' filtern; beides ging nur mit Aufklappen bzw. einem Wert pro Filter."
 outcome-resolves: "DoD 1: TicketCard.svelte zeigt span.assignee; DoD 2: npm test 10/10, dist neu gebaut, Release-Notiz; DoD 3: passes() in filter.ts, fromQuery/toQuery mit not-<key>, filter.test.ts."
-review-summary: none
-review-gaps: "removed the forwarding helper filter(q) => fromQuery(q) in filter.test.ts; no duplicate found (no truncation or chip code elsewhere in core/web/ui/src); select style in ChipSelect.svelte left as is, the repo repeats control styles per component; no dead code, every export of assignee.ts and filter.ts has a caller"
+review-summary: "Jede Ticketkarte (TicketCard.svelte, genutzt von EpicList und UnassignedList) zeigt jetzt unter dem Titel eine kleine graue Zeile mit dem assignee: hoechstens 20 Codepoints inkl. '…' (shortAssignee in entities/ticket/model/assignee.ts), voller Name im title-Tooltip, ohne assignee keine Zeile. Zusaetzlich (von Alex am 26.10. nachbestellt, DoD 3): Lane-, Tag- und Person-Filter sind Chip-Listen statt Einzelwerten - Auswahl im Dropdown fuegt einen Chip hinzu, Klick schaltet 'X'/'not X', × entfernt (ChipSelect.svelte); innerhalb eines Filters ODER, ausgeschlossene Werte UND-NICHT, zwischen Filtern UND (passes() in filter.ts). Der Link traegt das als ?lane=a&lane=b&not-lane=c; alte ?lane=x-Links lesen sich als ein Chip. Hilfetext von 'jaira web' und zwei Zeilen Release-Notiz ergaenzt, dist neu gebaut."
+review-gaps: |-
+  note: die Kuerzung auf 20 Zeichen ist nur im Unit-Test (assignee.test.ts) belegt; auf diesem Board ist kein Name laenger, live also nicht gesehen
+  note: Person 'not X' wirft ein Ticket raus, sobald X creator, assignee ODER updated_by ist - bewusste Spiegelung der Einschlussregel (decision-Note), kann aber ueberraschen, wenn man nur 'nicht zugewiesen an X' meint
+  note: DoD 3 (Mehrfachfilter) ist eine Erweiterung ueber das urspruengliche Ziel hinaus; von Alex per Note 21:54 bestellt, deshalb kein Befund, aber Titel und goal des Tickets nennen sie nicht
+  note: svelte-check meldet 1 Fehler in vite.config.ts (node:url-Typen); Datei ist vom Diff unberuehrt, laut Note schon auf master so
+test-verdict: "pass: go vet RC=0, go test -race -count=1 ./... RC=0 (31 packages ok), npm ci+build+test 10/10 RC=0, committed dist matches the build (git diff --exit-code RC=0); DoD 1-3 checked in the tree; scratch board in headless Chromium: 'Maximiliane Müller-Lüdenscheidt' shows as 'Maximiliane Müller-…' with the full name as title, a ticket without assignee shows no line; tag web / not web / not-person / old ?tag=cli each leave exactly the expected card"
+review-verdict: "Diff erfuellt DoD 1-3; keine Defekte gefunden. Selbst geprueft: npm test 10/10 gruen, frischer vite build ist byte-gleich mit core/web/ui/dist, go build und go test ./core/web/... ./internal/cli/... gruen, Release-Notiz im richtigen Format. Keine Blocker, nur Notes."
+review-round: 1
+review-check: |-
+  1. cd core/web/ui && npm test  -> 10 Tests, 0 fail
+  2. Im Repo-Root: jaira web  -> Browser oeffnet sich
+  3. Auf jeder Karte steht unter dem Titel klein der Name (z.B. Alexander Sacharov); Maus drauf -> Tooltip mit vollem Namen; Karten ohne assignee haben keine solche Zeile
+  4. Filterleiste: bei Lane 'done' waehlen  -> Chip 'done', nur erledigte Tickets
+  5. Auf den Chip klicken  -> er heisst 'not done', gestrichelter Rand, alle Tickets ausser done; Adresszeile enthaelt not-lane=done
+  6. Bei Lane zusaetzlich 'review' waehlen  -> zwei Chips; × am Chip entfernt ihn wieder aus Liste und Adresse
+  7. Alten Link testen: Adresse auf ?lane=backlog setzen und laden  -> ein Chip 'backlog', nur Backlog-Tickets
 ---
 
 # jaira web zeigt auf jeder Ticketkarte, wer daran arbeitet
@@ -67,3 +85,12 @@ review-gaps: "removed the forwarding helper filter(q) => fromQuery(q) in filter.
 - **2026-10-26 22:14 · Alexander Sacharov** — Pause (conversational): DoD 3 fertig, nicht committed; Diff + Commit-Zeile an Parent geschickt, warte auf Alex' OK. Danach: Commit pruefen, dann move critique. .jaira/milestones/ (untracked) stammt von einem jaira-Aufruf, gehoert nicht in den Commit.
 - **2026-10-26 22:17 · Alexander Sacharov** — Alex (via Parent): kein conversational mode auf diesem Ticket — mode geleert, DoD 3 selbst committet, weiter ohne Halt bis zur frischen Review.
 - **2026-10-26 22:17 · Alexander Sacharov** — critique Runde 1: nichts. Geprueft und stehen gelassen: Select-Stil doppelt in ChipSelect.svelte und FilterBar.svelte — das Repo wiederholt Kontrollstile pro Komponente (CreateEpicForm.svelte:49, EditEpicForm.svelte:69), keine globale Regel in app/styles.css; Chip[] statt {is,not} haelt die Reihenfolge der Chips; Person-'nicht' spiegelt die Einschluss-Regel (decision-Note 21:52+).
+- **2026-10-26 22:23 · Alexander Sacharov** — review (frischer Kontext): keine Blocker. Selbst nachgeprueft: npm test 10/10, vite build byte-gleich mit dist, go test core/web + internal/cli gruen. 4 Notes in review-gaps, keine davon verlangt Arbeit vor der Abnahme.
+- **2026-10-26 22:23 · Alexander Sacharov** — Zu review-gaps Note 1: die Kuerzung wurde in testing doch live gesehen — Scratch-Board, 'Maximiliane Müller-Lüdenscheidt' -> 'Maximiliane Müller-…', title voll (test-verdict). Die Review las die aeltere Note.
+- **2026-10-26 22:39 · Alexander Sacharov** — Alex (via Parent): angenommen wie es ist; Person-Filter bleibt 'jede Beteiligung' (review-gaps Note 2 bleibt, keine Aenderung).
+- **2026-10-26 22:39 · Alexander Sacharov** — explain: Review ohne Blocker. Karten zeigen den assignee, Lane-/Tag-/Person-Filter sind Chip-Listen mit 'X'/'not X'. Offen ist nur: Person 'not X' wirft ein Ticket raus, sobald X creator, assignee ODER updated_by ist.
+Warum: Wer 'nicht zugewiesen an X' meint, bekommt auch Tickets weg, die X nur angelegt oder zuletzt angefasst hat. Das ist bewusst so (Spiegel der Einschlussregel), kann aber ueberraschen.
+1) Person 'not X' nur auf assignee beschraenken, Einschluss und Ausschluss sind dann nicht mehr symmetrisch [give back]
+2) Ticket so annehmen, Person-Filter bleibt 'jede Beteiligung' [accept]
+Empfehlung: 2 - das ist die dokumentierte decision-Note, die Review fand keinen Defekt, und Alex hat genau das schon angenommen.
+- **2026-10-26 22:40 · Alexander Sacharov** — decision: 2) Ticket so annehmen, Person-Filter bleibt 'jede Beteiligung'
