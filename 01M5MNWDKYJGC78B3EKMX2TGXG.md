@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWDKYJGC78B3EKMX2TGXG
 title: "Ein Worker findet seinen Teamlead nach einem Neustart wieder, und eine Frage an die Person kommt als fertige Zeile"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Nach einem Crash oder Neustart des Teamleads erreichen die Nachrichten der Worker ihn weiter, ohne dass jemand den neuen Namen von Hand nachreicht; und eine Frage, die nur die Person per Kommando loesen kann, kommt mit der Zeile, die sie tippen muss."
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:44Z
-updated-at: 2026-10-26T19:24:55Z
+updated-at: 2026-10-26T19:25:54Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-252449
@@ -28,6 +28,7 @@ outcome-resolves: "teamlead.sh prints the parent while its socket exists and the
 review-summary: |-
   core/role/builtin/jaira-teamlead/SKILL.md:165-169 hides 'teamlead.sh --here ... first thing in every session' inside the Herdr spawn paragraph, so it runs when the teamlead is about to spawn, not at start, and not after 'claude --resume': a resume keeps the session ID (claude --help: only --fork-session makes a new one) while the socket is new, so a resumed teamlead has already done it 'this session' and its workers keep reporting into the void. Move the call into the every-round routine under 'Read the board first, always' beside reap.sh (lines 31-36, 'every round, before you start anything') and say every round: one idempotent file write, and a resumed teamlead re-records on its first round.
   core/role/builtin/jaira-teamlead/SKILL.md:72-79 (point 4) is the only hop that talks to the person, and it recasts every question as AskUserQuestion with short option labels, which has no slot for a command; the '! <command>' rule sits only on worker and dispatcher. Add one sentence there: a question that carries a '! <command>' line goes to the person with that line verbatim in the question text, never folded into an option label.
+round: 2
 ---
 
 # Ein Worker findet seinen Teamlead nach einem Neustart wieder, und eine Frage an die Person kommt als fertige Zeile
