@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:47Z
-updated-at: 2026-10-26T19:23:03Z
+updated-at: 2026-10-26T19:28:52Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-253301
@@ -24,6 +24,12 @@ claimed-at: 2026-10-26T19:10:55Z
 outcome-what: "Added a committed .claude/settings.json. permissions.allow: go build/vet/test, gofmt, the git commands lanes use (add, commit, status, diff, log, show, worktree, branch, fetch, stash, rev-parse, ls-tree, ls-files, config user.email), every jaira subcommand, tmux, mkdir/cp/ls/cat/grep/find/wc/head/tail/sed, rm -r /tmp/*, Edit(/**). permissions.deny: rm -rf/-fr, git push, git reset --hard, git filter-branch, gh pr create/merge, tmux kill-server. Added a README subsection 'Permissions: what a worker may run without asking' on the rules, why rm -rf is denied even under /tmp, and which settings a worktree reads. Added release note ZE9WZC."
 outcome-why: "Workers stopped to ask for routine lane commands (go build, git commit, jaira move/dod), because the repo carried no permission rules, and the user settings' autoMode.allow takes prose for the classifier, not patterns. A deny list a teamlead put into a worktree was never read, and nothing said which file a worktree reads."
 outcome-resolves: "DoD 1: .claude/settings.json:3. Deny is checked before allow, so 'rm -rf except the scratchpad' cannot be written; rm -rf is denied everywhere and rm -r /tmp/* is allowed. DoD 2: README.md:670, the worktree reads its own committed settings.json, but settings.local.json and trust come from the main checkout's root, so a personal deny list goes there or into ~/.claude/settings.json. DoD 3: a fresh headless sonnet worker on a scratch board ran the in-progress lane with 0 permission denials (note on ZE9WZC). The first run hit 2 denials from shell expansions that no rule can approve, including the lane prompt's own --commits \"$(git rev-parse HEAD)\". Follow-up W9AVBE removes that form."
+review-summary: |-
+  .claude/settings.json:41,44 deny `git push` and `gh pr create`, and a deny in this file beats every allow, settings.local.json included: /jaira-role-pr (core/role/builtin/jaira-role-pr/SKILL.md:212 "git push -u origin HEAD", :308 gh pr create when a person invoked it) and README.md:1138 / CLAUDE.md:223 ("An agent pushes its branch") can no longer run in this repo, not even from the maintainer's own session. The goal says these commands should ask ("fragen nach"), the DoD says forbid ("verbietet"). Maintainer decides: keep deny, or move them to `permissions.ask` (question on the human move).
+  core/release/notes/ZE9WZC.md: delete it. A binary user can observe nothing new: .claude/settings.json is this source repo's file, no go:embed reads .claude/, and `jaira update` would tell every user "The repo now ships" a file their repo does not have (CLAUDE.md: "Does not count: ... anything a user cannot observe from outside the binary").
+  README.md:674-678 repeat the allow/deny lists of .claude/settings.json and already differ from it (no `git config user.email`, no `rm -fr`). Replace the five bullets with one sentence: the lists live in .claude/settings.json, and /permissions shows them (README.md:701 already says so). Keep only what the JSON cannot say.
+  README.md:670-702 puts one sentence per line; ten lines run past 80 columns, the longest is 167. The README wraps prose into paragraphs at 80 columns (e.g. the `jaira hook print` paragraph, README.md:661-668). Rewrap the subsection as paragraphs.
+  README.md:670 puts the subsection under "## With Claude Code", which is for people using jaira in their own repo. This .claude/settings.json (go build, gofmt, ...) exists only in the jaira source repo. Move the part on what this repo allows and denies under "## Development" (README.md:1100), next to the push rule at README.md:1138 that it has to agree with. Keep "Which settings a worktree reads" (README.md:686-692) under With Claude Code.
 ---
 
 # Eine Erlaubnisliste im Repo laesst Worker arbeiten, ohne bei jedem Befehl zu fragen
@@ -59,3 +65,10 @@ Run 2 (ticket FFDE20, prompt forbade $(...), backticks, $?, ${...}): 0 permissio
 Proven: the rule content (allow/deny list) works for a lane run via --settings.
 NOT proven: the trust step of a committed file (-p ignores project allow rules in an untrusted folder, stderr said so); prompts an interactive session would show.
 Follow-up: the lane text must stop prescribing $(git rev-parse HEAD) for --commits; the driver files it.
+- **2026-10-26 19:28 · BeMuCa** — critique (pass 1, whole diff): five findings, the first needs the maintainer.
+1. .claude/settings.json:41,44 deny git push and gh pr create. A deny in the committed file beats every allow, settings.local.json included, so /jaira-role-pr (SKILL.md:212 git push -u origin HEAD; :308 gh pr create when a person invoked it) and the rule at README.md:1138 / CLAUDE.md:223 that an agent pushes its branch stop working in this repo, the maintainer's own session included. The goal says ask ("fragen nach"), the DoD says forbid ("verbietet"). Decide: keep deny, or move push/create (and maybe rm -rf, reset --hard, filter-branch, kill-server) to permissions.ask; a headless worker with --permission-prompts none is refused either way (facts F14).
+2. core/release/notes/ZE9WZC.md: delete. Nothing in the binary changed; no go:embed reads .claude/, and jaira update would tell every user about a file in a repo that is not theirs.
+3. README.md:674-678: drop the five bullets that copy the JSON (they already miss git config user.email and rm -fr); point at .claude/settings.json and /permissions instead.
+4. README.md:670-702: rewrap as paragraphs at 80 columns like README.md:661-668.
+5. README.md:670: the part about this repo's own allow/deny lists belongs under ## Development (README.md:1100) next to the push rule; the worktree-settings part stays under With Claude Code.
+Left alone, standing on the notes: rm -rf denied everywhere and Edit(/**) (19:17 driver note), git ls-files and git config user.email (19:17 note), the $(...) lane text split off to W9AVBE (19:22 note). Also left alone: sed/cp/find and git branch/worktree/stash wildcards reach past the project or drop work (sed -i, find -delete, branch -D, worktree remove --force); the README already says the deny list is not a sandbox, and the DoD names these commands.
