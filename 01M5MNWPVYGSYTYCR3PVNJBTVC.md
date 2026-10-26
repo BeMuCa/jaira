@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:53Z
-updated-at: 2026-10-26T19:28:03Z
+updated-at: 2026-10-26T19:28:05Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-264760
@@ -31,7 +31,8 @@ claimed-at: 2026-10-26T19:12:35Z
 - [ ] move.Result.Hints fuellen bei Move in Ziellane
 - [x] CLI Text+JSON+dry-run zeigen den Hinweis
   proof: core/gate/plan_test.go TestUnfinishedPlanAddsNothingToDoDRefusal
-- [ ] TUI: model.go zwei Pfade + signoff Accept zeigen den Hinweis
+- [x] TUI: model.go zwei Pfade + signoff Accept zeigen den Hinweis
+  proof: internal/cli/flow.go (Note: lines + hints JSON), internal/tui/model.go applyMove/forceMove, internal/tui/signoff.go accept (compiled, CLI/TUI output not run by hand)
 - [ ] Tests: plan_test.go drehen, move-Test fuer Hinweis
 - [ ] Docs (SKILL, README, AGENTS, 50-done) + Release-Notiz
 - [ ] gofmt/vet/build + Paket-Tests, DoD abhaken
