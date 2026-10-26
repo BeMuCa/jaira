@@ -1,0 +1,1 @@
+- Read who works a ticket straight off its card in `jaira web`: every card now shows its assignee under the title, cut to 20 characters with the full name in the tooltip, and nothing when the ticket has no assignee.
