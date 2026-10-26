@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWB3682HRPZXX5Y1TFFG2
 title: "spawn.sh startet Worker-Tabs im Berechtigungsmodus der Person und merkt, wenn der Prompt nicht ankommt"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Ein von spawn.sh gestarteter Worker- oder Review-Tab arbeitet sofort los: er haengt nicht an der ersten Bash-Rueckfrage, und spawn.sh meldet 'up' erst, wenn der Rollen-Prompt wirklich angekommen ist."
@@ -19,7 +19,7 @@ related: []
 commits:
   - 4b920015d063527e9d48d75cc242d8342bf17d2e
 created-at: 2026-10-23T15:25:41Z
-updated-at: 2026-10-26T19:32:06Z
+updated-at: 2026-10-26T19:32:39Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-253833
@@ -30,6 +30,7 @@ outcome-resolves: "DoD 1: the permission_mode block and usage() in spawn.sh, Tes
 review-summary: |-
   core/role/builtin/jaira-dispatcher/scripts/spawn.sh:280-311 reads the board's .jaira/permission-mode with its own bash line parser, its own precedence and its own value check, beside the pattern this repo already has for a one-line board file: Go reads it (core/settings/settings.go:178 boardLine, :209 ChatModelFor, :262 ReleaseFor, each returning value and source), 'jaira roles list --json' carries it (internal/cli/roles.go:70-87), and spawn.sh takes it from there (spawn.sh:252, chat_model). Instead: add PermissionModeFor(root) (mode, source) to core/settings/settings.go (board via boardLine with bypassPermissions refused, then permissions.defaultMode in $CLAUDE_CONFIG_DIR or ~/.claude settings.json, then auto for an autoMode key, unknown values dropped like modelName does), carry it as permission_mode and permission_mode_source in roles list (JSON and the text line), and have spawn.sh read it with one 'jaira json get' from a single roles list call it shares with chat_model. The eight table cases of TestSpawnStartsClaudeInThePersonsPermissionMode then become a Go unit test, and one stub case checks that the flag reaches the command line.
   core/role/builtin/jaira-dispatcher/scripts/spawn.sh:427 exits 3 for 'approval dialog waits', but run-lane.sh:69 reads spawn.sh as pane="$(...)" under set -euo pipefail (run-lane.sh:7), so that 3 becomes run-lane.sh's own exit 3, which run-lane.sh:21 and jaira-dispatcher/SKILL.md:353-354 define as 'timed out' (checked with a stub: exit 3 inside x="$(...)" under set -e ends the caller with 3). Instead: use exit 4, which run-lane.sh:101 and SKILL.md:352 already use for an approval dialog. Change usage() and core/release/notes/1TFFG2.md to match, and add both new outcomes (1 = prompt not received, 4 = dialog) to the spawn.sh description in jaira-dispatcher/SKILL.md:291-295, which still ends with 'It prints the pane id'.
+round: 2
 ---
 
 # spawn.sh startet Worker-Tabs im Berechtigungsmodus der Person und merkt, wenn der Prompt nicht ankommt
