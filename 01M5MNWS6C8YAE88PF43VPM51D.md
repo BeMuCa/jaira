@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:56Z
-updated-at: 2026-10-26T19:45:09Z
+updated-at: 2026-10-26T19:45:11Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-374545
@@ -29,7 +29,8 @@ claimed-at: 2026-10-26T19:21:26Z
 
 - [x] Board, jaira list und jaira show erkennen eine Ticketdatei, deren Ticket im Logbuch eines anderen Checkouts oder auf dem Remote abgelegt ist, und zeigen sie als 'abgelegt'; ein Test baut den Fall mit zwei Worktrees
   proof: internal/cli/filedelsewhere_test.go TestAFileFiledInAnotherWorktreeIsShownAsFiled, TestAFileFiledOnTheLandingBranchIsShownAsFiled; internal/tui/logbook_test.go TestAStaleCopyIsFiledElsewhereOnTheBoard
-- [ ] jaira bietet an, die veraltete Kopie zu entfernen (Befehl in der Meldung); nichts wird still geloescht
+- [x] jaira bietet an, die veraltete Kopie zu entfernen (Befehl in der Meldung); nichts wird still geloescht
+  proof: internal/cli/tickets.go printFiledElsewhere + show line; core/refsync/filedelsewhere.go RemoveHint; tests assert git restore / rm .jaira, file still present
 - [ ] go test ./... -race gruen; Release-Notiz unter core/release/notes/
 
 ## Options
