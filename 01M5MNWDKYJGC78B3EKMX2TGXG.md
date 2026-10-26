@@ -17,9 +17,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:44Z
-updated-at: 2026-10-26T19:07:55Z
+updated-at: 2026-10-26T19:10:49Z
 assignee: BeMuCa
 updated-by: BeMuCa
+claimed-by: EE-3NX6GL3-252449
+claimed-at: 2026-10-26T19:10:49Z
 ---
 
 # Ein Worker findet seinen Teamlead nach einem Neustart wieder, und eine Frage an die Person kommt als fertige Zeile
