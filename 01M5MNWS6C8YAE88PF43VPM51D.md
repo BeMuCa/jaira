@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:56Z
-updated-at: 2026-10-26T19:43:32Z
+updated-at: 2026-10-26T19:43:42Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-374545
@@ -49,7 +49,7 @@ claimed-at: 2026-10-26T19:21:26Z
 - [x] Kostentest mit GIT_TRACE: ein zweites List ohne Aenderung startet hoechstens 2 zusaetzliche git-Prozesse und keinen pro Ticket
 - [x] Entfernen-Hinweis an einer Stelle fuer CLI und TUI: nicht getrackt -> rm <pfad>; auf diesem Branch getrackt -> git restore <pfad>, dann git merge <landing> (nur im Worktree abgelegt: git restore <pfad>, geht mit dem Merge des ablegenden Branches); nur beim Ausgeben berechnet, nie im Board-Tick
 - [x] gate.Actionable gibt false fuer so ein Ticket (jaira next, list --actionable)
-- [ ] jaira list: Text - raus aus der Lane, eigener Block am Ende mit Ort + Befehl; JSON - eigenes Array filed_elsewhere, nicht in tickets und count
+- [x] jaira list: Text - raus aus der Lane, eigener Block am Ende mit Ort + Befehl; JSON - eigenes Array filed_elsewhere, nicht in tickets und count
 - [ ] jaira show: Zeile ueber dem Detail (Ort + Befehl); JSON-Felder filed_elsewhere und remove_stale
 - [ ] Board: reload schiebt solche Tickets an den Logbuch-Fuss der Terminal-Lane (m.logged/m.loggedDay), Lane-Zaehler ohne sie; Flag 'filed elsewhere'; refuseLogged nennt den Entfernen-Befehl statt jaira restore; openDetail laedt die Datei voll; ein Render-Test, mit -run gelaufen
 - [ ] Release-Notiz core/release/notes/VPM51D.md: je Aenderung eine '- '-Zeile als Anweisung (Anzeige in list/show/Board, JSON-Felder, next ueberspringt)
@@ -74,3 +74,4 @@ claimed-at: 2026-10-26T19:21:26Z
 - Luecke: eine stale Kopie aus derselben Sekunde wie das Ablegen wird verpasst (updated-at hat Sekundenaufloesung). Darum muss der Test 1 s Abstand halten oder updated-at in der Fixture setzen.
 - K6BGB0 (PR #91, nicht auf master) aendert dieselben Stellen: Ticket-Laufzeitfeld, list-Flags, ticketJSON, Karten-Flags und Store.List 'newest'. Egal, wer zuerst merged: die Abgelegt-Pruefung laeuft auf der Datei, vor 'newest', und ein markiertes Ticket wird nicht durch den Ref-Stand ersetzt.
 - Nicht im Plan, Kandidat fuer ein Folgeticket: in S2 (Ref weg) geht ein Schreiben auf eine markierte Kopie durch und legt den Ref neu an. Das Ticket lebt dann wieder auf. Ausserdem zaehlt der Blocker-Index (link.Build) eine markierte Kopie weiter als offen, und web (internal/cli/web_source.go) ist nicht angefasst.
+- **2026-10-26 19:43 · BeMuCa** — in-progress: steps 1-10 done. Deviations: store marks via Store.MarkFiledElsewhere (List and show only, not Load, so writes pay no git call); Landing is a func on the Syncer (resolving costs a git call); answers are cached 5 s per Syncer for the board timer instead of per rev SHA (rev-parse would cost the process it saves). Missing updated-at on the file counts as unknown, never stale. Cost test: git process count identical for 1 and 6 tickets.
