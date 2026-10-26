@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWVKBC8Q193EK7YX6HB6V
 title: "Die Einzeiler des Cockpits nennen die Lane, in der das Ticket wirklich steht"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Die Kurzfassung eines Agentenberichts im Cockpit stimmt mit dem Board ueberein: sie nennt den tatsaechlichen Lanewechsel, oder keinen."
@@ -16,11 +16,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:58Z
-updated-at: 2026-10-26T19:51:56Z
+updated-at: 2026-10-26T19:52:55Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: x6hb6v-driver
 claimed-at: 2026-10-26T19:50:01Z
+outcome-what: "Der Cockpit-Einzeiler (core/mod/builtin/jaira-cockpit/hooks/digest.ts) liest keine Lane mehr aus dem Berichtstext; register.tsx liest beim Bericht `jaira list --json` aller Boards frisch (lanesNow) und zeigt 'vorher → jetzt' aus der Map lastSeen, nur wenn beide bekannt sind und sich unterscheiden."
+outcome-why: "Der Text nannte beilaeufig beliebige Lanes ('list -> human', 'done -> in-progress', 'moved to review'), sodass der Einzeiler falsche oder nie betretene Lanes zeigte; refreshBoard ergaenzt lastSeen nur beim ersten Auftauchen, damit der Vergleich nicht schon die neue Lane enthaelt, wenn ein minutenlang arbeitender Subagent berichtet."
+outcome-resolves: "Der Einzeiler stimmt mit dem Board ueberein: der echte Wechsel oder keiner. Vier neue Tests in core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts decken die drei beobachteten Faelle und den positiven Fall ab; Release-Notiz core/release/notes/X6HB6V.md."
 ---
 
 # Die Einzeiler des Cockpits nennen die Lane, in der das Ticket wirklich steht
