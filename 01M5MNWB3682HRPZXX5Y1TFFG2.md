@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:41Z
-updated-at: 2026-10-26T19:15:32Z
+updated-at: 2026-10-26T19:16:56Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-253833
@@ -43,4 +43,4 @@ claimed-at: 2026-10-26T19:10:59Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-26 19:16 · BeMuCa** — driver: planning lane skipped as the ticket's Options say; the in-progress brief carried the design instead. Found out: Herdr 'pane get' has no field with assistant output (PaneInfo: agent, agent_status idle|working|blocked|done|unknown, agent_session, terminal_title, tokens) - so 'prompt arrived' is read as agent_status working after enter, blocked after enter = dialog waiting. claude --help lists --permission-mode choices acceptEdits, auto, bypassPermissions, manual, dontAsk, plan - no 'default'. Berk's settings.json has no permissions.defaultMode, only an autoMode object. Why the board file may not turn on bypassPermissions: .jaira/permission-mode is repo content every teammate pulls; one commit would otherwise run everybody's workers without any permission check. Existing spawn tests in core/role/role_test.go and reap_test.go stub pane get as idle forever and must answer working after send-keys.
