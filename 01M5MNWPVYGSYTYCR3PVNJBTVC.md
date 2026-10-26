@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:53Z
-updated-at: 2026-10-26T19:28:43Z
+updated-at: 2026-10-26T19:28:45Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-264760
@@ -32,6 +32,7 @@ claimed-at: 2026-10-26T19:12:35Z
 - [x] Ein Move in eine Ziellane mit vollstaendiger DoD und offenem Plan-Punkt wird nicht mehr abgelehnt; die Ausgabe nennt den offenen Plan-Punkt als Hinweis; ein Test deckt den Fall
   proof: core/move/move_test.go TestMoveIntoDoneWithOpenPlanStepCarriesAHint; core/gate/plan_test.go TestUnfinishedPlanDoesNotBlockTerminalLane
 - [ ] go test ./... -race gruen; Release-Notiz unter core/release/notes/
+  proof: release note core/release/notes/NJBTVC.md exists; full race suite still to run
 - [x] Bei unvollstaendiger DoD nennt die Ablehnung nur die offenen DoD-Punkte, keinen Plan-Schritt mehr
   proof: core/gate/plan_test.go TestUnfinishedPlanAddsNothingToDoDRefusal
 - [x] Der Hinweis erscheint in der Textausgabe, im JSON und beim Move aus der TUI, das Annehmen in signoff eingeschlossen
