@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:53Z
-updated-at: 2026-10-26T19:08:04Z
+updated-at: 2026-10-26T19:10:34Z
 assignee: BeMuCa
 updated-by: BeMuCa
 ---
@@ -31,7 +31,7 @@ updated-by: BeMuCa
 
 ## Options
 
-- [ ] brainstorm
+- [x] brainstorm
 - [ ] planning
 
 ## Plan
