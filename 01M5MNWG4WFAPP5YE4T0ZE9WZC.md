@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWG4WFAPP5YE4T0ZE9WZC
 title: "Eine Erlaubnisliste im Repo laesst Worker arbeiten, ohne bei jedem Befehl zu fragen"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Worker und Subagenten fragen nur bei wirklich kritischen Befehlen (rm, push, reset --hard, kill-server) nach; alles, was eine Lane braucht, ist im Repo erlaubt, und die Doku sagt, wo Verbots- und Erlaubnislisten liegen und welche Settings ein Worktree liest."
@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:47Z
-updated-at: 2026-10-26T19:29:40Z
+updated-at: 2026-10-26T19:29:42Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-253301
@@ -30,6 +30,7 @@ review-summary: |-
   README.md:674-678 repeat the allow/deny lists of .claude/settings.json and already differ from it (no `git config user.email`, no `rm -fr`). Replace the five bullets with one sentence: the lists live in .claude/settings.json, and /permissions shows them (README.md:701 already says so). Keep only what the JSON cannot say.
   README.md:670-702 puts one sentence per line; ten lines run past 80 columns, the longest is 167. The README wraps prose into paragraphs at 80 columns (e.g. the `jaira hook print` paragraph, README.md:661-668). Rewrap the subsection as paragraphs.
   README.md:670 puts the subsection under "## With Claude Code", which is for people using jaira in their own repo. This .claude/settings.json (go build, gofmt, ...) exists only in the jaira source repo. Move the part on what this repo allows and denies under "## Development" (README.md:1100), next to the push rule at README.md:1138 that it has to agree with. Keep "Which settings a worktree reads" (README.md:686-692) under With Claude Code.
+round: 2
 ---
 
 # Eine Erlaubnisliste im Repo laesst Worker arbeiten, ohne bei jedem Befehl zu fragen
