@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T08:26:42Z
-updated-at: 2026-10-26T19:43:17Z
+updated-at: 2026-10-26T19:43:19Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: qyk8md-driver
@@ -39,6 +39,8 @@ review-gaps: |-
   4. The 'local' fallback (no home directory) is the same word on every such machine, so 'local-<pid>' can collide across machines. Rare: the ticket store itself falls back into the repo in that case. (From the code.)
   5. First-use race, let stand by critique: two jaira processes creating machine-id in the same instant can each use a different token once. A claim taken in that call then looks foreign to its own shell until ClaimTTL or --steal - the critique note's 'self-heals on the next read' is true for the token, not for that claim. Very rare; not worth code now. (From the code, not reproduced.)
 test-verdict: "pass: gofmt/vet/build clean, race tests core/session + cli (LegacyHostname|Claim|Stale) ok, release note is one line; token claims, foreign/own-old/stale old-format claims behave on a scratch board; full suite pending pre-PR run"
+review-verdict: "Ready for signoff once DoD 3's full race suite has run green; by house rule that run happens once before the PR, so DoD 3 is still open and is the only thing missing. The diff does what DoD 1 and 2 ask: no new session id carries the hostname (TestDefaultIDCarriesNoHostname fails when the old DefaultID is put back, checked), foreign old-format claims still block until ClaimTTL, and this machine's own old claims are taken over without --steal, as the 23.10 note asked (TestLegacyHostnameClaims fails without the LegacyLocal check, checked). Gaps 1-5 are edge cases or a decision to confirm; none needs a change before merge. gofmt -l empty, go vet ./... and go build ./... green, go test -race ./core/session and ./internal/cli -run 'LegacyHostname|Claim|Stale' green, scratch-board run matches the review-check below."
+review-round: 3
 ---
 
 # Die Session-ID traegt keinen Rechnernamen mehr
