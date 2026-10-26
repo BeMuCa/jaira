@@ -16,9 +16,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:07Z
-updated-at: 2026-10-26T19:12:42Z
+updated-at: 2026-10-26T20:28:21Z
 assignee: BeMuCa
 updated-by: BeMuCa
+claimed-by: 4n1b66-driver
+claimed-at: 2026-10-26T20:28:21Z
 ---
 
 # Die Testing-Lane verlangt keinen vollen Suite-Lauf mehr; die Suite laeuft einmal vor dem PR
