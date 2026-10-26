@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:01Z
-updated-at: 2026-10-26T20:09:03Z
+updated-at: 2026-10-26T20:09:06Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: rnqrjb-driver
@@ -27,7 +27,8 @@ claimed-at: 2026-10-26T20:06:42Z
 
 ## Definition of Done
 
-- [ ] Die Warnung erscheint einmal pro Board und Binary-Version (Merker neben dem Versionsstempel) und danach nur noch bei jaira update selbst oder --verbose; ein Test deckt den zweiten Aufruf ab
+- [x] Die Warnung erscheint einmal pro Board und Binary-Version (Merker neben dem Versionsstempel) und danach nur noch bei jaira update selbst oder --verbose; ein Test deckt den zweiten Aufruf ab
+  proof: core/release/release.go Nudged/MarkNudged; internal/cli/update.go nudgeIfStale; covered by TestNudgeIfStaleShowsOncePerBoardAndVersion, TestUpdateAfterShownHintStillReportsPreviousAndStamps
 - [ ] go test ./... -race gruen; Release-Notiz unter core/release/notes/
 
 ## Options
