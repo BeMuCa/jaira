@@ -1,8 +1,8 @@
 ---
 id: 01M5MNWVKBC8Q193EK7YX6HB6V
 title: "Die Einzeiler des Cockpits nennen die Lane, in der das Ticket wirklich steht"
-status: backlog
-ready: false
+status: todo
+ready: true
 creator: BeMuCa
 goal: "Die Kurzfassung eines Agentenberichts im Cockpit stimmt mit dem Board ueberein: sie nennt den tatsaechlichen Lanewechsel, oder keinen."
 context: |-
@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:58Z
-updated-at: 2026-10-26T19:45:45Z
+updated-at: 2026-10-26T19:45:51Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: x6hb6v-driver
