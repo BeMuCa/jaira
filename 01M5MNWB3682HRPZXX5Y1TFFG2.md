@@ -20,11 +20,11 @@ commits:
   - 4b920015d063527e9d48d75cc242d8342bf17d2e
   - 1c4ef1ae3addca1b8809f93613402b0a2c14b73a
 created-at: 2026-10-23T15:25:41Z
-updated-at: 2026-10-26T20:05:27Z
+updated-at: 2026-10-26T20:15:31Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: driver-1TFFG2
-claimed-at: 2026-10-26T20:05:27Z
+claimed-at: 2026-10-26T20:15:31Z
 outcome-what: "spawn.sh starts every tab's claude in the person's permission mode, resolved in Go by settings.PermissionModeFor (board .jaira/permission-mode without bypassPermissions, then permissions.defaultMode in the claude settings.json, then auto for an autoMode key) and shown by jaira roles list as permission_mode and permission_mode_source; after the enter it checks the role prompt arrived and exits 1 'prompt not received' when not, 4 with the pane printed when an approval dialog waits."
 outcome-why: "A worker tab stopped at its first Bash question, once for 49 minutes, and in 1NATKP spawn.sh reported success though the prompt never arrived. Resolved in Go like chat-model and release so there is one reader and roles list says where the mode came from; exit 4 because run-lane.sh already reads 4 as the approval dialog and 3 as timed out."
 outcome-resolves: "DoD 1: settings.PermissionModeFor, permission_mode in spawn.sh and usage(), TestPermissionModeFor, TestSpawnStartsClaudeInThePersonsPermissionMode. DoD 2: the arrival check after send-keys (exit 1 or 4), TestSpawnChecksThePromptArrived. DoD 3: Herdr-stub tests and core/release/notes/1TFFG2.md exist, go test ./core/role -race green; the full go test ./... -race is left for the run before the PR."
