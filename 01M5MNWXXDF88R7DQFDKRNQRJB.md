@@ -1,8 +1,8 @@
 ---
 id: 01M5MNWXXDF88R7DQFDKRNQRJB
 title: "Die Warnung 'Board von aelterer Version eingerichtet' kommt einmal, nicht bei jedem Aufruf"
-status: backlog
-ready: false
+status: todo
+ready: true
 creator: BeMuCa
 goal: "Wer jaira update noch nicht laufen liess, hoert es einmal pro Board und Version - nicht vor jeder Ausgabe, wo Agenten es mitparsen und Menschen es ueberlesen."
 context: |-
@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:01Z
-updated-at: 2026-10-26T20:06:42Z
+updated-at: 2026-10-26T20:06:48Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: rnqrjb-driver
