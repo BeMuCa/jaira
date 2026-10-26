@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:53Z
-updated-at: 2026-10-26T19:28:41Z
+updated-at: 2026-10-26T19:28:43Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-264760
@@ -36,7 +36,8 @@ claimed-at: 2026-10-26T19:12:35Z
   proof: core/gate/plan_test.go TestUnfinishedPlanAddsNothingToDoDRefusal
 - [x] Der Hinweis erscheint in der Textausgabe, im JSON und beim Move aus der TUI, das Annehmen in signoff eingeschlossen
   proof: internal/cli/flow.go Note: lines + hints JSON; internal/tui/model.go applyMove/forceMove; internal/tui/signoff.go accept (compiled; output not run by hand)
-- [ ] Die Texte, die das Plan-Gate beschreiben (.claude/skills/jaira/SKILL.md, README.md, docs/AGENTS.md, core/lane/builtin/50-done.md), sagen nichts Falsches mehr
+- [x] Die Texte, die das Plan-Gate beschreiben (.claude/skills/jaira/SKILL.md, README.md, docs/AGENTS.md, core/lane/builtin/50-done.md), sagen nichts Falsches mehr
+  proof: SKILL.md, README.md, docs/AGENTS.md, core/lane/builtin/50-done.md
 
 ## Options
 
