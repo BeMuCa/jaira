@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWG4WFAPP5YE4T0ZE9WZC
 title: "Eine Erlaubnisliste im Repo laesst Worker arbeiten, ohne bei jedem Befehl zu fragen"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Worker und Subagenten fragen nur bei wirklich kritischen Befehlen (rm, push, reset --hard, kill-server) nach; alles, was eine Lane braucht, ist im Repo erlaubt, und die Doku sagt, wo Verbots- und Erlaubnislisten liegen und welche Settings ein Worktree liest."
@@ -16,11 +16,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:47Z
-updated-at: 2026-10-26T19:22:34Z
+updated-at: 2026-10-26T19:23:03Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-253301
 claimed-at: 2026-10-26T19:10:55Z
+outcome-what: "Added a committed .claude/settings.json. permissions.allow: go build/vet/test, gofmt, the git commands lanes use (add, commit, status, diff, log, show, worktree, branch, fetch, stash, rev-parse, ls-tree, ls-files, config user.email), every jaira subcommand, tmux, mkdir/cp/ls/cat/grep/find/wc/head/tail/sed, rm -r /tmp/*, Edit(/**). permissions.deny: rm -rf/-fr, git push, git reset --hard, git filter-branch, gh pr create/merge, tmux kill-server. Added a README subsection 'Permissions: what a worker may run without asking' on the rules, why rm -rf is denied even under /tmp, and which settings a worktree reads. Added release note ZE9WZC."
+outcome-why: "Workers stopped to ask for routine lane commands (go build, git commit, jaira move/dod), because the repo carried no permission rules, and the user settings' autoMode.allow takes prose for the classifier, not patterns. A deny list a teamlead put into a worktree was never read, and nothing said which file a worktree reads."
+outcome-resolves: "DoD 1: .claude/settings.json:3. Deny is checked before allow, so 'rm -rf except the scratchpad' cannot be written; rm -rf is denied everywhere and rm -r /tmp/* is allowed. DoD 2: README.md:670, the worktree reads its own committed settings.json, but settings.local.json and trust come from the main checkout's root, so a personal deny list goes there or into ~/.claude/settings.json. DoD 3: a fresh headless sonnet worker on a scratch board ran the in-progress lane with 0 permission denials (note on ZE9WZC). The first run hit 2 denials from shell expansions that no rule can approve, including the lane prompt's own --commits \"$(git rev-parse HEAD)\". Follow-up W9AVBE removes that form."
 ---
 
 # Eine Erlaubnisliste im Repo laesst Worker arbeiten, ohne bei jedem Befehl zu fragen
@@ -31,7 +34,8 @@ claimed-at: 2026-10-26T19:10:55Z
   proof: .claude/settings.json:3
 - [x] docs/COMMANDS.md oder README sagt: Worktrees lesen die Settings des Haupt-Checkouts; eine Verbotsliste gehoert in dessen settings.local.json oder in die User-Settings
   proof: README.md:670
-- [ ] Ein frischer Worker auf einem Scratch-Board faehrt eine Lane ohne eine einzige Rueckfrage durch; das Ergebnis steht als Notiz am Ticket
+- [x] Ein frischer Worker auf einem Scratch-Board faehrt eine Lane ohne eine einzige Rueckfrage durch; das Ergebnis steht als Notiz am Ticket
+  proof: jaira note on ZE9WZC: run 2 on scratch ticket FFDE20, 0 permission denials
 
 ## Options
 
