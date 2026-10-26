@@ -151,6 +151,14 @@ def plan(data_path, db_path):
             left = [x["id"] for x in s["unmarked"]] + [x["id"] + " (skipped)" for x in s["skipped"]]
             print(f"# {tid}: open - not marked: {', '.join(left)}" + (f"; comment: {comment!r}" if comment else ""))
 
+    for tid, t in T.items():
+        if t.get("candidates"):
+            comment = said(comments, tid)
+            print(f"\n# {tid}: review notes - a ticket only for one the comment names, none otherwise")
+            for c in t["candidates"]:
+                print(f"#   candidate: {c}")
+            print(f"#   comment: {comment!r}" if comment else "#   no comment - none of them becomes a ticket")
+
     for sid, step in cases.items():
         note = said(results, sid)
         print(f"\n# CASE {sid}: {step['do']}")
