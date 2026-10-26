@@ -1,7 +1,7 @@
 ---
 id: 01M5X35J33QTAVQX6B2ZZDBXN1
 title: "jaira web zeigt auf jeder Ticketkarte, wer daran arbeitet"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-26T21:51:50Z
-updated-at: 2026-10-26T22:17:19Z
+updated-at: 2026-10-26T22:18:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-72427
 claimed-at: 2026-10-26T21:52:15Z
@@ -28,6 +28,8 @@ mode: ""
 outcome-what: "Ticketkarten in jaira web zeigen den assignee (max 20 Zeichen, voller Name im Tooltip; entities/ticket/model/assignee.ts). Lane-, Tag- und Person-Filter nehmen mehrere Werte als Chips, ein Klick macht 'nicht X' (features/filter-tickets/model/filter.ts, ui/ChipSelect.svelte); Link ?lane=a&not-lane=b, alte ?lane=x-Links gehen weiter."
 outcome-why: "Alex wollte bei einem Epic mit 124 Tickets sehen, wer welches hat, und Listen wie 'alle Lanes ausser done' filtern; beides ging nur mit Aufklappen bzw. einem Wert pro Filter."
 outcome-resolves: "DoD 1: TicketCard.svelte zeigt span.assignee; DoD 2: npm test 10/10, dist neu gebaut, Release-Notiz; DoD 3: passes() in filter.ts, fromQuery/toQuery mit not-<key>, filter.test.ts."
+review-summary: none
+review-gaps: "removed the forwarding helper filter(q) => fromQuery(q) in filter.test.ts; no duplicate found (no truncation or chip code elsewhere in core/web/ui/src); select style in ChipSelect.svelte left as is, the repo repeats control styles per component; no dead code, every export of assignee.ts and filter.ts has a caller"
 ---
 
 # jaira web zeigt auf jeder Ticketkarte, wer daran arbeitet
@@ -64,3 +66,4 @@ outcome-resolves: "DoD 1: TicketCard.svelte zeigt span.assignee; DoD 2: npm test
 - **2026-10-26 22:13 · Alexander Sacharov** — DoD 3 live geprueft (Headless Chromium gegen 'jaira web --no-open'): ?lane=backlog alter Link -> 76 Karten, ein Chip; 'done' waehlen 146, Chip umschalten 'not done' 121 (=267-146), Link not-lane=done&all=1; x entfernt den Chip aus dem Link. Nebenbei gesehen, nicht angefasst: steht ein Filter, versteckt ReviewPage leere Epics und zeigt dann 'No epics yet.' — irrefuehrend, aber schon vorher so. Hilfetext von 'jaira web' (internal/cli/web.go) um die Mehrfachauswahl ergaenzt, zweite Zeile in der Release-Notiz.
 - **2026-10-26 22:14 · Alexander Sacharov** — Pause (conversational): DoD 3 fertig, nicht committed; Diff + Commit-Zeile an Parent geschickt, warte auf Alex' OK. Danach: Commit pruefen, dann move critique. .jaira/milestones/ (untracked) stammt von einem jaira-Aufruf, gehoert nicht in den Commit.
 - **2026-10-26 22:17 · Alexander Sacharov** — Alex (via Parent): kein conversational mode auf diesem Ticket — mode geleert, DoD 3 selbst committet, weiter ohne Halt bis zur frischen Review.
+- **2026-10-26 22:17 · Alexander Sacharov** — critique Runde 1: nichts. Geprueft und stehen gelassen: Select-Stil doppelt in ChipSelect.svelte und FilterBar.svelte — das Repo wiederholt Kontrollstile pro Komponente (CreateEpicForm.svelte:49, EditEpicForm.svelte:69), keine globale Regel in app/styles.css; Chip[] statt {is,not} haelt die Reihenfolge der Chips; Person-'nicht' spiegelt die Einschluss-Regel (decision-Note 21:52+).
