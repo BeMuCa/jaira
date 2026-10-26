@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:58Z
-updated-at: 2026-10-26T20:05:16Z
+updated-at: 2026-10-26T20:06:52Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: x6hb6v-driver
@@ -27,6 +27,7 @@ outcome-resolves: "Der Einzeiler stimmt mit dem Board ueberein: der echte Wechse
 review-summary: none
 round: 2
 review-gaps: "nothing removed. Considered and left: (1) duplication - laneOf reads jaira show --json like noteOn (register.tsx:382) and the explain loop in refreshBoard (register.tsx:344), but those parse the body for notes and this one the status, so there is no shared parser to call; no other before → now formatter exists besides laneChangeOf; boardAt in tests/cockpit.test.ts is a small fake beside the world() of tests/board.test.ts, which is file-local and answers show with a body, not a status. (2) dead code - removing LANES/ARROW/INTO/laneOf from digest.ts orphaned nothing else (words.*, clip still used; no reference left in core/ or docs/); board.ts nets to zero over the two commits; lanesOf and otherBoardsOf are still called. (3) fluff - the outer let lane in shorten could move into the digest callback, but it gets no shorter and storing after digest succeeded reads clearer; firstSight always gets lanesOf(...) from its two callers, left; the const lanes in the first two new tests is never mutated, kept parallel to the two tests that mutate it. (4) cost - refreshBoard now parses each list output twice (snapshotOf, then lanesOf for firstSight), once a minute and per turn on a small JSON: not worth changing snapshotOf; one jaira show per digested report is the settled design."
+test-verdict: "pass: cockpit 164/164, validate ok, gofmt/vet/build clean, 4 new tests cover the 3 observed cases + positive; jaira show --json status verified on default and second board"
 ---
 
 # Die Einzeiler des Cockpits nennen die Lane, in der das Ticket wirklich steht
