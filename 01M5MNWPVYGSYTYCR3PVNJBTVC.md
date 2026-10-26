@@ -2,9 +2,9 @@
 id: 01M5MNWPVYGSYTYCR3PVNJBTVC
 title: "Ein offener Plan-Punkt sperrt die Ziellane nicht mehr, wenn die Definition of Done erfuellt ist"
 status: backlog
-ready: false
+ready: true
 creator: BeMuCa
-goal: "Ein Ticket mit erfuellter Definition of Done kommt nach done, auch wenn ein Plan-Schritt nicht abgehakt ist; der Plan ist die Methode, die DoD das Ergebnis."
+goal: "Ob ein Ticket in die Ziellane darf, entscheidet allein die Definition of Done; ein offener Plan-Schritt sperrt nicht mehr, sondern wird beim gelungenen Move als Hinweis genannt - der Plan ist die Methode, die DoD das Ergebnis."
 context: |-
   Beobachtet 22.-23.10.2026 (Feedback Punkt 8): GH0GKD mit DoD 9/9 wurde an done abgelehnt, weil Plan-Schritt 30 offen war.
   Nachgeprueft am 23.10.: core/gate/gate.go:411-424 verweigert jede Ziellane mit CodePlanIncomplete, solange ein Plan-Punkt offen ist. Der Kommentar dort sagt, Plan und DoD seien nicht unabhaengig.
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:53Z
-updated-at: 2026-10-26T19:18:02Z
+updated-at: 2026-10-26T19:18:12Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-264760
