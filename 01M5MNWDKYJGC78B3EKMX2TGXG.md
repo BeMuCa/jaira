@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWDKYJGC78B3EKMX2TGXG
 title: "Ein Worker findet seinen Teamlead nach einem Neustart wieder, und eine Frage an die Person kommt als fertige Zeile"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Nach einem Crash oder Neustart des Teamleads erreichen die Nachrichten der Worker ihn weiter, ohne dass jemand den neuen Namen von Hand nachreicht; und eine Frage, die nur die Person per Kommando loesen kann, kommt mit der Zeile, die sie tippen muss."
@@ -17,14 +17,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:44Z
-updated-at: 2026-10-26T19:45:44Z
+updated-at: 2026-10-26T19:47:29Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-252449
 claimed-at: 2026-10-26T19:10:49Z
-outcome-what: "Added core/role/builtin/jaira-dispatcher/scripts/teamlead.sh: a teamlead records its messaging socket with --here every round, and a worker or dispatcher runs it with its --parent before every SendMessage to get the address to send to; the teamlead, worker and dispatcher skills say so, and a question that needs a command from the person carries a ready '! <command>' line that the teamlead passes on verbatim."
-outcome-why: "After a restart or resume the teamlead has a new socket and name, the --parent a worker was started with names the dead one, and its reports went nowhere until someone handed each worker the new name; and a question that needed a command from the person came without the line to type, which cost a round."
-outcome-resolves: "teamlead.sh prints the parent while its socket exists and the address the teamlead recorded once it is gone, covered by TestTeamleadFollowsARestart (restart from a second worktree, second live teamlead keeps its reports, both gone, --here without a socket); the '! <command>' rule is in the worker, dispatcher and teamlead SKILL.md; release note in core/release/notes/X2TGXG.md."
+outcome-what: "Added core/role/builtin/jaira-dispatcher/scripts/teamlead.sh: a teamlead records its messaging socket with --here every round; a worker or dispatcher runs 'teamlead.sh <parent>' before every SendMessage (a uds: parent whose socket file is gone is replaced by the record, anything else comes back unchanged) and 'teamlead.sh --recorded' when a send fails; the teamlead, worker and dispatcher skills say so, and a question that needs a command from the person carries a ready '! <command>' line the teamlead passes on verbatim."
+outcome-why: "After a restart, resume or crash the teamlead has a new socket and name, the --parent a worker was started with names the dead one, and its reports went nowhere until someone handed each worker the new name; and a question that needed a command from the person came without the line to type, which cost a round."
+outcome-resolves: "A worker started under a teamlead that later restarted reaches the new session through the record (TestTeamleadFollowsARestart: restart recorded from a second worktree, live parent kept, name passed through, --recorded beside a stale socket file, record gone); the record is one slot per clone and the skills say so; the '! <command>' rule is in the worker, dispatcher and teamlead SKILL.md; release note core/release/notes/X2TGXG.md tells the reader to run 'jaira roles install --force'."
 review-summary: "Adds core/role/builtin/jaira-dispatcher/scripts/teamlead.sh, shipped and installed executable beside spawn.sh. 'teamlead.sh --here' writes uds:$CLAUDE_CODE_MESSAGING_SOCKET into <git common dir>/jaira/teamlead - one file per clone, shared by every worktree, outside git status, written to a temp file and moved over; exit 2 when the socket variable is empty, names no file, or there is no repository. 'teamlead.sh <parent>' prints the parent while it is a uds: address whose socket file exists, else the recorded address when its socket file exists, else the parent unchanged. The teamlead skill now runs --here every round beside reap.sh. The worker and dispatcher skills run 'teamlead.sh <session>' before every SendMessage to the parent, send to what it prints, and note a changed address as the new parent. All three skills gain the '! <command>' rule: worker and dispatcher put the ready line into a question only the person can settle by a command, the teamlead passes it on verbatim. role_test.go ships the script, exempts '/scripts/teamlead' from the prefix check, and adds TestTeamleadFollowsARestart (record; old socket gone and new one recorded from a second worktree; a name as parent; old parent alive again keeps its reports; both gone; --here without a socket). Release note core/release/notes/X2TGXG.md, two lines. Net effect: after a clean teamlead restart, workers started before it find the new teamlead without anyone handing them its name."
 round: 3
 review-gaps: |-
