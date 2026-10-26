@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:56Z
-updated-at: 2026-10-26T19:45:00Z
+updated-at: 2026-10-26T19:45:09Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-374545
@@ -27,7 +27,8 @@ claimed-at: 2026-10-26T19:21:26Z
 
 ## Definition of Done
 
-- [ ] Board, jaira list und jaira show erkennen eine Ticketdatei, deren Ticket im Logbuch eines anderen Checkouts oder auf dem Remote abgelegt ist, und zeigen sie als 'abgelegt'; ein Test baut den Fall mit zwei Worktrees
+- [x] Board, jaira list und jaira show erkennen eine Ticketdatei, deren Ticket im Logbuch eines anderen Checkouts oder auf dem Remote abgelegt ist, und zeigen sie als 'abgelegt'; ein Test baut den Fall mit zwei Worktrees
+  proof: internal/cli/filedelsewhere_test.go TestAFileFiledInAnotherWorktreeIsShownAsFiled, TestAFileFiledOnTheLandingBranchIsShownAsFiled; internal/tui/logbook_test.go TestAStaleCopyIsFiledElsewhereOnTheBoard
 - [ ] jaira bietet an, die veraltete Kopie zu entfernen (Befehl in der Meldung); nichts wird still geloescht
 - [ ] go test ./... -race gruen; Release-Notiz unter core/release/notes/
 
