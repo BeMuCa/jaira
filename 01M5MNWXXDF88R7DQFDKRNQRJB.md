@@ -16,11 +16,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:01Z
-updated-at: 2026-10-26T20:09:08Z
+updated-at: 2026-10-26T20:09:15Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: rnqrjb-driver
-claimed-at: 2026-10-26T20:06:42Z
+claimed-at: 2026-10-26T20:09:15Z
 ---
 
 # Die Warnung 'Board von aelterer Version eingerichtet' kommt einmal, nicht bei jedem Aufruf
