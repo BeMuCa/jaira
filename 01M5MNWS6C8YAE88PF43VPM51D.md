@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:56Z
-updated-at: 2026-10-26T20:09:46Z
+updated-at: 2026-10-26T20:11:07Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-374545
@@ -24,9 +24,7 @@ claimed-at: 2026-10-26T19:21:26Z
 outcome-what: "jaira list, jaira show and the board recognise a ticket file whose ticket was filed away (logbook/archive) in another worktree or already on the landing branch, and treat it as filed: list puts it in a 'Filed elsewhere' block and a filed_elsewhere JSON array outside tickets/count, show prints where it was filed and the removal command (JSON filed_elsewhere, remove_stale), the board moves the card to the logbook foot uncounted and read-only, and next / list --actionable skip it."
 outcome-why: "Only a copy whose updated-at is strictly older than the filed copy's is marked, so a restored copy or one edited after the filing stays open. The check runs only where the mark is read (list, show, next, board reload), reads existing worktrees and the landing branch with a fixed number of git processes, none per ticket, and changes no file format. The removal command is printed for a person to run: rm for an untracked copy; for a tracked one git restore plus git merge of the landing branch, once the branch that filed it is on it. jaira delete would also take down the ref before the ticket has landed, git rm would conflict with the next merge, and merging the filing feature branch here would land its other files without a PR."
 outcome-resolves: "After jaira logbook in one worktree, the other worktrees and the main checkout no longer show the old ticket file as open work, no longer count it or hand it to jaira next, and say how to remove the stale copy."
-review-summary: |-
-  core/refsync/filedelsewhere.go:157 (round 3): RemoveHint now returns a sentence for a tracked copy filed in another worktree ('once that branch is merged into origin/master, run: git restore <p> && git merge origin/master'), but every reader presents it as a command: JSON remove_stale (release note line 4: 'the command to run'; on a scratch board bash -c "$remove_stale" gives 'once: command not found', exit 127), the TUI 'To remove the copy, run:' (internal/tui/logbook.go:72), list/show 'remove the copy here with:'. On a worktree with a detached HEAD, Where names no branch, so 'that branch' points at nothing. Keep RemoveHint a bare command in every case: for Branch == '' return the same 'git restore <p> && git merge <landing[0]>' as the landing case, and put the condition into Where in FiledElsewhere (filedelsewhere.go:72; resolve y.landing() before the worktree loop): 'the worktree <dir> on branch work, not merged into origin/master yet' (detached HEAD: 'the worktree <dir>, not merged into origin/master yet').
-  internal/cli/filedelsewhere_test.go:145 still says the copy leaves with the merge of 'work', which round 3 removed. Fix the comment, move the 'once that branch is merged into' assertions at :146,162 to the new Where text, and assert that list, show and remove_stale do not contain 'git merge work' and that remove_stale is the command alone.
+review-summary: none
 round: 4
 ---
 
