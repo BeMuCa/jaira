@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:47Z
-updated-at: 2026-10-26T19:47:21Z
+updated-at: 2026-10-26T19:50:24Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-253301
@@ -28,6 +28,7 @@ review-summary: "none"
 round: 4
 question: "Should .claude/settings.json deny or ask for git push and gh pr create? The goal says workers ask (\"fragen nach\"), DoD 1 says forbid (\"verbietet\"); today both are denied. (B, recommended) Move both to permissions.ask and keep gh pr merge denied: /jaira-role-pr and your own session work again, with a prompt on every push and every PR create that no allow can silence; DoD 1 then says \"asks\" for these two. (A) Keep deny: a deny beats every allow, settings.local.json included, so neither /jaira-role-pr (SKILL.md:212 push, :308 create) nor your own Claude session can push in this repo; you push from your terminal, and README.md:1121 / CLAUDE.md:223 (\"an agent pushes its branch\") must be reworded. Either way a headless worker run with --permission-prompts none is refused, because that flag turns every ask into a denial. B or A?"
 review-gaps: "Removed: README.md:1127 \"The lists live in that file;\" - it restated the sentence before it, which already names .claude/settings.json; the paragraph is rewrapped at 80 columns with every code span kept on one line. Left: Bash(head *), Bash(tail *), Bash(wc *) - Claude Code already runs them without a prompt (built-in read-only set), like the DoD-named ls/cat/grep, but the file is the list of what the lanes run, and \"go build ./... 2>&1 | tail -20\" (an allowed command piped into tail) was never measured without the rule. Left: Bash(git ls-tree *) - no lane prompt or role skill names it, but the docs do not say whether read-only git covers it, so dropping it could add a prompt, which is a behaviour change, not a cleanup. Left: every DoD-named rule; /permissions named in both README places (two audiences; critique pass 1 asked for the pointer). Duplication: no other file in the repo documents Claude Code permissions or worktree settings. Dead code: nothing orphaned; the deleted release note core/release/notes/ZE9WZC.md has no references left. Cost: nothing to do (config and docs). For review, not a cleanup: README.md:672-675 says a worktree reads its own .claude/settings.json and \"a deny list dropped into a worktree is never read\" - true for settings.local.json in a CLI worktree; a desktop-app worktree session reads settings from the main checkout root."
+test-verdict: "fail: gates green and DoD 1-3 hold as written, but in a headless probe on the current .claude/settings.json the allow rule Bash(rm -r /tmp/*) never matches - rm -r on a /tmp path was denied 3 of 3 times (go build/jaira list/git status/gofmt ran; push, gh pr create/merge, reset --hard, rm -rf, kill-server denied as expected)"
 ---
 
 # Eine Erlaubnisliste im Repo laesst Worker arbeiten, ohne bei jedem Befehl zu fragen
