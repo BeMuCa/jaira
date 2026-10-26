@@ -816,6 +816,9 @@ esac
 		if out, err := cmd.CombinedOutput(); err != nil {
 			t.Fatalf("%s: spawn.sh: %v\n%s", c.name, err, out)
 		}
+		// spawn.sh takes the root in its shell's spelling: /tmp/... under the
+		// Git Bash this case runs in on Windows, as it is in a real WSL.
+		wt = shellDir(t, bash, wt)
 		r, _ := os.ReadFile(ran)
 		if got, want := strings.TrimSpace(string(r)), strings.ReplaceAll(c.wantStart, "<wt>", wt); got != want {
 			t.Errorf("%s: the tab ran %q, want %q", c.name, got, want)
@@ -916,16 +919,8 @@ esac
 			t.Fatalf("spawn.sh: %v\n%s", err, out)
 		}
 		got, _ := os.ReadFile(args)
-		// Both paths in the shell's own spelling: under Git Bash that is
-		// /tmp/... for the C:\... Go hands in, and never the two mixed.
-		shell := func(dir string) string {
-			b, err := exec.Command(bash, "-c", `cd "$1" && pwd`, "bash", dir).Output()
-			if err != nil {
-				t.Fatalf("pwd in %s: %v", dir, err)
-			}
-			return strings.TrimSpace(string(b))
-		}
-		if want := strings.Join([]string{shell(wt), "ab12cd", off, shell(root)}, "\n") + "\n"; string(got) != want {
+		// Both paths in the shell's own spelling, never the two mixed.
+		if want := strings.Join([]string{shellDir(t, bash, wt), "ab12cd", off, shellDir(t, bash, root)}, "\n") + "\n"; string(got) != want {
 			t.Errorf("the setup got\n%s\nwant worktree, slug, offset %s and root:\n%s", got, off, want)
 		}
 		if env, _ := os.ReadFile(filepath.Join(wt, ".env")); string(env) != "FROM_SETUP=1\n" {
@@ -973,6 +968,17 @@ esac
 			branchGone(t, root)
 		})
 	}
+}
+
+// shellDir is dir as bash spells it after cd'ing there, the form spawn.sh
+// gives its root: unchanged on Unix, /tmp/... for Git Bash's C:\... on Windows.
+func shellDir(t *testing.T, bash, dir string) string {
+	t.Helper()
+	b, err := exec.Command(bash, "-c", `cd "$1" && pwd`, "bash", dir).Output()
+	if err != nil {
+		t.Fatalf("pwd in %s: %v", dir, err)
+	}
+	return strings.TrimSpace(string(b))
 }
 
 // spawnOn runs spawn.sh in a shell whose uname answers uname and whose cygpath
