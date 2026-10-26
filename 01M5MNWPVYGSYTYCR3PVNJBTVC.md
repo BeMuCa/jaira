@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:53Z
-updated-at: 2026-10-26T19:26:10Z
+updated-at: 2026-10-26T19:26:12Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-264760
@@ -29,6 +29,7 @@ claimed-at: 2026-10-26T19:12:35Z
 - [ ] Gate: Plan-Sperre in gate.go entfernen, Hinweis-Helfer OpenPlanHints
 - [ ] move.Result.Hints fuellen bei Move in Ziellane
 - [ ] CLI Text+JSON+dry-run zeigen den Hinweis
+- [ ] TUI: model.go zwei Pfade + signoff Accept zeigen den Hinweis
 
 ## Definition of Done
 
