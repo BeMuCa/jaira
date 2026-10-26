@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T08:26:42Z
-updated-at: 2026-10-26T19:32:10Z
+updated-at: 2026-10-26T19:33:26Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: qyk8md-driver
@@ -29,9 +29,8 @@ outcome-resolves: "No new claimed-by carries a hostname; old claims from other m
 review-summary: none
 round: 3
 review-gaps: |-
-  fix (test bug, not a cleanup): core/session/machine_test.go:43 TestLegacyLocal fails on any machine whose hostname is 46 or more characters. sanitize cuts sanitize(host+"-") and sanitize(host+"-12x4") at 48, which leaves exactly the form LegacyLocal rightly accepts as an old local id (checked with a scratch copy of sanitize and LegacyLocal: lengths 46, 47 and 49 fail, 3 passes; the suite passes on this machine). Use those two host-built negatives only when the sanitized hostname is at most 43 characters.
-  fix (cleanup): core/session/session.go:170-171 LegacyLocal. sanitize already caps its output at 48 ASCII bytes, so len(prefix) >= 48 means == 48 and prefix[:48] is prefix: write 'return id == prefix'. Same results.
-  let stand: sanitizeForTest (internal/cli/staleclaim_test.go:159) is a deliberate frozen copy of the format old builds wrote, the only test that fails if session.sanitize later changes and LegacyLocal stops matching them; the JAIRA_HOME-else-~/.jaira lookup in machineToken is the seventh private copy (identity, project, lane, selfupdate, settings, ticket.stateHome) with no shared helper, so merging them is its own ticket; LegacyLocal sits in both ClaimActive and StaleClaim because those two functions were already separate; internal/cli/flow.go:398 now reads machine-id once per actionable ticket, an estimated few microseconds each on a one-shot command (not measured), so hoisting it is optional.
+  pass 2 (4529c17b only): nothing new to remove. Both pass-1 fixes landed: core/session/session.go:170-171 LegacyLocal now reads 'return id == prefix' (same results, sanitize caps at 48 ASCII bytes); core/session/machine_test.go:43-46 adds the two host-built negatives only when the sanitized hostname is at most 43 characters (44 would also be safe, critique pass 3; a conservative bound, not a cleanup)
+  let stand (pass 1, not reopened): sanitizeForTest (internal/cli/staleclaim_test.go:159) is a deliberate frozen copy of the format old builds wrote; the JAIRA_HOME-else-~/.jaira lookup in machineToken is the seventh private copy with no shared helper, merging them is its own ticket; LegacyLocal sits in both ClaimActive and StaleClaim (internal/cli/claim.go:29 and :54) because those two were already separate; internal/cli/flow.go:398 reads machine-id once per actionable ticket, hoisting it is optional; Session.Host (core/session/session.go:28) is pre-existing dead code, left alone
 ---
 
 # Die Session-ID traegt keinen Rechnernamen mehr
