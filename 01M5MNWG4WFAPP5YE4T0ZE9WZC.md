@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWG4WFAPP5YE4T0ZE9WZC
 title: "Eine Erlaubnisliste im Repo laesst Worker arbeiten, ohne bei jedem Befehl zu fragen"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Worker und Subagenten fragen nur bei wirklich kritischen Befehlen (rm, push, reset --hard, kill-server) nach; alles, was eine Lane braucht, ist im Repo erlaubt, und die Doku sagt, wo Verbots- und Erlaubnislisten liegen und welche Settings ein Worktree liest."
@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:47Z
-updated-at: 2026-10-26T19:40:07Z
+updated-at: 2026-10-26T19:40:24Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-253301
@@ -25,7 +25,7 @@ outcome-what: "Added a committed .claude/settings.json. permissions.allow covers
 outcome-why: "Workers stopped to ask for routine lane commands (go build, git commit, jaira move/dod), because the repo carried no permission rules, and the user settings' autoMode.allow takes prose for the classifier, not patterns. A deny list a teamlead put into a worktree was never read, and nothing said which file a worktree reads. The maintainer's rule: critical commands ask, not forbid."
 outcome-resolves: "DoD 1 (reworded per the human answer): .claude/settings.json:38, where push and PR create ask, the rest is denied, rm -rf even under /tmp. DoD 2: README.md:672, the worktree reads its own settings.json, but settings.local.json and trust come from the main checkout's root. DoD 3: a fresh headless sonnet worker on a scratch board ran the in-progress lane with 0 permission denials (note on ZE9WZC). Shell expansions such as the lane prompt's --commits \"$(git rev-parse HEAD)\" always ask; follow-up W9AVBE."
 review-summary: "README.md:1131-1132 still names `git -C . push` as what slips past the deny list, but 4f6af1dc moved git push from deny to ask, so the example names a command the deny list no longer holds, one sentence before the line saying push asks. Say instead that the deny and ask lists match the command as written and are not a sandbox: `git -C . push` slips past the ask, `/bin/rm -rf` or `bash -c '...'` past the deny."
-round: 3
+round: 4
 question: "Should .claude/settings.json deny or ask for git push and gh pr create? The goal says workers ask (\"fragen nach\"), DoD 1 says forbid (\"verbietet\"); today both are denied. (B, recommended) Move both to permissions.ask and keep gh pr merge denied: /jaira-role-pr and your own session work again, with a prompt on every push and every PR create that no allow can silence; DoD 1 then says \"asks\" for these two. (A) Keep deny: a deny beats every allow, settings.local.json included, so neither /jaira-role-pr (SKILL.md:212 push, :308 create) nor your own Claude session can push in this repo; you push from your terminal, and README.md:1121 / CLAUDE.md:223 (\"an agent pushes its branch\") must be reworded. Either way a headless worker run with --permission-prompts none is refused, because that flag turns every ask into a denial. B or A?"
 ---
 
