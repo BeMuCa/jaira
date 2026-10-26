@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWS6C8YAE88PF43VPM51D
 title: "Ein Checkout, dessen Ticket anderswo abgelegt wurde, zeigt es als abgelegt statt als geaendert"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Nach jaira logbook in einem Worktree verwirrt die alte Ticketdatei in den anderen Worktrees und im Haupt-Checkout niemanden mehr: sie gilt als abgelegt, und jaira bietet an, sie zu entfernen."
@@ -16,13 +16,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:56Z
-updated-at: 2026-10-26T20:03:45Z
+updated-at: 2026-10-26T20:03:47Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-374545
 claimed-at: 2026-10-26T19:21:26Z
 outcome-what: "jaira list, jaira show and the board recognise a ticket file whose ticket was filed away (logbook/archive) in another worktree or already on the landing branch, and treat it as filed: list puts it in a 'Filed elsewhere' block and a filed_elsewhere JSON array outside tickets/count, show prints where it was filed and the removal command (JSON filed_elsewhere, remove_stale), the board moves the card to the logbook foot uncounted and read-only, and next / list --actionable skip it."
-outcome-why: "Only a copy whose updated-at is strictly older than the filed copy's is marked, so a restored copy or one edited after the filing stays open. The check runs only where the mark is read (list, show, next, board reload), reads existing worktrees and the landing branch with a fixed number of git processes, none per ticket, and changes no file format. The removal command is printed for a person to run (rm for an untracked copy; for a tracked one git restore plus git merge of the branch that filed it, or of the landing branch), because jaira delete would also take down the ref before the ticket has landed and git rm would conflict with the next merge."
+outcome-why: "Only a copy whose updated-at is strictly older than the filed copy's is marked, so a restored copy or one edited after the filing stays open. The check runs only where the mark is read (list, show, next, board reload), reads existing worktrees and the landing branch with a fixed number of git processes, none per ticket, and changes no file format. The removal command is printed for a person to run: rm for an untracked copy; for a tracked one git restore plus git merge of the landing branch, once the branch that filed it is on it. jaira delete would also take down the ref before the ticket has landed, git rm would conflict with the next merge, and merging the filing feature branch here would land its other files without a PR."
 outcome-resolves: "After jaira logbook in one worktree, the other worktrees and the main checkout no longer show the old ticket file as open work, no longer count it or hand it to jaira next, and say how to remove the stale copy."
 review-summary: "core/refsync/filedelsewhere.go:72+143 (round 2): a tracked copy filed in another worktree now gets 'git restore <path> && git merge <that worktree's branch>'. On a scratch board in the DoD's own case (main on master, jaira logbook in a worktree on 'work'): logbook leaves the filing uncommitted, so the merge says 'Already up to date' and the file stays; once 'work' is committed, the same command fast-forwards master onto the feature branch and lands its other changes without a PR. Never print a merge of the other worktree's branch: keep Branch for the landing case only (as in round 1, core/ticket/schema.go:883), put the worktree's branch into Where ('the worktree <dir> on branch work'), and make the printed line say the copy leaves once that branch is merged into the landing branch instead of offering a command that merges it here; change the 'git merge work' assertions in internal/cli/filedelsewhere_test.go:146,162 to match."
 round: 3
