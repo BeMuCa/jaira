@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:51Z
-updated-at: 2026-10-26T20:20:35Z
+updated-at: 2026-10-26T20:22:24Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-268570
@@ -44,7 +44,7 @@ test-verdict: "pass: gates green (build/vet/gofmt, race tests of cli/gate/move/r
 - [x] Die Ausgabe eines --force-Moves nennt die uebergangenen Gates in einer Zeile als 'uebergangen', nicht im Wortlaut der Verweigerung
   proof: internal/cli/forceorder_test.go TestForcedMoveEndsOnItsSuccessLine
 - [x] jaira-teamlead/SKILL.md sagt: ein getipptes 'accept <id>' der Person ist die Abnahme und wird mit jaira accept ausgefuehrt
-  proof: core/role/builtin/jaira-teamlead/SKILL.md:211
+  proof: core/role/builtin/jaira-teamlead/SKILL.md:211-216
 - [ ] go test ./... -race gruen; Release-Notiz unter core/release/notes/
 
 ## Options
