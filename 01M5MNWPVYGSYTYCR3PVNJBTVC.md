@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:53Z
-updated-at: 2026-10-26T19:28:12Z
+updated-at: 2026-10-26T19:28:37Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-264760
@@ -26,22 +26,11 @@ claimed-at: 2026-10-26T19:12:35Z
 
 # Ein offener Plan-Punkt sperrt die Ziellane nicht mehr, wenn die Definition of Done erfuellt ist
 
-- [x] Gate: Plan-Sperre in gate.go entfernen, Hinweis-Helfer OpenPlanHints
-  proof: core/move/move_test.go TestMoveIntoDoneWithOpenPlanStepCarriesAHint; core/gate/plan_test.go TestUnfinishedPlanDoesNotBlockTerminalLane
-- [ ] move.Result.Hints fuellen bei Move in Ziellane
-  proof: release note core/release/notes/NJBTVC.md; full race suite still to run
-- [x] CLI Text+JSON+dry-run zeigen den Hinweis
-  proof: core/gate/plan_test.go TestUnfinishedPlanAddsNothingToDoDRefusal
-- [x] TUI: model.go zwei Pfade + signoff Accept zeigen den Hinweis
-  proof: internal/cli/flow.go (Note: lines + hints JSON), internal/tui/model.go applyMove/forceMove, internal/tui/signoff.go accept (compiled, CLI/TUI output not run by hand)
-- [x] Tests: plan_test.go drehen, move-Test fuer Hinweis
-  proof: SKILL.md, README.md, docs/AGENTS.md, core/lane/builtin/50-done.md
-- [ ] Docs (SKILL, README, AGENTS, 50-done) + Release-Notiz
-- [ ] gofmt/vet/build + Paket-Tests, DoD abhaken
 
 ## Definition of Done
 
-- [ ] Ein Move in eine Ziellane mit vollstaendiger DoD und offenem Plan-Punkt wird nicht mehr abgelehnt; die Ausgabe nennt den offenen Plan-Punkt als Hinweis; ein Test deckt den Fall
+- [x] Ein Move in eine Ziellane mit vollstaendiger DoD und offenem Plan-Punkt wird nicht mehr abgelehnt; die Ausgabe nennt den offenen Plan-Punkt als Hinweis; ein Test deckt den Fall
+  proof: core/move/move_test.go TestMoveIntoDoneWithOpenPlanStepCarriesAHint; core/gate/plan_test.go TestUnfinishedPlanDoesNotBlockTerminalLane
 - [ ] go test ./... -race gruen; Release-Notiz unter core/release/notes/
 - [ ] Bei unvollstaendiger DoD nennt die Ablehnung nur die offenen DoD-Punkte, keinen Plan-Schritt mehr
 - [ ] Der Hinweis erscheint in der Textausgabe, im JSON und beim Move aus der TUI, das Annehmen in signoff eingeschlossen
@@ -54,7 +43,13 @@ claimed-at: 2026-10-26T19:12:35Z
 
 ## Plan
 
-<Steps, in order — filled in by the pre-process step, or by you.>
+- [x] Gate: Plan-Sperre in gate.go entfernen, Hinweis-Helfer OpenPlanHints
+- [x] move.Result.Hints fuellen bei Move in Ziellane
+- [x] CLI Text+JSON zeigen den Hinweis (dry-run unveraendert)
+- [x] TUI: model.go zwei Pfade + signoff Accept zeigen den Hinweis
+- [x] Tests: plan_test.go drehen, move-Test fuer Hinweis
+- [x] Docs (SKILL, README, AGENTS, 50-done) + Release-Notiz
+- [x] gofmt/vet/build + Paket-Tests, DoD abhaken
 
 ## Progress
 - **2026-10-26 19:17 · BeMuCa** — BRAINSTORM 1/3 - Befund im Code.
