@@ -16,11 +16,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:58Z
-updated-at: 2026-10-26T20:21:17Z
+updated-at: 2026-10-26T20:21:20Z
 assignee: BeMuCa
 updated-by: BeMuCa
-claimed-by: x6hb6v-driver
-claimed-at: 2026-10-26T20:10:25Z
+claimed-by: ""
+claimed-at: ""
 outcome-what: "Der Cockpit-Einzeiler zeigt 'vorher → jetzt' nur noch aus dem Board: shorten() in core/mod/builtin/jaira-cockpit/hooks/register.tsx liest die Lane des einen Tickets per `jaira show <id> --json`, erst nachdem digest() ein Ticket und keinen Fehlschlag gefunden hat (digest ist jetzt async). Die Lane, die der Berichtstext nennt, wird nie gelesen; laneChangeOf liegt in digest.ts."
 outcome-why: "Der Berichtstext nannte beliebige Lanes ('list -> human', 'done -> in-progress', 'moved to review'), die das Ticket nie hatte; das Board ist die einzige Quelle, die stimmt. lastSeen wird nur beim ersten Auftauchen und bei Berichten gesetzt, weil refreshBoard jede Minute liest und ein minutenlang arbeitender Subagent sonst nie einen Wechsel zeigte."
 outcome-resolves: "Der Einzeiler stimmt mit dem Board ueberein: der echte Wechsel oder keiner. Vier Tests in core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts ('the lane in the line comes from the board') decken die drei beobachteten Faelle und den positiven Fall ab; Release-Notiz core/release/notes/X6HB6V.md."
