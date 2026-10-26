@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:47Z
-updated-at: 2026-10-26T19:30:24Z
+updated-at: 2026-10-26T19:30:26Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-253301
@@ -74,3 +74,4 @@ Follow-up: the lane text must stop prescribing $(git rev-parse HEAD) for --commi
 5. README.md:670: the part about this repo's own allow/deny lists belongs under ## Development (README.md:1100) next to the push rule; the worktree-settings part stays under With Claude Code.
 Left alone, standing on the notes: rm -rf denied everywhere and Edit(/**) (19:17 driver note), git ls-files and git config user.email (19:17 note), the $(...) lane text split off to W9AVBE (19:22 note). Also left alone: sed/cp/find and git branch/worktree/stash wildcards reach past the project or drop work (sed -i, find -delete, branch -D, worktree remove --force); the README already says the deny list is not a sandbox, and the DoD names these commands.
 - **2026-10-26 19:29 · BeMuCa** — Driver: critique findings 2-5 (delete the release note, README points to the JSON instead of repeating it, rewrap at 80 columns, repo-specific part under Development) go back to in-progress now. They do not depend on the deny-or-ask decision in finding 1. Finding 1 is held for the maintainer: the next critique pass sends it to human with the critic's question, so he is asked once, with only that decision left. Until he answers, the deny list stays as the DoD says.
+- **2026-10-26 19:30 · BeMuCa** — Second pass: permissions docs split by audience. General part (worktree reads, trust, autoMode) stays under With Claude Code as 'Permissions in a worktree'; what this repo's settings.json allows/denies (rm -rf under /tmp, not a sandbox) moved next to the PR paragraph under Development. Allow/deny bullets dropped, the JSON is the list. Release note deleted: nothing the binary embeds reads .claude/. Finding 1 (deny vs ask for push/pr create) left for the maintainer; settings.json untouched.
