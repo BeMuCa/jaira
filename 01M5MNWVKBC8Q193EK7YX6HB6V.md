@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWVKBC8Q193EK7YX6HB6V
 title: "Die Einzeiler des Cockpits nennen die Lane, in der das Ticket wirklich steht"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Die Kurzfassung eines Agentenberichts im Cockpit stimmt mit dem Board ueberein: sie nennt den tatsaechlichen Lanewechsel, oder keinen."
@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:58Z
-updated-at: 2026-10-26T19:57:21Z
+updated-at: 2026-10-26T19:57:48Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: x6hb6v-driver
@@ -30,6 +30,7 @@ review-summary: |-
   core/mod/builtin/jaira-cockpit/hooks/board.ts:146-150 laneChangeOf formats a piece of the one-liner (`before → now`) and has one caller; board.ts reads jaira's JSON, the line format lives in digest.ts (the removed laneOf built the same `a → b` there). Move it into digest.ts beside digest().
   core/release/notes/X6HB6V.md:1 records what changed ("The teamlead chat now names ...") instead of telling the reader what to do, as CLAUDE.md asks and the neighbours do (7V1XPB "Start ...", A0C081 "Read why ...", TPCKZB "Tell lanes apart ..."); "as of the last report" is also wrong for the first report, which compares with the lane the cockpit first saw on the board. Rewrite as one instruction, e.g. "- Trust the lane change in an agent's one-line summary in the cockpit: it is what the board shows (`before → now` since the cockpit last saw that ticket), never a lane the report merely names; a ticket that did not move shows no lane, and `/cockpit report <id>` still gives the full text."
   core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:304-306 first() takes lanes and to only to write lanes[ticket] = to, and all four callers (313, 322, 331, 342) pass the lane the ticket already stands in, so it is a no-op. Drop both parameters and the assignment: first($, ticket).
+round: 2
 ---
 
 # Die Einzeiler des Cockpits nennen die Lane, in der das Ticket wirklich steht
