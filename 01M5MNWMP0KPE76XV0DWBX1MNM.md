@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWMP0KPE76XV0DWBX1MNM
 title: "jaira accept <id> --by <person>: eine Abnahme auf Wort der Person, die festhaelt, wer abgenommen hat"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Sagt eine Person im Chat 'accept', fuehrt der Agent die Abnahme ehrlich aus: ein Befehl nimmt das Ticket aus signoff, schreibt auf das Ticket, wer wann abgenommen hat, und die Ausgabe liest sich als Erfolg - nicht als uebergangene Verweigerung."
@@ -16,14 +16,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:51Z
-updated-at: 2026-10-26T19:47:07Z
+updated-at: 2026-10-26T19:51:41Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-268570
 claimed-at: 2026-10-26T19:13:06Z
-outcome-what: "Added `jaira accept <id> --by <person>`: it moves a ticket out of a human-exit lane (signoff) into that lane's next lane without --force and writes accepted-by, accepted-at and a note \"accepted by <person>\". The human-exit gate is satisfied by a per-request AcceptedBy. A --force move now prints one line \"overrode: <codes>\" before the move line. The teamlead role treats a typed \"accept <id>\" as the acceptance."
-outcome-why: "The acceptance rides on the request, not on the ticket, so a ticket restored into signoff with an old accepted-by still waits for a person. It is written inside the move (move.Request.Record), so a refusal by any other gate writes nothing. accept stays on the normal move path, so every other gate still applies."
-outcome-resolves: "A person's chat \"accept\" needed --force, which printed \"Overrode N gate refusal(s)\" and recorded no acceptor. accept now succeeds with a success line and records who accepted and when."
+outcome-what: "jaira accept <id> --by <person> moves a ticket out of signoff into its next lane without --force; move.Move writes accepted-by, accepted-at and the note \"accepted by <person>\" itself whenever AcceptedBy is set. A --force move prints one line \"overrode: <codes>\" before the move line. The teamlead role, the jaira skill and docs/AGENTS.md say a typed \"accept\" is run with jaira accept."
+outcome-why: "The acceptance rides on the request, not the ticket, so a ticket restored into signoff with an old accepted-by still waits for a person; the gate bypass and its record are written by the same move, so they cannot be separated and a refusal by any other gate writes nothing."
+outcome-resolves: "A person's chat \"accept\" needed --force, which printed \"Overrode N gate refusal(s)\" and recorded no acceptor. Acceptance on a person's word is now recorded on the ticket (who and when) with no gate override, and the skill and docs no longer teach the --force route."
 review-summary: "critique pass 1: SEND BACK. (1) .claude/skills/jaira/SKILL.md:376-384 and docs/AGENTS.md:221-224 still tell agents to carry out a spoken acceptance with jaira move --to done --force; rewrite both to jaira accept <id> --by <person>, as A0C081 did for reject. (2) core/move/move.go adds a generic Record hook with one caller; drop it and write accepted-by, accepted-at and the note inside Move when req.AcceptedBy is set, like ClaimOnPull, so the gate bypass cannot be passed without its record. (3) The seen-not-fixed items (acceptance role still forces; TUI force notice; TUI a key writes no accepted-by) go to the maintainer as proposed follow-ups."
 round: 2
 ---
