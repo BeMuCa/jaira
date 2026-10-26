@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:58Z
-updated-at: 2026-10-26T19:59:09Z
+updated-at: 2026-10-26T19:59:12Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: x6hb6v-driver
@@ -40,7 +40,7 @@ round: 2
 - [x] Der Einzeiler leitet den Lanewechsel aus dem Board ab, nicht aus dem Berichtstext; nennt der Text eine Lane, die das Ticket nicht hat, erscheint kein Wechsel
   proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx laneOf()/shorten(), digest.ts async digest(text, laneChange)
 - [x] Ein Test deckt die drei beobachteten Fehlfaelle ab
-  proof: tests/cockpit.test.ts 'the lane in the line comes from the board' (4 tests)
+  proof: tests/cockpit.test.ts 'the lane in the line comes from the board' (4 tests, fake board answers jaira show)
 - [x] Release-Notiz unter core/release/notes/
   proof: core/release/notes/X6HB6V.md
 
