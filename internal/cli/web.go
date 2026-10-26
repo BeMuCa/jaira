@@ -45,7 +45,9 @@ there.
 
 The bar above both columns filters them: a search over title, goal and id, a
 lane, a tag, a person (who created it, is assigned it or changed it last), and
-a date range on created, last changed or filed away. "All tickets ever" adds
+a date range on created, last changed or filed away. Lane, tag and person take
+several values, any of which may match; click a value to turn it into 'not'
+that value, so "not done" shows every lane but done. "All tickets ever" adds
 every ticket in no epic that ever existed — finished, only on a ref, or filed
 in the logbook or the archive — each saying where it lies; a filed ticket
 opens but cannot be dragged. The filters stay in the address, so a link shows

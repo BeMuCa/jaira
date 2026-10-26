@@ -1,1 +1,2 @@
 - Read who works a ticket straight off its card in `jaira web`: every card now shows its assignee under the title, cut to 20 characters with the full name in the tooltip, and nothing when the ticket has no assignee.
+- In the `jaira web` filter bar, pick several lanes, tags or people at once — a ticket shows when it matches any of them — and click a picked value to turn it into "not" that value, e.g. "not done" for every lane but done; links carry it as `?lane=review&not-lane=done`, and old `?lane=x` links still work.
