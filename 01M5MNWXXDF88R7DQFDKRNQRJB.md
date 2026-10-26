@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:01Z
-updated-at: 2026-10-26T20:12:37Z
+updated-at: 2026-10-26T20:13:10Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: rnqrjb-driver
@@ -24,6 +24,7 @@ claimed-at: 2026-10-26T20:09:15Z
 outcome-what: "nudgeIfStale (internal/cli/update.go) prints the 'board was set up by an older version' hint once per board and binary version: a 'nudged' marker file beside the version stamp (core/release Nudged/MarkNudged) remembers which version it was shown for. jaira update and the stamp are unchanged."
 outcome-why: "The hint appeared on stderr before every command, even with --json, so agents filtered it away and people stopped reading it."
 outcome-resolves: "DoD 1: the hint no longer repeats on every call; a new binary version shows it once again; afterwards jaira update's own report (previous version + what changed) is where staleness surfaces. Covered by TestNudgeIfStaleShowsOncePerBoardAndVersion and TestUpdateAfterShownHintStillReportsPreviousAndStamps. No --verbose flag exists, so none was added."
+review-summary: "critique 1: README.md:97 still says a newer binary on an older board 'says so on every command' - false after this change; reword to once per board and jaira version, on the first command after the upgrade. Optional: reflow the nudgeIfStale doc comment (internal/cli/update.go:20-26, line 24 is 88 chars); make core/release/notes/RNQRJB.md tell the reader to act on the hint because it will not repeat, rather than 'run jaira update to see the previous version' (update rewrites CLAUDE.md/AGENTS.md, it is not a status query)."
 ---
 
 # Die Warnung 'Board von aelterer Version eingerichtet' kommt einmal, nicht bei jedem Aufruf
