@@ -1,7 +1,7 @@
 ---
 id: 01M5B0PCJW8KCF3XFCTSWVYG9H
 title: Tickets und Logbook nennen keine anderen Projekte mehr
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,9 +21,10 @@ tags:
   - docs
 blocked-by: []
 related: []
-commits: []
+commits:
+  - c81e83d46174653d667e27d5737c90456985c1e7
 created-at: 2026-10-19T21:22:16Z
-updated-at: 2026-10-26T22:16:44Z
+updated-at: 2026-10-26T22:40:02Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-30382
 claimed-at: 2026-10-26T21:58:04Z
@@ -107,3 +108,4 @@ Warum: Ohne Commit wird der Zug nach done verweigert. Seit dem 21.10. sind auf 4
 1) Zurueckgeben: eine Pruefung beim Schreiben von Tickets einbauen und die Dateizahl korrigieren [give back]
 2) So annehmen: der Diff ist reiner Namensersatz, danach nur noch der Commit mit WVYG9H [accept]
 Empfehlung: 2 - der Diff erfuellt das Ticketziel vollstaendig, die Pruefung beim Schreiben ist eine neue, eigene Aufgabe und gehoert nicht in diesen Textersatz.
+- **2026-10-26 22:39 · Alexander Sacharov** — decision: 2) So annehmen: der Diff ist reiner Namensersatz, danach nur noch der Commit mit WVYG9H
