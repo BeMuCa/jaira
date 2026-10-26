@@ -16,11 +16,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:01Z
-updated-at: 2026-10-26T20:18:36Z
+updated-at: 2026-10-26T20:19:07Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: rnqrjb-driver
-claimed-at: 2026-10-26T20:14:30Z
+claimed-at: 2026-10-26T20:19:07Z
 outcome-what: "nudgeIfStale (internal/cli/update.go) prints the 'board was set up by an older version' hint once per board and binary version: a 'nudged' marker file beside the version stamp (core/release Nudged/MarkNudged) remembers which version it was shown for. jaira update and the stamp are unchanged."
 outcome-why: "The hint appeared on stderr before every command, even with --json, so agents filtered it away and people stopped reading it."
 outcome-resolves: "DoD 1: the hint no longer repeats on every call; a new binary version shows it once again; afterwards jaira update's own report (previous version + what changed) is where staleness surfaces. Covered by TestNudgeIfStaleShowsOncePerBoardAndVersion and TestUpdateAfterShownHintStillReportsPreviousAndStamps. No --verbose flag exists, so none was added."
