@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:47Z
-updated-at: 2026-10-26T19:12:59Z
+updated-at: 2026-10-26T19:17:25Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-253301
@@ -42,3 +42,4 @@ claimed-at: 2026-10-26T19:10:55Z
 
 ## Progress
 - **2026-10-26 19:12 · BeMuCa** — Driver: pre-process was passed by (next_lane went todo -> in-progress, the plan is empty). The lane worker gets its plan from the DoD plus the driver brief. Permission semantics are being checked against the Claude Code docs before writing; the user settings put their jaira rules under autoMode.allow, not permissions.allow. The dispatcher's spawn.sh drives herdr panes, not tmux, so the tmux rules only cover what a session types by hand.
+- **2026-10-26 19:17 · BeMuCa** — Driver: the DoD as written cannot be met literally. Claude Code checks deny before allow and ignores how narrow a rule is, so 'deny rm -rf except in the scratchpad' cannot be written. Chosen instead: deny rm -rf / rm -fr everywhere and allow 'rm -r /tmp/*' for scratch boards. Edit(/**) was added beyond the DoD list, because default mode prompts on every file edit and DoD 3 could not pass without it. The user settings' autoMode.allow entries such as 'Bash(jaira create:*)' are prose for the auto-mode classifier, not tool patterns, and autoMode is never read from a project file. That is the likely reason the six jaira commands looked like the only ones allowed. Sources: code.claude.com/docs/en/permissions.md, settings.md, auto-mode-config.md.
