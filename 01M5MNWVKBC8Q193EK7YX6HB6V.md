@@ -16,9 +16,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:58Z
-updated-at: 2026-10-26T19:08:09Z
+updated-at: 2026-10-26T19:45:45Z
 assignee: BeMuCa
 updated-by: BeMuCa
+claimed-by: x6hb6v-driver
+claimed-at: 2026-10-26T19:45:45Z
 ---
 
 # Die Einzeiler des Cockpits nennen die Lane, in der das Ticket wirklich steht
