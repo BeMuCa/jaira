@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWPVYGSYTYCR3PVNJBTVC
 title: "Ein offener Plan-Punkt sperrt die Ziellane nicht mehr, wenn die Definition of Done erfuellt ist"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Ob ein Ticket in die Ziellane darf, entscheidet allein die Definition of Done; ein offener Plan-Schritt sperrt nicht mehr, sondern wird beim gelungenen Move als Hinweis genannt - der Plan ist die Methode, die DoD das Ergebnis."
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:53Z
-updated-at: 2026-10-26T19:43:53Z
+updated-at: 2026-10-26T19:43:55Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-650718
@@ -30,6 +30,7 @@ review-summary: |-
   internal/cli/flow.go:239 adds a JSON key "hints" beside the key "warnings" that other commands already use for non-fatal lines on a command that succeeded (internal/cli/lanes.go:130, internal/cli/tickets.go:1282 and :1369, internal/cli/market.go:53) and that backlog ticket 01M26PW18D proposes for next --json; name it "warnings", so an agent reads one key for "it worked, but look at this" (the text line "Note:" before the move line stays, per brainstorm note 3/3)
   core/release/notes/NJBTVC.md:1 records a change instead of telling the reader what to do, and contradicts itself ("tick the plan steps you did ..., but the move now lands anyway"); length is not the problem (notes in 0.5.3/ run to 1000 chars). Replace with: - Expect a move into done to land once every definition-of-done item is ticked, even with a plan step still open: each open step is printed as a `Note:` line before the move line (`warnings` in `--json`, and in the TUI message, accepting in signoff included) — tick it afterwards with `jaira dod <id> <n> --done --plan` if that work was done.
   core/release/notes/NJBTVC.md: add a second line for boards that keep the old done description (in-progress left them untouched, which stays; precedent 0.5.3/8NHD8Q.md line 2): - On a board set up before this version, delete ", the plan finished if there is one" from the `description:` line of `.jaira/lanes/done.md` (and of `.jaira/boards/<name>/lanes/done.md`): it still says an open plan step keeps a ticket out of done.
+round: 2
 ---
 
 # Ein offener Plan-Punkt sperrt die Ziellane nicht mehr, wenn die Definition of Done erfuellt ist
