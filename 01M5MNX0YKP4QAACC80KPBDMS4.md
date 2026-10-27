@@ -15,7 +15,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:04Z
-updated-at: 2026-10-27T00:04:15Z
+updated-at: 2026-10-27T00:05:44Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: pbdms4-driver
@@ -64,3 +64,4 @@ round: 2
 - Card edge: archived tickets never get a card. Only logbook cards in the done column carry the bar, so the bar goes there (milestoneColors). m.mstones stays unfiltered, because the M filter matches logbook cards on purpose (model.go:567-569).
 - Left alone on purpose: roadmap L bubble and detail (layer.go:162 milestoneDone, via Satisfied; TestArchivedTicketCountsAsTheLinkIndexSays pins archived-unfinished as not done there); epic ls/show (epic.Count); the 'holds N ticket(s)' totals of create/add/rm and logbook.
 - JSON: ls adds 'open'. 'count' keeps meaning the total, because changing what it means would break readers.
+- **2026-10-27 00:05 · BeMuCa** — Driver decisions after pre-process: (1) step 6 approved - DoD 1 names 'milestone show', which does not exist; the smallest faithful reading is a new 'jaira milestone show <name>' modelled on 'epic show', using Whereabouts() wording (English, like the rest of the command). If the maintainer does not want a new command, drop steps 6-7 and reword DoD 1. (2) step 9 as planned - DoD 2 asks the card edge to ignore filed tickets; archived ones have no card, so only logbook cards lose the milestone bar; the M filter keeps matching logbook cards (model.go:567-569, 'narrowing the board narrows what it remembers too'). Alternative if that reads wrong at signoff: keep the bar, drop the isLogged condition in milestoneColors.
