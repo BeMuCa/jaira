@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:51Z
-updated-at: 2026-10-27T00:11:13Z
+updated-at: 2026-10-27T00:13:52Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-268570
@@ -35,6 +35,7 @@ review-gaps: |-
   optimize pass 1: SEND BACK, test-only removals. TestForcedMoveNamesOverriddenCodesOnOneLine copies the setup and run of TestForcedMoveEndsOnItsSuccessLine (fold it in, fix the line-11 comment); core/gate/humanexit_test.go:62-64 repeats TestHumanExitLaneStillRefusesForward; the ticketFiles count checks in internal/cli/accept_test.go cannot fail because an accepted ticket stays in .jaira/tickets, so they move to the existing readTicketFile before/after comparison. Production code: nothing to remove.
   optimize pass 2: none. 94f60039 completed pass 1 list (forced-move tests folded, humanexit_test.go duplicate dropped, refused accepts compared byte for byte); the last-line bullet check in forceorder_test.go stays per the driver note. Production code unchanged since pass 1, which found nothing to remove.
   review pass 1: (1) core/release/notes/BX1MNM.md line 1 says ownership still refuses an accept; it cannot (core/gate/gate.go:217-219 exempts requires-human-exit lanes) - drop "ownership". (2) Follow-ups not filed: jaira-role-acceptance SKILL.md:199-204 and build.py:140 still force accepted tickets; cockpit Accept and the board a key record no acceptor. (3) Neither the plain-move refusal (gate.go:405) nor the generated agent block (core/board/announce.go:154) names jaira accept. (4) accepted-by/accepted-at are not shown in show --json and stay on a ticket sent back from done to signoff. (5) accept on a ticket in the human lane says it is "not a lane that waits for a person". (6) CLI accept goes to the route's next lane, the board a key to the terminal lane; same on the shipped board. (7) Full race suite for DoD 4 not run (deliberate, before the PR).
+  optimize pass 3: none. 70f82afd only rewords the not_human_lane refusal (internal/cli/accept.go:52) and drops ownership from release note line 1, adding or orphaning no code.
 test-verdict: "pass: gates green (build/vet/gofmt, race tests of cli/gate/move/role/ticket all ok), DoD 1-3 verified in the tree, accept + forced move exercised on a scratch board; full ./... race suite NOT run (house rule), DoD 4 stays open"
 review-verdict: "review pass 1: send back for one small fix - code and tests match DoD 1-3 with no defect found, but release note line 1 wrongly lists ownership as a gate that still refuses an accept, and that text ships in the binary."
 review-round: 3
