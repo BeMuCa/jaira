@@ -15,7 +15,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:04Z
-updated-at: 2026-10-27T00:07:04Z
+updated-at: 2026-10-27T00:07:13Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: pbdms4-driver
@@ -42,7 +42,7 @@ round: 2
 
 - [x] core/link/link.go: add (ix *Index) Open(id) bool beside Satisfied (~l.304): true only when place() is PlaceBoard or PlaceRef and not Done - 'open' as jaira tags/boards count it (tags.go:126, boards.go:47); reads no file
 - [x] core/link/link_test.go: TestOpen... - backlog ticket open; done-lane ticket, s.Archive'd ticket, s.Logbook'd ticket and unknown id not open (fixtures store/make1/list, l.10-60); go test ./core/link -run TestOpen -count=1
-- [ ] core/milestone/milestone.go: add (m *Milestone) Open(isOpen func(id string) bool) int beside Members (l.109), counting members; file lines stay untouched (removing ids is N71NVG); small test in milestone_test.go
+- [x] core/milestone/milestone.go: add (m *Milestone) Open(isOpen func(id string) bool) int beside Members (l.109), counting members; file lines stay untouched (removing ids is N71NVG); small test in milestone_test.go
 - [ ] failing test first in internal/cli/milestones_test.go after TestLsNamesEveryMilestoneWithItsCount (l.245): 3 tickets via mkTicket, milestone create, runCLI archive h2, ticket.At(dir).Logbook(h3, "as-20260911") (pattern links_test.go:47); ls text has '1 open of' and '3 ticket(s)', ls --json open==1 and count==3
 - [ ] internal/cli/milestones.go ls (l.505-560): one boardIndex(s) (links.go:113); line '%3d ticket(s)' becomes '%3d open of %3d ticket(s)' (keeps milestones_test.go:239/262 green); --json adds "open" after milestoneJSON, "count" stays the total; update the Long help
 - [ ] NEEDS DRIVER OK (no 'milestone show' exists, milestones.go:80-87): newMilestoneShowCmd modelled on epic show (epics.go:259-309), registered in newMilestoneCmd: label, goal, 'N open of M ticket(s)', one row per member with handle, ix.Lookup(id).Whereabouts() (link.go:493: 'archive · unfinished/done', 'logbook · done', 'on the board · <lane>'), title; --json = milestoneJSON + open + tickets with place, lane, title; name lookup and refusals as the other milestone commands
