@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:07Z
-updated-at: 2026-10-27T00:18:56Z
+updated-at: 2026-10-27T00:20:58Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: 4n1b66-driver
@@ -27,6 +27,7 @@ outcome-resolves: "DoD 1: 'run the whole suite' is gone; .jaira/lanes/testing.md
 review-summary: none
 round: 2
 review-gaps: "removed from core/release/notes/4N1B66.md:1 the repeated 'with `go test ./... -race`': the shipped lane and role files already carry the command as the Go case, and the note goes to non-Go repositories too. Considered and left: the full-suite rule in three files (DoD 2 asks for the worker and dispatcher line); the worker bullet's closing clause 'a lane runs only the tests of the packages its change touched' (the other half of the rule, not a repeat); 'in a lane' in the Gates sentence and the 'run ... and run' in its first line (trimming them in both lane files buys nothing); the dispatcher line being unwrapped (critique left it, DoD 2 'in einer Zeile'). Searched core/role/builtin, core/lane/builtin and .jaira/lanes for an existing full-suite rule: none besides this change; core/role/builtin/jaira-role-tester/SKILL.md:25 runs go test ./... as that role's whole job and is out of scope."
+test-verdict: "pass: gofmt/vet/build rc=0, go test ./core/lane ./core/role ./core/release rc=0, DoD 1-3 verified in the tree (prompts identical, 'whole suite' gone, rule lines in worker+dispatcher, note is one '- ' line), scratch board: lanes show testing has new text, lanes use testing --force replaced old Gates text, roles install wrote both rule lines"
 ---
 
 # Die Testing-Lane verlangt keinen vollen Suite-Lauf mehr; die Suite laeuft einmal vor dem PR
