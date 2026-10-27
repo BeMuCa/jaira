@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:22Z
-updated-at: 2026-10-27T14:59:50Z
+updated-at: 2026-10-27T14:59:52Z
 updated-by: berkc
 claimed-by: berk-ca-728718
 claimed-at: 2026-10-27T14:32:43Z
@@ -34,6 +34,8 @@ review-gaps: |-
   note: 'jaira boards create ""' normalises to today's board and is refused with exit 3 'default is today's board' rather than a usage error - harmless, slightly misleading
   note: an existing .jaira/boards/<name>/lanes/ holding only order or description (no *.md) counts as no board and those files are overwritten - consistent with how Boards() decides what is a board
 test-verdict: "pass: go build ./..., go vet ./... (exit 0), go test -count=1 -race ./... (exit 0). By hand with a binary built from ff50aaaa in a fresh 'jaira init' repo: boards create r --type code -> exit 0, order and every lane file byte-identical to the init board's; second create -> exit 3, description unchanged; blank --description -> exit 2 with the teamlead hint; --json keys name,type,lanes,description,lanes_dir; boards types lists code with its line; lanes --board r reads the new board; outside a repo exit 1 'run jaira init'."
+review-verdict: "The diff meets all five DoD items; go vet and go test ./... are green, and a hand run of the built binary showed every exit code and the written board as claimed. No defects found; three notes only."
+review-round: 2
 ---
 
 # Ein zweites Board laesst sich mit einem Befehl aus einem Board-Typ anlegen statt Lane-Dateien von Hand zu kopieren
