@@ -81,7 +81,7 @@ and on a bad day a different forge.
 2. **Unset, host `github.com`** — GitHub. Your tool is `gh`.
 3. **Unset, host contains `gitlab`** — GitLab. Your tool is `glab`.
 4. **Unset and the host says neither** — a forge on a domain of its own, say
-   `git.esprit-engineering.de`. Do not guess: a guessed tool fails against the
+   `git.example.de`. Do not guess: a guessed tool fails against the
    wrong forge, and a guessed tool that authenticates against the wrong project
    is worse. Say you cannot tell, and name the one command that settles it for
    this board for good:

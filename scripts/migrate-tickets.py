@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Migrate requirementsgenie tickets (copies only) into jaira's format.
+"""Migrate another project's tickets (copies only) into jaira's format.
 
 Adds `id:` and `status: backlog` to the frontmatter, leaves everything else
 byte-for-byte untouched (including the German body and the Jira-style keys),

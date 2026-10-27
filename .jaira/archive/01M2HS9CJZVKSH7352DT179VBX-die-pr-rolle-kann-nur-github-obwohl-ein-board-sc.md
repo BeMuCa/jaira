@@ -10,14 +10,14 @@ context: |-
 
   Auf GitLab gibt es keinen dieser Befehle. Das Gegenstueck heisst 'glab mr list --source-branch' und 'glab mr create'. Auch das Wort stimmt nicht: dort heisst es Merge Request, und der Prompt sagt durchgehend pull request.
 
-  Das ist kein hypothetischer Fall. Auf diesem Rechner liegt unter /home/alex/projects/requirementsgenie ein Board mit .jaira/, und sein einziger Remote ist git.esprit-engineering.de - GitLab. glab ist installiert, sowohl als Windows-Datei als auch als Linux-Binary in ~/.local/bin/glab. Wer dort die PR-Rolle startet, bekommt einen Prompt, dessen erste Handlung ins Leere greift.
+  Das ist kein hypothetischer Fall. Auf diesem Rechner liegt in einem anderen Projekt ein Board mit .jaira/, und sein einziger Remote ist ein firmeneigenes GitLab. glab ist installiert, sowohl als Windows-Datei als auch als Linux-Binary in ~/.local/bin/glab. Wer dort die PR-Rolle startet, bekommt einen Prompt, dessen erste Handlung ins Leere greift.
 
   jaira selbst ist davon nicht betroffen: es reist auf git-Refs und kennt keinen Forge. Betroffen ist allein der Rollen-Prompt.
 
   Was NICHT aufgeweicht werden darf, egal wie die Loesung aussieht: die Regel aus 13VMA8 gilt auf beiden Seiten gleich - der Agent schiebt den Zweig und haelt an, das Aufmachen gibt der Mensch frei, und Mergen und Freigeben bleiben verboten. Ein zweiter Weg durch den Prompt ist eine zweite Stelle, an der diese Regel stehen und stimmen muss.
 
   Offen und Sache der Plan-Lane: woran der Forge erkannt wird. Die Remote-URL ist der naheliegende Weg und braucht keine Einstellung; eine Einstellung je Board waere der andere; zwei getrennte Rollen der dritte und vermutlich der schlechteste, weil die Regel dann doppelt gepflegt werden muss.
-definition-of-done: "Auf einem Repository, dessen Remote auf GitLab zeigt, listet die Rolle die offenen Merge Requests des aktuellen Zweigs und schreibt dem Menschen eine lauffaehige 'glab mr create'-Zeile aus. Nachgestellt auf dem requirementsgenie-Board oder einem Fixture mit einem GitLab-Remote."
+definition-of-done: "Auf einem Repository, dessen Remote auf GitLab zeigt, listet die Rolle die offenen Merge Requests des aktuellen Zweigs und schreibt dem Menschen eine lauffaehige 'glab mr create'-Zeile aus. Nachgestellt auf dem Board eines anderen Projekts oder einem Fixture mit einem GitLab-Remote."
 tags:
   - cli
 blocked-by: []
@@ -34,7 +34,7 @@ updated-by: Alexander Sacharov
 
 ## Definition of Done
 
-- [-] Auf einem Repository, dessen Remote auf GitLab zeigt, listet die Rolle die offenen Merge Requests des aktuellen Zweigs und schreibt dem Menschen eine lauffaehige 'glab mr create'-Zeile aus. Nachgestellt auf dem requirementsgenie-Board oder einem Fixture mit einem GitLab-Remote.
+- [-] Auf einem Repository, dessen Remote auf GitLab zeigt, listet die Rolle die offenen Merge Requests des aktuellen Zweigs und schreibt dem Menschen eine lauffaehige 'glab mr create'-Zeile aus. Nachgestellt auf dem Board eines anderen Projekts oder einem Fixture mit einem GitLab-Remote.
   proof: als Punkte 2-4 nach 13VMA8 gewandert, 2026-09-15
 - [-] Auf GitHub aendert sich nichts: derselbe Prompt tut dort weiterhin genau das, was er heute tut. Nachgestellt auf diesem Repository.
   proof: als Punkte 2-4 nach 13VMA8 gewandert, 2026-09-15

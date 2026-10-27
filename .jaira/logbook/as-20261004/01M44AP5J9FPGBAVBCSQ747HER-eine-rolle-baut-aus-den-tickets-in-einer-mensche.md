@@ -9,7 +9,7 @@ goal: "jaira roles install liefert jaira-role-acceptance: die Rolle macht aus al
 context: |-
   Was heute schiefgeht:
   - Eine Abnahme heute: die Person geht jedes Ticket einzeln nach seinem review-check durch.
-  - Beispiel requirementsgenie feat/R33C4B, 04.10.2026: 55 Tickets, 378 Abnahme-Schritte.
+  - Beispiel aus einem anderen Projekt, feat/R33C4B, 04.10.2026: 55 Tickets, 378 Abnahme-Schritte.
   - Davon 51 Schritte Testbefehle (task test:one, npx vitest), die ein Agent selbst laufen lassen kann.
   - 52 Schritte 'localhost:8109 oeffnen', 25 'anmelden', 24 'Projekt 93' - dieselbe Vorbereitung je Ticket neu.
   - 9 bis 11 Schritte starten je einen Lauf mit echtem Modell (kostet Tokens), obwohl ein Lauf pro Thema alle Tickets abdeckt.

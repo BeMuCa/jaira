@@ -11,7 +11,7 @@ open list.
 
 ## 90ff38d — the lane is optimize, not optimise
 
-File, id and name. The catalogue copy and the req board's copy were replaced in
+File, id and name. The catalogue copy and the test project board's copy were replaced in
 the same pass rather than left as a dead `optimise`. Removing the `order` file the
 second `lanes add` wrote restored anchor ordering, so the board still reads
 `Implementing → Critique → Optimize → … → Review`.
@@ -51,12 +51,12 @@ parked or waiting on an answer resumes where it stopped, and nothing on the boar
 records where that was, so the honest answer is empty. Fixed, with a test naming
 the reason.
 
-Live spread on the req board afterwards: `backlog→todo`, `todo→in-progress`,
+Live spread on the test project board afterwards: `backlog→todo`, `todo→in-progress`,
 `review→signoff`, `human→""`, `blocked→""`, `done→""`.
 
 ## Consequence handled
 
-Editing the built-in review lane made the req board's byte-identical copy differ,
+Editing the built-in review lane made the test project board's byte-identical copy differ,
 and the board warned exactly as predicted:
 
     lane .../.jaira/lanes/review.md: id "review" overrides the built-in lane of the same name

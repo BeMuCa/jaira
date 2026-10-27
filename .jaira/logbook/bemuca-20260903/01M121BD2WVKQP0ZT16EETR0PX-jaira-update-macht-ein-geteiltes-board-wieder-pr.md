@@ -6,7 +6,7 @@ ready: true
 creator: BeMuCa
 goal: jaira update auf einem geteilten Board laesst .gitignore in Ruhe; nur jaira init schreibt den Ignore-Eintrag
 context: |-
-  Gemessen am 27.08. auf zwei Wegwerf-Boards: 'jaira init && jaira share && jaira update' - nach share steht nur /.jaira/lanes/ in .gitignore, nach update steht /.jaira/ wieder drin. Dasselbe, wenn die Zeile von Hand auskommentiert wurde (#/.jaira/), wie auf Berks req-Board. Folge: neue Tickets eines geteilten Boards werden ignoriert, Teammates sehen sie nicht mehr; schon getrackte Dateien bleiben getrackt, deshalb faellt es erst spaet auf.
+  Gemessen am 27.08. auf zwei Wegwerf-Boards: 'jaira init && jaira share && jaira update' - nach share steht nur /.jaira/lanes/ in .gitignore, nach update steht /.jaira/ wieder drin. Dasselbe, wenn die Zeile von Hand auskommentiert wurde (#/.jaira/), wie auf Berks Testprojekt-Board. Folge: neue Tickets eines geteilten Boards werden ignoriert, Teammates sehen sie nicht mehr; schon getrackte Dateien bleiben getrackt, deshalb faellt es erst spaet auf.
 
   Ursache: internal/cli/update.go:82 ruft board.Prepare, und Prepare (core/board/board.go:20) ruft AddIgnore ohne Bedingung. AddIgnore prueft nur Ignored(root) (core/board/gitignore.go:29), und das erkennt eine auskommentierte Zeile nicht als Absicht.
 
@@ -14,7 +14,7 @@ context: |-
 
   Fix-Vorschlag: update ruft nur AnnounceInAgentFiles (den Block) und, wenn das Board geteilt ist, AddLanesIgnore; den /.jaira/-Eintrag schreibt nur init. Alternativ Prepare ein Flag geben. Tests in internal/cli, die 'gitignore_written' von update erwarten, anpassen.
 
-  Warum das jetzt zaehlt: der board-beschreibende Block (0e7db74) ist auf Berks req-Board nie angekommen - dort steht noch der alte Block ohne 'This board's lanes' und ohne 'Work one lane to empty'. Ihn per jaira update zu holen wuerde das Board heute wieder privat machen.
+  Warum das jetzt zaehlt: der board-beschreibende Block (0e7db74) ist auf Berks Testprojekt-Board nie angekommen - dort steht noch der alte Block ohne 'This board's lanes' und ohne 'Work one lane to empty'. Ihn per jaira update zu holen wuerde das Board heute wieder privat machen.
 definition-of-done: "Nach 'jaira init && jaira share && jaira update' enthaelt .gitignore keinen /.jaira/-Eintrag (Test); auf einem Board mit auskommentierter Zeile ebenso; jaira init schreibt ihn weiterhin; die update-Hilfe sagt nicht mehr, dass sie den Ignore-Eintrag schreibt"
 blocked-by: []
 commits:
