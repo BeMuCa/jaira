@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:22Z
-updated-at: 2026-10-27T14:31:47Z
+updated-at: 2026-10-27T14:32:03Z
 updated-by: berkc
 ---
 
@@ -44,4 +44,4 @@ updated-by: berkc
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-27 14:32 · berkc** — Korrektur 27.10.2026 (berkc): Der Kontext beschreibt 'b' so, wie es heute ist (b schaltet zum naechsten Board, internal/tui/model.go:1705). Gewollt ist (KVMG0K): b oeffnet ein Popup mit allen Boards, dort waehlt man mit Leertaste die freigegebenen (aktiven) Boards, aus denen der Teamlead waehlen darf; Shift+hoch/runter wechselt zwischen den aktiven Boards. Eine Einstellung 'aktive Boards' gibt es heute nicht (nur default-board in internal/tui/settings.go). Fuer dieses Ticket aendert das nichts: es geht nur ums Anlegen von Boards per Befehl.
