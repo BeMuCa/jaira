@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:07Z
-updated-at: 2026-10-27T00:02:42Z
+updated-at: 2026-10-27T00:02:44Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: 4n1b66-driver
@@ -44,4 +44,4 @@ claimed-at: 2026-10-27T00:01:46Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-27 00:02 · BeMuCa** — Gates phrases the Go command as the Go case because core/lane/builtin ships to every repository, not only Go ones; the lane prompt must stay byte-identical between .jaira/lanes/testing.md and the builtin (lanesEquivalent). Example verdict now says 'touched packages green'.
