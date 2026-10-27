@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:22Z
-updated-at: 2026-10-27T14:34:52Z
+updated-at: 2026-10-27T14:42:32Z
 updated-by: berkc
 claimed-by: berk-ca-728718
 claimed-at: 2026-10-27T14:32:43Z
@@ -30,7 +30,8 @@ claimed-at: 2026-10-27T14:32:43Z
 
 ## Definition of Done
 
-- [ ] 'jaira boards create <name> --type <typ>' schreibt .jaira/boards/<name>/lanes/ mit Lanes, order und description des Typs; ein vorhandenes Board wird nicht ueberschrieben (exit 3)
+- [x] 'jaira boards create <name> --type <typ>' schreibt .jaira/boards/<name>/lanes/ mit Lanes, order und description des Typs; ein vorhandenes Board wird nicht ueberschrieben (exit 3)
+  proof: core/lane/boardtypes.go CreateBoard, internal/cli/boards.go:94 newBoardsCreateCmd; TestCreateBoardFromATypeWithLanesOfItsOwn, TestBoardsCreate (exit 3 for video and default)
 - [ ] 'jaira boards types' listet die mitgelieferten Typen mit einer Zeile Beschreibung
 - [ ] Ein Board ohne --type bekommt die eingebauten Code-Lanes
 - [ ] Tests; Release-Note
