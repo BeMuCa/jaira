@@ -16,11 +16,11 @@ related: []
 commits:
   - a780e3fca9d45d977c7495252e356612ee0ebc1c
 created-at: 2026-10-23T15:26:09Z
-updated-at: 2026-10-27T00:20:58Z
+updated-at: 2026-10-27T00:21:06Z
 assignee: BeMuCa
 updated-by: BeMuCa
-claimed-by: szftqd-driver
-claimed-at: 2026-10-27T00:01:42Z
+claimed-by: ""
+claimed-at: ""
 outcome-what: "Vier Rollen-Skills (jaira-worker, jaira-dispatcher, jaira-role-lane, jaira-role-acceptance) bekommen je einen Absatz: ein Ergebnis fuer eine Person (Vergleichsseite, Bericht, Screenshot, Abnahmeseite) liegt unter <repo>/.jaira/deliverables/<ticket-handle>/, nie unter /tmp oder im Scratchpad, und der Pfad kommt per jaira note ans Ticket. Release-Notiz core/release/notes/SZFTQD.md."
 outcome-why: "Eine Vergleichsseite eines Workers lag im Scratchpad unter /tmp und war nach dem WSL-Crash weg (Feedback Punkt 16). Die Rollen nannten keinen Ort fuer Ergebnisse, die fuer einen Menschen bestimmt sind."
 outcome-resolves: "DoD 1: alle vier Skills nennen den stabilen Pfad, verbieten /tmp und verlangen die Notiz am Ticket (Fundstellen im Proof). Ein Setting 'deliverables' gibt es nicht und wurde nicht gebaut (nicht text-only), es gilt der Fallback. DoD 2: core/release/notes/SZFTQD.md:1."
