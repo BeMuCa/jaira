@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:07Z
-updated-at: 2026-10-27T00:09:40Z
+updated-at: 2026-10-27T00:10:42Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: 4n1b66-driver
@@ -54,3 +54,4 @@ review-summary: |-
 ## Progress
 - **2026-10-27 00:02 · BeMuCa** — Gates phrases the Go command as the Go case because core/lane/builtin ships to every repository, not only Go ones; the lane prompt must stay byte-identical between .jaira/lanes/testing.md and the builtin (lanesEquivalent). Example verdict now says 'touched packages green'.
 - **2026-10-27 00:09 · BeMuCa** — critique: four findings, the full text is in review-summary. (1) Open question for the maintainer: the "runs once before the PR" half of the rule has no home - no shipped role tells any session to run the full suite now (the old Gates was the only place), and "main session" is defined nowhere; the candidate home is the "Before you push anything" list in core/role/builtin/jaira-role-pr/SKILL.md:37. Wait for the answer before touching it. (2) Lane Gates, both files, same bytes: put "with the race detector (go test ./... -race)" inside the Go case, as the 00:02 note intends. (3) Worker SKILL.md:168 and dispatcher SKILL.md:268: drop "7-8 minutes" (true only for this repository; the roles are installed everywhere) and name go test ./... -race as the Go case. (4) Release note: lanes use --force copies a catalogue testing.md over the builtin (core/lane/lane.go:682); the maintainer's ~/.jaira/lanes/testing.md:22 still has the old Gates - reproduced on a scratch board, use --force wrote "Build everything and run the whole suite" back. Tell readers to update or delete a catalogue copy first; the maintainer refreshes his own copy by hand (outside the repo). Left alone: the rule appearing in three files and the dispatcher line being unwrapped - both are what DoD 2 asks for ("in einer Zeile").
+- **2026-10-27 00:10 · BeMuCa** — driver: critique finding 1 (nothing shipped tells a session to run the full suite; jaira-role-pr) is not taken into this ticket and does not block it: it is outside DoD 1-3, and .github/workflows/ci.yaml:70 already runs go test ./... -race on every PR. It goes to the maintainer as a question in the driver's report. Findings 2-4 go back to in-progress. The maintainer's own catalogue ~/.jaira/lanes/testing.md:22 still has the old Gates text and lays over the shipped lane; it is outside the repository and is left for his hand.
