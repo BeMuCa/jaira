@@ -1,7 +1,7 @@
 ---
 id: 01M5MNX3NGYBHKCQ2YBQ4N1B66
 title: Die Testing-Lane verlangt keinen vollen Suite-Lauf mehr; die Suite laeuft einmal vor dem PR
-status: todo
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Der Prompt der Testing-Lane sagt, was die Regel ist: Paket-Tests der beruehrten Pakete in der Lane, die volle Race-Suite einmal vor dem PR durch die Hauptsession - und kein Worker startet sie mehr aus eigenem Antrieb."
@@ -16,11 +16,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:07Z
-updated-at: 2026-10-26T20:28:31Z
+updated-at: 2026-10-27T00:01:46Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: 4n1b66-driver
-claimed-at: 2026-10-26T20:28:21Z
+claimed-at: 2026-10-27T00:01:46Z
 ---
 
 # Die Testing-Lane verlangt keinen vollen Suite-Lauf mehr; die Suite laeuft einmal vor dem PR
