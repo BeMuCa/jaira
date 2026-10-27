@@ -7,7 +7,7 @@ creator: BeMuCa
 assignee: Alexander Sacharov
 goal: "Ein Claim, dessen Session gestorben ist, laesst sich mit einem Befehl loesen und blockiert das Ticket nicht auf Dauer"
 context: |-
-  Auf dem requirementsgenie-Board: 'jaira next --per-lane' meldet '5M11NC carries an abandoned claim by EE-3NX6GL3-690539, last renewed 11h ago'. Zwei Tage vorher meldete dasselbe Board '2CQ613 ... last renewed 436h ago' - also 18 Tage.
+  Auf dem Board eines anderen Projekts: 'jaira next --per-lane' meldet '5M11NC carries an abandoned claim by EE-3NX6GL3-690539, last renewed 11h ago'. Zwei Tage vorher meldete dasselbe Board '2CQ613 ... last renewed 436h ago' - also 18 Tage.
   jaira erkennt den verwaisten Claim also und benennt ihn praezise. Was fehlt, ist der Befehl daneben: 'jaira --help' listet claim, aber nichts, was einen Claim wieder loest, und er laeuft auch nicht von selbst ab.
   NICHT geprueft und vor dem Bauen zu klaeren: ob es intern doch eine Ablaufzeit gibt, die nur nicht greift - ich habe das aus der Befehlsliste geschlossen, nicht im Code nachgelesen.
   Warum es zaehlt: mehrere parallele Sessions schreiben dieses Board, und eine getoetete Session hat nie einen Zug, ihren Claim zurueckzugeben. Genau der Fall, fuer den das Board gebaut ist.

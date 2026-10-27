@@ -180,15 +180,20 @@ board is meant to run in. Every tab that asks on its own is a tab the person
 has to go looking for.
 
 - **Started with `--parent <session>`** — the line that started you was
-  `/jaira-dispatcher <id> --parent <name>`, which is what `spawn.sh --parent`
-  types. Then you never ask the person yourself, not even with
-  `AskUserQuestion` at hand. Write the question and its numbered options onto
-  the ticket with `jaira note`, send the same to `<name>` with `SendMessage`,
+  `/jaira-dispatcher <id> --parent <session>`, which is what `spawn.sh` types
+  with the caller's own session as `<session>`, usually a `uds:` address. Then
+  you never ask the person yourself, not even with `AskUserQuestion` at hand.
+  Write the question and its numbered options onto the ticket with
+  `jaira note`, send the same to `<session>` with `SendMessage`,
   and end your turn. The answer comes back as a message, and it is on the
   ticket as a note by then; act on it from there. Write the parent's name onto
-  the ticket too (`jaira note <id> "parent session: <name>"`) the first time
+  the ticket too (`jaira note <id> "parent session: <session>"`) the first time
   you read it: a dispatcher restarted after `jaira resume` has no starting
-  line to read it from.
+  line to read it from. **A parent `SendMessage` cannot reach is no reason to
+  pick another session.** Never send to another peer instead — the oldest,
+  the likeliest, one with a similar name: a second teamlead's work is then
+  reported to the wrong one, and nobody sees it. Note on the ticket that the
+  parent was unreachable, then ask in your own tab as if you had none.
 - **No parent, and `AskUserQuestion` in your session** — the person started
   you directly. Ask with `AskUserQuestion`.
 - **No `AskUserQuestion` at all** — started as a subagent, or headless. The
@@ -293,9 +298,10 @@ Say which one you took. The human needs to know whether the workers outlive you.
    into the tab instead of `/jaira-role-lane <ticket-id> <lane>`. That is how a
    teamlead starts a dispatcher in a tab of its own — the same script, so there
    is no second one to drift from this one. You do not pass it yourself; you are
-   what it starts. With `--parent <session>` it types
-   `/jaira-dispatcher <ticket-id> --parent <session>`, and that name is where
-   your questions go — see "How you ask".
+   what it starts. It types `/jaira-dispatcher <ticket-id> --parent <session>`,
+   `<session>` being the session that ran it — or the one `--parent` named —
+   as a `uds:` address, and that is where your questions go — see "How you
+   ask".
 
    `--no-worktree` before the slug starts the worker in the repository
    directory itself instead — no worktree, no branch of its own. (`JAIRA_NO_WORKTREE=1`
@@ -474,7 +480,9 @@ try something in the app, hand it on before you stop:
 
 Pass every ticket of the same change that is already waiting in a human lane —
 a large fix carried as several tickets is one acceptance page, not several.
-Say which language the person was spoken to in. The acceptance role answers in
+Say which language the person was spoken to in. A `note:` line in the
+review's `review-gaps` reaches the page as a candidate; you never create a
+ticket from one, the person does. The acceptance role answers in
 three lines; its link goes into your third report line. Reading the person's
 marks back is not yours: that comes later, from whoever the person tells.
 

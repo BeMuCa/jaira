@@ -55,6 +55,7 @@ const (
 	modeSettings
 	modeDefaultBoard
 	modeDelete
+	modeReject
 	modeDropBoard
 	modeLegend
 	modeMilestones
@@ -172,6 +173,11 @@ type Model struct {
 	// somewhere else. Zero value is modeBoard, which is what these dismissed to
 	// before.
 	returnTo mode
+
+	// rejecting is the ticket R was pressed on, held while its reason is
+	// typed: on the board the cursor may move under a reload, and the
+	// reason must land on the ticket it was typed for.
+	rejecting *ticket.Ticket
 
 	// copied marks that the id was just put on the clipboard. OSC52 gives no
 	// feedback of its own, so the pane has to say the copy happened — it is
@@ -1237,7 +1243,7 @@ func (m *Model) insertText(text string) {
 		m.filter = m.input
 		m.rebuild()
 
-	case modeCreate, modeDelete:
+	case modeCreate, modeDelete, modeReject:
 		m.input += foldToOneLine(text)
 
 	case modeLayer:
@@ -1308,6 +1314,22 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		case "esc":
 			m.input = ""
 			m.mode = modeDetail
+		case "backspace":
+			if r := []rune(m.input); len(r) > 0 {
+				m.input = string(r[:len(r)-1])
+			}
+		default:
+			m.insertText(k.Text)
+		}
+		return m, nil
+
+	case modeReject:
+		switch s {
+		case "enter":
+			m.confirmReject()
+		case "esc":
+			m.input, m.rejecting = "", nil
+			m.mode = m.returnTo
 		case "backspace":
 			if r := []rune(m.input); len(r) > 0 {
 				m.input = string(r[:len(r)-1])
@@ -1581,6 +1603,8 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 				m.mode = modeDelete
 				m.input = ""
 			}
+		case "R":
+			m.startReject(m.detail)
 		case "b":
 			// A blocked ticket names its blocker; the reader's next question is
 			// always "and what is that one waiting on" — so the link is walkable.
@@ -1653,6 +1677,8 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.openDetail()
 	case "x":
 		m.archiveSelected()
+	case "R":
+		m.startReject(m.selected())
 	case "v":
 		// The compact view: the whole flow on one screen, for watching several
 		// agents rather than working one ticket.
@@ -2273,6 +2299,51 @@ func (m *Model) archiveSelected() {
 	m.detail = nil
 	m.notify(fmt.Sprintf("Archived %s.\n\nNothing was deleted — bring it back with:\n\n  jaira restore %s",
 		ticket.Handle(t.ID), filepath.Base(dst)), false)
+}
+
+// startReject asks for the one line that says why t will not be done.
+//
+// Its own key rather than a question on x: x tidies a ticket away and must
+// go on doing only that, and a rejection is a decision with a reason, which
+// is what tells the two apart in the archive months later. The board is a
+// person at a keyboard, so nothing here asks whether the caller may reject —
+// that refusal is the CLI's, which agents drive.
+func (m *Model) startReject(t *ticket.Ticket) {
+	if t == nil || m.refuseLogged(t) {
+		return
+	}
+	m.returnTo = m.mode
+	m.rejecting = t
+	m.input = ""
+	m.mode = modeReject
+}
+
+// confirmReject rejects the ticket with the typed reason. An empty reason
+// leaves the prompt open: rejecting without one is archiving, and x does that.
+func (m *Model) confirmReject() {
+	t, why := m.rejecting, strings.TrimSpace(m.input)
+	if why == "" {
+		return
+	}
+	m.input, m.rejecting = "", nil
+	// Stamped before the ticket leaves the board, as 'jaira reject' does:
+	// a rejected ticket's commits are the record of what was tried.
+	// Best-effort, like there — finding none must not stop the rejection.
+	_, _ = m.store.StampCommits(t, m.gateEnv().DeriveCommits)
+	dst, err := m.store.Reject(t.ID, ticket.RejectWontfix, why, "", time.Now())
+	if err != nil {
+		m.mode = m.returnTo
+		m.notify(err.Error(), true)
+		return
+	}
+	m.mode = modeBoard
+	m.detail = nil
+	if err := m.reload(); err != nil {
+		m.notify(err.Error(), true)
+		return
+	}
+	m.notify(fmt.Sprintf("Rejected %s: %s\n\nIt is in the archive with its reason — bring it back with:\n\n  jaira restore %s",
+		ticket.Handle(t.ID), why, filepath.Base(dst)), false)
 }
 
 // nextBoard shows the repository's next board, in the order today's board

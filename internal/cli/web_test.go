@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/BeMuCa/jaira/core/ticket"
 	"github.com/BeMuCa/jaira/core/web"
 )
 
@@ -185,5 +188,179 @@ func TestWebCreatesMovesRemovesAndOpens(t *testing.T) {
 	}
 	if last := d.Notes[len(d.Notes)-1]; last.Text != "**bold** and <script>alert(1)</script>" || last.Author == "" || last.At.IsZero() {
 		t.Fatalf("last note = %+v; want the text verbatim with its author and time", last)
+	}
+}
+
+// fileAway moves a board ticket's file to dir under .jaira, as filing it
+// does, with extra frontmatter lines put in before the closing delimiter.
+func fileAway(t *testing.T, s *ticket.Store, id, dir, extra string) {
+	t.Helper()
+	var from string
+	entries, err := os.ReadDir(s.TicketsDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range entries {
+		if ticket.IDFromFilename(e.Name()) == id {
+			from = filepath.Join(s.TicketsDir(), e.Name())
+		}
+	}
+	raw, err := os.ReadFile(from)
+	if err != nil {
+		t.Fatal(err)
+	}
+	src := strings.Replace(string(raw), "\n---\n", "\n"+extra+"---\n", 1)
+	to := filepath.Join(s.Root, ticket.DirName, dir, filepath.Base(from))
+	if err := os.MkdirAll(filepath.Dir(to), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(to, []byte(src), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(from); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// all=1 lists every ticket that ever was: the logbook and the archive beside
+// the board, each saying where it lies, the logbook's with the day it was
+// filed and a rejected one with its kind; each of them opens, and the opened
+// archive ticket says why it was rejected.
+func TestWebListsFiledTicketsAndOpensThem(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("JAIRA_USER", "Ada Lovelace")
+	t.Setenv("JAIRA_HOME", filepath.Join(dir, "home"))
+	if out, err := runCLI(t, dir, "init"); err != nil {
+		t.Fatalf("init: %v\n%s", err, out)
+	}
+	open := createTicket(t, dir, "Still open", "--tag", "web")
+	logged := createTicket(t, dir, "Long done")
+	rejected := createTicket(t, dir, "Never")
+
+	g.dir = dir
+	s, err := openStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	fileAway(t, s, logged, filepath.Join(ticket.LogbookSubdir, "al-20261001"), "")
+	fileAway(t, s, rejected, ticket.ArchiveSubdir,
+		"rejected-kind: wontfix\nrejected-why: nobody needs it\nrejected-by: Ada Lovelace\nrejected-at: 2026-10-02T09:00:00Z\n")
+	h := (&web.Server{Source: newWebSource(s)}).Handler()
+
+	var loose []web.Ticket
+	webGet(t, h, "/api/unassigned", &loose)
+	if len(loose) != 1 || loose[0].ID != open || loose[0].Place != "board" || loose[0].Creator != "Ada Lovelace" || loose[0].Goal != "g" || len(loose[0].Tags) != 1 {
+		t.Fatalf("unassigned = %+v; want only %s, on the board, with its creator and tag", loose, open)
+	}
+
+	webGet(t, h, "/api/unassigned?all=1", &loose)
+	got := map[string]web.Ticket{}
+	for _, c := range loose {
+		got[c.ID] = c
+	}
+	if len(loose) != 3 {
+		t.Fatalf("all = %+v; want 3 tickets", loose)
+	}
+	if c := got[logged]; c.Place != "logbook" || c.FiledAt.Format("2006-01-02") != "2026-10-01" {
+		t.Errorf("logged = %+v; want place logbook, filed 2026-10-01", c)
+	}
+	if c := got[rejected]; c.Place != "archive" || c.Rejected != "wontfix" || c.FiledAt.Format("2006-01-02") != "2026-10-02" {
+		t.Errorf("rejected = %+v; want place archive, rejected wontfix, filed 2026-10-02", c)
+	}
+
+	var d web.TicketDetail
+	webGet(t, h, "/api/tickets/"+logged, &d)
+	if d.Place != "logbook" || d.Rejected != nil {
+		t.Errorf("logged detail = %+v", d)
+	}
+	webGet(t, h, "/api/tickets/"+rejected, &d)
+	if d.Place != "archive" || d.Rejected == nil || d.Rejected.Kind != "wontfix" || d.Rejected.Why != "nobody needs it" {
+		t.Errorf("rejected detail = %+v; want its rejection", d)
+	}
+	webGet(t, h, "/api/tickets/"+open, &d)
+	if d.Place != "board" {
+		t.Errorf("open detail place = %q", d.Place)
+	}
+}
+
+// The page colours lanes by the board's order and their kind, so the lanes
+// come in that order with the kind of each.
+func TestWebListsLanesInBoardOrderWithKind(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("JAIRA_HOME", filepath.Join(dir, "home"))
+	if out, err := runCLI(t, dir, "init"); err != nil {
+		t.Fatalf("init: %v\n%s", err, out)
+	}
+	g.dir = dir
+	s, err := openStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var lanes []web.Lane
+	webGet(t, (&web.Server{Source: newWebSource(s)}).Handler(), "/api/lanes", &lanes)
+	kind := map[string]string{}
+	var order []string
+	for _, l := range lanes {
+		kind[l.ID] = l.Kind
+		order = append(order, l.ID)
+	}
+	if len(order) == 0 || order[0] != "backlog" {
+		t.Fatalf("lanes = %v; want the board's order, backlog first", order)
+	}
+	for id, want := range map[string]string{"backlog": "work", "human": "human", "signoff": "human", "done": "terminal", "blocked": "parking"} {
+		if kind[id] != want {
+			t.Errorf("%s is %q, want %q", id, kind[id], want)
+		}
+	}
+}
+
+// The page rewrites an epic through the same call 'jaira epic set' makes and
+// reads the new state straight back. An editor that sat open while the CLI
+// changed the same epic is refused with 409 and writes nothing, so neither
+// change is lost; the members are untouched by either.
+func TestWebRewritesAnEpicAndRefusesAStaleEditor(t *testing.T) {
+	ada, grace := twoBoards(t)
+	a := createTicket(t, ada, "Login form")
+	jsonOf(t, ada, "epic", "create", "magic-login", a, "--title", "Login")
+
+	g.dir = ada
+	s, err := openStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := (&web.Server{Source: newWebSource(s), Push: webPush}).Handler()
+	var epics []web.Epic
+	webGet(t, h, "/api/epics", &epics)
+	read, _ := json.Marshal(web.EpicFields{Title: epics[0].Title, Description: epics[0].Description, Body: epics[0].Body})
+
+	edit := `{"title":"Anmeldung","description":"per Link","body":"# Login\n\n## Ziel\n\nkein Passwort","base":` + string(read) + `}`
+	if w := webDo(t, h, "PATCH", "/api/epics/magic-login", edit); w.Code != 200 {
+		t.Fatalf("edit: %d %s", w.Code, w.Body)
+	}
+	webGet(t, h, "/api/epics", &epics)
+	if e := epics[0]; e.Title != "Anmeldung" || e.Description != "per Link" || e.Body != "# Anmeldung\n\n## Ziel\n\nkein Passwort" || e.Text != "## Ziel\n\nkein Passwort" || len(e.Tickets) != 1 {
+		t.Fatalf("after the edit: %+v", e)
+	}
+
+	if out, err := runAndSend(t, ada, "epic", "set", "magic-login", "--body", "from the CLI"); err != nil {
+		t.Fatalf("set: %v\n%s", err, out)
+	}
+	stale := `{"body":"from a stale editor","base":` + string(read) + `}`
+	if w := webDo(t, h, "PATCH", "/api/epics/magic-login", stale); w.Code != http.StatusConflict || !strings.Contains(w.Body.String(), "open it again") {
+		t.Fatalf("stale editor: %d %s; want 409 saying to open it again", w.Code, w.Body)
+	}
+	if w := webDo(t, h, "PATCH", "/api/epics/no-such", `{"title":"x"}`); w.Code != http.StatusNotFound {
+		t.Fatalf("unknown epic: %d %s", w.Code, w.Body)
+	}
+	if w := webDo(t, h, "PATCH", "/api/epics/magic-login", `{"title":"  "}`); w.Code != http.StatusBadRequest {
+		t.Fatalf("empty title: %d %s", w.Code, w.Body)
+	}
+
+	if out, err := runCLI(t, grace, "fetch"); err != nil {
+		t.Fatalf("fetch: %v\n%s", err, out)
+	}
+	got := jsonOf(t, grace, "epic", "show", "magic-login")
+	if got["body"] != "from the CLI" || got["title"] != "Anmeldung" || len(got["members"].([]any)) != 1 {
+		t.Fatalf("grace sees %v", got)
 	}
 }

@@ -614,7 +614,9 @@ async function afterAccept($: EngineInterface, id: string, terminal: string): Pr
   const next = nextToStart(listed.stdout, tabsOf(tabs.stdout))
   if (next === undefined) return stuck(t.nothingNext)
   const lane = dispatchLane(await settingsJson($))
-  const started = await run($, [...script, next.toLowerCase(), next, lane, b.repo], b.repo, 120_000)
+  // Its own tab, not this chat: spawn.sh would otherwise make this session
+  // its parent, and its questions would arrive here instead of beside it.
+  const started = await run($, [...script, '--no-parent', next.toLowerCase(), next, lane, b.repo], b.repo, 120_000)
   if (started?.exitCode !== 0) return stuck(`spawn.sh: ${output(started).slice(-160)}`)
   await say($, [t.nextStarted(id, next), hint].filter(Boolean).join('; '))
 }
@@ -935,7 +937,8 @@ async function giveBack($: EngineInterface, id: string, lane: string, reason: st
   // whatever worker it has.
   if (script === undefined) return handedTo('none', `${why}; no spawn.sh found (jaira roles install), old tab left open`)
   if (tab !== undefined) await run($, [bin, 'tab', 'close', tab.tab_id], dir)
-  const started = await run($, [...script, id.toLowerCase(), id, 'worker', board.repo], board.repo, 120_000)
+  // In its own tab, like the one after Accept: not this chat's child.
+  const started = await run($, [...script, '--no-parent', id.toLowerCase(), id, 'worker', board.repo], board.repo, 120_000)
   if (started?.exitCode === 0) return handedTo('new', why)
   await handedTo('none', `${why}; spawn.sh failed: ${(started?.stderr ?? '').trim().slice(-160)}`)
 }

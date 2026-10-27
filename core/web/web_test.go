@@ -16,10 +16,15 @@ type fakeSource struct {
 	unassigned []Ticket
 	assigned   []string
 	err        error
+	// all is what the last Unassigned call was asked for.
+	all bool
 }
 
-func (f *fakeSource) Epics() ([]Epic, error)        { return f.epics, f.err }
-func (f *fakeSource) Unassigned() ([]Ticket, error) { return f.unassigned, f.err }
+func (f *fakeSource) Epics() ([]Epic, error) { return f.epics, f.err }
+func (f *fakeSource) Unassigned(all bool) ([]Ticket, error) {
+	f.all = all
+	return f.unassigned, f.err
+}
 func (f *fakeSource) Assign(epic, from, id string) error {
 	if f.err != nil {
 		return f.err
@@ -44,6 +49,14 @@ func (f *fakeSource) CreateEpic(name, title, description string) error {
 	f.assigned = append(f.assigned, "+"+name+"/"+title+"/"+description)
 	return nil
 }
+func (f *fakeSource) SetEpic(name string, edit EpicEdit) error {
+	if edit.Base != nil && edit.Base.Title != "Login" {
+		return fmt.Errorf("epic %s: %w", name, ErrConflict)
+	}
+	f.assigned = append(f.assigned, "="+name+"/"+*edit.Title)
+	return nil
+}
+func (f *fakeSource) Lanes() ([]Lane, error) { return nil, f.err }
 func (f *fakeSource) Ticket(id string) (TicketDetail, error) {
 	if id != "A" {
 		return TicketDetail{}, fmt.Errorf("ticket %s: %w", id, ErrNotFound)
@@ -100,8 +113,24 @@ func TestEmptyListsAreArrays(t *testing.T) {
 	if got := strings.TrimSpace(do(t, h, "GET", "/api/unassigned", "").Body.String()); got != "[]" {
 		t.Fatalf("unassigned = %s", got)
 	}
+	if got := strings.TrimSpace(do(t, h, "GET", "/api/lanes", "").Body.String()); got != "[]" {
+		t.Fatalf("lanes = %s", got)
+	}
 	if got := do(t, h, "GET", "/api/epics", "").Body.String(); !strings.Contains(got, `"tickets":[]`) {
 		t.Fatalf("epics = %s", got)
+	}
+}
+
+// all=1 asks the source for every ticket that ever was; anything else, for
+// the open ones only.
+func TestUnassignedAllReachesTheSource(t *testing.T) {
+	src := &fakeSource{}
+	h := (&Server{Source: src}).Handler()
+	for target, want := range map[string]bool{"/api/unassigned?all=1": true, "/api/unassigned": false, "/api/unassigned?all=yes": false} {
+		do(t, h, "GET", target, "")
+		if src.all != want {
+			t.Errorf("GET %s: all = %v, want %v", target, src.all, want)
+		}
 	}
 }
 
@@ -161,16 +190,19 @@ func TestMoveRemoveCreate(t *testing.T) {
 		{"POST", "/api/epics", `{"name":"pay","title":"Pay","description":"d"}`, 200},
 		{"POST", "/api/epics", `{"name":"login"}`, 409},
 		{"POST", "/api/epics", `{"title":"no name"}`, 400},
+		{"PATCH", "/api/epics/login", `{"title":"Anmeldung","base":{"title":"Login"}}`, 200},
+		{"PATCH", "/api/epics/login", `{"title":"Anmeldung","base":{"title":"Stale"}}`, 409},
+		{"PATCH", "/api/epics/login", `{"base":{"title":"Login"}}`, 400},
 	} {
 		if w := do(t, h, c.method, c.target, c.body); w.Code != c.code {
 			t.Errorf("%s %s %s: %d %s; want %d", c.method, c.target, c.body, w.Code, w.Body, c.code)
 		}
 	}
-	want := []string{"old>login/B", "-login/B", "+pay/Pay/d"}
+	want := []string{"old>login/B", "-login/B", "+pay/Pay/d", "=login/Anmeldung"}
 	if fmt.Sprint(src.assigned) != fmt.Sprint(want) {
 		t.Errorf("writes = %v; want %v", src.assigned, want)
 	}
-	if pushes != 5 {
+	if pushes != 7 {
 		t.Errorf("pushes = %d; want one per write that reached the source", pushes)
 	}
 }

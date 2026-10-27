@@ -25,7 +25,8 @@ h1{font-size:1.5rem;font-weight:600;margin:0;text-wrap:balance}
 h2{font-size:1.15rem;font-weight:600;margin:0;text-wrap:balance}
 h3{font-size:.8rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px}
 .sub{color:var(--muted);margin:4px 0 0;max-width:75ch}
-code{font-family:var(--mono);font-size:.86em;background:var(--code-bg);padding:1px 4px;border-radius:3px;overflow-wrap:anywhere}
+code{font-family:var(--mono);font-size:.86em;background:var(--code-bg);padding:1px 4px;border-radius:3px;overflow-wrap:anywhere;cursor:copy}
+code.copied{outline:2px solid var(--ok)}
 button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:6px;padding:4px 10px}
 button:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .strip{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:12px;border-bottom:1px solid var(--line);margin-bottom:16px;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
@@ -130,6 +131,7 @@ const STR = {
     expect: 'Ожидается:', ok: '✓ ок', fail: '✗ нет', skip: 'пропуск', stepNote: 'Что увидел вместо ожидаемого? Отсюда Claude поймёт, вернуть тикет или это новый баг.',
     test: 'тест', step: 'шаг', unproven: 'ни один шаг не проверяет этот тикет', round: 'круг',
     changed: 'После доработки:', comment: 'Комментарий к тикету (необязательно)',
+    candidates: 'Заметки ревью: кандидаты в тикет', candidatesHint: 'Ни одна не станет тикетом сама. Напиши в комментарии к тикету, какую завести.',
     blockNote: 'Заметка к блоку: всё, что не относится к одному шагу или тикету' },
   de: { connecting: 'Verbinde mit dem Speicher…', saving: 'Wird gespeichert', nosave: 'Ohne Speichern', saveFailed: 'Nicht gespeichert: ', store: 'Speicher: ',
     warn: 'Speicher nicht erreichbar: Markierungen werden nicht gespeichert. Seite auf claude.ai mit eigenem Konto öffnen.', blocks: 'Blöcke',
@@ -141,6 +143,7 @@ const STR = {
     expect: 'Erwartet:', ok: '✓ ok', fail: '✗ nein', skip: 'übersprungen', stepNote: 'Was war stattdessen zu sehen?',
     test: 'Test', step: 'Schritt', unproven: 'kein Schritt prüft dieses Ticket', round: 'Runde',
     changed: 'Nach der Nacharbeit:', comment: 'Kommentar zum Ticket (optional)',
+    candidates: 'Hinweise aus dem Review: Kandidaten für ein Ticket', candidatesHint: 'Keiner wird von selbst ein Ticket. Schreib in den Kommentar zum Ticket, welcher eins werden soll.',
     blockNote: 'Bemerkung zum Block: alles, was nicht zu einem Schritt oder Ticket gehört' },
   en: { connecting: 'Connecting to storage…', saving: 'Saving', nosave: 'Not saving', saveFailed: 'Not saved: ', store: 'Storage: ',
     warn: 'Storage unavailable: marks are not saved. Open the page on claude.ai with your own account.', blocks: 'Blocks',
@@ -152,6 +155,7 @@ const STR = {
     expect: 'Expect:', ok: '✓ ok', fail: '✗ no', skip: 'skip', stepNote: 'What did you see instead?',
     test: 'test', step: 'step', unproven: 'no step checks this ticket', round: 'round',
     changed: 'After rework:', comment: 'Comment on this ticket (optional)',
+    candidates: 'Review notes: candidates for a ticket', candidatesHint: 'None becomes a ticket by itself. Say in the comment on this ticket which one should.',
     blockNote: 'Note on this block: anything that belongs to no single step or ticket' },
 };
 const L = STR[DATA.lang] || STR.en;
@@ -161,7 +165,7 @@ let db = null;
 let block = (() => { try { return localStorage.getItem('acc-block') || String(DATA.blocks[0].n); } catch { return String(DATA.blocks[0].n); } })();
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const fmt = s => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/(https?:\/\/[^\s,)<]+)/g, '<code>$1</code>');
+const fmt = s => esc(s).replace(/\n/g, '<br>').replace(/`([^`]+)`/g, '<code>$1</code>').replace(/(https?:\/\/[^\s,)<]+)/g, '<code>$1</code>');
 const roundOf = ids => Math.max(1, ...ids.map(id => T[id]?.round || 1));
 const allSteps = () => DATA.blocks.flatMap(b => b.steps);
 const chip = id => `<a class="chip" href="#t-${esc(id)}">${esc(id)}</a>`;
@@ -214,6 +218,7 @@ function ticketHtml(id, b){
     <div class="proof">${proof || L.unproven}</div>
     ${t.changed ? `<p class="goal"><b>${L.changed}</b> ${fmt(t.changed)}</p>` : ''}
     <details class="dod"><summary>Definition of Done (${t.dod.length})</summary><ul>${t.dod.map(x => `<li>${esc(x)}</li>`).join('')}</ul></details>
+    ${t.candidates?.length ? `<details class="dod" open><summary>${L.candidates} (${t.candidates.length})</summary><p class="goal">${L.candidatesHint}</p><ul>${t.candidates.map(x => `<li>${fmt(x)}</li>`).join('')}</ul></details>` : ''}
     <div class="tfoot"><textarea id="c-${esc(id)}" data-t="${esc(id)}" aria-label="${L.comment}" placeholder="${L.comment}">${esc(cn)}</textarea></div></section>`;
 }
 
@@ -281,4 +286,8 @@ render();
   }, err => { status.textContent = L.store + (err?.code || '?'); });
   listen('results', results); listen('comments', comments); listen('notes', notes);
 })();
+document.addEventListener('click', e => {
+  const c = e.target.closest('code'); if (!c) return;
+  try { navigator.clipboard.writeText(c.textContent); c.classList.add('copied'); setTimeout(() => c.classList.remove('copied'), 900); } catch {}
+});
 </script>

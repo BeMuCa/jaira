@@ -8,7 +8,7 @@ goal: "Landet ein Ticket in einer Lane, die eine Session bearbeiten darf, arbeit
 context: |-
   Berk am 27.08.: critique gibt eine Kritik aus, aber die Session, die die Tickets orchestriert, soll das Ticket dann auch selbst zurueck nach in-progress schieben und die Punkte umsetzen, oder zum Menschen - fuer jede Lane, die keinen Menschen braucht, ohne Aufforderung.
 
-  Was heute da ist: der Lane-Prompt (critique.md, optimize.md) sagt am Ende, wohin das Ticket soll. Der verwaltete Block in CLAUDE.md/AGENTS.md sagt 'work one lane to empty before starting the next'. Beides steht - und gemessen laeuft es trotzdem nur, wenn eine Session dazu aufgefordert wird (27.08.: 4DQPMS und QPJNQP durch alle Lanes, auf Anweisung; 24.08.: 12 Tickets unbearbeitet in critique auf dem req-Board).
+  Was heute da ist: der Lane-Prompt (critique.md, optimize.md) sagt am Ende, wohin das Ticket soll. Der verwaltete Block in CLAUDE.md/AGENTS.md sagt 'work one lane to empty before starting the next'. Beides steht - und gemessen laeuft es trotzdem nur, wenn eine Session dazu aufgefordert wird (27.08.: 4DQPMS und QPJNQP durch alle Lanes, auf Anweisung; 24.08.: 12 Tickets unbearbeitet in critique auf dem Testprojekt-Board).
 
   Warum der Block nicht reicht: er wird einmal zu Sitzungsbeginn gelesen; der Moment, in dem die Session weitermachen soll, ist der Move.
 

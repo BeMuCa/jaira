@@ -214,3 +214,17 @@ func TestAgentNoteNamesTheBoards(t *testing.T) {
 		}
 	}
 }
+
+// TestAgentNoteNamesReject guards the entry that tells an agent a ticket that
+// will not be done is rejected by a person, and how it asks for that instead.
+func TestAgentNoteNamesReject(t *testing.T) {
+	for _, want := range []string{
+		"`jaira reject <id> --why <text>`",
+		"exit 3",
+		"--question \"reject? reason:",
+	} {
+		if !strings.Contains(agentNote, want) {
+			t.Errorf("agentNote does not contain %s", want)
+		}
+	}
+}

@@ -144,6 +144,11 @@ Working a ticket:
 - `jaira logbook <id>` — once a ticket reaches the terminal lane, stamps its
   commits and files it under `.jaira/logbook/<you>-<date>/`, taking it off the
   board. `jaira restore <file>` brings it back
+- `jaira reject <id> --why <text>` — a ticket that will not be done is
+  rejected, not archived, so the archive says why. That is a person's call:
+  without `--force` it refuses with exit 3, and `--force` is not yours to
+  pass — move the ticket to the human lane with `--question "reject? reason:
+  ..."` instead
 
 `jaira <command> --help` for everything else.
 

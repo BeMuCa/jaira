@@ -1,9 +1,11 @@
 <script lang="ts">
-  import { TicketCard, type Ticket } from '@/entities/ticket';
+  import { TicketCard, isFiled, type Ticket } from '@/entities/ticket';
   import { DropTarget, startTicketDrag } from '@/features/assign-to-epic';
 
-  let { tickets, onremove, onopen }: {
+  let { tickets, empty, onremove, onopen }: {
     tickets: Ticket[];
+    // What the column says when it shows nothing.
+    empty: string;
     // A ticket dragged here out of an epic leaves that epic.
     onremove: (epic: string, id: string) => void;
     onopen: (id: string) => void;
@@ -14,11 +16,17 @@
   <section>
     <h2>Tickets in no epic <small>{tickets.length}</small></h2>
     {#if tickets.length === 0}
-      <p class="empty">Every open ticket belongs to an epic.</p>
+      <p class="empty">{empty}</p>
     {:else}
       <ul>
         {#each tickets as ticket (ticket.id)}
-          <TicketCard {ticket} {onopen} draggable ondragstart={(e) => startTicketDrag(e, ticket.id)} />
+          <!-- A filed ticket is read, not sorted: it has left the board. -->
+          <TicketCard
+            {ticket}
+            {onopen}
+            draggable={!isFiled(ticket.place)}
+            ondragstart={isFiled(ticket.place) ? undefined : (e) => startTicketDrag(e, ticket.id)}
+          />
         {/each}
       </ul>
     {/if}

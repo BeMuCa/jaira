@@ -1020,6 +1020,7 @@ jaira logbook <id>         file a finished ticket under today, commits stamped
 jaira logbook <milestone>  file a milestone once every ticket in it is finished
 jaira logbook              list what left the board in the last logbook-days (--since)
 jaira archive <id>         take a ticket that is not being worked off the board
+jaira reject <id> --why .. say why a ticket will not be done, and archive it (a person's call)
 jaira restore <file>       put an archived or logged ticket, or a filed milestone, back
 jaira delete <id>          remove a ticket's file for good (type the handle back)
 jaira move <id> --to ...   move lanes, applying the gates
@@ -1152,7 +1153,7 @@ same to anyone. `?` lists them with the same styling the cards use.
 
 The terminal lane ends with what went into the logbook in the last 28 days,
 newest first, below the tickets still waiting to be filed and filled in teal
-rather than grey. Those cards are read-only: `enter` opens one, and `m`, `x`,
+rather than grey. Those cards are read-only: `enter` opens one, and `m`, `x`, `R`,
 `e`, `E` and `X` answer with the `jaira restore` line that brings it back. How
 many days is `"logbook-days"` in `~/.jaira/settings.json`, editable on the
 settings screen (`S`); `0` takes them off the board. The same number is the

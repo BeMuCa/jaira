@@ -284,3 +284,39 @@ func TestChatModelForPrefersTheBoard(t *testing.T) {
 		t.Errorf("nothing set: %q (%s), want the account default", got, src)
 	}
 }
+
+// Who touches the version and the changelog is the board's: .jaira/release.
+// Without it, or with anything but teamlead in it, a worker does what it did
+// before there was a choice.
+func TestReleaseDefaultsToTheWorker(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if got, src := settings.ReleaseFor(root); got != settings.ReleaseWorker || src != "the default" {
+		t.Errorf("no file: %q (%s), want worker, the default", got, src)
+	}
+	if got, _ := settings.ReleaseFor(""); got != settings.ReleaseWorker {
+		t.Errorf("outside a board: %q, want worker", got)
+	}
+	for in, want := range map[string]string{
+		"teamlead\n":                   settings.ReleaseTeamlead,
+		"# who bumps\n\n  teamlead \n": settings.ReleaseTeamlead,
+		"worker\n":                     settings.ReleaseWorker,
+		"team-lead\n":                  settings.ReleaseWorker,
+		"worker\nteamlead\n":           settings.ReleaseWorker,
+	} {
+		if err := os.WriteFile(settings.BoardReleasePath(root), []byte(in), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if got, _ := settings.ReleaseFor(root); got != want {
+			t.Errorf(".jaira/release %q: %q, want %q", in, got, want)
+		}
+	}
+	if err := os.WriteFile(settings.BoardReleasePath(root), []byte("worker\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, src := settings.ReleaseFor(root); src != "the default" {
+		t.Errorf("a file naming worker: source %q, want the default", src)
+	}
+}
