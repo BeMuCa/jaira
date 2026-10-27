@@ -15,7 +15,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:09Z
-updated-at: 2026-10-27T00:02:15Z
+updated-at: 2026-10-27T00:03:08Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: szftqd-driver
@@ -39,4 +39,4 @@ claimed-at: 2026-10-27T00:01:42Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-27 00:03 · BeMuCa** — Driver: brainstorm und pre-process uebersprungen (Optionen nicht gesetzt, next_lane lt. lane.OnPath). in-progress an Subagent (tier cheap) gegeben; Vorgabe: kein neues deliverables-Setting, nur Fallback .jaira/deliverables/<handle>/, ausser es ist trivial.
