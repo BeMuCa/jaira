@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWMP0KPE76XV0DWBX1MNM
 title: "jaira accept <id> --by <person>: eine Abnahme auf Wort der Person, die festhaelt, wer abgenommen hat"
-status: review
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Sagt eine Person im Chat 'accept', fuehrt der Agent die Abnahme ehrlich aus: ein Befehl nimmt das Ticket aus signoff, schreibt auf das Ticket, wer wann abgenommen hat, und die Ausgabe liest sich als Erfolg - nicht als uebergangene Verweigerung."
@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:51Z
-updated-at: 2026-10-27T00:02:14Z
+updated-at: 2026-10-27T00:02:23Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-268570
@@ -29,7 +29,7 @@ review-summary: |-
   critique pass 2: NOTHING LEFT. Round 2 (5fcb8f6c) fixed both pass-1 findings: the jaira skill and docs/AGENTS.md teach jaira accept <id> --by <person> instead of move --force, matching the teamlead role; core/move/move.go writes accepted-by, accepted-at and the note inside the move only when AcceptedBy is set, after the gate (a refused accept writes nothing) and before lane settle (a ticket filed on entry carries the record). accept.go is the only caller that sets AcceptedBy, so the TUI and plain move paths are unchanged.
   critique pass 3: NOTHING LEFT. 94f60039 removes only duplicate test checks and swaps the uncatchable ticket-count checks for before/after byte comparisons, so every demand stays pinned: accept and its record, no --by (exit 2), not in a human-exit lane (exit 3), other gates refuse without an acceptance, plain move out of signoff refused, and the single overrode: line before the move line.
   review pass 1: Adds jaira accept <id> --by <person> (internal/cli/accept.go): refuses without --by (exit 2) and for a ticket whose lane is not requires-human-exit (exit 3), writing nothing; otherwise moves it to the next lane on its route (done on the shipped board) through the normal move.Move without --force. The name rides on move.Request.AcceptedBy / gate.Request.AcceptedBy, which satisfies only the human-exit gate; DoD, plan, commits and outcome gates still refuse and a refused accept leaves the file byte for byte unchanged. Only when the move lands does move.Move write accepted-by, accepted-at (RFC3339 UTC) and the note "accepted by <person>", before a file-on-entry lane can take the ticket away. The gate never reads accepted-by from the file. A --force move now prints one line "overrode: <codes>" before the move line; --json unchanged. Teamlead role, this repo's jaira skill and docs/AGENTS.md say a typed accept is carried out with jaira accept, never --force. README, docs/COMMANDS.md and a three-line release note added.
-round: 3
+round: 4
 review-gaps: |-
   optimize pass 1: SEND BACK, test-only removals. TestForcedMoveNamesOverriddenCodesOnOneLine copies the setup and run of TestForcedMoveEndsOnItsSuccessLine (fold it in, fix the line-11 comment); core/gate/humanexit_test.go:62-64 repeats TestHumanExitLaneStillRefusesForward; the ticketFiles count checks in internal/cli/accept_test.go cannot fail because an accepted ticket stays in .jaira/tickets, so they move to the existing readTicketFile before/after comparison. Production code: nothing to remove.
   optimize pass 2: none. 94f60039 completed pass 1 list (forced-move tests folded, humanexit_test.go duplicate dropped, refused accepts compared byte for byte); the last-line bullet check in forceorder_test.go stays per the driver note. Production code unchanged since pass 1, which found nothing to remove.
