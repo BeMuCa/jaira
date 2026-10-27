@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:55Z
-updated-at: 2026-10-27T20:53:32Z
+updated-at: 2026-10-27T20:53:40Z
 assignee: BeMuCa
 updated-by: BeMuCa
 ---
@@ -41,4 +41,4 @@ updated-by: BeMuCa
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-27 20:53 · BeMuCa** — Aus L318/L329 (27.10.2026): parallele Worker bumpten die Version je selbst (0.5.173/174/175) und kollidierten. Prozessregel bisher: der Worker liest den Milestone-Head direkt vor dem Merge, der Teamlead vergibt Nummern, wenn zwei Worker nahe am Merge sind. Dieses Ticket (Release-Weg als Werkzeuge) ist der Ort, wo 'naechste freie Versionsnummer zentral' hingehoert.
