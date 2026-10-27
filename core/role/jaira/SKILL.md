@@ -426,8 +426,19 @@ not being worked goes into the archive.**
 `.jaira/logbook/<initials>-<date>/` — who finished what, on which day — after
 stamping every commit git can find for it. It refuses a ticket short of the
 terminal lane. `jaira archive <handle>` takes any ticket off the board, from any
-lane, into `.jaira/archive/`: abandoned, duplicate, obsolete. Neither deletes
+lane, into `.jaira/archive/` without a word about why. Neither deletes
 anything; `jaira restore <file>` brings either back.
+
+A ticket that will not be done — not worth it, a duplicate, overtaken — is
+**rejected**, not archived: `jaira reject <handle> --why <text>` writes
+`rejected-kind`, `rejected-why`, `rejected-by` and `rejected-at` onto it and
+archives it, so the archive still says why months later. `--kind obsolete`
+or `--duplicate-of <handle>`, which also writes `rejected-duplicate-of`; the
+default kind is wontfix. Rejecting is a
+person's decision and the command refuses you (exit 3) without `--force`,
+which is not yours to pass: move the ticket to the human lane with
+`--question "reject? reason: ..."` and let a person reject it — on the board
+with `R`, or with `--force`.
 
 An accepted ticket leaves the board once its work is pushed, and in that order.
 Log it before the push and a teammate pulls a board that has forgotten the
@@ -443,6 +454,7 @@ its context already carries that ticket's commits in prose for this reason.
 jaira logbook <handle>      # finished: into .jaira/logbook/<you>-<date>/, commits stamped
 jaira logbook               # list the logbook
 jaira archive <handle>      # not being worked: into .jaira/archive/
+jaira reject <handle> --why <text> --force   # a person's: will not be done, and why
 jaira restore <file>        # put either back
 ```
 

@@ -498,7 +498,7 @@ func TestSpawnParentIsTheCallerAndAnUnknownOneStops(t *testing.T) {
 	}
 	path := jairaPath(t)
 	dir := t.TempDir()
-	if _, err := install(dir, false, true); err != nil {
+	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
 	calls := filepath.Join(t.TempDir(), "calls")
@@ -843,7 +843,7 @@ func TestSpawnLetsTheRepositorySetUpItsWorktree(t *testing.T) {
 	}
 	path := jairaPath(t)
 	dir := t.TempDir()
-	if _, err := install(dir, false, true); err != nil {
+	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
 	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
