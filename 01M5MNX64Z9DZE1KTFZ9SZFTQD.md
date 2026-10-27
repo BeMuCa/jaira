@@ -15,9 +15,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:09Z
-updated-at: 2026-10-26T19:08:27Z
+updated-at: 2026-10-27T00:01:42Z
 assignee: BeMuCa
 updated-by: BeMuCa
+claimed-by: szftqd-driver
+claimed-at: 2026-10-27T00:01:42Z
 ---
 
 # Ergebnisse fuer eine Person liegen auf einem stabilen Pfad, nie unter /tmp
