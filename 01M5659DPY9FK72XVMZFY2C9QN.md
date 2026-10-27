@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:22Z
-updated-at: 2026-10-27T14:48:48Z
+updated-at: 2026-10-27T14:49:03Z
 updated-by: berkc
 claimed-by: berk-ca-728718
 claimed-at: 2026-10-27T14:32:43Z
@@ -29,6 +29,7 @@ outcome-why: "Ein zweites Board musste man bisher von Hand aus Lane-Dateien zusa
 outcome-resolves: "Y2C9QN: Board per Befehl aus einem Typ anlegen; vorhandenes Board wird nie ueberschrieben (exit 3), fehlende Beschreibung exit 2."
 review-summary: "none"
 round: 2
+review-gaps: "none removed. Considered: Materialise (core/lane/defaultboard.go:118) and SaveOrder/writeIDList (core/lane/order.go) write lanes and order only into today's .jaira/lanes and mkdir it as a side effect, so CreateBoard writes its own three files rather than bending them; no dead code or unused imports after critique's repair; nothing on a hot path."
 ---
 
 # Ein zweites Board laesst sich mit einem Befehl aus einem Board-Typ anlegen statt Lane-Dateien von Hand zu kopieren
