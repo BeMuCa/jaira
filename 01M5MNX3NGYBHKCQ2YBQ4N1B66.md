@@ -16,11 +16,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:07Z
-updated-at: 2026-10-27T00:49:13Z
+updated-at: 2026-10-27T00:49:15Z
 assignee: BeMuCa
 updated-by: BeMuCa
-claimed-by: 4n1b66-driver
-claimed-at: 2026-10-27T00:01:46Z
+claimed-by: ""
+claimed-at: ""
 outcome-what: "The testing lane (core/lane/builtin/27-testing.md and the board copy .jaira/lanes/testing.md, byte-identical prompt) now says in Gates: build, format/vet, and test only the touched packages (in Go go test ./<pkg> -count=1); never run the full suite in a lane, it runs once before the pull request by the main session (in Go go test ./... -race). Pass 2 says a DoD item that asks for the full suite is left unticked and named in test-verdict as left for that run, not a finding. jaira-worker and jaira-dispatcher SKILL.md carry the rule in one line each. core/release/notes/4N1B66.md tells readers to run jaira lanes use testing --force if their board has a testing lane, jaira roles install --force with their install flag, and to fix a catalogue testing.md first."
 outcome-why: "The lane demanded the full race suite in every testing pass, against the maintainer's rule that it runs once before the PR (it takes 7-8 minutes here); the rule lived only in session memory, so a worker followed the prompt. Many tickets carry a DoD item 'go test ./... -race gruen', which the new Gates rule would otherwise turn into an endless send-back. Shipped lanes and roles go into non-Go repositories, so Go is named as one case."
 outcome-resolves: "DoD 1: 'run the whole suite' is gone; .jaira/lanes/testing.md:22 and core/lane/builtin/27-testing.md:23 say touched-package tests in the lane and the full -race suite once before the PR by the main session, prompts identical. DoD 2: one rule each in core/role/builtin/jaira-worker/SKILL.md:168 and core/role/builtin/jaira-dispatcher/SKILL.md:268. DoD 3: core/release/notes/4N1B66.md:1."
