@@ -20,13 +20,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:22Z
-updated-at: 2026-10-27T14:47:18Z
+updated-at: 2026-10-27T14:47:43Z
 updated-by: berkc
 claimed-by: berk-ca-728718
 claimed-at: 2026-10-27T14:32:43Z
 outcome-what: "Neue Befehle 'jaira boards create <name> --description <...> [--type <typ>]' und 'jaira boards types' (beide mit --json). Board-Typen liegen eingebettet unter core/lane/boardtypes/<typ>/ (description, order, eigene Lane-Dateien; IDs ohne eigene Datei kommen aus den eingebauten Lanes). Mitgeliefert: 'code' = die eingebauten Default-Lanes."
 outcome-why: "Ein zweites Board musste man bisher von Hand aus Lane-Dateien zusammenkopieren; Agenten brauchen einen nicht-interaktiven Befehl, und Berk will spaeter eigene Typen (ideas, builder) ausliefern koennen, ohne Go-Code zu schreiben."
 outcome-resolves: "Y2C9QN: Board per Befehl aus einem Typ anlegen; vorhandenes Board wird nie ueberschrieben (exit 3), fehlende Beschreibung exit 2."
+review-summary: "core/lane/boardtypes.go typeLanes: returns parallel []*Lane and [][]byte, but only l.ID is used and it always equals the id from order - drop the second Parse and the []*Lane slice, return the order ids and the bytes. core/lane/boardtypes.go mustSub: helper with one caller - embed boardtypes and address files as boardtypes/<type>/..., test MapFS keys likewise. core/lane/boardtypes.go boardType: reads the literal \"description\" beside orderFileName - use descriptionFileName from boards.go."
 ---
 
 # Ein zweites Board laesst sich mit einem Befehl aus einem Board-Typ anlegen statt Lane-Dateien von Hand zu kopieren
