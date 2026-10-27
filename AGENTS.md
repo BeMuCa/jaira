@@ -50,7 +50,9 @@ Capturing and picking work:
   `default`, **read it before you create one** and file the ticket on the board
   its subject belongs to: `jaira create --board <name>`. `list` and `next` show
   today's board; `--board <name>` shows another, and `jaira set <id>
-  board=<name>` moves a ticket across
+  board=<name>` moves a ticket across. `jaira boards create <name>
+  --description <which tickets belong here> [--type <type>]` adds a board;
+  `jaira boards types` lists the types
 
 Working a ticket:
 

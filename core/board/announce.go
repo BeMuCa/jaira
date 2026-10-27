@@ -81,7 +81,9 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  `default`, **read it before you create one** and file the ticket on the board\n" +
 	"  its subject belongs to: `jaira create --board <name>`. `list` and `next` show\n" +
 	"  today's board; `--board <name>` shows another, and `jaira set <id>\n" +
-	"  board=<name>` moves a ticket across\n" +
+	"  board=<name>` moves a ticket across. `jaira boards create <name>\n" +
+	"  --description <which tickets belong here> [--type <type>]` adds a board;\n" +
+	"  `jaira boards types` lists the types\n" +
 	"\n" +
 	"Working a ticket:\n" +
 	"\n" +

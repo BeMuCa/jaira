@@ -1,0 +1,2 @@
+- Add a second board with `jaira boards create <name> --description "<which tickets belong here>"` instead of copying lane files by hand; it gets the built-in code lanes, refuses a board that already exists (exit 3) and exits 2 without a description.
+- Run `jaira boards types` to see the board types `jaira boards create --type <type>` can build from; `code` ships today.

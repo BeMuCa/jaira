@@ -858,6 +858,7 @@ jaira links <id>           every ticket connected to this one, wherever it lives
 jaira set <id> k=v...      set fields
 jaira tags                 the tags this board uses; read it before you tag anything
 jaira boards               the boards of this repository and what each is for; read it before you create
+jaira boards create <name> add a board: --description (required), --type from 'jaira boards types'
 jaira tag <id> <name>...   add tags to a ticket
 jaira milestone ls         the board's milestones; read it before you create one
 jaira milestone <cmd>      create, add, rm, set (--after: the Milestone Roadmap), rename (the name only)

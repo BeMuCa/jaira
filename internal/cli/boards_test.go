@@ -309,3 +309,43 @@ func TestLanesTakeABoard(t *testing.T) {
 		t.Errorf("lanes --board vidoe: exit %d (%v), want %d", exitCode(err), err, ExitUsage)
 	}
 }
+
+// 'boards create' is the whole of setting a board up, for an agent too: it
+// needs a description, refuses a board that exists and a type that does not,
+// and the board it writes takes tickets at once.
+func TestBoardsCreate(t *testing.T) {
+	dir := newTwoBoards(t)
+
+	if _, err := runCLI(t, dir, "boards", "create", "research"); exitCode(err) != ExitUsage || !strings.Contains(err.Error(), "--description") {
+		t.Errorf("create without --description: exit %d (%v), want %d naming --description", exitCode(err), err, ExitUsage)
+	}
+	if _, err := runCLI(t, dir, "boards", "create", "research", "--type", "nope", "--description", "x"); exitCode(err) != ExitUsage {
+		t.Errorf("create with an unknown type: exit %d (%v), want %d", exitCode(err), err, ExitUsage)
+	}
+	for _, name := range []string{"video", "default"} {
+		if _, err := runCLI(t, dir, "boards", "create", name, "--description", "x"); exitCode(err) != ExitValidation {
+			t.Errorf("create %s, which exists: exit %d (%v), want %d", name, exitCode(err), err, ExitValidation)
+		}
+	}
+	if d, _ := os.ReadFile(filepath.Join(dir, ticket.DirName, "boards", "video", "lanes", "order")); string(d) != "script\nrender\ndone\n" {
+		t.Errorf("refused create changed video's order file: %q", d)
+	}
+
+	v := jsonCLI(t, dir, "boards", "create", "research", "--description", "Questions to find out before building")
+	if v["name"] != "research" || v["type"] != "code" || v["lanes"].([]any)[0] != "backlog" {
+		t.Errorf("create without --type: %v, want the code lanes", v)
+	}
+	rows := jsonCLI(t, dir, "boards")["boards"].([]any)
+	if r := rows[1].(map[string]any); r["name"] != "research" || r["description"] != "Questions to find out before building" {
+		t.Errorf("boards lists the new board as %v", r)
+	}
+	c := jsonCLI(t, dir, "create", "q", "--board", "research", "--goal", "g", "--context", "c", "--dod", "d", "--assignee", "berk")
+	if c["board"] != "research" || c["status"] != "backlog" {
+		t.Errorf("ticket on the new board: board %v, status %v", c["board"], c["status"])
+	}
+
+	types := jsonCLI(t, dir, "boards", "types")["types"].([]any)
+	if len(types) == 0 || types[0].(map[string]any)["name"] != "code" || types[0].(map[string]any)["description"] == "" {
+		t.Errorf("boards types: %v, want code with a description", types)
+	}
+}
