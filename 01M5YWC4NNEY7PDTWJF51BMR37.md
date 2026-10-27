@@ -1,7 +1,7 @@
 ---
 id: 01M5YWC4NNEY7PDTWJF51BMR37
 title: "Nach dem Release von PR #91 mit der veroeffentlichten Version pruefen: Release-Notes blaettern (GK1QGT), volle Breite (X3A8RZ), Band um bearbeitete Karten (C8V6DQ)"
-status: backlog
+status: human
 ready: true
 creator: berkc
 assignee: berkc
@@ -21,8 +21,9 @@ related:
   - 01M58G2DJP5P0634Z4FSC8V6DQ
 commits: []
 created-at: 2026-10-27T14:31:35Z
-updated-at: 2026-10-27T14:31:44Z
+updated-at: 2026-10-27T14:31:50Z
 updated-by: berkc
+question: "Bitte nach Merge von #91 und dem Release testen und die drei Punkte abhaken."
 ---
 
 # Nach dem Release von PR #91 mit der veroeffentlichten Version pruefen: Release-Notes blaettern (GK1QGT), volle Breite (X3A8RZ), Band um bearbeitete Karten (C8V6DQ)
