@@ -1,8 +1,8 @@
 ---
 id: 01M5MNX64Z9DZE1KTFZ9SZFTQD
 title: "Ergebnisse fuer eine Person liegen auf einem stabilen Pfad, nie unter /tmp"
-status: backlog
-ready: false
+status: todo
+ready: true
 creator: BeMuCa
 goal: "Was ein Worker fuer einen Menschen erzeugt (Vergleichsseite, Bericht, Screenshot), ueberlebt einen Crash: die Rollen sagen, wohin es gehoert, und der Pfad steht am Ticket."
 context: |-
@@ -15,7 +15,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:09Z
-updated-at: 2026-10-27T00:01:42Z
+updated-at: 2026-10-27T00:01:49Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: szftqd-driver
