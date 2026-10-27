@@ -15,7 +15,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:04Z
-updated-at: 2026-10-27T00:09:37Z
+updated-at: 2026-10-27T00:09:39Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: pbdms4-driver
@@ -51,7 +51,7 @@ round: 2
 - [x] TUI card edge: milestoneColors (model.go:1794) returns empty slots for m.isLogged(t) (logbook.go:37); do NOT filter m.mstones (model.go:431), the M filter matches logbook cards on purpose (model.go:567-569); test with fileIntoLogbook (logbook_test.go:16) that the logged card has no milestone colour
 - [x] docs: docs/COMMANDS.md:142 ls row (open of total, json open) plus a show row; docs/AGENTS.md:164; README.md:862 command list
 - [x] release note core/release/notes/PBDMS4.md: exactly one '- ' line, unwrapped, an instruction: ls reads open of total (json open), show lists where each ticket is now, M picker counts the same, logbook cards drop the milestone colour
-- [ ] per commit gofmt -l . empty, go vet ./... and go build ./... green; the full go test ./... -race runs once before the PR (driver ticks DoD 3)
+- [x] per commit gofmt -l . empty, go vet ./... and go build ./... green; the full go test ./... -race runs once before the PR (driver ticks DoD 3)
 
 ## Progress
 - **2026-10-27 00:04 · BeMuCa** — pre-process reasoning:
