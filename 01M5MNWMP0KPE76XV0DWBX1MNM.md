@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:51Z
-updated-at: 2026-10-27T00:10:27Z
+updated-at: 2026-10-27T00:11:13Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-268570
@@ -77,3 +77,4 @@ review-round: 3
 - **2026-10-26 20:29 · BeMuCa** — review: SEND BACK, one small defect. core/release/notes/BX1MNM.md line 1 says every other gate '(definition of done, commits, ownership)' still refuses an accept. Ownership never does: core/gate/gate.go:217-219 exempts tickets whose current lane is requires-human-exit, and accept only runs from such a lane. Checked on a scratch board: a signoff ticket assigned to 'Someone Else' was accepted by another identity with exit 0. Fix: drop 'ownership' from that parenthesis. Code and tests otherwise match DoD 1-3. Not for this ticket, but file before the PR: jaira-role-acceptance SKILL.md:199-204 and build.py:140 still move accepted tickets with --force and say 'an agent cannot leave a human lane otherwise', which is now false for signoff and clashes with the teamlead's 'Never --force'; no ticket follows BX1MNM for it yet.
 - **2026-10-27 00:02 · BeMuCa** — round 4: dropped ownership from the accept note (human-lane tickets are exempt from the ownership rail); accept refusal now says 'not a sign-off lane (requires-human-exit)' so it is true for the human lane too
 - **2026-10-27 00:08 · BeMuCa** — critique (pass 4, 70f82afd only): NOTHING LEFT. Review finding 1 resolved: release note line 1 drops 'ownership'; true, because core/gate/gate.go:213-222 exempts requires-human-exit lanes from not_owner and accept runs only from such a lane (accept.go:49-53). Review finding 5 resolved: the not_human_lane refusal (accept.go:52) now says 'not a sign-off lane (requires-human-exit)', which is true for the human lane (requires-question, core/lane/builtin/30-human.md:8). No test pins the old text; release note is still one line starting '- '. Let stand: the refusal says 'sign-off lane' while help/COMMANDS.md/release note say 'a lane that waits for a person (signoff)'; the parentheses scope those, nothing false, DoD untouched. Outside scope, not a finding: accept.go:17 Short still says 'move the ticket on from the human lane', and on the shipped board 'human' is the lane accept refuses; reword together with any later accept text change.
+- **2026-10-27 00:11 · BeMuCa** — optimize (pass 3, 70f82afd only): NOTHING LEFT. The commit changes two strings and no code: release note line 1 drops 'ownership' (still three lines, each one line starting '- '), and the not_human_lane refusal at internal/cli/accept.go:52 is reworded. No branch, helper, import or test added or orphaned; the wording exists nowhere else in Go code (grep), so nothing is duplicated. gofmt clean.
