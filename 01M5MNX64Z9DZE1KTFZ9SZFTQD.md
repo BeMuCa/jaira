@@ -1,7 +1,7 @@
 ---
 id: 01M5MNX64Z9DZE1KTFZ9SZFTQD
 title: "Ergebnisse fuer eine Person liegen auf einem stabilen Pfad, nie unter /tmp"
-status: critique
+status: human
 ready: true
 creator: BeMuCa
 goal: "Was ein Worker fuer einen Menschen erzeugt (Vergleichsseite, Bericht, Screenshot), ueberlebt einen Crash: die Rollen sagen, wohin es gehoert, und der Pfad steht am Ticket."
@@ -16,7 +16,7 @@ related: []
 commits:
   - a780e3fca9d45d977c7495252e356612ee0ebc1c
 created-at: 2026-10-23T15:26:09Z
-updated-at: 2026-10-27T00:10:26Z
+updated-at: 2026-10-27T00:20:49Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: szftqd-driver
@@ -30,6 +30,7 @@ review-summary: |-
   core/role/builtin/jaira-role-acceptance/SKILL.md:52 — the paragraph sits between the listing (lines 45-50) and the line that defines `<repo>` for it (line 54, "the basename of the main worktree"), so that definition now also reads onto `<repo>/.jaira/deliverables/`, where `<repo>` has to be a path. Move the paragraph below the "If `url.txt` exists" paragraph (after line 60) and do not give `<repo>` a second meaning in this file.
   same four lines — each paragraph is one line of 442-581 characters; every other prose line in these files wraps at about 80 columns (only frontmatter and code-block lines exceed 100). Wrap at the file's width; in jaira-role-lane:342 indent the continuation lines two spaces like the bullets above it.
   DECISION FOR THE MAINTAINER, same four lines — the path puts results for a person inside the repository, beside an existing pattern that keeps them out: jaira-role-acceptance/SKILL.md:45 (~/.claude/acceptance/<repo>/<name>/) and jaira-role-logbook-summary/SKILL.md:103-104 ("beside nothing in the repository — in ~/.claude/summaries/<repo>/<from>_<to>/"). `<repo>` is undefined in worker/dispatcher/lane, so an agent in its ticket worktree (jaira-worker/SKILL.md:299) writes there; on a shared board .jaira/deliverables/ is not ignored (git check-ignore exits 1 in this repo), and core/gitrepo/git.go:229 lists every untracked file outside .jaira/tickets and diffs it in full into `worktree_diff`, so a comparison page reaches every later lane's payload as part of the change, `git add -A` commits it, and removing the worktree after done deletes it while the ticket note still points at it. Writing into the main worktree instead trips "Your worktree only" (jaira-role-lane/SKILL.md:336) and the stop rules (jaira-worker/SKILL.md:322, jaira-dispatcher/SKILL.md:460). Options: (a) keep the path and add /.jaira/deliverables/ to the gitignore beside /.jaira/lanes/ (core/board/gitignore.go:19) — code change, breaks text-only, still lost with the worktree; (b) move it outside the repository like acceptance and summaries, e.g. ~/.claude/deliverables/<repo>/<ticket-handle>/ — text-only, out of git and of every diff, but not the path the DoD names; (c) keep it as is and accept the payload and git-add cost.
+question: "Wo liegen Ergebnisse fuer eine Person (Vergleichsseite, Bericht, Screenshot)? (a) .jaira/deliverables/<handle>/ wie im DoD, plus /.jaira/deliverables/ in die gitignore neben /.jaira/lanes/ (core/board/gitignore.go:19). Kostet: Code-Aenderung, nicht mehr text-only; liegt im Ticket-Worktree und ist mit dem Worktree nach done trotzdem weg. (b) ausserhalb des Repos wie Abnahme und Summary, z. B. ~/.claude/deliverables/<repo>/<handle>/. Kostet: weicht vom Pfad im DoD ab (DoD-Text muesste angepasst werden); dafuer text-only, nie in git, in keinem Diff, ueberlebt Worktree-Entfernung. (c) so lassen. Kostet: auf einem geteilten Board landet jede Vergleichsseite im worktree_diff aller spaeteren Lanes (core/gitrepo/git.go:229), git add -A committet sie, nach done ist sie mit dem Worktree weg. Danach zurueck nach in-progress mit den Funden 1-4 aus review-summary."
 ---
 
 # Ergebnisse fuer eine Person liegen auf einem stabilen Pfad, nie unter /tmp
