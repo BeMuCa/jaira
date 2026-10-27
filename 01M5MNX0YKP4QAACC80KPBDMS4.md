@@ -15,7 +15,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:04Z
-updated-at: 2026-10-27T00:33:16Z
+updated-at: 2026-10-27T00:33:24Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: pbdms4-driver
@@ -43,6 +43,8 @@ review-gaps: |-
   (6) DoD 1 wording 'archiviert'/'abgelegt' vs shipped English 'archive · ...'/'logbook · done' (driver decision 00:09).
   DoD 3 open: the full race suite runs before the PR (known).
 test-verdict: "pass: gates green (gofmt/vet/build), added tests ok with -race, DoD1+2 verified, release note ok, scratch board: ls/show 1 open of 4, show nope rc=5, picker '1 open of 4', logbook card has no milestone bar while backlog and done-lane cards keep it; DoD3 full race suite still open"
+review-verdict: "ACCEPTABLE. The diff meets DoD 1 and DoD 2 as the driver read them; I found no defect. Checked by hand on a scratch board without a remote: ls '1 open of 4 ticket(s)', show rows per place, --json open=1/count=4, unknown name exit 5, picker '1 open of 4', the logbook card has no right-edge cell, the done-lane card has one; the installed 0.5.4 printed '4 ticket(s)' on the same board. The single tests named in the summary pass with -race. Driver decision 1 (new 'milestone show'): agree, it is the smallest faithful reading of DoD 1. Driver decision 2 (logbook cards lose the bar) is the weakest-backed part, for the maintainer: DoD 2 and the goal are about counting, a bar counts nothing, and with the M filter on such a card now matches but shows no colour. Keep it, or drop the m.isLogged condition (internal/tui/model.go:1797) and the colour half of the TUI test. Unsure: only a board without a remote was exercised; ref-only members and other boards' lanes (F1) were not. DoD 3 is still open."
+review-round: 3
 ---
 
 # Milestone-Dateien fuehren keine archivierten Tickets mehr als offen
