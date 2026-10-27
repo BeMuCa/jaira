@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:07Z
-updated-at: 2026-10-27T00:13:58Z
+updated-at: 2026-10-27T00:15:20Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: 4n1b66-driver
@@ -24,11 +24,7 @@ claimed-at: 2026-10-27T00:01:46Z
 outcome-what: "The testing lane (core/lane/builtin/27-testing.md and the board copy .jaira/lanes/testing.md, byte-identical prompt), the jaira-worker and jaira-dispatcher role skills and a release note now say: a lane runs only the tests of the packages its change touched; the full suite runs once, before the pull request, by the main session. The Go commands (go test ./<pkg> -count=1, go test ./... -race) are given as the Go case only. The release note tells readers to run jaira lanes use testing --force and jaira roles install, and to update or delete a catalogue copy of testing.md first."
 outcome-why: "The lane demanded the full race suite in every testing pass, which takes 7-8 minutes here, against the maintainer's rule that it runs once before the PR; the rule lived only in session memory. The shipped lane and role files also go into non-Go repositories, so the rule is stated generally with Go as one case and no timing number. A catalogue testing.md lays over the built-in on lanes use --force, so an old catalogue copy would bring the old text back."
 outcome-resolves: "DoD 1: 'run the whole suite' is gone; .jaira/lanes/testing.md:22 and core/lane/builtin/27-testing.md:23 say touched-package tests in the lane and the full -race suite once before the PR by the main session. DoD 2: one rule each in core/role/builtin/jaira-worker/SKILL.md:168 and core/role/builtin/jaira-dispatcher/SKILL.md:268. DoD 3: core/release/notes/4N1B66.md:1."
-review-summary: |-
-  core/role/builtin/jaira-role-pr/SKILL.md:37 ("Before you push anything") - the diff forbids the full suite in every lane and says "the main session" runs it once before the PR, but no shipped file tells any session to run it: the old Gates paragraph was the only shipped instruction to run a full suite, and "main session" appears in no role file. Either add a fourth precondition there (the repository's full suite green on the head being pushed; Go: go test ./... -race) or keep it as the maintainer's own practice - a maintainer decision, see the human-lane question.
-  core/lane/builtin/27-testing.md:25-27 and .jaira/lanes/testing.md:24-26 - "with the race detector (go test ./... -race)" is stated for every repository, though the progress note of 2026-10-27 00:02 says the Go command is phrased as the Go case because the builtin ships to non-Go repositories; move it into the Go case, e.g. "Never run the full suite in a lane: it runs once, before the pull request, by the main session (in Go `go test ./... -race`)." - same bytes in both files (lanesEquivalent compares Prompt).
-  core/role/builtin/jaira-dispatcher/SKILL.md:268 and core/role/builtin/jaira-worker/SKILL.md:168-169 - "it takes 7-8 minutes" is this repository's suite, written into role files that jaira roles install puts into every repository (--global: all of them), and go test ./... -race is again unconditional; drop the number ("the full suite is the slowest check, so it runs once ...") and name go test ./... -race as the Go case, as the lane does.
-  core/release/notes/4N1B66.md:1 - jaira lanes use testing --force copies the catalogue's testing.md when there is one (the catalogue lays over the built-ins, core/lane/lane.go:682), and the maintainer's catalogue ~/.jaira/lanes/testing.md:22 still says "Build everything and run the whole suite"; on a scratch board with that file, use --force wrote the old Gates back (board testing.md:22). Add to the note: if jaira lanes path shows a catalogue holding testing.md, update or delete that copy first. The catalogue file itself is outside the repository and needs the maintainer's own hand - it is also what "die Katalog-Lane" in DoD 1 means in jaira's own vocabulary (jaira lanes path: "Catalogue").
+review-summary: none
 round: 2
 ---
 
