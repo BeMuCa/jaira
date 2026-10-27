@@ -1,6 +1,7 @@
 <script lang="ts">
   import { byBoardOrder, laneColour } from '@/entities/lane';
   import { emptyFilter, narrows, type Filter } from '../model/filter';
+  import ChipSelect from './ChipSelect.svelte';
 
   let { filter = $bindable(), lanes, tags, people }: {
     filter: Filter;
@@ -12,24 +13,9 @@
 
 <form class="filters" role="search" onsubmit={(e) => e.preventDefault()}>
   <label class="q">Search <input type="search" bind:value={filter.q} placeholder="title, goal or id" /></label>
-  <label>Lane
-    <select bind:value={filter.lane} class="lane" style:border-left-color={filter.lane ? laneColour(filter.lane) : undefined}>
-      <option value="">any</option>
-      {#each byBoardOrder(lanes) as l (l)}<option value={l} style:color={laneColour(l)}>● {l}</option>{/each}
-    </select>
-  </label>
-  <label>Tag
-    <select bind:value={filter.tag}>
-      <option value="">any</option>
-      {#each tags as t (t)}<option value={t}>{t}</option>{/each}
-    </select>
-  </label>
-  <label title="Created it, is assigned it, or changed it last">Person
-    <select bind:value={filter.person}>
-      <option value="">anyone</option>
-      {#each people as p (p)}<option value={p}>{p}</option>{/each}
-    </select>
-  </label>
+  <ChipSelect label="Lane" any="any" options={byBoardOrder(lanes)} bind:chips={filter.lane} colour={laneColour} />
+  <ChipSelect label="Tag" any="any" options={tags} bind:chips={filter.tag} />
+  <ChipSelect label="Person" title="Created it, is assigned it, or changed it last" any="anyone" options={people} bind:chips={filter.person} />
   <div class="range" role="group" aria-label="Date">
     <span>Date</span>
     <div class="row">
@@ -58,5 +44,4 @@
   .all { display: flex; gap: 0.35rem; align-items: center; color: var(--text); }
   .all small { color: var(--muted); }
   button { cursor: pointer; }
-  .lane { border-left-width: 6px; }
 </style>
