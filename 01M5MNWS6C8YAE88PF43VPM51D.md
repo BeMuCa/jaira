@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:56Z
-updated-at: 2026-10-27T00:45:28Z
+updated-at: 2026-10-27T00:45:30Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-374545
@@ -44,22 +44,30 @@ review-verdict: |-
   I am sure of these facts. I did not run the full race suite.
 review-round: 6
 review-check: |-
-  1. Build the branch binary into a temp folder (before changing HOME): B=$(mktemp -d); cd /home/berk/git/jAIra-VPM51D && /home/berk/.local/go/bin/go build -o $B/jaira ./cmd/jaira -> no output.
-  2. Isolate jaira from your real settings: export HOME=$B/home JAIRA_HOME=$B/home JAIRA_NO_FETCH=1 JAIRA_USER=ada; mkdir -p $HOME
-  3. Make a throwaway repo with a local remote: git init -q --bare -b master $B/remote.git && git clone -q $B/remote.git $B/main && cd $B/main && git checkout -q -b master && git config user.name ada && git config user.email ada@example.test
+  1. Build the branch binary into a temp folder, before you change HOME: B=$(mktemp -d); cd /home/berk/git/jAIra-VPM51D && /home/berk/.local/go/bin/go build -o $B/jaira ./cmd/jaira -> no output.
+  2. Keep jaira away from your real settings: export HOME=$B/home JAIRA_HOME=$B/home JAIRA_NO_FETCH=1 JAIRA_USER=ada; mkdir -p $HOME
+  3. Make a throwaway repo with a local remote: git init -q --bare -b master $B/remote.git && git clone -q $B/remote.git $B/main && cd $B/main && git checkout -q -b master && git config user.name ada && git config user.email ada@example.test -> only 'warning: You appear to have cloned an empty repository.'
   4. Share a board: $B/jaira init >/dev/null && $B/jaira share >/dev/null && git add -A && git commit -qm share && git push -q origin master && git remote set-head origin -a -> 'origin/HEAD set to master'.
-  5. Create a ticket: H=$($B/jaira create "Stale copy demo" --goal g --context c --dod d --assignee ada | awk '/^Created/{print $2}'); echo $H -> six characters.
-  6. Start it and commit: $B/jaira pull $H && $B/jaira move $H --to todo && $B/jaira move $H --to in-progress && git add .jaira && git commit -qm "feat($H): start" && git push -q origin master
-  7. $B/jaira list -> the ticket under 'Implementing'.
-  8. File it in a second worktree: git worktree add -q -b work $B/wt && sleep 2 && cd $B/wt && $B/jaira move $H --to done --force; $B/jaira logbook $H -> 'Logged <H>'.
-  9. cd $B/main && $B/jaira list -> no 'Implementing' section. A block 'Filed elsewhere — these files are stale copies' says 'filed in the worktree $B/wt on branch work, not yet merged into origin/master; remove the copy here with: git restore .jaira/tickets/... && git merge origin/master'. ls .jaira/tickets still shows the file.
-  10. $B/jaira show $H | head -3 -> the first two lines are 'filed elsewhere: ...' and 'remove the copy here with: ...'.
-  11. $B/jaira next --json -> "count": 0. $B/jaira list --actionable -> 'No tickets match.'
-  12. $B/jaira resume -> STILL prints '<H> Stale copy demo / in-progress · parked in Implementing' (gap 1). $B/jaira show $H --for-lane in-progress --json | grep -c filed -> 0 (gap 2).
-  13. $B/jaira board -> 'Implementing 0' and 'Done 0'. The card 'Stale copy demo' sits at the bottom of Done with '⎙ filed elsewhere'. Press the right arrow until that card is selected, then press m: a NOTE box says '... was filed away in the worktree ... To remove the copy, run: git restore ...'. esc, then q.
-  14. Land the filing: cd $B/wt && git add -A .jaira && git commit -qm "chore($H): file away" && git push -q origin HEAD:master && cd $B/main && $B/jaira list -> now 'filed in origin/master; remove the copy here with: git restore ... && git merge origin/master'.
-  15. Run that command: git restore .jaira/tickets/*$H*.md && git merge origin/master -> 'Fast-forward ... rename .jaira/{tickets => logbook/ada-<date>}/...'. ls .jaira/logbook/*/ shows the file; .jaira/tickets is gone. A jaira list now saying 'no .jaira directory found' is older than this change: the last ticket file left.
-  16. Clean up: rm -rf $B and open a new shell, so HOME is back.
+  5. H=$($B/jaira create "Stale copy demo" --goal g --context c --dod d --assignee ada | awk '/^Created/{print $2}'); echo $H -> six characters.
+  6. K=$($B/jaira create "Still open" --goal g --context c --dod d --assignee ada | awk '/^Created/{print $2}'); echo $K -> six characters.
+  7. $B/jaira pull $H && $B/jaira pull $K && $B/jaira move $H --to todo && $B/jaira move $H --to in-progress && $B/jaira move $K --to todo && git add .jaira && git commit -qm "feat($H): start" && git push -q origin master -> ends with '<K> → todo'.
+  8. $B/jaira list -> 'Still open' under Todo, 'Stale copy demo' under Implementing.
+  9. File it in a second worktree: git worktree add -q -b work $B/wt && sleep 2 && cd $B/wt && $B/jaira move $H --to done --force; $B/jaira logbook $H -> ends with 'Logged <H>  Stale copy demo'.
+  10. cd $B/main && $B/jaira list -> no Implementing section. You see a block 'Filed elsewhere — these files are stale copies, the tickets are filed away' with 'filed in the worktree $B/wt on branch work, not yet merged into origin/master; remove the copy here with: git restore .jaira/tickets/<file> && git merge origin/master'. ls .jaira/tickets still lists both files.
+  11. $B/jaira list --json | grep '"count"' -> '"count": 1,'.
+  12. $B/jaira show $H | head -2 -> 'filed elsewhere: this file is a stale copy, the ticket was filed in the worktree ...' and 'remove the copy here with: git restore ...'.
+  13. $B/jaira resume -> 'Nothing was left in progress.' (fixed since review 1).
+  14. $B/jaira show $H --for-lane in-progress --json | grep -c '"filed_elsewhere"\|"remove_stale"' -> 2 (fixed since review 1).
+  15. $B/jaira show $H --brief -> one JSON line that ends with "filed_elsewhere":"the worktree ...","remove_stale":"git restore ..."}.
+  16. $B/jaira next --json | grep -c "$H" -> 0. Then $B/jaira list --actionable -> only 'Still open'.
+  17. $B/jaira board -> 'Implementing 0'. Press z: the Done column ('Done 0') shows 'Stale copy demo' with '⎙ filed elsewhere'.
+  18. Press the right arrow until the Done column's frame is highlighted, then press m -> a NOTE says '<H> was filed away in the worktree ... To remove the copy, run: git restore ... && git merge origin/master'. Press esc.
+  19. Gap 2: press enter on that card, wait 3 seconds, press e -> the field editor opens. Press esc twice, then q.
+  20. Gap 1: run $B/jaira (no arguments) -> under Projects, 'main 2 open / 2'. jaira list counts 1. Press q.
+  21. Land the filing: cd $B/wt && git add -A .jaira && git commit -qm "chore($H): file away" && git push -q origin HEAD:master && cd $B/main && git fetch -q && $B/jaira list -> now 'filed in origin/master; remove the copy here with: git restore ... && git merge origin/master'.
+  22. Run that command: git restore .jaira/tickets/*$H*.md && git merge origin/master -> 'Fast-forward' and 'rename .jaira/{tickets => logbook/ada-<date>}/...'.
+  23. $B/jaira list -> only 'Still open', and no Filed elsewhere block. ls .jaira/logbook/*/ shows the stale-copy file.
+  24. Clean up: rm -rf $B, then open a new shell so HOME is back.
 ---
 
 # Ein Checkout, dessen Ticket anderswo abgelegt wurde, zeigt es als abgelegt statt als geaendert
