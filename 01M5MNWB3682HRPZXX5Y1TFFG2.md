@@ -26,11 +26,11 @@ commits:
   - 97e44fb93e9390ac0242a6c1acbc00f6e2de4135
   - a4f99837adae22af1cc2ef4b1087ad2aa2de0d2b
 created-at: 2026-10-23T15:25:41Z
-updated-at: 2026-10-27T01:14:26Z
+updated-at: 2026-10-27T01:14:42Z
 assignee: BeMuCa
 updated-by: BeMuCa
-claimed-by: "driver-1TFFG2"
-claimed-at: 2026-10-27T01:14:26Z
+claimed-by: ""
+claimed-at: ""
 outcome-what: "spawn.sh starts every tab's claude in the permission mode jaira roles list names for the repository it was run for (settings.PermissionModeFor: board .jaira/permission-mode without bypassPermissions, then permissions.defaultMode in the claude settings.json, then auto for an autoMode key), shown as permission_mode and permission_mode_source. After the enter it checks Herdr's agent_status: exit 0 working, exit 1 'prompt not received in <pane>' (tab stays open, message fits the cockpit's 160-char cut), exit 4 an approval dialog waits (pane printed). The cockpit takes exit 4 as a started worker or chat at all four call sites and says a dialog waits; give back records a new worker."
 outcome-why: "Worker tabs stood at their first Bash question, once for 49 minutes, and in 1NATKP spawn.sh reported success though the prompt never arrived. Reading the mode from the repository, not the fresh worktree, keeps an uncommitted or unshared board file in force; the cockpit would otherwise have read exit 4 as 'no worker started'."
 outcome-resolves: "DoD 1: settings.PermissionModeFor, permission_mode in spawn.sh and usage(), TestPermissionModeFor, TestSpawnStartsClaudeInThePersonsPermissionMode, TestSpawnReadsThePermissionModeFromTheRepositoryNotTheNewWorktree. DoD 2: the arrival check after send-keys (exit 1 or 4), TestSpawnChecksThePromptArrived, and the cockpit's four exit-4 cases in board.test.ts. DoD 3: Herdr-stub tests and core/release/notes/1TFFG2.md exist; core/role green, claude plugin test 164 pass; the full go test ./... -race is left for the run before the PR."
