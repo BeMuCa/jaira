@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:07Z
-updated-at: 2026-10-27T00:48:58Z
+updated-at: 2026-10-27T00:49:00Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: 4n1b66-driver
@@ -28,8 +28,8 @@ review-summary: "The testing lane prompt no longer says 'Build everything and ru
 round: 3
 review-gaps: "Minor, none blocks. (1) The release note gives its catalogue warning last, though the reader must act on it before the --force command; and jaira lanes path only prints the catalogue folder, not whether a testing.md is in it. (2) Gates says 'format and vet checks' - vet is a Go word in a lane shipped to every repository. (3) The worker rule sits under 'Judging your own work', whose first line limits it to critique, optimize and testing; the rule says 'a lane', so in-progress is covered only by that wording. (4) The dispatcher line leaves out the 'touched packages' half (harmless: a dispatcher runs no tests). Open for the maintainer: (5) who runs the full suite before the PR - 'main session' is defined nowhere, jaira-role-pr has no such step; this repo's CI runs go test ./... -race (.github/workflows/ci.yaml:70), other repositories have nothing; and who ticks a held-back full-suite DoD item afterwards - the move into done is refused while it is open (core/gate/gate.go:358-372). (6) The dispatcher route through /jaira-role-lane does not carry the rule; the optimize lane says 'run the tests' with no limit (core/lane/builtin/26-optimize.md:43-44). (7) The dispatcher line is one unwrapped line, as DoD 2 asks. (8) The maintainer's own catalogue ~/.jaira/lanes/testing.md:22 (outside the repo) still says 'run the whole suite'; jaira lanes use testing --force copies it back on his boards (reproduced on a scratch board). Unrelated: core/release/notes/7V1XPB.md tells readers to run bare jaira roles install, which exits 2."
 test-verdict: "pass: touched packages green (gofmt/vet/build/core/lane+role+release RC=0), DoD 1-3 verified in the tree (prompts identical, 'whole suite' gone, one-line note), release-note steps exercised on a scratch board; DoD asks no full-suite item"
-review-verdict: "Send back. DoD 1-3 are met as literally written; gofmt -l empty, go vet ./..., go build ./... and go test ./core/lane ./core/role ./core/release -count=1 pass; commits use the noreply address, no trailers, no denylisted strings. But the change introduces a contradiction in the testing lane for a common DoD shape (gap 1), and both instructions in the release note fail to do what they say (gaps 2 and 3); all three reproduced, each fix a few words. Gaps 4 and 5 are questions for the maintainer, not reasons to send back."
-review-round: 2
+review-verdict: "Pass, with minor gaps. DoD 1-3 are met in the tree: 'run the whole suite' is gone from both testing lanes, their prompts are byte-identical and state the touched-package rule and the one full race suite before the PR; the worker and dispatcher skills carry the rule; the release note is one well-formed '- ' line and jaira update shows it under Unreleased. The first review's three fixes landed and hold on a scratch board: bare roles install exits 2; without --force older role files are skipped as edited; --project --force overwrites them; a catalogue testing.md is copied back by lanes use --force and deleting it fixes that. gofmt -l empty; go vet ./..., go build ./... and go test ./core/lane ./core/role ./core/release -count=1 pass. Commits use the noreply address, no trailers, no denylisted strings. Gaps 1-4 are wording; gaps 5-8 are for the maintainer. Not run here: go test ./... -race (owed once before the PR)."
+review-round: 3
 review-check: "Pending: this review sent the ticket back; the next review writes the hand-check for the fixed change."
 ---
 
