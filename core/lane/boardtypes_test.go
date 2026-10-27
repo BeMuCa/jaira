@@ -46,10 +46,10 @@ func TestCreateBoardFromATypeWithLanesOfItsOwn(t *testing.T) {
 	old := boardTypesFS
 	t.Cleanup(func() { boardTypesFS = old })
 	boardTypesFS = fstest.MapFS{
-		"ideas/description": {Data: []byte("A topic, several ideas with a roadmap each, a person picks one.\n")},
-		"ideas/order":       {Data: []byte("backlog\nideate\npicked\n")},
-		"ideas/ideate.md":   {Data: []byte("---\nid: ideate\nname: Ideate\nagentic: true\nmodel-tier: strong\n---\n\n# Prompt\n\nWrite three ideas.\n")},
-		"ideas/picked.md":   {Data: []byte("---\nid: picked\nname: Picked\nterminal: true\n---\n")},
+		"boardtypes/ideas/description": {Data: []byte("A topic, several ideas with a roadmap each, a person picks one.\n")},
+		"boardtypes/ideas/order":       {Data: []byte("backlog\nideate\npicked\n")},
+		"boardtypes/ideas/ideate.md":   {Data: []byte("---\nid: ideate\nname: Ideate\nagentic: true\nmodel-tier: strong\n---\n\n# Prompt\n\nWrite three ideas.\n")},
+		"boardtypes/ideas/picked.md":   {Data: []byte("---\nid: picked\nname: Picked\nterminal: true\n---\n")},
 	}
 	root := newBoardRoot(t)
 

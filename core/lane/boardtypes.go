@@ -26,17 +26,11 @@ import (
 //go:embed boardtypes
 var boardTypesEmbed embed.FS
 
-// boardTypesFS is the shipped types, rooted at the directory holding one
-// sub-directory per type. A variable so a test can lay other types in.
-var boardTypesFS fs.FS = mustSub(boardTypesEmbed, "boardtypes")
+// boardTypesFS is the shipped types, one directory per type under
+// boardtypes/. A variable so a test can lay other types in.
+var boardTypesFS fs.FS = boardTypesEmbed
 
-func mustSub(f fs.FS, dir string) fs.FS {
-	sub, err := fs.Sub(f, dir)
-	if err != nil {
-		panic(err)
-	}
-	return sub
-}
+const boardTypesDir = "boardtypes"
 
 // DefaultBoardType is the type a board created without one gets: the
 // built-in lanes for code.
@@ -57,7 +51,7 @@ type BoardType struct {
 
 // BoardTypes lists the shipped types, sorted by name.
 func BoardTypes() ([]BoardType, error) {
-	entries, err := fs.ReadDir(boardTypesFS, ".")
+	entries, err := fs.ReadDir(boardTypesFS, boardTypesDir)
 	if err != nil {
 		return nil, err
 	}
@@ -77,11 +71,11 @@ func BoardTypes() ([]BoardType, error) {
 }
 
 func boardType(name string) (BoardType, error) {
-	desc, err := fs.ReadFile(boardTypesFS, path.Join(name, "description"))
+	desc, err := fs.ReadFile(boardTypesFS, path.Join(boardTypesDir, name, descriptionFileName))
 	if err != nil {
 		return BoardType{}, fmt.Errorf("board type %s: %w", name, err)
 	}
-	order, err := fs.ReadFile(boardTypesFS, path.Join(name, orderFileName))
+	order, err := fs.ReadFile(boardTypesFS, path.Join(boardTypesDir, name, orderFileName))
 	if err != nil {
 		return BoardType{}, fmt.Errorf("board type %s: %w", name, err)
 	}
@@ -92,10 +86,10 @@ func boardType(name string) (BoardType, error) {
 	}, nil
 }
 
-// typeLanes resolves the lanes of type typ, in its order, with each lane's
-// file content: the type's own file for an id it has one for, the built-in
-// lane's otherwise.
-func typeLanes(typ string) ([]*Lane, [][]byte, error) {
+// typeLanes resolves the lane ids of type typ, in its order, with each
+// lane's file content: the type's own file for an id it has one for, the
+// built-in lane's otherwise.
+func typeLanes(typ string) ([]string, [][]byte, error) {
 	bt, err := boardType(typ)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -104,7 +98,7 @@ func typeLanes(typ string) ([]*Lane, [][]byte, error) {
 		return nil, nil, err
 	}
 	own := map[string][]byte{}
-	files, _ := fs.Glob(boardTypesFS, path.Join(typ, "*.md"))
+	files, _ := fs.Glob(boardTypesFS, path.Join(boardTypesDir, typ, "*.md"))
 	for _, f := range files {
 		raw, err := fs.ReadFile(boardTypesFS, f)
 		if err != nil {
@@ -122,7 +116,6 @@ func typeLanes(typ string) ([]*Lane, [][]byte, error) {
 	}
 	builtinByID := indexByID(builtins)
 
-	var lanes []*Lane
 	var raws [][]byte
 	for _, id := range bt.Lanes {
 		raw, ok := own[id]
@@ -135,14 +128,9 @@ func typeLanes(typ string) ([]*Lane, [][]byte, error) {
 				return nil, nil, err
 			}
 		}
-		l, err := Parse(raw, id)
-		if err != nil {
-			return nil, nil, err
-		}
-		lanes = append(lanes, l)
 		raws = append(raws, raw)
 	}
-	return lanes, raws, nil
+	return bt.Lanes, raws, nil
 }
 
 // CreateBoard writes board name of type typ into
@@ -162,20 +150,17 @@ func CreateBoard(root, name, typ, description string) (string, []string, error) 
 	if hasLaneFiles(dir) {
 		return "", nil, fmt.Errorf("%w: %s already has lanes in %s", ErrBoardExists, norm, dir)
 	}
-	lanes, raws, err := typeLanes(typ)
+	ids, raws, err := typeLanes(typ)
 	if err != nil {
 		return "", nil, err
 	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", nil, err
 	}
-	ids := make([]string, 0, len(lanes))
-	for i, l := range lanes {
-		// Named from the parsed id, never from a path, as Materialise does.
-		if err := os.WriteFile(filepath.Join(dir, l.ID+".md"), raws[i], 0o644); err != nil {
+	for i, id := range ids {
+		if err := os.WriteFile(filepath.Join(dir, id+".md"), raws[i], 0o644); err != nil {
 			return "", nil, err
 		}
-		ids = append(ids, l.ID)
 	}
 	if err := os.WriteFile(filepath.Join(dir, orderFileName), []byte(strings.Join(ids, "\n")+"\n"), 0o644); err != nil {
 		return "", nil, err
