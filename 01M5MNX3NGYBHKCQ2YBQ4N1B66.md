@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:07Z
-updated-at: 2026-10-27T00:02:40Z
+updated-at: 2026-10-27T00:02:42Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: 4n1b66-driver
@@ -31,7 +31,8 @@ claimed-at: 2026-10-27T00:01:46Z
   proof: .jaira/lanes/testing.md:22, core/lane/builtin/27-testing.md:23
 - [x] jaira-worker/SKILL.md und jaira-dispatcher/SKILL.md tragen dieselbe Regel in einer Zeile
   proof: core/role/builtin/jaira-worker/SKILL.md:168, core/role/builtin/jaira-dispatcher/SKILL.md:268
-- [ ] Release-Notiz unter core/release/notes/
+- [x] Release-Notiz unter core/release/notes/
+  proof: core/release/notes/4N1B66.md:1
 
 ## Options
 
