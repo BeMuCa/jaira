@@ -1,7 +1,7 @@
 ---
 id: 01M5MNX0YKP4QAACC80KPBDMS4
 title: Milestone-Dateien fuehren keine archivierten Tickets mehr als offen
-status: optimize
+status: testing
 ready: true
 creator: BeMuCa
 goal: jaira milestone ls/show und die Kartenkante auf dem Board zaehlen ein archiviertes oder abgelegtes Ticket nicht mehr als offenen Teil des Milestones.
@@ -15,7 +15,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:04Z
-updated-at: 2026-10-27T00:23:19Z
+updated-at: 2026-10-27T00:23:21Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: pbdms4-driver
