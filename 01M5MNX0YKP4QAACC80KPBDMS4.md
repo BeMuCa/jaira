@@ -1,7 +1,7 @@
 ---
 id: 01M5MNX0YKP4QAACC80KPBDMS4
 title: Milestone-Dateien fuehren keine archivierten Tickets mehr als offen
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: jaira milestone ls/show und die Kartenkante auf dem Board zaehlen ein archiviertes oder abgelegtes Ticket nicht mehr als offenen Teil des Milestones.
@@ -15,12 +15,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:04Z
-updated-at: 2026-10-27T00:10:32Z
+updated-at: 2026-10-27T00:10:34Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: pbdms4-driver
 claimed-at: 2026-10-27T00:10:32Z
 round: 2
+outcome-what: "jaira milestone ls prints 'N open of M ticket(s)' and --json gains 'open' (count stays the total); new 'jaira milestone show <name>' lists every member with where it is now (on the board · <lane>, archive · ..., logbook · done); the TUI M picker row counts open of total; logbook cards no longer carry the milestone colour bar. New link.Index.Open and Milestone.Open; ids stay in the milestone files."
+outcome-why: "Milestone files keep the ids of archived and logbooked tickets, so ls and the picker counted them as open and a finished round looked unfinished."
+outcome-resolves: "DoD 1: ls/show via Index.Open + Milestone.Open, TestLsCountsOnlyOpenTicketsAndKeepsTheTotal and TestShowSaysWhereEveryMemberIsNow. DoD 2: picker count and milestoneColors, TestMilestonePickerCountsOpenOfTotalAndLogbookCardsLoseTheBar. DoD 3 waits for the full race suite before the PR; release note core/release/notes/PBDMS4.md."
 ---
 
 # Milestone-Dateien fuehren keine archivierten Tickets mehr als offen
