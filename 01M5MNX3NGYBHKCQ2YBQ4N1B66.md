@@ -1,7 +1,7 @@
 ---
 id: 01M5MNX3NGYBHKCQ2YBQ4N1B66
 title: Die Testing-Lane verlangt keinen vollen Suite-Lauf mehr; die Suite laeuft einmal vor dem PR
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Der Prompt der Testing-Lane sagt, was die Regel ist: Paket-Tests der beruehrten Pakete in der Lane, die volle Race-Suite einmal vor dem PR durch die Hauptsession - und kein Worker startet sie mehr aus eigenem Antrieb."
@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:07Z
-updated-at: 2026-10-27T00:10:42Z
+updated-at: 2026-10-27T00:10:45Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: 4n1b66-driver
@@ -29,6 +29,7 @@ review-summary: |-
   core/lane/builtin/27-testing.md:25-27 and .jaira/lanes/testing.md:24-26 - "with the race detector (go test ./... -race)" is stated for every repository, though the progress note of 2026-10-27 00:02 says the Go command is phrased as the Go case because the builtin ships to non-Go repositories; move it into the Go case, e.g. "Never run the full suite in a lane: it runs once, before the pull request, by the main session (in Go `go test ./... -race`)." - same bytes in both files (lanesEquivalent compares Prompt).
   core/role/builtin/jaira-dispatcher/SKILL.md:268 and core/role/builtin/jaira-worker/SKILL.md:168-169 - "it takes 7-8 minutes" is this repository's suite, written into role files that jaira roles install puts into every repository (--global: all of them), and go test ./... -race is again unconditional; drop the number ("the full suite is the slowest check, so it runs once ...") and name go test ./... -race as the Go case, as the lane does.
   core/release/notes/4N1B66.md:1 - jaira lanes use testing --force copies the catalogue's testing.md when there is one (the catalogue lays over the built-ins, core/lane/lane.go:682), and the maintainer's catalogue ~/.jaira/lanes/testing.md:22 still says "Build everything and run the whole suite"; on a scratch board with that file, use --force wrote the old Gates back (board testing.md:22). Add to the note: if jaira lanes path shows a catalogue holding testing.md, update or delete that copy first. The catalogue file itself is outside the repository and needs the maintainer's own hand - it is also what "die Katalog-Lane" in DoD 1 means in jaira's own vocabulary (jaira lanes path: "Catalogue").
+round: 2
 ---
 
 # Die Testing-Lane verlangt keinen vollen Suite-Lauf mehr; die Suite laeuft einmal vor dem PR
