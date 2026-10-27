@@ -15,7 +15,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:04Z
-updated-at: 2026-10-27T00:08:50Z
+updated-at: 2026-10-27T00:09:35Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: pbdms4-driver
@@ -49,7 +49,7 @@ round: 2
 - [x] extend the CLI test: show marks h2 'archive ·' and h3 'logbook · done', h1 'on the board · backlog'; show --json tickets carry place archive/logbook/board
 - [x] TUI M picker: internal/tui/view.go:1646 count becomes open of total via ms.Open(m.linkIndex().Open) (model.go:1926); test in internal/tui/milestonebar_test.go with pickerRow (l.192), mkMilestone (l.13), m.store.Archive (pattern layer_test.go:751); go test ./internal/tui -run <that test> -count=1
 - [x] TUI card edge: milestoneColors (model.go:1794) returns empty slots for m.isLogged(t) (logbook.go:37); do NOT filter m.mstones (model.go:431), the M filter matches logbook cards on purpose (model.go:567-569); test with fileIntoLogbook (logbook_test.go:16) that the logged card has no milestone colour
-- [~] docs: docs/COMMANDS.md:142 ls row (open of total, json open) plus a show row; docs/AGENTS.md:164; README.md:862 command list
+- [x] docs: docs/COMMANDS.md:142 ls row (open of total, json open) plus a show row; docs/AGENTS.md:164; README.md:862 command list
 - [ ] release note core/release/notes/PBDMS4.md: exactly one '- ' line, unwrapped, an instruction: ls reads open of total (json open), show lists where each ticket is now, M picker counts the same, logbook cards drop the milestone colour
 - [ ] per commit gofmt -l . empty, go vet ./... and go build ./... green; the full go test ./... -race runs once before the PR (driver ticks DoD 3)
 
