@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:22Z
-updated-at: 2026-10-27T14:32:43Z
+updated-at: 2026-10-27T14:34:24Z
 updated-by: berkc
 claimed-by: berk-ca-728718
 claimed-at: 2026-10-27T14:32:43Z
@@ -47,3 +47,4 @@ claimed-at: 2026-10-27T14:32:43Z
 
 ## Progress
 - **2026-10-27 14:32 · berkc** — Korrektur 27.10.2026 (berkc): Der Kontext beschreibt 'b' so, wie es heute ist (b schaltet zum naechsten Board, internal/tui/model.go:1705). Gewollt ist (KVMG0K): b oeffnet ein Popup mit allen Boards, dort waehlt man mit Leertaste die freigegebenen (aktiven) Boards, aus denen der Teamlead waehlen darf; Shift+hoch/runter wechselt zwischen den aktiven Boards. Eine Einstellung 'aktive Boards' gibt es heute nicht (nur default-board in internal/tui/settings.go). Fuer dieses Ticket aendert das nichts: es geht nur ums Anlegen von Boards per Befehl.
+- **2026-10-27 14:34 · berkc** — Entscheidungen (Worker, nach 'kleiner als paca'): (1) Mitgeliefert wird nur der Typ 'code' = die eingebauten Default-Lanes (die Lanes mit default-board != false), also dasselbe wie ohne --type. 'ideas' und 'builder' liefert Berk selbst spaeter; das Format muss sie nur tragen koennen. (2) Ein Typ ist NUR Lanes + order + description - keine Tags, keine Milestone-Vorlagen (niemand hat sie verlangt). (3) Keine eigenen Typen in ~/.jaira in diesem Ticket: ein zweiter Quellort ist ein eigenes Feature; das Format (ein Verzeichnis wie ein Board-lanes/-Verzeichnis) laesst das spaeter mit einer Zeile zu. (4) Format: core/lane/boardtypes/<typ>/ mit 'description' (eine Zeile, was der Typ ist; nur fuer 'boards types'), 'order' (Lane-IDs) und optional eigenen <id>.md Lane-Dateien; eine ID in order ohne eigene Datei kommt aus den eingebauten Lanes. So ist ideas = eigene Lanes (ideate, pick ...), builder = eingebaute Code-Lanes plus eigene. (5) DoD1 'description des Typs' vs DoD5 '--description Pflicht': die Board-description-Datei bekommt den --description-Text (welche Tickets aufs Board gehoeren); die Typ-Beschreibung steht nur in 'boards types'. (6) 'code' ignoriert ~/.jaira/default-board.md bewusst: DoD3 sagt eingebaute Code-Lanes, und ein Befehl, den ein Agent ausfuehrt, soll auf jeder Maschine dasselbe Board bauen.
