@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:22Z
-updated-at: 2026-10-27T14:42:37Z
+updated-at: 2026-10-27T14:42:40Z
 updated-by: berkc
 claimed-by: berk-ca-728718
 claimed-at: 2026-10-27T14:32:43Z
@@ -37,7 +37,8 @@ claimed-at: 2026-10-27T14:32:43Z
 - [x] Ein Board ohne --type bekommt die eingebauten Code-Lanes
   proof: --type defaults to lane.DefaultBoardType=code (core/lane/boardtypes/code/order); TestCodeTypeIsTheBuiltinDefaultLanes, TestBoardsCreate (create without --type)
 - [ ] Tests; Release-Note
-- [ ] 'boards create' verlangt eine Beschreibung (--description), die sagt, welche Tickets auf dieses Board gehoeren; ohne sie exit 2 mit Hinweis, wofuer der Teamlead sie braucht
+- [x] 'boards create' verlangt eine Beschreibung (--description), die sagt, welche Tickets auf dieses Board gehoeren; ohne sie exit 2 mit Hinweis, wofuer der Teamlead sie braucht
+  proof: internal/cli/boards.go:111 missing_description exit 2; TestBoardsCreate
 
 ## Options
 
