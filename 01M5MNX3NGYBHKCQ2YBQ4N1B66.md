@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:07Z
-updated-at: 2026-10-27T00:29:40Z
+updated-at: 2026-10-27T00:29:42Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: 4n1b66-driver
@@ -30,6 +30,7 @@ review-gaps: "(1) Defect in the lane: 16 open tickets in .jaira/tickets/ besides
 test-verdict: "pass: gofmt/vet/build rc=0, go test ./core/lane ./core/role ./core/release rc=0, DoD 1-3 verified in the tree (prompts identical, 'whole suite' gone, rule lines in worker+dispatcher, note is one '- ' line), scratch board: lanes show testing has new text, lanes use testing --force replaced old Gates text, roles install wrote both rule lines"
 review-verdict: "Send back. DoD 1-3 are met as literally written; gofmt -l empty, go vet ./..., go build ./... and go test ./core/lane ./core/role ./core/release -count=1 pass; commits use the noreply address, no trailers, no denylisted strings. But the change introduces a contradiction in the testing lane for a common DoD shape (gap 1), and both instructions in the release note fail to do what they say (gaps 2 and 3); all three reproduced, each fix a few words. Gaps 4 and 5 are questions for the maintainer, not reasons to send back."
 review-round: 2
+review-check: "Pending: this review sent the ticket back; the next review writes the hand-check for the fixed change."
 ---
 
 # Die Testing-Lane verlangt keinen vollen Suite-Lauf mehr; die Suite laeuft einmal vor dem PR
