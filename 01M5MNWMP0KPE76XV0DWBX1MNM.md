@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:51Z
-updated-at: 2026-10-27T00:34:11Z
+updated-at: 2026-10-27T00:34:19Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-268570
@@ -108,3 +108,4 @@ review-check: |-
 - **2026-10-27 00:08 · BeMuCa** — critique (pass 4, 70f82afd only): NOTHING LEFT. Review finding 1 resolved: release note line 1 drops 'ownership'; true, because core/gate/gate.go:213-222 exempts requires-human-exit lanes from not_owner and accept runs only from such a lane (accept.go:49-53). Review finding 5 resolved: the not_human_lane refusal (accept.go:52) now says 'not a sign-off lane (requires-human-exit)', which is true for the human lane (requires-question, core/lane/builtin/30-human.md:8). No test pins the old text; release note is still one line starting '- '. Let stand: the refusal says 'sign-off lane' while help/COMMANDS.md/release note say 'a lane that waits for a person (signoff)'; the parentheses scope those, nothing false, DoD untouched. Outside scope, not a finding: accept.go:17 Short still says 'move the ticket on from the human lane', and on the shipped board 'human' is the lane accept refuses; reword together with any later accept text change.
 - **2026-10-27 00:11 · BeMuCa** — optimize (pass 3, 70f82afd only): NOTHING LEFT. The commit changes two strings and no code: release note line 1 drops 'ownership' (still three lines, each one line starting '- '), and the not_human_lane refusal at internal/cli/accept.go:52 is reworded. No branch, helper, import or test added or orphaned; the wording exists nowhere else in Go code (grep), so nothing is duplicated. gofmt clean.
 - **2026-10-27 00:15 · BeMuCa** — testing (pass 2): on 70f82afd go build, go vet, gofmt -l all empty; go test -race -count=1 ./internal/cli ok (44s). Fresh remoteless board: accept on backlog ticket prints 'is in "backlog", which is not a sign-off lane (requires-human-exit); there is nothing to accept', exit 3. Ticket assigned to another person, forced into signoff with outcome, DoD ticked, commit naming it: accept --by 'Some Person' exits 0 'Accepted ... into done'. Release note line 1 has no 'ownership'. Full race suite not run (house rule); DoD 4 open.
+- **2026-10-27 00:34 · BeMuCa** — Driver: model review pass 2 says ready for sign-off. Its three text nits (release note lines 2 and 3, accept's one-line help 'from the human lane') are left for the person to take or send back, not looped again. Follow-ups for the maintainer: acceptance role build.py/SKILL.md and docs/how-to-work-with-jaira.html still force accepted tickets; board a key and cockpit Accept write no accepted-by; accepted-* not in show --json and kept on send-back; plain-move refusal does not name jaira accept.
