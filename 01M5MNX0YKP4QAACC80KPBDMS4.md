@@ -15,7 +15,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:04Z
-updated-at: 2026-10-27T00:33:06Z
+updated-at: 2026-10-27T00:33:16Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: pbdms4-driver
@@ -32,7 +32,16 @@ review-summary: |-
   'Open' is new link.Index.Open: on the board (file or ref) and not in a terminal lane, answered from memory. New Milestone.Open counts members by that predicate; the ids stay in the file.
   TUI: the M picker row reads 'N open of M'; milestoneColors gives a logbook card no colour (m.isLogged), a done-lane card keeps its bar, the M filter still matches logbook cards.
   Docs: COMMANDS.md ls+show rows, AGENTS.md, SKILL.md, README.md. One release-note line. Tests: link TestOpenIsOnlyWhatIsStillOnTheBoard, milestone TestOpenCountsOnlyWhatTheCallerCallsOpen, CLI TestLsCountsOnlyOpenTicketsAndKeepsTheTotal + TestShowSaysWhereEveryMemberIsNow, TUI TestMilestonePickerCountsOpenOfTotalAndLogbookCardsLoseTheBar; each fails without the change (new symbols or new text).
-review-gaps: "optimize: (1) internal/cli/milestones.go:603 show --json builds its ticket rows from memberRefs (milestones.go:884) and adds place/lane/title, instead of spelling id/handle a second time - output byte-identical (cmp on a scratch board). (2) internal/cli/milestones_test.go: inlined the single-use test helper milestoneMembers as the file does elsewhere (l.52). (3) internal/tui/model.go:1791-1794 rewrapped the ragged comment, words unchanged. Considered and left: Index.Open (core/link/link.go:318) is the only open predicate on the link index - tags.go countTags and boards.go count per tag/board over the list with their own lane sets, logbook.go:393 needs names and uses s.Load, so none of them can call it without changing behaviour. Milestone.Open (core/milestone/milestone.go:114) has four callers (ls text, ls json, show, TUI picker); the predicate keeps core/milestone free of core/link, as gate takes Satisfied. Pre-existing tui/layer.go:162 milestoneDone runs the same member-count loop with Satisfied; folding it would mean renaming Open to a generic count - outside this ticket, left. milestone ls now calls boardIndex (milestones.go:528) even with no milestones; not a hot path, moving it would change which error an empty board reports, left. epic show prints its rows inline, no shared helper to reuse."
+review-gaps: |-
+  optimize: (1) internal/cli/milestones.go:603 show --json builds its ticket rows from memberRefs (milestones.go:884) and adds place/lane/title, instead of spelling id/handle a second time - output byte-identical (cmp on a scratch board). (2) internal/cli/milestones_test.go: inlined the single-use test helper milestoneMembers as the file does elsewhere (l.52). (3) internal/tui/model.go:1791-1794 rewrapped the ragged comment, words unchanged. Considered and left: Index.Open (core/link/link.go:318) is the only open predicate on the link index - tags.go countTags and boards.go count per tag/board over the list with their own lane sets, logbook.go:393 needs names and uses s.Load, so none of them can call it without changing behaviour. Milestone.Open (core/milestone/milestone.go:114) has four callers (ls text, ls json, show, TUI picker); the predicate keeps core/milestone free of core/link, as gate takes Satisfied. Pre-existing tui/layer.go:162 milestoneDone runs the same member-count loop with Satisfied; folding it would mean renaming Open to a generic count - outside this ticket, left. milestone ls now calls boardIndex (milestones.go:528) even with no milestones; not a hot path, moving it would change which error an empty board reports, left. epic show prints its rows inline, no shared helper to reuse.
+  review: no defect found. Points, none blocking:
+  (1) The new command is hard to find for agents: the generated CLAUDE.md/AGENTS.md block (core/board/announce.go:64), .claude/skills/jaira/SKILL.md:213 and docs/AGENTS.md:164 name 'milestone ls' but not 'milestone show'; only README.md:863 and docs/COMMANDS.md:143 do.
+  (2) With the M filter on, a logbook card matches the milestone (model.go:567-572) but carries no milestone colour (model.go:1797). A person can read the missing cell as 'not in this milestone'.
+  (3) internal/cli/milestones.go:562 pads the total too: '1 open of   3 ticket(s)'. Cosmetic; milestones_test.go:306 pins the padding.
+  (4) docs/COMMANDS.md:143 says show --json is 'the milestone as ls gives it plus tickets'; tickets is not added, it replaces ls's id/handle rows with a superset. Harmless. 'show' of a milestone filed into the logbook exits 3 (milestone_filed, checked on a scratch board) and is not documented there.
+  (5) Not tested: a member only on its ref (PlaceRef, open) and a logbooked ticket whose ref is still up (link.go:161-172 drops it to the logbook) - the second is the normal case on a shared board. The code handles both; no test pins them.
+  (6) DoD 1 wording 'archiviert'/'abgelegt' vs shipped English 'archive · ...'/'logbook · done' (driver decision 00:09).
+  DoD 3 open: the full race suite runs before the PR (known).
 test-verdict: "pass: gates green (gofmt/vet/build), added tests ok with -race, DoD1+2 verified, release note ok, scratch board: ls/show 1 open of 4, show nope rc=5, picker '1 open of 4', logbook card has no milestone bar while backlog and done-lane cards keep it; DoD3 full race suite still open"
 ---
 
