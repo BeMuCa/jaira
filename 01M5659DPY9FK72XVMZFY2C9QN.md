@@ -1,7 +1,7 @@
 ---
 id: 01M5659DPY9FK72XVMZFY2C9QN
 title: Ein zweites Board laesst sich mit einem Befehl aus einem Board-Typ anlegen statt Lane-Dateien von Hand zu kopieren
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: berkc
@@ -20,10 +20,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:22Z
-updated-at: 2026-10-27T14:47:16Z
+updated-at: 2026-10-27T14:47:18Z
 updated-by: berkc
 claimed-by: berk-ca-728718
 claimed-at: 2026-10-27T14:32:43Z
+outcome-what: "Neue Befehle 'jaira boards create <name> --description <...> [--type <typ>]' und 'jaira boards types' (beide mit --json). Board-Typen liegen eingebettet unter core/lane/boardtypes/<typ>/ (description, order, eigene Lane-Dateien; IDs ohne eigene Datei kommen aus den eingebauten Lanes). Mitgeliefert: 'code' = die eingebauten Default-Lanes."
+outcome-why: "Ein zweites Board musste man bisher von Hand aus Lane-Dateien zusammenkopieren; Agenten brauchen einen nicht-interaktiven Befehl, und Berk will spaeter eigene Typen (ideas, builder) ausliefern koennen, ohne Go-Code zu schreiben."
+outcome-resolves: "Y2C9QN: Board per Befehl aus einem Typ anlegen; vorhandenes Board wird nie ueberschrieben (exit 3), fehlende Beschreibung exit 2."
 ---
 
 # Ein zweites Board laesst sich mit einem Befehl aus einem Board-Typ anlegen statt Lane-Dateien von Hand zu kopieren
