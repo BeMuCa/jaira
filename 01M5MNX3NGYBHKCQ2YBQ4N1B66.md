@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:07Z
-updated-at: 2026-10-27T00:29:31Z
+updated-at: 2026-10-27T00:29:40Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: 4n1b66-driver
@@ -28,6 +28,8 @@ review-summary: "The branch has no Go code changes. It is three docs commits tha
 round: 2
 review-gaps: "(1) Defect in the lane: 16 open tickets in .jaira/tickets/ besides this one have a DoD with 'go test ./... -race gruen', and core/role/builtin/jaira-role-brainstorm/SKILL.md:54-56 teaches that as the model DoD. Pass 2 of the same lane says to verify every DoD item ('a criterion you could not verify is a finding, not a pass'), while Gates now forbids the full suite: a testing worker on such a ticket must break the new rule or fail the ticket back over and over. (2) Release note: 'jaira lanes use testing --force' on an existing board adds the testing lane to a board that never had it (scratch board from jaira init: it wrote .jaira/lanes/testing.md and appended testing to .jaira/lanes/order); testing is not among the lanes jaira init writes. (3) Release note: bare 'jaira roles install' exits 2 ('choose exactly one of --project, --global or --into'); with --global but without --force an installed older jaira-worker/SKILL.md is skipped as 'edited here' (exit 3) and the rule never arrives (core/role/install.go:115-116 compares bytes only). (4) Not in the DoD: on the dispatcher route each lane runs as /jaira-role-lane without a brief, so the dispatcher line at :268 reaches no worker; core/lane/builtin/26-optimize.md:43-44 still says 'After each edit, run the tests'. (5) 'runs once before the PR by the main session' is written nowhere a session would act on it (jaira-role-pr, jaira-teamlead say nothing about tests) - critique raised it, the driver deferred it to the maintainer. (6) Nits: Go commands break across lines inside backticks (both lanes, worker skill); 'vet' is Go vocabulary; the dispatcher rule is one 158-character line; the dispatcher line leaves out the touched-packages half."
 test-verdict: "pass: gofmt/vet/build rc=0, go test ./core/lane ./core/role ./core/release rc=0, DoD 1-3 verified in the tree (prompts identical, 'whole suite' gone, rule lines in worker+dispatcher, note is one '- ' line), scratch board: lanes show testing has new text, lanes use testing --force replaced old Gates text, roles install wrote both rule lines"
+review-verdict: "Send back. DoD 1-3 are met as literally written; gofmt -l empty, go vet ./..., go build ./... and go test ./core/lane ./core/role ./core/release -count=1 pass; commits use the noreply address, no trailers, no denylisted strings. But the change introduces a contradiction in the testing lane for a common DoD shape (gap 1), and both instructions in the release note fail to do what they say (gaps 2 and 3); all three reproduced, each fix a few words. Gaps 4 and 5 are questions for the maintainer, not reasons to send back."
+review-round: 2
 ---
 
 # Die Testing-Lane verlangt keinen vollen Suite-Lauf mehr; die Suite laeuft einmal vor dem PR
