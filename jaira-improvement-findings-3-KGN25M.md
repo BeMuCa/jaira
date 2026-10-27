@@ -1,0 +1,27 @@
+---
+color: 178
+created-at: 2026-10-27T20:52:56Z
+goal: Was am 25.-27.10.2026 beim Teamlead-Betrieb mit 16 Workern und beim Driver-Betrieb mit 19 Tickets schiefging oder fehlte: Gates, Worker-Disziplin, Kosten je Lane, Anlegen und Aendern von Tickets, ein beratender PII-Check
+after: [J89MM5]
+---
+
+# jaira-improvement-findings-3
+
+<!-- One ticket id per line. Move the unfinished ones into the next
+     milestone's file when this one is done. -->
+
+- 01M5ZJ4KA5N2PH7Q4WY4F1V59P
+- 01M5ZJ4NNCYN6YBWVAPWAHG254
+- 01M5ZJ4QSWY1WCTRR5QR195QXK
+- 01M5ZJ4SWDVEZ3C6BV0VXZBF0V
+- 01M5ZJ4WRN0FRAKQCCB805CSWX
+- 01M5ZJ4YXAJ30VQSSJM3FE30SD
+- 01M5ZJ5128A90Z67PZ2YHPFD7D
+- 01M5ZJ532H7HT1234QSSDWRC0H
+- 01M5ZJ555685ZXARWNEF5QR36R
+- 01M5ZJ57ARFWR06TS7TJFYHJ39
+- 01M5ZJ59EHSFBNKM048E64BZSR
+- 01M5ZJ5BFTK2EF9RNRJP35PV7F
+- 01M5ZJ5DKQZ83GYBGPJHAX8K02
+- 01M5ZJ5FMXTVR0AS5FT77QDQ4W
+- 01M5ZJ5JPVKP4H0FDE5Q9T77A0
