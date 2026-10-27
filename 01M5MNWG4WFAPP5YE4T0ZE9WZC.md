@@ -16,11 +16,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:47Z
-updated-at: 2026-10-26T20:23:08Z
+updated-at: 2026-10-27T00:01:56Z
 assignee: BeMuCa
 updated-by: BeMuCa
-claimed-by: EE-3NX6GL3-253301
-claimed-at: 2026-10-26T19:10:55Z
+claimed-by: EE-3NX6GL3-2063561
+claimed-at: 2026-10-27T00:01:56Z
 outcome-what: "Added a committed .claude/settings.json. permissions.allow covers the lane commands: go build/vet/test, gofmt, the git commands lanes use, every jaira subcommand, tmux, the read/copy tools, Edit(/**). permissions.ask: git push, gh pr create. permissions.deny: rm -rf/-fr, git reset --hard, git filter-branch, gh pr merge, tmux kill-server. README: '### Permissions in a worktree' under With Claude Code (which settings a worktree session reads, where a deny list for every worktree goes, trust, autoMode, /permissions), plus a paragraph under Development on what this repo's file allows, asks for and denies. No release note: nothing a jaira user runs changes."
 outcome-why: "Workers stopped to ask for routine lane commands (go build, git commit, jaira move/dod), because the repo carried no permission rules, and the user settings' autoMode.allow takes prose for the classifier, not patterns. A deny list a teamlead put into a worktree did not reach the sessions it was meant for, and nothing said which file a worktree reads. The maintainer's rule: critical commands ask, not forbid."
 outcome-resolves: "DoD 1: .claude/settings.json:4-48, where push and PR create ask and the rest is denied, rm -rf even under /tmp. DoD 2: README.md:680, settings.local.json and trust come from the main checkout's root; a worktree's own local file only reaches sessions started there, so a deny list for every worktree goes into the main checkout's settings.local.json or ~/.claude/settings.json. DoD 3: a fresh headless sonnet worker on a scratch board ran the in-progress lane with 0 permission denials (note on ZE9WZC). Shell expansions such as the lane prompt's --commits \"$(git rev-parse HEAD)\" always ask; follow-up W9AVBE."
