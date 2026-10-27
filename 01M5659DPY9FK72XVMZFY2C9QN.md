@@ -20,8 +20,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:22Z
-updated-at: 2026-10-27T14:32:42Z
+updated-at: 2026-10-27T14:32:43Z
 updated-by: berkc
+claimed-by: berk-ca-728718
+claimed-at: 2026-10-27T14:32:43Z
 ---
 
 # Ein zweites Board laesst sich mit einem Befehl aus einem Board-Typ anlegen statt Lane-Dateien von Hand zu kopieren
