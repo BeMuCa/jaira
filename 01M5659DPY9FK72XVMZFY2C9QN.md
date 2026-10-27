@@ -1,7 +1,7 @@
 ---
 id: 01M5659DPY9FK72XVMZFY2C9QN
 title: Ein zweites Board laesst sich mit einem Befehl aus einem Board-Typ anlegen statt Lane-Dateien von Hand zu kopieren
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: berkc
@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:22Z
-updated-at: 2026-10-27T14:47:48Z
+updated-at: 2026-10-27T14:48:29Z
 updated-by: berkc
 claimed-by: berk-ca-728718
 claimed-at: 2026-10-27T14:32:43Z
