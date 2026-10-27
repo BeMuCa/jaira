@@ -15,7 +15,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:04Z
-updated-at: 2026-10-27T00:08:06Z
+updated-at: 2026-10-27T00:08:08Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: pbdms4-driver
@@ -46,7 +46,7 @@ round: 2
 - [x] failing test first in internal/cli/milestones_test.go after TestLsNamesEveryMilestoneWithItsCount (l.245): 3 tickets via mkTicket, milestone create, runCLI archive h2, ticket.At(dir).Logbook(h3, "as-20260911") (pattern links_test.go:47); ls text has '1 open of' and '3 ticket(s)', ls --json open==1 and count==3
 - [x] internal/cli/milestones.go ls (l.505-560): one boardIndex(s) (links.go:113); line '%3d ticket(s)' becomes '%3d open of %3d ticket(s)' (keeps milestones_test.go:239/262 green); --json adds "open" after milestoneJSON, "count" stays the total; update the Long help
 - [x] NEEDS DRIVER OK (no 'milestone show' exists, milestones.go:80-87): newMilestoneShowCmd modelled on epic show (epics.go:259-309), registered in newMilestoneCmd: label, goal, 'N open of M ticket(s)', one row per member with handle, ix.Lookup(id).Whereabouts() (link.go:493: 'archive · unfinished/done', 'logbook · done', 'on the board · <lane>'), title; --json = milestoneJSON + open + tickets with place, lane, title; name lookup and refusals as the other milestone commands
-- [ ] extend the CLI test: show marks h2 'archive ·' and h3 'logbook · done', h1 'on the board · backlog'; show --json tickets carry place archive/logbook/board
+- [x] extend the CLI test: show marks h2 'archive ·' and h3 'logbook · done', h1 'on the board · backlog'; show --json tickets carry place archive/logbook/board
 - [ ] TUI M picker: internal/tui/view.go:1646 count becomes open of total via ms.Open(m.linkIndex().Open) (model.go:1926); test in internal/tui/milestonebar_test.go with pickerRow (l.192), mkMilestone (l.13), m.store.Archive (pattern layer_test.go:751); go test ./internal/tui -run <that test> -count=1
 - [ ] TUI card edge: milestoneColors (model.go:1794) returns empty slots for m.isLogged(t) (logbook.go:37); do NOT filter m.mstones (model.go:431), the M filter matches logbook cards on purpose (model.go:567-569); test with fileIntoLogbook (logbook_test.go:16) that the logged card has no milestone colour
 - [ ] docs: docs/COMMANDS.md:142 ls row (open of total, json open) plus a show row; docs/AGENTS.md:164; README.md:862 command list
