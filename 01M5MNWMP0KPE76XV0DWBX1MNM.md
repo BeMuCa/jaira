@@ -1,7 +1,7 @@
 ---
 id: 01M5MNWMP0KPE76XV0DWBX1MNM
 title: "jaira accept <id> --by <person>: eine Abnahme auf Wort der Person, die festhaelt, wer abgenommen hat"
-status: testing
+status: review
 ready: true
 creator: BeMuCa
 goal: "Sagt eine Person im Chat 'accept', fuehrt der Agent die Abnahme ehrlich aus: ein Befehl nimmt das Ticket aus signoff, schreibt auf das Ticket, wer wann abgenommen hat, und die Ausgabe liest sich als Erfolg - nicht als uebergangene Verweigerung."
@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:51Z
-updated-at: 2026-10-27T00:13:55Z
+updated-at: 2026-10-27T00:18:29Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-268570
@@ -36,7 +36,7 @@ review-gaps: |-
   optimize pass 2: none. 94f60039 completed pass 1 list (forced-move tests folded, humanexit_test.go duplicate dropped, refused accepts compared byte for byte); the last-line bullet check in forceorder_test.go stays per the driver note. Production code unchanged since pass 1, which found nothing to remove.
   review pass 1: (1) core/release/notes/BX1MNM.md line 1 says ownership still refuses an accept; it cannot (core/gate/gate.go:217-219 exempts requires-human-exit lanes) - drop "ownership". (2) Follow-ups not filed: jaira-role-acceptance SKILL.md:199-204 and build.py:140 still force accepted tickets; cockpit Accept and the board a key record no acceptor. (3) Neither the plain-move refusal (gate.go:405) nor the generated agent block (core/board/announce.go:154) names jaira accept. (4) accepted-by/accepted-at are not shown in show --json and stay on a ticket sent back from done to signoff. (5) accept on a ticket in the human lane says it is "not a lane that waits for a person". (6) CLI accept goes to the route's next lane, the board a key to the terminal lane; same on the shipped board. (7) Full race suite for DoD 4 not run (deliberate, before the PR).
   optimize pass 3: none. 70f82afd only rewords the not_human_lane refusal (internal/cli/accept.go:52) and drops ownership from release note line 1, adding or orphaning no code.
-test-verdict: "pass: gates green (build/vet/gofmt, race tests of cli/gate/move/role/ticket all ok), DoD 1-3 verified in the tree, accept + forced move exercised on a scratch board; full ./... race suite NOT run (house rule), DoD 4 stays open"
+test-verdict: "pass: pass 2 on 70f82afd; build/vet/gofmt clean, go test -race ./internal/cli ok; accept refuses backlog with exit 3 and new wording; accept on someone else's forced-signoff ticket exits 0; release note line 1 no longer says ownership. DoD 4 (full suite) left open"
 review-verdict: "review pass 1: send back for one small fix - code and tests match DoD 1-3 with no defect found, but release note line 1 wrongly lists ownership as a gate that still refuses an accept, and that text ships in the binary."
 review-round: 3
 ---
@@ -79,3 +79,4 @@ review-round: 3
 - **2026-10-27 00:02 · BeMuCa** — round 4: dropped ownership from the accept note (human-lane tickets are exempt from the ownership rail); accept refusal now says 'not a sign-off lane (requires-human-exit)' so it is true for the human lane too
 - **2026-10-27 00:08 · BeMuCa** — critique (pass 4, 70f82afd only): NOTHING LEFT. Review finding 1 resolved: release note line 1 drops 'ownership'; true, because core/gate/gate.go:213-222 exempts requires-human-exit lanes from not_owner and accept runs only from such a lane (accept.go:49-53). Review finding 5 resolved: the not_human_lane refusal (accept.go:52) now says 'not a sign-off lane (requires-human-exit)', which is true for the human lane (requires-question, core/lane/builtin/30-human.md:8). No test pins the old text; release note is still one line starting '- '. Let stand: the refusal says 'sign-off lane' while help/COMMANDS.md/release note say 'a lane that waits for a person (signoff)'; the parentheses scope those, nothing false, DoD untouched. Outside scope, not a finding: accept.go:17 Short still says 'move the ticket on from the human lane', and on the shipped board 'human' is the lane accept refuses; reword together with any later accept text change.
 - **2026-10-27 00:11 · BeMuCa** — optimize (pass 3, 70f82afd only): NOTHING LEFT. The commit changes two strings and no code: release note line 1 drops 'ownership' (still three lines, each one line starting '- '), and the not_human_lane refusal at internal/cli/accept.go:52 is reworded. No branch, helper, import or test added or orphaned; the wording exists nowhere else in Go code (grep), so nothing is duplicated. gofmt clean.
+- **2026-10-27 00:15 · BeMuCa** — testing (pass 2): on 70f82afd go build, go vet, gofmt -l all empty; go test -race -count=1 ./internal/cli ok (44s). Fresh remoteless board: accept on backlog ticket prints 'is in "backlog", which is not a sign-off lane (requires-human-exit); there is nothing to accept', exit 3. Ticket assigned to another person, forced into signoff with outcome, DoD ticked, commit naming it: accept --by 'Some Person' exits 0 'Accepted ... into done'. Release note line 1 has no 'ownership'. Full race suite not run (house rule); DoD 4 open.
