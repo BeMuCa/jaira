@@ -15,7 +15,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:04Z
-updated-at: 2026-10-27T00:18:24Z
+updated-at: 2026-10-27T00:18:47Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: pbdms4-driver
@@ -24,7 +24,9 @@ round: 3
 outcome-what: "jaira milestone ls prints 'N open of M ticket(s)' and --json gains 'open' (count stays the total); new 'jaira milestone show <name>' lists every member with where it is now (on the board · <lane>, archive · ..., logbook · done); the TUI M picker row counts open of total; logbook cards no longer carry the milestone colour bar. New link.Index.Open and Milestone.Open; ids stay in the milestone files."
 outcome-why: "Milestone files keep the ids of archived and logbooked tickets, so ls and the picker counted them as open and a finished round looked unfinished."
 outcome-resolves: "DoD 1: ls/show via Index.Open + Milestone.Open, TestLsCountsOnlyOpenTicketsAndKeepsTheTotal and TestShowSaysWhereEveryMemberIsNow. DoD 2: picker count and milestoneColors, TestMilestonePickerCountsOpenOfTotalAndLogbookCardsLoseTheBar. DoD 3 waits for the full race suite before the PR; release note core/release/notes/PBDMS4.md."
-review-summary: "critique 1: ls prints 'N open of M ticket(s)', --json gains open, count stays the total. New milestone show lists each member with where it is now, built from existing helpers (milestoneKey, editRefusal, milestoneJSON, boardIndex, Whereabouts). Open = on the board and not in a terminal lane, as jaira tags and the logbook gate count it. Picker counts open of total; logbook cards lose the milestone bar. Right shape. LOOP: internal/tui/model.go:1791-1793 comment says 'the bar says what is still open', but done-lane cards keep their bar - reword. Cheap in the same round: docs/COMMANDS.md show row misses 'on its ref · jaira pull <h>' and 'nowhere here · dangling link'; .claude/skills/jaira/SKILL.md:213 ls comment lacks the open count."
+review-summary: |-
+  critique 1: ls prints 'N open of M ticket(s)', --json gains open, count stays the total. New milestone show lists each member with where it is now, built from existing helpers (milestoneKey, editRefusal, milestoneJSON, boardIndex, Whereabouts). Open = on the board and not in a terminal lane, as jaira tags and the logbook gate count it. Picker counts open of total; logbook cards lose the milestone bar. Right shape. LOOP: internal/tui/model.go:1791-1793 comment says 'the bar says what is still open', but done-lane cards keep their bar - reword. Cheap in the same round: docs/COMMANDS.md show row misses 'on its ref · jaira pull <h>' and 'nowhere here · dangling link'; .claude/skills/jaira/SKILL.md:213 ls comment lacks the open count.
+  critique 2: b596955b closes the LOOP - the model.go:1791 comment now matches milestoneColors (m.isLogged only). COMMANDS.md show row lists all five Whereabouts() wordings verbatim; the SKILL.md ls line gains the open count, true to milestones.go:537. CLEAN.
 ---
 
 # Milestone-Dateien fuehren keine archivierten Tickets mehr als offen
