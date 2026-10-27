@@ -20,7 +20,7 @@ commits:
   - 4b920015d063527e9d48d75cc242d8342bf17d2e
   - 1c4ef1ae3addca1b8809f93613402b0a2c14b73a
 created-at: 2026-10-23T15:25:41Z
-updated-at: 2026-10-27T00:03:33Z
+updated-at: 2026-10-27T00:07:37Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: driver-1TFFG2
@@ -31,7 +31,7 @@ outcome-resolves: "DoD 1: settings.PermissionModeFor, permission_mode in spawn.s
 review-summary: none
 round: 4
 review-gaps: "optimize pass 2 (8ad47527, e115263e): giveBack wrote t.dialogWaits twice (once joined into why for the note, once as the toast suffix); handedTo now joins the suffix onto the note itself and the exit-4 call passes why and t.dialogWaits once - note and toast text unchanged, since every why handed to it is non-empty. Considered and left: a helper for the three 'started or dialog' checks (r?.exitCode !== 0 && !dialogWaits(r)) and the three [text, dialogWaits ? t.dialogWaits : ''] joins - the call sites differ (fail vs stuck, the hint after nextStarted), a wrapper would only forward; the dialogWaits comment says why exit 4 counts as started, kept; spawn.sh usage line on tools' own exit codes is true under set -euo pipefail, kept; the shorter not-received message and the SKILL.md sentence carry nothing extra. No dead code or cost found."
-test-verdict: "pass: gofmt/vet/build clean; -race core/settings, core/role, internal/cli TestRoles ok; TestPermissionModeFor, both spawn tests, roles-list test pass; built binary roles list shows auto/acceptEdits/plan/bypass-ignored correctly; stubbed spawn.sh: working exit 0 + 'pane run ... claude --permission-mode auto', idle exit 1 'prompt not received', blocked exit 4 with pane; DoD 3 go test ./... -race deferred to pre-PR run"
+test-verdict: "pass: gofmt/vet/build clean, settings/role/mod/cli-TestRoles race green, plugin test 163 pass + validate passed; spawn.sh on a stub herdr gave exit 0 (pane, --permission-mode auto), exit 1 (123 chars), exit 4 (pane); gap: explain/discuss chat exit-4 site (register.tsx:635) has no test; DoD 3 go test ./... -race deferred to pre-PR"
 review-verdict: "DoD 1 is met. DoD 2 is met in substance, using agent_status rather than pane output. DoD 3 is met except for the full go test ./... -race, which is still open by house rule. I found no defect in spawn.sh's own logic. The mode reaches all three start lines, and only allowlisted words reach the command line. working, blocked and still-idle give exits 0, 4 and 1 as the help text says. Checked in stub runs and by the touched packages' tests with -race; gofmt and go vet are clean. It is not a clean approval, though. The untouched cockpit reads the new exit 4 as 'no worker started' and cuts off the exit-1 message. usage() promises exit codes the script does not keep. And two design choices need a person's yes: the board file overriding the person's own mode, and agent_status standing in for the 'first output of the role in the pane' that DoD 2 names. I would accept it with one follow-up ticket for the cockpit and the exit-code wording. I am not sure how real Herdr timing behaves, because nothing here ran against a real tab."
 review-round: 2
 ---
