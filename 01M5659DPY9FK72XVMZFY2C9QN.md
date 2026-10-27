@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:22Z
-updated-at: 2026-10-27T14:49:05Z
+updated-at: 2026-10-27T14:54:48Z
 updated-by: berkc
 claimed-by: berk-ca-728718
 claimed-at: 2026-10-27T14:32:43Z
@@ -30,6 +30,7 @@ outcome-resolves: "Y2C9QN: Board per Befehl aus einem Typ anlegen; vorhandenes B
 review-summary: "none"
 round: 2
 review-gaps: "none removed. Considered: Materialise (core/lane/defaultboard.go:118) and SaveOrder/writeIDList (core/lane/order.go) write lanes and order only into today's .jaira/lanes and mkdir it as a side effect, so CreateBoard writes its own three files rather than bending them; no dead code or unused imports after critique's repair; nothing on a hot path."
+test-verdict: "pass: go build ./..., go vet ./... (exit 0), go test -count=1 -race ./... (exit 0). By hand with a binary built from ff50aaaa in a fresh 'jaira init' repo: boards create r --type code -> exit 0, order and every lane file byte-identical to the init board's; second create -> exit 3, description unchanged; blank --description -> exit 2 with the teamlead hint; --json keys name,type,lanes,description,lanes_dir; boards types lists code with its line; lanes --board r reads the new board; outside a repo exit 1 'run jaira init'."
 ---
 
 # Ein zweites Board laesst sich mit einem Befehl aus einem Board-Typ anlegen statt Lane-Dateien von Hand zu kopieren
