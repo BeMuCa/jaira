@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:51Z
-updated-at: 2026-10-27T00:33:59Z
+updated-at: 2026-10-27T00:34:01Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-268570
@@ -43,6 +43,30 @@ review-verdict: |-
   review pass 1: send back for one small fix - code and tests match DoD 1-3 with no defect found, but release note line 1 wrongly lists ownership as a gate that still refuses an accept, and that text ships in the binary.
   review pass 2: Ready for a person's sign-off. The diff meets DoD 1-3 and they hold on a scratch board; the previous send-back reason (ownership in release note line 1) is fixed and no code defect was found. Three text nits are cheap to fold in before the PR if the person wants them (release note lines 2 and 3, accept's one-line help). DoD 4's full race suite stays open by design.
 review-round: 4
+review-check: |-
+  1. mkdir -p /tmp/jaira-accept-check/board /tmp/jaira-accept-check/home  (prints nothing)
+  2. cd /home/berk/git/jAIra-BX1MNM && go build -o /tmp/jaira-accept-check/jaira ./cmd/jaira  (prints nothing)
+  3. In a NEW terminal: export HOME=/tmp/jaira-accept-check/home JAIRA_HOME=/tmp/jaira-accept-check/home/.jaira JAIRA_NO_FETCH=1 J=/tmp/jaira-accept-check/jaira  (prints nothing)
+  4. cd /tmp/jaira-accept-check/board && git init -q -b master && git config user.email t@example.invalid && git config user.name tester && git commit -q --allow-empty -m init  (prints nothing; git remote -v prints nothing)
+  5. $J init  (last line: "Run 'jaira share' when you want your team to have it.")
+  6. $J create "accept me" --goal g --context c --dod "one thing works"  (first line: "Created <six letters>  accept me")
+  7. H=<those six letters>
+  8. $J move $H --to signoff --force --what w --why y --resolves r  (prints "<H> -> signoff")
+  9. $J move $H --to done; echo $?  (bullets ending with 'lane "signoff" is a human checkpoint ...', then 3)
+  10. $J accept $H; echo $?  ("jaira: accept needs --by <person>: ...", then 2)
+  11. $J accept $H --by "Some Person"; echo $?  ("cannot accept <H> into done:" with bullets for commits and definition of done, NO human-checkpoint bullet, then 3)
+  12. grep -c accepted .jaira/tickets/*$H*.md  (0 - the refused accept wrote nothing)
+  13. $J dod $H 1 --done --proof x.go:1  (the item shows [x])
+  14. echo hi > x.go && git add x.go && git commit -q -m "feat($H): x"  (prints nothing)
+  15. $J accept $H --by "Some Person"; echo $?  ("Accepted <H> into done (by Some Person)", no "overrode" anywhere, then 0)
+  16. grep -n accepted .jaira/tickets/*$H*.md  (three hits: accepted-by: Some Person, accepted-at: "<now, UTC>", a note line ending "accepted by Some Person")
+  17. $J move $H --to signoff  (prints "<H> -> signoff"; sending back needs no --force)
+  18. $J move $H --to done; echo $?  (refused with only the human checkpoint bullet, then 3 - the old accepted-by on the file does not count)
+  19. $J create "force me" --goal g --context c --dod a --dod b, then F=<its six letters>
+  20. $J move $F --to signoff --force --what w --why y --resolves r  (prints "<F> -> signoff")
+  21. $J move $F --to done --force  (exactly two lines: "overrode: needs_commits, needs_nonmodel_signal, needs_human" then "<F> -> done"; no line starts with "  - ")
+  22. cat /home/berk/git/jAIra-BX1MNM/core/release/notes/BX1MNM.md  (three lines starting "- "; line 1 says "every other gate (definition of done, commits)", no "ownership")
+  23. In your normal terminal: cd /home/berk/git/jAIra-BX1MNM && go test ./internal/cli -run 'TestAccept|TestPlainMoveOutOfSignoff|TestForcedMove' -count=1  (prints ok)
 ---
 
 # jaira accept <id> --by <person>: eine Abnahme auf Wort der Person, die festhaelt, wer abgenommen hat
