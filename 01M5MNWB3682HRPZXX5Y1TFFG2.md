@@ -20,7 +20,7 @@ commits:
   - 4b920015d063527e9d48d75cc242d8342bf17d2e
   - 1c4ef1ae3addca1b8809f93613402b0a2c14b73a
 created-at: 2026-10-23T15:25:41Z
-updated-at: 2026-10-27T00:38:35Z
+updated-at: 2026-10-27T00:43:42Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: driver-1TFFG2
@@ -31,7 +31,7 @@ outcome-resolves: "DoD 1: settings.PermissionModeFor, permission_mode in spawn.s
 review-summary: "none"
 round: 6
 review-gaps: "optimize pass 3 (97e44fb9, a4f99837): removed nothing. Considered and left: 1) TestSpawnReadsThePermissionModeFromTheRepositoryNotTheNewWorktree repeats the board setup of the 'board' case in TestSpawnStartsClaudeInThePersonsPermissionMode; folding it into that table would put a conditional git init into every case, so it stays a test of its own. 2) Its inline git init/commit loop: the only in-package git helper is reapRig.git (core/role/reap_test.go:122), a method of another rig; the fixtureRepo helpers live in other packages. 3) The 'repo' subdirectory under t.TempDir() keeps the cut worktree (../.worktrees/repo-ab12cd) inside a temp dir the test owns; dropping it would rely on the testing package removing the TempDir parent. 4) The Discuss half of the cockpit exit-4 test runs the same openChat line as Explain (register.tsx:635-637), but Discuss also takes the socket branch at register.tsx:632, so it is not pure repetition. 5) args = append(args[:1], args[2:]...) in spawnRig.run: an insert of --no-worktree would be no shorter. 6) The spawn.sh comment says why $root and not $wt, not what the line does. 7) a4f99837: the release note is two single lines starting '- ', no wrap. Not a cleanup, outside these commits: jaira -C \"$wt\" show --brief (spawn.sh:261) still reads the fresh worktree; changing it would change behaviour."
-test-verdict: "pass: gofmt/vet/build clean, settings/role/mod/cli-TestRoles race green, plugin test 163 pass + validate passed; spawn.sh on a stub herdr gave exit 0 (pane, --permission-mode auto), exit 1 (123 chars), exit 4 (pane); gap: explain/discuss chat exit-4 site (register.tsx:635) has no test; DoD 3 go test ./... -race deferred to pre-PR"
+test-verdict: "pass: gates green (gofmt/vet/build, core pkgs, TestRoles, plugin test 164/0, validate); DoD 1+2 pass incl. repo-board test and 4 cockpit exit-4 tests; DoD 3 stub tests and 2-line note ok, go test ./... -race deferred so DoD 3 not ticked; by hand: new worktree spawn exit 0, pane run ends --permission-mode plan from uncommitted repo file"
 review-verdict: "Round 1's send-back is fixed. The cockpit takes exit 4 as a started worker or chat at all four call sites and says a dialog waits. The exit-1 text is 130 characters with pane w12:p345, so 'prompt not received' survives the cockpit's 160-character cut. usage() no longer promises a closed set of exit codes, and the dispatcher SKILL.md sentence is corrected. DoD 1 is met. DoD 2 is met in substance through agent_status (gap 9). DoD 3 is met except the deferred full race run (gap 8). I found no defect that breaks the definition of done. It is not a clean approval. Gap 1 is a real mismatch between what 'jaira roles list' says and what a worktree tab gets. Gap 2 may change behaviour for repositories that set their own defaultMode; I have not verified it. Gap 3 leaves one cockpit site untested. None of gaps 1 to 8 lets a tab run with more than the person's own mode. Nothing here ran against a real Herdr tab or a real claude."
 review-round: 4
 ---
