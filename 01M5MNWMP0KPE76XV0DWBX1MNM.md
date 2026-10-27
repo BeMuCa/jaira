@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:51Z
-updated-at: 2026-10-27T00:34:01Z
+updated-at: 2026-10-27T00:34:11Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-268570
@@ -51,7 +51,7 @@ review-check: |-
   5. $J init  (last line: "Run 'jaira share' when you want your team to have it.")
   6. $J create "accept me" --goal g --context c --dod "one thing works"  (first line: "Created <six letters>  accept me")
   7. H=<those six letters>
-  8. $J move $H --to signoff --force --what w --why y --resolves r  (prints "<H> -> signoff")
+  8. $J move $H --to signoff --force --what w --why y --resolves r  (prints "<H> → signoff")
   9. $J move $H --to done; echo $?  (bullets ending with 'lane "signoff" is a human checkpoint ...', then 3)
   10. $J accept $H; echo $?  ("jaira: accept needs --by <person>: ...", then 2)
   11. $J accept $H --by "Some Person"; echo $?  ("cannot accept <H> into done:" with bullets for commits and definition of done, NO human-checkpoint bullet, then 3)
@@ -60,11 +60,11 @@ review-check: |-
   14. echo hi > x.go && git add x.go && git commit -q -m "feat($H): x"  (prints nothing)
   15. $J accept $H --by "Some Person"; echo $?  ("Accepted <H> into done (by Some Person)", no "overrode" anywhere, then 0)
   16. grep -n accepted .jaira/tickets/*$H*.md  (three hits: accepted-by: Some Person, accepted-at: "<now, UTC>", a note line ending "accepted by Some Person")
-  17. $J move $H --to signoff  (prints "<H> -> signoff"; sending back needs no --force)
+  17. $J move $H --to signoff  (prints "<H> → signoff"; sending back needs no --force)
   18. $J move $H --to done; echo $?  (refused with only the human checkpoint bullet, then 3 - the old accepted-by on the file does not count)
   19. $J create "force me" --goal g --context c --dod a --dod b, then F=<its six letters>
-  20. $J move $F --to signoff --force --what w --why y --resolves r  (prints "<F> -> signoff")
-  21. $J move $F --to done --force  (exactly two lines: "overrode: needs_commits, needs_nonmodel_signal, needs_human" then "<F> -> done"; no line starts with "  - ")
+  20. $J move $F --to signoff --force --what w --why y --resolves r  (prints "<F> → signoff")
+  21. $J move $F --to done --force  (exactly two lines: "overrode: needs_commits, needs_nonmodel_signal, needs_human" then "<F> → done"; no line starts with "  - ")
   22. cat /home/berk/git/jAIra-BX1MNM/core/release/notes/BX1MNM.md  (three lines starting "- "; line 1 says "every other gate (definition of done, commits)", no "ownership")
   23. In your normal terminal: cd /home/berk/git/jAIra-BX1MNM && go test ./internal/cli -run 'TestAccept|TestPlainMoveOutOfSignoff|TestForcedMove' -count=1  (prints ok)
 ---
