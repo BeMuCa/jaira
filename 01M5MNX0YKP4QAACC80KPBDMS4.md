@@ -15,7 +15,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:04Z
-updated-at: 2026-10-27T00:09:39Z
+updated-at: 2026-10-27T00:09:45Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: pbdms4-driver
@@ -27,8 +27,10 @@ round: 2
 
 ## Definition of Done
 
-- [ ] jaira milestone ls zaehlt archivierte und abgelegte Tickets nicht als offen und zeigt sie in show als 'archiviert'/'abgelegt'; ein Test baut den Fall
-- [ ] Die Kartenkante und der M-Picker ignorieren sie
+- [x] jaira milestone ls zaehlt archivierte und abgelegte Tickets nicht als offen und zeigt sie in show als 'archiviert'/'abgelegt'; ein Test baut den Fall
+  proof: core/milestone/milestone.go Open + internal/cli/milestones.go ls/show; TestLsCountsOnlyOpenTicketsAndKeepsTheTotal, TestShowSaysWhereEveryMemberIsNow
+- [x] Die Kartenkante und der M-Picker ignorieren sie
+  proof: internal/tui/model.go milestoneColors + view.go picker count; TestMilestonePickerCountsOpenOfTotalAndLogbookCardsLoseTheBar
 - [ ] go test ./... -race gruen; Release-Notiz unter core/release/notes/
 
 ## Options
