@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:07Z
-updated-at: 2026-10-27T00:37:58Z
+updated-at: 2026-10-27T00:40:04Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: 4n1b66-driver
@@ -27,7 +27,7 @@ outcome-resolves: "DoD 1: 'run the whole suite' is gone; .jaira/lanes/testing.md
 review-summary: "none"
 round: 3
 review-gaps: "pass 2 (f7deb7fa only): trimmed the new clause in both testing lanes (.jaira/lanes/testing.md:31-33, core/lane/builtin/27-testing.md:32-34, still byte-identical) from 'An item that asks for the full suite is not run in the lane: leave it unticked...' to 'Leave an item that asks for the full suite unticked...' - 'is not run in the lane' repeated Gates' 'Never run the full suite in a lane' three lines above, and 'left for the run before the pull request' still says where it runs; same instruction. Left: 'it is not a finding' (the exception to the sentence before it); the Gates and jaira-worker/SKILL.md changes (re-wraps only, no new words); in the release note, 'role files' three times (clearer than pronouns), 'with the flag you installed with' (plain, only slightly clumsy), and the bare --force next to a backticked one (formatting, not a repeat)."
-test-verdict: "pass: gofmt/vet/build rc=0, go test ./core/lane ./core/role ./core/release rc=0, DoD 1-3 verified in the tree (prompts identical, 'whole suite' gone, rule lines in worker+dispatcher, note is one '- ' line), scratch board: lanes show testing has new text, lanes use testing --force replaced old Gates text, roles install wrote both rule lines"
+test-verdict: "pass: touched packages green (gofmt/vet/build/core/lane+role+release RC=0), DoD 1-3 verified in the tree (prompts identical, 'whole suite' gone, one-line note), release-note steps exercised on a scratch board; DoD asks no full-suite item"
 review-verdict: "Send back. DoD 1-3 are met as literally written; gofmt -l empty, go vet ./..., go build ./... and go test ./core/lane ./core/role ./core/release -count=1 pass; commits use the noreply address, no trailers, no denylisted strings. But the change introduces a contradiction in the testing lane for a common DoD shape (gap 1), and both instructions in the release note fail to do what they say (gaps 2 and 3); all three reproduced, each fix a few words. Gaps 4 and 5 are questions for the maintainer, not reasons to send back."
 review-round: 2
 review-check: "Pending: this review sent the ticket back; the next review writes the hand-check for the fixed change."
