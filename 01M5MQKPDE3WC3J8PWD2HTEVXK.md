@@ -18,7 +18,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:55:55Z
-updated-at: 2026-10-23T15:55:55Z
+updated-at: 2026-10-27T20:53:32Z
+assignee: BeMuCa
+updated-by: BeMuCa
 ---
 
 # Teamlead: Release-Weg je Repo als Werkzeuge im Skill
