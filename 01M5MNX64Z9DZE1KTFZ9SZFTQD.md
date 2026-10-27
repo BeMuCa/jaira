@@ -15,7 +15,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:09Z
-updated-at: 2026-10-27T00:05:00Z
+updated-at: 2026-10-27T00:05:03Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: szftqd-driver
@@ -28,7 +28,8 @@ claimed-at: 2026-10-27T00:01:42Z
 
 - [x] jaira-worker, jaira-dispatcher, jaira-role-lane und jaira-role-acceptance sagen: ein Ergebnis fuer eine Person wird unter einem stabilen Pfad abgelegt (Board-Setting 'deliverables' oder, wenn leer, <repo>/.jaira/deliverables/<ticket>/), nie unter /tmp, und der Pfad steht als Notiz am Ticket
   proof: core/role/builtin/jaira-worker/SKILL.md:331, jaira-dispatcher/SKILL.md:474, jaira-role-lane/SKILL.md:342, jaira-role-acceptance/SKILL.md:52
-- [ ] Release-Notiz unter core/release/notes/
+- [x] Release-Notiz unter core/release/notes/
+  proof: core/release/notes/SZFTQD.md:1
 
 ## Options
 
