@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:56Z
-updated-at: 2026-10-27T00:45:26Z
+updated-at: 2026-10-27T00:45:28Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-374545
@@ -34,17 +34,15 @@ review-gaps: |-
   5. Not code: the committed ticket file still carries the known claimed-by line. It has to be cleaned before this branch is pushed.
 test-verdict: "pass (pass 3): gofmt -l empty; go vet and go build ./... green; go test -race -count=1 ok for core/refsync, core/gitref, core/ticket, core/gate, internal/cli (filtered), internal/tui (3 named tests). Rebuilt binary into scratchpad vpm-test3/jaira. Scratch board with local bare origin, ticket WQ89DB in-progress committed on master, filed away (move --force to done + logbook) in a second worktree: in main checkout resume lists only ordinary 5ATATP (working lane); show WQ89DB --for-lane in-progress --json and show --brief carry filed_elsewhere and remove_stale; list prints a \"Filed elsewhere ... tickets are filed away\" block; list --json and show --json carry both fields; next --json returns only 5ATATP; 5ATATP lane json, show --json and brief carry no filed_elsewhere key. Release notes VPM51D.md: 6 single \"- \" lines, unwrapped, instructions, match binary. DoD 3 left unticked."
 review-verdict: |-
-  Back to in-progress for gaps 1 and 2. Both are small: resume and show --for-lane/--brief should read the mark that is already computed.
-  What holds:
-  - DoD items 1 and 2 are met as written: list, show and the board show the copy as filed, a two-worktree test exists, the command is printed, nothing is deleted.
-  - The release-note half of item 3 is met, and the note is in format.
-  - gofmt is empty; vet and build are green.
-  - With -race these pass: the 6 new internal/cli tests, TestAStaleCopyIsFiledElsewhereOnTheBoard, and core/refsync, core/gitref, core/gate, core/ticket.
-  - I ran the whole flow by hand on a scratch board.
-  What does not hold: the outcome says the copy is no longer shown as open work, and jaira resume and the lane input still show it that way. Those are the commands the next worker uses, which is the original incident.
-  Gap 3 should become follow-up tickets rather than grow this one. Gaps 4-8 are minor.
-  If the person accepts the DoD as literally written, the rest is fine to ship. That choice is theirs. I am not unsure about the facts.
-review-round: 5
+  Ready for the person's sign-off. No defect breaks the DoD.
+  - DoD 1 is met: list, show and the board show the copy as filed, and two tests build the case with two worktrees.
+  - DoD 2 is met: the removal command is printed and nothing is deleted.
+  - DoD 3, release-note half: met. The six lines are in format, one '- ' line each, written as instructions. The race half was not run here, on purpose (house rule).
+  - Gates: gofmt -l . is empty, and go vet ./... and go build ./... are green. With -race these pass: internal/cli (the filed-elsewhere tests), internal/tui (-run StaleCopy|Logbook), core/refsync, core/gitref, core/gate and core/ticket.
+  - The round-1 blockers are fixed. jaira resume says 'Nothing was left in progress.', and the lane input and the brief carry filed_elsewhere and remove_stale.
+  - What is left is low. Gap 1 (the launcher's open count) contradicts 'no longer count it' in the outcome. Whether that is one more round or a follow-up is the person's call. Gap 3 needs follow-up tickets before this one is logbooked.
+  I am sure of these facts. I did not run the full race suite.
+review-round: 6
 review-check: |-
   1. Build the branch binary into a temp folder (before changing HOME): B=$(mktemp -d); cd /home/berk/git/jAIra-VPM51D && /home/berk/.local/go/bin/go build -o $B/jaira ./cmd/jaira -> no output.
   2. Isolate jaira from your real settings: export HOME=$B/home JAIRA_HOME=$B/home JAIRA_NO_FETCH=1 JAIRA_USER=ada; mkdir -p $HOME
