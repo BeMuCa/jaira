@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:56Z
-updated-at: 2026-10-27T00:18:08Z
+updated-at: 2026-10-27T00:18:10Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-374545
@@ -40,6 +40,18 @@ review-summary: |-
 round: 5
 review-gaps: "1. jaira resume still lists the stale copy as open work: 'in-progress · parked in Implementing, which is a working lane, 1 ticket(s) left in progress' (check step 12). internal/cli/resume.go was not touched. The outcome says 'no longer show the old ticket file as open work'. resume is the command CLAUDE.md gives a new session for 'work left in progress', so this is the path of the original incident (the next worker took the ticket for open).\n2. 'jaira show <id> --for-lane <lane> --json' and 'jaira show --brief' pay for the check (MarkFiledElsewhere runs before the forLane branch, internal/cli/tickets.go:816) but drop the answer. The lane input handed to a worker for a stale copy has no filed_elsewhere or remove_stale (checked by hand).\n3. The pre-process note of 19:35 names three holes as follow-up candidates, but no follow-up ticket exists (searched all 109 ticket refs for VPM51D: none):\n   (a) Once the ref is gone, 'jaira claim' on a copy that list and show mark as filed goes through. It re-creates refs/jaira/tickets/<id>, and the ticket is back under Implementing as open work (checked on a scratch board).\n   (b) A ticket blocked-by a marked copy stays [blocked] and is skipped by next, while the same 'jaira list' says the blocker is done (checked in both the worktree case and the landed case).\n   (c) The web view is not touched.\n4. Low: the DoD's own case (filed in a worktree, copy tracked here) prints 'remove the copy here with: git restore <p> && git merge origin/master'. Run now, it is a no-op: 'Already up to date.', the file stays and is still marked. It only works after the work branch has landed. The place text does say 'not yet merged', but the sentence still promises a removal.\n5. Low: remove_stale paths are relative to the board root. Run from a subdirectory, the command fails with exit 1: \"error: pathspec '.jaira/tickets/...' did not match any file(s) known to git\" (ran it from main/src/deep). internal/cli/share.go prints paths the same way.\n6. Low: the list header says 'these files are stale copies, the tickets are done'. It also covers 'jaira archive', which works from any lane, so an archived ticket is not necessarily done.\n7. Low: on the board, the detail view (enter) of a stale card shows 'lane in-progress' and says nothing about filed elsewhere. Only the card flag and the refusals say it.\n8. Tests: every CLI test sets landing-branches [\"master\"], so the default path (the remote's HEAD) has no test. I checked it by hand after 'git remote set-head origin -a' and it works. The board test uses a stub source instead of two worktrees. I checked the real board in tmux: 'Implementing 0', 'Done 0', card at the foot flagged 'filed elsewhere', m refused with the command.\nSeen but older than this change: after the merge removes the last ticket file, .jaira/tickets/ is gone and jaira says 'no .jaira directory found'. A fresh worktree of a shared board with no committed ticket says the same."
 test-verdict: "pass (pass 2): gofmt -l empty, go vet/build green; go test -race ok on core/refsync, gitref, ticket, gate, internal/cli (-run filter), internal/tui (-run filter). Scratch binary+board (local bare origin, NO_FETCH): (a) filing only in worktree -> list/show/show --json say 'the worktree <dir> on branch work, not yet merged into origin/master', remove_stale = git restore <p> && git merge origin/master; count 0, tickets [], next --json and list --actionable --json empty. (b) filing pushed to origin/master + fetched, worktree still present -> show/list/show --json say 'origin/master', no 'not yet merged'; bash -c remove_stale fast-forwarded, stale copy gone, git status clean. DoD 1-2 hold; item 3 left unticked; release note VPM51D.md has 4 single-line '- ' instructions matching behaviour. Pre-existing, not this ticket: after merge removed .jaira/tickets, jaira says 'no .jaira directory found'."
+review-verdict: |-
+  Back to in-progress for gaps 1 and 2. Both are small: resume and show --for-lane/--brief should read the mark that is already computed.
+  What holds:
+  - DoD items 1 and 2 are met as written: list, show and the board show the copy as filed, a two-worktree test exists, the command is printed, nothing is deleted.
+  - The release-note half of item 3 is met, and the note is in format.
+  - gofmt is empty; vet and build are green.
+  - With -race these pass: the 6 new internal/cli tests, TestAStaleCopyIsFiledElsewhereOnTheBoard, and core/refsync, core/gitref, core/gate, core/ticket.
+  - I ran the whole flow by hand on a scratch board.
+  What does not hold: the outcome says the copy is no longer shown as open work, and jaira resume and the lane input still show it that way. Those are the commands the next worker uses, which is the original incident.
+  Gap 3 should become follow-up tickets rather than grow this one. Gaps 4-8 are minor.
+  If the person accepts the DoD as literally written, the rest is fine to ship. That choice is theirs. I am not unsure about the facts.
+review-round: 5
 ---
 
 # Ein Checkout, dessen Ticket anderswo abgelegt wurde, zeigt es als abgelegt statt als geaendert
