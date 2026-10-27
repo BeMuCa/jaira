@@ -1,7 +1,7 @@
 ---
 id: 01M5MNX3NGYBHKCQ2YBQ4N1B66
 title: Die Testing-Lane verlangt keinen vollen Suite-Lauf mehr; die Suite laeuft einmal vor dem PR
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Der Prompt der Testing-Lane sagt, was die Regel ist: Paket-Tests der beruehrten Pakete in der Lane, die volle Race-Suite einmal vor dem PR durch die Hauptsession - und kein Worker startet sie mehr aus eigenem Antrieb."
@@ -16,11 +16,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:07Z
-updated-at: 2026-10-27T00:02:44Z
+updated-at: 2026-10-27T00:03:14Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: 4n1b66-driver
 claimed-at: 2026-10-27T00:01:46Z
+outcome-what: "Rewrote the Gates paragraph of the testing lane in .jaira/lanes/testing.md and core/lane/builtin/27-testing.md (byte-identical prompt): a lane builds, runs format/vet and tests only the touched packages (Go: go test ./<pkg> -count=1 plus gofmt/vet/build); the example verdict now says 'touched packages green'. Added the rule as one line to the jaira-worker and jaira-dispatcher role skills, and a release note in core/release/notes/4N1B66.md."
+outcome-why: "The testing lane told agents to run the whole suite with the race detector, but the full suite takes 7-8 minutes and the maintainer's rule is that no lane runs it: the main session runs go test ./... -race once, before the pull request. The rule lived only in session memory, so a worker followed the prompt instead."
+outcome-resolves: "DoD 1: 'run the whole suite' is gone and both lane copies carry the new Gates rule with an identical prompt (.jaira/lanes/testing.md:22, core/lane/builtin/27-testing.md:23). DoD 2: the rule is one line in core/role/builtin/jaira-worker/SKILL.md:168 and core/role/builtin/jaira-dispatcher/SKILL.md:268. DoD 3: core/release/notes/4N1B66.md tells readers to run jaira lanes use testing --force and jaira roles install."
 ---
 
 # Die Testing-Lane verlangt keinen vollen Suite-Lauf mehr; die Suite laeuft einmal vor dem PR
