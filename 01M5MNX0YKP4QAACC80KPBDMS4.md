@@ -15,7 +15,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:04Z
-updated-at: 2026-10-27T00:04:03Z
+updated-at: 2026-10-27T00:04:15Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: pbdms4-driver
@@ -54,4 +54,13 @@ round: 2
 - [ ] per commit gofmt -l . empty, go vet ./... and go build ./... green; the full go test ./... -race runs once before the PR (driver ticks DoD 3)
 
 ## Progress
-
+- **2026-10-27 00:04 · BeMuCa** — pre-process reasoning:
+- There is no 'jaira milestone show' (milestones.go:80-87 registers create/add/rm/set/rename/ls). DoD 1 names it. Plan step 6 adds one, modelled on epic show. Driver confirms.
+- Reproduced with this worktree's build on a scratch board: 3 members, 1 archived, 1 moved into a logbook folder. 'milestone ls' says '3 ticket(s)', 'jaira list' shows 1.
+- 'open' = what jaira tags and boards call open (tags.go:126, boards.go:47): on the board (a file or a ref) and not in a terminal lane. So a done-lane ticket is not open either. This is the same answer the 'jaira logbook <milestone>' gate gives (logbook.go:393-404): open==0 means the milestone may be filed.
+- Where 'on the board' comes from: Store.List via link.Index, not FiledAwayIDs alone. List already drops tickets filed here (refsync.go:1512-1521). Once GWK31K lands it also drops refs marked archived:, which FiledAwayIDs never sees.
+- The main-checkout case in the context (archived in a worktree, its ref still up without a mark) stays counted as open until GWK31K is merged. Nothing on this branch can see it. GWK31K lives on feat/GWK31K-archive-on-ref.
+- After GWK31K, such a ticket is PlaceUnknown here, so show prints 'nowhere here · dangling link', not 'archive'. Follow-up if that matters.
+- Card edge: archived tickets never get a card. Only logbook cards in the done column carry the bar, so the bar goes there (milestoneColors). m.mstones stays unfiltered, because the M filter matches logbook cards on purpose (model.go:567-569).
+- Left alone on purpose: roadmap L bubble and detail (layer.go:162 milestoneDone, via Satisfied; TestArchivedTicketCountsAsTheLinkIndexSays pins archived-unfinished as not done there); epic ls/show (epic.Count); the 'holds N ticket(s)' totals of create/add/rm and logbook.
+- JSON: ls adds 'open'. 'count' keeps meaning the total, because changing what it means would break readers.
