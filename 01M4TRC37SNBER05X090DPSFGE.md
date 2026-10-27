@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:49:00Z
-updated-at: 2026-10-27T20:53:30Z
+updated-at: 2026-10-27T20:53:38Z
 assignee: BeMuCa
 updated-by: BeMuCa
 ---
@@ -42,4 +42,4 @@ updated-by: BeMuCa
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-27 20:53 · BeMuCa** — Aus L311/L326 (27.10.2026): die liegengebliebenen Ticket-Dateien im Haupt-Checkout sind nicht nur Rauschen. Jeder Worker-Merge in den Haupt-Checkout scheiterte an ihnen ('local changes would be overwritten'), dreimal von Hand geloest. Der Merge-Driver jaira (.git/config [merge "jaira"]) hilft nicht, weil die Datei uncommitted ist, nicht konfligiert. Loest dieses Ticket die liegengebliebenen Dateien, loest es auch die Merges.
