@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:22Z
-updated-at: 2026-10-27T14:59:48Z
+updated-at: 2026-10-27T14:59:50Z
 updated-by: berkc
 claimed-by: berk-ca-728718
 claimed-at: 2026-10-27T14:32:43Z
@@ -29,7 +29,10 @@ outcome-why: "Ein zweites Board musste man bisher von Hand aus Lane-Dateien zusa
 outcome-resolves: "Y2C9QN: Board per Befehl aus einem Typ anlegen; vorhandenes Board wird nie ueberschrieben (exit 3), fehlende Beschreibung exit 2."
 review-summary: "Adds 'jaira boards create <name> --description <...> [--type <type>]' and 'jaira boards types' (both with --json). A board type is an embedded directory core/lane/boardtypes/<type>/ holding description, order and optional lane files of its own; an id in order without its own file is taken from the built-in lanes. One type ships: 'code', whose order is the built-in default-board lanes (a test fails if it drifts from them). CreateBoard resolves every lane before touching disk, then writes .jaira/boards/<name>/lanes/ with the lane files, order and the --description text as the board's description file. It refuses 'default' and any board that already has lane files (exit 3), an unknown type and a missing description (exit 2). Agent block (core/board/announce.go), CLAUDE.md/AGENTS.md, README, docs/COMMANDS.md and release note Y2C9QN.md are updated."
 round: 2
-review-gaps: "none removed. Considered: Materialise (core/lane/defaultboard.go:118) and SaveOrder/writeIDList (core/lane/order.go) write lanes and order only into today's .jaira/lanes and mkdir it as a side effect, so CreateBoard writes its own three files rather than bending them; no dead code or unused imports after critique's repair; nothing on a hot path."
+review-gaps: |-
+  note: the goal says jaira ships 'a few' types (code, research, content); only 'code' ships - deliberate per the 14:34 note (ideas/builder follow from Berk later), and no DoD item asks for more
+  note: 'jaira boards create ""' normalises to today's board and is refused with exit 3 'default is today's board' rather than a usage error - harmless, slightly misleading
+  note: an existing .jaira/boards/<name>/lanes/ holding only order or description (no *.md) counts as no board and those files are overwritten - consistent with how Boards() decides what is a board
 test-verdict: "pass: go build ./..., go vet ./... (exit 0), go test -count=1 -race ./... (exit 0). By hand with a binary built from ff50aaaa in a fresh 'jaira init' repo: boards create r --type code -> exit 0, order and every lane file byte-identical to the init board's; second create -> exit 3, description unchanged; blank --description -> exit 2 with the teamlead hint; --json keys name,type,lanes,description,lanes_dir; boards types lists code with its line; lanes --board r reads the new board; outside a repo exit 1 'run jaira init'."
 ---
 
