@@ -15,7 +15,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:04Z
-updated-at: 2026-10-27T00:17:26Z
+updated-at: 2026-10-27T00:18:24Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: pbdms4-driver
@@ -78,3 +78,4 @@ Checked and fine: Index.Open (link.go:318) = tags count (tags.go:129 default lan
 FOLLOW-UP 1: link.Index.terminal uses one lane set (CLI: default board, links.go:115; TUI: the open board, model.go:1930). A member on another board in its own terminal lane counts open; boards.go:52 uses per-board lanes. So link.go:316 'what the board counts call open' and the note's 'picker counts the same way' hold only on the default board. Pre-existing in Satisfied too.
 FOLLOW-UP 2: after GWK31K, an archived-elsewhere ref is dropped by List (not open here) but still found by s.Load, so the logbook <milestone> gate (logbook.go:394) would refuse a milestone ls calls '0 open'.
 FOLLOW-UP 3 (cheap, may ride the LOOP): docs/COMMANDS.md:143 lists the show wordings without 'on its ref · jaira pull <h>' and 'nowhere here · dangling link', which link.go:501 also prints; .claude/skills/jaira/SKILL.md:213 still lacks 'open' beside docs/AGENTS.md:164.
+- **2026-10-27 00:18 · BeMuCa** — critique 2: read b596955b against round 1. LOOP closed: model.go:1791-1795 now says a logbook card loses the bar because that work has left the board - true, milestoneColors checks only m.isLogged (model.go:1798), done-lane cards keep their bar and the comment no longer claims otherwise. COMMANDS.md:143 now lists all five Whereabouts() wordings exactly as link.go:501-516 prints them ('on its ref · jaira pull <handle>', 'nowhere here · dangling link' added); show prints them via ref.Whereabouts() (milestones.go:621). SKILL.md:213 'open count' is true (milestones.go:537 row[open]) and matches docs/AGENTS.md:164; no other copy of that line in the repo. Nothing in the fix makes another line false. Nit only: the reworded comment's lines wrap ragged (short 'The M filter' line) - cosmetic, gofmt -l clean, go build ./... green. Verdict CLEAN.
