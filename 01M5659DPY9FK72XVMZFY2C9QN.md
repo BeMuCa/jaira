@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:22Z
-updated-at: 2026-10-27T14:59:52Z
+updated-at: 2026-10-27T14:59:54Z
 updated-by: berkc
 claimed-by: berk-ca-728718
 claimed-at: 2026-10-27T14:32:43Z
@@ -36,6 +36,16 @@ review-gaps: |-
 test-verdict: "pass: go build ./..., go vet ./... (exit 0), go test -count=1 -race ./... (exit 0). By hand with a binary built from ff50aaaa in a fresh 'jaira init' repo: boards create r --type code -> exit 0, order and every lane file byte-identical to the init board's; second create -> exit 3, description unchanged; blank --description -> exit 2 with the teamlead hint; --json keys name,type,lanes,description,lanes_dir; boards types lists code with its line; lanes --board r reads the new board; outside a repo exit 1 'run jaira init'."
 review-verdict: "The diff meets all five DoD items; go vet and go test ./... are green, and a hand run of the built binary showed every exit code and the written board as claimed. No defects found; three notes only."
 review-round: 2
+review-check: |-
+  1. In the worktree: go build -o /tmp/jaira ./cmd/jaira
+  2. mkdir /tmp/b && cd /tmp/b && git init && /tmp/jaira init
+  3. /tmp/jaira boards types -> one line: code, with a description
+  4. /tmp/jaira boards create research ; echo $? -> message naming --description, exit 2
+  5. /tmp/jaira boards create research --type nope --description x ; echo $? -> no such board type, exit 2
+  6. /tmp/jaira boards create research --description "Questions to answer first" -> Board research created ... backlog -> ... -> blocked
+  7. ls .jaira/boards/research/lanes -> 10 lane .md files, order, description
+  8. Repeat step 6, then /tmp/jaira boards create default --description y ; echo $? -> both refused, exit 3
+  9. /tmp/jaira boards -> research listed with "Questions to answer first"
 ---
 
 # Ein zweites Board laesst sich mit einem Befehl aus einem Board-Typ anlegen statt Lane-Dateien von Hand zu kopieren
