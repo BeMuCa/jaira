@@ -15,11 +15,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:04Z
-updated-at: 2026-10-27T00:16:20Z
+updated-at: 2026-10-27T00:16:23Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: pbdms4-driver
-claimed-at: 2026-10-27T00:10:32Z
+claimed-at: 2026-10-27T00:16:23Z
 round: 2
 outcome-what: "jaira milestone ls prints 'N open of M ticket(s)' and --json gains 'open' (count stays the total); new 'jaira milestone show <name>' lists every member with where it is now (on the board · <lane>, archive · ..., logbook · done); the TUI M picker row counts open of total; logbook cards no longer carry the milestone colour bar. New link.Index.Open and Milestone.Open; ids stay in the milestone files."
 outcome-why: "Milestone files keep the ids of archived and logbooked tickets, so ls and the picker counted them as open and a finished round looked unfinished."
