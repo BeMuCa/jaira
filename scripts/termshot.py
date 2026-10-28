@@ -78,6 +78,29 @@ def cells(text):
                         fg = col
                     else:
                         bg = col
+            # Basic and bright colours (30-37, 90-97, 40-47, 100-107) and the
+            # resets 39/49, skipping the parameters of 38;5;N / 38;2;R;G;B.
+            j = 0
+            while j < len(codes):
+                c = codes[j]
+                if c in ("38", "48"):
+                    j += 3 if j + 1 < len(codes) and codes[j + 1] == "5" else 5
+                    continue
+                if c.isdigit():
+                    n = int(c)
+                    if 30 <= n <= 37:
+                        fg = BASE16[n - 30]
+                    elif 90 <= n <= 97:
+                        fg = BASE16[n - 90 + 8]
+                    elif 40 <= n <= 47:
+                        bg = BASE16[n - 40]
+                    elif 100 <= n <= 107:
+                        bg = BASE16[n - 100 + 8]
+                    elif n == 39:
+                        fg = FG
+                    elif n == 49:
+                        bg = None
+                j += 1
             i = m.end()
             continue
         m = OTHER_CSI.match(text, i)

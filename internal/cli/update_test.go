@@ -212,3 +212,15 @@ func TestUpdateLeavesASharedBoardShared(t *testing.T) {
 		t.Errorf("update changed .gitignore:\n before %q\n after  %q", before, string(after))
 	}
 }
+
+func TestUpdateNotesMarkImportantLines(t *testing.T) {
+	var buf bytes.Buffer
+	writeNotes(&buf, []release.Entry{{
+		Version: "0.5.2",
+		Changes: []string{"! run jaira update", "a plain change", "!not a marker"},
+	}})
+	want := "\n0.5.2\n  ! run jaira update\n  - a plain change\n  - !not a marker\n"
+	if buf.String() != want {
+		t.Fatalf("got %q, want %q", buf.String(), want)
+	}
+}

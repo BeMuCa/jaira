@@ -1,0 +1,62 @@
+---
+id: 01M5659BR7RYZ6RVC84HGK1QGT
+title: "Die Release-Notes zeigen eine Version pro Seite, die neueste zuerst, und links/rechts blaettert zwischen den Versionen"
+status: signoff
+ready: true
+creator: berkc
+assignee: berkc
+goal: "Wer die Release-Notes liest (Popup nach einem Upgrade und 'w' im Launcher), sieht zuerst nur die neueste Version kurz und knapp und blaettert mit links/rechts zu aelteren und zurueck."
+context: |-
+  Berk am 18.10.: 'Ich wuerde es pro Version aufteilen. Standardmaessig die neueste sehen, kurz, kompakt, praezise. Dann mit links oder rechts zwischen den Versionen navigieren.'
+  Heute (PR #91, Tickets T8A8KM/PWAF22): das Popup nach einem Upgrade zeigt alle Notes seit der zuletzt gelesenen Version in einer langen Liste (internal/tui/releasenotes.go, openReleaseNotes/newNotesView). 'w' im Launcher zeigt alle Versionen untereinander, neueste zuerst.
+  Die Daten sind schon pro Version da: release.Notes() liefert []Entry{Version, Changes}, neueste zuerst (core/release/release.go).
+  Abgelehnt: eine feste Zahl Tabs (zuerst als 'letzte 5 Updates als Tabs' besprochen) - Blaettern pro Version deckt beliebig viele ab.
+  Offen: was das Popup nach einem Upgrade ueber mehrere Versionen zeigt - Vorschlag: es startet auf der neuesten und sagt '1/3', die ungelesenen sind die ersten Seiten; Zeilen mit '!' bleiben hervorgehoben.
+  Haengt an PR #91: baut auf dessen releasenotes.go auf, erst nach dessen Merge anfangen.
+definition-of-done: "Popup und 'w' zeigen genau eine Version pro Seite, die neueste zuerst, mit Kopfzeile Version und Position (z.B. 0.5.4 · 1/12)"
+tags:
+  - tui
+blocked-by: []
+related: []
+commits: []
+created-at: 2026-10-18T00:06:20Z
+updated-at: 2026-10-18T00:50:01Z
+updated-by: berkc
+claimed-by: berk-ca-703016
+claimed-at: 2026-10-18T00:32:08Z
+outcome-what: "Release notes view (internal/tui/releasenotes.go) shows one version per page with header 'version · n/N', newest first; left/h older, right/l newer, no-op at ends; j/k scroll within a page and reset on page change; popup title adds '· N unread'. Tests + release note GK1QGT.md."
+outcome-why: "Berk: notes should be split per version, newest by default, compact, with left/right to navigate; the long single list after a multi-version upgrade was hard to read."
+outcome-resolves: "DoD 1-4: one version per page with position header in popup and 'w'; left/right/h/l paging with inert ends; unread count in popup title; tests pin start page and paging, release note written."
+review-summary: "internal/tui/releasenotes.go: notesView now holds an index 'at' (0 = newest) and renders only entries[at] — a header line '<version> · i/n' under the title, that version's changes (! lines still styled), and the hint '←/→ older/newer · j/k scroll · esc close' (truncated to width). left/h moves to the older entry, right/l to the newer, both inert at the ends, and a page change resets scroll to 0; j/k/pgup/pgdown scroll inside a page as before. The board popup (openReleaseNotes) still pages release.Since(base), i.e. only versions newer than the seen record or stamp, and its title gains '· N unread'; markSeen on close is unchanged (records release.Current). The launcher's w still opens every version (release.Since(\"\")). Tests updated in home_test.go and releasenotes_test.go, plus core/release/notes/GK1QGT.md with two one-line notes."
+review-gaps: "none blocking. Checked: (1) real release build — simulated the release-notes workflow (loose notes moved into notes/0.5.4/, built -X main.version=0.5.4, board stamped 0.5.0, no notes-seen): popup reads 'What is new since 0.5.0 · 4 unread', pages 0.5.4 · 1/4 … 0.5.1, no Unreleased page; so the 'N unread counts Unreleased' effect is dev-tree-only. Residual, pre-existing and outside this ticket: a release tag built from a merge commit that also carries a loose note merged to master after the release branch was cut would show an 'Unreleased' page and count it. (2) markSeen: after esc, notes-seen = 0.5.4. (3) 0 entries: header and body skipped (v.at >= len guard); the popup never opens with 0 anyway. (4) long page: j scrolls and clamps, page change resets scroll. (5) 40x14 terminal: header, wrapped changes and hint fit; 30x h stops at 25/25. (6) keys: h/l/left/right were unbound in the notes view on both board (model.go modeReleaseNotes) and launcher (home.go h.notes branch, which returns before board keys), so no conflict. Minor: the hint names esc only though q/enter also close (pre-existing); with height < 6 render emits more lines than height (pre-existing, body floor of 1)."
+test-verdict: "pass: go vet + go test -race ./... RC=0 after go clean -testcache; DoD 1-4 verified in tree (proof lines + named tests run -v); tmux: w at 120x40 and 40x20 pages Unreleased 1/25 -> 0.5.3 2/25 and back, popup (0.5.3 build, stamp 0.5.0) '· 4 unread', 1/4..4/4, h past oldest stays 4/4, q closes and writes notes-seen 0.5.3"
+review-verdict: "approve: the diff meets all four DoD items; go vet ./... clean, go test -race ./... all ok; behaviour confirmed in tmux on a dev build (w) and a simulated release build (popup). No defects introduced."
+review-round: 1
+review-check: "1. cd /home/berkc/code/X_General/jaira-T8A8KM && go build -ldflags '-X main.version=0.5.3' -o /tmp/jgk ./cmd/jaira  2. JAIRA_NO_FETCH=1 JAIRA_NO_UPDATE_CHECK=1 /tmp/jgk  (from any repo with a board)  3. press w: the screen shows 'Release notes', then one header line 'Unreleased · 1/25' (dev tree; a release shows the newest version) and only that version's changes  4. press ← (or h): header becomes '0.5.3 · 2/25' and only 0.5.3's changes show  5. press → (or l) twice: back to 1/25, the second press does nothing  6. press j a few times on a long page: it scrolls; press ←: the next page starts at its top  7. press esc: back to the launcher  8. popup: in ~/.jaira/state/board-*/ of a board write 0.5.0 into 'version' and delete 'notes-seen', open that board: popup title 'What is new since 0.5.0 · N unread', header '<newest> · 1/N'; press esc, then 'cat notes-seen' in that folder shows the running version  9. go test ./internal/tui -run 'NotesView|ReleaseNotes|Popup' passes"
+---
+
+# Die Release-Notes zeigen eine Version pro Seite, die neueste zuerst, und links/rechts blaettert zwischen den Versionen
+
+## Definition of Done
+
+- [x] Popup und 'w' zeigen genau eine Version pro Seite, die neueste zuerst, mit Kopfzeile Version und Position (z.B. 0.5.4 · 1/12)
+  proof: internal/tui/releasenotes.go:101-104 header 'version · n/N' + lines() one entry; TestNotesViewStartsOnTheNewestAndPagesOneVersionAtATime, TestHomeWOpensReleaseNotesNewestFirst
+- [x] Pfeil links/rechts (und h/l) blaettert zur aelteren/neueren Version, an den Enden passiert nichts
+  proof: internal/tui/releasenotes.go:42-49; TestNotesViewStartsOnTheNewestAndPagesOneVersionAtATime (ends: right at newest, left at oldest)
+- [x] Nach einem Upgrade ueber mehrere Versionen sieht man, wie viele davon ungelesen sind
+  proof: internal/tui/releasenotes.go:164 title '· N unread'; TestPopupAfterAnUpgradeAcrossVersionsCountsTheUnreadAndPagesThem
+- [x] Test pinnt Startseite und Blaettern; Release-Note
+  proof: internal/tui/releasenotes_test.go:39,201; internal/tui/home_test.go:416; core/release/notes/GK1QGT.md
+
+## Options
+
+- [ ] brainstorm
+- [ ] planning
+
+## Plan
+
+<Steps, in order — filled in by the pre-process step, or by you.>
+
+## Progress
+- **2026-10-18 00:32 · berkc** — Decided (open point in context): the popup after an upgrade pages only the unread versions (release.Since(base)), starts on the newest, and its title says how many: 'What is new since 0.5.0 · 3 unread'; the page header is '0.5.4 · 1/3'. 'w' pages every version, '0.5.3 · 1/12'. Why: the popup's job is the unread, 'w' already keeps the whole history one key away; marking unread pages inside a 12-page popup would add a second concept for the same count. Direction per DoD 2: left/h = older (next page number), right/l = newer; ends do nothing. j/k scrolling stays for a version longer than the screen and resets on a page change. Brainstorm and planning options unticked, so the ticket goes todo -> in-progress directly.
+- **2026-10-18 00:40 · berkc** — Found out: release.Since(base) includes the Unreleased entry whenever note files sit directly in core/release/notes/, so a local build (tmux, -X main.version=0.5.3, stamp 0.5.0) says '4 unread' with an 'Unreleased' first page. A cut release has no loose note files, so real builds count only versions. Left as is: Since is T8A8KM's selection, not this ticket's.

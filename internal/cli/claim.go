@@ -13,13 +13,9 @@ import (
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
-// ClaimTTL is how long a claim is honoured without being renewed.
-//
-// Claims expire rather than being held until released, because there is no server
-// to notice that a session died. A lease that outlives its holder would wedge the
-// board and require manual unlocking — which, with no coordinator, means editing a
-// file by hand. Expiry makes abandonment self-healing.
-const ClaimTTL = 30 * time.Minute
+// ClaimTTL is how long a claim is honoured without being renewed; see
+// ticket.ClaimTTL, which the board reads too.
+const ClaimTTL = ticket.ClaimTTL
 
 // ClaimActive reports whether a ticket is claimed by someone other than sessionID.
 func ClaimActive(t *ticket.Ticket, sessionID string) (holder string, active bool) {
@@ -89,7 +85,8 @@ would let two sessions work the same ticket with nothing anywhere saying so.
 --release gives a claim up: your own at any time, somebody else's only once it
 has expired — that clears an abandoned claim's warning without waiting. A claim
 another session is actively renewing is refused.`,
-		Args: exactArgs(1),
+		Args:    exactArgs(1),
+		PostRun: warnNewerRelease,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
 			if err != nil {
@@ -126,6 +123,9 @@ another session is actively renewing is refused.`,
 				if err != nil {
 					return err
 				}
+				if err := session.ForgetClaimProcess(t.ID); err != nil {
+					fmt.Fprintf(cmd.ErrOrStderr(), "jaira: warning: %v\n", err)
+				}
 				if g.jsonOut {
 					return emit(cmd.OutOrStdout(), map[string]any{"released": true, "id": t.ID})
 				}
@@ -155,6 +155,11 @@ another session is actively renewing is refused.`,
 			})
 			if err != nil {
 				return err
+			}
+			// Lets the board on this machine keep the ticket marked as worked
+			// past the lease, for as long as the agent's process runs.
+			if err := session.RecordClaimProcess(t.ID, sessionID); err != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "jaira: warning: %v\n", err)
 			}
 			fireHook("claim", s, t)
 			if g.jsonOut {

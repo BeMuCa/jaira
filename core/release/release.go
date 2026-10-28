@@ -64,7 +64,7 @@ func composeNotes(md string, fsys fs.FS) []Entry {
 			versions = append(versions, d.Name())
 		}
 	}
-	sort.Slice(versions, func(i, j int) bool { return newer(versions[i], versions[j]) })
+	sort.Slice(versions, func(i, j int) bool { return Newer(versions[i], versions[j]) })
 	for _, v := range versions {
 		out = append(out, entryOf(fsys, path.Join(notesDir, v), v))
 	}
@@ -82,8 +82,8 @@ func entryOf(fsys fs.FS, dir, version string) Entry {
 	return e
 }
 
-// newer compares two X.Y.Z versions number by number.
-func newer(a, b string) bool {
+// Newer reports whether version a is newer than b, comparing X.Y.Z numbers one by one.
+func Newer(a, b string) bool {
 	as, bs := strings.Split(a, "."), strings.Split(b, ".")
 	for i := 0; i < len(as) && i < len(bs); i++ {
 		x, _ := strconv.Atoi(as[i])
@@ -95,8 +95,16 @@ func newer(a, b string) bool {
 	return len(as) > len(bs)
 }
 
+// Important splits the marker off a change: a line written "- ! text" is read
+// by changeLines as the plain change "! text", and Important returns text.
+// The marker is "! " with the space; "!text" is not one.
+func Important(change string) (string, bool) {
+	return strings.CutPrefix(change, "! ")
+}
+
 // changeLines is parseNotes for a note file, which has no headings: every
-// "- " line is one change.
+// "- " line is one change. A line "- ! text" is the change "! text": the
+// marker for a change the reader must act on, read back by Important.
 func changeLines(s string) []string {
 	var out []string
 	for _, line := range strings.Split(s, "\n") {
@@ -156,7 +164,9 @@ func selectSince(all []Entry, stamped string) []Entry {
 		return all
 	}
 	for i, e := range all {
-		if e.Version == stamped {
+		// A release that shipped without a single note has no entry of its
+		// own; it still ends the selection at the first older release.
+		if e.Version == stamped || (e.Version != "Unreleased" && !Newer(e.Version, stamped)) {
 			return all[:i]
 		}
 	}
@@ -166,18 +176,34 @@ func selectSince(all []Entry, stamped string) []Entry {
 // Stamped reads <dir>/version, trimmed. Errors are deliberately swallowed: a
 // missing or unreadable stamp is indistinguishable from "never recorded" for
 // every purpose this serves.
-func Stamped(dir string) string {
-	b, err := os.ReadFile(filepath.Join(dir, "version"))
+func Stamped(dir string) string { return readVersion(dir, "version") }
+
+// Stamp records Current as the version that last prepared dir.
+func Stamp(dir string) error { return writeCurrent(dir, "version") }
+
+// NotesSeen reads <dir>/notes-seen: the last version whose release notes the
+// user closed in the TUI, "" when none. It sits next to the stamp, per working
+// tree and never in git: "I read them" is one person's fact, not the team's.
+func NotesSeen(dir string) string { return readVersion(dir, "notes-seen") }
+
+// MarkNotesSeen records Current as the version whose release notes were read.
+func MarkNotesSeen(dir string) error { return writeCurrent(dir, "notes-seen") }
+
+// readVersion reads the one-line version file <dir>/<name>, trimmed; a
+// missing or unreadable file is "".
+func readVersion(dir, name string) string {
+	b, err := os.ReadFile(filepath.Join(dir, name))
 	if err != nil {
 		return ""
 	}
 	return strings.TrimSpace(string(b))
 }
 
-// Stamp records Current as the version that last prepared dir.
-func Stamp(dir string) error {
+// writeCurrent writes Current as the one-line version file <dir>/<name>,
+// creating dir.
+func writeCurrent(dir, name string) error {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(dir, "version"), []byte(Current+"\n"), 0o644)
+	return os.WriteFile(filepath.Join(dir, name), []byte(Current+"\n"), 0o644)
 }

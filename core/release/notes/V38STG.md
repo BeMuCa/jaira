@@ -1,0 +1,1 @@
+- Install with the curl or PowerShell one-liner and the role skills and the Cockpit are set up for you in ~/.claude/skills; the Cockpit loads in your next Claude Code session, and JAIRA_NO_ROLES=1 installs only the binary.

@@ -427,3 +427,32 @@ func TestRolesListReportsThePythonCommand(t *testing.T) {
 		t.Errorf("JAIRA_PYTHON must win: python = %q, want py -3", got)
 	}
 }
+
+// A role file an older jaira wrote is not an edit: a second install replaces it
+// without --force and says so, instead of exiting 3 on files nobody touched.
+func TestRolesInstallUpdatesAnOlderShippedFileWithoutForce(t *testing.T) {
+	dir := lanesTestProject(t)
+	if out, err := runCLI(t, dir, "roles", "install", "--project"); err != nil {
+		t.Fatalf("first install: %v\n%s", err, out)
+	}
+	old, err := os.ReadFile(filepath.Join("..", "..", "core", "role", "testdata", "jaira-role-acceptance-SKILL-v0.4.0.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	dst := filepath.Join(dir, ".claude", "skills", "jaira-role-acceptance", "SKILL.md")
+	if err := os.WriteFile(dst, old, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := runCLI(t, dir, "roles", "install", "--project")
+	if code := exitCode(err); code != ExitOK {
+		t.Fatalf("exited %d, want %d\n%s", code, ExitOK, out)
+	}
+	if !strings.Contains(out, "updated "+dst) || !strings.Contains(out, "1 updated") {
+		t.Errorf("output did not report the update:\n%s", out)
+	}
+	want, _ := role.File("jaira-role-acceptance", "SKILL.md")
+	if b, _ := os.ReadFile(dst); string(b) != string(want) {
+		t.Error("the older shipped file was not replaced")
+	}
+}

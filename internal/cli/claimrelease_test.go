@@ -1,10 +1,13 @@
 package cli
 
 import (
+	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/BeMuCa/jaira/core/session"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -76,5 +79,27 @@ func TestReleaseRefusesALiveForeignClaim(t *testing.T) {
 	}
 	if got, _ := s.Load(tk.ID); got.ClaimedBy != "other-session" {
 		t.Errorf("the live claim was cleared: %q", got.ClaimedBy)
+	}
+}
+
+// A claim names the agent's process on this machine, so the board here can
+// tell a claim past its lease from an abandoned one; releasing it forgets it.
+func TestClaimRecordsTheAgentProcessAndReleaseForgetsIt(t *testing.T) {
+	dir, _, tk := claimFixture(t)
+	t.Setenv("JAIRA_HOME", t.TempDir())
+	t.Setenv("CLAUDE_PID", "")
+	t.Setenv("JAIRA_AGENT_PID", strconv.Itoa(os.Getpid()))
+	h := ticket.Handle(tk.ID)
+	if out, err := runCLI(t, dir, "claim", h, "--session", "me"); err != nil {
+		t.Fatalf("claim: %v\n%s", err, out)
+	}
+	if !session.ClaimProcessAlive(tk.ID, "me") {
+		t.Error("the claim did not record the agent's running process")
+	}
+	if out, err := runCLI(t, dir, "claim", h, "--release", "--session", "me"); err != nil {
+		t.Fatalf("release: %v\n%s", err, out)
+	}
+	if session.ClaimProcessAlive(tk.ID, "me") {
+		t.Error("a released claim still names a live process")
 	}
 }

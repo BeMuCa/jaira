@@ -235,9 +235,11 @@ func TestHelpScrollsAndKeepsItsWayOut(t *testing.T) {
 
 	// Scrolling reaches what the first screen could not show, and the footer
 	// travels with it.
-	m.Update(tea.KeyPressMsg{Code: tea.KeyPgDown})
-	m.Update(tea.KeyPressMsg{Code: tea.KeyPgDown})
-	m.Update(tea.KeyPressMsg{Code: tea.KeyPgDown})
+	// Paged to the end rather than a fixed number of pages, so the help
+	// growing a line does not move its end out of reach of this test.
+	for range 10 {
+		m.Update(tea.KeyPressMsg{Code: tea.KeyPgDown})
+	}
 	bottom := stripANSI(m.View().Content)
 	if bottom == top {
 		t.Error("the help does not scroll")
