@@ -1,7 +1,7 @@
 ---
 id: 01M5B0PCJW8KCF3XFCTSWVYG9H
 title: Tickets und Logbook nennen keine anderen Projekte mehr
-status: in-progress
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,14 +21,28 @@ tags:
   - docs
 blocked-by: []
 related: []
-commits: []
+commits:
+  - c81e83d46174653d667e27d5737c90456985c1e7
 created-at: 2026-10-19T21:22:16Z
-updated-at: 2026-10-26T07:54:26Z
+updated-at: 2026-10-26T22:40:02Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-17688
-claimed-at: 2026-10-26T07:39:43Z
+claimed-by: DESKTOP-RFTCH11-30382
+claimed-at: 2026-10-26T21:58:04Z
 question: ""
 mode: conversational
+outcome-what: "Namen anderer Projekte des Maintainers, davon abgeleitete Kuerzel und der Firmen-Host sind ersetzt: in 25 Dateien unter .jaira/, in 9 Dateien ausserhalb (.planning, zwei Tests, ein Skript, ein Rollen-Skill) und auf 9 Ticket-Refs auf upstream, jeweils mit einem fast-forward-Commit"
+outcome-why: "jaira ist oeffentlich, die Namen waren ein Datenleck. Die Historie bleibt unangetastet (so entschieden), bereinigt wird nur der heutige Text"
+outcome-resolves: "Kein heutiger Text unter .jaira/, auf den Ticket-Refs oder in den genannten Dateien nennt mehr eines der Projekte aus ~/.jaira/foreign-names"
+review-summary: "Reiner Textersatz, kein Verhalten geaendert: in 39 Dateien (22 unter .jaira/logbook und .jaira/archive, 8 Ticket-Kopien unter .jaira/tickets, 9 ausserhalb: .planning, zwei Testkommentare, ein Docstring in scripts/migrate-tickets.py, ein Beispiel-Host in der PR-Rolle) sind Namen anderer Projekte des Maintainers, das Board-Kuerzel und der Firmen-Host durch neutrale Umschreibungen ersetzt ('ein anderes Projekt', 'test project board', git.example.de). Auf upstream sind die Ticket-Refs per fast-forward-Commit bereinigt; die Historie bleibt unveraendert, wie entschieden."
+review-gaps: |-
+  note: outcome-what nennt 25 Dateien unter .jaira/, der Diff aendert 30 (22 Logbook/Archiv + 8 Ticket-Kopien); die Arbeit ist vollstaendig, nur die Zahl stimmt nicht
+  note: noch kein Commit - commits ist leer und die Ticket-Datei dieses Tickets ist untracked; ohne einen Commit mit WVYG9H im Betreff wird der Zug nach done verweigert
+  note: die 8 Ticket-Kopien unter .jaira/tickets behalten ihr updated_at; ein Klon mit alter Kopie kann den alten Text wieder auf den Ref schreiben (in der Note vom 19.10. schon als Restrisiko festgehalten)
+  note: zwischen 21.10. und 26.10. sind auf 4 Refs neue Nennungen entstanden - ohne eine Pruefung beim Schreiben kommt das Leck wieder
+test-verdict: "pass: go vet ./... RC=0, go build ./cmd/jaira RC=0, go test ./... -race RC=0 (auf upstream/master 254b9085); DoD 1 grep .jaira exit 1, DoD 2 0 Treffer auf 139 upstream-Refs nach Push, DoD 3 30 Dateien +86/-86 und kein Frontmatter-Feld geaendert, DoD 5 grep ausserhalb exit 1; gebautes Binary: jaira list exit 0, jaira show auf jedes geaenderte Ticket ok, Frontmatter aller 30 Dateien intakt"
+review-verdict: "Der Diff erfuellt alle fuenf DoD-Punkte, unabhaengig nachgeprueft: grep mit ~/.jaira/foreign-names unter .jaira/ und im ganzen Baum 0 Treffer, Board-Kuerzel und Firmen-Host 0 Treffer, 136 Ticket-Refs auf upstream 0 Treffer, eigene Ticket-Datei 0 Treffer, go test ./internal/cli/ ./internal/tui/ ./core/role/ gruen. Jede Aenderung ist eine Namensersetzung. Kein Blocker; offen ist nur der Commit."
+review-round: 1
+review-check: "1. cd ~/projects/.worktrees/jaira-wvyg9h  2. grep -rliE -f ~/.jaira/foreign-names .jaira ; git grep -liE -f ~/.jaira/foreign-names -- .  -> beide Befehle geben nichts aus  3. git diff --word-diff=plain -- . | grep -E '\\[-' | less  -> jede Zeile tauscht nur einen Namen gegen eine neutrale Umschreibung, der Satz bleibt lesbar  4. git fetch upstream '+refs/jaira/*:refs/chk/*' ; for r in $(git for-each-ref --format='%(refname)' refs/chk/); do git show $r:$(git ls-tree --name-only $r | head -1); done | grep -ciE -f ~/.jaira/foreign-names  -> 0 ; danach git for-each-ref --format='%(refname)' refs/chk/ | xargs -n1 git update-ref -d  5. go test ./internal/cli/ ./internal/tui/ ./core/role/  -> dreimal ok"
 ---
 
 # Tickets und Logbook nennen keine anderen Projekte mehr
@@ -37,10 +51,12 @@ mode: conversational
 
 - [x] git grep -iE -f ~/.jaira/foreign-names auf dem Branch findet unter .jaira/ nichts mehr
   proof: grep -rniE -f ~/.jaira/foreign-names .jaira -> exit 1 (keine Treffer, inkl. der drei neuen Namen); ebenso Praefix, Workspace-Label und Firmen-Host
-- [ ] Der aktuelle Inhalt jedes Refs unter refs/jaira/ enthaelt keinen Namen aus der Liste, auf upstream geprueft nach dem Push
+- [x] Der aktuelle Inhalt jedes Refs unter refs/jaira/ enthaelt keinen Namen aus der Liste, auf upstream geprueft nach dem Push
+  proof: nach push-refs.sh + push-refs2.sh (Alex, 26.10.): git fetch upstream refs/jaira/*, git show auf den aktuellen Inhalt jedes Refs | grep -iE -f ~/.jaira/foreign-names -> 0 Treffer auf 139 Refs; 9 Refs per fast-forward-Commit bereinigt, keine Historie umgeschrieben
 - [x] Jeder ersetzte Satz bleibt verstaendlich; kein Feld ausser dem Namen ist veraendert (git diff --word-diff zeigt nur Namensersetzungen)
   proof: git diff --word-diff=plain -- .jaira: 25 Dateien, 78/78 Zeilen, jede Aenderung ist eine Namens-/Host-/Praefix-Ersetzung; Paare in fester Liste, kein Frontmatter-Feld ausser Text beruehrt
-- [ ] Commit-Nachrichten, Ticket-Notes und PR-Text dieses Tickets nennen keinen der Namen
+- [x] Commit-Nachrichten, Ticket-Notes und PR-Text dieses Tickets nennen keinen der Namen
+  proof: Ticket-Datei und Ref dieses Tickets: grep -ciE -f ~/.jaira/foreign-names -> 0; vorgeschlagene Commit-Zeile 'docs(WVYG9H): replace names of other projects...' -> 0; PR-Text schreibt der Maintainer, dort gilt dieselbe Liste
 - [x] Die Dateien ausserhalb .jaira/ (.planning/HANDOFF.md, internal/cli/staleclaim_test.go, internal/tui/home_refs_test.go, scripts/migrate-tickets.py) nennen keinen Namen aus der Liste mehr; go test ./internal/cli/ ./internal/tui/ bleibt gruen
   proof: git grep -niE -f ~/.jaira/foreign-names -- . ':!.jaira' -> nur noch Binaer-Rauschen in docs/img/demo-chain.gif (kein Listen-Name); go test ./internal/cli/ ./internal/tui/ ./core/role/ ok
 
@@ -58,8 +74,8 @@ mode: conversational
 - [x] Ersetzungen unter .jaira/ auf dem Branch, Satz fuer Satz von Hand (python-Skript mit exakten Alt/Neu-Paaren im Scratchpad); word-diff pruefen -> DoD 1, 3
 - [x] Die vier Dateien ausserhalb .jaira/ (drei aus der Entscheidung plus ein Testkommentar in internal/tui/home_refs_test.go); go test der beiden Pakete -> DoD 5
 - [x] Ref-Inhalte: dieselben Paare auf den aktuellen Inhalt jedes betroffenen Refs anwenden, je Ref einen neuen Commit oben drauf bauen (hash-object/mktree/commit-tree), lokal noch nicht pushen; diff zeigen
-- [ ] Nach Freigabe: git push upstream <neu>:<ref> --force-with-lease=<ref>:<alt> je Ref, update-ref lokal, danach git show auf upstream pruefen -> DoD 2
-- [ ] Commit-Nachricht, Notes und PR-Text gegen die Liste greppen -> DoD 4
+- [x] Nach Freigabe: git push upstream <neu>:<ref> --force-with-lease=<ref>:<alt> je Ref, update-ref lokal, danach git show auf upstream pruefen -> DoD 2
+- [x] Commit-Nachricht, Notes und PR-Text gegen die Liste greppen -> DoD 4
 
 ## Progress
 - **2026-10-19 21:22 · Alexander Sacharov** — Teamlead 19.10.2026: der Worktree startet auf dem lokalen master 7f008dec, upstream/master ist weiter (36bde2df, release 0.5.4). Vor dem ersten Commit auf upstream/master aufsetzen und dort greppen - sonst fehlen die neuesten Logbook-Dateien.
@@ -85,3 +101,11 @@ mode: conversational
 - **2026-10-26 07:41 · Alexander Sacharov** — 2026-10-26, neuer Worker (Parent jaira-7a): Refs waren noch nicht gepusht. Upstream heute neu geholt: 7 Refs nennen noch Listen-Namen (nicht 9 - drei davon seit 21.10. weiter geschrieben, einer ist ein neues Ticket vom 23.10., 01M5MQKP..., inkl. eines Pfads unter ~/.claude/acceptance/<projekt>/). Die am 21.10. gebauten Commits waren damit veraltet. Neu gebaut auf dem heutigen upstream-Stand, je Ref ein fast-forward-Commit, gleiche Ersatzregeln. Abgeleitete Kuerzel und Firmen-Host: auf keinem Ref (die Treffer fuer 'req' sind Go-Code wie req.To). Branch: Listen-grep unter .jaira weiter leer. Skript: /tmp/claude-1000/-home-alex-projects--worktrees-jaira-wvyg9h/411d0b40-f3bc-43cc-b6a6-cdd117b7e1b0/scratchpad/push-refs.sh, Zuordnung /tmp/claude-1000/-home-alex-projects--worktrees-jaira-wvyg9h/411d0b40-f3bc-43cc-b6a6-cdd117b7e1b0/scratchpad/refnew.txt. Push bleibt bei Alex (Klassifikator lehnt --force-with-lease ab).
 - **2026-10-26 07:41 · Alexander Sacharov** — Auch ein normaler fast-forward-Push (ohne Force) wurde vom Klassifikator abgelehnt [Modify Shared Resources]. Nicht umgangen. push-refs.sh im Scratchpad dieser Session jetzt: ein atomarer ff-Push der 7 Refs, update-ref lokal, danach grep auf jeden upstream-Ref. Wartet auf Alex.
 - **2026-10-26 07:54 · Alexander Sacharov** — decision (Alex, 2026-10-26, ueber Teamlead jaira-7a): Option 2 - Alex legt selbst eine Bash-Erlaubnis fuer git push upstream auf refs/jaira an; danach pusht der Worker die 7 Refs selbst, einmal. Lehnt der Klassifikator auch dann ab: nicht umgehen, an jaira-7a melden. Worker wartet auf das Signal, dass die Regel steht.
+- **2026-10-26 21:47 · Alexander Sacharov** — decision (Alex, 2026-10-26, ueber Teamlead jaira-7a): zurueck zu Option 1 - Alex fuehrt push-refs.sh selbst aus, keine Settings-Regel. Worker pusht die Refs NICHT selbst; wartet auf das Signal, dann DoD 2 und 4 pruefen und weiter durch critique, optimize, testing bis review.
+- **2026-10-26 21:53 · Alexander Sacharov** — critique (Runde 1, ganzer Diff gelesen): keine Findings. Der Diff ist reiner Textersatz nach festen Paaren; Diff unter .jaira/ hat Alex am 21.10. freigegeben (Note 08:01). Ausserhalb .jaira/: 9 Dateien, 20 Zeilen, nur Kommentare, Docstrings und Planungs-Prosa, kein Verhalten. Beobachtung fuer Alex, kein Finding dieses Diffs: zwischen 21.10. und 26.10. sind auf 4 Refs neue Nennungen entstanden - ohne eine Pruefung beim Schreiben kommt das Leck wieder.
+- **2026-10-26 22:16 · Alexander Sacharov** — explain: Der Review fand keinen Fehler: der Diff ersetzt nur Namen anderer Projekte durch neutrale Umschreibungen, alle fuenf DoD-Punkte sind nachgeprueft (grep 0 Treffer, Tests gruen). Offen ist nur der Commit mit WVYG9H im Betreff, und die Zahl 25 Dateien in outcome-what stimmt nicht (es sind 30).
+Warum: Ohne Commit wird der Zug nach done verweigert. Seit dem 21.10. sind auf 4 Refs neue Nennungen entstanden, ohne Pruefung beim Schreiben kommt das Leck wieder.
+1) Zurueckgeben: eine Pruefung beim Schreiben von Tickets einbauen und die Dateizahl korrigieren [give back]
+2) So annehmen: der Diff ist reiner Namensersatz, danach nur noch der Commit mit WVYG9H [accept]
+Empfehlung: 2 - der Diff erfuellt das Ticketziel vollstaendig, die Pruefung beim Schreiben ist eine neue, eigene Aufgabe und gehoert nicht in diesen Textersatz.
+- **2026-10-26 22:39 · Alexander Sacharov** — decision: 2) So annehmen: der Diff ist reiner Namensersatz, danach nur noch der Commit mit WVYG9H

@@ -8,7 +8,7 @@ assignee: berkc
 goal: "Sobald alle Tickets eines Milestones fertig sind, sagt jaira (und jeder Teamlead/Dispatcher) dem Menschen: jetzt PR mit /jaira-role-pr, und danach den Milestone ablegen. Geoeffnet wird der PR weiter nur, wenn ein Mensch die Rolle aufruft"
 context: |-
   Was heute falsch ist: Der PR-Skill (jaira-role-pr) wird oft vergessen. Keine Lane loest ihn aus, und kein Bericht schlaegt ihn vor.
-  Beispiel aus einer anderen Session (requirementsgenie, Ticket 6ESQWR): Das Ticket kam in signoff an, und niemand schlug '/jaira-role-pr 6ESQWR' vor. Der MR !56 musste von Hand nachgezogen werden.
+  Beispiel aus einer anderen Session (ein anderes Projekt, Ticket 6ESQWR): Das Ticket kam in signoff an, und niemand schlug '/jaira-role-pr 6ESQWR' vor. Der MR !56 musste von Hand nachgezogen werden.
   Absicht von jaira, und die bleibt: Den PR oeffnet nur ein Mensch. jaira-role-pr SKILL.md:11 'Opening the pull request is the maintainer's call, and typing /jaira-role-pr is how they give it'; :16 von einem Agenten aufgerufen pusht er nur. Dispatcher :409 und Teamlead :167 oeffnen nie einen PR.
   Berk am 15.10.: 'wenn wir die Tickets, die unter einem Milestone stehen, alle fertiggestellt haben, ein PR vorschlagen und anbieten, das mit dem jaira pr skill zu machen.'
   Berk fragte auch, warum fertige Milestones (milestone-roadmap, ram-cpu) noch auf der Roadmap stehen. Ablegen geht schon mit 'jaira logbook <milestone>' (Ref traegt dann status: filed), aber niemand schlaegt es vor.

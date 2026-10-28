@@ -41,7 +41,7 @@ context: |-
 
   Die Entscheidung, die dieses Ticket treffen muss und die groesser ist als die Umsetzung: was tut der nackte Aufruf ohne Schalter? Wer 'jaira update' heute gewohnheitsmaessig laeuft, erwartet eine Textblock-Regeneration. Faengt der Befehl an, Rollen und Lanes anzufassen, aendert sich das Verhalten unter den Fuessen aller, die ihn schon benutzen. Das ist eine Frage der Vertraeglichkeit, keine der Bequemlichkeit.
 
-  Die zweite Haelfte des Problems, von Alex am 2026-09-15 benannt: auch mit einem Sammelbefehl muss er ihn in JEDEM Projekt einzeln aufrufen. 'jaira projects' kennt die Boards dieses Rechners bereits - acht Eintraege, darunter jaira, requirementsgenie und die Worktrees.
+  Die zweite Haelfte des Problems, von Alex am 2026-09-15 benannt: auch mit einem Sammelbefehl muss er ihn in JEDEM Projekt einzeln aufrufen. 'jaira projects' kennt die Boards dieses Rechners bereits - acht Eintraege, darunter jaira, ein anderes Projekt und die Worktrees.
 
   Aber dieselbe Liste zeigt, warum ein rechnerweiter Lauf heute gefaehrlich waere: drei der acht Eintraege sind Wegwerf-Boards, die testing-Worker im Laufe des Tages unter /tmp/claude-*/scratchpad/ angelegt haben - sandbox, board74, board. Sie stehen dauerhaft in der Liste, obwohl ihre Verzeichnisse Muell sind. Ein Befehl, der ueber alle Boards laeuft, laeuft zuerst in diese hinein.
 

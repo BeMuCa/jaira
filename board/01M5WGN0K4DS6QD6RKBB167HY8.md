@@ -54,7 +54,7 @@ review-check: "1. go test ./core/role -run TestSpawnLetsTheRepositorySetUpItsWor
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-- **2026-10-26 16:28 · Alexander Sacharov** — parent session: requirementsgenie-22
+- **2026-10-26 16:28 · Alexander Sacharov** — parent session: <projekt>-22
 - **2026-10-26 16:29 · Alexander Sacharov** — Offene Entscheidungen gezaehlt, keine braucht die Person - alle aus Ticket und Code entschieden:
 1) Fehler im Setup-Skript: Abbruch (DoD 3 dieses Tickets), nicht 'melden und weiter' wie die Notiz an 7MG5GB vorschlug. Das Skript laeuft vor 'tab create', also entsteht kein Tab.
 2) Nach dem Fehlschlag raeumt spawn.sh den eben angelegten worktree und Branch wieder ab. Grund: bliebe der worktree stehen, ueberspringt der naechste Aufruf das Setup ('if [ ! -d $wt ]') und der Arbeiter laeuft ohne .env.

@@ -1,7 +1,7 @@
 ---
 id: 01M5659DPY9FK72XVMZFY2C9QN
 title: Ein zweites Board laesst sich mit einem Befehl aus einem Board-Typ anlegen statt Lane-Dateien von Hand zu kopieren
-status: backlog
+status: signoff
 ready: true
 creator: berkc
 assignee: berkc
@@ -20,19 +20,48 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T00:06:22Z
-updated-at: 2026-10-18T00:32:03Z
+updated-at: 2026-10-27T14:59:57Z
 updated-by: berkc
+claimed-by: berk-ca-728718
+claimed-at: 2026-10-27T14:32:43Z
+outcome-what: "Neue Befehle 'jaira boards create <name> --description <...> [--type <typ>]' und 'jaira boards types' (beide mit --json). Board-Typen liegen eingebettet unter core/lane/boardtypes/<typ>/ (description, order, eigene Lane-Dateien; IDs ohne eigene Datei kommen aus den eingebauten Lanes). Mitgeliefert: 'code' = die eingebauten Default-Lanes."
+outcome-why: "Ein zweites Board musste man bisher von Hand aus Lane-Dateien zusammenkopieren; Agenten brauchen einen nicht-interaktiven Befehl, und Berk will spaeter eigene Typen (ideas, builder) ausliefern koennen, ohne Go-Code zu schreiben."
+outcome-resolves: "Y2C9QN: Board per Befehl aus einem Typ anlegen; vorhandenes Board wird nie ueberschrieben (exit 3), fehlende Beschreibung exit 2."
+review-summary: "Adds 'jaira boards create <name> --description <...> [--type <type>]' and 'jaira boards types' (both with --json). A board type is an embedded directory core/lane/boardtypes/<type>/ holding description, order and optional lane files of its own; an id in order without its own file is taken from the built-in lanes. One type ships: 'code', whose order is the built-in default-board lanes (a test fails if it drifts from them). CreateBoard resolves every lane before touching disk, then writes .jaira/boards/<name>/lanes/ with the lane files, order and the --description text as the board's description file. It refuses 'default' and any board that already has lane files (exit 3), an unknown type and a missing description (exit 2). Agent block (core/board/announce.go), CLAUDE.md/AGENTS.md, README, docs/COMMANDS.md and release note Y2C9QN.md are updated."
+round: 2
+review-gaps: |-
+  note: the goal says jaira ships 'a few' types (code, research, content); only 'code' ships - deliberate per the 14:34 note (ideas/builder follow from Berk later), and no DoD item asks for more
+  note: 'jaira boards create ""' normalises to today's board and is refused with exit 3 'default is today's board' rather than a usage error - harmless, slightly misleading
+  note: an existing .jaira/boards/<name>/lanes/ holding only order or description (no *.md) counts as no board and those files are overwritten - consistent with how Boards() decides what is a board
+test-verdict: "pass: go build ./..., go vet ./... (exit 0), go test -count=1 -race ./... (exit 0). By hand with a binary built from ff50aaaa in a fresh 'jaira init' repo: boards create r --type code -> exit 0, order and every lane file byte-identical to the init board's; second create -> exit 3, description unchanged; blank --description -> exit 2 with the teamlead hint; --json keys name,type,lanes,description,lanes_dir; boards types lists code with its line; lanes --board r reads the new board; outside a repo exit 1 'run jaira init'."
+review-verdict: "The diff meets all five DoD items; go vet and go test ./... are green, and a hand run of the built binary showed every exit code and the written board as claimed. No defects found; three notes only."
+review-round: 2
+review-check: |-
+  1. In the worktree: go build -o /tmp/jaira ./cmd/jaira
+  2. mkdir /tmp/b && cd /tmp/b && git init && /tmp/jaira init
+  3. /tmp/jaira boards types -> one line: code, with a description
+  4. /tmp/jaira boards create research ; echo $? -> message naming --description, exit 2
+  5. /tmp/jaira boards create research --type nope --description x ; echo $? -> no such board type, exit 2
+  6. /tmp/jaira boards create research --description "Questions to answer first" -> Board research created ... backlog -> ... -> blocked
+  7. ls .jaira/boards/research/lanes -> 10 lane .md files, order, description
+  8. Repeat step 6, then /tmp/jaira boards create default --description y ; echo $? -> both refused, exit 3
+  9. /tmp/jaira boards -> research listed with "Questions to answer first"
 ---
 
 # Ein zweites Board laesst sich mit einem Befehl aus einem Board-Typ anlegen statt Lane-Dateien von Hand zu kopieren
 
 ## Definition of Done
 
-- [ ] 'jaira boards create <name> --type <typ>' schreibt .jaira/boards/<name>/lanes/ mit Lanes, order und description des Typs; ein vorhandenes Board wird nicht ueberschrieben (exit 3)
-- [ ] 'jaira boards types' listet die mitgelieferten Typen mit einer Zeile Beschreibung
-- [ ] Ein Board ohne --type bekommt die eingebauten Code-Lanes
-- [ ] Tests; Release-Note
-- [ ] 'boards create' verlangt eine Beschreibung (--description), die sagt, welche Tickets auf dieses Board gehoeren; ohne sie exit 2 mit Hinweis, wofuer der Teamlead sie braucht
+- [x] 'jaira boards create <name> --type <typ>' schreibt .jaira/boards/<name>/lanes/ mit Lanes, order und description des Typs; ein vorhandenes Board wird nicht ueberschrieben (exit 3)
+  proof: core/lane/boardtypes.go CreateBoard, internal/cli/boards.go:94 newBoardsCreateCmd; TestCreateBoardFromATypeWithLanesOfItsOwn, TestBoardsCreate (exit 3 for video and default)
+- [x] 'jaira boards types' listet die mitgelieferten Typen mit einer Zeile Beschreibung
+  proof: internal/cli/boards.go:149 newBoardsTypesCmd, core/lane/boardtypes/code/description; TestBoardsCreate (boards types)
+- [x] Ein Board ohne --type bekommt die eingebauten Code-Lanes
+  proof: --type defaults to lane.DefaultBoardType=code (core/lane/boardtypes/code/order); TestCodeTypeIsTheBuiltinDefaultLanes, TestBoardsCreate (create without --type)
+- [x] Tests; Release-Note
+  proof: core/lane/boardtypes_test.go (3 tests), internal/cli/boards_test.go TestBoardsCreate; core/release/notes/Y2C9QN.md; go vet ./... and go test ./... green
+- [x] 'boards create' verlangt eine Beschreibung (--description), die sagt, welche Tickets auf dieses Board gehoeren; ohne sie exit 2 mit Hinweis, wofuer der Teamlead sie braucht
+  proof: internal/cli/boards.go:111 missing_description exit 2; TestBoardsCreate
 
 ## Options
 
@@ -43,5 +72,13 @@ updated-by: berkc
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-## Progress
+- [x] core/lane: Board-Typen eingebettet unter core/lane/boardtypes/<typ>/ (description, order, eigene Lanes); BoardTypes() und CreateBoard(root, name, typ, description)
+- [x] cli: 'jaira boards create <name> [--type] --description' und 'jaira boards types', beide mit --json; exit 2 ohne Beschreibung / unbekannter Typ, exit 3 bei vorhandenem Board
+- [x] Tests (core/lane und internal/cli), Release-Note core/release/notes/Y2C9QN.md, docs falls Befehlsliste gepflegt
 
+## Progress
+- **2026-10-27 14:32 · berkc** — Korrektur 27.10.2026 (berkc): Der Kontext beschreibt 'b' so, wie es heute ist (b schaltet zum naechsten Board, internal/tui/model.go:1705). Gewollt ist (KVMG0K): b oeffnet ein Popup mit allen Boards, dort waehlt man mit Leertaste die freigegebenen (aktiven) Boards, aus denen der Teamlead waehlen darf; Shift+hoch/runter wechselt zwischen den aktiven Boards. Eine Einstellung 'aktive Boards' gibt es heute nicht (nur default-board in internal/tui/settings.go). Fuer dieses Ticket aendert das nichts: es geht nur ums Anlegen von Boards per Befehl.
+- **2026-10-27 14:34 · berkc** — Entscheidungen (Worker, nach 'kleiner als paca'): (1) Mitgeliefert wird nur der Typ 'code' = die eingebauten Default-Lanes (die Lanes mit default-board != false), also dasselbe wie ohne --type. 'ideas' und 'builder' liefert Berk selbst spaeter; das Format muss sie nur tragen koennen. (2) Ein Typ ist NUR Lanes + order + description - keine Tags, keine Milestone-Vorlagen (niemand hat sie verlangt). (3) Keine eigenen Typen in ~/.jaira in diesem Ticket: ein zweiter Quellort ist ein eigenes Feature; das Format (ein Verzeichnis wie ein Board-lanes/-Verzeichnis) laesst das spaeter mit einer Zeile zu. (4) Format: core/lane/boardtypes/<typ>/ mit 'description' (eine Zeile, was der Typ ist; nur fuer 'boards types'), 'order' (Lane-IDs) und optional eigenen <id>.md Lane-Dateien; eine ID in order ohne eigene Datei kommt aus den eingebauten Lanes. So ist ideas = eigene Lanes (ideate, pick ...), builder = eingebaute Code-Lanes plus eigene. (5) DoD1 'description des Typs' vs DoD5 '--description Pflicht': die Board-description-Datei bekommt den --description-Text (welche Tickets aufs Board gehoeren); die Typ-Beschreibung steht nur in 'boards types'. (6) 'code' ignoriert ~/.jaira/default-board.md bewusst: DoD3 sagt eingebaute Code-Lanes, und ein Befehl, den ein Agent ausfuehrt, soll auf jeder Maschine dasselbe Board bauen.
+- **2026-10-27 14:43 · berkc** — in-progress: Agentenblock (core/board/announce.go) nennt jetzt 'boards create'/'boards types'; CLAUDE.md und AGENTS.md des Repos von Hand gleichgezogen wie bei 8NHD8Q/A0C081 ueblich (jaira validate meldet keinen Block-Mismatch). Format fuer ideas/builder ist mit einem Test belegt (TestCreateBoardFromATypeWithLanesOfItsOwn legt per fstest.MapFS einen ideas-Typ mit eigenen Lanes an) - einen neuen Typ ausliefern heisst: Verzeichnis unter core/lane/boardtypes/ anlegen, kein Go-Code.
+- **2026-10-27 14:47 · berkc** — critique 1: (a) typeLanes gibt parallel []*Lane und [][]byte zurueck, gebraucht wird nur l.ID (== id aus order): zweites Parse und []*Lane streichen. (b) mustSub hat einen Aufrufer: boardtypes ohne fs.Sub ansprechen. (c) boardType nutzt Literal "description" statt descriptionFileName. Rest (CLI-Form, Exit-Codes, Typ-Format) steht so.
+- **2026-10-27 14:48 · berkc** — critique 2: alle drei Funde aus critique 1 behoben (ff50aaaa); die Reparatur fuehrt nichts Neues ein - ids aus order erreichen os.WriteFile nur, wenn sie eine eigene Lane-Datei (geparste ID) oder eine eingebaute Lane treffen, also kein Pfad-Ausbruch. Nichts mehr.
