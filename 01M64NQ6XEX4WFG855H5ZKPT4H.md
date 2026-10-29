@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T21:06:02Z
+updated-at: 2026-10-29T21:06:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1236953
 claimed-at: 2026-10-29T20:37:14Z
@@ -55,7 +55,8 @@ review-check: "1. go test ./internal/cli -run 'TestWebShowsTheNewerOfFileAndRef|
   proof: core/web/ui/src/entities/epic/ui/EpicProgress.svelte zweites Segment .signoff (--waiting) + Text '{done} done · {signoff} in signoff of {total}'; internal/cli/web_source.go Epics() zählt Lane signoff; TestWebCountsSignoffApartFromDone (Gegenprobe rot)
 - [x] board() in internal/cli/web_source.go und boardIndex() in internal/cli/links.go sind eine Ladefunktion
   proof: internal/cli/links.go boardIndex() macht den Newer-Schritt und liefert behind; internal/cli/web_source.go board() ruft boardIndex; TestWebShowsTheNewerOfFileAndRef
-- [~] Karte und Detailansicht im Web sagen, wenn die Datei im Checkout älter ist als der Ref und die Seite den Ref zeigt
+- [x] Karte und Detailansicht im Web sagen, wenn die Datei im Checkout älter ist als der Ref und die Seite den Ref zeigt
+  proof: core/web/ui/src/entities/ticket/ui/TicketCard.svelte 'file behind ref' + Tooltip aus model/behind.ts; TicketDetails.svelte gleiche Zeile; behind_ref in core/web/web.go Ticket/TicketDetail; TestWebShowsTheNewerOfFileAndRef prüft behind_ref true (Ref neuer) und false (Datei neuer)
 
 ## Options
 
