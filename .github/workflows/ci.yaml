@@ -70,7 +70,12 @@ jobs:
           git config --global user.name jaira-ci
           git config --global user.email ci@example.invalid
       - run: go vet ./...
-      - run: go test ./... -race
+      # internal/cli shells out to git hundreds of times, and on windows-latest
+      # that alone takes 330-515 s against go test's default limit of 600 s per
+      # package; a slow runner then aborts a run that is not hanging. The limit
+      # is raised rather than the tests thinned: they share global state and
+      # cannot run in parallel.
+      - run: go test ./... -race -timeout 20m
       - run: go build ./cmd/jaira
       # Cross-compiling for Windows on the Linux runner catches what breaks at
       # compile time — a build tag, a syscall, a package with no windows build
