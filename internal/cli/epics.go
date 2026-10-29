@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -38,7 +39,7 @@ work that appears while a feature is built is never lost from it.
 
 Epics need a repository with a remote; a board without one has none.`,
 	}
-	cmd.AddCommand(newEpicCreateCmd(), newEpicAddCmd(), newEpicRmCmd(), newEpicLsCmd(), newEpicShowCmd())
+	cmd.AddCommand(newEpicCreateCmd(), newEpicAddCmd(), newEpicRmCmd(), newEpicSetCmd(), newEpicLsCmd(), newEpicShowCmd())
 	return cmd
 }
 
@@ -51,6 +52,8 @@ func epicFail(name string, err error) error {
 	case errors.Is(err, epic.ErrNotFound):
 		return fail(ExitNotFound, "no_such_epic",
 			"no epic %q — 'jaira epic ls' lists them, 'jaira epic create %s' starts it", name, name)
+	case errors.Is(err, epic.ErrNoTitle):
+		return fail(ExitUsage, "usage", "%v — leave --title out to keep the one it has", err)
 	case errors.Is(err, epic.ErrExists):
 		return fail(ExitValidation, "epic_exists",
 			"epic %q exists already — 'jaira epic add %s <id>' puts tickets in it", name, name)
@@ -172,6 +175,88 @@ func editEpic(cmd *cobra.Command, args []string, add bool) error {
 	return nil
 }
 
+func newEpicSetCmd() *cobra.Command {
+	var title, description, body, bodyFile string
+	cmd := &cobra.Command{
+		Use:   "set <name> [--title <t>] [--description <d>] [--body <text> | --body-file <path|->]",
+		Short: "Rewrite an epic's title, description or text",
+		Long: `Rewrites what an epic says about itself, in one write of its ref. The name
+stays — it is the ref — and the member lines stay as they are, in their order.
+
+--title is what a person reads; a heading at the top of the text that carried
+the old title is renamed with it. --description is the one line under the
+title. --body replaces the markdown text below them, --body-file reads it from
+a file, or from stdin with '-'. 'jaira epic show <name>' prints the text as it
+stands.
+
+Only what you name is touched. Asking for what is there already writes
+nothing.`,
+		Args: exactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			f := cmd.Flags()
+			if !f.Changed("title") && !f.Changed("description") && !f.Changed("body") && !f.Changed("body-file") {
+				return fail(ExitUsage, "usage", "nothing to set — name at least one of --title, --description, --body, --body-file")
+			}
+			if f.Changed("body") && f.Changed("body-file") {
+				return fail(ExitUsage, "usage", "--body and --body-file both give the text; name one")
+			}
+			var p epic.Patch
+			if f.Changed("title") {
+				p.Title = &title
+			}
+			if f.Changed("description") {
+				p.Description = &description
+			}
+			if f.Changed("body") {
+				p.Body = &body
+			}
+			if f.Changed("body-file") {
+				var raw []byte
+				var err error
+				if bodyFile == "-" {
+					raw, err = io.ReadAll(cmd.InOrStdin())
+				} else {
+					raw, err = os.ReadFile(bodyFile)
+				}
+				if err != nil {
+					return fail(ExitUsage, "usage", "--body-file: %v", err)
+				}
+				text := string(raw)
+				p.Body = &text
+			}
+			s, err := openStore()
+			if err != nil {
+				return err
+			}
+			name, _, err := epicName(args[0])
+			if err != nil {
+				return err
+			}
+			e, changed, err := epic.Set(s, epicRefs(), name, p)
+			if err != nil {
+				return epicFail(name, err)
+			}
+			w := cmd.OutOrStdout()
+			if g.jsonOut {
+				out := epicJSON(e, nil)
+				out["changed"] = changed
+				return emit(w, out)
+			}
+			if !changed {
+				fmt.Fprintf(w, "Nothing to do: epic %q is already as asked.\n", name)
+				return nil
+			}
+			fmt.Fprintf(w, "Epic %q rewritten on %s\n", name, gitref.EpicRefName(name))
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&title, "title", "", "what a person reads")
+	cmd.Flags().StringVar(&description, "description", "", "one line on what the feature is for")
+	cmd.Flags().StringVar(&body, "body", "", "the markdown text below title and description")
+	cmd.Flags().StringVar(&bodyFile, "body-file", "", "read the text from a file, '-' for stdin")
+	return cmd
+}
+
 // epicRefs is the store epics are read from and written to. A nil syncer is
 // passed on as a nil interface, never as a typed nil, so the epic package
 // sees "no refs" instead of calling a method on nothing.
@@ -204,7 +289,7 @@ when sorting a board into features.`,
 			if err != nil {
 				return epicFail("", err)
 			}
-			ix, board, _, err := boardIndex(s)
+			ix, board, err := boardIndex(s)
 			if err != nil {
 				return err
 			}
@@ -274,7 +359,7 @@ func newEpicShowCmd() *cobra.Command {
 			if err != nil {
 				return epicFail(name, err)
 			}
-			ix, _, _, err := boardIndex(s)
+			ix, _, err := boardIndex(s)
 			if err != nil {
 				return err
 			}
@@ -286,6 +371,9 @@ func newEpicShowCmd() *cobra.Command {
 			fmt.Fprintf(w, "%s — %s\n", e.Name, e.Title)
 			if e.Description != "" {
 				fmt.Fprintf(w, "%s\n", e.Description)
+			}
+			if body := e.Text(); body != "" {
+				fmt.Fprintf(w, "\n%s\n", body)
 			}
 			fmt.Fprintf(w, "\n%d of %d done\n\n", p.Done, p.Total)
 			for _, t := range p.Tickets {
@@ -313,6 +401,7 @@ func epicJSON(e *epic.Epic, p *epic.Progress) map[string]any {
 		"name":        e.Name,
 		"title":       e.Title,
 		"description": e.Description,
+		"body":        e.Body(),
 		"members":     memberRefs(e.Members()),
 		"ref":         gitref.EpicRefName(e.Name),
 	}

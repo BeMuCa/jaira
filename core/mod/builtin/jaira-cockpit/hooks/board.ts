@@ -25,7 +25,7 @@ export type Waiting = {
 
 export type Counts = { worker: number; review: number; person: number }
 
-export type Lane = { id: string; agentic: boolean; terminal?: boolean; context: string; human_exit?: boolean }
+export type Lane = { id: string; agentic: boolean; terminal?: boolean; context: string; human_exit?: boolean; requires_question?: boolean }
 type Ticket = {
   handle: string
   title: string
@@ -54,8 +54,20 @@ export const oneLine = (s: string | undefined) => (s ?? '').replace(/\s+/g, ' ')
 // whose lane is whose: then the shipped board's person lanes are taken.
 const PERSON_LANES = new Set(['human', 'signoff'])
 
+// A person's lane: one only a person moves work out of (signoff), or one
+// where work waits for a person's answer (human), which jaira marks
+// requires_question and not human_exit.
 export function isPersons(lane: Lane): boolean {
-  return lane.human_exit ?? PERSON_LANES.has(lane.id)
+  if (lane.human_exit === undefined && lane.requires_question === undefined) return PERSON_LANES.has(lane.id)
+  return lane.human_exit === true || lane.requires_question === true
+}
+
+// The boards `jaira boards --json` names besides today's, whose tickets the
+// band reads with --board. Today's board is read without it, so a jaira
+// that knows no boards still shows that one.
+export function otherBoardsOf(boardsJson: string): string[] {
+  const boards = parse<{ boards?: { name?: string }[] }>(withoutWarnings(boardsJson))?.boards ?? []
+  return boards.map(b => (b.name ?? '').trim()).filter(n => n !== '' && n !== 'default')
 }
 
 export type Agent = { description: string; name?: string; status: string }
@@ -511,4 +523,26 @@ export function isOlder(version: string, min: string): boolean {
   const b = min.split('.').map(Number)
   for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return a[i]! < b[i]!
   return false
+}
+
+// The release the band offers an update to: the one the release cache names
+// (`update-check.json`, written by `jaira self upgrade --check` — the hourly
+// check the TUI and next/resume/claim/move start), when it is newer than the
+// jaira installed and not the one the person dismissed. undefined in every
+// other case: a dev build, a cache never written, the same version.
+export function offeredRelease(
+  installed: string | undefined, cacheJson: string | undefined, dismissed: string | undefined,
+): { installed: string; latest: string } | undefined {
+  const latest = parse<{ latest?: unknown }>(cacheJson ?? '')?.latest
+  if (installed === undefined || typeof latest !== 'string' || !/^\d+\.\d+\.\d+$/.test(latest)) return undefined
+  if (!isOlder(installed, latest) || latest === dismissed) return undefined
+  return { installed, latest }
+}
+
+// What `jaira self upgrade --check --json` answered: the version installed,
+// the latest release, and whether they are the same.
+export function upgradeCheckOf(json: string): { current: string; latest: string; upToDate: boolean } | undefined {
+  const c = parse<{ current?: unknown; latest?: unknown; up_to_date?: unknown }>(withoutWarnings(json))
+  if (typeof c?.current !== 'string' || typeof c.latest !== 'string') return undefined
+  return { current: c.current, latest: c.latest, upToDate: c.up_to_date === true }
 }

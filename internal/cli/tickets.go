@@ -744,6 +744,11 @@ func printTable(w io.Writer, ts []*ticket.Ticket, env gate.Env) {
 			if t.ReadOnly {
 				flags += " [pull it]"
 			}
+			// The file here is older than its ref: the row shows the ref's
+			// state, and a write is refused until the file is pulled up.
+			if t.BehindRef {
+				flags += " [behind ref: pull it]"
+			}
 			fmt.Fprintf(w, "  %-10s %-52s %s%s\n", ticket.Handle(t.ID), truncate(t.Title, 52), t.Assignee, flags)
 		}
 	}
@@ -780,6 +785,11 @@ many there are as notes_total.`,
 			t, path, err := s.LoadAnywhere(args[0])
 			if err != nil {
 				return err
+			}
+			// On the board, the newest state: a file older than its ref shows
+			// what the ref says, marked, the way list and the board do.
+			if filedAway(t, path) == "" {
+				t = s.Newest(t)
 			}
 			env, err := envFor(s, t)
 			if err != nil {
@@ -876,6 +886,9 @@ func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env, notesLast int, kid
 	// Only a ticket off today's board says so: row() skips the empty value.
 	row("board", t.Board)
 	row("lane", t.Status)
+	if t.BehindRef {
+		row("behind", "the file here is older than its ref; this is the ref's state — run 'jaira pull "+ticket.Handle(t.ID)+"' before writing")
+	}
 	row("assignee", t.Assignee)
 	row("creator", t.Creator)
 	row("updated by", t.UpdatedBy)
@@ -933,6 +946,9 @@ func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env, notesLast int, kid
 	}
 	if t.Question != "" {
 		row("question", t.Question)
+	}
+	if t.Rejected.Kind != "" {
+		row("rejected", rejectionLine(t.Rejected))
 	}
 	if t.Outcome.What != "" || t.Outcome.Why != "" || t.Outcome.Resolves != "" {
 		fmt.Fprintf(w, "\nOutcome\n")
@@ -1198,6 +1214,7 @@ its end. Review fields keep their history across loop rounds that way.`,
 }
 
 func newLanesCmd() *cobra.Command {
+	var board string
 	cmd := &cobra.Command{
 		Use:   "lanes",
 		Short: "List the installed lanes",
@@ -1207,6 +1224,15 @@ func newLanesCmd() *cobra.Command {
 			// useful for writing a project's first lane file — so the root is
 			// best-effort rather than required.
 			lanes, err := lane.Load(bestEffortRoot())
+			// Another board's lanes need the board they live in: --board is
+			// what lets the cockpit tell whose lane a ticket there sits in.
+			if board != "" {
+				s, serr := openStore()
+				if serr != nil {
+					return serr
+				}
+				lanes, err = boardLanes(s, board)
+			}
 			if err != nil {
 				return err
 			}
@@ -1247,11 +1273,13 @@ func newLanesCmd() *cobra.Command {
 						"agentic": l.Agentic, "terminal": l.Terminal,
 						"model_tier": l.ModelTier, "builtin": l.Builtin,
 						"context": l.Context, "context_implied": l.ContextImplied, "context_invalid": l.ContextInvalid,
-						// Whose lane it is: true where a person alone moves work out
-						// (signoff, human). The cockpit mod's "waiting for you" band
-						// reads it rather than knowing lane names.
-						"human_exit":     l.RequiresHumanExit,
-						"input_requires": l.InputRequires, "output_produces": l.OutputProduces,
+						// Whose lane it is: human_exit where a person alone moves work
+						// out (signoff), requires_question where work waits for a
+						// person's answer (human). The cockpit mod's "waiting for you"
+						// band reads both rather than knowing lane names.
+						"human_exit":        l.RequiresHumanExit,
+						"requires_question": l.RequiresQuestion,
+						"input_requires":    l.InputRequires, "output_produces": l.OutputProduces,
 						"source": l.Source, "prompt": l.Prompt, "creator": l.Creator,
 					})
 				}
@@ -1320,6 +1348,7 @@ The loop for building a lane or a default board by hand, no TUI required:
 		newLanesUseCmd(), newLanesPublishCmd(), newLanesAdoptCmd(), newLanesDefaultCmd(),
 		newLanesAddCmd(), newLanesRemoveCmd(), newLanesMoveCmd(), newLanesMarketCmd(),
 	)
+	cmd.Flags().StringVar(&board, "board", "", boardFlagUsage)
 	return cmd
 }
 
@@ -1610,6 +1639,7 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		"status_known":       known,
 		"ready":              gate.Ready(t),
 		"on-ref-only":        t.ReadOnly,
+		"behind-ref":         t.BehindRef,
 		"creator":            t.Creator,
 		"assignee":           t.Assignee,
 		"executed_by":        t.ExecutedBy,
@@ -1635,6 +1665,7 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 			"summary": t.ReviewSummary, "gaps": t.ReviewGaps,
 			"verdict": t.ReviewVerdict, "check": t.ReviewCheck,
 		},
+		"rejected": rejectionJSON(t.Rejected),
 		// Where this goes when the current step is finished, so the route is not
 		// re-derived by every caller from the column order and the ticket's
 		// Options. Empty when there is nowhere left to go.
@@ -1729,4 +1760,35 @@ func resolveRef(s *ticket.Store, ref string) (string, error) {
 			"%q does not name a ticket here, so the link would point at nothing", ref)
 	}
 	return t.ID, nil
+}
+
+// rejectionLine is a rejection on one line — "wontfix: why (by, date)" — the
+// way show and the archive listing print it.
+func rejectionLine(r ticket.Rejection) string {
+	line := r.Kind
+	if r.DuplicateOf != "" {
+		line += " of " + ticket.Handle(r.DuplicateOf)
+	}
+	line += ": " + r.Why
+	var who []string
+	if r.By != "" {
+		who = append(who, r.By)
+	}
+	if !r.At.IsZero() {
+		who = append(who, r.At.Format("2006-01-02"))
+	}
+	if len(who) > 0 {
+		line += " (" + strings.Join(who, ", ") + ")"
+	}
+	return line
+}
+
+// rejectionJSON is the rejection for --json; every key is empty on a ticket
+// nobody rejected, as the outcome's are on a ticket nobody finished.
+func rejectionJSON(r ticket.Rejection) map[string]string {
+	at := ""
+	if !r.At.IsZero() {
+		at = r.At.UTC().Format(time.RFC3339)
+	}
+	return map[string]string{"kind": r.Kind, "why": r.Why, "by": r.By, "at": at, "duplicate_of": r.DuplicateOf}
 }

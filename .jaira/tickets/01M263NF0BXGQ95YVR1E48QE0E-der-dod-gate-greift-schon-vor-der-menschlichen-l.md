@@ -7,7 +7,7 @@ creator: BeMuCa
 assignee: BeMuCa
 goal: "Ein Ticket mit unabgehakter Definition of Done kommt nicht kommentarlos in eine Lane, aus der nur ein Mensch herausfuehrt"
 context: |-
-  Auf dem requirementsgenie-Board liegen NE23SW, 19PN17 und 022SGY mit 'DoD 0/1' in review - der Lane, aus der nur ein Mensch herauskommt. Berk sieht sie dort als abnahmebereit.
+  Auf dem Board eines anderen Projekts liegen NE23SW, 19PN17 und 022SGY mit 'DoD 0/1' in review - der Lane, aus der nur ein Mensch herauskommt. Berk sieht sie dort als abnahmebereit.
   Der Gate EXISTIERT, er greift nur zu spaet. Nachgemessen auf einem Wegwerf-Board:
   - in-progress -> review mit DoD 0/1: EXIT=0, erlaubt.
   - review -> done mit DoD 0/1: refused, woertlich 'the definition of done is not met: criterion 1 ("d") is still open. Satisfy it, mark it with jaira dod ... --done, then try this move again'.

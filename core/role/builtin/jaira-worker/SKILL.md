@@ -176,6 +176,23 @@ ticket id (`fix(A3K9QP): …`); a lane that changed code commits the code and th
 ticket file together, by path, never `-A`; a lane that changed no code commits
 nothing and leaves the ticket file for the next commit that carries code.
 
+The version and the changelog belong to whoever the board says:
+`jaira roles list --json | jaira json get release`. `teamlead` — the board's
+`.jaira/release` says so — means you touch neither: no version field
+(`package.json`, `pyproject.toml`, `Cargo.toml`, a `VERSION` file), no
+changelog entry, no tag. The version is set once, when the release is cut, and
+a bump in every ticket conflicts with every other ticket merged into the same
+build. It outranks a line in the repository's instructions that asks for a
+bump per change: the board was set this way on purpose. `worker`, the default,
+means the repository's instructions decide, as before.
+
+Format only the files you changed. Hand the formatter your own paths —
+`git diff --name-only --diff-filter=d HEAD` and your new files from
+`git ls-files --others --exclude-standard` — never a task that formats the
+whole tree (`task code:format`, `ruff format .`, `npm run format`). A
+whole-tree run rewrites files nobody on this ticket opened, and every one of
+them is a conflict with somebody else's branch.
+
 ## The fresh lane
 
 A lane marked fresh is the board's guarantee that somebody other than the
@@ -192,6 +209,8 @@ guarantee is gone and nobody can see that it is.
 4. It moved the ticket on to a person's lane: stop. It sent the work back: the
    ticket is in an agentic lane again and yours — carry on with the loop, and
    the fresh lane gets a **new** agent next time, never the one from before.
+   A `note:` line in its `review-gaps` is not work for you: it stays a line,
+   and no ticket is created from it — the person decides that at acceptance.
 
 It runs in your directory, not a worktree of its own: what it judges includes
 your uncommitted work, and while it runs you write nothing.
@@ -242,15 +261,20 @@ yes-or-no is a choice too.
 
 **Where it goes depends on who started you:**
 
-- **Started with `--parent <session>`** — `/jaira-worker <id> --parent <name>`,
-  which is what `spawn.sh --parent <name> <slug> <id> worker` types: a teamlead
+- **Started with `--parent <session>`** — `/jaira-worker <id> --parent <session>`,
+  which is what `spawn.sh <slug> <id> worker` types with the caller's own
+  session as `<session>`, usually a `uds:` address: a teamlead
   opens your own Herdr tab that way. You never ask the person yourself.
   Write the question and its numbered options onto the ticket with
-  `jaira note`, send the same to `<name>` with `SendMessage`, and end your
+  `jaira note`, send the same to `<session>` with `SendMessage`, and end your
   turn. The answer comes back as a message and is on the ticket as a note by
   then. Write the parent's name onto the ticket the first time you read it
-  (`jaira note <id> "parent session: <name>"`): a worker restarted after
-  `jaira resume` has no starting line to read it from.
+  (`jaira note <id> "parent session: <session>"`): a worker restarted after
+  `jaira resume` has no starting line to read it from. A parent `SendMessage`
+  cannot reach is not replaced by another peer — not the oldest, not the
+  likeliest: another teamlead would get your reports and yours would not.
+  Note on the ticket that the parent was unreachable, then ask in your own
+  tab, as the next case says.
 - **No parent, and `AskUserQuestion` in your session** — the person started
   you directly. Ask with it.
 - **No `AskUserQuestion` at all** — started as a subagent or headless. The

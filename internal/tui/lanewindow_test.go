@@ -231,3 +231,36 @@ func TestHelpNamesZ(t *testing.T) {
 		}
 	}
 }
+
+// Every column is budgeted at the width it is drawn at, so the row of
+// columns fills the terminal except for the remainder of an integer division
+// (fewer cells than there are full columns) and never runs past it.
+func TestBoardRowFillsTerminalWidth(t *testing.T) {
+	for _, thin := range []bool{false, true} {
+		for _, w := range []int{100, 130, 150, 177, 200, 240, 300} {
+			m := newTestModel(t, w, 40)
+			if thin {
+				m.key(key("z"))
+			}
+			win := m.boardFit(w)
+			full := 0
+			for i := win.start; i < win.end; i++ {
+				if !win.thin[i] {
+					full++
+				}
+			}
+			row := 0
+			for _, l := range strings.Split(stripANSI(m.render()), "\n") {
+				if strings.Contains(l, "┌") {
+					row = max(row, len([]rune(strings.TrimRight(l, " "))))
+				}
+			}
+			if row > w {
+				t.Errorf("thin=%v w=%d: column row is %d wide, wider than the terminal", thin, w, row)
+			}
+			if gap := w - row; full > 0 && gap >= full {
+				t.Errorf("thin=%v w=%d: %d cells blank on the right, want fewer than the %d full columns", thin, w, gap, full)
+			}
+		}
+	}
+}

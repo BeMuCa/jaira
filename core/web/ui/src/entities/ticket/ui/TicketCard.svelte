@@ -2,6 +2,9 @@
   import { age, date } from '@/shared/lib';
   import { behindRef } from '../model/behind';
   import type { Ticket } from '../model/types';
+  import { PLACE_LABELS, badgeLane } from '../model/place';
+  import { shortAssignee } from '../model/assignee';
+  import { LaneBadge } from '@/entities/lane';
 
   let { ticket, draggable = false, ondragstart, onopen }: {
     ticket: Ticket;
@@ -21,7 +24,13 @@
 >
   <span class="handle">{ticket.handle}</span>
   <button class="title" onclick={() => onopen?.(ticket.id)}>{ticket.title}</button>
-  <span class="lane">{ticket.lane}</span>
+  <LaneBadge lane={badgeLane(ticket)} />
+  {#if ticket.assignee}
+    <span class="assignee" title={ticket.assignee}>{shortAssignee(ticket.assignee)}</span>
+  {/if}
+  {#if ticket.place && ticket.place !== 'board'}
+    <span class="where">{PLACE_LABELS[ticket.place]}{#if ticket.rejected} · rejected: {ticket.rejected}{/if}</span>
+  {/if}
   {#if ticket.created_at || ticket.updated_at || ticket.behind_ref}
     <span class="dates">
       {#if ticket.created_at}<time datetime={ticket.created_at}>created {date(ticket.created_at)}</time>{/if}
@@ -49,8 +58,7 @@
   .handle { font-family: ui-monospace, monospace; color: var(--muted); }
   .title { all: unset; cursor: pointer; overflow-wrap: anywhere; }
   .title:hover, .title:focus-visible { text-decoration: underline; }
-  .lane { font-size: 0.8rem; color: var(--muted); }
-  .dates, .via { grid-column: 2 / -1; font-size: 0.75rem; color: var(--muted); }
+  .via, .where, .assignee, .dates { grid-column: 2 / -1; font-size: 0.75rem; color: var(--muted); }
   .behind { color: var(--waiting); }
   .done .title { text-decoration: line-through; color: var(--muted); }
   .indirect { border-style: dashed; }

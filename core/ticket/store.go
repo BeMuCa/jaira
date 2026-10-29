@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -121,6 +122,14 @@ type TicketSource interface {
 	// mark what they return as ReadOnly: there is no file to write to, so a
 	// mutation has to be refused rather than half-applied.
 	Extra(have map[string]bool) ([]*Ticket, error)
+}
+
+// AheadSource is what a TicketSource implements when it can tell that a file
+// here is older than the ticket's ref.
+type AheadSource interface {
+	// Ahead returns, keyed by id, the ticket the ref carries for each of files
+	// whose ref was written after the file.
+	Ahead(files []*Ticket) map[string]*Ticket
 }
 
 // ErrOnRefOnly means the ticket exists for this board but not as a file here,
@@ -314,20 +323,93 @@ func (s *Store) Archive(id string) (string, error) {
 	if err := os.MkdirAll(s.ArchiveDir(), 0o755); err != nil {
 		return "", err
 	}
-	// Resolve symlinks first: archiving through a link would otherwise move the
-	// link and orphan the file it pointed at.
-	src, err := filepath.EvalSymlinks(t.Path)
+	src, dst, err := s.archiveTarget(t.Path)
 	if err != nil {
-		src = t.Path
-	}
-	dst := filepath.Join(s.ArchiveDir(), filepath.Base(src))
-	if _, err := os.Stat(dst); err == nil {
-		return "", fmt.Errorf("%s already exists in the archive", filepath.Base(dst))
+		return "", err
 	}
 	if err := os.Rename(src, dst); err != nil {
 		return "", err
 	}
 	return dst, s.recordFiled(t.ID, dst)
+}
+
+// archiveTarget is where Archive moves the file at path, refusing a name the
+// archive already holds. Symlinks are resolved first: archiving through a link
+// would otherwise move the link and orphan the file it pointed at.
+func (s *Store) archiveTarget(path string) (src, dst string, err error) {
+	src, err = filepath.EvalSymlinks(path)
+	if err != nil {
+		src = path
+	}
+	dst = filepath.Join(s.ArchiveDir(), filepath.Base(src))
+	if _, err := os.Stat(dst); err == nil {
+		return "", "", fmt.Errorf("%s already exists in the archive", filepath.Base(dst))
+	}
+	return src, dst, nil
+}
+
+// Reject writes why nobody will do a ticket onto it and archives it, returning
+// its new path. duplicateOf, when set, is the original's full id, resolved by
+// the caller before anything is written; it makes the kind RejectDuplicate,
+// names the original in FieldRejectedDuplicateOf and relates the ticket to it,
+// marking FieldRejectedLinked when that link is new, so restore takes off only
+// what the rejection put there.
+//
+// It archives through Archive rather than a second move of its own: a rejected
+// ticket lies where an archived one lies, and 'jaira restore' brings both back
+// the same way. Whether the caller may reject at all is decided above this
+// line, as it is for delete.
+func (s *Store) Reject(id, kind, why, duplicateOf string, now time.Time) (string, error) {
+	// One line, however it was typed: the archive listing prints the reason
+	// indented under its file, and a second line would read as an entry of
+	// its own.
+	why = strings.Join(strings.Fields(why), " ")
+	if duplicateOf != "" {
+		kind = RejectDuplicate
+	}
+	// Archive refuses a name the archive already holds, and by then the
+	// rejection would be written onto a ticket still on the board. Asked
+	// first, the refusal leaves the ticket as it was.
+	path, err := s.resolve(id)
+	if err != nil {
+		return "", err
+	}
+	if _, _, err := s.archiveTarget(path); err != nil {
+		return "", err
+	}
+	t, err := s.Mutate(id, func(t *Ticket) error {
+		if duplicateOf == t.ID {
+			return fmt.Errorf("%s cannot be a duplicate of itself", Handle(t.ID))
+		}
+		d := t.Doc()
+		for _, kv := range [][2]string{
+			{FieldRejectedKind, kind},
+			{FieldRejectedWhy, why},
+			{FieldRejectedBy, s.Actor},
+			{FieldRejectedAt, now.UTC().Format(time.RFC3339)},
+		} {
+			if err := d.SetScalar(kv[0], kv[1]); err != nil {
+				return err
+			}
+		}
+		if duplicateOf == "" {
+			return nil
+		}
+		if err := d.SetScalar(FieldRejectedDuplicateOf, duplicateOf); err != nil {
+			return err
+		}
+		if slices.Contains(t.Related, duplicateOf) {
+			return nil
+		}
+		if err := d.SetScalar(FieldRejectedLinked, "true"); err != nil {
+			return err
+		}
+		return d.SetList(FieldRelated, append(slices.Clone(t.Related), duplicateOf))
+	})
+	if err != nil && !errors.Is(err, ErrNotRecorded) {
+		return "", err
+	}
+	return s.Archive(t.ID)
 }
 
 // Delete removes a ticket's file and returns the path it was at.
@@ -683,10 +765,57 @@ func (s *Store) Restore(name string) (string, error) {
 	if _, err := os.Stat(dst); err == nil {
 		return "", fmt.Errorf("%s is already on the board", base)
 	}
+	if err := unreject(src); err != nil {
+		return "", err
+	}
 	if err := os.Rename(src, dst); err != nil {
 		return "", err
 	}
 	return dst, nil
+}
+
+// unreject takes a rejection off a file about to go back on the board: a
+// ticket somebody restored is a ticket somebody wants after all, and a
+// rejection left on it would say the opposite. The link a duplicate rejection
+// added to related goes with it; one that was there before the rejection
+// stays. A file that carries none is left byte for byte as it is.
+func unreject(path string) error {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	d, err := ParseDoc(raw)
+	if err != nil {
+		// Not a ticket this code can rewrite; restoring it as it is beats
+		// refusing to restore it at all.
+		return nil
+	}
+	changed := false
+	orig, _, _ := d.Scalar(FieldRejectedDuplicateOf)
+	if linked, _, _ := d.Scalar(FieldRejectedLinked); orig != "" && linked == "true" {
+		related, err := d.List(FieldRelated)
+		if err != nil {
+			return err
+		}
+		if i := slices.Index(related, orig); i >= 0 {
+			if err := d.SetList(FieldRelated, slices.Delete(related, i, i+1)); err != nil {
+				return err
+			}
+			changed = true
+		}
+	}
+	for _, key := range RejectedFields {
+		if d.Has(key) {
+			if err := d.Remove(key); err != nil {
+				return err
+			}
+			changed = true
+		}
+	}
+	if !changed {
+		return nil
+	}
+	return WriteAtomic(path, d.Bytes())
 }
 
 // SessionsDir is where this working tree's session state lives, outside the repo.
@@ -856,6 +985,7 @@ func (s *Store) List() ([]*Ticket, error) {
 		problems = append(problems, s.dupIDs...)
 	}
 	problems = append(problems, s.offBoardDuplicates(out)...)
+	s.newest(out)
 	// And then whatever the board can see without having a file for it. Added
 	// here rather than by each caller: list, next, the board and the task
 	// mirror all read through this one function, and a caller that forgot would
@@ -1047,6 +1177,37 @@ func (s *Store) extra(have map[string]bool) []*Ticket {
 		t.ReadOnly = true
 	}
 	return out
+}
+
+// newest replaces, in place, each ticket whose file is older than its ref with
+// what the ref says, marked BehindRef. A move made in another worktree or by a
+// teammate then shows on this board without a pull; the file stays where it
+// is, and every write — which reads the file, never this — is refused until
+// it is pulled.
+//
+// Only readers come here. Load keeps reading the file, because Archive,
+// Logbook and the move gate check what Load gave them against the ref, and the
+// ref's own state would pass that check and file away the old file.
+func (s *Store) newest(ts []*Ticket) {
+	a, ok := s.Source.(AheadSource)
+	if !ok {
+		return
+	}
+	ahead := a.Ahead(ts)
+	for i, t := range ts {
+		if r, ok := ahead[t.ID]; ok {
+			r.Path, r.BehindRef = t.Path, true
+			ts[i] = r
+		}
+	}
+}
+
+// Newest is t as a reader should show it: the ref's state when the file t was
+// read from is older than its ref, t itself otherwise.
+func (s *Store) Newest(t *Ticket) *Ticket {
+	ts := []*Ticket{t}
+	s.newest(ts)
+	return ts[0]
 }
 
 // Load reads one ticket in full, resolving an exact ID or unambiguous prefix.

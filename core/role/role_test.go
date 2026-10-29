@@ -1,6 +1,7 @@
 package role
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -136,7 +137,7 @@ func TestCrossReferencesCarryThePrefix(t *testing.T) {
 
 func TestInstallWritesEveryFile(t *testing.T) {
 	dir := t.TempDir()
-	results, err := install(dir, false, true)
+	results, err := install(dir, false, true, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,10 +181,10 @@ func TestInstallWritesEveryFile(t *testing.T) {
 
 func TestSecondRunChangesNothing(t *testing.T) {
 	dir := t.TempDir()
-	if _, err := install(dir, false, true); err != nil {
+	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
-	results, err := install(dir, false, true)
+	results, err := install(dir, false, true, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -199,7 +200,7 @@ func TestSecondRunChangesNothing(t *testing.T) {
 
 func TestEditedFileIsLeftAloneAndReported(t *testing.T) {
 	dir := t.TempDir()
-	if _, err := install(dir, false, true); err != nil {
+	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
 	mine := filepath.Join(dir, "jaira-role-lane", skillFile)
@@ -208,7 +209,7 @@ func TestEditedFileIsLeftAloneAndReported(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	results, err := install(dir, false, true)
+	results, err := install(dir, false, true, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -222,7 +223,7 @@ func TestEditedFileIsLeftAloneAndReported(t *testing.T) {
 		t.Error("the edited file was overwritten without --force")
 	}
 
-	results, err = install(dir, true, true)
+	results, err = install(dir, true, true, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -247,7 +248,7 @@ func TestInstallRestoresTheExecuteBit(t *testing.T) {
 		t.Skip("no POSIX execute bit on windows")
 	}
 	dir := t.TempDir()
-	if _, err := install(dir, false, true); err != nil {
+	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
 	script := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
@@ -256,7 +257,7 @@ func TestInstallRestoresTheExecuteBit(t *testing.T) {
 	if err := os.Chmod(script, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := install(dir, false, true); err != nil {
+	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
 	if fi, err := os.Stat(script); err != nil {
@@ -269,7 +270,7 @@ func TestInstallRestoresTheExecuteBit(t *testing.T) {
 	if err := os.WriteFile(script, []byte("#!/bin/sh\necho mine\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := install(dir, true, true); err != nil {
+	if _, err := install(dir, true, true, false); err != nil {
 		t.Fatal(err)
 	}
 	fi, err := os.Stat(script)
@@ -295,7 +296,7 @@ func TestEmbeddedScriptsParse(t *testing.T) {
 		t.Skipf("no bash on this machine: %v", err)
 	}
 	dir := t.TempDir()
-	if _, err := install(dir, false, true); err != nil {
+	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
 
@@ -410,7 +411,7 @@ func TestSpawnDiscussReturnsItsDecision(t *testing.T) {
 		t.Skipf("no bash on this machine: %v", err)
 	}
 	dir := t.TempDir()
-	if _, err := install(dir, false, true); err != nil {
+	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
 	typed := filepath.Join(t.TempDir(), "typed")
@@ -426,7 +427,8 @@ esac
 		t.Fatal(err)
 	}
 	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
-	cmd := exec.Command(bash, spawn, "--no-worktree", "--parent", "uds:/tmp/cc-socks/7.sock", "ab12cd", "AB12CD", "discuss")
+	sock := fakeSocket(t)
+	cmd := exec.Command(bash, spawn, "--no-worktree", "--parent", "uds:"+sock, "ab12cd", "AB12CD", "discuss")
 	cmd.Dir = t.TempDir()
 	cmd.Env = append(os.Environ(), "TMPDIR="+t.TempDir(), "HERDR_ENV=1", "HERDR_BIN_PATH="+stub, "HERDR_WORKSPACE_ID=", "PATH="+jairaPath(t))
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -441,7 +443,7 @@ esac
 		`jaira note AB12CD "decision: `,
 		"jaira set AB12CD question=",
 		"jaira move AB12CD --to in-progress (",
-		"SendMessage an uds:/tmp/cc-socks/7.sock",
+		"SendMessage an uds:" + sock,
 	} {
 		if !strings.Contains(line, want) {
 			t.Errorf("discuss prompt lacks %q:\n%s", want, line)
@@ -456,6 +458,109 @@ esac
 	}
 }
 
+// fakeSocket stands in for a session's messaging socket. spawn.sh asks only
+// that the address exists, so a plain file does.
+func fakeSocket(t *testing.T) string {
+	t.Helper()
+	sock := filepath.Join(t.TempDir(), "77.sock")
+	if err := os.WriteFile(sock, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return sock
+}
+
+// sessionRegistry writes a Claude Code config directory whose session
+// registry holds one running session by that name, and returns the directory
+// and the session's socket.
+func sessionRegistry(t *testing.T, name string) (config, sock string) {
+	t.Helper()
+	config = t.TempDir()
+	sock = fakeSocket(t)
+	if err := os.MkdirAll(filepath.Join(config, "sessions"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	entry := `{"pid":77,"name":"` + name + `","messagingSocketPath":"` + filepath.ToSlash(sock) + `"}`
+	if err := os.WriteFile(filepath.Join(config, "sessions", "77.json"), []byte(entry), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return config, filepath.ToSlash(sock)
+}
+
+// A worker reports to the session that started it, and finds it by itself:
+// without --parent, spawn.sh passes on the caller's own messaging socket. A
+// --parent that names no running session — a name from before the
+// teamlead restarted — stops the spawn before a tab exists, instead of a
+// worker that later reports to nobody (7V1XPB).
+func TestSpawnParentIsTheCallerAndAnUnknownOneStops(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	path := jairaPath(t)
+	dir := t.TempDir()
+	if _, err := install(dir, false, true, false); err != nil {
+		t.Fatal(err)
+	}
+	calls := filepath.Join(t.TempDir(), "calls")
+	stub := filepath.Join(t.TempDir(), "herdr")
+	script := `#!/usr/bin/env bash
+echo "$1 $2" >> "` + calls + `"
+case "$1 $2" in
+  "tab create") echo '{"result":{"root_pane":{"pane_id":"p1"}}}' ;;
+  "pane get")   echo '{"result":{"pane":{"agent":"claude","agent_status":"idle","tab_id":"t1"}}}' ;;
+  "pane send-text") printf '%s\n' "$4" >> "` + calls + `" ;;
+esac
+`
+	if err := os.WriteFile(stub, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+	config, _ := sessionRegistry(t, "lead")
+	own := filepath.ToSlash(fakeSocket(t))
+	run := func(args ...string) (string, error) {
+		_ = os.Remove(calls)
+		cmd := exec.Command(bash, append([]string{spawn, "--no-worktree"}, args...)...)
+		cmd.Dir = t.TempDir()
+		cmd.Env = append(os.Environ(), "TMPDIR="+t.TempDir(), "HERDR_ENV=1", "HERDR_BIN_PATH="+stub, "HERDR_WORKSPACE_ID=", "PATH="+path,
+			"CLAUDE_CONFIG_DIR="+config, "CLAUDE_CODE_MESSAGING_SOCKET="+own)
+		out, err := cmd.CombinedOutput()
+		got, _ := os.ReadFile(calls)
+		return string(out) + string(got), err
+	}
+
+	for _, lane := range []string{"worker", "dispatch"} {
+		out, err := run("ab12cd", "ab12cd", lane)
+		if err != nil {
+			t.Fatalf("spawn.sh %s without --parent: %v\n%s", lane, err, out)
+		}
+		if !strings.Contains(out, " ab12cd --parent uds:"+own+"\n") {
+			t.Errorf("spawn.sh %s without --parent did not pass the caller's socket:\n%s", lane, out)
+		}
+	}
+	// A lane that takes no parent gets none, and --no-parent — what the
+	// cockpit passes, so the worker stays in its own tab — none either.
+	if out, err := run("ab12cd", "ab12cd", "review"); err != nil || strings.Contains(out, "--parent") {
+		t.Errorf("spawn.sh review: %v\n%s", err, out)
+	}
+	if out, err := run("--no-parent", "ab12cd", "ab12cd", "worker"); err != nil || !strings.Contains(out, "/jaira-worker ab12cd\n") {
+		t.Errorf("spawn.sh --no-parent worker: %v\n%s", err, out)
+	}
+
+	for _, parent := range []string{"lead-9f", "uds:" + filepath.ToSlash(filepath.Join(t.TempDir(), "gone.sock"))} {
+		out, err := run("--parent", parent, "ab12cd", "ab12cd", "worker")
+		var exit *exec.ExitError
+		if !errors.As(err, &exit) || exit.ExitCode() != 2 {
+			t.Errorf("--parent %s: want exit 2, got %v\n%s", parent, err, out)
+		}
+		if strings.Contains(out, "tab create") {
+			t.Errorf("--parent %s: a tab was made before the parent was refused:\n%s", parent, out)
+		}
+		if !strings.Contains(out, "--parent "+parent+": no ") {
+			t.Errorf("--parent %s: the refusal does not name it:\n%s", parent, out)
+		}
+	}
+}
+
 // spawn.sh types the role into the tab it opened; "worker" must start
 // /jaira-worker and "dispatch" /jaira-dispatcher, --parent carried along.
 // Herdr is replaced by a stub that answers the three calls the script reads
@@ -467,7 +572,7 @@ func TestSpawnTypesTheRoleForItsLaneName(t *testing.T) {
 	}
 	path := jairaPath(t)
 	dir := t.TempDir()
-	if _, err := install(dir, false, true); err != nil {
+	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
 	typed := filepath.Join(t.TempDir(), "typed")
@@ -483,9 +588,11 @@ esac
 		t.Fatal(err)
 	}
 	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+	// "lead" is a name, and the worker gets the address it stands for.
+	config, sock := sessionRegistry(t, "lead")
 	for lane, want := range map[string]string{
-		"worker":   "/jaira-worker ab12cd --parent lead",
-		"dispatch": "/jaira-dispatcher ab12cd --parent lead",
+		"worker":   "/jaira-worker ab12cd --parent uds:" + sock,
+		"dispatch": "/jaira-dispatcher ab12cd --parent uds:" + sock,
 		"review":   "/jaira-role-lane ab12cd review",
 		// A person's chats, which the cockpit mod opens: a plain request,
 		// never a role, so the tab answers and never works the ticket.
@@ -498,7 +605,7 @@ esac
 		_ = os.Remove(typed)
 		cmd := exec.Command(bash, spawn, "--no-worktree", "--parent", "lead", "ab12cd", "ab12cd", lane)
 		cmd.Dir = t.TempDir()
-		cmd.Env = append(os.Environ(), "TMPDIR="+t.TempDir(), "HERDR_ENV=1", "HERDR_BIN_PATH="+stub, "HERDR_WORKSPACE_ID=", "PATH="+path)
+		cmd.Env = append(os.Environ(), "TMPDIR="+t.TempDir(), "HERDR_ENV=1", "HERDR_BIN_PATH="+stub, "HERDR_WORKSPACE_ID=", "PATH="+path, "CLAUDE_CONFIG_DIR="+config)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			t.Fatalf("spawn.sh %s: %v\n%s", lane, err, out)
 		}
@@ -563,7 +670,7 @@ func TestSpawnChatsStartOnTheChatModelWithTheirBrief(t *testing.T) {
 	}
 	path := jairaPath(t)
 	dir := t.TempDir()
-	if _, err := install(dir, false, true); err != nil {
+	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
 	bin := t.TempDir()
@@ -673,7 +780,7 @@ func TestSpawnStartsClaudeWhereItsShellRuns(t *testing.T) {
 	}
 	path := jairaPath(t)
 	dir := t.TempDir()
-	if _, err := install(dir, false, true); err != nil {
+	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
 	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
@@ -709,6 +816,9 @@ esac
 		if out, err := cmd.CombinedOutput(); err != nil {
 			t.Fatalf("%s: spawn.sh: %v\n%s", c.name, err, out)
 		}
+		// spawn.sh takes the root in its shell's spelling: /tmp/... under the
+		// Git Bash this case runs in on Windows, as it is in a real WSL.
+		wt = shellDir(t, bash, wt)
 		r, _ := os.ReadFile(ran)
 		if got, want := strings.TrimSpace(string(r)), strings.ReplaceAll(c.wantStart, "<wt>", wt); got != want {
 			t.Errorf("%s: the tab ran %q, want %q", c.name, got, want)
@@ -718,6 +828,157 @@ esac
 			t.Errorf("%s: tab create got %q, want --cwd %s", c.name, args, c.wantCwd)
 		}
 	}
+}
+
+// A repository with an executable .jaira/worktree-setup sets up its own
+// worktrees: spawn.sh calls it with the worktree, the slug, the port offset and
+// the root, and writes no .env of its own. Without one, spawn.sh copies the .env
+// and appends its ports as before. A setup that fails or cannot run stops the
+// spawn before a tab opens, and leaves no worktree that would skip the setup on
+// the next try.
+func TestSpawnLetsTheRepositorySetUpItsWorktree(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	path := jairaPath(t)
+	dir := t.TempDir()
+	if _, err := install(dir, false, true, false); err != nil {
+		t.Fatal(err)
+	}
+	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+
+	// setup is the repository's script, "" for none; mode its permission bits.
+	run := func(t *testing.T, setup string, mode os.FileMode) (root, wt, args, created, out string, err error) {
+		t.Helper()
+		base := t.TempDir()
+		root = filepath.Join(base, "repo")
+		wt = filepath.Join(base, ".worktrees", "repo-ab12cd")
+		bin := t.TempDir()
+		args = filepath.Join(bin, "args")
+		created = filepath.Join(bin, "created")
+		herdr := `#!/usr/bin/env bash
+case "$1 $2" in
+  "tab create") touch "` + created + `"; echo '{"result":{"root_pane":{"pane_id":"p1"}}}' ;;
+  "pane get")   echo '{"result":{"pane":{"agent":"claude","agent_status":"idle","tab_id":"t1"}}}' ;;
+esac
+`
+		if err := os.WriteFile(filepath.Join(bin, "herdr"), []byte(herdr), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(root, ".env"), []byte("APP=1\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if setup != "" {
+			script := strings.ReplaceAll(setup, "<args>", args)
+			if err := os.WriteFile(filepath.Join(root, ".jaira", "worktree-setup"), []byte(script), mode); err != nil {
+				t.Fatal(err)
+			}
+		}
+		for _, git := range [][]string{{"init", "-q"}, {"-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", "x"}} {
+			if b, err := exec.Command("git", append([]string{"-C", root}, git...)...).CombinedOutput(); err != nil {
+				t.Fatalf("git %v: %v\n%s", git, err, b)
+			}
+		}
+		cmd := exec.Command(bash, spawn, "ab12cd", "AB12CD", "review", root)
+		cmd.Dir = root
+		cmd.Env = append(os.Environ(), "HERDR_ENV=1", "HERDR_BIN_PATH="+filepath.Join(bin, "herdr"),
+			"HERDR_WORKSPACE_ID=", "JAIRA_NO_WORKTREE=", "PATH="+bin+string(os.PathListSeparator)+path)
+		var stdout, stderr strings.Builder
+		cmd.Stdout, cmd.Stderr = &stdout, &stderr
+		err = cmd.Run()
+		return root, wt, args, created, stdout.String() + stderr.String(), err
+	}
+	branchGone := func(t *testing.T, root string) {
+		t.Helper()
+		if b, _ := exec.Command("git", "-C", root, "branch", "--list", "feat/ab12cd").Output(); len(b) > 0 {
+			t.Errorf("branch feat/ab12cd is still there")
+		}
+	}
+
+	// Without a setup: the .env as before, offset and all.
+	_, wt, _, _, out, err := run(t, "", 0)
+	if err != nil {
+		t.Fatalf("spawn.sh without a setup: %v\n%s", err, out)
+	}
+	env, _ := os.ReadFile(filepath.Join(wt, ".env"))
+	for _, want := range []string{"APP=1\n", "# worker stack: slug=ab12cd offset=", "COMPOSE_PROJECT_NAME=repo_ab12cd\n", "HTTP_PORT=", "DB_PORT_HOST=", "DB_PORT_TEST_HOST="} {
+		if !strings.Contains(string(env), want) {
+			t.Errorf("without a setup the worktree's .env lacks %q:\n%s", want, env)
+		}
+	}
+	_, off, _ := strings.Cut(string(env), "offset=")
+	off, _, _ = strings.Cut(off, "\n")
+
+	t.Run("setup", func(t *testing.T) {
+		root, wt, args, _, out, err := run(t, "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\" > '<args>'\necho 'FROM_SETUP=1' > \"$1/.env\"\necho chatter\n", 0o755)
+		if err != nil {
+			t.Fatalf("spawn.sh: %v\n%s", err, out)
+		}
+		got, _ := os.ReadFile(args)
+		// Both paths in the shell's own spelling, never the two mixed.
+		if want := strings.Join([]string{shellDir(t, bash, wt), "ab12cd", off, shellDir(t, bash, root)}, "\n") + "\n"; string(got) != want {
+			t.Errorf("the setup got\n%s\nwant worktree, slug, offset %s and root:\n%s", got, off, want)
+		}
+		if env, _ := os.ReadFile(filepath.Join(wt, ".env")); string(env) != "FROM_SETUP=1\n" {
+			t.Errorf("spawn.sh wrote into the .env the setup made:\n%s", env)
+		}
+		if !strings.HasPrefix(out, "p1\n") {
+			t.Errorf("stdout must carry the pane id and nothing else, the setup's output goes to stderr:\n%s", out)
+		}
+	})
+
+	t.Run("failing setup", func(t *testing.T) {
+		root, wt, _, created, out, err := run(t, "#!/usr/bin/env bash\necho 'no docker here' >&2\nexit 3\n", 0o755)
+		if err == nil {
+			t.Fatalf("spawn.sh went on past a failed setup:\n%s", out)
+		}
+		if _, err := os.Stat(created); err == nil {
+			t.Error("a tab was opened for a worker whose setup failed")
+		}
+		if _, err := os.Stat(wt); err == nil {
+			t.Error("the worktree of a failed setup is still there; the next spawn would skip the setup")
+		}
+		branchGone(t, root)
+		for _, want := range []string{"no docker here", "failed (exit 3)"} {
+			if !strings.Contains(out, want) {
+				t.Errorf("spawn.sh does not say %q:\n%s", want, out)
+			}
+		}
+	})
+
+	// Windows has no execute bit for bash to read: every file passes -x.
+	if runtime.GOOS != "windows" {
+		t.Run("setup not executable", func(t *testing.T) {
+			root, wt, args, created, out, err := run(t, "#!/usr/bin/env bash\ntouch '<args>'\n", 0o644)
+			if err == nil {
+				t.Fatalf("spawn.sh went on with a setup it cannot run:\n%s", out)
+			}
+			if !strings.Contains(out, "chmod +x") {
+				t.Errorf("spawn.sh does not say what to do:\n%s", out)
+			}
+			for _, f := range []string{created, wt, args} {
+				if _, err := os.Stat(f); err == nil {
+					t.Errorf("%s exists after a refused spawn", f)
+				}
+			}
+			branchGone(t, root)
+		})
+	}
+}
+
+// shellDir is dir as bash spells it after cd'ing there, the form spawn.sh
+// gives its root: unchanged on Unix, /tmp/... for Git Bash's C:\... on Windows.
+func shellDir(t *testing.T, bash, dir string) string {
+	t.Helper()
+	b, err := exec.Command(bash, "-c", `cd "$1" && pwd`, "bash", dir).Output()
+	if err != nil {
+		t.Fatalf("pwd in %s: %v", dir, err)
+	}
+	return strings.TrimSpace(string(b))
 }
 
 // spawnOn runs spawn.sh in a shell whose uname answers uname and whose cygpath
@@ -807,7 +1068,7 @@ func TestSpawnStopsBeforeATabWhenJairaIsTooOld(t *testing.T) {
 		t.Skipf("no bash on this machine: %v", err)
 	}
 	dir := t.TempDir()
-	if _, err := install(dir, false, true); err != nil {
+	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
 	bin := t.TempDir()
@@ -834,5 +1095,28 @@ func TestSpawnStopsBeforeATabWhenJairaIsTooOld(t *testing.T) {
 	}
 	if b, _ := os.ReadFile(called); len(b) > 0 {
 		t.Errorf("Herdr was called before the check: %s", b)
+	}
+}
+
+// Both roles that change code — the worker through every lane, the lane agent
+// through one — ask the board who owns the version and the changelog, and
+// format only the files they changed: a bump or a whole-tree format in every
+// ticket conflicts with every other ticket merged into the same build.
+func TestCodeChangingRolesLeaveTheReleaseAndFormatOnlyTheirFiles(t *testing.T) {
+	for _, id := range []string{"jaira-worker", "jaira-role-lane"} {
+		body, err := File(id, "SKILL.md")
+		if err != nil {
+			t.Fatal(err)
+		}
+		text := string(body)
+		for _, want := range []string{
+			"jaira roles list --json | jaira json get release",
+			"`teamlead`",
+			"git diff --name-only --diff-filter=d HEAD",
+		} {
+			if !strings.Contains(text, want) {
+				t.Errorf("%s does not say %q", id, want)
+			}
+		}
 	}
 }

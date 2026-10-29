@@ -170,14 +170,20 @@ const chatModelHeader = `# The model jaira's cockpit starts its explain and disc
 // BoardChatModel returns the model the board at root names, or "" when it
 // names none, or names something that is not a model name.
 func BoardChatModel(root string) string {
-	b, err := os.ReadFile(BoardChatModelPath(root))
+	return modelName(boardLine(BoardChatModelPath(root)))
+}
+
+// boardLine returns the first line of a one-line board file that is neither
+// blank nor a # comment, trimmed, or "" when there is none or no file.
+func boardLine(path string) string {
+	b, err := os.ReadFile(path)
 	if err != nil {
 		return ""
 	}
 	for _, line := range strings.Split(string(b), "\n") {
 		line = strings.TrimSpace(line)
 		if line != "" && !strings.HasPrefix(line, "#") {
-			return modelName(line)
+			return line
 		}
 	}
 	return ""
@@ -226,6 +232,38 @@ func modelName(v string) string {
 		}
 	}
 	return v
+}
+
+// The two values of the board's release file.
+const (
+	ReleaseWorker   = "worker"
+	ReleaseTeamlead = "teamlead"
+)
+
+// releaseFile is the board's answer to who touches the repository's version
+// and changelog: "teamlead" when they are set once, at release, by whoever
+// cuts it; "worker" when every ticket brings its own. A board file and not a
+// field in settings.json, because it is a property of the repository — one
+// machine's answer would reach every other repository on it, which is how
+// "remote" once broke boards that had no upstream.
+const releaseFile = "release"
+
+// BoardReleasePath is where the board at root says who owns the release.
+func BoardReleasePath(root string) string {
+	return filepath.Join(root, ticket.DirName, releaseFile)
+}
+
+// ReleaseFor returns ReleaseTeamlead when the board at root names it, and
+// ReleaseWorker otherwise, with where it came from in words a person can read.
+// Worker is the default because it is what ran before there was a choice:
+// every ticket may bump the version and write the changelog itself, as the
+// repository's own instructions say. A typo falls back to it too, like
+// DispatchMode, rather than stopping a worker from starting.
+func ReleaseFor(root string) (owner, source string) {
+	if root != "" && boardLine(BoardReleasePath(root)) == ReleaseTeamlead {
+		return ReleaseTeamlead, "from .jaira/release, shared with the board"
+	}
+	return ReleaseWorker, "the default"
 }
 
 // The two values of Dispatch.

@@ -83,6 +83,12 @@ Working a ticket:
   id — so nothing needs to be typed here; it is written onto the ticket once,
   when the ticket leaves the board
 - `jaira resume` — work left in progress, with everything recorded about it
+- when jaira reports a newer release (`jaira next`, `resume`, `claim` and `move`
+  print it on stderr), first run `jaira self upgrade --check` and
+  `jaira update --roles --lanes --dry-run`, which write nothing,
+  show the user what they report and ask the user once whether to update.
+  Only on a yes run `jaira self upgrade`, then `jaira update --roles --lanes`;
+  without one run neither, and after a no do not ask again in this session
 - **every commit names the ticket id** — `fix(A3K9QP): ...`. jaira derives a
   ticket's commit list from two sources: the history of the ticket file itself,
   and the commits that name its id. The first source is thin by design (see the
@@ -111,6 +117,11 @@ Working a ticket:
 - `jaira logbook <id>` — once a ticket reaches the terminal lane, stamps its
   commits and files it under `.jaira/logbook/<you>-<date>/`, taking it off the
   board. `jaira restore <file>` brings it back
+- `jaira reject <id> --why <text>` — a ticket that will not be done is
+  rejected, not archived, so the archive says why. That is a person's call:
+  without `--force` it refuses with exit 3, and `--force` is not yours to
+  pass — move the ticket to the human lane with `--question "reject? reason:
+  ..."` instead
 
 `jaira <command> --help` for everything else.
 
@@ -126,11 +137,13 @@ this note from outside the block.
 
 ## This board's lanes
 
-Order: backlog → brainstorm → todo → pre-process → in-progress → critique → optimize → testing → human → review → signoff → done → blocked
+Order: ideas → backlog → brainstorm → todo → pre-process → in-progress → critique → optimize → testing → human → review → signoff → done → blocked
 Loop: critique sends work back to in-progress, and that repeats until critique has nothing left to say.
 Loop: optimize sends work back to in-progress, and that repeats until optimize has nothing left to say.
 Loop: testing sends work back to in-progress, and that repeats until testing has nothing left to say.
 
+- `ideas` — no agent step; move through it
+  Ideas that are not ripe for the backlog yet.
 - `backlog` — no agent step; move through it
   Captured but not yet specified enough to work on.
 - `brainstorm` — yours to work; tier strong; must produce goal
@@ -205,6 +218,8 @@ The format is a line scan, and breaking it silently corrupts what users read:
 
 - One change is exactly one line starting `- `. Never wrap it across two lines —
   a wrapped line is read as two separate, incomplete changes.
+- A line starting `- ! ` marks a change the reader must act on. `jaira update`
+  and the TUI show it highlighted; to every other reader it stays a plain line.
 - Everything else in the file — prose, blank lines, HTML comments — is ignored.
 - No version heading. A note file never says which release it belongs to.
 

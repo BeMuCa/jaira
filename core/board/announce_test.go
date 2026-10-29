@@ -18,7 +18,7 @@ func TestAnnounceRegeneratesByteForByteWithNoLocalMarker(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, action, err := announceInAgentFile(root, "AGENTS.md", nil); err != nil {
+	if _, action, err := announceInAgentFile(root, "AGENTS.md", nil, false); err != nil {
 		t.Fatalf("announceInAgentFile: %v", err)
 	} else if action != "appended" {
 		t.Fatalf("action = %q, want appended", action)
@@ -48,7 +48,7 @@ func TestAnnounceSurvivesLocalMarkerVerbatim(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, action, err := announceInAgentFile(root, "AGENTS.md", nil); err != nil {
+	if _, action, err := announceInAgentFile(root, "AGENTS.md", nil, false); err != nil {
 		t.Fatalf("announceInAgentFile: %v", err)
 	} else if action != "updated" {
 		t.Fatalf("action = %q, want updated", action)
@@ -68,7 +68,7 @@ func TestAnnounceSurvivesLocalMarkerVerbatim(t *testing.T) {
 	}
 
 	// A second regeneration is idempotent.
-	_, action2, err := announceInAgentFile(root, "AGENTS.md", nil)
+	_, action2, err := announceInAgentFile(root, "AGENTS.md", nil, false)
 	if err != nil {
 		t.Fatalf("announceInAgentFile (second): %v", err)
 	}
@@ -82,7 +82,7 @@ func TestAnnounceSurvivesLocalMarkerVerbatim(t *testing.T) {
 func TestAnnounceCreatesFreshFileWithoutLocalMarker(t *testing.T) {
 	root := t.TempDir()
 
-	path, action, err := announceInAgentFile(root, "CLAUDE.md", nil)
+	path, action, err := announceInAgentFile(root, "CLAUDE.md", nil, false)
 	if err != nil {
 		t.Fatalf("announceInAgentFile: %v", err)
 	}
@@ -115,7 +115,7 @@ func TestAnnounceIgnoresLocalMarkerOutsideBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, _, err := announceInAgentFile(root, "AGENTS.md", nil); err != nil {
+	if _, _, err := announceInAgentFile(root, "AGENTS.md", nil, false); err != nil {
 		t.Fatalf("announceInAgentFile: %v", err)
 	}
 
@@ -184,6 +184,21 @@ func TestAgentNoteNamesTheMilestoneCommands(t *testing.T) {
 	}
 }
 
+// TestAgentNoteTellsAgentsToAskAboutANewerRelease guards the line that makes
+// an agent act on the stderr line 'jaira next', 'resume', 'claim' and 'move'
+// print: show the user both previews, ask, and only on a yes run the upgrade
+// and the setup after it.
+func TestAgentNoteTellsAgentsToAskAboutANewerRelease(t *testing.T) {
+	for _, want := range []string{
+		"newer release", "`jaira self upgrade --check`", "`jaira update --roles --lanes --dry-run`", "show the user",
+		"ask the user", "Only on a yes", "`jaira self upgrade`", "`jaira update --roles --lanes`",
+	} {
+		if !strings.Contains(agentNote, want) {
+			t.Errorf("agentNote does not mention %q", want)
+		}
+	}
+}
+
 // TestAgentNoteNamesTheBoards guards the entry that tells an agent outside the
 // roles that a repository can have more than one board: without it, it files
 // every ticket on today's board and runs it through lanes not meant for it.
@@ -193,6 +208,20 @@ func TestAgentNoteNamesTheBoards(t *testing.T) {
 		"`jaira create --board <name>`",
 		"`--board <name>`",
 		"board=<name>`",
+	} {
+		if !strings.Contains(agentNote, want) {
+			t.Errorf("agentNote does not contain %s", want)
+		}
+	}
+}
+
+// TestAgentNoteNamesReject guards the entry that tells an agent a ticket that
+// will not be done is rejected by a person, and how it asks for that instead.
+func TestAgentNoteNamesReject(t *testing.T) {
+	for _, want := range []string{
+		"`jaira reject <id> --why <text>`",
+		"exit 3",
+		"--question \"reject? reason:",
 	} {
 		if !strings.Contains(agentNote, want) {
 			t.Errorf("agentNote does not contain %s", want)

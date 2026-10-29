@@ -209,6 +209,7 @@ Exit codes:
 		newArchiveCmd(),
 		newRestoreCmd(),
 		newDeleteCmd(),
+		newRejectCmd(),
 		newLogbookCmd(),
 		newNoteCmd(),
 		newResumeCmd(),
@@ -264,6 +265,7 @@ func openStore() (*ticket.Store, error) {
 	attachRefs(s)
 	bindDriverIfShared(s)
 	nudgeIfStale(s)
+	nudgeSkillsIfStale()
 	return s, nil
 }
 

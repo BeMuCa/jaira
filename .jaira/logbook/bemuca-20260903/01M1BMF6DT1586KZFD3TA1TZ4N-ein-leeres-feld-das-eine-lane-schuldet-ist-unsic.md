@@ -8,7 +8,7 @@ goal: "Ein Ticket in review/signoff zeigt problem, what, why, resolves, summary,
 context: |-
   Berk am 31.08.: Tickets in seiner review-Lane zeigen nur dod und problem, er weiss nicht einmal, wie er das Review pruefen soll. Frueher mochte er: problem, what, why, resolves, summary, gaps, check - knappe Stichpunkte mit genug Inhalt.
 
-  Ursache, gelesen in internal/tui/view.go ~848-860: die Detailansicht rendert Outcome (what/why/resolves) und Review (summary/gaps/verdict/check) als Bloecke, aber NUR wenn mindestens ein Feld gefuellt ist; prose() unterdrueckt leere Werte generell. Ein Ticket, das review erreicht, ohne dass die Lanes davor ihre Felder geschrieben haben (sein req-Board: Agents fuellen dort nichts), zeigt also nur Basiszeilen plus DoD.
+  Ursache, gelesen in internal/tui/view.go ~848-860: die Detailansicht rendert Outcome (what/why/resolves) und Review (summary/gaps/verdict/check) als Bloecke, aber NUR wenn mindestens ein Feld gefuellt ist; prose() unterdrueckt leere Werte generell. Ein Ticket, das review erreicht, ohne dass die Lanes davor ihre Felder geschrieben haben (sein Testprojekt-Board: Agents fuellen dort nichts), zeigt also nur Basiszeilen plus DoD.
 
   Regel: ein Feld, das eine installierte Lane dieses Boards in produces deklariert, wird angezeigt, auch leer - als leere Zeile, die die schuldende Lane nennt (z.B. 'check    — (aus optimize, noch leer)'). Basisfelder (id, lane, assignee, creator, when, goal, context) immer. Reihenfolge fuer review/signoff: problem, what, why, resolves, summary, gaps, check.
 

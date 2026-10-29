@@ -1,0 +1,2 @@
+- Read the release notes one version per page, newest first: press ← or h for the older version and → or l for the newer one, both in the popup after an upgrade and under `w` on the launcher; the header shows where you are, e.g. `0.5.3 · 1/12`.
+- Check the popup's title after an upgrade across several versions: it says how many you have not read yet, e.g. `What is new since 0.5.0 · 3 unread`, and those are its only pages.

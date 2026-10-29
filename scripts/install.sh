@@ -5,7 +5,9 @@
 #
 # Downloads the release archive for this OS/arch, verifies its checksum, and
 # puts the binary in ~/.local/bin (override with JAIRA_INSTALL_DIR). No root,
-# no dependencies beyond curl or wget plus tar. On Windows, use install.ps1 in
+# no dependencies beyond curl or wget plus tar. Then it runs
+# `jaira roles install --global` so the role skills and the cockpit are set up
+# too; JAIRA_NO_ROLES=1 installs only the binary. On Windows, use install.ps1 in
 # PowerShell instead:
 #   irm https://raw.githubusercontent.com/BeMuCa/jaira/master/scripts/install.ps1 | iex
 set -eu
@@ -21,6 +23,16 @@ fetch() {
 	else
 		echo "error: neither curl nor wget is available" >&2
 		exit 1
+	fi
+}
+
+# download is fetch with a progress bar, shown only when stderr is a terminal
+# (curl only; wget stays quiet), so `curl | sh` in CI logs stays clean.
+download() {
+	if [ -t 2 ] && command -v curl >/dev/null 2>&1; then
+		curl -fL --progress-bar "$1"
+	else
+		fetch "$1"
 	fi
 }
 
@@ -60,7 +72,7 @@ tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
 echo "downloading jaira $tag ($os/$arch)…"
-fetch "$base/$archive" >"$tmp/$archive"
+download "$base/$archive" >"$tmp/$archive"
 fetch "$base/checksums.txt" >"$tmp/checksums.txt"
 
 # Verify against the published checksum so a truncated or tampered download
@@ -92,3 +104,20 @@ case ":$PATH:" in
 *":$INSTALL_DIR:"*) ;;
 *) echo "note: $INSTALL_DIR is not on your PATH" ;;
 esac
+
+# Roles and cockpit: one command writes both, so it is one step, not two. A
+# failure here is printed as it came and does not undo the install above.
+if [ "${JAIRA_NO_ROLES:-}" = "1" ]; then
+	echo "skipped the skills and the Cockpit (JAIRA_NO_ROLES=1) — run: jaira roles install --global"
+	exit 0
+fi
+echo "Setting up the skills and the Cockpit…"
+if out=$("$INSTALL_DIR/jaira" roles install --global 2>&1); then
+	echo "✓ $(printf '%s\n' "$out" | grep ' written, ' | tail -n1)"
+	echo "active now: the jaira role skills and the Cockpit in ~/.claude/skills"
+	echo "the Cockpit loads in your next Claude Code session"
+else
+	echo "✗ could not set up the skills and the Cockpit:" >&2
+	printf '%s\n' "$out" >&2
+	echo "the binary is installed; retry with: jaira roles install --global" >&2
+fi

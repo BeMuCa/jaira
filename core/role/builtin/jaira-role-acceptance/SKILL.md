@@ -77,6 +77,11 @@ next round (section 3).
 jaira show <id> --json      # goal, definition of done, review-check, notes, tags, follows, outcome-what
 ```
 
+Every `note:` line of the ticket's `review.gaps` goes into its `candidates`,
+verbatim and without the prefix: a review note is a candidate for a ticket,
+and the person decides which, if any, becomes one. A `blocker:` line never
+reaches you — the review sent that ticket back.
+
 A ticket without a `review-check` cannot be accepted by hand. Do not invent one
 from the diff — report it as "needs review-check" and leave it off the page.
 
@@ -143,7 +148,8 @@ This is the part that saves the person's time. Do it with care.
                "expect": "the run starts and shows its progress", "covers": ["Q0G6H8", "6T77WD"], "costly": true}]
   }],
   "tickets": [{"id": "Q0G6H8", "title": "...", "goal": "...", "dod": ["..."], "round": 1,
-               "next_lane": "review", "return_lane": "in-progress"}]
+               "next_lane": "review", "return_lane": "in-progress",
+               "candidates": ["the export test covers 1MB, not 40MB"]}]
 }
 ```
 
@@ -227,6 +233,12 @@ ticket's diff. Then decide one of:
 
 A failed machine check sends its tickets back with the check named.
 
+**A candidate becomes a ticket only when the person's comment on that ticket
+names it** — `jaira create ... --follows <id>`, written like any ticket, the
+comment quoted in its context. Every candidate the comment does not name stays
+a line in `review-gaps`; `plan` lists them so you see them, not so you file
+them. A candidate never changes whether the ticket is accepted.
+
 Write every decision to `decisions.json` as a list of `{"step", "ticket",
 "kind", "reason", "result"}` — `result` is the new ticket's id or the lane the
 ticket went to. A block note goes onto the tickets it is about with `jaira
@@ -271,4 +283,5 @@ they left it.
 - accept a ticket whose steps the person did not all mark ok
 - leave a "no" to the person to analyse, or decide a case you could not tell
 - turn a return into a new ticket when it belongs to this one
+- create a ticket from a review note the person did not name
 - edit page.html by hand — change data.json and rebuild

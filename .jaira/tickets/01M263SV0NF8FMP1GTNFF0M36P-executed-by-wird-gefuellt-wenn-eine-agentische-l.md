@@ -7,7 +7,7 @@ creator: BeMuCa
 assignee: BeMuCa
 goal: "An jedem Ticket, das eine agentische Lane durchlaufen hat, steht, welches Modell die Arbeit gemacht hat"
 context: |-
-  Auf dem requirementsgenie-Board tragen 9 von 11 Tickets in review kein executed-by. Nur CNTYMW und ZTR2CW sagen 'sonnet'.
+  Auf dem Board eines anderen Projekts tragen 9 von 11 Tickets in review kein executed-by. Nur CNTYMW und ZTR2CW sagen 'sonnet'.
   Damit ist bei der Abnahme nicht erkennbar, ob ein Ticket von einem starken oder einem billigen Modell bearbeitet wurde - und die Lanes deklarieren genau das: in-progress hat 'model-tier: cheap', critique und optimize haben 'strong'.
   Das Feld existiert im Schema (core/ticket/schema.go, FieldExecutedBy) und 'jaira move' hat den Schalter --executed-by. Es wird nur von niemandem gesetzt und von nichts eingefordert.
   Kommentar im Schema zur Abgrenzung beachten: executed-by ist das Modell, die Verantwortung bleibt beim assignee. Es ersetzt also keinen Besitzer, es ergaenzt ihn.

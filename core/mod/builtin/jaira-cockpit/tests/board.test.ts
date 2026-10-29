@@ -22,6 +22,9 @@ type World = {
   agents: { id: string; description: string; type: string; status: string; name?: string }[]
   // `jaira lanes --json` of a build before human_exit.
   oldJaira: boolean
+  // The repository's boards besides today's, as `jaira boards --json` names
+  // them; one without lanes is a board whose `lanes --board` read fails.
+  boards: Record<string, { lanes?: unknown[]; tickets: unknown[] }>
   asked: string[]
   answer: string
   model: string
@@ -72,6 +75,14 @@ type World = {
   // The forge answers `repo view` but refuses `pr list`.
   prListFails: boolean
   nextFails: boolean
+  // The latest release `jaira self upgrade --check` finds; the check writes
+  // it into the release cache, as jaira does. `jaira self upgrade` installs
+  // it, unless upgradeFails.
+  latest: string
+  upgradeFails: boolean
+  // How `jaira update --roles --lanes --dry-run` exits: 0, 3 (an edited
+  // file it would leave alone) or 2 (a jaira without --roles).
+  dryRunExit: number
   // The terminal has no room for a pane: $.ui.open places nothing.
   noRoom?: boolean
   // When set, every `herdr tab list` waits here until the test lets it go.
@@ -84,7 +95,7 @@ const LANES = {
     { id: 'critique', agentic: true, context: '' },
     { id: 'review', agentic: true, context: 'fresh' },
     { id: 'signoff', agentic: false, context: '', human_exit: true },
-    { id: 'human', agentic: false, context: '', human_exit: true },
+    { id: 'human', agentic: false, context: '', human_exit: false, requires_question: true },
     { id: 'done', agentic: false, context: '', terminal: true },
   ],
 }
@@ -105,6 +116,8 @@ const MESSAGE = (title: string) =>
 
 const WORKTREES = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n\nworktree /.worktrees/repo-mg677r\nHEAD 2\nbranch refs/heads/feat/mg677r\n'
 const SPAWN = '/repo/.claude/skills/jaira-dispatcher/scripts/spawn.sh'
+// The release cache jaira writes under ~/.jaira, HOME being /home/a.
+const CACHE = '/home/a/.jaira/update-check.json'
 
 function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<string, unknown>; spawn?: boolean; env?: Record<string, string> } = {}): World {
   const w: World = {
@@ -117,6 +130,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     held: undefined,
     agents: [],
     oldJaira: false,
+    boards: {},
     asked: [],
     answer: '',
     model: '',
@@ -146,6 +160,9 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     toasts: [],
     prListFails: false,
     nextFails: false,
+    latest: '0.3.7',
+    upgradeFails: false,
+    dryRunExit: 0,
     remotes: 'origin\tgit@github.com:acme/repo.git (fetch)\norigin\tgit@github.com:acme/repo.git (push)\nupstream\thttps://github.com/upstream/repo.git (fetch)\n',
   }
   const hasBoard = opts.board ?? true
@@ -209,13 +226,41 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (w.heldTabs && e.argv[1] === 'tab' && e.argv[2] === 'list') await new Promise<void>(go => w.heldTabs!.push(go))
     const ok = (stdout = '') => ({ value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
     const [cmd, ...args] = e.argv
-    if (cmd === 'jaira' && args[0] === 'lanes') return ok(JSON.stringify(w.oldJaira ? { lanes: LANES.lanes.map(({ human_exit, ...l }) => l) } : LANES))
+    const on = args.includes('--board') ? w.boards[args[args.indexOf('--board') + 1] ?? ''] : undefined
+    if (cmd === 'jaira' && args[0] === 'boards') return ok(JSON.stringify({ boards: ['default', ...Object.keys(w.boards)].map(name => ({ name })) }))
+    if (cmd === 'jaira' && args.includes('--board') && (on === undefined || (args[0] === 'lanes' && on.lanes === undefined))) return failed('jaira: unknown flag: --board')
+    if (cmd === 'jaira' && args[0] === 'lanes' && on !== undefined) return ok(JSON.stringify({ lanes: on.lanes }))
+    if (cmd === 'jaira' && args[0] === 'list' && on !== undefined) return ok(JSON.stringify({ count: on.tickets.length, tickets: on.tickets }))
+    if (cmd === 'jaira' && args[0] === 'lanes') return ok(JSON.stringify(w.oldJaira ? { lanes: LANES.lanes.map(({ human_exit, requires_question, ...l }) => l) } : LANES))
     if (cmd === 'jaira' && args[0] === 'list') return ok(JSON.stringify({ count: w.tickets.length, tickets: w.tickets }))
     if (cmd === 'jaira' && args[0] === 'move' && args.includes('--dry-run')) {
       const error = (w.warns ? `${OLDER}\n` : '') + JSON.stringify({ error: { code: 3, reason: 'gate_refused', violations: w.refusals } })
       return { value: { exitCode: 3, stdout: '', stderr: error, isStdoutTruncated: false, isStderrTruncated: false } }
     }
     if (cmd === 'jaira' && args[0] === '--version') return ok(`jaira version ${w.version}\n`)
+    if (cmd === 'jaira' && args[0] === 'self' && args.includes('--check')) {
+      w.files.set(CACHE, JSON.stringify({ checked_at: '2026-10-16T10:00:00Z', latest: w.latest }))
+      return ok(JSON.stringify({ current: w.version, latest: w.latest, up_to_date: w.latest === w.version, upgraded: false, target: '/home/a/.local/bin/jaira', install_method: 'self-managed', checked_at: '2026-10-16T10:00:00Z' }))
+    }
+    if (cmd === 'jaira' && args[0] === 'self' && w.upgradeFails) {
+      return { value: { exitCode: 3, stdout: '', stderr: 'jaira: this jaira was installed with go install; upgrade it with go install github.com/BeMuCa/jaira/cmd/jaira@latest', isStdoutTruncated: false, isStderrTruncated: false } }
+    }
+    if (cmd === 'jaira' && args[0] === 'self') {
+      const from = w.version
+      w.version = w.latest
+      // jaira names a release host override on stderr, after the upgrade.
+      const stdout = `upgraded jaira ${from} -> ${w.latest} (/home/a/.local/bin/jaira)\nbringing your setup in step with ${w.latest}: jaira update --roles\n`
+      return { value: { exitCode: 0, stdout, stderr: 'warning: release host overridden by JAIRA_RELEASE_API=http://127.0.0.1:8765/api\n', isStdoutTruncated: false, isStderrTruncated: false } }
+    }
+    if (cmd === 'jaira' && args[0] === 'update' && args.includes('--dry-run') && w.dryRunExit === 2) {
+      return { value: { exitCode: 2, stdout: '', stderr: 'jaira: unknown flag: --roles\n', isStdoutTruncated: false, isStderrTruncated: false } }
+    }
+    if (cmd === 'jaira' && args[0] === 'update' && args.includes('--dry-run') && w.dryRunExit === 3) {
+      const stdout = 'skipped /repo/.claude/skills/jaira-worker/SKILL.md (edited)\nnothing was written (--dry-run)\n'
+      return { value: { exitCode: 3, stdout, stderr: "jaira: some files were edited here and left alone; 'jaira roles install --project --force' (or '--global --force') and 'jaira lanes use <id> --force' replace them\n", isStdoutTruncated: false, isStderrTruncated: false } }
+    }
+    if (cmd === 'jaira' && args[0] === 'update' && args.includes('--dry-run')) return ok(`${OLDER}\nskills in /repo/.claude/skills: 3 would be updated\nlanes: critique would be updated\nnothing was written (--dry-run)\n`)
+    if (cmd === 'jaira' && args[0] === 'update') return ok('skills in /repo/.claude/skills: 3 updated\nlanes: critique updated\n')
     if (cmd === 'jaira' && args[0] === 'move' && !args.includes('--force') && /^0\.3\.[0-6]$/.test(w.version)) {
       return { value: { exitCode: 3, stdout: '', stderr: 'jaira: lane "signoff" is a human checkpoint; use --force', isStdoutTruncated: false, isStderrTruncated: false } }
     }
@@ -337,6 +382,40 @@ describe('waiting for you', () => {
     expect((await ui.find({ type: 'Text', text: /MG677R \| signoff \| approve mit Vorbehalt/ }))).toBeDefined()
     expect((await ui.find({ type: 'Text', text: /K7P2QX \| human/ }))).toBeDefined()
     expect(await ui.find({ text: /T8QS1Y/ })).toBeUndefined()
+  })
+
+  test('tickets waiting on another board are listed too, each by its own board\'s lanes', async ($, on) => {
+    const w = world(on)
+    w.boards.video = {
+      lanes: [
+        { id: 'script', agentic: true, context: '' },
+        { id: 'approve', agentic: false, context: '', human_exit: true },
+        { id: 'ask', agentic: false, context: '', requires_question: true },
+        { id: 'done', agentic: false, context: '', terminal: true },
+      ],
+      tickets: [
+        { handle: 'S0EG0M', title: 'intro', status: 'approve', next_lane: 'done', question: '', review: {} },
+        { handle: 'V1D3OQ', title: 'outro', status: 'ask', next_lane: 'script', question: 'Musik oder Stille?', review: {} },
+        { handle: 'V2R3ND', title: 'credits', status: 'script', question: '', review: {} },
+      ],
+    }
+    await startSession($)
+    expect(await headLine($)).toBe('0 worker | 0 review | 4 waiting for you | 5h 34%')
+    await (await $.ui.mount(BAND)).press({ key: 'more' })
+    const ui = await $.ui.mount(BAND)
+    expect(await ui.find({ type: 'Text', text: /S0EG0M \| approve/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /V1D3OQ \| ask/ })).toBeDefined()
+    expect(await ui.find({ key: 'accept-S0EG0M' })).toBeDefined()
+    expect(await ui.find({ key: 'accept-V1D3OQ' })).toBeUndefined()
+    expect(await ui.find({ text: /V2R3ND/ })).toBeUndefined()
+    expect(ran(w, 'jaira', 'list', '--board', 'video').length).toBeGreaterThan(0)
+  })
+
+  test('a board whose lanes cannot be read is left out, not the band', async ($, on) => {
+    const w = world(on)
+    w.boards.video = { tickets: [{ handle: 'S0EG0M', title: 'intro', status: 'approve', next_lane: 'done', question: '', review: {} }] }
+    await startSession($)
+    expect(await headLine($)).toBe('0 worker | 0 review | 2 waiting for you | 5h 34%')
   })
 
   test('Accept moves the ticket to done in its own worktree', async ($, on) => {
@@ -1133,7 +1212,7 @@ describe('after Accept', () => {
     expect(prLane(w)).toEqual([])
     expect(ran(w, 'jaira', 'next')).toEqual([['jaira', 'next', '--all', '--json', '@/repo']])
     // T8QS1Y has a worker tab already: never a second agent on it.
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, 'ab12cd', 'AB12CD', 'worker', '/repo', '@/repo']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-parent', 'ab12cd', 'AB12CD', 'worker', '/repo', '@/repo']])
     expect(w.opened).toEqual([])
   })
 
@@ -1142,7 +1221,7 @@ describe('after Accept', () => {
     w.next = ['AB12CD']
     await press($)
     expect(ran(w, 'gh', 'pr')).toEqual([])
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-parent', 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
   })
 
   test('GitLab, by jaira.forge or by host, asks glab', async ($, on) => {
@@ -1177,7 +1256,7 @@ describe('after Accept', () => {
     await press($)
     expect(ran(w, 'gh', 'pr')).toEqual([])
     expect(prLane(w)).toEqual([])
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-parent', 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
     expect(w.toasts.at(-1)).toBe('MG677R accepted; AB12CD started in a Herdr tab; no pull request for feat/mg677r yet: T8QS1Y not in done')
   })
 
@@ -1267,7 +1346,7 @@ describe('after Accept', () => {
     w.next = ['AB12CD']
     await press($)
     expect(ran(w, 'git', 'log')).toEqual([])
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-parent', 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
     expect(w.toasts.at(-1)).toContain('Pull requests go to upstream/repo, and no remote here points at it')
   })
 
@@ -1278,7 +1357,7 @@ describe('after Accept', () => {
     w.next = ['AB12CD']
     await press($)
     expect(prLane(w)).toEqual([])
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-parent', 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
     expect(ran(w, 'jaira', 'move', 'MG677R').map(r => r[5])).toEqual(['--dry-run', '--force'])
     expect(w.opened).toEqual([])
     expect(w.toasts.at(-1)).toBe('MG677R accepted; AB12CD started in a Herdr tab; pull requests not checked (gh repo view: gh: command not found)')
@@ -1291,7 +1370,7 @@ describe('after Accept', () => {
     w.next = ['AB12CD']
     await press($)
     expect(prLane(w)).toEqual([])
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-parent', 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
     expect(w.toasts.at(-1)).toContain('pull requests not checked (gh: HTTP 401')
   })
 
@@ -1486,7 +1565,7 @@ describe('give back', () => {
     const spawn = w.ran.findIndex(r => r[1] === SPAWN)
     expect(w.ran[close]?.[3]).toBe('w1:t9')
     expect(close).toBeLessThan(spawn)
-    expect(w.ran[spawn]?.slice(0, 6)).toEqual(['bash', SPAWN, 'mg677r', 'MG677R', 'worker', '/repo'])
+    expect(w.ran[spawn]?.slice(0, 7)).toEqual(['bash', SPAWN, '--no-parent', 'mg677r', 'MG677R', 'worker', '/repo'])
     expect(ran(w, 'herdr', 'pane', 'send-text')).toEqual([])
     expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to a new worker - old worker\'s prompt cache cold for 10 min')
   })
@@ -1501,7 +1580,7 @@ describe('give back', () => {
     await giveBack($, w)
     expect(ran(w, 'herdr', 'pane', 'send-keys')).toEqual([])
     expect(ran(w, 'herdr', 'tab', 'close')[0]?.[3]).toBe('w1:t9')
-    expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 6)).toEqual(['bash', SPAWN, 'mg677r', 'MG677R', 'worker', '/repo'])
+    expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 7)).toEqual(['bash', SPAWN, '--no-parent', 'mg677r', 'MG677R', 'worker', '/repo'])
     expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to a new worker - tab alive, cache warm for 40 more min, context 80k, but its pane took no text')
   })
 })
@@ -1535,6 +1614,193 @@ describe('the jaira it runs beside', () => {
     await startSession($)
     expect(ran(w, 'jaira', '--version')).toEqual([])
     expect(w.toasts).toEqual([])
+  })
+})
+
+describe('a newer jaira release', () => {
+  const UPGRADE = (title: string) =>
+    ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-upgrade', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as never
+  const TITLE = 'Update jaira 0.5.1 -> 0.6.0?'
+  // The release cache as the hourly check leaves it.
+  const released = (w: World, latest: string, at = CACHE) => w.files.set(at, JSON.stringify({ checked_at: '2026-10-16T09:00:00Z', latest }))
+  // Every jaira command that could write: the binary and the setup.
+  const writes = (w: World) => w.ran.filter(r => r[0] === 'jaira' && (r[1] === 'self' || r[1] === 'update')).map(r => r.slice(1, -1).join(' '))
+  const offered = async ($: Test$) => (await $.ui.mount(BAND)).find({ key: 'release-update' })
+
+  test('notice shown: a release newer than the jaira installed gets a line with Update and Dismiss', async ($, on) => {
+    const w = world(on)
+    w.version = '0.5.1'
+    released(w, '0.6.0')
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    expect(await ui.find({ type: 'Text', text: /^jaira 0\.6\.0 is released \(this is 0\.5\.1\)/ })).toBeDefined()
+    expect((await ui.find({ key: 'release-update' }))?.text).toBe('[ Update ]')
+    expect(await ui.find({ key: 'release-dismiss' })).toBeDefined()
+    // The cache is read, nothing more: no check of its own, nothing written.
+    expect(writes(w)).toEqual([])
+  })
+
+  for (const [name, version, cache] of [
+    ['the same version', '0.6.0', '0.6.0'],
+    ['a cache older than the jaira installed', '0.6.0', '0.5.1'],
+    ['a cache never written', '0.5.1', undefined],
+    ['a dev build', 'dev', '0.6.0'],
+  ] as const) {
+    test(`no notice: ${name}`, async ($, on) => {
+      const w = world(on)
+      w.version = version
+      if (cache !== undefined) released(w, cache)
+      await startSession($)
+      expect(await offered($)).toBeUndefined()
+      expect(await (await $.ui.mount(BAND)).find({ type: 'Text', text: /is released/ })).toBeUndefined()
+    })
+  }
+
+  test('no notice: JAIRA_NO_UPDATE_CHECK=1, even with a cache naming a newer release', async ($, on) => {
+    const w = world(on, { env: { HOME: '/home/a', JAIRA_NO_UPDATE_CHECK: '1' } })
+    w.version = '0.5.1'
+    released(w, '0.6.0')
+    await startSession($)
+    expect(await offered($)).toBeUndefined()
+  })
+
+  test('the cache is read where JAIRA_HOME puts it', async ($, on) => {
+    const w = world(on, { env: { HOME: '/home/a', JAIRA_HOME: '/srv/jaira' } })
+    w.version = '0.5.1'
+    released(w, '0.6.0', '/srv/jaira/update-check.json')
+    await startSession($)
+    expect(await offered($)).toBeDefined()
+  })
+
+  test('Update path with preview: the check and the dry run first, shown in a pane; nothing is written before the yes', async ($, on) => {
+    const w = world(on)
+    w.version = '0.5.1'
+    w.latest = '0.6.0'
+    released(w, '0.6.0')
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'release-update' })
+    expect(writes(w)).toEqual(['self upgrade --check --json', 'update --roles --lanes --dry-run'])
+    expect(w.opened).toEqual([{ id: 'cockpit-upgrade', title: TITLE, focus: true }])
+    const pane = await $.ui.mount(UPGRADE(TITLE))
+    expect(await pane.find({ type: 'Text', text: /^Nothing has been written yet\. Update runs 'jaira self upgrade' \(0\.5\.1 -> 0\.6\.0\), then 'jaira update --roles --lanes'/ })).toBeDefined()
+    // The dry run's own words, the older-board warning taken off.
+    expect(await pane.find({ type: 'Text', text: 'skills in /repo/.claude/skills: 3 would be updated\nlanes: critique would be updated\nnothing was written (--dry-run)' })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /older version/ })).toBeUndefined()
+    expect((await pane.find({ key: 'upgrade-confirm' }))?.props.label).toBe('Update to 0.6.0')
+    // An Enter pressed once too often lands on Cancel.
+    expect((await pane.find({ key: 'upgrade-cancel' }))?.props.autoFocus).toBe(true)
+    await pane.press({ key: 'upgrade-cancel' })
+    expect(w.closed).toEqual(['cockpit-upgrade'])
+    expect(writes(w)).toEqual(['self upgrade --check --json', 'update --roles --lanes --dry-run'])
+    // Cancelled, the offer stands.
+    expect(await offered($)).toBeDefined()
+  })
+
+  test('the yes in the pane upgrades the binary, then the skills and lane files, and the notice goes', async ($, on) => {
+    const w = world(on)
+    w.version = '0.5.1'
+    w.latest = '0.6.0'
+    released(w, '0.6.0')
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'release-update' })
+    await (await $.ui.mount(UPGRADE(TITLE))).press({ key: 'upgrade-confirm' })
+    expect(writes(w)).toEqual(['self upgrade --check --json', 'update --roles --lanes --dry-run', 'self upgrade', 'update --roles --lanes'])
+    expect(w.closed).toContain('cockpit-upgrade')
+    expect(w.opened.at(-1)).toEqual({ id: 'cockpit-message', title: 'jaira updated to 0.6.0', focus: true })
+    const result = await $.ui.mount(MESSAGE('jaira updated to 0.6.0'))
+    expect(await result.find({ type: 'Text', text: /^upgraded jaira 0\.5\.1 -> 0\.6\.0[\s\S]*lanes: critique updated$/ })).toBeDefined()
+    // What self upgrade says on stderr is shown too: a release host override
+    // must never pass quietly.
+    expect(await result.find({ type: 'Text', text: /\nwarning: release host overridden by JAIRA_RELEASE_API=http:\/\/127\.0\.0\.1:8765\/api\n/ })).toBeDefined()
+    // jaira is asked again which it is: 0.6.0 now, nothing left to offer.
+    expect(await offered($)).toBeUndefined()
+  })
+
+  test('a dry run that gives no preview is shown as the error it is, and no update is offered', async ($, on) => {
+    const w = world(on)
+    w.version = '0.5.1'
+    w.latest = '0.6.0'
+    w.dryRunExit = 2
+    released(w, '0.6.0')
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'release-update' })
+    expect(writes(w)).toEqual(['self upgrade --check --json', 'update --roles --lanes --dry-run'])
+    expect(w.opened).toEqual([{ id: 'cockpit-message', title: 'Update jaira failed', focus: true }])
+    const pane = await $.ui.mount(MESSAGE('Update jaira failed'))
+    expect(await pane.find({ type: 'Text', text: "Nothing was written and no update is offered: 'jaira update --roles --lanes --dry-run' gave no preview. It said:\njaira: unknown flag: --roles" })).toBeDefined()
+    expect(await pane.find({ key: 'upgrade-confirm' })).toBeUndefined()
+  })
+
+  test('a dry run that would leave an edited file alone is a preview, and the update is offered', async ($, on) => {
+    const w = world(on)
+    w.version = '0.5.1'
+    w.latest = '0.6.0'
+    w.dryRunExit = 3
+    released(w, '0.6.0')
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'release-update' })
+    expect(w.opened).toEqual([{ id: 'cockpit-upgrade', title: TITLE, focus: true }])
+    const pane = await $.ui.mount(UPGRADE(TITLE))
+    expect(await pane.find({ type: 'Text', text: /^skipped \/repo\/\.claude\/skills\/jaira-worker\/SKILL\.md \(edited\)[\s\S]*some files were edited here and left alone/ })).toBeDefined()
+    expect(await pane.find({ key: 'upgrade-confirm' })).toBeDefined()
+  })
+
+  test('an upgrade jaira refuses is shown whole, and the setup is not touched', async ($, on) => {
+    const w = world(on)
+    w.version = '0.5.1'
+    w.latest = '0.6.0'
+    w.upgradeFails = true
+    released(w, '0.6.0')
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'release-update' })
+    await (await $.ui.mount(UPGRADE(TITLE))).press({ key: 'upgrade-confirm' })
+    expect(writes(w)).toEqual(['self upgrade --check --json', 'update --roles --lanes --dry-run', 'self upgrade'])
+    const pane = await $.ui.mount(MESSAGE('Update jaira failed'))
+    expect(await pane.find({ type: 'Text', text: /installed with go install/ })).toBeDefined()
+    expect(await offered($)).toBeDefined()
+  })
+
+  test('a check that finds nothing newer opens no pane and takes the notice away', async ($, on) => {
+    const w = world(on)
+    w.version = '0.5.1'
+    released(w, '0.6.0')
+    await startSession($)
+    // Upgraded in a terminal meanwhile.
+    w.version = '0.6.0'
+    w.latest = '0.6.0'
+    await (await $.ui.mount(BAND)).press({ key: 'release-update' })
+    expect(writes(w)).toEqual(['self upgrade --check --json'])
+    expect(w.opened).toEqual([])
+    expect(w.toasts).toContain('jaira 0.6.0 is already the latest release')
+    expect(await offered($)).toBeUndefined()
+  })
+
+  test('Dismiss hides exactly that version; the next release is offered again', async ($, on) => {
+    const w = world(on)
+    w.version = '0.5.1'
+    released(w, '0.6.0')
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'release-dismiss' })
+    expect(w.store.get('dismissed-release')).toBe('0.6.0')
+    expect(w.toasts).toContain('jaira 0.6.0 dismissed: the band offers the next release again')
+    expect(await offered($)).toBeUndefined()
+    // A minute on the cache is read again: the same version stays hidden.
+    await w.clock.advance(60_000)
+    await w.clock.settle()
+    expect(await offered($)).toBeUndefined()
+    released(w, '0.6.1')
+    await w.clock.advance(60_000)
+    await w.clock.settle()
+    expect(await (await $.ui.mount(BAND)).find({ type: 'Text', text: /^jaira 0\.6\.1 is released \(this is 0\.5\.1\)/ })).toBeDefined()
+    expect(writes(w)).toEqual([])
+  })
+
+  test('a dismissed version stays hidden in the next session', async ($, on) => {
+    const w = world(on, { store: { 'dismissed-release': '0.6.0' } })
+    w.version = '0.5.1'
+    released(w, '0.6.0')
+    await startSession($)
+    expect(await offered($)).toBeUndefined()
   })
 })
 

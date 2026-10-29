@@ -72,6 +72,9 @@ var (
 	styAsks      = lipgloss.NewStyle().Foreground(colWarn).Bold(true)
 	styReview    = lipgloss.NewStyle().Foreground(colAccent).Bold(true)
 	styDoing     = lipgloss.NewStyle().Foreground(colAgentic).Bold(true)
+	// The release pill: a newer release exists. Filled, so it is the one
+	// thing on the head that reads as a badge rather than as text.
+	styPill = lipgloss.NewStyle().Background(colAccent).Foreground(lipgloss.Color("16")).Padding(0, 1)
 )
 
 const minColWidth = 22
@@ -92,7 +95,9 @@ const thinColWidth = 4
 // that already fit themselves lose nothing to this; the ones that never did
 // stop being able to break the layout at all.
 func (m *Model) View() tea.View {
+	start := time.Now()
 	out := m.render()
+	m.lastRender = time.Since(start)
 	if m.width > 0 && m.height > 0 {
 		out = clampBlock(out, m.width, m.height)
 	}
@@ -141,6 +146,8 @@ func (m *Model) render() string {
 		return m.modal(m.renderMessage())
 	case modeLegend:
 		return m.modal(m.renderLegend())
+	case modeReleaseNotes:
+		return m.modal(m.notes.render(max(20, m.width-12), m.modalContent()))
 	case modeMilestones:
 		return m.modal(m.renderMilestones())
 	case modeUsers:
@@ -164,6 +171,10 @@ func (m *Model) render() string {
 		return m.renderBoard() // picker is drawn into the status bar
 	case modeDelete:
 		return m.renderDelete()
+	case modeReject:
+		if m.returnTo == modeDetail && m.detail != nil {
+			return m.clipToWindow(m.detailBody(m.detail, max(20, m.width)), m.rejectPrompt()+" · esc cancel")
+		}
 	case modeDropBoard:
 		if m.drop != nil {
 			return m.drop.render(m.width, m.height)
@@ -180,7 +191,7 @@ type boardWindow struct {
 	start int          // first rendered lane, an index into m.cols
 	end   int          // one past the last rendered lane
 	thin  map[int]bool // lanes drawn at thinColWidth because they hold no tickets
-	colW  int          // content width of every other column
+	colW  int          // rendered width (border included) of every other column
 }
 
 // boardFit is the single place that decides how the lanes are laid out: which
@@ -192,12 +203,12 @@ func (m *Model) boardFit(width int) boardWindow {
 	costs := make([]int, len(m.cols))
 	thin := map[int]bool{}
 	for i, c := range m.cols {
-		// A column is budgeted at its width plus two cells — the margin the
-		// full columns have always been laid out with.
-		costs[i] = minColWidth + 2
+		// A column is budgeted at its rendered width: lipgloss's Width is the
+		// whole box, border included, and the columns are joined with no gap.
+		costs[i] = minColWidth
 		if m.thinEmpty && len(c.tickets) == 0 {
 			thin[i] = true
-			costs[i] = thinColWidth + 2
+			costs[i] = thinColWidth
 		}
 	}
 	start, end := fitWindow(m.laneIdx, costs, width)
@@ -208,14 +219,14 @@ func (m *Model) boardFit(width int) boardWindow {
 	full, thinCells := 0, 0
 	for i := start; i < end; i++ {
 		if thin[i] {
-			thinCells += thinColWidth + 2
+			thinCells += thinColWidth
 		} else {
 			full++
 		}
 	}
 	colW := minColWidth
 	if full > 0 {
-		colW = max(minColWidth, (width-thinCells)/full-2)
+		colW = max(minColWidth, (width-thinCells)/full)
 	}
 	return boardWindow{start: start, end: end, thin: thin, colW: colW}
 }
@@ -225,9 +236,12 @@ func (m *Model) renderBoard() string {
 	// The running version, top left, before anything on the board is read —
 	// see versionLine() in updatecheck.go for what it says. It gets a row of
 	// its own rather than the head line's left end (which the ticket count
-	// shares) so that a line can be hung underneath it without pushing the
-	// board bar down.
+	// shares) so that the release pill can hang underneath it; the pill
+	// pushes the head line and the board bar down one row (headLines counts it).
 	head := truncate(m.versionLine, m.width)
+	if m.releasePill != "" {
+		head += "\n" + m.releasePill
+	}
 	b.WriteString(head + "\n")
 	b.WriteString(m.header())
 	b.WriteString("\n")
@@ -605,12 +619,10 @@ func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected, alt bool) str
 	slots := m.cardColors(t)
 	right := m.milestoneColors(t)
 
-	// The selection fill and the glow still follow the first tag alone: the
-	// card is filled in one colour, and slot 1 is the ticket's primary one.
 	bgParams := ""
 	switch {
 	case selected:
-		_, bgParams = m.selectionFill(slots[0].colour, slots[0].coloured)
+		_, bgParams = m.selectionFill()
 	case m.isLogged(t):
 		bgParams = m.logbookShade(alt)
 	default:
@@ -629,8 +641,16 @@ func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected, alt bool) str
 	inner := max(1, w-2)
 	content := strings.TrimSuffix(m.renderCard(t, inner, selected), "\n")
 
+	lines := strings.Split(content, "\n")
+	var snake map[int]map[int]bool
+	var snakeBG string
+	if k := m.snakeOf(t); k != snakeNone {
+		snake = m.snakeCells(t.ID, w, len(lines))
+		snakeBG = snakeParams(k)
+	}
+
 	var b strings.Builder
-	for i, line := range strings.Split(content, "\n") {
+	for i, line := range lines {
 		// A slot with no colour — an absent tag, or a tag with no registry
 		// line — gets the card's own shade, so the text still lines up with
 		// every other card in the lane.
@@ -641,6 +661,24 @@ func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected, alt bool) str
 		rightParams := bgParams
 		if right[i].coloured {
 			rightParams = "5;" + strconv.Itoa(right[i].colour)
+		}
+		if row := snake[i]; row != nil {
+			if row[0] {
+				barParams = snakeBG
+			}
+			if row[w-1] {
+				rightParams = snakeBG
+			}
+			b.WriteString(paintRow(barParams, " "))
+			b.WriteString(paintCells(padDisplay(line, inner), inner, func(c int) string {
+				if row[c+1] {
+					return snakeBG
+				}
+				return bgParams
+			}))
+			b.WriteString(paintRow(rightParams, " "))
+			b.WriteString("\n")
+			continue
 		}
 		b.WriteString(paintRow(barParams, " "))
 		b.WriteString(paintRow(bgParams, padDisplay(line, inner)))
@@ -758,6 +796,14 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 	// until it is pulled, so the card says which command does that.
 	if t.ReadOnly {
 		flags = append(flags, styAsks.Render("⇢ pull"))
+	}
+	// The file here is older than its ref, so the card shows the ref's state
+	// — a move made in another worktree or by a teammate — and says the file
+	// needs a pull before anything here can write it. First, because it says
+	// whose state every other flag on the card describes, and a narrow column
+	// truncates from the end.
+	if t.BehindRef {
+		flags = append([]string{styAsks.Render("⇣ pull")}, flags...)
 	}
 	// Written here, not yet on the remote. It is not an error and not a
 	// conflict: the ticket is correct on this machine and has not left it, and
@@ -1031,6 +1077,9 @@ func (m *Model) statusBar() string {
 	if m.mode == modeCreate {
 		return truncate(styHelpKey.Render("new: ")+m.input+stySelected.Render("▏"), m.width)
 	}
+	if m.mode == modeReject {
+		return truncate(m.rejectPrompt(), m.width)
+	}
 
 	// Hints are dropped from the right as the terminal narrows, rather than
 	// letting the bar wrap and push the board off-screen.
@@ -1042,9 +1091,9 @@ func (m *Model) statusBar() string {
 	if m.thinEmpty {
 		zHint = "z widen empty"
 	}
-	cHint := "c glow"
-	if m.glow {
-		cHint = "c plain"
+	cHint := "c animate"
+	if m.anim {
+		cHint = "c still"
 	}
 	keys := []string{"enter open", "l links", "v compact", zHint, cHint, "t tags", "u users", "M milestones", "L roadmap", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
 	prefix := ""
@@ -1097,11 +1146,20 @@ func (m *Model) renderDelete() string {
 	return m.clipToWindow(m.detailBody(m.detail, max(20, m.width)), prompt+" · esc cancel")
 }
 
+// rejectPrompt is the line R opens, asking for the reason.
+func (m *Model) rejectPrompt() string {
+	handle := ""
+	if m.rejecting != nil {
+		handle = ticket.Handle(m.rejecting.ID)
+	}
+	return styWarn.Render("reject "+handle+" — why: ") + m.input + stySelected.Render("▏")
+}
+
 // detailHints names the actions an open ticket offers. Basic movement (arrows,
 // jk, paging) is deliberately not listed: the footer names actions, the help
 // screen teaches movement. b appears only when there is a blocker to jump to.
 func (m *Model) detailHints(t *ticket.Ticket) string {
-	hint := "e fields · E editor · y copy id · m move · l links · n follow-up · X delete"
+	hint := "e fields · E editor · y copy id · m move · l links · n follow-up · R reject · X delete"
 	if len(t.BlockedBy) > 0 {
 		hint += " · b blocked-by"
 	}
@@ -1689,7 +1747,7 @@ func (m *Model) renderHelp() string {
 			{"esc", "clear the filter"},
 			{"y", "copy the full ticket id (detail pane)"},
 			{"z", "draw lanes with no tickets thin (press again to widen them)"},
-			{"c", "fill the selected card in its tag's colour (press again for plain grey)"},
+			{"c", "stop or start the band running round the cards being worked on"},
 			{"L", "the milestone roadmap (its keys are further down)"},
 		}},
 		{"Change things", [][2]string{
@@ -1701,7 +1759,7 @@ func (m *Model) renderHelp() string {
 			{"a f", "accept, or raise a follow-up (on a ticket awaiting sign-off)"},
 			{"m", "move the selected ticket to another lane"},
 			{"f", "override a move the gate refused, after confirming with y"},
-			{"x", "archive the selected ticket (restore brings it back)"},
+			{"x R", "archive the selected ticket; R: reject it with a one-line reason (restore brings either back)"},
 			{"X", "on an open ticket: delete its file, after typing the handle back"},
 			{"r", "reload from disk now"},
 			{"p b", "switch to another board; b: this repository's next board, its own lanes and only its tickets"},
@@ -1747,6 +1805,7 @@ func (m *Model) renderHelp() string {
 		{styAgentic.Render("sonnet"), "the model that last ran a lane on it"},
 		{styMeta.Render("@name"), "who owns the outcome"},
 		{styOK.Render("⎙ filed 4 Oct"), "in the logbook, filed that day: read-only, 'jaira restore' brings it back"},
+		{snakeLegend(snakeAgent, "▬") + snakeLegend(snakeReview, "▬") + snakeLegend(snakeHuman, "▬") + " worked", "a band runs round the card: an agent works it, a fresh agent reviews it, or it waits for a person (c stops it moving)"},
 	} {
 		fmt.Fprintf(&b, "  %s  %s\n", padDisplay(k[0], 11), styledWrap(styMeta, k[1], max(9, m.width-17), 15))
 	}

@@ -56,6 +56,7 @@ var proseFields = map[string]bool{
 	ticket.FieldOutcomeWhat:     true,
 	ticket.FieldOutcomeWhy:      true,
 	ticket.FieldOutcomeResolves: true,
+	ticket.FieldRejectedWhy:     true,
 }
 
 // emptyDoc is a ticket file with nothing in it, used to stand in for an absent

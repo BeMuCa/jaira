@@ -8,7 +8,9 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -33,16 +35,38 @@ func newWebCmd() *cobra.Command {
 epics, each with its description and how many of its tickets are done; on the
 left are the open tickets that belong to no epic. Drag a ticket onto an epic to
 put it there, onto another epic to move it, or back to the left to take it out;
-"+ New epic" starts one, as 'jaira epic create' does. A ticket that counts only
-because it follows a member has no line of its own and cannot be dragged.
-Click a ticket to read it: goal, context, definition of done and every note,
-rendered as markdown, without leaving the page. Nothing is edited there.
+"+ New epic" starts one, as 'jaira epic create' does, and "Edit" on an epic
+rewrites its title, description and text, as 'jaira epic set' does. Its text
+sits folded under the description; click "Text" to read it. A ticket that
+counts only because it follows a member has no line of its own and cannot be
+dragged. Click a ticket to read it: goal, context, definition of done and
+every note, rendered as markdown, without leaving the page. Nothing is edited
+there.
+
+The bar above both columns filters them: a search over title, goal and id, a
+lane, a tag, a person (who created it, is assigned it or changed it last), and
+a date range on created, last changed or filed away. Lane, tag and person take
+several values, any of which may match; click a value to turn it into 'not'
+that value, so "not done" shows every lane but done. "All tickets ever" adds
+every ticket in no epic that ever existed — finished, only on a ref, or filed
+in the logbook or the archive — each saying where it lies; a filed ticket
+opens but cannot be dragged. The filters stay in the address, so a link shows
+the same list.
+
+Every lane has a colour of its own, the same on each ticket's badge and in
+the lane filter: the lanes where agents work take theirs from their place in
+the board's order, a lane a person moves on is amber, the terminal lane green
+and the parking lane red.
 
 There is no server: the page lives as long as this command runs, and it reads
 and writes the same refs the CLI does. A drop writes the epic's ref and pushes
 it at once; every minute the command fetches, so what a teammate sorted arrives
 without a reload. The page shows when it last synchronised. A push that fails
 stays queued and goes out with the next change.
+
+Every answer with an error, every failed fetch or push and every crash is
+written with its time and cause to a log outside the repository; the command
+prints its path when it starts.
 
 The page answers only on loopback and only to requests that name a loopback
 host, so neither another machine nor another web site can reach it.
@@ -58,7 +82,19 @@ Stop it with Ctrl-C.`,
 			if err != nil {
 				return fail(ExitError, "listen", "cannot listen on 127.0.0.1:%d: %v", port, err)
 			}
-			srv := &web.Server{Source: newWebSource(s)}
+			// A log that cannot be opened costs the record, not the page: the
+			// command warns and serves on, writing what it would have logged
+			// to stderr as it did before there was a log.
+			logPath := filepath.Join(s.StateDir(), "web.log")
+			logger := web.NewLogger(cmd.ErrOrStderr())
+			if logFile, err := web.OpenLog(logPath); err != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "jaira web: cannot open the log %s (%v); running without one\n", logPath, err)
+				logPath = ""
+			} else {
+				defer logFile.Close()
+				logger = web.NewLogger(logFile)
+			}
+			srv := &web.Server{Source: newWebSource(s), Log: logger}
 			if refs.Usable() == nil {
 				root := s.Root
 				srv.Fetch = func() error { return fetchInChild(root) }
@@ -66,6 +102,10 @@ Stop it with Ctrl-C.`,
 			}
 			url := "http://" + l.Addr().String() + "/"
 			fmt.Fprintf(cmd.OutOrStdout(), "jaira web: %s  (Ctrl-C to stop)\n", url)
+			if logPath != "" {
+				fmt.Fprintf(cmd.OutOrStdout(), "jaira web: log %s\n", logPath)
+			}
+			logger.Printf("started on %s (pid %d, %s)", url, os.Getpid(), s.Root)
 			if !noOpen {
 				if err := web.OpenBrowser(url); err != nil {
 					fmt.Fprintf(cmd.ErrOrStderr(), "jaira web: could not open a browser (%v); open the address above\n", err)
@@ -74,16 +114,20 @@ Stop it with Ctrl-C.`,
 
 			stop := make(chan struct{})
 			go srv.Loop(webFetchEvery, stop)
-			hs := &http.Server{Handler: srv.Handler(), ReadHeaderTimeout: 10 * time.Second}
+			hs := &http.Server{Handler: srv.Handler(), ReadHeaderTimeout: 10 * time.Second, ErrorLog: logger}
 			served := make(chan error, 1)
 			go func() { served <- hs.Serve(l) }()
 
 			sig := make(chan os.Signal, 1)
-			signal.Notify(sig, os.Interrupt)
+			// A closed terminal (SIGHUP) or a kill (SIGTERM) ends the command as
+			// Ctrl-C does, but through here, so the log says which of them it was.
+			signal.Notify(sig, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 			defer signal.Stop(sig)
 			select {
-			case <-sig:
+			case got := <-sig:
+				logger.Printf("stopped by signal %v", got)
 			case err = <-served:
+				logger.Printf("stopped: %v", err)
 			}
 			close(stop)
 			_ = hs.Close()

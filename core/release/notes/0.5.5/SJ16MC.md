@@ -1,0 +1,2 @@
+- Put `teamlead` into `.jaira/release` and commit it when your repository sets its version and changelog once, at release: jaira-worker and jaira-role-lane then leave both alone, and `jaira roles list` reports it as `release`. Without the file nothing changes.
+- Expect jaira-worker and jaira-role-lane to format only the files they changed, never the whole tree.

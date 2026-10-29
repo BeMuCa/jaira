@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/project"
+	"github.com/BeMuCa/jaira/core/release"
 	"github.com/BeMuCa/jaira/core/session"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -23,6 +25,10 @@ type HomeEntry struct {
 	Name  string
 	Open  int // tickets not in a terminal lane
 	Total int
+
+	// Counted is whether Open, Total and Waiting have been counted yet. They
+	// are counted off the first frame, because counting reads the board's refs.
+	Counted bool
 
 	// Agents is how many sessions are actively working this board, and Waiting
 	// how many tickets sit at a human checkpoint. Those are the two states worth
@@ -82,33 +88,23 @@ type Home struct {
 	// indicator drawn in the top left corner, computed once at construction —
 	// see versionLine() in updatecheck.go for why not on every render.
 	versionLine string
+	// releasePill is the "^ <version>" badge under it when a newer release is
+	// known, empty otherwise.
+	releasePill string
+	// notes is the release-notes screen opened with w, nil when closed.
+	notes *notesView
 
 	width, height int
 }
 
 // refresh rebuilds the list, including anything just added, and reports how many
-// of them were not already known.
-func (h *Home) refresh(extra []string) int {
-	seen := map[string]bool{}
-	var entries []HomeEntry
-	add := func(root string) {
-		abs := project.Canonical(root)
-		if seen[abs] {
-			return
-		}
-		seen[abs] = true
-		entries = append(entries, describe(abs, h.lanes))
-	}
+// of them were not already known, with the run that counts their tickets.
+func (h *Home) refresh(extra []string) (int, tea.Cmd) {
 	before := map[string]bool{}
 	for _, e := range h.entries {
 		before[project.Canonical(e.Root)] = true
 	}
-	for _, p := range project.Load() {
-		add(p.Root)
-	}
-	for _, r := range extra {
-		add(r)
-	}
+	entries := describeAll(boardRoots(extra), h.lanes, false)
 	h.entries = entries
 	if h.idx >= len(h.entries) {
 		h.idx = max(0, len(h.entries)-1)
@@ -119,7 +115,28 @@ func (h *Home) refresh(extra []string) int {
 			added++
 		}
 	}
-	return added
+	return added, h.countBoards()
+}
+
+// boardRoots is every registered board followed by extra, each once, in
+// canonical form.
+func boardRoots(extra []string) []string {
+	seen := map[string]bool{}
+	var out []string
+	add := func(root string) {
+		abs := project.Canonical(root)
+		if !seen[abs] {
+			seen[abs] = true
+			out = append(out, abs)
+		}
+	}
+	for _, p := range project.Load() {
+		add(p.Root)
+	}
+	for _, r := range extra {
+		add(r)
+	}
+	return out
 }
 
 // NewHome builds the launcher from the registry plus anything discovered below
@@ -131,38 +148,86 @@ func NewHome(extraRoots []string) (*Home, error) {
 	if err != nil {
 		return nil, err
 	}
-	h := &Home{lanes: lanes, versionLine: versionLine()}
+	h := &Home{lanes: lanes}
+	h.versionLine, h.releasePill = versionLine()
 
-	seen := map[string]bool{}
-	add := func(root string) {
-		abs := project.Canonical(root)
-		if seen[abs] {
-			return
-		}
-		seen[abs] = true
-		h.entries = append(h.entries, describe(abs, lanes))
-	}
-	for _, p := range project.Load() {
-		add(p.Root)
-	}
-	for _, r := range extraRoots {
-		add(r)
-	}
+	h.entries = describeAll(boardRoots(extraRoots), lanes, false)
 	if wd, err := os.Getwd(); err == nil {
 		h.startDir = wd
 	}
 	return h, nil
 }
 
-// describe reads one board's counts. A board that cannot be read is listed with
-// its error rather than dropped: a project vanishing silently from the launcher
-// is worse than one that says what is wrong with it.
-func describe(root string, lanes *lane.Set) HomeEntry {
-	e := HomeEntry{Root: root, Name: filepath.Base(root)}
+// describeAll reads every board at once, in the order given; counted says
+// whether to count their tickets too (see describe).
+//
+// One goroutine per board: since a board's tickets live on refs, reading one
+// is a few git calls, and ten boards read one after the other would make the
+// launcher wait for all of them in a row.
+func describeAll(roots []string, lanes *lane.Set, counted bool) []HomeEntry {
+	out := make([]HomeEntry, len(roots))
+	var wg sync.WaitGroup
+	for i, root := range roots {
+		wg.Go(func() { out[i] = describe(root, lanes, counted) })
+	}
+	wg.Wait()
+	return out
+}
+
+// homeCountedMsg carries the boards with their tickets counted, from the
+// background run countBoards starts.
+type homeCountedMsg struct{ entries []HomeEntry }
+
+// countBoards counts the tickets of every board listed, off the update loop.
+//
+// Counting reads each board's refs, and on a board with a hundred and fifty of
+// them that is a tenth of a second the first frame must not wait for. Until
+// it arrives a row shows a placeholder rather than the files on disk: a disk
+// count is a wrong number that then jumps, on a board whose tickets are mostly
+// on refs often "0 open / 0".
+func (h *Home) countBoards() tea.Cmd {
+	roots := make([]string, len(h.entries))
+	for i, e := range h.entries {
+		roots[i] = e.Root
+	}
+	lanes := h.lanes
+	return func() tea.Msg { return homeCountedMsg{describeAll(roots, lanes, true)} }
+}
+
+// counted puts counted boards into the list by root, so a list rebuilt while
+// they were being counted keeps its own order and its own boards.
+func (h *Home) counted(entries []HomeEntry) {
+	byRoot := make(map[string]HomeEntry, len(entries))
+	for _, e := range entries {
+		byRoot[e.Root] = e
+	}
+	for i, e := range h.entries {
+		if c, ok := byRoot[e.Root]; ok {
+			h.entries[i] = c
+		}
+	}
+}
+
+// describe reads one board. A board that cannot be read is listed with its
+// error rather than dropped: a project vanishing silently from the launcher is
+// worse than one that says what is wrong with it.
+//
+// Counted, it counts what 'jaira list' counts: the ticket files and the
+// tickets that live only on their ref, each once. Those are most of a board's
+// tickets — a ticket stays on its ref until it is filed away — so a launcher
+// reading only the disk showed a board with refs and no files as empty.
+// Uncounted, it reads only the disk and leaves the counts to a second run.
+func describe(root string, lanes *lane.Set, counted bool) HomeEntry {
+	e := HomeEntry{Root: root, Name: filepath.Base(root), Counted: counted}
 	s, err := ticket.At(root)
 	if err != nil {
 		e.Err = err
 		return e
+	}
+	if counted {
+		// Read through the same syncer the board attaches, which hands List
+		// the tickets with no file here. Nothing is written through it.
+		newSyncer(s, "")
 	}
 	tickets, err := s.List()
 	if err != nil {
@@ -173,17 +238,7 @@ func describe(root string, lanes *lane.Set) HomeEntry {
 			return e
 		}
 	}
-	e.Total = len(tickets)
 	e.Logged = s.LoggedPerDay(time.Now(), logbookDays)
-	for _, t := range tickets {
-		l, known := lanes.Get(t.Status)
-		if !known || !l.Terminal {
-			e.Open++
-		}
-		if known && l.RequiresHumanExit {
-			e.Waiting++
-		}
-	}
 	if ss, err := session.Load(s); err == nil {
 		for _, x := range ss {
 			if !x.Stale() {
@@ -191,15 +246,45 @@ func describe(root string, lanes *lane.Set) HomeEntry {
 			}
 		}
 	}
+	if !counted {
+		return e
+	}
+	e.Total = len(tickets)
+	// A ticket runs through the lanes of its own board, so it is open or
+	// waiting by those. Today's board keeps the catalogue it was always
+	// counted against; a named board is read as it stands. A named board that
+	// cannot be read falls back to the catalogue rather than hiding its tickets.
+	boardLanes := lane.LanesOf(root)
+	lanesOf := func(t *ticket.Ticket) *lane.Set {
+		if lane.BoardOf(t) == "" {
+			return lanes
+		}
+		if set := boardLanes(t); set != nil {
+			return set
+		}
+		return lanes
+	}
+	for _, t := range tickets {
+		l, known := lanesOf(t).Get(t.Status)
+		if !known || !l.Terminal {
+			e.Open++
+		}
+		if known && l.RequiresHumanExit {
+			e.Waiting++
+		}
+	}
 	return e
 }
 
-func (h *Home) Init() tea.Cmd { return nil }
+func (h *Home) Init() tea.Cmd { return h.countBoards() }
 
 func (h *Home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		h.width, h.height = msg.Width, msg.Height
+	case homeCountedMsg:
+		h.counted(msg.entries)
+		return h, nil
 	case boardEditorDoneMsg:
 		if h.board != nil {
 			if msg.err != nil {
@@ -213,16 +298,23 @@ func (h *Home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		if h.drop != nil {
 			done, removed := h.drop.key(cmdKey(msg))
+			var cmd tea.Cmd
 			if done {
 				name := h.drop.name
 				h.drop = nil
 				if removed {
-					h.refresh(nil)
+					_, cmd = h.refresh(nil)
 					if h.idx >= len(h.entries) {
 						h.idx = max(0, len(h.entries)-1)
 					}
 					h.msg = "removed " + name
 				}
+			}
+			return h, cmd
+		}
+		if h.notes != nil {
+			if h.notes.key(cmdKey(msg)) {
+				h.notes = nil
 			}
 			return h, nil
 		}
@@ -235,10 +327,12 @@ func (h *Home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if h.browse != nil {
 			added, done := h.browse.key(cmdKey(msg))
+			var cmd tea.Cmd
 			if len(added) > 0 {
 				// Say what happened. Registering boards that were already known
 				// changes nothing on screen, which reads as the key not working.
-				n := h.refresh(added)
+				var n int
+				n, cmd = h.refresh(added)
 				switch {
 				case n == 0 && len(added) == 1:
 					h.msg = filepath.Base(added[0]) + " was already on the list"
@@ -253,7 +347,7 @@ func (h *Home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if done {
 				h.browse = nil
 			}
-			return h, nil
+			return h, cmd
 		}
 		switch cmdKey(msg) {
 		case "a":
@@ -261,11 +355,14 @@ func (h *Home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			h.browse = newBrowser(h.startDir)
 			return h, nil
 		case "r":
-			h.refresh(nil)
+			_, cmd := h.refresh(nil)
 			h.msg = "reloaded"
-			return h, nil
+			return h, cmd
 		case "s":
 			h.stats = !h.stats
+			return h, nil
+		case "w":
+			h.notes = newNotesView("Release notes", release.Since(""))
 			return h, nil
 		case "x":
 			// Opens a screen rather than acting: removing a board is the one
@@ -328,6 +425,9 @@ func (h *Home) render() string {
 	if h.drop != nil {
 		return h.drop.render(h.width, h.height)
 	}
+	if h.notes != nil {
+		return h.notes.render(h.width, h.height)
+	}
 	if h.board != nil {
 		return h.board.render(h.width, h.height)
 	}
@@ -347,6 +447,9 @@ func (h *Home) render() string {
 	// The running version, top left, above everything else — the same corner
 	// renderBoard puts it in, so it is in one place on every screen.
 	b.WriteString(truncate(h.versionLine, h.width) + "\n")
+	if h.releasePill != "" {
+		b.WriteString(h.releasePill + "\n")
+	}
 
 	// Header: the wordmark with the icon beside it, centred as a block. This is
 	// the one screen that is looked at rather than worked in, so it is allowed
@@ -373,9 +476,12 @@ func (h *Home) render() string {
 			name = stySelected.Render(name)
 		}
 		var bits []string
-		if e.Err != nil {
+		switch {
+		case e.Err != nil:
 			bits = append(bits, styErr.Render("unreadable"))
-		} else {
+		case !e.Counted:
+			bits = append(bits, styMeta.Render("… open"))
+		default:
 			bits = append(bits, styMeta.Render(fmt.Sprintf("%d open / %d", e.Open, e.Total)))
 		}
 		// Two colours because they ask for two different things: work happening
@@ -400,7 +506,7 @@ func (h *Home) render() string {
 		}
 	}
 
-	for _, l := range wrapHints([]string{"enter open", "s stats", "a add a board", "x remove a board", "d default board", "r refresh", "q quit"}, max(1, h.width)) {
+	for _, l := range wrapHints([]string{"enter open", "s stats", "a add a board", "x remove a board", "d default board", "w release notes", "r refresh", "q quit"}, max(1, h.width)) {
 		b.WriteString("\n" + centre.Render(styMeta.Render(l)))
 	}
 	// Nothing above measures its own height, unlike every other self-contained

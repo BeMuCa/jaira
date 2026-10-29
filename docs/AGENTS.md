@@ -260,7 +260,7 @@ For anything else, copy that block into whatever your tool reads:
 | Tool | File |
 |---|---|
 | Codex, and increasingly others | `AGENTS.md` — written for you |
-| Claude Code | `CLAUDE.md` — written for you, plus a skill in `.claude/skills/jaira/` |
+| Claude Code | `CLAUDE.md` — written for you, plus the `jaira` skill from `jaira roles install` |
 | Gemini CLI | `GEMINI.md` |
 | Cursor | `.cursorrules` or `.cursor/rules/` |
 | Aider | the conventions file named in its config |
@@ -268,8 +268,9 @@ For anything else, copy that block into whatever your tool reads:
 Re-running `jaira init` updates the block in place and leaves the rest of each
 file alone.
 
-For Claude Code there is also a skill in `.claude/skills/jaira/`; copy it to
-`~/.claude/skills/jaira/` to have it available in every repository.
+For Claude Code there is also the `jaira` skill. `jaira roles install --project`
+writes it to `.claude/skills/jaira/` and `jaira roles install --global` to
+`~/.claude/skills/jaira/`, to have it available in every repository.
 
 The roles that drive a board — teamlead, dispatcher, worker and the lane
 agents — are skills too, and `jaira roles install` writes them where your agent

@@ -18,7 +18,7 @@ You are given the ticket's goal, its definition of done, the implementer's
 account of what they did, and the actual diff. Judge the diff, not the account —
 they can disagree, and when they do, the diff is what shipped.
 
-Write three things, in this order:
+Write four things, in this order:
 
 1. `review-summary` — what this change actually does, read off the diff, in
    plain language, such that someone who has not read the diff can follow what
@@ -27,20 +27,34 @@ Write three things, in this order:
 
        jaira set <handle> review-summary="streamed the writer instead of buffering the whole export"
 
-2. `review-gaps` — what is missing or unconvincing. If you found nothing, write
-   `none` explicitly — an empty field means nobody looked, and "none" is you
-   saying you looked and found nothing.
+2. `review-gaps` — what is missing or unconvincing, one finding per line, and
+   every line starts with what kind of finding it is:
+
+   - `blocker:` — the diff breaks a definition-of-done item, or introduces a
+     defect. Nothing else is a blocker.
+   - `note:` — everything else: a simpler form, a missing test of something
+     that works, a neighbouring fault, a "would be nice".
+
+   If you found nothing, write `none` explicitly — an empty field means nobody
+   looked, and "none" is you saying you looked and found nothing.
 
        jaira set <handle> review-gaps="none"
+       jaira set <handle> review-gaps="note: the export test covers 1MB, not 40MB"
+
+   Two findings are two lines, never one line joined with `;` — each line is
+   read on its own, and a joined pair is read as one finding:
+
+       jaira set <handle> review-gaps=$'blocker: DoD 2 - an empty export still writes a header\nnote: the export test covers 1MB, not 40MB'
 
    Ask yourself specifically:
    - Does the diff actually satisfy the definition of done? If not, what is missing?
    - Are there defects introduced by this change?
    - Is anything claimed in the outcome not supported by the diff?
 
-   When a review sends work back, put the reason in a note too
-   (`jaira note <id> <text>`), so the implementer reading the ticket later sees
-   it in the trail rather than only in a field the next review overwrites.
+   A note is one line in this field and nothing else. Never create a ticket
+   from it, and never ask for one to be created: whether a note becomes a
+   ticket is the person's decision when they accept the work, not yours and
+   not the next agent's.
 
 3. `review-verdict` — your conclusion.
 
@@ -62,8 +76,14 @@ Write three things, in this order:
    is a legitimate answer ("go test ./auth -run TestSameSite covers it; there is
    no UI path"). "Review the diff" is not.
 
-Default to finding problems. A review that approves everything is worth nothing.
+Judge against the definition of done. `none` is a normal, expected answer: a
+change that meets its criteria and breaks nothing has no blocker, however much
+you could add to it.
 
-Then move the ticket to human review. You are not the last word: a person reads your
-verdict alongside the implementer's account and decides. Say plainly when you
-are unsure rather than rounding up to approval.
+Then move the ticket on. A blocker sends it back to the lane the work was done
+in (`in-progress` on the default board), with the reason in a note
+(`jaira note <id> <text>`), so the implementer reading the ticket later sees it
+in the trail rather than only in a field the next review overwrites. Without a
+blocker it goes on to the person, notes and all. You are not the last word: a
+person reads your verdict alongside the implementer's account and decides. Say
+plainly when you are unsure rather than rounding up to approval.

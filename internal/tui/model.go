@@ -55,12 +55,14 @@ const (
 	modeSettings
 	modeDefaultBoard
 	modeDelete
+	modeReject
 	modeDropBoard
 	modeLegend
 	modeMilestones
 	modeLinks
 	modeUsers
 	modeLayer
+	modeReleaseNotes
 )
 
 // Model is the board's state.
@@ -122,15 +124,26 @@ type Model struct {
 	// the dark default, which is what the rest of the palette already assumes.
 	darkBG bool
 
-	// glow fills the selected card in its tag's colour instead of a neutral
-	// grey. On by default: the fill is there either way, and carrying the tag's
-	// hue in it costs nothing and says more. Session-only, for the same reason
-	// thinEmpty is — see the note there.
-	glow bool
+	// anim runs the snake round the cards being worked (snake.go); off, it
+	// stands still. On by default. Session-only, for the same reason thinEmpty
+	// is — see the note there.
+	anim bool
+	// animStart is the clock the snake's position is read from, animPhase that
+	// position as of the last frame, and animPending that a frame is already
+	// on its way, so a second loop is never started beside the first.
+	animStart   time.Time
+	animPhase   int
+	animPending bool
+	// lastRender is how long the last View took; the frame loop spaces its
+	// frames by it.
+	lastRender time.Duration
+	// liveClaims holds the tickets whose claim is past its lease but whose
+	// agent process is still running here, read on every reload.
+	liveClaims map[string]bool
 
-	// trueColor says the terminal can show 24-bit colour, which decides how far
-	// the glow is mixed. Reported by Bubble Tea on start; a terminal that says
-	// nothing is treated as palette-only, the safe direction.
+	// trueColor says the terminal can show 24-bit colour, which decides how a
+	// milestone bubble's fill is mixed. Reported by Bubble Tea on start; a
+	// terminal that says nothing is treated as palette-only, the safe direction.
 	trueColor bool
 
 	// detailScroll is the first visible line of the open ticket. The detail pane
@@ -160,6 +173,11 @@ type Model struct {
 	// somewhere else. Zero value is modeBoard, which is what these dismissed to
 	// before.
 	returnTo mode
+
+	// rejecting is the ticket R was pressed on, held while its reason is
+	// typed: on the board the cursor may move under a reload, and the
+	// reason must land on the ticket it was typed for.
+	rejecting *ticket.Ticket
 
 	// copied marks that the id was just put on the clipboard. OSC52 gives no
 	// feedback of its own, so the pane has to say the copy happened — it is
@@ -287,12 +305,20 @@ type Model struct {
 	laneStart int
 
 	// versionLine is the persistent "which version, is there an update"
-	// indicator drawn in the board's top left corner, computed once at
-	// construction — see versionLine() in updatecheck.go for why not on
-	// every render. It survives switchBoard,
-	// since which jaira binary is running is a machine-level fact, not a
-	// per-board one.
+	// indicator drawn in the board's top left corner, computed at
+	// construction and again by the tick once versionAt is versionEvery old
+	// — see versionLine() in updatecheck.go for why not on every render. It
+	// survives switchBoard, since which jaira binary is running is a
+	// machine-level fact, not a per-board one.
 	versionLine string
+	// releasePill is the "^ <version>" badge under it when a newer release is
+	// known, empty otherwise.
+	releasePill string
+	// versionAt is when versionLine and releasePill were last computed.
+	versionAt time.Time
+	// notes is the release-notes popup shown once after a version change,
+	// nil when closed; see openReleaseNotes.
+	notes *notesView
 
 	width, height int
 }
@@ -323,7 +349,9 @@ func New(s *ticket.Store) (*Model, error) {
 	// its 1-9 binding work from the very first frame — a board that has to be
 	// opened once with 'p' before it knows its own neighbours is the bug this
 	// exists to fix.
-	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), versionLine: versionLine(), darkBG: true, glow: true}
+	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), darkBG: true, anim: true, animStart: time.Now()}
+	m.versionLine, m.releasePill = versionLine()
+	m.versionAt = time.Now()
 	m.me = identity.Current(s.Root)
 	// Mutations from the board record who made them, the same as the CLI's.
 	s.Actor = m.me
@@ -340,6 +368,7 @@ func New(s *ticket.Store) (*Model, error) {
 	if err := m.reload(); err != nil {
 		return nil, err
 	}
+	m.openReleaseNotes()
 	return m, nil
 }
 
@@ -455,6 +484,7 @@ func (m *Model) reload() error {
 		m.sessions = sess
 	}
 	m.refMarks()
+	m.refreshLiveClaims()
 	m.rebuild()
 	m.refreshLiveBoards()
 	m.refreshLayer()
@@ -886,7 +916,7 @@ func (m *Model) Init() tea.Cmd {
 	// Asked for explicitly: the selection fill has a direction, and without an
 	// answer the board keeps the dark default and would paint a black block on
 	// a light terminal.
-	return tea.Batch(tick(), waitForChange(m.watch), fetchRefs(m.refSync), refTick(), tea.RequestBackgroundColor)
+	return tea.Batch(tick(), waitForChange(m.watch), fetchRefs(m.refSync), refTick(), tea.RequestBackgroundColor, m.animKick())
 }
 
 // startWatching subscribes to changes in the ticket and session directories.
@@ -1080,9 +1110,19 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.store.ForgetAll()
 			m.fullAt = time.Now()
 		}
+		// The release cache is read again here, not only at construction: the
+		// check runs hourly, and a board left open all day would otherwise
+		// never show a release published after it was opened.
+		if time.Since(m.versionAt) >= versionEvery {
+			m.versionLine, m.releasePill = versionLine()
+			m.versionAt = time.Now()
+		}
 		// Preserve the cursor and any open pane across a background refresh.
 		_ = m.reload()
-		return m, tick()
+		return m, tea.Batch(tick(), m.animKick())
+
+	case animFrameMsg:
+		return m, m.frame()
 
 	case refTickMsg:
 		return m, tea.Batch(fetchRefs(m.refSync), refTick())
@@ -1147,7 +1187,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyPressMsg:
-		return m.key(msg)
+		// A key can bring the board back on screen or switch the snake on,
+		// and either may need the frame loop running again.
+		next, cmd := m.key(msg)
+		return next, tea.Batch(cmd, m.animKick())
 
 	// A paste arrives as an event of its own, never as a key, so it needs a
 	// branch of its own: the terminal wraps a bracketed paste in its own escape
@@ -1200,7 +1243,7 @@ func (m *Model) insertText(text string) {
 		m.filter = m.input
 		m.rebuild()
 
-	case modeCreate, modeDelete:
+	case modeCreate, modeDelete, modeReject:
 		m.input += foldToOneLine(text)
 
 	case modeLayer:
@@ -1280,6 +1323,22 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case modeReject:
+		switch s {
+		case "enter":
+			m.confirmReject()
+		case "esc":
+			m.input, m.rejecting = "", nil
+			m.mode = m.returnTo
+		case "backspace":
+			if r := []rune(m.input); len(r) > 0 {
+				m.input = string(r[:len(r)-1])
+			}
+		default:
+			m.insertText(k.Text)
+		}
+		return m, nil
+
 	case modeMove:
 		switch s {
 		case "enter":
@@ -1338,6 +1397,14 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		switch s {
 		case "esc", "t", "q":
 			m.mode = m.returnTo
+		}
+		return m, nil
+
+	case modeReleaseNotes:
+		if m.notes.key(s) {
+			markSeen(m.store.StateDir())
+			m.notes = nil
+			m.mode = modeBoard
 		}
 		return m, nil
 
@@ -1536,6 +1603,8 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 				m.mode = modeDelete
 				m.input = ""
 			}
+		case "R":
+			m.startReject(m.detail)
 		case "b":
 			// A blocked ticket names its blocker; the reader's next question is
 			// always "and what is that one waiting on" — so the link is walkable.
@@ -1608,6 +1677,8 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.openDetail()
 	case "x":
 		m.archiveSelected()
+	case "R":
+		m.startReject(m.selected())
 	case "v":
 		// The compact view: the whole flow on one screen, for watching several
 		// agents rather than working one ticket.
@@ -1616,7 +1687,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// Next to v: both are about what the screen shows, not about a ticket.
 		m.toggleEmptyLanes()
 	case "c":
-		m.toggleGlow()
+		m.toggleAnim()
 	case "t":
 		// The legend for the colour a tagged card's box is drawn in. It is
 		// drawn over the board, so it has to record what it is covering.
@@ -1695,13 +1766,6 @@ func (m *Model) moveLane(d int) {
 	m.laneIdx = (m.laneIdx + d + len(m.cols)) % len(m.cols)
 	m.cardIdx = 0
 	m.clampCursor()
-}
-
-// toggleGlow flips whether the selected card is filled in its tag's colour or
-// in neutral grey. The fill itself is not in question — only its hue — so the
-// cursor stays exactly as findable either way.
-func (m *Model) toggleGlow() {
-	m.glow = !m.glow
 }
 
 // toggleEmptyLanes flips whether lanes holding no tickets are drawn thin.
@@ -2235,6 +2299,51 @@ func (m *Model) archiveSelected() {
 	m.detail = nil
 	m.notify(fmt.Sprintf("Archived %s.\n\nNothing was deleted — bring it back with:\n\n  jaira restore %s",
 		ticket.Handle(t.ID), filepath.Base(dst)), false)
+}
+
+// startReject asks for the one line that says why t will not be done.
+//
+// Its own key rather than a question on x: x tidies a ticket away and must
+// go on doing only that, and a rejection is a decision with a reason, which
+// is what tells the two apart in the archive months later. The board is a
+// person at a keyboard, so nothing here asks whether the caller may reject —
+// that refusal is the CLI's, which agents drive.
+func (m *Model) startReject(t *ticket.Ticket) {
+	if t == nil || m.refuseLogged(t) {
+		return
+	}
+	m.returnTo = m.mode
+	m.rejecting = t
+	m.input = ""
+	m.mode = modeReject
+}
+
+// confirmReject rejects the ticket with the typed reason. An empty reason
+// leaves the prompt open: rejecting without one is archiving, and x does that.
+func (m *Model) confirmReject() {
+	t, why := m.rejecting, strings.TrimSpace(m.input)
+	if why == "" {
+		return
+	}
+	m.input, m.rejecting = "", nil
+	// Stamped before the ticket leaves the board, as 'jaira reject' does:
+	// a rejected ticket's commits are the record of what was tried.
+	// Best-effort, like there — finding none must not stop the rejection.
+	_, _ = m.store.StampCommits(t, m.gateEnv().DeriveCommits)
+	dst, err := m.store.Reject(t.ID, ticket.RejectWontfix, why, "", time.Now())
+	if err != nil {
+		m.mode = m.returnTo
+		m.notify(err.Error(), true)
+		return
+	}
+	m.mode = modeBoard
+	m.detail = nil
+	if err := m.reload(); err != nil {
+		m.notify(err.Error(), true)
+		return
+	}
+	m.notify(fmt.Sprintf("Rejected %s: %s\n\nIt is in the archive with its reason — bring it back with:\n\n  jaira restore %s",
+		ticket.Handle(t.ID), why, filepath.Base(dst)), false)
 }
 
 // nextBoard shows the repository's next board, in the order today's board

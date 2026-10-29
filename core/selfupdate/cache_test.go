@@ -95,8 +95,8 @@ func TestStaleAtThresholds(t *testing.T) {
 		ok   bool
 		want bool
 	}{
-		{"25 hours old is stale", 25 * time.Hour, true, true},
-		{"23 hours old is not stale", 23 * time.Hour, true, false},
+		{"61 minutes old is stale", 61 * time.Minute, true, true},
+		{"59 minutes old is not stale", 59 * time.Minute, true, false},
 		{"absent is stale", 0, false, true},
 	}
 	for _, tc := range cases {

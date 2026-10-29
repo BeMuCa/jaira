@@ -3,6 +3,7 @@ package cli
 import (
 	"cmp"
 	"fmt"
+	"io"
 
 	"github.com/spf13/cobra"
 
@@ -48,7 +49,13 @@ from as chat_model_source.
 
 And which command the roles run their Python scripts with: JAIRA_PYTHON first,
 then "python" in settings.json, else python3 — carried as python, and where it
-came from as python_source. A command, so "uv run python" works too.`,
+came from as python_source. A command, so "uv run python" works too.
+
+And who touches the repository's version and changelog: "teamlead" when the
+board's .jaira/release says so — one line, committed, shared with everybody
+on the board — and "worker" otherwise, every ticket bringing its own as the
+repository's instructions say. Carried as release, and where it came from as
+release_source.`,
 		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			roles, err := role.Builtins()
@@ -60,8 +67,10 @@ came from as python_source. A command, so "uv run python" works too.`,
 			// this list to know what it can start, and which of two it starts
 			// for a ticket is the same question.
 			cur := settings.Load()
-			chat, chatSource := cur.ChatModelFor(bestEffortRoot())
+			root := bestEffortRoot()
+			chat, chatSource := cur.ChatModelFor(root)
 			py, pySource := cur.PythonCommand()
+			release, releaseSource := settings.ReleaseFor(root)
 			if g.jsonOut {
 				arr := make([]map[string]any, 0, len(roles))
 				for _, r := range roles {
@@ -74,6 +83,7 @@ came from as python_source. A command, so "uv run python" works too.`,
 					"roles": arr, "dispatch": cur.DispatchMode(), "dispatch_role": cur.DispatchRole(),
 					"chat_model": chat, "chat_model_source": chatSource,
 					"python": py, "python_source": pySource,
+					"release": release, "release_source": releaseSource,
 				})
 			}
 			fmt.Fprintf(w, "%-24s %s\n", "ID", "DESCRIPTION")
@@ -85,6 +95,7 @@ came from as python_source. A command, so "uv run python" works too.`,
 			fmt.Fprintf(w, "chat model: %s — what the cockpit's explain and discuss chats start on (%s)\n",
 				cmp.Or(chat, "account default"), chatSource)
 			fmt.Fprintf(w, "python: %s — what the roles run their Python scripts with (%s)\n", py, pySource)
+			fmt.Fprintf(w, "release: %s — who touches the version and the changelog (%s)\n", release, releaseSource)
 			return nil
 		},
 	}
@@ -97,7 +108,8 @@ func newRolesInstallCmd() *cobra.Command {
 		Use:   "install --project|--global|--into <dir> [--agent <name>]",
 		Short: "Write the role prompts into a skills directory",
 		Long: `Writes every built-in role as <skills>/<role-id>/SKILL.md, together with any
-files the role ships beside its prompt, and the jaira-cockpit mod as
+files the role ships beside its prompt, the jaira skill as <skills>/jaira/SKILL.md
+(not a role: it teaches the agent the CLI), and the jaira-cockpit mod as
 <skills>/jaira-cockpit/ — a Claude Code plugin folder, which Claude Code loads
 by itself from the next session on (from .claude/skills once you trust the
 workspace). It keeps a teamlead chat readable and shows what waits on the
@@ -121,9 +133,13 @@ A file you have edited is never replaced. It is left exactly as it is and
 reported, and the command exits 3 so a script can tell "installed" from
 "installed except the ones you changed"; --force replaces it. A file already
 identical to the built-in one is not an edit — a second run reports it as
-unchanged and exits 0.`,
+unchanged and exits 0. Neither is a file identical to a version an earlier
+jaira shipped: it is replaced and reported as updated, without --force.`,
 		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			// --project opens the store below; it must not warn about the skills it is installing.
+			updateInProgress = true
+			defer func() { updateInProgress = false }()
 			agent, ok := role.AgentNamed(agentName)
 			if !ok {
 				return fail(ExitUsage, "usage", "unknown agent %q; known agents: %s", agentName, role.AgentNames())
@@ -181,7 +197,7 @@ unchanged and exits 0.`,
 				return nil
 			}
 
-			results, err := agent.Install(target, force)
+			results, err := agent.Install(target, force, false)
 			if err != nil {
 				return err
 			}
@@ -200,31 +216,11 @@ func reportRoleInstall(cmd *cobra.Command, agent, target string, results []role.
 	w := cmd.OutOrStdout()
 	skipped := role.SkippedAny(results)
 	if g.jsonOut {
-		arr := make([]map[string]any, 0, len(results))
-		for _, r := range results {
-			arr = append(arr, map[string]any{
-				"role": r.Role, "path": r.Path, "action": string(r.Action),
-			})
-		}
-		if err := emit(w, map[string]any{"agent": agent, "directory": target, "installed": arr, "skipped": skipped}); err != nil {
+		if err := emit(w, map[string]any{"agent": agent, "directory": target, "installed": roleResultsJSON(results), "skipped": skipped}); err != nil {
 			return err
 		}
 	} else {
-		counts := map[role.Action]int{}
-		for _, r := range results {
-			counts[r.Action]++
-			// Only the two actions that changed or withheld something are
-			// worth a line each; a run that writes nothing new should be quiet.
-			switch r.Action {
-			case role.Written, role.Overwritten:
-				fmt.Fprintf(w, "%s %s\n", r.Action, r.Path)
-			case role.Skipped:
-				fmt.Fprintf(w, "%s %s (edited here; --force to replace)\n", r.Action, r.Path)
-			}
-		}
-		fmt.Fprintf(w, "%d written, %d unchanged, %d skipped, %d overwritten\n",
-			counts[role.Written], counts[role.Unchanged], counts[role.Skipped], counts[role.Overwritten])
-		fmt.Fprintf(w, "roles in %s\n", target)
+		printRoleResults(w, target, results, false)
 	}
 	if skipped {
 		// A refusal, not a failure: everything else was installed, and the
@@ -232,4 +228,40 @@ func reportRoleInstall(cmd *cobra.Command, agent, target string, results []role.
 		return fail(ExitValidation, "edited", "some roles were edited here and left alone; --force to replace them")
 	}
 	return nil
+}
+
+// roleResultsJSON is one entry per file, as 'roles install --json' lists them.
+func roleResultsJSON(results []role.Result) []map[string]any {
+	arr := make([]map[string]any, 0, len(results))
+	for _, r := range results {
+		arr = append(arr, map[string]any{
+			"role": r.Role, "path": r.Path, "action": string(r.Action),
+		})
+	}
+	return arr
+}
+
+// printRoleResults writes the text report of one install. With dry the lines
+// say what would happen instead of what did.
+func printRoleResults(w io.Writer, target string, results []role.Result, dry bool) {
+	counts := map[role.Action]int{}
+	for _, r := range results {
+		counts[r.Action]++
+		// Only the actions that changed or withheld something are worth a line
+		// each; a run that writes nothing new should be quiet.
+		switch r.Action {
+		case role.Written, role.Updated, role.Overwritten:
+			if dry {
+				verb := map[role.Action]string{role.Written: "write", role.Updated: "update", role.Overwritten: "overwrite"}[r.Action]
+				fmt.Fprintf(w, "would %s %s\n", verb, r.Path)
+			} else {
+				fmt.Fprintf(w, "%s %s\n", r.Action, r.Path)
+			}
+		case role.Skipped:
+			fmt.Fprintf(w, "%s %s (edited here; --force to replace)\n", r.Action, r.Path)
+		}
+	}
+	fmt.Fprintf(w, "%d written, %d updated, %d unchanged, %d skipped, %d overwritten\n",
+		counts[role.Written], counts[role.Updated], counts[role.Unchanged], counts[role.Skipped], counts[role.Overwritten])
+	fmt.Fprintf(w, "roles in %s\n", target)
 }
