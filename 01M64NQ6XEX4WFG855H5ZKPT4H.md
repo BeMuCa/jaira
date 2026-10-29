@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T20:54:15Z
+updated-at: 2026-10-29T20:54:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1236953
 claimed-at: 2026-10-29T20:37:14Z
@@ -31,7 +31,7 @@ outcome-resolves: Seite und Ref widersprechen sich nicht mehr; Liegengebliebenes
 review-summary: "none"
 round: 4
 review-gaps: "Runde DoD 5/6: nichts entfernt. Geprüft: archived/signoff-Konstanten je ein Name statt Literal an zwei Stellen; Lookup in Epics() liest abgelegte Tickets aus dem Index-Cache (kein zweiter Dateizugriff außer LoadAnywhere für die Daten). Frühere Runde: Newer gebündelt über ReadMany (0,55 → 0,1 s)."
-test-verdict: "pass: go build ./... und go test -race -count=1 ./... RC=0; dist == npm ci && npm run build; DoD 1+2 per TestWebShowsTheNewerOfFileAndRef (Gegenprobe ohne Newer rot), DoD 3+4 per Test (created_at/updated_at) und age()/date() unter node geprüft (<1h, 5h, 1d, 3d, leer); jaira web --no-open auf diesem Board liefert Daten auf jeder Karte"
+test-verdict: "pass: go test -race -count=1 ./... RC=0 nach DoD 5/6; dist == Neubau aus src; DoD 5 per TestWebShowsAnArchivedTicketAsArchive, DoD 6 per TestWebCountsSignoffApartFromDone (beide Gegenproben rot), DoD 1-4 wie Runde 1; jaira web auf diesem Board liefert signoff je Epic (hier 0, keine signoff-Tickets im Epic)"
 review-verdict: "Der Diff erfüllt alle vier DoD-Punkte; go build/vet und die Tests in internal/cli (TestWeb*), core/refsync, core/web, core/link laufen grün, das ausgelieferte Bundle entspricht dem Quellstand. Keine Defekte gefunden; die Lücken oben sind Testabdeckung und eine Randbedeutung von ReadOnly, nichts, das die Annahme aufhalten muss."
 review-round: 2
 review-check: "1. cd in das Repo dieses Branches, go run ./cmd/jaira web  2. ein Ticket nehmen, das per 'jaira move' auf dem Ref in signoff liegt, dessen Datei unter .jaira/tickets/ aber noch 'status: in-progress' und ein älteres updated-at hat  3. Seite neu laden: die Karte steht in signoff, nicht in in-progress; Karte anklicken — Detail zeigt ebenfalls signoff  4. in der Datei updated-at auf 2099-01-01T00:00:00Z setzen, neu laden: Karte zeigt jetzt in-progress  5. unter jedem Kartentitel steht eine graue Zeile 'created <Datum> · untouched <Nd|Nh|<1h>'  6. Datei danach mit 'git checkout -- .jaira/tickets/<datei>' zurücksetzen. Automatisch: go test ./internal/cli -run TestWebShowsTheNewerOfFileAndRef"
