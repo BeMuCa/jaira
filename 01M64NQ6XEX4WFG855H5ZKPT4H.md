@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T20:56:46Z
+updated-at: 2026-10-29T20:56:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1236953
 claimed-at: 2026-10-29T20:37:14Z
@@ -30,7 +30,7 @@ outcome-why: Lanes ohne Code schreiben nur den Ref; abgelegte Tickets behalten i
 outcome-resolves: Seite und Ref widersprechen sich nicht mehr; Liegengebliebenes und Abgelegtes ist auf der Karte erkennbar.
 review-summary: "board() in internal/cli/web_source.go liest jetzt alle Ticketdateien, fragt mit dem neuen refsync.Syncer.Newer in einem einzigen git-Durchgang (Repo.ReadMany) alle Refs ab und ersetzt jede Datei, deren Ref ein späteres updated-at hat (isStale), durch den Ref-Stand – bevor der Index gebaut wird. Damit stehen Karten in Epics und 'unassigned' sowie die Detailansicht (Ticket() ruft Newer für das eine Ticket) in der Lane des Refs; eine neuere Datei gewinnt weiter. web.Ticket bekommt created_at/updated_at, die Karte zeigt 'created <Datum> · untouched 3d/5h/<1h' (time.ts age/date). Archivierte bzw. Logbook-Tickets zeigen 'archive' statt ihrer alten Lane (Epics über ix.Lookup-Place, Detail über den Pfad außerhalb tickets/). Epics zählen signoff getrennt (Epic.Signoff) und der Fortschrittsbalken zeigt dafür ein bernsteinfarbenes zweites Segment mit Text '4 done · 3 in signoff of 10'. Release-Note core/release/notes/ZKPT4H.md mit vier Zeilen, dist-Bundle neu gebaut und passt zum Quelltext."
 round: 4
-review-gaps: "Runde DoD 5/6: nichts entfernt. Geprüft: archived/signoff-Konstanten je ein Name statt Literal an zwei Stellen; Lookup in Epics() liest abgelegte Tickets aus dem Index-Cache (kein zweiter Dateizugriff außer LoadAnywhere für die Daten). Frühere Runde: Newer gebündelt über ReadMany (0,55 → 0,1 s)."
+review-gaps: "Keine Defekte gefunden. Kleinigkeiten: (1) board() dupliziert boardIndex() aus internal/cli/links.go:113 bis auf den Newer-Schritt – zwei Kopien derselben Ladelogik. (2) Ein ticket, das der Web-Server als Ref-Stand zeigt, bleibt im Checkout veraltet; die Seite verschweigt das (kein Hinweis 'Datei älter als Ref') – gewollt laut Kontext, aber unsichtbar. (3) Fortschrittsbalken: pct(done)+pct(signoff) wird einzeln gerundet und kann 101% ergeben; durch overflow:hidden unsichtbar. (4) Der Signoff-Zähler und 'archive' sind nur über Go-Tests abgedeckt; die Svelte-Anzeige (Karte, Balken) hat keinen Test."
 test-verdict: "pass: go test -race -count=1 ./... RC=0 nach DoD 5/6; dist == Neubau aus src; DoD 5 per TestWebShowsAnArchivedTicketAsArchive, DoD 6 per TestWebCountsSignoffApartFromDone (beide Gegenproben rot), DoD 1-4 wie Runde 1; jaira web auf diesem Board liefert signoff je Epic (hier 0, keine signoff-Tickets im Epic)"
 review-verdict: "Der Diff erfüllt alle vier DoD-Punkte; go build/vet und die Tests in internal/cli (TestWeb*), core/refsync, core/web, core/link laufen grün, das ausgelieferte Bundle entspricht dem Quellstand. Keine Defekte gefunden; die Lücken oben sind Testabdeckung und eine Randbedeutung von ReadOnly, nichts, das die Annahme aufhalten muss."
 review-round: 2
