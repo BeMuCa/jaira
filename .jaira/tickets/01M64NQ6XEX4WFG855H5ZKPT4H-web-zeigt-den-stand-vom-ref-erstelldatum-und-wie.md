@@ -1,7 +1,7 @@
 ---
 id: 01M64NQ6XEX4WFG855H5ZKPT4H
 title: "Web zeigt den Stand vom Ref, Erstelldatum und wie lange ein Ticket unberührt ist"
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,16 +21,20 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T20:45:27Z
+updated-at: 2026-10-29T20:51:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1236953
 claimed-at: 2026-10-29T20:37:14Z
-outcome-what: "jaira web zeigt bei einer Ticketdatei, die älter ist als ihr Ref, den Stand vom Ref (Karte, Epic-Zählung, Detail); jede Karte zeigt Erstelldatum und 'untouched Nd/Nh'."
-outcome-why: Lanes ohne Code schreiben nur den Ref; die Datei im Checkout blieb stehen und die Seite zeigte Tickets in signoff als in-progress.
-outcome-resolves: Seite und Ref widersprechen sich nicht mehr; liegengebliebene Tickets sind auf der Karte erkennbar.
-review-summary: "none"
-round: 2
-review-gaps: "Syncer.Newer liest alle Refs in einem ReadMany statt einem git-Aufruf pro Ticket (gemessen auf einem Board mit 130 Tickets: /api/unassigned 0,55 s → 0,08–0,12 s, wie vor der Änderung); refTicket und Newer teilen decodeRef. Stehen gelassen: board() kopiert ~8 Zeilen aus boardIndex (critique-Notiz Runde 1)."
+outcome-what: "jaira web zeigt den Ref-Stand bei älterer Datei, Erstelldatum und 'untouched' auf jeder Karte, und 'archive' als Lane für archivierte/abgelegte Tickets."
+outcome-why: Lanes ohne Code schreiben nur den Ref; abgelegte Tickets behalten ihre alte Lane und lasen sich wie offene Arbeit.
+outcome-resolves: Seite und Ref widersprechen sich nicht mehr; Liegengebliebenes und Abgelegtes ist auf der Karte erkennbar.
+review-summary: "jaira web liest jetzt alle Ticket-Refs in einem git-Aufruf (neues refsync.Syncer.Newer über gitref.ReadMany) und ersetzt jede Ticketdatei, deren updated-at älter ist als der Ref, durch den Ref-Stand, bevor der Link-Index gebaut wird — dadurch zeigen Karten, Epic-Zählung und Detailansicht die Lane vom Ref; eine neuere Datei bleibt, weil derselbe isStale-Vergleich wie bei pull/CheckFresh entscheidet. Zusätzlich trägt web.Ticket created_at/updated_at, und TicketCard zeigt 'created <Datum>' und 'untouched 3d/5h/<1h' (im Browser aus updated_at berechnet). dist ist aus dem Quellstand gebaut (Neubau ergibt dieselben Hashes)."
+round: 3
+review-gaps: "Kein Blocker. (1) Der Test prüft nur lose Karten (/api/unassigned) und die Detailansicht; der Epic-Pfad (Epics(): Zählung und Daten, inkl. LoadAnywhere für abgelegte Mitglieder) ist ungetestet, obwohl das Outcome 'Epic-Zählung' nennt. (2) age()/date() haben keinen Test — es gibt im Repo kein UI-Testframework, das räumt der Implementierer selbst ein. (3) Der ersetzte Ticketstand ist ReadOnly mit leerem Path; im Link-Index gilt er damit als 'nur auf dem Ref' (PlaceRef), obwohl eine Datei existiert — die Seite zeigt Place heute nicht, fällt also nicht auf, ist aber eine stille Bedeutungsverschiebung. (4) Scheitert ReadMany, zeigt die Seite ohne Hinweis wieder den Dateistand. (5) TUI und 'jaira list' lesen weiter nur die Datei — bewusst außerhalb des Tickets (Note vom 29.10.)."
+test-verdict: "pass: go build ./... und go test -race -count=1 ./... RC=0; dist == npm ci && npm run build; DoD 1+2 per TestWebShowsTheNewerOfFileAndRef (Gegenprobe ohne Newer rot), DoD 3+4 per Test (created_at/updated_at) und age()/date() unter node geprüft (<1h, 5h, 1d, 3d, leer); jaira web --no-open auf diesem Board liefert Daten auf jeder Karte"
+review-verdict: "Der Diff erfüllt alle vier DoD-Punkte; go build/vet und die Tests in internal/cli (TestWeb*), core/refsync, core/web, core/link laufen grün, das ausgelieferte Bundle entspricht dem Quellstand. Keine Defekte gefunden; die Lücken oben sind Testabdeckung und eine Randbedeutung von ReadOnly, nichts, das die Annahme aufhalten muss."
+review-round: 2
+review-check: "1. cd in das Repo dieses Branches, go run ./cmd/jaira web  2. ein Ticket nehmen, das per 'jaira move' auf dem Ref in signoff liegt, dessen Datei unter .jaira/tickets/ aber noch 'status: in-progress' und ein älteres updated-at hat  3. Seite neu laden: die Karte steht in signoff, nicht in in-progress; Karte anklicken — Detail zeigt ebenfalls signoff  4. in der Datei updated-at auf 2099-01-01T00:00:00Z setzen, neu laden: Karte zeigt jetzt in-progress  5. unter jedem Kartentitel steht eine graue Zeile 'created <Datum> · untouched <Nd|Nh|<1h>'  6. Datei danach mit 'git checkout -- .jaira/tickets/<datei>' zurücksetzen. Automatisch: go test ./internal/cli -run TestWebShowsTheNewerOfFileAndRef"
 ---
 
 # Web zeigt den Stand vom Ref, Erstelldatum und wie lange ein Ticket unberührt ist
@@ -45,6 +49,9 @@ review-gaps: "Syncer.Newer liest alle Refs in einem ReadMany statt einem git-Auf
   proof: core/web/ui/src/entities/ticket/ui/TicketCard.svelte 'created {date(created_at)}'; created_at gesetzt in internal/cli/web_source.go Unassigned() und Epics(); TestWebShowsTheNewerOfFileAndRef prüft created_at
 - [x] Jede Karte zeigt, wie lange das Ticket unberührt ist (seit updated-at), in Tagen/Stunden
   proof: core/web/ui/src/shared/lib/time.ts age() (d ab 24h, sonst h, <1h); TicketCard.svelte 'untouched {age(updated_at)}'; TestWebShowsTheNewerOfFileAndRef prüft updated_at
+- [x] Ein Ticket, das im Archiv bzw. im Logbook liegt, zeigt auf seiner Karte im Web den Status 'archive' statt der Lane, in der es abgelegt wurde (z.B. nicht 'backlog') – sonst sieht es aus, als müsse man es noch machen
+  proof: internal/cli/web_source.go Epics(): ix.Lookup Place archive/logbook → Lane archived; Ticket(): Pfad außerhalb tickets/ → archived; TestWebShowsAnArchivedTicketAsArchive (Gegenprobe mit backlog rot)
+- [ ] Der Fortschrittsbalken eines Epics im Web (EpicProgress) zeigt neben 'done' auch die Tickets in 'signoff' als eigenen, farblich abgesetzten Teil, mit Zahl im Tooltip/Text (z.B. '4 done · 3 in signoff of 10') – Abnahme dauert, und heute sieht fertig-wartende Arbeit aus wie nicht angefangen
 
 ## Options
 
@@ -68,3 +75,7 @@ review-gaps: "Syncer.Newer liest alle Refs in einem ReadMany statt einem git-Auf
 - **2026-10-29 20:41 · Alexander Sacharov** — Gegenprobe: mit Newer→nil fällt TestWebShowsTheNewerOfFileAndRef ('card in-progress; want signoff'). Live-Probe: jaira web --no-open auf diesem Board, /api/unassigned liefert created_at/updated_at, Seite lädt das neue Bundle. Kein UI-Testframework im Repo (kein vitest) – age()/date() nur per Augenschein im Build.
 - **2026-10-29 20:43 · Alexander Sacharov** — critique (Runde 1): card() in web_source.go hat einen Aufrufer – inlinen. Stehen gelassen: board() dupliziert ~8 Zeilen von boardIndex (links.go:113) statt boardIndex zu ändern, weil boardIndex auch epic ls/show bedient und dessen Verhalten nicht Teil dieses Tickets ist.
 - **2026-10-29 20:45 · Alexander Sacharov** — optimize: Newer war pro Ticket ein git-Prozess – jede Seitenanfrage 5x langsamer (0,1 → 0,55 s bei 130 Tickets). Jetzt gebündelt über gitref.ReadMany wie Syncer.Extra; zurück auf 0,08–0,12 s. Verhalten unverändert, Test grün.
+- **2026-10-29 20:48 · Alexander Sacharov** — review: grün, keine Defekte. Lücken nur Testabdeckung (Epic-Pfad, age()/date()) und ReadOnly-Ersatz = PlaceRef im Index. Nicht zu diesem Ticket gehörig: .jaira/milestones/ liegt untracked im Worktree und taucht deshalb in worktree_diff auf.
+- **2026-10-29 20:49 · Alexander Sacharov** — decision (Alex, 29.10.): Karten von archivierten/abgelegten Tickets (z.B. in einem Epic, 'via follows/parent') zeigten das Lane-Badge 'backlog' plus die Zeile 'in the archive'. Das Badge soll 'archive' heißen, wenn das Ticket im Archiv liegt – 'backlog' liest sich wie offene Arbeit. Als DoD 5 aufgenommen. Testdaten erfunden, keine fremden Tickets.
+- **2026-10-29 20:50 · Alexander Sacharov** — DoD 5: Entscheidung – Archiv und Logbook zeigen beide 'archive' (DoD-Text 'Archiv bzw. Logbook'); auch die Detailansicht, damit Karte und Detail nicht auseinanderlaufen. Die Zeile 'in the archive' aus Alex' Beschreibung gibt es in core/web weder hier noch auf origin/master – nichts zu entfernen.
+- **2026-10-29 20:50 · Alexander Sacharov** — decision (Alex, 29.10.): DoD 6 – signoff gehört in den Epic-Fortschrittsbalken von jaira web (core/web/ui/src/entities/epic/ui/EpicProgress.svelte, heute nur done/total). Grund: Tickets warten lange in signoff und zählen sonst wie offene Arbeit. done bleibt die einzige Zahl, die als fertig zählt; signoff ist ein zweites Segment.

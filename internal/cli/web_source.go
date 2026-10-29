@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/BeMuCa/jaira/core/epic"
@@ -24,6 +25,11 @@ type webSource struct {
 }
 
 func newWebSource(s *ticket.Store) *webSource { return &webSource{s: s} }
+
+// archived is the lane the page shows for a ticket filed into the archive or
+// the logbook. The file keeps the lane it was filed from, and on a card
+// "backlog" reads as work still to do.
+const archived = "archive"
 
 // board loads the open tickets, the index that says which are finished, and
 // the epics, through the same helpers 'jaira epic ls' uses. A board with
@@ -77,6 +83,9 @@ func (w *webSource) Epics() ([]web.Epic, error) {
 		v := web.Epic{Name: e.Name, Title: e.Title, Description: e.Description, Done: p.Done, Total: p.Total}
 		for _, t := range p.Tickets {
 			c := web.Ticket{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Lane, Done: t.Done, Direct: t.Direct}
+			if r, _ := ix.Lookup(t.ID); r.Place == link.PlaceArchive || r.Place == link.PlaceLogbook {
+				c.Lane = archived
+			}
 			// A member filed away is in no listing; its file still has the dates.
 			full, ok := open[t.ID]
 			if !ok {
@@ -113,7 +122,7 @@ func (w *webSource) Unassigned() ([]web.Ticket, error) {
 func (w *webSource) Ticket(id string) (web.TicketDetail, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	t, _, err := w.s.LoadAnywhere(id)
+	t, path, err := w.s.LoadAnywhere(id)
 	if err != nil {
 		if errors.Is(err, ticket.ErrNotFound) {
 			return web.TicketDetail{}, fmt.Errorf("ticket %s: %w", id, web.ErrNotFound)
@@ -124,6 +133,9 @@ func (w *webSource) Ticket(id string) (web.TicketDetail, error) {
 		t = n
 	}
 	d := web.TicketDetail{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Status, Goal: t.Goal, Context: t.Context}
+	if path != "" && filepath.Dir(path) != w.s.TicketsDir() {
+		d.Lane = archived
+	}
 	for _, it := range t.DoDItems {
 		d.DoD = append(d.DoD, web.Check{Text: it.Text, Done: it.Checked()})
 	}

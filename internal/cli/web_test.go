@@ -266,3 +266,38 @@ func TestWebShowsTheNewerOfFileAndRef(t *testing.T) {
 		t.Errorf("card updated_at = %v; want %v", card.UpdatedAt, want)
 	}
 }
+
+// A ticket filed into the archive keeps the lane it left the board from; the
+// page shows it as archive, on its card in an epic and when it is opened.
+func TestWebShowsAnArchivedTicketAsArchive(t *testing.T) {
+	ada, _ := twoBoards(t)
+	a := createTicket(t, ada, "Old idea")
+	jsonOf(t, ada, "epic", "create", "ideas")
+	jsonOf(t, ada, "epic", "add", "ideas", a)
+	if out, err := runAndSend(t, ada, "pull", a); err != nil {
+		t.Fatalf("pull: %v\n%s", err, out)
+	}
+	if out, err := runAndSend(t, ada, "archive", a); err != nil {
+		t.Fatalf("archive: %v\n%s", err, out)
+	}
+
+	g.dir = ada
+	s, err := openStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := (&web.Server{Source: newWebSource(s)}).Handler()
+	var epics []web.Epic
+	webGet(t, h, "/api/epics", &epics)
+	if len(epics) != 1 || len(epics[0].Tickets) != 1 || epics[0].Tickets[0].Lane != "archive" {
+		t.Fatalf("epics = %+v; want the one card in lane archive", epics)
+	}
+	if epics[0].Tickets[0].CreatedAt.IsZero() {
+		t.Error("the archived card has no created_at")
+	}
+	var d web.TicketDetail
+	webGet(t, h, "/api/tickets/"+a, &d)
+	if d.Lane != "archive" {
+		t.Errorf("detail lane = %q; want archive", d.Lane)
+	}
+}
