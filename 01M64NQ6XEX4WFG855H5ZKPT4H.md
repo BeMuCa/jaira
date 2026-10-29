@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T21:11:23Z
+updated-at: 2026-10-29T21:14:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1480570
 claimed-at: 2026-10-29T21:08:48Z
@@ -103,3 +103,4 @@ Warum: Die Lücken betreffen Testabdeckung, nicht das Verhalten; web, epic ls un
 1) Zurückgeben und Tests für epic ls/show/links und den Epic-Kartenpfad ergänzen lassen [give back]
 2) Ticket so annehmen und die Lücken ungetestet lassen [accept]
 Empfehlung: 2 - kein Defekt, die Lücken sind indirekt über boardIndex abgedeckt und die UI hat im Repo kein Testframework.
+- **2026-10-29 21:14 · Alexander Sacharov** — decision: 2) Ticket so annehmen und die Lücken ungetestet lassen
