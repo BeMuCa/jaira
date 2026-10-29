@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T21:08:10Z
+updated-at: 2026-10-29T21:08:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1236953
 claimed-at: 2026-10-29T20:37:14Z
@@ -31,7 +31,7 @@ outcome-resolves: Seite und Ref widersprechen sich nicht mehr; Liegengebliebenes
 review-summary: "none"
 round: 5
 review-gaps: "Runde 3: entfernt – die Kopie der Ladelogik in web_source.go board() (ruft jetzt boardIndex) und der lane-Import dort. Frühere Runden: Newer gebündelt (0,55 → 0,1 s). Stehen gelassen: nichts Offenes."
-test-verdict: "pass: go test -race -count=1 ./... RC=0 nach DoD 5/6; dist == Neubau aus src; DoD 5 per TestWebShowsAnArchivedTicketAsArchive, DoD 6 per TestWebCountsSignoffApartFromDone (beide Gegenproben rot), DoD 1-4 wie Runde 1; jaira web auf diesem Board liefert signoff je Epic (hier 0, keine signoff-Tickets im Epic)"
+test-verdict: "pass: go test -race -count=1 ./... RC=0 nach Runde 3; dist == Neubau; DoD 7 boardIndex einzige Ladefunktion (web_source.go board ruft sie), DoD 8 behind_ref true/false in TestWebShowsTheNewerOfFileAndRef; DoD 1-6 Tests unverändert grün; jaira epic ls mit neuem Binary auf diesem Board läuft (rc 0)"
 review-verdict: "Der Diff erfüllt alle sechs DoD-Punkte; TestWebShowsTheNewerOfFileAndRef deckt genau Datei=in-progress/Ref=signoff und die Gegenrichtung ab. go vet sauber, go test ./internal/cli ./core/refsync ./core/web ./core/ticket ./core/link ./core/epic grün. Keine Defekte; die Lücken sind kosmetisch bzw. Wartung."
 review-round: 4
 review-check: "1. go test ./internal/cli -run 'TestWebShowsTheNewerOfFileAndRef|TestWebShowsAnArchivedTicketAsArchive|TestWebCountsSignoffApartFromDone' -count=1 → ok  2. go build -o /tmp/jaira ./cmd/jaira und in einem Repo mit geteiltem Board /tmp/jaira web starten  3. ein Ticket nehmen, das per 'jaira move' (ohne Code-Commit) in signoff steht, dessen Datei im Checkout aber noch in-progress sagt: die Karte zeigt 'signoff'  4. jede Karte trägt darunter 'created <Datum> · untouched <N>d|h|<1h'  5. ein Epic mit einem signoff-Ticket: der Balken hat ein bernsteinfarbenes Segment, Text '<x> done · <y> in signoff of <z>'  6. ein mit 'jaira archive' abgelegtes Epic-Mitglied: Karte und geöffnetes Detail zeigen Lane 'archive'"
