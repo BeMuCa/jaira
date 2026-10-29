@@ -46,8 +46,9 @@ func (w *webSource) board() ([]*ticket.Ticket, *link.Index, []*epic.Epic, error)
 			return nil, nil, nil, err
 		}
 	}
+	newer := refs.Newer(all)
 	for i, t := range all {
-		if n := refs.Newer(t); n != nil {
+		if n, ok := newer[t.ID]; ok {
 			all[i] = n
 		}
 	}
@@ -119,7 +120,7 @@ func (w *webSource) Ticket(id string) (web.TicketDetail, error) {
 		}
 		return web.TicketDetail{}, err
 	}
-	if n := refs.Newer(t); n != nil {
+	if n, ok := refs.Newer([]*ticket.Ticket{t})[t.ID]; ok {
 		t = n
 	}
 	d := web.TicketDetail{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Status, Goal: t.Goal, Context: t.Context}

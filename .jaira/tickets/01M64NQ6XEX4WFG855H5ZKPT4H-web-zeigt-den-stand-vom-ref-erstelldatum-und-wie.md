@@ -1,7 +1,7 @@
 ---
 id: 01M64NQ6XEX4WFG855H5ZKPT4H
 title: "Web zeigt den Stand vom Ref, Erstelldatum und wie lange ein Ticket unberührt ist"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,15 +21,16 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T20:43:26Z
+updated-at: 2026-10-29T20:45:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1236953
 claimed-at: 2026-10-29T20:37:14Z
 outcome-what: "jaira web zeigt bei einer Ticketdatei, die älter ist als ihr Ref, den Stand vom Ref (Karte, Epic-Zählung, Detail); jede Karte zeigt Erstelldatum und 'untouched Nd/Nh'."
 outcome-why: Lanes ohne Code schreiben nur den Ref; die Datei im Checkout blieb stehen und die Seite zeigte Tickets in signoff als in-progress.
 outcome-resolves: Seite und Ref widersprechen sich nicht mehr; liegengebliebene Tickets sind auf der Karte erkennbar.
-review-summary: "internal/cli/web_source.go card(): Helfer mit einem Aufrufer (Unassigned), Epics baut web.Ticket weiter inline – card() zurück in Unassigned inlinen"
+review-summary: "none"
 round: 2
+review-gaps: "Syncer.Newer liest alle Refs in einem ReadMany statt einem git-Aufruf pro Ticket (gemessen auf einem Board mit 130 Tickets: /api/unassigned 0,55 s → 0,08–0,12 s, wie vor der Änderung); refTicket und Newer teilen decodeRef. Stehen gelassen: board() kopiert ~8 Zeilen aus boardIndex (critique-Notiz Runde 1)."
 ---
 
 # Web zeigt den Stand vom Ref, Erstelldatum und wie lange ein Ticket unberührt ist
@@ -37,9 +38,9 @@ round: 2
 ## Definition of Done
 
 - [x] Ein Ticket, dessen Datei älter ist als sein Ref, erscheint im Web in der Lane des Refs (Test mit Datei=in-progress, Ref=signoff)
-  proof: internal/cli/web_source.go board(): refs.Newer ersetzt die Datei vor link.Build; TestWebShowsTheNewerOfFileAndRef (Datei=in-progress/2026-09-10, Ref=signoff → Karte und Detail signoff)
+  proof: internal/cli/web_source.go board(): refs.Newer(all) ersetzt veraltete Dateien vor link.Build; TestWebShowsTheNewerOfFileAndRef (Datei=in-progress/2026-09-10, Ref=signoff → Karte und Detail signoff)
 - [x] Ist die Datei neuer als der Ref, gewinnt die Datei
-  proof: core/refsync/refsync.go Syncer.Newer gibt nil, wenn !isStale; TestWebShowsTheNewerOfFileAndRef (Datei updated-at 2099 → in-progress)
+  proof: core/refsync/refsync.go Syncer.Newer nimmt ein Ticket nur auf, wenn isStale(Datei, Ref); TestWebShowsTheNewerOfFileAndRef (Datei updated-at 2099 → in-progress)
 - [x] Jede Karte zeigt das Erstelldatum
   proof: core/web/ui/src/entities/ticket/ui/TicketCard.svelte 'created {date(created_at)}'; created_at gesetzt in internal/cli/web_source.go Unassigned() und Epics(); TestWebShowsTheNewerOfFileAndRef prüft created_at
 - [x] Jede Karte zeigt, wie lange das Ticket unberührt ist (seit updated-at), in Tagen/Stunden
@@ -66,3 +67,4 @@ round: 2
 - **2026-10-29 20:38 · Alexander Sacharov** — Entscheidungen (selbst getroffen, keine offen für Alex): (1) Regel 'neuer gewinnt' ganz, nicht der Feld-Merge aus refsync.Reconcile – der hält status nie rückwärts und würde DoD 2 (Datei neuer, frühere Lane) brechen. Vergleich über refsync.isStale, dieselbe Definition wie pull/CheckFresh. (2) Nur jaira web; TUI/list lesen weiter die Datei – gleicher Fehler möglich, nicht Teil dieses Tickets. (3) Karte englisch wie der Rest der Seite: 'created 14.10.26' (locale) und 'untouched 3d' / '5h' / '<1h'; Tage ab 24h, sonst Stunden, berechnet im Browser aus updated_at. (4) Auch die Detailansicht nimmt den neueren Stand. (5) Epic-Karten eines abgelegten Tickets: Daten per LoadAnywhere.
 - **2026-10-29 20:41 · Alexander Sacharov** — Gegenprobe: mit Newer→nil fällt TestWebShowsTheNewerOfFileAndRef ('card in-progress; want signoff'). Live-Probe: jaira web --no-open auf diesem Board, /api/unassigned liefert created_at/updated_at, Seite lädt das neue Bundle. Kein UI-Testframework im Repo (kein vitest) – age()/date() nur per Augenschein im Build.
 - **2026-10-29 20:43 · Alexander Sacharov** — critique (Runde 1): card() in web_source.go hat einen Aufrufer – inlinen. Stehen gelassen: board() dupliziert ~8 Zeilen von boardIndex (links.go:113) statt boardIndex zu ändern, weil boardIndex auch epic ls/show bedient und dessen Verhalten nicht Teil dieses Tickets ist.
+- **2026-10-29 20:45 · Alexander Sacharov** — optimize: Newer war pro Ticket ein git-Prozess – jede Seitenanfrage 5x langsamer (0,1 → 0,55 s bei 130 Tickets). Jetzt gebündelt über gitref.ReadMany wie Syncer.Extra; zurück auf 0,08–0,12 s. Verhalten unverändert, Test grün.

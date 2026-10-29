@@ -1189,15 +1189,25 @@ func (y *Syncer) refTicket(id string) (*ticket.Ticket, []byte) {
 	if err != nil {
 		return nil, nil
 	}
-	d, err := ticket.ParseDoc(content)
-	if err != nil {
-		return nil, nil
-	}
-	t, err := ticket.Decode(d, "")
-	if err != nil {
+	t := decodeRef(content)
+	if t == nil {
 		return nil, nil
 	}
 	return t, content
+}
+
+// decodeRef reads the bytes a ref carries as a ticket, or nil when they are
+// not one.
+func decodeRef(content []byte) *ticket.Ticket {
+	d, err := ticket.ParseDoc(content)
+	if err != nil {
+		return nil
+	}
+	t, err := ticket.Decode(d, "")
+	if err != nil {
+		return nil
+	}
+	return t
 }
 
 // isStale is the one definition of "older than its ref": the ref was written
@@ -1207,21 +1217,38 @@ func isStale(file, ref *ticket.Ticket) bool {
 		ref.UpdatedAt.After(file.UpdatedAt)
 }
 
-// Newer returns the ticket as its ref holds it when the ref was written after
-// the file t was read from, and nil otherwise. It is the reading side of
-// CheckFresh: a view that shows the file would show a state the team has
-// moved past, so it shows the ref instead. The result is ReadOnly, as every
-// ticket with no file behind it is.
-func (y *Syncer) Newer(t *ticket.Ticket) *ticket.Ticket {
-	if y == nil || t == nil || y.Usable() != nil {
+// Newer returns, by id, those of ts whose ref was written after the file each
+// was read from, as the ref holds them. It is the reading side of CheckFresh:
+// a view that shows the file would show a state the team has moved past, so it
+// shows the ref instead. The results are ReadOnly, as every ticket with no file
+// behind it is. All refs are read in one pass: a view asks for the whole board
+// on every refresh, and a git call per ticket made that five times slower.
+func (y *Syncer) Newer(ts []*ticket.Ticket) map[string]*ticket.Ticket {
+	if y == nil || y.Usable() != nil {
 		return nil
 	}
-	ref, _ := y.refTicket(t.ID)
-	if !isStale(t, ref) {
+	ids := make([]string, 0, len(ts))
+	for _, t := range ts {
+		if !t.ReadOnly { // a ReadOnly ticket was read off its ref already
+			ids = append(ids, t.ID)
+		}
+	}
+	contents, err := y.Repo.ReadMany(ids)
+	if err != nil {
 		return nil
 	}
-	ref.ReadOnly = true
-	return ref
+	out := map[string]*ticket.Ticket{}
+	for _, t := range ts {
+		content, ok := contents[t.ID]
+		if !ok {
+			continue
+		}
+		if ref := decodeRef(content); isStale(t, ref) {
+			ref.ReadOnly = true
+			out[t.ID] = ref
+		}
+	}
+	return out
 }
 
 // CheckFresh refuses a write whose file is older than the ticket's ref. It
