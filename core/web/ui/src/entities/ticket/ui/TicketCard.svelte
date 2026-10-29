@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { age, date } from '@/shared/lib';
   import type { Ticket } from '../model/types';
 
   let { ticket, draggable = false, ondragstart, onopen }: {
@@ -20,6 +21,13 @@
   <span class="handle">{ticket.handle}</span>
   <button class="title" onclick={() => onopen?.(ticket.id)}>{ticket.title}</button>
   <span class="lane">{ticket.lane}</span>
+  {#if ticket.created_at || ticket.updated_at}
+    <span class="dates">
+      {#if ticket.created_at}<time datetime={ticket.created_at}>created {date(ticket.created_at)}</time>{/if}
+      {#if ticket.created_at && ticket.updated_at} · {/if}
+      {#if ticket.updated_at}<time datetime={ticket.updated_at} title="Time since the ticket was last written">untouched {age(ticket.updated_at)}</time>{/if}
+    </span>
+  {/if}
   {#if !ticket.direct}<span class="via">via follows/parent</span>{/if}
 </li>
 
@@ -40,7 +48,7 @@
   .title { all: unset; cursor: pointer; overflow-wrap: anywhere; }
   .title:hover, .title:focus-visible { text-decoration: underline; }
   .lane { font-size: 0.8rem; color: var(--muted); }
-  .via { grid-column: 2 / -1; font-size: 0.75rem; color: var(--muted); }
+  .dates, .via { grid-column: 2 / -1; font-size: 0.75rem; color: var(--muted); }
   .done .title { text-decoration: line-through; color: var(--muted); }
   .indirect { border-style: dashed; }
 </style>

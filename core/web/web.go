@@ -40,6 +40,10 @@ type Ticket struct {
 	// Direct is false for a ticket that belongs to an epic only because it
 	// follows, or is a child of, one of its members.
 	Direct bool `json:"direct"`
+	// CreatedAt and UpdatedAt are the ticket's own stamps; the page shows
+	// the first as a date and the second as how long nobody touched it.
+	CreatedAt time.Time `json:"created_at,omitzero"`
+	UpdatedAt time.Time `json:"updated_at,omitzero"`
 }
 
 // Epic is one function of the product with its progress.

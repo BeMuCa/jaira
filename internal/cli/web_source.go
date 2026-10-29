@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/BeMuCa/jaira/core/epic"
+	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/link"
 	"github.com/BeMuCa/jaira/core/ticket"
 	"github.com/BeMuCa/jaira/core/web"
@@ -28,11 +29,29 @@ func newWebSource(s *ticket.Store) *webSource { return &webSource{s: s} }
 // the epics, through the same helpers 'jaira epic ls' uses. A board with
 // nowhere to keep epics has none, which the page shows as an empty column
 // rather than an error.
+//
+// A ticket file older than its ref is replaced by the ref before the index is
+// built. Lanes that change no code write only the ref, so the file in this
+// checkout stays where the last code commit left it; read as it is, the page
+// would show a ticket in signoff as still in progress.
 func (w *webSource) board() ([]*ticket.Ticket, *link.Index, []*epic.Epic, error) {
-	ix, all, err := boardIndex(w.s)
+	lanes, err := lane.Load(w.s.Root)
 	if err != nil {
 		return nil, nil, nil, err
 	}
+	all, err := w.s.List()
+	if err != nil {
+		var pe *ticket.PartialError
+		if !errors.As(err, &pe) {
+			return nil, nil, nil, err
+		}
+	}
+	for i, t := range all {
+		if n := refs.Newer(t); n != nil {
+			all[i] = n
+		}
+	}
+	ix := link.Build(w.s, lanes, all)
 	epics, err := epic.LoadAll(epicRefs())
 	if err != nil && !errors.Is(err, epic.ErrNoRefs) {
 		return nil, nil, nil, err
@@ -40,19 +59,37 @@ func (w *webSource) board() ([]*ticket.Ticket, *link.Index, []*epic.Epic, error)
 	return all, ix, epics, nil
 }
 
+// card is one ticket as the page lists it, with the dates it shows on the card.
+func card(t *ticket.Ticket) web.Ticket {
+	return web.Ticket{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Status, Direct: true, CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt}
+}
+
 func (w *webSource) Epics() ([]web.Epic, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	_, ix, epics, err := w.board()
+	all, ix, epics, err := w.board()
 	if err != nil {
 		return nil, err
+	}
+	open := make(map[string]*ticket.Ticket, len(all))
+	for _, t := range all {
+		open[t.ID] = t
 	}
 	out := make([]web.Epic, 0, len(epics))
 	for _, e := range epics {
 		p := epic.Count(e, ix)
 		v := web.Epic{Name: e.Name, Title: e.Title, Description: e.Description, Done: p.Done, Total: p.Total}
 		for _, t := range p.Tickets {
-			v.Tickets = append(v.Tickets, web.Ticket{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Lane, Done: t.Done, Direct: t.Direct})
+			c := web.Ticket{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Lane, Done: t.Done, Direct: t.Direct}
+			// A member filed away is in no listing; its file still has the dates.
+			full, ok := open[t.ID]
+			if !ok {
+				full, _, _ = w.s.LoadAnywhere(t.ID)
+			}
+			if full != nil {
+				c.CreatedAt, c.UpdatedAt = full.CreatedAt, full.UpdatedAt
+			}
+			v.Tickets = append(v.Tickets, c)
 		}
 		out = append(out, v)
 	}
@@ -69,13 +106,14 @@ func (w *webSource) Unassigned() ([]web.Ticket, error) {
 	loose := epic.Unassigned(epics, ix, all)
 	out := make([]web.Ticket, 0, len(loose))
 	for _, t := range loose {
-		out = append(out, web.Ticket{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Status, Direct: true})
+		out = append(out, card(t))
 	}
 	return out, nil
 }
 
 // Ticket is one ticket opened on the page, read the way 'jaira show' reads
-// it: past the board, so a finished ticket a card links to still opens.
+// it: past the board, so a finished ticket a card links to still opens. Like
+// the cards, it shows the ref when the file here is older.
 func (w *webSource) Ticket(id string) (web.TicketDetail, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -85,6 +123,9 @@ func (w *webSource) Ticket(id string) (web.TicketDetail, error) {
 			return web.TicketDetail{}, fmt.Errorf("ticket %s: %w", id, web.ErrNotFound)
 		}
 		return web.TicketDetail{}, err
+	}
+	if n := refs.Newer(t); n != nil {
+		t = n
 	}
 	d := web.TicketDetail{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Status, Goal: t.Goal, Context: t.Context}
 	for _, it := range t.DoDItems {

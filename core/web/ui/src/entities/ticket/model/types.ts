@@ -6,6 +6,9 @@ export interface Ticket {
   done: boolean;
   // false: in the epic only because it follows, or is a child of, a member.
   direct: boolean;
+  // The ticket's own stamps; absent when the server could not read them.
+  created_at?: string;
+  updated_at?: string;
 }
 
 // One item of the definition of done.

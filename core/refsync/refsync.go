@@ -1207,6 +1207,23 @@ func isStale(file, ref *ticket.Ticket) bool {
 		ref.UpdatedAt.After(file.UpdatedAt)
 }
 
+// Newer returns the ticket as its ref holds it when the ref was written after
+// the file t was read from, and nil otherwise. It is the reading side of
+// CheckFresh: a view that shows the file would show a state the team has
+// moved past, so it shows the ref instead. The result is ReadOnly, as every
+// ticket with no file behind it is.
+func (y *Syncer) Newer(t *ticket.Ticket) *ticket.Ticket {
+	if y == nil || t == nil || y.Usable() != nil {
+		return nil
+	}
+	ref, _ := y.refTicket(t.ID)
+	if !isStale(t, ref) {
+		return nil
+	}
+	ref.ReadOnly = true
+	return ref
+}
+
 // CheckFresh refuses a write whose file is older than the ticket's ref. It
 // satisfies ticket.FreshnessChecker, so every write through the store asks it.
 //

@@ -1,0 +1,2 @@
+- `jaira web` now shows each ticket in the lane its ref holds when the ticket file in your checkout is older than the ref, so a ticket moved on by lanes that commit no code no longer looks stuck; a file newer than its ref still wins.
+- Every card in `jaira web` now shows when the ticket was created and how long nobody has touched it (`untouched 3d`, `5h`, `<1h`), counted from its updated-at.
