@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T20:57:00Z
+updated-at: 2026-10-29T21:02:53Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1236953
 claimed-at: 2026-10-29T20:37:14Z
@@ -83,3 +83,8 @@ review-check: "1. go test ./internal/cli -run 'TestWebShowsTheNewerOfFileAndRef|
 - **2026-10-29 20:52 · Alexander Sacharov** — DoD 6: Lane per Name 'signoff' (const in web_source.go) – die Lane-Konfiguration hat kein Merkmal, das signoff vom human-Lane unterscheidet; ein Board ohne signoff zählt 0. Signoff-Zahl nach der Ref-Ersetzung, zählt also auch Tickets, deren Datei noch in-progress sagt. Text ohne signoff unverändert '{done} of {total} done'. Farbe neues Token --waiting (hell #c98a1b / dunkel #e8b14f).
 - **2026-10-29 20:54 · Alexander Sacharov** — critique (DoD 5/6): stehen gelassen – signoff per Lane-Name statt per Lane-Merkmal (nur RequiresNonModelSignal && !RequiresQuestion trennt es von human, mehr Umweg für dieselbe Antwort; DoD nennt signoff wörtlich). Ticket(): 'Pfad außerhalb tickets/' statt link.Index für die Detailansicht, weil ein Index für ein einzelnes Ticket das ganze Board liest.
 - **2026-10-29 20:54 · Alexander Sacharov** — testing: auf diesem Board zeigt ein Epic 3 Karten mit leerer Lane – Mitglieder, die hier unbekannt sind (Lookup → PlaceUnknown). War vor diesem Ticket genauso, nicht Teil davon.
+- **2026-10-29 21:02 · Alexander Sacharov** — explain: Der Review fand keinen Defekt, nur Kleinigkeiten: board() in web_source.go kopiert die Ladelogik von boardIndex() (links.go:113), die Seite verschweigt, dass die Datei im Checkout älter als der Ref ist, der Balken kann durch Rundung 101% ergeben (unsichtbar), und die Svelte-Anzeige hat keinen Test.
+Warum: Alle sechs DoD-Punkte sind erfüllt und die Tests sind grün, die Lücken betreffen Wartung und Kosmetik. Zwei Kopien derselben Ladelogik können später auseinanderlaufen.
+1) Zurückgeben: board() und boardIndex() zusammenführen und einen Hinweis 'Datei älter als Ref' ergänzen [give back]
+2) So annehmen und die Kleinigkeiten bewusst stehen lassen [accept]
+Empfehlung: 2 - kein Defekt, und jede Änderung vergrößert das Ticket, obwohl das Projekt klein bleiben soll.
