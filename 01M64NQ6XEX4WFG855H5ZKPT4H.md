@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T21:10:08Z
+updated-at: 2026-10-29T21:10:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1480570
 claimed-at: 2026-10-29T21:08:48Z
@@ -32,8 +32,8 @@ review-summary: "jaira web liest das Board jetzt über eine gemeinsame Ladefunkt
 round: 5
 review-gaps: "Kein Defekt gefunden. Lücken: (1) Die Release-Note sagt, epic ls/show und links zeigen jetzt den Ref-Stand – dafür gibt es keinen eigenen Test; abgedeckt nur indirekt, weil web dieselbe boardIndex-Funktion nutzt. (2) Epic-Karten-Pfad (behind_ref, created_at über LoadAnywhere für abgelegte Mitglieder) ohne eigenen Test. (3) age()/date() und die Svelte-Anzeige haben keinen Test (kein UI-Testframework im Repo). (4) Kosmetisch: pct(done)+pct(signoff) kann durch Rundung 101% ergeben; durch overflow:hidden unsichtbar. (5) Newer schluckt einen ReadMany-Fehler stumm und zeigt dann die Datei – vertretbar, aber unsichtbar."
 test-verdict: "pass: go test -race -count=1 ./... RC=0 nach Runde 3; dist == Neubau; DoD 7 boardIndex einzige Ladefunktion (web_source.go board ruft sie), DoD 8 behind_ref true/false in TestWebShowsTheNewerOfFileAndRef; DoD 1-6 Tests unverändert grün; jaira epic ls mit neuem Binary auf diesem Board läuft (rc 0)"
-review-verdict: "Der Diff erfüllt alle sechs DoD-Punkte; TestWebShowsTheNewerOfFileAndRef deckt genau Datei=in-progress/Ref=signoff und die Gegenrichtung ab. go vet sauber, go test ./internal/cli ./core/refsync ./core/web ./core/ticket ./core/link ./core/epic grün. Keine Defekte; die Lücken sind kosmetisch bzw. Wartung."
-review-round: 4
+review-verdict: "Diff erfüllt alle acht DoD-Punkte; go build/vet und go test ./internal/cli ./core/refsync ./core/web grün; die Rückgabe aus signoff (Ladefunktion zusammenführen + Hinweis 'file behind ref') ist umgesetzt. Keine Defekte; die Lücken sind Testabdeckung und Kosmetik."
+review-round: 5
 review-check: "1. go test ./internal/cli -run 'TestWebShowsTheNewerOfFileAndRef|TestWebShowsAnArchivedTicketAsArchive|TestWebCountsSignoffApartFromDone' -count=1 → ok  2. go build -o /tmp/jaira ./cmd/jaira und in einem Repo mit geteiltem Board /tmp/jaira web starten  3. ein Ticket nehmen, das per 'jaira move' (ohne Code-Commit) in signoff steht, dessen Datei im Checkout aber noch in-progress sagt: die Karte zeigt 'signoff'  4. jede Karte trägt darunter 'created <Datum> · untouched <N>d|h|<1h'  5. ein Epic mit einem signoff-Ticket: der Balken hat ein bernsteinfarbenes Segment, Text '<x> done · <y> in signoff of <z>'  6. ein mit 'jaira archive' abgelegtes Epic-Mitglied: Karte und geöffnetes Detail zeigen Lane 'archive'"
 ---
 
