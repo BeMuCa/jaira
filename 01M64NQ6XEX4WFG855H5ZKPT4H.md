@@ -1,7 +1,7 @@
 ---
 id: 01M64NQ6XEX4WFG855H5ZKPT4H
 title: "Web zeigt den Stand vom Ref, Erstelldatum und wie lange ein Ticket unberührt ist"
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T21:14:19Z
+updated-at: 2026-10-29T21:14:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1480570
 claimed-at: 2026-10-29T21:08:48Z
