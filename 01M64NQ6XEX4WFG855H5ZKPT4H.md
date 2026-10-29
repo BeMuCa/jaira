@@ -21,10 +21,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T21:08:24Z
+updated-at: 2026-10-29T21:08:48Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-1236953
-claimed-at: 2026-10-29T20:37:14Z
+claimed-by: DESKTOP-RFTCH11-1480570
+claimed-at: 2026-10-29T21:08:48Z
 outcome-what: "jaira web zeigt den Ref-Stand bei älterer Datei, Erstelldatum und 'untouched' auf jeder Karte, und 'archive' als Lane für archivierte/abgelegte Tickets."
 outcome-why: Lanes ohne Code schreiben nur den Ref; abgelegte Tickets behalten ihre alte Lane und lasen sich wie offene Arbeit.
 outcome-resolves: Seite und Ref widersprechen sich nicht mehr; Liegengebliebenes und Abgelegtes ist auf der Karte erkennbar.
