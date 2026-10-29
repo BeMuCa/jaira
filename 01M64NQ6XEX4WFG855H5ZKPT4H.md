@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T20:56:53Z
+updated-at: 2026-10-29T20:56:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1236953
 claimed-at: 2026-10-29T20:37:14Z
@@ -34,7 +34,7 @@ review-gaps: "Keine Defekte gefunden. Kleinigkeiten: (1) board() dupliziert boar
 test-verdict: "pass: go test -race -count=1 ./... RC=0 nach DoD 5/6; dist == Neubau aus src; DoD 5 per TestWebShowsAnArchivedTicketAsArchive, DoD 6 per TestWebCountsSignoffApartFromDone (beide Gegenproben rot), DoD 1-4 wie Runde 1; jaira web auf diesem Board liefert signoff je Epic (hier 0, keine signoff-Tickets im Epic)"
 review-verdict: "Der Diff erfüllt alle sechs DoD-Punkte; TestWebShowsTheNewerOfFileAndRef deckt genau Datei=in-progress/Ref=signoff und die Gegenrichtung ab. go vet sauber, go test ./internal/cli ./core/refsync ./core/web ./core/ticket ./core/link ./core/epic grün. Keine Defekte; die Lücken sind kosmetisch bzw. Wartung."
 review-round: 4
-review-check: "1. cd in das Repo dieses Branches, go run ./cmd/jaira web  2. ein Ticket nehmen, das per 'jaira move' auf dem Ref in signoff liegt, dessen Datei unter .jaira/tickets/ aber noch 'status: in-progress' und ein älteres updated-at hat  3. Seite neu laden: die Karte steht in signoff, nicht in in-progress; Karte anklicken — Detail zeigt ebenfalls signoff  4. in der Datei updated-at auf 2099-01-01T00:00:00Z setzen, neu laden: Karte zeigt jetzt in-progress  5. unter jedem Kartentitel steht eine graue Zeile 'created <Datum> · untouched <Nd|Nh|<1h>'  6. Datei danach mit 'git checkout -- .jaira/tickets/<datei>' zurücksetzen. Automatisch: go test ./internal/cli -run TestWebShowsTheNewerOfFileAndRef"
+review-check: "1. go test ./internal/cli -run 'TestWebShowsTheNewerOfFileAndRef|TestWebShowsAnArchivedTicketAsArchive|TestWebCountsSignoffApartFromDone' -count=1 → ok  2. go build -o /tmp/jaira ./cmd/jaira und in einem Repo mit geteiltem Board /tmp/jaira web starten  3. ein Ticket nehmen, das per 'jaira move' (ohne Code-Commit) in signoff steht, dessen Datei im Checkout aber noch in-progress sagt: die Karte zeigt 'signoff'  4. jede Karte trägt darunter 'created <Datum> · untouched <N>d|h|<1h'  5. ein Epic mit einem signoff-Ticket: der Balken hat ein bernsteinfarbenes Segment, Text '<x> done · <y> in signoff of <z>'  6. ein mit 'jaira archive' abgelegtes Epic-Mitglied: Karte und geöffnetes Detail zeigen Lane 'archive'"
 ---
 
 # Web zeigt den Stand vom Ref, Erstelldatum und wie lange ein Ticket unberührt ist
