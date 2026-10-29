@@ -10,3 +10,7 @@ export const PLACE_LABELS: Record<Place, string> = {
   logbook: 'in the logbook',
   archive: 'in the archive',
 };
+
+// The lane a badge shows. A filed ticket keeps the lane it left the board
+// from, and "backlog" on a card reads as work still to do, so it says archive.
+export const badgeLane = (t: { lane: string; place?: Place }) => (t.place && isFiled(t.place) ? 'archive' : t.lane);

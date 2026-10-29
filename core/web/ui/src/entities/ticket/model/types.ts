@@ -19,6 +19,8 @@ export interface Ticket {
   filed_at?: string;
   // The kind of no, for a ticket 'jaira reject' archived.
   rejected?: string;
+  // The ticket file in this checkout is older than the ref; this is the ref.
+  behind_ref?: boolean;
 }
 
 export type Place = 'board' | 'ref' | 'logbook' | 'archive';
@@ -56,4 +58,5 @@ export interface TicketDetail {
   dod: Check[];
   notes: Note[];
   rejected?: Rejection;
+  behind_ref?: boolean;
 }

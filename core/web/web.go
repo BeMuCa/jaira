@@ -57,6 +57,9 @@ type Ticket struct {
 	FiledAt time.Time `json:"filed_at,omitzero"`
 	// Rejected is the kind of no, for a ticket 'jaira reject' archived.
 	Rejected string `json:"rejected,omitzero"`
+	// BehindRef says the ticket file in this checkout is older than the
+	// ticket's ref, and what the page shows is the ref.
+	BehindRef bool `json:"behind_ref,omitzero"`
 }
 
 // Rejection is why nobody will do a ticket, as 'jaira reject' wrote it.
@@ -72,14 +75,17 @@ type Rejection struct {
 // person reads it, without the heading that repeats the title and without
 // comments, for the page.
 type Epic struct {
-	Name        string   `json:"name"`
-	Title       string   `json:"title"`
-	Description string   `json:"description"`
-	Body        string   `json:"body"`
-	Text        string   `json:"text"`
-	Done        int      `json:"done"`
-	Total       int      `json:"total"`
-	Tickets     []Ticket `json:"tickets"`
+	Name        string `json:"name"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Body        string `json:"body"`
+	Text        string `json:"text"`
+	Done        int    `json:"done"`
+	// Signoff counts the tickets waiting in the signoff lane for a person to
+	// accept them; they are not in Done.
+	Signoff int      `json:"signoff"`
+	Total   int      `json:"total"`
+	Tickets []Ticket `json:"tickets"`
 }
 
 // EpicFields are what a person writes about an epic.
@@ -142,6 +148,8 @@ type TicketDetail struct {
 	Notes   []Note  `json:"notes"`
 	// Rejected is nil for a ticket that was never rejected.
 	Rejected *Rejection `json:"rejected,omitempty"`
+	// BehindRef: as on Ticket.
+	BehindRef bool `json:"behind_ref,omitzero"`
 }
 
 // Source is where the page's data comes from and where a change goes.

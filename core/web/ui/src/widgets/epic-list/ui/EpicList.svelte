@@ -37,7 +37,7 @@
       <article>
         <header>
           <h3>{epic.title}</h3>
-          <EpicProgress done={epic.done} total={epic.total} />
+          <EpicProgress done={epic.done} signoff={epic.signoff} total={epic.total} />
         </header>
         {#if editing === epic.name}
           <EditEpicForm

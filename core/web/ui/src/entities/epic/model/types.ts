@@ -10,6 +10,8 @@ export interface Epic {
   body: string;
   text: string;
   done: number;
+  // In signoff: finished, waiting for a person to accept it; not in done.
+  signoff: number;
   total: number;
   tickets: Ticket[];
 }

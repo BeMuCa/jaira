@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/BeMuCa/jaira/core/ticket"
 	"github.com/BeMuCa/jaira/core/web"
@@ -362,5 +363,112 @@ func TestWebRewritesAnEpicAndRefusesAStaleEditor(t *testing.T) {
 	got := jsonOf(t, grace, "epic", "show", "magic-login")
 	if got["body"] != "from the CLI" || got["title"] != "Anmeldung" || len(got["members"].([]any)) != 1 {
 		t.Fatalf("grace sees %v", got)
+	}
+}
+
+// fileSays rewrites the ticket file's lane and updated-at by hand, the state a
+// checkout is left in when later lanes wrote only the ref.
+func fileSays(t *testing.T, path, lane, updated string) {
+	t.Helper()
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var lines []string
+	for _, line := range strings.Split(string(b), "\n") {
+		switch {
+		case strings.HasPrefix(line, "status:"):
+			line = "status: " + lane
+		case strings.HasPrefix(line, "updated-at:"):
+			line = "updated-at: " + updated
+		}
+		lines = append(lines, line)
+	}
+	if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// A file older than its ref shows the ref's lane, on the card and when the
+// ticket is opened; a file newer than its ref shows its own. Every card
+// carries the ticket's created and updated stamps.
+func TestWebShowsTheNewerOfFileAndRef(t *testing.T) {
+	t.Setenv("JAIRA_USER", "ada")
+	clone := cloneWithRemotes(t, "origin")
+	h := ticketIn(t, clone, "stale card")
+	if out, err := runCLI(t, clone, "pull", h); err != nil {
+		t.Fatalf("pull: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, clone, "move", h, "--to", "signoff", "--force"); err != nil {
+		t.Fatalf("move: %v\n%s", err, out)
+	}
+	flushRefs()
+
+	g.dir = clone
+	s, err := openStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	tk, err := s.Load(h)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h2 := (&web.Server{Source: newWebSource(s)}).Handler()
+	lanes := func() (string, string, web.Ticket) {
+		var loose []web.Ticket
+		webGet(t, h2, "/api/unassigned", &loose)
+		if len(loose) != 1 {
+			t.Fatalf("unassigned = %+v; want the one ticket", loose)
+		}
+		var d web.TicketDetail
+		webGet(t, h2, "/api/tickets/"+tk.ID, &d)
+		if loose[0].BehindRef != d.BehindRef {
+			t.Errorf("behind_ref: card %v, detail %v; want the same", loose[0].BehindRef, d.BehindRef)
+		}
+		return loose[0].Lane, d.Lane, loose[0]
+	}
+
+	fileSays(t, tk.Path, "in-progress", "2026-09-10T08:00:00Z")
+	if c, d, card := lanes(); c != "signoff" || d != "signoff" || !card.BehindRef {
+		t.Errorf("file older than its ref: card %q, detail %q, behind_ref %v; want signoff from the ref, marked", c, d, card.BehindRef)
+	}
+
+	fileSays(t, tk.Path, "in-progress", "2099-01-01T00:00:00Z")
+	c, d, card := lanes()
+	if c != "in-progress" || d != "in-progress" || card.BehindRef {
+		t.Errorf("file newer than its ref: card %q, detail %q, behind_ref %v; want in-progress from the file, unmarked", c, d, card.BehindRef)
+	}
+	if card.CreatedAt.IsZero() || !card.CreatedAt.Equal(tk.CreatedAt) {
+		t.Errorf("card created_at = %v; want %v", card.CreatedAt, tk.CreatedAt)
+	}
+	if want := time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC); !card.UpdatedAt.Equal(want) {
+		t.Errorf("card updated_at = %v; want %v", card.UpdatedAt, want)
+	}
+}
+
+// An epic counts the tickets waiting in signoff apart from the ones done: a
+// person still has to accept them.
+func TestWebCountsSignoffApartFromDone(t *testing.T) {
+	ada, _ := twoBoards(t)
+	a := createTicket(t, ada, "Waiting for acceptance")
+	b := createTicket(t, ada, "Not started")
+	jsonOf(t, ada, "epic", "create", "checkout")
+	jsonOf(t, ada, "epic", "add", "checkout", a, b)
+	if out, err := runAndSend(t, ada, "pull", a); err != nil {
+		t.Fatalf("pull: %v\n%s", err, out)
+	}
+	if out, err := runAndSend(t, ada, "move", a, "--to", "signoff", "--force"); err != nil {
+		t.Fatalf("move: %v\n%s", err, out)
+	}
+
+	g.dir = ada
+	s, err := openStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var epics []web.Epic
+	webGet(t, (&web.Server{Source: newWebSource(s)}).Handler(), "/api/epics", &epics)
+	if len(epics) != 1 || epics[0].Signoff != 1 || epics[0].Done != 0 || epics[0].Total != 2 {
+		t.Fatalf("epics = %+v; want 1 in signoff, 0 done, of 2", epics)
 	}
 }

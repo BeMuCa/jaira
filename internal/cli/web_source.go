@@ -28,6 +28,10 @@ type webSource struct {
 
 func newWebSource(s *ticket.Store) *webSource { return &webSource{s: s} }
 
+// signoff is the lane whose tickets the epic's progress counts apart: finished,
+// waiting for a person to accept them. A board without it counts none.
+const signoff = "signoff"
+
 // board loads the open tickets, the index that says which are finished, and
 // the epics, through the same helpers 'jaira epic ls' uses. A board with
 // nowhere to keep epics has none, which the page shows as an empty column
@@ -62,6 +66,9 @@ func (w *webSource) Epics() ([]web.Epic, error) {
 				c = web.Ticket{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Lane}
 			}
 			c.Done, c.Direct = t.Done, t.Direct
+			if c.Lane == signoff {
+				v.Signoff++
+			}
 			v.Tickets = append(v.Tickets, c)
 		}
 		out = append(out, v)
@@ -155,7 +162,7 @@ func card(t *ticket.Ticket, place link.Place) web.Ticket {
 		ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Status, Direct: true,
 		Place: string(place), Goal: t.Goal, Tags: t.Tags,
 		Creator: t.Creator, Assignee: t.Assignee, UpdatedBy: t.UpdatedBy,
-		CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt,
+		CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt, BehindRef: t.BehindRef,
 	}
 }
 
@@ -189,7 +196,8 @@ func rejection(path string) *web.Rejection {
 }
 
 // Ticket is one ticket opened on the page, read the way 'jaira show' reads
-// it: past the board, so a finished ticket a card links to still opens.
+// it: past the board, so a finished ticket a card links to still opens. Like
+// the cards, it shows the ref when the file here is older.
 func (w *webSource) Ticket(id string) (web.TicketDetail, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -200,6 +208,7 @@ func (w *webSource) Ticket(id string) (web.TicketDetail, error) {
 		}
 		return web.TicketDetail{}, err
 	}
+	t = w.s.Newest(t)
 	place := link.PlaceBoard
 	switch {
 	case t.ReadOnly:
@@ -207,7 +216,7 @@ func (w *webSource) Ticket(id string) (web.TicketDetail, error) {
 	case w.s.FiledAwayIDs()[t.ID] == path:
 		place = link.PlaceOf(path)
 	}
-	d := web.TicketDetail{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Status, Place: string(place), Goal: t.Goal, Context: t.Context}
+	d := web.TicketDetail{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Status, Place: string(place), Goal: t.Goal, Context: t.Context, BehindRef: t.BehindRef}
 	if place == link.PlaceArchive {
 		d.Rejected = rejection(path)
 	}

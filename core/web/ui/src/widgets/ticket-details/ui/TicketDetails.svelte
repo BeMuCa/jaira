@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { NoteItem, PLACE_LABELS, type TicketDetail } from '@/entities/ticket';
+  import { NoteItem, PLACE_LABELS, badgeLane, behindRef, type TicketDetail } from '@/entities/ticket';
   import { LaneBadge } from '@/entities/lane';
   import { dateTime } from '@/shared/lib';
 
@@ -16,11 +16,12 @@
 <article aria-labelledby="ticket-title">
   <header>
     <span class="handle">{ticket.handle}</span>
-    <LaneBadge lane={ticket.lane} />
+    <LaneBadge lane={badgeLane(ticket)} />
     {#if ticket.place !== 'board'}<span class="where">{PLACE_LABELS[ticket.place]}</span>{/if}
     <button class="close" onclick={onclose} aria-label="Close">×</button>
   </header>
   <h2 id="ticket-title">{ticket.title}</h2>
+  {#if ticket.behind_ref}<p class="behind">{behindRef(ticket.handle)}</p>{/if}
   {#if ticket.rejected}
     <section class="rejected" aria-label="Rejected">
       <strong>Rejected: {ticket.rejected.kind}</strong>
@@ -56,6 +57,7 @@
 </article>
 
 <style>
+  .behind { font-size: 0.85rem; color: var(--waiting); }
   article { display: grid; gap: 0.25rem; }
   header { display: flex; gap: 0.75rem; align-items: baseline; }
   .handle { font-family: ui-monospace, monospace; color: var(--muted); }
