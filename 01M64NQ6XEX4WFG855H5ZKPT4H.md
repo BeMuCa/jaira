@@ -21,14 +21,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T20:43:26Z
+updated-at: 2026-10-29T20:43:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1236953
 claimed-at: 2026-10-29T20:37:14Z
 outcome-what: "jaira web zeigt bei einer Ticketdatei, die älter ist als ihr Ref, den Stand vom Ref (Karte, Epic-Zählung, Detail); jede Karte zeigt Erstelldatum und 'untouched Nd/Nh'."
 outcome-why: Lanes ohne Code schreiben nur den Ref; die Datei im Checkout blieb stehen und die Seite zeigte Tickets in signoff als in-progress.
 outcome-resolves: Seite und Ref widersprechen sich nicht mehr; liegengebliebene Tickets sind auf der Karte erkennbar.
-review-summary: "internal/cli/web_source.go card(): Helfer mit einem Aufrufer (Unassigned), Epics baut web.Ticket weiter inline – card() zurück in Unassigned inlinen"
+review-summary: "none"
 round: 2
 ---
 
