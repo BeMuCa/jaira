@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T21:04:19Z
+updated-at: 2026-10-29T21:04:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1236953
 claimed-at: 2026-10-29T20:37:14Z
@@ -91,3 +91,4 @@ Empfehlung: 2 - kein Defekt, und jede Änderung vergrößert das Ticket, obwohl 
 - **2026-10-29 21:04 · Alexander Sacharov** — decision: 1) Zurückgeben: board() und boardIndex() zusammenführen und einen Hinweis 'Datei älter als Ref' ergänzen
 - **2026-10-29 21:04 · Alexander Sacharov** — Given back from signoff: 1) Zurückgeben: board() und boardIndex() zusammenführen und einen Hinweis 'Datei älter als Ref' ergänzen
 - **2026-10-29 21:04 · Alexander Sacharov** — cockpit: given back to the old worker - tab alive, cache warm for 54 more min, context 170k
+- **2026-10-29 21:04 · Alexander Sacharov** — Runde 3, Entscheidungen: (a) Zusammenführen heißt: boardIndex (links.go) macht den Newer-Schritt selbst und meldet, welche Tickets ersetzt wurden; webSource.board ruft es. Damit zeigen auch 'jaira epic ls/show' und 'jaira links' den Ref-Stand – derselbe Fehler, gleiche Regel; Release-Note dafür. (b) Newer setzt den ersetzten Tickets nicht mehr ReadOnly und behält den Dateipfad: sonst ordnet link.Build sie als PlaceRef ('nicht gepullt') ein, was in 'jaira links' sichtbar falsch wäre (Review-Lücke 3 der ersten Runde). Geschrieben wird über diese Objekte nie – Mutate liest per id neu. (c) Hinweis: Feld behind_ref an Karte und Detail; Karte zeigt 'file behind ref' in der Datumszeile, Tooltip nennt 'jaira pull <handle>'; Detail zeigt dieselbe Zeile unter dem Kopf.
