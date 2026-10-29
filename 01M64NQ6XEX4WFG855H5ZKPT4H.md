@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T21:10:12Z
+updated-at: 2026-10-29T21:10:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1480570
 claimed-at: 2026-10-29T21:08:48Z
@@ -34,7 +34,7 @@ review-gaps: "Kein Defekt gefunden. Lücken: (1) Die Release-Note sagt, epic ls/
 test-verdict: "pass: go test -race -count=1 ./... RC=0 nach Runde 3; dist == Neubau; DoD 7 boardIndex einzige Ladefunktion (web_source.go board ruft sie), DoD 8 behind_ref true/false in TestWebShowsTheNewerOfFileAndRef; DoD 1-6 Tests unverändert grün; jaira epic ls mit neuem Binary auf diesem Board läuft (rc 0)"
 review-verdict: "Diff erfüllt alle acht DoD-Punkte; go build/vet und go test ./internal/cli ./core/refsync ./core/web grün; die Rückgabe aus signoff (Ladefunktion zusammenführen + Hinweis 'file behind ref') ist umgesetzt. Keine Defekte; die Lücken sind Testabdeckung und Kosmetik."
 review-round: 5
-review-check: "1. go test ./internal/cli -run 'TestWebShowsTheNewerOfFileAndRef|TestWebShowsAnArchivedTicketAsArchive|TestWebCountsSignoffApartFromDone' -count=1 → ok  2. go build -o /tmp/jaira ./cmd/jaira und in einem Repo mit geteiltem Board /tmp/jaira web starten  3. ein Ticket nehmen, das per 'jaira move' (ohne Code-Commit) in signoff steht, dessen Datei im Checkout aber noch in-progress sagt: die Karte zeigt 'signoff'  4. jede Karte trägt darunter 'created <Datum> · untouched <N>d|h|<1h'  5. ein Epic mit einem signoff-Ticket: der Balken hat ein bernsteinfarbenes Segment, Text '<x> done · <y> in signoff of <z>'  6. ein mit 'jaira archive' abgelegtes Epic-Mitglied: Karte und geöffnetes Detail zeigen Lane 'archive'"
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-zkpt4h && go test ./internal/cli -run 'TestWebShowsTheNewerOfFileAndRef|TestWebShowsAnArchivedTicketAsArchive|TestWebCountsSignoffApartFromDone' -v → alle drei PASS  2. go run ./cmd/jaira web (oder installiertes jaira web) → Seite öffnet sich  3. Jede Karte hat eine graue Zeile 'created <Datum> · untouched <Nd|Nh|<1h>'  4. Ein Ticket, das per Ref in signoff steht, dessen Datei hier aber in-progress sagt: Karte zeigt Lane 'signoff' und bernsteinfarben 'file behind ref'; Maus darüber → Tooltip nennt 'jaira pull <handle>'  5. Karte anklicken → im Detail unter dem Titel derselbe Hinweis  6. Ein Epic mit Tickets in signoff: Balken hat einen blauen und einen bernsteinfarbenen Teil, Text '<n> done · <m> in signoff of <total>'  7. Ein Ticket aus dem Logbook in einem Epic: Lane auf der Karte 'archive', nicht 'backlog'  8. jaira epic ls → dasselbe Ticket aus Schritt 4 zählt in derselben Lane wie im Web"
 ---
 
 # Web zeigt den Stand vom Ref, Erstelldatum und wie lange ein Ticket unberührt ist
