@@ -301,3 +301,30 @@ func TestWebShowsAnArchivedTicketAsArchive(t *testing.T) {
 		t.Errorf("detail lane = %q; want archive", d.Lane)
 	}
 }
+
+// An epic counts the tickets waiting in signoff apart from the ones done: a
+// person still has to accept them.
+func TestWebCountsSignoffApartFromDone(t *testing.T) {
+	ada, _ := twoBoards(t)
+	a := createTicket(t, ada, "Waiting for acceptance")
+	b := createTicket(t, ada, "Not started")
+	jsonOf(t, ada, "epic", "create", "checkout")
+	jsonOf(t, ada, "epic", "add", "checkout", a, b)
+	if out, err := runAndSend(t, ada, "pull", a); err != nil {
+		t.Fatalf("pull: %v\n%s", err, out)
+	}
+	if out, err := runAndSend(t, ada, "move", a, "--to", "signoff", "--force"); err != nil {
+		t.Fatalf("move: %v\n%s", err, out)
+	}
+
+	g.dir = ada
+	s, err := openStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var epics []web.Epic
+	webGet(t, (&web.Server{Source: newWebSource(s)}).Handler(), "/api/epics", &epics)
+	if len(epics) != 1 || epics[0].Signoff != 1 || epics[0].Done != 0 || epics[0].Total != 2 {
+		t.Fatalf("epics = %+v; want 1 in signoff, 0 done, of 2", epics)
+	}
+}

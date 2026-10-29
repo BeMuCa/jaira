@@ -48,12 +48,15 @@ type Ticket struct {
 
 // Epic is one function of the product with its progress.
 type Epic struct {
-	Name        string   `json:"name"`
-	Title       string   `json:"title"`
-	Description string   `json:"description"`
-	Done        int      `json:"done"`
-	Total       int      `json:"total"`
-	Tickets     []Ticket `json:"tickets"`
+	Name        string `json:"name"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Done        int    `json:"done"`
+	// Signoff counts the tickets waiting in the signoff lane for a person to
+	// accept them; they are not in Done.
+	Signoff int      `json:"signoff"`
+	Total   int      `json:"total"`
+	Tickets []Ticket `json:"tickets"`
 }
 
 // Check is one item of a ticket's definition of done.

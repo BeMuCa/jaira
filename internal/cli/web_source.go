@@ -31,6 +31,10 @@ func newWebSource(s *ticket.Store) *webSource { return &webSource{s: s} }
 // "backlog" reads as work still to do.
 const archived = "archive"
 
+// signoff is the lane whose tickets the epic's progress counts apart: finished,
+// waiting for a person to accept them. A board without it counts none.
+const signoff = "signoff"
+
 // board loads the open tickets, the index that says which are finished, and
 // the epics, through the same helpers 'jaira epic ls' uses. A board with
 // nowhere to keep epics has none, which the page shows as an empty column
@@ -85,6 +89,9 @@ func (w *webSource) Epics() ([]web.Epic, error) {
 			c := web.Ticket{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Lane, Done: t.Done, Direct: t.Direct}
 			if r, _ := ix.Lookup(t.ID); r.Place == link.PlaceArchive || r.Place == link.PlaceLogbook {
 				c.Lane = archived
+			}
+			if c.Lane == signoff {
+				v.Signoff++
 			}
 			// A member filed away is in no listing; its file still has the dates.
 			full, ok := open[t.ID]
