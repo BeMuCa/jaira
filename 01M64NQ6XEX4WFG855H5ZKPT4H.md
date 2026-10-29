@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T21:08:03Z
+updated-at: 2026-10-29T21:08:06Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1236953
 claimed-at: 2026-10-29T20:37:14Z
@@ -30,7 +30,7 @@ outcome-why: Lanes ohne Code schreiben nur den Ref; abgelegte Tickets behalten i
 outcome-resolves: Seite und Ref widersprechen sich nicht mehr; Liegengebliebenes und Abgelegtes ist auf der Karte erkennbar.
 review-summary: "none"
 round: 5
-review-gaps: "Keine Defekte gefunden. Kleinigkeiten: (1) board() dupliziert boardIndex() aus internal/cli/links.go:113 bis auf den Newer-Schritt – zwei Kopien derselben Ladelogik. (2) Ein ticket, das der Web-Server als Ref-Stand zeigt, bleibt im Checkout veraltet; die Seite verschweigt das (kein Hinweis 'Datei älter als Ref') – gewollt laut Kontext, aber unsichtbar. (3) Fortschrittsbalken: pct(done)+pct(signoff) wird einzeln gerundet und kann 101% ergeben; durch overflow:hidden unsichtbar. (4) Der Signoff-Zähler und 'archive' sind nur über Go-Tests abgedeckt; die Svelte-Anzeige (Karte, Balken) hat keinen Test."
+review-gaps: "Runde 3: entfernt – die Kopie der Ladelogik in web_source.go board() (ruft jetzt boardIndex) und der lane-Import dort. Frühere Runden: Newer gebündelt (0,55 → 0,1 s). Stehen gelassen: nichts Offenes."
 test-verdict: "pass: go test -race -count=1 ./... RC=0 nach DoD 5/6; dist == Neubau aus src; DoD 5 per TestWebShowsAnArchivedTicketAsArchive, DoD 6 per TestWebCountsSignoffApartFromDone (beide Gegenproben rot), DoD 1-4 wie Runde 1; jaira web auf diesem Board liefert signoff je Epic (hier 0, keine signoff-Tickets im Epic)"
 review-verdict: "Der Diff erfüllt alle sechs DoD-Punkte; TestWebShowsTheNewerOfFileAndRef deckt genau Datei=in-progress/Ref=signoff und die Gegenrichtung ab. go vet sauber, go test ./internal/cli ./core/refsync ./core/web ./core/ticket ./core/link ./core/epic grün. Keine Defekte; die Lücken sind kosmetisch bzw. Wartung."
 review-round: 4
