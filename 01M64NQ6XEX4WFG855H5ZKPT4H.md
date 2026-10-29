@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T20:40:26Z
+updated-at: 2026-10-29T20:41:06Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1236953
 claimed-at: 2026-10-29T20:37:14Z
@@ -48,7 +48,7 @@ claimed-at: 2026-10-29T20:37:14Z
 - [x] refsync: exportierte Methode Newer(t) – liefert das Ref-Ticket, wenn isStale(t, ref), sonst nil
 - [x] web_source: board() ersetzt veraltete Dateien durch den Ref-Stand, bevor link.Build den Index baut; Ticket(id) ebenso
 - [x] web.Ticket: created_at/updated_at; webSource füllt sie für Epic- und lose Karten
-- [~] UI: TicketCard zeigt created und untouched; dist neu bauen
+- [x] UI: TicketCard zeigt created und untouched; dist neu bauen
 - [ ] Tests: web_source mit Datei=in-progress/Ref=signoff und umgekehrt; Go-Test für die Felder; Release-Note
 
 ## Progress
