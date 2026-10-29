@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T20:50:50Z
+updated-at: 2026-10-29T20:50:53Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1236953
 claimed-at: 2026-10-29T20:37:14Z
@@ -51,6 +51,7 @@ review-check: "1. cd in das Repo dieses Branches, go run ./cmd/jaira web  2. ein
   proof: core/web/ui/src/shared/lib/time.ts age() (d ab 24h, sonst h, <1h); TicketCard.svelte 'untouched {age(updated_at)}'; TestWebShowsTheNewerOfFileAndRef prüft updated_at
 - [x] Ein Ticket, das im Archiv bzw. im Logbook liegt, zeigt auf seiner Karte im Web den Status 'archive' statt der Lane, in der es abgelegt wurde (z.B. nicht 'backlog') – sonst sieht es aus, als müsse man es noch machen
   proof: internal/cli/web_source.go Epics(): ix.Lookup Place archive/logbook → Lane archived; Ticket(): Pfad außerhalb tickets/ → archived; TestWebShowsAnArchivedTicketAsArchive (Gegenprobe mit backlog rot)
+- [ ] Der Fortschrittsbalken eines Epics im Web (EpicProgress) zeigt neben 'done' auch die Tickets in 'signoff' als eigenen, farblich abgesetzten Teil, mit Zahl im Tooltip/Text (z.B. '4 done · 3 in signoff of 10') – Abnahme dauert, und heute sieht fertig-wartende Arbeit aus wie nicht angefangen
 
 ## Options
 
@@ -76,3 +77,4 @@ review-check: "1. cd in das Repo dieses Branches, go run ./cmd/jaira web  2. ein
 - **2026-10-29 20:45 · Alexander Sacharov** — optimize: Newer war pro Ticket ein git-Prozess – jede Seitenanfrage 5x langsamer (0,1 → 0,55 s bei 130 Tickets). Jetzt gebündelt über gitref.ReadMany wie Syncer.Extra; zurück auf 0,08–0,12 s. Verhalten unverändert, Test grün.
 - **2026-10-29 20:48 · Alexander Sacharov** — review: grün, keine Defekte. Lücken nur Testabdeckung (Epic-Pfad, age()/date()) und ReadOnly-Ersatz = PlaceRef im Index. Nicht zu diesem Ticket gehörig: .jaira/milestones/ liegt untracked im Worktree und taucht deshalb in worktree_diff auf.
 - **2026-10-29 20:49 · Alexander Sacharov** — decision (Alex, 29.10.): Karten von archivierten/abgelegten Tickets (z.B. in einem Epic, 'via follows/parent') zeigten das Lane-Badge 'backlog' plus die Zeile 'in the archive'. Das Badge soll 'archive' heißen, wenn das Ticket im Archiv liegt – 'backlog' liest sich wie offene Arbeit. Als DoD 5 aufgenommen. Testdaten erfunden, keine fremden Tickets.
+- **2026-10-29 20:50 · Alexander Sacharov** — DoD 5: Entscheidung – Archiv und Logbook zeigen beide 'archive' (DoD-Text 'Archiv bzw. Logbook'); auch die Detailansicht, damit Karte und Detail nicht auseinanderlaufen. Die Zeile 'in the archive' aus Alex' Beschreibung gibt es in core/web weder hier noch auf origin/master – nichts zu entfernen.
