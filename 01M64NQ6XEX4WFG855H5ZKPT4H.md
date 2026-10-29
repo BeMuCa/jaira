@@ -21,14 +21,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T21:08:48Z
+updated-at: 2026-10-29T21:10:05Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1480570
 claimed-at: 2026-10-29T21:08:48Z
 outcome-what: "jaira web zeigt den Ref-Stand bei älterer Datei, Erstelldatum und 'untouched' auf jeder Karte, und 'archive' als Lane für archivierte/abgelegte Tickets."
 outcome-why: Lanes ohne Code schreiben nur den Ref; abgelegte Tickets behalten ihre alte Lane und lasen sich wie offene Arbeit.
 outcome-resolves: Seite und Ref widersprechen sich nicht mehr; Liegengebliebenes und Abgelegtes ist auf der Karte erkennbar.
-review-summary: "none"
+review-summary: "jaira web liest das Board jetzt über eine gemeinsame Ladefunktion boardIndex (internal/cli/links.go): alle Ticket-Dateien, deren Ref neuer ist, werden in einem git-Durchgang (refsync.Syncer.Newer über ReadMany) durch den Ref-Stand ersetzt, behalten aber ihren Dateipfad, damit link.Build sie weiter als Board-Ticket einordnet; boardIndex meldet die ersetzten IDs als behind. Dieselbe Funktion bedient jetzt auch epic ls/show und links. Die Web-API liefert pro Karte created_at, updated_at und behind_ref, im Detail behind_ref; abgelegte Tickets (Archiv/Logbook) heißen archive; Epics zählen signoff getrennt von done. Die Svelte-Seite zeigt 'created <Datum> · untouched 3d/5h/<1h · file behind ref' auf der Karte, den Hinweis mit 'jaira pull <handle>' im Detail und einen zweiten, bernsteinfarbenen Balkenteil mit Text '4 done · 3 in signoff of 10'. dist ist neu gebaut, Release-Note mit sechs Zeilen."
 round: 5
 review-gaps: "Runde 3: entfernt – die Kopie der Ladelogik in web_source.go board() (ruft jetzt boardIndex) und der lane-Import dort. Frühere Runden: Newer gebündelt (0,55 → 0,1 s). Stehen gelassen: nichts Offenes."
 test-verdict: "pass: go test -race -count=1 ./... RC=0 nach Runde 3; dist == Neubau; DoD 7 boardIndex einzige Ladefunktion (web_source.go board ruft sie), DoD 8 behind_ref true/false in TestWebShowsTheNewerOfFileAndRef; DoD 1-6 Tests unverändert grün; jaira epic ls mit neuem Binary auf diesem Board läuft (rc 0)"
