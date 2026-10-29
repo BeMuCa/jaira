@@ -2,3 +2,5 @@
 - Every card in `jaira web` now shows when the ticket was created and how long nobody has touched it (`untouched 3d`, `5h`, `<1h`), counted from its updated-at.
 - In `jaira web`, a ticket filed into the archive or the logbook now shows `archive` as its lane, on its card in an epic and when opened, instead of the lane it was filed from.
 - In `jaira web`, an epic's progress bar now shows its tickets waiting in signoff as a separate amber segment, and its text reads `4 done · 3 in signoff of 10`; only done counts as finished.
+- `jaira epic ls`, `jaira epic show` and `jaira links` now also show a ticket in the lane its ref holds when the ticket file in your checkout is older than the ref, as `jaira web` does.
+- In `jaira web`, a card or opened ticket whose file in your checkout is older than its ref now says `file behind ref`; run `jaira pull <handle>` to bring the file up.

@@ -204,7 +204,7 @@ when sorting a board into features.`,
 			if err != nil {
 				return epicFail("", err)
 			}
-			ix, board, err := boardIndex(s)
+			ix, board, _, err := boardIndex(s)
 			if err != nil {
 				return err
 			}
@@ -274,7 +274,7 @@ func newEpicShowCmd() *cobra.Command {
 			if err != nil {
 				return epicFail(name, err)
 			}
-			ix, _, err := boardIndex(s)
+			ix, _, _, err := boardIndex(s)
 			if err != nil {
 				return err
 			}

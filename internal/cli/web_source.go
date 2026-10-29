@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/BeMuCa/jaira/core/epic"
-	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/link"
 	"github.com/BeMuCa/jaira/core/ticket"
 	"github.com/BeMuCa/jaira/core/web"
@@ -35,45 +34,26 @@ const archived = "archive"
 // waiting for a person to accept them. A board without it counts none.
 const signoff = "signoff"
 
-// board loads the open tickets, the index that says which are finished, and
-// the epics, through the same helpers 'jaira epic ls' uses. A board with
-// nowhere to keep epics has none, which the page shows as an empty column
-// rather than an error.
-//
-// A ticket file older than its ref is replaced by the ref before the index is
-// built. Lanes that change no code write only the ref, so the file in this
-// checkout stays where the last code commit left it; read as it is, the page
-// would show a ticket in signoff as still in progress.
-func (w *webSource) board() ([]*ticket.Ticket, *link.Index, []*epic.Epic, error) {
-	lanes, err := lane.Load(w.s.Root)
+// board loads the open tickets, the index that says which are finished, the
+// tickets whose file is behind their ref, and the epics, through the same
+// helpers 'jaira epic ls' uses. A board with nowhere to keep epics has none,
+// which the page shows as an empty column rather than an error.
+func (w *webSource) board() ([]*ticket.Ticket, *link.Index, map[string]bool, []*epic.Epic, error) {
+	ix, all, behind, err := boardIndex(w.s)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
-	all, err := w.s.List()
-	if err != nil {
-		var pe *ticket.PartialError
-		if !errors.As(err, &pe) {
-			return nil, nil, nil, err
-		}
-	}
-	newer := refs.Newer(all)
-	for i, t := range all {
-		if n, ok := newer[t.ID]; ok {
-			all[i] = n
-		}
-	}
-	ix := link.Build(w.s, lanes, all)
 	epics, err := epic.LoadAll(epicRefs())
 	if err != nil && !errors.Is(err, epic.ErrNoRefs) {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
-	return all, ix, epics, nil
+	return all, ix, behind, epics, nil
 }
 
 func (w *webSource) Epics() ([]web.Epic, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	all, ix, epics, err := w.board()
+	all, ix, behind, epics, err := w.board()
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +66,7 @@ func (w *webSource) Epics() ([]web.Epic, error) {
 		p := epic.Count(e, ix)
 		v := web.Epic{Name: e.Name, Title: e.Title, Description: e.Description, Done: p.Done, Total: p.Total}
 		for _, t := range p.Tickets {
-			c := web.Ticket{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Lane, Done: t.Done, Direct: t.Direct}
+			c := web.Ticket{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Lane, Done: t.Done, Direct: t.Direct, BehindRef: behind[t.ID]}
 			if r, _ := ix.Lookup(t.ID); r.Place == link.PlaceArchive || r.Place == link.PlaceLogbook {
 				c.Lane = archived
 			}
@@ -111,14 +91,14 @@ func (w *webSource) Epics() ([]web.Epic, error) {
 func (w *webSource) Unassigned() ([]web.Ticket, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	all, ix, epics, err := w.board()
+	all, ix, behind, epics, err := w.board()
 	if err != nil {
 		return nil, err
 	}
 	loose := epic.Unassigned(epics, ix, all)
 	out := make([]web.Ticket, 0, len(loose))
 	for _, t := range loose {
-		out = append(out, web.Ticket{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Status, Direct: true, CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt})
+		out = append(out, web.Ticket{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Status, Direct: true, CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt, BehindRef: behind[t.ID]})
 	}
 	return out, nil
 }
@@ -136,10 +116,11 @@ func (w *webSource) Ticket(id string) (web.TicketDetail, error) {
 		}
 		return web.TicketDetail{}, err
 	}
-	if n, ok := refs.Newer([]*ticket.Ticket{t})[t.ID]; ok {
+	n, behind := refs.Newer([]*ticket.Ticket{t})[t.ID]
+	if behind {
 		t = n
 	}
-	d := web.TicketDetail{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Status, Goal: t.Goal, Context: t.Context}
+	d := web.TicketDetail{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Status, Goal: t.Goal, Context: t.Context, BehindRef: behind}
 	if path != "" && filepath.Dir(path) != w.s.TicketsDir() {
 		d.Lane = archived
 	}

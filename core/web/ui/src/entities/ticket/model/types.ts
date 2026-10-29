@@ -9,6 +9,8 @@ export interface Ticket {
   // The ticket's own stamps; absent when the server could not read them.
   created_at?: string;
   updated_at?: string;
+  // The ticket file in this checkout is older than the ref; this is the ref.
+  behind_ref?: boolean;
 }
 
 // One item of the definition of done.
@@ -34,4 +36,5 @@ export interface TicketDetail {
   context: string;
   dod: Check[];
   notes: Note[];
+  behind_ref?: boolean;
 }

@@ -44,6 +44,9 @@ type Ticket struct {
 	// the first as a date and the second as how long nobody touched it.
 	CreatedAt time.Time `json:"created_at,omitzero"`
 	UpdatedAt time.Time `json:"updated_at,omitzero"`
+	// BehindRef says the ticket file in this checkout is older than the
+	// ticket's ref, and what the page shows is the ref.
+	BehindRef bool `json:"behind_ref,omitzero"`
 }
 
 // Epic is one function of the product with its progress.
@@ -82,6 +85,8 @@ type TicketDetail struct {
 	Context string  `json:"context"`
 	DoD     []Check `json:"dod"`
 	Notes   []Note  `json:"notes"`
+	// BehindRef: as on Ticket.
+	BehindRef bool `json:"behind_ref,omitzero"`
 }
 
 // Source is where the page's data comes from and where a change goes.

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { NoteItem, type TicketDetail } from '@/entities/ticket';
+  import { NoteItem, behindRef, type TicketDetail } from '@/entities/ticket';
 
   let { ticket, onclose }: { ticket: TicketDetail; onclose: () => void } = $props();
 
@@ -18,6 +18,7 @@
     <button class="close" onclick={onclose} aria-label="Close">×</button>
   </header>
   <h2 id="ticket-title">{ticket.title}</h2>
+  {#if ticket.behind_ref}<p class="behind">{behindRef(ticket.handle)}</p>{/if}
   {#if ticket.goal}<h3>Goal</h3><p class="text">{ticket.goal}</p>{/if}
   {#if ticket.context}<h3>Context</h3><p class="text">{ticket.context}</p>{/if}
   {#if ticket.dod.length}
@@ -44,6 +45,7 @@
 </article>
 
 <style>
+  .behind { font-size: 0.85rem; color: var(--waiting); }
   article { display: grid; gap: 0.25rem; }
   header { display: flex; gap: 0.75rem; align-items: baseline; }
   .handle { font-family: ui-monospace, monospace; color: var(--muted); }

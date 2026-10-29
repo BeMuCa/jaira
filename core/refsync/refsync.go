@@ -1220,8 +1220,9 @@ func isStale(file, ref *ticket.Ticket) bool {
 // Newer returns, by id, those of ts whose ref was written after the file each
 // was read from, as the ref holds them. It is the reading side of CheckFresh:
 // a view that shows the file would show a state the team has moved past, so it
-// shows the ref instead. The results are ReadOnly, as every ticket with no file
-// behind it is. All refs are read in one pass: a view asks for the whole board
+// shows the ref instead. Each result keeps the path of the file it stands in
+// for, so it is still placed on the board and not as a ticket nobody pulled.
+// All refs are read in one pass: a view asks for the whole board
 // on every refresh, and a git call per ticket made that five times slower.
 func (y *Syncer) Newer(ts []*ticket.Ticket) map[string]*ticket.Ticket {
 	if y == nil || y.Usable() != nil {
@@ -1244,7 +1245,7 @@ func (y *Syncer) Newer(ts []*ticket.Ticket) map[string]*ticket.Ticket {
 			continue
 		}
 		if ref := decodeRef(content); isStale(t, ref) {
-			ref.ReadOnly = true
+			ref.Path = t.Path
 			out[t.ID] = ref
 		}
 	}

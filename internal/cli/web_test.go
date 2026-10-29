@@ -246,18 +246,21 @@ func TestWebShowsTheNewerOfFileAndRef(t *testing.T) {
 		}
 		var d web.TicketDetail
 		webGet(t, h2, "/api/tickets/"+tk.ID, &d)
+		if loose[0].BehindRef != d.BehindRef {
+			t.Errorf("behind_ref: card %v, detail %v; want the same", loose[0].BehindRef, d.BehindRef)
+		}
 		return loose[0].Lane, d.Lane, loose[0]
 	}
 
 	fileSays(t, tk.Path, "in-progress", "2026-09-10T08:00:00Z")
-	if c, d, _ := lanes(); c != "signoff" || d != "signoff" {
-		t.Errorf("file older than its ref: card %q, detail %q; want signoff from the ref", c, d)
+	if c, d, card := lanes(); c != "signoff" || d != "signoff" || !card.BehindRef {
+		t.Errorf("file older than its ref: card %q, detail %q, behind_ref %v; want signoff from the ref, marked", c, d, card.BehindRef)
 	}
 
 	fileSays(t, tk.Path, "in-progress", "2099-01-01T00:00:00Z")
 	c, d, card := lanes()
-	if c != "in-progress" || d != "in-progress" {
-		t.Errorf("file newer than its ref: card %q, detail %q; want in-progress from the file", c, d)
+	if c != "in-progress" || d != "in-progress" || card.BehindRef {
+		t.Errorf("file newer than its ref: card %q, detail %q, behind_ref %v; want in-progress from the file, unmarked", c, d, card.BehindRef)
 	}
 	if card.CreatedAt.IsZero() || !card.CreatedAt.Equal(tk.CreatedAt) {
 		t.Errorf("card created_at = %v; want %v", card.CreatedAt, tk.CreatedAt)

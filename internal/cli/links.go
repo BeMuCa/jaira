@@ -40,7 +40,7 @@ ticket having to be edited twice.`,
 			if err != nil {
 				return err
 			}
-			ix, _, err := boardIndex(s)
+			ix, _, _, err := boardIndex(s)
 			if err != nil {
 				return err
 			}
@@ -110,17 +110,30 @@ func printLinks(w io.Writer, t *ticket.Ticket, entries []link.Entry) {
 // boardIndex lists the board and indexes it with the logbook and the archive.
 // An unreadable ticket must not hide the ones that are readable, so a partial
 // listing is used as it is.
-func boardIndex(s *ticket.Store) (*link.Index, []*ticket.Ticket, error) {
+//
+// A ticket file older than its ref is replaced by the ref before the index is
+// built, and behind names those tickets. Lanes that change no code write only
+// the ref, so the file in this checkout stays where the last code commit left
+// it; read as it is, a ticket in signoff would show as still in progress.
+func boardIndex(s *ticket.Store) (ix *link.Index, all []*ticket.Ticket, behind map[string]bool, err error) {
 	lanes, err := lane.Load(s.Root)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	all, err := s.List()
+	all, err = s.List()
 	if err != nil {
 		var pe *ticket.PartialError
 		if !errors.As(err, &pe) {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 	}
-	return link.Build(s, lanes, all), all, nil
+	newer := refs.Newer(all)
+	behind = make(map[string]bool, len(newer))
+	for i, t := range all {
+		if n, ok := newer[t.ID]; ok {
+			all[i] = n
+			behind[t.ID] = true
+		}
+	}
+	return link.Build(s, lanes, all), all, behind, nil
 }
