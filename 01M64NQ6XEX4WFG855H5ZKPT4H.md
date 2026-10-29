@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T20:51:37Z
+updated-at: 2026-10-29T20:51:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1236953
 claimed-at: 2026-10-29T20:37:14Z
@@ -51,7 +51,7 @@ review-check: "1. cd in das Repo dieses Branches, go run ./cmd/jaira web  2. ein
   proof: core/web/ui/src/shared/lib/time.ts age() (d ab 24h, sonst h, <1h); TicketCard.svelte 'untouched {age(updated_at)}'; TestWebShowsTheNewerOfFileAndRef prüft updated_at
 - [x] Ein Ticket, das im Archiv bzw. im Logbook liegt, zeigt auf seiner Karte im Web den Status 'archive' statt der Lane, in der es abgelegt wurde (z.B. nicht 'backlog') – sonst sieht es aus, als müsse man es noch machen
   proof: internal/cli/web_source.go Epics(): ix.Lookup Place archive/logbook → Lane archived; Ticket(): Pfad außerhalb tickets/ → archived; TestWebShowsAnArchivedTicketAsArchive (Gegenprobe mit backlog rot)
-- [ ] Der Fortschrittsbalken eines Epics im Web (EpicProgress) zeigt neben 'done' auch die Tickets in 'signoff' als eigenen, farblich abgesetzten Teil, mit Zahl im Tooltip/Text (z.B. '4 done · 3 in signoff of 10') – Abnahme dauert, und heute sieht fertig-wartende Arbeit aus wie nicht angefangen
+- [~] Der Fortschrittsbalken eines Epics im Web (EpicProgress) zeigt neben 'done' auch die Tickets in 'signoff' als eigenen, farblich abgesetzten Teil, mit Zahl im Tooltip/Text (z.B. '4 done · 3 in signoff of 10') – Abnahme dauert, und heute sieht fertig-wartende Arbeit aus wie nicht angefangen
 
 ## Options
 
