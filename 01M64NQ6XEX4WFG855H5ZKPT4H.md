@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T20:52:29Z
+updated-at: 2026-10-29T20:52:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1236953
 claimed-at: 2026-10-29T20:37:14Z
@@ -80,3 +80,4 @@ review-check: "1. cd in das Repo dieses Branches, go run ./cmd/jaira web  2. ein
 - **2026-10-29 20:49 · Alexander Sacharov** — decision (Alex, 29.10.): Karten von archivierten/abgelegten Tickets (z.B. in einem Epic, 'via follows/parent') zeigten das Lane-Badge 'backlog' plus die Zeile 'in the archive'. Das Badge soll 'archive' heißen, wenn das Ticket im Archiv liegt – 'backlog' liest sich wie offene Arbeit. Als DoD 5 aufgenommen. Testdaten erfunden, keine fremden Tickets.
 - **2026-10-29 20:50 · Alexander Sacharov** — DoD 5: Entscheidung – Archiv und Logbook zeigen beide 'archive' (DoD-Text 'Archiv bzw. Logbook'); auch die Detailansicht, damit Karte und Detail nicht auseinanderlaufen. Die Zeile 'in the archive' aus Alex' Beschreibung gibt es in core/web weder hier noch auf origin/master – nichts zu entfernen.
 - **2026-10-29 20:50 · Alexander Sacharov** — decision (Alex, 29.10.): DoD 6 – signoff gehört in den Epic-Fortschrittsbalken von jaira web (core/web/ui/src/entities/epic/ui/EpicProgress.svelte, heute nur done/total). Grund: Tickets warten lange in signoff und zählen sonst wie offene Arbeit. done bleibt die einzige Zahl, die als fertig zählt; signoff ist ein zweites Segment.
+- **2026-10-29 20:52 · Alexander Sacharov** — DoD 6: Lane per Name 'signoff' (const in web_source.go) – die Lane-Konfiguration hat kein Merkmal, das signoff vom human-Lane unterscheidet; ein Board ohne signoff zählt 0. Signoff-Zahl nach der Ref-Ersetzung, zählt also auch Tickets, deren Datei noch in-progress sagt. Text ohne signoff unverändert '{done} of {total} done'. Farbe neues Token --waiting (hell #c98a1b / dunkel #e8b14f).
