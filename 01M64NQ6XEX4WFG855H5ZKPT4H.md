@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T21:05:14Z
+updated-at: 2026-10-29T21:05:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1236953
 claimed-at: 2026-10-29T20:37:14Z
@@ -53,7 +53,8 @@ review-check: "1. go test ./internal/cli -run 'TestWebShowsTheNewerOfFileAndRef|
   proof: internal/cli/web_source.go Epics(): ix.Lookup Place archive/logbook → Lane archived; Ticket(): Pfad außerhalb tickets/ → archived; TestWebShowsAnArchivedTicketAsArchive (Gegenprobe mit backlog rot)
 - [x] Der Fortschrittsbalken eines Epics im Web (EpicProgress) zeigt neben 'done' auch die Tickets in 'signoff' als eigenen, farblich abgesetzten Teil, mit Zahl im Tooltip/Text (z.B. '4 done · 3 in signoff of 10') – Abnahme dauert, und heute sieht fertig-wartende Arbeit aus wie nicht angefangen
   proof: core/web/ui/src/entities/epic/ui/EpicProgress.svelte zweites Segment .signoff (--waiting) + Text '{done} done · {signoff} in signoff of {total}'; internal/cli/web_source.go Epics() zählt Lane signoff; TestWebCountsSignoffApartFromDone (Gegenprobe rot)
-- [~] board() in internal/cli/web_source.go und boardIndex() in internal/cli/links.go sind eine Ladefunktion
+- [x] board() in internal/cli/web_source.go und boardIndex() in internal/cli/links.go sind eine Ladefunktion
+  proof: internal/cli/links.go boardIndex() macht den Newer-Schritt und liefert behind; internal/cli/web_source.go board() ruft boardIndex; TestWebShowsTheNewerOfFileAndRef
 - [ ] Karte und Detailansicht im Web sagen, wenn die Datei im Checkout älter ist als der Ref und die Seite den Ref zeigt
 
 ## Options
