@@ -59,11 +59,6 @@ func (w *webSource) board() ([]*ticket.Ticket, *link.Index, []*epic.Epic, error)
 	return all, ix, epics, nil
 }
 
-// card is one ticket as the page lists it, with the dates it shows on the card.
-func card(t *ticket.Ticket) web.Ticket {
-	return web.Ticket{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Status, Direct: true, CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt}
-}
-
 func (w *webSource) Epics() ([]web.Epic, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -106,7 +101,7 @@ func (w *webSource) Unassigned() ([]web.Ticket, error) {
 	loose := epic.Unassigned(epics, ix, all)
 	out := make([]web.Ticket, 0, len(loose))
 	for _, t := range loose {
-		out = append(out, card(t))
+		out = append(out, web.Ticket{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Status, Direct: true, CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt})
 	}
 	return out, nil
 }
