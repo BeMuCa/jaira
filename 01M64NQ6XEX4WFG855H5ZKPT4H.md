@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T20:45:12Z
+updated-at: 2026-10-29T20:45:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1236953
 claimed-at: 2026-10-29T20:37:14Z
@@ -37,7 +37,7 @@ round: 2
 ## Definition of Done
 
 - [x] Ein Ticket, dessen Datei älter ist als sein Ref, erscheint im Web in der Lane des Refs (Test mit Datei=in-progress, Ref=signoff)
-  proof: internal/cli/web_source.go board(): refs.Newer ersetzt die Datei vor link.Build; TestWebShowsTheNewerOfFileAndRef (Datei=in-progress/2026-09-10, Ref=signoff → Karte und Detail signoff)
+  proof: internal/cli/web_source.go board(): refs.Newer(all) ersetzt veraltete Dateien vor link.Build; TestWebShowsTheNewerOfFileAndRef (Datei=in-progress/2026-09-10, Ref=signoff → Karte und Detail signoff)
 - [x] Ist die Datei neuer als der Ref, gewinnt die Datei
   proof: core/refsync/refsync.go Syncer.Newer nimmt ein Ticket nur auf, wenn isStale(Datei, Ref); TestWebShowsTheNewerOfFileAndRef (Datei updated-at 2099 → in-progress)
 - [x] Jede Karte zeigt das Erstelldatum
