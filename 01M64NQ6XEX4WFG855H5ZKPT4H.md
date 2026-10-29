@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T20:43:36Z
+updated-at: 2026-10-29T20:45:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1236953
 claimed-at: 2026-10-29T20:37:14Z
@@ -39,7 +39,7 @@ round: 2
 - [x] Ein Ticket, dessen Datei älter ist als sein Ref, erscheint im Web in der Lane des Refs (Test mit Datei=in-progress, Ref=signoff)
   proof: internal/cli/web_source.go board(): refs.Newer ersetzt die Datei vor link.Build; TestWebShowsTheNewerOfFileAndRef (Datei=in-progress/2026-09-10, Ref=signoff → Karte und Detail signoff)
 - [x] Ist die Datei neuer als der Ref, gewinnt die Datei
-  proof: core/refsync/refsync.go Syncer.Newer gibt nil, wenn !isStale; TestWebShowsTheNewerOfFileAndRef (Datei updated-at 2099 → in-progress)
+  proof: core/refsync/refsync.go Syncer.Newer nimmt ein Ticket nur auf, wenn isStale(Datei, Ref); TestWebShowsTheNewerOfFileAndRef (Datei updated-at 2099 → in-progress)
 - [x] Jede Karte zeigt das Erstelldatum
   proof: core/web/ui/src/entities/ticket/ui/TicketCard.svelte 'created {date(created_at)}'; created_at gesetzt in internal/cli/web_source.go Unassigned() und Epics(); TestWebShowsTheNewerOfFileAndRef prüft created_at
 - [x] Jede Karte zeigt, wie lange das Ticket unberührt ist (seit updated-at), in Tagen/Stunden
