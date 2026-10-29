@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T21:10:24Z
+updated-at: 2026-10-29T21:11:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1480570
 claimed-at: 2026-10-29T21:08:48Z
@@ -98,3 +98,8 @@ Empfehlung: 2 - kein Defekt, und jede Änderung vergrößert das Ticket, obwohl 
 - **2026-10-29 21:04 · Alexander Sacharov** — Runde 3, Entscheidungen: (a) Zusammenführen heißt: boardIndex (links.go) macht den Newer-Schritt selbst und meldet, welche Tickets ersetzt wurden; webSource.board ruft es. Damit zeigen auch 'jaira epic ls/show' und 'jaira links' den Ref-Stand – derselbe Fehler, gleiche Regel; Release-Note dafür. (b) Newer setzt den ersetzten Tickets nicht mehr ReadOnly und behält den Dateipfad: sonst ordnet link.Build sie als PlaceRef ('nicht gepullt') ein, was in 'jaira links' sichtbar falsch wäre (Review-Lücke 3 der ersten Runde). Geschrieben wird über diese Objekte nie – Mutate liest per id neu. (c) Hinweis: Feld behind_ref an Karte und Detail; Karte zeigt 'file behind ref' in der Datumszeile, Tooltip nennt 'jaira pull <handle>'; Detail zeigt dieselbe Zeile unter dem Kopf.
 - **2026-10-29 21:07 · Alexander Sacharov** — critique (Runde 3): nichts. behind.ts hat zwei Aufrufer (Karte, Detail); boardIndex kostet epic ls/show/links einen git-Aufruf (cat-file --batch) mehr, kein Prozess pro Ticket.
 - **2026-10-29 21:10 · Alexander Sacharov** — review (Runde 3, fresh context): grün, keine Defekte. Rückgabe aus signoff erfüllt – boardIndex ist die eine Ladefunktion, 'file behind ref' auf Karte und Detail. Offene Lücken nur Testabdeckung (epic ls/links-Ref-Stand, Epic-Kartenpfad, UI) und Rundung 101%. .jaira/milestones/ im Worktree ist untracked und gehört nicht zu diesem Ticket.
+- **2026-10-29 21:11 · Alexander Sacharov** — explain: Der Review fand keinen Defekt; der Diff erfüllt alle acht DoD-Punkte, Build und Tests sind grün. Offen sind nur Lücken: kein eigener Test für den Ref-Stand in epic ls/show/links und für den Epic-Kartenpfad, keine UI-Tests, Rundung kann 101% ergeben.
+Warum: Die Lücken betreffen Testabdeckung, nicht das Verhalten; web, epic ls und links nutzen dieselbe boardIndex-Funktion, die schon getestet ist.
+1) Zurückgeben und Tests für epic ls/show/links und den Epic-Kartenpfad ergänzen lassen [give back]
+2) Ticket so annehmen und die Lücken ungetestet lassen [accept]
+Empfehlung: 2 - kein Defekt, die Lücken sind indirekt über boardIndex abgedeckt und die UI hat im Repo kein Testframework.
