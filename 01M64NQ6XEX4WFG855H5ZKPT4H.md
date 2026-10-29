@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T20:54:06Z
+updated-at: 2026-10-29T20:54:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1236953
 claimed-at: 2026-10-29T20:37:14Z
@@ -30,7 +30,7 @@ outcome-why: Lanes ohne Code schreiben nur den Ref; abgelegte Tickets behalten i
 outcome-resolves: Seite und Ref widersprechen sich nicht mehr; Liegengebliebenes und Abgelegtes ist auf der Karte erkennbar.
 review-summary: "none"
 round: 4
-review-gaps: "Kein Blocker. (1) Der Test prüft nur lose Karten (/api/unassigned) und die Detailansicht; der Epic-Pfad (Epics(): Zählung und Daten, inkl. LoadAnywhere für abgelegte Mitglieder) ist ungetestet, obwohl das Outcome 'Epic-Zählung' nennt. (2) age()/date() haben keinen Test — es gibt im Repo kein UI-Testframework, das räumt der Implementierer selbst ein. (3) Der ersetzte Ticketstand ist ReadOnly mit leerem Path; im Link-Index gilt er damit als 'nur auf dem Ref' (PlaceRef), obwohl eine Datei existiert — die Seite zeigt Place heute nicht, fällt also nicht auf, ist aber eine stille Bedeutungsverschiebung. (4) Scheitert ReadMany, zeigt die Seite ohne Hinweis wieder den Dateistand. (5) TUI und 'jaira list' lesen weiter nur die Datei — bewusst außerhalb des Tickets (Note vom 29.10.)."
+review-gaps: "Runde DoD 5/6: nichts entfernt. Geprüft: archived/signoff-Konstanten je ein Name statt Literal an zwei Stellen; Lookup in Epics() liest abgelegte Tickets aus dem Index-Cache (kein zweiter Dateizugriff außer LoadAnywhere für die Daten). Frühere Runde: Newer gebündelt über ReadMany (0,55 → 0,1 s)."
 test-verdict: "pass: go build ./... und go test -race -count=1 ./... RC=0; dist == npm ci && npm run build; DoD 1+2 per TestWebShowsTheNewerOfFileAndRef (Gegenprobe ohne Newer rot), DoD 3+4 per Test (created_at/updated_at) und age()/date() unter node geprüft (<1h, 5h, 1d, 3d, leer); jaira web --no-open auf diesem Board liefert Daten auf jeder Karte"
 review-verdict: "Der Diff erfüllt alle vier DoD-Punkte; go build/vet und die Tests in internal/cli (TestWeb*), core/refsync, core/web, core/link laufen grün, das ausgelieferte Bundle entspricht dem Quellstand. Keine Defekte gefunden; die Lücken oben sind Testabdeckung und eine Randbedeutung von ReadOnly, nichts, das die Annahme aufhalten muss."
 review-round: 2
