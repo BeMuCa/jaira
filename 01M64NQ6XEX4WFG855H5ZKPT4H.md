@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T20:48:55Z
+updated-at: 2026-10-29T20:49:02Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1236953
 claimed-at: 2026-10-29T20:37:14Z
@@ -49,6 +49,7 @@ review-check: "1. cd in das Repo dieses Branches, go run ./cmd/jaira web  2. ein
   proof: core/web/ui/src/entities/ticket/ui/TicketCard.svelte 'created {date(created_at)}'; created_at gesetzt in internal/cli/web_source.go Unassigned() und Epics(); TestWebShowsTheNewerOfFileAndRef prüft created_at
 - [x] Jede Karte zeigt, wie lange das Ticket unberührt ist (seit updated-at), in Tagen/Stunden
   proof: core/web/ui/src/shared/lib/time.ts age() (d ab 24h, sonst h, <1h); TicketCard.svelte 'untouched {age(updated_at)}'; TestWebShowsTheNewerOfFileAndRef prüft updated_at
+- [ ] Ein Ticket, das im Archiv bzw. im Logbook liegt, zeigt auf seiner Karte im Web den Status 'archive' statt der Lane, in der es abgelegt wurde (z.B. nicht 'backlog') – sonst sieht es aus, als müsse man es noch machen
 
 ## Options
 
