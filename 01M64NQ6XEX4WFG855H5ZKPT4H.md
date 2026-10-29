@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T20:45:27Z
+updated-at: 2026-10-29T20:46:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1236953
 claimed-at: 2026-10-29T20:37:14Z
@@ -31,6 +31,7 @@ outcome-resolves: Seite und Ref widersprechen sich nicht mehr; liegengebliebene 
 review-summary: "none"
 round: 2
 review-gaps: "Syncer.Newer liest alle Refs in einem ReadMany statt einem git-Aufruf pro Ticket (gemessen auf einem Board mit 130 Tickets: /api/unassigned 0,55 s → 0,08–0,12 s, wie vor der Änderung); refTicket und Newer teilen decodeRef. Stehen gelassen: board() kopiert ~8 Zeilen aus boardIndex (critique-Notiz Runde 1)."
+test-verdict: "pass: go build ./... und go test -race -count=1 ./... RC=0; dist == npm ci && npm run build; DoD 1+2 per TestWebShowsTheNewerOfFileAndRef (Gegenprobe ohne Newer rot), DoD 3+4 per Test (created_at/updated_at) und age()/date() unter node geprüft (<1h, 5h, 1d, 3d, leer); jaira web --no-open auf diesem Board liefert Daten auf jeder Karte"
 ---
 
 # Web zeigt den Stand vom Ref, Erstelldatum und wie lange ein Ticket unberührt ist
