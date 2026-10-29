@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T20:41:20Z
+updated-at: 2026-10-29T20:41:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1236953
 claimed-at: 2026-10-29T20:37:14Z
@@ -37,7 +37,8 @@ claimed-at: 2026-10-29T20:37:14Z
   proof: core/refsync/refsync.go Syncer.Newer gibt nil, wenn !isStale; TestWebShowsTheNewerOfFileAndRef (Datei updated-at 2099 → in-progress)
 - [x] Jede Karte zeigt das Erstelldatum
   proof: core/web/ui/src/entities/ticket/ui/TicketCard.svelte 'created {date(created_at)}'; created_at aus internal/cli/web_source.go card()/Epics(); TestWebShowsTheNewerOfFileAndRef prüft created_at
-- [ ] Jede Karte zeigt, wie lange das Ticket unberührt ist (seit updated-at), in Tagen/Stunden
+- [x] Jede Karte zeigt, wie lange das Ticket unberührt ist (seit updated-at), in Tagen/Stunden
+  proof: core/web/ui/src/shared/lib/time.ts age() (d ab 24h, sonst h, <1h); TicketCard.svelte 'untouched {age(updated_at)}'; TestWebShowsTheNewerOfFileAndRef prüft updated_at
 
 ## Options
 
