@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T21:04:14Z
+updated-at: 2026-10-29T21:04:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1236953
 claimed-at: 2026-10-29T20:37:14Z
@@ -90,3 +90,4 @@ Warum: Alle sechs DoD-Punkte sind erfüllt und die Tests sind grün, die Lücken
 Empfehlung: 2 - kein Defekt, und jede Änderung vergrößert das Ticket, obwohl das Projekt klein bleiben soll.
 - **2026-10-29 21:04 · Alexander Sacharov** — decision: 1) Zurückgeben: board() und boardIndex() zusammenführen und einen Hinweis 'Datei älter als Ref' ergänzen
 - **2026-10-29 21:04 · Alexander Sacharov** — Given back from signoff: 1) Zurückgeben: board() und boardIndex() zusammenführen und einen Hinweis 'Datei älter als Ref' ergänzen
+- **2026-10-29 21:04 · Alexander Sacharov** — cockpit: given back to the old worker - tab alive, cache warm for 54 more min, context 170k
