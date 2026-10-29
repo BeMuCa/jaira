@@ -1,7 +1,7 @@
 ---
 id: 01M64NQ6XEX4WFG855H5ZKPT4H
 title: "Web zeigt den Stand vom Ref, Erstelldatum und wie lange ein Ticket unberührt ist"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,10 +21,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T20:41:27Z
+updated-at: 2026-10-29T20:42:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1236953
 claimed-at: 2026-10-29T20:37:14Z
+outcome-what: "jaira web zeigt bei einer Ticketdatei, die älter ist als ihr Ref, den Stand vom Ref (Karte, Epic-Zählung, Detail); jede Karte zeigt Erstelldatum und 'untouched Nd/Nh'."
+outcome-why: Lanes ohne Code schreiben nur den Ref; die Datei im Checkout blieb stehen und die Seite zeigte Tickets in signoff als in-progress.
+outcome-resolves: Seite und Ref widersprechen sich nicht mehr; liegengebliebene Tickets sind auf der Karte erkennbar.
 ---
 
 # Web zeigt den Stand vom Ref, Erstelldatum und wie lange ein Ticket unberührt ist
