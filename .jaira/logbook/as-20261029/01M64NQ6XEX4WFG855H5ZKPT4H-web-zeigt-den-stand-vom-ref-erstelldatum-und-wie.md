@@ -1,7 +1,7 @@
 ---
 id: 01M64NQ6XEX4WFG855H5ZKPT4H
 title: "Web zeigt den Stand vom Ref, Erstelldatum und wie lange ein Ticket unberührt ist"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,22 +19,28 @@ tags:
   - web
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 4d2f0535019aaa00f6cd719c492214ed0f275dd6
+  - 9b8f565bbb09d2aba8c031d0af507887b2dff07d
+  - be350c0b3d9b1fa471a8a1ac8771b5d53c6804dc
+  - 55cd92e32d949ea6d5c845e77d4335100668e1f5
+  - cf50edeecd8bac82f86ab65eaf44d2fed6cc14c9
+  - 1cfccfe5c1e8ee2126d20064fe33df5a5fa0b0c8
 created-at: 2026-10-29T20:30:44Z
-updated-at: 2026-10-29T21:07:42Z
+updated-at: 2026-10-29T21:15:01Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-1236953
-claimed-at: 2026-10-29T20:37:14Z
+claimed-by: DESKTOP-RFTCH11-1480570
+claimed-at: 2026-10-29T21:08:48Z
 outcome-what: "jaira web zeigt den Ref-Stand bei älterer Datei, Erstelldatum und 'untouched' auf jeder Karte, und 'archive' als Lane für archivierte/abgelegte Tickets."
 outcome-why: Lanes ohne Code schreiben nur den Ref; abgelegte Tickets behalten ihre alte Lane und lasen sich wie offene Arbeit.
 outcome-resolves: Seite und Ref widersprechen sich nicht mehr; Liegengebliebenes und Abgelegtes ist auf der Karte erkennbar.
-review-summary: "board() in internal/cli/web_source.go liest jetzt alle Ticketdateien, fragt mit dem neuen refsync.Syncer.Newer in einem einzigen git-Durchgang (Repo.ReadMany) alle Refs ab und ersetzt jede Datei, deren Ref ein späteres updated-at hat (isStale), durch den Ref-Stand – bevor der Index gebaut wird. Damit stehen Karten in Epics und 'unassigned' sowie die Detailansicht (Ticket() ruft Newer für das eine Ticket) in der Lane des Refs; eine neuere Datei gewinnt weiter. web.Ticket bekommt created_at/updated_at, die Karte zeigt 'created <Datum> · untouched 3d/5h/<1h' (time.ts age/date). Archivierte bzw. Logbook-Tickets zeigen 'archive' statt ihrer alten Lane (Epics über ix.Lookup-Place, Detail über den Pfad außerhalb tickets/). Epics zählen signoff getrennt (Epic.Signoff) und der Fortschrittsbalken zeigt dafür ein bernsteinfarbenes zweites Segment mit Text '4 done · 3 in signoff of 10'. Release-Note core/release/notes/ZKPT4H.md mit vier Zeilen, dist-Bundle neu gebaut und passt zum Quelltext."
+review-summary: "jaira web liest das Board jetzt über eine gemeinsame Ladefunktion boardIndex (internal/cli/links.go): alle Ticket-Dateien, deren Ref neuer ist, werden in einem git-Durchgang (refsync.Syncer.Newer über ReadMany) durch den Ref-Stand ersetzt, behalten aber ihren Dateipfad, damit link.Build sie weiter als Board-Ticket einordnet; boardIndex meldet die ersetzten IDs als behind. Dieselbe Funktion bedient jetzt auch epic ls/show und links. Die Web-API liefert pro Karte created_at, updated_at und behind_ref, im Detail behind_ref; abgelegte Tickets (Archiv/Logbook) heißen archive; Epics zählen signoff getrennt von done. Die Svelte-Seite zeigt 'created <Datum> · untouched 3d/5h/<1h · file behind ref' auf der Karte, den Hinweis mit 'jaira pull <handle>' im Detail und einen zweiten, bernsteinfarbenen Balkenteil mit Text '4 done · 3 in signoff of 10'. dist ist neu gebaut, Release-Note mit sechs Zeilen."
 round: 5
-review-gaps: "Keine Defekte gefunden. Kleinigkeiten: (1) board() dupliziert boardIndex() aus internal/cli/links.go:113 bis auf den Newer-Schritt – zwei Kopien derselben Ladelogik. (2) Ein ticket, das der Web-Server als Ref-Stand zeigt, bleibt im Checkout veraltet; die Seite verschweigt das (kein Hinweis 'Datei älter als Ref') – gewollt laut Kontext, aber unsichtbar. (3) Fortschrittsbalken: pct(done)+pct(signoff) wird einzeln gerundet und kann 101% ergeben; durch overflow:hidden unsichtbar. (4) Der Signoff-Zähler und 'archive' sind nur über Go-Tests abgedeckt; die Svelte-Anzeige (Karte, Balken) hat keinen Test."
-test-verdict: "pass: go test -race -count=1 ./... RC=0 nach DoD 5/6; dist == Neubau aus src; DoD 5 per TestWebShowsAnArchivedTicketAsArchive, DoD 6 per TestWebCountsSignoffApartFromDone (beide Gegenproben rot), DoD 1-4 wie Runde 1; jaira web auf diesem Board liefert signoff je Epic (hier 0, keine signoff-Tickets im Epic)"
-review-verdict: "Der Diff erfüllt alle sechs DoD-Punkte; TestWebShowsTheNewerOfFileAndRef deckt genau Datei=in-progress/Ref=signoff und die Gegenrichtung ab. go vet sauber, go test ./internal/cli ./core/refsync ./core/web ./core/ticket ./core/link ./core/epic grün. Keine Defekte; die Lücken sind kosmetisch bzw. Wartung."
-review-round: 4
-review-check: "1. go test ./internal/cli -run 'TestWebShowsTheNewerOfFileAndRef|TestWebShowsAnArchivedTicketAsArchive|TestWebCountsSignoffApartFromDone' -count=1 → ok  2. go build -o /tmp/jaira ./cmd/jaira und in einem Repo mit geteiltem Board /tmp/jaira web starten  3. ein Ticket nehmen, das per 'jaira move' (ohne Code-Commit) in signoff steht, dessen Datei im Checkout aber noch in-progress sagt: die Karte zeigt 'signoff'  4. jede Karte trägt darunter 'created <Datum> · untouched <N>d|h|<1h'  5. ein Epic mit einem signoff-Ticket: der Balken hat ein bernsteinfarbenes Segment, Text '<x> done · <y> in signoff of <z>'  6. ein mit 'jaira archive' abgelegtes Epic-Mitglied: Karte und geöffnetes Detail zeigen Lane 'archive'"
+review-gaps: "Kein Defekt gefunden. Lücken: (1) Die Release-Note sagt, epic ls/show und links zeigen jetzt den Ref-Stand – dafür gibt es keinen eigenen Test; abgedeckt nur indirekt, weil web dieselbe boardIndex-Funktion nutzt. (2) Epic-Karten-Pfad (behind_ref, created_at über LoadAnywhere für abgelegte Mitglieder) ohne eigenen Test. (3) age()/date() und die Svelte-Anzeige haben keinen Test (kein UI-Testframework im Repo). (4) Kosmetisch: pct(done)+pct(signoff) kann durch Rundung 101% ergeben; durch overflow:hidden unsichtbar. (5) Newer schluckt einen ReadMany-Fehler stumm und zeigt dann die Datei – vertretbar, aber unsichtbar."
+test-verdict: "pass: go test -race -count=1 ./... RC=0 nach Runde 3; dist == Neubau; DoD 7 boardIndex einzige Ladefunktion (web_source.go board ruft sie), DoD 8 behind_ref true/false in TestWebShowsTheNewerOfFileAndRef; DoD 1-6 Tests unverändert grün; jaira epic ls mit neuem Binary auf diesem Board läuft (rc 0)"
+review-verdict: "Diff erfüllt alle acht DoD-Punkte; go build/vet und go test ./internal/cli ./core/refsync ./core/web grün; die Rückgabe aus signoff (Ladefunktion zusammenführen + Hinweis 'file behind ref') ist umgesetzt. Keine Defekte; die Lücken sind Testabdeckung und Kosmetik."
+review-round: 5
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-zkpt4h && go test ./internal/cli -run 'TestWebShowsTheNewerOfFileAndRef|TestWebShowsAnArchivedTicketAsArchive|TestWebCountsSignoffApartFromDone' -v → alle drei PASS  2. go run ./cmd/jaira web (oder installiertes jaira web) → Seite öffnet sich  3. Jede Karte hat eine graue Zeile 'created <Datum> · untouched <Nd|Nh|<1h>'  4. Ein Ticket, das per Ref in signoff steht, dessen Datei hier aber in-progress sagt: Karte zeigt Lane 'signoff' und bernsteinfarben 'file behind ref'; Maus darüber → Tooltip nennt 'jaira pull <handle>'  5. Karte anklicken → im Detail unter dem Titel derselbe Hinweis  6. Ein Epic mit Tickets in signoff: Balken hat einen blauen und einen bernsteinfarbenen Teil, Text '<n> done · <m> in signoff of <total>'  7. Ein Ticket aus dem Logbook in einem Epic: Lane auf der Karte 'archive', nicht 'backlog'  8. jaira epic ls → dasselbe Ticket aus Schritt 4 zählt in derselben Lane wie im Web"
 ---
 
 # Web zeigt den Stand vom Ref, Erstelldatum und wie lange ein Ticket unberührt ist
@@ -96,3 +102,11 @@ Empfehlung: 2 - kein Defekt, und jede Änderung vergrößert das Ticket, obwohl 
 - **2026-10-29 21:04 · Alexander Sacharov** — Given back from signoff: 1) Zurückgeben: board() und boardIndex() zusammenführen und einen Hinweis 'Datei älter als Ref' ergänzen
 - **2026-10-29 21:04 · Alexander Sacharov** — cockpit: given back to the old worker - tab alive, cache warm for 54 more min, context 170k
 - **2026-10-29 21:04 · Alexander Sacharov** — Runde 3, Entscheidungen: (a) Zusammenführen heißt: boardIndex (links.go) macht den Newer-Schritt selbst und meldet, welche Tickets ersetzt wurden; webSource.board ruft es. Damit zeigen auch 'jaira epic ls/show' und 'jaira links' den Ref-Stand – derselbe Fehler, gleiche Regel; Release-Note dafür. (b) Newer setzt den ersetzten Tickets nicht mehr ReadOnly und behält den Dateipfad: sonst ordnet link.Build sie als PlaceRef ('nicht gepullt') ein, was in 'jaira links' sichtbar falsch wäre (Review-Lücke 3 der ersten Runde). Geschrieben wird über diese Objekte nie – Mutate liest per id neu. (c) Hinweis: Feld behind_ref an Karte und Detail; Karte zeigt 'file behind ref' in der Datumszeile, Tooltip nennt 'jaira pull <handle>'; Detail zeigt dieselbe Zeile unter dem Kopf.
+- **2026-10-29 21:07 · Alexander Sacharov** — critique (Runde 3): nichts. behind.ts hat zwei Aufrufer (Karte, Detail); boardIndex kostet epic ls/show/links einen git-Aufruf (cat-file --batch) mehr, kein Prozess pro Ticket.
+- **2026-10-29 21:10 · Alexander Sacharov** — review (Runde 3, fresh context): grün, keine Defekte. Rückgabe aus signoff erfüllt – boardIndex ist die eine Ladefunktion, 'file behind ref' auf Karte und Detail. Offene Lücken nur Testabdeckung (epic ls/links-Ref-Stand, Epic-Kartenpfad, UI) und Rundung 101%. .jaira/milestones/ im Worktree ist untracked und gehört nicht zu diesem Ticket.
+- **2026-10-29 21:11 · Alexander Sacharov** — explain: Der Review fand keinen Defekt; der Diff erfüllt alle acht DoD-Punkte, Build und Tests sind grün. Offen sind nur Lücken: kein eigener Test für den Ref-Stand in epic ls/show/links und für den Epic-Kartenpfad, keine UI-Tests, Rundung kann 101% ergeben.
+Warum: Die Lücken betreffen Testabdeckung, nicht das Verhalten; web, epic ls und links nutzen dieselbe boardIndex-Funktion, die schon getestet ist.
+1) Zurückgeben und Tests für epic ls/show/links und den Epic-Kartenpfad ergänzen lassen [give back]
+2) Ticket so annehmen und die Lücken ungetestet lassen [accept]
+Empfehlung: 2 - kein Defekt, die Lücken sind indirekt über boardIndex abgedeckt und die UI hat im Repo kein Testframework.
+- **2026-10-29 21:14 · Alexander Sacharov** — decision: 2) Ticket so annehmen und die Lücken ungetestet lassen
