@@ -1,7 +1,7 @@
 ---
 id: 01M67K70X843TBF0TYRPMXMDFH
 title: "Die Release-Notes erscheinen als Popup statt Seite, getrennt in Features zuerst und 'Andere' darunter, luftig und leicht lesbar"
-status: critique
+status: in-progress
 ready: true
 creator: berkc
 assignee: berkc
@@ -18,7 +18,7 @@ related:
   - 01M5659BR7RYZ6RVC84HGK1QGT
 commits: []
 created-at: 2026-10-30T23:44:40Z
-updated-at: 2026-10-30T23:53:49Z
+updated-at: 2026-10-30T23:53:51Z
 updated-by: berkc
 claimed-by: berk-ca-2691736
 claimed-at: 2026-10-30T23:47:40Z
@@ -26,6 +26,7 @@ outcome-what: "Release notes popup and jaira update: a note line '- + text' is a
 outcome-why: "Berk: the popup must be the only surface, features first, Others below with a header, gaps for readability; the feature marker had to be a format the old binaries read as a plain line, so '- + ' mirrors '- ! '."
 outcome-resolves: "DoD 2 (ordering, header, gaps, test) and DoD 3 (marker and CLAUDE.md) code and tests in place; DoD 1 (popup, paging) unchanged from GK1QGT, to be verified in tmux; DoD 4 note written."
 review-summary: "internal/tui/releasenotes.go lines(): the loop calls release.Feature and passes the stripped text plus a feature bool to changeLines, which then calls release.Important itself; changeLines should take the raw change and call Feature and Important once, so lines() only decides which group a change goes into. The bool parameter exists only to carry what the caller already knows; removing it leaves one marker parser on the path."
+round: 2
 ---
 
 # Die Release-Notes erscheinen als Popup statt Seite, getrennt in Features zuerst und 'Andere' darunter, luftig und leicht lesbar
