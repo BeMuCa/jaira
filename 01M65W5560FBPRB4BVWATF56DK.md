@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T07:42:27Z
-updated-at: 2026-10-30T07:46:38Z
+updated-at: 2026-10-30T07:47:37Z
 assignee: AlSa
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4867
@@ -27,7 +27,7 @@ claimed-at: 2026-10-30T07:42:45Z
 outcome-what: "Eingebaute critique-Lane (core/lane/builtin/25-critique.md) übernimmt die zwei Regeln der lokalen Lane: Notes vor dem Diff lesen, jeder Durchgang nach dem ersten liest nur die letzten Findings und ihre Reparatur. Neue Version in shipped.sha256, Release-Note, .jaira/lanes auf den eingebauten Stand."
 outcome-why: "Jedes andere Board bekam bisher die schwächere critique, deren Schleife Erledigtes neu fand und nicht auf null kam."
 outcome-resolves: update --lanes überspringt critique.md hier nicht mehr; neue Boards bekommen die Regeln.
-review-summary: none
+review-summary: "Die eingebaute critique-Lane (core/lane/builtin/25-critique.md) nimmt notes als Input und sagt im Prompt: erst die Notes lesen, was dort als repariert/akzeptiert steht, nicht neu erheben; nur der erste Durchgang liest den ganzen Diff, jeder spätere nur die Findings davor und deren Reparatur, ein neuer Fehler zählt nur, wenn er die DoD bricht. Die neue Version steht in shipped.sha256 (7d3e33a0…), damit update --lanes sie als jaira-geschrieben erkennt; die Release-Note sagt das. Die lokalen .jaira/lanes critique/optimize/testing bekamen nur 'default-board: false' und sind jetzt byte-gleich mit den eingebauten."
 review-gaps: none
 test-verdict: "pass: go test ./... green (RC=0), DoD 1-4 verified in the tree, new binary reports 'update --lanes' 0 skipped"
 ---
