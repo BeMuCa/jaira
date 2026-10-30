@@ -26,15 +26,9 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-30T23:50:47Z
+updated-at: 2026-10-30T23:50:50Z
 updated-by: berkc
-question: |-
-  Welche Arbeitsweise bekommt ein NEUER Milestone, wenn beim Anlegen niemand --pr angibt?
-  A) single: es wird keine pr:-Zeile geschrieben. Block-PR nur mit 'jaira milestone create|set <m> --pr block'. (Empfehlung pre-process: hier hat jedes Ticket seinen eigenen Branch, ein Block-PR braucht alle auf einem Branch.)
-  B) block: 'milestone create' und das TUI-Formular (internal/tui/layer.go:457) schreiben 'pr: block'. Wer einzeln mergt, setzt --pr single. (Meine Empfehlung: dein erster Satz nennt den Block, und ein Opt-in wird vergessen wie heute der PR-Skill.)
-  Fest in beiden Faellen: eine alte Datei ohne pr:-Zeile gilt als single (ram-cpu, milestone-roadmap kamen Ticket fuer Ticket rein).
-  Ausserdem so geplant, sag nur wenn nicht: ein Ticket OHNE Milestone bekommt beim Erreichen von signoff oder done die Zeile '/jaira-role-pr <id>' (das 6ESQWR-Beispiel aus dem Kontext). Kostet auf jedem Board eine Zeile mehr bei solchen Moves.
-  Antwort: A oder B.
+question: ""
 round: 2
 ---
 
