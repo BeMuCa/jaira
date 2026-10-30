@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:09Z
-updated-at: 2026-10-30T01:56:14Z
+updated-at: 2026-10-30T01:56:17Z
 updated-by: berkc
 ---
 
@@ -43,3 +43,4 @@ updated-by: berkc
 ## Progress
 - **2026-10-23 21:04 · berkc** — Entscheidung berkc 23.10.2026: b bleibt fuer Boards (KVMG0K). Der Sprung vom Ticket aufs Board (Filter zuruecksetzen) bekommt eine andere Taste - im brainstorm/pre-process vorschlagen.
 - **2026-10-27 14:32 · berkc** — 27.10.2026: b im offenen Ticket ist schon belegt - es folgt dem Blocker, wenn das Ticket blockiert ist (internal/tui/model.go:1608). Das Board-Popup (KVMG0K) liegt auf b in der Board-Ansicht (model.go:1705), kollidiert also nicht. Vorschlag: b im Ticket springt aufs Board (Filter zurueck), wenn das Ticket keinen Blocker hat; mit Blocker folgt b weiter dem Blocker - oder der Blocker-Sprung zieht auf eine andere Taste. Entscheidung berkc offen.
+- **2026-10-30 01:56 · berkc** — Entscheidung berkc 30.10.2026: b im offenen Ticket springt aufs Board (Filter zuruecksetzen). Der Blocker-Sprung auf b (internal/tui/model.go:1608) entfaellt - Blocker erreicht man ueber l (Links), es geht also nichts verloren. Board-Popup b auf dem Board (KVMG0K) bleibt.
