@@ -1,7 +1,7 @@
 ---
 id: 01M65W5560FBPRB4BVWATF56DK
 title: critique-Regeln aus .jaira/lanes in die eingebaute Lane übernehmen
-status: todo
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Die eingebaute Lane core/lane/builtin/25-critique.md enthält die beiden Regeln, die bisher nur in .jaira/lanes/critique.md dieses Repos stehen: Notes vor dem Diff lesen, und jeder Durchgang nach dem ersten liest weniger."
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T07:42:27Z
-updated-at: 2026-10-30T07:43:07Z
+updated-at: 2026-10-30T07:43:14Z
 assignee: AlSa
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4867
