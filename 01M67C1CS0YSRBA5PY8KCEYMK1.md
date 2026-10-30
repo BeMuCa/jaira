@@ -20,7 +20,7 @@ related:
   - 01M5GFB5KWABVZVWWDVNP5ABVR
 commits: []
 created-at: 2026-10-30T21:39:15Z
-updated-at: 2026-10-30T21:43:57Z
+updated-at: 2026-10-30T21:44:00Z
 updated-by: berkc
 ---
 
@@ -100,3 +100,54 @@ Offene Fragen an berkc:
 5. Ausliefern (core/role/builtin) oder erst als persoenlicher Skill ausprobieren?
 6. Name: jaira-role-fit, jaira-role-onboard oder jaira-role-setup?
 7. Soll "passt nicht" auch fremde Systeme erkennen (GSD .planning/, GitHub Issues) und dann zur Koexistenz raten statt Ersatz?
+- **2026-10-30 21:44 · berkc** — KORREKTUR: Die Notiz von 21:42 direkt davor ('Brainstorm YCVW0X ... /jaira-role-fit') gehoert zu YCVW0X, nicht hierher - zwei parallele Agenten haben dieselbe Scratch-Datei benutzt. Sie steht auf YCVW0X auch richtig. Fuer CEYMK1 ignorieren; es gilt die folgende.
+
+Brainstorm CEYMK1 (Agent, 30.10.2026): Vorschlag Board-Typ 'projektidee' - eine Idee rein, am Ende Go/No-Go mit einseitigem Brief.
+
+Dateien: core/lane/boardtypes/projektidee/ mit description, order und je einer eigenen Lane-Datei (keine eingebaute Lane passt, siehe unten).
+order: idee, schaerfen, recherche, nutzen, zuschnitt, entscheidung, abgelegt - 7 Lanes, davon 4 agentisch.
+
+1. idee - Mensch, kein Agentenschritt.
+Zweck: Rohidee festhalten, eine Zeile reicht. Hier wird auch die Option 'nutzen' an- oder abgewaehlt.
+Liefert: title, context (kommen von create).
+
+2. schaerfen - agentisch, Tier strong, output-produces: goal.
+Zweck: aus dem Satz eine pruefbare Idee machen.
+Prompt-Skizze: Schreib die Idee in drei Zeilen: welches Problem, fuer wen, was danach anders ist. Liste die drei Annahmen, an denen sie scheitert, die riskanteste zuerst. Ist die Notiz zu duenn, frag per human-Frage statt zu raten. Das goal ist ein Satz.
+
+3. recherche - agentisch, Tier strong, output-produces: prior-art. Nicht abwaehlbar.
+Zweck: gibt es das schon (Produkte, Open-Source, aufgegebene Versuche)?
+Prompt-Skizze: Arbeite nach /jaira-role-research mit der Frage 'Gibt es das schon, und was fehlt den vorhandenen?'. Nenne 3-5 echte Projekte, je: was es kann, was fehlt, Quelle, Datum, Konfidenz. Schluss in einer Zeile: existiert schon / Luecke ist X / unklar. Kein Projekt gefunden ist ein Befund, keine Erlaubnis.
+
+4. nutzen - agentisch, Tier strong, output-produces: nutzen-urteil, requires-option: nutzen. ABWAEHLBAR.
+Zweck: Nutzen pruefen, bevor Zeit hineingeht.
+Prompt-Skizze: Pruefe die riskanteste Annahme aus schaerfen gegen Belege: wer hat das Problem, wie oft, was tut er heute stattdessen (ein Workaround ist der beste Beleg fuer echten Schmerz). Belege aus Issues, Foren, Bewertungen der Konkurrenz aus recherche - keine erfundenen Interviews. Urteil stark/schwach/unbelegt, dazu der Beleg, der es am ehesten kippen wuerde.
+
+5. zuschnitt - agentisch, Tier strong, output-produces: plan (eingebautes Feld, Checkliste).
+Zweck: der kleinste baubare Schnitt, der die riskanteste Annahme testet.
+Prompt-Skizze: 3-7 Plan-Schritte; jeder wird spaeter ein Backlog-Ticket, also je Titel, goal und ein dod-Satz in einer Notiz. Was ausdruecklich NICHT gebaut wird. Aufwand S/M/L und ein Abbruchkriterium. Stack nur nennen, wenn recherche ihn nahelegt. Die Gegenrede (warum es scheitert) gehoert hier hinein, nicht in eine eigene Lane.
+
+6. entscheidung - Mensch, requires-human-exit: true, output-produces: entscheidung.
+Zweck: Go / No-Go / zurueck (zu recherche oder schaerfen mit neuer Frage).
+Der Mensch setzt 'jaira set <id> entscheidung="go: <ein Satz>"'. Ein Agent kann hier nicht weiter, nur hineinlegen.
+
+7. abgelegt - terminal, kein Agentenschritt. Eigene Datei, weil die eingebaute done-Lane requires-commits und requires-outcome hat (.jaira/lanes/done.md) - eine Idee hat keine Commits. Go und No-Go landen beide hier; ein No-Go mit Begruendung ist genauso wertvoll (man prueft dieselbe Idee nicht zweimal).
+
+Endprodukt: das Ticket selbst ist der einseitige Brief - goal + prior-art + nutzen-urteil + plan + entscheidung, lesbar mit 'jaira show <id>'. Keine eigene Datei, kein neues Format. Bei Go legt der Teamlead oder die Person je Plan-Schritt ein Ticket auf dem Bau-Board an: 'jaira create --board <code-board> --follows <idee-id> --goal ... --dod ...'. Das ist Handarbeit, weil es keine boarduebergreifende Weitergabe gibt (8NHD8Q, P5ABVR); zuschnitt kann die fertigen create-Zeilen als Notiz liefern.
+
+Technisch geprueft (Code gelesen, nicht ausgefuehrt):
+- Eigene output-Felder (prior-art, nutzen-urteil, entscheidung) gehen ohne Go-Code: core/gate/gate.go fieldFilled faellt bei unbekannten Feldern auf das Frontmatter-Skalar zurueck; geschrieben mit 'jaira set <id> prior-art=...'.
+- Keine Lane des Typs darf requires-specified tragen (wie todo), sonst verlangt das Board dod und assignee, die eine Idee nicht hat.
+- Id ohne eigene Datei = eingebaute Lane (core/lane/boardtypes.go auf origin/feat/Y2C9QN-boards-create); hier passt keine, also 7 eigene Dateien.
+
+Verworfen:
+A) Das Code-Board mit Option brainstorm plus /jaira-role-research benutzen. Spart den Typ, aber: keine Nutzen-Pruefung, done verlangt Commits, und Ideen verstopfen das Board, auf dem gebaut wird.
+B) Volle Startup-Pipeline (Markt, Wettbewerb, Monetarisierung, Tech-Spike, Pitch, Kritik als je eigene Lanes, 10+). Jede Lane ist eine Uebergabe mehr; fuer eine Person zu schwer und groesser als paca. Wettbewerb steckt in recherche, Kritik in zuschnitt.
+
+Offene Fragen an berkc:
+1. 'nutzen' standardmaessig an oder aus? Und wie wird beim Anlegen gefragt: heute hat 'jaira create' kein --option; es gibt nur 'jaira dod <id> --option nutzen' danach und 'jaira lanes --options' als Board-Vorgabe. Braucht create ein --option-Flag bzw. eine Frage im TUI-Dialog (Code-Aenderung, eigenes Ticket)?
+2. Wohin geht ein Go: Tickets auf das Code-Board (per Teamlead, von Hand) oder baut man auf demselben Board weiter?
+3. No-Go eigener Terminal-Lane 'verworfen' oder nur das Feld entscheidung in 'abgelegt'? (Ob zwei terminale Lanes erlaubt sind, nicht geprueft.)
+4. Mit P5ABVR zusammenlegen? Das Hackathon-Ideen-Board waere dann nur eine Stufe davor: Thema -> N Tickets auf einem projektidee-Board.
+5. Soll recherche auch die eigenen Repos und alten Ideen/Logbuecher durchsuchen, nicht nur das Web?
+6. Lane-Prompts auf Englisch wie die eingebauten, oder Deutsch?
