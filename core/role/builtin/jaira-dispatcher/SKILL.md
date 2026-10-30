@@ -471,6 +471,8 @@ everything the human could have reacted to while it was still cheap to react.
 If the lane produced nothing a person needs, say the lane is done and nothing
 else. Silence is the exception you state, not the default.
 
+When `jaira move`, `jaira logbook` or `jaira milestone ls` prints a suggestion line, or its `--json` carries `suggestions`, pass every such line to the person word for word, command included. You never run `/jaira-role-pr` yourself: opening a pull request is the person's call, and passing the line on is the whole of your part.
+
 ## Handing it on for acceptance
 
 When your ticket reaches a human lane and its `review-check` asks a person to

@@ -10,7 +10,9 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/milestone"
+	"github.com/BeMuCa/jaira/core/suggest"
 	"github.com/BeMuCa/jaira/core/tag"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -522,11 +524,28 @@ work and each filters to half of it.`,
 			if err != nil {
 				return err
 			}
+			// A complete milestone is told what to do next. Without a readable
+			// board there are no lanes to say whether it is complete, so the
+			// listing goes on without the lines.
+			var lanes *lane.Set
+			if env, _, lerr := loadEnv(s); lerr == nil {
+				lanes = env.Lanes
+			}
+			owed := func(ms *milestone.Milestone) []suggest.Line {
+				if lanes == nil {
+					return nil
+				}
+				return suggest.ForMilestone(lanes, groupOf(s, ms))
+			}
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
 				arr := make([]map[string]any, 0, len(all))
 				for _, ms := range all {
-					arr = append(arr, milestoneJSON(ms, s.Root, all))
+					mj := milestoneJSON(ms, s.Root, all)
+					if sg := owed(ms); len(sg) > 0 {
+						mj["suggestions"] = sg
+					}
+					arr = append(arr, mj)
 				}
 				return emit(w, map[string]any{
 					"milestones": arr, "count": len(arr), "dir": milestone.Dir(s.Root),
@@ -552,6 +571,11 @@ work and each filters to half of it.`,
 				}
 				fmt.Fprintf(w, "  %s %-24s %s  %3d ticket(s)%s\n",
 					swatch(ms.Colour, known, colours), labels[ms.ID], value, len(ms.Members()), goal)
+			}
+			for _, ms := range all {
+				for _, l := range owed(ms) {
+					fmt.Fprintln(w, l.Text)
+				}
 			}
 			fmt.Fprintf(w, "\nFiles: %s\n", milestone.Dir(s.Root))
 			printTwins(milestone.Twins(all))

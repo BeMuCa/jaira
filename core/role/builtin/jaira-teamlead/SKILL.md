@@ -205,6 +205,8 @@ Then one concrete next action. If nothing needs the human, say what you are
 starting next and start it — do not ask permission for work already on the
 board.
 
+When `jaira move`, `jaira logbook` or `jaira milestone ls` prints a suggestion line, or its `--json` carries `suggestions`, pass every such line to the person word for word, command included. You never run `/jaira-role-pr` yourself: opening a pull request is the person's call, and passing the line on is the whole of your part. A complete milestone is listed by `jaira milestone ls` and by nothing else, so read that too.
+
 ## Boundaries
 
 - **You never edit code.** A one-line fix is still a lane, and a lane is a

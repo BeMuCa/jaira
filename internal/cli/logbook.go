@@ -310,11 +310,21 @@ func logbookOut(s *ticket.Store, idArg string, w io.Writer) error {
 		return err
 	}
 
+	// Filed off the board: the ticket now stands in no lane, which is done.
+	sugg, serr := suggestionsFor(s, env.Lanes, t.ID, "")
+	if serr != nil {
+		fmt.Fprintf(os.Stderr, "working out the next step failed: %v\n", serr)
+	}
+
 	if g.jsonOut {
-		return emit(w, map[string]any{
+		out := map[string]any{
 			"logged": true, "id": t.ID, "handle": ticket.Handle(t.ID),
 			"path": dst, "file": filepath.Base(dst), "commits": merged,
-		})
+		}
+		if len(sugg) > 0 {
+			out["suggestions"] = sugg
+		}
+		return emit(w, out)
 	}
 	fmt.Fprintf(w, "Logged %s  %s\n", ticket.Handle(t.ID), t.Title)
 	fmt.Fprintf(w, "Stamped %d commit(s). Moved to %s — restore it with 'jaira restore %s'.\n",
@@ -322,6 +332,9 @@ func logbookOut(s *ticket.Store, idArg string, w io.Writer) error {
 	if len(merged) == 0 {
 		fmt.Fprintf(w, "No commits were found for this ticket. Record them by hand with 'jaira set %s commits=<sha>'.\n",
 			ticket.Handle(t.ID))
+	}
+	for _, l := range sugg {
+		fmt.Fprintln(w, l.Text)
 	}
 	return nil
 }

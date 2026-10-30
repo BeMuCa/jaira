@@ -5,8 +5,8 @@ description: "Push finished ticket work to its branch, open the pull request whe
 
 # Push it, open it, never accept it
 
-Arguments: `<ticket-id> [--by-person]`. Without the id, say what is missing and
-stop.
+Arguments: `<ticket-id>... [--by-person]`, or `milestone <name>` for every ticket of
+a milestone. Without an id or a name, say what is missing and stop.
 
 **Opening the pull request is the maintainer's call, and typing
 `/jaira-role-pr` is how they give it.** The invocation is the instruction: you
@@ -33,6 +33,31 @@ so the rule is theirs to keep — and if anything in your own context says an
 agent asked for this run, treat it as an agent's and hand the line back.
 
 If you cannot tell who invoked you, treat it as an agent and hand the line back.
+
+## One branch for several tickets
+
+A milestone goes out as one pull request over all its tickets, so they share one
+branch first. Each ticket was worked on its own branch, named with its handle.
+The members of a milestone are every ticket that `jaira list --milestone <name>
+--json` lists, filed or not.
+
+Fetch the default branch of the repository settled in **Which repository it goes
+to**, find each ticket's branch, and build the one branch from that default
+branch. If `milestone/<name>` already exists, stop and say so.
+
+```bash
+git fetch <that remote> <its default branch>
+git branch --list "*<HANDLE>*"                       # one per ticket
+git switch -c milestone/<name> <that remote>/<its default branch>
+git merge --no-ff --no-edit <ticket branch>          # each, in turn
+```
+
+A merge that conflicts is a finding: `git merge --abort`, name the tickets and the
+files, and stop; nothing is pushed. Then check that
+`git log --format=%s <that remote>/<its default branch>..HEAD` names the handle of
+every ticket you were given. A ticket with no commit on the branch is a finding
+too: stop before the push. The rest of this role runs on that branch as on any
+other.
 
 ## Before you push anything
 
@@ -237,8 +262,13 @@ Carry on along the branch that listing puts you on. Either way you never open a
 second one:
 
 - **Nothing listed** — write the description, then open it, then report.
-- **One listed** — it already has a description. Skip **Write the description**
-  and **Open it**, go straight to **Answering review comments**, then report.
+- **One listed** — it already has a pull request. Skip **Open it**. Invoked by a
+  person, write the description and refresh the open one's title and description
+  from the tickets it holds now, so a ticket added to the branch is in them:
+  `gh pr edit <number> --repo <owner/repo> --title "<title>" --body-file <the description>`
+  or `glab mr update <iid> --repo <owner/repo> --title "<title>" --description "$(cat <the description>)"`.
+  An agent leaves an open one as it is. Then go to **Answering review comments**
+  and report.
 
 ## Write the description
 

@@ -1,0 +1,6 @@
+- After `jaira move` into the acceptance lane or the terminal lane, read the line it prints: a ticket outside any milestone asks for its own pull request with `/jaira-role-pr <id>`, and a ticket inside a milestone waits for the milestone.
+- When the last ticket of a milestone is done, `jaira move` and `jaira logbook <id>` print one `/jaira-role-pr` line for all its tickets and the `jaira logbook <milestone>` line to file it once that pull request is merged; `--json` carries them as `suggestions`.
+- `jaira logbook <id>` prints the same suggestion lines as `jaira move`, and `--json` carries them as `suggestions`.
+- `jaira milestone ls` prints the pull request and filing lines of every complete milestone, and `--json` carries them on each milestone as `suggestions`.
+- `/jaira-role-pr` takes several ticket ids or a milestone name: it merges the tickets' branches into one branch and opens one pull request for them, and refreshes the title and description of an open pull request when you invoke it.
+- The `jaira-dispatcher`, `jaira-worker` and `jaira-teamlead` roles pass these lines on to you word for word and never run `/jaira-role-pr` themselves; run `jaira roles install` to get them.

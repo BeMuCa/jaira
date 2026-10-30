@@ -330,6 +330,8 @@ the lane, and the single thing a person would want to know from it. A decision
 taken, a surprise found, a number measured. A lane that produced nothing worth
 saying gets "done" and nothing else.
 
+When `jaira move`, `jaira logbook` or `jaira milestone ls` prints a suggestion line, or its `--json` carries `suggestions`, pass every such line to the person word for word, command included. You never run `/jaira-role-pr` yourself: opening a pull request is the person's call, and passing the line on is the whole of your part.
+
 ## Handing it on for acceptance
 
 When the ticket reaches a human lane and its `review-check` asks a person to
