@@ -22,14 +22,14 @@ commits:
   - b9872d8a
   - 297d5915
 created-at: 2026-10-30T01:56:44Z
-updated-at: 2026-10-30T21:59:22Z
+updated-at: 2026-10-30T22:03:00Z
 updated-by: berkc
 claimed-by: berk-ca-2129199
 claimed-at: 2026-10-30T21:40:58Z
 outcome-what: "README table rows say worker is the default and dispatcher is the lanes opt-in, fixing the one critique finding"
 outcome-why: "the critique found README.md:822 still called worker the opt-in"
 outcome-resolves: "G6T54H DoD 2: help and docs name worker as the default"
-review-summary: "none"
+review-summary: "Flips the default of the 'dispatch' setting. core/settings/settings.go DispatchMode now returns 'lanes' only when settings.json says exactly 'lanes' (whitespace trimmed); empty, 'worker' or a typo return 'worker', so DispatchRole hands a teamlead /jaira-worker unless the person asked for the dispatcher. Nothing else decides the mode: 'jaira roles list' (text and --json dispatch/dispatch_role) and the TUI 'Agents per ticket' row/toggle read DispatchMode, so they follow without their own logic. Tests flipped with it (settings_test incl. ' lanes ', roles_test with an explicit lanes file, tui settings_test starting from worker). The roles help, the TUI row text, README (feature list, role table, worker paragraph), the teamlead and worker SKILL.md now call worker the default; the two changed SKILL.md hashes are appended to core/shipped/shipped.sha256; release note core/release/notes/G6T54H.md is one line telling users how to get lanes back."
 round: 3
 review-gaps: "duplication: none; DispatchMode is the only place that decides the dispatch mode (grep DispatchMode, DispatchWorker, DispatchLanes: settings.go, roles.go, tui/settings.go, tests). dead code: none added. fluff: none; the Long texts are the same length as before. cost: none, the check is one string compare."
 test-verdict: "pass: go test ./... -race -count=1 exit 0, 33 packages ok, go vet exit 0, gofmt clean; DoD 1-3 verified in the tree (settings.go DispatchMode, TestDispatchDefaultsToWorker, TestSettingsEnterSwitchesDispatch, TestRolesListReportsTheDispatchSetting, core/release/notes/G6T54H.md); behaviour exercised with built binary: no settings.json -> worker/jaira-worker, dispatch lanes -> lanes/jaira-dispatcher, typo lanse -> worker"
