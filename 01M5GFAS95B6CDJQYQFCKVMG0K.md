@@ -1,7 +1,7 @@
 ---
 id: 01M5GFAS95B6CDJQYQFCKVMG0K
 title: "Boards wechseln mit Shift+Pfeil und ein Board-Fenster auf b mit aktiven Boards, Ersteller und Lanes"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: berkc
@@ -17,10 +17,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:17Z
-updated-at: 2026-10-30T02:12:00Z
+updated-at: 2026-10-30T02:12:13Z
 updated-by: berkc
 claimed-by: berk-ca-1397863
 claimed-at: 2026-10-30T01:57:38Z
+outcome-what: "b on the board opens a window of every board (name, creator from git, lanes, tick on active ones; order active, most recently shown, rest; space toggles active, enter shows the board); shift+up/down on the board steps through the active boards; active boards are stored in .jaira/active-boards via core/lane ActiveBoards/SetBoardActive"
+outcome-why: berkc wants to rotate through the boards the teamlead may use and to see and choose them in one window; b used to step blindly through every board
+outcome-resolves: "DoD 1 stepBoard + tests; DoD 2 openBoards/renderBoards + TestBOpensTheBoardWindow; DoD 3 SetBoardActive writes .jaira/active-boards, the setting 57TDND will read; DoD 4 help line, detail b left to P3VS02; DoD 5 core/release/notes/KVMG0K.md"
 ---
 
 # Boards wechseln mit Shift+Pfeil und ein Board-Fenster auf b mit aktiven Boards, Ersteller und Lanes
