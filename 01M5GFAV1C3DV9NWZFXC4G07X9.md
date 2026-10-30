@@ -5,7 +5,7 @@ status: brainstorm
 ready: true
 creator: berkc
 assignee: berkc
-goal: "Ein Board laesst sich im TUI anlegen (Name, Beschreibung, Lanes aus dem Katalog), mit dem Team teilen, ein geteiltes Board in den eigenen Katalog uebernehmen, und jedes Repo sieht die Boards aus dem persoenlichen Katalog."
+goal: "Boards wie Lanes: ein Board laesst sich im TUI und per CLI anlegen (Name, Pflicht-Beschreibung, Lanes aus Board und Katalog), landet im persoenlichen Katalog ~/.jaira/boards, aus dem jedes Repo Boards anlegen kann, und laesst sich mit dem Team teilen (publish) und uebernehmen (adopt)."
 context: |-
   Wunsch von berkc am 22.10.2026: 'Regarding the Boards we need to handle them similar to the lanes, making it possible to create a board manually and pick lanes to include, write board description and also to share boards with the team or save shared boards. The boards are also saved globally, like for the tickets.'
   Heute: ein Board ist ein Ordner .jaira/boards/<name>/lanes/ mit description-Datei, nur im Repo (S0EG0M). Anlegen geht nur von Hand.
@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:19Z
-updated-at: 2026-10-30T02:00:03Z
+updated-at: 2026-10-30T02:00:05Z
 updated-by: berkc
 claimed-by: berk-ca-1397571
 claimed-at: 2026-10-30T01:57:35Z
