@@ -20,7 +20,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-27T14:31:21Z
-updated-at: 2026-10-30T22:17:52Z
+updated-at: 2026-10-30T22:17:54Z
 updated-by: berkc
 claimed-by: berk-ca-2379103
 claimed-at: 2026-10-30T22:13:03Z
@@ -68,3 +68,4 @@ claimed-at: 2026-10-30T22:13:03Z
 - **2026-10-30 22:17 · berkc** — DESIGN DECISION 2 (for signoff): 'jaira update diff' output. One line per role file, mod file and lane: current | behind (shipped in vX.Y.Z) | behind (not in a release yet) | behind (missing) | edited, grouped by skills directory, then a summary line. Writes nothing; outside a board only personal dirs. Lanes are skipped on a board with no lane files of its own (lane.Load would write them). --json gives roles, lanes, state, release. Alternative not taken: list only changed files.
 - **2026-10-30 22:17 · berkc** — DESIGN DECISION 3: a bare 'jaira update' now also updates roles, cockpit mod and jaira skill (flag --roles kept, default true, --roles=false leaves them). Lanes stay --lanes. Exit 3 when a role file was edited, also on a bare update. Outside a board, a bare update does the personal dirs only (as --roles did).
 - **2026-10-30 22:17 · berkc** — SKIPPED TESTS in the full run (environment, not this change): core/gitref TestUnreachableRemoteIsOfflineNotARace (hangs on git push to an unreachable remote; the same hang reproduces on unmodified origin/master), core/outbox TestAnOfflineWriteArrivesWhenTheNetworkIsBack (same class), internal/cli TestWebPushReportsAQueuedDrop (git fetch to an unreachable remote, hung in this sandbox).
+- **2026-10-30 22:17 · berkc** — INCIDENT: the first worktree was deleted by a mistaken 'git worktree remove --force' on its own path; uncommitted work was lost and re-applied from the transcript in ../jaira-GBFM32 on the same branch. The regenerated list was reused from the scratchpad and re-verified byte-identical.
