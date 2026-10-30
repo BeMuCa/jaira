@@ -20,7 +20,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-27T14:31:21Z
-updated-at: 2026-10-30T22:29:58Z
+updated-at: 2026-10-30T22:30:00Z
 updated-by: berkc
 claimed-by: berk-ca-2379103
 claimed-at: 2026-10-30T22:13:03Z
@@ -34,6 +34,8 @@ review-gaps: |-
   note: with --roles=false there is no longer any hint that roles are behind (hintLines lost its roles branch)
   note: bare 'jaira update' outside a board used to fail with no-store and now updates the personal skills dir instead; intended by design decision 3, worth knowing at signoff
 test-verdict: "pass: go vet ./... RC=0; go test ./... -race -count=1 -timeout 20m -skip 'TestUnreachableRemoteIsOfflineNotARace|TestAnOfflineWriteArrivesWhenTheNetworkIsBack|TestWebPushReportsAQueuedDrop' EXIT=0, 33 packages ok, no FAIL; DoD 1-4 verified in the tree; behaviour exercised with the built binary on a scratch home (update diff: board.ts and register.tsx 'behind (shipped in v0.5.4)'; bare update rc=0; diff afterwards: both current)"
+review-verdict: "Pass: the diff meets all four DoD items. Re-run here: scripts/shipped-history.sh reproduces the committed manifest byte for byte. No sha+path line was lost (552 pairs, +55). Every embedded file of v0.5.4 to v0.5.7 is in it, and board.ts at 5bc22fb1 and register.tsx at 2c4c6790 are listed as v0.5.2. go vet ./... and go test ./... both pass. Three network tests were skipped because they hang in this sandbox. A manual run on a scratch HOME showed update diff writing nothing and a bare update exiting 3. No blockers."
+review-round: 2
 ---
 
 # jaira update bringt standardmaessig alles auf Stand - Abschnitt, Rollen, Cockpit, Skill - und 'jaira update diff' zeigt, was zurueckliegt
