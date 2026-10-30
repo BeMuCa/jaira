@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T01:56:44Z
-updated-at: 2026-10-30T21:40:58Z
+updated-at: 2026-10-30T21:41:06Z
 updated-by: berkc
 claimed-by: berk-ca-2129199
 claimed-at: 2026-10-30T21:40:58Z
@@ -43,4 +43,4 @@ claimed-at: 2026-10-30T21:40:58Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-30 21:41 · berkc** — worker: open decisions counted, none the person must take. Settled: explicit 'lanes' keeps lanes; empty or unknown dispatch -> worker (DoD 1). Worktree is ../jaira-G6T54H on feat/G6T54H-worker-default, as the parent asked (the skill's default path is .worktrees/, not used). jaira update warning from 0.5.7 on this board was left alone.
