@@ -1,7 +1,7 @@
 ---
 id: 01M658C3Y2JQJ1ARMW9NG6T54H
 title: Agents per ticket steht per Default auf worker statt lanes
-status: critique
+status: in-progress
 ready: true
 creator: berkc
 assignee: berkc
@@ -22,7 +22,7 @@ commits:
   - b9872d8a
   - 297d5915
 created-at: 2026-10-30T01:56:44Z
-updated-at: 2026-10-30T21:53:50Z
+updated-at: 2026-10-30T21:53:53Z
 updated-by: berkc
 claimed-by: berk-ca-2129199
 claimed-at: 2026-10-30T21:40:58Z
@@ -30,7 +30,7 @@ outcome-what: "README table rows say worker is the default and dispatcher is the
 outcome-why: "the critique found README.md:822 still called worker the opt-in"
 outcome-resolves: "G6T54H DoD 2: help and docs name worker as the default"
 review-summary: "none"
-round: 2
+round: 3
 ---
 
 # Agents per ticket steht per Default auf worker statt lanes
