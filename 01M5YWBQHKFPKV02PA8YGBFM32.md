@@ -20,7 +20,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-27T14:31:21Z
-updated-at: 2026-10-30T21:47:10Z
+updated-at: 2026-10-30T21:49:24Z
 updated-by: berkc
 claimed-by: berk-ca-2129445
 claimed-at: 2026-10-30T21:41:03Z
@@ -44,7 +44,8 @@ claimed-at: 2026-10-30T21:41:03Z
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] find the real cause of the false 'edited' cockpit files in core/shipped (done: list is stale, script is correct; see notes)
+- [x] find the real cause of the false 'edited' cockpit files in core/shipped (done: list is stale, script is correct; see notes)
+  proof: core/shipped/shipped.sha256 regenerated; scripts/shipped-history.sh
 - [ ] scripts/shipped-history.sh: add the release column (first vX.Y.Z tag that holds the blob at that path, '-' if none)
 - [ ] regenerate core/shipped/shipped.sha256 with the script; check append-only (no committed line lost) and every tagged embedded file present
 - [ ] core/shipped/shipped.go: Known keeps sha+path matching; add Release(path, b) to read the column; update shipped_test.go regex
