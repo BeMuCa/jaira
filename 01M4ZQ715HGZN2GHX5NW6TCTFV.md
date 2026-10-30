@@ -1,7 +1,7 @@
 ---
 id: 01M4ZQ715HGZN2GHX5NW6TCTFV
 title: "Ist der letzte Ticket eines Milestones fertig, schlaegt jaira den PR mit /jaira-role-pr vor und bietet an, den Milestone abzulegen"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 assignee: berkc
@@ -26,10 +26,13 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-30T23:58:25Z
+updated-at: 2026-10-30T23:58:36Z
 updated-by: berkc
 question: ""
 round: 2
+outcome-what: "jaira move, jaira logbook <id> and jaira milestone ls print the pull-request line and the milestone filing line when a ticket or a complete milestone calls for one, and --json carries them as suggestions; the rules live in core/suggest; the roles pass the lines on word for word; jaira-role-pr takes several tickets or a milestone and merges their branches into one before the push"
+outcome-why: "a milestone is one pull request over all its tickets (berkc 22.10), and the person is otherwise never told /jaira-role-pr is due; a ticket outside any milestone is a group of one"
+outcome-resolves: "a finished ticket or a finished milestone now names its next step in the output; an agent never opens a pull request; the one-branch question is settled by merging the ticket branches at PR time, not by changing worktrees"
 ---
 
 # Ist der letzte Ticket eines Milestones fertig, schlaegt jaira den PR mit /jaira-role-pr vor und bietet an, den Milestone abzulegen
