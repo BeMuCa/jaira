@@ -1,7 +1,7 @@
 ---
 id: 01M5YWBQHKFPKV02PA8YGBFM32
 title: "jaira update bringt standardmaessig alles auf Stand - Abschnitt, Rollen, Cockpit, Skill - und 'jaira update diff' zeigt, was zurueckliegt"
-status: testing
+status: review
 ready: true
 creator: berkc
 assignee: berkc
@@ -20,7 +20,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-27T14:31:21Z
-updated-at: 2026-10-30T22:23:43Z
+updated-at: 2026-10-30T22:23:46Z
 updated-by: berkc
 claimed-by: berk-ca-2379103
 claimed-at: 2026-10-30T22:13:03Z
