@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:19Z
-updated-at: 2026-10-30T02:10:12Z
+updated-at: 2026-10-30T02:10:14Z
 updated-by: berkc
 claimed-by: berk-ca-1397571
 claimed-at: 2026-10-30T01:57:35Z
@@ -38,7 +38,8 @@ claimed-at: 2026-10-30T01:57:35Z
   proof: core/lane/boardshare.go PublishBoard/SharedBoards/AdoptBoard; TestPublishAndAdoptBoard
 - [x] Release-Note-Zeile in core/release/notes/<ID>.md
   proof: core/release/notes/4G07X9.md
-- [ ] Per CLI ohne TUI: 'jaira boards create --lanes a,b' waehlt Lanes, 'boards publish|shared|adopt' teilen und uebernehmen, alles mit --json; Test
+- [x] Per CLI ohne TUI: 'jaira boards create --lanes a,b' waehlt Lanes, 'boards publish|shared|adopt' teilen und uebernehmen, alles mit --json; Test
+  proof: internal/cli/boards.go create --lanes, publish/shared/adopt; TestBoardsPickSaveShareAndAdoptFromTheCLI
 
 ## Options
 
