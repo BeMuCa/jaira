@@ -20,7 +20,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-27T14:31:21Z
-updated-at: 2026-10-30T22:17:54Z
+updated-at: 2026-10-30T22:18:49Z
 updated-by: berkc
 claimed-by: berk-ca-2379103
 claimed-at: 2026-10-30T22:13:03Z
@@ -30,7 +30,8 @@ claimed-at: 2026-10-30T22:13:03Z
 
 ## Definition of Done
 
-- [ ] 'jaira update' ohne Flags aktualisiert Abschnitt, Rollen, Cockpit-Mod und jaira-Skill ueberall, wo sie schon installiert sind; bearbeitete Dateien bleiben (exit 3)
+- [x] 'jaira update' ohne Flags aktualisiert Abschnitt, Rollen, Cockpit-Mod und jaira-Skill ueberall, wo sie schon installiert sind; bearbeitete Dateien bleiben (exit 3)
+  proof: internal/cli/updatesetup_test.go TestUpdateWithoutSwitchesUpdatesRolesButNotLanes; internal/cli/update.go roles default true
 - [ ] 'jaira update diff' listet je Rolle, Mod-Datei und Lane: aktuell, zurueck (welche Version) oder bearbeitet; schreibt nichts
 - [ ] Alte ausgelieferte Versionen aus Merge-Zweigen (board.ts 5bc22fb1, register.tsx 2c4c6790) gelten als ausgeliefert, nicht als bearbeitet
 - [ ] Tests; Release-Note
