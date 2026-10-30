@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-30T23:50:17Z
+updated-at: 2026-10-30T23:50:19Z
 updated-by: berkc
 question: |-
   Welche Arbeitsweise bekommt ein NEUER Milestone, wenn beim Anlegen niemand --pr angibt?
@@ -62,7 +62,7 @@ round: 2
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 - [-] Schritt 1 (core/milestone): Feld 'pr: block|single' — erst Tests core/milestone/pr_test.go (TestPRLineIsReadAndRewrittenInPlace, TestAMilestoneWithoutPRIsSingle, TestUnknownPRValueReadsAsSingle, TestParsePRRefusesAnUnknownMode, TestAdoptTakesAPRChangeFromTheOldSide), dann neue Datei pr.go (PRBlock, PRSingle, Block(), SetPR, ParsePR) + Feld PR im Struct und 'case "pr"' in parse(); check.sh
-- [ ] Schritt 2 (CLI): 'milestone create/set --pr block|single' (falscher Wert exit 2), milestoneJSON traegt immer 'pr', 'milestone ls' markiert 'pr: block' — erst Tests internal/cli/milestonepr_test.go; docs/COMMANDS.md Zeilen create/set/ls; erste Zeile in core/release/notes/6TCTFV.md; check.sh
+- [-] Schritt 2 (CLI): 'milestone create/set --pr block|single' (falscher Wert exit 2), milestoneJSON traegt immer 'pr', 'milestone ls' markiert 'pr: block' — erst Tests internal/cli/milestonepr_test.go; docs/COMMANDS.md Zeilen create/set/ls; erste Zeile in core/release/notes/6TCTFV.md; check.sh
 - [ ] Schritt 3 (neues Paket core/suggest): AfterMove, AfterLogbook, ForMilestone, Complete, Lines, fileMilestoneCommand — erst Tests core/suggest/suggest_test.go: TestTicketReachingAcceptanceGetsItsOwnPullRequest, TestTicketReachingTheTerminalLaneGetsItsOwnPullRequest, TestNoSuggestionOnAnyOtherLane, TestBlockMilestoneCompleteSuggestsOnePullRequestThenFiling, TestBlockMilestoneIncompleteSuggestsNothing, TestSingleMilestoneCompleteOffersFilingAndNoBlockPullRequest, TestMembersOffTheBoardCountAsFinished, TestEmptyMilestoneIsNeverComplete, TestFiledMilestoneSuggestsNothing, TestTicketInTwoMilestones, TestLanesAreFoundByWhatTheyDoNotByName, TestAfterLogbookSuggestsOnlyForMilestones, TestLinesSayOnlyAPersonOpensThePullRequest; check.sh
 - [ ] Schritt 4 (jaira move): kleiner Hook in flow.go newMoveCmd — Zeilen nach nextStepLine, --json 'suggestions' nur wenn nicht leer — erst Tests internal/cli/prsuggest_test.go (TestMoveToSignoffSuggestsThePullRequest, TestMoveJSONCarriesSuggestions, TestMoveCompletingABlockMilestoneSuggestsOnePullRequestAndFiling, TestMoveIntoAnAgenticLaneSuggestsNothing); docs move-Zeile; Release-Zeile; check.sh
 - [ ] Schritt 5 (jaira logbook <id>): kleiner Hook in logbookOut — erst Tests (TestLogbookOfTheLastTicketOffersToFileTheMilestone, TestLogbookJSONCarriesSuggestions, TestSuggestedFilingIsAccepted, TestLogbookOfABlockTicketSuggestsTheBlockPullRequest); docs logbook-Zeile; Release-Zeile; check.sh
