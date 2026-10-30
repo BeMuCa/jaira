@@ -22,7 +22,7 @@ commits:
   - b9872d8a
   - 297d5915
 created-at: 2026-10-30T01:56:44Z
-updated-at: 2026-10-30T21:53:47Z
+updated-at: 2026-10-30T21:53:50Z
 updated-by: berkc
 claimed-by: berk-ca-2129199
 claimed-at: 2026-10-30T21:40:58Z
@@ -65,3 +65,4 @@ round: 2
 - **2026-10-30 21:45 · berkc** — Correction to the previous note: the TUI row, roles help and their tests were changed in the same pass, not left for later.
 - **2026-10-30 21:52 · berkc** — Commit b9872d8a carries the change. The shipped-version index needed the two new skill hashes appended (core/shipped/shipped.sha256 is append-only; TestEveryInstalledFileIsAShippedVersion failed until then). Full go test ./... exit 0 with 33 ok packages; go vet exit 0; gofmt clean.
 - **2026-10-30 21:53 · berkc** — critique: README.md:822 table row says /jaira-worker is an opt-in alternative; fix that row only. Stood on: the note about the code diff (DispatchMode single source, no speculative code). The other README lines already fixed in b9872d8a.
+- **2026-10-30 21:53 · berkc** — critique round 2: README table fixed in 297d5915; grep over the repo finds no other claim that lanes is the default outside historical logbook and NOTES files. Nothing left.
