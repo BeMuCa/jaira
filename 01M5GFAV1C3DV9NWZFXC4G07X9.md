@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:19Z
-updated-at: 2026-10-30T02:29:30Z
+updated-at: 2026-10-30T02:29:32Z
 updated-by: berkc
 claimed-by: berk-ca-1397571
 claimed-at: 2026-10-30T01:57:35Z
@@ -37,6 +37,7 @@ review-gaps: |-
 test-verdict: "pass: go vet + go test -count=1 ./... green (RC=0); DoD 1-5 tests run; built binary exercised on two scratch repos with scratch JAIRA_HOME: create --lanes saved to catalogue, unknown lane exit 2, other repo lists catalogue type and builds clips from it, ticket filed on it, publish/shared/adopt onto a second home all with --json. TUI form verified only through TestLaneScreenCreatesABoardFromTheForm (real key dispatch), not by eye."
 review-verdict: "Approve: all five DoD items are met by the diff, each with a test; go build, go vet and go test ./... pass; manual CLI run of create --lanes/types/publish/shared/adopt behaves as documented. No defects found; only minor notes."
 review-round: 1
+review-check: "1. cd into a scratch git repo, run 'git init' and 'jaira init', and 'export JAIRA_HOME=/tmp/jh' so your real ~/.jaira is untouched  2. jaira boards create video --lanes backlog,review,done --description \"Video work\"  -> says board created in .jaira/boards/video/lanes and 'Saved to your catalogue in /tmp/jh/boards/video'  3. jaira boards types -> a row 'video  catalogue  Video work' under 'code  shipped'  4. in a second scratch repo (same JAIRA_HOME): jaira boards create clips --type video --description Clips -> board with backlog → review → done  5. back in the first repo: jaira boards publish video -> path .jaira/shared/<you>/boards/video; run it again -> refused, exit 3  6. jaira boards shared -> lists video with its lanes and path  7. export JAIRA_HOME=/tmp/jh2; jaira boards adopt <that path> -> 'adopted /tmp/jh2/boards/video'  8. jaira (TUI) -> open the lane settings screen, press B -> 'New board' form; type a name, tab, a description, tab, space to untick a lane, enter -> message 'board <name> created with N lanes; saved to your catalogue, ...'  9. jaira boards -> the new board is listed with its description"
 ---
 
 # Boards wie Lanes behandeln: von Hand anlegen, Lanes waehlen, beschreiben, teilen und global speichern
