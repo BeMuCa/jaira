@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:17Z
-updated-at: 2026-10-30T02:27:05Z
+updated-at: 2026-10-30T02:27:07Z
 updated-by: berkc
 claimed-by: berk-ca-1397863
 claimed-at: 2026-10-30T01:57:38Z
@@ -33,6 +33,16 @@ review-gaps: |-
 test-verdict: "pass: go build, go vet, go test ./... -race -timeout 20m after go clean -testcache all RC=0; DoD 1-5 checked against the tree (proof lines re-read after optimize); built binary run in tmux on a scratch repo with boards default/docs/video: b showed name, 'created by Tess Tester' for the committed board and 'creator unknown' for the others, lanes joined by arrows; space on docs wrote .jaira/active-boards = default,video; shift+down/up stepped default->video->default and skipped docs; reopened b listed default, video, then ○ docs; enter on docs showed it, shift+down from there went to video; boards-seen.json written under JAIRA_HOME/repo/"
 review-verdict: "The diff meets all 5 DoD items: shift+arrows step through active boards only, b opens the window with name, creator, lanes, ticks and the required order, space writes .jaira/active-boards, the help line is updated, and the release note is present. go vet ./... is clean and go test ./... passes, including the 6 new or renamed board tests. No defects found. The notes are about what the active setting does not reach yet (57TDND) and one default-behaviour subtlety."
 review-round: 1
+review-check: |-
+  1. cd /home/berkc/code/X_General/jaira-KVMG0K && go build -o /tmp/jaira-kvmg ./cmd/jaira
+  2. In a scratch copy of a repo with a .jaira board, create two boards: mkdir -p .jaira/boards/video/lanes .jaira/boards/docs/lanes and copy one lane file from .jaira/lanes/ into each
+  3. Run /tmp/jaira-kvmg in that repo and press shift+down: the header shows 'board: docs'. Press it again for video, and again to come back to today's board
+  4. Press b: a 'Boards' window lists default, docs and video, each with a tick, a 'created by ...' or 'creator unknown: not committed yet' line, and its lanes joined by arrows
+  5. Press j to reach docs, then space: its tick becomes a circle, and cat .jaira/active-boards prints 'default' and 'video'
+  6. Press esc, then shift+down twice: docs is skipped (default, video, default)
+  7. In the window, switch off every board but one, then press space on the last: a red line says 'The last active board stays active'
+  8. Open a ticket (enter) and press shift+down: the ticket scrolls and the board does not change
+  Without a UI: go test ./internal/tui -run 'Shift|BOpens|SpaceToggles' and go test ./core/lane -run TestActiveBoards
 ---
 
 # Boards wechseln mit Shift+Pfeil und ein Board-Fenster auf b mit aktiven Boards, Ersteller und Lanes
