@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T07:42:27Z
-updated-at: 2026-10-30T07:42:45Z
+updated-at: 2026-10-30T07:42:59Z
 assignee: AlSa
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4867
@@ -45,4 +45,4 @@ claimed-at: 2026-10-30T07:42:45Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-30 07:42 · Alexander Sacharov** — Keine offenen Entscheidungen: Inhalt ist die lokale critique.md dieses Repos; 'default-board: false' der eingebauten Datei bleibt (Feld für Mehr-Board-Typen), die lokale Datei bekommt es dazu und wird so byte-gleich.
