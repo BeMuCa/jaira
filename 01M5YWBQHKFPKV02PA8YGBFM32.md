@@ -20,7 +20,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-27T14:31:21Z
-updated-at: 2026-10-30T21:46:58Z
+updated-at: 2026-10-30T21:47:07Z
 updated-by: berkc
 claimed-by: berk-ca-2129445
 claimed-at: 2026-10-30T21:41:03Z
@@ -60,3 +60,4 @@ claimed-at: 2026-10-30T21:41:03Z
 - **2026-10-30 21:44 · berkc** — finding 1 (shipped list): scripts/shipped-history.sh does walk second parents: it uses 'git log --full-history -m' since its first commit 299c65aa, and every commit reachable from HEAD that touches the embedded paths is in that walk (303 vs 375 commits, none missing). Its output today is 558 lines; core/shipped/shipped.sha256 has 503 and is a strict subset of it (0 lines committed-only, 55 lines script-only). The list is append-only and was patched by hand (736c80ee) and never re-run after the 44 later commits that changed embedded files. Hence board.ts 9406af (added by 5bc22fb1, F80QZT) and register.tsx are reported as edited. Fix: regenerate the list with the script. Checked: every file of tags v0.4.1..v0.5.7 under core/role/builtin, core/mod/builtin, core/lane/builtin, core/role/jaira has its sha in the regenerated list (0 missing); the committed list misses 22 of them (v0.5.2..v0.5.6 cockpit files).
 - **2026-10-30 21:46 · berkc** — finding 2 (cause of the cockpit false 'edited'): not the script's walk. The committed list is an append-only file: script output at 299c65aa (438 lines) was extended by hand (736c80ee) and never re-run after 44 later commits to embedded paths. Committed list = strict subset of script output today (0 lines lost, 55 missing). Fix = regenerate, then keep append-only. Also a manifest that keeps 2 columns cannot say which release a behind file came from, so DoD 2 'welche Version' needs a release column.
 - **2026-10-30 21:46 · berkc** — decisions settled here (reversible, not person-only): (a) manifest line becomes 'sha  path  release' where release is the first vX.Y.Z tag whose tree holds that blob at that path, '-' if none; shipped.Known keeps matching on sha+path. (b) update: roles, cockpit mod and jaira skill default on; --roles stays accepted as a no-op; lanes stay --lanes. (c) 'update diff' is a subcommand, one line per role/mod file and per lane: current | behind (release, or 'missing' for files not yet written) | edited; it reuses the dry-run of refreshRoles and lane.RefreshShipped and writes nothing. Outside a board, roles only, as before.
+- **2026-10-30 21:47 · berkc** — plan written as Plan items (see jaira show). Options 'planning' was left unticked by the person, so the pre-process lane is skipped; the plan above is the pre-process output, written by the worker.
