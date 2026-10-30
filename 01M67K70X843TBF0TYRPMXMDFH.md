@@ -18,7 +18,7 @@ related:
   - 01M5659BR7RYZ6RVC84HGK1QGT
 commits: []
 created-at: 2026-10-30T23:44:40Z
-updated-at: 2026-10-30T23:54:48Z
+updated-at: 2026-10-30T23:55:04Z
 updated-by: berkc
 claimed-by: berk-ca-2691736
 claimed-at: 2026-10-30T23:47:40Z
@@ -27,6 +27,7 @@ outcome-why: "Berk: the popup must be the only surface, features first, Others b
 outcome-resolves: "DoD 2 (ordering, header, gaps, test) and DoD 3 (marker and CLAUDE.md) code and tests in place; DoD 1 (popup, paging) unchanged from GK1QGT, to be verified in tmux; DoD 4 note written."
 review-summary: "none"
 round: 2
+review-gaps: "none: duplication searched (grep CutPrefix and the '! ' marker across the repo): the only marker parser is core/release/release.go Important/Feature, the other CutPrefix hits are unrelated (epic.go, selfupdate.go, milestone.go). No dead code: every added helper has callers (Feature: release.go lines and update.go writeNotes; changeLines: lines()). No fluff left after the e39d62f4 simplification. Cost: lines() rebuilds the page on each render, as before this change; the render already did it, and a page is a few dozen lines."
 ---
 
 # Die Release-Notes erscheinen als Popup statt Seite, getrennt in Features zuerst und 'Andere' darunter, luftig und leicht lesbar
