@@ -1,7 +1,7 @@
 ---
 id: 01M658C3Y2JQJ1ARMW9NG6T54H
 title: Agents per ticket steht per Default auf worker statt lanes
-status: backlog
+status: todo
 ready: true
 creator: berkc
 assignee: berkc
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T01:56:44Z
-updated-at: 2026-10-30T21:41:06Z
+updated-at: 2026-10-30T21:41:09Z
 updated-by: berkc
 claimed-by: berk-ca-2129199
 claimed-at: 2026-10-30T21:40:58Z
