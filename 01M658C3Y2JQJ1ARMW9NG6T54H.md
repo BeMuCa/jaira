@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T01:56:44Z
-updated-at: 2026-10-30T21:41:09Z
+updated-at: 2026-10-30T21:41:55Z
 updated-by: berkc
 claimed-by: berk-ca-2129199
 claimed-at: 2026-10-30T21:40:58Z
@@ -41,6 +41,12 @@ claimed-at: 2026-10-30T21:40:58Z
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] settings.go: DispatchMode returns lanes only for an explicit lanes; comments
+- [ ] tests: settings_test, roles_test, tui settings_test follow the new default
+- [ ] help text: roles.go Long, tui settings row desc, teamlead/worker SKILL.md statements of the default
+- [ ] release note core/release/notes/G6T54H.md
+- [ ] go vet ./... and go test ./... green, then commit with ticket id
 
 ## Progress
 - **2026-10-30 21:41 · berkc** — worker: open decisions counted, none the person must take. Settled: explicit 'lanes' keeps lanes; empty or unknown dispatch -> worker (DoD 1). Worktree is ../jaira-G6T54H on feat/G6T54H-worker-default, as the parent asked (the skill's default path is .worktrees/, not used). jaira update warning from 0.5.7 on this board was left alone.
