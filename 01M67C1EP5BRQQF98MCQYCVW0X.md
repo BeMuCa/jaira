@@ -19,7 +19,7 @@ related:
   - 01M55T0M58DDQ7BVE2MPPP24H1
 commits: []
 created-at: 2026-10-30T21:39:17Z
-updated-at: 2026-10-30T23:45:29Z
+updated-at: 2026-10-30T23:45:42Z
 updated-by: berkc
 ---
 
@@ -99,3 +99,4 @@ Offene Fragen an berkc:
 5. Ausliefern (core/role/builtin) oder erst als persoenlicher Skill ausprobieren?
 6. Name: jaira-role-fit, jaira-role-onboard oder jaira-role-setup?
 7. Soll "passt nicht" auch fremde Systeme erkennen (GSD .planning/, GitHub Issues) und dann zur Koexistenz raten statt Ersatz?
+- **2026-10-30 23:45 · berkc** — Antworten berkc 31.10.2026 auf die Brainstorm-Fragen: Vorschlag gefaellt. 1) Agent-Beschreibungen der Sessions: ja, aber wie jede Quelle vorher fragen. 2) Der Nutzer waehlt das Projekt aus. Niemals Firmen- oder Personennamen uebernehmen - immer umschreiben (statt 'Alex' -> 'dein Kollege'); Firmeninfos nie 'lernen', z.B. die Firmen-E-Mail-Domain darf nie hineinleaken. 3) Nicht das Default-Board, sondern ein neues mit eigenem Namen, z.B. 'Massgeschneidertes Board'. 4) Ja, 7BWHCN und PP24H1 zusammenfuehren, deren Wissen weiterverwenden, damit der Aufwand nicht umsonst war. 6) Name: vielleicht 'board optimizer' o.ae. 7) GSD und alles, was Sinn macht und einen Workflow verwendet, erkennen und nutzen. (5 offen: in jaira ausliefern oder erst persoenlicher Skill.)
