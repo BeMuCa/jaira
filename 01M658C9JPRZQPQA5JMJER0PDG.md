@@ -18,7 +18,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T01:56:49Z
-updated-at: 2026-10-30T01:56:49Z
+updated-at: 2026-10-30T23:45:27Z
+updated-by: berkc
 ---
 
 # Ein Ticket in human review laeuft im Hauptarbeitsbaum statt im eigenen Worktree, damit UI-Tests nur eine App auf einem Port brauchen
