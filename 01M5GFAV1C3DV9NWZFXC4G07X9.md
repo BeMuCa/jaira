@@ -20,8 +20,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:19Z
-updated-at: 2026-10-30T01:57:33Z
+updated-at: 2026-10-30T01:57:35Z
 updated-by: berkc
+claimed-by: berk-ca-1397571
+claimed-at: 2026-10-30T01:57:35Z
 ---
 
 # Boards wie Lanes behandeln: von Hand anlegen, Lanes waehlen, beschreiben, teilen und global speichern
