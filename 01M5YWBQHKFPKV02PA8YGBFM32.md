@@ -20,7 +20,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-27T14:31:21Z
-updated-at: 2026-10-30T21:49:30Z
+updated-at: 2026-10-30T21:52:10Z
 updated-by: berkc
 claimed-by: berk-ca-2129445
 claimed-at: 2026-10-30T21:41:03Z
@@ -49,7 +49,7 @@ claimed-at: 2026-10-30T21:41:03Z
 - [x] scripts/shipped-history.sh: add the release column (first vX.Y.Z tag that holds the blob at that path, '-' if none)
 - [x] regenerate core/shipped/shipped.sha256 with the script; check append-only (no committed line lost) and every tagged embedded file present
 - [x] core/shipped/shipped.go: Known keeps sha+path matching; add Release(path, b) to read the column; update shipped_test.go regex
-- [ ] core/role/install.go and core/lane/refresh.go: Result / Refreshed carry the release of an Updated file
+- [x] core/role/install.go and core/lane/refresh.go: Result / Refreshed carry the release of an Updated file
 - [ ] internal/cli/update.go + updatesetup.go: roles default on, --roles accepted as no-op, personal-only path kept, hintLines keeps lanes only
 - [ ] internal/cli/update.go: 'jaira update diff' subcommand, one line per role, mod file and lane: current | behind (release) | edited; writes nothing
 - [ ] tests: adjust update_test.go / updatedry_test.go / updatesetup_test.go for new defaults; add diff tests incl. a no-write check
