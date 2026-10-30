@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:17Z
-updated-at: 2026-10-30T02:11:58Z
+updated-at: 2026-10-30T02:12:00Z
 updated-by: berkc
 claimed-by: berk-ca-1397863
 claimed-at: 2026-10-30T01:57:38Z
@@ -62,3 +62,4 @@ claimed-at: 2026-10-30T01:57:38Z
 - **2026-10-30 01:59 · berkc** — brainstorm Entscheidung (Worker, Begruendung): (A) .jaira/active-boards im Repo. Grund: 'aktiv' sagt, wohin der Teamlead neue Tickets legen darf - das ist eine Regel des Teams, nicht eine Vorliebe einer Person; mit (B) wuerden zwei Personen dasselbe Ticket auf verschiedene Boards legen. Vorbild: .jaira/chat-model ist ebenfalls eine Board-Einstellung im Repo. Keine Datei = alle aktiv, damit aendert sich fuer bestehende Repos nichts. Das letzte aktive Board laesst sich nicht abschalten (sonst haette der Teamlead nichts zur Wahl). 57TDND soll dieselbe Datei lesen/schreiben (Funktionen in core/lane).
 - **2026-10-30 01:59 · berkc** — brainstorm weitere Festlegungen (Worker): 'zuletzt benutzt' = wann das Board zuletzt in der TUI gezeigt wurde, pro Rechner und Repo unter Store.RepoStateDir() (~/.jaira/repo/<key>/), weil das Navigation einer Person ist und kein Teamzustand. Ersteller = Autor des ersten Commits, der den Lanes-Ordner des Boards anlegte (git log), 'noch nicht committet' wenn es keinen gibt - so braucht es kein neues Feld und kein Eingriff in boards create (4G07X9). Reihenfolge im Fenster: aktive in fester Reihenfolge (default zuerst, dann Name - dieselbe, durch die Shift+Pfeil laeuft), dann inaktive zuletzt benutzte (neueste zuerst), dann der Rest nach Name. enter im Fenster zeigt das gewaehlte Board (sonst kaeme man an ein inaktives Board nicht mehr heran, weil b nicht mehr reihum springt). Shift+Pfeil auf einem inaktiven Board geht zum naechsten aktiven. b im offenen Ticket bleibt hier unberuehrt (P3VS02).
 - **2026-10-30 02:00 · berkc** — pre-process: jaira boards --json und der Teamlead-Skill lesen active-boards hier NICHT - das ist 57TDNDs DoD und internal/cli/boards.go ist gerade Baustelle von 4G07X9/Y2C9QN. Dieses Ticket legt Speicherort und core/lane-Funktionen fest, die 57TDND dann nur noch aufruft.
+- **2026-10-30 02:12 · berkc** — in-progress: Die Hilfe ist auf 60 Zeilen ausgereizt - TestHelpExplainsEveryCardMark (150x60) faellt, sobald eine Zeile dazukommt; deshalb steht shift+↓↑ in der bestehenden 'p b'-Zeile statt in einer eigenen. wintrap-Test verbietet dir+"/x" in Tests (filepath.Join). Ersteller kommt aus git log --reverse ueber den Lanes-Ordner (gitrepo.FirstAuthor); ein ungeteiltes .jaira (gitignored) zeigt 'creator unknown'.
