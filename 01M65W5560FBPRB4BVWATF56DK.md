@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T07:42:27Z
-updated-at: 2026-10-30T07:46:21Z
+updated-at: 2026-10-30T07:46:35Z
 assignee: AlSa
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4867
@@ -29,7 +29,7 @@ outcome-why: "Jedes andere Board bekam bisher die schwächere critique, deren Sc
 outcome-resolves: update --lanes überspringt critique.md hier nicht mehr; neue Boards bekommen die Regeln.
 review-summary: none
 review-gaps: none
-test-verdict: "pass"
+test-verdict: "pass: go test ./... green (RC=0), DoD 1-4 verified in the tree, new binary reports 'update --lanes' 0 skipped"
 ---
 
 # critique-Regeln aus .jaira/lanes in die eingebaute Lane übernehmen
