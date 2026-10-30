@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:19Z
-updated-at: 2026-10-30T02:04:26Z
+updated-at: 2026-10-30T02:04:29Z
 updated-by: berkc
 claimed-by: berk-ca-1397571
 claimed-at: 2026-10-30T01:57:35Z
@@ -46,7 +46,7 @@ claimed-at: 2026-10-30T01:57:35Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 - [x] core/lane/boardtypes.go: UserBoardsDir (~/.jaira/boards), BoardTypes/typeLanes read shipped types then the catalogue; CreateBoardWithLanes picks lanes from today's board + Installable; SaveBoard copies a repo board into a board-type dir
-- [ ] core/lane: PublishBoard -> .jaira/shared/<you>/boards/<name>/, SharedBoards lists, AdoptBoard validates then copies into the catalogue
+- [x] core/lane: PublishBoard -> .jaira/shared/<you>/boards/<name>/, SharedBoards lists, AdoptBoard validates then copies into the catalogue
 - [ ] internal/cli/boards.go: create --lanes, create saves to catalogue, publish/shared/adopt, all --json
 - [ ] TUI: B in the lane settings screen opens a create-board form (name, description, lane checklist)
 - [ ] tests + release note + docs/COMMANDS.md
