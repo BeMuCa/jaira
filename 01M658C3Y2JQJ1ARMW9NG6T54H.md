@@ -22,14 +22,14 @@ commits:
   - b9872d8a
   - 297d5915
 created-at: 2026-10-30T01:56:44Z
-updated-at: 2026-10-30T21:53:39Z
+updated-at: 2026-10-30T21:53:47Z
 updated-by: berkc
 claimed-by: berk-ca-2129199
 claimed-at: 2026-10-30T21:40:58Z
 outcome-what: "README table rows say worker is the default and dispatcher is the lanes opt-in, fixing the one critique finding"
 outcome-why: "the critique found README.md:822 still called worker the opt-in"
 outcome-resolves: "G6T54H DoD 2: help and docs name worker as the default"
-review-summary: "README.md:822 still says /jaira-worker is the opt-in alternative to the dispatcher; it is the default now, say that and name lanes as the opt-in. Code findings: none, DispatchMode is the single source and the change fits the existing fallback pattern"
+review-summary: "none"
 round: 2
 ---
 
