@@ -18,7 +18,7 @@ related:
   - 01M5659BR7RYZ6RVC84HGK1QGT
 commits: []
 created-at: 2026-10-30T23:44:40Z
-updated-at: 2026-10-30T23:53:45Z
+updated-at: 2026-10-30T23:53:49Z
 updated-by: berkc
 claimed-by: berk-ca-2691736
 claimed-at: 2026-10-30T23:47:40Z
@@ -60,3 +60,4 @@ review-summary: "internal/tui/releasenotes.go lines(): the loop calls release.Fe
 - **2026-10-30 23:48 · berkc** — 6 jaira update (CLI, writeNotes) prints a feature line as '  + text', like it prints '  ! text' for important lines; JSON keeps the raw string as it keeps '! text' today. That is a changed CLI output and gets its own release-note line. 7 spacing: one blank line between changes in the popup, the person asked for gaps. Settled. 8 the open point (who decides) : none needs the person; nothing is set to conversational, the person did not ask for it. Plan follows in pre-process.
 - **2026-10-30 23:49 · berkc** — Plan rests on the decisions already noted above. Test order: write the failing core/release and TUI tests first, then the code. The popup layout is verified by tmux, not only by the test, because the person judges it by eye. The release note line is written last so it describes what was built.
 - **2026-10-30 23:50 · berkc** — Lane change pre-process -> in-progress was refused by the send step ('was not sent', ref still at pre-process, 23:49:13, the same worker's own earlier write) while the local file already said in-progress. Re-sending with this note. If the ref still says pre-process after this, the send is broken, not the ticket, and the next worker must check it before moving.
+- **2026-10-30 23:53 · berkc** — critique: internal/tui/releasenotes.go changeLines(c, feature, width) takes the feature flag from lines() and lines() strips the marker before calling it. Simplify: changeLines(c, width) parses both markers itself with release.Feature and release.Important; lines() only asks Feature to pick the group. Checked: the wrap, the bullets and the blank line are right; CLI writeNotes and the core helper are fine as they are.
