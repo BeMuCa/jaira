@@ -22,7 +22,7 @@ commits:
   - b9872d8a
   - 297d5915
 created-at: 2026-10-30T01:56:44Z
-updated-at: 2026-10-30T22:03:04Z
+updated-at: 2026-10-30T22:03:06Z
 updated-by: berkc
 claimed-by: berk-ca-2129199
 claimed-at: 2026-10-30T21:40:58Z
@@ -39,6 +39,7 @@ review-gaps: |-
 test-verdict: "pass: go test ./... -race -count=1 exit 0, 33 packages ok, go vet exit 0, gofmt clean; DoD 1-3 verified in the tree (settings.go DispatchMode, TestDispatchDefaultsToWorker, TestSettingsEnterSwitchesDispatch, TestRolesListReportsTheDispatchSetting, core/release/notes/G6T54H.md); behaviour exercised with built binary: no settings.json -> worker/jaira-worker, dispatch lanes -> lanes/jaira-dispatcher, typo lanse -> worker"
 review-verdict: "The diff meets all three DoD items: DispatchMode defaults to worker with lanes only when explicit, tested; roles help and the TUI row name worker the default; the release note is there and follows the one-line format. No defects found - vet clean, core/settings, core/role, core/shipped, core/release, internal/tui and internal/cli roles tests pass, and the built binary reports worker with no settings file and lanes/jaira-dispatcher with one. Not a blocker but worth deciding at signoff: docs/COMMANDS.md:189 still documents lanes as the default."
 review-round: 3
+review-check: "1. cd /home/berkc/code/X_General/jaira-G6T54H && go build -o /tmp/j ./cmd/jaira  2. mkdir -p /tmp/jh && JAIRA_HOME=/tmp/jh /tmp/j roles list | grep dispatch  -> 'dispatch: worker - a ticket handed to an agent goes to /jaira-worker'  3. echo '{\"dispatch\":\"lanes\"}' > /tmp/jh/settings.json && JAIRA_HOME=/tmp/jh /tmp/j --json roles list  -> dispatch \"lanes\", dispatch_role \"jaira-dispatcher\"  4. rm /tmp/jh/settings.json, then JAIRA_HOME=/tmp/jh /tmp/j in a repo with a board, press S, go down to 'Agents per ticket'  -> the row text starts 'worker (the default)'; enter switches it to lanes and writes /tmp/jh/settings.json  5. /tmp/j roles list --help  -> says '\"worker\" (the default) starts jaira-worker'  6. grep -n default docs/COMMANDS.md | grep lanes  -> line 189 still says lanes is the default (the open note)"
 ---
 
 # Agents per ticket steht per Default auf worker statt lanes
