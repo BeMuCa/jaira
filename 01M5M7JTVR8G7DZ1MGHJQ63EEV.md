@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T11:15:50Z
-updated-at: 2026-10-30T23:45:23Z
+updated-at: 2026-10-30T23:45:36Z
 assignee: berkc
 updated-by: berkc
 question: |-
@@ -70,3 +70,4 @@ Follow-ups:
 - F1, one ticket, mod only: row button, the card from `jaira show --json` with long parts folded, Accept/Give back/Explain/Discuss in the pane with letter hotkeys, explain options inline, next ticket or close after a press, `/cockpit ticket` kept, tests and a release note.
 - F2, own ticket, not mod-only: where a signoff ticket's open question lives (option B). Touches the review lane prompt and role texts; coordinate with ZWK0PF.
 Not verified: that the docked pane sits on the right; the plugin API only says "beside".
+- **2026-10-30 23:45 · berkc** — Antwort berkc 31.10.2026 zu Frage 1: (a) - das Pane zeigt einfach, was das Ticket selbst zeigt (vorhandene Felder), keine generierte Karte: 'saves the user switching to jaira, and saves us tokens since we just replicate.' Fragen 2-4 noch offen (Empfehlungen: 2b, 3a, 4b).
