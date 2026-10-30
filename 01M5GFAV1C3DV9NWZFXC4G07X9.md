@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:19Z
-updated-at: 2026-10-30T02:13:14Z
+updated-at: 2026-10-30T02:17:44Z
 updated-by: berkc
 claimed-by: berk-ca-1397571
 claimed-at: 2026-10-30T01:57:35Z
@@ -28,6 +28,7 @@ outcome-what: "Boards get a personal catalogue ~/.jaira/boards (core/lane/boardt
 outcome-why: "Boards could only be made by hand in one repo; berkc wants them handled like lanes: created with picked lanes and a description, kept globally in the personal catalogue so every repo can use them, and shared/adopted with the team."
 outcome-resolves: "DoD 1 TUI form (TestLaneScreenCreatesABoardFromTheForm); 2 catalogue + every repo (TestBoardInTheCatalogueIsATypeInEveryRepository, JAIRA_HOME); 3 publish/adopt (TestPublishAndAdoptBoard); 4 core/release/notes/4G07X9.md; 5 CLI --json (TestBoardsPickSaveShareAndAdoptFromTheCLI). go vet and go test ./... green."
 review-summary: none
+review-gaps: "inlined the one-use typ alias in core/lane/boardtypes.go dirLanes; dropped an impossible bounds guard in internal/tui/newboard.go formKey (PickableLanes always holds the built-ins). Checked for duplication: clearDst vs share.go copyLane (file vs directory, kept), PickableLanes vs Installable (adds today's lanes, kept). No dead code found."
 ---
 
 # Boards wie Lanes behandeln: von Hand anlegen, Lanes waehlen, beschreiben, teilen und global speichern
