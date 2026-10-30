@@ -19,7 +19,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T07:42:27Z
-updated-at: 2026-10-30T07:42:27Z
+updated-at: 2026-10-30T07:42:39Z
+assignee: Alexander Sacharov
+updated-by: Alexander Sacharov
 ---
 
 # critique-Regeln aus .jaira/lanes in die eingebaute Lane übernehmen
