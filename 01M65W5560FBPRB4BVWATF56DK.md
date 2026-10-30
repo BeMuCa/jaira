@@ -17,9 +17,10 @@ definition-of-done: core/lane/builtin/25-critique.md trägt notes in input-requi
 tags: []
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 684aa1c6475397c6256561f7368ac3c58ddf12db
 created-at: 2026-10-30T07:42:27Z
-updated-at: 2026-10-30T22:48:37Z
+updated-at: 2026-10-30T22:48:45Z
 assignee: AlSa
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4867
