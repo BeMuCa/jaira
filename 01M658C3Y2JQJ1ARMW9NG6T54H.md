@@ -22,7 +22,7 @@ commits:
   - b9872d8a
   - 297d5915
 created-at: 2026-10-30T01:56:44Z
-updated-at: 2026-10-30T21:54:08Z
+updated-at: 2026-10-30T21:59:14Z
 updated-by: berkc
 claimed-by: berk-ca-2129199
 claimed-at: 2026-10-30T21:40:58Z
@@ -32,6 +32,7 @@ outcome-resolves: "G6T54H DoD 2: help and docs name worker as the default"
 review-summary: "none"
 round: 3
 review-gaps: "duplication: none; DispatchMode is the only place that decides the dispatch mode (grep DispatchMode, DispatchWorker, DispatchLanes: settings.go, roles.go, tui/settings.go, tests). dead code: none added. fluff: none; the Long texts are the same length as before. cost: none, the check is one string compare."
+test-verdict: "pass: go test ./... -race -count=1 exit 0, 33 packages ok, go vet exit 0, gofmt clean; DoD 1-3 verified in the tree (settings.go DispatchMode, TestDispatchDefaultsToWorker, TestSettingsEnterSwitchesDispatch, TestRolesListReportsTheDispatchSetting, core/release/notes/G6T54H.md); behaviour exercised with built binary: no settings.json -> worker/jaira-worker, dispatch lanes -> lanes/jaira-dispatcher, typo lanse -> worker"
 ---
 
 # Agents per ticket steht per Default auf worker statt lanes
