@@ -76,8 +76,7 @@ mixes committed content with scratch state.
   ticket through every lane; only the fresh-context lane (`review` on the
   shipped board) gets a new agent. Set `"dispatch": "lanes"` in
   `~/.jaira/settings.json`, or switch "Agents per ticket" under `S` on the
-  board, then run `jaira roles install --force`, to get one new agent per lane
-  instead.
+  board, to get one new agent per lane instead.
   - Use case: keep one agent's context from plan to tests, instead of a new
     agent per lane.
 - **Several milestones at once.** `M` on the board opens the milestone picker.
@@ -817,7 +816,7 @@ left alone and reported, and `--force` replaces it too.
 | Skill | What it does |
 |---|---|
 | `jaira` | Teaches the agent the CLI. Not a role, but `roles install` writes it beside them as `jaira/SKILL.md`. |
-| `/jaira-teamlead` | Plans with you and starts one dispatcher per ticket. Writes no code. |
+| `/jaira-teamlead` | Plans with you and starts one worker per ticket (a dispatcher with `"dispatch": "lanes"`). Writes no code. |
 | `/jaira-dispatcher <id>` | Carries one ticket lane by lane to the next lane a person owns, one worker per lane. A teamlead starts it only with `"dispatch": "lanes"`. |
 | `/jaira-worker <id>` | The default: carries the ticket through every lane itself, and only a lane marked `context: fresh` gets a new agent. |
 | `/jaira-role-lane <id> <lane>` | Works exactly one lane, then stops. |
@@ -846,7 +845,7 @@ walk-through in German: **[docs/how-to-work-with-jaira.html](docs/how-to-work-wi
   screen (`S`, "Agents per ticket") is switched to lanes. `jaira roles list`
   says which is set.
 - `/jaira-teamlead` is for several tickets at once: it decides the order, says
-  what is not worth doing, and starts one dispatcher per ticket.
+  what is not worth doing, and starts one worker per ticket.
 - `/jaira-role-acceptance <id>...` turns the tickets waiting for you into one
   page to accept them on: the tests already run, setup written once per block,
   and one scenario per block whose steps name the tickets they prove. You mark

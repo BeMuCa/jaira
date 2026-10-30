@@ -503,3 +503,4 @@ c3b9c153076027c78475ab699897cba58dc202a19c3d2f436b35610bec00500f  core/mod/built
 ae89d798d9213e35e1a036f4f613b8a277add9e1aeb72e64e2dfa205c135782c  core/lane/builtin/40-review.md
 757acfeaa76a2ff7ec06e6ab3d8dcedfe184c78817741dd6af923a1a828c22eb  core/role/builtin/jaira-teamlead/SKILL.md
 623d1679be8326237e61dc01f0071a4ec1231e9fdbcba5337ca89a1f7db7ef07  core/role/builtin/jaira-worker/SKILL.md
+fa95afa5410c5669416bb3df3d2436a608f943791b9b99a397bcc7929e887a1f  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
