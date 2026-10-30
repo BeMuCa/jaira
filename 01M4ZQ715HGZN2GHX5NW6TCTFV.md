@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-30T23:49:05Z
+updated-at: 2026-10-30T23:49:15Z
 updated-by: berkc
 question: |-
   Welche Arbeitsweise bekommt ein NEUER Milestone, wenn beim Anlegen niemand --pr angibt?
@@ -96,3 +96,4 @@ Parallel: N71NVG baut das Ablegen/Loeschen eines fertigen Milestones samt Ticket
 - Unveraendert: core/board/announce.go (sagt schon 'jaira logbook <milestone>'), core/milestone/adopt.go (merged jedes Frontmatter-Feld generisch, adopt.go:84), nextStepLine, move.Move.
 - Ausgelassen, Folge-Tickets: TUI-Schreibstellen (signoff.go:187, model.go:1949, :2004); 'jaira logbook --all'; Tickets eines Block-Milestones auf einen Branch bringen (jaira-role-pr meldet ein Ticket ohne Commit auf dem Branch und stoppt).
 - **2026-10-22 00:15 · berkc** — Antwort von berkc am 22.10.2026 auf die Frage A/B: Alarm in beiden Faellen - wenn ein Ticket fertig ist UND wenn ein Milestone fertig ist. PRs pro Ticket entfallen; der PR entsteht pro Milestone ('we can skip the single ticket prs and wait for milestone'). Damit gibt es kein single/block-Attribut mehr: jeder Milestone bekommt beim Abschluss einen PR ueber alle seine Tickets. Ein Ticket ohne Milestone: offen, ob es einen eigenen PR bekommt - beim Planen pruefen und notfalls nachfragen. Folge: alle Tickets eines Milestones muessen auf einem Branch landen (siehe Plan-Notiz: heute hat jedes Ticket seinen eigenen Branch). Verwandt: 80MGXT (Worktree weg bei done, Branch bleibt bis zum Milestone-Merge).
+- **2026-10-30 23:49 · berkc** — pre-process (worker, 2026-10-31): open decisions counted from the ticket and its notes. (a) single/block attribute on a milestone: CLOSED by berkc 22.10 - no attribute, one PR per milestone, alert on ticket done and on milestone done. (b) ticket without a milestone: CLOSED here - it gets the ticket-done alert with its own /jaira-role-pr <id> line, because no milestone PR will ever carry it. A group of one, not a PR per milestone ticket. Reversible if berkc says otherwise. (c) one PR over tickets that each live on their own branch: CLOSED in the plan, see the next note. Nothing is left that only the person can take, so no question and no conversational mode.
