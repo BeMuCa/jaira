@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T07:42:27Z
-updated-at: 2026-10-30T07:47:44Z
+updated-at: 2026-10-30T07:47:47Z
 assignee: AlSa
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4867
@@ -34,6 +34,7 @@ review-gaps: |-
 test-verdict: "pass: go test ./... green (RC=0), DoD 1-4 verified in the tree, new binary reports 'update --lanes' 0 skipped"
 review-verdict: "Der Diff erfüllt alle vier DoD-Punkte: notes in input-requires und beide Regeln im Prompt, lokale Datei byte-gleich (cmp), frisches Binary meldet 'lanes: 0 updated, 13 unchanged, 0 skipped', Hash stimmt mit sha256sum, go test core/shipped core/lane core/release internal/cli grün, Release-Note da. Kein Blocker."
 review-round: 1
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-tf56dk  2. cmp .jaira/lanes/critique.md core/lane/builtin/25-critique.md — keine Ausgabe heißt gleich  3. go build -o /tmp/jaira ./cmd/jaira && /tmp/jaira update --lanes --dry-run — erwartet: 'lanes: 0 updated, 13 unchanged, 0 skipped'  4. jaira show TF56DK --for-lane critique --json | grep -c '\"notes\"' — größer 0: critique bekommt die Notes  5. sed -n '20,35p;75,100p' core/lane/builtin/25-critique.md — die Abschnitte 'Read the notes before you read the diff' und 'Every pass after the first reads less' stehen da"
 ---
 
 # critique-Regeln aus .jaira/lanes in die eingebaute Lane übernehmen
