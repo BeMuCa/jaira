@@ -22,7 +22,7 @@ commits:
   - b9872d8a
   - 297d5915
 created-at: 2026-10-30T01:56:44Z
-updated-at: 2026-10-30T21:54:04Z
+updated-at: 2026-10-30T21:54:06Z
 updated-by: berkc
 claimed-by: berk-ca-2129199
 claimed-at: 2026-10-30T21:40:58Z
@@ -67,3 +67,4 @@ review-gaps: "duplication: none; DispatchMode is the only place that decides the
 - **2026-10-30 21:52 · berkc** — Commit b9872d8a carries the change. The shipped-version index needed the two new skill hashes appended (core/shipped/shipped.sha256 is append-only; TestEveryInstalledFileIsAShippedVersion failed until then). Full go test ./... exit 0 with 33 ok packages; go vet exit 0; gofmt clean.
 - **2026-10-30 21:53 · berkc** — critique: README.md:822 table row says /jaira-worker is an opt-in alternative; fix that row only. Stood on: the note about the code diff (DispatchMode single source, no speculative code). The other README lines already fixed in b9872d8a.
 - **2026-10-30 21:53 · berkc** — critique round 2: README table fixed in 297d5915; grep over the repo finds no other claim that lanes is the default outside historical logbook and NOTES files. Nothing left.
+- **2026-10-30 21:54 · berkc** — optimize: nothing to remove. The diff touches only what the DoD names; no duplicate dispatch decision exists in the repo.
