@@ -150,7 +150,6 @@ func typeLanes(typ string) ([]string, [][]byte, error) {
 // of fsys: its own file for an id it has one for, the built-in lane's
 // otherwise. Every own file must parse.
 func dirLanes(fsys fs.FS, dir string, bt BoardType) ([][]byte, error) {
-	typ := bt.Name
 	own := map[string][]byte{}
 	files, _ := fs.Glob(fsys, path.Join(dir, "*.md"))
 	for _, f := range files {
@@ -176,7 +175,7 @@ func dirLanes(fsys fs.FS, dir string, bt BoardType) ([][]byte, error) {
 		if !ok {
 			b, found := builtinByID[id]
 			if !found {
-				return nil, fmt.Errorf("board type %s names lane %q, which it has no file for and jaira does not ship", typ, id)
+				return nil, fmt.Errorf("board type %s names lane %q, which it has no file for and jaira does not ship", bt.Name, id)
 			}
 			if raw, err = Bytes(b); err != nil {
 				return nil, err

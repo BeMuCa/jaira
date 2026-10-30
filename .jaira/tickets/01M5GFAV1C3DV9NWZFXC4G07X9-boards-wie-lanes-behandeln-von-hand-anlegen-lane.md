@@ -1,7 +1,7 @@
 ---
 id: 01M5GFAV1C3DV9NWZFXC4G07X9
 title: "Boards wie Lanes behandeln: von Hand anlegen, Lanes waehlen, beschreiben, teilen und global speichern"
-status: critique
+status: testing
 ready: true
 creator: berkc
 assignee: berkc
@@ -20,13 +20,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:19Z
-updated-at: 2026-10-30T02:12:50Z
+updated-at: 2026-10-30T02:17:46Z
 updated-by: berkc
 claimed-by: berk-ca-1397571
 claimed-at: 2026-10-30T01:57:35Z
 outcome-what: "Boards get a personal catalogue ~/.jaira/boards (core/lane/boardtypes.go UserBoardsDir; boards types/create --type read it), boards create --lanes picks lanes, a created board is saved to the catalogue, boards publish/shared/adopt share boards via .jaira/shared/<you>/boards/ (core/lane/boardshare.go), and B in the TUI lane settings screen opens a create-board form (internal/tui/newboard.go)."
 outcome-why: "Boards could only be made by hand in one repo; berkc wants them handled like lanes: created with picked lanes and a description, kept globally in the personal catalogue so every repo can use them, and shared/adopted with the team."
 outcome-resolves: "DoD 1 TUI form (TestLaneScreenCreatesABoardFromTheForm); 2 catalogue + every repo (TestBoardInTheCatalogueIsATypeInEveryRepository, JAIRA_HOME); 3 publish/adopt (TestPublishAndAdoptBoard); 4 core/release/notes/4G07X9.md; 5 CLI --json (TestBoardsPickSaveShareAndAdoptFromTheCLI). go vet and go test ./... green."
+review-summary: none
+review-gaps: "inlined the one-use typ alias in core/lane/boardtypes.go dirLanes; dropped an impossible bounds guard in internal/tui/newboard.go formKey (PickableLanes always holds the built-ins). Checked for duplication: clearDst vs share.go copyLane (file vs directory, kept), PickableLanes vs Installable (adds today's lanes, kept). No dead code found."
 ---
 
 # Boards wie Lanes behandeln: von Hand anlegen, Lanes waehlen, beschreiben, teilen und global speichern
@@ -66,3 +68,4 @@ outcome-resolves: "DoD 1 TUI form (TestLaneScreenCreatesABoardFromTheForm); 2 ca
 - **2026-10-30 01:59 · berkc** — Decisions settled (disagree at review): 1) 'global/jaira update for all repos' per 30.10 note = one place, ~/.jaira/boards: every repo's 'boards types' and 'boards create --type' read it live, and shipped types live in the binary, so updating the binary or the catalogue reaches every repo at once; repo boards are copies and are never rewritten. 2) A shipped type's name wins over a catalogue board of the same name (create does not save a catalogue copy under it), so a binary update is never shadowed. 3) CLI picks lanes with 'boards create --lanes a,b' (resolved: today's board's file, then catalogue, then built-in). 4) TUI: a create-board form opened with B from the lane settings screen (free key there), not from the b board window - that window and board switching belong to KVMG0K, which can open the same form later. 5) publish/adopt for boards are CLI only (boards publish/shared/adopt, all with --json); the TUI lane screen's p/a stay lane-only to keep the change small.
 - **2026-10-30 02:00 · berkc** — Moved ideas -> brainstorm with --force: the ideas lane exists on master (.jaira/lanes/ideas.md) but not on the Y2C9QN base this worktree is on, so jaira here reads the ticket as in an unknown lane. No gate other than that was overridden.
 - **2026-10-30 02:04 · berkc** — Found out: lane.Shared globs .jaira/shared/*/*.md, so published boards go one level deeper (shared/<who>/boards/<name>/) and are never read as shared lanes (asserted in TestPublishAndAdoptBoard). Catalogue boards hold every lane file (built-ins materialised), so a published/adopted board needs nothing else. Installable lists built-ins before catalogue lanes, so for a picked id the built-in wins over a catalogue lane of the same id - same as 'jaira lanes add'.
+- **2026-10-30 02:13 · berkc** — critique pass 1: read whole diff. Let stand: catalogue save on every create (DoD 2 asks for it; a board built from catalogue type X under name Y adds Y - accepted, it is a copy the person named); clearDst in boardshare.go is the directory counterpart of copyLane's file-level overwrite refusal in share.go, not a duplicate; I/O errors from CreateBoardWithLanes reported as exit 2 - accepted, minor.

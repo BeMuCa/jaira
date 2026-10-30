@@ -79,10 +79,8 @@ func (ls *laneScreen) formKey(s, text string) {
 				f.idx--
 			}
 		case " ", "space", "x":
-			if f.idx < len(f.lanes) {
-				id := f.lanes[f.idx].ID
-				f.picked[id] = !f.picked[id]
-			}
+			id := f.lanes[f.idx].ID
+			f.picked[id] = !f.picked[id]
 		case "enter":
 			ls.createBoard()
 		}
