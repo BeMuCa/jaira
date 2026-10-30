@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T07:42:27Z
-updated-at: 2026-10-30T07:45:07Z
+updated-at: 2026-10-30T07:45:10Z
 assignee: AlSa
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4867
@@ -34,7 +34,8 @@ claimed-at: 2026-10-30T07:42:45Z
   proof: core/lane/builtin/25-critique.md:10 (notes), Prompt-Abschnitte 'Read the notes before you read the diff' und 'Every pass after the first reads less'
 - [x] Nach dem Wechsel ist .jaira/lanes/critique.md dieses Repos byte-gleich mit der eingebauten Datei, 'jaira update --lanes' meldet 0 skipped
   proof: cmp .jaira/lanes/critique.md core/lane/builtin/25-critique.md gleich; neues Binary: 'jaira update --lanes' -> lanes: 2 updated, 11 unchanged, 0 skipped
-- [ ] core/shipped/shipped.sha256 kennt die neue Version, go test ./... grün
+- [x] core/shipped/shipped.sha256 kennt die neue Version, go test ./... grün
+  proof: core/shipped/shipped.sha256:27 (7d3e33a0…); go test ./... ohne FAIL, rc=0
 - [ ] core/release/notes/<ID>.md sagt, dass critique jetzt Notes liest und jede Runde weniger liest
 
 ## Options
