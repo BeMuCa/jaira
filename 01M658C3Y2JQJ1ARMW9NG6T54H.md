@@ -1,7 +1,7 @@
 ---
 id: 01M658C3Y2JQJ1ARMW9NG6T54H
 title: Agents per ticket steht per Default auf worker statt lanes
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: berkc
@@ -19,14 +19,16 @@ blocked-by: []
 related: []
 commits:
   - b9872d8a67d695f61db5829a744aac2869f05fbe
+  - b9872d8a
+  - 297d5915
 created-at: 2026-10-30T01:56:44Z
-updated-at: 2026-10-30T21:53:15Z
+updated-at: 2026-10-30T21:53:39Z
 updated-by: berkc
 claimed-by: berk-ca-2129199
 claimed-at: 2026-10-30T21:40:58Z
-outcome-what: "DispatchMode returns lanes only for an explicit lanes; empty or unknown dispatch is worker. Help text, settings row, teamlead and worker skills, README and release note now say worker is the default."
-outcome-why: "the default was lanes, the ticket asks for worker when nothing is set; an explicit lanes keeps the dispatcher"
-outcome-resolves: "G6T54H DoD 1-3: default test, help and settings text, release note"
+outcome-what: "README table rows say worker is the default and dispatcher is the lanes opt-in, fixing the one critique finding"
+outcome-why: "the critique found README.md:822 still called worker the opt-in"
+outcome-resolves: "G6T54H DoD 2: help and docs name worker as the default"
 review-summary: "README.md:822 still says /jaira-worker is the opt-in alternative to the dispatcher; it is the default now, say that and name lanes as the opt-in. Code findings: none, DispatchMode is the single source and the change fits the existing fallback pattern"
 round: 2
 ---
