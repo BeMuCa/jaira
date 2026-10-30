@@ -20,7 +20,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-27T14:31:21Z
-updated-at: 2026-10-30T22:18:51Z
+updated-at: 2026-10-30T22:18:53Z
 updated-by: berkc
 claimed-by: berk-ca-2379103
 claimed-at: 2026-10-30T22:13:03Z
@@ -34,7 +34,8 @@ claimed-at: 2026-10-30T22:13:03Z
   proof: internal/cli/updatesetup_test.go TestUpdateWithoutSwitchesUpdatesRolesButNotLanes; internal/cli/update.go roles default true
 - [x] 'jaira update diff' listet je Rolle, Mod-Datei und Lane: aktuell, zurueck (welche Version) oder bearbeitet; schreibt nichts
   proof: internal/cli/updatediff.go writeDiff; internal/cli/updatediff_test.go TestUpdateDiffWritesNothingAndNamesWhatIsBehind
-- [ ] Alte ausgelieferte Versionen aus Merge-Zweigen (board.ts 5bc22fb1, register.tsx 2c4c6790) gelten als ausgeliefert, nicht als bearbeitet
+- [x] Alte ausgelieferte Versionen aus Merge-Zweigen (board.ts 5bc22fb1, register.tsx 2c4c6790) gelten als ausgeliefert, nicht als bearbeitet
+  proof: core/shipped/shipped.sha256 board.ts 9406afda... line shipped in v0.5.2; core/shipped/shipped.go Release
 - [ ] Tests; Release-Note
 
 ## Options
