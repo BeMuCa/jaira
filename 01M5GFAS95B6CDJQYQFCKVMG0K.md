@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:17Z
-updated-at: 2026-10-30T02:27:07Z
+updated-at: 2026-10-30T02:27:09Z
 updated-by: berkc
 claimed-by: berk-ca-1397863
 claimed-at: 2026-10-30T01:57:38Z
@@ -86,3 +86,4 @@ review-check: |-
 - **2026-10-30 02:00 · berkc** — pre-process: jaira boards --json und der Teamlead-Skill lesen active-boards hier NICHT - das ist 57TDNDs DoD und internal/cli/boards.go ist gerade Baustelle von 4G07X9/Y2C9QN. Dieses Ticket legt Speicherort und core/lane-Funktionen fest, die 57TDND dann nur noch aufruft.
 - **2026-10-30 02:12 · berkc** — in-progress: Die Hilfe ist auf 60 Zeilen ausgereizt - TestHelpExplainsEveryCardMark (150x60) faellt, sobald eine Zeile dazukommt; deshalb steht shift+↓↑ in der bestehenden 'p b'-Zeile statt in einer eigenen. wintrap-Test verbietet dir+"/x" in Tests (filepath.Join). Ersteller kommt aus git log --reverse ueber den Lanes-Ordner (gitrepo.FirstAuthor); ein ungeteiltes .jaira (gitignored) zeigt 'creator unknown'.
 - **2026-10-30 02:12 · berkc** — critique (Runde 1, ganzer Diff): stehen gelassen - (a) keyBoards nutzt nicht tickPicker (ticks.go): der schreibt die Haken erst bei enter in den Filter, hier schreibt space sofort die Datei; gleiche Mechanik waere falsche Semantik. (b) gitrepo.FirstAuthor laeuft synchron beim Druck auf b, einmal pro Board: 15 ms auf diesem Repo (1526 Commits) gemessen, kein Cache noetig. (c) ActiveBoards faellt auf alle zurueck, wenn die Datei nur geloeschte Boards nennt - realer Zustand nach dem Loeschen eines Boards, nicht spekulativ. (d) Hilfe: shift+↓↑ teilt sich die 'p b'-Zeile, weil die Hilfe auf 60 Zeilen ausgereizt ist (siehe in-progress-Note).
+- **2026-10-30 02:27 · berkc** — review (fresh context): no blocker. Diff checked against DoD 1-5; go vet + go test ./... green. 4 notes in review-gaps (active-boards file freezes the default for boards added later; only the TUI reads it until 57TDND; writeIDList mkdirs .jaira/lanes; git log per board on b). Worktree also carries untracked .jaira/milestones/, which does not belong to this ticket and is not in the diff.
