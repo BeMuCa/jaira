@@ -86,7 +86,7 @@ func ForTicket(lanes *lane.Set, id, status string, groups []Group) []Line {
 // ForMilestone returns the lines for a milestone that is complete, and none
 // otherwise. An empty or filed milestone is never complete.
 func ForMilestone(lanes *lane.Set, g Group) []Line {
-	if g.Filed || len(g.Members) == 0 || !complete(lanes, g, "", "") {
+	if !complete(lanes, g, "", "") {
 		return nil
 	}
 	return completeLines(g)
