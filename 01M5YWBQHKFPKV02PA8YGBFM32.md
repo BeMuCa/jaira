@@ -20,7 +20,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-27T14:31:21Z
-updated-at: 2026-10-30T21:46:30Z
+updated-at: 2026-10-30T21:46:38Z
 updated-by: berkc
 claimed-by: berk-ca-2129445
 claimed-at: 2026-10-30T21:41:03Z
@@ -43,6 +43,8 @@ claimed-at: 2026-10-30T21:41:03Z
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] find the real cause of the false 'edited' cockpit files in core/shipped (done: list is stale, script is correct; see notes)
 
 ## Progress
 - **2026-10-30 21:41 · berkc** — open decisions at start: none that only the person can take. Settled by the person (ticket context, 27.10.): roles, cockpit mod and jaira skill update by default; lanes opt-in via --lanes; 'update diff' writes nothing. Settled here by default: diff output is one line per role/mod file/lane with state current|behind (version)|edited, the same for all three; 'update' touches only what is already installed. Parent session: none (started directly as worker subagent, no AskUserQuestion).
