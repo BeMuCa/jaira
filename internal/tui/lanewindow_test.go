@@ -3,6 +3,8 @@ package tui
 import (
 	"strings"
 	"testing"
+
+	tea "charm.land/bubbletea/v2"
 )
 
 // The ten-lane fixture behind these tests holds tickets in five lanes
@@ -160,16 +162,71 @@ func equalStringSets(a, b map[string]bool) bool {
 	return true
 }
 
-// A thin lane is still a lane: l steps onto it like any other, because what
-// is on the board is what the cursor can reach.
-func TestLWithToggleOnStepsOntoThinLanes(t *testing.T) {
+// Without the toggle the board's right arrow still lands on the adjacent lane,
+// empty or not.
+func TestRightWithToggleOffStepsOntoAdjacentEmptyLane(t *testing.T) {
+	m := newTestModel(t, 240, 40)
+	m.laneIdx = laneIndex(t, m, "backlog")
+
+	m.key(tea.KeyPressMsg{Code: tea.KeyRight})
+	if got := m.cols[m.laneIdx].lane.ID; got != "brainstorm" {
+		t.Errorf("right from backlog with z off landed on %q, want brainstorm (the adjacent lane)", got)
+	}
+}
+
+// With the toggle on, the board's right arrow jumps over the empty brainstorm
+// lane to the next lane holding a ticket.
+func TestRightWithToggleOnSkipsEmptyLanes(t *testing.T) {
 	m := newTestModel(t, 240, 40)
 	m.laneIdx = laneIndex(t, m, "backlog")
 	m.key(key("z"))
 
-	m.moveLane(1)
-	if got := m.cols[m.laneIdx].lane.ID; got != "brainstorm" {
-		t.Errorf("l from backlog with empty lanes thin landed on %q, want brainstorm (the adjacent lane)", got)
+	m.key(tea.KeyPressMsg{Code: tea.KeyRight})
+	if got := m.cols[m.laneIdx].lane.ID; got != "todo" {
+		t.Errorf("right from backlog with z on landed on %q, want todo (brainstorm is empty)", got)
+	}
+}
+
+// The same jump backwards, from a lane whose neighbour on the left is empty.
+func TestLeftWithToggleOnSkipsEmptyLanes(t *testing.T) {
+	m := newTestModel(t, 240, 40)
+	m.laneIdx = laneIndex(t, m, "todo")
+	m.key(key("z"))
+
+	m.key(tea.KeyPressMsg{Code: tea.KeyLeft})
+	if got := m.cols[m.laneIdx].lane.ID; got != "backlog" {
+		t.Errorf("left from todo with z on landed on %q, want backlog (brainstorm is empty)", got)
+	}
+}
+
+// A cursor parked on an empty lane steps from there to the next filled one.
+func TestRightFromAnEmptyLaneWithToggleOnSkipsToTheNextFilledLane(t *testing.T) {
+	m := newTestModel(t, 240, 40)
+	m.laneIdx = laneIndex(t, m, "pre-process")
+	m.key(key("z"))
+
+	m.key(tea.KeyPressMsg{Code: tea.KeyRight})
+	if got := m.cols[m.laneIdx].lane.ID; got != "in-progress" {
+		t.Errorf("right from empty pre-process with z on landed on %q, want in-progress", got)
+	}
+}
+
+// When no other lane holds a ticket there is nothing to jump to, so the
+// cursor stays on the one lane that does.
+func TestRightWithToggleOnStaysWhenNoOtherLaneHasTickets(t *testing.T) {
+	m := newTestModel(t, 240, 40)
+	m.filter = "Refactor auth"
+	m.rebuild()
+	m.laneIdx = laneIndex(t, m, "todo")
+	m.key(key("z"))
+
+	m.key(tea.KeyPressMsg{Code: tea.KeyRight})
+	if got := m.cols[m.laneIdx].lane.ID; got != "todo" {
+		t.Errorf("right with only todo holding a ticket moved to %q, want it to stay on todo", got)
+	}
+	m.key(tea.KeyPressMsg{Code: tea.KeyLeft})
+	if got := m.cols[m.laneIdx].lane.ID; got != "todo" {
+		t.Errorf("left with only todo holding a ticket moved to %q, want it to stay on todo", got)
 	}
 }
 

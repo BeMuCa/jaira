@@ -1661,9 +1661,9 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// milestone layer, and an h left meaning "lane left" beside them would
 	// be half of a pair whose other half now does something else.
 	case "left":
-		m.moveLane(-1)
+		m.boardLane(-1)
 	case "right":
-		m.moveLane(1)
+		m.boardLane(1)
 	case "j", "down":
 		m.moveCard(1)
 	case "k", "up":
@@ -1768,9 +1768,36 @@ func (m *Model) moveLane(d int) {
 	m.clampCursor()
 }
 
+// boardLane is the board's left/right. With thin empty lanes on it steps over
+// every lane holding no tickets, so one press lands on the next ticket's lane;
+// with the toggle off it is moveLane. When no other lane holds a ticket the
+// cursor stays where it is.
+func (m *Model) boardLane(d int) {
+	if !m.thinEmpty {
+		m.moveLane(d)
+		return
+	}
+	n := len(m.cols)
+	if n == 0 {
+		return
+	}
+	// Stops before coming back round to the starting lane, so the cursor is
+	// never reset when it was the only lane with tickets.
+	for step := 1; step < n; step++ {
+		i := ((m.laneIdx+d*step)%n + n) % n
+		if len(m.cols[i].tickets) > 0 {
+			m.laneIdx = i
+			m.cardIdx = 0
+			m.clampCursor()
+			return
+		}
+	}
+}
+
 // toggleEmptyLanes flips whether lanes holding no tickets are drawn thin.
 // Nothing else changes: a thin lane is still on the board, so the cursor may
-// sit on it and h/l step onto it like any other.
+// sit on it. Only the board's left/right step over thin lanes (boardLane);
+// lane focus, which never shows the toggle, still steps onto each one.
 func (m *Model) toggleEmptyLanes() {
 	m.thinEmpty = !m.thinEmpty
 }
