@@ -1,7 +1,7 @@
 ---
 id: 01M5GFAS95B6CDJQYQFCKVMG0K
 title: "Boards wechseln mit Shift+Pfeil und ein Board-Fenster auf b mit aktiven Boards, Ersteller und Lanes"
-status: optimize
+status: testing
 ready: true
 creator: berkc
 assignee: berkc
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:17Z
-updated-at: 2026-10-30T02:14:11Z
+updated-at: 2026-10-30T02:14:13Z
 updated-by: berkc
 claimed-by: berk-ca-1397863
 claimed-at: 2026-10-30T01:57:38Z
