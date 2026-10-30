@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T07:42:27Z
-updated-at: 2026-10-30T07:45:49Z
+updated-at: 2026-10-30T07:45:52Z
 assignee: AlSa
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4867
@@ -27,6 +27,7 @@ claimed-at: 2026-10-30T07:42:45Z
 outcome-what: "Eingebaute critique-Lane (core/lane/builtin/25-critique.md) übernimmt die zwei Regeln der lokalen Lane: Notes vor dem Diff lesen, jeder Durchgang nach dem ersten liest nur die letzten Findings und ihre Reparatur. Neue Version in shipped.sha256, Release-Note, .jaira/lanes auf den eingebauten Stand."
 outcome-why: "Jedes andere Board bekam bisher die schwächere critique, deren Schleife Erledigtes neu fand und nicht auf null kam."
 outcome-resolves: update --lanes überspringt critique.md hier nicht mehr; neue Boards bekommen die Regeln.
+review-summary: none
 ---
 
 # critique-Regeln aus .jaira/lanes in die eingebaute Lane übernehmen
