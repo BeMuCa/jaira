@@ -20,7 +20,7 @@ related:
   - 01M5GFB5KWABVZVWWDVNP5ABVR
 commits: []
 created-at: 2026-10-30T21:39:15Z
-updated-at: 2026-10-30T23:45:31Z
+updated-at: 2026-10-30T23:45:44Z
 updated-by: berkc
 ---
 
@@ -151,3 +151,4 @@ Offene Fragen an berkc:
 4. Mit P5ABVR zusammenlegen? Das Hackathon-Ideen-Board waere dann nur eine Stufe davor: Thema -> N Tickets auf einem projektidee-Board.
 5. Soll recherche auch die eigenen Repos und alten Ideen/Logbuecher durchsuchen, nicht nur das Web?
 6. Lane-Prompts auf Englisch wie die eingebauten, oder Deutsch?
+- **2026-10-30 23:45 · berkc** — Antworten berkc 31.10.2026: Der Board-Typ gefaellt. Vorhandene Lanes wiederverwenden statt neuer gleicher Art: done statt 'abgelegt', HITL (human) statt 'entscheidung' (siehe CNARZN, Duplikate vermeiden). Frage 1: nutzen per Default AN. Frage 5: Recherche auch ueber die eigenen Logbooks und Repos. Frage 6: Lane-Prompts auf Englisch. Frage 4/Kette: Uebergang Idee -> Mini-MVP auf anderen Boards ist CDGJV3.
