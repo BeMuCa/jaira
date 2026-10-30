@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-30T23:56:52Z
+updated-at: 2026-10-30T23:56:54Z
 updated-by: berkc
 question: ""
 round: 2
@@ -48,7 +48,8 @@ round: 2
 - [x] Ticket fertig: Erreicht ein Ticket per 'jaira move' oder 'jaira logbook' die Abnahme-Lane (signoff) oder die Endlane, druckt jaira den Stand. Ist es in keinem Milestone, druckt es 'Next: the pull request. Only a person opens it: /jaira-role-pr <id>' und --json 'suggestions' (kind pull_request, by person). Liegt es in einem offenen Milestone, druckt es nur 'Milestone <m>: k of n done' und KEINE PR-Zeile; Tests TestMoveToSignoffSuggestsThePullRequest, TestMoveJSONCarriesSuggestions, TestTicketInAnOpenMilestoneSuggestsNoPullRequest
   proof: internal/cli/prsuggest_test.go TestMoveToSignoffSuggestsThePullRequest, TestMoveJSONCarriesSuggestions, TestTicketInAnOpenMilestoneSuggestsNoPullRequest
 - [-] Einzeln, Milestone komplett: Ist ein Milestone ohne pr: block nach move oder logbook <id> komplett, bietet jaira nur 'jaira logbook <m>' an und schlaegt KEINEN Block-PR vor; 'jaira logbook <m>' nimmt den vorgeschlagenen Befehl an; Tests TestSingleMilestoneCompleteOffersFilingAndNoBlockPullRequest, TestLogbookOfTheLastTicketOffersToFileTheMilestone, TestSuggestedFilingIsAccepted
-- [ ] Abnahme- und Endlane werden an ihren Eigenschaften erkannt, nicht am Namen; ein leerer oder abgelegter Milestone schlaegt nie etwas vor; ein Ticket in mehreren Milestones bekommt die Zeilen jedes kompletten Milestones; Tests TestLanesAreFoundByWhatTheyDoNotByName, TestEmptyMilestoneIsNeverComplete, TestFiledMilestoneSuggestsNothing, TestTicketInTwoMilestones
+- [x] Abnahme- und Endlane werden an ihren Eigenschaften erkannt, nicht am Namen; ein leerer oder abgelegter Milestone schlaegt nie etwas vor; ein Ticket in mehreren Milestones bekommt die Zeilen jedes kompletten Milestones; Tests TestLanesAreFoundByWhatTheyDoNotByName, TestEmptyMilestoneIsNeverComplete, TestFiledMilestoneSuggestsNothing, TestTicketInTwoMilestones
+  proof: core/suggest/suggest_test.go TestLanesAreFoundByWhatTheyDoNotByName, TestEmptyMilestoneIsNeverComplete, TestFiledMilestoneSuggestsNothing, TestTicketInTwoMilestonesGetsTheLinesOfEachComplete
 - [ ] 'jaira milestone ls' zeigt fuer jeden kompletten Milestone dieselben Zeilen (--json: 'suggestions' am Milestone), weil das Annehmen in der TUI nichts druckt; Test TestLsCarriesTheSuggestionsOfACompleteMilestone
 
 ## Options
