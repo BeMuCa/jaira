@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T01:56:49Z
-updated-at: 2026-10-30T23:45:27Z
+updated-at: 2026-10-30T23:45:40Z
 updated-by: berkc
 ---
 
@@ -38,4 +38,4 @@ updated-by: berkc
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-30 23:45 · berkc** — berkc 31.10.2026: 'wouldnt it be better to just pull it into the main worktree because we also have the advantage that the ticket updates land in the mainboard aswell? integration worktree seems useless.' Gegenargumente zur Entscheidung: (1) der Hauptworktree steht auf master, und auf master landet nichts direkt - ein Merge dort waere ein lokaler Commit auf master; (2) zwei Tickets gleichzeitig in human review mischen sich im Hauptbaum, und ein zurueckgeschicktes Ticket muss wieder heraus (Revert); (3) die eigenen ungesicherten Aenderungen im Hauptbaum geraten dazwischen. Ticket-Updates landen ohnehin auf den Refs, das Board sieht sie ohne Merge. Moeglicher Mittelweg: Checkout des Ticket-Branches im Hauptbaum (git switch) fuer die Abnahme statt Merge.
