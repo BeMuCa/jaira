@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T01:56:44Z
-updated-at: 2026-10-30T21:52:20Z
+updated-at: 2026-10-30T21:52:22Z
 updated-by: berkc
 claimed-by: berk-ca-2129199
 claimed-at: 2026-10-30T21:40:58Z
@@ -31,7 +31,8 @@ claimed-at: 2026-10-30T21:40:58Z
 
 - [x] DispatchMode liefert worker, wenn dispatch leer oder unbekannt ist; 'lanes' nur ausdruecklich; Test
   proof: core/settings/settings.go DispatchMode; core/settings/settings_test.go TestDispatchDefaultsToWorker
-- [ ] Hilfetexte (roles, Settings) nennen worker als Default
+- [x] Hilfetexte (roles, Settings) nennen worker als Default
+  proof: internal/cli/roles.go roles Long text; internal/tui/settings.go Agents per ticket row; TestSettingsEnterSwitchesDispatch, TestRolesListReportsTheDispatchSetting
 - [ ] Release-Note-Zeile
 
 ## Options
