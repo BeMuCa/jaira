@@ -20,7 +20,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-27T14:31:21Z
-updated-at: 2026-10-30T22:19:49Z
+updated-at: 2026-10-30T22:20:12Z
 updated-by: berkc
 claimed-by: berk-ca-2379103
 claimed-at: 2026-10-30T22:13:03Z
@@ -79,3 +79,4 @@ round: 2
 - **2026-10-30 22:17 · berkc** — SKIPPED TESTS in the full run (environment, not this change): core/gitref TestUnreachableRemoteIsOfflineNotARace (hangs on git push to an unreachable remote; the same hang reproduces on unmodified origin/master), core/outbox TestAnOfflineWriteArrivesWhenTheNetworkIsBack (same class), internal/cli TestWebPushReportsAQueuedDrop (git fetch to an unreachable remote, hung in this sandbox).
 - **2026-10-30 22:17 · berkc** — INCIDENT: the first worktree was deleted by a mistaken 'git worktree remove --force' on its own path; uncommitted work was lost and re-applied from the transcript in ../jaira-GBFM32 on the same branch. The regenerated list was reused from the scratchpad and re-verified byte-identical.
 - **2026-10-30 22:19 · berkc** — critique (pass 1, full diff read): standing on DESIGN DECISION 1-3 notes; accepted, not re-argued. Findings: (a) updatediff.go diffJSON mixes lanes[i].ID with diffFile.dir; (b) plain 'jaira update' prints 'roles: none installed ...' on every run once roles default on, update.go / updatesetup.go printRoleRuns. Both fixed in the next in-progress round.
+- **2026-10-30 22:20 · berkc** — in-progress round 2: fixed critique findings (a) diffJSON uses diffFile.dir for lane ids, (b) 'roles: none installed' line only printed when roles were found (update.go, dry and real run). update tests pass.
