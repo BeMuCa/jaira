@@ -174,7 +174,7 @@ installed.`,
 				if len(notesWritten) > 0 {
 					fmt.Fprintf(w, "Would tell your agents about this board: %s\n", strings.Join(notesWritten, ", "))
 				}
-				if setup.roles {
+				if setup.roles && len(setup.roleRuns) > 0 {
 					printRoleRuns(w, setup.roleRuns, s.Root, true)
 				}
 				fmt.Fprint(w, hintLines(s.Root, setup.lanes))
@@ -185,7 +185,7 @@ installed.`,
 			if line := announceLine(notesWritten); line != "" {
 				fmt.Fprint(w, line)
 			}
-			if setup.roles {
+			if setup.roles && len(setup.roleRuns) > 0 {
 				printRoleRuns(w, setup.roleRuns, s.Root, false)
 			}
 			fmt.Fprint(w, hintLines(s.Root, setup.lanes))

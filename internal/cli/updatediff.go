@@ -159,9 +159,9 @@ func diffJSON(root string, runs []roleRun, lanes []lane.Refreshed, hasLanes bool
 		})
 	}
 	laneEntries := make([]map[string]any, 0, len(lanesOut))
-	for i, f := range lanesOut {
+	for _, f := range lanesOut {
 		laneEntries = append(laneEntries, map[string]any{
-			"lane": lanes[i].ID, "path": f.name, "action": f.action,
+			"lane": f.dir, "path": f.name, "action": f.action,
 			"state": diffState(f.action, f.release), "release": f.release,
 		})
 	}
