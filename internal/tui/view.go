@@ -152,6 +152,8 @@ func (m *Model) render() string {
 		return m.modal(m.renderMilestones())
 	case modeUsers:
 		return m.modal(m.renderUsers())
+	case modeBoards:
+		return m.modal(m.renderBoards())
 	case modeLinks:
 		if m.links != nil {
 			return m.modalOver(m.renderLinks(), m.links.from)
@@ -1762,7 +1764,7 @@ func (m *Model) renderHelp() string {
 			{"x R", "archive the selected ticket; R: reject it with a one-line reason (restore brings either back)"},
 			{"X", "on an open ticket: delete its file, after typing the handle back"},
 			{"r", "reload from disk now"},
-			{"p b", "switch to another board; b: this repository's next board, its own lanes and only its tickets"},
+			{"p b ⇧↓↑", "switch to another board; b: this repository's boards, space marks one active; shift+↓↑: next / previous active one"},
 			{"x", "in that list: remove a board, choosing what goes (default no)"},
 			{"S", "settings: lanes (read a prompt, use it, publish it), the default board, and how many days of the logbook the terminal lane shows"},
 		}},

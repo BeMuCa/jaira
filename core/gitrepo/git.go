@@ -152,6 +152,19 @@ func (r *Repo) Branch() string {
 	return strings.TrimSpace(out)
 }
 
+// FirstAuthor is the author name of the oldest commit touching path, which
+// is the commit that created it: who made a board, read off its lanes
+// directory. "" when nothing under path is committed yet, outside a
+// repository, or without git.
+func (r *Repo) FirstAuthor(path string) string {
+	out, err := r.run("log", "--reverse", "--format=%an", "--", path)
+	if err != nil {
+		return ""
+	}
+	first, _, _ := strings.Cut(out, "\n")
+	return strings.TrimSpace(first)
+}
+
 func shortSHA(s string) string {
 	if len(s) > 7 {
 		return s[:7]

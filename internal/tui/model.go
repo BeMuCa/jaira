@@ -63,6 +63,7 @@ const (
 	modeUsers
 	modeLayer
 	modeReleaseNotes
+	modeBoards
 )
 
 // Model is the board's state.
@@ -103,8 +104,11 @@ type Model struct {
 	mode   mode
 	filter string
 	// boardName is which of the repository's boards is shown: "" is today's,
-	// .jaira/lanes/, otherwise a directory under .jaira/boards/. b picks it.
+	// .jaira/lanes/, otherwise a directory under .jaira/boards/. shift+up/down
+	// steps through the active ones, and the window b opens picks any.
 	boardName string
+	// boards is the window b opens on the board; see boardwindow.go.
+	boards boardsWindow
 	// allTickets is every board's tickets, m.tickets only the shown board's:
 	// a blocker or a parent may sit on another board, and the link index has
 	// to find it.
@@ -1412,6 +1416,10 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.keyTicks(s, "u", m.userNames())
 		return m, nil
 
+	case modeBoards:
+		m.keyBoards(s)
+		return m, nil
+
 	case modeMilestones:
 		m.keyTicks(s, "M", m.milestoneNames())
 		return m, nil
@@ -1703,9 +1711,17 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.openTicks(modeMilestones, "milestone")
 		}
 	case "b":
-		// Not F: f is the follow-up on an open ticket. b there follows a
-		// blocker, which is the detail view's own key and never reaches here.
-		m.nextBoard()
+		// The window of every board. Not F: f is the follow-up on an open
+		// ticket. The detail view has a b of its own, which never reaches
+		// here.
+		m.openBoards()
+	case "shift+down":
+		// shift, because the arrows alone already move between lanes and
+		// cards. The open ticket scrolls on shift+arrows instead, in its own
+		// handler.
+		m.stepBoard(1)
+	case "shift+up":
+		m.stepBoard(-1)
 	case "u":
 		// Next to the milestone picker in purpose: narrowing the board to
 		// some of the people on it, through the same one filter.
@@ -2344,27 +2360,4 @@ func (m *Model) confirmReject() {
 	}
 	m.notify(fmt.Sprintf("Rejected %s: %s\n\nIt is in the archive with its reason — bring it back with:\n\n  jaira restore %s",
 		ticket.Handle(t.ID), why, filepath.Base(dst)), false)
-}
-
-// nextBoard shows the repository's next board, in the order today's board
-// first and then the others by name, wrapping around. With only today's board
-// there is nothing to switch to, and the note says how another one comes
-// about.
-func (m *Model) nextBoard() {
-	boards := append([]string{""}, lane.Boards(m.store.Root)...)
-	if len(boards) == 1 {
-		m.notify("This repository has one board.\n\nAnother is a directory of lane files: .jaira/boards/<name>/lanes/.", false)
-		return
-	}
-	next := boards[0]
-	for i, b := range boards {
-		if b == m.boardName {
-			next = boards[(i+1)%len(boards)]
-		}
-	}
-	m.boardName = next
-	m.laneIdx, m.cardIdx = 0, 0
-	if err := m.reload(); err != nil {
-		m.notify(err.Error(), true)
-	}
 }
