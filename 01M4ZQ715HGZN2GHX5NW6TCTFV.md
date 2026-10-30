@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-30T23:56:54Z
+updated-at: 2026-10-30T23:56:56Z
 updated-by: berkc
 question: ""
 round: 2
@@ -50,7 +50,8 @@ round: 2
 - [-] Einzeln, Milestone komplett: Ist ein Milestone ohne pr: block nach move oder logbook <id> komplett, bietet jaira nur 'jaira logbook <m>' an und schlaegt KEINEN Block-PR vor; 'jaira logbook <m>' nimmt den vorgeschlagenen Befehl an; Tests TestSingleMilestoneCompleteOffersFilingAndNoBlockPullRequest, TestLogbookOfTheLastTicketOffersToFileTheMilestone, TestSuggestedFilingIsAccepted
 - [x] Abnahme- und Endlane werden an ihren Eigenschaften erkannt, nicht am Namen; ein leerer oder abgelegter Milestone schlaegt nie etwas vor; ein Ticket in mehreren Milestones bekommt die Zeilen jedes kompletten Milestones; Tests TestLanesAreFoundByWhatTheyDoNotByName, TestEmptyMilestoneIsNeverComplete, TestFiledMilestoneSuggestsNothing, TestTicketInTwoMilestones
   proof: core/suggest/suggest_test.go TestLanesAreFoundByWhatTheyDoNotByName, TestEmptyMilestoneIsNeverComplete, TestFiledMilestoneSuggestsNothing, TestTicketInTwoMilestonesGetsTheLinesOfEachComplete
-- [ ] 'jaira milestone ls' zeigt fuer jeden kompletten Milestone dieselben Zeilen (--json: 'suggestions' am Milestone), weil das Annehmen in der TUI nichts druckt; Test TestLsCarriesTheSuggestionsOfACompleteMilestone
+- [x] 'jaira milestone ls' zeigt fuer jeden kompletten Milestone dieselben Zeilen (--json: 'suggestions' am Milestone), weil das Annehmen in der TUI nichts druckt; Test TestLsCarriesTheSuggestionsOfACompleteMilestone
+  proof: internal/cli/prsuggest_test.go TestLsCarriesTheSuggestionsOfACompleteMilestone
 
 ## Options
 
