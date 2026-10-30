@@ -27,7 +27,8 @@ related:
   - 01M5MNWJF240306ZVDA41K3RA8
 commits: []
 created-at: 2026-10-30T23:44:38Z
-updated-at: 2026-10-30T23:44:38Z
+updated-at: 2026-10-30T23:49:21Z
+updated-by: berkc
 ---
 
 # jaira web wird Beobachtungs- und Steuerzentrale fuer PMs ohne Claude: Onboarding mit Anbieterwahl, lokale Tokens, Projekte aus Repos, Tabs fuer Tickets, Aktive, Milestones/Epics, Schreiben
