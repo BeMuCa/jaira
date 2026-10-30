@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-30T23:59:43Z
+updated-at: 2026-10-30T23:59:46Z
 updated-by: berkc
 question: ""
 round: 2
@@ -34,6 +34,7 @@ outcome-what: "jaira move, jaira logbook <id> and jaira milestone ls print the p
 outcome-why: "a milestone is one pull request over all its tickets (berkc 22.10), and the person is otherwise never told /jaira-role-pr is due; a ticket outside any milestone is a group of one"
 outcome-resolves: "a finished ticket or a finished milestone now names its next step in the output; an agent never opens a pull request; the one-branch question is settled by merging the ticket branches at PR time, not by changing worktrees"
 review-summary: "none: pass 1 read the diff of core/suggest, internal/cli suggest/flow/logbook/milestones and the three role paragraphs; no finding that names a file and a clearer shape; the observations are in the note of this pass"
+review-gaps: "none: duplication checked (lane.impliedFresh reads the same lane fact, no shared predicate exists; logbookMilestone repeats the completion rule and belongs to N71NVG); no dead code; no fluff beyond the find walk that tests need; cost is one milestone load per move"
 ---
 
 # Ist der letzte Ticket eines Milestones fertig, schlaegt jaira den PR mit /jaira-role-pr vor und bietet an, den Milestone abzulegen
