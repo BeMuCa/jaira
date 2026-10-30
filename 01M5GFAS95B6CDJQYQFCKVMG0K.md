@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:17Z
-updated-at: 2026-10-30T02:03:51Z
+updated-at: 2026-10-30T02:11:47Z
 updated-by: berkc
 claimed-by: berk-ca-1397863
 claimed-at: 2026-10-30T01:57:38Z
@@ -27,7 +27,8 @@ claimed-at: 2026-10-30T01:57:38Z
 
 ## Definition of Done
 
-- [ ] Shift+hoch/runter wechselt reihum durch die aktiven Boards; Test in internal/tui
+- [x] Shift+hoch/runter wechselt reihum durch die aktiven Boards; Test in internal/tui
+  proof: internal/tui/model.go:1718 stepBoard; TestShiftArrowsStepThroughActiveBoardsOnly, TestShiftDownPicksABoard
 - [ ] b oeffnet ein Fenster: pro Board Name als Ueberschrift, Ersteller, Lanes; aktive mit Haken; Reihenfolge aktiv, zuletzt benutzt, Rest; Test
 - [ ] Leertaste schaltet aktiv/inaktiv und schreibt dieselbe Einstellung wie 57TDND; Test
 - [ ] Die Belegung von b (Board, Blocked-by-Sprung, Ticket auf dem Board zeigen) ist entschieden und in der Hilfe beschrieben
