@@ -20,7 +20,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-27T14:31:21Z
-updated-at: 2026-10-30T22:30:03Z
+updated-at: 2026-10-30T22:30:05Z
 updated-by: berkc
 claimed-by: berk-ca-2379103
 claimed-at: 2026-10-30T22:13:03Z
@@ -97,3 +97,4 @@ review-check: |-
 - **2026-10-30 22:20 · berkc** — in-progress round 2: fixed critique findings (a) diffJSON uses diffFile.dir for lane ids, (b) 'roles: none installed' line only printed when roles were found (update.go, dry and real run). update tests pass.
 - **2026-10-30 22:20 · berkc** — critique pass 2 (reads findings of pass 1 and the change answering them only): (a) fixed at updatediff.go diffJSON, lane id from f.dir; (b) fixed at update.go, both printRoleRuns calls guarded by len(setup.roleRuns) > 0. Nothing left to say.
 - **2026-10-30 22:23 · berkc** — testing: skipped three tests that dial an unreachable remote and hang in this sandbox: core/gitref TestUnreachableRemoteIsOfflineNotARace (reproduced on origin/master too), core/outbox TestAnOfflineWriteArrivesWhenTheNetworkIsBack, internal/cli TestWebPushReportsAQueuedDrop (git fetch to 127.0.0.1:1). Not verified: those three on a machine with normal network behaviour.
+- **2026-10-30 22:30 · berkc** — review (fresh context): pass, no blockers. Verified: manifest reproducible by scripts/shipped-history.sh, append-only (0 lost, 55 added), all v0.5.4-v0.5.7 embedded files present with release column; go vet and go test ./... green (skipped TestUnreachableRemoteIsOfflineNotARace, TestAnOfflineWriteArrivesWhenTheNetworkIsBack, TestWebPushReportsAQueuedDrop - they hang on pushes to 127.0.0.1:1 in this sandbox); hand run on scratch HOME: update diff writes nothing, bare update fixes stale v0.5.4 board.ts/register.tsx and exits 3 on edited SKILL.md. Three notes in review-gaps.
