@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T07:42:27Z
-updated-at: 2026-10-30T07:45:14Z
+updated-at: 2026-10-30T07:45:18Z
 assignee: AlSa
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4867
@@ -50,3 +50,4 @@ claimed-at: 2026-10-30T07:42:45Z
 
 ## Progress
 - **2026-10-30 07:42 · Alexander Sacharov** — Keine offenen Entscheidungen: Inhalt ist die lokale critique.md dieses Repos; 'default-board: false' der eingebauten Datei bleibt (Feld für Mehr-Board-Typen), die lokale Datei bekommt es dazu und wird so byte-gleich.
+- **2026-10-30 07:45 · Alexander Sacharov** — shipped.sha256 bekam nur die eine critique-Zeile: scripts/shipped-history.sh hätte ~60 alte Versionen anderer Dateien nachgetragen, das gehört nicht zu diesem Ticket. 'update --lanes' hat dabei optimize.md und testing.md auf die eingebaute Version gebracht (nur 'default-board: false' dazu) — mitcommittet, damit das Board sauber ist.
