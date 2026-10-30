@@ -17,14 +17,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:17Z
-updated-at: 2026-10-30T02:20:19Z
+updated-at: 2026-10-30T02:27:01Z
 updated-by: berkc
 claimed-by: berk-ca-1397863
 claimed-at: 2026-10-30T01:57:38Z
 outcome-what: "b on the board opens a window of every board (name, creator from git, lanes, tick on active ones; order active, most recently shown, rest; space toggles active, enter shows the board); shift+up/down on the board steps through the active boards; active boards are stored in .jaira/active-boards via core/lane ActiveBoards/SetBoardActive"
 outcome-why: berkc wants to rotate through the boards the teamlead may use and to see and choose them in one window; b used to step blindly through every board
 outcome-resolves: "DoD 1 stepBoard + tests; DoD 2 openBoards/renderBoards + TestBOpensTheBoardWindow; DoD 3 SetBoardActive writes .jaira/active-boards, the setting 57TDND will read; DoD 4 help line, detail b left to P3VS02; DoD 5 core/release/notes/KVMG0K.md"
-review-summary: none
+review-summary: "Pressing b on the board no longer jumps to the next board. It now opens a window that lists every board: the name as a heading, a tick (active) or circle (not active), the creator (author of the first git commit of the board's lanes directory, or 'creator unknown: not committed yet'), and its lanes joined by arrows. Order: active boards (default first, then by name), then inactive ones most recently shown first (per-machine stamp in ~/.jaira/repo/<key>/boards-seen.json), then the rest. In the window, space toggles a board and writes .jaira/active-boards (one name per line, today's board as 'default'; no file = all active; the last active board cannot be switched off), enter shows that board, and esc/q/b close it. shift+down/up on the board steps through the active boards only, wrapping round, and skips inactive ones; in an open ticket shift+arrows still scroll. New in core: lane.AllBoards, ActiveBoards, SetBoardActive and gitrepo.FirstAuthor. The help line reads 'p b ⇧↓↑'. The release note core/release/notes/KVMG0K.md has 2 lines. nextBoard is removed, and the old b tests are renamed to shift+down."
 review-gaps: "SetBoardActive writes through the existing writeIDList (core/lane/order.go) instead of its own join+WriteFile; considered and left: keyBoards beside tickPicker (different semantics, see critique note), the one-board message moved from nextBoard into stepBoard (moved, not copied), AllBoards read twice per b press (one ReadDir, not worth folding)"
 test-verdict: "pass: go build, go vet, go test ./... -race -timeout 20m after go clean -testcache all RC=0; DoD 1-5 checked against the tree (proof lines re-read after optimize); built binary run in tmux on a scratch repo with boards default/docs/video: b showed name, 'created by Tess Tester' for the committed board and 'creator unknown' for the others, lanes joined by arrows; space on docs wrote .jaira/active-boards = default,video; shift+down/up stepped default->video->default and skipped docs; reopened b listed default, video, then ○ docs; enter on docs showed it, shift+down from there went to video; boards-seen.json written under JAIRA_HOME/repo/"
 ---
