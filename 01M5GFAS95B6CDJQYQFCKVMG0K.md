@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:17Z
-updated-at: 2026-10-30T02:14:09Z
+updated-at: 2026-10-30T02:14:11Z
 updated-by: berkc
 claimed-by: berk-ca-1397863
 claimed-at: 2026-10-30T01:57:38Z
@@ -25,6 +25,7 @@ outcome-what: "b on the board opens a window of every board (name, creator from 
 outcome-why: berkc wants to rotate through the boards the teamlead may use and to see and choose them in one window; b used to step blindly through every board
 outcome-resolves: "DoD 1 stepBoard + tests; DoD 2 openBoards/renderBoards + TestBOpensTheBoardWindow; DoD 3 SetBoardActive writes .jaira/active-boards, the setting 57TDND will read; DoD 4 help line, detail b left to P3VS02; DoD 5 core/release/notes/KVMG0K.md"
 review-summary: none
+review-gaps: "SetBoardActive writes through the existing writeIDList (core/lane/order.go) instead of its own join+WriteFile; considered and left: keyBoards beside tickPicker (different semantics, see critique note), the one-board message moved from nextBoard into stepBoard (moved, not copied), AllBoards read twice per b press (one ReadDir, not worth folding)"
 ---
 
 # Boards wechseln mit Shift+Pfeil und ein Board-Fenster auf b mit aktiven Boards, Ersteller und Lanes
