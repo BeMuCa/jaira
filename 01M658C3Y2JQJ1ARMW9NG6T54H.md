@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T01:56:44Z
-updated-at: 2026-10-30T21:52:24Z
+updated-at: 2026-10-30T21:52:26Z
 updated-by: berkc
 claimed-by: berk-ca-2129199
 claimed-at: 2026-10-30T21:40:58Z
@@ -48,7 +48,7 @@ claimed-at: 2026-10-30T21:40:58Z
 - [x] settings.go: DispatchMode returns lanes only for an explicit lanes; comments
 - [x] tests: settings_test, roles_test, tui settings_test follow the new default
 - [x] help text: roles.go Long, tui settings row desc, teamlead/worker SKILL.md statements of the default
-- [ ] release note core/release/notes/G6T54H.md
+- [x] release note core/release/notes/G6T54H.md
 - [ ] go vet ./... and go test ./... green, then commit with ticket id
 
 ## Progress
