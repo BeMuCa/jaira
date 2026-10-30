@@ -88,9 +88,9 @@ func TestSettingsEscStepsBackOneLevel(t *testing.T) {
 	}
 }
 
-// TestSettingsEnterSwitchesDispatch: the fourth entry is the opt-in to the
-// worker mode. enter flips it and writes settings.json at once, and the row
-// shows what the file now says — off ("lanes") until somebody turns it on.
+// TestSettingsEnterSwitchesDispatch: the fourth entry switches between the
+// worker mode, the default, and lanes. enter flips it and writes settings.json
+// at once, and the row shows what the file now says.
 func TestSettingsEnterSwitchesDispatch(t *testing.T) {
 	t.Setenv("JAIRA_HOME", t.TempDir())
 	m := newTestModel(t, 150, 32)
@@ -98,21 +98,21 @@ func TestSettingsEnterSwitchesDispatch(t *testing.T) {
 	for range 3 {
 		m.key(key("j"))
 	}
-	if got := m.settingsScreen.render(150, 32); m.settingsScreen.dispatch != settings.DispatchLanes || !strings.Contains(got, "lanes") {
-		t.Fatalf("the dispatch row does not show the default, lanes (%q):\n%s", m.settingsScreen.dispatch, got)
+	if got := m.settingsScreen.render(150, 32); m.settingsScreen.dispatch != settings.DispatchWorker || !strings.Contains(got, "worker (the default)") {
+		t.Fatalf("the dispatch row does not show the default, worker (%q):\n%s", m.settingsScreen.dispatch, got)
 	}
 
 	m.key(key("enter"))
-	if got := settings.Load().DispatchMode(); got != settings.DispatchWorker {
-		t.Fatalf("after enter, settings.json dispatch = %q, want worker", got)
+	if got := settings.Load().DispatchMode(); got != settings.DispatchLanes {
+		t.Fatalf("after enter, settings.json dispatch = %q, want lanes", got)
 	}
 	if m.mode != modeSettings {
 		t.Errorf("switching must stay on the settings screen, mode = %v", m.mode)
 	}
 
 	m.key(key("enter"))
-	if got := settings.Load().DispatchMode(); got != settings.DispatchLanes {
-		t.Fatalf("after a second enter, dispatch = %q, want lanes", got)
+	if got := settings.Load().DispatchMode(); got != settings.DispatchWorker {
+		t.Fatalf("after a second enter, dispatch = %q, want worker", got)
 	}
 }
 

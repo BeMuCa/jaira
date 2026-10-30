@@ -22,8 +22,8 @@ func newRolesCmd() *cobra.Command {
 		Use:   "roles",
 		Short: "The agent role prompts this binary ships",
 		Long: `Roles are the agent prompts that drive a board: a teamlead who talks to you, a
-dispatcher who carries one ticket lane by lane — or, with "dispatch": "worker"
-in ~/.jaira/settings.json, a worker who carries it through every lane itself —
+worker who carries a ticket through every lane itself — or, with "dispatch":
+"lanes" in ~/.jaira/settings.json, a dispatcher who carries it lane by lane —
 and the agents they hand lanes to. They are compiled into this binary, and
 'jaira roles install' writes them into your agent's skills directory.`,
 	}
@@ -37,9 +37,9 @@ func newRolesListCmd() *cobra.Command {
 		Short: "List the role prompts built into this binary",
 		Long: `Lists the role prompts built into this binary, and which one a teamlead
 starts for a whole ticket: the "dispatch" setting in ~/.jaira/settings.json.
-"lanes" (the default) starts jaira-dispatcher, one new agent per lane;
-"worker" starts jaira-worker, one agent through every lane, with only a lane
-marked context: fresh handed to a new one. --json carries it as dispatch and
+"worker" (the default) starts jaira-worker, one agent through every lane, with
+only a lane marked context: fresh handed to a new one; "lanes" starts
+jaira-dispatcher, one new agent per lane. --json carries it as dispatch and
 dispatch_role.
 
 It also says which model the cockpit's explain and discuss chats start on:

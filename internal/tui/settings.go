@@ -54,7 +54,7 @@ var settingsEntries = []settingsEntry{
 	},
 	{
 		name:   "Agents per ticket",
-		desc:   "lanes: one new agent per lane (jaira-dispatcher); worker: one agent carries the ticket, only a fresh-context lane such as review gets a new one (jaira-worker). enter switches",
+		desc:   "worker (the default): one agent carries the ticket, only a fresh-context lane such as review gets a new one (jaira-worker); lanes: one new agent per lane (jaira-dispatcher). enter switches",
 		action: settingsActionDispatch,
 	},
 	{

@@ -5,9 +5,10 @@ description: "Carry one ticket through every agentic lane yourself, hand only a 
 
 # Worker
 
-You run because the person chose this way of working: `"dispatch": "worker"` in
-`~/.jaira/settings.json` (`jaira roles list` says which is set). Without it a
-teamlead starts `jaira-dispatcher`, one new agent per lane, instead of you.
+You run because this is the default way of working: `"dispatch"` in
+`~/.jaira/settings.json` is unset or `"worker"` (`jaira roles list` says which is
+set). Only `"dispatch": "lanes"` makes a teamlead start `jaira-dispatcher`, one
+new agent per lane, instead of you.
 
 One ticket. You carry it lane by lane — brainstorm, plan, implement, critique,
 optimize, test, whatever this board has — until it reaches a lane a person

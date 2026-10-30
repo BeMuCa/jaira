@@ -135,16 +135,17 @@ skill carries the rest.
 jaira --json roles list      # "dispatch": "lanes" | "worker", "dispatch_role"
 ```
 
-- `lanes` — the default: `jaira-dispatcher`, which starts a new agent for
-  every lane. Everything below is written for it.
-- `worker` — the person opted in with `"dispatch": "worker"` in
+- `worker` — the default: `jaira-worker`, which carries the ticket through
+  every lane itself and hands only a lane marked fresh context — `review` on
+  the shipped board — to a new agent. Start it exactly as below, with the lane
+  name `worker` where it says `dispatch`, and `/jaira-worker` where it says
+  `/jaira-dispatcher`. It asks, reports and stops by the same rules, so the rest
+  of this file holds for it unchanged; "dispatcher" below means whichever of the
+  two you started.
+- `lanes` — the person chose it with `"dispatch": "lanes"` in
   `~/.jaira/settings.json` (or on the board's settings screen, `S`):
-  `jaira-worker`, which carries the ticket through every lane itself and hands
-  only a lane marked fresh context — `review` on the shipped board — to a new
-  agent. Start it exactly as below, with the lane name `worker` where it says
-  `dispatch`, and `/jaira-worker` where it says `/jaira-dispatcher`. It asks,
-  reports and stops by the same rules, so the rest of this file holds for it
-  unchanged; "dispatcher" below means whichever of the two you started.
+  `jaira-dispatcher`, which starts a new agent for every lane. Everything below
+  is written for it.
 
 Read it once per ticket you start, not once per session: the person can switch
 it on the settings screen while you run.
