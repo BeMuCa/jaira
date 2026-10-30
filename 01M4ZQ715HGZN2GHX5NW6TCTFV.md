@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-30T23:58:36Z
+updated-at: 2026-10-30T23:59:14Z
 updated-by: berkc
 question: ""
 round: 2
@@ -105,3 +105,4 @@ Parallel: N71NVG baut das Ablegen/Loeschen eines fertigen Milestones samt Ticket
 - **2026-10-30 23:49 · berkc** — pre-process: ticket without a milestone - decided. Ticket-done alert (move or logbook into signoff or done) prints one PR line for that ticket. A ticket in a milestone gets only the progress line 'Milestone m: k of n done', never a PR line. A complete milestone (every member in the terminal lane or off the board, the same rule as logbook m) gives one PR line for all its handles plus the filing line. An empty or filed milestone never suggests anything. A ticket in two milestones gets the lines of each complete one.
 - **2026-10-30 23:50 · berkc** — pre-process: question field cleared - berkc answered it on 22.10 (see Progress: no single/block attribute). Plan and DoD rewritten to that decision; old items 5, 7 (DoD) and 1, 2 (plan) superseded, not deleted.
 - **2026-10-30 23:58 · berkc** — handtest (plan step 9): built the branch binary to the scratchpad (handtest-6TCTFV/bin/jaira), scratch repo with HOME and JAIRA_HOME inside the scratchpad. round-one with A and B: A to signoff -> 'Milestone round-one: 0 of 2 done', no PR line; B to done -> '1 of 2 done'; A to done -> PR line for both handles + logbook line, same in milestone ls and in --json. The suggested 'jaira logbook round-one' filed it (exit 0), ls empty after. Ungrouped C to signoff -> '/jaira-role-pr <C>' line. Plain git check of the merge step: two feature branches merged --no-ff into milestone/round-one = clean; a conflicting pair = rc 1, merge --abort. NOT tested: the jaira-role-pr skill itself (an agent run that pushes to a real remote), and the milestone file differing between ticket branches (the KWQCYZ risk).
+- **2026-10-30 23:59 · berkc** — critique (pass 1, worker): read the Go diff - core/suggest/suggest.go, internal/cli/suggest.go, the hooks in flow.go, logbook.go, milestones.go - and the three role SKILL paragraphs. One simplification made already: ForMilestone repeated the Filed/empty check that complete() does. Left alone on purpose: (a) groupOf reads every member of each milestone the ticket is in on every move; board sizes are tens, so no cache; (b) the same paragraph is in three role skills because the pin test reads each role on its own and the role format has no include; (c) --json suggestions also carry kind progress, which the DoD does not name; the docs say consumers branch on kind; (d) milestone ls swallows a lane-load error on purpose so the listing never fails because of suggestions.
