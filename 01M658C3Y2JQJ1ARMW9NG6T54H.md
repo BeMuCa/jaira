@@ -22,7 +22,7 @@ commits:
   - b9872d8a
   - 297d5915
 created-at: 2026-10-30T01:56:44Z
-updated-at: 2026-10-30T22:03:00Z
+updated-at: 2026-10-30T22:03:02Z
 updated-by: berkc
 claimed-by: berk-ca-2129199
 claimed-at: 2026-10-30T21:40:58Z
@@ -31,7 +31,11 @@ outcome-why: "the critique found README.md:822 still called worker the opt-in"
 outcome-resolves: "G6T54H DoD 2: help and docs name worker as the default"
 review-summary: "Flips the default of the 'dispatch' setting. core/settings/settings.go DispatchMode now returns 'lanes' only when settings.json says exactly 'lanes' (whitespace trimmed); empty, 'worker' or a typo return 'worker', so DispatchRole hands a teamlead /jaira-worker unless the person asked for the dispatcher. Nothing else decides the mode: 'jaira roles list' (text and --json dispatch/dispatch_role) and the TUI 'Agents per ticket' row/toggle read DispatchMode, so they follow without their own logic. Tests flipped with it (settings_test incl. ' lanes ', roles_test with an explicit lanes file, tui settings_test starting from worker). The roles help, the TUI row text, README (feature list, role table, worker paragraph), the teamlead and worker SKILL.md now call worker the default; the two changed SKILL.md hashes are appended to core/shipped/shipped.sha256; release note core/release/notes/G6T54H.md is one line telling users how to get lanes back."
 round: 3
-review-gaps: "duplication: none; DispatchMode is the only place that decides the dispatch mode (grep DispatchMode, DispatchWorker, DispatchLanes: settings.go, roles.go, tui/settings.go, tests). dead code: none added. fluff: none; the Long texts are the same length as before. cost: none, the check is one string compare."
+review-gaps: |-
+  note: docs/COMMANDS.md:189 (the jaira roles list row) still says 'lanes (the default, jaira-dispatcher)' - untouched by the diff, so the outcome's 'help and docs name worker as the default' and the critique note 'grep finds no other claim' are not quite true; a one-line fix, and arguably inside DoD 2
+  note: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:36 says the lane name worker is what a teamlead passes when settings.json says 'dispatch': 'worker' - now also when nothing is set
+  note: README.md:820 and :849 still say the teamlead starts one dispatcher per ticket; the teamlead SKILL.md defines dispatcher as either role, the README does not
+  note: README.md:77-80 says to run 'jaira roles install --force' after switching to lanes; the teamlead reads the setting at run time and the dispatcher is already installed, so that step is not needed for this direction
 test-verdict: "pass: go test ./... -race -count=1 exit 0, 33 packages ok, go vet exit 0, gofmt clean; DoD 1-3 verified in the tree (settings.go DispatchMode, TestDispatchDefaultsToWorker, TestSettingsEnterSwitchesDispatch, TestRolesListReportsTheDispatchSetting, core/release/notes/G6T54H.md); behaviour exercised with built binary: no settings.json -> worker/jaira-worker, dispatch lanes -> lanes/jaira-dispatcher, typo lanse -> worker"
 ---
 
