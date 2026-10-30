@@ -76,11 +76,10 @@ func (v *notesView) lines(width int) []string {
 	}
 	var features, others []string
 	for _, c := range v.entries[v.at].Changes {
-		rest, feature := release.Feature(c)
-		if feature {
-			features = append(features, changeLines(rest, true, width)...)
+		if _, feature := release.Feature(c); feature {
+			features = append(features, changeLines(c, width)...)
 		} else {
-			others = append(others, changeLines(c, false, width)...)
+			others = append(others, changeLines(c, width)...)
 		}
 	}
 	var out []string
@@ -98,10 +97,10 @@ func (v *notesView) lines(width int) []string {
 }
 
 // changeLines lays out one change for width: its first line carries the bullet,
-// the wrapped rest is indented under it, and a blank line closes it. c is the
-// change without its feature marker; feature says whether it had one.
-func changeLines(c string, feature bool, width int) []string {
-	text, important := release.Important(c)
+// the wrapped rest is indented under it, and a blank line closes it.
+func changeLines(c string, width int) []string {
+	text, feature := release.Feature(c)
+	text, important := release.Important(text)
 	bullet, sty := "- ", lipgloss.NewStyle()
 	switch {
 	case important:
