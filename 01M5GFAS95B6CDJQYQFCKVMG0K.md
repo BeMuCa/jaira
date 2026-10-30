@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:17Z
-updated-at: 2026-10-30T02:27:03Z
+updated-at: 2026-10-30T02:27:05Z
 updated-by: berkc
 claimed-by: berk-ca-1397863
 claimed-at: 2026-10-30T01:57:38Z
@@ -31,6 +31,8 @@ review-gaps: |-
   note: SetBoardActive goes through writeIDList, which first creates .jaira/lanes/. That is harmless, because an empty lanes directory does not count (ProjectLanesActive needs a lane file), but it is a side effect of writing a file next to it
   note: openBoards calls git log once per board each time b is pressed. Critique measured 15 ms; a repository with many boards or a slow disk would feel it
 test-verdict: "pass: go build, go vet, go test ./... -race -timeout 20m after go clean -testcache all RC=0; DoD 1-5 checked against the tree (proof lines re-read after optimize); built binary run in tmux on a scratch repo with boards default/docs/video: b showed name, 'created by Tess Tester' for the committed board and 'creator unknown' for the others, lanes joined by arrows; space on docs wrote .jaira/active-boards = default,video; shift+down/up stepped default->video->default and skipped docs; reopened b listed default, video, then ○ docs; enter on docs showed it, shift+down from there went to video; boards-seen.json written under JAIRA_HOME/repo/"
+review-verdict: "The diff meets all 5 DoD items: shift+arrows step through active boards only, b opens the window with name, creator, lanes, ticks and the required order, space writes .jaira/active-boards, the help line is updated, and the release note is present. go vet ./... is clean and go test ./... passes, including the 6 new or renamed board tests. No defects found. The notes are about what the active setting does not reach yet (57TDND) and one default-behaviour subtlety."
+review-round: 1
 ---
 
 # Boards wechseln mit Shift+Pfeil und ein Board-Fenster auf b mit aktiven Boards, Ersteller und Lanes
