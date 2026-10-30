@@ -17,7 +17,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T01:56:46Z
-updated-at: 2026-10-30T01:56:46Z
+updated-at: 2026-10-30T21:39:38Z
+updated-by: berkc
 ---
 
 # Das offene Ticket zeigt oben Kopfdaten und DoD-Stand, die Agenten-Notizen darunter
