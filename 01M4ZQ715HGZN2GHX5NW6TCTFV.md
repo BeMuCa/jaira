@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-30T23:50:53Z
+updated-at: 2026-10-30T23:56:37Z
 updated-by: berkc
 question: ""
 round: 2
@@ -36,7 +36,8 @@ round: 2
 
 ## Definition of Done
 
-- [ ] Milestone komplett: Hat 'jaira move <id> --to <lane>' oder 'jaira logbook <id>' jedes Ticket eines Milestones in die Endlane oder vom Board gebracht (dieselbe Regel wie 'jaira logbook <milestone>'), druckt jaira zwei Zeilen: 'Milestone <m> is complete. Next: one pull request for all its tickets. Only a person opens it: /jaira-role-pr <alle Handles>' und 'Once that pull request is merged, take milestone <m> off the board: jaira logbook <m>'; --json traegt beide unter 'suggestions' (kind pull_request mit by person, kind file_milestone mit after merge); Tests TestMoveCompletingAMilestoneSuggestsOnePullRequestAndFiling, TestLogbookOfTheLastTicketSuggestsThePullRequest
+- [x] Milestone komplett: Hat 'jaira move <id> --to <lane>' oder 'jaira logbook <id>' jedes Ticket eines Milestones in die Endlane oder vom Board gebracht (dieselbe Regel wie 'jaira logbook <milestone>'), druckt jaira zwei Zeilen: 'Milestone <m> is complete. Next: one pull request for all its tickets. Only a person opens it: /jaira-role-pr <alle Handles>' und 'Once that pull request is merged, take milestone <m> off the board: jaira logbook <m>'; --json traegt beide unter 'suggestions' (kind pull_request mit by person, kind file_milestone mit after merge); Tests TestMoveCompletingAMilestoneSuggestsOnePullRequestAndFiling, TestLogbookOfTheLastTicketSuggestsThePullRequest
+  proof: internal/cli/prsuggest_test.go TestMoveCompletingAMilestoneSuggestsOnePullRequestAndFiling, TestLogbookOfTheLastTicketSuggestsThePullRequest; core/suggest/suggest.go ForTicket
 - [ ] jaira-dispatcher, jaira-worker und jaira-teamlead geben jede Vorschlagszeile von jaira ('suggestions' aus move/logbook, beim Teamlead auch aus 'jaira milestone ls --json') woertlich an den Menschen weiter und rufen /jaira-role-pr nie selbst auf; Test TestRolesPassThePRSuggestionOnAndNeverRunIt
 - [ ] jaira-role-pr nimmt mehrere Tickets bzw. einen Milestone: er legt alle angenommenen Tickets vor dem Push ab und baut bei einem Milestone EINEN Branch aus origin/master, in den er jeden Ticket-Branch mit --no-ff hineinmerged; ein genanntes Ticket ohne Commit auf seinem Branch ist ein Befund (Stopp vor dem Push), ein Merge-Konflikt ebenso. Fuer einen bestehenden PR/MR aktualisiert er Titel und Beschreibung aus den Tickets (gh pr edit / glab mr update), aber nur wenn ein Mensch ihn aufrief; Test TestPRTakesSeveralTicketsOrAMilestone
 - [ ] Je eine Zeile pro sichtbarer Aenderung in core/release/notes/6TCTFV.md: Vorschlaege bei move, bei logbook <id>, in milestone ls, Weitergabe durch die Rollen, jaira-role-pr mit mehreren Tickets
