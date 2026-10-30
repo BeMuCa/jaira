@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T07:42:27Z
-updated-at: 2026-10-30T07:46:00Z
+updated-at: 2026-10-30T07:46:05Z
 assignee: AlSa
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4867
@@ -28,6 +28,7 @@ outcome-what: "Eingebaute critique-Lane (core/lane/builtin/25-critique.md) über
 outcome-why: "Jedes andere Board bekam bisher die schwächere critique, deren Schleife Erledigtes neu fand und nicht auf null kam."
 outcome-resolves: update --lanes überspringt critique.md hier nicht mehr; neue Boards bekommen die Regeln.
 review-summary: none
+review-gaps: none
 ---
 
 # critique-Regeln aus .jaira/lanes in die eingebaute Lane übernehmen
