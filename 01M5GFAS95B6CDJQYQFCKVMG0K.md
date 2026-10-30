@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:17Z
-updated-at: 2026-10-30T01:58:32Z
+updated-at: 2026-10-30T01:58:34Z
 updated-by: berkc
 claimed-by: berk-ca-1397863
 claimed-at: 2026-10-30T01:57:38Z
@@ -36,7 +36,7 @@ claimed-at: 2026-10-30T01:57:38Z
 ## Options
 
 - [x] brainstorm
-- [ ] planning
+- [x] planning
 
 ## Plan
 
