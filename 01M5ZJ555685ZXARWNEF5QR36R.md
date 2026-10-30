@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-30T23:45:25Z
+updated-at: 2026-10-30T23:45:38Z
 assignee: berkc
 updated-by: berkc
 ---
@@ -40,4 +40,4 @@ updated-by: berkc
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-30 23:45 · berkc** — Frage berkc 31.10.2026: Das Interview in einer neuen Session bzw. als eigener Interviewer-Subagent fuehren? Vorteil: der Kontext der Hauptsession bleibt schlank, und das Interview laeuft parallel zur normalen Arbeit. Tokens: das Interview kostet gleich viel, aber nicht im teuren, langen Hauptkontext - jede Antwort dort wuerde den ganzen Verlauf neu mitschicken. Empfehlung: ja, eigener Agent/Tab, der nur die Tickets in human/signoff liest; die Hauptsession bekommt am Ende eine Zeile pro Ticket (angenommen/zurueck/Folgeticket).
