@@ -22,7 +22,7 @@ commits:
   - b9872d8a
   - 297d5915
 created-at: 2026-10-30T01:56:44Z
-updated-at: 2026-10-30T22:03:02Z
+updated-at: 2026-10-30T22:03:04Z
 updated-by: berkc
 claimed-by: berk-ca-2129199
 claimed-at: 2026-10-30T21:40:58Z
@@ -37,6 +37,8 @@ review-gaps: |-
   note: README.md:820 and :849 still say the teamlead starts one dispatcher per ticket; the teamlead SKILL.md defines dispatcher as either role, the README does not
   note: README.md:77-80 says to run 'jaira roles install --force' after switching to lanes; the teamlead reads the setting at run time and the dispatcher is already installed, so that step is not needed for this direction
 test-verdict: "pass: go test ./... -race -count=1 exit 0, 33 packages ok, go vet exit 0, gofmt clean; DoD 1-3 verified in the tree (settings.go DispatchMode, TestDispatchDefaultsToWorker, TestSettingsEnterSwitchesDispatch, TestRolesListReportsTheDispatchSetting, core/release/notes/G6T54H.md); behaviour exercised with built binary: no settings.json -> worker/jaira-worker, dispatch lanes -> lanes/jaira-dispatcher, typo lanse -> worker"
+review-verdict: "The diff meets all three DoD items: DispatchMode defaults to worker with lanes only when explicit, tested; roles help and the TUI row name worker the default; the release note is there and follows the one-line format. No defects found - vet clean, core/settings, core/role, core/shipped, core/release, internal/tui and internal/cli roles tests pass, and the built binary reports worker with no settings file and lanes/jaira-dispatcher with one. Not a blocker but worth deciding at signoff: docs/COMMANDS.md:189 still documents lanes as the default."
+review-round: 3
 ---
 
 # Agents per ticket steht per Default auf worker statt lanes
