@@ -20,7 +20,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-27T14:31:21Z
-updated-at: 2026-10-30T22:17:43Z
+updated-at: 2026-10-30T22:17:45Z
 updated-by: berkc
 claimed-by: berk-ca-2379103
 claimed-at: 2026-10-30T22:13:03Z
@@ -64,3 +64,4 @@ claimed-at: 2026-10-30T22:13:03Z
 - **2026-10-30 21:47 · berkc** — plan written as Plan items (see jaira show). Options 'planning' was left unticked by the person, so the pre-process lane is skipped; the plan above is the pre-process output, written by the worker.
 - **2026-10-30 21:56 · berkc** — built and checked by hand on a scratch clone (HOME=scratch, stale v0.5.4 cockpit files): update diff lists board.ts behind (shipped in v0.5.4), texts.ts/types behind (v0.5.2); bare update rewrites them to current; diff afterwards shows only lanes (critique edited, optimize/testing behind: those files in the clone are old). update diff writes nothing (tests: TestUpdateDiffWritesNothingAndNamesWhatIsBehind, tree snapshot). Lane Load writes lane files when a board has none: diff skips lanes there on purpose (ProjectLanesActive guard).
 - **2026-10-30 22:17 · berkc** — cause of the false 'edited' cockpit files: not the script's walk. scripts/shipped-history.sh already uses git log --full-history -m (since 299c65aa), so second merge parents are walked; every commit reachable from HEAD that touches the embedded paths is in that walk. The committed core/shipped/shipped.sha256 was an append-only file patched by hand (736c80ee) and never regenerated after 44 later commits to embedded paths; it was a strict subset of the script output (55 lines missing), so board.ts 9406af (from 5bc22fb1, F80QZT, in v0.5.2) read as edited. Fix: regenerate with the script. Checked: every file under core/role/builtin, core/mod/builtin, core/lane/builtin, core/role/jaira at tags v0.4.1..v0.5.7 has its sha in the regenerated list (0 missing).
+- **2026-10-30 22:17 · berkc** — DESIGN DECISION 1 (for signoff): manifest line is now 'sha256  path  release'. release = first vX.Y.Z tag whose tree holds that blob at that path, '-' when no release holds it (409 of 559 lines: intermediate versions that never reached a tag). shipped.Known still matches sha+path only; shipped.Release reads the third column. Alternative not taken: a separate file or a comment header; both need a second lookup. Reason: DoD 2 asks for 'welche Version'.
