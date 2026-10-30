@@ -19,9 +19,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T07:42:27Z
-updated-at: 2026-10-30T07:42:41Z
+updated-at: 2026-10-30T07:42:45Z
 assignee: AlSa
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-4867
+claimed-at: 2026-10-30T07:42:45Z
 ---
 
 # critique-Regeln aus .jaira/lanes in die eingebaute Lane übernehmen
