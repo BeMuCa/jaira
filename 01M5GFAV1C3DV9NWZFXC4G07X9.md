@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:19Z
-updated-at: 2026-10-30T01:57:35Z
+updated-at: 2026-10-30T01:59:34Z
 updated-by: berkc
 claimed-by: berk-ca-1397571
 claimed-at: 2026-10-30T01:57:35Z
@@ -46,3 +46,4 @@ claimed-at: 2026-10-30T01:57:35Z
 
 ## Progress
 - **2026-10-30 01:56 · berkc** — berkc 30.10.2026 (Frage 3/13): Boards und Default-Lanes sollen an einer Stelle global liegen, damit ein 'jaira update' sie fuer alle Sessions und Repos auf einmal aktualisiert und Repo-eigene Lanes nicht ueberschrieben werden. 'global wie Tickets' meint den persoenlichen Katalog ~/.jaira, nicht die Refs. Baut auf Y2C9QN auf (boards create/types, Branch feat/Y2C9QN-boards-create, noch nicht gemergt).
+- **2026-10-30 01:59 · berkc** — Blocked-by Y2C9QN (reasoning): this work is built on branch feat/Y2C9QN-boards-create (jaira boards create/types, core/lane/boardtypes.go), not yet on master. Branch feat/4G07X9-boards-catalogue is based on origin/feat/Y2C9QN-boards-create; its PR must land after Y2C9QN's. Not set as blocked_by field so the ticket can run its lanes now.
