@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:19Z
-updated-at: 2026-10-30T02:10:05Z
+updated-at: 2026-10-30T02:10:07Z
 updated-by: berkc
 claimed-by: berk-ca-1397571
 claimed-at: 2026-10-30T01:57:35Z
@@ -30,7 +30,8 @@ claimed-at: 2026-10-30T01:57:35Z
 
 ## Definition of Done
 
-- [ ] Im TUI laesst sich ein Board anlegen: Name, Beschreibung (Pflicht), Lanes aus Katalog und Board ankreuzen; Test
+- [x] Im TUI laesst sich ein Board anlegen: Name, Beschreibung (Pflicht), Lanes aus Katalog und Board ankreuzen; Test
+  proof: internal/tui/newboard.go formKey/createBoard; TestLaneScreenCreatesABoardFromTheForm
 - [ ] Ein Board landet auch im persoenlichen Katalog und ist in jedem Repo waehlbar; Test mit JAIRA_HOME
 - [ ] publish/adopt fuer Boards wie fuer Lanes; Test
 - [ ] Release-Note-Zeile in core/release/notes/<ID>.md
