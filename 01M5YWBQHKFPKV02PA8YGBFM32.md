@@ -20,7 +20,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-27T14:31:21Z
-updated-at: 2026-10-30T21:56:30Z
+updated-at: 2026-10-30T21:56:32Z
 updated-by: berkc
 claimed-by: berk-ca-2129445
 claimed-at: 2026-10-30T21:41:03Z
@@ -62,3 +62,4 @@ claimed-at: 2026-10-30T21:41:03Z
 - **2026-10-30 21:46 · berkc** — finding 2 (cause of the cockpit false 'edited'): not the script's walk. The committed list is an append-only file: script output at 299c65aa (438 lines) was extended by hand (736c80ee) and never re-run after 44 later commits to embedded paths. Committed list = strict subset of script output today (0 lines lost, 55 missing). Fix = regenerate, then keep append-only. Also a manifest that keeps 2 columns cannot say which release a behind file came from, so DoD 2 'welche Version' needs a release column.
 - **2026-10-30 21:46 · berkc** — decisions settled here (reversible, not person-only): (a) manifest line becomes 'sha  path  release' where release is the first vX.Y.Z tag whose tree holds that blob at that path, '-' if none; shipped.Known keeps matching on sha+path. (b) update: roles, cockpit mod and jaira skill default on; --roles stays accepted as a no-op; lanes stay --lanes. (c) 'update diff' is a subcommand, one line per role/mod file and per lane: current | behind (release, or 'missing' for files not yet written) | edited; it reuses the dry-run of refreshRoles and lane.RefreshShipped and writes nothing. Outside a board, roles only, as before.
 - **2026-10-30 21:47 · berkc** — plan written as Plan items (see jaira show). Options 'planning' was left unticked by the person, so the pre-process lane is skipped; the plan above is the pre-process output, written by the worker.
+- **2026-10-30 21:56 · berkc** — built and checked by hand on a scratch clone (HOME=scratch, stale v0.5.4 cockpit files): update diff lists board.ts behind (shipped in v0.5.4), texts.ts/types behind (v0.5.2); bare update rewrites them to current; diff afterwards shows only lanes (critique edited, optimize/testing behind: those files in the clone are old). update diff writes nothing (tests: TestUpdateDiffWritesNothingAndNamesWhatIsBehind, tree snapshot). Lane Load writes lane files when a board has none: diff skips lanes there on purpose (ProjectLanesActive guard).
