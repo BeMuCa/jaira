@@ -1,7 +1,7 @@
 ---
 id: 01M658C3Y2JQJ1ARMW9NG6T54H
 title: Agents per ticket steht per Default auf worker statt lanes
-status: review
+status: signoff
 ready: true
 creator: berkc
 assignee: berkc
@@ -22,7 +22,7 @@ commits:
   - b9872d8a
   - 297d5915
 created-at: 2026-10-30T01:56:44Z
-updated-at: 2026-10-30T22:03:08Z
+updated-at: 2026-10-30T22:03:14Z
 updated-by: berkc
 claimed-by: berk-ca-2129199
 claimed-at: 2026-10-30T21:40:58Z
