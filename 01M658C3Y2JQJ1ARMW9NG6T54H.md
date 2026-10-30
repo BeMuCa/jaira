@@ -1,7 +1,7 @@
 ---
 id: 01M658C3Y2JQJ1ARMW9NG6T54H
 title: Agents per ticket steht per Default auf worker statt lanes
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: berkc
@@ -17,12 +17,16 @@ tags:
   - tui
 blocked-by: []
 related: []
-commits: []
+commits:
+  - b9872d8a67d695f61db5829a744aac2869f05fbe
 created-at: 2026-10-30T01:56:44Z
-updated-at: 2026-10-30T21:52:42Z
+updated-at: 2026-10-30T21:52:49Z
 updated-by: berkc
 claimed-by: berk-ca-2129199
 claimed-at: 2026-10-30T21:40:58Z
+outcome-what: "DispatchMode returns lanes only for an explicit lanes; empty or unknown dispatch is worker. Help text, settings row, teamlead and worker skills, README and release note now say worker is the default."
+outcome-why: "the default was lanes, the ticket asks for worker when nothing is set; an explicit lanes keeps the dispatcher"
+outcome-resolves: "G6T54H DoD 1-3: default test, help and settings text, release note"
 ---
 
 # Agents per ticket steht per Default auf worker statt lanes
