@@ -20,7 +20,8 @@ related:
   - 01M5GFB5KWABVZVWWDVNP5ABVR
 commits: []
 created-at: 2026-10-30T21:39:15Z
-updated-at: 2026-10-30T21:39:15Z
+updated-at: 2026-10-30T21:42:36Z
+updated-by: berkc
 ---
 
 # Ein Board-Typ 'Projektidee': Idee rein, aehnliche Ideen recherchieren, Nutzen pruefen (abwaehlbar), weitere Schritte
