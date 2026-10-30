@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T01:56:44Z
-updated-at: 2026-10-30T21:45:26Z
+updated-at: 2026-10-30T21:45:28Z
 updated-by: berkc
 claimed-by: berk-ca-2129199
 claimed-at: 2026-10-30T21:40:58Z
@@ -29,7 +29,7 @@ claimed-at: 2026-10-30T21:40:58Z
 
 ## Definition of Done
 
-- [ ] DispatchMode liefert worker, wenn dispatch leer oder unbekannt ist; 'lanes' nur ausdruecklich; Test
+- [~] DispatchMode liefert worker, wenn dispatch leer oder unbekannt ist; 'lanes' nur ausdruecklich; Test
 - [ ] Hilfetexte (roles, Settings) nennen worker als Default
 - [ ] Release-Note-Zeile
 
