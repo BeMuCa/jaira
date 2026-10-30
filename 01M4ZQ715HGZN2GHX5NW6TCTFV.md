@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-30T23:50:36Z
+updated-at: 2026-10-30T23:50:38Z
 updated-by: berkc
 question: |-
   Welche Arbeitsweise bekommt ein NEUER Milestone, wenn beim Anlegen niemand --pr angibt?
@@ -69,7 +69,7 @@ round: 2
 - [ ] Schritt 4 (jaira milestone ls): komplette Milestones bekommen dieselben Zeilen, --json 'suggestions' pro Milestone — erst Test TestLsCarriesTheSuggestionsOfACompleteMilestone; docs ls-Zeile; Release-Zeile; Tests
 - [ ] Schritt 5 (Rollen): jaira-dispatcher, jaira-worker, jaira-teamlead geben jaira-Vorschlaege woertlich weiter und rufen /jaira-role-pr nie auf; Teamlead liest 'jaira milestone ls --json' — erst Pin-Test core/role/prsuggest_test.go TestRolesPassThePRSuggestionOnAndNeverRunIt; Release-Zeile nur wenn sichtbar; Tests
 - [ ] Schritt 6 (Rolle jaira-role-pr): nimmt mehrere Tickets oder einen Milestone; Milestone = ein Branch aus origin/master, jeder Ticket-Branch per merge --no-ff hinein (siehe Notiz zum Ein-Branch); Ticket ohne Commit = Befund, Merge-Konflikt = Stopp vor dem Push; offener PR/MR per 'gh pr edit'/'glab mr update', nur wenn ein Mensch aufrief — erst Pin-Test TestPRTakesSeveralTicketsOrAMilestone; die Strings, die TestPRFilesTheTicketsAwayBeforeThePush (core/role/role_test.go:504) prueft, bleiben stehen; Release-Zeile; Tests
-- [ ] Schritt 9: Handtest mit einem Build aus dem Branch in einem Scratch-Repo ausserhalb von /home/berk/git (HOME und JAIRA_HOME dort): kein Milestone, single, block; menschlich und --json; das vorgeschlagene 'jaira logbook <m>' laeuft durch — Ergebnis als jaira note
+- [ ] Schritt 7 (Handtest): Build aus dem Branch in einem Scratch-Repo ausserhalb von /home/berk/git (HOME und JAIRA_HOME dort): ein Milestone mit zwei Tickets, eins fertig, dann beide fertig; kein Milestone; menschlich und --json; das vorgeschlagene 'jaira logbook <m>' laeuft durch; Merge der Ticket-Branches einmal ohne, einmal mit Konflikt; Ergebnis als jaira note
 
 ## Progress
 - **2026-10-15 12:20 · BeMuCa** — Berk am 15.10. (Ergaenzung): '6TCTFV soll auch umgesetzt werden! Weil dann kann ein Milestone-Block als ein PR reinkommen. Alternativ gibt es aber auch noch die Option, dass man Tickets immer noch einzeln reinmergen will und Milestones nur als eine Sammlung nutzt; fuer den Fall kann man Milestones auch wieder loeschen.'
