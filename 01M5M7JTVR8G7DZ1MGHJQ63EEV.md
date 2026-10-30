@@ -16,9 +16,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T11:15:50Z
-updated-at: 2026-10-26T19:20:30Z
-assignee: BeMuCa
-updated-by: BeMuCa
+updated-at: 2026-10-30T23:45:23Z
+assignee: berkc
+updated-by: berkc
 question: |-
   1. Pane content: (a) existing fields only, long ones folded, mixed languages; (b) an agent writes a short card per ticket in your language, as in the chat walkthrough, at one model call per ticket; (c) (a) now and (b) later only if (a) reads badly. Recommended (c).
   2. The open question of a signoff ticket: (a) you read it out of the verdict and newest notes in the pane; (b) the review lane writes it into the existing question field, which the band already shows with Discuss (overlaps ZWK0PF); (c) a new field of its own. Recommended (b), as its own follow-up.
