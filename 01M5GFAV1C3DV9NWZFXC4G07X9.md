@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:19Z
-updated-at: 2026-10-30T02:00:18Z
+updated-at: 2026-10-30T02:01:36Z
 updated-by: berkc
 claimed-by: berk-ca-1397571
 claimed-at: 2026-10-30T01:57:35Z
@@ -44,6 +44,12 @@ claimed-at: 2026-10-30T01:57:35Z
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] core/lane/boardtypes.go: UserBoardsDir (~/.jaira/boards), BoardTypes/typeLanes read shipped types then the catalogue; CreateBoardWithLanes picks lanes from today's board + Installable; SaveBoard copies a repo board into a board-type dir
+- [ ] core/lane: PublishBoard -> .jaira/shared/<you>/boards/<name>/, SharedBoards lists, AdoptBoard validates then copies into the catalogue
+- [ ] internal/cli/boards.go: create --lanes, create saves to catalogue, publish/shared/adopt, all --json
+- [ ] TUI: B in the lane settings screen opens a create-board form (name, description, lane checklist)
+- [ ] tests + release note + docs/COMMANDS.md
 
 ## Progress
 - **2026-10-30 01:56 · berkc** — berkc 30.10.2026 (Frage 3/13): Boards und Default-Lanes sollen an einer Stelle global liegen, damit ein 'jaira update' sie fuer alle Sessions und Repos auf einmal aktualisiert und Repo-eigene Lanes nicht ueberschrieben werden. 'global wie Tickets' meint den persoenlichen Katalog ~/.jaira, nicht die Refs. Baut auf Y2C9QN auf (boards create/types, Branch feat/Y2C9QN-boards-create, noch nicht gemergt).
