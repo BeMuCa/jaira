@@ -17,13 +17,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:17Z
-updated-at: 2026-10-30T02:12:13Z
+updated-at: 2026-10-30T02:12:57Z
 updated-by: berkc
 claimed-by: berk-ca-1397863
 claimed-at: 2026-10-30T01:57:38Z
 outcome-what: "b on the board opens a window of every board (name, creator from git, lanes, tick on active ones; order active, most recently shown, rest; space toggles active, enter shows the board); shift+up/down on the board steps through the active boards; active boards are stored in .jaira/active-boards via core/lane ActiveBoards/SetBoardActive"
 outcome-why: berkc wants to rotate through the boards the teamlead may use and to see and choose them in one window; b used to step blindly through every board
 outcome-resolves: "DoD 1 stepBoard + tests; DoD 2 openBoards/renderBoards + TestBOpensTheBoardWindow; DoD 3 SetBoardActive writes .jaira/active-boards, the setting 57TDND will read; DoD 4 help line, detail b left to P3VS02; DoD 5 core/release/notes/KVMG0K.md"
+review-summary: none
 ---
 
 # Boards wechseln mit Shift+Pfeil und ein Board-Fenster auf b mit aktiven Boards, Ersteller und Lanes
@@ -66,3 +67,4 @@ outcome-resolves: "DoD 1 stepBoard + tests; DoD 2 openBoards/renderBoards + Test
 - **2026-10-30 01:59 · berkc** — brainstorm weitere Festlegungen (Worker): 'zuletzt benutzt' = wann das Board zuletzt in der TUI gezeigt wurde, pro Rechner und Repo unter Store.RepoStateDir() (~/.jaira/repo/<key>/), weil das Navigation einer Person ist und kein Teamzustand. Ersteller = Autor des ersten Commits, der den Lanes-Ordner des Boards anlegte (git log), 'noch nicht committet' wenn es keinen gibt - so braucht es kein neues Feld und kein Eingriff in boards create (4G07X9). Reihenfolge im Fenster: aktive in fester Reihenfolge (default zuerst, dann Name - dieselbe, durch die Shift+Pfeil laeuft), dann inaktive zuletzt benutzte (neueste zuerst), dann der Rest nach Name. enter im Fenster zeigt das gewaehlte Board (sonst kaeme man an ein inaktives Board nicht mehr heran, weil b nicht mehr reihum springt). Shift+Pfeil auf einem inaktiven Board geht zum naechsten aktiven. b im offenen Ticket bleibt hier unberuehrt (P3VS02).
 - **2026-10-30 02:00 · berkc** — pre-process: jaira boards --json und der Teamlead-Skill lesen active-boards hier NICHT - das ist 57TDNDs DoD und internal/cli/boards.go ist gerade Baustelle von 4G07X9/Y2C9QN. Dieses Ticket legt Speicherort und core/lane-Funktionen fest, die 57TDND dann nur noch aufruft.
 - **2026-10-30 02:12 · berkc** — in-progress: Die Hilfe ist auf 60 Zeilen ausgereizt - TestHelpExplainsEveryCardMark (150x60) faellt, sobald eine Zeile dazukommt; deshalb steht shift+↓↑ in der bestehenden 'p b'-Zeile statt in einer eigenen. wintrap-Test verbietet dir+"/x" in Tests (filepath.Join). Ersteller kommt aus git log --reverse ueber den Lanes-Ordner (gitrepo.FirstAuthor); ein ungeteiltes .jaira (gitignored) zeigt 'creator unknown'.
+- **2026-10-30 02:12 · berkc** — critique (Runde 1, ganzer Diff): stehen gelassen - (a) keyBoards nutzt nicht tickPicker (ticks.go): der schreibt die Haken erst bei enter in den Filter, hier schreibt space sofort die Datei; gleiche Mechanik waere falsche Semantik. (b) gitrepo.FirstAuthor laeuft synchron beim Druck auf b, einmal pro Board: 15 ms auf diesem Repo (1526 Commits) gemessen, kein Cache noetig. (c) ActiveBoards faellt auf alle zurueck, wenn die Datei nur geloeschte Boards nennt - realer Zustand nach dem Loeschen eines Boards, nicht spekulativ. (d) Hilfe: shift+↓↑ teilt sich die 'p b'-Zeile, weil die Hilfe auf 60 Zeilen ausgereizt ist (siehe in-progress-Note).
