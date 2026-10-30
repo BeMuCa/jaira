@@ -19,7 +19,8 @@ related:
   - 01M55T0M58DDQ7BVE2MPPP24H1
 commits: []
 created-at: 2026-10-30T21:39:17Z
-updated-at: 2026-10-30T21:39:17Z
+updated-at: 2026-10-30T21:42:42Z
+updated-by: berkc
 ---
 
 # Ein Skill schaut, wie die Person arbeitet, und schlaegt vor, ob und wie jaira in ihren Ablauf passt
