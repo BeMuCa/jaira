@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:17Z
-updated-at: 2026-10-30T01:58:36Z
+updated-at: 2026-10-30T01:59:37Z
 updated-by: berkc
 claimed-by: berk-ca-1397863
 claimed-at: 2026-10-30T01:57:38Z
@@ -44,3 +44,4 @@ claimed-at: 2026-10-30T01:57:38Z
 
 ## Progress
 - **2026-10-23 21:04 · berkc** — Entscheidung berkc 23.10.2026: Taste b bleibt fuer Boards (Board-Popup). Die Sprung-Funktion aus P3VS02 braucht eine andere Taste.
+- **2026-10-30 01:59 · berkc** — brainstorm: Was heute ist (geprueft): b auf dem Board ruft nextBoard() (internal/tui/model.go:1705, 2353) und springt reihum durch .jaira/lanes + .jaira/boards/*. Shift+hoch/runter ist auf dem Board frei; im offenen Ticket scrollt es (model.go:1575) - bleibt so. Eine Einstellung 'aktive Boards' gibt es nicht (57TDND ist noch backlog). Ein Board speichert keinen Ersteller (auch Y2C9QN/4G07X9 nicht).
