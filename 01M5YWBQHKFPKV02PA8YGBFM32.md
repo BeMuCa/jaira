@@ -20,7 +20,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-27T14:31:21Z
-updated-at: 2026-10-30T22:20:54Z
+updated-at: 2026-10-30T22:23:41Z
 updated-by: berkc
 claimed-by: berk-ca-2379103
 claimed-at: 2026-10-30T22:13:03Z
@@ -30,6 +30,7 @@ outcome-resolves: cockpit files from released tags are no longer reported as edi
 review-summary: "none"
 round: 2
 review-gaps: "removed nothing: no duplicate of the release lookup or the state words exists (grep: shipped.Known/Release only in core/lane/refresh.go and core/role/install.go; 'behind (' only in internal/cli/updatediff.go and its help text); no orphan (role.Behind still used by internal/cli/skillsnudge.go:40; lane.Refreshed.Release read by internal/cli/updatediff.go). left: shipped.Known is a one-line forwarder kept as the API the two callers use; left the filepath.Rel fallback in internal/cli/updatediff.go diffFiles, which cannot fail for absolute paths. left as pre-existing: none touched."
+test-verdict: "pass: go vet ./... RC=0; go test ./... -race -count=1 -timeout 20m -skip 'TestUnreachableRemoteIsOfflineNotARace|TestAnOfflineWriteArrivesWhenTheNetworkIsBack|TestWebPushReportsAQueuedDrop' EXIT=0, 33 packages ok, no FAIL; DoD 1-4 verified in the tree; behaviour exercised with the built binary on a scratch home (update diff: board.ts and register.tsx 'behind (shipped in v0.5.4)'; bare update rc=0; diff afterwards: both current)"
 ---
 
 # jaira update bringt standardmaessig alles auf Stand - Abschnitt, Rollen, Cockpit, Skill - und 'jaira update diff' zeigt, was zurueckliegt
