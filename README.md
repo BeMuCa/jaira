@@ -818,8 +818,8 @@ left alone and reported, and `--force` replaces it too.
 |---|---|
 | `jaira` | Teaches the agent the CLI. Not a role, but `roles install` writes it beside them as `jaira/SKILL.md`. |
 | `/jaira-teamlead` | Plans with you and starts one dispatcher per ticket. Writes no code. |
-| `/jaira-dispatcher <id>` | Carries one ticket lane by lane to the next lane a person owns, one worker per lane. |
-| `/jaira-worker <id>` | Opt-in alternative to the dispatcher: carries the ticket through every lane itself, and only a lane marked `context: fresh` gets a new agent. |
+| `/jaira-dispatcher <id>` | Carries one ticket lane by lane to the next lane a person owns, one worker per lane. A teamlead starts it only with `"dispatch": "lanes"`. |
+| `/jaira-worker <id>` | The default: carries the ticket through every lane itself, and only a lane marked `context: fresh` gets a new agent. |
 | `/jaira-role-lane <id> <lane>` | Works exactly one lane, then stops. |
 | `/jaira-role-brainstorm <idea>` | Turns an idea into tickets, or says it is not one. |
 | `/jaira-role-research <question>` | Finds the facts out first, each with its source and confidence. |
