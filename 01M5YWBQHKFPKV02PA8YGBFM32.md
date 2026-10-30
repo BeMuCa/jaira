@@ -1,7 +1,7 @@
 ---
 id: 01M5YWBQHKFPKV02PA8YGBFM32
 title: "jaira update bringt standardmaessig alles auf Stand - Abschnitt, Rollen, Cockpit, Skill - und 'jaira update diff' zeigt, was zurueckliegt"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: berkc
@@ -20,10 +20,13 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-27T14:31:21Z
-updated-at: 2026-10-30T22:18:57Z
+updated-at: 2026-10-30T22:19:03Z
 updated-by: berkc
 claimed-by: berk-ca-2379103
 claimed-at: 2026-10-30T22:13:03Z
+outcome-what: "bare 'jaira update' updates roles, cockpit mod and jaira skill; 'jaira update diff' lists current/behind/edited per file and lane; the shipped manifest gets a release column and is regenerated"
+outcome-why: "the cockpit files shipped in v0.5.2-v0.5.6 read as edited because the committed manifest was a hand-patched, never regenerated list"
+outcome-resolves: cockpit files from released tags are no longer reported as edited; update diff answers what is behind before anything is written
 ---
 
 # jaira update bringt standardmaessig alles auf Stand - Abschnitt, Rollen, Cockpit, Skill - und 'jaira update diff' zeigt, was zurueckliegt
