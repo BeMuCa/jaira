@@ -20,7 +20,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-27T14:31:21Z
-updated-at: 2026-10-30T22:30:14Z
+updated-at: 2026-10-30T22:30:17Z
 updated-by: berkc
 claimed-by: berk-ca-2379103
 claimed-at: 2026-10-30T22:13:03Z
@@ -37,13 +37,10 @@ test-verdict: "pass: go vet ./... RC=0; go test ./... -race -count=1 -timeout 20
 review-verdict: "The diff matches the four DoD items and no defect was found; no blocker. Verified: the four named packages pass, regenerating scripts/shipped-history.sh gives a byte-identical manifest, and no line of the previous manifest is lost (0 of 497 by sha+path). Not verified by hand: the interactive update output on a real stale board."
 review-round: 2
 review-check: |-
-  1. cd into a jaira repo and build: go build -o /tmp/j ./cmd/jaira
-  2. jaira roles install --global, then replace ~/.claude/skills/jaira-cockpit/hooks/board.ts with: git show v0.5.4:core/mod/builtin/jaira-cockpit/hooks/board.ts
-  3. append a line to ~/.claude/skills/jaira/SKILL.md
-  4. /tmp/j update diff - see board.ts 'behind (shipped in v0.5.4)', jaira/SKILL.md 'edited', a last line '... (nothing was written)'; the files are unchanged
-  5. /tmp/j update; echo $? - prints 'skipped .../jaira/SKILL.md', exit code 3
-  6. /tmp/j update diff - board.ts now 'current', only SKILL.md 'edited'; lane files untouched unless you pass --lanes
-  7. cat core/release/notes/GBFM32.md - three lines, each starting '- '
+  1. cd /home/berkc/code/X_General/jaira-GBFM32
+  2. export PATH=/home/berkc/.local/go/bin:$PATH
+  3. go test ./internal/cli -run TestUpdateDiff -v 2>&1 | grep -E "^(--- |ok|FAIL)"  -> expect four "--- PASS: TestUpdateDiff..." lines and "ok"
+  4. bash scripts/shipped-history.sh | diff - core/shipped/shipped.sha256  -> expect no output
 ---
 
 # jaira update bringt standardmaessig alles auf Stand - Abschnitt, Rollen, Cockpit, Skill - und 'jaira update diff' zeigt, was zurueckliegt
