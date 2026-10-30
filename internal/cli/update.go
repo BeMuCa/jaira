@@ -76,14 +76,18 @@ It does not touch .gitignore. 'jaira init' makes a new board private; whether
 this board is shared is a decision already taken, and re-adding the ignore
 entry to a shared board would silently stop new tickets reaching teammates.
 
---roles brings the roles, the cockpit mod and the jaira skill up to date in every
-skills directory that already holds the roles: this repository's and your
-personal one. Outside a board it does the personal one only. --lanes replaces
-every lane file on this board that is an older version of a lane jaira ships.
-A file you edited — one that is no version jaira ever shipped — is never
-replaced: it is named, and the command exits 3. Without --roles or --lanes only
-the jaira section is written, as before, and it says when roles or lanes are
-behind.
+Roles, the cockpit mod and the jaira skill are brought up to date by default, in
+every skills directory that already holds them: this repository's and your
+personal one. Outside a board it does the personal one only. --roles is still
+accepted and does the same. --lanes replaces every lane file on this board that
+is an older version of a lane jaira ships. Lanes are board configuration that is
+committed, so they stay opt-in. A file you edited — one that is no version jaira
+ever shipped — is never replaced: it is named, and the command exits 3. When
+lanes are behind without --lanes, the update says so.
+
+'jaira update diff' writes nothing. It lists every role, cockpit file and lane
+as current, behind (with the release that shipped the version on disk), or
+edited.
 
 --dry-run says what would be written and what would be left alone, and writes
 nothing — not even the version stamp. With --lanes the preview of the jaira
@@ -173,7 +177,7 @@ installed.`,
 				if setup.roles {
 					printRoleRuns(w, setup.roleRuns, s.Root, true)
 				}
-				fmt.Fprint(w, hintLines(s.Root, setup.roles, setup.lanes))
+				fmt.Fprint(w, hintLines(s.Root, setup.lanes))
 				fmt.Fprintln(w, "nothing was written (--dry-run)")
 				return nil
 			}
@@ -184,7 +188,7 @@ installed.`,
 			if setup.roles {
 				printRoleRuns(w, setup.roleRuns, s.Root, false)
 			}
-			fmt.Fprint(w, hintLines(s.Root, setup.roles, setup.lanes))
+			fmt.Fprint(w, hintLines(s.Root, setup.lanes))
 			if len(notes) == 0 {
 				fmt.Fprintf(w, "\nNothing has changed since the version that last set this board up.\n")
 				return nil
@@ -195,7 +199,8 @@ installed.`,
 		},
 	}
 	cmd.Flags().StringVar(&agentFile, "agent-file", "", "where the jaira section lives: agents (AGENTS.md), claude (CLAUDE.md) or both")
-	cmd.Flags().BoolVar(&setup.roles, "roles", false, "also bring the jaira skills up to date wherever they are installed: this repository's skills directory and your personal one")
+	cmd.Flags().BoolVar(&setup.roles, "roles", true, "bring the roles, the cockpit mod and the jaira skill up to date wherever they are installed (the default; --roles=false leaves them alone)")
+	cmd.AddCommand(newUpdateDiffCmd())
 	cmd.Flags().BoolVar(&setup.lanes, "lanes", false, "also replace this board's lane files that are an older version of a lane jaira ships")
 	cmd.Flags().BoolVar(&setup.dry, "dry-run", false, "say what would be written and what is left alone, and write nothing")
 	return cmd

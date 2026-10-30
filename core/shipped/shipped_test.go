@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-var entry = regexp.MustCompile(`^[0-9a-f]{64}  \S+$`)
+var entry = regexp.MustCompile(`^[0-9a-f]{64}  \S+  (v\d+\.\d+\.\d+|-)$`)
 
 // entries returns the manifest's real lines.
 func entries() []string {
@@ -59,10 +59,25 @@ func TestKnownMatchesPathAndBytes(t *testing.T) {
 	}
 }
 
+func TestReleaseReadsTheReleaseColumn(t *testing.T) {
+	const path = "core/lane/builtin/00-backlog.md"
+	b, err := os.ReadFile(filepath.Join("..", "..", filepath.FromSlash(path)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	rel, ok := Release(path, b)
+	if !ok || (rel != "-" && !strings.HasPrefix(rel, "v")) {
+		t.Errorf("Release(%s) = %q, %v; want a vX.Y.Z or -", path, rel, ok)
+	}
+	if _, ok := Release(path, []byte("not a shipped version")); ok {
+		t.Error("bytes that were never shipped must have no release")
+	}
+}
+
 func TestEveryManifestPathExists(t *testing.T) {
 	seen := map[string]bool{}
 	for _, l := range entries() {
-		path := l[66:]
+		path := strings.Fields(l)[1]
 		if seen[path] {
 			continue
 		}

@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Prints core/shipped/shipped.sha256: every version of every file jaira
 # installs that was ever committed, plus the working tree's own, as
-# "sha256  path in this repository" under the path it is embedded from today.
+# "sha256  path in this repository  release" under the path it is embedded from
+# today. release is the first vX.Y.Z tag whose tree holds that version, or "-"
+# when no release holds it yet.
 #
 #   scripts/shipped-history.sh > core/shipped/shipped.sha256
 #
@@ -19,9 +21,37 @@ fi
 # own tests but never written to a skills directory (core/mod/mod.go).
 embedded() { git ls-files core/role/builtin core/mod/builtin core/lane/builtin core/role/jaira | grep -v '/tests/'; }
 
+# key is the path a version is embedded from today, for a path git knows it by;
+# empty for a path jaira does not embed.
+key() {
+	case $1 in
+	# critique, optimize and testing were catalogue lanes before 2fb8f177 moved them into the binary
+	lanes/*.md) ls core/lane/builtin/*-"${1#lanes/}" 2>/dev/null | head -n 1 ;;
+	# the jaira skill is embedded from a copy of the repository's own
+	.claude/skills/jaira/SKILL.md) echo core/role/jaira/SKILL.md ;;
+	*) echo "$1" ;;
+	esac
+}
+
+# releases prints "sha256  path  tag" for every version a release tag holds, tags in
+# version order, so the first line of a version names the release it first shipped in.
+releases() {
+	local tag meta path blob
+	for tag in $(git tag -l 'v*' --sort=v:refname); do
+		git ls-tree -r "$tag" -- core/role/builtin core/mod/builtin core/lane/builtin core/role/jaira lanes .claude/skills/jaira |
+			while IFS=$'\t' read -r meta path; do
+				blob=${meta##* }
+				path=$(key "$path")
+				[ -n "$path" ] || continue
+				printf '%s  %s  %s\n' "$(git cat-file blob "$blob" | sha256sum | cut -d' ' -f1)" "$path" "$tag"
+			done
+	done
+}
+
 cat <<'HEADER'
 # Every version of every file jaira installs — the roles, the cockpit mod, the jaira
-# skill and the built-in lanes — as "sha256  path in this repository".
+# skill and the built-in lanes — as "sha256  path in this repository  release".
+# release is the first vX.Y.Z that shipped the version, "-" if none has yet.
 # A file on someone's disk equal to one of these was written by jaira and may be
 # replaced by a newer one; anything else was edited by a person and is left alone.
 # Append-only: a line removed here turns a file jaira wrote back into "edited".
@@ -34,12 +64,7 @@ HEADER
 		core/role/builtin core/mod/builtin core/lane/builtin core/role/jaira lanes .claude/skills/jaira |
 		awk '$4 !~ /^0+$/ { print $4, $6 }' | sort -u |
 		while read -r blob path; do
-			case $path in
-			# critique, optimize and testing were catalogue lanes before 2fb8f177 moved them into the binary
-			lanes/*.md) path=$(ls core/lane/builtin/*-"${path#lanes/}" 2>/dev/null | head -n 1) || true ;;
-			# the jaira skill is embedded from a copy of the repository's own
-			.claude/skills/jaira/SKILL.md) path=core/role/jaira/SKILL.md ;;
-			esac
+			path=$(key "$path")
 			[ -n "$path" ] || continue
 			printf '%s  %s\n' "$(git cat-file blob "$blob" | sha256sum | cut -d' ' -f1)" "$path"
 		done
@@ -47,4 +72,6 @@ HEADER
 	embedded | while read -r f; do
 		printf '%s  %s\n' "$(sha256sum <"$f" | cut -d' ' -f1)" "$f"
 	done
-} | awk 'NR==FNR { keep[$1]=1; next } keep[$2]' <(embedded) - | sort -k2,2 -k1,1 -u
+} | awk 'NR==FNR { keep[$1]=1; next } keep[$2]' <(embedded) - | sort -k2,2 -k1,1 -u |
+	awk 'NR==FNR { if (!(($1 SUBSEP $2) in release)) release[$1 SUBSEP $2] = $3; next }
+		{ print $1 "  " $2 "  " (($1 SUBSEP $2) in release ? release[$1 SUBSEP $2] : "-") }' <(releases) -

@@ -155,15 +155,18 @@ func TestUpdateRolesLanesBringsAStaleBoardUpToDate(t *testing.T) {
 	}
 }
 
-func TestUpdateWithoutSwitchesWritesOnlyTheBlock(t *testing.T) {
+func TestUpdateWithoutSwitchesUpdatesRolesButNotLanes(t *testing.T) {
 	st := newStaleSetup(t)
 	if out, err := runUpdate(t, st.dir); err != nil {
 		t.Fatalf("update: %v\n%s", err, out)
 	}
-	for p, old := range map[string][]byte{st.projRole: st.roleOld, st.homeRole: st.roleOld, st.lan: st.laneOld} {
-		if string(mustRead(t, p)) != string(old) {
-			t.Errorf("a bare update wrote %s", p)
+	for _, p := range []string{st.projRole, st.homeRole} {
+		if string(mustRead(t, p)) == string(st.roleOld) {
+			t.Errorf("a bare update left the stale role %s", p)
 		}
+	}
+	if string(mustRead(t, st.lan)) != string(st.laneOld) {
+		t.Error("a bare update wrote the lane file; lanes need --lanes")
 	}
 	if !st.blockCurrent(t) {
 		t.Error("the jaira block is still stale")
@@ -252,7 +255,10 @@ func TestUpdateJSONCarriesRolesAndLanesOnlyWhenAsked(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &bare); err != nil {
 		t.Fatalf("not JSON: %v\n%s", err, out)
 	}
-	for _, k := range []string{"roles", "lanes", "skipped", "dry_run"} {
+	if _, ok := bare["roles"]; !ok {
+		t.Error("a bare update lacks \"roles\": roles are updated by default")
+	}
+	for _, k := range []string{"lanes", "dry_run"} {
 		if _, ok := bare[k]; ok {
 			t.Errorf("a bare update carries %q", k)
 		}

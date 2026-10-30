@@ -39,6 +39,9 @@ type Result struct {
 	Role   string
 	Path   string
 	Action Action
+	// Release is, for an Updated file, the first release that shipped the version
+	// it replaces ("vX.Y.Z", or "-" for none yet); empty for every other action.
+	Release string
 }
 
 // install writes every embedded role into dstSkillsDir as
@@ -76,20 +79,20 @@ func install(dstSkillsDir string, force, mods, dryRun bool) ([]Result, error) {
 			// from a caller, so the destination is fixed at compile time and
 			// stays under dstSkillsDir by construction.
 			dst := filepath.Join(dstSkillsDir, r.ID, filepath.FromSlash(rel))
-			action, err := writeFile(dst, want, roleKey(r.ID, rel), force, dryRun)
+			action, shippedRel, err := writeFile(dst, want, roleKey(r.ID, rel), force, dryRun)
 			if err != nil {
 				return out, err
 			}
-			out = append(out, Result{Role: r.ID, Path: dst, Action: action})
+			out = append(out, Result{Role: r.ID, Path: dst, Action: action, Release: shippedRel})
 		}
 	}
 	// The jaira skill goes beside the roles but is not one of them.
 	dst := filepath.Join(dstSkillsDir, "jaira", "SKILL.md")
-	action, err := writeFile(dst, jairaSkill, jairaSkillKey, force, dryRun)
+	action, shippedRel, err := writeFile(dst, jairaSkill, jairaSkillKey, force, dryRun)
 	if err != nil {
 		return out, err
 	}
-	out = append(out, Result{Role: "jaira", Path: dst, Action: action})
+	out = append(out, Result{Role: "jaira", Path: dst, Action: action, Release: shippedRel})
 	// The mods jaira ships go beside the roles: a plugin folder in a skills
 	// directory is one Claude Code loads by itself, so this is their install.
 	// Same three-way comparison, so an edited mod file is left alone too.
@@ -107,11 +110,11 @@ func install(dstSkillsDir string, force, mods, dryRun bool) ([]Result, error) {
 				return out, err
 			}
 			dst := filepath.Join(dstSkillsDir, m.ID, filepath.FromSlash(rel))
-			action, err := writeFile(dst, want, modKey(m.ID, rel), force, dryRun)
+			action, shippedRel, err := writeFile(dst, want, modKey(m.ID, rel), force, dryRun)
 			if err != nil {
 				return out, err
 			}
-			out = append(out, Result{Role: m.ID, Path: dst, Action: action})
+			out = append(out, Result{Role: m.ID, Path: dst, Action: action, Release: shippedRel})
 		}
 	}
 	return out, nil
@@ -124,12 +127,12 @@ func roleKey(id, rel string) string { return "core/role/" + path.Join(builtinDir
 func modKey(id, rel string) string  { return "core/mod/builtin/" + id + "/" + rel }
 
 // writeFile applies the comparison to one file; key is its path in the jaira
-// repository.
-func writeFile(dst string, want []byte, key string, force, dryRun bool) (Action, error) {
+// repository. The release is the one the replaced version first shipped in, set for Updated only.
+func writeFile(dst string, want []byte, key string, force, dryRun bool) (Action, string, error) {
 	have, readErr := os.ReadFile(dst)
 	existed := readErr == nil
 	if !existed && !errors.Is(readErr, os.ErrNotExist) {
-		return "", readErr
+		return "", "", readErr
 	}
 	mode := modeOf(dst)
 	if existed && bytes.Equal(have, want) {
@@ -138,37 +141,38 @@ func writeFile(dst string, want []byte, key string, force, dryRun bool) (Action,
 		// that drops the bit — is repaired here, because nothing is written
 		// for it below.
 		if dryRun {
-			return Unchanged, nil
+			return Unchanged, "", nil
 		}
-		return Unchanged, os.Chmod(dst, mode)
+		return Unchanged, "", os.Chmod(dst, mode)
 	}
 	action := Written
+	var release string
 	if existed {
-		if shipped.Known(key, have) {
-			action = Updated
+		if rel, ok := shipped.Release(key, have); ok {
+			action, release = Updated, rel
 		} else if !force {
-			return Skipped, nil
+			return Skipped, "", nil
 		} else {
 			action = Overwritten
 		}
 	}
 	if dryRun {
-		return action, nil
+		return action, release, nil
 	}
 	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-		return "", err
+		return "", "", err
 	}
 	if err := os.WriteFile(dst, want, mode); err != nil {
-		return "", err
+		return "", "", err
 	}
 	// os.WriteFile passes the mode to O_CREATE only, so an existing file keeps
 	// the permissions it already had. Say it again for the file we just
 	// replaced, or --force restores the content of a script and leaves it
 	// unexecutable.
 	if err := os.Chmod(dst, mode); err != nil {
-		return "", err
+		return "", "", err
 	}
-	return action, nil
+	return action, release, nil
 }
 
 // modeOf picks the permissions one installed file gets.

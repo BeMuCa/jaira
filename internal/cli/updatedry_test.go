@@ -75,13 +75,11 @@ func TestUpdateWithoutSwitchesNamesWhatIsBehind(t *testing.T) {
 	if err != nil {
 		t.Fatalf("update: %v\n%s", err, out)
 	}
-	for _, want := range []string{"roles: ", "lanes: "} {
-		if !hasLine(setupOutput(out), want) {
-			t.Errorf("output lacks the hint %q:\n%s", want, out)
-		}
+	if !hasLine(setupOutput(out), "lanes: ") {
+		t.Errorf("output lacks the lanes hint:\n%s", out)
 	}
-	if string(mustRead(t, st.projRole)) != string(st.roleOld) || string(mustRead(t, st.lan)) != string(st.laneOld) {
-		t.Error("a hint wrote a file")
+	if string(mustRead(t, st.lan)) != string(st.laneOld) {
+		t.Error("a hint wrote the lane file")
 	}
 }
 

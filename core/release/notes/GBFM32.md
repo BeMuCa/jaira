@@ -1,0 +1,3 @@
+- Run 'jaira update' without flags after an upgrade: it now brings the roles, the cockpit mod and the jaira skill up to date in every skills directory that already has them, and leaves files you edited alone and exits 3 when it did; add --lanes to bring this board's lane files up to date too.
+- Run 'jaira update diff' to see, before anything is written, which roles, cockpit files and lanes are current, behind (with the release that shipped the version on disk) or edited; it changes nothing.
+- Expect 'jaira update --roles' to keep working as before: the flag is still accepted and now does what a bare 'jaira update' does.

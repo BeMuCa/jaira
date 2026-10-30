@@ -18,6 +18,9 @@ const (
 // Refreshed is what RefreshShipped did, or would do, to one lane file on a board.
 type Refreshed struct {
 	ID, Path, Action string
+	// Release is, for RefreshUpdated, the first release that shipped the version
+	// the file held ("vX.Y.Z", or "-" for none yet); empty otherwise.
+	Release string
 }
 
 // RefreshShipped brings every lane file on the board at root that is an older version of a lane
@@ -60,6 +63,7 @@ func RefreshShipped(root string, dryRun bool) ([]Refreshed, error) {
 			r.Action = RefreshUnchanged
 		case shipped.Known(shippedKey(base), have):
 			r.Action = RefreshUpdated
+			r.Release, _ = shipped.Release(shippedKey(base), have)
 			if !dryRun {
 				if err := os.WriteFile(l.Source, want, 0o644); err != nil {
 					return out, fmt.Errorf("lane %s: %w", l.ID, err)

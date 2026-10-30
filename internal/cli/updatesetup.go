@@ -137,19 +137,8 @@ func laneResultsJSON(results []lane.Refreshed) []map[string]any {
 // hintLines says, for the parts a bare update did not touch, that they are behind and which
 // switch brings them up. It writes nothing and ignores every error of its own probes: a
 // hint must never fail an update.
-func hintLines(root string, roles, lanes bool) string {
+func hintLines(root string, lanes bool) string {
 	var out string
-	if !roles {
-		if runs, err := refreshRoles(root, true); err == nil {
-			n := 0
-			for _, r := range runs {
-				n += role.Behind(r.results)
-			}
-			if n > 0 {
-				out += fmt.Sprintf("roles: %d file(s) are older than this jaira — 'jaira update --roles' brings them up (add --dry-run to list them)\n", n)
-			}
-		}
-	}
 	if !lanes {
 		if res, err := lane.RefreshShipped(root, true); err == nil {
 			n := 0
