@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:19Z
-updated-at: 2026-10-30T02:17:46Z
+updated-at: 2026-10-30T02:23:00Z
 updated-by: berkc
 claimed-by: berk-ca-1397571
 claimed-at: 2026-10-30T01:57:35Z
@@ -29,6 +29,7 @@ outcome-why: "Boards could only be made by hand in one repo; berkc wants them ha
 outcome-resolves: "DoD 1 TUI form (TestLaneScreenCreatesABoardFromTheForm); 2 catalogue + every repo (TestBoardInTheCatalogueIsATypeInEveryRepository, JAIRA_HOME); 3 publish/adopt (TestPublishAndAdoptBoard); 4 core/release/notes/4G07X9.md; 5 CLI --json (TestBoardsPickSaveShareAndAdoptFromTheCLI). go vet and go test ./... green."
 review-summary: none
 review-gaps: "inlined the one-use typ alias in core/lane/boardtypes.go dirLanes; dropped an impossible bounds guard in internal/tui/newboard.go formKey (PickableLanes always holds the built-ins). Checked for duplication: clearDst vs share.go copyLane (file vs directory, kept), PickableLanes vs Installable (adds today's lanes, kept). No dead code found."
+test-verdict: "pass: go vet + go test -count=1 ./... green (RC=0); DoD 1-5 tests run; built binary exercised on two scratch repos with scratch JAIRA_HOME: create --lanes saved to catalogue, unknown lane exit 2, other repo lists catalogue type and builds clips from it, ticket filed on it, publish/shared/adopt onto a second home all with --json. TUI form verified only through TestLaneScreenCreatesABoardFromTheForm (real key dispatch), not by eye."
 ---
 
 # Boards wie Lanes behandeln: von Hand anlegen, Lanes waehlen, beschreiben, teilen und global speichern
