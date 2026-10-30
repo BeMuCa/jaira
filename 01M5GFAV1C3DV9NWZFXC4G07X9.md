@@ -1,7 +1,7 @@
 ---
 id: 01M5GFAV1C3DV9NWZFXC4G07X9
 title: "Boards wie Lanes behandeln: von Hand anlegen, Lanes waehlen, beschreiben, teilen und global speichern"
-status: ideas
+status: brainstorm
 ready: true
 creator: berkc
 assignee: berkc
@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:19Z
-updated-at: 2026-10-30T01:59:49Z
+updated-at: 2026-10-30T02:00:03Z
 updated-by: berkc
 claimed-by: berk-ca-1397571
 claimed-at: 2026-10-30T01:57:35Z
