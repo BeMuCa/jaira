@@ -2,9 +2,7 @@ package lane
 
 import (
 	"errors"
-	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -89,5 +87,5 @@ func SetBoardActive(root, name string, on bool) error {
 	if len(lines) == 0 {
 		return ErrLastActiveBoard
 	}
-	return os.WriteFile(ActiveBoardsPath(root), []byte(strings.Join(lines, "\n")+"\n"), 0o644)
+	return writeIDList(root, ActiveBoardsPath(root), lines)
 }
