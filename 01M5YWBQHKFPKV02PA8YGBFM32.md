@@ -20,7 +20,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-27T14:31:21Z
-updated-at: 2026-10-30T22:13:03Z
+updated-at: 2026-10-30T22:17:41Z
 updated-by: berkc
 claimed-by: berk-ca-2379103
 claimed-at: 2026-10-30T22:13:03Z
@@ -53,7 +53,7 @@ claimed-at: 2026-10-30T22:13:03Z
 - [x] internal/cli/update.go + updatesetup.go: roles default on, --roles accepted as no-op, personal-only path kept, hintLines keeps lanes only
 - [x] internal/cli/update.go: 'jaira update diff' subcommand, one line per role, mod file and lane: current | behind (release) | edited; writes nothing
 - [x] tests: adjust update_test.go / updatedry_test.go / updatesetup_test.go for new defaults; add diff tests incl. a no-write check
-- [ ] release note core/release/notes/GBFM32.md (one '- ' line per change, instruction form)
+- [x] release note core/release/notes/GBFM32.md (one '- ' line per change, instruction form)
 - [ ] go vet ./... and go test ./... (exit codes checked, output verbatim on failure)
 
 ## Progress
