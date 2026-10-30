@@ -1,7 +1,7 @@
 ---
 id: 01M5GFAV1C3DV9NWZFXC4G07X9
 title: "Boards wie Lanes behandeln: von Hand anlegen, Lanes waehlen, beschreiben, teilen und global speichern"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: berkc
@@ -20,10 +20,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:19Z
-updated-at: 2026-10-30T02:10:14Z
+updated-at: 2026-10-30T02:12:50Z
 updated-by: berkc
 claimed-by: berk-ca-1397571
 claimed-at: 2026-10-30T01:57:35Z
+outcome-what: "Boards get a personal catalogue ~/.jaira/boards (core/lane/boardtypes.go UserBoardsDir; boards types/create --type read it), boards create --lanes picks lanes, a created board is saved to the catalogue, boards publish/shared/adopt share boards via .jaira/shared/<you>/boards/ (core/lane/boardshare.go), and B in the TUI lane settings screen opens a create-board form (internal/tui/newboard.go)."
+outcome-why: "Boards could only be made by hand in one repo; berkc wants them handled like lanes: created with picked lanes and a description, kept globally in the personal catalogue so every repo can use them, and shared/adopted with the team."
+outcome-resolves: "DoD 1 TUI form (TestLaneScreenCreatesABoardFromTheForm); 2 catalogue + every repo (TestBoardInTheCatalogueIsATypeInEveryRepository, JAIRA_HOME); 3 publish/adopt (TestPublishAndAdoptBoard); 4 core/release/notes/4G07X9.md; 5 CLI --json (TestBoardsPickSaveShareAndAdoptFromTheCLI). go vet and go test ./... green."
 ---
 
 # Boards wie Lanes behandeln: von Hand anlegen, Lanes waehlen, beschreiben, teilen und global speichern
