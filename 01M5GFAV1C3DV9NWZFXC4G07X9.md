@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:19Z
-updated-at: 2026-10-30T21:39:42Z
+updated-at: 2026-10-30T21:39:51Z
 updated-by: berkc
 claimed-by: berk-ca-1397571
 claimed-at: 2026-10-30T01:57:35Z
@@ -79,3 +79,4 @@ review-check: "1. cd into a scratch git repo, run 'git init' and 'jaira init', a
 - **2026-10-30 02:04 · berkc** — Found out: lane.Shared globs .jaira/shared/*/*.md, so published boards go one level deeper (shared/<who>/boards/<name>/) and are never read as shared lanes (asserted in TestPublishAndAdoptBoard). Catalogue boards hold every lane file (built-ins materialised), so a published/adopted board needs nothing else. Installable lists built-ins before catalogue lanes, so for a picked id the built-in wins over a catalogue lane of the same id - same as 'jaira lanes add'.
 - **2026-10-30 02:13 · berkc** — critique pass 1: read whole diff. Let stand: catalogue save on every create (DoD 2 asks for it; a board built from catalogue type X under name Y adds Y - accepted, it is a copy the person named); clearDst in boardshare.go is the directory counterpart of copyLane's file-level overwrite refusal in share.go, not a duplicate; I/O errors from CreateBoardWithLanes reported as exit 2 - accepted, minor.
 - **2026-10-30 02:29 · berkc** — review (fresh context): approve, no blockers. go build/vet/test ./... green; manual CLI run of boards create --lanes, types, publish/shared/adopt in a scratch repo with JAIRA_HOME matched the docs. Notes in review-gaps (CLI exit 1 when catalogue save fails after the board was written; unknown_lane code covers non-lane errors; adoptable catalogue type named default; no reorder in TUI form; PR must land after Y2C9QN).
+- **2026-10-30 21:39 · berkc** — berkc 30.10.2026: Die Taste B auf der Lane-Seite ist nicht gewuenscht - Boards bekommen eine eigene Settings-Seite unter 'Lanes' (Ticket 1Z6MRY). CLI-Teil (boards create mit Katalog, publish/shared/adopt) bleibt wie gebaut; der B-Form-Teil wird von 1Z6MRY ersetzt.
