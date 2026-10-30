@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:17Z
-updated-at: 2026-10-30T02:11:50Z
+updated-at: 2026-10-30T02:11:52Z
 updated-by: berkc
 claimed-by: berk-ca-1397863
 claimed-at: 2026-10-30T01:57:38Z
@@ -33,7 +33,8 @@ claimed-at: 2026-10-30T01:57:38Z
   proof: internal/tui/boardwindow.go:120 openBoards/renderBoards; TestBOpensTheBoardWindow
 - [x] Leertaste schaltet aktiv/inaktiv und schreibt dieselbe Einstellung wie 57TDND; Test
   proof: internal/tui/boardwindow.go:179 -> core/lane/active.go:69 SetBoardActive (.jaira/active-boards, the setting 57TDND is to read); TestSpaceTogglesABoardActive, TestActiveBoards
-- [ ] Die Belegung von b (Board, Blocked-by-Sprung, Ticket auf dem Board zeigen) ist entschieden und in der Hilfe beschrieben
+- [x] Die Belegung von b (Board, Blocked-by-Sprung, Ticket auf dem Board zeigen) ist entschieden und in der Hilfe beschrieben
+  proof: internal/tui/view.go:1767 help line; b on the board = board window, b in an open ticket left to P3VS02 (decision berkc 30.10.)
 - [ ] Release-Note-Zeile in core/release/notes/<ID>.md
 
 ## Options
