@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-30T23:57:03Z
+updated-at: 2026-10-30T23:57:05Z
 updated-by: berkc
 question: ""
 round: 2
@@ -67,7 +67,7 @@ round: 2
 - [x] Schritt 1 (neues Paket core/suggest): AfterMove, AfterLogbook, ForMilestone, Complete, Lines, fileMilestoneCommand — erst Tests core/suggest/suggest_test.go (TestTicketInAnOpenMilestoneSuggestsNoPullRequest, TestMoveToSignoffSuggestsThePullRequest, TestMilestoneCompleteSuggestsOnePullRequestThenFiling, TestTicketInTwoMilestones, TestLanesAreFoundByWhatTheyDoNotByName, TestEmptyMilestoneIsNeverComplete, TestFiledMilestoneSuggestsNothing, TestSuggestedFilingIsAccepted, TestLinesSayOnlyAPersonOpensThePullRequest); dann Code; go test ./core/suggest/
 - [x] Schritt 2 (jaira move): kleiner Hook in flow.go newMoveCmd — Zeilen nach nextStepLine, --json 'suggestions' nur wenn nicht leer — erst Tests internal/cli/prsuggest_test.go (TestMoveToSignoffSuggestsThePullRequest, TestMoveJSONCarriesSuggestions, TestMoveCompletingAMilestoneSuggestsOnePullRequestAndFiling, TestMoveIntoAnAgenticLaneSuggestsNothing); docs move-Zeile; Release-Zeilen; go test ./internal/cli/ fuer die Pakete
 - [x] Schritt 3 (jaira logbook <id>): kleiner Hook in logbookOut — erst Tests (TestLogbookOfTheLastTicketSuggestsThePullRequest, TestLogbookJSONCarriesSuggestions); docs logbook-Zeile; Release-Zeile; Tests
-- [ ] Schritt 4 (jaira milestone ls): komplette Milestones bekommen dieselben Zeilen, --json 'suggestions' pro Milestone — erst Test TestLsCarriesTheSuggestionsOfACompleteMilestone; docs ls-Zeile; Release-Zeile; Tests
+- [x] Schritt 4 (jaira milestone ls): komplette Milestones bekommen dieselben Zeilen, --json 'suggestions' pro Milestone — erst Test TestLsCarriesTheSuggestionsOfACompleteMilestone; docs ls-Zeile; Release-Zeile; Tests
 - [ ] Schritt 5 (Rollen): jaira-dispatcher, jaira-worker, jaira-teamlead geben jaira-Vorschlaege woertlich weiter und rufen /jaira-role-pr nie auf; Teamlead liest 'jaira milestone ls --json' — erst Pin-Test core/role/prsuggest_test.go TestRolesPassThePRSuggestionOnAndNeverRunIt; Release-Zeile nur wenn sichtbar; Tests
 - [ ] Schritt 6 (Rolle jaira-role-pr): nimmt mehrere Tickets oder einen Milestone; Milestone = ein Branch aus origin/master, jeder Ticket-Branch per merge --no-ff hinein (siehe Notiz zum Ein-Branch); Ticket ohne Commit = Befund, Merge-Konflikt = Stopp vor dem Push; offener PR/MR per 'gh pr edit'/'glab mr update', nur wenn ein Mensch aufrief — erst Pin-Test TestPRTakesSeveralTicketsOrAMilestone; die Strings, die TestPRFilesTheTicketsAwayBeforeThePush (core/role/role_test.go:504) prueft, bleiben stehen; Release-Zeile; Tests
 - [ ] Schritt 7 (Handtest): Build aus dem Branch in einem Scratch-Repo ausserhalb von /home/berk/git (HOME und JAIRA_HOME dort): ein Milestone mit zwei Tickets, eins fertig, dann beide fertig; kein Milestone; menschlich und --json; das vorgeschlagene 'jaira logbook <m>' laeuft durch; Merge der Ticket-Branches einmal ohne, einmal mit Konflikt; Ergebnis als jaira note
