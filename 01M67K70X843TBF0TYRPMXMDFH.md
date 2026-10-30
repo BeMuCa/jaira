@@ -18,7 +18,7 @@ related:
   - 01M5659BR7RYZ6RVC84HGK1QGT
 commits: []
 created-at: 2026-10-30T23:44:40Z
-updated-at: 2026-10-30T23:53:02Z
+updated-at: 2026-10-30T23:53:04Z
 updated-by: berkc
 claimed-by: berk-ca-2691736
 claimed-at: 2026-10-30T23:47:40Z
@@ -42,11 +42,11 @@ claimed-at: 2026-10-30T23:47:40Z
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [~] core/release: a '- + ' marker (alone or as '- + ! ') read by a new Feature helper; failing test in core/release/notes_test.go first
+- [ ] core/release: a '- + ' marker (alone or as '- + ! ') read by a new Feature helper; failing test in core/release/notes_test.go first
 - [x] internal/tui/releasenotes.go lines(): Features group first under a 'Features' header, plain changes under 'Others' (header only when the version has a feature line), a blank line between changes, same colours for ! lines; failing test in releasenotes_test.go first
 - [x] internal/cli/update.go writeNotes: a feature line prints '  + text'; test next to the existing writeNotes test
 - [x] CLAUDE.md release-notes format list: a bullet for '- + ' next to '- ! ' (old binaries read it as a plain line)
-- [ ] core/release/notes/MXMDFH.md: one '- ' line per change, a line that tells the user what to expect in the popup and in 'jaira update'
+- [~] core/release/notes/MXMDFH.md: one '- ' line per change, a line that tells the user what to expect in the popup and in 'jaira update'
 - [ ] go test on the touched packages, then go vet ./..., then full suite with the three hanging tests skipped
 - [ ] run the built binary in tmux on a scratch repo (JAIRA_HOME in a temp dir), check the popup pages and the layout, describe what was seen
 
