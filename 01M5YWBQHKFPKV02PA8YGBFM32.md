@@ -20,13 +20,14 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-27T14:31:21Z
-updated-at: 2026-10-30T22:19:03Z
+updated-at: 2026-10-30T22:19:43Z
 updated-by: berkc
 claimed-by: berk-ca-2379103
 claimed-at: 2026-10-30T22:13:03Z
 outcome-what: "bare 'jaira update' updates roles, cockpit mod and jaira skill; 'jaira update diff' lists current/behind/edited per file and lane; the shipped manifest gets a release column and is regenerated"
 outcome-why: "the cockpit files shipped in v0.5.2-v0.5.6 read as edited because the committed manifest was a hand-patched, never regenerated list"
 outcome-resolves: cockpit files from released tags are no longer reported as edited; update diff answers what is behind before anything is written
+review-summary: "internal/cli/updatediff.go diffJSON: lanes take their id from lanes[i].ID while writeDiff/diffFiles keep it in diffFile.dir; use f.dir in diffJSON (or split a lane struct) so one convention holds. internal/cli/update.go (the 'if setup.roles { printRoleRuns }' block after the move) with roles now default on: a plain 'jaira update' on a machine with no roles now prints 'roles: none installed where jaira writes them' on every run; print that line only when the roles were asked for explicitly, or only from diff."
 ---
 
 # jaira update bringt standardmaessig alles auf Stand - Abschnitt, Rollen, Cockpit, Skill - und 'jaira update diff' zeigt, was zurueckliegt
