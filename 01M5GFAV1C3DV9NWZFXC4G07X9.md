@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:19Z
-updated-at: 2026-10-30T02:10:10Z
+updated-at: 2026-10-30T02:10:12Z
 updated-by: berkc
 claimed-by: berk-ca-1397571
 claimed-at: 2026-10-30T01:57:35Z
@@ -36,7 +36,8 @@ claimed-at: 2026-10-30T01:57:35Z
   proof: core/lane/boardshare.go SaveToCatalogue, boardtypes.go BoardTypes/typeLanes read UserBoardsDir; TestBoardInTheCatalogueIsATypeInEveryRepository (JAIRA_HOME)
 - [x] publish/adopt fuer Boards wie fuer Lanes; Test
   proof: core/lane/boardshare.go PublishBoard/SharedBoards/AdoptBoard; TestPublishAndAdoptBoard
-- [ ] Release-Note-Zeile in core/release/notes/<ID>.md
+- [x] Release-Note-Zeile in core/release/notes/<ID>.md
+  proof: core/release/notes/4G07X9.md
 - [ ] Per CLI ohne TUI: 'jaira boards create --lanes a,b' waehlt Lanes, 'boards publish|shared|adopt' teilen und uebernehmen, alles mit --json; Test
 
 ## Options
