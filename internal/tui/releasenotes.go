@@ -13,6 +13,9 @@ import (
 // colour, bold, so it stands out from the plain changes around it.
 var styImportant = lipgloss.NewStyle().Foreground(colWarn).Bold(true)
 
+// styFeature colours the bullet of a feature line, "- + text".
+var styFeature = lipgloss.NewStyle().Foreground(colAccent)
+
 // notesView shows release notes one version per page, the newest first:
 // left/h pages to the older version, right/l back to the newer one, and j/k
 // scroll a version longer than the screen. The launcher's "w" opens it with
@@ -61,29 +64,60 @@ func (v *notesView) key(k string) (done bool) {
 	return false
 }
 
-// lines lays out the changes of the version on screen for width. Each line is
-// styled on its own, so a wrapped change never leaves a padded block behind a
-// prefix.
+// lines lays out the version on screen for width: its features first under a
+// "Features" header, then the rest under "Others". The "Others" header appears
+// only next to a feature, so a version without feature lines reads as a plain
+// list. A blank line follows each header and each change, so every change
+// reads on its own. Each line is styled on its own, so a wrapped change never
+// leaves a padded block behind a prefix.
 func (v *notesView) lines(width int) []string {
 	if v.at >= len(v.entries) {
 		return nil
 	}
-	var out []string
+	var features, others []string
 	for _, c := range v.entries[v.at].Changes {
-		text, important := release.Important(c)
-		bullet, sty := "- ", lipgloss.NewStyle()
-		if important {
-			bullet, sty = "! ", styImportant
-		}
-		for j, l := range strings.Split(wrap(text, max(1, width-2), 0), "\n") {
-			lead := "  "
-			if j == 0 {
-				lead = bullet
-			}
-			out = append(out, sty.Render(lead+l))
+		rest, feature := release.Feature(c)
+		if feature {
+			features = append(features, changeLines(rest, true, width)...)
+		} else {
+			others = append(others, changeLines(c, false, width)...)
 		}
 	}
+	var out []string
+	if len(features) > 0 {
+		out = append(out, styReview.Render("Features"), "")
+		out = append(out, features...)
+	}
+	if len(others) > 0 {
+		if len(features) > 0 {
+			out = append(out, styMeta.Render("Others"), "")
+		}
+		out = append(out, others...)
+	}
 	return out
+}
+
+// changeLines lays out one change for width: its first line carries the bullet,
+// the wrapped rest is indented under it, and a blank line closes it. c is the
+// change without its feature marker; feature says whether it had one.
+func changeLines(c string, feature bool, width int) []string {
+	text, important := release.Important(c)
+	bullet, sty := "- ", lipgloss.NewStyle()
+	switch {
+	case important:
+		bullet, sty = "! ", styImportant
+	case feature:
+		bullet, sty = "+ ", styFeature
+	}
+	var out []string
+	for j, l := range strings.Split(wrap(text, max(1, width-2), 0), "\n") {
+		lead := "  "
+		if j == 0 {
+			lead = bullet
+		}
+		out = append(out, sty.Render(lead+l))
+	}
+	return append(out, "")
 }
 
 // render draws the title, the version and its position ("0.5.4 · 1/12"), the

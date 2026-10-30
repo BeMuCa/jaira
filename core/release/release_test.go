@@ -207,3 +207,32 @@ func TestImportantLineStaysAPlainChange(t *testing.T) {
 		t.Fatalf("composeNotes = %#v, want %#v", got, want)
 	}
 }
+
+func TestFeatureMarker(t *testing.T) {
+	for _, c := range []struct {
+		in   string
+		text string
+		ok   bool
+	}{
+		{"+ a", "a", true},
+		{"+ ! a", "! a", true},
+		{"a", "a", false},
+		{"+a", "+a", false},
+	} {
+		text, ok := Feature(c.in)
+		if ok != c.ok || (ok && text != c.text) {
+			t.Errorf("Feature(%q) = %q, %v; want %q, %v", c.in, text, ok, c.text, c.ok)
+		}
+	}
+}
+
+// Every binary reads "- + a" as the ordinary change "+ a": the format stays
+// "one line starting with - ".
+func TestFeatureLineStaysAPlainChange(t *testing.T) {
+	fsys := fstest.MapFS{"notes/X.md": {Data: []byte("- + a\n")}}
+	got := composeNotes("", fsys)
+	want := []Entry{{Version: "Unreleased", Changes: []string{"+ a"}}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("composeNotes = %#v, want %#v", got, want)
+	}
+}

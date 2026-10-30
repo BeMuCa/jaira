@@ -102,6 +102,14 @@ func Important(change string) (string, bool) {
 	return strings.CutPrefix(change, "! ")
 }
 
+// Feature splits off the feature marker: a line written "- + text" is read by
+// changeLines as the change "+ text", and Feature returns text. A feature line
+// may also be must-act, "- + ! text"; the feature marker comes first, so the
+// caller strips it, then passes the rest to Important.
+func Feature(change string) (string, bool) {
+	return strings.CutPrefix(change, "+ ")
+}
+
 // changeLines is parseNotes for a note file, which has no headings: every
 // "- " line is one change. A line "- ! text" is the change "! text": the
 // marker for a change the reader must act on, read back by Important.

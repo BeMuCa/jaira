@@ -78,6 +78,39 @@ func TestNotesViewStartsOnTheNewestAndPagesOneVersionAtATime(t *testing.T) {
 	}
 }
 
+func TestNotesViewSplitsFeaturesFromOthers(t *testing.T) {
+	v := newNotesView("Release notes", []release.Entry{
+		{Version: "0.5.2", Changes: []string{"an other change", "+ a new feature", "+ ! a feature to act on"}},
+		{Version: "0.5.1", Changes: []string{"a plain change"}},
+	})
+	out := stripANSI(v.render(60, 30))
+	at := func(s string) int {
+		t.Helper()
+		i := strings.Index(out, s)
+		if i < 0 {
+			t.Fatalf("missing %q:\n%s", s, out)
+		}
+		return i
+	}
+	if !(at("Features") < at("+ a new feature") && at("+ a new feature") < at("a feature to act on") &&
+		at("a feature to act on") < at("Others") && at("Others") < at("an other change")) {
+		t.Errorf("want Features with its changes, then Others:\n%s", out)
+	}
+	if strings.Contains(out, "- + ") {
+		t.Errorf("the feature marker was printed with a bullet:\n%s", out)
+	}
+	// A blank line follows the header and each change, so the page has room to breathe.
+	if lines := v.lines(60); stripANSI(lines[0]) != "Features" || stripANSI(lines[1]) != "" {
+		t.Errorf("header not followed by a gap: %q %q", lines[0], lines[1])
+	}
+
+	v.key("left")
+	out = stripANSI(v.render(60, 30))
+	if strings.Contains(out, "Features") || strings.Contains(out, "Others") {
+		t.Errorf("a version without feature lines shows headers:\n%s", out)
+	}
+}
+
 func TestNotesViewWrapsWithinTheWidth(t *testing.T) {
 	v := newNotesView("t", []release.Entry{{Version: "1.0.0", Changes: []string{"! " + strings.Repeat("word ", 30)}}})
 	for _, l := range strings.Split(stripANSI(v.render(30, 30)), "\n") {
