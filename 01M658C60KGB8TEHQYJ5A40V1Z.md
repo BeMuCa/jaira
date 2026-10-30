@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T01:56:46Z
-updated-at: 2026-10-30T23:45:33Z
+updated-at: 2026-10-30T23:45:46Z
 updated-by: berkc
 ---
 
@@ -40,3 +40,4 @@ updated-by: berkc
 
 ## Progress
 - **2026-10-30 21:39 · berkc** — berkc 30.10.2026: (1) Gemeint sind alle Metadaten, die ein Ticket schon im Backlog zeigt (ID, Lane, Assignee, Creator, Tags, Goal, Context, follows/related, Milestone) - in jeder Lane oben, auch beim Oeffnen vom Board aus. (2) Fuer Tickets, die ein Mensch pruefen soll: oben eine Anleitung, wie er es prueft - das ist das review-check-Feld, das die review-Lane heute schon schreiben muss (review-summary/-gaps/-verdict/-check); es muss sichtbar oben stehen. (3) Die Bloecke 'Outcome / Review / Lane fields - owed by <lane>' zeigen, welche Lane welches Ausgabefeld noch schuldet; im Backlog ist das nur Rauschen: erst zeigen, wenn die Lane erreicht ist, oder einklappen.
+- **2026-10-30 23:45 · berkc** — berkc 31.10.2026 (Punkt 13): Was die review-Lane schreibt (summary, gaps, verdict, check) ist im Human-Review-Ticket unstrukturiert und schwer zu lesen - gehoert in diesem Ticket mit gestaltet: je Feld eine Ueberschrift, Befunde als Liste, check als nummerierte Schritte.
