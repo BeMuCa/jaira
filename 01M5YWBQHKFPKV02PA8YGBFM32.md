@@ -20,7 +20,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-10-27T14:31:21Z
-updated-at: 2026-10-30T21:41:17Z
+updated-at: 2026-10-30T21:44:57Z
 updated-by: berkc
 claimed-by: berk-ca-2129445
 claimed-at: 2026-10-30T21:41:03Z
@@ -46,3 +46,4 @@ claimed-at: 2026-10-30T21:41:03Z
 
 ## Progress
 - **2026-10-30 21:41 · berkc** — open decisions at start: none that only the person can take. Settled by the person (ticket context, 27.10.): roles, cockpit mod and jaira skill update by default; lanes opt-in via --lanes; 'update diff' writes nothing. Settled here by default: diff output is one line per role/mod file/lane with state current|behind (version)|edited, the same for all three; 'update' touches only what is already installed. Parent session: none (started directly as worker subagent, no AskUserQuestion).
+- **2026-10-30 21:44 · berkc** — finding 1 (shipped list): scripts/shipped-history.sh does walk second parents: it uses 'git log --full-history -m' since its first commit 299c65aa, and every commit reachable from HEAD that touches the embedded paths is in that walk (303 vs 375 commits, none missing). Its output today is 558 lines; core/shipped/shipped.sha256 has 503 and is a strict subset of it (0 lines committed-only, 55 lines script-only). The list is append-only and was patched by hand (736c80ee) and never re-run after the 44 later commits that changed embedded files. Hence board.ts 9406af (added by 5bc22fb1, F80QZT) and register.tsx are reported as edited. Fix: regenerate the list with the script. Checked: every file of tags v0.4.1..v0.5.7 under core/role/builtin, core/mod/builtin, core/lane/builtin, core/role/jaira has its sha in the regenerated list (0 missing); the committed list misses 22 of them (v0.5.2..v0.5.6 cockpit files).
