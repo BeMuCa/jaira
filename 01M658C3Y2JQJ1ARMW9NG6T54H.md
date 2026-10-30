@@ -22,7 +22,7 @@ commits:
   - b9872d8a
   - 297d5915
 created-at: 2026-10-30T01:56:44Z
-updated-at: 2026-10-30T22:03:06Z
+updated-at: 2026-10-30T22:03:08Z
 updated-by: berkc
 claimed-by: berk-ca-2129199
 claimed-at: 2026-10-30T21:40:58Z
@@ -76,3 +76,4 @@ review-check: "1. cd /home/berkc/code/X_General/jaira-G6T54H && go build -o /tmp
 - **2026-10-30 21:53 · berkc** — critique: README.md:822 table row says /jaira-worker is an opt-in alternative; fix that row only. Stood on: the note about the code diff (DispatchMode single source, no speculative code). The other README lines already fixed in b9872d8a.
 - **2026-10-30 21:53 · berkc** — critique round 2: README table fixed in 297d5915; grep over the repo finds no other claim that lanes is the default outside historical logbook and NOTES files. Nothing left.
 - **2026-10-30 21:54 · berkc** — optimize: nothing to remove. The diff touches only what the DoD names; no duplicate dispatch decision exists in the repo.
+- **2026-10-30 22:03 · berkc** — review (fresh context): no blocker. Ran go vet and the tests of core/settings, core/role, core/shipped, core/release, internal/tui, internal/cli roles; built the binary and checked roles list with no settings (worker) and with dispatch lanes (jaira-dispatcher). The one finding worth a decision: docs/COMMANDS.md:189 still says lanes is the default - the critique round's grep missed it. Left as a note, not a blocker, because DoD 2 names the roles and Settings help texts and both are fixed.
