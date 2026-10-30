@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:17Z
-updated-at: 2026-10-30T01:59:53Z
+updated-at: 2026-10-30T02:00:55Z
 updated-by: berkc
 claimed-by: berk-ca-1397863
 claimed-at: 2026-10-30T01:57:38Z
@@ -41,6 +41,14 @@ claimed-at: 2026-10-30T01:57:38Z
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] core/lane/active.go: ActiveBoardsPath, ActiveBoards(root) (default zuerst, dann Name; keine Datei = alle), SetBoardActive(root,name,on) - das letzte aktive bleibt; Tests in core/lane
+- [ ] core/gitrepo: FirstAuthor(path) - Autor des ersten Commits, der path anlegte; Test
+- [ ] internal/tui/boardwindow.go: modeBoards, openBoards/keyBoards/renderBoards (Name als Ueberschrift, Ersteller, Lanes, Haken, Reihenfolge aktiv/zuletzt benutzt/Rest), space schaltet, enter zeigt das Board; zuletzt-benutzt-Stempel unter Store.RepoStateDir()
+- [ ] model.go: b auf dem Board oeffnet das Fenster; shift+down/up wechselt reihum durch die aktiven Boards (nextBoard ersetzt); shift im offenen Ticket unveraendert
+- [ ] Hilfe (view.go) beschreibt b und shift+↓↑ auf dem Board; b im Ticket bleibt P3VS02
+- [ ] Tests in internal/tui: TestBPicksABoard umstellen, Fenster-Reihenfolge/Inhalt, space schreibt .jaira/active-boards, shift cycelt nur aktive
+- [ ] Release-Note core/release/notes/KVMG0K.md; go vet ./... und go test ./...
 
 ## Progress
 - **2026-10-23 21:04 · berkc** — Entscheidung berkc 23.10.2026: Taste b bleibt fuer Boards (Board-Popup). Die Sprung-Funktion aus P3VS02 braucht eine andere Taste.
