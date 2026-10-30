@@ -19,7 +19,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T01:56:44Z
-updated-at: 2026-10-30T01:56:44Z
+updated-at: 2026-10-30T21:40:57Z
+updated-by: berkc
 ---
 
 # Agents per ticket steht per Default auf worker statt lanes
