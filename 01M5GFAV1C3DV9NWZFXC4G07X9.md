@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:14:19Z
-updated-at: 2026-10-30T02:29:28Z
+updated-at: 2026-10-30T02:29:30Z
 updated-by: berkc
 claimed-by: berk-ca-1397571
 claimed-at: 2026-10-30T01:57:35Z
@@ -35,6 +35,8 @@ review-gaps: |-
   note: the TUI form keeps lane order as listed (today's, then catalogue/built-ins); there is no way to reorder picked lanes in the form - not asked by the DoD
   note: branch is based on feat/Y2C9QN-boards-create (not merged); origin/HEAD..HEAD shows the 2 Y2C9QN commits too - the PR must land after Y2C9QN's
 test-verdict: "pass: go vet + go test -count=1 ./... green (RC=0); DoD 1-5 tests run; built binary exercised on two scratch repos with scratch JAIRA_HOME: create --lanes saved to catalogue, unknown lane exit 2, other repo lists catalogue type and builds clips from it, ticket filed on it, publish/shared/adopt onto a second home all with --json. TUI form verified only through TestLaneScreenCreatesABoardFromTheForm (real key dispatch), not by eye."
+review-verdict: "Approve: all five DoD items are met by the diff, each with a test; go build, go vet and go test ./... pass; manual CLI run of create --lanes/types/publish/shared/adopt behaves as documented. No defects found; only minor notes."
+review-round: 1
 ---
 
 # Boards wie Lanes behandeln: von Hand anlegen, Lanes waehlen, beschreiben, teilen und global speichern
