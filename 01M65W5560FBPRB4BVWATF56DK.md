@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T07:42:27Z
-updated-at: 2026-10-30T07:47:47Z
+updated-at: 2026-10-30T07:47:51Z
 assignee: AlSa
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4867
@@ -64,3 +64,4 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-tf56dk  2. cmp .jaira/
 - **2026-10-30 07:45 · Alexander Sacharov** — shipped.sha256 bekam nur die eine critique-Zeile: scripts/shipped-history.sh hätte ~60 alte Versionen anderer Dateien nachgetragen, das gehört nicht zu diesem Ticket. 'update --lanes' hat dabei optimize.md und testing.md auf die eingebaute Version gebracht (nur 'default-board: false' dazu) — mitcommittet, damit das Board sauber ist.
 - **2026-10-30 07:45 · Alexander Sacharov** — critique: Diff gelesen (Lane-Datei, eine Manifestzeile, Release-Note, drei .jaira/lanes). notes als Input wird bereits unterstützt (internal/cli/notesinput_test.go), der for-lane-Payload ist complete. Kein Finding.
 - **2026-10-30 07:46 · Alexander Sacharov** — optimize: nichts zu entfernen — der Diff ist Text plus eine Hash-Zeile, kein Code.
+- **2026-10-30 07:47 · Alexander Sacharov** — review (fresh context): kein Blocker. cmp gleich, Hash 7d3e33a0 = sha256sum, frisches Binary update --lanes --dry-run 0 skipped, go test core/shipped core/lane core/release internal/cli grün, for-lane critique liefert notes. Zwei Notes in review-gaps (optimize/testing außerhalb Scope, alte lokale Fassung ohne Hash) — beide harmlos.
