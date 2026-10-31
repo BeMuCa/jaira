@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-31T01:24:02Z
-updated-at: 2026-10-31T03:00:43Z
+updated-at: 2026-10-31T03:00:49Z
 updated-by: berkc
 claimed-by: berk-ca-3153991
 claimed-at: 2026-10-31T02:32:33Z
@@ -27,7 +27,9 @@ outcome-why: "critique r2 (02:50): beide Klauseln waren im Satz verschmolzen, so
 outcome-resolves: "docs/how-to-work-with-jaira.html:387 nennt die drei Lanes fuer das shipped-Board und beschreibt den Default getrennt, wie README.md:840-843"
 review-summary: "Adds context: fresh to the shipped lane files core/lane/builtin/25-critique.md, 26-optimize.md and 40-review.md (review now declares it explicitly, because once any lane declares context the implied review default switches off) and to this board's .jaira/lanes copies; new hashes appended to core/shipped/shipped.sha256 so jaira update --lanes recognises the old files and replaces them. The AGENTS.md/CLAUDE.md lane block now marks critique and optimize as fresh context. jaira-worker SKILL names critique, optimize, review as the fresh lanes, narrows 'judging your own work' to non-fresh lanes (testing), and says a fresh lane moving into another fresh lane (critique->optimize) gets a NEW agent; jaira-teamlead SKILL, README and the German docs page say the same. Tests: core/lane and internal/cli context tests now assert the shipped offer is critique,optimize,review and strip context lines (stripLaneContexts) to keep testing the old-board default. Release note core/release/notes/XKS048.md: one plain line plus a '- !' line for hand-edited lane files that update --lanes skips."
 round: 3
-review-gaps: "none - considered: stripLaneContexts exists twice (core/lane/context_test.go:51, internal/cli/context_test.go:177); left, test helpers cannot cross packages and the repo has no shared testutil package, exporting it from core/lane would put test code in the binary. setUpOldBoard (7 callers) kept. No dead code, no fluff, no hot path. go test core/lane core/shipped, internal/cli -run Context ok."
+review-gaps: |-
+  note: stripLaneContexts is duplicated verbatim in core/lane/context_test.go and internal/cli/context_test.go (test-only, different packages)
+  note: a board whose critique.md was hand-edited (e.g. notes added to input-requires, as an older release note suggested) gets no context line from update --lanes; the '- !' release line covers it, nothing enforces it
 test-verdict: "pass: touched-package tests green (core/lane, core/role, core/shipped, internal/cli minus the 3 hangers; whole suite not run), DoD 1-3 verified in the tree, behaviour exercised on a scratch clone (update --lanes on an old board, --for-lane critique|optimize|review context fresh)"
 ---
 
