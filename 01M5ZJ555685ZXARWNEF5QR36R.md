@@ -21,7 +21,7 @@ commits:
   - 50ff54b331ba75cf94b282daf0ea53a6d07994c5
   - 2c495b3b05310493744ee9661f6dcfd381e21f73
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T03:02:12Z
+updated-at: 2026-10-31T03:02:58Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-3129429
@@ -36,6 +36,7 @@ review-summary: |-
   OK: stub forwarding + install Updated path (internal/cli tests green), all role/README/how-to references renamed (only stub, history and release notes keep the old name), shipped-manifest drop of removed paths matches scripts/shipped-history.sh:50 and the spawn.sh precedent, release note format, go test ./core/role ./core/shipped ./internal/cli subset pass
   ROUND 2: round-1 items OK (SKILL.md:107-113 fix only on failed check or present non-pass verdict; review never accept, labelled 'not yet model-reviewed'; accept scoped to human+signoff at :121-125; plan 11 ticked). New, from accept-scope change + whole diff: (1) core/release/notes/5QR36R.md:1 says it 'accepts the tickets in human, review and signoff' - now false; say it interviews human, review and signoff and accepts those in human and signoff. Same in SKILL.md:3 description 'Works for tickets in human, review and signoff' - add that review tickets get explain/fix only. (2) docs/how-to-work-with-jaira.html:394 table row says the plain /jaira-role-interreview <id> 'Baut eine Abnahmeseite' - default is now the chat interview, page only with --page; :333 says the dispatcher builds the page and sends a link - it now answers with the line to paste into a new session (worker/dispatcher SKILL.md). Adjust both lines (German); L335/L502 --page read-back are fine once :333 says the page is opt-in.
   ROUND 3: OK release note :1, SKILL.md:3 description (review tickets interviewed, only human+signoff accepted), how-to :394, new SKILL.md hash appended (shipped.sha256:502 matches file; go test ./core/shipped ./core/role pass). Open: docs/how-to-work-with-jaira.html:333 still says the dispatcher starts /jaira-role-interreview 'das dich im Chat befragt' - per interreview SKILL.md:21-25 and dispatcher SKILL.md:485-487 an agent caller gets no interview, it reports the line to paste into a NEW session. Say: Dispatcher ruft /jaira-role-interreview auf und meldet dir die Zeile, die du in eine neue Session einfuegst; dort befragt es dich im Chat (accept/explain/fix); die Seite nur mit --page.
+  ROUND 4: docs/how-to-work-with-jaira.html:333 now says the dispatcher 'ruft /jaira-role-interreview nicht selbst auf' - false: core/role/builtin/jaira-dispatcher/SKILL.md:479-487 has the dispatcher call /jaira-role-interreview <id>, and the role (interreview SKILL.md:21-25, agent caller) answers with the paste line. Say: Dispatcher ruft /jaira-role-interreview auf und gibt dir die Zeile zurueck, die du in eine neue Session einfuegst; dort befragt dich die Rolle im Chat (accept/explain/fix). Rest of :333 is fine.
 round: 4
 ---
 
