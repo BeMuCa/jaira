@@ -7,19 +7,59 @@ import (
 	"testing"
 )
 
-// TestLoadDefaultBoardAbsentReturnsZeroBoard asserts no file at all is the
-// normal state, not a missing-configuration error.
-func TestLoadDefaultBoardAbsentReturnsZeroBoard(t *testing.T) {
+// TestLoadDefaultBoardAbsentTicksPlanning asserts no file at all is the
+// normal state, not a missing-configuration error, and that it still starts
+// new tickets with planning ticked: no lanes chosen, DefaultOptions ticked.
+func TestLoadDefaultBoardAbsentTicksPlanning(t *testing.T) {
 	t.Setenv("JAIRA_DEFAULT_BOARD", filepath.Join(t.TempDir(), "does-not-exist.md"))
 	b, err := LoadDefaultBoard()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(b.Lanes) != 0 || len(b.Options) != 0 {
-		t.Errorf("expected a zero board, got %+v", b)
+	if len(b.Lanes) != 0 {
+		t.Errorf("Lanes = %v, want none", b.Lanes)
+	}
+	if !reflect.DeepEqual(b.Options, []string{"planning"}) {
+		t.Errorf("Options = %v, want [planning]", b.Options)
 	}
 	if len(b.Warnings) != 0 {
 		t.Errorf("an absent file must not warn, got: %v", b.Warnings)
+	}
+}
+
+// TestLoadDefaultBoardEmptyOptionsListTicksNothing asserts options: [] is the
+// way to ask for no pre-ticked options, overriding DefaultOptions.
+func TestLoadDefaultBoardEmptyOptionsListTicksNothing(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "default-board.md")
+	if err := os.WriteFile(path, []byte("---\noptions: []\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("JAIRA_DEFAULT_BOARD", path)
+
+	b, err := LoadDefaultBoard()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(b.Options) != 0 {
+		t.Errorf("Options = %v, want none", b.Options)
+	}
+}
+
+// TestLoadDefaultBoardNoOptionsKeyDefaultsToPlanning asserts a board file that
+// names lanes but no options: key still ticks planning.
+func TestLoadDefaultBoardNoOptionsKeyDefaultsToPlanning(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "default-board.md")
+	if err := os.WriteFile(path, []byte("---\nlanes: [backlog, done]\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("JAIRA_DEFAULT_BOARD", path)
+
+	b, err := LoadDefaultBoard()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(b.Options, []string{"planning"}) {
+		t.Errorf("Options = %v, want [planning]", b.Options)
 	}
 }
 
@@ -241,6 +281,20 @@ func TestValidateSilentOnAGoodBoard(t *testing.T) {
 	board := &DefaultBoard{Lanes: builtinIDList(t), Options: []string{"brainstorm"}}
 	if warnings := Validate(board, set); len(warnings) != 0 {
 		t.Errorf("expected no warnings, got: %v", warnings)
+	}
+}
+
+// TestValidateSilentOnDefaultedOptionWithoutPlanningLane asserts planning,
+// which the user never named, does not warn on a set whose lanes do not
+// require it.
+func TestValidateSilentOnDefaultedOptionWithoutPlanningLane(t *testing.T) {
+	t.Setenv("JAIRA_DEFAULT_BOARD", filepath.Join(t.TempDir(), "does-not-exist.md"))
+	board, err := LoadDefaultBoard()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if warnings := Validate(board, &Set{}); len(warnings) != 0 {
+		t.Errorf("expected no warnings for a defaulted option, got: %v", warnings)
 	}
 }
 

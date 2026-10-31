@@ -1551,6 +1551,7 @@ lanes: [backlog, brainstorm, todo, pre-process, in-progress, human, review, sign
                                   # absent, or an empty list, means the built-ins — not "no lanes".
 options: [brainstorm]            # ticket Options to pre-tick on a new ticket. Names come from the
                                   # installed lanes' requires-option fields, never a fixed list.
+                                  # absent means [planning]; an empty list, [], means none pre-ticked.
 ---
 
 # Default board

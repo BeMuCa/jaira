@@ -1,0 +1,1 @@
+- ! New tickets now start with planning ticked, so every ticket goes through the Opus planner; to keep it off, run `jaira lanes default --options brainstorm` (any list without planning does it).

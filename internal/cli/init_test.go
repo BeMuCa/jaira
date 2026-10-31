@@ -174,4 +174,45 @@ func TestCreateAfterInitTicksDefaultBoardOptions(t *testing.T) {
 	if !strings.Contains(full.Body, "- [x] brainstorm") {
 		t.Errorf("ticket body = %q, want brainstorm ticked", full.Body)
 	}
+	if !strings.Contains(full.Body, "- [ ] planning") {
+		t.Errorf("ticket body = %q, want planning unticked: the default board names options without it", full.Body)
+	}
+}
+
+// TestCreateWithoutDefaultBoardTicksPlanning asserts a new ticket with no
+// default board file starts with planning ticked, so the pre-process planner
+// runs for it, and every other option stays unticked.
+func TestCreateWithoutDefaultBoardTicksPlanning(t *testing.T) {
+	initTestHome(t)
+	t.Setenv("JAIRA_DEFAULT_BOARD", filepath.Join(t.TempDir(), "does-not-exist.md"))
+	dir := t.TempDir()
+
+	if out, err := runInit(t, dir); err != nil {
+		t.Fatalf("init: %v\n%s", err, out)
+	}
+	if out, err := runCreate(t, dir, "A ticket"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+
+	s, err := ticket.Discover(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tickets, err := s.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(tickets) != 1 {
+		t.Fatalf("expected exactly one ticket, got %d", len(tickets))
+	}
+	full, err := s.Load(tickets[0].ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(full.Body, "- [x] planning") {
+		t.Errorf("ticket body = %q, want planning ticked", full.Body)
+	}
+	if !strings.Contains(full.Body, "- [ ] brainstorm") {
+		t.Errorf("ticket body = %q, want brainstorm unticked", full.Body)
+	}
 }
