@@ -22,7 +22,7 @@ commits:
   - 2c495b3b05310493744ee9661f6dcfd381e21f73
   - b3bdefe99745601d272d96c0833c6de788cbb66f
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T03:08:40Z
+updated-at: 2026-10-31T03:10:44Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-3129429
@@ -106,3 +106,4 @@ review-gaps: "dispatcher SKILL.md:483-488: remove page-only sentences (note: can
 - **2026-10-31 03:06 · berkc** — Round-4 fixes: L333 wording as the coordinator gave it; dispatcher SKILL.md 'one acceptance page' -> 'one interview' and its new hash 395a2542 appended to shipped.sha256. go test ./core/role ./core/shipped ok.
 - **2026-10-31 03:07 · berkc** — critique round 5: no findings; both round-4 asks verified in b3bdefe9, shipped hash correct. Residual 'reaches the page' at dispatcher SKILL.md:484 left as non-blocking.
 - **2026-10-31 03:08 · berkc** — optimize: core/role/builtin/jaira-dispatcher/SKILL.md:483-488 has two page-only sentences that are dead weight now the default is the chat interview: (a) 'A note: line in the review's review-gaps reaches the page as a candidate; you never create a ticket from one, the person does.' - the chat path (interreview SKILL.md:83-161) never shows candidates, and the dispatcher acts on nothing there; delete it. (b) 'Reading the person's marks back is not yours: that comes later, from whoever the person tells.' - no marks exist in the default path and the interview runs in the new session; delete it, or replace with 'The interview runs in that new session, not in yours.' Then append the new dispatcher hash to core/shipped/shipped.sha256. Left: teamlead SKILL.md:71 and README.md:826 'read the marks back' are correctly scoped to --page. Not a cleanup, maintainer's call: the chat path drops note: candidates entirely (only the page path, interreview SKILL.md:181, surfaces them).
+- **2026-10-31 03:10 · berkc** — Optimize: dispatcher SKILL.md:483-488 dropped the review-gaps candidate sentence and the 'reading marks back' sentence; the line 'The interview runs in that new session, not in yours' replaces it. New hash cbbae671 appended to shipped.sha256; go test ./core/role ./core/shipped ok.
