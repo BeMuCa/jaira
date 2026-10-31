@@ -1,7 +1,7 @@
 ---
 id: 01M5ZJ555685ZXARWNEF5QR36R
 title: Die Abnahme-Rolle fuehrt das Interview im Chat; die Seite ist nur noch auf Wunsch
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "jaira-role-acceptance fragt standardmaessig im Chat ab - je Ticket ID, Einzeiler, wie pruefen, Empfehlung, dann 'accept X / explain X / fix X' - und baut die statische Seite nur mit --page."
@@ -18,15 +18,16 @@ related: []
 commits:
   - 8fea809f03736e6759b1d15d2bc51fbd7c83cc3a
   - de96db1745c69f9e47ea329ea8ccc782072ef6f9
+  - 50ff54b331ba75cf94b282daf0ea53a6d07994c5
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T02:58:13Z
+updated-at: 2026-10-31T02:58:15Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-3129429
 claimed-at: 2026-10-31T01:27:42Z
-outcome-what: "fix: recommend fix only on a failed check or a non-pass verdict; review tickets never accepted"
-outcome-why: "critique returned: empty review-verdict triggered fix, and review tickets were accepted"
-outcome-resolves: interview recommendation rules and accept scope; plan 11 ticked with the amended manifest decision
+outcome-what: "text fixes: release note, SKILL.md description, how-to L333 and L394 match accept scope and chat default"
+outcome-why: "round-2 critique found stale text after the accept-scope fix"
+outcome-resolves: release note and SKILL.md say accept is human and signoff only; how-to describes the chat interview as default with --page for the page
 review-summary: |-
   core/role/builtin/jaira-role-interreview/SKILL.md:107-109 recommends fix when 'the review-verdict is not a pass'; review-verdict is empty for every ticket in human and review (the review lane writes it, after human), so a literal cheap model recommends fix for all of them - say 'fix when a machine check failed, or a review-verdict is present and is not a pass'
   .jaira plan step 11 (shipped hashes) is still unticked although its note says done - the terminal gate refuses a move with an open plan step (core/gate/gate.go:417-430); tick it with jaira dod 5QR36R 11 --done --plan
