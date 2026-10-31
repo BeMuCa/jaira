@@ -19,7 +19,7 @@ related:
   - 01M658C7SP4V29E95574CXH98W
 commits: []
 created-at: 2026-10-30T23:44:58Z
-updated-at: 2026-10-31T00:03:18Z
+updated-at: 2026-10-31T00:03:20Z
 updated-by: berkc
 ---
 
@@ -39,4 +39,4 @@ updated-by: berkc
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-31 00:03 · berkc** — Ergebnis 31.10.2026, Ticket NDE933 (z ueberspringt leere Lanes), beide von origin/master, Ticket nicht beruehrt. Lauf A (exp/NDE933-a, ed602e79): nur Haiku high, ohne Plan - 108k Tokens (120k inkl. dreifach wiederholtem Bericht), ca. 7,5 min Agentenzeit, 70 Tool-Aufrufe, 3 Dateien +94/-9, 5 Tests + Mutationsprobe. Lauf B (exp/NDE933-b, 31871f63): Plan durch Opus 5.5 (74,5k Tokens, 105 s, 17 Aufrufe), Umsetzung Haiku high nach Plan (85k Tokens, 11,5 min, 37 Aufrufe) - zusammen 160k Tokens, davon 74,5k Opus (teurer), 4 Dateien +142/-11, 6 Tests. Ein Planfehler (Testhelfer key('right') liefert Code 0) liess 5 Tests zuerst scheitern; Haiku hat ihn korrigiert. Beide: go vet und go test ./internal/tui gruen (von mir nachgeprueft). Blinde Bewertung durch frischen Opus-Agenten (Variante 1 = B, 2 = A): B 9/9/8/9 (Korrektheit/Tests/Stil/Vollstaendigkeit) gegen A 8/7/7/6; Empfehlung B. A liess den Hilfetext fuer z und einen nun falschen Kommentar stehen, keine Tests fuer Wrap-around und 'alles leer', und friert den Cursor ein, wenn alle Lanes leer sind. Fazit: Opus-Plan + Haiku ergab hier spuerbar vollstaendigere Arbeit bei etwa halber Zahl Tool-Aufrufe in der Umsetzung, kostet aber mehr Tokens und Geld (Opus-Anteil) und dauerte laenger. Eine Stichprobe von 1 - fuer eine Regel weitere Laeufe noetig. Hinweis: der Bewerter hatte kein Go im PATH und urteilte nur aus dem Code.
