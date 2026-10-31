@@ -23,7 +23,7 @@ commits:
   - b3bdefe99745601d272d96c0833c6de788cbb66f
   - 01563903e30786b1d4f3e626bdf72a316e2a2d25
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T03:17:29Z
+updated-at: 2026-10-31T03:17:31Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-3129429
@@ -57,7 +57,7 @@ test-verdict: "pass: touched packages green (go build ./..., go vet, go test -co
 - [x] --page baut die Seite wie bisher; ohne --page wird keine Datei geschrieben
   proof: core/role/builtin/jaira-role-interreview/SKILL.md:17 'Who called you' and :163 '## The page (--page)' (page files only with --page); :156 'Write NO other file'
 - [x] Die statische Aufzeichnung der Abnahme entsteht auch im Chat-Weg (gleicher Pfad wie heute)
-  proof: core/role/builtin/jaira-role-interreview/SKILL.md:142 '### Record (chat path)' writes ~/.claude/acceptance/<repo>/<name>/report.md, the same path the page record uses
+  proof: core/role/builtin/jaira-role-interreview/SKILL.md:147 '### Record (chat path)' writes ~/.claude/acceptance/<repo>/<name>/report.md, the same path the page record uses
 
 ## Options
 
