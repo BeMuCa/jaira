@@ -18,7 +18,7 @@ related:
   - 01M5659BR7RYZ6RVC84HGK1QGT
 commits: []
 created-at: 2026-10-30T23:44:40Z
-updated-at: 2026-10-31T00:05:11Z
+updated-at: 2026-10-31T00:08:52Z
 updated-by: berkc
 claimed-by: berk-ca-2691736
 claimed-at: 2026-10-30T23:47:40Z
@@ -44,7 +44,7 @@ review-check: "1. cd /home/berkc/code/X_General/jaira-MXMDFH && go build -o /tmp
 ## Definition of Done
 
 - [x] Popup (Overlay ueber dem Board), keine eigene Seite; links/rechts blaettert weiter zwischen Versionen
-  proof: internal/tui/releasenotes.go:41-50 key() left/h and right/l inert at the ends; popup verified in tmux: 'What is new since 0.5.0 · 9 unread', Left -> '0.5.8 · 2/9', Right -> 'Unreleased · 1/9', second Right no-op, esc closes; TestNotesViewStartsOnTheNewestAndPagesOneVersionAtATime, TestPopupAfterAnUpgradeAcrossVersionsCountsTheUnreadAndPagesThem
+  proof: internal/tui/home.go render(): notes drawn with overBox over the launcher's list(), TestHomeWDrawsReleaseNotesOverTheLauncher (first row kept, framed box); board popup internal/tui/modal.go overBox via modalOver; TestHomeWOpensReleaseNotesNewestFirst paging. tmux: 'w' in launcher shows the box over the launcher, esc returns; board popup 'What is new since 0.5.0 · 9 unread' with Left/Right paging
 - [x] Je Version zuerst Features/Feature-Aenderungen, dann Ueberschrift 'Andere'; Leerzeilen und Einrueckung fuer Lesbarkeit; Test
   proof: internal/tui/releasenotes.go:73-98 lines() groups Features then Others, Others header only beside a feature; :101-119 changeLines blank line after each change; TestNotesViewSplitsFeaturesFromOthers; tmux popup showed Features header, gap, '+' bullets, Others header
 - [x] Notizformat kennzeichnet Features; CLAUDE.md-Abschnitt zu Release-Notes beschreibt es
