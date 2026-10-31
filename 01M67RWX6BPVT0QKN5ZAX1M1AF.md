@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-31T01:24:00Z
-updated-at: 2026-10-31T02:37:05Z
+updated-at: 2026-10-31T02:37:21Z
 updated-by: berkc
 claimed-by: berk-ca-3129208
 claimed-at: 2026-10-31T01:27:35Z
@@ -33,7 +33,7 @@ claimed-at: 2026-10-31T01:27:35Z
 - [x] internal/cli/tickets.go defaultBoardTemplate: change comment under options: to say absent means [planning], [] means none pre-ticked. internal/cli/lanes.go 'lanes default' Long help: add one sentence that with no options: line a new ticket starts with planning ticked
 - [x] tests core/lane/defaultboard_test.go: rename/rewrite TestLoadDefaultBoardAbsentReturnsZeroBoard -> absent file gives Lanes empty, Options == [planning], no warnings; add TestLoadDefaultBoardEmptyOptionsListTicksNothing (file 'options: []' -> Options empty); add TestLoadDefaultBoardNoOptionsKeyDefaultsToPlanning (file with only lanes:); add TestValidateSilentOnDefaultedOptionWithoutPlanningLane (set without pre-process, absent file -> no warning)
 - [x] tests internal/cli/init_test.go: add TestCreateWithoutDefaultBoardTicksPlanning (initTestHome, JAIRA_DEFAULT_BOARD=nonexistent, init+create, body contains '- [x] planning' and '- [ ] brainstorm') and TestCreateWithDefaultBoardOptionsWithoutPlanningLeavesItUnticked (file 'options: [brainstorm]' -> body has '- [ ] planning'; extend existing TestCreateAfterInitTicksDefaultBoardOptions with that assertion instead of a new test is fine)
-- [ ] core/release/notes/X1M1AF.md: one line, e.g. '- ! Expect new tickets to start with planning ticked, so they go through pre-process; to keep it off write options: [] (or your own list) into your default board: jaira lanes default --options brainstorm'
+- [x] core/release/notes/X1M1AF.md: one line, e.g. '- ! Expect new tickets to start with planning ticked, so they go through pre-process; to keep it off write options: [] (or your own list) into your default board: jaira lanes default --options brainstorm'
 - [ ] run go test ./core/lane ./core/ticket ./internal/tui -count=1 and go test ./internal/cli -count=1 -skip 'TestUnreachableRemoteIsOfflineNotARace|TestAnOfflineWriteArrivesWhenTheNetworkIsBack|TestWebPushReportsAQueuedDrop'; any failure from a ticket now carrying [x] planning (e.g. createlane_test comment 'ticks no option', lanes default output 'none pre-ticked'): fix the test's expectation or set JAIRA_DEFAULT_BOARD with options: [] in that test, note which in jaira note
 - [ ] commit feat(X1M1AF): ... with ticket file, tick DoD 1-3 with test names as proof
 
