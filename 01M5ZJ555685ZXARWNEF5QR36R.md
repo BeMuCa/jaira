@@ -20,7 +20,7 @@ commits:
   - de96db1745c69f9e47ea329ea8ccc782072ef6f9
   - 50ff54b331ba75cf94b282daf0ea53a6d07994c5
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T03:00:22Z
+updated-at: 2026-10-31T03:02:08Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-3129429
@@ -96,3 +96,4 @@ round: 4
 - **2026-10-31 02:55 · berkc** — critique round 2: round-1 findings all addressed (verified in de96db17/e1f4f345). Send-back for wording only, no logic: release note line 1 + SKILL.md:3 still claim review tickets are accepted; how-to :333/:394 still describe the page as default/dispatcher sending a link. No code change needed beyond those text lines; remember the shipped.sha256 append if SKILL.md changes again (core/role TestEveryInstalledFileIsAShippedVersion).
 - **2026-10-31 02:58 · berkc** — Round-2 text fix: release note line 1 and SKILL.md description now say accept is human and signoff only; how-to HTML L333 and L394 describe the chat interview as default with the page behind --page. New SKILL.md hash appended to shipped.sha256 (fe7419d3...).
 - **2026-10-31 03:00 · berkc** — critique round 3: only how-to L333 left - it still describes the interview as happening in the dispatcher's run; the paste-into-new-session step from round 2 is missing. Everything else from round 2 fixed.
+- **2026-10-31 03:02 · berkc** — Round-3 text fix: how-to HTML L333 now says the dispatcher hands back the line to paste into a new session, where the interview runs. Only that line changed.
