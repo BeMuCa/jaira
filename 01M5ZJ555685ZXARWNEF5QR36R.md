@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T02:43:25Z
+updated-at: 2026-10-31T02:43:27Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-3129429
@@ -70,3 +70,4 @@ claimed-at: 2026-10-31T01:27:42Z
 - Called by an agent (dispatcher/worker/teamlead): no interview in the agent's long context (berkc note 30.10): answer with the line to paste into a new session. Interview ends with one line per ticket for the main session.
 - **2026-10-31 02:36 · berkc** — steps 1-2 done: git mv to jaira-role-interreview; forwarding stub at jaira-role-acceptance. go test ./core/role now fails only on wantRoles/roleFiles (step 10) and missing shipped hashes (step 11), as the plan expects; both fixed later in this lane.
 - **2026-10-31 02:38 · berkc** — SKILL.md rewritten as one file: header/who/which/language/interview/answers/record (new), page sections 1-3 + never-list demoted one level under '## The page (--page)' (text unchanged in substance). grep role-acceptance in interreview SKILL.md: none. Chat accept with human lane needs a --force on the person-lane refusal; dry-run decides.
+- **2026-10-31 02:43 · berkc** — STOP at step 13: go test ./core/shipped fails TestEveryManifestPathExists - core/shipped/shipped.sha256 names core/role/builtin/jaira-role-acceptance/{build.py,template.html,report.html} (old paths, kept as history lines) and those files no longer exist after step 1's git mv. Plan step 11 says append-only, the decision note says the old build/template/report stay on disk in the old dir, but step 1 moves them and step 2 says the stub is SKILL.md only. Both cannot hold. Options: (A) keep copies of build.py/template.html/report.html in the old dir (stub dir then ships them as the acceptance role's files, Builtins() enumerates every dir); (B) change TestEveryManifestPathExists to skip renamed paths (test change not in plan); (C) other. Not chosen by me.
