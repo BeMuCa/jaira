@@ -320,3 +320,76 @@ func TestReleaseDefaultsToTheWorker(t *testing.T) {
 		t.Errorf("a file naming worker: source %q, want the default", src)
 	}
 }
+
+// Without a settings file the teamlead runs on opus, workers and cheap lanes on
+// haiku at high effort, and strong lanes on opus.
+func TestModelsDefault(t *testing.T) {
+	t.Setenv("JAIRA_HOME", t.TempDir())
+
+	s := settings.Load()
+	want := map[string]string{
+		"orchestrator": "opus",
+		"worker":       "haiku high",
+		"strong":       "opus",
+		"cheap":        "haiku high",
+	}
+	for key, w := range want {
+		m, src := s.ModelFor(key)
+		if m.String() != w || src != "the default" {
+			t.Errorf("%s: %q (%s), want %q from the default", key, m, src, w)
+		}
+	}
+	if m, _ := s.ModelFor("no-such-tier"); m.String() != "haiku high" {
+		t.Errorf("unknown key: %q, want the worker's haiku high", m)
+	}
+}
+
+// An entry in settings.json wins whole: naming a worker model without an effort
+// does not keep the default's high.
+func TestModelsFromFileWinWhole(t *testing.T) {
+	s := settings.Settings{Models: map[string]settings.AgentModel{
+		"worker": {Model: "sonnet"},
+		"strong": {Model: "sonnet", Effort: "xhigh"},
+	}}
+	if m, src := s.ModelFor("worker"); m.String() != "sonnet" || !strings.Contains(src, "settings.json") {
+		t.Errorf("worker: %q (%s), want sonnet with no effort from settings.json", m, src)
+	}
+	if m, _ := s.ModelFor("strong"); m.String() != "sonnet xhigh" {
+		t.Errorf("strong: %q, want sonnet xhigh", m)
+	}
+	if m, _ := s.ModelFor("cheap"); m.String() != "haiku high" {
+		t.Errorf("cheap is not named, got %q, want the default", m)
+	}
+}
+
+// A model that is not a name falls back to the default; an effort that is not a
+// level is dropped and the model kept.
+func TestModelsRejectBadValues(t *testing.T) {
+	s := settings.Settings{Models: map[string]settings.AgentModel{
+		"worker": {Model: "x;rm"},
+		"cheap":  {Model: "sonnet", Effort: "huge"},
+	}}
+	if m, src := s.ModelFor("worker"); m.String() != "haiku high" || src != "the default" {
+		t.Errorf("bad model: %q (%s), want the default haiku high", m, src)
+	}
+	if m, _ := s.ModelFor("cheap"); m.String() != "sonnet" {
+		t.Errorf("bad effort: %q, want sonnet with no effort", m)
+	}
+}
+
+// Models written by Save come back from Load unchanged, and a settings file
+// without them keeps reading as before.
+func TestSaveKeepsModels(t *testing.T) {
+	t.Setenv("JAIRA_HOME", t.TempDir())
+
+	in := settings.Settings{Models: map[string]settings.AgentModel{
+		"orchestrator": {Model: "sonnet", Effort: "high"},
+	}}
+	if err := settings.Save(in); err != nil {
+		t.Fatal(err)
+	}
+	got := settings.Load().Models
+	if got["orchestrator"] != (settings.AgentModel{Model: "sonnet", Effort: "high"}) || len(got) != 1 {
+		t.Errorf("round trip: %+v", got)
+	}
+}

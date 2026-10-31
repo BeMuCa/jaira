@@ -127,6 +127,73 @@ type Settings struct {
 	// (issue #79). Empty means python3. JAIRA_PYTHON in the environment wins
 	// over it. Read it through PythonCommand.
 	Python string `json:"python,omitempty"`
+
+	// Models says which model, and at what effort, each kind of agent starts
+	// on. The keys are orchestrator (the teamlead), worker (the session that
+	// carries a ticket through its lanes), and strong and cheap (the lanes by
+	// their tier). An entry wins whole; a key it does not name keeps
+	// DefaultModels. Read it through ModelFor.
+	Models map[string]AgentModel `json:"models,omitempty"`
+}
+
+// AgentModel is the model an agent is started on and the effort it runs at.
+// Model is an alias (opus, sonnet, haiku); Effort is low, medium, high, xhigh,
+// max, or "" for the model's own default.
+type AgentModel struct {
+	Model  string `json:"model,omitempty"`
+	Effort string `json:"effort,omitempty"`
+}
+
+// DefaultModels is what an agent starts on when settings.json names nothing for
+// its key: the teamlead on opus, workers and cheap lanes on haiku at high
+// effort, strong lanes on opus.
+var DefaultModels = map[string]AgentModel{
+	"orchestrator": {Model: "opus"},
+	"worker":       {Model: "haiku", Effort: "high"},
+	"strong":       {Model: "opus"},
+	"cheap":        {Model: "haiku", Effort: "high"},
+}
+
+// ModelChoices are the values the settings screen steps through, after the
+// default. Anything else is written by hand.
+var ModelChoices = []AgentModel{
+	{Model: "opus"}, {Model: "opus", Effort: "high"},
+	{Model: "sonnet"}, {Model: "sonnet", Effort: "high"},
+	{Model: "haiku"}, {Model: "haiku", Effort: "high"},
+}
+
+// String is the model and the effort in words a person can type: "opus",
+// "haiku high".
+func (m AgentModel) String() string {
+	if m.Effort == "" {
+		return m.Model
+	}
+	return m.Model + " " + m.Effort
+}
+
+// ModelFor returns the model an agent of key starts on, and where it came from
+// in words a person can read. A key that is not in DefaultModels is read as
+// worker. An entry in Models whose model is a valid name wins whole; anything
+// else falls back to the default.
+func (s Settings) ModelFor(key string) (m AgentModel, source string) {
+	if _, ok := DefaultModels[key]; !ok {
+		key = "worker"
+	}
+	if e, ok := s.Models[key]; ok {
+		if name := modelName(e.Model); name != "" {
+			return AgentModel{Model: name, Effort: effortName(e.Effort)}, "from settings.json on this machine"
+		}
+	}
+	return DefaultModels[key], "the default"
+}
+
+// effortName returns v trimmed when it is an effort level, or "" when it is not.
+func effortName(v string) string {
+	switch v = strings.TrimSpace(v); v {
+	case "low", "medium", "high", "xhigh", "max":
+		return v
+	}
+	return ""
 }
 
 // PythonEnv overrides the python setting for one shell or one machine.
