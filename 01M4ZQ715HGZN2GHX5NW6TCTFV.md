@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-31T00:21:41Z
+updated-at: 2026-10-31T00:21:43Z
 updated-by: berkc
 question: ""
 round: 3
@@ -34,7 +34,11 @@ outcome-what: "jaira move, jaira logbook <id> and jaira milestone ls print the p
 outcome-why: "a milestone is one pull request over all its tickets (berkc 22.10), and the person is otherwise never told /jaira-role-pr is due; a ticket outside any milestone is a group of one"
 outcome-resolves: "a finished ticket or a finished milestone now names its next step in the output; an agent never opens a pull request; the one-branch question is settled by merging the ticket branches at PR time, not by changing worktrees"
 review-summary: "Adds a new package core/suggest that works out what is owed once a ticket stands in the acceptance lane (requires-human-exit, not a question lane, not agentic) or the terminal lane or off the board: a ticket in no open milestone gets 'Next: the pull request. Only a person opens it: /jaira-role-pr <handle>'; a ticket in an open, incomplete milestone gets only 'Milestone <m>: k of n done'; a milestone whose every member is terminal or filed gets one /jaira-role-pr line naming all its handles plus 'jaira logbook <m>' for after the merge. Empty or filed milestones say nothing. jaira move, jaira logbook <id> and jaira milestone ls print these lines after their usual output, and --json carries them as 'suggestions' (kind, text, command, by, after), left out when empty. The dispatcher, worker and teamlead skills get one paragraph each: pass the lines on word for word, never run /jaira-role-pr. jaira-role-pr now takes several ids or 'milestone <name>', reads members from 'jaira milestone ls --json' tickets (filed ones included - the round-2 fix in 83eeac55), builds milestone/<name> from the default branch with git merge --no-ff per ticket branch, stops before the push on a conflict or on a ticket with no commit, and refreshes an open PR/MR title and body only when a person invoked it. Release notes (6 lines), docs/COMMANDS.md rows and the shipped.sha256 manifest are updated."
-review-gaps: "none: pass 2 optimize of the delta - the sentence is the only change, no dead code, no second copy of the members rule (the list command keeps its own filter)"
+review-gaps: |-
+  note: the milestone-complete line passes bare handles (/jaira-role-pr H45V4K N9MN9D), not 'milestone <name>', so the role has no milestone name for its milestone/<name> branch unless it works it out from the handles
+  note: the filing line says 'jaira logbook <name>' by bare name, which jaira refuses (exit 3) when two milestones share that name; <name>-<ID> would always work
+  note: 'jaira logbook --all' prints no suggestions, so sweeping the terminal lane never says that a milestone just became complete
+  note: the jaira-role-pr skill itself has never been run end to end against a real remote; the handtest only checked the plain git merge --no-ff steps
 test-verdict: "pass: full suite EXIT=0 (same three hanging tests skipped), go vet EXIT=0 on commit 83eeac55; the change since the last green run is the role-pr sentence, its pin test and the manifest line; core/role and core/shipped pass"
 claimed-by: berk-ca-2990549
 claimed-at: 2026-10-31T00:12:59Z
