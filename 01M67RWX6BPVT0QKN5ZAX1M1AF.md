@@ -18,7 +18,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-31T01:24:00Z
-updated-at: 2026-10-31T01:24:00Z
+updated-at: 2026-10-31T01:27:34Z
+updated-by: berkc
 ---
 
 # Neue Tickets haben die Option planning standardmaessig angehakt, damit jedes Ticket durch den Planer geht
