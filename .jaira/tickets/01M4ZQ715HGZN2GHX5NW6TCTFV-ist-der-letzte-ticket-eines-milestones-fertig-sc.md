@@ -1,7 +1,7 @@
 ---
 id: 01M4ZQ715HGZN2GHX5NW6TCTFV
 title: "Ist der letzte Ticket eines Milestones fertig, schlaegt jaira den PR mit /jaira-role-pr vor und bietet an, den Milestone abzulegen"
-status: optimize
+status: testing
 ready: true
 creator: BeMuCa
 assignee: berkc
@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-30T23:59:46Z
+updated-at: 2026-10-31T00:02:31Z
 updated-by: berkc
 question: ""
 round: 2
@@ -109,3 +109,4 @@ Parallel: N71NVG baut das Ablegen/Loeschen eines fertigen Milestones samt Ticket
 - **2026-10-30 23:58 · berkc** — handtest (plan step 9): built the branch binary to the scratchpad (handtest-6TCTFV/bin/jaira), scratch repo with HOME and JAIRA_HOME inside the scratchpad. round-one with A and B: A to signoff -> 'Milestone round-one: 0 of 2 done', no PR line; B to done -> '1 of 2 done'; A to done -> PR line for both handles + logbook line, same in milestone ls and in --json. The suggested 'jaira logbook round-one' filed it (exit 0), ls empty after. Ungrouped C to signoff -> '/jaira-role-pr <C>' line. Plain git check of the merge step: two feature branches merged --no-ff into milestone/round-one = clean; a conflicting pair = rc 1, merge --abort. NOT tested: the jaira-role-pr skill itself (an agent run that pushes to a real remote), and the milestone file differing between ticket branches (the KWQCYZ risk).
 - **2026-10-30 23:59 · berkc** — critique (pass 1, worker): read the Go diff - core/suggest/suggest.go, internal/cli/suggest.go, the hooks in flow.go, logbook.go, milestones.go - and the three role SKILL paragraphs. One simplification made already: ForMilestone repeated the Filed/empty check that complete() does. Left alone on purpose: (a) groupOf reads every member of each milestone the ticket is in on every move; board sizes are tens, so no cache; (b) the same paragraph is in three role skills because the pin test reads each role on its own and the role format has no include; (c) --json suggestions also carry kind progress, which the DoD does not name; the docs say consumers branch on kind; (d) milestone ls swallows a lane-load error on purpose so the listing never fails because of suggestions.
 - **2026-10-30 23:59 · berkc** — optimize (worker): (1) duplication - the acceptance reading (requires-human-exit, not question, not agentic) matches core/lane impliedFresh (lane.go:655) but no helper exists to call; lane.Facts() is a board-note projection, not a predicate, so the one-line predicate stays in core/suggest. The milestone completion rule is written again in internal/cli/logbook.go logbookMilestone; it is not rewritten here because the note on this ticket says N71NVG owns that code. (2) dead code - none added. (3) fluff - the find() walk is kept: Set.Get needs the private index that Load fills, so a Set built in a unit test answers nothing through it. (4) cost - milestone ls reads lanes once; per move one LoadAll; nothing hoisted. Change made: ForMilestone no longer repeats the Filed/empty check complete() does.
+- **2026-10-31 00:02 · berkc** — testing (worker): full suite RC=1 - core/role TestEveryInstalledFileIsAShippedVersion: core/shipped/shipped.sha256 lacked the four SKILL.md versions this branch changes (dispatcher, role-pr, teamlead, worker). Fixed by appending their four lines, as the test prints them; the file is append-only, so nothing was regenerated. Vet RC=0.
