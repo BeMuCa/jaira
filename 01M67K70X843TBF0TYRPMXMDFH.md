@@ -18,7 +18,7 @@ related:
   - 01M5659BR7RYZ6RVC84HGK1QGT
 commits: []
 created-at: 2026-10-30T23:44:40Z
-updated-at: 2026-10-30T23:55:07Z
+updated-at: 2026-10-31T00:00:05Z
 updated-by: berkc
 claimed-by: berk-ca-2691736
 claimed-at: 2026-10-30T23:47:40Z
@@ -34,7 +34,8 @@ review-gaps: "none: duplication searched (grep CutPrefix and the '! ' marker acr
 
 ## Definition of Done
 
-- [ ] Popup (Overlay ueber dem Board), keine eigene Seite; links/rechts blaettert weiter zwischen Versionen
+- [x] Popup (Overlay ueber dem Board), keine eigene Seite; links/rechts blaettert weiter zwischen Versionen
+  proof: internal/tui/releasenotes.go:41-50 key() left/h and right/l inert at the ends; popup verified in tmux: 'What is new since 0.5.0 · 9 unread', Left -> '0.5.8 · 2/9', Right -> 'Unreleased · 1/9', second Right no-op, esc closes; TestNotesViewStartsOnTheNewestAndPagesOneVersionAtATime, TestPopupAfterAnUpgradeAcrossVersionsCountsTheUnreadAndPagesThem
 - [ ] Je Version zuerst Features/Feature-Aenderungen, dann Ueberschrift 'Andere'; Leerzeilen und Einrueckung fuer Lesbarkeit; Test
 - [ ] Notizformat kennzeichnet Features; CLAUDE.md-Abschnitt zu Release-Notes beschreibt es
 - [ ] Release-Note-Zeile
