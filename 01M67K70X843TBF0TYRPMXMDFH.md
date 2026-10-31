@@ -18,7 +18,7 @@ related:
   - 01M5659BR7RYZ6RVC84HGK1QGT
 commits: []
 created-at: 2026-10-30T23:44:40Z
-updated-at: 2026-10-31T00:00:11Z
+updated-at: 2026-10-31T00:00:15Z
 updated-by: berkc
 claimed-by: berk-ca-2691736
 claimed-at: 2026-10-30T23:47:40Z
@@ -40,7 +40,8 @@ review-gaps: "none: duplication searched (grep CutPrefix and the '! ' marker acr
   proof: internal/tui/releasenotes.go:73-98 lines() groups Features then Others, Others header only beside a feature; :101-119 changeLines blank line after each change; TestNotesViewSplitsFeaturesFromOthers; tmux popup showed Features header, gap, '+' bullets, Others header
 - [x] Notizformat kennzeichnet Features; CLAUDE.md-Abschnitt zu Release-Notes beschreibt es
   proof: core/release/release.go:109 Feature() ('- + ' marker, '- + ! ' combined); CLAUDE.md:270 format bullet; TestFeatureMarker, TestFeatureLineStaysAPlainChange (core/release/release_test.go); internal/cli/update.go writeNotes prints ' + text', TestUpdateNotesMarkImportantLines
-- [ ] Release-Note-Zeile
+- [x] Release-Note-Zeile
+  proof: core/release/notes/MXMDFH.md two '- + ' lines, one per change, unwrapped
 
 ## Options
 
