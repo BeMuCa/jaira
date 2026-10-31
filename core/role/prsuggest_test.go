@@ -33,7 +33,7 @@ func TestPRTakesSeveralTicketsOrAMilestone(t *testing.T) {
 	text := string(body)
 	for _, want := range []string{
 		"`milestone <name>`",
-		"jaira list --milestone <name>\n--json",
+		"jaira milestone ls --json",
 		"## One branch for several tickets",
 		"git merge --no-ff",
 		"A ticket with no commit on the branch is a finding",

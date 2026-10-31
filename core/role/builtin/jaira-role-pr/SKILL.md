@@ -38,8 +38,9 @@ If you cannot tell who invoked you, treat it as an agent and hand the line back.
 
 A milestone goes out as one pull request over all its tickets, so they share one
 branch first. Each ticket was worked on its own branch, named with its handle.
-The members of a milestone are every ticket that `jaira list --milestone <name>
---json` lists, filed or not.
+The members of a milestone are the `tickets` that `jaira milestone ls --json`
+lists under that milestone, filed ones included; `jaira list` shows only the
+board and leaves filed members out.
 
 Fetch the default branch of the repository settled in **Which repository it goes
 to**, find each ticket's branch, and build the one branch from that default
