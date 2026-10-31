@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-31T01:24:02Z
-updated-at: 2026-10-31T02:35:09Z
+updated-at: 2026-10-31T02:36:23Z
 updated-by: berkc
 claimed-by: berk-ca-3153991
 claimed-at: 2026-10-31T02:32:33Z
@@ -41,7 +41,7 @@ claimed-at: 2026-10-31T02:32:33Z
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] Lane files: add the line 'context: fresh' directly after 'model-tier: strong' in core/lane/builtin/25-critique.md, 26-optimize.md AND 40-review.md (review must become explicit: impliedFresh in core/lane/lane.go:648 switches the implied review default off as soon as any lane declares a valid context). Change nothing else in them.
+- [x] Lane files: add the line 'context: fresh' directly after 'model-tier: strong' in core/lane/builtin/25-critique.md, 26-optimize.md AND 40-review.md (review must become explicit: impliedFresh in core/lane/lane.go:648 switches the implied review default off as soon as any lane declares a valid context). Change nothing else in them.
 - [ ] core/shipped/shipped.sha256: keep every old hash, append the new sha256 of each changed file (lanes + SKILL.md below) under its own path; run 'go test ./core/shipped -count=1' and follow its message.
 - [ ] core/lane/context_test.go: setUpBoard must simulate a board written before the field — after Load, strip every line 'context: fresh' from each *.md in ProjectLanesDir(root) (otherwise addFrontmatter adds a duplicate context: key). TestContextDefaultsToReviewOnTheShippedBoard: the shipped-offer half now wants 'critique,optimize,review' (no '*'); the setUpBoard half keeps 'review*'; rename it TestContextShippedLanesAreFreshAndAnOldBoardDefaultsToReview and fix its comment. Run 'go test ./core/lane -count=1'.
 - [ ] internal/cli/context_test.go: add helper stripLaneContexts(t, dir) (same stripping, lane.ProjectLanesDir(dir)); in TestLanesAndForLaneReportContext, TestAnInvalidContextIsReportedNotDropped and TestAnInvalidContextLeavesTheDefaultFresh call runLanes(t, dir) once so the files exist, then stripLaneContexts, before the rest. Run 'go test ./internal/cli -run Context -count=1' and 'go test ./core/board -count=1'.
