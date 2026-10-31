@@ -1,7 +1,7 @@
 ---
 id: 01M67RWZDWBS8E44Z3KGXKS048
 title: "critique und optimize laufen je in einem frischen Agenten, nicht im Agenten, der gebaut hat"
-status: pre-process
+status: in-progress
 ready: true
 creator: berkc
 assignee: berkc
@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-31T01:24:02Z
-updated-at: 2026-10-31T02:35:07Z
+updated-at: 2026-10-31T02:35:09Z
 updated-by: berkc
 claimed-by: berk-ca-3153991
 claimed-at: 2026-10-31T02:32:33Z
