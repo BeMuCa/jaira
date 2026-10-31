@@ -18,7 +18,7 @@ related: []
 commits:
   - 8fea809f03736e6759b1d15d2bc51fbd7c83cc3a
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T02:46:45Z
+updated-at: 2026-10-31T02:51:50Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-3129429
@@ -26,6 +26,11 @@ claimed-at: 2026-10-31T01:27:42Z
 outcome-what: "interreview role: chat interview default, --page for the page, stub at old name"
 outcome-why: /jaira-role-acceptance built a page by default and the chat path was nowhere; 17 tickets were faster in chat (feedback 27.10.2026)
 outcome-resolves: chat interview default with the per-ticket format and accept/explain/fix answers; record at the old path; page behind --page
+review-summary: |-
+  core/role/builtin/jaira-role-interreview/SKILL.md:107-109 recommends fix when 'the review-verdict is not a pass'; review-verdict is empty for every ticket in human and review (the review lane writes it, after human), so a literal cheap model recommends fix for all of them - say 'fix when a machine check failed, or a review-verdict is present and is not a pass'
+  .jaira plan step 11 (shipped hashes) is still unticked although its note says done - the terminal gate refuses a move with an open plan step (core/gate/gate.go:417-430); tick it with jaira dod 5QR36R 11 --done --plan
+  OPEN QUESTION (maintainer, not a send-back reason): SKILL.md:118-119 accept on a review-lane ticket targets done; core/gate/gate.go:438-447 refuses leaving review while review-summary/gaps/verdict/check are empty, so the dry-run always refuses and the skill (correctly) never forces - as written, accept in review can never succeed. Decide: drop review from accept (and say 'run the model review first'), or make accept in review mean something else
+  OK: stub forwarding + install Updated path (internal/cli tests green), all role/README/how-to references renamed (only stub, history and release notes keep the old name), shipped-manifest drop of removed paths matches scripts/shipped-history.sh:50 and the spawn.sh precedent, release note format, go test ./core/role ./core/shipped ./internal/cli subset pass
 ---
 
 # Die Abnahme-Rolle fuehrt das Interview im Chat; die Seite ist nur noch auf Wunsch
