@@ -1746,7 +1746,7 @@ func (m *Model) renderHelp() string {
 			{"u", "narrow the board to some people: space ticks them, enter applies (x there shows everyone)"},
 			{"esc", "clear the filter"},
 			{"y", "copy the full ticket id (detail pane)"},
-			{"z", "draw lanes with no tickets thin (press again to widen them)"},
+			{"z", "draw lanes with no tickets thin and skip them with ←/→ (press again to widen them)"},
 			{"c", "stop or start the band running round the cards being worked on"},
 			{"L", "the milestone roadmap (its keys are further down)"},
 		}},

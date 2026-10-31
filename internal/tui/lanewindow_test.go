@@ -3,6 +3,8 @@ package tui
 import (
 	"strings"
 	"testing"
+
+	tea "charm.land/bubbletea/v2"
 )
 
 // The ten-lane fixture behind these tests holds tickets in five lanes
@@ -160,17 +162,122 @@ func equalStringSets(a, b map[string]bool) bool {
 	return true
 }
 
-// A thin lane is still a lane: l steps onto it like any other, because what
-// is on the board is what the cursor can reach.
-func TestLWithToggleOnStepsOntoThinLanes(t *testing.T) {
+// assertStepSkipsEmptyLanes checks that stepping d lanes from `from` landed on
+// `to`, that `to` holds tickets, and that every lane passed over is empty.
+func assertStepSkipsEmptyLanes(t *testing.T, m *Model, from, to, d int) {
+	t.Helper()
+	n := len(m.cols)
+	for i := ((from+d)%n + n) % n; i != to; i = ((i+d)%n + n) % n {
+		if len(m.cols[i].tickets) != 0 {
+			t.Errorf("step from %q to %q jumped over %q, which holds tickets", m.cols[from].lane.ID, m.cols[to].lane.ID, m.cols[i].lane.ID)
+		}
+	}
+	if len(m.cols[to].tickets) == 0 {
+		t.Errorf("step from %q landed on %q, which holds no tickets", m.cols[from].lane.ID, m.cols[to].lane.ID)
+	}
+}
+
+// With z on, the board's ←/→ skip the thin lanes: from backlog, right lands on
+// the next lane that holds a ticket, not on the empty brainstorm beside it.
+func TestArrowsWithToggleOnSkipEmptyLanes(t *testing.T) {
 	m := newTestModel(t, 240, 40)
-	m.laneIdx = laneIndex(t, m, "backlog")
+	start := laneIndex(t, m, "backlog")
+	m.laneIdx = start
 	m.key(key("z"))
 
-	m.moveLane(1)
-	if got := m.cols[m.laneIdx].lane.ID; got != "brainstorm" {
-		t.Errorf("l from backlog with empty lanes thin landed on %q, want brainstorm (the adjacent lane)", got)
+	m.key(tea.KeyPressMsg{Code: tea.KeyRight})
+	if m.laneIdx == laneIndex(t, m, "brainstorm") {
+		t.Errorf("right from backlog with empty lanes thin landed on brainstorm, which is empty")
 	}
+	assertStepSkipsEmptyLanes(t, m, start, m.laneIdx, 1)
+}
+
+// Without z the arrows still step onto every lane, empty or not.
+func TestArrowsWithToggleOffStepOntoEmptyLanes(t *testing.T) {
+	m := newTestModel(t, 240, 40)
+	m.laneIdx = laneIndex(t, m, "backlog")
+
+	m.key(tea.KeyPressMsg{Code: tea.KeyRight})
+	if got := m.cols[m.laneIdx].lane.ID; got != "brainstorm" {
+		t.Errorf("right from backlog with z off landed on %q, want brainstorm (the adjacent lane)", got)
+	}
+}
+
+// From backlog, left with z on wraps round the trailing empty lanes to the
+// last lane that holds tickets.
+func TestLeftWithToggleOnWrapsToLastFilledLane(t *testing.T) {
+	m := newTestModel(t, 240, 40)
+	start := laneIndex(t, m, "backlog")
+	m.laneIdx = start
+	m.key(key("z"))
+
+	m.key(tea.KeyPressMsg{Code: tea.KeyLeft})
+	if got := m.cols[m.laneIdx].lane.ID; got != "done" {
+		t.Errorf("left from backlog with z on landed on %q, want done (the last lane holding tickets)", got)
+	}
+	assertStepSkipsEmptyLanes(t, m, start, m.laneIdx, -1)
+}
+
+// When the cursor's lane is the only one holding tickets, ←/→ have nowhere
+// else to skip to and leave the cursor where it is.
+func TestArrowsWithToggleOnStayWhenOnlyLaneHasTickets(t *testing.T) {
+	m := newTestModel(t, 240, 40)
+	m.filter = "Refactor"
+	m.rebuild()
+	filled := -1
+	count := 0
+	for i, c := range m.cols {
+		if len(c.tickets) > 0 {
+			filled = i
+			count++
+		}
+	}
+	if count != 1 {
+		t.Fatalf("filter Refactor left %d lanes with tickets, want exactly 1", count)
+	}
+	m.laneIdx = filled
+	m.key(key("z"))
+
+	m.key(tea.KeyPressMsg{Code: tea.KeyRight})
+	if m.laneIdx != filled {
+		t.Errorf("right moved to lane %d with only lane %d holding tickets", m.laneIdx, filled)
+	}
+	m.key(tea.KeyPressMsg{Code: tea.KeyLeft})
+	if m.laneIdx != filled {
+		t.Errorf("left moved to lane %d with only lane %d holding tickets", m.laneIdx, filled)
+	}
+}
+
+// When no lane holds tickets at all, there is nothing to skip to, so the
+// arrows step one lane at a time as they always did.
+func TestArrowsWithToggleOnAllEmptyStillMove(t *testing.T) {
+	m := newTestModel(t, 240, 40)
+	m.filter = "zzz-matches-nothing"
+	m.rebuild()
+	for _, c := range m.cols {
+		if len(c.tickets) != 0 {
+			t.Fatalf("filter matching nothing left lane %q with tickets", c.lane.ID)
+		}
+	}
+	m.laneIdx = 3
+	m.key(key("z"))
+
+	m.key(tea.KeyPressMsg{Code: tea.KeyRight})
+	if want := (3 + 1) % len(m.cols); m.laneIdx != want {
+		t.Errorf("right with every lane empty landed on lane %d, want %d", m.laneIdx, want)
+	}
+}
+
+// Standing on an empty lane when the toggle is on, the arrows still go to the
+// next lane that holds tickets in that direction.
+func TestArrowsWithToggleOnLeaveEmptyStartLane(t *testing.T) {
+	m := newTestModel(t, 240, 40)
+	start := laneIndex(t, m, "pre-process")
+	m.laneIdx = start
+	m.key(key("z"))
+
+	m.key(tea.KeyPressMsg{Code: tea.KeyRight})
+	assertStepSkipsEmptyLanes(t, m, start, m.laneIdx, 1)
 }
 
 // Toggling on while parked on an empty lane leaves the cursor where it is:
