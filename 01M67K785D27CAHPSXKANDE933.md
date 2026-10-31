@@ -14,7 +14,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-10-31T02:35:16Z
+updated-at: 2026-10-31T02:36:54Z
 updated-by: berkc
 claimed-by: berk-ca-3155695
 claimed-at: 2026-10-31T02:31:33Z
@@ -22,6 +22,7 @@ outcome-what: stepLane in model.go skips lanes with no tickets when z is on; rel
 outcome-why: "with z on, ←/→ from backlog to done jumped through every empty lane in between"
 outcome-resolves: "DoD 1 and 2 ticked with proof (tests in lanewindow_test.go:182-301, release note line)"
 review-summary: none
+review-gaps: "none: stepLane is the only wrap-scan for non-empty lanes (moveLane/layer.go/ticks.go do single-step wrap only); len(m.cols)==0 guard is load-bearing (index m.cols[m.laneIdx] below); new tests exercise distinct cases; nothing orphaned (moveLane still used by lane focus)"
 ---
 
 # Mit z (leere Lanes schmal) springen links/rechts zwischen Tickets ueber leere Lanes hinweg
