@@ -18,7 +18,7 @@ related:
   - 01M5659BR7RYZ6RVC84HGK1QGT
 commits: []
 created-at: 2026-10-30T23:44:40Z
-updated-at: 2026-10-31T00:05:02Z
+updated-at: 2026-10-31T00:05:04Z
 updated-by: berkc
 claimed-by: berk-ca-2691736
 claimed-at: 2026-10-30T23:47:40Z
@@ -34,6 +34,8 @@ review-gaps: |-
   note: DoD 2 names the header 'Andere'; the popup says 'Others' - decided in the 23:48 note (popup text is English), the person should confirm.
   note: the blank line after the last change plus render's own blank line leaves two empty lines above the key hint (seen in tmux).
 test-verdict: "pass: full suite RC=0 (go test ./... -skip the three hanging tests, 33 packages ok, no FAIL) and go vet ./... clean, both before the last note-only commit 9e50be2b; core/release and internal/tui re-run with -count=1 after it, ok. DoD 1-4 verified in the tree (proofs on the ticket). Popup verified in tmux on a scratch board with a 0.5.0 stamp: 'What is new since 0.5.0 · 9 unread', Features first then Others, Left/Right paging and esc. jaira update prints '  + ' for features. Skipped: TestUnreachableRemoteIsOfflineNotARace, TestAnOfflineWriteArrivesWhenTheNetworkIsBack, TestWebPushReportsAQueuedDrop (hang in this sandbox). Not checked: the launcher w view at phone-narrow width; the 'w' launcher path was not exercised in tmux (same notesView component)."
+review-verdict: "Not accepted: the Features/Others split, the '- + ' marker, the CLI '+' lines, the docs and the note are right and tested (go test ./core/release ./internal/tui ok, TestUpdateNotes ok, vet clean, board popup checked in tmux), but DoD 1 is not met - the launcher's 'w' still shows the release notes as a full-screen page, and that is the 'you made them a page ... pop up only' the ticket exists for. Fairly sure, not certain: if the person meant only the board popup, DoD 1 already held and this blocker falls away."
+review-round: 2
 ---
 
 # Die Release-Notes erscheinen als Popup statt Seite, getrennt in Features zuerst und 'Andere' darunter, luftig und leicht lesbar
