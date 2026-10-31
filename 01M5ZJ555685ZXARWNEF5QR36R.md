@@ -18,7 +18,7 @@ related: []
 commits:
   - 8fea809f03736e6759b1d15d2bc51fbd7c83cc3a
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T02:54:07Z
+updated-at: 2026-10-31T02:54:09Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-3129429
@@ -88,3 +88,4 @@ round: 2
 - **2026-10-31 02:44 · berkc** — planner amendment 31.10: the append-only rule in plan item 11 was wrong for removed paths. core/shipped TestEveryManifestPathExists requires every manifest path to exist, and scripts/shipped-history.sh only keeps paths embedded today, so lines of a removed path are dropped (precedent: jaira-teamlead/scripts/spawn.sh after the C9V7ZV move has 0 lines). Decision: delete the 12 lines for jaira-role-acceptance/{build.py,template.html,report.html}; keep all jaira-role-acceptance/SKILL.md lines. Effect on users: none - install() never touches those three files in an old jaira-role-acceptance dir anyway (not in Builtins), so whether they count as 'known' doesn't matter; they stay on disk unused. Not chosen: keeping copies of build.py etc. in the stub dir just to satisfy the test - that would ship dead files.
 - **2026-10-31 02:46 · berkc** — Resumed on coordinator amendment: deleted the 12 shipped.sha256 lines for jaira-role-acceptance build.py/template.html/report.html (SKILL.md lines kept). go test ./core/role ./core/shipped ./internal/cli (subset) ./core/release all pass. Stub still at jaira-role-acceptance/SKILL.md.
 - **2026-10-31 02:51 · berkc** — critique: (1) SKILL.md:107-109 - empty review-verdict (always so in human and review) must not count as 'not a pass'; recommend fix only on a failed machine check or a present non-pass verdict. (2) tick plan step 11 (jaira dod 5QR36R 11 --done --plan), the terminal gate refuses an open plan step. Open for maintainer, not a send-back: accept on a review-lane ticket -> done is always refused by the missing-produces gate (core/gate/gate.go:438-447) for review outputs; the skill shows the refusal and does not force, so that path is dead text until the maintainer decides the rule. Left alone: manifest line drop (planner note 02:44 + scripts/shipped-history.sh:50), stub-only old dir (planner note 02:34).
+- **2026-10-31 02:54 · berkc** — Plan 11 as actually done: the shipped manifest is append-only except the amended coordinator decision: 12 old build.py/template.html/report.html lines of jaira-role-acceptance deleted (their files no longer exist after the rename); all SKILL.md lines kept; the current interreview hashes appended (and one more after the review fix). shipped-history.sh not run.
