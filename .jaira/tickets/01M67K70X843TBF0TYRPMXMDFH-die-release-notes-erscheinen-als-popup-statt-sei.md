@@ -1,7 +1,7 @@
 ---
 id: 01M67K70X843TBF0TYRPMXMDFH
 title: "Die Release-Notes erscheinen als Popup statt Seite, getrennt in Features zuerst und 'Andere' darunter, luftig und leicht lesbar"
-status: in-progress
+status: optimize
 ready: true
 creator: berkc
 assignee: berkc
@@ -18,14 +18,14 @@ related:
   - 01M5659BR7RYZ6RVC84HGK1QGT
 commits: []
 created-at: 2026-10-30T23:44:40Z
-updated-at: 2026-10-31T00:09:19Z
+updated-at: 2026-10-31T00:10:06Z
 updated-by: berkc
 claimed-by: berk-ca-2691736
 claimed-at: 2026-10-30T23:47:40Z
 outcome-what: "Release notes popup and jaira update: a note line '- + text' is a feature; the popup lists features under a Features header, then the rest under Others, a blank line after each change. Parser: core/release/release.go Feature(); layout: internal/tui/releasenotes.go lines()/changeLines(); CLI: internal/cli/update.go writeNotes prints '  + text'. CLAUDE.md format bullet and note core/release/notes/MXMDFH.md added. Commit cb13a6c2 on feat/MXMDFH-release-notes-popup."
 outcome-why: "Berk: the popup must be the only surface, features first, Others below with a header, gaps for readability; the feature marker had to be a format the old binaries read as a plain line, so '- + ' mirrors '- ! '."
 outcome-resolves: "DoD 2 (ordering, header, gaps, test) and DoD 3 (marker and CLAUDE.md) code and tests in place; DoD 1 (popup, paging) unchanged from GK1QGT, to be verified in tmux; DoD 4 note written."
-review-summary: "internal/tui/modal.go:92 modalContent() still spends its own arithmetic (m.modalHeight() - 2) beside the new modalContentOf(height) that home.go now uses; the comment above modalHeight says the budget must be asked in one place. Make modalContent return modalContentOf(m.height)."
+review-summary: "none"
 round: 4
 review-gaps: |-
   blocker: DoD 1 - 'Popup (Overlay ueber dem Board), keine eigene Seite': the launcher's 'w' still draws the notes as a full-screen page of their own (internal/tui/home.go:428-429, h.notes.render(h.width, h.height), no box, launcher not visible behind). Seen in tmux with this branch's binary. The diff does not touch where the notes are shown, and outcome-resolves itself says 'DoD 1 unchanged from GK1QGT', yet the person's complaint was 'you made them a page ... pop up only' about that state. The DoD 1 proof checks only the board modal.
@@ -81,3 +81,5 @@ review-check: "1. cd /home/berkc/code/X_General/jaira-MXMDFH && go build -o /tmp
 - **2026-10-31 00:05 · berkc** — review (fresh context): sent back to in-progress, blocker on DoD 1. The launcher's 'w' (internal/tui/home.go:428-429) still renders the release notes full screen as a page of their own; only the board shows them as a modal (view.go:150, modal.go modalOver). The person asked for 'pop up only', and the DoD 1 proof checked only the board. Fix direction: draw the launcher's notes as a bordered box over the launcher, as modalOver does on the board (Home has no modal helper today). Everything else in the diff holds; the four notes in review-gaps are small (AGENTS.md:221 lacks the '- + ' bullet, styFeature comment vs whole-line colour, 'Others' vs 'Andere' to confirm, double blank above the hint). If the person says the launcher page is fine, this blocker falls away and the ticket can go on to signoff.
 - **2026-10-31 00:09 · berkc** — in-progress (round 2, after review sent back): the launcher's w now draws the notes as a box over the launcher (home.go render -> list(), overBox in modal.go), the same as the board popup. Also fixed the two findings the review listed: AGENTS.md gets the '- + ' bullet, styFeature comment corrected, one blank line above the hint. Left open for the person (not changed): the heading is 'Others' in English, the ticket DoD says 'Andere'.
 - **2026-10-31 00:09 · berkc** — critique (round 2): one finding, modal.go:92 modalContent duplicates the content-height arithmetic next to modalContentOf; fix is one line, return modalContentOf(m.height). Everything else in the launcher overlay: list() split, overBox, the test, the blank-line fix, AGENTS.md bullet checked and stands.
+- **2026-10-31 00:09 · berkc** — in-progress (round 2): modal.go modalContent now returns modalContentOf(m.height); committed 2d3c61e7 and pushed. Tests for the touched files ok.
+- **2026-10-31 00:10 · berkc** — critique pass 3: none. Stood on the round-1 and round-2 notes; the modal.go:92 finding is answered in 2d3c61e7 (modalContent = modalContentOf(m.height)). Launcher overlay split in home.go render()/list() is the only structural change and is read as clean.

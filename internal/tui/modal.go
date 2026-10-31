@@ -74,21 +74,17 @@ func overBox(behind, content string, width, height int) string {
 	).Render()
 }
 
-// modalHeight is how tall the box may be, and modalContent how many lines
-// fit inside its border. A window that budgets its own lines has to ask
-// here rather than repeat the arithmetic: three rounds of review found the
-// same defect, each time because the lines were counted in one place and
-// spent in another.
-func (m *Model) modalHeight() int { return modalHeightOf(m.height) }
-
-// modalHeightOf is modalHeight for a window of the given height, for a view
-// that is not the board and so has no Model to ask.
+// modalHeightOf is how tall the box may be in a window of the given height,
+// and modalContentOf how many lines fit inside its border. A window that
+// budgets its own lines has to ask here rather than repeat the arithmetic:
+// three rounds of review found the same defect, each time because the lines
+// were counted in one place and spent in another.
 func modalHeightOf(height int) int { return max(6, height-6) }
 
-// modalContentOf is modalContent for a window of the given height.
+// modalContentOf is modalHeightOf less the two border lines.
 func modalContentOf(height int) int { return modalHeightOf(height) - 2 }
 
-// modalContent is modalHeight less the two border lines.
+// modalContent is modalContentOf for the board's window.
 func (m *Model) modalContent() int { return modalContentOf(m.height) }
 
 // underlying renders the view a modal sits on, so closing the modal changes
