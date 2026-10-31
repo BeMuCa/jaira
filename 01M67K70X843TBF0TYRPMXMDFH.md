@@ -18,7 +18,7 @@ related:
   - 01M5659BR7RYZ6RVC84HGK1QGT
 commits: []
 created-at: 2026-10-30T23:44:40Z
-updated-at: 2026-10-31T00:05:00Z
+updated-at: 2026-10-31T00:05:02Z
 updated-by: berkc
 claimed-by: berk-ca-2691736
 claimed-at: 2026-10-30T23:47:40Z
@@ -27,7 +27,12 @@ outcome-why: "Berk: the popup must be the only surface, features first, Others b
 outcome-resolves: "DoD 2 (ordering, header, gaps, test) and DoD 3 (marker and CLAUDE.md) code and tests in place; DoD 1 (popup, paging) unchanged from GK1QGT, to be verified in tmux; DoD 4 note written."
 review-summary: "Adds a feature marker to the release-note format: a note line written '- + text' is a feature or feature change (core/release/release.go Feature(); '- + ! text' is a feature the reader must act on). The release notes view (internal/tui/releasenotes.go lines()/changeLines()) now lists a version's feature lines first under a 'Features' header with an accent '+' bullet, then the rest under a dim 'Others' header; 'Others' appears only when the version has a feature line, so older versions read as before. A blank line now follows each header and each change. 'jaira update' (internal/cli/update.go writeNotes) prints a feature line as '  + text', a must-act feature still as '  ! text'. CLAUDE.md documents the marker; core/release/notes/MXMDFH.md carries two '- + ' lines. Where the notes are shown is unchanged: on the board they stay the modal from GK1QGT, in the launcher 'w' stays a full-screen view."
 round: 2
-review-gaps: "none: duplication searched (grep CutPrefix and the '! ' marker across the repo): the only marker parser is core/release/release.go Important/Feature, the other CutPrefix hits are unrelated (epic.go, selfupdate.go, milestone.go). No dead code: every added helper has callers (Feature: release.go lines and update.go writeNotes; changeLines: lines()). No fluff left after the e39d62f4 simplification. Cost: lines() rebuilds the page on each render, as before this change; the render already did it, and a page is a few dozen lines."
+review-gaps: |-
+  blocker: DoD 1 - 'Popup (Overlay ueber dem Board), keine eigene Seite': the launcher's 'w' still draws the notes as a full-screen page of their own (internal/tui/home.go:428-429, h.notes.render(h.width, h.height), no box, launcher not visible behind). Seen in tmux with this branch's binary. The diff does not touch where the notes are shown, and outcome-resolves itself says 'DoD 1 unchanged from GK1QGT', yet the person's complaint was 'you made them a page ... pop up only' about that state. The DoD 1 proof checks only the board modal.
+  note: AGENTS.md:221 carries the same release-notes format list as CLAUDE.md and did not get the new '- + ' bullet, so an agent reading AGENTS.md does not know the marker.
+  note: internal/tui/releasenotes.go styFeature comment says it colours the bullet; changeLines renders the whole line, wrapped continuation lines included, in that colour.
+  note: DoD 2 names the header 'Andere'; the popup says 'Others' - decided in the 23:48 note (popup text is English), the person should confirm.
+  note: the blank line after the last change plus render's own blank line leaves two empty lines above the key hint (seen in tmux).
 test-verdict: "pass: full suite RC=0 (go test ./... -skip the three hanging tests, 33 packages ok, no FAIL) and go vet ./... clean, both before the last note-only commit 9e50be2b; core/release and internal/tui re-run with -count=1 after it, ok. DoD 1-4 verified in the tree (proofs on the ticket). Popup verified in tmux on a scratch board with a 0.5.0 stamp: 'What is new since 0.5.0 · 9 unread', Features first then Others, Left/Right paging and esc. jaira update prints '  + ' for features. Skipped: TestUnreachableRemoteIsOfflineNotARace, TestAnOfflineWriteArrivesWhenTheNetworkIsBack, TestWebPushReportsAQueuedDrop (hang in this sandbox). Not checked: the launcher w view at phone-narrow width; the 'w' launcher path was not exercised in tmux (same notesView component)."
 ---
 
