@@ -1770,7 +1770,8 @@ func (m *Model) moveLane(d int) {
 
 // stepLane is the board's ←/→. With thinEmpty on, it steps over the lanes drawn
 // thin (the ones holding no tickets) and lands on the next lane that holds one.
-// Lane focus keeps moveLane, which steps onto every lane.
+// If only the current lane has tickets, the cursor stays. Lane focus keeps
+// moveLane, which steps onto every lane.
 func (m *Model) stepLane(d int) {
 	if !m.thinEmpty || len(m.cols) == 0 {
 		m.moveLane(d)
@@ -1786,6 +1787,7 @@ func (m *Model) stepLane(d int) {
 			return
 		}
 	}
+	// Every lane is empty (e.g. a filter matches nothing): step one lane as before.
 	if len(m.cols[m.laneIdx].tickets) == 0 {
 		m.moveLane(d)
 	}
