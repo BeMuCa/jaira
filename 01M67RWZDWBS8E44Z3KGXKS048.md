@@ -18,8 +18,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-31T01:24:02Z
-updated-at: 2026-10-31T02:32:32Z
+updated-at: 2026-10-31T02:32:33Z
 updated-by: berkc
+claimed-by: berk-ca-3153991
+claimed-at: 2026-10-31T02:32:33Z
 ---
 
 # critique und optimize laufen je in einem frischen Agenten, nicht im Agenten, der gebaut hat
