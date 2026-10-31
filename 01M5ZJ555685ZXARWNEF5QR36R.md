@@ -17,9 +17,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T01:27:35Z
+updated-at: 2026-10-31T01:27:42Z
 assignee: berkc
 updated-by: berkc
+claimed-by: berk-ca-3129429
+claimed-at: 2026-10-31T01:27:42Z
 ---
 
 # Die Abnahme-Rolle fuehrt das Interview im Chat; die Seite ist nur noch auf Wunsch
