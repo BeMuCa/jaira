@@ -23,7 +23,7 @@ commits:
   - b3bdefe99745601d272d96c0833c6de788cbb66f
   - 01563903e30786b1d4f3e626bdf72a316e2a2d25
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T03:17:36Z
+updated-at: 2026-10-31T03:17:38Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-3129429
@@ -42,6 +42,7 @@ review-gaps: |-
 test-verdict: "pass: touched packages green (go build ./..., go vet, go test -count=1 ./core/role ./core/shipped ./internal/cli RC=0, 3 hangers skipped; whole suite not run per maintainer rule), DoD 1-3 verified in the tree, behaviour exercised on scratch HOME: roles install --global wrote interreview + stub, old acceptance SKILL.md replaced by stub on update --roles without --force"
 review-verdict: "pass - all three DoD items hold in the diff; the interview section is concrete enough for a model to run a good chat acceptance over human/review/signoff (machine checks first, fixed 4-line format, fix only on a failed check or present non-pass verdict, accept limited to human/signoff with dry-run and verbatim refusals); go test ./core/role ./core/shipped pass"
 review-round: 6
+review-check: "1. jaira update --roles in a repo with tickets in human/signoff  2. in a NEW Claude session run /jaira-role-interreview  3. expect ONE message: per ticket 4 lines (ID · lane · title / What: / Check: / Recommend:) ending with accept <id> / explain <id> / fix <id> <what>  4. answer explain <id>: DoD+proofs+diff stat shown, nothing written  5. answer accept <id> for a signoff ticket: it moves to done; a review ticket is refused with 'still awaits the model review'  6. ls ~/.claude/acceptance/<repo>/<name>/ shows only report.md with a '## Interview ...' section  7. /jaira-role-acceptance <id> builds the page as before (stub forwards with --page)"
 ---
 
 # Die Abnahme-Rolle fuehrt das Interview im Chat; die Seite ist nur noch auf Wunsch
