@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-31T01:24:02Z
-updated-at: 2026-10-31T02:50:28Z
+updated-at: 2026-10-31T02:50:29Z
 updated-by: berkc
 claimed-by: berk-ca-3153991
 claimed-at: 2026-10-31T02:32:33Z
@@ -72,3 +72,4 @@ round: 2
 - **2026-10-31 02:39 · berkc** — Planner amendment applied: setUpBoard back to installed shipped board; setUpOldBoard (setUpBoard + stripLaneContexts) used by all 7 context_test.go calls. go test ./core/lane -count=1: ok.
 - **2026-10-31 02:40 · berkc** — Step 4 done: internal/cli stripLaneContexts helper added; TestLanesAndForLaneReportContext, TestAnInvalidContextIsReportedNotDropped, TestAnInvalidContextLeavesTheDefaultFresh run runLanes once, then strip. go test ./internal/cli -run Context and ./core/board: ok.
 - **2026-10-31 02:45 · berkc** — critique (fresh): three stale 'only review is fresh' statements the diff missed — worker SKILL.md:16, teamlead SKILL.md:143 (+ shipped hash), docs/how-to-work-with-jaira.html:387. Everything else stands (see review-summary). Fix those and return to critique.
+- **2026-10-31 02:50 · berkc** — critique r2: worker:16 and teamlead:143(+hash) fixed. docs/how-to-work-with-jaira.html:387 fix merged the two clauses so the German text now says the no-declaration default is critique/optimize/review ('also'); separate them as README.md:840-843 does: shipped board = critique, optimize, review; no declaration = last agentic lane before the first human lane. Only remaining finding.
