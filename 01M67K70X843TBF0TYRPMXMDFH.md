@@ -18,7 +18,7 @@ related:
   - 01M5659BR7RYZ6RVC84HGK1QGT
 commits: []
 created-at: 2026-10-30T23:44:40Z
-updated-at: 2026-10-31T00:15:50Z
+updated-at: 2026-10-31T00:15:58Z
 updated-by: berkc
 claimed-by: berk-ca-2691736
 claimed-at: 2026-10-30T23:47:40Z
@@ -35,7 +35,7 @@ review-gaps: |-
 test-verdict: "pass: go test ./... -count=1 -skip the three hanging tests RC=0 (33 packages ok, no FAIL); go vet ./... RC=0; both on aad4060a. DoD 1-4 verified in the tree (proofs on the ticket). Launcher w in tmux: box over the launcher, first row kept, esc returns; board popup paging verified earlier. Skipped: TestUnreachableRemoteIsOfflineNotARace, TestAnOfflineWriteArrivesWhenTheNetworkIsBack, TestWebPushReportsAQueuedDrop (hang in this sandbox). Open for the person: heading 'Others' vs DoD 'Andere'."
 review-verdict: "Accepted. The diff meets all four DoD items. DoD 1, which the first review blocked: the launcher's 'w' now draws a box over the launcher (checked in tmux at 120x36: logo and list edges visible around it, left/right page, esc returns), and the board popup is unchanged in behaviour (checked in tmux after a 0.5.0 to 0.5.8 upgrade). Build ok, go vet clean, go test ./core/release ./internal/tui ok, go test ./internal/cli -run TestUpdateNotes ok; full suite not rerun by this review. No defects found; the notes are wording and coverage only."
 review-round: 4
-review-check: "1. cd /home/berkc/code/X_General/jaira-MXMDFH && go build -o /tmp/jaira-mx -ldflags '-X main.version=0.5.8' ./cmd/jaira  2. in an empty scratch git repo: JAIRA_HOME=$PWD/home /tmp/jaira-mx init  3. JAIRA_HOME=$PWD/home /tmp/jaira-mx (the launcher), press w - see the blocker: the notes fill the whole screen, no box, the launcher is gone  4. the first page 'Unreleased' shows a 'Features' header, a blank line, two '+' lines with a blank line after each  5. press left - '0.5.8 · 2/30' shows plain '-' lines and no headers  6. esc, open the board: to see the popup after an upgrade, first open the board once with a binary built with main.version=0.5.0, then with /tmp/jaira-mx board - a bordered box over the board titled 'What is new since 0.5.0 · N unread'  7. go test ./internal/tui -run TestNotesViewSplitsFeaturesFromOthers and go test ./internal/cli -run TestUpdateNotesMarkImportantLines both print ok"
+review-check: "1. cd /home/berkc/code/X_General/jaira-MXMDFH && go build -o /tmp/jaira-mx -ldflags '-X main.version=0.5.8' ./cmd/jaira && go build -o /tmp/jaira-old -ldflags '-X main.version=0.5.0' ./cmd/jaira  2. mkdir -p /tmp/mx/repo && cd /tmp/mx/repo && git init && git commit --allow-empty -m init  3. JAIRA_HOME=/tmp/mx/home /tmp/jaira-old init  4. JAIRA_HOME=/tmp/mx/home /tmp/jaira-mx (the launcher), press w: a framed box titled 'Release notes' sits in the middle and the jaira logo stays visible above it  5. first page 'Unreleased · 1/30': a 'Features' header, a blank line, two lines starting with '+', a blank line after each  6. press the left arrow: '0.5.8 · 2/30' shows plain '-' lines and no headers; press esc: the launcher is back  7. press q, then JAIRA_HOME=/tmp/mx/home /tmp/jaira-mx board: a box over the lanes titled 'What is new since 0.5.0 · 9 unread' with the same Features page  8. go test ./internal/tui -run 'TestNotesViewSplitsFeaturesFromOthers|TestHomeWDrawsReleaseNotesOverTheLauncher' and go test ./internal/cli -run TestUpdateNotesMarkImportantLines both print ok"
 ---
 
 # Die Release-Notes erscheinen als Popup statt Seite, getrennt in Features zuerst und 'Andere' darunter, luftig und leicht lesbar
