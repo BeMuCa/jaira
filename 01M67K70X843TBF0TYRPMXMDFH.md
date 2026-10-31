@@ -18,7 +18,7 @@ related:
   - 01M5659BR7RYZ6RVC84HGK1QGT
 commits: []
 created-at: 2026-10-30T23:44:40Z
-updated-at: 2026-10-31T00:09:19Z
+updated-at: 2026-10-31T00:09:42Z
 updated-by: berkc
 claimed-by: berk-ca-2691736
 claimed-at: 2026-10-30T23:47:40Z
@@ -81,3 +81,4 @@ review-check: "1. cd /home/berkc/code/X_General/jaira-MXMDFH && go build -o /tmp
 - **2026-10-31 00:05 · berkc** — review (fresh context): sent back to in-progress, blocker on DoD 1. The launcher's 'w' (internal/tui/home.go:428-429) still renders the release notes full screen as a page of their own; only the board shows them as a modal (view.go:150, modal.go modalOver). The person asked for 'pop up only', and the DoD 1 proof checked only the board. Fix direction: draw the launcher's notes as a bordered box over the launcher, as modalOver does on the board (Home has no modal helper today). Everything else in the diff holds; the four notes in review-gaps are small (AGENTS.md:221 lacks the '- + ' bullet, styFeature comment vs whole-line colour, 'Others' vs 'Andere' to confirm, double blank above the hint). If the person says the launcher page is fine, this blocker falls away and the ticket can go on to signoff.
 - **2026-10-31 00:09 · berkc** — in-progress (round 2, after review sent back): the launcher's w now draws the notes as a box over the launcher (home.go render -> list(), overBox in modal.go), the same as the board popup. Also fixed the two findings the review listed: AGENTS.md gets the '- + ' bullet, styFeature comment corrected, one blank line above the hint. Left open for the person (not changed): the heading is 'Others' in English, the ticket DoD says 'Andere'.
 - **2026-10-31 00:09 · berkc** — critique (round 2): one finding, modal.go:92 modalContent duplicates the content-height arithmetic next to modalContentOf; fix is one line, return modalContentOf(m.height). Everything else in the launcher overlay: list() split, overBox, the test, the blank-line fix, AGENTS.md bullet checked and stands.
+- **2026-10-31 00:09 · berkc** — in-progress (round 2): modal.go modalContent now returns modalContentOf(m.height); committed 2d3c61e7 and pushed. Tests for the touched files ok.
