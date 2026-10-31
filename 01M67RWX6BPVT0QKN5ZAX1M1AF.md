@@ -20,7 +20,7 @@ commits:
   - 8a9fa6a46d4adc8147319eab9737da13a703f18e
   - e7716c03b171b3a3c29d9152136cad682d99cb03
 created-at: 2026-10-31T01:24:00Z
-updated-at: 2026-10-31T02:51:17Z
+updated-at: 2026-10-31T02:51:25Z
 updated-by: berkc
 claimed-by: berk-ca-3129208
 claimed-at: 2026-10-31T01:27:35Z
@@ -76,3 +76,4 @@ review-check: "1. cd /home/berkc/code/X_General/jaira-X1M1AF && export PATH=$HOM
 - **2026-10-31 02:39 · berkc** — Tests: core/lane, core/ticket, internal/tui, core/release, internal/cli (3 hangers skipped) all green. No existing test needed its expectation changed: createlane_test and 'lanes default' output still pass. Bare 'options:' with no value now reads as DefaultOptions (planning), where before it meant none; not covered by a test, left as the plan says. Ticket file is untracked in the worktree at start; committed with the code.
 - **2026-10-31 02:41 · berkc** — critique: only finding — core/release/notes/X1M1AF.md names 'the Opus planner' and 'every ticket'; pre-process is tier strong (core/lane/builtin/15-pre-process.md), Opus not enforced until CXH98W, and only boards installing pre-process run it. Reword to 'the pre-process (planning) lane' and mention `jaira lanes default --options ''` for none (splitCSV('') -> options: []). Left standing: default in LoadDefaultBoard + optionsDefaulted (planner note 02:33), bare options: (note 02:39). Not a send-back reason: DAQKZX (teamlead decides per ticket) vs always-on default — maintainer question.
 - **2026-10-31 02:44 · berkc** — Critique round 2 (fresh agent): only round-1 finding was the release note wording; fixed in e7716c03 and verified by running 'jaira lanes default --options ""' on a scratch build (writes options: [], shows none pre-ticked). No new findings; DAQKZX question stays with maintainer, not a send-back. Moved to optimize.
+- **2026-10-31 02:51 · berkc** — Review (fresh agent): pass, no blocker. Reservation DAQKZX (teamlead per-ticket planning vs always-on default) left to maintainer. Notes in review-gaps: bare options:, lanes-only save freezes [planning] into file, --template path untouched, Opus enforcement is CXH98W.
