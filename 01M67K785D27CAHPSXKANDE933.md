@@ -14,7 +14,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-10-30T23:44:47Z
+updated-at: 2026-10-31T02:31:26Z
+updated-by: berkc
 ---
 
 # Mit z (leere Lanes schmal) springen links/rechts zwischen Tickets ueber leere Lanes hinweg
