@@ -18,14 +18,14 @@ related:
   - 01M5659BR7RYZ6RVC84HGK1QGT
 commits: []
 created-at: 2026-10-30T23:44:40Z
-updated-at: 2026-10-31T00:09:46Z
+updated-at: 2026-10-31T00:09:52Z
 updated-by: berkc
 claimed-by: berk-ca-2691736
 claimed-at: 2026-10-30T23:47:40Z
 outcome-what: "Release notes popup and jaira update: a note line '- + text' is a feature; the popup lists features under a Features header, then the rest under Others, a blank line after each change. Parser: core/release/release.go Feature(); layout: internal/tui/releasenotes.go lines()/changeLines(); CLI: internal/cli/update.go writeNotes prints '  + text'. CLAUDE.md format bullet and note core/release/notes/MXMDFH.md added. Commit cb13a6c2 on feat/MXMDFH-release-notes-popup."
 outcome-why: "Berk: the popup must be the only surface, features first, Others below with a header, gaps for readability; the feature marker had to be a format the old binaries read as a plain line, so '- + ' mirrors '- ! '."
 outcome-resolves: "DoD 2 (ordering, header, gaps, test) and DoD 3 (marker and CLAUDE.md) code and tests in place; DoD 1 (popup, paging) unchanged from GK1QGT, to be verified in tmux; DoD 4 note written."
-review-summary: "internal/tui/modal.go:92 modalContent() still spends its own arithmetic (m.modalHeight() - 2) beside the new modalContentOf(height) that home.go now uses; the comment above modalHeight says the budget must be asked in one place. Make modalContent return modalContentOf(m.height)."
+review-summary: ""
 round: 4
 review-gaps: |-
   blocker: DoD 1 - 'Popup (Overlay ueber dem Board), keine eigene Seite': the launcher's 'w' still draws the notes as a full-screen page of their own (internal/tui/home.go:428-429, h.notes.render(h.width, h.height), no box, launcher not visible behind). Seen in tmux with this branch's binary. The diff does not touch where the notes are shown, and outcome-resolves itself says 'DoD 1 unchanged from GK1QGT', yet the person's complaint was 'you made them a page ... pop up only' about that state. The DoD 1 proof checks only the board modal.
