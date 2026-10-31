@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:13Z
-updated-at: 2026-10-31T01:25:09Z
+updated-at: 2026-10-31T01:25:18Z
 updated-by: berkc
 ---
 
@@ -42,4 +42,4 @@ updated-by: berkc
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-31 01:25 · berkc** — Maintainer 31.10.2026 (Punkt 7): Integrationsbranch ok, aber das Ziel ist: wird ein Ticket angenommen und steht in done, wird sein Branch gemerged und sein Worktree geloescht - 'ich will nicht den speicher mit worktrees voll machen die nicht geloescht wurden.' Merge bleibt Sache der Person (PR); das Aufraeumen des Worktrees nach done ist dieses Ticket.
