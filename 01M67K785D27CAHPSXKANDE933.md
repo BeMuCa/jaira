@@ -14,7 +14,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-10-31T02:40:15Z
+updated-at: 2026-10-31T02:40:17Z
 updated-by: berkc
 claimed-by: berk-ca-3155695
 claimed-at: 2026-10-31T02:31:33Z
@@ -26,6 +26,8 @@ review-gaps: |-
   note: skipping wraps round the board end (backlog ← lands on done), same wrap moveLane already had, but a user might expect a stop at the edge
   note: lane focus mode still steps onto empty lanes with z on - deliberate per the doc comment, not covered by a test
 test-verdict: "pass: go build ./... RC=0, go vet ./internal/tui RC=0, go test ./internal/tui -count=1 ok (RC=0); DoD 1-2 verified in tree, 7 named tests PASS -v; release note is one '- ' line; behaviour exercised through Model.key(KeyRight/KeyLeft) in tests, not a live TUI run"
+review-verdict: "pass - diff meets both DoD items (skip with z, unchanged without z, tests, release note); go vet and go test ./internal/tui/ pass; no defects found"
+review-round: 1
 ---
 
 # Mit z (leere Lanes schmal) springen links/rechts zwischen Tickets ueber leere Lanes hinweg
