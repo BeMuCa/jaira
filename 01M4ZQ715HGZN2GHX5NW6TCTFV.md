@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-31T00:13:21Z
+updated-at: 2026-10-31T00:15:28Z
 updated-by: berkc
 question: ""
 round: 3
@@ -122,3 +122,4 @@ Parallel: N71NVG baut das Ablegen/Loeschen eines fertigen Milestones samt Ticket
 - **2026-10-31 00:02 · berkc** — testing (worker): full suite RC=1 - core/role TestEveryInstalledFileIsAShippedVersion: core/shipped/shipped.sha256 lacked the four SKILL.md versions this branch changes (dispatcher, role-pr, teamlead, worker). Fixed by appending their four lines, as the test prints them; the file is append-only, so nothing was regenerated. Vet RC=0.
 - **2026-10-31 00:08 · berkc** — testing (worker): full suite run twice - the first RC=1 was the shipped manifest (fixed in b2e571b7); the second, with go clean -testcache, is EXIT=0; vet EXIT=0; race on the five touched packages EXIT=0; scratch board rerun on the final binary matches the handtest. Skipped by the house list: the three hanging tests.
 - **2026-10-31 00:13 · berkc** — review (fresh, 2026-10-31): sent back to in-progress on one blocker against DoD 3. core/role/builtin/jaira-role-pr/SKILL.md, section 'One branch for several tickets', reads a milestone's members from 'jaira list --milestone <name> --json' and claims that includes filed tickets. It does not: list reads board tickets only (internal/cli/tickets.go:615). Checked on a scratch board with the branch binary: after 'jaira logbook XRSGSN', 'list --milestone m1' showed only ZMH0SY. 'jaira milestone ls --json' carries every member under 'tickets', filed or not. Fix: point the sentence at that, then re-append the new SKILL.md sha to core/shipped/shipped.sha256. Everything else checked out by hand: move/logbook/ls lines, --json suggestions, the ungrouped ticket line. Targeted tests in core/suggest, core/role and internal/cli are ok. The three notes in review-gaps are not blockers.
+- **2026-10-31 00:15 · berkc** — in-progress (round 2, after review): fixed the DoD 3 blocker - role-pr SKILL.md now reads a milestone's members from 'jaira milestone ls --json' (tickets, filed ones included); the pin test and shipped.sha256 line updated; commit 83eeac55. Review gaps left open for the person: (1) the suggestion line passes bare handles, so the one-branch section has to work out the milestone name; (2) 'jaira logbook <m>' in the line uses the bare name, which jaira refuses (exit 3) when two milestones share it; (3) 'jaira logbook --all' prints no suggestions - the planned follow-up.
