@@ -1,7 +1,7 @@
 ---
 id: 01M67K785D27CAHPSXKANDE933
 title: Mit z (leere Lanes schmal) springen links/rechts zwischen Tickets ueber leere Lanes hinweg
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: berkc
@@ -14,10 +14,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-10-31T02:33:30Z
+updated-at: 2026-10-31T02:33:32Z
 updated-by: berkc
 claimed-by: berk-ca-3155695
 claimed-at: 2026-10-31T02:31:33Z
+outcome-what: stepLane in model.go skips lanes with no tickets when z is on; release note rewritten as an instruction
+outcome-why: "with z on, ←/→ from backlog to done jumped through every empty lane in between"
+outcome-resolves: "DoD 1 and 2 ticked with proof (tests in lanewindow_test.go:182-301, release note line)"
 ---
 
 # Mit z (leere Lanes schmal) springen links/rechts zwischen Tickets ueber leere Lanes hinweg
