@@ -18,7 +18,7 @@ related:
   - 01M5659BR7RYZ6RVC84HGK1QGT
 commits: []
 created-at: 2026-10-30T23:44:40Z
-updated-at: 2026-10-31T00:00:17Z
+updated-at: 2026-10-31T00:01:15Z
 updated-by: berkc
 claimed-by: berk-ca-2691736
 claimed-at: 2026-10-30T23:47:40Z
@@ -28,6 +28,7 @@ outcome-resolves: "DoD 2 (ordering, header, gaps, test) and DoD 3 (marker and CL
 review-summary: "none"
 round: 2
 review-gaps: "none: duplication searched (grep CutPrefix and the '! ' marker across the repo): the only marker parser is core/release/release.go Important/Feature, the other CutPrefix hits are unrelated (epic.go, selfupdate.go, milestone.go). No dead code: every added helper has callers (Feature: release.go lines and update.go writeNotes; changeLines: lines()). No fluff left after the e39d62f4 simplification. Cost: lines() rebuilds the page on each render, as before this change; the render already did it, and a page is a few dozen lines."
+test-verdict: "pass: full suite RC=0 (go test ./... -skip the three hanging tests, 33 packages ok, no FAIL) and go vet ./... clean, both before the last note-only commit 9e50be2b; core/release and internal/tui re-run with -count=1 after it, ok. DoD 1-4 verified in the tree (proofs on the ticket). Popup verified in tmux on a scratch board with a 0.5.0 stamp: 'What is new since 0.5.0 · 9 unread', Features first then Others, Left/Right paging and esc. jaira update prints '  + ' for features. Skipped: TestUnreachableRemoteIsOfflineNotARace, TestAnOfflineWriteArrivesWhenTheNetworkIsBack, TestWebPushReportsAQueuedDrop (hang in this sandbox). Not checked: the launcher w view at phone-narrow width; the 'w' launcher path was not exercised in tmux (same notesView component)."
 ---
 
 # Die Release-Notes erscheinen als Popup statt Seite, getrennt in Features zuerst und 'Andere' darunter, luftig und leicht lesbar
