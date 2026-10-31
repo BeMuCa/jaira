@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-31T01:24:02Z
-updated-at: 2026-10-31T02:43:34Z
+updated-at: 2026-10-31T02:43:36Z
 updated-by: berkc
 claimed-by: berk-ca-3153991
 claimed-at: 2026-10-31T02:32:33Z
@@ -32,7 +32,8 @@ claimed-at: 2026-10-31T02:32:33Z
   proof: core/lane/builtin/25-critique.md:9, 26-optimize.md:9, 40-review.md:9 (context: fresh); jaira show XKS048 --for-lane critique|optimize|review --json shows context fresh
 - [x] jaira update --lanes bringt es auf ein bestehendes Board (oder die Release-Notiz sagt, was zu tun ist)
   proof: .jaira/lanes/critique.md:9, optimize.md:9, review.md:9 changed by 'jaira update --lanes' (updated); AGENTS.md/CLAUDE.md lane block only; core/lane TestRefreshShipped* ok
-- [ ] Release-Notiz unter core/release/notes/
+- [x] Release-Notiz unter core/release/notes/
+  proof: core/release/notes/XKS048.md (one '- ' line, one '- ! ' line)
 
 ## Options
 
