@@ -1,0 +1,2 @@
+- Pick the orchestrator, worker, strong-lane and cheap-lane model (and effort) under Settings, or in "models" in ~/.jaira/settings.json; without it the teamlead runs on opus, workers and cheap lanes on haiku high, strong lanes on opus.
+- ! Run jaira update --roles so workers start each lane on the model of its tier; jaira show --for-lane --json now carries model and effort.

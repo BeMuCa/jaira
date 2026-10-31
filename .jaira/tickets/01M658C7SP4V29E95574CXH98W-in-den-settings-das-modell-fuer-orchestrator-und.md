@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T01:56:48Z
-updated-at: 2026-10-31T02:48:12Z
+updated-at: 2026-10-31T02:48:29Z
 updated-by: berkc
 claimed-by: berk-ca-3129445
 claimed-at: 2026-10-31T01:27:42Z
@@ -51,7 +51,7 @@ claimed-at: 2026-10-31T01:27:42Z
 - [x] core/role/builtin/jaira-worker/SKILL.md: loop step 2 -> before working a lane compare payload model/effort with worker_model/worker_effort from 'jaira roles list --json'; differs -> the lane is not yours: hand it to a new agent exactly as 'The fresh lane' (run-lane.sh under Herdr, spawn.sh picks the model itself; else Agent(subagent_type: claude, model: <model>, effort: <effort>, prompt: jaira-role-lane ...)). Fresh-lane subagent line also passes model/effort
 - [x] core/role/builtin/jaira-dispatcher/SKILL.md: Subagents path (around line 364) -> Agent per lane with model/effort from the lane's --for-lane payload; one sentence that run-lane/spawn.sh already pick it. core/role/builtin/jaira-teamlead/SKILL.md: section naming its own model: orchestrator_model from roles list; if the session runs another model say once 'restart with claude --model <m> [--effort <e>]', never switch silently; no-Herdr Agent(...) call for dispatcher/worker gets model: worker_model, effort: worker_effort
 - [x] shipped hashes: run go test ./core/role ./core/shipped ./core/lane -count=1 after the SKILL.md/spawn.sh edits; TestEveryInstalledFileIsAShippedVersion prints the missing lines -> APPEND them to core/shipped/shipped.sha256 (never remove old hashes). bash -n spawn.sh
-- [ ] core/release/notes/CXH98W.md, one line each, never wrapped: '- Pick the orchestrator, worker, strong-lane and cheap-lane model (and effort) under Settings, or in "models" in ~/.jaira/settings.json; without it the teamlead runs on opus, workers and cheap lanes on haiku high, strong lanes on opus.' and '- ! Run jaira update --roles so workers start each lane on the model of its tier; jaira show --for-lane --json now carries model and effort.'
+- [x] core/release/notes/CXH98W.md, one line each, never wrapped: '- Pick the orchestrator, worker, strong-lane and cheap-lane model (and effort) under Settings, or in "models" in ~/.jaira/settings.json; without it the teamlead runs on opus, workers and cheap lanes on haiku high, strong lanes on opus.' and '- ! Run jaira update --roles so workers start each lane on the model of its tier; jaira show --for-lane --json now carries model and effort.'
 - [ ] verify: go test ./core/settings ./internal/cli ./internal/tui ./core/role ./core/shipped -count=1 (skip the 3 hangers); tick DoD with proofs; commit feat(CXH98W) with the ticket file
 
 ## Progress
