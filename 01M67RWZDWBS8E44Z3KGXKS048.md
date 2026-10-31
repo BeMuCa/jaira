@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-31T01:24:02Z
-updated-at: 2026-10-31T03:00:49Z
+updated-at: 2026-10-31T03:00:52Z
 updated-by: berkc
 claimed-by: berk-ca-3153991
 claimed-at: 2026-10-31T02:32:33Z
@@ -31,6 +31,8 @@ review-gaps: |-
   note: stripLaneContexts is duplicated verbatim in core/lane/context_test.go and internal/cli/context_test.go (test-only, different packages)
   note: a board whose critique.md was hand-edited (e.g. notes added to input-requires, as an older release note suggested) gets no context line from update --lanes; the '- !' release line covers it, nothing enforces it
 test-verdict: "pass: touched-package tests green (core/lane, core/role, core/shipped, internal/cli minus the 3 hangers; whole suite not run), DoD 1-3 verified in the tree, behaviour exercised on a scratch clone (update --lanes on an old board, --for-lane critique|optimize|review context fresh)"
+review-verdict: "pass: all three DoD items hold on the diff and verified by hand - fresh build: update --lanes on a board with context lines stripped reports 'lanes: 3 updated', jaira lanes then shows critique/optimize/review fresh, show --for-lane critique --json carries \"context\": \"fresh\"; go test ./core/lane ./core/shipped and internal/cli -run Context|ForLane|Lanes pass. No defects found."
+review-round: 3
 ---
 
 # critique und optimize laufen je in einem frischen Agenten, nicht im Agenten, der gebaut hat
