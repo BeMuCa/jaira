@@ -18,22 +18,24 @@ related: []
 commits:
   - 8fea809f03736e6759b1d15d2bc51fbd7c83cc3a
   - de96db1745c69f9e47ea329ea8ccc782072ef6f9
+  - 50ff54b331ba75cf94b282daf0ea53a6d07994c5
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T02:58:13Z
+updated-at: 2026-10-31T03:02:08Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-3129429
 claimed-at: 2026-10-31T01:27:42Z
-outcome-what: "fix: recommend fix only on a failed check or a non-pass verdict; review tickets never accepted"
-outcome-why: "critique returned: empty review-verdict triggered fix, and review tickets were accepted"
-outcome-resolves: interview recommendation rules and accept scope; plan 11 ticked with the amended manifest decision
+outcome-what: "text fixes: release note, SKILL.md description, how-to L333 and L394 match accept scope and chat default"
+outcome-why: "round-2 critique found stale text after the accept-scope fix"
+outcome-resolves: release note and SKILL.md say accept is human and signoff only; how-to describes the chat interview as default with --page for the page
 review-summary: |-
   core/role/builtin/jaira-role-interreview/SKILL.md:107-109 recommends fix when 'the review-verdict is not a pass'; review-verdict is empty for every ticket in human and review (the review lane writes it, after human), so a literal cheap model recommends fix for all of them - say 'fix when a machine check failed, or a review-verdict is present and is not a pass'
   .jaira plan step 11 (shipped hashes) is still unticked although its note says done - the terminal gate refuses a move with an open plan step (core/gate/gate.go:417-430); tick it with jaira dod 5QR36R 11 --done --plan
   OPEN QUESTION (maintainer, not a send-back reason): SKILL.md:118-119 accept on a review-lane ticket targets done; core/gate/gate.go:438-447 refuses leaving review while review-summary/gaps/verdict/check are empty, so the dry-run always refuses and the skill (correctly) never forces - as written, accept in review can never succeed. Decide: drop review from accept (and say 'run the model review first'), or make accept in review mean something else
   OK: stub forwarding + install Updated path (internal/cli tests green), all role/README/how-to references renamed (only stub, history and release notes keep the old name), shipped-manifest drop of removed paths matches scripts/shipped-history.sh:50 and the spawn.sh precedent, release note format, go test ./core/role ./core/shipped ./internal/cli subset pass
   ROUND 2: round-1 items OK (SKILL.md:107-113 fix only on failed check or present non-pass verdict; review never accept, labelled 'not yet model-reviewed'; accept scoped to human+signoff at :121-125; plan 11 ticked). New, from accept-scope change + whole diff: (1) core/release/notes/5QR36R.md:1 says it 'accepts the tickets in human, review and signoff' - now false; say it interviews human, review and signoff and accepts those in human and signoff. Same in SKILL.md:3 description 'Works for tickets in human, review and signoff' - add that review tickets get explain/fix only. (2) docs/how-to-work-with-jaira.html:394 table row says the plain /jaira-role-interreview <id> 'Baut eine Abnahmeseite' - default is now the chat interview, page only with --page; :333 says the dispatcher builds the page and sends a link - it now answers with the line to paste into a new session (worker/dispatcher SKILL.md). Adjust both lines (German); L335/L502 --page read-back are fine once :333 says the page is opt-in.
-round: 3
+  ROUND 3: OK release note :1, SKILL.md:3 description (review tickets interviewed, only human+signoff accepted), how-to :394, new SKILL.md hash appended (shipped.sha256:502 matches file; go test ./core/shipped ./core/role pass). Open: docs/how-to-work-with-jaira.html:333 still says the dispatcher starts /jaira-role-interreview 'das dich im Chat befragt' - per interreview SKILL.md:21-25 and dispatcher SKILL.md:485-487 an agent caller gets no interview, it reports the line to paste into a NEW session. Say: Dispatcher ruft /jaira-role-interreview auf und meldet dir die Zeile, die du in eine neue Session einfuegst; dort befragt es dich im Chat (accept/explain/fix); die Seite nur mit --page.
+round: 4
 ---
 
 # Die Abnahme-Rolle fuehrt das Interview im Chat; die Seite ist nur noch auf Wunsch
@@ -93,3 +95,5 @@ round: 3
 - **2026-10-31 02:54 · berkc** — Plan 11 as actually done: the shipped manifest is append-only except the amended coordinator decision: 12 old build.py/template.html/report.html lines of jaira-role-acceptance deleted (their files no longer exist after the rename); all SKILL.md lines kept; the current interreview hashes appended (and one more after the review fix). shipped-history.sh not run.
 - **2026-10-31 02:55 · berkc** — critique round 2: round-1 findings all addressed (verified in de96db17/e1f4f345). Send-back for wording only, no logic: release note line 1 + SKILL.md:3 still claim review tickets are accepted; how-to :333/:394 still describe the page as default/dispatcher sending a link. No code change needed beyond those text lines; remember the shipped.sha256 append if SKILL.md changes again (core/role TestEveryInstalledFileIsAShippedVersion).
 - **2026-10-31 02:58 · berkc** — Round-2 text fix: release note line 1 and SKILL.md description now say accept is human and signoff only; how-to HTML L333 and L394 describe the chat interview as default with the page behind --page. New SKILL.md hash appended to shipped.sha256 (fe7419d3...).
+- **2026-10-31 03:00 · berkc** — critique round 3: only how-to L333 left - it still describes the interview as happening in the dispatcher's run; the paste-into-new-session step from round 2 is missing. Everything else from round 2 fixed.
+- **2026-10-31 03:02 · berkc** — Round-3 text fix: how-to HTML L333 now says the dispatcher hands back the line to paste into a new session, where the interview runs. Only that line changed.
