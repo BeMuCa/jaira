@@ -1,7 +1,7 @@
 ---
 id: 01M67RWX6BPVT0QKN5ZAX1M1AF
 title: "Neue Tickets haben die Option planning standardmaessig angehakt, damit jedes Ticket durch den Planer geht"
-status: critique
+status: optimize
 ready: true
 creator: berkc
 assignee: berkc
@@ -20,7 +20,7 @@ commits:
   - 8a9fa6a46d4adc8147319eab9737da13a703f18e
   - e7716c03b171b3a3c29d9152136cad682d99cb03
 created-at: 2026-10-31T01:24:00Z
-updated-at: 2026-10-31T02:44:31Z
+updated-at: 2026-10-31T02:44:33Z
 updated-by: berkc
 claimed-by: berk-ca-3129208
 claimed-at: 2026-10-31T01:27:35Z
