@@ -104,9 +104,13 @@ Recommend: accept|fix|explain first - <one reason>
 
 Line 3 comes from the review-check when there is one. When there is none
 (always so in review: that lane writes it), it comes from the DoD proofs and
-the test-verdict, and says `no review-check`. Recommend `fix` when a machine
-check failed or the review-verdict is not a pass; in review, add `not yet
-model-reviewed`.
+the test-verdict, and says `no review-check`. Recommend `fix` only when a
+machine check failed, or the review-verdict exists and is not a pass. An empty
+review-verdict (human and review lanes) is no reason to recommend `fix`.
+
+A ticket in review still awaits the model review: its line 4 says `not yet
+model-reviewed`, it is never recommended `accept`, and it is recommended
+`explain` or `fix`.
 
 End the message with the answer forms: `accept <id>`, `explain <id>`,
 `fix <id> <what is wrong>`. Several per message are allowed; `accept all`
@@ -114,10 +118,11 @@ accepts every ticket whose recommendation is accept.
 
 ### Answers
 
-- **`accept <id>`** — target lane: for a ticket in human, its `next_lane` (the
-  route continues; the model review still runs). For a ticket in review or
-  signoff, the done lane from `jaira lanes --json`: the person is the sign-off.
-  Dry-run first, `jaira move <id> --to <target> --dry-run`. A clean dry-run:
+- **`accept <id>`** — only for a ticket in human or signoff. Target lane: for
+  human, its `next_lane` (the route continues; the model review still runs);
+  for signoff, the done lane from `jaira lanes --json`: the person is the
+  sign-off. A ticket in review is not accepted: say it still awaits the model
+  review, and offer `explain <id>` or `fix <id>` instead. Dry-run first, `jaira move <id> --to <target> --dry-run`. A clean dry-run:
   `jaira move <id> --to <target>`. If the refusal only says that an agent may
   not leave a person's lane: `jaira move <id> --to <target> --force`, and say
   that `--force` was used. Any other refusal: show it verbatim and do not move.
