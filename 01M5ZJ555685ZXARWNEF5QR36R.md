@@ -1,7 +1,7 @@
 ---
 id: 01M5ZJ555685ZXARWNEF5QR36R
 title: Die Abnahme-Rolle fuehrt das Interview im Chat; die Seite ist nur noch auf Wunsch
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "jaira-role-acceptance fragt standardmaessig im Chat ab - je Ticket ID, Einzeiler, wie pruefen, Empfehlung, dann 'accept X / explain X / fix X' - und baut die statische Seite nur mit --page."
@@ -15,13 +15,17 @@ tags:
   - docs
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 8fea809f03736e6759b1d15d2bc51fbd7c83cc3a
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T02:46:43Z
+updated-at: 2026-10-31T02:46:45Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-3129429
 claimed-at: 2026-10-31T01:27:42Z
+outcome-what: "interreview role: chat interview default, --page for the page, stub at old name"
+outcome-why: /jaira-role-acceptance built a page by default and the chat path was nowhere; 17 tickets were faster in chat (feedback 27.10.2026)
+outcome-resolves: chat interview default with the per-ticket format and accept/explain/fix answers; record at the old path; page behind --page
 ---
 
 # Die Abnahme-Rolle fuehrt das Interview im Chat; die Seite ist nur noch auf Wunsch
