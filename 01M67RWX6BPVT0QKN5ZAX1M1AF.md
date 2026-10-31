@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-31T01:24:00Z
-updated-at: 2026-10-31T02:39:58Z
+updated-at: 2026-10-31T02:40:00Z
 updated-by: berkc
 claimed-by: berk-ca-3129208
 claimed-at: 2026-10-31T01:27:35Z
@@ -39,7 +39,8 @@ claimed-at: 2026-10-31T01:27:35Z
 
 ## Definition of Done
 
-- [ ] jaira create ohne Default-Board-Datei legt ein Ticket an, dessen Options 'planning' angehakt hat; Test dafuer
+- [x] jaira create ohne Default-Board-Datei legt ein Ticket an, dessen Options 'planning' angehakt hat; Test dafuer
+  proof: core/lane/defaultboard_test.go TestLoadDefaultBoardAbsentTicksPlanning; internal/cli/init_test.go TestCreateWithoutDefaultBoardTicksPlanning
 - [ ] Eine Default-Board-Datei, die options ohne planning nennt, laesst planning unangehakt; Test dafuer
 - [ ] Release-Notiz unter core/release/notes/
 
