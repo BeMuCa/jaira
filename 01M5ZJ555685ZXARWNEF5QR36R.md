@@ -23,7 +23,7 @@ commits:
   - b3bdefe99745601d272d96c0833c6de788cbb66f
   - 01563903e30786b1d4f3e626bdf72a316e2a2d25
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T03:17:32Z
+updated-at: 2026-10-31T03:17:34Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-3129429
@@ -34,8 +34,11 @@ outcome-resolves: "dispatcher hands the interview to a new session without the r
 review-summary: "Renames jaira-role-acceptance to jaira-role-interreview (build.py/template/report moved unchanged) and rewrites its SKILL.md so the default is a chat interview: per ticket four lines (ID/lane/title, What, Check with machine results run beforehand, Recommend), answers accept/explain/fix <id>; accept only for human (-> next_lane) and signoff (-> done), review tickets are interviewed but marked 'not yet model-reviewed'; fix splits into return/new-bug/asked like the page path; the chat path appends a section to ~/.claude/acceptance/<repo>/<name>/report.md and writes no other file. An agent caller gets a paste line for a new session instead of an interview. The page path is unchanged behind --page. jaira-role-acceptance becomes a stub forwarding with --page; dispatcher/worker/teamlead/README/how-to point to the new name; shipped hashes appended; release note added; role_test covers both files."
 round: 6
 review-gaps: |-
-  dispatcher SKILL.md:483-488: remove page-only sentences (note: candidate reaches the page; reading marks back) - dead in the default chat path; sent back to in-progress. Left: teamlead:71, README:826 (scoped to --page, fine). No duplication/dead code elsewhere in the diff (stub forwards with --page by design).
-  optimize round 2 (orchestrator): both sentences named in note 03:08 are gone; nothing further to remove.
+  note: DoD proofs were ~5 lines stale (:158/:151/:142); corrected by review to :163/:156/:147
+  note: chat path drops note: candidates from review-gaps (only --page shows them) - maintainer reservation, not a defect
+  note: chat record appends to report.md while the page path's build.py report writes report.md too - a later --page read-back may overwrite interview sections in the same <name> folder
+  note: fix->return uses `jaira move --force` even though sending back to an earlier lane needs no --force
+  note: SKILL.md:125 is one over-long unwrapped line (cosmetic)
 test-verdict: "pass: touched packages green (go build ./..., go vet, go test -count=1 ./core/role ./core/shipped ./internal/cli RC=0, 3 hangers skipped; whole suite not run per maintainer rule), DoD 1-3 verified in the tree, behaviour exercised on scratch HOME: roles install --global wrote interreview + stub, old acceptance SKILL.md replaced by stub on update --roles without --force"
 ---
 
