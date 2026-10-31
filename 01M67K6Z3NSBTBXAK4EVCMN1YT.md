@@ -27,7 +27,7 @@ related:
   - 01M5MNWJF240306ZVDA41K3RA8
 commits: []
 created-at: 2026-10-30T23:44:38Z
-updated-at: 2026-10-31T01:25:11Z
+updated-at: 2026-10-31T01:25:20Z
 updated-by: berkc
 ---
 
@@ -138,3 +138,4 @@ OFFENE FRAGEN
 6. Sync mit Jira einmalig (Import/Export) oder dauerhaft in beide Richtungen? Dauerhaft ist der groesste Kostentreiber.
 7. Onboarding im Browser statt im curl-Skript ok?
 8. Token-Speicher: reicht zuerst die 0600-Datei, oder ist OS-Schluesselbund Pflicht von Anfang an?
+- **2026-10-31 01:25 · berkc** — Antworten Maintainer 31.10.2026: (1) Milestone vs Epic: gleiche Form (Beschreibung + Liste + X von Y); Vorschlag Roads (KQQD1H) = Epics, Milestones liegen auf einer Road - ein Begriff weniger. (7) Onboarding im Browser: ja. (8) Token-Speicher: zuerst Datei mit Rechten 0600 (nur der eigene Benutzer darf lesen, keine Verschluesselung); Firmen: OS-Schluesselbund oder Umgebungsvariable aus einem Secret-Manager - spaeter. (6) Jira nur auf Anfrage, einmalig, wegen API-Quoten; kein Dauer-Sync. Mapping Epic/Milestone -> Jira soll im Web einstellbar sein (Default wie vorgeschlagen). Alles in einen Milestone. Offen: 2, 3, 4, 5.
