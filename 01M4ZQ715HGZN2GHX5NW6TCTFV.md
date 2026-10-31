@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-31T00:13:04Z
+updated-at: 2026-10-31T00:13:07Z
 updated-by: berkc
 question: ""
 round: 2
@@ -42,6 +42,8 @@ review-gaps: |-
 test-verdict: "pass: full suite EXIT=0 with cleared cache (skipping TestUnreachableRemoteIsOfflineNotARace, TestAnOfflineWriteArrivesWhenTheNetworkIsBack, TestWebPushReportsAQueuedDrop); go vet ./... EXIT=0; go test -race on core/suggest, core/role, core/release, core/shipped, internal/cli EXIT=0; DoD 1-4, 6, 8, 9 verified in the tree by their named tests; scratch board re-run on the final binary: 0 of 2, 1 of 2, milestone complete lines, logbook accepted. Not verified: jaira-role-pr itself (an agent run that pushes to a real remote) and the milestone-file conflict risk across ticket branches"
 claimed-by: berk-ca-2990549
 claimed-at: 2026-10-31T00:12:59Z
+review-verdict: "The CLI half matches DoD 1, 2, 4, 6, 8 and 9. I confirmed the move/logbook/ls lines and --json by hand on a scratch board. The targeted tests in core/suggest, core/role and internal/cli pass. DoD 3 is not met as written: the 'milestone <name>' form of jaira-role-pr gets its members from a command that leaves filed tickets out, so a milestone PR can silently miss a finished ticket. Sending it back to in-progress for a one-sentence fix in core/role/builtin/jaira-role-pr/SKILL.md (plus its shipped.sha256 line)."
+review-round: 2
 ---
 
 # Ist der letzte Ticket eines Milestones fertig, schlaegt jaira den PR mit /jaira-role-pr vor und bietet an, den Milestone abzulegen
