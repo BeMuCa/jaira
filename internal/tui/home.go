@@ -425,8 +425,10 @@ func (h *Home) render() string {
 	if h.drop != nil {
 		return h.drop.render(h.width, h.height)
 	}
-	if h.notes != nil {
-		return h.notes.render(h.width, h.height)
+	// The release notes are a box over the launcher, as a board's modals are
+	// over the board: the launcher stays visible around them.
+	if h.notes != nil && h.height > 0 {
+		return overBox(h.list(), h.notes.render(max(20, h.width-12), modalContentOf(h.height)), h.width, h.height)
 	}
 	if h.board != nil {
 		return h.board.render(h.width, h.height)
@@ -434,6 +436,11 @@ func (h *Home) render() string {
 	if h.browse != nil {
 		return h.browse.render(h.width, h.height)
 	}
+	return h.list()
+}
+
+// list is the launcher's own screen: the boards, the stats and the key hints.
+func (h *Home) list() string {
 	// Everything below is truncated against the pane, which is the list width
 	// when the icon is beside it and the whole terminal when it is not.
 	paneW := h.width

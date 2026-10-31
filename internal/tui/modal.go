@@ -43,25 +43,32 @@ func (m *Model) modalOver(content string, under mode) string {
 	if m.width <= 0 || m.height <= 0 {
 		return behind
 	}
-	// Leave a margin so the board is visible around all four sides — that
+	return overBox(behind, content, m.width, m.height)
+}
+
+// overBox draws content in the modal frame centred over behind, a view already
+// laid out for width x height. The launcher's release notes use it as well as
+// the board's modals, so both sit on what is under them the same way.
+func overBox(behind, content string, width, height int) string {
+	// Leave a margin so the view is visible around all four sides — that
 	// margin is what says "this is on top of something", not "this is the
 	// screen now".
-	maxW := max(20, m.width-8)
-	maxH := m.modalHeight()
+	maxW := max(20, width-8)
+	maxH := modalHeightOf(height)
 	// The trailing newline every view ends with counts as a line once the
 	// content is split, and one line over the budget is what the clip then
 	// eats — the hint line at the bottom, which is the one part of a window
 	// a reader cannot work without.
 	box := styModal.MaxWidth(maxW).Render(clipHeight(strings.TrimRight(content, "\n"), maxH-2))
 
-	x := max(0, (m.width-lipgloss.Width(box))/2)
-	y := max(0, (m.height-lipgloss.Height(box))/2)
+	x := max(0, (width-lipgloss.Width(box))/2)
+	y := max(0, (height-lipgloss.Height(box))/2)
 	// A Layer only carries its position for a Compositor to read; drawing one
 	// straight onto a Canvas ignores x and y and lands everything at the
 	// origin, which renders as the box alone on an empty screen.
-	return lipgloss.NewCanvas(m.width, m.height).Compose(
+	return lipgloss.NewCanvas(width, height).Compose(
 		lipgloss.NewCompositor(
-			lipgloss.NewLayer(fitCanvas(behind, m.width, m.height)),
+			lipgloss.NewLayer(fitCanvas(behind, width, height)),
 			lipgloss.NewLayer(box).X(x).Y(y).Z(1),
 		),
 	).Render()
@@ -72,7 +79,14 @@ func (m *Model) modalOver(content string, under mode) string {
 // here rather than repeat the arithmetic: three rounds of review found the
 // same defect, each time because the lines were counted in one place and
 // spent in another.
-func (m *Model) modalHeight() int { return max(6, m.height-6) }
+func (m *Model) modalHeight() int { return modalHeightOf(m.height) }
+
+// modalHeightOf is modalHeight for a window of the given height, for a view
+// that is not the board and so has no Model to ask.
+func modalHeightOf(height int) int { return max(6, height-6) }
+
+// modalContentOf is modalContent for a window of the given height.
+func modalContentOf(height int) int { return modalHeightOf(height) - 2 }
 
 // modalContent is modalHeight less the two border lines.
 func (m *Model) modalContent() int { return m.modalHeight() - 2 }

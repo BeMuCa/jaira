@@ -220,6 +220,10 @@ The format is a line scan, and breaking it silently corrupts what users read:
   a wrapped line is read as two separate, incomplete changes.
 - A line starting `- ! ` marks a change the reader must act on. `jaira update`
   and the TUI show it highlighted; to every other reader it stays a plain line.
+- A line starting `- + ` marks a feature or a change to one. The TUI lists these
+  first, under "Features", and `jaira update` shows them with `+`; to every
+  other reader it stays a plain line. `- + ! ` marks a feature the reader must
+  act on too: the feature marker comes first.
 - Everything else in the file — prose, blank lines, HTML comments — is ignored.
 - No version heading. A note file never says which release it belongs to.
 

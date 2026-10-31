@@ -441,6 +441,23 @@ func TestHomeWOpensReleaseNotesNewestFirst(t *testing.T) {
 	}
 }
 
+// The launcher's release notes are a box over the launcher, not a screen of
+// their own: the launcher's first row stays where it was above the box.
+func TestHomeWDrawsReleaseNotesOverTheLauncher(t *testing.T) {
+	root := t.TempDir()
+	h := newHome(t, []string{makeBoard(t, root, "alpha")}, 120, 40)
+	before := strings.Split(stripANSI(h.render()), "\n")[0]
+
+	h.Update(tea.KeyPressMsg{Code: 'w', Text: "w"})
+	out := stripANSI(h.render())
+	if first := strings.Split(out, "\n")[0]; first != before {
+		t.Errorf("first row changed from %q to %q: the notes replaced the launcher", before, first)
+	}
+	if !strings.Contains(out, "╭") || !strings.Contains(out, "Release notes") {
+		t.Errorf("no framed notes box:\n%s", out)
+	}
+}
+
 func TestHomeHintNamesTheReleaseNotesKey(t *testing.T) {
 	root := t.TempDir()
 	for _, w := range []int{120, 40} {

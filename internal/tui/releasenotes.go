@@ -13,7 +13,7 @@ import (
 // colour, bold, so it stands out from the plain changes around it.
 var styImportant = lipgloss.NewStyle().Foreground(colWarn).Bold(true)
 
-// styFeature colours the bullet of a feature line, "- + text".
+// styFeature colours a feature line, "- + text", its bullet and its text alike.
 var styFeature = lipgloss.NewStyle().Foreground(colAccent)
 
 // notesView shows release notes one version per page, the newest first:
@@ -92,6 +92,10 @@ func (v *notesView) lines(width int) []string {
 			out = append(out, styMeta.Render("Others"), "")
 		}
 		out = append(out, others...)
+	}
+	// The last change's gap is the gap render puts above the key hint.
+	if n := len(out); n > 0 {
+		out = out[:n-1]
 	}
 	return out
 }
