@@ -1,7 +1,7 @@
 ---
 id: 01M67RWZDWBS8E44Z3KGXKS048
 title: "critique und optimize laufen je in einem frischen Agenten, nicht im Agenten, der gebaut hat"
-status: critique
+status: in-progress
 ready: true
 creator: berkc
 assignee: berkc
@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-31T01:24:02Z
-updated-at: 2026-10-31T02:45:12Z
+updated-at: 2026-10-31T02:45:14Z
 updated-by: berkc
 claimed-by: berk-ca-3153991
 claimed-at: 2026-10-31T02:32:33Z
@@ -30,6 +30,7 @@ review-summary: |-
   core/role/builtin/jaira-teamlead/SKILL.md:143 "only a lane marked fresh context — `review` on the shipped board —" — name critique, optimize and review, as README.md:78 now does; append the new teamlead SKILL hash to core/shipped/shipped.sha256
   docs/how-to-work-with-jaira.html:387 (German worker row) "also <code>review</code>" — name critique, optimize und review on the shipped board, keep the no-declaration default sentence as README.md:840 does
   Left alone: lane files, AGENTS.md/CLAUDE.md lane block, impliedFresh/review decision (note 02:35), setUpOldBoard (note 02:38), release note incl. "- !" line for hand-edited lane files, worker step 4 fresh->fresh line, dispatcher unchanged (one worker per lane already) — all sound
+round: 2
 ---
 
 # critique und optimize laufen je in einem frischen Agenten, nicht im Agenten, der gebaut hat
