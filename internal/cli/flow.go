@@ -14,6 +14,7 @@ import (
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/move"
 	"github.com/BeMuCa/jaira/core/session"
+	"github.com/BeMuCa/jaira/core/settings"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -676,6 +677,14 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 		}
 	}
 
+	// The model a tier runs on is the machine's setting, not the ticket's, so
+	// it is read here and carried beside the tier. A lane with no tier has no
+	// model to carry.
+	var model settings.AgentModel
+	if l.ModelTier != "" {
+		model, _ = settings.Load().ModelFor(l.ModelTier)
+	}
+
 	if g.jsonOut {
 		payload := map[string]any{
 			"ticket_id":  t.ID,
@@ -698,6 +707,10 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			"produces": l.OutputProduces,
 			"missing":  missing,
 			"complete": len(missing) == 0,
+		}
+		if l.ModelTier != "" {
+			payload["model"] = model.Model
+			payload["effort"] = model.Effort
 		}
 		// The uncommitted half rides in a key of its own, and only when there
 		// is one: a key that is always there is read as a field, and an empty
@@ -732,6 +745,9 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 	// reads the plain-text lane prompt rather than --json learns how to run
 	// the lane from this line and nowhere else.
 	head := fmt.Sprintf("tier: %s", dash(l.ModelTier))
+	if l.ModelTier != "" {
+		head = fmt.Sprintf("tier: %s (%s)", l.ModelTier, model)
+	}
 	if t.Mode != "" {
 		head += fmt.Sprintf(", mode: %s", t.Mode)
 	}
