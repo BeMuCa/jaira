@@ -14,7 +14,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-10-31T02:35:12Z
+updated-at: 2026-10-31T02:35:14Z
 updated-by: berkc
 claimed-by: berk-ca-3155695
 claimed-at: 2026-10-31T02:31:33Z
@@ -50,3 +50,4 @@ review-summary: none
 
 ## Progress
 - **2026-10-31 02:33 · berkc** — Worktree already held 31871f63 (experiment); this pass: stepLane doc names the only-lane case, one comment on the all-empty fallback, release note rewritten as an instruction. Plan items were recorded from plan.md and ticked. Board reports an older jaira version (jaira update not run).
+- **2026-10-31 02:35 · berkc** — critique (first pass, fresh agent): no findings. stepLane separate from moveLane is justified (lane focus must keep stepping onto every lane); skip predicate len(tickets)==0 matches the thin-draw predicate in view.go:209; wraparound matches moveLane; help text in view.go updated. Nothing speculative.
