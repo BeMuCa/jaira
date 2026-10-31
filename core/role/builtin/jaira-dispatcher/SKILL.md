@@ -480,12 +480,10 @@ try something in the app, hand it on before you stop:
 
 Pass every ticket of the same change that is already waiting in a human lane —
 a large fix carried as several tickets is one interview, not several.
-Say which language the person was spoken to in. A `note:` line in the
-review's `review-gaps` reaches the page as a candidate; you never create a
-ticket from one, the person does. The interview role answers with the line the
-person pastes into a new session; that line goes into your third report line
-instead of a link. Reading the person's
-marks back is not yours: that comes later, from whoever the person tells.
+Say which language the person was spoken to in. The interview role answers
+with the line the person pastes into a new session; that line goes into your
+third report line instead of a link. The interview runs in that new session,
+not in yours.
 
 ## Report
 

@@ -20,15 +20,16 @@ commits:
   - de96db1745c69f9e47ea329ea8ccc782072ef6f9
   - 50ff54b331ba75cf94b282daf0ea53a6d07994c5
   - 2c495b3b05310493744ee9661f6dcfd381e21f73
+  - b3bdefe99745601d272d96c0833c6de788cbb66f
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T03:06:24Z
+updated-at: 2026-10-31T03:10:44Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-3129429
 claimed-at: 2026-10-31T01:27:42Z
-outcome-what: "how-to L333: the dispatcher hands back the line, the interview runs in a new session"
-outcome-why: "round-3 critique: L333 still described the interview running in the dispatcher's run"
-outcome-resolves: L333 matches the agent-caller behaviour in SKILL.md
+outcome-what: "L333 wording as the coordinator gave it; dispatcher SKILL.md says one interview; its shipped hash appended"
+outcome-why: "critique r4: L333 inverted the call; dispatcher still said one acceptance page"
+outcome-resolves: "L333 and dispatcher:481 match the agent-caller behaviour; shipped manifest has the new dispatcher hash"
 review-summary: |-
   core/role/builtin/jaira-role-interreview/SKILL.md:107-109 recommends fix when 'the review-verdict is not a pass'; review-verdict is empty for every ticket in human and review (the review lane writes it, after human), so a literal cheap model recommends fix for all of them - say 'fix when a machine check failed, or a review-verdict is present and is not a pass'
   .jaira plan step 11 (shipped hashes) is still unticked although its note says done - the terminal gate refuses a move with an open plan step (core/gate/gate.go:417-430); tick it with jaira dod 5QR36R 11 --done --plan
@@ -37,7 +38,9 @@ review-summary: |-
   ROUND 2: round-1 items OK (SKILL.md:107-113 fix only on failed check or present non-pass verdict; review never accept, labelled 'not yet model-reviewed'; accept scoped to human+signoff at :121-125; plan 11 ticked). New, from accept-scope change + whole diff: (1) core/release/notes/5QR36R.md:1 says it 'accepts the tickets in human, review and signoff' - now false; say it interviews human, review and signoff and accepts those in human and signoff. Same in SKILL.md:3 description 'Works for tickets in human, review and signoff' - add that review tickets get explain/fix only. (2) docs/how-to-work-with-jaira.html:394 table row says the plain /jaira-role-interreview <id> 'Baut eine Abnahmeseite' - default is now the chat interview, page only with --page; :333 says the dispatcher builds the page and sends a link - it now answers with the line to paste into a new session (worker/dispatcher SKILL.md). Adjust both lines (German); L335/L502 --page read-back are fine once :333 says the page is opt-in.
   ROUND 3: OK release note :1, SKILL.md:3 description (review tickets interviewed, only human+signoff accepted), how-to :394, new SKILL.md hash appended (shipped.sha256:502 matches file; go test ./core/shipped ./core/role pass). Open: docs/how-to-work-with-jaira.html:333 still says the dispatcher starts /jaira-role-interreview 'das dich im Chat befragt' - per interreview SKILL.md:21-25 and dispatcher SKILL.md:485-487 an agent caller gets no interview, it reports the line to paste into a NEW session. Say: Dispatcher ruft /jaira-role-interreview auf und meldet dir die Zeile, die du in eine neue Session einfuegst; dort befragt es dich im Chat (accept/explain/fix); die Seite nur mit --page.
   ROUND 4: docs/how-to-work-with-jaira.html:333 now says the dispatcher 'ruft /jaira-role-interreview nicht selbst auf' - false: core/role/builtin/jaira-dispatcher/SKILL.md:479-487 has the dispatcher call /jaira-role-interreview <id>, and the role (interreview SKILL.md:21-25, agent caller) answers with the paste line. Say: Dispatcher ruft /jaira-role-interreview auf und gibt dir die Zeile zurueck, die du in eine neue Session einfuegst; dort befragt dich die Rolle im Chat (accept/explain/fix). Rest of :333 is fine.
-round: 5
+  Round 5: none. how-to.html:333 (b3bdefe9) now says the dispatcher calls /jaira-role-interreview and passes the role's paste line on, matching jaira-dispatcher/SKILL.md:479-487; dispatcher SKILL.md:482 says one interview, not several; shipped.sha256 appends 395a2542 = sha256 of current file, old 5576e939 kept, go test ./core/shipped ok. Not blocking: dispatcher SKILL.md:484 still says a note: line reaches the page.
+round: 6
+review-gaps: "dispatcher SKILL.md:483-488: remove page-only sentences (note: candidate reaches the page; reading marks back) - dead in the default chat path; sent back to in-progress. Left: teamlead:71, README:826 (scoped to --page, fine). No duplication/dead code elsewhere in the diff (stub forwards with --page by design)."
 ---
 
 # Die Abnahme-Rolle fuehrt das Interview im Chat; die Seite ist nur noch auf Wunsch
@@ -101,3 +104,6 @@ round: 5
 - **2026-10-31 03:02 · berkc** — Round-3 text fix: how-to HTML L333 now says the dispatcher hands back the line to paste into a new session, where the interview runs. Only that line changed.
 - **2026-10-31 03:03 · berkc** — critique r4: :333 repair inverted the call - says dispatcher does NOT call interreview; dispatcher SKILL.md:479 does call it, the role returns the paste line. One-word fix (drop 'nicht selbst ... sondern').
 - **2026-10-31 03:06 · berkc** — Round-4 fixes: L333 wording as the coordinator gave it; dispatcher SKILL.md 'one acceptance page' -> 'one interview' and its new hash 395a2542 appended to shipped.sha256. go test ./core/role ./core/shipped ok.
+- **2026-10-31 03:07 · berkc** — critique round 5: no findings; both round-4 asks verified in b3bdefe9, shipped hash correct. Residual 'reaches the page' at dispatcher SKILL.md:484 left as non-blocking.
+- **2026-10-31 03:08 · berkc** — optimize: core/role/builtin/jaira-dispatcher/SKILL.md:483-488 has two page-only sentences that are dead weight now the default is the chat interview: (a) 'A note: line in the review's review-gaps reaches the page as a candidate; you never create a ticket from one, the person does.' - the chat path (interreview SKILL.md:83-161) never shows candidates, and the dispatcher acts on nothing there; delete it. (b) 'Reading the person's marks back is not yours: that comes later, from whoever the person tells.' - no marks exist in the default path and the interview runs in the new session; delete it, or replace with 'The interview runs in that new session, not in yours.' Then append the new dispatcher hash to core/shipped/shipped.sha256. Left: teamlead SKILL.md:71 and README.md:826 'read the marks back' are correctly scoped to --page. Not a cleanup, maintainer's call: the chat path drops note: candidates entirely (only the page path, interreview SKILL.md:181, surfaces them).
+- **2026-10-31 03:10 · berkc** — Optimize: dispatcher SKILL.md:483-488 dropped the review-gaps candidate sentence and the 'reading marks back' sentence; the line 'The interview runs in that new session, not in yours' replaces it. New hash cbbae671 appended to shipped.sha256; go test ./core/role ./core/shipped ok.
