@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-31T01:24:00Z
-updated-at: 2026-10-31T02:37:21Z
+updated-at: 2026-10-31T02:39:58Z
 updated-by: berkc
 claimed-by: berk-ca-3129208
 claimed-at: 2026-10-31T01:27:35Z
@@ -54,3 +54,4 @@ claimed-at: 2026-10-31T01:27:35Z
 
 ## Progress
 - **2026-10-31 02:33 · berkc** — Planner decision: default lives in LoadDefaultBoard (absent options: key -> [planning]), not in ResolveOptions. Why: the TUI default-board screen (internal/tui/defaultboard.go:62) and 'jaira lanes default --lanes X' (internal/cli/lanes.go) both seed from board.Options and SaveDefaultBoard always writes options:; a default only in ResolveOptions would show planning unticked there and a lanes-only save would write options: [] and silently turn planning off. Distinguish absent key (d.Has) from 'options: []' (= none, full control). Validate must skip the option check when defaulted, else boards without pre-process warn 'option planning not required'. NewBody untouched (pure; regression baseline test passes explicit options). Tests changing: TestLoadDefaultBoardAbsentReturnsZeroBoard (Options now [planning]). Unaffected: body_test, TestResolveOptionsTicksNamedOptions, TUI TogglesAndSaves (opts[0]=brainstorm). Docs: docs/COMMANDS.md does not mention options; only the template in tickets.go:1552 and 'lanes default' help do. Unparseable file is treated as absent -> planning ticked too.
+- **2026-10-31 02:39 · berkc** — Tests: core/lane, core/ticket, internal/tui, core/release, internal/cli (3 hangers skipped) all green. No existing test needed its expectation changed: createlane_test and 'lanes default' output still pass. Bare 'options:' with no value now reads as DefaultOptions (planning), where before it meant none; not covered by a test, left as the plan says. Ticket file is untracked in the worktree at start; committed with the code.
