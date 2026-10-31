@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-31T01:24:02Z
-updated-at: 2026-10-31T03:00:52Z
+updated-at: 2026-10-31T03:00:54Z
 updated-by: berkc
 claimed-by: berk-ca-3153991
 claimed-at: 2026-10-31T02:32:33Z
@@ -33,6 +33,13 @@ review-gaps: |-
 test-verdict: "pass: touched-package tests green (core/lane, core/role, core/shipped, internal/cli minus the 3 hangers; whole suite not run), DoD 1-3 verified in the tree, behaviour exercised on a scratch clone (update --lanes on an old board, --for-lane critique|optimize|review context fresh)"
 review-verdict: "pass: all three DoD items hold on the diff and verified by hand - fresh build: update --lanes on a board with context lines stripped reports 'lanes: 3 updated', jaira lanes then shows critique/optimize/review fresh, show --for-lane critique --json carries \"context\": \"fresh\"; go test ./core/lane ./core/shipped and internal/cli -run Context|ForLane|Lanes pass. No defects found."
 review-round: 3
+review-check: |-
+  1. cd into the branch checkout, run: go build -o /tmp/jx ./cmd/jaira
+  2. mkdir /tmp/b && cd /tmp/b && git init && /tmp/jx init && /tmp/jx lanes add critique && /tmp/jx lanes add optimize
+  3. run: /tmp/jx lanes - the CONTEXT column says fresh on critique, optimize and review, dash elsewhere
+  4. simulate an old board: sed -i '/^context: fresh$/d' .jaira/lanes/*.md, then /tmp/jx update --lanes - it prints 'lanes: 3 updated' and the XKS048 note lines; /tmp/jx lanes shows fresh on the three again
+  5. /tmp/jx create t --goal g --context c --dod d, then /tmp/jx show <id> --for-lane critique --json - see "context": "fresh"
+  6. open core/role/builtin/jaira-worker/SKILL.md line 16 and step 4: critique, optimize, review named as fresh; a fresh lane handing to another fresh lane starts a new agent
 ---
 
 # critique und optimize laufen je in einem frischen Agenten, nicht im Agenten, der gebaut hat
