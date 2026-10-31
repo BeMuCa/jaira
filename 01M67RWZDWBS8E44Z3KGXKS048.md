@@ -18,13 +18,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-31T01:24:02Z
-updated-at: 2026-10-31T02:50:29Z
+updated-at: 2026-10-31T02:53:20Z
 updated-by: berkc
 claimed-by: berk-ca-3153991
 claimed-at: 2026-10-31T02:32:33Z
-outcome-what: "drei veraltete Stellen korrigiert: worker SKILL.md:16 und teamlead SKILL.md:143 nennen critique, optimize und review; docs/how-to-work-with-jaira.html:387 ebenso; shipped.sha256 um beide SKILL.md-Hashes ergaenzt; Commit a4194dff"
-outcome-why: "critique fand drei Stellen, die noch nur review als frische Lane nennen (Review-Summary 02:45)"
-outcome-resolves: "die drei genannten Stellen sagen jetzt critique, optimize und review; go test ./core/role ./core/shipped gruen"
+outcome-what: "docs/how-to-work-with-jaira.html:387 trennt jetzt Schluss: shipped-Board = critique, optimize, review; ohne Angabe = letzte Agenten-Lane vor der ersten Menschen-Lane; Commit 065df0d9"
+outcome-why: "critique r2 (02:50): beide Klauseln waren im Satz verschmolzen, so dass der Default critique/optimize/review las"
+outcome-resolves: "docs/how-to-work-with-jaira.html:387 nennt die drei Lanes fuer das shipped-Board und beschreibt den Default getrennt, wie README.md:840-843"
 review-summary: |-
   core/role/builtin/jaira-worker/SKILL.md:16 still says "On the shipped board that is `review`." — change to critique, optimize and review (the change made all three fresh; step 4 and line 157 already say so)
   core/role/builtin/jaira-teamlead/SKILL.md:143 "only a lane marked fresh context — `review` on the shipped board —" — name critique, optimize and review, as README.md:78 now does; append the new teamlead SKILL hash to core/shipped/shipped.sha256
@@ -32,7 +32,8 @@ review-summary: |-
   Left alone: lane files, AGENTS.md/CLAUDE.md lane block, impliedFresh/review decision (note 02:35), setUpOldBoard (note 02:38), release note incl. "- !" line for hand-edited lane files, worker step 4 fresh->fresh line, dispatcher unchanged (one worker per lane already) — all sound
   round 2: worker SKILL.md:16 fixed; teamlead SKILL.md:143 fixed + hash appended (core/shipped ok)
   docs/how-to-work-with-jaira.html:387 still wrong: 'ohne Angabe die letzte Agenten-Lane vor der ersten Menschen-Lane, auf dem ausgelieferten Board also critique, optimize und review' says the no-declaration default IS those three. Split it like README.md:840-843: 'Nur eine Lane mit <code>context: fresh</code> – auf dem ausgelieferten Board <code>critique</code>, <code>optimize</code> und <code>review</code>; ohne Angabe die letzte Agenten-Lane vor der ersten Menschen-Lane – bekommt ...'
-round: 2
+  round 3 (fresh agent): docs/how-to-work-with-jaira.html:387 now split like README.md:840-843 (shipped board: critique, optimize, review; no-declaration default as its own clause) - fixed. Whole diff re-read: lane files, AGENTS/CLAUDE lane block, README:78/840, worker+teamlead SKILL, shipped hashes, release note, tests consistent; grep finds no stale 'only review' mention; go test core/lane core/shipped ok. Nothing left to say.
+round: 3
 ---
 
 # critique und optimize laufen je in einem frischen Agenten, nicht im Agenten, der gebaut hat
