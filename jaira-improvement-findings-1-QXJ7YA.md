@@ -2,7 +2,7 @@
 color: 73
 created-at: 2026-10-13T14:15:54Z
 goal: Was am 13.10. beim Arbeiten mit jaira schiefging oder umstaendlich war, ist behoben: veraltete Ticket-Kopien, Lane-Namen, Testbuilds, Versionen, Updates und Skills
-after: [59ZD7J]
+after: []
 ---
 
 # jaira-improvement-findings-1
