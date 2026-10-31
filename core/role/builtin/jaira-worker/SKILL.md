@@ -13,7 +13,7 @@ One ticket. You carry it lane by lane — brainstorm, plan, implement, critique,
 optimize, test, whatever this board has — until it reaches a lane a person
 owns, or until it blocks. You do every lane yourself, with one exception: a
 lane marked **fresh context** goes to a new agent that has seen nothing of
-your work. On the shipped board that is `review`.
+your work. On the shipped board those are `critique`, `optimize` and `review`.
 
 Why one agent and not one per lane: measured on three tickets on 2026-10-11,
 one agent per lane spent 17 agents, 1.11M tokens and 69 minutes; one agent per

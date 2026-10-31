@@ -140,7 +140,7 @@ jaira --json roles list      # "dispatch": "lanes" | "worker", "dispatch_role"
 - `worker` — the person opted in with `"dispatch": "worker"` in
   `~/.jaira/settings.json` (or on the board's settings screen, `S`):
   `jaira-worker`, which carries the ticket through every lane itself and hands
-  only a lane marked fresh context — `review` on the shipped board — to a new
+  only a lane marked fresh context — `critique`, `optimize` and `review` on the shipped board — to a new
   agent. Start it exactly as below, with the lane name `worker` where it says
   `dispatch`, and `/jaira-worker` where it says `/jaira-dispatcher`. It asks,
   reports and stops by the same rules, so the rest of this file holds for it

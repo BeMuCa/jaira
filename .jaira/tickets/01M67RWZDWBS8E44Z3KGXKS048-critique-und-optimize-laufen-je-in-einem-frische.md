@@ -18,10 +18,19 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-31T01:24:02Z
-updated-at: 2026-10-31T02:43:45Z
+updated-at: 2026-10-31T02:45:14Z
 updated-by: berkc
 claimed-by: berk-ca-3153991
 claimed-at: 2026-10-31T02:32:33Z
+outcome-what: "critique, optimize und review tragen context: fresh (core/lane/builtin 25/26/40, .jaira/lanes critique/optimize/review, AGENTS.md/CLAUDE.md Lane-Block); Worker-SKILL Schritt 4 fuer fresh->fresh; README; shipped.sha256 angehaengt; Release-Notiz XKS048.md; Commit e8d9b5ec"
+outcome-why: "zwei zusaetzliche Augenpaare statt Selbstkontrolle (Experiment 3CBCN6: Nur-Haiku-Lauf liess veraltete Hilfezeile stehen)"
+outcome-resolves: "review haette sonst ihren fresh-Default verloren (impliedFresh); context-Tests simulieren alten Board ueber setUpOldBoard/stripLaneContexts, refresh_test unveraendert; core/lane, core/shipped, core/role, core/release, internal/cli -run Context, core/board gruen"
+review-summary: |-
+  core/role/builtin/jaira-worker/SKILL.md:16 still says "On the shipped board that is `review`." — change to critique, optimize and review (the change made all three fresh; step 4 and line 157 already say so)
+  core/role/builtin/jaira-teamlead/SKILL.md:143 "only a lane marked fresh context — `review` on the shipped board —" — name critique, optimize and review, as README.md:78 now does; append the new teamlead SKILL hash to core/shipped/shipped.sha256
+  docs/how-to-work-with-jaira.html:387 (German worker row) "also <code>review</code>" — name critique, optimize und review on the shipped board, keep the no-declaration default sentence as README.md:840 does
+  Left alone: lane files, AGENTS.md/CLAUDE.md lane block, impliedFresh/review decision (note 02:35), setUpOldBoard (note 02:38), release note incl. "- !" line for hand-edited lane files, worker step 4 fresh->fresh line, dispatcher unchanged (one worker per lane already) — all sound
+round: 2
 ---
 
 # critique und optimize laufen je in einem frischen Agenten, nicht im Agenten, der gebaut hat
@@ -60,3 +69,4 @@ claimed-at: 2026-10-31T02:32:33Z
 - **2026-10-31 02:38 · berkc** — Planner on the 02:37 stop: option (b). setUpBoard keeps meaning 'the shipped board as installed' — refresh_test.go (boardWithTesting) tests RefreshShipped against exactly that, and a stripped review.md is a genuinely older shipped version, so 'updated' would be correct behaviour, not a bug; exempting review in that loop (a) would weaken the test. (c) would add a flag to a helper. Instead context_test.go gets its own setUpOldBoard (setUpBoard + strip), used by all 7 context tests, which are about the implied default of a pre-field board. Plan step 3 reworded accordingly.
 - **2026-10-31 02:39 · berkc** — Planner amendment applied: setUpBoard back to installed shipped board; setUpOldBoard (setUpBoard + stripLaneContexts) used by all 7 context_test.go calls. go test ./core/lane -count=1: ok.
 - **2026-10-31 02:40 · berkc** — Step 4 done: internal/cli stripLaneContexts helper added; TestLanesAndForLaneReportContext, TestAnInvalidContextIsReportedNotDropped, TestAnInvalidContextLeavesTheDefaultFresh run runLanes once, then strip. go test ./internal/cli -run Context and ./core/board: ok.
+- **2026-10-31 02:45 · berkc** — critique (fresh): three stale 'only review is fresh' statements the diff missed — worker SKILL.md:16, teamlead SKILL.md:143 (+ shipped hash), docs/how-to-work-with-jaira.html:387. Everything else stands (see review-summary). Fix those and return to critique.
