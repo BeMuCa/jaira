@@ -479,7 +479,7 @@ try something in the app, hand it on before you stop:
     /jaira-role-interreview <id> [<id>...]
 
 Pass every ticket of the same change that is already waiting in a human lane —
-a large fix carried as several tickets is one acceptance page, not several.
+a large fix carried as several tickets is one interview, not several.
 Say which language the person was spoken to in. A `note:` line in the
 review's `review-gaps` reaches the page as a candidate; you never create a
 ticket from one, the person does. The interview role answers with the line the
