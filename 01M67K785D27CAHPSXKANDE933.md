@@ -14,14 +14,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-10-31T02:38:42Z
+updated-at: 2026-10-31T02:40:13Z
 updated-by: berkc
 claimed-by: berk-ca-3155695
 claimed-at: 2026-10-31T02:31:33Z
 outcome-what: stepLane in model.go skips lanes with no tickets when z is on; release note rewritten as an instruction
 outcome-why: "with z on, ←/→ from backlog to done jumped through every empty lane in between"
 outcome-resolves: "DoD 1 and 2 ticked with proof (tests in lanewindow_test.go:182-301, release note line)"
-review-summary: none
+review-summary: "Board ←/→ now call a new stepLane (internal/tui/model.go). With z off it is the old moveLane. With z on it walks the lanes cyclically in the arrow's direction and lands on the first one holding tickets, skipping the thin (empty) lanes; if only the cursor's lane has tickets it stays put; if every lane is empty (filter matches nothing) it steps one lane as before. Thin-ness and skipping use the same test (len(tickets)==0), so what is drawn thin is exactly what is skipped. Lane focus (h/l there) keeps moveLane. The z help line and release note core/release/notes/NDE933.md say the arrows skip empty lanes. Six tests in internal/tui/lanewindow_test.go cover skip, z off, left wrap to done, only-lane, all-empty, empty start lane; the old test that asserted stepping onto thin lanes was replaced."
 review-gaps: "none: stepLane is the only wrap-scan for non-empty lanes (moveLane/layer.go/ticks.go do single-step wrap only); len(m.cols)==0 guard is load-bearing (index m.cols[m.laneIdx] below); new tests exercise distinct cases; nothing orphaned (moveLane still used by lane focus)"
 test-verdict: "pass: go build ./... RC=0, go vet ./internal/tui RC=0, go test ./internal/tui -count=1 ok (RC=0); DoD 1-2 verified in tree, 7 named tests PASS -v; release note is one '- ' line; behaviour exercised through Model.key(KeyRight/KeyLeft) in tests, not a live TUI run"
 ---
