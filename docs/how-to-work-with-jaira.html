@@ -251,7 +251,7 @@ jaira roles install --project     # nach .claude/skills, reist mit dem Clone</co
     <li><div>
       <h3>Optional</h3>
       <p><code>jaira hook print</code> gibt einen Stop-Hook für <code>~/.claude/settings.json</code> aus. Er lässt eine Session nicht enden, solange irgendeine Agenten-Lane auf dem Board noch Arbeit hat. Er blockiert pro Stopp nur einmal.</p>
-      <p><code>/jaira-role-acceptance</code> und <code>/jaira-role-logbook-summary</code> brauchen <code>python3</code>. <code>/jaira-role-pr</code> braucht <code>gh</code> (GitHub) oder <code>glab</code> (GitLab).</p>
+      <p><code>/jaira-role-interreview</code> und <code>/jaira-role-logbook-summary</code> brauchen <code>python3</code>. <code>/jaira-role-pr</code> braucht <code>gh</code> (GitHub) oder <code>glab</code> (GitLab).</p>
     </div></li>
   </ol>
 </section>
@@ -330,9 +330,9 @@ jaira roles install --project     # nach .claude/skills, reist mit dem Clone</co
         <li><span class="who rolle">Rolle</span><div><span>Legt Branch <code>feat/&lt;slug&gt;</code> und Worktree <code>../.worktrees/&lt;repo&gt;-&lt;slug&gt;</code> an.</span><span class="res">Im Modus <code>conversational</code>: dein ausgecheckter Branch.</span></div></li>
         <li><span class="who rolle">Rolle</span><div><span>Pro Lane ein frischer Worker: <code>/jaira-role-lane &lt;id&gt; &lt;lane&gt;</code>. Pro Lane eine Zeile an dich.</span><span class="res">Commits tragen die Ticket-ID. Gepusht wird noch nichts.</span></div></li>
         <li><span class="who rolle">Rolle</span><div><span>Nach <code>testing</code> geht es direkt zu <code>review</code>. Nach <code>human</code> nur, wenn es eine offene Frage an dich gibt.</span><span class="res"><code>review</code> schreibt auf, wie du es selbst prüfst (<code>review-check</code>).</span></div></li>
-        <li><span class="who rolle">Rolle</span><div><span>Ticket erreicht <code>signoff</code>. Dispatcher baut die Abnahmeseite (<code>/jaira-role-acceptance</code>), schickt dir den Link und hört auf.</span></div></li>
+        <li><span class="who rolle">Rolle</span><div><span>Ticket erreicht <code>signoff</code>. Dispatcher baut die Abnahmeseite (<code>/jaira-role-interreview</code>), schickt dir den Link und hört auf.</span></div></li>
         <li><span class="who du">Du</span><div><span>Seite durchgehen, jeden Schritt ok / nein / übersprungen markieren.</span></div></li>
-        <li><span class="who du">Du</span><div><code>/jaira-role-acceptance read the acceptance</code><span class="res">Angenommen: weiter nach <code>done</code>. Jedes Nein: zurück ins Ticket oder neuer Bug.</span></div></li>
+        <li><span class="who du">Du</span><div><code>/jaira-role-interreview --page read the acceptance</code><span class="res">Angenommen: weiter nach <code>done</code>. Jedes Nein: zurück ins Ticket oder neuer Bug.</span></div></li>
         <li><span class="who du">Du</span><div><code>/jaira-role-pr &lt;id&gt;</code><span class="res">Weil du es tippst: Push und PR. Ein Agent dürfte nur pushen.</span></div></li>
         <li><span class="who du">Du</span><div><span>Maintainer merged. Danach <code>jaira logbook &lt;id&gt;</code>.</span></div></li>
       </ol>
@@ -366,7 +366,7 @@ jaira roles install --project     # nach .claude/skills, reist mit dem Clone</co
     <ul>
       <li>Manchmal. Claude sieht jeden Skill als Name plus Beschreibung und entscheidet danach. Ein Stichwort wie „Ticket“ schaltet nichts fest ein.</li>
       <li>„Arbeite diese drei Tickets ab“ passt zur Beschreibung des Teamleads und löst ihn oft aus. Verlassen kann man sich darauf nicht.</li>
-      <li>Fest in den Prompts verdrahtet ist nur, wie die Rollen einander aufrufen: Teamlead startet Dispatcher. Dispatcher startet Lane-Worker und, sobald das Ticket in einer Menschen-Lane ist, <code>/jaira-role-acceptance</code>. Brainstorm schickt bei fehlenden Fakten zu <code>/jaira-role-research</code>.</li>
+      <li>Fest in den Prompts verdrahtet ist nur, wie die Rollen einander aufrufen: Teamlead startet Dispatcher. Dispatcher startet Lane-Worker und, sobald das Ticket in einer Menschen-Lane ist, <code>/jaira-role-interreview</code>. Brainstorm schickt bei fehlenden Fakten zu <code>/jaira-role-research</code>.</li>
       <li><b>Wenn du eine bestimmte Rolle willst, tipp <code>/name</code>.</b></li>
     </ul>
   </div>
@@ -391,7 +391,7 @@ jaira roles install --project     # nach .claude/skills, reist mit dem Clone</co
         <tr><td><code>/jaira-role-research &lt;frage|id&gt;</code></td><td>Findet heraus, was schon bekannt ist: im Repo, bei vergleichbaren Tools, echte Versionen. Jede Aussage mit Quelle und Sicherheit. Ergebnis per <code>jaira note</code>.</td><td>du oder die Brainstorm-Rolle</td><td>Code schreiben, Tickets bewegen</td></tr>
         <tr class="group"><td colspan="4">Prüfen und abnehmen</td></tr>
         <tr><td><code>/jaira-role-tester [id]</code></td><td>Lässt die Tests laufen und meldet, was rot ist.</td><td>du oder der Teamlead</td><td>reparieren</td></tr>
-        <tr><td><code>/jaira-role-acceptance &lt;id&gt;…</code></td><td>Baut eine Abnahmeseite für alle Tickets einer Änderung und wertet deine Markierungen später aus. Siehe <a href="#abnahme">Die Abnahmeseite</a>.</td><td>der Dispatcher von selbst, oder du</td><td>etwas ausführen, das schreibt oder Tokens kostet</td></tr>
+        <tr><td><code>/jaira-role-interreview &lt;id&gt;…</code></td><td>Baut eine Abnahmeseite für alle Tickets einer Änderung und wertet deine Markierungen später aus. Siehe <a href="#abnahme">Die Abnahmeseite</a>.</td><td>der Dispatcher von selbst, oder du</td><td>etwas ausführen, das schreibt oder Tokens kostet</td></tr>
         <tr class="group"><td colspan="4">Danach</td></tr>
         <tr><td><code>/jaira-role-pr &lt;id&gt;</code></td><td>Prüft den Branch (eigener Branch, Ticket-ID in jedem Commit), pusht ihn, öffnet den PR, beantwortet Review-Kommentare.</td><td>du: Push und PR. Ein Agent: nur Push</td><td>mergen, approven</td></tr>
         <tr><td><code>/jaira-role-logbook-summary [zeitraum]</code></td><td>Eine Seite für die Projektleitung: fertig, in Arbeit, offen, Stunden aus Commit-Zeiten. Jeder Text mit Kopierknopf, kein Code.</td><td>du</td><td>Dateinamen, Hashes oder Code zeigen</td></tr>
@@ -480,7 +480,7 @@ jaira roles install --project     # nach .claude/skills, reist mit dem Clone</co
   <ol class="steps">
     <li><div>
       <h3>Bauen</h3>
-      <p>Der Dispatcher ruft <code>/jaira-role-acceptance &lt;id&gt;…</code> auf, sobald sein Ticket in einer Menschen-Lane ist und <code>review</code> einen Prüfweg für dich aufgeschrieben hat. Du kannst es auch selbst tippen. Ohne IDs nimmt die Rolle alle Tickets aus den Menschen-Lanes.</p>
+      <p>Der Dispatcher ruft <code>/jaira-role-interreview &lt;id&gt;…</code> auf, sobald sein Ticket in einer Menschen-Lane ist und <code>review</code> einen Prüfweg für dich aufgeschrieben hat. Du kannst es auch selbst tippen. Ohne IDs nimmt die Rolle alle Tickets aus den Menschen-Lanes.</p>
       <ul class="rules">
         <li>Die Rolle teilt jeden Prüfschritt (<code>review-check</code>) in Maschine oder Mensch.</li>
         <li>Maschinen-Schritte wie <code>go test</code> oder <code>grep</code> führt sie vorher aus. Ergebnis und letzte Zeilen stehen auf der Seite. Was rot ist, bleibt rot sichtbar.</li>
@@ -499,7 +499,7 @@ jaira roles install --project     # nach .claude/skills, reist mit dem Clone</co
     </div></li>
     <li><div>
       <h3>Zurücklesen</h3>
-      <pre class="cmd"><code>/jaira-role-acceptance read the acceptance</code></pre>
+      <pre class="cmd"><code>/jaira-role-interreview --page read the acceptance</code></pre>
       <ul class="rules">
         <li>Angenommene Tickets gehen in die nächste Lane (aus <code>signoff</code> nach <code>done</code>), mit <code>--force</code>. Die Rolle sagt dir das.</li>
         <li>Jedes Nein klärt die Rolle selbst. Fehlt ein DoD-Punkt, geht das Ticket zurück. Ist es etwas daneben, wird ein neuer Bug angelegt. War der Prüfschritt falsch, wird der Schritt korrigiert.</li>

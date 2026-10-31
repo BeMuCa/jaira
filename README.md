@@ -823,7 +823,7 @@ left alone and reported, and `--force` replaces it too.
 | `/jaira-role-brainstorm <idea>` | Turns an idea into tickets, or says it is not one. |
 | `/jaira-role-research <question>` | Finds the facts out first, each with its source and confidence. |
 | `/jaira-role-tester [id]` | Runs the tests and reports what fails. Fixes nothing. |
-| `/jaira-role-acceptance <id>...` | Builds the acceptance page and reads your marks back. |
+| `/jaira-role-interreview <id>...` | Interviews you in chat about the tickets waiting for you: `accept <id>`, `explain <id>` or `fix <id> <what>`. `--page` builds the acceptance page instead and reads your marks back. |
 | `/jaira-role-pr <id>` | Pushes the branch, opens the pull request when you typed it, answers review comments. Never merges. |
 | `/jaira-role-logbook-summary [period]` | Writes a report for a project lead, with hours. |
 
@@ -845,13 +845,15 @@ walk-through in German: **[docs/how-to-work-with-jaira.html](docs/how-to-work-wi
   instead of the dispatcher. `jaira roles list` says which is set.
 - `/jaira-teamlead` is for several tickets at once: it decides the order, says
   what is not worth doing, and starts one dispatcher per ticket.
-- `/jaira-role-acceptance <id>...` turns the tickets waiting for you into one
-  page to accept them on: the tests already run, setup written once per block,
-  and one scenario per block whose steps name the tickets they prove. You mark
-  each step ok or no; a ticket whose steps are all ok is accepted. Reading it
-  back, the role works out every "no" itself — back into the same ticket, a new
-  bug, or a wrong step — and publishes a fixed record of the acceptance. A
-  dispatcher or teamlead hands tickets on to it when they reach a human lane.
+- `/jaira-role-interreview <id>...` turns the tickets waiting for you into a
+  chat interview: per ticket one line on what it does, how to check it and a
+  recommendation. You answer `accept <id>`, `explain <id>` or `fix <id> <what is
+  wrong>`, and the role carries it out and writes a record of the acceptance. Add
+  `--page` for the acceptance page instead: the tests already run, setup written
+  once per block, one scenario per block, and your marks read back into the
+  same records. A dispatcher or teamlead hands tickets on to it when they reach a
+  human lane; it answers with the line to paste into a new session.
+  `/jaira-role-acceptance` still works and builds the page.
 - `/jaira-role-logbook-summary [period]` writes what a project lead wants to
   know about a period — what is finished, what is under way, hours estimated
   from commit times — as one page without code, every text ready to copy. A
