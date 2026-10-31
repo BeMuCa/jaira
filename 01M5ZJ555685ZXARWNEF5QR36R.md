@@ -1,8 +1,8 @@
 ---
 id: 01M5ZJ555685ZXARWNEF5QR36R
 title: Die Abnahme-Rolle fuehrt das Interview im Chat; die Seite ist nur noch auf Wunsch
-status: backlog
-ready: false
+status: todo
+ready: true
 creator: BeMuCa
 goal: "jaira-role-acceptance fragt standardmaessig im Chat ab - je Ticket ID, Einzeiler, wie pruefen, Empfehlung, dann 'accept X / explain X / fix X' - und baut die statische Seite nur mit --page."
 context: |-
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T02:31:26Z
+updated-at: 2026-10-31T02:31:34Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-3129429
