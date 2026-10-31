@@ -89,7 +89,7 @@ func modalHeightOf(height int) int { return max(6, height-6) }
 func modalContentOf(height int) int { return modalHeightOf(height) - 2 }
 
 // modalContent is modalHeight less the two border lines.
-func (m *Model) modalContent() int { return m.modalHeight() - 2 }
+func (m *Model) modalContent() int { return modalContentOf(m.height) }
 
 // underlying renders the view a modal sits on, so closing the modal changes
 // nothing but the box going away.
