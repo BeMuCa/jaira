@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-31T00:15:41Z
+updated-at: 2026-10-31T00:15:42Z
 updated-by: berkc
 question: ""
 round: 3
@@ -34,11 +34,7 @@ outcome-what: "jaira move, jaira logbook <id> and jaira milestone ls print the p
 outcome-why: "a milestone is one pull request over all its tickets (berkc 22.10), and the person is otherwise never told /jaira-role-pr is due; a ticket outside any milestone is a group of one"
 outcome-resolves: "a finished ticket or a finished milestone now names its next step in the output; an agent never opens a pull request; the one-branch question is settled by merging the ticket branches at PR time, not by changing worktrees"
 review-summary: "none: pass 2 reads only the delta since pass 1 - the milestone-members sentence in core/role/builtin/jaira-role-pr/SKILL.md (now milestone ls --json tickets), its pin test line, and the manifest line; nothing simpler, nothing duplicated"
-review-gaps: |-
-  blocker: DoD 3 - jaira-role-pr/SKILL.md 'One branch for several tickets' says the members of a milestone are what 'jaira list --milestone <name> --json' lists, 'filed or not'. That is false: list reads only board tickets (internal/cli/tickets.go:615 loadBoardEnv). Checked on a scratch board: after 'jaira logbook XRSGSN', 'jaira list --milestone m1' showed only ZMH0SY. So '/jaira-role-pr milestone <name>' silently leaves a filed member's branch out of the milestone branch. The handle check that follows passes anyway, because it only checks the tickets it was given. 'jaira milestone ls --json' lists every member under 'tickets', filed ones included. Point the sentence there.
-  note: the suggestion line jaira prints passes bare handles ('/jaira-role-pr XRSGSN ZMH0SY'), not 'milestone <name>'. The one-branch section names the branch milestone/<name>, a name the handle form never supplies, so the agent has to work out which milestone the handles belong to.
-  note: completeLines uses the bare milestone name in 'jaira logbook <m>'. When two milestones share a name, a writing command refuses that name (exit 3), so the suggested line would fail. <name>-<ID> would be safe.
-  note: 'jaira logbook --all' prints no suggestions (logbookAll does not go through logbookOut). The pre-process note lists it as a planned follow-up.
+review-gaps: "none: pass 2 optimize of the delta - the sentence is the only change, no dead code, no second copy of the members rule (the list command keeps its own filter)"
 test-verdict: "pass: full suite EXIT=0 with cleared cache (skipping TestUnreachableRemoteIsOfflineNotARace, TestAnOfflineWriteArrivesWhenTheNetworkIsBack, TestWebPushReportsAQueuedDrop); go vet ./... EXIT=0; go test -race on core/suggest, core/role, core/release, core/shipped, internal/cli EXIT=0; DoD 1-4, 6, 8, 9 verified in the tree by their named tests; scratch board re-run on the final binary: 0 of 2, 1 of 2, milestone complete lines, logbook accepted. Not verified: jaira-role-pr itself (an agent run that pushes to a real remote) and the milestone-file conflict risk across ticket branches"
 claimed-by: berk-ca-2990549
 claimed-at: 2026-10-31T00:12:59Z
