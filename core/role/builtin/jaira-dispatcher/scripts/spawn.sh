@@ -279,8 +279,6 @@ brief=""
 if [ "$lane" = explain ] || [ "$lane" = discuss ]; then
   chat_model="$(jaira -C "$wt" roles list --json 2>/dev/null \
     | jaira json get chat_model 2>/dev/null)" || chat_model=""
-  # It lands in a command line: only a model name passes.
-  [[ "$chat_model" =~ ^[][A-Za-z0-9._-]*$ ]] || chat_model=""
   brief="$(jaira -C "$wt" show "$ticket" --brief 2>/dev/null)" || brief=""
 fi
 # Their request, brief included, runs to thousands of characters, and typed

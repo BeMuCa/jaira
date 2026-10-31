@@ -506,3 +506,4 @@ bcb2ae17f2995c7b2d8b68986a24c68b2c8c6eb19343dbb277fe51a00f343747  core/role/buil
 18ee06c03ce054213c21f01c98bc6144c32123dd2875f0a8827a06dee6f05b31  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
 709b3d5bcff354f2659badd2de0d9288ed4cd78c031e65e589185e81a20d7662  core/role/builtin/jaira-teamlead/SKILL.md
 f4f2dd48537b8e87a49d0965b8cf4d35e6bfe13c82a5040765569031668a6272  core/role/builtin/jaira-worker/SKILL.md
+8edb6682d98aee0b22b3b84892e0981fe57d54ea961c6218c8dee462d720126a  core/role/builtin/jaira-dispatcher/scripts/spawn.sh

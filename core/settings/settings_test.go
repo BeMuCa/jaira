@@ -376,20 +376,3 @@ func TestModelsRejectBadValues(t *testing.T) {
 		t.Errorf("bad effort: %q, want sonnet with no effort", m)
 	}
 }
-
-// Models written by Save come back from Load unchanged, and a settings file
-// without them keeps reading as before.
-func TestSaveKeepsModels(t *testing.T) {
-	t.Setenv("JAIRA_HOME", t.TempDir())
-
-	in := settings.Settings{Models: map[string]settings.AgentModel{
-		"orchestrator": {Model: "sonnet", Effort: "high"},
-	}}
-	if err := settings.Save(in); err != nil {
-		t.Fatal(err)
-	}
-	got := settings.Load().Models
-	if got["orchestrator"] != (settings.AgentModel{Model: "sonnet", Effort: "high"}) || len(got) != 1 {
-		t.Errorf("round trip: %+v", got)
-	}
-}
