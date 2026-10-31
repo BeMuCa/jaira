@@ -154,8 +154,8 @@ in-progress and repeats until it has nothing left to say. Run it to silence.
 
 ### Judging your own work
 
-In critique, optimize and testing you are reading code you wrote, and that is
-the one thing a per-lane run never did. So:
+In a lane not marked fresh (testing on the shipped board) you are reading code
+you wrote, and that is the one thing a per-lane run never did. So:
 
 - **Read the payload's diff, not your memory.** `--for-lane` hands you `diff`
   and `worktree_diff`; read them as a stranger who was not there would. What
@@ -209,6 +209,9 @@ guarantee is gone and nobody can see that it is.
 4. It moved the ticket on to a person's lane: stop. It sent the work back: the
    ticket is in an agentic lane again and yours — carry on with the loop, and
    the fresh lane gets a **new** agent next time, never the one from before.
+   It moved the ticket into another fresh lane (critique into optimize): start
+   a NEW agent on that lane, step 2 again — never the previous one, never
+   yourself.
    A `note:` line in its `review-gaps` is not work for you: it stays a line,
    and no ticket is created from it — the person decides that at acceptance.
 

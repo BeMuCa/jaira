@@ -154,9 +154,9 @@ Loop: testing sends work back to in-progress, and that repeats until testing has
   Working out how the change will be made.
 - `in-progress` — yours to work; tier cheap; must produce outcome-what, outcome-why, outcome-resolves
   Carrying out the plan.
-- `critique` — yours to work; tier strong; must produce review-summary
+- `critique` — **fresh context** — an agent's, but not the one that carried the ticket here: hand it to a new agent; tier strong; must produce review-summary
   Judges whether this is the right implementation, not whether it works.
-- `optimize` — yours to work; tier strong; must produce review-gaps
+- `optimize` — **fresh context** — an agent's, but not the one that carried the ticket here: hand it to a new agent; tier strong; must produce review-gaps
   Removes what the change does not need — code that already exists elsewhere, code nobody calls, and code that carries its weight in nothing.
 - `testing` — yours to work; tier cheap; must produce test-verdict
   Runs the change and checks it against the ticket - does the demanded thing exist, and does it work.

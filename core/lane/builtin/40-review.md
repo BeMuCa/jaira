@@ -6,6 +6,7 @@ precedence: 50
 agentic: true
 terminal: false
 model-tier: strong
+context: fresh
 input-requires: [goal, definition-of-done, outcome-what, outcome-resolves, diff]
 output-produces: [review-summary, review-gaps, review-verdict, review-check]
 description: A second model has judged the diff. Not yet accepted by a person.

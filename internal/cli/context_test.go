@@ -19,6 +19,10 @@ func TestLanesAndForLaneReportContext(t *testing.T) {
 	lanesTestCatalogue(t)
 	t.Setenv("JAIRA_DEFAULT_BOARD", filepath.Join(t.TempDir(), "none.md"))
 	dir, h := newModeTicket(t)
+	if out, err := runLanes(t, dir); err != nil {
+		t.Fatalf("lanes: %v\n%s", err, out)
+	}
+	stripLaneContexts(t, dir)
 
 	out, err := runLanes(t, dir, "--json")
 	if err != nil {
@@ -75,6 +79,7 @@ func TestAnInvalidContextIsReportedNotDropped(t *testing.T) {
 	if out, err := runLanes(t, dir); err != nil {
 		t.Fatalf("lanes: %v\n%s", err, out)
 	}
+	stripLaneContexts(t, dir)
 	setLaneContext(t, dir, "review", "Fresh")
 
 	table, err := runLanes(t, dir)
@@ -109,6 +114,7 @@ func TestAnInvalidContextLeavesTheDefaultFresh(t *testing.T) {
 	if out, err := runLanes(t, dir); err != nil {
 		t.Fatalf("lanes: %v\n%s", err, out)
 	}
+	stripLaneContexts(t, dir)
 	setLaneContext(t, dir, "in-progress", "Shared")
 
 	out, err := runLanes(t, dir, "--json")
@@ -163,5 +169,31 @@ func setLaneContext(t *testing.T, dir, id, value string) {
 	}
 	if err := os.WriteFile(p, []byte(strings.Replace(string(b), "---\n", "---\ncontext: "+value+"\n", 1)), 0o644); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// stripLaneContexts removes every "context: fresh" line from a board's lane
+// files, so the board reads as one written before the field existed and the
+// default decides which lane is fresh.
+func stripLaneContexts(t *testing.T, dir string) {
+	t.Helper()
+	files, err := filepath.Glob(filepath.Join(lane.ProjectLanesDir(dir), "*.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range files {
+		b, err := os.ReadFile(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var keep []string
+		for _, l := range strings.Split(string(b), "\n") {
+			if strings.TrimSpace(l) != "context: fresh" {
+				keep = append(keep, l)
+			}
+		}
+		if err := os.WriteFile(p, []byte(strings.Join(keep, "\n")), 0o644); err != nil {
+			t.Fatal(err)
+		}
 	}
 }

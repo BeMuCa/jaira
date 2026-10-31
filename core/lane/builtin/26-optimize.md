@@ -6,6 +6,7 @@ after: critique
 precedence: 48
 agentic: true
 model-tier: strong
+context: fresh
 rejects-to: in-progress
 input-requires: [goal, definition-of-done, outcome-what, diff]
 output-produces: [review-gaps]
