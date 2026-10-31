@@ -42,3 +42,24 @@ func TestForLaneCarriesTheTierModel(t *testing.T) {
 		t.Errorf("plain-text head does not name the model:\n%s", out)
 	}
 }
+
+// roles list tells a teamlead which model it runs on and which its workers
+// start on, so it can say so when they differ from the session it is in.
+func TestRolesListCarriesTheOrchestratorAndWorkerModel(t *testing.T) {
+	t.Setenv("JAIRA_HOME", t.TempDir())
+	dir := t.TempDir()
+
+	got := jsonCLI(t, dir, "roles", "list")
+	if got["orchestrator_model"] != "opus" || got["orchestrator_effort"] != "" ||
+		got["worker_model"] != "haiku" || got["worker_effort"] != "high" {
+		t.Errorf("roles list --json: %v, want orchestrator opus, worker haiku high", got)
+	}
+
+	out, err := runCLI(t, dir, "roles", "list")
+	if err != nil {
+		t.Fatalf("roles list: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "models: orchestrator opus, worker haiku high, strong opus, cheap haiku high (models in ") {
+		t.Errorf("roles list does not name the models:\n%s", out)
+	}
+}

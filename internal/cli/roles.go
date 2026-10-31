@@ -55,7 +55,14 @@ And who touches the repository's version and changelog: "teamlead" when the
 board's .jaira/release says so — one line, committed, shared with everybody
 on the board — and "worker" otherwise, every ticket bringing its own as the
 repository's instructions say. Carried as release, and where it came from as
-release_source.`,
+release_source.
+
+And which model, at which effort, each agent starts on: the orchestrator (the
+teamlead), the worker (the session that carries a ticket through its lanes),
+and the strong and cheap lanes by their tier. These are the "models" entries in
+~/.jaira/settings.json; without them the teamlead and strong lanes run on opus,
+the worker and cheap lanes on haiku at high effort. Carried as
+orchestrator_model and orchestrator_effort, worker_model and worker_effort.`,
 		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			roles, err := role.Builtins()
@@ -71,6 +78,10 @@ release_source.`,
 			chat, chatSource := cur.ChatModelFor(root)
 			py, pySource := cur.PythonCommand()
 			release, releaseSource := settings.ReleaseFor(root)
+			orch, _ := cur.ModelFor("orchestrator")
+			work, _ := cur.ModelFor("worker")
+			strong, _ := cur.ModelFor("strong")
+			cheap, _ := cur.ModelFor("cheap")
 			if g.jsonOut {
 				arr := make([]map[string]any, 0, len(roles))
 				for _, r := range roles {
@@ -84,6 +95,8 @@ release_source.`,
 					"chat_model": chat, "chat_model_source": chatSource,
 					"python": py, "python_source": pySource,
 					"release": release, "release_source": releaseSource,
+					"orchestrator_model": orch.Model, "orchestrator_effort": orch.Effort,
+					"worker_model": work.Model, "worker_effort": work.Effort,
 				})
 			}
 			fmt.Fprintf(w, "%-24s %s\n", "ID", "DESCRIPTION")
@@ -96,6 +109,8 @@ release_source.`,
 				cmp.Or(chat, "account default"), chatSource)
 			fmt.Fprintf(w, "python: %s — what the roles run their Python scripts with (%s)\n", py, pySource)
 			fmt.Fprintf(w, "release: %s — who touches the version and the changelog (%s)\n", release, releaseSource)
+			fmt.Fprintf(w, "models: orchestrator %s, worker %s, strong %s, cheap %s (models in %s)\n",
+				orch, work, strong, cheap, settings.Path())
 			return nil
 		},
 	}
