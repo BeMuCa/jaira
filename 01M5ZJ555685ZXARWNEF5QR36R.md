@@ -1,7 +1,7 @@
 ---
 id: 01M5ZJ555685ZXARWNEF5QR36R
 title: Die Abnahme-Rolle fuehrt das Interview im Chat; die Seite ist nur noch auf Wunsch
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "jaira-role-acceptance fragt standardmaessig im Chat ab - je Ticket ID, Einzeiler, wie pruefen, Empfehlung, dann 'accept X / explain X / fix X' - und baut die statische Seite nur mit --page."
@@ -19,15 +19,16 @@ commits:
   - 8fea809f03736e6759b1d15d2bc51fbd7c83cc3a
   - de96db1745c69f9e47ea329ea8ccc782072ef6f9
   - 50ff54b331ba75cf94b282daf0ea53a6d07994c5
+  - 2c495b3b05310493744ee9661f6dcfd381e21f73
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T03:02:08Z
+updated-at: 2026-10-31T03:02:12Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-3129429
 claimed-at: 2026-10-31T01:27:42Z
-outcome-what: "text fixes: release note, SKILL.md description, how-to L333 and L394 match accept scope and chat default"
-outcome-why: "round-2 critique found stale text after the accept-scope fix"
-outcome-resolves: release note and SKILL.md say accept is human and signoff only; how-to describes the chat interview as default with --page for the page
+outcome-what: "how-to L333: the dispatcher hands back the line, the interview runs in a new session"
+outcome-why: "round-3 critique: L333 still described the interview running in the dispatcher's run"
+outcome-resolves: L333 matches the agent-caller behaviour in SKILL.md
 review-summary: |-
   core/role/builtin/jaira-role-interreview/SKILL.md:107-109 recommends fix when 'the review-verdict is not a pass'; review-verdict is empty for every ticket in human and review (the review lane writes it, after human), so a literal cheap model recommends fix for all of them - say 'fix when a machine check failed, or a review-verdict is present and is not a pass'
   .jaira plan step 11 (shipped hashes) is still unticked although its note says done - the terminal gate refuses a move with an open plan step (core/gate/gate.go:417-430); tick it with jaira dod 5QR36R 11 --done --plan
