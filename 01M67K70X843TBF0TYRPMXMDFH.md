@@ -18,16 +18,20 @@ related:
   - 01M5659BR7RYZ6RVC84HGK1QGT
 commits: []
 created-at: 2026-10-30T23:44:40Z
-updated-at: 2026-10-31T00:12:57Z
+updated-at: 2026-10-31T00:15:43Z
 updated-by: berkc
 claimed-by: berk-ca-2691736
 claimed-at: 2026-10-30T23:47:40Z
 outcome-what: "Release notes popup and jaira update: a note line '- + text' is a feature; the popup lists features under a Features header, then the rest under Others, a blank line after each change. Parser: core/release/release.go Feature(); layout: internal/tui/releasenotes.go lines()/changeLines(); CLI: internal/cli/update.go writeNotes prints '  + text'. CLAUDE.md format bullet and note core/release/notes/MXMDFH.md added. Commit cb13a6c2 on feat/MXMDFH-release-notes-popup."
 outcome-why: "Berk: the popup must be the only surface, features first, Others below with a header, gaps for readability; the feature marker had to be a format the old binaries read as a plain line, so '- + ' mirrors '- ! '."
 outcome-resolves: "DoD 2 (ordering, header, gaps, test) and DoD 3 (marker and CLAUDE.md) code and tests in place; DoD 1 (popup, paging) unchanged from GK1QGT, to be verified in tmux; DoD 4 note written."
-review-summary: "none"
+review-summary: "Release note lines written '- + text' are now features. The release notes popup lists a version's features first under a 'Features' header, then the remaining lines under 'Others' (that header only appears when the version has a feature), with a blank line after every change. 'jaira update' prints a feature as '  + text'. The launcher's 'w' no longer replaces the screen: it draws the same framed box over the launcher that the board uses for its popup (modal.go overBox, now shared by both). The marker is documented in CLAUDE.md and AGENTS.md, and core/release/notes/MXMDFH.md has two feature lines. Older binaries read '- + text' as an ordinary line."
 round: 4
-review-gaps: "none: duplication searched (modal sizing now in modalHeightOf/modalContentOf only; overBox is the one composite used by both the board modal and the launcher notes). Dead code: modalHeight method removed in this pass, its last caller had moved to modalContentOf. Cost: the launcher now builds the list view once more per render while notes are open, the same as the board does for its modal, no loop involved."
+review-gaps: |-
+  note: DoD 2 names the second header 'Andere'; the popup says 'Others' (English like the rest of the popup and the person's own word); the person confirms the wording
+  note: no shipped version has both feature and other lines yet, so the 'Others' header is shown only by TestNotesViewSplitsFeaturesFromOthers, not on a real page
+  note: in 'jaira update' a '- + ! ' line prints as '  ! text': the must-act mark wins and the feature mark is not shown (the TUI keeps it under Features)
+  note: plan items 6 and 7 (full suite, tmux run) are left unticked although the testing note records both as done
 test-verdict: "pass: go test ./... -count=1 -skip the three hanging tests RC=0 (33 packages ok, no FAIL); go vet ./... RC=0; both on aad4060a. DoD 1-4 verified in the tree (proofs on the ticket). Launcher w in tmux: box over the launcher, first row kept, esc returns; board popup paging verified earlier. Skipped: TestUnreachableRemoteIsOfflineNotARace, TestAnOfflineWriteArrivesWhenTheNetworkIsBack, TestWebPushReportsAQueuedDrop (hang in this sandbox). Open for the person: heading 'Others' vs DoD 'Andere'."
 review-verdict: "Not accepted: the Features/Others split, the '- + ' marker, the CLI '+' lines, the docs and the note are right and tested (go test ./core/release ./internal/tui ok, TestUpdateNotes ok, vet clean, board popup checked in tmux), but DoD 1 is not met - the launcher's 'w' still shows the release notes as a full-screen page, and that is the 'you made them a page ... pop up only' the ticket exists for. Fairly sure, not certain: if the person meant only the board popup, DoD 1 already held and this blocker falls away."
 review-round: 2
