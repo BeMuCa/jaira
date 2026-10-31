@@ -1,7 +1,7 @@
 ---
 id: 01M67RWX6BPVT0QKN5ZAX1M1AF
 title: "Neue Tickets haben die Option planning standardmaessig angehakt, damit jedes Ticket durch den Planer geht"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: berkc
@@ -16,12 +16,16 @@ tags:
   - cli
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 8a9fa6a46d4adc8147319eab9737da13a703f18e
 created-at: 2026-10-31T01:24:00Z
-updated-at: 2026-10-31T02:40:30Z
+updated-at: 2026-10-31T02:40:32Z
 updated-by: berkc
 claimed-by: berk-ca-3129208
 claimed-at: 2026-10-31T01:27:35Z
+outcome-what: "New tickets start with planning ticked when no default board names options:; an options: key replaces it, options: [] ticks nothing; an unparseable default board counts as absent (planning ticked)."
+outcome-why: "Without a ticked planning option the pre-process Opus planner skipped nearly every ticket, and the maintainer wants every ticket through it by default."
+outcome-resolves: "Default options come from lane.DefaultOptions in LoadDefaultBoard; Validate skips the unknown-option check for the defaulted value; NewBody comment rewritten; template and 'lanes default' help updated; release note core/release/notes/X1M1AF.md. Tests: core/lane, core/ticket, internal/tui, core/release, internal/cli (3 hangers skipped) pass."
 ---
 
 # Neue Tickets haben die Option planning standardmaessig angehakt, damit jedes Ticket durch den Planer geht
