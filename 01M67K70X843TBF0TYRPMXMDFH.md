@@ -18,7 +18,7 @@ related:
   - 01M5659BR7RYZ6RVC84HGK1QGT
 commits: []
 created-at: 2026-10-30T23:44:40Z
-updated-at: 2026-10-31T00:16:03Z
+updated-at: 2026-10-31T00:16:43Z
 updated-by: berkc
 claimed-by: berk-ca-2691736
 claimed-at: 2026-10-30T23:47:40Z
@@ -65,7 +65,8 @@ review-check: "1. cd /home/berkc/code/X_General/jaira-MXMDFH && go build -o /tmp
 - [x] internal/cli/update.go writeNotes: a feature line prints '  + text'; test next to the existing writeNotes test
 - [x] CLAUDE.md release-notes format list: a bullet for '- + ' next to '- ! ' (old binaries read it as a plain line)
 - [x] core/release/notes/MXMDFH.md: one '- ' line per change, a line that tells the user what to expect in the popup and in 'jaira update'
-- [~] go test on the touched packages, then go vet ./..., then full suite with the three hanging tests skipped
+- [x] go test on the touched packages, then go vet ./..., then full suite with the three hanging tests skipped
+  proof: go test ./... -count=1 -skip the three hanging tests RC=0; go vet ./... RC=0 (aad4060a)
 - [ ] run the built binary in tmux on a scratch repo (JAIRA_HOME in a temp dir), check the popup pages and the layout, describe what was seen
 
 ## Progress
