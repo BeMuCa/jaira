@@ -42,7 +42,9 @@ the account's default — and get the part of the ticket they need in their
 prompt. <pr> starts /jaira-role-pr <ticket-id> --by-person: the cockpit's Accept
 starts it when a person accepted a ticket whose branch has no pull request yet,
 and nothing else may.
-Every other lane name starts /jaira-role-lane <ticket-id> <lane>.
+Every other lane name starts /jaira-role-lane <ticket-id> <lane>. Each agent
+starts on the model and effort settings.json "models" gives it, else the default
+for it: the dispatcher and worker on the worker model, a lane on its tier's.
 
 A new worktree is set up by the repository's own .jaira/worktree-setup when it
 is there and executable, called as
@@ -298,7 +300,31 @@ if [ "$lane" = explain ] || [ "$lane" = discuss ]; then
     chat_dir_win="$(cygpath -w "$chat_dir")"; chat_file_win="$(cygpath -w "$chat_file")"
   fi
 fi
-claude="claude${chat_model:+ --model '$chat_model'}${chat_dir:+ --add-dir '$chat_dir'}"
+# The model and effort the agent starts on. The dispatcher and a worker start on
+# the worker model 'jaira roles list' names; any other lane starts on the model
+# its tier has, which 'jaira show --for-lane' names (settings.json "models", else
+# the defaults). explain and discuss keep the chat model above, with no effort;
+# pr starts on none. Anything that is no model name or effort level is dropped
+# rather than carried into the command line.
+model=""
+effort=""
+case "$lane" in
+  explain|discuss) model="$chat_model" ;;
+  pr) ;;
+  dispatch|worker)
+    roles="$(jaira -C "$wt" roles list --json 2>/dev/null)" || roles=""
+    model="$(jaira json get worker_model --default "" <<<"$roles" 2>/dev/null)" || model=""
+    effort="$(jaira json get worker_effort --default "" <<<"$roles" 2>/dev/null)" || effort=""
+    ;;
+  *)
+    lane_json="$(jaira -C "$wt" show "$ticket" --for-lane "$lane" --json 2>/dev/null)" || lane_json=""
+    model="$(jaira json get model --default "" <<<"$lane_json" 2>/dev/null)" || model=""
+    effort="$(jaira json get effort --default "" <<<"$lane_json" 2>/dev/null)" || effort=""
+    ;;
+esac
+[[ "$model" =~ ^[][A-Za-z0-9._-]*$ ]] || model=""
+[[ "$effort" =~ ^(low|medium|high|xhigh|max)?$ ]] || effort=""
+claude="claude${model:+ --model '$model'}${effort:+ --effort $effort}${chat_dir:+ --add-dir '$chat_dir'}"
 
 # The tab's shell runs on the machine Herdr itself runs on. When that is Windows
 # and this script runs in WSL, that shell has no /home/... at all: --cwd is
@@ -317,7 +343,7 @@ claude="claude${chat_model:+ --model '$chat_model'}${chat_dir:+ --add-dir '$chat
 # needs no quotes — only letters, digits and . _ - [ ] pass.
 case "$on" in
   wsl)     start="wsl.exe --cd '$wt' -- bash -lic \"$claude\"" ;;
-  windows) start="claude${chat_model:+ --model $chat_model}${chat_dir:+ --add-dir \"$chat_dir_win\"}" ;;
+  windows) start="claude${model:+ --model $model}${effort:+ --effort $effort}${chat_dir:+ --add-dir \"$chat_dir_win\"}" ;;
   *)       start="cd '$cwd' && $claude" ;;
 esac
 
