@@ -16,12 +16,18 @@ tags:
   - cli
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 8a9fa6a46d4adc8147319eab9737da13a703f18e
 created-at: 2026-10-31T01:24:00Z
-updated-at: 2026-10-31T02:40:14Z
+updated-at: 2026-10-31T02:41:58Z
 updated-by: berkc
 claimed-by: berk-ca-3129208
 claimed-at: 2026-10-31T01:27:35Z
+outcome-what: "New tickets start with planning ticked when no default board names options:; an options: key replaces it, options: [] ticks nothing; an unparseable default board counts as absent (planning ticked)."
+outcome-why: "Without a ticked planning option the pre-process Opus planner skipped nearly every ticket, and the maintainer wants every ticket through it by default."
+outcome-resolves: "Default options come from lane.DefaultOptions in LoadDefaultBoard; Validate skips the unknown-option check for the defaulted value; NewBody comment rewritten; template and 'lanes default' help updated; release note core/release/notes/X1M1AF.md. Tests: core/lane, core/ticket, internal/tui, core/release, internal/cli (3 hangers skipped) pass."
+review-summary: "core/release/notes/X1M1AF.md:1 says every ticket goes through 'the Opus planner': the pre-process lane is tier strong (core/lane/builtin/15-pre-process.md), Opus is not enforced until CXH98W, and it only runs on boards that install pre-process — reword to 'through the pre-process (planning) lane' and add that `jaira lanes default --options ''` ticks none. Rest stands: placement in LoadDefaultBoard + optionsDefaulted per planner note 02:33; bare 'options:' accepted per note 02:39. Question for maintainer: open DAQKZX says the teamlead decides/asks per ticket whether brainstorm/planning apply; this ticket makes planning always-on by default — confirm both are wanted (DAQKZX would then decide to untick)."
+round: 2
 ---
 
 # Neue Tickets haben die Option planning standardmaessig angehakt, damit jedes Ticket durch den Planer geht
@@ -35,7 +41,7 @@ claimed-at: 2026-10-31T01:27:35Z
 - [x] tests internal/cli/init_test.go: add TestCreateWithoutDefaultBoardTicksPlanning (initTestHome, JAIRA_DEFAULT_BOARD=nonexistent, init+create, body contains '- [x] planning' and '- [ ] brainstorm') and TestCreateWithDefaultBoardOptionsWithoutPlanningLeavesItUnticked (file 'options: [brainstorm]' -> body has '- [ ] planning'; extend existing TestCreateAfterInitTicksDefaultBoardOptions with that assertion instead of a new test is fine)
 - [x] core/release/notes/X1M1AF.md: one line, e.g. '- ! Expect new tickets to start with planning ticked, so they go through pre-process; to keep it off write options: [] (or your own list) into your default board: jaira lanes default --options brainstorm'
 - [x] run go test ./core/lane ./core/ticket ./internal/tui -count=1 and go test ./internal/cli -count=1 -skip 'TestUnreachableRemoteIsOfflineNotARace|TestAnOfflineWriteArrivesWhenTheNetworkIsBack|TestWebPushReportsAQueuedDrop'; any failure from a ticket now carrying [x] planning (e.g. createlane_test comment 'ticks no option', lanes default output 'none pre-ticked'): fix the test's expectation or set JAIRA_DEFAULT_BOARD with options: [] in that test, note which in jaira note
-- [ ] commit feat(X1M1AF): ... with ticket file, tick DoD 1-3 with test names as proof
+- [x] commit feat(X1M1AF): ... with ticket file, tick DoD 1-3 with test names as proof
 
 ## Definition of Done
 
@@ -58,3 +64,4 @@ claimed-at: 2026-10-31T01:27:35Z
 ## Progress
 - **2026-10-31 02:33 · berkc** — Planner decision: default lives in LoadDefaultBoard (absent options: key -> [planning]), not in ResolveOptions. Why: the TUI default-board screen (internal/tui/defaultboard.go:62) and 'jaira lanes default --lanes X' (internal/cli/lanes.go) both seed from board.Options and SaveDefaultBoard always writes options:; a default only in ResolveOptions would show planning unticked there and a lanes-only save would write options: [] and silently turn planning off. Distinguish absent key (d.Has) from 'options: []' (= none, full control). Validate must skip the option check when defaulted, else boards without pre-process warn 'option planning not required'. NewBody untouched (pure; regression baseline test passes explicit options). Tests changing: TestLoadDefaultBoardAbsentReturnsZeroBoard (Options now [planning]). Unaffected: body_test, TestResolveOptionsTicksNamedOptions, TUI TogglesAndSaves (opts[0]=brainstorm). Docs: docs/COMMANDS.md does not mention options; only the template in tickets.go:1552 and 'lanes default' help do. Unparseable file is treated as absent -> planning ticked too.
 - **2026-10-31 02:39 · berkc** — Tests: core/lane, core/ticket, internal/tui, core/release, internal/cli (3 hangers skipped) all green. No existing test needed its expectation changed: createlane_test and 'lanes default' output still pass. Bare 'options:' with no value now reads as DefaultOptions (planning), where before it meant none; not covered by a test, left as the plan says. Ticket file is untracked in the worktree at start; committed with the code.
+- **2026-10-31 02:41 · berkc** — critique: only finding — core/release/notes/X1M1AF.md names 'the Opus planner' and 'every ticket'; pre-process is tier strong (core/lane/builtin/15-pre-process.md), Opus not enforced until CXH98W, and only boards installing pre-process run it. Reword to 'the pre-process (planning) lane' and mention `jaira lanes default --options ''` for none (splitCSV('') -> options: []). Left standing: default in LoadDefaultBoard + optionsDefaulted (planner note 02:33), bare options: (note 02:39). Not a send-back reason: DAQKZX (teamlead decides per ticket) vs always-on default — maintainer question.
