@@ -149,6 +149,15 @@ jaira --json roles list      # "dispatch": "lanes" | "worker", "dispatch_role"
 Read it once per ticket you start, not once per session: the person can switch
 it on the settings screen while you run.
 
+**Your own model.** `jaira --json roles list` names the model a teamlead runs
+on as `orchestrator_model` and `orchestrator_effort`, and the model a worker
+starts on as `worker_model` and `worker_effort`. Compare `orchestrator_model`
+with the model this session runs on. If they differ, tell the person once,
+in this session, as the line `restart with claude --model <m> [--effort <e>]`.
+Never switch your own model, and never fall back to another one without
+saying so. The spawn script starts a dispatcher or worker on the worker model
+by itself; a subagent is given it.
+
 **If Herdr is here (`HERDR_ENV=1`), the dispatcher gets its own tab**, the same
 way its workers do. Start it with
 `.claude/skills/jaira-dispatcher/scripts/spawn.sh` — `~/.claude/skills/...` when
@@ -180,13 +189,16 @@ Without Herdr, start it as a subagent instead — "the worker skill" in place of
 
 ```
 Agent(subagent_type: "claude",
+      model: <worker_model>,
+      effort: <worker_effort>,
       prompt: "Read the dispatcher skill and drive ticket <id> until it
                reaches a human lane or blocks. Report in three lines,
                plus the numbered options of any question you could not
                ask.")
 ```
 
-and say plainly that it dies with your session.
+`model` and `effort` are the worker's from `roles list`; leave `effort` out
+when it is empty. Say plainly that it dies with your session.
 
 Several tickets means several dispatchers, each in its own tab or started in one
 message so they run at once. Two dispatchers must never be given tickets that

@@ -138,7 +138,12 @@ Then, until you stop:
    it is yours — step 2.
 2. **Read the lane's brief** — `jaira show <id> --for-lane <lane> --json`. It
    carries the prompt, the bounded input, the outputs the lane owes, `mode`,
-   and `context`. Do what the prompt says, produce exactly those outputs, then
+   and `context`. It also names the model and effort the lane's tier runs on
+   (`model`, `effort`); `jaira roles list --json` names this session's as
+   `worker_model` and `worker_effort`. When they differ, the lane is not yours:
+   this session is on the wrong model for it. Hand it to a new agent as "The
+   fresh lane" says, the ticket already in that lane, on the model it names.
+   Otherwise do what the prompt says, produce exactly those outputs, then
    `jaira move <id> --to <next_lane>` (or back, where the lane found the work
    wanting). Every lane's prompt applies to you as written — the critique lane
    is not lighter because you wrote the code.
@@ -245,8 +250,10 @@ the project, or `~/.claude/skills/...` when the roles were installed globally.
    yourself: calling `claude --permission-mode ...` is refused as "Create
    Unsafe Agents", and `command -v herdr` fails on WSL, where
    `$HERDR_BIN_PATH` names the binary.
-2. **No Herdr** — a subagent: `Agent(subagent_type: "claude", prompt: "Read the
-   jaira-role-lane skill and work lane <lane> of ticket <id>.")`. It dies with
+2. **No Herdr** — a subagent: `Agent(subagent_type: "claude", model: <model>,
+   effort: <effort>, prompt: "Read the jaira-role-lane skill and work lane
+   <lane> of ticket <id>.")`, with `model` and `effort` from the lane's
+   `--for-lane` payload (leave `effort` out when it is empty). It dies with
    you; say so.
 
 None of these is a way around a permission you were refused. An agent doing

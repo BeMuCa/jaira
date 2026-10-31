@@ -502,3 +502,7 @@ cb8992f0bb386c6447b5b2e78807c6953cf17a5c83f28c721b7866f56a8494ed  core/role/buil
 058661db7c6d69773282e8ce43b47e1b5c771345f5aa85e2878f2840f9ec13e1  core/role/jaira/SKILL.md
 c3b9c153076027c78475ab699897cba58dc202a19c3d2f436b35610bec00500f  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 ae89d798d9213e35e1a036f4f613b8a277add9e1aeb72e64e2dfa205c135782c  core/lane/builtin/40-review.md
+bcb2ae17f2995c7b2d8b68986a24c68b2c8c6eb19343dbb277fe51a00f343747  core/role/builtin/jaira-dispatcher/SKILL.md
+18ee06c03ce054213c21f01c98bc6144c32123dd2875f0a8827a06dee6f05b31  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
+709b3d5bcff354f2659badd2de0d9288ed4cd78c031e65e589185e81a20d7662  core/role/builtin/jaira-teamlead/SKILL.md
+f4f2dd48537b8e87a49d0965b8cf4d35e6bfe13c82a5040765569031668a6272  core/role/builtin/jaira-worker/SKILL.md

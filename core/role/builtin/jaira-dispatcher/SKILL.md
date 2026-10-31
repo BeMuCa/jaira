@@ -361,9 +361,11 @@ Say which one you took. The human needs to know whether the workers outlive you.
    only sees peers on this machine's socket, which can be fewer than are
    actually running.
 
-3. **Subagents** — neither of the above. `Agent` per lane. They die with you, and
-   so does their work in flight, so say that upfront and do not start a second
-   ticket on them.
+3. **Subagents** — neither of the above. `Agent` per lane, with `model` and
+   `effort` from that lane's `--for-lane` payload (leave `effort` out when it is
+   empty); run-lane.sh and spawn.sh already pick them under Herdr. They die with
+   you, and so does their work in flight, so say that upfront and do not start a
+   second ticket on them.
 
 None of the three is a way around a permission you were refused. A worker doing
 what your own session was denied launders that decision — route it back up.
