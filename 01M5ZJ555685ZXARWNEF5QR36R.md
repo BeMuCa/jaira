@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T02:36:31Z
+updated-at: 2026-10-31T02:36:40Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-3129429
@@ -68,3 +68,4 @@ claimed-at: 2026-10-31T01:27:42Z
 - review-lane tickets have no review-check yet (the review lane produces it): the chat interview takes 'how to check' from review-check when present, otherwise from the DoD proofs + test-verdict, and says which.
 - accept: human -> next_lane (route continues, model review still runs); review and signoff -> the terminal lane, because the person is the sign-off and the maintainer wants to clear review/signoff with it. Uses --force only for the person-lane refusal; dry-run first, any other refusal shown verbatim, no move.
 - Called by an agent (dispatcher/worker/teamlead): no interview in the agent's long context (berkc note 30.10): answer with the line to paste into a new session. Interview ends with one line per ticket for the main session.
+- **2026-10-31 02:36 · berkc** — steps 1-2 done: git mv to jaira-role-interreview; forwarding stub at jaira-role-acceptance. go test ./core/role now fails only on wantRoles/roleFiles (step 10) and missing shipped hashes (step 11), as the plan expects; both fixed later in this lane.
