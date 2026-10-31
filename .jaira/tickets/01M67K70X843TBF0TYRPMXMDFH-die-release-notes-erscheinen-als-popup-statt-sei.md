@@ -1,7 +1,7 @@
 ---
 id: 01M67K70X843TBF0TYRPMXMDFH
 title: "Die Release-Notes erscheinen als Popup statt Seite, getrennt in Features zuerst und 'Andere' darunter, luftig und leicht lesbar"
-status: in-progress
+status: testing
 ready: true
 creator: berkc
 assignee: berkc
@@ -18,25 +18,30 @@ related:
   - 01M5659BR7RYZ6RVC84HGK1QGT
 commits: []
 created-at: 2026-10-30T23:44:40Z
-updated-at: 2026-10-30T23:53:51Z
+updated-at: 2026-10-31T00:00:17Z
 updated-by: berkc
 claimed-by: berk-ca-2691736
 claimed-at: 2026-10-30T23:47:40Z
 outcome-what: "Release notes popup and jaira update: a note line '- + text' is a feature; the popup lists features under a Features header, then the rest under Others, a blank line after each change. Parser: core/release/release.go Feature(); layout: internal/tui/releasenotes.go lines()/changeLines(); CLI: internal/cli/update.go writeNotes prints '  + text'. CLAUDE.md format bullet and note core/release/notes/MXMDFH.md added. Commit cb13a6c2 on feat/MXMDFH-release-notes-popup."
 outcome-why: "Berk: the popup must be the only surface, features first, Others below with a header, gaps for readability; the feature marker had to be a format the old binaries read as a plain line, so '- + ' mirrors '- ! '."
 outcome-resolves: "DoD 2 (ordering, header, gaps, test) and DoD 3 (marker and CLAUDE.md) code and tests in place; DoD 1 (popup, paging) unchanged from GK1QGT, to be verified in tmux; DoD 4 note written."
-review-summary: "internal/tui/releasenotes.go lines(): the loop calls release.Feature and passes the stripped text plus a feature bool to changeLines, which then calls release.Important itself; changeLines should take the raw change and call Feature and Important once, so lines() only decides which group a change goes into. The bool parameter exists only to carry what the caller already knows; removing it leaves one marker parser on the path."
+review-summary: "none"
 round: 2
+review-gaps: "none: duplication searched (grep CutPrefix and the '! ' marker across the repo): the only marker parser is core/release/release.go Important/Feature, the other CutPrefix hits are unrelated (epic.go, selfupdate.go, milestone.go). No dead code: every added helper has callers (Feature: release.go lines and update.go writeNotes; changeLines: lines()). No fluff left after the e39d62f4 simplification. Cost: lines() rebuilds the page on each render, as before this change; the render already did it, and a page is a few dozen lines."
 ---
 
 # Die Release-Notes erscheinen als Popup statt Seite, getrennt in Features zuerst und 'Andere' darunter, luftig und leicht lesbar
 
 ## Definition of Done
 
-- [ ] Popup (Overlay ueber dem Board), keine eigene Seite; links/rechts blaettert weiter zwischen Versionen
-- [ ] Je Version zuerst Features/Feature-Aenderungen, dann Ueberschrift 'Andere'; Leerzeilen und Einrueckung fuer Lesbarkeit; Test
-- [ ] Notizformat kennzeichnet Features; CLAUDE.md-Abschnitt zu Release-Notes beschreibt es
-- [ ] Release-Note-Zeile
+- [x] Popup (Overlay ueber dem Board), keine eigene Seite; links/rechts blaettert weiter zwischen Versionen
+  proof: internal/tui/releasenotes.go:41-50 key() left/h and right/l inert at the ends; popup verified in tmux: 'What is new since 0.5.0 · 9 unread', Left -> '0.5.8 · 2/9', Right -> 'Unreleased · 1/9', second Right no-op, esc closes; TestNotesViewStartsOnTheNewestAndPagesOneVersionAtATime, TestPopupAfterAnUpgradeAcrossVersionsCountsTheUnreadAndPagesThem
+- [x] Je Version zuerst Features/Feature-Aenderungen, dann Ueberschrift 'Andere'; Leerzeilen und Einrueckung fuer Lesbarkeit; Test
+  proof: internal/tui/releasenotes.go:73-98 lines() groups Features then Others, Others header only beside a feature; :101-119 changeLines blank line after each change; TestNotesViewSplitsFeaturesFromOthers; tmux popup showed Features header, gap, '+' bullets, Others header
+- [x] Notizformat kennzeichnet Features; CLAUDE.md-Abschnitt zu Release-Notes beschreibt es
+  proof: core/release/release.go:109 Feature() ('- + ' marker, '- + ! ' combined); CLAUDE.md:270 format bullet; TestFeatureMarker, TestFeatureLineStaysAPlainChange (core/release/release_test.go); internal/cli/update.go writeNotes prints ' + text', TestUpdateNotesMarkImportantLines
+- [x] Release-Note-Zeile
+  proof: core/release/notes/MXMDFH.md two '- + ' lines, one per change, unwrapped
 
 ## Options
 
@@ -62,3 +67,4 @@ round: 2
 - **2026-10-30 23:49 · berkc** — Plan rests on the decisions already noted above. Test order: write the failing core/release and TUI tests first, then the code. The popup layout is verified by tmux, not only by the test, because the person judges it by eye. The release note line is written last so it describes what was built.
 - **2026-10-30 23:50 · berkc** — Lane change pre-process -> in-progress was refused by the send step ('was not sent', ref still at pre-process, 23:49:13, the same worker's own earlier write) while the local file already said in-progress. Re-sending with this note. If the ref still says pre-process after this, the send is broken, not the ticket, and the next worker must check it before moving.
 - **2026-10-30 23:53 · berkc** — critique: internal/tui/releasenotes.go changeLines(c, feature, width) takes the feature flag from lines() and lines() strips the marker before calling it. Simplify: changeLines(c, width) parses both markers itself with release.Feature and release.Important; lines() only asks Feature to pick the group. Checked: the wrap, the bullets and the blank line are right; CLI writeNotes and the core helper are fine as they are.
+- **2026-10-30 23:54 · berkc** — critique pass 2: none. Stood on the decisions note (format '- + ', English labels, Others only beside a feature, CLI '+' lines) and on the simplification note of pass 1, now in e39d62f4: changeLines reads both markers itself. Checked: Feature/Important split in core/release/release.go is the same pattern as Important; CLI writeNotes changes only the feature branch; no new file beyond core/release/notes/MXMDFH.md and the CLAUDE.md bullet.

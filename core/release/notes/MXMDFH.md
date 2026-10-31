@@ -1,2 +1,2 @@
-- Read the "Features" block at the top of the release notes popup first: a line there is a new feature or a changed one, and "Others" below it holds the rest.
-- Read a `+` line in `jaira update` output as a new feature or a changed one; a `!` line still means act on it.
+- + Read the "Features" block at the top of the release notes popup first: a line there is a new feature or a changed one, and "Others" below it holds the rest.
+- + Read a `+` line in `jaira update` output as a new feature or a changed one; a `!` line still means act on it.
