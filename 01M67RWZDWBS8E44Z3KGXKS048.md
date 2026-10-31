@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-31T01:24:02Z
-updated-at: 2026-10-31T02:53:22Z
+updated-at: 2026-10-31T02:54:10Z
 updated-by: berkc
 claimed-by: berk-ca-3153991
 claimed-at: 2026-10-31T02:32:33Z
@@ -34,6 +34,7 @@ review-summary: |-
   docs/how-to-work-with-jaira.html:387 still wrong: 'ohne Angabe die letzte Agenten-Lane vor der ersten Menschen-Lane, auf dem ausgelieferten Board also critique, optimize und review' says the no-declaration default IS those three. Split it like README.md:840-843: 'Nur eine Lane mit <code>context: fresh</code> – auf dem ausgelieferten Board <code>critique</code>, <code>optimize</code> und <code>review</code>; ohne Angabe die letzte Agenten-Lane vor der ersten Menschen-Lane – bekommt ...'
   round 3 (fresh agent): docs/how-to-work-with-jaira.html:387 now split like README.md:840-843 (shipped board: critique, optimize, review; no-declaration default as its own clause) - fixed. Whole diff re-read: lane files, AGENTS/CLAUDE lane block, README:78/840, worker+teamlead SKILL, shipped hashes, release note, tests consistent; grep finds no stale 'only review' mention; go test core/lane core/shipped ok. Nothing left to say.
 round: 3
+review-gaps: "none - considered: stripLaneContexts exists twice (core/lane/context_test.go:51, internal/cli/context_test.go:177); left, test helpers cannot cross packages and the repo has no shared testutil package, exporting it from core/lane would put test code in the binary. setUpOldBoard (7 callers) kept. No dead code, no fluff, no hot path. go test core/lane core/shipped, internal/cli -run Context ok."
 ---
 
 # critique und optimize laufen je in einem frischen Agenten, nicht im Agenten, der gebaut hat
