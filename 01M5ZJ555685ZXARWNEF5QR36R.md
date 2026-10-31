@@ -23,7 +23,7 @@ commits:
   - b3bdefe99745601d272d96c0833c6de788cbb66f
   - 01563903e30786b1d4f3e626bdf72a316e2a2d25
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T03:12:31Z
+updated-at: 2026-10-31T03:15:09Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-3129429
@@ -45,6 +45,7 @@ round: 6
 review-gaps: |-
   dispatcher SKILL.md:483-488: remove page-only sentences (note: candidate reaches the page; reading marks back) - dead in the default chat path; sent back to in-progress. Left: teamlead:71, README:826 (scoped to --page, fine). No duplication/dead code elsewhere in the diff (stub forwards with --page by design).
   optimize round 2 (orchestrator): both sentences named in note 03:08 are gone; nothing further to remove.
+test-verdict: "pass: touched packages green (go build ./..., go vet, go test -count=1 ./core/role ./core/shipped ./internal/cli RC=0, 3 hangers skipped; whole suite not run per maintainer rule), DoD 1-3 verified in the tree, behaviour exercised on scratch HOME: roles install --global wrote interreview + stub, old acceptance SKILL.md replaced by stub on update --roles without --force"
 ---
 
 # Die Abnahme-Rolle fuehrt das Interview im Chat; die Seite ist nur noch auf Wunsch
