@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-31T01:24:02Z
-updated-at: 2026-10-31T02:36:23Z
+updated-at: 2026-10-31T02:37:49Z
 updated-by: berkc
 claimed-by: berk-ca-3153991
 claimed-at: 2026-10-31T02:32:33Z
@@ -53,3 +53,4 @@ claimed-at: 2026-10-31T02:32:33Z
 
 ## Progress
 - **2026-10-31 02:35 · berkc** — Plan decision: review/40-review.md gets context: fresh explicitly too. Reason: impliedFresh (core/lane/lane.go:648) gives review its fresh only while NO lane declares a valid context; no shipped lane declares one today, so adding fresh to critique alone would silently make review non-fresh. Rejected alternative: change impliedFresh to add the default even when fresh is declared elsewhere — that reverses TestContextDeclaredReplacesTheDefault and the 0.3.7 release note. Consequence: the implied-default tests (core/lane/context_test.go setUpBoard, internal/cli/context_test.go 3 tests) must strip context lines to simulate an old board; impliedFresh itself needs no code change and handles several fresh lanes fine (it returns early). Residual risk: a board whose review.md was hand-edited is skipped by update --lanes and loses fresh review once critique is refreshed -> '- !' release note line. This worktree's .jaira/lanes critique/optimize/review are byte-identical to the builtins (known hashes), so update --lanes refreshes them here; the master tree's critique.md may differ. Worker SKILL step 4 only handled fresh->person or fresh->back; fresh critique moving into fresh optimize needed a line. Dispatcher already uses one worker per lane: no change.
+- **2026-10-31 02:37 · berkc** — Stopped at plan step 3. Plan step 3 makes setUpBoard strip 'context: fresh' from the lane files (simulating an old board). That breaks core/lane/refresh_test.go TestRefreshShippedUpdatesAnOlderShippedLane, which the plan did not list: boardWithTesting uses setUpBoard, and after the strip review.md equals the old shipped bytes (known in shipped.sha256), so RefreshShipped reports review as 'updated' where the test expects every lane except testing 'unchanged'. Only that one test fails (go test ./core/lane). Options for the planner: (a) exempt review in that test's loop, (b) strip only in the context tests (not in setUpBoard), (c) have boardWithTesting skip the strip. Not decided here. Done so far: plan 1 (three lane files get 'context: fresh'), plan 2 partly (25-critique, 26-optimize, 40-review hashes appended; go test ./core/shipped passes; SKILL.md hash still to append). Plan 3 edits in core/lane/context_test.go are in the worktree, uncommitted.
