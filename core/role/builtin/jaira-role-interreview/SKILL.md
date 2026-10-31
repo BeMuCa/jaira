@@ -1,6 +1,6 @@
 ---
 name: jaira-role-interreview
-description: "Accept tickets waiting for a person in a chat interview - per ticket its ID, what it does in one line, how to check it, a recommendation - and carry out the answer: accept <id>, explain <id> or fix <id> <what is wrong>; then write a static record. Works for tickets in human, review and signoff. With --page it builds the acceptance page instead and reads its marks back. Invoked as /jaira-role-interreview [ticket-id...] [--name <set>] [--page]. Use when tickets wait for a person's acceptance."
+description: "Accept tickets waiting for a person in a chat interview - per ticket its ID, what it does in one line, how to check it, a recommendation - and carry out the answer: accept <id>, explain <id> or fix <id> <what is wrong>; then write a static record. Works for tickets in human, review and signoff; only human and signoff tickets are accepted. With --page it builds the acceptance page instead and reads its marks back. Invoked as /jaira-role-interreview [ticket-id...] [--name <set>] [--page]. Use when tickets wait for a person's acceptance."
 ---
 
 # Interview first, page on request

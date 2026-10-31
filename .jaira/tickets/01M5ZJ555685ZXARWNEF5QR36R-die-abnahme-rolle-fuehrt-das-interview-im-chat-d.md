@@ -1,7 +1,7 @@
 ---
 id: 01M5ZJ555685ZXARWNEF5QR36R
 title: Die Abnahme-Rolle fuehrt das Interview im Chat; die Seite ist nur noch auf Wunsch
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "jaira-role-acceptance fragt standardmaessig im Chat ab - je Ticket ID, Einzeiler, wie pruefen, Empfehlung, dann 'accept X / explain X / fix X' - und baut die statische Seite nur mit --page."
@@ -19,7 +19,7 @@ commits:
   - 8fea809f03736e6759b1d15d2bc51fbd7c83cc3a
   - de96db1745c69f9e47ea329ea8ccc782072ef6f9
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T02:54:26Z
+updated-at: 2026-10-31T02:58:13Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-3129429
@@ -32,7 +32,8 @@ review-summary: |-
   .jaira plan step 11 (shipped hashes) is still unticked although its note says done - the terminal gate refuses a move with an open plan step (core/gate/gate.go:417-430); tick it with jaira dod 5QR36R 11 --done --plan
   OPEN QUESTION (maintainer, not a send-back reason): SKILL.md:118-119 accept on a review-lane ticket targets done; core/gate/gate.go:438-447 refuses leaving review while review-summary/gaps/verdict/check are empty, so the dry-run always refuses and the skill (correctly) never forces - as written, accept in review can never succeed. Decide: drop review from accept (and say 'run the model review first'), or make accept in review mean something else
   OK: stub forwarding + install Updated path (internal/cli tests green), all role/README/how-to references renamed (only stub, history and release notes keep the old name), shipped-manifest drop of removed paths matches scripts/shipped-history.sh:50 and the spawn.sh precedent, release note format, go test ./core/role ./core/shipped ./internal/cli subset pass
-round: 2
+  ROUND 2: round-1 items OK (SKILL.md:107-113 fix only on failed check or present non-pass verdict; review never accept, labelled 'not yet model-reviewed'; accept scoped to human+signoff at :121-125; plan 11 ticked). New, from accept-scope change + whole diff: (1) core/release/notes/5QR36R.md:1 says it 'accepts the tickets in human, review and signoff' - now false; say it interviews human, review and signoff and accepts those in human and signoff. Same in SKILL.md:3 description 'Works for tickets in human, review and signoff' - add that review tickets get explain/fix only. (2) docs/how-to-work-with-jaira.html:394 table row says the plain /jaira-role-interreview <id> 'Baut eine Abnahmeseite' - default is now the chat interview, page only with --page; :333 says the dispatcher builds the page and sends a link - it now answers with the line to paste into a new session (worker/dispatcher SKILL.md). Adjust both lines (German); L335/L502 --page read-back are fine once :333 says the page is opt-in.
+round: 3
 ---
 
 # Die Abnahme-Rolle fuehrt das Interview im Chat; die Seite ist nur noch auf Wunsch
@@ -90,3 +91,5 @@ round: 2
 - **2026-10-31 02:46 · berkc** — Resumed on coordinator amendment: deleted the 12 shipped.sha256 lines for jaira-role-acceptance build.py/template.html/report.html (SKILL.md lines kept). go test ./core/role ./core/shipped ./internal/cli (subset) ./core/release all pass. Stub still at jaira-role-acceptance/SKILL.md.
 - **2026-10-31 02:51 · berkc** — critique: (1) SKILL.md:107-109 - empty review-verdict (always so in human and review) must not count as 'not a pass'; recommend fix only on a failed machine check or a present non-pass verdict. (2) tick plan step 11 (jaira dod 5QR36R 11 --done --plan), the terminal gate refuses an open plan step. Open for maintainer, not a send-back: accept on a review-lane ticket -> done is always refused by the missing-produces gate (core/gate/gate.go:438-447) for review outputs; the skill shows the refusal and does not force, so that path is dead text until the maintainer decides the rule. Left alone: manifest line drop (planner note 02:44 + scripts/shipped-history.sh:50), stub-only old dir (planner note 02:34).
 - **2026-10-31 02:54 · berkc** — Plan 11 as actually done: the shipped manifest is append-only except the amended coordinator decision: 12 old build.py/template.html/report.html lines of jaira-role-acceptance deleted (their files no longer exist after the rename); all SKILL.md lines kept; the current interreview hashes appended (and one more after the review fix). shipped-history.sh not run.
+- **2026-10-31 02:55 · berkc** — critique round 2: round-1 findings all addressed (verified in de96db17/e1f4f345). Send-back for wording only, no logic: release note line 1 + SKILL.md:3 still claim review tickets are accepted; how-to :333/:394 still describe the page as default/dispatcher sending a link. No code change needed beyond those text lines; remember the shipped.sha256 append if SKILL.md changes again (core/role TestEveryInstalledFileIsAShippedVersion).
+- **2026-10-31 02:58 · berkc** — Round-2 text fix: release note line 1 and SKILL.md description now say accept is human and signoff only; how-to HTML L333 and L394 describe the chat interview as default with the page behind --page. New SKILL.md hash appended to shipped.sha256 (fe7419d3...).
