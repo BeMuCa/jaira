@@ -2,7 +2,6 @@
 color: 100
 created-at: 2026-10-13T20:52:20Z
 goal: Milestones planen, verbinden und umbenennen: die Milestone Roadmap mit Mehrfachauswahl, Umbenennen, fester ID und den passenden Befehlslisten (PR #74)
-after: []
 ---
 
 # milestone-roadmap
