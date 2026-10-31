@@ -1,7 +1,7 @@
 ---
 id: 01M5ZJ555685ZXARWNEF5QR36R
 title: Die Abnahme-Rolle fuehrt das Interview im Chat; die Seite ist nur noch auf Wunsch
-status: optimize
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "jaira-role-acceptance fragt standardmaessig im Chat ab - je Ticket ID, Einzeiler, wie pruefen, Empfehlung, dann 'accept X / explain X / fix X' - und baut die statische Seite nur mit --page."
@@ -22,7 +22,7 @@ commits:
   - 2c495b3b05310493744ee9661f6dcfd381e21f73
   - b3bdefe99745601d272d96c0833c6de788cbb66f
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T03:08:34Z
+updated-at: 2026-10-31T03:08:40Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-3129429
@@ -39,7 +39,8 @@ review-summary: |-
   ROUND 3: OK release note :1, SKILL.md:3 description (review tickets interviewed, only human+signoff accepted), how-to :394, new SKILL.md hash appended (shipped.sha256:502 matches file; go test ./core/shipped ./core/role pass). Open: docs/how-to-work-with-jaira.html:333 still says the dispatcher starts /jaira-role-interreview 'das dich im Chat befragt' - per interreview SKILL.md:21-25 and dispatcher SKILL.md:485-487 an agent caller gets no interview, it reports the line to paste into a NEW session. Say: Dispatcher ruft /jaira-role-interreview auf und meldet dir die Zeile, die du in eine neue Session einfuegst; dort befragt es dich im Chat (accept/explain/fix); die Seite nur mit --page.
   ROUND 4: docs/how-to-work-with-jaira.html:333 now says the dispatcher 'ruft /jaira-role-interreview nicht selbst auf' - false: core/role/builtin/jaira-dispatcher/SKILL.md:479-487 has the dispatcher call /jaira-role-interreview <id>, and the role (interreview SKILL.md:21-25, agent caller) answers with the paste line. Say: Dispatcher ruft /jaira-role-interreview auf und gibt dir die Zeile zurueck, die du in eine neue Session einfuegst; dort befragt dich die Rolle im Chat (accept/explain/fix). Rest of :333 is fine.
   Round 5: none. how-to.html:333 (b3bdefe9) now says the dispatcher calls /jaira-role-interreview and passes the role's paste line on, matching jaira-dispatcher/SKILL.md:479-487; dispatcher SKILL.md:482 says one interview, not several; shipped.sha256 appends 395a2542 = sha256 of current file, old 5576e939 kept, go test ./core/shipped ok. Not blocking: dispatcher SKILL.md:484 still says a note: line reaches the page.
-round: 5
+round: 6
+review-gaps: "dispatcher SKILL.md:483-488: remove page-only sentences (note: candidate reaches the page; reading marks back) - dead in the default chat path; sent back to in-progress. Left: teamlead:71, README:826 (scoped to --page, fine). No duplication/dead code elsewhere in the diff (stub forwards with --page by design)."
 ---
 
 # Die Abnahme-Rolle fuehrt das Interview im Chat; die Seite ist nur noch auf Wunsch
