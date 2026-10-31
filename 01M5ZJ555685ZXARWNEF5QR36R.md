@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T02:35:46Z
+updated-at: 2026-10-31T02:35:55Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-3129429
@@ -41,7 +41,7 @@ claimed-at: 2026-10-31T01:27:42Z
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [~] 1 RENAME: git mv core/role/builtin/jaira-role-acceptance core/role/builtin/jaira-role-interreview (moves SKILL.md, build.py, template.html, report.html unchanged except SKILL.md below). Verify: ls core/role/builtin/jaira-role-interreview shows the 4 files.
+- [x] 1 RENAME: git mv core/role/builtin/jaira-role-acceptance core/role/builtin/jaira-role-interreview (moves SKILL.md, build.py, template.html, report.html unchanged except SKILL.md below). Verify: ls core/role/builtin/jaira-role-interreview shows the 4 files.
 - [ ] 2 STUB: create core/role/builtin/jaira-role-acceptance/SKILL.md ONLY (no other file). Frontmatter: name: jaira-role-acceptance; description: "Renamed to /jaira-role-interreview. Invoked as /jaira-role-acceptance [args], it runs /jaira-role-interreview with the same args plus --page, so the acceptance page is built as before. Use /jaira-role-interreview instead." Body, ~6 lines: this role is now /jaira-role-interreview; carry out /jaira-role-interreview <same arguments> --page ('read the acceptance' passes through unchanged); tell the person once that the new name interviews in chat by default. Reason: install() never deletes, so old installs would otherwise keep the page-by-default role.
 - [ ] 3 SKILL.md FRONTMATTER of jaira-role-interreview: name: jaira-role-interreview; description (one line, double-quoted, no ':' issues): "Accept tickets waiting for a person in a chat interview - per ticket its ID, what it does in one line, how to check it, a recommendation - and carry out the answer: accept <id>, explain <id> or fix <id> <what is wrong>; then write a static record. Works for tickets in human, review and signoff. With --page it builds the acceptance page instead and reads its marks back. Invoked as /jaira-role-interreview [ticket-id...] [--name <set>] [--page]. Use when tickets wait for a person's acceptance."
 - [ ] 4 SKILL.md TOP + CALLERS: title '# Interview first, page on request'. Intro: chat interview is the default; '--page' switches to sections 'The page' (old content). 'Who called you': (a) a person -> interview in their language. (b) an agent (dispatcher/worker/teamlead) without --page -> do NOT interview in the agent's context; answer in exactly three lines: the ticket ids; the line the person pastes into a NEW session: '/jaira-role-interreview <ids> --name <name>'; tickets left off and why. (c) an agent with --page -> build the page and answer in the three lines the old text already defines. Keep 'Which tickets, under which name' and 'Language' sections as they are, but: without ids take every ticket in this board's human, review and signoff lanes (jaira next --per-lane --json / jaira list --json filtered by lane); the folder listing gets a line 'report.md  the record - the only file the interview writes'.
