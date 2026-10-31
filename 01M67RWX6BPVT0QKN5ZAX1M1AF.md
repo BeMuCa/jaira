@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-31T01:24:00Z
-updated-at: 2026-10-31T02:40:02Z
+updated-at: 2026-10-31T02:40:04Z
 updated-by: berkc
 claimed-by: berk-ca-3129208
 claimed-at: 2026-10-31T01:27:35Z
@@ -43,7 +43,8 @@ claimed-at: 2026-10-31T01:27:35Z
   proof: core/lane/defaultboard_test.go TestLoadDefaultBoardAbsentTicksPlanning; internal/cli/init_test.go TestCreateWithoutDefaultBoardTicksPlanning
 - [x] Eine Default-Board-Datei, die options ohne planning nennt, laesst planning unangehakt; Test dafuer
   proof: internal/cli/init_test.go TestCreateAfterInitTicksDefaultBoardOptions (planning unticked with options: [brainstorm]); core/lane/defaultboard_test.go TestLoadDefaultBoardEmptyOptionsListTicksNothing, TestValidateSilentOnDefaultedOptionWithoutPlanningLane
-- [ ] Release-Notiz unter core/release/notes/
+- [x] Release-Notiz unter core/release/notes/
+  proof: core/release/notes/X1M1AF.md
 
 ## Options
 
