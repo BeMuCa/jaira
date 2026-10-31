@@ -1,7 +1,7 @@
 ---
 id: 01M67RWZDWBS8E44Z3KGXKS048
 title: "critique und optimize laufen je in einem frischen Agenten, nicht im Agenten, der gebaut hat"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: berkc
@@ -18,10 +18,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-31T01:24:02Z
-updated-at: 2026-10-31T02:43:45Z
+updated-at: 2026-10-31T02:43:55Z
 updated-by: berkc
 claimed-by: berk-ca-3153991
 claimed-at: 2026-10-31T02:32:33Z
+outcome-what: "critique, optimize und review tragen context: fresh (core/lane/builtin 25/26/40, .jaira/lanes critique/optimize/review, AGENTS.md/CLAUDE.md Lane-Block); Worker-SKILL Schritt 4 fuer fresh->fresh; README; shipped.sha256 angehaengt; Release-Notiz XKS048.md; Commit e8d9b5ec"
+outcome-why: "zwei zusaetzliche Augenpaare statt Selbstkontrolle (Experiment 3CBCN6: Nur-Haiku-Lauf liess veraltete Hilfezeile stehen)"
+outcome-resolves: "review haette sonst ihren fresh-Default verloren (impliedFresh); context-Tests simulieren alten Board ueber setUpOldBoard/stripLaneContexts, refresh_test unveraendert; core/lane, core/shipped, core/role, core/release, internal/cli -run Context, core/board gruen"
 ---
 
 # critique und optimize laufen je in einem frischen Agenten, nicht im Agenten, der gebaut hat
