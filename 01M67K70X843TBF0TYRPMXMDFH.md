@@ -18,14 +18,14 @@ related:
   - 01M5659BR7RYZ6RVC84HGK1QGT
 commits: []
 created-at: 2026-10-30T23:44:40Z
-updated-at: 2026-10-31T00:09:03Z
+updated-at: 2026-10-31T00:09:15Z
 updated-by: berkc
 claimed-by: berk-ca-2691736
 claimed-at: 2026-10-30T23:47:40Z
 outcome-what: "Release notes popup and jaira update: a note line '- + text' is a feature; the popup lists features under a Features header, then the rest under Others, a blank line after each change. Parser: core/release/release.go Feature(); layout: internal/tui/releasenotes.go lines()/changeLines(); CLI: internal/cli/update.go writeNotes prints '  + text'. CLAUDE.md format bullet and note core/release/notes/MXMDFH.md added. Commit cb13a6c2 on feat/MXMDFH-release-notes-popup."
 outcome-why: "Berk: the popup must be the only surface, features first, Others below with a header, gaps for readability; the feature marker had to be a format the old binaries read as a plain line, so '- + ' mirrors '- ! '."
 outcome-resolves: "DoD 2 (ordering, header, gaps, test) and DoD 3 (marker and CLAUDE.md) code and tests in place; DoD 1 (popup, paging) unchanged from GK1QGT, to be verified in tmux; DoD 4 note written."
-review-summary: "Adds a feature marker to the release-note format: a note line written '- + text' is a feature or feature change (core/release/release.go Feature(); '- + ! text' is a feature the reader must act on). The release notes view (internal/tui/releasenotes.go lines()/changeLines()) now lists a version's feature lines first under a 'Features' header with an accent '+' bullet, then the rest under a dim 'Others' header; 'Others' appears only when the version has a feature line, so older versions read as before. A blank line now follows each header and each change. 'jaira update' (internal/cli/update.go writeNotes) prints a feature line as '  + text', a must-act feature still as '  ! text'. CLAUDE.md documents the marker; core/release/notes/MXMDFH.md carries two '- + ' lines. Where the notes are shown is unchanged: on the board they stay the modal from GK1QGT, in the launcher 'w' stays a full-screen view."
+review-summary: "internal/tui/modal.go:92 modalContent() still spends its own arithmetic (m.modalHeight() - 2) beside the new modalContentOf(height) that home.go now uses; the comment above modalHeight says the budget must be asked in one place. Make modalContent return modalContentOf(m.height)."
 round: 3
 review-gaps: |-
   blocker: DoD 1 - 'Popup (Overlay ueber dem Board), keine eigene Seite': the launcher's 'w' still draws the notes as a full-screen page of their own (internal/tui/home.go:428-429, h.notes.render(h.width, h.height), no box, launcher not visible behind). Seen in tmux with this branch's binary. The diff does not touch where the notes are shown, and outcome-resolves itself says 'DoD 1 unchanged from GK1QGT', yet the person's complaint was 'you made them a page ... pop up only' about that state. The DoD 1 proof checks only the board modal.
