@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-31T01:24:02Z
-updated-at: 2026-10-31T02:54:15Z
+updated-at: 2026-10-31T02:58:18Z
 updated-by: berkc
 claimed-by: berk-ca-3153991
 claimed-at: 2026-10-31T02:32:33Z
@@ -35,6 +35,7 @@ review-summary: |-
   round 3 (fresh agent): docs/how-to-work-with-jaira.html:387 now split like README.md:840-843 (shipped board: critique, optimize, review; no-declaration default as its own clause) - fixed. Whole diff re-read: lane files, AGENTS/CLAUDE lane block, README:78/840, worker+teamlead SKILL, shipped hashes, release note, tests consistent; grep finds no stale 'only review' mention; go test core/lane core/shipped ok. Nothing left to say.
 round: 3
 review-gaps: "none - considered: stripLaneContexts exists twice (core/lane/context_test.go:51, internal/cli/context_test.go:177); left, test helpers cannot cross packages and the repo has no shared testutil package, exporting it from core/lane would put test code in the binary. setUpOldBoard (7 callers) kept. No dead code, no fluff, no hot path. go test core/lane core/shipped, internal/cli -run Context ok."
+test-verdict: "pass: touched-package tests green (core/lane, core/role, core/shipped, internal/cli minus the 3 hangers; whole suite not run), DoD 1-3 verified in the tree, behaviour exercised on a scratch clone (update --lanes on an old board, --for-lane critique|optimize|review context fresh)"
 ---
 
 # critique und optimize laufen je in einem frischen Agenten, nicht im Agenten, der gebaut hat
