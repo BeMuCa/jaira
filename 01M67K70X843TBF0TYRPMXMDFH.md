@@ -18,7 +18,7 @@ related:
   - 01M5659BR7RYZ6RVC84HGK1QGT
 commits: []
 created-at: 2026-10-30T23:44:40Z
-updated-at: 2026-10-31T00:05:04Z
+updated-at: 2026-10-31T00:05:06Z
 updated-by: berkc
 claimed-by: berk-ca-2691736
 claimed-at: 2026-10-30T23:47:40Z
@@ -36,6 +36,7 @@ review-gaps: |-
 test-verdict: "pass: full suite RC=0 (go test ./... -skip the three hanging tests, 33 packages ok, no FAIL) and go vet ./... clean, both before the last note-only commit 9e50be2b; core/release and internal/tui re-run with -count=1 after it, ok. DoD 1-4 verified in the tree (proofs on the ticket). Popup verified in tmux on a scratch board with a 0.5.0 stamp: 'What is new since 0.5.0 · 9 unread', Features first then Others, Left/Right paging and esc. jaira update prints '  + ' for features. Skipped: TestUnreachableRemoteIsOfflineNotARace, TestAnOfflineWriteArrivesWhenTheNetworkIsBack, TestWebPushReportsAQueuedDrop (hang in this sandbox). Not checked: the launcher w view at phone-narrow width; the 'w' launcher path was not exercised in tmux (same notesView component)."
 review-verdict: "Not accepted: the Features/Others split, the '- + ' marker, the CLI '+' lines, the docs and the note are right and tested (go test ./core/release ./internal/tui ok, TestUpdateNotes ok, vet clean, board popup checked in tmux), but DoD 1 is not met - the launcher's 'w' still shows the release notes as a full-screen page, and that is the 'you made them a page ... pop up only' the ticket exists for. Fairly sure, not certain: if the person meant only the board popup, DoD 1 already held and this blocker falls away."
 review-round: 2
+review-check: "1. cd /home/berkc/code/X_General/jaira-MXMDFH && go build -o /tmp/jaira-mx -ldflags '-X main.version=0.5.8' ./cmd/jaira  2. in an empty scratch git repo: JAIRA_HOME=$PWD/home /tmp/jaira-mx init  3. JAIRA_HOME=$PWD/home /tmp/jaira-mx (the launcher), press w - see the blocker: the notes fill the whole screen, no box, the launcher is gone  4. the first page 'Unreleased' shows a 'Features' header, a blank line, two '+' lines with a blank line after each  5. press left - '0.5.8 · 2/30' shows plain '-' lines and no headers  6. esc, open the board: to see the popup after an upgrade, first open the board once with a binary built with main.version=0.5.0, then with /tmp/jaira-mx board - a bordered box over the board titled 'What is new since 0.5.0 · N unread'  7. go test ./internal/tui -run TestNotesViewSplitsFeaturesFromOthers and go test ./internal/cli -run TestUpdateNotesMarkImportantLines both print ok"
 ---
 
 # Die Release-Notes erscheinen als Popup statt Seite, getrennt in Features zuerst und 'Andere' darunter, luftig und leicht lesbar
