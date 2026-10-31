@@ -20,14 +20,16 @@ commits:
   - 8a9fa6a46d4adc8147319eab9737da13a703f18e
   - e7716c03b171b3a3c29d9152136cad682d99cb03
 created-at: 2026-10-31T01:24:00Z
-updated-at: 2026-10-31T02:42:56Z
+updated-at: 2026-10-31T02:44:29Z
 updated-by: berkc
 claimed-by: berk-ca-3129208
 claimed-at: 2026-10-31T01:27:35Z
 outcome-what: "New tickets start with planning ticked when no default board names options:; an options: key replaces it, options: [] ticks nothing; an unparseable default board counts as absent (planning ticked)."
 outcome-why: "Without a ticked planning option the pre-process Opus planner skipped nearly every ticket, and the maintainer wants every ticket through it by default."
 outcome-resolves: "Default options come from lane.DefaultOptions in LoadDefaultBoard; Validate skips the unknown-option check for the defaulted value; NewBody comment rewritten; template and 'lanes default' help updated; release note core/release/notes/X1M1AF.md. Tests: core/lane, core/ticket, internal/tui, core/release, internal/cli (3 hangers skipped) pass."
-review-summary: "core/release/notes/X1M1AF.md:1 says every ticket goes through 'the Opus planner': the pre-process lane is tier strong (core/lane/builtin/15-pre-process.md), Opus is not enforced until CXH98W, and it only runs on boards that install pre-process — reword to 'through the pre-process (planning) lane' and add that `jaira lanes default --options ''` ticks none. Rest stands: placement in LoadDefaultBoard + optionsDefaulted per planner note 02:33; bare 'options:' accepted per note 02:39. Question for maintainer: open DAQKZX says the teamlead decides/asks per ticket whether brainstorm/planning apply; this ticket makes planning always-on by default — confirm both are wanted (DAQKZX would then decide to untick)."
+review-summary: |-
+  core/release/notes/X1M1AF.md:1 says every ticket goes through 'the Opus planner': the pre-process lane is tier strong (core/lane/builtin/15-pre-process.md), Opus is not enforced until CXH98W, and it only runs on boards that install pre-process — reword to 'through the pre-process (planning) lane' and add that `jaira lanes default --options ''` ticks none. Rest stands: placement in LoadDefaultBoard + optionsDefaulted per planner note 02:33; bare 'options:' accepted per note 02:39. Question for maintainer: open DAQKZX says the teamlead decides/asks per ticket whether brainstorm/planning apply; this ticket makes planning always-on by default — confirm both are wanted (DAQKZX would then decide to untick).
+  Round 2 (fresh critique): release-note fix verified — core/release/notes/X1M1AF.md:1 now names the 'pre-process (planning) lane' and `jaira lanes default --options ''`; ran that on a built binary: writes options: [] and 'jaira lanes default' then prints 'Options: none pre-ticked'. Nothing else raised in round 1; no new defect from the repair. go test core/lane core/ticket core/release + internal/cli -run 'TestCreate|TestLanesDefault|TestInit' pass. Findings: none.
 round: 2
 ---
 
