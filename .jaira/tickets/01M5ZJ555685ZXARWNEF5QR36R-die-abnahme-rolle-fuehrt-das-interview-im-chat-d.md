@@ -1,7 +1,7 @@
 ---
 id: 01M5ZJ555685ZXARWNEF5QR36R
 title: Die Abnahme-Rolle fuehrt das Interview im Chat; die Seite ist nur noch auf Wunsch
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "jaira-role-acceptance fragt standardmaessig im Chat ab - je Ticket ID, Einzeiler, wie pruefen, Empfehlung, dann 'accept X / explain X / fix X' - und baut die statische Seite nur mit --page."
@@ -17,15 +17,16 @@ blocked-by: []
 related: []
 commits:
   - 8fea809f03736e6759b1d15d2bc51fbd7c83cc3a
+  - de96db1745c69f9e47ea329ea8ccc782072ef6f9
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T02:54:09Z
+updated-at: 2026-10-31T02:54:26Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-3129429
 claimed-at: 2026-10-31T01:27:42Z
-outcome-what: "interreview role: chat interview default, --page for the page, stub at old name"
-outcome-why: /jaira-role-acceptance built a page by default and the chat path was nowhere; 17 tickets were faster in chat (feedback 27.10.2026)
-outcome-resolves: chat interview default with the per-ticket format and accept/explain/fix answers; record at the old path; page behind --page
+outcome-what: "fix: recommend fix only on a failed check or a non-pass verdict; review tickets never accepted"
+outcome-why: "critique returned: empty review-verdict triggered fix, and review tickets were accepted"
+outcome-resolves: interview recommendation rules and accept scope; plan 11 ticked with the amended manifest decision
 review-summary: |-
   core/role/builtin/jaira-role-interreview/SKILL.md:107-109 recommends fix when 'the review-verdict is not a pass'; review-verdict is empty for every ticket in human and review (the review lane writes it, after human), so a literal cheap model recommends fix for all of them - say 'fix when a machine check failed, or a review-verdict is present and is not a pass'
   .jaira plan step 11 (shipped hashes) is still unticked although its note says done - the terminal gate refuses a move with an open plan step (core/gate/gate.go:417-430); tick it with jaira dod 5QR36R 11 --done --plan
@@ -65,7 +66,7 @@ round: 2
 - [x] 9 REFERENCES: replace /jaira-role-acceptance by /jaira-role-interreview in core/role/builtin/jaira-teamlead/SKILL.md (~L69 item 3 Acceptance: 'one interview in a new session: /jaira-role-interreview <id>...'; page only when the person asks: --page; ~L213 Boundaries), core/role/builtin/jaira-worker/SKILL.md (~L337) and core/role/builtin/jaira-dispatcher/SKILL.md (~L479): the role now answers with the line to paste into a new session; that line goes into the third report line instead of a link. README.md L826 table row and L848 bullet (describe chat interview default, --page for the page). docs/how-to-work-with-jaira.html L254, 333, 335, 394, 483, 502 (German; keep L557 history row). Do NOT touch core/release/NOTES.md, core/release/testdata/*, core/role/testdata/*.
 - [x] 10 TESTS core/role/role_test.go: wantRoles add 'jaira-role-interreview' after 'jaira-role-brainstorm' (sorted); keep 'jaira-role-acceptance' (stub). roleFiles: key 'jaira-role-acceptance' -> 'jaira-role-interreview' (comment unchanged). Add TestInterreviewInterviewsByDefault: File("jaira-role-interreview","SKILL.md") contains 'accept <id>', 'explain <id>', 'fix <id>', '--page', 'report.md'; and File("jaira-role-acceptance","SKILL.md") contains '/jaira-role-interreview' and '--page'. core/role/shipped_test.go and internal/cli tests stay unchanged (v0.4.0 fixture is an older acceptance SKILL.md; the stub differs from it, so Updated still holds).
 - [x] 11 SHIPPED HASHES: (a) export PATH=$HOME/.local/go/bin:$PATH; go test ./core/role -run TestEveryInstalledFileIsAShippedVersion -count=1 -> append exactly the printed lines to the END of core/shipped/shipped.sha256 (already done). (b) AMENDED: drop the lines of the three paths the git mv removed - grep -vE ' core/role/builtin/jaira-role-acceptance/(build\.py|template\.html|report\.html)$' core/shipped/shipped.sha256 > tmp && mv tmp core/shipped/shipped.sha256 (12 lines). Keep every jaira-role-acceptance/SKILL.md line (the stub path exists; old copies must still match to be Updated). Precedent: scripts/shipped-history.sh keeps only paths embedded today (awk keep[$2] filter), and TestEveryManifestPathExists enforces it; the jaira-teamlead/scripts/spawn.sh history was dropped the same way after C9V7ZV. Remove nothing else, reorder nothing. (c) go test ./core/shipped ./core/role -count=1 must pass.
-  proof: x
+  proof: core/shipped/shipped.sha256: 12 old acceptance build/template/report lines deleted (amended decision), SKILL.md lines kept, interreview hashes appended; go test ./core/shipped ./core/role pass
 - [x] 12 RELEASE NOTE core/release/notes/5QR36R.md, one unwrapped line each: '- ! Run `jaira update --roles` (or `jaira roles install --force`) to get `/jaira-role-interreview`: it accepts the tickets in human, review and signoff in a chat interview - answer `accept <id>`, `explain <id>` or `fix <id> <what>` - and writes the record to ~/.claude/acceptance/<repo>/<name>/report.md.' and '- Use `/jaira-role-interreview --page` for the acceptance page; `/jaira-role-acceptance` now forwards there and builds the page as before.'
 - [x] 13 VERIFY: go test ./core/role ./core/shipped -count=1; go test ./internal/cli -run 'Roles|Nudge|UpdateSetup|Update' -count=1 -skip 'TestUnreachableRemoteIsOfflineNotARace|TestAnOfflineWriteArrivesWhenTheNetworkIsBack|TestWebPushReportsAQueuedDrop'; grep -rn 'role-acceptance' core/role/builtin README.md docs/how-to-work-with-jaira.html shows only the stub and the 0.3.3 history row. Then tick DoD 1-3 with proofs (SKILL.md line numbers + TestInterreviewInterviewsByDefault).
 - [x] 14 COMMIT (in-progress lane): one commit 'feat(5QR36R): acceptance becomes /jaira-role-interreview, chat interview by default, page with --page' carrying code, release note, shipped.sha256 and the ticket file under .jaira/tickets/. Never push.
