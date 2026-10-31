@@ -18,6 +18,7 @@ var wantRoles = []string{
 	"jaira-dispatcher",
 	"jaira-role-acceptance",
 	"jaira-role-brainstorm",
+	"jaira-role-interreview",
 	"jaira-role-lane",
 	"jaira-role-logbook-summary",
 	"jaira-role-pr",
@@ -68,7 +69,7 @@ var roleFiles = map[string][]string{
 	"jaira-dispatcher": {"scripts/spawn.sh", "scripts/run-lane.sh"},
 	// build.py writes the page from template.html and the record from
 	// report.html.
-	"jaira-role-acceptance": {"build.py", "template.html", "report.html"},
+	"jaira-role-interreview": {"build.py", "template.html", "report.html"},
 	// collect.py gathers the facts, build.py checks the text and writes the
 	// page from template.html; summary.example.md is what the prompt points a
 	// person at to shape the summary.
@@ -94,6 +95,30 @@ func TestRolesShipTheirFiles(t *testing.T) {
 			if !slices.Contains(r.Files, w) {
 				t.Errorf("%s: files %v, want %s among them", id, r.Files, w)
 			}
+		}
+	}
+}
+
+// The interview is the default: the chat words are how a person answers, and
+// --page is the only way the acceptance page is built. The old name stays as a
+// stub that forwards to the new one with --page, so old installs keep working.
+func TestInterreviewInterviewsByDefault(t *testing.T) {
+	src, err := File("jaira-role-interreview", "SKILL.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"accept <id>", "explain <id>", "fix <id>", "--page", "report.md"} {
+		if !strings.Contains(string(src), want) {
+			t.Errorf("jaira-role-interreview SKILL.md lacks %q", want)
+		}
+	}
+	stub, err := File("jaira-role-acceptance", "SKILL.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"/jaira-role-interreview", "--page"} {
+		if !strings.Contains(string(stub), want) {
+			t.Errorf("jaira-role-acceptance stub lacks %q", want)
 		}
 	}
 }

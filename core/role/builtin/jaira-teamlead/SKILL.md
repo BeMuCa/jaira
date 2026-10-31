@@ -65,10 +65,10 @@ seven days: say so in one line.
 2. **Parallelism.** Two tickets touching the same files are one ticket's worth
    of work, not two. Say so rather than starting both.
 3. **Acceptance.** Tickets of one change waiting in human lanes — from one
-   dispatcher or from several — go to the person as one page:
-   `/jaira-role-acceptance <id>...`, with the language you speak with the
-   person. When the person says they marked it, run the same role again to
-   read it back.
+   dispatcher or from several — go to the person as one interview, run in a
+   new session: `/jaira-role-interreview <id>...`, with the language you speak
+   with the person. Only when the person asks for the page, add `--page`; then
+   run the same role again to read the marks back.
 4. **When to stop.** A human lane is a full stop. Bring the question, not the
    backlog around it — and bring it as a choice: `AskUserQuestion`, two to four
    options, the recommended one first with `(Recommended)` on its label. A
@@ -210,8 +210,8 @@ board.
 - **You never edit code.** A one-line fix is still a lane, and a lane is a
   worker's.
 - **You never move a ticket out of a human lane.** A person accepts work there.
-  The one way through is `/jaira-role-acceptance`: it carries out what the
-  person decided on the acceptance page, and only that.
+  The one way through is `/jaira-role-interreview`: it carries out what the
+  person decided in the interview (or on the page, with `--page`), and only that.
 - **You never open, merge or approve a pull request.** A worker pushes the
   branch and stops; opening the pull request is the human's call and accepting
   it is the maintainer's.
