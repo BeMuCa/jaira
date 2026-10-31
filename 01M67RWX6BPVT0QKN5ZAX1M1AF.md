@@ -20,7 +20,7 @@ commits:
   - 8a9fa6a46d4adc8147319eab9737da13a703f18e
   - e7716c03b171b3a3c29d9152136cad682d99cb03
 created-at: 2026-10-31T01:24:00Z
-updated-at: 2026-10-31T02:51:15Z
+updated-at: 2026-10-31T02:51:17Z
 updated-by: berkc
 claimed-by: berk-ca-3129208
 claimed-at: 2026-10-31T01:27:35Z
@@ -37,6 +37,7 @@ review-gaps: |-
 test-verdict: "pass: go build ./... rc=0, go vet clean, go test core/lane core/ticket and internal/cli (3 hangers skipped) ok, DoD 1-3 proof tests exist and pass, behaviour exercised on scratch board (no default board: planning ticked; options: [brainstorm]: planning unticked; options: []: none ticked; unparseable: planning ticked)"
 review-verdict: "Pass: all 3 DoD items met by the diff (TestLoadDefaultBoardAbsentTicksPlanning, TestCreateWithoutDefaultBoardTicksPlanning, TestCreateAfterInitTicksDefaultBoardOptions, TestLoadDefaultBoardEmptyOptionsListTicksNothing; release note present); core/lane, core/ticket, core/release and internal/cli (Default|Create|Init|Lanes) green here; no defects found. Reservation, not a failure: maintainer question DAQKZX is open — whether the teamlead decides planning per ticket instead of this always-on default. If the answer is per-ticket, this default should be reverted or reduced before merging."
 review-round: 2
+review-check: "1. cd /home/berkc/code/X_General/jaira-X1M1AF && export PATH=$HOME/.local/go/bin:$PATH  2. go build -o /tmp/jx ./cmd/jaira (or the repo's main pkg)  3. mkdir /tmp/pt && cd /tmp/pt && git init -q && JAIRA_DEFAULT_BOARD=/tmp/none.md /tmp/jx init  4. JAIRA_DEFAULT_BOARD=/tmp/none.md /tmp/jx create 'probe' --goal g --dod d  5. open the new file in .jaira/tickets/: under '## Options' you see '- [x] planning' and '- [ ] brainstorm'  6. JAIRA_DEFAULT_BOARD=/tmp/none.md /tmp/jx lanes default --options ''  then cat /tmp/none.md: it contains 'options: []'  7. repeat step 4: the new ticket shows '- [ ] planning'"
 ---
 
 # Neue Tickets haben die Option planning standardmaessig angehakt, damit jedes Ticket durch den Planer geht
