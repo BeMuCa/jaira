@@ -14,7 +14,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-10-31T02:31:56Z
+updated-at: 2026-10-31T02:32:02Z
 updated-by: berkc
 claimed-by: berk-ca-3155695
 claimed-at: 2026-10-31T02:31:33Z
@@ -36,7 +36,7 @@ claimed-at: 2026-10-31T02:31:33Z
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] Add stepLane in internal/tui/model.go after moveLane; board arrows call it, lane focus keeps moveLane
+- [x] Add stepLane in internal/tui/model.go after moveLane; board arrows call it, lane focus keeps moveLane
 - [ ] Rewrite the z test and add arrow tests in internal/tui/lanewindow_test.go (skip, off, wrap, only-lane, all-empty, empty start)
 - [ ] Update toggleEmptyLanes doc comment and the z help line in internal/tui/view.go
 - [ ] Release note line in core/release/notes/NDE933.md
