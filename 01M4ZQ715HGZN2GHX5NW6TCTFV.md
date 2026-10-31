@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-31T00:08:48Z
+updated-at: 2026-10-31T00:08:51Z
 updated-by: berkc
 question: ""
 round: 2
@@ -111,3 +111,4 @@ Parallel: N71NVG baut das Ablegen/Loeschen eines fertigen Milestones samt Ticket
 - **2026-10-30 23:59 · berkc** — critique (pass 1, worker): read the Go diff - core/suggest/suggest.go, internal/cli/suggest.go, the hooks in flow.go, logbook.go, milestones.go - and the three role SKILL paragraphs. One simplification made already: ForMilestone repeated the Filed/empty check that complete() does. Left alone on purpose: (a) groupOf reads every member of each milestone the ticket is in on every move; board sizes are tens, so no cache; (b) the same paragraph is in three role skills because the pin test reads each role on its own and the role format has no include; (c) --json suggestions also carry kind progress, which the DoD does not name; the docs say consumers branch on kind; (d) milestone ls swallows a lane-load error on purpose so the listing never fails because of suggestions.
 - **2026-10-30 23:59 · berkc** — optimize (worker): (1) duplication - the acceptance reading (requires-human-exit, not question, not agentic) matches core/lane impliedFresh (lane.go:655) but no helper exists to call; lane.Facts() is a board-note projection, not a predicate, so the one-line predicate stays in core/suggest. The milestone completion rule is written again in internal/cli/logbook.go logbookMilestone; it is not rewritten here because the note on this ticket says N71NVG owns that code. (2) dead code - none added. (3) fluff - the find() walk is kept: Set.Get needs the private index that Load fills, so a Set built in a unit test answers nothing through it. (4) cost - milestone ls reads lanes once; per move one LoadAll; nothing hoisted. Change made: ForMilestone no longer repeats the Filed/empty check complete() does.
 - **2026-10-31 00:02 · berkc** — testing (worker): full suite RC=1 - core/role TestEveryInstalledFileIsAShippedVersion: core/shipped/shipped.sha256 lacked the four SKILL.md versions this branch changes (dispatcher, role-pr, teamlead, worker). Fixed by appending their four lines, as the test prints them; the file is append-only, so nothing was regenerated. Vet RC=0.
+- **2026-10-31 00:08 · berkc** — testing (worker): full suite run twice - the first RC=1 was the shipped manifest (fixed in b2e571b7); the second, with go clean -testcache, is EXIT=0; vet EXIT=0; race on the five touched packages EXIT=0; scratch board rerun on the final binary matches the handtest. Skipped by the house list: the three hanging tests.
