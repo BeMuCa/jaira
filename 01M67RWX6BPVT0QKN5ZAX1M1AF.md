@@ -20,7 +20,7 @@ commits:
   - 8a9fa6a46d4adc8147319eab9737da13a703f18e
   - e7716c03b171b3a3c29d9152136cad682d99cb03
 created-at: 2026-10-31T01:24:00Z
-updated-at: 2026-10-31T02:45:22Z
+updated-at: 2026-10-31T02:48:50Z
 updated-by: berkc
 claimed-by: berk-ca-3129208
 claimed-at: 2026-10-31T01:27:35Z
@@ -32,6 +32,7 @@ review-summary: |-
   Round 2 (fresh critique): release-note fix verified — core/release/notes/X1M1AF.md:1 now names the 'pre-process (planning) lane' and `jaira lanes default --options ''`; ran that on a built binary: writes options: [] and 'jaira lanes default' then prints 'Options: none pre-ticked'. Nothing else raised in round 1; no new defect from the repair. go test core/lane core/ticket core/release + internal/cli -run 'TestCreate|TestLanesDefault|TestInit' pass. Findings: none.
 round: 2
 review-gaps: "none removed: diff is minimal — DefaultOptions has one reader (LoadDefaultBoard) and optionsDefaulted one (Validate), no duplicate of the options-default logic elsewhere (grepped DefaultOptions/options defaults), no dead code or forwarding wrappers. Left: DefaultOptions could be unexported (only in-package use) but body.go comment names it lane.DefaultOptions, so kept; noted that SaveDefaultBoard always writes options:, so a later 'lanes default --lanes x' persists [planning] explicitly — behaviour, not cleanup"
+test-verdict: "pass: go build ./... rc=0, go vet clean, go test core/lane core/ticket and internal/cli (3 hangers skipped) ok, DoD 1-3 proof tests exist and pass, behaviour exercised on scratch board (no default board: planning ticked; options: [brainstorm]: planning unticked; options: []: none ticked; unparseable: planning ticked)"
 ---
 
 # Neue Tickets haben die Option planning standardmaessig angehakt, damit jedes Ticket durch den Planer geht
