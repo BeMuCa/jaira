@@ -183,3 +183,53 @@ func TestSettingsEnterStepsTheChatModel(t *testing.T) {
 		t.Errorf("enter on an invalid board value: %q, want sonnet, the step after none", got)
 	}
 }
+
+// rowOf is the screen line that names the settings row, trimmed.
+func rowOf(screen, name string) string {
+	for _, line := range strings.Split(screen, "\n") {
+		if strings.Contains(line, name) {
+			return strings.TrimSpace(line)
+		}
+	}
+	return ""
+}
+
+// TestSettingsEnterStepsTheModels: the model rows show the model and effort an
+// agent starts on, marked (default) while settings.json does not name it. enter
+// steps one row through settings.ModelChoices and saves at once; the step past
+// the last choice removes the entry, so the default applies again.
+func TestSettingsEnterStepsTheModels(t *testing.T) {
+	t.Setenv("JAIRA_HOME", t.TempDir())
+	m := newTestModel(t, 150, 32)
+	m.key(key("esc"))
+	m.key(key("S"))
+	for range 5 {
+		m.key(key("j"))
+	}
+	screen := func() string { return stripANSI(m.settingsScreen.render(150, 32)) }
+	if got := rowOf(screen(), "Orchestrator model"); !strings.HasSuffix(got, "Orchestrator model  opus (default)") {
+		t.Fatalf("the orchestrator row does not show the default:\n%s", screen())
+	}
+	if got := rowOf(screen(), "Worker model"); !strings.HasSuffix(got, "Worker model  haiku high (default)") {
+		t.Fatalf("the worker row does not show the default:\n%s", screen())
+	}
+	for _, c := range settings.ModelChoices {
+		m.key(key("enter"))
+		if got := rowOf(screen(), "Orchestrator model"); !strings.HasSuffix(got, "Orchestrator model  "+c.String()) {
+			t.Fatalf("after enter, the row does not read %q:\n%s", c, screen())
+		}
+		if got := settings.Load().Models["orchestrator"]; got != c {
+			t.Fatalf("after enter, settings.json orchestrator = %+v, want %+v", got, c)
+		}
+	}
+	m.key(key("enter"))
+	if got := rowOf(screen(), "Orchestrator model"); !strings.HasSuffix(got, "Orchestrator model  opus (default)") {
+		t.Fatalf("the step past the last choice does not restore the default:\n%s", screen())
+	}
+	if got := settings.Load().Models; len(got) != 0 {
+		t.Fatalf("the step past the last choice left settings.json models: %+v", got)
+	}
+	if m.mode != modeSettings {
+		t.Errorf("stepping must stay on the settings screen, mode = %v", m.mode)
+	}
+}

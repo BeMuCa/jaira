@@ -26,14 +26,19 @@ const (
 	// settingsActionChatModel steps the chat model through its choices in
 	// place, the same way.
 	settingsActionChatModel = "chat-model"
+	// settingsActionModel steps one agent's model and effort through
+	// settings.ModelChoices in place; the entry's key says which agent.
+	settingsActionModel = "model"
 )
 
 // settingsEntry is one row in the menu: a name, what pressing enter on it
-// opens, and a one-line description of what it is for.
+// opens, and a one-line description of what it is for. key is the agent a
+// settingsActionModel row is for, as settings.ModelFor takes it.
 type settingsEntry struct {
 	name   string
 	desc   string
 	action string
+	key    string
 }
 
 var settingsEntries = []settingsEntry{
@@ -61,6 +66,30 @@ var settingsEntries = []settingsEntry{
 		name:   "Chat model",
 		desc:   "the model the cockpit's explain and discuss chats start on, for everybody on this board (.jaira/chat-model); without it this machine's chat-model in settings.json, else the account default. enter steps the board's through sonnet, haiku, opus and none; any other model by hand",
 		action: settingsActionChatModel,
+	},
+	{
+		name:   "Orchestrator model",
+		desc:   "model + effort for the teamlead session; enter steps through opus, opus high, sonnet, sonnet high, haiku, haiku high, then the default; any other by hand in settings.json",
+		action: settingsActionModel,
+		key:    "orchestrator",
+	},
+	{
+		name:   "Worker model",
+		desc:   "model + effort for the worker, the session that carries a ticket through its lanes; enter steps as above; any other by hand in settings.json",
+		action: settingsActionModel,
+		key:    "worker",
+	},
+	{
+		name:   "Strong lanes model",
+		desc:   "model + effort for lanes of tier strong (brainstorm, pre-process, critique, optimize, review); enter steps as above; any other by hand in settings.json",
+		action: settingsActionModel,
+		key:    "strong",
+	},
+	{
+		name:   "Cheap lanes model",
+		desc:   "model + effort for lanes of tier cheap (in-progress, testing); enter steps as above; any other by hand in settings.json",
+		action: settingsActionModel,
+		key:    "cheap",
 	},
 }
 
@@ -93,11 +122,18 @@ type settingsScreen struct {
 	chatModel       string
 	chatModelSource string
 	chatModelErr    string
+
+	// models is settings.json as it stands, for the four model rows. modelErr
+	// is what went wrong saving the last step, and modelErrKey the agent whose
+	// row it belongs under.
+	models      settings.Settings
+	modelErr    string
+	modelErrKey string
 }
 
 func newSettingsScreen(root string) *settingsScreen {
 	cur := settings.Load()
-	s := &settingsScreen{days: cur.LogbookWindow(), dispatch: cur.DispatchMode(), root: root}
+	s := &settingsScreen{days: cur.LogbookWindow(), dispatch: cur.DispatchMode(), root: root, models: cur}
 	s.readChatModel(cur)
 	return s
 }
@@ -173,6 +209,45 @@ func (s *settingsScreen) switchDispatch() string {
 	return settingsActionNone
 }
 
+// nextModelChoice is the entry an agent's model steps on to: the first choice
+// when the file names none, the one after the current choice, and no entry
+// (keep=false) after the last choice. A value written by hand that is none of
+// the choices steps to no entry too, the default.
+func nextModelChoice(now settings.AgentModel, set bool) (next settings.AgentModel, keep bool) {
+	if !set {
+		return settings.ModelChoices[0], true
+	}
+	for i, c := range settings.ModelChoices {
+		if c == now && i+1 < len(settings.ModelChoices) {
+			return settings.ModelChoices[i+1], true
+		}
+	}
+	return settings.AgentModel{}, false
+}
+
+// stepModel moves one agent's model on to the next of its choices and saves at
+// once, reading the file again first for the same reason editKey does. The
+// last step removes the agent's entry, so the default applies again.
+func (s *settingsScreen) stepModel(key string) string {
+	cur := settings.Load()
+	now, set := cur.Models[key]
+	next, keep := nextModelChoice(now, set)
+	if keep {
+		if cur.Models == nil {
+			cur.Models = map[string]settings.AgentModel{}
+		}
+		cur.Models[key] = next
+	} else {
+		delete(cur.Models, key)
+	}
+	if err := settings.Save(cur); err != nil {
+		s.modelErr, s.modelErrKey = err.Error(), key
+		return settingsActionNone
+	}
+	s.models, s.modelErr, s.modelErrKey = cur, "", ""
+	return settingsActionNone
+}
+
 // editKey drives the number while it is open: digits type, backspace takes
 // one back, enter saves and esc leaves it as it was. Saving reads the file
 // again first, so nothing else in it — a remote, a hook — is written back from
@@ -233,6 +308,9 @@ func (s *settingsScreen) key(k string) string {
 		if a == settingsActionChatModel {
 			return s.stepChatModel()
 		}
+		if a == settingsActionModel {
+			return s.stepModel(settingsEntries[s.idx].key)
+		}
 		if a != settingsActionLogbookDays {
 			return a
 		}
@@ -263,6 +341,9 @@ func (s *settingsScreen) render(width, height int) string {
 		if e.action == settingsActionChatModel {
 			name += "  " + styMeta.Render(s.chatModelValue())
 		}
+		if e.action == settingsActionModel {
+			name += "  " + styMeta.Render(s.modelValue(e.key))
+		}
 		sb.WriteString(truncate(lead+name, w) + "\n")
 		sb.WriteString(styMeta.Render("      "+wrap(e.desc, max(10, w-6), 6)) + "\n")
 		if e.action == settingsActionLogbookDays && s.err != "" {
@@ -274,6 +355,9 @@ func (s *settingsScreen) render(width, height int) string {
 		if e.action == settingsActionChatModel && s.chatModelErr != "" {
 			sb.WriteString(styErr.Render("      "+s.chatModelErr) + "\n")
 		}
+		if e.action == settingsActionModel && s.modelErr != "" && e.key == s.modelErrKey {
+			sb.WriteString(styErr.Render("      "+s.modelErr) + "\n")
+		}
 	}
 
 	hints := []string{"enter open", "esc back"}
@@ -284,6 +368,16 @@ func (s *settingsScreen) render(width, height int) string {
 		sb.WriteString("\n" + styMeta.Render(l))
 	}
 	return sb.String()
+}
+
+// modelValue is one model row's value: the model and effort the agent starts
+// on, and "(default)" when settings.json does not name it.
+func (s *settingsScreen) modelValue(key string) string {
+	m, src := s.models.ModelFor(key)
+	if src == "the default" {
+		return m.String() + " (default)"
+	}
+	return m.String()
 }
 
 // logbookValue is the logbook-days row's value: the number being typed while
