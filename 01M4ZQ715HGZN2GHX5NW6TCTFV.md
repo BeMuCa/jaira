@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-31T00:21:47Z
+updated-at: 2026-10-31T00:21:49Z
 updated-by: berkc
 question: ""
 round: 3
@@ -44,7 +44,19 @@ claimed-by: berk-ca-2990549
 claimed-at: 2026-10-31T00:12:59Z
 review-verdict: "No blocker. The round-2 blocker is fixed: jaira-role-pr reads a milestone's members from 'jaira milestone ls --json' tickets, and on a scratch board a member filed with 'jaira logbook' stays in that list while 'jaira list --milestone' drops it. DoD 1, 2, 3, 4, 6, 8 and 9 are met by the diff (5 and 7 are superseded by berkc's 22.10 decision). Checked by hand on a scratch board with the branch binary: progress line, milestone-complete PR + filing lines, ungrouped ticket line, --json suggestions on move, logbook <id> and milestone ls, and the suggested 'jaira logbook m1' runs (exit 0). go vet and go test ./core/suggest ./core/role ./core/shipped ./internal/cli pass. The four gaps are notes for the person, not defects. Unsure only about the role-pr skill's real-remote run, which nobody has exercised."
 review-round: 3
-review-check: "1. cd /home/berkc/code/X_General/jaira-6TCTFV && go build -o /tmp/j6/jaira ./cmd/jaira  2. In an empty scratch git repo: /tmp/j6/jaira init, create two tickets A and B, then '/tmp/j6/jaira milestone create m1 A B'  3. '/tmp/j6/jaira move A --to done --force' - you see 'Milestone m1: 1 of 2 done' and no /jaira-role-pr line  4. '/tmp/j6/jaira move B --to done --force' - you see 'Milestone m1 is complete. Next: one pull request ... /jaira-role-pr <A> <B>' and 'Once that pull request is merged, take milestone m1 off the board: jaira logbook m1'  5. '/tmp/j6/jaira milestone ls --json' - m1 carries the same two lines under 'suggestions'  6. Create a third ticket C in no milestone and run '/tmp/j6/jaira move C --to signoff --force' - you see 'Next: the pull request. Only a person opens it: /jaira-role-pr <C>'  7. For the blocker: '/tmp/j6/jaira logbook A', then '/tmp/j6/jaira list --milestone m1' - only B is listed, although jaira-role-pr/SKILL.md says this listing includes filed members. '/tmp/j6/jaira milestone ls --json' still lists both under 'tickets'  8. go test ./core/suggest/ ./core/role/ ./internal/cli/ - all ok"
+review-check: |-
+  1. cd /home/berkc/code/X_General/jaira-6TCTFV && go build -o /tmp/j6/jaira ./cmd/jaira
+  2. mkdir /tmp/j6r && cd /tmp/j6r && git init -b master && git commit --allow-empty -m init && /tmp/j6/jaira init
+  3. Create two tickets: /tmp/j6/jaira create A --goal g --context c --dod d and the same for B; note their handles
+  4. /tmp/j6/jaira milestone create m1 <A> <B>
+  5. /tmp/j6/jaira move <A> --to done --force - you see 'Milestone m1: 1 of 2 done' and no /jaira-role-pr line
+  6. /tmp/j6/jaira logbook <A> - same progress line
+  7. /tmp/j6/jaira move <B> --to done --force - you see 'Milestone m1 is complete. Next: one pull request for all its tickets. Only a person opens it: /jaira-role-pr <A> <B>' and 'Once that pull request is merged, take milestone m1 off the board: jaira logbook m1'
+  8. /tmp/j6/jaira milestone ls --json - m1 lists BOTH A and B under tickets (A is filed) and carries the two lines under suggestions
+  9. Create a third ticket C, then /tmp/j6/jaira move <C> --to signoff --force - you see 'Next: the pull request. Only a person opens it: /jaira-role-pr <C>'
+  10. /tmp/j6/jaira logbook m1 - exits 0, and milestone ls no longer shows m1
+  11. Open core/role/builtin/jaira-role-pr/SKILL.md, section 'One branch for several tickets' - members come from jaira milestone ls --json
+  12. go test ./core/suggest/ ./core/role/ ./internal/cli/ - all ok
 ---
 
 # Ist der letzte Ticket eines Milestones fertig, schlaegt jaira den PR mit /jaira-role-pr vor und bietet an, den Milestone abzulegen
