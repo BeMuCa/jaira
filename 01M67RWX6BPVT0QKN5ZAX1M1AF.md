@@ -20,7 +20,7 @@ commits:
   - 8a9fa6a46d4adc8147319eab9737da13a703f18e
   - e7716c03b171b3a3c29d9152136cad682d99cb03
 created-at: 2026-10-31T01:24:00Z
-updated-at: 2026-10-31T02:51:11Z
+updated-at: 2026-10-31T02:51:13Z
 updated-by: berkc
 claimed-by: berk-ca-3129208
 claimed-at: 2026-10-31T01:27:35Z
@@ -29,7 +29,11 @@ outcome-why: "Without a ticked planning option the pre-process Opus planner skip
 outcome-resolves: "Default options come from lane.DefaultOptions in LoadDefaultBoard; Validate skips the unknown-option check for the defaulted value; NewBody comment rewritten; template and 'lanes default' help updated; release note core/release/notes/X1M1AF.md. Tests: core/lane, core/ticket, internal/tui, core/release, internal/cli (3 hangers skipped) pass."
 review-summary: "LoadDefaultBoard now starts every DefaultBoard with Options = lane.DefaultOptions ([planning]) and only replaces it when the file has an options: key (options: [] = none). ResolveOptions/NewBody unchanged, so both create paths (CLI jaira create, TUI quick-create) tick planning whenever the board's lanes offer it (pre-process installed). Validate skips the unknown-option warning for the defaulted value so boards without pre-process stay silent. Help text, file template comment, NewBody comment and an act-on release note (with 'jaira lanes default --options \"\"' to tick none) updated; 4 new/rewritten tests in core/lane, 2 assertions/tests in internal/cli."
 round: 2
-review-gaps: "none removed: diff is minimal — DefaultOptions has one reader (LoadDefaultBoard) and optionsDefaulted one (Validate), no duplicate of the options-default logic elsewhere (grepped DefaultOptions/options defaults), no dead code or forwarding wrappers. Left: DefaultOptions could be unexported (only in-package use) but body.go comment names it lane.DefaultOptions, so kept; noted that SaveDefaultBoard always writes options:, so a later 'lanes default --lanes x' persists [planning] explicitly — behaviour, not cleanup"
+review-gaps: |-
+  note: bare 'options:' with no value now reads as [planning] (before: none); untested, implementer flagged it
+  note: 'jaira lanes default --lanes X' (or TUI save) on a user without options: now writes options: [planning] into the file, freezing today's default; a later change to DefaultOptions will not reach that user
+  note: ticket bodies from a --template (tickets.go:348) get no Options at all, so no planning tick; pre-existing, outside DoD
+  note: goal says the Opus planner runs for every ticket; this only ticks the option, model choice depends on CXH98W
 test-verdict: "pass: go build ./... rc=0, go vet clean, go test core/lane core/ticket and internal/cli (3 hangers skipped) ok, DoD 1-3 proof tests exist and pass, behaviour exercised on scratch board (no default board: planning ticked; options: [brainstorm]: planning unticked; options: []: none ticked; unparseable: planning ticked)"
 ---
 
