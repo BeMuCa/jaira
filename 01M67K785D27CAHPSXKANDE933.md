@@ -14,7 +14,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-10-31T02:32:13Z
+updated-at: 2026-10-31T02:33:21Z
 updated-by: berkc
 claimed-by: berk-ca-3155695
 claimed-at: 2026-10-31T02:31:33Z
@@ -24,7 +24,8 @@ claimed-at: 2026-10-31T02:31:33Z
 
 ## Definition of Done
 
-- [ ] Mit z: links/rechts ueberspringt leere Lanes; ohne z unveraendert; Test
+- [x] Mit z: links/rechts ueberspringt leere Lanes; ohne z unveraendert; Test
+  proof: internal/tui/model.go:1774 stepLane; tests TestArrowsWithToggleOnSkipEmptyLanes, TestLeftWithToggleOnWrapsToLastFilledLane, TestArrowsWithToggleOnStayWhenOnlyLaneHasTickets, TestArrowsWithToggleOnAllEmptyStillMove, TestArrowsWithToggleOnLeaveEmptyStartLane, TestArrowsWithToggleOffStepOntoEmptyLanes, TestLaneFocusIgnoresTheToggle (internal/tui/lanewindow_test.go:182-301)
 - [ ] Release-Note-Zeile
 
 ## Options
