@@ -18,7 +18,7 @@ related:
   - 01M5659BR7RYZ6RVC84HGK1QGT
 commits: []
 created-at: 2026-10-30T23:44:40Z
-updated-at: 2026-10-31T00:01:15Z
+updated-at: 2026-10-31T00:01:17Z
 updated-by: berkc
 claimed-by: berk-ca-2691736
 claimed-at: 2026-10-30T23:47:40Z
@@ -69,3 +69,4 @@ test-verdict: "pass: full suite RC=0 (go test ./... -skip the three hanging test
 - **2026-10-30 23:50 · berkc** — Lane change pre-process -> in-progress was refused by the send step ('was not sent', ref still at pre-process, 23:49:13, the same worker's own earlier write) while the local file already said in-progress. Re-sending with this note. If the ref still says pre-process after this, the send is broken, not the ticket, and the next worker must check it before moving.
 - **2026-10-30 23:53 · berkc** — critique: internal/tui/releasenotes.go changeLines(c, feature, width) takes the feature flag from lines() and lines() strips the marker before calling it. Simplify: changeLines(c, width) parses both markers itself with release.Feature and release.Important; lines() only asks Feature to pick the group. Checked: the wrap, the bullets and the blank line are right; CLI writeNotes and the core helper are fine as they are.
 - **2026-10-30 23:54 · berkc** — critique pass 2: none. Stood on the decisions note (format '- + ', English labels, Others only beside a feature, CLI '+' lines) and on the simplification note of pass 1, now in e39d62f4: changeLines reads both markers itself. Checked: Feature/Important split in core/release/release.go is the same pattern as Important; CLI writeNotes changes only the feature branch; no new file beyond core/release/notes/MXMDFH.md and the CLAUDE.md bullet.
+- **2026-10-31 00:01 · berkc** — testing: suite and vet green; popup verified in tmux on scratch board (JAIRA_HOME in scratchpad/mx-home, fixture build with a feature line and a must-act line). The three skipped tests are the ones the brief named.
