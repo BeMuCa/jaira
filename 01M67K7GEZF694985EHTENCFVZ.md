@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-10-31T01:25:44Z
+updated-at: 2026-10-31T01:25:46Z
 updated-by: berkc
 ---
 
@@ -169,3 +169,4 @@ Offene Fragen an berkc
 5. Telegram-Antwort: reicht "Antwort wird Note, Ticket geht nach rejects-to", oder soll eine Antwort wie "ok" auch weiter nach vorne moven duerfen (dann entscheidet ein Bot, was heute nur eine Person darf)?
 6. A oder B - oder A jetzt und B als Ticket im Backlog?
 - **2026-10-31 01:25 · berkc** — Antworten Maintainer 31.10.2026: Ponytail = github.com/DietrichGebert/ponytail, ein Skill 'lazy senior dev' (minimaler Code, /ponytail-review, -audit, -debt) - passt als Skill-Lane neben optimize. Skript pro Person: der Maintainer will ein mitgeliefertes Skript (z.B. Telegram-API-Aufruf), das der Agent nutzt - keine Zuordnung pro Person noetig, solange das Skript keine Secrets enthaelt (Token aus lokalem Speicher, CMN1YT). Quittung gegen Doppelsenden: entfaellt vorerst, der Text auf dem Ticket soll ohnehin weg (eigenes Ticket). Entscheidung: Variante A (alles ist ein Skill, der Agent ruft die API).
+- **2026-10-31 01:25 · berkc** — Korrektur zur Notiz davor: A oder B ist NICHT entschieden - der Maintainer hat nur gefragt, was A/B bedeuten. Unklar auch, welcher 'Text auf dem Ticket' weg soll (sein Hinweis zu 'No double sends'); nachfragen.
