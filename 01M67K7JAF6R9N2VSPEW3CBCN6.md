@@ -19,7 +19,8 @@ related:
   - 01M658C7SP4V29E95574CXH98W
 commits: []
 created-at: 2026-10-30T23:44:58Z
-updated-at: 2026-10-30T23:44:58Z
+updated-at: 2026-10-31T00:03:18Z
+updated-by: berkc
 ---
 
 # Experiment: macht ein Pre-Process mit Opus 5.5 die Umsetzung durch Haiku besser, billiger oder schneller?
