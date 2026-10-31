@@ -21,7 +21,7 @@ commits:
   - 50ff54b331ba75cf94b282daf0ea53a6d07994c5
   - 2c495b3b05310493744ee9661f6dcfd381e21f73
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T03:02:58Z
+updated-at: 2026-10-31T03:03:00Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-3129429
@@ -99,3 +99,4 @@ round: 4
 - **2026-10-31 02:58 · berkc** — Round-2 text fix: release note line 1 and SKILL.md description now say accept is human and signoff only; how-to HTML L333 and L394 describe the chat interview as default with the page behind --page. New SKILL.md hash appended to shipped.sha256 (fe7419d3...).
 - **2026-10-31 03:00 · berkc** — critique round 3: only how-to L333 left - it still describes the interview as happening in the dispatcher's run; the paste-into-new-session step from round 2 is missing. Everything else from round 2 fixed.
 - **2026-10-31 03:02 · berkc** — Round-3 text fix: how-to HTML L333 now says the dispatcher hands back the line to paste into a new session, where the interview runs. Only that line changed.
+- **2026-10-31 03:03 · berkc** — critique r4: :333 repair inverted the call - says dispatcher does NOT call interreview; dispatcher SKILL.md:479 does call it, the role returns the paste line. One-word fix (drop 'nicht selbst ... sondern').
