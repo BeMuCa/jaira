@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T01:56:48Z
-updated-at: 2026-10-31T02:48:29Z
+updated-at: 2026-10-31T02:50:44Z
 updated-by: berkc
 claimed-by: berk-ca-3129445
 claimed-at: 2026-10-31T01:27:42Z
@@ -28,10 +28,14 @@ claimed-at: 2026-10-31T01:27:42Z
 
 ## Definition of Done
 
-- [ ] Settings hat Zeilen 'Orchestrator model' und 'Worker model' (Modell + Effort), gespeichert in settings.json; Test
-- [ ] spawn.sh / Teamlead startet Worker mit dem eingestellten Modell und Effort; Teamlead-Skill nennt sein Modell
-- [ ] Ohne Einstellung: Opus 5.5 Orchestrator, Haiku high Worker
-- [ ] Release-Note-Zeile
+- [x] Settings hat Zeilen 'Orchestrator model' und 'Worker model' (Modell + Effort), gespeichert in settings.json; Test
+  proof: core/settings/settings_test.go TestSaveKeepsModels; internal/tui/settings_test.go TestSettingsEnterStepsTheModels (rows Orchestrator model / Worker model, saved to settings.json)
+- [x] spawn.sh / Teamlead startet Worker mit dem eingestellten Modell und Effort; Teamlead-Skill nennt sein Modell
+  proof: core/role/spawnmodel_test.go TestSpawnStartsEachAgentOnItsModel (spawn.sh --model/--effort); core/role/builtin/jaira-teamlead/SKILL.md 'Your own model' + internal/cli/models_test.go TestRolesListCarriesTheOrchestratorAndWorkerModel
+- [x] Ohne Einstellung: Opus 5.5 Orchestrator, Haiku high Worker
+  proof: core/settings/settings_test.go TestModelsDefault (orchestrator opus, worker haiku high, strong opus, cheap haiku high); internal/cli/models_test.go TestForLaneCarriesTheTierModel
+- [x] Release-Note-Zeile
+  proof: core/release/notes/CXH98W.md (two lines, one with '- ! ')
 
 ## Options
 
@@ -58,3 +62,4 @@ claimed-at: 2026-10-31T01:27:42Z
 - **2026-10-30 21:39 · berkc** — berkc 30.10.2026: Effort muss mit einstellbar sein (Modell + Effort). Pro Lane ein festes Modell: Lanes tragen heute schon 'tier' (strong/cheap, siehe CLAUDE.md-Lane-Liste). Vorschlag statt neuem Ticket-Attribut: Settings legt fest, welches Modell+Effort zu jedem Tier gehoert (z.B. strong = Opus 5.5 high, cheap = Haiku high) plus Orchestrator-Modell; eine Lane darf zusaetzlich ein festes 'model:' tragen. Weicht das Modell einer Lane vom Modell des laufenden Workers ab, uebergibt der Worker diese Lane an einen neuen Agenten mit frischem Kontext (wie heute bei context: fresh). Offen fuer berkc: zusaetzlich ein model-Feld pro Ticket, oder reicht Lane + Settings?
 - **2026-10-30 23:45 · berkc** — berkc 31.10.2026 (Punkt 8): Die review-Lane soll immer ein starkes Modell nutzen - Opus 5.5. Heute hat review 'tier strong' (jaira lanes), aber welches Modell 'strong' bedeutet, legt nichts fest; genau diese Zuordnung Tier -> Modell+Effort soll dieses Ticket in den Settings liefern (Default strong = Opus 5.5).
 - **2026-10-31 02:34 · berkc** — Pre-process decisions (planner, 31.10.2026): (1) Worker model and tier mapping are separate entries in one settings.json map 'models' {orchestrator, worker, strong, cheap}, each {model, effort}; an entry wins whole, missing -> default (opus / haiku high / opus / haiku high). Answers the context's open question: the worker setting does NOT override tiers; it is the model the jaira-worker session is started on, and a lane whose tier model differs is handed to a new agent on that model (same procedure as a fresh lane). With defaults: worker=cheap=haiku high, so in-progress/testing run in the worker, brainstorm/pre-process/critique/optimize/review go to opus subagents. (2) Aliases only (opus/sonnet/haiku), not full ids: the Agent tool's model param takes aliases; assumption, unverified: alias 'opus' resolves to Opus 5.5 today. (3) Machine-level only (~/.jaira/settings.json), no board file like chat-model: maintainer asked for settings.json; jaira update does not write settings.json (only Load/Save in core/settings), and adding the field to the struct keeps it across every Save. (4) No per-ticket model override (YAGNI). Found: tickets already carry a model-tier field (jaira create --tier, core/ticket/schema.go FieldModelTier) that --for-lane ignores (flow.go reports l.ModelTier only) - left as is. Open for berkc: should a ticket's own model-tier override the lane's tier? (5) Teamlead cannot change its own model; its skill names orchestrator_model and tells the human the restart line if it differs. (6) The dispatcher session itself starts on worker model; claude CLI has --effort low|medium|high|xhigh|max (checked claude --help).
+- **2026-10-31 02:50 · berkc** — Built per plan. Unverified: the defaults are the aliases opus/haiku; the claim that alias opus resolves to Opus 5.5 is not checked here. Effort values outside low|medium|high|xhigh|max are dropped to none, an invalid model falls back to the whole default entry. Worker entry does not override tier entries (planner decision kept). Open for berkc, still unanswered: should a ticket's own model-tier override its lane tier (--for-lane ignores the ticket field, as before).
