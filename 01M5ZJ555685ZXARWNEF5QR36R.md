@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T02:46:38Z
+updated-at: 2026-10-31T02:46:39Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-3129429
@@ -30,7 +30,8 @@ claimed-at: 2026-10-31T01:27:42Z
 
 - [x] SKILL.md beschreibt das Chat-Interview als Default mit dem Format je Ticket und den drei Antworten
   proof: core/role/builtin/jaira-role-interreview/SKILL.md:75 '## The interview (default)' with the four-line per-ticket format (line 92+) and the answers accept/explain/fix at :115; core/role/role_test.go TestInterreviewInterviewsByDefault
-- [ ] --page baut die Seite wie bisher; ohne --page wird keine Datei geschrieben
+- [x] --page baut die Seite wie bisher; ohne --page wird keine Datei geschrieben
+  proof: core/role/builtin/jaira-role-interreview/SKILL.md:17 'Who called you' and :158 '## The page (--page)' (page files only with --page); :151 'Write NO other file'
 - [ ] Die statische Aufzeichnung der Abnahme entsteht auch im Chat-Weg (gleicher Pfad wie heute)
 
 ## Options
