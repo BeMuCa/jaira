@@ -18,7 +18,7 @@ related:
   - 01M5659BR7RYZ6RVC84HGK1QGT
 commits: []
 created-at: 2026-10-30T23:44:40Z
-updated-at: 2026-10-31T00:10:06Z
+updated-at: 2026-10-31T00:10:54Z
 updated-by: berkc
 claimed-by: berk-ca-2691736
 claimed-at: 2026-10-30T23:47:40Z
@@ -27,12 +27,7 @@ outcome-why: "Berk: the popup must be the only surface, features first, Others b
 outcome-resolves: "DoD 2 (ordering, header, gaps, test) and DoD 3 (marker and CLAUDE.md) code and tests in place; DoD 1 (popup, paging) unchanged from GK1QGT, to be verified in tmux; DoD 4 note written."
 review-summary: "none"
 round: 4
-review-gaps: |-
-  blocker: DoD 1 - 'Popup (Overlay ueber dem Board), keine eigene Seite': the launcher's 'w' still draws the notes as a full-screen page of their own (internal/tui/home.go:428-429, h.notes.render(h.width, h.height), no box, launcher not visible behind). Seen in tmux with this branch's binary. The diff does not touch where the notes are shown, and outcome-resolves itself says 'DoD 1 unchanged from GK1QGT', yet the person's complaint was 'you made them a page ... pop up only' about that state. The DoD 1 proof checks only the board modal.
-  note: AGENTS.md:221 carries the same release-notes format list as CLAUDE.md and did not get the new '- + ' bullet, so an agent reading AGENTS.md does not know the marker.
-  note: internal/tui/releasenotes.go styFeature comment says it colours the bullet; changeLines renders the whole line, wrapped continuation lines included, in that colour.
-  note: DoD 2 names the header 'Andere'; the popup says 'Others' - decided in the 23:48 note (popup text is English), the person should confirm.
-  note: the blank line after the last change plus render's own blank line leaves two empty lines above the key hint (seen in tmux).
+review-gaps: "none: duplication searched (modal sizing now in modalHeightOf/modalContentOf only; overBox is the one composite used by both the board modal and the launcher notes). Dead code: modalHeight method removed in this pass, its last caller had moved to modalContentOf. Cost: the launcher now builds the list view once more per render while notes are open, the same as the board does for its modal, no loop involved."
 test-verdict: "pass: full suite RC=0 (go test ./... -skip the three hanging tests, 33 packages ok, no FAIL) and go vet ./... clean, both before the last note-only commit 9e50be2b; core/release and internal/tui re-run with -count=1 after it, ok. DoD 1-4 verified in the tree (proofs on the ticket). Popup verified in tmux on a scratch board with a 0.5.0 stamp: 'What is new since 0.5.0 · 9 unread', Features first then Others, Left/Right paging and esc. jaira update prints '  + ' for features. Skipped: TestUnreachableRemoteIsOfflineNotARace, TestAnOfflineWriteArrivesWhenTheNetworkIsBack, TestWebPushReportsAQueuedDrop (hang in this sandbox). Not checked: the launcher w view at phone-narrow width; the 'w' launcher path was not exercised in tmux (same notesView component)."
 review-verdict: "Not accepted: the Features/Others split, the '- + ' marker, the CLI '+' lines, the docs and the note are right and tested (go test ./core/release ./internal/tui ok, TestUpdateNotes ok, vet clean, board popup checked in tmux), but DoD 1 is not met - the launcher's 'w' still shows the release notes as a full-screen page, and that is the 'you made them a page ... pop up only' the ticket exists for. Fairly sure, not certain: if the person meant only the board popup, DoD 1 already held and this blocker falls away."
 review-round: 2
