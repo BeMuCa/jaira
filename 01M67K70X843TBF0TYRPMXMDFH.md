@@ -18,7 +18,7 @@ related:
   - 01M5659BR7RYZ6RVC84HGK1QGT
 commits: []
 created-at: 2026-10-30T23:44:40Z
-updated-at: 2026-10-31T00:05:06Z
+updated-at: 2026-10-31T00:05:08Z
 updated-by: berkc
 claimed-by: berk-ca-2691736
 claimed-at: 2026-10-30T23:47:40Z
@@ -78,3 +78,4 @@ review-check: "1. cd /home/berkc/code/X_General/jaira-MXMDFH && go build -o /tmp
 - **2026-10-30 23:53 · berkc** — critique: internal/tui/releasenotes.go changeLines(c, feature, width) takes the feature flag from lines() and lines() strips the marker before calling it. Simplify: changeLines(c, width) parses both markers itself with release.Feature and release.Important; lines() only asks Feature to pick the group. Checked: the wrap, the bullets and the blank line are right; CLI writeNotes and the core helper are fine as they are.
 - **2026-10-30 23:54 · berkc** — critique pass 2: none. Stood on the decisions note (format '- + ', English labels, Others only beside a feature, CLI '+' lines) and on the simplification note of pass 1, now in e39d62f4: changeLines reads both markers itself. Checked: Feature/Important split in core/release/release.go is the same pattern as Important; CLI writeNotes changes only the feature branch; no new file beyond core/release/notes/MXMDFH.md and the CLAUDE.md bullet.
 - **2026-10-31 00:01 · berkc** — testing: suite and vet green; popup verified in tmux on scratch board (JAIRA_HOME in scratchpad/mx-home, fixture build with a feature line and a must-act line). The three skipped tests are the ones the brief named.
+- **2026-10-31 00:05 · berkc** — review (fresh context): sent back to in-progress, blocker on DoD 1. The launcher's 'w' (internal/tui/home.go:428-429) still renders the release notes full screen as a page of their own; only the board shows them as a modal (view.go:150, modal.go modalOver). The person asked for 'pop up only', and the DoD 1 proof checked only the board. Fix direction: draw the launcher's notes as a bordered box over the launcher, as modalOver does on the board (Home has no modal helper today). Everything else in the diff holds; the four notes in review-gaps are small (AGENTS.md:221 lacks the '- + ' bullet, styFeature comment vs whole-line colour, 'Others' vs 'Andere' to confirm, double blank above the hint). If the person says the launcher page is fine, this blocker falls away and the ticket can go on to signoff.
