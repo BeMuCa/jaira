@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-31T00:13:07Z
+updated-at: 2026-10-31T00:13:09Z
 updated-by: berkc
 question: ""
 round: 2
@@ -44,6 +44,7 @@ claimed-by: berk-ca-2990549
 claimed-at: 2026-10-31T00:12:59Z
 review-verdict: "The CLI half matches DoD 1, 2, 4, 6, 8 and 9. I confirmed the move/logbook/ls lines and --json by hand on a scratch board. The targeted tests in core/suggest, core/role and internal/cli pass. DoD 3 is not met as written: the 'milestone <name>' form of jaira-role-pr gets its members from a command that leaves filed tickets out, so a milestone PR can silently miss a finished ticket. Sending it back to in-progress for a one-sentence fix in core/role/builtin/jaira-role-pr/SKILL.md (plus its shipped.sha256 line)."
 review-round: 2
+review-check: "1. cd /home/berkc/code/X_General/jaira-6TCTFV && go build -o /tmp/j6/jaira ./cmd/jaira  2. In an empty scratch git repo: /tmp/j6/jaira init, create two tickets A and B, then '/tmp/j6/jaira milestone create m1 A B'  3. '/tmp/j6/jaira move A --to done --force' - you see 'Milestone m1: 1 of 2 done' and no /jaira-role-pr line  4. '/tmp/j6/jaira move B --to done --force' - you see 'Milestone m1 is complete. Next: one pull request ... /jaira-role-pr <A> <B>' and 'Once that pull request is merged, take milestone m1 off the board: jaira logbook m1'  5. '/tmp/j6/jaira milestone ls --json' - m1 carries the same two lines under 'suggestions'  6. Create a third ticket C in no milestone and run '/tmp/j6/jaira move C --to signoff --force' - you see 'Next: the pull request. Only a person opens it: /jaira-role-pr <C>'  7. For the blocker: '/tmp/j6/jaira logbook A', then '/tmp/j6/jaira list --milestone m1' - only B is listed, although jaira-role-pr/SKILL.md says this listing includes filed members. '/tmp/j6/jaira milestone ls --json' still lists both under 'tickets'  8. go test ./core/suggest/ ./core/role/ ./internal/cli/ - all ok"
 ---
 
 # Ist der letzte Ticket eines Milestones fertig, schlaegt jaira den PR mit /jaira-role-pr vor und bietet an, den Milestone abzulegen
