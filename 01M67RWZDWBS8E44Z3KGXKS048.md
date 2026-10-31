@@ -18,21 +18,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-31T01:24:02Z
-updated-at: 2026-10-31T02:58:24Z
+updated-at: 2026-10-31T03:00:43Z
 updated-by: berkc
 claimed-by: berk-ca-3153991
 claimed-at: 2026-10-31T02:32:33Z
 outcome-what: "docs/how-to-work-with-jaira.html:387 trennt jetzt Schluss: shipped-Board = critique, optimize, review; ohne Angabe = letzte Agenten-Lane vor der ersten Menschen-Lane; Commit 065df0d9"
 outcome-why: "critique r2 (02:50): beide Klauseln waren im Satz verschmolzen, so dass der Default critique/optimize/review las"
 outcome-resolves: "docs/how-to-work-with-jaira.html:387 nennt die drei Lanes fuer das shipped-Board und beschreibt den Default getrennt, wie README.md:840-843"
-review-summary: |-
-  core/role/builtin/jaira-worker/SKILL.md:16 still says "On the shipped board that is `review`." — change to critique, optimize and review (the change made all three fresh; step 4 and line 157 already say so)
-  core/role/builtin/jaira-teamlead/SKILL.md:143 "only a lane marked fresh context — `review` on the shipped board —" — name critique, optimize and review, as README.md:78 now does; append the new teamlead SKILL hash to core/shipped/shipped.sha256
-  docs/how-to-work-with-jaira.html:387 (German worker row) "also <code>review</code>" — name critique, optimize und review on the shipped board, keep the no-declaration default sentence as README.md:840 does
-  Left alone: lane files, AGENTS.md/CLAUDE.md lane block, impliedFresh/review decision (note 02:35), setUpOldBoard (note 02:38), release note incl. "- !" line for hand-edited lane files, worker step 4 fresh->fresh line, dispatcher unchanged (one worker per lane already) — all sound
-  round 2: worker SKILL.md:16 fixed; teamlead SKILL.md:143 fixed + hash appended (core/shipped ok)
-  docs/how-to-work-with-jaira.html:387 still wrong: 'ohne Angabe die letzte Agenten-Lane vor der ersten Menschen-Lane, auf dem ausgelieferten Board also critique, optimize und review' says the no-declaration default IS those three. Split it like README.md:840-843: 'Nur eine Lane mit <code>context: fresh</code> – auf dem ausgelieferten Board <code>critique</code>, <code>optimize</code> und <code>review</code>; ohne Angabe die letzte Agenten-Lane vor der ersten Menschen-Lane – bekommt ...'
-  round 3 (fresh agent): docs/how-to-work-with-jaira.html:387 now split like README.md:840-843 (shipped board: critique, optimize, review; no-declaration default as its own clause) - fixed. Whole diff re-read: lane files, AGENTS/CLAUDE lane block, README:78/840, worker+teamlead SKILL, shipped hashes, release note, tests consistent; grep finds no stale 'only review' mention; go test core/lane core/shipped ok. Nothing left to say.
+review-summary: "Adds context: fresh to the shipped lane files core/lane/builtin/25-critique.md, 26-optimize.md and 40-review.md (review now declares it explicitly, because once any lane declares context the implied review default switches off) and to this board's .jaira/lanes copies; new hashes appended to core/shipped/shipped.sha256 so jaira update --lanes recognises the old files and replaces them. The AGENTS.md/CLAUDE.md lane block now marks critique and optimize as fresh context. jaira-worker SKILL names critique, optimize, review as the fresh lanes, narrows 'judging your own work' to non-fresh lanes (testing), and says a fresh lane moving into another fresh lane (critique->optimize) gets a NEW agent; jaira-teamlead SKILL, README and the German docs page say the same. Tests: core/lane and internal/cli context tests now assert the shipped offer is critique,optimize,review and strip context lines (stripLaneContexts) to keep testing the old-board default. Release note core/release/notes/XKS048.md: one plain line plus a '- !' line for hand-edited lane files that update --lanes skips."
 round: 3
 review-gaps: "none - considered: stripLaneContexts exists twice (core/lane/context_test.go:51, internal/cli/context_test.go:177); left, test helpers cannot cross packages and the repo has no shared testutil package, exporting it from core/lane would put test code in the binary. setUpOldBoard (7 callers) kept. No dead code, no fluff, no hot path. go test core/lane core/shipped, internal/cli -run Context ok."
 test-verdict: "pass: touched-package tests green (core/lane, core/role, core/shipped, internal/cli minus the 3 hangers; whole suite not run), DoD 1-3 verified in the tree, behaviour exercised on a scratch clone (update --lanes on an old board, --for-lane critique|optimize|review context fresh)"
