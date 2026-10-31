@@ -18,7 +18,7 @@ related:
   - 01M5659BR7RYZ6RVC84HGK1QGT
 commits: []
 created-at: 2026-10-30T23:44:40Z
-updated-at: 2026-10-31T00:15:58Z
+updated-at: 2026-10-31T00:16:00Z
 updated-by: berkc
 claimed-by: berk-ca-2691736
 claimed-at: 2026-10-30T23:47:40Z
@@ -82,3 +82,4 @@ review-check: "1. cd /home/berkc/code/X_General/jaira-MXMDFH && go build -o /tmp
 - **2026-10-31 00:09 · berkc** — critique (round 2): one finding, modal.go:92 modalContent duplicates the content-height arithmetic next to modalContentOf; fix is one line, return modalContentOf(m.height). Everything else in the launcher overlay: list() split, overBox, the test, the blank-line fix, AGENTS.md bullet checked and stands.
 - **2026-10-31 00:09 · berkc** — in-progress (round 2): modal.go modalContent now returns modalContentOf(m.height); committed 2d3c61e7 and pushed. Tests for the touched files ok.
 - **2026-10-31 00:10 · berkc** — critique pass 3: none. Stood on the round-1 and round-2 notes; the modal.go:92 finding is answered in 2d3c61e7 (modalContent = modalContentOf(m.height)). Launcher overlay split in home.go render()/list() is the only structural change and is read as clean.
+- **2026-10-31 00:16 · berkc** — review round 2 (fresh context): accepted, no blocker. The round-1 blocker is resolved: home.go render() draws the notes with overBox over list(), checked in tmux (launcher 120x36 shows a box with the logo above it, left/right page, esc returns; board popup after a 0.5.0 to 0.5.8 upgrade shows 'What is new since 0.5.0 · 9 unread'). list() writes no state, so rendering it under the box has no side effects. The edited release-notes section is outside the generated block in CLAUDE.md and behind jaira:local in AGENTS.md, so regeneration keeps it. Four notes in review-gaps for the person: 'Others' vs 'Andere', 'Others' header not yet seen on a real version, '- + ! ' shows only '!' in jaira update, plan items 6 and 7 unticked.
