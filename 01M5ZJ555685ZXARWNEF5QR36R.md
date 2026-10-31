@@ -19,7 +19,7 @@ commits:
   - 8fea809f03736e6759b1d15d2bc51fbd7c83cc3a
   - de96db1745c69f9e47ea329ea8ccc782072ef6f9
 created-at: 2026-10-27T20:52:15Z
-updated-at: 2026-10-31T02:55:30Z
+updated-at: 2026-10-31T02:55:32Z
 assignee: berkc
 updated-by: berkc
 claimed-by: berk-ca-3129429
@@ -91,3 +91,4 @@ round: 2
 - **2026-10-31 02:46 · berkc** — Resumed on coordinator amendment: deleted the 12 shipped.sha256 lines for jaira-role-acceptance build.py/template.html/report.html (SKILL.md lines kept). go test ./core/role ./core/shipped ./internal/cli (subset) ./core/release all pass. Stub still at jaira-role-acceptance/SKILL.md.
 - **2026-10-31 02:51 · berkc** — critique: (1) SKILL.md:107-109 - empty review-verdict (always so in human and review) must not count as 'not a pass'; recommend fix only on a failed machine check or a present non-pass verdict. (2) tick plan step 11 (jaira dod 5QR36R 11 --done --plan), the terminal gate refuses an open plan step. Open for maintainer, not a send-back: accept on a review-lane ticket -> done is always refused by the missing-produces gate (core/gate/gate.go:438-447) for review outputs; the skill shows the refusal and does not force, so that path is dead text until the maintainer decides the rule. Left alone: manifest line drop (planner note 02:44 + scripts/shipped-history.sh:50), stub-only old dir (planner note 02:34).
 - **2026-10-31 02:54 · berkc** — Plan 11 as actually done: the shipped manifest is append-only except the amended coordinator decision: 12 old build.py/template.html/report.html lines of jaira-role-acceptance deleted (their files no longer exist after the rename); all SKILL.md lines kept; the current interreview hashes appended (and one more after the review fix). shipped-history.sh not run.
+- **2026-10-31 02:55 · berkc** — critique round 2: round-1 findings all addressed (verified in de96db17/e1f4f345). Send-back for wording only, no logic: release note line 1 + SKILL.md:3 still claim review tickets are accepted; how-to :333/:394 still describe the page as default/dispatcher sending a link. No code change needed beyond those text lines; remember the shipped.sha256 append if SKILL.md changes again (core/role TestEveryInstalledFileIsAShippedVersion).
