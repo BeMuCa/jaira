@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-31T01:24:00Z
-updated-at: 2026-10-31T02:36:02Z
+updated-at: 2026-10-31T02:36:05Z
 updated-by: berkc
 claimed-by: berk-ca-3129208
 claimed-at: 2026-10-31T01:27:35Z
@@ -30,7 +30,7 @@ claimed-at: 2026-10-31T01:27:35Z
 - [x] LoadDefaultBoard: right after 'b := &DefaultBoard{Path: path}' set b.Options = append([]string(nil), DefaultOptions...) and b.optionsDefaulted = true (covers absent file AND unparseable file). Replace the options read with: if d.Has("options") { if opts, err := d.List("options"); err == nil { b.Options, b.optionsDefaulted = opts, false } }. Keep lanes read unchanged. Do NOT touch ResolveOptions or NewBody logic
 - [x] Validate: wrap the unknown-option loop in 'if !board.optionsDefaulted' so a board without the pre-process lane gets no spurious 'option planning' warning when the user has no options: line
 - [x] core/ticket/body.go NewBody comment lines 45-50: rewrite 'Unticked by default...' to say callers pass the ticks; without a default board naming options: planning starts ticked (lane.DefaultOptions) so every ticket goes through the pre-process planner; a per-user default board can untick it. Do not change NewBody code or the TestNewBodyMatchesRegressionBaseline test (it passes explicit options, stays green)
-- [ ] internal/cli/tickets.go defaultBoardTemplate: change comment under options: to say absent means [planning], [] means none pre-ticked. internal/cli/lanes.go 'lanes default' Long help: add one sentence that with no options: line a new ticket starts with planning ticked
+- [x] internal/cli/tickets.go defaultBoardTemplate: change comment under options: to say absent means [planning], [] means none pre-ticked. internal/cli/lanes.go 'lanes default' Long help: add one sentence that with no options: line a new ticket starts with planning ticked
 - [ ] tests core/lane/defaultboard_test.go: rename/rewrite TestLoadDefaultBoardAbsentReturnsZeroBoard -> absent file gives Lanes empty, Options == [planning], no warnings; add TestLoadDefaultBoardEmptyOptionsListTicksNothing (file 'options: []' -> Options empty); add TestLoadDefaultBoardNoOptionsKeyDefaultsToPlanning (file with only lanes:); add TestValidateSilentOnDefaultedOptionWithoutPlanningLane (set without pre-process, absent file -> no warning)
 - [ ] tests internal/cli/init_test.go: add TestCreateWithoutDefaultBoardTicksPlanning (initTestHome, JAIRA_DEFAULT_BOARD=nonexistent, init+create, body contains '- [x] planning' and '- [ ] brainstorm') and TestCreateWithDefaultBoardOptionsWithoutPlanningLeavesItUnticked (file 'options: [brainstorm]' -> body has '- [ ] planning'; extend existing TestCreateAfterInitTicksDefaultBoardOptions with that assertion instead of a new test is fine)
 - [ ] core/release/notes/X1M1AF.md: one line, e.g. '- ! Expect new tickets to start with planning ticked, so they go through pre-process; to keep it off write options: [] (or your own list) into your default board: jaira lanes default --options brainstorm'
