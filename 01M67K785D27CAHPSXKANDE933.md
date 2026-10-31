@@ -14,7 +14,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-10-31T02:37:01Z
+updated-at: 2026-10-31T02:38:28Z
 updated-by: berkc
 claimed-by: berk-ca-3155695
 claimed-at: 2026-10-31T02:31:33Z
@@ -23,6 +23,7 @@ outcome-why: "with z on, ←/→ from backlog to done jumped through every empty
 outcome-resolves: "DoD 1 and 2 ticked with proof (tests in lanewindow_test.go:182-301, release note line)"
 review-summary: none
 review-gaps: "none: stepLane is the only wrap-scan for non-empty lanes (moveLane/layer.go/ticks.go do single-step wrap only); len(m.cols)==0 guard is load-bearing (index m.cols[m.laneIdx] below); new tests exercise distinct cases; nothing orphaned (moveLane still used by lane focus)"
+test-verdict: "pass: go build ./... RC=0, go vet ./internal/tui RC=0, go test ./internal/tui -count=1 ok (RC=0); DoD 1-2 verified in tree, 7 named tests PASS -v; release note is one '- ' line; behaviour exercised through Model.key(KeyRight/KeyLeft) in tests, not a live TUI run"
 ---
 
 # Mit z (leere Lanes schmal) springen links/rechts zwischen Tickets ueber leere Lanes hinweg
@@ -53,3 +54,4 @@ review-gaps: "none: stepLane is the only wrap-scan for non-empty lanes (moveLane
 - **2026-10-31 02:33 · berkc** — Worktree already held 31871f63 (experiment); this pass: stepLane doc names the only-lane case, one comment on the all-empty fallback, release note rewritten as an instruction. Plan items were recorded from plan.md and ticked. Board reports an older jaira version (jaira update not run).
 - **2026-10-31 02:35 · berkc** — critique (first pass, fresh agent): no findings. stepLane separate from moveLane is justified (lane focus must keep stepping onto every lane); skip predicate len(tickets)==0 matches the thin-draw predicate in view.go:209; wraparound matches moveLane; help text in view.go updated. Nothing speculative.
 - **2026-10-31 02:36 · berkc** — optimize: looked for duplicate non-empty-lane scan (none), orphans (none), fluff (none); go test ./internal/tui green
+- **2026-10-31 02:38 · berkc** — testing: whole-suite gate in lane prompt not run; per parent instruction and agent rules only internal/tui was tested (build ./... also run, RC=0). proof line says model.go:1774, stepLane is at 1775 (doc comment 1771) - cosmetic.
