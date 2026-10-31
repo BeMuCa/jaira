@@ -26,7 +26,7 @@ related:
   - 01M2K275PSXDASRN6Y1VN71NVG
 commits: []
 created-at: 2026-10-15T12:04:57Z
-updated-at: 2026-10-31T00:15:50Z
+updated-at: 2026-10-31T00:17:58Z
 updated-by: berkc
 question: ""
 round: 3
@@ -35,7 +35,7 @@ outcome-why: "a milestone is one pull request over all its tickets (berkc 22.10)
 outcome-resolves: "a finished ticket or a finished milestone now names its next step in the output; an agent never opens a pull request; the one-branch question is settled by merging the ticket branches at PR time, not by changing worktrees"
 review-summary: "none: pass 2 reads only the delta since pass 1 - the milestone-members sentence in core/role/builtin/jaira-role-pr/SKILL.md (now milestone ls --json tickets), its pin test line, and the manifest line; nothing simpler, nothing duplicated"
 review-gaps: "none: pass 2 optimize of the delta - the sentence is the only change, no dead code, no second copy of the members rule (the list command keeps its own filter)"
-test-verdict: "pass: full suite EXIT=0 with cleared cache (skipping TestUnreachableRemoteIsOfflineNotARace, TestAnOfflineWriteArrivesWhenTheNetworkIsBack, TestWebPushReportsAQueuedDrop); go vet ./... EXIT=0; go test -race on core/suggest, core/role, core/release, core/shipped, internal/cli EXIT=0; DoD 1-4, 6, 8, 9 verified in the tree by their named tests; scratch board re-run on the final binary: 0 of 2, 1 of 2, milestone complete lines, logbook accepted. Not verified: jaira-role-pr itself (an agent run that pushes to a real remote) and the milestone-file conflict risk across ticket branches"
+test-verdict: "pass: full suite EXIT=0 (same three hanging tests skipped), go vet EXIT=0 on commit 83eeac55; the change since the last green run is the role-pr sentence, its pin test and the manifest line; core/role and core/shipped pass"
 claimed-by: berk-ca-2990549
 claimed-at: 2026-10-31T00:12:59Z
 review-verdict: "The CLI half matches DoD 1, 2, 4, 6, 8 and 9. I confirmed the move/logbook/ls lines and --json by hand on a scratch board. The targeted tests in core/suggest, core/role and internal/cli pass. DoD 3 is not met as written: the 'milestone <name>' form of jaira-role-pr gets its members from a command that leaves filed tickets out, so a milestone PR can silently miss a finished ticket. Sending it back to in-progress for a one-sentence fix in core/role/builtin/jaira-role-pr/SKILL.md (plus its shipped.sha256 line)."
