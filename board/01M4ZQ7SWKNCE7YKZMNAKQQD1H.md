@@ -4,7 +4,7 @@ title: "Die Swimlanes der Roadmap heissen Roads, tragen einen Namen und lassen s
 status: backlog
 ready: true
 creator: BeMuCa
-assignee: BeMuCa
+assignee: berkc
 goal: "Jede Swimlane der Milestone-Roadmap ist eine 'Road' mit Namen: ohne Namen Road-1 bis Road-n, und im TUI waehlt man eine Road mit den Pfeiltasten und benennt sie mit Enter um"
 context: |-
   Was heute fehlt: Die Roadmap (L, aus D0SAHM) zeigt Swimlanes, also Ketten von Milestones, die ueber after: verbunden sind. Eine Swimlane hat keinen Namen.
@@ -19,7 +19,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-10-15T12:05:22Z
+updated-at: 2026-10-31T01:25:24Z
+updated-by: berkc
 ---
 
 # Die Swimlanes der Roadmap heissen Roads, tragen einen Namen und lassen sich im TUI umbenennen
@@ -41,4 +42,4 @@ updated-at: 2026-10-15T12:05:22Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-31 01:25 · berkc** — Maintainer 31.10.2026 (Punkt 11): Wenn Roads Name + Beschreibung bekommen, koennen sie als Epics dienen - eine Road ist dann ein Feature, die Milestones darauf die Runden. Im Plan pruefen, ob Epic und Road ein Objekt werden.
