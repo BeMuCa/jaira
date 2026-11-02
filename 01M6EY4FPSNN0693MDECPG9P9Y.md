@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T22:06:32Z
+updated-at: 2026-11-02T22:06:36Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
@@ -44,16 +44,12 @@ claimed-at: 2026-11-02T21:59:27Z
 review-verdict: "the diff matches all ten DoD items; no blocker. go build/vet, go test core/epic core/web internal/cli, npm test 24/24 green, and core/web/ui/dist is byte-identical to a fresh vite build of the current sources"
 review-round: 5
 review-check: |-
-  1. cd /home/alex/projects/.worktrees/jaira-pg9p9y && go build -o /tmp/jaira-pg ./cmd/jaira
-  2. /tmp/jaira-pg epic create web-0-2 --title "Web 0.2"  - Ausgabe: Epic "Web 0.2" (web-0-2) created ...
-  3. /tmp/jaira-pg epic ls  - Zeile beginnt mit 'Web 0.2  (web-0-2)', danach '0 of 0 done'
-  4. /tmp/jaira-pg epic set web-0-2 --external "JIRA-1 https://jira.example/browse/JIRA-1"  - epic show web-0-2 zeigt die external-Zeile
-  5. /tmp/jaira-pg list --external jira-1  - die Tickets des Epics samt Folge-Tickets; git status: nichts unter .jaira/tickets geaendert
-  6. /tmp/jaira-pg web  - Kopf des Epics: 'Web 0.2' und klein 'web-0-2' daneben; JIRA-1 ist ein Link
-  7. Epic bearbeiten, im Link-Feld 'kein link' tippen  - nur diese Zeile rot mit Hinweis 'Not an http(s) link'
-  8. Im selben Formular die Beschreibung aendern, speichern  - Beschreibung ist gespeichert, JIRA-1 steht unveraendert am Epic
-  9. Filter 'Key' = JIRA-1  - nur dieses Epic und seine Tickets bleiben
-  10. /tmp/jaira-pg epic close web-0-2 --force  - das Test-Epic verschwindet aus epic ls (Aufraeumen)
+  1. go build -o /tmp/jaira ./cmd/jaira && cd a scratch repo with a jaira board
+  2. /tmp/jaira epic create web-0-2 --title "Web 0.2" --external "JIRA-12 https://jira.example/12" - you see: Epic "Web 0.2" (web-0-2) created
+  3. /tmp/jaira epic add web-0-2 <ticket-id> - last line reads: "Web 0.2" (web-0-2) now lists 1 ticket(s).
+  4. /tmp/jaira list --external jira-12 - the ticket is listed (lower case matches); git status shows no changed ticket file
+  5. open the epic ref file by hand (jaira epic show web-0-2 shows the key), change the URL to "not a link" via the editor in /tmp/jaira web
+  6. in jaira web open the epic editor, rename JIRA-12 to JIRA-99 and change the title, save - the title saves, the row shows "this line is not saved and stays as JIRA-12", and jaira epic show web-0-2 still lists JIRA-12
 ---
 
 # Ein Epic traegt einen externen Schluessel mit Link, und Epics und Tickets lassen sich danach suchen und filtern
