@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:47:51Z
+updated-at: 2026-11-02T20:48:05Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
@@ -54,7 +54,7 @@ review-check: |-
   7. Epic bearbeiten, im Link-Feld 'kein link' tippen  - nur diese Zeile rot mit Hinweis 'Not an http(s) link'
   8. Im selben Formular die Beschreibung aendern, speichern  - Beschreibung ist gespeichert, JIRA-1 steht unveraendert am Epic
   9. Filter 'Key' = JIRA-1  - nur dieses Epic und seine Tickets bleiben
-  10. /tmp/jaira-pg epic rm web-0-2 bzw. Test-Epic wieder entfernen, wenn es nur zum Pruefen angelegt war
+  10. /tmp/jaira-pg epic close web-0-2 --force  - das Test-Epic verschwindet aus epic ls (Aufraeumen)
 ---
 
 # Ein Epic traegt einen externen Schluessel mit Link, und Epics und Tickets lassen sich danach suchen und filtern
