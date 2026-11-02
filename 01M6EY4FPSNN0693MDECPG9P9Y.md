@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T22:06:50Z
+updated-at: 2026-11-02T22:06:54Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
@@ -116,3 +116,4 @@ review-check: |-
 - **2026-11-02 22:01 · Alexander Sacharov** — critique 4 (Runde 3): core/web/ui/src/features/edit-epic/ui/EditEpicForm.svelte:78 compares row.key with row.from in its own case rule inside the template; keysEdit (model/edit.ts) owns 'keys compare in any case' - export heldAs(row) from edit.ts (the read key a bad-link renamed row stays as, else '') and use it in both keysEdit's held list and the hint
 - **2026-11-02 22:02 · Alexander Sacharov** — critique 5: Fund aus critique 4 behoben (heldAs in edit.ts, Template und keysEdit nutzen es) - nichts weiter.
 - **2026-11-02 22:04 · Alexander Sacharov** — review Runde 3: an einen neuen frischen Agenten uebergeben.
+- **2026-11-02 22:06 · Alexander Sacharov** — review Runde 3: frischer Agent. Gelesen: 62869144..143e2ae8 (heldAs/from in edit.ts, EditEpicForm-Hinweis, epic add/rm Schlusszeile) gegen den ganzen Diff seit 783c6009; worktree_diff nur fremde .jaira/milestones/. go build/vet, go test core/epic core/web internal/cli, npm test 24/24, dist = frischer vite build (byte-gleich). Randfaelle geprueft: KEY leeren, Gross/Klein-Umbenennung, Umbenennung mit gutem Link, Entfernen-Knopf - keiner verliert eine Zeile. Kein Blocker, zwei Notizen.
