@@ -28,12 +28,12 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:46:09Z
+updated-at: 2026-11-02T20:47:37Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
 outcome-resolves: "Epics und ihre Tickets lassen sich nach dem Schluessel einer Aufgabe in einem anderen System finden, ohne dass der Schluessel ein Ticket-File beruehrt."
-review-summary: "none"
+review-summary: "Epics tragen im Frontmatter ihres Refs eine Blockliste 'external:' (je Zeile KEY und optional http(s)-URL); epic create/set --external/--external-rm pflegen sie, epic show/ls (+--json) zeigen sie, epic ls --external und list --external filtern (Mitglieder und Folge-Tickets), Ticket-Dateien bleiben unberuehrt. jaira web zeigt die Keys als Links, editiert sie als Zeilen und filtert per Key-Chip. Runde 2 (Commit 62869144): das Link-Feld ist kein type=url mehr - eine ungueltige URL markiert nur ihre Zeile (linkable spiegelt LinkableURL), die Zeile wird nicht gesendet und nicht geloescht, der Rest speichert. Epics werden ueberall mit Titel genannt, Name daneben: core/epic Label/LabelOf fuer Saetze (\"Web 0.2\" (web-0-2)), cli titleAndName fuer epic ls/show-Spalten, web nameBeside klein im EpicList-Kopf; Release-Note mit '!' fuer das geaenderte epic-ls-Layout."
 round: 3
 review-gaps: "none - Runde 3: Label/LabelOf einmal in core/epic, von CLI-Saetzen und web_source genutzt; titleAndName nur in epics.go (ls, show); nameBeside nur in EpicList; linkable spiegelt ParseExternal im Browser, absichtlich doppelt (der Server bleibt die Pruefung, der Browser markiert nur die Zeile)"
 test-verdict: "pass (Runde 3): go test -race -count=1 ./... RC=0, npm test 23/23; Binary auf dem Test-Board: epic ls 'Anmeldung  (login)', epic show Kopf 'Anmeldung  (login)', epic set meldet '\"Anmeldung\" (login) rewritten', web-409 nennt '\"Anmeldung\" (login)'; gebautes JS enthaelt den Zeilen-Hinweis fuer ungueltige Links und den Namen neben dem Titel. Nicht im Browser angeklickt."
