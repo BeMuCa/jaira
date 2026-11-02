@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:17:50Z
+updated-at: 2026-11-02T20:19:19Z
 updated-by: Alexander Sacharov
 ---
 
@@ -42,7 +42,8 @@ updated-by: Alexander Sacharov
   proof: internal/cli/epics.go keysMark/epicJSON external, ls --external; test TestEpicExternalKeysFindTheWork
 - [x] jaira list --external <KEY> zeigt die Tickets aller Epics mit diesem Schluessel, Folge-Tickets eingeschlossen; Test
   proof: internal/cli/epics.go ticketsForKey + list --external in internal/cli/tickets.go; test TestEpicExternalKeysFindTheWork (member + follow-up)
-- [ ] web: Schluessel am Epic als klickbarer Link, setzen/entfernen im Epic-Editor, Filter nach Schluessel; Test
+- [x] web: Schluessel am Epic als klickbarer Link, setzen/entfernen im Epic-Editor, Filter nach Schluessel; Test
+  proof: core/web/ui/src/widgets/epic-list/ui/EpicList.svelte (links), features/edit-epic/ui/EditEpicForm.svelte (rows), features/filter-tickets/model/filter.ts epicPasses/key chip; tests TestWebEditsAnEpicsExternalKeys, edit.test.ts 'the keys go as...', filter.test.ts 'the key filter...'
 - [x] Kein Ticket-File und kein Code-Commit traegt den Schluessel - er steht nur im Epic-Ref; Test
   proof: test TestAnExternalKeyStaysOnTheEpicRef (ticket ref unchanged, no working-tree file, no commit outside refs/jaira/epics)
 - [ ] Release-Note-Zeile in core/release/notes/<ID>.md
