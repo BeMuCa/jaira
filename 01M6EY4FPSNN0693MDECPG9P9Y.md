@@ -28,7 +28,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:10:12Z
+updated-at: 2026-11-02T20:10:43Z
+updated-by: Alexander Sacharov
 ---
 
 # Ein Epic traegt einen externen Schluessel mit Link, und Epics und Tickets lassen sich danach suchen und filtern
