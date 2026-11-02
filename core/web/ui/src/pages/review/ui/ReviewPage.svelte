@@ -5,6 +5,7 @@
   import { fetchSync, type SyncState } from '@/entities/sync';
   import { fetchLanes, setLanes } from '@/entities/lane';
   import { assignToEpic, removeFromEpic } from '@/features/assign-to-epic';
+  import { closeEpic, reopenEpic } from '@/features/close-epic';
   import { createEpic } from '@/features/create-epic';
   import { setEpic, type EpicEdit } from '@/features/edit-epic';
   import { FilterBar, choices, fromQuery, matches, narrows, toQuery } from '@/features/filter-tickets';
@@ -152,7 +153,16 @@
     onopen={open}
     onremove={(epic, id) => change(() => removeFromEpic(epic, id))}
   />
-  <EpicList epics={shownEpics} expanded={narrows(filter)} onopen={open} oncreate={create} onedit={edit} onassign={(epic, id, from) => change(() => assignToEpic(epic, id, from))} />
+  <EpicList
+    epics={shownEpics}
+    expanded={narrows(filter)}
+    onopen={open}
+    oncreate={create}
+    onedit={edit}
+    onassign={(epic, id, from, force) => change(() => assignToEpic(epic, id, from, force))}
+    onclose={(epic, force) => change(() => closeEpic(epic, force))}
+    onreopen={(epic) => change(() => reopenEpic(epic))}
+  />
 </main>
 
 <dialog bind:this={dialog} onclose={() => (opened = null)}>

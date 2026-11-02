@@ -186,3 +186,55 @@ func TestEpicSetRewritesTheTextNotTheMembers(t *testing.T) {
 		t.Errorf("no flag: exit %d, want %d", exitCode(err), ExitUsage)
 	}
 }
+
+// 'epic close' marks the epic closed on its ref and deletes nothing; a closed
+// epic refuses 'epic add' with exit 3 naming --force, takes the ticket with
+// --force and stays closed, is missing from 'epic ls' and listed marked by
+// 'epic ls --all'. 'epic reopen' takes it all back. Closing with an
+// unfinished ticket is refused without --force.
+func TestEpicCloseAndReopen(t *testing.T) {
+	ada, _ := twoBoards(t)
+	a := createTicket(t, ada, "One")
+	b := createTicket(t, ada, "Two")
+	jsonOf(t, ada, "epic", "create", "feature", a)
+
+	out, err := runCLI(t, ada, "epic", "close", "feature")
+	if exitCode(err) != ExitValidation || !strings.Contains(out+err.Error(), "--force") {
+		t.Fatalf("close with an open ticket: exit %d, %v\n%s; want 3 naming --force", exitCode(err), err, out)
+	}
+	if got := jsonOf(t, ada, "epic", "close", "feature", "--force"); got["closed"] != true || got["changed"] != true {
+		t.Fatalf("forced close: %v", got)
+	}
+	flushRefs()
+	if file := gitOut(t, ada, "show", gitref.EpicRefName("feature")+":feature.md"); !strings.Contains(file, "status: closed") || !strings.Contains(file, "- "+a) {
+		t.Fatalf("the ref after close:\n%s", file)
+	}
+
+	out, err = runCLI(t, ada, "epic", "add", "feature", b)
+	if exitCode(err) != ExitValidation || !strings.Contains(out+err.Error(), "--force") {
+		t.Fatalf("add to closed: exit %d, %v\n%s; want 3 naming --force", exitCode(err), err, out)
+	}
+	if got := jsonOf(t, ada, "epic", "add", "feature", b, "--force"); got["closed"] != true || len(got["changed"].([]any)) != 1 {
+		t.Fatalf("forced add: %v; want %s in and the epic still closed", got, ticket.Handle(b))
+	}
+
+	if ls := jsonOf(t, ada, "epic", "ls"); ls["count"].(float64) != 0 {
+		t.Errorf("ls lists a closed epic: %v", ls)
+	}
+	if ls := jsonOf(t, ada, "epic", "ls", "--all"); ls["count"].(float64) != 1 || ls["epics"].([]any)[0].(map[string]any)["closed"] != true {
+		t.Errorf("ls --all = %v; want the closed epic, marked", ls)
+	}
+	if out, _ := runCLI(t, ada, "epic", "ls", "--all"); !strings.Contains(out, "[closed]") {
+		t.Errorf("ls --all does not mark it:\n%s", out)
+	}
+
+	if got := jsonOf(t, ada, "epic", "reopen", "feature"); got["closed"] != false || got["changed"] != true {
+		t.Fatalf("reopen: %v", got)
+	}
+	if ls := jsonOf(t, ada, "epic", "ls"); ls["count"].(float64) != 1 {
+		t.Errorf("ls after reopen = %v; want the epic back", ls)
+	}
+	if _, err := runCLI(t, ada, "epic", "close", "nothing-here"); exitCode(err) != ExitNotFound {
+		t.Errorf("unknown epic: exit %d, want %d", exitCode(err), ExitNotFound)
+	}
+}

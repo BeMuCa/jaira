@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/link"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -288,5 +289,120 @@ func TestATicketIDInTheTextStaysText(t *testing.T) {
 	}
 	if got := e.Body(); got != "see\n\n* "+idB+" the old form\n  * "+idC {
 		t.Errorf("body = %q", got)
+	}
+}
+
+// Closing writes "status: closed" into the ref and reopening takes the line
+// out again, so a reopened epic reads like one that was never closed. Neither
+// deletes anything, and doing either twice writes nothing the second time.
+func TestCloseAndReopenWriteOneLine(t *testing.T) {
+	s := &ticket.Store{Root: t.TempDir()}
+	e := New("f", "F", "", time.Unix(0, 0))
+	e.Add(idA)
+	open := string(e.Bytes())
+	refs := mapRefs{"f": e.Bytes()}
+	ix := index(t, &ticket.Ticket{ID: idA, Title: "a", Status: "done"})
+
+	got, written, err := Close(s, refs, "f", ix, false)
+	if err != nil || !written || !got.Closed {
+		t.Fatalf("close: %v, written %v, closed %v", err, written, got != nil && got.Closed)
+	}
+	if !strings.Contains(string(refs["f"]), "\nstatus: closed\n") || !FromBytes("f", refs["f"]).Closed {
+		t.Fatalf("ref after close:\n%s", refs["f"])
+	}
+	if m := FromBytes("f", refs["f"]).Members(); len(m) != 1 || m[0] != idA {
+		t.Errorf("members after close = %v", m)
+	}
+	if _, written, _ := Close(s, refs, "f", ix, false); written {
+		t.Error("closing a closed epic wrote again")
+	}
+	if _, written, err := Reopen(s, refs, "f"); err != nil || !written {
+		t.Fatalf("reopen: %v, written %v", err, written)
+	}
+	if got := string(refs["f"]); got != open {
+		t.Errorf("reopened epic:\n%s\nwant it as it was:\n%s", got, open)
+	}
+	if _, written, _ := Reopen(s, refs, "f"); written {
+		t.Error("reopening an open epic wrote")
+	}
+}
+
+// index builds an index over the shipped lanes, in which a ticket in "done"
+// is finished.
+func index(t *testing.T, board ...*ticket.Ticket) *link.Index {
+	t.Helper()
+	set, err := lane.Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return link.Build(nil, set, board)
+}
+
+// An epic still counting an unfinished ticket — a follow-up included — is
+// not closed without force; with it, it is.
+func TestCloseRefusesUnfinishedWithoutForce(t *testing.T) {
+	s := &ticket.Store{Root: t.TempDir()}
+	e := New("f", "", "", time.Unix(0, 0))
+	e.Add(idA)
+	refs := mapRefs{"f": e.Bytes()}
+	ix := index(t, &ticket.Ticket{ID: idA, Title: "a", Status: "done"}, &ticket.Ticket{ID: idB, Title: "b", Status: "todo", Follows: idA})
+	before := string(refs["f"])
+	if _, _, err := Close(s, refs, "f", ix, false); !errors.Is(err, ErrUnfinished) || !strings.Contains(err.Error(), "1 of 2") {
+		t.Fatalf("close with an open follow-up: %v; want ErrUnfinished naming 1 of 2", err)
+	}
+	if string(refs["f"]) != before {
+		t.Error("a refused close wrote the ref")
+	}
+	if _, written, err := Close(s, refs, "f", ix, true); err != nil || !written {
+		t.Fatalf("forced close: %v, written %v", err, written)
+	}
+}
+
+// A closed epic takes no new ticket without force, and with force takes it
+// and stays closed. Re-adding a member and taking one out are not refused.
+func TestAssignToAClosedEpic(t *testing.T) {
+	s := &ticket.Store{Root: t.TempDir()}
+	e := New("f", "", "", time.Unix(0, 0))
+	e.Add(idA)
+	e.setClosed(true)
+	refs := mapRefs{"f": e.Bytes()}
+	before := string(refs["f"])
+	if _, _, err := Assign(s, refs, "f", []string{idA, idB}, true, false); !errors.Is(err, ErrClosed) {
+		t.Fatalf("add to closed: %v; want ErrClosed", err)
+	}
+	if string(refs["f"]) != before {
+		t.Error("a refused add wrote the ref")
+	}
+	if _, changed, err := Assign(s, refs, "f", []string{idA}, true, false); err != nil || len(changed) != 0 {
+		t.Errorf("re-adding a member: %v, changed %v; want nothing to do", err, changed)
+	}
+	got, changed, err := Assign(s, refs, "f", []string{idB}, true, true)
+	if err != nil || len(changed) != 1 || !got.Closed || !FromBytes("f", refs["f"]).Closed {
+		t.Fatalf("forced add: %v, changed %v; want B in and the epic still closed", err, changed)
+	}
+	if _, changed, err := Assign(s, refs, "f", []string{idB}, false, false); err != nil || len(changed) != 1 {
+		t.Errorf("rm from closed: %v, changed %v", err, changed)
+	}
+}
+
+// A close on one clone survives a race with a member added on another, and a
+// reopen on ours is not undone by theirs having left the status alone.
+func TestMergeKeepsAClosing(t *testing.T) {
+	base := New("f", "F", "", time.Unix(0, 0))
+	theirs := FromBytes("f", base.Bytes())
+	theirs.Add(idB)
+	ours := FromBytes("f", base.Bytes())
+	ours.setClosed(true)
+	got := FromBytes("f", Merge("f", base.Bytes(), ours.Bytes(), theirs.Bytes()))
+	if !got.Closed || !got.Has(idB) {
+		t.Errorf("merged: closed %v, has B %v; want both", got.Closed, got.Has(idB))
+	}
+	got = FromBytes("f", Merge("f", ours.Bytes(), base.Bytes(), ours.Bytes()))
+	if got.Closed {
+		t.Error("our reopen was lost")
+	}
+	got = FromBytes("f", Merge("f", base.Bytes(), theirs.Bytes(), ours.Bytes()))
+	if !got.Closed {
+		t.Error("their closing was lost when ours left the status alone")
 	}
 }

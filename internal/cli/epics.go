@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -37,9 +38,14 @@ A ticket that follows on from a member (follows: or parent:, any number of
 steps down) counts towards the epic without a line of its own, so follow-up
 work that appears while a feature is built is never lost from it.
 
+A finished epic is closed with 'jaira epic close', which writes "status:
+closed" onto its ref and deletes nothing. A closed epic takes no new tickets
+without --force and drops out of 'jaira epic ls'; 'jaira epic reopen' takes the
+closing back.
+
 Epics need a repository with a remote; a board without one has none.`,
 	}
-	cmd.AddCommand(newEpicCreateCmd(), newEpicAddCmd(), newEpicRmCmd(), newEpicSetCmd(), newEpicLsCmd(), newEpicShowCmd())
+	cmd.AddCommand(newEpicCreateCmd(), newEpicAddCmd(), newEpicRmCmd(), newEpicSetCmd(), newEpicLsCmd(), newEpicShowCmd(), newEpicCloseCmd(), newEpicReopenCmd())
 	return cmd
 }
 
@@ -54,6 +60,12 @@ func epicFail(name string, err error) error {
 			"no epic %q — 'jaira epic ls' lists them, 'jaira epic create %s' starts it", name, name)
 	case errors.Is(err, epic.ErrNoTitle):
 		return fail(ExitUsage, "usage", "%v — leave --title out to keep the one it has", err)
+	case errors.Is(err, epic.ErrClosed):
+		return fail(ExitValidation, "epic_closed",
+			"epic %q is closed — 'jaira epic add %s <id>... --force' puts the ticket in anyway and leaves it closed, 'jaira epic reopen %s' opens it again", name, name, name)
+	case errors.Is(err, epic.ErrUnfinished):
+		return fail(ExitValidation, "epic_unfinished",
+			"%v — 'jaira epic show %s' lists them, 'jaira epic close %s --force' closes it anyway", err, name, name)
 	case errors.Is(err, epic.ErrExists):
 		return fail(ExitValidation, "epic_exists",
 			"epic %q exists already — 'jaira epic add %s <id>' puts tickets in it", name, name)
@@ -114,15 +126,21 @@ when left out), --description says in one line what the feature is for.`,
 }
 
 func newEpicAddCmd() *cobra.Command {
-	return &cobra.Command{
+	var force bool
+	cmd := &cobra.Command{
 		Use:   "add <name> <id>...",
 		Short: "Put tickets into an epic",
 		Long: `Adds one line per ticket to the epic, in one write of the epic's ref. The
 tickets themselves are not touched. A ticket already in the epic stays where
-it is.`,
+it is.
+
+A closed epic refuses a new ticket with exit 3. --force puts it in anyway and
+leaves the epic closed; 'jaira epic reopen' is the way to open it again.`,
 		Args: minArgs(2),
-		RunE: func(cmd *cobra.Command, args []string) error { return editEpic(cmd, args, true) },
+		RunE: func(cmd *cobra.Command, args []string) error { return editEpic(cmd, args, true, force) },
 	}
+	cmd.Flags().BoolVar(&force, "force", false, "put tickets into a closed epic, which stays closed")
+	return cmd
 }
 
 func newEpicRmCmd() *cobra.Command {
@@ -133,11 +151,11 @@ func newEpicRmCmd() *cobra.Command {
 leaving every other line where it was. The epic stays standing when it is
 emptied.`,
 		Args: minArgs(2),
-		RunE: func(cmd *cobra.Command, args []string) error { return editEpic(cmd, args, false) },
+		RunE: func(cmd *cobra.Command, args []string) error { return editEpic(cmd, args, false, false) },
 	}
 }
 
-func editEpic(cmd *cobra.Command, args []string, add bool) error {
+func editEpic(cmd *cobra.Command, args []string, add, force bool) error {
 	s, err := openStore()
 	if err != nil {
 		return err
@@ -150,7 +168,7 @@ func editEpic(cmd *cobra.Command, args []string, add bool) error {
 	if err != nil {
 		return err
 	}
-	e, changed, err := epic.Assign(s, epicRefs(), name, ids, add)
+	e, changed, err := epic.Assign(s, epicRefs(), name, ids, add, force)
 	if err != nil {
 		return epicFail(name, err)
 	}
@@ -267,14 +285,97 @@ func epicRefs() epic.Refs {
 	return refs
 }
 
+func newEpicCloseCmd() *cobra.Command {
+	var force bool
+	cmd := &cobra.Command{
+		Use:   "close <name>",
+		Short: "Close a finished epic: it takes no new tickets and leaves 'epic ls'",
+		Long: `Writes "status: closed" onto the epic's ref, in one write of it. Nothing is
+deleted: the members, the text and the ref stay, every clone reads the closing
+on its next fetch, and 'jaira epic reopen <name>' takes it back.
+
+An epic that still counts an unfinished ticket — a member, or a ticket that
+follows on from one — is refused with exit 3. --force closes it anyway.
+
+A closed epic refuses 'jaira epic add' without --force and is left out of
+'jaira epic ls'; 'jaira epic ls --all' shows it, marked.`,
+		Args: exactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			s, err := openStore()
+			if err != nil {
+				return err
+			}
+			name, _, err := epicName(args[0])
+			if err != nil {
+				return err
+			}
+			ix, _, err := boardIndex(s)
+			if err != nil {
+				return err
+			}
+			e, changed, err := epic.Close(s, epicRefs(), name, ix, force)
+			if err != nil {
+				return epicFail(name, err)
+			}
+			return reportClosing(cmd.OutOrStdout(), e, changed, "closed")
+		},
+	}
+	cmd.Flags().BoolVar(&force, "force", false, "close it although tickets counted towards it are unfinished")
+	return cmd
+}
+
+func newEpicReopenCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "reopen <name>",
+		Short: "Take back the closing of an epic",
+		Long: `Takes "status: closed" off the epic's ref again, in one write of it. The epic
+takes new tickets again and is back in 'jaira epic ls'.`,
+		Args: exactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			s, err := openStore()
+			if err != nil {
+				return err
+			}
+			name, _, err := epicName(args[0])
+			if err != nil {
+				return err
+			}
+			e, changed, err := epic.Reopen(s, epicRefs(), name)
+			if err != nil {
+				return epicFail(name, err)
+			}
+			return reportClosing(cmd.OutOrStdout(), e, changed, "open")
+		},
+	}
+}
+
+func reportClosing(w io.Writer, e *epic.Epic, changed bool, state string) error {
+	if g.jsonOut {
+		out := epicJSON(e, nil)
+		out["changed"] = changed
+		return emit(w, out)
+	}
+	if !changed {
+		fmt.Fprintf(w, "Nothing to do: epic %q is %s already.\n", e.Name, state)
+		return nil
+	}
+	if state == "closed" {
+		fmt.Fprintf(w, "Epic %q closed on %s — 'jaira epic reopen %s' takes it back.\n", e.Name, gitref.EpicRefName(e.Name), e.Name)
+		return nil
+	}
+	fmt.Fprintf(w, "Epic %q is open again on %s.\n", e.Name, gitref.EpicRefName(e.Name))
+	return nil
+}
+
 func newEpicLsCmd() *cobra.Command {
-	var unassigned bool
+	var unassigned, everything bool
 	cmd := &cobra.Command{
 		Use:   "ls",
 		Short: "List epics with how far each one is",
 		Long: `Lists every epic with done X of Y. Y counts the member tickets and every
 ticket that follows on from one of them; X counts those in a terminal lane or
-filed in the logbook.
+filed in the logbook. A closed epic is left out; --all lists it too, marked
+"closed".
 
 --unassigned lists instead the open tickets that belong to no epic — neither by
 a line nor by following on from a member — which is the list to work through
@@ -297,6 +398,9 @@ when sorting a board into features.`,
 			if unassigned {
 				return printUnassigned(w, epic.Unassigned(all, ix, board))
 			}
+			if !everything {
+				all = slices.DeleteFunc(all, func(e *epic.Epic) bool { return e.Closed })
+			}
 			if g.jsonOut {
 				arr := make([]map[string]any, 0, len(all))
 				for _, e := range all {
@@ -306,19 +410,28 @@ when sorting a board into features.`,
 				return emit(w, map[string]any{"epics": arr, "count": len(arr)})
 			}
 			if len(all) == 0 {
+				if !everything {
+					fmt.Fprintln(w, "No open epics on this board. 'jaira epic create <name>' starts one, 'jaira epic ls --all' shows closed ones.")
+					return nil
+				}
 				fmt.Fprintln(w, "No epics on this board yet. 'jaira epic create <name>' starts one.")
 				return nil
 			}
 			fmt.Fprintln(w)
 			for _, e := range all {
 				p := epic.Count(e, ix)
-				fmt.Fprintf(w, "  %-24s %3d of %-3d done  %s\n", e.Name, p.Done, p.Total, e.Title)
+				mark := ""
+				if e.Closed {
+					mark = "  [closed]"
+				}
+				fmt.Fprintf(w, "  %-24s %3d of %-3d done  %s%s\n", e.Name, p.Done, p.Total, e.Title, mark)
 			}
 			fmt.Fprintln(w)
 			return nil
 		},
 	}
 	cmd.Flags().BoolVar(&unassigned, "unassigned", false, "list the open tickets that are in no epic instead")
+	cmd.Flags().BoolVar(&everything, "all", false, "list closed epics too, marked")
 	return cmd
 }
 
@@ -368,7 +481,11 @@ func newEpicShowCmd() *cobra.Command {
 			if g.jsonOut {
 				return emit(w, epicJSON(e, &p))
 			}
-			fmt.Fprintf(w, "%s — %s\n", e.Name, e.Title)
+			closed := ""
+			if e.Closed {
+				closed = "  [closed]"
+			}
+			fmt.Fprintf(w, "%s — %s%s\n", e.Name, e.Title, closed)
 			if e.Description != "" {
 				fmt.Fprintf(w, "%s\n", e.Description)
 			}
@@ -404,6 +521,7 @@ func epicJSON(e *epic.Epic, p *epic.Progress) map[string]any {
 		"body":        e.Body(),
 		"members":     memberRefs(e.Members()),
 		"ref":         gitref.EpicRefName(e.Name),
+		"closed":      e.Closed,
 	}
 	if !e.CreatedAt.IsZero() {
 		out["created_at"] = e.CreatedAt.UTC().Format(time.RFC3339)

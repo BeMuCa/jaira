@@ -25,14 +25,24 @@ func (f *fakeSource) Unassigned(all bool) ([]Ticket, error) {
 	f.all = all
 	return f.unassigned, f.err
 }
-func (f *fakeSource) Assign(epic, from, id string) error {
+func (f *fakeSource) Assign(epic, from, id string, force bool) error {
 	if f.err != nil {
 		return f.err
 	}
-	if epic != "login" {
+	if epic == "shut" && !force {
+		return fmt.Errorf("epic %q is closed: %w", epic, ErrConflict)
+	}
+	if epic != "login" && epic != "shut" {
 		return fmt.Errorf("epic %q: %w", epic, ErrNotFound)
 	}
 	f.assigned = append(f.assigned, from+">"+epic+"/"+id)
+	return nil
+}
+func (f *fakeSource) SetClosed(epic string, closed, force bool) error {
+	if epic == "busy" && closed && !force {
+		return fmt.Errorf("epic %q has unfinished tickets: %w", epic, ErrConflict)
+	}
+	f.assigned = append(f.assigned, fmt.Sprintf("closed=%v,force=%v:%s", closed, force, epic))
 	return nil
 }
 func (f *fakeSource) Unassign(epic, id string) error {
@@ -303,5 +313,42 @@ func TestListenIsLoopback(t *testing.T) {
 	defer l.Close()
 	if !strings.HasPrefix(l.Addr().String(), "127.0.0.1:") {
 		t.Fatalf("listening on %s", l.Addr())
+	}
+}
+
+// Closing, reopening and adding to a closed epic reach the source with the
+// force the page sent; a refusal answers 409, which the page turns into a
+// confirmation, and nothing is written for it.
+func TestCloseReopenAndForce(t *testing.T) {
+	src := &fakeSource{}
+	h := (&Server{Source: src}).Handler()
+	for _, c := range []struct {
+		method, target, body string
+		code                 int
+	}{
+		{"POST", "/api/epics/shut/tickets", `{"id":"B"}`, 409},
+		{"POST", "/api/epics/shut/tickets", `{"id":"B","force":true}`, 200},
+		{"POST", "/api/epics/busy/close", "", 409},
+		{"POST", "/api/epics/busy/close", `{"force":true}`, 200},
+		{"POST", "/api/epics/login/close", "", 200},
+		{"POST", "/api/epics/login/reopen", "", 200},
+		{"POST", "/api/epics/login/close", "not json", 400},
+	} {
+		if w := do(t, h, c.method, c.target, c.body); w.Code != c.code {
+			t.Errorf("%s %s %s: %d %s; want %d", c.method, c.target, c.body, w.Code, w.Body, c.code)
+		}
+	}
+	want := []string{">shut/B", "closed=true,force=true:busy", "closed=true,force=false:login", "closed=false,force=false:login"}
+	if fmt.Sprint(src.assigned) != fmt.Sprint(want) {
+		t.Errorf("writes = %v; want %v", src.assigned, want)
+	}
+}
+
+// The page reads whether an epic is closed off the list it already loads.
+func TestEpicsCarryClosed(t *testing.T) {
+	h := (&Server{Source: &fakeSource{epics: []Epic{{Name: "x", Closed: true}}}}).Handler()
+	w := do(t, h, "GET", "/api/epics", "")
+	if !strings.Contains(w.Body.String(), `"closed":true`) {
+		t.Errorf("epics = %s; want closed:true", w.Body)
 	}
 }

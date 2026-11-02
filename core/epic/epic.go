@@ -19,6 +19,12 @@
 // frontmatter for the facts, one "- <ticket id>" line per member below it, and
 // every other line kept verbatim across a write, so a person may edit it by
 // hand and read it in a diff.
+//
+// A finished epic is closed, never deleted: "status: closed" in its
+// frontmatter, the way a filed milestone says "status: filed". The ref stays,
+// so every clone reads the closing on its next fetch and 'jaira epic reopen'
+// has something to take back. A closed epic takes no new tickets unless asked
+// with force, and drops out of the default listings.
 package epic
 
 import (
@@ -51,6 +57,18 @@ var ErrNotFound = errors.New("no such epic")
 // ErrExists means an epic of that name exists already.
 var ErrExists = errors.New("epic exists already")
 
+// ErrClosed means a ticket was to be put into a closed epic without force.
+// Nothing was written.
+var ErrClosed = errors.New("epic is closed")
+
+// ErrUnfinished means an epic was to be closed while tickets counted towards
+// it are not finished, without force. Nothing was written.
+var ErrUnfinished = errors.New("epic has unfinished tickets")
+
+// closedStatus is the frontmatter value that marks an epic closed. Any other
+// value, or none, is an open epic.
+const closedStatus = "closed"
+
 // Refs is where epics are kept. *refsync.Syncer implements it; a test can
 // hand in a map.
 type Refs interface {
@@ -81,6 +99,8 @@ type Epic struct {
 	Title       string
 	Description string
 	CreatedAt   time.Time
+	// Closed is "status: closed" in the frontmatter.
+	Closed bool
 
 	lines   []string
 	members []string
@@ -170,6 +190,8 @@ func FromBytes(name string, content []byte) *Epic {
 				if t, err := time.Parse(time.RFC3339, value); err == nil {
 					e.CreatedAt = t
 				}
+			case "status":
+				e.Closed = value == closedStatus
 			}
 			continue
 		}
@@ -214,6 +236,33 @@ func (e *Epic) setField(key, value string) {
 		}
 	}
 	e.lines = slices.Insert(e.lines, end, key+": "+value)
+}
+
+// dropField removes one frontmatter line and touches nothing else.
+func (e *Epic) dropField(key string) {
+	end, hasFront := e.frontEnd()
+	if !hasFront {
+		return
+	}
+	for i := 1; i < end; i++ {
+		k, _, ok := strings.Cut(strings.TrimSpace(e.lines[i]), ":")
+		if ok && strings.TrimSpace(k) == key {
+			e.lines = slices.Delete(slices.Clone(e.lines), i, i+1)
+			return
+		}
+	}
+}
+
+// setClosed writes the closed state into the frontmatter. Reopening takes the
+// status line out rather than writing "open": no line is what an epic that was
+// never closed has, so a reopened one reads the same in a diff.
+func (e *Epic) setClosed(closed bool) {
+	e.Closed = closed
+	if closed {
+		e.setField("status", closedStatus)
+	} else {
+		e.dropField("status")
+	}
 }
 
 // bodyStart is the first line below the frontmatter: where the text a person
@@ -397,6 +446,12 @@ func Merge(name string, base, ours, theirs []byte) []byte {
 	if text != t.Body {
 		out.SetBody(text)
 	}
+	// Closing is one bit, so there is nothing to put beside it for a person:
+	// the side that changed it wins, and when both did they agree or ours
+	// was the later word.
+	if o.Closed != b.Closed && o.Closed != out.Closed {
+		out.setClosed(o.Closed)
+	}
 	return out.Bytes()
 }
 
@@ -565,9 +620,18 @@ func Create(s *ticket.Store, r Refs, name, title, description string, ids []stri
 // epic's ref and of nothing else. It returns the epic as written and the ids
 // that actually changed; nothing is written when none did. ids must be full
 // ticket ids.
-func Assign(s *ticket.Store, r Refs, name string, ids []string, add bool) (*Epic, []string, error) {
+//
+// A closed epic refuses a new member with ErrClosed unless force is set, and
+// stays closed when it is: putting a straggler into a finished feature is a
+// correction, not a reopening. Taking a ticket out is never refused.
+func Assign(s *ticket.Store, r Refs, name string, ids []string, add, force bool) (*Epic, []string, error) {
 	var changed []string
 	e, err := edit(s, r, name, func(e *Epic) (bool, error) {
+		if add && e.Closed && !force {
+			if i := slices.IndexFunc(ids, func(id string) bool { return !e.Has(id) }); i >= 0 {
+				return false, fmt.Errorf("%w: %s", ErrClosed, name)
+			}
+		}
 		for _, id := range ids {
 			var ok bool
 			if add {
@@ -585,6 +649,41 @@ func Assign(s *ticket.Store, r Refs, name string, ids []string, add bool) (*Epic
 		return nil, nil, err
 	}
 	return e, changed, nil
+}
+
+// Close marks an epic closed, in one write of its ref. An epic that still
+// counts an unfinished ticket — a member or a follow-up, as Count says — is
+// refused with ErrUnfinished unless force is set. It returns the epic and
+// whether anything was written; closing a closed epic writes nothing.
+func Close(s *ticket.Store, r Refs, name string, ix *link.Index, force bool) (*Epic, bool, error) {
+	var written bool
+	e, err := edit(s, r, name, func(e *Epic) (bool, error) {
+		if e.Closed {
+			return false, nil
+		}
+		if p := Count(e, ix); p.Done < p.Total && !force {
+			return false, fmt.Errorf("%w: %d of %d ticket(s) of %s are not finished", ErrUnfinished, p.Total-p.Done, p.Total, name)
+		}
+		e.setClosed(true)
+		written = true
+		return true, nil
+	})
+	return e, written, err
+}
+
+// Reopen takes the closing back, in one write of its ref. It returns the epic
+// and whether anything was written; an open epic writes nothing.
+func Reopen(s *ticket.Store, r Refs, name string) (*Epic, bool, error) {
+	var written bool
+	e, err := edit(s, r, name, func(e *Epic) (bool, error) {
+		if !e.Closed {
+			return false, nil
+		}
+		e.setClosed(false)
+		written = true
+		return true, nil
+	})
+	return e, written, err
 }
 
 // edit is one change of an existing epic under the epics lock: read it, let

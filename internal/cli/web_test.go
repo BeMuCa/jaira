@@ -472,3 +472,57 @@ func TestWebCountsSignoffApartFromDone(t *testing.T) {
 		t.Fatalf("epics = %+v; want 1 in signoff, 0 done, of 2", epics)
 	}
 }
+
+// The page closes and reopens an epic through the calls 'jaira epic close'
+// and 'jaira epic reopen' make: a close with an unfinished ticket and a drop
+// into a closed epic each answer 409 until the page sends force, and the
+// forced drop leaves the epic closed.
+func TestWebClosesReopensAndForcesIntoAClosedEpic(t *testing.T) {
+	ada, _ := twoBoards(t)
+	a := createTicket(t, ada, "Login form")
+	b := createTicket(t, ada, "Straggler")
+	jsonOf(t, ada, "epic", "create", "magic-login", a)
+
+	g.dir = ada
+	s, err := openStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := (&web.Server{Source: newWebSource(s), Push: webPush}).Handler()
+	if w := webDo(t, h, "POST", "/api/epics/magic-login/close", ""); w.Code != http.StatusConflict {
+		t.Fatalf("close with an open ticket: %d %s; want 409", w.Code, w.Body)
+	}
+	if w := webDo(t, h, "POST", "/api/epics/magic-login/close", `{"force":true}`); w.Code != 200 {
+		t.Fatalf("forced close: %d %s", w.Code, w.Body)
+	}
+	var epics []web.Epic
+	webGet(t, h, "/api/epics", &epics)
+	if len(epics) != 1 || !epics[0].Closed {
+		t.Fatalf("after close: %+v; want the epic, closed", epics)
+	}
+
+	if w := webDo(t, h, "POST", "/api/epics/magic-login/tickets", `{"id":"`+b+`"}`); w.Code != http.StatusConflict {
+		t.Fatalf("drop into a closed epic: %d %s; want 409", w.Code, w.Body)
+	}
+	if w := webDo(t, h, "POST", "/api/epics/magic-login/tickets", `{"id":"`+b+`","force":true}`); w.Code != 200 {
+		t.Fatalf("confirmed drop: %d %s", w.Code, w.Body)
+	}
+	webGet(t, h, "/api/epics", &epics)
+	if !epics[0].Closed || len(epics[0].Tickets) != 2 {
+		t.Fatalf("after the confirmed drop: %+v; want two tickets and still closed", epics[0])
+	}
+
+	if w := webDo(t, h, "POST", "/api/epics/magic-login/reopen", ""); w.Code != 200 {
+		t.Fatalf("reopen: %d %s", w.Code, w.Body)
+	}
+	webGet(t, h, "/api/epics", &epics)
+	if epics[0].Closed {
+		t.Fatal("still closed after reopen")
+	}
+	if got := jsonOf(t, ada, "epic", "show", "magic-login"); got["closed"] != false {
+		t.Errorf("the CLI reads %v; want it open", got["closed"])
+	}
+	if w := webDo(t, h, "POST", "/api/epics/no-such/close", ""); w.Code != http.StatusNotFound {
+		t.Errorf("unknown epic: %d %s", w.Code, w.Body)
+	}
+}
