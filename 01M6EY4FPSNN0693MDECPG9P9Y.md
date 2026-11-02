@@ -28,17 +28,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T22:02:40Z
+updated-at: 2026-11-02T22:02:54Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
 outcome-resolves: "Epics und ihre Tickets lassen sich nach dem Schluessel einer Aufgabe in einem anderen System finden, ohne dass der Schluessel ein Ticket-File beruehrt."
 review-summary: "none"
 round: 5
-review-gaps: |-
-  note: internal/cli/epics.go:227 '<name> now lists N ticket(s)' nennt das Epic direkt nach den Label-Zeilen noch beim nackten Namen
-  note: web-Editor: eine Zeile mit handgeschriebener ungueltiger URL, deren KEY man umbenennt, wird als neue Zeile zurueckgehalten, der alte KEY aber per drop_external entfernt - der Hinweis 'nicht gespeichert' steht dabei, kein Test deckt den Fall
-  note: linkable (edit.ts) und LinkableURL (external.go) sind zwei Implementierungen derselben Regel; heute deckungsgleich (http/https + Host), driften aber ohne gemeinsamen Test auseinander
+review-gaps: "none - Runde 3 (31487096, 143e2ae8): nichts doppelt oder tot; die anderen toUpperCase-Vergleiche in filter.ts:130 und ReviewPage.svelte:51 stammen aus frueheren Runden, die optimize schon passiert haben, und bleiben"
 test-verdict: "pass (Runde 3): go test -race -count=1 ./... RC=0, npm test 23/23; Binary auf dem Test-Board: epic ls 'Anmeldung  (login)', epic show Kopf 'Anmeldung  (login)', epic set meldet '\"Anmeldung\" (login) rewritten', web-409 nennt '\"Anmeldung\" (login)'; gebautes JS enthaelt den Zeilen-Hinweis fuer ungueltige Links und den Namen neben dem Titel. Nicht im Browser angeklickt."
 claimed-by: DESKTOP-RFTCH11-91590
 claimed-at: 2026-11-02T21:59:27Z
