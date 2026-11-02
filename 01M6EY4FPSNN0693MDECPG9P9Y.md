@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T22:55:30Z
+updated-at: 2026-11-02T22:56:17Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
@@ -122,3 +122,4 @@ Warum: Das Verhalten beim Leeren ist richtig (die Zeile bleibt erhalten), aber o
 1) Test fuer das Leeren des Schluessels einer Bad-Link-Zeile in edit.test.ts nachziehen lassen [give back]
 2) Ticket so annehmen, den fehlenden Test als bekannte Luecke akzeptieren [accept]
 Empfehlung: 2 - alle zehn DoD-Punkte sind erfuellt, das Verhalten ist geprueft und richtig, und die Luecke ist klein.
+- **2026-11-02 22:56 · Alexander Sacharov** — decision: 2) Ticket so annehmen, den fehlenden Test als bekannte Luecke akzeptieren
