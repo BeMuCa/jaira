@@ -28,17 +28,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:45:38Z
+updated-at: 2026-11-02T20:45:42Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
 outcome-resolves: "Epics und ihre Tickets lassen sich nach dem Schluessel einer Aufgabe in einem anderen System finden, ohne dass der Schluessel ein Ticket-File beruehrt."
 review-summary: "none"
 round: 3
-review-gaps: |-
-  note: EditEpicForm.svelte - das URL-Feld ist type="url"; traegt ein von Hand editiertes Epic eine Zeile wie 'C-3 not a link', blockiert die Browser-Validierung das Speichern des ganzen Formulars (auch Titel/Text), bis man die Zeile leert oder repariert
-  note: der Merge-Pfad fuer Schluessel ist nur auf Ebene core/epic getestet (TestMergeKeepsBothSidesKeyChanges), nicht ueber ein echtes Rennen zweier Clones um den Ref
-  note: svelte-check meldet einen Fehler in vite.config.ts (node:url-Typen) - besteht schon vor diesem Diff, nicht durch ihn
+review-gaps: "none - Runde 3: Label/LabelOf einmal in core/epic, von CLI-Saetzen und web_source genutzt; titleAndName nur in epics.go (ls, show); nameBeside nur in EpicList; linkable spiegelt ParseExternal im Browser, absichtlich doppelt (der Server bleibt die Pruefung, der Browser markiert nur die Zeile)"
 test-verdict: "pass: go build + go test -race -count=1 ./... RC=0; ui npm test 21/21; DoD 1-6 in der Arbeitskopie geprueft (Proof-Tests laufen gruen); am gebauten Binary auf einem Scratch-Board: epic create/set --external, ls zeigt [JIRA-1234, YT-7], show zeigt 'external:'-Zeilen, list --external jira-1234 zeigt Mitglied + Folge-Ticket, javascript:-URL exit 2, --external-rm entfernt; Ref traegt Blockliste; jaira web: GET /api/epics liefert key/url/link, PATCH add/drop 200, javascript: 400, das gebaute JS enthaelt Editor-Zeilen und noopener-Links. Nicht im Browser angeklickt."
 claimed-by: DESKTOP-RFTCH11-47320
 claimed-at: 2026-11-02T20:26:29Z
