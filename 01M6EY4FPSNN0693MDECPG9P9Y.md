@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:12:39Z
+updated-at: 2026-11-02T20:12:52Z
 updated-by: Alexander Sacharov
 ---
 
@@ -51,6 +51,12 @@ updated-by: Alexander Sacharov
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] core/epic: External-Typ, Parse/Schreiben der Blockliste, AddExternal/DropExternal in Patch, Merge je KEY, Tests
+- [ ] CLI: epic create/set --external/--external-rm, epic show/ls (+json) zeigen, epic ls --external, list --external, Tests
+- [ ] web: Go-Typen (Epic.External, EpicEdit add/drop), webSource, Tests
+- [ ] web UI: Links am Epic, Editor-Zeilen, Key-Chip im Filter, vitest; dist bauen
+- [ ] Test: Ticket-Datei bleibt unveraendert; Release-Note core/release/notes/PG9P9Y.md
 
 ## Progress
 - **2026-11-02 20:11 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/43623.sock
