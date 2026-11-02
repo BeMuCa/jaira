@@ -1,7 +1,7 @@
 ---
 id: 01M6EY4FPSNN0693MDECPG9P9Y
 title: "Ein Epic traegt einen externen Schluessel mit Link, und Epics und Tickets lassen sich danach suchen und filtern"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -28,13 +28,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T21:59:27Z
+updated-at: 2026-11-02T21:59:38Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
 outcome-resolves: "Epics und ihre Tickets lassen sich nach dem Schluessel einer Aufgabe in einem anderen System finden, ohne dass der Schluessel ein Ticket-File beruehrt."
 review-summary: "Epics tragen im Frontmatter ihres Refs eine Blockliste 'external:' (je Zeile KEY und optional http(s)-URL); epic create/set --external/--external-rm pflegen sie, epic show/ls (+--json) zeigen sie, epic ls --external und list --external filtern (Mitglieder und Folge-Tickets), Ticket-Dateien bleiben unberuehrt. jaira web zeigt die Keys als Links, editiert sie als Zeilen und filtert per Key-Chip. Runde 2 (Commit 62869144): das Link-Feld ist kein type=url mehr - eine ungueltige URL markiert nur ihre Zeile (linkable spiegelt LinkableURL), die Zeile wird nicht gesendet und nicht geloescht, der Rest speichert. Epics werden ueberall mit Titel genannt, Name daneben: core/epic Label/LabelOf fuer Saetze (\"Web 0.2\" (web-0-2)), cli titleAndName fuer epic ls/show-Spalten, web nameBeside klein im EpicList-Kopf; Release-Note mit '!' fuer das geaenderte epic-ls-Layout."
-round: 3
+round: 4
 review-gaps: |-
   note: internal/cli/epics.go:227 '<name> now lists N ticket(s)' nennt das Epic direkt nach den Label-Zeilen noch beim nackten Namen
   note: web-Editor: eine Zeile mit handgeschriebener ungueltiger URL, deren KEY man umbenennt, wird als neue Zeile zurueckgehalten, der alte KEY aber per drop_external entfernt - der Hinweis 'nicht gespeichert' steht dabei, kein Test deckt den Fall
