@@ -1,7 +1,7 @@
 ---
 id: 01M6DRTRR1CVZH8DJPH4DF70XX
 title: "Im Web sieht man einem archivierten Ticket an, ob es fertig, liegen gelassen oder abgelehnt ist, und das Archiv laesst sich filtern"
-status: critique
+status: optimize
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Ticket im Archiv zeigt im Web auf einen Blick, wie es das Board verlassen hat: fertig (done), ohne Abschluss abgelegt (andere Lane), oder abgelehnt (jaira reject, mit Grund). Das Archiv laesst sich getrennt vom Logbuch filtern."
@@ -24,7 +24,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T09:18:16Z
-updated-at: 2026-11-02T09:27:13Z
+updated-at: 2026-11-02T09:28:08Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-58445
@@ -32,6 +32,8 @@ claimed-at: 2026-11-02T09:18:50Z
 outcome-what: "Karten im Web zeigen archivierte Tickets als fertig (durchgestrichen), liegen gelassen (gedimmt, Badge mit Herkunfts-Lane) oder abgelehnt (roter Rand, Zeile Art – Grund); die Checkbox 'All tickets ever' ist durch einen Where-Chip-Filter (board/logbook/archive/rejected) ersetzt, ?all=1 liest als alle vier."
 outcome-why: Im Archiv sah ein liegen gelassenes Ticket wie ein offenes aus und ein abgelehntes nur als grauer Nebentext; Logbuch und Archiv liessen sich nicht getrennt zeigen.
 outcome-resolves: DF70XX
+review-summary: "none"
+round: 2
 ---
 
 # Im Web sieht man einem archivierten Ticket an, ob es fertig, liegen gelassen oder abgelehnt ist, und das Archiv laesst sich filtern
@@ -66,3 +68,5 @@ Frage 2 (Filter statt 'All tickets ever'): 1) (Empfohlen) Chip-Auswahl 'Wo' mit 
 - **2026-11-02 09:23 · Alexander Sacharov** — decision (Alex via teamlead, 02.11.): Frage 1 = 1: fertig durchgestrichen; liegen gelassen gedimmt, Badge zeigt die Herkunfts-Lane; abgelehnt roter linker Rand + rote Zeile 'rejected: <Art> - <Grund>'. Frage 2 = 1: Chip-Auswahl 'Where' board/logbook/archive/rejected, mehrere waehlbar, ohne Chip nur board; ?all=1 = alle vier. Mode bleibt autonom.
 - **2026-11-02 09:24 · Alexander Sacharov** — Methode: Go web.Ticket bekommt rejected_why (web_source.go cards()); place.ts bekommt fate(t) = open|done|left|rejected und whereOf(t) = board|logbook|archive|rejected (ref zaehlt als board); badgeLane zeigt fuer archive die Herkunfts-Lane, logbook bleibt 'archive'; TicketCard: class left (gedimmt) / rejected (roter Rand + Zeile); filter.ts: 'where' als vierter Chip-Filter statt all, ?all=1 liest als alle vier, Server wird mit all=1 gefragt sobald ein Chip etwas anderes als board meint. Ohne Where-Chip filtert matches() nicht nach Ort, damit Epics wie heute ihre abgelegten Tickets zeigen.
 - **2026-11-02 09:27 · Alexander Sacharov** — whereOf/WHERES liegen in features/filter-tickets/model/filter.ts, nicht in entities/ticket: filter.ts darf zur Laufzeit nichts ueber '@/' importieren, sonst bricht 'node --test' (nur import type wird gestrippt). Ohne Where-Chip filtert matches() nicht nach Ort, damit Epics ihre abgelegten Mitglieder weiter zeigen; ein Where-Chip filtert auch die Epics. dist neu gebaut (eingecheckt, go:embed). tsc-Fehler in vite.config.ts (node:url) ist alt, nicht von hier.
+- **2026-11-02 09:27 · Alexander Sacharov** — critique 1: fate/Fate-Export aus entities/ticket/index.ts ist ungenutzt - streichen. Bewusst stehen gelassen: ein alter Link ?all=1 waehlt alle vier Orte, narrows() ist dann wahr und Epics ohne Ticket verschwinden aus der Liste, 'Clear' erscheint - harmlos, Ort-Filter ist ein echter Filter. Abgelehnte Karte hat zwei Zeilen ('in the archive' grau + rote Grund-Zeile) - gewollt, Ort und Grund sind zwei Aussagen.
+- **2026-11-02 09:28 · Alexander Sacharov** — critique 2: nichts mehr; Entscheidungen aus critique 1 bleiben stehen.

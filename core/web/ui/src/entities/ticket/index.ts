@@ -1,5 +1,5 @@
 export type { Ticket, TicketDetail } from './model/types';
-export { badgeLane, fate, isFiled, PLACE_LABELS, type Fate } from './model/place';
+export { badgeLane, isFiled, PLACE_LABELS } from './model/place';
 export { fetchUnassigned, fetchTicket } from './api/tickets';
 export { behindRef } from './model/behind';
 export { default as TicketCard } from './ui/TicketCard.svelte';
