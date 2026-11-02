@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:47:48Z
+updated-at: 2026-11-02T20:47:51Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
@@ -111,3 +111,4 @@ review-check: |-
 - **2026-11-02 20:41 · Alexander Sacharov** — decision: Alex (02.11., ueber Teamlead): wo ein Epic genannt wird (web und CLI), steht sein Titel, der Name klein daneben (den tippt man in Befehle). Gleiches Ticket, kein eigenes.
 - **2026-11-02 20:45 · Alexander Sacharov** — critique 3 (Runde fuer DoD 7+8): kein Fund. Stehen gelassen: epic.Label ("Web 0.2" (web-0-2), fuer Saetze) und cli titleAndName (Web 0.2  (web-0-2), fuer Tabellen-/Kopfzeilen) sind zwei Formen mit Absicht - Anfuehrungszeichen gehoeren in einen Satz, nicht in eine Spalte. Fehlermeldungen fuer ein unbekanntes Epic bleiben beim Namen (es gibt keinen Titel). web: TicketCard/Details/UnassignedList nennen kein Epic, nur EpicList-Kopf geaendert.
 - **2026-11-02 20:46 · Alexander Sacharov** — review Runde 2: an einen neuen frischen Agenten uebergeben.
+- **2026-11-02 20:47 · Alexander Sacharov** — review Runde 2: frischer Agent. Gelesen: 62869144 (DoD 7+8) gegen 783c6009..HEAD; worktree_diff nur fremde .jaira/milestones/. go build/vet, go test core/epic core/web internal/cli, npm test 23/23, dist = frischer vite build. Kein Blocker, drei Notizen in review-gaps.
