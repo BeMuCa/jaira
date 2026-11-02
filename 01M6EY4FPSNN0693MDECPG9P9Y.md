@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:11:20Z
+updated-at: 2026-11-02T20:12:35Z
 updated-by: Alexander Sacharov
 ---
 
@@ -55,3 +55,9 @@ updated-by: Alexander Sacharov
 ## Progress
 - **2026-11-02 20:11 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/43623.sock
 - **2026-11-02 20:11 · Alexander Sacharov** — Branch auf upstream/master 783c6009 gesetzt (enthaelt 182JT1 PR #120 und DF70XX PR #119) - die Abhaengigkeit aus dem Kontext ist erfuellt.
+- **2026-11-02 20:12 · Alexander Sacharov** — Offene Entscheidungen gezaehlt: keine fuer Alex. Selbst entschieden (Reviewer darf widersprechen):
+1) Format: YAML-Blockliste im Frontmatter, 'external:' und darunter je Schluessel eine Zeile '  - <KEY> <URL>'. Grund: Kontext sagt 'je Zeile', eine Zeile pro Schluessel ist im Diff lesbar, gueltiges YAML (wiederholte 'external:'-Zeilen waeren doppelte Keys). Fehlt 'external:', schreibt jaira nichts (alte Epics bleiben byte-gleich).
+2) KEY = erstes Wort (kein Leerzeichen), URL optional; ohne URL nur Text, kein Link. URL nur http(s) - CLI lehnt anderes ab (exit 2), web rendert href nur fuer http(s) (kein javascript:-Link).
+3) Vergleich der Schluessel ohne Gross/Klein (jira-12 == JIRA-12), gespeichert wie geschrieben. --external mit vorhandenem KEY ersetzt dessen URL an seiner Stelle.
+4) Patch arbeitet mit add/drop pro KEY statt Liste ersetzen - CLI und Web-Editor (der schickt die Differenz zu dem, was er gelesen hat). Merge im Rennen um den Ref: wie Mitglieder, Hinzufuegen/Entfernen je KEY wird auf theirs angewandt.
+5) Web: Chip-Filter 'Key' in der FilterBar wie Tag; ein Ticket traegt die Schluessel aller Epics, die es zaehlen (Folge-Tickets eingeschlossen) - so filtert er Epic-Liste und lose Tickets gleich wie 'jaira list --external'. Epic-Editor: Zeilen KEY/URL mit Entfernen-Knopf und eine leere Zeile zum Hinzufuegen.
