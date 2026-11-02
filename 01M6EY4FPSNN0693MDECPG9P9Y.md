@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T22:06:58Z
+updated-at: 2026-11-02T22:55:30Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
@@ -117,3 +117,8 @@ review-check: |-
 - **2026-11-02 22:02 · Alexander Sacharov** — critique 5: Fund aus critique 4 behoben (heldAs in edit.ts, Template und keysEdit nutzen es) - nichts weiter.
 - **2026-11-02 22:04 · Alexander Sacharov** — review Runde 3: an einen neuen frischen Agenten uebergeben.
 - **2026-11-02 22:06 · Alexander Sacharov** — review Runde 3: frischer Agent. Gelesen: 62869144..143e2ae8 (heldAs/from in edit.ts, EditEpicForm-Hinweis, epic add/rm Schlusszeile) gegen den ganzen Diff seit 783c6009; worktree_diff nur fremde .jaira/milestones/. go build/vet, go test core/epic core/web internal/cli, npm test 24/24, dist = frischer vite build (byte-gleich). Randfaelle geprueft: KEY leeren, Gross/Klein-Umbenennung, Umbenennung mit gutem Link, Entfernen-Knopf - keiner verliert eine Zeile. Kein Blocker, zwei Notizen.
+- **2026-11-02 22:55 · Alexander Sacharov** — explain: Der Review hat keinen Blocker gefunden, nur zwei Notizen: Es fehlt ein Test, der das Leeren des Schluessels in einer Zeile mit kaputtem Link festhaelt, und svelte-check meldet einen Fehler in vite.config.ts (fehlende Node-Typen).
+Warum: Das Verhalten beim Leeren ist richtig (die Zeile bleibt erhalten), aber ohne Test kann es spaeter unbemerkt brechen. Der vite.config.ts-Fehler stammt nicht aus diesem Branch.
+1) Test fuer das Leeren des Schluessels einer Bad-Link-Zeile in edit.test.ts nachziehen lassen [give back]
+2) Ticket so annehmen, den fehlenden Test als bekannte Luecke akzeptieren [accept]
+Empfehlung: 2 - alle zehn DoD-Punkte sind erfuellt, das Verhalten ist geprueft und richtig, und die Luecke ist klein.
