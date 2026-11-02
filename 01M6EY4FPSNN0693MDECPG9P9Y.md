@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T22:06:36Z
+updated-at: 2026-11-02T22:06:50Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
@@ -44,12 +44,12 @@ claimed-at: 2026-11-02T21:59:27Z
 review-verdict: "the diff matches all ten DoD items; no blocker. go build/vet, go test core/epic core/web internal/cli, npm test 24/24 green, and core/web/ui/dist is byte-identical to a fresh vite build of the current sources"
 review-round: 5
 review-check: |-
-  1. go build -o /tmp/jaira ./cmd/jaira && cd a scratch repo with a jaira board
+  1. go build -o /tmp/jaira ./cmd/jaira, then cd into a scratch repo that has a jaira board
   2. /tmp/jaira epic create web-0-2 --title "Web 0.2" --external "JIRA-12 https://jira.example/12" - you see: Epic "Web 0.2" (web-0-2) created
-  3. /tmp/jaira epic add web-0-2 <ticket-id> - last line reads: "Web 0.2" (web-0-2) now lists 1 ticket(s).
+  3. /tmp/jaira epic add web-0-2 <ticket-id> - the last line reads: "Web 0.2" (web-0-2) now lists 1 ticket(s).
   4. /tmp/jaira list --external jira-12 - the ticket is listed (lower case matches); git status shows no changed ticket file
-  5. open the epic ref file by hand (jaira epic show web-0-2 shows the key), change the URL to "not a link" via the editor in /tmp/jaira web
-  6. in jaira web open the epic editor, rename JIRA-12 to JIRA-99 and change the title, save - the title saves, the row shows "this line is not saved and stays as JIRA-12", and jaira epic show web-0-2 still lists JIRA-12
+  5. /tmp/jaira web, open the epic: JIRA-12 is a link; in the editor type "not a link" in its URL and change the title, save - the title is saved, only that row is marked, and jaira epic show web-0-2 still has the old URL
+  6. the rename case needs a hand-written bad link on the ref and has no quick UI path: cd core/web/ui && npm test - "renaming a row with a bad link keeps the line it was read as" passes
 ---
 
 # Ein Epic traegt einen externen Schluessel mit Link, und Epics und Tickets lassen sich danach suchen und filtern
