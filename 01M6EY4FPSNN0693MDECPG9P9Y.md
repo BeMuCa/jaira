@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:26:40Z
+updated-at: 2026-11-02T20:26:43Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
@@ -44,6 +44,17 @@ claimed-by: DESKTOP-RFTCH11-47320
 claimed-at: 2026-11-02T20:26:29Z
 review-verdict: "Der Diff erfuellt alle sechs DoD-Punkte; keine Defekte gefunden. go build/vet, go test ./core/epic ./core/web ./internal/cli (Epic|External|Web|List), npm test (21/21) gruen; core/web/ui/dist entspricht einem frischen vite build der Quellen. Drei Notizen, kein Blocker."
 review-round: 2
+review-check: |-
+  1. cd /home/alex/projects/.worktrees/jaira-pg9p9y && go build -o /tmp/jaira-pg ./cmd/jaira
+  2. /tmp/jaira-pg epic ls  - sich ein vorhandenes Epic merken, z. B. <name>
+  3. /tmp/jaira-pg epic set <name> --external "JIRA-1 https://jira.example/browse/JIRA-1"
+  4. /tmp/jaira-pg epic show <name>  - Zeile 'external: JIRA-1 https://jira.example/browse/JIRA-1' ist da
+  5. /tmp/jaira-pg epic ls --external jira-1  - nur dieses Epic, mit [JIRA-1] hinter dem Titel
+  6. /tmp/jaira-pg list --external JIRA-1  - die Tickets des Epics samt Folge-Tickets
+  7. git status  - keine Datei unter .jaira/tickets hat sich geaendert
+  8. /tmp/jaira-pg epic set <name> --external "X javascript:alert(1)"  - Fehler, exit 2
+  9. /tmp/jaira-pg web  - am Epic steht JIRA-1 als Link; Epic bearbeiten zeigt eine Zeile JIRA-1/URL mit x; im Filter 'Key' JIRA-1 waehlen - nur dieses Epic und seine Tickets bleiben
+  10. /tmp/jaira-pg epic set <name> --external-rm JIRA-1  - epic show zeigt keine external-Zeile mehr
 ---
 
 # Ein Epic traegt einen externen Schluessel mit Link, und Epics und Tickets lassen sich danach suchen und filtern
