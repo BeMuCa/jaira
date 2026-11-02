@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:16:12Z
+updated-at: 2026-11-02T20:16:16Z
 updated-by: Alexander Sacharov
 ---
 
@@ -38,7 +38,8 @@ updated-by: Alexander Sacharov
 
 - [x] Epic-Frontmatter hat 'external:' (Liste '<KEY> <URL>'); jaira epic create/set --external fuegt hinzu, --external-rm nimmt weg; Datei bleibt von Hand editierbar; Test
   proof: core/epic/external.go writeExternal; tests TestExternalKeysAreABlockListInTheFrontmatter, TestExternalKeysReadAHandEditedFile, TestMergeKeepsBothSidesKeyChanges; CLI TestEpicExternalKeysFindTheWork
-- [ ] jaira epic show und epic ls (auch --json) zeigen die Schluessel; jaira epic ls --external <KEY> filtert; Test
+- [x] jaira epic show und epic ls (auch --json) zeigen die Schluessel; jaira epic ls --external <KEY> filtert; Test
+  proof: internal/cli/epics.go keysMark/epicJSON external, ls --external; test TestEpicExternalKeysFindTheWork
 - [ ] jaira list --external <KEY> zeigt die Tickets aller Epics mit diesem Schluessel, Folge-Tickets eingeschlossen; Test
 - [ ] web: Schluessel am Epic als klickbarer Link, setzen/entfernen im Epic-Editor, Filter nach Schluessel; Test
 - [ ] Kein Ticket-File und kein Code-Commit traegt den Schluessel - er steht nur im Epic-Ref; Test
