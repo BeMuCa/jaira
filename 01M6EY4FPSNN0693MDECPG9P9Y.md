@@ -28,11 +28,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:21:02Z
+updated-at: 2026-11-02T20:21:33Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
 outcome-resolves: "Epics und ihre Tickets lassen sich nach dem Schluessel einer Aufgabe in einem anderen System finden, ohne dass der Schluessel ein Ticket-File beruehrt."
+review-summary: |-
+  core/web/ui/src/features/edit-epic/model/edit.ts keysEdit: 'norm(x.key) === norm(r.key) && x.key === r.key.trim()' - der norm-Vergleich ist durch den exakten ueberfluessig; nur 'x.key === r.key.trim() && x.url === r.url.trim()' pruefen
+  internal/cli/epics.go newEpicSetCmd Short sagt noch 'title, description or text' - die Keys fehlen; 'Rewrite an epic's title, description, text or external keys'
 ---
 
 # Ein Epic traegt einen externen Schluessel mit Link, und Epics und Tickets lassen sich danach suchen und filtern
