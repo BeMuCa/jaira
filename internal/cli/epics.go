@@ -224,7 +224,7 @@ func editEpic(cmd *cobra.Command, args []string, add, force bool) error {
 	for _, id := range changed {
 		fmt.Fprintf(w, "%s %s %s\n", ticket.Handle(id), verb, e.Label())
 	}
-	fmt.Fprintf(w, "%s now lists %d ticket(s).\n", name, len(e.Members()))
+	fmt.Fprintf(w, "%s now lists %d ticket(s).\n", e.Label(), len(e.Members()))
 	return nil
 }
 

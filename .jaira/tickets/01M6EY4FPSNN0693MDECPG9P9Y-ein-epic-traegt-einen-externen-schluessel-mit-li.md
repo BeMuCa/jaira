@@ -28,33 +28,33 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:45:11Z
+updated-at: 2026-11-02T22:01:29Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
 outcome-resolves: "Epics und ihre Tickets lassen sich nach dem Schluessel einer Aufgabe in einem anderen System finden, ohne dass der Schluessel ein Ticket-File beruehrt."
-review-summary: "Epics tragen jetzt im Frontmatter ihres Refs eine Blockliste 'external:' mit je einer Zeile '<KEY> [<URL>]' (core/epic/external.go). 'jaira epic create|set --external' fuegt einen Schluessel hinzu oder verlinkt ihn neu (Vergleich ohne Gross/Klein, URL nur http/https, sonst exit 2), '--external-rm' nimmt ihn weg; der letzte entfernte Schluessel nimmt den Block mit, alte Epics bleiben byte-gleich. Von Hand geschriebene Formen (Wert auf der 'external:'-Zeile, gequotete Zeilen, Nicht-URL) werden gelesen und beim naechsten Schreiben erhalten. Merge im Ref-Rennen wendet Hinzufuegen/Entfernen je Schluessel auf die andere Seite an. 'epic show' und 'epic ls' (auch --json) zeigen die Schluessel, 'epic ls --external' filtert Epics, 'jaira list --external' zeigt Mitglieder aller Epics mit dem Schluessel samt Folge-Tickets (geschlossene Epics eingeschlossen). jaira web liefert je Schluessel key/url und ein 'link' nur fuer http(s); die Epic-Liste zeigt ihn als Link, der Epic-Editor hat KEY/URL-Zeilen und schickt add/drop als Differenz, die FilterBar hat einen Key-Chip, der Epics und Tickets (ueber die Schluessel ihrer Epics) filtert. Kein Ticket-Ref, keine Datei im Arbeitsbaum und kein Commit ausserhalb refs/jaira/epics traegt den Schluessel (Test). Release-Note in core/release/notes/PG9P9Y.md."
-round: 3
+review-summary: "Epics tragen im Frontmatter ihres Refs eine Blockliste 'external:' (je Zeile KEY und optional http(s)-URL); epic create/set --external/--external-rm pflegen sie, epic show/ls (+--json) zeigen sie, epic ls --external und list --external filtern (Mitglieder und Folge-Tickets), Ticket-Dateien bleiben unberuehrt. jaira web zeigt die Keys als Links, editiert sie als Zeilen und filtert per Key-Chip. Runde 2 (Commit 62869144): das Link-Feld ist kein type=url mehr - eine ungueltige URL markiert nur ihre Zeile (linkable spiegelt LinkableURL), die Zeile wird nicht gesendet und nicht geloescht, der Rest speichert. Epics werden ueberall mit Titel genannt, Name daneben: core/epic Label/LabelOf fuer Saetze (\"Web 0.2\" (web-0-2)), cli titleAndName fuer epic ls/show-Spalten, web nameBeside klein im EpicList-Kopf; Release-Note mit '!' fuer das geaenderte epic-ls-Layout."
+round: 4
 review-gaps: |-
-  note: EditEpicForm.svelte - das URL-Feld ist type="url"; traegt ein von Hand editiertes Epic eine Zeile wie 'C-3 not a link', blockiert die Browser-Validierung das Speichern des ganzen Formulars (auch Titel/Text), bis man die Zeile leert oder repariert
-  note: der Merge-Pfad fuer Schluessel ist nur auf Ebene core/epic getestet (TestMergeKeepsBothSidesKeyChanges), nicht ueber ein echtes Rennen zweier Clones um den Ref
-  note: svelte-check meldet einen Fehler in vite.config.ts (node:url-Typen) - besteht schon vor diesem Diff, nicht durch ihn
-test-verdict: "pass: go build + go test -race -count=1 ./... RC=0; ui npm test 21/21; DoD 1-6 in der Arbeitskopie geprueft (Proof-Tests laufen gruen); am gebauten Binary auf einem Scratch-Board: epic create/set --external, ls zeigt [JIRA-1234, YT-7], show zeigt 'external:'-Zeilen, list --external jira-1234 zeigt Mitglied + Folge-Ticket, javascript:-URL exit 2, --external-rm entfernt; Ref traegt Blockliste; jaira web: GET /api/epics liefert key/url/link, PATCH add/drop 200, javascript: 400, das gebaute JS enthaelt Editor-Zeilen und noopener-Links. Nicht im Browser angeklickt."
-claimed-by: DESKTOP-RFTCH11-47320
-claimed-at: 2026-11-02T20:26:29Z
-review-verdict: "Der Diff erfuellt alle sechs DoD-Punkte; keine Defekte gefunden. go build/vet, go test ./core/epic ./core/web ./internal/cli (Epic|External|Web|List), npm test (21/21) gruen; core/web/ui/dist entspricht einem frischen vite build der Quellen. Drei Notizen, kein Blocker."
-review-round: 2
+  note: internal/cli/epics.go:227 '<name> now lists N ticket(s)' nennt das Epic direkt nach den Label-Zeilen noch beim nackten Namen
+  note: web-Editor: eine Zeile mit handgeschriebener ungueltiger URL, deren KEY man umbenennt, wird als neue Zeile zurueckgehalten, der alte KEY aber per drop_external entfernt - der Hinweis 'nicht gespeichert' steht dabei, kein Test deckt den Fall
+  note: linkable (edit.ts) und LinkableURL (external.go) sind zwei Implementierungen derselben Regel; heute deckungsgleich (http/https + Host), driften aber ohne gemeinsamen Test auseinander
+test-verdict: "pass (Runde 3): go test -race -count=1 ./... RC=0, npm test 23/23; Binary auf dem Test-Board: epic ls 'Anmeldung  (login)', epic show Kopf 'Anmeldung  (login)', epic set meldet '\"Anmeldung\" (login) rewritten', web-409 nennt '\"Anmeldung\" (login)'; gebautes JS enthaelt den Zeilen-Hinweis fuer ungueltige Links und den Namen neben dem Titel. Nicht im Browser angeklickt."
+claimed-by: DESKTOP-RFTCH11-91590
+claimed-at: 2026-11-02T21:59:27Z
+review-verdict: "Der Diff erfuellt alle acht DoD-Punkte, auch die neuen 7 (ungueltige URL markiert nur ihre Zeile) und 8 (Titel mit Name daneben in CLI und web); kein Blocker. go build/vet, go test ./core/epic ./core/web, ./internal/cli (Epic|External|Web|List|Label) und npm test 23/23 gruen; core/web/ui/dist entspricht einem frischen vite build. Drei Notizen."
+review-round: 3
 review-check: |-
   1. cd /home/alex/projects/.worktrees/jaira-pg9p9y && go build -o /tmp/jaira-pg ./cmd/jaira
-  2. /tmp/jaira-pg epic ls  - sich ein vorhandenes Epic merken, z. B. <name>
-  3. /tmp/jaira-pg epic set <name> --external "JIRA-1 https://jira.example/browse/JIRA-1"
-  4. /tmp/jaira-pg epic show <name>  - Zeile 'external: JIRA-1 https://jira.example/browse/JIRA-1' ist da
-  5. /tmp/jaira-pg epic ls --external jira-1  - nur dieses Epic, mit [JIRA-1] hinter dem Titel
-  6. /tmp/jaira-pg list --external JIRA-1  - die Tickets des Epics samt Folge-Tickets
-  7. git status  - keine Datei unter .jaira/tickets hat sich geaendert
-  8. /tmp/jaira-pg epic set <name> --external "X javascript:alert(1)"  - Fehler, exit 2
-  9. /tmp/jaira-pg web  - am Epic steht JIRA-1 als Link; Epic bearbeiten zeigt eine Zeile JIRA-1/URL mit x; im Filter 'Key' JIRA-1 waehlen - nur dieses Epic und seine Tickets bleiben
-  10. /tmp/jaira-pg epic set <name> --external-rm JIRA-1  - epic show zeigt keine external-Zeile mehr
+  2. /tmp/jaira-pg epic create web-0-2 --title "Web 0.2"  - Ausgabe: Epic "Web 0.2" (web-0-2) created ...
+  3. /tmp/jaira-pg epic ls  - Zeile beginnt mit 'Web 0.2  (web-0-2)', danach '0 of 0 done'
+  4. /tmp/jaira-pg epic set web-0-2 --external "JIRA-1 https://jira.example/browse/JIRA-1"  - epic show web-0-2 zeigt die external-Zeile
+  5. /tmp/jaira-pg list --external jira-1  - die Tickets des Epics samt Folge-Tickets; git status: nichts unter .jaira/tickets geaendert
+  6. /tmp/jaira-pg web  - Kopf des Epics: 'Web 0.2' und klein 'web-0-2' daneben; JIRA-1 ist ein Link
+  7. Epic bearbeiten, im Link-Feld 'kein link' tippen  - nur diese Zeile rot mit Hinweis 'Not an http(s) link'
+  8. Im selben Formular die Beschreibung aendern, speichern  - Beschreibung ist gespeichert, JIRA-1 steht unveraendert am Epic
+  9. Filter 'Key' = JIRA-1  - nur dieses Epic und seine Tickets bleiben
+  10. /tmp/jaira-pg epic close web-0-2 --force  - das Test-Epic verschwindet aus epic ls (Aufraeumen)
 ---
 
 # Ein Epic traegt einen externen Schluessel mit Link, und Epics und Tickets lassen sich danach suchen und filtern
@@ -77,6 +77,10 @@ review-check: |-
   proof: core/web/ui/src/features/edit-epic/ui/EditEpicForm.svelte (Link-Feld ohne type=url, Zeile .bad + Hinweis), model/edit.ts linkable/keysEdit; test edit.test.ts 'a bad link holds back its own row only'
 - [x] Wo ein Epic genannt wird (web und CLI), steht sein Titel, der Name klein daneben; Test
   proof: core/epic/epic.go Label/LabelOf, internal/cli/epics.go titleAndName, web_source.go messages, core/web/ui/src/entities/epic/model/label.ts + EpicList.svelte; tests TestTheCLINamesAnEpicByItsTitle, TestLabel, label.test.ts
+- [x] Umbenennen des KEY einer Zeile mit ungueltigem Link im Epic-Editor verliert die Zeile nicht; Test
+  proof: core/web/ui/src/features/edit-epic/model/edit.ts keysEdit (held: from of a bad-link row), EditEpicForm.svelte rows carry from; test edit.test.ts 'renaming a row with a bad link keeps the line it was read as'
+- [x] epic add/rm nennen in der Schlusszeile Titel und Namen; Test
+  proof: internal/cli/epics.go editEpic summary line uses e.Label(); test TestTheCLINamesAnEpicByItsTitle (add/rm 'now lists')
 
 ## Options
 
@@ -109,3 +113,8 @@ review-check: |-
 - **2026-11-02 20:28 · Alexander Sacharov** — Abnahmeseite: https://claude.ai/artifact/N5BogNLe6e1kXmNtufAqn2 (8 Maschinenpruefungen gruen auf einem Test-Board unter ~/.claude/acceptance/jaira/feat-pg9p9y/fixture, 5 Personen-Schritte in jaira web).
 - **2026-11-02 20:41 · Alexander Sacharov** — decision: Alex (02.11., ueber Teamlead): der type=url-Fund aus dem Review wird in diesem Ticket behoben, kein eigenes Ticket. Die anderen zwei Review-Notizen bleiben Notizen.
 - **2026-11-02 20:41 · Alexander Sacharov** — decision: Alex (02.11., ueber Teamlead): wo ein Epic genannt wird (web und CLI), steht sein Titel, der Name klein daneben (den tippt man in Befehle). Gleiches Ticket, kein eigenes.
+- **2026-11-02 20:45 · Alexander Sacharov** — critique 3 (Runde fuer DoD 7+8): kein Fund. Stehen gelassen: epic.Label ("Web 0.2" (web-0-2), fuer Saetze) und cli titleAndName (Web 0.2  (web-0-2), fuer Tabellen-/Kopfzeilen) sind zwei Formen mit Absicht - Anfuehrungszeichen gehoeren in einen Satz, nicht in eine Spalte. Fehlermeldungen fuer ein unbekanntes Epic bleiben beim Namen (es gibt keinen Titel). web: TicketCard/Details/UnassignedList nennen kein Epic, nur EpicList-Kopf geaendert.
+- **2026-11-02 20:46 · Alexander Sacharov** — review Runde 2: an einen neuen frischen Agenten uebergeben.
+- **2026-11-02 20:47 · Alexander Sacharov** — review Runde 2: frischer Agent. Gelesen: 62869144 (DoD 7+8) gegen 783c6009..HEAD; worktree_diff nur fremde .jaira/milestones/. go build/vet, go test core/epic core/web internal/cli, npm test 23/23, dist = frischer vite build. Kein Blocker, drei Notizen in review-gaps.
+- **2026-11-02 21:59 · Alexander Sacharov** — Entschieden von Alex (02.11.2026, ueber Teamlead), Runde 3: beide Review-Notizen werden in diesem Ticket behoben. (1) Datenverlust: KEY einer Zeile mit ungueltigem, von Hand geschriebenem Link im Epic-Editor umbenennen -> alter KEY weg, neuer nicht gespeichert. Die Zeile darf nie verloren gehen. (2) epic add/rm nennen in der Schlusszeile den Titel, den Namen klein daneben, wie ueberall sonst (DoD 8). Neuer Worker, weil der Cache des alten kalt war.
+- **2026-11-02 22:01 · Alexander Sacharov** — Runde 3 umgesetzt: (1) Zeilen im Epic-Editor merken sich ihren gelesenen KEY (from). keysEdit haelt den from-KEY einer Zeile mit ungueltigem Link vom drop zurueck - Umbenennen ohne gueltigen Link wird nicht gespeichert, die alte Zeile bleibt; der Hinweis sagt 'stays as <from>'. Verworfen: Umbenennung trotzdem mit kaputtem Link senden - der Server lehnt nicht-http(s) ab (ParseExternal), das wuerde das ganze Speichern scheitern lassen. (2) epic add/rm Schlusszeile 'now lists' nimmt e.Label() statt name.

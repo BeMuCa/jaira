@@ -29,16 +29,19 @@ export function linkable(url: string): boolean {
 // Keys compare in any case, as jaira compares them. An empty key row is left
 // out, and so is a row whose url the server would refuse: the form marks
 // that row, and the rest of the edit is still saved. Such a row is not
-// dropped either — a hand-written line stays on the epic as it was. Nothing
-// changed is an empty object.
-export function keysEdit(read: External[], rows: { key: string; url: string }[]): Pick<EpicEdit, 'add_external' | 'drop_external'> {
+// dropped either — a hand-written line stays on the epic as it was, under
+// the key it was read with (from), even when the person renamed it: the
+// rename cannot be saved without a link, and dropping the old key would lose
+// the line. Nothing changed is an empty object.
+export function keysEdit(read: External[], rows: { key: string; url: string; from?: string }[]): Pick<EpicEdit, 'add_external' | 'drop_external'> {
   const norm = (k: string) => k.trim().toUpperCase();
+  const held = rows.filter((r) => r.from && !linkable(r.url)).map((r) => norm(r.from!));
   const kept = rows.filter((r) => r.key.trim());
   const add = kept
     .filter((r) => linkable(r.url))
     .filter((r) => !read.some((x) => x.key === r.key.trim() && x.url === r.url.trim()))
     .map((r) => `${r.key.trim()} ${r.url.trim()}`.trim());
-  const drop = read.filter((x) => !kept.some((r) => norm(r.key) === norm(x.key))).map((x) => x.key);
+  const drop = read.filter((x) => !held.includes(norm(x.key)) && !kept.some((r) => norm(r.key) === norm(x.key))).map((x) => x.key);
   return { ...(add.length ? { add_external: add } : {}), ...(drop.length ? { drop_external: drop } : {}) };
 }
 

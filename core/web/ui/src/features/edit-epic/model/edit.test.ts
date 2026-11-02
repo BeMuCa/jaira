@@ -40,3 +40,13 @@ test('a bad link holds back its own row only', () => {
   assert.ok(linkable('') && linkable('https://x.example/a') && linkable('http://x.example'));
   assert.ok(!linkable('not a link') && !linkable('ftp://x.example') && !linkable('https://'));
 });
+
+test('renaming a row with a bad link keeps the line it was read as', () => {
+  const read = [{ key: 'C-3', url: 'not a link' }, { key: 'D-4', url: 'https://d.example/4' }];
+  // C-3 renamed with its hand-written link: the rename cannot be saved, C-3 stays.
+  assert.deepEqual(keysEdit(read, [{ key: 'C-33', url: 'not a link', from: 'C-3' }, { key: 'D-4', url: 'https://d.example/4', from: 'D-4' }]), {});
+  // Renamed with a good link, the rename goes through as before.
+  assert.deepEqual(keysEdit(read, [{ key: 'C-33', url: 'https://c.example/3', from: 'C-3' }, { key: 'D-4', url: 'https://d.example/4', from: 'D-4' }]), { add_external: ['C-33 https://c.example/3'], drop_external: ['C-3'] });
+  // A row removed with its button is still dropped.
+  assert.deepEqual(keysEdit(read, [{ key: 'D-4', url: 'https://d.example/4', from: 'D-4' }]), { drop_external: ['C-3'] });
+});

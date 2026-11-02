@@ -356,6 +356,8 @@ func TestTheCLINamesAnEpicByItsTitle(t *testing.T) {
 		{[]string{"epic", "create", "web-0-2", "--title", "Web 0.2"}, `Epic "Web 0.2" (web-0-2) created`},
 		{[]string{"epic", "create", "plain"}, `Epic "plain" created`},
 		{[]string{"epic", "add", "web-0-2", ticket.Handle(a)}, `added to "Web 0.2" (web-0-2)`},
+		{[]string{"epic", "add", "web-0-2", ticket.Handle(b)}, `"Web 0.2" (web-0-2) now lists 2 ticket(s).`},
+		{[]string{"epic", "rm", "web-0-2", ticket.Handle(b)}, `"Web 0.2" (web-0-2) now lists 1 ticket(s).`},
 		{[]string{"epic", "ls"}, "  Web 0.2  (web-0-2)    0 of 1   done"},
 		{[]string{"epic", "show", "web-0-2"}, "Web 0.2  (web-0-2)\n"},
 		{[]string{"epic", "set", "web-0-2", "--description", "d"}, `Epic "Web 0.2" (web-0-2) rewritten`},
