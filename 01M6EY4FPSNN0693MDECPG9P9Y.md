@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T22:02:33Z
+updated-at: 2026-11-02T22:02:36Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
@@ -119,3 +119,4 @@ review-check: |-
 - **2026-11-02 21:59 · Alexander Sacharov** — Entschieden von Alex (02.11.2026, ueber Teamlead), Runde 3: beide Review-Notizen werden in diesem Ticket behoben. (1) Datenverlust: KEY einer Zeile mit ungueltigem, von Hand geschriebenem Link im Epic-Editor umbenennen -> alter KEY weg, neuer nicht gespeichert. Die Zeile darf nie verloren gehen. (2) epic add/rm nennen in der Schlusszeile den Titel, den Namen klein daneben, wie ueberall sonst (DoD 8). Neuer Worker, weil der Cache des alten kalt war.
 - **2026-11-02 22:01 · Alexander Sacharov** — Runde 3 umgesetzt: (1) Zeilen im Epic-Editor merken sich ihren gelesenen KEY (from). keysEdit haelt den from-KEY einer Zeile mit ungueltigem Link vom drop zurueck - Umbenennen ohne gueltigen Link wird nicht gespeichert, die alte Zeile bleibt; der Hinweis sagt 'stays as <from>'. Verworfen: Umbenennung trotzdem mit kaputtem Link senden - der Server lehnt nicht-http(s) ab (ParseExternal), das wuerde das ganze Speichern scheitern lassen. (2) epic add/rm Schlusszeile 'now lists' nimmt e.Label() statt name.
 - **2026-11-02 22:01 · Alexander Sacharov** — critique 4 (Runde 3): core/web/ui/src/features/edit-epic/ui/EditEpicForm.svelte:78 compares row.key with row.from in its own case rule inside the template; keysEdit (model/edit.ts) owns 'keys compare in any case' - export heldAs(row) from edit.ts (the read key a bad-link renamed row stays as, else '') and use it in both keysEdit's held list and the hint
+- **2026-11-02 22:02 · Alexander Sacharov** — critique 5: Fund aus critique 4 behoben (heldAs in edit.ts, Template und keysEdit nutzen es) - nichts weiter.
