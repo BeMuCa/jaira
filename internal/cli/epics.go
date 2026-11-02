@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/spf13/cobra"
 
@@ -70,7 +71,7 @@ func epicFail(name string, err error) error {
 		return fail(ExitUsage, "usage", "%v — leave --title out to keep the one it has", err)
 	case errors.Is(err, epic.ErrClosed):
 		return fail(ExitValidation, "epic_closed",
-			"epic %q is closed — 'jaira epic add %s <id>... --force' puts the ticket in anyway and leaves it closed, 'jaira epic reopen %s' opens it again", name, name, name)
+			"epic %s is closed — 'jaira epic add %s <id>... --force' puts the ticket in anyway and leaves it closed, 'jaira epic reopen %s' opens it again", epic.LabelOf(epicRefs(), name), name, name)
 	case errors.Is(err, epic.ErrUnfinished):
 		return fail(ExitValidation, "epic_unfinished",
 			"%v — 'jaira epic show %s' lists them, 'jaira epic close %s --force' closes it anyway", err, name, name)
@@ -149,7 +150,7 @@ for; repeat it for several.`,
 			if changed {
 				fmt.Fprintf(w, "Filed %q as %q.\n", args[0], name)
 			}
-			fmt.Fprintf(w, "Epic %q created with %d ticket(s) on %s\n", name, len(e.Members()), gitref.EpicRefName(name))
+			fmt.Fprintf(w, "Epic %s created with %d ticket(s) on %s\n", e.Label(), len(e.Members()), gitref.EpicRefName(name))
 			return nil
 		},
 	}
@@ -213,7 +214,7 @@ func editEpic(cmd *cobra.Command, args []string, add, force bool) error {
 		return emit(w, out)
 	}
 	if len(changed) == 0 {
-		fmt.Fprintf(w, "Nothing to do: epic %q is already as asked.\n", name)
+		fmt.Fprintf(w, "Nothing to do: epic %s is already as asked.\n", e.Label())
 		return nil
 	}
 	verb := "added to"
@@ -221,7 +222,7 @@ func editEpic(cmd *cobra.Command, args []string, add, force bool) error {
 		verb = "removed from"
 	}
 	for _, id := range changed {
-		fmt.Fprintf(w, "%s %s %q\n", ticket.Handle(id), verb, name)
+		fmt.Fprintf(w, "%s %s %s\n", ticket.Handle(id), verb, e.Label())
 	}
 	fmt.Fprintf(w, "%s now lists %d ticket(s).\n", name, len(e.Members()))
 	return nil
@@ -305,10 +306,10 @@ nothing.`,
 				return emit(w, out)
 			}
 			if !changed {
-				fmt.Fprintf(w, "Nothing to do: epic %q is already as asked.\n", name)
+				fmt.Fprintf(w, "Nothing to do: epic %s is already as asked.\n", e.Label())
 				return nil
 			}
-			fmt.Fprintf(w, "Epic %q rewritten on %s\n", name, gitref.EpicRefName(name))
+			fmt.Fprintf(w, "Epic %s rewritten on %s\n", e.Label(), gitref.EpicRefName(name))
 			return nil
 		},
 	}
@@ -406,14 +407,14 @@ func reportClosing(w io.Writer, e *epic.Epic, changed bool) error {
 		if e.Closed {
 			state = "closed"
 		}
-		fmt.Fprintf(w, "Nothing to do: epic %q is %s already.\n", e.Name, state)
+		fmt.Fprintf(w, "Nothing to do: epic %s is %s already.\n", e.Label(), state)
 		return nil
 	}
 	if e.Closed {
-		fmt.Fprintf(w, "Epic %q closed on %s — 'jaira epic reopen %s' takes it back.\n", e.Name, gitref.EpicRefName(e.Name), e.Name)
+		fmt.Fprintf(w, "Epic %s closed on %s — 'jaira epic reopen %s' takes it back.\n", e.Label(), gitref.EpicRefName(e.Name), e.Name)
 		return nil
 	}
-	fmt.Fprintf(w, "Epic %q is open again on %s.\n", e.Name, gitref.EpicRefName(e.Name))
+	fmt.Fprintf(w, "Epic %s is open again on %s.\n", e.Label(), gitref.EpicRefName(e.Name))
 	return nil
 }
 
@@ -479,9 +480,14 @@ system, in any case; with --all, closed ones too.`,
 				return nil
 			}
 			fmt.Fprintln(w)
+			width := 0
+			for _, e := range all {
+				width = max(width, utf8.RuneCountInString(titleAndName(e)))
+			}
 			for _, e := range all {
 				p := epic.Count(e, ix)
-				fmt.Fprintf(w, "  %-24s %3d of %-3d done  %s%s%s\n", e.Name, p.Done, p.Total, e.Title, closedMark(e), keysMark(e))
+				label := titleAndName(e)
+				fmt.Fprintf(w, "  %s%s  %3d of %-3d done%s%s\n", label, strings.Repeat(" ", width-utf8.RuneCountInString(label)), p.Done, p.Total, closedMark(e), keysMark(e))
 			}
 			fmt.Fprintln(w)
 			return nil
@@ -539,7 +545,7 @@ func newEpicShowCmd() *cobra.Command {
 			if g.jsonOut {
 				return emit(w, epicJSON(e, &p))
 			}
-			fmt.Fprintf(w, "%s — %s%s\n", e.Name, e.Title, closedMark(e))
+			fmt.Fprintf(w, "%s%s\n", titleAndName(e), closedMark(e))
 			if e.Description != "" {
 				fmt.Fprintf(w, "%s\n", e.Description)
 			}
@@ -568,6 +574,16 @@ func newEpicShowCmd() *cobra.Command {
 			return nil
 		},
 	}
+}
+
+// titleAndName is an epic as a listing names it: the title a person reads,
+// the name to type beside it — "Web 0.2  (web-0-2)". A title that is the name
+// is printed once.
+func titleAndName(e *epic.Epic) string {
+	if e.Title == "" || e.Title == e.Name {
+		return e.Name
+	}
+	return e.Title + "  (" + e.Name + ")"
 }
 
 // closedMark is what 'epic ls --all' and 'epic show' print after a closed

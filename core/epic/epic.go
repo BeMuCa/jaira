@@ -107,6 +107,25 @@ type Epic struct {
 	external []External
 }
 
+// Label is how a message names the epic: its title, which a person reads,
+// with the name beside it, which a person types into a command — "Web 0.2"
+// (web-0-2). An epic whose title is its name is named once.
+func (e *Epic) Label() string {
+	if e.Title == "" || e.Title == e.Name {
+		return fmt.Sprintf("%q", e.Name)
+	}
+	return fmt.Sprintf("%q (%s)", e.Title, e.Name)
+}
+
+// LabelOf is Label for an epic known by name only, as an error path has it.
+// An epic that cannot be read is named by its name.
+func LabelOf(r Refs, name string) string {
+	if e, err := Load(r, name); err == nil {
+		return e.Label()
+	}
+	return fmt.Sprintf("%q", name)
+}
+
 // Members lists the ticket ids this epic holds, in file order.
 func (e *Epic) Members() []string { return append([]string(nil), e.members...) }
 
@@ -714,7 +733,7 @@ func Close(s *ticket.Store, r Refs, name string, ix *link.Index, force bool) (*E
 			return false, nil
 		}
 		if p := Count(e, ix); p.Done < p.Total && !force {
-			return false, fmt.Errorf("%w: %d of %d ticket(s) of %s are not finished", ErrUnfinished, p.Total-p.Done, p.Total, name)
+			return false, fmt.Errorf("%w: %d of %d ticket(s) of %s are not finished", ErrUnfinished, p.Total-p.Done, p.Total, e.Label())
 		}
 		e.setClosed(true)
 		written = true

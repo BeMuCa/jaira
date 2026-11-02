@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { editOf, keysEdit, rebase } from './edit.ts';
+import { editOf, keysEdit, linkable, rebase } from './edit.ts';
 
 const read = { title: 'Login', description: 'no password', body: '## Goal' };
 
@@ -29,4 +29,14 @@ test('the keys go as what was added and what was taken out', () => {
   const rows = [{ key: 'JIRA-1', url: 'https://j.example/one' }, { key: 'YT-7', url: '' }, { key: ' NEW-3 ', url: '' }, { key: '', url: 'x' }];
   assert.deepEqual(keysEdit(read, rows), { add_external: ['JIRA-1 https://j.example/one', 'NEW-3'], drop_external: ['OLD-2'] });
   assert.deepEqual(keysEdit(read, read.map((x) => ({ ...x }))), {});
+});
+
+// A row whose link the server would refuse is left out of the save and not
+// dropped either; every other change still goes.
+test('a bad link holds back its own row only', () => {
+  const read = [{ key: 'C-3', url: 'not a link' }];
+  const rows = [{ key: 'C-3', url: 'not a link' }, { key: 'NEW-1', url: 'javascript:alert(1)' }, { key: 'OK-2', url: 'https://ok.example/2' }];
+  assert.deepEqual(keysEdit(read, rows), { add_external: ['OK-2 https://ok.example/2'] });
+  assert.ok(linkable('') && linkable('https://x.example/a') && linkable('http://x.example'));
+  assert.ok(!linkable('not a link') && !linkable('ftp://x.example') && !linkable('https://'));
 });

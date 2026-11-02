@@ -2,7 +2,7 @@
   import { untrack } from 'svelte';
   import type { Epic } from '@/entities/epic';
   import type { EpicEdit, EpicFields } from '../api/set';
-  import { editOf, keysEdit, rebase } from '../model/edit';
+  import { editOf, keysEdit, linkable, rebase } from '../model/edit';
 
   let { epic, onsave, oncancel }: {
     epic: Epic;
@@ -62,15 +62,19 @@
   <fieldset class="keys">
     <legend title="The key of the task in another system this epic stands for, with its link. It stays on the epic, never on a ticket.">External keys</legend>
     {#each keys as row, i (i)}
-      <div class="key">
+      <!-- The link is plain text, not type="url": the browser would refuse the
+           whole form over one hand-written line. A bad link marks its row
+           and is left out of the save; everything else is written. -->
+      <div class="key" class:bad={!linkable(row.url)}>
         <input bind:value={row.key} placeholder="JIRA-1234" aria-label="Key" size="12" />
-        <input bind:value={row.url} placeholder="https://…" aria-label="Link" type="url" />
+        <input bind:value={row.url} placeholder="https://…" aria-label="Link" aria-invalid={!linkable(row.url)} />
         {#if i < keys.length - 1}
           <button type="button" aria-label="Remove {row.key}" onclick={() => keys.splice(i, 1)}>×</button>
         {:else}
           <button type="button" onclick={() => keys.push({ key: '', url: '' })}>+</button>
         {/if}
       </div>
+      {#if !linkable(row.url)}<p class="bad-hint">Not an http(s) link — this line is not saved; the rest of the form is.</p>{/if}
     {/each}
   </fieldset>
   {#if error}<p class="error" role="alert">{error}</p>{/if}
@@ -91,6 +95,8 @@
   .keys { display: grid; gap: 0.3rem; border: none; padding: 0; margin: 0; font-size: 0.85rem; color: var(--muted); }
   .keys legend { padding: 0; margin-bottom: 0.15rem; }
   .key { display: flex; gap: 0.3rem; }
-  .key input[type='url'] { flex: 1; min-width: 0; }
+  .key input + input { flex: 1; min-width: 0; }
+  .bad input + input { border-color: var(--error); }
+  .bad-hint { margin: 0; color: var(--error); font-size: 0.8rem; }
   .key button { padding: 0.1rem 0.5rem; }
 </style>

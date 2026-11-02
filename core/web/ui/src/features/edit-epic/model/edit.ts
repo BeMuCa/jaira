@@ -11,14 +11,31 @@ export function editOf(base: EpicFields, mine: EpicFields): EpicEdit | null {
   return Object.keys(edit).length === 1 ? null : edit;
 }
 
+// linkable is a url the server takes: empty, or http(s) with a host — what
+// jaira's ParseExternal accepts.
+export function linkable(url: string): boolean {
+  const u = url.trim();
+  if (!u) return true;
+  try {
+    const p = new URL(u);
+    return (p.protocol === 'http:' || p.protocol === 'https:') && !!p.host;
+  } catch {
+    return false;
+  }
+}
+
 // keysEdit is what a save sends for the keys: the rows the person added or
 // relinked, and the keys they took out, against the keys the form opened on.
 // Keys compare in any case, as jaira compares them. An empty key row is left
-// out; nothing changed is an empty object.
+// out, and so is a row whose url the server would refuse: the form marks
+// that row, and the rest of the edit is still saved. Such a row is not
+// dropped either — a hand-written line stays on the epic as it was. Nothing
+// changed is an empty object.
 export function keysEdit(read: External[], rows: { key: string; url: string }[]): Pick<EpicEdit, 'add_external' | 'drop_external'> {
   const norm = (k: string) => k.trim().toUpperCase();
   const kept = rows.filter((r) => r.key.trim());
   const add = kept
+    .filter((r) => linkable(r.url))
     .filter((r) => !read.some((x) => x.key === r.key.trim() && x.url === r.url.trim()))
     .map((r) => `${r.key.trim()} ${r.url.trim()}`.trim());
   const drop = read.filter((x) => !kept.some((r) => norm(r.key) === norm(x.key))).map((x) => x.key);

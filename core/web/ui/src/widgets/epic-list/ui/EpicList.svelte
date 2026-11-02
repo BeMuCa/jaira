@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { EpicProgress, type Epic } from '@/entities/epic';
+  import { EpicProgress, nameBeside, type Epic } from '@/entities/epic';
   import { TicketCard } from '@/entities/ticket';
   import { DropTarget, startTicketDrag } from '@/features/assign-to-epic';
   import { addQuestion, closeQuestion, visible } from '@/features/close-epic';
@@ -63,7 +63,7 @@
     <DropTarget ondropticket={(t) => drop(epic, t.id, t.from)}>
       <article class:closed={epic.closed}>
         <header>
-          <h3>{epic.title}{#if epic.closed} <span class="badge">closed</span>{/if}</h3>
+          <h3>{epic.title}{#if nameBeside(epic)} <small class="name" title="the name to type into 'jaira epic …'">{nameBeside(epic)}</small>{/if}{#if epic.closed} <span class="badge">closed</span>{/if}</h3>
           <EpicProgress done={epic.done} signoff={epic.signoff} total={epic.total} />
         </header>
         {#if editing === epic.name}
@@ -144,5 +144,6 @@
   .edit { font: inherit; font-size: 0.8rem; color: var(--muted); background: none; border: 1px solid var(--line); border-radius: 4px; padding: 0.1rem 0.5rem; cursor: pointer; margin-bottom: 0.3rem; }
   summary { cursor: pointer; color: var(--muted); font-size: 0.85rem; }
   small { color: var(--muted); font-weight: normal; }
+  .name { font-family: ui-monospace, monospace; font-size: 0.75rem; }
   .empty { color: var(--muted); }
 </style>

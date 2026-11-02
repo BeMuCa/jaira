@@ -127,3 +127,21 @@ func TestMergeKeepsBothSidesKeyChanges(t *testing.T) {
 		}
 	}
 }
+
+// A message names an epic by its title with the name beside it, once when
+// they are the same.
+func TestLabel(t *testing.T) {
+	if got := New("web-0-2", "Web 0.2", "", time.Unix(0, 0)).Label(); got != `"Web 0.2" (web-0-2)` {
+		t.Errorf("label = %s", got)
+	}
+	if got := New("login", "", "", time.Unix(0, 0)).Label(); got != `"login"` {
+		t.Errorf("label = %s", got)
+	}
+	refs := mapRefs{"f": New("f", "Feature", "", time.Unix(0, 0)).Bytes()}
+	if got := LabelOf(refs, "f"); got != `"Feature" (f)` {
+		t.Errorf("LabelOf = %s", got)
+	}
+	if got := LabelOf(refs, "gone"); got != `"gone"` {
+		t.Errorf("LabelOf missing = %s", got)
+	}
+}

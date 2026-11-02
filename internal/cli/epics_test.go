@@ -342,3 +342,34 @@ func TestAnExternalKeyStaysOnTheEpicRef(t *testing.T) {
 		t.Errorf("a commit outside the epic refs carries the key")
 	}
 }
+
+// Wherever the CLI names an epic, it names it by its title, the name to type
+// beside it; an epic titled by its name is named once.
+func TestTheCLINamesAnEpicByItsTitle(t *testing.T) {
+	ada, _ := twoBoards(t)
+	a := createTicket(t, ada, "Login form")
+	b := createTicket(t, ada, "Second")
+	for _, c := range []struct {
+		args []string
+		want string
+	}{
+		{[]string{"epic", "create", "web-0-2", "--title", "Web 0.2"}, `Epic "Web 0.2" (web-0-2) created`},
+		{[]string{"epic", "create", "plain"}, `Epic "plain" created`},
+		{[]string{"epic", "add", "web-0-2", ticket.Handle(a)}, `added to "Web 0.2" (web-0-2)`},
+		{[]string{"epic", "ls"}, "  Web 0.2  (web-0-2)    0 of 1   done"},
+		{[]string{"epic", "show", "web-0-2"}, "Web 0.2  (web-0-2)\n"},
+		{[]string{"epic", "set", "web-0-2", "--description", "d"}, `Epic "Web 0.2" (web-0-2) rewritten`},
+		{[]string{"epic", "close", "web-0-2", "--force"}, `Epic "Web 0.2" (web-0-2) closed`},
+	} {
+		out, err := runAndSend(t, ada, c.args...)
+		if err != nil {
+			t.Fatalf("%v: %v\n%s", c.args, err, out)
+		}
+		if !strings.Contains(out, c.want) {
+			t.Errorf("%v printed:\n%s\nwant it to contain %q", c.args, out, c.want)
+		}
+	}
+	if out, err := runCLI(t, ada, "epic", "add", "web-0-2", ticket.Handle(b)); err == nil || !strings.Contains(out+err.Error(), `epic "Web 0.2" (web-0-2) is closed`) {
+		t.Errorf("closed epic refusal: %v\n%s", err, out)
+	}
+}

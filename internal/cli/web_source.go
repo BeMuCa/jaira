@@ -301,7 +301,7 @@ func (w *webSource) SetEpic(name string, edit web.EpicEdit) error {
 	case errors.Is(err, epic.ErrNotFound):
 		return fmt.Errorf("no epic %s: %w", name, web.ErrNotFound)
 	case errors.Is(err, epic.ErrChanged):
-		return fmt.Errorf("%s was changed since you opened it; open it again to see what it says now: %w", name, web.ErrConflict)
+		return fmt.Errorf("%s was changed since you opened it; open it again to see what it says now: %w", epic.LabelOf(epicRefs(), name), web.ErrConflict)
 	case errors.Is(err, epic.ErrNoTitle):
 		return fmt.Errorf("%v: %w", err, web.ErrInvalid)
 	}
@@ -364,10 +364,10 @@ func (w *webSource) assign(name, id string, add, force bool) error {
 		return fmt.Errorf("no epic %s: %w", name, web.ErrNotFound)
 	}
 	if errors.Is(err, epic.ErrClosed) {
-		return fmt.Errorf("%s is closed; confirm to put the ticket in anyway: %w", name, web.ErrConflict)
+		return fmt.Errorf("%s is closed; confirm to put the ticket in anyway: %w", epic.LabelOf(epicRefs(), name), web.ErrConflict)
 	}
 	if err == nil && !add && len(changed) == 0 {
-		return fmt.Errorf("it is no member of %s, it counts through follows or parent: %w", name, web.ErrConflict)
+		return fmt.Errorf("it is no member of %s, it counts through follows or parent: %w", epic.LabelOf(epicRefs(), name), web.ErrConflict)
 	}
 	return err
 }
