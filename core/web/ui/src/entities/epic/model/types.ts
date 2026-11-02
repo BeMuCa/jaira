@@ -14,4 +14,7 @@ export interface Epic {
   signoff: number;
   total: number;
   tickets: Ticket[];
+  // Closed by 'jaira epic close': takes a ticket only after a confirmation,
+  // and the list hides it unless asked to show it.
+  closed: boolean;
 }

@@ -88,6 +88,9 @@ type Epic struct {
 	Signoff int      `json:"signoff"`
 	Total   int      `json:"total"`
 	Tickets []Ticket `json:"tickets"`
+	// Closed is an epic 'jaira epic close' closed: it takes a ticket only
+	// with force, and the page hides it unless asked to show it.
+	Closed bool `json:"closed"`
 }
 
 // EpicFields are what a person writes about an epic.
@@ -168,9 +171,14 @@ type Source interface {
 	CreateEpic(name, title, description string) error
 	SetEpic(name string, edit EpicEdit) error
 	// Assign puts a ticket into epic; with from set it takes it out of that
-	// epic as well, which is a move.
-	Assign(epic, from, ticketID string) error
+	// epic as well, which is a move. A closed epic refuses it with
+	// ErrConflict unless force is set, and stays closed when it is.
+	Assign(epic, from, ticketID string, force bool) error
 	Unassign(epic, ticketID string) error
+	// SetClosed closes an epic or opens it again. Closing one that still
+	// counts an unfinished ticket is refused with ErrConflict unless force
+	// is set.
+	SetClosed(epic string, closed, force bool) error
 }
 
 // Sync is what the page says about the last round trip to the remote.
@@ -280,6 +288,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("PATCH /api/epics/{name}", s.handleSetEpic)
 	mux.HandleFunc("POST /api/epics/{name}/tickets", s.handleAssign)
 	mux.HandleFunc("DELETE /api/epics/{name}/tickets/{id}", s.handleUnassign)
+	mux.HandleFunc("POST /api/epics/{name}/close", s.handleClose)
+	mux.HandleFunc("POST /api/epics/{name}/reopen", s.handleReopen)
 	mux.HandleFunc("GET /api/sync", s.handleSync)
 	dist, err := fs.Sub(distFS, "ui/dist")
 	if err != nil {
@@ -420,14 +430,34 @@ func (s *Server) handleSetEpic(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleAssign(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		ID   string `json:"id"`
-		From string `json:"from"`
+		ID    string `json:"id"`
+		From  string `json:"from"`
+		Force bool   `json:"force"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.ID == "" {
-		writeError(w, http.StatusBadRequest, fmt.Errorf(`want {"id": "<ticket id>", "from": "<epic it leaves, if any>"}`))
+		writeError(w, http.StatusBadRequest, fmt.Errorf(`want {"id": "<ticket id>", "from": "<epic it leaves, if any>", "force": <true into a closed epic>}`))
 		return
 	}
-	s.write(w, s.Source.Assign(r.PathValue("name"), body.From, body.ID))
+	s.write(w, s.Source.Assign(r.PathValue("name"), body.From, body.ID, body.Force))
+}
+
+// handleClose closes an epic. The body is optional: {"force": true} closes
+// one that still counts unfinished tickets.
+func (s *Server) handleClose(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Force bool `json:"force"`
+	}
+	if r.ContentLength != 0 {
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			writeError(w, http.StatusBadRequest, fmt.Errorf(`want {"force": <true to close with unfinished tickets>} or no body`))
+			return
+		}
+	}
+	s.write(w, s.Source.SetClosed(r.PathValue("name"), true, body.Force))
+}
+
+func (s *Server) handleReopen(w http.ResponseWriter, r *http.Request) {
+	s.write(w, s.Source.SetClosed(r.PathValue("name"), false, false))
 }
 
 func (s *Server) handleUnassign(w http.ResponseWriter, r *http.Request) {
