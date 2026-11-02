@@ -26,9 +26,14 @@ tags:
   - cli
 blocked-by: []
 related: []
-commits: []
+commits:
+  - e5fe06d190299eb60d03d8473968531bb7743ccc
+  - 75ef0f6ef063f622d304e5860fa397ceee45a87f
+  - 628691440b9ecb39f6c77aae6771c85bed84d329
+  - 31487096281c2a6c564974ebd153a28c17507153
+  - 143e2ae8ce5efdb5e02559eeebdb83ecdd3c65d1
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T22:56:21Z
+updated-at: 2026-11-02T22:56:50Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
