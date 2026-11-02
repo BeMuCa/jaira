@@ -225,7 +225,7 @@ func fileAway(t *testing.T, s *ticket.Store, id, dir, extra string) {
 
 // all=1 lists every ticket that ever was: the logbook and the archive beside
 // the board, each saying where it lies, the logbook's with the day it was
-// filed and a rejected one with its kind; each of them opens, and the opened
+// filed and a rejected one with its kind and reason; each of them opens, and the opened
 // archive ticket says why it was rejected.
 func TestWebListsFiledTicketsAndOpensThem(t *testing.T) {
 	dir := t.TempDir()
@@ -265,8 +265,8 @@ func TestWebListsFiledTicketsAndOpensThem(t *testing.T) {
 	if c := got[logged]; c.Place != "logbook" || c.FiledAt.Format("2006-01-02") != "2026-10-01" {
 		t.Errorf("logged = %+v; want place logbook, filed 2026-10-01", c)
 	}
-	if c := got[rejected]; c.Place != "archive" || c.Rejected != "wontfix" || c.FiledAt.Format("2006-01-02") != "2026-10-02" {
-		t.Errorf("rejected = %+v; want place archive, rejected wontfix, filed 2026-10-02", c)
+	if c := got[rejected]; c.Place != "archive" || c.Rejected != "wontfix" || c.RejectedWhy != "nobody needs it" || c.FiledAt.Format("2006-01-02") != "2026-10-02" {
+		t.Errorf("rejected = %+v; want place archive, rejected wontfix for nobody needs it, filed 2026-10-02", c)
 	}
 
 	var d web.TicketDetail
