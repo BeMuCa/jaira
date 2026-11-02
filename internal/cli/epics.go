@@ -232,7 +232,7 @@ func newEpicSetCmd() *cobra.Command {
 	var external, externalRm []string
 	cmd := &cobra.Command{
 		Use:   "set <name> [--title <t>] [--description <d>] [--body <text> | --body-file <path|->] [--external \"<KEY> <URL>\"]... [--external-rm <KEY>]...",
-		Short: "Rewrite an epic's title, description or text",
+		Short: "Rewrite an epic's title, description, text or external keys",
 		Long: `Rewrites what an epic says about itself, in one write of its ref. The name
 stays — it is the ref — and the member lines stay as they are, in their order.
 

@@ -19,7 +19,7 @@ export function keysEdit(read: External[], rows: { key: string; url: string }[])
   const norm = (k: string) => k.trim().toUpperCase();
   const kept = rows.filter((r) => r.key.trim());
   const add = kept
-    .filter((r) => !read.some((x) => norm(x.key) === norm(r.key) && x.key === r.key.trim() && x.url === r.url.trim()))
+    .filter((r) => !read.some((x) => x.key === r.key.trim() && x.url === r.url.trim()))
     .map((r) => `${r.key.trim()} ${r.url.trim()}`.trim());
   const drop = read.filter((x) => !kept.some((r) => norm(r.key) === norm(x.key))).map((x) => x.key);
   return { ...(add.length ? { add_external: add } : {}), ...(drop.length ? { drop_external: drop } : {}) };
