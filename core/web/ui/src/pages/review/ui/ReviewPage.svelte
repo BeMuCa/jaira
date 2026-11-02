@@ -7,7 +7,7 @@
   import { assignToEpic, removeFromEpic } from '@/features/assign-to-epic';
   import { createEpic } from '@/features/create-epic';
   import { setEpic, type EpicEdit } from '@/features/edit-epic';
-  import { FilterBar, choices, fromQuery, matches, narrows, toQuery } from '@/features/filter-tickets';
+  import { FilterBar, choices, fromQuery, matches, narrows, toQuery, wantsFiled } from '@/features/filter-tickets';
   import { EpicList } from '@/widgets/epic-list';
   import { UnassignedList } from '@/widgets/unassigned-list';
   import { SyncStatus } from '@/widgets/sync-status';
@@ -48,21 +48,24 @@
     if (q !== location.search) history.replaceState(null, '', location.pathname + q + location.hash);
   });
 
-  // Loads at once, and again whenever the switch flips: it changes what the
-  // server is asked for.
+  // Whether the server is asked for the filed tickets as well. Derived, so
+  // only a change of the answer reloads, not every chip.
+  const filed = $derived(wantsFiled(filter));
+
+  // Loads at once, and again whenever that answer changes.
   $effect(() => {
-    void filter.all;
+    void filed;
     untrack(load);
   });
 
-  // Loads overlap — the switch, the minute's reload, a drop — and they need
+  // Loads overlap — the place filter, the minute's reload, a drop — and they need
   // not answer in order. Only the one started last may write the page, or a
-  // slow answer to the switch's old position would put it back.
+  // slow answer to the filter's old places would put it back.
   let loads = 0;
   async function load() {
     const n = ++loads;
     try {
-      const answers = await Promise.all([fetchEpics(), fetchUnassigned(filter.all), fetchSync(), fetchLanes()]);
+      const answers = await Promise.all([fetchEpics(), fetchUnassigned(filed), fetchSync(), fetchLanes()]);
       if (n !== loads) return;
       [epics, unassigned, sync] = answers;
       setLanes(answers[3]);

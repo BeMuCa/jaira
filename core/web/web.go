@@ -57,6 +57,8 @@ type Ticket struct {
 	FiledAt time.Time `json:"filed_at,omitzero"`
 	// Rejected is the kind of no, for a ticket 'jaira reject' archived.
 	Rejected string `json:"rejected,omitzero"`
+	// RejectedWhy is the reason 'jaira reject' gave, shown on the card.
+	RejectedWhy string `json:"rejected_why,omitzero"`
 	// BehindRef says the ticket file in this checkout is older than the
 	// ticket's ref, and what the page shows is the ref.
 	BehindRef bool `json:"behind_ref,omitzero"`
