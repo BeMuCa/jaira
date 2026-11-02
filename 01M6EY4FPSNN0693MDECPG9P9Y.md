@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T22:06:29Z
+updated-at: 2026-11-02T22:06:32Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
@@ -41,8 +41,8 @@ review-gaps: |-
 test-verdict: "pass: go build/vet ./..., go test ./... -race RC=0 (33 Pakete ok), npm test 24/24 RC=0, dist = frischer vite build; DoD 9 per edit.test.ts + Quelle (Zeilen tragen from), DoD 10 live auf Scratch-Board: epic add/rm drucken '\"Web 0.2\" (web-0-2) now lists N ticket(s).'"
 claimed-by: DESKTOP-RFTCH11-91590
 claimed-at: 2026-11-02T21:59:27Z
-review-verdict: "Der Diff erfuellt alle acht DoD-Punkte, auch die neuen 7 (ungueltige URL markiert nur ihre Zeile) und 8 (Titel mit Name daneben in CLI und web); kein Blocker. go build/vet, go test ./core/epic ./core/web, ./internal/cli (Epic|External|Web|List|Label) und npm test 23/23 gruen; core/web/ui/dist entspricht einem frischen vite build. Drei Notizen."
-review-round: 3
+review-verdict: "the diff matches all ten DoD items; no blocker. go build/vet, go test core/epic core/web internal/cli, npm test 24/24 green, and core/web/ui/dist is byte-identical to a fresh vite build of the current sources"
+review-round: 5
 review-check: |-
   1. cd /home/alex/projects/.worktrees/jaira-pg9p9y && go build -o /tmp/jaira-pg ./cmd/jaira
   2. /tmp/jaira-pg epic create web-0-2 --title "Web 0.2"  - Ausgabe: Epic "Web 0.2" (web-0-2) created ...
