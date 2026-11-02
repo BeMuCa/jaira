@@ -28,13 +28,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:22:19Z
+updated-at: 2026-11-02T20:22:38Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
 outcome-resolves: "Epics und ihre Tickets lassen sich nach dem Schluessel einer Aufgabe in einem anderen System finden, ohne dass der Schluessel ein Ticket-File beruehrt."
 review-summary: none
 round: 2
+review-gaps: "none - geprueft: keine bestehende Blocklisten-Leserei im Frontmatter (resume.go/tickets.go '- '-Scans sind Markdown-Abschnitte, release.go Notes); ticketsForKey teilt 4 Zeilen Mitglieder-Sammeln mit epic.Unassigned, bewusst nicht zusammengelegt (anderer Filter, eine Stelle je Aufrufer); keine toten Helfer, kein unbenutzter Patch-/web-Feld; ParseExternal lehnt Keys mit fuehrendem '-' ab, gelassen (sie saehen auf der Kommandozeile wie Flags aus)"
 ---
 
 # Ein Epic traegt einen externen Schluessel mit Link, und Epics und Tickets lassen sich danach suchen und filtern
