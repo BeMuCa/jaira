@@ -24,6 +24,18 @@ export function linkable(url: string): boolean {
   }
 }
 
+// A key row of the epic editor. from is the key a row was read with; a row
+// the person added has none.
+export type KeyRow = { key: string; url: string; from?: string };
+
+const norm = (k: string) => k.trim().toUpperCase();
+
+// heldAs is the key a renamed row stays under because its link cannot be
+// saved: its read key, or '' when the row is saved as typed.
+export function heldAs(row: KeyRow): string {
+  return row.from && !linkable(row.url) && norm(row.key) !== norm(row.from) ? row.from : '';
+}
+
 // keysEdit is what a save sends for the keys: the rows the person added or
 // relinked, and the keys they took out, against the keys the form opened on.
 // Keys compare in any case, as jaira compares them. An empty key row is left
@@ -33,9 +45,8 @@ export function linkable(url: string): boolean {
 // the key it was read with (from), even when the person renamed it: the
 // rename cannot be saved without a link, and dropping the old key would lose
 // the line. Nothing changed is an empty object.
-export function keysEdit(read: External[], rows: { key: string; url: string; from?: string }[]): Pick<EpicEdit, 'add_external' | 'drop_external'> {
-  const norm = (k: string) => k.trim().toUpperCase();
-  const held = rows.filter((r) => r.from && !linkable(r.url)).map((r) => norm(r.from!));
+export function keysEdit(read: External[], rows: KeyRow[]): Pick<EpicEdit, 'add_external' | 'drop_external'> {
+  const held = rows.map(heldAs).filter(Boolean).map(norm);
   const kept = rows.filter((r) => r.key.trim());
   const add = kept
     .filter((r) => linkable(r.url))

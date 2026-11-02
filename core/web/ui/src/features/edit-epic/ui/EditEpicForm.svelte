@@ -2,7 +2,7 @@
   import { untrack } from 'svelte';
   import type { Epic } from '@/entities/epic';
   import type { EpicEdit, EpicFields } from '../api/set';
-  import { editOf, keysEdit, linkable, rebase } from '../model/edit';
+  import { editOf, heldAs, keysEdit, linkable, rebase, type KeyRow } from '../model/edit';
 
   let { epic, onsave, oncancel }: {
     epic: Epic;
@@ -25,7 +25,7 @@
   // one at the end to add a key. A read row remembers its key (from), so a
   // rename that cannot be saved keeps the line it started from.
   const keysRead = untrack(() => epic.external ?? []);
-  let keys: { key: string; url: string; from?: string }[] = $state([...keysRead.map((x) => ({ key: x.key, url: x.url, from: x.key })), { key: '', url: '' }]);
+  let keys: KeyRow[] = $state([...keysRead.map((x) => ({ key: x.key, url: x.url, from: x.key })), { key: '', url: '' }]);
   let error = $state('');
   let busy = $state(false);
 
@@ -75,7 +75,7 @@
           <button type="button" onclick={() => keys.push({ key: '', url: '' })}>+</button>
         {/if}
       </div>
-      {#if !linkable(row.url)}<p class="bad-hint">Not an http(s) link — this line is not saved{row.from && row.key.trim().toUpperCase() !== row.from.toUpperCase() ? ` and stays as ${row.from}` : ''}; the rest of the form is.</p>{/if}
+      {#if !linkable(row.url)}<p class="bad-hint">Not an http(s) link — this line is not saved{heldAs(row) ? ` and stays as ${heldAs(row)}` : ''}; the rest of the form is.</p>{/if}
     {/each}
   </fieldset>
   {#if error}<p class="error" role="alert">{error}</p>{/if}

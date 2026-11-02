@@ -28,13 +28,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T22:01:29Z
+updated-at: 2026-11-02T22:02:23Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
 outcome-resolves: "Epics und ihre Tickets lassen sich nach dem Schluessel einer Aufgabe in einem anderen System finden, ohne dass der Schluessel ein Ticket-File beruehrt."
-review-summary: "Epics tragen im Frontmatter ihres Refs eine Blockliste 'external:' (je Zeile KEY und optional http(s)-URL); epic create/set --external/--external-rm pflegen sie, epic show/ls (+--json) zeigen sie, epic ls --external und list --external filtern (Mitglieder und Folge-Tickets), Ticket-Dateien bleiben unberuehrt. jaira web zeigt die Keys als Links, editiert sie als Zeilen und filtert per Key-Chip. Runde 2 (Commit 62869144): das Link-Feld ist kein type=url mehr - eine ungueltige URL markiert nur ihre Zeile (linkable spiegelt LinkableURL), die Zeile wird nicht gesendet und nicht geloescht, der Rest speichert. Epics werden ueberall mit Titel genannt, Name daneben: core/epic Label/LabelOf fuer Saetze (\"Web 0.2\" (web-0-2)), cli titleAndName fuer epic ls/show-Spalten, web nameBeside klein im EpicList-Kopf; Release-Note mit '!' fuer das geaenderte epic-ls-Layout."
-round: 4
+review-summary: "core/web/ui/src/features/edit-epic/ui/EditEpicForm.svelte:78 compares row.key with row.from in its own case rule inside the template; keysEdit (model/edit.ts) owns 'keys compare in any case' - export heldAs(row) from edit.ts (the read key a bad-link renamed row stays as, else '') and use it in both keysEdit's held list and the hint"
+round: 5
 review-gaps: |-
   note: internal/cli/epics.go:227 '<name> now lists N ticket(s)' nennt das Epic direkt nach den Label-Zeilen noch beim nackten Namen
   note: web-Editor: eine Zeile mit handgeschriebener ungueltiger URL, deren KEY man umbenennt, wird als neue Zeile zurueckgehalten, der alte KEY aber per drop_external entfernt - der Hinweis 'nicht gespeichert' steht dabei, kein Test deckt den Fall
@@ -78,7 +78,7 @@ review-check: |-
 - [x] Wo ein Epic genannt wird (web und CLI), steht sein Titel, der Name klein daneben; Test
   proof: core/epic/epic.go Label/LabelOf, internal/cli/epics.go titleAndName, web_source.go messages, core/web/ui/src/entities/epic/model/label.ts + EpicList.svelte; tests TestTheCLINamesAnEpicByItsTitle, TestLabel, label.test.ts
 - [x] Umbenennen des KEY einer Zeile mit ungueltigem Link im Epic-Editor verliert die Zeile nicht; Test
-  proof: core/web/ui/src/features/edit-epic/model/edit.ts keysEdit (held: from of a bad-link row), EditEpicForm.svelte rows carry from; test edit.test.ts 'renaming a row with a bad link keeps the line it was read as'
+  proof: core/web/ui/src/features/edit-epic/model/edit.ts heldAs + keysEdit (held), EditEpicForm.svelte rows carry from; test edit.test.ts 'renaming a row with a bad link keeps the line it was read as'
 - [x] epic add/rm nennen in der Schlusszeile Titel und Namen; Test
   proof: internal/cli/epics.go editEpic summary line uses e.Label(); test TestTheCLINamesAnEpicByItsTitle (add/rm 'now lists')
 
@@ -118,3 +118,4 @@ review-check: |-
 - **2026-11-02 20:47 · Alexander Sacharov** — review Runde 2: frischer Agent. Gelesen: 62869144 (DoD 7+8) gegen 783c6009..HEAD; worktree_diff nur fremde .jaira/milestones/. go build/vet, go test core/epic core/web internal/cli, npm test 23/23, dist = frischer vite build. Kein Blocker, drei Notizen in review-gaps.
 - **2026-11-02 21:59 · Alexander Sacharov** — Entschieden von Alex (02.11.2026, ueber Teamlead), Runde 3: beide Review-Notizen werden in diesem Ticket behoben. (1) Datenverlust: KEY einer Zeile mit ungueltigem, von Hand geschriebenem Link im Epic-Editor umbenennen -> alter KEY weg, neuer nicht gespeichert. Die Zeile darf nie verloren gehen. (2) epic add/rm nennen in der Schlusszeile den Titel, den Namen klein daneben, wie ueberall sonst (DoD 8). Neuer Worker, weil der Cache des alten kalt war.
 - **2026-11-02 22:01 · Alexander Sacharov** — Runde 3 umgesetzt: (1) Zeilen im Epic-Editor merken sich ihren gelesenen KEY (from). keysEdit haelt den from-KEY einer Zeile mit ungueltigem Link vom drop zurueck - Umbenennen ohne gueltigen Link wird nicht gespeichert, die alte Zeile bleibt; der Hinweis sagt 'stays as <from>'. Verworfen: Umbenennung trotzdem mit kaputtem Link senden - der Server lehnt nicht-http(s) ab (ParseExternal), das wuerde das ganze Speichern scheitern lassen. (2) epic add/rm Schlusszeile 'now lists' nimmt e.Label() statt name.
+- **2026-11-02 22:01 · Alexander Sacharov** — critique 4 (Runde 3): core/web/ui/src/features/edit-epic/ui/EditEpicForm.svelte:78 compares row.key with row.from in its own case rule inside the template; keysEdit (model/edit.ts) owns 'keys compare in any case' - export heldAs(row) from edit.ts (the read key a bad-link renamed row stays as, else '') and use it in both keysEdit's held list and the hint

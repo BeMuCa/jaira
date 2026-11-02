@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { editOf, keysEdit, linkable, rebase } from './edit.ts';
+import { editOf, heldAs, keysEdit, linkable, rebase } from './edit.ts';
 
 const read = { title: 'Login', description: 'no password', body: '## Goal' };
 
@@ -49,4 +49,7 @@ test('renaming a row with a bad link keeps the line it was read as', () => {
   assert.deepEqual(keysEdit(read, [{ key: 'C-33', url: 'https://c.example/3', from: 'C-3' }, { key: 'D-4', url: 'https://d.example/4', from: 'D-4' }]), { add_external: ['C-33 https://c.example/3'], drop_external: ['C-3'] });
   // A row removed with its button is still dropped.
   assert.deepEqual(keysEdit(read, [{ key: 'D-4', url: 'https://d.example/4', from: 'D-4' }]), { drop_external: ['C-3'] });
+  assert.equal(heldAs({ key: 'C-33', url: 'not a link', from: 'C-3' }), 'C-3');
+  assert.equal(heldAs({ key: 'c-3', url: 'not a link', from: 'C-3' }), '');
+  assert.equal(heldAs({ key: 'NEW-1', url: 'not a link' }), '');
 });
