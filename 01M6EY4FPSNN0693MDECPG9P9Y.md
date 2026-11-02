@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:19:19Z
+updated-at: 2026-11-02T20:19:23Z
 updated-by: Alexander Sacharov
 ---
 
@@ -46,7 +46,8 @@ updated-by: Alexander Sacharov
   proof: core/web/ui/src/widgets/epic-list/ui/EpicList.svelte (links), features/edit-epic/ui/EditEpicForm.svelte (rows), features/filter-tickets/model/filter.ts epicPasses/key chip; tests TestWebEditsAnEpicsExternalKeys, edit.test.ts 'the keys go as...', filter.test.ts 'the key filter...'
 - [x] Kein Ticket-File und kein Code-Commit traegt den Schluessel - er steht nur im Epic-Ref; Test
   proof: test TestAnExternalKeyStaysOnTheEpicRef (ticket ref unchanged, no working-tree file, no commit outside refs/jaira/epics)
-- [ ] Release-Note-Zeile in core/release/notes/<ID>.md
+- [x] Release-Note-Zeile in core/release/notes/<ID>.md
+  proof: core/release/notes/PG9P9Y.md
 
 ## Options
 
