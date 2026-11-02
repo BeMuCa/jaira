@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:41:15Z
+updated-at: 2026-11-02T20:41:43Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
@@ -73,7 +73,8 @@ review-check: |-
   proof: test TestAnExternalKeyStaysOnTheEpicRef (ticket ref unchanged, no working-tree file, no commit outside refs/jaira/epics)
 - [x] Release-Note-Zeile in core/release/notes/<ID>.md
   proof: core/release/notes/PG9P9Y.md
-- [ ] web: eine ungueltige URL in einer external-Zeile markiert nur diese Zeile; der Rest des Epic-Formulars laesst sich speichern; Test
+- [x] web: eine ungueltige URL in einer external-Zeile markiert nur diese Zeile; der Rest des Epic-Formulars laesst sich speichern; Test
+  proof: core/web/ui/src/features/edit-epic/ui/EditEpicForm.svelte (Link-Feld ohne type=url, Zeile .bad + Hinweis), model/edit.ts linkable/keysEdit; test edit.test.ts 'a bad link holds back its own row only'
 
 ## Options
 
