@@ -77,6 +77,14 @@
           />
         {:else}
           {#if epic.description}<p class="desc">{epic.description}</p>{/if}
+          {#if epic.external?.length}
+            <p class="keys">
+              {#each epic.external as x (x.key)}
+                <!-- link is set by the server only for an http(s) url. -->
+                {#if x.link}<a href={x.link} target="_blank" rel="noopener noreferrer">{x.key}</a>{:else}<span title={x.url}>{x.key}</span>{/if}
+              {/each}
+            </p>
+          {/if}
           {#if epic.text}
             <!-- Folded by default: the description line says what it is, the text says it at length. -->
             <details class="text">
@@ -122,6 +130,8 @@
   header { display: grid; gap: 0.4rem; }
   h3 { margin: 0; font-size: 1rem; }
   .desc { margin: 0.5rem 0; white-space: pre-line; }
+  .keys { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.3rem 0; font-size: 0.85rem; }
+  .keys > * { border: 1px solid var(--line); border-radius: 4px; padding: 0 0.35rem; }
   ul { display: grid; gap: 0.3rem; padding: 0; margin: 0.4rem 0 0; }
   .text { margin: 0.4rem 0; }
   .md { margin-top: 0.3rem; overflow-wrap: anywhere; }

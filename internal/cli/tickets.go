@@ -601,12 +601,19 @@ func missingFields(t *ticket.Ticket) []string {
 }
 
 func newListCmd() *cobra.Command {
-	var laneFilter, assigneeFilter, query, tagFilter, milestoneFilter, board string
+	var laneFilter, assigneeFilter, query, tagFilter, milestoneFilter, externalKey, board string
 	var actionableOnly bool
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List tickets",
-		Args:  noArgs(),
+		Long: `Lists the tickets of a board, grouped by lane. Every flag narrows the list
+further.
+
+--external <key> keeps the tickets of every epic that carries that key of a
+task in another system — the members and every ticket that follows on from
+one — open or closed epic alike. The key is on the epic only, never on the
+ticket.`,
+		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			s, err := openStore()
 			if err != nil {
@@ -625,8 +632,17 @@ func newListCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			var forKey map[string]bool
+			if externalKey != "" {
+				if forKey, err = ticketsForKey(s, externalKey); err != nil {
+					return err
+				}
+			}
 			var out []*ticket.Ticket
 			for _, t := range all {
+				if forKey != nil && !forKey[t.ID] {
+					continue
+				}
 				if laneFilter != "" && t.Status != laneFilter {
 					continue
 				}
@@ -673,6 +689,7 @@ func newListCmd() *cobra.Command {
 	f.StringVar(&assigneeFilter, "assignee", "", "only tickets assigned to this person")
 	f.StringVar(&tagFilter, "tag", "", "only tickets carrying this tag")
 	f.StringVar(&milestoneFilter, "milestone", "", "only tickets in this milestone")
+	f.StringVar(&externalKey, "external", "", "only tickets of the epics carrying this key of a task in another system")
 	f.StringVarP(&query, "query", "q", "", "substring match over title, goal and id")
 	f.BoolVar(&actionableOnly, "actionable", false, "only tickets that could be started right now")
 	f.StringVar(&board, "board", "", boardFlagUsage)

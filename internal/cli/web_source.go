@@ -59,7 +59,14 @@ func (w *webSource) Epics() ([]web.Epic, error) {
 	out := make([]web.Epic, 0, len(epics))
 	for _, e := range epics {
 		p := epic.Count(e, ix)
-		v := web.Epic{Name: e.Name, Title: e.Title, Description: e.Description, Body: e.Body(), Text: e.Text(), Done: p.Done, Total: p.Total, Closed: e.Closed}
+		v := web.Epic{Name: e.Name, Title: e.Title, Description: e.Description, Body: e.Body(), Text: e.Text(), Done: p.Done, Total: p.Total, Closed: e.Closed, External: []web.External{}}
+		for _, x := range e.Externals() {
+			ext := web.External{Key: x.Key, URL: x.URL}
+			if epic.LinkableURL(x.URL) {
+				ext.Link = x.URL
+			}
+			v.External = append(v.External, ext)
+		}
 		for _, t := range p.Tickets {
 			c, ok := cards[t.ID]
 			if !ok {
@@ -278,7 +285,14 @@ func (w *webSource) CreateEpic(raw, title, description string) error {
 func (w *webSource) SetEpic(name string, edit web.EpicEdit) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	p := epic.Patch{Title: edit.Title, Description: edit.Description, Body: edit.Body}
+	p := epic.Patch{Title: edit.Title, Description: edit.Description, Body: edit.Body, DropExternal: edit.DropExternal}
+	for _, raw := range edit.AddExternal {
+		x, err := epic.ParseExternal(raw)
+		if err != nil {
+			return fmt.Errorf("%v: %w", err, web.ErrInvalid)
+		}
+		p.AddExternal = append(p.AddExternal, x)
+	}
 	if b := edit.Base; b != nil {
 		p.Base = &epic.Fields{Title: b.Title, Description: b.Description, Body: b.Body}
 	}

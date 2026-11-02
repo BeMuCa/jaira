@@ -1,0 +1,3 @@
+- Put the key of a task in another system on an epic with `jaira epic set <name> --external "JIRA-1234 <url>"` (or on `epic create`), take it off with `--external-rm JIRA-1234`; the key lives on the epic's ref only and never rides in a code commit, but everybody who can read the repository sees it.
+- Find the work for one such key with `jaira epic ls --external <key>` and `jaira list --external <key>` (members and their follow-ups); `epic show` and `epic ls`, `--json` included, now print an `external` list.
+- In `jaira web`, an epic shows its keys as links, the epic editor adds and removes them, and the filter bar has a Key filter.

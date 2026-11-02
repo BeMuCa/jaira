@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -43,6 +44,13 @@ closed" onto its ref and deletes nothing. A closed epic takes no new tickets
 without --force and drops out of 'jaira epic ls'; 'jaira epic reopen' takes the
 closing back.
 
+An epic may carry the keys of the tasks it stands for in another system —
+JIRA-1234, a YouTrack issue — each with a link: 'jaira epic set <name>
+--external "JIRA-1234 <url>"'. They are on the epic's ref and never on a
+ticket, so they never ride in a code commit. 'jaira epic ls --external <key>'
+and 'jaira list --external <key>' find the work done for one of them. The ref
+is pushed: everybody who can read the repository can read the keys.
+
 Epics need a repository with a remote; a board without one has none.`,
 	}
 	cmd.AddCommand(newEpicCreateCmd(), newEpicAddCmd(), newEpicRmCmd(), newEpicSetCmd(), newEpicLsCmd(), newEpicShowCmd(), newEpicCloseCmd(), newEpicReopenCmd())
@@ -66,6 +74,8 @@ func epicFail(name string, err error) error {
 	case errors.Is(err, epic.ErrUnfinished):
 		return fail(ExitValidation, "epic_unfinished",
 			"%v — 'jaira epic show %s' lists them, 'jaira epic close %s --force' closes it anyway", err, name, name)
+	case errors.Is(err, epic.ErrBadExternal):
+		return fail(ExitUsage, "bad_external", "%v", err)
 	case errors.Is(err, epic.ErrExists):
 		return fail(ExitValidation, "epic_exists",
 			"epic %q exists already — 'jaira epic add %s <id>' puts tickets in it", name, name)
@@ -81,8 +91,25 @@ func epicName(raw string) (string, bool, error) {
 	return name, changed, nil
 }
 
+// externalFlags reads --external values, each "<KEY> [<URL>]".
+func externalFlags(raw []string) ([]epic.External, error) {
+	out := make([]epic.External, 0, len(raw))
+	for _, r := range raw {
+		x, err := epic.ParseExternal(r)
+		if err != nil {
+			return nil, epicFail("", err)
+		}
+		out = append(out, x)
+	}
+	return out, nil
+}
+
+// externalUsage is the one wording of --external on create and set.
+const externalUsage = `the key of the task in another system with its link, "<KEY> [<URL>]"; repeat for several`
+
 func newEpicCreateCmd() *cobra.Command {
 	var title, description string
+	var external []string
 	cmd := &cobra.Command{
 		Use:   "create <name> [id...]",
 		Short: "Start an epic, optionally with its first tickets",
@@ -90,7 +117,9 @@ func newEpicCreateCmd() *cobra.Command {
 
 The name is lowercase kebab, the tag rule; "Magic Login" is stored as
 "magic-login" and you are told so. --title is what a person reads (the name
-when left out), --description says in one line what the feature is for.`,
+when left out), --description says in one line what the feature is for.
+--external "<KEY> <URL>" records the task in another system the epic stands
+for; repeat it for several.`,
 		Args: minArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
@@ -105,7 +134,11 @@ when left out), --description says in one line what the feature is for.`,
 			if err != nil {
 				return err
 			}
-			e, err := epic.Create(s, epicRefs(), name, title, description, ids)
+			keys, err := externalFlags(external)
+			if err != nil {
+				return err
+			}
+			e, err := epic.Create(s, epicRefs(), name, title, description, ids, keys...)
 			if err != nil {
 				return epicFail(name, err)
 			}
@@ -122,6 +155,7 @@ when left out), --description says in one line what the feature is for.`,
 	}
 	cmd.Flags().StringVar(&title, "title", "", "what a person reads (default: the name)")
 	cmd.Flags().StringVar(&description, "description", "", "one line on what the feature is for")
+	cmd.Flags().StringArrayVar(&external, "external", nil, externalUsage)
 	return cmd
 }
 
@@ -195,8 +229,9 @@ func editEpic(cmd *cobra.Command, args []string, add, force bool) error {
 
 func newEpicSetCmd() *cobra.Command {
 	var title, description, body, bodyFile string
+	var external, externalRm []string
 	cmd := &cobra.Command{
-		Use:   "set <name> [--title <t>] [--description <d>] [--body <text> | --body-file <path|->]",
+		Use:   "set <name> [--title <t>] [--description <d>] [--body <text> | --body-file <path|->] [--external \"<KEY> <URL>\"]... [--external-rm <KEY>]...",
 		Short: "Rewrite an epic's title, description or text",
 		Long: `Rewrites what an epic says about itself, in one write of its ref. The name
 stays — it is the ref — and the member lines stay as they are, in their order.
@@ -207,18 +242,27 @@ title. --body replaces the markdown text below them, --body-file reads it from
 a file, or from stdin with '-'. 'jaira epic show <name>' prints the text as it
 stands.
 
+--external "<KEY> <URL>" puts the key of a task in another system on the epic,
+or gives a key it carries already the new link; --external-rm <KEY> takes one
+off. Keys compare in any case. Both repeat.
+
 Only what you name is touched. Asking for what is there already writes
 nothing.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			f := cmd.Flags()
-			if !f.Changed("title") && !f.Changed("description") && !f.Changed("body") && !f.Changed("body-file") {
-				return fail(ExitUsage, "usage", "nothing to set — name at least one of --title, --description, --body, --body-file")
+			if !f.Changed("title") && !f.Changed("description") && !f.Changed("body") && !f.Changed("body-file") &&
+				!f.Changed("external") && !f.Changed("external-rm") {
+				return fail(ExitUsage, "usage", "nothing to set — name at least one of --title, --description, --body, --body-file, --external, --external-rm")
 			}
 			if f.Changed("body") && f.Changed("body-file") {
 				return fail(ExitUsage, "usage", "--body and --body-file both give the text; name one")
 			}
-			var p epic.Patch
+			keys, err := externalFlags(external)
+			if err != nil {
+				return err
+			}
+			p := epic.Patch{AddExternal: keys, DropExternal: externalRm}
 			if f.Changed("title") {
 				p.Title = &title
 			}
@@ -272,6 +316,8 @@ nothing.`,
 	cmd.Flags().StringVar(&description, "description", "", "one line on what the feature is for")
 	cmd.Flags().StringVar(&body, "body", "", "the markdown text below title and description")
 	cmd.Flags().StringVar(&bodyFile, "body-file", "", "read the text from a file, '-' for stdin")
+	cmd.Flags().StringArrayVar(&external, "external", nil, externalUsage)
+	cmd.Flags().StringArrayVar(&externalRm, "external-rm", nil, "take the key of a task in another system off the epic; repeat for several")
 	return cmd
 }
 
@@ -373,6 +419,7 @@ func reportClosing(w io.Writer, e *epic.Epic, changed bool) error {
 
 func newEpicLsCmd() *cobra.Command {
 	var unassigned, everything bool
+	var externalKey string
 	cmd := &cobra.Command{
 		Use:   "ls",
 		Short: "List epics with how far each one is",
@@ -383,7 +430,10 @@ filed in the logbook. A closed epic is left out; --all lists it too, marked
 
 --unassigned lists instead the open tickets that belong to no epic — neither by
 a line nor by following on from a member — which is the list to work through
-when sorting a board into features.`,
+when sorting a board into features.
+
+--external <key> lists only the epics that carry that key of a task in another
+system, in any case; with --all, closed ones too.`,
 		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			s, err := openStore()
@@ -405,6 +455,9 @@ when sorting a board into features.`,
 			if !everything {
 				all = slices.DeleteFunc(all, func(e *epic.Epic) bool { return e.Closed })
 			}
+			if externalKey != "" {
+				all = slices.DeleteFunc(all, func(e *epic.Epic) bool { return !e.HasExternal(externalKey) })
+			}
 			if g.jsonOut {
 				arr := make([]map[string]any, 0, len(all))
 				for _, e := range all {
@@ -414,6 +467,10 @@ when sorting a board into features.`,
 				return emit(w, map[string]any{"epics": arr, "count": len(arr)})
 			}
 			if len(all) == 0 {
+				if externalKey != "" {
+					fmt.Fprintf(w, "No epic carries %q. 'jaira epic set <name> --external \"%s <url>\"' puts it on one.\n", externalKey, externalKey)
+					return nil
+				}
 				if !everything {
 					fmt.Fprintln(w, "No open epics on this board. 'jaira epic create <name>' starts one, 'jaira epic ls --all' shows closed ones.")
 					return nil
@@ -424,7 +481,7 @@ when sorting a board into features.`,
 			fmt.Fprintln(w)
 			for _, e := range all {
 				p := epic.Count(e, ix)
-				fmt.Fprintf(w, "  %-24s %3d of %-3d done  %s%s\n", e.Name, p.Done, p.Total, e.Title, closedMark(e))
+				fmt.Fprintf(w, "  %-24s %3d of %-3d done  %s%s%s\n", e.Name, p.Done, p.Total, e.Title, closedMark(e), keysMark(e))
 			}
 			fmt.Fprintln(w)
 			return nil
@@ -432,6 +489,7 @@ when sorting a board into features.`,
 	}
 	cmd.Flags().BoolVar(&unassigned, "unassigned", false, "list the open tickets that are in no epic instead")
 	cmd.Flags().BoolVar(&everything, "all", false, "list closed epics too, marked")
+	cmd.Flags().StringVar(&externalKey, "external", "", "only epics carrying this key of a task in another system")
 	return cmd
 }
 
@@ -485,6 +543,9 @@ func newEpicShowCmd() *cobra.Command {
 			if e.Description != "" {
 				fmt.Fprintf(w, "%s\n", e.Description)
 			}
+			for _, x := range e.Externals() {
+				fmt.Fprintf(w, "external: %s\n", x)
+			}
 			if body := e.Text(); body != "" {
 				fmt.Fprintf(w, "\n%s\n", body)
 			}
@@ -518,6 +579,18 @@ func closedMark(e *epic.Epic) string {
 	return ""
 }
 
+// keysMark is what 'epic ls' prints after a title: the keys the epic carries.
+func keysMark(e *epic.Epic) string {
+	var keys []string
+	for _, x := range e.Externals() {
+		keys = append(keys, x.Key)
+	}
+	if len(keys) == 0 {
+		return ""
+	}
+	return "  [" + strings.Join(keys, ", ") + "]"
+}
+
 func epicJSON(e *epic.Epic, p *epic.Progress) map[string]any {
 	out := map[string]any{
 		"name":        e.Name,
@@ -527,6 +600,7 @@ func epicJSON(e *epic.Epic, p *epic.Progress) map[string]any {
 		"members":     memberRefs(e.Members()),
 		"ref":         gitref.EpicRefName(e.Name),
 		"closed":      e.Closed,
+		"external":    append([]epic.External{}, e.Externals()...),
 	}
 	if !e.CreatedAt.IsZero() {
 		out["created_at"] = e.CreatedAt.UTC().Format(time.RFC3339)
@@ -535,4 +609,29 @@ func epicJSON(e *epic.Epic, p *epic.Progress) map[string]any {
 		out["done"], out["total"], out["tickets"] = p.Done, p.Total, p.Tickets
 	}
 	return out
+}
+
+// ticketsForKey is every ticket counted towards an epic carrying the key:
+// members and their follow-ups, as 'jaira epic show' counts them. Closed
+// epics count too — the key asks what was done for a task, not what is open.
+func ticketsForKey(s *ticket.Store, key string) (map[string]bool, error) {
+	epics, err := epic.LoadAll(epicRefs())
+	if err != nil {
+		return nil, epicFail("", err)
+	}
+	ix, _, err := boardIndex(s)
+	if err != nil {
+		return nil, err
+	}
+	var members []string
+	for _, e := range epics {
+		if e.HasExternal(key) {
+			members = append(members, e.Members()...)
+		}
+	}
+	out := map[string]bool{}
+	for _, id := range epic.Covered(members, ix) {
+		out[id] = true
+	}
+	return out, nil
 }
