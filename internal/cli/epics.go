@@ -424,11 +424,7 @@ when sorting a board into features.`,
 			fmt.Fprintln(w)
 			for _, e := range all {
 				p := epic.Count(e, ix)
-				mark := ""
-				if e.Closed {
-					mark = "  [closed]"
-				}
-				fmt.Fprintf(w, "  %-24s %3d of %-3d done  %s%s\n", e.Name, p.Done, p.Total, e.Title, mark)
+				fmt.Fprintf(w, "  %-24s %3d of %-3d done  %s%s\n", e.Name, p.Done, p.Total, e.Title, closedMark(e))
 			}
 			fmt.Fprintln(w)
 			return nil
@@ -485,11 +481,7 @@ func newEpicShowCmd() *cobra.Command {
 			if g.jsonOut {
 				return emit(w, epicJSON(e, &p))
 			}
-			closed := ""
-			if e.Closed {
-				closed = "  [closed]"
-			}
-			fmt.Fprintf(w, "%s — %s%s\n", e.Name, e.Title, closed)
+			fmt.Fprintf(w, "%s — %s%s\n", e.Name, e.Title, closedMark(e))
 			if e.Description != "" {
 				fmt.Fprintf(w, "%s\n", e.Description)
 			}
@@ -515,6 +507,15 @@ func newEpicShowCmd() *cobra.Command {
 			return nil
 		},
 	}
+}
+
+// closedMark is what 'epic ls --all' and 'epic show' print after a closed
+// epic's title.
+func closedMark(e *epic.Epic) string {
+	if e.Closed {
+		return "  [closed]"
+	}
+	return ""
 }
 
 func epicJSON(e *epic.Epic, p *epic.Progress) map[string]any {

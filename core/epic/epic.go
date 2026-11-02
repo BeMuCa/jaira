@@ -628,7 +628,7 @@ func Assign(s *ticket.Store, r Refs, name string, ids []string, add, force bool)
 	var changed []string
 	e, err := edit(s, r, name, func(e *Epic) (bool, error) {
 		if add && e.Closed && !force {
-			if i := slices.IndexFunc(ids, func(id string) bool { return !e.Has(id) }); i >= 0 {
+			if slices.ContainsFunc(ids, func(id string) bool { return !e.Has(id) }) {
 				return false, fmt.Errorf("%w: %s", ErrClosed, name)
 			}
 		}

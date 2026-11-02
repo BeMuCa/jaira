@@ -1,7 +1,7 @@
 ---
 id: 01M6DSAAVH27P0HNBXZV182JT1
 title: "Ein Epic laesst sich schliessen: danach nimmt es keine Tickets mehr an und verschwindet aus der Epic-Liste"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,17 +23,16 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T09:26:46Z
-updated-at: 2026-11-02T09:43:38Z
+updated-at: 2026-11-02T09:45:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-70421
 claimed-at: 2026-11-02T09:33:25Z
 outcome-what: "Epics lassen sich schliessen und wieder oeffnen: 'status: closed' im Epic-Ref (core/epic Close/Reopen), CLI 'epic close [--force]', 'epic reopen', 'epic add --force', 'epic ls --all'; web: POST /api/epics/{name}/close|reopen, force beim Zuordnen, Schalter 'Show closed', Knoepfe Close/Reopen, Bestaetigung bei Drop auf ein geschlossenes Epic und beim Schliessen mit offenen Tickets."
 outcome-why: "Fertige Epics nahmen weiter Tickets an (web-0-2 '4 of 4 done') und blieben fuer immer in 'epic ls' und der Epic-Liste im web."
 outcome-resolves: "Alle 7 DoD-Punkte: close/reopen ohne Loeschen, add verweigert mit exit 3 und nennt --force, --force laesst es geschlossen, ls/--all, web ausgeblendet/Schalter, web Knoepfe, Release-Note."
-review-summary: |-
-  core/release/notes/182JT1.md:2 markiert die add-Aenderung mit '- !', aber keine bestehende Invocation verhaelt sich anders, bis jemand ein Epic schliesst — als normale Zeile schreiben, sonst stumpft die Hervorhebung ab
-  internal/cli/epics.go reportClosing nimmt einen state-String "closed"/"open", den e.Closed schon traegt — Parameter streichen und aus e.Closed ableiten
+review-summary: none
 round: 2
+review-gaps: "zweimal '[closed]'-Markierung (epic ls, epic show) in closedMark() in internal/cli/epics.go gefaltet; IndexFunc>=0 durch ContainsFunc ersetzt (core/epic/epic.go Assign). Gelassen: dropField neben setField in core/epic/epic.go — kein vorhandener Helfer im Repo entfernt eine Frontmatter-Zeile (grep nach drop/remove/unsetField leer); written-Variable in Close/Reopen, weil edit() nicht meldet, ob geschrieben wurde."
 ---
 
 # Ein Epic laesst sich schliessen: danach nimmt es keine Tickets mehr an und verschwindet aus der Epic-Liste
@@ -45,7 +44,7 @@ round: 2
 - [x] jaira epic add in ein geschlossenes Epic verweigert ohne --force mit exit 3 und nennt --force; Test
   proof: core/epic/epic.go:632 ErrClosed; internal/cli/epics.go:64 exit 3 nennt --force; TestAssignToAClosedEpic, TestEpicCloseAndReopen
 - [x] jaira epic ls zeigt geschlossene Epics nicht, jaira epic ls --all zeigt sie mit Markierung; Test
-  proof: internal/cli/epics.go:402 (ls ohne --all filtert), [closed]-Markierung; TestEpicCloseAndReopen
+  proof: internal/cli/epics.go:406 (ls ohne --all filtert), [closed]-Markierung; TestEpicCloseAndReopen
 - [x] Die Epic-Liste im web blendet geschlossene Epics aus oder zeigt sie getrennt; Test
   proof: core/web/ui/src/widgets/epic-list/ui/EpicList.svelte:35 blendet geschlossene aus, Schalter 'Show closed'; visible() in features/close-epic/model/close.ts, Test 'closed epics are hidden unless asked for'; Epic.closed core/web/web.go, TestEpicsCarryClosed
 - [x] Release-Note-Zeile in core/release/notes/<ID>.md
@@ -82,3 +81,4 @@ round: 2
 - **2026-11-02 09:36 · Alexander Sacharov** — core/epic: Tests brauchen fuer 'fertig' ein link.Index ueber lane.Load("") (Default-Lanes, done ist terminal); link.Build(nil, nil, ...) kennt keine terminale Lane und zaehlt nichts als fertig. Close prueft offen/fertig ueber epic.Count, also zaehlen Folge-Tickets mit.
 - **2026-11-02 09:42 · Alexander Sacharov** — web: Bestaetigung ist window.confirm (features/close-epic/model/close.ts liefert den Fragetext, null = keine Frage). Der Server verweigert ohne force mit 409; die Seite fragt VOR dem Request, statt erst auf 409 zu reagieren, weil sie done/total und closed schon kennt. 'Show closed' ist lokaler Zustand in EpicList, nicht in der URL. tsc-Fehler in vite.config.ts (node:url) ist vorbestehend, nicht von diesem Ticket.
 - **2026-11-02 09:43 · Alexander Sacharov** — critique Runde 1: (1) Release-Note Zeile 2 ohne '!' — niemand muss jetzt handeln. (2) reportClosing: state-Parameter weg, e.Closed lesen. Stehen gelassen: Close/Reopen als zwei Funktionen statt einer SetClosed (Close braucht den Index, Reopen nicht; zwei Namen lesen sich an den CLI-Aufrufern klarer); optionaler Body bei POST close (reopen sendet keinen, close kann ohne).
+- **2026-11-02 09:44 · Alexander Sacharov** — critique Runde 2: beide Befunde aus Runde 1 umgesetzt (b76f9c10), nichts Neues.
