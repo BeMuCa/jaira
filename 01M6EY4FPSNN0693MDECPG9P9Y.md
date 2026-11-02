@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T22:02:58Z
+updated-at: 2026-11-02T22:04:38Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
@@ -36,7 +36,7 @@ outcome-resolves: "Epics und ihre Tickets lassen sich nach dem Schluessel einer 
 review-summary: "none"
 round: 5
 review-gaps: "none - Runde 3 (31487096, 143e2ae8): nichts doppelt oder tot; die anderen toUpperCase-Vergleiche in filter.ts:130 und ReviewPage.svelte:51 stammen aus frueheren Runden, die optimize schon passiert haben, und bleiben"
-test-verdict: "pass (Runde 3): go test -race -count=1 ./... RC=0, npm test 23/23; Binary auf dem Test-Board: epic ls 'Anmeldung  (login)', epic show Kopf 'Anmeldung  (login)', epic set meldet '\"Anmeldung\" (login) rewritten', web-409 nennt '\"Anmeldung\" (login)'; gebautes JS enthaelt den Zeilen-Hinweis fuer ungueltige Links und den Namen neben dem Titel. Nicht im Browser angeklickt."
+test-verdict: "pass: go build/vet ./..., go test ./... -race RC=0 (33 Pakete ok), npm test 24/24 RC=0, dist = frischer vite build; DoD 9 per edit.test.ts + Quelle (Zeilen tragen from), DoD 10 live auf Scratch-Board: epic add/rm drucken '\"Web 0.2\" (web-0-2) now lists N ticket(s).'"
 claimed-by: DESKTOP-RFTCH11-91590
 claimed-at: 2026-11-02T21:59:27Z
 review-verdict: "Der Diff erfuellt alle acht DoD-Punkte, auch die neuen 7 (ungueltige URL markiert nur ihre Zeile) und 8 (Titel mit Name daneben in CLI und web); kein Blocker. go build/vet, go test ./core/epic ./core/web, ./internal/cli (Epic|External|Web|List|Label) und npm test 23/23 gruen; core/web/ui/dist entspricht einem frischen vite build. Drei Notizen."
