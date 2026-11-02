@@ -28,14 +28,17 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:26:32Z
+updated-at: 2026-11-02T20:26:36Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
 outcome-resolves: "Epics und ihre Tickets lassen sich nach dem Schluessel einer Aufgabe in einem anderen System finden, ohne dass der Schluessel ein Ticket-File beruehrt."
 review-summary: "Epics tragen jetzt im Frontmatter ihres Refs eine Blockliste 'external:' mit je einer Zeile '<KEY> [<URL>]' (core/epic/external.go). 'jaira epic create|set --external' fuegt einen Schluessel hinzu oder verlinkt ihn neu (Vergleich ohne Gross/Klein, URL nur http/https, sonst exit 2), '--external-rm' nimmt ihn weg; der letzte entfernte Schluessel nimmt den Block mit, alte Epics bleiben byte-gleich. Von Hand geschriebene Formen (Wert auf der 'external:'-Zeile, gequotete Zeilen, Nicht-URL) werden gelesen und beim naechsten Schreiben erhalten. Merge im Ref-Rennen wendet Hinzufuegen/Entfernen je Schluessel auf die andere Seite an. 'epic show' und 'epic ls' (auch --json) zeigen die Schluessel, 'epic ls --external' filtert Epics, 'jaira list --external' zeigt Mitglieder aller Epics mit dem Schluessel samt Folge-Tickets (geschlossene Epics eingeschlossen). jaira web liefert je Schluessel key/url und ein 'link' nur fuer http(s); die Epic-Liste zeigt ihn als Link, der Epic-Editor hat KEY/URL-Zeilen und schickt add/drop als Differenz, die FilterBar hat einen Key-Chip, der Epics und Tickets (ueber die Schluessel ihrer Epics) filtert. Kein Ticket-Ref, keine Datei im Arbeitsbaum und kein Commit ausserhalb refs/jaira/epics traegt den Schluessel (Test). Release-Note in core/release/notes/PG9P9Y.md."
 round: 2
-review-gaps: "none - geprueft: keine bestehende Blocklisten-Leserei im Frontmatter (resume.go/tickets.go '- '-Scans sind Markdown-Abschnitte, release.go Notes); ticketsForKey teilt 4 Zeilen Mitglieder-Sammeln mit epic.Unassigned, bewusst nicht zusammengelegt (anderer Filter, eine Stelle je Aufrufer); keine toten Helfer, kein unbenutzter Patch-/web-Feld; ParseExternal lehnt Keys mit fuehrendem '-' ab, gelassen (sie saehen auf der Kommandozeile wie Flags aus)"
+review-gaps: |-
+  note: EditEpicForm.svelte - das URL-Feld ist type="url"; traegt ein von Hand editiertes Epic eine Zeile wie 'C-3 not a link', blockiert die Browser-Validierung das Speichern des ganzen Formulars (auch Titel/Text), bis man die Zeile leert oder repariert
+  note: der Merge-Pfad fuer Schluessel ist nur auf Ebene core/epic getestet (TestMergeKeepsBothSidesKeyChanges), nicht ueber ein echtes Rennen zweier Clones um den Ref
+  note: svelte-check meldet einen Fehler in vite.config.ts (node:url-Typen) - besteht schon vor diesem Diff, nicht durch ihn
 test-verdict: "pass: go build + go test -race -count=1 ./... RC=0; ui npm test 21/21; DoD 1-6 in der Arbeitskopie geprueft (Proof-Tests laufen gruen); am gebauten Binary auf einem Scratch-Board: epic create/set --external, ls zeigt [JIRA-1234, YT-7], show zeigt 'external:'-Zeilen, list --external jira-1234 zeigt Mitglied + Folge-Ticket, javascript:-URL exit 2, --external-rm entfernt; Ref traegt Blockliste; jaira web: GET /api/epics liefert key/url/link, PATCH add/drop 200, javascript: 400, das gebaute JS enthaelt Editor-Zeilen und noopener-Links. Nicht im Browser angeklickt."
 claimed-by: DESKTOP-RFTCH11-47320
 claimed-at: 2026-11-02T20:26:29Z
