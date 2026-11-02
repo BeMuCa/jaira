@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:14:46Z
+updated-at: 2026-11-02T20:16:12Z
 updated-by: Alexander Sacharov
 ---
 
@@ -36,7 +36,8 @@ updated-by: Alexander Sacharov
 
 ## Definition of Done
 
-- [ ] Epic-Frontmatter hat 'external:' (Liste '<KEY> <URL>'); jaira epic create/set --external fuegt hinzu, --external-rm nimmt weg; Datei bleibt von Hand editierbar; Test
+- [x] Epic-Frontmatter hat 'external:' (Liste '<KEY> <URL>'); jaira epic create/set --external fuegt hinzu, --external-rm nimmt weg; Datei bleibt von Hand editierbar; Test
+  proof: core/epic/external.go writeExternal; tests TestExternalKeysAreABlockListInTheFrontmatter, TestExternalKeysReadAHandEditedFile, TestMergeKeepsBothSidesKeyChanges; CLI TestEpicExternalKeysFindTheWork
 - [ ] jaira epic show und epic ls (auch --json) zeigen die Schluessel; jaira epic ls --external <KEY> filtert; Test
 - [ ] jaira list --external <KEY> zeigt die Tickets aller Epics mit diesem Schluessel, Folge-Tickets eingeschlossen; Test
 - [ ] web: Schluessel am Epic als klickbarer Link, setzen/entfernen im Epic-Editor, Filter nach Schluessel; Test
