@@ -1,10 +1,23 @@
 import type { Ticket } from '@/entities/ticket';
 
+// Where the place filter puts a ticket. A ticket only on its ref is on the
+// board for everybody who fetches; a rejected one is apart from the archive
+// it lies in.
+export type Where = 'board' | 'logbook' | 'archive' | 'rejected';
+
+export const WHERES: Where[] = ['board', 'logbook', 'archive', 'rejected'];
+
+export function whereOf(t: Pick<Ticket, 'place' | 'rejected'>): Where {
+  if (t.place === 'logbook') return 'logbook';
+  if (t.place === 'archive') return t.rejected ? 'rejected' : 'archive';
+  return 'board';
+}
+
 // Which date the from-to range reads.
 export type DateField = 'created' | 'updated' | 'filed';
 
-// One value picked in a lane, tag or person filter: the ticket must carry it,
-// or, with not, must not.
+// One value picked in a lane, tag, person or where filter: the ticket must
+// carry it, or, with not, must not.
 export interface Chip {
   value: string;
   not: boolean;
@@ -12,7 +25,7 @@ export interface Chip {
 
 // The filters that take chips. Each name is its key in the address; the
 // values it excludes go under not-<name>.
-const CHIPPED = ['lane', 'tag', 'person'] as const;
+const CHIPPED = ['lane', 'tag', 'person', 'where'] as const;
 
 // What the page filters by. Every field set narrows the list further: the
 // filters are ANDed, as 'jaira list' ANDs its flags. Within one chipped filter
@@ -24,15 +37,16 @@ export interface Filter {
   tag: Chip[];
   // Creator, assignee or whoever changed it last.
   person: Chip[];
+  // Board, logbook, archive or rejected. None picked shows what the board
+  // shows: open tickets, and the filed ones only inside their epic.
+  where: Chip[];
   date: DateField;
   // yyyy-mm-dd, both ends included; empty is open.
   from: string;
   to: string;
-  // Filed tickets too, not only the board.
-  all: boolean;
 }
 
-export const emptyFilter = (): Filter => ({ q: '', lane: [], tag: [], person: [], date: 'created', from: '', to: '', all: false });
+export const emptyFilter = (): Filter => ({ q: '', lane: [], tag: [], person: [], where: [], date: 'created', from: '', to: '' });
 
 const DATES: DateField[] = ['created', 'updated', 'filed'];
 
@@ -50,7 +64,8 @@ export function fromQuery(search: string): Filter {
   if (DATES.includes(date)) f.date = date;
   f.from = p.get('from') ?? '';
   f.to = p.get('to') ?? '';
-  f.all = p.get('all') === '1';
+  // ?all=1 is the switch from before the place filter: every place.
+  if (p.get('all') === '1') for (const w of WHERES) f.where = addChip(f.where, w);
   return f;
 }
 
@@ -65,13 +80,17 @@ export function toQuery(f: Filter): string {
     if (f[k]) p.set(k, f[k]);
   }
   if ((f.from || f.to) && f.date !== 'created') p.set('date', f.date);
-  if (f.all) p.set('all', '1');
   const s = p.toString();
   return s ? `?${s}` : '';
 }
 
-// Whether anything narrows the list; the switch only widens it.
-export const narrows = (f: Filter) => !!(f.q || f.lane.length || f.tag.length || f.person.length || f.from || f.to);
+// Whether anything narrows the list.
+export const narrows = (f: Filter) =>
+  !!(f.q || f.lane.length || f.tag.length || f.person.length || f.where.length || f.from || f.to);
+
+// Whether the page has to ask the server for the filed tickets too: a place
+// is picked that is not the board, or one is excluded, which leaves others.
+export const wantsFiled = (f: Filter) => f.where.some((c) => c.not || c.value !== 'board');
 
 // A value picked once more is not a second chip: it keeps the place it has.
 export const addChip = (chips: Chip[], value: string, not = false): Chip[] =>
@@ -110,6 +129,7 @@ export function matches(t: Ticket, f: Filter): boolean {
   if (!passes(f.lane, [t.lane])) return false;
   if (!passes(f.tag, t.tags ?? [])) return false;
   if (!passes(f.person, [t.creator, t.assignee, t.updated_by])) return false;
+  if (!passes(f.where, [whereOf(t)])) return false;
   if (f.from || f.to) {
     // A ticket with no such date (never filed, or filed before it was
     // recorded) is outside every range.

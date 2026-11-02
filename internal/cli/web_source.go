@@ -150,7 +150,7 @@ func (w *webSource) cards(all []*ticket.Ticket, ix *link.Index) map[string]web.T
 		if place == link.PlaceLogbook {
 			c.FiledAt, _ = ticket.LogbookFolderDay(filepath.Base(filepath.Dir(path)), time.Local)
 		} else if r := rejection(path); r != nil {
-			c.Rejected, c.FiledAt = r.Kind, r.At
+			c.Rejected, c.RejectedWhy, c.FiledAt = r.Kind, r.Why, r.At
 		}
 		out[id] = c
 	}

@@ -19,6 +19,8 @@ export interface Ticket {
   filed_at?: string;
   // The kind of no, for a ticket 'jaira reject' archived.
   rejected?: string;
+  // Why, as 'jaira reject' wrote it.
+  rejected_why?: string;
   // The ticket file in this checkout is older than the ref; this is the ref.
   behind_ref?: boolean;
 }
