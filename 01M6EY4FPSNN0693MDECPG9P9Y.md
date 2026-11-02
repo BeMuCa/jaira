@@ -1,7 +1,7 @@
 ---
 id: 01M6EY4FPSNN0693MDECPG9P9Y
 title: "Ein Epic traegt einen externen Schluessel mit Link, und Epics und Tickets lassen sich danach suchen und filtern"
-status: todo
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:12:52Z
+updated-at: 2026-11-02T20:12:56Z
 updated-by: Alexander Sacharov
 ---
 
