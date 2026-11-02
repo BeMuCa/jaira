@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:19:27Z
+updated-at: 2026-11-02T20:19:31Z
 updated-by: Alexander Sacharov
 ---
 
@@ -62,7 +62,7 @@ updated-by: Alexander Sacharov
 - [x] CLI: epic create/set --external/--external-rm, epic show/ls (+json) zeigen, epic ls --external, list --external, Tests
 - [x] web: Go-Typen (Epic.External, EpicEdit add/drop), webSource, Tests
 - [x] web UI: Links am Epic, Editor-Zeilen, Key-Chip im Filter, vitest; dist bauen
-- [ ] Test: Ticket-Datei bleibt unveraendert; Release-Note core/release/notes/PG9P9Y.md
+- [x] Test: Ticket-Datei bleibt unveraendert; Release-Note core/release/notes/PG9P9Y.md
 
 ## Progress
 - **2026-11-02 20:11 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/43623.sock
