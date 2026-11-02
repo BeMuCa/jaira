@@ -1,7 +1,7 @@
 ---
 id: 01M6DRTRR1CVZH8DJPH4DF70XX
 title: "Im Web sieht man einem archivierten Ticket an, ob es fertig, liegen gelassen oder abgelehnt ist, und das Archiv laesst sich filtern"
-status: optimize
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Ticket im Archiv zeigt im Web auf einen Blick, wie es das Board verlassen hat: fertig (done), ohne Abschluss abgelegt (andere Lane), oder abgelehnt (jaira reject, mit Grund). Das Archiv laesst sich getrennt vom Logbuch filtern."
@@ -24,7 +24,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T09:18:16Z
-updated-at: 2026-11-02T09:28:08Z
+updated-at: 2026-11-02T09:30:16Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-58445
@@ -33,7 +33,9 @@ outcome-what: "Karten im Web zeigen archivierte Tickets als fertig (durchgestric
 outcome-why: Im Archiv sah ein liegen gelassenes Ticket wie ein offenes aus und ein abgelehntes nur als grauer Nebentext; Logbuch und Archiv liessen sich nicht getrennt zeigen.
 outcome-resolves: DF70XX
 review-summary: "none"
-round: 2
+round: 3
+review-gaps: "none - geprueft: whereOf (filter.ts) und fate (place.ts) lesen beide place+rejected, beantworten aber verschiedene Fragen (Ort fuer den Filter vs Aussehen der Karte), bleiben getrennt; isFiled hat weiter zwei Aufrufer (UnassignedList, fate); keine verwaisten Importe, CSS .all mit der Checkbox entfernt; Kosten: whereOf pro Ticket pro Filterlauf, trivial."
+test-verdict: "fail: Karte klebt Trennzeichen an: 'wontfix– nobody…' und 'in the archive· left unfinished'"
 ---
 
 # Im Web sieht man einem archivierten Ticket an, ob es fertig, liegen gelassen oder abgelehnt ist, und das Archiv laesst sich filtern
@@ -70,3 +72,4 @@ Frage 2 (Filter statt 'All tickets ever'): 1) (Empfohlen) Chip-Auswahl 'Wo' mit 
 - **2026-11-02 09:27 · Alexander Sacharov** — whereOf/WHERES liegen in features/filter-tickets/model/filter.ts, nicht in entities/ticket: filter.ts darf zur Laufzeit nichts ueber '@/' importieren, sonst bricht 'node --test' (nur import type wird gestrippt). Ohne Where-Chip filtert matches() nicht nach Ort, damit Epics ihre abgelegten Mitglieder weiter zeigen; ein Where-Chip filtert auch die Epics. dist neu gebaut (eingecheckt, go:embed). tsc-Fehler in vite.config.ts (node:url) ist alt, nicht von hier.
 - **2026-11-02 09:27 · Alexander Sacharov** — critique 1: fate/Fate-Export aus entities/ticket/index.ts ist ungenutzt - streichen. Bewusst stehen gelassen: ein alter Link ?all=1 waehlt alle vier Orte, narrows() ist dann wahr und Epics ohne Ticket verschwinden aus der Liste, 'Clear' erscheint - harmlos, Ort-Filter ist ein echter Filter. Abgelehnte Karte hat zwei Zeilen ('in the archive' grau + rote Grund-Zeile) - gewollt, Ort und Grund sind zwei Aussagen.
 - **2026-11-02 09:28 · Alexander Sacharov** — critique 2: nichts mehr; Entscheidungen aus critique 1 bleiben stehen.
+- **2026-11-02 09:29 · Alexander Sacharov** — testing 1: Screenshot auf Scratch-Board (headless chrome, ?where=board&where=archive&where=rejected): drei Zustaende sichtbar und richtig, aber Svelte trimmt das Leerzeichen vor {#if} in TicketCard.svelte:36/39 -> 'wontfix– nobody needs it' und 'in the archive· left unfinished'. Fix: Trenner als {' – '} / {' · '} schreiben.

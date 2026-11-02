@@ -33,10 +33,10 @@
     <span class="assignee" title={ticket.assignee}>{shortAssignee(ticket.assignee)}</span>
   {/if}
   {#if ticket.place && ticket.place !== 'board'}
-    <span class="where">{PLACE_LABELS[ticket.place]}{#if how === 'left'} · left unfinished{/if}</span>
+    <span class="where">{PLACE_LABELS[ticket.place]}{#if how === 'left'}{' · left unfinished'}{/if}</span>
   {/if}
   {#if how === 'rejected'}
-    <span class="why">rejected: {ticket.rejected}{#if ticket.rejected_why} – {ticket.rejected_why}{/if}</span>
+    <span class="why">rejected: {ticket.rejected}{#if ticket.rejected_why}{' – '}{ticket.rejected_why}{/if}</span>
   {/if}
   {#if ticket.created_at || ticket.updated_at || ticket.behind_ref}
     <span class="dates">
