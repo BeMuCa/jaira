@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T22:01:58Z
+updated-at: 2026-11-02T22:02:19Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
@@ -78,7 +78,7 @@ review-check: |-
 - [x] Wo ein Epic genannt wird (web und CLI), steht sein Titel, der Name klein daneben; Test
   proof: core/epic/epic.go Label/LabelOf, internal/cli/epics.go titleAndName, web_source.go messages, core/web/ui/src/entities/epic/model/label.ts + EpicList.svelte; tests TestTheCLINamesAnEpicByItsTitle, TestLabel, label.test.ts
 - [x] Umbenennen des KEY einer Zeile mit ungueltigem Link im Epic-Editor verliert die Zeile nicht; Test
-  proof: core/web/ui/src/features/edit-epic/model/edit.ts keysEdit (held: from of a bad-link row), EditEpicForm.svelte rows carry from; test edit.test.ts 'renaming a row with a bad link keeps the line it was read as'
+  proof: core/web/ui/src/features/edit-epic/model/edit.ts heldAs + keysEdit (held), EditEpicForm.svelte rows carry from; test edit.test.ts 'renaming a row with a bad link keeps the line it was read as'
 - [x] epic add/rm nennen in der Schlusszeile Titel und Namen; Test
   proof: internal/cli/epics.go editEpic summary line uses e.Label(); test TestTheCLINamesAnEpicByItsTitle (add/rm 'now lists')
 
