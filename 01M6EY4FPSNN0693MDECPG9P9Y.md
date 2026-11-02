@@ -28,14 +28,16 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T22:06:25Z
+updated-at: 2026-11-02T22:06:29Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
 outcome-resolves: "Epics und ihre Tickets lassen sich nach dem Schluessel einer Aufgabe in einem anderen System finden, ohne dass der Schluessel ein Ticket-File beruehrt."
 review-summary: "Epics carry an 'external:' block list (one '<KEY> <URL>' line each) in the frontmatter on their own ref; 'epic create/set --external/--external-rm' add and take keys (case-insensitive, http(s) only), 'epic show/ls' (+--json) print them, 'epic ls --external' and 'list --external' find epics and their tickets including follow-ups, and no ticket file or code commit carries a key. jaira web shows keys as links, edits them as KEY/URL rows and filters by a Key chip. A bad link marks only its own row and the rest saves; round 3 makes each read row remember its key (from), so renaming a row whose hand-written link is bad keeps the old line instead of dropping it (heldAs in edit.ts is the single rule, used by keysEdit and the hint). Every place an epic is named, 'epic add/rm' summary line included, shows the title with the name beside it."
 round: 5
-review-gaps: "none - Runde 3 (31487096, 143e2ae8): nichts doppelt oder tot; die anderen toUpperCase-Vergleiche in filter.ts:130 und ReviewPage.svelte:51 stammen aus frueheren Runden, die optimize schon passiert haben, und bleiben"
+review-gaps: |-
+  note: edit.test.ts does not cover clearing the key of a bad-link row (heldAs keeps the line, which is right, but no test pins it)
+  note: svelte-check reports one error in core/web/ui/vite.config.ts (missing node types); the file is not touched by this branch
 test-verdict: "pass: go build/vet ./..., go test ./... -race RC=0 (33 Pakete ok), npm test 24/24 RC=0, dist = frischer vite build; DoD 9 per edit.test.ts + Quelle (Zeilen tragen from), DoD 10 live auf Scratch-Board: epic add/rm drucken '\"Web 0.2\" (web-0-2) now lists N ticket(s).'"
 claimed-by: DESKTOP-RFTCH11-91590
 claimed-at: 2026-11-02T21:59:27Z
