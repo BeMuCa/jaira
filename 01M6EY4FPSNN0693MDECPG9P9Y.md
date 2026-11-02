@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:16:27Z
+updated-at: 2026-11-02T20:16:30Z
 updated-by: Alexander Sacharov
 ---
 
@@ -58,7 +58,7 @@ updated-by: Alexander Sacharov
 
 - [x] core/epic: External-Typ, Parse/Schreiben der Blockliste, AddExternal/DropExternal in Patch, Merge je KEY, Tests
 - [x] CLI: epic create/set --external/--external-rm, epic show/ls (+json) zeigen, epic ls --external, list --external, Tests
-- [ ] web: Go-Typen (Epic.External, EpicEdit add/drop), webSource, Tests
+- [~] web: Go-Typen (Epic.External, EpicEdit add/drop), webSource, Tests
 - [ ] web UI: Links am Epic, Editor-Zeilen, Key-Chip im Filter, vitest; dist bauen
 - [ ] Test: Ticket-Datei bleibt unveraendert; Release-Note core/release/notes/PG9P9Y.md
 
