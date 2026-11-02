@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T21:59:04Z
+updated-at: 2026-11-02T21:59:08Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
@@ -77,6 +77,8 @@ review-check: |-
   proof: core/web/ui/src/features/edit-epic/ui/EditEpicForm.svelte (Link-Feld ohne type=url, Zeile .bad + Hinweis), model/edit.ts linkable/keysEdit; test edit.test.ts 'a bad link holds back its own row only'
 - [x] Wo ein Epic genannt wird (web und CLI), steht sein Titel, der Name klein daneben; Test
   proof: core/epic/epic.go Label/LabelOf, internal/cli/epics.go titleAndName, web_source.go messages, core/web/ui/src/entities/epic/model/label.ts + EpicList.svelte; tests TestTheCLINamesAnEpicByItsTitle, TestLabel, label.test.ts
+- [ ] Umbenennen des KEY einer Zeile mit ungueltigem Link im Epic-Editor verliert die Zeile nicht; Test
+- [ ] epic add/rm nennen in der Schlusszeile Titel und Namen; Test
 
 ## Options
 
