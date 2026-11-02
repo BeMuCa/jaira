@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:45:46Z
+updated-at: 2026-11-02T20:46:02Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
@@ -36,7 +36,7 @@ outcome-resolves: "Epics und ihre Tickets lassen sich nach dem Schluessel einer 
 review-summary: "none"
 round: 3
 review-gaps: "none - Runde 3: Label/LabelOf einmal in core/epic, von CLI-Saetzen und web_source genutzt; titleAndName nur in epics.go (ls, show); nameBeside nur in EpicList; linkable spiegelt ParseExternal im Browser, absichtlich doppelt (der Server bleibt die Pruefung, der Browser markiert nur die Zeile)"
-test-verdict: "pass: go build + go test -race -count=1 ./... RC=0; ui npm test 21/21; DoD 1-6 in der Arbeitskopie geprueft (Proof-Tests laufen gruen); am gebauten Binary auf einem Scratch-Board: epic create/set --external, ls zeigt [JIRA-1234, YT-7], show zeigt 'external:'-Zeilen, list --external jira-1234 zeigt Mitglied + Folge-Ticket, javascript:-URL exit 2, --external-rm entfernt; Ref traegt Blockliste; jaira web: GET /api/epics liefert key/url/link, PATCH add/drop 200, javascript: 400, das gebaute JS enthaelt Editor-Zeilen und noopener-Links. Nicht im Browser angeklickt."
+test-verdict: "pass (Runde 3): go test -race -count=1 ./... RC=0, npm test 23/23; Binary auf dem Test-Board: epic ls 'Anmeldung  (login)', epic show Kopf 'Anmeldung  (login)', epic set meldet '\"Anmeldung\" (login) rewritten', web-409 nennt '\"Anmeldung\" (login)'; gebautes JS enthaelt den Zeilen-Hinweis fuer ungueltige Links und den Namen neben dem Titel. Nicht im Browser angeklickt."
 claimed-by: DESKTOP-RFTCH11-47320
 claimed-at: 2026-11-02T20:26:29Z
 review-verdict: "Der Diff erfuellt alle sechs DoD-Punkte; keine Defekte gefunden. go build/vet, go test ./core/epic ./core/web ./internal/cli (Epic|External|Web|List), npm test (21/21) gruen; core/web/ui/dist entspricht einem frischen vite build der Quellen. Drei Notizen, kein Blocker."
