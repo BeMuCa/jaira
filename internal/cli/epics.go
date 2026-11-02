@@ -317,7 +317,7 @@ A closed epic refuses 'jaira epic add' without --force and is left out of
 			if err != nil {
 				return epicFail(name, err)
 			}
-			return reportClosing(cmd.OutOrStdout(), e, changed, "closed")
+			return reportClosing(cmd.OutOrStdout(), e, changed)
 		},
 	}
 	cmd.Flags().BoolVar(&force, "force", false, "close it although tickets counted towards it are unfinished")
@@ -344,22 +344,26 @@ takes new tickets again and is back in 'jaira epic ls'.`,
 			if err != nil {
 				return epicFail(name, err)
 			}
-			return reportClosing(cmd.OutOrStdout(), e, changed, "open")
+			return reportClosing(cmd.OutOrStdout(), e, changed)
 		},
 	}
 }
 
-func reportClosing(w io.Writer, e *epic.Epic, changed bool, state string) error {
+func reportClosing(w io.Writer, e *epic.Epic, changed bool) error {
 	if g.jsonOut {
 		out := epicJSON(e, nil)
 		out["changed"] = changed
 		return emit(w, out)
 	}
 	if !changed {
+		state := "open"
+		if e.Closed {
+			state = "closed"
+		}
 		fmt.Fprintf(w, "Nothing to do: epic %q is %s already.\n", e.Name, state)
 		return nil
 	}
-	if state == "closed" {
+	if e.Closed {
 		fmt.Fprintf(w, "Epic %q closed on %s — 'jaira epic reopen %s' takes it back.\n", e.Name, gitref.EpicRefName(e.Name), e.Name)
 		return nil
 	}

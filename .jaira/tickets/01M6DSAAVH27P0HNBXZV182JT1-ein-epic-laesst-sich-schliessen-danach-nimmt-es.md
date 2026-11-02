@@ -23,13 +23,17 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T09:26:46Z
-updated-at: 2026-11-02T09:42:27Z
+updated-at: 2026-11-02T09:43:38Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-70421
 claimed-at: 2026-11-02T09:33:25Z
 outcome-what: "Epics lassen sich schliessen und wieder oeffnen: 'status: closed' im Epic-Ref (core/epic Close/Reopen), CLI 'epic close [--force]', 'epic reopen', 'epic add --force', 'epic ls --all'; web: POST /api/epics/{name}/close|reopen, force beim Zuordnen, Schalter 'Show closed', Knoepfe Close/Reopen, Bestaetigung bei Drop auf ein geschlossenes Epic und beim Schliessen mit offenen Tickets."
 outcome-why: "Fertige Epics nahmen weiter Tickets an (web-0-2 '4 of 4 done') und blieben fuer immer in 'epic ls' und der Epic-Liste im web."
 outcome-resolves: "Alle 7 DoD-Punkte: close/reopen ohne Loeschen, add verweigert mit exit 3 und nennt --force, --force laesst es geschlossen, ls/--all, web ausgeblendet/Schalter, web Knoepfe, Release-Note."
+review-summary: |-
+  core/release/notes/182JT1.md:2 markiert die add-Aenderung mit '- !', aber keine bestehende Invocation verhaelt sich anders, bis jemand ein Epic schliesst — als normale Zeile schreiben, sonst stumpft die Hervorhebung ab
+  internal/cli/epics.go reportClosing nimmt einen state-String "closed"/"open", den e.Closed schon traegt — Parameter streichen und aus e.Closed ableiten
+round: 2
 ---
 
 # Ein Epic laesst sich schliessen: danach nimmt es keine Tickets mehr an und verschwindet aus der Epic-Liste
@@ -77,3 +81,4 @@ outcome-resolves: "Alle 7 DoD-Punkte: close/reopen ohne Loeschen, add verweigert
 - Web: geschlossene Epics standardmaessig ausgeblendet, ein Schalter 'geschlossene zeigen' zeigt sie markiert, mit Knopf 'wieder oeffnen'; offene haben 'schliessen'. Spiegelt 'epic ls --all'.
 - **2026-11-02 09:36 · Alexander Sacharov** — core/epic: Tests brauchen fuer 'fertig' ein link.Index ueber lane.Load("") (Default-Lanes, done ist terminal); link.Build(nil, nil, ...) kennt keine terminale Lane und zaehlt nichts als fertig. Close prueft offen/fertig ueber epic.Count, also zaehlen Folge-Tickets mit.
 - **2026-11-02 09:42 · Alexander Sacharov** — web: Bestaetigung ist window.confirm (features/close-epic/model/close.ts liefert den Fragetext, null = keine Frage). Der Server verweigert ohne force mit 409; die Seite fragt VOR dem Request, statt erst auf 409 zu reagieren, weil sie done/total und closed schon kennt. 'Show closed' ist lokaler Zustand in EpicList, nicht in der URL. tsc-Fehler in vite.config.ts (node:url) ist vorbestehend, nicht von diesem Ticket.
+- **2026-11-02 09:43 · Alexander Sacharov** — critique Runde 1: (1) Release-Note Zeile 2 ohne '!' — niemand muss jetzt handeln. (2) reportClosing: state-Parameter weg, e.Closed lesen. Stehen gelassen: Close/Reopen als zwei Funktionen statt einer SetClosed (Close braucht den Index, Reopen nicht; zwei Namen lesen sich an den CLI-Aufrufern klarer); optionaler Body bei POST close (reopen sendet keinen, close kann ohne).
