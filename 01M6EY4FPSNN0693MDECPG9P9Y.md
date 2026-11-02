@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:28:50Z
+updated-at: 2026-11-02T20:41:07Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
@@ -103,3 +103,4 @@ review-check: |-
 - **2026-11-02 20:24 · Alexander Sacharov** — review: an einen frischen Agenten uebergeben (Herdr-Tab via run-lane.sh --no-worktree).
 - **2026-11-02 20:26 · Alexander Sacharov** — review: frischer Agent. Gelesen: Go- und UI-Diff 783c6009..HEAD (2 Commits), worktree_diff enthaelt nur fremde .jaira/milestones/ - nicht Teil des Tickets. Geprueft: go build/vet, go test core/epic core/web internal/cli, npm test, dist = frischer vite build. Kein Blocker; drei Notizen in review-gaps (type=url blockiert Speichern bei handeditierter Nicht-URL).
 - **2026-11-02 20:28 · Alexander Sacharov** — Abnahmeseite: https://claude.ai/artifact/N5BogNLe6e1kXmNtufAqn2 (8 Maschinenpruefungen gruen auf einem Test-Board unter ~/.claude/acceptance/jaira/feat-pg9p9y/fixture, 5 Personen-Schritte in jaira web).
+- **2026-11-02 20:41 · Alexander Sacharov** — decision: Alex (02.11., ueber Teamlead): der type=url-Fund aus dem Review wird in diesem Ticket behoben, kein eigenes Ticket. Die anderen zwei Review-Notizen bleiben Notizen.
