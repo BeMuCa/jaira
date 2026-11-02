@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:12:56Z
+updated-at: 2026-11-02T20:13:31Z
 updated-by: Alexander Sacharov
 ---
 
@@ -52,7 +52,7 @@ updated-by: Alexander Sacharov
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] core/epic: External-Typ, Parse/Schreiben der Blockliste, AddExternal/DropExternal in Patch, Merge je KEY, Tests
+- [~] core/epic: External-Typ, Parse/Schreiben der Blockliste, AddExternal/DropExternal in Patch, Merge je KEY, Tests
 - [ ] CLI: epic create/set --external/--external-rm, epic show/ls (+json) zeigen, epic ls --external, list --external, Tests
 - [ ] web: Go-Typen (Epic.External, EpicEdit add/drop), webSource, Tests
 - [ ] web UI: Links am Epic, Editor-Zeilen, Key-Chip im Filter, vitest; dist bauen
