@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:24:44Z
+updated-at: 2026-11-02T20:24:52Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
@@ -82,3 +82,4 @@ test-verdict: "pass: go build + go test -race -count=1 ./... RC=0; ui npm test 2
 5) Web: Chip-Filter 'Key' in der FilterBar wie Tag; ein Ticket traegt die Schluessel aller Epics, die es zaehlen (Folge-Tickets eingeschlossen) - so filtert er Epic-Liste und lose Tickets gleich wie 'jaira list --external'. Epic-Editor: Zeilen KEY/URL mit Entfernen-Knopf und eine leere Zeile zum Hinzufuegen.
 - **2026-11-02 20:21 · Alexander Sacharov** — critique 1: zwei kleine Funde - keysEdit doppelter Key-Vergleich (edit.ts), Short von 'epic set' nennt die Keys nicht. Sonst stehen gelassen: Inline-'external: KEY URL' lesen bleibt (verhindert Datenverlust beim naechsten writeExternal); web.External traegt URL und Link, damit LinkableURL nur in Go entschieden wird; ticketsForKey liegt bei den Epic-Helfern in epics.go.
 - **2026-11-02 20:22 · Alexander Sacharov** — critique 2: beide Funde aus Runde 1 behoben (edit.ts keysEdit, epic set Short) - nichts weiter.
+- **2026-11-02 20:24 · Alexander Sacharov** — review: an einen frischen Agenten uebergeben (Herdr-Tab via run-lane.sh --no-worktree).
