@@ -28,12 +28,12 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T22:02:23Z
+updated-at: 2026-11-02T22:02:33Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
 outcome-resolves: "Epics und ihre Tickets lassen sich nach dem Schluessel einer Aufgabe in einem anderen System finden, ohne dass der Schluessel ein Ticket-File beruehrt."
-review-summary: "core/web/ui/src/features/edit-epic/ui/EditEpicForm.svelte:78 compares row.key with row.from in its own case rule inside the template; keysEdit (model/edit.ts) owns 'keys compare in any case' - export heldAs(row) from edit.ts (the read key a bad-link renamed row stays as, else '') and use it in both keysEdit's held list and the hint"
+review-summary: "none"
 round: 5
 review-gaps: |-
   note: internal/cli/epics.go:227 '<name> now lists N ticket(s)' nennt das Epic direkt nach den Label-Zeilen noch beim nackten Namen
