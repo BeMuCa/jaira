@@ -28,12 +28,12 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T22:01:29Z
+updated-at: 2026-11-02T22:01:51Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
 outcome-resolves: "Epics und ihre Tickets lassen sich nach dem Schluessel einer Aufgabe in einem anderen System finden, ohne dass der Schluessel ein Ticket-File beruehrt."
-review-summary: "Epics tragen im Frontmatter ihres Refs eine Blockliste 'external:' (je Zeile KEY und optional http(s)-URL); epic create/set --external/--external-rm pflegen sie, epic show/ls (+--json) zeigen sie, epic ls --external und list --external filtern (Mitglieder und Folge-Tickets), Ticket-Dateien bleiben unberuehrt. jaira web zeigt die Keys als Links, editiert sie als Zeilen und filtert per Key-Chip. Runde 2 (Commit 62869144): das Link-Feld ist kein type=url mehr - eine ungueltige URL markiert nur ihre Zeile (linkable spiegelt LinkableURL), die Zeile wird nicht gesendet und nicht geloescht, der Rest speichert. Epics werden ueberall mit Titel genannt, Name daneben: core/epic Label/LabelOf fuer Saetze (\"Web 0.2\" (web-0-2)), cli titleAndName fuer epic ls/show-Spalten, web nameBeside klein im EpicList-Kopf; Release-Note mit '!' fuer das geaenderte epic-ls-Layout."
+review-summary: "core/web/ui/src/features/edit-epic/ui/EditEpicForm.svelte:78 compares row.key with row.from in its own case rule inside the template; keysEdit (model/edit.ts) owns 'keys compare in any case' - export heldAs(row) from edit.ts (the read key a bad-link renamed row stays as, else '') and use it in both keysEdit's held list and the hint"
 round: 4
 review-gaps: |-
   note: internal/cli/epics.go:227 '<name> now lists N ticket(s)' nennt das Epic direkt nach den Label-Zeilen noch beim nackten Namen
