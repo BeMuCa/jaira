@@ -1,7 +1,7 @@
 ---
 id: 01M6DRTRR1CVZH8DJPH4DF70XX
 title: "Im Web sieht man einem archivierten Ticket an, ob es fertig, liegen gelassen oder abgelehnt ist, und das Archiv laesst sich filtern"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Ticket im Archiv zeigt im Web auf einen Blick, wie es das Board verlassen hat: fertig (done), ohne Abschluss abgelegt (andere Lane), oder abgelehnt (jaira reject, mit Grund). Das Archiv laesst sich getrennt vom Logbuch filtern."
@@ -22,9 +22,12 @@ tags:
   - web
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 510c47d5fb15e817b0cf3f0d1b1ee5f6579fd699
+  - 33c52f8ba15187ff4357a633b4b8955b5f566b27
+  - e7fab6805b8fa1d305dea702c8d52b73184d1fd0
 created-at: 2026-11-02T09:18:16Z
-updated-at: 2026-11-02T09:30:16Z
+updated-at: 2026-11-02T10:24:31Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-58445
@@ -32,10 +35,16 @@ claimed-at: 2026-11-02T09:18:50Z
 outcome-what: "Karten im Web zeigen archivierte Tickets als fertig (durchgestrichen), liegen gelassen (gedimmt, Badge mit Herkunfts-Lane) oder abgelehnt (roter Rand, Zeile Art – Grund); die Checkbox 'All tickets ever' ist durch einen Where-Chip-Filter (board/logbook/archive/rejected) ersetzt, ?all=1 liest als alle vier."
 outcome-why: Im Archiv sah ein liegen gelassenes Ticket wie ein offenes aus und ein abgelehntes nur als grauer Nebentext; Logbuch und Archiv liessen sich nicht getrennt zeigen.
 outcome-resolves: DF70XX
-review-summary: "none"
+review-summary: "Die Web-Karte unterscheidet jetzt drei Ausgaenge: place.ts fate() liefert open/done/left/rejected; TicketCard streicht fertige durch, dimmt liegen gelassene (opacity 0.6, Zusatz 'left unfinished', Badge zeigt die Herkunfts-Lane statt 'archive') und gibt abgelehnten einen roten linken Rand plus rote Zeile 'rejected: <Art> – <Grund>'. Den Grund liefert Go neu als rejected_why (web.go, web_source.go cards()). Die Checkbox 'All tickets ever' ist durch einen vierten Chip-Filter 'Where' (board/logbook/archive/rejected, auch 'not X') ersetzt; der Server wird nur mit all=1 gefragt, wenn ein Chip mehr als board meint (wantsFiled), und alte Links ?all=1 lesen als alle vier Orte. dist ist neu gebaut und reproduzierbar."
 round: 3
-review-gaps: "none - geprueft: whereOf (filter.ts) und fate (place.ts) lesen beide place+rejected, beantworten aber verschiedene Fragen (Ort fuer den Filter vs Aussehen der Karte), bleiben getrennt; isFiled hat weiter zwei Aufrufer (UnassignedList, fate); keine verwaisten Importe, CSS .all mit der Checkbox entfernt; Kosten: whereOf pro Ticket pro Filterlauf, trivial."
-test-verdict: "fail: Karte klebt Trennzeichen an: 'wontfix– nobody…' und 'in the archive· left unfinished'"
+review-gaps: |-
+  note: ohne Where-Chip zeigen Epics weiter ihre abgelegten Mitglieder - die Entscheidung sagte 'ohne Chip nur board'; bewusst so (Notiz 09:27), gilt aber nur fuer die Liste ohne Epic
+  note: TicketDetails.svelte nutzt badgeLane auch - die Detailansicht eines archivierten Tickets zeigt jetzt ebenfalls die Herkunfts-Lane statt 'archive'; konsistent, aber nicht im DoD genannt
+  note: die Optik selbst (durchgestrichen, gedimmt, roter Rand) ist nur ueber fate() getestet, nicht ueber die gerenderte Karte; testing hat sie per Screenshot geprueft
+test-verdict: "pass: go vet + go test ./... -race RC=0 (33 Pakete), npm test 16/16, vite build ok; DoD 1-5 im Baum geprueft; Scratch-Board mit offen/liegen gelassen/abgelehnt per jaira web + headless chrome: durchgestrichen/gedimmt mit Lane backlog/roter Rand mit 'rejected: wontfix – <Grund>', ?where=rejected zeigt nur das abgelehnte, ?where=archive&where=rejected beide archivierten"
+review-verdict: "Der Diff erfuellt alle fuenf DoD-Punkte; npm test (16/16) und go test ./internal/cli -run TestWeb gruen, vite build reproduziert den eingecheckten dist byte-gleich. Keine Defekte gefunden."
+review-round: 3
+review-check: "1. cd core/web/ui && npm test  -> 16 pass, darunter 'the place filter keeps the board, the logbook, the archive and the rejected apart'  2. go run ./cmd/jaira web in einem Repo mit je einem Ticket im Logbuch, einem per 'jaira archive' aus backlog abgelegten und einem per 'jaira reject --force' abgelehnten  3. im Filter 'Where' archive und rejected waehlen  4. das abgelegte ist gedimmt, Badge 'backlog', Zeile 'in the archive · left unfinished'  5. das abgelehnte hat roten linken Rand und rote Zeile 'rejected: wontfix – <Grund>'  6. Where = logbook: Titel durchgestrichen, Badge 'archive'  7. URL mit ?all=1 oeffnen -> alle vier Where-Chips sind gesetzt"
 ---
 
 # Im Web sieht man einem archivierten Ticket an, ob es fertig, liegen gelassen oder abgelehnt ist, und das Archiv laesst sich filtern
@@ -73,3 +82,11 @@ Frage 2 (Filter statt 'All tickets ever'): 1) (Empfohlen) Chip-Auswahl 'Wo' mit 
 - **2026-11-02 09:27 · Alexander Sacharov** — critique 1: fate/Fate-Export aus entities/ticket/index.ts ist ungenutzt - streichen. Bewusst stehen gelassen: ein alter Link ?all=1 waehlt alle vier Orte, narrows() ist dann wahr und Epics ohne Ticket verschwinden aus der Liste, 'Clear' erscheint - harmlos, Ort-Filter ist ein echter Filter. Abgelehnte Karte hat zwei Zeilen ('in the archive' grau + rote Grund-Zeile) - gewollt, Ort und Grund sind zwei Aussagen.
 - **2026-11-02 09:28 · Alexander Sacharov** — critique 2: nichts mehr; Entscheidungen aus critique 1 bleiben stehen.
 - **2026-11-02 09:29 · Alexander Sacharov** — testing 1: Screenshot auf Scratch-Board (headless chrome, ?where=board&where=archive&where=rejected): drei Zustaende sichtbar und richtig, aber Svelte trimmt das Leerzeichen vor {#if} in TicketCard.svelte:36/39 -> 'wontfix– nobody needs it' und 'in the archive· left unfinished'. Fix: Trenner als {' – '} / {' · '} schreiben.
+- **2026-11-02 09:30 · Alexander Sacharov** — critique 3 / optimize 2: Trenner-Fix ist zwei String-Literale, nichts zu sagen.
+- **2026-11-02 09:30 · Alexander Sacharov** — testing 2: Suite lief auf 33c52f8b; e7fab680 aendert nur TicketCard.svelte + dist, danach npm test + build + Screenshot erneut. Screenshots: scratchpad shot2.png/shot3.png (lokal).
+- **2026-11-02 10:06 · Alexander Sacharov** — explain: Der Review fand keinen Defekt, nur drei Hinweise: Epics zeigen ohne Where-Chip weiter abgelegte Mitglieder, die Detailansicht zeigt nun die Herkunfts-Lane statt 'archive', und die Optik ist nur ueber fate() getestet, nicht ueber die gerenderte Karte.
+Warum: Alle fuenf DoD-Punkte sind erfuellt und die Tests sind gruen; die Hinweise sind Randfaelle ohne Folgen fuer das Ziel, ein Archiv-Ticket auf einen Blick einzuordnen.
+1) Zurueckgeben und die Epic-Liste ohne Chip auf 'nur board' bringen, dazu einen Test fuer die gerenderte Karte [give back]
+2) Das Ticket so annehmen; die drei Hinweise bleiben als bekannte Randfaelle stehen [accept]
+Empfehlung: 2 - die Epic-Entscheidung ist bewusst getroffen (Notiz 09:27), der Rest ist konsistent und per Screenshot geprueft.
+- **2026-11-02 10:23 · Alexander Sacharov** — decision: 2) Das Ticket so annehmen; die drei Hinweise bleiben als bekannte Randfaelle stehen
