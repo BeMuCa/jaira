@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:26:43Z
+updated-at: 2026-11-02T20:26:52Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
@@ -101,3 +101,4 @@ review-check: |-
 - **2026-11-02 20:21 · Alexander Sacharov** — critique 1: zwei kleine Funde - keysEdit doppelter Key-Vergleich (edit.ts), Short von 'epic set' nennt die Keys nicht. Sonst stehen gelassen: Inline-'external: KEY URL' lesen bleibt (verhindert Datenverlust beim naechsten writeExternal); web.External traegt URL und Link, damit LinkableURL nur in Go entschieden wird; ticketsForKey liegt bei den Epic-Helfern in epics.go.
 - **2026-11-02 20:22 · Alexander Sacharov** — critique 2: beide Funde aus Runde 1 behoben (edit.ts keysEdit, epic set Short) - nichts weiter.
 - **2026-11-02 20:24 · Alexander Sacharov** — review: an einen frischen Agenten uebergeben (Herdr-Tab via run-lane.sh --no-worktree).
+- **2026-11-02 20:26 · Alexander Sacharov** — review: frischer Agent. Gelesen: Go- und UI-Diff 783c6009..HEAD (2 Commits), worktree_diff enthaelt nur fremde .jaira/milestones/ - nicht Teil des Tickets. Geprueft: go build/vet, go test core/epic core/web internal/cli, npm test, dist = frischer vite build. Kein Blocker; drei Notizen in review-gaps (type=url blockiert Speichern bei handeditierter Nicht-URL).
