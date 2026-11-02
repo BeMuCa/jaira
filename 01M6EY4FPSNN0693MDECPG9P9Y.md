@@ -1,7 +1,7 @@
 ---
 id: 01M6EY4FPSNN0693MDECPG9P9Y
 title: "Ein Epic traegt einen externen Schluessel mit Link, und Epics und Tickets lassen sich danach suchen und filtern"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -28,13 +28,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T20:10:12Z
-updated-at: 2026-11-02T20:41:11Z
+updated-at: 2026-11-02T20:41:15Z
 updated-by: Alexander Sacharov
 outcome-what: "Epics tragen 'external:' (Blockliste KEY URL) im Frontmatter ihres Refs; epic create/set --external/--external-rm, epic show/ls zeigen sie, epic ls --external und list --external filtern; jaira web zeigt Links, editiert und filtert nach Key."
 outcome-why: "Alex rechnet Stunden ueber JIRA-Stories ab: ein Epic je Story, und der Schluessel darf nicht in Code-Commits landen - darum nur auf dem Epic-Ref."
 outcome-resolves: "Epics und ihre Tickets lassen sich nach dem Schluessel einer Aufgabe in einem anderen System finden, ohne dass der Schluessel ein Ticket-File beruehrt."
 review-summary: "Epics tragen jetzt im Frontmatter ihres Refs eine Blockliste 'external:' mit je einer Zeile '<KEY> [<URL>]' (core/epic/external.go). 'jaira epic create|set --external' fuegt einen Schluessel hinzu oder verlinkt ihn neu (Vergleich ohne Gross/Klein, URL nur http/https, sonst exit 2), '--external-rm' nimmt ihn weg; der letzte entfernte Schluessel nimmt den Block mit, alte Epics bleiben byte-gleich. Von Hand geschriebene Formen (Wert auf der 'external:'-Zeile, gequotete Zeilen, Nicht-URL) werden gelesen und beim naechsten Schreiben erhalten. Merge im Ref-Rennen wendet Hinzufuegen/Entfernen je Schluessel auf die andere Seite an. 'epic show' und 'epic ls' (auch --json) zeigen die Schluessel, 'epic ls --external' filtert Epics, 'jaira list --external' zeigt Mitglieder aller Epics mit dem Schluessel samt Folge-Tickets (geschlossene Epics eingeschlossen). jaira web liefert je Schluessel key/url und ein 'link' nur fuer http(s); die Epic-Liste zeigt ihn als Link, der Epic-Editor hat KEY/URL-Zeilen und schickt add/drop als Differenz, die FilterBar hat einen Key-Chip, der Epics und Tickets (ueber die Schluessel ihrer Epics) filtert. Kein Ticket-Ref, keine Datei im Arbeitsbaum und kein Commit ausserhalb refs/jaira/epics traegt den Schluessel (Test). Release-Note in core/release/notes/PG9P9Y.md."
-round: 2
+round: 3
 review-gaps: |-
   note: EditEpicForm.svelte - das URL-Feld ist type="url"; traegt ein von Hand editiertes Epic eine Zeile wie 'C-3 not a link', blockiert die Browser-Validierung das Speichern des ganzen Formulars (auch Titel/Text), bis man die Zeile leert oder repariert
   note: der Merge-Pfad fuer Schluessel ist nur auf Ebene core/epic getestet (TestMergeKeepsBothSidesKeyChanges), nicht ueber ein echtes Rennen zweier Clones um den Ref
