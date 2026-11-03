@@ -24,7 +24,8 @@ related: []
 follows: 01M67K6Z3NSBTBXAK4EVCMN1YT
 commits: []
 created-at: 2026-11-03T17:25:25Z
-updated-at: 2026-11-03T17:25:25Z
+updated-at: 2026-11-03T22:58:14Z
+updated-by: berkc
 ---
 
 # jaira web: die Zuordnung jaira -> Jira (Epic, Milestone, Road, Ticket, Lane) ist auf einer Seite einstellbar, mit Default
