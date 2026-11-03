@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:00:32Z
+updated-at: 2026-11-03T23:00:34Z
 updated-by: berkc
 claimed-by: berk-ca-130584
 claimed-at: 2026-11-03T17:20:46Z
@@ -57,3 +57,4 @@ F2 Ein Milestone in zwei Roads - A (Empfohlen) verboten: create/add verweigert (
 F3 Wo liegt eine Road - A (Empfohlen) wie Milestones: Datei .jaira/roads/<name>-<ID>.md (eine Zeile pro Milestone-ID) plus Ref je ID; hand-editierbar, merge-faehig, Roadmap liest wie heute Dateien. - B nur auf Refs wie Epics (refs/jaira/roads/<name>); kein Datei-Konflikt im Branch, aber nicht im Diff sichtbar und offline nur ueber Outbox.
 F4 Epic-Etikett pro Board - A (Empfohlen) eigenes Ticket: das TUI zeigt heute gar keine Epics, also braucht es erst eine Epic-Ansicht; dieses Ticket liefert nur Roads. Ablageort dort: eine committete Datei je Board neben den Lanes (.jaira/lanes/epic bzw. .jaira/boards/<n>/lanes/epic) mit milestone|road|epic. - B hier mit: Datei wie in A, und das TUI bekommt ein 'Epic'-Etikett an Karte/Roadmap. Macht das Ticket etwa doppelt so gross. - C Einstellung in ~/.jaira/settings.json (pro Person) - widerspricht 'jedes Team entscheidet'.
 - **2026-11-03 22:58 · berkc** — Maintainer 03.11.2026 zu F1-F4: F1 'Eine Road ist eine ganze Swimlane' - die Road umfasst die ganze Swimlane samt Verzweigungen; Aufbau innerhalb bleibt aus after:, die Road fasst ihre Milestones zusammen (Milestones kennen ihre Road nicht). F2 verboten (exit 3, validate meldet Merge-Faelle). F3 nur Ref (wie Epics) - reicht, damit andere Klone/Boards sie sehen. F4 nicht in KQQD1H: 'Epic' wird vorerst ein Milestone sein; die Wahl gehoert in die Web-Zuordnungsseite (VD4ZDW).
+- **2026-11-03 23:00 · berkc** — Brainstorm nach den Antworten 03.11/04.11 (Worker), selbst entschieden: (1) Road wie Epic per Name auf dem Ref (refs/jaira/roads/<name>, slug), Anzeige ueber title; Umbenennen im TUI aendert nur title - so braucht es kein Loeschen eines Refs (Refs werden nie geloescht). (2) Zu F1 'ganze Swimlane' + Mitgliederliste: Lane eines Milestones = die Road, die ihn listet; sonst die Lane seines ersten Vorgaengers (wie heute); sonst eigene Lane. Ein erster Vorgaenger in einer anderen Lane wird zum Pfeil zwischen Lanes, der Milestone ist dann ein Top seiner Lane; eine Lane kann so mehrere Tops nebeneinander haben. Ein neuer Milestone nach einem Road-Mitglied steht damit ohne Schreiben der Road in ihrer Lane - die Liste muss nicht bei jedem Platzieren nachgezogen werden. (3) Doppelte Mitgliedschaft nach Merge: die aeltere Road (created-at, dann Name) bekommt den Milestone. (4) F4 Epic-Etikett nicht hier (VD4ZDW). DoD 1-4 umformuliert, 5-6 neu.
