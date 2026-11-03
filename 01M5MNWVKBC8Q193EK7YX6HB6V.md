@@ -16,9 +16,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:58Z
-updated-at: 2026-10-26T20:21:20Z
-assignee: BeMuCa
-updated-by: BeMuCa
+updated-at: 2026-11-03T17:18:03Z
+assignee: berkc
+updated-by: berkc
 claimed-by: ""
 claimed-at: ""
 outcome-what: "Der Cockpit-Einzeiler zeigt 'vorher → jetzt' nur noch aus dem Board: shorten() in core/mod/builtin/jaira-cockpit/hooks/register.tsx liest die Lane des einen Tickets per `jaira show <id> --json`, erst nachdem digest() ein Ticket und keinen Fehlschlag gefunden hat (digest ist jetzt async). Die Lane, die der Berichtstext nennt, wird nie gelesen; laneChangeOf liegt in digest.ts."
