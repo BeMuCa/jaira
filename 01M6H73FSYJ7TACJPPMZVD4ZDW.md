@@ -24,7 +24,7 @@ related: []
 follows: 01M67K6Z3NSBTBXAK4EVCMN1YT
 commits: []
 created-at: 2026-11-03T17:25:25Z
-updated-at: 2026-11-03T22:58:14Z
+updated-at: 2026-11-03T22:58:16Z
 updated-by: berkc
 ---
 
@@ -47,4 +47,4 @@ updated-by: berkc
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-11-03 22:58 · berkc** — Maintainer 03.11.2026: Auf dieselbe Web-Seite gehoert auch, worauf jaira selbst das Wort 'Epic' abbildet (Milestone, Road oder eigenes Epic-Objekt) - pro Board, damit jedes Team waehlt. Default vorerst: Epic = Milestone. Herkunft: KQQD1H F4.
