@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T17:21:02Z
+updated-at: 2026-11-03T17:22:46Z
 updated-by: berkc
 claimed-by: berk-ca-130584
 claimed-at: 2026-11-03T17:20:46Z
@@ -46,3 +46,4 @@ claimed-at: 2026-11-03T17:20:46Z
 ## Progress
 - **2026-10-31 01:25 · berkc** — Maintainer 31.10.2026 (Punkt 11): Wenn Roads Name + Beschreibung bekommen, koennen sie als Epics dienen - eine Road ist dann ein Feature, die Milestones darauf die Runden. Im Plan pruefen, ob Epic und Road ein Objekt werden.
 - **2026-11-03 17:18 · berkc** — Maintainer 03.11.2026: (1) Statt 'road:' am ersten Milestone: die Road ist ein eigenes Objekt (Name, Beschreibung, geordnete Liste ihrer Milestones) - Eltern/Kind; Milestones wissen nicht, zu welcher Road sie gehoeren. (2) Epics bleiben. Pro Board waehlbar, worauf das Etikett 'Epic' im TUI zeigt: auf einen Milestone, auf eine Road, oder auf das eigene Epic-Objekt - jedes Team entscheidet selbst. (3) Was in einem Milestone nicht fertig wird, bleibt in diesem Milestone. Klaeren im Brainstorm: Verhaeltnis Road-Liste zu after: (ersetzt die Liste after: innerhalb einer Road?), ein Milestone in zwei Roads, und dass Epic seit PG9P9Y externe Schluessel/Links traegt.
+- **2026-11-03 17:22 · berkc** — Brainstorm 03.11 (Befund im Code): (a) Eine Swimlane ist heute KEINE Kette, sondern der Baum unter einem Top: core/milestone/layout.go baut Lanes aus after:, das erste after: entscheidet die Lane, Geschwister (zwei Milestones mit gleichem Vorgaenger) sind erlaubt und werden nebeneinander gezeichnet (internal/tui/layer.go placement onRight). Eine geordnete Liste kann Geschwister nicht ausdruecken. (b) Milestones sind repo-weit (.jaira/milestones/<name>-<ID>.md + Ref je ID), nicht pro Board; Epics liegen nur auf Refs (refs/jaira/epics/<name>, core/epic/epic.go). (c) Das TUI zeigt Epics heute nirgends - ein 'Epic'-Etikett, das man umbiegen koennte, existiert im TUI nicht; Epics sieht man nur in CLI und Web (Epic-Editor aus PG9P9Y). (d) 'Unfertiges wandert in den naechsten Milestone' steht nur als Rat: internal/cli/milestones.go:52 (Hilfe), core/milestone/milestone.go:174 (Kommentar im neuen Milestone-File), core/epic/epic.go:7 (Paketdoku). Punkt (3) des Maintainers dreht das um; kein Code verschiebt Tickets. (e) Pfeile in der Roadmap wandern heute zwischen Bubbles und [+]-Zielen, Enter auf einer Bubble oeffnet ihr Detail - fuer die Road-Auswahl reicht ein neues Ziel 'Road-Kopf' ueber dem Top (hoch vom Top); das entscheidet der Plan.
