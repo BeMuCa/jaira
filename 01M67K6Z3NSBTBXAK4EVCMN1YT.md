@@ -27,7 +27,7 @@ related:
   - 01M5MNWJF240306ZVDA41K3RA8
 commits: []
 created-at: 2026-10-30T23:44:38Z
-updated-at: 2026-11-03T17:29:08Z
+updated-at: 2026-11-03T23:04:58Z
 updated-by: berkc
 claimed-by: berk-ca-131411
 claimed-at: 2026-11-03T17:20:56Z
@@ -150,3 +150,4 @@ Unabhaengig: DBZ9NM gestaltete Startausgabe.
 KORREKTUR fuer GF2MAB, AS9WSS, 35Y6N5: Epics tragen seit PG9P9Y schon 'external' als Liste {key, url} (core/epic/external.go:23-29). Ticket und Milestone nehmen dieselbe Form, nicht 'jira:<KEY>' (Notiz an GF2MAB steht, die anderen zwei sind nur auf ihrem Ref).
 Bewusst NICHT angelegt: Neu-zugewiesen-Markierung (Punkt 5 der Nachricht bricht ab - offen); PM bewegt Lanes/nimmt signoff an (offen); Schluesselbund/Secret-Manager/Token aus Umgebungsvariable (Maintainer: spaeter); GitHub/GitLab/YouTrack (nur Jira, auf Anfrage; Rest in 1YTBPX); Dauer-Sync mit Jira (abgelehnt: API-Quoten, 'kleiner als paca'); Hosting fuer mehrere PMs (kein Server per Konstruktion); README-Abschnitt (gibt es schon: H319TV, nach CW2X0F/NEYWJH aktualisieren).
 Hinweis: GF2MAB landete beim Anlegen zuerst nur als Datei (kein Ref); ein 'jaira tag' hat es nachtraeglich auf den Ref gebracht. Der Milestone-Ref wurde zuerst mit 'someone else wrote it first' abgelehnt, nach 'jaira fetch' ist er auf dem Remote.
+- **2026-11-03 23:04 · berkc** — Maintainer 04.11.2026: PM = wer ueber jaira web arbeitet. Der PM bewegt keine Lanes und nimmt nicht in signoff ab. CMN1YT wird als aufgeteilt rejected (Maintainer gibt den Befehl selbst).
