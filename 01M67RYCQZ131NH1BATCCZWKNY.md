@@ -18,7 +18,7 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-03T17:28:47Z
+updated-at: 2026-11-03T17:28:55Z
 updated-by: berkc
 claimed-by: berk-ca-130447
 claimed-at: 2026-11-03T17:20:45Z
@@ -34,7 +34,8 @@ claimed-at: 2026-11-03T17:20:45Z
   proof: release.entryOf hooks first: TestEntryPutsEveryHookOfAReleaseFirst; TestUpdateNotesShowHooks; TestNotesViewPutsHooksFirst
 - [x] Ein Board, das 3 Versionen zurueckliegt, sieht die Notes aller 3; Test
   proof: TestSinceThreeVersionsBehindReturnsAllThree; TestUpdateThreeVersionsBehindPrintsAllThree; TestPopupThreeVersionsBehindPagesAllThree
-- [ ] Release-Notiz unter core/release/notes/
+- [x] Release-Notiz unter core/release/notes/
+  proof: core/release/notes/CZWKNY.md
 
 ## Options
 
