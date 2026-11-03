@@ -32,7 +32,7 @@ commits:
   - 07dbb35e8f53f1ab2704e6d690e5dc664216f625
   - 94792682d5ded521fb7f7f7eeed271561c6631fa
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:34:10Z
+updated-at: 2026-11-03T23:34:12Z
 updated-by: berkc
 claimed-by: berk-ca-423748
 claimed-at: 2026-11-03T23:32:10Z
@@ -106,3 +106,4 @@ F4 Epic-Etikett pro Board - A (Empfohlen) eigenes Ticket: das TUI zeigt heute ga
 - **2026-11-03 23:28 · berkc** — critique 1 (first pass, whole diff read): (1) core/refsync/road.go:82 rebaseRoad is a renamed copy of rebaseEpic (core/refsync/epic.go:89) - fold both into one refsync function parametrised by the kind's outbox/gitref/merge funcs, so the lost-race merge exists once. (2) core/road/road.go Owner is unused outside its test; Layout computes the same map (layout.go roadOf) - remove it. Let stand: separate core/road package (plan note 23:02), gitref/outbox mirrors, Layout/TUI/CLI shape, validate check inline. Next pass reads only these two.
 - **2026-11-03 23:30 · berkc** — critique 2 fixed: rebaseEpic and rebaseRoad now both call Syncer.rebaseRef (core/refsync/rebase.go) with a refKind of func pieces (pending, queue, drop, record, readAt, read, write, merge); the wrappers at the end of core/refsync/epic.go and road.go pass epic.Merge / road.Merge and the Box/Repo methods. rebaseAttempts moved to rebase.go. Owner deleted from core/road/road.go with its test assertion; no caller anywhere (grep). No DoD proof named Owner or a moved line, so no dod re-proof. Epic behaviour: no refsync test covers an epic lost race (only road_test.go TestAConcurrentRoadListingIsMergedNotLost covers the road one), so epic equivalence rests on the line-by-line move plus go test ./core/refsync ./core/epic ./core/road (exit 0).
 - **2026-11-03 23:32 · berkc** — critique 2: read only commit 94792682 against the two critique-1 findings; both resolved (rebase.go rebaseRef shared by epic/road; Owner gone, grep clean; go vet refsync/road clean). No new findings; next pass need not re-read critique scope.
+- **2026-11-03 23:34 · berkc** — optimize: one edit (roadJSON takes the names map; ls hoists it). Considered and left: core/road duplicates core/epic's line-file mechanics (extracting would touch epic/milestone, not a cleanup); header x formula twice in layerdraw.go; harmless nil guard in tui reload. go test ./internal/cli -run 'Road|Validate' green.
