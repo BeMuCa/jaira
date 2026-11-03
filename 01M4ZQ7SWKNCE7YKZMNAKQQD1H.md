@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:04:23Z
+updated-at: 2026-11-03T23:04:25Z
 updated-by: berkc
 claimed-by: berk-ca-130584
 claimed-at: 2026-11-03T17:20:46Z
@@ -75,3 +75,4 @@ F4 Epic-Etikett pro Board - A (Empfohlen) eigenes Ticket: das TUI zeigt heute ga
 - **2026-11-03 23:00 · berkc** — Brainstorm nach den Antworten 03.11/04.11 (Worker), selbst entschieden: (1) Road wie Epic per Name auf dem Ref (refs/jaira/roads/<name>, slug), Anzeige ueber title; Umbenennen im TUI aendert nur title - so braucht es kein Loeschen eines Refs (Refs werden nie geloescht). (2) Zu F1 'ganze Swimlane' + Mitgliederliste: Lane eines Milestones = die Road, die ihn listet; sonst die Lane seines ersten Vorgaengers (wie heute); sonst eigene Lane. Ein erster Vorgaenger in einer anderen Lane wird zum Pfeil zwischen Lanes, der Milestone ist dann ein Top seiner Lane; eine Lane kann so mehrere Tops nebeneinander haben. Ein neuer Milestone nach einem Road-Mitglied steht damit ohne Schreiben der Road in ihrer Lane - die Liste muss nicht bei jedem Platzieren nachgezogen werden. (3) Doppelte Mitgliedschaft nach Merge: die aeltere Road (created-at, dann Name) bekommt den Milestone. (4) F4 Epic-Etikett nicht hier (VD4ZDW). DoD 1-4 umformuliert, 5-6 neu.
 - **2026-11-03 23:02 · berkc** — Plan (pre-process 04.11): Road spiegelt den Epic-Weg auf Refs (gitref -> outbox Kind -> refsync mit Merge bei verlorenem Rennen), weil F3 'nur Ref wie Epics' ist und Fetch schon refs/jaira/* holt - kein neuer Sync-Mechanismus. Eigenes Paket core/road statt Erweiterung von core/epic: Epic hat Externals, Status, Textkoerper und Ticket-Mitglieder, eine Road nichts davon. Layout bekommt die Road-Listen als [][]string, damit core/milestone core/road nicht importiert (road importiert milestone.ParseMember). Navigation im TUI ist geometrisch (layerScene.step), daher reicht ein Ziel onRoad in einer neuen Kopfzeile ueber der Lane; Pfeil hoch vom Top erreicht es ohne Sonderfall. Name des Refs fest (slug), Umbenennen im TUI aendert nur title - Refs werden nie geloescht.
 - **2026-11-03 23:03 · berkc** — Step 1 gitref: RoadPrefix/RoadRefName/RoadSHA/ReadRoad/ReadRoadAt/WriteRoad/ListRoads mirror the epic ones. Test core/gitref/road_test.go mirrors milestone_test.go (no epic gitref test existed).
+- **2026-11-03 23:04 · berkc** — Step 2 outbox: KindRoad (dir roads/) at queueKind ref switch, readDir kinds list, lost-race keep-queued condition, send switch; Sender gained WriteRoad (gitref.Repo has it). Test TestARoadIsQueuedSentAndKeptOnARace in outbox_test.go.
