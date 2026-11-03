@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:25Z
-updated-at: 2026-11-03T22:47:10Z
+updated-at: 2026-11-03T22:47:35Z
 updated-by: berkc
 claimed-by: berk-ca-130899
 claimed-at: 2026-11-03T17:20:49Z
@@ -41,7 +41,7 @@ claimed-at: 2026-11-03T17:20:49Z
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] plugin.json (core/mod/builtin/jaira-cockpit/.claude-plugin/plugin.json): add userConfig key showTeammates after workerContextShare: {"type": "boolean", "title": "Teammates' waiting tickets", "description": "Show the band's line with the tickets waiting for your teammates. Off: the band shows only your own tickets and nobody's.", "default": false}. Keep version 0.2.1.
+- [~] plugin.json (core/mod/builtin/jaira-cockpit/.claude-plugin/plugin.json): add userConfig key showTeammates after workerContextShare: {"type": "boolean", "title": "Teammates' waiting tickets", "description": "Show the band's line with the tickets waiting for your teammates. Off: the band shows only your own tickets and nobody's.", "default": false}. Keep version 0.2.1.
 - [ ] register.tsx (hooks/register.tsx): in register(), after the line 'const share = ...workerContextShare...', add a comment line '// Whether the band shows the line with the teammates' waiting tickets; off unless set.' and 'const showTeammates = options.showTeammates === true'. In the band render handler replace 'const theirs = view?.theirs ?? []' with 'const theirs = showTeammates ? view?.theirs ?? [] : []'. Touch nothing else (board.ts unchanged).
 - [ ] tests/board.test.ts: give the four tests that use the teammates' line the option, as the 'the share is a setting' test does - test(name, { options: { showTeammates: true } }, async ($, on) => ...): 'only the person's own and nobody's tickets get buttons and count; ...' (~l.1044), 'a Discuss chat on a teammate's ticket stays open ...' (~l.1072), 'the band reads top down ...' (~l.1121), 'opened by +N more, ...' (~l.1149).
 - [ ] tests/board.test.ts: new test right after 'without a word from jaira whoami ...' (~l.1090): 'by default a teammate's waiting ticket is not in the band; the person's own, an alias's and nobody's are'. w.me = { identity: 'Alexander Sacharov', aliases: ['Alexander Sacharov', 'alex@example.org'] }; w.tickets = [{ ...SIGNOFF, assignee: 'Alexander Sacharov' }, { ...SIGNOFF, handle: 'AB12CD', assignee: 'alex@EXAMPLE.org' }, { ...SIGNOFF, handle: 'CD34EF', assignee: '' }, { ...SIGNOFF, handle: 'EF34GH', assignee: 'Berk' }, WORKING]; startSession; headLine = '0 worker | 0 review | 3 waiting for you | 5h 34%'; band has accept-MG677R, accept-AB12CD, accept-CD34EF; find({ key: 'theirs' }) undefined; await drawn($) contains neither 'EF34GH' nor 'Berk'.
