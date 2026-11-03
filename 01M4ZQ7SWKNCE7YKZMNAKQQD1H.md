@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:17:02Z
+updated-at: 2026-11-03T23:21:48Z
 updated-by: berkc
 claimed-by: berk-ca-130584
 claimed-at: 2026-11-03T17:20:46Z
@@ -62,7 +62,7 @@ question: ""
 - [x] CLI jaira road create|add|rm|set|ls [--json], zweite Road exit 3; Tests
 - [x] validate: Warnung road_duplicate; Test
 - [x] TUI: Roads laden, Kopfzeile je Lane (Titel / Road-n), Ziel onRoad per Pfeil hoch, Enter-Namensfeld, Enter speichert (unbenannt: Road mit allen Lane-Milestones), Esc; Hilfe; Tests
-- [ ] Ratschlag-Texte 'Unfertiges bleibt im Milestone' (milestones.go Hilfe, milestone.go Vorlage, epic.go Doku)
+- [x] Ratschlag-Texte 'Unfertiges bleibt im Milestone' (milestones.go Hilfe, milestone.go Vorlage, epic.go Doku)
 - [ ] README, docs/COMMANDS.md, core/release/notes/KQQD1H.md
 
 ## Progress
