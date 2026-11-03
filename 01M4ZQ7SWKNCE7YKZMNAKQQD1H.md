@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T17:18:05Z
+updated-at: 2026-11-03T17:18:20Z
 updated-by: berkc
 ---
 
@@ -43,3 +43,4 @@ updated-by: berkc
 
 ## Progress
 - **2026-10-31 01:25 · berkc** — Maintainer 31.10.2026 (Punkt 11): Wenn Roads Name + Beschreibung bekommen, koennen sie als Epics dienen - eine Road ist dann ein Feature, die Milestones darauf die Runden. Im Plan pruefen, ob Epic und Road ein Objekt werden.
+- **2026-11-03 17:18 · berkc** — Maintainer 03.11.2026: (1) Statt 'road:' am ersten Milestone: die Road ist ein eigenes Objekt (Name, Beschreibung, geordnete Liste ihrer Milestones) - Eltern/Kind; Milestones wissen nicht, zu welcher Road sie gehoeren. (2) Epics bleiben. Pro Board waehlbar, worauf das Etikett 'Epic' im TUI zeigt: auf einen Milestone, auf eine Road, oder auf das eigene Epic-Objekt - jedes Team entscheidet selbst. (3) Was in einem Milestone nicht fertig wird, bleibt in diesem Milestone. Klaeren im Brainstorm: Verhaeltnis Road-Liste zu after: (ersetzt die Liste after: innerhalb einer Road?), ein Milestone in zwei Roads, und dass Epic seit PG9P9Y externe Schluessel/Links traegt.
