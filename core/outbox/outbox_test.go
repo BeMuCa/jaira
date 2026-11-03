@@ -63,6 +63,15 @@ func (f *fakeSender) WriteEpic(name string, content []byte, lease string) (strin
 	return "sha-" + name, nil
 }
 
+func (f *fakeSender) WriteRoad(name string, content []byte, lease string) (string, error) {
+	f.seen[name] = lease
+	if err := f.err[name]; err != nil {
+		return "", err
+	}
+	f.wrote = append(f.wrote, "road/"+name+":"+string(content))
+	return "sha-" + name, nil
+}
+
 func box(t *testing.T) *outbox.Box {
 	t.Helper()
 	return &outbox.Box{Dir: filepath.Join(t.TempDir(), "outbox")}
@@ -425,4 +434,38 @@ func mustList(t *testing.T, b *outbox.Box) []outbox.Entry {
 		t.Fatal(err)
 	}
 	return l
+}
+
+// A road is queued and sent like an epic: it has no file on disk, so the
+// queue is the only copy of an edit made offline, and a lost race keeps it.
+func TestARoadIsQueuedSentAndKeptOnARace(t *testing.T) {
+	b := box(t)
+	if err := b.QueueRoad("auth-rollout", []byte("new"), "", "ada"); err != nil {
+		t.Fatalf("queue: %v", err)
+	}
+	if e, ok := b.PendingRoad("auth-rollout"); !ok || e.Ref != "refs/jaira/roads/auth-rollout" {
+		t.Fatalf("PendingRoad = %+v, %v; want the queued road on its ref", e, ok)
+	}
+	f := newFake()
+	f.err["auth-rollout"] = gitref.ErrRaceLost
+	res, err := b.Flush(f)
+	if err != nil {
+		t.Fatalf("flush: %v", err)
+	}
+	if len(res) != 1 || res[0].Outcome != outbox.Rejected {
+		t.Fatalf("flush results = %+v; want one Rejected", res)
+	}
+	if _, ok := b.PendingRoad("auth-rollout"); !ok {
+		t.Fatal("a lost race dropped the road; it must stay queued until it is merged")
+	}
+	delete(f.err, "auth-rollout")
+	if _, err := b.Flush(f); err != nil {
+		t.Fatalf("second flush: %v", err)
+	}
+	if !slices.Equal(f.wrote, []string{"road/auth-rollout:new"}) {
+		t.Errorf("sent %v; want the road once", f.wrote)
+	}
+	if _, ok := b.PendingRoad("auth-rollout"); ok {
+		t.Error("a sent road is still queued")
+	}
 }
