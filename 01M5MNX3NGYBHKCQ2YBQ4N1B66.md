@@ -16,9 +16,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:26:07Z
-updated-at: 2026-10-27T00:49:15Z
-assignee: BeMuCa
-updated-by: BeMuCa
+updated-at: 2026-11-03T17:18:07Z
+assignee: berkc
+updated-by: berkc
 claimed-by: ""
 claimed-at: ""
 outcome-what: "The testing lane (core/lane/builtin/27-testing.md and the board copy .jaira/lanes/testing.md, byte-identical prompt) now says in Gates: build, format/vet, and test only the touched packages (in Go go test ./<pkg> -count=1); never run the full suite in a lane, it runs once before the pull request by the main session (in Go go test ./... -race). Pass 2 says a DoD item that asks for the full suite is left unticked and named in test-verdict as left for that run, not a finding. jaira-worker and jaira-dispatcher SKILL.md carry the rule in one line each. core/release/notes/4N1B66.md tells readers to run jaira lanes use testing --force if their board has a testing lane, jaira roles install --force with their install flag, and to fix a catalogue testing.md first."
