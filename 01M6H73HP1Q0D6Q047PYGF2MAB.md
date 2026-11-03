@@ -23,7 +23,7 @@ related: []
 follows: 01M67K6Z3NSBTBXAK4EVCMN1YT
 commits: []
 created-at: 2026-11-03T17:25:27Z
-updated-at: 2026-11-03T17:26:41Z
+updated-at: 2026-11-03T17:28:22Z
 updated-by: berkc
 ---
 
@@ -47,4 +47,4 @@ updated-by: berkc
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-11-03 17:28 · berkc** — Korrektur aus dem Brainstorm (03.11.2026): Epics tragen seit PG9P9Y schon eine Liste 'external' mit Eintraegen {key, url} (core/epic/external.go:23-29). Wo dieses Ticket 'external: jira:<KEY>' schreibt, gilt stattdessen dieselbe Form {key, url} - fuer Ticket und Milestone ebenso, kein zweites Format. Am Ticket ist 'external' heute nur reserviert (core/ticket/schema.go:77-78).
