@@ -18,7 +18,7 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-03T17:28:07Z
+updated-at: 2026-11-03T17:28:40Z
 updated-by: berkc
 claimed-by: berk-ca-130447
 claimed-at: 2026-11-03T17:20:45Z
@@ -48,7 +48,7 @@ claimed-at: 2026-11-03T17:20:45Z
 - [x] internal/tui/releasenotes.go: styHook bold; lines() emits hooks before Features header; changeLines bullet '> '; tests TestNotesViewPutsHooksFirst, TestPopupThreeVersionsBehindPagesAllThree (popupBoard 0.5.8/0.5.5)
 - [x] CLAUDE.md and AGENTS.md: '- > ' hook bullet after the '- + ' bullet in the release-notes section (never NOTES.md, never notes/<version>/, never MXMDFH.md)
 - [x] core/release/notes/CZWKNY.md: '- > ' hook line + json-order line
-- [ ] gofmt -l, go vet, go test ./core/release ./core/shipped, ./internal/cli -run TestUpdate, ./internal/tui -run 'NotesView|Popup|NotesBase'; tick DoD with proofs; move to critique; one commit code+ticket
+- [x] gofmt -l, go vet, go test ./core/release ./core/shipped, ./internal/cli -run TestUpdate, ./internal/tui -run 'NotesView|Popup|NotesBase'; tick DoD with proofs; move to critique; one commit code+ticket
 
 ## Progress
 - **2026-11-03 17:20 · berkc** — teamlead 03.11.2026: baut auf MXMDFH (Popup, Praefix '- + ') auf, das noch nicht auf master ist. Branch feat/CZWKNY-release-hook startet von origin/feat/MXMDFH-release-notes-popup; der PR geht nach MXMDFH.
