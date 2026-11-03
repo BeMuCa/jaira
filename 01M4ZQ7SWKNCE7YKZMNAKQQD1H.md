@@ -32,7 +32,7 @@ commits:
   - 07dbb35e8f53f1ab2704e6d690e5dc664216f625
   - 94792682d5ded521fb7f7f7eeed271561c6631fa
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:43:01Z
+updated-at: 2026-11-03T23:43:03Z
 updated-by: berkc
 claimed-by: berk-ca-423748
 claimed-at: 2026-11-03T23:32:10Z
@@ -49,6 +49,8 @@ review-gaps: |-
   note: Ctrl-U does not clear the TUI road-name field, only backspace (seen in testing)
   note: core/road repeats core/epic's line-file mechanics (frontEnd/setField/Bytes); left by optimize as out of scope
 test-verdict: "pass: go build ./... + go vet + go test of the 9 touched packages RC=0 (3 known hangers skipped per repo rule); DoD 1-6 verified in the tree; behaviour exercised on a scratch board with a bare remote: road create/set/ls --json, second road exit 3, ref on remote, second clone sees it after fetch, planted duplicate -> validate warning 'auth (older) draws it', TUI roadmap shows titles and Road-1, up+enter renames to the ref, esc writes nothing, naming an unnamed lane creates a road with both its milestones"
+review-verdict: "The diff meets all six DoD items; vet clean and go test ./core/road ./core/milestone ./core/refsync ./core/outbox ./core/gitref ./core/epic ./internal/tui pass, ./internal/cli -run Road|Validate|EveryCommand|Milestone|Epic pass. No blocker found; five notes for the person to weigh."
+review-round: 2
 ---
 
 # Die Swimlanes der Roadmap heissen Roads, tragen einen Namen und lassen sich im TUI umbenennen
