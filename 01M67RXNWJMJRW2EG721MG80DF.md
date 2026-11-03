@@ -1,7 +1,7 @@
 ---
 id: 01M67RXNWJMJRW2EG721MG80DF
 title: "Das Cockpit zeigt nur die Tickets, die mir gehoeren"
-status: todo
+status: pre-process
 ready: true
 creator: berkc
 assignee: berkc
@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:25Z
-updated-at: 2026-11-03T22:45:04Z
+updated-at: 2026-11-03T22:46:04Z
 updated-by: berkc
 claimed-by: berk-ca-130899
 claimed-at: 2026-11-03T17:20:49Z
