@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:25Z
-updated-at: 2026-11-03T22:55:26Z
+updated-at: 2026-11-03T22:55:30Z
 updated-by: berkc
 claimed-by: berk-ca-304689
 claimed-at: 2026-11-03T22:51:53Z
@@ -33,6 +33,7 @@ review-gaps: |-
 test-verdict: "pass: go build ./... RC=0; go test ./core/shipped ./core/mod ./core/release RC=0; claude plugin test . 176 pass 0 fail RC=0; DoD 1-2 verified by test board.test.ts:1097 (mutation: guard at register.tsx:1246 removed -> exactly that test fails), DoD 3 core/release/notes/MG80DF.md one '- !' line; behaviour exercised only in the plugin test harness, not in a live Claude TUI"
 review-verdict: "the diff meets all three DoD items; no defects found. 176/0 cockpit tests and core/shipped, core/mod, core/release green on re-run. Unverified: the switch toggled in a real Claude Code session."
 review-round: 1
+review-check: "1. cd /home/berkc/code/X_General/jaira-MG80DF/core/mod/builtin/jaira-cockpit && claude plugin test .  -> 176 pass, 0 fail  2. live: install this build's jaira-cockpit, on a board with a signoff ticket assigned to someone else (jaira set <id> assignee=Somebody) start a Claude Code session  3. the band shows your own and unassigned waiting tickets but no 'N waiting for Somebody' line  4. turn on the plugin setting showTeammates (plugin settings / userConfig) and restart the session  5. the line 'N waiting for Somebody' appears and opens to that ticket with only a Discuss button"
 ---
 
 # Das Cockpit zeigt nur die Tickets, die mir gehoeren
