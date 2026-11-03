@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T17:23:06Z
+updated-at: 2026-11-03T22:58:11Z
 updated-by: berkc
 claimed-by: berk-ca-130584
 claimed-at: 2026-11-03T17:20:46Z
@@ -54,3 +54,4 @@ F1 Road-Liste vs after: - A (Empfohlen) Die Liste der Road IST die Reihenfolge i
 F2 Ein Milestone in zwei Roads - A (Empfohlen) verboten: create/add verweigert (exit 3); kommt es per git-Merge doch zustande, zeichnet die aeltere Road ihn und validate meldet es. - B erlaubt, in beiden Roads gezeichnet (doppelte Bubble). - C erlaubt, gezeichnet in der ersten, die zweite zeigt einen Verweis.
 F3 Wo liegt eine Road - A (Empfohlen) wie Milestones: Datei .jaira/roads/<name>-<ID>.md (eine Zeile pro Milestone-ID) plus Ref je ID; hand-editierbar, merge-faehig, Roadmap liest wie heute Dateien. - B nur auf Refs wie Epics (refs/jaira/roads/<name>); kein Datei-Konflikt im Branch, aber nicht im Diff sichtbar und offline nur ueber Outbox.
 F4 Epic-Etikett pro Board - A (Empfohlen) eigenes Ticket: das TUI zeigt heute gar keine Epics, also braucht es erst eine Epic-Ansicht; dieses Ticket liefert nur Roads. Ablageort dort: eine committete Datei je Board neben den Lanes (.jaira/lanes/epic bzw. .jaira/boards/<n>/lanes/epic) mit milestone|road|epic. - B hier mit: Datei wie in A, und das TUI bekommt ein 'Epic'-Etikett an Karte/Roadmap. Macht das Ticket etwa doppelt so gross. - C Einstellung in ~/.jaira/settings.json (pro Person) - widerspricht 'jedes Team entscheidet'.
+- **2026-11-03 22:58 · berkc** — Maintainer 03.11.2026 zu F1-F4: F1 'Eine Road ist eine ganze Swimlane' - die Road umfasst die ganze Swimlane samt Verzweigungen; Aufbau innerhalb bleibt aus after:, die Road fasst ihre Milestones zusammen (Milestones kennen ihre Road nicht). F2 verboten (exit 3, validate meldet Merge-Faelle). F3 nur Ref (wie Epics) - reicht, damit andere Klone/Boards sie sehen. F4 nicht in KQQD1H: 'Epic' wird vorerst ein Milestone sein; die Wahl gehoert in die Web-Zuordnungsseite (VD4ZDW).
