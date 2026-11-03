@@ -18,7 +18,7 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-03T17:20:56Z
+updated-at: 2026-11-03T17:23:19Z
 updated-by: berkc
 claimed-by: berk-ca-130447
 claimed-at: 2026-11-03T17:20:45Z
@@ -44,3 +44,4 @@ claimed-at: 2026-11-03T17:20:45Z
 
 ## Progress
 - **2026-11-03 17:20 · berkc** — teamlead 03.11.2026: baut auf MXMDFH (Popup, Praefix '- + ') auf, das noch nicht auf master ist. Branch feat/CZWKNY-release-hook startet von origin/feat/MXMDFH-release-notes-popup; der PR geht nach MXMDFH.
+- **2026-11-03 17:23 · berkc** — pre-process findings: skipped versions ALREADY work. release.Since(stamp) (core/release/release.go selectSince) returns every entry newer than the stamp; jaira update (internal/cli/update.go writeNotes) prints all of them; the popup (internal/tui/releasenotes.go openReleaseNotes, GK1QGT) pages one version per page through all of them. Only missing: a deterministic test for '3 versions behind' (the existing popup test reads real notes and t.Skips under 3). DoD 3 = tests only, no code.
