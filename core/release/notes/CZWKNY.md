@@ -1,0 +1,2 @@
+- > Read the `>` lines at the top of each version first, in the release notes popup and in `jaira update`: each is the one-line pitch of a change.
+- Expect `jaira update --json` to list a version's changes starting `> ` before its others; the text keeps the `> ` so a script can tell them apart.

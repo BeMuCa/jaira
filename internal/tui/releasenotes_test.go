@@ -317,3 +317,42 @@ func TestNoPopupOnAFreshBoardOrDevBuild(t *testing.T) {
 		t.Errorf("a dev build must not write notes-seen, got %q", got)
 	}
 }
+
+func TestNotesViewPutsHooksFirst(t *testing.T) {
+	v := newNotesView("Release notes", []release.Entry{
+		{Version: "0.5.9", Changes: []string{"> the hook", "an other change", "+ a new feature"}},
+	})
+	out := stripANSI(v.render(60, 30))
+	hook, features := strings.Index(out, "> the hook"), strings.Index(out, "Features")
+	if hook < 0 || features < 0 || hook > features {
+		t.Fatalf("want the hook above Features:\n%s", out)
+	}
+	if strings.Contains(out, "- > ") {
+		t.Errorf("the hook marker was printed with a bullet:\n%s", out)
+	}
+}
+
+// A board three releases behind pages through all three, not only the newest.
+func TestPopupThreeVersionsBehindPagesAllThree(t *testing.T) {
+	m := popupBoard(t, "0.5.8", "0.5.5", "")
+	if m.mode != modeReleaseNotes {
+		t.Fatalf("mode = %v, want the release-notes popup", m.mode)
+	}
+	n := len(release.Since("0.5.5"))
+	var pages strings.Builder
+	for i := 0; i < n; i++ {
+		pages.WriteString(stripANSI(m.render()))
+		press(m, "h")
+	}
+	// A page header is "│ <version> · i/n" inside the box; the title reads
+	// "since 0.5.5 · n unread", so the box edge keeps the title out of the match.
+	all := pages.String()
+	for _, v := range []string{"0.5.6", "0.5.7", "0.5.8"} {
+		if !strings.Contains(all, "│ "+v+" · ") {
+			t.Errorf("never paged to %s", v)
+		}
+	}
+	if strings.Contains(all, "│ 0.5.5 · ") {
+		t.Errorf("paged to the stamped version 0.5.5 itself")
+	}
+}

@@ -11,6 +11,13 @@
 // its ticket, so two branches never edit the same lines. A file directly in
 // notes/ is Unreleased; releasing moves every one of them into
 // notes/<version>/ (see Cut), and the folder's name is the release.
+//
+// A note file is a line scan: every line starting "- " is one change. Three
+// markers may follow the dash. "- ! " marks a change the reader must act on
+// (Important), "- + " a feature (Feature), and "- > " the hook (Hook): the
+// one-line pitch a note file opens with, which every reader shows before the
+// other changes of its release. A binary that does not know a marker shows
+// the line as a plain change, so a new marker never breaks an older reader.
 package release
 
 import (
@@ -71,7 +78,7 @@ func composeNotes(md string, fsys fs.FS) []Entry {
 	return append(out, parseNotes(md)...)
 }
 
-// entryOf is one release: the changes of every *.md file directly in dir.
+// entryOf is one release: the changes of every *.md file directly in dir, its hooks first.
 func entryOf(fsys fs.FS, dir, version string) Entry {
 	e := Entry{Version: version}
 	files, _ := fs.Glob(fsys, path.Join(dir, "*.md"))
@@ -79,6 +86,16 @@ func entryOf(fsys fs.FS, dir, version string) Entry {
 		b, _ := fs.ReadFile(fsys, f)
 		e.Changes = append(e.Changes, changeLines(string(b))...)
 	}
+	// The hooks of every file come first, each group keeping its file order.
+	var hooks, rest []string
+	for _, c := range e.Changes {
+		if _, ok := Hook(c); ok {
+			hooks = append(hooks, c)
+		} else {
+			rest = append(rest, c)
+		}
+	}
+	e.Changes = append(hooks, rest...)
 	return e
 }
 
@@ -108,6 +125,14 @@ func Important(change string) (string, bool) {
 // caller strips it, then passes the rest to Important.
 func Feature(change string) (string, bool) {
 	return strings.CutPrefix(change, "+ ")
+}
+
+// Hook splits off the hook marker: a line written "- > text" is read by
+// changeLines as the change "> text", and Hook returns text. A hook is the
+// one-line pitch a note file opens with; entryOf puts every hook of a release
+// before its other changes.
+func Hook(change string) (string, bool) {
+	return strings.CutPrefix(change, "> ")
 }
 
 // changeLines is parseNotes for a note file, which has no headings: every

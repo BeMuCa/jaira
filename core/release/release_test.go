@@ -236,3 +236,66 @@ func TestFeatureLineStaysAPlainChange(t *testing.T) {
 		t.Fatalf("composeNotes = %#v, want %#v", got, want)
 	}
 }
+
+func TestHookMarker(t *testing.T) {
+	for _, c := range []struct {
+		in   string
+		text string
+		ok   bool
+	}{
+		{"> a", "a", true},
+		{"a", "a", false},
+		{">a", ">a", false},
+	} {
+		text, ok := Hook(c.in)
+		if ok != c.ok || (ok && text != c.text) {
+			t.Errorf("Hook(%q) = %q, %v; want %q, %v", c.in, text, ok, c.text, c.ok)
+		}
+	}
+}
+
+// An older binary reads "- > a" as the ordinary change "> a": the format stays
+// "one line starting with - ", and Feature and Important do not claim it.
+func TestHookLineStaysAPlainChange(t *testing.T) {
+	fsys := fstest.MapFS{"notes/X.md": {Data: []byte("- > a\n")}}
+	got := composeNotes("", fsys)
+	want := []Entry{{Version: "Unreleased", Changes: []string{"> a"}}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("composeNotes = %#v, want %#v", got, want)
+	}
+	if _, ok := Feature("> a"); ok {
+		t.Error("Feature claims a hook line")
+	}
+	if _, ok := Important("> a"); ok {
+		t.Error("Important claims a hook line")
+	}
+}
+
+func TestEntryPutsEveryHookOfAReleaseFirst(t *testing.T) {
+	fsys := fstest.MapFS{
+		"notes/0.6.0/AAAAAA.md": {Data: []byte("- plain a\n- > hook a\n")},
+		"notes/0.6.0/BBBBBB.md": {Data: []byte("- > hook b\n- + feature b\n")},
+	}
+	got := composeNotes("", fsys)
+	want := []Entry{{Version: "0.6.0", Changes: []string{"> hook a", "> hook b", "plain a", "+ feature b"}}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("composeNotes = %#v, want %#v", got, want)
+	}
+}
+
+// A board stamped three releases ago sees the notes of all three, not only the newest.
+func TestSinceThreeVersionsBehindReturnsAllThree(t *testing.T) {
+	fsys := fstest.MapFS{
+		"notes/0.5.4/A.md": {Data: []byte("- four\n")},
+		"notes/0.5.5/B.md": {Data: []byte("- five\n")},
+		"notes/0.5.6/C.md": {Data: []byte("- six\n")},
+		"notes/0.5.7/D.md": {Data: []byte("- seven\n")},
+	}
+	var got []string
+	for _, e := range sinceEntries(composeNotes("", fsys), "0.5.4") {
+		got = append(got, e.Version)
+	}
+	if want := []string{"0.5.7", "0.5.6", "0.5.5"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("sinceEntries(0.5.4) versions = %v, want %v", got, want)
+	}
+}

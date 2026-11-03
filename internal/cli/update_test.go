@@ -224,3 +224,38 @@ func TestUpdateNotesMarkImportantLines(t *testing.T) {
 		t.Fatalf("got %q, want %q", buf.String(), want)
 	}
 }
+
+func TestUpdateNotesShowHooks(t *testing.T) {
+	var buf bytes.Buffer
+	writeNotes(&buf, []release.Entry{{
+		Version: "0.5.9",
+		Changes: []string{"> the hook", "a plain change", ">not a marker"},
+	}})
+	want := "\n0.5.9\n  > the hook\n  - a plain change\n  - >not a marker\n"
+	if buf.String() != want {
+		t.Fatalf("got %q, want %q", buf.String(), want)
+	}
+}
+
+// A board stamped by 0.5.5 and updated by 0.5.8 is told about 0.5.6, 0.5.7 and
+// 0.5.8. It reads the real embedded notes; released folders never change.
+func TestUpdateThreeVersionsBehindPrintsAllThree(t *testing.T) {
+	setCurrent(t, "0.5.5")
+	dir, s := updateTestStore(t)
+	if err := release.Stamp(s.StateDir()); err != nil {
+		t.Fatal(err)
+	}
+	setCurrent(t, "0.5.8")
+	out, err := runUpdate(t, dir)
+	if err != nil {
+		t.Fatalf("jaira update: %v\n%s", err, out)
+	}
+	for _, v := range []string{"0.5.6", "0.5.7", "0.5.8"} {
+		if !strings.Contains(out, "\n"+v+"\n") {
+			t.Errorf("missing version %s:\n%s", v, out)
+		}
+	}
+	if strings.Contains(out, "\n0.5.5\n") {
+		t.Errorf("shows the stamped version 0.5.5 itself:\n%s", out)
+	}
+}

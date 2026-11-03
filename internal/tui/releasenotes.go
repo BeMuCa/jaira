@@ -16,6 +16,9 @@ var styImportant = lipgloss.NewStyle().Foreground(colWarn).Bold(true)
 // styFeature colours a feature line, "- + text", its bullet and its text alike.
 var styFeature = lipgloss.NewStyle().Foreground(colAccent)
 
+// styHook carries a hook line, "- > text": bold, the first thing on the page.
+var styHook = lipgloss.NewStyle().Bold(true)
+
 // notesView shows release notes one version per page, the newest first:
 // left/h pages to the older version, right/l back to the newer one, and j/k
 // scroll a version longer than the screen. The launcher's "w" opens it with
@@ -64,25 +67,27 @@ func (v *notesView) key(k string) (done bool) {
 	return false
 }
 
-// lines lays out the version on screen for width: its features first under a
-// "Features" header, then the rest under "Others". The "Others" header appears
-// only next to a feature, so a version without feature lines reads as a plain
-// list. A blank line follows each header and each change, so every change
-// reads on its own. Each line is styled on its own, so a wrapped change never
-// leaves a padded block behind a prefix.
+// lines lays out the version on screen for width: its hooks first, without a
+// header, then its features under a "Features" header, then the rest under
+// "Others". The "Others" header appears only next to a feature, so a version
+// without feature lines reads as a plain list. A blank line follows each header
+// and each change, so every change reads on its own. Each line is styled on its
+// own, so a wrapped change never leaves a padded block behind a prefix.
 func (v *notesView) lines(width int) []string {
 	if v.at >= len(v.entries) {
 		return nil
 	}
-	var features, others []string
+	var hooks, features, others []string
 	for _, c := range v.entries[v.at].Changes {
-		if _, feature := release.Feature(c); feature {
+		if _, hook := release.Hook(c); hook {
+			hooks = append(hooks, changeLines(c, width)...)
+		} else if _, feature := release.Feature(c); feature {
 			features = append(features, changeLines(c, width)...)
 		} else {
 			others = append(others, changeLines(c, width)...)
 		}
 	}
-	var out []string
+	out := hooks
 	if len(features) > 0 {
 		out = append(out, styReview.Render("Features"), "")
 		out = append(out, features...)
@@ -103,10 +108,13 @@ func (v *notesView) lines(width int) []string {
 // changeLines lays out one change for width: its first line carries the bullet,
 // the wrapped rest is indented under it, and a blank line closes it.
 func changeLines(c string, width int) []string {
-	text, feature := release.Feature(c)
+	text, hook := release.Hook(c)
+	text, feature := release.Feature(text)
 	text, important := release.Important(text)
 	bullet, sty := "- ", lipgloss.NewStyle()
 	switch {
+	case hook:
+		bullet, sty = "> ", styHook
 	case important:
 		bullet, sty = "! ", styImportant
 	case feature:

@@ -202,13 +202,18 @@ installed.`,
 }
 
 // writeNotes prints the release notes. A change marked important ("- ! text"
-// in its note file) reads "  ! text" instead of "  - text", and a feature
-// ("- + text") reads "  + text": plain text, because agents and pipes read this
-// output too.
+// in its note file) reads "  ! text" instead of "  - text", a feature
+// ("- + text") reads "  + text", and a hook ("- > text"), which the release
+// puts before its other changes, reads "  > text": plain text, because agents
+// and pipes read this output too.
 func writeNotes(w io.Writer, notes []release.Entry) {
 	for _, e := range notes {
 		fmt.Fprintf(w, "\n%s\n", e.Version)
 		for _, c := range e.Changes {
+			if text, ok := release.Hook(c); ok {
+				fmt.Fprintf(w, "  > %s\n", text)
+				continue
+			}
 			rest, feature := release.Feature(c)
 			if text, ok := release.Important(rest); ok {
 				fmt.Fprintf(w, "  ! %s\n", text)
