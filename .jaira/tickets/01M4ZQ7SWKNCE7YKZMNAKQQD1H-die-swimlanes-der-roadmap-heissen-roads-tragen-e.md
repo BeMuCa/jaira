@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:08:02Z
+updated-at: 2026-11-03T23:09:21Z
 updated-by: berkc
 claimed-by: berk-ca-130584
 claimed-at: 2026-11-03T17:20:46Z
@@ -55,7 +55,7 @@ question: ""
 - [x] outbox: KindRoad 'roads' an jeder Stelle von KindEpic, Queue/Pending/DropRoad, Sender.WriteRoad
 - [x] refsync/road.go wie epic.go (RoadNames, RoadContent, RecordRoad, rebaseRoad) + Haken in refsync.go; cli/refs.go refSubject/rejectedAdvice
 - [x] core/road: Road (title, description, created-at, '- <msID>'), Merge 3-Wege, LoadAll aelteste zuerst, Create/Assign/Set unter Lock 'roads', TakenError, Owner/Duplicates/Groups/NewName; Tests
-- [ ] milestone.Layout(all, roads): Lane = Road die listet, sonst Lane des ersten Vorgaengers, sonst eigene; Vorgaenger in fremder Lane = Extra-Pfeil + Top; mehrere Tops je Lane; roads=nil unveraendert; Tests
+- [x] milestone.Layout(all, roads): Lane = Road die listet, sonst Lane des ersten Vorgaengers, sonst eigene; Vorgaenger in fremder Lane = Extra-Pfeil + Top; mehrere Tops je Lane; roads=nil unveraendert; Tests
 - [ ] CLI jaira road create|add|rm|set|ls [--json], zweite Road exit 3; Tests
 - [ ] validate: Warnung road_duplicate; Test
 - [ ] TUI: Roads laden, Kopfzeile je Lane (Titel / Road-n), Ziel onRoad per Pfeil hoch, Enter-Namensfeld, Enter speichert (unbenannt: Road mit allen Lane-Milestones), Esc; Hilfe; Tests
@@ -78,3 +78,4 @@ F4 Epic-Etikett pro Board - A (Empfohlen) eigenes Ticket: das TUI zeigt heute ga
 - **2026-11-03 23:03 · berkc** — Step 1 gitref: RoadPrefix/RoadRefName/RoadSHA/ReadRoad/ReadRoadAt/WriteRoad/ListRoads mirror the epic ones. Test core/gitref/road_test.go mirrors milestone_test.go (no epic gitref test existed).
 - **2026-11-03 23:04 · berkc** — Step 2 outbox: KindRoad (dir roads/) at queueKind ref switch, readDir kinds list, lost-race keep-queued condition, send switch; Sender gained WriteRoad (gitref.Repo has it). Test TestARoadIsQueuedSentAndKeptOnARace in outbox_test.go.
 - **2026-11-03 23:07 · berkc** — Plan deviation (step 4): the plan says members are read with milestone.ParseMember, but that only accepts ticket ULIDs (ticket.ValidID); milestone IDs are six characters (milestone.IsID). core/road has its own parseMember on milestone.IsID. Plan step 3 (refsync/road.go) needs core/road to compile, so steps 3 and 4 were committed together after both tests passed. refsync has no epic rebase test; road_test.go there covers the lost race (TestAConcurrentRoadListingIsMergedNotLost).
+- **2026-11-03 23:09 · berkc** — Step 5 layout: Layout(all, roads [][]string). Lane key = first listing road, else lane of first usable predecessor, else own top. A child joins its parent only when both have the same lane key; otherwise its arrow is Extra. nil roads: all 13 existing tests pass with ', nil' added; layerdraw.go passes nil until step 9 wires road.Groups.

@@ -58,7 +58,7 @@ type sceneTarget struct {
 func (m *Model) layerScene() *layerScene {
 	l := m.layer
 	sc := &layerScene{
-		grid:   milestone.Layout(m.milestones),
+		grid:   milestone.Layout(m.milestones, nil),
 		byID:   map[string]*milestone.Milestone{},
 		bubble: map[string]milestone.Bubble{},
 		at:     map[string]image.Point{},

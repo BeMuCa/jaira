@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -35,18 +36,18 @@ func pos(t *testing.T, g Grid, name string) string {
 }
 
 func TestLayoutEmptyAndUnplaced(t *testing.T) {
-	if g := Layout(nil); len(g.Bubbles) != 0 || len(g.Lanes) != 0 || len(g.Arrows) != 0 {
+	if g := Layout(nil, nil); len(g.Bubbles) != 0 || len(g.Lanes) != 0 || len(g.Arrows) != 0 {
 		t.Errorf("empty input: %+v", g)
 	}
 	loose := New("loose", 45, time.Now()) // no after line: not in the layer
 	loose.ID = LegacyID("loose")
-	if g := Layout([]*Milestone{loose}); len(g.Bubbles) != 0 {
+	if g := Layout([]*Milestone{loose}, nil); len(g.Bubbles) != 0 {
 		t.Errorf("an unplaced milestone must not be drawn: %+v", g.Bubbles)
 	}
 }
 
 func TestLayoutSingleLaneIsAColumn(t *testing.T) {
-	g := Layout([]*Milestone{ms("a", 0), ms("b", 1, "a"), ms("c", 2, "b")})
+	g := Layout([]*Milestone{ms("a", 0), ms("b", 1, "a"), ms("c", 2, "b")}, nil)
 	for name, want := range map[string]string{"a": "lane0 col0 row0", "b": "lane0 col0 row1", "c": "lane0 col0 row2"} {
 		if got := pos(t, g, name); got != want {
 			t.Errorf("%s at %s, want %s", name, got, want)
@@ -63,7 +64,7 @@ func TestLayoutSingleLaneIsAColumn(t *testing.T) {
 // A split: two children side by side under one parent, the parent over the
 // first child, children ordered by created-at then name.
 func TestLayoutSplit(t *testing.T) {
-	g := Layout([]*Milestone{ms("a", 0), ms("z", 1, "a"), ms("b", 1, "a"), ms("late", 5, "a")})
+	g := Layout([]*Milestone{ms("a", 0), ms("z", 1, "a"), ms("b", 1, "a"), ms("late", 5, "a")}, nil)
 	want := map[string]string{
 		"a": "lane0 col0 row0", "b": "lane0 col0 row1", "z": "lane0 col1 row1", "late": "lane0 col2 row1",
 	}
@@ -79,7 +80,7 @@ func TestLayoutSplit(t *testing.T) {
 
 func TestLayoutSubtreeWidthPushesTheSibling(t *testing.T) {
 	// b has two children, so c (b's later sibling) starts at column 2.
-	g := Layout([]*Milestone{ms("a", 0), ms("b", 1, "a"), ms("c", 2, "a"), ms("b1", 3, "b"), ms("b2", 4, "b")})
+	g := Layout([]*Milestone{ms("a", 0), ms("b", 1, "a"), ms("c", 2, "a"), ms("b1", 3, "b"), ms("b2", 4, "b")}, nil)
 	if got := pos(t, g, "c"); got != "lane0 col2 row1" {
 		t.Errorf("c at %s", got)
 	}
@@ -94,7 +95,7 @@ func TestLayoutSubtreeWidthPushesTheSibling(t *testing.T) {
 // A join: h has two predecessors in one lane. The first is the parent, the
 // second an extra arrow flagged as a join.
 func TestLayoutJoin(t *testing.T) {
-	g := Layout([]*Milestone{ms("a", 0), ms("c", 1, "a"), ms("g", 2, "a"), ms("h", 3, "c", "g")})
+	g := Layout([]*Milestone{ms("a", 0), ms("c", 1, "a"), ms("g", 2, "a"), ms("h", 3, "c", "g")}, nil)
 	if at(t, g, "h").Parent != LegacyID("c") {
 		t.Errorf("parent = %q", at(t, g, "h").Parent)
 	}
@@ -114,7 +115,7 @@ func TestLayoutJoin(t *testing.T) {
 
 func TestLayoutCrossLaneArrowAndLaneOrder(t *testing.T) {
 	// Lane order follows the top's created-at, not the name: "zed" is older.
-	g := Layout([]*Milestone{ms("alpha", 5), ms("zed", 1), ms("x", 6, "zed", "alpha")})
+	g := Layout([]*Milestone{ms("alpha", 5), ms("zed", 1), ms("x", 6, "zed", "alpha")}, nil)
 	if g.Lanes[0].Top != LegacyID("zed") || g.Lanes[1].Top != LegacyID("alpha") {
 		t.Fatalf("lanes: %+v", g.Lanes)
 	}
@@ -136,7 +137,7 @@ func TestLayoutCrossLaneArrowAndLaneOrder(t *testing.T) {
 }
 
 func TestLayoutLaneTiesBreakByName(t *testing.T) {
-	g := Layout([]*Milestone{ms("b", 0), ms("a", 0)})
+	g := Layout([]*Milestone{ms("b", 0), ms("a", 0)}, nil)
 	if g.Lanes[0].Top != LegacyID("a") {
 		t.Errorf("lanes: %+v", g.Lanes)
 	}
@@ -145,7 +146,7 @@ func TestLayoutLaneTiesBreakByName(t *testing.T) {
 func TestLayoutIgnoresUnknownAndUnplacedPredecessors(t *testing.T) {
 	loose := New("loose", 45, time.Now())
 	loose.ID = LegacyID("loose")
-	g := Layout([]*Milestone{ms("a", 0, "ghost"), ms("b", 1, "loose", "a"), loose})
+	g := Layout([]*Milestone{ms("a", 0, "ghost"), ms("b", 1, "loose", "a"), loose}, nil)
 	if at(t, g, "a").Parent != "" || len(g.Lanes) != 2 {
 		t.Errorf("a with an unknown predecessor must be a lane top: %+v", g)
 	}
@@ -160,7 +161,7 @@ func TestLayoutIgnoresUnknownAndUnplacedPredecessors(t *testing.T) {
 }
 
 func TestLayoutCycleNeverCrashesAndDropsOneArrow(t *testing.T) {
-	g := Layout([]*Milestone{ms("a", 0, "b"), ms("b", 1, "a"), ms("self", 2, "self")})
+	g := Layout([]*Milestone{ms("a", 0, "b"), ms("b", 1, "a"), ms("self", 2, "self")}, nil)
 	if len(g.Bubbles) != 3 {
 		t.Fatalf("bubbles: %+v", g.Bubbles)
 	}
@@ -182,12 +183,12 @@ func TestLayoutIsDeterministic(t *testing.T) {
 	in := func() []*Milestone {
 		return []*Milestone{ms("d", 3, "b", "c"), ms("c", 2, "a"), ms("b", 1, "a"), ms("a", 0), ms("e", 0)}
 	}
-	first := Layout(in())
+	first := Layout(in(), nil)
 	rev := in()
 	for i, j := 0, len(rev)-1; i < j; i, j = i+1, j-1 {
 		rev[i], rev[j] = rev[j], rev[i]
 	}
-	if !reflect.DeepEqual(first, Layout(rev)) {
+	if !reflect.DeepEqual(first, Layout(rev, nil)) {
 		t.Error("input order changed the layout")
 	}
 }
@@ -280,7 +281,7 @@ func TestLayoutAndCheckAfterReadIDsAndNames(t *testing.T) {
 	byID := ms("b", 1)
 	byID.SetAfter([]string{a.ID})
 	byName := ms("c", 2, "a")
-	g := Layout([]*Milestone{a, byID, byName})
+	g := Layout([]*Milestone{a, byID, byName}, nil)
 	if at(t, g, "b").Parent != a.ID || at(t, g, "c").Parent != a.ID {
 		t.Errorf("an ID token and a name token must both reach a: %+v", g.Bubbles)
 	}
@@ -301,5 +302,53 @@ func TestLayoutAndCheckAfterReadIDsAndNames(t *testing.T) {
 	byID.SetAfter([]string{"ZZZZZZ", "Api Umbau"})
 	if got := strings.Join(byID.After, ","); got != "ZZZZZZ,api-umbau" {
 		t.Errorf("After = %q", got)
+	}
+}
+
+// A road lists milestones and draws them in its lane. A listed milestone whose
+// first predecessor sits in another lane is a top of the road's lane, and the
+// arrow from that predecessor is an extra arrow.
+func TestARoadListingAMilestoneWhoseParentIsElsewhereMakesItATopOfTheRoad(t *testing.T) {
+	g := Layout([]*Milestone{ms("a", 0), ms("b", 1, "a")}, [][]string{{"b"}})
+	b := at(t, g, "b")
+	if b.Parent != "" || g.Lanes[b.Lane].Road != 0 {
+		t.Errorf("b = %+v, lanes %+v; want a top in the road's lane", b, g.Lanes)
+	}
+	if at(t, g, "a").Lane == b.Lane {
+		t.Errorf("a shares b's lane; it is in another lane")
+	}
+	if !slices.Contains(g.Arrows, Arrow{From: LegacyID("a"), To: LegacyID("b"), Extra: true}) {
+		t.Errorf("arrows %+v; want a->b as an extra arrow", g.Arrows)
+	}
+}
+
+// A milestone with no road that follows a road's member is drawn in that lane,
+// with the member as its parent: placing it writes no road.
+func TestAMilestoneAfterARoadMemberIsInTheRoadsLane(t *testing.T) {
+	g := Layout([]*Milestone{ms("a", 0), ms("b", 1, "a"), ms("c", 2, "b")}, [][]string{{"b"}})
+	b, c := at(t, g, "b"), at(t, g, "c")
+	if c.Lane != b.Lane || c.Parent != LegacyID("b") || g.Lanes[c.Lane].Road != 0 {
+		t.Errorf("c = %+v; want a child of b in the road's lane %+v", c, g.Lanes)
+	}
+}
+
+// Two unconnected milestones listed in one road are one lane, side by side, and
+// the lane is as wide as both together.
+func TestARoadOfUnconnectedMilestonesIsOneLane(t *testing.T) {
+	g := Layout([]*Milestone{ms("x", 0), ms("y", 1), ms("z", 2)}, [][]string{{"x", "y"}})
+	x, y := at(t, g, "x"), at(t, g, "y")
+	if x.Lane != y.Lane || x.Col == y.Col {
+		t.Fatalf("x = %+v, y = %+v; want one lane with two columns", x, y)
+	}
+	if len(g.Lanes) != 2 || g.Lanes[x.Lane].Width != 2 || g.Lanes[x.Lane].Road != 0 || g.Lanes[1].Road != -1 {
+		t.Errorf("lanes = %+v; want the road lane 2 wide and z in a lane of its own", g.Lanes)
+	}
+}
+
+// A milestone listed in two roads is drawn in the lower-indexed one.
+func TestAMilestoneInTwoRoadsIsDrawnInTheFirst(t *testing.T) {
+	g := Layout([]*Milestone{ms("x", 0)}, [][]string{{"x"}, {"x"}})
+	if len(g.Lanes) != 1 || g.Lanes[0].Road != 0 {
+		t.Errorf("lanes = %+v; want x in road 0 only", g.Lanes)
 	}
 }
