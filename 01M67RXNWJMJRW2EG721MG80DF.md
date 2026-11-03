@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:25Z
-updated-at: 2026-11-03T22:50:24Z
+updated-at: 2026-11-03T22:50:40Z
 updated-by: berkc
 claimed-by: berk-ca-130899
 claimed-at: 2026-11-03T17:20:49Z
@@ -61,3 +61,4 @@ outcome-resolves: "DoD 1: a waiting ticket with a foreign assignee is absent fro
 - **2026-11-03 22:45 · berkc** — Maintainer 03.11.2026 (teamlead): Teamkollegen-Zeile bleibt, aber standardmaessig versteckt; ein Settings-Schalter blendet sie ein (Option 2). Unzugewiesene bleiben sichtbar.
 - **2026-11-03 22:47 · berkc** — Plan reasoning: 'settings switch' = a plugin userConfig boolean showTeammates in core/mod/builtin/jaira-cockpit/.claude-plugin/plugin.json, read in register(on, options) like cacheGuardTokens/workerContextShare - not ~/.jaira/settings.json, which holds jaira's own dispatch choice. Filter at render only (register.tsx band handler, 'const theirs = view?.theirs ?? []'); board.ts snapshotOf stays, its split and counter already do DoD 2. No version bump: QRHB35 (98718866) added workerContextShare without one; release role here is 'worker', repo has no per-change bump rule. Shipped hashes: append sha256sum lines; do NOT rerun scripts/shipped-history.sh - it also adds 5 unrelated historic lines (40-review.md, board.ts) from other branches. Baseline before change: claude plugin test . = 175 pass, 0 fail.
 - **2026-11-03 22:47 · berkc** — Plan step 1: the --plan --done marker was written in the same batch as the plugin.json Edit, and the Edit was refused (file not read yet). Re-did the Edit after a Read; step 1 final state verified (userConfig now has showTeammates, JSON parses).
+- **2026-11-03 22:50 · berkc** — Deviations and findings from in-progress: (1) plan step 8 says move then commit, so the move carried no --commits: the code commit did not exist yet; jaira derives the commit list from git (handle in subject, d2c91df2), per 'jaira move --help'. (2) .jaira/tickets/01M67RXNWJMJRW2EG721MG80DF-*.md was untracked on this branch at start, so commit d2c91df2 adds the whole ticket file (63 lines), not a diff. (3) step 1 done-marker was written before its Edit landed (Edit refused, file not read); fixed, final state verified. (4) jaira warns the board was set up by an older version: 'jaira update' not run (not in plan). Test status: claude plugin test . exit 0, 176 pass, 0 fail (new test included); go test ./core/shipped ./core/mod exit 0. Plan's test count 176 matched. Open for critique: showTeammates default false changes behaviour for every existing user who relied on the teammates' line; release note 0.x carries the warning as a '- !' line.
