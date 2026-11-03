@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:25Z
-updated-at: 2026-11-03T22:54:08Z
+updated-at: 2026-11-03T22:54:10Z
 updated-by: berkc
 claimed-by: berk-ca-304689
 claimed-at: 2026-11-03T22:51:53Z
@@ -67,3 +67,4 @@ test-verdict: "pass: go build ./... RC=0; go test ./core/shipped ./core/mod ./co
 - **2026-11-03 22:50 · berkc** — Deviations and findings from in-progress: (1) plan step 8 says move then commit, so the move carried no --commits: the code commit did not exist yet; jaira derives the commit list from git (handle in subject, d2c91df2), per 'jaira move --help'. (2) .jaira/tickets/01M67RXNWJMJRW2EG721MG80DF-*.md was untracked on this branch at start, so commit d2c91df2 adds the whole ticket file (63 lines), not a diff. (3) step 1 done-marker was written before its Edit landed (Edit refused, file not read); fixed, final state verified. (4) jaira warns the board was set up by an older version: 'jaira update' not run (not in plan). Test status: claude plugin test . exit 0, 176 pass, 0 fail (new test included); go test ./core/shipped ./core/mod exit 0. Plan's test count 176 matched. Open for critique: showTeammates default false changes behaviour for every existing user who relied on the teammates' line; release note 0.x carries the warning as a '- !' line.
 - **2026-11-03 22:51 · berkc** — critique (pass 1, whole diff d2c91df2): no findings. Simpler shape: none - one userConfig key + one render-time guard (register.tsx:1088,1246) is the smallest; filtering in board.ts snapshotOf would need options passed into board.ts for no gain. Fit: same pattern as workerContextShare/cacheGuardTokens (plugin.json userConfig read once in register()). Not speculative: the switch is the maintainer's option 2 (note 22:45). Left alone: register.tsx:358 Discuss lookup still searches view.theirs - only reachable from a teammate row, which is not drawn when off, harmless. Implementer's open point (default off changes behaviour for existing users) is closed by the maintainer's 'standardmaessig versteckt' (note 22:45) and carried as a '- !' release line.
 - **2026-11-03 22:52 · berkc** — optimize: four passes over d2c91df2, no edits. Did not move the filter into board.ts snapshotOf: would need options threaded into board.ts and change the counter path - critique already judged the render guard the smaller shape.
+- **2026-11-03 22:54 · berkc** — testing: gates green (build, core/shipped core/mod core/release, cockpit 176/0). Mutation check: reverting register.tsx:1246 to 'const theirs = view?.theirs ?? []' makes exactly the new test fail (175 pass / 1 fail), restored. Not checked: a live cockpit in a real Claude session with showTeammates toggled in plugin settings - only the harness's { options } path.
