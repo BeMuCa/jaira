@@ -7,11 +7,15 @@ creator: BeMuCa
 assignee: berkc
 goal: "Jede Swimlane der Milestone-Roadmap ist eine Road - ein eigenes Objekt auf seinem Ref mit Titel, Beschreibung und Milestone-Liste -, die ohne Titel Road-1..Road-n heisst und im TUI per Pfeiltaste gewaehlt und mit Enter benannt wird; Milestones wissen nichts von ihrer Road, Unfertiges bleibt im Milestone"
 context: |-
-  Was heute fehlt: Die Roadmap (L, aus D0SAHM) zeigt Swimlanes, also Ketten von Milestones, die ueber after: verbunden sind. Eine Swimlane hat keinen Namen.
-  Der Anfang einer Swimlane ist ein Milestone ohne Vorgaenger ('jaira milestone create --after ""' macht ihn zum Anfang einer eigenen Swimlane).
-  Berk am 15.10.: 'die einzelnen Swimlanes als Milestone Road bezeichnen, und die sollen jeweils auch Namen bekommen. Per Default zaehlen sie einfach hoch, Road-1 .. Road-n. Aber man kann auf sie wechseln per Pfeiltaste und mit Enter deren Bezeichnung dann aendern. Dafuer muss man den Milestones dann wahrscheinlich noch einen Road-Namen hinzufuegen?'
-  Vorschlag: Den Namen traegt nur der erste Milestone der Road, als Feld 'road: <name>'. Die anderen erben ihn ueber die Kette, damit es keine doppelte Wahrheit gibt. Ein Milestone wird wie heute ueber seinen Ref geteilt (seit EBTX6X ueber die ID).
-  Offen fuer brainstorm: Was passiert, wenn zwei Roads zusammenlaufen (ein Milestone mit after auf zwei Roads), und welche Pfeiltasten (in der Roadmap bewegen sich Pfeile heute zwischen Bubbles).
+  Was heute fehlt: Die Milestone-Roadmap im TUI (Taste L, aus D0SAHM) zeigt Swimlanes ohne Namen.
+  Eine Swimlane ist heute der Baum unter einem Milestone ohne Vorgaenger; gebaut aus after: in core/milestone/layout.go (erstes after: entscheidet die Lane).
+  Berk am 15.10.: Swimlanes heissen 'Road', bekommen Namen, Default Road-1..Road-n, per Pfeiltaste waehlen, mit Enter umbenennen.
+  Entscheidungen Maintainer 03.11.2026 (Notizen): Road ist ein eigenes Objekt (Titel, Beschreibung, Liste ihrer Milestones); Milestones wissen nichts von ihrer Road.
+  Eine Road ist die ganze Swimlane samt Verzweigungen; der Aufbau darin bleibt aus after:.
+  Ein Milestone in zwei Roads ist verboten (exit 3); nach einem Merge meldet validate es.
+  Road liegt nur auf ihrem Ref, wie Epics (refs/jaira/epics/ -> refs/jaira/roads/).
+  Epics bleiben; das Etikett 'Epic' im TUI ist nicht Teil dieses Tickets (VD4ZDW).
+  Unfertiges bleibt im Milestone - bisher rieten Hilfe und Vorlage zum Verschieben.
 definition-of-done: "Jede Swimlane der Roadmap zeigt einen Road-Namen: 'road:' ihres ersten Milestones, sonst Road-1..Road-n in Anzeigereihenfolge; Test"
 tags:
   - tui
@@ -19,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:02:25Z
+updated-at: 2026-11-03T23:02:27Z
 updated-by: berkc
 claimed-by: berk-ca-130584
 claimed-at: 2026-11-03T17:20:46Z
