@@ -18,7 +18,7 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-03T17:27:44Z
+updated-at: 2026-11-03T17:28:05Z
 updated-by: berkc
 claimed-by: berk-ca-130447
 claimed-at: 2026-11-03T17:20:45Z
@@ -46,7 +46,7 @@ claimed-at: 2026-11-03T17:20:45Z
 - [x] core/release/release_test.go: TestHookMarker, TestHookLineStaysAPlainChange, TestEntryPutsEveryHookOfAReleaseFirst, TestSinceThreeVersionsBehindReturnsAllThree (fstest 0.5.4..0.5.7, stamp 0.5.4)
 - [x] internal/cli/update.go writeNotes: hook line prints '  > text' first branch; tests TestUpdateNotesShowHooks, TestUpdateThreeVersionsBehindPrintsAllThree (stamp 0.5.5, current 0.5.8, real notes)
 - [x] internal/tui/releasenotes.go: styHook bold; lines() emits hooks before Features header; changeLines bullet '> '; tests TestNotesViewPutsHooksFirst, TestPopupThreeVersionsBehindPagesAllThree (popupBoard 0.5.8/0.5.5)
-- [ ] CLAUDE.md and AGENTS.md: '- > ' hook bullet after the '- + ' bullet in the release-notes section (never NOTES.md, never notes/<version>/, never MXMDFH.md)
+- [x] CLAUDE.md and AGENTS.md: '- > ' hook bullet after the '- + ' bullet in the release-notes section (never NOTES.md, never notes/<version>/, never MXMDFH.md)
 - [ ] core/release/notes/CZWKNY.md: '- > ' hook line + json-order line
 - [ ] gofmt -l, go vet, go test ./core/release ./core/shipped, ./internal/cli -run TestUpdate, ./internal/tui -run 'NotesView|Popup|NotesBase'; tick DoD with proofs; move to critique; one commit code+ticket
 
