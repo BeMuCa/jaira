@@ -695,6 +695,9 @@ func (y *Syncer) Flush() ([]Report, error) {
 		if r.Outcome == outbox.Rejected && r.Kind == outbox.KindEpic {
 			r = y.rebaseEpic(r)
 		}
+		if r.Outcome == outbox.Rejected && r.Kind == outbox.KindRoad {
+			r = y.rebaseRoad(r)
+		}
 		rep := Report{Result: r}
 		if r.Outcome == outbox.Rejected && r.Kind == outbox.KindMilestone {
 			if e, ok := queued[r.ID]; ok {

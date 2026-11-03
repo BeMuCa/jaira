@@ -304,6 +304,8 @@ func refSubject(kind outbox.Kind, id, file string) (key, name string) {
 		return "milestone", milestone.FromBytes(file, nil).Name
 	case outbox.KindEpic:
 		return "epic", id
+	case outbox.KindRoad:
+		return "road", id
 	}
 	return "ticket", ticket.Handle(id)
 }
@@ -332,13 +334,14 @@ func mergedClashes(cs []milestone.Conflict) string {
 // left to send. Telling a milestone writer their file is unchanged would be
 // describing a ticket to them.
 //
-// An epic is merged rather than lost (refsync.rebaseEpic), so it reaches this
-// line only when the merge could not be sent either; the merge stays queued.
+// An epic and a road are merged rather than lost (refsync.rebaseEpic and
+// refsync.rebaseRoad), so they reach this line only when the merge could not be
+// sent either; the merge stays queued.
 func rejectedAdvice(kind outbox.Kind) string {
 	switch kind {
 	case outbox.KindMilestone:
 		return "the remote's version wins; your edit stays queued and is merged into it at the next send, unless there is nothing of it left to send"
-	case outbox.KindEpic:
+	case outbox.KindEpic, outbox.KindRoad:
 		return "your change is merged onto theirs and stays queued; it goes out with your next command"
 	}
 	return "your file is unchanged; the board shows both sides once the ref is fetched"

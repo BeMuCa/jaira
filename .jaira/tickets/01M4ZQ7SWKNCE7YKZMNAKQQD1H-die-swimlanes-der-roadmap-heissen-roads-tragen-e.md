@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:04:25Z
+updated-at: 2026-11-03T23:08:02Z
 updated-by: berkc
 claimed-by: berk-ca-130584
 claimed-at: 2026-11-03T17:20:46Z
@@ -34,7 +34,8 @@ question: ""
 
 ## Definition of Done
 
-- [ ] Eine Road ist ein eigenes Objekt nur auf ihrem Ref refs/jaira/roads/<name> (wie Epics): Titel, Beschreibung, Liste ihrer Milestone-IDs; Milestones tragen kein Road-Feld; paralleles Schreiben wird gemergt wie bei Epics; Test
+- [x] Eine Road ist ein eigenes Objekt nur auf ihrem Ref refs/jaira/roads/<name> (wie Epics): Titel, Beschreibung, Liste ihrer Milestone-IDs; Milestones tragen kein Road-Feld; paralleles Schreiben wird gemergt wie bei Epics; Test
+  proof: core/road/road.go Merge, core/road/road_test.go TestCreateRefusesAMilestoneInAnotherRoad; core/gitref/road_test.go TestRoadArrivesWithoutASharedBranch; core/refsync/road_test.go TestAConcurrentRoadListingIsMergedNotLost; no Road field in core/milestone
 - [ ] Roadmap: eine Road ist eine ganze Swimlane - ihre Milestones stehen in ihrer Lane, der Aufbau darin kommt weiter aus after:; ein Milestone ohne Road steht in der Lane seines ersten Vorgaengers; der Lane-Kopf zeigt den Road-Titel, sonst Road-1..Road-n in Anzeigereihenfolge; Test
 - [ ] TUI-Roadmap: vom obersten Bubble waehlt Pfeil hoch den Road-Kopf, Enter oeffnet ein Namensfeld, Enter speichert (eine unbenannte Lane wird dabei zur Road mit allen Milestones, die in ihr stehen), Esc bricht ab; Test
 - [ ] CLI 'jaira road create|ls|set|add|rm' ('ls --json' traegt Titel, Beschreibung, Milestones); ein Milestone in einer zweiten Road wird mit exit 3 verweigert; liegt er nach einem Merge doch in zweien, zeichnet ihn die aeltere Road und 'jaira validate' meldet es; Test
@@ -52,8 +53,8 @@ question: ""
 
 - [x] gitref: RoadPrefix refs/jaira/roads/, Read/ReadAt/Write/List/SHA wie Epic
 - [x] outbox: KindRoad 'roads' an jeder Stelle von KindEpic, Queue/Pending/DropRoad, Sender.WriteRoad
-- [ ] refsync/road.go wie epic.go (RoadNames, RoadContent, RecordRoad, rebaseRoad) + Haken in refsync.go; cli/refs.go refSubject/rejectedAdvice
-- [ ] core/road: Road (title, description, created-at, '- <msID>'), Merge 3-Wege, LoadAll aelteste zuerst, Create/Assign/Set unter Lock 'roads', TakenError, Owner/Duplicates/Groups/NewName; Tests
+- [x] refsync/road.go wie epic.go (RoadNames, RoadContent, RecordRoad, rebaseRoad) + Haken in refsync.go; cli/refs.go refSubject/rejectedAdvice
+- [x] core/road: Road (title, description, created-at, '- <msID>'), Merge 3-Wege, LoadAll aelteste zuerst, Create/Assign/Set unter Lock 'roads', TakenError, Owner/Duplicates/Groups/NewName; Tests
 - [ ] milestone.Layout(all, roads): Lane = Road die listet, sonst Lane des ersten Vorgaengers, sonst eigene; Vorgaenger in fremder Lane = Extra-Pfeil + Top; mehrere Tops je Lane; roads=nil unveraendert; Tests
 - [ ] CLI jaira road create|add|rm|set|ls [--json], zweite Road exit 3; Tests
 - [ ] validate: Warnung road_duplicate; Test
@@ -76,3 +77,4 @@ F4 Epic-Etikett pro Board - A (Empfohlen) eigenes Ticket: das TUI zeigt heute ga
 - **2026-11-03 23:02 · berkc** — Plan (pre-process 04.11): Road spiegelt den Epic-Weg auf Refs (gitref -> outbox Kind -> refsync mit Merge bei verlorenem Rennen), weil F3 'nur Ref wie Epics' ist und Fetch schon refs/jaira/* holt - kein neuer Sync-Mechanismus. Eigenes Paket core/road statt Erweiterung von core/epic: Epic hat Externals, Status, Textkoerper und Ticket-Mitglieder, eine Road nichts davon. Layout bekommt die Road-Listen als [][]string, damit core/milestone core/road nicht importiert (road importiert milestone.ParseMember). Navigation im TUI ist geometrisch (layerScene.step), daher reicht ein Ziel onRoad in einer neuen Kopfzeile ueber der Lane; Pfeil hoch vom Top erreicht es ohne Sonderfall. Name des Refs fest (slug), Umbenennen im TUI aendert nur title - Refs werden nie geloescht.
 - **2026-11-03 23:03 · berkc** — Step 1 gitref: RoadPrefix/RoadRefName/RoadSHA/ReadRoad/ReadRoadAt/WriteRoad/ListRoads mirror the epic ones. Test core/gitref/road_test.go mirrors milestone_test.go (no epic gitref test existed).
 - **2026-11-03 23:04 · berkc** — Step 2 outbox: KindRoad (dir roads/) at queueKind ref switch, readDir kinds list, lost-race keep-queued condition, send switch; Sender gained WriteRoad (gitref.Repo has it). Test TestARoadIsQueuedSentAndKeptOnARace in outbox_test.go.
+- **2026-11-03 23:07 · berkc** — Plan deviation (step 4): the plan says members are read with milestone.ParseMember, but that only accepts ticket ULIDs (ticket.ValidID); milestone IDs are six characters (milestone.IsID). core/road has its own parseMember on milestone.IsID. Plan step 3 (refsync/road.go) needs core/road to compile, so steps 3 and 4 were committed together after both tests passed. refsync has no epic rebase test; road_test.go there covers the lost race (TestAConcurrentRoadListingIsMergedNotLost).
