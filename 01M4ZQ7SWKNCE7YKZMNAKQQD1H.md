@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:07:55Z
+updated-at: 2026-11-03T23:08:02Z
 updated-by: berkc
 claimed-by: berk-ca-130584
 claimed-at: 2026-11-03T17:20:46Z
@@ -34,7 +34,8 @@ question: ""
 
 ## Definition of Done
 
-- [ ] Eine Road ist ein eigenes Objekt nur auf ihrem Ref refs/jaira/roads/<name> (wie Epics): Titel, Beschreibung, Liste ihrer Milestone-IDs; Milestones tragen kein Road-Feld; paralleles Schreiben wird gemergt wie bei Epics; Test
+- [x] Eine Road ist ein eigenes Objekt nur auf ihrem Ref refs/jaira/roads/<name> (wie Epics): Titel, Beschreibung, Liste ihrer Milestone-IDs; Milestones tragen kein Road-Feld; paralleles Schreiben wird gemergt wie bei Epics; Test
+  proof: core/road/road.go Merge, core/road/road_test.go TestCreateRefusesAMilestoneInAnotherRoad; core/gitref/road_test.go TestRoadArrivesWithoutASharedBranch; core/refsync/road_test.go TestAConcurrentRoadListingIsMergedNotLost; no Road field in core/milestone
 - [ ] Roadmap: eine Road ist eine ganze Swimlane - ihre Milestones stehen in ihrer Lane, der Aufbau darin kommt weiter aus after:; ein Milestone ohne Road steht in der Lane seines ersten Vorgaengers; der Lane-Kopf zeigt den Road-Titel, sonst Road-1..Road-n in Anzeigereihenfolge; Test
 - [ ] TUI-Roadmap: vom obersten Bubble waehlt Pfeil hoch den Road-Kopf, Enter oeffnet ein Namensfeld, Enter speichert (eine unbenannte Lane wird dabei zur Road mit allen Milestones, die in ihr stehen), Esc bricht ab; Test
 - [ ] CLI 'jaira road create|ls|set|add|rm' ('ls --json' traegt Titel, Beschreibung, Milestones); ein Milestone in einer zweiten Road wird mit exit 3 verweigert; liegt er nach einem Merge doch in zweien, zeichnet ihn die aeltere Road und 'jaira validate' meldet es; Test
