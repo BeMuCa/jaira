@@ -32,7 +32,7 @@ commits:
   - 07dbb35e8f53f1ab2704e6d690e5dc664216f625
   - 94792682d5ded521fb7f7f7eeed271561c6631fa
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:42:59Z
+updated-at: 2026-11-03T23:43:01Z
 updated-by: berkc
 claimed-by: berk-ca-423748
 claimed-at: 2026-11-03T23:32:10Z
@@ -42,7 +42,12 @@ outcome-why: "Maintainer 03.11.2026: a swimlane should carry a name, be an objec
 outcome-resolves: "DoD 1 core/road + gitref + refsync tests; DoD 2 layout tests + TUI header tests; DoD 3 TUI navigation/enter/esc tests in internal/tui/layerroad_test.go; DoD 4 internal/cli/roads_test.go + validate test; DoD 5 advice text in milestones.go/milestone.go/epic.go; DoD 6 README, COMMANDS.md (TestEveryCommandIsDocumented), core/release/notes/KQQD1H.md."
 review-summary: "Adds roads: a road is a small file on its own git ref refs/jaira/roads/<name> (title, description, created-at, one '- <milestoneID>' line per member), new package core/road, synced through gitref/outbox/refsync exactly like epics; the lost-race merge for epics and roads is now one shared function (core/refsync/rebase.go rebaseRef). milestone.Layout takes the road lists: a milestone's lane is the road listing it, else its first predecessor's lane, else its own; a predecessor in another lane becomes an extra arrow, so a lane can hold several tops. The TUI roadmap draws a header row over each lane (road title, else Road-1..n over unnamed lanes), up-arrow from a top reaches it, enter opens a name field that renames the road (title only) or, for an unnamed lane, creates a road listing every milestone drawn there; esc writes nothing. CLI 'jaira road create|add|rm|set|ls [--json]' refuses a milestone already in another road with exit 3 (milestone_in_road); 'jaira validate' warns road_duplicate when a merge put one in two roads, the older road draws it. Advice texts (milestone help, new-milestone template, epic package doc) now say unfinished work stays in its milestone; README, COMMANDS.md and release note KQQD1H.md added."
 round: 2
-review-gaps: "hoisted roadMilestoneNames out of roadJSON (internal/cli/roads.go): 'road ls --json' read every milestone file once per road, now once. Left: core/road/road.go repeats core/epic/epic.go's line-file mechanics (oneLine, frontEnd, setField, Bytes, Add/Remove/Has/Label, LoadAll sort, Create/Assign lock+check) - a shared frontmatter-lines type would rewrite epic and milestone too, beyond a cleanup and against the critique's 'separate package' call; worth its own ticket. Left: lane header x formula repeated in layerdraw.go (scene target and draw loop, plus pre-existing separator at :499); redundant 'm.refSync != nil' guard in tui reload (LoadAll returns ErrNoRefs for a nil Syncer); impossible Title==\"\" branch in Road.Label, mirrors epic. No dead code: every exported road func has a caller; Owner already removed in critique."
+review-gaps: |-
+  note: the ticket frontmatter field definition-of-done still holds the old text ('road:' of the first milestone), which the lane payload hands every lane as input; the body DoD is the current one
+  note: after the refactor into rebaseRef no refsync test covers an epic lost race; only the road one (TestAConcurrentRoadListingIsMergedNotLost) exercises the shared path
+  note: jaira road ls does not fetch by itself, so another clone's new road shows only after a fetching command (same as epic ls, seen in testing)
+  note: Ctrl-U does not clear the TUI road-name field, only backspace (seen in testing)
+  note: core/road repeats core/epic's line-file mechanics (frontEnd/setField/Bytes); left by optimize as out of scope
 test-verdict: "pass: go build ./... + go vet + go test of the 9 touched packages RC=0 (3 known hangers skipped per repo rule); DoD 1-6 verified in the tree; behaviour exercised on a scratch board with a bare remote: road create/set/ls --json, second road exit 3, ref on remote, second clone sees it after fetch, planted duplicate -> validate warning 'auth (older) draws it', TUI roadmap shows titles and Road-1, up+enter renames to the ref, esc writes nothing, naming an unnamed lane creates a road with both its milestones"
 ---
 
