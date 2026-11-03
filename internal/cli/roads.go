@@ -153,7 +153,7 @@ when left out), --description says in one line what the road is for.`,
 			}
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
-				return emit(w, roadJSON(s, x))
+				return emit(w, roadJSON(roadMilestoneNames(s), x))
 			}
 			if changed {
 				fmt.Fprintf(w, "Filed %q as %q.\n", args[0], name)
@@ -210,7 +210,7 @@ func editRoad(cmd *cobra.Command, args []string, add bool) error {
 	}
 	w := cmd.OutOrStdout()
 	if g.jsonOut {
-		out := roadJSON(s, x)
+		out := roadJSON(roadMilestoneNames(s), x)
 		out["changed"] = strOrEmpty(changed)
 		return emit(w, out)
 	}
@@ -263,7 +263,7 @@ it lists are left as they are. A blank title is the name again.`,
 			}
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
-				out := roadJSON(s, x)
+				out := roadJSON(roadMilestoneNames(s), x)
 				out["changed"] = written
 				return emit(w, out)
 			}
@@ -297,10 +297,11 @@ name, title, description, created_at and milestones (id and name) per road.`,
 				return roadFail("", err)
 			}
 			w := cmd.OutOrStdout()
+			names := roadMilestoneNames(s)
 			if g.jsonOut {
 				arr := make([]map[string]any, 0, len(all))
 				for _, x := range all {
-					arr = append(arr, roadJSON(s, x))
+					arr = append(arr, roadJSON(names, x))
 				}
 				return emit(w, map[string]any{"roads": arr, "count": len(arr)})
 			}
@@ -308,7 +309,6 @@ name, title, description, created_at and milestones (id and name) per road.`,
 				fmt.Fprintln(w, "No roads on this board. 'jaira road create <name>' starts one.")
 				return nil
 			}
-			names := roadMilestoneNames(s)
 			width := 0
 			for _, x := range all {
 				width = max(width, utf8.RuneCountInString(x.Label()))
@@ -336,9 +336,9 @@ func listSuffix(items []string) string {
 	return ": " + strings.Join(items, ", ")
 }
 
-// roadJSON is one road as the commands print it.
-func roadJSON(s *ticket.Store, x *road.Road) map[string]any {
-	names := roadMilestoneNames(s)
+// roadJSON is one road as the commands print it; names is roadMilestoneNames,
+// read once by the caller rather than once per road.
+func roadJSON(names map[string]string, x *road.Road) map[string]any {
 	ms := make([]map[string]string, 0, len(x.Members()))
 	for _, id := range x.Members() {
 		ms = append(ms, map[string]string{"id": id, "name": names[id]})

@@ -1,7 +1,7 @@
 ---
 id: 01M4ZQ7SWKNCE7YKZMNAKQQD1H
 title: "Die Swimlanes der Roadmap heissen Roads, tragen einen Namen und lassen sich im TUI umbenennen"
-status: critique
+status: testing
 ready: true
 creator: BeMuCa
 assignee: berkc
@@ -32,19 +32,17 @@ commits:
   - 07dbb35e8f53f1ab2704e6d690e5dc664216f625
   - 94792682d5ded521fb7f7f7eeed271561c6631fa
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:31:11Z
+updated-at: 2026-11-03T23:34:17Z
 updated-by: berkc
-claimed-by: berk-ca-130584
-claimed-at: 2026-11-03T17:20:46Z
+claimed-by: berk-ca-423748
+claimed-at: 2026-11-03T23:32:10Z
 question: ""
 outcome-what: "Roads: a road is an object on refs/jaira/roads/<name> (title, description, milestone IDs); milestones carry no road field. Roadmap draws each road as a whole swimlane with a header (title, else Road-n); TUI: ↑ from a top reaches the header, enter names it, esc cancels. CLI: jaira road create|add|rm|set|ls. validate warns road_duplicate after a merge. Unfinished work advice now says it stays in its milestone (milestone help, new-file template, epic doc). Docs: README, COMMANDS.md, release note KQQD1H.md."
 outcome-why: "Maintainer 03.11.2026: a swimlane should carry a name, be an object of its own, and a milestone must not know its road; unfinished work stays in its milestone. Roads reuse the epic ref path (gitref, outbox kind, refsync merge) so they travel without a branch merge."
 outcome-resolves: "DoD 1 core/road + gitref + refsync tests; DoD 2 layout tests + TUI header tests; DoD 3 TUI navigation/enter/esc tests in internal/tui/layerroad_test.go; DoD 4 internal/cli/roads_test.go + validate test; DoD 5 advice text in milestones.go/milestone.go/epic.go; DoD 6 README, COMMANDS.md (TestEveryCommandIsDocumented), core/release/notes/KQQD1H.md."
-review-summary: |-
-  core/refsync/road.go:82 rebaseRoad is rebaseEpic (core/refsync/epic.go:89) with Epic renamed to Road, line for line - two copies of the lost-race merge loop that must be fixed in step; make it one function in refsync (e.g. rebaseRef taking the kind's pending/drop/queue/read/readAt/write/merge) that rebaseEpic and rebaseRoad both call
-  core/road/road.go:462 Owner has no caller outside road_test.go; milestone.Layout (core/milestone/layout.go:312, roadOf) already computes the first listing road itself - delete Owner and its test assertion
-  Let stand (plan note 2026-11-03 23:02): core/road as its own package beside core/epic, and the gitref/outbox one-line mirrors of the epic kind
+review-summary: "critique 2 (only the two findings of critique 1, per note 23:28): (1) rebaseEpic/rebaseRoad now thin wrappers over Syncer.rebaseRef (core/refsync/rebase.go) with a refKind of func pieces - line-for-line move of the old epic body, one caller pair in refsync.go:696/699; resolved. (2) road.Owner deleted, no caller left (grep); resolved. Everything else let stand as recorded in note 23:28 (separate core/road, gitref/outbox mirrors, Layout/TUI/CLI shape, inline validate check). Nothing left to say."
 round: 2
+review-gaps: "hoisted roadMilestoneNames out of roadJSON (internal/cli/roads.go): 'road ls --json' read every milestone file once per road, now once. Left: core/road/road.go repeats core/epic/epic.go's line-file mechanics (oneLine, frontEnd, setField, Bytes, Add/Remove/Has/Label, LoadAll sort, Create/Assign lock+check) - a shared frontmatter-lines type would rewrite epic and milestone too, beyond a cleanup and against the critique's 'separate package' call; worth its own ticket. Left: lane header x formula repeated in layerdraw.go (scene target and draw loop, plus pre-existing separator at :499); redundant 'm.refSync != nil' guard in tui reload (LoadAll returns ErrNoRefs for a nil Syncer); impossible Title==\"\" branch in Road.Label, mirrors epic. No dead code: every exported road func has a caller; Owner already removed in critique."
 ---
 
 # Die Swimlanes der Roadmap heissen Roads, tragen einen Namen und lassen sich im TUI umbenennen
@@ -107,3 +105,5 @@ F4 Epic-Etikett pro Board - A (Empfohlen) eigenes Ticket: das TUI zeigt heute ga
 - **2026-11-03 23:21 · berkc** — Steps 9-10: advice text rewritten in milestones.go Long help, milestone.go template + package doc (package doc said unfinished moves to the next group: now false, so changed), epic.go package doc. Docs: README Commands block (TestEveryCommandIsDocumented needs a line per command), Features bullet, keys line; COMMANDS.md rows; release notes file KQQD1H.md.
 - **2026-11-03 23:28 · berkc** — critique 1 (first pass, whole diff read): (1) core/refsync/road.go:82 rebaseRoad is a renamed copy of rebaseEpic (core/refsync/epic.go:89) - fold both into one refsync function parametrised by the kind's outbox/gitref/merge funcs, so the lost-race merge exists once. (2) core/road/road.go Owner is unused outside its test; Layout computes the same map (layout.go roadOf) - remove it. Let stand: separate core/road package (plan note 23:02), gitref/outbox mirrors, Layout/TUI/CLI shape, validate check inline. Next pass reads only these two.
 - **2026-11-03 23:30 · berkc** — critique 2 fixed: rebaseEpic and rebaseRoad now both call Syncer.rebaseRef (core/refsync/rebase.go) with a refKind of func pieces (pending, queue, drop, record, readAt, read, write, merge); the wrappers at the end of core/refsync/epic.go and road.go pass epic.Merge / road.Merge and the Box/Repo methods. rebaseAttempts moved to rebase.go. Owner deleted from core/road/road.go with its test assertion; no caller anywhere (grep). No DoD proof named Owner or a moved line, so no dod re-proof. Epic behaviour: no refsync test covers an epic lost race (only road_test.go TestAConcurrentRoadListingIsMergedNotLost covers the road one), so epic equivalence rests on the line-by-line move plus go test ./core/refsync ./core/epic ./core/road (exit 0).
+- **2026-11-03 23:32 · berkc** — critique 2: read only commit 94792682 against the two critique-1 findings; both resolved (rebase.go rebaseRef shared by epic/road; Owner gone, grep clean; go vet refsync/road clean). No new findings; next pass need not re-read critique scope.
+- **2026-11-03 23:34 · berkc** — optimize: one edit (roadJSON takes the names map; ls hoists it). Considered and left: core/road duplicates core/epic's line-file mechanics (extracting would touch epic/milestone, not a cleanup); header x formula twice in layerdraw.go; harmless nil guard in tui reload. go test ./internal/cli -run 'Road|Validate' green.
