@@ -64,6 +64,14 @@ const EpicPrefix = Root + "epics/"
 // EpicRefName is the ref an epic travels on.
 func EpicRefName(name string) string { return EpicPrefix + name }
 
+// RoadPrefix is where a road travels. Like an epic it lives only on its ref:
+// a road is a group of milestones with a title, and nothing in a branch needs
+// to carry it. Its member list is written by whoever places a milestone in it.
+const RoadPrefix = Root + "roads/"
+
+// RoadRefName is the ref a road travels on.
+func RoadRefName(name string) string { return RoadPrefix + name }
+
 // DefaultRemote is where refs go when nothing is configured.
 const DefaultRemote = "origin"
 
@@ -248,6 +256,9 @@ func (r *Repo) MilestoneSHA(name string) (string, error) { return r.refSHA(Miles
 // EpicSHA is the lease for an epic's ref.
 func (r *Repo) EpicSHA(name string) (string, error) { return r.refSHA(EpicRefName(name)) }
 
+// RoadSHA is the lease for a road's ref.
+func (r *Repo) RoadSHA(name string) (string, error) { return r.refSHA(RoadRefName(name)) }
+
 // refSHA is what both of those are: one ref, one compare-and-swap value. The
 // kind of thing on the ref changes nothing about how it is read, which is why
 // the second namespace costs a path segment rather than a second mechanism.
@@ -330,6 +341,17 @@ func (r *Repo) ReadEpicAt(name, sha string) ([]byte, error) {
 	return r.readEntry(EpicRefName(name), sha, name+".md")
 }
 
+// ReadRoad returns the road file carried by the local ref, with its lease.
+func (r *Repo) ReadRoad(name string) ([]byte, string, error) {
+	return r.refRead(RoadRefName(name), name+".md")
+}
+
+// ReadRoadAt returns the road file as one commit of its ref carried it, the
+// same base a lost race is rebased from as ReadEpicAt.
+func (r *Repo) ReadRoadAt(name, sha string) ([]byte, error) {
+	return r.readEntry(RoadRefName(name), sha, name+".md")
+}
+
 // refRead reads the one file a jaira ref carries, named entry at its root. One
 // file per ref rather than a directory, so reading is a single git show and a
 // ref can never hold two answers.
@@ -409,6 +431,12 @@ func (r *Repo) WriteMilestone(key, file string, content []byte, lease string) (s
 // compare-and-swap as a milestone.
 func (r *Repo) WriteEpic(name string, content []byte, lease string) (string, error) {
 	return r.refWrite(EpicRefName(name), name+".md", content, lease)
+}
+
+// WriteRoad puts a road file on its ref and pushes it, under the same
+// compare-and-swap as an epic.
+func (r *Repo) WriteRoad(name string, content []byte, lease string) (string, error) {
+	return r.refWrite(RoadRefName(name), name+".md", content, lease)
 }
 
 // MigratedFromTrailer is the message trailer of the commit that moved a
@@ -817,6 +845,9 @@ func (r *Repo) ListMilestones() ([]string, error) { return r.listNames(Milestone
 
 // ListEpics returns the epic names that have a local ref.
 func (r *Repo) ListEpics() ([]string, error) { return r.listNames(EpicPrefix) }
+
+// ListRoads returns the road names that have a local ref.
+func (r *Repo) ListRoads() ([]string, error) { return r.listNames(RoadPrefix) }
 
 func (r *Repo) listNames(prefix string) ([]string, error) {
 	out, err := r.value("for-each-ref", "--format=%(refname)", prefix)
