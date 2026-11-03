@@ -32,7 +32,7 @@ commits:
   - 07dbb35e8f53f1ab2704e6d690e5dc664216f625
   - 94792682d5ded521fb7f7f7eeed271561c6631fa
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:32:10Z
+updated-at: 2026-11-03T23:32:13Z
 updated-by: berkc
 claimed-by: berk-ca-423748
 claimed-at: 2026-11-03T23:32:10Z
@@ -40,10 +40,7 @@ question: ""
 outcome-what: "Roads: a road is an object on refs/jaira/roads/<name> (title, description, milestone IDs); milestones carry no road field. Roadmap draws each road as a whole swimlane with a header (title, else Road-n); TUI: ↑ from a top reaches the header, enter names it, esc cancels. CLI: jaira road create|add|rm|set|ls. validate warns road_duplicate after a merge. Unfinished work advice now says it stays in its milestone (milestone help, new-file template, epic doc). Docs: README, COMMANDS.md, release note KQQD1H.md."
 outcome-why: "Maintainer 03.11.2026: a swimlane should carry a name, be an object of its own, and a milestone must not know its road; unfinished work stays in its milestone. Roads reuse the epic ref path (gitref, outbox kind, refsync merge) so they travel without a branch merge."
 outcome-resolves: "DoD 1 core/road + gitref + refsync tests; DoD 2 layout tests + TUI header tests; DoD 3 TUI navigation/enter/esc tests in internal/tui/layerroad_test.go; DoD 4 internal/cli/roads_test.go + validate test; DoD 5 advice text in milestones.go/milestone.go/epic.go; DoD 6 README, COMMANDS.md (TestEveryCommandIsDocumented), core/release/notes/KQQD1H.md."
-review-summary: |-
-  core/refsync/road.go:82 rebaseRoad is rebaseEpic (core/refsync/epic.go:89) with Epic renamed to Road, line for line - two copies of the lost-race merge loop that must be fixed in step; make it one function in refsync (e.g. rebaseRef taking the kind's pending/drop/queue/read/readAt/write/merge) that rebaseEpic and rebaseRoad both call
-  core/road/road.go:462 Owner has no caller outside road_test.go; milestone.Layout (core/milestone/layout.go:312, roadOf) already computes the first listing road itself - delete Owner and its test assertion
-  Let stand (plan note 2026-11-03 23:02): core/road as its own package beside core/epic, and the gitref/outbox one-line mirrors of the epic kind
+review-summary: "critique 2 (only the two findings of critique 1, per note 23:28): (1) rebaseEpic/rebaseRoad now thin wrappers over Syncer.rebaseRef (core/refsync/rebase.go) with a refKind of func pieces - line-for-line move of the old epic body, one caller pair in refsync.go:696/699; resolved. (2) road.Owner deleted, no caller left (grep); resolved. Everything else let stand as recorded in note 23:28 (separate core/road, gitref/outbox mirrors, Layout/TUI/CLI shape, inline validate check). Nothing left to say."
 round: 2
 ---
 
