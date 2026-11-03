@@ -19,7 +19,8 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:27Z
-updated-at: 2026-10-31T01:24:27Z
+updated-at: 2026-11-03T17:18:09Z
+updated-by: berkc
 ---
 
 # Das Cockpit bekommt Tabs, darunter ein Worker-Panel: je Agent ein Icon, sein Ticket, seine Lane und ob er festhaengt
