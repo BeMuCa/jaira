@@ -18,7 +18,8 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-10-31T01:24:49Z
+updated-at: 2026-11-03T17:19:44Z
+updated-by: berkc
 ---
 
 # Release-Notes beginnen mit einer Hook-Zeile, und wer mehrere Versionen ueberspringt, sieht die Notes aller dazwischen
