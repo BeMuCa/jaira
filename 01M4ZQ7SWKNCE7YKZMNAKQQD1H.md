@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:21:50Z
+updated-at: 2026-11-03T23:21:52Z
 updated-by: berkc
 claimed-by: berk-ca-130584
 claimed-at: 2026-11-03T17:20:46Z
@@ -42,7 +42,8 @@ question: ""
   proof: internal/tui/layer.go onRoad key handling (enter -> startRoadName); internal/tui/layerroad.go submitRoadName/keyRoadName; tests internal/tui/layer_test.go TestUpOnTheTopRowReachesTheRoadHeader; internal/tui/layerroad_test.go TestEnterNamesAnUnnamedLaneWithAllItsMilestones, TestEscInTheRoadFieldWritesNothing, TestABlankRoadNameIsRefused
 - [x] CLI 'jaira road create|ls|set|add|rm' ('ls --json' traegt Titel, Beschreibung, Milestones); ein Milestone in einer zweiten Road wird mit exit 3 verweigert; liegt er nach einem Merge doch in zweien, zeichnet ihn die aeltere Road und 'jaira validate' meldet es; Test
   proof: internal/cli/roads.go roadFail (TakenError -> exit 3); internal/cli/roads_test.go TestAMilestoneInTwoRoadsIsRefused, TestARoadTravelsOnItsRefAndListsItsMilestones (ls --json); internal/cli/validate.go road_duplicate; TestValidateReportsAMilestoneInTwoRoads
-- [ ] Unfertiges bleibt im Milestone: Hilfe von 'jaira milestone' (internal/cli/milestones.go), Vorlage im neuen Milestone-File (core/milestone/milestone.go) und Paketdoku core/epic/epic.go sagen das statt 'in den naechsten verschieben'
+- [x] Unfertiges bleibt im Milestone: Hilfe von 'jaira milestone' (internal/cli/milestones.go), Vorlage im neuen Milestone-File (core/milestone/milestone.go) und Paketdoku core/epic/epic.go sagen das statt 'in den naechsten verschieben'
+  proof: internal/cli/milestones.go milestone Long help ('stays in the milestone it was planned in'); core/milestone/milestone.go newMilestone template comment and package doc; core/epic/epic.go package doc lines 7-8
 - [ ] README, docs/COMMANDS.md und eine Zeile in core/release/notes/KQQD1H.md
 
 ## Options
