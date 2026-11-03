@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:25Z
-updated-at: 2026-11-03T22:51:57Z
+updated-at: 2026-11-03T22:52:38Z
 updated-by: berkc
 claimed-by: berk-ca-304689
 claimed-at: 2026-11-03T22:51:53Z
@@ -26,6 +26,7 @@ outcome-what: "The cockpit band (jaira-cockpit) shows the teammates' waiting-tic
 outcome-why: "Maintainer 31.10.2026: the band must show only the person's own tickets, not the teammates'. Maintainer 03.11.2026 (teamlead): keep the teammates' line, hidden by default behind a settings switch."
 outcome-resolves: "DoD 1: a waiting ticket with a foreign assignee is absent from the band (test 'by default a teammate's waiting ticket is not in the band...'). DoD 2: own and alias tickets appear, same test. DoD 3: core/release/notes/MG80DF.md."
 review-summary: none
+review-gaps: "none removed. Considered: duplication - showTeammates read once in register() like workerContextShare/cacheGuardTokens (register.tsx:1086-1088), no second option reader; dead code - theirsOpenAtom, t.theirs, the theirs line and the Discuss lookup over view.theirs (register.tsx:358) all still run when the switch is on, nothing orphaned; fluff - one comment matching its neighbours' style, no forwarding wrappers; cost - board.ts snapshotOf still builds theirs when off, trivial and kept so the render guard stays the single switch. Left alone: nothing pre-existing touched."
 ---
 
 # Das Cockpit zeigt nur die Tickets, die mir gehoeren
