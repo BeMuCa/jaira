@@ -4,8 +4,8 @@
 //
 // An epic is not a ticket. It has no definition of done, runs through no lane
 // and is worked by no agent — it is a description plus a list. Nor is it a
-// milestone: a milestone is a round of work, and what is unfinished moves on
-// to the next one; an epic is a feature, and what is unfinished stays in it.
+// milestone: a milestone is a round of work, an epic a feature that rounds may
+// build. What is unfinished stays in the milestone or the epic that holds it.
 //
 // The member list is in the epic, never on the tickets. Sorting a ticket into
 // an epic therefore writes the epic's ref alone, and never the ref of a ticket

@@ -46,11 +46,10 @@ on is named after the ID, and every command takes a milestone as its name, its
 ID or ` + "`<name>-<ID>`" + ` — a name two milestones carry is refused (exit 3) with
 both forms to run it again with.
 
-It is a file rather than a field on each ticket because of what happens at the
-end of a round: the work that did not finish has to appear in the next one, and
-a per-ticket marker means touching every ticket one at a time. Here you open
-the next milestone's file and move the unfinished lines into it — one edit
-instead of twenty.
+It is a file rather than a field on each ticket: one file lists a round's
+tickets and reads in a diff. Work that did not finish stays in the milestone it
+was planned in; nothing moves it on. A finished round is filed with
+'jaira logbook'.
 
 The file is hand-editable and reads in a diff, like a ticket. The file name IS
 the milestone's name — ` + "`jaira milestone rename <old> <new>`" + ` renames it, since

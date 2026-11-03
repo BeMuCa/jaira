@@ -3,12 +3,11 @@
 // .jaira/milestones/.
 //
 // The grouping lives in its own file rather than as a field on each ticket
-// because of what happens at the end of a round. Work that did not finish has
-// to appear in the next group, and a per-ticket marker means touching every
-// ticket one at a time — and tickets travel on their own refs, so that is one
-// pull, one edit and one release each. Twenty of those is the reason nobody
-// does it. A file is copied instead: the lines that are not finished move into
-// the next milestone's file in one edit.
+// because of what a group is for: the tickets that belong to one round, which
+// is one file to read and one place to see how far the round is. Work that did
+// not finish stays in the milestone it was planned in; nothing copies it on. A
+// per-ticket marker would mean touching every ticket one at a time, and tickets
+// travel on their own refs, so that is one pull, one edit and one release each.
 //
 // A milestone that has been filed into the logbook carries `status: filed` in
 // its frontmatter, and that line is what keeps it off the board. It is written
@@ -171,8 +170,8 @@ func New(name string, colour int, now time.Time) *Milestone {
 		"",
 		"# " + name,
 		"",
-		"<!-- One ticket id per line. Move the unfinished ones into the next",
-		"     milestone's file when this one is done. -->",
+		"<!-- One ticket id per line. Unfinished tickets stay here: nothing moves",
+		"     them to another milestone. -->",
 		"",
 	}
 	return m

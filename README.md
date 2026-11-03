@@ -39,6 +39,9 @@ mixes committed content with scratch state.
   goal and tickets; `b` there shows the board filtered to it. Put a milestone
   on the roadmap with `jaira milestone create <name> --goal <text> --after <a,b>`;
   `--after ""` starts a swimlane of its own, and without `--after` it stays off.
+  Each swimlane is a road, named `Road-1`, `Road-2`, … until somebody names it:
+  on the roadmap `↑` from a swimlane's top reaches its header and `enter` names
+  it; `jaira road create|add|rm|set|ls` does the same from the command line.
   - Use case: see how far each round of work is, and which round comes next.
 
   <img src="docs/img/milestone-roadmap.png" alt="The Milestone Roadmap: cart-basics with 2 of 2 tickets done, then payments-v1 with 1 of 4, then webhooks with 1 of 2, and sessions with 0 of 3 in a second swimlane" width="70%">
@@ -1013,6 +1016,8 @@ jaira milestone ls         the board's milestones; read it before you create one
 jaira milestone <cmd>      create, add, rm, set (--after: the Milestone Roadmap), rename (the name only)
 jaira epic ls              the features this board is built of, done X of Y; --unassigned the rest
 jaira epic <cmd>           create, add, rm, show — an epic lives on its own ref, not in a file
+jaira road ls              the roadmap swimlanes and the milestones each lists
+jaira road <cmd>           create, add, rm, set — a road is a swimlane, kept on its own ref
 jaira dod <id> <n>         mark a checklist item --doing / --done / --todo / --superseded
 jaira note <id> <text>     record what you worked out, so a later session can pick it up
 jaira validate             check every ticket on the board for damage
@@ -1105,6 +1110,7 @@ On the Milestone Roadmap (L):
 ←↑↓→  nearest bubble or [+]       enter  open a bubble; on a [+]: n new, c connect
 e     name, goal, predecessors     c      next colour
 x     take it off the roadmap     L esc  back to the board
+↑ on a top, then enter: name its swimlane's road (the header above it)
 In an open milestone: ↑↓ ticket, enter opens it, b the board filtered to it, esc back.
 
 On the board list (p, and the launcher):
