@@ -11,6 +11,7 @@ import (
 	"charm.land/lipgloss/v2"
 
 	"github.com/BeMuCa/jaira/core/milestone"
+	"github.com/BeMuCa/jaira/core/road"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -27,7 +28,7 @@ const (
 	extraHead = 4  // where an extra arrow's ▼ lands, three left of the parent arrow's at 7
 	laneGap   = 3  // extra columns between swimlanes; the ┊ stands in them
 	layerLeft = 2  // room left of the first lane for an arrow's vertical run
-	layerTop  = 1  // room above the first row for an arrow into a swimlane top
+	layerTop  = 3  // room above the first row: the swimlane's header, then an arrow into a swimlane top
 	fillCells = bubbleW - 2
 	fillMix   = 0.55 // how far toward white a bubble's fill is mixed
 	nameMax   = 12   // the longest name a bubble shows untruncated
@@ -43,6 +44,7 @@ type layerScene struct {
 	bubble  map[string]milestone.Bubble
 	at      map[string]image.Point // a bubble's top-left cell
 	targets []sceneTarget
+	labels  []string // what each swimlane's header says, by lane index
 	farX    int
 	w, h    int
 }
@@ -58,7 +60,7 @@ type sceneTarget struct {
 func (m *Model) layerScene() *layerScene {
 	l := m.layer
 	sc := &layerScene{
-		grid:   milestone.Layout(m.milestones, nil),
+		grid:   milestone.Layout(m.milestones, road.Groups(m.roads)),
 		byID:   map[string]*milestone.Milestone{},
 		bubble: map[string]milestone.Bubble{},
 		at:     map[string]image.Point{},
@@ -80,6 +82,7 @@ func (m *Model) layerScene() *layerScene {
 		}
 	}
 	sc.farX = layerLeft + cols*cellW + len(sc.grid.Lanes)*laneGap
+	sc.labels = m.laneLabels(sc.grid.Lanes)
 	sc.w = sc.farX + len(emptyLayerHint) + 6
 	sc.h = layerTop + rows*cellH
 
@@ -100,6 +103,12 @@ func (m *Model) layerScene() *layerScene {
 		p := sc.at[b.ID]
 		sc.targets = append(sc.targets, sceneTarget{layerTarget{onBubble, b.ID}, image.Rect(p.X, p.Y, p.X+bubbleW, p.Y+bubbleH)})
 	}
+	// The header over each swimlane's first column, one row above the tops. ↑
+	// from a top bubble reaches it, ↓ from it comes back to the top.
+	for i, ln := range sc.grid.Lanes {
+		x := layerLeft + ln.Col*cellW + i*laneGap
+		sc.targets = append(sc.targets, sceneTarget{layerTarget{onRoad, ln.Top}, image.Rect(x, 0, x+bubbleW, 1)})
+	}
 	// The [+] of the bubble the cursor is on, or of the bubble whose [+] it
 	// is on: drawn in space the layout reserves, so offering them moves
 	// nothing. Right of a swimlane top there is none — a sibling of a top is
@@ -111,7 +120,7 @@ func (m *Model) layerScene() *layerScene {
 	// bubble's own axis — the one beside it on its middle, the one under it
 	// on its centre column — so ↑↓ never stops on the [+] beside a bubble
 	// and ←→ never on the one under it. "[+]" is drawn at the box's corner.
-	if l.sel.kind != onFar {
+	if l.sel.kind != onFar && l.sel.kind != onRoad {
 		b := sc.bubble[l.sel.id]
 		p := sc.at[b.ID]
 		if b.Parent != "" {
@@ -559,7 +568,7 @@ func (m *Model) drawLayer(sc *layerScene) *layerCanvas {
 	}
 
 	for _, t := range sc.targets {
-		if t.kind == onBubble {
+		if t.kind == onBubble || t.kind == onRoad {
 			continue
 		}
 		st := dim
@@ -567,6 +576,15 @@ func (m *Model) drawLayer(sc *layerScene) *layerCanvas {
 			st = cv.style(stySelected)
 		}
 		cv.text(t.box.Min.X, t.box.Min.Y, "[+]", st)
+	}
+	for i, ln := range sc.grid.Lanes {
+		st := dim
+		if l.sel.kind == onRoad && l.sel.id == ln.Top {
+			st = cv.style(stySelected)
+		}
+		// The header runs across the lane's columns, less the gap after the last.
+		x := layerLeft + ln.Col*cellW + i*laneGap
+		cv.text(x, 0, truncate(sc.labels[i], ln.Width*cellW-(cellW-bubbleW)), st)
 	}
 	if len(sc.grid.Bubbles) == 0 {
 		cv.text(sc.farX+4, layerTop+1, emptyLayerHint, dim)
@@ -581,7 +599,7 @@ func (m *Model) renderLayer() string {
 		return m.renderBoard()
 	}
 	switch m.layer.stage {
-	case stageChoose, stageForm, stagePick, stageRemove:
+	case stageChoose, stageForm, stagePick, stageRemove, stageRoadName:
 		return m.modalOver(m.renderLayerDialog(), modeLayer)
 	}
 	return m.renderLayerBase()
@@ -665,6 +683,8 @@ func (m *Model) layerHeader(sc *layerScene) string {
 		label := m.milestoneLabel(ms.ID)
 		goal = truncate(goal, width-lipgloss.Width(roadmapTitle+" ·  · "+label))
 		return head + styMeta.Render(" · ") + label + styMeta.Render(" · "+goal)
+	case onRoad:
+		return head + styMeta.Render(truncate(" · enter names the road of this swimlane", width-len(roadmapTitle)))
 	default:
 		return head + styMeta.Render(truncate(" · [+] a new milestone, "+m.placementText(l.sel), width-len(roadmapTitle)))
 	}
@@ -737,6 +757,12 @@ func (m *Model) renderLayerDialog() string {
 		}
 		errLine()
 		hints("↑↓ pick", "enter connect", "esc back")
+
+	case stageRoadName:
+		b.WriteString(styLaneTitle.Render("Name the road of this swimlane") + "\n\n")
+		b.WriteString(styMeta.Render(fmt.Sprintf("%-6s", "road")) + " " + l.form.vals[0] + stySelected.Render("▏") + "\n")
+		errLine()
+		hints("enter save", "esc cancel")
 
 	case stageRemove:
 		b.WriteString(styLaneTitle.Render("Take "+m.milestoneLabel(l.sel.id)+" off the roadmap?") + "\n\n")

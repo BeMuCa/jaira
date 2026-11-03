@@ -219,15 +219,23 @@ func TestExtraArrowNeverEndsAtASiblingsJunction(t *testing.T) {
 
 // ↑ on a bubble of the top row has nowhere to go; it must not jump to the far
 // [+], which sits on the same row.
-func TestUpOnTheTopRowStays(t *testing.T) {
+func TestUpOnTheTopRowReachesTheRoadHeader(t *testing.T) {
 	m := newTestModel(t, 200, 40)
 	mkPlaced(t, m, "a", 0, nil)
 	mkPlaced(t, m, "b", 1, nil)
 	reloadOrFail(t, m)
 	m.key(key("L"))
 	m.key(keyUp)
+	if m.layer.sel != (layerTarget{onRoad, lid("a")}) {
+		t.Errorf("↑ on a swimlane's top must reach its road header, got %+v", m.layer.sel)
+	}
+	m.key(keyUp)
+	if m.layer.sel != (layerTarget{onRoad, lid("a")}) {
+		t.Errorf("↑ on the header, the top row, must stay put, got %+v", m.layer.sel)
+	}
+	m.key(keyDown)
 	if m.layer.sel != (layerTarget{onBubble, lid("a")}) {
-		t.Errorf("↑ on the top row must stay put, got %+v", m.layer.sel)
+		t.Errorf("↓ from the header must come back to its top, got %+v", m.layer.sel)
 	}
 }
 

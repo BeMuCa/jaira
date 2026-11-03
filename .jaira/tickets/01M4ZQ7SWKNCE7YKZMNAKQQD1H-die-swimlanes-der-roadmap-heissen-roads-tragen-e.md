@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:12:01Z
+updated-at: 2026-11-03T23:17:02Z
 updated-by: berkc
 claimed-by: berk-ca-130584
 claimed-at: 2026-11-03T17:20:46Z
@@ -36,8 +36,10 @@ question: ""
 
 - [x] Eine Road ist ein eigenes Objekt nur auf ihrem Ref refs/jaira/roads/<name> (wie Epics): Titel, Beschreibung, Liste ihrer Milestone-IDs; Milestones tragen kein Road-Feld; paralleles Schreiben wird gemergt wie bei Epics; Test
   proof: core/road/road.go Merge, core/road/road_test.go TestCreateRefusesAMilestoneInAnotherRoad; core/gitref/road_test.go TestRoadArrivesWithoutASharedBranch; core/refsync/road_test.go TestAConcurrentRoadListingIsMergedNotLost; no Road field in core/milestone
-- [ ] Roadmap: eine Road ist eine ganze Swimlane - ihre Milestones stehen in ihrer Lane, der Aufbau darin kommt weiter aus after:; ein Milestone ohne Road steht in der Lane seines ersten Vorgaengers; der Lane-Kopf zeigt den Road-Titel, sonst Road-1..Road-n in Anzeigereihenfolge; Test
-- [ ] TUI-Roadmap: vom obersten Bubble waehlt Pfeil hoch den Road-Kopf, Enter oeffnet ein Namensfeld, Enter speichert (eine unbenannte Lane wird dabei zur Road mit allen Milestones, die in ihr stehen), Esc bricht ab; Test
+- [x] Roadmap: eine Road ist eine ganze Swimlane - ihre Milestones stehen in ihrer Lane, der Aufbau darin kommt weiter aus after:; ein Milestone ohne Road steht in der Lane seines ersten Vorgaengers; der Lane-Kopf zeigt den Road-Titel, sonst Road-1..Road-n in Anzeigereihenfolge; Test
+  proof: core/milestone/layout.go Layout (lane = road, else predecessor's lane); internal/tui/layerdraw.go drawLayer header row; internal/tui/layerroad.go laneLabels; tests core/milestone/layout_test.go TestARoadListingAMilestoneWhoseParentIsElsewhere..., TestAMilestoneAfterARoadMemberIsInTheRoadsLane; internal/tui/layerroad_test.go TestUnnamedSwimlanesAreNumbered, TestARoadsTitleHeadsItsLane
+- [x] TUI-Roadmap: vom obersten Bubble waehlt Pfeil hoch den Road-Kopf, Enter oeffnet ein Namensfeld, Enter speichert (eine unbenannte Lane wird dabei zur Road mit allen Milestones, die in ihr stehen), Esc bricht ab; Test
+  proof: internal/tui/layer.go onRoad key handling (enter -> startRoadName); internal/tui/layerroad.go submitRoadName/keyRoadName; tests internal/tui/layer_test.go TestUpOnTheTopRowReachesTheRoadHeader; internal/tui/layerroad_test.go TestEnterNamesAnUnnamedLaneWithAllItsMilestones, TestEscInTheRoadFieldWritesNothing, TestABlankRoadNameIsRefused
 - [x] CLI 'jaira road create|ls|set|add|rm' ('ls --json' traegt Titel, Beschreibung, Milestones); ein Milestone in einer zweiten Road wird mit exit 3 verweigert; liegt er nach einem Merge doch in zweien, zeichnet ihn die aeltere Road und 'jaira validate' meldet es; Test
   proof: internal/cli/roads.go roadFail (TakenError -> exit 3); internal/cli/roads_test.go TestAMilestoneInTwoRoadsIsRefused, TestARoadTravelsOnItsRefAndListsItsMilestones (ls --json); internal/cli/validate.go road_duplicate; TestValidateReportsAMilestoneInTwoRoads
 - [ ] Unfertiges bleibt im Milestone: Hilfe von 'jaira milestone' (internal/cli/milestones.go), Vorlage im neuen Milestone-File (core/milestone/milestone.go) und Paketdoku core/epic/epic.go sagen das statt 'in den naechsten verschieben'
@@ -59,7 +61,7 @@ question: ""
 - [x] milestone.Layout(all, roads): Lane = Road die listet, sonst Lane des ersten Vorgaengers, sonst eigene; Vorgaenger in fremder Lane = Extra-Pfeil + Top; mehrere Tops je Lane; roads=nil unveraendert; Tests
 - [x] CLI jaira road create|add|rm|set|ls [--json], zweite Road exit 3; Tests
 - [x] validate: Warnung road_duplicate; Test
-- [ ] TUI: Roads laden, Kopfzeile je Lane (Titel / Road-n), Ziel onRoad per Pfeil hoch, Enter-Namensfeld, Enter speichert (unbenannt: Road mit allen Lane-Milestones), Esc; Hilfe; Tests
+- [x] TUI: Roads laden, Kopfzeile je Lane (Titel / Road-n), Ziel onRoad per Pfeil hoch, Enter-Namensfeld, Enter speichert (unbenannt: Road mit allen Lane-Milestones), Esc; Hilfe; Tests
 - [ ] Ratschlag-Texte 'Unfertiges bleibt im Milestone' (milestones.go Hilfe, milestone.go Vorlage, epic.go Doku)
 - [ ] README, docs/COMMANDS.md, core/release/notes/KQQD1H.md
 
@@ -82,3 +84,4 @@ F4 Epic-Etikett pro Board - A (Empfohlen) eigenes Ticket: das TUI zeigt heute ga
 - **2026-11-03 23:09 · berkc** — Step 5 layout: Layout(all, roads [][]string). Lane key = first listing road, else lane of first usable predecessor, else own top. A child joins its parent only when both have the same lane key; otherwise its arrow is Extra. nil roads: all 13 existing tests pass with ', nil' added; layerdraw.go passes nil until step 9 wires road.Groups.
 - **2026-11-03 23:11 · berkc** — Step 6 CLI: internal/cli/roads.go (create/add/rm/set/ls, --json keys name,title,description,created_at,milestones[{id,name}]); milestone args resolved with milestoneNamed (logbook.go) and refuseAmbiguous; taken road -> exit 3 via TakenError. Tests internal/cli/roads_test.go.
 - **2026-11-03 23:12 · berkc** — Step 7 validate: road_duplicate warning per duplicate (Path = the older road's ref); road_unreadable warning for a non-ErrNoRefs load error; ErrNoRefs silently skipped. Test TestValidateReportsAMilestoneInTwoRoads writes the second road with gitref.Repo.WriteRoad to simulate a merge.
+- **2026-11-03 23:17 · berkc** — Step 8 TUI: layerTop 1->3 (header row at y=0). onRoad target per lane = header box over the lane's first column (1 row). Plan's 'Road-n' numbering counts lanes with no road. Enter on header opens stageRoadName (one field, pre-filled with the label); unnamed lane -> road.Create with every bubble in the lane; esc writes nothing. Changed behaviour: '↑ on a top' used to stay put (TestUpOnTheTopRowStays), now reaches the header; the test is updated to say so. Tests use newRemoteModel (bare remote) since the TUI Model holds a concrete *refsync.Syncer.
