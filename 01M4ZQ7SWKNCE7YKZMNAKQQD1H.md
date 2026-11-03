@@ -1,7 +1,7 @@
 ---
 id: 01M4ZQ7SWKNCE7YKZMNAKQQD1H
 title: "Die Swimlanes der Roadmap heissen Roads, tragen einen Namen und lassen sich im TUI umbenennen"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 assignee: berkc
@@ -21,13 +21,24 @@ tags:
   - tui
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 2e834d0b9a29a7bb6bb373009017ef81add17a64
+  - cbc02c6d8b0d3e0a89fec19c0e92fcd692e4589c
+  - ab7adf834d1fcb03141f1b26f2d0f0752a040fcb
+  - 40cd909f4e98136adb8305888739521cc645f13a
+  - 60167c57b70a1772588363f8024316eb811ed282
+  - 347817d4ba1f7c17401638910c4cfa3e20514490
+  - 253a8870dff3122ec09fbff8792e0bc74a342e15
+  - 07dbb35e8f53f1ab2704e6d690e5dc664216f625
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:21:56Z
+updated-at: 2026-11-03T23:22:18Z
 updated-by: berkc
 claimed-by: berk-ca-130584
 claimed-at: 2026-11-03T17:20:46Z
 question: ""
+outcome-what: "Roads: a road is an object on refs/jaira/roads/<name> (title, description, milestone IDs); milestones carry no road field. Roadmap draws each road as a whole swimlane with a header (title, else Road-n); TUI: ↑ from a top reaches the header, enter names it, esc cancels. CLI: jaira road create|add|rm|set|ls. validate warns road_duplicate after a merge. Unfinished work advice now says it stays in its milestone (milestone help, new-file template, epic doc). Docs: README, COMMANDS.md, release note KQQD1H.md."
+outcome-why: "Maintainer 03.11.2026: a swimlane should carry a name, be an object of its own, and a milestone must not know its road; unfinished work stays in its milestone. Roads reuse the epic ref path (gitref, outbox kind, refsync merge) so they travel without a branch merge."
+outcome-resolves: "DoD 1 core/road + gitref + refsync tests; DoD 2 layout tests + TUI header tests; DoD 3 TUI navigation/enter/esc tests in internal/tui/layerroad_test.go; DoD 4 internal/cli/roads_test.go + validate test; DoD 5 advice text in milestones.go/milestone.go/epic.go; DoD 6 README, COMMANDS.md (TestEveryCommandIsDocumented), core/release/notes/KQQD1H.md."
 ---
 
 # Die Swimlanes der Roadmap heissen Roads, tragen einen Namen und lassen sich im TUI umbenennen
