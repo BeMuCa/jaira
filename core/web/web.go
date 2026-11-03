@@ -91,6 +91,17 @@ type Epic struct {
 	// Closed is an epic 'jaira epic close' closed: it takes a ticket only
 	// with force, and the page hides it unless asked to show it.
 	Closed bool `json:"closed"`
+	// External are the keys of the tasks in another system the epic stands
+	// for. Link is the URL when it is one the page may open, empty when the
+	// file carries none or something else.
+	External []External `json:"external"`
+}
+
+// External is one key of a task in another system, as the epic carries it.
+type External struct {
+	Key  string `json:"key"`
+	URL  string `json:"url"`
+	Link string `json:"link,omitzero"`
 }
 
 // EpicFields are what a person writes about an epic.
@@ -108,6 +119,12 @@ type EpicEdit struct {
 	Description *string     `json:"description"`
 	Body        *string     `json:"body"`
 	Base        *EpicFields `json:"base"`
+	// AddExternal puts keys on the epic or relinks one it carries, each
+	// "<KEY> [<URL>]"; DropExternal takes keys off. The editor sends what
+	// changed against what it read, so two editors adding a key each both
+	// keep theirs.
+	AddExternal  []string `json:"add_external"`
+	DropExternal []string `json:"drop_external"`
 }
 
 // Lane is one lane of the board, in the board's order. Kind is what the
@@ -421,8 +438,9 @@ func (s *Server) handleCreateEpic(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleSetEpic(w http.ResponseWriter, r *http.Request) {
 	var edit EpicEdit
-	if err := json.NewDecoder(r.Body).Decode(&edit); err != nil || edit.Title == nil && edit.Description == nil && edit.Body == nil {
-		writeError(w, http.StatusBadRequest, fmt.Errorf(`want {"title": ..., "description": ..., "body": ..., "base": <what the editor read>}`))
+	if err := json.NewDecoder(r.Body).Decode(&edit); err != nil ||
+		edit.Title == nil && edit.Description == nil && edit.Body == nil && len(edit.AddExternal) == 0 && len(edit.DropExternal) == 0 {
+		writeError(w, http.StatusBadRequest, fmt.Errorf(`want {"title": ..., "description": ..., "body": ..., "add_external": [...], "drop_external": [...], "base": <what the editor read>}`))
 		return
 	}
 	s.write(w, s.Source.SetEpic(r.PathValue("name"), edit))

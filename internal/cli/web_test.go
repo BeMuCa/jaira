@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/BeMuCa/jaira/core/epic"
 	"github.com/BeMuCa/jaira/core/ticket"
 	"github.com/BeMuCa/jaira/core/web"
 )
@@ -524,5 +525,49 @@ func TestWebClosesReopensAndForcesIntoAClosedEpic(t *testing.T) {
 	}
 	if w := webDo(t, h, "POST", "/api/epics/no-such/close", ""); w.Code != http.StatusNotFound {
 		t.Errorf("unknown epic: %d %s", w.Code, w.Body)
+	}
+}
+
+// The page reads an epic's keys with the link it may open, puts a key on and
+// takes one off through the edit the CLI makes, and refuses a link that is no
+// http one. A URL a person wrote by hand that is no link stays text.
+func TestWebEditsAnEpicsExternalKeys(t *testing.T) {
+	ada, _ := twoBoards(t)
+	a := createTicket(t, ada, "Login form")
+	jsonOf(t, ada, "epic", "create", "login", a, "--external", "OLD-1")
+
+	g.dir = ada
+	s, err := openStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := (&web.Server{Source: newWebSource(s), Push: webPush}).Handler()
+	edit := `{"add_external":["JIRA-1 https://jira.example/browse/JIRA-1"],"drop_external":["old-1"]}`
+	if w := webDo(t, h, "PATCH", "/api/epics/login", edit); w.Code != 200 {
+		t.Fatalf("edit: %d %s", w.Code, w.Body)
+	}
+	var epics []web.Epic
+	webGet(t, h, "/api/epics", &epics)
+	want := web.External{Key: "JIRA-1", URL: "https://jira.example/browse/JIRA-1", Link: "https://jira.example/browse/JIRA-1"}
+	if x := epics[0].External; len(x) != 1 || x[0] != want {
+		t.Fatalf("external after the edit = %+v; want %+v", x, want)
+	}
+	if w := webDo(t, h, "PATCH", "/api/epics/login", `{"add_external":["X-1 javascript:alert(1)"]}`); w.Code != http.StatusBadRequest {
+		t.Fatalf("a javascript: link: %d %s; want 400", w.Code, w.Body)
+	}
+
+	// A hand-written line whose URL is no link reaches the page without one.
+	e, err := epic.Load(epicRefs(), "login")
+	if err != nil {
+		t.Fatal(err)
+	}
+	hand := strings.Replace(string(e.Bytes()), "  - JIRA-1 https://jira.example/browse/JIRA-1", "  - JIRA-1 javascript:alert(1)", 1)
+	if err := epicRefs().RecordEpic("login", []byte(hand)); err != nil {
+		t.Fatal(err)
+	}
+	epics = nil
+	webGet(t, h, "/api/epics", &epics)
+	if x := epics[0].External; len(x) != 1 || x[0].Link != "" || x[0].URL != "javascript:alert(1)" {
+		t.Fatalf("a hand-written non-link = %+v; want it as text without a link", x)
 	}
 }

@@ -17,4 +17,13 @@ export interface Epic {
   // Closed by 'jaira epic close': takes a ticket only after a confirmation,
   // and the list hides it unless asked to show it.
   closed: boolean;
+  // The keys of the tasks in another system the epic stands for. link is the
+  // url when it is one the page may open, missing otherwise.
+  external: External[];
+}
+
+export interface External {
+  key: string;
+  url: string;
+  link?: string;
 }

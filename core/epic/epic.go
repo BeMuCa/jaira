@@ -102,8 +102,28 @@ type Epic struct {
 	// Closed is "status: closed" in the frontmatter.
 	Closed bool
 
-	lines   []string
-	members []string
+	lines    []string
+	members  []string
+	external []External
+}
+
+// Label is how a message names the epic: its title, which a person reads,
+// with the name beside it, which a person types into a command — "Web 0.2"
+// (web-0-2). An epic whose title is its name is named once.
+func (e *Epic) Label() string {
+	if e.Title == "" || e.Title == e.Name {
+		return fmt.Sprintf("%q", e.Name)
+	}
+	return fmt.Sprintf("%q (%s)", e.Title, e.Name)
+}
+
+// LabelOf is Label for an epic known by name only, as an error path has it.
+// An epic that cannot be read is named by its name.
+func LabelOf(r Refs, name string) string {
+	if e, err := Load(r, name); err == nil {
+		return e.Label()
+	}
+	return fmt.Sprintf("%q", name)
 }
 
 // Members lists the ticket ids this epic holds, in file order.
@@ -171,11 +191,19 @@ func FromBytes(name string, content []byte) *Epic {
 		e.lines = strings.Split(s, "\n")
 	}
 	end, hasFront := e.frontEnd()
+	inExternal := false
 	for i, line := range e.lines {
 		if hasFront && i <= end {
 			if i == 0 || i == end {
 				continue
 			}
+			if inExternal && isItem(line) {
+				if x, ok := parseItem(strings.TrimPrefix(strings.TrimSpace(line), "-")); ok && !e.HasExternal(x.Key) {
+					e.external = append(e.external, x)
+				}
+				continue
+			}
+			inExternal = false
 			key, value, ok := strings.Cut(strings.TrimSpace(line), ":")
 			if !ok {
 				continue
@@ -192,6 +220,13 @@ func FromBytes(name string, content []byte) *Epic {
 				}
 			case "status":
 				e.Closed = value == closedStatus
+			case externalField:
+				// A key written on the line itself, the way a person might
+				// type one by hand, is read as the list's first item.
+				inExternal = true
+				if x, ok := parseItem(value); ok && value != "[]" {
+					e.external = append(e.external, x)
+				}
 			}
 			continue
 		}
@@ -452,6 +487,22 @@ func Merge(name string, base, ours, theirs []byte) []byte {
 	if o.Closed != b.Closed && o.Closed != out.Closed {
 		out.setClosed(o.Closed)
 	}
+	// The keys merge like the members: what we added or relinked goes onto
+	// theirs, what we took out comes off it.
+	keys := false
+	for _, x := range o.external {
+		if !slices.Contains(b.external, x) {
+			keys = out.putExternal(x) || keys
+		}
+	}
+	for _, x := range b.external {
+		if !o.HasExternal(x.Key) {
+			keys = out.dropExternal(x.Key) || keys
+		}
+	}
+	if keys {
+		out.writeExternal()
+	}
 	return out.Bytes()
 }
 
@@ -508,6 +559,12 @@ func (e *Epic) Fields() Fields {
 // Patch is an edit of an epic: a nil field is left as it is.
 type Patch struct {
 	Title, Description, Body *string
+	// AddExternal puts keys on the epic, a key it carries already getting
+	// the new URL; DropExternal takes keys off, in any case. Both are
+	// changes rather than a new list, so two people adding a key each at
+	// once both get theirs, and neither needs Base.
+	AddExternal  []External
+	DropExternal []string
 	// Base is what the editor read before it changed anything; nil writes
 	// onto whatever is there. With it, a field the patch changes that is no
 	// longer what Base says refuses the whole write with ErrChanged, so an
@@ -552,7 +609,17 @@ func Set(s *ticket.Store, r Refs, name string, p Patch) (*Epic, bool, error) {
 				e.setField("description", d)
 			}
 		}
-		written = e.Fields() != now
+		keys := false
+		for _, key := range p.DropExternal {
+			keys = e.dropExternal(key) || keys
+		}
+		for _, x := range p.AddExternal {
+			keys = e.putExternal(x) || keys
+		}
+		if keys {
+			e.writeExternal()
+		}
+		written = keys || e.Fields() != now
 		return written, nil
 	})
 	return e, written, err
@@ -590,9 +657,9 @@ func LoadAll(r Refs) ([]*Epic, error) {
 	return out, nil
 }
 
-// Create writes a new epic with its first members. The name must be
-// normalized already, and ids must be full ticket ids.
-func Create(s *ticket.Store, r Refs, name, title, description string, ids []string) (*Epic, error) {
+// Create writes a new epic with its first members and external keys. The name
+// must be normalized already, and ids must be full ticket ids.
+func Create(s *ticket.Store, r Refs, name, title, description string, ids []string, external ...External) (*Epic, error) {
 	if r == nil {
 		return nil, ErrNoRefs
 	}
@@ -610,6 +677,10 @@ func Create(s *ticket.Store, r Refs, name, title, description string, ids []stri
 	for _, id := range ids {
 		e.Add(id)
 	}
+	for _, x := range external {
+		e.putExternal(x)
+	}
+	e.writeExternal()
 	if err := r.RecordEpic(name, e.Bytes()); err != nil {
 		return nil, err
 	}
@@ -662,7 +733,7 @@ func Close(s *ticket.Store, r Refs, name string, ix *link.Index, force bool) (*E
 			return false, nil
 		}
 		if p := Count(e, ix); p.Done < p.Total && !force {
-			return false, fmt.Errorf("%w: %d of %d ticket(s) of %s are not finished", ErrUnfinished, p.Total-p.Done, p.Total, name)
+			return false, fmt.Errorf("%w: %d of %d ticket(s) of %s are not finished", ErrUnfinished, p.Total-p.Done, p.Total, e.Label())
 		}
 		e.setClosed(true)
 		written = true

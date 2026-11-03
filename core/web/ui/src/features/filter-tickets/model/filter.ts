@@ -25,7 +25,7 @@ export interface Chip {
 
 // The filters that take chips. Each name is its key in the address; the
 // values it excludes go under not-<name>.
-const CHIPPED = ['lane', 'tag', 'person', 'where'] as const;
+const CHIPPED = ['lane', 'tag', 'person', 'where', 'key'] as const;
 
 // What the page filters by. Every field set narrows the list further: the
 // filters are ANDed, as 'jaira list' ANDs its flags. Within one chipped filter
@@ -40,13 +40,16 @@ export interface Filter {
   // Board, logbook, archive or rejected. None picked shows what the board
   // shows: open tickets, and the filed ones only inside their epic.
   where: Chip[];
+  // The key of a task in another system: the ticket counts towards an epic
+  // carrying it. Keys compare in any case.
+  key: Chip[];
   date: DateField;
   // yyyy-mm-dd, both ends included; empty is open.
   from: string;
   to: string;
 }
 
-export const emptyFilter = (): Filter => ({ q: '', lane: [], tag: [], person: [], where: [], date: 'created', from: '', to: '' });
+export const emptyFilter = (): Filter => ({ q: '', lane: [], tag: [], person: [], where: [], key: [], date: 'created', from: '', to: '' });
 
 const DATES: DateField[] = ['created', 'updated', 'filed'];
 
@@ -86,7 +89,7 @@ export function toQuery(f: Filter): string {
 
 // Whether anything narrows the list.
 export const narrows = (f: Filter) =>
-  !!(f.q || f.lane.length || f.tag.length || f.person.length || f.where.length || f.from || f.to);
+  !!(f.q || f.lane.length || f.tag.length || f.person.length || f.where.length || f.key.length || f.from || f.to);
 
 // Whether the page has to ask the server for the filed tickets too: a place
 // is picked that is not the board, or one is excluded, which leaves others.
@@ -121,7 +124,21 @@ function day(iso: string | undefined): string {
 
 const dateOf = (t: Ticket, f: DateField) => day(f === 'created' ? t.created_at : f === 'updated' ? t.updated_at : t.filed_at);
 
-export function matches(t: Ticket, f: Filter): boolean {
+// The key chips against keys carried, both in one case.
+const passesKeys = (f: Filter, keys: string[]) =>
+  passes(
+    f.key.map((c) => ({ ...c, value: c.value.toUpperCase() })),
+    keys.map((k) => k.toUpperCase()),
+  );
+
+// Whether an epic carrying these keys stays in the list: a key filter shows
+// the epics of that key, not every epic that shares a ticket with one.
+export const epicPasses = (keys: string[], f: Filter) => passesKeys(f, keys);
+
+// keys are those of every epic the ticket counts towards; the page knows
+// them, the ticket does not carry them.
+export function matches(t: Ticket, f: Filter, keys: string[] = []): boolean {
+  if (!passesKeys(f, keys)) return false;
   if (f.q) {
     const q = f.q.toLowerCase();
     if (![t.title, t.goal ?? '', t.handle, t.id].some((s) => s.toLowerCase().includes(q))) return false;

@@ -59,7 +59,14 @@ func (w *webSource) Epics() ([]web.Epic, error) {
 	out := make([]web.Epic, 0, len(epics))
 	for _, e := range epics {
 		p := epic.Count(e, ix)
-		v := web.Epic{Name: e.Name, Title: e.Title, Description: e.Description, Body: e.Body(), Text: e.Text(), Done: p.Done, Total: p.Total, Closed: e.Closed}
+		v := web.Epic{Name: e.Name, Title: e.Title, Description: e.Description, Body: e.Body(), Text: e.Text(), Done: p.Done, Total: p.Total, Closed: e.Closed, External: []web.External{}}
+		for _, x := range e.Externals() {
+			ext := web.External{Key: x.Key, URL: x.URL}
+			if epic.LinkableURL(x.URL) {
+				ext.Link = x.URL
+			}
+			v.External = append(v.External, ext)
+		}
 		for _, t := range p.Tickets {
 			c, ok := cards[t.ID]
 			if !ok {
@@ -278,7 +285,14 @@ func (w *webSource) CreateEpic(raw, title, description string) error {
 func (w *webSource) SetEpic(name string, edit web.EpicEdit) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	p := epic.Patch{Title: edit.Title, Description: edit.Description, Body: edit.Body}
+	p := epic.Patch{Title: edit.Title, Description: edit.Description, Body: edit.Body, DropExternal: edit.DropExternal}
+	for _, raw := range edit.AddExternal {
+		x, err := epic.ParseExternal(raw)
+		if err != nil {
+			return fmt.Errorf("%v: %w", err, web.ErrInvalid)
+		}
+		p.AddExternal = append(p.AddExternal, x)
+	}
 	if b := edit.Base; b != nil {
 		p.Base = &epic.Fields{Title: b.Title, Description: b.Description, Body: b.Body}
 	}
@@ -287,7 +301,7 @@ func (w *webSource) SetEpic(name string, edit web.EpicEdit) error {
 	case errors.Is(err, epic.ErrNotFound):
 		return fmt.Errorf("no epic %s: %w", name, web.ErrNotFound)
 	case errors.Is(err, epic.ErrChanged):
-		return fmt.Errorf("%s was changed since you opened it; open it again to see what it says now: %w", name, web.ErrConflict)
+		return fmt.Errorf("%s was changed since you opened it; open it again to see what it says now: %w", epic.LabelOf(epicRefs(), name), web.ErrConflict)
 	case errors.Is(err, epic.ErrNoTitle):
 		return fmt.Errorf("%v: %w", err, web.ErrInvalid)
 	}
@@ -350,10 +364,10 @@ func (w *webSource) assign(name, id string, add, force bool) error {
 		return fmt.Errorf("no epic %s: %w", name, web.ErrNotFound)
 	}
 	if errors.Is(err, epic.ErrClosed) {
-		return fmt.Errorf("%s is closed; confirm to put the ticket in anyway: %w", name, web.ErrConflict)
+		return fmt.Errorf("%s is closed; confirm to put the ticket in anyway: %w", epic.LabelOf(epicRefs(), name), web.ErrConflict)
 	}
 	if err == nil && !add && len(changed) == 0 {
-		return fmt.Errorf("it is no member of %s, it counts through follows or parent: %w", name, web.ErrConflict)
+		return fmt.Errorf("it is no member of %s, it counts through follows or parent: %w", epic.LabelOf(epicRefs(), name), web.ErrConflict)
 	}
 	return err
 }

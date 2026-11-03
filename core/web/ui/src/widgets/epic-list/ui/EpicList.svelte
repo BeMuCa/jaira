@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { EpicProgress, type Epic } from '@/entities/epic';
+  import { EpicProgress, nameBeside, type Epic } from '@/entities/epic';
   import { TicketCard } from '@/entities/ticket';
   import { DropTarget, startTicketDrag } from '@/features/assign-to-epic';
   import { addQuestion, closeQuestion, visible } from '@/features/close-epic';
@@ -63,7 +63,7 @@
     <DropTarget ondropticket={(t) => drop(epic, t.id, t.from)}>
       <article class:closed={epic.closed}>
         <header>
-          <h3>{epic.title}{#if epic.closed} <span class="badge">closed</span>{/if}</h3>
+          <h3>{epic.title}{#if nameBeside(epic)} <small class="name" title="the name to type into 'jaira epic …'">{nameBeside(epic)}</small>{/if}{#if epic.closed} <span class="badge">closed</span>{/if}</h3>
           <EpicProgress done={epic.done} signoff={epic.signoff} total={epic.total} />
         </header>
         {#if editing === epic.name}
@@ -77,6 +77,14 @@
           />
         {:else}
           {#if epic.description}<p class="desc">{epic.description}</p>{/if}
+          {#if epic.external?.length}
+            <p class="keys">
+              {#each epic.external as x (x.key)}
+                <!-- link is set by the server only for an http(s) url. -->
+                {#if x.link}<a href={x.link} target="_blank" rel="noopener noreferrer">{x.key}</a>{:else}<span title={x.url}>{x.key}</span>{/if}
+              {/each}
+            </p>
+          {/if}
           {#if epic.text}
             <!-- Folded by default: the description line says what it is, the text says it at length. -->
             <details class="text">
@@ -122,6 +130,8 @@
   header { display: grid; gap: 0.4rem; }
   h3 { margin: 0; font-size: 1rem; }
   .desc { margin: 0.5rem 0; white-space: pre-line; }
+  .keys { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.3rem 0; font-size: 0.85rem; }
+  .keys > * { border: 1px solid var(--line); border-radius: 4px; padding: 0 0.35rem; }
   ul { display: grid; gap: 0.3rem; padding: 0; margin: 0.4rem 0 0; }
   .text { margin: 0.4rem 0; }
   .md { margin-top: 0.3rem; overflow-wrap: anywhere; }
@@ -134,5 +144,6 @@
   .edit { font: inherit; font-size: 0.8rem; color: var(--muted); background: none; border: 1px solid var(--line); border-radius: 4px; padding: 0.1rem 0.5rem; cursor: pointer; margin-bottom: 0.3rem; }
   summary { cursor: pointer; color: var(--muted); font-size: 0.85rem; }
   small { color: var(--muted); font-weight: normal; }
+  .name { font-family: ui-monospace, monospace; font-size: 0.75rem; }
   .empty { color: var(--muted); }
 </style>

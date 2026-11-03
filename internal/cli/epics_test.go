@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -236,5 +237,141 @@ func TestEpicCloseAndReopen(t *testing.T) {
 	}
 	if _, err := runCLI(t, ada, "epic", "close", "nothing-here"); exitCode(err) != ExitNotFound {
 		t.Errorf("unknown epic: exit %d, want %d", exitCode(err), ExitNotFound)
+	}
+}
+
+// An epic carries the keys of the tasks it stands for in another system, and
+// they find the work back: 'epic ls --external' the epics, 'list --external'
+// their tickets, follow-ups included. A key nobody typed right is refused.
+func TestEpicExternalKeysFindTheWork(t *testing.T) {
+	ada, _ := twoBoards(t)
+	a := createTicket(t, ada, "Login form")
+	b := createTicket(t, ada, "Fix the form", "--follows", a)
+	c := createTicket(t, ada, "Unrelated")
+	jsonOf(t, ada, "epic", "create", "login", a, "--external", "JIRA-1 https://jira.example/browse/JIRA-1")
+	jsonOf(t, ada, "epic", "create", "other", c)
+	got := jsonOf(t, ada, "epic", "set", "other", "--external", "YT-7", "--external", "jira-1 https://jira.example/JIRA-1")
+	if x := got["external"].([]any); len(x) != 2 {
+		t.Fatalf("set --external: %v", got["external"])
+	}
+	jsonOf(t, ada, "epic", "set", "other", "--external-rm", "JIRA-1")
+
+	show := jsonOf(t, ada, "epic", "show", "login")
+	if x := show["external"].([]any); len(x) != 1 || x[0].(map[string]any)["url"] != "https://jira.example/browse/JIRA-1" {
+		t.Errorf("show --json external = %v", show["external"])
+	}
+	if out, _ := runCLI(t, ada, "epic", "show", "login"); !strings.Contains(out, "external: JIRA-1 https://jira.example/browse/JIRA-1") {
+		t.Errorf("show does not print the key:\n%s", out)
+	}
+	if out, _ := runCLI(t, ada, "epic", "ls"); !strings.Contains(out, "[JIRA-1]") || !strings.Contains(out, "[YT-7]") {
+		t.Errorf("ls does not print the keys:\n%s", out)
+	}
+	ls := jsonOf(t, ada, "epic", "ls", "--external", "jira-1")
+	if e := ls["epics"].([]any); len(e) != 1 || e[0].(map[string]any)["name"] != "login" {
+		t.Errorf("ls --external jira-1 = %v; want login alone", ls["epics"])
+	}
+	if e := jsonOf(t, ada, "epic", "ls")["epics"].([]any); len(e) != 2 {
+		t.Errorf("ls without a key lists %d epics, want 2", len(e))
+	}
+
+	list := jsonOf(t, ada, "list", "--external", "JIRA-1")
+	var ids []string
+	for _, row := range list["tickets"].([]any) {
+		ids = append(ids, row.(map[string]any)["id"].(string))
+	}
+	if len(ids) != 2 || !slices.Contains(ids, a) || !slices.Contains(ids, b) {
+		t.Errorf("list --external JIRA-1 = %v; want the member and its follow-up", ids)
+	}
+	if n := jsonOf(t, ada, "list", "--external", "NOPE-1")["count"].(float64); n != 0 {
+		t.Errorf("list for a key nobody carries = %v tickets", n)
+	}
+
+	for _, bad := range [][]string{
+		{"epic", "set", "login", "--external", "JIRA-2 javascript:alert(1)"},
+		{"epic", "set", "login", "--external", "JIRA 2 https://x.example"},
+		{"epic", "create", "third", "--external", "A ftp://x.example"},
+	} {
+		if _, err := runCLI(t, ada, bad...); exitCode(err) != ExitUsage {
+			t.Errorf("%v: exit %d, want %d", bad, exitCode(err), ExitUsage)
+		}
+	}
+}
+
+// The key is on the epic's ref and nowhere else: setting it writes no
+// ticket's ref, no file in the working tree, and no commit outside
+// refs/jaira/epics carries it — so a code commit never takes it along.
+func TestAnExternalKeyStaysOnTheEpicRef(t *testing.T) {
+	ada, _ := twoBoards(t)
+	a := createTicket(t, ada, "Login form")
+	if out, err := runCLI(t, ada, "pull", ticket.Handle(a)); err != nil {
+		t.Fatalf("pull: %v\n%s", err, out)
+	}
+	jsonOf(t, ada, "epic", "create", "login", a)
+	repo := &gitref.Repo{Dir: ada}
+	before, err := repo.SHA(a)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const key = "BILL-4711"
+	jsonOf(t, ada, "epic", "set", "login", "--external", key+" https://jira.example/browse/"+key)
+	flushRefs()
+
+	if after, _ := repo.SHA(a); after != before {
+		t.Errorf("setting a key wrote the ticket's ref: %s -> %s", before, after)
+	}
+	if file := gitOut(t, ada, "show", gitref.EpicRefName("login")+":login.md"); !strings.Contains(file, key) {
+		t.Fatalf("the epic's ref lacks the key:\n%s", file)
+	}
+	err = filepath.WalkDir(ada, func(path string, d os.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			if d != nil && d.Name() == ".git" {
+				return filepath.SkipDir
+			}
+			return err
+		}
+		raw, err := os.ReadFile(path)
+		if err == nil && strings.Contains(string(raw), key) {
+			t.Errorf("%s carries the key", path)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if log := gitOut(t, ada, "log", "-p", "--exclude=refs/jaira/epics/*", "--all"); strings.Contains(log, key) {
+		t.Errorf("a commit outside the epic refs carries the key")
+	}
+}
+
+// Wherever the CLI names an epic, it names it by its title, the name to type
+// beside it; an epic titled by its name is named once.
+func TestTheCLINamesAnEpicByItsTitle(t *testing.T) {
+	ada, _ := twoBoards(t)
+	a := createTicket(t, ada, "Login form")
+	b := createTicket(t, ada, "Second")
+	for _, c := range []struct {
+		args []string
+		want string
+	}{
+		{[]string{"epic", "create", "web-0-2", "--title", "Web 0.2"}, `Epic "Web 0.2" (web-0-2) created`},
+		{[]string{"epic", "create", "plain"}, `Epic "plain" created`},
+		{[]string{"epic", "add", "web-0-2", ticket.Handle(a)}, `added to "Web 0.2" (web-0-2)`},
+		{[]string{"epic", "add", "web-0-2", ticket.Handle(b)}, `"Web 0.2" (web-0-2) now lists 2 ticket(s).`},
+		{[]string{"epic", "rm", "web-0-2", ticket.Handle(b)}, `"Web 0.2" (web-0-2) now lists 1 ticket(s).`},
+		{[]string{"epic", "ls"}, "  Web 0.2  (web-0-2)    0 of 1   done"},
+		{[]string{"epic", "show", "web-0-2"}, "Web 0.2  (web-0-2)\n"},
+		{[]string{"epic", "set", "web-0-2", "--description", "d"}, `Epic "Web 0.2" (web-0-2) rewritten`},
+		{[]string{"epic", "close", "web-0-2", "--force"}, `Epic "Web 0.2" (web-0-2) closed`},
+	} {
+		out, err := runAndSend(t, ada, c.args...)
+		if err != nil {
+			t.Fatalf("%v: %v\n%s", c.args, err, out)
+		}
+		if !strings.Contains(out, c.want) {
+			t.Errorf("%v printed:\n%s\nwant it to contain %q", c.args, out, c.want)
+		}
+	}
+	if out, err := runCLI(t, ada, "epic", "add", "web-0-2", ticket.Handle(b)); err == nil || !strings.Contains(out+err.Error(), `epic "Web 0.2" (web-0-2) is closed`) {
+		t.Errorf("closed epic refusal: %v\n%s", err, out)
 	}
 }

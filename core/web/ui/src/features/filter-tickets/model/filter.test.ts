@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addChip, emptyFilter, fromQuery, matches, narrows, removeChip, toggleChip, toQuery, wantsFiled, whereOf } from './filter.ts';
+import { addChip, emptyFilter, epicPasses, fromQuery, matches, narrows, removeChip, toggleChip, toQuery, wantsFiled, whereOf } from './filter.ts';
 
 const ticket = (lane: string, tags: string[], assignee?: string) => ({
   id: lane + tags.join(),
@@ -104,4 +104,20 @@ test('a link from before the place filter, ?all=1, picks every place', () => {
   assert.ok(wantsFiled(f));
   assert.equal(toQuery(f), '?where=board&where=logbook&where=archive&where=rejected');
   assert.deepEqual(fromQuery(toQuery(f)), f);
+});
+
+// A key filter keeps the tickets of the epics carrying the key, in any case,
+// and goes into the link like every chip.
+test('the key filter matches the keys of the epics a ticket counts towards', () => {
+  const f = fromQuery('?key=jira-1');
+  assert.deepEqual(f.key, [{ value: 'jira-1', not: false }]);
+  assert.equal(toQuery(f), '?key=jira-1');
+  assert.ok(narrows(f));
+  const t = ticket('review', []);
+  assert.ok(matches(t, f, ['JIRA-1', 'YT-7']));
+  assert.ok(!matches(t, f, ['YT-7']));
+  assert.ok(!matches(t, f));
+  assert.ok(epicPasses(['Jira-1'], f));
+  assert.ok(!epicPasses([], f));
+  assert.ok(epicPasses([], emptyFilter()));
 });
