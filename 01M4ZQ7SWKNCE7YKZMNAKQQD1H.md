@@ -1,7 +1,7 @@
 ---
 id: 01M4ZQ7SWKNCE7YKZMNAKQQD1H
 title: "Die Swimlanes der Roadmap heissen Roads, tragen einen Namen und lassen sich im TUI umbenennen"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 assignee: berkc
@@ -31,7 +31,7 @@ commits:
   - 253a8870dff3122ec09fbff8792e0bc74a342e15
   - 07dbb35e8f53f1ab2704e6d690e5dc664216f625
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:28:42Z
+updated-at: 2026-11-03T23:28:44Z
 updated-by: berkc
 claimed-by: berk-ca-130584
 claimed-at: 2026-11-03T17:20:46Z
@@ -43,6 +43,7 @@ review-summary: |-
   core/refsync/road.go:82 rebaseRoad is rebaseEpic (core/refsync/epic.go:89) with Epic renamed to Road, line for line - two copies of the lost-race merge loop that must be fixed in step; make it one function in refsync (e.g. rebaseRef taking the kind's pending/drop/queue/read/readAt/write/merge) that rebaseEpic and rebaseRoad both call
   core/road/road.go:462 Owner has no caller outside road_test.go; milestone.Layout (core/milestone/layout.go:312, roadOf) already computes the first listing road itself - delete Owner and its test assertion
   Let stand (plan note 2026-11-03 23:02): core/road as its own package beside core/epic, and the gitref/outbox one-line mirrors of the epic kind
+round: 2
 ---
 
 # Die Swimlanes der Roadmap heissen Roads, tragen einen Namen und lassen sich im TUI umbenennen
