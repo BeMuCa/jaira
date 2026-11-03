@@ -5,7 +5,7 @@ status: brainstorm
 ready: true
 creator: BeMuCa
 assignee: berkc
-goal: "Jede Swimlane der Milestone-Roadmap ist eine 'Road' mit Namen: ohne Namen Road-1 bis Road-n, und im TUI waehlt man eine Road mit den Pfeiltasten und benennt sie mit Enter um"
+goal: "Eine Road ist ein eigenes Objekt mit Name, Beschreibung und geordneter Milestone-Liste, das die Roadmap als benannte Swimlane zeichnet (ohne Road Road-1..Road-n) und das man im TUI per Pfeiltaste waehlt und mit Enter umbenennt; Milestones wissen nichts von ihrer Road, Unfertiges bleibt im Milestone"
 context: |-
   Was heute fehlt: Die Roadmap (L, aus D0SAHM) zeigt Swimlanes, also Ketten von Milestones, die ueber after: verbunden sind. Eine Swimlane hat keinen Namen.
   Der Anfang einer Swimlane ist ein Milestone ohne Vorgaenger ('jaira milestone create --after ""' macht ihn zum Anfang einer eigenen Swimlane).
@@ -19,10 +19,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T17:23:04Z
+updated-at: 2026-11-03T17:23:06Z
 updated-by: berkc
 claimed-by: berk-ca-130584
 claimed-at: 2026-11-03T17:20:46Z
+question: "Brainstorm: 4 Designfragen offen (Road-Liste vs after:, Milestone in zwei Roads, Ablage der Road, Epic-Etikett) - siehe Notiz OFFENE FRAGEN, je mit Empfehlung"
 ---
 
 # Die Swimlanes der Roadmap heissen Roads, tragen einen Namen und lassen sich im TUI umbenennen
