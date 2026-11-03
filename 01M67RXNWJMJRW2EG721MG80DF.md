@@ -18,14 +18,14 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:25Z
-updated-at: 2026-11-03T22:54:14Z
+updated-at: 2026-11-03T22:55:22Z
 updated-by: berkc
 claimed-by: berk-ca-304689
 claimed-at: 2026-11-03T22:51:53Z
 outcome-what: "The cockpit band (jaira-cockpit) shows the teammates' waiting-tickets line only when the plugin setting showTeammates is on (userConfig, default off). Own, alias and unassigned waiting tickets stay in the band and the counter."
 outcome-why: "Maintainer 31.10.2026: the band must show only the person's own tickets, not the teammates'. Maintainer 03.11.2026 (teamlead): keep the teammates' line, hidden by default behind a settings switch."
 outcome-resolves: "DoD 1: a waiting ticket with a foreign assignee is absent from the band (test 'by default a teammate's waiting ticket is not in the band...'). DoD 2: own and alias tickets appear, same test. DoD 3: core/release/notes/MG80DF.md."
-review-summary: none
+review-summary: "Adds a jaira-cockpit plugin setting showTeammates (boolean, default off) in plugin.json userConfig. register() reads it once (options.showTeammates === true) and the band render uses an empty teammates' list when it is off, so the collapsed 'N waiting for <names>' line and its rows disappear. Own, alias and unassigned waiting tickets and the 'N waiting for you' counter are unchanged (board.ts split untouched). Four existing teammate-line tests now run with the setting on; one new test proves the default hides a teammate's ticket and keeps own/alias/unassigned. Release note marked '- !', shipped hashes appended."
 review-gaps: "none removed. Considered: duplication - showTeammates read once in register() like workerContextShare/cacheGuardTokens (register.tsx:1086-1088), no second option reader; dead code - theirsOpenAtom, t.theirs, the theirs line and the Discuss lookup over view.theirs (register.tsx:358) all still run when the switch is on, nothing orphaned; fluff - one comment matching its neighbours' style, no forwarding wrappers; cost - board.ts snapshotOf still builds theirs when off, trivial and kept so the render guard stays the single switch. Left alone: nothing pre-existing touched."
 test-verdict: "pass: go build ./... RC=0; go test ./core/shipped ./core/mod ./core/release RC=0; claude plugin test . 176 pass 0 fail RC=0; DoD 1-2 verified by test board.test.ts:1097 (mutation: guard at register.tsx:1246 removed -> exactly that test fails), DoD 3 core/release/notes/MG80DF.md one '- !' line; behaviour exercised only in the plugin test harness, not in a live Claude TUI"
 ---
