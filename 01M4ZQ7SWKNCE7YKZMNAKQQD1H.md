@@ -32,7 +32,7 @@ commits:
   - 07dbb35e8f53f1ab2704e6d690e5dc664216f625
   - 94792682d5ded521fb7f7f7eeed271561c6631fa
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:43:03Z
+updated-at: 2026-11-03T23:43:05Z
 updated-by: berkc
 claimed-by: berk-ca-423748
 claimed-at: 2026-11-03T23:32:10Z
@@ -51,6 +51,7 @@ review-gaps: |-
 test-verdict: "pass: go build ./... + go vet + go test of the 9 touched packages RC=0 (3 known hangers skipped per repo rule); DoD 1-6 verified in the tree; behaviour exercised on a scratch board with a bare remote: road create/set/ls --json, second road exit 3, ref on remote, second clone sees it after fetch, planted duplicate -> validate warning 'auth (older) draws it', TUI roadmap shows titles and Road-1, up+enter renames to the ref, esc writes nothing, naming an unnamed lane creates a road with both its milestones"
 review-verdict: "The diff meets all six DoD items; vet clean and go test ./core/road ./core/milestone ./core/refsync ./core/outbox ./core/gitref ./core/epic ./internal/tui pass, ./internal/cli -run Road|Validate|EveryCommand|Milestone|Epic pass. No blocker found; five notes for the person to weigh."
 review-round: 2
+review-check: "1. cd /home/berkc/code/X_General/jaira-KQQD1H && go build -o /tmp/jr ./cmd/jaira  2. go test ./core/road ./core/milestone ./internal/tui ./internal/cli -run 'Road|Layout|Validate' -count=1 - all ok  3. In a board with a remote and two milestones a and b (b after a): /tmp/jr road create web a --title Web - prints 'Road \"Web\" (web) created with 1 milestone(s)'  4. /tmp/jr road create other b - exits 3, says milestone ... is already in road \"web\"  5. /tmp/jr road ls --json - one road with title Web and milestones [a]  6. /tmp/jr, open the Milestone Roadmap - the lane is headed 'Web', b sits under a in it  7. press up from the top bubble - the header is selected; enter, type 'Web App', enter - header now reads 'Web App'  8. on another unnamed lane the header reads Road-1; enter, esc - nothing written (road ls unchanged)"
 ---
 
 # Die Swimlanes der Roadmap heissen Roads, tragen einen Namen und lassen sich im TUI umbenennen
