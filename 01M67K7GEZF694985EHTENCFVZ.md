@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-03T17:18:13Z
+updated-at: 2026-11-03T17:18:28Z
 updated-by: berkc
 ---
 
@@ -170,3 +170,4 @@ Offene Fragen an berkc
 6. A oder B - oder A jetzt und B als Ticket im Backlog?
 - **2026-10-31 01:25 · berkc** — Antworten Maintainer 31.10.2026: Ponytail = github.com/DietrichGebert/ponytail, ein Skill 'lazy senior dev' (minimaler Code, /ponytail-review, -audit, -debt) - passt als Skill-Lane neben optimize. Skript pro Person: der Maintainer will ein mitgeliefertes Skript (z.B. Telegram-API-Aufruf), das der Agent nutzt - keine Zuordnung pro Person noetig, solange das Skript keine Secrets enthaelt (Token aus lokalem Speicher, CMN1YT). Quittung gegen Doppelsenden: entfaellt vorerst, der Text auf dem Ticket soll ohnehin weg (eigenes Ticket). Entscheidung: Variante A (alles ist ein Skill, der Agent ruft die API).
 - **2026-10-31 01:25 · berkc** — Korrektur zur Notiz davor: A oder B ist NICHT entschieden - der Maintainer hat nur gefragt, was A/B bedeuten. Unklar auch, welcher 'Text auf dem Ticket' weg soll (sein Hinweis zu 'No double sends'); nachfragen.
+- **2026-11-03 17:18 · berkc** — Maintainer 03.11.2026: Entscheidung Variante A (alles ist ein Skill; der Agent ruft die API per mitgeliefertem Skript). Keine Quittung, kein jaira run. Offen bleibt nur, welcher 'Text auf dem Ticket' weg soll.
