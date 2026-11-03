@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:21:54Z
+updated-at: 2026-11-03T23:21:56Z
 updated-by: berkc
 claimed-by: berk-ca-130584
 claimed-at: 2026-11-03T17:20:46Z
@@ -87,3 +87,4 @@ F4 Epic-Etikett pro Board - A (Empfohlen) eigenes Ticket: das TUI zeigt heute ga
 - **2026-11-03 23:11 · berkc** — Step 6 CLI: internal/cli/roads.go (create/add/rm/set/ls, --json keys name,title,description,created_at,milestones[{id,name}]); milestone args resolved with milestoneNamed (logbook.go) and refuseAmbiguous; taken road -> exit 3 via TakenError. Tests internal/cli/roads_test.go.
 - **2026-11-03 23:12 · berkc** — Step 7 validate: road_duplicate warning per duplicate (Path = the older road's ref); road_unreadable warning for a non-ErrNoRefs load error; ErrNoRefs silently skipped. Test TestValidateReportsAMilestoneInTwoRoads writes the second road with gitref.Repo.WriteRoad to simulate a merge.
 - **2026-11-03 23:17 · berkc** — Step 8 TUI: layerTop 1->3 (header row at y=0). onRoad target per lane = header box over the lane's first column (1 row). Plan's 'Road-n' numbering counts lanes with no road. Enter on header opens stageRoadName (one field, pre-filled with the label); unnamed lane -> road.Create with every bubble in the lane; esc writes nothing. Changed behaviour: '↑ on a top' used to stay put (TestUpOnTheTopRowStays), now reaches the header; the test is updated to say so. Tests use newRemoteModel (bare remote) since the TUI Model holds a concrete *refsync.Syncer.
+- **2026-11-03 23:21 · berkc** — Steps 9-10: advice text rewritten in milestones.go Long help, milestone.go template + package doc (package doc said unfinished moves to the next group: now false, so changed), epic.go package doc. Docs: README Commands block (TestEveryCommandIsDocumented needs a line per command), Features bullet, keys line; COMMANDS.md rows; release notes file KQQD1H.md.
