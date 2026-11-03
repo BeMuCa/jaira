@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:07:51Z
+updated-at: 2026-11-03T23:07:53Z
 updated-by: berkc
 claimed-by: berk-ca-130584
 claimed-at: 2026-11-03T17:20:46Z
@@ -52,7 +52,7 @@ question: ""
 
 - [x] gitref: RoadPrefix refs/jaira/roads/, Read/ReadAt/Write/List/SHA wie Epic
 - [x] outbox: KindRoad 'roads' an jeder Stelle von KindEpic, Queue/Pending/DropRoad, Sender.WriteRoad
-- [ ] refsync/road.go wie epic.go (RoadNames, RoadContent, RecordRoad, rebaseRoad) + Haken in refsync.go; cli/refs.go refSubject/rejectedAdvice
+- [x] refsync/road.go wie epic.go (RoadNames, RoadContent, RecordRoad, rebaseRoad) + Haken in refsync.go; cli/refs.go refSubject/rejectedAdvice
 - [ ] core/road: Road (title, description, created-at, '- <msID>'), Merge 3-Wege, LoadAll aelteste zuerst, Create/Assign/Set unter Lock 'roads', TakenError, Owner/Duplicates/Groups/NewName; Tests
 - [ ] milestone.Layout(all, roads): Lane = Road die listet, sonst Lane des ersten Vorgaengers, sonst eigene; Vorgaenger in fremder Lane = Extra-Pfeil + Top; mehrere Tops je Lane; roads=nil unveraendert; Tests
 - [ ] CLI jaira road create|add|rm|set|ls [--json], zweite Road exit 3; Tests
