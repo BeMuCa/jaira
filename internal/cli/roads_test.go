@@ -5,8 +5,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/BeMuCa/jaira/core/gitref"
 	"github.com/BeMuCa/jaira/core/milestone"
+	"github.com/BeMuCa/jaira/core/road"
 )
 
 // milestoneID is the ID of the one milestone a board holds under name.
@@ -130,5 +133,34 @@ func TestARoadNeedsARemote(t *testing.T) {
 	out, err := runCLI(t, dir, "road", "create", "auth")
 	if err == nil || !strings.Contains(out+err.Error(), "remote") {
 		t.Fatalf("create without a remote = %v\n%s; want a refusal naming the remote", err, out)
+	}
+}
+
+// A git merge can list one milestone in two roads, since the command refuses it
+// only on this clone. validate reports it as a warning, names the older road
+// as the one that draws it, and still exits 0.
+func TestValidateReportsAMilestoneInTwoRoads(t *testing.T) {
+	ada, _ := twoBoards(t)
+	if out, err := runAndSend(t, ada, "milestone", "create", "round-one"); err != nil {
+		t.Fatalf("milestone create: %v\n%s", err, out)
+	}
+	id := milestoneID(t, ada, "round-one")
+	if out, err := runAndSend(t, ada, "road", "create", "auth", "round-one"); err != nil {
+		t.Fatalf("road create: %v\n%s", err, out)
+	}
+	// What a merge leaves: a second road that lists the milestone, written
+	// past the command's check.
+	later := road.New("billing", "Billing", "", time.Now().Add(time.Hour))
+	later.Add(id)
+	if _, err := (&gitref.Repo{Dir: ada}).WriteRoad("billing", later.Bytes(), ""); err != nil {
+		t.Fatalf("write second road: %v", err)
+	}
+
+	out, err := runCLI(t, ada, "validate")
+	if err != nil {
+		t.Fatalf("validate exit = %v; a duplicate is a warning\n%s", err, out)
+	}
+	if !strings.Contains(out, "is in roads auth and billing; auth (older) draws it") {
+		t.Errorf("validate does not report the duplicate:\n%s", out)
 	}
 }

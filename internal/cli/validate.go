@@ -1,12 +1,15 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/BeMuCa/jaira/core/board"
+	"github.com/BeMuCa/jaira/core/gitref"
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/link"
+	"github.com/BeMuCa/jaira/core/road"
 	"github.com/BeMuCa/jaira/core/ticket"
 	"github.com/BeMuCa/jaira/core/validate"
 	"github.com/spf13/cobra"
@@ -66,6 +69,24 @@ because capture is meant to be cheap. Use --strict to fail on those too.`,
 						Path: l.Source, Message: lane.ContextInvalidMessage(l),
 					})
 				}
+			}
+
+			// A milestone in two roads is what a git merge leaves behind: a
+			// second listing is refused at the command. The older road draws it.
+			if roads, err := road.LoadAll(roadRefs()); err == nil {
+				names := roadMilestoneNames(s)
+				for _, d := range road.Duplicates(roads) {
+					problems = append(problems, validate.Problem{
+						Code: "road_duplicate", Severity: validate.SeverityWarning,
+						ID: d.Milestone, Path: gitref.RoadRefName(d.Roads[0]),
+						Message: fmt.Sprintf("milestone %s is in roads %s; %s (older) draws it",
+							roadMemberLabel(names, d.Milestone), strings.Join(d.Roads, " and "), d.Roads[0]),
+					})
+				}
+			} else if !errors.Is(err, road.ErrNoRefs) {
+				problems = append(problems, validate.Problem{
+					Code: "road_unreadable", Severity: validate.SeverityWarning, Message: err.Error(),
+				})
 			}
 
 			// The board at rest includes what it tells its agents. A lane file
