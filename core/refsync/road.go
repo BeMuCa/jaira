@@ -75,60 +75,17 @@ func (y *Syncer) RecordRoad(name string, content []byte) error {
 	return nil
 }
 
-// rebaseRoad answers a lost race for a road by merging, as rebaseEpic does for
-// an epic: the queued entry is the only copy of the edit, so it is merged
-// (road.Merge keeps both sides' member changes), sent again, and replaces the
-// entry only once it is sent or requeued.
+// rebaseRoad answers a lost race for a road by merging it (road.Merge), as
+// rebaseEpic does for an epic.
 func (y *Syncer) rebaseRoad(r outbox.Result) outbox.Result {
-	e, ok := y.Box.PendingRoad(r.ID)
-	if !ok {
-		return r
-	}
-	name, ours := r.ID, []byte(e.Content)
-	var base []byte
-	if e.Lease != "" {
-		b, err := y.Repo.ReadRoadAt(name, e.Lease)
-		if err != nil {
-			// The common state is unreadable, so there is nothing to merge
-			// against; the edit stays queued rather than guessed at.
-			r.Outcome, r.Err = outbox.Failed, err
-			return r
-		}
-		base = b
-	}
-	for range rebaseAttempts {
-		theirs, lease, err := y.Repo.ReadRoad(name)
-		if err != nil && !errors.Is(err, gitref.ErrNoRef) {
-			r.Err = err
-			break
-		}
-		merged := road.Merge(name, base, ours, theirs)
-		_, err = y.Repo.WriteRoad(name, merged, lease)
-		switch {
-		case err == nil:
-			r.Outcome, r.Err = outbox.Sent, y.Box.DropRoad(name)
-			return r
-		case errors.Is(err, gitref.ErrRaceLost):
-			// Somebody wrote it again between our read and our push: their
-			// state is now the one to merge onto, ours stays what it was.
-			base, ours = theirs, merged
-			if ferr := y.Repo.Fetch(); ferr != nil {
-				err = ferr
-			} else {
-				continue
-			}
-		}
-		r.Err = err
-		break
-	}
-	// Not sent: queue what we have, leased on the ref it was merged onto, so
-	// the next command tries again.
-	if err := y.Box.DropRoad(name); err != nil {
-		r.Err = err
-	} else if err := y.RecordRoad(name, ours); err != nil {
-		_ = y.Box.QueueRoad(name, []byte(e.Content), e.Lease, e.By)
-		r.Err = err
-	}
-	r.Outcome = outbox.Unsent
-	return r
+	return y.rebaseRef(r, refKind{
+		pending: y.Box.PendingRoad,
+		queue:   y.Box.QueueRoad,
+		drop:    y.Box.DropRoad,
+		record:  y.RecordRoad,
+		readAt:  y.Repo.ReadRoadAt,
+		read:    y.Repo.ReadRoad,
+		write:   y.Repo.WriteRoad,
+		merge:   road.Merge,
+	})
 }

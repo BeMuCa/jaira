@@ -457,20 +457,6 @@ func Set(s *ticket.Store, r Refs, name string, title, description *string) (*Roa
 	return x, written, nil
 }
 
-// Owner maps each milestone ID to the index of the oldest road listing it.
-// roads is in LoadAll order, so the lowest index is the oldest.
-func Owner(roads []*Road) map[string]int {
-	out := map[string]int{}
-	for i, x := range roads {
-		for _, id := range x.members {
-			if _, ok := out[id]; !ok {
-				out[id] = i
-			}
-		}
-	}
-	return out
-}
-
 // Duplicate is a milestone listed in more than one road. Roads names them, the
 // oldest first: the first one draws the milestone.
 type Duplicate struct {

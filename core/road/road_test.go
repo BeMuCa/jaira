@@ -149,7 +149,7 @@ func TestLoadAllIsOldestFirst(t *testing.T) {
 }
 
 // A milestone two roads list (a merge produced it) is reported with the older
-// road first, and Owner gives it to that road.
+// road first.
 func TestDuplicatesNameTheOlderRoadFirst(t *testing.T) {
 	refs := mapRefs{
 		"new": New("new", "New", "", time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)).Bytes(),
@@ -164,9 +164,6 @@ func TestDuplicatesNameTheOlderRoadFirst(t *testing.T) {
 	dups := Duplicates(all)
 	if len(dups) != 1 || dups[0].Milestone != m1 || !slices.Equal(dups[0].Roads, []string{"old", "new"}) {
 		t.Fatalf("Duplicates = %+v; want %s in [old new]", dups, m1)
-	}
-	if owner := Owner(all); owner[m1] != 0 {
-		t.Errorf("Owner(%s) = %d; want 0, the older road", m1, owner[m1])
 	}
 	if g := Groups(all); !slices.Equal(g[0], []string{m1}) || !slices.Equal(g[1], []string{m1}) {
 		t.Errorf("Groups = %v", g)
