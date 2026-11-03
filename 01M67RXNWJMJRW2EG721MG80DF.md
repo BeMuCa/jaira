@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:25Z
-updated-at: 2026-11-03T22:55:23Z
+updated-at: 2026-11-03T22:55:26Z
 updated-by: berkc
 claimed-by: berk-ca-304689
 claimed-at: 2026-11-03T22:51:53Z
@@ -31,6 +31,8 @@ review-gaps: |-
   note: unassigned tickets stay in the band although the goal says only the person's own - this is the maintainer's decision (note 22:45), not a defect
   note: register.tsx:358 Discuss lookup still searches view.theirs when the switch is off - unreachable without a drawn teammate row, harmless
 test-verdict: "pass: go build ./... RC=0; go test ./core/shipped ./core/mod ./core/release RC=0; claude plugin test . 176 pass 0 fail RC=0; DoD 1-2 verified by test board.test.ts:1097 (mutation: guard at register.tsx:1246 removed -> exactly that test fails), DoD 3 core/release/notes/MG80DF.md one '- !' line; behaviour exercised only in the plugin test harness, not in a live Claude TUI"
+review-verdict: "the diff meets all three DoD items; no defects found. 176/0 cockpit tests and core/shipped, core/mod, core/release green on re-run. Unverified: the switch toggled in a real Claude Code session."
+review-round: 1
 ---
 
 # Das Cockpit zeigt nur die Tickets, die mir gehoeren
