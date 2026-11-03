@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:25Z
-updated-at: 2026-11-03T22:49:52Z
+updated-at: 2026-11-03T22:50:05Z
 updated-by: berkc
 claimed-by: berk-ca-130899
 claimed-at: 2026-11-03T17:20:49Z
@@ -28,7 +28,8 @@ claimed-at: 2026-11-03T17:20:49Z
 
 ## Definition of Done
 
-- [ ] Ein wartendes Ticket mit fremdem assignee erscheint nicht im Band; Test in hooks
+- [x] Ein wartendes Ticket mit fremdem assignee erscheint nicht im Band; Test in hooks
+  proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts: test 'by default a teammate's waiting ticket is not in the band; the person's own, an alias's and nobody's are' (asserts EF34GH and Berk absent from band)
 - [ ] Ein Ticket mit eigenem assignee oder einem Alias erscheint; Test
 - [ ] Release-Notiz unter core/release/notes/
 
