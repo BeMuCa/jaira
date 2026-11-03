@@ -18,7 +18,7 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-03T17:28:45Z
+updated-at: 2026-11-03T17:28:47Z
 updated-by: berkc
 claimed-by: berk-ca-130447
 claimed-at: 2026-11-03T17:20:45Z
@@ -32,7 +32,8 @@ claimed-at: 2026-11-03T17:20:45Z
   proof: CLAUDE.md + AGENTS.md '- > ' bullet; core/release/release.go Hook + package doc; TestHookLineStaysAPlainChange
 - [x] jaira update und das Popup zeigen die Hook-Zeilen zuerst; Test
   proof: release.entryOf hooks first: TestEntryPutsEveryHookOfAReleaseFirst; TestUpdateNotesShowHooks; TestNotesViewPutsHooksFirst
-- [ ] Ein Board, das 3 Versionen zurueckliegt, sieht die Notes aller 3; Test
+- [x] Ein Board, das 3 Versionen zurueckliegt, sieht die Notes aller 3; Test
+  proof: TestSinceThreeVersionsBehindReturnsAllThree; TestUpdateThreeVersionsBehindPrintsAllThree; TestPopupThreeVersionsBehindPagesAllThree
 - [ ] Release-Notiz unter core/release/notes/
 
 ## Options
