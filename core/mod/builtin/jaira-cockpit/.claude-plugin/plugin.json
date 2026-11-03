@@ -24,6 +24,12 @@
       "title": "Worker context limit",
       "description": "Percent of the model's context window past which a ticket coming back for a new round goes to a new worker instead of the one that carried it.",
       "default": 50
+    },
+    "showTeammates": {
+      "type": "boolean",
+      "title": "Teammates' waiting tickets",
+      "description": "Show the band's line with the tickets waiting for your teammates. Off: the band shows only your own tickets and nobody's.",
+      "default": false
     }
   }
 }

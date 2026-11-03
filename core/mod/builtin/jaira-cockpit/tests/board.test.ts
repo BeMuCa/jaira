@@ -1041,7 +1041,7 @@ describe('waiting for you', () => {
     expect(ran(w, 'herdr', 'tab', 'close')).toEqual([['herdr', 'tab', 'close', 'w1:t5', '@/repo']])
   })
 
-  test('only the person\'s own and nobody\'s tickets get buttons and count; the teammates\' sit in one line that opens', async ($, on) => {
+  test('only the person\'s own and nobody\'s tickets get buttons and count; the teammates\' sit in one line that opens', { options: { showTeammates: true } }, async ($, on) => {
     const w = world(on)
     w.me = { identity: 'Alexander Sacharov', aliases: ['Alexander Sacharov', 'alex@example.org'] }
     w.tickets = [
@@ -1070,7 +1070,7 @@ describe('waiting for you', () => {
     }
   })
 
-  test('a Discuss chat on a teammate\'s ticket stays open while it waits for the person', async ($, on) => {
+  test('a Discuss chat on a teammate\'s ticket stays open while it waits for the person', { options: { showTeammates: true } }, async ($, on) => {
     const w = world(on, { herdr: true })
     w.me = { identity: 'Alexander Sacharov', aliases: ['Alexander Sacharov'] }
     w.tickets = [SIGNOFF, { ...HUMAN, assignee: 'Carla' }, WORKING]
@@ -1092,6 +1092,28 @@ describe('waiting for you', () => {
     await startSession($)
     expect(await headLine($)).toBe('0 worker | 0 review | 2 waiting for you | 5h 34%')
     expect(await (await $.ui.mount(BAND)).find({ key: 'theirs' })).toBeUndefined()
+  })
+
+  test('by default a teammate\'s waiting ticket is not in the band; the person\'s own, an alias\'s and nobody\'s are', async ($, on) => {
+    const w = world(on)
+    w.me = { identity: 'Alexander Sacharov', aliases: ['Alexander Sacharov', 'alex@example.org'] }
+    w.tickets = [
+      { ...SIGNOFF, assignee: 'Alexander Sacharov' },
+      { ...SIGNOFF, handle: 'AB12CD', assignee: 'alex@EXAMPLE.org' },
+      { ...SIGNOFF, handle: 'CD34EF', assignee: '' },
+      { ...SIGNOFF, handle: 'EF34GH', assignee: 'Berk' },
+      WORKING,
+    ]
+    await startSession($)
+    expect(await headLine($)).toBe('0 worker | 0 review | 3 waiting for you | 5h 34%')
+    const ui = await $.ui.mount(BAND)
+    expect(await ui.find({ key: 'accept-MG677R' })).toBeDefined()
+    expect(await ui.find({ key: 'accept-AB12CD' })).toBeDefined()
+    expect(await ui.find({ key: 'accept-CD34EF' })).toBeDefined()
+    expect(await ui.find({ key: 'theirs' })).toBeUndefined()
+    const band = await drawn($)
+    expect(band).not.toContain('EF34GH')
+    expect(band).not.toContain('Berk')
   })
 
   test('+N more opens every waiting ticket with its buttons, and show fewer closes them again', async ($, on) => {
@@ -1117,7 +1139,7 @@ describe('waiting for you', () => {
     expect(await closed.find({ key: 'more' })).toBeDefined()
   })
 
-  test('the band reads top down: head, notice, waiting for you, decisions, the teammates\' tickets, the session line', async ($, on) => {
+  test('the band reads top down: head, notice, waiting for you, decisions, the teammates\' tickets, the session line', { options: { showTeammates: true } }, async ($, on) => {
     const w = world(on, { herdr: true })
     w.me = { identity: 'Alexander Sacharov', aliases: ['Alexander Sacharov'] }
     const BERK = { ...SIGNOFF, handle: 'EF34GH', assignee: 'Berk' }
@@ -1145,7 +1167,7 @@ describe('waiting for you', () => {
     expect(at).toEqual([...at].sort((a, b) => a - b))
   })
 
-  test('opened by +N more, the person\'s own tickets still sit above the teammates\'', async ($, on) => {
+  test('opened by +N more, the person\'s own tickets still sit above the teammates\'', { options: { showTeammates: true } }, async ($, on) => {
     const w = world(on)
     w.me = { identity: 'Alexander Sacharov', aliases: ['Alexander Sacharov'] }
     const own = ['MG677R', 'AB12CD', 'CD34EF', 'GH56JK']

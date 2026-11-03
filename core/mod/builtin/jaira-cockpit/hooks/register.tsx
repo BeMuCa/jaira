@@ -1084,6 +1084,8 @@ export const register: Register = (on, options) => {
   // The share of a model's window, in percent, past which a ticket's next
   // round goes to a new worker.
   const share = typeof options.workerContextShare === 'number' ? options.workerContextShare : DEFAULT_CONTEXT_SHARE
+  // Whether the band shows the line with the teammates' waiting tickets; off unless set.
+  const showTeammates = options.showTeammates === true
 
   on('session.start', async ($, e, next) => {
     const started = await next(e)
@@ -1241,7 +1243,7 @@ export const register: Register = (on, options) => {
     await read($, minuteAtom)
     const now = await $.clock.now()
     const waiting = view?.waiting ?? []
-    const theirs = view?.theirs ?? []
+    const theirs = showTeammates ? view?.theirs ?? [] : []
     const decisions = Object.entries(decided)
     const c = cacheView(cache.tokens, now, cache.lastAnswerAt ?? undefined, cache.ttl)
     const hasCache = cache.tokens > 0
