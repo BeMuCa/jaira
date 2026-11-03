@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:00:44Z
+updated-at: 2026-11-03T23:02:23Z
 updated-by: berkc
 claimed-by: berk-ca-130584
 claimed-at: 2026-11-03T17:20:46Z
@@ -45,6 +45,17 @@ question: ""
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] gitref: RoadPrefix refs/jaira/roads/, Read/ReadAt/Write/List/SHA wie Epic
+- [ ] outbox: KindRoad 'roads' an jeder Stelle von KindEpic, Queue/Pending/DropRoad, Sender.WriteRoad
+- [ ] refsync/road.go wie epic.go (RoadNames, RoadContent, RecordRoad, rebaseRoad) + Haken in refsync.go; cli/refs.go refSubject/rejectedAdvice
+- [ ] core/road: Road (title, description, created-at, '- <msID>'), Merge 3-Wege, LoadAll aelteste zuerst, Create/Assign/Set unter Lock 'roads', TakenError, Owner/Duplicates/Groups/NewName; Tests
+- [ ] milestone.Layout(all, roads): Lane = Road die listet, sonst Lane des ersten Vorgaengers, sonst eigene; Vorgaenger in fremder Lane = Extra-Pfeil + Top; mehrere Tops je Lane; roads=nil unveraendert; Tests
+- [ ] CLI jaira road create|add|rm|set|ls [--json], zweite Road exit 3; Tests
+- [ ] validate: Warnung road_duplicate; Test
+- [ ] TUI: Roads laden, Kopfzeile je Lane (Titel / Road-n), Ziel onRoad per Pfeil hoch, Enter-Namensfeld, Enter speichert (unbenannt: Road mit allen Lane-Milestones), Esc; Hilfe; Tests
+- [ ] Ratschlag-Texte 'Unfertiges bleibt im Milestone' (milestones.go Hilfe, milestone.go Vorlage, epic.go Doku)
+- [ ] README, docs/COMMANDS.md, core/release/notes/KQQD1H.md
 
 ## Progress
 - **2026-10-31 01:25 · berkc** — Maintainer 31.10.2026 (Punkt 11): Wenn Roads Name + Beschreibung bekommen, koennen sie als Epics dienen - eine Road ist dann ein Feature, die Milestones darauf die Runden. Im Plan pruefen, ob Epic und Road ein Objekt werden.
