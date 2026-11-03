@@ -32,7 +32,7 @@ commits:
   - 07dbb35e8f53f1ab2704e6d690e5dc664216f625
   - 94792682d5ded521fb7f7f7eeed271561c6631fa
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:43:05Z
+updated-at: 2026-11-03T23:43:07Z
 updated-by: berkc
 claimed-by: berk-ca-423748
 claimed-at: 2026-11-03T23:32:10Z
@@ -117,3 +117,4 @@ F4 Epic-Etikett pro Board - A (Empfohlen) eigenes Ticket: das TUI zeigt heute ga
 - **2026-11-03 23:32 · berkc** — critique 2: read only commit 94792682 against the two critique-1 findings; both resolved (rebase.go rebaseRef shared by epic/road; Owner gone, grep clean; go vet refsync/road clean). No new findings; next pass need not re-read critique scope.
 - **2026-11-03 23:34 · berkc** — optimize: one edit (roadJSON takes the names map; ls hoists it). Considered and left: core/road duplicates core/epic's line-file mechanics (extracting would touch epic/milestone, not a cleanup); header x formula twice in layerdraw.go; harmless nil guard in tui reload. go test ./internal/cli -run 'Road|Validate' green.
 - **2026-11-03 23:37 · berkc** — testing 04.11: gezeigt auf Scratch-Board (bare remote, HOME isoliert, Binary aus dem Branch): TUI Kopfzeile 'Auth v2 | Web | Road-1'; delta ohne Road steht in der Lane seines Vorgaengers gamma (Web); beta in zwei Roads (per git gepflanzt) wird von auth (aelter) gezeichnet. Beobachtet, kein Fehler dieses Tickets: Ctrl-U leert das Namensfeld nicht (Backspace geht); 'road ls' holt nicht selbst vom Remote - eine Road eines anderen Klons erscheint nach dem naechsten holenden Befehl (z.B. jaira list), im Fixture zeigte 'epic ls' ein frisches Epic ebenso nicht.
+- **2026-11-03 23:43 · berkc** — review (fresh context): read the whole diff of the 12 commits (count matches git log origin/HEAD..HEAD), vet + tests of touched packages green. No blocker. Notes: stale frontmatter definition-of-done text; no epic lost-race test after rebaseRef refactor; road ls does not fetch; Ctrl-U in name field; road/epic line-file duplication.
