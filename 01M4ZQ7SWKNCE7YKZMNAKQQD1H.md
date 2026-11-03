@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:04:25Z
+updated-at: 2026-11-03T23:07:51Z
 updated-by: berkc
 claimed-by: berk-ca-130584
 claimed-at: 2026-11-03T17:20:46Z
@@ -76,3 +76,4 @@ F4 Epic-Etikett pro Board - A (Empfohlen) eigenes Ticket: das TUI zeigt heute ga
 - **2026-11-03 23:02 · berkc** — Plan (pre-process 04.11): Road spiegelt den Epic-Weg auf Refs (gitref -> outbox Kind -> refsync mit Merge bei verlorenem Rennen), weil F3 'nur Ref wie Epics' ist und Fetch schon refs/jaira/* holt - kein neuer Sync-Mechanismus. Eigenes Paket core/road statt Erweiterung von core/epic: Epic hat Externals, Status, Textkoerper und Ticket-Mitglieder, eine Road nichts davon. Layout bekommt die Road-Listen als [][]string, damit core/milestone core/road nicht importiert (road importiert milestone.ParseMember). Navigation im TUI ist geometrisch (layerScene.step), daher reicht ein Ziel onRoad in einer neuen Kopfzeile ueber der Lane; Pfeil hoch vom Top erreicht es ohne Sonderfall. Name des Refs fest (slug), Umbenennen im TUI aendert nur title - Refs werden nie geloescht.
 - **2026-11-03 23:03 · berkc** — Step 1 gitref: RoadPrefix/RoadRefName/RoadSHA/ReadRoad/ReadRoadAt/WriteRoad/ListRoads mirror the epic ones. Test core/gitref/road_test.go mirrors milestone_test.go (no epic gitref test existed).
 - **2026-11-03 23:04 · berkc** — Step 2 outbox: KindRoad (dir roads/) at queueKind ref switch, readDir kinds list, lost-race keep-queued condition, send switch; Sender gained WriteRoad (gitref.Repo has it). Test TestARoadIsQueuedSentAndKeptOnARace in outbox_test.go.
+- **2026-11-03 23:07 · berkc** — Plan deviation (step 4): the plan says members are read with milestone.ParseMember, but that only accepts ticket ULIDs (ticket.ValidID); milestone IDs are six characters (milestone.IsID). core/road has its own parseMember on milestone.IsID. Plan step 3 (refsync/road.go) needs core/road to compile, so steps 3 and 4 were committed together after both tests passed. refsync has no epic rebase test; road_test.go there covers the lost race (TestAConcurrentRoadListingIsMergedNotLost).
