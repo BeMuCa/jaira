@@ -1,7 +1,7 @@
 ---
 id: 01M67K6Z3NSBTBXAK4EVCMN1YT
 title: "jaira web wird Beobachtungs- und Steuerzentrale fuer PMs ohne Claude: Onboarding mit Anbieterwahl, lokale Tokens, Projekte aus Repos, Tabs fuer Tickets, Aktive, Milestones/Epics, Schreiben"
-status: backlog
+status: brainstorm
 ready: true
 creator: berkc
 assignee: berkc
@@ -27,7 +27,7 @@ related:
   - 01M5MNWJF240306ZVDA41K3RA8
 commits: []
 created-at: 2026-10-30T23:44:38Z
-updated-at: 2026-11-03T17:21:05Z
+updated-at: 2026-11-03T17:21:07Z
 updated-by: berkc
 claimed-by: berk-ca-131411
 claimed-at: 2026-11-03T17:20:56Z
