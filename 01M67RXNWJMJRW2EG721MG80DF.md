@@ -18,7 +18,8 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:25Z
-updated-at: 2026-10-31T01:24:25Z
+updated-at: 2026-11-03T17:19:41Z
+updated-by: berkc
 ---
 
 # Das Cockpit zeigt nur die Tickets, die mir gehoeren
