@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T17:19:52Z
+updated-at: 2026-11-03T17:19:54Z
 updated-by: berkc
 ---
 
@@ -35,7 +35,7 @@ updated-by: berkc
 ## Options
 
 - [x] brainstorm
-- [ ] planning
+- [x] planning
 
 ## Plan
 
