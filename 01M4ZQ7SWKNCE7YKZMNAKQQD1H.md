@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:12:01Z
+updated-at: 2026-11-03T23:16:56Z
 updated-by: berkc
 claimed-by: berk-ca-130584
 claimed-at: 2026-11-03T17:20:46Z
@@ -59,7 +59,7 @@ question: ""
 - [x] milestone.Layout(all, roads): Lane = Road die listet, sonst Lane des ersten Vorgaengers, sonst eigene; Vorgaenger in fremder Lane = Extra-Pfeil + Top; mehrere Tops je Lane; roads=nil unveraendert; Tests
 - [x] CLI jaira road create|add|rm|set|ls [--json], zweite Road exit 3; Tests
 - [x] validate: Warnung road_duplicate; Test
-- [ ] TUI: Roads laden, Kopfzeile je Lane (Titel / Road-n), Ziel onRoad per Pfeil hoch, Enter-Namensfeld, Enter speichert (unbenannt: Road mit allen Lane-Milestones), Esc; Hilfe; Tests
+- [x] TUI: Roads laden, Kopfzeile je Lane (Titel / Road-n), Ziel onRoad per Pfeil hoch, Enter-Namensfeld, Enter speichert (unbenannt: Road mit allen Lane-Milestones), Esc; Hilfe; Tests
 - [ ] Ratschlag-Texte 'Unfertiges bleibt im Milestone' (milestones.go Hilfe, milestone.go Vorlage, epic.go Doku)
 - [ ] README, docs/COMMANDS.md, core/release/notes/KQQD1H.md
 
