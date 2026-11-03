@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T15:25:58Z
-updated-at: 2026-11-03T17:18:03Z
+updated-at: 2026-11-03T17:18:18Z
 assignee: berkc
 updated-by: berkc
 claimed-by: ""
@@ -80,3 +80,4 @@ review-check: |-
 - **2026-10-26 20:01 · BeMuCa** — critique (second pass): none left - checked f04f549e against the five first-pass findings, all addressed: (1) digest is async and awaits laneChange only after isFailure/ticketOf (digest.ts:85-92); (2) lanesNow and its board loop are gone, laneOf reads one 'jaira show <id> --json' status (register.tsx:218-223; checked: show --json carries top-level status); (3) laneChangeOf now in digest.ts:76; (4) release note is one instruction line; (5) first($, ticket) without the no-op parameters. Repair introduced nothing that breaks the DoD; first-pass let-stands untouched.
 - **2026-10-26 20:06 · BeMuCa** — testing: pass. Gates green. Verified on scratch board (no remote): show --json status backlog->todo on default and --board second ticket; plain 'jaira show <id>' finds second-board ticket. Not exercised: live Claude Code band. Failure path: digest() returns before calling laneChange when isFailure, so no jaira show starts; existing tests assert text stays whole but do not assert no show call (minor gap).
 - **2026-10-26 20:20 · BeMuCa** — review: Freigabe mit kleinem Vorbehalt, nichts zurueckgeschickt. (1) Release-Notiz core/release/notes/X6HB6V.md sagt 'since the cockpit last saw that ticket' - die Basis ist aber die Lane beim letzten Bericht (oder beim ersten Sehen in der Sitzung), nicht der letzte Board-Read (jede Minute); Vorschlag: 'since the last report about that ticket, or since the session first saw it'. (2) Der Wechsel umfasst auch Moves des Treibers/der Hauptsitzung seit dem letzten Bericht (z. B. Review-Bericht zeigt 'testing → review'). (3) Kein Repo-Test fuer firstSight in refreshBoard; in Scratch-Kopie mit Wegwerf-Test geprueft: gruen, ebenso 'Fehlschlag startet kein jaira show'.
+- **2026-11-03 17:18 · berkc** — Maintainer 03.11.2026: Ist der Lanewechsel ueberhaupt noetig? Nur die aktuelle Lane reicht. Folge: Einzeiler zeigt '<id> · <lane laut jaira show>' - kein vorher/nachher, kein lastSeen-Zustand, Luecke 1+2 des Reviews entfallen. Code liegt auf dem anderen Rechner (/home/berk/git/jAIra-X6HB6V); dort vereinfachen. Ueberschneidet sich mit MVR4PY.
