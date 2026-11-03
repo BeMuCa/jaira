@@ -32,10 +32,10 @@ commits:
   - 07dbb35e8f53f1ab2704e6d690e5dc664216f625
   - 94792682d5ded521fb7f7f7eeed271561c6631fa
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:31:11Z
+updated-at: 2026-11-03T23:32:10Z
 updated-by: berkc
-claimed-by: berk-ca-130584
-claimed-at: 2026-11-03T17:20:46Z
+claimed-by: berk-ca-423748
+claimed-at: 2026-11-03T23:32:10Z
 question: ""
 outcome-what: "Roads: a road is an object on refs/jaira/roads/<name> (title, description, milestone IDs); milestones carry no road field. Roadmap draws each road as a whole swimlane with a header (title, else Road-n); TUI: ↑ from a top reaches the header, enter names it, esc cancels. CLI: jaira road create|add|rm|set|ls. validate warns road_duplicate after a merge. Unfinished work advice now says it stays in its milestone (milestone help, new-file template, epic doc). Docs: README, COMMANDS.md, release note KQQD1H.md."
 outcome-why: "Maintainer 03.11.2026: a swimlane should carry a name, be an object of its own, and a milestone must not know its road; unfinished work stays in its milestone. Roads reuse the epic ref path (gitref, outbox kind, refsync merge) so they travel without a branch merge."
