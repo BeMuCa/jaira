@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:00:24Z
+updated-at: 2026-11-03T23:00:26Z
 updated-by: berkc
 claimed-by: berk-ca-130584
 claimed-at: 2026-11-03T17:20:46Z
@@ -31,7 +31,7 @@ question: "Brainstorm: 4 Designfragen offen (Road-Liste vs after:, Milestone in 
 ## Definition of Done
 
 - [ ] Eine Road ist ein eigenes Objekt nur auf ihrem Ref refs/jaira/roads/<name> (wie Epics): Titel, Beschreibung, Liste ihrer Milestone-IDs; Milestones tragen kein Road-Feld; paralleles Schreiben wird gemergt wie bei Epics; Test
-- [ ] In der Roadmap waehlt eine Pfeiltaste die Road, Enter oeffnet ein Namensfeld, Enter speichert 'road:' am ersten Milestone (geteilt wie jede Milestone-Aenderung), Esc bricht ab; Test
+- [ ] Roadmap: eine Road ist eine ganze Swimlane - ihre Milestones stehen in ihrer Lane, der Aufbau darin kommt weiter aus after:; ein Milestone ohne Road steht in der Lane seines ersten Vorgaengers; der Lane-Kopf zeigt den Road-Titel, sonst Road-1..Road-n in Anzeigereihenfolge; Test
 - [ ] 'jaira milestone set <name> --road <road>' setzt den Namen auch ueber die CLI; 'milestone ls --json' traegt road; Test
 - [ ] README, docs/COMMANDS.md und eine Zeile in core/release/notes/<ID>.md
 
