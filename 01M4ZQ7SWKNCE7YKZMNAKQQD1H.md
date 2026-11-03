@@ -32,7 +32,7 @@ commits:
   - 07dbb35e8f53f1ab2704e6d690e5dc664216f625
   - 94792682d5ded521fb7f7f7eeed271561c6631fa
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-03T23:32:20Z
+updated-at: 2026-11-03T23:34:10Z
 updated-by: berkc
 claimed-by: berk-ca-423748
 claimed-at: 2026-11-03T23:32:10Z
@@ -42,6 +42,7 @@ outcome-why: "Maintainer 03.11.2026: a swimlane should carry a name, be an objec
 outcome-resolves: "DoD 1 core/road + gitref + refsync tests; DoD 2 layout tests + TUI header tests; DoD 3 TUI navigation/enter/esc tests in internal/tui/layerroad_test.go; DoD 4 internal/cli/roads_test.go + validate test; DoD 5 advice text in milestones.go/milestone.go/epic.go; DoD 6 README, COMMANDS.md (TestEveryCommandIsDocumented), core/release/notes/KQQD1H.md."
 review-summary: "critique 2 (only the two findings of critique 1, per note 23:28): (1) rebaseEpic/rebaseRoad now thin wrappers over Syncer.rebaseRef (core/refsync/rebase.go) with a refKind of func pieces - line-for-line move of the old epic body, one caller pair in refsync.go:696/699; resolved. (2) road.Owner deleted, no caller left (grep); resolved. Everything else let stand as recorded in note 23:28 (separate core/road, gitref/outbox mirrors, Layout/TUI/CLI shape, inline validate check). Nothing left to say."
 round: 2
+review-gaps: "hoisted roadMilestoneNames out of roadJSON (internal/cli/roads.go): 'road ls --json' read every milestone file once per road, now once. Left: core/road/road.go repeats core/epic/epic.go's line-file mechanics (oneLine, frontEnd, setField, Bytes, Add/Remove/Has/Label, LoadAll sort, Create/Assign lock+check) - a shared frontmatter-lines type would rewrite epic and milestone too, beyond a cleanup and against the critique's 'separate package' call; worth its own ticket. Left: lane header x formula repeated in layerdraw.go (scene target and draw loop, plus pre-existing separator at :499); redundant 'm.refSync != nil' guard in tui reload (LoadAll returns ErrNoRefs for a nil Syncer); impossible Title==\"\" branch in Road.Label, mirrors epic. No dead code: every exported road func has a caller; Owner already removed in critique."
 ---
 
 # Die Swimlanes der Roadmap heissen Roads, tragen einen Namen und lassen sich im TUI umbenennen
