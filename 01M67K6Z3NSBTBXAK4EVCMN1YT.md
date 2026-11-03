@@ -27,7 +27,7 @@ related:
   - 01M5MNWJF240306ZVDA41K3RA8
 commits: []
 created-at: 2026-10-30T23:44:38Z
-updated-at: 2026-11-03T17:21:07Z
+updated-at: 2026-11-03T17:23:09Z
 updated-by: berkc
 claimed-by: berk-ca-131411
 claimed-at: 2026-11-03T17:20:56Z
@@ -141,3 +141,4 @@ OFFENE FRAGEN
 7. Onboarding im Browser statt im curl-Skript ok?
 8. Token-Speicher: reicht zuerst die 0600-Datei, oder ist OS-Schluesselbund Pflicht von Anfang an?
 - **2026-10-31 01:25 · berkc** — Antworten Maintainer 31.10.2026: (1) Milestone vs Epic: gleiche Form (Beschreibung + Liste + X von Y); Vorschlag Roads (KQQD1H) = Epics, Milestones liegen auf einer Road - ein Begriff weniger. (7) Onboarding im Browser: ja. (8) Token-Speicher: zuerst Datei mit Rechten 0600 (nur der eigene Benutzer darf lesen, keine Verschluesselung); Firmen: OS-Schluesselbund oder Umgebungsvariable aus einem Secret-Manager - spaeter. (6) Jira nur auf Anfrage, einmalig, wegen API-Quoten; kein Dauer-Sync. Mapping Epic/Milestone -> Jira soll im Web einstellbar sein (Default wie vorgeschlagen). Alles in einen Milestone. Offen: 2, 3, 4, 5.
+- **2026-11-03 17:23 · berkc** — Brainstorm-Lane 03.11.2026 (Worker). Geprueft in diesem Stand: jaira web schreibt nur Epics (core/web/web.go:300-315: Epic anlegen/aendern/zuordnen/schliessen, sonst nur lesen). Schutz gegen fremde Webseiten existiert schon: nur Loopback-Host, Writes mit fremdem Origin abgelehnt (core/web/web.go:293-327) - jeder neue Schreib-Endpunkt erbt das. Fehlgeschlagener Push bleibt in einer Warteschlange (internal/cli/web.go, Hilfetext). Lane-Farben gibt es schon: Agenten-Lanes nach Position, Personen-Lane amber, Terminal gruen, Parkspur rot (internal/cli/web.go:56-59) - Tab Aktiv nutzt diese Regel statt einer zweiten. Feld 'external' ist im Ticket-Schema reserviert und wird nie gelesen (core/ticket/schema.go:77-78). settings.json wird mit 0644 geschrieben (core/settings/settings.go:340) - Tokens duerfen dort NICHT hin. git wird an drei Stellen per LookPath gesucht (core/gitref/gitref.go:200, core/gitrepo/git.go:29, core/ticket/store.go:878). Projekt-Suche: core/project/discover.go:25, Projektliste core/project/project.go:41/65. Verwandt: DVPAPE (fester Name, enthaelt schon 'jaira web fragt den Namen im Browser'), KQQD1H (Roads), H319TV (README-Abschnitt PM), 1YTBPX (Mapping-Matrix fuer alle Anbieter). Vorgehen: Aufteilung in Folge-Tickets je ein PR, Reihenfolge ueber --blocked-by, alle in einen Milestone (Wunsch Maintainer).
