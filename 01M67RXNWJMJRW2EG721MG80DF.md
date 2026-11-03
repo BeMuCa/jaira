@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:25Z
-updated-at: 2026-11-03T22:50:09Z
+updated-at: 2026-11-03T22:50:22Z
 updated-by: berkc
 claimed-by: berk-ca-130899
 claimed-at: 2026-11-03T17:20:49Z
@@ -51,7 +51,7 @@ claimed-at: 2026-11-03T17:20:49Z
 - [x] run: cd core/mod/builtin/jaira-cockpit && claude plugin test . -> 176 pass, 0 fail (check exit code 0).
 - [x] release note: create core/release/notes/MG80DF.md with exactly one line: '- ! Expect your teammates' waiting tickets to be gone from the cockpit band; turn on the jaira-cockpit setting showTeammates to get their line back.'
 - [x] shipped hashes: from repo root run 'sha256sum core/mod/builtin/jaira-cockpit/.claude-plugin/plugin.json core/mod/builtin/jaira-cockpit/hooks/register.tsx >> core/shipped/shipped.sha256' (append, never delete a line; tests/ are not shipped). Then: export PATH=$HOME/.local/go/bin:$PATH; go test ./core/shipped ./core/mod -count=1 -> ok, exit 0.
-- [~] tick DoD: 1 and 2 with --proof naming the new test, 3 with --proof core/release/notes/MG80DF.md; then jaira move MG80DF --to critique --what --why --resolves; then commit code + ticket together: git add the 5 changed files plus .jaira/tickets/01M67RXNWJMJRW2EG721MG80DF-*.md; git commit -m 'feat(MG80DF): the cockpit band hides teammates' waiting tickets unless showTeammates is on'.
+- [x] tick DoD: 1 and 2 with --proof naming the new test, 3 with --proof core/release/notes/MG80DF.md; then jaira move MG80DF --to critique --what --why --resolves; then commit code + ticket together: git add the 5 changed files plus .jaira/tickets/01M67RXNWJMJRW2EG721MG80DF-*.md; git commit -m 'feat(MG80DF): the cockpit band hides teammates' waiting tickets unless showTeammates is on'.
 
 ## Progress
 - **2026-11-03 17:21 · berkc** — Before plan (worker 2026-11-03): most of this already exists since NZZDRH (4b2c3701, 2026-10-12): board.ts snapshotOf splits waiting (assignee = whoami identity/alias, or empty) from theirs; counter 'N waiting for you' counts only own+unassigned; teammates' tickets sit in ONE collapsed band line 'N waiting for Berk, Carla' (key 'theirs', register.tsx ~1340) that opens to rows with Discuss only. Tests: board.test.ts ~1044-1165. whoami on this machine resolves berkc + aliases berk.calabakan@gmail.com, BeMuCa; all waiting tickets on this board today are berkc/BeMuCa. Unassigned stays shown (settled: belongs to nobody yet, as context proposes). OPEN for the person: what happens to the collapsed theirs line? 1) (Recommended) remove it and the teammate Discuss from the band entirely - literal DoD, smallest; 2) keep it, hidden by default behind a settings switch; 3) move teammates' waiting tickets into the Overview pane instead of the band; 4) nothing to build - the trigger was BeMuCa missing from ~/.jaira/identity, close as already done by NZZDRH. Stopped before pre-process until answered.
