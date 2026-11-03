@@ -18,7 +18,7 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-03T17:25:27Z
+updated-at: 2026-11-03T17:25:46Z
 updated-by: berkc
 claimed-by: berk-ca-130447
 claimed-at: 2026-11-03T17:20:45Z
@@ -43,7 +43,7 @@ claimed-at: 2026-11-03T17:20:45Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 - [x] core/release/release.go: Hook() (CutPrefix '> ') after Feature; entryOf stable-partitions hooks first; package doc paragraph on the three markers and old readers
-- [ ] core/release/release_test.go: TestHookMarker, TestHookLineStaysAPlainChange, TestEntryPutsEveryHookOfAReleaseFirst, TestSinceThreeVersionsBehindReturnsAllThree (fstest 0.5.4..0.5.7, stamp 0.5.4)
+- [x] core/release/release_test.go: TestHookMarker, TestHookLineStaysAPlainChange, TestEntryPutsEveryHookOfAReleaseFirst, TestSinceThreeVersionsBehindReturnsAllThree (fstest 0.5.4..0.5.7, stamp 0.5.4)
 - [ ] internal/cli/update.go writeNotes: hook line prints '  > text' first branch; tests TestUpdateNotesShowHooks, TestUpdateThreeVersionsBehindPrintsAllThree (stamp 0.5.5, current 0.5.8, real notes)
 - [ ] internal/tui/releasenotes.go: styHook bold; lines() emits hooks before Features header; changeLines bullet '> '; tests TestNotesViewPutsHooksFirst, TestPopupThreeVersionsBehindPagesAllThree (popupBoard 0.5.8/0.5.5)
 - [ ] CLAUDE.md and AGENTS.md: '- > ' hook bullet after the '- + ' bullet in the release-notes section (never NOTES.md, never notes/<version>/, never MXMDFH.md)
