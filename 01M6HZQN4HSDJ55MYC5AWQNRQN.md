@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-04T21:41:07Z
+updated-at: 2026-11-04T21:41:09Z
 updated-by: berkc
 claimed-by: berk-ca-1280500
 claimed-at: 2026-11-04T21:24:22Z
@@ -36,6 +36,7 @@ question: ""
 - [ ] TUI: Banner, Kartenmarker und Liste (i); Oeffnen oder x quittiert; TUI-Test
 - [ ] 'jaira inbox [--json] [--ack <id>|--all]' fuer Agenten
 - [ ] Ein Befehl weist alle offenen Tickets eines Milestones einer Person zu (jaira milestone assign <name> <person>); mehrere Zuweisungen aus einem Milestone/Epic in einem Fetch sind ein Eintrag; Test
+- [ ] Das Ticket zeigt, wer es wem zugewiesen hat ('alex -> berkc') in Detail und show; Test
 
 ## Options
 
