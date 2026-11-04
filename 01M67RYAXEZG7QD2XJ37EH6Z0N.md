@@ -1,7 +1,7 @@
 ---
 id: 01M67RYAXEZG7QD2XJ37EH6Z0N
 title: "In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: berkc
@@ -16,15 +16,16 @@ tags:
 blocked-by: []
 related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
-commits: []
+commits:
+  - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T21:42:17Z
+updated-at: 2026-11-04T21:43:51Z
 updated-by: berkc
 claimed-by: berk-ca-1345452
 claimed-at: 2026-11-04T21:29:36Z
-outcome-what: "A ticket in signoff or human shows its diff against master beside it in the TUI at 140+ columns: the ticket and the diff each sit in a box, the focused one with the accent border. tab switches focus, ]/[ jump between files, o opens the file at its line in VS Code and confirms inline in the diff title ('opened <path>:<line>', cleared on the next key) with no modal; below 140 columns the screen is unchanged. Scroll and focus survive the 2s board reload and reset only when another ticket is opened."
-outcome-why: "The person accepting work judged the outcome and review text but could not see the code; the diff had to be found by hand in git or on GitHub. A confirmation modal after o took the next keys, so the sign-off screen was lost behind it."
-outcome-resolves: "Sign-off and human screens show each changed file with its +/- lines beside the ticket, and o opens the file at that line without a modal. Critique round 1 closed: reload keeps scroll and focus (TestReloadKeepsDiffScrollAndFocus, TestOpeningAnotherTicketResetsDiffScroll); one branch-segment split shared by BranchFor and branchTicket; the split is built from splitPane like the follow-up split (TestPersonLaneShowsDiffBesideTheTicketWhenWide). Testing finding closed: a successful o no longer raises a modal (TestOKeyConfirmsInTheDiffTitleWithoutAModal). Tests: go test ./core/gitrepo ./internal/tui -count=1 exit 0; go test ./internal/cli -count=1 -run 'Create|Follows|Branch' exit 0 (earlier run, cli untouched by this fix)."
+outcome-what: "A ticket in signoff or human shows its diff beside it when the terminal is 140+ columns: a file header bar with dir, bold name, new/deleted/renamed tag and +/- counts; hunk header with the @@ range coloured apart; old/new line-number gutter; added and removed rows tinted across the whole pane with the changed words marked; title says file N/M and the totals; a notice in place of the rows for the no-diff, no-change and git-error states; BranchFor picks the branch with the newest commit when several carry the handle. Tab, ]/[, o and the narrow single-column fallback as before."
+outcome-why: "Raw git diff piped through colour was hard to review: no line numbers, +/- only as coloured text, no position in the diff, one vague empty line. NDE933 showed an old experiment branch because BranchFor took the first name alphabetically."
+outcome-resolves: "internal/tui TestParseDiffNumbersBothSides, TestParseDiffTagsNewDeletedAndRenamedFiles, TestWordPairsMarkOnlyTheChangedMiddle, TestChangedRowsAreTintedAcrossThePane, TestGutterShowsOldAndNewNumbersOnTheirSides, TestDiffTitleCountsFilesAndTotals, TestBlankRowSeparatesFilesAndJumpsStillLandOnHeaders, TestLongCodeRowIsCutToThePane, TestEmptyStateIsNoticeBelowTheTitle, TestTicketDiffSaysWhyThereAreNoRows, and core/gitrepo TestBranchForPicksTheNewestBranchCarryingTheHandle; earlier diff tests still pass"
 review-summary: "New core/gitrepo/branchdiff.go finds the ticket's branch by a handle segment (BranchFor, now sharing BranchSegments with the CLI's branchTicket), picks master/main as base and diffs base...branch (merge-base, like a PR) without .jaira/. In the TUI, internal/tui/diffpane.go parses that patch into per-file rows numbered by new-side line; when a ticket sits in a person's lane (signoff via RequiresHumanExit, human via RequiresQuestion) and the terminal is >=140x20, renderSignOff/renderDetail put the ticket (78 cols) and the diff side by side in splitPane boxes. tab moves focus, arrows scroll the focused pane, ]/[ jump file headers, o runs 'code -g path:line' in the branch's worktree (else the repo root) and confirms in the diff title, no modal. Without a branch it falls back to the commits naming the handle. Scroll/focus survive the 2s reload; narrower terminals get the old single column."
 round: 4
 review-gaps: |-
@@ -111,3 +112,4 @@ RULES (all in internal/tui/diffpane.go unless named; pane width W = m.width-diff
 9 BRANCH PICK (core/gitrepo/branchdiff.go BranchFor): when several branches carry the handle, the one with the newest commit wins: for-each-ref --sort=-committerdate. Test: two branches exp/X-a (older) and feat/X-b (newer) -> feat/X-b.
 10 FOCUS: unchanged keys (tab, ]/[, o, arrows). Focused pane border colAccent (exists) + title marker of rule 1. The footer hint stays.
 Out of scope: side-by-side split diff, syntax highlighting, horizontal scroll (W ~97 is too narrow for split; syntax colours would fight the row tint).
+- **2026-11-04 21:42 · berkc** — in-progress (design spec rules 1-10): DEAD END the sample patch in diffpane_test.go has one '-' and two '+', an unequal run, so rule 6 correctly pairs nothing there; word tests use pairPatch (1 to 1). DECISIONS: gutter writes old and new numbers with one space between them (spec silent); a blank row takes the file index of the header above, so counter and marker stay on the file the blank belongs to; a git error on the fallback CommitsForTicket path is now a red notice instead of being ignored; empty and error states are one paneNotice from ticketDiff, centred under the title. NOT DONE: tmux check of the real screen on a scratch board (testing lane), light-terminal tint not seen on screen, git-error notice has no unit test (no failing-git fixture). DoD 5 tick was refused once (ticket on ref newer than worktree copy, 21:29:51 note); accepted on retry, worktree not pulled.
