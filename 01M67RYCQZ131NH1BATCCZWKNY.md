@@ -18,7 +18,7 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-04T00:43:04Z
+updated-at: 2026-11-04T00:43:07Z
 updated-by: berkc
 claimed-by: berk-ca-512097
 claimed-at: 2026-11-04T00:37:05Z
@@ -35,7 +35,7 @@ round: 2
 ## Definition of Done
 
 - [x] Ein Praefix fuer die Hook-Zeile ist festgelegt, dokumentiert in CLAUDE.md und core/release, und alte Leser zeigen sie als normale Zeile
-  proof: CLAUDE.md + AGENTS.md '- > ' bullet; core/release/release.go Hook + package doc; TestHookLineStaysAPlainChange
+  proof: CLAUDE.md + AGENTS.md '- > ' hook bullet (optional headline, max one per file); core/release/release.go Hook + package doc; TestHookLineStaysAPlainChange
 - [x] jaira update und das Popup zeigen die Hook-Zeilen zuerst; Test
   proof: release.entryOf hooks first: TestEntryPutsEveryHookOfAReleaseFirst; TestUpdateNotesShowHooks; TestNotesViewPutsHooksFirst
 - [x] Ein Board, das 3 Versionen zurueckliegt, sieht die Notes aller 3; Test
