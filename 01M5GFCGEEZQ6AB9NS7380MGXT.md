@@ -19,8 +19,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:13Z
-updated-at: 2026-11-04T21:24:18Z
+updated-at: 2026-11-04T21:24:25Z
 updated-by: berkc
+claimed-by: berk-ca-1279800
+claimed-at: 2026-11-04T21:24:25Z
 ---
 
 # Ein Ticket in done raeumt seinen Worktree weg, sobald der Branch gepusht und sauber ist
