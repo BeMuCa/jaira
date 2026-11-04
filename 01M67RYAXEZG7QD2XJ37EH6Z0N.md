@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T03:41:20Z
+updated-at: 2026-11-04T03:41:22Z
 updated-by: berkc
 claimed-by: berk-ca-511849
 claimed-at: 2026-11-04T00:37:01Z
@@ -28,7 +28,7 @@ outcome-resolves: "Sign-off and human screens show each changed file with its +/
 review-summary: none
 round: 3
 review-gaps: "pass 1: folded renderDiffPane's own pad/fill-to-height loop into clipPane (view.go:1490, same code) and dropped the diffScroll/top double bookkeeping there; left: Base() beside gitref.RemoteHead (different lookup, critique let-stand), WorktreeOf/openInCode (no existing twin), parseDiff's second counting pass (runs once per diff load), the focused-title restyle next to the accent border (visual, not a cleanup). pass 2 (46448074 diffOpened): none - mirrors the copied pattern, nothing duplicated or dead; kept the loadDiff reset of diffOpened as a cheap guard"
-test-verdict: "fail: a successful 'o' opens a modal NOTE that must be dismissed with esc and swallows the next keys"
+test-verdict: "pass: build+vet ok, go test ./... exit 0 (33 pkgs ok, 3 known hangers skipped), DoD 1-4 verified in the tree, tmux on a scratch board: split on signoff and human at 160 cols, single column at 120, ] [ tab scroll work, o runs 'code -g <path>:<line>' (stub) with inline confirmation and no modal"
 ---
 
 # In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code
