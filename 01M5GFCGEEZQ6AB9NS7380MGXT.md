@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:13Z
-updated-at: 2026-11-04T21:50:42Z
+updated-at: 2026-11-04T21:50:44Z
 updated-by: berkc
 claimed-by: berk-ca-1279800
 claimed-at: 2026-11-04T21:24:25Z
@@ -28,6 +28,7 @@ outcome-why: "Worktrees pile up on disk when PRs are per milestone and wait for 
 outcome-resolves: "Critique round 1 finding 2 (SKILL.md long-lived-worktree rationale contradicting the new paragraph) fixed. Finding 1 (spawn.sh worktree add -b on a kept branch) deliberately left for follow-up R80Z4G."
 review-summary: none
 round: 2
+review-gaps: "none removed; considered: reap.sh:247 re-reads tip from :187 (needed when the worktree block is skipped), pane-vs-HERDR_PANE_ID check repeated at :168/:199 (each loop needs it); old gone=() loop already removed; no duplication of forge/merged_head; pushedAt helper mirrors mergedAt"
 ---
 
 # Ein Ticket in done raeumt seinen Worktree weg, sobald der Branch gepusht und sauber ist
