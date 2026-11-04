@@ -1,7 +1,7 @@
 ---
 id: 01M67K785D27CAHPSXKANDE933
 title: Mit z (leere Lanes schmal) springen links/rechts zwischen Tickets ueber leere Lanes hinweg
-status: optimize
+status: testing
 ready: true
 creator: berkc
 assignee: berkc
@@ -14,7 +14,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-11-04T00:48:57Z
+updated-at: 2026-11-04T00:49:04Z
 updated-by: berkc
 claimed-by: berk-ca-516678
 claimed-at: 2026-11-04T00:38:18Z
