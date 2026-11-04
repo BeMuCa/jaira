@@ -18,7 +18,7 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-04T00:37:26Z
+updated-at: 2026-11-04T00:39:26Z
 updated-by: berkc
 claimed-by: berk-ca-512097
 claimed-at: 2026-11-04T00:37:05Z
@@ -41,6 +41,9 @@ question: ""
   proof: TestSinceThreeVersionsBehindReturnsAllThree; TestUpdateThreeVersionsBehindPrintsAllThree; TestPopupThreeVersionsBehindPagesAllThree
 - [x] Release-Notiz unter core/release/notes/
   proof: core/release/notes/CZWKNY.md
+- [ ] Hook-Format '- > <Headline>: <ein kurzer Satz>'; das Popup zeigt die Headline fett, den Satz gedimmt darunter, eine Leerzeile zwischen Hooks; Test
+- [ ] Popup: Hooks, Features und '!'-Zeilen immer sichtbar, einfache Zeilen unter 'Others' standardmaessig eingeklappt, Taste o klappt sie aus; jaira update zeigt weiter alles; Test
+- [ ] Ein Test schlaegt fehl bei einer Hook-Zeile ueber 80 Zeichen oder mehr als einem Hook pro Note-Datei
 
 ## Options
 
