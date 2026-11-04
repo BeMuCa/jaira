@@ -14,7 +14,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-11-04T00:38:27Z
+updated-at: 2026-11-04T00:38:29Z
 updated-by: berkc
 claimed-by: berk-ca-516678
 claimed-at: 2026-11-04T00:38:18Z
@@ -56,7 +56,7 @@ round: 2
 - [x] Update toggleEmptyLanes doc comment and the z help line in internal/tui/view.go
 - [x] Release note line in core/release/notes/NDE933.md
 - [x] Verify: go vet and go test ./internal/tui/
-- [ ] New() in internal/tui/model.go sets thinEmpty: true beside anim: true; update the thinEmpty field comment (on by default, z turns it off, session-only)
+- [~] New() in internal/tui/model.go sets thinEmpty: true beside anim: true; update the thinEmpty field comment (on by default, z turns it off, session-only)
 - [ ] Fix tests that assumed z starts off (internal/tui/*_test.go): tests that press z to turn it on now get it by default; tests of the off behaviour press z once; add a test that a fresh New() model has thinEmpty on and draws an empty lane thin, and that one z turns it off
 - [ ] Check the ? help text and hint bar still read right with the default on (view.go zHint)
 - [ ] Add a second line '- ! ...' to core/release/notes/NDE933.md: empty lanes now start thin and skipped, press z to show them
