@@ -1,7 +1,7 @@
 ---
 id: 01M67K785D27CAHPSXKANDE933
 title: Mit z (leere Lanes schmal) springen links/rechts zwischen Tickets ueber leere Lanes hinweg
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: berkc
@@ -14,13 +14,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-11-04T00:46:06Z
+updated-at: 2026-11-04T00:46:09Z
 updated-by: berkc
 claimed-by: berk-ca-516678
 claimed-at: 2026-11-04T00:38:18Z
-outcome-what: "z is on by default: New() starts thinEmpty true, so empty lanes draw thin and ←/→ skip them from the first frame; one z turns it off for the session; ? help line says on by default; tests adjusted (z pressed where a test wants full-width lanes, dropped where it wanted z on) plus TestThinEmptyLanesAreOnByDefault; release note line 2 is a '- !' instruction"
-outcome-why: "maintainer asked for z on by default; z is session-only and not persisted (model.go:292), so no restart behaviour changes"
-outcome-resolves: "DoD 3 ticked with proof (model.go:353, TestThinEmptyLanesAreOnByDefault); DoD 1 proof re-pointed to model.go:1776 and lanewindow_test.go:201-329; tmux check left to the parent"
+outcome-what: "z is on by default: New() starts thinEmpty true, so empty lanes draw thin and ←/→ skip them from the first frame; one z turns it off for the session. Release note is a single '- !' line (core/release/notes/NDE933.md:1)"
+outcome-why: "maintainer asked for z on by default (04.11.2026); z is session-only and not persisted (model.go:292), so no restart behaviour changes"
+outcome-resolves: "critique pass 2: stale release-note line 1 ('Press z to draw empty lanes thin') contradicted the default and is deleted; DoD 2 proof re-checked at NDE933.md:1; tmux check still left to the parent"
 review-summary: "core/release/notes/NDE933.md:1 still says \"Press z to draw empty lanes thin\", which is false since 9237f70d made thin the default (z now widens); jaira update shows both lines side by side and they contradict each other. The file is unreleased (directly in core/release/notes/), so delete line 1 and keep only line 2, or rewrite line 1 so it matches line 2. Everything else in pass 2 (New() thinEmpty: true beside anim, field comment, ? help line, zHint tests, no persistence per the 00:37 plan note) needs no change."
 review-gaps: |-
   note: skipping wraps round the board end (backlog ← lands on done), same wrap moveLane already had, but a user might expect a stop at the edge
