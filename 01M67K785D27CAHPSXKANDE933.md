@@ -14,14 +14,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-11-04T00:51:45Z
+updated-at: 2026-11-04T00:53:05Z
 updated-by: berkc
 claimed-by: berk-ca-516678
 claimed-at: 2026-11-04T00:38:18Z
 outcome-what: "z is on by default: New() starts thinEmpty true, so empty lanes draw thin and ←/→ skip them from the first frame; one z turns it off for the session. Release note is a single '- !' line (core/release/notes/NDE933.md:1)"
 outcome-why: "maintainer asked for z on by default (04.11.2026); z is session-only and not persisted (model.go:292), so no restart behaviour changes"
 outcome-resolves: "critique pass 2: stale release-note line 1 ('Press z to draw empty lanes thin') contradicted the default and is deleted; DoD 2 proof re-checked at NDE933.md:1; tmux check still left to the parent"
-review-summary: "none"
+review-summary: "Board ←/→ now go through a new stepLane (internal/tui/model.go:1776): while the thin-empty-lanes toggle is on, it walks lanes in the arrow's direction (wrapping round, as before) and lands on the first lane that holds tickets, so the empty lanes in between are skipped. If only the current lane has tickets the cursor stays; if every lane is empty (a filter matching nothing) it steps one lane as before. With the toggle off it calls the old moveLane, so behaviour is unchanged. New() now starts with the toggle on, so empty lanes are thin and skipped from the first frame and z turns that off for the session (not saved). Lane focus keeps moveLane. Help text for z and the release note (one '- !' line) say so; tests cover skip, wrap, only-lane, all-empty, empty start lane, toggle off and the new default."
 review-gaps: "removed TestWideBoardShowsAllTenLanesWidened (lanewindow_test.go): with z on by default it pressed z once and checked all ten lane names, the same setup and a subset of TestZWidensEverything; DoD proof line refs updated. Left: stepLane's wrap loop is not a duplicate of moveLane (steps i lanes, not one); TestZWidensEverything's thin check overlaps TestThinEmptyLanesAreOnByDefault's second half by one assertion, kept. No dead code or fluff in model.go/view.go."
 test-verdict: "pass: go build ./... RC=0, go test ./... RC=0 (3 known hangers skipped per agent rules), DoD 1-3 proofs checked in the tree, tmux on scratch board: thin on first start, → backlog->done, z widens and → steps onto empty lane, restart thin again"
 review-verdict: "pass - diff meets both DoD items (skip with z, unchanged without z, tests, release note); go vet and go test ./internal/tui/ pass; no defects found"
