@@ -14,7 +14,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-11-04T00:53:07Z
+updated-at: 2026-11-04T00:53:09Z
 updated-by: berkc
 claimed-by: berk-ca-516678
 claimed-at: 2026-11-04T00:38:18Z
@@ -26,8 +26,8 @@ review-gaps: |-
   note: the TUI was not driven by hand (tmux) in any lane - outcome-resolves says it was left to the parent; only go test covers it
   note: DoD 3's clause about a saved z state does not apply - z was never persisted (model.go:292), so every start is thin and a z press does not survive a restart
 test-verdict: "pass: go build ./... RC=0, go test ./... RC=0 (3 known hangers skipped per agent rules), DoD 1-3 proofs checked in the tree, tmux on scratch board: thin on first start, → backlog->done, z widens and → steps onto empty lane, restart thin again"
-review-verdict: "pass - diff meets both DoD items (skip with z, unchanged without z, tests, release note); go vet and go test ./internal/tui/ pass; no defects found"
-review-round: 1
+review-verdict: "pass - diff meets all three DoD items (skip with z on, unchanged with z off, on by default, tests, release note); go vet and go test ./internal/tui/ -count=1 pass; no defects found"
+review-round: 3
 review-check: "1. cd /home/berkc/code/X_General/jaira-exp-b && go run ./cmd/jaira  2. on the board, put the cursor on a ticket in a lane with empty lanes to its right  3. press → : cursor moves to the adjacent (empty) lane, as before  4. press ← to go back, then press z : empty lanes are drawn thin  5. press → : cursor jumps straight to the next lane that has tickets, skipping the thin ones  6. press z again and → : it steps one lane at a time again. Automated: go test ./internal/tui/ -run 'Arrows|LeftWithToggle' -count=1 passes"
 round: 3
 ---
