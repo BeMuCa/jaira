@@ -81,9 +81,16 @@ func TestAMultilineCheckKeepsItsLines(t *testing.T) {
 	tk.Status = "signoff"
 	tk.ReviewVerdict = "fine"
 	m.detail = tk
+	// At 140 columns the sign-off screen is split beside the diff, so every row
+	// starts with a box border: the test looks for the steps on one row instead.
 	sign := stripANSI(m.renderSignOff())
-	if !strings.Contains(sign, indent+"2. open the board") {
-		t.Errorf("sign-off screen flattened the check's lines:\n%s", sign)
+	if !strings.Contains(sign, "2. open the board") {
+		t.Errorf("sign-off screen misses the check's step 2:\n%s", sign)
+	}
+	for _, line := range strings.Split(sign, "\n") {
+		if strings.Contains(line, "2. open the board") && strings.Contains(line, "3. squint at the cards") {
+			t.Errorf("sign-off screen flattened the check's lines: %q", line)
+		}
 	}
 }
 

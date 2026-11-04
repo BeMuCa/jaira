@@ -2,6 +2,14 @@ package gitrepo
 
 import "strings"
 
+// BranchSegments splits a branch name into its words: runs of letters and
+// digits, so "feat/eh6z0n-diff-view" gives "feat", "eh6z0n", "diff", "view".
+func BranchSegments(branch string) []string {
+	return strings.FieldsFunc(branch, func(r rune) bool {
+		return !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9')
+	})
+}
+
 // BranchFor returns the branch whose name carries handle as one of its
 // segments ("feat/eh6z0n-diff-view" carries "EH6Z0N"), using the same rule as
 // branchTicket in internal/cli. Local branches come before remote ones because
@@ -16,17 +24,13 @@ func (r *Repo) BranchFor(handle string) string {
 		if name == "" || strings.HasSuffix(name, "/HEAD") {
 			continue
 		}
-		for _, seg := range strings.FieldsFunc(name, notAlnum) {
+		for _, seg := range BranchSegments(name) {
 			if strings.EqualFold(seg, handle) {
 				return name
 			}
 		}
 	}
 	return ""
-}
-
-func notAlnum(r rune) bool {
-	return !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9')
 }
 
 // Base returns the branch a ticket branch is reviewed against: master, else

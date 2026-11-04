@@ -45,7 +45,7 @@ func diffModel(t *testing.T, w int, status string) *Model {
 	tk := waitingTicket(status)
 	m.detail = tk
 	m.mode = modeDetail
-	m.diffFor, m.diffRows, m.diffNote = tk.ID, parseDiff(samplePatch), "feat/x vs master"
+	m.diffFor, m.diffScrollFor, m.diffRows, m.diffNote = tk.ID, tk.ID, parseDiff(samplePatch), "feat/x vs master"
 	return m
 }
 
@@ -106,9 +106,11 @@ func TestPersonLaneShowsDiffBesideTheTicketWhenWide(t *testing.T) {
 			t.Errorf("wide sign-off screen misses %q", want)
 		}
 	}
+	// The ticket's handle line and the diff's title share a row: the two panes
+	// sit side by side rather than one above the other.
 	for _, line := range strings.Split(out, "\n") {
-		if strings.Contains(line, "stop credential stuffing") && !strings.Contains(line, "│") {
-			t.Errorf("the ticket goal and the diff are not side by side: %q", line)
+		if strings.Contains(line, "7BVRCT") && !strings.Contains(line, "Diff  feat/x") {
+			t.Errorf("the ticket and the diff are not side by side: %q", line)
 		}
 	}
 }
@@ -124,7 +126,7 @@ func TestHumanLaneShowsDiffBesideTheTicketWhenWide(t *testing.T) {
 func TestNarrowTerminalKeepsTheSingleColumn(t *testing.T) {
 	m := diffModel(t, 120, "signoff")
 	out := stripANSI(m.render())
-	if strings.Contains(out, "open in VS Code") || strings.Contains(out, "│ ") {
+	if strings.Contains(out, "open in VS Code") || strings.Contains(out, "tab diff") {
 		t.Errorf("narrow terminal shows the diff pane:\n%s", out)
 	}
 	m2 := diffModel(t, 120, "signoff")
@@ -151,6 +153,35 @@ func TestBracketJumpsBetweenFiles(t *testing.T) {
 	press("[")
 	if got := top(); got.kind != 'H' || got.path != "internal/a.go" {
 		t.Fatalf("after [ the top row is %+v, want the internal/a.go header", got)
+	}
+}
+
+// The 2s tick reloads the board. A reload must not move a diff the person has
+// scrolled, nor take the focus off it: it only marks the diff to be read again.
+func TestReloadKeepsDiffScrollAndFocus(t *testing.T) {
+	m := diffModel(t, 160, "signoff")
+	m.diffScroll, m.diffFocus = 3, true
+	if err := m.reload(); err != nil {
+		t.Fatal(err)
+	}
+	if m.diffScroll != 3 || !m.diffFocus {
+		t.Fatalf("after reload scroll=%d focus=%v, want 3 and true", m.diffScroll, m.diffFocus)
+	}
+	m.loadDiff(m.detail)
+	if m.diffScroll != 3 || !m.diffFocus {
+		t.Fatalf("after reloading the same ticket's diff scroll=%d focus=%v, want 3 and true", m.diffScroll, m.diffFocus)
+	}
+}
+
+func TestOpeningAnotherTicketResetsDiffScroll(t *testing.T) {
+	m := diffModel(t, 160, "signoff")
+	m.diffScroll, m.diffFocus = 3, true
+	other := waitingTicket("signoff")
+	other.ID = "01KZTT3XZ2YQBX93TTSR7BVRCZ"
+	m.loadDiff(other)
+	if m.diffScroll != 0 || m.diffFocus || m.diffScrollFor != other.ID {
+		t.Fatalf("after opening another ticket scroll=%d focus=%v for=%q, want 0, false, %q",
+			m.diffScroll, m.diffFocus, m.diffScrollFor, other.ID)
 	}
 }
 

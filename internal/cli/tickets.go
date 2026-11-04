@@ -155,9 +155,7 @@ func branchTicket(s *ticket.Store) (id, branch string) {
 	if branch == "" {
 		return "", ""
 	}
-	for _, seg := range strings.FieldsFunc(branch, func(r rune) bool {
-		return !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9')
-	}) {
+	for _, seg := range gitrepo.BranchSegments(branch) {
 		if len(seg) != 6 { // a handle's length; anything else is a word
 			continue
 		}

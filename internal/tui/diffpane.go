@@ -181,16 +181,20 @@ func ticketDiff(root string, t *ticket.Ticket) (rows []diffRow, note, dir string
 	return rows, note, dir
 }
 
-// loadDiff computes the diff of the open ticket once, until the ticket changes
-// or a reload clears diffFor.
+// loadDiff computes the diff of the open ticket once, until a reload clears
+// diffFor. The scroll and focus are reset only when the ticket changes, so a
+// reload that re-reads the same diff leaves the person where they were.
 func (m *Model) loadDiff(t *ticket.Ticket) {
 	if m.diffFor == t.ID {
 		return
 	}
 	m.diffRows, m.diffNote, m.diffDir = ticketDiff(m.store.Root, t)
 	m.diffFor = t.ID
-	m.diffScroll = 0
-	m.diffFocus = false
+	if m.diffScrollFor != t.ID {
+		m.diffScroll = 0
+		m.diffFocus = false
+		m.diffScrollFor = t.ID
+	}
 }
 
 // diffPaneShown reports whether the open ticket shows its diff beside it: it
@@ -314,25 +318,17 @@ func (m *Model) renderDiffPane(width, height int) string {
 // list; the diff's keys are appended to it.
 func (m *Model) withDiff(left, hint string) string {
 	footer := wrapHints(strings.Split(hint+" · tab diff · ]/[ file · o open in VS Code", " · "), max(1, m.width))
-	rows := max(1, m.height-1-len(footer))
+	// A pane costs a row top and bottom for its box, and a column each side and
+	// the space between them.
+	rows := max(1, m.height-len(footer)-2)
 	leftPane, scroll := clipPane(left, diffLeftWidth, rows, m.detailScroll)
 	m.detailScroll = scroll
-	rightW := m.width - diffLeftWidth - 3
-	right := m.renderDiffPane(rightW, rows)
-	sepSty := lipgloss.NewStyle().Foreground(colFaint)
-	if m.diffFocus {
-		sepSty = lipgloss.NewStyle().Foreground(colAccent)
-	}
-	sep := sepSty.Render(" │ ")
-	leftLines := strings.Split(leftPane, "\n")
-	rightLines := strings.Split(right, "\n")
+	right := m.renderDiffPane(m.width-diffLeftWidth-5, rows)
+	// The live pane is the one the keys reach, marked by its accent border as in
+	// the follow-up split.
 	var b strings.Builder
-	for i := 0; i < rows; i++ {
-		if i > 0 {
-			b.WriteString("\n")
-		}
-		b.WriteString(leftLines[i] + sep + rightLines[i])
-	}
+	b.WriteString(lipgloss.JoinHorizontal(lipgloss.Top,
+		splitPane(leftPane, !m.diffFocus), " ", splitPane(right, m.diffFocus)))
 	for _, l := range footer {
 		b.WriteString("\n" + styMeta.Render(l))
 	}

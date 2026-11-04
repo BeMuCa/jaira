@@ -160,12 +160,15 @@ type Model struct {
 	// diffFor is the ticket whose diff is loaded, diffRows its patch, diffNote
 	// where the patch came from and diffDir the checkout 'o' opens files in.
 	// diffScroll is the top row of the diff pane and diffFocus gives it the keys.
-	diffFor    string
-	diffRows   []diffRow
-	diffNote   string
-	diffDir    string
-	diffScroll int
-	diffFocus  bool
+	// diffScrollFor is the ticket those two belong to: a reload clears diffFor
+	// but keeps the scroll, and only a different ticket resets it.
+	diffFor       string
+	diffRows      []diffRow
+	diffNote      string
+	diffDir       string
+	diffScroll    int
+	diffFocus     bool
+	diffScrollFor string
 
 	// detail holds the fully loaded ticket, since the board only reads
 	// frontmatter for speed.
@@ -471,8 +474,8 @@ func (m *Model) reload() error {
 	// on yesterday's answer (or on "no commits" forever).
 	m.derivedFor = ""
 	// The same reasoning holds for the diff of the open ticket: a push to its
-	// branch changes it, so the next render asks git again.
-	m.diffFor, m.diffScroll, m.diffFocus = "", 0, false
+	// branch changes it, so the next render asks git again. The scroll stays.
+	m.diffFor = ""
 
 	tickets, err := m.store.List()
 	if err != nil {
