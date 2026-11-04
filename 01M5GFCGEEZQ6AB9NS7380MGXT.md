@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:13Z
-updated-at: 2026-11-04T21:37:23Z
+updated-at: 2026-11-04T21:37:25Z
 updated-by: berkc
 claimed-by: berk-ca-1279800
 claimed-at: 2026-11-04T21:24:25Z
@@ -31,7 +31,8 @@ claimed-at: 2026-11-04T21:24:25Z
 
 - [x] Steht das Ticket in done, ist jeder seiner Worktrees sauber (oder nur die eigene Ticket-Datei geaendert) und steht origin/<branch> auf demselben Commit wie der lokale Branch, schliesst reap.sh seine Tabs und entfernt den Worktree, ohne auf einen PR zu warten; der Branch bleibt; Test in core/role/reap_test.go
   proof: core/role/reap_test.go TestReapRemovesAPushedWorktreeBeforeTheMerge; reap.sh:189-194 (push check) and 209-226 (worktree removal before merge)
-- [ ] Ist das Ticket nicht in done, der Worktree nicht sauber, der Branch nicht gepusht oder origin/<branch> auf anderem Stand, bleibt alles (Tabs, Worktree, Branch) und reap.sh druckt je Ticket eine Zeile mit dem Grund; Test je Fall
+- [x] Ist das Ticket nicht in done, der Worktree nicht sauber, der Branch nicht gepusht oder origin/<branch> auf anderem Stand, bleibt alles (Tabs, Worktree, Branch) und reap.sh druckt je Ticket eine Zeile mit dem Grund; Test je Fall
+  proof: core/role/reap_test.go TestReapKeepsWhatIsNotFinished (subtests not pushed, origin elsewhere, not done, uncommitted, detached HEAD, herdr not reachable); reap.sh:143 waiting, 182 dirty, 189-191 push
 - [ ] Der lokale Branch wird erst geloescht, wenn sein eigener PR gemergt ist oder sein Stand im Default-Branch von origin liegt (Milestone-PR); reap.sh --dry-run zeigt 'would remove <worktree>' und 'would delete branch <branch>' und aendert nichts; Test
 - [ ] Release-Note-Zeile in core/release/notes/80MGXT.md
 - [ ] jaira-teamlead/SKILL.md beschreibt den neuen Zeitpunkt (Worktree bei done, Branch nach Merge); neue Hashes von reap.sh und SKILL.md in core/shipped/shipped.sha256 angehaengt, core/role- und core/shipped-Tests gruen
