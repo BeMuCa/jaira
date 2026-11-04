@@ -34,13 +34,16 @@ Then clear away what is finished, every round, before you start anything:
 .claude/skills/jaira-dispatcher/scripts/reap.sh   # ~/.claude/skills/... when installed globally
 ```
 
-It closes every tab `spawn.sh` opened for a ticket whose pull request is
-merged — worker, dispatcher, lane and review agents alike — and removes that
-ticket's worktree and local branch. A merged ticket it keeps — not done, its
-branch past the merged head, or uncommitted changes in its worktree — comes
-with the reason. Tell the person, in one line each, what it `closed` and what
-it `kept`; `waiting` lines are work in flight and not news; nothing either way:
-say nothing. `--dry-run` shows the same without doing it.
+For a ticket in `done` it closes every tab `spawn.sh` opened for it — worker,
+dispatcher, lane and review agents alike — and removes its worktree as soon as
+the worktree is clean and its branch is pushed at the same commit, without
+waiting for the pull request. The local branch goes only after it is merged:
+its own pull request merged, or its head in origin's default branch. A ticket
+it keeps — not pushed, uncommitted changes, a detached HEAD, a branch past its
+merged head — comes with the reason. `waiting` is a ticket not yet in `done`,
+or a branch whose pull request is not merged: work in flight and not news. Tell
+the person, in one line each, what it `closed` and what it `kept`; nothing
+else: say nothing. `--dry-run` shows the same without doing it.
 
 Then name what happened on the board in the last seven days, newest day
 first, with who did it — the person slept, and what a session filed at night
@@ -251,12 +254,14 @@ The cockpit's Give back button decides by itself. When you send it back:
 The limit is a share of the model's context window, the cockpit's setting
 `workerContextShare` (percent, default 50), never a fixed number of tokens: a
 large task on a large window keeps its worker. The tab closes for good when
-`reap.sh` finds the ticket done and its pull request merged; you do not close it
-by hand.
+`reap.sh` finds the ticket done and its branch pushed; you do not close it by
+hand.
 
-Its worktree outlives it, and by longer than the pull request: `reap.sh` removes
-it only when both hold — the ticket in `done` and the pull request merged.
-Review comments come back to the branch and want somewhere to land, and a
+Its worktree goes with the tab: `reap.sh` removes it once the ticket is done and
+the worktree is clean and pushed, without waiting for the pull request — pull
+requests are per milestone, so a wait would keep worktrees for weeks. The local
+branch stays until it is merged. Review comments come back to the branch and
+want somewhere to land, and a
 merged pull request is not the end of that — a ticket that has not been
 accepted can still come back.
 

@@ -1,0 +1,1 @@
+- A done ticket's tabs and worktree are removed as soon as its branch is pushed at the same commit; the local branch stays until its pull request, or its milestone pull request, has merged.

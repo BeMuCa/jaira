@@ -155,6 +155,11 @@ func (r *reapRig) mergedAt(t *testing.T, sha string) {
 	r.write(t, r.merged, `[{"headRefOid":"`+sha+`"}]`)
 }
 
+// pushedAt makes origin's copy of the branch sit at sha, as a push leaves it.
+func (r *reapRig) pushedAt(t *testing.T, sha string) {
+	r.git(t, r.repo, "update-ref", "refs/remotes/origin/feat/ab12cd", sha)
+}
+
 func (r *reapRig) records(t *testing.T) []string {
 	t.Helper()
 	got, _ := filepath.Glob(filepath.Join(r.repo, ".git", "jaira", "panes", "*"))
@@ -190,12 +195,14 @@ func TestSpawnRecordsItsTabForReap(t *testing.T) {
 	}
 }
 
-// Merged and done: every tab of the ticket closes, its worktree and branch go,
-// and the records with them. --dry-run says the same and changes nothing.
+// Merged, pushed and done: every tab of the ticket closes, its worktree and
+// branch go, and the records with them. --dry-run says the same and changes
+// nothing.
 func TestReapClosesAMergedTicket(t *testing.T) {
 	t.Parallel()
 	r := newReapRig(t)
 	r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+	r.pushedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
 	r.write(t, r.shown, `{"status":"done"}`)
 	// Untracked board files are no work: AYBDJ2's rule.
 	r.write(t, filepath.Join(r.wt, ".jaira", "milestones", "m.md"), "x\n")
@@ -232,51 +239,150 @@ func TestReapClosesAMergedTicket(t *testing.T) {
 	}
 }
 
+// Done and pushed is enough for the worktree: its tabs close and it goes, while
+// the branch waits for its pull request. One record stays, naming the branch,
+// so the next round closes nothing twice.
+func TestReapRemovesAPushedWorktreeBeforeTheMerge(t *testing.T) {
+	t.Parallel()
+	r := newReapRig(t)
+	r.pushedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+	r.write(t, r.shown, `{"status":"done"}`)
+
+	out := r.run(t, r.repo, "reap.sh")
+	for _, want := range []string{"removed " + r.wt, "waiting AB12CD: feat/ab12cd has no merged pull request"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("want %q, got:\n%s", want, out)
+		}
+	}
+	if got := r.closedTabs(); got != "tp1\ntp2" {
+		t.Errorf("closed tabs %q, want tp1 and tp2\n%s", got, out)
+	}
+	if _, err := os.Stat(r.wt); !os.IsNotExist(err) {
+		t.Errorf("worktree still there (%v):\n%s", err, out)
+	}
+	if b := r.git(t, r.repo, "branch", "--list", "feat/ab12cd"); b == "" {
+		t.Errorf("the branch went before its pull request merged:\n%s", out)
+	}
+	recs := r.records(t)
+	if len(recs) != 1 {
+		t.Fatalf("want the branch's record alone, got %v", recs)
+	}
+	if b, _ := os.ReadFile(recs[0]); string(b) != "ticket=AB12CD\nbranch=feat/ab12cd\n" {
+		t.Errorf("record %s:\n%s", recs[0], b)
+	}
+
+	r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+	out = r.run(t, r.repo, "reap.sh")
+	if b := r.git(t, r.repo, "branch", "--list", "feat/ab12cd"); b != "" {
+		t.Errorf("the merged branch is still there: %q\n%s", b, out)
+	}
+	if recs := r.records(t); len(recs) != 0 {
+		t.Errorf("records left: %v", recs)
+	}
+	if got := r.closedTabs(); got != "tp1\ntp2" {
+		t.Errorf("the next round closed tabs again: %q", got)
+	}
+}
+
+// The local branch goes once its head lies in origin's default branch: a
+// milestone's pull request merges into the integration branch, and no forge is
+// asked about it.
+func TestReapDeletesABranchInOriginsDefaultBranch(t *testing.T) {
+	t.Parallel()
+	r := newReapRig(t)
+	tip := r.git(t, r.repo, "rev-parse", "feat/ab12cd")
+	r.pushedAt(t, tip)
+	r.git(t, r.repo, "update-ref", "refs/remotes/origin/master", tip)
+	r.git(t, r.repo, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/master")
+	r.write(t, r.shown, `{"status":"done"}`)
+
+	out := r.run(t, r.repo, "reap.sh")
+	if !strings.Contains(out, "deleted branch feat/ab12cd") || strings.Contains(out, "waiting") {
+		t.Errorf("want the branch deleted without a forge question:\n%s", out)
+	}
+	if b := r.git(t, r.repo, "branch", "--list", "feat/ab12cd"); b != "" {
+		t.Errorf("branch still there: %q\n%s", b, out)
+	}
+	if recs := r.records(t); len(recs) != 0 {
+		t.Errorf("records left: %v", recs)
+	}
+}
+
+// The ticket's own file, modified by its worker until the next commit that
+// carries code, is no work left behind: the worktree goes anyway.
+func TestReapIgnoresTheTicketsOwnFileInItsWorktree(t *testing.T) {
+	t.Parallel()
+	r := newReapRig(t)
+	ticket := filepath.Join(r.wt, ".jaira", "tickets", "01K2ZAB12CD-ticket.md")
+	r.write(t, ticket, "one\n")
+	r.git(t, r.wt, "add", ".jaira")
+	r.git(t, r.wt, "commit", "-q", "-m", "ticket")
+	r.pushedAt(t, r.git(t, r.wt, "rev-parse", "HEAD"))
+	r.write(t, ticket, "two\n")
+	r.write(t, r.shown, `{"status":"done"}`)
+
+	out := r.run(t, r.repo, "reap.sh")
+	if _, err := os.Stat(r.wt); !os.IsNotExist(err) {
+		t.Errorf("the worktree stayed for the ticket's own file (%v):\n%s", err, out)
+	}
+}
+
 // Anything that may still be work keeps the whole ticket — tabs, worktree,
-// branch — and says why.
+// branch — and says why. A ticket still worked on is 'waiting' instead.
 func TestReapKeepsWhatIsNotFinished(t *testing.T) {
 	t.Parallel()
+	// Done and pushed at the local head: each case then breaks one thing.
+	done := func(t *testing.T, r *reapRig) {
+		r.write(t, r.shown, `{"status":"done"}`)
+		r.pushedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+	}
 	for name, c := range map[string]struct {
 		setup func(t *testing.T, r *reapRig)
 		why   string
 	}{
-		"not merged": {
-			func(t *testing.T, r *reapRig) {}, "waiting AB12CD: feat/ab12cd has no merged pull request",
+		"not pushed": {
+			func(t *testing.T, r *reapRig) { r.write(t, r.shown, `{"status":"done"}`) },
+			"kept AB12CD: feat/ab12cd is not pushed",
+		},
+		"origin elsewhere": {
+			func(t *testing.T, r *reapRig) {
+				done(t, r)
+				old := r.git(t, r.repo, "rev-parse", "feat/ab12cd")
+				r.write(t, filepath.Join(r.wt, "README"), "later\n")
+				r.git(t, r.wt, "commit", "-q", "-am", "later")
+				r.pushedAt(t, old)
+			},
+			"kept AB12CD: feat/ab12cd is not pushed at its head",
+		},
+		"not done": {
+			func(t *testing.T, r *reapRig) {
+				done(t, r)
+				r.write(t, r.shown, `{"status":"in-progress"}`)
+			},
+			"waiting AB12CD: the ticket is in in-progress, not done",
 		},
 		"uncommitted": {
 			func(t *testing.T, r *reapRig) {
-				r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+				done(t, r)
 				r.write(t, filepath.Join(r.wt, "README"), "changed\n")
-			}, "kept AB12CD: " + r0 + " has uncommitted changes: README",
+			},
+			"kept AB12CD: " + r0 + " has uncommitted changes: README",
 		},
 		"detached HEAD": {
 			func(t *testing.T, r *reapRig) {
-				r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
-				r.write(t, r.shown, `{"status":"done"}`)
+				done(t, r)
 				r.git(t, r.wt, "checkout", "-q", "--detach")
-			}, "kept AB12CD: " + r0 + " has a detached HEAD",
-		},
-		"committed after the merge": {
-			func(t *testing.T, r *reapRig) {
-				r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
-				r.write(t, filepath.Join(r.wt, "README"), "later\n")
-				r.git(t, r.wt, "commit", "-q", "-am", "later")
-			}, "kept AB12CD: feat/ab12cd is not at the merged head",
-		},
-		"given back": {
-			func(t *testing.T, r *reapRig) {
-				r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
-				r.write(t, r.shown, `{"status":"in-progress"}`)
-			}, "kept AB12CD: the ticket is in in-progress, not done",
+			},
+			"kept AB12CD: " + r0 + " has a detached HEAD",
 		},
 		// Outside Herdr, or with a stale HERDR_BIN_PATH, an open tab looks
 		// closed: everything stays until herdr answers.
 		"herdr not reachable": {
 			func(t *testing.T, r *reapRig) {
-				r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
-				r.write(t, r.shown, `{"status":"done"}`)
+				done(t, r)
 				r.env = append(r.env, "HERDR_BIN_PATH="+filepath.Join(r.repo, "no-herdr"))
-			}, "kept AB12CD: herdr not reachable",
+			},
+			"kept AB12CD: herdr not reachable",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -294,7 +400,36 @@ func TestReapKeepsWhatIsNotFinished(t *testing.T) {
 			if _, err := os.Stat(r.wt); err != nil {
 				t.Errorf("the worktree went: %v", err)
 			}
+			if b := r.git(t, r.repo, "branch", "--list", "feat/ab12cd"); b == "" {
+				t.Errorf("the branch went:\n%s", out)
+			}
 		})
+	}
+}
+
+// A branch with commits past its merged pull request keeps its branch. Its
+// worktree, clean and pushed, goes all the same: the commits are on origin.
+func TestReapKeepsABranchPastItsMergedHead(t *testing.T) {
+	t.Parallel()
+	r := newReapRig(t)
+	r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+	r.write(t, r.shown, `{"status":"done"}`)
+	r.write(t, filepath.Join(r.wt, "README"), "later\n")
+	r.git(t, r.wt, "commit", "-q", "-am", "later")
+	r.pushedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+
+	out := r.run(t, r.repo, "reap.sh")
+	if !strings.Contains(out, "kept AB12CD: feat/ab12cd is not at the merged head") {
+		t.Errorf("no reason given:\n%s", out)
+	}
+	if _, err := os.Stat(r.wt); !os.IsNotExist(err) {
+		t.Errorf("the pushed worktree stayed (%v):\n%s", err, out)
+	}
+	if b := r.git(t, r.repo, "branch", "--list", "feat/ab12cd"); b == "" {
+		t.Errorf("the branch past its merged head went:\n%s", out)
+	}
+	if recs := r.records(t); len(recs) != 1 {
+		t.Errorf("want the branch's record alone, got %v", recs)
 	}
 }
 
@@ -305,6 +440,7 @@ func TestReapLeavesATabItDidNotOpen(t *testing.T) {
 	t.Parallel()
 	r := newReapRig(t)
 	r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+	r.pushedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
 	r.write(t, r.shown, `{"status":"done"}`)
 	r.write(t, filepath.Join(r.labels, "p2"), "ZZ99ZZ/worker\n")
 
@@ -329,6 +465,7 @@ func TestReapComesBackToAWorktreeItCouldNotRemove(t *testing.T) {
 	t.Parallel()
 	r := newReapRig(t)
 	r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+	r.pushedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
 	r.write(t, r.shown, `{"status":"done"}`)
 	// A locked worktree resists a single --force.
 	r.git(t, r.repo, "worktree", "lock", r.wt)
@@ -381,6 +518,7 @@ func TestReapNeverRemovesTheWorktreeItRunsIn(t *testing.T) {
 	t.Parallel()
 	r := newReapRig(t)
 	r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+	r.pushedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
 	if out := r.run(t, r.wt, "reap.sh", "--dry-run"); strings.Contains(out, "would remove") || strings.Contains(out, "would delete") {
 		t.Errorf("--dry-run promises what the run will not do:\n%s", out)
 	}
@@ -389,6 +527,7 @@ func TestReapNeverRemovesTheWorktreeItRunsIn(t *testing.T) {
 	r.git(t, r.wt, "add", "sub")
 	r.git(t, r.wt, "commit", "-q", "-m", "sub")
 	r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+	r.pushedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
 	out := r.run(t, sub, "reap.sh")
 	if r.closedTabs() != "tp1\ntp2" {
 		t.Errorf("closed tabs %q, want tp1 and tp2\n%s", r.closedTabs(), out)
