@@ -20,7 +20,7 @@ related: []
 commits:
   - 26d4a26af9b1c7e56b09175150b0af34663ceab9
 created-at: 2026-10-19T08:33:51Z
-updated-at: 2026-11-04T21:49:49Z
+updated-at: 2026-11-04T21:49:51Z
 updated-by: berkc
 claimed-by: berk-ca-1280084
 claimed-at: 2026-11-04T21:24:26Z
@@ -37,6 +37,7 @@ review-gaps: |-
 test-verdict: "pass: build RC=0 and go test ./internal/tui ./core/shipped ./core/lane RC=0; DoD 1-3 verified in the tree; behaviour exercised through renderSignOff/detailBody tests, not a live TUI"
 review-verdict: "Diff matches all three DoD items: check is first on sign-off and on the human-lane detail, as numbered steps one per line, with tests in internal/tui; the review prompt asks for at most six steps starting with a build-and-start command for this worktree; release note present. go vet and go test ./internal/tui ./core/shipped ./core/lane pass. No blockers."
 review-round: 2
+review-check: "1. cd /home/berkc/code/X_General/jaira-AW9KVT && go run ./cmd/jaira  2. in the board, open ticket AW9KVT in the signoff lane with Enter: the screen opens with a 'try it' row, these steps one per line, above tags, problem and verdict  3. press Esc and open a ticket in an earlier lane such as review or in-progress: its detail shows no 'try it' row, and any check stays under Review after the verdict"
 ---
 
 # Human Review zeigt zuerst, wie der Mensch die Aenderung selbst testet
