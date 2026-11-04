@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:13Z
-updated-at: 2026-11-04T21:57:10Z
+updated-at: 2026-11-04T21:57:12Z
 updated-by: berkc
 claimed-by: berk-ca-1799653
 claimed-at: 2026-11-04T21:54:41Z
@@ -28,7 +28,12 @@ outcome-why: "Worktrees pile up on disk when PRs are per milestone and wait for 
 outcome-resolves: "Critique round 1 finding 2 (SKILL.md long-lived-worktree rationale contradicting the new paragraph) fixed. Finding 1 (spawn.sh worktree add -b on a kept branch) deliberately left for follow-up R80Z4G."
 review-summary: "reap.sh now works per ticket in three steps: (1) lane - a ticket not in done prints 'waiting <T>: the ticket is in <lane>, not done' and keeps everything; (2) tabs+worktree - for a done ticket, if every worktree is clean (untracked .jaira/ files and the ticket's own file ignored), HEAD not detached, refs/remotes/origin/<branch> equals refs/heads/<branch> (local tracking ref, no fetch) and herdr answers, it closes the spawn.sh tabs and 'git worktree remove --force's the worktree without waiting for a PR, then replaces the tab records with one 'branch-<T>' record (ticket=, branch=) so later rounds still know the branch; (3) branch - deleted with -D only if its tip is an ancestor of origin/HEAD (milestone PR) or its own PR is merged at/after the tip, else 'waiting ... has no merged pull request' or 'kept ... not at the merged head'. --dry-run prints 'would close/remove/delete branch' and changes nothing. jaira-teamlead/SKILL.md rewritten to the new timing (worktree at done, branch after merge); hashes appended to shipped.sha256; release note added. Tests in core/role/reap_test.go cover push-before-merge removal, the keep table, own ticket file, origin/HEAD merge and dry-run."
 round: 2
-review-gaps: "none removed; considered: reap.sh:247 re-reads tip from :187 (needed when the worktree block is skipped), pane-vs-HERDR_PANE_ID check repeated at :168/:199 (each loop needs it); old gone=() loop already removed; no duplication of forge/merged_head; pushedAt helper mirrors mergedAt"
+review-gaps: |-
+  note: re-spawning a done ticket that comes back fails: spawn.sh:168 'git worktree add <wt> -b <branch>' aborts on the branch reap.sh now keeps without a worktree; deferred to R80Z4G (backlog), loud not silent
+  note: herdr must answer even when a done ticket has a worktree but no open tab (reap.sh:170-193), so an unreachable herdr keeps a worktree that has nothing to close
+  note: shipped.sha256 gets two SKILL.md hashes, 0de16ad9 is the intermediate version of commit 5221ec42 that never shipped; harmless but not needed
+  note: the release note describes what happens rather than telling the reader what to do differently
+  note: 'done' is hard-coded as the terminal lane (reap.sh:143), as before this change
 test-verdict: "pass: go test ./core/role ./core/shipped RC=0 (touched packages only, full suite not run by scope); DoD 1-5 verified in the tree; TestReap* verbose 10 of 10 PASS incl. 6 kept subtests; bash -n RC=0; reap.sh --help RC=0; --dry-run on the worktree silent RC=0; removal exercised by the test rig (real git, bare origin, fake herdr)"
 ---
 
