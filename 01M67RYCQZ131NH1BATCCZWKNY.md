@@ -18,7 +18,7 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-04T00:47:55Z
+updated-at: 2026-11-04T00:50:16Z
 updated-by: berkc
 claimed-by: berk-ca-512097
 claimed-at: 2026-11-04T00:37:05Z
@@ -28,6 +28,7 @@ outcome-resolves: "Maintainer decision 04.11.2026: headline format, at most one 
 review-summary: "none"
 question: ""
 round: 3
+review-gaps: "folded hookLines' two wrap loops and changeLines' loop into one bulletLines helper in internal/tui/releasenotes.go (same idea three times, output byte-identical, tui/release/cli tests pass); left: entryOf's hook partition (only one, nothing to reuse), the hook branch in update.go writeNotes (it is behaviour: '  > ' instead of '  - > '), TestHookLinesAreShortAndOnePerFile's own '- > ' prefix check (counts the whole line, so changeLines+Hook would not fit), the static 'o others' footer hint critique pass 3 let stand (changing it is behaviour); no dead code, no hot-path cost"
 ---
 
 # Release-Notes beginnen mit einer Hook-Zeile, und wer mehrere Versionen ueberspringt, sieht die Notes aller dazwischen
