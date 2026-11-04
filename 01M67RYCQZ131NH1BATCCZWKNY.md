@@ -18,7 +18,7 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-04T00:44:50Z
+updated-at: 2026-11-04T00:45:09Z
 updated-by: berkc
 claimed-by: berk-ca-512097
 claimed-at: 2026-11-04T00:37:05Z
@@ -83,3 +83,4 @@ round: 3
 - **2026-11-04 00:39 · berkc** — round 2 plan choices: plain = no marker; '!' non-feature lines stay visible under Others; 'Others' header only below a hook or feature (keeps a plain-only version a plain list); fold state is one bool on the view that survives paging, 'o' toggles; length cap counts the whole line incl. '- > ' in runes; test also enforces at most one hook per file since the maintainer asked for that; jaira update text output untouched.
 - **2026-11-04 00:42 · berkc** — round 2 step D proof: TestHookLinesAreShortAndOnePerFile FAILED on the round-1 note (146 chars), as planned it bites on real content. Temporarily lengthened the hook line of notes/CZWKNY.md to 119 chars: test FAILED (exit 1); restored from a backup, byte-identical, test passes (exit 0). Claim: 'jaira claim CZWKNY' refused, claimed by berk-ca-512097; did not pass --steal, all writes went through under berkc.
 - **2026-11-04 00:44 · berkc** — critique (pass 2, judged only commit 528a535a, which answers pass 1 via the maintainer decision of 04.11.2026; that decision is settled and not reopened): round 2 covers the decision's points 1-4 (headline+dimmed sentence, optional with one hook per file in docs and test, ! and hooks visible, o toggles, jaira update text untouched, 80-rune cap). One finding: internal/tui/releasenotes.go lines(): the plain-change fold applies to every version, including one with no hook and no feature. Every released version (0.5.3-0.5.8 hold 0 hooks, 0 features) therefore opens as an empty page reading "N more · o shows them" (0.5.7: one ! line plus "31 more"), both in the upgrade popup and in the launcher w view of all history. That contradicts the 00:39 plan note (Others header only below a hook or feature keeps a plain-only version a plain list). Fold only when the page has a hook or a feature, i.e. the same len(out)>0 condition that already gates the Others header (folded only matters when an Others header is drawn); add a test that a plain-only version shows its lines unfolded. Rest of 528a535a: no finding. The worktree_diff is unrelated untracked .jaira/milestones files, not judged.
+- **2026-11-04 00:45 · berkc** — worker decision on critique pass 2: fold plain changes only on a page that has a hook or a feature above them (same condition as the 'Others' header). A page with neither shows its plain changes unfolded, because folding it would leave nothing but 'N more'. Reading of the maintainer's 'collapsed by default'; the maintainer can overrule at signoff.
