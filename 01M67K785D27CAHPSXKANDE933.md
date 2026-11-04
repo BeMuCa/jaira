@@ -14,10 +14,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-11-04T00:37:49Z
+updated-at: 2026-11-04T00:38:18Z
 updated-by: berkc
-claimed-by: berk-ca-3155695
-claimed-at: 2026-10-31T02:31:33Z
+claimed-by: berk-ca-516678
+claimed-at: 2026-11-04T00:38:18Z
 outcome-what: stepLane in model.go skips lanes with no tickets when z is on; release note rewritten as an instruction
 outcome-why: "with z on, ←/→ from backlog to done jumped through every empty lane in between"
 outcome-resolves: "DoD 1 and 2 ticked with proof (tests in lanewindow_test.go:182-301, release note line)"
