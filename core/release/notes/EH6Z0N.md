@@ -1,0 +1,1 @@
+- A ticket waiting on you in signoff or human now shows its diff against master beside it in the TUI when the terminal is at least 140 columns wide: tab switches to the diff, ] and [ jump between files, o opens the file at that line in VS Code.

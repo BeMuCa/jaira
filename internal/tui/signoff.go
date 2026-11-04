@@ -24,7 +24,17 @@ func (m *Model) renderSignOff() string {
 	if t == nil {
 		return m.renderBoard()
 	}
-	w := max(20, m.width)
+	const hint = "a accept → done · f follow-up ticket · e edit · E editor · esc back"
+	if m.diffPaneShown() {
+		m.loadDiff(t)
+		return m.withDiff(m.signOffBody(diffLeftWidth), hint)
+	}
+	return m.clipToWindow(m.signOffBody(max(20, m.width)), hint)
+}
+
+// signOffBody is the sign-off screen's ticket, laid out at width w.
+func (m *Model) signOffBody(w int) string {
+	t := m.detail
 	var b strings.Builder
 
 	fmt.Fprintf(&b, "%s  %s\n", styHandle.Render(ticket.Handle(t.ID)),
@@ -53,7 +63,7 @@ func (m *Model) renderSignOff() string {
 	// 78 is the pane width that leaves a debt row the 64 columns of text
 	// section() gives a value, beside the 13-column label — so the rows line
 	// up with the sections around them.
-	const paneWidth = 78
+	const paneWidth = diffLeftWidth
 	declared := func(label, field, value string) {
 		if strings.TrimSpace(value) != "" {
 			section(label, sourced(srcs, field, value))
@@ -144,11 +154,10 @@ func (m *Model) renderSignOff() string {
 		}
 	}
 
-	// Clipped and scrolled the same way the detail pane is: a review with a
-	// long verdict and a long checklist is exactly the ticket that outgrows a
-	// small terminal, and this is the screen where it must be readable.
-	return m.clipToWindow(b.String(),
-		"a accept → done · f follow-up ticket · e edit · E editor · esc back")
+	// renderSignOff clips and scrolls this the same way the detail pane is: a
+	// review with a long verdict and a long checklist is exactly the ticket that
+	// outgrows a small terminal.
+	return b.String()
 }
 
 func firstNonEmpty(vals ...string) string {

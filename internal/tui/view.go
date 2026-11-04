@@ -1132,7 +1132,12 @@ func (m *Model) renderDetail() string {
 	if m.detail == nil {
 		return m.renderBoard()
 	}
-	return m.clipToWindow(m.detailBody(m.detail, max(20, m.width)), m.detailHints(m.detail)+" · esc back")
+	hint := m.detailHints(m.detail) + " · esc back"
+	if m.diffPaneShown() {
+		m.loadDiff(m.detail)
+		return m.withDiff(m.detailBody(m.detail, diffLeftWidth), hint)
+	}
+	return m.clipToWindow(m.detailBody(m.detail, max(20, m.width)), hint)
 }
 
 // renderDelete keeps the ticket on screen while its handle is typed back. What

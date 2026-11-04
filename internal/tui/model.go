@@ -157,6 +157,15 @@ type Model struct {
 	// render would shell out on every keypress.
 	derivedFor  string
 	derivedShas []string
+	// diffFor is the ticket whose diff is loaded, diffRows its patch, diffNote
+	// where the patch came from and diffDir the checkout 'o' opens files in.
+	// diffScroll is the top row of the diff pane and diffFocus gives it the keys.
+	diffFor    string
+	diffRows   []diffRow
+	diffNote   string
+	diffDir    string
+	diffScroll int
+	diffFocus  bool
 
 	// detail holds the fully loaded ticket, since the board only reads
 	// frontmatter for speed.
@@ -461,6 +470,9 @@ func (m *Model) reload() error {
 	// the board refreshes, and a stale memo would keep the sign-off screen
 	// on yesterday's answer (or on "no commits" forever).
 	m.derivedFor = ""
+	// The same reasoning holds for the diff of the open ticket: a push to its
+	// branch changes it, so the next render asks git again.
+	m.diffFor, m.diffScroll, m.diffFocus = "", 0, false
 
 	tickets, err := m.store.List()
 	if err != nil {
@@ -1571,6 +1583,20 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		case "tab":
 			if m.follow != nil {
 				m.follow.focusLeft = !m.follow.focusLeft
+			} else if m.diffPaneShown() {
+				m.diffFocus = !m.diffFocus
+			}
+		case "]":
+			if m.diffPaneShown() {
+				m.jumpFile(true)
+			}
+		case "[":
+			if m.diffPaneShown() {
+				m.jumpFile(false)
+			}
+		case "o":
+			if m.diffPaneShown() {
+				m.openDiffRow()
 			}
 		case "shift+down":
 			m.scrollSrc(1)
