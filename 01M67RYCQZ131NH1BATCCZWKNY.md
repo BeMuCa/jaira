@@ -18,7 +18,7 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-04T00:39:26Z
+updated-at: 2026-11-04T00:39:29Z
 updated-by: berkc
 claimed-by: berk-ca-512097
 claimed-at: 2026-11-04T00:37:05Z
@@ -61,6 +61,11 @@ question: ""
 - [x] CLAUDE.md and AGENTS.md: '- > ' hook bullet after the '- + ' bullet in the release-notes section (never NOTES.md, never notes/<version>/, never MXMDFH.md)
 - [x] core/release/notes/CZWKNY.md: '- > ' hook line + json-order line
 - [x] gofmt -l, go vet, go test ./core/release ./core/shipped, ./internal/cli -run TestUpdate, ./internal/tui -run 'NotesView|Popup|NotesBase'; tick DoD with proofs; move to critique; one commit code+ticket
+- [ ] R2 popup: notesView.others + key o; lines() buckets hooks/features/important/plain, plain folded to 'n more · o shows them'; hookLines (headline bold, sentence dim); changeLines drops hook case; hint 'o others'
+- [ ] R2 tui tests: v.key("o") in 4 existing tests; TestNotesViewHookIsAHeadlineWithItsSentenceBelow; TestNotesViewFoldsPlainChangesUnderOthers
+- [ ] R2 core/release/notes_test.go TestHookLinesAreShortAndOnePerFile over embedded notesFS (<=80 runes, <=1 per file); prove it fails on a long hook
+- [ ] R2 docs: release.go package doc + Hook doc; CLAUDE.md + AGENTS.md hook bullet (optional headline, max one, <=80, popup folds plain); CZWKNY.md rewritten with a headline hook
+- [ ] R2 gofmt/vet/tests; tick DoD 5-7, re-proof DoD 1; move to critique; one commit code+ticket
 
 ## Progress
 - **2026-11-03 17:20 · berkc** — teamlead 03.11.2026: baut auf MXMDFH (Popup, Praefix '- + ') auf, das noch nicht auf master ist. Branch feat/CZWKNY-release-hook startet von origin/feat/MXMDFH-release-notes-popup; der PR geht nach MXMDFH.
