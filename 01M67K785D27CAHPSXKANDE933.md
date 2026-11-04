@@ -1,7 +1,7 @@
 ---
 id: 01M67K785D27CAHPSXKANDE933
 title: Mit z (leere Lanes schmal) springen links/rechts zwischen Tickets ueber leere Lanes hinweg
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: berkc
@@ -14,13 +14,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-11-04T00:43:48Z
+updated-at: 2026-11-04T00:44:04Z
 updated-by: berkc
 claimed-by: berk-ca-516678
 claimed-at: 2026-11-04T00:38:18Z
-outcome-what: stepLane in model.go skips lanes with no tickets when z is on; release note rewritten as an instruction
-outcome-why: "with z on, ←/→ from backlog to done jumped through every empty lane in between"
-outcome-resolves: "DoD 1 and 2 ticked with proof (tests in lanewindow_test.go:182-301, release note line)"
+outcome-what: "z is on by default: New() starts thinEmpty true, so empty lanes draw thin and ←/→ skip them from the first frame; one z turns it off for the session; ? help line says on by default; tests adjusted (z pressed where a test wants full-width lanes, dropped where it wanted z on) plus TestThinEmptyLanesAreOnByDefault; release note line 2 is a '- !' instruction"
+outcome-why: "maintainer asked for z on by default; z is session-only and not persisted (model.go:292), so no restart behaviour changes"
+outcome-resolves: "DoD 3 ticked with proof (model.go:353, TestThinEmptyLanesAreOnByDefault); DoD 1 proof re-pointed to model.go:1776 and lanewindow_test.go:201-329; tmux check left to the parent"
 review-summary: "Board ←/→ now call a new stepLane (internal/tui/model.go). With z off it is the old moveLane. With z on it walks the lanes cyclically in the arrow's direction and lands on the first one holding tickets, skipping the thin (empty) lanes; if only the cursor's lane has tickets it stays put; if every lane is empty (filter matches nothing) it steps one lane as before. Thin-ness and skipping use the same test (len(tickets)==0), so what is drawn thin is exactly what is skipped. Lane focus (h/l there) keeps moveLane. The z help line and release note core/release/notes/NDE933.md say the arrows skip empty lanes. Six tests in internal/tui/lanewindow_test.go cover skip, z off, left wrap to done, only-lane, all-empty, empty start lane; the old test that asserted stepping onto thin lanes was replaced."
 review-gaps: |-
   note: skipping wraps round the board end (backlog ← lands on done), same wrap moveLane already had, but a user might expect a stop at the edge
