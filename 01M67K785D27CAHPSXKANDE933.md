@@ -14,7 +14,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-11-04T00:48:53Z
+updated-at: 2026-11-04T00:48:55Z
 updated-by: berkc
 claimed-by: berk-ca-516678
 claimed-at: 2026-11-04T00:38:18Z
@@ -22,9 +22,7 @@ outcome-what: "z is on by default: New() starts thinEmpty true, so empty lanes d
 outcome-why: "maintainer asked for z on by default (04.11.2026); z is session-only and not persisted (model.go:292), so no restart behaviour changes"
 outcome-resolves: "critique pass 2: stale release-note line 1 ('Press z to draw empty lanes thin') contradicted the default and is deleted; DoD 2 proof re-checked at NDE933.md:1; tmux check still left to the parent"
 review-summary: "none"
-review-gaps: |-
-  note: skipping wraps round the board end (backlog ← lands on done), same wrap moveLane already had, but a user might expect a stop at the edge
-  note: lane focus mode still steps onto empty lanes with z on - deliberate per the doc comment, not covered by a test
+review-gaps: "removed TestWideBoardShowsAllTenLanesWidened (lanewindow_test.go): with z on by default it pressed z once and checked all ten lane names, the same setup and a subset of TestZWidensEverything; DoD proof line refs updated. Left: stepLane's wrap loop is not a duplicate of moveLane (steps i lanes, not one); TestZWidensEverything's thin check overlaps TestThinEmptyLanesAreOnByDefault's second half by one assertion, kept. No dead code or fluff in model.go/view.go."
 test-verdict: "pass: go build ./... RC=0, go vet ./internal/tui RC=0, go test ./internal/tui -count=1 ok (RC=0); DoD 1-2 verified in tree, 7 named tests PASS -v; release note is one '- ' line; behaviour exercised through Model.key(KeyRight/KeyLeft) in tests, not a live TUI run"
 review-verdict: "pass - diff meets both DoD items (skip with z, unchanged without z, tests, release note); go vet and go test ./internal/tui/ pass; no defects found"
 review-round: 1
