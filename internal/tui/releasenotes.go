@@ -74,12 +74,14 @@ func (v *notesView) key(k string) (done bool) {
 
 // lines lays out the version on screen for width: its hooks first, without a
 // header, then its features under a "Features" header, then the rest under
-// "Others". Of the rest, the changes marked "!" always show; the plain ones
-// fold into one "n more · o shows them" line until "o" unfolds them. The
-// "Others" header appears only below a hook or a feature, so a version without
-// either reads as a plain list. A blank line follows each header and each
-// change, so every change reads on its own. Each line is styled on its own, so
-// a wrapped change never leaves a padded block behind a prefix.
+// "Others". Of the rest, the changes marked "!" always show. The plain ones
+// fold into one "n more · o shows them" line until "o" unfolds them, but only
+// below a hook or a feature; a version without either shows them all, since
+// folding would leave nothing to read. The "Others" header appears only below a
+// hook or a feature, so a version without either reads as a plain list. A blank
+// line follows each header and each change, so every change reads on its own.
+// Each line is styled on its own, so a wrapped change never leaves a padded
+// block behind a prefix.
 func (v *notesView) lines(width int) []string {
 	if v.at >= len(v.entries) {
 		return nil
@@ -108,12 +110,13 @@ func (v *notesView) lines(width int) []string {
 		out = append(out, features...)
 	}
 	if len(important) > 0 || folded > 0 {
-		if len(out) > 0 {
+		headed := len(out) > 0
+		if headed {
 			out = append(out, styMeta.Render("Others"), "")
 		}
 		out = append(out, important...)
 		switch {
-		case v.others:
+		case v.others || !headed:
 			out = append(out, plain...)
 		case folded > 0:
 			out = append(out, styMeta.Render(truncate(fmt.Sprintf("%d more · o shows them", folded), width)), "")

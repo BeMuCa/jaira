@@ -18,16 +18,16 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-04T00:43:22Z
+updated-at: 2026-11-04T00:46:50Z
 updated-by: berkc
 claimed-by: berk-ca-512097
 claimed-at: 2026-11-04T00:37:05Z
 outcome-what: "A release note hook is an optional headline 'Headline: sentence'; the popup shows hooks, features and ! lines and folds plain changes under Others (key o); jaira update text output unchanged"
 outcome-why: "Release notes read as a wall of text (0.5.7: 32 lines, about 214 characters each on average); headlines first and folded plain lines make a version scannable"
 outcome-resolves: "Maintainer decision 04.11.2026: headline format, at most one hook per note file, 80-character cap enforced by TestHookLinesAreShortAndOnePerFile, plain changes folded by default"
-review-summary: "CLAUDE.md:274 + AGENTS.md:227 make a hook mandatory in every note file; with one file per ticket (0.5.7 = 9 files) that puts N hooks above Features and brings back the drowning the ticket is for. Make it optional ('may open with one') unless the person wants it mandatory. Open question on the ticket. No other finding."
+review-summary: "internal/tui/releasenotes.go lines(): the plain-change fold applies to every version, including one with no hook and no feature. Every released version (0.5.3-0.5.8 hold 0 hooks, 0 features) therefore opens as an empty page reading \"N more · o shows them\" (0.5.7: one ! line plus \"31 more\"), both in the upgrade popup and in the launcher w view of all history. That contradicts the 00:39 plan note (Others header only below a hook or feature keeps a plain-only version a plain list). Fold only when the page has a hook or a feature, i.e. the same len(out)>0 condition that already gates the Others header (folded only matters when an Others header is drawn); add a test that a plain-only version shows its lines unfolded."
 question: ""
-round: 2
+round: 3
 ---
 
 # Release-Notes beginnen mit einer Hook-Zeile, und wer mehrere Versionen ueberspringt, sieht die Notes aller dazwischen
@@ -45,7 +45,7 @@ round: 2
 - [x] Hook-Format '- > <Headline>: <ein kurzer Satz>'; das Popup zeigt die Headline fett, den Satz gedimmt darunter, eine Leerzeile zwischen Hooks; Test
   proof: internal/tui/releasenotes.go hookLines; TestNotesViewHookIsAHeadlineWithItsSentenceBelow
 - [x] Popup: Hooks, Features und '!'-Zeilen immer sichtbar, einfache Zeilen unter 'Others' standardmaessig eingeklappt, Taste o klappt sie aus; jaira update zeigt weiter alles; Test
-  proof: internal/tui/releasenotes.go lines/key 'o'; TestNotesViewFoldsPlainChangesUnderOthers; jaira update unchanged: TestUpdateNotesShowHooks
+  proof: internal/tui/releasenotes.go lines() folds below a hook/feature, key 'o'; TestNotesViewFoldsPlainChangesUnderOthers; TestNotesViewDoesNotFoldAVersionWithoutHeadlines; jaira update unchanged: TestUpdateNotesShowHooks
 - [x] Ein Test schlaegt fehl bei einer Hook-Zeile ueber 80 Zeichen oder mehr als einem Hook pro Note-Datei
   proof: core/release/notes_test.go TestHookLinesAreShortAndOnePerFile
 
@@ -82,3 +82,6 @@ round: 2
 - **2026-11-04 00:37 · berkc** — Maintainer decision 04.11.2026 (via coordinator): hook = HEADLINE. (1) format '- > <Headline>: <one short sentence>'; popup shows headline bold, sentence dimmed on the line below, blank line between hooks. (2) optional, at most one hook per ticket note file, only for changes a user really notices (new command, skill, view); docs say so. (3) popup: hooks and '!' lines always visible; plain lines under 'Others' collapsed by default, one key expands; jaira update terminal output keeps showing everything. (4) a test fails when a hook line is longer than ~80 chars.
 - **2026-11-04 00:39 · berkc** — round 2 plan choices: plain = no marker; '!' non-feature lines stay visible under Others; 'Others' header only below a hook or feature (keeps a plain-only version a plain list); fold state is one bool on the view that survives paging, 'o' toggles; length cap counts the whole line incl. '- > ' in runes; test also enforces at most one hook per file since the maintainer asked for that; jaira update text output untouched.
 - **2026-11-04 00:42 · berkc** — round 2 step D proof: TestHookLinesAreShortAndOnePerFile FAILED on the round-1 note (146 chars), as planned it bites on real content. Temporarily lengthened the hook line of notes/CZWKNY.md to 119 chars: test FAILED (exit 1); restored from a backup, byte-identical, test passes (exit 0). Claim: 'jaira claim CZWKNY' refused, claimed by berk-ca-512097; did not pass --steal, all writes went through under berkc.
+- **2026-11-04 00:44 · berkc** — critique (pass 2, judged only commit 528a535a, which answers pass 1 via the maintainer decision of 04.11.2026; that decision is settled and not reopened): round 2 covers the decision's points 1-4 (headline+dimmed sentence, optional with one hook per file in docs and test, ! and hooks visible, o toggles, jaira update text untouched, 80-rune cap). One finding: internal/tui/releasenotes.go lines(): the plain-change fold applies to every version, including one with no hook and no feature. Every released version (0.5.3-0.5.8 hold 0 hooks, 0 features) therefore opens as an empty page reading "N more · o shows them" (0.5.7: one ! line plus "31 more"), both in the upgrade popup and in the launcher w view of all history. That contradicts the 00:39 plan note (Others header only below a hook or feature keeps a plain-only version a plain list). Fold only when the page has a hook or a feature, i.e. the same len(out)>0 condition that already gates the Others header (folded only matters when an Others header is drawn); add a test that a plain-only version shows its lines unfolded. Rest of 528a535a: no finding. The worktree_diff is unrelated untracked .jaira/milestones files, not judged.
+- **2026-11-04 00:45 · berkc** — worker decision on critique pass 2: fold plain changes only on a page that has a hook or a feature above them (same condition as the 'Others' header). A page with neither shows its plain changes unfolded, because folding it would leave nothing but 'N more'. Reading of the maintainer's 'collapsed by default'; the maintainer can overrule at signoff.
+- **2026-11-04 00:46 · berkc** — in-progress round 3 (critique finding, plain-only version folded): lines() now folds plain changes only when a hook or feature heads the page (headed := len(out) > 0; case v.others || !headed). Doc comment reworded. New TestNotesViewDoesNotFoldAVersionWithoutHeadlines. Mutation check: reverting '|| !headed' made it FAIL (shows '2 more · o shows them'); restored byte-identical, PASS. gofmt/vet/tui targeted/core/release all exit 0.

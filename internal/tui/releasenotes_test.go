@@ -406,3 +406,18 @@ func TestNotesViewFoldsPlainChangesUnderOthers(t *testing.T) {
 		t.Errorf("a second o did not fold them again:\n%s", out)
 	}
 }
+
+// A version without a hook or a feature has nothing to show above its plain
+// changes, so it does not fold them.
+func TestNotesViewDoesNotFoldAVersionWithoutHeadlines(t *testing.T) {
+	v := newNotesView("Release notes", []release.Entry{{Version: "0.5.8", Changes: []string{"! act now", "plain one", "plain two"}}})
+	out := stripANSI(v.render(60, 30))
+	for _, want := range []string{"! act now", "- plain one", "- plain two"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "more · o shows them") || strings.Contains(out, "Others") {
+		t.Errorf("a version without hooks or features was folded:\n%s", out)
+	}
+}
