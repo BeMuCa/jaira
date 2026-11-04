@@ -1,7 +1,7 @@
 ---
 id: 01M59MQBJHB2NW3F3WFXAW9KVT
 title: "Human Review zeigt zuerst, wie der Mensch die Aenderung selbst testet"
-status: critique
+status: in-progress
 ready: true
 creator: berkc
 assignee: berkc
@@ -20,7 +20,7 @@ related: []
 commits:
   - 26d4a26af9b1c7e56b09175150b0af34663ceab9
 created-at: 2026-10-19T08:33:51Z
-updated-at: 2026-11-04T21:39:35Z
+updated-at: 2026-11-04T21:39:38Z
 updated-by: berkc
 claimed-by: berk-ca-1280084
 claimed-at: 2026-11-04T21:24:26Z
@@ -31,6 +31,7 @@ review-summary: |-
   internal/tui/view.go:1347-1354 re-implements the declared closure (value -> sourced row, empty+owed -> owedRow) that the same function defines at ~1415; hoist declared (with owed/srcs) above the identity rows and call declared(declaredField{"try it", ticket.FieldReviewCheck, oneStepPerLine(t.ReviewCheck)}) instead of a second copy
   internal/tui/owed_test.go:336 strings.Index(out,"try it") > strings.Index(out,"secrets-status") passes when the try it row is missing (-1); add an i < 0 failure as reviewcheck_test.go does, so the ordering assertion cannot pass vacuously
   internal/tui/signoff.go:19 the reflowed doc comment left one 104-char line; rewrap the paragraph to the file's ~80-column width
+round: 2
 ---
 
 # Human Review zeigt zuerst, wie der Mensch die Aenderung selbst testet
