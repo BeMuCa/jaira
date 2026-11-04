@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:13Z
-updated-at: 2026-11-04T21:37:13Z
+updated-at: 2026-11-04T21:37:15Z
 updated-by: berkc
 claimed-by: berk-ca-1279800
 claimed-at: 2026-11-04T21:24:25Z
@@ -52,7 +52,7 @@ claimed-at: 2026-11-04T21:24:25Z
 - [x] Phase C (Branch): existiert refs/heads/<branch> nicht -> Records des Tickets loeschen (nicht bei --dry-run), continue. Ist er in root oder main ausgecheckt -> stehen lassen, Records bleiben, continue (stumm wie heute). Gemergt, wenn tip Vorfahre von refs/remotes/origin/HEAD ist (falls der Ref existiert; Milestone-PR) ODER der Forge-PR gemergt ist und tip == head oder Vorfahre von head (bestehende merged_head-Logik, Forge-Fehlermeldungen wie heute). Kein Merge -> 'waiting <T>: <branch> has no merged pull request'. Tip hinter/neben head -> 'kept <T>: <branch> is not at the merged head ...'. Sonst branch -D, 'deleted branch <branch>' (--dry-run: 'would delete branch'), dann Records des Tickets loeschen
 - [x] usage()-Text oben in reap.sh an die neue Reihenfolge anpassen (Worktree+Tabs bei done+sauber+gepusht, Branch nach Merge inkl. origin/HEAD), Kopfkommentar Zeile 2-3 ebenso
 - [x] Tests in core/role/reap_test.go: Helfer pushed(t) = git update-ref refs/remotes/origin/feat/ab12cd <tip>. Bestehende Tests anpassen (wo Worktree weg soll: pushed setzen; 'given back' erwartet jetzt waiting...not done; 'committed after the merge' als Branch-Phasen-Test). Neue Tests: (a) done+sauber+gepusht, kein PR -> Worktree weg, Tabs zu, Branch da, Ausgabe 'waiting ... no merged pull request', ein Record mit branch= bleibt; zweiter Lauf nach mergedAt -> Branch weg, keine Records, keine Tabs doppelt geschlossen. (b) Keep-Tabelle: nicht gepusht, origin auf anderem Stand, nicht done, dirty, detached, herdr weg - je Grundzeile, alles bleibt. (c) nur eigene Ticket-Datei geaendert (.jaira/tickets/01X...AB12CD-x.md committed, dann geaendert) -> Worktree wird entfernt. (d) Milestone: tip Vorfahre von origin/HEAD (update-ref refs/remotes/origin/master <tip>; symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/master), kein PR -> Branch geloescht. (e) --dry-run zeigt 'would remove' und 'would delete branch' und aendert nichts
-- [ ] core/role/builtin/jaira-teamlead/SKILL.md Zeilen ~36-42 und ~253-262 umschreiben: Tabs und Worktree gehen bei done + sauber + gepusht, lokaler Branch erst nach Merge (eigener PR oder im Default-Branch von origin); Gruende werden als kept genannt
+- [x] core/role/builtin/jaira-teamlead/SKILL.md Zeilen ~36-42 und ~253-262 umschreiben: Tabs und Worktree gehen bei done + sauber + gepusht, lokaler Branch erst nach Merge (eigener PR oder im Default-Branch von origin); Gruende werden als kept genannt
 - [ ] core/shipped: go test ./core/role ./core/shipped -count=1; der Shipped-Test verlangt neue Hashes von reap.sh und jaira-teamlead/SKILL.md - Zeilen an core/shipped/shipped.sha256 anhaengen wie die Fehlermeldung sagt (alte bleiben)
 - [ ] core/release/notes/80MGXT.md mit einer Zeile '- ...' (eine Zeile, nicht umbrechen); commit feat(80MGXT): ... mit Code + Ticket-Datei
 
