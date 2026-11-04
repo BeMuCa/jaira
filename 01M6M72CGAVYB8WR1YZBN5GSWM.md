@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T21:22:33Z
-updated-at: 2026-11-04T21:40:00Z
+updated-at: 2026-11-04T21:40:03Z
 updated-by: berkc
 claimed-by: berk-ca-1280093
 claimed-at: 2026-11-04T21:24:26Z
@@ -31,6 +31,8 @@ review-gaps: |-
   note: the release note says what changed ('is easy to read') rather than an instruction, which CLAUDE.md asks for; nothing for a user to do here, so harmless
   note: logbook card fills (logbook.go) are not in the test; they are far from 248/240 by the critique note
 test-verdict: "pass: go test ./internal/tui -count=1 RC=0; DoD 1-2 verified in tree (handleStyle view.go:698, 7 call sites, core/release/notes/N5GSWM.md one '- ' line); function exercised by TestHandleToneReadsOnEveryCardFill only, no scratch board run"
+review-verdict: "Meets both DoD items: the handle is lighter and adapts to the background, readable on the normal and the selected card (levels checked against view.go constants), there is a test in internal/tui, and the release note is one valid line. go vet is clean and go test ./internal/tui passes (40.7s). No defects found; the outcome matches the diff. Commit list complete: 2 of 2 commits name N5GSWM."
+review-round: 1
 ---
 
 # Die Ticket-ID auf der Karte ist gut lesbar statt fast unsichtbar grau
