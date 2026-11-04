@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:13Z
-updated-at: 2026-11-04T21:57:14Z
+updated-at: 2026-11-04T21:57:16Z
 updated-by: berkc
 claimed-by: berk-ca-1799653
 claimed-at: 2026-11-04T21:54:41Z
@@ -37,6 +37,7 @@ review-gaps: |-
 test-verdict: "pass: go test ./core/role ./core/shipped RC=0 (touched packages only, full suite not run by scope); DoD 1-5 verified in the tree; TestReap* verbose 10 of 10 PASS incl. 6 kept subtests; bash -n RC=0; reap.sh --help RC=0; --dry-run on the worktree silent RC=0; removal exercised by the test rig (real git, bare origin, fake herdr)"
 review-verdict: "the diff meets all five DoD items; core/role and core/shipped tests pass (re-run here, ok); no defects found in reap.sh's new ordering or safety checks; only notes, the spawn.sh re-spawn gap is tracked in R80Z4G"
 review-round: 2
+review-check: "1. cd /home/berkc/code/X_General/jaira-80MGXT  2. export PATH=$HOME/.local/go/bin:$PATH  3. go test ./core/role -run Reap -count=1 -v 2>&1 | grep -- '--- '  -> every line PASS, including TestReapRemovesAPushedWorktreeBeforeTheMerge (worktree gone, branch kept, 'waiting ... no merged pull request'), TestReapKeepsWhatIsNotFinished (not pushed / origin elsewhere / not done / uncommitted / detached / herdr down, each with a reason line), TestReapDeletesABranchInOriginsDefaultBranch and TestReapClosesAMergedTicket (--dry-run prints 'would remove' and 'would delete branch', nothing changes)  4. go test ./core/shipped -count=1 -> ok  5. read core/role/builtin/jaira-teamlead/SKILL.md lines 37-46 and 257-265 -> both say the worktree goes at done once pushed and the branch only after merge  6. a live check needs herdr and a real spawned ticket: after a ticket reaches done and is pushed, run .claude/skills/jaira-dispatcher/scripts/reap.sh --dry-run in the repo -> 'would remove <worktree>' and 'waiting <T>: <branch> has no merged pull request'"
 ---
 
 # Ein Ticket in done raeumt seinen Worktree weg, sobald der Branch gepusht und sauber ist
