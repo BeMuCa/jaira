@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T00:37:01Z
+updated-at: 2026-11-04T00:37:10Z
 updated-by: berkc
 claimed-by: berk-ca-511849
 claimed-at: 2026-11-04T00:37:01Z
@@ -28,7 +28,8 @@ claimed-at: 2026-11-04T00:37:01Z
 
 ## Definition of Done
 
-- [ ] Brainstorm hat mit dem Maintainer den Ort festgelegt (Screenshot aus Punkt 8)
+- [x] Brainstorm hat mit dem Maintainer den Ort festgelegt (Screenshot aus Punkt 8)
+  proof: note 2026-11-03 17:18 (maintainer, screenshot): right half of TUI ticket detail view
 - [ ] Ein Ticket in signoff zeigt seinen Diff je Datei; Test
 - [ ] Ein Knopf/Taste oeffnet die Datei an der Zeile in VS Code
 - [ ] Release-Notiz unter core/release/notes/
