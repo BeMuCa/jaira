@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T21:22:33Z
-updated-at: 2026-11-04T21:36:29Z
+updated-at: 2026-11-04T21:37:55Z
 updated-by: berkc
 claimed-by: berk-ca-1280093
 claimed-at: 2026-11-04T21:24:26Z
@@ -27,6 +27,7 @@ outcome-why: "On the dark selection fill (239) colFaint 240 is ten grey levels a
 outcome-resolves: "Ticket ID hard to read on dark terminals and on the selected card (berkc, 04.11.2026)."
 review-summary: none
 review-gaps: "handle_test.go: replaced the inline absolute-value branch with the package's existing abs() (links_test.go:543). Left: grey() in handle_test.go (takes a color.Color, paletteRGB takes an index - they differ); handleStyle() building a fresh lipgloss style per call (render path, cheap, mirrors selectionFill/laneShade); no dead code - styHandle removed with all 7 callers switched."
+test-verdict: "pass: go test ./internal/tui -count=1 RC=0; DoD 1-2 verified in tree (handleStyle view.go:698, 7 call sites, core/release/notes/N5GSWM.md one '- ' line); function exercised by TestHandleToneReadsOnEveryCardFill only, no scratch board run"
 ---
 
 # Die Ticket-ID auf der Karte ist gut lesbar statt fast unsichtbar grau
