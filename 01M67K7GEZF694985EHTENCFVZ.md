@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-04T21:37:52Z
+updated-at: 2026-11-04T21:37:54Z
 updated-by: berkc
 claimed-by: berk-ca-1279809
 claimed-at: 2026-11-04T21:24:25Z
@@ -37,7 +37,8 @@ claimed-at: 2026-11-04T21:24:25Z
   proof: core/gate/gate.go CheckAdvance receipt block, HasReceipt; core/gate/receipt_test.go TestReceiptRequiredRefusesWithoutAReceipt, TestReceiptForThisRoundPasses, TestEarlierRoundReceiptIsRefused, TestSendBackNeedsNoReceipt
 - [x] 'jaira show <id> --for-lane <lane> --json' carries skill, skill_path (found in the skills directories jaira roles installs into, else listed under missing), script, idempotency_key, receipt_required, receipt and a run line passing JAIRA_IDEMPOTENCY_KEY to the script; when the current key already has a receipt the run line is empty and script_done is true, so the script is not run again. The text output says the same. CLI test covers it.
   proof: internal/cli/flow.go laneRunFor + showForLane payload keys; internal/cli/receiptlane_test.go TestForLaneNamesTheSkillScriptAndKey, TestForLaneOfAPlainLaneHasNoSkillKeys, TestForLaneReportsAMissingSkillAndScript
-- [ ] 'jaira receipt <id> <result>' writes receipt-<lane> = '<key> <result>' for the ticket's current lane; it refuses with exit 3 when the lane does not require a receipt and when the current key already has one. CLI test covers it.
+- [x] 'jaira receipt <id> <result>' writes receipt-<lane> = '<key> <result>' for the ticket's current lane; it refuses with exit 3 when the lane does not require a receipt and when the current key already has one. CLI test covers it.
+  proof: internal/cli/resume.go newReceiptCmd (registered in root.go); receiptlane_test.go TestReceiptEndsTheRunForThisRound, TestReceiptRefusedWhereTheLaneDoesNotRequireOne
 - [ ] 'jaira lanes show <id>' and the generated lanes block in CLAUDE.md/AGENTS.md name a lane's skill, script and receipt requirement.
 - [ ] README 'Lanes are pipeline stages' documents skill, script and receipt: required in the lane file format, including that jaira never runs the script itself.
 - [ ] Release note core/release/notes/ENCFVZ.md, one line per client-facing change.
