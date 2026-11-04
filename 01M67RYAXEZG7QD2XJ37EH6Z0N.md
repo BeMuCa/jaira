@@ -1,7 +1,7 @@
 ---
 id: 01M67RYAXEZG7QD2XJ37EH6Z0N
 title: "In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code"
-status: review
+status: signoff
 ready: true
 creator: berkc
 assignee: berkc
@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T03:43:15Z
+updated-at: 2026-11-04T03:43:17Z
 updated-by: berkc
 claimed-by: berk-ca-828397
 claimed-at: 2026-11-04T03:43:05Z
