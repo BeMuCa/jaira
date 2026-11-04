@@ -14,7 +14,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-11-04T00:48:51Z
+updated-at: 2026-11-04T00:48:53Z
 updated-by: berkc
 claimed-by: berk-ca-516678
 claimed-at: 2026-11-04T00:38:18Z
@@ -41,7 +41,7 @@ round: 3
 - [x] Release-Note-Zeile
   proof: core/release/notes/NDE933.md:1
 - [x] z ist standardmaessig an: Board startet mit schmalen leeren Lanes, Pfeile ueberspringen sie, z schaltet aus; ist der z-Zustand heute gespeichert, bleibt ein ausgeschaltetes z ueber Neustarts aus; Test
-  proof: internal/tui/model.go:353 New() sets thinEmpty: true; model.go:292 field comment (session-only, not persisted, so every start is thin); test TestThinEmptyLanesAreOnByDefault (internal/tui/lanewindow_test.go:33)
+  proof: internal/tui/model.go:353 New() sets thinEmpty: true; model.go:292 field comment (session-only, not persisted, so every start is thin); test TestThinEmptyLanesAreOnByDefault (internal/tui/lanewindow_test.go:19)
 
 ## Options
 
