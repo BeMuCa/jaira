@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T11:15:50Z
-updated-at: 2026-11-04T00:34:55Z
+updated-at: 2026-11-04T00:35:00Z
 assignee: berkc
 updated-by: berkc
 question: |-
@@ -72,3 +72,4 @@ Follow-ups:
 Not verified: that the docked pane sits on the right; the plugin API only says "beside".
 - **2026-10-30 23:45 · berkc** — Antwort berkc 31.10.2026 zu Frage 1: (a) - das Pane zeigt einfach, was das Ticket selbst zeigt (vorhandene Felder), keine generierte Karte: 'saves the user switching to jaira, and saves us tokens since we just replicate.' Fragen 2-4 noch offen (Empfehlungen: 2b, 3a, 4b).
 - **2026-11-03 17:18 · berkc** — Antwort berkc 03.11.2026 zu 2-4: (2) b - der Review-Lane schreibt den offenen Punkt eines signoff-Tickets ins vorhandene question-Feld; (3) a - die ID in der Band-Zeile wird ein Knopf; (4) b - nach Accept/Deny springt das Pane zum naechsten wartenden Ticket. Alle vier Fragen beantwortet.
+- **2026-11-04 00:35 · berkc** — 04.11.2026: alle vier Fragen beantwortet; Maintainer will, dass der Agent es weiterschiebt. Zurueck nach todo (rueckwaerts braucht kein --force), damit planning es aufnimmt.
