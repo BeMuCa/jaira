@@ -1,7 +1,7 @@
 ---
 id: 01M67RYAXEZG7QD2XJ37EH6Z0N
 title: "In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code"
-status: signoff
+status: in-progress
 ready: true
 creator: berkc
 assignee: berkc
@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T21:29:49Z
+updated-at: 2026-11-04T21:29:51Z
 updated-by: berkc
 claimed-by: berk-ca-1345452
 claimed-at: 2026-11-04T21:29:36Z
@@ -26,7 +26,7 @@ outcome-what: "A ticket in signoff or human shows its diff against master beside
 outcome-why: "The person accepting work judged the outcome and review text but could not see the code; the diff had to be found by hand in git or on GitHub. A confirmation modal after o took the next keys, so the sign-off screen was lost behind it."
 outcome-resolves: "Sign-off and human screens show each changed file with its +/- lines beside the ticket, and o opens the file at that line without a modal. Critique round 1 closed: reload keeps scroll and focus (TestReloadKeepsDiffScrollAndFocus, TestOpeningAnotherTicketResetsDiffScroll); one branch-segment split shared by BranchFor and branchTicket; the split is built from splitPane like the follow-up split (TestPersonLaneShowsDiffBesideTheTicketWhenWide). Testing finding closed: a successful o no longer raises a modal (TestOKeyConfirmsInTheDiffTitleWithoutAModal). Tests: go test ./core/gitrepo ./internal/tui -count=1 exit 0; go test ./internal/cli -count=1 -run 'Create|Follows|Branch' exit 0 (earlier run, cli untouched by this fix)."
 review-summary: "New core/gitrepo/branchdiff.go finds the ticket's branch by a handle segment (BranchFor, now sharing BranchSegments with the CLI's branchTicket), picks master/main as base and diffs base...branch (merge-base, like a PR) without .jaira/. In the TUI, internal/tui/diffpane.go parses that patch into per-file rows numbered by new-side line; when a ticket sits in a person's lane (signoff via RequiresHumanExit, human via RequiresQuestion) and the terminal is >=140x20, renderSignOff/renderDetail put the ticket (78 cols) and the diff side by side in splitPane boxes. tab moves focus, arrows scroll the focused pane, ]/[ jump file headers, o runs 'code -g path:line' in the branch's worktree (else the repo root) and confirms in the diff title, no modal. Without a branch it falls back to the commits naming the handle. Scroll/focus survive the 2s reload; narrower terminals get the old single column."
-round: 3
+round: 4
 review-gaps: |-
   note: when no worktree has the branch checked out (maintainer on master), o opens the file in the root checkout - the master version, so the line number points into the pre-change file or a file that does not exist yet (diffpane.go ticketDiff dir=root)
   note: the fallback path (git show per commit) is not filtered for .jaira, so ticket files appear as diff files, and a file changed in several commits appears once per commit with line numbers of that commit, not of today
