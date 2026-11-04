@@ -20,7 +20,7 @@ related: []
 commits:
   - 26d4a26af9b1c7e56b09175150b0af34663ceab9
 created-at: 2026-10-19T08:33:51Z
-updated-at: 2026-11-04T21:47:49Z
+updated-at: 2026-11-04T21:47:51Z
 updated-by: berkc
 claimed-by: berk-ca-1280084
 claimed-at: 2026-11-04T21:24:26Z
@@ -33,6 +33,7 @@ review-summary: |-
   internal/tui/signoff.go:19 the reflowed doc comment left one 104-char line; rewrap the paragraph to the file's ~80-column width
 round: 2
 review-gaps: "none removed: diff is lean (declared closure moved up, not copied; oneStepPerLine has one helper, no existing step splitter in repo; no orphans, vet clean, go test ./internal/tui ok). Left: the 'RequiresQuestion || RequiresHumanExit' person-lane test now also in view.go:1357 is pre-existing in snake.go:67, gate.go:212, cli/web_source.go:256 — a Lane method would fold all four but touches core/lane, out of scope; signoff.go untouched (EH6Z0N); owed_test.go:340 error text 'seven questions no longer come first' is slightly stale, harmless"
+test-verdict: "pass: build RC=0 and go test ./internal/tui ./core/shipped ./core/lane RC=0; DoD 1-3 verified in the tree; behaviour exercised through renderSignOff/detailBody tests, not a live TUI"
 ---
 
 # Human Review zeigt zuerst, wie der Mensch die Aenderung selbst testet
