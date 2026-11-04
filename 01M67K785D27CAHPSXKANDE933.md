@@ -14,7 +14,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-11-04T00:49:04Z
+updated-at: 2026-11-04T00:51:40Z
 updated-by: berkc
 claimed-by: berk-ca-516678
 claimed-at: 2026-11-04T00:38:18Z
@@ -23,7 +23,7 @@ outcome-why: "maintainer asked for z on by default (04.11.2026); z is session-on
 outcome-resolves: "critique pass 2: stale release-note line 1 ('Press z to draw empty lanes thin') contradicted the default and is deleted; DoD 2 proof re-checked at NDE933.md:1; tmux check still left to the parent"
 review-summary: "none"
 review-gaps: "removed TestWideBoardShowsAllTenLanesWidened (lanewindow_test.go): with z on by default it pressed z once and checked all ten lane names, the same setup and a subset of TestZWidensEverything; DoD proof line refs updated. Left: stepLane's wrap loop is not a duplicate of moveLane (steps i lanes, not one); TestZWidensEverything's thin check overlaps TestThinEmptyLanesAreOnByDefault's second half by one assertion, kept. No dead code or fluff in model.go/view.go."
-test-verdict: "pass: go build ./... RC=0, go vet ./internal/tui RC=0, go test ./internal/tui -count=1 ok (RC=0); DoD 1-2 verified in tree, 7 named tests PASS -v; release note is one '- ' line; behaviour exercised through Model.key(KeyRight/KeyLeft) in tests, not a live TUI run"
+test-verdict: "pass: go build ./... RC=0, go test ./... RC=0 (3 known hangers skipped per agent rules), DoD 1-3 proofs checked in the tree, tmux on scratch board: thin on first start, → backlog->done, z widens and → steps onto empty lane, restart thin again"
 review-verdict: "pass - diff meets both DoD items (skip with z, unchanged without z, tests, release note); go vet and go test ./internal/tui/ pass; no defects found"
 review-round: 1
 review-check: "1. cd /home/berkc/code/X_General/jaira-exp-b && go run ./cmd/jaira  2. on the board, put the cursor on a ticket in a lane with empty lanes to its right  3. press → : cursor moves to the adjacent (empty) lane, as before  4. press ← to go back, then press z : empty lanes are drawn thin  5. press → : cursor jumps straight to the next lane that has tickets, skipping the thin ones  6. press z again and → : it steps one lane at a time again. Automated: go test ./internal/tui/ -run 'Arrows|LeftWithToggle' -count=1 passes"
