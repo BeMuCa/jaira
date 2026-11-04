@@ -18,11 +18,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:54Z
-updated-at: 2026-11-04T21:41:33Z
+updated-at: 2026-11-04T21:41:35Z
 updated-by: berkc
 claimed-by: berk-ca-1311236
 claimed-at: 2026-11-04T21:27:24Z
-question: "PR-Darstellung: 1) eigene PRs-Spalte rechts (empfohlen), 2) Buendel in den Lanes, 3) nur Flag + P-Picker? Mockups im Note"
+question: ""
 ---
 
 # Eine PR-Lane zeigt gebuendelt, welche Tickets in welchem PR liegen, mit Name, Branch und Pipeline-Farbe
