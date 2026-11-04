@@ -17,7 +17,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-04T00:35:52Z
+updated-at: 2026-11-04T21:24:16Z
+updated-by: berkc
 ---
 
 # Wer ein Ticket, einen Milestone oder ein Epic zugewiesen bekommt, sieht das im Board als Nachricht
