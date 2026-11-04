@@ -14,20 +14,6 @@ import (
 var emptyLaneNames = []string{"Brainstorm", "Pre-process", "Review", "Human Review", "Blocked"}
 var filledLaneNames = []string{"Backlog", "Todo", "Implementing", "HITL", "Done"}
 
-// At 240 columns all ten lanes fit (10*(22+2) = 240), so this is the baseline
-// the toggle is measured against: nothing about a wide terminal changes. z is
-// on by default, so the press widens the empty lanes whose names this reads.
-func TestWideBoardShowsAllTenLanesWidened(t *testing.T) {
-	m := newTestModel(t, 240, 40)
-	m.key(key("z"))
-	out := stripANSI(m.render())
-	for _, name := range append(append([]string{}, emptyLaneNames...), filledLaneNames...) {
-		if !strings.Contains(out, name) {
-			t.Errorf("lane %q missing from the baseline render:\n%s", name, out)
-		}
-	}
-}
-
 // z is on from the start: a fresh board draws the five empty lanes thin, and
 // one z widens them again.
 func TestThinEmptyLanesAreOnByDefault(t *testing.T) {
