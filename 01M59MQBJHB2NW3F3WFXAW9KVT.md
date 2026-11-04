@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T08:33:51Z
-updated-at: 2026-11-04T21:36:51Z
+updated-at: 2026-11-04T21:37:04Z
 updated-by: berkc
 claimed-by: berk-ca-1280084
 claimed-at: 2026-11-04T21:24:26Z
@@ -29,7 +29,8 @@ claimed-at: 2026-11-04T21:24:26Z
 
 ## Definition of Done
 
-- [ ] Der Sign-off-Screen und das Detail einer Karte in Human Review zeigen review-check als ersten Block, als nummerierte Schritte; Test in internal/tui
+- [x] Der Sign-off-Screen und das Detail einer Karte in Human Review zeigen review-check als ersten Block, als nummerierte Schritte; Test in internal/tui
+  proof: internal/tui/signoff.go:71 (try it row first); view.go:1351 (detail, human lanes); tests reviewcheck_test.go TestSignOffScreenShowsTheCheck, TestDetailPaneOpensWithTheCheckOnAHumanLane, TestDetailPaneKeepsTheCheckInReviewOffAHumanLane
 - [ ] Der Prompt der review-Lane verlangt fuer check: hoechstens ~6 Schritte, beginnend mit einem kopierbaren Befehl, der den Branch baut und startet, und je Schritt was man sehen soll
 - [ ] Release-Note-Zeile in core/release/notes/<ID>.md
 
