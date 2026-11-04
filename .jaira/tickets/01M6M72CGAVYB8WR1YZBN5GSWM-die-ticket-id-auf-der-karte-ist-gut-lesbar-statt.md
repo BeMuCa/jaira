@@ -1,7 +1,7 @@
 ---
 id: 01M6M72CGAVYB8WR1YZBN5GSWM
 title: Die Ticket-ID auf der Karte ist gut lesbar statt fast unsichtbar grau
-status: critique
+status: testing
 ready: true
 creator: berkc
 assignee: berkc
@@ -18,13 +18,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T21:22:33Z
-updated-at: 2026-11-04T21:31:53Z
+updated-at: 2026-11-04T21:36:29Z
 updated-by: berkc
 claimed-by: berk-ca-1280093
 claimed-at: 2026-11-04T21:24:26Z
 outcome-what: "The ticket handle on board cards and ticket headers is toned by terminal background: 248 on dark, 240 on light (was colFaint 240 everywhere)."
 outcome-why: "On the dark selection fill (239) colFaint 240 is ten grey levels away, so the handle vanished on the selected card. The lane counter keeps colFaint."
 outcome-resolves: "Ticket ID hard to read on dark terminals and on the selected card (berkc, 04.11.2026)."
+review-summary: none
+review-gaps: "handle_test.go: replaced the inline absolute-value branch with the package's existing abs() (links_test.go:543). Left: grey() in handle_test.go (takes a color.Color, paletteRGB takes an index - they differ); handleStyle() building a fresh lipgloss style per call (render path, cheap, mirrors selectionFill/laneShade); no dead code - styHandle removed with all 7 callers switched."
 ---
 
 # Die Ticket-ID auf der Karte ist gut lesbar statt fast unsichtbar grau
@@ -54,3 +56,5 @@ outcome-resolves: "Ticket ID hard to read on dark terminals and on the selected 
 ## Progress
 - **2026-11-04 21:26 · berkc** — plan: no single grey reads on both selection fills (dark 239=78, light 250=188 grey). 240 on dark selection is 10 levels apart = invisible, which is the bug. Fixed 245 gives only ~50 on either; adaptive gives 90 (dark 248 on 239) and keeps light at 240 (100 on 250), which already read fine. 248 not 250 so the ID stays calmer than the title and only a step above the name (244). Every styHandle use is a ticket handle beside a title, so all follow; lane counter keeps colFaint via styLaneCount.
 - **2026-11-04 21:31 · berkc** — Claim: jaira claim said berk-ca-1280093 holds it (3m); did not --steal, worked in the worktree. Mutation check: dark handle back at 240 fails TestHandleToneReadsOnEveryCardFill (88 is 40 from shade B 48; 240 on selection 239 is 10 off, so the selection fails too). Lane-counter stays colFaint; only handle sites switched. Test helper grey() and the RGBA reading live in handle_test.go; abs() already exists in links_test.go, so none added.
+- **2026-11-04 21:34 · berkc** — critique pass 1: no findings. handleStyle() (view.go) mirrors selectionFill (palette.go:43) and laneShade (view.go) - a darkBG switch over two consts - so no new pattern; a package var mutated on BackgroundColorMsg (model.go:1101) would be the only alternative and is worse. All 7 sites show a ticket handle beside a title; lane counter correctly keeps colFaint via styLaneCount. Checked logbook card fills too (logbook.go:27-30: 23/24 dark, 195/153 light), not covered by the test but far from 248/240, no regression. Let stand: test comment says every fill is grey, true for the three fills it checks.
+- **2026-11-04 21:36 · berkc** — optimize: only change was abs() reuse in handle_test.go. Considered precomputing two package-level handle styles instead of NewStyle per call - not worth it, per-card cost is negligible and laneShade/selectionFill set the per-call pattern.

@@ -24,11 +24,7 @@ func TestHandleToneReadsOnEveryCardFill(t *testing.T) {
 
 		handle := grey(m.handleStyle().GetForeground())
 		for what, f := range fills {
-			d := handle - grey(f)
-			if d < 0 {
-				d = -d
-			}
-			if d < 60 {
+			if d := abs(handle - grey(f)); d < 60 {
 				t.Errorf("%s: handle level %d is only %d from %s (level %d), want at least 60",
 					name, handle, d, what, grey(f))
 			}
