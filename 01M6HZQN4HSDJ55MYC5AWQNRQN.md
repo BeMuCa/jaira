@@ -17,11 +17,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-04T21:40:50Z
+updated-at: 2026-11-04T21:40:52Z
 updated-by: berkc
 claimed-by: berk-ca-1280500
 claimed-at: 2026-11-04T21:24:22Z
-question: "Welche Form: 1 lokaler Posteingang+Banner+Kartenmarker (empfohlen), 2 nur Kartenmarker, 3 Posteingang als Git-Ref pro Person? Und Milestone/Epic: B1 gebuendelte Ticketzuweisung (empfohlen) oder B2 neues owner-Feld?"
+question: ""
 ---
 
 # Wer ein Ticket, einen Milestone oder ein Epic zugewiesen bekommt, sieht das im Board als Nachricht
