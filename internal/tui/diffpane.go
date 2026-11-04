@@ -193,6 +193,7 @@ func (m *Model) loadDiff(t *ticket.Ticket) {
 	if m.diffScrollFor != t.ID {
 		m.diffScroll = 0
 		m.diffFocus = false
+		m.diffOpened = ""
 		m.diffScrollFor = t.ID
 	}
 }
@@ -256,7 +257,7 @@ func (m *Model) openDiffRow() {
 		m.notify(err.Error(), true)
 		return
 	}
-	m.notify("opened "+r.path+":"+strconv.Itoa(r.line)+" in VS Code", false)
+	m.diffOpened = "opened " + r.path + ":" + strconv.Itoa(r.line)
 }
 
 // renderDiffPane renders the diff into exactly width x height: a title line,
@@ -268,7 +269,12 @@ func (m *Model) renderDiffPane(width, height int) string {
 	if m.diffFocus {
 		titleSty = styReview
 	}
-	lines := []string{titleSty.Render(truncate("Diff  "+m.diffNote, width))}
+	title := "Diff  " + m.diffNote
+	if m.diffOpened != "" {
+		// Before the note: a narrow pane cuts the end of the title, not the reply.
+		title = "Diff  " + m.diffOpened + "  " + m.diffNote
+	}
+	lines := []string{titleSty.Render(truncate(title, width))}
 	body := max(1, height-1)
 	// The scroll may go to the last row, not the last full page: "]" must be
 	// able to put a short file's header at the top even when the whole diff

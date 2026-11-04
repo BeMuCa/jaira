@@ -161,7 +161,8 @@ type Model struct {
 	// where the patch came from and diffDir the checkout 'o' opens files in.
 	// diffScroll is the top row of the diff pane and diffFocus gives it the keys.
 	// diffScrollFor is the ticket those two belong to: a reload clears diffFor
-	// but keeps the scroll, and only a different ticket resets it.
+	// but keeps the scroll, and only a different ticket resets it. diffOpened is
+	// the 'o' confirmation in the diff title; like copied it clears on the next key.
 	diffFor       string
 	diffRows      []diffRow
 	diffNote      string
@@ -169,6 +170,7 @@ type Model struct {
 	diffScroll    int
 	diffFocus     bool
 	diffScrollFor string
+	diffOpened    string
 
 	// detail holds the fully loaded ticket, since the board only reads
 	// frontmatter for speed.
@@ -1566,6 +1568,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 
 	case modeDetail:
 		m.copied = false
+		m.diffOpened = ""
 		switch s {
 		case "esc", "q", "enter":
 			// One level back: out of the split first, onto the ticket the follow-up

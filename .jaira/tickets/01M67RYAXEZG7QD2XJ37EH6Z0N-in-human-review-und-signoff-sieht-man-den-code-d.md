@@ -1,7 +1,7 @@
 ---
 id: 01M67RYAXEZG7QD2XJ37EH6Z0N
 title: "In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code"
-status: testing
+status: critique
 ready: true
 creator: berkc
 assignee: berkc
@@ -18,16 +18,17 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T00:59:24Z
+updated-at: 2026-11-04T01:02:54Z
 updated-by: berkc
 claimed-by: berk-ca-511849
 claimed-at: 2026-11-04T00:37:01Z
-outcome-what: "A ticket in signoff or human shows its diff against master beside it in the TUI at 140+ columns: the ticket and the diff each sit in a box, the focused one with the accent border. tab switches focus, ]/[ jump between files, o opens the file at its line in VS Code; below 140 columns the screen is unchanged. Scroll and focus survive the 2s board reload and reset only when another ticket is opened."
-outcome-why: The person accepting work judged the outcome and review text but could not see the code; the diff had to be found by hand in git or on GitHub.
-outcome-resolves: "Sign-off and human screens show each changed file with its +/- lines beside the ticket, and o opens the file at that line. Critique round 1 closed: reload keeps scroll and focus (TestReloadKeepsDiffScrollAndFocus, TestOpeningAnotherTicketResetsDiffScroll); one branch-segment split shared by BranchFor and branchTicket; the split is built from splitPane like the follow-up split (TestPersonLaneShowsDiffBesideTheTicketWhenWide). Tests: go test ./core/gitrepo ./internal/tui -count=1 exit 0; go test ./internal/cli -count=1 -run 'Create|Follows|Branch' exit 0."
+outcome-what: "A ticket in signoff or human shows its diff against master beside it in the TUI at 140+ columns: the ticket and the diff each sit in a box, the focused one with the accent border. tab switches focus, ]/[ jump between files, o opens the file at its line in VS Code and confirms inline in the diff title ('opened <path>:<line>', cleared on the next key) with no modal; below 140 columns the screen is unchanged. Scroll and focus survive the 2s board reload and reset only when another ticket is opened."
+outcome-why: "The person accepting work judged the outcome and review text but could not see the code; the diff had to be found by hand in git or on GitHub. A confirmation modal after o took the next keys, so the sign-off screen was lost behind it."
+outcome-resolves: "Sign-off and human screens show each changed file with its +/- lines beside the ticket, and o opens the file at that line without a modal. Critique round 1 closed: reload keeps scroll and focus (TestReloadKeepsDiffScrollAndFocus, TestOpeningAnotherTicketResetsDiffScroll); one branch-segment split shared by BranchFor and branchTicket; the split is built from splitPane like the follow-up split (TestPersonLaneShowsDiffBesideTheTicketWhenWide). Testing finding closed: a successful o no longer raises a modal (TestOKeyConfirmsInTheDiffTitleWithoutAModal). Tests: go test ./core/gitrepo ./internal/tui -count=1 exit 0; go test ./internal/cli -count=1 -run 'Create|Follows|Branch' exit 0 (earlier run, cli untouched by this fix)."
 review-summary: none
-round: 2
+round: 3
 review-gaps: "folded renderDiffPane's own pad/fill-to-height loop into clipPane (view.go:1490, same code) and dropped the diffScroll/top double bookkeeping there; left: Base() beside gitref.RemoteHead (different lookup, critique let-stand), WorktreeOf/openInCode (no existing twin), parseDiff's second counting pass (runs once per diff load), the focused-title restyle next to the accent border (visual, not a cleanup)"
+test-verdict: "fail: a successful 'o' opens a modal NOTE that must be dismissed with esc and swallows the next keys"
 ---
 
 # In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code
@@ -39,7 +40,7 @@ review-gaps: "folded renderDiffPane's own pad/fill-to-height loop into clipPane 
 - [x] Ein Ticket in signoff zeigt seinen Diff je Datei; Test
   proof: internal/tui/diffpane_test.go TestPersonLaneShowsDiffBesideTheTicketWhenWide, TestHumanLaneShowsDiffBesideTheTicketWhenWide, TestNarrowTerminalKeepsTheSingleColumn, TestParseDiffSplitsFilesAndNumbersLines; core/gitrepo/branchdiff_test.go TestBranchDiffIsAgainstMergeBaseAndSkipsJaira
 - [x] Ein Knopf/Taste oeffnet die Datei an der Zeile in VS Code
-  proof: internal/tui/diffpane_test.go TestOKeyOpensFileAtLine and TestBracketJumpsBetweenFiles; internal/tui/model.go case "o", "]", "[" in modeDetail; internal/tui/diffpane.go openDiffRow
+  proof: internal/tui/diffpane_test.go TestOKeyOpensFileAtLine and TestOKeyConfirmsInTheDiffTitleWithoutAModal; internal/tui/model.go case "o", "]", "[" in modeDetail; internal/tui/diffpane.go openDiffRow
 - [x] Release-Notiz unter core/release/notes/
   proof: core/release/notes/EH6Z0N.md:1
 
@@ -73,3 +74,5 @@ Let stand: fallback via CommitsForTicket+Repo.Diff (needed on boards that work o
 - **2026-11-04 00:56 · berkc** — Round 2 (worker 2026-11-04): the three critique fixes are in. (1) reload() now clears only diffFor and keeps scroll and focus; loadDiff resets them only when the ticket differs from the new field diffScrollFor. Tests TestReloadKeepsDiffScrollAndFocus and TestOpeningAnotherTicketResetsDiffScroll. (2) gitrepo.BranchSegments is the one segment split; BranchFor and branchTicket both use it, branchTicket behaviour unchanged. (3) withDiff is splitPane boxes joined by lipgloss.JoinHorizontal, rows = height - footer - 2; the hand-built separator is gone. Side effect: TestAMultilineCheckKeepsItsLines (internal/tui/reviewcheck_test.go) matched a newline plus indent, which no longer exists once rows carry box borders at 140 columns; it now asserts step 2 and step 3 never share a row. Dead end: the goal line sits on an empty diff row, so the old check passed only on the border glyph; the new check asserts the handle row also holds the diff title. Open: plan item 6 (tmux check on a scratch board) is still not done.
 - **2026-11-04 00:57 · berkc** — critique (pass 2): read only the pass-1 findings and commit 50765410. (1) reload keeps scroll/focus: model.go reload clears only diffFor, diffpane.go loadDiff resets via diffScrollFor - addressed. (2) gitrepo.BranchSegments used by BranchFor and internal/cli/tickets.go branchTicket, notAlnum gone - addressed. (3) withDiff = splitPane boxes + lipgloss.JoinHorizontal, widths 78+2 / 1 / width-83+2 add up to m.width - addressed. Nothing new; pass-1 let-stands still hold. review-summary=none.
 - **2026-11-04 00:59 · berkc** — optimize: renderDiffPane hand-padded and height-filled its rows - the same loop clipPane (view.go:1490) runs; now ends in clipPane. Checked and left: Base() vs gitref.RemoteHead (different question: origin default only, Base prefers local master/main - critique let-stand); WorktreeOf has no twin in core (no other 'worktree list' parse); openInCode is the only 'code -g' launcher; parseDiff second pass for +/- counts is cheap and runs once per load; diffFocus title restyle beside the accent border kept (removing it changes the screen).
+- **2026-11-04 01:00 · berkc** — testing (worker, tmux on scratch board, build of 50765410): diff split, ] [ tab scroll and narrow fallback (120 cols -> single column) all work; o ran 'code -g a.go:2' at the right line. FINDING: on success o calls m.notify(..., false) (internal/tui/model.go, case "o"), and notify always switches to modeMessage - a modal 'NOTE opened new.go:1 in VS Code / esc dismiss' pops over the screen, and the next keys ([, o) went to the modal and were lost; behind the modal the generic renderDetail screen is drawn instead of the sign-off screen (pre-existing modal behaviour, not this ticket's). FIX: on success do not call notify; show it inline like 'y' shows 'copied' (m.copied) - e.g. a field m.diffOpened string rendered in the diff pane title as 'opened new.go:1', cleared on the next key like m.copied is cleared at the top of case modeDetail. Errors keep notify. Add a test: after 'o' with the stub, m.mode is still modeDetail and the render contains 'opened <path>:<line>'.
+- **2026-11-04 01:02 · berkc** — testing finding fixed (worker 2026-11-04): a successful 'o' no longer calls notify. openDiffRow sets Model.diffOpened (model.go, next to diffScrollFor); renderDiffPane prints 'Diff  opened <path>:<line>  <note>' so the opened text survives a narrow title; the key clears it at the top of case modeDetail, and loadDiff clears it when another ticket is opened. Errors still use notify. Test TestOKeyConfirmsInTheDiffTitleWithoutAModal: mode stays modeDetail, title shows the open, next key clears it. Dead end: a first struct edit with its own comment realigned the whole Model field block; kept the field inside the existing aligned block instead. Still open: plan item 6 tmux check on a scratch board, not run in this lane.

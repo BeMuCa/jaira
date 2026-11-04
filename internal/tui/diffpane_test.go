@@ -203,3 +203,26 @@ func TestOKeyOpensFileAtLine(t *testing.T) {
 		t.Errorf("openInCode(%q, %q, %d), want (/repo/worktree, internal/a.go, 10)", gotDir, gotPath, gotLine)
 	}
 }
+
+// A successful open must not raise the message modal: it would take the next
+// keys. The confirmation sits in the diff title and clears on the next key.
+func TestOKeyConfirmsInTheDiffTitleWithoutAModal(t *testing.T) {
+	orig := openInCode
+	openInCode = func(string, string, int) error { return nil }
+	t.Cleanup(func() { openInCode = orig })
+
+	m := diffModel(t, 160, "signoff")
+	m.diffDir = "/repo/worktree"
+	m.render()
+	m.Update(tea.KeyPressMsg{Code: 'o', Text: "o"})
+	if m.mode != modeDetail {
+		t.Fatalf("mode = %v after a successful open, want modeDetail", m.mode)
+	}
+	if out := stripANSI(m.render()); !strings.Contains(out, "opened internal/a.go:10") {
+		t.Errorf("diff title misses the open confirmation:\n%s", out)
+	}
+	m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	if out := stripANSI(m.render()); strings.Contains(out, "opened internal/a.go:10") {
+		t.Errorf("the open confirmation survives the next key:\n%s", out)
+	}
+}
