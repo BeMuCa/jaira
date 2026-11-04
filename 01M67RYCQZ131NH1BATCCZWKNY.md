@@ -18,7 +18,7 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-04T00:42:58Z
+updated-at: 2026-11-04T00:43:02Z
 updated-by: berkc
 claimed-by: berk-ca-512097
 claimed-at: 2026-11-04T00:37:05Z
@@ -44,7 +44,8 @@ round: 2
   proof: core/release/notes/CZWKNY.md
 - [x] Hook-Format '- > <Headline>: <ein kurzer Satz>'; das Popup zeigt die Headline fett, den Satz gedimmt darunter, eine Leerzeile zwischen Hooks; Test
   proof: internal/tui/releasenotes.go hookLines; TestNotesViewHookIsAHeadlineWithItsSentenceBelow
-- [ ] Popup: Hooks, Features und '!'-Zeilen immer sichtbar, einfache Zeilen unter 'Others' standardmaessig eingeklappt, Taste o klappt sie aus; jaira update zeigt weiter alles; Test
+- [x] Popup: Hooks, Features und '!'-Zeilen immer sichtbar, einfache Zeilen unter 'Others' standardmaessig eingeklappt, Taste o klappt sie aus; jaira update zeigt weiter alles; Test
+  proof: internal/tui/releasenotes.go lines/key 'o'; TestNotesViewFoldsPlainChangesUnderOthers; jaira update unchanged: TestUpdateNotesShowHooks
 - [ ] Ein Test schlaegt fehl bei einer Hook-Zeile ueber 80 Zeichen oder mehr als einem Hook pro Note-Datei
 
 ## Options
