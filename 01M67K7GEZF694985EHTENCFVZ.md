@@ -5,7 +5,7 @@ status: brainstorm
 ready: true
 creator: berkc
 assignee: berkc
-goal: "Eine Lane kann statt eines Prompts einen Skill ausfuehren oder eine Automation anstossen, so dass Boards ueber Code hinaus Arbeit erledigen - wie ein N8N-Ablauf."
+goal: "A lane can name a skill and a repository script for the agent working it, and can refuse to let a ticket leave until the ticket carries a receipt for this round, so a side effect such as a message or an upload happens at most once per round."
 context: |-
   Wunsch von berkc am 31.10.2026 (Punkt 25): 'einen neuen Board/Lane-Typ, wo man nur einen Skill reinhaengt und der dann gestartet wird, wenn das Ticket da landet. z.B. Ponytail-Skill soll etwas zum Code optimieren sein. Eine Lane, die nur Ponytail + vllt einen Mini-Prompt hat.' Weitere Ideen: Artefakt-Lanes (Bilder, HTML als Output), Lanes, die E-Mails versenden, bestimmte APIs aufrufen, eine Telegram-Nachricht an ihn senden oder eine von ihm erwarten, Videos per API hochladen. 'Ich denk in Richtung N8N-Automation.'
   Heute: eine Lane ist Prompt + Tier + Ein-/Ausgabevertrag; Artefakte fehlen (eigenes altes Ticket zu .jaira/artifacts/). Eine Lane, die auf eine Nachricht wartet, waere eine menschliche Lane mit externem Kanal.
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-04T21:28:03Z
+updated-at: 2026-11-04T21:28:05Z
 updated-by: berkc
 claimed-by: berk-ca-1279809
 claimed-at: 2026-11-04T21:24:25Z
