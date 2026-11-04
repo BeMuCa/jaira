@@ -1,7 +1,7 @@
 ---
 id: 01M6M72CGAVYB8WR1YZBN5GSWM
 title: Die Ticket-ID auf der Karte ist gut lesbar statt fast unsichtbar grau
-status: todo
+status: pre-process
 ready: true
 creator: berkc
 assignee: berkc
@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T21:22:33Z
-updated-at: 2026-11-04T21:25:57Z
+updated-at: 2026-11-04T21:26:01Z
 updated-by: berkc
 claimed-by: berk-ca-1280093
 claimed-at: 2026-11-04T21:24:26Z
