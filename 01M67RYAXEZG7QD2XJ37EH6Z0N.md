@@ -1,7 +1,7 @@
 ---
 id: 01M67RYAXEZG7QD2XJ37EH6Z0N
 title: "In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: berkc
@@ -18,10 +18,13 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T00:48:18Z
+updated-at: 2026-11-04T00:48:26Z
 updated-by: berkc
 claimed-by: berk-ca-511849
 claimed-at: 2026-11-04T00:37:01Z
+outcome-what: "A ticket in signoff or human shows its diff against master beside it in the TUI at 140+ columns: tab switches focus, ]/[ jump between files, o opens the file at its line in VS Code; below 140 columns the screen is unchanged. Branch diff (merge-base) with a fallback to commits naming the handle."
+outcome-why: The person accepting work judged the outcome and review text but could not see the code; the diff had to be found by hand in git or on GitHub.
+outcome-resolves: "Sign-off and human screens show each changed file with its +/- lines beside the ticket, and o opens the file at that line. Tests: go test ./core/gitrepo ./internal/tui -count=1 exit 0."
 ---
 
 # In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code
