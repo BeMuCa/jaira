@@ -1,7 +1,7 @@
 ---
 id: 01M67RYAXEZG7QD2XJ37EH6Z0N
 title: "In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: berkc
@@ -20,13 +20,13 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T21:58:40Z
+updated-at: 2026-11-04T21:58:43Z
 updated-by: berkc
 claimed-by: berk-ca-1829671
 claimed-at: 2026-11-04T21:56:36Z
-outcome-what: "Diff pane in the sign-off and human ticket view: changed rows and words carry 256-palette tints (dark add 22, del 52, word-add 28, word-del 88; light 194, 224, 157, 217), a row cut exactly at a segment boundary ends in an ellipsis."
-outcome-why: "Critique pass 1 found the hex tints fell onto the grey ramp of 256-colour terminals (removed lines showed no red), and the cut row was silently shortened at an exact boundary; the tint test asserted only the hex escapes."
-outcome-resolves: "critique 21:47 finding 1: tints -> diffpane.go diffPaletteDark/Light, TestChangedRowsAreTintedAcrossThePane asserts 48;5;22/52/28/88; finding 2: removed-row word-del assertion in TestChangedRowsAreTintedAcrossThePane; finding 3: fitSegs fix, TestFitSegsEndsAnExactBoundaryCutInEllipsis; finding 4: model.go diff field comment rewrapped"
+outcome-what: "'o' on a blank separator row opens the file below it, and the file counter and marker name that file; header rows no longer carry an unused text field"
+outcome-why: "review-gaps found 'o' on a blank row opened code -g :0 with title 'opened :0'; blank rows have no path, and the next file's header is the row the reader is looking at"
+outcome-resolves: "both review-gaps items; test TestOKeyOnABlankRowOpensTheFileBelow"
 review-summary: none
 round: 6
 review-gaps: "must go: (1) diffpane.go:81 'H' row still sets text: path, which nothing reads since 2a73eae2 (diffLine draws headers from r.path) - drop it; (2) not a cleanup: the 'B' blank row (diffpane.go:77) has path \"\" and line 0, so 'o' with it at the top runs code -g :0 and titles 'opened :0' (reproduced with a throwaway test) - give B the previous file's path/line or skip B in openDiffRow, plus a test. Left: fitSegs/spreadRow/padRow vs view.go:1050 status line (that one cuts styled strings, no bg fill - genuinely differs); colours reuse view.go col*/sty* and palette is 256-idx like view.go; no centre helper exists elsewhere so noticeRows' closure stays; nw/files/adds/dels loop in renderDiffPane runs per frame over all rows - cheap, left; noticeRows' head!=\"\" guard only matters before a load, harmless; hunkStart side param has two real callers"
