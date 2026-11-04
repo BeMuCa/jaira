@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:54Z
-updated-at: 2026-11-04T21:42:12Z
+updated-at: 2026-11-04T21:42:49Z
 updated-by: berkc
 claimed-by: berk-ca-1311236
 claimed-at: 2026-11-04T21:27:24Z
@@ -29,7 +29,8 @@ question: ""
 
 ## Definition of Done
 
-- [ ] Brainstorm hat Darstellung und Quelle des PR-Stands festgelegt
+- [x] Brainstorm hat Darstellung und Quelle des PR-Stands festgelegt
+  proof: Notiz 04.11.2026 Entscheidung berkc Option 1
 - [ ] Tickets eines offenen PRs erscheinen gebuendelt mit PR-Name/Branch und Farbe nach CI-Stand; Test
 - [ ] Release-Notiz unter core/release/notes/
 - [ ] Spalte 'PRs' nach done mit allen offenen PRs des Repos (gh pr list), je PR: Nummer+Titel, Branch, CI-Zustand mit Glyph+Wort und Farbe; ohne gh oder ohne offene PRs sieht das Board aus wie heute; TUI-Test
