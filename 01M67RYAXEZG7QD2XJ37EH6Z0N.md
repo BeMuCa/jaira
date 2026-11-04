@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T00:59:24Z
+updated-at: 2026-11-04T01:00:08Z
 updated-by: berkc
 claimed-by: berk-ca-511849
 claimed-at: 2026-11-04T00:37:01Z
@@ -28,6 +28,7 @@ outcome-resolves: "Sign-off and human screens show each changed file with its +/
 review-summary: none
 round: 2
 review-gaps: "folded renderDiffPane's own pad/fill-to-height loop into clipPane (view.go:1490, same code) and dropped the diffScroll/top double bookkeeping there; left: Base() beside gitref.RemoteHead (different lookup, critique let-stand), WorktreeOf/openInCode (no existing twin), parseDiff's second counting pass (runs once per diff load), the focused-title restyle next to the accent border (visual, not a cleanup)"
+test-verdict: "fail: a successful 'o' opens a modal NOTE that must be dismissed with esc and swallows the next keys"
 ---
 
 # In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code
