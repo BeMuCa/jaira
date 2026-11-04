@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T03:43:09Z
+updated-at: 2026-11-04T03:43:11Z
 updated-by: berkc
 claimed-by: berk-ca-828397
 claimed-at: 2026-11-04T03:43:05Z
@@ -34,6 +34,8 @@ review-gaps: |-
   note: loadDiff runs git (for-each-ref, up to 4 rev-parse, diff, worktree list) from View after every 2s reload while such a ticket is open - critique let it stand; fine for normal repos
   note: TestAMultilineCheckKeepsItsLines no longer checks the indent of the check's continuation lines, only that steps 2 and 3 are on different rows
 test-verdict: "pass: build+vet ok, go test ./... exit 0 (33 pkgs ok, 3 known hangers skipped), DoD 1-4 verified in the tree, tmux on a scratch board: split on signoff and human at 160 cols, single column at 120, ] [ tab scroll work, o runs 'code -g <path>:<line>' (stub) with inline confirmation and no modal"
+review-verdict: "The diff meets all four DoD items (location agreed, per-file diff in signoff and human with tests, o opens VS Code at the line, release note one line). No defects found; go build, vet, gofmt clean; go test ./core/gitrepo ./internal/tui and ./internal/cli -run 'Create|Follows|Branch' pass. Not exercised by me: a real VS Code launch (tests stub 'code')."
+review-round: 3
 ---
 
 # In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code
