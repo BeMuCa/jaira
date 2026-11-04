@@ -27,7 +27,7 @@ func (m *Model) renderSignOff() string {
 	w := max(20, m.width)
 	var b strings.Builder
 
-	fmt.Fprintf(&b, "%s  %s\n", styHandle.Render(ticket.Handle(t.ID)),
+	fmt.Fprintf(&b, "%s  %s\n", m.handleStyle().Render(ticket.Handle(t.ID)),
 		styleLines(styLaneTitle, wrap(t.Title, max(10, w-10), 8)))
 	b.WriteString(styReview.Render(truncate("◆ waiting on your sign-off", w)) + "\n")
 	b.WriteString(styBar.Render(strings.Repeat("─", w)) + "\n")

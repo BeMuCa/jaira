@@ -787,7 +787,7 @@ func (m *Model) renderMilestoneDetail() string {
 			marker, title = stySelected.Render("▌ "), stySelected.Render(title)
 		}
 		pad := strings.Repeat(" ", max(1, titleW-lipgloss.Width(title)+2))
-		rows = append(rows, marker+styHandle.Render(handle)+title+pad+styMeta.Render(truncate(r.where, whereW)))
+		rows = append(rows, marker+m.handleStyle().Render(handle)+title+pad+styMeta.Render(truncate(r.where, whereW)))
 	}
 
 	footer := wrapHints([]string{"↑↓ pick", "enter open", "e edit", "b board", "esc back"}, width)

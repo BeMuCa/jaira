@@ -186,7 +186,7 @@ func (m *Model) renderLaneCard(t *ticket.Ticket, w int, selected bool) string {
 		title = stySelected.Render(title)
 	}
 
-	meta := styHandle.Render(ticket.Handle(t.ID))
+	meta := m.handleStyle().Render(ticket.Handle(t.ID))
 	if t.Assignee != "" {
 		meta += styMeta.Render(" " + t.Assignee)
 	}
