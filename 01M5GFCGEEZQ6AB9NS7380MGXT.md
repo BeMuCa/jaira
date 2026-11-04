@@ -1,7 +1,7 @@
 ---
 id: 01M5GFCGEEZQ6AB9NS7380MGXT
 title: "Ein Ticket in done raeumt seinen Worktree weg, sobald der Branch gepusht und sauber ist"
-status: critique
+status: in-progress
 ready: true
 creator: berkc
 assignee: berkc
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:13Z
-updated-at: 2026-11-04T21:41:44Z
+updated-at: 2026-11-04T21:41:47Z
 updated-by: berkc
 claimed-by: berk-ca-1279800
 claimed-at: 2026-11-04T21:24:25Z
@@ -29,6 +29,7 @@ outcome-resolves: "DoD 1-5: reap_test.go (TestReapRemovesAPushedWorktreeBeforeTh
 review-summary: |-
   core/role/builtin/jaira-dispatcher/scripts/spawn.sh:168 still runs 'git worktree add <wt> -b <branch>', which fails for the branch reap.sh now keeps after removing a done ticket's worktree - so the kept branch the goal names cannot be worked again through spawn.sh; when refs/heads/<branch> exists run 'git worktree add <wt> <branch>' instead, and make the setup-failure cleanup at spawn.sh:185 'branch -D' only a branch this run created; test in core/role/reap_test.go or role_test.go, shipped hash appended
   core/role/builtin/jaira-teamlead/SKILL.md:263-266 'Review comments come back to the branch and want somewhere to land ... a ticket that has not been accepted can still come back' is the old argument for keeping the worktree and now contradicts the new paragraph (worktree gone at done, done = accepted); replace with one sentence: the branch stays, a later fix gets a fresh worktree on it from spawn.sh
+round: 2
 ---
 
 # Ein Ticket in done raeumt seinen Worktree weg, sobald der Branch gepusht und sauber ist
