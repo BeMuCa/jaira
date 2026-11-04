@@ -14,7 +14,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-11-04T00:53:05Z
+updated-at: 2026-11-04T00:53:07Z
 updated-by: berkc
 claimed-by: berk-ca-516678
 claimed-at: 2026-11-04T00:38:18Z
@@ -22,7 +22,9 @@ outcome-what: "z is on by default: New() starts thinEmpty true, so empty lanes d
 outcome-why: "maintainer asked for z on by default (04.11.2026); z is session-only and not persisted (model.go:292), so no restart behaviour changes"
 outcome-resolves: "critique pass 2: stale release-note line 1 ('Press z to draw empty lanes thin') contradicted the default and is deleted; DoD 2 proof re-checked at NDE933.md:1; tmux check still left to the parent"
 review-summary: "Board ←/→ now go through a new stepLane (internal/tui/model.go:1776): while the thin-empty-lanes toggle is on, it walks lanes in the arrow's direction (wrapping round, as before) and lands on the first lane that holds tickets, so the empty lanes in between are skipped. If only the current lane has tickets the cursor stays; if every lane is empty (a filter matching nothing) it steps one lane as before. With the toggle off it calls the old moveLane, so behaviour is unchanged. New() now starts with the toggle on, so empty lanes are thin and skipped from the first frame and z turns that off for the session (not saved). Lane focus keeps moveLane. Help text for z and the release note (one '- !' line) say so; tests cover skip, wrap, only-lane, all-empty, empty start lane, toggle off and the new default."
-review-gaps: "removed TestWideBoardShowsAllTenLanesWidened (lanewindow_test.go): with z on by default it pressed z once and checked all ten lane names, the same setup and a subset of TestZWidensEverything; DoD proof line refs updated. Left: stepLane's wrap loop is not a duplicate of moveLane (steps i lanes, not one); TestZWidensEverything's thin check overlaps TestThinEmptyLanesAreOnByDefault's second half by one assertion, kept. No dead code or fluff in model.go/view.go."
+review-gaps: |-
+  note: the TUI was not driven by hand (tmux) in any lane - outcome-resolves says it was left to the parent; only go test covers it
+  note: DoD 3's clause about a saved z state does not apply - z was never persisted (model.go:292), so every start is thin and a z press does not survive a restart
 test-verdict: "pass: go build ./... RC=0, go test ./... RC=0 (3 known hangers skipped per agent rules), DoD 1-3 proofs checked in the tree, tmux on scratch board: thin on first start, → backlog->done, z widens and → steps onto empty lane, restart thin again"
 review-verdict: "pass - diff meets both DoD items (skip with z, unchanged without z, tests, release note); go vet and go test ./internal/tui/ pass; no defects found"
 review-round: 1
