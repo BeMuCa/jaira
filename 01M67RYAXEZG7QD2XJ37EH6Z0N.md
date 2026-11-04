@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T21:41:51Z
+updated-at: 2026-11-04T21:42:00Z
 updated-by: berkc
 claimed-by: berk-ca-1345452
 claimed-at: 2026-11-04T21:29:36Z
@@ -74,7 +74,7 @@ review-check: "1. cd /home/berkc/code/X_General/jaira-EH6Z0N && go build -o /tmp
 - [x] parseDiff: old-side line numbers, file status tag (new/deleted/renamed), blank separator rows before file headers 2..n
 - [x] renderDiffPane: title row, file header bar, hunk row, gutter, row tint dark/light, word-level spans, truncation before styling
 - [x] empty/error states and BranchFor --sort=-committerdate with tests
-- [ ] release note line in core/release/notes/EH6Z0N.md; go test ./core/gitrepo ./internal/tui
+- [x] release note line in core/release/notes/EH6Z0N.md; go test ./core/gitrepo ./internal/tui
 
 ## Progress
 - **2026-11-03 17:18 · berkc** — Maintainer 03.11.2026 (Screenshot): Ort = rechte, heute leere Haelfte der TUI-Ticketansicht (neben tags/problem/what/why/summary), dazu im Cockpit-Pane aus Q63EEV - beide zeigen denselben Diff. Brainstorm-Punkt 1 damit erledigt.
