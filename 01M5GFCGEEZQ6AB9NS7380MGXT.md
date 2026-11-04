@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:13Z
-updated-at: 2026-11-04T21:37:18Z
+updated-at: 2026-11-04T21:37:21Z
 updated-by: berkc
 claimed-by: berk-ca-1279800
 claimed-at: 2026-11-04T21:24:25Z
@@ -54,7 +54,7 @@ claimed-at: 2026-11-04T21:24:25Z
 - [x] Tests in core/role/reap_test.go: Helfer pushed(t) = git update-ref refs/remotes/origin/feat/ab12cd <tip>. Bestehende Tests anpassen (wo Worktree weg soll: pushed setzen; 'given back' erwartet jetzt waiting...not done; 'committed after the merge' als Branch-Phasen-Test). Neue Tests: (a) done+sauber+gepusht, kein PR -> Worktree weg, Tabs zu, Branch da, Ausgabe 'waiting ... no merged pull request', ein Record mit branch= bleibt; zweiter Lauf nach mergedAt -> Branch weg, keine Records, keine Tabs doppelt geschlossen. (b) Keep-Tabelle: nicht gepusht, origin auf anderem Stand, nicht done, dirty, detached, herdr weg - je Grundzeile, alles bleibt. (c) nur eigene Ticket-Datei geaendert (.jaira/tickets/01X...AB12CD-x.md committed, dann geaendert) -> Worktree wird entfernt. (d) Milestone: tip Vorfahre von origin/HEAD (update-ref refs/remotes/origin/master <tip>; symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/master), kein PR -> Branch geloescht. (e) --dry-run zeigt 'would remove' und 'would delete branch' und aendert nichts
 - [x] core/role/builtin/jaira-teamlead/SKILL.md Zeilen ~36-42 und ~253-262 umschreiben: Tabs und Worktree gehen bei done + sauber + gepusht, lokaler Branch erst nach Merge (eigener PR oder im Default-Branch von origin); Gruende werden als kept genannt
 - [x] core/shipped: go test ./core/role ./core/shipped -count=1; der Shipped-Test verlangt neue Hashes von reap.sh und jaira-teamlead/SKILL.md - Zeilen an core/shipped/shipped.sha256 anhaengen wie die Fehlermeldung sagt (alte bleiben)
-- [ ] core/release/notes/80MGXT.md mit einer Zeile '- ...' (eine Zeile, nicht umbrechen); commit feat(80MGXT): ... mit Code + Ticket-Datei
+- [x] core/release/notes/80MGXT.md mit einer Zeile '- ...' (eine Zeile, nicht umbrechen); commit feat(80MGXT): ... mit Code + Ticket-Datei
 
 ## Progress
 - **2026-10-31 01:25 · berkc** — Maintainer 31.10.2026 (Punkt 7): Integrationsbranch ok, aber das Ziel ist: wird ein Ticket angenommen und steht in done, wird sein Branch gemerged und sein Worktree geloescht - 'ich will nicht den speicher mit worktrees voll machen die nicht geloescht wurden.' Merge bleibt Sache der Person (PR); das Aufraeumen des Worktrees nach done ist dieses Ticket.
