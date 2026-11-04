@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-04T21:33:12Z
+updated-at: 2026-11-04T21:33:15Z
 updated-by: berkc
 claimed-by: berk-ca-1279809
 claimed-at: 2026-11-04T21:24:25Z
@@ -33,7 +33,8 @@ claimed-at: 2026-11-04T21:24:25Z
   proof: core/lane/lane.go parse() Skill; core/lane/lane_test.go TestSkillLaneNeedsNoPromptBody, TestAgenticLaneNeedsPromptOrSkill, TestSkillRefusesAPath
 - [x] A lane file may declare 'script: <path>' relative to the repository root; the loader refuses an absolute path, a path leaving the repository, and a script on a lane that is not agentic. Parser test covers it.
   proof: core/lane/lane.go parse() Script checks; lane_test.go TestScriptIsParsed, TestScriptRefusesAPathOutsideTheRepository, TestScriptNeedsAnAgenticLane
-- [ ] 'receipt: required' on a lane: a forward move out of it is refused (code needs_receipt, field receipt-<lane>) unless the ticket field receipt-<lane> is '<key> <result>' with key = <ticket-id>-<lane>-r<round>; a receipt from an earlier round does not count; any other receipt: value fails the load. Gate test covers it.
+- [x] 'receipt: required' on a lane: a forward move out of it is refused (code needs_receipt, field receipt-<lane>) unless the ticket field receipt-<lane> is '<key> <result>' with key = <ticket-id>-<lane>-r<round>; a receipt from an earlier round does not count; any other receipt: value fails the load. Gate test covers it.
+  proof: core/gate/gate.go CheckAdvance receipt block, HasReceipt; core/gate/receipt_test.go TestReceiptRequiredRefusesWithoutAReceipt, TestReceiptForThisRoundPasses, TestEarlierRoundReceiptIsRefused, TestSendBackNeedsNoReceipt
 - [ ] 'jaira show <id> --for-lane <lane> --json' carries skill, skill_path (found in the skills directories jaira roles installs into, else listed under missing), script, idempotency_key, receipt_required, receipt and a run line passing JAIRA_IDEMPOTENCY_KEY to the script; when the current key already has a receipt the run line is empty and script_done is true, so the script is not run again. The text output says the same. CLI test covers it.
 - [ ] 'jaira receipt <id> <result>' writes receipt-<lane> = '<key> <result>' for the ticket's current lane; it refuses with exit 3 when the lane does not require a receipt and when the current key already has one. CLI test covers it.
 - [ ] 'jaira lanes show <id>' and the generated lanes block in CLAUDE.md/AGENTS.md name a lane's skill, script and receipt requirement.
