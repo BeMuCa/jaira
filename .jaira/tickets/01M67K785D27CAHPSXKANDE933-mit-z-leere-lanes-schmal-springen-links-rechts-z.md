@@ -14,14 +14,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-11-04T00:44:04Z
+updated-at: 2026-11-04T00:46:09Z
 updated-by: berkc
 claimed-by: berk-ca-516678
 claimed-at: 2026-11-04T00:38:18Z
-outcome-what: "z is on by default: New() starts thinEmpty true, so empty lanes draw thin and ←/→ skip them from the first frame; one z turns it off for the session; ? help line says on by default; tests adjusted (z pressed where a test wants full-width lanes, dropped where it wanted z on) plus TestThinEmptyLanesAreOnByDefault; release note line 2 is a '- !' instruction"
-outcome-why: "maintainer asked for z on by default; z is session-only and not persisted (model.go:292), so no restart behaviour changes"
-outcome-resolves: "DoD 3 ticked with proof (model.go:353, TestThinEmptyLanesAreOnByDefault); DoD 1 proof re-pointed to model.go:1776 and lanewindow_test.go:201-329; tmux check left to the parent"
-review-summary: "Board ←/→ now call a new stepLane (internal/tui/model.go). With z off it is the old moveLane. With z on it walks the lanes cyclically in the arrow's direction and lands on the first one holding tickets, skipping the thin (empty) lanes; if only the cursor's lane has tickets it stays put; if every lane is empty (filter matches nothing) it steps one lane as before. Thin-ness and skipping use the same test (len(tickets)==0), so what is drawn thin is exactly what is skipped. Lane focus (h/l there) keeps moveLane. The z help line and release note core/release/notes/NDE933.md say the arrows skip empty lanes. Six tests in internal/tui/lanewindow_test.go cover skip, z off, left wrap to done, only-lane, all-empty, empty start lane; the old test that asserted stepping onto thin lanes was replaced."
+outcome-what: "z is on by default: New() starts thinEmpty true, so empty lanes draw thin and ←/→ skip them from the first frame; one z turns it off for the session. Release note is a single '- !' line (core/release/notes/NDE933.md:1)"
+outcome-why: "maintainer asked for z on by default (04.11.2026); z is session-only and not persisted (model.go:292), so no restart behaviour changes"
+outcome-resolves: "critique pass 2: stale release-note line 1 ('Press z to draw empty lanes thin') contradicted the default and is deleted; DoD 2 proof re-checked at NDE933.md:1; tmux check still left to the parent"
+review-summary: "core/release/notes/NDE933.md:1 still says \"Press z to draw empty lanes thin\", which is false since 9237f70d made thin the default (z now widens); jaira update shows both lines side by side and they contradict each other. The file is unreleased (directly in core/release/notes/), so delete line 1 and keep only line 2, or rewrite line 1 so it matches line 2. Everything else in pass 2 (New() thinEmpty: true beside anim, field comment, ? help line, zHint tests, no persistence per the 00:37 plan note) needs no change."
 review-gaps: |-
   note: skipping wraps round the board end (backlog ← lands on done), same wrap moveLane already had, but a user might expect a stop at the edge
   note: lane focus mode still steps onto empty lanes with z on - deliberate per the doc comment, not covered by a test
@@ -29,7 +29,7 @@ test-verdict: "pass: go build ./... RC=0, go vet ./internal/tui RC=0, go test ./
 review-verdict: "pass - diff meets both DoD items (skip with z, unchanged without z, tests, release note); go vet and go test ./internal/tui/ pass; no defects found"
 review-round: 1
 review-check: "1. cd /home/berkc/code/X_General/jaira-exp-b && go run ./cmd/jaira  2. on the board, put the cursor on a ticket in a lane with empty lanes to its right  3. press → : cursor moves to the adjacent (empty) lane, as before  4. press ← to go back, then press z : empty lanes are drawn thin  5. press → : cursor jumps straight to the next lane that has tickets, skipping the thin ones  6. press z again and → : it steps one lane at a time again. Automated: go test ./internal/tui/ -run 'Arrows|LeftWithToggle' -count=1 passes"
-round: 2
+round: 3
 ---
 
 # Mit z (leere Lanes schmal) springen links/rechts zwischen Tickets ueber leere Lanes hinweg
@@ -73,3 +73,5 @@ round: 2
 - **2026-11-04 00:38 · berkc** — in-progress pass 2: starting plan 6 (New() thinEmpty default on). Reading model.go New() and the thinEmpty field comment; plan 7 (tests) and 8 (zHint) follow.
 - **2026-11-04 00:43 · berkc** — plan 6-8 done: New() thinEmpty default on; tests adjusted (press z where a test wants the old full-width board, drop it where it wanted z on); new TestThinEmptyLanesAreOnByDefault; hint label checks now 'z widen empty' on the default board; ? help line says on by default. go vet + go test ./internal/tui/ -count=1 green (exit 0).
 - **2026-11-04 00:43 · berkc** — tmux check (plan 10 second half) is left to the parent: this lane ran go vet and go test ./internal/tui/ -count=1 only. Release note: appended line 2 of core/release/notes/NDE933.md as '- !'; line 1 still reads 'Press z to draw empty lanes thin', now only true as a press-to-widen-then-thin description - left unchanged per brief, parent may rewrite it.
+- **2026-11-04 00:45 · berkc** — critique pass 2 (fresh agent): read only 9237f70d, the change since the first critique, which found nothing (02:35 note). One finding: core/release/notes/NDE933.md:1 still says "Press z to draw empty lanes thin", which is false since 9237f70d made thin the default (z now widens); jaira update shows both lines side by side and they contradict each other. The file is unreleased (directly in core/release/notes/), so delete line 1 and keep only line 2, or rewrite line 1 so it matches line 2. Everything else in pass 2 (New() thinEmpty: true beside anim, field comment, ? help line, zHint tests, no persistence per the 00:37 plan note) needs no change.
+- **2026-11-04 00:45 · berkc** — in-progress pass 3 (critique pass 2 finding): core/release/notes/NDE933.md line 1 ('Press z to draw empty lanes thin') contradicted the new default. Deleted it; the single '- !' line now carries the change (thin and skipped from the start, z shows them full width, not saved). The file is unreleased, so no version folder is touched. DoD 2 proof core/release/notes/NDE933.md:1 now points at the '- !' line, unchanged.
