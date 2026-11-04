@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:54Z
-updated-at: 2026-11-04T21:41:51Z
+updated-at: 2026-11-04T21:42:00Z
 updated-by: berkc
 claimed-by: berk-ca-1311236
 claimed-at: 2026-11-04T21:27:24Z
@@ -34,6 +34,7 @@ question: ""
 - [ ] Release-Notiz unter core/release/notes/
 - [ ] Spalte 'PRs' nach done mit allen offenen PRs des Repos (gh pr list), je PR: Nummer+Titel, Branch, CI-Zustand mit Glyph+Wort und Farbe; ohne gh oder ohne offene PRs sieht das Board aus wie heute; TUI-Test
 - [ ] Cursor auf einem Buendel klappt es auf: erster fehlgeschlagener Check, je Ticket eine Zeile mit Lane; enter springt zur Karte, o oeffnet den PR im Browser; TUI-Test
+- [ ] PR->Ticket ueber das Handle im Branchnamen und milestone/<name> -> Tickets des Milestones; Test
 
 ## Options
 
