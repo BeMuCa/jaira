@@ -12,10 +12,11 @@ import (
 
 // renderSignOff is the screen a person sees when a ticket is waiting on them.
 //
-// It answers these questions in order — what was wrong, what the agent did,
-// why, whether it actually holds, what the reviewer says it does, what the
-// reviewer found missing, and the reviewer's verdict — because that is the
-// judgement being asked for. The implementer's account and the reviewer's
+// It opens with the check — the steps to try it yourself, the one thing the
+// person does rather than reads — and then answers these questions in order —
+// what was wrong, what the agent did, why, whether it actually holds, what the
+// reviewer says it does, what the reviewer found missing, and the reviewer's
+// verdict — because that is the judgement being asked for. The implementer's account and the reviewer's
 // reading of it are shown side by side rather than merged: they are different
 // claims, and when they disagree that disagreement is the most useful thing on
 // the screen.
@@ -64,6 +65,10 @@ func (m *Model) renderSignOff() string {
 			owedRow(&b, label, l, min(w, paneWidth))
 		}
 	}
+	// First, before the tags and the seven questions: the check is the one thing
+	// the person does rather than reads, so it is what they see before anything
+	// else. Each step goes on its own line.
+	declared("try it", ticket.FieldReviewCheck, oneStepPerLine(t.ReviewCheck))
 	// Before the seven questions, not among them: a tag says which subject the
 	// work belongs to, which is context for every answer below rather than one
 	// of them.
@@ -78,9 +83,6 @@ func (m *Model) renderSignOff() string {
 	declared("summary", ticket.FieldReviewSummary, t.ReviewSummary)
 	declared("gaps", ticket.FieldReviewGaps, t.ReviewGaps)
 	declared("verdict", ticket.FieldReviewVerdict, t.ReviewVerdict)
-	// Last, because it is the one section that asks the reader to do something
-	// rather than to read: everything above is the account, this is the check.
-	declared("check", ticket.FieldReviewCheck, t.ReviewCheck)
 	// After the seven, never among them: those labels are the order this
 	// judgement is made in, and a field a board's own lane declares cannot be
 	// slotted into it without guessing where it belongs. Appended, it is still

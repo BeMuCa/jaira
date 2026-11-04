@@ -60,17 +60,14 @@ Write four things, in this order:
 
        jaira set <handle> review-verdict="the diff matches the criteria; no defects found"
 
-4. `review-check` — how a person checks this themselves, as a flow: do this,
-   then that, then look at this. Every field above is an account of what
-   happened; this is the only one the reader can act on, and without it signing
-   off means trusting the account or rebuilding the steps from the diff.
+4. `review-check` — how a person tries this change themselves, in at most six
+   steps. Step 1 is one copyable command that builds and starts THIS change from
+   its worktree, never the installed binary, so the person does not test the old
+   build (`cd <worktree> && go run ./cmd/app`, with the real path written out).
+   Every later step names what they should see, not only what to press: a step
+   with no stated outcome cannot be failed. One action per step, no jargon.
 
-       jaira set <handle> review-check="1. go run ./cmd/app  2. open /export and pick a 40MB range  3. the download starts within a second instead of hanging"
-
-   Write it as if the reader has mild ADHD and knows none of what you know —
-   numbered steps, one action each, exact commands and exact paths rather than
-   "run the tests", no jargon and no preamble. Name what they should see, not
-   only what to press: a step whose outcome is unstated cannot be failed.
+       jaira set <handle> review-check="1. cd <worktree> && go run ./cmd/app  2. open /export and pick a 40MB range  3. the download starts within a second instead of hanging"
 
    If it cannot be checked by hand at all, say that and say why — a test name
    is a legitimate answer ("go test ./auth -run TestSameSite covers it; there is

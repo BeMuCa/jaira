@@ -1,0 +1,1 @@
+- The sign-off screen and the detail of a ticket waiting on you now open with a "try it" row of numbered steps, one per line; run `jaira update --lanes` to get the shorter review-check prompt, whose first step starts the change's own build instead of the installed binary.
