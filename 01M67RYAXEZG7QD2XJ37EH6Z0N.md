@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T00:50:54Z
+updated-at: 2026-11-04T00:56:21Z
 updated-by: berkc
 claimed-by: berk-ca-511849
 claimed-at: 2026-11-04T00:37:01Z
@@ -72,3 +72,4 @@ round: 2
 core/gitrepo/branchdiff.go:19 BranchFor re-implements the branch-segment split that branchTicket already has inline (internal/cli/tickets.go:157, same alnum closure as notAlnum) while its comment claims "the same rule" — export one helper from gitrepo (e.g. BranchSegments(name) []string) and use it in both places
 internal/tui/diffpane.go:316 withDiff hand-rolls a second two-pane layout with its own focus signal (separator colour + title style) beside renderSplit/splitPane (internal/tui/followup.go:205-260), where the live pane is shown by an accent border — build the split with lipgloss.JoinHorizontal and splitPane so both split screens show focus the same way (shrink diffLeftWidth content/rows by the box frame)
 Let stand: fallback via CommitsForTicket+Repo.Diff (needed on boards that work on master without branches; note 00:40); Base() hardcoding master/main; re-running git on each reload (same trade-off as derivedFor memo); WorktreeOf for 'o'.
+- **2026-11-04 00:56 · berkc** — Round 2 (worker 2026-11-04): the three critique fixes are in. (1) reload() now clears only diffFor and keeps scroll and focus; loadDiff resets them only when the ticket differs from the new field diffScrollFor. Tests TestReloadKeepsDiffScrollAndFocus and TestOpeningAnotherTicketResetsDiffScroll. (2) gitrepo.BranchSegments is the one segment split; BranchFor and branchTicket both use it, branchTicket behaviour unchanged. (3) withDiff is splitPane boxes joined by lipgloss.JoinHorizontal, rows = height - footer - 2; the hand-built separator is gone. Side effect: TestAMultilineCheckKeepsItsLines (internal/tui/reviewcheck_test.go) matched a newline plus indent, which no longer exists once rows carry box borders at 140 columns; it now asserts step 2 and step 3 never share a row. Dead end: the goal line sits on an empty diff row, so the old check passed only on the border glyph; the new check asserts the handle row also holds the diff title. Open: plan item 6 (tmux check on a scratch board) is still not done.
