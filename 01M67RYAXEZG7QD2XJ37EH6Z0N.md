@@ -1,7 +1,7 @@
 ---
 id: 01M67RYAXEZG7QD2XJ37EH6Z0N
 title: "In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code"
-status: critique
+status: in-progress
 ready: true
 creator: berkc
 assignee: berkc
@@ -19,7 +19,7 @@ related:
 commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T21:47:10Z
+updated-at: 2026-11-04T21:47:13Z
 updated-by: berkc
 claimed-by: berk-ca-1644630
 claimed-at: 2026-11-04T21:45:46Z
@@ -32,7 +32,7 @@ review-summary: |-
   internal/tui/diffpane.go:384 fitSegs keeps a segment that ends exactly at n and drops every later segment without a "…", so a row whose gutter+prefix fills the pane exactly is cut silently (rule 7: a cut row ends in …) — when used+w == n and a later segment has text, truncate this one instead; add a case to TestLongCodeRowIsCutToThePane with a paired row cut at a segment boundary
   internal/tui/model.go:162 the rewrapped field comment is now one ~140-column line — wrap it at the width of the lines around it
   Let stand: hunk header indented 2*nw+4 with no │ (aligns @@ with the sign column; spec rule 3 says gutter blank); diffSeg/fitSegs/padRow/spreadRow beside truncate/padDisplay/refill (segments are needed to cut before styling with word spans; refill works on styled strings and does not cut); markWordPair rune-based prefix/suffix with non-overlap guard is correct; wide runes are cut via truncate/lipgloss.Width and the row padded to width.
-round: 4
+round: 5
 review-gaps: |-
   note: when no worktree has the branch checked out (maintainer on master), o opens the file in the root checkout - the master version, so the line number points into the pre-change file or a file that does not exist yet (diffpane.go ticketDiff dir=root)
   note: the fallback path (git show per commit) is not filtered for .jaira, so ticket files appear as diff files, and a file changed in several commits appears once per commit with line numbers of that commit, not of today
