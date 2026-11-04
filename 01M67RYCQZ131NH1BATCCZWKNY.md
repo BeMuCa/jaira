@@ -18,7 +18,7 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-04T00:54:55Z
+updated-at: 2026-11-04T00:54:57Z
 updated-by: berkc
 claimed-by: berk-ca-512097
 claimed-at: 2026-11-04T00:37:05Z
@@ -36,6 +36,7 @@ review-gaps: |-
 test-verdict: "pass: build/vet/full suite green (RC=0, 3 known hangers skipped), DoD 1-7 verified in tree by named tests, binary built as 0.5.8 on a scratch board stamped 0.5.5: update lists 0.5.6/0.5.7/0.5.8 + Unreleased with the '> ' hook first; popup exercised only through its model-render tests, not by hand"
 review-verdict: "The diff meets all 7 DoD items. Each has a named test, and the tests pass (core/release, core/shipped, internal/tui NotesView/Popup, internal/cli TestUpdate; gofmt and vet are clean). I found no defects, only 4 notes. I did not drive the popup by hand."
 review-round: 3
+review-check: "1. cd /home/berkc/code/X_General/jaira-CZWKNY && go build -o /tmp/jz -ldflags '-X main.version=0.5.8' ./cmd/jaira  2. export JAIRA_HOME=$(mktemp -d); in a scratch repo run /tmp/jz init, then write 0.5.5 into the file $JAIRA_HOME/state/board-*/version  3. run /tmp/jz update: you should see the sections Unreleased, 0.5.8, 0.5.7 and 0.5.6, and the Unreleased section starts with '  > Shorter release notes: headlines first, the rest folds under Others'  4. run /tmp/jz in the same repo: the popup opens on Unreleased with 'Shorter release notes' in bold and the sentence dimmed below it, then Others, then 'N more · o shows them'  5. press o: the plain lines appear. Press o again: they fold away  6. press left to page to 0.5.8. It has no hook or feature, so all its lines show unfolded  7. without the TUI: go test ./core/release ./internal/tui ./internal/cli -run 'Hook|ThreeVersions|NotesView|TestUpdateNotes' -count=1"
 ---
 
 # Release-Notes beginnen mit einer Hook-Zeile, und wer mehrere Versionen ueberspringt, sieht die Notes aller dazwischen
