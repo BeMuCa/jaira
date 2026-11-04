@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T00:36:20Z
+updated-at: 2026-11-04T00:36:21Z
 updated-by: berkc
 ---
 
@@ -34,7 +34,7 @@ updated-by: berkc
 ## Options
 
 - [ ] brainstorm
-- [ ] planning
+- [x] planning
 
 ## Plan
 
