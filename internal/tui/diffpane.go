@@ -273,14 +273,14 @@ func (m *Model) renderDiffPane(width, height int) string {
 	// The scroll may go to the last row, not the last full page: "]" must be
 	// able to put a short file's header at the top even when the whole diff
 	// would fit.
-	m.diffScroll = m.diffTop()
-	top := m.diffScroll
+	top := m.diffTop()
+	m.diffScroll = top
 	selFile := -1
 	if len(m.diffRows) > 0 {
 		selFile = m.diffRows[top].file
 	}
-	end := min(len(m.diffRows), m.diffScroll+body)
-	for _, r := range m.diffRows[m.diffScroll:end] {
+	end := min(len(m.diffRows), top+body)
+	for _, r := range m.diffRows[top:end] {
 		text := truncate(r.text, width)
 		var sty lipgloss.Style
 		switch r.kind {
@@ -302,15 +302,8 @@ func (m *Model) renderDiffPane(width, height int) string {
 	if len(m.diffRows) == 0 {
 		lines = append(lines, styMeta.Render(truncate("nothing to show", width)))
 	}
-	for i, l := range lines {
-		if pad := width - lipgloss.Width(l); pad > 0 {
-			lines[i] = l + strings.Repeat(" ", pad)
-		}
-	}
-	for len(lines) < height {
-		lines = append(lines, strings.Repeat(" ", width))
-	}
-	return strings.Join(lines[:height], "\n")
+	pane, _ := clipPane(strings.Join(lines, "\n"), width, height, 0)
+	return pane
 }
 
 // withDiff puts the ticket body, built at diffLeftWidth, on the left and the

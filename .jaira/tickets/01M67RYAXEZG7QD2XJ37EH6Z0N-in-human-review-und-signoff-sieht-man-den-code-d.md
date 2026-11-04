@@ -1,7 +1,7 @@
 ---
 id: 01M67RYAXEZG7QD2XJ37EH6Z0N
 title: "In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code"
-status: critique
+status: testing
 ready: true
 creator: berkc
 assignee: berkc
@@ -18,18 +18,16 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T00:56:27Z
+updated-at: 2026-11-04T00:59:24Z
 updated-by: berkc
 claimed-by: berk-ca-511849
 claimed-at: 2026-11-04T00:37:01Z
 outcome-what: "A ticket in signoff or human shows its diff against master beside it in the TUI at 140+ columns: the ticket and the diff each sit in a box, the focused one with the accent border. tab switches focus, ]/[ jump between files, o opens the file at its line in VS Code; below 140 columns the screen is unchanged. Scroll and focus survive the 2s board reload and reset only when another ticket is opened."
 outcome-why: The person accepting work judged the outcome and review text but could not see the code; the diff had to be found by hand in git or on GitHub.
 outcome-resolves: "Sign-off and human screens show each changed file with its +/- lines beside the ticket, and o opens the file at that line. Critique round 1 closed: reload keeps scroll and focus (TestReloadKeepsDiffScrollAndFocus, TestOpeningAnotherTicketResetsDiffScroll); one branch-segment split shared by BranchFor and branchTicket; the split is built from splitPane like the follow-up split (TestPersonLaneShowsDiffBesideTheTicketWhenWide). Tests: go test ./core/gitrepo ./internal/tui -count=1 exit 0; go test ./internal/cli -count=1 -run 'Create|Follows|Branch' exit 0."
-review-summary: |-
-  internal/tui/model.go:475 reload() resets diffScroll and diffFocus, and reload runs on every 2s tickMsg (model.go:1133): a scrolled diff jumps back to the top and tab-focus falls back to the ticket within 2 seconds — clear only diffFor in reload, and reset diffScroll/diffFocus inside loadDiff (diffpane.go) only when t.ID differs from the ticket the diff was last loaded for (keep that id in its own field, since diffFor is blanked)
-  core/gitrepo/branchdiff.go:19 BranchFor re-implements the branch-segment split that branchTicket already has inline (internal/cli/tickets.go:157, same alnum closure as notAlnum) while its comment claims "the same rule" — export one helper from gitrepo (e.g. BranchSegments(name) []string) and use it in both places
-  internal/tui/diffpane.go:316 withDiff hand-rolls a second two-pane layout with its own focus signal (separator colour + title style) beside renderSplit/splitPane (internal/tui/followup.go:205-260), where the live pane is shown by an accent border — build the split with lipgloss.JoinHorizontal and splitPane so both split screens show focus the same way (shrink diffLeftWidth content/rows by the box frame)
+review-summary: none
 round: 2
+review-gaps: "folded renderDiffPane's own pad/fill-to-height loop into clipPane (view.go:1490, same code) and dropped the diffScroll/top double bookkeeping there; left: Base() beside gitref.RemoteHead (different lookup, critique let-stand), WorktreeOf/openInCode (no existing twin), parseDiff's second counting pass (runs once per diff load), the focused-title restyle next to the accent border (visual, not a cleanup)"
 ---
 
 # In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code
@@ -73,3 +71,5 @@ core/gitrepo/branchdiff.go:19 BranchFor re-implements the branch-segment split t
 internal/tui/diffpane.go:316 withDiff hand-rolls a second two-pane layout with its own focus signal (separator colour + title style) beside renderSplit/splitPane (internal/tui/followup.go:205-260), where the live pane is shown by an accent border — build the split with lipgloss.JoinHorizontal and splitPane so both split screens show focus the same way (shrink diffLeftWidth content/rows by the box frame)
 Let stand: fallback via CommitsForTicket+Repo.Diff (needed on boards that work on master without branches; note 00:40); Base() hardcoding master/main; re-running git on each reload (same trade-off as derivedFor memo); WorktreeOf for 'o'.
 - **2026-11-04 00:56 · berkc** — Round 2 (worker 2026-11-04): the three critique fixes are in. (1) reload() now clears only diffFor and keeps scroll and focus; loadDiff resets them only when the ticket differs from the new field diffScrollFor. Tests TestReloadKeepsDiffScrollAndFocus and TestOpeningAnotherTicketResetsDiffScroll. (2) gitrepo.BranchSegments is the one segment split; BranchFor and branchTicket both use it, branchTicket behaviour unchanged. (3) withDiff is splitPane boxes joined by lipgloss.JoinHorizontal, rows = height - footer - 2; the hand-built separator is gone. Side effect: TestAMultilineCheckKeepsItsLines (internal/tui/reviewcheck_test.go) matched a newline plus indent, which no longer exists once rows carry box borders at 140 columns; it now asserts step 2 and step 3 never share a row. Dead end: the goal line sits on an empty diff row, so the old check passed only on the border glyph; the new check asserts the handle row also holds the diff title. Open: plan item 6 (tmux check on a scratch board) is still not done.
+- **2026-11-04 00:57 · berkc** — critique (pass 2): read only the pass-1 findings and commit 50765410. (1) reload keeps scroll/focus: model.go reload clears only diffFor, diffpane.go loadDiff resets via diffScrollFor - addressed. (2) gitrepo.BranchSegments used by BranchFor and internal/cli/tickets.go branchTicket, notAlnum gone - addressed. (3) withDiff = splitPane boxes + lipgloss.JoinHorizontal, widths 78+2 / 1 / width-83+2 add up to m.width - addressed. Nothing new; pass-1 let-stands still hold. review-summary=none.
+- **2026-11-04 00:59 · berkc** — optimize: renderDiffPane hand-padded and height-filled its rows - the same loop clipPane (view.go:1490) runs; now ends in clipPane. Checked and left: Base() vs gitref.RemoteHead (different question: origin default only, Base prefers local master/main - critique let-stand); WorktreeOf has no twin in core (no other 'worktree list' parse); openInCode is the only 'code -g' launcher; parseDiff second pass for +/- counts is cheap and runs once per load; diffFocus title restyle beside the accent border kept (removing it changes the screen).
