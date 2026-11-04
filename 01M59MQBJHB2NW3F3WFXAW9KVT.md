@@ -20,17 +20,14 @@ related: []
 commits:
   - 26d4a26af9b1c7e56b09175150b0af34663ceab9
 created-at: 2026-10-19T08:33:51Z
-updated-at: 2026-11-04T21:47:53Z
+updated-at: 2026-11-04T21:49:44Z
 updated-by: berkc
 claimed-by: berk-ca-1280084
 claimed-at: 2026-11-04T21:24:26Z
 outcome-what: "Sign-off screen and detail of a human-lane ticket open with a 'try it' row of numbered steps (one per line); review-check prompt asks for at most six steps, step 1 builds and starts this change."
 outcome-why: "A reviewer's check was the last row, as a developer recipe; a person waiting to sign off could not quickly try the change, and step 1 pointed at the installed binary, not this branch."
 outcome-resolves: "Human review shows how to test: the check is the first thing on the sign-off screen and the ticket detail, with short steps that name what to see."
-review-summary: |-
-  internal/tui/view.go:1347-1354 re-implements the declared closure (value -> sourced row, empty+owed -> owedRow) that the same function defines at ~1415; hoist declared (with owed/srcs) above the identity rows and call declared(declaredField{"try it", ticket.FieldReviewCheck, oneStepPerLine(t.ReviewCheck)}) instead of a second copy
-  internal/tui/owed_test.go:336 strings.Index(out,"try it") > strings.Index(out,"secrets-status") passes when the try it row is missing (-1); add an i < 0 failure as reviewcheck_test.go does, so the ordering assertion cannot pass vacuously
-  internal/tui/signoff.go:19 the reflowed doc comment left one 104-char line; rewrap the paragraph to the file's ~80-column width
+review-summary: "The sign-off screen now opens with a 'try it' row holding the reviewer's check, ahead of tags, problem, account and verdict (signoff.go: the existing declared('check') call moved to the top and relabelled). The ticket detail pane does the same for a ticket in a person's lane (RequiresQuestion or RequiresHumanExit): the check is the first row above id/goal and is dropped from the Review group there; on other lanes it stays after the verdict. A new render-only helper oneStepPerLine splits an inline '1. a  2. b' check into one step per line, leaving the stored field untouched. The review lane prompt (builtin 40-review.md and the board copy, identical) now asks for at most six steps, step 1 a copyable command that builds and starts this change from its worktree, every later step naming what to see; the new hash is appended to shipped.sha256. Release note added. Tests cover order, one-step-per-line, the non-human detail case, and the splitter."
 round: 2
 review-gaps: "none removed: diff is lean (declared closure moved up, not copied; oneStepPerLine has one helper, no existing step splitter in repo; no orphans, vet clean, go test ./internal/tui ok). Left: the 'RequiresQuestion || RequiresHumanExit' person-lane test now also in view.go:1357 is pre-existing in snake.go:67, gate.go:212, cli/web_source.go:256 — a Lane method would fold all four but touches core/lane, out of scope; signoff.go untouched (EH6Z0N); owed_test.go:340 error text 'seven questions no longer come first' is slightly stale, harmless"
 test-verdict: "pass: build RC=0 and go test ./internal/tui ./core/shipped ./core/lane RC=0; DoD 1-3 verified in the tree; behaviour exercised through renderSignOff/detailBody tests, not a live TUI"
