@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T00:37:10Z
+updated-at: 2026-11-04T00:37:17Z
 updated-by: berkc
 claimed-by: berk-ca-511849
 claimed-at: 2026-11-04T00:37:01Z
@@ -45,3 +45,4 @@ claimed-at: 2026-11-04T00:37:01Z
 
 ## Progress
 - **2026-11-03 17:18 · berkc** — Maintainer 03.11.2026 (Screenshot): Ort = rechte, heute leere Haelfte der TUI-Ticketansicht (neben tags/problem/what/why/summary), dazu im Cockpit-Pane aus Q63EEV - beide zeigen denselben Diff. Brainstorm-Punkt 1 damit erledigt.
+- **2026-11-04 00:37 · berkc** — Worker 2026-11-04: Cockpit pane part (Q63EEV) left out - that pane does not exist yet; this ticket delivers only the TUI detail view. Diff = ticket branch vs master, reusing the lane payload's diff code. Narrow terminal: single-column view as today.
