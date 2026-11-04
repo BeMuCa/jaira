@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T00:39:54Z
+updated-at: 2026-11-04T00:40:12Z
 updated-by: berkc
 claimed-by: berk-ca-511849
 claimed-at: 2026-11-04T00:37:01Z
@@ -42,6 +42,13 @@ claimed-at: 2026-11-04T00:37:01Z
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] core/gitrepo/branchdiff.go: BranchFor(handle), Base(), BranchDiff(base,branch), WorktreeOf(branch) + tests in core/gitrepo/branchdiff_test.go
+- [ ] internal/tui/diffpane.go: parseDiff into per-file rows with new-side line numbers, ticketDiff (branch...master, fallback CommitsForTicket+Diff), memoised per open ticket
+- [ ] render: renderSignOff and renderDetail (human lane) split into ticket left (78 cols) and diff right when width>=140 and height>=20; else unchanged single column
+- [ ] keys in modeDetail: tab switches pane focus, arrows/pgup/pgdn scroll focused pane, ] / [ next/prev file, o opens top-visible file:line via 'code -g' (in the branch's worktree if one exists)
+- [ ] tests internal/tui/diffpane_test.go: parse, wide split shows file header and coloured +/- lines, narrow falls back, ]/[ jump, o calls stubbed launcher with path:line
+- [ ] release note core/release/notes/EH6Z0N.md; go test ./core/gitrepo ./internal/tui; tmux check on scratch board
 
 ## Progress
 - **2026-11-03 17:18 · berkc** — Maintainer 03.11.2026 (Screenshot): Ort = rechte, heute leere Haelfte der TUI-Ticketansicht (neben tags/problem/what/why/summary), dazu im Cockpit-Pane aus Q63EEV - beide zeigen denselben Diff. Brainstorm-Punkt 1 damit erledigt.
