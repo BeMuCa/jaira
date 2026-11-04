@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-04T21:51:02Z
+updated-at: 2026-11-04T21:56:42Z
 updated-by: berkc
 claimed-by: berk-ca-1279809
 claimed-at: 2026-11-04T21:24:25Z
@@ -218,3 +218,4 @@ Offene Fragen an berkc
 - **2026-11-04 21:40 · berkc** — Steps 7-8 done: README subsection under 'Lanes are pipeline stages' (skill/script/receipt, key format, send-twice caveat after a crash); release note core/release/notes/ENCFVZ.md. Plan step 9 is test + vet, next.
 - **2026-11-04 21:46 · berkc** — Tests: core/* all green; internal/cli had one failure, TestEveryCommandIsDocumented: README '## Commands' lacked a 'jaira receipt' line. Added it to README (Commands block); rerun of that test passes. Re-running the full internal/cli suite.
 - **2026-11-04 21:50 · berkc** — critique (pass 1): internal/cli/flow.go showForLane + core/role/builtin/jaira-role-lane/SKILL.md:35, jaira-worker/SKILL.md:139: a skill-only lane hands the agent an empty 'prompt', and no shipped role reads the new keys skill_path, run or receipt_required — an agent following jaira-role-lane/jaira-worker 'follows the prompt' and never starts the skill, runs the script or writes the receipt, so the feature only works for a reader of the text output. Do instead: add one step where those two skills (and core/role/jaira/SKILL.md 'Working a ticket') read the --for-lane payload: skill_path set -> read and follow that SKILL.md with prompt as the extra instruction; run non-empty -> run it from the repository root; receipt_required -> 'jaira receipt <id> <result>' after the side effect, before the move. Append the new hashes to core/shipped/shipped.sha256 as its test demands. Rest of the diff (lane.go parse, gate receipt block reusing Doc().Scalar like fieldFilled, role.FindSkill, jaira receipt, lanes show, announce marks) fits existing patterns; nothing speculative beyond the script_done-without-receipt decision recorded in note 21:37, which stands.
+- **2026-11-04 21:56 · berkc** — Critique round 2 fix: the three shipped role skills now say what to do with the --for-lane side-effect keys. jaira-role-lane and jaira-worker (after the lane-brief step) and core/role/jaira 'Working an agentic lane': skill -> start it with the prompt as extra instruction (no skill tool: read skill_path); non-empty run -> run once from repo root unless script_done; receipt_required -> jaira receipt <id> <result> before the move. core/role/jaira/SKILL.md copied over .claude/skills/jaira/SKILL.md (the test demands identical copies). Three new hashes appended to core/shipped/shipped.sha256 (old lines kept). Tests: go test ./core/shipped ./core/role ./internal/cli -count=1 with the three hangers skipped: all ok.
