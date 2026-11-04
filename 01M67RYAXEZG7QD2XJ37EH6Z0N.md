@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T00:47:56Z
+updated-at: 2026-11-04T00:47:58Z
 updated-by: berkc
 claimed-by: berk-ca-511849
 claimed-at: 2026-11-04T00:37:01Z
@@ -32,7 +32,8 @@ claimed-at: 2026-11-04T00:37:01Z
   proof: note 2026-11-03 17:18 (maintainer, screenshot): right half of TUI ticket detail view
 - [x] Ein Ticket in signoff zeigt seinen Diff je Datei; Test
   proof: internal/tui/diffpane_test.go TestPersonLaneShowsDiffBesideTheTicketWhenWide, TestHumanLaneShowsDiffBesideTheTicketWhenWide, TestNarrowTerminalKeepsTheSingleColumn, TestParseDiffSplitsFilesAndNumbersLines; core/gitrepo/branchdiff_test.go TestBranchDiffIsAgainstMergeBaseAndSkipsJaira
-- [ ] Ein Knopf/Taste oeffnet die Datei an der Zeile in VS Code
+- [x] Ein Knopf/Taste oeffnet die Datei an der Zeile in VS Code
+  proof: internal/tui/diffpane_test.go TestOKeyOpensFileAtLine and TestBracketJumpsBetweenFiles; internal/tui/model.go case "o", "]", "[" in modeDetail; internal/tui/diffpane.go openDiffRow
 - [ ] Release-Notiz unter core/release/notes/
 
 ## Options
