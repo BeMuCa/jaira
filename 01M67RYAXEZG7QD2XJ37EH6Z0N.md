@@ -20,10 +20,10 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T21:54:31Z
+updated-at: 2026-11-04T21:54:57Z
 updated-by: berkc
-claimed-by: berk-ca-1786644
-claimed-at: 2026-11-04T21:53:55Z
+claimed-by: berk-ca-1804087
+claimed-at: 2026-11-04T21:54:57Z
 outcome-what: "Diff pane in the sign-off and human ticket view: changed rows and words carry 256-palette tints (dark add 22, del 52, word-add 28, word-del 88; light 194, 224, 157, 217), a row cut exactly at a segment boundary ends in an ellipsis."
 outcome-why: "Critique pass 1 found the hex tints fell onto the grey ramp of 256-colour terminals (removed lines showed no red), and the cut row was silently shortened at an exact boundary; the tint test asserted only the hex escapes."
 outcome-resolves: "critique 21:47 finding 1: tints -> diffpane.go diffPaletteDark/Light, TestChangedRowsAreTintedAcrossThePane asserts 48;5;22/52/28/88; finding 2: removed-row word-del assertion in TestChangedRowsAreTintedAcrossThePane; finding 3: fitSegs fix, TestFitSegsEndsAnExactBoundaryCutInEllipsis; finding 4: model.go diff field comment rewrapped"
