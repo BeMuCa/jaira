@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-04T21:31:30Z
+updated-at: 2026-11-04T21:31:32Z
 updated-by: berkc
 claimed-by: berk-ca-1279809
 claimed-at: 2026-11-04T21:24:25Z
@@ -29,7 +29,8 @@ claimed-at: 2026-11-04T21:24:25Z
 
 - [x] Brainstorm: Lane-Arten mit Format, Sicherheit (Secrets, Seiteneffekte), was im Binary bleibt und was ein Skill ist
   proof: Progress note 2026-10-30 23:49 (brainstorm), decisions in notes 2026-11-03 17:18 and 2026-11-04 00:36
-- [ ] A lane file may declare 'skill: <name>'; an agentic lane with a skill needs no prompt body (the body is then the extra instruction beside the skill). Parser test covers it.
+- [x] A lane file may declare 'skill: <name>'; an agentic lane with a skill needs no prompt body (the body is then the extra instruction beside the skill). Parser test covers it.
+  proof: core/lane/lane.go parse() Skill; core/lane/lane_test.go TestSkillLaneNeedsNoPromptBody, TestAgenticLaneNeedsPromptOrSkill, TestSkillRefusesAPath
 - [ ] A lane file may declare 'script: <path>' relative to the repository root; the loader refuses an absolute path, a path leaving the repository, and a script on a lane that is not agentic. Parser test covers it.
 - [ ] 'receipt: required' on a lane: a forward move out of it is refused (code needs_receipt, field receipt-<lane>) unless the ticket field receipt-<lane> is '<key> <result>' with key = <ticket-id>-<lane>-r<round>; a receipt from an earlier round does not count; any other receipt: value fails the load. Gate test covers it.
 - [ ] 'jaira show <id> --for-lane <lane> --json' carries skill, skill_path (found in the skills directories jaira roles installs into, else listed under missing), script, idempotency_key, receipt_required, receipt and a run line passing JAIRA_IDEMPOTENCY_KEY to the script; when the current key already has a receipt the run line is empty and script_done is true, so the script is not run again. The text output says the same. CLI test covers it.
