@@ -20,13 +20,17 @@ related: []
 commits:
   - 26d4a26af9b1c7e56b09175150b0af34663ceab9
 created-at: 2026-10-19T08:33:51Z
-updated-at: 2026-11-04T21:37:23Z
+updated-at: 2026-11-04T21:39:32Z
 updated-by: berkc
 claimed-by: berk-ca-1280084
 claimed-at: 2026-11-04T21:24:26Z
 outcome-what: "Sign-off screen and detail of a human-lane ticket open with a 'try it' row of numbered steps (one per line); review-check prompt asks for at most six steps, step 1 builds and starts this change."
 outcome-why: "A reviewer's check was the last row, as a developer recipe; a person waiting to sign off could not quickly try the change, and step 1 pointed at the installed binary, not this branch."
 outcome-resolves: "Human review shows how to test: the check is the first thing on the sign-off screen and the ticket detail, with short steps that name what to see."
+review-summary: |-
+  internal/tui/view.go:1347-1354 re-implements the declared closure (value -> sourced row, empty+owed -> owedRow) that the same function defines at ~1415; hoist declared (with owed/srcs) above the identity rows and call declared(declaredField{"try it", ticket.FieldReviewCheck, oneStepPerLine(t.ReviewCheck)}) instead of a second copy
+  internal/tui/owed_test.go:336 strings.Index(out,"try it") > strings.Index(out,"secrets-status") passes when the try it row is missing (-1); add an i < 0 failure as reviewcheck_test.go does, so the ordering assertion cannot pass vacuously
+  internal/tui/signoff.go:19 the reflowed doc comment left one 104-char line; rewrap the paragraph to the file's ~80-column width
 ---
 
 # Human Review zeigt zuerst, wie der Mensch die Aenderung selbst testet
