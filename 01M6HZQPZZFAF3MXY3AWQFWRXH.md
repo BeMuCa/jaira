@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:54Z
-updated-at: 2026-11-04T21:30:41Z
+updated-at: 2026-11-04T21:41:33Z
 updated-by: berkc
 claimed-by: berk-ca-1311236
 claimed-at: 2026-11-04T21:27:24Z
@@ -56,3 +56,4 @@ Question: how should a PR's tickets show up on the board?
 2. Bundles inside the existing lanes. Trade-off: no extra column, but a milestone PR whose tickets sit in two lanes splits into two bundles, and it breaks the "one entry = one ticket" assumption in cardsInBudget/scroll/cardIdx.
 3. Only a flag on the card (✓#131 / ✗#140 / ●#138) plus a P picker like M, with a filter. Trade-off: the smallest change, but there is no bundle on the board, and the flag row is already full.
 Common to all: a grouping, not a lane. PR state changes outside jaira; a lane would need status writes on every CI run, which means ref churn and conflicts, and a ticket cannot be in signoff and in "PR" at once. Source: gh pr list when the board starts, on the existing ref fetch and on manual refresh. No daemon/cron/Action. Memory only, never written to tickets/refs. Mapping: handle segment in headRefName (as branchTicket, internal/cli/tickets.go:152) + milestone/<name> -> members (6TCTFV, not on master yet). CI: fail > running > pass > no CI. GitLab via glab, same shape, after GitHub (unverified).
+- **2026-11-04 21:41 · berkc** — Entscheidung berkc 04.11.2026: Option 1, PRs-Spalte rechts. Zusatz wortgetreu: 'Man koennte dann quasi PR's von kollegen sehen. Ich denk das muesste damit es sinnvoll ist auch von allen die PRs anzeigen. also muessen wir auch aktive darstellen und pullen.' Also: alle offenen PRs des Repos (auch von Kollegen), nicht nur eigene; aktive PRs zeigen und den Stand beim Refresh holen.
