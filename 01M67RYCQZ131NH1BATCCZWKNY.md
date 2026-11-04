@@ -18,7 +18,7 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-04T00:41:15Z
+updated-at: 2026-11-04T00:41:17Z
 updated-by: berkc
 claimed-by: berk-ca-512097
 claimed-at: 2026-11-04T00:37:05Z
@@ -63,7 +63,7 @@ round: 2
 - [x] core/release/notes/CZWKNY.md: '- > ' hook line + json-order line
 - [x] gofmt -l, go vet, go test ./core/release ./core/shipped, ./internal/cli -run TestUpdate, ./internal/tui -run 'NotesView|Popup|NotesBase'; tick DoD with proofs; move to critique; one commit code+ticket
 - [x] R2 popup: notesView.others + key o; lines() buckets hooks/features/important/plain, plain folded to 'n more · o shows them'; hookLines (headline bold, sentence dim); changeLines drops hook case; hint 'o others'
-- [ ] R2 tui tests: v.key("o") in 4 existing tests; TestNotesViewHookIsAHeadlineWithItsSentenceBelow; TestNotesViewFoldsPlainChangesUnderOthers
+- [x] R2 tui tests: v.key("o") in 4 existing tests; TestNotesViewHookIsAHeadlineWithItsSentenceBelow; TestNotesViewFoldsPlainChangesUnderOthers
 - [ ] R2 core/release/notes_test.go TestHookLinesAreShortAndOnePerFile over embedded notesFS (<=80 runes, <=1 per file); prove it fails on a long hook
 - [ ] R2 docs: release.go package doc + Hook doc; CLAUDE.md + AGENTS.md hook bullet (optional headline, max one, <=80, popup folds plain); CZWKNY.md rewritten with a headline hook
 - [ ] R2 gofmt/vet/tests; tick DoD 5-7, re-proof DoD 1; move to critique; one commit code+ticket
