@@ -18,7 +18,7 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-04T00:43:02Z
+updated-at: 2026-11-04T00:43:04Z
 updated-by: berkc
 claimed-by: berk-ca-512097
 claimed-at: 2026-11-04T00:37:05Z
@@ -46,7 +46,8 @@ round: 2
   proof: internal/tui/releasenotes.go hookLines; TestNotesViewHookIsAHeadlineWithItsSentenceBelow
 - [x] Popup: Hooks, Features und '!'-Zeilen immer sichtbar, einfache Zeilen unter 'Others' standardmaessig eingeklappt, Taste o klappt sie aus; jaira update zeigt weiter alles; Test
   proof: internal/tui/releasenotes.go lines/key 'o'; TestNotesViewFoldsPlainChangesUnderOthers; jaira update unchanged: TestUpdateNotesShowHooks
-- [ ] Ein Test schlaegt fehl bei einer Hook-Zeile ueber 80 Zeichen oder mehr als einem Hook pro Note-Datei
+- [x] Ein Test schlaegt fehl bei einer Hook-Zeile ueber 80 Zeichen oder mehr als einem Hook pro Note-Datei
+  proof: core/release/notes_test.go TestHookLinesAreShortAndOnePerFile
 
 ## Options
 
