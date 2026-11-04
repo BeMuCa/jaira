@@ -18,7 +18,7 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-04T00:54:48Z
+updated-at: 2026-11-04T00:54:52Z
 updated-by: berkc
 claimed-by: berk-ca-512097
 claimed-at: 2026-11-04T00:37:05Z
@@ -28,7 +28,11 @@ outcome-resolves: "Maintainer decision 04.11.2026: headline format, at most one 
 review-summary: "Adds an optional release-note hook: a line '- > Headline: sentence' in a note file. core/release.Hook reads it; entryOf puts every hook of a release before its other changes, so jaira update (text '  > text', and --json with '> ' kept) and the TUI show it first. The release-notes popup shows the headline bold with the sentence dimmed below it, then Features, then Others where '!' lines always show and plain lines fold into 'N more · o shows them' until key o; a version with no hook or feature is not folded. TestHookLinesAreShortAndOnePerFile fails on a hook over 80 runes or a second hook in one note file. Skipped versions already worked (Since returns all of them); the change adds 3-versions-behind tests for release, update and popup. CLAUDE.md, AGENTS.md and the release.go package doc describe the marker; notes/CZWKNY.md carries the user note."
 question: ""
 round: 3
-review-gaps: "folded hookLines' two wrap loops and changeLines' loop into one bulletLines helper in internal/tui/releasenotes.go (same idea three times, output byte-identical, tui/release/cli tests pass); left: entryOf's hook partition (only one, nothing to reuse), the hook branch in update.go writeNotes (it is behaviour: '  > ' instead of '  - > '), TestHookLinesAreShortAndOnePerFile's own '- > ' prefix check (counts the whole line, so changeLines+Hook would not fit), the static 'o others' footer hint critique pass 3 let stand (changing it is behaviour); no dead code, no hot-path cost"
+review-gaps: |-
+  note: the goal still says every note file opens with a hook; the maintainer decision of 04.11.2026 made it optional, and the docs and diff follow the decision, not the goal text
+  note: in a version with no hook or feature, lines marked ! now show above the plain lines instead of in file order (internal/tui/releasenotes.go lines()); the doc comment does not mention this reordering
+  note: nothing rejects '- > ! text' or '- > + text'; the docs say a hook carries no ! or +, but Hook is checked first, so such a line shows as a headline starting with ! or +
+  note: the footer hint 'o others' is shown on every page, including pages where o has nothing to unfold (already seen in critique pass 3)
 test-verdict: "pass: build/vet/full suite green (RC=0, 3 known hangers skipped), DoD 1-7 verified in tree by named tests, binary built as 0.5.8 on a scratch board stamped 0.5.5: update lists 0.5.6/0.5.7/0.5.8 + Unreleased with the '> ' hook first; popup exercised only through its model-render tests, not by hand"
 ---
 
