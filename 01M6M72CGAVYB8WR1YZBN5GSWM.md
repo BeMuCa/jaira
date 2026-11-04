@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T21:22:33Z
-updated-at: 2026-11-04T21:31:24Z
+updated-at: 2026-11-04T21:31:27Z
 updated-by: berkc
 claimed-by: berk-ca-1280093
 claimed-at: 2026-11-04T21:24:26Z
@@ -42,7 +42,7 @@ claimed-at: 2026-11-04T21:24:26Z
 
 - [x] view.go: replace package var styHandle with method (m *Model) handleStyle() that picks handleDark=248 / handleLight=240 off m.darkBG, like laneShade does; keep colFaint for lane counter
 - [x] switch all 7 styHandle call sites (view.go x3, lanefocus.go, edit.go, signoff.go, layerdraw.go) to m.handleStyle(); all of them show a ticket handle, so they should all follow
-- [ ] test in internal/tui: for dark and light, the handle tone is at least 60 grey levels (paletteRGB) away from both lane shades and the selection fill
+- [x] test in internal/tui: for dark and light, the handle tone is at least 60 grey levels (paletteRGB) away from both lane shades and the selection fill
 - [ ] release note core/release/notes/N5GSWM.md, one line
 - [ ] go test ./internal/tui -count=1
 
