@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T00:40:12Z
+updated-at: 2026-11-04T00:40:14Z
 updated-by: berkc
 claimed-by: berk-ca-511849
 claimed-at: 2026-11-04T00:37:01Z
@@ -53,3 +53,4 @@ claimed-at: 2026-11-04T00:37:01Z
 ## Progress
 - **2026-11-03 17:18 · berkc** — Maintainer 03.11.2026 (Screenshot): Ort = rechte, heute leere Haelfte der TUI-Ticketansicht (neben tags/problem/what/why/summary), dazu im Cockpit-Pane aus Q63EEV - beide zeigen denselben Diff. Brainstorm-Punkt 1 damit erledigt.
 - **2026-11-04 00:37 · berkc** — Worker 2026-11-04: Cockpit pane part (Q63EEV) left out - that pane does not exist yet; this ticket delivers only the TUI detail view. Diff = ticket branch vs master, reusing the lane payload's diff code. Narrow terminal: single-column view as today.
+- **2026-11-04 00:40 · berkc** — Plan decisions (worker 2026-11-04): (1) Diff source = 'git diff <base>...<branch>' (merge-base, what GitHub shows), base master else main; branch = first local then remote branch whose name has the ticket handle as a segment (same rule as branchTicket in internal/cli/tickets.go). Reason: CommitsForTicket (the lane diff source, core/gitrepo/derive.go) walks HEAD only, so the maintainer's TUI on master would see nothing for an unmerged signoff ticket. Fallback when no branch exists (merged and deleted): the lane derivation CommitsForTicket+Repo.Diff, parsed the same way. .jaira/ is excluded like WorktreeDiff excludes tickets. (2) Split only at width>=140 so the 78-col sign-off column keeps its width and the diff gets >=59 cols; below that the screen is exactly today's. (3) Keys: tab focus, ]/[ file, o = VS Code at the top visible diff line; 'o' and ']' '[' were unused in modeDetail. (4) human lane (requires-question) gets the same right pane via renderDetail, per maintainer 'human or signoff'. Cockpit pane (Q63EEV) out of scope: it does not exist yet.
