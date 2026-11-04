@@ -1,7 +1,7 @@
 ---
 id: 01M59MQBJHB2NW3F3WFXAW9KVT
 title: "Human Review zeigt zuerst, wie der Mensch die Aenderung selbst testet"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: berkc
@@ -17,12 +17,16 @@ tags:
   - tui
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 26d4a26af9b1c7e56b09175150b0af34663ceab9
 created-at: 2026-10-19T08:33:51Z
-updated-at: 2026-11-04T21:37:09Z
+updated-at: 2026-11-04T21:37:23Z
 updated-by: berkc
 claimed-by: berk-ca-1280084
 claimed-at: 2026-11-04T21:24:26Z
+outcome-what: "Sign-off screen and detail of a human-lane ticket open with a 'try it' row of numbered steps (one per line); review-check prompt asks for at most six steps, step 1 builds and starts this change."
+outcome-why: "A reviewer's check was the last row, as a developer recipe; a person waiting to sign off could not quickly try the change, and step 1 pointed at the installed binary, not this branch."
+outcome-resolves: "Human review shows how to test: the check is the first thing on the sign-off screen and the ticket detail, with short steps that name what to see."
 ---
 
 # Human Review zeigt zuerst, wie der Mensch die Aenderung selbst testet
