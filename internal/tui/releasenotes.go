@@ -134,18 +134,9 @@ func (v *notesView) lines(width int) []string {
 // hook without ": " is all headline.
 func hookLines(text string, width int) []string {
 	head, sentence, _ := strings.Cut(text, ": ")
-	var out []string
-	for j, l := range strings.Split(wrap(head, max(1, width-2), 0), "\n") {
-		lead := "  "
-		if j == 0 {
-			lead = "> "
-		}
-		out = append(out, styHook.Render(lead+l))
-	}
+	out := bulletLines(head, "> ", styHook, width)
 	if sentence != "" {
-		for _, l := range strings.Split(wrap(sentence, max(1, width-2), 0), "\n") {
-			out = append(out, styMeta.Render("  "+l))
-		}
+		out = append(out, bulletLines(sentence, "  ", styMeta, width)...)
 	}
 	return append(out, "")
 }
@@ -162,6 +153,12 @@ func changeLines(c string, width int) []string {
 	case feature:
 		bullet, sty = "+ ", styFeature
 	}
+	return append(bulletLines(text, bullet, sty, width), "")
+}
+
+// bulletLines wraps text for width, the bullet in front of its first line and
+// the rest indented under it, each line rendered in sty on its own.
+func bulletLines(text, bullet string, sty lipgloss.Style, width int) []string {
 	var out []string
 	for j, l := range strings.Split(wrap(text, max(1, width-2), 0), "\n") {
 		lead := "  "
@@ -170,7 +167,7 @@ func changeLines(c string, width int) []string {
 		}
 		out = append(out, sty.Render(lead+l))
 	}
-	return append(out, "")
+	return out
 }
 
 // render draws the title, the version and its position ("0.5.4 · 1/12"), the

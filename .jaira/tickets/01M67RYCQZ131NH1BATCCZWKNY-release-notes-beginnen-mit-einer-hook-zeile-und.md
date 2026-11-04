@@ -1,7 +1,7 @@
 ---
 id: 01M67RYCQZ131NH1BATCCZWKNY
 title: "Release-Notes beginnen mit einer Hook-Zeile, und wer mehrere Versionen ueberspringt, sieht die Notes aller dazwischen"
-status: critique
+status: testing
 ready: true
 creator: berkc
 assignee: berkc
@@ -18,16 +18,17 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-04T00:46:50Z
+updated-at: 2026-11-04T00:50:21Z
 updated-by: berkc
 claimed-by: berk-ca-512097
 claimed-at: 2026-11-04T00:37:05Z
 outcome-what: "A release note hook is an optional headline 'Headline: sentence'; the popup shows hooks, features and ! lines and folds plain changes under Others (key o); jaira update text output unchanged"
 outcome-why: "Release notes read as a wall of text (0.5.7: 32 lines, about 214 characters each on average); headlines first and folded plain lines make a version scannable"
 outcome-resolves: "Maintainer decision 04.11.2026: headline format, at most one hook per note file, 80-character cap enforced by TestHookLinesAreShortAndOnePerFile, plain changes folded by default"
-review-summary: "internal/tui/releasenotes.go lines(): the plain-change fold applies to every version, including one with no hook and no feature. Every released version (0.5.3-0.5.8 hold 0 hooks, 0 features) therefore opens as an empty page reading \"N more · o shows them\" (0.5.7: one ! line plus \"31 more\"), both in the upgrade popup and in the launcher w view of all history. That contradicts the 00:39 plan note (Others header only below a hook or feature keeps a plain-only version a plain list). Fold only when the page has a hook or a feature, i.e. the same len(out)>0 condition that already gates the Others header (folded only matters when an Others header is drawn); add a test that a plain-only version shows its lines unfolded."
+review-summary: "none"
 question: ""
 round: 3
+review-gaps: "folded hookLines' two wrap loops and changeLines' loop into one bulletLines helper in internal/tui/releasenotes.go (same idea three times, output byte-identical, tui/release/cli tests pass); left: entryOf's hook partition (only one, nothing to reuse), the hook branch in update.go writeNotes (it is behaviour: '  > ' instead of '  - > '), TestHookLinesAreShortAndOnePerFile's own '- > ' prefix check (counts the whole line, so changeLines+Hook would not fit), the static 'o others' footer hint critique pass 3 let stand (changing it is behaviour); no dead code, no hot-path cost"
 ---
 
 # Release-Notes beginnen mit einer Hook-Zeile, und wer mehrere Versionen ueberspringt, sieht die Notes aller dazwischen
@@ -85,3 +86,5 @@ round: 3
 - **2026-11-04 00:44 · berkc** — critique (pass 2, judged only commit 528a535a, which answers pass 1 via the maintainer decision of 04.11.2026; that decision is settled and not reopened): round 2 covers the decision's points 1-4 (headline+dimmed sentence, optional with one hook per file in docs and test, ! and hooks visible, o toggles, jaira update text untouched, 80-rune cap). One finding: internal/tui/releasenotes.go lines(): the plain-change fold applies to every version, including one with no hook and no feature. Every released version (0.5.3-0.5.8 hold 0 hooks, 0 features) therefore opens as an empty page reading "N more · o shows them" (0.5.7: one ! line plus "31 more"), both in the upgrade popup and in the launcher w view of all history. That contradicts the 00:39 plan note (Others header only below a hook or feature keeps a plain-only version a plain list). Fold only when the page has a hook or a feature, i.e. the same len(out)>0 condition that already gates the Others header (folded only matters when an Others header is drawn); add a test that a plain-only version shows its lines unfolded. Rest of 528a535a: no finding. The worktree_diff is unrelated untracked .jaira/milestones files, not judged.
 - **2026-11-04 00:45 · berkc** — worker decision on critique pass 2: fold plain changes only on a page that has a hook or a feature above them (same condition as the 'Others' header). A page with neither shows its plain changes unfolded, because folding it would leave nothing but 'N more'. Reading of the maintainer's 'collapsed by default'; the maintainer can overrule at signoff.
 - **2026-11-04 00:46 · berkc** — in-progress round 3 (critique finding, plain-only version folded): lines() now folds plain changes only when a hook or feature heads the page (headed := len(out) > 0; case v.others || !headed). Doc comment reworded. New TestNotesViewDoesNotFoldAVersionWithoutHeadlines. Mutation check: reverting '|| !headed' made it FAIL (shows '2 more · o shows them'); restored byte-identical, PASS. gofmt/vet/tui targeted/core/release all exit 0.
+- **2026-11-04 00:47 · berkc** — critique (pass 3, judged only e6b1e8f1 against the pass-2 finding; pass 1/2 notes and the maintainer decision of 04.11.2026 stand and were not reopened): addressed. internal/tui/releasenotes.go lines() folds plain changes only when a hook or feature heads the page (headed := len(out) > 0, case v.others || !headed), same condition as the Others header, as pass 2 proposed; TestNotesViewDoesNotFoldAVersionWithoutHeadlines covers it. Seen and let stand (not introduced by the repair, breaks no DoD item): the footer hint 'o others' (releasenotes.go:194) is static and also shows on a page where o has nothing to unfold. worktree_diff = unrelated untracked .jaira/milestones files, not judged. review-summary=none.
+- **2026-11-04 00:50 · berkc** — optimize: one cleanup, bulletLines in internal/tui/releasenotes.go now carries the bullet+wrap loop that hookLines (twice) and changeLines each spelled out; no behaviour change. Looked for and found nothing: an existing stable partition or notes walker to reuse (none in core/release), dead code (folded counter and the 'case folded > 0' branch are both reachable), hot loops (popup renders one version). Claim refused (held by berk-ca-512097, same session's worker), not stolen.
