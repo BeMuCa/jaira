@@ -1,7 +1,7 @@
 ---
 id: 01M5GFCGEEZQ6AB9NS7380MGXT
 title: "Ein Ticket in done raeumt seinen Worktree weg, sobald der Branch gepusht und sauber ist"
-status: testing
+status: review
 ready: true
 creator: berkc
 assignee: berkc
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:13Z
-updated-at: 2026-11-04T21:54:00Z
+updated-at: 2026-11-04T21:54:07Z
 updated-by: berkc
 claimed-by: berk-ca-1279800
 claimed-at: 2026-11-04T21:24:25Z
