@@ -14,7 +14,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-11-04T00:53:09Z
+updated-at: 2026-11-04T00:53:11Z
 updated-by: berkc
 claimed-by: berk-ca-516678
 claimed-at: 2026-11-04T00:38:18Z
@@ -28,7 +28,15 @@ review-gaps: |-
 test-verdict: "pass: go build ./... RC=0, go test ./... RC=0 (3 known hangers skipped per agent rules), DoD 1-3 proofs checked in the tree, tmux on scratch board: thin on first start, → backlog->done, z widens and → steps onto empty lane, restart thin again"
 review-verdict: "pass - diff meets all three DoD items (skip with z on, unchanged with z off, on by default, tests, release note); go vet and go test ./internal/tui/ -count=1 pass; no defects found"
 review-round: 3
-review-check: "1. cd /home/berkc/code/X_General/jaira-exp-b && go run ./cmd/jaira  2. on the board, put the cursor on a ticket in a lane with empty lanes to its right  3. press → : cursor moves to the adjacent (empty) lane, as before  4. press ← to go back, then press z : empty lanes are drawn thin  5. press → : cursor jumps straight to the next lane that has tickets, skipping the thin ones  6. press z again and → : it steps one lane at a time again. Automated: go test ./internal/tui/ -run 'Arrows|LeftWithToggle' -count=1 passes"
+review-check: |-
+  1. cd /home/berkc/code/X_General/jaira-exp-b && go run ./cmd/jaira
+  2. Look at the board: lanes with no tickets are drawn narrow from the start, and the hint bar reads 'z widen empty'
+  3. Put the cursor on a ticket in a lane that has empty lanes to its right, press →: the cursor jumps straight to the next lane that has tickets
+  4. Press ← : it jumps back the same way; from the first filled lane, ← wraps round to the last filled lane
+  5. Press z: every lane is full width again and the hint reads 'z thin empty'
+  6. Press → : the cursor now steps one lane at a time, onto empty lanes too
+  7. Quit and start again: lanes are thin again (z is not saved)
+  Automated: go test ./internal/tui/ -run 'Arrows|LeftWithToggle|ThinEmptyLanesAreOnByDefault' -count=1 passes
 round: 3
 ---
 
