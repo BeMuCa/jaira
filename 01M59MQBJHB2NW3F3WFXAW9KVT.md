@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T08:33:51Z
-updated-at: 2026-11-04T21:36:48Z
+updated-at: 2026-11-04T21:36:51Z
 updated-by: berkc
 claimed-by: berk-ca-1280084
 claimed-at: 2026-11-04T21:24:26Z
@@ -47,7 +47,7 @@ claimed-at: 2026-11-04T21:24:26Z
 - [x] view.go detailBody: for a ticket in a lane with RequiresHumanExit or RequiresQuestion, render review-check as first block after the title rule ('try it'), and leave it out of the Review group there; other lanes unchanged
 - [x] tests in internal/tui: signoff and detail show check before goal/summary, one step per line; detail for a non-human lane keeps check in Review
 - [x] core/lane/builtin/40-review.md + .jaira/lanes/review.md: review-check at most ~6 steps, step 1 a copyable command that builds and starts this branch (worktree path), each step names what you should see; append new hash to core/shipped/shipped.sha256, run core/shipped tests
-- [ ] release note core/release/notes/AW9KVT.md; go test ./internal/tui ./core/shipped ./core/lane
+- [x] release note core/release/notes/AW9KVT.md; go test ./internal/tui ./core/shipped ./core/lane
 
 ## Progress
 - **2026-11-04 21:26 · berkc** — Plan decisions: (1) 'frueher' was not a different order: git log -S shows review-check was last on both screens since it was introduced in 0994fc07 (2026-08-20); what changed is that check texts grew into 9-step developer recipes (GK1QGT). So the fix is order + step layout + a tighter lane prompt. (2) The detail pane moves check first only for tickets in a person's lane (requires-question or requires-human-exit), not everywhere: on other lanes nobody is asked to try anything. (3) Inline '1. x  2. y' is split into lines at render time, the stored field is not rewritten — the file format stays as written. (4) EH6Z0N (branch feat/EH6Z0N-diff-view, unmerged) also edits internal/tui/signoff.go (adds a right-half diff pane). This ticket keeps its signoff.go change to moving one call up in renderSignOff's left column plus the step layout, so the merge conflict is at most one hunk.
