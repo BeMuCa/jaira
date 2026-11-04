@@ -18,7 +18,7 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-04T00:54:52Z
+updated-at: 2026-11-04T00:54:55Z
 updated-by: berkc
 claimed-by: berk-ca-512097
 claimed-at: 2026-11-04T00:37:05Z
@@ -34,6 +34,8 @@ review-gaps: |-
   note: nothing rejects '- > ! text' or '- > + text'; the docs say a hook carries no ! or +, but Hook is checked first, so such a line shows as a headline starting with ! or +
   note: the footer hint 'o others' is shown on every page, including pages where o has nothing to unfold (already seen in critique pass 3)
 test-verdict: "pass: build/vet/full suite green (RC=0, 3 known hangers skipped), DoD 1-7 verified in tree by named tests, binary built as 0.5.8 on a scratch board stamped 0.5.5: update lists 0.5.6/0.5.7/0.5.8 + Unreleased with the '> ' hook first; popup exercised only through its model-render tests, not by hand"
+review-verdict: "The diff meets all 7 DoD items. Each has a named test, and the tests pass (core/release, core/shipped, internal/tui NotesView/Popup, internal/cli TestUpdate; gofmt and vet are clean). I found no defects, only 4 notes. I did not drive the popup by hand."
+review-round: 3
 ---
 
 # Release-Notes beginnen mit einer Hook-Zeile, und wer mehrere Versionen ueberspringt, sieht die Notes aller dazwischen
