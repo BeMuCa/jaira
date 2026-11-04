@@ -19,10 +19,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:13Z
-updated-at: 2026-11-04T21:54:07Z
+updated-at: 2026-11-04T21:54:41Z
 updated-by: berkc
-claimed-by: berk-ca-1279800
-claimed-at: 2026-11-04T21:24:25Z
+claimed-by: berk-ca-1799653
+claimed-at: 2026-11-04T21:54:41Z
 outcome-what: "reap.sh removes a done ticket's tabs and worktree once its branch is pushed at the same commit (clean worktree, own ticket file ignored); the local branch is deleted only after its PR merged at the head or its head lies in origin/HEAD. SKILL.md (teamlead) says the worktree goes at done and the branch and its commits stay on the pushed branch until merged, with review comments and returning tickets landing there. Shipped hashes appended; core/role and core/shipped tests pass."
 outcome-why: "Worktrees pile up on disk when PRs are per milestone and wait for merge; the branch and its commits are the record, so the worktree can go once they are on origin."
 outcome-resolves: "Critique round 1 finding 2 (SKILL.md long-lived-worktree rationale contradicting the new paragraph) fixed. Finding 1 (spawn.sh worktree add -b on a kept branch) deliberately left for follow-up R80Z4G."
