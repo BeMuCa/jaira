@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-04T21:40:09Z
+updated-at: 2026-11-04T21:46:36Z
 updated-by: berkc
 claimed-by: berk-ca-1279809
 claimed-at: 2026-11-04T21:24:25Z
@@ -211,3 +211,4 @@ Offene Fragen an berkc
 - **2026-11-04 21:37 · berkc** — Steps 4-5 done: show --for-lane keys/text section in flow.go (laneRunFor); 'jaira receipt' in resume.go, registered in root.go, listed in docs/COMMANDS.md. Decisions: key uses full ticket id; run line only while no receipt for this round, and script_done is reported for any script lane; a receipt-only lane still gets idempotency_key. Dead end: the test helper needed lane.Load(dir) first, otherwise the project lane dir is authoritative and drops the built-ins.
 - **2026-11-04 21:39 · berkc** — Step 6 done: LaneFact Skill/Script/Receipt (board/announce.go), facts.go fills them, lanes show text+json (tickets.go). Decision: marks and text lines only for lanes that declare them, so existing boards' generated note and lanes show output are unchanged. The repo's own CLAUDE.md/AGENTS.md block is NOT hand-edited: it is generated (jaira update), and this board's lanes declare no skill, so it stays current.
 - **2026-11-04 21:40 · berkc** — Steps 7-8 done: README subsection under 'Lanes are pipeline stages' (skill/script/receipt, key format, send-twice caveat after a crash); release note core/release/notes/ENCFVZ.md. Plan step 9 is test + vet, next.
+- **2026-11-04 21:46 · berkc** — Tests: core/* all green; internal/cli had one failure, TestEveryCommandIsDocumented: README '## Commands' lacked a 'jaira receipt' line. Added it to README (Commands block); rerun of that test passes. Re-running the full internal/cli suite.
