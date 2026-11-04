@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-04T21:33:15Z
+updated-at: 2026-11-04T21:33:23Z
 updated-by: berkc
 claimed-by: berk-ca-1279809
 claimed-at: 2026-11-04T21:24:25Z
@@ -201,3 +201,4 @@ Offene Fragen an berkc
 - **2026-11-04 21:28 · berkc** — Brainstorm 04.11.2026 (worker). Direction is the maintainer's: Variant A + receipt gate. Scope here: skill, script, receipt: required, --for-lane hand-over, 'jaira receipt', docs. Out: max-rounds, wait-for, artifacts (follow-ups). Sub-decisions I settled, disagree here: (1) jaira never runs the script - the agent working the lane does, from the 'run' line in --for-lane; that keeps 'no daemon, nothing runs by itself' true. (2) key = <full ticket id>-<lane>-r<round>, round = the existing 'round' field (counts send-backs, core/move/move.go:126), so a lane re-entered after a send-back is a new key and may run again; full id, not the 6-char handle, because providers dedupe on it across boards. (3) The gate only accepts a receipt whose key is the current one: a stale round-1 receipt does not let round 2 leave. (4) 'jaira receipt <id> <result>' computes the key itself so nobody types it; refuses exit 3 if the key already has a receipt or the lane requires none. (5) script path relative to repo root, must stay inside it, lane must be agentic (nobody else would run it). (6) skill resolved to a SKILL.md in the same directories 'jaira roles install' uses (core/role/target.go), so a non-Claude agent can read the file; not found -> listed in missing, the lane is not silently skipped. (7) Agents learn of it from the per-lane line in the generated CLAUDE.md/AGENTS.md block, not from edits to the hash-pinned role skills.
 - **2026-11-04 21:29 · berkc** — Pre-process: plan written. Artifacts follow-up is the existing FCMP17 (note added there), not a new duplicate. Follow-ups H6CD33, M5ABXE have no assignee yet - the maintainer assigns.
 - **2026-11-04 21:31 · berkc** — Step 1 done: Lane.Skill/Script/ReceiptRequired in core/lane/lane.go, parse checks (skill not a path, script relative and inside repo, script only on agentic, receipt required|absent). Decision: an agentic lane may now have no body if it names a skill; the old 'no prompt body' error text changed to 'no prompt body or skill'. Tests appended to core/lane/lane_test.go.
+- **2026-11-04 21:33 · berkc** — Step 2 done: gate.CodeNeedsReceipt, ReceiptField/ReceiptKey/HasReceipt in core/gate/gate.go; check placed after OutputOwed block in CheckAdvance. Decision: key uses the full ticket ID (plan says t.ID) not the 6-char handle. Dead end: in-memory tickets have no Doc(), so HasReceipt reads false for them; tests build the ticket from ParseDoc+Decode in core/gate/receipt_test.go.
