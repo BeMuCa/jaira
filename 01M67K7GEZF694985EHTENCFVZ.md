@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-04T21:28:14Z
+updated-at: 2026-11-04T21:28:41Z
 updated-by: berkc
 claimed-by: berk-ca-1279809
 claimed-at: 2026-11-04T21:24:25Z
@@ -47,6 +47,16 @@ claimed-at: 2026-11-04T21:24:25Z
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] core/lane/lane.go: add Lane fields Skill, Script string and ReceiptRequired bool; parse 'skill', 'script', 'receipt' in parse(); agentic needs prompt body OR skill; script must be relative, filepath.Clean must not start with '..', lane must be agentic; receipt: only 'required' (case-insensitive) or absent, anything else an error; add the three to lanesEquivalent. Tests in core/lane/lane_test.go.
+- [ ] core/gate/gate.go: add CodeNeedsReceipt = "needs_receipt", exported ReceiptField(laneID) = "receipt-"+laneID and ReceiptKey(t, laneID) = t.ID+"-"+laneID+"-r"+CurrentRound(t), and HasReceipt(t, laneID) (raw field's first space-separated word == key). In CheckAdvance, beside the OutputOwed block (to > from, !parking, lane not skipped): cur.ReceiptRequired && !HasReceipt -> violation naming 'jaira receipt <handle> <result>'. Tests in core/gate (new receipt_test.go): no receipt refused, current-key receipt passes, round-1 receipt refused in round 2, send-back not refused.
+- [ ] core/role: add FindSkill(root, name string) string returning the first <dir>/<name>/SKILL.md that exists, over every agent's ProjectTarget(root) + also-dirs, then GlobalTarget + also-dirs (target.go). Test with t.TempDir and HOME set to a temp dir.
+- [ ] internal/cli/flow.go showForLane: JSON keys only when the lane declares them: skill, skill_path (missing entry 'skill <name> (no SKILL.md found in ...)' when FindSkill returns empty); script, idempotency_key, receipt_required, receipt (current field value), script_done (HasReceipt), run = 'JAIRA_IDEMPOTENCY_KEY=<key> JAIRA_TICKET=<id> JAIRA_LANE=<lane> ./<script>' or empty when script_done; missing entry when the script file does not exist under s.Root. Text output: a '## Skill / script' section with the same facts and, when script_done, 'already ran for this key: do not run it again'. Tests in internal/cli.
+- [ ] internal/cli: new 'jaira receipt <id> <result...>' command (copy the shape of newNoteCmd in resume.go, register in root.go AddCommand): loads env, refuses ExitValidation when the ticket's lane lacks receipt: required or HasReceipt already true; else SetScalar(ReceiptField, key+" "+result) via s.Mutate. Prints 'Receipt for <handle> in <lane>: <key> <result>'. --json emits ticketJSON. Tests: write, double write refused, lane without receipt refused. Add it to docs/COMMANDS.md if that file lists every command.
+- [ ] jaira lanes show (internal/cli/tickets.go ~1440): JSON keys skill, script, receipt_required; text lines Skill:/Script:/Receipt:. core/board/announce.go LaneFact gets Skill, Script, Receipt; per-lane marks 'runs skill <name>', 'runs script <path> (JAIRA_IDEMPOTENCY_KEY from --for-lane)', 'leaving needs a receipt: jaira receipt <id> <result>'; core/lane/facts.go fills them. Test that the marks appear only for lanes that declare them.
+- [ ] README.md 'Lanes are pipeline stages': a short subsection with an example lane file using skill, script and receipt: required, the key format, that jaira never runs the script (the agent does, from --for-lane's run line), and that the script must hold no secrets.
+- [ ] core/release/notes/ENCFVZ.md: one line each for skill:, script:, receipt: required + 'jaira receipt'.
+- [ ] Run go vet and go test for ./core/lane ./core/gate ./core/role ./core/board ./internal/cli (with the -skip of the three hanging tests) and ./core/shipped; fix what fails.
 
 ## Progress
 - **2026-10-30 23:49 · berkc** — Brainstorm (starkes Modell, 31.10.2026). Gelesen: .jaira/lanes/*.md, core/lane/lane.go (parse), core/lane/template.go, core/lane/share.go, core/hook/hook.go, core/settings/settings.go, jaira-worker SKILL.md, --for-lane JSON, FCMP17 (Artefakte), ATDG74 (Schwarm).
