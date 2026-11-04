@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:13Z
-updated-at: 2026-11-04T21:26:17Z
+updated-at: 2026-11-04T21:26:20Z
 updated-by: berkc
 claimed-by: berk-ca-1279800
 claimed-at: 2026-11-04T21:24:25Z
@@ -30,7 +30,7 @@ claimed-at: 2026-11-04T21:24:25Z
 ## Definition of Done
 
 - [ ] Steht das Ticket in done, ist jeder seiner Worktrees sauber (oder nur die eigene Ticket-Datei geaendert) und steht origin/<branch> auf demselben Commit wie der lokale Branch, schliesst reap.sh seine Tabs und entfernt den Worktree, ohne auf einen PR zu warten; der Branch bleibt; Test in core/role/reap_test.go
-- [ ] Ist der Worktree nicht sauber oder der Branch nicht gepusht, bleibt alles und die Ausgabe nennt den Grund; Test
+- [ ] Ist das Ticket nicht in done, der Worktree nicht sauber, der Branch nicht gepusht oder origin/<branch> auf anderem Stand, bleibt alles (Tabs, Worktree, Branch) und reap.sh druckt je Ticket eine Zeile mit dem Grund; Test je Fall
 - [ ] Der Branch wird geloescht, sobald der (Milestone-)PR gemergt ist; reap.sh --dry-run zeigt beides
 - [ ] Release-Note-Zeile in core/release/notes/<ID>.md
 
