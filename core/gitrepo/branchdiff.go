@@ -12,10 +12,11 @@ func BranchSegments(branch string) []string {
 
 // BranchFor returns the branch whose name carries handle as one of its
 // segments ("feat/eh6z0n-diff-view" carries "EH6Z0N"), using the same rule as
-// branchTicket in internal/cli. Local branches come before remote ones because
-// for-each-ref sorts refs/heads before refs/remotes. "" when none does.
+// branchTicket in internal/cli. When several do, the one with the newest commit
+// wins: an old experiment under the same handle must not shadow the work. ""
+// when none does.
 func (r *Repo) BranchFor(handle string) string {
-	out, err := r.run("for-each-ref", "--format=%(refname:short)", "refs/heads", "refs/remotes")
+	out, err := r.run("for-each-ref", "--sort=-committerdate", "--format=%(refname:short)", "refs/heads", "refs/remotes")
 	if err != nil {
 		return ""
 	}

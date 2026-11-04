@@ -81,3 +81,21 @@ func TestWorktreeOfFindsTheCheckoutOfTheBranch(t *testing.T) {
 		t.Errorf("WorktreeOf(nope) = %q, want none", got)
 	}
 }
+
+// When several branches carry the handle, the one with the newest commit wins,
+// not the first by name: an old experiment must not shadow the current work.
+func TestBranchForPicksTheNewestBranchCarryingTheHandle(t *testing.T) {
+	dir, repo := fixtureRepo(t)
+	when := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	fixtureCommit(t, dir, map[string]string{"a.txt": "one\n"}, "base", when)
+	gitIn(t, dir, "branch", "-M", "master")
+	gitIn(t, dir, "checkout", "-q", "-b", "exp/abc123-a")
+	fixtureCommit(t, dir, map[string]string{"a.txt": "exp\n"}, "exp", when.Add(time.Hour))
+	gitIn(t, dir, "checkout", "-q", "master")
+	gitIn(t, dir, "checkout", "-q", "-b", "feat/abc123-b")
+	fixtureCommit(t, dir, map[string]string{"a.txt": "feat\n"}, "feat", when.Add(2*time.Hour))
+	gitIn(t, dir, "checkout", "-q", "master")
+	if got := repo.BranchFor("ABC123"); got != "feat/abc123-b" {
+		t.Errorf("BranchFor(ABC123) = %q, want the newer feat/abc123-b, not exp/abc123-a", got)
+	}
+}

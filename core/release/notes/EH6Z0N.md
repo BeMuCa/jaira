@@ -1,1 +1,2 @@
 - A ticket waiting on you in signoff or human now shows its diff against master beside it in the TUI when the terminal is at least 140 columns wide: tab switches to the diff, ] and [ jump between files, o opens the file at that line in VS Code.
+- The diff beside a sign-off or human ticket now shows old and new line numbers, tints added and removed lines across the whole pane with the changed words marked, and reads "file N/M" for the file at the top, so you can tell where you are in the diff.
