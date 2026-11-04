@@ -20,10 +20,10 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T21:58:43Z
+updated-at: 2026-11-04T21:59:10Z
 updated-by: berkc
-claimed-by: berk-ca-1829671
-claimed-at: 2026-11-04T21:56:36Z
+claimed-by: berk-ca-1855988
+claimed-at: 2026-11-04T21:59:09Z
 outcome-what: "'o' on a blank separator row opens the file below it, and the file counter and marker name that file; header rows no longer carry an unused text field"
 outcome-why: "review-gaps found 'o' on a blank row opened code -g :0 with title 'opened :0'; blank rows have no path, and the next file's header is the row the reader is looking at"
 outcome-resolves: "both review-gaps items; test TestOKeyOnABlankRowOpensTheFileBelow"
