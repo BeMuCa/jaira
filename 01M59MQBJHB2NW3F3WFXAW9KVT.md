@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T08:33:51Z
-updated-at: 2026-11-04T21:36:40Z
+updated-at: 2026-11-04T21:36:43Z
 updated-by: berkc
 claimed-by: berk-ca-1280084
 claimed-at: 2026-11-04T21:24:26Z
@@ -44,7 +44,7 @@ claimed-at: 2026-11-04T21:24:26Z
 
 - [x] internal/tui: helper checkSteps(text) splits an inline '1. a  2. b' review-check into one line per step (text that already has line breaks keeps them); used by both screens
 - [x] signoff.go: move the declared("check") call from last to first (before tags), label 'try it', rendered as numbered steps; nothing else in signoff.go changes (EH6Z0N merge)
-- [ ] view.go detailBody: for a ticket in a lane with RequiresHumanExit or RequiresQuestion, render review-check as first block after the title rule ('try it'), and leave it out of the Review group there; other lanes unchanged
+- [x] view.go detailBody: for a ticket in a lane with RequiresHumanExit or RequiresQuestion, render review-check as first block after the title rule ('try it'), and leave it out of the Review group there; other lanes unchanged
 - [ ] tests in internal/tui: signoff and detail show check before goal/summary, one step per line; detail for a non-human lane keeps check in Review
 - [ ] core/lane/builtin/40-review.md + .jaira/lanes/review.md: review-check at most ~6 steps, step 1 a copyable command that builds and starts this branch (worktree path), each step names what you should see; append new hash to core/shipped/shipped.sha256, run core/shipped tests
 - [ ] release note core/release/notes/AW9KVT.md; go test ./internal/tui ./core/shipped ./core/lane
