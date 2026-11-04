@@ -363,8 +363,10 @@ type diffPalette struct {
 }
 
 var (
-	diffPaletteDark  = diffPalette{lipgloss.Color("#16301f"), lipgloss.Color("#3a1d22"), lipgloss.Color("#2b6a3c"), lipgloss.Color("#7a2c35")}
-	diffPaletteLight = diffPalette{lipgloss.Color("#e6ffec"), lipgloss.Color("#ffebe9"), lipgloss.Color("#abf2bc"), lipgloss.Color("#ffc1c0")}
+	// 256-colour indices, as view.go's colours are: the hex tints the first
+	// version used fell onto the grey ramp of a 256-colour terminal.
+	diffPaletteDark  = diffPalette{lipgloss.Color("22"), lipgloss.Color("52"), lipgloss.Color("28"), lipgloss.Color("88")}
+	diffPaletteLight = diffPalette{lipgloss.Color("194"), lipgloss.Color("224"), lipgloss.Color("157"), lipgloss.Color("217")}
 )
 
 // diffSeg is a run of plain text and the style it is drawn in. A row is built
@@ -375,19 +377,21 @@ type diffSeg struct {
 	sty  lipgloss.Style
 }
 
-// fitSegs cuts segments to n columns, a cut ending in "…" as truncate does.
+// fitSegs cuts segments to n columns, a cut ending in "…" as truncate does. A
+// segment that fills the last column exactly is cut too when text follows it,
+// so the row still ends in "…".
 func fitSegs(segs []diffSeg, n int) []diffSeg {
 	var out []diffSeg
 	used := 0
-	for _, s := range segs {
+	for i, s := range segs {
 		w := lipgloss.Width(s.text)
-		if used+w <= n {
+		if used+w < n || used+w == n && segsWidth(segs[i+1:]) == 0 {
 			out = append(out, s)
 			used += w
 			continue
 		}
 		if room := n - used; room > 0 {
-			out = append(out, diffSeg{truncate(s.text, room), s.sty})
+			out = append(out, diffSeg{truncate(s.text+"…", room), s.sty})
 		}
 		break
 	}

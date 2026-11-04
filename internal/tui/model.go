@@ -159,10 +159,11 @@ type Model struct {
 	derivedShas []string
 	// diffFor is the ticket whose diff is loaded, diffRows its patch, diffNote
 	// where the patch came from, diffDir the checkout 'o' opens files in and
-	// diffNotice what the pane says when there are no rows. diffScroll is the top row of the diff pane and diffFocus gives it the keys.
-	// diffScrollFor is the ticket those two belong to: a reload clears diffFor
-	// but keeps the scroll, and only a different ticket resets it. diffOpened is
-	// the 'o' confirmation in the diff title; like copied it clears on the next key.
+	// diffNotice what the pane says when there are no rows. diffScroll is the
+	// top row of the diff pane and diffFocus gives it the keys. diffScrollFor
+	// is the ticket those two belong to: a reload clears diffFor but keeps the
+	// scroll, and only a different ticket resets it. diffOpened is the 'o'
+	// confirmation in the diff title; like copied it clears on the next key.
 	diffFor       string
 	diffRows      []diffRow
 	diffNote      string

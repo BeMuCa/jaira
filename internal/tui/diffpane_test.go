@@ -322,20 +322,24 @@ func TestWordPairsMarkOnlyTheChangedMiddle(t *testing.T) {
 	}
 }
 
-// bgOpen is the escape a background of hex opens with, as lipgloss writes it.
-func bgOpen(hex string) string {
-	s := lipgloss.NewStyle().Background(lipgloss.Color(hex)).Render("x")
+// bgOpen is the escape a background colour opens with, as lipgloss writes it.
+func bgOpen(color string) string {
+	s := lipgloss.NewStyle().Background(lipgloss.Color(color)).Render("x")
 	return s[:strings.Index(s, "x")]
 }
 
 // Changed rows carry their tint across the whole pane, and the changed words
-// carry the stronger one; a context row carries no tint at all.
+// carry the stronger one; a context row carries no tint at all. The colours are
+// 256-palette indices, so a 256-colour terminal shows the same hue.
 func TestChangedRowsAreTintedAcrossThePane(t *testing.T) {
 	m := diffModel(t, 160, "signoff")
 	m.darkBG = true
 	m.diffRows = parseDiff(pairPatch)
 	width := m.width - diffLeftWidth - 5
-	add, del, wordAdd := bgOpen("#16301f"), bgOpen("#3a1d22"), bgOpen("#2b6a3c")
+	add, del, wordAdd, wordDel := bgOpen("22"), bgOpen("52"), bgOpen("28"), bgOpen("88")
+	if add != "\x1b[48;5;22m" || wordDel != "\x1b[48;5;88m" {
+		t.Fatalf("palette opens with %q and %q, want the 256-colour indices", add, wordDel)
+	}
 	for _, line := range strings.Split(m.renderDiffPane(width, 20), "\n") {
 		plain := stripANSI(line)
 		switch {
@@ -346,6 +350,9 @@ func TestChangedRowsAreTintedAcrossThePane(t *testing.T) {
 		case strings.Contains(plain, "y := 2"):
 			if !strings.Contains(line, del) {
 				t.Errorf("removed row lacks its tint:\n%q", line)
+			}
+			if !strings.Contains(line, wordDel+"2") {
+				t.Errorf("removed row's changed word lacks the word-del colour:\n%q", line)
 			}
 		case strings.Contains(plain, "return x"):
 			if strings.Contains(line, "48;") {
@@ -474,4 +481,26 @@ func TestLongCodeRowIsCutToThePane(t *testing.T) {
 		}
 	}
 	t.Error("the long row is not in the pane")
+}
+
+// A cut that falls exactly on a segment boundary still ends in "…": the segment
+// that fills the last column gives up one column for it. Without text after it
+// the segment stays whole.
+func TestFitSegsEndsAnExactBoundaryCutInEllipsis(t *testing.T) {
+	sty := lipgloss.NewStyle()
+	text := func(segs []diffSeg) string {
+		var b strings.Builder
+		for _, s := range segs {
+			b.WriteString(s.text)
+		}
+		return b.String()
+	}
+	cut := fitSegs([]diffSeg{{"abcd", sty}, {"ef", sty}}, 4)
+	if got := text(cut); got != "abc…" {
+		t.Errorf("cut at a boundary is %q, want \"abc…\"", got)
+	}
+	whole := fitSegs([]diffSeg{{"abcd", sty}, {"", sty}}, 4)
+	if got := text(whole); got != "abcd" {
+		t.Errorf("exact fit with no text after it is %q, want \"abcd\"", got)
+	}
 }
