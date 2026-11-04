@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-04T21:28:41Z
+updated-at: 2026-11-04T21:29:30Z
 updated-by: berkc
 claimed-by: berk-ca-1279809
 claimed-at: 2026-11-04T21:24:25Z
@@ -37,7 +37,8 @@ claimed-at: 2026-11-04T21:24:25Z
 - [ ] 'jaira lanes show <id>' and the generated lanes block in CLAUDE.md/AGENTS.md name a lane's skill, script and receipt requirement.
 - [ ] README 'Lanes are pipeline stages' documents skill, script and receipt: required in the lane file format, including that jaira never runs the script itself.
 - [ ] Release note core/release/notes/ENCFVZ.md, one line per client-facing change.
-- [ ] Follow-up tickets created with 'jaira create' (follows ENCFVZ, full context): max-rounds per lane, wait-for: reply lanes, lane artifacts (output-artifacts/input-artifacts).
+- [x] Follow-up tickets created with 'jaira create' (follows ENCFVZ, full context): max-rounds per lane, wait-for: reply lanes, lane artifacts (output-artifacts/input-artifacts).
+  proof: follow-ups H6CD33 (max-rounds), M5ABXE (wait-for: reply); artifacts already ticket FCMP17, noted there instead of a duplicate
 
 ## Options
 
