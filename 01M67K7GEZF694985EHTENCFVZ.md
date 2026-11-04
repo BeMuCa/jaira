@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-04T21:46:36Z
+updated-at: 2026-11-04T21:48:52Z
 updated-by: berkc
 claimed-by: berk-ca-1279809
 claimed-at: 2026-11-04T21:24:25Z
@@ -65,7 +65,7 @@ claimed-at: 2026-11-04T21:24:25Z
 - [x] jaira lanes show (internal/cli/tickets.go ~1440): JSON keys skill, script, receipt_required; text lines Skill:/Script:/Receipt:. core/board/announce.go LaneFact gets Skill, Script, Receipt; per-lane marks 'runs skill <name>', 'runs script <path> (JAIRA_IDEMPOTENCY_KEY from --for-lane)', 'leaving needs a receipt: jaira receipt <id> <result>'; core/lane/facts.go fills them. Test that the marks appear only for lanes that declare them.
 - [x] README.md 'Lanes are pipeline stages': a short subsection with an example lane file using skill, script and receipt: required, the key format, that jaira never runs the script (the agent does, from --for-lane's run line), and that the script must hold no secrets.
 - [x] core/release/notes/ENCFVZ.md: one line each for skill:, script:, receipt: required + 'jaira receipt'.
-- [ ] Run go vet and go test for ./core/lane ./core/gate ./core/role ./core/board ./internal/cli (with the -skip of the three hanging tests) and ./core/shipped; fix what fails.
+- [x] Run go vet and go test for ./core/lane ./core/gate ./core/role ./core/board ./internal/cli (with the -skip of the three hanging tests) and ./core/shipped; fix what fails.
 
 ## Progress
 - **2026-10-30 23:49 · berkc** — Brainstorm (starkes Modell, 31.10.2026). Gelesen: .jaira/lanes/*.md, core/lane/lane.go (parse), core/lane/template.go, core/lane/share.go, core/hook/hook.go, core/settings/settings.go, jaira-worker SKILL.md, --for-lane JSON, FCMP17 (Artefakte), ATDG74 (Schwarm).
