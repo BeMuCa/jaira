@@ -20,7 +20,7 @@ related: []
 commits:
   - 26d4a26af9b1c7e56b09175150b0af34663ceab9
 created-at: 2026-10-19T08:33:51Z
-updated-at: 2026-11-04T21:45:30Z
+updated-at: 2026-11-04T21:47:49Z
 updated-by: berkc
 claimed-by: berk-ca-1280084
 claimed-at: 2026-11-04T21:24:26Z
@@ -70,3 +70,4 @@ review-gaps: "none removed: diff is lean (declared closure moved up, not copied;
 - **2026-11-04 21:42 · berkc** — critique findings fixed: (1) view.go: declared closure hoisted above the try-it row, row now declared(declaredField{"try it",...}); moved view.go:1351 -> 1359, re-ticked DoD 1 proof. (2) owed_test.go: guard fails when 'try it' index < 0. (3) signoff.go:19-22 doc comment rewrapped under 80. signoff.go:236 and :250 are >100 chars and pre-existing, left alone. go test ./internal/tui -count=1 exit 0; go vet and gofmt clean.
 - **2026-11-04 21:43 · berkc** — Critique ran once (maintainer asked for at most one pass). Its three findings were fixed in e2e4a2ec (declared hoisted and reused for the try-it row, -1 guard in owed_test, doc comment rewrapped); the worker checked the diff and go test ./internal/tui passes, so the ticket goes on to optimize without a second critique.
 - **2026-11-04 21:45 · berkc** — optimize: nothing removed. Considered folding the person-lane predicate into a core/lane method; skipped, pre-existing in 3 other places and outside this ticket.
+- **2026-11-04 21:47 · berkc** — testing: build RC=0; go test ./internal/tui ./core/shipped ./core/lane -count=1 RC=0 (whole suite not run, per the touched-packages instruction). DoD 1: signoff.go:71 and view.go:1359 match the proofs; TestSignOffScreenShowsTheCheck, TestDetailPaneOpensWithTheCheckOnAHumanLane, TestDetailPaneKeepsTheCheckInReviewOffAHumanLane pass. DoD 2: core/lane/builtin/40-review.md is identical to .jaira/lanes/review.md (diff empty); the step list is at 40-review.md:63, at most six steps; shipped.sha256 keeps ae89... and appends fe8fd6a9.... Nit, not blocking: the example in the prompt names go run ./cmd/app, but this repo's entry point is cmd/jaira; step 2 of the example states no outcome, against the prompt's own rule. DoD 3: AW9KVT.md has one '- ' line, 272 chars, no wrap. Function: exercised through renderSignOff and detailBody in the tests, not by running the TUI live.
