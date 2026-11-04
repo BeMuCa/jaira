@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-04T21:39:12Z
+updated-at: 2026-11-04T21:39:14Z
 updated-by: berkc
 claimed-by: berk-ca-1279809
 claimed-at: 2026-11-04T21:24:25Z
@@ -207,3 +207,4 @@ Offene Fragen an berkc
 - **2026-11-04 21:33 · berkc** — Step 2 done: gate.CodeNeedsReceipt, ReceiptField/ReceiptKey/HasReceipt in core/gate/gate.go; check placed after OutputOwed block in CheckAdvance. Decision: key uses the full ticket ID (plan says t.ID) not the 6-char handle. Dead end: in-memory tickets have no Doc(), so HasReceipt reads false for them; tests build the ticket from ParseDoc+Decode in core/gate/receipt_test.go.
 - **2026-11-04 21:33 · berkc** — Step 3 done: role.FindSkill in core/role/target.go, searches project then home skills dirs incl. also-dirs; test TestFindSkillSearchesTheProjectThenTheHome in target_test.go. Decision: missing HOME skips the global search rather than failing.
 - **2026-11-04 21:37 · berkc** — Steps 4-5 done: show --for-lane keys/text section in flow.go (laneRunFor); 'jaira receipt' in resume.go, registered in root.go, listed in docs/COMMANDS.md. Decisions: key uses full ticket id; run line only while no receipt for this round, and script_done is reported for any script lane; a receipt-only lane still gets idempotency_key. Dead end: the test helper needed lane.Load(dir) first, otherwise the project lane dir is authoritative and drops the built-ins.
+- **2026-11-04 21:39 · berkc** — Step 6 done: LaneFact Skill/Script/Receipt (board/announce.go), facts.go fills them, lanes show text+json (tickets.go). Decision: marks and text lines only for lanes that declare them, so existing boards' generated note and lanes show output are unchanged. The repo's own CLAUDE.md/AGENTS.md block is NOT hand-edited: it is generated (jaira update), and this board's lanes declare no skill, so it stays current.
