@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T00:57:41Z
+updated-at: 2026-11-04T00:59:20Z
 updated-by: berkc
 claimed-by: berk-ca-511849
 claimed-at: 2026-11-04T00:37:01Z
@@ -71,3 +71,4 @@ internal/tui/diffpane.go:316 withDiff hand-rolls a second two-pane layout with i
 Let stand: fallback via CommitsForTicket+Repo.Diff (needed on boards that work on master without branches; note 00:40); Base() hardcoding master/main; re-running git on each reload (same trade-off as derivedFor memo); WorktreeOf for 'o'.
 - **2026-11-04 00:56 · berkc** — Round 2 (worker 2026-11-04): the three critique fixes are in. (1) reload() now clears only diffFor and keeps scroll and focus; loadDiff resets them only when the ticket differs from the new field diffScrollFor. Tests TestReloadKeepsDiffScrollAndFocus and TestOpeningAnotherTicketResetsDiffScroll. (2) gitrepo.BranchSegments is the one segment split; BranchFor and branchTicket both use it, branchTicket behaviour unchanged. (3) withDiff is splitPane boxes joined by lipgloss.JoinHorizontal, rows = height - footer - 2; the hand-built separator is gone. Side effect: TestAMultilineCheckKeepsItsLines (internal/tui/reviewcheck_test.go) matched a newline plus indent, which no longer exists once rows carry box borders at 140 columns; it now asserts step 2 and step 3 never share a row. Dead end: the goal line sits on an empty diff row, so the old check passed only on the border glyph; the new check asserts the handle row also holds the diff title. Open: plan item 6 (tmux check on a scratch board) is still not done.
 - **2026-11-04 00:57 · berkc** — critique (pass 2): read only the pass-1 findings and commit 50765410. (1) reload keeps scroll/focus: model.go reload clears only diffFor, diffpane.go loadDiff resets via diffScrollFor - addressed. (2) gitrepo.BranchSegments used by BranchFor and internal/cli/tickets.go branchTicket, notAlnum gone - addressed. (3) withDiff = splitPane boxes + lipgloss.JoinHorizontal, widths 78+2 / 1 / width-83+2 add up to m.width - addressed. Nothing new; pass-1 let-stands still hold. review-summary=none.
+- **2026-11-04 00:59 · berkc** — optimize: renderDiffPane hand-padded and height-filled its rows - the same loop clipPane (view.go:1490) runs; now ends in clipPane. Checked and left: Base() vs gitref.RemoteHead (different question: origin default only, Base prefers local master/main - critique let-stand); WorktreeOf has no twin in core (no other 'worktree list' parse); openInCode is the only 'code -g' launcher; parseDiff second pass for +/- counts is cheap and runs once per load; diffFocus title restyle beside the accent border kept (removing it changes the screen).
