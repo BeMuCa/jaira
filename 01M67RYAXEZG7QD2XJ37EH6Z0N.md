@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T03:43:17Z
+updated-at: 2026-11-04T03:43:41Z
 updated-by: berkc
 claimed-by: berk-ca-828397
 claimed-at: 2026-11-04T03:43:05Z
@@ -88,3 +88,4 @@ Let stand: fallback via CommitsForTicket+Repo.Diff (needed on boards that work o
 - **2026-11-04 01:04 · berkc** — optimize (pass 2): read only 46448074 (diffOpened). Nothing to remove: follows the copied pattern, no twin elsewhere, no dead code; loadDiff's diffOpened reset kept (cheap guard for a ticket change that does not pass a modeDetail key). gofmt/vet clean, go test ./core/gitrepo ./internal/tui green.
 - **2026-11-04 03:41 · berkc** — testing pass 2 (worker, build of 46448074): suite exit 0; tmux re-check confirms the modal fix; human lane shows the split too. Real VS Code launch not exercised (a stub 'code' recorded the arguments).
 - **2026-11-04 03:43 · berkc** — review (fresh agent 2026-11-04): diff of 4 commits (766032e5..46448074) matches git log origin/HEAD..HEAD. No blocker; five notes in review-gaps (o opens master copy when no worktree has the branch; fallback shows .jaira and per-commit duplicates; merged-not-deleted branch shows 'no changes'; git calls per 2s reload; reviewcheck test lost its indent check). Tests green: core/gitrepo, internal/tui, internal/cli -run Create|Follows|Branch. Real VS Code launch not exercised.
+- **2026-11-04 03:43 · berkc** — worker done 2026-11-04: in signoff, branch feat/EH6Z0N-diff-view pushed (4 commits 766032e5..46448074), no PR opened. The ticket file's lane changes since 46448074 are uncommitted in the worktree (no-code lanes commit nothing); they ride with the next code commit or the logbook commit. Not done here: Cockpit pane part (Q63EEV pane does not exist yet); a real VS Code launch (only a stub tested).
