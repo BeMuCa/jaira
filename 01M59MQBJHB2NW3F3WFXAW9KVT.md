@@ -20,7 +20,7 @@ related: []
 commits:
   - 26d4a26af9b1c7e56b09175150b0af34663ceab9
 created-at: 2026-10-19T08:33:51Z
-updated-at: 2026-11-04T21:49:44Z
+updated-at: 2026-11-04T21:49:46Z
 updated-by: berkc
 claimed-by: berk-ca-1280084
 claimed-at: 2026-11-04T21:24:26Z
@@ -29,7 +29,11 @@ outcome-why: "A reviewer's check was the last row, as a developer recipe; a pers
 outcome-resolves: "Human review shows how to test: the check is the first thing on the sign-off screen and the ticket detail, with short steps that name what to see."
 review-summary: "The sign-off screen now opens with a 'try it' row holding the reviewer's check, ahead of tags, problem, account and verdict (signoff.go: the existing declared('check') call moved to the top and relabelled). The ticket detail pane does the same for a ticket in a person's lane (RequiresQuestion or RequiresHumanExit): the check is the first row above id/goal and is dropped from the Review group there; on other lanes it stays after the verdict. A new render-only helper oneStepPerLine splits an inline '1. a  2. b' check into one step per line, leaving the stored field untouched. The review lane prompt (builtin 40-review.md and the board copy, identical) now asks for at most six steps, step 1 a copyable command that builds and starts this change from its worktree, every later step naming what to see; the new hash is appended to shipped.sha256. Release note added. Tests cover order, one-step-per-line, the non-human detail case, and the splitter."
 round: 2
-review-gaps: "none removed: diff is lean (declared closure moved up, not copied; oneStepPerLine has one helper, no existing step splitter in repo; no orphans, vet clean, go test ./internal/tui ok). Left: the 'RequiresQuestion || RequiresHumanExit' person-lane test now also in view.go:1357 is pre-existing in snake.go:67, gate.go:212, cli/web_source.go:256 — a Lane method would fold all four but touches core/lane, out of scope; signoff.go untouched (EH6Z0N); owed_test.go:340 error text 'seven questions no longer come first' is slightly stale, harmless"
+review-gaps: |-
+  note: on the detail pane the try-it row sits directly above the id row with no blank line or heading between them, so step text and identity rows run together visually
+  note: the try-it value carries the sourced prefix, so step 1 reads '(review) 1. ...' rather than starting at the step number
+  note: oneStepPerLine also splits inside a step whose text contains ' N. ' (e.g. 'version 2. '); documented in its comment, untested
+  note: core/lane/builtin and .jaira/lanes/review.md change only on run of jaira update --lanes for existing boards; the release note says so
 test-verdict: "pass: build RC=0 and go test ./internal/tui ./core/shipped ./core/lane RC=0; DoD 1-3 verified in the tree; behaviour exercised through renderSignOff/detailBody tests, not a live TUI"
 ---
 
