@@ -14,7 +14,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-10-31T02:40:28Z
+updated-at: 2026-11-04T00:37:01Z
 updated-by: berkc
 claimed-by: berk-ca-3155695
 claimed-at: 2026-10-31T02:31:33Z
@@ -60,3 +60,4 @@ review-check: "1. cd /home/berkc/code/X_General/jaira-exp-b && go run ./cmd/jair
 - **2026-10-31 02:35 · berkc** — critique (first pass, fresh agent): no findings. stepLane separate from moveLane is justified (lane focus must keep stepping onto every lane); skip predicate len(tickets)==0 matches the thin-draw predicate in view.go:209; wraparound matches moveLane; help text in view.go updated. Nothing speculative.
 - **2026-10-31 02:36 · berkc** — optimize: looked for duplicate non-empty-lane scan (none), orphans (none), fluff (none); go test ./internal/tui green
 - **2026-10-31 02:38 · berkc** — testing: whole-suite gate in lane prompt not run; per parent instruction and agent rules only internal/tui was tested (build ./... also run, RC=0). proof line says model.go:1774, stepLane is at 1775 (doc comment 1771) - cosmetic.
+- **2026-11-04 00:37 · berkc** — Maintainer request 04.11.2026 (before accepting): z must be ON by default - the board starts with empty lanes collapsed/thin and left/right jumps skip them; pressing z turns it off. If the z state is persisted anywhere today (settings, per board), keep that working: a person who turned it off must not get it back on every start.
