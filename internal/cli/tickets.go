@@ -1450,6 +1450,7 @@ func newLanesShowCmd() *cobra.Command {
 					"rejects_to": l.RejectsTo, "holds": l.Holds,
 					"context": l.Context, "context_implied": l.ContextImplied, "context_invalid": l.ContextInvalid,
 					"human_exit": l.RequiresHumanExit,
+					"skill":      l.Skill, "script": l.Script, "receipt_required": l.ReceiptRequired,
 				})
 			}
 			w := cmd.OutOrStdout()
@@ -1473,6 +1474,16 @@ func newLanesShowCmd() *cobra.Command {
 			}
 			fmt.Fprintf(w, "Input:       %s\n", dash(strings.Join(l.InputRequires, ", ")))
 			fmt.Fprintf(w, "Output:      %s\n", dash(strings.Join(l.OutputProduces, ", ")))
+			// Only for a lane that declares them, so a plain lane's listing is unchanged.
+			if l.Skill != "" {
+				fmt.Fprintf(w, "Skill:       %s\n", l.Skill)
+			}
+			if l.Script != "" {
+				fmt.Fprintf(w, "Script:      %s (run by the agent, never by jaira)\n", l.Script)
+			}
+			if l.ReceiptRequired {
+				fmt.Fprintf(w, "Receipt:     required; 'jaira receipt <id> <result>' once its side effect has happened\n")
+			}
 			if l.Holds > 0 {
 				fmt.Fprintf(w, "Holds:       %d (older tickets leave for the logbook)\n", l.Holds)
 			}

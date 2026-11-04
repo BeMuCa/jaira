@@ -184,6 +184,12 @@ type LaneFact struct {
 	Parking     bool
 	RejectsTo   []string
 	Produces    []string
+	// Skill, Script and Receipt are what the lane declares for the agent that
+	// runs it. Each mark is written only when declared, so a board without them
+	// gets the same note as before.
+	Skill   string
+	Script  string
+	Receipt bool
 	// Fresh marks a lane a new agent works, not the one carrying the ticket.
 	Fresh bool
 }
@@ -266,6 +272,15 @@ func laneSection(facts []LaneFact) string {
 		}
 		if len(f.Produces) > 0 {
 			marks = append(marks, "must produce "+strings.Join(f.Produces, ", "))
+		}
+		if f.Skill != "" {
+			marks = append(marks, "runs skill "+f.Skill)
+		}
+		if f.Script != "" {
+			marks = append(marks, "runs script "+f.Script+" (JAIRA_IDEMPOTENCY_KEY from --for-lane)")
+		}
+		if f.Receipt {
+			marks = append(marks, "leaving needs a receipt: jaira receipt <id> <result>")
 		}
 		if f.Terminal {
 			marks = append(marks, "terminal")

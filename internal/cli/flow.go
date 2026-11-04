@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/BeMuCa/jaira/core/gitrepo"
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/move"
+	"github.com/BeMuCa/jaira/core/role"
 	"github.com/BeMuCa/jaira/core/session"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -563,6 +565,51 @@ func sortByProgress(ts []*ticket.Ticket, env gate.Env) {
 	}
 }
 
+// laneRun is the skill, script and receipt a lane declares, worked out for this
+// ticket. Only what the lane declares is set, so a lane with none of them adds
+// none of the keys to the payload.
+type laneRun struct {
+	skill, skillPath string
+	script, run      string
+	key, receipt     string
+	receiptRequired  bool
+	scriptDone       bool
+	missing          []string
+}
+
+// laneRunFor reads what the agent needs to run a lane's skill and script. jaira
+// runs neither: the run line is for the agent, and the key in it is what a
+// provider can use to refuse a second send. Once the receipt for this round is
+// written, the run line is empty, so a fresh agent does not send again.
+func laneRunFor(root string, t *ticket.Ticket, l *lane.Lane) laneRun {
+	var r laneRun
+	if l.Skill != "" {
+		r.skill = l.Skill
+		r.skillPath = role.FindSkill(root, l.Skill)
+		if r.skillPath == "" {
+			r.missing = append(r.missing, fmt.Sprintf("skill %s (no SKILL.md found in the skills directories jaira roles install into)", l.Skill))
+		}
+	}
+	if l.Script != "" || l.ReceiptRequired {
+		r.key = gate.ReceiptKey(t, l.ID)
+	}
+	if l.ReceiptRequired {
+		r.receiptRequired = true
+		r.receipt = fieldValue(t, gate.ReceiptField(l.ID))
+	}
+	if l.Script != "" {
+		r.script = l.Script
+		r.scriptDone = gate.HasReceipt(t, l.ID)
+		if _, err := os.Stat(filepath.Join(root, l.Script)); err != nil {
+			r.missing = append(r.missing, fmt.Sprintf("script %s (not found under the repository root)", l.Script))
+		}
+		if !r.scriptDone {
+			r.run = fmt.Sprintf("JAIRA_IDEMPOTENCY_KEY=%s JAIRA_TICKET=%s JAIRA_LANE=%s ./%s", r.key, ticket.Handle(t.ID), l.ID, l.Script)
+		}
+	}
+	return r
+}
+
 // showForLane assembles the bounded input a lane's agent should receive.
 //
 // The tool builds this, not the agent: if the agent decided what context it
@@ -676,6 +723,9 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 		}
 	}
 
+	run := laneRunFor(s.Root, t, l)
+	missing = append(missing, run.missing...)
+
 	if g.jsonOut {
 		payload := map[string]any{
 			"ticket_id":  t.ID,
@@ -724,6 +774,26 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 		if worktreeErr != "" {
 			payload["worktree_error"] = worktreeErr
 		}
+		// Keys only for what the lane declares. skill_path is left out when no
+		// SKILL.md was found, so a path that is not there is never printed.
+		if run.skill != "" {
+			payload["skill"] = run.skill
+		}
+		if run.skillPath != "" {
+			payload["skill_path"] = run.skillPath
+		}
+		if run.key != "" {
+			payload["idempotency_key"] = run.key
+		}
+		if run.script != "" {
+			payload["script"] = run.script
+			payload["script_done"] = run.scriptDone
+			payload["run"] = run.run
+		}
+		if run.receiptRequired {
+			payload["receipt_required"] = true
+			payload["receipt"] = run.receipt
+		}
 		return emit(cmd.OutOrStdout(), payload)
 	}
 
@@ -771,6 +841,24 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 	// to quote it.
 	if worktreeDiff != "" {
 		fmt.Fprintf(w, "## Worktree diff (not committed yet)\n\n```diff\n%s```\n\n", worktreeDiff)
+	}
+	if run.skill != "" || run.script != "" || run.receiptRequired {
+		fmt.Fprintf(w, "## Skill / script\n\n")
+		if run.skill != "" {
+			fmt.Fprintf(w, "- skill %s: %s\n", run.skill, dash(run.skillPath))
+		}
+		switch {
+		case run.script == "":
+		case run.scriptDone:
+			fmt.Fprintf(w, "- script %s already ran for key %s: do not run it again\n", run.script, run.key)
+		default:
+			// Run from the repository root; the key is what a provider can use to refuse a second send.
+			fmt.Fprintf(w, "- script, run from the repository root: %s\n", run.run)
+		}
+		if run.receiptRequired {
+			fmt.Fprintf(w, "- once its side effect has happened, write the receipt: jaira receipt %s <result> (key %s); the ticket does not leave this lane without it\n", ticket.Handle(t.ID), run.key)
+		}
+		fmt.Fprintln(w)
 	}
 	if len(l.OutputProduces) > 0 {
 		fmt.Fprintf(w, "## Must produce\n\n")

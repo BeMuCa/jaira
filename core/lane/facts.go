@@ -22,6 +22,7 @@ func (s *Set) Facts() []board.LaneFact {
 			HumanExit: l.RequiresHumanExit, Question: l.RequiresQuestion,
 			Parking: l.RequiresBlockedReason, RejectsTo: l.RejectsTo,
 			Produces: l.OutputProduces, Fresh: l.Context == ContextFresh,
+			Skill: l.Skill, Script: l.Script, Receipt: l.ReceiptRequired,
 		})
 	}
 	return out

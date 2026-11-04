@@ -1,0 +1,5 @@
+- A lane file may name a skill with `skill: <name>`; the agent working the lane starts that skill, and the prompt body is then only the extra instruction beside it, so a lane can be nothing but a skill.
+- A lane file may name a repository script with `script: <path>`, relative to the repository root; `jaira show <id> --for-lane <lane> --json` hands the agent the command with `JAIRA_IDEMPOTENCY_KEY` set, and jaira never runs the script itself.
+- A lane file with `receipt: required` keeps a ticket from leaving that lane until `jaira receipt <id> <result>` has recorded this round's side effect; a receipt from an earlier round does not count.
+- `jaira receipt <id> <result>` is new: it writes the receipt for the ticket's current lane and is refused when that lane does not require one or this round already has one.
+- `jaira show <id> --for-lane <lane>`, in text and with `--json`, names a lane's skill and its SKILL.md path, its script, the idempotency key and the receipt; `jaira lanes show <id>` names the skill, script and receipt requirement.

@@ -463,6 +463,42 @@ outside.
 A teammate without your `critique` lane still sees those tickets, in a read-only
 passthrough column. Hiding them would be the worse failure.
 
+### A lane that runs a skill or a script
+
+A lane can name a skill, a repository script, or both, and can hold a ticket in
+the lane until a receipt says the side effect happened:
+
+```markdown
+---
+id: send-summary
+name: Send summary
+after: in-progress
+agentic: true
+model-tier: cheap
+skill: ponytail
+script: scripts/send-summary.sh
+receipt: required
+---
+Send the summary of this ticket once, then stop.
+```
+
+- `skill` names a skill installed for this repository or for you. The prompt body
+  is then only the extra instruction beside it, so it may be left empty.
+- `script` is a path inside the repository. jaira never runs it. `jaira show
+  <id> --for-lane send-summary --json` hands the agent the command, with
+  `JAIRA_IDEMPOTENCY_KEY` set, and the agent runs it from the repository root.
+- `receipt: required` keeps the ticket in the lane until `jaira receipt <id>
+  <result>` has written the receipt for this round. The key is
+  `<ticket id>-<lane>-r<round>`. A send back into the lane is a new round and may
+  run again on purpose.
+- The script passes the key to its provider, which can then refuse a repeat. If a
+  session dies between the send and the receipt, the receipt is missing and the
+  script runs again with the same key. jaira cannot tell whether the first send
+  happened, so the provider has to refuse the repeat.
+- A script holds no secrets. It reads its own from the environment, a config
+  directory or a keychain. Nothing in the lane file, the ticket, a note or the
+  repository may contain one.
+
 ## Tickets travel on their own git refs
 
 Hand someone a ticket today and they learn nothing: the ticket file lives in
@@ -1015,6 +1051,7 @@ jaira epic ls              the features this board is built of, done X of Y; --u
 jaira epic <cmd>           create, add, rm, show — an epic lives on its own ref, not in a file
 jaira dod <id> <n>         mark a checklist item --doing / --done / --todo / --superseded
 jaira note <id> <text>     record what you worked out, so a later session can pick it up
+jaira receipt <id> <result> record that a receipt-required lane's side effect happened, once per round
 jaira validate             check every ticket on the board for damage
 jaira logbook <id>         file a finished ticket under today, commits stamped
 jaira logbook <milestone>  file a milestone once every ticket in it is finished

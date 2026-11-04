@@ -1282,3 +1282,119 @@ func newBoardRoot(t *testing.T) string {
 	}
 	return root
 }
+
+// A lane that is nothing but a skill has no prompt body: the skill is the work,
+// and the body is only an extra instruction beside it.
+func TestSkillLaneNeedsNoPromptBody(t *testing.T) {
+	l, err := parse([]byte(`---
+id: optimize-ponytail
+name: Ponytail
+agentic: true
+model-tier: strong
+skill: ponytail
+---
+`), "test", false)
+	if err != nil {
+		t.Fatalf("a skill lane with no body must load: %v", err)
+	}
+	if l.Skill != "ponytail" || l.Prompt != "" {
+		t.Errorf("Skill=%q Prompt=%q, want ponytail and empty", l.Skill, l.Prompt)
+	}
+}
+
+func TestAgenticLaneNeedsPromptOrSkill(t *testing.T) {
+	_, err := parse([]byte(`---
+id: agentic-empty
+name: Agentic Empty
+agentic: true
+model-tier: cheap
+---
+`), "test", false)
+	if err == nil || !strings.Contains(err.Error(), "skill") {
+		t.Fatalf("an agentic lane with neither body nor skill must be refused naming skill, got: %v", err)
+	}
+}
+
+// The skill is looked up as a directory name, so a path in it would reach
+// outside the skills roots.
+func TestSkillRefusesAPath(t *testing.T) {
+	for _, skill := range []string{"../other", "a/b", `a\b`, ".."} {
+		_, err := parse([]byte("---\nid: x\nname: X\nagentic: true\nmodel-tier: cheap\nskill: "+skill+"\n---\n"), "test", false)
+		if err == nil {
+			t.Errorf("skill %q: expected an error", skill)
+		}
+	}
+}
+
+func TestScriptIsParsed(t *testing.T) {
+	l, err := parse([]byte(`---
+id: send-note
+name: Send
+agentic: true
+model-tier: cheap
+script: scripts/send.sh
+---
+Send the note.
+`), "test", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if l.Script != "scripts/send.sh" {
+		t.Errorf("Script = %q, want scripts/send.sh", l.Script)
+	}
+}
+
+// Only a path inside the repository may be named: an absolute path or one that
+// climbs out of the root would run a script the repository does not hold.
+func TestScriptRefusesAPathOutsideTheRepository(t *testing.T) {
+	for _, script := range []string{"/usr/local/bin/send", "../send.sh", "scripts/../../send.sh"} {
+		_, err := parse([]byte("---\nid: x\nname: X\nagentic: true\nmodel-tier: cheap\nscript: "+script+"\n---\nbody\n"), "test", false)
+		if err == nil || !strings.Contains(err.Error(), "inside the repository") {
+			t.Errorf("script %q: want a refusal naming the repository, got: %v", script, err)
+		}
+	}
+}
+
+func TestScriptNeedsAnAgenticLane(t *testing.T) {
+	_, err := parse([]byte(`---
+id: human-send
+name: Human Send
+script: scripts/send.sh
+---
+`), "test", false)
+	if err == nil || !strings.Contains(err.Error(), "agentic") {
+		t.Errorf("a script on a lane that is not agentic must be refused, got: %v", err)
+	}
+}
+
+func TestReceiptRequiredIsParsed(t *testing.T) {
+	cases := map[string]struct {
+		receipt string
+		want    bool
+		wantErr bool
+	}{
+		"absent":   {receipt: "", want: false},
+		"required": {receipt: "required", want: true},
+		"upper":    {receipt: "Required", want: true},
+		"typo":     {receipt: "sometimes", wantErr: true},
+	}
+	for name, c := range cases {
+		line := ""
+		if c.receipt != "" {
+			line = "receipt: " + c.receipt + "\n"
+		}
+		l, err := parse([]byte("---\nid: x\nname: X\nagentic: true\nmodel-tier: cheap\n"+line+"---\nbody\n"), "test", false)
+		if c.wantErr {
+			if err == nil {
+				t.Errorf("%s: a receipt value other than required must fail the load", name)
+			}
+			continue
+		}
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if l.ReceiptRequired != c.want {
+			t.Errorf("%s: ReceiptRequired = %v, want %v", name, l.ReceiptRequired, c.want)
+		}
+	}
+}

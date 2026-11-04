@@ -125,6 +125,34 @@ func InstalledIn(dirs []string) (string, error) {
 	return "", nil
 }
 
+// FindSkill returns the SKILL.md of the skill called name, searched where the
+// harnesses read skills: the repository first, then the person's home. It
+// returns "" when none of those directories holds it. A lane names a skill by
+// name alone, so the search never leaves these directories.
+func FindSkill(root, name string) string {
+	if name == "" {
+		return ""
+	}
+	var dirs []string
+	for _, a := range agents {
+		dir, also := a.ProjectTarget(root)
+		dirs = append(append(dirs, dir), also...)
+	}
+	for _, a := range agents {
+		// Without a home directory there is no personal skills directory to search.
+		if dir, also, err := a.GlobalTarget(); err == nil {
+			dirs = append(append(dirs, dir), also...)
+		}
+	}
+	for _, dir := range dirs {
+		p := filepath.Join(dir, name, skillFile)
+		if _, err := os.Stat(p); err == nil {
+			return p
+		}
+	}
+	return ""
+}
+
 // Target is one skills directory jaira's roles are already installed in.
 type Target struct {
 	Agent  Agent

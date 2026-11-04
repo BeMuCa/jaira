@@ -190,3 +190,28 @@ func TestLaneSectionMarksAFreshLane(t *testing.T) {
 		t.Errorf("a fresh lane is still offered to the carrying agent:\n%s", got)
 	}
 }
+
+// A skill, a script and a receipt are the instructions an agent acts on, so the
+// note says them for the lane that declares them. A lane that declares none says
+// nothing about them, which keeps every existing board's note as it was.
+func TestLaneSectionNamesSkillScriptAndReceiptOnlyWhereDeclared(t *testing.T) {
+	facts := append(demoFacts(), LaneFact{ID: "send", Name: "Send", Agentic: true, ModelTier: "cheap",
+		Skill: "ponytail", Script: "scripts/send.sh", Receipt: true})
+	got := laneSection(facts)
+
+	for _, want := range []string{
+		"runs skill ponytail",
+		"runs script scripts/send.sh (JAIRA_IDEMPOTENCY_KEY from --for-lane)",
+		"leaving needs a receipt: jaira receipt <id> <result>",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("missing %q:\n%s", want, got)
+		}
+	}
+	plain := laneSection(demoFacts())
+	for _, unwanted := range []string{"runs skill", "runs script", "receipt"} {
+		if strings.Contains(plain, unwanted) {
+			t.Errorf("a board with no skill, script or receipt says %q:\n%s", unwanted, plain)
+		}
+	}
+}

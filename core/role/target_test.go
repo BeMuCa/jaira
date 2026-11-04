@@ -1,6 +1,7 @@
 package role
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -72,5 +73,36 @@ func TestBehindCountsWrittenAndUpdatedOnly(t *testing.T) {
 	}
 	if got := Behind(rs); got != 2 {
 		t.Errorf("Behind = %d, want 2", got)
+	}
+}
+
+// A lane names a skill and FindSkill says where its SKILL.md is. The repository
+// copy wins, so a project can pin its own version over the person's.
+func TestFindSkillSearchesTheProjectThenTheHome(t *testing.T) {
+	home := setHome(t)
+	root := t.TempDir()
+	if got := FindSkill(root, ""); got != "" {
+		t.Errorf("an empty name found %q", got)
+	}
+	if got := FindSkill(root, "ponytail"); got != "" {
+		t.Fatalf("found %q though nothing installed it", got)
+	}
+	write := func(dir string) string {
+		p := filepath.Join(dir, "ponytail", skillFile)
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte("---\nname: ponytail\n---\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	homeSkill := write(filepath.Join(home, ".claude", "skills"))
+	if got := FindSkill(root, "ponytail"); got != homeSkill {
+		t.Errorf("home copy: got %q, want %q", got, homeSkill)
+	}
+	projectSkill := write(filepath.Join(root, ".claude", "skills"))
+	if got := FindSkill(root, "ponytail"); got != projectSkill {
+		t.Errorf("project copy: got %q, want %q", got, projectSkill)
 	}
 }

@@ -145,8 +145,26 @@ type Lane struct {
 	// or after it may hold a ticket that is missing its promotion fields.
 	RequiresSpecified bool
 
-	// Prompt is the markdown body: the instruction given to the subagent.
+	// Prompt is the markdown body: the instruction given to the subagent. With a
+	// Skill it is only the extra instruction beside the skill, so a lane can be
+	// nothing but a skill name.
 	Prompt string
+
+	// Skill names a skill the agent working this lane starts. jaira does not run
+	// it: --for-lane reports where the SKILL.md is (role.FindSkill), and the
+	// agent reads and follows it.
+	Skill string
+
+	// Script names a repository script, relative to the repository root, that the
+	// agent runs for this lane. jaira never runs it either: --for-lane hands the
+	// agent the command, with an idempotency key, and the receipt says whether
+	// this round already ran it.
+	Script string
+
+	// ReceiptRequired means a ticket cannot leave this lane until it carries a
+	// receipt for the current round (core/gate). That is what keeps a side effect
+	// such as a sent message from happening twice in one round.
+	ReceiptRequired bool
 
 	// Creator names who wrote this lane, for provenance once a lane has been
 	// adopted or copied between machines. A built-in with no creator: field
@@ -346,6 +364,15 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 	l.RequiresBlockedReason = boolOf("requires-blocked-reason")
 	l.RequiresCommits = boolOf("requires-commits")
 	l.RequiresOption = strings.TrimSpace(str("requires-option"))
+	l.Skill = strings.TrimSpace(str("skill"))
+	l.Script = strings.TrimSpace(str("script"))
+	switch r := strings.TrimSpace(str("receipt")); {
+	case r == "":
+	case strings.EqualFold(r, "required"):
+		l.ReceiptRequired = true
+	default:
+		return nil, fmt.Errorf("lane %s: receipt %q must be 'required' or left out", source, r)
+	}
 	l.RejectsTo = rejectsTo(f)
 	l.Context = strings.TrimSpace(str("context"))
 	if l.Context != "" && l.Context != ContextFresh && l.Context != ContextShared {
@@ -387,11 +414,28 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 	if l.LogbookOnEntry && !l.Terminal {
 		return nil, fmt.Errorf("lane %s: logbook-on-entry needs terminal: true — the logbook records finished work", source)
 	}
-	if l.Agentic && l.Prompt == "" {
-		return nil, fmt.Errorf("lane %s: lane is marked agentic but has no prompt body", source)
+	if l.Agentic && l.Prompt == "" && l.Skill == "" {
+		return nil, fmt.Errorf("lane %s: lane is marked agentic but has no prompt body or skill", source)
 	}
 	if l.Agentic && l.ModelTier == "" {
 		return nil, fmt.Errorf("lane %s: agentic lane must declare a model-tier", source)
+	}
+	// A skill name is looked up as a directory under the skills roots, so a
+	// separator or a dot-dot would send that lookup outside them.
+	if strings.ContainsAny(l.Skill, `/\`) || l.Skill == "." || l.Skill == ".." {
+		return nil, fmt.Errorf("lane %s: skill %q must be a skill name, not a path", source, l.Skill)
+	}
+	if l.Script != "" {
+		// The script is run by an agent from the repository root, so a path that
+		// leaves the repository would run something the repository does not hold.
+		// Only an agent runs it, which is why a lane that runs nothing cannot name one.
+		clean := filepath.Clean(l.Script)
+		if !l.Agentic {
+			return nil, fmt.Errorf("lane %s: script needs agentic: true — only an agent runs a script", source)
+		}
+		if filepath.IsAbs(l.Script) || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+			return nil, fmt.Errorf("lane %s: script %q must be a path inside the repository, relative to its root", source, l.Script)
+		}
 	}
 	return l, nil
 }
@@ -917,6 +961,9 @@ func lanesEquivalent(base, replacement *Lane) bool {
 		base.RequiresOption == replacement.RequiresOption &&
 		base.RequiresSpecified == replacement.RequiresSpecified &&
 		base.Prompt == replacement.Prompt &&
+		base.Skill == replacement.Skill &&
+		base.Script == replacement.Script &&
+		base.ReceiptRequired == replacement.ReceiptRequired &&
 		slices.Equal(base.RejectsTo, replacement.RejectsTo) &&
 		slices.Equal(base.InputRequires, replacement.InputRequires) &&
 		slices.Equal(base.OutputProduces, replacement.OutputProduces)

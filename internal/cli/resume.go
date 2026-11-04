@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/BeMuCa/jaira/core/gate"
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/ticket"
 	"github.com/spf13/cobra"
@@ -60,6 +61,60 @@ rather than adjectives, no jargon and no preamble.`,
 				return emit(cmd.OutOrStdout(), ticketJSON(t, env.Lanes))
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Noted on %s.\n", ticket.Handle(t.ID))
+			return nil
+		},
+	}
+}
+
+func newReceiptCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "receipt <id> <result>",
+		Short: "Record that this round's side effect happened, so its script is not run again",
+		Long: `Writes the receipt for the ticket's current lane, which must declare
+receipt: required. Run it once the script has done its work, with a short result
+such as a message id or an upload url.
+
+Refused when the lane does not require a receipt, and when this round already
+has one: a second receipt would mean the side effect was recorded twice. A send
+back into the lane is a new round, so it may write a receipt again.`,
+		Args: minArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			s, err := openStore()
+			if err != nil {
+				return err
+			}
+			result := strings.TrimSpace(strings.Join(args[1:], " "))
+			if result == "" {
+				return fail(ExitUsage, "usage", "a receipt with no result records nothing")
+			}
+			cur, err := s.Load(args[0])
+			if err != nil {
+				return err
+			}
+			env, err := envFor(s, cur)
+			if err != nil {
+				return err
+			}
+			l, ok := env.Lanes.Get(cur.Status)
+			if !ok || !l.ReceiptRequired {
+				return fail(ExitValidation, "no_receipt", "lane %q does not require a receipt", cur.Status)
+			}
+
+			t, err := s.Mutate(args[0], func(t *ticket.Ticket) error {
+				// Checked on the fresh copy, so two sessions writing at once cannot
+				// both pass the check.
+				if gate.HasReceipt(t, l.ID) {
+					return fail(ExitValidation, "receipt_exists", "lane %s already has its receipt for this round (%s); a second one would record the side effect twice", l.ID, ticket.Handle(t.ID))
+				}
+				return t.Doc().SetScalar(gate.ReceiptField(l.ID), gate.ReceiptKey(t, l.ID)+" "+result)
+			})
+			if err != nil {
+				return err
+			}
+			if g.jsonOut {
+				return emit(cmd.OutOrStdout(), ticketJSON(t, env.Lanes))
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Receipt for %s in %s: %s\n", ticket.Handle(t.ID), l.ID, gate.ReceiptKey(t, l.ID)+" "+result)
 			return nil
 		},
 	}

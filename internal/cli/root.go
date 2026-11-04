@@ -212,6 +212,7 @@ Exit codes:
 		newRejectCmd(),
 		newLogbookCmd(),
 		newNoteCmd(),
+		newReceiptCmd(),
 		newResumeCmd(),
 		newMoveCmd(),
 		newNextCmd(),

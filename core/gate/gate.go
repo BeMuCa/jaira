@@ -36,6 +36,7 @@ const (
 	CodeNeedsHuman      = "needs_human"
 	CodeStepNotChosen   = "step_not_chosen"
 	CodeNotOwner        = "not_owner"
+	CodeNeedsReceipt    = "needs_receipt"
 )
 
 // Violation is one reason a move was refused. Field is set when the fix is to
@@ -445,7 +446,46 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 		}
 	}
 
+	// A receipt says a side effect of this round happened, so a lane that
+	// sends or uploads holds the ticket until it says so. It is checked per
+	// round: last round's receipt does not let this round's send go unrecorded.
+	if cur, ok := env.Lanes.Get(t.Status); ok && to > from && !parking && cur.ReceiptRequired && !skipped(cur, t) && !HasReceipt(t, cur.ID) {
+		vs = append(vs, Violation{
+			Code:    CodeNeedsReceipt,
+			Field:   ReceiptField(cur.ID),
+			Message: fmt.Sprintf("lane %q needs a receipt for round %d before the ticket can leave it: once its script has run, write 'jaira receipt %s <result>' (key %s)", cur.ID, ticket.CurrentRound(t), ticket.Handle(t.ID), ReceiptKey(t, cur.ID)),
+		})
+	}
+
 	return vs
+}
+
+// ReceiptField is the ticket field a lane's receipt is written to.
+func ReceiptField(laneID string) string {
+	return "receipt-" + laneID
+}
+
+// ReceiptKey names this round of this lane. The same key is handed to the
+// script as JAIRA_IDEMPOTENCY_KEY, so a provider that receives it can refuse a
+// second send. The round is part of the key, so a send-back into the lane is a
+// new round and may send again on purpose.
+func ReceiptKey(t *ticket.Ticket, laneID string) string {
+	return fmt.Sprintf("%s-%s-r%d", t.ID, laneID, ticket.CurrentRound(t))
+}
+
+// HasReceipt reports whether the receipt for this lane's current round is
+// already written. A receipt from an earlier round carries a different key and
+// does not count.
+func HasReceipt(t *ticket.Ticket, laneID string) bool {
+	if t.Doc() == nil {
+		return false
+	}
+	raw, _, err := t.Doc().Scalar(ReceiptField(laneID))
+	if err != nil {
+		return false
+	}
+	first, _, _ := strings.Cut(strings.TrimSpace(raw), " ")
+	return first != "" && first == ReceiptKey(t, laneID)
 }
 
 // OutputOwed lists the fields lane l declares it produces that ticket t has not
