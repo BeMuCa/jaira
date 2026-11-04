@@ -18,14 +18,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T21:22:33Z
-updated-at: 2026-11-04T21:38:00Z
+updated-at: 2026-11-04T21:39:57Z
 updated-by: berkc
 claimed-by: berk-ca-1280093
 claimed-at: 2026-11-04T21:24:26Z
 outcome-what: "The ticket handle on board cards and ticket headers is toned by terminal background: 248 on dark, 240 on light (was colFaint 240 everywhere)."
 outcome-why: "On the dark selection fill (239) colFaint 240 is ten grey levels away, so the handle vanished on the selected card. The lane counter keeps colFaint."
 outcome-resolves: "Ticket ID hard to read on dark terminals and on the selected card (berkc, 04.11.2026)."
-review-summary: none
+review-summary: "Removed the fixed styHandle (grey 240, same as frames and lane counters) and added Model.handleStyle(), which colours a ticket handle 248 on a dark terminal and 240 on a light one, switching on m.darkBG like laneShade and selectionFill already do. All 7 places that draw a handle beside a title use it: board card, lane-focus card, detail header, edit header, sign-off header, milestone detail rows, sessions list. The lane counter keeps 240. On the dark selected card the handle is now 90 grey levels from the fill (it was 10, which is why it vanished); on light it is unchanged. A new test checks that the handle is at least 60 levels away from the selection fill and both card shades, in both modes. Release note in core/release/notes/N5GSWM.md."
 review-gaps: "handle_test.go: replaced the inline absolute-value branch with the package's existing abs() (links_test.go:543). Left: grey() in handle_test.go (takes a color.Color, paletteRGB takes an index - they differ); handleStyle() building a fresh lipgloss style per call (render path, cheap, mirrors selectionFill/laneShade); no dead code - styHandle removed with all 7 callers switched."
 test-verdict: "pass: go test ./internal/tui -count=1 RC=0; DoD 1-2 verified in tree (handleStyle view.go:698, 7 call sites, core/release/notes/N5GSWM.md one '- ' line); function exercised by TestHandleToneReadsOnEveryCardFill only, no scratch board run"
 ---
