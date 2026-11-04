@@ -18,7 +18,7 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-04T00:37:05Z
+updated-at: 2026-11-04T00:37:12Z
 updated-by: berkc
 claimed-by: berk-ca-512097
 claimed-at: 2026-11-04T00:37:05Z
@@ -26,7 +26,7 @@ outcome-what: "Release notes take a '- > text' hook line; core/release sorts eac
 outcome-why: "Readers skip long notes; a one-line pitch per release makes them open it. Older binaries read the same line as an ordinary change, so no reader breaks."
 outcome-resolves: "Hook marker, hook-first ordering, and three-versions-behind paging are covered by tests in core/release, internal/cli and internal/tui; the format is documented in CLAUDE.md and AGENTS.md; the note is core/release/notes/CZWKNY.md."
 review-summary: "CLAUDE.md:274 + AGENTS.md:227 make a hook mandatory in every note file; with one file per ticket (0.5.7 = 9 files) that puts N hooks above Features and brings back the drowning the ticket is for. Make it optional ('may open with one') unless the person wants it mandatory. Open question on the ticket. No other finding."
-question: "Hook line required in every note file (goal) or optional, only for changes worth pitching? (1) optional [rec], (2) mandatory, (3) one hook per release at cut time. See critique note."
+question: ""
 ---
 
 # Release-Notes beginnen mit einer Hook-Zeile, und wer mehrere Versionen ueberspringt, sieht die Notes aller dazwischen
