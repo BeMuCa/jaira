@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-04T21:27:41Z
+updated-at: 2026-11-04T21:27:59Z
 updated-by: berkc
 claimed-by: berk-ca-1280500
 claimed-at: 2026-11-04T21:24:22Z
@@ -99,3 +99,4 @@ Vorschlag DoD:
  5 Mehrere Zuweisungen aus einem Milestone/Epic in einem Fetch = ein Eintrag
  6 Release-Notiz core/release/notes/WQNRQN.md
 Nicht hier: Web-Gegenstueck (nach DVPAPE/CW2X0F eigenes Ticket).
+- **2026-11-04 21:27 · berkc** — Nachtrag Brainstorm: es gibt kein 'jaira assign' - zugewiesen wird per 'set assignee=', 'tickets create --assignee' (internal/cli/tickets.go:460), pull/move (core/move/move.go:100). Erkennung muss daher in refsync.Incoming alten gegen neuen Assignee vergleichen, nicht an einem Befehl haengen. Das Cockpit kennt 'me' schon ueber 'jaira whoami --json' (core/mod/builtin/jaira-cockpit/hooks/register.tsx:105) und koennte 'jaira inbox --json' als Zaehler zeigen - eigenes Folgeticket. Ungeprueft: ob ein leeres refs-seen.json beim ersten Fetch alle meine Tickets als neu meldet.
