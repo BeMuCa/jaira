@@ -18,14 +18,14 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-04T00:46:50Z
+updated-at: 2026-11-04T00:47:50Z
 updated-by: berkc
 claimed-by: berk-ca-512097
 claimed-at: 2026-11-04T00:37:05Z
 outcome-what: "A release note hook is an optional headline 'Headline: sentence'; the popup shows hooks, features and ! lines and folds plain changes under Others (key o); jaira update text output unchanged"
 outcome-why: "Release notes read as a wall of text (0.5.7: 32 lines, about 214 characters each on average); headlines first and folded plain lines make a version scannable"
 outcome-resolves: "Maintainer decision 04.11.2026: headline format, at most one hook per note file, 80-character cap enforced by TestHookLinesAreShortAndOnePerFile, plain changes folded by default"
-review-summary: "internal/tui/releasenotes.go lines(): the plain-change fold applies to every version, including one with no hook and no feature. Every released version (0.5.3-0.5.8 hold 0 hooks, 0 features) therefore opens as an empty page reading \"N more · o shows them\" (0.5.7: one ! line plus \"31 more\"), both in the upgrade popup and in the launcher w view of all history. That contradicts the 00:39 plan note (Others header only below a hook or feature keeps a plain-only version a plain list). Fold only when the page has a hook or a feature, i.e. the same len(out)>0 condition that already gates the Others header (folded only matters when an Others header is drawn); add a test that a plain-only version shows its lines unfolded."
+review-summary: "none"
 question: ""
 round: 3
 ---
