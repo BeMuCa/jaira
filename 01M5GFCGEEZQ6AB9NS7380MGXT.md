@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:13Z
-updated-at: 2026-11-04T21:47:01Z
+updated-at: 2026-11-04T21:47:11Z
 updated-by: berkc
 claimed-by: berk-ca-1279800
 claimed-at: 2026-11-04T21:24:25Z
@@ -78,3 +78,4 @@ round: 2
 - **2026-11-04 21:37 · berkc** — Board: jaira claim 80MGXT was refused (claimed by berk-ca-1279800, 3m ago). I did not --steal. A dod write was also refused once with 'berkc wrote it first' and then succeeded on the re-run; the plan state shows 1-11 ticked.
 - **2026-11-04 21:41 · berkc** — critique (pass 1): two findings, fix clear. (1) spawn.sh:168 'worktree add -b <branch>' fails on the branch reap.sh now deliberately keeps without a worktree (the open point of the 21:37 note) - this ticket creates that state, so it should handle it: reuse an existing refs/heads/<branch> with 'git worktree add <wt> <branch>', and do not 'branch -D' at spawn.sh:185 a branch this run did not create. DSDPZ4 (backlog, worktree location) does not cover this, so it is not a reason to leave it. (2) jaira-teamlead/SKILL.md:263-266 keeps the old 'review comments want somewhere to land / not accepted can still come back' rationale for a long-lived worktree, which now contradicts the paragraph above it; rewrite to: branch stays, later fixes get a fresh worktree on it. Let stand: reap.sh ordering lane->worktree->branch, local-only push check (decision 1 of 21:26), origin/HEAD-first merge check (21:37 decision), branch-<T> record (no collision with pane-id record names). Claim refused (held by berk-ca-1279800); not stolen.
 - **2026-11-04 21:42 · berkc** — Critique Runde 1, Befund 1 (spawn.sh:168 'worktree add -b' scheitert an einem von reap.sh behaltenen Branch): bewusst NICHT hier behoben - Auftrag schloss spawn.sh aus, dieselbe Zeile aendert DSDPZ4. Als Folgeticket R80Z4G erfasst. In-progress Runde 2 behebt nur Befund 2 (SKILL.md:263-266).
+- **2026-11-04 21:47 · berkc** — Runde 2 (critique Befund 2): jaira-teamlead/SKILL.md Absatz 'Its worktree goes with the tab' (lines 260-265) ersetzt. Die alte Begruendung (Review-Kommentare und nicht angenommene Tickets brauchen einen langlebigen Worktree) entfaellt: die Commits liegen auf dem gepushten Branch, der bis zum Merge bleibt; ein Rueckkommen landet auf diesem Branch, neuer Worktree aus ihm. Hash-Zeile fuer SKILL.md an core/shipped/shipped.sha256 angehaengt (alte bleiben); go test ./core/role ./core/shipped -count=1 ok. spawn.sh nicht angefasst (R80Z4G). jaira claim wurde von berk-ca-1279800 gehalten (19m), nicht --steal.
