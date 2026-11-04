@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T21:29:44Z
+updated-at: 2026-11-04T21:29:46Z
 updated-by: berkc
 claimed-by: berk-ca-1345452
 claimed-at: 2026-11-04T21:29:36Z
@@ -51,6 +51,8 @@ review-check: "1. cd /home/berkc/code/X_General/jaira-EH6Z0N && go build -o /tmp
   proof: internal/tui/diffpane_test.go TestOKeyOpensFileAtLine and TestOKeyConfirmsInTheDiffTitleWithoutAModal; internal/tui/model.go case "o", "]", "[" in modeDetail; internal/tui/diffpane.go openDiffRow
 - [x] Release-Notiz unter core/release/notes/
   proof: core/release/notes/EH6Z0N.md:1
+- [ ] Diff pane laid out per the design spec note of 2026-11-04 (rules 1-8, 10): title with file N/M and totals, file header bar, hunk header, old/new line-number gutter, full-width +/- row tint, word-level highlight on paired lines, empty/error states; tests
+- [ ] BranchFor picks the newest of several branches carrying the handle (rule 9); test
 
 ## Options
 
