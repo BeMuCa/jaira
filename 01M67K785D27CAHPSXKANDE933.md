@@ -14,7 +14,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-11-04T00:43:11Z
+updated-at: 2026-11-04T00:43:13Z
 updated-by: berkc
 claimed-by: berk-ca-516678
 claimed-at: 2026-11-04T00:38:18Z
@@ -70,3 +70,4 @@ round: 2
 - **2026-11-04 00:37 · berkc** — Maintainer request 04.11.2026 (before accepting): z must be ON by default - the board starts with empty lanes collapsed/thin and left/right jumps skip them; pressing z turns it off. If the z state is persisted anywhere today (settings, per board), keep that working: a person who turned it off must not get it back on every start.
 - **2026-11-04 00:37 · berkc** — Plan decision: z state is not persisted anywhere today - model.go:292-298 documents thinEmpty as session-only (filter, cursor, scroll all start fresh; only lane.SaveDefaultBoard is saved and that is a workflow definition). So nothing to keep working: default flips to on in New() exactly like anim (model.go:352), z turns it off for the session, next start is on again. Adding persistence would be a new write path the maintainer did not ask for; if they want z-off to survive restarts that is a follow-up ticket.
 - **2026-11-04 00:38 · berkc** — in-progress pass 2: starting plan 6 (New() thinEmpty default on). Reading model.go New() and the thinEmpty field comment; plan 7 (tests) and 8 (zHint) follow.
+- **2026-11-04 00:43 · berkc** — plan 6-8 done: New() thinEmpty default on; tests adjusted (press z where a test wants the old full-width board, drop it where it wanted z on); new TestThinEmptyLanesAreOnByDefault; hint label checks now 'z widen empty' on the default board; ? help line says on by default. go vet + go test ./internal/tui/ -count=1 green (exit 0).
