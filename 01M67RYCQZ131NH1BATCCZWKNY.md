@@ -18,7 +18,7 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-04T00:50:21Z
+updated-at: 2026-11-04T00:53:11Z
 updated-by: berkc
 claimed-by: berk-ca-512097
 claimed-at: 2026-11-04T00:37:05Z
@@ -29,6 +29,7 @@ review-summary: "none"
 question: ""
 round: 3
 review-gaps: "folded hookLines' two wrap loops and changeLines' loop into one bulletLines helper in internal/tui/releasenotes.go (same idea three times, output byte-identical, tui/release/cli tests pass); left: entryOf's hook partition (only one, nothing to reuse), the hook branch in update.go writeNotes (it is behaviour: '  > ' instead of '  - > '), TestHookLinesAreShortAndOnePerFile's own '- > ' prefix check (counts the whole line, so changeLines+Hook would not fit), the static 'o others' footer hint critique pass 3 let stand (changing it is behaviour); no dead code, no hot-path cost"
+test-verdict: "pass: build/vet/full suite green (RC=0, 3 known hangers skipped), DoD 1-7 verified in tree by named tests, binary built as 0.5.8 on a scratch board stamped 0.5.5: update lists 0.5.6/0.5.7/0.5.8 + Unreleased with the '> ' hook first; popup exercised only through its model-render tests, not by hand"
 ---
 
 # Release-Notes beginnen mit einer Hook-Zeile, und wer mehrere Versionen ueberspringt, sieht die Notes aller dazwischen
@@ -88,3 +89,4 @@ review-gaps: "folded hookLines' two wrap loops and changeLines' loop into one bu
 - **2026-11-04 00:46 · berkc** — in-progress round 3 (critique finding, plain-only version folded): lines() now folds plain changes only when a hook or feature heads the page (headed := len(out) > 0; case v.others || !headed). Doc comment reworded. New TestNotesViewDoesNotFoldAVersionWithoutHeadlines. Mutation check: reverting '|| !headed' made it FAIL (shows '2 more · o shows them'); restored byte-identical, PASS. gofmt/vet/tui targeted/core/release all exit 0.
 - **2026-11-04 00:47 · berkc** — critique (pass 3, judged only e6b1e8f1 against the pass-2 finding; pass 1/2 notes and the maintainer decision of 04.11.2026 stand and were not reopened): addressed. internal/tui/releasenotes.go lines() folds plain changes only when a hook or feature heads the page (headed := len(out) > 0, case v.others || !headed), same condition as the Others header, as pass 2 proposed; TestNotesViewDoesNotFoldAVersionWithoutHeadlines covers it. Seen and let stand (not introduced by the repair, breaks no DoD item): the footer hint 'o others' (releasenotes.go:194) is static and also shows on a page where o has nothing to unfold. worktree_diff = unrelated untracked .jaira/milestones files, not judged. review-summary=none.
 - **2026-11-04 00:50 · berkc** — optimize: one cleanup, bulletLines in internal/tui/releasenotes.go now carries the bullet+wrap loop that hookLines (twice) and changeLines each spelled out; no behaviour change. Looked for and found nothing: an existing stable partition or notes walker to reuse (none in core/release), dead code (folded counter and the 'case folded > 0' branch are both reachable), hot loops (popup renders one version). Claim refused (held by berk-ca-512097, same session's worker), not stolen.
+- **2026-11-04 00:53 · berkc** — testing: full suite (go test ./... -count=1 minus the 3 known hangers) exit 0, go build/vet ./... exit 0. Scratch run: binary -X main.version=0.5.8, JAIRA_HOME scratch, stamp at $JAIRA_HOME/state/board-*/version set to 0.5.5 -> 'jaira update' prints Unreleased, 0.5.8, 0.5.7, 0.5.6 and the Unreleased block opens with '  > Shorter release notes: ...'; --json keeps '> ' text first. Popup not driven interactively; covered by TestPopupThreeVersionsBehindPagesAllThree and the NotesView tests.
