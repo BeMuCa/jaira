@@ -333,6 +333,9 @@ func TestSignOffAppendsFieldsOnlyTheBoardDeclares(t *testing.T) {
 	if !strings.Contains(out, "secrets-status — owed by secrets-scan") {
 		t.Errorf("the sign-off screen hides a debt the gate enforces:\n%s", out)
 	}
+	if strings.Index(out, "try it") < 0 {
+		t.Errorf("the sign-off screen has no try-it row to order:\n%s", out)
+	}
 	if strings.Index(out, "try it") > strings.Index(out, "secrets-status") {
 		t.Errorf("the seven questions no longer come first:\n%s", out)
 	}

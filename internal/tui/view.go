@@ -1341,17 +1341,22 @@ func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 	}
 	owed := gate.OwedBy(m.lanes, t)
 	srcs := gate.DeclaredBy(m.lanes)
+	declared := func(f declaredField) {
+		if strings.TrimSpace(f.value) != "" {
+			row(f.label, sourced(srcs, f.field, f.value))
+			return
+		}
+		if l, ok := owed[f.field]; ok {
+			owedRow(&b, f.label, l, width)
+		}
+	}
 	// On a ticket waiting on a person, the check is what they do first, so it
 	// opens the pane, above the identity rows. Only there: on other lanes the
 	// check stays in the Review group after the verdict.
 	l, onHuman := m.lanes.Get(t.Status)
 	onHuman = onHuman && (l.RequiresQuestion || l.RequiresHumanExit)
 	if onHuman {
-		if strings.TrimSpace(t.ReviewCheck) != "" {
-			row("try it", sourced(srcs, ticket.FieldReviewCheck, oneStepPerLine(t.ReviewCheck)))
-		} else if lane, ok := owed[ticket.FieldReviewCheck]; ok {
-			owedRow(&b, "try it", lane, width)
-		}
+		declared(declaredField{"try it", ticket.FieldReviewCheck, oneStepPerLine(t.ReviewCheck)})
 	}
 	if m.copied {
 		row("id", t.ID+styOK.Render("  copied"))
@@ -1411,15 +1416,6 @@ func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 			}
 		}
 		return false
-	}
-	declared := func(f declaredField) {
-		if strings.TrimSpace(f.value) != "" {
-			row(f.label, sourced(srcs, f.field, f.value))
-			return
-		}
-		if l, ok := owed[f.field]; ok {
-			owedRow(&b, f.label, l, width)
-		}
 	}
 	// The same, in the prose rhythm: the blank line is written only when the
 	// row itself will be, or an unowed empty field leaves a gap behind.

@@ -16,10 +16,10 @@ import (
 // person does rather than reads — and then answers these questions in order —
 // what was wrong, what the agent did, why, whether it actually holds, what the
 // reviewer says it does, what the reviewer found missing, and the reviewer's
-// verdict — because that is the judgement being asked for. The implementer's account and the reviewer's
-// reading of it are shown side by side rather than merged: they are different
-// claims, and when they disagree that disagreement is the most useful thing on
-// the screen.
+// verdict — because that is the judgement being asked for. The implementer's
+// account and the reviewer's reading of it are shown side by side rather than
+// merged: they are different claims, and when they disagree that disagreement
+// is the most useful thing on the screen.
 func (m *Model) renderSignOff() string {
 	t := m.detail
 	if t == nil {
