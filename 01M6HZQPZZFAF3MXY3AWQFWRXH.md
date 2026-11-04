@@ -18,7 +18,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:54Z
-updated-at: 2026-11-04T00:35:54Z
+updated-at: 2026-11-04T21:27:04Z
+updated-by: berkc
 ---
 
 # Eine PR-Lane zeigt gebuendelt, welche Tickets in welchem PR liegen, mit Name, Branch und Pipeline-Farbe
