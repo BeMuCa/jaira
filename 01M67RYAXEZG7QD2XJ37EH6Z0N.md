@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T03:43:11Z
+updated-at: 2026-11-04T03:43:13Z
 updated-by: berkc
 claimed-by: berk-ca-828397
 claimed-at: 2026-11-04T03:43:05Z
@@ -36,6 +36,7 @@ review-gaps: |-
 test-verdict: "pass: build+vet ok, go test ./... exit 0 (33 pkgs ok, 3 known hangers skipped), DoD 1-4 verified in the tree, tmux on a scratch board: split on signoff and human at 160 cols, single column at 120, ] [ tab scroll work, o runs 'code -g <path>:<line>' (stub) with inline confirmation and no modal"
 review-verdict: "The diff meets all four DoD items (location agreed, per-file diff in signoff and human with tests, o opens VS Code at the line, release note one line). No defects found; go build, vet, gofmt clean; go test ./core/gitrepo ./internal/tui and ./internal/cli -run 'Create|Follows|Branch' pass. Not exercised by me: a real VS Code launch (tests stub 'code')."
 review-round: 3
+review-check: "1. cd /home/berkc/code/X_General/jaira-EH6Z0N && go build -o /tmp/jaira-eh ./cmd/jaira (or your usual build)  2. widen the terminal to at least 140 columns and 20 rows  3. in a repo whose ticket sits in signoff and has a branch carrying its handle (e.g. this ticket on master once it reaches signoff), run /tmp/jaira-eh and open that ticket  4. see: ticket in a box left, 'Diff  feat/... vs master' box right, each file header with +N -M, green + lines, red - lines  5. press tab: the accent border moves to the diff; press down: the diff scrolls  6. press ] and [: the top jumps to the next / previous file header  7. press o: VS Code opens that file at that line, the diff title shows 'opened <path>:<line>', no popup; the next key clears it  8. shrink the terminal under 140 columns: the old single-column screen comes back  9. wait 3 seconds after scrolling: the diff stays where it was"
 ---
 
 # In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code
