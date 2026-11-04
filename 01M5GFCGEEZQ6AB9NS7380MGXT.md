@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:13Z
-updated-at: 2026-11-04T21:27:46Z
+updated-at: 2026-11-04T21:31:46Z
 updated-by: berkc
 claimed-by: berk-ca-1279800
 claimed-at: 2026-11-04T21:24:25Z
@@ -44,7 +44,7 @@ claimed-at: 2026-11-04T21:24:25Z
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] reap.sh lesen (core/role/builtin/jaira-dispatcher/scripts/reap.sh) und core/role/reap_test.go; Tests vorher laufen lassen: go test ./core/role -run 'Reap|Spawn' -count=1
+- [x] reap.sh lesen (core/role/builtin/jaira-dispatcher/scripts/reap.sh) und core/role/reap_test.go; Tests vorher laufen lassen: go test ./core/role -run 'Reap|Spawn' -count=1
 - [ ] reap.sh Schleife je Ticket neu ordnen, Phase A (Lane): jaira show zuerst; Lane != done -> 'waiting <T>: the ticket is in <lane>, not done' und continue; exit 5 (abgelegt) zaehlt als done; anderer Fehler -> 'kept <T>: jaira show <T> failed (exit N)'
 - [ ] Branch bestimmen: zuerst Feld branch= aus den Records des Tickets, sonst symbolic-ref eines Worktrees, sonst ${JAIRA_BRANCH_PREFIX:-feat}/<t klein>. Record-Felder lesen mit field(); Records ohne pane= (leer) im Tab-Loop ueberspringen, Records ohne worktree= im Worktree-Loop ueberspringen (passiert schon durch [ -d ])
 - [ ] Phase B (Worktree, nur wenn wts nicht leer ODER ein Record ein pane= hat): detached/dirty-Check wie heute, aber zusaetzlich jede Status-Zeile ignorieren, deren Pfad unter .jaira/tickets/ liegt und '<T>-' im Dateinamen enthaelt (eigene Ticket-Datei, jeder Status-Code). Dann Push-Check: tip=rev-parse refs/heads/<branch>, up=rev-parse refs/remotes/origin/<branch>; fehlt up -> 'kept <T>: <branch> is not pushed'; up != tip -> 'kept <T>: <branch> is not pushed at its head (origin at <12>, local at <12>)'; beides continue. Dann herdr-Check wie heute, Tabs schliessen und Worktrees entfernen wie heute (--dry-run: would ...)
