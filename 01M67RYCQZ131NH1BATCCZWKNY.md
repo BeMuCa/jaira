@@ -18,7 +18,7 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-04T00:50:16Z
+updated-at: 2026-11-04T00:50:18Z
 updated-by: berkc
 claimed-by: berk-ca-512097
 claimed-at: 2026-11-04T00:37:05Z
@@ -87,3 +87,4 @@ review-gaps: "folded hookLines' two wrap loops and changeLines' loop into one bu
 - **2026-11-04 00:45 · berkc** — worker decision on critique pass 2: fold plain changes only on a page that has a hook or a feature above them (same condition as the 'Others' header). A page with neither shows its plain changes unfolded, because folding it would leave nothing but 'N more'. Reading of the maintainer's 'collapsed by default'; the maintainer can overrule at signoff.
 - **2026-11-04 00:46 · berkc** — in-progress round 3 (critique finding, plain-only version folded): lines() now folds plain changes only when a hook or feature heads the page (headed := len(out) > 0; case v.others || !headed). Doc comment reworded. New TestNotesViewDoesNotFoldAVersionWithoutHeadlines. Mutation check: reverting '|| !headed' made it FAIL (shows '2 more · o shows them'); restored byte-identical, PASS. gofmt/vet/tui targeted/core/release all exit 0.
 - **2026-11-04 00:47 · berkc** — critique (pass 3, judged only e6b1e8f1 against the pass-2 finding; pass 1/2 notes and the maintainer decision of 04.11.2026 stand and were not reopened): addressed. internal/tui/releasenotes.go lines() folds plain changes only when a hook or feature heads the page (headed := len(out) > 0, case v.others || !headed), same condition as the Others header, as pass 2 proposed; TestNotesViewDoesNotFoldAVersionWithoutHeadlines covers it. Seen and let stand (not introduced by the repair, breaks no DoD item): the footer hint 'o others' (releasenotes.go:194) is static and also shows on a page where o has nothing to unfold. worktree_diff = unrelated untracked .jaira/milestones files, not judged. review-summary=none.
+- **2026-11-04 00:50 · berkc** — optimize: one cleanup, bulletLines in internal/tui/releasenotes.go now carries the bullet+wrap loop that hookLines (twice) and changeLines each spelled out; no behaviour change. Looked for and found nothing: an existing stable partition or notes walker to reuse (none in core/release), dead code (folded counter and the 'case folded > 0' branch are both reachable), hot loops (popup renders one version). Claim refused (held by berk-ca-512097, same session's worker), not stolen.
