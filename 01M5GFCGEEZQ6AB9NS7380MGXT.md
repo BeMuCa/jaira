@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:13Z
-updated-at: 2026-11-04T21:53:58Z
+updated-at: 2026-11-04T21:54:00Z
 updated-by: berkc
 claimed-by: berk-ca-1279800
 claimed-at: 2026-11-04T21:24:25Z
@@ -81,3 +81,4 @@ test-verdict: "pass: go test ./core/role ./core/shipped RC=0 (touched packages o
 - **2026-11-04 21:47 · berkc** — Runde 2 (critique Befund 2): jaira-teamlead/SKILL.md Absatz 'Its worktree goes with the tab' (lines 260-265) ersetzt. Die alte Begruendung (Review-Kommentare und nicht angenommene Tickets brauchen einen langlebigen Worktree) entfaellt: die Commits liegen auf dem gepushten Branch, der bis zum Merge bleibt; ein Rueckkommen landet auf diesem Branch, neuer Worktree aus ihm. Hash-Zeile fuer SKILL.md an core/shipped/shipped.sha256 angehaengt (alte bleiben); go test ./core/role ./core/shipped -count=1 ok. spawn.sh nicht angefasst (R80Z4G). jaira claim wurde von berk-ca-1279800 gehalten (19m), nicht --steal.
 - **2026-11-04 21:48 · berkc** — critique (pass 2): nothing left. Finding 2 (SKILL.md:263-266 stale long-lived-worktree rationale) repaired in ca7742d4: paragraph now says commits live on the pushed branch until merge, returns get a new worktree from it; consistent with lines 37-46. Finding 1 (spawn.sh:168 -b on a kept branch) accepted as deferred per the 21:42 note: filed as R80Z4G (follows 80MGXT), spawn.sh out of this ticket's scope and the same line is changed by DSDPZ4; failure is loud (git aborts), not silent. Let stand as in pass 1: reap.sh ordering, local-only push check, origin/HEAD-first merge check, branch-<T> record. Claim held by berk-ca-1279800; not stolen.
 - **2026-11-04 21:50 · berkc** — optimize: nothing to send back. Duplication: forge/merged_head and field/ticket_of reused, not copied; test helper pushedAt sits beside mergedAt. Dead code: old gone=() tab loop removed with the rewrite, no orphan left. Fluff left alone: reap.sh:247 re-reads tip already read at :187 (needed when the worktree block is skipped, one rev-parse per ticket); the pane==HERDR_PANE_ID check at :168 and :199 is repeated but each loop needs it. go test ./core/role -run 'Reap|Spawn' -count=1 ok. Claim held by berk-ca-1279800, not stolen.
+- **2026-11-04 21:54 · berkc** — testing: ran only the touched packages per instruction (go test ./core/role ./core/shipped -count=1 RC=0, log at /tmp/claude-1000/-home-berkc-code-X-General-jaira/15e0b874-a533-433c-887a-ca9272cf72bc/scratchpad/80MGXT-gotest.log). The lane prompt asks for the whole suite; not run here. Herdr is exercised only through the test fake, not a live herdr. Ticket is claimed by berk-ca-1279800; claim not stolen.
