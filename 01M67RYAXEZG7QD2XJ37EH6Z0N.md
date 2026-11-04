@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T03:43:07Z
+updated-at: 2026-11-04T03:43:09Z
 updated-by: berkc
 claimed-by: berk-ca-828397
 claimed-at: 2026-11-04T03:43:05Z
@@ -27,7 +27,12 @@ outcome-why: "The person accepting work judged the outcome and review text but c
 outcome-resolves: "Sign-off and human screens show each changed file with its +/- lines beside the ticket, and o opens the file at that line without a modal. Critique round 1 closed: reload keeps scroll and focus (TestReloadKeepsDiffScrollAndFocus, TestOpeningAnotherTicketResetsDiffScroll); one branch-segment split shared by BranchFor and branchTicket; the split is built from splitPane like the follow-up split (TestPersonLaneShowsDiffBesideTheTicketWhenWide). Testing finding closed: a successful o no longer raises a modal (TestOKeyConfirmsInTheDiffTitleWithoutAModal). Tests: go test ./core/gitrepo ./internal/tui -count=1 exit 0; go test ./internal/cli -count=1 -run 'Create|Follows|Branch' exit 0 (earlier run, cli untouched by this fix)."
 review-summary: "New core/gitrepo/branchdiff.go finds the ticket's branch by a handle segment (BranchFor, now sharing BranchSegments with the CLI's branchTicket), picks master/main as base and diffs base...branch (merge-base, like a PR) without .jaira/. In the TUI, internal/tui/diffpane.go parses that patch into per-file rows numbered by new-side line; when a ticket sits in a person's lane (signoff via RequiresHumanExit, human via RequiresQuestion) and the terminal is >=140x20, renderSignOff/renderDetail put the ticket (78 cols) and the diff side by side in splitPane boxes. tab moves focus, arrows scroll the focused pane, ]/[ jump file headers, o runs 'code -g path:line' in the branch's worktree (else the repo root) and confirms in the diff title, no modal. Without a branch it falls back to the commits naming the handle. Scroll/focus survive the 2s reload; narrower terminals get the old single column."
 round: 3
-review-gaps: "pass 1: folded renderDiffPane's own pad/fill-to-height loop into clipPane (view.go:1490, same code) and dropped the diffScroll/top double bookkeeping there; left: Base() beside gitref.RemoteHead (different lookup, critique let-stand), WorktreeOf/openInCode (no existing twin), parseDiff's second counting pass (runs once per diff load), the focused-title restyle next to the accent border (visual, not a cleanup). pass 2 (46448074 diffOpened): none - mirrors the copied pattern, nothing duplicated or dead; kept the loadDiff reset of diffOpened as a cheap guard"
+review-gaps: |-
+  note: when no worktree has the branch checked out (maintainer on master), o opens the file in the root checkout - the master version, so the line number points into the pre-change file or a file that does not exist yet (diffpane.go ticketDiff dir=root)
+  note: the fallback path (git show per commit) is not filtered for .jaira, so ticket files appear as diff files, and a file changed in several commits appears once per commit with line numbers of that commit, not of today
+  note: once the branch is merged into master but not deleted, base...branch is empty and the pane says 'no changes' instead of showing the merged commits
+  note: loadDiff runs git (for-each-ref, up to 4 rev-parse, diff, worktree list) from View after every 2s reload while such a ticket is open - critique let it stand; fine for normal repos
+  note: TestAMultilineCheckKeepsItsLines no longer checks the indent of the check's continuation lines, only that steps 2 and 3 are on different rows
 test-verdict: "pass: build+vet ok, go test ./... exit 0 (33 pkgs ok, 3 known hangers skipped), DoD 1-4 verified in the tree, tmux on a scratch board: split on signoff and human at 160 cols, single column at 120, ] [ tab scroll work, o runs 'code -g <path>:<line>' (stub) with inline confirmation and no modal"
 ---
 
