@@ -215,6 +215,43 @@ func TestOKeyOpensFileAtLine(t *testing.T) {
 	}
 }
 
+// A blank separator above a header has no path. With it on top, 'o' opens the
+// file below, and the counter and marker name that same file.
+func TestOKeyOnABlankRowOpensTheFileBelow(t *testing.T) {
+	var gotPath string
+	var gotLine int
+	orig := openInCode
+	openInCode = func(_, path string, line int) error {
+		gotPath, gotLine = path, line
+		return nil
+	}
+	t.Cleanup(func() { openInCode = orig })
+
+	m := diffModel(t, 160, "signoff")
+	m.diffDir = "/repo/worktree"
+	blank := -1
+	for i, r := range m.diffRows {
+		if r.kind == 'B' {
+			blank = i
+			break
+		}
+	}
+	if blank < 0 {
+		t.Fatal("sample patch has no blank row")
+	}
+	m.diffScroll = blank
+	if out := stripANSI(m.render()); !strings.Contains(out, "file 2/2") {
+		t.Errorf("counter with a blank row on top does not name the file below:\n%s", out)
+	}
+	m.Update(tea.KeyPressMsg{Code: 'o', Text: "o"})
+	if gotPath != "docs/b.md" || gotLine != 1 {
+		t.Errorf("openInCode got (%q, %d), want (docs/b.md, 1)", gotPath, gotLine)
+	}
+	if out := stripANSI(m.render()); !strings.Contains(out, "opened docs/b.md:1") {
+		t.Errorf("diff title misses the open:\n%s", out)
+	}
+}
+
 // A successful open must not raise the message modal: it would take the next
 // keys. The confirmation sits in the diff title and clears on the next key.
 func TestOKeyConfirmsInTheDiffTitleWithoutAModal(t *testing.T) {

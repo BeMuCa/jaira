@@ -78,7 +78,7 @@ func parseDiff(patch string) []diffRow {
 			}
 			file++
 			header = len(rows)
-			rows = append(rows, diffRow{file: file, path: path, line: 1, kind: 'H', text: path})
+			rows = append(rows, diffRow{file: file, path: path, line: 1, kind: 'H'})
 			inHunk, skipping = false, false
 			continue
 		}
@@ -310,6 +310,17 @@ func (m *Model) diffTop() int {
 	return min(max(m.diffScroll, 0), max(len(m.diffRows)-1, 0))
 }
 
+// diffTarget is the row the file counter, the marker and 'o' act on: the top
+// row, or the row below it when the top row is a blank separator, which has no
+// path and is never opened.
+func (m *Model) diffTarget() int {
+	t := m.diffTop()
+	if t+1 < len(m.diffRows) && m.diffRows[t].kind == 'B' {
+		t++
+	}
+	return t
+}
+
 // jumpFile moves the diff to the next file's header, or to the header of the
 // file the top row is in when going back, or the one before it if the top row
 // is that header.
@@ -343,12 +354,12 @@ func (m *Model) jumpFile(next bool) {
 	}
 }
 
-// openDiffRow opens the file of the top row in VS Code at its line.
+// openDiffRow opens the file of the target row in VS Code at its line.
 func (m *Model) openDiffRow() {
 	if len(m.diffRows) == 0 {
 		return
 	}
-	r := m.diffRows[m.diffTop()]
+	r := m.diffRows[m.diffTarget()]
 	if err := openInCode(m.diffDir, r.path, r.line); err != nil {
 		m.notify(err.Error(), true)
 		return
@@ -561,7 +572,7 @@ func (m *Model) renderDiffPane(width, height int) string {
 	m.diffScroll = top
 	selFile := -1
 	if len(m.diffRows) > 0 {
-		selFile = m.diffRows[top].file
+		selFile = m.diffRows[m.diffTarget()].file
 	}
 
 	mark, markSty := "○ ", styMeta
