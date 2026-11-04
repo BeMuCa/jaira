@@ -20,19 +20,14 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T21:53:55Z
+updated-at: 2026-11-04T21:54:23Z
 updated-by: berkc
 claimed-by: berk-ca-1786644
 claimed-at: 2026-11-04T21:53:55Z
 outcome-what: "Diff pane in the sign-off and human ticket view: changed rows and words carry 256-palette tints (dark add 22, del 52, word-add 28, word-del 88; light 194, 224, 157, 217), a row cut exactly at a segment boundary ends in an ellipsis."
 outcome-why: "Critique pass 1 found the hex tints fell onto the grey ramp of 256-colour terminals (removed lines showed no red), and the cut row was silently shortened at an exact boundary; the tint test asserted only the hex escapes."
 outcome-resolves: "critique 21:47 finding 1: tints -> diffpane.go diffPaletteDark/Light, TestChangedRowsAreTintedAcrossThePane asserts 48;5;22/52/28/88; finding 2: removed-row word-del assertion in TestChangedRowsAreTintedAcrossThePane; finding 3: fitSegs fix, TestFitSegsEndsAnExactBoundaryCutInEllipsis; finding 4: model.go diff field comment rewrapped"
-review-summary: |-
-  internal/tui/diffpane.go:366-367 the hex tints downsample to neutral greys on a 256-colour terminal (tmux default, many WSL setups): dark del #3a1d22 -> 48;5;235, word-del #7a2c35 -> 239 (same grey as the file header fill), light add/del also land on the grey ramp (232-255), so removed lines carry no red at all — define the palette as 256 indices like every other colour in internal/tui/view.go:44-50 (colOK "78" etc.): dark add 22, word-add 28, del 52, word-del 88; light add 194, word-add 157, del 224, word-del 217; these are cube colours and keep their hue on 256 and truecolor alike
-  internal/tui/diffpane_test.go:338 TestChangedRowsAreTintedAcrossThePane asserts the truecolor escapes of the hex values, so it passed while the 256-colour screen was grey — assert the palette indices (48;5;52 for a removed row, 48;5;88 on its changed word, 48;5;22/28 for added) after the palette change, and add the removed-row word assertion the test currently skips
-  internal/tui/diffpane.go:384 fitSegs keeps a segment that ends exactly at n and drops every later segment without a "…", so a row whose gutter+prefix fills the pane exactly is cut silently (rule 7: a cut row ends in …) — when used+w == n and a later segment has text, truncate this one instead; add a case to TestLongCodeRowIsCutToThePane with a paired row cut at a segment boundary
-  internal/tui/model.go:162 the rewrapped field comment is now one ~140-column line — wrap it at the width of the lines around it
-  Let stand: hunk header indented 2*nw+4 with no │ (aligns @@ with the sign column; spec rule 3 says gutter blank); diffSeg/fitSegs/padRow/spreadRow beside truncate/padDisplay/refill (segments are needed to cut before styling with word spans; refill works on styled strings and does not cut); markWordPair rune-based prefix/suffix with non-overlap guard is correct; wide runes are cut via truncate/lipgloss.Width and the row padded to width.
+review-summary: none
 round: 5
 review-gaps: |-
   note: when no worktree has the branch checked out (maintainer on master), o opens the file in the root checkout - the master version, so the line number points into the pre-change file or a file that does not exist yet (diffpane.go ticketDiff dir=root)
