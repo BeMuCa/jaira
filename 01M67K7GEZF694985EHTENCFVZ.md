@@ -17,14 +17,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-04T21:57:45Z
+updated-at: 2026-11-04T21:58:00Z
 updated-by: berkc
 claimed-by: berk-ca-1838016
 claimed-at: 2026-11-04T21:57:45Z
 outcome-what: "Lanes may name a skill (skill:), a repository script (script:) and require a receipt (receipt: required). show --for-lane carries skill, skill_path, script, idempotency_key, receipt_required, receipt, script_done and a run line; new 'jaira receipt <id> <result>' writes the round's receipt; 'lanes show' and the generated lane note name them. README subsection and release note ENCFVZ.md added."
 outcome-why: "A lane must hand an agent a skill and a script and refuse to let a ticket leave until its side effect is recorded, so a message or upload happens at most once per round. jaira itself runs nothing."
 outcome-resolves: "DoD 2: core/lane/lane.go parse, lane_test.go TestSkillLaneNeedsNoPromptBody. DoD 3: lane.go script checks, TestScriptIsParsed, TestScriptRefusesAPathOutsideTheRepository, TestScriptNeedsAnAgenticLane. DoD 4: gate.go receipt block, receipt_test.go four tests. DoD 5: flow.go laneRunFor, receiptlane_test.go ForLane tests. DoD 6: resume.go newReceiptCmd, TestReceiptEndsTheRunForThisRound, TestReceiptRefusedWhereTheLaneDoesNotRequireOne. DoD 7: announce.go marks, tickets.go lanes show, TestLanesShowNamesTheSkillScriptAndReceipt. DoD 8: README. DoD 9: core/release/notes/ENCFVZ.md. Green: go test core/lane gate role board shipped and internal/cli (with the three skips), go vet on them, gofmt clean."
-review-summary: "internal/cli/flow.go showForLane + core/role/builtin/jaira-role-lane/SKILL.md:35, jaira-worker/SKILL.md:139: a skill-only lane hands the agent an empty 'prompt', and no shipped role reads the new keys skill_path, run or receipt_required — an agent following jaira-role-lane/jaira-worker 'follows the prompt' and never starts the skill, runs the script or writes the receipt, so the feature only works for a reader of the text output. Do instead: add one step where those two skills (and core/role/jaira/SKILL.md 'Working a ticket') read the --for-lane payload: skill_path set -> read and follow that SKILL.md with prompt as the extra instruction; run non-empty -> run it from the repository root; receipt_required -> 'jaira receipt <id> <result>' after the side effect, before the move. Append the new hashes to core/shipped/shipped.sha256 as its test demands. Rest of the diff (lane.go parse, gate receipt block reusing Doc().Scalar like fieldFilled, role.FindSkill, jaira receipt, lanes show, announce marks) fits existing patterns; nothing speculative beyond the script_done-without-receipt decision recorded in note 21:37, which stands."
+review-summary: "none"
 round: 2
 ---
 
