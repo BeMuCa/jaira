@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T21:42:00Z
+updated-at: 2026-11-04T21:42:17Z
 updated-by: berkc
 claimed-by: berk-ca-1345452
 claimed-at: 2026-11-04T21:29:36Z
@@ -52,7 +52,7 @@ review-check: "1. cd /home/berkc/code/X_General/jaira-EH6Z0N && go build -o /tmp
 - [x] Release-Notiz unter core/release/notes/
   proof: core/release/notes/EH6Z0N.md:1
 - [x] Diff pane laid out per the design spec note of 2026-11-04 (rules 1-8, 10): title with file N/M and totals, file header bar, hunk header, old/new line-number gutter, full-width +/- row tint, word-level highlight on paired lines, empty/error states; tests
-  proof: internal/tui/diffpane.go renderDiffPane, diffLine, spreadRow, markWordPairs; tests TestParseDiffNumbersBothSides, TestTagsNewDeletedAndRenamed (TestParseDiffTagsNewDeletedAndRenamedFiles), TestWordPairsMarkOnlyTheChangedMiddle, TestChangedRowsAreTintedAcrossThePane, TestGutterShowsOldAndNewNumbersOnTheirSides, TestDiffTitleCountsFilesAndTotals, TestBlankRowSeparatesFilesAndJumpsStillLandOnHeaders, TestLongCodeRowIsCutToThePane, TestEmptyStateIsNoticeBelowTheTitle, TestTicketDiffSaysWhyThereAreNoRows
+  proof: internal/tui/diffpane.go renderDiffPane, diffLine, spreadRow, markWordPairs; tests TestParseDiffNumbersBothSides, TestParseDiffTagsNewDeletedAndRenamedFiles, TestWordPairsMarkOnlyTheChangedMiddle, TestChangedRowsAreTintedAcrossThePane, TestGutterShowsOldAndNewNumbersOnTheirSides, TestDiffTitleCountsFilesAndTotals, TestBlankRowSeparatesFilesAndJumpsStillLandOnHeaders, TestLongCodeRowIsCutToThePane, TestEmptyStateIsNoticeBelowTheTitle, TestTicketDiffSaysWhyThereAreNoRows
 - [x] BranchFor picks the newest of several branches carrying the handle (rule 9); test
   proof: core/gitrepo/branchdiff.go BranchFor (for-each-ref --sort=-committerdate); test TestBranchForPicksTheNewestBranchCarryingTheHandle in core/gitrepo/branchdiff_test.go
 
