@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:13Z
-updated-at: 2026-11-04T21:31:49Z
+updated-at: 2026-11-04T21:31:51Z
 updated-by: berkc
 claimed-by: berk-ca-1279800
 claimed-at: 2026-11-04T21:24:25Z
@@ -46,7 +46,7 @@ claimed-at: 2026-11-04T21:24:25Z
 
 - [x] reap.sh lesen (core/role/builtin/jaira-dispatcher/scripts/reap.sh) und core/role/reap_test.go; Tests vorher laufen lassen: go test ./core/role -run 'Reap|Spawn' -count=1
 - [x] reap.sh Schleife je Ticket neu ordnen, Phase A (Lane): jaira show zuerst; Lane != done -> 'waiting <T>: the ticket is in <lane>, not done' und continue; exit 5 (abgelegt) zaehlt als done; anderer Fehler -> 'kept <T>: jaira show <T> failed (exit N)'
-- [ ] Branch bestimmen: zuerst Feld branch= aus den Records des Tickets, sonst symbolic-ref eines Worktrees, sonst ${JAIRA_BRANCH_PREFIX:-feat}/<t klein>. Record-Felder lesen mit field(); Records ohne pane= (leer) im Tab-Loop ueberspringen, Records ohne worktree= im Worktree-Loop ueberspringen (passiert schon durch [ -d ])
+- [x] Branch bestimmen: zuerst Feld branch= aus den Records des Tickets, sonst symbolic-ref eines Worktrees, sonst ${JAIRA_BRANCH_PREFIX:-feat}/<t klein>. Record-Felder lesen mit field(); Records ohne pane= (leer) im Tab-Loop ueberspringen, Records ohne worktree= im Worktree-Loop ueberspringen (passiert schon durch [ -d ])
 - [ ] Phase B (Worktree, nur wenn wts nicht leer ODER ein Record ein pane= hat): detached/dirty-Check wie heute, aber zusaetzlich jede Status-Zeile ignorieren, deren Pfad unter .jaira/tickets/ liegt und '<T>-' im Dateinamen enthaelt (eigene Ticket-Datei, jeder Status-Code). Dann Push-Check: tip=rev-parse refs/heads/<branch>, up=rev-parse refs/remotes/origin/<branch>; fehlt up -> 'kept <T>: <branch> is not pushed'; up != tip -> 'kept <T>: <branch> is not pushed at its head (origin at <12>, local at <12>)'; beides continue. Dann herdr-Check wie heute, Tabs schliessen und Worktrees entfernen wie heute (--dry-run: would ...)
 - [ ] Nach erfolgreicher Phase B (nicht --dry-run, kein failed): die Records in gone loeschen und genau einen Record '$panes/branch-<T>' schreiben mit 'ticket=<T>\nbranch=<branch>\n' (der Record des eigenen HERDR_PANE_ID bleibt wie heute). Der Dateiname kollidiert nicht mit Pane-Records? pruefen; sonst anderes Praefix
 - [ ] Phase C (Branch): existiert refs/heads/<branch> nicht -> Records des Tickets loeschen (nicht bei --dry-run), continue. Ist er in root oder main ausgecheckt -> stehen lassen, Records bleiben, continue (stumm wie heute). Gemergt, wenn tip Vorfahre von refs/remotes/origin/HEAD ist (falls der Ref existiert; Milestone-PR) ODER der Forge-PR gemergt ist und tip == head oder Vorfahre von head (bestehende merged_head-Logik, Forge-Fehlermeldungen wie heute). Kein Merge -> 'waiting <T>: <branch> has no merged pull request'. Tip hinter/neben head -> 'kept <T>: <branch> is not at the merged head ...'. Sonst branch -D, 'deleted branch <branch>' (--dry-run: 'would delete branch'), dann Records des Tickets loeschen
