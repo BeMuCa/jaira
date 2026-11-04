@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T21:22:33Z
-updated-at: 2026-11-04T21:31:36Z
+updated-at: 2026-11-04T21:31:38Z
 updated-by: berkc
 claimed-by: berk-ca-1280093
 claimed-at: 2026-11-04T21:24:26Z
@@ -50,3 +50,4 @@ claimed-at: 2026-11-04T21:24:26Z
 
 ## Progress
 - **2026-11-04 21:26 · berkc** — plan: no single grey reads on both selection fills (dark 239=78, light 250=188 grey). 240 on dark selection is 10 levels apart = invisible, which is the bug. Fixed 245 gives only ~50 on either; adaptive gives 90 (dark 248 on 239) and keeps light at 240 (100 on 250), which already read fine. 248 not 250 so the ID stays calmer than the title and only a step above the name (244). Every styHandle use is a ticket handle beside a title, so all follow; lane counter keeps colFaint via styLaneCount.
+- **2026-11-04 21:31 · berkc** — Claim: jaira claim said berk-ca-1280093 holds it (3m); did not --steal, worked in the worktree. Mutation check: dark handle back at 240 fails TestHandleToneReadsOnEveryCardFill (88 is 40 from shade B 48; 240 on selection 239 is 10 off, so the selection fails too). Lane-counter stays colFaint; only handle sites switched. Test helper grey() and the RGBA reading live in handle_test.go; abs() already exists in links_test.go, so none added.
