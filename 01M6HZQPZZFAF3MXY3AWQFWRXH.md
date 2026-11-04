@@ -1,7 +1,7 @@
 ---
 id: 01M6HZQPZZFAF3MXY3AWQFWRXH
 title: "Eine PR-Lane zeigt gebuendelt, welche Tickets in welchem PR liegen, mit Name, Branch und Pipeline-Farbe"
-status: brainstorm
+status: todo
 ready: true
 creator: berkc
 assignee: berkc
@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:54Z
-updated-at: 2026-11-04T21:42:09Z
+updated-at: 2026-11-04T21:42:12Z
 updated-by: berkc
 claimed-by: berk-ca-1311236
 claimed-at: 2026-11-04T21:27:24Z
