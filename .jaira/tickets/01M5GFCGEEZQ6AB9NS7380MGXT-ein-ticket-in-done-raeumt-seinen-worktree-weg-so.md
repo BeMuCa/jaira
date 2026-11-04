@@ -19,13 +19,17 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:13Z
-updated-at: 2026-11-04T21:37:57Z
+updated-at: 2026-11-04T21:47:18Z
 updated-by: berkc
 claimed-by: berk-ca-1279800
 claimed-at: 2026-11-04T21:24:25Z
-outcome-what: "reap.sh removes a done ticket's tabs and worktree once its branch is pushed at the same commit (clean worktree, own ticket file ignored); the local branch is deleted only after its pull request merged at the head, or its head lies in origin/HEAD; SKILL.md and the release note describe the new timing; shipped hashes appended"
-outcome-why: "worktrees piled up until the pull request merged, and per-milestone PRs make that wait weeks; the branch and its commits stay on origin and locally until merged, so nothing is lost by removing the worktree"
-outcome-resolves: "DoD 1-5: reap_test.go (TestReapRemovesAPushedWorktreeBeforeTheMerge, TestReapKeepsWhatIsNotFinished, TestReapClosesAMergedTicket, TestReapDeletesABranchInOriginsDefaultBranch, TestReapIgnoresTheTicketsOwnFileInItsWorktree, TestReapKeepsABranchPastItsMergedHead); go test ./core/role ./core/shipped ok"
+outcome-what: "reap.sh removes a done ticket's tabs and worktree once its branch is pushed at the same commit (clean worktree, own ticket file ignored); the local branch is deleted only after its PR merged at the head or its head lies in origin/HEAD. SKILL.md (teamlead) says the worktree goes at done and the branch and its commits stay on the pushed branch until merged, with review comments and returning tickets landing there. Shipped hashes appended; core/role and core/shipped tests pass."
+outcome-why: "Worktrees pile up on disk when PRs are per milestone and wait for merge; the branch and its commits are the record, so the worktree can go once they are on origin."
+outcome-resolves: "Critique round 1 finding 2 (SKILL.md long-lived-worktree rationale contradicting the new paragraph) fixed. Finding 1 (spawn.sh worktree add -b on a kept branch) deliberately left for follow-up R80Z4G."
+review-summary: |-
+  core/role/builtin/jaira-dispatcher/scripts/spawn.sh:168 'git worktree add <wt> -b <branch>' fails for the branch reap.sh now keeps after removing a done ticket's worktree; reuse an existing refs/heads/<branch> with 'git worktree add <wt> <branch>' and only 'branch -D' at spawn.sh:185 a branch this run created; test + shipped hash
+  core/role/builtin/jaira-teamlead/SKILL.md:263-266 keeps the old 'review comments want somewhere to land / not accepted can still come back' rationale for a long-lived worktree, contradicting the new paragraph; replace with: the branch stays, a later fix gets a fresh worktree on it from spawn.sh
+round: 2
 ---
 
 # Ein Ticket in done raeumt seinen Worktree weg, sobald der Branch gepusht und sauber ist
@@ -41,7 +45,7 @@ outcome-resolves: "DoD 1-5: reap_test.go (TestReapRemovesAPushedWorktreeBeforeTh
 - [x] Release-Note-Zeile in core/release/notes/80MGXT.md
   proof: core/release/notes/80MGXT.md
 - [x] jaira-teamlead/SKILL.md beschreibt den neuen Zeitpunkt (Worktree bei done, Branch nach Merge); neue Hashes von reap.sh und SKILL.md in core/shipped/shipped.sha256 angehaengt, core/role- und core/shipped-Tests gruen
-  proof: core/role/builtin/jaira-teamlead/SKILL.md (lines 37-46, 257-262 rewritten); core/shipped/shipped.sha256 last two lines (reap.sh, SKILL.md); go test ./core/role ./core/shipped ok; TestTeamleadReapsEveryRound
+  proof: core/role/builtin/jaira-teamlead/SKILL.md (lines 37-46, 260-265 rewritten: worktree goes at done, branch and its commits stay on the pushed branch until merged, no long-lived-worktree rationale); core/shipped/shipped.sha256 last line (SKILL.md hash); go test ./core/role ./core/shipped -count=1 ok
 
 ## Options
 
@@ -72,3 +76,6 @@ outcome-resolves: "DoD 1-5: reap_test.go (TestReapRemovesAPushedWorktreeBeforeTh
 - **2026-11-04 21:37 · berkc** — Decision: the branch's merge check asks origin/HEAD first (no forge call) and the forge only when origin/HEAD does not contain the branch. A squash-merged milestone PR therefore keeps its branch until the forge reports the head, which is the safe side.
 - **2026-11-04 21:37 · berkc** — Dead end: no 'before' run of reap_test.go. The script was rewritten before the test run, so the pre-change baseline (plan item 1) was not taken; the verification is the post-change run, go test ./core/role ./core/shipped ok with no reap test skipped.
 - **2026-11-04 21:37 · berkc** — Board: jaira claim 80MGXT was refused (claimed by berk-ca-1279800, 3m ago). I did not --steal. A dod write was also refused once with 'berkc wrote it first' and then succeeded on the re-run; the plan state shows 1-11 ticked.
+- **2026-11-04 21:41 · berkc** — critique (pass 1): two findings, fix clear. (1) spawn.sh:168 'worktree add -b <branch>' fails on the branch reap.sh now deliberately keeps without a worktree (the open point of the 21:37 note) - this ticket creates that state, so it should handle it: reuse an existing refs/heads/<branch> with 'git worktree add <wt> <branch>', and do not 'branch -D' at spawn.sh:185 a branch this run did not create. DSDPZ4 (backlog, worktree location) does not cover this, so it is not a reason to leave it. (2) jaira-teamlead/SKILL.md:263-266 keeps the old 'review comments want somewhere to land / not accepted can still come back' rationale for a long-lived worktree, which now contradicts the paragraph above it; rewrite to: branch stays, later fixes get a fresh worktree on it. Let stand: reap.sh ordering lane->worktree->branch, local-only push check (decision 1 of 21:26), origin/HEAD-first merge check (21:37 decision), branch-<T> record (no collision with pane-id record names). Claim refused (held by berk-ca-1279800); not stolen.
+- **2026-11-04 21:42 · berkc** — Critique Runde 1, Befund 1 (spawn.sh:168 'worktree add -b' scheitert an einem von reap.sh behaltenen Branch): bewusst NICHT hier behoben - Auftrag schloss spawn.sh aus, dieselbe Zeile aendert DSDPZ4. Als Folgeticket R80Z4G erfasst. In-progress Runde 2 behebt nur Befund 2 (SKILL.md:263-266).
+- **2026-11-04 21:47 · berkc** — Runde 2 (critique Befund 2): jaira-teamlead/SKILL.md Absatz 'Its worktree goes with the tab' (lines 260-265) ersetzt. Die alte Begruendung (Review-Kommentare und nicht angenommene Tickets brauchen einen langlebigen Worktree) entfaellt: die Commits liegen auf dem gepushten Branch, der bis zum Merge bleibt; ein Rueckkommen landet auf diesem Branch, neuer Worktree aus ihm. Hash-Zeile fuer SKILL.md an core/shipped/shipped.sha256 angehaengt (alte bleiben); go test ./core/role ./core/shipped -count=1 ok. spawn.sh nicht angefasst (R80Z4G). jaira claim wurde von berk-ca-1279800 gehalten (19m), nicht --steal.

@@ -259,11 +259,10 @@ hand.
 
 Its worktree goes with the tab: `reap.sh` removes it once the ticket is done and
 the worktree is clean and pushed, without waiting for the pull request — pull
-requests are per milestone, so a wait would keep worktrees for weeks. The local
-branch stays until it is merged. Review comments come back to the branch and
-want somewhere to land, and a
-merged pull request is not the end of that — a ticket that has not been
-accepted can still come back.
+requests are per milestone, so a wait would keep worktrees for weeks. Nothing is
+lost with it: the commits are on the pushed branch, and that branch stays until
+it is merged. Review comments and a ticket that comes back land on that branch;
+a new worktree is made from it.
 
 A new worker needs nothing from the old one: the decisions are in `jaira note`,
 the criteria in the definition of done, the change in git, the argument in the
