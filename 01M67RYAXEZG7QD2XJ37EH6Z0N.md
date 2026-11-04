@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T03:41:22Z
+updated-at: 2026-11-04T03:41:24Z
 updated-by: berkc
 claimed-by: berk-ca-511849
 claimed-at: 2026-11-04T00:37:01Z
@@ -78,3 +78,4 @@ Let stand: fallback via CommitsForTicket+Repo.Diff (needed on boards that work o
 - **2026-11-04 01:02 · berkc** — testing finding fixed (worker 2026-11-04): a successful 'o' no longer calls notify. openDiffRow sets Model.diffOpened (model.go, next to diffScrollFor); renderDiffPane prints 'Diff  opened <path>:<line>  <note>' so the opened text survives a narrow title; the key clears it at the top of case modeDetail, and loadDiff clears it when another ticket is opened. Errors still use notify. Test TestOKeyConfirmsInTheDiffTitleWithoutAModal: mode stays modeDetail, title shows the open, next key clears it. Dead end: a first struct edit with its own comment realigned the whole Model field block; kept the field inside the existing aligned block instead. Still open: plan item 6 tmux check on a scratch board, not run in this lane.
 - **2026-11-04 01:03 · berkc** — critique (pass 3): read only the testing finding (note 01:00) and its repair 46448074. openDiffRow sets diffOpened instead of notify, cleared at top of case modeDetail beside m.copied and in loadDiff on a ticket change; errors still notify; test TestOKeyConfirmsInTheDiffTitleWithoutAModal - addressed, follows the existing copied pattern (model.go case modeDetail). Pass-1 let-stands and optimize keeps still hold. review-summary=none.
 - **2026-11-04 01:04 · berkc** — optimize (pass 2): read only 46448074 (diffOpened). Nothing to remove: follows the copied pattern, no twin elsewhere, no dead code; loadDiff's diffOpened reset kept (cheap guard for a ticket change that does not pass a modeDetail key). gofmt/vet clean, go test ./core/gitrepo ./internal/tui green.
+- **2026-11-04 03:41 · berkc** — testing pass 2 (worker, build of 46448074): suite exit 0; tmux re-check confirms the modal fix; human lane shows the split too. Real VS Code launch not exercised (a stub 'code' recorded the arguments).
