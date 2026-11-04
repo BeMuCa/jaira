@@ -27,10 +27,14 @@ related:
   - 01M5MNWJF240306ZVDA41K3RA8
 commits: []
 created-at: 2026-10-30T23:44:38Z
-updated-at: 2026-11-04T00:34:53Z
+updated-at: 2026-11-04T00:34:58Z
 updated-by: berkc
 claimed-by: berk-ca-131411
 claimed-at: 2026-11-03T17:20:56Z
+rejected-kind: wontfix
+rejected-why: "aufgeteilt in 13 Tickets im Milestone pm-web: V9S8RN CW2X0F ZMN3MW PB664F 35Y6N5 QCM818 NEYWJH EEX2HX 3Q92JY VD4ZDW GF2MAB AS9WSS DBZ9NM (Maintainer 04.11.2026)"
+rejected-by: berkc
+rejected-at: "2026-11-04T00:34:58Z"
 ---
 
 # jaira web wird Beobachtungs- und Steuerzentrale fuer PMs ohne Claude: Onboarding mit Anbieterwahl, lokale Tokens, Projekte aus Repos, Tabs fuer Tickets, Aktive, Milestones/Epics, Schreiben
