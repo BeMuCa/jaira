@@ -1,7 +1,7 @@
 ---
 id: 01M67K7GEZF694985EHTENCFVZ
 title: "Neue Lane-Arten: eine Lane, die nur einen Skill startet, und Automations-Lanes (Artefakte, E-Mail, API-Aufrufe, Telegram senden/empfangen, Video-Upload)"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: berkc
@@ -17,10 +17,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-04T21:48:52Z
+updated-at: 2026-11-04T21:49:05Z
 updated-by: berkc
 claimed-by: berk-ca-1279809
 claimed-at: 2026-11-04T21:24:25Z
+outcome-what: "Lanes may name a skill (skill:), a repository script (script:) and require a receipt (receipt: required). show --for-lane carries skill, skill_path, script, idempotency_key, receipt_required, receipt, script_done and a run line; new 'jaira receipt <id> <result>' writes the round's receipt; 'lanes show' and the generated lane note name them. README subsection and release note ENCFVZ.md added."
+outcome-why: "A lane must hand an agent a skill and a script and refuse to let a ticket leave until its side effect is recorded, so a message or upload happens at most once per round. jaira itself runs nothing."
+outcome-resolves: "DoD 2: core/lane/lane.go parse, lane_test.go TestSkillLaneNeedsNoPromptBody. DoD 3: lane.go script checks, TestScriptIsParsed, TestScriptRefusesAPathOutsideTheRepository, TestScriptNeedsAnAgenticLane. DoD 4: gate.go receipt block, receipt_test.go four tests. DoD 5: flow.go laneRunFor, receiptlane_test.go ForLane tests. DoD 6: resume.go newReceiptCmd, TestReceiptEndsTheRunForThisRound, TestReceiptRefusedWhereTheLaneDoesNotRequireOne. DoD 7: announce.go marks, tickets.go lanes show, TestLanesShowNamesTheSkillScriptAndReceipt. DoD 8: README. DoD 9: core/release/notes/ENCFVZ.md. Green: go test core/lane gate role board shipped and internal/cli (with the three skips), go vet on them, gofmt clean."
 ---
 
 # Neue Lane-Arten: eine Lane, die nur einen Skill startet, und Automations-Lanes (Artefakte, E-Mail, API-Aufrufe, Telegram senden/empfangen, Video-Upload)
