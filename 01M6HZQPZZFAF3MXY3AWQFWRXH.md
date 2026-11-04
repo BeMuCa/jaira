@@ -5,7 +5,7 @@ status: brainstorm
 ready: true
 creator: berkc
 assignee: berkc
-goal: "Im Board sieht man pro offenem PR eine gebuendelte Gruppe von Tickets (aufklappbar beim Hovern/Auswaehlen) mit PR-Name, Branch und einer Farbe fuer den CI-Stand"
+goal: "Das Board zeigt rechts nach done eine Nur-Lese-Spalte 'PRs' mit jedem offenen PR des Repos (auch der Kollegen) als Buendel in CI-Farbe; das Buendel klappt auf, solange der Cursor darauf steht, und nennt seine Tickets mit ihrer Lane; der Stand kommt beim Refresh aus gh und liegt nur im Speicher."
 context: |-
   Wunsch berkc 04.11.2026 (Punkt 11): 'PR Lane klingt eig fun, gebuendelt darstellen, wobei es sich ausbreitet wenn man drueber hovered. Es sollte den PR-Namen oder Branch-Namen halten, und Farbe nach State der Pipeline. Vielleicht Cron-Job, der stuendlich checkt?'
   Heute: PRs entstehen pro Milestone (6TCTFV): jaira-role-pr baut milestone/<name> aus origin/master und merged die Ticket-Branches mit --no-ff. Den PR-Stand kennt jaira nicht.
@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:54Z
-updated-at: 2026-11-04T21:41:35Z
+updated-at: 2026-11-04T21:41:43Z
 updated-by: berkc
 claimed-by: berk-ca-1311236
 claimed-at: 2026-11-04T21:27:24Z
@@ -32,6 +32,7 @@ question: ""
 - [ ] Brainstorm hat Darstellung und Quelle des PR-Stands festgelegt
 - [ ] Tickets eines offenen PRs erscheinen gebuendelt mit PR-Name/Branch und Farbe nach CI-Stand; Test
 - [ ] Release-Notiz unter core/release/notes/
+- [ ] Spalte 'PRs' nach done mit allen offenen PRs des Repos (gh pr list), je PR: Nummer+Titel, Branch, CI-Zustand mit Glyph+Wort und Farbe; ohne gh oder ohne offene PRs sieht das Board aus wie heute; TUI-Test
 
 ## Options
 
