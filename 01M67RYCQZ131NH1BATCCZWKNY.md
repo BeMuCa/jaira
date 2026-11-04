@@ -18,10 +18,10 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-03T23:05:00Z
+updated-at: 2026-11-04T00:37:05Z
 updated-by: berkc
-claimed-by: berk-ca-130447
-claimed-at: 2026-11-03T17:20:45Z
+claimed-by: berk-ca-512097
+claimed-at: 2026-11-04T00:37:05Z
 outcome-what: "Release notes take a '- > text' hook line; core/release sorts each release's hooks first, and jaira update and the release-notes popup print them first, with '>'."
 outcome-why: "Readers skip long notes; a one-line pitch per release makes them open it. Older binaries read the same line as an ordinary change, so no reader breaks."
 outcome-resolves: "Hook marker, hook-first ordering, and three-versions-behind paging are covered by tests in core/release, internal/cli and internal/tui; the format is documented in CLAUDE.md and AGENTS.md; the note is core/release/notes/CZWKNY.md."
