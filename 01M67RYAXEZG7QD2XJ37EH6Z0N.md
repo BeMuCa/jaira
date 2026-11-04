@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T00:50:46Z
+updated-at: 2026-11-04T00:50:50Z
 updated-by: berkc
 claimed-by: berk-ca-511849
 claimed-at: 2026-11-04T00:37:01Z
@@ -67,3 +67,7 @@ review-summary: |-
 - **2026-11-04 00:42 · berkc** — Step 1 done: core/gitrepo/branchdiff.go (BranchFor, Base, BranchDiff, WorktreeOf) + branchdiff_test.go pass. Base() returns the short name for origin refs (origin/master). BranchDiff pins --src-prefix/--dst-prefix so diff.noprefix cannot break parseDiff. Fixture needs 'git branch -M master' since fixtureRepo does not name the branch.
 - **2026-11-04 00:46 · berkc** — Pause after build: diffpane.go written (parseDiff state machine skips 'commit ' blocks so the fallback's stat lines are not read as context), signoff.go/renderDetail/model keys/followup scrollFocused wired. Not yet tested.
 - **2026-11-04 00:48 · berkc** — Tests green: go test ./core/gitrepo ./internal/tui -count=1 exit 0. Decision: renderDiffPane clamps the scroll to the last row, not the last full page, so ] can put a short file's header on top even when the whole diff fits. Dead end: a first draft clamped to len-body and made ] a no-op on short diffs. Not done here: plan item 6 (tmux check on a scratch board, release note already written).
+- **2026-11-04 00:50 · berkc** — critique (pass 1): internal/tui/model.go:475 reload() resets diffScroll and diffFocus, and reload runs on every 2s tickMsg (model.go:1133): a scrolled diff jumps back to the top and tab-focus falls back to the ticket within 2 seconds — clear only diffFor in reload, and reset diffScroll/diffFocus inside loadDiff (diffpane.go) only when t.ID differs from the ticket the diff was last loaded for (keep that id in its own field, since diffFor is blanked)
+core/gitrepo/branchdiff.go:19 BranchFor re-implements the branch-segment split that branchTicket already has inline (internal/cli/tickets.go:157, same alnum closure as notAlnum) while its comment claims "the same rule" — export one helper from gitrepo (e.g. BranchSegments(name) []string) and use it in both places
+internal/tui/diffpane.go:316 withDiff hand-rolls a second two-pane layout with its own focus signal (separator colour + title style) beside renderSplit/splitPane (internal/tui/followup.go:205-260), where the live pane is shown by an accent border — build the split with lipgloss.JoinHorizontal and splitPane so both split screens show focus the same way (shrink diffLeftWidth content/rows by the box frame)
+Let stand: fallback via CommitsForTicket+Repo.Diff (needed on boards that work on master without branches; note 00:40); Base() hardcoding master/main; re-running git on each reload (same trade-off as derivedFor memo); WorktreeOf for 'o'.
