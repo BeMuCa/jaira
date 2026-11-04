@@ -20,7 +20,7 @@ related: []
 commits:
   - 26d4a26af9b1c7e56b09175150b0af34663ceab9
 created-at: 2026-10-19T08:33:51Z
-updated-at: 2026-11-04T21:49:51Z
+updated-at: 2026-11-04T21:49:58Z
 updated-by: berkc
 claimed-by: berk-ca-1280084
 claimed-at: 2026-11-04T21:24:26Z
@@ -76,3 +76,4 @@ review-check: "1. cd /home/berkc/code/X_General/jaira-AW9KVT && go run ./cmd/jai
 - **2026-11-04 21:43 · berkc** — Critique ran once (maintainer asked for at most one pass). Its three findings were fixed in e2e4a2ec (declared hoisted and reused for the try-it row, -1 guard in owed_test, doc comment rewrapped); the worker checked the diff and go test ./internal/tui passes, so the ticket goes on to optimize without a second critique.
 - **2026-11-04 21:45 · berkc** — optimize: nothing removed. Considered folding the person-lane predicate into a core/lane method; skipped, pre-existing in 3 other places and outside this ticket.
 - **2026-11-04 21:47 · berkc** — testing: build RC=0; go test ./internal/tui ./core/shipped ./core/lane -count=1 RC=0 (whole suite not run, per the touched-packages instruction). DoD 1: signoff.go:71 and view.go:1359 match the proofs; TestSignOffScreenShowsTheCheck, TestDetailPaneOpensWithTheCheckOnAHumanLane, TestDetailPaneKeepsTheCheckInReviewOffAHumanLane pass. DoD 2: core/lane/builtin/40-review.md is identical to .jaira/lanes/review.md (diff empty); the step list is at 40-review.md:63, at most six steps; shipped.sha256 keeps ae89... and appends fe8fd6a9.... Nit, not blocking: the example in the prompt names go run ./cmd/app, but this repo's entry point is cmd/jaira; step 2 of the example states no outcome, against the prompt's own rule. DoD 3: AW9KVT.md has one '- ' line, 272 chars, no wrap. Function: exercised through renderSignOff and detailBody in the tests, not by running the TUI live.
+- **2026-11-04 21:49 · berkc** — review (fresh context): no blocker; 4 notes in review-gaps (cramped try-it row on detail, '(review)' prefix before step 1, splitter edge case, existing boards need jaira update --lanes). Verified with go vet + go test ./internal/tui ./core/shipped ./core/lane; builtin and board review.md identical.
