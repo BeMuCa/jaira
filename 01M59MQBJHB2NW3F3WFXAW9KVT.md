@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T08:33:51Z
-updated-at: 2026-11-04T21:37:04Z
+updated-at: 2026-11-04T21:37:07Z
 updated-by: berkc
 claimed-by: berk-ca-1280084
 claimed-at: 2026-11-04T21:24:26Z
@@ -31,7 +31,8 @@ claimed-at: 2026-11-04T21:24:26Z
 
 - [x] Der Sign-off-Screen und das Detail einer Karte in Human Review zeigen review-check als ersten Block, als nummerierte Schritte; Test in internal/tui
   proof: internal/tui/signoff.go:71 (try it row first); view.go:1351 (detail, human lanes); tests reviewcheck_test.go TestSignOffScreenShowsTheCheck, TestDetailPaneOpensWithTheCheckOnAHumanLane, TestDetailPaneKeepsTheCheckInReviewOffAHumanLane
-- [ ] Der Prompt der review-Lane verlangt fuer check: hoechstens ~6 Schritte, beginnend mit einem kopierbaren Befehl, der den Branch baut und startet, und je Schritt was man sehen soll
+- [x] Der Prompt der review-Lane verlangt fuer check: hoechstens ~6 Schritte, beginnend mit einem kopierbaren Befehl, der den Branch baut und startet, und je Schritt was man sehen soll
+  proof: core/lane/builtin/40-review.md:63 (at most six steps, step 1 builds and starts this change); identical copy .jaira/lanes/review.md; core/shipped/shipped.sha256 last line ae89... kept, fe8fd6a9... appended; go test ./core/shipped ./core/lane ok
 - [ ] Release-Note-Zeile in core/release/notes/<ID>.md
 
 ## Options
