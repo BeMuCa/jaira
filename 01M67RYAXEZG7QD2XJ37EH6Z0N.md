@@ -18,10 +18,10 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T03:43:41Z
+updated-at: 2026-11-04T21:29:36Z
 updated-by: berkc
-claimed-by: berk-ca-828397
-claimed-at: 2026-11-04T03:43:05Z
+claimed-by: berk-ca-1345452
+claimed-at: 2026-11-04T21:29:36Z
 outcome-what: "A ticket in signoff or human shows its diff against master beside it in the TUI at 140+ columns: the ticket and the diff each sit in a box, the focused one with the accent border. tab switches focus, ]/[ jump between files, o opens the file at its line in VS Code and confirms inline in the diff title ('opened <path>:<line>', cleared on the next key) with no modal; below 140 columns the screen is unchanged. Scroll and focus survive the 2s board reload and reset only when another ticket is opened."
 outcome-why: "The person accepting work judged the outcome and review text but could not see the code; the diff had to be found by hand in git or on GitHub. A confirmation modal after o took the next keys, so the sign-off screen was lost behind it."
 outcome-resolves: "Sign-off and human screens show each changed file with its +/- lines beside the ticket, and o opens the file at that line without a modal. Critique round 1 closed: reload keeps scroll and focus (TestReloadKeepsDiffScrollAndFocus, TestOpeningAnotherTicketResetsDiffScroll); one branch-segment split shared by BranchFor and branchTicket; the split is built from splitPane like the follow-up split (TestPersonLaneShowsDiffBesideTheTicketWhenWide). Testing finding closed: a successful o no longer raises a modal (TestOKeyConfirmsInTheDiffTitleWithoutAModal). Tests: go test ./core/gitrepo ./internal/tui -count=1 exit 0; go test ./internal/cli -count=1 -run 'Create|Follows|Branch' exit 0 (earlier run, cli untouched by this fix)."
