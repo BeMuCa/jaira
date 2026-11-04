@@ -18,7 +18,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T21:22:33Z
-updated-at: 2026-11-04T21:22:33Z
+updated-at: 2026-11-04T21:24:19Z
+updated-by: berkc
 ---
 
 # Die Ticket-ID auf der Karte ist gut lesbar statt fast unsichtbar grau
