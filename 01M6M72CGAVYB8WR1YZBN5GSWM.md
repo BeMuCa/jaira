@@ -18,13 +18,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T21:22:33Z
-updated-at: 2026-11-04T21:31:53Z
+updated-at: 2026-11-04T21:33:58Z
 updated-by: berkc
 claimed-by: berk-ca-1280093
 claimed-at: 2026-11-04T21:24:26Z
 outcome-what: "The ticket handle on board cards and ticket headers is toned by terminal background: 248 on dark, 240 on light (was colFaint 240 everywhere)."
 outcome-why: "On the dark selection fill (239) colFaint 240 is ten grey levels away, so the handle vanished on the selected card. The lane counter keeps colFaint."
 outcome-resolves: "Ticket ID hard to read on dark terminals and on the selected card (berkc, 04.11.2026)."
+review-summary: none
 ---
 
 # Die Ticket-ID auf der Karte ist gut lesbar statt fast unsichtbar grau
