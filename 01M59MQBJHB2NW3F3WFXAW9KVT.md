@@ -20,7 +20,7 @@ related: []
 commits:
   - 26d4a26af9b1c7e56b09175150b0af34663ceab9
 created-at: 2026-10-19T08:33:51Z
-updated-at: 2026-11-04T21:39:32Z
+updated-at: 2026-11-04T21:39:35Z
 updated-by: berkc
 claimed-by: berk-ca-1280084
 claimed-at: 2026-11-04T21:24:26Z
@@ -64,3 +64,4 @@ review-summary: |-
 - **2026-11-04 21:26 · berkc** — Plan decisions: (1) 'frueher' was not a different order: git log -S shows review-check was last on both screens since it was introduced in 0994fc07 (2026-08-20); what changed is that check texts grew into 9-step developer recipes (GK1QGT). So the fix is order + step layout + a tighter lane prompt. (2) The detail pane moves check first only for tickets in a person's lane (requires-question or requires-human-exit), not everywhere: on other lanes nobody is asked to try anything. (3) Inline '1. x  2. y' is split into lines at render time, the stored field is not rewritten — the file format stays as written. (4) EH6Z0N (branch feat/EH6Z0N-diff-view, unmerged) also edits internal/tui/signoff.go (adds a right-half diff pane). This ticket keeps its signoff.go change to moving one call up in renderSignOff's left column plus the step layout, so the merge conflict is at most one hunk.
 - **2026-11-04 21:27 · berkc** — Name clash: internal/tui/reviewcheck_test.go already has package-level const checkSteps (test fixture), so the helper is named oneStepPerLine. Also TestSignOffScreenShowsTheCheck asserts check comes AFTER verdict; that is the behaviour being reversed, so the test gets inverted.
 - **2026-11-04 21:34 · berkc** — Sign-off/detail: the 'try it' row reuses declared()/row() so it keeps the '(review)' provenance prefix on step 1 (same as every other row). Two owed_test assertions moved check->'try it' on the sign-off screen; the detail-pane owed assertion for lane review stays 'check' (non-human lane).
+- **2026-11-04 21:39 · berkc** — critique (pass 1): design stands — render-time split (note 3), human-lane-only placement (note 2), prompt rewrite are accepted. Three fixes: (1) view.go detailBody duplicates the declared closure for the try-it row; hoist declared+owed+srcs above the identity rows and call it. (2) owed_test.go:336 ordering check passes vacuously if 'try it' is absent; guard i<0. (3) signoff.go:19 doc comment line is 104 chars after reflow; rewrap. No other findings; next pass reads only these three.
