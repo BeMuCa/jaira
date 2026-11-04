@@ -1,7 +1,7 @@
 ---
 id: 01M67RYAXEZG7QD2XJ37EH6Z0N
 title: "In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code"
-status: optimize
+status: in-progress
 ready: true
 creator: berkc
 assignee: berkc
@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T21:56:04Z
+updated-at: 2026-11-04T21:56:06Z
 updated-by: berkc
 claimed-by: berk-ca-1804087
 claimed-at: 2026-11-04T21:54:57Z
@@ -28,7 +28,7 @@ outcome-what: "Diff pane in the sign-off and human ticket view: changed rows and
 outcome-why: "Critique pass 1 found the hex tints fell onto the grey ramp of 256-colour terminals (removed lines showed no red), and the cut row was silently shortened at an exact boundary; the tint test asserted only the hex escapes."
 outcome-resolves: "critique 21:47 finding 1: tints -> diffpane.go diffPaletteDark/Light, TestChangedRowsAreTintedAcrossThePane asserts 48;5;22/52/28/88; finding 2: removed-row word-del assertion in TestChangedRowsAreTintedAcrossThePane; finding 3: fitSegs fix, TestFitSegsEndsAnExactBoundaryCutInEllipsis; finding 4: model.go diff field comment rewrapped"
 review-summary: none
-round: 5
+round: 6
 review-gaps: "must go: (1) diffpane.go:81 'H' row still sets text: path, which nothing reads since 2a73eae2 (diffLine draws headers from r.path) - drop it; (2) not a cleanup: the 'B' blank row (diffpane.go:77) has path \"\" and line 0, so 'o' with it at the top runs code -g :0 and titles 'opened :0' (reproduced with a throwaway test) - give B the previous file's path/line or skip B in openDiffRow, plus a test. Left: fitSegs/spreadRow/padRow vs view.go:1050 status line (that one cuts styled strings, no bg fill - genuinely differs); colours reuse view.go col*/sty* and palette is 256-idx like view.go; no centre helper exists elsewhere so noticeRows' closure stays; nw/files/adds/dels loop in renderDiffPane runs per frame over all rows - cheap, left; noticeRows' head!=\"\" guard only matters before a load, harmless; hunkStart side param has two real callers"
 test-verdict: "pass: build+vet ok, go test ./... exit 0 (33 pkgs ok, 3 known hangers skipped), DoD 1-4 verified in the tree, tmux on a scratch board: split on signoff and human at 160 cols, single column at 120, ] [ tab scroll work, o runs 'code -g <path>:<line>' (stub) with inline confirmation and no modal"
 review-verdict: "The diff meets all four DoD items (location agreed, per-file diff in signoff and human with tests, o opens VS Code at the line, release note one line). No defects found; go build, vet, gofmt clean; go test ./core/gitrepo ./internal/tui and ./internal/cli -run 'Create|Follows|Branch' pass. Not exercised by me: a real VS Code launch (tests stub 'code')."
