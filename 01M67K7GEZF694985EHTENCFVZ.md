@@ -17,15 +17,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-04T21:24:18Z
+updated-at: 2026-11-04T21:27:21Z
 updated-by: berkc
+claimed-by: berk-ca-1279809
+claimed-at: 2026-11-04T21:24:25Z
 ---
 
 # Neue Lane-Arten: eine Lane, die nur einen Skill startet, und Automations-Lanes (Artefakte, E-Mail, API-Aufrufe, Telegram senden/empfangen, Video-Upload)
 
 ## Definition of Done
 
-- [ ] Brainstorm: Lane-Arten mit Format, Sicherheit (Secrets, Seiteneffekte), was im Binary bleibt und was ein Skill ist
+- [x] Brainstorm: Lane-Arten mit Format, Sicherheit (Secrets, Seiteneffekte), was im Binary bleibt und was ein Skill ist
+  proof: Progress note 2026-10-30 23:49 (brainstorm), decisions in notes 2026-11-03 17:18 and 2026-11-04 00:36
 
 ## Options
 
