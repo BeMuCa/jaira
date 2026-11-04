@@ -41,6 +41,14 @@ something to read and not an order: the critique lane's own prompt tells you to
 writes the section below takes away from you. Read it for what the lane is
 meant to judge, and leave its outputs to the dispatcher that started you.
 
+A lane that writes follows the payload's side-effect keys too. When it carries
+`skill`, start that skill with the lane's prompt as the extra instruction; with
+no skill tool, read the SKILL.md at `skill_path` and follow it the same way. A
+non-empty `run` is a repository script: run that line once, from the repository
+root. `script_done: true` means it already ran for this round, so do not run it
+again. When `receipt_required` is true, record the result with
+`jaira receipt <id> <result>` before you move on.
+
 Does your lane judge that payload's diff? The ordinary `critique`, `testing`
 and `review` lanes do — and the payload names what it was built from. Its
 `commits` field lists the SHAs the diff covers and `commits_source` says where

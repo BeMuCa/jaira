@@ -392,7 +392,11 @@ jaira show <handle> --for-lane review --json
 
 That returns the lane's prompt, only the fields the lane declared it needs, and
 the diff of the ticket's own commits. Spawn a subagent at the lane's `model_tier`
-with exactly that.
+with exactly that. When the payload carries `skill`, that subagent starts the
+skill with the prompt as its extra instruction (or reads the SKILL.md at
+`skill_path`); a non-empty `run` is a repository script to run once from the
+repository root, unless `script_done` is true; `receipt_required` means
+`jaira receipt <handle> <result>` before the move.
 
 ## Working an agentic lane
 

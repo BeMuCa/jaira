@@ -141,7 +141,13 @@ Then, until you stop:
    and `context`. Do what the prompt says, produce exactly those outputs, then
    `jaira move <id> --to <next_lane>` (or back, where the lane found the work
    wanting). Every lane's prompt applies to you as written — the critique lane
-   is not lighter because you wrote the code.
+   is not lighter because you wrote the code. The payload's side-effect keys
+   apply too: with `skill`, start that skill with the lane's prompt as the extra
+   instruction (no skill tool: read the SKILL.md at `skill_path` and follow it);
+   a non-empty `run` is a repository script, run that line once from the
+   repository root, unless `script_done: true` says it already ran this round;
+   with `receipt_required` true, record the result with `jaira receipt <id>
+   <result>` before the move.
 3. **Is `next_lane` marked fresh?** (`context: fresh` in its `--for-lane`
    payload.) Then it is not yours. Move the ticket
    into it and hand it to a new agent — see "The fresh lane" below.
