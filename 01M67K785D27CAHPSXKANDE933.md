@@ -14,7 +14,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-11-04T00:47:10Z
+updated-at: 2026-11-04T00:48:51Z
 updated-by: berkc
 claimed-by: berk-ca-516678
 claimed-at: 2026-11-04T00:38:18Z
@@ -37,7 +37,7 @@ round: 3
 ## Definition of Done
 
 - [x] Mit z: links/rechts ueberspringt leere Lanes; ohne z unveraendert; Test
-  proof: internal/tui/model.go:1776 stepLane; tests TestArrowsWithToggleOnSkipEmptyLanes, TestLeftWithToggleOnWrapsToLastFilledLane, TestArrowsWithToggleOnStayWhenOnlyLaneHasTickets, TestArrowsWithToggleOnAllEmptyStillMove, TestArrowsWithToggleOnLeaveEmptyStartLane, TestArrowsWithToggleOffStepOntoEmptyLanes, TestLaneFocusIgnoresTheToggle (internal/tui/lanewindow_test.go:201-329)
+  proof: internal/tui/model.go:1776 stepLane; tests TestArrowsWithToggleOnSkipEmptyLanes, TestLeftWithToggleOnWrapsToLastFilledLane, TestArrowsWithToggleOnStayWhenOnlyLaneHasTickets, TestArrowsWithToggleOnAllEmptyStillMove, TestArrowsWithToggleOnLeaveEmptyStartLane, TestArrowsWithToggleOffStepOntoEmptyLanes, TestLaneFocusIgnoresTheToggle (internal/tui/lanewindow_test.go:187-315)
 - [x] Release-Note-Zeile
   proof: core/release/notes/NDE933.md:1
 - [x] z ist standardmaessig an: Board startet mit schmalen leeren Lanes, Pfeile ueberspringen sie, z schaltet aus; ist der z-Zustand heute gespeichert, bleibt ein ausgeschaltetes z ueber Neustarts aus; Test
