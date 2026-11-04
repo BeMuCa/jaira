@@ -1,7 +1,7 @@
 ---
 id: 01M59MQBJHB2NW3F3WFXAW9KVT
 title: "Human Review zeigt zuerst, wie der Mensch die Aenderung selbst testet"
-status: critique
+status: optimize
 ready: true
 creator: berkc
 assignee: berkc
@@ -20,7 +20,7 @@ related: []
 commits:
   - 26d4a26af9b1c7e56b09175150b0af34663ceab9
 created-at: 2026-10-19T08:33:51Z
-updated-at: 2026-11-04T21:43:48Z
+updated-at: 2026-11-04T21:45:23Z
 updated-by: berkc
 claimed-by: berk-ca-1280084
 claimed-at: 2026-11-04T21:24:26Z
@@ -32,6 +32,7 @@ review-summary: |-
   internal/tui/owed_test.go:336 strings.Index(out,"try it") > strings.Index(out,"secrets-status") passes when the try it row is missing (-1); add an i < 0 failure as reviewcheck_test.go does, so the ordering assertion cannot pass vacuously
   internal/tui/signoff.go:19 the reflowed doc comment left one 104-char line; rewrap the paragraph to the file's ~80-column width
 round: 2
+review-gaps: "none removed: diff is lean (declared closure moved up, not copied; oneStepPerLine has one helper, no existing step splitter in repo; no orphans, vet clean, go test ./internal/tui ok). Left: the 'RequiresQuestion || RequiresHumanExit' person-lane test now also in view.go:1357 is pre-existing in snake.go:67, gate.go:212, cli/web_source.go:256 — a Lane method would fold all four but touches core/lane, out of scope; signoff.go untouched (EH6Z0N); owed_test.go:340 error text 'seven questions no longer come first' is slightly stale, harmless"
 ---
 
 # Human Review zeigt zuerst, wie der Mensch die Aenderung selbst testet
