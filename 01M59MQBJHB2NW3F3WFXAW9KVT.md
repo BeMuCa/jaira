@@ -20,7 +20,7 @@ related: []
 commits:
   - 26d4a26af9b1c7e56b09175150b0af34663ceab9
 created-at: 2026-10-19T08:33:51Z
-updated-at: 2026-11-04T21:49:46Z
+updated-at: 2026-11-04T21:49:49Z
 updated-by: berkc
 claimed-by: berk-ca-1280084
 claimed-at: 2026-11-04T21:24:26Z
@@ -35,6 +35,8 @@ review-gaps: |-
   note: oneStepPerLine also splits inside a step whose text contains ' N. ' (e.g. 'version 2. '); documented in its comment, untested
   note: core/lane/builtin and .jaira/lanes/review.md change only on run of jaira update --lanes for existing boards; the release note says so
 test-verdict: "pass: build RC=0 and go test ./internal/tui ./core/shipped ./core/lane RC=0; DoD 1-3 verified in the tree; behaviour exercised through renderSignOff/detailBody tests, not a live TUI"
+review-verdict: "Diff matches all three DoD items: check is first on sign-off and on the human-lane detail, as numbered steps one per line, with tests in internal/tui; the review prompt asks for at most six steps starting with a build-and-start command for this worktree; release note present. go vet and go test ./internal/tui ./core/shipped ./core/lane pass. No blockers."
+review-round: 2
 ---
 
 # Human Review zeigt zuerst, wie der Mensch die Aenderung selbst testet
