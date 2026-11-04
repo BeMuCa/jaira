@@ -18,7 +18,7 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-04T00:42:20Z
+updated-at: 2026-11-04T00:42:22Z
 updated-by: berkc
 claimed-by: berk-ca-512097
 claimed-at: 2026-11-04T00:37:05Z
@@ -65,7 +65,7 @@ round: 2
 - [x] R2 popup: notesView.others + key o; lines() buckets hooks/features/important/plain, plain folded to 'n more · o shows them'; hookLines (headline bold, sentence dim); changeLines drops hook case; hint 'o others'
 - [x] R2 tui tests: v.key("o") in 4 existing tests; TestNotesViewHookIsAHeadlineWithItsSentenceBelow; TestNotesViewFoldsPlainChangesUnderOthers
 - [x] R2 core/release/notes_test.go TestHookLinesAreShortAndOnePerFile over embedded notesFS (<=80 runes, <=1 per file); prove it fails on a long hook
-- [ ] R2 docs: release.go package doc + Hook doc; CLAUDE.md + AGENTS.md hook bullet (optional headline, max one, <=80, popup folds plain); CZWKNY.md rewritten with a headline hook
+- [x] R2 docs: release.go package doc + Hook doc; CLAUDE.md + AGENTS.md hook bullet (optional headline, max one, <=80, popup folds plain); CZWKNY.md rewritten with a headline hook
 - [ ] R2 gofmt/vet/tests; tick DoD 5-7, re-proof DoD 1; move to critique; one commit code+ticket
 
 ## Progress
