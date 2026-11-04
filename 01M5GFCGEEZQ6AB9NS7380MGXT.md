@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:13Z
-updated-at: 2026-11-04T21:37:45Z
+updated-at: 2026-11-04T21:37:47Z
 updated-by: berkc
 claimed-by: berk-ca-1279800
 claimed-at: 2026-11-04T21:24:25Z
@@ -67,3 +67,4 @@ claimed-at: 2026-11-04T21:24:25Z
 - **2026-11-04 21:26 · berkc** — Entscheidungen (Worker, vor dem Plan): (1) 'gepusht' = refs/remotes/origin/<branch> zeigt auf denselben Commit wie refs/heads/<branch>; lokal gelesen, kein fetch/ls-remote - offline-sicher, Tests haben nur einen Fake-Remote git@github.com. git push setzt den Tracking-Ref ohnehin. (2) Milestone-PR: Branch gilt als gemergt, wenn sein eigener PR gemergt ist (wie heute) ODER sein Tip Vorfahre von refs/remotes/origin/HEAD ist. Squash-gemergter Milestone-PR -> Branch bleibt (sichere Seite, lokal ist nichts verloren, Branch liegt auf origin). (3) Ticket nicht in done -> 'waiting <T>: the ticket is in <lane>, not done' statt 'kept'. (4) Nur Worktrees mit spawn.sh-Record (git-common-dir/jaira/panes) werden geraeumt; Worktrees ohne Record bleiben ausser Scope; spawn.sh wird nicht angefasst (DSDPZ4). (5) Nach dem Worktree-Abbau ersetzt reap.sh die Tab-Records des Tickets durch einen Record ticket=/branch= ohne pane, damit die naechste Runde den Branch kennt und keine Tabs erneut schliesst.
 - **2026-11-04 21:37 · berkc** — Open: a ticket given back after done has lost its worktree (reap removes it at done). spawn.sh:168 creates the worktree with 'git worktree add <wt> -b <branch>', which fails when the branch already exists; I did not check for a fallback in spawn.sh (not touched, DSDPZ4). Check before a re-spawn of a done-and-pushed ticket.
 - **2026-11-04 21:37 · berkc** — Decision: the branch's merge check asks origin/HEAD first (no forge call) and the forge only when origin/HEAD does not contain the branch. A squash-merged milestone PR therefore keeps its branch until the forge reports the head, which is the safe side.
+- **2026-11-04 21:37 · berkc** — Dead end: no 'before' run of reap_test.go. The script was rewritten before the test run, so the pre-change baseline (plan item 1) was not taken; the verification is the post-change run, go test ./core/role ./core/shipped ok with no reap test skipped.
