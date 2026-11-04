@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-04T21:37:54Z
+updated-at: 2026-11-04T21:37:56Z
 updated-by: berkc
 claimed-by: berk-ca-1279809
 claimed-at: 2026-11-04T21:24:25Z
@@ -205,3 +205,4 @@ Offene Fragen an berkc
 - **2026-11-04 21:31 · berkc** — Step 1 done: Lane.Skill/Script/ReceiptRequired in core/lane/lane.go, parse checks (skill not a path, script relative and inside repo, script only on agentic, receipt required|absent). Decision: an agentic lane may now have no body if it names a skill; the old 'no prompt body' error text changed to 'no prompt body or skill'. Tests appended to core/lane/lane_test.go.
 - **2026-11-04 21:33 · berkc** — Step 2 done: gate.CodeNeedsReceipt, ReceiptField/ReceiptKey/HasReceipt in core/gate/gate.go; check placed after OutputOwed block in CheckAdvance. Decision: key uses the full ticket ID (plan says t.ID) not the 6-char handle. Dead end: in-memory tickets have no Doc(), so HasReceipt reads false for them; tests build the ticket from ParseDoc+Decode in core/gate/receipt_test.go.
 - **2026-11-04 21:33 · berkc** — Step 3 done: role.FindSkill in core/role/target.go, searches project then home skills dirs incl. also-dirs; test TestFindSkillSearchesTheProjectThenTheHome in target_test.go. Decision: missing HOME skips the global search rather than failing.
+- **2026-11-04 21:37 · berkc** — Steps 4-5 done: show --for-lane keys/text section in flow.go (laneRunFor); 'jaira receipt' in resume.go, registered in root.go, listed in docs/COMMANDS.md. Decisions: key uses full ticket id; run line only while no receipt for this round, and script_done is reported for any script lane; a receipt-only lane still gets idempotency_key. Dead end: the test helper needed lane.Load(dir) first, otherwise the project lane dir is authoritative and drops the built-ins.
