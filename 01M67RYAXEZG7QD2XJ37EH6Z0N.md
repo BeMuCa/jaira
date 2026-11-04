@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T00:47:58Z
+updated-at: 2026-11-04T00:48:00Z
 updated-by: berkc
 claimed-by: berk-ca-511849
 claimed-at: 2026-11-04T00:37:01Z
@@ -34,7 +34,8 @@ claimed-at: 2026-11-04T00:37:01Z
   proof: internal/tui/diffpane_test.go TestPersonLaneShowsDiffBesideTheTicketWhenWide, TestHumanLaneShowsDiffBesideTheTicketWhenWide, TestNarrowTerminalKeepsTheSingleColumn, TestParseDiffSplitsFilesAndNumbersLines; core/gitrepo/branchdiff_test.go TestBranchDiffIsAgainstMergeBaseAndSkipsJaira
 - [x] Ein Knopf/Taste oeffnet die Datei an der Zeile in VS Code
   proof: internal/tui/diffpane_test.go TestOKeyOpensFileAtLine and TestBracketJumpsBetweenFiles; internal/tui/model.go case "o", "]", "[" in modeDetail; internal/tui/diffpane.go openDiffRow
-- [ ] Release-Notiz unter core/release/notes/
+- [x] Release-Notiz unter core/release/notes/
+  proof: core/release/notes/EH6Z0N.md:1
 
 ## Options
 
