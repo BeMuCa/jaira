@@ -20,7 +20,7 @@ related: []
 commits:
   - 26d4a26af9b1c7e56b09175150b0af34663ceab9
 created-at: 2026-10-19T08:33:51Z
-updated-at: 2026-11-04T21:42:41Z
+updated-at: 2026-11-04T21:43:48Z
 updated-by: berkc
 claimed-by: berk-ca-1280084
 claimed-at: 2026-11-04T21:24:26Z
@@ -67,3 +67,4 @@ round: 2
 - **2026-11-04 21:34 · berkc** — Sign-off/detail: the 'try it' row reuses declared()/row() so it keeps the '(review)' provenance prefix on step 1 (same as every other row). Two owed_test assertions moved check->'try it' on the sign-off screen; the detail-pane owed assertion for lane review stays 'check' (non-human lane).
 - **2026-11-04 21:39 · berkc** — critique (pass 1): design stands — render-time split (note 3), human-lane-only placement (note 2), prompt rewrite are accepted. Three fixes: (1) view.go detailBody duplicates the declared closure for the try-it row; hoist declared+owed+srcs above the identity rows and call it. (2) owed_test.go:336 ordering check passes vacuously if 'try it' is absent; guard i<0. (3) signoff.go:19 doc comment line is 104 chars after reflow; rewrap. No other findings; next pass reads only these three.
 - **2026-11-04 21:42 · berkc** — critique findings fixed: (1) view.go: declared closure hoisted above the try-it row, row now declared(declaredField{"try it",...}); moved view.go:1351 -> 1359, re-ticked DoD 1 proof. (2) owed_test.go: guard fails when 'try it' index < 0. (3) signoff.go:19-22 doc comment rewrapped under 80. signoff.go:236 and :250 are >100 chars and pre-existing, left alone. go test ./internal/tui -count=1 exit 0; go vet and gofmt clean.
+- **2026-11-04 21:43 · berkc** — Critique ran once (maintainer asked for at most one pass). Its three findings were fixed in e2e4a2ec (declared hoisted and reused for the try-it row, -1 guard in owed_test, doc comment rewrapped); the worker checked the diff and go test ./internal/tui passes, so the ticket goes on to optimize without a second critique.
