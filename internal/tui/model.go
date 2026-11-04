@@ -290,7 +290,8 @@ type Model struct {
 	fullAt time.Time
 
 	// thinEmpty is whether lanes holding no tickets are drawn thin on the
-	// multi-column board. Session-only, reset on every launch: nothing about
+	// multi-column board. On by default; z turns it off for the session.
+	// Session-only, reset on every launch: nothing about
 	// the board's *view* is persisted today — the filter, the cursor and the
 	// per-lane scroll all start fresh — and the only saved per-user state
 	// (lane.SaveDefaultBoard) is a workflow definition rather than a view
@@ -349,7 +350,7 @@ func New(s *ticket.Store) (*Model, error) {
 	// its 1-9 binding work from the very first frame — a board that has to be
 	// opened once with 'p' before it knows its own neighbours is the bug this
 	// exists to fix.
-	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), darkBG: true, anim: true, animStart: time.Now()}
+	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), darkBG: true, anim: true, thinEmpty: true, animStart: time.Now()}
 	m.versionLine, m.releasePill = versionLine()
 	m.versionAt = time.Now()
 	m.me = identity.Current(s.Root)

@@ -49,6 +49,7 @@ func TestBPicksABoard(t *testing.T) {
 	}
 
 	press(m, "b")
+	press(m, "z") // widen empty lanes: this reads their names, which a thin lane does not draw whole
 	out = stripANSI(m.render())
 	for _, want := range []string{"board: video", "Skript", "Stimme", "Intro video"} {
 		if !strings.Contains(out, want) {

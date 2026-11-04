@@ -15,9 +15,11 @@ var emptyLaneNames = []string{"Brainstorm", "Pre-process", "Review", "Human Revi
 var filledLaneNames = []string{"Backlog", "Todo", "Implementing", "HITL", "Done"}
 
 // At 240 columns all ten lanes fit (10*(22+2) = 240), so this is the baseline
-// the toggle is measured against: nothing about a wide terminal changes.
-func TestWideBoardShowsAllTenLanesByDefault(t *testing.T) {
+// the toggle is measured against: nothing about a wide terminal changes. z is
+// on by default, so the press widens the empty lanes whose names this reads.
+func TestWideBoardShowsAllTenLanesWidened(t *testing.T) {
 	m := newTestModel(t, 240, 40)
+	m.key(key("z"))
 	out := stripANSI(m.render())
 	for _, name := range append(append([]string{}, emptyLaneNames...), filledLaneNames...) {
 		if !strings.Contains(out, name) {
@@ -26,11 +28,35 @@ func TestWideBoardShowsAllTenLanesByDefault(t *testing.T) {
 	}
 }
 
+// z is on from the start: a fresh board draws the five empty lanes thin, and
+// one z widens them again.
+func TestThinEmptyLanesAreOnByDefault(t *testing.T) {
+	m := newTestModel(t, 240, 40)
+	if !m.thinEmpty {
+		t.Fatalf("fresh board has thinEmpty off, want on")
+	}
+	win := m.boardFit(240)
+	for i, c := range m.cols {
+		if got, want := win.thin[i], len(c.tickets) == 0; got != want {
+			t.Errorf("lane %q: thin = %v, want %v on a fresh board (it holds %d tickets)", c.lane.ID, got, want, len(c.tickets))
+		}
+	}
+
+	m.key(key("z"))
+	if m.thinEmpty {
+		t.Errorf("one z left thinEmpty on")
+	}
+	if win := m.boardFit(240); len(win.thin) != 0 {
+		t.Errorf("lanes still drawn thin after one z: %v", win.thin)
+	}
+}
+
 // z keeps every lane on the board and draws the five holding no tickets thin:
 // the process is still all there, and a thin lane is how it says "nothing in
 // here". The lanes with tickets get the room the thin ones give up.
 func TestZDrawsEmptyLanesThinAndKeepsThemAll(t *testing.T) {
 	m := newTestModel(t, 240, 40)
+	m.key(key("z")) // on by default: this press widens every lane, so the next line is the full-width baseline
 	before := m.boardFit(240)
 	m.key(key("z"))
 	win := m.boardFit(240)
@@ -58,36 +84,29 @@ func TestZDrawsEmptyLanesThinAndKeepsThemAll(t *testing.T) {
 	}
 }
 
-// The reason to press z at all: at 200 columns only eight full lanes fit, so
+// The reason thin is the default: at 200 columns only eight full lanes fit, so
 // two are off-screen; drawn thin, all ten fit (5×24 + 5×6 = 150 cells).
-func TestZMakesRoomForLanesThatWereOffScreen(t *testing.T) {
+func TestThinLanesMakeRoomForLanesThatWereOffScreen(t *testing.T) {
 	m := newTestModel(t, 200, 40)
 	win := m.boardFit(200)
-	if win.end-win.start >= len(m.cols) {
-		t.Skipf("all %d lanes already fit at 200 columns; the fixture changed", len(m.cols))
-	}
-
-	m.key(key("z"))
-	win = m.boardFit(200)
 	if win.start != 0 || win.end != len(m.cols) {
-		t.Errorf("window %d..%d after z at 200 columns, want all %d lanes", win.start, win.end, len(m.cols))
+		t.Errorf("window %d..%d at 200 columns with the default z, want all %d lanes", win.start, win.end, len(m.cols))
 	}
 }
 
-// A second z restores every lane and removes the notice entirely.
-func TestSecondZRestoresEverything(t *testing.T) {
+// One z widens every lane again and removes the notice entirely.
+func TestZWidensEverything(t *testing.T) {
 	m := newTestModel(t, 240, 40)
-	m.key(key("z"))
 	m.key(key("z"))
 	out := stripANSI(m.render())
 
 	for _, name := range append(append([]string{}, emptyLaneNames...), filledLaneNames...) {
 		if !strings.Contains(out, name) {
-			t.Errorf("lane %q missing after the second z:\n%s", name, out)
+			t.Errorf("lane %q missing after z:\n%s", name, out)
 		}
 	}
 	if win := m.boardFit(240); len(win.thin) != 0 {
-		t.Errorf("lanes still drawn thin after the second z: %v", win.thin)
+		t.Errorf("lanes still drawn thin after z: %v", win.thin)
 	}
 }
 
@@ -183,7 +202,6 @@ func TestArrowsWithToggleOnSkipEmptyLanes(t *testing.T) {
 	m := newTestModel(t, 240, 40)
 	start := laneIndex(t, m, "backlog")
 	m.laneIdx = start
-	m.key(key("z"))
 
 	m.key(tea.KeyPressMsg{Code: tea.KeyRight})
 	if m.laneIdx == laneIndex(t, m, "brainstorm") {
@@ -196,6 +214,7 @@ func TestArrowsWithToggleOnSkipEmptyLanes(t *testing.T) {
 func TestArrowsWithToggleOffStepOntoEmptyLanes(t *testing.T) {
 	m := newTestModel(t, 240, 40)
 	m.laneIdx = laneIndex(t, m, "backlog")
+	m.key(key("z")) // on by default: this press turns it off
 
 	m.key(tea.KeyPressMsg{Code: tea.KeyRight})
 	if got := m.cols[m.laneIdx].lane.ID; got != "brainstorm" {
@@ -209,7 +228,6 @@ func TestLeftWithToggleOnWrapsToLastFilledLane(t *testing.T) {
 	m := newTestModel(t, 240, 40)
 	start := laneIndex(t, m, "backlog")
 	m.laneIdx = start
-	m.key(key("z"))
 
 	m.key(tea.KeyPressMsg{Code: tea.KeyLeft})
 	if got := m.cols[m.laneIdx].lane.ID; got != "done" {
@@ -236,7 +254,6 @@ func TestArrowsWithToggleOnStayWhenOnlyLaneHasTickets(t *testing.T) {
 		t.Fatalf("filter Refactor left %d lanes with tickets, want exactly 1", count)
 	}
 	m.laneIdx = filled
-	m.key(key("z"))
 
 	m.key(tea.KeyPressMsg{Code: tea.KeyRight})
 	if m.laneIdx != filled {
@@ -260,7 +277,6 @@ func TestArrowsWithToggleOnAllEmptyStillMove(t *testing.T) {
 		}
 	}
 	m.laneIdx = 3
-	m.key(key("z"))
 
 	m.key(tea.KeyPressMsg{Code: tea.KeyRight})
 	if want := (3 + 1) % len(m.cols); m.laneIdx != want {
@@ -274,7 +290,6 @@ func TestArrowsWithToggleOnLeaveEmptyStartLane(t *testing.T) {
 	m := newTestModel(t, 240, 40)
 	start := laneIndex(t, m, "pre-process")
 	m.laneIdx = start
-	m.key(key("z"))
 
 	m.key(tea.KeyPressMsg{Code: tea.KeyRight})
 	assertStepSkipsEmptyLanes(t, m, start, m.laneIdx, 1)
@@ -285,6 +300,7 @@ func TestArrowsWithToggleOnLeaveEmptyStartLane(t *testing.T) {
 func TestTogglingOnLeavesTheCursorOnAnEmptyLane(t *testing.T) {
 	m := newTestModel(t, 240, 40)
 	m.laneIdx = laneIndex(t, m, "pre-process")
+	m.key(key("z")) // on by default: this press widens lanes, the next one thins them again
 	m.key(key("z"))
 
 	if got := m.cols[m.laneIdx].lane.ID; got != "pre-process" {
@@ -316,14 +332,14 @@ func TestLaneFocusIgnoresTheToggle(t *testing.T) {
 func TestHintBarNamesTheToggleInBothStates(t *testing.T) {
 	m := newTestModel(t, 240, 40)
 	out := stripANSI(m.render())
-	if !strings.Contains(out, "z thin empty") {
-		t.Errorf("hint bar does not offer 'z thin empty':\n%s", out)
+	if !strings.Contains(out, "z widen empty") {
+		t.Errorf("hint bar does not offer 'z widen empty' with empty lanes thin by default:\n%s", out)
 	}
 
 	m.key(key("z"))
 	out = stripANSI(m.render())
-	if !strings.Contains(out, "z widen empty") {
-		t.Errorf("hint bar does not offer 'z widen empty' once lanes are thin:\n%s", out)
+	if !strings.Contains(out, "z thin empty") {
+		t.Errorf("hint bar does not offer 'z thin empty' once lanes are widened:\n%s", out)
 	}
 }
 
@@ -346,8 +362,8 @@ func TestBoardRowFillsTerminalWidth(t *testing.T) {
 	for _, thin := range []bool{false, true} {
 		for _, w := range []int{100, 130, 150, 177, 200, 240, 300} {
 			m := newTestModel(t, w, 40)
-			if thin {
-				m.key(key("z"))
+			if !thin {
+				m.key(key("z")) // on by default: this press gives the full-width board
 			}
 			win := m.boardFit(w)
 			full := 0
