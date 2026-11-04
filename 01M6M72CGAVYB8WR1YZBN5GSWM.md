@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T21:22:33Z
-updated-at: 2026-11-04T21:40:03Z
+updated-at: 2026-11-04T21:40:06Z
 updated-by: berkc
 claimed-by: berk-ca-1280093
 claimed-at: 2026-11-04T21:24:26Z
@@ -33,6 +33,7 @@ review-gaps: |-
 test-verdict: "pass: go test ./internal/tui -count=1 RC=0; DoD 1-2 verified in tree (handleStyle view.go:698, 7 call sites, core/release/notes/N5GSWM.md one '- ' line); function exercised by TestHandleToneReadsOnEveryCardFill only, no scratch board run"
 review-verdict: "Meets both DoD items: the handle is lighter and adapts to the background, readable on the normal and the selected card (levels checked against view.go constants), there is a test in internal/tui, and the release note is one valid line. go vet is clean and go test ./internal/tui passes (40.7s). No defects found; the outcome matches the diff. Commit list complete: 2 of 2 commits name N5GSWM."
 review-round: 1
+review-check: "1. cd /home/berkc/code/X_General/jaira-N5GSWM && go build -o /tmp/jaira-n5 ./cmd/jaira  2. in a dark terminal, run /tmp/jaira-n5 in any repo with a .jaira board  3. look at the 6-character ID under a card title: it is a light grey, clearly brighter than the frame lines and the lane counter  4. move the cursor onto that card: the ID stays readable on the highlighted card (before this change it disappeared there)  5. press enter: the ID in the detail header is the same light grey  6. optional, light terminal theme: the ID is a dark grey, as before  7. go test ./internal/tui -run TestHandleToneReadsOnEveryCardFill -count=1 -v prints PASS"
 ---
 
 # Die Ticket-ID auf der Karte ist gut lesbar statt fast unsichtbar grau
