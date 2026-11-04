@@ -19,14 +19,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:13Z
-updated-at: 2026-11-04T21:54:41Z
+updated-at: 2026-11-04T21:57:10Z
 updated-by: berkc
 claimed-by: berk-ca-1799653
 claimed-at: 2026-11-04T21:54:41Z
 outcome-what: "reap.sh removes a done ticket's tabs and worktree once its branch is pushed at the same commit (clean worktree, own ticket file ignored); the local branch is deleted only after its PR merged at the head or its head lies in origin/HEAD. SKILL.md (teamlead) says the worktree goes at done and the branch and its commits stay on the pushed branch until merged, with review comments and returning tickets landing there. Shipped hashes appended; core/role and core/shipped tests pass."
 outcome-why: "Worktrees pile up on disk when PRs are per milestone and wait for merge; the branch and its commits are the record, so the worktree can go once they are on origin."
 outcome-resolves: "Critique round 1 finding 2 (SKILL.md long-lived-worktree rationale contradicting the new paragraph) fixed. Finding 1 (spawn.sh worktree add -b on a kept branch) deliberately left for follow-up R80Z4G."
-review-summary: none
+review-summary: "reap.sh now works per ticket in three steps: (1) lane - a ticket not in done prints 'waiting <T>: the ticket is in <lane>, not done' and keeps everything; (2) tabs+worktree - for a done ticket, if every worktree is clean (untracked .jaira/ files and the ticket's own file ignored), HEAD not detached, refs/remotes/origin/<branch> equals refs/heads/<branch> (local tracking ref, no fetch) and herdr answers, it closes the spawn.sh tabs and 'git worktree remove --force's the worktree without waiting for a PR, then replaces the tab records with one 'branch-<T>' record (ticket=, branch=) so later rounds still know the branch; (3) branch - deleted with -D only if its tip is an ancestor of origin/HEAD (milestone PR) or its own PR is merged at/after the tip, else 'waiting ... has no merged pull request' or 'kept ... not at the merged head'. --dry-run prints 'would close/remove/delete branch' and changes nothing. jaira-teamlead/SKILL.md rewritten to the new timing (worktree at done, branch after merge); hashes appended to shipped.sha256; release note added. Tests in core/role/reap_test.go cover push-before-merge removal, the keep table, own ticket file, origin/HEAD merge and dry-run."
 round: 2
 review-gaps: "none removed; considered: reap.sh:247 re-reads tip from :187 (needed when the worktree block is skipped), pane-vs-HERDR_PANE_ID check repeated at :168/:199 (each loop needs it); old gone=() loop already removed; no duplication of forge/merged_head; pushedAt helper mirrors mergedAt"
 test-verdict: "pass: go test ./core/role ./core/shipped RC=0 (touched packages only, full suite not run by scope); DoD 1-5 verified in the tree; TestReap* verbose 10 of 10 PASS incl. 6 kept subtests; bash -n RC=0; reap.sh --help RC=0; --dry-run on the worktree silent RC=0; removal exercised by the test rig (real git, bare origin, fake herdr)"
