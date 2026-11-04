@@ -14,7 +14,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-11-04T00:45:04Z
+updated-at: 2026-11-04T00:45:53Z
 updated-by: berkc
 claimed-by: berk-ca-516678
 claimed-at: 2026-11-04T00:38:18Z
@@ -74,3 +74,4 @@ round: 3
 - **2026-11-04 00:43 · berkc** — plan 6-8 done: New() thinEmpty default on; tests adjusted (press z where a test wants the old full-width board, drop it where it wanted z on); new TestThinEmptyLanesAreOnByDefault; hint label checks now 'z widen empty' on the default board; ? help line says on by default. go vet + go test ./internal/tui/ -count=1 green (exit 0).
 - **2026-11-04 00:43 · berkc** — tmux check (plan 10 second half) is left to the parent: this lane ran go vet and go test ./internal/tui/ -count=1 only. Release note: appended line 2 of core/release/notes/NDE933.md as '- !'; line 1 still reads 'Press z to draw empty lanes thin', now only true as a press-to-widen-then-thin description - left unchanged per brief, parent may rewrite it.
 - **2026-11-04 00:45 · berkc** — critique pass 2 (fresh agent): read only 9237f70d, the change since the first critique, which found nothing (02:35 note). One finding: core/release/notes/NDE933.md:1 still says "Press z to draw empty lanes thin", which is false since 9237f70d made thin the default (z now widens); jaira update shows both lines side by side and they contradict each other. The file is unreleased (directly in core/release/notes/), so delete line 1 and keep only line 2, or rewrite line 1 so it matches line 2. Everything else in pass 2 (New() thinEmpty: true beside anim, field comment, ? help line, zHint tests, no persistence per the 00:37 plan note) needs no change.
+- **2026-11-04 00:45 · berkc** — in-progress pass 3 (critique pass 2 finding): core/release/notes/NDE933.md line 1 ('Press z to draw empty lanes thin') contradicted the new default. Deleted it; the single '- !' line now carries the change (thin and skipped from the start, z shows them full width, not saved). The file is unreleased, so no version folder is touched. DoD 2 proof core/release/notes/NDE933.md:1 now points at the '- !' line, unchanged.
