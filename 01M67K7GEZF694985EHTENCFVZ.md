@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-04T21:39:14Z
+updated-at: 2026-11-04T21:39:53Z
 updated-by: berkc
 claimed-by: berk-ca-1279809
 claimed-at: 2026-11-04T21:24:25Z
@@ -61,7 +61,7 @@ claimed-at: 2026-11-04T21:24:25Z
 - [x] internal/cli/flow.go showForLane: JSON keys only when the lane declares them: skill, skill_path (missing entry 'skill <name> (no SKILL.md found in ...)' when FindSkill returns empty); script, idempotency_key, receipt_required, receipt (current field value), script_done (HasReceipt), run = 'JAIRA_IDEMPOTENCY_KEY=<key> JAIRA_TICKET=<id> JAIRA_LANE=<lane> ./<script>' or empty when script_done; missing entry when the script file does not exist under s.Root. Text output: a '## Skill / script' section with the same facts and, when script_done, 'already ran for this key: do not run it again'. Tests in internal/cli.
 - [x] internal/cli: new 'jaira receipt <id> <result...>' command (copy the shape of newNoteCmd in resume.go, register in root.go AddCommand): loads env, refuses ExitValidation when the ticket's lane lacks receipt: required or HasReceipt already true; else SetScalar(ReceiptField, key+" "+result) via s.Mutate. Prints 'Receipt for <handle> in <lane>: <key> <result>'. --json emits ticketJSON. Tests: write, double write refused, lane without receipt refused. Add it to docs/COMMANDS.md if that file lists every command.
 - [x] jaira lanes show (internal/cli/tickets.go ~1440): JSON keys skill, script, receipt_required; text lines Skill:/Script:/Receipt:. core/board/announce.go LaneFact gets Skill, Script, Receipt; per-lane marks 'runs skill <name>', 'runs script <path> (JAIRA_IDEMPOTENCY_KEY from --for-lane)', 'leaving needs a receipt: jaira receipt <id> <result>'; core/lane/facts.go fills them. Test that the marks appear only for lanes that declare them.
-- [ ] README.md 'Lanes are pipeline stages': a short subsection with an example lane file using skill, script and receipt: required, the key format, that jaira never runs the script (the agent does, from --for-lane's run line), and that the script must hold no secrets.
+- [x] README.md 'Lanes are pipeline stages': a short subsection with an example lane file using skill, script and receipt: required, the key format, that jaira never runs the script (the agent does, from --for-lane's run line), and that the script must hold no secrets.
 - [ ] core/release/notes/ENCFVZ.md: one line each for skill:, script:, receipt: required + 'jaira receipt'.
 - [ ] Run go vet and go test for ./core/lane ./core/gate ./core/role ./core/board ./internal/cli (with the -skip of the three hanging tests) and ./core/shipped; fix what fails.
 
