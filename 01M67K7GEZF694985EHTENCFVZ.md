@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-04T21:50:55Z
+updated-at: 2026-11-04T21:50:58Z
 updated-by: berkc
 claimed-by: berk-ca-1279809
 claimed-at: 2026-11-04T21:24:25Z
@@ -216,3 +216,4 @@ Offene Fragen an berkc
 - **2026-11-04 21:39 · berkc** — Step 6 done: LaneFact Skill/Script/Receipt (board/announce.go), facts.go fills them, lanes show text+json (tickets.go). Decision: marks and text lines only for lanes that declare them, so existing boards' generated note and lanes show output are unchanged. The repo's own CLAUDE.md/AGENTS.md block is NOT hand-edited: it is generated (jaira update), and this board's lanes declare no skill, so it stays current.
 - **2026-11-04 21:40 · berkc** — Steps 7-8 done: README subsection under 'Lanes are pipeline stages' (skill/script/receipt, key format, send-twice caveat after a crash); release note core/release/notes/ENCFVZ.md. Plan step 9 is test + vet, next.
 - **2026-11-04 21:46 · berkc** — Tests: core/* all green; internal/cli had one failure, TestEveryCommandIsDocumented: README '## Commands' lacked a 'jaira receipt' line. Added it to README (Commands block); rerun of that test passes. Re-running the full internal/cli suite.
+- **2026-11-04 21:50 · berkc** — critique (pass 1): internal/cli/flow.go showForLane + core/role/builtin/jaira-role-lane/SKILL.md:35, jaira-worker/SKILL.md:139: a skill-only lane hands the agent an empty 'prompt', and no shipped role reads the new keys skill_path, run or receipt_required — an agent following jaira-role-lane/jaira-worker 'follows the prompt' and never starts the skill, runs the script or writes the receipt, so the feature only works for a reader of the text output. Do instead: add one step where those two skills (and core/role/jaira/SKILL.md 'Working a ticket') read the --for-lane payload: skill_path set -> read and follow that SKILL.md with prompt as the extra instruction; run non-empty -> run it from the repository root; receipt_required -> 'jaira receipt <id> <result>' after the side effect, before the move. Append the new hashes to core/shipped/shipped.sha256 as its test demands. Rest of the diff (lane.go parse, gate receipt block reusing Doc().Scalar like fieldFilled, role.FindSkill, jaira receipt, lanes show, announce marks) fits existing patterns; nothing speculative beyond the script_done-without-receipt decision recorded in note 21:37, which stands.
