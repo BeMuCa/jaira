@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:13Z
-updated-at: 2026-11-04T21:57:12Z
+updated-at: 2026-11-04T21:57:14Z
 updated-by: berkc
 claimed-by: berk-ca-1799653
 claimed-at: 2026-11-04T21:54:41Z
@@ -35,6 +35,8 @@ review-gaps: |-
   note: the release note describes what happens rather than telling the reader what to do differently
   note: 'done' is hard-coded as the terminal lane (reap.sh:143), as before this change
 test-verdict: "pass: go test ./core/role ./core/shipped RC=0 (touched packages only, full suite not run by scope); DoD 1-5 verified in the tree; TestReap* verbose 10 of 10 PASS incl. 6 kept subtests; bash -n RC=0; reap.sh --help RC=0; --dry-run on the worktree silent RC=0; removal exercised by the test rig (real git, bare origin, fake herdr)"
+review-verdict: "the diff meets all five DoD items; core/role and core/shipped tests pass (re-run here, ok); no defects found in reap.sh's new ordering or safety checks; only notes, the spawn.sh re-spawn gap is tracked in R80Z4G"
+review-round: 2
 ---
 
 # Ein Ticket in done raeumt seinen Worktree weg, sobald der Branch gepusht und sauber ist
