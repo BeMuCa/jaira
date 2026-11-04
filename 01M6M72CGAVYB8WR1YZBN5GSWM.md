@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T21:22:33Z
-updated-at: 2026-11-04T21:37:55Z
+updated-at: 2026-11-04T21:37:57Z
 updated-by: berkc
 claimed-by: berk-ca-1280093
 claimed-at: 2026-11-04T21:24:26Z
@@ -59,3 +59,4 @@ test-verdict: "pass: go test ./internal/tui -count=1 RC=0; DoD 1-2 verified in t
 - **2026-11-04 21:31 · berkc** — Claim: jaira claim said berk-ca-1280093 holds it (3m); did not --steal, worked in the worktree. Mutation check: dark handle back at 240 fails TestHandleToneReadsOnEveryCardFill (88 is 40 from shade B 48; 240 on selection 239 is 10 off, so the selection fails too). Lane-counter stays colFaint; only handle sites switched. Test helper grey() and the RGBA reading live in handle_test.go; abs() already exists in links_test.go, so none added.
 - **2026-11-04 21:34 · berkc** — critique pass 1: no findings. handleStyle() (view.go) mirrors selectionFill (palette.go:43) and laneShade (view.go) - a darkBG switch over two consts - so no new pattern; a package var mutated on BackgroundColorMsg (model.go:1101) would be the only alternative and is worse. All 7 sites show a ticket handle beside a title; lane counter correctly keeps colFaint via styLaneCount. Checked logbook card fills too (logbook.go:27-30: 23/24 dark, 195/153 light), not covered by the test but far from 248/240, no regression. Let stand: test comment says every fill is grey, true for the three fills it checks.
 - **2026-11-04 21:36 · berkc** — optimize: only change was abs() reuse in handle_test.go. Considered precomputing two package-level handle styles instead of NewStyle per call - not worth it, per-card cost is negligible and laneShade/selectionFill set the per-call pattern.
+- **2026-11-04 21:37 · berkc** — testing: go test ./internal/tui -count=1 exit 0 (32.7s). TestHandleToneReadsOnEveryCardFill -v PASS. No styHandle left anywhere in internal/. Whole-suite gate and scratch-board run not done (scope limited to touched package per user instruction).
