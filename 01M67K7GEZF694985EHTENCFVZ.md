@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-04T21:27:21Z
+updated-at: 2026-11-04T21:27:23Z
 updated-by: berkc
 claimed-by: berk-ca-1279809
 claimed-at: 2026-11-04T21:24:25Z
@@ -29,6 +29,15 @@ claimed-at: 2026-11-04T21:24:25Z
 
 - [x] Brainstorm: Lane-Arten mit Format, Sicherheit (Secrets, Seiteneffekte), was im Binary bleibt und was ein Skill ist
   proof: Progress note 2026-10-30 23:49 (brainstorm), decisions in notes 2026-11-03 17:18 and 2026-11-04 00:36
+- [ ] A lane file may declare 'skill: <name>'; an agentic lane with a skill needs no prompt body (the body is then the extra instruction beside the skill). Parser test covers it.
+- [ ] A lane file may declare 'script: <path>' relative to the repository root; the loader refuses an absolute path, a path leaving the repository, and a script on a lane that is not agentic. Parser test covers it.
+- [ ] 'receipt: required' on a lane: a forward move out of it is refused (code needs_receipt, field receipt-<lane>) unless the ticket field receipt-<lane> is '<key> <result>' with key = <ticket-id>-<lane>-r<round>; a receipt from an earlier round does not count; any other receipt: value fails the load. Gate test covers it.
+- [ ] 'jaira show <id> --for-lane <lane> --json' carries skill, skill_path (found in the skills directories jaira roles installs into, else listed under missing), script, idempotency_key, receipt_required, receipt and a run line passing JAIRA_IDEMPOTENCY_KEY to the script; when the current key already has a receipt the run line is empty and script_done is true, so the script is not run again. The text output says the same. CLI test covers it.
+- [ ] 'jaira receipt <id> <result>' writes receipt-<lane> = '<key> <result>' for the ticket's current lane; it refuses with exit 3 when the lane does not require a receipt and when the current key already has one. CLI test covers it.
+- [ ] 'jaira lanes show <id>' and the generated lanes block in CLAUDE.md/AGENTS.md name a lane's skill, script and receipt requirement.
+- [ ] README 'Lanes are pipeline stages' documents skill, script and receipt: required in the lane file format, including that jaira never runs the script itself.
+- [ ] Release note core/release/notes/ENCFVZ.md, one line per client-facing change.
+- [ ] Follow-up tickets created with 'jaira create' (follows ENCFVZ, full context): max-rounds per lane, wait-for: reply lanes, lane artifacts (output-artifacts/input-artifacts).
 
 ## Options
 
