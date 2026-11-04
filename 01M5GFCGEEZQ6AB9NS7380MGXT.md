@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:13Z
-updated-at: 2026-11-04T21:26:29Z
+updated-at: 2026-11-04T21:26:49Z
 updated-by: berkc
 claimed-by: berk-ca-1279800
 claimed-at: 2026-11-04T21:24:25Z
@@ -47,3 +47,4 @@ claimed-at: 2026-11-04T21:24:25Z
 ## Progress
 - **2026-10-31 01:25 · berkc** — Maintainer 31.10.2026 (Punkt 7): Integrationsbranch ok, aber das Ziel ist: wird ein Ticket angenommen und steht in done, wird sein Branch gemerged und sein Worktree geloescht - 'ich will nicht den speicher mit worktrees voll machen die nicht geloescht wurden.' Merge bleibt Sache der Person (PR); das Aufraeumen des Worktrees nach done ist dieses Ticket.
 - **2026-11-03 17:18 · berkc** — Maintainer 03.11.2026: Worktree-Entfernen ist auch deshalb sicher, weil die Commits im gepushten Branch liegen. Ergaenzung: das gemeinsame Review laeuft in einem eigenen Integrations-Worktree/-Branch je Milestone (Ticket-Branches hineingemergt, PR von dort); die Ticket-Worktrees verschwinden bei done.
+- **2026-11-04 21:26 · berkc** — Entscheidungen (Worker, vor dem Plan): (1) 'gepusht' = refs/remotes/origin/<branch> zeigt auf denselben Commit wie refs/heads/<branch>; lokal gelesen, kein fetch/ls-remote - offline-sicher, Tests haben nur einen Fake-Remote git@github.com. git push setzt den Tracking-Ref ohnehin. (2) Milestone-PR: Branch gilt als gemergt, wenn sein eigener PR gemergt ist (wie heute) ODER sein Tip Vorfahre von refs/remotes/origin/HEAD ist. Squash-gemergter Milestone-PR -> Branch bleibt (sichere Seite, lokal ist nichts verloren, Branch liegt auf origin). (3) Ticket nicht in done -> 'waiting <T>: the ticket is in <lane>, not done' statt 'kept'. (4) Nur Worktrees mit spawn.sh-Record (git-common-dir/jaira/panes) werden geraeumt; Worktrees ohne Record bleiben ausser Scope; spawn.sh wird nicht angefasst (DSDPZ4). (5) Nach dem Worktree-Abbau ersetzt reap.sh die Tab-Records des Tickets durch einen Record ticket=/branch= ohne pane, damit die naechste Runde den Branch kennt und keine Tabs erneut schliesst.
