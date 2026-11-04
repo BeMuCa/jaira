@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T21:41:43Z
+updated-at: 2026-11-04T21:41:51Z
 updated-by: berkc
 claimed-by: berk-ca-1345452
 claimed-at: 2026-11-04T21:29:36Z
@@ -73,7 +73,7 @@ review-check: "1. cd /home/berkc/code/X_General/jaira-EH6Z0N && go build -o /tmp
 - [x] release note core/release/notes/EH6Z0N.md; go test ./core/gitrepo ./internal/tui; tmux check on scratch board
 - [x] parseDiff: old-side line numbers, file status tag (new/deleted/renamed), blank separator rows before file headers 2..n
 - [x] renderDiffPane: title row, file header bar, hunk row, gutter, row tint dark/light, word-level spans, truncation before styling
-- [ ] empty/error states and BranchFor --sort=-committerdate with tests
+- [x] empty/error states and BranchFor --sort=-committerdate with tests
 - [ ] release note line in core/release/notes/EH6Z0N.md; go test ./core/gitrepo ./internal/tui
 
 ## Progress
