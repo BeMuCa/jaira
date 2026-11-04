@@ -1,7 +1,7 @@
 ---
 id: 01M5GFCGEEZQ6AB9NS7380MGXT
 title: "Ein Ticket in done raeumt seinen Worktree weg, sobald der Branch gepusht und sauber ist"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: berkc
@@ -19,10 +19,16 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:13Z
-updated-at: 2026-11-04T21:37:49Z
+updated-at: 2026-11-04T21:41:44Z
 updated-by: berkc
 claimed-by: berk-ca-1279800
 claimed-at: 2026-11-04T21:24:25Z
+outcome-what: "reap.sh removes a done ticket's tabs and worktree once its branch is pushed at the same commit (clean worktree, own ticket file ignored); the local branch is deleted only after its pull request merged at the head, or its head lies in origin/HEAD; SKILL.md and the release note describe the new timing; shipped hashes appended"
+outcome-why: "worktrees piled up until the pull request merged, and per-milestone PRs make that wait weeks; the branch and its commits stay on origin and locally until merged, so nothing is lost by removing the worktree"
+outcome-resolves: "DoD 1-5: reap_test.go (TestReapRemovesAPushedWorktreeBeforeTheMerge, TestReapKeepsWhatIsNotFinished, TestReapClosesAMergedTicket, TestReapDeletesABranchInOriginsDefaultBranch, TestReapIgnoresTheTicketsOwnFileInItsWorktree, TestReapKeepsABranchPastItsMergedHead); go test ./core/role ./core/shipped ok"
+review-summary: |-
+  core/role/builtin/jaira-dispatcher/scripts/spawn.sh:168 still runs 'git worktree add <wt> -b <branch>', which fails for the branch reap.sh now keeps after removing a done ticket's worktree - so the kept branch the goal names cannot be worked again through spawn.sh; when refs/heads/<branch> exists run 'git worktree add <wt> <branch>' instead, and make the setup-failure cleanup at spawn.sh:185 'branch -D' only a branch this run created; test in core/role/reap_test.go or role_test.go, shipped hash appended
+  core/role/builtin/jaira-teamlead/SKILL.md:263-266 'Review comments come back to the branch and want somewhere to land ... a ticket that has not been accepted can still come back' is the old argument for keeping the worktree and now contradicts the new paragraph (worktree gone at done, done = accepted); replace with one sentence: the branch stays, a later fix gets a fresh worktree on it from spawn.sh
 ---
 
 # Ein Ticket in done raeumt seinen Worktree weg, sobald der Branch gepusht und sauber ist
@@ -69,3 +75,4 @@ claimed-at: 2026-11-04T21:24:25Z
 - **2026-11-04 21:37 · berkc** — Decision: the branch's merge check asks origin/HEAD first (no forge call) and the forge only when origin/HEAD does not contain the branch. A squash-merged milestone PR therefore keeps its branch until the forge reports the head, which is the safe side.
 - **2026-11-04 21:37 · berkc** — Dead end: no 'before' run of reap_test.go. The script was rewritten before the test run, so the pre-change baseline (plan item 1) was not taken; the verification is the post-change run, go test ./core/role ./core/shipped ok with no reap test skipped.
 - **2026-11-04 21:37 · berkc** — Board: jaira claim 80MGXT was refused (claimed by berk-ca-1279800, 3m ago). I did not --steal. A dod write was also refused once with 'berkc wrote it first' and then succeeded on the re-run; the plan state shows 1-11 ticked.
+- **2026-11-04 21:41 · berkc** — critique (pass 1): two findings, fix clear. (1) spawn.sh:168 'worktree add -b <branch>' fails on the branch reap.sh now deliberately keeps without a worktree (the open point of the 21:37 note) - this ticket creates that state, so it should handle it: reuse an existing refs/heads/<branch> with 'git worktree add <wt> <branch>', and do not 'branch -D' at spawn.sh:185 a branch this run did not create. DSDPZ4 (backlog, worktree location) does not cover this, so it is not a reason to leave it. (2) jaira-teamlead/SKILL.md:263-266 keeps the old 'review comments want somewhere to land / not accepted can still come back' rationale for a long-lived worktree, which now contradicts the paragraph above it; rewrite to: branch stays, later fixes get a fresh worktree on it. Let stand: reap.sh ordering lane->worktree->branch, local-only push check (decision 1 of 21:26), origin/HEAD-first merge check (21:37 decision), branch-<T> record (no collision with pane-id record names). Claim refused (held by berk-ca-1279800); not stolen.
