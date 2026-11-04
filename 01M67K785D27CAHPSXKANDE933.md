@@ -14,7 +14,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-11-04T00:37:01Z
+updated-at: 2026-11-04T00:37:09Z
 updated-by: berkc
 claimed-by: berk-ca-3155695
 claimed-at: 2026-10-31T02:31:33Z
@@ -39,6 +39,7 @@ review-check: "1. cd /home/berkc/code/X_General/jaira-exp-b && go run ./cmd/jair
   proof: internal/tui/model.go:1774 stepLane; tests TestArrowsWithToggleOnSkipEmptyLanes, TestLeftWithToggleOnWrapsToLastFilledLane, TestArrowsWithToggleOnStayWhenOnlyLaneHasTickets, TestArrowsWithToggleOnAllEmptyStillMove, TestArrowsWithToggleOnLeaveEmptyStartLane, TestArrowsWithToggleOffStepOntoEmptyLanes, TestLaneFocusIgnoresTheToggle (internal/tui/lanewindow_test.go:182-301)
 - [x] Release-Note-Zeile
   proof: core/release/notes/NDE933.md:1
+- [ ] z ist standardmaessig an: Board startet mit schmalen leeren Lanes, Pfeile ueberspringen sie, z schaltet aus; ist der z-Zustand heute gespeichert, bleibt ein ausgeschaltetes z ueber Neustarts aus; Test
 
 ## Options
 
