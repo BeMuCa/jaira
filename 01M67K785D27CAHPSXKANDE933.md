@@ -14,7 +14,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:47Z
-updated-at: 2026-11-04T00:43:44Z
+updated-at: 2026-11-04T00:43:46Z
 updated-by: berkc
 claimed-by: berk-ca-516678
 claimed-at: 2026-11-04T00:38:18Z
@@ -72,3 +72,4 @@ round: 2
 - **2026-11-04 00:37 · berkc** — Plan decision: z state is not persisted anywhere today - model.go:292-298 documents thinEmpty as session-only (filter, cursor, scroll all start fresh; only lane.SaveDefaultBoard is saved and that is a workflow definition). So nothing to keep working: default flips to on in New() exactly like anim (model.go:352), z turns it off for the session, next start is on again. Adding persistence would be a new write path the maintainer did not ask for; if they want z-off to survive restarts that is a follow-up ticket.
 - **2026-11-04 00:38 · berkc** — in-progress pass 2: starting plan 6 (New() thinEmpty default on). Reading model.go New() and the thinEmpty field comment; plan 7 (tests) and 8 (zHint) follow.
 - **2026-11-04 00:43 · berkc** — plan 6-8 done: New() thinEmpty default on; tests adjusted (press z where a test wants the old full-width board, drop it where it wanted z on); new TestThinEmptyLanesAreOnByDefault; hint label checks now 'z widen empty' on the default board; ? help line says on by default. go vet + go test ./internal/tui/ -count=1 green (exit 0).
+- **2026-11-04 00:43 · berkc** — tmux check (plan 10 second half) is left to the parent: this lane ran go vet and go test ./internal/tui/ -count=1 only. Release note: appended line 2 of core/release/notes/NDE933.md as '- !'; line 1 still reads 'Press z to draw empty lanes thin', now only true as a press-to-widen-then-thin description - left unchanged per brief, parent may rewrite it.
