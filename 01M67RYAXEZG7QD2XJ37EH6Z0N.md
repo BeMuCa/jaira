@@ -19,7 +19,7 @@ related:
 commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T21:47:55Z
+updated-at: 2026-11-04T21:50:14Z
 updated-by: berkc
 claimed-by: berk-ca-1686300
 claimed-at: 2026-11-04T21:47:55Z
@@ -123,3 +123,4 @@ internal/tui/diffpane_test.go:338 TestChangedRowsAreTintedAcrossThePane asserts 
 internal/tui/diffpane.go:384 fitSegs keeps a segment that ends exactly at n and drops every later segment without a "…", so a row whose gutter+prefix fills the pane exactly is cut silently (rule 7: a cut row ends in …) — when used+w == n and a later segment has text, truncate this one instead; add a case to TestLongCodeRowIsCutToThePane with a paired row cut at a segment boundary
 internal/tui/model.go:162 the rewrapped field comment is now one ~140-column line — wrap it at the width of the lines around it
 Let stand: hunk header indented 2*nw+4 with no │ (aligns @@ with the sign column; spec rule 3 says gutter blank); diffSeg/fitSegs/padRow/spreadRow beside truncate/padDisplay/refill (segments are needed to cut before styling with word spans; refill works on styled strings and does not cut); markWordPair rune-based prefix/suffix with non-overlap guard is correct; wide runes are cut via truncate/lipgloss.Width and the row padded to width.
+- **2026-11-04 21:50 · berkc** — critique fixes (worker 2026-11-04, commit 725643c3): (1) diffPaletteDark/Light are 256 indices as view.go does: dark add 22, del 52, word-add 28, word-del 88; light add 194, del 224, word-add 157, word-del 217. The hex tints were the reason removed rows showed grey on 256-colour terminals. (2) TestChangedRowsAreTintedAcrossThePane asserts 48;5;22 / 48;5;52 / 48;5;28 / 48;5;88 (bgOpen takes a colour name; lipgloss v2 writes the index escape in the test without a profile setting) and that the removed row's changed word '2' carries the word-del colour. (3) fitSegs: a segment that exactly fills the last column is cut to '…' when text follows; new unit test TestFitSegsEndsAnExactBoundaryCutInEllipsis (direct unit test, not a case in TestLongCodeRowIsCutToThePane: that row has no word span, so it cannot land on a boundary). (4) model.go diff* field comment rewrapped to the ~78-column width of the lines around it. Tests: go test ./core/gitrepo ./internal/tui pass; gofmt and go vet clean. Not done: real 256-colour terminal check on screen.
