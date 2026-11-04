@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:13Z
-updated-at: 2026-11-04T21:42:54Z
+updated-at: 2026-11-04T21:47:01Z
 updated-by: berkc
 claimed-by: berk-ca-1279800
 claimed-at: 2026-11-04T21:24:25Z
@@ -45,7 +45,7 @@ round: 2
 - [x] Release-Note-Zeile in core/release/notes/80MGXT.md
   proof: core/release/notes/80MGXT.md
 - [x] jaira-teamlead/SKILL.md beschreibt den neuen Zeitpunkt (Worktree bei done, Branch nach Merge); neue Hashes von reap.sh und SKILL.md in core/shipped/shipped.sha256 angehaengt, core/role- und core/shipped-Tests gruen
-  proof: core/role/builtin/jaira-teamlead/SKILL.md (lines 37-46, 257-262 rewritten); core/shipped/shipped.sha256 last two lines (reap.sh, SKILL.md); go test ./core/role ./core/shipped ok; TestTeamleadReapsEveryRound
+  proof: core/role/builtin/jaira-teamlead/SKILL.md (lines 37-46, 260-265 rewritten: worktree goes at done, branch and its commits stay on the pushed branch until merged, no long-lived-worktree rationale); core/shipped/shipped.sha256 last line (SKILL.md hash); go test ./core/role ./core/shipped -count=1 ok
 
 ## Options
 
