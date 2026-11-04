@@ -1,7 +1,7 @@
 ---
 id: 01M67RYAXEZG7QD2XJ37EH6Z0N
 title: "In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: berkc
@@ -18,14 +18,15 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
+  - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T21:50:14Z
+updated-at: 2026-11-04T21:50:20Z
 updated-by: berkc
 claimed-by: berk-ca-1686300
 claimed-at: 2026-11-04T21:47:55Z
-outcome-what: "A ticket in signoff or human shows its diff beside it when the terminal is 140+ columns: a file header bar with dir, bold name, new/deleted/renamed tag and +/- counts; hunk header with the @@ range coloured apart; old/new line-number gutter; added and removed rows tinted across the whole pane with the changed words marked; title says file N/M and the totals; a notice in place of the rows for the no-diff, no-change and git-error states; BranchFor picks the branch with the newest commit when several carry the handle. Tab, ]/[, o and the narrow single-column fallback as before."
-outcome-why: "Raw git diff piped through colour was hard to review: no line numbers, +/- only as coloured text, no position in the diff, one vague empty line. NDE933 showed an old experiment branch because BranchFor took the first name alphabetically."
-outcome-resolves: "internal/tui TestParseDiffNumbersBothSides, TestParseDiffTagsNewDeletedAndRenamedFiles, TestWordPairsMarkOnlyTheChangedMiddle, TestChangedRowsAreTintedAcrossThePane, TestGutterShowsOldAndNewNumbersOnTheirSides, TestDiffTitleCountsFilesAndTotals, TestBlankRowSeparatesFilesAndJumpsStillLandOnHeaders, TestLongCodeRowIsCutToThePane, TestEmptyStateIsNoticeBelowTheTitle, TestTicketDiffSaysWhyThereAreNoRows, and core/gitrepo TestBranchForPicksTheNewestBranchCarryingTheHandle; earlier diff tests still pass"
+outcome-what: "Diff pane in the sign-off and human ticket view: changed rows and words carry 256-palette tints (dark add 22, del 52, word-add 28, word-del 88; light 194, 224, 157, 217), a row cut exactly at a segment boundary ends in an ellipsis."
+outcome-why: "Critique pass 1 found the hex tints fell onto the grey ramp of 256-colour terminals (removed lines showed no red), and the cut row was silently shortened at an exact boundary; the tint test asserted only the hex escapes."
+outcome-resolves: "critique 21:47 finding 1: tints -> diffpane.go diffPaletteDark/Light, TestChangedRowsAreTintedAcrossThePane asserts 48;5;22/52/28/88; finding 2: removed-row word-del assertion in TestChangedRowsAreTintedAcrossThePane; finding 3: fitSegs fix, TestFitSegsEndsAnExactBoundaryCutInEllipsis; finding 4: model.go diff field comment rewrapped"
 review-summary: |-
   internal/tui/diffpane.go:366-367 the hex tints downsample to neutral greys on a 256-colour terminal (tmux default, many WSL setups): dark del #3a1d22 -> 48;5;235, word-del #7a2c35 -> 239 (same grey as the file header fill), light add/del also land on the grey ramp (232-255), so removed lines carry no red at all — define the palette as 256 indices like every other colour in internal/tui/view.go:44-50 (colOK "78" etc.): dark add 22, word-add 28, del 52, word-del 88; light add 194, word-add 157, del 224, word-del 217; these are cube colours and keep their hue on 256 and truecolor alike
   internal/tui/diffpane_test.go:338 TestChangedRowsAreTintedAcrossThePane asserts the truecolor escapes of the hex values, so it passed while the 256-colour screen was grey — assert the palette indices (48;5;52 for a removed row, 48;5;88 on its changed word, 48;5;22/28 for added) after the palette change, and add the removed-row word assertion the test currently skips
