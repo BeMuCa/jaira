@@ -1,7 +1,7 @@
 ---
 id: 01M67RYCQZ131NH1BATCCZWKNY
 title: "Release-Notes beginnen mit einer Hook-Zeile, und wer mehrere Versionen ueberspringt, sieht die Notes aller dazwischen"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: berkc
@@ -18,13 +18,13 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-04T00:43:20Z
+updated-at: 2026-11-04T00:43:22Z
 updated-by: berkc
 claimed-by: berk-ca-512097
 claimed-at: 2026-11-04T00:37:05Z
-outcome-what: "Release notes take a '- > text' hook line; core/release sorts each release's hooks first, and jaira update and the release-notes popup print them first, with '>'."
-outcome-why: "Readers skip long notes; a one-line pitch per release makes them open it. Older binaries read the same line as an ordinary change, so no reader breaks."
-outcome-resolves: "Hook marker, hook-first ordering, and three-versions-behind paging are covered by tests in core/release, internal/cli and internal/tui; the format is documented in CLAUDE.md and AGENTS.md; the note is core/release/notes/CZWKNY.md."
+outcome-what: "A release note hook is an optional headline 'Headline: sentence'; the popup shows hooks, features and ! lines and folds plain changes under Others (key o); jaira update text output unchanged"
+outcome-why: "Release notes read as a wall of text (0.5.7: 32 lines, about 214 characters each on average); headlines first and folded plain lines make a version scannable"
+outcome-resolves: "Maintainer decision 04.11.2026: headline format, at most one hook per note file, 80-character cap enforced by TestHookLinesAreShortAndOnePerFile, plain changes folded by default"
 review-summary: "CLAUDE.md:274 + AGENTS.md:227 make a hook mandatory in every note file; with one file per ticket (0.5.7 = 9 files) that puts N hooks above Features and brings back the drowning the ticket is for. Make it optional ('may open with one') unless the person wants it mandatory. Open question on the ticket. No other finding."
 question: ""
 round: 2
