@@ -271,11 +271,14 @@ The format is a line scan, and breaking it silently corrupts what users read:
   first, under "Features", and `jaira update` shows them with `+`; to every
   other reader it stays a plain line. `- + ! ` marks a feature the reader must
   act on too: the feature marker comes first.
-- A line starting `- > ` is the hook: a one-line pitch that makes a reader want
-  the change, like the first line of a post. Every note file opens with one, as
-  its first line. `jaira update` and the TUI show a release's hooks before all
-  its other lines, with `>`; to every other reader it stays a plain line. A
-  hook carries no `!` or `+`.
+- A line starting `- > ` is the hook: a headline and one short sentence, as
+  `- > New skill: /interreview walks review tickets in chat`. It is optional,
+  at most one per note file, and only for a change a user really notices — a
+  new command, skill or view. The whole line stays within 80 characters; a
+  test fails beyond that, or on a second hook in one file. `jaira update` and
+  the TUI show a release's hooks before its other lines; the popup shows
+  hooks, features and `!` lines and folds the plain ones under "Others". To
+  every other reader it stays a plain line. A hook carries no `!` or `+`.
 - Everything else in the file — prose, blank lines, HTML comments — is ignored.
 - No version heading. A note file never says which release it belongs to.
 

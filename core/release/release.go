@@ -14,10 +14,11 @@
 //
 // A note file is a line scan: every line starting "- " is one change. Three
 // markers may follow the dash. "- ! " marks a change the reader must act on
-// (Important), "- + " a feature (Feature), and "- > " the hook (Hook): the
-// one-line pitch a note file opens with, which every reader shows before the
-// other changes of its release. A binary that does not know a marker shows
-// the line as a plain change, so a new marker never breaks an older reader.
+// (Important), "- + " a feature (Feature), and "- > " the hook (Hook): an
+// optional headline, "Headline: one short sentence", at most one per note file,
+// which every reader shows before the other changes of its release. A binary
+// that does not know a marker shows the line as a plain change, so a new marker
+// never breaks an older reader.
 package release
 
 import (
@@ -128,9 +129,9 @@ func Feature(change string) (string, bool) {
 }
 
 // Hook splits off the hook marker: a line written "- > text" is read by
-// changeLines as the change "> text", and Hook returns text. A hook is the
-// one-line pitch a note file opens with; entryOf puts every hook of a release
-// before its other changes.
+// changeLines as the change "> text", and Hook returns text. A hook is an
+// optional headline, "Headline: one short sentence", at most one per note file;
+// entryOf puts every hook of a release before its other changes.
 func Hook(change string) (string, bool) {
 	return strings.CutPrefix(change, "> ")
 }

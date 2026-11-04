@@ -6,8 +6,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"testing/fstest"
+	"unicode/utf8"
 )
 
 // fixtureRepo makes a git repository whose core/release holds a NOTES.md with
@@ -263,5 +265,37 @@ func checkMigration(t *testing.T, all []Entry) {
 		if !shown[c] {
 			t.Errorf("formerly Unreleased line is shown nowhere: %q", c)
 		}
+	}
+}
+
+// A hook is a headline: at most one per note file, and a line short enough to
+// read at a glance.
+func TestHookLinesAreShortAndOnePerFile(t *testing.T) {
+	const maxHook = 80
+	err := fs.WalkDir(notesFS, notesDir, func(p string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() || !strings.HasSuffix(p, ".md") {
+			return err
+		}
+		b, err := fs.ReadFile(notesFS, p)
+		if err != nil {
+			return err
+		}
+		hooks := 0
+		for _, line := range strings.Split(string(b), "\n") {
+			if !strings.HasPrefix(line, "- > ") {
+				continue
+			}
+			hooks++
+			if n := utf8.RuneCountInString(line); n > maxHook {
+				t.Errorf("%s: hook line is %d characters, at most %d: %q", p, n, maxHook, line)
+			}
+		}
+		if hooks > 1 {
+			t.Errorf("%s: %d hook lines, at most one per note file", p, hooks)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 }
