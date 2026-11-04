@@ -18,14 +18,14 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-04T00:53:34Z
+updated-at: 2026-11-04T00:54:48Z
 updated-by: berkc
 claimed-by: berk-ca-512097
 claimed-at: 2026-11-04T00:37:05Z
 outcome-what: "A release note hook is an optional headline 'Headline: sentence'; the popup shows hooks, features and ! lines and folds plain changes under Others (key o); jaira update text output unchanged"
 outcome-why: "Release notes read as a wall of text (0.5.7: 32 lines, about 214 characters each on average); headlines first and folded plain lines make a version scannable"
 outcome-resolves: "Maintainer decision 04.11.2026: headline format, at most one hook per note file, 80-character cap enforced by TestHookLinesAreShortAndOnePerFile, plain changes folded by default"
-review-summary: "none"
+review-summary: "Adds an optional release-note hook: a line '- > Headline: sentence' in a note file. core/release.Hook reads it; entryOf puts every hook of a release before its other changes, so jaira update (text '  > text', and --json with '> ' kept) and the TUI show it first. The release-notes popup shows the headline bold with the sentence dimmed below it, then Features, then Others where '!' lines always show and plain lines fold into 'N more · o shows them' until key o; a version with no hook or feature is not folded. TestHookLinesAreShortAndOnePerFile fails on a hook over 80 runes or a second hook in one note file. Skipped versions already worked (Since returns all of them); the change adds 3-versions-behind tests for release, update and popup. CLAUDE.md, AGENTS.md and the release.go package doc describe the marker; notes/CZWKNY.md carries the user note."
 question: ""
 round: 3
 review-gaps: "folded hookLines' two wrap loops and changeLines' loop into one bulletLines helper in internal/tui/releasenotes.go (same idea three times, output byte-identical, tui/release/cli tests pass); left: entryOf's hook partition (only one, nothing to reuse), the hook branch in update.go writeNotes (it is behaviour: '  > ' instead of '  - > '), TestHookLinesAreShortAndOnePerFile's own '- > ' prefix check (counts the whole line, so changeLines+Hook would not fit), the static 'o others' footer hint critique pass 3 let stand (changing it is behaviour); no dead code, no hot-path cost"
