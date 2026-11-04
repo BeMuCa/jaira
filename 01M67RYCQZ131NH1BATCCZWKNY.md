@@ -18,7 +18,7 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-04T00:54:57Z
+updated-at: 2026-11-04T00:55:05Z
 updated-by: berkc
 claimed-by: berk-ca-512097
 claimed-at: 2026-11-04T00:37:05Z
@@ -97,3 +97,4 @@ review-check: "1. cd /home/berkc/code/X_General/jaira-CZWKNY && go build -o /tmp
 - **2026-11-04 00:47 · berkc** — critique (pass 3, judged only e6b1e8f1 against the pass-2 finding; pass 1/2 notes and the maintainer decision of 04.11.2026 stand and were not reopened): addressed. internal/tui/releasenotes.go lines() folds plain changes only when a hook or feature heads the page (headed := len(out) > 0, case v.others || !headed), same condition as the Others header, as pass 2 proposed; TestNotesViewDoesNotFoldAVersionWithoutHeadlines covers it. Seen and let stand (not introduced by the repair, breaks no DoD item): the footer hint 'o others' (releasenotes.go:194) is static and also shows on a page where o has nothing to unfold. worktree_diff = unrelated untracked .jaira/milestones files, not judged. review-summary=none.
 - **2026-11-04 00:50 · berkc** — optimize: one cleanup, bulletLines in internal/tui/releasenotes.go now carries the bullet+wrap loop that hookLines (twice) and changeLines each spelled out; no behaviour change. Looked for and found nothing: an existing stable partition or notes walker to reuse (none in core/release), dead code (folded counter and the 'case folded > 0' branch are both reachable), hot loops (popup renders one version). Claim refused (held by berk-ca-512097, same session's worker), not stolen.
 - **2026-11-04 00:53 · berkc** — testing: full suite (go test ./... -count=1 minus the 3 known hangers) exit 0, go build/vet ./... exit 0. Scratch run: binary -X main.version=0.5.8, JAIRA_HOME scratch, stamp at $JAIRA_HOME/state/board-*/version set to 0.5.5 -> 'jaira update' prints Unreleased, 0.5.8, 0.5.7, 0.5.6 and the Unreleased block opens with '  > Shorter release notes: ...'; --json keeps '> ' text first. Popup not driven interactively; covered by TestPopupThreeVersionsBehindPagesAllThree and the NotesView tests.
+- **2026-11-04 00:55 · berkc** — review (fresh context): judged 4 commits a276fad1..77fcc4a7 against origin/feat/MXMDFH-release-notes-popup. No blocker; all 7 DoD items are backed by existing tests, and all of them pass when re-run (core/release, core/shipped, tui NotesView/Popup, cli TestUpdate; gofmt and vet clean). The 4 notes are in review-gaps. The worktree_diff holds only untracked .jaira/milestones files, which have nothing to do with this ticket, so I did not judge them. Claim refused (held by berk-ca-512097); did not steal. Popup not driven by hand.
