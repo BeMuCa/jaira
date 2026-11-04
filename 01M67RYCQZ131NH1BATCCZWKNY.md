@@ -18,7 +18,7 @@ related:
   - 01M67K70X843TBF0TYRPMXMDFH
 commits: []
 created-at: 2026-10-31T01:24:49Z
-updated-at: 2026-11-04T00:42:22Z
+updated-at: 2026-11-04T00:42:24Z
 updated-by: berkc
 claimed-by: berk-ca-512097
 claimed-at: 2026-11-04T00:37:05Z
@@ -78,3 +78,4 @@ round: 2
 - **2026-11-03 23:05 · berkc** — Maintainer 04.11.2026: 'Hook' heisst eine Ueberschrift neben '- > ', z.B. 'Neuer Skill: /interreview' plus kurze Beschreibung 'Nuetzlich zum Durchgehen von Tickets in review'. Release-News sollen kurz und knackig sein; Zeilen wie die zu 'jaira roles install --project ... --force' (0.5.7/PWAF22) gehoeren nicht in die News. Heute: 0.5.7 hatte 32 Zeilen mit im Schnitt 214 Zeichen - eine Textwand. Format-Entscheidung steht aus.
 - **2026-11-04 00:37 · berkc** — Maintainer decision 04.11.2026 (via coordinator): hook = HEADLINE. (1) format '- > <Headline>: <one short sentence>'; popup shows headline bold, sentence dimmed on the line below, blank line between hooks. (2) optional, at most one hook per ticket note file, only for changes a user really notices (new command, skill, view); docs say so. (3) popup: hooks and '!' lines always visible; plain lines under 'Others' collapsed by default, one key expands; jaira update terminal output keeps showing everything. (4) a test fails when a hook line is longer than ~80 chars.
 - **2026-11-04 00:39 · berkc** — round 2 plan choices: plain = no marker; '!' non-feature lines stay visible under Others; 'Others' header only below a hook or feature (keeps a plain-only version a plain list); fold state is one bool on the view that survives paging, 'o' toggles; length cap counts the whole line incl. '- > ' in runes; test also enforces at most one hook per file since the maintainer asked for that; jaira update text output untouched.
+- **2026-11-04 00:42 · berkc** — round 2 step D proof: TestHookLinesAreShortAndOnePerFile FAILED on the round-1 note (146 chars), as planned it bites on real content. Temporarily lengthened the hook line of notes/CZWKNY.md to 119 chars: test FAILED (exit 1); restored from a backup, byte-identical, test passes (exit 0). Claim: 'jaira claim CZWKNY' refused, claimed by berk-ca-512097; did not pass --steal, all writes went through under berkc.
