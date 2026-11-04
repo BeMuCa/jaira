@@ -19,10 +19,10 @@ related:
 commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T21:47:13Z
+updated-at: 2026-11-04T21:47:55Z
 updated-by: berkc
-claimed-by: berk-ca-1644630
-claimed-at: 2026-11-04T21:45:46Z
+claimed-by: berk-ca-1686300
+claimed-at: 2026-11-04T21:47:55Z
 outcome-what: "A ticket in signoff or human shows its diff beside it when the terminal is 140+ columns: a file header bar with dir, bold name, new/deleted/renamed tag and +/- counts; hunk header with the @@ range coloured apart; old/new line-number gutter; added and removed rows tinted across the whole pane with the changed words marked; title says file N/M and the totals; a notice in place of the rows for the no-diff, no-change and git-error states; BranchFor picks the branch with the newest commit when several carry the handle. Tab, ]/[, o and the narrow single-column fallback as before."
 outcome-why: "Raw git diff piped through colour was hard to review: no line numbers, +/- only as coloured text, no position in the diff, one vague empty line. NDE933 showed an old experiment branch because BranchFor took the first name alphabetically."
 outcome-resolves: "internal/tui TestParseDiffNumbersBothSides, TestParseDiffTagsNewDeletedAndRenamedFiles, TestWordPairsMarkOnlyTheChangedMiddle, TestChangedRowsAreTintedAcrossThePane, TestGutterShowsOldAndNewNumbersOnTheirSides, TestDiffTitleCountsFilesAndTotals, TestBlankRowSeparatesFilesAndJumpsStillLandOnHeaders, TestLongCodeRowIsCutToThePane, TestEmptyStateIsNoticeBelowTheTitle, TestTicketDiffSaysWhyThereAreNoRows, and core/gitrepo TestBranchForPicksTheNewestBranchCarryingTheHandle; earlier diff tests still pass"
