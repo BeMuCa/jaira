@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-22T00:15:13Z
-updated-at: 2026-11-04T21:37:47Z
+updated-at: 2026-11-04T21:37:49Z
 updated-by: berkc
 claimed-by: berk-ca-1279800
 claimed-at: 2026-11-04T21:24:25Z
@@ -68,3 +68,4 @@ claimed-at: 2026-11-04T21:24:25Z
 - **2026-11-04 21:37 · berkc** — Open: a ticket given back after done has lost its worktree (reap removes it at done). spawn.sh:168 creates the worktree with 'git worktree add <wt> -b <branch>', which fails when the branch already exists; I did not check for a fallback in spawn.sh (not touched, DSDPZ4). Check before a re-spawn of a done-and-pushed ticket.
 - **2026-11-04 21:37 · berkc** — Decision: the branch's merge check asks origin/HEAD first (no forge call) and the forge only when origin/HEAD does not contain the branch. A squash-merged milestone PR therefore keeps its branch until the forge reports the head, which is the safe side.
 - **2026-11-04 21:37 · berkc** — Dead end: no 'before' run of reap_test.go. The script was rewritten before the test run, so the pre-change baseline (plan item 1) was not taken; the verification is the post-change run, go test ./core/role ./core/shipped ok with no reap test skipped.
+- **2026-11-04 21:37 · berkc** — Board: jaira claim 80MGXT was refused (claimed by berk-ca-1279800, 3m ago). I did not --steal. A dod write was also refused once with 'berkc wrote it first' and then succeeded on the re-run; the plan state shows 1-11 ticked.
