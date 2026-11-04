@@ -18,7 +18,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-04T00:42:34Z
+updated-at: 2026-11-04T00:42:48Z
 updated-by: berkc
 claimed-by: berk-ca-511849
 claimed-at: 2026-11-04T00:37:01Z
@@ -43,7 +43,7 @@ claimed-at: 2026-11-04T00:37:01Z
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [~] core/gitrepo/branchdiff.go: BranchFor(handle), Base(), BranchDiff(base,branch), WorktreeOf(branch) + tests in core/gitrepo/branchdiff_test.go
+- [x] core/gitrepo/branchdiff.go: BranchFor(handle), Base(), BranchDiff(base,branch), WorktreeOf(branch) + tests in core/gitrepo/branchdiff_test.go
 - [ ] internal/tui/diffpane.go: parseDiff into per-file rows with new-side line numbers, ticketDiff (branch...master, fallback CommitsForTicket+Diff), memoised per open ticket
 - [ ] render: renderSignOff and renderDetail (human lane) split into ticket left (78 cols) and diff right when width>=140 and height>=20; else unchanged single column
 - [ ] keys in modeDetail: tab switches pane focus, arrows/pgup/pgdn scroll focused pane, ] / [ next/prev file, o opens top-visible file:line via 'code -g' (in the branch's worktree if one exists)
