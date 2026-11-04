@@ -1,7 +1,7 @@
 ---
 id: 01M6HZQN4HSDJ55MYC5AWQNRQN
 title: "Wer ein Ticket, einen Milestone oder ein Epic zugewiesen bekommt, sieht das im Board als Nachricht"
-status: brainstorm
+status: todo
 ready: true
 creator: berkc
 assignee: berkc
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-04T21:41:11Z
+updated-at: 2026-11-04T21:41:14Z
 updated-by: berkc
 claimed-by: berk-ca-1280500
 claimed-at: 2026-11-04T21:24:22Z
