@@ -18,7 +18,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T10:35:35Z
+updated-at: 2026-11-05T10:35:39Z
 updated-by: Alexander Sacharov
 ---
 
@@ -44,7 +44,7 @@ updated-by: Alexander Sacharov
 - [x] README: drei Schritte von Use this template bis Katalog-PR
 - [x] Push nach main von panda-bobr/jaira-plugin-template, kein Tag
 - [x] panda-bobr/jaira-hello-demo aus der Vorlage anlegen, Tag v0.1.0, Release-Assets und checksums.txt pruefen -> DoD 1
-- [ ] E2HSK1 nach blocked auf D44NVR (DoD 2 wartet auf die Katalog-CI)
+- [~] E2HSK1 nach blocked auf D44NVR (DoD 2 wartet auf die Katalog-CI)
 
 ## Progress
 - **2026-11-05 10:23 · Alexander Sacharov** — Teamlead (05.11.2026): der Standard (R6X6FH, abgenommen) liegt noch nicht auf master, sondern auf origin/feat/r6x6fh: docs/PLUGINS.md und docs/schema/*.json - lesen mit 'git show origin/feat/r6x6fh:docs/PLUGINS.md'. Die Arbeit selbst gehoert in das Repo panda-bobr/e2hsk1; Alex ist dort admin. Ein Agent pusht seinen Branch und oeffnet keinen PR.
