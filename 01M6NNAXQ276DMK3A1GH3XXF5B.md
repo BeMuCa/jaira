@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T10:51:07Z
-updated-at: 2026-11-05T10:53:21Z
+updated-at: 2026-11-05T10:54:06Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85123
 claimed-at: 2026-11-05T10:51:26Z
@@ -54,3 +54,4 @@ claimed-at: 2026-11-05T10:51:26Z
 ## Progress
 - **2026-11-05 10:51 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/1770.sock
 - **2026-11-05 10:52 · Alexander Sacharov** — decisions (none open for the person, settled from code): (1) Remove button = small text button 'Remove' on every direct card in an epic, no confirm dialog - drag has none either and 'add' undoes it; aria-label names ticket and epic. (2) An indirect card names the epic member it is counted through (the line you would remove), found by walking follows/parent up in epic.Covered; new field 'via' on epic.Ticket and web.Ticket. (3) Archived: root cause found - webSource.load uses Store.Load (board only), 'jaira epic rm' resolves via LoadAnywhere (board+logbook+archive). Web switches to LoadAnywhere, so web and CLI behave the same; no 'why not' message needed.
+- **2026-11-05 10:54 · Alexander Sacharov** — archived/logbook: reproduced - DELETE on a filed ticket answered 404 'not found' before load switched to LoadAnywhere (TestWebRemovesAFiledTicketFromAnEpic fails on the old line).
