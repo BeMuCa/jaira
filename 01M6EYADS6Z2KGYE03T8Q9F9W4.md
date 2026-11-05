@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T18:08:33Z
+updated-at: 2026-11-05T18:08:35Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
@@ -107,3 +107,4 @@ left alone: detection in the scripts, not the binary (pre-process note 17:59 poi
 - **2026-11-05 18:06 · BeMuCa** — round 2: fixed the three critique findings: AGENTS.md table now lists all 8 agents + skip rule; target.go comment names install.sh/install.ps1; install.sh/ps1 print the add-later line also when JAIRA_AGENT has only unknown names. Ran: gofmt -l, go vet, go build, sh -n/dash -n; install.sh harness (scratch HOME) with JAIRA_AGENT=foo prints unknown + add-later line, codex and none cases unchanged. install.ps1 unrun (no pwsh).
 - **2026-11-05 18:07 · BeMuCa** — critique (pass 2): findings 2 and 3 of pass 1 fixed in a69f5abdf. Finding 1 half done: docs/AGENTS.md now has all eight agents and the generic skip rule, but not the claude+codex double-listing limit pass 1 asked for, and its new sentence ('a second copy would register every role twice') reads as if the skip always prevents that. Add one sentence after the skip paragraph: with both claude and codex installed, cursor and opencode read ~/.claude/skills and ~/.agents/skills and list each role twice (known limit, see core/role/target.go:47-50). Nothing else reopened.
 - **2026-11-05 18:07 · BeMuCa** — in-progress round 3: docs/AGENTS.md now states the claude+codex limit (cursor and opencode list each role twice) as the last sentence of the --agent paragraph, after the Copilot example so that sentence still follows its own lead-in.
+- **2026-11-05 18:08 · BeMuCa** — critique (pass 3): the one finding of pass 2 (docs/AGENTS.md lacked the claude+codex double-listing limit) is fixed in 766139a52 - docs/AGENTS.md:295-297 now says cursor and opencode list each role twice with claude and codex both installed, matching core/role/target.go:47-50. Read only that change, as the lane prompt says; nothing else reopened. Standing on pass 1 and pass 2 notes for everything left alone. review-summary=none.
