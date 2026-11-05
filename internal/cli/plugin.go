@@ -93,7 +93,9 @@ func init() {
 // firePlugins tells every plugin subscribed to event about t, after the write
 // has succeeded. stdin is what 'jaira show <id> --json' prints, plus who made
 // the change and the lane the ticket left (empty for every event but move).
-// Nothing about it reaches the command: see plugin.Fire.
+// lanes may be nil: they are then loaded only when a plugin is listening, so a
+// write with no subscriber pays for nothing. Nothing about it reaches the
+// command: see plugin.Fire.
 func firePlugins(event string, s *ticket.Store, t *ticket.Ticket, from string, lanes *lane.Set) {
 	if t == nil {
 		return
@@ -102,10 +104,14 @@ func firePlugins(event string, s *ticket.Store, t *ticket.Ticket, from string, l
 	if len(ids) == 0 {
 		return
 	}
-	j := ticketJSON(t, lanes)
-	j["body"] = t.Body
-	j["path"] = t.Path
-	j["filed_away"] = ""
+	if lanes == nil {
+		env, err := envFor(s, t)
+		if err != nil {
+			return
+		}
+		lanes = env.Lanes
+	}
+	j := showJSON(t, lanes, t.Path)
 	j["actor"] = s.Actor
 	j["from_lane"] = from
 	payload, err := json.Marshal(j)

@@ -825,11 +825,7 @@ many there are as notes_total.`,
 				return nil
 			}
 			if g.jsonOut {
-				j := ticketJSON(t, env.Lanes)
-				j["body"] = t.Body
-				j["path"] = path
-				j["filed_away"] = filedAway(t, path)
-				return emit(cmd.OutOrStdout(), j)
+				return emit(cmd.OutOrStdout(), showJSON(t, env.Lanes, path))
 			}
 			if where := filedAway(t, path); where != "" {
 				fmt.Fprintf(cmd.OutOrStdout(), "off the board: %s\n", where)
@@ -842,6 +838,16 @@ many there are as notes_total.`,
 	cmd.Flags().IntVar(&notesLast, "notes-last", 0, "show only the newest n progress notes (0 shows all)")
 	cmd.Flags().BoolVar(&brief, "brief", false, "one line of JSON: title, goal, question, review and the newest notes")
 	return cmd
+}
+
+// showJSON is what 'show --json' prints for t, loaded from path: the ticket,
+// its body, and where it lives. A plugin's event gets the same object.
+func showJSON(t *ticket.Ticket, lanes *lane.Set, path string) map[string]any {
+	j := ticketJSON(t, lanes)
+	j["body"] = t.Body
+	j["path"] = path
+	j["filed_away"] = filedAway(t, path)
+	return j
 }
 
 // briefNotes is how many of the newest notes a brief carries.

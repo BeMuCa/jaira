@@ -1,7 +1,7 @@
 ---
 id: 01M6NHNN9AF2W8R6MDQK8Z3VRF
 title: "jaira <id> startet ein installiertes Plugin"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -20,17 +20,16 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T21:51:41Z
+updated-at: 2026-11-05T21:52:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
 outcome-what: "jaira <id> startet ~/.jaira/plugins/<id>/jaira-<id> (Argumente, stdio, JAIRA_ROOT/BOARD/VERSION, Exit-Code); eingebaute Befehle gewinnen. create/set/claim/move feuern Plugin-Events aus jaira-plugin.json (move ueber core/move.Moved, also auch aus der TUI). external in show/list --json. Merge uebernimmt external von der Seite, die es geaendert hat."
 outcome-why: "Standard docs/PLUGINS.md (R6X6FH) verlangt Dispatch und Events; Teamlead-Luecken (TUI-Moves, external in JSON, merge, AGENTS.md) gehoeren dazu. Der Merge meldete bisher einen Konflikt, sobald nur ein Branch external setzte."
 outcome-resolves: Plugins lassen sich ohne Aenderung am Kern starten und hoeren Schreibvorgaenge; Install und Katalog bleiben ein spaeteres Ticket.
-review-summary: |-
-  core/plugin/plugin.go:30 var Events has no caller (the closed list lives in the schema and the doc) - delete it
-  internal/cli/plugin.go:firePlugins checks plugin.Subscribers and plugin.Fire scans the directory again and stats every Program a second time - let Subscribers return nil inside an event (JAIRA_IN_EVENT) and pass its ids into Fire(ids, event, payload, env), so one scan per write and no JSON built inside an event
+review-summary: none
 round: 2
+review-gaps: "folded the event payload into showJSON (internal/cli/tickets.go), which show --json now uses too - it was assembled twice; claim no longer loads the whole board (envFor) on every claim - firePlugins loads lanes only when a plugin subscribed; left: plugin.Dir repeats the JAIRA_HOME lookup that 7 packages already repeat each (pre-existing convention); hook.Run keeps its own select-based timeout beside plugin.fireOne's context one (pre-existing, different contract: env vars, no stdin); fireOne re-stats Program per subscriber (one stat, needed for the path)"
 ---
 
 # jaira <id> startet ein installiertes Plugin
@@ -75,3 +74,4 @@ round: 2
 - **2026-11-05 21:45 · Alexander Sacharov** — Stand: core/plugin (Program/Run/Subscribers/Fire) und internal/cli/plugin.go (runPlugin in Execute, firePlugins) gebaut. Plan-Schritt 1 (ticketJSON nach core ziehen) verworfen: stattdessen ruft core/move.Move nach jedem geschriebenen Move den Hook move.Moved, den internal/cli in init() setzt - deckt CLI und TUI (model.go x2, signoff.go) mit einer Stelle ab, ohne 30 Aufrufstellen umzuziehen. Gefunden: core/merge mergeOpaque meldet einen Konflikt, wenn nur die andere Seite external aendert - widerspricht docs/PLUGINS.md ('whichever side changed it wins'); wird in DoD 6 behoben.
 - **2026-11-05 21:51 · Alexander Sacharov** — critique (Runde 1): core/plugin/plugin.go:30 var Events has no caller (the closed list lives in the schema and the doc) - delete it
 internal/cli/plugin.go:firePlugins checks plugin.Subscribers and plugin.Fire scans the directory again and stats every Program a second time - let Subscribers return nil inside an event (JAIRA_IN_EVENT) and pass its ids into Fire(ids, event, payload, env), so one scan per write and no JSON built inside an event. Stehen gelassen: JAIRA_HOME-Logik in plugin.Dir dupliziert settings.Path - das gleiche Muster steht in 7 Paketen (session, selfupdate, project, identity, lane, ticket/store), eigenes Paket ist Konvention. move.Moved als Paketvariable: gleiches Muster wie release.Current, deckt CLI+TUI an einer Stelle.
+- **2026-11-05 21:51 · Alexander Sacharov** — critique (Runde 2): beide Befunde aus Runde 1 erledigt (b154df66) - Events geloescht, Subscribers einmal pro Schreibvorgang und leer innerhalb eines Events. Nichts Neues.
