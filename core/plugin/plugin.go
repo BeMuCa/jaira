@@ -52,7 +52,11 @@ func Dir() string {
 
 // Program is the path of id's program, or "" when id is not a well-formed id
 // or no such plugin is installed.
-func Program(id string) string {
+func Program(id string) string { return program(id, runtime.GOOS) }
+
+// program is Program for the operating system goos, so the Windows name is
+// tested on every system.
+func program(id, goos string) string {
 	if !idRe.MatchString(id) {
 		return ""
 	}
@@ -61,7 +65,7 @@ func Program(id string) string {
 		return ""
 	}
 	name := "jaira-" + id
-	if runtime.GOOS == "windows" {
+	if goos == "windows" {
 		name += ".exe"
 	}
 	path := filepath.Join(dir, id, name)

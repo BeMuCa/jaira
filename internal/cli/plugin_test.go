@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/BeMuCa/jaira/core/release"
 	"github.com/BeMuCa/jaira/core/ticket"
@@ -217,5 +218,95 @@ func TestExternalIsInShowAndListJSON(t *testing.T) {
 	}
 	if len(listed.Tickets) != 1 || listed.Tickets[0]["external"] != "jira:PROJ-7" {
 		t.Errorf("list --json rows %v", listed.Tickets)
+	}
+}
+
+// A board change that lands the ticket in another lane is a move too: the
+// plugin hears set and then move, from the old lane, judged by the new
+// board's lanes.
+func TestSetBoardThatChangesTheLaneFiresAMove(t *testing.T) {
+	t.Setenv("JAIRA_HOME", t.TempDir())
+	t.Setenv("JAIRA_IN_EVENT", "")
+	dir := newTwoBoards(t)
+	d := jsonCLI(t, dir, "create", "code", "--goal", "g", "--context", "c", "--dod", "d")
+	h := d["handle"].(string)
+	log := filepath.Join(t.TempDir(), "events")
+	installPlugin(t, "rec", `{ echo "== $1 $2"; cat; echo; } >> `+log, "move", "set")
+
+	if out, err := runCLI(t, dir, "set", h, "board=video"); err != nil {
+		t.Fatalf("set board=video: %v\n%s", err, out)
+	}
+	raw, err := os.ReadFile(log)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parts := strings.Split(string(raw), "== ")[1:]
+	if len(parts) != 2 || !strings.HasPrefix(parts[0], "event set\n") || !strings.HasPrefix(parts[1], "event move\n") {
+		t.Fatalf("events:\n%s\nwant set, then move", raw)
+	}
+	var p map[string]any
+	if err := json.Unmarshal([]byte(strings.TrimPrefix(parts[1], "event move\n")), &p); err != nil {
+		t.Fatal(err)
+	}
+	if p["from_lane"] != "backlog" || p["status"] != "script" || p["board"] != "video" {
+		t.Errorf("move: from_lane %v status %v board %v; want backlog, script, video", p["from_lane"], p["status"], p["board"])
+	}
+	// script and render exist only on the video board.
+	if p["status_known"] != true || p["next_lane"] != "render" {
+		t.Errorf("move payload judged by the wrong lanes: status_known %v next_lane %v", p["status_known"], p["next_lane"])
+	}
+
+	// A board change that keeps the lane is a set and nothing else.
+	_ = os.Remove(log)
+	if out, err := runCLI(t, dir, "set", h, "title=renamed"); err != nil {
+		t.Fatalf("set title: %v\n%s", err, out)
+	}
+	if raw, _ := os.ReadFile(log); strings.Contains(string(raw), "event move") {
+		t.Errorf("a set that changed no lane fired a move:\n%s", raw)
+	}
+}
+
+// On the terminal board a move must not wait for a plugin: the event is
+// queued and returns at once, runs in the background, and quitting the board
+// waits for it, so nothing is lost. Without the queue — the CLI — it runs
+// before firePlugins returns.
+func TestBoardEventsDoNotWaitForThePlugin(t *testing.T) {
+	dir := pluginBoard(t)
+	d := jsonCLI(t, dir, "create", "slow", "--goal", "g", "--context", "c", "--dod", "d")
+	ran := filepath.Join(t.TempDir(), "ran")
+	installPlugin(t, "slow", "sleep 2; echo x >> "+ran, "move")
+
+	s, err := ticket.Discover(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tk, err := s.Load(d["id"].(string))
+	if err != nil {
+		t.Fatal(err)
+	}
+	env, err := envFor(s, tk)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	stop := queueEvents()
+	start := time.Now()
+	firePlugins("move", s, tk, "backlog", env.Lanes)
+	if took := time.Since(start); took > time.Second {
+		stop()
+		t.Fatalf("a queued event held the caller for %v", took)
+	}
+	if _, err := os.Stat(ran); err == nil {
+		t.Fatal("the plugin finished before the caller got control back")
+	}
+	stop()
+	if raw, _ := os.ReadFile(ran); string(raw) != "x\n" {
+		t.Fatalf("after stop the plugin ran %q, want once", raw)
+	}
+
+	// The CLI: no queue, so the plugin has run when firePlugins returns.
+	firePlugins("move", s, tk, "backlog", env.Lanes)
+	if raw, _ := os.ReadFile(ran); string(raw) != "x\nx\n" {
+		t.Fatalf("without a queue the plugin ran %q by the time firePlugins returned", raw)
 	}
 }

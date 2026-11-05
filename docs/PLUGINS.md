@@ -159,7 +159,7 @@ file names another `id`, hears no event.
 | Event | After |
 |---|---|
 | `create` | `jaira create` filed a ticket |
-| `move` | `jaira move` put a ticket into another lane |
+| `move` | `jaira move` put a ticket into another lane — or `jaira set board=<name>` did, because the new board lacks the old lane |
 | `claim` | `jaira claim` took a ticket |
 | `set` | `jaira set` changed a ticket's fields |
 
@@ -182,6 +182,10 @@ jaira-<id> event <name>
   plugin that exits non-zero, times out or is missing changes nothing about
   the command's own result or exit code. Its stdout and stderr are discarded,
   as a hook's are, so they never mix into JSON an agent is parsing.
+- **The terminal board does not wait.** A move made there queues its events
+  and the board carries on; one goroutine runs them in order in the
+  background, and quitting the board waits for the queue to empty, so none is
+  lost. A command — `jaira move` and the rest — runs them before it exits.
 - **Writes from inside an event fire no events.** jaira runs the plugin with
   `JAIRA_IN_EVENT=1`, and a `jaira create`, `move`, `claim` or `set` that sees
   it set writes as usual but calls no plugin. Without that, a plugin that

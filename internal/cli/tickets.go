@@ -1216,6 +1216,11 @@ its end. Review fields keep their history across loop rounds that way.`,
 				return err
 			}
 			firePlugins("set", s, t, "", env.Lanes)
+			// A board change that put the ticket into another lane is a move
+			// as well, and a plugin mirroring lanes has to hear it as one.
+			if landed != "" {
+				firePlugins("move", s, t, cur.Status, env.Lanes)
+			}
 			if g.jsonOut {
 				j := ticketJSON(t, env.Lanes)
 				if landed != "" {

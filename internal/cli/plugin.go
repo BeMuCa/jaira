@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/spf13/cobra"
 
 	"github.com/BeMuCa/jaira/core/lane"
@@ -90,6 +91,40 @@ func init() {
 	}
 }
 
+// events, while it is set, takes plugin events off the caller's path: the
+// terminal board sets it, so a move there never waits for a plugin, which may
+// take up to five seconds. The CLI leaves it nil and runs them before it
+// exits, as docs/PLUGINS.md describes.
+var events chan func()
+
+// queueEvents starts the one goroutine that runs queued events in the order
+// they were queued. stop drains the queue and waits for it, so quitting the
+// board loses no event.
+func queueEvents() (stop func()) {
+	ch := make(chan func(), 64)
+	done := make(chan struct{})
+	go func() {
+		for fire := range ch {
+			fire()
+		}
+		close(done)
+	}()
+	events = ch
+	return func() {
+		events = nil
+		close(ch)
+		<-done
+	}
+}
+
+// runBoard runs the terminal board with its plugin events queued.
+func runBoard(m tea.Model) error {
+	stop := queueEvents()
+	defer stop()
+	_, err := tea.NewProgram(m).Run()
+	return err
+}
+
 // firePlugins tells every plugin subscribed to event about t, after the write
 // has succeeded. stdin is what 'jaira show <id> --json' prints, plus who made
 // the change and the lane the ticket left (empty for every event but move).
@@ -118,7 +153,11 @@ func firePlugins(event string, s *ticket.Store, t *ticket.Ticket, from string, l
 	if err != nil {
 		return
 	}
-	plugin.Fire(ids, event, payload, plugin.Env{
-		Root: s.Root, Board: cmp.Or(t.Board, lane.DefaultBoardName), Version: release.Current,
-	})
+	env := plugin.Env{Root: s.Root, Board: cmp.Or(t.Board, lane.DefaultBoardName), Version: release.Current}
+	fire := func() { plugin.Fire(ids, event, payload, env) }
+	if events != nil {
+		events <- fire
+		return
+	}
+	fire()
 }

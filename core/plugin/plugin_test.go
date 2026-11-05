@@ -144,3 +144,29 @@ func TestFireStopsAHangingPlugin(t *testing.T) {
 		t.Fatal("the plugin after a hanging one did not run")
 	}
 }
+
+// On Windows the program is jaira-<id>.exe and nothing else; tested on every
+// system by naming the system.
+func TestProgramOnWindowsIsTheExe(t *testing.T) {
+	h := home(t)
+	dir := filepath.Join(h, "plugins", "jira")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	exe := filepath.Join(dir, "jaira-jira.exe")
+	if err := os.WriteFile(exe, []byte("MZ"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if got := program("jira", "windows"); got != exe {
+		t.Errorf("program(jira, windows) = %q, want %q", got, exe)
+	}
+	if got := program("jira", "linux"); got != "" {
+		t.Errorf("program(jira, linux) = %q; jaira-jira.exe is not the Linux program", got)
+	}
+	if err := os.Rename(exe, filepath.Join(dir, "jaira-jira")); err != nil {
+		t.Fatal(err)
+	}
+	if got := program("jira", "windows"); got != "" {
+		t.Errorf("program(jira, windows) = %q without the .exe", got)
+	}
+}
