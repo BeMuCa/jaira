@@ -321,6 +321,48 @@ func TestParseDiffTagsNewDeletedAndRenamedFiles(t *testing.T) {
 	}
 }
 
+// A file's header row takes the start of its first hunk, even when that start
+// is line 1; a later hunk of the same file must not overwrite it, and a new
+// file starts over.
+func TestHeaderLineIsTheFirstHunkOfEachFile(t *testing.T) {
+	patch := "diff --git a/x.go b/x.go\n--- a/x.go\n+++ b/x.go\n" +
+		"@@ -1,2 +1,2 @@\n a\n-b\n+c\n" +
+		"@@ -50,2 +51,2 @@\n d\n-e\n+f\n" +
+		"diff --git a/y.go b/y.go\n--- a/y.go\n+++ b/y.go\n" +
+		"@@ -7 +7 @@\n-g\n+h\n"
+	var headers []diffRow
+	for _, r := range parseDiff(patch) {
+		if r.kind == 'H' {
+			headers = append(headers, r)
+		}
+	}
+	if len(headers) != 2 {
+		t.Fatalf("got %d headers, want 2", len(headers))
+	}
+	if headers[0].line != 1 {
+		t.Errorf("first file header line = %d, want 1 (its first hunk starts at +1, not its second at +51)", headers[0].line)
+	}
+	if headers[1].line != 7 {
+		t.Errorf("second file header line = %d, want 7", headers[1].line)
+	}
+}
+
+// A commit git cannot show leaves no rows; the pane must say the diff is
+// unavailable, not that there are no changes.
+func TestUnshowableCommitIsDiffUnavailableNotNoChanges(t *testing.T) {
+	root := t.TempDir()
+	runGit(t, root, "init", "-q")
+	runGit(t, root, "commit", "-q", "--allow-empty", "-m", "base")
+	runGit(t, root, "branch", "-M", "master")
+	tk := waitingTicket("signoff")
+	tk.Commits = []string{"0123456789abcdef0123456789abcdef01234567"}
+
+	_, _, _, notice := ticketDiff(root, tk)
+	if notice.head != "Diff unavailable" || !notice.bad {
+		t.Errorf("notice = %+v, want the red Diff unavailable state", notice)
+	}
+}
+
 // spanText is the part of a row that the word highlight paints.
 func spanText(r diffRow) string {
 	rs := []rune(r.text)

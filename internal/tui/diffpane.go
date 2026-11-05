@@ -67,6 +67,7 @@ func parseDiff(patch string) []diffRow {
 		oldLine  int
 		newLine  int
 		inHunk   bool
+		seenHunk bool   // the file's first hunk has set its header line
 		skipping = true // true until a "diff --git" line starts a file
 	)
 	for _, raw := range strings.Split(patch, "\n") {
@@ -79,7 +80,7 @@ func parseDiff(patch string) []diffRow {
 			file++
 			header = len(rows)
 			rows = append(rows, diffRow{file: file, path: path, line: 1, kind: 'H'})
-			inHunk, skipping = false, false
+			inHunk, skipping, seenHunk = false, false, false
 			continue
 		}
 		if strings.HasPrefix(raw, "commit ") {
@@ -93,8 +94,9 @@ func parseDiff(patch string) []diffRow {
 			inHunk = true
 			oldLine = hunkStart(raw, "-")
 			newLine = hunkStart(raw, "+")
-			if rows[header].line == 1 {
+			if !seenHunk {
 				rows[header].line = max(newLine, 1)
+				seenHunk = true
 			}
 			rows = append(rows, diffRow{file: file, path: path, line: max(newLine, 1), kind: '@', text: raw})
 			continue
@@ -268,7 +270,14 @@ func ticketDiff(root string, t *ticket.Ticket) (rows []diffRow, note, dir string
 			"push a branch feat/" + handle + "-… to see it here",
 		}}
 	}
-	patch, _ := repo.Diff(shas)
+	patch, unavailable := repo.Diff(shas)
+	if len(unavailable) == len(shas) {
+		// Repo.Diff has no error return: a commit git cannot show comes back as
+		// a placeholder line the parser drops, so with none left it is not "no changes".
+		return nil, "", dir, paneNotice{head: "Diff unavailable", lines: []string{
+			"git cannot show the commits naming " + handle + " on this checkout: " + strings.Join(unavailable, " "),
+		}, bad: true}
+	}
 	note = "commits naming " + handle + " on this checkout"
 	rows = parseDiff(patch)
 	if len(rows) == 0 {
