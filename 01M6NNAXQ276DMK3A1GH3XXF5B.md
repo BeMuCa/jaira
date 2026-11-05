@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T10:51:07Z
-updated-at: 2026-11-05T10:57:09Z
+updated-at: 2026-11-05T10:57:13Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85123
 claimed-at: 2026-11-05T10:51:26Z
@@ -38,7 +38,8 @@ claimed-at: 2026-11-05T10:51:26Z
   proof: core/epic/epic.go Ticket.Via via covered(); TicketCard.svelte:54 'counted through <handle>'; tests TestCoveredWalksFollowsAndParent, TestWebCreatesMovesRemovesAndOpens (via), epic-card.test.ts 'a follow-up names the member'
 - [x] Ein archiviertes Ticket laesst sich im Web genauso aus dem Epic nehmen wie mit 'jaira epic rm', oder die Seite sagt warum nicht; Test
   proof: internal/cli/web_source.go load -> LoadAnywhere, same as resolveRef for 'jaira epic rm'; TestWebRemovesAFiledTicketFromAnEpic (404 before, 200 after)
-- [ ] Release-Note-Zeile in core/release/notes/<ID>.md
+- [x] Release-Note-Zeile in core/release/notes/<ID>.md
+  proof: core/release/notes/3XXF5B.md
 
 ## Options
 
