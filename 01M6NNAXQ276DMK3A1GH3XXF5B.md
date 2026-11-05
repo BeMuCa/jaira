@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T10:51:07Z
-updated-at: 2026-11-05T10:58:24Z
+updated-at: 2026-11-05T10:58:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85123
 claimed-at: 2026-11-05T10:51:26Z
@@ -40,7 +40,7 @@ round: 2
 - [x] Jede direkte Ticket-Karte in einem Epic hat einen Entfernen-Knopf, der DELETE /api/epics/{name}/tickets/{id} ruft; funktioniert per Tipp ohne Drag; Test
   proof: EpicList.svelte:79 onremove on every direct card -> ReviewPage removeFromEpic (DELETE /api/epics/{name}/tickets/{id}); button TicketCard.svelte:34 is a plain click/tap button; tests TestWebCreatesMovesRemovesAndOpens (DELETE 200 for a member, 409 for a follow-up). No Svelte component test runner in core/web/ui - the button itself is checked by hand.
 - [x] Eine indirekte Karte (via follows/parent) nennt das Ticket, ueber das sie mitgezaehlt wird, statt still nicht ziehbar zu sein; Test
-  proof: core/epic/epic.go Ticket.Via via covered(); TicketCard.svelte:54 'counted through <handle>'; tests TestCoveredWalksFollowsAndParent, TestWebCreatesMovesRemovesAndOpens (via), epic-card.test.ts 'a follow-up names the member'
+  proof: core/epic/epic.go Ticket.Via from covered(); TicketCard.svelte:54 'counted through <handle>'; tests TestCoveredWalksFollowsAndParent (via two steps down), TestWebCreatesMovesRemovesAndOpens (via in /api/epics), handle.test.ts
 - [x] Ein archiviertes Ticket laesst sich im Web genauso aus dem Epic nehmen wie mit 'jaira epic rm', oder die Seite sagt warum nicht; Test
   proof: internal/cli/web_source.go load -> LoadAnywhere, same as resolveRef for 'jaira epic rm'; TestWebRemovesAFiledTicketFromAnEpic (404 before, 200 after)
 - [x] Release-Note-Zeile in core/release/notes/<ID>.md
