@@ -1,7 +1,7 @@
 ---
 id: 01M6EYADS6Z2KGYE03T8Q9F9W4
 title: "Der Installer erkennt den Coding-Agenten und legt die Rollen dort ab, wo er sie liest"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "install.sh und install.ps1 erkennen, welche Agenten auf dem Rechner sind, und jaira roles install kennt neben claude und copilot auch codex, cursor, gemini-cli, opencode, pi und hermes mit ihren Pfaden; ohne erkannten Agenten wird nichts ins Home geschrieben und ein Satz sagt, wie man es nachholt."
@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T18:07:10Z
+updated-at: 2026-11-05T18:07:13Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
@@ -32,7 +32,7 @@ review-summary: |-
   docs/AGENTS.md:290-295 (pass-1 finding 1, half done): the table and the generic skip rule are in, the claude+codex double-listing limit from core/role/target.go:47-50 is not, and the new paragraph now claims the skip prevents every role registering twice; add one sentence after it: with both claude and codex installed, cursor and opencode read ~/.claude/skills and ~/.agents/skills and list each role twice (known limit)
   pass-1 finding 2 (target.go:39 names both installers) and finding 3 (no-agent sentence without the JAIRA_AGENT guard in install.sh and install.ps1) are fixed in a69f5abdf; closed
   left alone, as pass 1 did: detection in the scripts (pre-process note 17:59 point 4); copilot dirs (driver note 17:55 a); install.ps1 unrun and opencode Windows path (in-progress note 18:03)
-round: 2
+round: 3
 ---
 
 # Der Installer erkennt den Coding-Agenten und legt die Rollen dort ab, wo er sie liest
