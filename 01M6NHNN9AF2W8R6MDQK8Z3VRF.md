@@ -20,7 +20,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T21:56:33Z
+updated-at: 2026-11-05T21:56:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
@@ -34,6 +34,8 @@ review-gaps: |-
   note: jaira set board=<x> kann den Status in die erste Lane des neuen Boards setzen (internal/cli/tickets.go:1170); das feuert nur 'set', nicht 'move', und der Payload wird mit den Lanes des alten Boards gebaut
   note: kein Test fuer Windows (.exe-Suffix in plugin.Program) - nur auf Linux gelaufen
 test-verdict: "pass: go test ./... -race after go clean -testcache RC=0; DoD 1-7 proofs opened and their tests run; built binary on a scratch board: 'echo hello | jaira demo pull --board ops \"two words\"' passed args, stdin, JAIRA_ROOT/BOARD=ops/VERSION=0.9.9 and exit 6; 'jaira list' stayed built-in; create/set/claim/move each reached the plugin with in_event=1, from_lane backlog on move, external demo:X-1; a plugin exiting 1 failed no command. TUI moves not driven by hand - covered by TestMovedHearsEveryWrittenMove, all three TUI sites call move.Move"
+review-verdict: "Diff erfuellt alle 7 DoD-Punkte; keine Defekte gefunden. go test fuer core/plugin, internal/cli, core/move, core/merge, core/ticket gruen; Handtest mit Fake-Plugin bestaetigt Argumente, Env, Exit-Code 7 und create-Event-Payload."
+review-round: 2
 ---
 
 # jaira <id> startet ein installiertes Plugin
