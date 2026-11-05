@@ -1,0 +1,3 @@
+- In `jaira web`, take a ticket out of an epic with the Remove button on its card — a tap is enough, so it works on a phone where dragging does not.
+- In `jaira web`, read a dashed card's "counted through XXXXXX" to see which member brings a follow-up into the epic; take that member out to remove both.
+- Remove logbook and archived tickets from an epic in `jaira web` too: the page no longer answers "not found" where `jaira epic rm` succeeds.
