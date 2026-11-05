@@ -1,7 +1,7 @@
 ---
 id: 01M6NHMX3XGC9RBPA29NR6X6FH
 title: "Plugins: Entscheidung und Standard stehen in docs/PLUGINS.md"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:46:40Z
-updated-at: 2026-11-05T10:07:59Z
+updated-at: 2026-11-05T10:08:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-21000
 claimed-at: 2026-11-05T09:47:52Z
@@ -37,7 +37,7 @@ outcome-what: docs/PLUGINS.md schreibt den Plugin-Standard und die Entscheidung 
 outcome-why: "Wer ein Plugin schreiben will, braucht einen Ort mit Aufruf, Umgebung, Schreibweg, external, Geheimnissen, Exit-Codes, Manifest und Katalogweg - bisher stand das nur in der Teamlead-Sitzung"
 outcome-resolves: Alle drei DoD-Punkte; jaira selbst startet noch keine Plugins (spaeteres Ticket)
 review-summary: "Zwei Commits, nur Doku: docs/PLUGINS.md legt den Plugin-Standard fest (Aufruf jaira <id> -> ~/.jaira/plugins/<id>/jaira-<id>, Umgebung JAIRA_ROOT/JAIRA_BOARD/JAIRA_VERSION, Schreiben nur ueber die CLI, external als '<id>:<key>', Geheimnisse in ~/.jaira/secrets.json (wartet auf 3Q92JY), Exit-Codes wie jaira, Manifest jaira-plugin.json + 'manifest --json', Releases per goreleaser, Weg in den Katalog per Fork+PR) und haelt die Entscheidung vom 05.11.2026 samt Absagen (Go-plugin, Jira eingebaut) fest. docs/schema/ bringt JSON-Schemas (Draft 2020-12) fuer das Manifest und einen plugins.json-Eintrag. jaira selbst aendert sich nicht."
-round: 2
+round: 3
 review-gaps: |-
   note: jaira show --json und jaira list --json geben das Feld external nicht aus - ein Plugin, das wie empfohlen ueber die Lesebefehle liest, findet seinen Schluessel (jira:PROJ-123) nicht und muss doch das Markdown parsen; entweder die JSON-Ausgabe ergaenzt external im Dispatch-Ticket, oder der Abschnitt Writing nennt das
   note: core/merge/merge_test.go fuehrt external als YAML-Block (provider/key), PLUGINS.md als String '<id>:<key>' - der Merge behandelt beides opak, aber der Test zeigt eine Form, die der Standard nicht mehr vorsieht
