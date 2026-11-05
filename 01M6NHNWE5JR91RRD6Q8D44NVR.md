@@ -19,7 +19,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T12:13:58Z
+updated-at: 2026-11-05T12:14:57Z
 updated-by: Alexander Sacharov
 question: ""
 outcome-what: "panda-bobr/jaira-releases: README auf main, per PR #1 plugins.json ([]), schema/ (Kopien aus R6X6FH), CONTRIBUTING.md, .github/scripts/check_catalog.py mit 23 Unit-Tests und Workflow check-catalog (pull_request_target, nur plugins.json-PRs, Kommentar mit allen Problemen). Fixture-Repos panda-bobr/jaira-plugin-ci-fixture (Release ohne checksums.txt) und -norelease. Test-PR #2 zeigt die Ablehnung."
@@ -48,7 +48,8 @@ review-check: "1. https://github.com/panda-bobr/jaira-releases oeffnen - auf mai
   proof: panda-bobr/jaira-releases main 44d293d (Merge PR #1): plugins.json, README.md, CONTRIBUTING.md; check-catalog push run success on 44d293d
 - [x] Die Action lehnt einen PR mit doppelter id, fehlendem Release oder fehlender Pruefsumme ab; in einem Test-PR gezeigt
   proof: panda-bobr/jaira-releases PR #2 (draft test PR): check-catalog run 42024115800 failed; bot comment issuecomment-6657527419 lists duplicate id ci-fixture, no release v0.0.1 (ci-fixture-norelease), no checksums.txt (ci-fixture); unit tests .github/scripts/test_check_catalog.py (23)
-- [ ] Ein PR, der repo oder author eines schon gelisteten id aendert, wird abgelehnt, wenn der Autor nicht beide repos besitzt; Test
+- [x] Ein PR, der repo oder author eines schon gelisteten id aendert, wird abgelehnt, wenn der Autor nicht beide repos besitzt; Test
+  proof: jaira-releases fix/d44nvr-errors 52c090e: .github/scripts/check_catalog.py check_takeover; tests test_takeover_of_a_listed_id_is_refused, test_takeover_with_foreign_old_repo_is_refused, test_owner_of_both_repos_may_move_the_entry, test_description_change_needs_no_old_owner_check (29 OK)
 - [ ] Die Unit-Tests der Katalogpruefung laufen in jedem PR, der .github/** aendert; im PR fix/d44nvr-errors gezeigt
 
 ## Options
