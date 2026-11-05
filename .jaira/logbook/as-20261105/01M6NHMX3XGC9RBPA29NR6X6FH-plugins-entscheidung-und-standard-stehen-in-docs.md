@@ -1,7 +1,7 @@
 ---
 id: 01M6NHMX3XGC9RBPA29NR6X6FH
 title: "Plugins: Entscheidung und Standard stehen in docs/PLUGINS.md"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -27,28 +27,30 @@ tags:
   - docs
 blocked-by: []
 related: []
-commits: []
+commits:
+  - e08bffa3a2abd61adc2ecfd3ed676d67a54e97fa
+  - b30e2bfaf15c04bf778ed689a226ebfa006635d7
+  - d2c9d9e11ec8d89bb1fa675e5dab6be4bc8d6351
+  - dc2781305c958d023dfa799f59fcba8758b56be8
 created-at: 2026-11-05T09:46:40Z
-updated-at: 2026-11-05T10:10:45Z
+updated-at: 2026-11-05T10:23:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-21000
 claimed-at: 2026-11-05T09:47:52Z
 outcome-what: "docs/PLUGINS.md: Plugin-Standard samt Entscheidung vom 05.11.2026, dazu Events (jaira-<id> event <name>) und Web (Seiten unter /plugins/<id>/, api CGI-artig); docs/schema/ mit Schemas fuer jaira-plugin.json (inkl. events, web) und einen plugins.json-Eintrag"
 outcome-why: "Wer ein Plugin schreiben will, braucht einen Ort mit allen drei Kanaelen (Befehl, Event, Web), Schreibweg, external, Geheimnissen, Exit-Codes, Manifest und Katalogweg - bisher stand das nur in der Teamlead-Sitzung"
 outcome-resolves: Alle vier DoD-Punkte; jaira selbst startet noch keine Plugins (8Z3VRF und Folgetickets im Epic plugins)
-review-summary: |-
-  docs/PLUGINS.md Events: a plugin that calls jaira set/note from its event handler fires the next event - an endless loop with two plugins; say that jaira passes JAIRA_IN_EVENT=1 and writes made with it set fire no events
-  docs/PLUGINS.md Web: 'pages or an api' - but the manifest has no way to declare an api without pages; say the capability web is what lets jaira web forward /plugins/<id>/api/*
-  docs/PLUGINS.md Web: a file under web/api/ collides with the forwarded path; say api/ is reserved and never served as a file
+review-summary: "Nur Doku, kein Code: neue docs/PLUGINS.md legt den Plugin-Standard fest (eigenes Programm jaira-<id> im Repo des Autors, Aufruf 'jaira <id> args' nach ~/.jaira/plugins/<id>/, Umgebung JAIRA_ROOT/BOARD/VERSION, Schreiben nur ueber die CLI, Feld external als '<id>:<key>', Geheimnisse in ~/.jaira/secrets.json ab 3Q92JY, Exit-Codes wie jaira, Events create/move/claim/set mit 5 s Timeout und JAIRA_IN_EVENT gegen Schleifen, Web-Seiten unter /plugins/<id>/ und CGI-artige api, Manifest, Releases, Weg in den Katalog per Fork+PR) samt Begruendung (kein Go-plugin, kein eingebautes Jira). Dazu zwei JSON-Schemas (Draft 2020-12) fuer jaira-plugin.json und einen plugins.json-Eintrag. Die Verweise auf den Code stimmen: FieldExternal und opaker Merge (core/merge/merge.go:153), Hook-Timeout 5 s und JAIRA_ROOT (core/hook/hook.go:24,64), settings.json mit 0644 (core/settings/settings.go:340), Exit-Code-Tabelle aus docs/COMMANDS.md."
 round: 4
 review-gaps: |-
-  note: jaira show --json und jaira list --json geben das Feld external nicht aus - ein Plugin, das wie empfohlen ueber die Lesebefehle liest, findet seinen Schluessel (jira:PROJ-123) nicht und muss doch das Markdown parsen; entweder die JSON-Ausgabe ergaenzt external im Dispatch-Ticket, oder der Abschnitt Writing nennt das
-  note: core/merge/merge_test.go fuehrt external als YAML-Block (provider/key), PLUGINS.md als String '<id>:<key>' - der Merge behandelt beides opak, aber der Test zeigt eine Form, die der Standard nicht mehr vorsieht
-  note: Exit-Code 5 heisst in PLUGINS.md 'not found - ticket, issue or key', in COMMANDS.md 'no such ticket, or an ambiguous id prefix' - fuer Plugins sinnvoll erweitert, aber nicht wortgleich mit dem behaupteten gleichen Vertrag
-test-verdict: "pass: go build ./... und go test ./... gruen (RC=0); DoD 1-3 im Baum geprueft (Abschnitte in docs/PLUGINS.md, beide Schemas Draft-2020-12-gueltig, Doku-Beispiele validieren, Bad_ID abgelehnt); 'jaira set <id> external=jira:PROJ-1' auf Scratch-Board ausgefuehrt, Feld steht im Frontmatter"
-review-verdict: "Alle drei DoD-Punkte erfuellt: PLUGINS.md deckt Aufruf, Umgebung, Schreibweg, external, Geheimnisse, Exit-Codes, Manifest, Katalogweg und die Go-plugin-Absage ab; beide Schemas liegen im Repo. Geprueft: jaira set external=jira:PROJ-123 und note --json funktionieren wie beschrieben, JAIRA_ROOT gibt es fuer Hooks, external wird beim Merge opak behandelt. Kein Blocker; der wichtigste Hinweis ist, dass external in der JSON-Lesesicht fehlt."
-review-round: 2
-review-check: "1. less docs/PLUGINS.md - Abschnitte Invocation, Environment, Writing, The external field, Secrets, Exit codes, The manifest, Releases, Into the catalogue sind da  2. uvx check-jsonschema --check-metaschema docs/schema/jaira-plugin.schema.json docs/schema/plugins-entry.schema.json - beide 'ok'  3. Manifest-Beispiel aus PLUGINS.md in /tmp/m.json kopieren, dann uvx check-jsonschema --schemafile docs/schema/jaira-plugin.schema.json /tmp/m.json - 'ok'  4. in einem Testboard: jaira set <id> external=jira:PROJ-123, dann grep external .jaira/tickets/*.md - zeigt external: \"jira:PROJ-123\""
+  note: core/merge/merge_test.go:140 nutzt external als YAML-Block (provider/key), die Doku legt einen String '<id>:<key>' fest - der opake Merge traegt beides, aber Test und Standard zeigen zwei Formen
+  note: nichts verlinkt docs/PLUGINS.md (README, docs/AGENTS.md, docs/COMMANDS.md) - wer das Dokument nicht kennt, findet es nicht; docs/AGENTS.md:8 sagt weiter 'no plugin API'
+  note: Events nennen nur die CLI-Befehle; ob ein move aus der TUI oder aus jaira web ebenfalls ein Event ausloest, sagt die Doku nicht - das muss 8Z3VRF festlegen
+  note: Events laufen nacheinander mit je 5 s; bei mehreren haengenden Plugins wartet ein jaira move entsprechend - von critique bewusst an 8Z3VRF uebergeben
+test-verdict: "pass: go test ./... RC=0; DoD 1-4 im Baum geprueft; beide Schemas Draft-2020-12-gueltig, alle JSON-Beispiele der Doku (Manifest, events-, web-Fragment, Katalogeintrag) validieren; abgelehnt werden id Bad_ID, events [delete], page path ../x und /x"
+review-verdict: "Der Diff erfuellt alle vier DoD-Punkte; beide Schemas sind gueltiges JSON, die Code-Verweise in der Doku stimmen; kein Blocker. Keine Release-Note noetig - reine Doku, im Binary nicht sichtbar."
+review-round: 4
+review-check: "1. docs/PLUGINS.md auf GitHub im Branch feat/r6x6fh oeffnen  2. Abschnitte pruefen: Invocation, Environment, Writing, The external field, Secrets, Events, Web, Exit codes, The manifest, Releases, Into the catalogue - alle vorhanden  3. 'Why plugins' lesen: Begruendung gegen Go-plugin und gegen eingebautes Jira steht da  4. uv run --with jsonschema python -c \"import json,jsonschema;[jsonschema.Draft202012Validator.check_schema(json.load(open(f))) for f in ['docs/schema/jaira-plugin.schema.json','docs/schema/plugins-entry.schema.json']];print('ok')\"  5. Erwartet: 'ok' ohne Traceback"
 ---
 
 # Plugins: Entscheidung und Standard stehen in docs/PLUGINS.md
@@ -83,3 +85,6 @@ review-check: "1. less docs/PLUGINS.md - Abschnitte Invocation, Environment, Wri
 - **2026-11-05 10:08 · Alexander Sacharov** — Alex (05.11.2026), zweiter Zusatz: ein Plugin kann jaira web um eigene Seiten erweitern (z.B. Jira-Integration anders dargestellt). Vertrag fuer docs/PLUGINS.md, Abschnitt 'Web': Manifest-Feld 'web': {pages: [{path, title}]}; die Dateien liegen im Release-Asset unter web/ und landen in ~/.jaira/plugins/<id>/web/; jaira web liefert sie unter /plugins/<id>/ aus und zeigt jede page als Tab/Link. Daten: die Seite liest jaira webs bestehende JSON-API; fuer eigene Daten leitet jaira web /plugins/<id>/api/<pfad> CGI-artig weiter an 'jaira-<id> web <METHOD> /<pfad>' (Body auf stdin, Antwort JSON auf stdout, Status per Exit-Code/Feld) - kein dauerhaft laufender Plugin-Prozess, kein eigener Port. Neue capability 'web'. Warum kein eigener Server des Plugins: Ports, Lebensdauer und Windows-Prozesse waeren jaira webs Problem. Code dafuer kommt in ein eigenes Ticket im Epic plugins.
 - **2026-11-05 10:09 · Alexander Sacharov** — Runde 2, selbst entschieden (Vertrag aus den Notes von 10:07/10:08 sonst 1:1): (1) Event-stdin = show-JSON-Objekt mit zwei zusaetzlichen Top-Level-Keys actor und from_lane (from_lane leer ausser bei move). (2) Plugins werden nacheinander, in id-Reihenfolge, aufgerufen; stdout/stderr des Plugins verworfen wie bei core/hook. (3) Web-API: Query-String in JAIRA_QUERY, Body auf stdin, JSON auf stdout; HTTP-Status aus dem Exit-Code (0->200, 2->400, 3->403, 5->404, sonst 500) - kein Statusfeld, ein Weg reicht. (4) web/-Dateien kommen als eigenes Release-Asset jaira-<id>_web.tar.gz (die Binaries sind nackte Dateien, kein Archiv). (5) Events brauchen keine eigene capability; neue capability nur 'web'. (6) plugins-entry.schema.json bleibt unveraendert: der Katalog nennt nur das Repo, events/web stehen im Manifest.
 - **2026-11-05 10:10 · Alexander Sacharov** — critique Runde 3 (nach Events/Web): Event-Schleife ueber eigene Schreibbefehle -> JAIRA_IN_EVENT=1, Schreiben damit loest keine Events aus (selbst entschieden, sonst kann ein Plugin sich selbst endlos triggern); api ohne pages nicht deklarierbar -> capability web schaltet die Weiterleitung frei; web/api/ als Datei reserviert.
+- **2026-11-05 10:10 · Alexander Sacharov** — critique Runde 4: nichts mehr. Stehen gelassen: Events in id-Reihenfolge nacheinander (bei 5 s je Plugin kann ein Befehl mit vielen Plugins warten - Parallelisierung entscheidet 8Z3VRF).
+- **2026-11-05 10:13 · Alexander Sacharov** — Teamlead (05.11.2026): Review-Hinweise fuer 8Z3VRF mitnehmen, wenn es startet - (a) AGENTS.md:8 sagt noch 'no plugin API', README/AGENTS.md auf docs/PLUGINS.md verweisen; (b) festlegen, ob move aus TUI und jaira web Events ausloest (Erwartung: ja, jede Schreiboperation); (c) external in show/list --json; (d) merge_test nutzt external noch als YAML-Block.
+- **2026-11-05 10:23 · Alexander Sacharov** — Abgenommen von Alex im Chat mit dem Teamlead am 05.11.2026 ('Принимай через форс'); der Teamlead fuehrt den Move auf sein Wort aus.
