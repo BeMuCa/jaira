@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T21:32:27Z
-updated-at: 2026-11-05T21:46:17Z
+updated-at: 2026-11-05T21:46:21Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54459
 claimed-at: 2026-11-05T21:33:03Z
@@ -61,3 +61,4 @@ test-verdict: "fail: TestEveryInstalledFileIsAShippedVersion - shipped.sha256 la
 - **2026-11-05 21:41 · Alexander Sacharov** — critique: DELIVERY_DOORS in filter.ts duplicates the matcher literal in register.tsx (the only caller of rewriteRow). Fix: drop the constant and the door check in rewriteRow, the matcher is the only door gate.
 - **2026-11-05 21:42 · Alexander Sacharov** — critique round 2: nothing left - the doors now live only in the matcher literal (register.tsx:1184), rewriteRow no longer checks them.
 - **2026-11-05 21:44 · Alexander Sacharov** — testing: go test ./... rc=1, core/role TestEveryInstalledFileIsAShippedVersion: core/shipped/shipped.sha256 lacks 85cf6274... filter.ts and 364f06f7... register.tsx. Fix: append the two lines the test prints (append rather than rerunning the script, so the file only grows).
+- **2026-11-05 21:46 · Alexander Sacharov** — critique round 3 (after testing): the only change is two appended lines in core/shipped/shipped.sha256, the way the test asks for it - nothing to say. optimize: none.
