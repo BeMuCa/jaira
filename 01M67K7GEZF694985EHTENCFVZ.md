@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-05T09:39:33Z
+updated-at: 2026-11-05T09:39:35Z
 updated-by: berkc
 claimed-by: berk-ca-1989860
 claimed-at: 2026-11-05T09:31:17Z
@@ -27,6 +27,7 @@ outcome-resolves: "DoD 2: core/lane/lane.go parse, lane_test.go TestSkillLaneNee
 review-summary: "none"
 round: 3
 review-gaps: "none — optimize pass 2: the four pass-1 items landed in 5b1bf715 (laneRun field copies gone, filepath.IsLocal for script, dead first!=\"\" guard dropped, one receipt value in jaira receipt). Rest of the diff re-checked: no duplicate helper (CurrentRound, fieldValue, dash, Doc().Scalar reused), nothing orphaned, vet and gofmt clean. Left as before: the near-identical side-effect paragraph in three shipped role skills, FindSkill vs InstalledIn, HasReceipt vs fieldValue, pre-existing inside-dir check in core/selfupdate/install.go:110."
+test-verdict: "pass: touched packages green (RC=0, three hangers skipped in internal/cli), DoD 1-9 verified in the tree, receipt gate and show payload exercised on a scratch board"
 ---
 
 # Neue Lane-Arten: eine Lane, die nur einen Skill startet, und Automations-Lanes (Artefakte, E-Mail, API-Aufrufe, Telegram senden/empfangen, Video-Upload)
