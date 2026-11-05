@@ -1,7 +1,7 @@
 ---
 id: 01M6PT17GQYE8YY5CZ4FQEPS3M
 title: "jaira-cockpit: session.append wird seit Claude Code 2.1.318 nicht mehr erreicht"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,10 +21,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T21:32:27Z
-updated-at: 2026-11-05T21:41:13Z
+updated-at: 2026-11-05T21:41:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54459
 claimed-at: 2026-11-05T21:33:03Z
+outcome-what: "session.append hook of jaira-cockpit now matches only door prompt|delivery; release note; test for the delivery and attachment doors"
+outcome-why: "the built-in cc-plugin-sec-default in 2.1.318 passes person plugins over on attachment/hook-context/compaction rows, and a hook without a matcher reported itself as skipped there"
+outcome-resolves: "the 'session.append hook was skipped' notice; dead clicks and scroll trace to the fullscreen renderer Claude Code turned off on this machine, not to the mod"
 ---
 
 # jaira-cockpit: session.append wird seit Claude Code 2.1.318 nicht mehr erreicht
