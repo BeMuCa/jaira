@@ -20,7 +20,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T21:45:25Z
+updated-at: 2026-11-05T21:50:14Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
@@ -30,13 +30,20 @@ claimed-at: 2026-11-05T21:39:09Z
 
 ## Definition of Done
 
-- [ ] Unbekannter Unterbefehl startet ~/.jaira/plugins/<id>/jaira-<id> mit Argumenten, Umgebung und Exit-Code; Test
-- [ ] Ein eingebauter Befehl gleichen Namens gewinnt; Test
-- [ ] Release-Note-Zeile in core/release/notes/<ID>.md
-- [ ] Events: create, move, claim und set aus der CLI und Moves aus der TUI rufen jedes abonnierte Plugin als 'jaira-<id> event <name>' auf (stdin = show --json + actor + from_lane, 5 s Timeout, Fehler aendert nichts, JAIRA_IN_EVENT=1 unterdrueckt Events); Test
-- [ ] Feld external erscheint in show --json und list --json; Test
-- [ ] merge_test deckt ein Ticket ab, dessen Frontmatter external als YAML-Block traegt
-- [ ] docs/AGENTS.md:8 ('no plugin API') und docs/PLUGINS.md (Status, external-Satz) beschreiben den neuen Stand und verlinken docs/PLUGINS.md
+- [x] Unbekannter Unterbefehl startet ~/.jaira/plugins/<id>/jaira-<id> mit Argumenten, Umgebung und Exit-Code; Test
+  proof: internal/cli/plugin.go:runPlugin, core/plugin/plugin.go:Run; Tests TestUnknownCommandStartsTheInstalledPlugin, TestRunPassesArgumentsEnvironmentAndExitCode, TestProgramIsOnlyAnInstalledPlugin
+- [x] Ein eingebauter Befehl gleichen Namens gewinnt; Test
+  proof: internal/cli/plugin.go:isBuiltin; Test TestBuiltinCommandWinsOverAPluginOfTheSameName (list, help, completion)
+- [x] Release-Note-Zeile in core/release/notes/<ID>.md
+  proof: core/release/notes/8Z3VRF.md
+- [x] Events: create, move, claim und set aus der CLI und Moves aus der TUI rufen jedes abonnierte Plugin als 'jaira-<id> event <name>' auf (stdin = show --json + actor + from_lane, 5 s Timeout, Fehler aendert nichts, JAIRA_IN_EVENT=1 unterdrueckt Events); Test
+  proof: core/move/move.go:Moved (CLI+TUI), internal/cli/plugin.go:firePlugins, core/plugin/plugin.go:Fire; Tests TestWritesFireThePluginsEvents, TestAFailingPluginDoesNotFailTheCommand, TestMovedHearsEveryWrittenMove, TestFireHandsThePluginTheEvent, TestFireInsideAnEventCallsNoPlugin, TestFireStopsAHangingPlugin
+- [x] Feld external erscheint in show --json und list --json; Test
+  proof: internal/cli/tickets.go:ticketJSON 'external', core/ticket/schema.go:External; Test TestExternalIsInShowAndListJSON
+- [x] merge_test deckt ein Ticket ab, dessen Frontmatter external als YAML-Block traegt
+  proof: core/merge/merge_test.go:TestMergeExternalChangedOnOneSideWins; Fix core/merge/merge.go:mergeOpaque + core/ticket/frontmatter.go:Entry/SetEntry
+- [x] docs/AGENTS.md:8 ('no plugin API') und docs/PLUGINS.md (Status, external-Satz) beschreiben den neuen Stand und verlinken docs/PLUGINS.md
+  proof: docs/AGENTS.md:8, docs/PLUGINS.md: Status, Writing (external in JSON), Events (Abo aus jaira-plugin.json, TUI-Moves)
 
 ## Options
 
@@ -50,9 +57,9 @@ claimed-at: 2026-11-05T21:39:09Z
 - [-] core/ticketjson: ticketJSON samt checklistJSON/rejectionJSON/nextLaneID aus internal/cli/tickets.go herausziehen, damit die TUI denselben Payload bauen kann; external ergaenzen
 - [x] core/plugin: Dir (JAIRA_HOME), Lookup(id), Env(root, board, version), Run (stdio, Exit-Code), Subscribers(event) aus jaira-plugin.json, Fire (stdin JSON, 5 s, JAIRA_IN_EVENT)
 - [x] cli.Execute: ist os.Args[1] ein Befehl, den cobra nicht kennt, und ein installiertes Plugin -> plugin.Run
-- [ ] Events: firePlugins neben fireHook in create, claim, set, move; TUI-Moves (model.go x2, signoff.go) ueber einen Callback aus cli
-- [ ] Tests: Dispatch (Args, Env, Exit-Code, stdin), eingebauter Befehl gewinnt, Events (vier Namen, Timeout, Fehler, JAIRA_IN_EVENT), external in show/list JSON, merge external-Block
-- [ ] Doku: docs/AGENTS.md:8, docs/PLUGINS.md Status + external-Satz; Release-Note core/release/notes/8Z3VRF.md
+- [x] Events: firePlugins neben fireHook in create, claim, set, move; TUI-Moves (model.go x2, signoff.go) ueber einen Callback aus cli
+- [x] Tests: Dispatch (Args, Env, Exit-Code, stdin), eingebauter Befehl gewinnt, Events (vier Namen, Timeout, Fehler, JAIRA_IN_EVENT), external in show/list JSON, merge external-Block
+- [x] Doku: docs/AGENTS.md:8, docs/PLUGINS.md Status + external-Satz; Release-Note core/release/notes/8Z3VRF.md
 
 ## Progress
 - **2026-11-05 21:39 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/47752.sock
