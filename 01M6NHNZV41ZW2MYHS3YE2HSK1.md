@@ -18,7 +18,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T17:05:47Z
+updated-at: 2026-11-05T17:05:50Z
 updated-by: Alexander Sacharov
 blocked-reason: "DoD 2 wartet auf die Katalog-CI aus D44NVR (panda-bobr/jaira-releases, noch nicht auf main)"
 outcome-what: "panda-bobr/jaira-plugin-template@fc5d7e1: Go-Plugin jaira-hello (greet liest jaira list --json und schreibt jaira note; manifest --json aus eingebettetem jaira-plugin.json; Exit 3 bei zu altem JAIRA_VERSION), Tests inkl. Manifest-Regeln, goreleaser (6 Binaries, checksums.txt, jaira-plugin.json), Actions test und release-auf-Tag mit Tag==version-Pruefung, README mit drei Schritten bis Katalog-PR. Demo panda-bobr/jaira-hello-demo v0.1.0; Katalog-PR panda-bobr/jaira-releases#4."
@@ -36,6 +36,8 @@ review-gaps: |-
 test-verdict: "pass - template main 66de84a: test-Workflow Run 42070699388 success (go vet + go test); Demo jaira-hello-demo v0.1.0 Release-Run 42011801567 success, 6 Binaries + checksums.txt, sha256sum -c alle OK; Katalog-PR jaira-releases#4 check-catalog Run 42026722958 pass. Lokal gegen dieses Board: greet exit 0, unbekannte id exit 5, zu altes JAIRA_VERSION exit 3."
 claimed-by: DESKTOP-RFTCH11-9733
 claimed-at: 2026-11-05T17:04:34Z
+review-verdict: "Beide DoD-Punkte sind mit oeffentlichen Belegen erfuellt; kein Blocker. Offen nur Notes: checksums.txt ohne jaira-plugin.json, id-Erwaehnungen im README, und ob PR #4 gemergt wird."
+review-round: 2
 ---
 
 # panda-bobr/jaira-plugin-template: lauffaehige Vorlage mit Beispielbefehl und Release-Pipeline
