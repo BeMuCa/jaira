@@ -1,7 +1,7 @@
 ---
 id: 01M67C14G4X5KS5RF7Z32C2TFC
 title: "Die Karte zeigt in der Zustandszeile nur den DoD-Stand, und das Band um bearbeitete Karten ist eine duenne Linie statt eines dicken Balkens"
-status: critique
+status: testing
 ready: true
 creator: berkc
 assignee: berkc
@@ -21,7 +21,7 @@ related:
   - 01M58G2DJP5P0634Z4FSC8V6DQ
 commits: []
 created-at: 2026-10-30T21:39:07Z
-updated-at: 2026-11-05T09:55:37Z
+updated-at: 2026-11-05T09:58:15Z
 updated-by: berkc
 claimed-by: berk-ca-1964007
 claimed-at: 2026-11-05T09:28:43Z
@@ -30,7 +30,7 @@ outcome-why: "a band painted as a full-width background read as a thick block on
 outcome-resolves: "the thick band and the two unnecessary card flags from the 30.10 request; DoD 1-3 ticked with proof; testing fail: the ▔ over spaces between title words made TestStrongerLineWinsWhereLinesOverlap fail (branch 2-5/15, master 0/15), now 30/30 ok; go test ./internal/tui -count=1 exit 0"
 review-summary: "none"
 round: 3
-review-gaps: "snakeEdge: single-case switch folded into an if (snake.go). Considered and left: paintCells' topAt/cell closure is the one place that draws the top edge, no duplicate elsewhere; it re-cuts a cell per column on the top row only of worked cards (~30 cells) - not a hot path; snakeParams now has snakeEdge as its only non-test caller, kept because tests read it; styAsks/RequiresQuestion still used (lanefocus.go, pipeline.go, detailBody); lanefocus.go keeps '▲ asks' on purpose (09:30 note). Pre-existing flake, not this ticket: TestStrongerLineWinsWhereLinesOverlap (linklines_test.go:297) fails ~2-4/8 runs on a445b28e with or without this edit. Stale outcome-what ('overline on the top row') is in-progress's field, not changed here."
+review-gaps: "pass 2 (after 9813918a): dropped paintCells' own blank-cell check (ansi.Cut per top-row cell) - its one caller's topAt already marks only blank cells (inset col 0 is renderCard's leading space, cells at/after titleEnd are padding); hoisted the twice-computed padDisplay(line, inner) in renderCardBlock. Pass 1: snakeEdge switch->if. Left: paintCells/paintRow are the existing paint path, no duplicate elsewhere; nothing orphaned (snakeParams still used by snakeEdge; ansi import still used); detail-row and help changes have nothing to fold."
 test-verdict: "fail: TestStrongerLineWinsWhereLinesOverlap fails intermittently on this branch (2/15 and 5/15 runs), the band's top-row blank-cell rule draws ▔ over the spaces inside the title"
 ---
 
@@ -74,3 +74,5 @@ test-verdict: "fail: TestStrongerLineWinsWhereLinesOverlap fails intermittently 
 - **2026-11-05 09:49 · berkc** — worker: TestStrongerLineWinsWhereLinesOverlap is NOT pre-existing flakiness - master 9980a092 fails it 0/15, this branch 2/15 (go test -run ... -count=15). Cause: paintCells' topAt (snake.go) draws ▔ in every top-row snake cell whose stripped content is a space, which includes the spaces BETWEEN words of the title - when the band passes, 'Decide on' renders as 'Decide▔on' and the text changes. Fix: ▔ only on the inset cell (content column 0) and on the padding after the title's last non-space character; spaces inside the title keep their space. Test: a title with spaces under the band keeps its text.
 - **2026-11-05 09:52 · berkc** — testing: gates: go test ./internal/tui -count=1 exit 0 (23.8s); go test ./internal/tui -run 'Snake|Band|Line|Card|Detail|Help|Asks|Waiting' -count=10 exit 0 - but the same tree fails TestStrongerLineWinsWhereLinesOverlap intermittently: 'go test ./internal/tui -run TestStrongerLineWinsWhereLinesOverlap -count=15 -v' gave FAIL 2/15 and FAIL 5/15 in two runs, verbatim: 'linklines_test.go:297: "Decide o" is not on screen'. Cause (matches your 09:49 note): snake.go:205 paintCells topAt returns true for every top-row snake cell whose content is ' ', including the spaces between title words, so 'Decide on' is drawn 'Decide▔on' under the band. Fix: ▔ only on content column 0 and on the padding after the title's last non-space character; spaces inside the title keep their space; add a test with a title containing spaces under the band that asserts the text survives. DoD proofs 1-3 and the ref-only row (TestTheDetailSaysAReadOnlyTicketIsPulledFirst) exist in the tree. Not done: the tmux function check - the gate failed first. outcome-what still says 'overline on the top row' (stale since a445b28e); fix it in in-progress.
 - **2026-11-05 09:55 · berkc** — testing fix: the ▔ on blank top-row cells now skips spaces between title words (view.go renderCardBlock topAt: column 0 or at/after the title's last word). TestTheBandIsALineOnTheEdge codified the old rule (every blank top cell is ▔), so its want now uses the same rule. New TestTheBandKeepsATitleWithSpacesWhole fails on the old rule. tui full package ok; TestStrongerLineWinsWhereLinesOverlap -count=30 ok. Release note line 1 still true (thin line), no new line. Still open: the tmux capture (plan item 7).
+- **2026-11-05 09:56 · berkc** — critique (pass 3): read only what changed since pass 2 (09:46, no findings): 9ade8e2d (snakeEdge switch->if, optimize) and 9813918a (testing fix: topAt in renderCardBlock view.go:678 marks only column 0 and cells at/after the title's last non-space, so spaces between title words stay spaces; paintCells still requires a blank cell). Decision stays in the caller that knows the title, paintCells unchanged in shape - fits. Pass-2 leftover 'outcome-what stale' is closed: outcome-what now describes the ▔ edge. No finding; review-summary=none. tmux capture (plan item 7) stays testing's.
+- **2026-11-05 09:58 · berkc** — optimize (pass 2): removed paintCells' redundant blank check - renderCardBlock's topAt is the single caller and marks only col 0 (always ' ' from renderCard's ' '+title) and cells past the title's last word; hoisted padDisplay. Behaviour-neutral: go test ./internal/tui -count=1 ok, TestStrongerLineWinsWhereLinesOverlap -count=20 ok.

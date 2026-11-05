@@ -673,14 +673,15 @@ func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected, alt bool) str
 				rightBar, rightSGR = "▕", rightParams+";"+edge
 			}
 			b.WriteString(paintRow(leftSGR, leftBar))
+			padded := padDisplay(line, inner)
 			var topAt func(int) bool
 			if i == 0 {
 				// The blank top cells are the inset and the padding after the
 				// title; a space between two words of the title stays a space.
-				titleEnd := ansi.StringWidth(strings.TrimRight(ansi.Strip(padDisplay(line, inner)), " "))
+				titleEnd := ansi.StringWidth(strings.TrimRight(ansi.Strip(padded), " "))
 				topAt = func(c int) bool { return row[c+1] && (c == 0 || c >= titleEnd) }
 			}
-			b.WriteString(paintCells(padDisplay(line, inner), inner, func(c int) string {
+			b.WriteString(paintCells(padded, inner, func(c int) string {
 				if row[c+1] {
 					return bgParams + ";" + edge
 				}

@@ -197,15 +197,13 @@ func (m *Model) snakeCells(id string, w, h int) map[int]map[int]bool {
 
 // paintCells fills a row of width cells, each in the SGR paramAt returns for it:
 // runs of one SGR are cut out of the styled row whole (ansi.Cut keeps the row's
-// own colours) and painted like any other row. A cell topAt marks that holds
-// only a space is drawn as ▔ instead: the terminal does not draw the overline
-// SGR 53, so the top edge of the band is a glyph. renderCardBlock marks only the
-// inset and the blank cells after the title's last word, so a space between two
-// words of the title stays a space and the title's text is kept. topAt is nil
-// off the top row.
+// own colours) and painted like any other row. A cell topAt marks is drawn as ▔
+// instead: the terminal does not draw the overline SGR 53, so the top edge of the
+// band is a glyph. topAt marks only blank cells (renderCardBlock says which), so
+// no text is lost; it is nil off the top row.
 func paintCells(line string, width int, paramAt func(int) string, topAt func(int) bool) string {
 	cell := func(a int) (string, bool) {
-		return paramAt(a), topAt != nil && topAt(a) && ansi.Strip(ansi.Cut(line, a, a+1)) == " "
+		return paramAt(a), topAt != nil && topAt(a)
 	}
 	var b strings.Builder
 	for a := 0; a < width; {
