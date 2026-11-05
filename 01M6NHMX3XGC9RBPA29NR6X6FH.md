@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:46:40Z
-updated-at: 2026-11-05T10:08:28Z
+updated-at: 2026-11-05T10:08:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-21000
 claimed-at: 2026-11-05T09:47:52Z
@@ -58,6 +58,7 @@ review-check: "1. less docs/PLUGINS.md - Abschnitte Invocation, Environment, Wri
   proof: docs/PLUGINS.md: 'Into the catalogue' (fork + PR to panda-bobr/jaira-releases) and 'Why plugins' (Not Go's plugin package)
 - [x] Ein JSON-Schema fuer jaira-plugin.json und fuer einen plugins.json-Eintrag liegt im Repo
   proof: docs/schema/jaira-plugin.schema.json, docs/schema/plugins-entry.schema.json - Draft 2020-12, doc examples validate (jsonschema check_schema + validate)
+- [ ] docs/PLUGINS.md beschreibt Events (Feld events, Aufruf, stdin, Timeout, Fehler) und Web (web.pages, /plugins/<id>/, api-Weiterleitung, capability web) sowie dass external in show/list --json fehlt (8Z3VRF); beide Schemas nachgezogen
 
 ## Options
 
