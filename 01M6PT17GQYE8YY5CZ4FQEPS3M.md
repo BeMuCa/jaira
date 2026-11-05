@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T21:32:27Z
-updated-at: 2026-11-05T21:47:54Z
+updated-at: 2026-11-05T21:50:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54459
 claimed-at: 2026-11-05T21:33:03Z
@@ -65,3 +65,4 @@ question: "DoD 3 (clicks/scroll) is not a mod bug: Claude Code 2.1.318 switched 
 - **2026-11-05 21:46 · Alexander Sacharov** — critique round 3 (after testing): the only change is two appended lines in core/shipped/shipped.sha256, the way the test asks for it - nothing to say. optimize: none.
 - **2026-11-05 21:47 · Alexander Sacharov** — testing: live run claude -p --plugin-dir (2.1.318): with master's register.tsx/filter.ts the debug log shows 'jaira-cockpit: session.append bypassed by cc-plugin-sec-default' and the skipped notice; with the branch there is neither, and session.append settles in 2.2ms. DoD 1 and 3 cannot be proven without a person.
 - **2026-11-05 21:47 · Alexander Sacharov** — question: DoD 3 (clicks/scroll) is not a mod bug: Claude Code 2.1.318 switched off fullscreen on this machine on 2026-11-04 after 3 failed starts (~/.claude.json fullscreenAutoDisabled). 1) (Recommended) Alex runs /tui fullscreen, then checks DoD 1+3 live in the cockpit (claude --plugin-dir <worktree>/core/mod/builtin/jaira-cockpit) - an agent ticks them on that word. 2) Remove DoD 3 from the ticket as not a code matter, check only DoD 1. 3) Something else.
+- **2026-11-05 21:50 · Alexander Sacharov** — Alex (via teamlead, 05.11.2026): the cockpit works on Windows - fullscreen was auto-disabled only on this WSL machine, DoD 3 is no mod bug. Answer to the question: option 1 - Alex runs /tui fullscreen here and checks DoD 1 and DoD 3 live with claude --plugin-dir <worktree>/core/mod/builtin/jaira-cockpit. The worker waits for his word, which the teamlead passes on; then tick DoD 1+3 and hand the ticket to a fresh review.
