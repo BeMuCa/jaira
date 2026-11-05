@@ -19,7 +19,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T10:29:22Z
+updated-at: 2026-11-05T10:33:03Z
 updated-by: Alexander Sacharov
 ---
 
@@ -52,3 +52,4 @@ updated-by: Alexander Sacharov
 - **2026-11-05 10:25 · Alexander Sacharov** — question (open, an Alex): 1) Wie kommt der Inhalt auf main des leeren Repos? (a, empfohlen) Worker pusht nur README als Start-Commit auf main, alles andere auf Branch feat/d44nvr, Alex oeffnet+merged den PR. (b) Worker pusht alles direkt auf main, ohne Review. 2) Test-PR fuer DoD 2: (a, empfohlen) Worker legt oeffentliches Fixture-Repo sashasoft90/jaira-plugin-ci-fixture an (Release v0.0.1 mit jaira-plugin.json, ohne checksums.txt), pusht Test-Branches, Alex oeffnet die Test-PRs mit gelieferten gh-Zeilen. (b) Wie a, aber Worker oeffnet die Test-PRs selbst (als Test markiert, danach geschlossen) - Ausnahme von 'Agents oeffnen keine PRs'. (c) Kein Fixture-Repo: Test-PR zeigt nur doppelte id und fehlendes Release; fehlende Pruefsumme nur im Unit-Test mit aufgezeichneten API-Antworten.
 - **2026-11-05 10:27 · Alexander Sacharov** — Alex (05.11.2026, via Teamlead): 1a - nur README als Start-Commit auf main von panda-bobr/jaira-releases, alles andere auf feat/d44nvr, Alex oeffnet und merged den PR. 2a - oeffentliches Fixture-Repo sashasoft90/jaira-plugin-ci-fixture (Release v0.0.1 ohne checksums.txt), Test-Branches pushen, Alex oeffnet die Test-PRs mit fertigen gh-Zeilen.
 - **2026-11-05 10:29 · Alexander Sacharov** — dead end: git push origin main nach panda-bobr/jaira-releases wurde vom Auto-Mode-Klassifikator dieser Sitzung verweigert. Nicht umgangen. Alles liegt lokal im Scratchpad-Clone (main: README-Commit eb57b38, Branch feat/d44nvr); ein neu gestarteter Worker findet den Clone nicht - Inhalt muss dann neu erzeugt oder Alex pusht. Push ist Alex' Entscheidung.
+- **2026-11-05 10:33 · Alexander Sacharov** — dead end: auch 'gh repo create sashasoft90/jaira-plugin-ci-fixture --public' vom Klassifikator verweigert ([Create Public Surface]). Nicht umgangen, nicht an den Teamlead weitergereicht (waere Permission-Laundering). Alles liegt lokal fertig in /tmp/claude-1000/-home-alex-projects--worktrees-jaira-d44nvr/e9c86c25-536c-4790-a6d8-3e163fb430b1/scratchpad: jaira-releases (main eb57b38 README; feat/d44nvr e4f71cd; test/d44nvr-catalog-check fe5c04b), fixtures/ (zwei Repos), publish-1-before-merge.sh und publish-2-after-merge.sh fuer Alex.
