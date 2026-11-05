@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:46:40Z
-updated-at: 2026-11-05T10:12:57Z
+updated-at: 2026-11-05T10:13:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-21000
 claimed-at: 2026-11-05T09:47:52Z
@@ -82,3 +82,4 @@ review-check: "1. docs/PLUGINS.md auf GitHub im Branch feat/r6x6fh oeffnen  2. A
 - **2026-11-05 10:09 · Alexander Sacharov** — Runde 2, selbst entschieden (Vertrag aus den Notes von 10:07/10:08 sonst 1:1): (1) Event-stdin = show-JSON-Objekt mit zwei zusaetzlichen Top-Level-Keys actor und from_lane (from_lane leer ausser bei move). (2) Plugins werden nacheinander, in id-Reihenfolge, aufgerufen; stdout/stderr des Plugins verworfen wie bei core/hook. (3) Web-API: Query-String in JAIRA_QUERY, Body auf stdin, JSON auf stdout; HTTP-Status aus dem Exit-Code (0->200, 2->400, 3->403, 5->404, sonst 500) - kein Statusfeld, ein Weg reicht. (4) web/-Dateien kommen als eigenes Release-Asset jaira-<id>_web.tar.gz (die Binaries sind nackte Dateien, kein Archiv). (5) Events brauchen keine eigene capability; neue capability nur 'web'. (6) plugins-entry.schema.json bleibt unveraendert: der Katalog nennt nur das Repo, events/web stehen im Manifest.
 - **2026-11-05 10:10 · Alexander Sacharov** — critique Runde 3 (nach Events/Web): Event-Schleife ueber eigene Schreibbefehle -> JAIRA_IN_EVENT=1, Schreiben damit loest keine Events aus (selbst entschieden, sonst kann ein Plugin sich selbst endlos triggern); api ohne pages nicht deklarierbar -> capability web schaltet die Weiterleitung frei; web/api/ als Datei reserviert.
 - **2026-11-05 10:10 · Alexander Sacharov** — critique Runde 4: nichts mehr. Stehen gelassen: Events in id-Reihenfolge nacheinander (bei 5 s je Plugin kann ein Befehl mit vielen Plugins warten - Parallelisierung entscheidet 8Z3VRF).
+- **2026-11-05 10:13 · Alexander Sacharov** — Teamlead (05.11.2026): Review-Hinweise fuer 8Z3VRF mitnehmen, wenn es startet - (a) AGENTS.md:8 sagt noch 'no plugin API', README/AGENTS.md auf docs/PLUGINS.md verweisen; (b) festlegen, ob move aus TUI und jaira web Events ausloest (Erwartung: ja, jede Schreiboperation); (c) external in show/list --json; (d) merge_test nutzt external noch als YAML-Block.
