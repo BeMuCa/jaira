@@ -1,0 +1,114 @@
+package cli
+
+import (
+	"cmp"
+	"encoding/json"
+	"fmt"
+	"os"
+	"strings"
+
+	"github.com/spf13/cobra"
+
+	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/move"
+	"github.com/BeMuCa/jaira/core/plugin"
+	"github.com/BeMuCa/jaira/core/release"
+	"github.com/BeMuCa/jaira/core/ticket"
+)
+
+// runPlugin starts the installed plugin args[0] names, when it names one and
+// jaira has no command of that name. ok is false when nothing was started and
+// the arguments belong to cobra — which then says "unknown command" exactly as
+// before, so a typo with no plugin behind it reads the same.
+//
+// jaira's own commands always win: a plugin can never cover one, whatever it
+// is called. Only the first argument is looked at; every argument after it is
+// the plugin's, --json and --board included.
+func runPlugin(root *cobra.Command, args []string) (code int, ok bool) {
+	if len(args) == 0 || isBuiltin(root, args[0]) {
+		return 0, false
+	}
+	prog := plugin.Program(args[0])
+	if prog == "" {
+		return 0, false
+	}
+	code, err := plugin.Run(prog, args[1:], pluginEnv(boardArg(args[1:])))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "jaira: plugin %s: %v\n", args[0], err)
+		return ExitError, true
+	}
+	return code, true
+}
+
+// isBuiltin reports whether name is one of jaira's commands or an alias of
+// one. help and completion are added by cobra only when it executes, so they
+// are added here first, or a plugin called "help" would take the word over.
+func isBuiltin(root *cobra.Command, name string) bool {
+	root.InitDefaultHelpCmd()
+	root.InitDefaultCompletionCmd()
+	for _, c := range root.Commands() {
+		if c.Name() == name || c.HasAlias(name) {
+			return true
+		}
+	}
+	return false
+}
+
+// boardArg is the value of a --board flag among a plugin's arguments, which
+// jaira reads without taking it away: the plugin gets every argument as typed.
+func boardArg(args []string) string {
+	for i, a := range args {
+		if a == "--" {
+			break
+		}
+		if v, found := strings.CutPrefix(a, "--board="); found {
+			return v
+		}
+		if a == "--board" && i+1 < len(args) {
+			return args[i+1]
+		}
+	}
+	return ""
+}
+
+// pluginEnv is the environment a plugin is started in. JAIRA_ROOT stays empty
+// outside a repository rather than refusing the call: a plugin's login or
+// setup command has no board to work on.
+func pluginEnv(board string) plugin.Env {
+	root := ""
+	if s, err := ticket.Discover(g.dir); err == nil {
+		root = s.Root
+	}
+	return plugin.Env{Root: root, Board: cmp.Or(board, lane.DefaultBoardName), Version: release.Current}
+}
+
+// A move is fired from core/move itself, so the TUI's moves reach a plugin
+// the same way the CLI's do.
+func init() {
+	move.Moved = func(s *ticket.Store, t *ticket.Ticket, from string, lanes *lane.Set) {
+		firePlugins("move", s, t, from, lanes)
+	}
+}
+
+// firePlugins tells every plugin subscribed to event about t, after the write
+// has succeeded. stdin is what 'jaira show <id> --json' prints, plus who made
+// the change and the lane the ticket left (empty for every event but move).
+// Nothing about it reaches the command: see plugin.Fire.
+func firePlugins(event string, s *ticket.Store, t *ticket.Ticket, from string, lanes *lane.Set) {
+	if t == nil || len(plugin.Subscribers(event)) == 0 {
+		return
+	}
+	j := ticketJSON(t, lanes)
+	j["body"] = t.Body
+	j["path"] = t.Path
+	j["filed_away"] = ""
+	j["actor"] = s.Actor
+	j["from_lane"] = from
+	payload, err := json.Marshal(j)
+	if err != nil {
+		return
+	}
+	plugin.Fire(event, payload, plugin.Env{
+		Root: s.Root, Board: cmp.Or(t.Board, lane.DefaultBoardName), Version: release.Current,
+	})
+}

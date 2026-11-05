@@ -4,10 +4,12 @@ A jaira plugin is a program of its own, written and released by its author in
 a repository of their own. jaira stores no plugin code. This document is the
 standard such a program follows, and the record of why it looks this way.
 
-**Status:** this is the standard, agreed on 2026-11-05. jaira does not start
-plugins yet — `jaira <id>` dispatch, install and the catalogue lookup are a
-later ticket. A plugin written to this document today is what that ticket
-will run.
+**Status:** this is the standard, agreed on 2026-11-05. jaira starts an
+installed plugin for `jaira <id>` and calls it on the events it subscribed
+to. `jaira plugin install`, the catalogue lookup and the plugin pages in
+`jaira web` are later tickets; until install exists, a plugin is installed by
+putting `jaira-<id>` and its `jaira-plugin.json` into
+`~/.jaira/plugins/<id>/` by hand.
 
 Templates and the catalogue:
 
@@ -102,9 +104,8 @@ Reading is free: `jaira show <id> --json`, `jaira list --json` and the other
 read commands are the stable way; parsing the markdown files directly works
 but follows the format wherever it goes.
 
-**Today `show --json` and `list --json` do not carry the `external` field.**
-A plugin that needs its key has to read it from the ticket file until ticket
-8Z3VRF adds it to the JSON output.
+`show --json` and `list --json` carry the `external` field, so a plugin reads
+its key without parsing the ticket file.
 
 ## The `external` field
 
@@ -149,7 +150,11 @@ A plugin subscribes in its manifest:
 "events": ["create", "move", "claim", "set"]
 ```
 
-The list is closed; these four are all there are.
+The list is closed; these four are all there are. jaira reads the
+subscription from the `jaira-plugin.json` beside the installed program —
+`~/.jaira/plugins/<id>/jaira-plugin.json` — and not by starting the plugin, so
+a write with no subscriber starts nothing. A plugin without that file, or whose
+file names another `id`, hears no event.
 
 | Event | After |
 |---|---|
@@ -158,7 +163,8 @@ The list is closed; these four are all there are.
 | `claim` | `jaira claim` took a ticket |
 | `set` | `jaira set` changed a ticket's fields |
 
-After the write has succeeded, jaira runs, for every subscribed plugin in
+After the write has succeeded — a move made on the board in the terminal as
+much as one made with `jaira move` — jaira runs, for every subscribed plugin in
 order of their ids:
 
 ```

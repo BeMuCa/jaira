@@ -374,6 +374,7 @@ already know it is yours; --assignee wins over it.`,
 			// file stays away until somebody pulls it into work. See
 			// fileOnRefOnly for why.
 			onRefOnly, why := fileOnRefOnly(t)
+			firePlugins("create", s, t, "", lanes)
 			targetLane, _ := lanes.Get(target)
 			skipped, emptyInputs := skippedByCreate(lanes, t, targetLane)
 			if g.jsonOut {
@@ -1208,6 +1209,7 @@ its end. Review fields keep their history across loop rounds that way.`,
 			if err != nil {
 				return err
 			}
+			firePlugins("set", s, t, "", env.Lanes)
 			if g.jsonOut {
 				j := ticketJSON(t, env.Lanes)
 				if landed != "" {
@@ -1670,6 +1672,7 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		"parent":             t.Parent,
 		"related":            t.Related,
 		"blocked_reason":     t.BlockedReason,
+		"external":           t.External,
 		"commits":            t.Commits,
 		"model_tier":         t.ModelTier,
 		"question":           t.Question,

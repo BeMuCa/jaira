@@ -99,6 +99,9 @@ func Execute(version string) int {
 	// might need it.
 	release.Current = version
 	root := newRoot(version)
+	if code, ok := runPlugin(root, os.Args[1:]); ok {
+		return code
+	}
 	err := root.Execute()
 	// After the command, not during it: sending happens once, and it happens
 	// even when the command failed, because a ticket that was written is a

@@ -162,6 +162,9 @@ another session is actively renewing is refused.`,
 				fmt.Fprintf(cmd.ErrOrStderr(), "jaira: warning: %v\n", err)
 			}
 			fireHook("claim", s, t)
+			if env, err := envFor(s, t); err == nil {
+				firePlugins("claim", s, t, "", env.Lanes)
+			}
 			if g.jsonOut {
 				out := map[string]any{
 					"claimed": true, "id": t.ID, "session": sessionID,

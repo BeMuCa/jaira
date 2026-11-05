@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 func lanes(t *testing.T) *lane.Set {
@@ -157,6 +158,63 @@ func TestMergePreservesUnknownBlockAndFormatting(t *testing.T) {
 	}
 	if !strings.Contains(got, "status: review") {
 		t.Error("status not merged")
+	}
+}
+
+// external belongs to a plugin and jaira never reads it, so the merge
+// compares it as written: a change on one side wins — a plugin that sets it on
+// one branch must not turn every merge into a conflict — and a change on both
+// is a conflict, whatever shape the value has.
+func TestMergeExternalChangedOnOneSideWins(t *testing.T) {
+	mk := func(external, updated string) string {
+		return "---\n" +
+			"id: 01TEST\n" +
+			"title: A ticket\n" +
+			"status: todo\n" +
+			external +
+			"goal: g\n" +
+			"updated-at: " + updated + "\n---\n\nbody\n"
+	}
+	block := func(key string) string { return "external:\n  provider: jira\n  key: " + key + "\n" }
+	for _, tc := range []struct {
+		name               string
+		base, ours, theirs string
+		want               string
+		conflict           bool
+	}{
+		{name: "block changed on their side", base: block("PROJ-1"), ours: block("PROJ-1"), theirs: block("PROJ-2"), want: block("PROJ-2")},
+		{name: "block changed on our side", base: block("PROJ-1"), ours: block("PROJ-2"), theirs: block("PROJ-1"), want: block("PROJ-2")},
+		{name: "block added on their side", base: "", ours: "", theirs: block("PROJ-3"), want: block("PROJ-3")},
+		{name: "scalar set on their side", base: "", ours: "", theirs: "external: jira:PROJ-4\n", want: "external: jira:PROJ-4\n"},
+		{name: "removed on their side", base: block("PROJ-1"), ours: block("PROJ-1"), theirs: "", want: ""},
+		{name: "changed on both sides", base: block("PROJ-1"), ours: block("PROJ-2"), theirs: block("PROJ-3"), conflict: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			r := mergeStr(t, mk(tc.base, "2026-08-11T10:00:00Z"),
+				mk(tc.ours, "2026-08-11T10:01:00Z"), mk(tc.theirs, "2026-08-11T10:02:00Z"))
+			if tc.conflict {
+				if r.Clean() {
+					t.Fatalf("both sides changed external and the merge was clean:\n%s", r.Merged)
+				}
+				return
+			}
+			if !r.Clean() {
+				t.Fatalf("unexpected conflicts: %v", r.Conflicts)
+			}
+			got := string(r.Merged)
+			if tc.want == "" {
+				if strings.Contains(got, "external:") {
+					t.Fatalf("external still there:\n%s", got)
+				}
+				return
+			}
+			if !strings.Contains(got, tc.want) {
+				t.Fatalf("want %q in\n%s", tc.want, got)
+			}
+			if _, err := ticket.ParseDoc(r.Merged); err != nil {
+				t.Fatalf("merged file does not parse: %v", err)
+			}
+		})
 	}
 }
 

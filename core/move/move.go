@@ -69,6 +69,13 @@ type Result struct {
 	SettleErr error
 }
 
+// Moved, when set, is called after every move that wrote: the CLI's, the
+// TUI's and any later caller's alike, so a plugin subscribed to moves hears
+// about each of them however it was made. from is the lane the ticket left.
+// It is set once at startup by the binary (internal/cli), which owns what a
+// plugin is told; a nil Moved calls nothing.
+var Moved func(s *ticket.Store, t *ticket.Ticket, from string, lanes *lane.Set)
+
 // Move performs one lane change: optional persisted staging, the gate, the
 // write, the settle — in that order, the same order every caller ran alone.
 func Move(s *ticket.Store, env gate.Env, id string, req Request) (*Result, error) {
@@ -115,6 +122,7 @@ func Move(s *ticket.Store, env gate.Env, id string, req Request) (*Result, error
 		return &Result{Ticket: t, Refused: vs}, nil
 	}
 
+	from := t.Status
 	t, err = s.Mutate(t.ID, func(t *ticket.Ticket) error {
 		if claiming {
 			if err := t.Doc().SetScalar(ticket.FieldAssignee, req.Actor); err != nil {
@@ -143,6 +151,9 @@ func Move(s *ticket.Store, env gate.Env, id string, req Request) (*Result, error
 	if l, ok := env.Lanes.Get(req.To); ok {
 		res.Holds = l.Holds
 		res.Trimmed, res.Filed, res.SettleErr = lane.Settle(s, l, req.Folder, t.ID, req.Prepare)
+	}
+	if Moved != nil {
+		Moved(s, t, from, env.Lanes)
 	}
 	return res, nil
 }
