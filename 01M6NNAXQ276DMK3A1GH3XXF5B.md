@@ -1,7 +1,7 @@
 ---
 id: 01M6NNAXQ276DMK3A1GH3XXF5B
 title: "jaira web: ein Ticket laesst sich per Knopf aus einem Epic nehmen, auch auf dem Handy"
-status: critique
+status: optimize
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T10:51:07Z
-updated-at: 2026-11-05T11:03:28Z
+updated-at: 2026-11-05T11:03:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85123
 claimed-at: 2026-11-05T10:51:26Z
