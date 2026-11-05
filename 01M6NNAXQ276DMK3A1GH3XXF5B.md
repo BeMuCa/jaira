@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T10:51:07Z
-updated-at: 2026-11-05T11:05:41Z
+updated-at: 2026-11-05T11:05:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85123
 claimed-at: 2026-11-05T10:51:26Z
@@ -72,3 +72,4 @@ test-verdict: "pass: go build rc=0, go test -count=1 ./... rc=0, -race on core/e
 - **2026-11-05 11:02 · Alexander Sacharov** — testing round 1: gates green - go build ./... rc=0, go test -race -count=1 core/epic core/web internal/cli rc=0, go test -count=1 ./... rc=0 (33 ok), npm test rc=0. DoD 1-4 verified in tree. Function on a scratch board (bare remote, jaira web --no-open): /api/epics gives the follow-up via=<member id>, members via empty; DELETE member 200, DELETE logbook member 200, DELETE follow-up 409 'counts through follows or parent'; epic show afterwards 0 of 0. Finding: internal/cli/web.go:36-42 help text says 'drag ... back to the left to take it out' and 'a ticket that counts only because it follows a member ... cannot be dragged' - add that every member card has a Remove button (a tap, works on a phone, filed tickets too) and that a follow-up's card names the member that brings it in.
 - **2026-11-05 11:03 · Alexander Sacharov** — in-progress round 3: web --help (internal/cli/web.go) now names the Remove button, filed tickets and the follow-up's member line; internal/cli tests rc=0.
 - **2026-11-05 11:03 · Alexander Sacharov** — critique round 3: read only f370fa68 (help text answering the testing finding) - says what the page does, no new shape. Nothing.
+- **2026-11-05 11:05 · Alexander Sacharov** — testing round 2: help-text finding fixed (f370fa68, seen in the rebuilt binary's web --help). EpicList rendered with svelte/server through vite ssrLoadModule (DOMPurify stubbed, script kept in the scratchpad): aria-label 'Take MEMBER out of Demo' and 'Take LOGGED out of Demo', follow-up shows 'counted through MEMBER (follows/parent)' and no button. A real tap on a phone was not exercised - for the review-check.
