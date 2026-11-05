@@ -20,7 +20,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T21:45:22Z
+updated-at: 2026-11-05T21:45:25Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
@@ -49,7 +49,7 @@ claimed-at: 2026-11-05T21:39:09Z
 
 - [-] core/ticketjson: ticketJSON samt checklistJSON/rejectionJSON/nextLaneID aus internal/cli/tickets.go herausziehen, damit die TUI denselben Payload bauen kann; external ergaenzen
 - [x] core/plugin: Dir (JAIRA_HOME), Lookup(id), Env(root, board, version), Run (stdio, Exit-Code), Subscribers(event) aus jaira-plugin.json, Fire (stdin JSON, 5 s, JAIRA_IN_EVENT)
-- [ ] cli.Execute: ist os.Args[1] ein Befehl, den cobra nicht kennt, und ein installiertes Plugin -> plugin.Run
+- [x] cli.Execute: ist os.Args[1] ein Befehl, den cobra nicht kennt, und ein installiertes Plugin -> plugin.Run
 - [ ] Events: firePlugins neben fireHook in create, claim, set, move; TUI-Moves (model.go x2, signoff.go) ueber einen Callback aus cli
 - [ ] Tests: Dispatch (Args, Env, Exit-Code, stdin), eingebauter Befehl gewinnt, Events (vier Namen, Timeout, Fehler, JAIRA_IN_EVENT), external in show/list JSON, merge external-Block
 - [ ] Doku: docs/AGENTS.md:8, docs/PLUGINS.md Status + external-Satz; Release-Note core/release/notes/8Z3VRF.md
