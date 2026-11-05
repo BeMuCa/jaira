@@ -1180,8 +1180,7 @@ export const register: Register = (on, options) => {
   // (cc-plugin-sec-default, outermost in Team and Enterprise organisations)
   // passes every person's plugin over on attachment, hook-context and
   // compaction rows, and a hook on those names the cockpit as skipped. A
-  // literal, so the engine reads the doors off the source: filter.ts's
-  // DELIVERY_DOORS, which rewriteRow keeps to as well.
+  // literal, so the engine reads the doors off the source.
   on('session.append', { door: ['prompt', 'delivery'] }, ($, e, next) => next(rewriteRow(e, shortened))).catch(($, e, next) => next(e))
 
   on('turn.complete', async ($, e, next) => {

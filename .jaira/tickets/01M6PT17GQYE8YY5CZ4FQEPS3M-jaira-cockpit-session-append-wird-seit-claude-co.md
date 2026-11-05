@@ -21,13 +21,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T21:32:27Z
-updated-at: 2026-11-05T21:41:27Z
+updated-at: 2026-11-05T21:42:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54459
 claimed-at: 2026-11-05T21:33:03Z
 outcome-what: "session.append hook of jaira-cockpit now matches only door prompt|delivery; release note; test for the delivery and attachment doors"
 outcome-why: "the built-in cc-plugin-sec-default in 2.1.318 passes person plugins over on attachment/hook-context/compaction rows, and a hook without a matcher reported itself as skipped there"
 outcome-resolves: "the 'session.append hook was skipped' notice; dead clicks and scroll trace to the fullscreen renderer Claude Code turned off on this machine, not to the mod"
+review-summary: "core/mod/builtin/jaira-cockpit/hooks/filter.ts:81 DELIVERY_DOORS repeats the doors that the matcher at register.tsx:1185 already writes as a literal; rewriteRow's only caller is that hook. Drop the constant and rewriteRow's door check, so the matcher is the one place the doors live"
+round: 2
 ---
 
 # jaira-cockpit: session.append wird seit Claude Code 2.1.318 nicht mehr erreicht
@@ -36,7 +38,7 @@ outcome-resolves: "the 'session.append hook was skipped' notice; dead clicks and
 
 - [~] Eine Peer-Meldung erscheint in Claude Code 2.1.318 wieder gekuerzt mit anklickbarer Zeile
 - [x] Kein Hinweis 'session.append hook was skipped' mehr fuer jaira-cockpit
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1185 (matcher door prompt|delivery; claude plugin validate: session.append{door=prompt|delivery})
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1184 (matcher door prompt|delivery; claude plugin validate: session.append{door=prompt|delivery})
 - [ ] Die Knoepfe im Cockpit-Panel ([ Overview ], [ N waiting for ... ]) reagieren in 2.1.318 wieder auf Klick, und das Panel scrollt nicht von selbst
 
 ## Options
@@ -54,3 +56,4 @@ outcome-resolves: "the 'session.append hook was skipped' notice; dead clicks and
 - **2026-11-05 21:38 · Alexander Sacharov** — Ursache session.append-Hinweis: cc-plugin-sec-default (eingebaut in 2.1.318, sitzt bei Team/Enterprise ganz aussen, Tier prepend) ruft next.to an den user-Plugins vorbei fuer session.append{door=attachment|hook-context|compaction} (PASSED_OVER_DOORS im Binary). Absicht: Prompt-Inhalt ausser Reichweite persoenlicher Plugins. Unser Hook (register.tsx:1179) hat keinen Matcher, haengt also auch an diesen Tueren -> Hinweis. rewriteRow (filter.ts:80) wirkt aber nur auf door prompt|delivery, die sec-default nicht ueberspringt. Fix: Matcher { door: ['prompt','delivery'] } am Hook. Kein Prioritaets-Hebel fuer user-Plugins: next.to ueberspringt nie eine Tier mit mehr Autoritaet, user kann nicht vor prepend.
 - **2026-11-05 21:38 · Alexander Sacharov** — Ursache DoD 3 (Klicks tot, Scroll springt): Claude Code hat am 2026-11-04 21:41 den Fullscreen-Renderer auf diesem Rechner abgeschaltet, nach 3 fehlgeschlagenen Starts: ~/.claude.json fullscreenAutoDisabled {version 2.1.318, strikes 3}. Der klassische Renderer hat keine Mausklicks. Kein Fehler der Mod: claude plugin test . laeuft auf 2.1.318 mit 175/175 gruen, inkl. Press-Tests. Abhilfe liegt bei Alex: /tui fullscreen oder CLAUDE_CODE_NO_FLICKER=1 (laut Meldung im Binary). Gilt nur fuer 2.1.318; die naechste Version setzt es zurueck.
 - **2026-11-05 21:41 · Alexander Sacharov** — Code fertig: Matcher als Literal { door: ['prompt','delivery'] } in register.tsx - mit einer Konstante zeigt claude plugin validate door=?, die Engine liest den Matcher aus dem Quelltext. Test 'a shortened message is rewritten on the delivery door too, and an attachment row is left alone' (176/176 gruen). DoD 1 braucht noch den Live-Test in 2.1.318 (claude --plugin-dir ...): ob eine Peer-Meldung, die waehrend eines laufenden Zuges ankommt, ueber door attachment kommt - die kann seit 2.1.318 KEIN Personen-Plugin mehr umschreiben (sec-default-Politik), session.receive kuerzt sie dann trotzdem, wenn es feuert. tsc meldet einen alten Fehler register.tsx:381 (null nicht void), nicht aus dieser Aenderung.
+- **2026-11-05 21:41 · Alexander Sacharov** — critique: DELIVERY_DOORS in filter.ts duplicates the matcher literal in register.tsx (the only caller of rewriteRow). Fix: drop the constant and the door check in rewriteRow, the matcher is the only door gate.
