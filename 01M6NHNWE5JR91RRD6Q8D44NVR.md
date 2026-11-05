@@ -19,7 +19,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T10:39:37Z
+updated-at: 2026-11-05T11:44:18Z
 updated-by: Alexander Sacharov
 question: "Pushes nach GitHub sind dieser Sitzung verweigert. 1) (empfohlen) Alex fuehrt publish-1-before-merge.sh aus, merged den PR, dann publish-2-after-merge.sh und oeffnet den Test-PR. 2) Alex erlaubt dem Worker git push/gh repo create per Permission-Regel. Zwei Fixture-Repos statt einem - ok?"
 ---
@@ -28,7 +28,8 @@ question: "Pushes nach GitHub sind dieser Sitzung verweigert. 1) (empfohlen) Ale
 
 ## Definition of Done
 
-- [ ] plugins.json, README und CONTRIBUTING.md liegen auf main von panda-bobr/jaira-releases
+- [x] plugins.json, README und CONTRIBUTING.md liegen auf main von panda-bobr/jaira-releases
+  proof: panda-bobr/jaira-releases main 44d293d (Merge PR #1): plugins.json, README.md, CONTRIBUTING.md; check-catalog push run success on 44d293d
 - [ ] Die Action lehnt einen PR mit doppelter id, fehlendem Release oder fehlender Pruefsumme ab; in einem Test-PR gezeigt
 
 ## Options
