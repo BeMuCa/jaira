@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-05T09:42:31Z
+updated-at: 2026-11-05T09:42:34Z
 updated-by: berkc
 claimed-by: berk-ca-2068644
 claimed-at: 2026-11-05T09:41:19Z
@@ -29,7 +29,9 @@ outcome-why: "Review sent back two blockers: a header line taken from the second
 outcome-resolves: "review 2026-11-05 09:31: diffpane.go:96 header line (blocker 1) and diffpane.go:271 fallback notice (blocker 2)"
 review-summary: "On a ticket in human or signoff, a wide TUI detail view shows the ticket's diff on the right: the feat/<handle> branch against the base's merge-base (.jaira excluded), or, when no branch exists, the commits that name the handle. Files get a header bar, hunk headers, an old/new number gutter, full-width +/- tint and word highlight; ] and [ jump between files, o opens the file at the row's line in VS Code and confirms in the title. 68dc5cf8 fixes the two blockers from the last review: parseDiff now sets a file header's line from its first @@ (seenHunk flag, reset at every diff --git), so a first hunk at +1 is no longer replaced by the second hunk's start. ticketDiff shows the red 'Diff unavailable' notice with the shas when git can show none of the fallback commits, not 'No changes'."
 round: 7
-review-gaps: "none (68dc5cf8): seenHunk is the only correct signal now that line 1 is a real first-hunk start — 'header == len(rows)-1' would also work (non-hunk lines before the first @@ only mutate the header row) but trades an explicit flag for an implicit invariant, so kept; the all-unavailable check reuses Repo.Diff's existing second return (core/gitrepo/git.go:103) rather than a new probe, flow.go:635 uses the same return for its own report, no duplicate; its comment says why (no error return), not what; both new tests guard the two fixed behaviours. Nothing dead, no fluff, no hot-path cost."
+review-gaps: |-
+  note: if only some fallback commits cannot be shown, they are still dropped without a word (diffpane.go:273 only checks the all-unshowable case). Critique accepted this as out of scope; listed so the person sees it
+  note: TestUnshowableCommitIsDiffUnavailableNotNoChanges covers one missing sha only; the mixed case has no test
 test-verdict: "pass: scoped suites green (go test ./core/gitrepo ./internal/tui RC=0; ./internal/cli -run Create|Follows|Branch RC=0), DoD 1-6 proof names all exist in the tree, the two named tests PASS verbosely; full suite not run (scoped by orchestrator), behaviour in tmux taken from the worker's check on build 68dc5cf8"
 review-verdict: "Sent back: the redesign delivers spec rules 1-10 and is well built, but two small defects - the file header's 'o' target jumps to the second hunk when the first starts at line 1 (diffpane.go:96), and a git error on the fallback diff path is shown as 'No changes' instead of an error (diffpane.go:271, DoD 5). go test ./core/gitrepo ./internal/tui green, gofmt and vet clean. Both fixes are a few lines."
 review-round: 6
