@@ -19,7 +19,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T12:06:15Z
+updated-at: 2026-11-05T12:06:18Z
 updated-by: Alexander Sacharov
 question: "Pushes nach GitHub sind dieser Sitzung verweigert. 1) (empfohlen) Alex fuehrt publish-1-before-merge.sh aus, merged den PR, dann publish-2-after-merge.sh und oeffnet den Test-PR. 2) Alex erlaubt dem Worker git push/gh repo create per Permission-Regel. Zwei Fixture-Repos statt einem - ok?"
 outcome-what: "panda-bobr/jaira-releases: README auf main, per PR #1 plugins.json ([]), schema/ (Kopien aus R6X6FH), CONTRIBUTING.md, .github/scripts/check_catalog.py mit 23 Unit-Tests und Workflow check-catalog (pull_request_target, nur plugins.json-PRs, Kommentar mit allen Problemen). Fixture-Repos panda-bobr/jaira-plugin-ci-fixture (Release ohne checksums.txt) und -norelease. Test-PR #2 zeigt die Ablehnung."
@@ -68,3 +68,4 @@ review-summary: |-
 - **2026-11-05 10:39 · Alexander Sacharov** — Trockenlauf mit den echten Fixture-Repos (nach publish-1): Pruefung meldet doppelte id, fehlendes Release (norelease), fehlendes checksums.txt (ci-fixture) und die Mitgliedschaft. Gefunden: eine doppelte id wurde zweimal gegen GitHub geprueft und doppelt gemeldet -> Commit 6840b4f auf feat/d44nvr prueft je id nur einmal (+Test, 23 gruen). 6840b4f ist LOKAL und muss vor dem Merge noch nach feat/d44nvr gepusht werden; test-Branch darauf rebased.
 - **2026-11-05 10:39 · Alexander Sacharov** — PR https://github.com/panda-bobr/jaira-releases/pull/1 offen (feat/d44nvr bei 6840b4f), auf Alex' Anweisung vom Teamlead geoeffnet; Merge macht Alex, danach publish-2 und Test-PR.
 - **2026-11-05 11:44 · Alexander Sacharov** — publish-2 umgebaut: kein Force-Push mehr. Worker hat test/d44nvr-catalog-check lokal auf origin/main 44d293d rebased (Diff = nur plugins.json); der Branch war nie gepusht, also reicht 'git push origin test/d44nvr-catalog-check'. Die Ablehnung im Teamlead lag am -f.
+- **2026-11-05 12:06 · Alexander Sacharov** — critique (Runde 1): 2 Funde - (1) Nicht-404-HTTP-Fehler ergeben leeren Bot-Kommentar: fangen und als Problem melden, Kommentar-Schritt an report.md binden; (2) event/manifest aus JAIRA_COMMANDS streichen. Bewusst stehen gelassen: Schema-Kopien statt Abruf aus jaira (Notiz 'decision (worker, settled)' zu schema/), Python statt Go (separates Repo, kein Code aus jaira wiederverwendbar). Fix geht als neuer Branch fix/d44nvr-errors in jaira-releases und braucht wieder einen PR von Alex.
