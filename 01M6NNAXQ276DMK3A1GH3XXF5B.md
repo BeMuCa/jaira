@@ -1,7 +1,7 @@
 ---
 id: 01M6NNAXQ276DMK3A1GH3XXF5B
 title: "jaira web: ein Ticket laesst sich per Knopf aus einem Epic nehmen, auch auf dem Handy"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T10:51:07Z
-updated-at: 2026-11-05T10:57:59Z
+updated-at: 2026-11-05T10:58:03Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85123
 claimed-at: 2026-11-05T10:51:26Z
@@ -30,6 +30,7 @@ outcome-what: "Epic cards in jaira web get a Remove button (tap, no drag); follo
 outcome-why: "Removing only worked by HTML5 drag, which phones lack; dashed cards gave no hint which line to remove; logbook/archive tickets answered 404 in the web while the CLI removed them."
 outcome-resolves: "Taking any ticket out of an epic in jaira web, on a phone too, without falling back to 'jaira epic rm'."
 review-summary: "core/web/ui/src/entities/ticket/model/epic-card.ts: epicCardExit/EpicCardExit is an abstraction with one caller that restates ticket.direct (its via half is unused - TicketCard reads ticket.via itself); drop it, let EpicList.svelte key draggable/onremove on ticket.direct as before, and keep only handleOf in entities/ticket/model/handle.ts (+ its test), unexported from index.ts since only TicketCard uses it"
+round: 2
 ---
 
 # jaira web: ein Ticket laesst sich per Knopf aus einem Epic nehmen, auch auf dem Handy
