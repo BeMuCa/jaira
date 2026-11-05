@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T18:02:58Z
+updated-at: 2026-11-05T18:03:00Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
@@ -56,7 +56,7 @@ claimed-at: 2026-11-05T17:54:30Z
 - [x] gofmt -l, go vet ./..., go build ./... (no go test in this lane)
 - [x] scripts/install.sh: agent list in table order with its home folder (~/.claude, ~/.codex, ~/.pi, ~/.copilot, ~/.cursor, ~/.gemini, ~/.config/opencode, ~/.hermes); detect by folder; JAIRA_AGENT=a,b overrides (known names in table order, unknown named and skipped); JAIRA_NO_ROLES=1 first
 - [x] install.sh: per agent run 'jaira roles install --agent X --global', print its summary or 'already reads' line; failure is non-fatal with the retry line; cockpit/~/.claude lines only for claude; none found -> nothing into HOME, one sentence: jaira works without an agent (e.g. jaira web), add roles later with 'jaira roles install --agent <name> --global'
-- [ ] update install.sh header comment; check with sh -n and dash -n; run it with HOME=throwaway dir: no agent folders, fake ~/.codex, JAIRA_AGENT=claude,bogus, JAIRA_NO_ROLES=1
+- [x] update install.sh header comment; check with sh -n and dash -n; run it with HOME=throwaway dir: no agent folders, fake ~/.codex, JAIRA_AGENT=claude,bogus, JAIRA_NO_ROLES=1
 - [ ] scripts/install.ps1: same detection, order, JAIRA_AGENT, messages, under $env:USERPROFILE; header comment; no exit (irm|iex); pwsh not available here, so note it is unrun
 - [ ] README ## Install: replace the ~/.claude/skills sentence with detection by home folder, JAIRA_AGENT override, JAIRA_NO_ROLES, and the no-agent case (jaira web, roles later)
 - [ ] core/release/notes/Q9F9W4.md: one-line instructions: new --agent names; installer detects agents and JAIRA_AGENT; no agent -> nothing in home; jaira update --roles now also refreshes roles in the new agents' dirs
