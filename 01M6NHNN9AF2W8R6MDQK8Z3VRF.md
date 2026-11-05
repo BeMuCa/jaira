@@ -20,7 +20,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T21:41:16Z
+updated-at: 2026-11-05T21:41:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
@@ -49,3 +49,4 @@ claimed-at: 2026-11-05T21:39:09Z
 
 ## Progress
 - **2026-11-05 21:39 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/47752.sock
+- **2026-11-05 21:41 · Alexander Sacharov** — Vom Teamlead (47752) am 05.11. nachgereicht, in dieses Ticket gefaltet: AGENTS.md, Events auch aus TUI/web, external in JSON, merge_test external-Block, Install soll Manifest gegen checksums.txt pruefen. Branch ist auf upstream/master eebf52b0 (PR #124, docs/PLUGINS.md) vorgespult.
