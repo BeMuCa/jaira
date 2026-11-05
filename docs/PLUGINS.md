@@ -176,6 +176,11 @@ jaira-<id> event <name>
   plugin that exits non-zero, times out or is missing changes nothing about
   the command's own result or exit code. Its stdout and stderr are discarded,
   as a hook's are, so they never mix into JSON an agent is parsing.
+- **Writes from inside an event fire no events.** jaira runs the plugin with
+  `JAIRA_IN_EVENT=1`, and a `jaira create`, `move`, `claim` or `set` that sees
+  it set writes as usual but calls no plugin. Without that, a plugin that
+  answers a `set` with a `set` — or two plugins answering each other — never
+  stop.
 - **A plugin that cannot reach its target buffers by itself** — jaira does not
   retry and does not queue. The next event, or a `jaira <id>` command, is the
   plugin's chance to send what it missed.
@@ -207,6 +212,8 @@ The manifest names them:
   `title`. `path` is relative to `web/`.
 - A page reads the board through `jaira web`'s existing JSON API (`/api/...`),
   the same one jaira's own page uses.
+- `api/` under `/plugins/<id>/` is reserved for the forwarding below; a file
+  at `web/api/...` is never served.
 
 ### Its own data
 
@@ -228,7 +235,9 @@ server of its own and opens no port: ports, process lifetime and how Windows
 handles background processes would all become `jaira web`'s problem, for
 every plugin.
 
-A plugin with pages or an `api` declares the capability `web`.
+The capability `web` is what switches this on: `jaira web` serves pages and
+forwards `/plugins/<id>/api/*` only for a plugin that declares it. A plugin
+with an `api` and no pages declares `web` and leaves the `web` field out.
 
 ## Exit codes
 
