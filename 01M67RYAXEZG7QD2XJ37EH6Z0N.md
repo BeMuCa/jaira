@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-05T09:36:45Z
+updated-at: 2026-11-05T09:37:07Z
 updated-by: berkc
 claimed-by: berk-ca-2028334
 claimed-at: 2026-11-05T09:36:45Z
@@ -29,11 +29,7 @@ outcome-why: "Review sent back two blockers: a header line taken from the second
 outcome-resolves: "review 2026-11-05 09:31: diffpane.go:96 header line (blocker 1) and diffpane.go:271 fallback notice (blocker 2)"
 review-summary: "none"
 round: 7
-review-gaps: |-
-  blocker: internal/tui/diffpane.go:96 the header row keeps line==1 as 'not set yet', so a file whose first hunk starts at line 1 takes the SECOND hunk's start: parseDiff of hunks '@@ -1,2 +1,3 @@' and '@@ -50,2 +51,2 @@' gives the H row line 51 (probed), and 'o' on that header opens line 51 instead of 1 - set the header line only at the file's first '@@' (e.g. a firstHunk bool reset at 'diff --git') and add that case to TestParseDiffSplitsFilesAndNumbersLines
-  blocker: internal/tui/diffpane.go:271 'patch, _ := repo.Diff(shas)' drops the git error on the fallback path, so a failing git shows 'No changes - the commits naming <H> ... change nothing' instead of the red error notice spec rule 8 / DoD 5 demands (the 21:42 note says this path now shows the error; only CommitsForTicket's error does) - return the same 'Diff unavailable' paneNotice as line 262
-  note: palette deviates from the spec's hex values on purpose (256 indices, critique 21:47) - right call; the light-terminal tints 194/224/157/217 have not been seen on a real screen
-  note: design is sound - one file, rows built as plain segments then styled (cut before style), shared diffTarget for counter/marker/o, spreadRow keeps counters uncut; diffLine is ~80 lines with three row kinds in one switch, acceptable
+review-gaps: "none (68dc5cf8): seenHunk is the only correct signal now that line 1 is a real first-hunk start — 'header == len(rows)-1' would also work (non-hunk lines before the first @@ only mutate the header row) but trades an explicit flag for an implicit invariant, so kept; the all-unavailable check reuses Repo.Diff's existing second return (core/gitrepo/git.go:103) rather than a new probe, flow.go:635 uses the same return for its own report, no duplicate; its comment says why (no error return), not what; both new tests guard the two fixed behaviours. Nothing dead, no fluff, no hot-path cost."
 test-verdict: "pass: touched packages green (go test ./core/gitrepo ./internal/tui ./internal/cli -count=1, RC=0), DoD 1-6 verified in the tree by name and file:line, DoD tests re-run and PASS; tmux real-app check taken from worker (NDE933), not re-run"
 review-verdict: "Sent back: the redesign delivers spec rules 1-10 and is well built, but two small defects - the file header's 'o' target jumps to the second hunk when the first starts at line 1 (diffpane.go:96), and a git error on the fallback diff path is shown as 'No changes' instead of an error (diffpane.go:271, DoD 5). go test ./core/gitrepo ./internal/tui green, gofmt and vet clean. Both fixes are a few lines."
 review-round: 6
