@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T17:29:40Z
+updated-at: 2026-11-05T17:29:43Z
 updated-by: Alexander Sacharov
 blocked-reason: ""
 outcome-what: "panda-bobr/jaira-plugin-template@fc5d7e1: Go-Plugin jaira-hello (greet liest jaira list --json und schreibt jaira note; manifest --json aus eingebettetem jaira-plugin.json; Exit 3 bei zu altem JAIRA_VERSION), Tests inkl. Manifest-Regeln, goreleaser (6 Binaries, checksums.txt, jaira-plugin.json), Actions test und release-auf-Tag mit Tag==version-Pruefung, README mit drei Schritten bis Katalog-PR. Demo panda-bobr/jaira-hello-demo v0.1.0; Katalog-PR panda-bobr/jaira-releases#4."
@@ -25,7 +25,12 @@ outcome-why: "Plugin-Autoren sollen ohne eigene Release-Technik ein Release beko
 outcome-resolves: "DoD 1: Tag v0.1.0 im unveraenderten Demo-Repo erzeugte alle 6 Assets + checksums.txt (Run 42011801567). DoD 2: check-catalog auf PR #4 gruen (Run 42026722958)."
 review-summary: "Im Repo panda-bobr/jaira-plugin-template (main = 7678fd2) liegt eine Go-Plugin-Vorlage: main.go mit jaira-hello (greet zaehlt per 'jaira list --json' die Tickets bzw. schreibt per 'jaira note --json' eine Notiz; manifest --json gibt das per go:embed eingebettete jaira-plugin.json aus; Exit 3 bei JAIRA_VERSION < minJairaVersion; Exit-Code von jaira wird durchgereicht), 8 Tests inkl. Manifest-Regeln, .goreleaser.yaml (6 Binaries jaira-<id>_<os>_<arch>, Id aus dem Manifest via PLUGIN_ID, jaira-plugin.json als Asset und seit 7678fd2 auch in checksums.txt), release.yml (Tag muss v+version sein, dann go test und goreleaser) und test.yml (push main + PR). README fuehrt in drei Schritten bis zum Katalog-PR. Bewiesen wurde das an panda-bobr/jaira-hello-demo (1 Commit, Stand fc5d7e1): Release v0.1.0 mit 6 Binaries, checksums.txt, jaira-plugin.json; Katalog-PR jaira-releases#4 aendert nur plugins.json, Check 'check' gruen. In diesem Repo traegt der Branch nur die Ticketdatei (d06a7cf3)."
 round: 3
-review-gaps: "none - 7678fd2 fuegt nur Konfig und Doku hinzu, nichts davon ohne Nutzen"
+review-gaps: |-
+  note: checksum.extra_files (7678fd2) ist durch keinen Release-Lauf bewiesen - die Demo steht auf fc5d7e1, ihre checksums.txt enthaelt jaira-plugin.json nicht; erster echter Beweis ist das naechste Release aus der Vorlage
+  note: Katalog-PR jaira-releases#4 ist noch offen; mergen listet hello wirklich im Katalog, schliessen nicht - Alex' Wahl
+  note: greet <ticket> ruft jaira note ohne --board; bei gesetztem JAIRA_BOARD sucht list auf dem Board, note verlaesst sich auf die Handle-Aufloesung
+  note: Plan-Punkt 1 ist ungehakt, obwohl fc5d7e1 ihn erfuellt - nur Kosmetik, der DoD ist vollstaendig gehakt
+  note: go test lokal hier nicht gelaufen (Auto-Mode verweigert), gestuetzt auf test-Run 42074852946 gruen fuer 7678fd2
 test-verdict: "pass - template main 7678fd2: test-Workflow Run 42074852946 success (go vet + go test). DoD-Belege unveraendert: jaira-hello-demo v0.1.0 (Run 42011801567, 6 Binaries + checksums.txt, sha256sum -c OK), jaira-releases#4 check-catalog Run 42026722958 pass. checksum.extra_files fuer jaira-plugin.json ist per goreleaser-Quelle v2.0.0 belegt, aber noch durch keinen Release-Lauf - erstes Release aus 7678fd2 zeigt es."
 claimed-by: DESKTOP-RFTCH11-9733
 claimed-at: 2026-11-05T17:04:34Z
