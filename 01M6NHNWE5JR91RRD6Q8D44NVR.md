@@ -19,7 +19,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T21:36:58Z
+updated-at: 2026-11-05T21:37:02Z
 updated-by: Alexander Sacharov
 question: ""
 outcome-what: "panda-bobr/jaira-releases: README auf main, per PR #1 plugins.json ([]), schema/ (Kopien aus R6X6FH), CONTRIBUTING.md, .github/scripts/check_catalog.py mit 23 Unit-Tests und Workflow check-catalog (pull_request_target, nur plugins.json-PRs, Kommentar mit allen Problemen). Fixture-Repos panda-bobr/jaira-plugin-ci-fixture (Release ohne checksums.txt) und -norelease. Test-PR #2 zeigt die Ablehnung."
@@ -27,11 +27,7 @@ outcome-why: "Ein Plugin-Autor soll seinen Eintrag per PR einreichen koennen und
 outcome-resolves: "DoD 1 (main 44d293d) und DoD 2 (PR #2, Run 42024115800, Bot-Kommentar mit doppelter id, fehlendem Release, fehlender Pruefsumme)"
 review-summary: "none"
 round: 4
-review-gaps: |-
-  note: 56da600 (optimize-Refactor: changed_entries inline) liegt auf origin/fix/d44nvr-errors, ist aber nicht in main - PR #3 wurde bei 52c090e gemergt; Verhalten gleich, also entweder nachziehen oder verwerfen
-  note: author ist Freitext (Schema: string 1-80) - ein neuer Eintrag kann jeden Autorennamen tragen; geprueft wird nur der Besitz von repo
-  note: wird ein PR zwischen Event und Lauf erneut gepusht, findet git show den HEAD_SHA nicht und die Meldung lautet 'plugins.json must be a JSON array' statt 'neu ausfuehren'; der folgende synchronize-Lauf ersetzt den Kommentar
-  note: DoD 3 ist nur per Unit-Test belegt (4 Tests mit aufgezeichneten API-Antworten), nicht per Live-PR - die DoD verlangt genau einen Test
+review-gaps: "none: 4aa2cfc fuegt nur HEAD_GONE, --head-gone und die cat-file-Weiche hinzu, nichts doppelt oder ungenutzt (pyflakes sauber); 6845b50 ist der schon gepruefte Optimize-Commit 56da600"
 test-verdict: "pass: unit RC=0 (29 Tests, 56da600); DoD 3 live: Verschieben von hello (panda-bobr/jaira-hello-demo -> sashasoft90/jaira) durch octocat abgelehnt mit 'needs the owner of the listed repository', durch sashasoft90 (jetzt oeffentliches panda-bobr-Mitglied, anon 204) korrekt erlaubt; DoD 4: PR #3 Run 42026044679 job unit success, check skipped"
 claimed-by: DESKTOP-RFTCH11-12777
 claimed-at: 2026-11-05T12:10:19Z
