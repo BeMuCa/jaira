@@ -1,7 +1,7 @@
 ---
 id: 01M6NHMX3XGC9RBPA29NR6X6FH
 title: "Plugins: Entscheidung und Standard stehen in docs/PLUGINS.md"
-status: review
+status: signoff
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:46:40Z
-updated-at: 2026-11-05T10:12:47Z
+updated-at: 2026-11-05T10:12:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-21000
 claimed-at: 2026-11-05T09:47:52Z
