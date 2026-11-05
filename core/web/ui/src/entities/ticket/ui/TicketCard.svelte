@@ -4,7 +4,7 @@
   import type { Ticket } from '../model/types';
   import { PLACE_LABELS, badgeLane } from '../model/place';
   import { shortAssignee } from '../model/assignee';
-  import { handleOf } from '../model/epic-card';
+  import { handleOf } from '../model/handle';
   import { LaneBadge } from '@/entities/lane';
 
   let { ticket, draggable = false, ondragstart, onopen, onremove, removeLabel = 'Remove' }: {

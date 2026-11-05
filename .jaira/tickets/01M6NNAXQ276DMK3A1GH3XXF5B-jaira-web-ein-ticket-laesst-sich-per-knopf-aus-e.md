@@ -22,13 +22,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T10:51:07Z
-updated-at: 2026-11-05T10:57:28Z
+updated-at: 2026-11-05T10:58:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85123
 claimed-at: 2026-11-05T10:51:26Z
 outcome-what: "Epic cards in jaira web get a Remove button (tap, no drag); follow-up cards name the member they are counted through (new 'via' field from core/epic); the web resolves filed tickets with LoadAnywhere like 'jaira epic rm'."
 outcome-why: "Removing only worked by HTML5 drag, which phones lack; dashed cards gave no hint which line to remove; logbook/archive tickets answered 404 in the web while the CLI removed them."
 outcome-resolves: "Taking any ticket out of an epic in jaira web, on a phone too, without falling back to 'jaira epic rm'."
+review-summary: "core/web/ui/src/entities/ticket/model/epic-card.ts: epicCardExit/EpicCardExit is an abstraction with one caller that restates ticket.direct (its via half is unused - TicketCard reads ticket.via itself); drop it, let EpicList.svelte key draggable/onremove on ticket.direct as before, and keep only handleOf in entities/ticket/model/handle.ts (+ its test), unexported from index.ts since only TicketCard uses it"
+round: 2
 ---
 
 # jaira web: ein Ticket laesst sich per Knopf aus einem Epic nehmen, auch auf dem Handy
@@ -36,9 +38,9 @@ outcome-resolves: "Taking any ticket out of an epic in jaira web, on a phone too
 ## Definition of Done
 
 - [x] Jede direkte Ticket-Karte in einem Epic hat einen Entfernen-Knopf, der DELETE /api/epics/{name}/tickets/{id} ruft; funktioniert per Tipp ohne Drag; Test
-  proof: core/web/ui/src/widgets/epic-list/ui/EpicList.svelte:80 (onremove -> ReviewPage removeFromEpic = DELETE /api/epics/{name}/tickets/{id}); button TicketCard.svelte:39; test epic-card.test.ts 'every member card can be taken out' + TestWebCreatesMovesRemovesAndOpens
+  proof: EpicList.svelte:79 onremove on every direct card -> ReviewPage removeFromEpic (DELETE /api/epics/{name}/tickets/{id}); button TicketCard.svelte:34 is a plain click/tap button; tests TestWebCreatesMovesRemovesAndOpens (DELETE 200 for a member, 409 for a follow-up). No Svelte component test runner in core/web/ui - the button itself is checked by hand.
 - [x] Eine indirekte Karte (via follows/parent) nennt das Ticket, ueber das sie mitgezaehlt wird, statt still nicht ziehbar zu sein; Test
-  proof: core/epic/epic.go Ticket.Via via covered(); TicketCard.svelte:54 'counted through <handle>'; tests TestCoveredWalksFollowsAndParent, TestWebCreatesMovesRemovesAndOpens (via), epic-card.test.ts 'a follow-up names the member'
+  proof: core/epic/epic.go Ticket.Via from covered(); TicketCard.svelte:54 'counted through <handle>'; tests TestCoveredWalksFollowsAndParent (via two steps down), TestWebCreatesMovesRemovesAndOpens (via in /api/epics), handle.test.ts
 - [x] Ein archiviertes Ticket laesst sich im Web genauso aus dem Epic nehmen wie mit 'jaira epic rm', oder die Seite sagt warum nicht; Test
   proof: internal/cli/web_source.go load -> LoadAnywhere, same as resolveRef for 'jaira epic rm'; TestWebRemovesAFiledTicketFromAnEpic (404 before, 200 after)
 - [x] Release-Note-Zeile in core/release/notes/<ID>.md
@@ -62,3 +64,5 @@ outcome-resolves: "Taking any ticket out of an epic in jaira web, on a phone too
 - **2026-11-05 10:51 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/1770.sock
 - **2026-11-05 10:52 · Alexander Sacharov** — decisions (none open for the person, settled from code): (1) Remove button = small text button 'Remove' on every direct card in an epic, no confirm dialog - drag has none either and 'add' undoes it; aria-label names ticket and epic. (2) An indirect card names the epic member it is counted through (the line you would remove), found by walking follows/parent up in epic.Covered; new field 'via' on epic.Ticket and web.Ticket. (3) Archived: root cause found - webSource.load uses Store.Load (board only), 'jaira epic rm' resolves via LoadAnywhere (board+logbook+archive). Web switches to LoadAnywhere, so web and CLI behave the same; no 'why not' message needed.
 - **2026-11-05 10:54 · Alexander Sacharov** — archived/logbook: reproduced - DELETE on a filed ticket answered 404 'not found' before load switched to LoadAnywhere (TestWebRemovesAFiledTicketFromAnEpic fails on the old line).
+- **2026-11-05 10:57 · Alexander Sacharov** — critique (round 1): drop epicCardExit - one caller, restates ticket.direct, via half unused; EpicList back to ticket.direct; handleOf alone into model/handle.ts, not exported. Let stand: LoadAnywhere also for Assign (CLI 'epic add' resolves the same way), via computed in core/epic not the UI (the UI cannot see follows/parent), no confirm dialog (decision note 10:52).
+- **2026-11-05 10:58 · Alexander Sacharov** — in-progress round 2: critique fix done - epic-card.ts gone, EpicList keys on ticket.direct, handleOf in model/handle.ts; proofs of DoD 1/2 rewritten (they named the deleted test). The button has no component test: core/web/ui only runs node --test on .ts, no Svelte test runner - the review-check should ask for a tap on a phone.

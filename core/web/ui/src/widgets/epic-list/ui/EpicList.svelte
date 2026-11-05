@@ -1,6 +1,6 @@
 <script lang="ts">
   import { EpicProgress, type Epic } from '@/entities/epic';
-  import { TicketCard, epicCardExit } from '@/entities/ticket';
+  import { TicketCard } from '@/entities/ticket';
   import { DropTarget, startTicketDrag } from '@/features/assign-to-epic';
   import { CreateEpicForm } from '@/features/create-epic';
   import { EditEpicForm, type EpicEdit } from '@/features/edit-epic';
@@ -71,13 +71,12 @@
             {#each epic.tickets as ticket (ticket.id)}
               <!-- Only a member line can be dragged or removed: a follow-up has none
                    to move, and its card names the member that brings it in. -->
-              {@const exit = epicCardExit(ticket)}
               <TicketCard
                 {ticket}
                 {onopen}
-                draggable={exit.removable}
-                ondragstart={exit.removable ? (e) => startTicketDrag(e, ticket.id, epic.name) : undefined}
-                onremove={exit.removable ? () => onremove(epic.name, ticket.id) : undefined}
+                draggable={ticket.direct}
+                ondragstart={ticket.direct ? (e) => startTicketDrag(e, ticket.id, epic.name) : undefined}
+                onremove={ticket.direct ? () => onremove(epic.name, ticket.id) : undefined}
                 removeLabel={`Take ${ticket.handle} out of ${epic.title}`}
               />
             {/each}
