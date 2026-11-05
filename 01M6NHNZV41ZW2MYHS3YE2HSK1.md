@@ -18,7 +18,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T12:05:55Z
+updated-at: 2026-11-05T12:05:58Z
 updated-by: Alexander Sacharov
 blocked-reason: "DoD 2 wartet auf die Katalog-CI aus D44NVR (panda-bobr/jaira-releases, noch nicht auf main)"
 ---
@@ -45,7 +45,7 @@ blocked-reason: "DoD 2 wartet auf die Katalog-CI aus D44NVR (panda-bobr/jaira-re
 - [x] README: drei Schritte von Use this template bis Katalog-PR
 - [x] Push nach main von panda-bobr/jaira-plugin-template, kein Tag
 - [x] panda-bobr/jaira-hello-demo aus der Vorlage anlegen, Tag v0.1.0, Release-Assets und checksums.txt pruefen -> DoD 1
-- [~] E2HSK1 nach blocked auf D44NVR (DoD 2 wartet auf die Katalog-CI)
+- [x] E2HSK1 nach blocked auf D44NVR (DoD 2 wartet auf die Katalog-CI)
 - [ ] Katalog-PR vorbereiten: Branch feat/e2hsk1 in panda-bobr/jaira-releases mit hello-Eintrag; Alex pusht und oeffnet den PR
 
 ## Progress
