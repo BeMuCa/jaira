@@ -19,7 +19,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T17:21:11Z
+updated-at: 2026-11-05T17:21:18Z
 updated-by: Alexander Sacharov
 question: ""
 outcome-what: "panda-bobr/jaira-releases: README auf main, per PR #1 plugins.json ([]), schema/ (Kopien aus R6X6FH), CONTRIBUTING.md, .github/scripts/check_catalog.py mit 23 Unit-Tests und Workflow check-catalog (pull_request_target, nur plugins.json-PRs, Kommentar mit allen Problemen). Fixture-Repos panda-bobr/jaira-plugin-ci-fixture (Release ohne checksums.txt) und -norelease. Test-PR #2 zeigt die Ablehnung."
@@ -52,7 +52,8 @@ review-check: "1. Oeffne https://github.com/panda-bobr/jaira-releases - auf main
   proof: jaira-releases fix/d44nvr-errors 52c090e: .github/scripts/check_catalog.py check_takeover; tests test_takeover_of_a_listed_id_is_refused, test_takeover_with_foreign_old_repo_is_refused, test_owner_of_both_repos_may_move_the_entry, test_description_change_needs_no_old_owner_check (29 OK)
 - [x] Die Unit-Tests der Katalogpruefung laufen in jedem PR, der .github/** aendert; im PR fix/d44nvr-errors gezeigt
   proof: panda-bobr/jaira-releases PR #3 (fix/d44nvr-errors 52c090e): run 42026044679, event pull_request, job unit success 'Ran 29 tests ... OK', job check skipped; .github/workflows/check-catalog.yml on.pull_request paths .github/**, schema/**
-- [ ] Wird ein PR waehrend der Pruefung neu gepusht, meldet die Pruefung 'the pull request changed while it was checked; the next run replaces this comment' statt 'must be a JSON array'; Unit-Test
+- [x] Wird ein PR waehrend der Pruefung neu gepusht, meldet die Pruefung 'the pull request changed while it was checked; the next run replaces this comment' statt 'must be a JSON array'; Unit-Test
+  proof: jaira-releases fix/d44nvr-race 4aa2cfc: check_catalog.py --head-gone/HEAD_GONE, check-catalog.yml 'git cat-file -e HEAD_SHA^{commit}'; test test_head_gone_says_the_next_run_replaces_it (30 OK)
 
 ## Options
 
