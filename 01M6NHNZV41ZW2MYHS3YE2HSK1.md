@@ -18,7 +18,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T10:24:22Z
+updated-at: 2026-11-05T10:24:25Z
 updated-by: Alexander Sacharov
 ---
 
@@ -43,3 +43,4 @@ updated-by: Alexander Sacharov
 - **2026-11-05 10:24 · Alexander Sacharov** — Korrektur zur vorigen Teamlead-Notiz: das Ziel-Repo ist panda-bobr/jaira-plugin-template (nicht panda-bobr/e2hsk1). Das Release des Beispiels muss die CI aus D44NVR (panda-bobr/jaira-releases) bestehen; D44NVR laeuft parallel in einem eigenen Tab.
 - **2026-11-05 10:24 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/1770.sock
 - **2026-11-05 10:24 · Alexander Sacharov** — Worker-Befund vor dem Plan (05.11.2026): (a) panda-bobr/jaira-releases ist leer, keine CI - die kommt erst mit D44NVR (backlog). DoD 2 ist bis dahin nicht erfuellbar. (b) Die ganze Arbeit liegt im fremden Repo panda-bobr/jaira-plugin-template (oeffentlich, leer): Commit, Push nach main und ein Tag v0.1.0 erzeugen ein oeffentliches Release - ausserhalb dieses Worktrees, nach aussen sichtbar.
+- **2026-11-05 10:24 · Alexander Sacharov** — Frage 1 (DoD 2 / D44NVR): 1) E2HSK1 auf D44NVR blockieren und D44NVR zuerst bauen (Recommended) - DoD bleibt ehrlich, eine Runde Wartezeit. 2) Vorlage jetzt bauen, DoD 1 abhaken, E2HSK1 danach in blocked bis D44NVR - Vorlage steht frueher, Ticket haengt offen. 3) DoD 2 ersetzen durch lokale Pruefung gegen das Format aus docs/PLUGINS.md - sofort fertig, aber keine echte Katalog-CI.
