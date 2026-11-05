@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:46:40Z
-updated-at: 2026-11-05T10:11:11Z
+updated-at: 2026-11-05T10:11:22Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-21000
 claimed-at: 2026-11-05T09:47:52Z
@@ -39,7 +39,7 @@ outcome-resolves: Alle vier DoD-Punkte; jaira selbst startet noch keine Plugins 
 review-summary: none
 round: 4
 review-gaps: none - Runde 2 nur Doku/Schema; Exit-Code-Tabelle wiederholt COMMANDS.md bewusst; Hook-Timeout zitiert core/hook statt es zu wiederholen
-test-verdict: "pass: go build ./... und go test ./... gruen (RC=0); DoD 1-3 im Baum geprueft (Abschnitte in docs/PLUGINS.md, beide Schemas Draft-2020-12-gueltig, Doku-Beispiele validieren, Bad_ID abgelehnt); 'jaira set <id> external=jira:PROJ-1' auf Scratch-Board ausgefuehrt, Feld steht im Frontmatter"
+test-verdict: "pass: go test ./... RC=0; DoD 1-4 im Baum geprueft; beide Schemas Draft-2020-12-gueltig, alle JSON-Beispiele der Doku (Manifest, events-, web-Fragment, Katalogeintrag) validieren; abgelehnt werden id Bad_ID, events [delete], page path ../x und /x"
 review-verdict: "Alle drei DoD-Punkte erfuellt: PLUGINS.md deckt Aufruf, Umgebung, Schreibweg, external, Geheimnisse, Exit-Codes, Manifest, Katalogweg und die Go-plugin-Absage ab; beide Schemas liegen im Repo. Geprueft: jaira set external=jira:PROJ-123 und note --json funktionieren wie beschrieben, JAIRA_ROOT gibt es fuer Hooks, external wird beim Merge opak behandelt. Kein Blocker; der wichtigste Hinweis ist, dass external in der JSON-Lesesicht fehlt."
 review-round: 2
 review-check: "1. less docs/PLUGINS.md - Abschnitte Invocation, Environment, Writing, The external field, Secrets, Exit codes, The manifest, Releases, Into the catalogue sind da  2. uvx check-jsonschema --check-metaschema docs/schema/jaira-plugin.schema.json docs/schema/plugins-entry.schema.json - beide 'ok'  3. Manifest-Beispiel aus PLUGINS.md in /tmp/m.json kopieren, dann uvx check-jsonschema --schemafile docs/schema/jaira-plugin.schema.json /tmp/m.json - 'ok'  4. in einem Testboard: jaira set <id> external=jira:PROJ-123, dann grep external .jaira/tickets/*.md - zeigt external: \"jira:PROJ-123\""
