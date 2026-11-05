@@ -19,7 +19,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T12:10:33Z
+updated-at: 2026-11-05T12:10:37Z
 updated-by: Alexander Sacharov
 question: "Pushes nach GitHub sind dieser Sitzung verweigert. 1) (empfohlen) Alex fuehrt publish-1-before-merge.sh aus, merged den PR, dann publish-2-after-merge.sh und oeffnet den Test-PR. 2) Alex erlaubt dem Worker git push/gh repo create per Permission-Regel. Zwei Fixture-Repos statt einem - ok?"
 outcome-what: "panda-bobr/jaira-releases: README auf main, per PR #1 plugins.json ([]), schema/ (Kopien aus R6X6FH), CONTRIBUTING.md, .github/scripts/check_catalog.py mit 23 Unit-Tests und Workflow check-catalog (pull_request_target, nur plugins.json-PRs, Kommentar mit allen Problemen). Fixture-Repos panda-bobr/jaira-plugin-ci-fixture (Release ohne checksums.txt) und -norelease. Test-PR #2 zeigt die Ablehnung."
@@ -82,3 +82,4 @@ review-check: "1. https://github.com/panda-bobr/jaira-releases oeffnen - auf mai
 - **2026-11-05 12:06 · Alexander Sacharov** — Runde-1-Fix: Branch fix/d44nvr-errors in jaira-releases, Commit 5bace82 (lokal, ungepusht, auf origin/main 44d293d). Dead end: 'if: hashFiles(runner.temp/report.md)' geht nicht - hashFiles sieht nur Dateien unter GITHUB_WORKSPACE; daher Shell-Guard '[ -f report.md ] || exit 0' im Kommentar-Schritt. 25 Unit-Tests gruen.
 - **2026-11-05 12:07 · Alexander Sacharov** — critique (Runde 2): beide Funde aus Runde 1 in 5bace82 erledigt (HTTPError/URLError in run() gefangen und als Problem gemeldet, Kommentar-Schritt hinter report.md; event/manifest gestrichen). Keine neuen Funde.
 - **2026-11-05 12:08 · Alexander Sacharov** — offen nach testing: fix/d44nvr-errors (5bace82, 310de33) liegt lokal im Scratchpad-Clone, ungepusht; braucht Push + PR + Merge durch Alex. DoD ist schon durch main 44d293d erfuellt, der Branch verbessert nur Fehlermeldungen. Push-Zeile: git -C /tmp/claude-1000/-home-alex-projects--worktrees-jaira-d44nvr/e9c86c25-536c-4790-a6d8-3e163fb430b1/scratchpad/jaira-releases push origin fix/d44nvr-errors
+- **2026-11-05 12:10 · Alexander Sacharov** — review (frische Sitzung): kein Blocker, DoD 1+2 auf GitHub nachgeprueft (main 44d293d, PR #2 Run 42024115800, Schemas byte-gleich mit origin/feat/r6x6fh, 23 Tests gruen). Vor done: fix/d44nvr-errors ist noch nicht gepusht - auf main postet die Pruefung bei Rate-Limit/5xx einen leeren Kommentar.
