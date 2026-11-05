@@ -19,7 +19,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T12:22:47Z
+updated-at: 2026-11-05T12:22:52Z
 updated-by: Alexander Sacharov
 question: ""
 outcome-what: "panda-bobr/jaira-releases: README auf main, per PR #1 plugins.json ([]), schema/ (Kopien aus R6X6FH), CONTRIBUTING.md, .github/scripts/check_catalog.py mit 23 Unit-Tests und Workflow check-catalog (pull_request_target, nur plugins.json-PRs, Kommentar mit allen Problemen). Fixture-Repos panda-bobr/jaira-plugin-ci-fixture (Release ohne checksums.txt) und -norelease. Test-PR #2 zeigt die Ablehnung."
@@ -35,8 +35,8 @@ review-gaps: |-
 test-verdict: "pass: unit RC=0 (29 Tests, 56da600); DoD 3 live: Verschieben von hello (panda-bobr/jaira-hello-demo -> sashasoft90/jaira) durch octocat abgelehnt mit 'needs the owner of the listed repository', durch sashasoft90 (jetzt oeffentliches panda-bobr-Mitglied, anon 204) korrekt erlaubt; DoD 4: PR #3 Run 42026044679 job unit success, check skipped"
 claimed-by: DESKTOP-RFTCH11-12777
 claimed-at: 2026-11-05T12:10:19Z
-review-verdict: "Beide DoD-Punkte stimmen mit dem, was auf GitHub liegt: main 44d293d enthaelt plugins.json, README und CONTRIBUTING.md, und Test-PR #2 (Run 42024115800) wird mit doppelter id, fehlendem Release und fehlender checksums.txt abgelehnt. Kein Blocker. Einschraenkung: auf main steckt noch der bekannte Fehler bei Nicht-404-API-Fehlern (leerer Kommentar); der Fix ist fertig, aber ungepusht. Empfehlung: fix/d44nvr-errors pushen und mergen, bevor das Ticket nach done geht."
-review-round: 2
+review-verdict: "Alle vier DoD-Punkte erfuellt und auf GitHub nachgeprueft: main 85953d3 enthaelt plugins.json, README, CONTRIBUTING, Skript und Workflow (PR #1 und #3 gemergt); PR #2 Lauf 42024115800 lehnt mit Bot-Kommentar ab (doppelte id, fehlendes Release, fehlende checksums.txt); check_takeover mit Tests; Lauf 42026044679 (pull_request) Job unit success, 29 Tests lokal auf origin/main gruen. Workflow-Sicherheit geprueft: kein PR-Code unter pull_request_target, PR-Werte nur ueber env. Kein Blocker; vier Notes."
+review-round: 3
 review-check: "1. https://github.com/panda-bobr/jaira-releases oeffnen - auf main liegen plugins.json (Inhalt: []), README.md, CONTRIBUTING.md, schema/ und .github/workflows/check-catalog.yml.  2. https://github.com/panda-bobr/jaira-releases/pull/2 oeffnen - der Check check-catalog ist rot, und der Bot-Kommentar nennt: 'the id is taken - it appears 2 times', 'no release v0.0.1' (ci-fixture-norelease) und 'has no checksums.txt' (ci-fixture).  3. Optional lokal: git clone https://github.com/panda-bobr/jaira-releases && cd jaira-releases && uv run --with jsonschema==4.23.0 python -m unittest discover -s .github/scripts - Ausgabe endet mit 'Ran 23 tests ... OK'.  4. Offen vor done: git -C /tmp/claude-1000/-home-alex-projects--worktrees-jaira-d44nvr/e9c86c25-536c-4790-a6d8-3e163fb430b1/scratchpad/jaira-releases push origin fix/d44nvr-errors, dann PR oeffnen und mergen."
 ---
 
