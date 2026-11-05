@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T18:07:40Z
+updated-at: 2026-11-05T18:07:47Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
@@ -77,7 +77,7 @@ round: 3
 - [x] AGENTS.md table names all eight agents plus the skip rule
 - [x] target.go comment names both installer scripts
 - [x] installers print the add-later line for only-unknown JAIRA_AGENT
-- [ ] AGENTS.md states the claude+codex double listing for cursor and opencode
+- [x] AGENTS.md states the claude+codex double listing for cursor and opencode
 
 ## Progress
 - **2026-11-05 17:53 · BeMuCa** — Berk, 2026-11-05: (1) ohne erkannten Agenten sagt der Installer ausdruecklich, dass jaira trotzdem nutzbar ist - z. B. ein PM ohne Agent mit 'jaira web' (Zusammenhang H319TV). (2) Stand: V38STG ist auf master gemergt (install.sh und install.ps1 haben JAIRA_NO_ROLES), dieses Ticket baut darauf auf. (3) Windows: install.ps1 bekommt dieselbe Erkennung wie install.sh.
