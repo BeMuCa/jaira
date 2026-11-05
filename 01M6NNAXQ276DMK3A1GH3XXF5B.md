@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T10:51:07Z
-updated-at: 2026-11-05T11:07:21Z
+updated-at: 2026-11-05T11:07:25Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85123
 claimed-at: 2026-11-05T10:51:26Z
@@ -37,6 +37,8 @@ review-gaps: |-
   note: LoadAnywhere also applies to Assign, so the API now accepts adding a filed ticket to an epic - matches 'jaira epic add', the page itself never drags a filed ticket
   note: Remove has no confirm and no undo message - deliberate per the 10:52 decision note, re-adding is a drag
 test-verdict: "pass: go build rc=0, go test -count=1 ./... rc=0, -race on core/epic core/web internal/cli rc=0, npm test rc=0; DoD 1-4 verified in the tree; scratch board via jaira web: DELETE member 200, logbook member 200, follow-up 409, /api/epics carries via; EpicList server-rendered: Remove on both direct cards (board+logbook), none on the follow-up, which names its member; web --help updated. Not run: a real tap in a phone browser"
+review-verdict: "The diff meets all four DoD items: Remove button on direct cards calling DELETE (tap, no drag), follow-up cards name the member via the new 'via' field, filed tickets removable as with 'jaira epic rm' (TestWebRemovesAFiledTicketFromAnEpic), release note present. go test core/epic core/web internal/cli and npm test (13 pass) green here; built bundle matches src. No blocker; the only unverified part is the tap on a real phone."
+review-round: 3
 ---
 
 # jaira web: ein Ticket laesst sich per Knopf aus einem Epic nehmen, auch auf dem Handy
