@@ -1,7 +1,7 @@
 ---
 id: 01M67K7GEZF694985EHTENCFVZ
 title: "Neue Lane-Arten: eine Lane, die nur einen Skill startet, und Automations-Lanes (Artefakte, E-Mail, API-Aufrufe, Telegram senden/empfangen, Video-Upload)"
-status: optimize
+status: testing
 ready: true
 creator: berkc
 assignee: berkc
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-05T09:33:05Z
+updated-at: 2026-11-05T09:33:09Z
 updated-by: berkc
 claimed-by: berk-ca-1989860
 claimed-at: 2026-11-05T09:31:17Z
@@ -224,3 +224,4 @@ Offene Fragen an berkc
 - **2026-11-05 09:26 · berkc** — optimize: (1) internal/cli/flow.go laneRun: fields skill, script, receiptRequired only copy l.Skill/l.Script/l.ReceiptRequired, and showForLane has l in scope - drop the three fields and read l directly (keep skillPath, key, receipt, run, scriptDone, missing). (2) core/lane/lane.go:436 script check: filepath.IsAbs + Clean + ".." prefix is hand-rolled filepath.IsLocal (go 1.26 in go.mod) - use !filepath.IsLocal(l.Script) and drop the clean variable. (3) core/gate/gate.go HasReceipt: `first != "" &&` is dead, ReceiptKey is never empty. (4) internal/cli/resume.go newReceiptCmd computes ReceiptKey+result twice (Mutate and the print) - keep the written value in one variable. Left as is: the near-identical side-effect paragraph in jaira-role-lane, jaira-worker and core/role/jaira (separate shipped skills, each read alone; critique accepted it); FindSkill vs InstalledIn (different question); HasReceipt vs fieldValue default branch (gate cannot import cli); pre-existing hand-rolled inside-dir check in core/selfupdate/install.go:110 (not this ticket). No behaviour change in any of the four. Sent back to in-progress: this lane run was told to change no code, so the four simplifications go to the implementing lane; run go test ./core/lane ./core/gate ./internal/cli after them.
 - **2026-11-05 09:30 · berkc** — optimize send-back applied, no behaviour change: (1) flow.go laneRun drops skill/script/receiptRequired, showForLane reads l.Skill/l.Script/l.ReceiptRequired (keeps skillPath, key, receipt, run, scriptDone, missing); (2) lane.go script check is !filepath.IsLocal(l.Script), clean var gone; (3) gate.go HasReceipt drops dead first != ""; (4) resume.go newReceiptCmd builds the receipt value once (var receipt) for Mutate and the print. Checked: no DoD --proof names a file:line, all proofs name functions/tests, so none moved. Tests: go vet clean; core/lane, core/gate ok; internal/cli ok with the three hangers skipped. gofmt flow.go (struct alignment only).
 - **2026-11-05 09:31 · berkc** — critique (pass 3): read only 5b1bf715, the answer to the optimize send-back (note 09:26); critique passes 1-2 (notes 21:50, 21:58) stay closed. (1) flow.go: showForLane reads l.Skill/l.Script/l.ReceiptRequired directly; l is already dereferenced by laneRunFor at flow.go:722, so no new nil path; JSON keys and text lines unchanged. (2) lane.go: !filepath.IsLocal(l.Script) is equivalent to the old IsAbs/Clean/.. check for the non-empty script it guards (go 1.26.5); the only extra refusal is Windows reserved names. (3) gate.go HasReceipt: an empty first token can never equal the non-empty ReceiptKey, so dropping the guard changes nothing. (4) resume.go: one receipt variable for Mutate and the print. No defect breaks the DoD. review-summary=none, on to optimize.
+- **2026-11-05 09:33 · berkc** — optimize (pass 2): verified 5b1bf715 applied all four pass-1 findings (flow.go laneRun has only skillPath/run/key/receipt/scriptDone/missing; lane.go uses !filepath.IsLocal; gate.go HasReceipt has no first!="" guard; resume.go one receipt var). Re-read whole Go diff (gate, lane, role/target, flow, resume, tickets, announce, facts): no duplication, dead code, fluff or hot-path cost left. go vet on touched pkgs clean, gofmt -l empty. review-gaps=none, on to testing.
