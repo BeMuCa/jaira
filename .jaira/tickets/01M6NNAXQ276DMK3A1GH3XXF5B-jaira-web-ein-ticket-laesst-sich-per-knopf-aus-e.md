@@ -22,15 +22,17 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T10:51:07Z
-updated-at: 2026-11-05T10:58:41Z
+updated-at: 2026-11-05T11:03:14Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85123
 claimed-at: 2026-11-05T10:51:26Z
 outcome-what: "Epic cards in jaira web get a Remove button (tap, no drag); follow-up cards name the member they are counted through (new 'via' field from core/epic); the web resolves filed tickets with LoadAnywhere like 'jaira epic rm'."
 outcome-why: "Removing only worked by HTML5 drag, which phones lack; dashed cards gave no hint which line to remove; logbook/archive tickets answered 404 in the web while the CLI removed them."
 outcome-resolves: "Taking any ticket out of an epic in jaira web, on a phone too, without falling back to 'jaira epic rm'."
-review-summary: "core/web/ui/src/entities/ticket/model/epic-card.ts: epicCardExit/EpicCardExit is an abstraction with one caller that restates ticket.direct (its via half is unused - TicketCard reads ticket.via itself); drop it, let EpicList.svelte key draggable/onremove on ticket.direct as before, and keep only handleOf in entities/ticket/model/handle.ts (+ its test), unexported from index.ts since only TicketCard uses it"
-round: 2
+review-summary: "none"
+round: 3
+review-gaps: "none - considered: handleOf duplicates Go ticket.Handle, kept because the UI needs the id to open the member and no TS helper existed; Covered now forwards to covered, kept as the public API Unassigned and web_source call; removeLabel has one caller but carries the epic title the card cannot know; webSource.Ticket (web_source.go:204) repeats load()'s LoadAnywhere+not-found mapping because it also needs the path - pre-existing, left alone"
+test-verdict: "fail: 'jaira web --help' (internal/cli/web.go:36-42) still describes removal as drag-only and a follow-up as merely undraggable - no word of the Remove button or the 'counted through' line"
 ---
 
 # jaira web: ein Ticket laesst sich per Knopf aus einem Epic nehmen, auch auf dem Handy
@@ -66,3 +68,6 @@ round: 2
 - **2026-11-05 10:54 · Alexander Sacharov** — archived/logbook: reproduced - DELETE on a filed ticket answered 404 'not found' before load switched to LoadAnywhere (TestWebRemovesAFiledTicketFromAnEpic fails on the old line).
 - **2026-11-05 10:57 · Alexander Sacharov** — critique (round 1): drop epicCardExit - one caller, restates ticket.direct, via half unused; EpicList back to ticket.direct; handleOf alone into model/handle.ts, not exported. Let stand: LoadAnywhere also for Assign (CLI 'epic add' resolves the same way), via computed in core/epic not the UI (the UI cannot see follows/parent), no confirm dialog (decision note 10:52).
 - **2026-11-05 10:58 · Alexander Sacharov** — in-progress round 2: critique fix done - epic-card.ts gone, EpicList keys on ticket.direct, handleOf in model/handle.ts; proofs of DoD 1/2 rewritten (they named the deleted test). The button has no component test: core/web/ui only runs node --test on .ts, no Svelte test runner - the review-check should ask for a tap on a phone.
+- **2026-11-05 10:58 · Alexander Sacharov** — critique round 2: round-1 finding addressed in 1ff410d2 (epicCardExit gone, EpicList on ticket.direct, handleOf unexported in model/handle.ts). Nothing further.
+- **2026-11-05 11:02 · Alexander Sacharov** — testing round 1: gates green - go build ./... rc=0, go test -race -count=1 core/epic core/web internal/cli rc=0, go test -count=1 ./... rc=0 (33 ok), npm test rc=0. DoD 1-4 verified in tree. Function on a scratch board (bare remote, jaira web --no-open): /api/epics gives the follow-up via=<member id>, members via empty; DELETE member 200, DELETE logbook member 200, DELETE follow-up 409 'counts through follows or parent'; epic show afterwards 0 of 0. Finding: internal/cli/web.go:36-42 help text says 'drag ... back to the left to take it out' and 'a ticket that counts only because it follows a member ... cannot be dragged' - add that every member card has a Remove button (a tap, works on a phone, filed tickets too) and that a follow-up's card names the member that brings it in.
+- **2026-11-05 11:03 · Alexander Sacharov** — in-progress round 3: web --help (internal/cli/web.go) now names the Remove button, filed tickets and the follow-up's member line; internal/cli tests rc=0.
