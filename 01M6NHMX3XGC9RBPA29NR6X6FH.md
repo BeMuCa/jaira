@@ -29,7 +29,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:46:40Z
-updated-at: 2026-11-05T09:46:40Z
+updated-at: 2026-11-05T09:47:50Z
+updated-by: Alexander Sacharov
 ---
 
 # Plugins: Entscheidung und Standard stehen in docs/PLUGINS.md
