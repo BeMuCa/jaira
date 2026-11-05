@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T10:51:07Z
-updated-at: 2026-11-05T10:58:03Z
+updated-at: 2026-11-05T10:58:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85123
 claimed-at: 2026-11-05T10:51:26Z
@@ -38,7 +38,7 @@ round: 2
 ## Definition of Done
 
 - [x] Jede direkte Ticket-Karte in einem Epic hat einen Entfernen-Knopf, der DELETE /api/epics/{name}/tickets/{id} ruft; funktioniert per Tipp ohne Drag; Test
-  proof: core/web/ui/src/widgets/epic-list/ui/EpicList.svelte:80 (onremove -> ReviewPage removeFromEpic = DELETE /api/epics/{name}/tickets/{id}); button TicketCard.svelte:39; test epic-card.test.ts 'every member card can be taken out' + TestWebCreatesMovesRemovesAndOpens
+  proof: EpicList.svelte:79 onremove on every direct card -> ReviewPage removeFromEpic (DELETE /api/epics/{name}/tickets/{id}); button TicketCard.svelte:34 is a plain click/tap button; tests TestWebCreatesMovesRemovesAndOpens (DELETE 200 for a member, 409 for a follow-up). No Svelte component test runner in core/web/ui - the button itself is checked by hand.
 - [x] Eine indirekte Karte (via follows/parent) nennt das Ticket, ueber das sie mitgezaehlt wird, statt still nicht ziehbar zu sein; Test
   proof: core/epic/epic.go Ticket.Via via covered(); TicketCard.svelte:54 'counted through <handle>'; tests TestCoveredWalksFollowsAndParent, TestWebCreatesMovesRemovesAndOpens (via), epic-card.test.ts 'a follow-up names the member'
 - [x] Ein archiviertes Ticket laesst sich im Web genauso aus dem Epic nehmen wie mit 'jaira epic rm', oder die Seite sagt warum nicht; Test
