@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T10:51:07Z
-updated-at: 2026-11-05T11:03:39Z
+updated-at: 2026-11-05T11:05:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85123
 claimed-at: 2026-11-05T10:51:26Z
@@ -32,7 +32,7 @@ outcome-resolves: "Taking any ticket out of an epic in jaira web, on a phone too
 review-summary: "none"
 round: 3
 review-gaps: "none - round 3 changed only help prose in internal/cli/web.go; earlier considerations stand (see round-1 review-gaps note)"
-test-verdict: "fail: 'jaira web --help' (internal/cli/web.go:36-42) still describes removal as drag-only and a follow-up as merely undraggable - no word of the Remove button or the 'counted through' line"
+test-verdict: "pass: go build rc=0, go test -count=1 ./... rc=0, -race on core/epic core/web internal/cli rc=0, npm test rc=0; DoD 1-4 verified in the tree; scratch board via jaira web: DELETE member 200, logbook member 200, follow-up 409, /api/epics carries via; EpicList server-rendered: Remove on both direct cards (board+logbook), none on the follow-up, which names its member; web --help updated. Not run: a real tap in a phone browser"
 ---
 
 # jaira web: ein Ticket laesst sich per Knopf aus einem Epic nehmen, auch auf dem Handy
