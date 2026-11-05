@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T18:06:14Z
+updated-at: 2026-11-05T18:06:17Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
@@ -107,3 +107,4 @@ All write dirs equal the Vercel table (https://github.com/vercel-labs/skills/blo
 core/role/target.go:39 "A further one is a further entry" is made false by this change: scripts/install.sh (agent_dir + AGENTS) and scripts/install.ps1 ($known) carry the same names, order and detect folders; name both scripts in that comment so the next agent lands in all three copies
 scripts/install.sh install_roles and scripts/install.ps1 Install-JairaRoles: the JAIRA_AGENT guard around the no-agent sentence leaves JAIRA_AGENT=bogus with no add-later command (goal: a sentence says how to catch up); drop the guard, one branch less, and the sentence prints whenever nothing is installed
 left alone: detection in the scripts, not the binary (pre-process note 17:59 point 4); claude+codex duplicate in cursor/opencode (point 2); copilot dirs kept (driver note 17:55 a); install.ps1 unrun and the opencode Windows path (in-progress note 18:03)
+- **2026-11-05 18:06 · BeMuCa** — round 2: fixed the three critique findings: AGENTS.md table now lists all 8 agents + skip rule; target.go comment names install.sh/install.ps1; install.sh/ps1 print the add-later line also when JAIRA_AGENT has only unknown names. Ran: gofmt -l, go vet, go build, sh -n/dash -n; install.sh harness (scratch HOME) with JAIRA_AGENT=foo prints unknown + add-later line, codex and none cases unchanged. install.ps1 unrun (no pwsh).
