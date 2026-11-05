@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T10:51:07Z
-updated-at: 2026-11-05T10:52:45Z
+updated-at: 2026-11-05T10:52:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85123
 claimed-at: 2026-11-05T10:51:26Z
@@ -46,7 +46,7 @@ claimed-at: 2026-11-05T10:51:26Z
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] core/epic: Ticket.Via = the member a follow-up is counted through; Covered/Count carry it; Go test
+- [~] core/epic: Ticket.Via = the member a follow-up is counted through; Covered/Count carry it; Go test
 - [ ] core/web + internal/cli: web.Ticket.Via passed through; webSource.load uses LoadAnywhere so archived/logbook tickets can be removed like 'jaira epic rm'; Go test
 - [ ] UI: Remove button on direct cards in EpicList calling DELETE via onunassign; indirect card text names the via ticket; vitest
 - [ ] release note core/release/notes/3XXF5B.md; build ui dist; go test ./...
