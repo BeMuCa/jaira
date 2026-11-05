@@ -1,7 +1,7 @@
 ---
 id: 01M6NHNZV41ZW2MYHS3YE2HSK1
 title: "panda-bobr/jaira-plugin-template: lauffaehige Vorlage mit Beispielbefehl und Release-Pipeline"
-status: backlog
+status: todo
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -18,7 +18,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T10:28:03Z
+updated-at: 2026-11-05T10:28:08Z
 updated-by: Alexander Sacharov
 ---
 
