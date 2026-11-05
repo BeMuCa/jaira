@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T21:32:27Z
-updated-at: 2026-11-05T21:50:23Z
+updated-at: 2026-11-05T22:00:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54459
 claimed-at: 2026-11-05T21:33:03Z
@@ -67,3 +67,4 @@ question: "DoD 3 (clicks/scroll) is not a mod bug: Claude Code 2.1.318 switched 
 - **2026-11-05 21:47 · Alexander Sacharov** — question: DoD 3 (clicks/scroll) is not a mod bug: Claude Code 2.1.318 switched off fullscreen on this machine on 2026-11-04 after 3 failed starts (~/.claude.json fullscreenAutoDisabled). 1) (Recommended) Alex runs /tui fullscreen, then checks DoD 1+3 live in the cockpit (claude --plugin-dir <worktree>/core/mod/builtin/jaira-cockpit) - an agent ticks them on that word. 2) Remove DoD 3 from the ticket as not a code matter, check only DoD 1. 3) Something else.
 - **2026-11-05 21:50 · Alexander Sacharov** — Alex (via teamlead, 05.11.2026): the cockpit works on Windows - fullscreen was auto-disabled only on this WSL machine, DoD 3 is no mod bug. Answer to the question: option 1 - Alex runs /tui fullscreen here and checks DoD 1 and DoD 3 live with claude --plugin-dir <worktree>/core/mod/builtin/jaira-cockpit. The worker waits for his word, which the teamlead passes on; then tick DoD 1+3 and hand the ticket to a fresh review.
 - **2026-11-05 21:50 · Alexander Sacharov** — Correction to the previous note: Claude Code on Windows is v2.1.317, not 2.1.318. That it works there does not prove the fullscreen diagnosis - it only shows that 2.1.317 works. What decides DoD 1 and DoD 3 is still Alex's live check on 2.1.318 after /tui fullscreen (option 1 stands).
+- **2026-11-05 22:00 · Alexander Sacharov** — DoD 1 path: the '[shortened by jaira-cockpit] ... - full report: /cockpit report <ID>' lines the teamlead saw on master's mod under 2.1.318 come from session.receive (register.tsx:1146, relayed peer messages) and prompt.submit (register.tsx:1155) - neither is in sec-default's scan list (PASSED_OVER_DOORS only touches session.append on attachment|hook-context|compaction). The session.append rewrite on door prompt|delivery was never skipped either. So shortening never broke: what failed was the click, through fullscreenAutoDisabled, and the notice came from the hook having no matcher on the attachment doors. DoD 1 holds on master as well as on the branch.
