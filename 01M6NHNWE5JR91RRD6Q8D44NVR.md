@@ -19,7 +19,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T12:05:19Z
+updated-at: 2026-11-05T12:05:22Z
 updated-by: Alexander Sacharov
 question: "Pushes nach GitHub sind dieser Sitzung verweigert. 1) (empfohlen) Alex fuehrt publish-1-before-merge.sh aus, merged den PR, dann publish-2-after-merge.sh und oeffnet den Test-PR. 2) Alex erlaubt dem Worker git push/gh repo create per Permission-Regel. Zwei Fixture-Repos statt einem - ok?"
 ---
@@ -42,7 +42,7 @@ question: "Pushes nach GitHub sind dieser Sitzung verweigert. 1) (empfohlen) Ale
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] Repo jaira-releases lokal anlegen, README-Start-Commit auf main pushen
+- [x] Repo jaira-releases lokal anlegen, README-Start-Commit auf main pushen
 - [x] plugins.json, schema/, CONTRIBUTING.md, check_catalog.py + Unit-Tests, Workflow auf feat/d44nvr
 - [~] Fixture-Repo sashasoft90/jaira-plugin-ci-fixture mit Release v0.0.1 ohne checksums.txt
 - [ ] Test-Branches (doppelte id, fehlendes Release, fehlende Pruefsumme) pushen, gh-Zeilen fuer Alex
