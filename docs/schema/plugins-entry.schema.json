@@ -1,6 +1,5 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/BeMuCa/jaira/blob/master/docs/schema/plugins-entry.schema.json",
   "title": "plugins.json entry",
   "description": "One entry of the plugin catalogue, plugins.json in panda-bobr/jaira-releases. plugins.json is an array of these. See docs/PLUGINS.md.",
   "type": "object",

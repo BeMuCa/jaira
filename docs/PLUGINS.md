@@ -128,8 +128,9 @@ the plugin's own folder. The file is written with mode `0600` in a `0700`
 directory: readable by its owner only. That is not encryption: every program
 of that user, and every backup of the disk, can read it.
 
-The file and its layout are the subject of ticket 3Q92JY. Until that lands, a
-plugin reads its token from where 3Q92JY puts it, and stores nothing of its own.
+The file and its layout are the subject of ticket 3Q92JY; until that ships
+the file does not exist. A plugin stores no token of its own anywhere else in
+the meantime.
 
 ## Exit codes
 
@@ -156,7 +157,7 @@ prints the same object for
 jaira-<id> manifest --json
 ```
 
-which is how `jaira web` and a later `jaira plugins` learn what an installed
+which is how `jaira web` learns what an installed
 plugin offers without reading its repository.
 
 ```json

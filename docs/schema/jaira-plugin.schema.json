@@ -1,6 +1,5 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/BeMuCa/jaira/blob/master/docs/schema/jaira-plugin.schema.json",
   "title": "jaira-plugin.json",
   "description": "The manifest of a jaira plugin: jaira-plugin.json at the root of the plugin's repository, and the output of 'jaira-<id> manifest --json'. See docs/PLUGINS.md.",
   "type": "object",
