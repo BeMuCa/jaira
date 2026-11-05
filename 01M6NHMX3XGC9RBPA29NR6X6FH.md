@@ -29,17 +29,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:46:40Z
-updated-at: 2026-11-05T09:51:09Z
+updated-at: 2026-11-05T09:51:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-21000
 claimed-at: 2026-11-05T09:47:52Z
 outcome-what: docs/PLUGINS.md schreibt den Plugin-Standard und die Entscheidung vom 05.11.2026 fest; docs/schema/ enthaelt JSON-Schemas fuer jaira-plugin.json und einen plugins.json-Eintrag
 outcome-why: "Wer ein Plugin schreiben will, braucht einen Ort mit Aufruf, Umgebung, Schreibweg, external, Geheimnissen, Exit-Codes, Manifest und Katalogweg - bisher stand das nur in der Teamlead-Sitzung"
 outcome-resolves: Alle drei DoD-Punkte; jaira selbst startet noch keine Plugins (spaeteres Ticket)
-review-summary: |-
-  docs/schema/*.schema.json: $id points at BeMuCa/jaira, the repo moves to panda-bobr - the URL goes stale and nothing resolves it; drop $id
-  docs/PLUGINS.md Secrets: 'Until that lands, a plugin reads its token from where 3Q92JY puts it' is circular; say the file does not exist until 3Q92JY ships and its layout is defined there
-  docs/PLUGINS.md manifest: 'and a later jaira plugins' promises a command nobody decided; drop it
+review-summary: none
 round: 2
 ---
 
