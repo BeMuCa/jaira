@@ -19,7 +19,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T11:44:18Z
+updated-at: 2026-11-05T11:44:22Z
 updated-by: Alexander Sacharov
 question: "Pushes nach GitHub sind dieser Sitzung verweigert. 1) (empfohlen) Alex fuehrt publish-1-before-merge.sh aus, merged den PR, dann publish-2-after-merge.sh und oeffnet den Test-PR. 2) Alex erlaubt dem Worker git push/gh repo create per Permission-Regel. Zwei Fixture-Repos statt einem - ok?"
 ---
@@ -60,3 +60,4 @@ question: "Pushes nach GitHub sind dieser Sitzung verweigert. 1) (empfohlen) Ale
 - **2026-11-05 10:37 · Alexander Sacharov** — Alex (05.11.2026, via Teamlead): Veroeffentlichung freigegeben; Fixture-Repos nach panda-bobr statt sashasoft90 (panda-bobr/jaira-plugin-ci-fixture, panda-bobr/jaira-plugin-ci-fixture-norelease). publish-1-before-merge.sh und test/d44nvr-catalog-check (neuer Commit 2d830c6, repo-URLs) angepasst. Teamlead fuehrt publish-1 auf Alex' Anweisung aus; der Worker pusht nichts. Erwartung Test-PR: zusaetzlich zu doppelter id, fehlendem Release, fehlender Pruefsumme meldet die Pruefung 'sashasoft90 is not a public member of panda-bobr', solange Alex' Mitgliedschaft nicht oeffentlich ist. Trockenlauf gegen panda-bobr/jaira-hello-demo (id hello): Manifest, Release v0.1.0, Binaries und checksums.txt bestehen; einzig die Mitgliedschaftspruefung schlaegt fehl - Kandidat fuer einen gruenen PR, sobald die Mitgliedschaft oeffentlich ist.
 - **2026-11-05 10:39 · Alexander Sacharov** — Trockenlauf mit den echten Fixture-Repos (nach publish-1): Pruefung meldet doppelte id, fehlendes Release (norelease), fehlendes checksums.txt (ci-fixture) und die Mitgliedschaft. Gefunden: eine doppelte id wurde zweimal gegen GitHub geprueft und doppelt gemeldet -> Commit 6840b4f auf feat/d44nvr prueft je id nur einmal (+Test, 23 gruen). 6840b4f ist LOKAL und muss vor dem Merge noch nach feat/d44nvr gepusht werden; test-Branch darauf rebased.
 - **2026-11-05 10:39 · Alexander Sacharov** — PR https://github.com/panda-bobr/jaira-releases/pull/1 offen (feat/d44nvr bei 6840b4f), auf Alex' Anweisung vom Teamlead geoeffnet; Merge macht Alex, danach publish-2 und Test-PR.
+- **2026-11-05 11:44 · Alexander Sacharov** — publish-2 umgebaut: kein Force-Push mehr. Worker hat test/d44nvr-catalog-check lokal auf origin/main 44d293d rebased (Diff = nur plugins.json); der Branch war nie gepusht, also reicht 'git push origin test/d44nvr-catalog-check'. Die Ablehnung im Teamlead lag am -f.
