@@ -29,14 +29,17 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:46:40Z
-updated-at: 2026-11-05T10:10:07Z
+updated-at: 2026-11-05T10:10:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-21000
 claimed-at: 2026-11-05T09:47:52Z
 outcome-what: "docs/PLUGINS.md: Plugin-Standard samt Entscheidung vom 05.11.2026, dazu Events (jaira-<id> event <name>) und Web (Seiten unter /plugins/<id>/, api CGI-artig); docs/schema/ mit Schemas fuer jaira-plugin.json (inkl. events, web) und einen plugins.json-Eintrag"
 outcome-why: "Wer ein Plugin schreiben will, braucht einen Ort mit allen drei Kanaelen (Befehl, Event, Web), Schreibweg, external, Geheimnissen, Exit-Codes, Manifest und Katalogweg - bisher stand das nur in der Teamlead-Sitzung"
 outcome-resolves: Alle vier DoD-Punkte; jaira selbst startet noch keine Plugins (8Z3VRF und Folgetickets im Epic plugins)
-review-summary: "Zwei Commits, nur Doku: docs/PLUGINS.md legt den Plugin-Standard fest (Aufruf jaira <id> -> ~/.jaira/plugins/<id>/jaira-<id>, Umgebung JAIRA_ROOT/JAIRA_BOARD/JAIRA_VERSION, Schreiben nur ueber die CLI, external als '<id>:<key>', Geheimnisse in ~/.jaira/secrets.json (wartet auf 3Q92JY), Exit-Codes wie jaira, Manifest jaira-plugin.json + 'manifest --json', Releases per goreleaser, Weg in den Katalog per Fork+PR) und haelt die Entscheidung vom 05.11.2026 samt Absagen (Go-plugin, Jira eingebaut) fest. docs/schema/ bringt JSON-Schemas (Draft 2020-12) fuer das Manifest und einen plugins.json-Eintrag. jaira selbst aendert sich nicht."
+review-summary: |-
+  docs/PLUGINS.md Events: a plugin that calls jaira set/note from its event handler fires the next event - an endless loop with two plugins; say that jaira passes JAIRA_IN_EVENT=1 and writes made with it set fire no events
+  docs/PLUGINS.md Web: 'pages or an api' - but the manifest has no way to declare an api without pages; say the capability web is what lets jaira web forward /plugins/<id>/api/*
+  docs/PLUGINS.md Web: a file under web/api/ collides with the forwarded path; say api/ is reserved and never served as a file
 round: 3
 review-gaps: |-
   note: jaira show --json und jaira list --json geben das Feld external nicht aus - ein Plugin, das wie empfohlen ueber die Lesebefehle liest, findet seinen Schluessel (jira:PROJ-123) nicht und muss doch das Markdown parsen; entweder die JSON-Ausgabe ergaenzt external im Dispatch-Ticket, oder der Abschnitt Writing nennt das
