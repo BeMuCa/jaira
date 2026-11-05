@@ -102,6 +102,10 @@ Reading is free: `jaira show <id> --json`, `jaira list --json` and the other
 read commands are the stable way; parsing the markdown files directly works
 but follows the format wherever it goes.
 
+**Today `show --json` and `list --json` do not carry the `external` field.**
+A plugin that needs its key has to read it from the ticket file until ticket
+8Z3VRF adds it to the JSON output.
+
 ## The `external` field
 
 A ticket that mirrors something in another system says so in its frontmatter
@@ -131,6 +135,100 @@ of that user, and every backup of the disk, can read it.
 The file and its layout are the subject of ticket 3Q92JY; until that ships
 the file does not exist. A plugin stores no token of its own anywhere else in
 the meantime.
+
+## Events
+
+A command is how a person or an agent calls a plugin. An event is how jaira
+calls it on its own: after a write succeeds, every plugin that subscribed to
+that write hears about it — a Jira plugin moves the issue when the ticket
+moves, without anybody typing `jaira jira push`.
+
+A plugin subscribes in its manifest:
+
+```json
+"events": ["create", "move", "claim", "set"]
+```
+
+The list is closed; these four are all there are.
+
+| Event | After |
+|---|---|
+| `create` | `jaira create` filed a ticket |
+| `move` | `jaira move` put a ticket into another lane |
+| `claim` | `jaira claim` took a ticket |
+| `set` | `jaira set` changed a ticket's fields |
+
+After the write has succeeded, jaira runs, for every subscribed plugin in
+order of their ids:
+
+```
+jaira-<id> event <name>
+```
+
+- **stdin** is one JSON object: what `jaira show <id> --json` prints after the
+  change, with two keys added at the top level — `actor`, who made the change,
+  and `from_lane`, the lane the ticket left (empty for every event but `move`).
+- **Environment**: the same `JAIRA_ROOT`, `JAIRA_BOARD` and `JAIRA_VERSION` as
+  a command gets.
+- **Timeout**: 5 seconds, the same cap jaira's hooks have
+  (`core/hook/hook.go`). A plugin still running after that is stopped.
+- **Failure never fails the command.** The write has already happened; a
+  plugin that exits non-zero, times out or is missing changes nothing about
+  the command's own result or exit code. Its stdout and stderr are discarded,
+  as a hook's are, so they never mix into JSON an agent is parsing.
+- **A plugin that cannot reach its target buffers by itself** — jaira does not
+  retry and does not queue. The next event, or a `jaira <id>` command, is the
+  plugin's chance to send what it missed.
+
+Events are separate from hooks: `core/hook` stays the place for a user's own
+scripts, events are for installed plugins.
+
+## Web
+
+A plugin can add pages of its own to `jaira web` — a Jira plugin, say, that
+shows the board the way its team reads Jira.
+
+### Pages
+
+The manifest names them:
+
+```json
+"web": {
+  "pages": [
+    { "path": "index.html", "title": "Jira" }
+  ]
+}
+```
+
+- The files ship in the release as `jaira-<id>_web.tar.gz`, a tarball of a
+  `web/` folder, and are unpacked into `~/.jaira/plugins/<id>/web/`.
+- `jaira web` serves that folder under `/plugins/<id>/` — the page above is
+  `/plugins/jira/index.html` — and shows every page as a tab or link with its
+  `title`. `path` is relative to `web/`.
+- A page reads the board through `jaira web`'s existing JSON API (`/api/...`),
+  the same one jaira's own page uses.
+
+### Its own data
+
+For data only the plugin has, `jaira web` passes a request on, CGI-style:
+
+```
+/plugins/<id>/api/<path>   →   jaira-<id> web <METHOD> /<path>
+```
+
+- The request body is on stdin; the query string is in `JAIRA_QUERY`.
+- The response is JSON on stdout.
+- The HTTP status comes from the exit code: `0` → 200, `2` → 400, `3` → 403,
+  `5` → 404, anything else → 500.
+- The same host and origin checks `jaira web` applies to its own API apply
+  here: a write from a foreign origin never reaches the plugin.
+
+One process per request, started and ended by `jaira web`. A plugin runs no
+server of its own and opens no port: ports, process lifetime and how Windows
+handles background processes would all become `jaira web`'s problem, for
+every plugin.
+
+A plugin with pages or an `api` declares the capability `web`.
 
 ## Exit codes
 
@@ -170,7 +268,11 @@ plugin offers without reading its repository.
     { "name": "pull", "summary": "create or update tickets from a JQL query" },
     { "name": "push", "summary": "write a ticket's lane back to its Jira issue" }
   ],
-  "capabilities": ["read", "write", "network", "secrets"]
+  "capabilities": ["read", "write", "network", "secrets", "web"],
+  "events": ["move"],
+  "web": {
+    "pages": [{ "path": "index.html", "title": "Jira" }]
+  }
 }
 ```
 
@@ -182,6 +284,8 @@ plugin offers without reading its repository.
 | `minJairaVersion` | the oldest jaira the plugin works with |
 | `commands` | what `jaira <id> <name>` does, one line each |
 | `capabilities` | what the plugin does, shown to a person before install |
+| `events` | optional — the writes it wants to hear about, see [Events](#events) |
+| `web` | optional — its pages in `jaira web`, see [Web](#web) |
 
 `capabilities` is a closed list:
 
@@ -191,6 +295,7 @@ plugin offers without reading its repository.
 | `write` | changes tickets through jaira's write commands |
 | `network` | talks to a host on the network |
 | `secrets` | reads `~/.jaira/secrets.json` |
+| `web` | adds pages or an `api` to `jaira web` |
 
 The list is a declaration, not a sandbox: jaira shows it, it does not enforce
 it. A plugin that does more than it declares is removed from the catalogue.
@@ -202,6 +307,8 @@ it. A plugin that does more than it declares is removed from the catalogue.
 - Release assets, one per platform, as goreleaser builds them:
   `jaira-<id>_<os>_<arch>` (`.exe` on Windows) — `linux`, `darwin`,
   `windows` × `amd64`, `arm64` — and `checksums.txt` beside them.
+- A plugin with pages adds `jaira-<id>_web.tar.gz`, the `web/` folder, once
+  for all platforms.
 - An update is a new release. It needs no pull request to the catalogue: the
   catalogue names the repository, not a version.
 

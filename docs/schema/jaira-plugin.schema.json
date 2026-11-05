@@ -53,7 +53,44 @@
       "type": "array",
       "uniqueItems": true,
       "items": {
-        "enum": ["read", "write", "network", "secrets"]
+        "enum": ["read", "write", "network", "secrets", "web"]
+      }
+    },
+    "events": {
+      "description": "The writes the plugin wants to hear about; jaira runs 'jaira-<id> event <name>' after each.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": ["create", "move", "claim", "set"]
+      }
+    },
+    "web": {
+      "description": "Pages the plugin adds to jaira web, served under /plugins/<id>/.",
+      "type": "object",
+      "required": ["pages"],
+      "additionalProperties": false,
+      "properties": {
+        "pages": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["path", "title"],
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "description": "Relative to the plugin's web/ folder; no leading slash, no '..'.",
+                "type": "string",
+                "pattern": "^(?!/)(?!.*\\.\\.)[A-Za-z0-9._/-]+$"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40
+              }
+            }
+          }
+        }
       }
     }
   }
