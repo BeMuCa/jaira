@@ -20,14 +20,14 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-05T09:35:32Z
+updated-at: 2026-11-05T09:36:08Z
 updated-by: berkc
 claimed-by: berk-ca-2016410
 claimed-at: 2026-11-05T09:35:32Z
 outcome-what: "The TUI diff pane (ticket view, sign-off/human lanes) shows each file's header at its first hunk's line, and a failed diff load shows 'Diff unavailable' instead of 'No changes'. Covered by new tests TestHeaderLineIsTheFirstHunkOfEachFile and TestUnshowableCommitIsDiffUnavailableNotNoChanges in internal/tui/diffpane_test.go; the rest of the ticket is unchanged from the earlier passes."
 outcome-why: "Review sent back two blockers: a header line taken from the second hunk when the first starts at line 1 makes 'o' open the wrong line; an unshowable commit list reported as 'No changes' hides a git problem (rule 8 of the spec)."
 outcome-resolves: "review 2026-11-05 09:31: diffpane.go:96 header line (blocker 1) and diffpane.go:271 fallback notice (blocker 2)"
-review-summary: "On a 140+ column terminal, a ticket in signoff or human shows the diff of its newest branch (feat/<handle>-..., picked by newest commit) against master next to the ticket. The redesign (2a73eae2, 725643c3, afbd423f) adds: a title 'Diff  <branch> → <base>' with 'file N/M +A −D' and a ●/○ focus mark; a shaded header bar per file with dir/basename, new/deleted/renamed tag and per-file counts, and a blank row between files; coloured hunk headers; a gutter with old and new line numbers; added and removed rows tinted across the whole pane in 256-colour indices (22/52, words 28/88; light 194/224/157/217); the changed middle of a 1:1 replaced line highlighted; long rows cut with '…'; centred 'No diff yet' / 'No changes' / red error notices. 'o' on a blank separator row opens the file below it. All of it is in internal/tui/diffpane.go plus BranchFor's --sort=-committerdate in core/gitrepo/branchdiff.go."
+review-summary: "none"
 round: 7
 review-gaps: |-
   blocker: internal/tui/diffpane.go:96 the header row keeps line==1 as 'not set yet', so a file whose first hunk starts at line 1 takes the SECOND hunk's start: parseDiff of hunks '@@ -1,2 +1,3 @@' and '@@ -50,2 +51,2 @@' gives the H row line 51 (probed), and 'o' on that header opens line 51 instead of 1 - set the header line only at the file's first '@@' (e.g. a firstHunk bool reset at 'diff --git') and add that case to TestParseDiffSplitsFilesAndNumbersLines
