@@ -18,7 +18,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T10:24:25Z
+updated-at: 2026-11-05T10:24:29Z
 updated-by: Alexander Sacharov
 ---
 
@@ -44,3 +44,4 @@ updated-by: Alexander Sacharov
 - **2026-11-05 10:24 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/1770.sock
 - **2026-11-05 10:24 · Alexander Sacharov** — Worker-Befund vor dem Plan (05.11.2026): (a) panda-bobr/jaira-releases ist leer, keine CI - die kommt erst mit D44NVR (backlog). DoD 2 ist bis dahin nicht erfuellbar. (b) Die ganze Arbeit liegt im fremden Repo panda-bobr/jaira-plugin-template (oeffentlich, leer): Commit, Push nach main und ein Tag v0.1.0 erzeugen ein oeffentliches Release - ausserhalb dieses Worktrees, nach aussen sichtbar.
 - **2026-11-05 10:24 · Alexander Sacharov** — Frage 1 (DoD 2 / D44NVR): 1) E2HSK1 auf D44NVR blockieren und D44NVR zuerst bauen (Recommended) - DoD bleibt ehrlich, eine Runde Wartezeit. 2) Vorlage jetzt bauen, DoD 1 abhaken, E2HSK1 danach in blocked bis D44NVR - Vorlage steht frueher, Ticket haengt offen. 3) DoD 2 ersetzen durch lokale Pruefung gegen das Format aus docs/PLUGINS.md - sofort fertig, aber keine echte Katalog-CI.
+- **2026-11-05 10:24 · Alexander Sacharov** — Frage 2 (fremdes Repo): Darf der Worker in panda-bobr/jaira-plugin-template direkt nach main pushen und zum Vorfuehren v0.1.0 taggen (oeffentliches Release)? 1) Ja, push nach main + Tag v0.1.0 im Template selbst (Recommended) - einfachste Vorfuehrung, Release liegt danach im Template (spaeter loeschbar). 2) Push nach main, aber Vorfuehrung in einem Wegwerf-Repo aus der Vorlage (panda-bobr/jaira-hello-demo) - Template bleibt ohne Release, ein Repo mehr. 3) Nur Branch pushen, Alex merged und taggt selbst - kein Push nach main durch den Agenten.
