@@ -20,7 +20,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T22:00:00Z
+updated-at: 2026-11-05T22:00:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
@@ -89,3 +89,4 @@ review-check: "1. go build -o /tmp/j ./cmd/jaira  2. mkdir -p /tmp/h/plugins/dem
 internal/cli/plugin.go:firePlugins checks plugin.Subscribers and plugin.Fire scans the directory again and stats every Program a second time - let Subscribers return nil inside an event (JAIRA_IN_EVENT) and pass its ids into Fire(ids, event, payload, env), so one scan per write and no JSON built inside an event. Stehen gelassen: JAIRA_HOME-Logik in plugin.Dir dupliziert settings.Path - das gleiche Muster steht in 7 Paketen (session, selfupdate, project, identity, lane, ticket/store), eigenes Paket ist Konvention. move.Moved als Paketvariable: gleiches Muster wie release.Current, deckt CLI+TUI an einer Stelle.
 - **2026-11-05 21:51 · Alexander Sacharov** — critique (Runde 2): beide Befunde aus Runde 1 erledigt (b154df66) - Events geloescht, Subscribers einmal pro Schreibvorgang und leer innerhalb eines Events. Nichts Neues.
 - **2026-11-05 21:58 · Alexander Sacharov** — Teamlead (47752) nach Review, vor Signoff: drei Review-Notizen werden behoben. (1) TUI-Moves feuern Events ohne die UI zu blockieren; CLI bleibt synchron wie PLUGINS.md. (2) set board=<x>, das den Status in die erste Lane des neuen Boards setzt, feuert zusaetzlich 'move' mit den Lanes des neuen Boards. (3) Test fuer das .exe-Suffix, der auch auf Linux laeuft (GOOS als Parameter). Plan: TUI -> eine Warteschlange mit einem Worker-Goroutine in internal/cli, Payload wird synchron gebaut (Zustand zum Zeitpunkt des Moves), gestartet vor tui-Lauf, beim Beenden geleert (Reihenfolge bleibt, kein Event geht beim Quit verloren; Quit wartet hoechstens auf laufende Plugins).
+- **2026-11-05 22:00 · Alexander Sacharov** — Runde 2 umgesetzt. Befund zu Review-Notiz 2: der set-Payload war schon mit den Lanes des neuen Boards gebaut (envFor liest t.Board nach dem Mutate) - der Test prueft status_known/next_lane jetzt explizit; neu ist nur das zusaetzliche move-Event. Home-Bildschirm (runHome) bewegt keine Tickets, daher nur openBoardAt und 'jaira board' mit Warteschlange. Haengendes Plugin beim Quit: Quit wartet bis zu 5 s je noch laufendem Event - bewusst, statt Events zu verlieren.
