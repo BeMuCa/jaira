@@ -20,7 +20,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T21:52:58Z
+updated-at: 2026-11-05T21:54:44Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
@@ -30,6 +30,7 @@ outcome-resolves: Plugins lassen sich ohne Aenderung am Kern starten und hoeren 
 review-summary: none
 round: 2
 review-gaps: "folded the event payload into showJSON (internal/cli/tickets.go), which show --json now uses too - it was assembled twice; claim no longer loads the whole board (envFor) on every claim - firePlugins loads lanes only when a plugin subscribed; left: plugin.Dir repeats the JAIRA_HOME lookup that 7 packages already repeat each (pre-existing convention); hook.Run keeps its own select-based timeout beside plugin.fireOne's context one (pre-existing, different contract: env vars, no stdin); fireOne re-stats Program per subscriber (one stat, needed for the path)"
+test-verdict: "pass: go test ./... -race after go clean -testcache RC=0; DoD 1-7 proofs opened and their tests run; built binary on a scratch board: 'echo hello | jaira demo pull --board ops \"two words\"' passed args, stdin, JAIRA_ROOT/BOARD=ops/VERSION=0.9.9 and exit 6; 'jaira list' stayed built-in; create/set/claim/move each reached the plugin with in_event=1, from_lane backlog on move, external demo:X-1; a plugin exiting 1 failed no command. TUI moves not driven by hand - covered by TestMovedHearsEveryWrittenMove, all three TUI sites call move.Move"
 ---
 
 # jaira <id> startet ein installiertes Plugin
