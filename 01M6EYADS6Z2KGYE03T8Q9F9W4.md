@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T18:06:10Z
+updated-at: 2026-11-05T18:06:12Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
@@ -76,7 +76,7 @@ round: 2
 - [x] core/release/notes/Q9F9W4.md: one-line instructions: new --agent names; installer detects agents and JAIRA_AGENT; no agent -> nothing in home; jaira update --roles now also refreshes roles in the new agents' dirs
 - [x] scan the diff for employer names and hostnames; gofmt -l, go vet ./..., go build ./...; commit with Q9F9W4 in the subject, ticket file alongside
 - [x] AGENTS.md table names all eight agents plus the skip rule
-- [ ] target.go comment names both installer scripts
+- [x] target.go comment names both installer scripts
 - [ ] installers print the add-later line for only-unknown JAIRA_AGENT
 
 ## Progress
