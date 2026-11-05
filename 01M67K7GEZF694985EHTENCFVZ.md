@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-05T09:43:33Z
+updated-at: 2026-11-05T09:43:35Z
 updated-by: berkc
 claimed-by: berk-ca-1989860
 claimed-at: 2026-11-05T09:31:17Z
@@ -32,6 +32,8 @@ review-gaps: |-
   note: the run line does not shell-quote the script path (flow.go laneRunFor), so a path with a space breaks when pasted
   note: a script lane without receipt: required never gets script_done=true, so every fresh agent is told to run it again - recorded design decision (note 2026-11-04 21:37), README does not spell it out
 test-verdict: "pass: touched packages green (RC=0, three hangers skipped in internal/cli), DoD 1-9 verified in the tree, receipt gate and show payload exercised on a scratch board"
+review-verdict: "the diff meets all nine DoD items; no defects found. go vet clean; go test core/lane core/gate core/role core/board core/shipped and the internal/cli receipt/for-lane/lanes-show tests pass; hand run on a scratch board confirmed refusal without receipt, receipt write, second receipt refused, script_done, new key after send-back. Four notes, none blocking"
+review-round: 3
 ---
 
 # Neue Lane-Arten: eine Lane, die nur einen Skill startet, und Automations-Lanes (Artefakte, E-Mail, API-Aufrufe, Telegram senden/empfangen, Video-Upload)
