@@ -20,7 +20,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T21:45:14Z
+updated-at: 2026-11-05T21:45:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
@@ -47,7 +47,7 @@ claimed-at: 2026-11-05T21:39:09Z
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] core/ticketjson: ticketJSON samt checklistJSON/rejectionJSON/nextLaneID aus internal/cli/tickets.go herausziehen, damit die TUI denselben Payload bauen kann; external ergaenzen
+- [-] core/ticketjson: ticketJSON samt checklistJSON/rejectionJSON/nextLaneID aus internal/cli/tickets.go herausziehen, damit die TUI denselben Payload bauen kann; external ergaenzen
 - [ ] core/plugin: Dir (JAIRA_HOME), Lookup(id), Env(root, board, version), Run (stdio, Exit-Code), Subscribers(event) aus jaira-plugin.json, Fire (stdin JSON, 5 s, JAIRA_IN_EVENT)
 - [ ] cli.Execute: ist os.Args[1] ein Befehl, den cobra nicht kennt, und ein installiertes Plugin -> plugin.Run
 - [ ] Events: firePlugins neben fireHook in create, claim, set, move; TUI-Moves (model.go x2, signoff.go) ueber einen Callback aus cli
