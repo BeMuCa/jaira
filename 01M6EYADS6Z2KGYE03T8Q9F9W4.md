@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T18:02:42Z
+updated-at: 2026-11-05T18:02:44Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
@@ -49,7 +49,7 @@ claimed-at: 2026-11-05T17:54:30Z
 - [x] test first, internal/cli/roles_test.go: TestRolesInstallAgentWritesWhereItReads, one t.Run per agent (claude, codex, pi, copilot, cursor, gemini-cli, opencode, hermes): --project and --global land in the dirs of the findings note; jaira-cockpit only for claude; replaces TestRolesInstallAgentCopilotWritesWhereCopilotReads
 - [x] test first: TestRolesInstallAgentSkipsWhereItAlreadyReads, one t.Run per agent with Also dirs: roles pre-installed in each Also dir (project and global) -> exit 0, one 'already reads' line, own dir not created; keeps the copilot skip test's assertions
 - [x] test first, core/role/target_test.go: agents sharing a Project or Global dir agree on Mods; claude is first; table order is claude, codex, pi, copilot, cursor, gemini-cli, opencode, hermes
-- [ ] test first: Installed() attributes a shared dir (~/.agents/skills) once, to codex; UpdateCommand for it returns 'jaira roles install --agent codex --global'
+- [x] test first: Installed() attributes a shared dir (~/.agents/skills) once, to codex; UpdateCommand for it returns 'jaira roles install --agent codex --global'
 - [ ] extend TestRolesInstallHelpNamesEveryAgentsDirectories and TestRolesInstallAgentRefusesUnknownAndInto to all eight names and dirs
 - [ ] core/role/target.go: add the six entries in the order above with Project/Global/AlsoProject/AlsoGlobal from the findings note, Mods false; extend the agents comment with each source URL, the order rule and the claude+codex duplicate limit
 - [ ] internal/cli/roles.go: rewrite the --agent paragraph of the Long help generically (every agent but claude leaves the cockpit out; Also dirs skip) instead of copilot-only prose
