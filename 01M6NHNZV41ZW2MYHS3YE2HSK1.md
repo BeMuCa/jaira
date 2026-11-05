@@ -18,7 +18,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T10:32:02Z
+updated-at: 2026-11-05T10:32:05Z
 updated-by: Alexander Sacharov
 ---
 
@@ -38,10 +38,10 @@ updated-by: Alexander Sacharov
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [~] Go-Modul + Befehl jaira-hello (greet: list --json lesen, note schreiben; manifest --json aus eingebettetem jaira-plugin.json; Versionspruefung JAIRA_VERSION) + Tests
+- [ ] Go-Modul + Befehl jaira-hello (greet: list --json lesen, note schreiben; manifest --json aus eingebettetem jaira-plugin.json; Versionspruefung JAIRA_VERSION) + Tests
 - [x] goreleaser-Konfig (Assets jaira-<id>_<os>_<arch>, checksums.txt, jaira-plugin.json als Asset) + Actions: test auf push/PR, release auf Tag mit Pruefung Tag == version
 - [x] README: drei Schritte von Use this template bis Katalog-PR
-- [ ] Push nach main von panda-bobr/jaira-plugin-template, kein Tag
+- [~] Push nach main von panda-bobr/jaira-plugin-template, kein Tag
 - [ ] panda-bobr/jaira-hello-demo aus der Vorlage anlegen, Tag v0.1.0, Release-Assets und checksums.txt pruefen -> DoD 1
 - [ ] E2HSK1 nach blocked auf D44NVR (DoD 2 wartet auf die Katalog-CI)
 
