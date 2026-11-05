@@ -1,7 +1,7 @@
 ---
 id: 01M6NNAXQ276DMK3A1GH3XXF5B
 title: "jaira web: ein Ticket laesst sich per Knopf aus einem Epic nehmen, auch auf dem Handy"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -20,19 +20,29 @@ tags:
   - web
 blocked-by: []
 related: []
-commits: []
+commits:
+  - ed757ab805f67deab3e2efe7a5c56d020818fce4
+  - 1ff410d25070a0273471e1f4ac0c4c2a2ed33349
+  - f370fa68da03c63e7c5dae633738c1f72c590e72
 created-at: 2026-11-05T10:51:07Z
-updated-at: 2026-11-05T11:03:14Z
+updated-at: 2026-11-05T12:06:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85123
 claimed-at: 2026-11-05T10:51:26Z
 outcome-what: "Epic cards in jaira web get a Remove button (tap, no drag); follow-up cards name the member they are counted through (new 'via' field from core/epic); the web resolves filed tickets with LoadAnywhere like 'jaira epic rm'."
 outcome-why: "Removing only worked by HTML5 drag, which phones lack; dashed cards gave no hint which line to remove; logbook/archive tickets answered 404 in the web while the CLI removed them."
 outcome-resolves: "Taking any ticket out of an epic in jaira web, on a phone too, without falling back to 'jaira epic rm'."
-review-summary: "none"
+review-summary: "Epic cards in jaira web now carry a 'Remove' button: a plain click/tap button (TicketCard.svelte) shown only on direct member cards (EpicList.svelte), wired through ReviewPage to the existing removeFromEpic, i.e. DELETE /api/epics/{name}/tickets/{id}, so taking a ticket out no longer needs a drag and works on a phone. core/epic covered() now also returns, for each follow-up, the member it was reached from (transitively, cmp.Or keeps the top member); it is passed out as a new 'via' field on epic.Ticket and web.Ticket, and a dashed follow-up card says 'counted through <handle> (follows/parent) - take that one out to remove this', the handle opening that member. webSource.load switched from Store.Load to LoadAnywhere, so DELETE (and POST assign) find logbook and archived tickets the way 'jaira epic rm/add' do instead of answering 404. Help text of 'jaira web', release note core/release/notes/3XXF5B.md and the rebuilt ui/dist come along."
 round: 3
-review-gaps: "none - considered: handleOf duplicates Go ticket.Handle, kept because the UI needs the id to open the member and no TS helper existed; Covered now forwards to covered, kept as the public API Unassigned and web_source call; removeLabel has one caller but carries the epic title the card cannot know; webSource.Ticket (web_source.go:204) repeats load()'s LoadAnywhere+not-found mapping because it also needs the path - pre-existing, left alone"
-test-verdict: "fail: 'jaira web --help' (internal/cli/web.go:36-42) still describes removal as drag-only and a follow-up as merely undraggable - no word of the Remove button or the 'counted through' line"
+review-gaps: |-
+  note: the Remove button itself has no automated test (core/web/ui has no Svelte component runner); the server side is covered, a real tap on a phone was not exercised
+  note: TicketCard grid is now four columns on every card, also in the unassigned list where no button appears - the empty fourth column only adds a gap
+  note: LoadAnywhere also applies to Assign, so the API now accepts adding a filed ticket to an epic - matches 'jaira epic add', the page itself never drags a filed ticket
+  note: Remove has no confirm and no undo message - deliberate per the 10:52 decision note, re-adding is a drag
+test-verdict: "pass: go build rc=0, go test -count=1 ./... rc=0, -race on core/epic core/web internal/cli rc=0, npm test rc=0; DoD 1-4 verified in the tree; scratch board via jaira web: DELETE member 200, logbook member 200, follow-up 409, /api/epics carries via; EpicList server-rendered: Remove on both direct cards (board+logbook), none on the follow-up, which names its member; web --help updated. Not run: a real tap in a phone browser"
+review-verdict: "The diff meets all four DoD items: Remove button on direct cards calling DELETE (tap, no drag), follow-up cards name the member via the new 'via' field, filed tickets removable as with 'jaira epic rm' (TestWebRemovesAFiledTicketFromAnEpic), release note present. go test core/epic core/web internal/cli and npm test (13 pass) green here; built bundle matches src. No blocker; the only unverified part is the tap on a real phone."
+review-round: 3
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-3xxf5b && go build -o /tmp/jaira-3xxf5b ./cmd/jaira  2. in a repo with an epic run /tmp/jaira-3xxf5b web --no-open and open the printed URL on your phone (same network) or with the browser's phone emulation  3. unfold an epic: every solid (member) card shows a 'Remove' button; dashed cards show none  4. tap 'Remove' on a member: the card leaves the epic, the done-count drops, and 'jaira epic show <epic>' no longer lists it  5. on a dashed card read 'counted through XXXXXX (follows/parent)'; tap XXXXXX - the member opens  6. for a logbook ticket in an epic, tap 'Remove': it goes, with no 'not found' error"
 ---
 
 # jaira web: ein Ticket laesst sich per Knopf aus einem Epic nehmen, auch auf dem Handy
@@ -71,3 +81,7 @@ test-verdict: "fail: 'jaira web --help' (internal/cli/web.go:36-42) still descri
 - **2026-11-05 10:58 · Alexander Sacharov** — critique round 2: round-1 finding addressed in 1ff410d2 (epicCardExit gone, EpicList on ticket.direct, handleOf unexported in model/handle.ts). Nothing further.
 - **2026-11-05 11:02 · Alexander Sacharov** — testing round 1: gates green - go build ./... rc=0, go test -race -count=1 core/epic core/web internal/cli rc=0, go test -count=1 ./... rc=0 (33 ok), npm test rc=0. DoD 1-4 verified in tree. Function on a scratch board (bare remote, jaira web --no-open): /api/epics gives the follow-up via=<member id>, members via empty; DELETE member 200, DELETE logbook member 200, DELETE follow-up 409 'counts through follows or parent'; epic show afterwards 0 of 0. Finding: internal/cli/web.go:36-42 help text says 'drag ... back to the left to take it out' and 'a ticket that counts only because it follows a member ... cannot be dragged' - add that every member card has a Remove button (a tap, works on a phone, filed tickets too) and that a follow-up's card names the member that brings it in.
 - **2026-11-05 11:03 · Alexander Sacharov** — in-progress round 3: web --help (internal/cli/web.go) now names the Remove button, filed tickets and the follow-up's member line; internal/cli tests rc=0.
+- **2026-11-05 11:03 · Alexander Sacharov** — critique round 3: read only f370fa68 (help text answering the testing finding) - says what the page does, no new shape. Nothing.
+- **2026-11-05 11:05 · Alexander Sacharov** — testing round 2: help-text finding fixed (f370fa68, seen in the rebuilt binary's web --help). EpicList rendered with svelte/server through vite ssrLoadModule (DOMPurify stubbed, script kept in the scratchpad): aria-label 'Take MEMBER out of Demo' and 'Take LOGGED out of Demo', follow-up shows 'counted through MEMBER (follows/parent)' and no button. A real tap on a phone was not exercised - for the review-check.
+- **2026-11-05 11:07 · Alexander Sacharov** — review: no blocker. Diff meets DoD 1-4; go test core/epic core/web internal/cli + npm test green; dist bundle matches src. Unverified only: a real tap on a phone (in review-check).
+- **2026-11-05 12:06 · Alexander Sacharov** — Abgenommen von Alex im Chat mit dem Teamlead am 05.11.2026 ('3XXF5B принимай'); der Teamlead fuehrt den Move auf sein Wort aus. Echter Tipp auf dem Handy nicht vorgefuehrt.
