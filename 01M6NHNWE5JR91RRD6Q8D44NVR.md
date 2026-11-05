@@ -19,7 +19,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T12:20:02Z
+updated-at: 2026-11-05T12:20:35Z
 updated-by: Alexander Sacharov
 question: ""
 outcome-what: "panda-bobr/jaira-releases: README auf main, per PR #1 plugins.json ([]), schema/ (Kopien aus R6X6FH), CONTRIBUTING.md, .github/scripts/check_catalog.py mit 23 Unit-Tests und Workflow check-catalog (pull_request_target, nur plugins.json-PRs, Kommentar mit allen Problemen). Fixture-Repos panda-bobr/jaira-plugin-ci-fixture (Release ohne checksums.txt) und -norelease. Test-PR #2 zeigt die Ablehnung."
@@ -28,7 +28,7 @@ outcome-resolves: "DoD 1 (main 44d293d) und DoD 2 (PR #2, Run 42024115800, Bot-K
 review-summary: "none"
 round: 3
 review-gaps: "changed_entries entfernt: baute dasselbe id->Eintrag-Dict wie listed in run(); jetzt eine Suche, 56da600. Gelassen: check_takeover als eigene Funktion (eigene Fehlermeldungen, eigener Altbesitzer-Abruf), get_json, pyflakes sauber."
-test-verdict: "pass: unit RC=0 (25 tests, fix/d44nvr-errors 310de33); DoD 1 - origin/main 44d293d hat plugins.json, README.md, CONTRIBUTING.md; DoD 2 - PR #2 Bot-Kommentar gelesen, gleicher Lauf lokal gegen echte API mit RC=1 und denselben drei Faellen; gruener Pfad live: hello-demo mit Autor=Besitzer -> 'Catalogue check passed' RC=0"
+test-verdict: "pass: unit RC=0 (29 Tests, 56da600); DoD 3 live: Verschieben von hello (panda-bobr/jaira-hello-demo -> sashasoft90/jaira) durch octocat abgelehnt mit 'needs the owner of the listed repository', durch sashasoft90 (jetzt oeffentliches panda-bobr-Mitglied, anon 204) korrekt erlaubt; DoD 4: PR #3 Run 42026044679 job unit success, check skipped"
 claimed-by: DESKTOP-RFTCH11-12777
 claimed-at: 2026-11-05T12:10:19Z
 review-verdict: "Beide DoD-Punkte stimmen mit dem, was auf GitHub liegt: main 44d293d enthaelt plugins.json, README und CONTRIBUTING.md, und Test-PR #2 (Run 42024115800) wird mit doppelter id, fehlendem Release und fehlender checksums.txt abgelehnt. Kein Blocker. Einschraenkung: auf main steckt noch der bekannte Fehler bei Nicht-404-API-Fehlern (leerer Kommentar); der Fix ist fertig, aber ungepusht. Empfehlung: fix/d44nvr-errors pushen und mergen, bevor das Ticket nach done geht."
