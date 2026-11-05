@@ -241,8 +241,7 @@ func snakeParams(k snakeKind) string {
 // cells. The top row has no SGR of its own: paintCells draws its blank cells as ▔.
 func snakeEdge(k snakeKind, r, h int) string {
 	s := snakeParams(k)
-	switch r {
-	case h - 1:
+	if r == h-1 {
 		return s + ";4;58;5;" + strconv.Itoa(snakeColour[k])
 	}
 	return s
