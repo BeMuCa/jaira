@@ -34,12 +34,15 @@ func newWebCmd() *cobra.Command {
 		Long: `Starts a page on 127.0.0.1 and opens it in the browser. On the right are the
 epics, each with its description and how many of its tickets are done; on the
 left are the open tickets that belong to no epic. Drag a ticket onto an epic to
-put it there, onto another epic to move it, or back to the left to take it out;
+put it there, onto another epic to move it, or back to the left to take it out
+— or press "Remove" on its card in the epic, which takes it out with one tap,
+on a phone too, and a filed-away ticket as well, as 'jaira epic rm' does.
 "+ New epic" starts one, as 'jaira epic create' does, and "Edit" on an epic
 rewrites its title, description and text, as 'jaira epic set' does. Its text
 sits folded under the description; click "Text" to read it. A ticket that
 counts only because it follows a member has no line of its own and cannot be
-dragged. Click a ticket to read it: goal, context, definition of done and
+dragged or removed: its card says which member brings it in, and taking that
+one out takes both. Click a ticket to read it: goal, context, definition of done and
 every note, rendered as markdown, without leaving the page. Nothing is edited
 there.
 

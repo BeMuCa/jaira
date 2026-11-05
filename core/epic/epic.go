@@ -19,9 +19,16 @@
 // frontmatter for the facts, one "- <ticket id>" line per member below it, and
 // every other line kept verbatim across a write, so a person may edit it by
 // hand and read it in a diff.
+//
+// A finished epic is closed, never deleted: "status: closed" in its
+// frontmatter, the way a filed milestone says "status: filed". The ref stays,
+// so every clone reads the closing on its next fetch and 'jaira epic reopen'
+// has something to take back. A closed epic takes no new tickets unless asked
+// with force, and drops out of the default listings.
 package epic
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"regexp"
@@ -50,6 +57,18 @@ var ErrNotFound = errors.New("no such epic")
 
 // ErrExists means an epic of that name exists already.
 var ErrExists = errors.New("epic exists already")
+
+// ErrClosed means a ticket was to be put into a closed epic without force.
+// Nothing was written.
+var ErrClosed = errors.New("epic is closed")
+
+// ErrUnfinished means an epic was to be closed while tickets counted towards
+// it are not finished, without force. Nothing was written.
+var ErrUnfinished = errors.New("epic has unfinished tickets")
+
+// closedStatus is the frontmatter value that marks an epic closed. Any other
+// value, or none, is an open epic.
+const closedStatus = "closed"
 
 // Refs is where epics are kept. *refsync.Syncer implements it; a test can
 // hand in a map.
@@ -81,9 +100,31 @@ type Epic struct {
 	Title       string
 	Description string
 	CreatedAt   time.Time
+	// Closed is "status: closed" in the frontmatter.
+	Closed bool
 
-	lines   []string
-	members []string
+	lines    []string
+	members  []string
+	external []External
+}
+
+// Label is how a message names the epic: its title, which a person reads,
+// with the name beside it, which a person types into a command — "Web 0.2"
+// (web-0-2). An epic whose title is its name is named once.
+func (e *Epic) Label() string {
+	if e.Title == "" || e.Title == e.Name {
+		return fmt.Sprintf("%q", e.Name)
+	}
+	return fmt.Sprintf("%q (%s)", e.Title, e.Name)
+}
+
+// LabelOf is Label for an epic known by name only, as an error path has it.
+// An epic that cannot be read is named by its name.
+func LabelOf(r Refs, name string) string {
+	if e, err := Load(r, name); err == nil {
+		return e.Label()
+	}
+	return fmt.Sprintf("%q", name)
 }
 
 // Members lists the ticket ids this epic holds, in file order.
@@ -151,11 +192,19 @@ func FromBytes(name string, content []byte) *Epic {
 		e.lines = strings.Split(s, "\n")
 	}
 	end, hasFront := e.frontEnd()
+	inExternal := false
 	for i, line := range e.lines {
 		if hasFront && i <= end {
 			if i == 0 || i == end {
 				continue
 			}
+			if inExternal && isItem(line) {
+				if x, ok := parseItem(strings.TrimPrefix(strings.TrimSpace(line), "-")); ok && !e.HasExternal(x.Key) {
+					e.external = append(e.external, x)
+				}
+				continue
+			}
+			inExternal = false
 			key, value, ok := strings.Cut(strings.TrimSpace(line), ":")
 			if !ok {
 				continue
@@ -169,6 +218,15 @@ func FromBytes(name string, content []byte) *Epic {
 			case "created-at":
 				if t, err := time.Parse(time.RFC3339, value); err == nil {
 					e.CreatedAt = t
+				}
+			case "status":
+				e.Closed = value == closedStatus
+			case externalField:
+				// A key written on the line itself, the way a person might
+				// type one by hand, is read as the list's first item.
+				inExternal = true
+				if x, ok := parseItem(value); ok && value != "[]" {
+					e.external = append(e.external, x)
 				}
 			}
 			continue
@@ -214,6 +272,33 @@ func (e *Epic) setField(key, value string) {
 		}
 	}
 	e.lines = slices.Insert(e.lines, end, key+": "+value)
+}
+
+// dropField removes one frontmatter line and touches nothing else.
+func (e *Epic) dropField(key string) {
+	end, hasFront := e.frontEnd()
+	if !hasFront {
+		return
+	}
+	for i := 1; i < end; i++ {
+		k, _, ok := strings.Cut(strings.TrimSpace(e.lines[i]), ":")
+		if ok && strings.TrimSpace(k) == key {
+			e.lines = slices.Delete(slices.Clone(e.lines), i, i+1)
+			return
+		}
+	}
+}
+
+// setClosed writes the closed state into the frontmatter. Reopening takes the
+// status line out rather than writing "open": no line is what an epic that was
+// never closed has, so a reopened one reads the same in a diff.
+func (e *Epic) setClosed(closed bool) {
+	e.Closed = closed
+	if closed {
+		e.setField("status", closedStatus)
+	} else {
+		e.dropField("status")
+	}
 }
 
 // bodyStart is the first line below the frontmatter: where the text a person
@@ -397,6 +482,28 @@ func Merge(name string, base, ours, theirs []byte) []byte {
 	if text != t.Body {
 		out.SetBody(text)
 	}
+	// Closing is one bit, so there is nothing to put beside it for a person:
+	// the side that changed it wins, and when both did they agree or ours
+	// was the later word.
+	if o.Closed != b.Closed && o.Closed != out.Closed {
+		out.setClosed(o.Closed)
+	}
+	// The keys merge like the members: what we added or relinked goes onto
+	// theirs, what we took out comes off it.
+	keys := false
+	for _, x := range o.external {
+		if !slices.Contains(b.external, x) {
+			keys = out.putExternal(x) || keys
+		}
+	}
+	for _, x := range b.external {
+		if !o.HasExternal(x.Key) {
+			keys = out.dropExternal(x.Key) || keys
+		}
+	}
+	if keys {
+		out.writeExternal()
+	}
 	return out.Bytes()
 }
 
@@ -453,6 +560,12 @@ func (e *Epic) Fields() Fields {
 // Patch is an edit of an epic: a nil field is left as it is.
 type Patch struct {
 	Title, Description, Body *string
+	// AddExternal puts keys on the epic, a key it carries already getting
+	// the new URL; DropExternal takes keys off, in any case. Both are
+	// changes rather than a new list, so two people adding a key each at
+	// once both get theirs, and neither needs Base.
+	AddExternal  []External
+	DropExternal []string
 	// Base is what the editor read before it changed anything; nil writes
 	// onto whatever is there. With it, a field the patch changes that is no
 	// longer what Base says refuses the whole write with ErrChanged, so an
@@ -497,7 +610,17 @@ func Set(s *ticket.Store, r Refs, name string, p Patch) (*Epic, bool, error) {
 				e.setField("description", d)
 			}
 		}
-		written = e.Fields() != now
+		keys := false
+		for _, key := range p.DropExternal {
+			keys = e.dropExternal(key) || keys
+		}
+		for _, x := range p.AddExternal {
+			keys = e.putExternal(x) || keys
+		}
+		if keys {
+			e.writeExternal()
+		}
+		written = keys || e.Fields() != now
 		return written, nil
 	})
 	return e, written, err
@@ -535,9 +658,9 @@ func LoadAll(r Refs) ([]*Epic, error) {
 	return out, nil
 }
 
-// Create writes a new epic with its first members. The name must be
-// normalized already, and ids must be full ticket ids.
-func Create(s *ticket.Store, r Refs, name, title, description string, ids []string) (*Epic, error) {
+// Create writes a new epic with its first members and external keys. The name
+// must be normalized already, and ids must be full ticket ids.
+func Create(s *ticket.Store, r Refs, name, title, description string, ids []string, external ...External) (*Epic, error) {
 	if r == nil {
 		return nil, ErrNoRefs
 	}
@@ -555,6 +678,10 @@ func Create(s *ticket.Store, r Refs, name, title, description string, ids []stri
 	for _, id := range ids {
 		e.Add(id)
 	}
+	for _, x := range external {
+		e.putExternal(x)
+	}
+	e.writeExternal()
 	if err := r.RecordEpic(name, e.Bytes()); err != nil {
 		return nil, err
 	}
@@ -565,9 +692,18 @@ func Create(s *ticket.Store, r Refs, name, title, description string, ids []stri
 // epic's ref and of nothing else. It returns the epic as written and the ids
 // that actually changed; nothing is written when none did. ids must be full
 // ticket ids.
-func Assign(s *ticket.Store, r Refs, name string, ids []string, add bool) (*Epic, []string, error) {
+//
+// A closed epic refuses a new member with ErrClosed unless force is set, and
+// stays closed when it is: putting a straggler into a finished feature is a
+// correction, not a reopening. Taking a ticket out is never refused.
+func Assign(s *ticket.Store, r Refs, name string, ids []string, add, force bool) (*Epic, []string, error) {
 	var changed []string
 	e, err := edit(s, r, name, func(e *Epic) (bool, error) {
+		if add && e.Closed && !force {
+			if slices.ContainsFunc(ids, func(id string) bool { return !e.Has(id) }) {
+				return false, fmt.Errorf("%w: %s", ErrClosed, name)
+			}
+		}
 		for _, id := range ids {
 			var ok bool
 			if add {
@@ -585,6 +721,41 @@ func Assign(s *ticket.Store, r Refs, name string, ids []string, add bool) (*Epic
 		return nil, nil, err
 	}
 	return e, changed, nil
+}
+
+// Close marks an epic closed, in one write of its ref. An epic that still
+// counts an unfinished ticket — a member or a follow-up, as Count says — is
+// refused with ErrUnfinished unless force is set. It returns the epic and
+// whether anything was written; closing a closed epic writes nothing.
+func Close(s *ticket.Store, r Refs, name string, ix *link.Index, force bool) (*Epic, bool, error) {
+	var written bool
+	e, err := edit(s, r, name, func(e *Epic) (bool, error) {
+		if e.Closed {
+			return false, nil
+		}
+		if p := Count(e, ix); p.Done < p.Total && !force {
+			return false, fmt.Errorf("%w: %d of %d ticket(s) of %s are not finished", ErrUnfinished, p.Total-p.Done, p.Total, e.Label())
+		}
+		e.setClosed(true)
+		written = true
+		return true, nil
+	})
+	return e, written, err
+}
+
+// Reopen takes the closing back, in one write of its ref. It returns the epic
+// and whether anything was written; an open epic writes nothing.
+func Reopen(s *ticket.Store, r Refs, name string) (*Epic, bool, error) {
+	var written bool
+	e, err := edit(s, r, name, func(e *Epic) (bool, error) {
+		if !e.Closed {
+			return false, nil
+		}
+		e.setClosed(false)
+		written = true
+		return true, nil
+	})
+	return e, written, err
 }
 
 // edit is one change of an existing epic under the epics lock: read it, let
@@ -624,6 +795,9 @@ type Ticket struct {
 	// Direct is true for a member line, false for a ticket that counts
 	// because it follows on from one (follows: or parent:).
 	Direct bool `json:"direct"`
+	// Via is, for a follow-up, the member it is counted through: the line
+	// that would have to go to take it out of the epic. Empty for a member.
+	Via string `json:"via,omitempty"`
 }
 
 // Progress is how far an epic is.
@@ -643,11 +817,11 @@ type Progress struct {
 // would always be behind.
 func Count(e *Epic, ix *link.Index) Progress {
 	members := e.Members()
-	ids := Covered(members, ix)
+	ids, via := covered(members, ix)
 	p := Progress{Tickets: make([]Ticket, 0, len(ids))}
 	for _, id := range ids {
 		ref, _ := ix.Lookup(id)
-		t := Ticket{ID: id, Title: ref.Title, Lane: ref.Lane, Done: ix.Satisfied(id), Direct: slices.Contains(members, id)}
+		t := Ticket{ID: id, Title: ref.Title, Lane: ref.Lane, Done: ix.Satisfied(id), Direct: slices.Contains(members, id), Via: via[id]}
 		if t.Done {
 			p.Done++
 		}
@@ -661,6 +835,13 @@ func Count(e *Epic, ix *link.Index) Progress {
 // of them, transitively, members first in their order, follow-ups after in id
 // order.
 func Covered(members []string, ix *link.Index) []string {
+	ids, _ := covered(members, ix)
+	return ids
+}
+
+// covered is Covered, and for every follow-up the member it was reached
+// from. A follow-up two members both reach is counted through the first.
+func covered(members []string, ix *link.Index) ([]string, map[string]string) {
 	kids := map[string][]string{}
 	for _, t := range ix.All() {
 		for _, up := range []string{t.Follows, t.Parent} {
@@ -670,6 +851,7 @@ func Covered(members []string, ix *link.Index) []string {
 		}
 	}
 	seen := map[string]bool{}
+	via := map[string]string{}
 	var out, queue []string
 	for _, id := range members {
 		if !seen[id] {
@@ -685,13 +867,14 @@ func Covered(members []string, ix *link.Index) []string {
 		for _, kid := range kids[id] {
 			if !seen[kid] {
 				seen[kid] = true
+				via[kid] = cmp.Or(via[id], id)
 				follow = append(follow, kid)
 				queue = append(queue, kid)
 			}
 		}
 	}
 	sort.Strings(follow)
-	return append(out, follow...)
+	return append(out, follow...), via
 }
 
 // Unassigned returns the open tickets of a board that belong to no epic,

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { editOf, rebase } from './edit.ts';
+import { editOf, heldAs, keysEdit, linkable, rebase } from './edit.ts';
 
 const read = { title: 'Login', description: 'no password', body: '## Goal' };
 
@@ -20,4 +20,36 @@ test('a refused save keeps the typing and saves against the new state', () => {
   assert.deepEqual(r.changed, ['title', 'description']);
   assert.deepEqual(r.mine, { title: 'Mein Titel', description: 'per Link', body: '## Goal\n\nmore' });
   assert.deepEqual(editOf(r.base, r.mine), { base: now, title: 'Mein Titel', body: '## Goal\n\nmore' });
+});
+
+// The key rows are sent as changes: a new row and a new link are added, a
+// row taken out is dropped, an untouched one is not sent at all.
+test('the keys go as what was added and what was taken out', () => {
+  const read = [{ key: 'JIRA-1', url: 'https://j.example/1' }, { key: 'YT-7', url: '' }, { key: 'OLD-2', url: '' }];
+  const rows = [{ key: 'JIRA-1', url: 'https://j.example/one' }, { key: 'YT-7', url: '' }, { key: ' NEW-3 ', url: '' }, { key: '', url: 'x' }];
+  assert.deepEqual(keysEdit(read, rows), { add_external: ['JIRA-1 https://j.example/one', 'NEW-3'], drop_external: ['OLD-2'] });
+  assert.deepEqual(keysEdit(read, read.map((x) => ({ ...x }))), {});
+});
+
+// A row whose link the server would refuse is left out of the save and not
+// dropped either; every other change still goes.
+test('a bad link holds back its own row only', () => {
+  const read = [{ key: 'C-3', url: 'not a link' }];
+  const rows = [{ key: 'C-3', url: 'not a link' }, { key: 'NEW-1', url: 'javascript:alert(1)' }, { key: 'OK-2', url: 'https://ok.example/2' }];
+  assert.deepEqual(keysEdit(read, rows), { add_external: ['OK-2 https://ok.example/2'] });
+  assert.ok(linkable('') && linkable('https://x.example/a') && linkable('http://x.example'));
+  assert.ok(!linkable('not a link') && !linkable('ftp://x.example') && !linkable('https://'));
+});
+
+test('renaming a row with a bad link keeps the line it was read as', () => {
+  const read = [{ key: 'C-3', url: 'not a link' }, { key: 'D-4', url: 'https://d.example/4' }];
+  // C-3 renamed with its hand-written link: the rename cannot be saved, C-3 stays.
+  assert.deepEqual(keysEdit(read, [{ key: 'C-33', url: 'not a link', from: 'C-3' }, { key: 'D-4', url: 'https://d.example/4', from: 'D-4' }]), {});
+  // Renamed with a good link, the rename goes through as before.
+  assert.deepEqual(keysEdit(read, [{ key: 'C-33', url: 'https://c.example/3', from: 'C-3' }, { key: 'D-4', url: 'https://d.example/4', from: 'D-4' }]), { add_external: ['C-33 https://c.example/3'], drop_external: ['C-3'] });
+  // A row removed with its button is still dropped.
+  assert.deepEqual(keysEdit(read, [{ key: 'D-4', url: 'https://d.example/4', from: 'D-4' }]), { drop_external: ['C-3'] });
+  assert.equal(heldAs({ key: 'C-33', url: 'not a link', from: 'C-3' }), 'C-3');
+  assert.equal(heldAs({ key: 'c-3', url: 'not a link', from: 'C-3' }), '');
+  assert.equal(heldAs({ key: 'NEW-1', url: 'not a link' }), '');
 });

@@ -1,0 +1,2 @@
+- Expect the critique lane to read the ticket's notes before the diff and leave alone what an earlier pass recorded as repaired or accepted; after its first pass it reads only the last pass's findings and the change that answered them, so the critique loop ends sooner.
+- Run `jaira update --lanes` to take the new critique lane onto your board; a critique.md you edited yourself is left alone and named.
