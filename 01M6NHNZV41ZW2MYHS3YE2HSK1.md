@@ -18,7 +18,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T10:28:53Z
+updated-at: 2026-11-05T10:28:57Z
 updated-by: Alexander Sacharov
 ---
 
@@ -55,3 +55,4 @@ updated-by: Alexander Sacharov
 - **2026-11-05 10:24 · Alexander Sacharov** — docs/PLUGINS.md (R6X6FH, done) steht nur auf feat/r6x6fh, nicht auf master. Die Vorlage richtet sich nach dem Stand dc278130 dort.
 - **2026-11-05 10:27 · Alexander Sacharov** — Alex (05.11.2026, via Teamlead): Frage 2 -> Push in main von panda-bobr/jaira-plugin-template erlaubt, KEIN Tag/Release im Template selbst; die Demonstration laeuft in einem Einweg-Repo panda-bobr/jaira-hello-demo, angelegt aus dem Template (gh repo create --template), dort Tag v0.1.0. Frage 1 entscheidet der Teamlead: D44NVR laeuft bereits parallel in eigenem Tab, also Template jetzt bauen, DoD 1 abhaken, DoD 2 pruefen, sobald die CI von D44NVR auf main von jaira-releases liegt; bis dahin E2HSK1 nach blocked mit Verweis auf D44NVR.
 - **2026-11-05 10:28 · Alexander Sacharov** — Worker: Mode bleibt autonom (zwei beantwortete Rahmenfragen, keine Designfrage offen). Weiter: todo -> pre-process.
+- **2026-11-05 10:28 · Alexander Sacharov** — decision (worker): Demo-id = hello, Programm jaira-hello, ein Befehl greet. manifest --json gibt das per go:embed eingebettete jaira-plugin.json aus - so koennen Datei und Ausgabe nie auseinanderlaufen. Release laedt jaira-plugin.json zusaetzlich als Asset hoch, weil D44NVR die Datei am Default-Branch liest, ein spaeteres jaira plugin install sie aber am Release braucht. Release-Workflow bricht ab, wenn Tag != v<version> im Manifest. Arbeitskopie der Vorlage: Scratchpad dieser Sitzung; nach jedem Schritt gepusht, damit ein Neustart nichts verliert.
