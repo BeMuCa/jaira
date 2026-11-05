@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T10:51:07Z
-updated-at: 2026-11-05T10:58:50Z
+updated-at: 2026-11-05T10:58:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85123
 claimed-at: 2026-11-05T10:51:26Z
@@ -66,3 +66,4 @@ round: 2
 - **2026-11-05 10:54 · Alexander Sacharov** — archived/logbook: reproduced - DELETE on a filed ticket answered 404 'not found' before load switched to LoadAnywhere (TestWebRemovesAFiledTicketFromAnEpic fails on the old line).
 - **2026-11-05 10:57 · Alexander Sacharov** — critique (round 1): drop epicCardExit - one caller, restates ticket.direct, via half unused; EpicList back to ticket.direct; handleOf alone into model/handle.ts, not exported. Let stand: LoadAnywhere also for Assign (CLI 'epic add' resolves the same way), via computed in core/epic not the UI (the UI cannot see follows/parent), no confirm dialog (decision note 10:52).
 - **2026-11-05 10:58 · Alexander Sacharov** — in-progress round 2: critique fix done - epic-card.ts gone, EpicList keys on ticket.direct, handleOf in model/handle.ts; proofs of DoD 1/2 rewritten (they named the deleted test). The button has no component test: core/web/ui only runs node --test on .ts, no Svelte test runner - the review-check should ask for a tap on a phone.
+- **2026-11-05 10:58 · Alexander Sacharov** — critique round 2: round-1 finding addressed in 1ff410d2 (epicCardExit gone, EpicList on ticket.direct, handleOf unexported in model/handle.ts). Nothing further.
