@@ -19,7 +19,8 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T09:47:12Z
+updated-at: 2026-11-05T10:23:45Z
+updated-by: Alexander Sacharov
 ---
 
 # panda-bobr/jaira-releases: plugins.json, CI-Pruefung und CONTRIBUTING
