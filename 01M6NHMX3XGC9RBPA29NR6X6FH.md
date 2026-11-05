@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:46:40Z
-updated-at: 2026-11-05T09:51:22Z
+updated-at: 2026-11-05T09:51:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-21000
 claimed-at: 2026-11-05T09:47:52Z
@@ -38,6 +38,7 @@ outcome-why: "Wer ein Plugin schreiben will, braucht einen Ort mit Aufruf, Umgeb
 outcome-resolves: Alle drei DoD-Punkte; jaira selbst startet noch keine Plugins (spaeteres Ticket)
 review-summary: none
 round: 2
+review-gaps: "none - Exit-Code-Tabelle in docs/PLUGINS.md wiederholt docs/COMMANDS.md bewusst, mit Plugin-Bedeutungen und Link dorthin; sonst nichts doppelt, kein Code"
 ---
 
 # Plugins: Entscheidung und Standard stehen in docs/PLUGINS.md
