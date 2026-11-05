@@ -18,13 +18,13 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T17:04:34Z
+updated-at: 2026-11-05T17:05:43Z
 updated-by: Alexander Sacharov
 blocked-reason: "DoD 2 wartet auf die Katalog-CI aus D44NVR (panda-bobr/jaira-releases, noch nicht auf main)"
 outcome-what: "panda-bobr/jaira-plugin-template@fc5d7e1: Go-Plugin jaira-hello (greet liest jaira list --json und schreibt jaira note; manifest --json aus eingebettetem jaira-plugin.json; Exit 3 bei zu altem JAIRA_VERSION), Tests inkl. Manifest-Regeln, goreleaser (6 Binaries, checksums.txt, jaira-plugin.json), Actions test und release-auf-Tag mit Tag==version-Pruefung, README mit drei Schritten bis Katalog-PR. Demo panda-bobr/jaira-hello-demo v0.1.0; Katalog-PR panda-bobr/jaira-releases#4."
 outcome-why: "Plugin-Autoren sollen ohne eigene Release-Technik ein Release bekommen, das die Katalog-CI aus D44NVR ohne Aenderung annimmt (Standard R6X6FH, docs/PLUGINS.md)."
 outcome-resolves: "DoD 1: Tag v0.1.0 im unveraenderten Demo-Repo erzeugte alle 6 Assets + checksums.txt (Run 42011801567). DoD 2: check-catalog auf PR #4 gruen (Run 42026722958)."
-review-summary: none
+review-summary: "Im Repo panda-bobr/jaira-plugin-template (main = 66de84a) liegt eine Go-Vorlage: jaira-hello mit einem Befehl greet (liest 'jaira list --json', zaehlt Tickets; mit Ticket-Handle schreibt es eine Note ueber 'jaira note'), 'manifest --json' gibt das per go:embed eingebaute jaira-plugin.json aus, Exit 3 bei zu altem JAIRA_VERSION, jaira-Exitcodes werden durchgereicht. Ein Test prueft das Manifest gegen die Regeln aus docs/PLUGINS.md. goreleaser baut 6 Binaries jaira-<id>_<os>_<arch>(.exe), checksums.txt und laedt jaira-plugin.json mit hoch; die id kommt nur aus dem Manifest. Der release-Workflow bricht ab, wenn Tag != v<version>. README fuehrt in drei Schritten bis zum Katalog-PR. Bewiesen: das unveraenderte Demo-Repo panda-bobr/jaira-hello-demo (nur 'Initial commit' aus der Vorlage) hat Release v0.1.0 mit allen 6 Binaries, checksums.txt und jaira-plugin.json (Run 42011801567 gruen); der Katalog-PR panda-bobr/jaira-releases#4 (nur plugins.json) hat den Check 'check' gruen. Im jaira-Repo selbst aendert sich nur die Ticket-Datei."
 round: 2
 review-gaps: "none - main.go hat keinen Code ohne Aufrufer mehr (version in 66de84a entfernt); .goreleaser.yaml project_name/changelog waeren entbehrlich, bleiben aber: die Konfig ist in jaira-hello-demo v0.1.0 so bewiesen, lokal laesst sich goreleaser hier nicht laufen"
 test-verdict: "pass - template main 66de84a: test-Workflow Run 42070699388 success (go vet + go test); Demo jaira-hello-demo v0.1.0 Release-Run 42011801567 success, 6 Binaries + checksums.txt, sha256sum -c alle OK; Katalog-PR jaira-releases#4 check-catalog Run 42026722958 pass. Lokal gegen dieses Board: greet exit 0, unbekannte id exit 5, zu altes JAIRA_VERSION exit 3."
