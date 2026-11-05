@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T17:53:11Z
+updated-at: 2026-11-05T17:53:15Z
 assignee: BeMuCa
 updated-by: BeMuCa
 ---
@@ -45,4 +45,4 @@ updated-by: BeMuCa
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-11-05 17:53 · BeMuCa** — Berk, 2026-11-05: (1) ohne erkannten Agenten sagt der Installer ausdruecklich, dass jaira trotzdem nutzbar ist - z. B. ein PM ohne Agent mit 'jaira web' (Zusammenhang H319TV). (2) Stand: V38STG ist auf master gemergt (install.sh und install.ps1 haben JAIRA_NO_ROLES), dieses Ticket baut darauf auf. (3) Windows: install.ps1 bekommt dieselbe Erkennung wie install.sh.
