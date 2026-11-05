@@ -18,7 +18,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T12:05:58Z
+updated-at: 2026-11-05T12:06:02Z
 updated-by: Alexander Sacharov
 blocked-reason: "DoD 2 wartet auf die Katalog-CI aus D44NVR (panda-bobr/jaira-releases, noch nicht auf main)"
 ---
@@ -46,7 +46,7 @@ blocked-reason: "DoD 2 wartet auf die Katalog-CI aus D44NVR (panda-bobr/jaira-re
 - [x] Push nach main von panda-bobr/jaira-plugin-template, kein Tag
 - [x] panda-bobr/jaira-hello-demo aus der Vorlage anlegen, Tag v0.1.0, Release-Assets und checksums.txt pruefen -> DoD 1
 - [x] E2HSK1 nach blocked auf D44NVR (DoD 2 wartet auf die Katalog-CI)
-- [ ] Katalog-PR vorbereiten: Branch feat/e2hsk1 in panda-bobr/jaira-releases mit hello-Eintrag; Alex pusht und oeffnet den PR
+- [~] Katalog-PR vorbereiten: Branch feat/e2hsk1 in panda-bobr/jaira-releases mit hello-Eintrag; Alex pusht und oeffnet den PR
 
 ## Progress
 - **2026-11-05 10:23 · Alexander Sacharov** — Teamlead (05.11.2026): der Standard (R6X6FH, abgenommen) liegt noch nicht auf master, sondern auf origin/feat/r6x6fh: docs/PLUGINS.md und docs/schema/*.json - lesen mit 'git show origin/feat/r6x6fh:docs/PLUGINS.md'. Die Arbeit selbst gehoert in das Repo panda-bobr/e2hsk1; Alex ist dort admin. Ein Agent pusht seinen Branch und oeffnet keinen PR.
