@@ -56,13 +56,15 @@ func TestSignOffMarkerFollowsTheHumanExitLane(t *testing.T) {
 	}
 }
 
-// The question marker stays on the lane that requires a question, untouched.
-func TestAsksMarkerStaysOnTheQuestionLane(t *testing.T) {
+// The card carries no question flag and no pull flag; the detail still says a
+// question waits.
+func TestTheCardLeavesOutAsksAndPullButTheDetailKeepsTheQuestion(t *testing.T) {
 	m := newTestModel(t, 120, 34)
 	tk := parkIn(t, m, "human")
+	tk.ReadOnly = true
 
-	if out := stripANSI(m.renderCard(tk, 30, true)); !strings.Contains(out, "asks") {
-		t.Errorf("the HITL card lost its asks flag:\n%s", out)
+	if out := stripANSI(m.renderCard(tk, 30, true)); strings.Contains(out, "asks") || strings.Contains(out, "⇢ pull") {
+		t.Errorf("the HITL card still carries asks or pull:\n%s", out)
 	}
 	m.openDetail()
 	if out := stripANSI(m.detailBody(m.detail, 90)); !strings.Contains(out, "waiting on your answer") {

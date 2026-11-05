@@ -1,9 +1,12 @@
 package tui
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -52,17 +55,32 @@ func moveTo(t *testing.T, m *Model, title, status string) {
 	}
 }
 
-func snakeBGIn(s string, k snakeKind) bool {
-	return strings.Contains(s, "\x1b[48;"+snakeParams(k)+"m")
+// snakeAsBackground reports whether the snake's colour is painted as a
+// background anywhere in s. The band is a line of foreground, so it never is.
+func snakeAsBackground(s string, k snakeKind) bool {
+	c := strconv.Itoa(snakeColour[k])
+	return strings.Contains(s, "48;5;"+c+"m") || strings.Contains(s, "48;5;"+c+";")
+}
+
+// snakeInForeground reports whether s paints the snake's colour as a foreground.
+func snakeInForeground(s string, k snakeKind) bool {
+	return strings.Contains(s, "38;5;"+strconv.Itoa(snakeColour[k]))
+}
+
+// withoutBandGlyphs is the card's text with its bar glyphs taken back to
+// spaces, so a card the snake has walked round compares with the same card
+// unclaimed.
+func withoutBandGlyphs(s string) string {
+	return strings.NewReplacer("▏", " ", "▕", " ").Replace(stripANSI(s))
 }
 
 // A card nobody is working on has no snake; claim it and an agent's snake runs
-// round it, in the agent's colour, with the card's text untouched.
+// round it as a line in the agent's colour, with the card's text untouched.
 func TestAClaimedCardCarriesTheAgentSnake(t *testing.T) {
 	m := newTestModel(t, 150, 32)
 	tk := ticketTitled(t, m, "Fix session cookie dropped on 302")
 	before := m.renderCardBlock(tk, 30, false, false)
-	if m.snakeOf(tk) != snakeNone || snakeBGIn(before, snakeAgent) {
+	if m.snakeOf(tk) != snakeNone || strings.ContainsAny(before, "▏▕") {
 		t.Fatalf("an unclaimed in-progress card has a snake:\n%q", before)
 	}
 
@@ -71,11 +89,67 @@ func TestAClaimedCardCarriesTheAgentSnake(t *testing.T) {
 		t.Fatalf("snakeOf = %v, want the agent's", got)
 	}
 	after := m.renderCardBlock(tk, 30, false, false)
-	if !snakeBGIn(after, snakeAgent) {
-		t.Errorf("the claimed card is not painted in the agent's colour:\n%q", after)
+	if !snakeInForeground(after, snakeAgent) {
+		t.Errorf("the claimed card is not drawn in the agent's colour:\n%q", after)
 	}
-	if stripANSI(after) != stripANSI(before) {
-		t.Errorf("the snake changed the card's text:\nbefore %q\nafter  %q", stripANSI(before), stripANSI(after))
+	if snakeAsBackground(after, snakeAgent) {
+		t.Errorf("the snake is painted as a background:\n%q", after)
+	}
+	if withoutBandGlyphs(after) != stripANSI(before) {
+		t.Errorf("the snake changed the card's text:\nbefore %q\nafter  %q", stripANSI(before), withoutBandGlyphs(after))
+	}
+	beforeRows := strings.Split(stripANSI(before), "\n")
+	afterRows := strings.Split(stripANSI(after), "\n")
+	for i := range beforeRows {
+		if ansi.StringWidth(afterRows[i]) != ansi.StringWidth(beforeRows[i]) {
+			t.Errorf("row %d changed width: %d, want %d:\n%q", i, ansi.StringWidth(afterRows[i]), ansi.StringWidth(beforeRows[i]), afterRows[i])
+		}
+	}
+}
+
+// The band is a line on the card's edge. Walked once round the ring, the snake
+// marks each edge cell it covers: a bar glyph on the sides, an overline on the
+// top row and an underline on the bottom row.
+func TestTheBandIsALineOnTheEdge(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	tk := claim(t, m, "Fix session cookie dropped on 302", "sess-1", time.Now())
+	const w = 30
+	underline := ";4;58;5;" + strconv.Itoa(snakeColour[snakeAgent]) + "m"
+	sides, tops, bottoms := 0, 0, 0
+	m.anim = true
+	// A 30 by 3 card has 62 ring cells, so every one is the snake's head at
+	// some phase in this range.
+	for p := 0; p < 100; p++ {
+		m.animPhase = p
+		block := m.renderCardBlock(tk, w, false, false)
+		rows := strings.Split(strings.TrimSuffix(block, "\n"), "\n")
+		cells := m.snakeCells(tk.ID, w, len(rows))
+		for r, row := range rows {
+			if cells[r][0] {
+				sides++
+				if !strings.Contains(row, "▏") {
+					t.Fatalf("phase %d, row %d: snake on the left bar without ▏:\n%q", p, r, row)
+				}
+			}
+			if cells[r][w-1] && !strings.Contains(row, "▕") {
+				t.Fatalf("phase %d, row %d: snake on the right bar without ▕:\n%q", p, r, row)
+			}
+			if r == 0 && len(cells[r]) > 0 {
+				tops++
+				if !strings.Contains(row, ";53m") {
+					t.Fatalf("phase %d: snake on the top row without overline 53:\n%q", p, row)
+				}
+			}
+			if r == len(rows)-1 && len(cells[r]) > 0 {
+				bottoms++
+				if !strings.Contains(row, underline) {
+					t.Fatalf("phase %d: snake on the bottom row without underline:\n%q", p, row)
+				}
+			}
+		}
+	}
+	if sides == 0 || tops == 0 || bottoms == 0 {
+		t.Fatalf("the walk never reached every edge: sides %d, tops %d, bottoms %d", sides, tops, bottoms)
 	}
 }
 

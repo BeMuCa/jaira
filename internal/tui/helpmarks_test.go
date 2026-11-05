@@ -13,7 +13,7 @@ func TestHelpExplainsEveryCardMark(t *testing.T) {
 	out := stripANSI(m.render())
 
 	for _, want := range []string{
-		"○ spec", "■ blocked", "▲ asks", "◆ sign off", "◇ unworked", "✎ name",
+		"○ spec", "■ blocked", "◆ sign off", "◇ unworked", "✎ name",
 		"Plan 2/5", "DoD 2/5", "✓ 3", "@name",
 	} {
 		if !strings.Contains(out, want) {
@@ -22,7 +22,7 @@ func TestHelpExplainsEveryCardMark(t *testing.T) {
 	}
 	// Each one is explained, not merely listed.
 	for _, want := range []string{
-		"not specified enough", "waiting on a ticket", "question is waiting",
+		"not specified enough", "waiting on a ticket",
 		"waiting for a person to accept", "has not produced what it declares",
 		"somebody else wrote this ticket last",
 	} {

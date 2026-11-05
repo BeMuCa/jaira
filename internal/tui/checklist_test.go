@@ -73,8 +73,8 @@ func TestWaitingStatesAreDistinct(t *testing.T) {
 	signoff.Status = "signoff"
 	signoffOut := stripANSI(m.renderCard(signoff, 40, false))
 
-	if !strings.Contains(humanOut, "asks") {
-		t.Errorf("a ticket waiting on an answer is not labelled:\n%s", humanOut)
+	if strings.Contains(humanOut, "asks") {
+		t.Errorf("a ticket waiting on an answer still says asks on the card:\n%s", humanOut)
 	}
 	if !strings.Contains(signoffOut, "sign off") {
 		t.Errorf("a ticket waiting on sign-off is not labelled:\n%s", signoffOut)

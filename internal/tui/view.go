@@ -611,8 +611,8 @@ func (m *Model) cardsInBudget(tickets []*ticket.Ticket, first, budget int) int {
 // The frame is gone rather than recoloured. Two glyphs of it stood between the
 // lane's edges and the title on every row, and a title cut at eighteen
 // characters was the board's most-complained-of surface; the band says the same
-// thing — where this card starts and stops — using the colour of rows that were
-// being drawn anyway. The tag colour moves from the frame into a whole inked
+// thing — where this card starts and stops — as a thin line of colour on the edge
+// of the rows already drawn. The tag colour moves from the frame into a whole inked
 // cell, because a border glyph inks about half of one and read as "the frame is
 // a slightly different colour" rather than as a marker.
 func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected, alt bool) string {
@@ -642,11 +642,10 @@ func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected, alt bool) str
 	content := strings.TrimSuffix(m.renderCard(t, inner, selected), "\n")
 
 	lines := strings.Split(content, "\n")
+	k := m.snakeOf(t)
 	var snake map[int]map[int]bool
-	var snakeBG string
-	if k := m.snakeOf(t); k != snakeNone {
+	if k != snakeNone {
 		snake = m.snakeCells(t.ID, w, len(lines))
-		snakeBG = snakeParams(k)
 	}
 
 	var b strings.Builder
@@ -663,20 +662,23 @@ func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected, alt bool) str
 			rightParams = "5;" + strconv.Itoa(right[i].colour)
 		}
 		if row := snake[i]; row != nil {
+			edge := snakeEdge(k, i, len(lines))
+			leftBar, leftSGR := " ", barParams
 			if row[0] {
-				barParams = snakeBG
+				leftBar, leftSGR = "▏", barParams+";"+edge
 			}
+			rightBar, rightSGR := " ", rightParams
 			if row[w-1] {
-				rightParams = snakeBG
+				rightBar, rightSGR = "▕", rightParams+";"+edge
 			}
-			b.WriteString(paintRow(barParams, " "))
+			b.WriteString(paintRow(leftSGR, leftBar))
 			b.WriteString(paintCells(padDisplay(line, inner), inner, func(c int) string {
 				if row[c+1] {
-					return snakeBG
+					return bgParams + ";" + edge
 				}
 				return bgParams
 			}))
-			b.WriteString(paintRow(rightParams, " "))
+			b.WriteString(paintRow(rightSGR, rightBar))
 			b.WriteString("\n")
 			continue
 		}
@@ -759,14 +761,11 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 	if len(t.BlockedBy) > 0 && !gate.Actionable(env, t) {
 		flags = append(flags, styErr.Render("■ blocked"))
 	}
-	// Two lanes both mean "waiting on you", but they ask for different things —
-	// answering a question, or signing off finished work — so they are labelled
-	// and coloured apart rather than collapsed into one "needs attention".
+	// A question waiting for an answer is not flagged on the card: the band
+	// already runs in the person's colour there, and the detail view says what
+	// is waiting. Finished work waiting for sign-off keeps its flag.
 	if l, ok := m.lanes.Get(t.Status); ok {
-		switch {
-		case l.RequiresQuestion:
-			flags = append(flags, styAsks.Render("▲ asks"))
-		case l.RequiresHumanExit:
+		if l.RequiresHumanExit {
 			flags = append(flags, styReview.Render("◆ sign off"))
 		}
 		// A lane that still owes its declared output has not been run on this
@@ -789,13 +788,6 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 	// person, and one that fired on everything would be read as decoration.
 	if !m.isMe(t.UpdatedBy) && strings.TrimSpace(t.UpdatedBy) != "" {
 		flags = append(flags, styAsks.Render("✎ "+truncate(t.UpdatedBy, 10)))
-	}
-	// On its ref and not on this disk. It is shown like any other card, and
-	// deliberately so — hiding a ticket somebody assigned you would make the
-	// board the last place to learn about it — but nothing here can be changed
-	// until it is pulled, so the card says which command does that.
-	if t.ReadOnly {
-		flags = append(flags, styAsks.Render("⇢ pull"))
 	}
 	// The file here is older than its ref, so the card shows the ref's state
 	// — a move made in another worktree or by a teammate — and says the file
@@ -1795,7 +1787,6 @@ func (m *Model) renderHelp() string {
 	for _, k := range [][2]string{
 		{styWarn.Render("○ spec"), "not specified enough to leave the backlog"},
 		{styErr.Render("■ blocked"), "waiting on a ticket that is not done"},
-		{styAsks.Render("▲ asks"), "a question is waiting for you to answer it"},
 		{styReview.Render("◆ sign off"), "finished work waiting for a person to accept it"},
 		{styAgentic.Render("◇ unworked"), "its lane has not produced what it declares yet"},
 		{styAsks.Render("✎ name"), "somebody else wrote this ticket last"},
@@ -1805,7 +1796,7 @@ func (m *Model) renderHelp() string {
 		{styAgentic.Render("sonnet"), "the model that last ran a lane on it"},
 		{styMeta.Render("@name"), "who owns the outcome"},
 		{styOK.Render("⎙ filed 4 Oct"), "in the logbook, filed that day: read-only, 'jaira restore' brings it back"},
-		{snakeLegend(snakeAgent, "▬") + snakeLegend(snakeReview, "▬") + snakeLegend(snakeHuman, "▬") + " worked", "a band runs round the card: an agent works it, a fresh agent reviews it, or it waits for a person (c stops it moving)"},
+		{snakeLegend(snakeAgent, "─") + snakeLegend(snakeReview, "─") + snakeLegend(snakeHuman, "─") + " worked", "a band runs round the card: an agent works it, a fresh agent reviews it, or it waits for a person (c stops it moving)"},
 	} {
 		fmt.Fprintf(&b, "  %s  %s\n", padDisplay(k[0], 11), styledWrap(styMeta, k[1], max(9, m.width-17), 15))
 	}

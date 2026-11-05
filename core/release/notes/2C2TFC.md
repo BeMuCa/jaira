@@ -1,0 +1,3 @@
+- The band round a card that someone is working on is now a thin line on its edge, not a full cell-wide block of colour; the card's layout and text stay as they were.
+- A card no longer shows `▲ asks` or `⇢ pull`; the detail view still says when a question is waiting for an answer.
+- The help screen's "What a card can say" no longer lists `▲ asks`, and its band key is a thin line.

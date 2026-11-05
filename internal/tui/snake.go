@@ -15,7 +15,7 @@ import (
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
-// A card someone is working on right now has a short band of colour running
+// A card someone is working on right now has a thin line of colour running
 // round its edge — the snake. The colour says who the ticket is waiting on: an
 // agent at work, an agent reviewing with fresh eyes, or a person. It is the
 // board's answer to "is anybody on this?", and so also the sign to everyone
@@ -195,9 +195,9 @@ func (m *Model) snakeCells(id string, w, h int) map[int]map[int]bool {
 	return cells
 }
 
-// paintCells fills a row of width cells, each in the background paramAt
-// returns for it: runs of one background are cut out of the styled row whole
-// (ansi.Cut keeps the row's own colours) and painted like any other row.
+// paintCells fills a row of width cells, each in the SGR paramAt returns for it:
+// runs of one SGR are cut out of the styled row whole (ansi.Cut keeps the row's
+// own colours) and painted like any other row.
 func paintCells(line string, width int, paramAt func(int) string) string {
 	var b strings.Builder
 	for a := 0; a < width; {
@@ -217,6 +217,23 @@ func snakeLegend(k snakeKind, label string) string {
 	return lipgloss.NewStyle().Foreground(lipgloss.Color(strconv.Itoa(snakeColour[k]))).Render(label)
 }
 
+// snakeParams is the foreground SGR for a kind. The snake is a line of
+// foreground, never a background, so this is the only colour a snake cell gets.
 func snakeParams(k snakeKind) string {
-	return "5;" + strconv.Itoa(snakeColour[k])
+	return "38;5;" + strconv.Itoa(snakeColour[k])
+}
+
+// snakeEdge is the SGR a snake cell adds to its own row's SGR, at row r of an h
+// row card: the foreground colour, an overline on the top row, and an underline
+// in the same colour on the bottom row. Those lines sit on the card's outer edge,
+// so the text keeps its own cells.
+func snakeEdge(k snakeKind, r, h int) string {
+	s := snakeParams(k)
+	switch r {
+	case 0:
+		return s + ";53"
+	case h - 1:
+		return s + ";4;58;5;" + strconv.Itoa(snakeColour[k])
+	}
+	return s
 }

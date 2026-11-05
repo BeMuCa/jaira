@@ -1,0 +1,63 @@
+---
+id: 01M67C14G4X5KS5RF7Z32C2TFC
+title: "Die Karte zeigt in der Zustandszeile nur den DoD-Stand, und das Band um bearbeitete Karten ist eine duenne Linie statt eines dicken Balkens"
+status: critique
+ready: true
+creator: berkc
+assignee: berkc
+goal: "Die Board-Karte traegt nur, was der Mensch braucht: DoD-Stand statt Markern wie '▲ asks' und '⇢ pull', und das Arbeits-Band ist so duenn wie ein Rahmenstrich."
+context: |-
+  Wunsch von berkc am 30.10.2026:
+  - '▲ asks ⇢ pull these informations are unnecessary for the user. we should remove them and only show the DOD state on that line.'
+  - 'The snake like light that walks on the ticket borders look stupid. They are way too thick. Can you make them as small as a line?'
+  Heute: das Band (C8V6DQ, internal/tui/snake.go) faerbt den Hintergrund ganzer Zellen am Kartenrand - eine volle Zellenbreite dick.
+  Duenner geht im Terminal nur mit Zeichen statt Hintergrund: Rahmenzeichen ─ │ ┌ ┐ └ ┘ oder Achtel-Bloecke ▔ ▁ ▏ ▕ im Vordergrund. Keine TUI-Grenze, nur andere Zeichen.
+  '⇢ pull' wird mit EZ3V6D ohnehin ueberfluessig.
+definition-of-done: "Die Zustandszeile der Karte zeigt den DoD-Stand; '▲ asks' und '⇢ pull' sind von der Karte weg (Info bleibt in der Detailansicht)"
+tags:
+  - tui
+blocked-by: []
+related:
+  - 01M58G2DJP5P0634Z4FSC8V6DQ
+commits: []
+created-at: 2026-10-30T21:39:07Z
+updated-at: 2026-11-05T09:38:22Z
+updated-by: berkc
+claimed-by: berk-ca-1964007
+claimed-at: 2026-11-05T09:28:43Z
+outcome-what: "the card's band is a thin line in the snake colour: ▏/▕ on the bar cells, overline on the top row, underline on the bottom row; the card no longer shows '▲ asks' or '⇢ pull'"
+outcome-why: "a band painted as a full-width background read as a thick block on the card edge; the board card should only carry what the human acts on, and asks/pull were not that"
+outcome-resolves: "the thick band and the two unnecessary card flags from the 30.10 request; DoD 1-3 ticked with proof; tests: go test ./internal/tui -count=1 exit 0"
+---
+
+# Die Karte zeigt in der Zustandszeile nur den DoD-Stand, und das Band um bearbeitete Karten ist eine duenne Linie statt eines dicken Balkens
+
+## Definition of Done
+
+- [x] Die Zustandszeile der Karte zeigt den DoD-Stand; '▲ asks' und '⇢ pull' sind von der Karte weg (Info bleibt in der Detailansicht)
+  proof: internal/tui/view.go:742 renderCard (asks and pull flags removed); internal/tui/humanmarker_test.go:61 TestTheCardLeavesOutAsksAndPullButTheDetailKeepsTheQuestion
+- [x] Das Band laeuft als Linienzeichen im Vordergrund, nicht als Hintergrundfarbe; Farben und c bleiben; Test
+  proof: internal/tui/snake_test.go:113 TestTheBandIsALineOnTheEdge; internal/tui/snake_test.go:79 TestAClaimedCardCarriesTheAgentSnake
+- [x] Release-Note-Zeile
+  proof: core/release/notes/2C2TFC.md
+
+## Options
+
+- [ ] brainstorm
+- [ ] planning
+
+## Plan
+
+<Steps, in order — filled in by the pre-process step, or by you.>
+
+- [x] renderCard (internal/tui/view.go): drop the '▲ asks' and '⇢ pull' flags; keep every other flag; update TestWaitingStatesAreDistinct / TestAsksMarkerStaysOnTheQuestionLane to assert the card no longer says asks and the detail still does
+- [x] help 'What a card can say': drop the '▲ asks' line (cards no longer show it), legend glyph ▬ -> a thin line; update helpmarks_test
+- [x] snake.go: snakeParams becomes a foreground SGR (38;5;C), add snakeEdge(row,col,h,w) deciding per ring cell: left column ▏, right column ▕ (glyph on the bar cell, bar background kept), top row overline (SGR 53), bottom row underline (SGR 4 + 58 colour); text cells keep their character
+- [x] renderCardBlock: paint snake cells with bg + line params instead of a snake background; widths unchanged
+- [x] tests: snake colour never appears as a background; side cells carry ▏/▕; top/bottom snake cells carry 53/4; the card text (bars aside) and width are unchanged
+- [x] release note core/release/notes/2C2TFC.md
+- [ ] build + tmux 180x50 capture: band is a thin line on the card edge, layout unchanged
+
+## Progress
+- **2026-11-05 09:30 · berkc** — pre-process decisions: (1) DoD 1 read as written: only '▲ asks' and '⇢ pull' leave the card; spec/blocked/sign off/unworked/✎/unsent/Plan/DoD/commits/model stay - the context names those two, and '▲ asks' is already said by the human-coloured band. '⇣ pull' (BehindRef) is a different mark and stays. The lane-focus list (lanefocus.go) keeps '▲ asks': it is not the board card. (2) The band cannot be drawn with ▔/▁ on the top and bottom rows: those rows ARE the title and the state line (cards are 3 rows, flush, no frame), so a glyph would eat text as it passes. Top row uses SGR 53 overline, bottom row SGR 4 underline (colour via 58), both a 1px line at the card's outer edge, text kept; left/right columns are the bar cells (spaces) and get ▏/▕ in the snake colour over the bar's own colour. Unverified: overline support in the maintainer's terminal (Windows Terminal) - checked under tmux only.
+- **2026-11-05 09:38 · berkc** — band drawn as: side cells keep the bar's own background and get ▏/▕ in the snake colour; top row adds SGR 53, bottom row SGR 4 with 58;5;C; interior snake cells keep the lane shade as background and take the snake colour as foreground (so title/state text under the snake is drawn in that colour, by design). Snake colour is only ever a foreground now (snakeParams is '38;5;C'). The top and bottom overline/underline are rendered only under tmux; Windows Terminal support is unverified. lanefocus.go keeps ▲ asks on purpose (it is not the board card).
