@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T18:03:08Z
+updated-at: 2026-11-05T18:03:10Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
@@ -31,7 +31,8 @@ claimed-at: 2026-11-05T17:54:30Z
 
 ## Definition of Done
 
-- [ ] core/role/target.go kennt die acht Agenten mit Projekt- und Home-Pfad; jaira roles install --agent <name> schreibt dorthin; ein Test je Agent
+- [x] core/role/target.go kennt die acht Agenten mit Projekt- und Home-Pfad; jaira roles install --agent <name> schreibt dorthin; ein Test je Agent
+  proof: core/role/target.go agents table (8 entries); internal/cli/roles_test.go TestRolesInstallAgentWritesWhereItReads (t.Run per agent); go vet compiles it, not run (no go test in this lane)
 - [ ] install.sh und install.ps1 erkennen die vorhandenen Agenten an ihren Home-Ordnern, installieren fuer jeden erkannten, und schreiben bei keinem erkannten nichts ins Home, sondern einen Satz mit dem Nachhol-Befehl
 - [ ] JAIRA_AGENT=<name,name> uebersteuert die Erkennung; JAIRA_NO_ROLES=1 bleibt
 - [ ] README-Install-Abschnitt nennt die Erkennung und die Uebersteuerung
