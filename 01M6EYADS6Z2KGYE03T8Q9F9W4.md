@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T18:05:04Z
+updated-at: 2026-11-05T18:05:10Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
@@ -99,3 +99,7 @@ All write dirs equal the Vercel table (https://github.com/vercel-labs/skills/blo
 8. The 'active now ... ~/.claude/skills' and 'Cockpit loads in your next Claude Code session' lines print only when claude was installed.
 9. Scripts have no Go tests. Check them with sh -n, dash -n and a run against a throwaway HOME with fake agent folders. pwsh is not installed here, so install.ps1 cannot be run locally - say so in the outcome.
 - **2026-11-05 18:03 · BeMuCa** — In-progress: tests written first but NOT run (house rule: no go test; go vet compiles them). install.sh checked with sh -n, dash -n and a harness that sources only the roles section (scratch dir q9f9w4-scratch, HOME inside it, binary rebuilt from this branch): no agent folders -> nothing written plus the 'works without an agent (jaira web), add later' sentence; only ~/.codex -> ~/.agents/skills; all eight folders -> only ~/.claude/skills (+cockpit), ~/.agents/skills, ~/.hermes/skills written, copilot/cursor/gemini-cli/opencode print 'already reads' (opencode names ~/.claude/skills, because its Also list has .claude first), pi prints 21 unchanged; JAIRA_AGENT=claude,bogus -> bogus named and skipped, claude installed; JAIRA_NO_ROLES=1 with ~/.codex -> nothing written. install.ps1 was NOT run (no pwsh here) nor syntax-checked; it mirrors install.sh by hand. Adjacent, not fixed: with JAIRA_AGENT naming only unknown agents nothing is installed and no retry sentence is printed beyond the unknown-agent line; docs/AGENTS.md (linked from README) was not updated for the six new agents.
+- **2026-11-05 18:05 · BeMuCa** — critique (pass 1): docs/AGENTS.md:276-288 still lists only claude and copilot and says "for any other agent, --into names its skills directory" - now false, and README.md:812 sends readers there for the eight agents; extend that table to all eight (--project/--global) and replace the copilot-only Also paragraph with the generic skip rule plus the claude+codex double-listing limit from target.go
+core/role/target.go:39 "A further one is a further entry" is made false by this change: scripts/install.sh (agent_dir + AGENTS) and scripts/install.ps1 ($known) carry the same names, order and detect folders; name both scripts in that comment so the next agent lands in all three copies
+scripts/install.sh install_roles and scripts/install.ps1 Install-JairaRoles: the JAIRA_AGENT guard around the no-agent sentence leaves JAIRA_AGENT=bogus with no add-later command (goal: a sentence says how to catch up); drop the guard, one branch less, and the sentence prints whenever nothing is installed
+left alone: detection in the scripts, not the binary (pre-process note 17:59 point 4); claude+codex duplicate in cursor/opencode (point 2); copilot dirs kept (driver note 17:55 a); install.ps1 unrun and the opencode Windows path (in-progress note 18:03)
