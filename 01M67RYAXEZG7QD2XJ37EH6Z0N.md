@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-05T09:26:25Z
+updated-at: 2026-11-05T09:26:27Z
 updated-by: berkc
 claimed-by: berk-ca-1929599
 claimed-at: 2026-11-05T09:25:33Z
@@ -119,3 +119,4 @@ Let stand: hunk header indented 2*nw+4 with no │ (aligns @@ with the sign colu
 - **2026-11-04 21:56 · berkc** — optimize: sent back. Blank 'B' separator rows (2a73eae2) carry path "" line 0; scrolling one onto the top and pressing o calls openInCode(dir, "", 0) -> 'opened :0'. Fixing it changes behaviour, so it is not this lane's edit. Also drop the orphaned text: path on 'H' rows (diffpane.go:81). Everything else in 2a73eae2/725643c3 checked against truncate/clipPane/selectionFill/view.go styles: no duplication.
 - **2026-11-04 21:58 · berkc** — optimize send-back fixed (worker 2026-11-04, commit afbd423f): (1) diffpane.go parseDiff no longer sets text on H rows, nothing read it (diffLine draws from path). (2) 'B' blank row on top: new diffTarget() = top row, or the row below when top is 'B'; openDiffRow and the file counter/marker both use it, so 'o' opens the next file at line 1 and the title says file N/M of that file. Did not change B's file index (design decision 21:42 keeps the blank on the file above). Test TestOKeyOnABlankRowOpensTheFileBelow. go test core/gitrepo + internal/tui green, gofmt and vet clean. Not done: real VS Code launch (stub only).
 - **2026-11-04 21:59 · berkc** — critique (afbd423f only): header 'o' target is the first hunk's new start - parseDiff diffpane.go:94-96 overwrites H.line=1 at the first @@ (TestParseDiff asserts 10 for a.go); the new test's line 1 is only because docs/b.md is a new file (@@ +1,2). diffTarget (diffpane.go:316) is the smallest shape: one step past a top 'B' row, shared by openDiffRow, counter and ▌ marker; moving B onto the next file is ruled out by the 21:42 decision, clamping the scroll off B would change scrolling. ']' from a top B moves one row onto the header the counter already names, '[' goes to the file above - both consistent. Dropping H.text: nothing reads it (diffLine draws H from path). Nothing found; review-summary=none.
+- **2026-11-05 09:26 · berkc** — optimize (afbd423f only): both previous findings resolved; considered giving B rows the next file's file/path instead of diffTarget() - rejected, reshapes parseDiff and is not a cleanup; go test ./internal/tui green
