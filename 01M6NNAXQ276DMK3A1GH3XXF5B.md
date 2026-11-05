@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T10:51:07Z
-updated-at: 2026-11-05T11:07:25Z
+updated-at: 2026-11-05T11:07:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85123
 claimed-at: 2026-11-05T10:51:26Z
@@ -39,6 +39,7 @@ review-gaps: |-
 test-verdict: "pass: go build rc=0, go test -count=1 ./... rc=0, -race on core/epic core/web internal/cli rc=0, npm test rc=0; DoD 1-4 verified in the tree; scratch board via jaira web: DELETE member 200, logbook member 200, follow-up 409, /api/epics carries via; EpicList server-rendered: Remove on both direct cards (board+logbook), none on the follow-up, which names its member; web --help updated. Not run: a real tap in a phone browser"
 review-verdict: "The diff meets all four DoD items: Remove button on direct cards calling DELETE (tap, no drag), follow-up cards name the member via the new 'via' field, filed tickets removable as with 'jaira epic rm' (TestWebRemovesAFiledTicketFromAnEpic), release note present. go test core/epic core/web internal/cli and npm test (13 pass) green here; built bundle matches src. No blocker; the only unverified part is the tap on a real phone."
 review-round: 3
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-3xxf5b && go build -o /tmp/jaira-3xxf5b ./cmd/jaira  2. in a repo with an epic run /tmp/jaira-3xxf5b web --no-open and open the printed URL on your phone (same network) or with the browser's phone emulation  3. unfold an epic: every solid (member) card shows a 'Remove' button; dashed cards show none  4. tap 'Remove' on a member: the card leaves the epic, the done-count drops, and 'jaira epic show <epic>' no longer lists it  5. on a dashed card read 'counted through XXXXXX (follows/parent)'; tap XXXXXX - the member opens  6. for a logbook ticket in an epic, tap 'Remove': it goes, with no 'not found' error"
 ---
 
 # jaira web: ein Ticket laesst sich per Knopf aus einem Epic nehmen, auch auf dem Handy
