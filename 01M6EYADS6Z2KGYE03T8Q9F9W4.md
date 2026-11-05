@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T18:14:27Z
+updated-at: 2026-11-05T18:14:30Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
@@ -38,6 +38,8 @@ review-gaps: |-
   note: with JAIRA_AGENT naming only unknown agents the sentence still opens 'no coding agent found', which reads slightly off for an explicit override
   note: known and documented limits, not fixed: claude+codex makes cursor and opencode list each role twice; pi .pi paths only partly verified; opencode Windows home path unverified
 test-verdict: "pass: gofmt/vet/build/sh -n/dash -n rc=0; 8 agents verified global+project incl. Also-skip and cockpit only for claude; install.sh none/codex/all/JAIRA_AGENT/NO_ROLES verified in scratch HOME; README+release note format ok; go test NOT run, install.ps1 NOT run (read against install.sh only)"
+review-verdict: "the diff meets all five DoD items and I found no defect; gofmt/vet/build clean, sh -n and dash -n clean, and install.sh's roles section behaves as described in a throwaway HOME (none, codex only, all eight, JAIRA_AGENT with an unknown name, only unknown, JAIRA_NO_ROLES). Unsure only where nothing could run: the Go tests and install.ps1."
+review-round: 3
 ---
 
 # Der Installer erkennt den Coding-Agenten und legt die Rollen dort ab, wo er sie liest
