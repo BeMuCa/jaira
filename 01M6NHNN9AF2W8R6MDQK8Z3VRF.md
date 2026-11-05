@@ -20,7 +20,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T21:41:12Z
+updated-at: 2026-11-05T21:41:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
@@ -36,6 +36,7 @@ claimed-at: 2026-11-05T21:39:09Z
 - [ ] Events: create, move, claim und set aus der CLI und Moves aus der TUI rufen jedes abonnierte Plugin als 'jaira-<id> event <name>' auf (stdin = show --json + actor + from_lane, 5 s Timeout, Fehler aendert nichts, JAIRA_IN_EVENT=1 unterdrueckt Events); Test
 - [ ] Feld external erscheint in show --json und list --json; Test
 - [ ] merge_test deckt ein Ticket ab, dessen Frontmatter external als YAML-Block traegt
+- [ ] docs/AGENTS.md:8 ('no plugin API') und docs/PLUGINS.md (Status, external-Satz) beschreiben den neuen Stand und verlinken docs/PLUGINS.md
 
 ## Options
 
