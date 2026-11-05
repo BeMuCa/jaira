@@ -1,7 +1,7 @@
 ---
 id: 01M67K7GEZF694985EHTENCFVZ
 title: "Neue Lane-Arten: eine Lane, die nur einen Skill startet, und Automations-Lanes (Artefakte, E-Mail, API-Aufrufe, Telegram senden/empfangen, Video-Upload)"
-status: testing
+status: signoff
 ready: true
 creator: berkc
 assignee: berkc
@@ -17,16 +17,36 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-05T09:33:09Z
+updated-at: 2026-11-05T09:43:41Z
 updated-by: berkc
 claimed-by: berk-ca-1989860
 claimed-at: 2026-11-05T09:31:17Z
 outcome-what: "Lanes may name a skill (skill:), a repository script (script:) and require a receipt (receipt: required). show --for-lane carries skill, skill_path, script, idempotency_key, receipt_required, receipt, script_done and a run line; new 'jaira receipt <id> <result>' writes the round's receipt; 'lanes show' and the generated lane note name them. README subsection and release note ENCFVZ.md added."
 outcome-why: "A lane must hand an agent a skill and a script and refuse to let a ticket leave until its side effect is recorded, so a message or upload happens at most once per round. jaira itself runs nothing."
 outcome-resolves: "DoD 2: core/lane/lane.go parse, lane_test.go TestSkillLaneNeedsNoPromptBody. DoD 3: lane.go script checks, TestScriptIsParsed, TestScriptRefusesAPathOutsideTheRepository, TestScriptNeedsAnAgenticLane. DoD 4: gate.go receipt block, receipt_test.go four tests. DoD 5: flow.go laneRunFor, receiptlane_test.go ForLane tests. DoD 6: resume.go newReceiptCmd, TestReceiptEndsTheRunForThisRound, TestReceiptRefusedWhereTheLaneDoesNotRequireOne. DoD 7: announce.go marks, tickets.go lanes show, TestLanesShowNamesTheSkillScriptAndReceipt. DoD 8: README. DoD 9: core/release/notes/ENCFVZ.md. Green: go test core/lane gate role board shipped and internal/cli (with the three skips), go vet on them, gofmt clean."
-review-summary: "none"
+review-summary: "Lane files gain three optional keys. 'skill: <name>' names a skill the agent starts (an agentic lane may then have an empty body); 'script: <path>' names a repo-relative script (refused if absolute, outside the repo via filepath.IsLocal, or on a non-agentic lane); 'receipt: required' makes the gate (core/gate CheckAdvance) refuse a forward move out of the lane with needs_receipt until the ticket field receipt-<lane> starts with the key <ticket-ULID>-<lane>-r<round>. Since any send-back bumps round, a later return to the lane gets a new key and may send again. New 'jaira receipt <id> <result>' writes that field for the current lane (exit 3 if the lane needs no receipt or this round already has one; checked inside Mutate). 'show --for-lane' adds skill, skill_path (role.FindSkill: repo skill dirs, then home), script, idempotency_key, run (env JAIRA_IDEMPOTENCY_KEY/JAIRA_TICKET/JAIRA_LANE + ./script), script_done, receipt_required, receipt, and lists a missing skill/script under missing; text output has a '## Skill / script' block. 'lanes show', the generated lanes note, README, COMMANDS.md, three shipped role skills (hashes appended) and release note ENCFVZ.md describe it. jaira never runs the script itself."
 round: 3
-review-gaps: "none — optimize pass 2: the four pass-1 items landed in 5b1bf715 (laneRun field copies gone, filepath.IsLocal for script, dead first!=\"\" guard dropped, one receipt value in jaira receipt). Rest of the diff re-checked: no duplicate helper (CurrentRound, fieldValue, dash, Doc().Scalar reused), nothing orphaned, vet and gofmt clean. Left as before: the near-identical side-effect paragraph in three shipped role skills, FindSkill vs InstalledIn, HasReceipt vs fieldValue, pre-existing inside-dir check in core/selfupdate/install.go:110."
+review-gaps: |-
+  note: a lane file dropped into .jaira/lanes/ is placed by .jaira/lanes/order when that file exists, not by its after: key (pre-existing); a receipt lane missing from order lands last, every move out of it is a send-back and no receipt is ever asked - README example with after: in-progress does not mention adding it to order
+  note: once the receipt is written, the --for-lane text still says 'once its side effect has happened, write the receipt' (flow.go) - harmless, slightly misleading
+  note: the run line does not shell-quote the script path (flow.go laneRunFor), so a path with a space breaks when pasted
+  note: a script lane without receipt: required never gets script_done=true, so every fresh agent is told to run it again - recorded design decision (note 2026-11-04 21:37), README does not spell it out
+test-verdict: "pass: touched packages green (RC=0, three hangers skipped in internal/cli), DoD 1-9 verified in the tree, receipt gate and show payload exercised on a scratch board"
+review-verdict: "the diff meets all nine DoD items; no defects found. go vet clean; go test core/lane core/gate core/role core/board core/shipped and the internal/cli receipt/for-lane/lanes-show tests pass; hand run on a scratch board confirmed refusal without receipt, receipt write, second receipt refused, script_done, new key after send-back. Four notes, none blocking"
+review-round: 3
+review-check: |-
+  1. cd into a scratch git repo, run: jaira init
+  2. mkdir scripts; printf '#!/bin/sh\necho sent $JAIRA_IDEMPOTENCY_KEY\n' > scripts/send.sh; chmod +x scripts/send.sh
+  3. create .jaira/lanes/send.md with frontmatter id: send, name: Send, agentic: true, model-tier: cheap, script: scripts/send.sh, receipt: required, and body 'Send once.'
+  4. add a line 'send' right after 'in-progress' in .jaira/lanes/order
+  5. jaira lanes show send -> shows Script: and Receipt: required lines
+  6. jaira create x --goal g --context c --dod d --assignee me; then jaira move <id> --to send --force
+  7. jaira show <id> --for-lane send -> a '## Skill / script' block with a run line containing JAIRA_IDEMPOTENCY_KEY=<ULID>-send-r1
+  8. jaira move <id> --to review -> refused: lane "send" needs a receipt for round 1
+  9. jaira receipt <id> msg-1 -> 'Receipt for <id> in send: ...-send-r1 msg-1'; run it again -> refused, exit 3
+  10. jaira show <id> --for-lane send -> says the script already ran, do not run it again
+  11. jaira move <id> --to review -> succeeds
+  12. jaira move <id> --to send, then jaira show <id> --for-lane send -> key now ends -r2 and the run line is back
 ---
 
 # Neue Lane-Arten: eine Lane, die nur einen Skill startet, und Automations-Lanes (Artefakte, E-Mail, API-Aufrufe, Telegram senden/empfangen, Video-Upload)
@@ -225,3 +245,5 @@ Offene Fragen an berkc
 - **2026-11-05 09:30 · berkc** — optimize send-back applied, no behaviour change: (1) flow.go laneRun drops skill/script/receiptRequired, showForLane reads l.Skill/l.Script/l.ReceiptRequired (keeps skillPath, key, receipt, run, scriptDone, missing); (2) lane.go script check is !filepath.IsLocal(l.Script), clean var gone; (3) gate.go HasReceipt drops dead first != ""; (4) resume.go newReceiptCmd builds the receipt value once (var receipt) for Mutate and the print. Checked: no DoD --proof names a file:line, all proofs name functions/tests, so none moved. Tests: go vet clean; core/lane, core/gate ok; internal/cli ok with the three hangers skipped. gofmt flow.go (struct alignment only).
 - **2026-11-05 09:31 · berkc** — critique (pass 3): read only 5b1bf715, the answer to the optimize send-back (note 09:26); critique passes 1-2 (notes 21:50, 21:58) stay closed. (1) flow.go: showForLane reads l.Skill/l.Script/l.ReceiptRequired directly; l is already dereferenced by laneRunFor at flow.go:722, so no new nil path; JSON keys and text lines unchanged. (2) lane.go: !filepath.IsLocal(l.Script) is equivalent to the old IsAbs/Clean/.. check for the non-empty script it guards (go 1.26.5); the only extra refusal is Windows reserved names. (3) gate.go HasReceipt: an empty first token can never equal the non-empty ReceiptKey, so dropping the guard changes nothing. (4) resume.go: one receipt variable for Mutate and the print. No defect breaks the DoD. review-summary=none, on to optimize.
 - **2026-11-05 09:33 · berkc** — optimize (pass 2): verified 5b1bf715 applied all four pass-1 findings (flow.go laneRun has only skillPath/run/key/receipt/scriptDone/missing; lane.go uses !filepath.IsLocal; gate.go HasReceipt has no first!="" guard; resume.go one receipt var). Re-read whole Go diff (gate, lane, role/target, flow, resume, tickets, announce, facts): no duplication, dead code, fluff or hot-path cost left. go vet on touched pkgs clean, gofmt -l empty. review-gaps=none, on to testing.
+- **2026-11-05 09:39 · berkc** — testing: touched packages green on 5b1bf715 (go test -count=1: core/lane core/gate core/role core/board core/shipped ok; internal/cli ok with the three hangers skipped). Not run: the full suite and -race (only touched packages, per the brief). DoD 1-9 checked against the tree: brainstorm notes present on the ticket; each named proof test run and PASS (lane, gate, role FindSkill, board lanesection, cli ForLane/Receipt/LanesShow); README subsection, release note ENCFVZ.md (5 single-line '- ' entries), lanes show and generated AGENTS.md/CLAUDE.md lane line all name skill/script/receipt. Function on a scratch board ($S/scratch-encfvz, HOME temp, binary built from this tree): lane with skill+script+receipt: show --for-lane names skill_path, run line with JAIRA_IDEMPOTENCY_KEY=<id>-send-r1; move to human refused exit 3 needs_receipt; receipt written; second receipt refused exit 3; after send back, round 2 key -r2 refused old receipt, new receipt accepted; script_done True and empty run line once the round has its receipt; receipt on a lane without receipt: required refused exit 3. Claim was refused (claimed by berk-ca-1989860, 2m ago); not stolen, verdict written without it.
+- **2026-11-05 09:43 · berkc** — review (fresh): pass, no blocker. Verified: go vet + tests core/lane gate role board shipped, internal/cli receipt/for-lane/lanes-show tests green; hand run on scratch board (refuse without receipt, receipt, duplicate refused exit 3, script_done, new key r+1 after send-back). Pitfall found while checking: a new lane file is not placed by after: when .jaira/lanes/order exists - without adding it to order the receipt lane sits last and its gate never fires (pre-existing ordering, logged as note in review-gaps).
