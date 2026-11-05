@@ -18,7 +18,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T10:32:05Z
+updated-at: 2026-11-05T10:32:09Z
 updated-by: Alexander Sacharov
 ---
 
@@ -57,3 +57,4 @@ updated-by: Alexander Sacharov
 - **2026-11-05 10:28 · Alexander Sacharov** — Worker: Mode bleibt autonom (zwei beantwortete Rahmenfragen, keine Designfrage offen). Weiter: todo -> pre-process.
 - **2026-11-05 10:28 · Alexander Sacharov** — decision (worker): Demo-id = hello, Programm jaira-hello, ein Befehl greet. manifest --json gibt das per go:embed eingebettete jaira-plugin.json aus - so koennen Datei und Ausgabe nie auseinanderlaufen. Release laedt jaira-plugin.json zusaetzlich als Asset hoch, weil D44NVR die Datei am Default-Branch liest, ein spaeteres jaira plugin install sie aber am Release braucht. Release-Workflow bricht ab, wenn Tag != v<version> im Manifest. Arbeitskopie der Vorlage: Scratchpad dieser Sitzung; nach jedem Schritt gepusht, damit ein Neustart nichts verliert.
 - **2026-11-05 10:31 · Alexander Sacharov** — Vorlage Schritt 1: go test gruen; gebautes jaira-hello gegen dieses Board: greet -> 198 Tickets exit 0, unbekannte id exit 5, JAIRA_VERSION=0.4.0 exit 3. Den note-Schreibweg nur im Unit-Test (gefaelschtes runJaira) geprueft - absichtlich keine Hello-Notiz auf das echte Board geschrieben. goreleaser lokal laufen zu lassen wurde vom Auto-Mode verweigert (Binary laden+ausfuehren); die Release-Konfig wird erst im Demo-Repo jaira-hello-demo echt geprueft.
+- **2026-11-05 10:32 · Alexander Sacharov** — Vorlage fertig als Commit fc5d7e1 (feat(E2HSK1)) in der Arbeitskopie /tmp/claude-1000/-home-alex-projects--worktrees-jaira-e2hsk1/e870470a-cbe4-4763-84f0-083ada1efa9f/scratchpad/jaira-plugin-template - NOCH NICHT GEPUSHT. Der Push nach main wurde vom Auto-Mode-Klassifikator verweigert ('Create Public Surface'); Alex' Erlaubnis kam nur ueber den Teamlead, das zaehlt fuer die Sitzung nicht. Alex muss selbst pushen und jaira-hello-demo anlegen (Zeilen gingen an den Teamlead). Die Arbeitskopie lebt im Scratchpad dieser Sitzung: stirbt die Sitzung vor dem Push, ist sie aus diesem Ticket nicht wiederherstellbar.
