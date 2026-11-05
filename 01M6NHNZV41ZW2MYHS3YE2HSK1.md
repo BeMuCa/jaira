@@ -18,7 +18,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T10:28:57Z
+updated-at: 2026-11-05T10:29:01Z
 updated-by: Alexander Sacharov
 ---
 
@@ -38,7 +38,7 @@ updated-by: Alexander Sacharov
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] Go-Modul + Befehl jaira-hello (greet: list --json lesen, note schreiben; manifest --json aus eingebettetem jaira-plugin.json; Versionspruefung JAIRA_VERSION) + Tests
+- [~] Go-Modul + Befehl jaira-hello (greet: list --json lesen, note schreiben; manifest --json aus eingebettetem jaira-plugin.json; Versionspruefung JAIRA_VERSION) + Tests
 - [ ] goreleaser-Konfig (Assets jaira-<id>_<os>_<arch>, checksums.txt, jaira-plugin.json als Asset) + Actions: test auf push/PR, release auf Tag mit Pruefung Tag == version
 - [ ] README: drei Schritte von Use this template bis Katalog-PR
 - [ ] Push nach main von panda-bobr/jaira-plugin-template, kein Tag
