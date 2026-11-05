@@ -18,7 +18,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T10:23:54Z
+updated-at: 2026-11-05T10:24:03Z
 updated-by: Alexander Sacharov
 ---
 
@@ -40,3 +40,4 @@ updated-by: Alexander Sacharov
 
 ## Progress
 - **2026-11-05 10:23 · Alexander Sacharov** — Teamlead (05.11.2026): der Standard (R6X6FH, abgenommen) liegt noch nicht auf master, sondern auf origin/feat/r6x6fh: docs/PLUGINS.md und docs/schema/*.json - lesen mit 'git show origin/feat/r6x6fh:docs/PLUGINS.md'. Die Arbeit selbst gehoert in das Repo panda-bobr/e2hsk1; Alex ist dort admin. Ein Agent pusht seinen Branch und oeffnet keinen PR.
+- **2026-11-05 10:24 · Alexander Sacharov** — Korrektur zur vorigen Teamlead-Notiz: das Ziel-Repo ist panda-bobr/jaira-plugin-template (nicht panda-bobr/e2hsk1). Das Release des Beispiels muss die CI aus D44NVR (panda-bobr/jaira-releases) bestehen; D44NVR laeuft parallel in einem eigenen Tab.
