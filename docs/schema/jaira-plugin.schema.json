@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "jaira-plugin.json",
+  "description": "The manifest of a jaira plugin: jaira-plugin.json at the root of the plugin's repository, and the output of 'jaira-<id> manifest --json'. See docs/PLUGINS.md.",
+  "type": "object",
+  "required": ["id", "name", "version", "minJairaVersion", "commands", "capabilities"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "The plugin's id; the program is jaira-<id>.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+      "maxLength": 40
+    },
+    "name": {
+      "description": "What a person reads.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "version": {
+      "description": "Semver without a leading v; the release tag is v<version>.",
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?$"
+    },
+    "minJairaVersion": {
+      "description": "The oldest jaira version the plugin works with.",
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+    },
+    "commands": {
+      "description": "What 'jaira <id> <name>' does, one line each.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "summary"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        }
+      }
+    },
+    "capabilities": {
+      "description": "What the plugin does, shown to a person before install. A declaration, not a sandbox.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": ["read", "write", "network", "secrets", "web"]
+      }
+    },
+    "events": {
+      "description": "The writes the plugin wants to hear about; jaira runs 'jaira-<id> event <name>' after each.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": ["create", "move", "claim", "set"]
+      }
+    },
+    "web": {
+      "description": "Pages the plugin adds to jaira web, served under /plugins/<id>/.",
+      "type": "object",
+      "required": ["pages"],
+      "additionalProperties": false,
+      "properties": {
+        "pages": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["path", "title"],
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "description": "Relative to the plugin's web/ folder; no leading slash, no '..'.",
+                "type": "string",
+                "pattern": "^(?!/)(?!.*\\.\\.)[A-Za-z0-9._/-]+$"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

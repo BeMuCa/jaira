@@ -2,7 +2,7 @@
   import { age, date } from '@/shared/lib';
   import { behindRef } from '../model/behind';
   import type { Ticket } from '../model/types';
-  import { PLACE_LABELS, badgeLane } from '../model/place';
+  import { PLACE_LABELS, badgeLane, fate } from '../model/place';
   import { shortAssignee } from '../model/assignee';
   import { handleOf } from '../model/handle';
   import { LaneBadge } from '@/entities/lane';
@@ -18,11 +18,15 @@
     // What the button says to a screen reader.
     removeLabel?: string;
   } = $props();
+
+  const how = $derived(fate(ticket));
 </script>
 
 <li
   class="card"
-  class:done={ticket.done}
+  class:done={how === 'done'}
+  class:left={how === 'left'}
+  class:rejected={how === 'rejected'}
   class:indirect={!ticket.direct}
   {draggable}
   {ondragstart}
@@ -37,7 +41,10 @@
     <span class="assignee" title={ticket.assignee}>{shortAssignee(ticket.assignee)}</span>
   {/if}
   {#if ticket.place && ticket.place !== 'board'}
-    <span class="where">{PLACE_LABELS[ticket.place]}{#if ticket.rejected} · rejected: {ticket.rejected}{/if}</span>
+    <span class="where">{PLACE_LABELS[ticket.place]}{#if how === 'left'}{' · left unfinished'}{/if}</span>
+  {/if}
+  {#if how === 'rejected'}
+    <span class="why">rejected: {ticket.rejected}{#if ticket.rejected_why}{' – '}{ticket.rejected_why}{/if}</span>
   {/if}
   {#if ticket.created_at || ticket.updated_at || ticket.behind_ref}
     <span class="dates">
@@ -77,9 +84,12 @@
   .handle { font-family: ui-monospace, monospace; color: var(--muted); }
   .title { all: unset; cursor: pointer; overflow-wrap: anywhere; }
   .title:hover, .title:focus-visible { text-decoration: underline; }
-  .via, .where, .assignee, .dates { grid-column: 2 / -1; font-size: 0.75rem; color: var(--muted); }
+  .via, .where, .why, .assignee, .dates { grid-column: 2 / -1; font-size: 0.75rem; color: var(--muted); }
   .behind { color: var(--waiting); }
   .done .title { text-decoration: line-through; color: var(--muted); }
+  .left { opacity: 0.6; }
+  .rejected { border-left: 3px solid var(--error); }
+  .why { color: var(--error); overflow-wrap: anywhere; }
   .indirect { border-style: dashed; }
   .remove { font: inherit; font-size: 0.75rem; color: var(--muted); background: none; border: 1px solid var(--line); border-radius: 4px; padding: 0.2rem 0.5rem; min-height: 1.75rem; cursor: pointer; }
   .remove:hover, .remove:focus-visible { color: inherit; border-color: currentColor; }

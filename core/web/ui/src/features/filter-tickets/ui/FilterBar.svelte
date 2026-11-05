@@ -1,13 +1,15 @@
 <script lang="ts">
   import { byBoardOrder, laneColour } from '@/entities/lane';
-  import { emptyFilter, narrows, type Filter } from '../model/filter';
+  import { WHERES, emptyFilter, narrows, type Filter } from '../model/filter';
   import ChipSelect from './ChipSelect.svelte';
 
-  let { filter = $bindable(), lanes, tags, people }: {
+  let { filter = $bindable(), lanes, tags, people, keys }: {
     filter: Filter;
     lanes: string[];
     tags: string[];
     people: string[];
+    // The keys of tasks in other systems the epics carry.
+    keys: string[];
   } = $props();
 </script>
 
@@ -15,6 +17,10 @@
   <label class="q">Search <input type="search" bind:value={filter.q} placeholder="title, goal or id" /></label>
   <ChipSelect label="Lane" any="any" options={byBoardOrder(lanes)} bind:chips={filter.lane} colour={laneColour} />
   <ChipSelect label="Tag" any="any" options={tags} bind:chips={filter.tag} />
+  {#if keys.length || filter.key.length}
+    <ChipSelect label="Key" title="The key of a task in another system an epic carries: its tickets and their follow-ups" any="any" options={keys} bind:chips={filter.key} />
+  {/if}
+  <ChipSelect label="Where" title="Board, logbook, archive (put away unfinished or finished) or rejected" any="board" options={WHERES} bind:chips={filter.where} />
   <ChipSelect label="Person" title="Created it, is assigned it, or changed it last" any="anyone" options={people} bind:chips={filter.person} />
   <div class="range" role="group" aria-label="Date">
     <span>Date</span>
@@ -29,8 +35,7 @@
       <input type="date" bind:value={filter.to} aria-label="To" />
     </div>
   </div>
-  <label class="all"><input type="checkbox" bind:checked={filter.all} /> All tickets ever <small>logbook and archive too</small></label>
-  {#if narrows(filter) || filter.all}
+  {#if narrows(filter)}
     <button type="button" onclick={() => (filter = emptyFilter())}>Clear</button>
   {/if}
 </form>
@@ -41,7 +46,5 @@
   .row { display: flex; gap: 0.3rem; align-items: center; }
   .q { flex: 1 1 14rem; }
   input, select, button { font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 0.25rem 0.4rem; }
-  .all { display: flex; gap: 0.35rem; align-items: center; color: var(--text); }
-  .all small { color: var(--muted); }
   button { cursor: pointer; }
 </style>

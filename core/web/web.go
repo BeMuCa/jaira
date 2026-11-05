@@ -60,6 +60,8 @@ type Ticket struct {
 	FiledAt time.Time `json:"filed_at,omitzero"`
 	// Rejected is the kind of no, for a ticket 'jaira reject' archived.
 	Rejected string `json:"rejected,omitzero"`
+	// RejectedWhy is the reason 'jaira reject' gave, shown on the card.
+	RejectedWhy string `json:"rejected_why,omitzero"`
 	// BehindRef says the ticket file in this checkout is older than the
 	// ticket's ref, and what the page shows is the ref.
 	BehindRef bool `json:"behind_ref,omitzero"`
@@ -89,6 +91,20 @@ type Epic struct {
 	Signoff int      `json:"signoff"`
 	Total   int      `json:"total"`
 	Tickets []Ticket `json:"tickets"`
+	// Closed is an epic 'jaira epic close' closed: it takes a ticket only
+	// with force, and the page hides it unless asked to show it.
+	Closed bool `json:"closed"`
+	// External are the keys of the tasks in another system the epic stands
+	// for. Link is the URL when it is one the page may open, empty when the
+	// file carries none or something else.
+	External []External `json:"external"`
+}
+
+// External is one key of a task in another system, as the epic carries it.
+type External struct {
+	Key  string `json:"key"`
+	URL  string `json:"url"`
+	Link string `json:"link,omitzero"`
 }
 
 // EpicFields are what a person writes about an epic.
@@ -106,6 +122,12 @@ type EpicEdit struct {
 	Description *string     `json:"description"`
 	Body        *string     `json:"body"`
 	Base        *EpicFields `json:"base"`
+	// AddExternal puts keys on the epic or relinks one it carries, each
+	// "<KEY> [<URL>]"; DropExternal takes keys off. The editor sends what
+	// changed against what it read, so two editors adding a key each both
+	// keep theirs.
+	AddExternal  []string `json:"add_external"`
+	DropExternal []string `json:"drop_external"`
 }
 
 // Lane is one lane of the board, in the board's order. Kind is what the
@@ -169,9 +191,14 @@ type Source interface {
 	CreateEpic(name, title, description string) error
 	SetEpic(name string, edit EpicEdit) error
 	// Assign puts a ticket into epic; with from set it takes it out of that
-	// epic as well, which is a move.
-	Assign(epic, from, ticketID string) error
+	// epic as well, which is a move. A closed epic refuses it with
+	// ErrConflict unless force is set, and stays closed when it is.
+	Assign(epic, from, ticketID string, force bool) error
 	Unassign(epic, ticketID string) error
+	// SetClosed closes an epic or opens it again. Closing one that still
+	// counts an unfinished ticket is refused with ErrConflict unless force
+	// is set.
+	SetClosed(epic string, closed, force bool) error
 }
 
 // Sync is what the page says about the last round trip to the remote.
@@ -281,6 +308,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("PATCH /api/epics/{name}", s.handleSetEpic)
 	mux.HandleFunc("POST /api/epics/{name}/tickets", s.handleAssign)
 	mux.HandleFunc("DELETE /api/epics/{name}/tickets/{id}", s.handleUnassign)
+	mux.HandleFunc("POST /api/epics/{name}/close", s.handleClose)
+	mux.HandleFunc("POST /api/epics/{name}/reopen", s.handleReopen)
 	mux.HandleFunc("GET /api/sync", s.handleSync)
 	dist, err := fs.Sub(distFS, "ui/dist")
 	if err != nil {
@@ -412,8 +441,9 @@ func (s *Server) handleCreateEpic(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleSetEpic(w http.ResponseWriter, r *http.Request) {
 	var edit EpicEdit
-	if err := json.NewDecoder(r.Body).Decode(&edit); err != nil || edit.Title == nil && edit.Description == nil && edit.Body == nil {
-		writeError(w, http.StatusBadRequest, fmt.Errorf(`want {"title": ..., "description": ..., "body": ..., "base": <what the editor read>}`))
+	if err := json.NewDecoder(r.Body).Decode(&edit); err != nil ||
+		edit.Title == nil && edit.Description == nil && edit.Body == nil && len(edit.AddExternal) == 0 && len(edit.DropExternal) == 0 {
+		writeError(w, http.StatusBadRequest, fmt.Errorf(`want {"title": ..., "description": ..., "body": ..., "add_external": [...], "drop_external": [...], "base": <what the editor read>}`))
 		return
 	}
 	s.write(w, s.Source.SetEpic(r.PathValue("name"), edit))
@@ -421,14 +451,34 @@ func (s *Server) handleSetEpic(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleAssign(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		ID   string `json:"id"`
-		From string `json:"from"`
+		ID    string `json:"id"`
+		From  string `json:"from"`
+		Force bool   `json:"force"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.ID == "" {
-		writeError(w, http.StatusBadRequest, fmt.Errorf(`want {"id": "<ticket id>", "from": "<epic it leaves, if any>"}`))
+		writeError(w, http.StatusBadRequest, fmt.Errorf(`want {"id": "<ticket id>", "from": "<epic it leaves, if any>", "force": <true into a closed epic>}`))
 		return
 	}
-	s.write(w, s.Source.Assign(r.PathValue("name"), body.From, body.ID))
+	s.write(w, s.Source.Assign(r.PathValue("name"), body.From, body.ID, body.Force))
+}
+
+// handleClose closes an epic. The body is optional: {"force": true} closes
+// one that still counts unfinished tickets.
+func (s *Server) handleClose(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Force bool `json:"force"`
+	}
+	if r.ContentLength != 0 {
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			writeError(w, http.StatusBadRequest, fmt.Errorf(`want {"force": <true to close with unfinished tickets>} or no body`))
+			return
+		}
+	}
+	s.write(w, s.Source.SetClosed(r.PathValue("name"), true, body.Force))
+}
+
+func (s *Server) handleReopen(w http.ResponseWriter, r *http.Request) {
+	s.write(w, s.Source.SetClosed(r.PathValue("name"), false, false))
 }
 
 func (s *Server) handleUnassign(w http.ResponseWriter, r *http.Request) {

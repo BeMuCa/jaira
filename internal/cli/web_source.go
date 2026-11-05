@@ -59,7 +59,14 @@ func (w *webSource) Epics() ([]web.Epic, error) {
 	out := make([]web.Epic, 0, len(epics))
 	for _, e := range epics {
 		p := epic.Count(e, ix)
-		v := web.Epic{Name: e.Name, Title: e.Title, Description: e.Description, Body: e.Body(), Text: e.Text(), Done: p.Done, Total: p.Total}
+		v := web.Epic{Name: e.Name, Title: e.Title, Description: e.Description, Body: e.Body(), Text: e.Text(), Done: p.Done, Total: p.Total, Closed: e.Closed, External: []web.External{}}
+		for _, x := range e.Externals() {
+			ext := web.External{Key: x.Key, URL: x.URL}
+			if epic.LinkableURL(x.URL) {
+				ext.Link = x.URL
+			}
+			v.External = append(v.External, ext)
+		}
 		for _, t := range p.Tickets {
 			c, ok := cards[t.ID]
 			if !ok {
@@ -150,7 +157,7 @@ func (w *webSource) cards(all []*ticket.Ticket, ix *link.Index) map[string]web.T
 		if place == link.PlaceLogbook {
 			c.FiledAt, _ = ticket.LogbookFolderDay(filepath.Base(filepath.Dir(path)), time.Local)
 		} else if r := rejection(path); r != nil {
-			c.Rejected, c.FiledAt = r.Kind, r.At
+			c.Rejected, c.RejectedWhy, c.FiledAt = r.Kind, r.Why, r.At
 		}
 		out[id] = c
 	}
@@ -278,7 +285,14 @@ func (w *webSource) CreateEpic(raw, title, description string) error {
 func (w *webSource) SetEpic(name string, edit web.EpicEdit) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	p := epic.Patch{Title: edit.Title, Description: edit.Description, Body: edit.Body}
+	p := epic.Patch{Title: edit.Title, Description: edit.Description, Body: edit.Body, DropExternal: edit.DropExternal}
+	for _, raw := range edit.AddExternal {
+		x, err := epic.ParseExternal(raw)
+		if err != nil {
+			return fmt.Errorf("%v: %w", err, web.ErrInvalid)
+		}
+		p.AddExternal = append(p.AddExternal, x)
+	}
 	if b := edit.Base; b != nil {
 		p.Base = &epic.Fields{Title: b.Title, Description: b.Description, Body: b.Body}
 	}
@@ -287,7 +301,7 @@ func (w *webSource) SetEpic(name string, edit web.EpicEdit) error {
 	case errors.Is(err, epic.ErrNotFound):
 		return fmt.Errorf("no epic %s: %w", name, web.ErrNotFound)
 	case errors.Is(err, epic.ErrChanged):
-		return fmt.Errorf("%s was changed since you opened it; open it again to see what it says now: %w", name, web.ErrConflict)
+		return fmt.Errorf("%s was changed since you opened it; open it again to see what it says now: %w", epic.LabelOf(epicRefs(), name), web.ErrConflict)
 	case errors.Is(err, epic.ErrNoTitle):
 		return fmt.Errorf("%v: %w", err, web.ErrInvalid)
 	}
@@ -300,20 +314,20 @@ func (w *webSource) SetEpic(name string, edit web.EpicEdit) error {
 // the error says which of the two writes it was. The page sends the full id
 // it was given, but a handle is resolved too, the way 'jaira epic add'
 // resolves one.
-func (w *webSource) Assign(name, from, id string) error {
+func (w *webSource) Assign(name, from, id string, force bool) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	t, err := w.load(id)
 	if err != nil {
 		return err
 	}
-	if err := w.assign(name, t.ID, true); err != nil {
+	if err := w.assign(name, t.ID, true, force); err != nil {
 		return fmt.Errorf("adding %s to %s: %w", ticket.Handle(t.ID), name, err)
 	}
 	if from == "" || from == name {
 		return nil
 	}
-	if err := w.assign(from, t.ID, false); err != nil {
+	if err := w.assign(from, t.ID, false, false); err != nil {
 		return fmt.Errorf("%s is in %s now, but taking it out of %s failed: %w", ticket.Handle(t.ID), name, from, err)
 	}
 	return nil
@@ -328,7 +342,7 @@ func (w *webSource) Unassign(name, id string) error {
 	if err != nil {
 		return err
 	}
-	if err := w.assign(name, t.ID, false); err != nil {
+	if err := w.assign(name, t.ID, false, false); err != nil {
 		return fmt.Errorf("taking %s out of %s: %w", ticket.Handle(t.ID), name, err)
 	}
 	return nil
@@ -348,13 +362,40 @@ func (w *webSource) load(id string) (*ticket.Ticket, error) {
 
 // assign is one write of one epic's ref through epic.Assign, the call 'jaira
 // epic add' and 'jaira epic rm' make.
-func (w *webSource) assign(name, id string, add bool) error {
-	_, changed, err := epic.Assign(w.s, epicRefs(), name, []string{id}, add)
+func (w *webSource) assign(name, id string, add, force bool) error {
+	_, changed, err := epic.Assign(w.s, epicRefs(), name, []string{id}, add, force)
 	if errors.Is(err, epic.ErrNotFound) || errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("no epic %s: %w", name, web.ErrNotFound)
 	}
+	if errors.Is(err, epic.ErrClosed) {
+		return fmt.Errorf("%s is closed; confirm to put the ticket in anyway: %w", epic.LabelOf(epicRefs(), name), web.ErrConflict)
+	}
 	if err == nil && !add && len(changed) == 0 {
-		return fmt.Errorf("it is no member of %s, it counts through follows or parent: %w", name, web.ErrConflict)
+		return fmt.Errorf("it is no member of %s, it counts through follows or parent: %w", epic.LabelOf(epicRefs(), name), web.ErrConflict)
+	}
+	return err
+}
+
+// SetClosed closes an epic through epic.Close or opens it through
+// epic.Reopen, the calls 'jaira epic close' and 'jaira epic reopen' make.
+func (w *webSource) SetClosed(name string, closed, force bool) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	var err error
+	if closed {
+		var ix *link.Index
+		if ix, _, err = boardIndex(w.s); err != nil {
+			return err
+		}
+		_, _, err = epic.Close(w.s, epicRefs(), name, ix, force)
+	} else {
+		_, _, err = epic.Reopen(w.s, epicRefs(), name)
+	}
+	switch {
+	case errors.Is(err, epic.ErrNotFound):
+		return fmt.Errorf("no epic %s: %w", name, web.ErrNotFound)
+	case errors.Is(err, epic.ErrUnfinished):
+		return fmt.Errorf("%v; confirm to close it anyway: %w", err, web.ErrConflict)
 	}
 	return err
 }
