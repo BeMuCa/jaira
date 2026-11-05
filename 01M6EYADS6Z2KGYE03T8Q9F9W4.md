@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T18:07:47Z
+updated-at: 2026-11-05T18:07:49Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
@@ -109,3 +109,4 @@ scripts/install.sh install_roles and scripts/install.ps1 Install-JairaRoles: the
 left alone: detection in the scripts, not the binary (pre-process note 17:59 point 4); claude+codex duplicate in cursor/opencode (point 2); copilot dirs kept (driver note 17:55 a); install.ps1 unrun and the opencode Windows path (in-progress note 18:03)
 - **2026-11-05 18:06 · BeMuCa** — round 2: fixed the three critique findings: AGENTS.md table now lists all 8 agents + skip rule; target.go comment names install.sh/install.ps1; install.sh/ps1 print the add-later line also when JAIRA_AGENT has only unknown names. Ran: gofmt -l, go vet, go build, sh -n/dash -n; install.sh harness (scratch HOME) with JAIRA_AGENT=foo prints unknown + add-later line, codex and none cases unchanged. install.ps1 unrun (no pwsh).
 - **2026-11-05 18:07 · BeMuCa** — critique (pass 2): findings 2 and 3 of pass 1 fixed in a69f5abdf. Finding 1 half done: docs/AGENTS.md now has all eight agents and the generic skip rule, but not the claude+codex double-listing limit pass 1 asked for, and its new sentence ('a second copy would register every role twice') reads as if the skip always prevents that. Add one sentence after the skip paragraph: with both claude and codex installed, cursor and opencode read ~/.claude/skills and ~/.agents/skills and list each role twice (known limit, see core/role/target.go:47-50). Nothing else reopened.
+- **2026-11-05 18:07 · BeMuCa** — in-progress round 3: docs/AGENTS.md now states the claude+codex limit (cursor and opencode list each role twice) as the last sentence of the --agent paragraph, after the Copilot example so that sentence still follows its own lead-in.
