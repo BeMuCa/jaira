@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T10:51:07Z
-updated-at: 2026-11-05T10:57:06Z
+updated-at: 2026-11-05T10:57:09Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85123
 claimed-at: 2026-11-05T10:51:26Z
@@ -36,7 +36,8 @@ claimed-at: 2026-11-05T10:51:26Z
   proof: core/web/ui/src/widgets/epic-list/ui/EpicList.svelte:80 (onremove -> ReviewPage removeFromEpic = DELETE /api/epics/{name}/tickets/{id}); button TicketCard.svelte:39; test epic-card.test.ts 'every member card can be taken out' + TestWebCreatesMovesRemovesAndOpens
 - [x] Eine indirekte Karte (via follows/parent) nennt das Ticket, ueber das sie mitgezaehlt wird, statt still nicht ziehbar zu sein; Test
   proof: core/epic/epic.go Ticket.Via via covered(); TicketCard.svelte:54 'counted through <handle>'; tests TestCoveredWalksFollowsAndParent, TestWebCreatesMovesRemovesAndOpens (via), epic-card.test.ts 'a follow-up names the member'
-- [ ] Ein archiviertes Ticket laesst sich im Web genauso aus dem Epic nehmen wie mit 'jaira epic rm', oder die Seite sagt warum nicht; Test
+- [x] Ein archiviertes Ticket laesst sich im Web genauso aus dem Epic nehmen wie mit 'jaira epic rm', oder die Seite sagt warum nicht; Test
+  proof: internal/cli/web_source.go load -> LoadAnywhere, same as resolveRef for 'jaira epic rm'; TestWebRemovesAFiledTicketFromAnEpic (404 before, 200 after)
 - [ ] Release-Note-Zeile in core/release/notes/<ID>.md
 
 ## Options
