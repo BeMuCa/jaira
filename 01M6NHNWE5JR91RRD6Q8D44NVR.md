@@ -19,7 +19,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T12:22:52Z
+updated-at: 2026-11-05T12:22:56Z
 updated-by: Alexander Sacharov
 question: ""
 outcome-what: "panda-bobr/jaira-releases: README auf main, per PR #1 plugins.json ([]), schema/ (Kopien aus R6X6FH), CONTRIBUTING.md, .github/scripts/check_catalog.py mit 23 Unit-Tests und Workflow check-catalog (pull_request_target, nur plugins.json-PRs, Kommentar mit allen Problemen). Fixture-Repos panda-bobr/jaira-plugin-ci-fixture (Release ohne checksums.txt) und -norelease. Test-PR #2 zeigt die Ablehnung."
@@ -37,7 +37,7 @@ claimed-by: DESKTOP-RFTCH11-12777
 claimed-at: 2026-11-05T12:10:19Z
 review-verdict: "Alle vier DoD-Punkte erfuellt und auf GitHub nachgeprueft: main 85953d3 enthaelt plugins.json, README, CONTRIBUTING, Skript und Workflow (PR #1 und #3 gemergt); PR #2 Lauf 42024115800 lehnt mit Bot-Kommentar ab (doppelte id, fehlendes Release, fehlende checksums.txt); check_takeover mit Tests; Lauf 42026044679 (pull_request) Job unit success, 29 Tests lokal auf origin/main gruen. Workflow-Sicherheit geprueft: kein PR-Code unter pull_request_target, PR-Werte nur ueber env. Kein Blocker; vier Notes."
 review-round: 3
-review-check: "1. https://github.com/panda-bobr/jaira-releases oeffnen - auf main liegen plugins.json (Inhalt: []), README.md, CONTRIBUTING.md, schema/ und .github/workflows/check-catalog.yml.  2. https://github.com/panda-bobr/jaira-releases/pull/2 oeffnen - der Check check-catalog ist rot, und der Bot-Kommentar nennt: 'the id is taken - it appears 2 times', 'no release v0.0.1' (ci-fixture-norelease) und 'has no checksums.txt' (ci-fixture).  3. Optional lokal: git clone https://github.com/panda-bobr/jaira-releases && cd jaira-releases && uv run --with jsonschema==4.23.0 python -m unittest discover -s .github/scripts - Ausgabe endet mit 'Ran 23 tests ... OK'.  4. Offen vor done: git -C /tmp/claude-1000/-home-alex-projects--worktrees-jaira-d44nvr/e9c86c25-536c-4790-a6d8-3e163fb430b1/scratchpad/jaira-releases push origin fix/d44nvr-errors, dann PR oeffnen und mergen."
+review-check: "1. Oeffne https://github.com/panda-bobr/jaira-releases - auf main liegen plugins.json, README.md, CONTRIBUTING.md, schema/ und .github/.  2. Oeffne https://github.com/panda-bobr/jaira-releases/pull/2 - unten steht ein Bot-Kommentar 'Catalogue check failed' mit den Zeilen 'the id is taken', 'no release v0.0.1' und 'has no checksums.txt'.  3. Oeffne https://github.com/panda-bobr/jaira-releases/actions/runs/42026044679 - Job unit gruen, Job check uebersprungen (DoD 4).  4. DoD 3 lokal: gh repo clone panda-bobr/jaira-releases /tmp/jr && cd /tmp/jr && uv run --no-project --with jsonschema==4.23.0 python -m unittest discover -s .github/scripts -v 2>&1 | grep takeover - vier Tests mit takeover/owner_of_both/description_change, alle 'ok'; die letzte Zeile der vollen Ausgabe ist 'OK' bei 29 Tests."
 ---
 
 # panda-bobr/jaira-releases: plugins.json, CI-Pruefung und CONTRIBUTING
