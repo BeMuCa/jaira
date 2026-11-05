@@ -7,7 +7,7 @@
   import { EditEpicForm, type EpicEdit } from '@/features/edit-epic';
   import { renderMarkdown } from '@/shared/lib';
 
-  let { epics, expanded = false, onassign, onclose, onreopen, oncreate, onedit, onopen }: {
+  let { epics, expanded = false, onassign, onremove, onclose, onreopen, oncreate, onedit, onopen }: {
     epics: Epic[];
     // Open every epic's ticket list: a filter's matches must not hide folded.
     // Unset again, each epic is back as the person left it.
@@ -18,6 +18,8 @@
     // force is set only after the person confirmed closing with unfinished tickets.
     onclose: (epic: string, force: boolean) => void;
     onreopen: (epic: string) => void;
+    // Takes a member out of the epic: the Remove button, a tap with no drag.
+    onremove: (epic: string, id: string) => void;
     oncreate: (name: string, title: string, description: string) => Promise<void>;
     // Resolves when the edit is written; throws with the server's message.
     onedit: (name: string, edit: EpicEdit) => Promise<void>;
@@ -109,12 +111,15 @@
           <summary>{epic.tickets.length} tickets</summary>
           <ul>
             {#each epic.tickets as ticket (ticket.id)}
-              <!-- Only a member line can be dragged: a follow-up has none to move. -->
+              <!-- Only a member line can be dragged or removed: a follow-up has none
+                   to move, and its card names the member that brings it in. -->
               <TicketCard
                 {ticket}
                 {onopen}
                 draggable={ticket.direct}
                 ondragstart={ticket.direct ? (e) => startTicketDrag(e, ticket.id, epic.name) : undefined}
+                onremove={ticket.direct ? () => onremove(epic.name, ticket.id) : undefined}
+                removeLabel={`Take ${ticket.handle} out of ${epic.title}`}
               />
             {/each}
           </ul>

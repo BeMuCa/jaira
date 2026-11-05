@@ -184,6 +184,7 @@
     onassign={(epic, id, from, force) => change(() => assignToEpic(epic, id, from, force))}
     onclose={(epic, force) => change(() => closeEpic(epic, force))}
     onreopen={(epic) => change(() => reopenEpic(epic))}
+    onremove={(epic, id) => change(() => removeFromEpic(epic, id))}
   />
 </main>
 
