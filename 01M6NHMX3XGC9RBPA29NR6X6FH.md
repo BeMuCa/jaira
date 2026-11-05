@@ -29,14 +29,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:46:40Z
-updated-at: 2026-11-05T10:11:26Z
+updated-at: 2026-11-05T10:12:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-21000
 claimed-at: 2026-11-05T09:47:52Z
 outcome-what: "docs/PLUGINS.md: Plugin-Standard samt Entscheidung vom 05.11.2026, dazu Events (jaira-<id> event <name>) und Web (Seiten unter /plugins/<id>/, api CGI-artig); docs/schema/ mit Schemas fuer jaira-plugin.json (inkl. events, web) und einen plugins.json-Eintrag"
 outcome-why: "Wer ein Plugin schreiben will, braucht einen Ort mit allen drei Kanaelen (Befehl, Event, Web), Schreibweg, external, Geheimnissen, Exit-Codes, Manifest und Katalogweg - bisher stand das nur in der Teamlead-Sitzung"
 outcome-resolves: Alle vier DoD-Punkte; jaira selbst startet noch keine Plugins (8Z3VRF und Folgetickets im Epic plugins)
-review-summary: none
+review-summary: "Nur Doku, kein Code: neue docs/PLUGINS.md legt den Plugin-Standard fest (eigenes Programm jaira-<id> im Repo des Autors, Aufruf 'jaira <id> args' nach ~/.jaira/plugins/<id>/, Umgebung JAIRA_ROOT/BOARD/VERSION, Schreiben nur ueber die CLI, Feld external als '<id>:<key>', Geheimnisse in ~/.jaira/secrets.json ab 3Q92JY, Exit-Codes wie jaira, Events create/move/claim/set mit 5 s Timeout und JAIRA_IN_EVENT gegen Schleifen, Web-Seiten unter /plugins/<id>/ und CGI-artige api, Manifest, Releases, Weg in den Katalog per Fork+PR) samt Begruendung (kein Go-plugin, kein eingebautes Jira). Dazu zwei JSON-Schemas (Draft 2020-12) fuer jaira-plugin.json und einen plugins.json-Eintrag. Die Verweise auf den Code stimmen: FieldExternal und opaker Merge (core/merge/merge.go:153), Hook-Timeout 5 s und JAIRA_ROOT (core/hook/hook.go:24,64), settings.json mit 0644 (core/settings/settings.go:340), Exit-Code-Tabelle aus docs/COMMANDS.md."
 round: 4
 review-gaps: none - Runde 2 nur Doku/Schema; Exit-Code-Tabelle wiederholt COMMANDS.md bewusst; Hook-Timeout zitiert core/hook statt es zu wiederholen
 test-verdict: "pass: go test ./... RC=0; DoD 1-4 im Baum geprueft; beide Schemas Draft-2020-12-gueltig, alle JSON-Beispiele der Doku (Manifest, events-, web-Fragment, Katalogeintrag) validieren; abgelehnt werden id Bad_ID, events [delete], page path ../x und /x"
