@@ -15,9 +15,10 @@ tags:
   - ci
 blocked-by: []
 related: []
-commits: []
+commits:
+  - d06a7cf3e092f9dd3dea08ffb60f3ddca4991cc1
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T21:29:47Z
+updated-at: 2026-11-05T21:29:51Z
 updated-by: Alexander Sacharov
 blocked-reason: ""
 outcome-what: "panda-bobr/jaira-plugin-template@fc5d7e1: Go-Plugin jaira-hello (greet liest jaira list --json und schreibt jaira note; manifest --json aus eingebettetem jaira-plugin.json; Exit 3 bei zu altem JAIRA_VERSION), Tests inkl. Manifest-Regeln, goreleaser (6 Binaries, checksums.txt, jaira-plugin.json), Actions test und release-auf-Tag mit Tag==version-Pruefung, README mit drei Schritten bis Katalog-PR. Demo panda-bobr/jaira-hello-demo v0.1.0; Katalog-PR panda-bobr/jaira-releases#4."
