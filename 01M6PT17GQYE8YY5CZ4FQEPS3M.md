@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T21:32:27Z
-updated-at: 2026-11-05T21:41:06Z
+updated-at: 2026-11-05T21:41:09Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54459
 claimed-at: 2026-11-05T21:33:03Z
@@ -31,7 +31,7 @@ claimed-at: 2026-11-05T21:33:03Z
 
 ## Definition of Done
 
-- [ ] Eine Peer-Meldung erscheint in Claude Code 2.1.318 wieder gekuerzt mit anklickbarer Zeile
+- [~] Eine Peer-Meldung erscheint in Claude Code 2.1.318 wieder gekuerzt mit anklickbarer Zeile
 - [x] Kein Hinweis 'session.append hook was skipped' mehr fuer jaira-cockpit
   proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1185 (matcher door prompt|delivery; claude plugin validate: session.append{door=prompt|delivery})
 - [ ] Die Knoepfe im Cockpit-Panel ([ Overview ], [ N waiting for ... ]) reagieren in 2.1.318 wieder auf Klick, und das Panel scrollt nicht von selbst
