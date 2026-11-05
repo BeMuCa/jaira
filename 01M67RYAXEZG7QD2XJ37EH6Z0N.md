@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-05T09:31:16Z
+updated-at: 2026-11-05T09:31:19Z
 updated-by: berkc
 claimed-by: berk-ca-1971576
 claimed-at: 2026-11-05T09:29:35Z
@@ -29,7 +29,11 @@ outcome-why: "review-gaps found 'o' on a blank row opened code -g :0 with title 
 outcome-resolves: "both review-gaps items; test TestOKeyOnABlankRowOpensTheFileBelow"
 review-summary: "On a 140+ column terminal, a ticket in signoff or human shows the diff of its newest branch (feat/<handle>-..., picked by newest commit) against master next to the ticket. The redesign (2a73eae2, 725643c3, afbd423f) adds: a title 'Diff  <branch> → <base>' with 'file N/M +A −D' and a ●/○ focus mark; a shaded header bar per file with dir/basename, new/deleted/renamed tag and per-file counts, and a blank row between files; coloured hunk headers; a gutter with old and new line numbers; added and removed rows tinted across the whole pane in 256-colour indices (22/52, words 28/88; light 194/224/157/217); the changed middle of a 1:1 replaced line highlighted; long rows cut with '…'; centred 'No diff yet' / 'No changes' / red error notices. 'o' on a blank separator row opens the file below it. All of it is in internal/tui/diffpane.go plus BranchFor's --sort=-committerdate in core/gitrepo/branchdiff.go."
 round: 6
-review-gaps: "none: afbd423f resolves both prior findings - H rows no longer set the unread text field (no reader of r.text for 'H'), and diffTarget() is the single blank-row skip shared by openDiffRow and the counter/marker; no duplicate, dead code or fluff added; diffTop kept since jumpFile and the scroll clamp need the raw top"
+review-gaps: |-
+  blocker: internal/tui/diffpane.go:96 the header row keeps line==1 as 'not set yet', so a file whose first hunk starts at line 1 takes the SECOND hunk's start: parseDiff of hunks '@@ -1,2 +1,3 @@' and '@@ -50,2 +51,2 @@' gives the H row line 51 (probed), and 'o' on that header opens line 51 instead of 1 - set the header line only at the file's first '@@' (e.g. a firstHunk bool reset at 'diff --git') and add that case to TestParseDiffSplitsFilesAndNumbersLines
+  blocker: internal/tui/diffpane.go:271 'patch, _ := repo.Diff(shas)' drops the git error on the fallback path, so a failing git shows 'No changes - the commits naming <H> ... change nothing' instead of the red error notice spec rule 8 / DoD 5 demands (the 21:42 note says this path now shows the error; only CommitsForTicket's error does) - return the same 'Diff unavailable' paneNotice as line 262
+  note: palette deviates from the spec's hex values on purpose (256 indices, critique 21:47) - right call; the light-terminal tints 194/224/157/217 have not been seen on a real screen
+  note: design is sound - one file, rows built as plain segments then styled (cut before style), shared diffTarget for counter/marker/o, spreadRow keeps counters uncut; diffLine is ~80 lines with three row kinds in one switch, acceptable
 test-verdict: "pass: touched packages green (go test ./core/gitrepo ./internal/tui ./internal/cli -count=1, RC=0), DoD 1-6 verified in the tree by name and file:line, DoD tests re-run and PASS; tmux real-app check taken from worker (NDE933), not re-run"
 review-verdict: "The diff meets all four DoD items (location agreed, per-file diff in signoff and human with tests, o opens VS Code at the line, release note one line). No defects found; go build, vet, gofmt clean; go test ./core/gitrepo ./internal/tui and ./internal/cli -run 'Create|Follows|Branch' pass. Not exercised by me: a real VS Code launch (tests stub 'code')."
 review-round: 3
