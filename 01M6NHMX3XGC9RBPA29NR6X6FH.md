@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:46:40Z
-updated-at: 2026-11-05T09:51:35Z
+updated-at: 2026-11-05T09:53:05Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-21000
 claimed-at: 2026-11-05T09:47:52Z
@@ -39,6 +39,7 @@ outcome-resolves: Alle drei DoD-Punkte; jaira selbst startet noch keine Plugins 
 review-summary: none
 round: 2
 review-gaps: "none - Exit-Code-Tabelle in docs/PLUGINS.md wiederholt docs/COMMANDS.md bewusst, mit Plugin-Bedeutungen und Link dorthin; sonst nichts doppelt, kein Code"
+test-verdict: "pass: go build ./... und go test ./... gruen (RC=0); DoD 1-3 im Baum geprueft (Abschnitte in docs/PLUGINS.md, beide Schemas Draft-2020-12-gueltig, Doku-Beispiele validieren, Bad_ID abgelehnt); 'jaira set <id> external=jira:PROJ-1' auf Scratch-Board ausgefuehrt, Feld steht im Frontmatter"
 ---
 
 # Plugins: Entscheidung und Standard stehen in docs/PLUGINS.md
