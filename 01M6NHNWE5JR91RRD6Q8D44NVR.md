@@ -1,7 +1,7 @@
 ---
 id: 01M6NHNWE5JR91RRD6Q8D44NVR
 title: "panda-bobr/jaira-releases: plugins.json, CI-Pruefung und CONTRIBUTING"
-status: backlog
+status: todo
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,7 +19,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T10:27:45Z
+updated-at: 2026-11-05T10:28:04Z
 updated-by: Alexander Sacharov
 ---
 
