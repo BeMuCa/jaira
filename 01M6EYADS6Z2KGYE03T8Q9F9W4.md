@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T18:08:37Z
+updated-at: 2026-11-05T18:09:55Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
@@ -30,6 +30,7 @@ outcome-why: "roles went to ~/.claude/skills whether or not Claude Code was ther
 outcome-resolves: "DoD 1-5; tests written but not run, install.ps1 unrun"
 review-summary: none
 round: 3
+review-gaps: "removed: install.ps1 Install-JairaRoles '$found = @()' (both branches assign it); roles_test.go TestRolesInstallAgentSkipsWhereItAlreadyReads guard 'scope.own != also' (no table entry lists its own dir as an Also dir, so always true). left: agentDirs in roles_test.go repeats target.go's table on purpose (independent expectation, folding it would make the tests tautological); install.sh keeps two lists (agent_dir case + AGENTS order) and install.ps1 a third copy of the table, documented at target.go:39-41 because the script cannot ask an older binary; nothing hot, no cost pass findings; no Go duplicate of the detection exists"
 ---
 
 # Der Installer erkennt den Coding-Agenten und legt die Rollen dort ab, wo er sie liest
