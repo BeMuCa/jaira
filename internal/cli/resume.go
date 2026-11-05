@@ -100,13 +100,15 @@ back into the lane is a new round, so it may write a receipt again.`,
 				return fail(ExitValidation, "no_receipt", "lane %q does not require a receipt", cur.Status)
 			}
 
+			var receipt string
 			t, err := s.Mutate(args[0], func(t *ticket.Ticket) error {
 				// Checked on the fresh copy, so two sessions writing at once cannot
 				// both pass the check.
 				if gate.HasReceipt(t, l.ID) {
 					return fail(ExitValidation, "receipt_exists", "lane %s already has its receipt for this round (%s); a second one would record the side effect twice", l.ID, ticket.Handle(t.ID))
 				}
-				return t.Doc().SetScalar(gate.ReceiptField(l.ID), gate.ReceiptKey(t, l.ID)+" "+result)
+				receipt = gate.ReceiptKey(t, l.ID) + " " + result
+				return t.Doc().SetScalar(gate.ReceiptField(l.ID), receipt)
 			})
 			if err != nil {
 				return err
@@ -114,7 +116,7 @@ back into the lane is a new round, so it may write a receipt again.`,
 			if g.jsonOut {
 				return emit(cmd.OutOrStdout(), ticketJSON(t, env.Lanes))
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Receipt for %s in %s: %s\n", ticket.Handle(t.ID), l.ID, gate.ReceiptKey(t, l.ID)+" "+result)
+			fmt.Fprintf(cmd.OutOrStdout(), "Receipt for %s in %s: %s\n", ticket.Handle(t.ID), l.ID, receipt)
 			return nil
 		},
 	}

@@ -429,11 +429,10 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 		// The script is run by an agent from the repository root, so a path that
 		// leaves the repository would run something the repository does not hold.
 		// Only an agent runs it, which is why a lane that runs nothing cannot name one.
-		clean := filepath.Clean(l.Script)
 		if !l.Agentic {
 			return nil, fmt.Errorf("lane %s: script needs agentic: true — only an agent runs a script", source)
 		}
-		if filepath.IsAbs(l.Script) || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+		if !filepath.IsLocal(l.Script) {
 			return nil, fmt.Errorf("lane %s: script %q must be a path inside the repository, relative to its root", source, l.Script)
 		}
 	}

@@ -569,12 +569,11 @@ func sortByProgress(ts []*ticket.Ticket, env gate.Env) {
 // ticket. Only what the lane declares is set, so a lane with none of them adds
 // none of the keys to the payload.
 type laneRun struct {
-	skill, skillPath string
-	script, run      string
-	key, receipt     string
-	receiptRequired  bool
-	scriptDone       bool
-	missing          []string
+	skillPath  string
+	run, key   string
+	receipt    string
+	scriptDone bool
+	missing    []string
 }
 
 // laneRunFor reads what the agent needs to run a lane's skill and script. jaira
@@ -584,7 +583,6 @@ type laneRun struct {
 func laneRunFor(root string, t *ticket.Ticket, l *lane.Lane) laneRun {
 	var r laneRun
 	if l.Skill != "" {
-		r.skill = l.Skill
 		r.skillPath = role.FindSkill(root, l.Skill)
 		if r.skillPath == "" {
 			r.missing = append(r.missing, fmt.Sprintf("skill %s (no SKILL.md found in the skills directories jaira roles install into)", l.Skill))
@@ -594,11 +592,9 @@ func laneRunFor(root string, t *ticket.Ticket, l *lane.Lane) laneRun {
 		r.key = gate.ReceiptKey(t, l.ID)
 	}
 	if l.ReceiptRequired {
-		r.receiptRequired = true
 		r.receipt = fieldValue(t, gate.ReceiptField(l.ID))
 	}
 	if l.Script != "" {
-		r.script = l.Script
 		r.scriptDone = gate.HasReceipt(t, l.ID)
 		if _, err := os.Stat(filepath.Join(root, l.Script)); err != nil {
 			r.missing = append(r.missing, fmt.Sprintf("script %s (not found under the repository root)", l.Script))
@@ -776,8 +772,8 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 		}
 		// Keys only for what the lane declares. skill_path is left out when no
 		// SKILL.md was found, so a path that is not there is never printed.
-		if run.skill != "" {
-			payload["skill"] = run.skill
+		if l.Skill != "" {
+			payload["skill"] = l.Skill
 		}
 		if run.skillPath != "" {
 			payload["skill_path"] = run.skillPath
@@ -785,12 +781,12 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 		if run.key != "" {
 			payload["idempotency_key"] = run.key
 		}
-		if run.script != "" {
-			payload["script"] = run.script
+		if l.Script != "" {
+			payload["script"] = l.Script
 			payload["script_done"] = run.scriptDone
 			payload["run"] = run.run
 		}
-		if run.receiptRequired {
+		if l.ReceiptRequired {
 			payload["receipt_required"] = true
 			payload["receipt"] = run.receipt
 		}
@@ -842,20 +838,20 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 	if worktreeDiff != "" {
 		fmt.Fprintf(w, "## Worktree diff (not committed yet)\n\n```diff\n%s```\n\n", worktreeDiff)
 	}
-	if run.skill != "" || run.script != "" || run.receiptRequired {
+	if l.Skill != "" || l.Script != "" || l.ReceiptRequired {
 		fmt.Fprintf(w, "## Skill / script\n\n")
-		if run.skill != "" {
-			fmt.Fprintf(w, "- skill %s: %s\n", run.skill, dash(run.skillPath))
+		if l.Skill != "" {
+			fmt.Fprintf(w, "- skill %s: %s\n", l.Skill, dash(run.skillPath))
 		}
 		switch {
-		case run.script == "":
+		case l.Script == "":
 		case run.scriptDone:
-			fmt.Fprintf(w, "- script %s already ran for key %s: do not run it again\n", run.script, run.key)
+			fmt.Fprintf(w, "- script %s already ran for key %s: do not run it again\n", l.Script, run.key)
 		default:
 			// Run from the repository root; the key is what a provider can use to refuse a second send.
 			fmt.Fprintf(w, "- script, run from the repository root: %s\n", run.run)
 		}
-		if run.receiptRequired {
+		if l.ReceiptRequired {
 			fmt.Fprintf(w, "- once its side effect has happened, write the receipt: jaira receipt %s <result> (key %s); the ticket does not leave this lane without it\n", ticket.Handle(t.ID), run.key)
 		}
 		fmt.Fprintln(w)

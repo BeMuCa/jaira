@@ -485,7 +485,7 @@ func HasReceipt(t *ticket.Ticket, laneID string) bool {
 		return false
 	}
 	first, _, _ := strings.Cut(strings.TrimSpace(raw), " ")
-	return first != "" && first == ReceiptKey(t, laneID)
+	return first == ReceiptKey(t, laneID)
 }
 
 // OutputOwed lists the fields lane l declares it produces that ticket t has not
