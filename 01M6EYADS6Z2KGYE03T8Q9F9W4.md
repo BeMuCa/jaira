@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T18:02:49Z
+updated-at: 2026-11-05T18:02:51Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
@@ -52,7 +52,7 @@ claimed-at: 2026-11-05T17:54:30Z
 - [x] test first: Installed() attributes a shared dir (~/.agents/skills) once, to codex; UpdateCommand for it returns 'jaira roles install --agent codex --global'
 - [x] extend TestRolesInstallHelpNamesEveryAgentsDirectories and TestRolesInstallAgentRefusesUnknownAndInto to all eight names and dirs
 - [x] core/role/target.go: add the six entries in the order above with Project/Global/AlsoProject/AlsoGlobal from the findings note, Mods false; extend the agents comment with each source URL, the order rule and the claude+codex duplicate limit
-- [ ] internal/cli/roles.go: rewrite the --agent paragraph of the Long help generically (every agent but claude leaves the cockpit out; Also dirs skip) instead of copilot-only prose
+- [x] internal/cli/roles.go: rewrite the --agent paragraph of the Long help generically (every agent but claude leaves the cockpit out; Also dirs skip) instead of copilot-only prose
 - [ ] gofmt -l, go vet ./..., go build ./... (no go test in this lane)
 - [ ] scripts/install.sh: agent list in table order with its home folder (~/.claude, ~/.codex, ~/.pi, ~/.copilot, ~/.cursor, ~/.gemini, ~/.config/opencode, ~/.hermes); detect by folder; JAIRA_AGENT=a,b overrides (known names in table order, unknown named and skipped); JAIRA_NO_ROLES=1 first
 - [ ] install.sh: per agent run 'jaira roles install --agent X --global', print its summary or 'already reads' line; failure is non-fatal with the retry line; cockpit/~/.claude lines only for claude; none found -> nothing into HOME, one sentence: jaira works without an agent (e.g. jaira web), add roles later with 'jaira roles install --agent <name> --global'
