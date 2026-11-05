@@ -132,10 +132,11 @@ func TestTheBandIsALineOnTheEdge(t *testing.T) {
 		}
 		rows := strings.Split(strings.TrimSuffix(block, "\n"), "\n")
 		cells := m.snakeCells(tk.ID, w, len(rows))
-		// The card's own text, before the band: a blank top cell under the snake
-		// must hold ▔, and a cell with text must keep its character.
+		// The card's own text, before the band: a blank top cell outside the
+		// title must hold ▔, and a cell with text must keep its character.
 		text := strings.Split(strings.TrimSuffix(stripANSI(m.renderCard(tk, w-2, false)), "\n"), "\n")[0]
 		text += strings.Repeat(" ", w-2)
+		textEnd := ansi.StringWidth(strings.TrimRight(text, " "))
 		for r, row := range rows {
 			if cells[r][0] {
 				sides++
@@ -154,7 +155,7 @@ func TestTheBandIsALineOnTheEdge(t *testing.T) {
 						continue
 					}
 					want := ansi.Cut(text, c, c+1)
-					if want == " " {
+					if want == " " && (c == 0 || c >= textEnd) {
 						want = "▔"
 						blanks++
 					}
@@ -173,6 +174,30 @@ func TestTheBandIsALineOnTheEdge(t *testing.T) {
 	}
 	if sides == 0 || tops == 0 || bottoms == 0 || blanks == 0 {
 		t.Fatalf("the walk never reached every edge: sides %d, tops %d, bottoms %d, blank top cells %d", sides, tops, bottoms, blanks)
+	}
+}
+
+// The band passes over the title row too. Its blank cells become ▔, but the
+// spaces between two words of the title stay spaces: at every phase round the
+// ring the card reads as it does unclaimed, and the title is still on its row.
+func TestTheBandKeepsATitleWithSpacesWhole(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	const title = "Fix session cookie dropped on 302"
+	const w = 40
+	unclaimed := stripANSI(m.renderCardBlock(ticketTitled(t, m, title), w, false, false))
+	tk := claim(t, m, title, "sess-1", time.Now())
+	m.anim = true
+	// A 40 by 3 card has 82 ring cells, so the head reaches every one in this range.
+	for p := 0; p < 100; p++ {
+		m.animPhase = p
+		block := m.renderCardBlock(tk, w, false, false)
+		if got := withoutBandGlyphs(block); got != unclaimed {
+			t.Fatalf("phase %d: the band changed the card:\nunclaimed %q\nclaimed   %q", p, unclaimed, got)
+		}
+		titleRow := strings.Split(stripANSI(block), "\n")[0]
+		if !strings.Contains(titleRow, title) {
+			t.Fatalf("phase %d: the band broke the title:\n%q", p, titleRow)
+		}
 	}
 }
 

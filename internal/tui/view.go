@@ -11,6 +11,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/BeMuCa/jaira/core/gate"
 	"github.com/BeMuCa/jaira/core/milestone"
@@ -674,7 +675,10 @@ func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected, alt bool) str
 			b.WriteString(paintRow(leftSGR, leftBar))
 			var topAt func(int) bool
 			if i == 0 {
-				topAt = func(c int) bool { return row[c+1] }
+				// The blank top cells are the inset and the padding after the
+				// title; a space between two words of the title stays a space.
+				titleEnd := ansi.StringWidth(strings.TrimRight(ansi.Strip(padDisplay(line, inner)), " "))
+				topAt = func(c int) bool { return row[c+1] && (c == 0 || c >= titleEnd) }
 			}
 			b.WriteString(paintCells(padDisplay(line, inner), inner, func(c int) string {
 				if row[c+1] {
