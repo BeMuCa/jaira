@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T10:51:07Z
-updated-at: 2026-11-05T10:55:31Z
+updated-at: 2026-11-05T10:57:02Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85123
 claimed-at: 2026-11-05T10:51:26Z
@@ -32,7 +32,8 @@ claimed-at: 2026-11-05T10:51:26Z
 
 ## Definition of Done
 
-- [ ] Jede direkte Ticket-Karte in einem Epic hat einen Entfernen-Knopf, der DELETE /api/epics/{name}/tickets/{id} ruft; funktioniert per Tipp ohne Drag; Test
+- [x] Jede direkte Ticket-Karte in einem Epic hat einen Entfernen-Knopf, der DELETE /api/epics/{name}/tickets/{id} ruft; funktioniert per Tipp ohne Drag; Test
+  proof: core/web/ui/src/widgets/epic-list/ui/EpicList.svelte:80 (onremove -> ReviewPage removeFromEpic = DELETE /api/epics/{name}/tickets/{id}); button TicketCard.svelte:39; test epic-card.test.ts 'every member card can be taken out' + TestWebCreatesMovesRemovesAndOpens
 - [ ] Eine indirekte Karte (via follows/parent) nennt das Ticket, ueber das sie mitgezaehlt wird, statt still nicht ziehbar zu sein; Test
 - [ ] Ein archiviertes Ticket laesst sich im Web genauso aus dem Epic nehmen wie mit 'jaira epic rm', oder die Seite sagt warum nicht; Test
 - [ ] Release-Note-Zeile in core/release/notes/<ID>.md
