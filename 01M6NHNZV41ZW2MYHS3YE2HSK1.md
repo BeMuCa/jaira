@@ -13,12 +13,11 @@ context: |-
 definition-of-done: "Ein Repo aus der Vorlage baut mit 'git tag v0.1.0 && git push --tags' ein Release mit allen Assets und checksums.txt; einmal vorgefuehrt"
 tags:
   - ci
-blocked-by:
-  - R6X6FH
+blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T17:20:11Z
+updated-at: 2026-11-05T17:20:55Z
 updated-by: Alexander Sacharov
 blocked-reason: "DoD 2 wartet auf die Katalog-CI aus D44NVR (panda-bobr/jaira-releases, noch nicht auf main)"
 outcome-what: "panda-bobr/jaira-plugin-template@fc5d7e1: Go-Plugin jaira-hello (greet liest jaira list --json und schreibt jaira note; manifest --json aus eingebettetem jaira-plugin.json; Exit 3 bei zu altem JAIRA_VERSION), Tests inkl. Manifest-Regeln, goreleaser (6 Binaries, checksums.txt, jaira-plugin.json), Actions test und release-auf-Tag mit Tag==version-Pruefung, README mit drei Schritten bis Katalog-PR. Demo panda-bobr/jaira-hello-demo v0.1.0; Katalog-PR panda-bobr/jaira-releases#4."
