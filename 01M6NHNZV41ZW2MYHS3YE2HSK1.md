@@ -18,7 +18,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T12:25:49Z
+updated-at: 2026-11-05T12:26:02Z
 updated-by: Alexander Sacharov
 blocked-reason: "DoD 2 wartet auf die Katalog-CI aus D44NVR (panda-bobr/jaira-releases, noch nicht auf main)"
 outcome-what: "panda-bobr/jaira-plugin-template@fc5d7e1: Go-Plugin jaira-hello (greet liest jaira list --json und schreibt jaira note; manifest --json aus eingebettetem jaira-plugin.json; Exit 3 bei zu altem JAIRA_VERSION), Tests inkl. Manifest-Regeln, goreleaser (6 Binaries, checksums.txt, jaira-plugin.json), Actions test und release-auf-Tag mit Tag==version-Pruefung, README mit drei Schritten bis Katalog-PR. Demo panda-bobr/jaira-hello-demo v0.1.0; Katalog-PR panda-bobr/jaira-releases#4."
@@ -73,3 +73,4 @@ review-gaps: "none - main.go hat keinen Code ohne Aufrufer mehr (version in 66de
 - **2026-11-05 12:24 · Alexander Sacharov** — critique: (1) test.yml push nur auf main, pull_request bleibt - sonst Doppellauf je PR. (2) version/--version aus main.go und usage raus - nicht im Standard, manifest --json reicht. README-Link auf BeMuCa/jaira bleibt bewusst: der Umzug nach panda-bobr ist entschieden, aber noch nicht passiert. jaira-hello-demo bleibt auf dem alten Stand fc5d7e1 - es beweist DoD 1, kein Grund es nachzuziehen.
 - **2026-11-05 12:25 · Alexander Sacharov** — Kritik-Fixes als 66de84a in der Template-Arbeitskopie (Scratchpad), noch nicht gepusht - Alex pusht. go vet/test gruen.
 - **2026-11-05 12:25 · Alexander Sacharov** — critique Runde 2: beide Befunde aus Runde 1 in 66de84a behoben (test.yml:5, main.go ohne version); sonst nichts. goreleaser-Konfig bewusst nicht angefasst.
+- **2026-11-05 12:26 · Alexander Sacharov** — testing wartet: 66de84a muss auf main von jaira-plugin-template (Alex pusht), dann test-Workflow dort gruen -> test-verdict. Lokal: go vet + go test gruen (exit 0).
