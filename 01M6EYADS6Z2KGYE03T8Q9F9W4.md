@@ -1,7 +1,7 @@
 ---
 id: 01M6EYADS6Z2KGYE03T8Q9F9W4
 title: "Der Installer erkennt den Coding-Agenten und legt die Rollen dort ab, wo er sie liest"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "install.sh und install.ps1 erkennen, welche Agenten auf dem Rechner sind, und jaira roles install kennt neben claude und copilot auch codex, cursor, gemini-cli, opencode, pi und hermes mit ihren Pfaden; ohne erkannten Agenten wird nichts ins Home geschrieben und ein Satz sagt, wie man es nachholt."
@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T18:05:10Z
+updated-at: 2026-11-05T18:05:12Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
@@ -33,6 +33,7 @@ review-summary: |-
   core/role/target.go:39 "A further one is a further entry" is made false by this change: scripts/install.sh (agent_dir + AGENTS) and scripts/install.ps1 ($known) carry the same names, order and detect folders; name both scripts in that comment so the next agent lands in all three copies
   scripts/install.sh install_roles and scripts/install.ps1 Install-JairaRoles: the JAIRA_AGENT guard around the no-agent sentence leaves JAIRA_AGENT=bogus with no add-later command (goal: a sentence says how to catch up); drop the guard, one branch less, and the sentence prints whenever nothing is installed
   left alone: detection in the scripts, not the binary (pre-process note 17:59 point 4); claude+codex duplicate in cursor/opencode (point 2); copilot dirs kept (driver note 17:55 a); install.ps1 unrun and the opencode Windows path (in-progress note 18:03)
+round: 2
 ---
 
 # Der Installer erkennt den Coding-Agenten und legt die Rollen dort ab, wo er sie liest
