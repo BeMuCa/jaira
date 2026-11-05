@@ -21,14 +21,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T21:32:27Z
-updated-at: 2026-11-05T21:42:34Z
+updated-at: 2026-11-05T21:42:43Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54459
 claimed-at: 2026-11-05T21:33:03Z
 outcome-what: "session.append hook of jaira-cockpit now matches only door prompt|delivery; release note; test for the delivery and attachment doors"
 outcome-why: "the built-in cc-plugin-sec-default in 2.1.318 passes person plugins over on attachment/hook-context/compaction rows, and a hook without a matcher reported itself as skipped there"
 outcome-resolves: "the 'session.append hook was skipped' notice; dead clicks and scroll trace to the fullscreen renderer Claude Code turned off on this machine, not to the mod"
-review-summary: "core/mod/builtin/jaira-cockpit/hooks/filter.ts:81 DELIVERY_DOORS repeats the doors that the matcher at register.tsx:1185 already writes as a literal; rewriteRow's only caller is that hook. Drop the constant and rewriteRow's door check, so the matcher is the one place the doors live"
+review-summary: "none"
 round: 2
 ---
 
