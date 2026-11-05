@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:46:40Z
-updated-at: 2026-11-05T09:54:15Z
+updated-at: 2026-11-05T09:54:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-21000
 claimed-at: 2026-11-05T09:47:52Z
@@ -38,7 +38,10 @@ outcome-why: "Wer ein Plugin schreiben will, braucht einen Ort mit Aufruf, Umgeb
 outcome-resolves: Alle drei DoD-Punkte; jaira selbst startet noch keine Plugins (spaeteres Ticket)
 review-summary: "Zwei Commits, nur Doku: docs/PLUGINS.md legt den Plugin-Standard fest (Aufruf jaira <id> -> ~/.jaira/plugins/<id>/jaira-<id>, Umgebung JAIRA_ROOT/JAIRA_BOARD/JAIRA_VERSION, Schreiben nur ueber die CLI, external als '<id>:<key>', Geheimnisse in ~/.jaira/secrets.json (wartet auf 3Q92JY), Exit-Codes wie jaira, Manifest jaira-plugin.json + 'manifest --json', Releases per goreleaser, Weg in den Katalog per Fork+PR) und haelt die Entscheidung vom 05.11.2026 samt Absagen (Go-plugin, Jira eingebaut) fest. docs/schema/ bringt JSON-Schemas (Draft 2020-12) fuer das Manifest und einen plugins.json-Eintrag. jaira selbst aendert sich nicht."
 round: 2
-review-gaps: "none - Exit-Code-Tabelle in docs/PLUGINS.md wiederholt docs/COMMANDS.md bewusst, mit Plugin-Bedeutungen und Link dorthin; sonst nichts doppelt, kein Code"
+review-gaps: |-
+  note: jaira show --json und jaira list --json geben das Feld external nicht aus - ein Plugin, das wie empfohlen ueber die Lesebefehle liest, findet seinen Schluessel (jira:PROJ-123) nicht und muss doch das Markdown parsen; entweder die JSON-Ausgabe ergaenzt external im Dispatch-Ticket, oder der Abschnitt Writing nennt das
+  note: core/merge/merge_test.go fuehrt external als YAML-Block (provider/key), PLUGINS.md als String '<id>:<key>' - der Merge behandelt beides opak, aber der Test zeigt eine Form, die der Standard nicht mehr vorsieht
+  note: Exit-Code 5 heisst in PLUGINS.md 'not found - ticket, issue or key', in COMMANDS.md 'no such ticket, or an ambiguous id prefix' - fuer Plugins sinnvoll erweitert, aber nicht wortgleich mit dem behaupteten gleichen Vertrag
 test-verdict: "pass: go build ./... und go test ./... gruen (RC=0); DoD 1-3 im Baum geprueft (Abschnitte in docs/PLUGINS.md, beide Schemas Draft-2020-12-gueltig, Doku-Beispiele validieren, Bad_ID abgelehnt); 'jaira set <id> external=jira:PROJ-1' auf Scratch-Board ausgefuehrt, Feld steht im Frontmatter"
 ---
 
