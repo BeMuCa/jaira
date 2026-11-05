@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T21:32:27Z
-updated-at: 2026-11-05T22:03:37Z
+updated-at: 2026-11-05T22:03:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9077
 claimed-at: 2026-11-05T22:03:26Z
@@ -39,6 +39,7 @@ test-verdict: "pass for what a machine can check: go test ./... rc=0, claude plu
 question: ""
 review-verdict: "the diff matches the definition of done; no defects found - cockpit plugin tests 176/176 and go test ./core/... green, shipped.sha256 hashes equal the files"
 review-round: 3
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-qeps3m  2. claude --plugin-dir core/mod/builtin/jaira-cockpit (Claude Code 2.1.318; if buttons are dead, type /tui fullscreen first)  3. work a few turns while a peer agent reports - no line 'jaira-cockpit: its session.append hook was skipped' appears  4. a peer message shows as '[shortened by jaira-cockpit] ... - full report: /cockpit report <ID>' and the line opens the report on click  5. click [ Overview ] in the cockpit panel - it opens, the panel does not scroll on its own  6. optional: cd core/mod/builtin/jaira-cockpit && claude plugin test . - shows 176 pass, 0 fail"
 ---
 
 # jaira-cockpit: session.append wird seit Claude Code 2.1.318 nicht mehr erreicht
