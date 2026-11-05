@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:46:40Z
-updated-at: 2026-11-05T10:12:44Z
+updated-at: 2026-11-05T10:12:47Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-21000
 claimed-at: 2026-11-05T09:47:52Z
@@ -46,7 +46,7 @@ review-gaps: |-
 test-verdict: "pass: go test ./... RC=0; DoD 1-4 im Baum geprueft; beide Schemas Draft-2020-12-gueltig, alle JSON-Beispiele der Doku (Manifest, events-, web-Fragment, Katalogeintrag) validieren; abgelehnt werden id Bad_ID, events [delete], page path ../x und /x"
 review-verdict: "Der Diff erfuellt alle vier DoD-Punkte; beide Schemas sind gueltiges JSON, die Code-Verweise in der Doku stimmen; kein Blocker. Keine Release-Note noetig - reine Doku, im Binary nicht sichtbar."
 review-round: 4
-review-check: "1. less docs/PLUGINS.md - Abschnitte Invocation, Environment, Writing, The external field, Secrets, Exit codes, The manifest, Releases, Into the catalogue sind da  2. uvx check-jsonschema --check-metaschema docs/schema/jaira-plugin.schema.json docs/schema/plugins-entry.schema.json - beide 'ok'  3. Manifest-Beispiel aus PLUGINS.md in /tmp/m.json kopieren, dann uvx check-jsonschema --schemafile docs/schema/jaira-plugin.schema.json /tmp/m.json - 'ok'  4. in einem Testboard: jaira set <id> external=jira:PROJ-123, dann grep external .jaira/tickets/*.md - zeigt external: \"jira:PROJ-123\""
+review-check: "1. docs/PLUGINS.md auf GitHub im Branch feat/r6x6fh oeffnen  2. Abschnitte pruefen: Invocation, Environment, Writing, The external field, Secrets, Events, Web, Exit codes, The manifest, Releases, Into the catalogue - alle vorhanden  3. 'Why plugins' lesen: Begruendung gegen Go-plugin und gegen eingebautes Jira steht da  4. uv run --with jsonschema python -c \"import json,jsonschema;[jsonschema.Draft202012Validator.check_schema(json.load(open(f))) for f in ['docs/schema/jaira-plugin.schema.json','docs/schema/plugins-entry.schema.json']];print('ok')\"  5. Erwartet: 'ok' ohne Traceback"
 ---
 
 # Plugins: Entscheidung und Standard stehen in docs/PLUGINS.md
