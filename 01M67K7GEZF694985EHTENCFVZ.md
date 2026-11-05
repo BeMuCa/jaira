@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-05T09:32:00Z
+updated-at: 2026-11-05T09:33:05Z
 updated-by: berkc
 claimed-by: berk-ca-1989860
 claimed-at: 2026-11-05T09:31:17Z
@@ -26,7 +26,7 @@ outcome-why: "A lane must hand an agent a skill and a script and refuse to let a
 outcome-resolves: "DoD 2: core/lane/lane.go parse, lane_test.go TestSkillLaneNeedsNoPromptBody. DoD 3: lane.go script checks, TestScriptIsParsed, TestScriptRefusesAPathOutsideTheRepository, TestScriptNeedsAnAgenticLane. DoD 4: gate.go receipt block, receipt_test.go four tests. DoD 5: flow.go laneRunFor, receiptlane_test.go ForLane tests. DoD 6: resume.go newReceiptCmd, TestReceiptEndsTheRunForThisRound, TestReceiptRefusedWhereTheLaneDoesNotRequireOne. DoD 7: announce.go marks, tickets.go lanes show, TestLanesShowNamesTheSkillScriptAndReceipt. DoD 8: README. DoD 9: core/release/notes/ENCFVZ.md. Green: go test core/lane gate role board shipped and internal/cli (with the three skips), go vet on them, gofmt clean."
 review-summary: "none"
 round: 3
-review-gaps: "optimize: (1) internal/cli/flow.go laneRun: fields skill, script, receiptRequired only copy l.Skill/l.Script/l.ReceiptRequired, and showForLane has l in scope - drop the three fields and read l directly (keep skillPath, key, receipt, run, scriptDone, missing). (2) core/lane/lane.go:436 script check: filepath.IsAbs + Clean + \"..\" prefix is hand-rolled filepath.IsLocal (go 1.26 in go.mod) - use !filepath.IsLocal(l.Script) and drop the clean variable. (3) core/gate/gate.go HasReceipt: `first != \"\" &&` is dead, ReceiptKey is never empty. (4) internal/cli/resume.go newReceiptCmd computes ReceiptKey+result twice (Mutate and the print) - keep the written value in one variable. Left as is: the near-identical side-effect paragraph in jaira-role-lane, jaira-worker and core/role/jaira (separate shipped skills, each read alone; critique accepted it); FindSkill vs InstalledIn (different question); HasReceipt vs fieldValue default branch (gate cannot import cli); pre-existing hand-rolled inside-dir check in core/selfupdate/install.go:110 (not this ticket). No behaviour change in any of the four."
+review-gaps: "none — optimize pass 2: the four pass-1 items landed in 5b1bf715 (laneRun field copies gone, filepath.IsLocal for script, dead first!=\"\" guard dropped, one receipt value in jaira receipt). Rest of the diff re-checked: no duplicate helper (CurrentRound, fieldValue, dash, Doc().Scalar reused), nothing orphaned, vet and gofmt clean. Left as before: the near-identical side-effect paragraph in three shipped role skills, FindSkill vs InstalledIn, HasReceipt vs fieldValue, pre-existing inside-dir check in core/selfupdate/install.go:110."
 ---
 
 # Neue Lane-Arten: eine Lane, die nur einen Skill startet, und Automations-Lanes (Artefakte, E-Mail, API-Aufrufe, Telegram senden/empfangen, Video-Upload)
