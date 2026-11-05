@@ -1,7 +1,7 @@
 ---
 id: 01M6NHMX3XGC9RBPA29NR6X6FH
 title: "Plugins: Entscheidung und Standard stehen in docs/PLUGINS.md"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -29,10 +29,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:46:40Z
-updated-at: 2026-11-05T09:50:18Z
+updated-at: 2026-11-05T09:50:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-21000
 claimed-at: 2026-11-05T09:47:52Z
+outcome-what: docs/PLUGINS.md schreibt den Plugin-Standard und die Entscheidung vom 05.11.2026 fest; docs/schema/ enthaelt JSON-Schemas fuer jaira-plugin.json und einen plugins.json-Eintrag
+outcome-why: "Wer ein Plugin schreiben will, braucht einen Ort mit Aufruf, Umgebung, Schreibweg, external, Geheimnissen, Exit-Codes, Manifest und Katalogweg - bisher stand das nur in der Teamlead-Sitzung"
+outcome-resolves: Alle drei DoD-Punkte; jaira selbst startet noch keine Plugins (spaeteres Ticket)
 ---
 
 # Plugins: Entscheidung und Standard stehen in docs/PLUGINS.md
