@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:46:40Z
-updated-at: 2026-11-05T09:51:18Z
+updated-at: 2026-11-05T09:51:22Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-21000
 claimed-at: 2026-11-05T09:47:52Z
@@ -65,3 +65,4 @@ round: 2
 - **2026-11-05 09:48 · Alexander Sacharov** — Offene Entscheidungen: keine fuer die Person. Selbst entschieden: (1) docs/PLUGINS.md auf Englisch (Projektsprache). (2) Schemas unter docs/schema/jaira-plugin.schema.json und docs/schema/plugins-entry.schema.json, JSON Schema 2020-12. (3) capabilities = geschlossene Liste read/write/network/secrets; nur angezeigt, nicht erzwungen (kein Sandbox). (4) commands = Liste {name, summary}. (5) id: lowercase-kebab, eingebaute jaira-Befehle gewinnen bei Namensgleichheit. (6) Das Dokument sagt offen: Standard, jaira startet Plugins noch nicht - Umsetzung ist ein spaeteres Ticket. (7) external als einzelner String '<id>:<key>' - 'jaira set <id> external=jira:PROJ-1' funktioniert heute schon (auf Scratch-Board geprueft). (8) JAIRA_ROOT ist schon die Hook-Variable (core/hook/hook.go:64) - gleiche Bedeutung. (9) Keine Release-Note: reine Doku, fuer Nutzer des Binaries nicht sichtbar.
 - **2026-11-05 09:50 · Alexander Sacharov** — Geprueft: beide Schemas sind gueltiges Draft 2020-12 (python jsonschema check_schema), die zwei JSON-Beispiele in docs/PLUGINS.md validieren dagegen, eine id 'Bad_ID' wird abgelehnt. Kein Test im Repo dafuer - reine Doku-Dateien, nichts im Binary liest sie.
 - **2026-11-05 09:50 · Alexander Sacharov** — critique: $id in beiden Schemas raus (Repo zieht nach panda-bobr um); Secrets-Satz zu 3Q92JY ist zirkulaer - neu formulieren; 'a later jaira plugins' streichen. docs/AGENTS.md:8 ('no plugin API') bleibt stehen: spricht ueber Agenten, und jaira startet Plugins noch nicht.
+- **2026-11-05 09:51 · Alexander Sacharov** — critique Runde 2: nichts mehr. Bewusst stehen gelassen: Exit-Code-Tabelle uebernimmt auch 4 (dependencies) - gleiche Tabelle wie jaira ist der Punkt; JAIRA_BOARD-Herkunft (--board vor der id) legt das Dispatch-Ticket genau fest.
