@@ -20,7 +20,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T21:59:56Z
+updated-at: 2026-11-05T22:00:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
@@ -61,7 +61,8 @@ review-check: "1. go build -o /tmp/j ./cmd/jaira  2. mkdir -p /tmp/h/plugins/dem
   proof: internal/cli/plugin.go:queueEvents/runBoard (board.go, home.go:openBoardAt); Test TestBoardEventsDoNotWaitForThePlugin (queued returns <1s, stop drains, CLI path synchronous)
 - [x] set board=<x>, das die Lane wechselt, feuert auch 'move' (from_lane = alte Lane) mit den Lanes des neuen Boards; Test
   proof: internal/cli/tickets.go: set fires move when landed != ""; Test TestSetBoardThatChangesTheLaneFiresAMove (set then move, from_lane backlog, status_known/next_lane of the video board)
-- [ ] .exe-Suffix in plugin.Program durch einen Test abgedeckt, der auch auf Linux laeuft
+- [x] .exe-Suffix in plugin.Program durch einen Test abgedeckt, der auch auf Linux laeuft
+  proof: core/plugin/plugin.go:program(id, goos); Test TestProgramOnWindowsIsTheExe
 
 ## Options
 
