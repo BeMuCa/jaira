@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T18:14:30Z
+updated-at: 2026-11-05T18:14:32Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
@@ -40,6 +40,7 @@ review-gaps: |-
 test-verdict: "pass: gofmt/vet/build/sh -n/dash -n rc=0; 8 agents verified global+project incl. Also-skip and cockpit only for claude; install.sh none/codex/all/JAIRA_AGENT/NO_ROLES verified in scratch HOME; README+release note format ok; go test NOT run, install.ps1 NOT run (read against install.sh only)"
 review-verdict: "the diff meets all five DoD items and I found no defect; gofmt/vet/build clean, sh -n and dash -n clean, and install.sh's roles section behaves as described in a throwaway HOME (none, codex only, all eight, JAIRA_AGENT with an unknown name, only unknown, JAIRA_NO_ROLES). Unsure only where nothing could run: the Go tests and install.ps1."
 review-round: 3
+review-check: "1. cd /home/berk/git/.worktrees/jAIra-q9f9w4 && go build -o /home/berk/git/.worktrees/q9f9w4-scratch/review/jaira ./cmd/jaira   2. /home/berk/git/.worktrees/q9f9w4-scratch/review/run.sh none   (runs install.sh's roles part with HOME in that scratch folder, never your real home) -> one line 'no coding agent found ... jaira web ... jaira roles install --agent <name> --global', and the 'skill dirs' list under it is empty   3. /home/berk/git/.worktrees/q9f9w4-scratch/review/run.sh all .claude .codex .pi .copilot .cursor .gemini .config/opencode .hermes -> claude, codex, hermes say '21/36 written'; pi says '21 unchanged'; copilot, cursor, gemini-cli, opencode say 'already reads the roles in ...'; skill dirs listed are only ~/.claude/skills, ~/.agents/skills, ~/.hermes/skills   4. JAIRA_AGENT=bogus /home/berk/git/.worktrees/q9f9w4-scratch/review/run.sh x .codex -> 'unknown agent bogus' line plus the add-later sentence, no skill dirs, although .codex exists   5. /home/berk/git/.worktrees/q9f9w4-scratch/review/jaira roles install --help -> the --project and --global lines name all eight agents with their directories   6. On Windows (install.ps1 never ran): once the branch is pushed, in PowerShell run $env:JAIRA_AGENT='bogus'; irm https://raw.githubusercontent.com/BeMuCa/jaira/feat/q9f9w4/scripts/install.ps1 | iex -> 'unknown agent bogus' and the add-later sentence, nothing new under ~\\.claude\\skills; then $env:JAIRA_AGENT='claude' and the same line -> 'OK ... written' and 'active now ... ~\\.claude\\skills' (only claude/copilot work there until the release, the script uses the released binary)   7. go test -race ./core/role ./internal/cli -run 'Agent|RolesInstall' before the PR -> ok"
 ---
 
 # Der Installer erkennt den Coding-Agenten und legt die Rollen dort ab, wo er sie liest
