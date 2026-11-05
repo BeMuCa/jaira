@@ -1,7 +1,7 @@
 ---
 id: 01M6NHNN9AF2W8R6MDQK8Z3VRF
 title: "jaira <id> startet ein installiertes Plugin"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -20,7 +20,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T21:56:48Z
+updated-at: 2026-11-05T21:58:02Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
@@ -28,7 +28,7 @@ outcome-what: "jaira <id> startet ~/.jaira/plugins/<id>/jaira-<id> (Argumente, s
 outcome-why: "Standard docs/PLUGINS.md (R6X6FH) verlangt Dispatch und Events; Teamlead-Luecken (TUI-Moves, external in JSON, merge, AGENTS.md) gehoeren dazu. Der Merge meldete bisher einen Konflikt, sobald nur ein Branch external setzte."
 outcome-resolves: Plugins lassen sich ohne Aenderung am Kern starten und hoeren Schreibvorgaenge; Install und Katalog bleiben ein spaeteres Ticket.
 review-summary: "'jaira <id>' startet jetzt ~/.jaira/plugins/<id>/jaira-<id> (.exe auf Windows, nie PATH) mit allen Argumenten, stdio, JAIRA_ROOT/BOARD/VERSION und gibt dessen Exit-Code zurueck - aber nur, wenn cobra das erste Wort nicht als Befehl, Alias, help oder completion kennt. create, claim und set rufen nach dem Schreiben firePlugins; move feuert ueber den neuen Hook core/move.Moved, den internal/cli setzt, damit auch TUI-Moves ihn erreichen. Abos liest jaira aus jaira-plugin.json neben dem Programm (ein Verzeichnis-Scan pro Schreibvorgang, nichts bei JAIRA_IN_EVENT=1); stdin ist das Objekt von show --json plus actor und from_lane, 5 s Timeout, Ausgabe und Fehler verworfen. external steht in show/list --json. Der Merge vergleicht external jetzt als ganzen Eintrag (Doc.Entry/SetEntry) und uebernimmt die Aenderung der anderen Seite statt einen Konflikt zu melden. Doku und Release-Note nachgezogen."
-round: 2
+round: 3
 review-gaps: |-
   note: TUI-Moves rufen das Plugin synchron im TUI-Prozess - pro abonniertem Plugin kann das Board bis zu 5 s haengen (core/move/move.go:156 -> plugin.Fire)
   note: jaira set board=<x> kann den Status in die erste Lane des neuen Boards setzen (internal/cli/tickets.go:1170); das feuert nur 'set', nicht 'move', und der Payload wird mit den Lanes des alten Boards gebaut
