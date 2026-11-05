@@ -1,7 +1,7 @@
 ---
 id: 01M6NHMX3XGC9RBPA29NR6X6FH
 title: "Plugins: Entscheidung und Standard stehen in docs/PLUGINS.md"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:46:40Z
-updated-at: 2026-11-05T09:50:50Z
+updated-at: 2026-11-05T09:50:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-21000
 claimed-at: 2026-11-05T09:47:52Z
@@ -40,6 +40,7 @@ review-summary: |-
   docs/schema/*.schema.json: $id points at BeMuCa/jaira, the repo moves to panda-bobr - the URL goes stale and nothing resolves it; drop $id
   docs/PLUGINS.md Secrets: 'Until that lands, a plugin reads its token from where 3Q92JY puts it' is circular; say the file does not exist until 3Q92JY ships and its layout is defined there
   docs/PLUGINS.md manifest: 'and a later jaira plugins' promises a command nobody decided; drop it
+round: 2
 ---
 
 # Plugins: Entscheidung und Standard stehen in docs/PLUGINS.md
