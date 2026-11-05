@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T17:21:42Z
+updated-at: 2026-11-05T17:28:14Z
 updated-by: Alexander Sacharov
 blocked-reason: ""
 outcome-what: "panda-bobr/jaira-plugin-template@fc5d7e1: Go-Plugin jaira-hello (greet liest jaira list --json und schreibt jaira note; manifest --json aus eingebettetem jaira-plugin.json; Exit 3 bei zu altem JAIRA_VERSION), Tests inkl. Manifest-Regeln, goreleaser (6 Binaries, checksums.txt, jaira-plugin.json), Actions test und release-auf-Tag mit Tag==version-Pruefung, README mit drei Schritten bis Katalog-PR. Demo panda-bobr/jaira-hello-demo v0.1.0; Katalog-PR panda-bobr/jaira-releases#4."
@@ -26,7 +26,7 @@ outcome-resolves: "DoD 1: Tag v0.1.0 im unveraenderten Demo-Repo erzeugte alle 6
 review-summary: "none"
 round: 3
 review-gaps: "none - 7678fd2 fuegt nur Konfig und Doku hinzu, nichts davon ohne Nutzen"
-test-verdict: "pass - template main 66de84a: test-Workflow Run 42070699388 success (go vet + go test); Demo jaira-hello-demo v0.1.0 Release-Run 42011801567 success, 6 Binaries + checksums.txt, sha256sum -c alle OK; Katalog-PR jaira-releases#4 check-catalog Run 42026722958 pass. Lokal gegen dieses Board: greet exit 0, unbekannte id exit 5, zu altes JAIRA_VERSION exit 3."
+test-verdict: "pass - template main 7678fd2: test-Workflow Run 42074852946 success (go vet + go test). DoD-Belege unveraendert: jaira-hello-demo v0.1.0 (Run 42011801567, 6 Binaries + checksums.txt, sha256sum -c OK), jaira-releases#4 check-catalog Run 42026722958 pass. checksum.extra_files fuer jaira-plugin.json ist per goreleaser-Quelle v2.0.0 belegt, aber noch durch keinen Release-Lauf - erstes Release aus 7678fd2 zeigt es."
 claimed-by: DESKTOP-RFTCH11-9733
 claimed-at: 2026-11-05T17:04:34Z
 review-verdict: "Beide DoD-Punkte sind mit oeffentlichen Belegen erfuellt; kein Blocker. Offen nur Notes: checksums.txt ohne jaira-plugin.json, id-Erwaehnungen im README, und ob PR #4 gemergt wird."
