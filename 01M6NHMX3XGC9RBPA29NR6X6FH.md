@@ -1,7 +1,7 @@
 ---
 id: 01M6NHMX3XGC9RBPA29NR6X6FH
 title: "Plugins: Entscheidung und Standard stehen in docs/PLUGINS.md"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -29,13 +29,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:46:40Z
-updated-at: 2026-11-05T10:09:56Z
+updated-at: 2026-11-05T10:10:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-21000
 claimed-at: 2026-11-05T09:47:52Z
-outcome-what: docs/PLUGINS.md schreibt den Plugin-Standard und die Entscheidung vom 05.11.2026 fest; docs/schema/ enthaelt JSON-Schemas fuer jaira-plugin.json und einen plugins.json-Eintrag
-outcome-why: "Wer ein Plugin schreiben will, braucht einen Ort mit Aufruf, Umgebung, Schreibweg, external, Geheimnissen, Exit-Codes, Manifest und Katalogweg - bisher stand das nur in der Teamlead-Sitzung"
-outcome-resolves: Alle drei DoD-Punkte; jaira selbst startet noch keine Plugins (spaeteres Ticket)
+outcome-what: "docs/PLUGINS.md: Plugin-Standard samt Entscheidung vom 05.11.2026, dazu Events (jaira-<id> event <name>) und Web (Seiten unter /plugins/<id>/, api CGI-artig); docs/schema/ mit Schemas fuer jaira-plugin.json (inkl. events, web) und einen plugins.json-Eintrag"
+outcome-why: "Wer ein Plugin schreiben will, braucht einen Ort mit allen drei Kanaelen (Befehl, Event, Web), Schreibweg, external, Geheimnissen, Exit-Codes, Manifest und Katalogweg - bisher stand das nur in der Teamlead-Sitzung"
+outcome-resolves: Alle vier DoD-Punkte; jaira selbst startet noch keine Plugins (8Z3VRF und Folgetickets im Epic plugins)
 review-summary: "Zwei Commits, nur Doku: docs/PLUGINS.md legt den Plugin-Standard fest (Aufruf jaira <id> -> ~/.jaira/plugins/<id>/jaira-<id>, Umgebung JAIRA_ROOT/JAIRA_BOARD/JAIRA_VERSION, Schreiben nur ueber die CLI, external als '<id>:<key>', Geheimnisse in ~/.jaira/secrets.json (wartet auf 3Q92JY), Exit-Codes wie jaira, Manifest jaira-plugin.json + 'manifest --json', Releases per goreleaser, Weg in den Katalog per Fork+PR) und haelt die Entscheidung vom 05.11.2026 samt Absagen (Go-plugin, Jira eingebaut) fest. docs/schema/ bringt JSON-Schemas (Draft 2020-12) fuer das Manifest und einen plugins.json-Eintrag. jaira selbst aendert sich nicht."
 round: 3
 review-gaps: |-
