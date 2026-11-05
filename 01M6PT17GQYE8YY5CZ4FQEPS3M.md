@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T21:32:27Z
-updated-at: 2026-11-05T21:46:29Z
+updated-at: 2026-11-05T21:47:38Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54459
 claimed-at: 2026-11-05T21:33:03Z
@@ -40,7 +40,7 @@ test-verdict: "fail: TestEveryInstalledFileIsAShippedVersion - shipped.sha256 la
 
 - [~] Eine Peer-Meldung erscheint in Claude Code 2.1.318 wieder gekuerzt mit anklickbarer Zeile
 - [x] Kein Hinweis 'session.append hook was skipped' mehr fuer jaira-cockpit
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1184 (matcher door prompt|delivery; claude plugin validate: session.append{door=prompt|delivery})
+  proof: register.tsx:1184 matcher door prompt|delivery; live claude -p 2.1.318 --plugin-dir: master mod logs 'session.append bypassed by cc-plugin-sec-default' + 'hook was skipped', this branch logs neither
 - [ ] Die Knoepfe im Cockpit-Panel ([ Overview ], [ N waiting for ... ]) reagieren in 2.1.318 wieder auf Klick, und das Panel scrollt nicht von selbst
 
 ## Options
