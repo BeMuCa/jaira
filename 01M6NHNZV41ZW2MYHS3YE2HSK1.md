@@ -18,7 +18,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T17:20:07Z
+updated-at: 2026-11-05T17:20:11Z
 updated-by: Alexander Sacharov
 blocked-reason: "DoD 2 wartet auf die Katalog-CI aus D44NVR (panda-bobr/jaira-releases, noch nicht auf main)"
 outcome-what: "panda-bobr/jaira-plugin-template@fc5d7e1: Go-Plugin jaira-hello (greet liest jaira list --json und schreibt jaira note; manifest --json aus eingebettetem jaira-plugin.json; Exit 3 bei zu altem JAIRA_VERSION), Tests inkl. Manifest-Regeln, goreleaser (6 Binaries, checksums.txt, jaira-plugin.json), Actions test und release-auf-Tag mit Tag==version-Pruefung, README mit drei Schritten bis Katalog-PR. Demo panda-bobr/jaira-hello-demo v0.1.0; Katalog-PR panda-bobr/jaira-releases#4."
@@ -86,3 +86,4 @@ review-check: "1. Oeffne https://github.com/panda-bobr/jaira-hello-demo/releases
 - **2026-11-05 12:25 · Alexander Sacharov** — Kritik-Fixes als 66de84a in der Template-Arbeitskopie (Scratchpad), noch nicht gepusht - Alex pusht. go vet/test gruen.
 - **2026-11-05 12:25 · Alexander Sacharov** — critique Runde 2: beide Befunde aus Runde 1 in 66de84a behoben (test.yml:5, main.go ohne version); sonst nichts. goreleaser-Konfig bewusst nicht angefasst.
 - **2026-11-05 12:26 · Alexander Sacharov** — testing wartet: 66de84a muss auf main von jaira-plugin-template (Alex pusht), dann test-Workflow dort gruen -> test-verdict. Lokal: go vet + go test gruen (exit 0).
+- **2026-11-05 17:20 · Alexander Sacharov** — Alex (via Teamlead, 05.11.2026): Review-Notes vor Abnahme beheben: (1) jaira-plugin.json in checksums.txt via checksum.extra_files, (2) README:19 Aussage zur id korrigieren und Fundstellen auflisten, (3) blocked_by R6X6FH und blocked_reason leeren. jaira-hello-demo bleibt wie es ist.
