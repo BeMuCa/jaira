@@ -1,7 +1,7 @@
 ---
 id: 01M6PT17GQYE8YY5CZ4FQEPS3M
 title: "jaira-cockpit: session.append wird seit Claude Code 2.1.318 nicht mehr erreicht"
-status: human
+status: review
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T21:32:27Z
-updated-at: 2026-11-05T22:00:48Z
+updated-at: 2026-11-05T22:00:53Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54459
 claimed-at: 2026-11-05T21:33:03Z
