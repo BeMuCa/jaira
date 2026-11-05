@@ -1,7 +1,7 @@
 ---
 id: 01M67K7GEZF694985EHTENCFVZ
 title: "Neue Lane-Arten: eine Lane, die nur einen Skill startet, und Automations-Lanes (Artefakte, E-Mail, API-Aufrufe, Telegram senden/empfangen, Video-Upload)"
-status: testing
+status: review
 ready: true
 creator: berkc
 assignee: berkc
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-05T09:39:35Z
+updated-at: 2026-11-05T09:39:49Z
 updated-by: berkc
 claimed-by: berk-ca-1989860
 claimed-at: 2026-11-05T09:31:17Z
