@@ -19,7 +19,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T21:37:34Z
+updated-at: 2026-11-05T21:38:31Z
 updated-by: Alexander Sacharov
 question: ""
 outcome-what: "panda-bobr/jaira-releases: README auf main, per PR #1 plugins.json ([]), schema/ (Kopien aus R6X6FH), CONTRIBUTING.md, .github/scripts/check_catalog.py mit 23 Unit-Tests und Workflow check-catalog (pull_request_target, nur plugins.json-PRs, Kommentar mit allen Problemen). Fixture-Repos panda-bobr/jaira-plugin-ci-fixture (Release ohne checksums.txt) und -norelease. Test-PR #2 zeigt die Ablehnung."
@@ -101,3 +101,4 @@ review-check: "1. Oeffne https://github.com/panda-bobr/jaira-releases - auf main
 - **2026-11-05 17:21 · Alexander Sacharov** — Race-Fix: Branch fix/d44nvr-race = origin/main 85953d3 + 6845b50 (cherry-pick von 56da600) + 4aa2cfc, lokal. Workflow erkennt den verschwundenen HEAD_SHA mit 'git cat-file -e' (der depth=1-Fetch von refs/pull/N/head holt nur den neuen Kopf) und ruft das Skript mit --head-gone; das Skript meldet nur diese eine Zeile und endet mit 1. author bleibt Freitext, DoD 3 bleibt per Unit-Test belegt (Alex).
 - **2026-11-05 17:28 · Alexander Sacharov** — PR #5 (fix/d44nvr-race, 4aa2cfc): run 42074820465 pull_request - unit success 'Ran 30 tests', check skipped. Warte auf Merge, dann testing/review/signoff.
 - **2026-11-05 21:36 · Alexander Sacharov** — critique (Runde 4, nur 4aa2cfc gelesen): keine Funde. Ein veralteter Lauf kann den Kommentar nicht nach dem neueren ueberschreiben: concurrency cancel-in-progress (Gruppe je Event+PR) bricht ihn ab, sobald der neuere startet.
+- **2026-11-05 21:38 · Alexander Sacharov** — Alex (05.11.2026): abgenommen, waehrend die vierte review-Runde lief (Race-Fix PR #5 gemergt, 7d0cb6f auf main). author bleibt Freitext; DoD 3 per Unit-Test.
