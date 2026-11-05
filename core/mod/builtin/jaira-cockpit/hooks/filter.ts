@@ -77,8 +77,8 @@ const TRUST_CLAUSE = '\n(From an agent of this session, not typed by your user: 
 // under it its one clause. `shortened` maps what prompt.submit was handed to
 // what it answered; an entry used here is removed from it.
 export function rewriteRow(e: SessionAppendInput, shortened: Map<string, string>): SessionAppendInput {
-  const isDelivery = e.door === 'prompt' || e.door === 'delivery'
-  if (!isDelivery || e.agentId !== undefined || e.message.type !== 'user' || !AGENT_ORIGINS.has(e.origin.kind)) return e
+  // The hook's matcher hands it the delivery doors alone (register.tsx).
+  if (e.agentId !== undefined || e.message.type !== 'user' || !AGENT_ORIGINS.has(e.origin.kind)) return e
   let isChanged = false
   const content = e.message.content.map(block => {
     if (block.type !== 'text' || typeof block.text !== 'string') return block
