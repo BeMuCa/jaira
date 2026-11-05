@@ -1,6 +1,7 @@
 ---
 color: 111
 created-at: 2026-09-15T17:26:39Z
+status: filed
 ---
 
 # demo-naechste-version
