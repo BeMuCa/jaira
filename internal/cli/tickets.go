@@ -374,6 +374,7 @@ already know it is yours; --assignee wins over it.`,
 			// file stays away until somebody pulls it into work. See
 			// fileOnRefOnly for why.
 			onRefOnly, why := fileOnRefOnly(t)
+			firePlugins("create", s, t, "", lanes)
 			targetLane, _ := lanes.Get(target)
 			skipped, emptyInputs := skippedByCreate(lanes, t, targetLane)
 			if g.jsonOut {
@@ -824,11 +825,7 @@ many there are as notes_total.`,
 				return nil
 			}
 			if g.jsonOut {
-				j := ticketJSON(t, env.Lanes)
-				j["body"] = t.Body
-				j["path"] = path
-				j["filed_away"] = filedAway(t, path)
-				return emit(cmd.OutOrStdout(), j)
+				return emit(cmd.OutOrStdout(), showJSON(t, env.Lanes, path))
 			}
 			if where := filedAway(t, path); where != "" {
 				fmt.Fprintf(cmd.OutOrStdout(), "off the board: %s\n", where)
@@ -841,6 +838,16 @@ many there are as notes_total.`,
 	cmd.Flags().IntVar(&notesLast, "notes-last", 0, "show only the newest n progress notes (0 shows all)")
 	cmd.Flags().BoolVar(&brief, "brief", false, "one line of JSON: title, goal, question, review and the newest notes")
 	return cmd
+}
+
+// showJSON is what 'show --json' prints for t, loaded from path: the ticket,
+// its body, and where it lives. A plugin's event gets the same object.
+func showJSON(t *ticket.Ticket, lanes *lane.Set, path string) map[string]any {
+	j := ticketJSON(t, lanes)
+	j["body"] = t.Body
+	j["path"] = path
+	j["filed_away"] = filedAway(t, path)
+	return j
 }
 
 // briefNotes is how many of the newest notes a brief carries.
@@ -1207,6 +1214,12 @@ its end. Review fields keep their history across loop rounds that way.`,
 			env, err := envFor(s, t)
 			if err != nil {
 				return err
+			}
+			firePlugins("set", s, t, "", env.Lanes)
+			// A board change that put the ticket into another lane is a move
+			// as well, and a plugin mirroring lanes has to hear it as one.
+			if landed != "" {
+				firePlugins("move", s, t, cur.Status, env.Lanes)
 			}
 			if g.jsonOut {
 				j := ticketJSON(t, env.Lanes)
@@ -1670,6 +1683,7 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		"parent":             t.Parent,
 		"related":            t.Related,
 		"blocked_reason":     t.BlockedReason,
+		"external":           t.External,
 		"commits":            t.Commits,
 		"model_tier":         t.ModelTier,
 		"question":           t.Question,

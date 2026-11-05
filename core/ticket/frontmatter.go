@@ -388,6 +388,67 @@ func (d *Doc) Remove(key string) error {
 	return nil
 }
 
+// entryLines is where key's entry sits in the frontmatter's lines: the key
+// line and every line its value occupies, as Remove takes them away.
+func (d *Doc) entryLines(key string) (lines []string, start, end int, err error) {
+	node, err := d.find(key)
+	if err != nil || node == nil {
+		return nil, -1, -1, err
+	}
+	keyTok := node.Key.GetToken()
+	if keyTok == nil || keyTok.Position == nil {
+		return nil, -1, -1, fmt.Errorf("ticket: no source position for %q", key)
+	}
+	lines = strings.Split(d.fm, "\n")
+	start = keyTok.Position.Line - 1
+	if start < 0 || start >= len(lines) {
+		return nil, -1, -1, fmt.Errorf("ticket: %q reports line %d, outside the frontmatter", key, keyTok.Position.Line)
+	}
+	end = max(blockExtent(lines, start), lastLine(node.Value)-1)
+	if end >= len(lines) {
+		return nil, -1, -1, fmt.Errorf("ticket: %q spans lines %d-%d, outside the frontmatter", key, start+1, end+1)
+	}
+	return lines, start, end, nil
+}
+
+// Entry is key's entry exactly as written — "key: value", or the key line
+// and the block beneath it — and "" when the key is absent. It is how a field
+// jaira never interprets is compared and carried over without being read.
+func (d *Doc) Entry(key string) string {
+	lines, start, end, err := d.entryLines(key)
+	if err != nil || lines == nil {
+		return ""
+	}
+	return strings.Join(lines[start:end+1], "\n")
+}
+
+// SetEntry replaces key's entry with entry, text Entry returned from another
+// copy of the ticket. An empty entry removes the key, and an absent key gets
+// the entry appended. A result that is no longer valid YAML is refused and
+// the document left as it was.
+func (d *Doc) SetEntry(key, entry string) error {
+	if entry == "" {
+		return d.Remove(key)
+	}
+	lines, start, end, err := d.entryLines(key)
+	if err != nil {
+		return err
+	}
+	old := d.fm
+	if lines == nil {
+		d.appendBlock(entry)
+	} else {
+		out := append([]string{}, lines[:start]...)
+		out = append(out, strings.Split(entry, "\n")...)
+		d.fm = strings.Join(append(out, lines[end+1:]...), "\n")
+	}
+	if _, err := d.Fields(); err != nil {
+		d.fm = old
+		return fmt.Errorf("ticket: %q: %w", key, err)
+	}
+	return nil
+}
+
 // scalarSourceLen measures how many bytes of src the scalar occupies, so the
 // splice replaces exactly the value and not any trailing comment.
 func scalarSourceLen(src, value string) (int, error) {

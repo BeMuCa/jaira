@@ -5,7 +5,9 @@ JSON can work the board — Claude Code, Codex, Aider, Cursor, a local model beh
 Ollama, or a shell script.
 
 The whole integration surface is: **run a command, read the JSON, branch on the
-exit code.** There is no SDK, no plugin API, and nothing to keep in sync.
+exit code.** There is no SDK and nothing to keep in sync. Extending jaira
+works the same way: a plugin is a program of its own that `jaira <id>` starts
+and that writes through the same commands — see [PLUGINS.md](PLUGINS.md).
 
 ## The loop
 

@@ -74,7 +74,8 @@ const (
 	FieldOutcomeWhy      = "outcome-why"
 	FieldOutcomeResolves = "outcome-resolves"
 
-	// Reserved for a future external tracker adapter. jaira never interprets it.
+	// FieldExternal is where a plugin records what a ticket mirrors in another
+	// system, as '<id>:<key>' (docs/PLUGINS.md). jaira never interprets it.
 	FieldExternal = "external"
 
 	// FieldFollows links a follow-up ticket back to the one whose review produced
@@ -296,6 +297,9 @@ type Ticket struct {
 	// BlockedReason is why the ticket is parked, when the blocker is not another
 	// ticket.
 	BlockedReason string
+	// External is what a plugin mirrors this ticket as, '<id>:<key>'. jaira
+	// never interprets it; a value that is not a single scalar reads as "".
+	External string
 
 	// ReadOnly means this board can see the ticket but has no file for it: it
 	// is still travelling on its own git ref and nobody here has pulled it into
@@ -705,6 +709,7 @@ func decodeFields(d *Doc, f *Fields, path string) (*Ticket, error) {
 	t.Follows = str(FieldFollows)
 	t.Parent = str(FieldParent)
 	t.BlockedReason = str(FieldBlockedReason)
+	t.External = str(FieldExternal)
 	t.ReviewVerdict = str(FieldReviewVerdict)
 	t.ReviewSummary = str(FieldReviewSummary)
 	t.ReviewGaps = str(FieldReviewGaps)
