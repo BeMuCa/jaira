@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T18:03:04Z
+updated-at: 2026-11-05T18:03:06Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
@@ -59,7 +59,7 @@ claimed-at: 2026-11-05T17:54:30Z
 - [x] update install.sh header comment; check with sh -n and dash -n; run it with HOME=throwaway dir: no agent folders, fake ~/.codex, JAIRA_AGENT=claude,bogus, JAIRA_NO_ROLES=1
 - [x] scripts/install.ps1: same detection, order, JAIRA_AGENT, messages, under $env:USERPROFILE; header comment; no exit (irm|iex); pwsh not available here, so note it is unrun
 - [x] README ## Install: replace the ~/.claude/skills sentence with detection by home folder, JAIRA_AGENT override, JAIRA_NO_ROLES, and the no-agent case (jaira web, roles later)
-- [ ] core/release/notes/Q9F9W4.md: one-line instructions: new --agent names; installer detects agents and JAIRA_AGENT; no agent -> nothing in home; jaira update --roles now also refreshes roles in the new agents' dirs
+- [x] core/release/notes/Q9F9W4.md: one-line instructions: new --agent names; installer detects agents and JAIRA_AGENT; no agent -> nothing in home; jaira update --roles now also refreshes roles in the new agents' dirs
 - [ ] scan the diff for employer names and hostnames; gofmt -l, go vet ./..., go build ./...; commit with Q9F9W4 in the subject, ticket file alongside
 
 ## Progress
