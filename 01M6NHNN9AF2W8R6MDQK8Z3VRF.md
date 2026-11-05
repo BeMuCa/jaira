@@ -20,8 +20,10 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T21:39:03Z
+updated-at: 2026-11-05T21:39:09Z
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-75959
+claimed-at: 2026-11-05T21:39:09Z
 ---
 
 # jaira <id> startet ein installiertes Plugin
