@@ -20,7 +20,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T21:51:58Z
+updated-at: 2026-11-05T21:52:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
@@ -29,6 +29,7 @@ outcome-why: "Standard docs/PLUGINS.md (R6X6FH) verlangt Dispatch und Events; Te
 outcome-resolves: Plugins lassen sich ohne Aenderung am Kern starten und hoeren Schreibvorgaenge; Install und Katalog bleiben ein spaeteres Ticket.
 review-summary: none
 round: 2
+review-gaps: "folded the event payload into showJSON (internal/cli/tickets.go), which show --json now uses too - it was assembled twice; claim no longer loads the whole board (envFor) on every claim - firePlugins loads lanes only when a plugin subscribed; left: plugin.Dir repeats the JAIRA_HOME lookup that 7 packages already repeat each (pre-existing convention); hook.Run keeps its own select-based timeout beside plugin.fireOne's context one (pre-existing, different contract: env vars, no stdin); fireOne re-stats Program per subscriber (one stat, needed for the path)"
 ---
 
 # jaira <id> startet ein installiertes Plugin
