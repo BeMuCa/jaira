@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T21:32:27Z
-updated-at: 2026-11-05T22:03:30Z
+updated-at: 2026-11-05T22:03:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9077
 claimed-at: 2026-11-05T22:03:26Z
@@ -30,7 +30,11 @@ outcome-why: "the built-in cc-plugin-sec-default in 2.1.318 passes person plugin
 outcome-resolves: "the 'session.append hook was skipped' notice; dead clicks and scroll trace to the fullscreen renderer Claude Code turned off on this machine, not to the mod"
 review-summary: "The cockpit's session.append hook (register.tsx:1184) now carries a matcher { door: ['prompt','delivery'] }, so Claude Code only calls it for the rows a delivery arrives by; on attachment, hook-context and compaction rows - which the built-in cc-plugin-sec-default in 2.1.318 passes person plugins over - the cockpit is no longer registered, so no 'hook was skipped' notice. rewriteRow (filter.ts:80) drops its own door check, the matcher is the only gate. A test sends one attachment row (left as is) and one delivery row (shortened); the release note and two shipped.sha256 lines come along. Shortening via session.receive/prompt.submit and the dead clicks (fullscreen renderer switched off by Claude Code, ~/.claude.json fullscreenAutoDisabled) needed no code."
 round: 3
-review-gaps: "none - the diff is one matcher, one comment block, one removed check, one test and the release note; left alone the tsc error at register.tsx:381 that was there before this change (null is not void)"
+review-gaps: |-
+  note: DoD 1 and DoD 3 rest on Alex's live check after /tui fullscreen, not on this diff - per the 22:00 note DoD 1 held on master too, so the branch changes only DoD 2
+  note: the matcher is a fixed list - should a later Claude Code deliver peer messages through a door with another name, the cockpit silently stops shortening those rows; the test would not notice
+  note: the comment's claim that sec-default sits outermost in Team and Enterprise organisations is read off the binary and cannot be checked from the repository
+  note: the worktree holds untracked .jaira/milestones/ files that belong to no commit of this ticket - they must not ride into its commits
 test-verdict: "pass for what a machine can check: go test ./... rc=0, claude plugin test 176/176, DoD 2 verified live on 2.1.318 (notice with the master mod, none with the branch). DoD 1: rewriting on door prompt|delivery is proven by a test, the clickable line needs a person in the fullscreen renderer. DoD 3: no code change possible - fullscreen is switched off on this machine (fullscreenAutoDisabled)"
 question: ""
 ---
