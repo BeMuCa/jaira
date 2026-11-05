@@ -20,14 +20,14 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T21:54:52Z
+updated-at: 2026-11-05T21:56:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
 outcome-what: "jaira <id> startet ~/.jaira/plugins/<id>/jaira-<id> (Argumente, stdio, JAIRA_ROOT/BOARD/VERSION, Exit-Code); eingebaute Befehle gewinnen. create/set/claim/move feuern Plugin-Events aus jaira-plugin.json (move ueber core/move.Moved, also auch aus der TUI). external in show/list --json. Merge uebernimmt external von der Seite, die es geaendert hat."
 outcome-why: "Standard docs/PLUGINS.md (R6X6FH) verlangt Dispatch und Events; Teamlead-Luecken (TUI-Moves, external in JSON, merge, AGENTS.md) gehoeren dazu. Der Merge meldete bisher einen Konflikt, sobald nur ein Branch external setzte."
 outcome-resolves: Plugins lassen sich ohne Aenderung am Kern starten und hoeren Schreibvorgaenge; Install und Katalog bleiben ein spaeteres Ticket.
-review-summary: none
+review-summary: "'jaira <id>' startet jetzt ~/.jaira/plugins/<id>/jaira-<id> (.exe auf Windows, nie PATH) mit allen Argumenten, stdio, JAIRA_ROOT/BOARD/VERSION und gibt dessen Exit-Code zurueck - aber nur, wenn cobra das erste Wort nicht als Befehl, Alias, help oder completion kennt. create, claim und set rufen nach dem Schreiben firePlugins; move feuert ueber den neuen Hook core/move.Moved, den internal/cli setzt, damit auch TUI-Moves ihn erreichen. Abos liest jaira aus jaira-plugin.json neben dem Programm (ein Verzeichnis-Scan pro Schreibvorgang, nichts bei JAIRA_IN_EVENT=1); stdin ist das Objekt von show --json plus actor und from_lane, 5 s Timeout, Ausgabe und Fehler verworfen. external steht in show/list --json. Der Merge vergleicht external jetzt als ganzen Eintrag (Doc.Entry/SetEntry) und uebernimmt die Aenderung der anderen Seite statt einen Konflikt zu melden. Doku und Release-Note nachgezogen."
 round: 2
 review-gaps: "folded the event payload into showJSON (internal/cli/tickets.go), which show --json now uses too - it was assembled twice; claim no longer loads the whole board (envFor) on every claim - firePlugins loads lanes only when a plugin subscribed; left: plugin.Dir repeats the JAIRA_HOME lookup that 7 packages already repeat each (pre-existing convention); hook.Run keeps its own select-based timeout beside plugin.fireOne's context one (pre-existing, different contract: env vars, no stdin); fireOne re-stats Program per subscriber (one stat, needed for the path)"
 test-verdict: "pass: go test ./... -race after go clean -testcache RC=0; DoD 1-7 proofs opened and their tests run; built binary on a scratch board: 'echo hello | jaira demo pull --board ops \"two words\"' passed args, stdin, JAIRA_ROOT/BOARD=ops/VERSION=0.9.9 and exit 6; 'jaira list' stayed built-in; create/set/claim/move each reached the plugin with in_event=1, from_lane backlog on move, external demo:X-1; a plugin exiting 1 failed no command. TUI moves not driven by hand - covered by TestMovedHearsEveryWrittenMove, all three TUI sites call move.Move"
