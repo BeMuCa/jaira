@@ -20,7 +20,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T21:39:31Z
+updated-at: 2026-11-05T21:41:05Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
@@ -33,6 +33,7 @@ claimed-at: 2026-11-05T21:39:09Z
 - [ ] Unbekannter Unterbefehl startet ~/.jaira/plugins/<id>/jaira-<id> mit Argumenten, Umgebung und Exit-Code; Test
 - [ ] Ein eingebauter Befehl gleichen Namens gewinnt; Test
 - [ ] Release-Note-Zeile in core/release/notes/<ID>.md
+- [ ] Events: create, move, claim und set aus der CLI und Moves aus der TUI rufen jedes abonnierte Plugin als 'jaira-<id> event <name>' auf (stdin = show --json + actor + from_lane, 5 s Timeout, Fehler aendert nichts, JAIRA_IN_EVENT=1 unterdrueckt Events); Test
 
 ## Options
 
