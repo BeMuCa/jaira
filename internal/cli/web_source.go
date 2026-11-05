@@ -65,7 +65,7 @@ func (w *webSource) Epics() ([]web.Epic, error) {
 			if !ok {
 				c = web.Ticket{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Lane}
 			}
-			c.Done, c.Direct = t.Done, t.Direct
+			c.Done, c.Direct, c.Via = t.Done, t.Direct, t.Via
 			if c.Lane == signoff {
 				v.Signoff++
 			}
@@ -334,8 +334,12 @@ func (w *webSource) Unassign(name, id string) error {
 	return nil
 }
 
+// load resolves a ticket wherever it lies, filed away included, the way
+// 'jaira epic add' and 'jaira epic rm' resolve one: a logbook or archived
+// ticket still has its line in an epic, and the page must be able to take it
+// out as the command can.
 func (w *webSource) load(id string) (*ticket.Ticket, error) {
-	t, err := w.s.Load(id)
+	t, _, err := w.s.LoadAnywhere(id)
 	if errors.Is(err, ticket.ErrNotFound) {
 		return nil, fmt.Errorf("ticket %s: %w", id, web.ErrNotFound)
 	}

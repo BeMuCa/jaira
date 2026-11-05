@@ -152,7 +152,7 @@
     onopen={open}
     onremove={(epic, id) => change(() => removeFromEpic(epic, id))}
   />
-  <EpicList epics={shownEpics} expanded={narrows(filter)} onopen={open} oncreate={create} onedit={edit} onassign={(epic, id, from) => change(() => assignToEpic(epic, id, from))} />
+  <EpicList epics={shownEpics} expanded={narrows(filter)} onopen={open} oncreate={create} onedit={edit} onassign={(epic, id, from) => change(() => assignToEpic(epic, id, from))} onremove={(epic, id) => change(() => removeFromEpic(epic, id))} />
 </main>
 
 <dialog bind:this={dialog} onclose={() => (opened = null)}>
