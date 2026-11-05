@@ -1,7 +1,7 @@
 ---
 id: 01M59MQBJHB2NW3F3WFXAW9KVT
 title: "Human Review zeigt zuerst, wie der Mensch die Aenderung selbst testet"
-status: backlog
+status: signoff
 ready: true
 creator: berkc
 assignee: berkc
@@ -17,27 +17,63 @@ tags:
   - tui
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 26d4a26af9b1c7e56b09175150b0af34663ceab9
 created-at: 2026-10-19T08:33:51Z
-updated-at: 2026-10-19T08:33:51Z
+updated-at: 2026-11-04T21:50:00Z
+updated-by: berkc
+claimed-by: berk-ca-1280084
+claimed-at: 2026-11-04T21:24:26Z
+outcome-what: "Sign-off screen and detail of a human-lane ticket open with a 'try it' row of numbered steps (one per line); review-check prompt asks for at most six steps, step 1 builds and starts this change."
+outcome-why: "A reviewer's check was the last row, as a developer recipe; a person waiting to sign off could not quickly try the change, and step 1 pointed at the installed binary, not this branch."
+outcome-resolves: "Human review shows how to test: the check is the first thing on the sign-off screen and the ticket detail, with short steps that name what to see."
+review-summary: "The sign-off screen now opens with a 'try it' row holding the reviewer's check, ahead of tags, problem, account and verdict (signoff.go: the existing declared('check') call moved to the top and relabelled). The ticket detail pane does the same for a ticket in a person's lane (RequiresQuestion or RequiresHumanExit): the check is the first row above id/goal and is dropped from the Review group there; on other lanes it stays after the verdict. A new render-only helper oneStepPerLine splits an inline '1. a  2. b' check into one step per line, leaving the stored field untouched. The review lane prompt (builtin 40-review.md and the board copy, identical) now asks for at most six steps, step 1 a copyable command that builds and starts this change from its worktree, every later step naming what to see; the new hash is appended to shipped.sha256. Release note added. Tests cover order, one-step-per-line, the non-human detail case, and the splitter."
+round: 2
+review-gaps: |-
+  note: on the detail pane the try-it row sits directly above the id row with no blank line or heading between them, so step text and identity rows run together visually
+  note: the try-it value carries the sourced prefix, so step 1 reads '(review) 1. ...' rather than starting at the step number
+  note: oneStepPerLine also splits inside a step whose text contains ' N. ' (e.g. 'version 2. '); documented in its comment, untested
+  note: core/lane/builtin and .jaira/lanes/review.md change only on run of jaira update --lanes for existing boards; the release note says so
+test-verdict: "pass: build RC=0 and go test ./internal/tui ./core/shipped ./core/lane RC=0; DoD 1-3 verified in the tree; behaviour exercised through renderSignOff/detailBody tests, not a live TUI"
+review-verdict: "Diff matches all three DoD items: check is first on sign-off and on the human-lane detail, as numbered steps one per line, with tests in internal/tui; the review prompt asks for at most six steps starting with a build-and-start command for this worktree; release note present. go vet and go test ./internal/tui ./core/shipped ./core/lane pass. No blockers."
+review-round: 2
+review-check: "1. cd /home/berkc/code/X_General/jaira-AW9KVT && go run ./cmd/jaira  2. in the board, open ticket AW9KVT in the signoff lane with Enter: the screen opens with a 'try it' row, these steps one per line, above tags, problem and verdict  3. press Esc and open a ticket in an earlier lane such as review or in-progress: its detail shows no 'try it' row, and any check stays under Review after the verdict"
 ---
 
 # Human Review zeigt zuerst, wie der Mensch die Aenderung selbst testet
 
 ## Definition of Done
 
-- [ ] Der Sign-off-Screen und das Detail einer Karte in Human Review zeigen review-check als ersten Block, als nummerierte Schritte; Test in internal/tui
-- [ ] Der Prompt der review-Lane verlangt fuer check: hoechstens ~6 Schritte, beginnend mit einem kopierbaren Befehl, der den Branch baut und startet, und je Schritt was man sehen soll
-- [ ] Release-Note-Zeile in core/release/notes/<ID>.md
+- [x] Der Sign-off-Screen und das Detail einer Karte in Human Review zeigen review-check als ersten Block, als nummerierte Schritte; Test in internal/tui
+  proof: internal/tui/signoff.go:71 (try it row first); view.go:1359 (detail, human lanes); tests reviewcheck_test.go TestSignOffScreenShowsTheCheck, TestDetailPaneOpensWithTheCheckOnAHumanLane, TestDetailPaneKeepsTheCheckInReviewOffAHumanLane
+- [x] Der Prompt der review-Lane verlangt fuer check: hoechstens ~6 Schritte, beginnend mit einem kopierbaren Befehl, der den Branch baut und startet, und je Schritt was man sehen soll
+  proof: core/lane/builtin/40-review.md:63 (at most six steps, step 1 builds and starts this change); identical copy .jaira/lanes/review.md; core/shipped/shipped.sha256 last line ae89... kept, fe8fd6a9... appended; go test ./core/shipped ./core/lane ok
+- [x] Release-Note-Zeile in core/release/notes/<ID>.md
+  proof: core/release/notes/AW9KVT.md (one '- ' line)
 
 ## Options
 
 - [ ] brainstorm
-- [ ] planning
+- [x] planning
 
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-## Progress
+- [x] internal/tui: helper checkSteps(text) splits an inline '1. a  2. b' review-check into one line per step (text that already has line breaks keeps them); used by both screens
+- [x] signoff.go: move the declared("check") call from last to first (before tags), label 'try it', rendered as numbered steps; nothing else in signoff.go changes (EH6Z0N merge)
+- [x] view.go detailBody: for a ticket in a lane with RequiresHumanExit or RequiresQuestion, render review-check as first block after the title rule ('try it'), and leave it out of the Review group there; other lanes unchanged
+- [x] tests in internal/tui: signoff and detail show check before goal/summary, one step per line; detail for a non-human lane keeps check in Review
+- [x] core/lane/builtin/40-review.md + .jaira/lanes/review.md: review-check at most ~6 steps, step 1 a copyable command that builds and starts this branch (worktree path), each step names what you should see; append new hash to core/shipped/shipped.sha256, run core/shipped tests
+- [x] release note core/release/notes/AW9KVT.md; go test ./internal/tui ./core/shipped ./core/lane
 
+## Progress
+- **2026-11-04 21:26 · berkc** — Plan decisions: (1) 'frueher' was not a different order: git log -S shows review-check was last on both screens since it was introduced in 0994fc07 (2026-08-20); what changed is that check texts grew into 9-step developer recipes (GK1QGT). So the fix is order + step layout + a tighter lane prompt. (2) The detail pane moves check first only for tickets in a person's lane (requires-question or requires-human-exit), not everywhere: on other lanes nobody is asked to try anything. (3) Inline '1. x  2. y' is split into lines at render time, the stored field is not rewritten — the file format stays as written. (4) EH6Z0N (branch feat/EH6Z0N-diff-view, unmerged) also edits internal/tui/signoff.go (adds a right-half diff pane). This ticket keeps its signoff.go change to moving one call up in renderSignOff's left column plus the step layout, so the merge conflict is at most one hunk.
+- **2026-11-04 21:27 · berkc** — Name clash: internal/tui/reviewcheck_test.go already has package-level const checkSteps (test fixture), so the helper is named oneStepPerLine. Also TestSignOffScreenShowsTheCheck asserts check comes AFTER verdict; that is the behaviour being reversed, so the test gets inverted.
+- **2026-11-04 21:34 · berkc** — Sign-off/detail: the 'try it' row reuses declared()/row() so it keeps the '(review)' provenance prefix on step 1 (same as every other row). Two owed_test assertions moved check->'try it' on the sign-off screen; the detail-pane owed assertion for lane review stays 'check' (non-human lane).
+- **2026-11-04 21:39 · berkc** — critique (pass 1): design stands — render-time split (note 3), human-lane-only placement (note 2), prompt rewrite are accepted. Three fixes: (1) view.go detailBody duplicates the declared closure for the try-it row; hoist declared+owed+srcs above the identity rows and call it. (2) owed_test.go:336 ordering check passes vacuously if 'try it' is absent; guard i<0. (3) signoff.go:19 doc comment line is 104 chars after reflow; rewrap. No other findings; next pass reads only these three.
+- **2026-11-04 21:42 · berkc** — critique findings fixed: (1) view.go: declared closure hoisted above the try-it row, row now declared(declaredField{"try it",...}); moved view.go:1351 -> 1359, re-ticked DoD 1 proof. (2) owed_test.go: guard fails when 'try it' index < 0. (3) signoff.go:19-22 doc comment rewrapped under 80. signoff.go:236 and :250 are >100 chars and pre-existing, left alone. go test ./internal/tui -count=1 exit 0; go vet and gofmt clean.
+- **2026-11-04 21:43 · berkc** — Critique ran once (maintainer asked for at most one pass). Its three findings were fixed in e2e4a2ec (declared hoisted and reused for the try-it row, -1 guard in owed_test, doc comment rewrapped); the worker checked the diff and go test ./internal/tui passes, so the ticket goes on to optimize without a second critique.
+- **2026-11-04 21:45 · berkc** — optimize: nothing removed. Considered folding the person-lane predicate into a core/lane method; skipped, pre-existing in 3 other places and outside this ticket.
+- **2026-11-04 21:47 · berkc** — testing: build RC=0; go test ./internal/tui ./core/shipped ./core/lane -count=1 RC=0 (whole suite not run, per the touched-packages instruction). DoD 1: signoff.go:71 and view.go:1359 match the proofs; TestSignOffScreenShowsTheCheck, TestDetailPaneOpensWithTheCheckOnAHumanLane, TestDetailPaneKeepsTheCheckInReviewOffAHumanLane pass. DoD 2: core/lane/builtin/40-review.md is identical to .jaira/lanes/review.md (diff empty); the step list is at 40-review.md:63, at most six steps; shipped.sha256 keeps ae89... and appends fe8fd6a9.... Nit, not blocking: the example in the prompt names go run ./cmd/app, but this repo's entry point is cmd/jaira; step 2 of the example states no outcome, against the prompt's own rule. DoD 3: AW9KVT.md has one '- ' line, 272 chars, no wrap. Function: exercised through renderSignOff and detailBody in the tests, not by running the TUI live.
+- **2026-11-04 21:49 · berkc** — review (fresh context): no blocker; 4 notes in review-gaps (cramped try-it row on detail, '(review)' prefix before step 1, splitter edge case, existing boards need jaira update --lanes). Verified with go vet + go test ./internal/tui ./core/shipped ./core/lane; builtin and board review.md identical.

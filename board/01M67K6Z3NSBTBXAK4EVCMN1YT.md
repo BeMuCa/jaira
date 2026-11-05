@@ -1,7 +1,7 @@
 ---
 id: 01M67K6Z3NSBTBXAK4EVCMN1YT
 title: "jaira web wird Beobachtungs- und Steuerzentrale fuer PMs ohne Claude: Onboarding mit Anbieterwahl, lokale Tokens, Projekte aus Repos, Tabs fuer Tickets, Aktive, Milestones/Epics, Schreiben"
-status: ideas
+status: todo
 ready: true
 creator: berkc
 assignee: berkc
@@ -27,20 +27,27 @@ related:
   - 01M5MNWJF240306ZVDA41K3RA8
 commits: []
 created-at: 2026-10-30T23:44:38Z
-updated-at: 2026-10-31T01:25:20Z
+updated-at: 2026-11-04T00:34:58Z
 updated-by: berkc
+claimed-by: berk-ca-131411
+claimed-at: 2026-11-03T17:20:56Z
+rejected-kind: wontfix
+rejected-why: "aufgeteilt in 13 Tickets im Milestone pm-web: V9S8RN CW2X0F ZMN3MW PB664F 35Y6N5 QCM818 NEYWJH EEX2HX 3Q92JY VD4ZDW GF2MAB AS9WSS DBZ9NM (Maintainer 04.11.2026)"
+rejected-by: berkc
+rejected-at: "2026-11-04T00:34:58Z"
 ---
 
 # jaira web wird Beobachtungs- und Steuerzentrale fuer PMs ohne Claude: Onboarding mit Anbieterwahl, lokale Tokens, Projekte aus Repos, Tabs fuer Tickets, Aktive, Milestones/Epics, Schreiben
 
 ## Definition of Done
 
-- [ ] Brainstorm (starkes Modell): Funktionsliste, Aufteilung in Tickets, Jira-Mapping (Epics/Tasks/Subtasks vs. Strassenname/Milestone/Ticket), Token-Ablage, was fehlt
+- [x] Brainstorm (starkes Modell): Funktionsliste, Aufteilung in Tickets, Jira-Mapping (Epics/Tasks/Subtasks vs. Strassenname/Milestone/Ticket), Token-Ablage, was fehlt
+  proof: Notiz 'Ergebnis Brainstorm 03.11.2026' an CMN1YT; 13 Folge-Tickets V9S8RN..DBZ9NM, Milestone pm-web A79Q9V
 
 ## Options
 
-- [ ] brainstorm
-- [ ] planning
+- [x] brainstorm
+- [x] planning
 
 ## Plan
 
@@ -139,3 +146,12 @@ OFFENE FRAGEN
 7. Onboarding im Browser statt im curl-Skript ok?
 8. Token-Speicher: reicht zuerst die 0600-Datei, oder ist OS-Schluesselbund Pflicht von Anfang an?
 - **2026-10-31 01:25 · berkc** — Antworten Maintainer 31.10.2026: (1) Milestone vs Epic: gleiche Form (Beschreibung + Liste + X von Y); Vorschlag Roads (KQQD1H) = Epics, Milestones liegen auf einer Road - ein Begriff weniger. (7) Onboarding im Browser: ja. (8) Token-Speicher: zuerst Datei mit Rechten 0600 (nur der eigene Benutzer darf lesen, keine Verschluesselung); Firmen: OS-Schluesselbund oder Umgebungsvariable aus einem Secret-Manager - spaeter. (6) Jira nur auf Anfrage, einmalig, wegen API-Quoten; kein Dauer-Sync. Mapping Epic/Milestone -> Jira soll im Web einstellbar sein (Default wie vorgeschlagen). Alles in einen Milestone. Offen: 2, 3, 4, 5.
+- **2026-11-03 17:23 · berkc** — Brainstorm-Lane 03.11.2026 (Worker). Geprueft in diesem Stand: jaira web schreibt nur Epics (core/web/web.go:300-315: Epic anlegen/aendern/zuordnen/schliessen, sonst nur lesen). Schutz gegen fremde Webseiten existiert schon: nur Loopback-Host, Writes mit fremdem Origin abgelehnt (core/web/web.go:293-327) - jeder neue Schreib-Endpunkt erbt das. Fehlgeschlagener Push bleibt in einer Warteschlange (internal/cli/web.go, Hilfetext). Lane-Farben gibt es schon: Agenten-Lanes nach Position, Personen-Lane amber, Terminal gruen, Parkspur rot (internal/cli/web.go:56-59) - Tab Aktiv nutzt diese Regel statt einer zweiten. Feld 'external' ist im Ticket-Schema reserviert und wird nie gelesen (core/ticket/schema.go:77-78). settings.json wird mit 0644 geschrieben (core/settings/settings.go:340) - Tokens duerfen dort NICHT hin. git wird an drei Stellen per LookPath gesucht (core/gitref/gitref.go:200, core/gitrepo/git.go:29, core/ticket/store.go:878). Projekt-Suche: core/project/discover.go:25, Projektliste core/project/project.go:41/65. Verwandt: DVPAPE (fester Name, enthaelt schon 'jaira web fragt den Namen im Browser'), KQQD1H (Roads), H319TV (README-Abschnitt PM), 1YTBPX (Mapping-Matrix fuer alle Anbieter). Vorgehen: Aufteilung in Folge-Tickets je ein PR, Reihenfolge ueber --blocked-by, alle in einen Milestone (Wunsch Maintainer).
+- **2026-11-03 17:28 · berkc** — Ergebnis Brainstorm 03.11.2026 - Folge-Tickets (je ein PR, Tag 'web', follows CMN1YT, Milestone pm-web A79Q9V; Reihenfolge ueber blocked-by). Voraussetzungen ausserhalb: DVPAPE (fester Name), KQQD1H (Roads, Benennung des Labels 'Epic' waehlt der Nutzer - hier NICHT entworfen).
+Strang A Ansicht/Schreiben: V9S8RN Tab-Leiste + 'Alle Tickets' -> CW2X0F Tickets anlegen/zuweisen (wartet auf DVPAPE) -> ZMN3MW Tab Aktiv (DVPAPE) -> PB664F 'Braucht dich' Fragen beantworten, ohne Lane-Bewegung (DVPAPE) -> 35Y6N5 Tab Milestones & Epics nur Ansicht (KQQD1H) -> QCM818 Milestones anlegen/zuordnen.
+Strang B Einstieg/Jira: NEYWJH Start ohne git/Projekt, git-Pfad -> EEX2HX Projekt aus Repos/Clone-Link + umschalten -> 3Q92JY Token-Ablage secrets.json 0600 + Einstellungsseite (mit Erklaerung 0600 und Firmen-Ablage) -> VD4ZDW Jira-Zuordnung einstellbar (KQQD1H) -> GF2MAB Ticket aus Jira-Key (eine Anfrage pro Klick, Anbieterwahl im Onboarding) -> AS9WSS Export Epic/Milestone nach Jira auf Knopfdruck, ohne Duplikate.
+Unabhaengig: DBZ9NM gestaltete Startausgabe.
+KORREKTUR fuer GF2MAB, AS9WSS, 35Y6N5: Epics tragen seit PG9P9Y schon 'external' als Liste {key, url} (core/epic/external.go:23-29). Ticket und Milestone nehmen dieselbe Form, nicht 'jira:<KEY>' (Notiz an GF2MAB steht, die anderen zwei sind nur auf ihrem Ref).
+Bewusst NICHT angelegt: Neu-zugewiesen-Markierung (Punkt 5 der Nachricht bricht ab - offen); PM bewegt Lanes/nimmt signoff an (offen); Schluesselbund/Secret-Manager/Token aus Umgebungsvariable (Maintainer: spaeter); GitHub/GitLab/YouTrack (nur Jira, auf Anfrage; Rest in 1YTBPX); Dauer-Sync mit Jira (abgelehnt: API-Quoten, 'kleiner als paca'); Hosting fuer mehrere PMs (kein Server per Konstruktion); README-Abschnitt (gibt es schon: H319TV, nach CW2X0F/NEYWJH aktualisieren).
+Hinweis: GF2MAB landete beim Anlegen zuerst nur als Datei (kein Ref); ein 'jaira tag' hat es nachtraeglich auf den Ref gebracht. Der Milestone-Ref wurde zuerst mit 'someone else wrote it first' abgelehnt, nach 'jaira fetch' ist er auf dem Remote.
+- **2026-11-03 23:04 · berkc** — Maintainer 04.11.2026: PM = wer ueber jaira web arbeitet. Der PM bewegt keine Lanes und nimmt nicht in signoff ab. CMN1YT wird als aufgeteilt rejected (Maintainer gibt den Befehl selbst).

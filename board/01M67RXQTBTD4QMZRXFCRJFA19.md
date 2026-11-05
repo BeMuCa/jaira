@@ -19,7 +19,8 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:27Z
-updated-at: 2026-10-31T01:24:27Z
+updated-at: 2026-11-03T17:18:24Z
+updated-by: berkc
 ---
 
 # Das Cockpit bekommt Tabs, darunter ein Worker-Panel: je Agent ein Icon, sein Ticket, seine Lane und ob er festhaengt
@@ -40,4 +41,4 @@ updated-at: 2026-10-31T01:24:27Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-11-03 17:18 · berkc** — Gepruefft 03.11.2026: der Worker-Tab existiert schon (F80QZT, Alexander Sacharov, 16.10.): Overview hat Tabs queue/log/workers, je Agent eine Figur mit Ticket, Lane, naechster Lane, Fortschritt; Zustaende working/idle/question (core/mod/builtin/jaira-cockpit/hooks/overview.ts:122-176). Es fehlt nur: Zustand 'wartet auf Freigabe' (z.B. Bash-Befehl). Ticket auf diesen Rest verkleinern.

@@ -1,7 +1,7 @@
 ---
 id: 01M5M7JTVR8G7DZ1MGHJQ63EEV
 title: "Tickets im Cockpit einzeln abarbeiten: Ticket aufklappen, Details rechts, Accept/Deny darunter"
-status: human
+status: todo
 ready: true
 creator: BeMuCa
 goal: "A person works off the tickets waiting for them one at a time in the cockpit: pressing a ticket in the band opens its pane with title, goal, how it was done, what the review found, the DoD and the open question, read from the ticket's existing fields, with Accept, Give back (Deny), Explain or Discuss beneath, each doing what the band's button does today."
@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-23T11:15:50Z
-updated-at: 2026-10-30T23:45:36Z
+updated-at: 2026-11-04T00:35:03Z
 assignee: berkc
 updated-by: berkc
 question: |-
@@ -24,6 +24,7 @@ question: |-
   2. The open question of a signoff ticket: (a) you read it out of the verdict and newest notes in the pane; (b) the review lane writes it into the existing question field, which the band already shows with Discuss (overlaps ZWK0PF); (c) a new field of its own. Recommended (b), as its own follow-up.
   3. Opening a ticket from the band: (a) the ticket's ID in the row becomes a button; (b) (a) plus digits 1-3 from an empty prompt, at the cost that a prompt starting with a digit presses the row instead. Recommended (a).
   4. After Accept or Deny in the pane: (a) the pane closes; (b) the pane moves on to the next waiting ticket. Recommended (b).
+round: 2
 ---
 
 # Tickets im Cockpit einzeln abarbeiten: Ticket aufklappen, Details rechts, Accept/Deny darunter
@@ -71,3 +72,5 @@ Follow-ups:
 - F2, own ticket, not mod-only: where a signoff ticket's open question lives (option B). Touches the review lane prompt and role texts; coordinate with ZWK0PF.
 Not verified: that the docked pane sits on the right; the plugin API only says "beside".
 - **2026-10-30 23:45 · berkc** — Antwort berkc 31.10.2026 zu Frage 1: (a) - das Pane zeigt einfach, was das Ticket selbst zeigt (vorhandene Felder), keine generierte Karte: 'saves the user switching to jaira, and saves us tokens since we just replicate.' Fragen 2-4 noch offen (Empfehlungen: 2b, 3a, 4b).
+- **2026-11-03 17:18 · berkc** — Antwort berkc 03.11.2026 zu 2-4: (2) b - der Review-Lane schreibt den offenen Punkt eines signoff-Tickets ins vorhandene question-Feld; (3) a - die ID in der Band-Zeile wird ein Knopf; (4) b - nach Accept/Deny springt das Pane zum naechsten wartenden Ticket. Alle vier Fragen beantwortet.
+- **2026-11-04 00:35 · berkc** — 04.11.2026: alle vier Fragen beantwortet; Maintainer will, dass der Agent es weiterschiebt. Zurueck nach todo (rueckwaerts braucht kein --force), damit planning es aufnimmt.
