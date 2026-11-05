@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:46:40Z
-updated-at: 2026-11-05T09:54:30Z
+updated-at: 2026-11-05T10:07:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-21000
 claimed-at: 2026-11-05T09:47:52Z
@@ -74,3 +74,4 @@ review-check: "1. less docs/PLUGINS.md - Abschnitte Invocation, Environment, Wri
 - **2026-11-05 09:50 · Alexander Sacharov** — Geprueft: beide Schemas sind gueltiges Draft 2020-12 (python jsonschema check_schema), die zwei JSON-Beispiele in docs/PLUGINS.md validieren dagegen, eine id 'Bad_ID' wird abgelehnt. Kein Test im Repo dafuer - reine Doku-Dateien, nichts im Binary liest sie.
 - **2026-11-05 09:50 · Alexander Sacharov** — critique: $id in beiden Schemas raus (Repo zieht nach panda-bobr um); Secrets-Satz zu 3Q92JY ist zirkulaer - neu formulieren; 'a later jaira plugins' streichen. docs/AGENTS.md:8 ('no plugin API') bleibt stehen: spricht ueber Agenten, und jaira startet Plugins noch nicht.
 - **2026-11-05 09:51 · Alexander Sacharov** — critique Runde 2: nichts mehr. Bewusst stehen gelassen: Exit-Code-Tabelle uebernimmt auch 4 (dependencies) - gleiche Tabelle wie jaira ist der Punkt; JAIRA_BOARD-Herkunft (--board vor der id) legt das Dispatch-Ticket genau fest.
+- **2026-11-05 10:07 · Alexander Sacharov** — Alex (05.11.2026, Teamlead-Sitzung): zurueck nach in-progress. Es fehlt der dritte Kanal - jaira benachrichtigt ein Plugin von sich aus. Abschnitt 'Events' in docs/PLUGINS.md + Feld 'events' (geschlossene Liste: create, move, claim, set) in docs/schema/jaira-plugin.schema.json. Vertrag: nach erfolgreichem Schreiben ruft jaira 'jaira-<id> event <name>' fuer jedes abonnierte Plugin auf; stdin = JSON wie 'jaira show --json' nach der Aenderung plus actor und from_lane; Timeout 5 s wie core/hook; Fehler des Plugins lassen den Befehl nicht scheitern; ein Plugin, das sein Ziel nicht erreicht, puffert selbst. core/hook bleibt fuer Nutzerskripte. Code dafuer gehoert zu 8Z3VRF. Ausserdem in PLUGINS.md vermerken: external fehlt heute in show/list --json, kommt mit 8Z3VRF.
