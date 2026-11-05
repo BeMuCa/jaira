@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T17:59:03Z
+updated-at: 2026-11-05T17:59:22Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
@@ -59,3 +59,13 @@ gemini-cli: .agents/skills / ~/.gemini/skills | .gemini/skills | .agents/skills 
 opencode: .agents/skills / ~/.config/opencode/skills | .opencode/skills, .claude/skills | .claude/skills, .agents/skills | ~/.config/opencode — https://opencode.ai/docs/skills/ (verified on Linux/mac; the Windows home path is NOT verified)
 hermes: .hermes/skills / ~/.hermes/skills | .agents/skills | - (skills.external_dirs is user config, not ours) | ~/.hermes — https://hermes-agent.nousresearch.com/docs/user-guide/features/skills (verified; project dirs load only after 'hermes skills trust')
 All write dirs equal the Vercel table (https://github.com/vercel-labs/skills/blob/main/docs/agents.md) except copilot project, where the driver's decision (a) keeps .github/skills; Copilot's own docs list both, so nothing contradicts it. Driver decisions (a)-(e) stand.
+- **2026-11-05 17:59 · BeMuCa** — Pre-process, why the plan looks like this:
+1. Order matters. The agents table order is also the installers' order: claude, codex, pi, copilot, cursor, gemini-cli, opencode, hermes. Writers of a shared dir come first, so the existing Also rule makes the later ones skip. With all eight present only ~/.claude/skills, ~/.agents/skills and ~/.hermes/skills get written.
+2. Known limit, not fixable without symlinks (ruled out): with claude AND codex, both ~/.claude/skills and ~/.agents/skills must exist, and cursor and opencode read both, so they see each role twice. The Also rule only protects the agent being installed. Say so in the Agent comment; do not try to fix it.
+3. codex and pi write the same dir. Second run reports 'unchanged' (its own target is not in its Also list) - harmless. Installed() and UpdateCommand() name the first table entry for a shared dir (codex), which is correct because the content is identical. A test pins that agents sharing a write dir agree on Mods (all false).
+4. Detection stays in the scripts, not a new binary flag: the script comes from master, the binary is the latest release, and an older release would not know such a flag. The same gap hits new names: an older binary refuses '--agent codex' (exit 2, unknown agent). So each per-agent install is non-fatal: print its output and the retry line, go on with the next.
+5. JAIRA_AGENT=a,b: known names run in table order (not the given order, see 1); an unknown name gets one line naming the known ones and is skipped, not fatal. JAIRA_NO_ROLES=1 still wins over everything.
+6. Nothing detected: write nothing into HOME; one sentence: no coding agent found, jaira works without one (e.g. 'jaira web'), add the roles later with 'jaira roles install --agent <name> --global'.
+7. Side effect: 'jaira update --roles' loops all agents via Installed(), so roles already sitting in e.g. ~/.agents/skills or project .agents/skills now get refreshed too. Worth a release-note line.
+8. The 'active now ... ~/.claude/skills' and 'Cockpit loads in your next Claude Code session' lines print only when claude was installed.
+9. Scripts have no Go tests. Check them with sh -n, dash -n and a run against a throwaway HOME with fake agent folders. pwsh is not installed here, so install.ps1 cannot be run locally - say so in the outcome.
