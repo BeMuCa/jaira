@@ -1,7 +1,7 @@
 ---
 id: 01M6NHNWE5JR91RRD6Q8D44NVR
 title: "panda-bobr/jaira-releases: plugins.json, CI-Pruefung und CONTRIBUTING"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,9 +19,12 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T12:05:30Z
+updated-at: 2026-11-05T12:05:35Z
 updated-by: Alexander Sacharov
 question: "Pushes nach GitHub sind dieser Sitzung verweigert. 1) (empfohlen) Alex fuehrt publish-1-before-merge.sh aus, merged den PR, dann publish-2-after-merge.sh und oeffnet den Test-PR. 2) Alex erlaubt dem Worker git push/gh repo create per Permission-Regel. Zwei Fixture-Repos statt einem - ok?"
+outcome-what: "panda-bobr/jaira-releases: README auf main, per PR #1 plugins.json ([]), schema/ (Kopien aus R6X6FH), CONTRIBUTING.md, .github/scripts/check_catalog.py mit 23 Unit-Tests und Workflow check-catalog (pull_request_target, nur plugins.json-PRs, Kommentar mit allen Problemen). Fixture-Repos panda-bobr/jaira-plugin-ci-fixture (Release ohne checksums.txt) und -norelease. Test-PR #2 zeigt die Ablehnung."
+outcome-why: "Ein Plugin-Autor soll seinen Eintrag per PR einreichen koennen und vor jedem Menschen erfahren, was fehlt; der Katalog aus R6X6FH existierte nur als leeres Repo."
+outcome-resolves: "DoD 1 (main 44d293d) und DoD 2 (PR #2, Run 42024115800, Bot-Kommentar mit doppelter id, fehlendem Release, fehlender Pruefsumme)"
 ---
 
 # panda-bobr/jaira-releases: plugins.json, CI-Pruefung und CONTRIBUTING
