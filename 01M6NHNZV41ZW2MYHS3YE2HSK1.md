@@ -18,7 +18,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T10:32:09Z
+updated-at: 2026-11-05T10:35:27Z
 updated-by: Alexander Sacharov
 ---
 
@@ -26,7 +26,8 @@ updated-by: Alexander Sacharov
 
 ## Definition of Done
 
-- [ ] Ein Repo aus der Vorlage baut mit 'git tag v0.1.0 && git push --tags' ein Release mit allen Assets und checksums.txt; einmal vorgefuehrt
+- [x] Ein Repo aus der Vorlage baut mit 'git tag v0.1.0 && git push --tags' ein Release mit allen Assets und checksums.txt; einmal vorgefuehrt
+  proof: https://github.com/panda-bobr/jaira-hello-demo/releases/tag/v0.1.0 - Tag v0.1.0 -> Run 42011801567 gruen; 6 Binaries jaira-hello_<os>_<arch>(.exe), checksums.txt (sha256sum -c alle OK), jaira-plugin.json; Vorlage = panda-bobr/jaira-plugin-template@fc5d7e1
 - [ ] Das Release besteht die CI von panda-bobr/jaira-releases
 
 ## Options
