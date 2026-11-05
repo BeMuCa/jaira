@@ -1,7 +1,7 @@
 ---
 id: 01M6NHMX3XGC9RBPA29NR6X6FH
 title: "Plugins: Entscheidung und Standard stehen in docs/PLUGINS.md"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:46:40Z
-updated-at: 2026-11-05T10:10:33Z
+updated-at: 2026-11-05T10:10:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-21000
 claimed-at: 2026-11-05T09:47:52Z
@@ -40,7 +40,7 @@ review-summary: |-
   docs/PLUGINS.md Events: a plugin that calls jaira set/note from its event handler fires the next event - an endless loop with two plugins; say that jaira passes JAIRA_IN_EVENT=1 and writes made with it set fire no events
   docs/PLUGINS.md Web: 'pages or an api' - but the manifest has no way to declare an api without pages; say the capability web is what lets jaira web forward /plugins/<id>/api/*
   docs/PLUGINS.md Web: a file under web/api/ collides with the forwarded path; say api/ is reserved and never served as a file
-round: 3
+round: 4
 review-gaps: |-
   note: jaira show --json und jaira list --json geben das Feld external nicht aus - ein Plugin, das wie empfohlen ueber die Lesebefehle liest, findet seinen Schluessel (jira:PROJ-123) nicht und muss doch das Markdown parsen; entweder die JSON-Ausgabe ergaenzt external im Dispatch-Ticket, oder der Abschnitt Writing nennt das
   note: core/merge/merge_test.go fuehrt external als YAML-Block (provider/key), PLUGINS.md als String '<id>:<key>' - der Merge behandelt beides opak, aber der Test zeigt eine Form, die der Standard nicht mehr vorsieht
