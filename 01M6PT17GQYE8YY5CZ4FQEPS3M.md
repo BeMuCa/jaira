@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T21:32:27Z
-updated-at: 2026-11-05T22:00:45Z
+updated-at: 2026-11-05T22:00:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54459
 claimed-at: 2026-11-05T21:33:03Z
@@ -32,7 +32,7 @@ review-summary: "none"
 round: 3
 review-gaps: "none - the diff is one matcher, one comment block, one removed check, one test and the release note; left alone the tsc error at register.tsx:381 that was there before this change (null is not void)"
 test-verdict: "pass for what a machine can check: go test ./... rc=0, claude plugin test 176/176, DoD 2 verified live on 2.1.318 (notice with the master mod, none with the branch). DoD 1: rewriting on door prompt|delivery is proven by a test, the clickable line needs a person in the fullscreen renderer. DoD 3: no code change possible - fullscreen is switched off on this machine (fullscreenAutoDisabled)"
-question: "DoD 3 (clicks/scroll) is not a mod bug: Claude Code 2.1.318 switched off fullscreen on this machine on 2026-11-04 after 3 failed starts (~/.claude.json fullscreenAutoDisabled). 1) (Recommended) Alex runs /tui fullscreen, then checks DoD 1+3 live in the cockpit (claude --plugin-dir <worktree>/core/mod/builtin/jaira-cockpit) - an agent ticks them on that word. 2) Remove DoD 3 from the ticket as not a code matter, check only DoD 1. 3) Something else."
+question: ""
 ---
 
 # jaira-cockpit: session.append wird seit Claude Code 2.1.318 nicht mehr erreicht
