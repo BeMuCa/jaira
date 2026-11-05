@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T18:03:17Z
+updated-at: 2026-11-05T18:03:19Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
@@ -39,7 +39,8 @@ claimed-at: 2026-11-05T17:54:30Z
   proof: scripts/install.sh install_roles JAIRA_AGENT branch; JAIRA_NO_ROLES first; harness runs override and nores
 - [x] README-Install-Abschnitt nennt die Erkennung und die Uebersteuerung
   proof: README.md ## Install paragraph
-- [ ] Release-Notiz in core/release/notes/<ID>.md
+- [x] Release-Notiz in core/release/notes/<ID>.md
+  proof: core/release/notes/Q9F9W4.md
 
 ## Options
 
