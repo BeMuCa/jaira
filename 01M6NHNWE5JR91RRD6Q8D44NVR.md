@@ -19,7 +19,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T17:21:28Z
+updated-at: 2026-11-05T17:21:32Z
 updated-by: Alexander Sacharov
 question: ""
 outcome-what: "panda-bobr/jaira-releases: README auf main, per PR #1 plugins.json ([]), schema/ (Kopien aus R6X6FH), CONTRIBUTING.md, .github/scripts/check_catalog.py mit 23 Unit-Tests und Workflow check-catalog (pull_request_target, nur plugins.json-PRs, Kommentar mit allen Problemen). Fixture-Repos panda-bobr/jaira-plugin-ci-fixture (Release ohne checksums.txt) und -norelease. Test-PR #2 zeigt die Ablehnung."
@@ -102,3 +102,4 @@ review-check: "1. Oeffne https://github.com/panda-bobr/jaira-releases - auf main
 - **2026-11-05 12:20 · Alexander Sacharov** — testing: sashasoft90 ist seit ~12:20 oeffentliches Mitglied von panda-bobr (public_members anon 204) - Mitgliedschafts-Zeile faellt fuer panda-bobr-Repos jetzt weg. 56da600 (optimize) ist lokal und noch nicht in PR #3; Push: git -C /tmp/claude-1000/-home-alex-projects--worktrees-jaira-d44nvr/e9c86c25-536c-4790-a6d8-3e163fb430b1/scratchpad/jaira-releases push origin fix/d44nvr-errors
 - **2026-11-05 12:23 · Alexander Sacharov** — review (frische Sitzung, Runde 2): kein Blocker. Nachgeprueft auf GitHub: PR #1/#3 gemergt (main 85953d3), PR #2 geschlossen mit Bot-Kommentar, Lauf 42026044679 unit success; 29 Tests auf origin/main lokal gruen. Offen nur: 56da600 liegt auf origin/fix/d44nvr-errors, nicht in main (reiner Refactor).
 - **2026-11-05 17:20 · Alexander Sacharov** — Alex (05.11.2026, via Teamlead): vor Abnahme (1) Race beheben - HEAD_SHA nach erneutem Push nicht mehr da -> Meldung 'the pull request changed while it was checked; the next run replaces this comment' statt 'must be a JSON array', mit Unit-Test; (2) neuer Branch von origin/main 85953d3 mit 56da600 cherry-picked + Fix 1, ein PR. (3) author bleibt Freitext (wie Obsidian), DoD 3 bleibt nur per Unit-Test belegt - bewusst keine Aenderung.
+- **2026-11-05 17:21 · Alexander Sacharov** — Race-Fix: Branch fix/d44nvr-race = origin/main 85953d3 + 6845b50 (cherry-pick von 56da600) + 4aa2cfc, lokal. Workflow erkennt den verschwundenen HEAD_SHA mit 'git cat-file -e' (der depth=1-Fetch von refs/pull/N/head holt nur den neuen Kopf) und ruft das Skript mit --head-gone; das Skript meldet nur diese eine Zeile und endet mit 1. author bleibt Freitext, DoD 3 bleibt per Unit-Test belegt (Alex).
