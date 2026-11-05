@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T18:03:19Z
+updated-at: 2026-11-05T18:03:21Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
@@ -90,3 +90,4 @@ All write dirs equal the Vercel table (https://github.com/vercel-labs/skills/blo
 7. Side effect: 'jaira update --roles' loops all agents via Installed(), so roles already sitting in e.g. ~/.agents/skills or project .agents/skills now get refreshed too. Worth a release-note line.
 8. The 'active now ... ~/.claude/skills' and 'Cockpit loads in your next Claude Code session' lines print only when claude was installed.
 9. Scripts have no Go tests. Check them with sh -n, dash -n and a run against a throwaway HOME with fake agent folders. pwsh is not installed here, so install.ps1 cannot be run locally - say so in the outcome.
+- **2026-11-05 18:03 · BeMuCa** — In-progress: tests written first but NOT run (house rule: no go test; go vet compiles them). install.sh checked with sh -n, dash -n and a harness that sources only the roles section (scratch dir q9f9w4-scratch, HOME inside it, binary rebuilt from this branch): no agent folders -> nothing written plus the 'works without an agent (jaira web), add later' sentence; only ~/.codex -> ~/.agents/skills; all eight folders -> only ~/.claude/skills (+cockpit), ~/.agents/skills, ~/.hermes/skills written, copilot/cursor/gemini-cli/opencode print 'already reads' (opencode names ~/.claude/skills, because its Also list has .claude first), pi prints 21 unchanged; JAIRA_AGENT=claude,bogus -> bogus named and skipped, claude installed; JAIRA_NO_ROLES=1 with ~/.codex -> nothing written. install.ps1 was NOT run (no pwsh here) nor syntax-checked; it mirrors install.sh by hand. Adjacent, not fixed: with JAIRA_AGENT naming only unknown agents nothing is installed and no retry sentence is printed beyond the unknown-agent line; docs/AGENTS.md (linked from README) was not updated for the six new agents.
