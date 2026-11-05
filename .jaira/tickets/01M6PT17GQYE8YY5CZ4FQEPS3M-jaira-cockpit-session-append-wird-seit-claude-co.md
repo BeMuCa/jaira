@@ -21,15 +21,17 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T21:32:27Z
-updated-at: 2026-11-05T21:42:34Z
+updated-at: 2026-11-05T21:46:14Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54459
 claimed-at: 2026-11-05T21:33:03Z
 outcome-what: "session.append hook of jaira-cockpit now matches only door prompt|delivery; release note; test for the delivery and attachment doors"
 outcome-why: "the built-in cc-plugin-sec-default in 2.1.318 passes person plugins over on attachment/hook-context/compaction rows, and a hook without a matcher reported itself as skipped there"
 outcome-resolves: "the 'session.append hook was skipped' notice; dead clicks and scroll trace to the fullscreen renderer Claude Code turned off on this machine, not to the mod"
-review-summary: "core/mod/builtin/jaira-cockpit/hooks/filter.ts:81 DELIVERY_DOORS repeats the doors that the matcher at register.tsx:1185 already writes as a literal; rewriteRow's only caller is that hook. Drop the constant and rewriteRow's door check, so the matcher is the one place the doors live"
-round: 2
+review-summary: "none"
+round: 3
+review-gaps: "none - the diff is one matcher, one comment block, one removed check, one test and the release note; left alone the tsc error at register.tsx:381 that was there before this change (null is not void)"
+test-verdict: "fail: TestEveryInstalledFileIsAShippedVersion - shipped.sha256 lacks the new versions of filter.ts and register.tsx"
 ---
 
 # jaira-cockpit: session.append wird seit Claude Code 2.1.318 nicht mehr erreicht
@@ -57,3 +59,5 @@ round: 2
 - **2026-11-05 21:38 · Alexander Sacharov** — Ursache DoD 3 (Klicks tot, Scroll springt): Claude Code hat am 2026-11-04 21:41 den Fullscreen-Renderer auf diesem Rechner abgeschaltet, nach 3 fehlgeschlagenen Starts: ~/.claude.json fullscreenAutoDisabled {version 2.1.318, strikes 3}. Der klassische Renderer hat keine Mausklicks. Kein Fehler der Mod: claude plugin test . laeuft auf 2.1.318 mit 175/175 gruen, inkl. Press-Tests. Abhilfe liegt bei Alex: /tui fullscreen oder CLAUDE_CODE_NO_FLICKER=1 (laut Meldung im Binary). Gilt nur fuer 2.1.318; die naechste Version setzt es zurueck.
 - **2026-11-05 21:41 · Alexander Sacharov** — Code fertig: Matcher als Literal { door: ['prompt','delivery'] } in register.tsx - mit einer Konstante zeigt claude plugin validate door=?, die Engine liest den Matcher aus dem Quelltext. Test 'a shortened message is rewritten on the delivery door too, and an attachment row is left alone' (176/176 gruen). DoD 1 braucht noch den Live-Test in 2.1.318 (claude --plugin-dir ...): ob eine Peer-Meldung, die waehrend eines laufenden Zuges ankommt, ueber door attachment kommt - die kann seit 2.1.318 KEIN Personen-Plugin mehr umschreiben (sec-default-Politik), session.receive kuerzt sie dann trotzdem, wenn es feuert. tsc meldet einen alten Fehler register.tsx:381 (null nicht void), nicht aus dieser Aenderung.
 - **2026-11-05 21:41 · Alexander Sacharov** — critique: DELIVERY_DOORS in filter.ts duplicates the matcher literal in register.tsx (the only caller of rewriteRow). Fix: drop the constant and the door check in rewriteRow, the matcher is the only door gate.
+- **2026-11-05 21:42 · Alexander Sacharov** — critique round 2: nothing left - the doors now live only in the matcher literal (register.tsx:1184), rewriteRow no longer checks them.
+- **2026-11-05 21:44 · Alexander Sacharov** — testing: go test ./... rc=1, core/role TestEveryInstalledFileIsAShippedVersion: core/shipped/shipped.sha256 lacks 85cf6274... filter.ts and 364f06f7... register.tsx. Fix: append the two lines the test prints (append rather than rerunning the script, so the file only grows).
