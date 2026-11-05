@@ -1,7 +1,7 @@
 ---
 id: 01M6NNAXQ276DMK3A1GH3XXF5B
 title: "jaira web: ein Ticket laesst sich per Knopf aus einem Epic nehmen, auch auf dem Handy"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -22,10 +22,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T10:51:07Z
-updated-at: 2026-11-05T10:57:17Z
+updated-at: 2026-11-05T10:57:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85123
 claimed-at: 2026-11-05T10:51:26Z
+outcome-what: "Epic cards in jaira web get a Remove button (tap, no drag); follow-up cards name the member they are counted through (new 'via' field from core/epic); the web resolves filed tickets with LoadAnywhere like 'jaira epic rm'."
+outcome-why: "Removing only worked by HTML5 drag, which phones lack; dashed cards gave no hint which line to remove; logbook/archive tickets answered 404 in the web while the CLI removed them."
+outcome-resolves: "Taking any ticket out of an epic in jaira web, on a phone too, without falling back to 'jaira epic rm'."
 ---
 
 # jaira web: ein Ticket laesst sich per Knopf aus einem Epic nehmen, auch auf dem Handy
