@@ -19,13 +19,13 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T12:10:19Z
+updated-at: 2026-11-05T12:10:22Z
 updated-by: Alexander Sacharov
 question: "Pushes nach GitHub sind dieser Sitzung verweigert. 1) (empfohlen) Alex fuehrt publish-1-before-merge.sh aus, merged den PR, dann publish-2-after-merge.sh und oeffnet den Test-PR. 2) Alex erlaubt dem Worker git push/gh repo create per Permission-Regel. Zwei Fixture-Repos statt einem - ok?"
 outcome-what: "panda-bobr/jaira-releases: README auf main, per PR #1 plugins.json ([]), schema/ (Kopien aus R6X6FH), CONTRIBUTING.md, .github/scripts/check_catalog.py mit 23 Unit-Tests und Workflow check-catalog (pull_request_target, nur plugins.json-PRs, Kommentar mit allen Problemen). Fixture-Repos panda-bobr/jaira-plugin-ci-fixture (Release ohne checksums.txt) und -norelease. Test-PR #2 zeigt die Ablehnung."
 outcome-why: "Ein Plugin-Autor soll seinen Eintrag per PR einreichen koennen und vor jedem Menschen erfahren, was fehlt; der Katalog aus R6X6FH existierte nur als leeres Repo."
 outcome-resolves: "DoD 1 (main 44d293d) und DoD 2 (PR #2, Run 42024115800, Bot-Kommentar mit doppelter id, fehlendem Release, fehlender Pruefsumme)"
-review-summary: none
+review-summary: "Im Repo panda-bobr/jaira-releases liegt auf main (44d293d, Merge PR #1): plugins.json als leeres Array, schema/ (byte-gleiche Kopien von docs/schema/*.json aus R6X6FH), README, CONTRIBUTING.md (Fork, einen Eintrag anhaengen, PR; Regeln fuer id/repo/Release-Assets) und der Workflow check-catalog. Der laeuft auf pull_request_target nur fuer PRs, die plugins.json aendern, checkt main aus und liest plugins.json des PRs nur als Daten (git show) - PR-Code wird nie ausgefuehrt. .github/scripts/check_catalog.py prueft nur neue/geaenderte Eintraege: Schema, id eindeutig/ohne 'jaira'/kein jaira-Befehl, Repo existiert und ist oeffentlich, PR-Autor ist Besitzer oder oeffentliches Org-Mitglied, jaira-plugin.json am Default-Branch passt zum Schema und zur id, Release v<version> hat sechs Binaries und checksums.txt mit einer Zeile je Binary; alle Probleme landen gesammelt in einem Bot-Kommentar, der bei jedem Push ersetzt wird. Test-PR #2 (Entwurf) zeigt die Ablehnung mit doppelter id, fehlendem Release und fehlender checksums.txt; 23 Unit-Tests gruen."
 round: 2
 review-gaps: "owner_repo (ein Aufrufer, zwei Zeilen) in check_entry inlined, 310de33. Geprueft und gelassen: get_json (3 Aufrufer), keine toten Imports (pyflakes sauber), kein Duplikat - jaira selbst hat noch keinen Katalog-/Manifest-Validator (8Z3VRF kommt spaeter); die Schema-Kopien in schema/ sind eine bewusste Entscheidung (Notiz). Kosten: pro geaenderter Eintrag 3-5 API-Aufrufe, unveraenderte Eintraege werden nicht abgefragt (Test test_unchanged_entries_are_not_fetched)."
 test-verdict: "pass: unit RC=0 (25 tests, fix/d44nvr-errors 310de33); DoD 1 - origin/main 44d293d hat plugins.json, README.md, CONTRIBUTING.md; DoD 2 - PR #2 Bot-Kommentar gelesen, gleicher Lauf lokal gegen echte API mit RC=1 und denselben drei Faellen; gruener Pfad live: hello-demo mit Autor=Besitzer -> 'Catalogue check passed' RC=0"
