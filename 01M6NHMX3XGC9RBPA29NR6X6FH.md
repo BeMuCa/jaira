@@ -29,8 +29,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:46:40Z
-updated-at: 2026-11-05T09:47:50Z
+updated-at: 2026-11-05T09:47:52Z
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-21000
+claimed-at: 2026-11-05T09:47:52Z
 ---
 
 # Plugins: Entscheidung und Standard stehen in docs/PLUGINS.md
