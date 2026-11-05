@@ -20,9 +20,11 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T17:54:28Z
+updated-at: 2026-11-05T17:54:30Z
 assignee: BeMuCa
 updated-by: BeMuCa
+claimed-by: q9f9w4-driver
+claimed-at: 2026-11-05T17:54:30Z
 ---
 
 # Der Installer erkennt den Coding-Agenten und legt die Rollen dort ab, wo er sie liest
