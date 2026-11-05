@@ -2,6 +2,7 @@
 color: 136
 created-at: 2026-10-22T00:17:21Z
 goal: Boards und Bausteine fuer den AI Hub Hackathon Frankfurt (Ende Oktober 2026) liegen bereit.
+after: []
 ---
 
 # hackathon-vorbereitung
