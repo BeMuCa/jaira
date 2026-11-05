@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T21:32:27Z
-updated-at: 2026-11-05T21:34:33Z
+updated-at: 2026-11-05T21:34:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54459
 claimed-at: 2026-11-05T21:33:03Z
@@ -33,6 +33,7 @@ claimed-at: 2026-11-05T21:33:03Z
 
 - [ ] Eine Peer-Meldung erscheint in Claude Code 2.1.318 wieder gekuerzt mit anklickbarer Zeile
 - [ ] Kein Hinweis 'session.append hook was skipped' mehr fuer jaira-cockpit
+- [ ] Die Knoepfe im Cockpit-Panel ([ Overview ], [ N waiting for ... ]) reagieren in 2.1.318 wieder auf Klick, und das Panel scrollt nicht von selbst
 
 ## Options
 
