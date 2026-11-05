@@ -19,7 +19,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T12:22:56Z
+updated-at: 2026-11-05T12:23:01Z
 updated-by: Alexander Sacharov
 question: ""
 outcome-what: "panda-bobr/jaira-releases: README auf main, per PR #1 plugins.json ([]), schema/ (Kopien aus R6X6FH), CONTRIBUTING.md, .github/scripts/check_catalog.py mit 23 Unit-Tests und Workflow check-catalog (pull_request_target, nur plugins.json-PRs, Kommentar mit allen Problemen). Fixture-Repos panda-bobr/jaira-plugin-ci-fixture (Release ohne checksums.txt) und -norelease. Test-PR #2 zeigt die Ablehnung."
@@ -95,3 +95,4 @@ review-check: "1. Oeffne https://github.com/panda-bobr/jaira-releases - auf main
 - **2026-11-05 12:15 · Alexander Sacharov** — DoD 3/4 umgesetzt in 52c090e auf fix/d44nvr-errors (lokal). Entscheidungen: verschwundenes altes repo -> Ablehnung mit 'ask a maintainer' (Besitz nicht beweisbar); nur repo/author-Aenderung loest die Altbesitzer-Pruefung aus, description/name nicht. Unit-Job: pull_request mit paths .github/** und schema/**, permissions nur contents: read; pull-requests: write jetzt nur am check-Job. Concurrency-Gruppe enthaelt event_name, sonst bricht pull_request den pull_request_target-Lauf desselben PRs ab. DoD 4 wird im PR fix/d44nvr-errors gezeigt: der PR aendert .github/** -> unit laeuft; check laeuft nicht (kein plugins.json).
 - **2026-11-05 12:19 · Alexander Sacharov** — critique (Runde 3, nur 52c090e gelesen): keine Funde. check_takeover steht neben check_entry und nutzt check_owner wieder; pull_request-Job laeuft PR-Code nur mit Lese-Token - Standardmuster. Hinweis: outcome-resolves nennt nur DoD 1+2; DoD 3+4 tragen ihre Proofs selbst.
 - **2026-11-05 12:20 · Alexander Sacharov** — testing: sashasoft90 ist seit ~12:20 oeffentliches Mitglied von panda-bobr (public_members anon 204) - Mitgliedschafts-Zeile faellt fuer panda-bobr-Repos jetzt weg. 56da600 (optimize) ist lokal und noch nicht in PR #3; Push: git -C /tmp/claude-1000/-home-alex-projects--worktrees-jaira-d44nvr/e9c86c25-536c-4790-a6d8-3e163fb430b1/scratchpad/jaira-releases push origin fix/d44nvr-errors
+- **2026-11-05 12:23 · Alexander Sacharov** — review (frische Sitzung, Runde 2): kein Blocker. Nachgeprueft auf GitHub: PR #1/#3 gemergt (main 85953d3), PR #2 geschlossen mit Bot-Kommentar, Lauf 42026044679 unit success; 29 Tests auf origin/main lokal gruen. Offen nur: 56da600 liegt auf origin/fix/d44nvr-errors, nicht in main (reiner Refactor).
