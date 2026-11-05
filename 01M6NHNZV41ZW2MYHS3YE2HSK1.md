@@ -18,7 +18,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T12:25:34Z
+updated-at: 2026-11-05T12:25:45Z
 updated-by: Alexander Sacharov
 blocked-reason: "DoD 2 wartet auf die Katalog-CI aus D44NVR (panda-bobr/jaira-releases, noch nicht auf main)"
 outcome-what: "panda-bobr/jaira-plugin-template@fc5d7e1: Go-Plugin jaira-hello (greet liest jaira list --json und schreibt jaira note; manifest --json aus eingebettetem jaira-plugin.json; Exit 3 bei zu altem JAIRA_VERSION), Tests inkl. Manifest-Regeln, goreleaser (6 Binaries, checksums.txt, jaira-plugin.json), Actions test und release-auf-Tag mit Tag==version-Pruefung, README mit drei Schritten bis Katalog-PR. Demo panda-bobr/jaira-hello-demo v0.1.0; Katalog-PR panda-bobr/jaira-releases#4."
@@ -26,6 +26,7 @@ outcome-why: "Plugin-Autoren sollen ohne eigene Release-Technik ein Release beko
 outcome-resolves: "DoD 1: Tag v0.1.0 im unveraenderten Demo-Repo erzeugte alle 6 Assets + checksums.txt (Run 42011801567). DoD 2: check-catalog auf PR #4 gruen (Run 42026722958)."
 review-summary: none
 round: 2
+review-gaps: "none - main.go hat keinen Code ohne Aufrufer mehr (version in 66de84a entfernt); .goreleaser.yaml project_name/changelog waeren entbehrlich, bleiben aber: die Konfig ist in jaira-hello-demo v0.1.0 so bewiesen, lokal laesst sich goreleaser hier nicht laufen"
 ---
 
 # panda-bobr/jaira-plugin-template: lauffaehige Vorlage mit Beispielbefehl und Release-Pipeline
