@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:46:40Z
-updated-at: 2026-11-05T09:54:19Z
+updated-at: 2026-11-05T09:54:22Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-21000
 claimed-at: 2026-11-05T09:47:52Z
@@ -43,6 +43,8 @@ review-gaps: |-
   note: core/merge/merge_test.go fuehrt external als YAML-Block (provider/key), PLUGINS.md als String '<id>:<key>' - der Merge behandelt beides opak, aber der Test zeigt eine Form, die der Standard nicht mehr vorsieht
   note: Exit-Code 5 heisst in PLUGINS.md 'not found - ticket, issue or key', in COMMANDS.md 'no such ticket, or an ambiguous id prefix' - fuer Plugins sinnvoll erweitert, aber nicht wortgleich mit dem behaupteten gleichen Vertrag
 test-verdict: "pass: go build ./... und go test ./... gruen (RC=0); DoD 1-3 im Baum geprueft (Abschnitte in docs/PLUGINS.md, beide Schemas Draft-2020-12-gueltig, Doku-Beispiele validieren, Bad_ID abgelehnt); 'jaira set <id> external=jira:PROJ-1' auf Scratch-Board ausgefuehrt, Feld steht im Frontmatter"
+review-verdict: "Alle drei DoD-Punkte erfuellt: PLUGINS.md deckt Aufruf, Umgebung, Schreibweg, external, Geheimnisse, Exit-Codes, Manifest, Katalogweg und die Go-plugin-Absage ab; beide Schemas liegen im Repo. Geprueft: jaira set external=jira:PROJ-123 und note --json funktionieren wie beschrieben, JAIRA_ROOT gibt es fuer Hooks, external wird beim Merge opak behandelt. Kein Blocker; der wichtigste Hinweis ist, dass external in der JSON-Lesesicht fehlt."
+review-round: 2
 ---
 
 # Plugins: Entscheidung und Standard stehen in docs/PLUGINS.md
