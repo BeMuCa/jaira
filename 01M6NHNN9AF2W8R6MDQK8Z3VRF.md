@@ -1,7 +1,7 @@
 ---
 id: 01M6NHNN9AF2W8R6MDQK8Z3VRF
 title: "jaira <id> startet ein installiertes Plugin"
-status: testing
+status: review
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -20,7 +20,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T21:54:44Z
+updated-at: 2026-11-05T21:54:52Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
