@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T18:11:54Z
+updated-at: 2026-11-05T18:14:25Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
@@ -28,7 +28,7 @@ claimed-at: 2026-11-05T17:54:30Z
 outcome-what: "target.go knows eight agents (codex, pi, cursor, gemini-cli, opencode, hermes added) with project/home/also dirs; install.sh and install.ps1 detect agents by home folder and run roles install --agent X --global each, JAIRA_AGENT overrides, no agent writes nothing and says jaira works without one; README and release note updated"
 outcome-why: "roles went to ~/.claude/skills whether or not Claude Code was there, and to a place other agents never read"
 outcome-resolves: "DoD 1-5; tests written but not run, install.ps1 unrun"
-review-summary: none
+review-summary: "core/role/target.go grows from two agents to eight (claude, codex, pi, copilot, cursor, gemini-cli, opencode, hermes), each with the skills directory it writes in a repository and at home plus the other directories it also reads; 'jaira roles install --agent <name>' therefore writes where that agent reads, skips when the roles already sit in a directory it also reads, and writes the cockpit only for claude. The table order is claude, codex, pi first so later agents find the roles in ~/.claude/skills or ~/.agents/skills and skip. install.sh and install.ps1 no longer always write ~/.claude/skills: they look for each agent's home folder (~/.claude, ~/.codex, ... ~/.hermes), run one 'roles install --agent X --global' per agent found, non-fatal per agent with a retry line; JAIRA_AGENT=a,b names the agents instead, JAIRA_NO_ROLES=1 still skips; with nothing found they write nothing and say jaira works without an agent (jaira web) and how to add the skills later. Tests per agent (write dirs, skip dirs, help text, unknown-agent message, shared ~/.agents/skills attributed to codex), README, docs/AGENTS.md table, roles --help text and a 4-line release note follow."
 round: 3
 review-gaps: "removed: install.ps1 Install-JairaRoles '$found = @()' (both branches assign it); roles_test.go TestRolesInstallAgentSkipsWhereItAlreadyReads guard 'scope.own != also' (no table entry lists its own dir as an Also dir, so always true). left: agentDirs in roles_test.go repeats target.go's table on purpose (independent expectation, folding it would make the tests tautological); install.sh keeps two lists (agent_dir case + AGENTS order) and install.ps1 a third copy of the table, documented at target.go:39-41 because the script cannot ask an older binary; nothing hot, no cost pass findings; no Go duplicate of the detection exists"
 test-verdict: "pass: gofmt/vet/build/sh -n/dash -n rc=0; 8 agents verified global+project incl. Also-skip and cockpit only for claude; install.sh none/codex/all/JAIRA_AGENT/NO_ROLES verified in scratch HOME; README+release note format ok; go test NOT run, install.ps1 NOT run (read against install.sh only)"
