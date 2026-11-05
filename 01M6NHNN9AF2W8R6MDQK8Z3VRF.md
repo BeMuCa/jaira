@@ -20,13 +20,16 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T21:50:26Z
+updated-at: 2026-11-05T21:51:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
 outcome-what: "jaira <id> startet ~/.jaira/plugins/<id>/jaira-<id> (Argumente, stdio, JAIRA_ROOT/BOARD/VERSION, Exit-Code); eingebaute Befehle gewinnen. create/set/claim/move feuern Plugin-Events aus jaira-plugin.json (move ueber core/move.Moved, also auch aus der TUI). external in show/list --json. Merge uebernimmt external von der Seite, die es geaendert hat."
 outcome-why: "Standard docs/PLUGINS.md (R6X6FH) verlangt Dispatch und Events; Teamlead-Luecken (TUI-Moves, external in JSON, merge, AGENTS.md) gehoeren dazu. Der Merge meldete bisher einen Konflikt, sobald nur ein Branch external setzte."
 outcome-resolves: Plugins lassen sich ohne Aenderung am Kern starten und hoeren Schreibvorgaenge; Install und Katalog bleiben ein spaeteres Ticket.
+review-summary: |-
+  core/plugin/plugin.go:30 var Events has no caller (the closed list lives in the schema and the doc) - delete it
+  internal/cli/plugin.go:firePlugins checks plugin.Subscribers and plugin.Fire scans the directory again and stats every Program a second time - let Subscribers return nil inside an event (JAIRA_IN_EVENT) and pass its ids into Fire(ids, event, payload, env), so one scan per write and no JSON built inside an event
 ---
 
 # jaira <id> startet ein installiertes Plugin
