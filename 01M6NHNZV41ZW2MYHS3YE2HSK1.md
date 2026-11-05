@@ -18,7 +18,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T12:24:57Z
+updated-at: 2026-11-05T12:25:18Z
 updated-by: Alexander Sacharov
 blocked-reason: "DoD 2 wartet auf die Katalog-CI aus D44NVR (panda-bobr/jaira-releases, noch nicht auf main)"
 outcome-what: "panda-bobr/jaira-plugin-template@fc5d7e1: Go-Plugin jaira-hello (greet liest jaira list --json und schreibt jaira note; manifest --json aus eingebettetem jaira-plugin.json; Exit 3 bei zu altem JAIRA_VERSION), Tests inkl. Manifest-Regeln, goreleaser (6 Binaries, checksums.txt, jaira-plugin.json), Actions test und release-auf-Tag mit Tag==version-Pruefung, README mit drei Schritten bis Katalog-PR. Demo panda-bobr/jaira-hello-demo v0.1.0; Katalog-PR panda-bobr/jaira-releases#4."
@@ -72,3 +72,4 @@ round: 2
 - **2026-11-05 10:35 · Alexander Sacharov** — Gefunden im Demo-Lauf: goreleaser haengt .exe bei formats: [binary] selbst an (bestaetigt: jaira-hello_windows_amd64.exe). jaira-plugin.json ist Release-Asset, steht aber nicht in checksums.txt (extra_files werden nicht gehasht) - fuer D44NVR egal, die prueft nur Binaries + checksums.txt. Weiter, sobald D44NVR auf main von jaira-releases liegt: ein Katalog-PR (oder dessen Check) fuer hello -> https://github.com/panda-bobr/jaira-hello-demo muss gruen sein -> DoD 2. Danach Ticket-Datei mit einem Commit chore(E2HSK1) hier mitnehmen; Code liegt im Template-Repo.
 - **2026-11-05 12:06 · Alexander Sacharov** — DoD 2 vorbereitet: Branch feat/e2hsk1 (8fdfee6) in Klon /tmp/claude-1000/-home-alex-projects--worktrees-jaira-e2hsk1/e870470a-cbe4-4763-84f0-083ada1efa9f/scratchpad/jaira-releases, nicht gepusht (Teamlead: Alex pusht und oeffnet). Lokal mit check_catalog.py von main 44d293d und --author sashasoft90 geprueft: einziger Fehler ist die Mitgliedschaft (sashasoft90 nicht oeffentliches Mitglied von panda-bobr); Schema, id, jaira-plugin.json, Release v0.1.0 und checksums.txt bestehen. DoD 2 gilt erst bei gruenem Check im echten PR. Merge listet hello wirklich im Katalog - ob der Test-PR gemergt oder geschlossen wird, ist Alex' Wahl.
 - **2026-11-05 12:24 · Alexander Sacharov** — critique: (1) test.yml push nur auf main, pull_request bleibt - sonst Doppellauf je PR. (2) version/--version aus main.go und usage raus - nicht im Standard, manifest --json reicht. README-Link auf BeMuCa/jaira bleibt bewusst: der Umzug nach panda-bobr ist entschieden, aber noch nicht passiert. jaira-hello-demo bleibt auf dem alten Stand fc5d7e1 - es beweist DoD 1, kein Grund es nachzuziehen.
+- **2026-11-05 12:25 · Alexander Sacharov** — Kritik-Fixes als 66de84a in der Template-Arbeitskopie (Scratchpad), noch nicht gepusht - Alex pusht. go vet/test gruen.
