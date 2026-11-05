@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T21:32:27Z
-updated-at: 2026-11-05T21:42:51Z
+updated-at: 2026-11-05T21:42:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54459
 claimed-at: 2026-11-05T21:33:03Z
@@ -30,6 +30,7 @@ outcome-why: "the built-in cc-plugin-sec-default in 2.1.318 passes person plugin
 outcome-resolves: "the 'session.append hook was skipped' notice; dead clicks and scroll trace to the fullscreen renderer Claude Code turned off on this machine, not to the mod"
 review-summary: "none"
 round: 2
+review-gaps: "none - the diff is one matcher, one comment block, one removed check, one test and the release note; left alone the tsc error at register.tsx:381 that was there before this change (null is not void)"
 ---
 
 # jaira-cockpit: session.append wird seit Claude Code 2.1.318 nicht mehr erreicht
