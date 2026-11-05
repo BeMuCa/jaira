@@ -66,8 +66,11 @@ func TestUnknownCommandStartsTheInstalledPlugin(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// macOS hands out temp dirs under /var, a link to /private/var: the root
+	// may come either way, so both spellings count as the board's directory.
 	root, _ := filepath.EvalSymlinks(dir)
-	if got, want := string(raw), "pull|--board|ops|--json|"+root+" ops 9.9.9\n"; got != want {
+	same := func(s string) string { return strings.ReplaceAll(s, root, dir) }
+	if got, want := same(string(raw)), "pull|--board|ops|--json|"+dir+" ops 9.9.9\n"; got != want {
 		t.Errorf("plugin saw %q, want %q", got, want)
 	}
 
@@ -76,7 +79,7 @@ func TestUnknownCommandStartsTheInstalledPlugin(t *testing.T) {
 		t.Fatal("the plugin did not start without arguments")
 	}
 	raw, _ = os.ReadFile(seen)
-	if got, want := string(raw), "|"+root+" default 9.9.9\n"; got != want {
+	if got, want := same(string(raw)), "|"+dir+" default 9.9.9\n"; got != want {
 		t.Errorf("plugin saw %q, want %q", got, want)
 	}
 }
