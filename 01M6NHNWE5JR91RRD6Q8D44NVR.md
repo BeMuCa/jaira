@@ -17,9 +17,10 @@ tags:
 blocked-by:
   - R6X6FH
 related: []
-commits: []
+commits:
+  - 57bc9c251d0744feee1f17a585f523ceccc28d93
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T21:38:35Z
+updated-at: 2026-11-05T21:38:38Z
 updated-by: Alexander Sacharov
 question: ""
 outcome-what: "panda-bobr/jaira-releases: README auf main, per PR #1 plugins.json ([]), schema/ (Kopien aus R6X6FH), CONTRIBUTING.md, .github/scripts/check_catalog.py mit 23 Unit-Tests und Workflow check-catalog (pull_request_target, nur plugins.json-PRs, Kommentar mit allen Problemen). Fixture-Repos panda-bobr/jaira-plugin-ci-fixture (Release ohne checksums.txt) und -norelease. Test-PR #2 zeigt die Ablehnung."
