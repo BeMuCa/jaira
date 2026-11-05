@@ -20,7 +20,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T21:41:19Z
+updated-at: 2026-11-05T21:41:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
@@ -50,3 +50,4 @@ claimed-at: 2026-11-05T21:39:09Z
 ## Progress
 - **2026-11-05 21:39 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/47752.sock
 - **2026-11-05 21:41 · Alexander Sacharov** — Vom Teamlead (47752) am 05.11. nachgereicht, in dieses Ticket gefaltet: AGENTS.md, Events auch aus TUI/web, external in JSON, merge_test external-Block, Install soll Manifest gegen checksums.txt pruefen. Branch ist auf upstream/master eebf52b0 (PR #124, docs/PLUGINS.md) vorgespult.
+- **2026-11-05 21:41 · Alexander Sacharov** — Offene Entscheidungen fuer die Person: keine. Selbst entschieden: (1) Plugin-Verzeichnis = $JAIRA_HOME/plugins, sonst ~/.jaira/plugins - wie settings.Path. (2) Nur das erste Argument ist die Plugin-id; 'jaira -C x jira' startet kein Plugin. (3) Eingebaute Befehle inkl. Aliase und help/completion gewinnen: Dispatch nur, wenn cobra das erste Argument nicht kennt. (4) Kein Plugin installiert -> bisheriger 'unknown command'-Fehler, Exit 2. (5) JAIRA_ROOT ausserhalb eines Repos leer, Plugin laeuft trotzdem (z.B. Login). (6) JAIRA_BOARD = Wert von --board/--board= in den Plugin-Argumenten (die unveraendert weitergehen), sonst 'default'. (7) Event-Abos liest jaira aus ~/.jaira/plugins/<id>/jaira-plugin.json (das Install ablegen wird, Punkt 5 des Teamleads) - kein 'manifest --json'-Prozess pro Schreibvorgang. Fehlt/kaputt -> keine Events. (8) Web: core/web hat heute keine Route, die ein Ticket bewegt/claimt/setzt (nur Epics) - es gibt dort nichts zu feuern; wenn eine kommt, ruft sie dieselbe Funktion. (9) TUI feuert nur Plugin-Events, nicht den Nutzer-Hook - der Hook-Vertrag bleibt wie er ist. (10) Pruefung des Manifests gegen checksums.txt gehoert zu 'jaira plugin install', das es noch nicht gibt - nur notiert, kein DoD hier.
