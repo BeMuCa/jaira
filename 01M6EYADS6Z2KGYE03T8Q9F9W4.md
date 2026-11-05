@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T17:55:21Z
+updated-at: 2026-11-05T17:55:30Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
@@ -48,3 +48,4 @@ claimed-at: 2026-11-05T17:54:30Z
 
 ## Progress
 - **2026-11-05 17:53 · BeMuCa** — Berk, 2026-11-05: (1) ohne erkannten Agenten sagt der Installer ausdruecklich, dass jaira trotzdem nutzbar ist - z. B. ein PM ohne Agent mit 'jaira web' (Zusammenhang H319TV). (2) Stand: V38STG ist auf master gemergt (install.sh und install.ps1 haben JAIRA_NO_ROLES), dieses Ticket baut darauf auf. (3) Windows: install.ps1 bekommt dieselbe Erkennung wie install.sh.
+- **2026-11-05 17:55 · BeMuCa** — Driver (q9f9w4-driver), before the plan: no decision left that only a person can take, so no conversational mode. Settled by default, open to disagreement: (a) keep copilot as target.go has it (.github/skills, ~/.copilot/skills, Also dirs) — the ticket's .agents/skills for copilot is the Vercel table, target.go's is from Copilot's own docs (E75R4Q); (b) name the Gemini entry gemini-cli as the goal does; (c) detection by each agent's own home folder (~/.claude, ~/.codex, ~/.cursor, ~/.gemini, ~/.config/opencode, ~/.copilot, ~/.pi, ~/.hermes), not by the shared ~/.agents; (d) the installer installs claude first so an agent that also reads ~/.claude/skills finds the roles there and skips via the existing Also rule; (e) the installer keeps --global only, as today. Pre-process checks the paths against each agent's own docs.
