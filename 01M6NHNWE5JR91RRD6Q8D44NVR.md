@@ -19,7 +19,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T12:05:26Z
+updated-at: 2026-11-05T12:05:30Z
 updated-by: Alexander Sacharov
 question: "Pushes nach GitHub sind dieser Sitzung verweigert. 1) (empfohlen) Alex fuehrt publish-1-before-merge.sh aus, merged den PR, dann publish-2-after-merge.sh und oeffnet den Test-PR. 2) Alex erlaubt dem Worker git push/gh repo create per Permission-Regel. Zwei Fixture-Repos statt einem - ok?"
 ---
@@ -45,7 +45,7 @@ question: "Pushes nach GitHub sind dieser Sitzung verweigert. 1) (empfohlen) Ale
 - [x] Repo jaira-releases lokal anlegen, README-Start-Commit auf main pushen
 - [x] plugins.json, schema/, CONTRIBUTING.md, check_catalog.py + Unit-Tests, Workflow auf feat/d44nvr
 - [x] Fixture-Repo sashasoft90/jaira-plugin-ci-fixture mit Release v0.0.1 ohne checksums.txt
-- [ ] Test-Branches (doppelte id, fehlendes Release, fehlende Pruefsumme) pushen, gh-Zeilen fuer Alex
+- [x] Test-Branches (doppelte id, fehlendes Release, fehlende Pruefsumme) pushen, gh-Zeilen fuer Alex
 
 ## Progress
 - **2026-11-05 10:23 · Alexander Sacharov** — Teamlead (05.11.2026): der Standard (R6X6FH, abgenommen) liegt noch nicht auf master, sondern auf origin/feat/r6x6fh: docs/PLUGINS.md und docs/schema/*.json - lesen mit 'git show origin/feat/r6x6fh:docs/PLUGINS.md'. Die Arbeit selbst gehoert in das Repo panda-bobr/jaira-releases; Alex ist dort admin. Ein Agent pusht seinen Branch und oeffnet keinen PR.
