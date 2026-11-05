@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T21:32:27Z
-updated-at: 2026-11-05T22:00:41Z
+updated-at: 2026-11-05T22:00:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54459
 claimed-at: 2026-11-05T21:33:03Z
@@ -43,7 +43,8 @@ question: "DoD 3 (clicks/scroll) is not a mod bug: Claude Code 2.1.318 switched 
   proof: Alex live on 2.1.318 after /tui fullscreen: peer messages arrive as '[shortened by jaira-cockpit] ... - full report: /cockpit report <ID>' and are clickable; path session.receive/prompt.submit (register.tsx:1146/1155), test 'a shortened message is rewritten on the delivery door too, and an attachment row is left alone'
 - [x] Kein Hinweis 'session.append hook was skipped' mehr fuer jaira-cockpit
   proof: register.tsx:1184 matcher door prompt|delivery; live claude -p 2.1.318 --plugin-dir: master mod logs 'session.append bypassed by cc-plugin-sec-default' + 'hook was skipped', this branch logs neither
-- [ ] Die Knoepfe im Cockpit-Panel ([ Overview ], [ N waiting for ... ]) reagieren in 2.1.318 wieder auf Klick, und das Panel scrollt nicht von selbst
+- [x] Die Knoepfe im Cockpit-Panel ([ Overview ], [ N waiting for ... ]) reagieren in 2.1.318 wieder auf Klick, und das Panel scrollt nicht von selbst
+  proof: Alex live on 2.1.318: clicks and scroll work after /tui fullscreen; cause ~/.claude.json fullscreenAutoDisabled {2.1.318, strikes 3}, no code change
 
 ## Options
 
