@@ -20,7 +20,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T21:59:53Z
+updated-at: 2026-11-05T21:59:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
@@ -59,7 +59,8 @@ review-check: "1. go build -o /tmp/j ./cmd/jaira  2. mkdir -p /tmp/h/plugins/dem
   proof: docs/AGENTS.md:8, docs/PLUGINS.md: Status, Writing (external in JSON), Events (Abo aus jaira-plugin.json, TUI-Moves)
 - [x] TUI-Moves blockieren die UI nicht: Events laufen in einer Warteschlange im Hintergrund, beim Beenden des Boards abgearbeitet; CLI bleibt synchron; Test
   proof: internal/cli/plugin.go:queueEvents/runBoard (board.go, home.go:openBoardAt); Test TestBoardEventsDoNotWaitForThePlugin (queued returns <1s, stop drains, CLI path synchronous)
-- [ ] set board=<x>, das die Lane wechselt, feuert auch 'move' (from_lane = alte Lane) mit den Lanes des neuen Boards; Test
+- [x] set board=<x>, das die Lane wechselt, feuert auch 'move' (from_lane = alte Lane) mit den Lanes des neuen Boards; Test
+  proof: internal/cli/tickets.go: set fires move when landed != ""; Test TestSetBoardThatChangesTheLaneFiresAMove (set then move, from_lane backlog, status_known/next_lane of the video board)
 - [ ] .exe-Suffix in plugin.Program durch einen Test abgedeckt, der auch auf Linux laeuft
 
 ## Options
