@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T21:32:27Z
-updated-at: 2026-11-05T21:33:07Z
+updated-at: 2026-11-05T21:34:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54459
 claimed-at: 2026-11-05T21:33:03Z
@@ -45,3 +45,4 @@ claimed-at: 2026-11-05T21:33:03Z
 
 ## Progress
 - **2026-11-05 21:33 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/47752.sock
+- **2026-11-05 21:34 · Alexander Sacharov** — Alex (05.11.2026, Screenshot): das Cockpit-Panel wird gezeichnet (1 worker | 0 review | ..., [ Overview ], [ 48 waiting for BeMuCa, berkc ]), aber kein Knopf ist anklickbar - nirgends; ausserdem springt die Scroll-Position des Menues beliebig. Also nicht nur session.append: Maus/Klick und Scroll im Panel sind in 2.1.318 ebenfalls kaputt. Auch /feedback zeigte in dieser Sitzung '(no content)'.
