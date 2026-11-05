@@ -21,10 +21,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T21:32:27Z
-updated-at: 2026-11-05T22:01:37Z
+updated-at: 2026-11-05T22:03:26Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-54459
-claimed-at: 2026-11-05T21:33:03Z
+claimed-by: DESKTOP-RFTCH11-9077
+claimed-at: 2026-11-05T22:03:26Z
 outcome-what: "session.append hook of jaira-cockpit now matches only door prompt|delivery; release note; test for the delivery and attachment doors"
 outcome-why: "the built-in cc-plugin-sec-default in 2.1.318 passes person plugins over on attachment/hook-context/compaction rows, and a hook without a matcher reported itself as skipped there"
 outcome-resolves: "the 'session.append hook was skipped' notice; dead clicks and scroll trace to the fullscreen renderer Claude Code turned off on this machine, not to the mod"
