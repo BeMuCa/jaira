@@ -18,7 +18,8 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T09:47:15Z
+updated-at: 2026-11-05T10:23:52Z
+updated-by: Alexander Sacharov
 ---
 
 # panda-bobr/jaira-plugin-template: lauffaehige Vorlage mit Beispielbefehl und Release-Pipeline
