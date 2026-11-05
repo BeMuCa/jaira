@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-05T09:42:36Z
+updated-at: 2026-11-05T09:42:38Z
 updated-by: berkc
 claimed-by: berk-ca-2068644
 claimed-at: 2026-11-05T09:41:19Z
@@ -35,7 +35,7 @@ review-gaps: |-
 test-verdict: "pass: scoped suites green (go test ./core/gitrepo ./internal/tui RC=0; ./internal/cli -run Create|Follows|Branch RC=0), DoD 1-6 proof names all exist in the tree, the two named tests PASS verbosely; full suite not run (scoped by orchestrator), behaviour in tmux taken from the worker's check on build 68dc5cf8"
 review-verdict: "Pass. 68dc5cf8 fixes both blockers in the right place with minimal changes, and adds nothing new: seenHunk resets per file, and the all-unavailable check reuses Repo.Diff's second return value. Each fix has a test that fails without it. The rest of the branch is unchanged since the review that accepted it. go test ./core/gitrepo ./internal/tui -count=1 is green; gofmt and vet are clean."
 review-round: 7
-review-check: "1. cd /home/berkc/code/X_General/jaira-EH6Z0N && go build -o /tmp/jaira-eh ./cmd/jaira  2. make the terminal at least 140 columns wide and 20 rows tall  3. run /tmp/jaira-eh in this repo and open a ticket that sits in signoff and has a branch with its handle  4. see on the right: title 'Diff  feat/... → master' and at its right end 'file 1/N  +A −D'  5. see each file start with a grey bar: ▌, folder dim, file name bold, '+a −d' at the right; an empty row before every file but the first  6. see a number gutter 'old new │'; added rows on a green band, removed rows on a red band across the whole pane; on a line changed in place the changed words have a darker band  7. press tab: title mark turns from ○ to ●, the diff border lights up  8. press ]: the next file's bar is at the top and the counter says file 2/N  9. press o: VS Code opens that file; the title right side says 'opened <path>:<line>'  10. open a ticket in signoff with no branch and no commits: the pane says 'No diff yet' centred under the title"
+review-check: "1. cd /home/berkc/code/X_General/jaira-EH6Z0N && go test ./internal/tui -count=1 -run 'TestHeaderLineIsTheFirstHunkOfEachFile|TestUnshowableCommitIsDiffUnavailableNotNoChanges' -v  2. see both PASS  3. go build -o /tmp/jaira-eh ./cmd/jaira  4. make the terminal at least 140 columns wide and 20 rows tall  5. run /tmp/jaira-eh in this repo and open a ticket in signoff that has a feat/<handle> branch  6. see on the right: title 'Diff  feat/... → master' and 'file 1/N  +A −D' at its right end  7. see each file start with a grey bar (folder dim, name bold, '+a −d' on the right), an 'old new │' gutter, added rows on a green band and removed rows on a red band  8. press tab, then ]: the next file's bar moves to the top and the counter says file 2/N  9. press o on a file bar whose first hunk starts at line 1: VS Code opens that file at line 1, and the title says 'opened <path>:1'  10. open a ticket in signoff with no branch and no commits: the pane says 'No diff yet'"
 ---
 
 # In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code
