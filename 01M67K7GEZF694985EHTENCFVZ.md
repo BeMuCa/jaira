@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-30T23:44:56Z
-updated-at: 2026-11-05T09:43:35Z
+updated-at: 2026-11-05T09:43:37Z
 updated-by: berkc
 claimed-by: berk-ca-1989860
 claimed-at: 2026-11-05T09:31:17Z
@@ -34,6 +34,19 @@ review-gaps: |-
 test-verdict: "pass: touched packages green (RC=0, three hangers skipped in internal/cli), DoD 1-9 verified in the tree, receipt gate and show payload exercised on a scratch board"
 review-verdict: "the diff meets all nine DoD items; no defects found. go vet clean; go test core/lane core/gate core/role core/board core/shipped and the internal/cli receipt/for-lane/lanes-show tests pass; hand run on a scratch board confirmed refusal without receipt, receipt write, second receipt refused, script_done, new key after send-back. Four notes, none blocking"
 review-round: 3
+review-check: |-
+  1. cd into a scratch git repo, run: jaira init
+  2. mkdir scripts; printf '#!/bin/sh\necho sent $JAIRA_IDEMPOTENCY_KEY\n' > scripts/send.sh; chmod +x scripts/send.sh
+  3. create .jaira/lanes/send.md with frontmatter id: send, name: Send, agentic: true, model-tier: cheap, script: scripts/send.sh, receipt: required, and body 'Send once.'
+  4. add a line 'send' right after 'in-progress' in .jaira/lanes/order
+  5. jaira lanes show send -> shows Script: and Receipt: required lines
+  6. jaira create x --goal g --context c --dod d --assignee me; then jaira move <id> --to send --force
+  7. jaira show <id> --for-lane send -> a '## Skill / script' block with a run line containing JAIRA_IDEMPOTENCY_KEY=<ULID>-send-r1
+  8. jaira move <id> --to review -> refused: lane "send" needs a receipt for round 1
+  9. jaira receipt <id> msg-1 -> 'Receipt for <id> in send: ...-send-r1 msg-1'; run it again -> refused, exit 3
+  10. jaira show <id> --for-lane send -> says the script already ran, do not run it again
+  11. jaira move <id> --to review -> succeeds
+  12. jaira move <id> --to send, then jaira show <id> --for-lane send -> key now ends -r2 and the run line is back
 ---
 
 # Neue Lane-Arten: eine Lane, die nur einen Skill startet, und Automations-Lanes (Artefakte, E-Mail, API-Aufrufe, Telegram senden/empfangen, Video-Upload)
