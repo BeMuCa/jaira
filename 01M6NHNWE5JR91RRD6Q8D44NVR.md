@@ -1,7 +1,7 @@
 ---
 id: 01M6NHNWE5JR91RRD6Q8D44NVR
 title: "panda-bobr/jaira-releases: plugins.json, CI-Pruefung und CONTRIBUTING"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,14 +19,14 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T12:13:27Z
+updated-at: 2026-11-05T12:13:31Z
 updated-by: Alexander Sacharov
 question: ""
 outcome-what: "panda-bobr/jaira-releases: README auf main, per PR #1 plugins.json ([]), schema/ (Kopien aus R6X6FH), CONTRIBUTING.md, .github/scripts/check_catalog.py mit 23 Unit-Tests und Workflow check-catalog (pull_request_target, nur plugins.json-PRs, Kommentar mit allen Problemen). Fixture-Repos panda-bobr/jaira-plugin-ci-fixture (Release ohne checksums.txt) und -norelease. Test-PR #2 zeigt die Ablehnung."
 outcome-why: "Ein Plugin-Autor soll seinen Eintrag per PR einreichen koennen und vor jedem Menschen erfahren, was fehlt; der Katalog aus R6X6FH existierte nur als leeres Repo."
 outcome-resolves: "DoD 1 (main 44d293d) und DoD 2 (PR #2, Run 42024115800, Bot-Kommentar mit doppelter id, fehlendem Release, fehlender Pruefsumme)"
 review-summary: "Im Repo panda-bobr/jaira-releases liegt auf main (44d293d, Merge PR #1): plugins.json als leeres Array, schema/ (byte-gleiche Kopien von docs/schema/*.json aus R6X6FH), README, CONTRIBUTING.md (Fork, einen Eintrag anhaengen, PR; Regeln fuer id/repo/Release-Assets) und der Workflow check-catalog. Der laeuft auf pull_request_target nur fuer PRs, die plugins.json aendern, checkt main aus und liest plugins.json des PRs nur als Daten (git show) - PR-Code wird nie ausgefuehrt. .github/scripts/check_catalog.py prueft nur neue/geaenderte Eintraege: Schema, id eindeutig/ohne 'jaira'/kein jaira-Befehl, Repo existiert und ist oeffentlich, PR-Autor ist Besitzer oder oeffentliches Org-Mitglied, jaira-plugin.json am Default-Branch passt zum Schema und zur id, Release v<version> hat sechs Binaries und checksums.txt mit einer Zeile je Binary; alle Probleme landen gesammelt in einem Bot-Kommentar, der bei jedem Push ersetzt wird. Test-PR #2 (Entwurf) zeigt die Ablehnung mit doppelter id, fehlendem Release und fehlender checksums.txt; 23 Unit-Tests gruen."
-round: 2
+round: 3
 review-gaps: |-
   note: Defekt auf main: ein HTTP-Fehler ausser 404 (Rate-Limit 403, 5xx) bricht check_catalog.py mit Traceback ab, report.md entsteht nicht und der Kommentar-Schritt postet einen leeren Kommentar (nur der Marker). Der Fix (critique Runde 1) liegt fertig auf fix/d44nvr-errors (5bace82, 310de33), ist aber nur im Scratchpad-Clone und NICHT gepusht (git ls-remote: nur main, feat/d44nvr, test/d44nvr-catalog-check). Kein Blocker nur, weil beide DoD-Punkte erfuellt sind und der Pfad selten ist.
   note: Uebernahme eines fremden Eintrags faellt nicht auf: aendert ein PR das repo eines bestehenden Eintrags auf ein eigenes Repo mit gleicher Manifest-id, besteht die Pruefung - verglichen wird nur mit dem neuen repo, nicht mit dem Besitzer des alten. CONTRIBUTING sagt 'leave the other entries alone', das Skript erzwingt es nicht; heute faengt es nur der Maintainer beim Merge.
