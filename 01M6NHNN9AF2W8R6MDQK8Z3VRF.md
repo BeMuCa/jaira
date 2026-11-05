@@ -20,7 +20,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T22:05:50Z
+updated-at: 2026-11-05T22:05:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
@@ -29,7 +29,10 @@ outcome-why: "Standard docs/PLUGINS.md (R6X6FH) verlangt Dispatch und Events; Te
 outcome-resolves: Plugins lassen sich ohne Aenderung am Kern starten und hoeren Schreibvorgaenge; Install und Katalog bleiben ein spaeteres Ticket.
 review-summary: "jaira <id> startet ~/.jaira/plugins/<id>/jaira-<id> (.exe auf Windows) mit allen Argumenten, stdio, JAIRA_ROOT/BOARD/VERSION und gibt dessen Exit-Code zurueck - nur wenn cobra den Befehl nicht kennt (help/completion/Aliase eingeschlossen), nie aus PATH. create/claim/set rufen nach dem Schreiben jedes Plugin, dessen jaira-plugin.json das Event nennt, als 'jaira-<id> event <name>' mit show --json + actor + from_lane auf stdin, 5 s Timeout, Ausgabe verworfen, JAIRA_IN_EVENT=1 verhindert Kettenreaktionen. move feuert aus core/move.Move ueber den Hook move.Moved, damit auch TUI-Moves ankommen; im Terminal-Board laufen die Events ueber eine Warteschlange mit einer Goroutine, die beim Beenden geleert wird; die CLI bleibt synchron. set board=<x>, das die Lane wechselt, feuert zusaetzlich move. external steht in show/list --json; der Merge uebernimmt external jetzt von der Seite, die es geaendert hat (Doc.Entry/SetEntry statt Konflikt). Doku AGENTS.md/PLUGINS.md und Release-Note angepasst."
 round: 3
-review-gaps: "round 3 (233ffbff): nothing to remove - runBoard has two callers (board.go, home.go:openBoardAt), program(id, goos) exists for the Windows test; earlier rounds: folded the event payload into showJSON, claim loads lanes only for a listening plugin; left the pre-existing JAIRA_HOME lookup per package and hook.Run's own timeout"
+review-gaps: |-
+  note: die TUI-Warteschlange hat 64 Plaetze - haengen Plugins laenger, blockiert der 65. Move im Board doch, bis einer frei wird
+  note: ein per Signal beendetes Plugin liefert ExitCode -1, jaira beendet sich dann mit 255 statt mit einem eigenen Code
+  note: der TUI-Pfad (Warteschlange im echten Board) ist nur per Unit-Test geprueft, nicht im laufenden Board
 test-verdict: "pass (round 2): go test -race -timeout 20m ./... RC=0 after go clean -testcache, and RC=0 again after merging upstream/master 3e3e1aee; DoD 8-10 proof tests run green (TestBoardEventsDoNotWaitForThePlugin, TestSetBoardThatChangesTheLaneFiresAMove, TestProgramOnWindowsIsTheExe); DoD 1-7 checked on round 1 with the built binary on a scratch board and still green in the suite. TUI not driven by hand: queueEvents is checked through firePlugins as runBoard wires it"
 review-verdict: "Diff erfuellt alle 7 DoD-Punkte; keine Defekte gefunden. go test fuer core/plugin, internal/cli, core/move, core/merge, core/ticket gruen; Handtest mit Fake-Plugin bestaetigt Argumente, Env, Exit-Code 7 und create-Event-Payload."
 review-round: 2
