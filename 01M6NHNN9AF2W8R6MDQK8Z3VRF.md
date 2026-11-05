@@ -20,7 +20,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T21:58:06Z
+updated-at: 2026-11-05T21:58:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
@@ -57,6 +57,9 @@ review-check: "1. go build -o /tmp/j ./cmd/jaira  2. mkdir -p /tmp/h/plugins/dem
   proof: core/merge/merge_test.go:TestMergeExternalChangedOnOneSideWins; Fix core/merge/merge.go:mergeOpaque + core/ticket/frontmatter.go:Entry/SetEntry
 - [x] docs/AGENTS.md:8 ('no plugin API') und docs/PLUGINS.md (Status, external-Satz) beschreiben den neuen Stand und verlinken docs/PLUGINS.md
   proof: docs/AGENTS.md:8, docs/PLUGINS.md: Status, Writing (external in JSON), Events (Abo aus jaira-plugin.json, TUI-Moves)
+- [ ] TUI-Moves blockieren die UI nicht: Events laufen in einer Warteschlange im Hintergrund, beim Beenden des Boards abgearbeitet; CLI bleibt synchron; Test
+- [ ] set board=<x>, das die Lane wechselt, feuert auch 'move' (from_lane = alte Lane) mit den Lanes des neuen Boards; Test
+- [ ] .exe-Suffix in plugin.Program durch einen Test abgedeckt, der auch auf Linux laeuft
 
 ## Options
 
