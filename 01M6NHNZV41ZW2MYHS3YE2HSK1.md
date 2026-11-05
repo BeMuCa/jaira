@@ -18,15 +18,13 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T12:25:22Z
+updated-at: 2026-11-05T12:25:26Z
 updated-by: Alexander Sacharov
 blocked-reason: "DoD 2 wartet auf die Katalog-CI aus D44NVR (panda-bobr/jaira-releases, noch nicht auf main)"
 outcome-what: "panda-bobr/jaira-plugin-template@fc5d7e1: Go-Plugin jaira-hello (greet liest jaira list --json und schreibt jaira note; manifest --json aus eingebettetem jaira-plugin.json; Exit 3 bei zu altem JAIRA_VERSION), Tests inkl. Manifest-Regeln, goreleaser (6 Binaries, checksums.txt, jaira-plugin.json), Actions test und release-auf-Tag mit Tag==version-Pruefung, README mit drei Schritten bis Katalog-PR. Demo panda-bobr/jaira-hello-demo v0.1.0; Katalog-PR panda-bobr/jaira-releases#4."
 outcome-why: "Plugin-Autoren sollen ohne eigene Release-Technik ein Release bekommen, das die Katalog-CI aus D44NVR ohne Aenderung annimmt (Standard R6X6FH, docs/PLUGINS.md)."
 outcome-resolves: "DoD 1: Tag v0.1.0 im unveraenderten Demo-Repo erzeugte alle 6 Assets + checksums.txt (Run 42011801567). DoD 2: check-catalog auf PR #4 gruen (Run 42026722958)."
-review-summary: |-
-  template .github/workflows/test.yml:4-6 push auf alle Branches plus pull_request laesst jeden PR aus einem Branch des Repos zweimal laufen - push nur auf main beschraenken
-  template main.go:73-75 Unterbefehl version/--version steht in keinem Standard und kein Aufrufer braucht ihn (manifest --json traegt version) - entfernen, eine Sache weniger, die ein Autor fuer Pflicht haelt
+review-summary: none
 round: 2
 ---
 
