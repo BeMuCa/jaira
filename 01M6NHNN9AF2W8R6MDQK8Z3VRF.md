@@ -20,7 +20,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T21:56:37Z
+updated-at: 2026-11-05T21:56:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
@@ -36,6 +36,7 @@ review-gaps: |-
 test-verdict: "pass: go test ./... -race after go clean -testcache RC=0; DoD 1-7 proofs opened and their tests run; built binary on a scratch board: 'echo hello | jaira demo pull --board ops \"two words\"' passed args, stdin, JAIRA_ROOT/BOARD=ops/VERSION=0.9.9 and exit 6; 'jaira list' stayed built-in; create/set/claim/move each reached the plugin with in_event=1, from_lane backlog on move, external demo:X-1; a plugin exiting 1 failed no command. TUI moves not driven by hand - covered by TestMovedHearsEveryWrittenMove, all three TUI sites call move.Move"
 review-verdict: "Diff erfuellt alle 7 DoD-Punkte; keine Defekte gefunden. go test fuer core/plugin, internal/cli, core/move, core/merge, core/ticket gruen; Handtest mit Fake-Plugin bestaetigt Argumente, Env, Exit-Code 7 und create-Event-Payload."
 review-round: 2
+review-check: "1. go build -o /tmp/j ./cmd/jaira  2. mkdir -p /tmp/h/plugins/demo und dort jaira-demo anlegen: #!/bin/sh / if [ \"$1\" = event ]; then cat > /tmp/h/ev-$2.json; exit 0; fi / echo \"args=$* board=$JAIRA_BOARD\"; exit 7 - dann chmod +x  3. echo '{\"id\":\"demo\",\"events\":[\"create\"]}' > /tmp/h/plugins/demo/jaira-plugin.json  4. in einem Repo mit .jaira: JAIRA_HOME=/tmp/h /tmp/j demo x --board=foo; echo $? -> \"args=x --board=foo board=foo\" und 7  5. JAIRA_HOME=/tmp/h /tmp/j create T --goal g --context c --dod d -> /tmp/h/ev-create.json existiert und enthaelt id, title, actor, external  6. JAIRA_HOME=/tmp/h /tmp/j list --json | jq '.[0].external' -> Feld vorhanden  7. Merge: go test ./core/merge -run TestMergeExternalChangedOnOneSideWins"
 ---
 
 # jaira <id> startet ein installiertes Plugin
