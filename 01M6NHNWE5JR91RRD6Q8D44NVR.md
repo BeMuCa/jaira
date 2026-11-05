@@ -19,15 +19,13 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T12:06:58Z
+updated-at: 2026-11-05T12:07:08Z
 updated-by: Alexander Sacharov
 question: "Pushes nach GitHub sind dieser Sitzung verweigert. 1) (empfohlen) Alex fuehrt publish-1-before-merge.sh aus, merged den PR, dann publish-2-after-merge.sh und oeffnet den Test-PR. 2) Alex erlaubt dem Worker git push/gh repo create per Permission-Regel. Zwei Fixture-Repos statt einem - ok?"
 outcome-what: "panda-bobr/jaira-releases: README auf main, per PR #1 plugins.json ([]), schema/ (Kopien aus R6X6FH), CONTRIBUTING.md, .github/scripts/check_catalog.py mit 23 Unit-Tests und Workflow check-catalog (pull_request_target, nur plugins.json-PRs, Kommentar mit allen Problemen). Fixture-Repos panda-bobr/jaira-plugin-ci-fixture (Release ohne checksums.txt) und -norelease. Test-PR #2 zeigt die Ablehnung."
 outcome-why: "Ein Plugin-Autor soll seinen Eintrag per PR einreichen koennen und vor jedem Menschen erfahren, was fehlt; der Katalog aus R6X6FH existierte nur als leeres Repo."
 outcome-resolves: "DoD 1 (main 44d293d) und DoD 2 (PR #2, Run 42024115800, Bot-Kommentar mit doppelter id, fehlendem Release, fehlender Pruefsumme)"
-review-summary: |-
-  jaira-releases .github/scripts/check_catalog.py github_fetch: jeder HTTP-Fehler ausser 404 (403 Rate-Limit, 5xx) und URLError fliegt als Exception durch run(), report.md entsteht nie, und check-catalog.yml postet einen Kommentar mit nur dem Marker - der Autor erfaehrt nichts. Statt dessen in check_entry die Fehler fangen und als Problem 'GitHub answered <code> for <url>; re-run the check' melden, und im Workflow den Kommentar-Schritt nur mit vorhandenem report.md laufen lassen
-  jaira-releases .github/scripts/check_catalog.py JAIRA_COMMANDS: 'event' und 'manifest' streichen - das sind Unterbefehle des Plugin-Programms (jaira-<id> event / manifest), keine jaira-Befehle; eine Plugin-id 'event' kollidiert mit nichts. plugin/plugins/install/uninstall/version bleiben als Reserve fuer 8Z3VRF
+review-summary: none
 round: 2
 ---
 
