@@ -20,7 +20,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T21:51:51Z
+updated-at: 2026-11-05T21:51:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
@@ -73,3 +73,4 @@ round: 2
 - **2026-11-05 21:45 · Alexander Sacharov** — Stand: core/plugin (Program/Run/Subscribers/Fire) und internal/cli/plugin.go (runPlugin in Execute, firePlugins) gebaut. Plan-Schritt 1 (ticketJSON nach core ziehen) verworfen: stattdessen ruft core/move.Move nach jedem geschriebenen Move den Hook move.Moved, den internal/cli in init() setzt - deckt CLI und TUI (model.go x2, signoff.go) mit einer Stelle ab, ohne 30 Aufrufstellen umzuziehen. Gefunden: core/merge mergeOpaque meldet einen Konflikt, wenn nur die andere Seite external aendert - widerspricht docs/PLUGINS.md ('whichever side changed it wins'); wird in DoD 6 behoben.
 - **2026-11-05 21:51 · Alexander Sacharov** — critique (Runde 1): core/plugin/plugin.go:30 var Events has no caller (the closed list lives in the schema and the doc) - delete it
 internal/cli/plugin.go:firePlugins checks plugin.Subscribers and plugin.Fire scans the directory again and stats every Program a second time - let Subscribers return nil inside an event (JAIRA_IN_EVENT) and pass its ids into Fire(ids, event, payload, env), so one scan per write and no JSON built inside an event. Stehen gelassen: JAIRA_HOME-Logik in plugin.Dir dupliziert settings.Path - das gleiche Muster steht in 7 Paketen (session, selfupdate, project, identity, lane, ticket/store), eigenes Paket ist Konvention. move.Moved als Paketvariable: gleiches Muster wie release.Current, deckt CLI+TUI an einer Stelle.
+- **2026-11-05 21:51 · Alexander Sacharov** — critique (Runde 2): beide Befunde aus Runde 1 erledigt (b154df66) - Events geloescht, Subscribers einmal pro Schreibvorgang und leer innerhalb eines Events. Nichts Neues.
