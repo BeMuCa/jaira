@@ -18,7 +18,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T10:24:46Z
+updated-at: 2026-11-05T10:27:49Z
 updated-by: Alexander Sacharov
 ---
 
@@ -46,3 +46,4 @@ updated-by: Alexander Sacharov
 - **2026-11-05 10:24 · Alexander Sacharov** — Frage 1 (DoD 2 / D44NVR): 1) E2HSK1 auf D44NVR blockieren und D44NVR zuerst bauen (Recommended) - DoD bleibt ehrlich, eine Runde Wartezeit. 2) Vorlage jetzt bauen, DoD 1 abhaken, E2HSK1 danach in blocked bis D44NVR - Vorlage steht frueher, Ticket haengt offen. 3) DoD 2 ersetzen durch lokale Pruefung gegen das Format aus docs/PLUGINS.md - sofort fertig, aber keine echte Katalog-CI.
 - **2026-11-05 10:24 · Alexander Sacharov** — Frage 2 (fremdes Repo): Darf der Worker in panda-bobr/jaira-plugin-template direkt nach main pushen und zum Vorfuehren v0.1.0 taggen (oeffentliches Release)? 1) Ja, push nach main + Tag v0.1.0 im Template selbst (Recommended) - einfachste Vorfuehrung, Release liegt danach im Template (spaeter loeschbar). 2) Push nach main, aber Vorfuehrung in einem Wegwerf-Repo aus der Vorlage (panda-bobr/jaira-hello-demo) - Template bleibt ohne Release, ein Repo mehr. 3) Nur Branch pushen, Alex merged und taggt selbst - kein Push nach main durch den Agenten.
 - **2026-11-05 10:24 · Alexander Sacharov** — docs/PLUGINS.md (R6X6FH, done) steht nur auf feat/r6x6fh, nicht auf master. Die Vorlage richtet sich nach dem Stand dc278130 dort.
+- **2026-11-05 10:27 · Alexander Sacharov** — Alex (05.11.2026, via Teamlead): Frage 2 -> Push in main von panda-bobr/jaira-plugin-template erlaubt, KEIN Tag/Release im Template selbst; die Demonstration laeuft in einem Einweg-Repo panda-bobr/jaira-hello-demo, angelegt aus dem Template (gh repo create --template), dort Tag v0.1.0. Frage 1 entscheidet der Teamlead: D44NVR laeuft bereits parallel in eigenem Tab, also Template jetzt bauen, DoD 1 abhaken, DoD 2 pruefen, sobald die CI von D44NVR auf main von jaira-releases liegt; bis dahin E2HSK1 nach blocked mit Verweis auf D44NVR.
