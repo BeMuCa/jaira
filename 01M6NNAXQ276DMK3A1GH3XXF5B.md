@@ -22,8 +22,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T10:51:07Z
-updated-at: 2026-11-05T10:51:24Z
+updated-at: 2026-11-05T10:51:26Z
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-85123
+claimed-at: 2026-11-05T10:51:26Z
 ---
 
 # jaira web: ein Ticket laesst sich per Knopf aus einem Epic nehmen, auch auf dem Handy
