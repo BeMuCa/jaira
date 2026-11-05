@@ -19,8 +19,9 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T10:33:10Z
+updated-at: 2026-11-05T10:33:14Z
 updated-by: Alexander Sacharov
+question: "Pushes nach GitHub sind dieser Sitzung verweigert. 1) (empfohlen) Alex fuehrt publish-1-before-merge.sh aus, merged den PR, dann publish-2-after-merge.sh und oeffnet den Test-PR. 2) Alex erlaubt dem Worker git push/gh repo create per Permission-Regel. Zwei Fixture-Repos statt einem - ok?"
 ---
 
 # panda-bobr/jaira-releases: plugins.json, CI-Pruefung und CONTRIBUTING
