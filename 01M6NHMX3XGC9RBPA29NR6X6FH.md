@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:46:40Z
-updated-at: 2026-11-05T10:12:36Z
+updated-at: 2026-11-05T10:12:40Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-21000
 claimed-at: 2026-11-05T09:47:52Z
@@ -38,7 +38,11 @@ outcome-why: "Wer ein Plugin schreiben will, braucht einen Ort mit allen drei Ka
 outcome-resolves: Alle vier DoD-Punkte; jaira selbst startet noch keine Plugins (8Z3VRF und Folgetickets im Epic plugins)
 review-summary: "Nur Doku, kein Code: neue docs/PLUGINS.md legt den Plugin-Standard fest (eigenes Programm jaira-<id> im Repo des Autors, Aufruf 'jaira <id> args' nach ~/.jaira/plugins/<id>/, Umgebung JAIRA_ROOT/BOARD/VERSION, Schreiben nur ueber die CLI, Feld external als '<id>:<key>', Geheimnisse in ~/.jaira/secrets.json ab 3Q92JY, Exit-Codes wie jaira, Events create/move/claim/set mit 5 s Timeout und JAIRA_IN_EVENT gegen Schleifen, Web-Seiten unter /plugins/<id>/ und CGI-artige api, Manifest, Releases, Weg in den Katalog per Fork+PR) samt Begruendung (kein Go-plugin, kein eingebautes Jira). Dazu zwei JSON-Schemas (Draft 2020-12) fuer jaira-plugin.json und einen plugins.json-Eintrag. Die Verweise auf den Code stimmen: FieldExternal und opaker Merge (core/merge/merge.go:153), Hook-Timeout 5 s und JAIRA_ROOT (core/hook/hook.go:24,64), settings.json mit 0644 (core/settings/settings.go:340), Exit-Code-Tabelle aus docs/COMMANDS.md."
 round: 4
-review-gaps: none - Runde 2 nur Doku/Schema; Exit-Code-Tabelle wiederholt COMMANDS.md bewusst; Hook-Timeout zitiert core/hook statt es zu wiederholen
+review-gaps: |-
+  note: core/merge/merge_test.go:140 nutzt external als YAML-Block (provider/key), die Doku legt einen String '<id>:<key>' fest - der opake Merge traegt beides, aber Test und Standard zeigen zwei Formen
+  note: nichts verlinkt docs/PLUGINS.md (README, docs/AGENTS.md, docs/COMMANDS.md) - wer das Dokument nicht kennt, findet es nicht; docs/AGENTS.md:8 sagt weiter 'no plugin API'
+  note: Events nennen nur die CLI-Befehle; ob ein move aus der TUI oder aus jaira web ebenfalls ein Event ausloest, sagt die Doku nicht - das muss 8Z3VRF festlegen
+  note: Events laufen nacheinander mit je 5 s; bei mehreren haengenden Plugins wartet ein jaira move entsprechend - von critique bewusst an 8Z3VRF uebergeben
 test-verdict: "pass: go test ./... RC=0; DoD 1-4 im Baum geprueft; beide Schemas Draft-2020-12-gueltig, alle JSON-Beispiele der Doku (Manifest, events-, web-Fragment, Katalogeintrag) validieren; abgelehnt werden id Bad_ID, events [delete], page path ../x und /x"
 review-verdict: "Alle drei DoD-Punkte erfuellt: PLUGINS.md deckt Aufruf, Umgebung, Schreibweg, external, Geheimnisse, Exit-Codes, Manifest, Katalogweg und die Go-plugin-Absage ab; beide Schemas liegen im Repo. Geprueft: jaira set external=jira:PROJ-123 und note --json funktionieren wie beschrieben, JAIRA_ROOT gibt es fuer Hooks, external wird beim Merge opak behandelt. Kein Blocker; der wichtigste Hinweis ist, dass external in der JSON-Lesesicht fehlt."
 review-round: 2
