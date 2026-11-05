@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T21:32:27Z
-updated-at: 2026-11-05T21:47:38Z
+updated-at: 2026-11-05T21:47:42Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-54459
 claimed-at: 2026-11-05T21:33:03Z
@@ -31,7 +31,7 @@ outcome-resolves: "the 'session.append hook was skipped' notice; dead clicks and
 review-summary: "none"
 round: 3
 review-gaps: "none - the diff is one matcher, one comment block, one removed check, one test and the release note; left alone the tsc error at register.tsx:381 that was there before this change (null is not void)"
-test-verdict: "fail: TestEveryInstalledFileIsAShippedVersion - shipped.sha256 lacks the new versions of filter.ts and register.tsx"
+test-verdict: "pass for what a machine can check: go test ./... rc=0, claude plugin test 176/176, DoD 2 verified live on 2.1.318 (notice with the master mod, none with the branch). DoD 1: rewriting on door prompt|delivery is proven by a test, the clickable line needs a person in the fullscreen renderer. DoD 3: no code change possible - fullscreen is switched off on this machine (fullscreenAutoDisabled)"
 ---
 
 # jaira-cockpit: session.append wird seit Claude Code 2.1.318 nicht mehr erreicht
