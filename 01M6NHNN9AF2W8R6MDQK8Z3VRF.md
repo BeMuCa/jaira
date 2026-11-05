@@ -20,7 +20,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T22:05:58Z
+updated-at: 2026-11-05T22:06:02Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
@@ -36,7 +36,7 @@ review-gaps: |-
 test-verdict: "pass (round 2): go test -race -timeout 20m ./... RC=0 after go clean -testcache, and RC=0 again after merging upstream/master 3e3e1aee; DoD 8-10 proof tests run green (TestBoardEventsDoNotWaitForThePlugin, TestSetBoardThatChangesTheLaneFiresAMove, TestProgramOnWindowsIsTheExe); DoD 1-7 checked on round 1 with the built binary on a scratch board and still green in the suite. TUI not driven by hand: queueEvents is checked through firePlugins as runBoard wires it"
 review-verdict: "Diff erfuellt alle 10 DoD-Punkte; keine Defekte. go test -race core/plugin, core/move, core/merge, core/ticket gruen; internal/cli und internal/tui komplett gruen; Handtest mit Fake-Plugin: Argumente, JAIRA_BOARD aus --board=, Exit-Code 7, unbekannter Befehl ohne Plugin weiter Exit 2, Events create/claim/set/move mit actor und from_lane (backlog -> todo)."
 review-round: 3
-review-check: "1. go build -o /tmp/j ./cmd/jaira  2. mkdir -p /tmp/h/plugins/demo und dort jaira-demo anlegen: #!/bin/sh / if [ \"$1\" = event ]; then cat > /tmp/h/ev-$2.json; exit 0; fi / echo \"args=$* board=$JAIRA_BOARD\"; exit 7 - dann chmod +x  3. echo '{\"id\":\"demo\",\"events\":[\"create\"]}' > /tmp/h/plugins/demo/jaira-plugin.json  4. in einem Repo mit .jaira: JAIRA_HOME=/tmp/h /tmp/j demo x --board=foo; echo $? -> \"args=x --board=foo board=foo\" und 7  5. JAIRA_HOME=/tmp/h /tmp/j create T --goal g --context c --dod d -> /tmp/h/ev-create.json existiert und enthaelt id, title, actor, external  6. JAIRA_HOME=/tmp/h /tmp/j list --json | jq '.[0].external' -> Feld vorhanden  7. Merge: go test ./core/merge -run TestMergeExternalChangedOnOneSideWins"
+review-check: "1. cd in dieses Repo, dann: go build -o /tmp/j ./cmd/jaira  2. mkdir -p /tmp/h/plugins/demo  3. Datei /tmp/h/plugins/demo/jaira-demo anlegen: #!/bin/sh / if [ \"$1\" = event ]; then cat > /tmp/h/ev-$2.json; exit 0; fi / echo \"args=$* board=$JAIRA_BOARD\"; exit 7 - dann chmod +x  4. echo '{\"id\":\"demo\",\"events\":[\"create\",\"move\",\"set\"]}' > /tmp/h/plugins/demo/jaira-plugin.json  5. in einem Repo mit .jaira: JAIRA_HOME=/tmp/h /tmp/j demo x --board=foo; echo $? -> zeigt \"args=x --board=foo board=foo\" und 7  6. JAIRA_HOME=/tmp/h /tmp/j create T --goal g --context c --dod d -> /tmp/h/ev-create.json existiert, enthaelt actor und external  7. JAIRA_HOME=/tmp/h /tmp/j move <id> --to todo -> /tmp/h/ev-move.json hat from_lane \"backlog\", status \"todo\"  8. JAIRA_HOME=/tmp/h /tmp/j board, Ticket mit der Tastatur verschieben -> Board reagiert sofort, nach dem Beenden ist ev-move.json neu  9. go test ./core/merge -run TestMergeExternalChangedOnOneSideWins -> ok"
 ---
 
 # jaira <id> startet ein installiertes Plugin
