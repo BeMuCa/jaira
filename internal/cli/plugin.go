@@ -95,7 +95,11 @@ func init() {
 // the change and the lane the ticket left (empty for every event but move).
 // Nothing about it reaches the command: see plugin.Fire.
 func firePlugins(event string, s *ticket.Store, t *ticket.Ticket, from string, lanes *lane.Set) {
-	if t == nil || len(plugin.Subscribers(event)) == 0 {
+	if t == nil {
+		return
+	}
+	ids := plugin.Subscribers(event)
+	if len(ids) == 0 {
 		return
 	}
 	j := ticketJSON(t, lanes)
@@ -108,7 +112,7 @@ func firePlugins(event string, s *ticket.Store, t *ticket.Ticket, from string, l
 	if err != nil {
 		return
 	}
-	plugin.Fire(event, payload, plugin.Env{
+	plugin.Fire(ids, event, payload, plugin.Env{
 		Root: s.Root, Board: cmp.Or(t.Board, lane.DefaultBoardName), Version: release.Current,
 	})
 }

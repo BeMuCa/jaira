@@ -26,9 +26,6 @@ import (
 // two plugins answering each other — would never stop.
 const InEventVar = "JAIRA_IN_EVENT"
 
-// Events are the writes a plugin can subscribe to; the list is closed.
-var Events = []string{"create", "move", "claim", "set"}
-
 // eventTimeout is the cap docs/PLUGINS.md promises, the same as a hook's: an
 // event is a courtesy on the end of a command somebody is waiting for.
 const eventTimeout = 5 * time.Second
@@ -111,7 +108,13 @@ func Run(prog string, args []string, env Env) (int, error) {
 // Subscribers are the ids of the installed plugins whose manifest names
 // event, in order of their ids. A plugin without a readable manifest, or whose
 // manifest names another id, hears nothing: the manifest is the subscription.
+//
+// Inside an event — JAIRA_IN_EVENT=1 — there are none, so a write a plugin
+// makes from its own event calls nobody.
 func Subscribers(event string) []string {
+	if os.Getenv(InEventVar) == "1" {
+		return nil
+	}
 	dir := Dir()
 	if dir == "" {
 		return nil
@@ -145,23 +148,22 @@ func Subscribers(event string) []string {
 	return ids
 }
 
-// Fire runs `jaira-<id> event <name>` for every subscriber, one after the
-// other, with payload on stdin. Nothing about a plugin's run reaches the
+// Fire runs `jaira-<id> event <name>` for each of ids — what Subscribers
+// returned — one after the other, with payload on stdin. Nothing about a plugin's run reaches the
 // caller: the write has already happened, so a plugin that fails, times out
 // or is missing changes nothing about the command's result. Its output is
 // discarded, as a hook's is, so it never mixes into JSON an agent is parsing.
-//
-// Inside an event — JAIRA_IN_EVENT=1 — it does nothing.
-func Fire(event string, payload []byte, env Env) {
-	if os.Getenv(InEventVar) == "1" {
-		return
-	}
-	for _, id := range Subscribers(event) {
-		fireOne(Program(id), event, payload, env)
+func Fire(ids []string, event string, payload []byte, env Env) {
+	for _, id := range ids {
+		fireOne(id, event, payload, env)
 	}
 }
 
-func fireOne(prog, event string, payload []byte, env Env) {
+func fireOne(id, event string, payload []byte, env Env) {
+	prog := Program(id)
+	if prog == "" {
+		return
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), eventTimeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, prog, "event", event)

@@ -102,7 +102,7 @@ func TestFireHandsThePluginTheEvent(t *testing.T) {
 	root := t.TempDir()
 	out := filepath.Join(t.TempDir(), "seen")
 	install(t, h, "jira", `{ echo "$1 $2 $JAIRA_IN_EVENT $JAIRA_BOARD $(pwd)"; cat; } > `+out+`; exit 9`, []string{"move"})
-	Fire("move", []byte(`{"id":"X"}`), Env{Root: root, Board: "default", Version: "dev"})
+	Fire(Subscribers("move"), "move", []byte(`{"id":"X"}`), Env{Root: root, Board: "default", Version: "dev"})
 	raw, err := os.ReadFile(out)
 	if err != nil {
 		t.Fatal(err)
@@ -120,7 +120,10 @@ func TestFireInsideAnEventCallsNoPlugin(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "seen")
 	install(t, h, "jira", "touch "+out, []string{"set"})
 	t.Setenv(InEventVar, "1")
-	Fire("set", nil, Env{Root: t.TempDir()})
+	if ids := Subscribers("set"); len(ids) != 0 {
+		t.Fatalf("inside an event the subscribers are %v, want none", ids)
+	}
+	Fire(Subscribers("set"), "set", nil, Env{Root: t.TempDir()})
 	if _, err := os.Stat(out); err == nil {
 		t.Fatal("a plugin ran from inside an event")
 	}
@@ -133,7 +136,7 @@ func TestFireStopsAHangingPlugin(t *testing.T) {
 	install(t, h, "a-slow", "exec sleep 30", []string{"claim"})
 	install(t, h, "b-next", "touch "+out, []string{"claim"})
 	start := time.Now()
-	Fire("claim", nil, Env{Root: t.TempDir()})
+	Fire(Subscribers("claim"), "claim", nil, Env{Root: t.TempDir()})
 	if took := time.Since(start); took > eventTimeout+3*time.Second {
 		t.Fatalf("Fire took %v; the timeout is %v", took, eventTimeout)
 	}
