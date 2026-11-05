@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T21:32:27Z
-updated-at: 2026-11-05T22:03:33Z
+updated-at: 2026-11-05T22:03:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9077
 claimed-at: 2026-11-05T22:03:26Z
@@ -37,6 +37,8 @@ review-gaps: |-
   note: the worktree holds untracked .jaira/milestones/ files that belong to no commit of this ticket - they must not ride into its commits
 test-verdict: "pass for what a machine can check: go test ./... rc=0, claude plugin test 176/176, DoD 2 verified live on 2.1.318 (notice with the master mod, none with the branch). DoD 1: rewriting on door prompt|delivery is proven by a test, the clickable line needs a person in the fullscreen renderer. DoD 3: no code change possible - fullscreen is switched off on this machine (fullscreenAutoDisabled)"
 question: ""
+review-verdict: "the diff matches the definition of done; no defects found - cockpit plugin tests 176/176 and go test ./core/... green, shipped.sha256 hashes equal the files"
+review-round: 3
 ---
 
 # jaira-cockpit: session.append wird seit Claude Code 2.1.318 nicht mehr erreicht
