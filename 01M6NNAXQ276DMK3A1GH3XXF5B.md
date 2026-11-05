@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T10:51:07Z
-updated-at: 2026-11-05T11:07:29Z
+updated-at: 2026-11-05T11:07:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85123
 claimed-at: 2026-11-05T10:51:26Z
@@ -80,3 +80,4 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-3xxf5b && go build -o 
 - **2026-11-05 11:03 · Alexander Sacharov** — in-progress round 3: web --help (internal/cli/web.go) now names the Remove button, filed tickets and the follow-up's member line; internal/cli tests rc=0.
 - **2026-11-05 11:03 · Alexander Sacharov** — critique round 3: read only f370fa68 (help text answering the testing finding) - says what the page does, no new shape. Nothing.
 - **2026-11-05 11:05 · Alexander Sacharov** — testing round 2: help-text finding fixed (f370fa68, seen in the rebuilt binary's web --help). EpicList rendered with svelte/server through vite ssrLoadModule (DOMPurify stubbed, script kept in the scratchpad): aria-label 'Take MEMBER out of Demo' and 'Take LOGGED out of Demo', follow-up shows 'counted through MEMBER (follows/parent)' and no button. A real tap on a phone was not exercised - for the review-check.
+- **2026-11-05 11:07 · Alexander Sacharov** — review: no blocker. Diff meets DoD 1-4; go test core/epic core/web internal/cli + npm test green; dist bundle matches src. Unverified only: a real tap on a phone (in review-check).
