@@ -197,16 +197,28 @@ func (m *Model) snakeCells(id string, w, h int) map[int]map[int]bool {
 
 // paintCells fills a row of width cells, each in the SGR paramAt returns for it:
 // runs of one SGR are cut out of the styled row whole (ansi.Cut keeps the row's
-// own colours) and painted like any other row.
-func paintCells(line string, width int, paramAt func(int) string) string {
+// own colours) and painted like any other row. A cell topAt marks that holds
+// only a space is drawn as ▔ instead: the terminal does not draw the overline
+// SGR 53, so the top edge of the band is a glyph. topAt is nil off the top row.
+func paintCells(line string, width int, paramAt func(int) string, topAt func(int) bool) string {
+	cell := func(a int) (string, bool) {
+		return paramAt(a), topAt != nil && topAt(a) && ansi.Strip(ansi.Cut(line, a, a+1)) == " "
+	}
 	var b strings.Builder
 	for a := 0; a < width; {
-		p := paramAt(a)
+		p, edge := cell(a)
 		e := a + 1
-		for e < width && paramAt(e) == p {
+		for e < width {
+			if q, qe := cell(e); q != p || qe != edge {
+				break
+			}
 			e++
 		}
-		b.WriteString(paintRow(p, ansi.Cut(line, a, e)))
+		if edge {
+			b.WriteString(paintRow(p, strings.Repeat("▔", e-a)))
+		} else {
+			b.WriteString(paintRow(p, ansi.Cut(line, a, e)))
+		}
 		a = e
 	}
 	return b.String()
@@ -224,14 +236,12 @@ func snakeParams(k snakeKind) string {
 }
 
 // snakeEdge is the SGR a snake cell adds to its own row's SGR, at row r of an h
-// row card: the foreground colour, an overline on the top row, and an underline
-// in the same colour on the bottom row. Those lines sit on the card's outer edge,
-// so the text keeps its own cells.
+// row card: the foreground colour, and on the bottom row an underline in the same
+// colour. The underline sits on the card's outer edge, so the text keeps its own
+// cells. The top row has no SGR of its own: paintCells draws its blank cells as ▔.
 func snakeEdge(k snakeKind, r, h int) string {
 	s := snakeParams(k)
 	switch r {
-	case 0:
-		return s + ";53"
 	case h - 1:
 		return s + ";4;58;5;" + strconv.Itoa(snakeColour[k])
 	}

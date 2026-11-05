@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -67,12 +68,15 @@ func snakeInForeground(s string, k snakeKind) bool {
 	return strings.Contains(s, "38;5;"+strconv.Itoa(snakeColour[k]))
 }
 
-// withoutBandGlyphs is the card's text with its bar glyphs taken back to
-// spaces, so a card the snake has walked round compares with the same card
-// unclaimed.
+// withoutBandGlyphs is the card's text with its bar glyphs and the top row's ▔
+// taken back to spaces, so a card the snake has walked round compares with the
+// same card unclaimed.
 func withoutBandGlyphs(s string) string {
-	return strings.NewReplacer("▏", " ", "▕", " ").Replace(stripANSI(s))
+	return strings.NewReplacer("▏", " ", "▕", " ", "▔", " ").Replace(stripANSI(s))
 }
+
+// overline matches an SGR that sets the overline (53), alone or among others.
+var overline = regexp.MustCompile("\x1b\\[(?:[0-9;]*;)?53(?:;[0-9;]*)?m")
 
 // A card nobody is working on has no snake; claim it and an agent's snake runs
 // round it as a line in the agent's colour, with the card's text untouched.
@@ -108,22 +112,30 @@ func TestAClaimedCardCarriesTheAgentSnake(t *testing.T) {
 }
 
 // The band is a line on the card's edge. Walked once round the ring, the snake
-// marks each edge cell it covers: a bar glyph on the sides, an overline on the
-// top row and an underline on the bottom row.
+// marks each edge cell it covers: a bar glyph on the sides, a ▔ on each blank
+// top cell (the terminal does not draw an overline), and an underline on the
+// bottom row. No row carries an overline at all.
 func TestTheBandIsALineOnTheEdge(t *testing.T) {
 	m := newTestModel(t, 150, 32)
 	tk := claim(t, m, "Fix session cookie dropped on 302", "sess-1", time.Now())
 	const w = 30
 	underline := ";4;58;5;" + strconv.Itoa(snakeColour[snakeAgent]) + "m"
-	sides, tops, bottoms := 0, 0, 0
+	sides, tops, bottoms, blanks := 0, 0, 0, 0
 	m.anim = true
 	// A 30 by 3 card has 62 ring cells, so every one is the snake's head at
 	// some phase in this range.
 	for p := 0; p < 100; p++ {
 		m.animPhase = p
 		block := m.renderCardBlock(tk, w, false, false)
+		if overline.MatchString(block) {
+			t.Fatalf("phase %d: the card carries an overline, which the terminal does not draw:\n%q", p, block)
+		}
 		rows := strings.Split(strings.TrimSuffix(block, "\n"), "\n")
 		cells := m.snakeCells(tk.ID, w, len(rows))
+		// The card's own text, before the band: a blank top cell under the snake
+		// must hold ▔, and a cell with text must keep its character.
+		text := strings.Split(strings.TrimSuffix(stripANSI(m.renderCard(tk, w-2, false)), "\n"), "\n")[0]
+		text += strings.Repeat(" ", w-2)
 		for r, row := range rows {
 			if cells[r][0] {
 				sides++
@@ -136,8 +148,19 @@ func TestTheBandIsALineOnTheEdge(t *testing.T) {
 			}
 			if r == 0 && len(cells[r]) > 0 {
 				tops++
-				if !strings.Contains(row, ";53m") {
-					t.Fatalf("phase %d: snake on the top row without overline 53:\n%q", p, row)
+				plain := stripANSI(row)
+				for c := 0; c < w-2; c++ {
+					if !cells[0][c+1] {
+						continue
+					}
+					want := ansi.Cut(text, c, c+1)
+					if want == " " {
+						want = "▔"
+						blanks++
+					}
+					if got := ansi.Cut(plain, c+1, c+2); got != want {
+						t.Fatalf("phase %d, top column %d: got %q, want %q:\n%q", p, c+1, got, want, plain)
+					}
 				}
 			}
 			if r == len(rows)-1 && len(cells[r]) > 0 {
@@ -148,8 +171,8 @@ func TestTheBandIsALineOnTheEdge(t *testing.T) {
 			}
 		}
 	}
-	if sides == 0 || tops == 0 || bottoms == 0 {
-		t.Fatalf("the walk never reached every edge: sides %d, tops %d, bottoms %d", sides, tops, bottoms)
+	if sides == 0 || tops == 0 || bottoms == 0 || blanks == 0 {
+		t.Fatalf("the walk never reached every edge: sides %d, tops %d, bottoms %d, blank top cells %d", sides, tops, bottoms, blanks)
 	}
 }
 

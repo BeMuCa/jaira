@@ -672,12 +672,16 @@ func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected, alt bool) str
 				rightBar, rightSGR = "▕", rightParams+";"+edge
 			}
 			b.WriteString(paintRow(leftSGR, leftBar))
+			var topAt func(int) bool
+			if i == 0 {
+				topAt = func(c int) bool { return row[c+1] }
+			}
 			b.WriteString(paintCells(padDisplay(line, inner), inner, func(c int) string {
 				if row[c+1] {
 					return bgParams + ";" + edge
 				}
 				return bgParams
-			}))
+			}, topAt))
 			b.WriteString(paintRow(rightSGR, rightBar))
 			b.WriteString("\n")
 			continue
@@ -1317,6 +1321,11 @@ func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 		row("lane", t.Status+styReview.Render("  ◆ waiting on your sign-off"))
 	} else {
 		row("lane", t.Status)
+	}
+	// The card drops '⇢ pull'; this row is where a ref-only ticket says it must be
+	// pulled before it can be changed here.
+	if t.ReadOnly {
+		row("ref", "only on its ref - jaira pull "+ticket.Handle(t.ID)+" brings it here")
 	}
 	row("assignee", t.Assignee)
 	row("creator", t.Creator)

@@ -71,3 +71,19 @@ func TestTheCardLeavesOutAsksAndPullButTheDetailKeepsTheQuestion(t *testing.T) {
 		t.Errorf("the HITL detail row lost its question marker:\n%s", out)
 	}
 }
+
+// A ref-only ticket has no card flag for pull any more; the detail row carries it.
+func TestTheDetailSaysAReadOnlyTicketIsPulledFirst(t *testing.T) {
+	m := newTestModel(t, 120, 34)
+	tk := parkIn(t, m, "in-progress")
+	m.openDetail()
+	m.detail.ReadOnly = true
+	if out := stripANSI(m.detailBody(m.detail, 90)); !strings.Contains(out, "jaira pull "+ticket.Handle(tk.ID)+" brings it here") {
+		t.Errorf("the ref-only detail does not say the ticket must be pulled first:\n%s", out)
+	}
+
+	m.detail.ReadOnly = false
+	if out := stripANSI(m.detailBody(m.detail, 90)); strings.Contains(out, "brings it here") {
+		t.Errorf("a normal ticket's detail says it must be pulled first:\n%s", out)
+	}
+}

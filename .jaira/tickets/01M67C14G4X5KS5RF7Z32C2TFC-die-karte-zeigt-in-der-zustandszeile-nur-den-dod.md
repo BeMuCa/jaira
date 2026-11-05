@@ -21,13 +21,15 @@ related:
   - 01M58G2DJP5P0634Z4FSC8V6DQ
 commits: []
 created-at: 2026-10-30T21:39:07Z
-updated-at: 2026-11-05T09:38:22Z
+updated-at: 2026-11-05T09:44:42Z
 updated-by: berkc
 claimed-by: berk-ca-1964007
 claimed-at: 2026-11-05T09:28:43Z
 outcome-what: "the card's band is a thin line in the snake colour: ▏/▕ on the bar cells, overline on the top row, underline on the bottom row; the card no longer shows '▲ asks' or '⇢ pull'"
 outcome-why: "a band painted as a full-width background read as a thick block on the card edge; the board card should only carry what the human acts on, and asks/pull were not that"
 outcome-resolves: "the thick band and the two unnecessary card flags from the 30.10 request; DoD 1-3 ticked with proof; tests: go test ./internal/tui -count=1 exit 0"
+review-summary: "internal/tui/view.go:792 removes the only TUI signal for a ref-only ticket (t.ReadOnly; no other non-test read in internal/tui besides model.go:1029), yet DoD 1 says the info stays in the detail view and EZ3V6D, which would make pull unnecessary, is still in backlog - add one row in detailBody next to the lane row (view.go ~1314), e.g. row(\"ref\", \"only on its ref - 'jaira pull <handle>' before changing it\") when t.ReadOnly, a test beside TestTheCardLeavesOutAsksAndPullButTheDetailKeepsTheQuestion, and say so in core/release/notes/2C2TFC.md line 2"
+round: 2
 ---
 
 # Die Karte zeigt in der Zustandszeile nur den DoD-Stand, und das Band um bearbeitete Karten ist eine duenne Linie statt eines dicken Balkens
@@ -35,9 +37,9 @@ outcome-resolves: "the thick band and the two unnecessary card flags from the 30
 ## Definition of Done
 
 - [x] Die Zustandszeile der Karte zeigt den DoD-Stand; '▲ asks' und '⇢ pull' sind von der Karte weg (Info bleibt in der Detailansicht)
-  proof: internal/tui/view.go:742 renderCard (asks and pull flags removed); internal/tui/humanmarker_test.go:61 TestTheCardLeavesOutAsksAndPullButTheDetailKeepsTheQuestion
+  proof: internal/tui/view.go:746 renderCard (asks and pull flags removed); internal/tui/humanmarker_test.go:61 TestTheCardLeavesOutAsksAndPullButTheDetailKeepsTheQuestion
 - [x] Das Band laeuft als Linienzeichen im Vordergrund, nicht als Hintergrundfarbe; Farben und c bleiben; Test
-  proof: internal/tui/snake_test.go:113 TestTheBandIsALineOnTheEdge; internal/tui/snake_test.go:79 TestAClaimedCardCarriesTheAgentSnake
+  proof: internal/tui/snake_test.go:118 TestTheBandIsALineOnTheEdge; internal/tui/snake_test.go:83 TestAClaimedCardCarriesTheAgentSnake
 - [x] Release-Note-Zeile
   proof: core/release/notes/2C2TFC.md
 
@@ -61,3 +63,6 @@ outcome-resolves: "the thick band and the two unnecessary card flags from the 30
 ## Progress
 - **2026-11-05 09:30 · berkc** — pre-process decisions: (1) DoD 1 read as written: only '▲ asks' and '⇢ pull' leave the card; spec/blocked/sign off/unworked/✎/unsent/Plan/DoD/commits/model stay - the context names those two, and '▲ asks' is already said by the human-coloured band. '⇣ pull' (BehindRef) is a different mark and stays. The lane-focus list (lanefocus.go) keeps '▲ asks': it is not the board card. (2) The band cannot be drawn with ▔/▁ on the top and bottom rows: those rows ARE the title and the state line (cards are 3 rows, flush, no frame), so a glyph would eat text as it passes. Top row uses SGR 53 overline, bottom row SGR 4 underline (colour via 58), both a 1px line at the card's outer edge, text kept; left/right columns are the bar cells (spaces) and get ▏/▕ in the snake colour over the bar's own colour. Unverified: overline support in the maintainer's terminal (Windows Terminal) - checked under tmux only.
 - **2026-11-05 09:38 · berkc** — band drawn as: side cells keep the bar's own background and get ▏/▕ in the snake colour; top row adds SGR 53, bottom row SGR 4 with 58;5;C; interior snake cells keep the lane shade as background and take the snake colour as foreground (so title/state text under the snake is drawn in that colour, by design). Snake colour is only ever a foreground now (snakeParams is '38;5;C'). The top and bottom overline/underline are rendered only under tmux; Windows Terminal support is unverified. lanefocus.go keeps ▲ asks on purpose (it is not the board card).
+- **2026-11-05 09:40 · berkc** — critique (pass 1): internal/tui/view.go:792 removes the only TUI signal for a ref-only ticket (t.ReadOnly; no other non-test read in internal/tui besides model.go:1029), yet DoD 1 says the info stays in the detail view and EZ3V6D, which would make pull unnecessary, is still in backlog - add one row in detailBody next to the lane row (view.go ~1314), e.g. row("ref", "only on its ref - 'jaira pull <handle>' before changing it") when t.ReadOnly, a test beside TestTheCardLeavesOutAsksAndPullButTheDetailKeepsTheQuestion, and say so in core/release/notes/2C2TFC.md line 2. Left standing: snake as fg + SGR 53/4 via snakeEdge reuses paintRow/refill (refill re-applies the full params after resets, so the overline survives styled text) - fits; overline support outside tmux is the 09:30/09:38 notes' accepted unverified point, a testing matter. lanefocus.go keeping '▲ asks' stands on the 09:30 note. worktree_diff is only untracked .jaira/milestones, unrelated.
+- **2026-11-05 09:40 · berkc** — tmux 180x50 check of 355d2da8 (worker): left/right ▏▕ and the bottom-row underline (4 + 58;5;C) reach the terminal; the TOP-row overline does NOT. Cause: bubbletea v2 renders through ultraviolet's cell model, and ultraviolet/styled.go parses SGR 0-9,22-29,30-49,58,59,90-107 - no 53 (overline). So on the top row the band shows only as title text tinted in the snake colour, no line. Unit tests miss it because they read renderCardBlock's string, not the terminal. Fix direction: top row cannot use 53; draw ▔ (U+2594, upper one-eighth block) in the snake colour on top-row cells that are blank (inset, padding after the title), and keep the tint on cells that hold title text so no character is lost; or drop the tint there entirely. Layout verified unchanged: column widths and rows identical in the capture.
+- **2026-11-05 09:44 · berkc** — critique fix: the top-row overline (SGR 53) is dropped by the terminal path (bubbletea v2 / ultraviolet has no case for 53), so snakeEdge no longer emits it. Top-row snake cells that hold only a space are drawn as ▔ in the snake foreground on the card background (paintCells topAt); cells with title text keep their character and tint. Bottom-row underline (4;58) is unchanged. Added the ref-only detail row ('jaira pull <handle> brings it here') with TestTheDetailSaysAReadOnlyTicketIsPulledFirst. Not verified: a real terminal capture after this change (the plan's tmux item stays open).
