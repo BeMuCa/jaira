@@ -1,7 +1,7 @@
 ---
 id: 01M67RYAXEZG7QD2XJ37EH6Z0N
 title: "In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code"
-status: review
+status: in-progress
 ready: true
 creator: berkc
 assignee: berkc
@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-05T09:31:32Z
+updated-at: 2026-11-05T09:31:34Z
 updated-by: berkc
 claimed-by: berk-ca-1971576
 claimed-at: 2026-11-05T09:29:35Z
@@ -28,7 +28,7 @@ outcome-what: "'o' on a blank separator row opens the file below it, and the fil
 outcome-why: "review-gaps found 'o' on a blank row opened code -g :0 with title 'opened :0'; blank rows have no path, and the next file's header is the row the reader is looking at"
 outcome-resolves: "both review-gaps items; test TestOKeyOnABlankRowOpensTheFileBelow"
 review-summary: "On a 140+ column terminal, a ticket in signoff or human shows the diff of its newest branch (feat/<handle>-..., picked by newest commit) against master next to the ticket. The redesign (2a73eae2, 725643c3, afbd423f) adds: a title 'Diff  <branch> → <base>' with 'file N/M +A −D' and a ●/○ focus mark; a shaded header bar per file with dir/basename, new/deleted/renamed tag and per-file counts, and a blank row between files; coloured hunk headers; a gutter with old and new line numbers; added and removed rows tinted across the whole pane in 256-colour indices (22/52, words 28/88; light 194/224/157/217); the changed middle of a 1:1 replaced line highlighted; long rows cut with '…'; centred 'No diff yet' / 'No changes' / red error notices. 'o' on a blank separator row opens the file below it. All of it is in internal/tui/diffpane.go plus BranchFor's --sort=-committerdate in core/gitrepo/branchdiff.go."
-round: 6
+round: 7
 review-gaps: |-
   blocker: internal/tui/diffpane.go:96 the header row keeps line==1 as 'not set yet', so a file whose first hunk starts at line 1 takes the SECOND hunk's start: parseDiff of hunks '@@ -1,2 +1,3 @@' and '@@ -50,2 +51,2 @@' gives the H row line 51 (probed), and 'o' on that header opens line 51 instead of 1 - set the header line only at the file's first '@@' (e.g. a firstHunk bool reset at 'diff --git') and add that case to TestParseDiffSplitsFilesAndNumbersLines
   blocker: internal/tui/diffpane.go:271 'patch, _ := repo.Diff(shas)' drops the git error on the fallback path, so a failing git shows 'No changes - the commits naming <H> ... change nothing' instead of the red error notice spec rule 8 / DoD 5 demands (the 21:42 note says this path now shows the error; only CommitsForTicket's error does) - return the same 'Diff unavailable' paneNotice as line 262
