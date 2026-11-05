@@ -19,7 +19,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T17:20:31Z
+updated-at: 2026-11-05T17:20:35Z
 updated-by: Alexander Sacharov
 question: ""
 outcome-what: "panda-bobr/jaira-releases: README auf main, per PR #1 plugins.json ([]), schema/ (Kopien aus R6X6FH), CONTRIBUTING.md, .github/scripts/check_catalog.py mit 23 Unit-Tests und Workflow check-catalog (pull_request_target, nur plugins.json-PRs, Kommentar mit allen Problemen). Fixture-Repos panda-bobr/jaira-plugin-ci-fixture (Release ohne checksums.txt) und -norelease. Test-PR #2 zeigt die Ablehnung."
@@ -70,7 +70,7 @@ review-check: "1. Oeffne https://github.com/panda-bobr/jaira-releases - auf main
 - [x] DoD 4: Unit-Job auf pull_request (paths .github/**, schema/**), concurrency je Event
 - [x] Push-Zeile und gh pr create fuer fix/d44nvr-errors an Teamlead; nach PR-Lauf DoD 4 mit Proof
 - [x] Branch fix/d44nvr-race von origin/main, 56da600 cherry-pick
-- [ ] Race: --head-gone im Skript + Workflow erkennt fehlenden HEAD_SHA, Unit-Test
+- [~] Race: --head-gone im Skript + Workflow erkennt fehlenden HEAD_SHA, Unit-Test
 - [ ] Push- und gh-pr-create-Zeile an Teamlead
 
 ## Progress
