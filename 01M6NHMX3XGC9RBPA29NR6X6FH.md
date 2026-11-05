@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T09:46:40Z
-updated-at: 2026-11-05T10:13:33Z
+updated-at: 2026-11-05T10:23:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-21000
 claimed-at: 2026-11-05T09:47:52Z
@@ -83,3 +83,4 @@ review-check: "1. docs/PLUGINS.md auf GitHub im Branch feat/r6x6fh oeffnen  2. A
 - **2026-11-05 10:10 · Alexander Sacharov** — critique Runde 3 (nach Events/Web): Event-Schleife ueber eigene Schreibbefehle -> JAIRA_IN_EVENT=1, Schreiben damit loest keine Events aus (selbst entschieden, sonst kann ein Plugin sich selbst endlos triggern); api ohne pages nicht deklarierbar -> capability web schaltet die Weiterleitung frei; web/api/ als Datei reserviert.
 - **2026-11-05 10:10 · Alexander Sacharov** — critique Runde 4: nichts mehr. Stehen gelassen: Events in id-Reihenfolge nacheinander (bei 5 s je Plugin kann ein Befehl mit vielen Plugins warten - Parallelisierung entscheidet 8Z3VRF).
 - **2026-11-05 10:13 · Alexander Sacharov** — Teamlead (05.11.2026): Review-Hinweise fuer 8Z3VRF mitnehmen, wenn es startet - (a) AGENTS.md:8 sagt noch 'no plugin API', README/AGENTS.md auf docs/PLUGINS.md verweisen; (b) festlegen, ob move aus TUI und jaira web Events ausloest (Erwartung: ja, jede Schreiboperation); (c) external in show/list --json; (d) merge_test nutzt external noch als YAML-Block.
+- **2026-11-05 10:23 · Alexander Sacharov** — Abgenommen von Alex im Chat mit dem Teamlead am 05.11.2026 ('Принимай через форс'); der Teamlead fuehrt den Move auf sein Wort aus.
