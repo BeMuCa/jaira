@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T21:32:27Z
-updated-at: 2026-11-05T22:03:48Z
+updated-at: 2026-11-05T22:04:47Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-9077
 claimed-at: 2026-11-05T22:03:26Z
@@ -79,3 +79,4 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-qeps3m  2. claude --pl
 - **2026-11-05 22:00 · Alexander Sacharov** — DoD 1 path: the '[shortened by jaira-cockpit] ... - full report: /cockpit report <ID>' lines the teamlead saw on master's mod under 2.1.318 come from session.receive (register.tsx:1146, relayed peer messages) and prompt.submit (register.tsx:1155) - neither is in sec-default's scan list (PASSED_OVER_DOORS only touches session.append on attachment|hook-context|compaction). The session.append rewrite on door prompt|delivery was never skipped either. So shortening never broke: what failed was the click, through fullscreenAutoDisabled, and the notice came from the hook having no matcher on the attachment doors. DoD 1 holds on master as well as on the branch.
 - **2026-11-05 22:01 · Alexander Sacharov** — Teamlead (05.11.2026): Alex has gone to sleep and, by the teamlead's account, authorized the teamlead to accept, open the PR and merge. Worker: after the review, put the ticket in signoff (fixes go through the in-progress loop first), report the verdict and every gap to the teamlead in full, never move it to done - acceptance and logbook are the teamlead's.
 - **2026-11-05 22:03 · Alexander Sacharov** — review (fresh context): diff read against f4abe25b, 3 commits = 3 in git log; claude plugin test 176/176, go test ./core/... green, shipped hashes match. No blocker; four notes in review-gaps.
+- **2026-11-05 22:04 · Alexander Sacharov** — Teamlead (05.11.2026, Alex' Auftrag vor dem Schlafen): abgenommen nach Review ohne Blocker; DoD 1/3 per Alex' Live-Check nach /tui fullscreen.
