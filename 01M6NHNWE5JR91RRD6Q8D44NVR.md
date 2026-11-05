@@ -19,7 +19,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T12:19:37Z
+updated-at: 2026-11-05T12:19:40Z
 updated-by: Alexander Sacharov
 question: ""
 outcome-what: "panda-bobr/jaira-releases: README auf main, per PR #1 plugins.json ([]), schema/ (Kopien aus R6X6FH), CONTRIBUTING.md, .github/scripts/check_catalog.py mit 23 Unit-Tests und Workflow check-catalog (pull_request_target, nur plugins.json-PRs, Kommentar mit allen Problemen). Fixture-Repos panda-bobr/jaira-plugin-ci-fixture (Release ohne checksums.txt) und -norelease. Test-PR #2 zeigt die Ablehnung."
@@ -93,3 +93,4 @@ review-check: "1. https://github.com/panda-bobr/jaira-releases oeffnen - auf mai
 - **2026-11-05 12:11 · Alexander Sacharov** — question geleert (Push-Freigabe ist erteilt und erledigt); Hinweis aus review.
 - **2026-11-05 12:13 · Alexander Sacharov** — Alex (05.11.2026, via Teamlead): beide Review-Hinweise werden in diesem Ticket behoben, auf fix/d44nvr-errors (noch nicht gepusht). (1) Ein PR, der bei einem schon gelisteten id das Feld repo (oder author) aendert, wird abgelehnt, ausser der PR-Autor ist Besitzer des bisherigen UND des neuen repo. (2) Die Unit-Tests von .github/scripts laufen auch in jedem PR, der .github/** aendert - nicht nur bei Push auf main. Achtung: pull_request_target checkt main aus, fuer die Tests braucht es einen eigenen Job auf pull_request, der keine Geheimnisse hat.
 - **2026-11-05 12:15 · Alexander Sacharov** — DoD 3/4 umgesetzt in 52c090e auf fix/d44nvr-errors (lokal). Entscheidungen: verschwundenes altes repo -> Ablehnung mit 'ask a maintainer' (Besitz nicht beweisbar); nur repo/author-Aenderung loest die Altbesitzer-Pruefung aus, description/name nicht. Unit-Job: pull_request mit paths .github/** und schema/**, permissions nur contents: read; pull-requests: write jetzt nur am check-Job. Concurrency-Gruppe enthaelt event_name, sonst bricht pull_request den pull_request_target-Lauf desselben PRs ab. DoD 4 wird im PR fix/d44nvr-errors gezeigt: der PR aendert .github/** -> unit laeuft; check laeuft nicht (kein plugins.json).
+- **2026-11-05 12:19 · Alexander Sacharov** — critique (Runde 3, nur 52c090e gelesen): keine Funde. check_takeover steht neben check_entry und nutzt check_owner wieder; pull_request-Job laeuft PR-Code nur mit Lese-Token - Standardmuster. Hinweis: outcome-resolves nennt nur DoD 1+2; DoD 3+4 tragen ihre Proofs selbst.
