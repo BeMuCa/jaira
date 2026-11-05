@@ -1,7 +1,7 @@
 ---
 id: 01M6NHNZV41ZW2MYHS3YE2HSK1
 title: "panda-bobr/jaira-plugin-template: lauffaehige Vorlage mit Beispielbefehl und Release-Pipeline"
-status: in-progress
+status: blocked
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -18,8 +18,9 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T10:35:48Z
+updated-at: 2026-11-05T10:35:52Z
 updated-by: Alexander Sacharov
+blocked-reason: "DoD 2 wartet auf die Katalog-CI aus D44NVR (panda-bobr/jaira-releases, noch nicht auf main)"
 ---
 
 # panda-bobr/jaira-plugin-template: lauffaehige Vorlage mit Beispielbefehl und Release-Pipeline
