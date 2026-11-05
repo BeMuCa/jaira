@@ -1,7 +1,7 @@
 ---
 id: 01M6NNAXQ276DMK3A1GH3XXF5B
 title: "jaira web: ein Ticket laesst sich per Knopf aus einem Epic nehmen, auch auf dem Handy"
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T10:51:07Z
-updated-at: 2026-11-05T11:02:15Z
+updated-at: 2026-11-05T11:02:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85123
 claimed-at: 2026-11-05T10:51:26Z
@@ -30,7 +30,7 @@ outcome-what: "Epic cards in jaira web get a Remove button (tap, no drag); follo
 outcome-why: "Removing only worked by HTML5 drag, which phones lack; dashed cards gave no hint which line to remove; logbook/archive tickets answered 404 in the web while the CLI removed them."
 outcome-resolves: "Taking any ticket out of an epic in jaira web, on a phone too, without falling back to 'jaira epic rm'."
 review-summary: "none"
-round: 2
+round: 3
 review-gaps: "none - considered: handleOf duplicates Go ticket.Handle, kept because the UI needs the id to open the member and no TS helper existed; Covered now forwards to covered, kept as the public API Unassigned and web_source call; removeLabel has one caller but carries the epic title the card cannot know; webSource.Ticket (web_source.go:204) repeats load()'s LoadAnywhere+not-found mapping because it also needs the path - pre-existing, left alone"
 test-verdict: "fail: 'jaira web --help' (internal/cli/web.go:36-42) still describes removal as drag-only and a follow-up as merely undraggable - no word of the Remove button or the 'counted through' line"
 ---
