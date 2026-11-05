@@ -19,7 +19,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T10:23:45Z
+updated-at: 2026-11-05T10:23:47Z
 updated-by: Alexander Sacharov
 ---
 
@@ -40,4 +40,4 @@ updated-by: Alexander Sacharov
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-11-05 10:23 · Alexander Sacharov** — Teamlead (05.11.2026): der Standard (R6X6FH, abgenommen) liegt noch nicht auf master, sondern auf origin/feat/r6x6fh: docs/PLUGINS.md und docs/schema/*.json - lesen mit 'git show origin/feat/r6x6fh:docs/PLUGINS.md'. Die Arbeit selbst gehoert in das Repo panda-bobr/jaira-releases; Alex ist dort admin. Ein Agent pusht seinen Branch und oeffnet keinen PR.
