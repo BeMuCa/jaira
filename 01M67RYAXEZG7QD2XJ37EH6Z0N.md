@@ -20,10 +20,10 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-05T09:34:57Z
+updated-at: 2026-11-05T09:35:32Z
 updated-by: berkc
-claimed-by: berk-ca-1992880
-claimed-at: 2026-11-05T09:32:07Z
+claimed-by: berk-ca-2016410
+claimed-at: 2026-11-05T09:35:32Z
 outcome-what: "The TUI diff pane (ticket view, sign-off/human lanes) shows each file's header at its first hunk's line, and a failed diff load shows 'Diff unavailable' instead of 'No changes'. Covered by new tests TestHeaderLineIsTheFirstHunkOfEachFile and TestUnshowableCommitIsDiffUnavailableNotNoChanges in internal/tui/diffpane_test.go; the rest of the ticket is unchanged from the earlier passes."
 outcome-why: "Review sent back two blockers: a header line taken from the second hunk when the first starts at line 1 makes 'o' open the wrong line; an unshowable commit list reported as 'No changes' hides a git problem (rule 8 of the spec)."
 outcome-resolves: "review 2026-11-05 09:31: diffpane.go:96 header line (blocker 1) and diffpane.go:271 fallback notice (blocker 2)"
