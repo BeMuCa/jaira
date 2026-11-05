@@ -1,7 +1,7 @@
 ---
 id: 01M6EYADS6Z2KGYE03T8Q9F9W4
 title: "Der Installer erkennt den Coding-Agenten und legt die Rollen dort ab, wo er sie liest"
-status: pre-process
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "install.sh und install.ps1 erkennen, welche Agenten auf dem Rechner sind, und jaira roles install kennt neben claude und copilot auch codex, cursor, gemini-cli, opencode, pi und hermes mit ihren Pfaden; ohne erkannten Agenten wird nichts ins Home geschrieben und ein Satz sagt, wie man es nachholt."
@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T17:59:42Z
+updated-at: 2026-11-05T17:59:49Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
