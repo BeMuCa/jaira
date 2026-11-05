@@ -22,14 +22,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T10:51:07Z
-updated-at: 2026-11-05T11:05:53Z
+updated-at: 2026-11-05T11:07:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85123
 claimed-at: 2026-11-05T10:51:26Z
 outcome-what: "Epic cards in jaira web get a Remove button (tap, no drag); follow-up cards name the member they are counted through (new 'via' field from core/epic); the web resolves filed tickets with LoadAnywhere like 'jaira epic rm'."
 outcome-why: "Removing only worked by HTML5 drag, which phones lack; dashed cards gave no hint which line to remove; logbook/archive tickets answered 404 in the web while the CLI removed them."
 outcome-resolves: "Taking any ticket out of an epic in jaira web, on a phone too, without falling back to 'jaira epic rm'."
-review-summary: "none"
+review-summary: "Epic cards in jaira web now carry a 'Remove' button: a plain click/tap button (TicketCard.svelte) shown only on direct member cards (EpicList.svelte), wired through ReviewPage to the existing removeFromEpic, i.e. DELETE /api/epics/{name}/tickets/{id}, so taking a ticket out no longer needs a drag and works on a phone. core/epic covered() now also returns, for each follow-up, the member it was reached from (transitively, cmp.Or keeps the top member); it is passed out as a new 'via' field on epic.Ticket and web.Ticket, and a dashed follow-up card says 'counted through <handle> (follows/parent) - take that one out to remove this', the handle opening that member. webSource.load switched from Store.Load to LoadAnywhere, so DELETE (and POST assign) find logbook and archived tickets the way 'jaira epic rm/add' do instead of answering 404. Help text of 'jaira web', release note core/release/notes/3XXF5B.md and the rebuilt ui/dist come along."
 round: 3
 review-gaps: "none - round 3 changed only help prose in internal/cli/web.go; earlier considerations stand (see round-1 review-gaps note)"
 test-verdict: "pass: go build rc=0, go test -count=1 ./... rc=0, -race on core/epic core/web internal/cli rc=0, npm test rc=0; DoD 1-4 verified in the tree; scratch board via jaira web: DELETE member 200, logbook member 200, follow-up 409, /api/epics carries via; EpicList server-rendered: Remove on both direct cards (board+logbook), none on the follow-up, which names its member; web --help updated. Not run: a real tap in a phone browser"
