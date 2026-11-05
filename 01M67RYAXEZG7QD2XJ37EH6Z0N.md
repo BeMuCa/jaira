@@ -20,14 +20,14 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-05T09:29:35Z
+updated-at: 2026-11-05T09:31:16Z
 updated-by: berkc
 claimed-by: berk-ca-1971576
 claimed-at: 2026-11-05T09:29:35Z
 outcome-what: "'o' on a blank separator row opens the file below it, and the file counter and marker name that file; header rows no longer carry an unused text field"
 outcome-why: "review-gaps found 'o' on a blank row opened code -g :0 with title 'opened :0'; blank rows have no path, and the next file's header is the row the reader is looking at"
 outcome-resolves: "both review-gaps items; test TestOKeyOnABlankRowOpensTheFileBelow"
-review-summary: none
+review-summary: "On a 140+ column terminal, a ticket in signoff or human shows the diff of its newest branch (feat/<handle>-..., picked by newest commit) against master next to the ticket. The redesign (2a73eae2, 725643c3, afbd423f) adds: a title 'Diff  <branch> → <base>' with 'file N/M +A −D' and a ●/○ focus mark; a shaded header bar per file with dir/basename, new/deleted/renamed tag and per-file counts, and a blank row between files; coloured hunk headers; a gutter with old and new line numbers; added and removed rows tinted across the whole pane in 256-colour indices (22/52, words 28/88; light 194/224/157/217); the changed middle of a 1:1 replaced line highlighted; long rows cut with '…'; centred 'No diff yet' / 'No changes' / red error notices. 'o' on a blank separator row opens the file below it. All of it is in internal/tui/diffpane.go plus BranchFor's --sort=-committerdate in core/gitrepo/branchdiff.go."
 round: 6
 review-gaps: "none: afbd423f resolves both prior findings - H rows no longer set the unread text field (no reader of r.text for 'H'), and diffTarget() is the single blank-row skip shared by openDiffRow and the counter/marker; no duplicate, dead code or fluff added; diffTop kept since jumpFile and the scroll clamp need the raw top"
 test-verdict: "pass: touched packages green (go test ./core/gitrepo ./internal/tui ./internal/cli -count=1, RC=0), DoD 1-6 verified in the tree by name and file:line, DoD tests re-run and PASS; tmux real-app check taken from worker (NDE933), not re-run"
