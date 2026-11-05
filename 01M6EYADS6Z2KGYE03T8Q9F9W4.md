@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T18:06:19Z
+updated-at: 2026-11-05T18:07:08Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
@@ -29,10 +29,9 @@ outcome-what: "target.go knows eight agents (codex, pi, cursor, gemini-cli, open
 outcome-why: "roles went to ~/.claude/skills whether or not Claude Code was there, and to a place other agents never read"
 outcome-resolves: "DoD 1-5; tests written but not run, install.ps1 unrun"
 review-summary: |-
-  docs/AGENTS.md:276-288 still lists only claude and copilot and says "for any other agent, --into names its skills directory" - now false, and README.md:812 sends readers there for the eight agents; extend that table to all eight (--project/--global) and replace the copilot-only Also paragraph with the generic skip rule plus the claude+codex double-listing limit from target.go
-  core/role/target.go:39 "A further one is a further entry" is made false by this change: scripts/install.sh (agent_dir + AGENTS) and scripts/install.ps1 ($known) carry the same names, order and detect folders; name both scripts in that comment so the next agent lands in all three copies
-  scripts/install.sh install_roles and scripts/install.ps1 Install-JairaRoles: the JAIRA_AGENT guard around the no-agent sentence leaves JAIRA_AGENT=bogus with no add-later command (goal: a sentence says how to catch up); drop the guard, one branch less, and the sentence prints whenever nothing is installed
-  left alone: detection in the scripts, not the binary (pre-process note 17:59 point 4); claude+codex duplicate in cursor/opencode (point 2); copilot dirs kept (driver note 17:55 a); install.ps1 unrun and the opencode Windows path (in-progress note 18:03)
+  docs/AGENTS.md:290-295 (pass-1 finding 1, half done): the table and the generic skip rule are in, the claude+codex double-listing limit from core/role/target.go:47-50 is not, and the new paragraph now claims the skip prevents every role registering twice; add one sentence after it: with both claude and codex installed, cursor and opencode read ~/.claude/skills and ~/.agents/skills and list each role twice (known limit)
+  pass-1 finding 2 (target.go:39 names both installers) and finding 3 (no-agent sentence without the JAIRA_AGENT guard in install.sh and install.ps1) are fixed in a69f5abdf; closed
+  left alone, as pass 1 did: detection in the scripts (pre-process note 17:59 point 4); copilot dirs (driver note 17:55 a); install.ps1 unrun and opencode Windows path (in-progress note 18:03)
 round: 2
 ---
 
