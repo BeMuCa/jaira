@@ -1,7 +1,7 @@
 ---
 id: 01M67RYAXEZG7QD2XJ37EH6Z0N
 title: "In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: berkc
@@ -20,13 +20,13 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-05T09:34:49Z
+updated-at: 2026-11-05T09:34:57Z
 updated-by: berkc
 claimed-by: berk-ca-1992880
 claimed-at: 2026-11-05T09:32:07Z
-outcome-what: "'o' on a blank separator row opens the file below it, and the file counter and marker name that file; header rows no longer carry an unused text field"
-outcome-why: "review-gaps found 'o' on a blank row opened code -g :0 with title 'opened :0'; blank rows have no path, and the next file's header is the row the reader is looking at"
-outcome-resolves: "both review-gaps items; test TestOKeyOnABlankRowOpensTheFileBelow"
+outcome-what: "The TUI diff pane (ticket view, sign-off/human lanes) shows each file's header at its first hunk's line, and a failed diff load shows 'Diff unavailable' instead of 'No changes'. Covered by new tests TestHeaderLineIsTheFirstHunkOfEachFile and TestUnshowableCommitIsDiffUnavailableNotNoChanges in internal/tui/diffpane_test.go; the rest of the ticket is unchanged from the earlier passes."
+outcome-why: "Review sent back two blockers: a header line taken from the second hunk when the first starts at line 1 makes 'o' open the wrong line; an unshowable commit list reported as 'No changes' hides a git problem (rule 8 of the spec)."
+outcome-resolves: "review 2026-11-05 09:31: diffpane.go:96 header line (blocker 1) and diffpane.go:271 fallback notice (blocker 2)"
 review-summary: "On a 140+ column terminal, a ticket in signoff or human shows the diff of its newest branch (feat/<handle>-..., picked by newest commit) against master next to the ticket. The redesign (2a73eae2, 725643c3, afbd423f) adds: a title 'Diff  <branch> → <base>' with 'file N/M +A −D' and a ●/○ focus mark; a shaded header bar per file with dir/basename, new/deleted/renamed tag and per-file counts, and a blank row between files; coloured hunk headers; a gutter with old and new line numbers; added and removed rows tinted across the whole pane in 256-colour indices (22/52, words 28/88; light 194/224/157/217); the changed middle of a 1:1 replaced line highlighted; long rows cut with '…'; centred 'No diff yet' / 'No changes' / red error notices. 'o' on a blank separator row opens the file below it. All of it is in internal/tui/diffpane.go plus BranchFor's --sort=-committerdate in core/gitrepo/branchdiff.go."
 round: 7
 review-gaps: |-
