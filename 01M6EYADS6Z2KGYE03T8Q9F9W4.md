@@ -20,7 +20,7 @@ related:
   - 01M55S97BCFRNZMARY8WV38STG
 commits: []
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T17:59:49Z
+updated-at: 2026-11-05T18:02:37Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
@@ -46,7 +46,7 @@ claimed-at: 2026-11-05T17:54:30Z
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] test first, internal/cli/roles_test.go: TestRolesInstallAgentWritesWhereItReads, one t.Run per agent (claude, codex, pi, copilot, cursor, gemini-cli, opencode, hermes): --project and --global land in the dirs of the findings note; jaira-cockpit only for claude; replaces TestRolesInstallAgentCopilotWritesWhereCopilotReads
+- [x] test first, internal/cli/roles_test.go: TestRolesInstallAgentWritesWhereItReads, one t.Run per agent (claude, codex, pi, copilot, cursor, gemini-cli, opencode, hermes): --project and --global land in the dirs of the findings note; jaira-cockpit only for claude; replaces TestRolesInstallAgentCopilotWritesWhereCopilotReads
 - [ ] test first: TestRolesInstallAgentSkipsWhereItAlreadyReads, one t.Run per agent with Also dirs: roles pre-installed in each Also dir (project and global) -> exit 0, one 'already reads' line, own dir not created; keeps the copilot skip test's assertions
 - [ ] test first, core/role/target_test.go: agents sharing a Project or Global dir agree on Mods; claude is first; table order is claude, codex, pi, copilot, cursor, gemini-cli, opencode, hermes
 - [ ] test first: Installed() attributes a shared dir (~/.agents/skills) once, to codex; UpdateCommand for it returns 'jaira roles install --agent codex --global'
