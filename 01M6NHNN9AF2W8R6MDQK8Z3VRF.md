@@ -20,7 +20,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T22:00:39Z
+updated-at: 2026-11-05T22:03:22Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
@@ -30,7 +30,7 @@ outcome-resolves: Plugins lassen sich ohne Aenderung am Kern starten und hoeren 
 review-summary: "none"
 round: 3
 review-gaps: "round 3 (233ffbff): nothing to remove - runBoard has two callers (board.go, home.go:openBoardAt), program(id, goos) exists for the Windows test; earlier rounds: folded the event payload into showJSON, claim loads lanes only for a listening plugin; left the pre-existing JAIRA_HOME lookup per package and hook.Run's own timeout"
-test-verdict: "pass: go test ./... -race after go clean -testcache RC=0; DoD 1-7 proofs opened and their tests run; built binary on a scratch board: 'echo hello | jaira demo pull --board ops \"two words\"' passed args, stdin, JAIRA_ROOT/BOARD=ops/VERSION=0.9.9 and exit 6; 'jaira list' stayed built-in; create/set/claim/move each reached the plugin with in_event=1, from_lane backlog on move, external demo:X-1; a plugin exiting 1 failed no command. TUI moves not driven by hand - covered by TestMovedHearsEveryWrittenMove, all three TUI sites call move.Move"
+test-verdict: "pass (round 2): go test -race -timeout 20m ./... RC=0 after go clean -testcache, and RC=0 again after merging upstream/master 3e3e1aee; DoD 8-10 proof tests run green (TestBoardEventsDoNotWaitForThePlugin, TestSetBoardThatChangesTheLaneFiresAMove, TestProgramOnWindowsIsTheExe); DoD 1-7 checked on round 1 with the built binary on a scratch board and still green in the suite. TUI not driven by hand: queueEvents is checked through firePlugins as runBoard wires it"
 review-verdict: "Diff erfuellt alle 7 DoD-Punkte; keine Defekte gefunden. go test fuer core/plugin, internal/cli, core/move, core/merge, core/ticket gruen; Handtest mit Fake-Plugin bestaetigt Argumente, Env, Exit-Code 7 und create-Event-Payload."
 review-round: 2
 review-check: "1. go build -o /tmp/j ./cmd/jaira  2. mkdir -p /tmp/h/plugins/demo und dort jaira-demo anlegen: #!/bin/sh / if [ \"$1\" = event ]; then cat > /tmp/h/ev-$2.json; exit 0; fi / echo \"args=$* board=$JAIRA_BOARD\"; exit 7 - dann chmod +x  3. echo '{\"id\":\"demo\",\"events\":[\"create\"]}' > /tmp/h/plugins/demo/jaira-plugin.json  4. in einem Repo mit .jaira: JAIRA_HOME=/tmp/h /tmp/j demo x --board=foo; echo $? -> \"args=x --board=foo board=foo\" und 7  5. JAIRA_HOME=/tmp/h /tmp/j create T --goal g --context c --dod d -> /tmp/h/ev-create.json existiert und enthaelt id, title, actor, external  6. JAIRA_HOME=/tmp/h /tmp/j list --json | jq '.[0].external' -> Feld vorhanden  7. Merge: go test ./core/merge -run TestMergeExternalChangedOnOneSideWins"
