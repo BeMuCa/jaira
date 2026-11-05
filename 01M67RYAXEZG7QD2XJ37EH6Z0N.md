@@ -1,7 +1,7 @@
 ---
 id: 01M67RYAXEZG7QD2XJ37EH6Z0N
 title: "In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code"
-status: optimize
+status: testing
 ready: true
 creator: berkc
 assignee: berkc
@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-05T09:37:07Z
+updated-at: 2026-11-05T09:37:10Z
 updated-by: berkc
 claimed-by: berk-ca-2028334
 claimed-at: 2026-11-05T09:36:45Z
@@ -124,3 +124,4 @@ Let stand: hunk header indented 2*nw+4 with no │ (aligns @@ with the sign colu
 - **2026-11-05 09:31 · berkc** — review (fresh agent 2026-11-05, redesign 2a73eae2/725643c3/afbd423f): spec rules 1-10 delivered, design sound. Sent back for two blockers: (1) internal/tui/diffpane.go:96 'if rows[header].line == 1' treats 1 as unset, so a file whose first hunk is '+1,..' takes the second hunk's start as its header line (probe: hunks +1,3 and +51,2 -> H.line 51); 'o' on that header opens the wrong line. Fix: set it only at the file's first '@@' and test it. (2) diffpane.go:271 'patch, _ := repo.Diff(shas)' swallows the git error, so the fallback path says 'No changes' instead of the red 'Diff unavailable' notice (rule 8); return the same paneNotice as line 262. Tests: go test ./core/gitrepo ./internal/tui green; gofmt/vet clean.
 - **2026-11-05 09:34 · berkc** — Review send-back fixed (worker 2026-11-05, commit 68dc5cf8). (1) parseDiff: header line now set at the file's first @@ via seenHunk flag, reset at each diff --git; test TestHeaderLineIsTheFirstHunkOfEachFile (hunks +1 and +51 -> header 1; next file +7 -> 7). (2) Repo.Diff has NO error return (core/gitrepo/git.go:103 returns (string, []string)); the swallowed condition is the unavailable-sha list. Shown as red 'Diff unavailable' when every commit is unshowable, instead of 'No changes'; test TestUnshowableCommitIsDiffUnavailableNotNoChanges. Partial unavailability (some shas shown, some not) still drops the placeholder silently: not changed here. go test core/gitrepo + internal/tui green, gofmt and vet clean.
 - **2026-11-05 09:36 · berkc** — critique (68dc5cf8 only, standing on the 09:31 review note and 09:34 repair note): both blockers answered in the right shape. (1) diffpane.go:70/97 seenHunk flag reset at each diff --git is the minimal fix - no sentinel value, test covers +1 then +51 and the per-file reset. (2) diffpane.go:273-280 reuses the exact 'Diff unavailable' bad paneNotice of lines 252/264, in the caller, which is right: Repo.Diff (core/gitrepo/git.go:103) documents unshowable shas as an outcome, not an error, so no callee change. Partial unavailability left silent: accepted - spec rule 8 only names no-diff/no-changes/git-error states, the shown commits are real diffs (not a false 'No changes'), and the fallback path only runs when no feat/<H> branch exists; surfacing 'N of M not available' in the note would be new scope, a follow-up at most. review-summary=none.
+- **2026-11-05 09:37 · berkc** — optimize (68dc5cf8 only): nothing removed. Considered replacing seenHunk with header==len(rows)-1 — equivalent today but relies on no row being appended between header and first @@; rejected as less legible. Targeted tests green.
