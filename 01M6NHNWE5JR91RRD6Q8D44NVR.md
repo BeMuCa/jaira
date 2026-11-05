@@ -19,7 +19,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T17:28:07Z
+updated-at: 2026-11-05T17:28:10Z
 updated-by: Alexander Sacharov
 question: ""
 outcome-what: "panda-bobr/jaira-releases: README auf main, per PR #1 plugins.json ([]), schema/ (Kopien aus R6X6FH), CONTRIBUTING.md, .github/scripts/check_catalog.py mit 23 Unit-Tests und Workflow check-catalog (pull_request_target, nur plugins.json-PRs, Kommentar mit allen Problemen). Fixture-Repos panda-bobr/jaira-plugin-ci-fixture (Release ohne checksums.txt) und -norelease. Test-PR #2 zeigt die Ablehnung."
@@ -103,3 +103,4 @@ review-check: "1. Oeffne https://github.com/panda-bobr/jaira-releases - auf main
 - **2026-11-05 12:23 · Alexander Sacharov** — review (frische Sitzung, Runde 2): kein Blocker. Nachgeprueft auf GitHub: PR #1/#3 gemergt (main 85953d3), PR #2 geschlossen mit Bot-Kommentar, Lauf 42026044679 unit success; 29 Tests auf origin/main lokal gruen. Offen nur: 56da600 liegt auf origin/fix/d44nvr-errors, nicht in main (reiner Refactor).
 - **2026-11-05 17:20 · Alexander Sacharov** — Alex (05.11.2026, via Teamlead): vor Abnahme (1) Race beheben - HEAD_SHA nach erneutem Push nicht mehr da -> Meldung 'the pull request changed while it was checked; the next run replaces this comment' statt 'must be a JSON array', mit Unit-Test; (2) neuer Branch von origin/main 85953d3 mit 56da600 cherry-picked + Fix 1, ein PR. (3) author bleibt Freitext (wie Obsidian), DoD 3 bleibt nur per Unit-Test belegt - bewusst keine Aenderung.
 - **2026-11-05 17:21 · Alexander Sacharov** — Race-Fix: Branch fix/d44nvr-race = origin/main 85953d3 + 6845b50 (cherry-pick von 56da600) + 4aa2cfc, lokal. Workflow erkennt den verschwundenen HEAD_SHA mit 'git cat-file -e' (der depth=1-Fetch von refs/pull/N/head holt nur den neuen Kopf) und ruft das Skript mit --head-gone; das Skript meldet nur diese eine Zeile und endet mit 1. author bleibt Freitext, DoD 3 bleibt per Unit-Test belegt (Alex).
+- **2026-11-05 17:28 · Alexander Sacharov** — PR #5 (fix/d44nvr-race, 4aa2cfc): run 42074820465 pull_request - unit success 'Ran 30 tests', check skipped. Warte auf Merge, dann testing/review/signoff.
