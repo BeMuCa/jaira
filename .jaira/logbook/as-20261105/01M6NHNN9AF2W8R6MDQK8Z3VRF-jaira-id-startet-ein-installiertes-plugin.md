@@ -1,7 +1,7 @@
 ---
 id: 01M6NHNN9AF2W8R6MDQK8Z3VRF
 title: "jaira <id> startet ein installiertes Plugin"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -18,25 +18,31 @@ tags:
 blocked-by:
   - R6X6FH
 related: []
-commits: []
+commits:
+  - d2c9d9e11ec8d89bb1fa675e5dab6be4bc8d6351
+  - 7b4c4024aef1fd5c3eb43d84755a9549a884399d
+  - b154df66c55e210427ba111616d27aea6c62557c
+  - 0804a372d34854151493c6c8c3ff94393df7e494
+  - 233ffbffc059e3410691fafd8b6013ff12557a58
+  - 8893e46fa59aa3f1c8fc77425d29fb78f6b10179
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T22:00:07Z
+updated-at: 2026-11-05T22:07:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
 outcome-what: "jaira <id> startet ~/.jaira/plugins/<id>/jaira-<id> (Argumente, stdio, JAIRA_ROOT/BOARD/VERSION, Exit-Code); eingebaute Befehle gewinnen. create/set/claim/move feuern Plugin-Events aus jaira-plugin.json (move ueber core/move.Moved, also auch aus der TUI). external in show/list --json. Merge uebernimmt external von der Seite, die es geaendert hat."
 outcome-why: "Standard docs/PLUGINS.md (R6X6FH) verlangt Dispatch und Events; Teamlead-Luecken (TUI-Moves, external in JSON, merge, AGENTS.md) gehoeren dazu. Der Merge meldete bisher einen Konflikt, sobald nur ein Branch external setzte."
 outcome-resolves: Plugins lassen sich ohne Aenderung am Kern starten und hoeren Schreibvorgaenge; Install und Katalog bleiben ein spaeteres Ticket.
-review-summary: "'jaira <id>' startet jetzt ~/.jaira/plugins/<id>/jaira-<id> (.exe auf Windows, nie PATH) mit allen Argumenten, stdio, JAIRA_ROOT/BOARD/VERSION und gibt dessen Exit-Code zurueck - aber nur, wenn cobra das erste Wort nicht als Befehl, Alias, help oder completion kennt. create, claim und set rufen nach dem Schreiben firePlugins; move feuert ueber den neuen Hook core/move.Moved, den internal/cli setzt, damit auch TUI-Moves ihn erreichen. Abos liest jaira aus jaira-plugin.json neben dem Programm (ein Verzeichnis-Scan pro Schreibvorgang, nichts bei JAIRA_IN_EVENT=1); stdin ist das Objekt von show --json plus actor und from_lane, 5 s Timeout, Ausgabe und Fehler verworfen. external steht in show/list --json. Der Merge vergleicht external jetzt als ganzen Eintrag (Doc.Entry/SetEntry) und uebernimmt die Aenderung der anderen Seite statt einen Konflikt zu melden. Doku und Release-Note nachgezogen."
+review-summary: "jaira <id> startet ~/.jaira/plugins/<id>/jaira-<id> (.exe auf Windows) mit allen Argumenten, stdio, JAIRA_ROOT/BOARD/VERSION und gibt dessen Exit-Code zurueck - nur wenn cobra den Befehl nicht kennt (help/completion/Aliase eingeschlossen), nie aus PATH. create/claim/set rufen nach dem Schreiben jedes Plugin, dessen jaira-plugin.json das Event nennt, als 'jaira-<id> event <name>' mit show --json + actor + from_lane auf stdin, 5 s Timeout, Ausgabe verworfen, JAIRA_IN_EVENT=1 verhindert Kettenreaktionen. move feuert aus core/move.Move ueber den Hook move.Moved, damit auch TUI-Moves ankommen; im Terminal-Board laufen die Events ueber eine Warteschlange mit einer Goroutine, die beim Beenden geleert wird; die CLI bleibt synchron. set board=<x>, das die Lane wechselt, feuert zusaetzlich move. external steht in show/list --json; der Merge uebernimmt external jetzt von der Seite, die es geaendert hat (Doc.Entry/SetEntry statt Konflikt). Doku AGENTS.md/PLUGINS.md und Release-Note angepasst."
 round: 3
 review-gaps: |-
-  note: TUI-Moves rufen das Plugin synchron im TUI-Prozess - pro abonniertem Plugin kann das Board bis zu 5 s haengen (core/move/move.go:156 -> plugin.Fire)
-  note: jaira set board=<x> kann den Status in die erste Lane des neuen Boards setzen (internal/cli/tickets.go:1170); das feuert nur 'set', nicht 'move', und der Payload wird mit den Lanes des alten Boards gebaut
-  note: kein Test fuer Windows (.exe-Suffix in plugin.Program) - nur auf Linux gelaufen
-test-verdict: "pass: go test ./... -race after go clean -testcache RC=0; DoD 1-7 proofs opened and their tests run; built binary on a scratch board: 'echo hello | jaira demo pull --board ops \"two words\"' passed args, stdin, JAIRA_ROOT/BOARD=ops/VERSION=0.9.9 and exit 6; 'jaira list' stayed built-in; create/set/claim/move each reached the plugin with in_event=1, from_lane backlog on move, external demo:X-1; a plugin exiting 1 failed no command. TUI moves not driven by hand - covered by TestMovedHearsEveryWrittenMove, all three TUI sites call move.Move"
-review-verdict: "Diff erfuellt alle 7 DoD-Punkte; keine Defekte gefunden. go test fuer core/plugin, internal/cli, core/move, core/merge, core/ticket gruen; Handtest mit Fake-Plugin bestaetigt Argumente, Env, Exit-Code 7 und create-Event-Payload."
-review-round: 2
-review-check: "1. go build -o /tmp/j ./cmd/jaira  2. mkdir -p /tmp/h/plugins/demo und dort jaira-demo anlegen: #!/bin/sh / if [ \"$1\" = event ]; then cat > /tmp/h/ev-$2.json; exit 0; fi / echo \"args=$* board=$JAIRA_BOARD\"; exit 7 - dann chmod +x  3. echo '{\"id\":\"demo\",\"events\":[\"create\"]}' > /tmp/h/plugins/demo/jaira-plugin.json  4. in einem Repo mit .jaira: JAIRA_HOME=/tmp/h /tmp/j demo x --board=foo; echo $? -> \"args=x --board=foo board=foo\" und 7  5. JAIRA_HOME=/tmp/h /tmp/j create T --goal g --context c --dod d -> /tmp/h/ev-create.json existiert und enthaelt id, title, actor, external  6. JAIRA_HOME=/tmp/h /tmp/j list --json | jq '.[0].external' -> Feld vorhanden  7. Merge: go test ./core/merge -run TestMergeExternalChangedOnOneSideWins"
+  note: die TUI-Warteschlange hat 64 Plaetze - haengen Plugins laenger, blockiert der 65. Move im Board doch, bis einer frei wird
+  note: ein per Signal beendetes Plugin liefert ExitCode -1, jaira beendet sich dann mit 255 statt mit einem eigenen Code
+  note: der TUI-Pfad (Warteschlange im echten Board) ist nur per Unit-Test geprueft, nicht im laufenden Board
+test-verdict: "pass (round 2): go test -race -timeout 20m ./... RC=0 after go clean -testcache, and RC=0 again after merging upstream/master 3e3e1aee; DoD 8-10 proof tests run green (TestBoardEventsDoNotWaitForThePlugin, TestSetBoardThatChangesTheLaneFiresAMove, TestProgramOnWindowsIsTheExe); DoD 1-7 checked on round 1 with the built binary on a scratch board and still green in the suite. TUI not driven by hand: queueEvents is checked through firePlugins as runBoard wires it"
+review-verdict: "Diff erfuellt alle 10 DoD-Punkte; keine Defekte. go test -race core/plugin, core/move, core/merge, core/ticket gruen; internal/cli und internal/tui komplett gruen; Handtest mit Fake-Plugin: Argumente, JAIRA_BOARD aus --board=, Exit-Code 7, unbekannter Befehl ohne Plugin weiter Exit 2, Events create/claim/set/move mit actor und from_lane (backlog -> todo)."
+review-round: 3
+review-check: "1. cd in dieses Repo, dann: go build -o /tmp/j ./cmd/jaira  2. mkdir -p /tmp/h/plugins/demo  3. Datei /tmp/h/plugins/demo/jaira-demo anlegen: #!/bin/sh / if [ \"$1\" = event ]; then cat > /tmp/h/ev-$2.json; exit 0; fi / echo \"args=$* board=$JAIRA_BOARD\"; exit 7 - dann chmod +x  4. echo '{\"id\":\"demo\",\"events\":[\"create\",\"move\",\"set\"]}' > /tmp/h/plugins/demo/jaira-plugin.json  5. in einem Repo mit .jaira: JAIRA_HOME=/tmp/h /tmp/j demo x --board=foo; echo $? -> zeigt \"args=x --board=foo board=foo\" und 7  6. JAIRA_HOME=/tmp/h /tmp/j create T --goal g --context c --dod d -> /tmp/h/ev-create.json existiert, enthaelt actor und external  7. JAIRA_HOME=/tmp/h /tmp/j move <id> --to todo -> /tmp/h/ev-move.json hat from_lane \"backlog\", status \"todo\"  8. JAIRA_HOME=/tmp/h /tmp/j board, Ticket mit der Tastatur verschieben -> Board reagiert sofort, nach dem Beenden ist ev-move.json neu  9. go test ./core/merge -run TestMergeExternalChangedOnOneSideWins -> ok"
 ---
 
 # jaira <id> startet ein installiertes Plugin
@@ -90,3 +96,6 @@ internal/cli/plugin.go:firePlugins checks plugin.Subscribers and plugin.Fire sca
 - **2026-11-05 21:51 · Alexander Sacharov** — critique (Runde 2): beide Befunde aus Runde 1 erledigt (b154df66) - Events geloescht, Subscribers einmal pro Schreibvorgang und leer innerhalb eines Events. Nichts Neues.
 - **2026-11-05 21:58 · Alexander Sacharov** — Teamlead (47752) nach Review, vor Signoff: drei Review-Notizen werden behoben. (1) TUI-Moves feuern Events ohne die UI zu blockieren; CLI bleibt synchron wie PLUGINS.md. (2) set board=<x>, das den Status in die erste Lane des neuen Boards setzt, feuert zusaetzlich 'move' mit den Lanes des neuen Boards. (3) Test fuer das .exe-Suffix, der auch auf Linux laeuft (GOOS als Parameter). Plan: TUI -> eine Warteschlange mit einem Worker-Goroutine in internal/cli, Payload wird synchron gebaut (Zustand zum Zeitpunkt des Moves), gestartet vor tui-Lauf, beim Beenden geleert (Reihenfolge bleibt, kein Event geht beim Quit verloren; Quit wartet hoechstens auf laufende Plugins).
 - **2026-11-05 22:00 · Alexander Sacharov** — Runde 2 umgesetzt. Befund zu Review-Notiz 2: der set-Payload war schon mit den Lanes des neuen Boards gebaut (envFor liest t.Board nach dem Mutate) - der Test prueft status_known/next_lane jetzt explizit; neu ist nur das zusaetzliche move-Event. Home-Bildschirm (runHome) bewegt keine Tickets, daher nur openBoardAt und 'jaira board' mit Warteschlange. Haengendes Plugin beim Quit: Quit wartet bis zu 5 s je noch laufendem Event - bewusst, statt Events zu verlieren.
+- **2026-11-05 22:00 · Alexander Sacharov** — critique (Runde 3, nur 233ffbff): nichts. core/bgrun geprueft - das ist ein abgekoppelter, zeitlich gedrosselter Unterbefehl ohne Reihenfolge und ohne Warten, passt nicht fuer geordnete Events, die beim Quit nicht verloren gehen duerfen.
+- **2026-11-05 22:06 · Alexander Sacharov** — review (Runde 3, frischer Kontext): keine Blocker. Geprueft gegen upstream/master...HEAD (5 Commits), alle Tests inkl. -race gruen, Handtest mit Fake-Plugin fuer dispatch und vier Events. Drei Notizen in review-gaps.
+- **2026-11-05 22:06 · Alexander Sacharov** — Teamlead (05.11.2026, Alex' Auftrag vor dem Schlafen): abgenommen nach Review ohne Blocker (3 Notes: Queue 64 Plaetze, Signal-Exit 255, TUI-Queue nur per Unit-Test).
