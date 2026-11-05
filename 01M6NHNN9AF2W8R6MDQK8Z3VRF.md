@@ -20,7 +20,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:04Z
-updated-at: 2026-11-05T22:06:09Z
+updated-at: 2026-11-05T22:06:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75959
 claimed-at: 2026-11-05T21:39:09Z
@@ -92,3 +92,4 @@ internal/cli/plugin.go:firePlugins checks plugin.Subscribers and plugin.Fire sca
 - **2026-11-05 22:00 · Alexander Sacharov** — Runde 2 umgesetzt. Befund zu Review-Notiz 2: der set-Payload war schon mit den Lanes des neuen Boards gebaut (envFor liest t.Board nach dem Mutate) - der Test prueft status_known/next_lane jetzt explizit; neu ist nur das zusaetzliche move-Event. Home-Bildschirm (runHome) bewegt keine Tickets, daher nur openBoardAt und 'jaira board' mit Warteschlange. Haengendes Plugin beim Quit: Quit wartet bis zu 5 s je noch laufendem Event - bewusst, statt Events zu verlieren.
 - **2026-11-05 22:00 · Alexander Sacharov** — critique (Runde 3, nur 233ffbff): nichts. core/bgrun geprueft - das ist ein abgekoppelter, zeitlich gedrosselter Unterbefehl ohne Reihenfolge und ohne Warten, passt nicht fuer geordnete Events, die beim Quit nicht verloren gehen duerfen.
 - **2026-11-05 22:06 · Alexander Sacharov** — review (Runde 3, frischer Kontext): keine Blocker. Geprueft gegen upstream/master...HEAD (5 Commits), alle Tests inkl. -race gruen, Handtest mit Fake-Plugin fuer dispatch und vier Events. Drei Notizen in review-gaps.
+- **2026-11-05 22:06 · Alexander Sacharov** — Teamlead (05.11.2026, Alex' Auftrag vor dem Schlafen): abgenommen nach Review ohne Blocker (3 Notes: Queue 64 Plaetze, Signal-Exit 255, TUI-Queue nur per Unit-Test).
