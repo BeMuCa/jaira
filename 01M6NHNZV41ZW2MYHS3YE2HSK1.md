@@ -18,7 +18,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:15Z
-updated-at: 2026-11-05T12:06:06Z
+updated-at: 2026-11-05T12:24:14Z
 updated-by: Alexander Sacharov
 blocked-reason: "DoD 2 wartet auf die Katalog-CI aus D44NVR (panda-bobr/jaira-releases, noch nicht auf main)"
 ---
@@ -29,7 +29,8 @@ blocked-reason: "DoD 2 wartet auf die Katalog-CI aus D44NVR (panda-bobr/jaira-re
 
 - [x] Ein Repo aus der Vorlage baut mit 'git tag v0.1.0 && git push --tags' ein Release mit allen Assets und checksums.txt; einmal vorgefuehrt
   proof: https://github.com/panda-bobr/jaira-hello-demo/releases/tag/v0.1.0 - Tag v0.1.0 -> Run 42011801567 gruen; 6 Binaries jaira-hello_<os>_<arch>(.exe), checksums.txt (sha256sum -c alle OK), jaira-plugin.json; Vorlage = panda-bobr/jaira-plugin-template@fc5d7e1
-- [ ] Das Release besteht die CI von panda-bobr/jaira-releases
+- [x] Das Release besteht die CI von panda-bobr/jaira-releases
+  proof: https://github.com/panda-bobr/jaira-releases/pull/4 - check-catalog run 42026722958 pass, Kommentar 'Catalogue check passed' fuer hello -> panda-bobr/jaira-hello-demo v0.1.0
 
 ## Options
 
