@@ -19,7 +19,7 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T10:28:23Z
+updated-at: 2026-11-05T10:28:33Z
 updated-by: Alexander Sacharov
 ---
 
@@ -39,7 +39,7 @@ updated-by: Alexander Sacharov
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] Repo jaira-releases lokal anlegen, README-Start-Commit auf main pushen
+- [~] Repo jaira-releases lokal anlegen, README-Start-Commit auf main pushen
 - [ ] plugins.json, schema/, CONTRIBUTING.md, check_catalog.py + Unit-Tests, Workflow auf feat/d44nvr
 - [ ] Fixture-Repo sashasoft90/jaira-plugin-ci-fixture mit Release v0.0.1 ohne checksums.txt
 - [ ] Test-Branches (doppelte id, fehlendes Release, fehlende Pruefsumme) pushen, gh-Zeilen fuer Alex
