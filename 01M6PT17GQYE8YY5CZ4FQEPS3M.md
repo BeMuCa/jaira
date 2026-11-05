@@ -21,7 +21,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T21:32:27Z
-updated-at: 2026-11-05T21:32:27Z
+updated-at: 2026-11-05T21:33:00Z
+updated-by: Alexander Sacharov
 ---
 
 # jaira-cockpit: session.append wird seit Claude Code 2.1.318 nicht mehr erreicht
