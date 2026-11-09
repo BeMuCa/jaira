@@ -1,7 +1,7 @@
 ---
 id: 01M7157NFTE0AME0MS7MX6JHQX
 title: Accept im Cockpit startet kein nächstes Ticket mehr
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Accept im Cockpit öffnet weiter den PR, startet aber nie von selbst das nächste Ticket; was als Nächstes läuft, entscheidet der Teamlead"
@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-09T22:00:36Z
-updated-at: 2026-11-09T22:08:13Z
+updated-at: 2026-11-09T22:11:37Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-64644
@@ -31,8 +31,9 @@ outcome-what: "Accept im Cockpit öffnet nur noch den PR, wenn einer fällig ist
 outcome-why: "Das automatisch gestartete Ticket kam ohne Ankündigung und ohne Grund; welches Ticket als Nächstes läuft, entscheidet der Teamlead"
 outcome-resolves: Accept ohne fälligen PR startet nichts mehr; Toast nennt nur Ticket und PR-Hinweis
 review-summary: "none"
-round: 2
+round: 3
 review-gaps: "register.tsx afterAccept: hint aus stuck() entfernt — nach dem Wegfall des Next-Zweigs war er dort immer leer (PR-Schritt hat nie einen Hinweis, Fehlerstring auch nicht); tests/board.test.ts: settings.json-Fixture {dispatch:worker} im PR-schon-da-Test entfernt, liest keiner mehr. Gelassen: w.next/nextFails-Fixture (Overview liest jaira next), tabsOf/settingsJson (andere Aufrufer), stepAfterAccept als 'pr'|'none' statt boolean (Benennung trägt), herdr()-Prüfung im PR-Zweig (bestehendes Muster)."
+test-verdict: "fail: go test ./... rot — core/role TestEveryInstalledFileIsAShippedVersion: shipped.sha256 kennt die neuen Hashes von board.ts, register.tsx, texts.ts nicht"
 ---
 
 # Accept im Cockpit startet kein nächstes Ticket mehr
@@ -68,3 +69,5 @@ review-gaps: "register.tsx afterAccept: hint aus stuck() entfernt — nach dem W
 - **2026-11-09 22:06 · Alexander Sacharov** — critique (Runde 1): core/mod/builtin/jaira-cockpit/hooks/register.tsx:535-538 beschreibt noch zwei Schritte ('never the board', 'stops both steps'); es gibt nur noch den PR-Schritt — Satz auf 'A string is a failure: no pull request is opened, and the pane says why' kürzen, 'never the board' streichen. Sonst nichts: spawn.sh --no-parent bleibt (Give back nutzt es, register.tsx:931), Doku in spawn.sh stimmt weiter; tabsOf/settingsJson bleiben (andere Aufrufer); 'pr'|'none' als Typ gelassen.
 - **2026-11-09 22:06 · Alexander Sacharov** — in-progress Runde 2: Kommentar register.tsx:535-537 auf einen Schritt gekürzt, nur Kommentar, Tests unberührt.
 - **2026-11-09 22:07 · Alexander Sacharov** — critique (Runde 2): einziger Befund aus Runde 1 (Kommentar register.tsx:535) behoben in 55a92796; nichts weiter.
+- **2026-11-09 22:09 · Alexander Sacharov** — testing (Runde 1): go build ./... ok; claude plugin test . 175/0; go test ./... exit 1: core/role shipped_test.go:74 TestEveryInstalledFileIsAShippedVersion — core/shipped/shipped.sha256 fehlt die Version von hooks/board.ts, register.tsx, texts.ts. Fix: scripts/shipped-history.sh > core/shipped/shipped.sha256 bzw. die drei Zeilen anhängen, im selben Commit wie der Code.
+- **2026-11-09 22:11 · Alexander Sacharov** — in-progress Runde 3: drei Hashes an core/shipped/shipped.sha256 angehängt (append-only laut Dateikopf; scripts/shipped-history.sh hätte ~40 fremde Altversionen mitgezogen). go test ./core/role ok.
