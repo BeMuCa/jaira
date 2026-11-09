@@ -15,8 +15,8 @@ definition-of-done: "Eine Lane deklariert output-artifacts; nach dem Move liegt 
 blocked-by: []
 commits: []
 created-at: 2026-08-27T15:55:56Z
-updated-at: 2026-11-04T21:29:21Z
-updated-by: berkc
+updated-at: 2026-11-05T17:53:13Z
+updated-by: BeMuCa
 ---
 
 # Lanes geben Artefakte aus und reichen sie an die naechste Lane weiter
@@ -36,3 +36,4 @@ updated-by: berkc
 
 ## Progress
 - **2026-11-04 21:29 · berkc** — Follow-up of ENCFVZ (skill/script/receipt lanes): the maintainer listed output-artifacts / input-artifacts as lane attributes on 04.11.2026 and left them to this ticket. Refinements from ENCFVZ's brainstorm note of 30.10.2026: path per ticket under .jaira/artifacts/<handle>/<ticket>/<lane>-<name>.<ext>, a gitignored local/ for large or private files, size limit for shared ones (proposed 1 MB), --for-lane hands paths not contents, the gate checks output-artifacts exist on leaving.
+- **2026-11-05 17:53 · BeMuCa** — Berk, 2026-11-05: wenn eine Lane Artefakte ausgibt (z. B. HTML-Seiten), muss man von jaira aus direkt zu ihrem Ordner kommen - ein Befehl, der den Pfad eines Tickets ausgibt oder oeffnet, und eine Taste auf der Ticket-Karte. Gehoert in dieses Ticket, nicht in ein eigenes. Zusammenhang SZFTQD (stabiler Pfad fuer Ergebnisse einer Person).

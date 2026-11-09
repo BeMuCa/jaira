@@ -1,7 +1,7 @@
 ---
 id: 01M6NHNWE5JR91RRD6Q8D44NVR
 title: "panda-bobr/jaira-releases: plugins.json, CI-Pruefung und CONTRIBUTING"
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -17,22 +17,19 @@ tags:
 blocked-by:
   - R6X6FH
 related: []
-commits: []
+commits:
+  - 57bc9c251d0744feee1f17a585f523ceccc28d93
 created-at: 2026-11-05T09:47:12Z
-updated-at: 2026-11-05T12:23:10Z
+updated-at: 2026-11-05T21:38:38Z
 updated-by: Alexander Sacharov
 question: ""
 outcome-what: "panda-bobr/jaira-releases: README auf main, per PR #1 plugins.json ([]), schema/ (Kopien aus R6X6FH), CONTRIBUTING.md, .github/scripts/check_catalog.py mit 23 Unit-Tests und Workflow check-catalog (pull_request_target, nur plugins.json-PRs, Kommentar mit allen Problemen). Fixture-Repos panda-bobr/jaira-plugin-ci-fixture (Release ohne checksums.txt) und -norelease. Test-PR #2 zeigt die Ablehnung."
 outcome-why: "Ein Plugin-Autor soll seinen Eintrag per PR einreichen koennen und vor jedem Menschen erfahren, was fehlt; der Katalog aus R6X6FH existierte nur als leeres Repo."
 outcome-resolves: "DoD 1 (main 44d293d) und DoD 2 (PR #2, Run 42024115800, Bot-Kommentar mit doppelter id, fehlendem Release, fehlender Pruefsumme)"
-review-summary: "Im Repo panda-bobr/jaira-releases liegt jetzt der Plugin-Katalog: plugins.json (leer), schema/ (Kopien der R6X6FH-Schemas), README, CONTRIBUTING und .github/scripts/check_catalog.py mit Workflow check-catalog. Ein PR auf plugins.json startet pull_request_target: der Workflow checkt main aus, liest plugins.json des PR nur als Daten und fuehrt keinen PR-Code aus; das Skript prueft Schema, eindeutige ids ohne 'jaira' und ohne jaira-Befehlsnamen, oeffentliches Repo, Besitz durch den PR-Autor (oder oeffentliche Org-Mitgliedschaft), jaira-plugin.json auf dem Default-Branch, Release v<version> mit sechs Binaries und checksums.txt, und schreibt alle Probleme als einen Bot-Kommentar, der bei jedem Push aktualisiert wird. Aendert ein PR repo oder author einer gelisteten id, muss der Autor auch das bisherige repo besitzen (check_takeover). GitHub-Fehler (Rate-Limit, 5xx) erscheinen als Problem statt als leerer Kommentar. Ein eigener Job unit laeuft auf pull_request mit paths .github/** und schema/** nur mit Lese-Token und fuehrt die 29 Unit-Tests aus. Im jaira-Repo selbst aendert der Branch nur die Ticketdatei."
-round: 3
-review-gaps: |-
-  note: 56da600 (optimize-Refactor: changed_entries inline) liegt auf origin/fix/d44nvr-errors, ist aber nicht in main - PR #3 wurde bei 52c090e gemergt; Verhalten gleich, also entweder nachziehen oder verwerfen
-  note: author ist Freitext (Schema: string 1-80) - ein neuer Eintrag kann jeden Autorennamen tragen; geprueft wird nur der Besitz von repo
-  note: wird ein PR zwischen Event und Lauf erneut gepusht, findet git show den HEAD_SHA nicht und die Meldung lautet 'plugins.json must be a JSON array' statt 'neu ausfuehren'; der folgende synchronize-Lauf ersetzt den Kommentar
-  note: DoD 3 ist nur per Unit-Test belegt (4 Tests mit aufgezeichneten API-Antworten), nicht per Live-PR - die DoD verlangt genau einen Test
-test-verdict: "pass: unit RC=0 (29 Tests, 56da600); DoD 3 live: Verschieben von hello (panda-bobr/jaira-hello-demo -> sashasoft90/jaira) durch octocat abgelehnt mit 'needs the owner of the listed repository', durch sashasoft90 (jetzt oeffentliches panda-bobr-Mitglied, anon 204) korrekt erlaubt; DoD 4: PR #3 Run 42026044679 job unit success, check skipped"
+review-summary: "none"
+round: 4
+review-gaps: "none: 4aa2cfc fuegt nur HEAD_GONE, --head-gone und die cat-file-Weiche hinzu, nichts doppelt oder ungenutzt (pyflakes sauber); 6845b50 ist der schon gepruefte Optimize-Commit 56da600"
+test-verdict: "pass: frischer Clone von main 7d0cb6f, unit RC=0 (30 Tests); push-Lauf auf 7d0cb6f success; --head-gone liefert nur die Zeile 'the pull request changed while it was checked; the next run replaces this comment' mit RC=1; git cat-file -e: fehlender SHA RC=128, vorhandener RC=0; Regression: PR-#2-Eintraege auf main-Code weiter abgelehnt (doppelte id, kein checksums.txt, kein Release), Mitgliedschaftszeile entfaellt (sashasoft90 oeffentlich)"
 claimed-by: DESKTOP-RFTCH11-12777
 claimed-at: 2026-11-05T12:10:19Z
 review-verdict: "Alle vier DoD-Punkte erfuellt und auf GitHub nachgeprueft: main 85953d3 enthaelt plugins.json, README, CONTRIBUTING, Skript und Workflow (PR #1 und #3 gemergt); PR #2 Lauf 42024115800 lehnt mit Bot-Kommentar ab (doppelte id, fehlendes Release, fehlende checksums.txt); check_takeover mit Tests; Lauf 42026044679 (pull_request) Job unit success, 29 Tests lokal auf origin/main gruen. Workflow-Sicherheit geprueft: kein PR-Code unter pull_request_target, PR-Werte nur ueber env. Kein Blocker; vier Notes."
@@ -52,6 +49,8 @@ review-check: "1. Oeffne https://github.com/panda-bobr/jaira-releases - auf main
   proof: jaira-releases fix/d44nvr-errors 52c090e: .github/scripts/check_catalog.py check_takeover; tests test_takeover_of_a_listed_id_is_refused, test_takeover_with_foreign_old_repo_is_refused, test_owner_of_both_repos_may_move_the_entry, test_description_change_needs_no_old_owner_check (29 OK)
 - [x] Die Unit-Tests der Katalogpruefung laufen in jedem PR, der .github/** aendert; im PR fix/d44nvr-errors gezeigt
   proof: panda-bobr/jaira-releases PR #3 (fix/d44nvr-errors 52c090e): run 42026044679, event pull_request, job unit success 'Ran 29 tests ... OK', job check skipped; .github/workflows/check-catalog.yml on.pull_request paths .github/**, schema/**
+- [x] Wird ein PR waehrend der Pruefung neu gepusht, meldet die Pruefung 'the pull request changed while it was checked; the next run replaces this comment' statt 'must be a JSON array'; Unit-Test
+  proof: jaira-releases fix/d44nvr-race 4aa2cfc: check_catalog.py --head-gone/HEAD_GONE, check-catalog.yml 'git cat-file -e HEAD_SHA^{commit}'; test test_head_gone_says_the_next_run_replaces_it (30 OK)
 
 ## Options
 
@@ -69,6 +68,9 @@ review-check: "1. Oeffne https://github.com/panda-bobr/jaira-releases - auf main
 - [x] DoD 3: Besitzerpruefung des alten repo bei geaendertem repo/author eines gelisteten id, mit Tests
 - [x] DoD 4: Unit-Job auf pull_request (paths .github/**, schema/**), concurrency je Event
 - [x] Push-Zeile und gh pr create fuer fix/d44nvr-errors an Teamlead; nach PR-Lauf DoD 4 mit Proof
+- [x] Branch fix/d44nvr-race von origin/main, 56da600 cherry-pick
+- [x] Race: --head-gone im Skript + Workflow erkennt fehlenden HEAD_SHA, Unit-Test
+- [x] Push- und gh-pr-create-Zeile an Teamlead
 
 ## Progress
 - **2026-11-05 10:23 · Alexander Sacharov** — Teamlead (05.11.2026): der Standard (R6X6FH, abgenommen) liegt noch nicht auf master, sondern auf origin/feat/r6x6fh: docs/PLUGINS.md und docs/schema/*.json - lesen mit 'git show origin/feat/r6x6fh:docs/PLUGINS.md'. Die Arbeit selbst gehoert in das Repo panda-bobr/jaira-releases; Alex ist dort admin. Ein Agent pusht seinen Branch und oeffnet keinen PR.
@@ -96,3 +98,8 @@ review-check: "1. Oeffne https://github.com/panda-bobr/jaira-releases - auf main
 - **2026-11-05 12:19 · Alexander Sacharov** — critique (Runde 3, nur 52c090e gelesen): keine Funde. check_takeover steht neben check_entry und nutzt check_owner wieder; pull_request-Job laeuft PR-Code nur mit Lese-Token - Standardmuster. Hinweis: outcome-resolves nennt nur DoD 1+2; DoD 3+4 tragen ihre Proofs selbst.
 - **2026-11-05 12:20 · Alexander Sacharov** — testing: sashasoft90 ist seit ~12:20 oeffentliches Mitglied von panda-bobr (public_members anon 204) - Mitgliedschafts-Zeile faellt fuer panda-bobr-Repos jetzt weg. 56da600 (optimize) ist lokal und noch nicht in PR #3; Push: git -C /tmp/claude-1000/-home-alex-projects--worktrees-jaira-d44nvr/e9c86c25-536c-4790-a6d8-3e163fb430b1/scratchpad/jaira-releases push origin fix/d44nvr-errors
 - **2026-11-05 12:23 · Alexander Sacharov** — review (frische Sitzung, Runde 2): kein Blocker. Nachgeprueft auf GitHub: PR #1/#3 gemergt (main 85953d3), PR #2 geschlossen mit Bot-Kommentar, Lauf 42026044679 unit success; 29 Tests auf origin/main lokal gruen. Offen nur: 56da600 liegt auf origin/fix/d44nvr-errors, nicht in main (reiner Refactor).
+- **2026-11-05 17:20 · Alexander Sacharov** — Alex (05.11.2026, via Teamlead): vor Abnahme (1) Race beheben - HEAD_SHA nach erneutem Push nicht mehr da -> Meldung 'the pull request changed while it was checked; the next run replaces this comment' statt 'must be a JSON array', mit Unit-Test; (2) neuer Branch von origin/main 85953d3 mit 56da600 cherry-picked + Fix 1, ein PR. (3) author bleibt Freitext (wie Obsidian), DoD 3 bleibt nur per Unit-Test belegt - bewusst keine Aenderung.
+- **2026-11-05 17:21 · Alexander Sacharov** — Race-Fix: Branch fix/d44nvr-race = origin/main 85953d3 + 6845b50 (cherry-pick von 56da600) + 4aa2cfc, lokal. Workflow erkennt den verschwundenen HEAD_SHA mit 'git cat-file -e' (der depth=1-Fetch von refs/pull/N/head holt nur den neuen Kopf) und ruft das Skript mit --head-gone; das Skript meldet nur diese eine Zeile und endet mit 1. author bleibt Freitext, DoD 3 bleibt per Unit-Test belegt (Alex).
+- **2026-11-05 17:28 · Alexander Sacharov** — PR #5 (fix/d44nvr-race, 4aa2cfc): run 42074820465 pull_request - unit success 'Ran 30 tests', check skipped. Warte auf Merge, dann testing/review/signoff.
+- **2026-11-05 21:36 · Alexander Sacharov** — critique (Runde 4, nur 4aa2cfc gelesen): keine Funde. Ein veralteter Lauf kann den Kommentar nicht nach dem neueren ueberschreiben: concurrency cancel-in-progress (Gruppe je Event+PR) bricht ihn ab, sobald der neuere startet.
+- **2026-11-05 21:38 · Alexander Sacharov** — Alex (05.11.2026): abgenommen, waehrend die vierte review-Runde lief (Race-Fix PR #5 gemergt, 7d0cb6f auf main). author bleibt Freitext; DoD 3 per Unit-Test.
