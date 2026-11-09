@@ -6,6 +6,9 @@ export interface Ticket {
   done: boolean;
   // false: in the epic only because it follows, or is a child of, a member.
   direct: boolean;
+  // For a ticket that is not direct, the id of the member it is counted
+  // through: the line that would have to go to take it out.
+  via?: string;
   // Where it lies; a filed ticket (logbook, archive) is shown, never dragged.
   place: Place;
   goal?: string;
@@ -19,6 +22,8 @@ export interface Ticket {
   filed_at?: string;
   // The kind of no, for a ticket 'jaira reject' archived.
   rejected?: string;
+  // Why, as 'jaira reject' wrote it.
+  rejected_why?: string;
   // The ticket file in this checkout is older than the ref; this is the ref.
   behind_ref?: boolean;
 }

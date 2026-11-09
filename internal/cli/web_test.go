@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/BeMuCa/jaira/core/epic"
 	"github.com/BeMuCa/jaira/core/ticket"
 	"github.com/BeMuCa/jaira/core/web"
 )
@@ -156,6 +157,18 @@ func TestWebCreatesMovesRemovesAndOpens(t *testing.T) {
 	if w := webDo(t, h, "POST", "/api/epics/pay-later/tickets", `{"id":"`+a+`","from":"magic-login"}`); w.Code != 200 || strings.Contains(w.Body.String(), "push_error") {
 		t.Fatalf("move: %d %s", w.Code, w.Body)
 	}
+	var epics []web.Epic
+	webGet(t, h, "/api/epics", &epics)
+	for _, e := range epics {
+		for _, c := range e.Tickets {
+			if c.ID == f && c.Via != a {
+				t.Errorf("follow-up in %s via = %q; want the member %s it is counted through", e.Name, c.Via, a)
+			}
+			if c.ID == a && c.Via != "" {
+				t.Errorf("member via = %q; want none", c.Via)
+			}
+		}
+	}
 	if w := webDo(t, h, "DELETE", "/api/epics/pay-later/tickets/"+f, ""); w.Code != http.StatusConflict || !strings.Contains(w.Body.String(), "follows") {
 		t.Fatalf("removing a follow-up: %d %s; want 409 naming follows", w.Code, w.Body)
 	}
@@ -225,7 +238,7 @@ func fileAway(t *testing.T, s *ticket.Store, id, dir, extra string) {
 
 // all=1 lists every ticket that ever was: the logbook and the archive beside
 // the board, each saying where it lies, the logbook's with the day it was
-// filed and a rejected one with its kind; each of them opens, and the opened
+// filed and a rejected one with its kind and reason; each of them opens, and the opened
 // archive ticket says why it was rejected.
 func TestWebListsFiledTicketsAndOpensThem(t *testing.T) {
 	dir := t.TempDir()
@@ -265,8 +278,8 @@ func TestWebListsFiledTicketsAndOpensThem(t *testing.T) {
 	if c := got[logged]; c.Place != "logbook" || c.FiledAt.Format("2006-01-02") != "2026-10-01" {
 		t.Errorf("logged = %+v; want place logbook, filed 2026-10-01", c)
 	}
-	if c := got[rejected]; c.Place != "archive" || c.Rejected != "wontfix" || c.FiledAt.Format("2006-01-02") != "2026-10-02" {
-		t.Errorf("rejected = %+v; want place archive, rejected wontfix, filed 2026-10-02", c)
+	if c := got[rejected]; c.Place != "archive" || c.Rejected != "wontfix" || c.RejectedWhy != "nobody needs it" || c.FiledAt.Format("2006-01-02") != "2026-10-02" {
+		t.Errorf("rejected = %+v; want place archive, rejected wontfix for nobody needs it, filed 2026-10-02", c)
 	}
 
 	var d web.TicketDetail
@@ -281,6 +294,40 @@ func TestWebListsFiledTicketsAndOpensThem(t *testing.T) {
 	webGet(t, h, "/api/tickets/"+open, &d)
 	if d.Place != "board" {
 		t.Errorf("open detail place = %q", d.Place)
+	}
+}
+
+// A filed ticket keeps its line in an epic, and the page takes it out the
+// way 'jaira epic rm' does: the ticket is found in the logbook or the
+// archive, not answered with "not found".
+func TestWebRemovesAFiledTicketFromAnEpic(t *testing.T) {
+	ada, _ := twoBoards(t)
+	logged := createTicket(t, ada, "Long done")
+	rejected := createTicket(t, ada, "Never")
+	jsonOf(t, ada, "epic", "create", "old-work")
+	jsonOf(t, ada, "epic", "add", "old-work", logged, rejected)
+	for _, id := range []string{logged, rejected} {
+		if out, err := runAndSend(t, ada, "pull", id); err != nil {
+			t.Fatalf("pull: %v\n%s", err, out)
+		}
+	}
+
+	g.dir = ada
+	s, err := openStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	fileAway(t, s, logged, filepath.Join(ticket.LogbookSubdir, "al-20261001"), "")
+	fileAway(t, s, rejected, ticket.ArchiveSubdir, "rejected-kind: wontfix\nrejected-why: nobody needs it\n")
+	h := (&web.Server{Source: newWebSource(s), Push: webPush}).Handler()
+
+	for _, id := range []string{logged, rejected} {
+		if w := webDo(t, h, "DELETE", "/api/epics/old-work/tickets/"+id, ""); w.Code != 200 {
+			t.Fatalf("removing filed %s: %d %s", id, w.Code, w.Body)
+		}
+	}
+	if got := jsonOf(t, ada, "epic", "show", "old-work"); got["total"].(float64) != 0 {
+		t.Fatalf("old-work still holds %v after removing both", got["total"])
 	}
 }
 
@@ -470,5 +517,103 @@ func TestWebCountsSignoffApartFromDone(t *testing.T) {
 	webGet(t, (&web.Server{Source: newWebSource(s)}).Handler(), "/api/epics", &epics)
 	if len(epics) != 1 || epics[0].Signoff != 1 || epics[0].Done != 0 || epics[0].Total != 2 {
 		t.Fatalf("epics = %+v; want 1 in signoff, 0 done, of 2", epics)
+	}
+}
+
+// The page closes and reopens an epic through the calls 'jaira epic close'
+// and 'jaira epic reopen' make: a close with an unfinished ticket and a drop
+// into a closed epic each answer 409 until the page sends force, and the
+// forced drop leaves the epic closed.
+func TestWebClosesReopensAndForcesIntoAClosedEpic(t *testing.T) {
+	ada, _ := twoBoards(t)
+	a := createTicket(t, ada, "Login form")
+	b := createTicket(t, ada, "Straggler")
+	jsonOf(t, ada, "epic", "create", "magic-login", a)
+
+	g.dir = ada
+	s, err := openStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := (&web.Server{Source: newWebSource(s), Push: webPush}).Handler()
+	if w := webDo(t, h, "POST", "/api/epics/magic-login/close", ""); w.Code != http.StatusConflict {
+		t.Fatalf("close with an open ticket: %d %s; want 409", w.Code, w.Body)
+	}
+	if w := webDo(t, h, "POST", "/api/epics/magic-login/close", `{"force":true}`); w.Code != 200 {
+		t.Fatalf("forced close: %d %s", w.Code, w.Body)
+	}
+	var epics []web.Epic
+	webGet(t, h, "/api/epics", &epics)
+	if len(epics) != 1 || !epics[0].Closed {
+		t.Fatalf("after close: %+v; want the epic, closed", epics)
+	}
+
+	if w := webDo(t, h, "POST", "/api/epics/magic-login/tickets", `{"id":"`+b+`"}`); w.Code != http.StatusConflict {
+		t.Fatalf("drop into a closed epic: %d %s; want 409", w.Code, w.Body)
+	}
+	if w := webDo(t, h, "POST", "/api/epics/magic-login/tickets", `{"id":"`+b+`","force":true}`); w.Code != 200 {
+		t.Fatalf("confirmed drop: %d %s", w.Code, w.Body)
+	}
+	webGet(t, h, "/api/epics", &epics)
+	if !epics[0].Closed || len(epics[0].Tickets) != 2 {
+		t.Fatalf("after the confirmed drop: %+v; want two tickets and still closed", epics[0])
+	}
+
+	if w := webDo(t, h, "POST", "/api/epics/magic-login/reopen", ""); w.Code != 200 {
+		t.Fatalf("reopen: %d %s", w.Code, w.Body)
+	}
+	webGet(t, h, "/api/epics", &epics)
+	if epics[0].Closed {
+		t.Fatal("still closed after reopen")
+	}
+	if got := jsonOf(t, ada, "epic", "show", "magic-login"); got["closed"] != false {
+		t.Errorf("the CLI reads %v; want it open", got["closed"])
+	}
+	if w := webDo(t, h, "POST", "/api/epics/no-such/close", ""); w.Code != http.StatusNotFound {
+		t.Errorf("unknown epic: %d %s", w.Code, w.Body)
+	}
+}
+
+// The page reads an epic's keys with the link it may open, puts a key on and
+// takes one off through the edit the CLI makes, and refuses a link that is no
+// http one. A URL a person wrote by hand that is no link stays text.
+func TestWebEditsAnEpicsExternalKeys(t *testing.T) {
+	ada, _ := twoBoards(t)
+	a := createTicket(t, ada, "Login form")
+	jsonOf(t, ada, "epic", "create", "login", a, "--external", "OLD-1")
+
+	g.dir = ada
+	s, err := openStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := (&web.Server{Source: newWebSource(s), Push: webPush}).Handler()
+	edit := `{"add_external":["JIRA-1 https://jira.example/browse/JIRA-1"],"drop_external":["old-1"]}`
+	if w := webDo(t, h, "PATCH", "/api/epics/login", edit); w.Code != 200 {
+		t.Fatalf("edit: %d %s", w.Code, w.Body)
+	}
+	var epics []web.Epic
+	webGet(t, h, "/api/epics", &epics)
+	want := web.External{Key: "JIRA-1", URL: "https://jira.example/browse/JIRA-1", Link: "https://jira.example/browse/JIRA-1"}
+	if x := epics[0].External; len(x) != 1 || x[0] != want {
+		t.Fatalf("external after the edit = %+v; want %+v", x, want)
+	}
+	if w := webDo(t, h, "PATCH", "/api/epics/login", `{"add_external":["X-1 javascript:alert(1)"]}`); w.Code != http.StatusBadRequest {
+		t.Fatalf("a javascript: link: %d %s; want 400", w.Code, w.Body)
+	}
+
+	// A hand-written line whose URL is no link reaches the page without one.
+	e, err := epic.Load(epicRefs(), "login")
+	if err != nil {
+		t.Fatal(err)
+	}
+	hand := strings.Replace(string(e.Bytes()), "  - JIRA-1 https://jira.example/browse/JIRA-1", "  - JIRA-1 javascript:alert(1)", 1)
+	if err := epicRefs().RecordEpic("login", []byte(hand)); err != nil {
+		t.Fatal(err)
+	}
+	epics = nil
+	webGet(t, h, "/api/epics", &epics)
+	if x := epics[0].External; len(x) != 1 || x[0].Link != "" || x[0].URL != "javascript:alert(1)" {
+		t.Fatalf("a hand-written non-link = %+v; want it as text without a link", x)
 	}
 }

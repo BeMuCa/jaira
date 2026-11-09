@@ -56,8 +56,7 @@ func openBoardAt(dir string) error {
 	if err != nil {
 		return err
 	}
-	_, err = tea.NewProgram(m).Run()
-	return err
+	return runBoard(m)
 }
 
 func newProjectsAddCmd() *cobra.Command {

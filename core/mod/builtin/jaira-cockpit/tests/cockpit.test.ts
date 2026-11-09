@@ -162,6 +162,30 @@ describe('prompt.submit', () => {
     expect((await $.command.run(typed('report MG677R'))).text).toContain('approve mit Vorbehalt')
   })
 
+  test('a shortened message is rewritten on the delivery door too, and an attachment row is left alone', async ($, on) => {
+    session(on)
+    const rows = mock.session(on)
+    const message = '<agent-message from="a2">\nTicket MG677R: review -> signoff, review-verdict="approve"\n</agent-message>'
+    const line = '[shortened by jaira-cockpit] MG677R · review → signoff · approve — full report: /cockpit report MG677R'
+    await $.prompt.submit({ text: message, origin: { kind: 'peer' }, wait: false })
+    // Since 2.1.318 the engine's security default passes a person's plugin
+    // over on attachment rows; the cockpit hooks only the delivery doors.
+    await $.session.append({
+      message: { type: 'user', role: 'user', content: [{ type: 'text', text: message }] },
+      door: 'attachment',
+      origin: { kind: 'peer' },
+      uuid: 'row-4',
+    })
+    expect(rows.appended().at(-1)?.message.content[0]).toEqual({ type: 'text', text: message })
+    await $.session.append({
+      message: { type: 'user', role: 'user', content: [{ type: 'text', text: message }] },
+      door: 'delivery',
+      origin: { kind: 'peer' },
+      uuid: 'row-5',
+    })
+    expect(rows.appended().at(-1)?.message.content[0]).toEqual({ type: 'text', text: line })
+  })
+
   test("a row the cockpit did not shorten is stored as it came", async ($, on) => {
     session(on)
     const rows = mock.session(on)

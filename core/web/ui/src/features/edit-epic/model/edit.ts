@@ -1,3 +1,4 @@
+import type { External } from '@/entities/epic';
 import type { EpicEdit, EpicFields } from '../api/set';
 
 const FIELDS = ['title', 'description', 'body'] as const;
@@ -8,6 +9,51 @@ export function editOf(base: EpicFields, mine: EpicFields): EpicEdit | null {
   const edit: EpicEdit = { base };
   for (const f of FIELDS) if (mine[f] !== base[f]) edit[f] = mine[f];
   return Object.keys(edit).length === 1 ? null : edit;
+}
+
+// linkable is a url the server takes: empty, or http(s) with a host — what
+// jaira's ParseExternal accepts.
+export function linkable(url: string): boolean {
+  const u = url.trim();
+  if (!u) return true;
+  try {
+    const p = new URL(u);
+    return (p.protocol === 'http:' || p.protocol === 'https:') && !!p.host;
+  } catch {
+    return false;
+  }
+}
+
+// A key row of the epic editor. from is the key a row was read with; a row
+// the person added has none.
+export type KeyRow = { key: string; url: string; from?: string };
+
+const norm = (k: string) => k.trim().toUpperCase();
+
+// heldAs is the key a renamed row stays under because its link cannot be
+// saved: its read key, or '' when the row is saved as typed.
+export function heldAs(row: KeyRow): string {
+  return row.from && !linkable(row.url) && norm(row.key) !== norm(row.from) ? row.from : '';
+}
+
+// keysEdit is what a save sends for the keys: the rows the person added or
+// relinked, and the keys they took out, against the keys the form opened on.
+// Keys compare in any case, as jaira compares them. An empty key row is left
+// out, and so is a row whose url the server would refuse: the form marks
+// that row, and the rest of the edit is still saved. Such a row is not
+// dropped either — a hand-written line stays on the epic as it was, under
+// the key it was read with (from), even when the person renamed it: the
+// rename cannot be saved without a link, and dropping the old key would lose
+// the line. Nothing changed is an empty object.
+export function keysEdit(read: External[], rows: KeyRow[]): Pick<EpicEdit, 'add_external' | 'drop_external'> {
+  const held = rows.map(heldAs).filter(Boolean).map(norm);
+  const kept = rows.filter((r) => r.key.trim());
+  const add = kept
+    .filter((r) => linkable(r.url))
+    .filter((r) => !read.some((x) => x.key === r.key.trim() && x.url === r.url.trim()))
+    .map((r) => `${r.key.trim()} ${r.url.trim()}`.trim());
+  const drop = read.filter((x) => !held.includes(norm(x.key)) && !kept.some((r) => norm(r.key) === norm(x.key))).map((x) => x.key);
+  return { ...(add.length ? { add_external: add } : {}), ...(drop.length ? { drop_external: drop } : {}) };
 }
 
 // rebase answers a refused save: somebody changed the epic since the form

@@ -1,0 +1,1 @@
+- Stop expecting "jaira-cockpit: its session.append hook was skipped" in Claude Code 2.1.318 and later: the cockpit now hooks only the rows a delivery arrives by, which the built-in security default leaves to it.

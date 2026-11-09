@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addChip, emptyFilter, fromQuery, matches, narrows, removeChip, toggleChip, toQuery } from './filter.ts';
+import { addChip, emptyFilter, epicPasses, fromQuery, matches, narrows, removeChip, toggleChip, toQuery, wantsFiled, whereOf } from './filter.ts';
 
 const ticket = (lane: string, tags: string[], assignee?: string) => ({
   id: lane + tags.join(),
@@ -68,4 +68,56 @@ test('a chip is picked once, toggles between X and not X, and goes', () => {
   chips = toggleChip(chips, 'web');
   assert.deepEqual(chips, [{ value: 'web', not: false }]);
   assert.deepEqual(removeChip(chips, 'web'), []);
+});
+
+const at = (place: 'board' | 'ref' | 'logbook' | 'archive', rejected?: string) => ({ ...ticket('done', []), place, rejected });
+
+test('the place filter keeps the board, the logbook, the archive and the rejected apart', () => {
+  assert.equal(whereOf(at('board')), 'board');
+  assert.equal(whereOf(at('ref')), 'board', 'only on its ref is still on the board');
+  assert.equal(whereOf(at('logbook')), 'logbook');
+  assert.equal(whereOf(at('archive')), 'archive');
+  assert.equal(whereOf(at('archive', 'wontfix')), 'rejected');
+
+  const tickets = [at('board'), at('logbook'), at('archive'), at('archive', 'wontfix')];
+  const shown = (q: string) => tickets.filter((t) => matches(t, fromQuery(q))).map(whereOf);
+  assert.deepEqual(shown('?where=board'), ['board']);
+  assert.deepEqual(shown('?where=logbook'), ['logbook']);
+  assert.deepEqual(shown('?where=archive'), ['archive'], 'the archive without the rejected');
+  assert.deepEqual(shown('?where=rejected'), ['rejected']);
+  assert.deepEqual(shown('?where=logbook&where=archive'), ['logbook', 'archive']);
+  assert.deepEqual(shown('?not-where=board'), ['logbook', 'archive', 'rejected']);
+  assert.deepEqual(shown(''), ['board', 'logbook', 'archive', 'rejected'], 'no place picked filters nothing');
+});
+
+test('the server is asked for filed tickets only when a place off the board is picked', () => {
+  assert.ok(!wantsFiled(emptyFilter()));
+  assert.ok(!wantsFiled(fromQuery('?where=board')));
+  assert.ok(wantsFiled(fromQuery('?where=archive')));
+  assert.ok(wantsFiled(fromQuery('?not-where=board')));
+  assert.ok(narrows(fromQuery('?where=rejected')));
+});
+
+test('a link from before the place filter, ?all=1, picks every place', () => {
+  const f = fromQuery('?all=1');
+  assert.deepEqual(f.where.map((c) => c.value), ['board', 'logbook', 'archive', 'rejected']);
+  assert.ok(wantsFiled(f));
+  assert.equal(toQuery(f), '?where=board&where=logbook&where=archive&where=rejected');
+  assert.deepEqual(fromQuery(toQuery(f)), f);
+});
+
+// A key filter keeps the tickets of the epics carrying the key, in any case,
+// and goes into the link like every chip.
+test('the key filter matches the keys of the epics a ticket counts towards', () => {
+  const f = fromQuery('?key=jira-1');
+  assert.deepEqual(f.key, [{ value: 'jira-1', not: false }]);
+  assert.equal(toQuery(f), '?key=jira-1');
+  assert.ok(narrows(f));
+  const t = ticket('review', []);
+  assert.ok(matches(t, f, ['JIRA-1', 'YT-7']));
+  assert.ok(!matches(t, f, ['YT-7']));
+  assert.ok(!matches(t, f));
+  assert.ok(epicPasses(['Jira-1'], f));
+  assert.ok(!epicPasses([], f));
+  assert.ok(epicPasses([], emptyFilter()));
 });

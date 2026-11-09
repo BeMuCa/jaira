@@ -374,6 +374,7 @@ already know it is yours; --assignee wins over it.`,
 			// file stays away until somebody pulls it into work. See
 			// fileOnRefOnly for why.
 			onRefOnly, why := fileOnRefOnly(t)
+			firePlugins("create", s, t, "", lanes)
 			targetLane, _ := lanes.Get(target)
 			skipped, emptyInputs := skippedByCreate(lanes, t, targetLane)
 			if g.jsonOut {
@@ -601,12 +602,19 @@ func missingFields(t *ticket.Ticket) []string {
 }
 
 func newListCmd() *cobra.Command {
-	var laneFilter, assigneeFilter, query, tagFilter, milestoneFilter, board string
+	var laneFilter, assigneeFilter, query, tagFilter, milestoneFilter, externalKey, board string
 	var actionableOnly bool
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List tickets",
-		Args:  noArgs(),
+		Long: `Lists the tickets of a board, grouped by lane. Every flag narrows the list
+further.
+
+--external <key> keeps the tickets of every epic that carries that key of a
+task in another system — the members and every ticket that follows on from
+one — open or closed epic alike. The key is on the epic only, never on the
+ticket.`,
+		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			s, err := openStore()
 			if err != nil {
@@ -625,8 +633,17 @@ func newListCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			var forKey map[string]bool
+			if externalKey != "" {
+				if forKey, err = ticketsForKey(s, externalKey); err != nil {
+					return err
+				}
+			}
 			var out []*ticket.Ticket
 			for _, t := range all {
+				if forKey != nil && !forKey[t.ID] {
+					continue
+				}
 				if laneFilter != "" && t.Status != laneFilter {
 					continue
 				}
@@ -673,6 +690,7 @@ func newListCmd() *cobra.Command {
 	f.StringVar(&assigneeFilter, "assignee", "", "only tickets assigned to this person")
 	f.StringVar(&tagFilter, "tag", "", "only tickets carrying this tag")
 	f.StringVar(&milestoneFilter, "milestone", "", "only tickets in this milestone")
+	f.StringVar(&externalKey, "external", "", "only tickets of the epics carrying this key of a task in another system")
 	f.StringVarP(&query, "query", "q", "", "substring match over title, goal and id")
 	f.BoolVar(&actionableOnly, "actionable", false, "only tickets that could be started right now")
 	f.StringVar(&board, "board", "", boardFlagUsage)
@@ -807,11 +825,7 @@ many there are as notes_total.`,
 				return nil
 			}
 			if g.jsonOut {
-				j := ticketJSON(t, env.Lanes)
-				j["body"] = t.Body
-				j["path"] = path
-				j["filed_away"] = filedAway(t, path)
-				return emit(cmd.OutOrStdout(), j)
+				return emit(cmd.OutOrStdout(), showJSON(t, env.Lanes, path))
 			}
 			if where := filedAway(t, path); where != "" {
 				fmt.Fprintf(cmd.OutOrStdout(), "off the board: %s\n", where)
@@ -824,6 +838,16 @@ many there are as notes_total.`,
 	cmd.Flags().IntVar(&notesLast, "notes-last", 0, "show only the newest n progress notes (0 shows all)")
 	cmd.Flags().BoolVar(&brief, "brief", false, "one line of JSON: title, goal, question, review and the newest notes")
 	return cmd
+}
+
+// showJSON is what 'show --json' prints for t, loaded from path: the ticket,
+// its body, and where it lives. A plugin's event gets the same object.
+func showJSON(t *ticket.Ticket, lanes *lane.Set, path string) map[string]any {
+	j := ticketJSON(t, lanes)
+	j["body"] = t.Body
+	j["path"] = path
+	j["filed_away"] = filedAway(t, path)
+	return j
 }
 
 // briefNotes is how many of the newest notes a brief carries.
@@ -1190,6 +1214,12 @@ its end. Review fields keep their history across loop rounds that way.`,
 			env, err := envFor(s, t)
 			if err != nil {
 				return err
+			}
+			firePlugins("set", s, t, "", env.Lanes)
+			// A board change that put the ticket into another lane is a move
+			// as well, and a plugin mirroring lanes has to hear it as one.
+			if landed != "" {
+				firePlugins("move", s, t, cur.Status, env.Lanes)
 			}
 			if g.jsonOut {
 				j := ticketJSON(t, env.Lanes)
@@ -1653,6 +1683,7 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		"parent":             t.Parent,
 		"related":            t.Related,
 		"blocked_reason":     t.BlockedReason,
+		"external":           t.External,
 		"commits":            t.Commits,
 		"model_tier":         t.ModelTier,
 		"question":           t.Question,

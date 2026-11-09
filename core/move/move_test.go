@@ -215,3 +215,29 @@ func TestMoveCountsARoundOnEverySendBack(t *testing.T) {
 		t.Fatalf("round is not written as a bare 3 a person can edit:\n%s", file)
 	}
 }
+
+// Moved hears every move that wrote, with the lane the ticket left — the one
+// place the TUI's moves and the CLI's reach a plugin alike — and nothing of a
+// refused one.
+func TestMovedHearsEveryWrittenMove(t *testing.T) {
+	s, env := fixture(t)
+	tk := mk(t, s, nil)
+	var heard []string
+	Moved = func(_ *ticket.Store, t *ticket.Ticket, from string, _ *lane.Set) {
+		heard = append(heard, from+">"+t.Status)
+	}
+	t.Cleanup(func() { Moved = nil })
+
+	if _, err := Move(s, env, tk.ID, Request{To: "todo", Actor: "berk"}); err != nil {
+		t.Fatal(err)
+	}
+	if len(heard) != 0 {
+		t.Fatalf("a refused move was heard: %v", heard)
+	}
+	if _, err := Move(s, env, tk.ID, Request{To: "todo", Actor: "berk", Force: true}); err != nil {
+		t.Fatal(err)
+	}
+	if len(heard) != 1 || heard[0] != "backlog>todo" {
+		t.Fatalf("heard %v, want [backlog>todo]", heard)
+	}
+}

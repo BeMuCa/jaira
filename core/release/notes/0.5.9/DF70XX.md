@@ -1,0 +1,2 @@
+- In `jaira web`, read how an archived ticket left the board from its card: a finished one is struck through, one put away unfinished is dimmed and its badge names the lane it was left in, and a rejected one has a red edge and a red line with the kind and the reason.
+- ! In `jaira web`, pick board, logbook, archive or rejected under the new Where filter instead of ticking "All tickets ever"; links with `?all=1` still open every place.
