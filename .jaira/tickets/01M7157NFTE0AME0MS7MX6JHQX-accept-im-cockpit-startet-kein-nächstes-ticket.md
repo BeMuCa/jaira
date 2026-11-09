@@ -1,7 +1,7 @@
 ---
 id: 01M7157NFTE0AME0MS7MX6JHQX
 title: Accept im Cockpit startet kein nächstes Ticket mehr
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Accept im Cockpit öffnet weiter den PR, startet aber nie von selbst das nächste Ticket; was als Nächstes läuft, entscheidet der Teamlead"
@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-09T22:00:36Z
-updated-at: 2026-11-09T22:06:59Z
+updated-at: 2026-11-09T22:08:13Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-64644
@@ -30,8 +30,9 @@ claimed-at: 2026-11-09T22:01:08Z
 outcome-what: "Accept im Cockpit öffnet nur noch den PR, wenn einer fällig ist; der Zweig, der das nächste Ticket per jaira next + spawn.sh in einem Herdr-Tab startete, ist entfernt, samt nextToStart, dispatchLane und drei Texten"
 outcome-why: "Das automatisch gestartete Ticket kam ohne Ankündigung und ohne Grund; welches Ticket als Nächstes läuft, entscheidet der Teamlead"
 outcome-resolves: Accept ohne fälligen PR startet nichts mehr; Toast nennt nur Ticket und PR-Hinweis
-review-summary: "core/mod/builtin/jaira-cockpit/hooks/register.tsx:535-538 beschreibt noch zwei Schritte ('never the board', 'stops both steps'); es gibt nur noch den PR-Schritt — Satz auf 'A string is a failure: no pull request is opened, and the pane says why' kürzen, 'never the board' streichen"
+review-summary: "none"
 round: 2
+review-gaps: "register.tsx afterAccept: hint aus stuck() entfernt — nach dem Wegfall des Next-Zweigs war er dort immer leer (PR-Schritt hat nie einen Hinweis, Fehlerstring auch nicht); tests/board.test.ts: settings.json-Fixture {dispatch:worker} im PR-schon-da-Test entfernt, liest keiner mehr. Gelassen: w.next/nextFails-Fixture (Overview liest jaira next), tabsOf/settingsJson (andere Aufrufer), stepAfterAccept als 'pr'|'none' statt boolean (Benennung trägt), herdr()-Prüfung im PR-Zweig (bestehendes Muster)."
 ---
 
 # Accept im Cockpit startet kein nächstes Ticket mehr
@@ -39,11 +40,11 @@ round: 2
 ## Definition of Done
 
 - [x] Accept auf ein Ticket ohne fälligen PR öffnet keinen Herdr-Tab und ruft spawn.sh nicht auf
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:597; tests 'nothing ahead of the target: no pull request is asked for, no tab opens…' and 'a pull request in any state already there: nothing starts…' (no spawn.sh, no jaira next)
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:596; tests 'nothing ahead of the target: no pull request is asked for, no tab opens…' and 'a pull request in any state already there: nothing starts…' (no spawn.sh, no jaira next)
 - [x] Accept mit fälligem PR öffnet den PR-Tab wie bisher
   proof: test 'a branch ahead of the target without a pull request: the press opens one, by a person, in the ticket's worktree' unchanged and green
 - [x] Der Toast nach Accept ohne PR nennt das akzeptierte Ticket und den PR-Hinweis, kein gestartetes Ticket
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:492 ('<id> accepted: done') + :597 / texts.ts:22 ('<id> accepted; <hint>'); tests 'two tickets on one branch…' and 'no gh…'
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:492 ('<id> accepted: done') + :596 / texts.ts:22 ('<id> accepted; <hint>'); tests 'two tickets on one branch…' and 'no gh…'
 - [x] Tote Texte und Hilfsfunktionen des Next-Zweigs sind entfernt; claude plugin test . im Cockpit ist grün
   proof: nextToStart/dispatchLane removed from core/mod/builtin/jaira-cockpit/hooks/board.ts, nextStarted/nothingNext/nextNeedsHerdr from texts.ts; claude plugin test . in core/mod/builtin/jaira-cockpit: 175 pass, 0 fail, exit 0
 - [x] Release-Note in core/release/notes/<ID>.md sagt: nach Accept startet der Teamlead das nächste Ticket
@@ -66,3 +67,4 @@ round: 2
 - **2026-11-09 22:05 · Alexander Sacharov** — Korrektur meiner obigen Entscheidung: ein Toast '<id> accepted' gibt es schon — accept() sagt t.accepted(id, lane) = '<id> accepted: done' vor afterAccept (register.tsx:492). Mein zweiter Schlüssel 'accepted' in texts.ts hat den doppelt belegt und überschrieben (bun meldet doppelte Keys nicht). Zurück zum Ansatz des Vorgängers: ohne PR nur ein zweiter Toast '<id> accepted; <Hinweis>', wenn es einen Hinweis gibt; sonst bleibt der erste Toast stehen.
 - **2026-11-09 22:06 · Alexander Sacharov** — critique (Runde 1): core/mod/builtin/jaira-cockpit/hooks/register.tsx:535-538 beschreibt noch zwei Schritte ('never the board', 'stops both steps'); es gibt nur noch den PR-Schritt — Satz auf 'A string is a failure: no pull request is opened, and the pane says why' kürzen, 'never the board' streichen. Sonst nichts: spawn.sh --no-parent bleibt (Give back nutzt es, register.tsx:931), Doku in spawn.sh stimmt weiter; tabsOf/settingsJson bleiben (andere Aufrufer); 'pr'|'none' als Typ gelassen.
 - **2026-11-09 22:06 · Alexander Sacharov** — in-progress Runde 2: Kommentar register.tsx:535-537 auf einen Schritt gekürzt, nur Kommentar, Tests unberührt.
+- **2026-11-09 22:07 · Alexander Sacharov** — critique (Runde 2): einziger Befund aus Runde 1 (Kommentar register.tsx:535) behoben in 55a92796; nichts weiter.

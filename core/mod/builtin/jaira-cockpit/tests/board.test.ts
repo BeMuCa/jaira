@@ -1205,7 +1205,6 @@ describe('after Accept', () => {
     w.ahead = 3
     w.prs = [{ number: 12 }]
     w.next = ['T8QS1Y', 'AB12CD']
-    w.files.set('/home/a/.jaira/settings.json', '{"dispatch":"worker"}')
     await press($)
     // Which ticket runs next is the teamlead's call, never the button's (X6JHQX).
     expect(ran(w, 'jaira', 'next')).toEqual([])

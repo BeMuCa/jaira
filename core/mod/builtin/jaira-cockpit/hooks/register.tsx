@@ -589,11 +589,10 @@ async function afterAccept($: EngineInterface, id: string, terminal: string): Pr
   const b = board
   const trees = await run($, ['git', 'worktree', 'list', '--porcelain'], b.dir)
   const decided = await decideStep($, b, id, terminal, trees?.exitCode === 0 ? trees.stdout : '')
-  // Why a pull request is not opened yet, said beside whatever happens instead.
-  const hint = typeof decided === 'string' ? '' : decided.hint
-  const stuck = (why: string) => fail($, t.afterAccept(id), [why, hint, t.staysDone(id)].filter(Boolean).join('\n'))
+  const stuck = (why: string) => fail($, t.afterAccept(id), `${why}\n${t.staysDone(id)}`)
   if (typeof decided === 'string') return stuck(decided)
-  const { step, branch } = decided
+  const { step, branch, hint } = decided
+  // No pull request to open: only why not, where there is a reason.
   if (step !== 'pr' || branch === undefined) return hint ? say($, t.acceptedNoPr(id, hint)) : undefined
   const bin = await herdr($)
   const script = await spawnScript($)
