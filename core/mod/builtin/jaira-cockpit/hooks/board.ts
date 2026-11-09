@@ -4,7 +4,7 @@
 // so it is the same in both dispatch modes and with Herdr tabs. register.tsx
 // runs the commands; this file only reads what they printed.
 
-import { carrierTab, type Tab } from './sessions.ts'
+import type { Tab } from './sessions.ts'
 
 export type Waiting = {
   id: string
@@ -352,18 +352,18 @@ export function newWorktreeFor(repo: string, branch: string): string {
 // only once every ticket its commits name is in done (`pending` empty). Any
 // other case — a ticket still pending, the branch already proposed (a pull
 // request in any state, merged and closed included), or nothing ahead of
-// master — has no further step of its own, and the press moves the board on
-// to the next ticket instead. One button, so the rule decides, never the
+// master — has no further step of its own, and the press only says the
+// ticket is accepted: which ticket runs next is the teamlead's call, never
+// the button's (X6JHQX). One button, so the rule decides, never the
 // person per press. The caller asks the forge only where the answer can
 // still change the step, and passes false otherwise. A forge that could not
 // be asked — offline, logged out, its repository no remote here — is
-// undefined: whether a pull request exists is unknown, so none is opened,
-// and the board moves on rather than wait for the network (Alex, GPFA7B
-// DoD 8); the press says why.
-export type StepAfterAccept = 'pr' | 'next'
+// undefined: whether a pull request exists is unknown, so none is opened
+// rather than wait for the network (Alex, GPFA7B DoD 8); the press says why.
+export type StepAfterAccept = 'pr' | 'none'
 
 export function stepAfterAccept(ahead: number, pending: readonly string[], hasPullRequest: boolean | undefined): StepAfterAccept {
-  return ahead > 0 && pending.length === 0 && hasPullRequest === false ? 'pr' : 'next'
+  return ahead > 0 && pending.length === 0 && hasPullRequest === false ? 'pr' : 'none'
 }
 
 // The tickets a branch carries, off `git log --format=%s <base>..<branch>`:
@@ -472,22 +472,6 @@ export function pullRequestsCommand(on: Forge, repo: string, branch: string): st
 export function hasPullRequest(listJson: string): boolean | undefined {
   const list = parse<unknown>(withoutWarnings(listJson))
   return Array.isArray(list) ? list.length > 0 : undefined
-}
-
-// The lane spawn.sh is given for the next ticket: the role a teamlead starts
-// under the person's dispatch setting (~/.jaira/settings.json), "worker" only
-// where it says so, as settings.DispatchMode reads it.
-export function dispatchLane(settingsJson: string | undefined): 'worker' | 'dispatch' {
-  const dispatch = parse<{ dispatch?: unknown }>(settingsJson ?? '')?.dispatch
-  return typeof dispatch === 'string' && dispatch.trim() === 'worker' ? 'worker' : 'dispatch'
-}
-
-// The next ticket to start, off `jaira next --all --json`: the first one no
-// worker or dispatcher tab carries already, so an Accept never puts a second
-// agent on a ticket that is being worked. undefined when there is none.
-export function nextToStart(nextJson: string, tabs: readonly Tab[]): string | undefined {
-  const tickets = parse<{ tickets?: { handle?: string }[] }>(withoutWarnings(nextJson))?.tickets ?? []
-  return tickets.map(t => t.handle).find((h): h is string => !!h && carrierTab(tabs, h) === undefined)
 }
 
 // The directory holding .jaira/, from `cwd` upwards: the candidates in the
