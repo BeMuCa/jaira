@@ -22,7 +22,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-09T22:00:36Z
-updated-at: 2026-11-09T22:06:02Z
+updated-at: 2026-11-09T22:06:59Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-64644
@@ -30,6 +30,8 @@ claimed-at: 2026-11-09T22:01:08Z
 outcome-what: "Accept im Cockpit öffnet nur noch den PR, wenn einer fällig ist; der Zweig, der das nächste Ticket per jaira next + spawn.sh in einem Herdr-Tab startete, ist entfernt, samt nextToStart, dispatchLane und drei Texten"
 outcome-why: "Das automatisch gestartete Ticket kam ohne Ankündigung und ohne Grund; welches Ticket als Nächstes läuft, entscheidet der Teamlead"
 outcome-resolves: Accept ohne fälligen PR startet nichts mehr; Toast nennt nur Ticket und PR-Hinweis
+review-summary: "core/mod/builtin/jaira-cockpit/hooks/register.tsx:535-538 beschreibt noch zwei Schritte ('never the board', 'stops both steps'); es gibt nur noch den PR-Schritt — Satz auf 'A string is a failure: no pull request is opened, and the pane says why' kürzen, 'never the board' streichen"
+round: 2
 ---
 
 # Accept im Cockpit startet kein nächstes Ticket mehr
@@ -62,3 +64,5 @@ outcome-resolves: Accept ohne fälligen PR startet nichts mehr; Toast nennt nur 
 - **2026-11-09 22:02 · Alexander Sacharov** — Teamlead: zuerst versehentlich als dispatcher gestartet (dispatch-Einstellung ist worker). Auf Alex' Wunsch beide Tabs geschlossen und als jaira-worker neu gestartet; in-progress wurde mitten in der Arbeit abgebrochen — git diff im Worktree prüfen.
 - **2026-11-09 22:04 · Alexander Sacharov** — Worker übernimmt nach Neustart: claim --steal wurde vom auto-mode-Klassifikator verweigert, Claim liegt noch beim geschlossenen Dispatcher (DESKTOP-RFTCH11-64644). Weiter ohne neuen Claim. Diff des abgebrochenen in-progress übernommen und fertig gemacht. Entscheidung: Toast ohne PR heißt immer '<id> accepted', mit '; <Hinweis>' nur wenn es einen gibt (vorher kein Toast bei fehlendem Hinweis) — DoD 3 verlangt, dass der Toast das Ticket nennt. Step heißt jetzt 'none' statt 'next'. nextToStart/dispatchLane aus board.ts entfernt; settingsJson und tabsOf bleiben (anderswo genutzt). Overview-Test ruft weiter jaira next — gehört nicht zu Accept.
 - **2026-11-09 22:05 · Alexander Sacharov** — Korrektur meiner obigen Entscheidung: ein Toast '<id> accepted' gibt es schon — accept() sagt t.accepted(id, lane) = '<id> accepted: done' vor afterAccept (register.tsx:492). Mein zweiter Schlüssel 'accepted' in texts.ts hat den doppelt belegt und überschrieben (bun meldet doppelte Keys nicht). Zurück zum Ansatz des Vorgängers: ohne PR nur ein zweiter Toast '<id> accepted; <Hinweis>', wenn es einen Hinweis gibt; sonst bleibt der erste Toast stehen.
+- **2026-11-09 22:06 · Alexander Sacharov** — critique (Runde 1): core/mod/builtin/jaira-cockpit/hooks/register.tsx:535-538 beschreibt noch zwei Schritte ('never the board', 'stops both steps'); es gibt nur noch den PR-Schritt — Satz auf 'A string is a failure: no pull request is opened, and the pane says why' kürzen, 'never the board' streichen. Sonst nichts: spawn.sh --no-parent bleibt (Give back nutzt es, register.tsx:931), Doku in spawn.sh stimmt weiter; tabsOf/settingsJson bleiben (andere Aufrufer); 'pr'|'none' als Typ gelassen.
+- **2026-11-09 22:06 · Alexander Sacharov** — in-progress Runde 2: Kommentar register.tsx:535-537 auf einen Schritt gekürzt, nur Kommentar, Tests unberührt.

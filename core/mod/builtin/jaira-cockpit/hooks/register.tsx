@@ -533,9 +533,9 @@ async function pullTarget($: EngineInterface, repoDir: string): Promise<Target |
 // Which step the press starts, and on which branch: the ticket's branch
 // found, counted against the pull request's target, its tickets read, its
 // pull requests asked for — stepAfterAccept (board.ts) decides from that.
-// A forge that cannot be asked leaves the pull request unchecked, never the
-// board: the rule gets undefined for it, and the hint says why no pull
-// request was looked at. A string is a failure that stops both steps.
+// A forge that cannot be asked leaves the pull request unchecked: the rule
+// gets undefined for it, and the hint says why no pull request was looked
+// at. A string is a failure: no pull request is opened, and the pane says why.
 type Decided = { step: StepAfterAccept; branch?: string; hint: string }
 
 async function decideStep($: EngineInterface, b: { dir: string; repo: string }, id: string, terminal: string, porcelain: string): Promise<Decided | string> {
