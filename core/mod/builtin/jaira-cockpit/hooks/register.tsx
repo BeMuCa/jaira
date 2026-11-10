@@ -2,8 +2,8 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
 import {
-  branchesFor, carrierBranch, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, dispatchLane, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
-  explanationNotes, explanationOf, isOlder, lanesOf, MIN_JAIRA, otherBoardsOf, nextToStart, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
+  branchesFor, carrierBranch, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
+  explanationNotes, explanationOf, isOlder, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, upgradeCheckOf,
   type Action, type Agent, type Option, type Waiting,
 } from './board.ts'
@@ -533,9 +533,9 @@ async function pullTarget($: EngineInterface, repoDir: string): Promise<Target |
 // Which step the press starts, and on which branch: the ticket's branch
 // found, counted against the pull request's target, its tickets read, its
 // pull requests asked for — stepAfterAccept (board.ts) decides from that.
-// A forge that cannot be asked leaves the pull request unchecked, never the
-// board: the rule gets undefined for it, and the hint says why no pull
-// request was looked at. A string is a failure that stops both steps.
+// A forge that cannot be asked leaves the pull request unchecked: the rule
+// gets undefined for it, and the hint says why no pull request was looked
+// at. A string is a failure: no pull request is opened, and the pane says why.
 type Decided = { step: StepAfterAccept; branch?: string; hint: string }
 
 async function decideStep($: EngineInterface, b: { dir: string; repo: string }, id: string, terminal: string, porcelain: string): Promise<Decided | string> {
@@ -557,12 +557,12 @@ async function decideStep($: EngineInterface, b: { dir: string; repo: string }, 
     const holders = sha ? await run($, ['git', 'branch', '--contains', sha, '--format=%(refname:short)'], b.repo) : undefined
     if (holders?.exitCode === 0) branch = carrierBranch(holders.stdout, found.base ?? base)
   }
-  if (branch === undefined || base === undefined || branch === found.base) return { step: 'next', hint: '' }
+  if (branch === undefined || base === undefined || branch === found.base) return { step: 'none', hint: '' }
   // One subject per commit ahead: the count and the tickets in one walk.
   const subjects = await run($, ['git', 'log', '--format=%s', `${base}..${branch}`], b.repo)
   if (subjects?.exitCode !== 0) return `git log ${base}..${branch}: ${output(subjects)}`
   const ahead = subjects.stdout.split('\n').filter(Boolean).length
-  if (ahead === 0) return { step: 'next', branch, hint: '' }
+  if (ahead === 0) return { step: 'none', branch, hint: '' }
   const list = await run($, ['jaira', 'list', '--json'], b.dir, 30_000)
   if (list?.exitCode !== 0) return `jaira list: ${withoutWarnings(list?.stderr ?? '') || 'did not run'}`
   const pending = pendingOf(list.stdout, ticketsNamed(subjects.stdout), terminal)
@@ -575,50 +575,39 @@ async function decideStep($: EngineInterface, b: { dir: string; repo: string }, 
 }
 
 // What the press starts once the ticket is in done, without a further word
-// from the person: stepAfterAccept (board.ts) decides, from the ticket's
-// branch and its pull requests. A pull request is opened only from here — a
-// press of Accept is a person's — by the pr lane of spawn.sh. A step that
-// cannot run starts nothing and says why in the message pane; the ticket
-// stays in done, where the press put it: accepted is accepted, and what
-// follows is the person's to start by hand then.
+// from the person: a pull request, where stepAfterAccept (board.ts) says the
+// ticket's branch needs one, and nothing else. A pull request is opened only
+// from here — a press of Accept is a person's — by the pr lane of spawn.sh.
+// The next ticket is never started from here: which one runs next is the
+// teamlead's call (X6JHQX), so without a pull request to open the press adds
+// nothing to its "accepted" but why none was opened, where there is a reason. A step that cannot run
+// starts nothing and says why in the message pane; the ticket stays in done,
+// where the press put it: accepted is accepted, and what follows is the
+// person's to start by hand then.
 async function afterAccept($: EngineInterface, id: string, terminal: string): Promise<void> {
   if (!board) return
   const b = board
   const trees = await run($, ['git', 'worktree', 'list', '--porcelain'], b.dir)
   const decided = await decideStep($, b, id, terminal, trees?.exitCode === 0 ? trees.stdout : '')
-  // Why a pull request is not opened yet, said beside whatever happens instead.
-  const hint = typeof decided === 'string' ? '' : decided.hint
-  const stuck = (why: string) => fail($, t.afterAccept(id), [why, hint, t.staysDone(id)].filter(Boolean).join('\n'))
+  const stuck = (why: string) => fail($, t.afterAccept(id), `${why}\n${t.staysDone(id)}`)
   if (typeof decided === 'string') return stuck(decided)
-  const { step, branch } = decided
+  const { step, branch, hint } = decided
+  // No pull request to open: only why not, where there is a reason.
+  if (step !== 'pr' || branch === undefined) return hint ? say($, t.acceptedNoPr(id, hint)) : undefined
   const bin = await herdr($)
   const script = await spawnScript($)
-  if (bin === undefined || script === undefined) return stuck(step === 'pr' ? t.prNeedsHerdr(branch ?? '') : t.nextNeedsHerdr)
-  if (step === 'pr' && branch !== undefined) {
-    // In the worktree that carries the branch — the role pushes from there —
-    // checked out again beside the repository where it went after done.
-    let wt = trees?.exitCode === 0 ? worktreeOfBranch(trees.stdout, branch) : undefined
-    if (wt === undefined) {
-      wt = newWorktreeFor(b.repo, branch)
-      const added = await run($, ['git', 'worktree', 'add', wt, branch], b.repo, 60_000)
-      if (added?.exitCode !== 0) return stuck(`git worktree add ${wt} ${branch}: ${output(added)}`)
-    }
-    const r = await run($, [...script, '--no-worktree', id.toLowerCase(), id, 'pr', wt], wt, 120_000)
-    if (r?.exitCode !== 0) return stuck(`spawn.sh: ${output(r).slice(-160)}`)
-    return say($, t.prStarted(id, branch))
+  if (bin === undefined || script === undefined) return stuck(t.prNeedsHerdr(branch))
+  // In the worktree that carries the branch — the role pushes from there —
+  // checked out again beside the repository where it went after done.
+  let wt = trees?.exitCode === 0 ? worktreeOfBranch(trees.stdout, branch) : undefined
+  if (wt === undefined) {
+    wt = newWorktreeFor(b.repo, branch)
+    const added = await run($, ['git', 'worktree', 'add', wt, branch], b.repo, 60_000)
+    if (added?.exitCode !== 0) return stuck(`git worktree add ${wt} ${branch}: ${output(added)}`)
   }
-  const [listed, tabs] = await Promise.all([run($, ['jaira', 'next', '--all', '--json'], b.repo, 30_000), run($, [bin, 'tab', 'list'], b.repo)])
-  if (listed?.exitCode !== 0) return stuck(`jaira next: ${withoutWarnings(listed?.stderr ?? '') || 'did not run'}`)
-  // Without the tab list a ticket being worked cannot be told apart.
-  if (tabs?.exitCode !== 0) return stuck(`herdr tab list: ${output(tabs)}`)
-  const next = nextToStart(listed.stdout, tabsOf(tabs.stdout))
-  if (next === undefined) return stuck(t.nothingNext)
-  const lane = dispatchLane(await settingsJson($))
-  // Its own tab, not this chat: spawn.sh would otherwise make this session
-  // its parent, and its questions would arrive here instead of beside it.
-  const started = await run($, [...script, '--no-parent', next.toLowerCase(), next, lane, b.repo], b.repo, 120_000)
-  if (started?.exitCode !== 0) return stuck(`spawn.sh: ${output(started).slice(-160)}`)
-  await say($, [t.nextStarted(id, next), hint].filter(Boolean).join('; '))
+  const r = await run($, [...script, '--no-worktree', id.toLowerCase(), id, 'pr', wt], wt, 120_000)
+  if (r?.exitCode !== 0) return stuck(`spawn.sh: ${output(r).slice(-160)}`)
+  return say($, t.prStarted(id, branch))
 }
 
 // The person's jaira settings, where jaira reads them: JAIRA_HOME, else

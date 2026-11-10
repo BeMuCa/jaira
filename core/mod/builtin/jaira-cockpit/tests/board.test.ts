@@ -1124,8 +1124,7 @@ describe('waiting for you', () => {
     // Accept takes MG677R to done; AB12CD still waits in signoff below the notice.
     const MINE = { ...SIGNOFF, handle: 'AB12CD' }
     w.tickets = [SIGNOFF, MINE, HUMAN, WORKING, BERK]
-    // Accept's next step succeeds, so its notice stays on the band.
-    w.next = ['T8QS1Y']
+    // Accept's notice stays on the band.
     w.tabs = [{ tab_id: 'w1:t5', label: 'K7P2QX/discuss', agent_status: 'working' }]
     await startSession($)
     // A decision from a Discuss chat, as in the test of its own above.
@@ -1140,7 +1139,7 @@ describe('waiting for you', () => {
     await answer($)
     await (await $.ui.mount(BAND)).press({ key: 'theirs' })
     const band = await drawn($)
-    const at = ['jaira-cockpit', 'MG677R accepted; T8QS1Y started', 'Waiting for you', 'AB12CD | signoff', 'K7P2QX | decided', '1 waiting for Berk', 'EF34GH | signoff | Berk', 'context 80k'].map(part => band.indexOf(part))
+    const at = ['jaira-cockpit', 'MG677R accepted', 'Waiting for you', 'AB12CD | signoff', 'K7P2QX | decided', '1 waiting for Berk', 'EF34GH | signoff | Berk', 'context 80k'].map(part => band.indexOf(part))
     expect(at.every(i => i >= 0)).toBe(true)
     expect(at).toEqual([...at].sort((a, b) => a - b))
   })
@@ -1201,27 +1200,26 @@ describe('after Accept', () => {
     expect(w.opened).toEqual([])
   })
 
-  test('a pull request in any state already there: the next ticket starts, under the dispatch setting', async ($, on) => {
+  test('a pull request in any state already there: nothing starts, not even with a ticket waiting next, and the press says accepted', async ($, on) => {
     const w = world(on, { herdr: true })
     w.ahead = 3
     w.prs = [{ number: 12 }]
     w.next = ['T8QS1Y', 'AB12CD']
-    w.tabs = [{ tab_id: 't9', label: 'T8QS1Y/worker' }]
-    w.files.set('/home/a/.jaira/settings.json', '{"dispatch":"worker"}')
     await press($)
-    expect(prLane(w)).toEqual([])
-    expect(ran(w, 'jaira', 'next')).toEqual([['jaira', 'next', '--all', '--json', '@/repo']])
-    // T8QS1Y has a worker tab already: never a second agent on it.
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-parent', 'ab12cd', 'AB12CD', 'worker', '/repo', '@/repo']])
+    // Which ticket runs next is the teamlead's call, never the button's (X6JHQX).
+    expect(ran(w, 'jaira', 'next')).toEqual([])
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(w.opened).toEqual([])
+    expect(w.toasts.at(-1)).toBe('MG677R accepted: done')
   })
 
-  test('nothing ahead of the target: no pull request is asked for, and without a worker setting the dispatcher starts the next one', async ($, on) => {
+  test('nothing ahead of the target: no pull request is asked for, no tab opens, and the press says accepted', async ($, on) => {
     const w = world(on, { herdr: true })
     w.next = ['AB12CD']
     await press($)
     expect(ran(w, 'gh', 'pr')).toEqual([])
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-parent', 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
+    expect(w.toasts.at(-1)).toBe('MG677R accepted: done')
   })
 
   test('GitLab, by jaira.forge or by host, asks glab', async ($, on) => {
@@ -1248,16 +1246,15 @@ describe('after Accept', () => {
     expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-zz99zz', '@/.worktrees/repo-zz99zz']])
   })
 
-  test('two tickets on one branch: no pull request while the other is not in done, the next ticket starts, and the press says which one is missing', async ($, on) => {
+  test('two tickets on one branch: no pull request while the other is not in done, nothing starts, and the press says which one is missing', async ($, on) => {
     const w = world(on, { herdr: true })
     w.ahead = 4
     w.subjects = ['feat(MG677R): cache key', 'fix(T8QS1Y): filter', 'feat(T8QS1Y): filter', 'docs: no ticket']
     w.next = ['AB12CD']
     await press($)
     expect(ran(w, 'gh', 'pr')).toEqual([])
-    expect(prLane(w)).toEqual([])
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-parent', 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
-    expect(w.toasts.at(-1)).toBe('MG677R accepted; AB12CD started in a Herdr tab; no pull request for feat/mg677r yet: T8QS1Y not in done')
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
+    expect(w.toasts.at(-1)).toBe('MG677R accepted; no pull request for feat/mg677r yet: T8QS1Y not in done')
   })
 
   test('two tickets on one branch, both in done: the pull request opens; a handle the board no longer lists is filed away and holds nothing up', async ($, on) => {
@@ -1339,38 +1336,33 @@ describe('after Accept', () => {
     expect(ran(w, 'git', 'log', '--format=%s')).toEqual([['git', 'log', '--format=%s', 'origin/main..feat/mg677r', '@/repo']])
   })
 
-  test('a fork without its parent as a remote: nothing is counted, the next ticket starts, and the press says which remote to add', async ($, on) => {
+  test('a fork without its parent as a remote: nothing is counted, nothing starts, and the press says which remote to add', async ($, on) => {
     const w = world(on, { herdr: true })
     w.ahead = 3
     w.remotes = 'origin\tgit@github.com:acme/repo.git (fetch)\n'
-    w.next = ['AB12CD']
     await press($)
     expect(ran(w, 'git', 'log')).toEqual([])
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-parent', 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(w.toasts.at(-1)).toContain('Pull requests go to upstream/repo, and no remote here points at it')
   })
 
-  test('no gh: the pull request goes unchecked, the next ticket starts anyway, and the press says why', async ($, on) => {
+  test('no gh: the pull request goes unchecked, nothing starts, and the press says why', async ($, on) => {
     const w = world(on, { herdr: true })
     w.ahead = 3
     w.prs = null
-    w.next = ['AB12CD']
     await press($)
-    expect(prLane(w)).toEqual([])
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-parent', 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(ran(w, 'jaira', 'move', 'MG677R').map(r => r[5])).toEqual(['--dry-run', '--force'])
     expect(w.opened).toEqual([])
-    expect(w.toasts.at(-1)).toBe('MG677R accepted; AB12CD started in a Herdr tab; pull requests not checked (gh repo view: gh: command not found)')
+    expect(w.toasts.at(-1)).toBe('MG677R accepted; pull requests not checked (gh repo view: gh: command not found)')
   })
 
-  test('a forge that answers the repository but not the pull requests: the next ticket starts all the same', async ($, on) => {
+  test('a forge that answers the repository but not the pull requests: nothing starts, and the press says why', async ($, on) => {
     const w = world(on, { herdr: true })
     w.ahead = 3
     w.prListFails = true
-    w.next = ['AB12CD']
     await press($)
-    expect(prLane(w)).toEqual([])
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-parent', 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(w.toasts.at(-1)).toContain('pull requests not checked (gh: HTTP 401')
   })
 
@@ -1379,7 +1371,6 @@ describe('after Accept', () => {
     w.ahead = 2
     w.tickets = [SIGNOFF, WORKING, { ...WORKING, handle: 'AB12CD', status: 'done' }]
     w.subjects = ['feat(MG677R): cache key', 'chore(AB12CD,T8QS1Y): both at once']
-    w.next = ['QR34ST']
     await press($)
     expect(prLane(w)).toEqual([])
     expect(w.toasts.at(-1)).toContain('no pull request for feat/mg677r yet: T8QS1Y not in done')
@@ -1403,13 +1394,13 @@ describe('after Accept', () => {
     expect(await failure($)).toContain('git config jaira.forge')
   })
 
-  test('no next ticket: nothing starts, and the pane says so', async ($, on) => {
-    const w = world(on, { herdr: true })
-    w.next = ['T8QS1Y']
-    w.tabs = [{ tab_id: 't9', label: 'T8QS1Y/dispatch' }]
+  test('no pull request due and no Herdr: nothing is missing, so nothing fails, and the press says accepted', async ($, on) => {
+    const w = world(on)
+    w.next = ['AB12CD']
     await press($)
     expect(ran(w, 'bash', SPAWN)).toEqual([])
-    expect(await failure($)).toContain('No ticket can be started next')
+    expect(w.opened).toEqual([])
+    expect(w.toasts.at(-1)).toBe('MG677R accepted: done')
   })
 
   test('no Herdr: nothing starts, and the pane says the step needs it', async ($, on) => {
