@@ -11,6 +11,17 @@ version: 2
 before:
   hooks:
     - go mod tidy
+    # The Windows version resource - Properties > Details: company, product,
+    # file version - plus an as-invoker manifest. go-winres writes
+    # cmd/jaira/rsrc_windows_<arch>.syso from cmd/jaira/winres/winres.json,
+    # and go build links a .syso only into the build whose GOOS/GOARCH its
+    # name carries. An exe with neither is what Defender's ML heuristics
+    # flag first (32TTSS). Numeric only: a snapshot's -SNAPSHOT suffix is no
+    # Windows version.
+    - go run github.com/tc-hib/go-winres@v0.3.3 make --in cmd/jaira/winres/winres.json --out cmd/jaira/rsrc --arch amd64,arm64 --file-version {{ .Major }}.{{ .Minor }}.{{ .Patch }}.0 --product-version {{ .Major }}.{{ .Minor }}.{{ .Patch }}.0
+    # install.ps1 rides along as a release asset - the copy SignPath signed
+    # when release.yaml's sign-windows job ran, the plain one otherwise.
+    - sh scripts/signed-windows.sh stage
 
 builds:
   - id: jaira
@@ -24,6 +35,11 @@ builds:
       - -s -w -X main.version={{.Version}}
     goos: [linux, darwin, windows]
     goarch: [amd64, arm64]
+    hooks:
+      # Swaps in the SignPath-signed jaira.exe when there is one (32TTSS);
+      # every other target, and every build without ./signed, is untouched.
+      post:
+        - cmd: sh scripts/signed-windows.sh exe "{{ .Path }}" "{{ .Target }}"
 
 archives:
   - formats: [tar.gz]
@@ -36,6 +52,14 @@ archives:
 
 checksum:
   name_template: checksums.txt
+
+release:
+  extra_files:
+    - glob: ./dist-extra/install.ps1
+  # SignPath Foundation signs the Windows files free of charge for open
+  # source on condition that the download page says so.
+  footer: |
+    Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
 
 changelog:
   sort: asc

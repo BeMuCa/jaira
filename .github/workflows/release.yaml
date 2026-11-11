@@ -7,6 +7,20 @@ name: release
 # workflow_dispatch: a tag pushed with GITHUB_TOKEN triggers nothing itself.
 # It runs no tests: the release button (release-notes.yaml) is the one place a
 # release is tested, on the tree this tag points at.
+#
+# Windows signing (32TTSS): an unsigned jaira.exe and install.ps1 are what
+# Defender's ML heuristics flag as trojans. Signing goes through SignPath
+# Foundation, and it is off until the repository variable
+# SIGNPATH_ORGANIZATION_ID is set — then sign-windows builds the Windows
+# binaries, has SignPath sign them and install.ps1, and the release swaps
+# the signed files in (scripts/signed-windows.sh). Setting it up once:
+#   - variables SIGNPATH_ORGANIZATION_ID, SIGNPATH_PROJECT_SLUG,
+#     SIGNPATH_SIGNING_POLICY_SLUG (release-signing on SignPath Foundation)
+#   - secret SIGNPATH_API_TOKEN
+#   - the SignPath project's artifact configuration is
+#     .signpath/artifact-configuration.xml
+# Without the variable sign-windows is skipped and the release ships
+# unsigned, as before.
 on:
   push:
     tags: ["v*"]
@@ -16,7 +30,59 @@ permissions:
   contents: write
 
 jobs:
+  sign-windows:
+    if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.26'
+      # The same goreleaser build the release job runs, so the binaries
+      # signed here are byte for byte the ones it would have built: CGO off,
+      # -trimpath, the tag's version, the same version resource.
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          version: '~> v2'
+          args: build --clean
+      # The layout here is what .signpath/artifact-configuration.xml names.
+      - name: Collect what SignPath signs
+        run: |
+          mkdir -p unsigned
+          for arch in amd64 arm64; do
+            mkdir -p "unsigned/windows_$arch"
+            cp dist/jaira_windows_${arch}*/jaira.exe "unsigned/windows_$arch/jaira.exe"
+          done
+          cp scripts/install.ps1 unsigned/install.ps1
+      - id: upload-unsigned
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-unsigned
+          path: unsigned/
+      - uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          github-artifact-id: ${{ steps.upload-unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: signed
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-signed
+          path: signed/
+
   goreleaser:
+    needs: sign-windows
+    # Runs when signing succeeded or was skipped; a signing failure stops
+    # the release instead of shipping it unsigned without a word.
+    if: ${{ !cancelled() && needs.sign-windows.result != 'failure' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -27,6 +93,11 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: '1.26'
+      - if: ${{ needs.sign-windows.result == 'success' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-signed
+          path: signed
       - uses: goreleaser/goreleaser-action@v6
         with:
           version: '~> v2'

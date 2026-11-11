@@ -62,18 +62,16 @@ function Add-JairaUserPath([string]$Dir) {
 	return $true
 }
 
-# Writing the registry tells no one; this broadcast is what makes a newly
-# opened terminal see the new PATH without signing out.
+# Writing the registry tells no one; a WM_SETTINGCHANGE broadcast is what
+# makes a newly opened terminal see the new PATH without signing out. .NET
+# sends that broadcast itself whenever it writes a user variable, so setting
+# and removing a throwaway one sends it twice - no Add-Type and no DllImport,
+# which made this script look like a dropper to Defender (32TTSS). PATH itself
+# is never written this way: SetEnvironmentVariable would store it as REG_SZ.
 function Send-JairaEnvChange {
 	try {
-		if (-not ('JairaInstall.Env' -as [type])) {
-			Add-Type -Namespace JairaInstall -Name Env -MemberDefinition @'
-[DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-public static extern IntPtr SendMessageTimeout(IntPtr hWnd, uint Msg, UIntPtr wParam, string lParam, uint fuFlags, uint uTimeout, out UIntPtr lpdwResult);
-'@
-		}
-		$result = [UIntPtr]::Zero
-		[void][JairaInstall.Env]::SendMessageTimeout([IntPtr]0xffff, 0x1a, [UIntPtr]::Zero, 'Environment', 2, 5000, [ref]$result)
+		[Environment]::SetEnvironmentVariable('JAIRA_INSTALL_ENV_REFRESH', '1', 'User')
+		[Environment]::SetEnvironmentVariable('JAIRA_INSTALL_ENV_REFRESH', $null, 'User')
 	} catch {
 		Write-Host 'note: open a new terminal (or sign out and in) for the PATH change to apply'
 	}
