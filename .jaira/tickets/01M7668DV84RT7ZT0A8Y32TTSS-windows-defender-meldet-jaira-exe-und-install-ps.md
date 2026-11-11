@@ -1,0 +1,72 @@
+---
+id: 01M7668DV84RT7ZT0A8Y32TTSS
+title: "Windows: Defender meldet jaira.exe und install.ps1 als Trojaner (ML-Heuristik)"
+status: in-progress
+ready: true
+creator: Alexander Sacharov
+goal: "jaira.exe und der Installer werden auf einem Windows-Rechner mit Microsoft Defender nicht mehr als Malware gemeldet, auch bei jeder neuen Version."
+context: |-
+  Was kaputt ist: Defender blockiert jaira auf Windows. Gemeldet am 2026-10-30 mit v0.5.7, installiert per 'irm .../scripts/install.ps1 | iex' und per Zip-Download in Edge.
+  Zwei Detektionen, beide '!ml' (Cloud-ML-Heuristik, keine Signatur): Trojan:Win32/Bearfoos.A!ml auf jaira.exe, Trojan:Script/Wacatac.C!ml auf dem Installer-Skript.
+  VirusTotal: v0.5.8 jaira.exe (SHA256 1e85ecb8...dd65) 3/70 - Ikarus Trojan.WinGo.Spy, Trellix Artemis, Fortinet Malicious_Behavior.SB; Microsoft dort sauber. v0.5.12 (3ddf00e8...4678) gleiches Bild.
+  Hashes geprüft: die gemeldeten Dateien sind die offiziellen Release-Artefakte, nichts untergeschoben.
+  Warum es auslöst: jaira.exe ist unsigniert, ohne Versionsinfo (.goreleaser.yaml baut mit -s -w, kein Resource), startet git/gh/bash/wsl.exe und liest Dateien im Home. scripts/install.ps1 sieht aus wie ein Dropper: irm|iex, Download nach %TEMP%, Expand-Archive, exe kopieren, HKCU\Environment Path schreiben, Add-Type mit DllImport user32 SendMessageTimeout.
+  Schon getan: False-Positive-Meldung an Microsoft (wdsi/filesubmission) und Ikarus/Fortinet/Trellix macht Alex von Hand.
+  Offen: eine Firmen-Identität für Azure Trusted Signing (Azure-Konto und Prüfung der juristischen Person) - das kann kein Agent.
+definition-of-done: "Windows-Binaries im Release sind Authenticode-signiert (z. B. Azure Trusted Signing im release.yaml), signtool verify /pa ist grün"
+tags:
+  - release
+  - ci
+blocked-by: []
+related: []
+commits: []
+created-at: 2026-11-11T20:54:42Z
+updated-at: 2026-11-11T21:20:23Z
+assignee: Alexander Sacharov
+updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-57423
+claimed-at: 2026-11-11T21:12:22Z
+question: ""
+---
+
+# Windows: Defender meldet jaira.exe und install.ps1 als Trojaner (ML-Heuristik)
+
+## Definition of Done
+
+- [ ] Windows-Binaries im Release sind Authenticode-signiert (z. B. Azure Trusted Signing im release.yaml), signtool verify /pa ist grün
+- [ ] jaira.exe trägt eine Versionsinfo (CompanyName, ProductName, FileVersion), sichtbar unter Eigenschaften > Details
+- [ ] scripts/install.ps1 kommt ohne Add-Type/DllImport aus und ist ebenfalls signiert
+- [x] Release-Note in core/release/notes/<ID>.md
+  proof: core/release/notes/32TTSS.md
+- [x] README und Release-Text (.goreleaser.yaml release.footer) nennen: Free code signing provided by SignPath.io, certificate by SignPath Foundation.
+  proof: README.md Install (after 'Or download a binary'); .goreleaser.yaml release.footer
+
+## Options
+
+- [ ] brainstorm
+- [ ] planning
+
+## Plan
+
+<Steps, in order — filled in by the pre-process step, or by you.>
+
+- [x] Versionsinfo: winres.json + go-winres im goreleaser before-hook, .syso gitignored
+  proof: .goreleaser.yaml before.hooks go-winres; cmd/jaira/winres/winres.json
+- [ ] Versionsinfo im gebauten jaira.exe prüfen (PE-Ressource auslesen)
+- [x] install.ps1: Broadcast ohne Add-Type/DllImport
+  proof: scripts/install.ps1 Send-JairaEnvChange
+- [x] release.yaml: SignPath-Signierjob für jaira.exe + install.ps1, aktiv nur mit Secret
+  proof: .github/workflows/release.yaml sign-windows; scripts/signed-windows.sh; .signpath/artifact-configuration.xml
+- [x] Release-Note 32TTSS.md
+  proof: core/release/notes/32TTSS.md
+
+## Progress
+- **2026-11-11 21:08 · Alexander Sacharov** — False-Positive-Meldungen an Microsoft am 2026-11-11 abgeschickt: (1) jaira.exe v0.5.7, Trojan:Win32/Bearfoos.A!ml, SHA256 bc57ef9c...1b29; (2) scripts/install.ps1 (master, SHA256 d865b65d...c470), Trojan:Script/Wacatac.C!ml. Antwort von Microsoft steht aus, meist 1-3 Tage.
+- **2026-11-11 21:11 · Alexander Sacharov** — decision: jaira ist Open Source (MIT, öffentlich), keine Firmensoftware - signiert wird über SignPath Foundation (kostenlos für OSS, kein Azure, keine juristische Person). Antrag bei signpath.org stellt der Repo-Owner von Hand; bis dahin zuerst Versionsinfo in jaira.exe und install.ps1 ohne Add-Type/DllImport, der Signierschritt in release.yaml wird für SignPath vorbereitet.
+- **2026-11-11 21:12 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/460629.sock
+- **2026-11-11 21:12 · Alexander Sacharov** — decision: PATH-Broadcast ohne Add-Type - [Environment]::SetEnvironmentVariable mit Target User sendet WM_SETTINGCHANGE selbst; install.ps1 setzt und löscht damit eine Hilfsvariable statt SendMessageTimeout per DllImport. Versionsinfo: go-winres erzeugt beim Release eine .syso in cmd/jaira (goreleaser before-hook, Version aus dem Tag), nicht eingecheckt; CompanyName 'jaira project', ProductName 'jaira'.
+- **2026-11-11 21:13 · Alexander Sacharov** — question: DoD 1 (Authenticode-Signatur, signtool verify grün) und der Signatur-Teil von DoD 3 kann kein Agent erfüllen, solange SignPath den Antrag nicht genehmigt hat - der Gate verweigert done. Optionen: (1) Empfohlen: DoD 1 und 3 umformulieren auf 'Signierschritt für SignPath in release.yaml vorbereitet, abschaltbar per Secret' + Folgeticket fürs echte Signieren nach Genehmigung; (2) Ticket bleibt offen: Versionsinfo + install.ps1 jetzt, dann blocked bis SignPath genehmigt; (3) Signier-Teil ganz raus, eigenes Ticket, dieses nur Versionsinfo + install.ps1.
+- **2026-11-11 21:15 · Alexander Sacharov** — decision (Alex, 2026-11-11): Option 2 - DoD bleibt wie sie ist. Jetzt Versionsinfo + install.ps1 ohne Add-Type, Signierschritt in release.yaml für SignPath vorbereiten; danach Ticket nach blocked (wartet auf SignPath-Genehmigung), kein Folgeticket.
+- **2026-11-11 21:15 · Alexander Sacharov** — decision: Path bleibt wie heute roh gelesen und per Set-ItemProperty -Type ExpandString geschrieben - %USERPROFILE%-Einträge bleiben unexpandiert. Nur der Broadcast ändert sich: [Environment]::SetEnvironmentVariable setzt und löscht eine Hilfsvariable JAIRA_INSTALL_ENV_REFRESH (Target User); .NET schickt dabei selbst WM_SETTINGCHANGE 'Environment'. Path wird nie über SetEnvironmentVariable geschrieben.
+- **2026-11-11 21:18 · Alexander Sacharov** — SignPath Foundation verlangt den Hinweis auf README und Download-Seite (Teamlead 2026-11-11, Antrag bei signpath.org heute gestellt) - DoD 5.
+- **2026-11-11 21:20 · Alexander Sacharov** — Signierweg: sign-windows-Job baut mit 'goreleaser build' dieselben Binaries (reproduzierbar: CGO off, -trimpath, gleiche Version/Resource), lädt windows_amd64/arm64 jaira.exe + install.ps1 als Artifact hoch, SignPath-Action v2 signiert (Foundation verlangt Herkunft aus GitHub Actions, darum Artifact und nicht REST-Upload). Der Release-Job lädt 'signed' herunter; goreleaser build post-hook (scripts/signed-windows.sh exe) ersetzt jaira.exe vor dem Zippen, before-hook 'stage' legt install.ps1 (signiert falls vorhanden) als Release-Asset bei. Aus solange vars.SIGNPATH_ORGANIZATION_ID leer. Offen nach Genehmigung: Variablen/Secret setzen, artifact-configuration.xml in SignPath einspielen, README-Einzeiler auf releases/latest/download/install.ps1 umstellen (raw master bleibt unsigniert).
