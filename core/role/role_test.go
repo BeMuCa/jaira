@@ -768,6 +768,57 @@ esac
 	}
 }
 
+// Herdr App sets no HERDR_ENV and has no herdr binary: inside it, spawn.sh
+// goes through herdr-hc.sh to hc. The worker's terminal has to open as a tab
+// of the caller's space (its herdr.space label), outlive the caller and leave
+// the caller's prompt alone, and the lane is typed once, Enter included.
+func TestSpawnOpensItsTabThroughHerdrApp(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	path := jairaPath(t)
+	dir := t.TempDir()
+	if _, err := install(dir, false, true, false); err != nil {
+		t.Fatal(err)
+	}
+	bin := t.TempDir()
+	calls := filepath.Join(t.TempDir(), "calls")
+	hc := `#!/usr/bin/env bash
+printf '%s\n' "$*" >> "` + calls + `"
+case "$1" in
+  run) echo '{"address":"t9","state":"live"}' ;;
+  get) echo '{"address":"'"$2"'","labels":{"herdr.space":"sp1","herdr.tab":"tb1"},"status":{"app":"claude-code","state":"idle"}}' ;;
+esac
+`
+	if err := os.WriteFile(filepath.Join(bin, "hc"), []byte(hc), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+	cmd := spawnOn(bash, "Linux", spawn, "--no-worktree", "--no-parent", "ab12cd", "AB12CD", "review")
+	cmd.Dir = t.TempDir()
+	cmd.Env = append(os.Environ(), "TMPDIR="+t.TempDir(), "HERDR_ENV=", "HERDR_BIN_PATH=", "HERDR_WORKSPACE_ID=",
+		"HC_TERMINAL_ID=t1", "HC_BIN=", "PATH="+bin+string(os.PathListSeparator)+path)
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("spawn.sh in Herdr App: %v\n%s", err, out)
+	}
+	if got := strings.TrimSpace(string(out)); got != "t9" {
+		t.Errorf("spawn.sh printed %q, want the terminal t9", got)
+	}
+	b, _ := os.ReadFile(calls)
+	log := string(b)
+	for _, want := range []string{"--outlive-parent", "--no-notify", "--label jaira.tab=AB12CD/review",
+		"--label herdr.space=sp1", "send t9 /jaira-role-lane AB12CD review\n"} {
+		if !strings.Contains(log, want) {
+			t.Errorf("hc was not called with %q:\n%s", want, log)
+		}
+	}
+	if strings.Contains(log, "keys t9") {
+		t.Errorf("hc send presses Enter itself, a second one was sent:\n%s", log)
+	}
+}
+
 // A herdr.exe is the Herdr of WSL and of native Windows alike, so spawn.sh
 // tells the two apart by the machine it runs on (issue #79): in WSL the tab
 // crosses back with wsl.exe --cd; in Git Bash it starts claude where it is,

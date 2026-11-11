@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-11T09:06:24Z
-updated-at: 2026-11-11T09:14:26Z
+updated-at: 2026-11-11T09:24:56Z
 assignee: AlSa
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15715
@@ -26,6 +26,8 @@ claimed-at: 2026-11-11T09:06:40Z
 outcome-what: "herdr-hc.sh übersetzt die herdr-Aufrufe von spawn.sh, run-lane.sh und reap.sh in Herdr Apps hc; die drei Skripte und die Rollen-Skills erkennen Herdr App an HC_TERMINAL_ID."
 outcome-why: "Herdr App setzt kein HERDR_ENV und hat kein herdr-Binary: Worker-Tabs ließen sich nicht mehr öffnen, und Terminals in Nachbarordnern landeten ohne herdr.space-Label außerhalb des eigenen Space."
 outcome-resolves: Teamlead und Dispatcher öffnen in Herdr App wieder Tabs im selben Space.
+review-summary: "core/role/role_test.go: every spawn.sh path has a stub test (TestSpawnStartsClaudeWhereItsShellRuns), the hc path through herdr-hc.sh has none — add one with a stub hc that checks herdr.space, --outlive-parent, --no-notify and the typed prompt"
+round: 2
 ---
 
 # spawn.sh und reap.sh starten keine Tabs in Herdr App (hc)
@@ -52,3 +54,4 @@ outcome-resolves: Teamlead und Dispatcher öffnen in Herdr App wieder Tabs im se
 
 ## Progress
 - **2026-11-11 09:14 · Alexander Sacharov** — Weg: ein Shim herdr-hc.sh übersetzt die herdr-Aufrufe der drei Skripte in hc, statt drei Skripte doppelt zu verzweigen. Ein hc-Terminal = ein Tab = eine Pane, die Adresse tN ist beide Ids. hc send drückt Enter selbst, deshalb ist send-keys enter im Shim ein No-op. shipped.sha256 nur ergänzt: scripts/shipped-history.sh im Worktree löschte 32 alte Zeilen.
+- **2026-11-11 09:23 · Alexander Sacharov** — critique: einziger Befund — kein Test für den hc-Pfad; Shim statt Verzweigung in drei Skripten bleibt (Note 1), send-keys-enter-No-op bleibt, dokumentiert.
