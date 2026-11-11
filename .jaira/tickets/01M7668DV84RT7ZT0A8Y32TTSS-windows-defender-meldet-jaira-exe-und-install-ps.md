@@ -21,12 +21,19 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-11T20:54:42Z
-updated-at: 2026-11-11T21:20:23Z
+updated-at: 2026-11-11T21:34:06Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-57423
 claimed-at: 2026-11-11T21:12:22Z
 question: ""
+outcome-what: "jaira.exe gets a Windows version resource and as-invoker manifest (go-winres from cmd/jaira/winres/winres.json in a goreleaser before-hook); install.ps1 refreshes PATH without Add-Type/DllImport; release.yaml has a sign-windows job that has SignPath sign jaira.exe and install.ps1, off until vars.SIGNPATH_ORGANIZATION_ID is set; install.ps1 becomes a release asset; README and release footer carry the SignPath notice"
+outcome-why: "Defender's ML heuristics flag the unsigned, resource-less exe and the dropper-looking installer as trojans"
+outcome-resolves: Version info and the Add-Type part done and verified on a built exe; Authenticode signing waits for SignPath Foundation approval (applied 2026-11-11)
+review-summary: "none - read the whole diff. Two goreleaser builds (sign-windows, then release with a post-hook swap) stand: goreleaser OSS cannot release prebuilt binaries, and SignPath Foundation requires the GitHub-artifact origin (note 'Signierweg'). PATH write path untouched (note 'decision: Path bleibt ... roh'). README notice before signing is live is Alex's call (teamlead message 2026-11-11, DoD 5)."
+review-gaps: "none - no other release script, artifact upload or Windows resource handling in the repo (grep upload-artifact/winres/syso/extra_files hits only this change); nothing orphaned: Send-JairaEnvChange still has its one caller, the JairaInstall.Env type is gone with Add-Type"
+test-verdict: "fail: scripts/install.ps1:69 comment still spells out 'Add-Type' and 'DllImport' - the words a content-scanning heuristic keys on"
+round: 2
 ---
 
 # Windows: Defender meldet jaira.exe und install.ps1 als Trojaner (ML-Heuristik)
@@ -34,8 +41,10 @@ question: ""
 ## Definition of Done
 
 - [ ] Windows-Binaries im Release sind Authenticode-signiert (z. B. Azure Trusted Signing im release.yaml), signtool verify /pa ist grün
-- [ ] jaira.exe trägt eine Versionsinfo (CompanyName, ProductName, FileVersion), sichtbar unter Eigenschaften > Details
-- [ ] scripts/install.ps1 kommt ohne Add-Type/DllImport aus und ist ebenfalls signiert
+- [x] jaira.exe trägt eine Versionsinfo (CompanyName, ProductName, FileVersion), sichtbar unter Eigenschaften > Details
+  proof: /tmp/j.exe (go-winres v0.3.3 make + GOOS=windows go build, run by Alex 2026-11-11): CompanyName 'jaira project', ProductName 'jaira', FileVersion 0.5.13.0, manifest asInvoker; source cmd/jaira/winres/winres.json
+- [~] scripts/install.ps1 kommt ohne Add-Type/DllImport aus und ist ebenfalls signiert
+  proof: scripts/install.ps1: grep Add-Type|DllImport = 0; Send-JairaEnvChange uses [Environment]::SetEnvironmentVariable; signing pending SignPath
 - [x] Release-Note in core/release/notes/<ID>.md
   proof: core/release/notes/32TTSS.md
 - [x] README und Release-Text (.goreleaser.yaml release.footer) nennen: Free code signing provided by SignPath.io, certificate by SignPath Foundation.
@@ -52,7 +61,8 @@ question: ""
 
 - [x] Versionsinfo: winres.json + go-winres im goreleaser before-hook, .syso gitignored
   proof: .goreleaser.yaml before.hooks go-winres; cmd/jaira/winres/winres.json
-- [ ] Versionsinfo im gebauten jaira.exe prüfen (PE-Ressource auslesen)
+- [x] Versionsinfo im gebauten jaira.exe prüfen (PE-Ressource auslesen)
+  proof: /tmp/j.exe read with a VS_VERSIONINFO parser: all strings + fixed 0.5.13.0 present
 - [x] install.ps1: Broadcast ohne Add-Type/DllImport
   proof: scripts/install.ps1 Send-JairaEnvChange
 - [x] release.yaml: SignPath-Signierjob für jaira.exe + install.ps1, aktiv nur mit Secret
@@ -70,3 +80,8 @@ question: ""
 - **2026-11-11 21:15 · Alexander Sacharov** — decision: Path bleibt wie heute roh gelesen und per Set-ItemProperty -Type ExpandString geschrieben - %USERPROFILE%-Einträge bleiben unexpandiert. Nur der Broadcast ändert sich: [Environment]::SetEnvironmentVariable setzt und löscht eine Hilfsvariable JAIRA_INSTALL_ENV_REFRESH (Target User); .NET schickt dabei selbst WM_SETTINGCHANGE 'Environment'. Path wird nie über SetEnvironmentVariable geschrieben.
 - **2026-11-11 21:18 · Alexander Sacharov** — SignPath Foundation verlangt den Hinweis auf README und Download-Seite (Teamlead 2026-11-11, Antrag bei signpath.org heute gestellt) - DoD 5.
 - **2026-11-11 21:20 · Alexander Sacharov** — Signierweg: sign-windows-Job baut mit 'goreleaser build' dieselben Binaries (reproduzierbar: CGO off, -trimpath, gleiche Version/Resource), lädt windows_amd64/arm64 jaira.exe + install.ps1 als Artifact hoch, SignPath-Action v2 signiert (Foundation verlangt Herkunft aus GitHub Actions, darum Artifact und nicht REST-Upload). Der Release-Job lädt 'signed' herunter; goreleaser build post-hook (scripts/signed-windows.sh exe) ersetzt jaira.exe vor dem Zippen, before-hook 'stage' legt install.ps1 (signiert falls vorhanden) als Release-Asset bei. Aus solange vars.SIGNPATH_ORGANIZATION_ID leer. Offen nach Genehmigung: Variablen/Secret setzen, artifact-configuration.xml in SignPath einspielen, README-Einzeiler auf releases/latest/download/install.ps1 umstellen (raw master bleibt unsigniert).
+- **2026-11-11 21:20 · Alexander Sacharov** — question: DoD 2 braucht einen Beleg, dass jaira.exe die Versionsinfo trägt. Lokal go-winres auszuführen (go run github.com/tc-hib/go-winres@v0.3.3, externer Code) hat der Auto-Mode verweigert. Optionen: (1) Empfohlen: Alex erlaubt es einmal oder führt es selbst aus: '! cd <worktree> && go run github.com/tc-hib/go-winres@v0.3.3 make --in cmd/jaira/winres/winres.json --out cmd/jaira/rsrc --arch amd64 --file-version 0.5.13.0 --product-version 0.5.13.0 && GOOS=windows go build -o /tmp/j.exe ./cmd/jaira' - danach lese ich die Ressource aus; (2) Beleg erst beim ersten Release nach dem Merge (Windows: Eigenschaften > Details) - DoD 2 bleibt bis dahin offen, das Ticket ist ohnehin blocked.
+- **2026-11-11 21:27 · Alexander Sacharov** — SignPath-Foundation-Antrag am 2026-11-11 von Alex abgeschickt (Homepage = GitHub-Repo, Download-URL = Releases-Seite, Privacy leer - keine Nutzerdaten). blocked_reason beim Parken: wartet auf SignPath-Genehmigung, Antrag 2026-11-11.
+- **2026-11-11 21:28 · Alexander Sacharov** — decision (Alex): DoD-2-Beleg über Option 1 - Alex führt go-winres + GOOS=windows go build selbst aus, ich lese danach /tmp/j.exe aus.
+- **2026-11-11 21:33 · Alexander Sacharov** — testing: parked in blocked out of testing. On return: after SignPath approval set vars SIGNPATH_ORGANIZATION_ID/PROJECT_SLUG/SIGNING_POLICY_SLUG + secret SIGNPATH_API_TOKEN, paste .signpath/artifact-configuration.xml into the SignPath project, cut a release, check signtool verify /pa on jaira.exe and Get-AuthenticodeSignature on the release's install.ps1, switch the README one-liner to releases/latest/download/install.ps1, tick DoD 1 and 3, then human -> review.
+- **2026-11-11 21:33 · Alexander Sacharov** — testing: install.ps1:69 the new comment names Add-Type and DllImport; Defender's script ML reads text, comments included. Fix: say 'no compiled C# and no native user32 call' instead.
