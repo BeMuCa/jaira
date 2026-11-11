@@ -65,9 +65,10 @@ function Add-JairaUserPath([string]$Dir) {
 # Writing the registry tells no one; a WM_SETTINGCHANGE broadcast is what
 # makes a newly opened terminal see the new PATH without signing out. .NET
 # sends that broadcast itself whenever it writes a user variable, so setting
-# and removing a throwaway one sends it twice - no Add-Type and no DllImport,
-# which made this script look like a dropper to Defender (32TTSS). PATH itself
-# is never written this way: SetEnvironmentVariable would store it as REG_SZ.
+# and removing a throwaway one sends it twice. Compiling C# to call user32
+# directly did the same and made this script look like a dropper to Defender
+# (32TTSS). PATH itself is never written this way: SetEnvironmentVariable
+# would store it as REG_SZ.
 function Send-JairaEnvChange {
 	try {
 		[Environment]::SetEnvironmentVariable('JAIRA_INSTALL_ENV_REFRESH', '1', 'User')
