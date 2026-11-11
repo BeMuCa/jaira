@@ -54,6 +54,14 @@ done
 # otherwise not know the worktree it stands in.
 root="$(cd "$(git -C "${1:-$PWD}" rev-parse --show-toplevel)" && pwd -P)"
 herdr="${HERDR_BIN_PATH:-herdr}"
+# Herdr App (herdr-core) sets no HERDR_ENV and has no herdr binary: its hc runs
+# the same calls through herdr-hc.sh beside this file. HC_TERMINAL_ID is what
+# the app exports into every terminal it starts.
+if [ "${HERDR_ENV:-}" != 1 ] && [ -n "${HC_TERMINAL_ID:-}" ] \
+  && command -v "${HC_BIN:-hc}" >/dev/null 2>&1; then
+  herdr="$(cd "$(dirname "$0")" && pwd)/herdr-hc.sh"
+  HERDR_ENV=1; HERDR_PANE_ID="${HERDR_PANE_ID:-$HC_TERMINAL_ID}"
+fi
 common="$(git -C "$root" rev-parse --git-common-dir)"
 panes="$(cd "$root" && cd "$common" && pwd)/jaira/panes"
 # No record, nothing to ask the forge about: the round costs nothing.

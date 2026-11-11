@@ -268,12 +268,13 @@ evidence, its tone is not.
 ## Transports: a tab if Herdr is here, otherwise fall back
 
 ```bash
-test "${HERDR_ENV:-}" = 1 && echo herdr
+{ test "${HERDR_ENV:-}" = 1 || test -n "${HC_TERMINAL_ID:-}"; } && echo herdr
 ```
 
 Say which one you took. The human needs to know whether the workers outlive you.
 
-1. **Herdr, one new tab per worker** — `HERDR_ENV=1`. This is the answer whenever
+1. **Herdr, one new tab per worker** — `HERDR_ENV=1`, or `HC_TERMINAL_ID` set
+   by Herdr App, whose `hc` the scripts drive through `herdr-hc.sh`. This is the answer whenever
    Herdr is here, for every lane, short ones included. Not a split pane: a tab.
    A split divides the screen the human is reading; a tab is a worker they can
    open when they want it and ignore when they do not, and the label tells them

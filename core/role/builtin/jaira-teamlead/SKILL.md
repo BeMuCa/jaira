@@ -149,7 +149,8 @@ jaira --json roles list      # "dispatch": "lanes" | "worker", "dispatch_role"
 Read it once per ticket you start, not once per session: the person can switch
 it on the settings screen while you run.
 
-**If Herdr is here (`HERDR_ENV=1`), the dispatcher gets its own tab**, the same
+**If Herdr is here (`HERDR_ENV=1`, or `HC_TERMINAL_ID` set by Herdr App), the
+dispatcher gets its own tab**, the same
 way its workers do. Start it with
 `.claude/skills/jaira-dispatcher/scripts/spawn.sh` — `~/.claude/skills/...` when
 the roles were installed globally — rather than assembling the calls yourself,
