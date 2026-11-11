@@ -51,7 +51,8 @@ and spawn.sh then writes nothing into the worktree itself. Without it, a .env in
 the repository is copied and four port lines are appended. A setup that fails,
 or is there but not executable, stops the spawn before a tab opens.
 
-Environment: JAIRA_BRANCH_PREFIX (default feat), JAIRA_NO_WORKTREE,
+Environment: JAIRA_BRANCH_PREFIX (default feat), JAIRA_NO_WORKTREE, HC_TERMINAL_ID and
+HC_BIN (Herdr App, through herdr-hc.sh),
 HERDR_BIN_PATH, HERDR_WORKSPACE_ID.
 USAGE
 }
@@ -80,7 +81,18 @@ root="${4:-$PWD}"
 # a /c/... worktree. Where root already is an absolute path, nothing changes.
 root="$(cd "$root" && pwd)" || { echo "no such directory: ${4:-$PWD}" >&2; exit 1; }
 herdr="${HERDR_BIN_PATH:-herdr}"
-[ "${HERDR_ENV:-}" = 1 ] || { echo "not inside a Herdr pane" >&2; exit 1; }
+# Herdr App (herdr-core) sets no HERDR_ENV and has no herdr binary: its hc runs
+# the same calls through herdr-hc.sh beside this file. HC_TERMINAL_ID is what
+# the app exports into every terminal it starts.
+if [ "${HERDR_ENV:-}" != 1 ] && [ -n "${HC_TERMINAL_ID:-}" ] \
+  && command -v "${HC_BIN:-hc}" >/dev/null 2>&1; then
+  herdr="$(cd "$(dirname "$0")" && pwd)/herdr-hc.sh"
+fi
+# HERDR_ENV is never set here for Herdr App: WSLENV exports it, empty, into
+# every WSL shell, so an assignment would reach the scripts this one starts and
+# send them to a herdr binary that is not there.
+[ "${HERDR_ENV:-}" = 1 ] || [ "${herdr##*/}" = herdr-hc.sh ] \
+  || { echo "not inside a Herdr pane" >&2; exit 1; }
 
 # Every JSON below is read with 'jaira json get', so a jaira from before it —
 # the roles reinstalled, the binary not — would fail right after 'tab create'

@@ -221,7 +221,7 @@ You start one for a fresh lane, and in conversational mode for the critique
 beside you.
 
 ```bash
-test "${HERDR_ENV:-}" = 1 && echo herdr
+{ test "${HERDR_ENV:-}" = 1 || test -n "${HC_TERMINAL_ID:-}"; } && echo herdr
 ```
 
 The scripts are the dispatcher's, not copies: `jaira roles install` writes

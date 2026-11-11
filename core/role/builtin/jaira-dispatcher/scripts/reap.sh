@@ -54,6 +54,13 @@ done
 # otherwise not know the worktree it stands in.
 root="$(cd "$(git -C "${1:-$PWD}" rev-parse --show-toplevel)" && pwd -P)"
 herdr="${HERDR_BIN_PATH:-herdr}"
+# Herdr App (herdr-core) sets no HERDR_ENV and has no herdr binary: its hc runs
+# the same calls through herdr-hc.sh beside this file. HC_TERMINAL_ID is what
+# the app exports into every terminal it starts.
+if [ "${HERDR_ENV:-}" != 1 ] && [ -n "${HC_TERMINAL_ID:-}" ] \
+  && command -v "${HC_BIN:-hc}" >/dev/null 2>&1; then
+  herdr="$(cd "$(dirname "$0")" && pwd)/herdr-hc.sh"
+fi
 common="$(git -C "$root" rev-parse --git-common-dir)"
 panes="$(cd "$root" && cd "$common" && pwd)/jaira/panes"
 # No record, nothing to ask the forge about: the round costs nothing.
@@ -169,7 +176,7 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
   failed=""; gone=()
   for f in "${recs[@]}"; do
     pane="$(field pane "$f")"; lane="$(field lane "$f")"
-    if [ "$pane" = "${HERDR_PANE_ID:-}" ]; then continue; fi
+    if [ "$pane" = "${HERDR_PANE_ID:-${HC_TERMINAL_ID:-}}" ]; then continue; fi
     gone+=("$f")
     # The person may have closed the tab already; that is the job done. A
     # record outlives its tab by days, and herdr hands its ids out again after

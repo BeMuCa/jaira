@@ -24,7 +24,7 @@ export const t = {
   prUnchecked: (why: string) => `pull requests not checked (${why})`,
   noForge: (branch: string) => `${branch} has commits to propose, but no pull request can be opened from here: this repository needs an origin on GitHub or GitLab, or git config jaira.forge github (or gitlab).`,
   noRemoteFor: (repo: string) => `Pull requests go to ${repo}, and no remote here points at it: add it with git remote add upstream <its URL>.`,
-  prNeedsHerdr: (branch: string) => `${branch} needs a pull request, which opens in a Herdr tab of its own (HERDR_ENV=1 and spawn.sh from jaira roles install).`,
+  prNeedsHerdr: (branch: string) => `${branch} needs a pull request, which opens in a Herdr tab of its own (HERDR_ENV=1 or Herdr App, and spawn.sh from jaira roles install).`,
   noteOn: (id: string) => `Note on ${id}`,
   noteLost: (id: string, why: string, note: string) => `${id} went back to in-progress, but the note with your reason was not written: ${why}\nAdd it by hand: jaira note ${id} '${note.replaceAll("'", `'\\''`)}'`,
   tooOld: (installed: string, needed: string) => `jaira ${installed} is too old for this cockpit: it needs ${needed} or later. Give back will be refused until you update jaira.`,

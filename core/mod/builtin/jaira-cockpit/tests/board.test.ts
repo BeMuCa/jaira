@@ -1403,6 +1403,13 @@ describe('after Accept', () => {
     expect(w.toasts.at(-1)).toBe('MG677R accepted: done')
   })
 
+  test('Herdr App (HC_TERMINAL_ID, no HERDR_ENV): the press opens the pull request through spawn.sh all the same', async ($, on) => {
+    const w = world(on, { herdr: true, env: { HOME: '/home/a', HC_TERMINAL_ID: 't3' } })
+    w.ahead = 3
+    await press($)
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'mg677r', 'MG677R', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+  })
+
   test('no Herdr: nothing starts, and the pane says the step needs it', async ($, on) => {
     const w = world(on)
     w.ahead = 3
