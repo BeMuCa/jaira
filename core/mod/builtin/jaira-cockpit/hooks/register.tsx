@@ -673,9 +673,14 @@ async function bash($: EngineInterface): Promise<string> {
   return git ? `${git}/bin/bash.exe` : 'bash'
 }
 
+// Herdr App (herdr-core) sets no HERDR_ENV and has no herdr binary: inside it
+// (HC_TERMINAL_ID set) the dispatcher's herdr-hc.sh carries out the same calls
+// through hc, beside the spawn.sh this mod starts.
 async function herdr($: EngineInterface): Promise<string | undefined> {
-  if ((await $.env.get('HERDR_ENV')) !== '1') return undefined
-  return (await $.env.get('HERDR_BIN_PATH')) || 'herdr'
+  if ((await $.env.get('HERDR_ENV')) === '1') return (await $.env.get('HERDR_BIN_PATH')) || 'herdr'
+  if (!(await $.env.get('HC_TERMINAL_ID'))) return undefined
+  const script = await spawnScript($)
+  return script?.[1]?.replace(/spawn\.sh$/, 'herdr-hc.sh')
 }
 
 // Explain a review finding, or talk an open question through, in a Herdr tab

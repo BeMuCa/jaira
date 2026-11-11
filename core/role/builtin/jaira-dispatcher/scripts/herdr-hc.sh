@@ -51,7 +51,17 @@ case "$cmd" in
       "$(js "$t")" "$(js "$label")" "$(js "$t")"
     ;;
   "tab list")
-    "$hc" ls --json
+    # As herdr lists tabs: the cockpit finds a ticket's worker by its label,
+    # which hc ls leaves out, so each live terminal is asked for its own.
+    ls="$("$hc" ls --json)"
+    sep=""; printf '{"result":{"tabs":['
+    for t in $(grep -o '"address":"[^"]*"' <<<"$ls" | sed 's/^"address":"//; s/"$//'); do
+      j="$("$hc" get "$t" --json 2>/dev/null)" || continue
+      printf '%s{"tab_id":"%s","label":"%s","agent_status":"%s"}' "$sep" "$(js "$t")" \
+        "$(js "$(labelof "$j" jaira.tab)")" "$(js "$(jaira json get status.state --default - <<<"$j")")"
+      sep=","
+    done
+    printf ']}}\n'
     ;;
   "tab get")
     j="$("$hc" get "$1" --json)"
