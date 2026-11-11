@@ -60,7 +60,6 @@ herdr="${HERDR_BIN_PATH:-herdr}"
 if [ "${HERDR_ENV:-}" != 1 ] && [ -n "${HC_TERMINAL_ID:-}" ] \
   && command -v "${HC_BIN:-hc}" >/dev/null 2>&1; then
   herdr="$(cd "$(dirname "$0")" && pwd)/herdr-hc.sh"
-  HERDR_ENV=1; HERDR_PANE_ID="${HERDR_PANE_ID:-$HC_TERMINAL_ID}"
 fi
 common="$(git -C "$root" rev-parse --git-common-dir)"
 panes="$(cd "$root" && cd "$common" && pwd)/jaira/panes"
@@ -177,7 +176,7 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
   failed=""; gone=()
   for f in "${recs[@]}"; do
     pane="$(field pane "$f")"; lane="$(field lane "$f")"
-    if [ "$pane" = "${HERDR_PANE_ID:-}" ]; then continue; fi
+    if [ "$pane" = "${HERDR_PANE_ID:-${HC_TERMINAL_ID:-}}" ]; then continue; fi
     gone+=("$f")
     # The person may have closed the tab already; that is the job done. A
     # record outlives its tab by days, and herdr hands its ids out again after

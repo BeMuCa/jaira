@@ -49,7 +49,6 @@ herdr="${HERDR_BIN_PATH:-herdr}"
 if [ "${HERDR_ENV:-}" != 1 ] && [ -n "${HC_TERMINAL_ID:-}" ] \
   && command -v "${HC_BIN:-hc}" >/dev/null 2>&1; then
   herdr="$(cd "$(dirname "$0")" && pwd)/herdr-hc.sh"
-  HERDR_ENV=1; HERDR_PANE_ID="${HERDR_PANE_ID:-$HC_TERMINAL_ID}"
 fi
 # Beside this file, not under ~/.claude/skills: roles are installed into a
 # project's .claude/skills as well, and a hard-coded home path misses those.

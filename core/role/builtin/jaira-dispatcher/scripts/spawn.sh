@@ -87,9 +87,12 @@ herdr="${HERDR_BIN_PATH:-herdr}"
 if [ "${HERDR_ENV:-}" != 1 ] && [ -n "${HC_TERMINAL_ID:-}" ] \
   && command -v "${HC_BIN:-hc}" >/dev/null 2>&1; then
   herdr="$(cd "$(dirname "$0")" && pwd)/herdr-hc.sh"
-  HERDR_ENV=1; HERDR_PANE_ID="${HERDR_PANE_ID:-$HC_TERMINAL_ID}"
 fi
-[ "${HERDR_ENV:-}" = 1 ] || { echo "not inside a Herdr pane" >&2; exit 1; }
+# HERDR_ENV is never set here for Herdr App: WSLENV exports it, empty, into
+# every WSL shell, so an assignment would reach the scripts this one starts and
+# send them to a herdr binary that is not there.
+[ "${HERDR_ENV:-}" = 1 ] || [ "${herdr##*/}" = herdr-hc.sh ] \
+  || { echo "not inside a Herdr pane" >&2; exit 1; }
 
 # Every JSON below is read with 'jaira json get', so a jaira from before it —
 # the roles reinstalled, the binary not — would fail right after 'tab create'

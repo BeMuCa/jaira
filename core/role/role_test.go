@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"slices"
 	"strings"
@@ -816,6 +817,20 @@ esac
 	}
 	if strings.Contains(log, "keys t9") {
 		t.Errorf("hc send presses Enter itself, a second one was sent:\n%s", log)
+	}
+
+	// WSLENV exports HERDR_ENV, empty, into every WSL shell: a script that
+	// assigns it hands the old Herdr's path to every script it starts, and
+	// run-lane.sh's spawn.sh then called a herdr that is not there (WRMREF).
+	assign := regexp.MustCompile(`(?m)^[^#]*\bHERDR_ENV=`)
+	for _, name := range []string{"spawn.sh", "run-lane.sh", "reap.sh"} {
+		b, err := os.ReadFile(filepath.Join(dir, "jaira-dispatcher", "scripts", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if m := assign.Find(b); m != nil {
+			t.Errorf("%s assigns HERDR_ENV: %q", name, m)
+		}
 	}
 }
 
