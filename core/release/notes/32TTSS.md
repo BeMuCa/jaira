@@ -1,0 +1,2 @@
+- On Windows, check jaira.exe under Properties > Details: it now names its product, company and version, which also makes Defender less likely to flag it as a trojan.
+- Install on Windows without Defender flagging the installer: install.ps1 no longer compiles C# with Add-Type to refresh PATH, and each release now carries install.ps1 as a downloadable asset.

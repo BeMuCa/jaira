@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The artifact configuration of jaira's SignPath project (32TTSS). It
+  describes the zip release.yaml's sign-windows job uploads: the two Windows
+  binaries and the PowerShell installer, each Authenticode-signed. SignPath
+  keeps its own copy; paste this one into the project when it changes.
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <zip-file>
+    <pe-file path="windows_amd64/jaira.exe">
+      <authenticode-sign/>
+    </pe-file>
+    <pe-file path="windows_arm64/jaira.exe">
+      <authenticode-sign/>
+    </pe-file>
+    <powershell-file path="install.ps1">
+      <authenticode-sign/>
+    </powershell-file>
+  </zip-file>
+</artifact-configuration>
