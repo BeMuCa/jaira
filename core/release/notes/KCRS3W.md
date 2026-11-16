@@ -1,0 +1,3 @@
+- The review lane no longer receives the implementer's outcome and now hunts for defects in every module its diff touches, copied or moved code included; run `jaira update --lanes` to bring the review lane on your board up to date.
+- The testing lane's third pass now triggers at least one failure path and, where the change writes, two parallel writers; run `jaira update --lanes` to get it.
+- New role `jaira-role-bughunt`: a fresh agent reads whole modules for concurrency, error-path, input and permission defects and leaves each verified finding as a note; run `jaira update --roles` to install it, and the worker and dispatcher run it before a code-changing ticket goes to review.

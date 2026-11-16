@@ -19,6 +19,7 @@ var wantRoles = []string{
 	"jaira-dispatcher",
 	"jaira-role-acceptance",
 	"jaira-role-brainstorm",
+	"jaira-role-bughunt",
 	"jaira-role-lane",
 	"jaira-role-logbook-summary",
 	"jaira-role-pr",

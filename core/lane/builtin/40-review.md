@@ -6,17 +6,41 @@ precedence: 50
 agentic: true
 terminal: false
 model-tier: strong
-input-requires: [goal, definition-of-done, outcome-what, outcome-resolves, diff]
+input-requires: [goal, definition-of-done, diff]
 output-produces: [review-summary, review-gaps, review-verdict, review-check]
 description: A second model has judged the diff. Not yet accepted by a person.
 ---
 # Prompt
 
-Review this change against its definition of done.
+Review this change against its definition of done. Then hunt for defects in
+everything it ships.
 
-You are given the ticket's goal, its definition of done, the implementer's
-account of what they did, and the actual diff. Judge the diff, not the account —
-they can disagree, and when they do, the diff is what shipped.
+You are given the ticket's goal, its definition of done and the actual diff —
+not the implementer's account of what they did. That is on purpose: read the
+account first and you check the code through it, and a defect the implementer
+did not see is exactly one the account does not mention. Form your own view
+from the code.
+
+**Everything the diff contains is yours to judge, whoever wrote it first.**
+Code that was copied in, moved, renamed or taken over from another project
+arrives with its defects, and once it is in this diff they ship with this
+change. "Not introduced here" is no reason to pass a defect by. Read every
+module the diff touches as a whole — the file, not only the hunk: a race, a
+swallowed error or a lost update is rarely visible in the lines that changed.
+Look for these explicitly:
+
+- **concurrency** — two writers at once, a read-modify-write without a lock or
+  a version check, an event handled while the state it reads is being replaced
+- **error paths** — an error that is dropped, logged and then reported as
+  success, a step that fails halfway and leaves partial state, a cleanup that
+  never runs
+- **unusual input** — empty, very large, duplicated, unordered, out of range,
+  missing, a different encoding or locale than the happy path assumes
+- **permissions and boundaries** — who may call this, what it may touch, what
+  it trusts that came from outside
+
+A finding you have not checked against the code is a guess: open the file and
+confirm it before you write it down.
 
 Write four things, in this order:
 
@@ -30,8 +54,9 @@ Write four things, in this order:
 2. `review-gaps` — what is missing or unconvincing, one finding per line, and
    every line starts with what kind of finding it is:
 
-   - `blocker:` — the diff breaks a definition-of-done item, or introduces a
-     defect. Nothing else is a blocker.
+   - `blocker:` — the diff breaks a definition-of-done item, or ships a
+     defect, whether it was written here or came along with copied or moved
+     code. Nothing else is a blocker.
    - `note:` — everything else: a simpler form, a missing test of something
      that works, a neighbouring fault, a "would be nice".
 
@@ -48,8 +73,9 @@ Write four things, in this order:
 
    Ask yourself specifically:
    - Does the diff actually satisfy the definition of done? If not, what is missing?
-   - Are there defects introduced by this change?
-   - Is anything claimed in the outcome not supported by the diff?
+   - Is there a defect anywhere in the code the diff contains — written here,
+     copied in or moved — or in the modules it touches, along the four lines
+     above?
 
    A note is one line in this field and nothing else. Never create a ticket
    from it, and never ask for one to be created: whether a note becomes a
@@ -76,9 +102,11 @@ Write four things, in this order:
    is a legitimate answer ("go test ./auth -run TestSameSite covers it; there is
    no UI path"). "Review the diff" is not.
 
-Judge against the definition of done. `none` is a normal, expected answer: a
-change that meets its criteria and breaks nothing has no blocker, however much
-you could add to it.
+Judge against the definition of done and against the code it ships. `none`
+is an answer you have to earn: write it only after you have read the touched
+modules whole and looked along all four lines above — then a change that meets
+its criteria and ships no defect has no blocker, however much you could add to
+it.
 
 Then move the ticket on. A blocker sends it back to the lane the work was done
 in (`in-progress` on the default board), with the reason in a note
