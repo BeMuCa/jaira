@@ -79,3 +79,31 @@ func TestDiffLeavesTicketFilesOut(t *testing.T) {
 		t.Errorf("the ticket file is in the diff:\n%s", diff)
 	}
 }
+
+// TestDiffNeverHandsGitAnOption pins that a value in a ticket's hand-editable
+// commits: field reaches git only as a commit id: "--output=<path>" used to make
+// 'git show' truncate or create that file and exit 0.
+func TestDiffNeverHandsGitAnOption(t *testing.T) {
+	dir, repo := fixtureRepo(t)
+	fixtureCommit(t, dir, map[string]string{"base.txt": "base\n"}, "chore: base",
+		time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
+	victim := filepath.Join(t.TempDir(), "victim")
+	if err := os.WriteFile(victim, []byte("keep me\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	bad := "--output=" + victim
+
+	_, unavailable := repo.Diff([]string{bad})
+	if len(unavailable) != 1 || unavailable[0] != bad {
+		t.Errorf("unavailable = %v, want the option reported as unavailable", unavailable)
+	}
+	if _, err := repo.Stat([]string{bad}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repo.Commits([]string{bad}); err != nil {
+		t.Fatal(err)
+	}
+	if b, err := os.ReadFile(victim); err != nil || string(b) != "keep me\n" {
+		t.Errorf("git wrote over the file: %q, %v", b, err)
+	}
+}

@@ -659,9 +659,16 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			if diff == "" && worktreeDiff == "" {
 				// Both halves are accounted for, because "no commits" alone
 				// would read as "the worktree was not looked at".
-				m := "diff (git has no commits for this ticket yet, and nothing is uncommitted)"
+				// Commits that touched nothing but the ticket file leave no
+				// text in the diff, which leaves .jaira/tickets out; saying
+				// "no commits" about them would be false.
+				commits := "git has no commits for this ticket yet"
+				if len(shas) > 0 {
+					commits = fmt.Sprintf("the ticket's %d commit(s) change nothing outside .jaira/tickets", len(shas))
+				}
+				m := fmt.Sprintf("diff (%s, and nothing is uncommitted)", commits)
 				if worktreeErr != "" {
-					m = fmt.Sprintf("diff (git has no commits for this ticket yet, and the working tree could not be read: %s)", worktreeErr)
+					m = fmt.Sprintf("diff (%s, and the working tree could not be read: %s)", commits, worktreeErr)
 				}
 				missing = append(missing, m)
 				continue

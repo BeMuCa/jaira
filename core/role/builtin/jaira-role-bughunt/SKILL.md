@@ -25,8 +25,10 @@ You change nothing: no source file, no commit, no `jaira move`, no `dod`, no
 ```bash
 # the files of every commit that names the ticket, and the uncommitted ones;
 # the ticket file itself stays out, it is the story you are not to read
-{ git log --format=%H -i --grep=<id> | xargs -r git show --name-only --format= -- ':/' ':(exclude,top).jaira/tickets'
-  git status --short -- ':/' ':(exclude,top).jaira/tickets' | cut -c4-; } | sort -u
+x=':(exclude,top).jaira/tickets'
+{ git -c core.quotePath=false log -i --grep=<id> --name-only --format= -- ':/' "$x"
+  git -c core.quotePath=false diff --name-only HEAD -- ':/' "$x"
+  git -c core.quotePath=false ls-files --others --exclude-standard -- ':/' "$x"; } | sort -u
 ```
 
 The commits are found by the ticket id in their subject, the way jaira itself

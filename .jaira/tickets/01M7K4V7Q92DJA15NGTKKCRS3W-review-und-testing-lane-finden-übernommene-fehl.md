@@ -1,7 +1,7 @@
 ---
 id: 01M7K4V7Q92DJA15NGTKKCRS3W
 title: Review- und Testing-Lane finden übernommene Fehler; neue Rolle jaira-role-bughunt
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-16T21:40:09Z
-updated-at: 2026-11-16T22:05:11Z
+updated-at: 2026-11-16T22:12:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-18351
 claimed-at: 2026-11-16T21:45:52Z
@@ -30,7 +30,7 @@ outcome-resolves: "DoD 1-5 met with proofs; DoD 6 release note written, the agre
 review-summary: none
 review-gaps: "none: notTickets now one package const shared by Diff and WorktreeDiff instead of a local in WorktreeDiff; nothing else to remove"
 test-verdict: "pass: go test -count=1 ./... RC=0; TestDiffLeavesTicketFilesOut fails without the fix, passes with it; for-lane review payload of this ticket built by the new binary carries no ticket file (0 hits on the ticket id), lane and code diffs intact; ticket-only commit yields empty diff, RC=0; failure path: show --for-lane on an unknown ticket exits 5; Diff writes nothing, so no parallel-writer case; bughunt file recipe run on this branch lists the 13 branch files, no foreign ones"
-round: 2
+round: 3
 ---
 
 # Review- und Testing-Lane finden übernommene Fehler; neue Rolle jaira-role-bughunt
@@ -72,3 +72,8 @@ round: 2
 - **2026-11-16 21:59 · Alexander Sacharov** — bughunt: done - 4 findings in 6 modules; concurrency, error paths, input, permissions checked
 - **2026-11-16 22:02 · Alexander Sacharov** — bughunt round 1 fixed: (1) outcome leaked into review through the ticket file committed beside the code — gitrepo.Diff now excludes .jaira/tickets like WorktreeDiff (shared const notTickets), TestDiffLeavesTicketFilesOut fails without it; (2)+(3) bughunt's file list now comes from commits whose message names the id (git log --grep), not a merge base with origin/HEAD (fork 207 commits behind gave ~300 foreign files), and leaves .jaira/tickets out; it no longer runs jaira show at all; (4) closing line is 'bughunt: done at <short sha>' and the teamlead compares it with the branch head, so a line from an earlier round no longer passes.
 - **2026-11-16 22:03 · Alexander Sacharov** — critique round 2: read only the bughunt fixes. Found: git show with a pathspec prints nothing at all for a commit that touched only its ticket file (checked in a scratch repo, RC=0, empty output) — no code to judge, so accepted; documented on gitrepo.Diff (comment only) rather than adding a second git call per commit for a header line.
+- **2026-11-16 22:08 · Alexander Sacharov** — bughunt: core/role/builtin/jaira-role-bughunt/SKILL.md:28 - xargs hängt die Commit-Hashes HINTER '--' an, git liest sie als Pfade und zeigt nur HEAD: die Dateiliste ist immer nur die des letzten Commits (hier nur core/gitrepo/git.go statt 13 Dateien aus 3 Commits). Reihenfolge umdrehen, z.B. xargs -r -I{} git show --name-only --format= {} -- ... oder die Hashes vor '--' setzen. Zeile 29: 'git status --short | cut -c4-' liefert bei einem gestagten Rename 'alt -> neu' und bei Nicht-ASCII-Pfaden eine gequotete Escape-Folge ('"\303\204nderung.go"') statt eines Dateinamens; -z bzw. --porcelain -z mit core.quotePath=false nötig. ran: git log --format=%H -i --grep=KCRS3W | xargs -r git show --name-only --format= -- ':/' ':(exclude,top).jaira/tickets' (1 Datei) gegen git show je Commit (13); git mv + Umlaut-Datei in Scratch-Repo
+- **2026-11-16 22:08 · Alexander Sacharov** — bughunt: core/gitrepo/git.go:123 + internal/cli/flow.go:658-666 - ein Commit, der nur seine Ticketdatei ändert, liefert mit dem neuen Pfadausschluss gar keine Ausgabe (auch keine 'commit <sha>'-Kopfzeile). Hat ein Ticket nur solche Commits und ist der Worktree sauber, ist diff=='' und show --for-lane meldet complete:false mit 'diff (git has no commits for this ticket yet, and nothing is uncommitted)' - obwohl die Commits existieren und in der Liste stehen. Die Meldung ist seit dieser Änderung falsch; sie müsste 'Commits vorhanden, aber ohne Code ausserhalb .jaira/tickets' sagen. ran: git show --patch --stat --format='commit %H%n%s%n' <ticket-only-sha> -- ':/' ':(exclude,top).jaira/tickets' in Scratch-Repo -> leere Ausgabe, rc=0; Rest read
+- **2026-11-16 22:08 · Alexander Sacharov** — bughunt: core/gitrepo/git.go:123 (gleich :78 Commits, :142 Stat; geerbt, nicht neu) - die Shas aus dem handeditierbaren commits:-Feld laufen über ticket.MergeCommits (core/ticket/trim.go:127, nur TrimSpace) ungeprüft als Argument in git show. Ein Eintrag '--output=<pfad>' wird von git als Option gelesen und legt die Datei an bzw. kürzt eine bestehende, Exit 0; ausgelöst durch jaira show <id> --for-lane review/testing (input diff) auf einem Ticket, das per Ref oder PR von jemand anderem kommt. Ein Sha sollte nur [0-9a-f]{4,64} sein dürfen, oder vor dem Sha '--end-of-options' stehen. ran: git -C <scratch> show --patch --stat --format=... --output=<scratch>/pwned -- ':/' ':(exclude,top).jaira/tickets' -> Datei angelegt, rc=0; Go-Pfad read (flow.go:631-635)
+- **2026-11-16 22:08 · Alexander Sacharov** — bughunt: done at 4b99bb33 - 3 findings in 7 modules; concurrency, error paths, input, permissions checked
+- **2026-11-16 22:12 · Alexander Sacharov** — bughunt round 2 fixed: (1) the skill's file recipe put shas after '--' via xargs, so git read them as paths and listed HEAD only — now one 'git log --grep=<id> --name-only' plus 'git diff --name-only HEAD' and 'git ls-files --others', quotePath off, no rename arrows; (2) ticket-only commits no longer reported as 'git has no commits for this ticket yet' — flow.go names how many commits change nothing outside .jaira/tickets; (3) inherited arg injection: gitrepo.Commits/Diff/Stat hand git only 4-64 hex ids (isSHA), anything else is unavailable; TestDiffNeverHandsGitAnOption fails without it.
