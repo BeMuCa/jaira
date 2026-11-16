@@ -142,7 +142,11 @@ Then, until you stop:
    `jaira move <id> --to <next_lane>` (or back, where the lane found the work
    wanting). Every lane's prompt applies to you as written — the critique lane
    is not lighter because you wrote the code.
-3. **Is `next_lane` marked fresh?** (`context: fresh` in its `--for-lane`
+3. **Is `next_lane` marked fresh, or a lane a person owns, and did the
+   ticket change code?** Run the bug hunt first — see "The bug hunt" below.
+   It runs once per pass through the loop, after the last lane that is yours,
+   before the work leaves your hands.
+   **Is `next_lane` marked fresh?** (`context: fresh` in its `--for-lane`
    payload.) Then it is not yours. Move the ticket
    into it and hand it to a new agent — see "The fresh lane" below.
 4. **Is `next_lane` a lane a person owns?** Deliver into it and stop. `human`
@@ -192,6 +196,34 @@ Format only the files you changed. Hand the formatter your own paths —
 whole tree (`task code:format`, `ruff format .`, `npm run format`). A
 whole-tree run rewrites files nobody on this ticket opened, and every one of
 them is a conflict with somebody else's branch.
+
+## The bug hunt
+
+Every lane you ran read the change through the ticket, and so does the review
+that follows. Defects that came along with copied or moved code, or that live
+in the lines around a hunk, sit outside that frame — on 2026-11-16 a ticket
+that took over code from an older project passed every lane, and an external
+review then found fourteen real defects in it. The bug hunt is a reader
+without the frame.
+
+When the ticket changed code — its diff touches anything outside `.jaira/` —
+and before it goes to the fresh lane, or to a person's lane where the board has
+no fresh one, start a new agent on it:
+
+    Agent(subagent_type: "claude", prompt: "Read the jaira-role-bughunt skill and hunt ticket <id>.")
+
+The id and nothing else: no summary, no hint where to look, for the same reason
+as the fresh lane. It moves nothing and changes no code; it leaves one
+`bughunt:` note per verified finding and a closing `bughunt: done at <commit>` line. Then:
+
+- **No findings:** carry on into the fresh lane.
+- **Findings:** each one is in-progress work on this ticket. Move the ticket
+  back to `in-progress`, fix them there, and run the loop to silence again —
+  critique, optimize, testing — and the bug hunt once more before it leaves,
+  on a new agent. A finding you hold to be wrong gets a note saying why, with
+  the line that proves it; the reviewer and the person read both.
+
+It runs in your directory, and while it runs you write nothing.
 
 ## The fresh lane
 

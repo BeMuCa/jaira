@@ -30,11 +30,23 @@ Three passes, in this order:
    not verify is a finding, not a pass.
 3. **Function.** Exercise the changed behaviour itself: run the binary, hit the
    path, build a scratch fixture if the repository offers one. The goal says
-   what it should do — watch it do it, and note what you actually saw.
+   what it should do — watch it do it, and note what you actually saw. The
+   happy path alone is not this pass; run all three:
+   - **the normal case** — the input the goal names, and what came out.
+   - **at least one failure path** — make a step fail on purpose: a missing
+     file, a refused permission, a command that exits non-zero, a run broken
+     off halfway. Check the exit code (`echo $?`), not the wording, and check
+     that nothing claims success and that no half-written state is left
+     behind. A failure reported as success is a finding.
+   - **two writers at once, wherever the change writes** — a file, a ticket, a
+     database row, a cache. Start two writers on the same thing in parallel
+     (`cmd & cmd & wait`) and check afterwards that both writes arrived or one
+     was refused with a clear error. A write that silently disappears is a
+     finding. Where the change writes nothing, say so in the verdict.
 
 Then write `test-verdict` — the one field this lane owes:
 
-    jaira set <handle> test-verdict="pass: suite green (RC=0), DoD 1-3 verified in the tree, behaviour exercised on a scratch board"
+    jaira set <handle> test-verdict="pass: suite green (RC=0), DoD 1-3 verified in the tree, behaviour exercised on a scratch board; missing file exits 1 with no partial write; two parallel moves both land"
 
 - **Findings.** Write `test-verdict="fail: <what is wrong, in one line>"`, and
   put the detail into a note for the implementing agent that picks it up —

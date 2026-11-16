@@ -75,6 +75,10 @@ func (r *Repo) Commits(shas []string) ([]Commit, error) {
 		if strings.TrimSpace(sha) == "" {
 			continue
 		}
+		if !IsSHA(sha) {
+			out = append(out, Commit{SHA: sha, Short: shortSHA(sha)})
+			continue
+		}
 		line, err := r.run("show", "-s", "--format=%H%x1f%h%x1f%s%x1f%an%x1f%aI", sha)
 		if err != nil {
 			out = append(out, Commit{SHA: sha, Short: shortSHA(sha)})
@@ -90,6 +94,24 @@ func (r *Repo) Commits(shas []string) ([]Commit, error) {
 	return out, nil
 }
 
+// codeOnly is the pathspec that keeps ticket files out of Diff and WorktreeDiff:
+// the whole repository, minus every place a ticket file lives — on the board,
+// filed in the logbook, rejected into the archive. A filed ticket carries the
+// same outcome and notes as one on the board, and a commit that filed it can
+// be in a ticket's commit list by the file's history alone. ",top" anchors
+// each exclusion at the repository root so it holds whatever directory Dir is.
+var codeOnly = []string{
+	":/",
+	":(exclude,top).jaira/tickets",
+	":(exclude,top).jaira/logbook",
+	":(exclude,top).jaira/archive",
+}
+
+// pathspec returns args, then "--", then codeOnly.
+func pathspec(args ...string) []string {
+	return append(append(args, "--"), codeOnly...)
+}
+
 // Diff returns the combined patch for a set of commits, scoped to those commits
 // rather than to the working tree — a reviewer is judging what the ticket
 // shipped, not whatever happens to be uncommitted right now.
@@ -100,6 +122,16 @@ func (r *Repo) Commits(shas []string) ([]Commit, error) {
 // otherwise report them as diffs it had shown — the same fraction-reported-whole
 // failure this package was fixed for. There is no error return because there is
 // no failure: an unshowable sha is an outcome, not a broken repository.
+//
+// Ticket files (codeOnly) are left out for the reason WorktreeDiff leaves them
+// out, and one
+// more: the ticket file rides in the same commits as the code, so its patch
+// carries the implementer's outcome and notes — and a lane that declares it
+// does not take them (review reads goal, definition-of-done and diff only, so
+// it judges the code without the author's account of it) would read them in
+// the diff all the same. A commit that touched nothing but its ticket file
+// therefore leaves no text here at all — it carried no code to judge — while
+// it is still counted in the commits the caller names.
 func (r *Repo) Diff(shas []string) (string, []string) {
 	var b strings.Builder
 	var unavailable []string
@@ -107,10 +139,19 @@ func (r *Repo) Diff(shas []string) (string, []string) {
 		if strings.TrimSpace(sha) == "" {
 			continue
 		}
-		out, err := r.run("show", "--patch", "--stat", "--format=commit %H%n%s%n", sha)
+		if !IsSHA(sha) {
+			b.WriteString(fmt.Sprintf("commit %s\n  (not a commit id)\n\n", sha))
+			unavailable = append(unavailable, sha)
+			continue
+		}
+		out, err := r.run(pathspec("show", "--patch", "--stat", "--format=commit %H%n%s%n", sha)...)
 		if err != nil {
 			b.WriteString(fmt.Sprintf("commit %s\n  (not available locally)\n\n", sha))
 			unavailable = append(unavailable, sha)
+			continue
+		}
+		if out == "" {
+			// Only the ticket file changed; see above.
 			continue
 		}
 		b.WriteString(out)
@@ -126,6 +167,9 @@ func (r *Repo) Stat(shas []string) (string, error) {
 	}
 	var b strings.Builder
 	for _, sha := range shas {
+		if !IsSHA(sha) {
+			continue
+		}
 		out, err := r.run("show", "--stat=200", "--format=", sha)
 		if err != nil {
 			continue
@@ -150,6 +194,22 @@ func (r *Repo) Branch() string {
 		return ""
 	}
 	return strings.TrimSpace(out)
+}
+
+// IsSHA reports whether s is a commit id: 4 to 64 hex digits. The shas these
+// functions take come from a ticket's hand-editable commits: field, and a git
+// argument is an option when it starts with a dash — "--output=<path>" in that
+// field would make 'git show' write over a file. Only an id is handed to git.
+func IsSHA(s string) bool {
+	if len(s) < 4 || len(s) > 64 {
+		return false
+	}
+	for _, c := range s {
+		if !(c >= '0' && c <= '9' || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F') {
+			return false
+		}
+	}
+	return true
 }
 
 func shortSHA(s string) string {
@@ -208,9 +268,8 @@ func (r *Repo) runTolerating(code int, args ...string) (string, error) {
 // already carries as goal, definition-of-done and notes. ",top" anchors the
 // exclusion at the repository root so it holds whatever directory Dir is.
 func (r *Repo) WorktreeDiff() (string, error) {
-	const notTickets = ":(exclude,top).jaira/tickets"
 	var b strings.Builder
-	tracked, err := r.run("-c", "core.quotePath=false", "diff", "HEAD", "--patch", "--stat", "--", ":/", notTickets)
+	tracked, err := r.run(pathspec("-c", "core.quotePath=false", "diff", "HEAD", "--patch", "--stat")...)
 	if err != nil {
 		return "", err
 	}
@@ -226,7 +285,7 @@ func (r *Repo) WorktreeDiff() (string, error) {
 	// the quoting off on the way in and settles paths with spaces in them at
 	// the same time; core.quotePath=false turns it off on the way out, so the
 	// patch a reviewer reads names the file rather than its escape sequence.
-	others, err := r.run("ls-files", "--others", "--exclude-standard", "-z", "--", ":/", notTickets)
+	others, err := r.run(pathspec("ls-files", "--others", "--exclude-standard", "-z")...)
 	if err != nil {
 		return "", err
 	}

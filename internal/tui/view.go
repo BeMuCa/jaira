@@ -13,6 +13,7 @@ import (
 	"charm.land/lipgloss/v2"
 
 	"github.com/BeMuCa/jaira/core/gate"
+	"github.com/BeMuCa/jaira/core/gitrepo"
 	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/session"
 	"github.com/BeMuCa/jaira/core/ticket"
@@ -1595,7 +1596,18 @@ func (g *gitStat) of(shas []string) (string, error) {
 	// Every sha, not the first: the heading over this block says "Commits",
 	// and a five-commit ticket whose stat shows one misrepresents the change
 	// more politely than the plain sha list ever would.
-	args := append([]string{"-C", g.root, "show", "--stat=120", "--format=%h %s"}, shas...)
+	// Only commit ids reach git: commits: is hand-editable, and an entry such
+	// as "--output=<path>" would be read as an option (see gitrepo.IsSHA).
+	args := []string{"-C", g.root, "show", "--stat=120", "--format=%h %s"}
+	n := len(args)
+	for _, sha := range shas {
+		if gitrepo.IsSHA(sha) {
+			args = append(args, sha)
+		}
+	}
+	if len(args) == n {
+		return "", nil
+	}
 	out, err := exec.Command("git", args...).Output()
 	if err != nil {
 		return "", err

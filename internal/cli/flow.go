@@ -597,6 +597,26 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 	var worktreeErr string
 	for _, want := range l.InputRequires {
 		switch want {
+		case ticket.FieldDoD:
+			// The checklist in the body is the definition of done whenever
+			// there is one; the frontmatter scalar holds only the first item
+			// 'jaira create --dod' was given, and a lane handed that alone
+			// judges against a fraction of the criteria. Proofs stay out: they
+			// are the implementer's account, which a lane such as review is
+			// meant to judge the code without.
+			if len(t.DoDItems) == 0 {
+				if strings.TrimSpace(t.DoD) == "" {
+					missing = append(missing, want)
+					continue
+				}
+				fields[want] = t.DoD
+				continue
+			}
+			var items []string
+			for i, it := range t.DoDItems {
+				items = append(items, fmt.Sprintf("%d. [%s] %s", i+1, it.State.Marker(), it.Text))
+			}
+			fields[want] = strings.Join(items, "\n")
 		case "plan":
 			if len(t.PlanItems) == 0 {
 				missing = append(missing, "plan (the ticket has no Plan checklist)")
@@ -659,9 +679,16 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			if diff == "" && worktreeDiff == "" {
 				// Both halves are accounted for, because "no commits" alone
 				// would read as "the worktree was not looked at".
-				m := "diff (git has no commits for this ticket yet, and nothing is uncommitted)"
+				// Commits that touched nothing but the ticket file leave no
+				// text in the diff, which leaves .jaira/tickets out; saying
+				// "no commits" about them would be false.
+				commits := "git has no commits for this ticket yet"
+				if len(shas) > 0 {
+					commits = fmt.Sprintf("the ticket's %d commit(s) change nothing but ticket files", len(shas))
+				}
+				m := fmt.Sprintf("diff (%s, and nothing is uncommitted)", commits)
 				if worktreeErr != "" {
-					m = fmt.Sprintf("diff (git has no commits for this ticket yet, and the working tree could not be read: %s)", worktreeErr)
+					m = fmt.Sprintf("diff (%s, and the working tree could not be read: %s)", commits, worktreeErr)
 				}
 				missing = append(missing, m)
 				continue

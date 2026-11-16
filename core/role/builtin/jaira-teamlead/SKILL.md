@@ -193,6 +193,32 @@ Several tickets means several dispatchers, each in its own tab or started in one
 message so they run at once. Two dispatchers must never be given tickets that
 share files.
 
+## No code reaches signoff without a bug hunt
+
+Before a ticket that changed code goes to its review and on to a person, a
+fresh agent hunts for defects in the modules it touches —
+`/jaira-role-bughunt <id>`, run by the dispatcher or worker you started, after
+the last lane that is theirs. That reader has no ticket in its head; the lanes
+and the review all read the change through one, and miss what came along with
+copied or moved code.
+
+So when a ticket you dispatched arrives in signoff or a human lane, look for its
+closing line before you report it. The line names the commit it hunted, and
+that has to be the head of the ticket's branch now — a line from an earlier
+round does not cover code a later round changed:
+
+```bash
+jaira show <id> | grep "bughunt: done at"                  # the hunt's closing note
+git rev-parse --short feat/<ticket id, lower case>         # the commit that ships
+```
+
+No such line naming that commit, on a ticket whose diff touches anything
+outside `.jaira/`: the hunt was skipped. Do not report the ticket as ready. Start the hunt yourself —
+`Agent(subagent_type: "claude", prompt: "Read the jaira-role-bughunt skill and
+hunt ticket <id>.")` with the id and nothing else — and tell the human what it
+found beside the review: a finding is work to give back, which is their call
+in that lane.
+
 ## Report to the human
 
 Per ticket, three lines and no more:
