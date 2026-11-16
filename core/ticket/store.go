@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"sort"
 	"strings"
@@ -1543,7 +1544,13 @@ func (s *Store) lock(id string) (func(), error) {
 			f.Close()
 			return func() { os.Remove(path) }, nil
 		}
-		if !os.IsExist(err) {
+		// On Windows a lock file the previous holder has just removed stays
+		// "delete pending" until every handle on it is closed, and creating it
+		// again in that window fails with Access is denied rather than with
+		// "exists". It is the same busy lock, so it is waited for like one; a
+		// denial that does not go away still ends in an error at the deadline.
+		busy := os.IsExist(err) || (runtime.GOOS == "windows" && os.IsPermission(err))
+		if !busy {
 			return nil, err
 		}
 		if fi, statErr := os.Stat(path); statErr == nil && time.Since(fi.ModTime()) > lockStale {
@@ -1551,6 +1558,9 @@ func (s *Store) lock(id string) (func(), error) {
 			continue
 		}
 		if time.Now().After(deadline) {
+			if !os.IsExist(err) {
+				return nil, err
+			}
 			return nil, fmt.Errorf("ticket: timed out waiting for lock on %s", id)
 		}
 		time.Sleep(backoff)
