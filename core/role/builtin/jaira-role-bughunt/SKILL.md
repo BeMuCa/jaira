@@ -23,10 +23,17 @@ You change nothing: no source file, no commit, no `jaira move`, no `dod`, no
 **Given a ticket id:** the files its change touches, and nothing of its story.
 
 ```bash
-jaira show <id> --json | jaira json get commits    # may be empty while in progress
-git diff --name-only "$(git merge-base HEAD origin/HEAD)"   # the branch's files
-git status --short                                 # and the uncommitted ones
+# the files of every commit that names the ticket, and the uncommitted ones;
+# the ticket file itself stays out, it is the story you are not to read
+{ git log --format=%H -i --grep=<id> | xargs -r git show --name-only --format= -- ':/' ':(exclude,top).jaira/tickets'
+  git status --short -- ':/' ':(exclude,top).jaira/tickets' | cut -c4-; } | sort -u
 ```
+
+The commits are found by the ticket id in their subject, the way jaira itself
+derives a ticket's commits — not by a merge base: `origin/HEAD` can name a
+fork that is hundreds of commits behind, and the files of all those commits
+are not this change. Do not run `jaira show` on the ticket at all; nothing you
+need is in it.
 
 **Given paths:** those files or directories.
 
@@ -84,10 +91,12 @@ context leads with what goes wrong and where). On a ticket's branch `follows`
 is set by itself.
 
 **Always last** — one closing line, findings or not, so whoever started you
-knows you have finished and looked:
+knows you have finished and looked. It names the commit you hunted: a later
+round changes the code, and a closing line from before it must not read as a
+hunt of what ships now.
 
 ```bash
-jaira note <id> "bughunt: done - 2 findings in 5 modules; concurrency, error paths, input, permissions checked"
+jaira note <id> "bughunt: done at $(git rev-parse --short HEAD) - 2 findings in 5 modules; concurrency, error paths, input, permissions checked"
 ```
 
 With paths only, the same line is your report instead of a note.

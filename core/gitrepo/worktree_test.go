@@ -55,3 +55,27 @@ func TestWorktreeDiffIgnoresAnEmptyUntrackedFile(t *testing.T) {
 		t.Fatalf("an empty untracked file must not be an error: %v", err)
 	}
 }
+
+// TestDiffLeavesTicketFilesOut pins that the commit diff a lane reads carries
+// the code and not the ticket file committed beside it: the ticket's patch
+// holds the implementer's outcome, which the review lane must not read.
+func TestDiffLeavesTicketFilesOut(t *testing.T) {
+	dir, repo := fixtureRepo(t)
+	fixtureCommit(t, dir, map[string]string{"base.txt": "base\n"}, "chore: base",
+		time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
+	head := fixtureCommit(t, dir, map[string]string{
+		"code.go":               "package code\n",
+		".jaira/tickets/AAA.md": "outcome-what: the author's account\n",
+	}, "feat(AAA): code", time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC))
+
+	diff, unavailable := repo.Diff([]string{head})
+	if len(unavailable) != 0 {
+		t.Fatalf("unavailable: %v", unavailable)
+	}
+	if !strings.Contains(diff, "package code") {
+		t.Errorf("the code is missing from the diff:\n%s", diff)
+	}
+	if strings.Contains(diff, "the author's account") || strings.Contains(diff, ".jaira/tickets") {
+		t.Errorf("the ticket file is in the diff:\n%s", diff)
+	}
+}

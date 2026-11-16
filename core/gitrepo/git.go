@@ -90,6 +90,10 @@ func (r *Repo) Commits(shas []string) ([]Commit, error) {
 	return out, nil
 }
 
+// notTickets is the pathspec that keeps ticket files out of Diff and WorktreeDiff.
+// ",top" anchors it at the repository root so it holds whatever directory Dir is.
+const notTickets = ":(exclude,top).jaira/tickets"
+
 // Diff returns the combined patch for a set of commits, scoped to those commits
 // rather than to the working tree — a reviewer is judging what the ticket
 // shipped, not whatever happens to be uncommitted right now.
@@ -100,6 +104,13 @@ func (r *Repo) Commits(shas []string) ([]Commit, error) {
 // otherwise report them as diffs it had shown — the same fraction-reported-whole
 // failure this package was fixed for. There is no error return because there is
 // no failure: an unshowable sha is an outcome, not a broken repository.
+//
+// .jaira/tickets is left out for the reason WorktreeDiff leaves it out, and one
+// more: the ticket file rides in the same commits as the code, so its patch
+// carries the implementer's outcome and notes — and a lane that declares it
+// does not take them (review reads goal, definition-of-done and diff only, so
+// it judges the code without the author's account of it) would read them in
+// the diff all the same.
 func (r *Repo) Diff(shas []string) (string, []string) {
 	var b strings.Builder
 	var unavailable []string
@@ -107,7 +118,7 @@ func (r *Repo) Diff(shas []string) (string, []string) {
 		if strings.TrimSpace(sha) == "" {
 			continue
 		}
-		out, err := r.run("show", "--patch", "--stat", "--format=commit %H%n%s%n", sha)
+		out, err := r.run("show", "--patch", "--stat", "--format=commit %H%n%s%n", sha, "--", ":/", notTickets)
 		if err != nil {
 			b.WriteString(fmt.Sprintf("commit %s\n  (not available locally)\n\n", sha))
 			unavailable = append(unavailable, sha)
@@ -208,7 +219,6 @@ func (r *Repo) runTolerating(code int, args ...string) (string, error) {
 // already carries as goal, definition-of-done and notes. ",top" anchors the
 // exclusion at the repository root so it holds whatever directory Dir is.
 func (r *Repo) WorktreeDiff() (string, error) {
-	const notTickets = ":(exclude,top).jaira/tickets"
 	var b strings.Builder
 	tracked, err := r.run("-c", "core.quotePath=false", "diff", "HEAD", "--patch", "--stat", "--", ":/", notTickets)
 	if err != nil {

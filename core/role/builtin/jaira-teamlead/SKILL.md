@@ -203,14 +203,17 @@ and the review all read the change through one, and miss what came along with
 copied or moved code.
 
 So when a ticket you dispatched arrives in signoff or a human lane, look for its
-closing line before you report it:
+closing line before you report it. The line names the commit it hunted, and
+that has to be the head of the ticket's branch now — a line from an earlier
+round does not cover code a later round changed:
 
 ```bash
-jaira show <id> | grep "bughunt: done"   # the hunt's closing note
+jaira show <id> | grep "bughunt: done at"                  # the hunt's closing note
+git rev-parse --short feat/<ticket id, lower case>         # the commit that ships
 ```
 
-No such line on a ticket whose diff touches anything outside `.jaira/`: the
-hunt was skipped. Do not report the ticket as ready. Start the hunt yourself —
+No such line naming that commit, on a ticket whose diff touches anything
+outside `.jaira/`: the hunt was skipped. Do not report the ticket as ready. Start the hunt yourself —
 `Agent(subagent_type: "claude", prompt: "Read the jaira-role-bughunt skill and
 hunt ticket <id>.")` with the id and nothing else — and tell the human what it
 found beside the review: a finding is work to give back, which is their call

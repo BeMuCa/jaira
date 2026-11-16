@@ -214,7 +214,7 @@ no fresh one, start a new agent on it:
 
 The id and nothing else: no summary, no hint where to look, for the same reason
 as the fresh lane. It moves nothing and changes no code; it leaves one
-`bughunt:` note per verified finding and a closing `bughunt: done` line. Then:
+`bughunt:` note per verified finding and a closing `bughunt: done at <commit>` line. Then:
 
 - **No findings:** carry on into the fresh lane.
 - **Findings:** each one is in-progress work on this ticket. Move the ticket

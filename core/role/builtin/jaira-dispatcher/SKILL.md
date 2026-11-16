@@ -281,7 +281,7 @@ there:
     Agent(subagent_type: "claude", prompt: "Read the jaira-role-bughunt skill and hunt ticket <id>.")
 
 The id and nothing else. It moves nothing and changes no code; it leaves one
-`bughunt:` note per verified finding and a closing `bughunt: done` line. No
+`bughunt:` note per verified finding and a closing `bughunt: done at <commit>` line. No
 findings: move on. Findings: move the ticket back to `in-progress` and start
 that lane's worker as usual — the notes are its brief — and the loop runs to
 silence again, with a new bug hunt before the ticket leaves once more.
