@@ -110,7 +110,9 @@ const notTickets = ":(exclude,top).jaira/tickets"
 // carries the implementer's outcome and notes — and a lane that declares it
 // does not take them (review reads goal, definition-of-done and diff only, so
 // it judges the code without the author's account of it) would read them in
-// the diff all the same.
+// the diff all the same. A commit that touched nothing but its ticket file
+// therefore leaves no text here at all — it carried no code to judge — while
+// it is still counted in the commits the caller names.
 func (r *Repo) Diff(shas []string) (string, []string) {
 	var b strings.Builder
 	var unavailable []string

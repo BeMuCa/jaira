@@ -1,7 +1,7 @@
 ---
 id: 01M7K4V7Q92DJA15NGTKKCRS3W
 title: Review- und Testing-Lane finden übernommene Fehler; neue Rolle jaira-role-bughunt
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-16T21:40:09Z
-updated-at: 2026-11-16T22:02:46Z
+updated-at: 2026-11-16T22:05:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-18351
 claimed-at: 2026-11-16T21:45:52Z
@@ -28,8 +28,8 @@ outcome-what: "review lane drops outcome-what/outcome-resolves from its input an
 outcome-why: "a ticket taking over code from an older project passed every lane and review, then an external review found 14 real defects: the review looked only for defects introduced by the change, read the implementer's account first, and testing exercised only the happy path"
 outcome-resolves: "DoD 1-5 met with proofs; DoD 6 release note written, the agreement with the colleague is the person's step"
 review-summary: none
-review-gaps: "none: no code paths added; the four defect lines appear in both 40-review.md and jaira-role-bughunt/SKILL.md on purpose (a lane prompt and a role are read by different agents); jaira-role-tester runs suites, bughunt reads modules — no overlap to fold"
-test-verdict: "pass: go test -count=1 ./... RC=0; DoD 1-5 verified in the tree; update --lanes on a board copy: 2 updated, review Input goal/dod/diff; failure path: hand-edited review.md skipped, exit 3, file untouched, testing still updated; two parallel update --lanes both RC=0, both lanes byte-equal to the built-ins; update --roles into a scratch HOME wrote jaira-role-bughunt"
+review-gaps: "none: notTickets now one package const shared by Diff and WorktreeDiff instead of a local in WorktreeDiff; nothing else to remove"
+test-verdict: "pass: go test -count=1 ./... RC=0; TestDiffLeavesTicketFilesOut fails without the fix, passes with it; for-lane review payload of this ticket built by the new binary carries no ticket file (0 hits on the ticket id), lane and code diffs intact; ticket-only commit yields empty diff, RC=0; failure path: show --for-lane on an unknown ticket exits 5; Diff writes nothing, so no parallel-writer case; bughunt file recipe run on this branch lists the 13 branch files, no foreign ones"
 round: 2
 ---
 
@@ -71,3 +71,4 @@ round: 2
 - **2026-11-16 21:59 · Alexander Sacharov** — bughunt: core/role/builtin/jaira-teamlead/SKILL.md:209 - 'jaira show <id> | grep "bughunt: done"' matches a closing line from any earlier pass; the worker and dispatcher send a ticket with findings back to in-progress and require a new hunt before it leaves again, so a skipped second hunt still passes the teamlead's check. read: worker SKILL.md 'The bug hunt' (Findings -> run the bug hunt once more) vs the unanchored grep
 - **2026-11-16 21:59 · Alexander Sacharov** — bughunt: done - 4 findings in 6 modules; concurrency, error paths, input, permissions checked
 - **2026-11-16 22:02 · Alexander Sacharov** — bughunt round 1 fixed: (1) outcome leaked into review through the ticket file committed beside the code — gitrepo.Diff now excludes .jaira/tickets like WorktreeDiff (shared const notTickets), TestDiffLeavesTicketFilesOut fails without it; (2)+(3) bughunt's file list now comes from commits whose message names the id (git log --grep), not a merge base with origin/HEAD (fork 207 commits behind gave ~300 foreign files), and leaves .jaira/tickets out; it no longer runs jaira show at all; (4) closing line is 'bughunt: done at <short sha>' and the teamlead compares it with the branch head, so a line from an earlier round no longer passes.
+- **2026-11-16 22:03 · Alexander Sacharov** — critique round 2: read only the bughunt fixes. Found: git show with a pathspec prints nothing at all for a commit that touched only its ticket file (checked in a scratch repo, RC=0, empty output) — no code to judge, so accepted; documented on gitrepo.Diff (comment only) rather than adding a second git call per commit for a header line.
