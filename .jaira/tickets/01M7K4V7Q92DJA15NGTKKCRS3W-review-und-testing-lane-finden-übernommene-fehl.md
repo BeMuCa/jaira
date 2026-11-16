@@ -1,7 +1,7 @@
 ---
 id: 01M7K4V7Q92DJA15NGTKKCRS3W
 title: Review- und Testing-Lane finden übernommene Fehler; neue Rolle jaira-role-bughunt
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -20,17 +20,24 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-16T21:40:09Z
-updated-at: 2026-11-16T22:26:33Z
+updated-at: 2026-11-16T22:33:07Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-18351
-claimed-at: 2026-11-16T21:45:52Z
+claimed-by: DESKTOP-RFTCH11-63183
+claimed-at: 2026-11-16T22:29:59Z
 outcome-what: "review lane drops outcome-what/outcome-resolves from its input and hunts defects in every module the diff touches, copied or moved code included, naming concurrency, error paths, unusual input and permissions; testing pass 3 now forces a failure path (exit code checked) and two parallel writers; new role jaira-role-bughunt (fresh agent, whole modules, verified findings as notes or tickets); worker, dispatcher and teamlead run it before a code-changing ticket goes to review; release note core/release/notes/KCRS3W.md"
 outcome-why: "a ticket taking over code from an older project passed every lane and review, then an external review found 14 real defects: the review looked only for defects introduced by the change, read the implementer's account first, and testing exercised only the happy path"
 outcome-resolves: "DoD 1-5 met with proofs; DoD 6 release note written, the agreement with the colleague is the person's step"
-review-summary: none
-review-gaps: "none: IsSHA reused in the TUI instead of a second validator"
-test-verdict: "pass: go test -count=1 ./... RC=0; TestDiffIsEmptyForTicketOnlyCommits and TestGitStatNeverHandsGitAnOption fail with their fix reverted and pass with it; no write path changed, so no parallel-writer case"
-round: 5
+review-summary: "Review lane no longer takes outcome-what/outcome-resolves (input: goal, definition-of-done, diff) and its prompt now demands hunting defects in whole touched modules, copied/moved code included, along four named lines (concurrency, error paths, unusual input, permissions). Testing pass 3 must trigger a failure path (exit code checked) and two parallel writers. New role jaira-role-bughunt: a fresh agent with only the ticket id reads the touched modules whole and leaves verified findings as notes plus 'bughunt: done at <sha>'; worker and dispatcher run it before a code-changing ticket goes to review, the teamlead checks the closing line against the branch head. Code: gitrepo.Diff/WorktreeDiff leave .jaira/tickets, .jaira/logbook and .jaira/archive out so the outcome does not leak into review through the committed ticket file; ticket-only commits yield an empty diff and show --for-lane says so; commits: values that are not 4-64 hex ids never reach git (Commits, Diff, Stat, TUI gitStat), closing an --output=<path> file overwrite. Lane files, shipped hashes, role list test and release notes updated."
+review-gaps: |-
+  blocker: internal/cli/flow.go:677/827 - show --for-lane fills input definition-of-done from fieldValue -> t.DoD, the frontmatter scalar only; the body checklist (t.DoDItems, which gate.go:530 counts first) never reaches the lane. On this ticket the review payload carries 1 of 6 DoD items. With outcome removed from review input (DoD 2), goal + this truncated DoD is all the reviewer judges against, so the change ships review blind to most criteria; complete:true hides it. Fix: render DoDItems (text + done state) into the definition-of-done input when present, test with a ticket whose items were added by jaira dod --add
+  note: teamlead rule "bughunt: done at <sha>" must equal the branch head, but this ticket's last hunt is at 5983f78d and head is a3deff81 (round-4 fix under the hard-stop decision) - the teamlead skill as written would flag this ticket itself as "hunt skipped"
+  note: bughunt closes with $(git rev-parse --short HEAD); in conversational mode the code is uncommitted, so the line names a commit that does not contain what was hunted
+  note: DoD 6 (CHANGELOG + agreement with the colleague) is still open - a person's item, the done gate will refuse until it is ticked
+test-verdict: "pass: go test -count=1 ./... RC=0; TestDiffLeavesTicketFilesOut covers tickets, logbook and archive and fails with the logbook exclusion removed; bughunt recipe run on this branch lists 16 files, none under .jaira/tickets|logbook|archive; no write path changed"
+round: 6
+review-verdict: "not yet: code and prompts match DoD 1-5, go test ./... green, no defect found in the gitrepo/TUI/flow changes themselves; but the review lane this ticket reshapes receives only the first DoD item (frontmatter scalar), so with the outcome removed it judges against a fraction of the criteria - back to in-progress"
+review-round: 5
+review-check: "1. cd into the kcrs3w worktree  2. jaira show KCRS3W --for-lane review --json | jq .input  3. today: definition-of-done holds one sentence (DoD item 1) while jaira show KCRS3W --json | jq '.dod_items|length' says 6 - after the fix all 6 must appear  4. jaira show KCRS3W --for-lane review --json | jq -r .diff | grep -c '^+outcome' -> 0 (outcome no longer leaks)  5. go test ./core/gitrepo ./internal/tui ./internal/cli -> ok"
 ---
 
 # Review- und Testing-Lane finden übernommene Fehler; neue Rolle jaira-role-bughunt
@@ -86,3 +93,5 @@ round: 5
 - **2026-11-16 22:23 · Alexander Sacharov** — bughunt: core/gitrepo/git.go:99 - notTickets excludes only .jaira/tickets, but a filed ticket lives under .jaira/logbook/<who>-<date>/ (and a rejected one under .jaira/archive/) with its outcome and notes. Once a ticket has been filed and restored, CommitsForTicket follows the file through the rename (derive.go:42, --follow), so the commit that filed it is in the list even when it does not name the id, and Diff hands review that commit's whole logbook file: the implementer's outcome and notes, which is what the exclusion is there to keep out. The same leak shows in WorktreeDiff (git.go:257) after an uncommitted 'jaira restore': the logbook file shows up as a deletion. It also shows in the jaira-role-bughunt SKILL.md file list, whose exclude names only .jaira/tickets. ran: scratch repo with ticket + code commit, then git mv to .jaira/logbook/me-20261116/ ('chore: file tickets away'), then git mv back + code ('fix(KCRS3W): round two'); a scratch test calling CommitsForTicket + Diff fails and shows '+outcome_what: SECRET-IMPLEMENTER-ACCOUNT' in the patch
 - **2026-11-16 22:24 · Alexander Sacharov** — bughunt: done at 5983f78d - 1 finding in 4 modules (core/gitrepo, internal/cli/flow.go, internal/tui/view.go gitStat, lane/role prompts); concurrency, error paths, input, permissions checked
 - **2026-11-16 22:26 · Alexander Sacharov** — bughunt round 4 fixed (fallout of round 1, so per the teamlead's hard stop no 5th hunt): Diff and WorktreeDiff now leave out .jaira/logbook and .jaira/archive as well as .jaira/tickets (one codeOnly pathspec list), so a filed or rejected ticket file reached through --follow no longer hands review the outcome; TestDiffLeavesTicketFilesOut covers all three and fails with logbook removed from the list. bughunt skill recipe excludes the same three.
+- **2026-11-16 22:30 · Alexander Sacharov** — review: blocker - show --for-lane hands lanes only the frontmatter definition-of-done scalar (internal/cli/flow.go:827 fieldValue -> t.DoD); the body checklist (DoDItems) is dropped. This ticket's review payload had 1 of 6 items. Since review no longer takes the outcome, the DoD is its only spec next to the goal. Fix in flow.go: when t.DoDItems exist, render them (with done state) as the definition-of-done input; add a test with items added via jaira dod --add. Notes in review-gaps are not blockers.
+- **2026-11-16 22:33 · Alexander Sacharov** — review blocker fixed: show --for-lane filled definition-of-done from the frontmatter scalar (first item only); flow.go now renders the body checklist (n. [state] text, proofs left out — they are the author's account) whenever it exists, scalar otherwise. TestForLaneDeliversTheWholeDoDChecklist fails without it; this ticket's review input now carries all 6 items. Review notes left as notes for the person (teamlead sha check vs a hard-stop fix after the last hunt; conversational mode hunts uncommitted code). No 5th bughunt: the teamlead's hard stop from 22:17 covers it; a new review agent judges this change.

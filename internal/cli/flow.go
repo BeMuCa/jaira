@@ -597,6 +597,26 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 	var worktreeErr string
 	for _, want := range l.InputRequires {
 		switch want {
+		case ticket.FieldDoD:
+			// The checklist in the body is the definition of done whenever
+			// there is one; the frontmatter scalar holds only the first item
+			// 'jaira create --dod' was given, and a lane handed that alone
+			// judges against a fraction of the criteria. Proofs stay out: they
+			// are the implementer's account, which a lane such as review is
+			// meant to judge the code without.
+			if len(t.DoDItems) == 0 {
+				if strings.TrimSpace(t.DoD) == "" {
+					missing = append(missing, want)
+					continue
+				}
+				fields[want] = t.DoD
+				continue
+			}
+			var items []string
+			for i, it := range t.DoDItems {
+				items = append(items, fmt.Sprintf("%d. [%s] %s", i+1, it.State.Marker(), it.Text))
+			}
+			fields[want] = strings.Join(items, "\n")
 		case "plan":
 			if len(t.PlanItems) == 0 {
 				missing = append(missing, "plan (the ticket has no Plan checklist)")
