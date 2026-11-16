@@ -107,3 +107,19 @@ func TestDiffNeverHandsGitAnOption(t *testing.T) {
 		t.Errorf("git wrote over the file: %q, %v", b, err)
 	}
 }
+
+// TestDiffIsEmptyForTicketOnlyCommits pins that a commit which touched only its
+// ticket file adds nothing to Diff, not even a blank line: the caller tells
+// "no code to judge" from an empty string, and "\n" used to hide that.
+func TestDiffIsEmptyForTicketOnlyCommits(t *testing.T) {
+	dir, repo := fixtureRepo(t)
+	fixtureCommit(t, dir, map[string]string{"base.txt": "base\n"}, "chore: base",
+		time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
+	sha := fixtureCommit(t, dir, map[string]string{".jaira/tickets/AAA.md": "note\n"},
+		"chore(AAA): ticket only", time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC))
+
+	diff, unavailable := repo.Diff([]string{sha})
+	if diff != "" || len(unavailable) != 0 {
+		t.Errorf("Diff = %q, unavailable %v; want empty for a ticket-only commit", diff, unavailable)
+	}
+}

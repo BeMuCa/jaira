@@ -75,7 +75,7 @@ func (r *Repo) Commits(shas []string) ([]Commit, error) {
 		if strings.TrimSpace(sha) == "" {
 			continue
 		}
-		if !isSHA(sha) {
+		if !IsSHA(sha) {
 			out = append(out, Commit{SHA: sha, Short: shortSHA(sha)})
 			continue
 		}
@@ -124,7 +124,7 @@ func (r *Repo) Diff(shas []string) (string, []string) {
 		if strings.TrimSpace(sha) == "" {
 			continue
 		}
-		if !isSHA(sha) {
+		if !IsSHA(sha) {
 			b.WriteString(fmt.Sprintf("commit %s\n  (not a commit id)\n\n", sha))
 			unavailable = append(unavailable, sha)
 			continue
@@ -133,6 +133,10 @@ func (r *Repo) Diff(shas []string) (string, []string) {
 		if err != nil {
 			b.WriteString(fmt.Sprintf("commit %s\n  (not available locally)\n\n", sha))
 			unavailable = append(unavailable, sha)
+			continue
+		}
+		if out == "" {
+			// Only the ticket file changed; see above.
 			continue
 		}
 		b.WriteString(out)
@@ -148,7 +152,7 @@ func (r *Repo) Stat(shas []string) (string, error) {
 	}
 	var b strings.Builder
 	for _, sha := range shas {
-		if !isSHA(sha) {
+		if !IsSHA(sha) {
 			continue
 		}
 		out, err := r.run("show", "--stat=200", "--format=", sha)
@@ -177,11 +181,11 @@ func (r *Repo) Branch() string {
 	return strings.TrimSpace(out)
 }
 
-// isSHA reports whether s is a commit id: 4 to 64 hex digits. The shas these
+// IsSHA reports whether s is a commit id: 4 to 64 hex digits. The shas these
 // functions take come from a ticket's hand-editable commits: field, and a git
 // argument is an option when it starts with a dash — "--output=<path>" in that
 // field would make 'git show' write over a file. Only an id is handed to git.
-func isSHA(s string) bool {
+func IsSHA(s string) bool {
 	if len(s) < 4 || len(s) > 64 {
 		return false
 	}
