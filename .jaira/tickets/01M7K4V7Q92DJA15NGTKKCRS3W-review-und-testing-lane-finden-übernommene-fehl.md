@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-16T21:40:09Z
-updated-at: 2026-11-16T22:20:03Z
+updated-at: 2026-11-16T22:26:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-18351
 claimed-at: 2026-11-16T21:45:52Z
@@ -28,9 +28,9 @@ outcome-what: "review lane drops outcome-what/outcome-resolves from its input an
 outcome-why: "a ticket taking over code from an older project passed every lane and review, then an external review found 14 real defects: the review looked only for defects introduced by the change, read the implementer's account first, and testing exercised only the happy path"
 outcome-resolves: "DoD 1-5 met with proofs; DoD 6 release note written, the agreement with the colleague is the person's step"
 review-summary: none
-review-gaps: "none: no existing sha validator in the repo to reuse (grep for hex checks found none); isSHA is one helper used by Commits, Diff and Stat"
-test-verdict: "pass: go test -count=1 ./... RC=0; TestDiffNeverHandsGitAnOption and TestDiffLeavesTicketFilesOut each fail with the fix reverted and pass with it; the bughunt file recipe run on this branch lists the 14 branch files with flow.go uncommitted; a live CLI probe of commits=--output was not set up (jaira set refused the scratch board), the unit test is the evidence"
-round: 4
+review-gaps: "none: IsSHA reused in the TUI instead of a second validator"
+test-verdict: "pass: go test -count=1 ./... RC=0; TestDiffIsEmptyForTicketOnlyCommits and TestGitStatNeverHandsGitAnOption fail with their fix reverted and pass with it; no write path changed, so no parallel-writer case"
+round: 5
 ---
 
 # Review- und Testing-Lane finden übernommene Fehler; neue Rolle jaira-role-bughunt
@@ -83,3 +83,6 @@ round: 4
 - **2026-11-16 22:16 · Alexander Sacharov** — question (bughunt sent the work back a third time; stop rule): round 3 findings verbatim — (1) core/gitrepo/git.go:138-139 Diff appends "\n" after every git show, so for ticket-only commits it returns "\n" not "", flow.go:659 'diff == ""' never holds and the new 'N commit(s) change nothing outside .jaira/tickets' message is unreachable; lane gets an empty diff with complete:true. (2) internal/tui/view.go:1598 gitStat.of passes commits: values to git show without isSHA — '--output=<path>' overwrites the file when the TUI shows ticket detail or signoff; the release note already calls the hole closed. My view: the DoD is not wrong and the loop is not deepening without end — #1 is fallout of round 2's repair, #2 a sibling call site of the same inherited hole; both ~20 min. Options: 1) fix both, one more bughunt, then review (recommended) 2) fix both, straight to review without a 4th hunt 3) stop here, hand the ticket to a person as it is.
 - **2026-11-16 22:17 · Alexander Sacharov** — decision: option 1, taken by the teamlead session (Alex's standing instruction to carry the ticket to a PR): fix both round-3 findings, one more bughunt, then review. Hard stop: a 4th hunt that finds only fallout of these two fixes gets fixed and goes to review without a 5th hunt; something unrelated and serious goes back to the teamlead.
 - **2026-11-16 22:20 · Alexander Sacharov** — bughunt round 3 fixed: (1) Diff skipped the trailing newline only when git printed something, so a ticket-only commit now yields "" and flow.go's 'N commit(s) change nothing outside .jaira/tickets' is reachable — TestDiffIsEmptyForTicketOnlyCommits; (2) isSHA exported as gitrepo.IsSHA and used by tui gitStat.of (detail pane + sign-off) — TestGitStatNeverHandsGitAnOption. Both tests fail with the fix reverted.
+- **2026-11-16 22:23 · Alexander Sacharov** — bughunt: core/gitrepo/git.go:99 - notTickets excludes only .jaira/tickets, but a filed ticket lives under .jaira/logbook/<who>-<date>/ (and a rejected one under .jaira/archive/) with its outcome and notes. Once a ticket has been filed and restored, CommitsForTicket follows the file through the rename (derive.go:42, --follow), so the commit that filed it is in the list even when it does not name the id, and Diff hands review that commit's whole logbook file: the implementer's outcome and notes, which is what the exclusion is there to keep out. The same leak shows in WorktreeDiff (git.go:257) after an uncommitted 'jaira restore': the logbook file shows up as a deletion. It also shows in the jaira-role-bughunt SKILL.md file list, whose exclude names only .jaira/tickets. ran: scratch repo with ticket + code commit, then git mv to .jaira/logbook/me-20261116/ ('chore: file tickets away'), then git mv back + code ('fix(KCRS3W): round two'); a scratch test calling CommitsForTicket + Diff fails and shows '+outcome_what: SECRET-IMPLEMENTER-ACCOUNT' in the patch
+- **2026-11-16 22:24 · Alexander Sacharov** — bughunt: done at 5983f78d - 1 finding in 4 modules (core/gitrepo, internal/cli/flow.go, internal/tui/view.go gitStat, lane/role prompts); concurrency, error paths, input, permissions checked
+- **2026-11-16 22:26 · Alexander Sacharov** — bughunt round 4 fixed (fallout of round 1, so per the teamlead's hard stop no 5th hunt): Diff and WorktreeDiff now leave out .jaira/logbook and .jaira/archive as well as .jaira/tickets (one codeOnly pathspec list), so a filed or rejected ticket file reached through --follow no longer hands review the outcome; TestDiffLeavesTicketFilesOut covers all three and fails with logbook removed from the list. bughunt skill recipe excludes the same three.

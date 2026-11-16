@@ -94,9 +94,23 @@ func (r *Repo) Commits(shas []string) ([]Commit, error) {
 	return out, nil
 }
 
-// notTickets is the pathspec that keeps ticket files out of Diff and WorktreeDiff.
-// ",top" anchors it at the repository root so it holds whatever directory Dir is.
-const notTickets = ":(exclude,top).jaira/tickets"
+// codeOnly is the pathspec that keeps ticket files out of Diff and WorktreeDiff:
+// the whole repository, minus every place a ticket file lives — on the board,
+// filed in the logbook, rejected into the archive. A filed ticket carries the
+// same outcome and notes as one on the board, and a commit that filed it can
+// be in a ticket's commit list by the file's history alone. ",top" anchors
+// each exclusion at the repository root so it holds whatever directory Dir is.
+var codeOnly = []string{
+	":/",
+	":(exclude,top).jaira/tickets",
+	":(exclude,top).jaira/logbook",
+	":(exclude,top).jaira/archive",
+}
+
+// pathspec returns args, then "--", then codeOnly.
+func pathspec(args ...string) []string {
+	return append(append(args, "--"), codeOnly...)
+}
 
 // Diff returns the combined patch for a set of commits, scoped to those commits
 // rather than to the working tree — a reviewer is judging what the ticket
@@ -109,7 +123,8 @@ const notTickets = ":(exclude,top).jaira/tickets"
 // failure this package was fixed for. There is no error return because there is
 // no failure: an unshowable sha is an outcome, not a broken repository.
 //
-// .jaira/tickets is left out for the reason WorktreeDiff leaves it out, and one
+// Ticket files (codeOnly) are left out for the reason WorktreeDiff leaves them
+// out, and one
 // more: the ticket file rides in the same commits as the code, so its patch
 // carries the implementer's outcome and notes — and a lane that declares it
 // does not take them (review reads goal, definition-of-done and diff only, so
@@ -129,7 +144,7 @@ func (r *Repo) Diff(shas []string) (string, []string) {
 			unavailable = append(unavailable, sha)
 			continue
 		}
-		out, err := r.run("show", "--patch", "--stat", "--format=commit %H%n%s%n", sha, "--", ":/", notTickets)
+		out, err := r.run(pathspec("show", "--patch", "--stat", "--format=commit %H%n%s%n", sha)...)
 		if err != nil {
 			b.WriteString(fmt.Sprintf("commit %s\n  (not available locally)\n\n", sha))
 			unavailable = append(unavailable, sha)
@@ -254,7 +269,7 @@ func (r *Repo) runTolerating(code int, args ...string) (string, error) {
 // exclusion at the repository root so it holds whatever directory Dir is.
 func (r *Repo) WorktreeDiff() (string, error) {
 	var b strings.Builder
-	tracked, err := r.run("-c", "core.quotePath=false", "diff", "HEAD", "--patch", "--stat", "--", ":/", notTickets)
+	tracked, err := r.run(pathspec("-c", "core.quotePath=false", "diff", "HEAD", "--patch", "--stat")...)
 	if err != nil {
 		return "", err
 	}
@@ -270,7 +285,7 @@ func (r *Repo) WorktreeDiff() (string, error) {
 	// the quoting off on the way in and settles paths with spaces in them at
 	// the same time; core.quotePath=false turns it off on the way out, so the
 	// patch a reviewer reads names the file rather than its escape sequence.
-	others, err := r.run("ls-files", "--others", "--exclude-standard", "-z", "--", ":/", notTickets)
+	others, err := r.run(pathspec("ls-files", "--others", "--exclude-standard", "-z")...)
 	if err != nil {
 		return "", err
 	}

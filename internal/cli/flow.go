@@ -664,7 +664,7 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 				// "no commits" about them would be false.
 				commits := "git has no commits for this ticket yet"
 				if len(shas) > 0 {
-					commits = fmt.Sprintf("the ticket's %d commit(s) change nothing outside .jaira/tickets", len(shas))
+					commits = fmt.Sprintf("the ticket's %d commit(s) change nothing but ticket files", len(shas))
 				}
 				m := fmt.Sprintf("diff (%s, and nothing is uncommitted)", commits)
 				if worktreeErr != "" {

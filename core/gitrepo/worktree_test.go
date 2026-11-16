@@ -64,8 +64,10 @@ func TestDiffLeavesTicketFilesOut(t *testing.T) {
 	fixtureCommit(t, dir, map[string]string{"base.txt": "base\n"}, "chore: base",
 		time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
 	head := fixtureCommit(t, dir, map[string]string{
-		"code.go":               "package code\n",
-		".jaira/tickets/AAA.md": "outcome-what: the author's account\n",
+		"code.go":                                "package code\n",
+		".jaira/tickets/AAA.md":                  "outcome-what: the author's account\n",
+		".jaira/logbook/someone-2026-01-02/B.md": "outcome-what: a filed account\n",
+		".jaira/archive/C.md":                    "outcome-what: a rejected account\n",
 	}, "feat(AAA): code", time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC))
 
 	diff, unavailable := repo.Diff([]string{head})
@@ -75,7 +77,7 @@ func TestDiffLeavesTicketFilesOut(t *testing.T) {
 	if !strings.Contains(diff, "package code") {
 		t.Errorf("the code is missing from the diff:\n%s", diff)
 	}
-	if strings.Contains(diff, "the author's account") || strings.Contains(diff, ".jaira/tickets") {
+	if strings.Contains(diff, "account") || strings.Contains(diff, ".jaira/") {
 		t.Errorf("the ticket file is in the diff:\n%s", diff)
 	}
 }
