@@ -1,7 +1,7 @@
 ---
 id: 01M7NMRQS4W0GMFGFES558DCYM
 title: Cockpit-Explain startet ohne Trust-Dialog und schreibt im richtigen Worktree
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Druck auf Explain im Cockpit laeuft ohne Eingriff durch: der Tab startet claude ohne Rueckfrage, der Chat schreibt seine explain:-Note, und der Tab schliesst sich danach von selbst."
@@ -16,20 +16,33 @@ tags:
   - cli
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 117872e0dbe2c3d86973c03ac95c8faf7d67887f
+  - b1f42138f26335570f935561d44e2ad1a771e26e
+  - 703f6be0ff7ea53a08cf932ab6646fbc1a541f36
+  - 43bc1ce6763515af555fc6fa8411fd8a53400929
+  - 49546d28949123d2f64c9115636d3ad6f983be1d
+  - c16afc0f01313e3e51e38e68fc97cb59fa34640d
 created-at: 2026-11-17T20:56:53Z
-updated-at: 2026-11-17T21:34:39Z
+updated-at: 2026-11-17T22:05:58Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-27759
-claimed-at: 2026-11-17T20:58:46Z
+claimed-by: DESKTOP-RFTCH11-20666
+claimed-at: 2026-11-17T22:00:25Z
 outcome-what: "Explain/Discuss starten claude mit einer Read-Regel auf den Auftragsordner statt --add-dir; das Cockpit waehlt den Worktree des Ticket-Branches statt Herdrs review/feat/<id>"
 outcome-why: "Claude Code 2.1.326 haelt den Tab am Trust-Dialog fuer --add-dir an; im Review-Worktree scheitert jaira note, die explain:-Note fehlt und der Tab schliesst nie"
 outcome-resolves: DoD 1-4
-review-summary: none
-review-gaps: "none - pass 5 added a world.worktrees override in the test world, used by the new test only; nothing to remove"
-test-verdict: "pass: go test ./... RC=0 at 49546d28; claude plugin test . 178/179, the single fail (borderStyle round) also on master; all three bughunt regressions pinned by tests that fail on the earlier code"
-round: 6
+review-summary: "spawn.sh starts Explain/Discuss tabs with '--allowedTools=Read(//<chat folder>/**)' instead of --add-dir, so Claude Code 2.1 shows no trust dialog; the folder is resolved with pwd -P (macOS /var -> /private/var) and on Git Bash rewritten from C:\\x to //c/x. In the cockpit, worktreeFor/branchesFor now pick among worktrees ending in the id the one with the fewest branch parts (feat/<id> before Herdr's review/feat/<id>, a detached own tree at 2.5 in between and then falling back to the branch listing), and carrierBranch drops '(HEAD detached at ...)' and any branch that only wraps another listed one, otherwise keeping git's order. Tests cover the new start lines and the review-worktree/detached/wip cases; release note 58DCYM.md has four lines."
+review-gaps: |-
+  note: Windows TEMP in 8.3 short form or with spaces vs the //c/... Read rule is untested on real Windows (a Linux path with a space was checked here: claude -p reads it under the rule)
+  note: ticketsTree ranks by branch depth after a path match - a worktree whose path ends in -<id> but sits on a one-part branch (wip) would beat feat/<id>; spawn.sh never creates that, so not a blocker
+  note: interactive start in a Herdr tab with --allowedTools was not run live, only claude -p
+  note: cockpit suite 178/179 - the one failure (borderStyle round in board.test.ts) also fails on master
+test-verdict: "pass: go test ./... RC=0 at c16afc0f; claude plugin test . 178 pass / 1 fail (borderStyle round, also on master); every bughunt finding pinned by a test that fails on the earlier code"
+round: 7
+review-verdict: "the diff meets all four DoD items; go test ./core/... and ./internal/wintrap green, cockpit 178/179 with the pre-existing failure; no defects found in spawn.sh's chat block or board.ts's ranking - remaining risk is the unchecked real-Windows path form"
+review-round: 6
+review-check: "1. jaira update --roles in a repo with Herdr running  2. open the cockpit, pick a ticket in signoff that has a worktree feat/<id>, press Explain  3. a new tab opens with claude running and NO trust/permission prompt  4. within a minute the ticket gets an explain: note (jaira show <id> | grep explain:) and the tab closes by itself  5. if a Herdr review worktree review/feat/<id> exists, check the note landed in the feat/<id> worktree (git -C <that worktree> status shows the ticket file modified)  6. on Windows: repeat step 2-3 once - no prompt to read the jaira-chat.* file under %TEMP%"
 ---
 
 # Cockpit-Explain startet ohne Trust-Dialog und schreibt im richtigen Worktree
@@ -82,3 +95,18 @@ round: 6
 - **2026-11-17 21:31 · Alexander Sacharov** — bughunt: core/mod/builtin/jaira-cockpit/hooks/board.ts:423-426 (carrierBranch) - git branch --contains <sha> --format=%(refname:short) lists a detached HEAD of the checkout as '(HEAD detached at <sha>)', first, with no slash; it wraps nothing, so carrierBranch returns it as the ticket's branch. register.tsx:558 (decideStep) then runs git log <base>..'(HEAD detached at <sha>)', which exits 128, and Accept ends in the 'stays done' error pane instead of opening the pull request. Triggers when the ticket has no worktree and no */<slug> branch (worked on another ticket's branch) and the main checkout is detached at a commit containing it (mid-rebase, bisect). Fix: drop lines starting with '(' in carrierBranch. ran: scratch repo, detached HEAD, git branch --contains HEAD --format=%(refname:short) -> '(HEAD detached at c3f5869)' first; node --experimental-strip-types carrierBranch(...) -> '(HEAD detached at c3f5869)'; git log master..'(HEAD detached at c3f5869)' -> exit 128
 - **2026-11-17 21:31 · Alexander Sacharov** — bughunt: done at 49546d28 - 1 finding in 2 modules (cockpit hooks/board.ts with its callers in register.tsx, dispatcher scripts/spawn.sh); concurrency, error paths, input, permissions checked
 - **2026-11-17 21:34 · Alexander Sacharov** — in-progress round 6 (bughunt 4): carrierBranch took '(HEAD detached at <sha>)' from git branch --contains as a branch - pre-existing on master, folded in since it is the same function: lines starting with '(' are dropped. Test 'a ticket worked on another ticket's branch' lists the detached line first; fails without the filter. Per Alex's decision this goes to the fresh review after the loop, no 5th bughunt.
+- **2026-11-17 21:34 · Alexander Sacharov** — critique pass 6: read only the one-line filter in carrierBranch; nothing raised.
+- **2026-11-17 21:38 · Alexander Sacharov** — review: no blocker. Read board.ts worktree/branch helpers and spawn.sh chat block whole; ran go test ./core/... ./internal/wintrap (green) and claude plugin test (178/179, borderStyle round pre-existing); checked a Read rule on a path with a space via claude -p (read). Open for signoff: real-Windows check of the //c/ rule.
+- **2026-11-17 21:58 · Alexander Sacharov** — explain: Der Review fand keinen Fehler im Code; offen bleibt nur, dass der Lese-Pfad //c/... fuer das Chat-Verzeichnis auf echtem Windows nie getestet wurde (nur Linux, auch mit Leerzeichen im Pfad).
+Warum: Auf Windows koennte Claude beim Explain-Tab doch nach Erlaubnis fragen oder die Datei nicht lesen, und der Tab liefe nicht von selbst durch.
+1) Zurueckgeben und die Windows-Pfadform vorab auf echtem Windows pruefen lassen [give back]
+2) So annehmen und die Windows-Pruefung (Schritt 6 der Check-Liste) bei der Abnahme selbst machen [accept]
+3) Zurueckgeben und die Worktree-Rangfolge fuer einen Zweig mit einem Namensteil haerten (wip) [give back]
+Empfehlung: 2 - Der Code ist geprueft und die Tests sind gruen; das Windows-Risiko laesst sich nur auf echtem Windows klaeren, und der wip-Fall wird von spawn.sh nie erzeugt.
+- **2026-11-17 21:59 · Alexander Sacharov** — decision: 1) Zurueckgeben und die Windows-Pfadform vorab auf echtem Windows pruefen lassen
+- **2026-11-17 21:59 · Alexander Sacharov** — Given back from signoff: 1) Zurueckgeben und die Windows-Pfadform vorab auf echtem Windows pruefen lassen
+- **2026-11-17 22:00 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
+- **2026-11-17 22:00 · Alexander Sacharov** — in-progress round 7 (given back from signoff): real-Windows check of the //c/ Read rule. This machine has native C:\Users\Alex\.local\bin\claude.exe and Git Bash at C:\Program Files\Git - testing there with claude -p, rule built by the same spawn.sh lines.
+- **2026-11-17 22:03 · Alexander Sacharov** — Windows live geprueft 17.11. (Host dieses WSL, Git Bash + native claude.exe 2.1.x, --permission-mode default, cwd C:\Users\Public): spawn.sh-Logik Zeilen 313-321 nachgebaut. Ohne Regel: Read verweigert (Ordner mit Leerzeichen und 8.3-Kurzname JAIRAW~1). Mit Regel Read(//c/...): gelesen, auch mit Leerzeichen im Pfad; pwd -P loest den 8.3-Kurznamen in den langen Namen auf, die Regel passt. Unter %TEMP% liest claude auch ohne Regel. Linux: Alex hat Explain live gedrueckt - kein Trust-Dialog, Note, Tab zu.
+- **2026-11-17 22:03 · Alexander Sacharov** — windows check (real Windows 11, native claude.exe 2.1.326, Git Bash, --permission-mode default, cwd outside TEMP; rule built by the spawn.sh lines 313-321): TEMP C:\Users\Alex\AppData\Local\Temp -> rule Read(//c/Users/Alex/AppData/Local/Temp/jaira-chat.X/**) reads the file 2/2, same file without the rule DENIED 2/2; folder with spaces (...\Temp\jaira space dir\...) -> with rule read, without DENIED. Pitfall for anyone repeating it: with cwd C:\Users\Alex the TEMP folder lies inside cwd and reads without any rule, and Alex's Windows settings.json has defaultMode auto - both make a control run pass falsely. 8.3 short names not run by me: a second worker session is running the same check right now (C:\...\Temp\jaira-wintest.sh, its case E).
+- **2026-11-17 22:05 · Alexander Sacharov** — decision (Alex, 17.11.): this second worker stops; the worker that started first (DESKTOP-RFTCH11-80045) carries 58DCYM on. Its claim was taken with --steal by mistake - it needs 'jaira claim 58DCYM --steal' back. No code changed by the second worker.
