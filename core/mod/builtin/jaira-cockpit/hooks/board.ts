@@ -300,13 +300,15 @@ export function mainRepoOf(gitCommonDir: string, fallback: string): string {
 // tree. Running `jaira move` anywhere else answers "on its ref and not on
 // your disk". Herdr's review worktree of feat/<id> sits on review/feat/<id>
 // and ends in the id just the same, without the ticket on its disk: of all
-// that match, the branch with the fewest parts is the ticket's own.
+// that match, the branch with the fewest parts is the ticket's own. A
+// detached tree — the ticket's own in the middle of a rebase — ranks after
+// <prefix>/<id> and before any branch nested deeper than that.
 export function worktreeFor(porcelain: string, id: string, fallback: string): string {
   return ticketsTree(worktreesOf(porcelain), id)?.path ?? fallback
 }
 
 function ticketsTree(trees: Worktree[], id: string): Worktree | undefined {
-  const parts = (w: Worktree) => (w.branch === '' ? Infinity : w.branch.split('/').length)
+  const parts = (w: Worktree) => (w.branch === '' ? 2.5 : w.branch.split('/').length)
   return trees.filter(w => isTicketsTree(w, id)).sort((a, b) => parts(a) - parts(b))[0]
 }
 
