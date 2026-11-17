@@ -317,7 +317,8 @@ if [ "$lane" = explain ] || [ "$lane" = discuss ]; then
   if [ "$on" = windows ] && command -v cygpath >/dev/null 2>&1; then
     chat_dir_win="$(cygpath -w "$chat_dir")"; chat_file_win="$(cygpath -w "$chat_file")"
     if [[ "$chat_dir_win" =~ ^([A-Za-z]):(.*)$ ]]; then
-      drive="${BASH_REMATCH[1],,}"; rest="${BASH_REMATCH[2]//\\//}"
+      # tr, not ${x,,}: macOS ships bash 3.2, which has no case conversion.
+      drive="$(printf %s "${BASH_REMATCH[1]}" | tr "[:upper:]" "[:lower:]")"; rest="${BASH_REMATCH[2]//\\//}"
       chat_rule="Read(//$drive$rest/**)"
     fi
   fi
