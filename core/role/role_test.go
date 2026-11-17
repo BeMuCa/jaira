@@ -734,6 +734,7 @@ esac
 		dir := file[:max(strings.LastIndex(file, "/"), 0)]
 		// A Read rule on the folder, never --add-dir: since Claude Code 2.1
 		// an added directory stops the tab at a trust dialog.
+		//wintrap:ok a permission rule on a shell line, slashes as spawn.sh writes it
 		if !strings.HasSuffix(start, "&& claude --model 'sonnet' '--allowedTools=Read(/"+dir+"/**)'") {
 			t.Errorf("%s started %q, want claude --model 'sonnet' '--allowedTools=Read(/%s/**)'", lane, start, dir)
 		}

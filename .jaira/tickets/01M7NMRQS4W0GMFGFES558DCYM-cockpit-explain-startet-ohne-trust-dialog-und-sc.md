@@ -18,14 +18,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-17T20:56:53Z
-updated-at: 2026-11-17T20:58:13Z
+updated-at: 2026-11-17T21:04:37Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-18891
-claimed-at: 2026-11-17T20:57:09Z
+claimed-by: DESKTOP-RFTCH11-27759
+claimed-at: 2026-11-17T20:58:46Z
 outcome-what: "Explain/Discuss starten claude mit einer Read-Regel auf den Auftragsordner statt --add-dir; das Cockpit waehlt den Worktree des Ticket-Branches statt Herdrs review/feat/<id>"
 outcome-why: "Claude Code 2.1.326 haelt den Tab am Trust-Dialog fuer --add-dir an; im Review-Worktree scheitert jaira note, die explain:-Note fehlt und der Tab schliesst nie"
 outcome-resolves: DoD 1-4
+review-summary: none
+review-gaps: "none - considered cygpath -u for the rule path instead of the drive regex: Cygwin would give /cygdrive/c and the test stub answers only -w, so kept; no other Windows-path conversion in core/role/builtin/jaira-dispatcher/scripts; nothing orphaned (chat_dir_win still read by the regex, --add-dir gone from spawn.sh and tests)"
+test-verdict: "fail: go test ./... red - internal/wintrap TestRepositoryIsClean flags core/role/role_test.go:736 (new Read rule suffix glued with literal /)"
+round: 2
 ---
 
 # Cockpit-Explain startet ohne Trust-Dialog und schreibt im richtigen Worktree
@@ -37,7 +41,7 @@ outcome-resolves: DoD 1-4
 - [x] worktreeFor/branchesFor waehlen bei mehreren passenden Worktrees den Branch des Tickets (feat/<id>), nicht review/feat/<id>
   proof: core/mod/builtin/jaira-cockpit/hooks/board.ts ticketsTree(); Fixture WORKTREES in tests/board.test.ts mit review/feat/mg677r zuerst: alter Code 14 Fehler, neuer keiner
 - [x] Tests in core/role und im Cockpit decken beides ab; go test ./core/... und claude plugin test gruen bis auf vorbestehende Fehler
-  proof: go test ./core/... ok; claude plugin test . 176/177, der eine Fehler (borderStyle round) auch auf master
+  proof: go test ./... RC=0 (incl. internal/wintrap, role_test.go:736 marked //wintrap:ok); claude plugin test . 176/177, der eine Fehler (borderStyle round) auch auf master
 - [x] Release-Notiz core/release/notes/<ID>.md
   proof: core/release/notes/58DCYM.md
 
@@ -56,3 +60,6 @@ outcome-resolves: DoD 1-4
 
 ## Progress
 - **2026-11-17 20:58 · Alexander Sacharov** — Interaktiver Start im Herdr-Tab mit --allowedTools nicht live geprueft, nur claude -p (liest ohne Rueckfrage, ohne Regel verweigert). Windows-Regelform //c/... nach Claude-Code-Doku zu Permission-Pfaden, nicht auf echtem Windows getestet. Fehler 'borderStyle round' in board.test.ts besteht auf master unabhaengig davon.
+- **2026-11-17 20:58 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/51013.sock
+- **2026-11-17 20:59 · Alexander Sacharov** — critique: nothing raised. board.ts ticketsTree (fewest branch parts) is general rather than Herdr-specific - a fix/<id> or feat/<id> branch beats review/feat/<id>, a detached tree matched by path loses to any branch; spawn.sh keeps one rule variable for both start lines, same shape as the --add-dir it replaces.
+- **2026-11-17 21:02 · Alexander Sacharov** — testing: go test ./... RC=1: internal/wintrap TestRepositoryIsClean: 'core/role/role_test.go:736: windows trap 5: a path is glued together with a literal "/" and handed to strings.HasSuffix'. The string is a Claude Code permission rule in a shell line, not a filesystem path - mark the site //wintrap:ok with that reason. go test ./core/... green; cockpit 176/177, the one fail (borderStyle round) pre-existing per earlier note.
