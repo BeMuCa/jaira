@@ -118,7 +118,7 @@ jobs:
           WINGET_GITHUB_TOKEN: ${{ secrets.WINGET_GITHUB_TOKEN }}
           WINGET_PKGS_OWNER: ${{ vars.WINGET_PKGS_OWNER }}
       - name: Collect what a false-positive report needs
-        run: sh scripts/wdsi-bundle.sh dist wdsi >> "$GITHUB_STEP_SUMMARY"
+        run: sh scripts/wdsi-bundle.sh >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
           name: wdsi-submission

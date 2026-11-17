@@ -5,26 +5,25 @@
 # outside an enterprise tenant - so this puts the files and their SHA256 in
 # one place and prints a markdown summary for the run page.
 #
-#   wdsi-bundle.sh <goreleaser dist dir> <output dir>
-#
-# Takes every dist/jaira_windows_<arch>*/jaira.exe - the signed one when
-# signed-windows.sh swapped it in - and dist-extra/install.ps1.
+# Run from the repository root after goreleaser: takes every
+# dist/jaira_windows_<arch>*/jaira.exe - the signed one when
+# signed-windows.sh swapped it in - and dist-extra/install.ps1, and writes
+# them with SHA256SUMS to wdsi/.
 set -eu
 
-dist=${1:?usage: wdsi-bundle.sh <dist dir> <output dir>}
-out=${2:?usage: wdsi-bundle.sh <dist dir> <output dir>}
+out=wdsi
 
 rm -rf "$out"
 mkdir -p "$out"
 found=0
-for exe in "$dist"/jaira_windows_*/jaira.exe; do
+for exe in dist/jaira_windows_*/jaira.exe; do
 	[ -f "$exe" ] || continue
 	arch=$(basename "$(dirname "$exe")" | sed 's/^jaira_windows_\([a-z0-9]*\).*/\1/')
 	cp "$exe" "$out/jaira_windows_$arch.exe"
 	found=$((found + 1))
 done
 if [ "$found" -eq 0 ]; then
-	echo "wdsi-bundle: no jaira.exe under $dist" >&2
+	echo "wdsi-bundle: no jaira.exe under dist/" >&2
 	exit 1
 fi
 if [ -f dist-extra/install.ps1 ]; then

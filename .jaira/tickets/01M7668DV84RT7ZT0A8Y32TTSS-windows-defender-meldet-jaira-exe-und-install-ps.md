@@ -1,7 +1,7 @@
 ---
 id: 01M7668DV84RT7ZT0A8Y32TTSS
 title: "Windows: Defender meldet jaira.exe und install.ps1 als Trojaner (ML-Heuristik)"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "jaira.exe und der Installer werden auf einem Windows-Rechner mit Microsoft Defender nicht mehr als Malware gemeldet, auch bei jeder neuen Version."
@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-11T20:54:42Z
-updated-at: 2026-11-17T21:36:31Z
+updated-at: 2026-11-17T21:37:30Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46806
@@ -30,8 +30,8 @@ question: ""
 outcome-what: "Without a signature: winget manifests and a winget-pkgs PR per release via goreleaser (off unless WINGET_GITHUB_TOKEN), a wdsi-submission artifact plus SHA256 summary per release run (scripts/wdsi-bundle.sh), docs/WINDOWS.md for the manual steps; SignPath line only on a release that was really signed"
 outcome-why: "SignPath Foundation turned the application down on 2026-11-17; Alex chose to lower false positives without a signature and add winget as a distribution path"
 outcome-resolves: "DoD 5, 6, 7; DoD 1 and the signing half of DoD 3 stay open for Alex at signoff"
-review-summary: "none - round 2 reads only the testing finding: install.ps1:66-70 comment reworded, no API names left, meaning unchanged"
-review-gaps: "none - round 2: one comment reworded, nothing to remove"
+review-summary: "none"
+review-gaps: "scripts/wdsi-bundle.sh: dropped the <dist> <out> arguments its only caller always passed as dist wdsi - fixed paths like scripts/signed-windows.sh, and dist-extra was already fixed; no duplicate found (install.sh verifies checksums.txt, a different job); nothing dead"
 test-verdict: "pass so far: go vet + go test ./... green (rc=0, round 1; round 2 changed only a .ps1 comment); linux + GOOS=windows build ok; DoD 2 read from /tmp/j.exe (CompanyName 'jaira project', ProductName 'jaira', FileVersion 0.5.13.0, asInvoker manifest); install.ps1: 0 hits for Add-Type|DllImport; DoD 4/5 present; signed-windows.sh exercised on a scratch tree (arm64 swap, amd64 no-op without signed file, linux no-op, stage plain/signed, bad arg exit 2). Not run: goreleaser and release.yaml (first tag), install.ps1 on Windows (no pwsh), SignPath signing (DoD 1 + signing part of DoD 3, waiting for approval)."
 round: 2
 blocked-reason: "wartet auf SignPath-Genehmigung, Antrag 2026-11-11"
@@ -98,3 +98,4 @@ blocked-reason: "wartet auf SignPath-Genehmigung, Antrag 2026-11-11"
 - **2026-11-17 21:31 · Alexander Sacharov** — Achtung DoD 5: README und release.footer nennen 'Free code signing provided by SignPath.io' - nach der Absage stimmt das nicht mehr. Den Satz entfernen oder erst bei aktiver Signatur ausgeben; DoD 5 entsprechend anpassen.
 - **2026-11-17 21:31 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/51013.sock
 - **2026-11-17 21:32 · Alexander Sacharov** — decision: rebased on upstream/master (0.5.13). Weg 3 settled without a question: (a) DoD 5 - SignPath line out of README; release.footer prints it only when sign-windows signed this release (env WINDOWS_SIGNED), so a later SignPath approval needs no edit. (b) winget via goreleaser's own winget publisher (OSS, zip archives, use ''), not winget-releaser/wingetcreate: it runs in the existing release job and writes manifests for both arches; package identifier BeMuCa.jaira (publisher = GitHub owner, permanent once in winget-pkgs - Alex can change before the secret is set). PR from a winget-pkgs fork (owner = vars.WINGET_PKGS_OWNER, default BeMuCa) into microsoft/winget-pkgs; skipped unless secret WINGET_GITHUB_TOKEN is non-empty. (c) WDSI has no public submission API (the MDE submission API needs an enterprise tenant): release job bundles jaira.exe x2 + install.ps1 + SHA256SUMS as artifact wdsi-submission and writes hashes and the wdsi/filesubmission link into the job summary; manual steps in docs/WINDOWS.md.
+- **2026-11-17 21:37 · Alexander Sacharov** — critique (pass on 1992dc05 only; earlier diff was critiqued before parking): let stand - scripts/wdsi-bundle.sh as a script beside scripts/signed-windows.sh (same pattern, testable locally); WINGET_PKGS_OWNER as a variable because the fork owner (Berk or a bot account) is not decided; the wdsi-submission artifact duplicates files reachable via the release zips, kept because DoD 7 asks the job to provide the files themselves.
