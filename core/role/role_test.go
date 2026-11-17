@@ -740,8 +740,10 @@ esac
 		}
 		// Typed, a long request loses its middle (42C3RZ): the brief's
 		// longest note alone runs past 4000 characters, and all of it
-		// reaches the file while the tab gets one short line.
-		if len(typedLine) > 200 {
+		// reaches the file while the tab gets one short line: the lead, the
+		// path and the tail. The path is the temp folder's, which on macOS
+		// alone runs past 130 characters (/private/var/folders/...).
+		if len(typedLine) > len(chatLead)+len(file)+len(chatTail) || len(typedLine)-len(file) > 120 {
 			t.Errorf("%s typed %d characters into the tab, want one short line: %q", lane, len(typedLine), typedLine)
 		}
 		if !strings.Contains(prompt, long) || len(prompt) < 4000 {
