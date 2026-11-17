@@ -1553,8 +1553,7 @@ func (s *Store) lock(id string) (func(), error) {
 		if !busy {
 			return nil, err
 		}
-		if fi, statErr := os.Stat(path); statErr == nil && time.Since(fi.ModTime()) > lockStale {
-			os.Remove(path) // previous holder died
+		if breakStale(path) {
 			continue
 		}
 		if time.Now().After(deadline) {
@@ -1568,6 +1567,34 @@ func (s *Store) lock(id string) (func(), error) {
 			backoff *= 2
 		}
 	}
+}
+
+// breakStale removes the lock file at path when its holder has died - it is
+// older than lockStale - and reports whether it did. A plain stat-then-remove
+// lets two waiters both see the dead lock, the first take a fresh one and the
+// second remove that fresh one, leaving two holders. So the break is made only
+// under <path>.break, taken with O_EXCL like the lock itself, and the lock is
+// looked at again under it: a lock somebody took in the meantime is fresh and
+// stays. A .break left by a process that died inside the few instructions it
+// holds one is broken the plain way once it is stale itself.
+func breakStale(path string) bool {
+	if fi, err := os.Stat(path); err != nil || time.Since(fi.ModTime()) <= lockStale {
+		return false
+	}
+	guard := path + ".break"
+	g, err := os.OpenFile(guard, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
+	if err != nil {
+		if fi, statErr := os.Stat(guard); statErr == nil && time.Since(fi.ModTime()) > lockStale {
+			os.Remove(guard)
+		}
+		return false
+	}
+	g.Close()
+	defer os.Remove(guard)
+	if fi, err := os.Stat(path); err != nil || time.Since(fi.ModTime()) <= lockStale {
+		return false
+	}
+	return os.Remove(path) == nil
 }
 
 // Lock takes the store's advisory lock under a caller-chosen name, for state in
