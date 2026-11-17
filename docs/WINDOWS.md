@@ -12,8 +12,10 @@ install script that downloads, unpacks and writes the user `PATH`.
 
 ## What a user can do
 
-- Check the file is the release artifact: compare its SHA256 with
-  `checksums.txt` on the release page (`Get-FileHash jaira.exe`).
+- Check the download is the release artifact: compare the zip's SHA256
+  (`Get-FileHash jaira_<version>_windows_amd64.zip`) with its line in
+  `checksums.txt` on the release page — that file lists the archives, not
+  `jaira.exe` itself. `install.ps1` does this check on every install.
 - Restore it from quarantine under *Windows Security > Virus & threat
   protection > Protection history*, or report it yourself at the form below.
 

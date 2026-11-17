@@ -127,11 +127,15 @@ function Install-Jaira {
 		if (Test-Path -LiteralPath $exe) {
 			Move-Item -LiteralPath $exe -Destination $old -Force
 		}
-		# A copy that fails - the new exe quarantined right after unpacking,
-		# a folder that refuses the write - puts the old one back, or the
-		# next run would sweep the last working copy away as .old-*.
+		# A new exe that does not get as far as printing its version - a copy
+		# that fails, an exe quarantined right after it was written or when it
+		# first starts, a folder that refuses the write - puts the old one
+		# back, or the next run would sweep the last working copy away as
+		# .old-*.
 		try {
 			Copy-Item -LiteralPath (Join-Path $tmp 'x\jaira.exe') -Destination $exe -ErrorAction Stop
+			$version = & $exe --version
+			if ($LASTEXITCODE -ne 0) { throw "$exe --version exited $LASTEXITCODE" }
 		} catch {
 			if (Test-Path -LiteralPath $old) {
 				Move-Item -LiteralPath $old -Destination $exe -Force -ErrorAction SilentlyContinue
@@ -143,7 +147,7 @@ function Install-Jaira {
 		Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
 	}
 
-	Write-Host "installed $(& $exe --version) to $exe"
+	Write-Host "installed $version to $exe"
 	if (Add-JairaUserPath $installDir) {
 		Send-JairaEnvChange
 		$env:Path = $env:Path.TrimEnd(';') + ';' + $installDir

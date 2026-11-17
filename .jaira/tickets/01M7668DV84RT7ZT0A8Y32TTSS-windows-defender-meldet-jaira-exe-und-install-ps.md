@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-11T20:54:42Z
-updated-at: 2026-11-17T22:03:24Z
+updated-at: 2026-11-17T22:09:12Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46806
@@ -31,9 +31,9 @@ outcome-what: "Without a signature: winget manifests and a winget-pkgs PR per re
 outcome-why: "SignPath Foundation turned the application down on 2026-11-17; Alex chose to lower false positives without a signature and add winget as a distribution path; two bug hunts found that a quarantined new exe left the install without any jaira.exe, and that two waiters could both break the same stale lock in core/ticket/store.go lock() next to this ticket's Windows lock fix"
 outcome-resolves: "DoD 5, 6, 7; DoD 1 and the signing half of DoD 3 stay open for Alex at signoff"
 review-summary: "none"
-review-gaps: "pass 2: 96cb14d3 adds only the try/catch around Copy-Item - nothing duplicated or dead; pass 1 (wdsi-bundle.sh fixed paths) stands"
-test-verdict: "pass: go test ./... RC=0 after 96cb14d3; install.ps1 ParseFile 0 errors; restore block run on Windows pwsh 7: failed copy (missing source) leaves the old jaira.exe in place and no .old-*, normal copy installs the new one; earlier pass (goreleaser check/snapshot, footer and skip_upload templates, wdsi-bundle.sh normal + no-exe exit 1) stands. Writes nothing shared beyond the install dir, which one installer run owns. Not exercisable here: real winget PR, WDSI form."
-round: 4
+review-gaps: "pass 3: 8796d54d - the stale check in breakStale appears twice on purpose (cheap look, then the authoritative one under the guard); tests are four small cases, the slow probabilistic one was already dropped; nothing removed. Earlier passes stand."
+test-verdict: "pass: go test ./... RC=0 at 8796d54d; GOOS=windows go vet ./core/ticket clean; TestBreakStale* (4, -race) green - dead lock broken and guard cleaned, guard held by another waiter -> nothing removed, fresh lock untouched, dead guard cleared; install.ps1 restore and release pipeline checks from earlier passes stand. Concurrent writers: covered by the guard test and the existing TestRegisterTagsLosesNoTagUnderConcurrentWriters (green)."
+round: 5
 blocked-reason: "wartet auf SignPath-Genehmigung, Antrag 2026-11-11"
 ---
 
@@ -107,3 +107,8 @@ blocked-reason: "wartet auf SignPath-Genehmigung, Antrag 2026-11-11"
 - **2026-11-17 21:51 · Alexander Sacharov** — bughunt: done at 96cb14d3 - 1 finding in 8 modules (store.go lock, install.ps1, signed-windows.sh, wdsi-bundle.sh, release.yaml, .goreleaser.yaml, signpath config, winres.json); concurrency, error paths, input, permissions checked
 - **2026-11-17 21:52 · Alexander Sacharov** — bughunt 2 finding accepted: core/ticket/store.go lock() breaks a stale lock with stat-then-remove; two waiters can both see it stale and the second removes the first's fresh lock -> two holders (bughunt reproduced with 32 goroutines over a 1h-old lock file). Fix: the break happens only under a second O_EXCL file <id>.lock.break, and the lock is re-stat'ed under it, so only a lock that is still stale is removed. Residual: a process dying inside the microseconds it holds .break leaves it until it is itself older than lockStale.
 - **2026-11-17 22:03 · Alexander Sacharov** — store.go fix: breakStale() guards the break with <id>.lock.break and re-stats under it. A 32-goroutine probabilistic test was dropped: on the old code it failed only sometimes (3 of 3 runs at 5 rounds passed) and took 15-66s; four deterministic tests in core/ticket/lock_stale_test.go pin the interleaving instead (guard held by another waiter -> nothing removed). go test ./... RC=0, GOOS=windows go vet clean.
+- **2026-11-17 22:03 · Alexander Sacharov** — critique pass 3 (reads only 8796d54d): breakStale uses the same O_EXCL-file idiom as lock() in the same file; a rename-to-unique-name break was the alternative and needs a restore path for a fresh lock grabbed by mistake - more code, not less. Nothing to say.
+- **2026-11-17 22:07 · Alexander Sacharov** — bughunt: scripts/install.ps1:141 - die alte jaira.exe (.old-<pid>) wird gelöscht, bevor die neue je gestartet wird; der erste Start ist erst Z.146 (& $exe --version). Stellt Defender die frisch kopierte jaira.exe nach dem Kopieren unter Quarantäne (asynchroner Cloud-/ML-Scan, also genau die Bearfoos-Meldung dieses Tickets), wirft Z.146, und der Nutzer hat gar keine jaira mehr - der Rollback in Z.135-139 greift nur, wenn Copy-Item selbst scheitert. Abhilfe: neue exe vor dem Löschen der alten einmal starten (--version) und bei Fehler die alte zurückschieben; read (Windows-Lauf nicht möglich)
+- **2026-11-17 22:07 · Alexander Sacharov** — bughunt: docs/WINDOWS.md:21-22 - 'compare its SHA256 with checksums.txt (Get-FileHash jaira.exe)' kann nie passen: checksums.txt enthält nur die Archive (.goreleaser.yaml checksum ohne extra_files, Windows als zip), weder jaira.exe noch install.ps1. Wer der Anleitung folgt, findet keinen Treffer und hält die Datei für manipuliert. Abhilfe: Hash des zip prüfen lassen, oder jaira.exe/install.ps1 per checksum.extra_files bzw. das SHA256SUMS aus wdsi-bundle.sh mitveröffentlichen; ran: gh release download --repo BeMuCa/jaira --pattern checksums.txt (0.5.13: sechs Zeilen, nur .tar.gz/.zip)
+- **2026-11-17 22:07 · Alexander Sacharov** — bughunt: done at 8796d54d - 2 findings in 9 modules; concurrency, error paths, input, permissions checked
+- **2026-11-17 22:09 · Alexander Sacharov** — bughunt 3 fixed: (1) install.ps1 now runs the new exe (--version, exit code checked) inside the same try as the copy, before the old .old-<pid> is removed; a failure puts the old one back. Run on Windows pwsh 7 with the block copied out: missing source / non-exe jaira.exe -> old jaira.exe restored, no .old left; real GOOS=windows build -> installed. (2) docs/WINDOWS.md: checksums.txt lists the archives only - the user check now hashes the zip; chose docs over checksum.extra_files so checksums.txt keeps the shape install.sh/install.ps1 parse.
