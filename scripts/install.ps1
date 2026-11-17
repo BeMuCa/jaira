@@ -123,11 +123,22 @@ function Install-Jaira {
 		# and remove what earlier runs left there once nothing holds it.
 		Get-ChildItem -LiteralPath $installDir -Filter 'jaira.exe.old-*' |
 			Remove-Item -Force -ErrorAction SilentlyContinue
+		$old = "$exe.old-$PID"
 		if (Test-Path -LiteralPath $exe) {
-			Move-Item -LiteralPath $exe -Destination "$exe.old-$PID" -Force
+			Move-Item -LiteralPath $exe -Destination $old -Force
 		}
-		Copy-Item -LiteralPath (Join-Path $tmp 'x\jaira.exe') -Destination $exe
-		Remove-Item -LiteralPath "$exe.old-$PID" -Force -ErrorAction SilentlyContinue
+		# A copy that fails - the new exe quarantined right after unpacking,
+		# a folder that refuses the write - puts the old one back, or the
+		# next run would sweep the last working copy away as .old-*.
+		try {
+			Copy-Item -LiteralPath (Join-Path $tmp 'x\jaira.exe') -Destination $exe -ErrorAction Stop
+		} catch {
+			if (Test-Path -LiteralPath $old) {
+				Move-Item -LiteralPath $old -Destination $exe -Force -ErrorAction SilentlyContinue
+			}
+			throw
+		}
+		Remove-Item -LiteralPath $old -Force -ErrorAction SilentlyContinue
 	} finally {
 		Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
 	}

@@ -1,7 +1,7 @@
 ---
 id: 01M7668DV84RT7ZT0A8Y32TTSS
 title: "Windows: Defender meldet jaira.exe und install.ps1 als Trojaner (ML-Heuristik)"
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "jaira.exe und der Installer werden auf einem Windows-Rechner mit Microsoft Defender nicht mehr als Malware gemeldet, auch bei jeder neuen Version."
@@ -21,19 +21,19 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-11T20:54:42Z
-updated-at: 2026-11-17T21:37:30Z
+updated-at: 2026-11-17T21:45:00Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46806
 claimed-at: 2026-11-17T21:31:20Z
 question: ""
-outcome-what: "Without a signature: winget manifests and a winget-pkgs PR per release via goreleaser (off unless WINGET_GITHUB_TOKEN), a wdsi-submission artifact plus SHA256 summary per release run (scripts/wdsi-bundle.sh), docs/WINDOWS.md for the manual steps; SignPath line only on a release that was really signed"
-outcome-why: "SignPath Foundation turned the application down on 2026-11-17; Alex chose to lower false positives without a signature and add winget as a distribution path"
+outcome-what: "Without a signature: winget manifests and a winget-pkgs PR per release via goreleaser (off unless WINGET_GITHUB_TOKEN), a wdsi-submission artifact plus SHA256 summary per release run (scripts/wdsi-bundle.sh), docs/WINDOWS.md for the manual steps; SignPath line only on a release that was really signed; install.ps1 restores the previous jaira.exe when the new one cannot be copied in"
+outcome-why: "SignPath Foundation turned the application down on 2026-11-17; Alex chose to lower false positives without a signature and add winget as a distribution path; the bughunt found that a quarantined new exe left the install without any jaira.exe"
 outcome-resolves: "DoD 5, 6, 7; DoD 1 and the signing half of DoD 3 stay open for Alex at signoff"
 review-summary: "none"
 review-gaps: "scripts/wdsi-bundle.sh: dropped the <dist> <out> arguments its only caller always passed as dist wdsi - fixed paths like scripts/signed-windows.sh, and dist-extra was already fixed; no duplicate found (install.sh verifies checksums.txt, a different job); nothing dead"
-test-verdict: "pass so far: go vet + go test ./... green (rc=0, round 1; round 2 changed only a .ps1 comment); linux + GOOS=windows build ok; DoD 2 read from /tmp/j.exe (CompanyName 'jaira project', ProductName 'jaira', FileVersion 0.5.13.0, asInvoker manifest); install.ps1: 0 hits for Add-Type|DllImport; DoD 4/5 present; signed-windows.sh exercised on a scratch tree (arm64 swap, amd64 no-op without signed file, linux no-op, stage plain/signed, bad arg exit 2). Not run: goreleaser and release.yaml (first tag), install.ps1 on Windows (no pwsh), SignPath signing (DoD 1 + signing part of DoD 3, waiting for approval)."
-round: 2
+test-verdict: "pass: go build/vet/test ./... RC=0; goreleaser v2.12.7 check ok and snapshot release wrote winget manifests BeMuCa.jaira (zip/portable, x64+arm64); templates evaluated in a scratch goreleaser project: footer only with WINDOWS_SIGNED=true (empty/false -> no line), skip_upload true without or with empty WINGET_GITHUB_TOKEN, auto with one; wdsi-bundle.sh on the snapshot dist: 2 exe + install.ps1 + SHA256SUMS + summary table, no exe -> exit 1; README has no SignPath line. Writes nothing shared (CI files only), so no two-writer case. Not exercisable here: a real winget PR and WDSI submission (need secret / Microsoft form). DoD 1 and signing half of DoD 3 open by design."
+round: 3
 blocked-reason: "wartet auf SignPath-Genehmigung, Antrag 2026-11-11"
 ---
 
@@ -99,3 +99,6 @@ blocked-reason: "wartet auf SignPath-Genehmigung, Antrag 2026-11-11"
 - **2026-11-17 21:31 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/51013.sock
 - **2026-11-17 21:32 · Alexander Sacharov** — decision: rebased on upstream/master (0.5.13). Weg 3 settled without a question: (a) DoD 5 - SignPath line out of README; release.footer prints it only when sign-windows signed this release (env WINDOWS_SIGNED), so a later SignPath approval needs no edit. (b) winget via goreleaser's own winget publisher (OSS, zip archives, use ''), not winget-releaser/wingetcreate: it runs in the existing release job and writes manifests for both arches; package identifier BeMuCa.jaira (publisher = GitHub owner, permanent once in winget-pkgs - Alex can change before the secret is set). PR from a winget-pkgs fork (owner = vars.WINGET_PKGS_OWNER, default BeMuCa) into microsoft/winget-pkgs; skipped unless secret WINGET_GITHUB_TOKEN is non-empty. (c) WDSI has no public submission API (the MDE submission API needs an enterprise tenant): release job bundles jaira.exe x2 + install.ps1 + SHA256SUMS as artifact wdsi-submission and writes hashes and the wdsi/filesubmission link into the job summary; manual steps in docs/WINDOWS.md.
 - **2026-11-17 21:37 · Alexander Sacharov** — critique (pass on 1992dc05 only; earlier diff was critiqued before parking): let stand - scripts/wdsi-bundle.sh as a script beside scripts/signed-windows.sh (same pattern, testable locally); WINGET_PKGS_OWNER as a variable because the fork owner (Berk or a bot account) is not decided; the wdsi-submission artifact duplicates files reachable via the release zips, kept because DoD 7 asks the job to provide the files themselves.
+- **2026-11-17 21:43 · Alexander Sacharov** — bughunt: scripts/install.ps1:126-130 - an update moves the working jaira.exe aside to jaira.exe.old-<pid> before Copy-Item; when Copy-Item throws (Defender quarantines x\jaira.exe right after Expand-Archive - this ticket's own scenario - or the target is not writable) nothing moves the old exe back, so the install dir has no jaira.exe at all and the next run's .old-* sweep deletes the last working copy; restore the .old file in a catch around Copy-Item; read
+- **2026-11-17 21:43 · Alexander Sacharov** — bughunt: done at c21570bc - 1 finding in 9 modules; concurrency, error paths, input, permissions checked
+- **2026-11-17 21:44 · Alexander Sacharov** — bughunt finding fixed: scripts/install.ps1 replace step - Copy-Item now in try/catch, a failed copy moves jaira.exe.old-<pid> back and rethrows. Exercised on Windows pwsh 7 with the block copied out: missing source -> ItemNotFoundException, installDir holds OLD jaira.exe and no .old file; present source -> NEW. ParseFile on install.ps1: 0 errors. Not touched: the non-atomic stale-lock removal in core/ticket/store.go lock() the bughunt left unconfirmed (pre-32TTSS, 8x200 race test found no double ownership).

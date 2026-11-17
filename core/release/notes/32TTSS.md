@@ -3,3 +3,4 @@
 - Expect parallel jaira writes on Windows (two sessions tagging or editing at once) to wait for each other instead of one failing with "Access is denied" on a lock file.
 - If Defender quarantines jaira.exe or install.ps1, read docs/WINDOWS.md: it says how to check the file and how to report the false positive; each release run now lists every Windows file with its SHA256 for that report.
 - Repository admins: set the secret WINGET_GITHUB_TOKEN (and the variable WINGET_PKGS_OWNER for the winget-pkgs fork) to have every release open a winget pull request; without it releases run as before.
+- If install.ps1 fails to put the new jaira.exe in place (Defender quarantined it, the folder refused the write), your previous jaira.exe is now restored instead of left behind as a .old file the next run deletes.
