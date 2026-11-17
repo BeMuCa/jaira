@@ -114,7 +114,9 @@ const ANSWER = (title: string) =>
 const MESSAGE = (title: string) =>
   ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-message', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as never
 
-const WORKTREES = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n\nworktree /.worktrees/repo-mg677r\nHEAD 2\nbranch refs/heads/feat/mg677r\n'
+// Herdr's review worktree of feat/mg677r is listed first and ends in the id
+// as well, without the ticket on its disk: every press must pass it by.
+const WORKTREES = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n\nworktree /.herdr/worktrees/repo/review-feat-mg677r\nHEAD 2\nbranch refs/heads/review/feat/mg677r\n\nworktree /.worktrees/repo-mg677r\nHEAD 2\nbranch refs/heads/feat/mg677r\n'
 const SPAWN = '/repo/.claude/skills/jaira-dispatcher/scripts/spawn.sh'
 // The release cache jaira writes under ~/.jaira, HOME being /home/a.
 const CACHE = '/home/a/.jaira/update-check.json'
