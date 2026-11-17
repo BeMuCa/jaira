@@ -419,9 +419,10 @@ export function pendingOf(listJson: string, named: readonly string[], terminal: 
 // branch. A branch that only wraps another listed one — Herdr's
 // review/<branch> — is passed by: it lists before task/<slug> and
 // work/<slug>. Depth alone decides nothing; in the --contains listing a wip
-// or a detached HEAD has fewer parts than the branch the work rode on.
+// or a detached HEAD has fewer parts than the branch the work rode on. A
+// detached HEAD lists as "(HEAD detached at <sha>)", which is no branch.
 export function carrierBranch(listing: string, base: string): string | undefined {
-  const branches = listing.split('\n').map(l => l.trim()).filter(b => b && b !== base)
+  const branches = listing.split('\n').map(l => l.trim()).filter(b => b && b !== base && !b.startsWith('('))
   return branches.find(b => !branches.some(o => b.endsWith(`/${o}`)))
 }
 

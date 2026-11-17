@@ -1297,8 +1297,9 @@ describe('after Accept', () => {
     w.tickets = [{ ...SIGNOFF, handle: 'ZZ99ZZ' }, { ...WORKING, handle: 'MG677R', status: 'done' }]
     w.subjects = ['feat(MG677R): cache key', 'fix(ZZ99ZZ): on the same branch']
     w.branchCommits = [{ sha: 'abc123', subject: 'fix(ZZ99ZZ): on the same branch' }]
-    // A wip holding the same commit has fewer parts and is no reason to leave it.
-    w.holders = ['master', 'feat/mg677r', 'wip']
+    // A wip holding the same commit has fewer parts and is no reason to leave
+    // it; a main checkout detached mid-rebase lists first and is no branch.
+    w.holders = ['(HEAD detached at abc123)', 'master', 'feat/mg677r', 'wip']
     await startSession($)
     const ui = await $.ui.mount(BAND)
     await ui.press({ key: 'accept-ZZ99ZZ' })

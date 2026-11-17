@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-17T20:56:53Z
-updated-at: 2026-11-17T21:24:56Z
+updated-at: 2026-11-17T21:34:39Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-27759
@@ -27,9 +27,9 @@ outcome-what: "Explain/Discuss starten claude mit einer Read-Regel auf den Auftr
 outcome-why: "Claude Code 2.1.326 haelt den Tab am Trust-Dialog fuer --add-dir an; im Review-Worktree scheitert jaira note, die explain:-Note fehlt und der Tab schliesst nie"
 outcome-resolves: DoD 1-4
 review-summary: none
-review-gaps: "none - pass 4 removed the branchParts helper the round before had added; nothing else orphaned"
-test-verdict: "pass: go test ./... RC=0 at 43bc1ce6; claude plugin test . 177/178, the single fail (borderStyle round) also on master; both bughunt regressions pinned by tests that fail on the earlier code"
-round: 5
+review-gaps: "none - pass 5 added a world.worktrees override in the test world, used by the new test only; nothing to remove"
+test-verdict: "pass: go test ./... RC=0 at 49546d28; claude plugin test . 178/179, the single fail (borderStyle round) also on master; all three bughunt regressions pinned by tests that fail on the earlier code"
+round: 6
 ---
 
 # Cockpit-Explain startet ohne Trust-Dialog und schreibt im richtigen Worktree
@@ -76,3 +76,9 @@ round: 5
 - **2026-11-17 21:21 · Alexander Sacharov** — bughunt: core/mod/builtin/jaira-cockpit/hooks/board.ts:309 - ticketsTree ranks a detached worktree as Infinity, so when the ticket's own worktree (.../jaira-58dcym) is detached - a rebase in progress, git checkout --detach - and Herdr's review worktree on review/feat/58dcym exists, worktreeFor returns the review worktree and branchesFor names review/feat/58dcym as the ticket's branch. ticketDir then runs jaira move where the ticket is not on disk, and Accept (register.tsx:542 decideStep -> afterAccept) counts commits on and starts the pr lane for review/feat/58dcym. Depth still decides here, unlike carrierBranch; the */<slug> listing fallback would have found feat/58dcym. ran: node --experimental-strip-types on a porcelain with master, a detached /wt/jaira-58dcym and review/feat/58dcym -> worktreeFor=/wt/review-x, branchesFor.ticket=review/feat/58dcym; git worktree list --porcelain prints 'detached' and no branch line for a detached worktree (checked in a scratch repo)
 - **2026-11-17 21:21 · Alexander Sacharov** — bughunt: done at 43bc1ce6 - 1 finding in 3 modules (cockpit board.ts with its register.tsx callers, dispatcher spawn.sh, role_test.go); concurrency, error paths, input, permissions checked
 - **2026-11-17 21:24 · Alexander Sacharov** — in-progress round 5 (bughunt 3): ticketsTree ranked a detached tree (the ticket's own mid-rebase) after every branch, so Herdr's review/feat/<id> won. A detached tree now ranks 2.5: after <prefix>/<id>, before anything nested deeper. Test 'Accept finds the ticket's own worktree mid-rebase' (world.worktrees override) fails on the old rank, passes now. Not reachable from here and left: Windows TEMP in 8.3 short names / with spaces vs the //c/ Read rule - needs a real Windows check at acceptance.
+- **2026-11-17 21:25 · Alexander Sacharov** — critique pass 5: read only 49546d28 - the 2.5 rank is commented where it sits and tested; nothing raised.
+- **2026-11-17 21:25 · Alexander Sacharov** — question (bughunt sent the work back 3 times): third round's finding verbatim - 'ticketsTree: a detached worktree ranks Infinity, so Herdr's review/feat/<id> wins when the ticket's own tree is mid-rebase' (fixed in 49546d28). Judgement: the DoD is right; rounds 2 and 3 found defects in my own repairs to the branch ranking, each narrower than the one before - the loop reads deeper, it does not reopen the core. Options: 1) (Recommended) skip a fourth bughunt, go to the fresh review now; 2) run bughunt a fourth time first. Open for acceptance either way: Windows TEMP in 8.3 short names or with spaces vs the //c/ Read rule, only checkable on real Windows.
+- **2026-11-17 21:30 · Alexander Sacharov** — decision (Alex, 17.11.): 4. Bughunt vor dem Review
+- **2026-11-17 21:31 · Alexander Sacharov** — bughunt: core/mod/builtin/jaira-cockpit/hooks/board.ts:423-426 (carrierBranch) - git branch --contains <sha> --format=%(refname:short) lists a detached HEAD of the checkout as '(HEAD detached at <sha>)', first, with no slash; it wraps nothing, so carrierBranch returns it as the ticket's branch. register.tsx:558 (decideStep) then runs git log <base>..'(HEAD detached at <sha>)', which exits 128, and Accept ends in the 'stays done' error pane instead of opening the pull request. Triggers when the ticket has no worktree and no */<slug> branch (worked on another ticket's branch) and the main checkout is detached at a commit containing it (mid-rebase, bisect). Fix: drop lines starting with '(' in carrierBranch. ran: scratch repo, detached HEAD, git branch --contains HEAD --format=%(refname:short) -> '(HEAD detached at c3f5869)' first; node --experimental-strip-types carrierBranch(...) -> '(HEAD detached at c3f5869)'; git log master..'(HEAD detached at c3f5869)' -> exit 128
+- **2026-11-17 21:31 · Alexander Sacharov** — bughunt: done at 49546d28 - 1 finding in 2 modules (cockpit hooks/board.ts with its callers in register.tsx, dispatcher scripts/spawn.sh); concurrency, error paths, input, permissions checked
+- **2026-11-17 21:34 · Alexander Sacharov** — in-progress round 6 (bughunt 4): carrierBranch took '(HEAD detached at <sha>)' from git branch --contains as a branch - pre-existing on master, folded in since it is the same function: lines starting with '(' are dropped. Test 'a ticket worked on another ticket's branch' lists the detached line first; fails without the filter. Per Alex's decision this goes to the fresh review after the loop, no 5th bughunt.
