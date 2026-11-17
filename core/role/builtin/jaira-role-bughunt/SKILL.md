@@ -109,8 +109,8 @@ Mark every finding as one of two, and check it — do not guess:
   input that triggers it reached it before this change, too.
 
 ```bash
-git blame -L <from>,<to> -- <file>             # who wrote the lines the defect rests on
-git log -1 --format=%s <commit>                # does that commit name the ticket id?
+git blame -L <from>,<to> -- <file>               # who wrote the lines the defect rests on
+git log -1 --format=%B <commit> | grep -i <id>  # does that commit name the ticket id?
 ```
 
 A line shown as `Not Committed Yet` belongs to the change. Look at the caller

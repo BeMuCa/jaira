@@ -66,9 +66,11 @@ Then write `test-verdict`:
 
     jaira set <handle> test-verdict="pass: suite green (RC=0), DoD 1-3 verified in the tree, behaviour exercised on a scratch board; missing file exits 1 with no partial write; two parallel moves both land"
 
-**Then wait for the hunter** by your harness's own signal, and read its notes
-off the ticket (`jaira show <handle> | grep "bughunt:"`). Every finding is
-marked:
+**Then wait for the hunter** by your harness's own signal, and read this
+round's notes off the ticket: `jaira show <handle> | grep "bughunt:"` lists
+every round, so read only what follows the previous `bughunt: done at` line, up
+to the closing line this hunt wrote — an older round's findings were fixed
+already and are no reason to send the ticket back. Every finding is marked:
 
 - `bughunt: change:` — this change brought the defect in. It is work on this
   ticket, the same as a failed test.
