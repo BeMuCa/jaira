@@ -128,7 +128,14 @@ installed.`,
 			}
 			// Re-generated with this board's current lanes: adopting a lane is
 			// exactly when the note stops matching the board.
-			boardLanes, _ := lane.Load(s.Root)
+			// A dry run wrote no lane, so it previews from the lanes as the
+			// refresh would leave them, not as they still are on disk.
+			var boardLanes *lane.Set
+			if setup.dry && setup.lanes {
+				boardLanes, _ = lane.PreviewRefresh(s.Root, setup.laneResults)
+			} else {
+				boardLanes, _ = lane.Load(s.Root)
+			}
 			var notesWritten []string
 			var noteErr error
 			if setup.dry {

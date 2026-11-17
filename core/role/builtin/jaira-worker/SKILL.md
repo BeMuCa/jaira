@@ -208,9 +208,13 @@ change:` finding sends the ticket back to `in-progress` like a failed test; a
 
 **A board whose testing lane does not owe `hunt-verdict`** — no testing lane at
 all, as on a board fresh from `jaira init`, or an older one not yet updated —
-still gets its hunt, from you: when the ticket changed code (anything outside
-`.jaira/`) and `next_lane` is the fresh lane, or a lane a person owns, start
-one before you move it there, with the id and nothing else:
+still gets its hunt, from you. Read it off the ticket's own board:
+`jaira show <id> --for-lane testing --json` lists the lane's outputs under
+`produces`; no `hunt-verdict` there, or exit 2 with `no_such_lane`, means the
+hunt is yours. Then, when the ticket changed
+code (anything outside `.jaira/`) and `next_lane` is the fresh lane, or a lane
+a person owns, start one before you move it there, with the id and nothing
+else:
 
     Agent(subagent_type: "claude", prompt: "Read the jaira-role-bughunt skill and hunt ticket <id>.")
 

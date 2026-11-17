@@ -31,7 +31,7 @@ x=(':/' ':(exclude,top).jaira/tickets' ':(exclude,top).jaira/logbook' ':(exclude
   git -c core.quotePath=false ls-files --others --exclude-standard -- "${x[@]}"; } | sort -u
 ```
 
-The commits are found by the ticket id in their subject, the way jaira itself
+The commits are found by the ticket id anywhere in their message, the way jaira itself
 derives a ticket's commits — not by a merge base: `origin/HEAD` can name a
 fork that is hundreds of commits behind, and the files of all those commits
 are not this change. Read nothing else of the ticket: `jaira show` only ever
