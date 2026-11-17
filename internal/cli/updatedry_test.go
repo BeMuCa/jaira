@@ -40,10 +40,21 @@ func TestUpdateDryRunWritesNothing(t *testing.T) {
 		t.Errorf("--dry-run moved the stamp from %q to %q", stampBefore, got)
 	}
 	for _, want := range []string{"would update " + st.projRole, "would update " + st.homeRole, "would update " + st.lan,
-		"Would tell your agents about this board: CLAUDE.md (updated)", "nothing was written (--dry-run)"} {
+		"nothing was written (--dry-run)"} {
 		if !hasLine(setupOutput(out), want) {
 			t.Errorf("output lacks %q:\n%s", want, out)
 		}
+	}
+	// AGENTS.md may be named beside it: the preview renders the agent block
+	// from the lanes on disk, before the refresh, and the stale testing lane
+	// declares fewer outputs than the built-in one that AGENTS.md was written
+	// from.
+	var told bool
+	for _, l := range strings.Split(setupOutput(out), "\n") {
+		told = told || strings.HasPrefix(l, "Would tell your agents about this board:") && strings.Contains(l, "CLAUDE.md (updated)")
+	}
+	if !told {
+		t.Errorf("output does not say CLAUDE.md would be updated:\n%s", out)
 	}
 }
 
