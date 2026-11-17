@@ -24,7 +24,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-17T21:06:22Z
-updated-at: 2026-11-17T21:24:01Z
+updated-at: 2026-11-17T21:27:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1175
 claimed-at: 2026-11-17T21:06:50Z
@@ -33,10 +33,10 @@ outcome-what: "Der testing-Lane startet den Bughunt als Hintergrund-Agent vor se
 outcome-why: "Der Bughunt nach testing las die Module jede Runde ganz und schickte jeden alten Fehler zurueck nach in-progress, so konvergierte die Schleife nicht; ausserhalb jedes Lanes war er zudem unsichtbar und ohne Gate."
 outcome-resolves: "Ein Ticket kommt nach einem Bughunt in hoechstens einer weiteren Runde durch: nur change-Fundstellen schicken zurueck, die Folgerunde liest nur neuen Diff, und das Gate verweigert testing ohne hunt-verdict."
 review-summary: none
-round: 3
-review-gaps: "none - gesucht: kein vorhandener Helfer baut in core/gate-Tests ein Ticket aus Frontmatter (testingTicket bleibt); keine verwaisten Abschnitte - die kurzen Bughunt-Verweise in worker/dispatcher bleiben, damit alte Gewohnheiten nicht einen zweiten Hunter starten"
-test-verdict: "pass: go build+vet ok, go test -race -count=1 ./... RC=0; DoD 1-5 gegen den Baum geprueft (Proof-Zeilen nachgelesen); Scratch-Board: nur test-verdict -> move aus testing exit 3 'produces hunt-verdict, which is still empty', beide Felder -> move nach review RC=0; zwei parallele jaira set (test-/hunt-verdict) landen beide"
-hunt-verdict: "fail: 2 change-Fundstellen (bughunt done at 338a5ede): unverankerter grep 'bughunt: done at'; ohne testing-Lane (Board nach jaira init) laeuft gar kein Hunt mehr"
+round: 4
+review-gaps: "none - Runde 3: Rueckfall-Absatz steht in worker und dispatcher je einmal, weil es zwei getrennt installierte Skills sind; nichts verwaist"
+test-verdict: "pass: Runde 2 auf 5b249332 - go build+vet ok, go test -race -count=1 ./... RC=0; Scratch-Board: nur test-verdict -> move aus testing exit 3 (hunt-verdict leer); verankerter grep trifft von zwei Notizen (decision zitiert die Zeile, echte Abschlusszeile) nur die echte (count 1); zwei parallele jaira set landen beide (Runde 1)"
+hunt-verdict: "fail: 1 change (bughunt done at 5b249332, Folge-Hunt nur Diff): worker-Schleife Schritt 3 verweist nicht auf den Rueckfall-Hunt"
 ---
 
 # Bughunt laeuft im testing-Lane parallel zu den Tests und konvergiert
@@ -52,7 +52,7 @@ hunt-verdict: "fail: 2 change-Fundstellen (bughunt done at 338a5ede): unveranker
 - [x] pre-existing: gleiches Thema als note fuer die Person, anderes Thema als Ticket mit --follows
   proof: core/lane/builtin/27-testing.md:78-84 (gleiches Thema note fuer die Person, anderes Thema jaira create --follows)
 - [x] jaira-worker und jaira-dispatcher rufen den Bughunt nicht mehr separat auf; Tests, shipped.sha256 und Release-Notiz
-  proof: core/role/builtin/jaira-worker/SKILL.md:196-219, core/role/builtin/jaira-dispatcher/SKILL.md:268-288 (Hunt im testing-Lane; eigener Hunter nur, wo testing kein hunt-verdict schuldet); go test RC=0; core/shipped/shipped.sha256; core/release/notes/Z66Z8E.md
+  proof: core/role/builtin/jaira-worker/SKILL.md:145-148,200-223, core/role/builtin/jaira-dispatcher/SKILL.md:268-288 (Hunt im testing-Lane; eigener Hunter nur, wo testing kein hunt-verdict schuldet); go test RC=0; core/shipped/shipped.sha256; core/release/notes/Z66Z8E.md
 
 ## Options
 
@@ -77,3 +77,7 @@ hunt-verdict: "fail: 2 change-Fundstellen (bughunt done at 338a5ede): unveranker
 - **2026-11-17 21:21 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-worker/SKILL.md:198-204 and core/role/builtin/jaira-dispatcher/SKILL.md:268-274 - the hunt now runs only inside a testing lane, and worker says no hunt is due where no lane owes hunt-verdict. A board from plain jaira init has no testing lane (lanes: brainstorm todo pre-process in-progress human review signoff done blocked), so on every default board worker and dispatcher no longer hunt at all; before this change they hunted before review. Only the teamlead check (jaira-teamlead/SKILL.md:205-219) still catches it, and only when a teamlead runs. ran: jaira init on a scratch repo, jaira lanes (no testing; testing/critique/optimize listed as shipped-not-on-board)
 - **2026-11-17 21:21 · Alexander Sacharov** — bughunt: done at 338a5ede - 2 findings (2 change, 0 pre-existing) in 12 files, first hunt; concurrency, error paths, input, permissions checked; gate verified on scratch board (no hunt-verdict -> exit 3, round-2 overwrite works); files: .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/gate/huntverdict_test.go core/lane/builtin/27-testing.md core/release/notes/Z66Z8E.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-bughunt/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/shipped/shipped.sha256 internal/cli/updatedry_test.go
 - **2026-11-17 21:23 · Alexander Sacharov** — in-progress Runde 3: beide bughunt-change-Fundstellen behoben. (1) grep verankert: '— bughunt: done at [0-9a-f]{7,} ' in bughunt SKILL, testing-Lane und teamlead - auf diesem Ticket getroffen nur die echte Abschlusszeile. (2) worker/dispatcher starten den Hunter selbst, wenn der testing-Lane des Boards kein hunt-verdict schuldet (kein testing nach jaira init, oder alte Lane) - wie vor diesem Ticket, vor fresh/Person-Lane.
+- **2026-11-17 21:24 · Alexander Sacharov** — critique Runde 3: nur die Reparatur 5b249332 gelesen - verankerter grep und Rueckfall-Hunt in worker/dispatcher beantworten beide bughunt-Fundstellen; keine neue Fundstelle.
+- **2026-11-17 21:25 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-worker/SKILL.md:145 - the fallback hunt for boards whose testing lane owes no hunt-verdict (lines 205-217) is never reached from the loop: adc11846 dropped step 3's 'Run the bug hunt first - see The bug hunt below' and 5b249332 restored only the section, so a worker following steps 1-4 on a fresh 'jaira init' board goes from its last lane straight into the fresh/person lane with no hunt; the dispatcher keeps its fallback inside its loop section (jaira-dispatcher/SKILL.md:276), the worker does not; read (git blame -L 145,148 shows step 3 rewritten in adc11846)
+- **2026-11-17 21:25 · Alexander Sacharov** — bughunt: done at 5b249332 - 1 finding (1 change, 0 pre-existing), follow-up hunt over diff since 338a5ede in 6 changed files; concurrency, error paths, input, permissions checked; anchored grep verified against jaira show (matches the closing line, UTF-8 and LC_ALL=C); shipped.sha256 holds every new builtin hash; go test core/gate core/lane core/role internal/cli rc=0; files: .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/gate/huntverdict_test.go core/lane/builtin/27-testing.md core/release/notes/Z66Z8E.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-bughunt/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/shipped/shipped.sha256 internal/cli/updatedry_test.go
+- **2026-11-17 21:27 · Alexander Sacharov** — in-progress Runde 4: worker-Schleife Schritt 3 (SKILL.md:145) verweist wieder auf den Rueckfall-Hunt fuer Boards ohne hunt-verdict im testing-Lane. Zweiter Ruecklauf aus testing durch den Hunt; die Folgerunde las nur 5b249332..HEAD - die Konvergenz-Regel greift.

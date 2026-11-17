@@ -142,7 +142,11 @@ Then, until you stop:
    `jaira move <id> --to <next_lane>` (or back, where the lane found the work
    wanting). Every lane's prompt applies to you as written — the critique lane
    is not lighter because you wrote the code.
-3. **Is `next_lane` marked fresh?** (`context: fresh` in its `--for-lane`
+3. **Does the board's testing lane owe no `hunt-verdict`, did the ticket
+   change code, and is `next_lane` fresh or a lane a person owns?** Run the
+   bug hunt first — see "The bug hunt" below. Where testing owes it, the hunt
+   already ran inside that lane.
+   **Is `next_lane` marked fresh?** (`context: fresh` in its `--for-lane`
    payload.) Then it is not yours. Move the ticket
    into it and hand it to a new agent — see "The fresh lane" below.
 4. **Is `next_lane` a lane a person owns?** Deliver into it and stop. `human`
