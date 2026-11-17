@@ -1,3 +1,5 @@
 - On Windows, check jaira.exe under Properties > Details: it now names its product, company and version, which also makes Defender less likely to flag it as a trojan.
 - Install on Windows without Defender flagging the installer: install.ps1 no longer compiles C# with Add-Type to refresh PATH, and each release now carries install.ps1 as a downloadable asset.
 - Expect parallel jaira writes on Windows (two sessions tagging or editing at once) to wait for each other instead of one failing with "Access is denied" on a lock file.
+- If Defender quarantines jaira.exe or install.ps1, read docs/WINDOWS.md: it says how to check the file and how to report the false positive; each release run now lists every Windows file with its SHA256 for that report.
+- Repository admins: set the secret WINGET_GITHUB_TOKEN (and the variable WINGET_PKGS_OWNER for the winget-pkgs fork) to have every release open a winget pull request; without it releases run as before.

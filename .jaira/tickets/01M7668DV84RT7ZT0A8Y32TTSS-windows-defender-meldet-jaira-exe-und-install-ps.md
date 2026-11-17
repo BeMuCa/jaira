@@ -1,7 +1,7 @@
 ---
 id: 01M7668DV84RT7ZT0A8Y32TTSS
 title: "Windows: Defender meldet jaira.exe und install.ps1 als Trojaner (ML-Heuristik)"
-status: blocked
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "jaira.exe und der Installer werden auf einem Windows-Rechner mit Microsoft Defender nicht mehr als Malware gemeldet, auch bei jeder neuen Version."
@@ -21,15 +21,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-11T20:54:42Z
-updated-at: 2026-11-16T22:44:34Z
+updated-at: 2026-11-17T21:36:31Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-57423
-claimed-at: 2026-11-11T21:12:22Z
+claimed-by: DESKTOP-RFTCH11-46806
+claimed-at: 2026-11-17T21:31:20Z
 question: ""
-outcome-what: "jaira.exe gets a Windows version resource and as-invoker manifest (go-winres from cmd/jaira/winres/winres.json in a goreleaser before-hook); install.ps1 refreshes PATH without Add-Type/DllImport; release.yaml has a sign-windows job that has SignPath sign jaira.exe and install.ps1, off until vars.SIGNPATH_ORGANIZATION_ID is set; install.ps1 becomes a release asset; README and release footer carry the SignPath notice"
-outcome-why: "Defender's ML heuristics flag the unsigned, resource-less exe and the dropper-looking installer as trojans"
-outcome-resolves: Version info and the Add-Type part done and verified on a built exe; Authenticode signing waits for SignPath Foundation approval (applied 2026-11-11)
+outcome-what: "Without a signature: winget manifests and a winget-pkgs PR per release via goreleaser (off unless WINGET_GITHUB_TOKEN), a wdsi-submission artifact plus SHA256 summary per release run (scripts/wdsi-bundle.sh), docs/WINDOWS.md for the manual steps; SignPath line only on a release that was really signed"
+outcome-why: "SignPath Foundation turned the application down on 2026-11-17; Alex chose to lower false positives without a signature and add winget as a distribution path"
+outcome-resolves: "DoD 5, 6, 7; DoD 1 and the signing half of DoD 3 stay open for Alex at signoff"
 review-summary: "none - round 2 reads only the testing finding: install.ps1:66-70 comment reworded, no API names left, meaning unchanged"
 review-gaps: "none - round 2: one comment reworded, nothing to remove"
 test-verdict: "pass so far: go vet + go test ./... green (rc=0, round 1; round 2 changed only a .ps1 comment); linux + GOOS=windows build ok; DoD 2 read from /tmp/j.exe (CompanyName 'jaira project', ProductName 'jaira', FileVersion 0.5.13.0, asInvoker manifest); install.ps1: 0 hits for Add-Type|DllImport; DoD 4/5 present; signed-windows.sh exercised on a scratch tree (arm64 swap, amd64 no-op without signed file, linux no-op, stage plain/signed, bad arg exit 2). Not run: goreleaser and release.yaml (first tag), install.ps1 on Windows (no pwsh), SignPath signing (DoD 1 + signing part of DoD 3, waiting for approval)."
@@ -48,8 +48,12 @@ blocked-reason: "wartet auf SignPath-Genehmigung, Antrag 2026-11-11"
   proof: scripts/install.ps1: grep Add-Type|DllImport = 0; Send-JairaEnvChange uses [Environment]::SetEnvironmentVariable; signing pending SignPath
 - [x] Release-Note in core/release/notes/<ID>.md
   proof: core/release/notes/32TTSS.md
-- [x] README und Release-Text (.goreleaser.yaml release.footer) nennen: Free code signing provided by SignPath.io, certificate by SignPath Foundation.
-  proof: README.md Install (after 'Or download a binary'); .goreleaser.yaml release.footer
+- [x] README nennt SignPath nicht, solange nicht signiert wird; der Release-Text (.goreleaser.yaml release.footer) nennt 'Free code signing provided by SignPath.io, certificate by SignPath Foundation' nur bei einem Release, das sign-windows tatsaechlich signiert hat
+  proof: .goreleaser.yaml release.footer (envOrDefault WINDOWS_SIGNED), .github/workflows/release.yaml goreleaser step env WINDOWS_SIGNED; README.md install section links docs/WINDOWS.md instead
+- [x] winget: jedes Release legt per release.yaml automatisch einen PR mit dem Manifest auf microsoft/winget-pkgs an (z. B. winget-releaser oder wingetcreate), aktiv nur wenn das Token-Secret gesetzt ist; ohne Secret laeuft das Release unveraendert
+  proof: .goreleaser.yaml winget (BeMuCa.jaira, skip_upload unless WINGET_GITHUB_TOKEN non-empty); release.yaml env WINGET_GITHUB_TOKEN/WINGET_PKGS_OWNER; goreleaser v2.12.7 check ok, snapshot wrote dist/winget/manifests/b/BeMuCa/jaira/*/ (zip, portable, x64+arm64)
+- [x] WDSI-Meldung pro Release so weit automatisiert, wie Microsoft es zulaesst: der Release-Job legt Dateien und SHA256 fuer die Fehlalarm-Meldung bereit und nennt den Link; was manuell bleibt, steht in docs
+  proof: scripts/wdsi-bundle.sh (run on a snapshot dist: 2 exe + install.ps1 + SHA256SUMS, summary table, exit 1 without exe); release.yaml steps 'Collect what a false-positive report needs' + artifact wdsi-submission; manual steps docs/WINDOWS.md
 
 ## Options
 
@@ -89,3 +93,8 @@ blocked-reason: "wartet auf SignPath-Genehmigung, Antrag 2026-11-11"
 - **2026-11-11 21:48 · Alexander Sacharov** — SignPath hat den Antrag 2026-11-11 bestätigt: wird bearbeitet. Kein PR vor der Genehmigung - Alex wartet.
 - **2026-11-11 21:59 · Alexander Sacharov** — PR #135 auf Alex' Anweisung vor der SignPath-Genehmigung geöffnet: Signierschritt bleibt aus, bis vars.SIGNPATH_ORGANIZATION_ID gesetzt ist. Variablen/Secret kann nur ein Repo-Admin setzen (Alex hat push, kein admin).
 - **2026-11-16 22:44 · Alexander Sacharov** — CI fix on PR #135: (1) ticket-commits failed on 8a2d540c, a commit carrying only this ticket file - folded into the next code commit, branch force-pushed with lease. (2) test (windows-latest) TestRegisterTagsLosesNoTagUnderConcurrentWriters: 'Access is denied' on tags.lock. Cause in core/ticket/store.go lock(): on Windows a just-removed lock file is delete-pending and O_EXCL create returns access denied, not exists; it is now waited for like a busy lock, bounded by lockTimeout. Not caused by 32TTSS, but it blocks this PR and every other PR's Windows run.
+- **2026-11-17 21:21 · Alexander Sacharov** — SignPath Foundation hat am 17.11. abgelehnt: das Projekt hat noch zu wenig oeffentliche Sichtbarkeit (Stars, Forks, Contributors, externe Erwaehnungen). Erneut bewerben, sobald es bekannter ist; sonst SignPath als bezahltes Abo. Signieren ueber die Foundation faellt damit vorerst weg.
+- **2026-11-17 21:30 · Alexander Sacharov** — decision (Alex, 17.11.): nach der SignPath-Absage Weg 3 jetzt umsetzen - ohne Signatur Fehlalarme senken, so automatisch wie moeglich, und winget als Verteilweg. Versionsinfo und install.ps1 ohne Add-Type sind schon da. Signatur (DoD 1) bleibt offen; ob sie fuer done noetig ist, entscheidet Alex in signoff. Achtung: winget-pkgs prueft jedes Paket mit Defender - solange jaira.exe gemeldet wird, faellt der winget-PR durch; das Token-Secret kann nur ein Repo-Admin (Berk) setzen. Zuerst auf upstream/master rebasen.
+- **2026-11-17 21:31 · Alexander Sacharov** — Achtung DoD 5: README und release.footer nennen 'Free code signing provided by SignPath.io' - nach der Absage stimmt das nicht mehr. Den Satz entfernen oder erst bei aktiver Signatur ausgeben; DoD 5 entsprechend anpassen.
+- **2026-11-17 21:31 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/51013.sock
+- **2026-11-17 21:32 · Alexander Sacharov** — decision: rebased on upstream/master (0.5.13). Weg 3 settled without a question: (a) DoD 5 - SignPath line out of README; release.footer prints it only when sign-windows signed this release (env WINDOWS_SIGNED), so a later SignPath approval needs no edit. (b) winget via goreleaser's own winget publisher (OSS, zip archives, use ''), not winget-releaser/wingetcreate: it runs in the existing release job and writes manifests for both arches; package identifier BeMuCa.jaira (publisher = GitHub owner, permanent once in winget-pkgs - Alex can change before the secret is set). PR from a winget-pkgs fork (owner = vars.WINGET_PKGS_OWNER, default BeMuCa) into microsoft/winget-pkgs; skipped unless secret WINGET_GITHUB_TOKEN is non-empty. (c) WDSI has no public submission API (the MDE submission API needs an enterprise tenant): release job bundles jaira.exe x2 + install.ps1 + SHA256SUMS as artifact wdsi-submission and writes hashes and the wdsi/filesubmission link into the job summary; manual steps in docs/WINDOWS.md.

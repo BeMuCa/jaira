@@ -21,6 +21,16 @@ name: release
 #     .signpath/artifact-configuration.xml
 # Without the variable sign-windows is skipped and the release ships
 # unsigned, as before.
+#
+# winget (32TTSS): goreleaser opens a pull request on microsoft/winget-pkgs
+# for every release once the secret WINGET_GITHUB_TOKEN is set - a token
+# that may push to the winget-pkgs fork of vars.WINGET_PKGS_OWNER (default
+# BeMuCa). Without the secret the release runs unchanged.
+#
+# False-positive reports (32TTSS): Microsoft takes them only through the
+# web form, so after every release the job attaches the Windows files and
+# their SHA256 as the artifact wdsi-submission and puts the hashes and the
+# form's link in the run summary. docs/WINDOWS.md has the manual steps.
 on:
   push:
     tags: ["v*"]
@@ -104,3 +114,12 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WINDOWS_SIGNED: ${{ needs.sign-windows.result == 'success' }}
+          WINGET_GITHUB_TOKEN: ${{ secrets.WINGET_GITHUB_TOKEN }}
+          WINGET_PKGS_OWNER: ${{ vars.WINGET_PKGS_OWNER }}
+      - name: Collect what a false-positive report needs
+        run: sh scripts/wdsi-bundle.sh dist wdsi >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wdsi-submission
+          path: wdsi/
