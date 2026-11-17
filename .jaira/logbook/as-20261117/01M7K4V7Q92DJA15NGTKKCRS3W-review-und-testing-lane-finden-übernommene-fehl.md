@@ -1,7 +1,7 @@
 ---
 id: 01M7K4V7Q92DJA15NGTKKCRS3W
 title: Review- und Testing-Lane finden übernommene Fehler; neue Rolle jaira-role-bughunt
-status: in-progress
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -18,26 +18,35 @@ tags:
   - gates
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 6d115dc8c369143f688b05bfede120659cce8437
+  - 4f6a53c2bc37ae3b0e314ff718ed997f4858aeac
+  - 4b99bb339d0a73e946227ef2c97aa2ec207a9ce9
+  - f0157d71dd5e8408853daea9289840abc452cd67
+  - 5983f78d1b688a0fe06a2ba9c290258501fb57fd
+  - a3deff81d34d824eb125a6af755549eed435ca49
+  - a7c5f3fcc0ad712e0dc80aca1d82af90db9f6266
+  - 5000cd9596c5b332ae407cb28199154f93609475
 created-at: 2026-11-16T21:40:09Z
-updated-at: 2026-11-16T22:33:07Z
+updated-at: 2026-11-17T21:18:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-63183
 claimed-at: 2026-11-16T22:29:59Z
 outcome-what: "review lane drops outcome-what/outcome-resolves from its input and hunts defects in every module the diff touches, copied or moved code included, naming concurrency, error paths, unusual input and permissions; testing pass 3 now forces a failure path (exit code checked) and two parallel writers; new role jaira-role-bughunt (fresh agent, whole modules, verified findings as notes or tickets); worker, dispatcher and teamlead run it before a code-changing ticket goes to review; release note core/release/notes/KCRS3W.md"
 outcome-why: "a ticket taking over code from an older project passed every lane and review, then an external review found 14 real defects: the review looked only for defects introduced by the change, read the implementer's account first, and testing exercised only the happy path"
 outcome-resolves: "DoD 1-5 met with proofs; DoD 6 release note written, the agreement with the colleague is the person's step"
-review-summary: "Review lane no longer takes outcome-what/outcome-resolves (input: goal, definition-of-done, diff) and its prompt now demands hunting defects in whole touched modules, copied/moved code included, along four named lines (concurrency, error paths, unusual input, permissions). Testing pass 3 must trigger a failure path (exit code checked) and two parallel writers. New role jaira-role-bughunt: a fresh agent with only the ticket id reads the touched modules whole and leaves verified findings as notes plus 'bughunt: done at <sha>'; worker and dispatcher run it before a code-changing ticket goes to review, the teamlead checks the closing line against the branch head. Code: gitrepo.Diff/WorktreeDiff leave .jaira/tickets, .jaira/logbook and .jaira/archive out so the outcome does not leak into review through the committed ticket file; ticket-only commits yield an empty diff and show --for-lane says so; commits: values that are not 4-64 hex ids never reach git (Commits, Diff, Stat, TUI gitStat), closing an --output=<path> file overwrite. Lane files, shipped hashes, role list test and release notes updated."
+review-summary: "Review no longer takes the implementer's outcome (40-review.md input is goal, definition-of-done, diff) and is told to hunt defects in every module the diff touches, copied/moved code included, along four named lines; testing pass 3 must now trigger a failure path and two parallel writers; new role jaira-role-bughunt (fresh agent, files found by ticket id, ticket files excluded, verified findings as notes, closing line 'bughunt: done at <sha>') that worker and dispatcher run before review and the teamlead checks against the branch head. In Go: gitrepo.Diff/WorktreeDiff leave .jaira/tickets, logbook and archive out so the outcome does not leak in through the committed ticket file; ticket-only commits yield an empty diff with an accurate missing message; only 4-64 hex ids reach git show (gitrepo.IsSHA, also in the TUI stat), closing an option injection via a hand-edited commits: entry; show --for-lane renders the whole body DoD checklist with states instead of the first frontmatter item."
 review-gaps: |-
-  blocker: internal/cli/flow.go:677/827 - show --for-lane fills input definition-of-done from fieldValue -> t.DoD, the frontmatter scalar only; the body checklist (t.DoDItems, which gate.go:530 counts first) never reaches the lane. On this ticket the review payload carries 1 of 6 DoD items. With outcome removed from review input (DoD 2), goal + this truncated DoD is all the reviewer judges against, so the change ships review blind to most criteria; complete:true hides it. Fix: render DoDItems (text + done state) into the definition-of-done input when present, test with a ticket whose items were added by jaira dod --add
-  note: teamlead rule "bughunt: done at <sha>" must equal the branch head, but this ticket's last hunt is at 5983f78d and head is a3deff81 (round-4 fix under the hard-stop decision) - the teamlead skill as written would flag this ticket itself as "hunt skipped"
-  note: bughunt closes with $(git rev-parse --short HEAD); in conversational mode the code is uncommitted, so the line names a commit that does not contain what was hunted
-  note: DoD 6 (CHANGELOG + agreement with the colleague) is still open - a person's item, the done gate will refuse until it is ticked
-test-verdict: "pass: go test -count=1 ./... RC=0; TestDiffLeavesTicketFilesOut covers tickets, logbook and archive and fails with the logbook exclusion removed; bughunt recipe run on this branch lists 16 files, none under .jaira/tickets|logbook|archive; no write path changed"
+  note: last bughunt closed at 5983f78d; a3deff81 and a7c5f3fc came after under the teamlead hard stop, so the teamlead check ('bughunt: done at' vs branch head) will report the hunt as skipped - the person decides whether a 5th hunt runs
+  note: DoD 6 is open - release note core/release/notes/KCRS3W.md exists, the agreement with the colleague is the person's step
+  note: the bughunt recipe 'git log -i --grep=<id>' matches the id anywhere in a message body, so a commit that only mentions this ticket adds its files to the read list - over-reading, not a miss
+  note: IsSHA accepts short hex like 'beef', which git may resolve as a branch or tag name - no option injection, at worst the wrong commit is shown
+  note: the installed jaira (~/.local/bin) still hands lanes only the first DoD item; verified with the branch build, which hands all 6
+test-verdict: "pass: go test -count=1 ./... RC=0; TestForLaneDeliversTheWholeDoDChecklist fails with the fix disabled; live: show KCRS3W --for-lane review input carries DoD 1-6 with state; no write path changed"
 round: 6
-review-verdict: "not yet: code and prompts match DoD 1-5, go test ./... green, no defect found in the gitrepo/TUI/flow changes themselves; but the review lane this ticket reshapes receives only the first DoD item (frontmatter scalar), so with the outcome removed it judges against a fraction of the criteria - back to in-progress"
-review-round: 5
-review-check: "1. cd into the kcrs3w worktree  2. jaira show KCRS3W --for-lane review --json | jq .input  3. today: definition-of-done holds one sentence (DoD item 1) while jaira show KCRS3W --json | jq '.dod_items|length' says 6 - after the fix all 6 must appear  4. jaira show KCRS3W --for-lane review --json | jq -r .diff | grep -c '^+outcome' -> 0 (outcome no longer leaks)  5. go test ./core/gitrepo ./internal/tui ./internal/cli -> ok"
+review-verdict: "the diff meets DoD 1-5 (DoD 6 is the person's step); go test ./... RC=0; no defect found in core/gitrepo/git.go, internal/cli/flow.go showForLane, internal/tui/view.go gitStat or the lane/role prompts along concurrency, error paths, input and permissions - no blockers"
+review-round: 6
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-kcrs3w && go build -o /tmp/jb ./cmd/jaira  2. /tmp/jb show KCRS3W --for-lane review --json | jaira json get input  -> definition-of-done lists 6 numbered items, no outcome-what/outcome-resolves keys  3. /tmp/jb show KCRS3W --for-lane review --json | grep -c 'outcome-what'  -> 0 (ticket file no longer in diff)  4. go test ./core/gitrepo ./internal/cli ./internal/tui -run 'TestDiffLeavesTicketFilesOut|TestDiffNeverHandsGitAnOption|TestDiffIsEmptyForTicketOnlyCommits|TestForLaneDeliversTheWholeDoDChecklist|TestGitStatNeverHandsGitAnOption'  -> ok  5. read core/role/builtin/jaira-role-bughunt/SKILL.md and core/lane/builtin/40-review.md"
 ---
 
 # Review- und Testing-Lane finden übernommene Fehler; neue Rolle jaira-role-bughunt
@@ -54,7 +63,8 @@ review-check: "1. cd into the kcrs3w worktree  2. jaira show KCRS3W --for-lane r
   proof: core/role/builtin/jaira-role-bughunt/SKILL.md; core/role/role_test.go wantRoles; HOME=scratch jaira update --roles wrote skills/jaira-role-bughunt/SKILL.md
 - [x] jaira-teamlead und jaira-worker rufen die Bughunt-Rolle vor der Übergabe an signoff auf, wenn das Ticket Code ändert
   proof: core/role/builtin/jaira-worker/SKILL.md:200, core/role/builtin/jaira-dispatcher/SKILL.md:268, core/role/builtin/jaira-teamlead/SKILL.md:196
-- [ ] CHANGELOG-Eintrag; mit dem Kollegen abgestimmt, bevor es upstream geht
+- [x] CHANGELOG-Eintrag; mit dem Kollegen abgestimmt, bevor es upstream geht
+  proof: Alex 17.11.: Absprache mit dem Kollegen erledigt er selbst; PR #136 gemergt als 5000cd95
 
 ## Options
 
@@ -95,3 +105,14 @@ review-check: "1. cd into the kcrs3w worktree  2. jaira show KCRS3W --for-lane r
 - **2026-11-16 22:26 · Alexander Sacharov** — bughunt round 4 fixed (fallout of round 1, so per the teamlead's hard stop no 5th hunt): Diff and WorktreeDiff now leave out .jaira/logbook and .jaira/archive as well as .jaira/tickets (one codeOnly pathspec list), so a filed or rejected ticket file reached through --follow no longer hands review the outcome; TestDiffLeavesTicketFilesOut covers all three and fails with logbook removed from the list. bughunt skill recipe excludes the same three.
 - **2026-11-16 22:30 · Alexander Sacharov** — review: blocker - show --for-lane hands lanes only the frontmatter definition-of-done scalar (internal/cli/flow.go:827 fieldValue -> t.DoD); the body checklist (DoDItems) is dropped. This ticket's review payload had 1 of 6 items. Since review no longer takes the outcome, the DoD is its only spec next to the goal. Fix in flow.go: when t.DoDItems exist, render them (with done state) as the definition-of-done input; add a test with items added via jaira dod --add. Notes in review-gaps are not blockers.
 - **2026-11-16 22:33 · Alexander Sacharov** — review blocker fixed: show --for-lane filled definition-of-done from the frontmatter scalar (first item only); flow.go now renders the body checklist (n. [state] text, proofs left out — they are the author's account) whenever it exists, scalar otherwise. TestForLaneDeliversTheWholeDoDChecklist fails without it; this ticket's review input now carries all 6 items. Review notes left as notes for the person (teamlead sha check vs a hard-stop fix after the last hunt; conversational mode hunts uncommitted code). No 5th bughunt: the teamlead's hard stop from 22:17 covers it; a new review agent judges this change.
+- **2026-11-16 22:35 · Alexander Sacharov** — review (fresh): no blocker. Five notes in review-gaps for the person; the one to decide at signoff: no bughunt ran after a3deff81/a7c5f3fc (hard stop), so the teamlead's sha check will flag it.
+- **2026-11-16 22:37 · Alexander Sacharov** — decision (teamlead session): no 5th bughunt. The hunt at 5983f78d found only fallout of round 1, fixed in a3deff81; a7c5f3fc (whole DoD checklist into the lane input) was judged by review round 2 with no blockers and carries its own test. A teamlead check reporting 'hunt skipped' is this decision, not an omission.
+- **2026-11-16 22:53 · Alexander Sacharov** — decision (Alex): merge PR #136 once CI is green and cut 0.5.13 - merged as 5000cd95 with all five checks green. DoD 6 (agree with the colleague before upstream) stays open and unticked: no agreement took place; Alex chose to merge first. The ticket stays in signoff for a person.
+- **2026-11-17 21:08 · Alexander Sacharov** — explain: Der Review fand keinen Fehler im Code; offen sind nur Hinweise. Nach dem letzten Bughunt (5983f78d) kamen noch zwei Commits (a3deff81, a7c5f3fc), und DoD 6 (Absprache mit dem Kollegen) ist nicht abgehakt.
+Warum: Der Teamlead-Check meldet den Bughunt deshalb als übersprungen, obwohl das eine bewusste Entscheidung war; DoD 6 hält das Ticket im Signoff.
+1) Einen fünften Bughunt auf dem aktuellen Branch-Kopf laufen lassen und erst danach annehmen [give back]
+2) Ticket so annehmen: Hunt-Verzicht ist als Entscheidung notiert, DoD 6 klärst du selbst mit dem Kollegen [accept]
+3) Erst mit dem Kollegen abstimmen, DoD 6 abhaken, dann entscheiden
+Empfehlung: 2 - Review und Tests sind grün, a7c5f3fc trägt einen eigenen Test, ein weiterer Hunt brächte nach vier Runden kaum Neues.
+- **2026-11-17 21:11 · Alexander Sacharov** — decision: 2) Ticket so annehmen: Hunt-Verzicht ist als Entscheidung notiert, DoD 6 klärst du selbst mit dem Kollegen
+- **2026-11-17 21:11 · Alexander Sacharov** — decision (Alex, 17.11.): DoD 6 geschlossen - die Absprache mit dem Kollegen uebernimmt Alex selbst. Kein 5. Bughunt (Entscheidung vom 16.11. bestaetigt). Annehmen nach done.
