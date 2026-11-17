@@ -305,9 +305,13 @@ fi
 # and is written with = — --allowedTools takes every word after it. Native
 # Windows claude reads the Windows spelling of the path, which cygpath gives,
 # and matches rules in the POSIX form of that spelling: C:\x becomes /c/x.
+# A Read is allowed only where the rule matches the real path as well, so
+# the folder is named with its links resolved: macOS keeps TMPDIR under
+# /var, a link to /private/var.
 chat_dir=""
 if [ "$lane" = explain ] || [ "$lane" = discuss ]; then
   chat_dir="$(mktemp -d "${TMPDIR:-/tmp}/jaira-chat.XXXXXX")"
+  chat_dir="$(cd "$chat_dir" && pwd -P)"
   chat_file="$chat_dir/$ticket-$lane.md"
   chat_file_win="$chat_file"; chat_rule="Read(/$chat_dir/**)"
   if [ "$on" = windows ] && command -v cygpath >/dev/null 2>&1; then

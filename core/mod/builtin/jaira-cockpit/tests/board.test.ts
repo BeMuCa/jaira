@@ -1248,6 +1248,18 @@ describe('after Accept', () => {
     expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-zz99zz', '@/.worktrees/repo-zz99zz']])
   })
 
+  test('a branch left behind beside the Herdr review branch of it: the pull request opens from the ticket branch itself', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 2
+    w.tickets = [{ ...SIGNOFF, handle: 'ZZ99ZZ' }]
+    w.branches = ['review/task/zz99zz', 'task/zz99zz']
+    w.subjects = ['fix(ZZ99ZZ): one']
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'accept-ZZ99ZZ' })
+    expect(ran(w, 'git', 'worktree', 'add')).toEqual([['git', 'worktree', 'add', '/.worktrees/repo-zz99zz', 'task/zz99zz', '@/repo']])
+  })
+
   test('two tickets on one branch: no pull request while the other is not in done, nothing starts, and the press says which one is missing', async ($, on) => {
     const w = world(on, { herdr: true })
     w.ahead = 4

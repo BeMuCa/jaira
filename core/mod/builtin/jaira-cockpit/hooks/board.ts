@@ -306,9 +306,11 @@ export function worktreeFor(porcelain: string, id: string, fallback: string): st
 }
 
 function ticketsTree(trees: Worktree[], id: string): Worktree | undefined {
-  const parts = (w: Worktree) => (w.branch === '' ? Infinity : w.branch.split('/').length)
+  const parts = (w: Worktree) => (w.branch === '' ? Infinity : branchParts(w.branch))
   return trees.filter(w => isTicketsTree(w, id)).sort((a, b) => parts(a) - parts(b))[0]
 }
+
+const branchParts = (branch: string) => branch.split('/').length
 
 type Worktree = { path: string; branch: string }
 
@@ -414,9 +416,11 @@ export function pendingOf(listJson: string, named: readonly string[], terminal: 
 // `git branch --list '*/<slug>'` — spawn.sh names it <prefix>/<slug>, and a
 // worktree removed after done leaves it behind — and from `git branch
 // --contains <a commit naming it>`, where it was worked on another ticket's
-// branch.
+// branch. Of several, the one with the fewest parts: Herdr's review/<branch>
+// lists before task/<slug> and work/<slug>, as worktreeFor knows.
 export function carrierBranch(listing: string, base: string): string | undefined {
-  return listing.split('\n').map(l => l.trim()).find(b => b && b !== base)
+  const branches = listing.split('\n').map(l => l.trim()).filter(b => b && b !== base)
+  return branches.sort((a, b) => branchParts(a) - branchParts(b))[0]
 }
 
 // The forge jaira-role-pr would open a pull request on: `git config
