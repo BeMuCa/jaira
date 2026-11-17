@@ -24,7 +24,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-17T21:06:22Z
-updated-at: 2026-11-17T21:18:37Z
+updated-at: 2026-11-17T21:24:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1175
 claimed-at: 2026-11-17T21:06:50Z
@@ -32,10 +32,11 @@ foo-check: ""
 outcome-what: "Der testing-Lane startet den Bughunt als Hintergrund-Agent vor seinen Tests und schuldet hunt-verdict neben test-verdict; jaira-role-bughunt markiert Fundstellen change/pre-existing und liest im Folge-Hunt nur den Diff seit seinem letzten 'done at'; worker und dispatcher starten keinen eigenen Hunter mehr."
 outcome-why: "Der Bughunt nach testing las die Module jede Runde ganz und schickte jeden alten Fehler zurueck nach in-progress, so konvergierte die Schleife nicht; ausserhalb jedes Lanes war er zudem unsichtbar und ohne Gate."
 outcome-resolves: "Ein Ticket kommt nach einem Bughunt in hoechstens einer weiteren Runde durch: nur change-Fundstellen schicken zurueck, die Folgerunde liest nur neuen Diff, und das Gate verweigert testing ohne hunt-verdict."
-review-summary: |-
-  core/lane/builtin/27-testing.md:72: 'jaira show <handle> | grep bughunt:' liefert die change-Notizen ALLER Runden, auch schon behobene - nur die Notizen zwischen der vorletzten und der letzten 'done at'-Zeile (die HEAD nennt) lesen
-  core/role/builtin/jaira-role-bughunt/SKILL.md:114: 'git log -1 --format=%s' prueft nur den Betreff, die Dateiliste oben findet Commits per --grep im ganzen Text - beide gleich: 'git log -1 --format=%B <commit> | grep -i <id>'
-round: 2
+review-summary: none
+round: 3
+review-gaps: "none - gesucht: kein vorhandener Helfer baut in core/gate-Tests ein Ticket aus Frontmatter (testingTicket bleibt); keine verwaisten Abschnitte - die kurzen Bughunt-Verweise in worker/dispatcher bleiben, damit alte Gewohnheiten nicht einen zweiten Hunter starten"
+test-verdict: "pass: go build+vet ok, go test -race -count=1 ./... RC=0; DoD 1-5 gegen den Baum geprueft (Proof-Zeilen nachgelesen); Scratch-Board: nur test-verdict -> move aus testing exit 3 'produces hunt-verdict, which is still empty', beide Felder -> move nach review RC=0; zwei parallele jaira set (test-/hunt-verdict) landen beide"
+hunt-verdict: "fail: 2 change-Fundstellen (bughunt done at 338a5ede): unverankerter grep 'bughunt: done at'; ohne testing-Lane (Board nach jaira init) laeuft gar kein Hunt mehr"
 ---
 
 # Bughunt laeuft im testing-Lane parallel zu den Tests und konvergiert
@@ -43,15 +44,15 @@ round: 2
 ## Definition of Done
 
 - [x] Lane testing (.jaira/lanes/testing.md und die ausgelieferte Fassung) startet den Bughunt parallel zu den Tests und liefert test-verdict und hunt-verdict; das Gate verweigert den Weg ohne hunt-verdict
-  proof: core/lane/builtin/27-testing.md:11,24,85 (= .jaira/lanes/testing.md); TestTestingOwesHuntVerdict in core/gate/huntverdict_test.go
+  proof: core/lane/builtin/27-testing.md:11,24,86 (= .jaira/lanes/testing.md); TestTestingOwesHuntVerdict in core/gate/huntverdict_test.go
 - [x] jaira-role-bughunt markiert jede Fundstelle change oder pre-existing, geprueft gegen die Basis; nur change fuehrt zurueck nach in-progress
-  proof: core/role/builtin/jaira-role-bughunt/SKILL.md:100-126 (Change or pre-existing, git blame gegen Ticket-Commits); core/lane/builtin/27-testing.md:75-78 (nur change fuehrt zurueck)
+  proof: core/role/builtin/jaira-role-bughunt/SKILL.md:104-130 (Change or pre-existing, git blame gegen Ticket-Commits); core/lane/builtin/27-testing.md:76-79 (nur change fuehrt zurueck)
 - [x] Folge-Hunt liest nur den Diff seit dem letzten 'done at', solange die Dateiliste gleich ist; neue Dateien ganz; die Abschlusszeile nennt die Dateiliste
-  proof: core/role/builtin/jaira-role-bughunt/SKILL.md:43-62 (Folge-Hunt nur git diff <commit>, neue Dateien ganz), :147-151 (files: in der Abschlusszeile)
+  proof: core/role/builtin/jaira-role-bughunt/SKILL.md:43-66 (verankerter grep auf die letzte done-at-Zeile; Folge-Hunt nur git diff <commit>, neue Dateien ganz), :151-155 (files: in der Abschlusszeile)
 - [x] pre-existing: gleiches Thema als note fuer die Person, anderes Thema als Ticket mit --follows
-  proof: core/lane/builtin/27-testing.md:77-83 (gleiches Thema note fuer die Person, anderes Thema jaira create --follows)
+  proof: core/lane/builtin/27-testing.md:78-84 (gleiches Thema note fuer die Person, anderes Thema jaira create --follows)
 - [x] jaira-worker und jaira-dispatcher rufen den Bughunt nicht mehr separat auf; Tests, shipped.sha256 und Release-Notiz
-  proof: core/role/builtin/jaira-worker/SKILL.md:196, core/role/builtin/jaira-dispatcher/SKILL.md:268 (kein eigener Hunter mehr); go test ./... RC=0; core/shipped/shipped.sha256 (5 Zeilen); core/release/notes/Z66Z8E.md
+  proof: core/role/builtin/jaira-worker/SKILL.md:196-219, core/role/builtin/jaira-dispatcher/SKILL.md:268-288 (Hunt im testing-Lane; eigener Hunter nur, wo testing kein hunt-verdict schuldet); go test RC=0; core/shipped/shipped.sha256; core/release/notes/Z66Z8E.md
 
 ## Options
 
@@ -71,3 +72,8 @@ round: 2
 - **2026-11-17 21:12 · Alexander Sacharov** — Basis: feat/z66z8e per fast-forward auf upstream/master be549519 (0.5.13) gesetzt; KCRS3W ist dort als 5000cd95 gemerged, die Notiz zur Basis feat/kcrs3w ist damit erledigt - kein KCRS3W-Commit mehr im PR dieses Tickets. Hinweis vom teamlead 17.11.
 - **2026-11-17 21:14 · Alexander Sacharov** — pre-existing, nicht von diesem Ticket: 'jaira update --lanes --dry-run' rendert die Agent-Datei-Vorschau aus den Lanes auf der Platte VOR dem Refresh (internal/cli/update.go:131-134, RefreshShipped schreibt bei dry nicht) - die Vorschau meldet AGENTS.md (updated), obwohl der echte Lauf sie unveraendert liesse. Sichtbar geworden, weil testing jetzt hunt-verdict produziert; TestUpdateDryRunWritesNothing prueft deshalb nur noch, dass CLAUDE.md in der Zeile steht. Die Person entscheidet, ob daraus ein Ticket wird.
 - **2026-11-17 21:16 · Alexander Sacharov** — critique: (1) 27-testing.md - der testing-Agent soll nur die bughunt-Notizen dieser Runde lesen (nach der vorletzten done-at-Zeile, bis zur Zeile mit HEAD), sonst schickt er schon behobene change-Fundstellen erneut zurueck und die Schleife konvergiert wieder nicht. (2) bughunt SKILL.md - change-Pruefung per %s (Betreff) passt nicht zur Dateiliste per --grep (ganzer Text): auf %B | grep -i <id> angleichen. Gelassen: review-Lane (40-review.md) schickt laut KCRS3W auch uebernommene Fehler als blocker zurueck - das ist nicht Teil dieser DoD, offene Frage fuer die Person bei der Abnahme.
+- **2026-11-17 21:18 · Alexander Sacharov** — critique Runde 2: beide Fundstellen aus Runde 1 in 338a5ede behoben (testing liest nur die Notizen dieser Runde; Hunter prueft %B | grep -i <id>). Nichts weiter.
+- **2026-11-17 21:21 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-bughunt/SKILL.md:47 (and core/lane/builtin/27-testing.md:69-73, .jaira/lanes/testing.md same lines) - grep "bughunt: done at" is not anchored to a closing line: any note that merely quotes the phrase (a decision, a testing note) is taken as the last round. The hunter then treats a first hunt as a follow-up or misreads files:, and testing cuts its "this round" window at the wrong note. ran: jaira show Z66Z8E | grep "bughunt: done at" | tail -n 1 on this ticket before any hunt returns the worker decision note of 21:08, not a closing line; reproduced on a scratch board (a decision note added after a real closing line wins tail -n 1). Anchor it to the note head, e.g. grep -E "— bughunt: done at [0-9a-f]{7,}"
+- **2026-11-17 21:21 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-worker/SKILL.md:198-204 and core/role/builtin/jaira-dispatcher/SKILL.md:268-274 - the hunt now runs only inside a testing lane, and worker says no hunt is due where no lane owes hunt-verdict. A board from plain jaira init has no testing lane (lanes: brainstorm todo pre-process in-progress human review signoff done blocked), so on every default board worker and dispatcher no longer hunt at all; before this change they hunted before review. Only the teamlead check (jaira-teamlead/SKILL.md:205-219) still catches it, and only when a teamlead runs. ran: jaira init on a scratch repo, jaira lanes (no testing; testing/critique/optimize listed as shipped-not-on-board)
+- **2026-11-17 21:21 · Alexander Sacharov** — bughunt: done at 338a5ede - 2 findings (2 change, 0 pre-existing) in 12 files, first hunt; concurrency, error paths, input, permissions checked; gate verified on scratch board (no hunt-verdict -> exit 3, round-2 overwrite works); files: .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/gate/huntverdict_test.go core/lane/builtin/27-testing.md core/release/notes/Z66Z8E.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-bughunt/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/shipped/shipped.sha256 internal/cli/updatedry_test.go
+- **2026-11-17 21:23 · Alexander Sacharov** — in-progress Runde 3: beide bughunt-change-Fundstellen behoben. (1) grep verankert: '— bughunt: done at [0-9a-f]{7,} ' in bughunt SKILL, testing-Lane und teamlead - auf diesem Ticket getroffen nur die echte Abschlusszeile. (2) worker/dispatcher starten den Hunter selbst, wenn der testing-Lane des Boards kein hunt-verdict schuldet (kein testing nach jaira init, oder alte Lane) - wie vor diesem Ticket, vor fresh/Person-Lane.

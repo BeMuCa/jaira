@@ -44,8 +44,12 @@ round.
 round is the one thing you read off the ticket — that line, nothing else:
 
 ```bash
-jaira show <id> | grep "bughunt: done at" | tail -n 1
+jaira show <id> | grep -E -- "— bughunt: done at [0-9a-f]{7,} " | tail -n 1
 ```
+
+The pattern is anchored on the dash `jaira show` puts before every note's
+text and on the commit after it, so it matches a note that *is* a closing
+line and not one that only quotes the words.
 
 - **No such line, or its commit is not an ancestor of `HEAD`**
   (`git merge-base --is-ancestor <commit> HEAD` exits non-zero — the branch

@@ -273,6 +273,19 @@ your own: the testing worker does it as its prompt says. A `bughunt: change:`
 finding sends the ticket back to `in-progress` like a failed test, and that
 lane's worker reads the notes as its brief; a `pre-existing` one never does.
 
+**A board whose testing lane does not owe `hunt-verdict`** — no testing lane at
+all, as on a board fresh from `jaira init`, or an older one not yet updated —
+still gets its hunt, from you: when the ticket changed code (anything outside
+`.jaira/`) and the next lane is the fresh one, or a lane a person owns, start
+one more agent before you move it there, with the id and nothing else:
+
+    Agent(subagent_type: "claude", prompt: "Read the jaira-role-bughunt skill and hunt ticket <id>.")
+
+A `change` finding sends the ticket back to `in-progress` and the loop runs to
+silence again, with a new hunt before it leaves; a `pre-existing` one goes to
+the person as a note when it is the ticket's own subject, or into a ticket of
+its own with `--follows <id>` when it is not.
+
 ## Transports: a tab if Herdr is here, otherwise fall back
 
 ```bash

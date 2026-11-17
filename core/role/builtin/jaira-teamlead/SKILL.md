@@ -208,7 +208,7 @@ that has to be the head of the ticket's branch now — a line from an earlier
 round does not cover code a later round changed:
 
 ```bash
-jaira show <id> | grep "bughunt: done at"                  # the hunt's closing note
+jaira show <id> | grep -E -- "— bughunt: done at [0-9a-f]{7,} " | tail -n 1   # the hunt's closing note
 git rev-parse --short feat/<ticket id, lower case>         # the commit that ships
 ```
 

@@ -540,3 +540,8 @@ a0051c0e49884b9677fc1d8a1147a900ee59cd502edaf0cb982d4c2e90765748  core/lane/buil
 99f331082368d19b16fc49a139e44c5e6955cbe62772aa1df5bb18fd2ae73a77  core/role/builtin/jaira-worker/SKILL.md
 67b4ba84a39a0cd3aeeffd46766f1999bccf5e7520b0c350a91f271c8a988bb5  core/lane/builtin/27-testing.md
 05cf84d550ef2092b0b4d6b5e79a4bfe925ebc6daccf57501feb73f8c4fc2812  core/role/builtin/jaira-role-bughunt/SKILL.md
+8ca7a24ed296e0defc2615e3639d720b4145f0ef0587f23fbf399f8cbb1c7889  core/lane/builtin/27-testing.md
+95a839e8c2eb642e05166eba45bdf6d0ebee9e2a03e461856eb81d893b62adbe  core/role/builtin/jaira-dispatcher/SKILL.md
+cea19a2aec991b52fd7e4bcba9d50d7b13a887f6d0fd509ed2dbadeb5f4f1cd4  core/role/builtin/jaira-role-bughunt/SKILL.md
+3dd646d71706e81672bc111ff5d374270a8f80d23e3f3b222ec6a6799803a102  core/role/builtin/jaira-teamlead/SKILL.md
+9106589edefd181fe15e88628c7cd24752244e724dd51bc169800babd9e39e4c  core/role/builtin/jaira-worker/SKILL.md

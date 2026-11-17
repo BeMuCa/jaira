@@ -200,8 +200,21 @@ background agent, runs the tests beside it and owes `hunt-verdict` as well as
 `test-verdict`. You work testing like any other lane and start the hunter the
 way its prompt says — never as a step of your own outside it. A `bughunt:
 change:` finding sends the ticket back to `in-progress` like a failed test; a
-`pre-existing` one never does. Where the board's testing lane does not owe
-`hunt-verdict` (an older or custom lane), no hunt is due from you either.
+`pre-existing` one never does.
+
+**A board whose testing lane does not owe `hunt-verdict`** — no testing lane at
+all, as on a board fresh from `jaira init`, or an older one not yet updated —
+still gets its hunt, from you: when the ticket changed code (anything outside
+`.jaira/`) and `next_lane` is the fresh lane, or a lane a person owns, start
+one before you move it there, with the id and nothing else:
+
+    Agent(subagent_type: "claude", prompt: "Read the jaira-role-bughunt skill and hunt ticket <id>.")
+
+It runs in your directory; while it runs you write nothing. A `change` finding
+sends the ticket back to `in-progress`, and the loop runs to silence with a
+new hunt before it leaves again; a `pre-existing` one you sort the way the
+testing lane does — same subject as the goal, a note for the person; another
+subject, `jaira create ... --follows <id>`.
 
 ## The fresh lane
 
