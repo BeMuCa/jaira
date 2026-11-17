@@ -306,11 +306,9 @@ export function worktreeFor(porcelain: string, id: string, fallback: string): st
 }
 
 function ticketsTree(trees: Worktree[], id: string): Worktree | undefined {
-  const parts = (w: Worktree) => (w.branch === '' ? Infinity : branchParts(w.branch))
+  const parts = (w: Worktree) => (w.branch === '' ? Infinity : w.branch.split('/').length)
   return trees.filter(w => isTicketsTree(w, id)).sort((a, b) => parts(a) - parts(b))[0]
 }
-
-const branchParts = (branch: string) => branch.split('/').length
 
 type Worktree = { path: string; branch: string }
 
@@ -416,11 +414,13 @@ export function pendingOf(listJson: string, named: readonly string[], terminal: 
 // `git branch --list '*/<slug>'` — spawn.sh names it <prefix>/<slug>, and a
 // worktree removed after done leaves it behind — and from `git branch
 // --contains <a commit naming it>`, where it was worked on another ticket's
-// branch. Of several, the one with the fewest parts: Herdr's review/<branch>
-// lists before task/<slug> and work/<slug>, as worktreeFor knows.
+// branch. A branch that only wraps another listed one — Herdr's
+// review/<branch> — is passed by: it lists before task/<slug> and
+// work/<slug>. Depth alone decides nothing; in the --contains listing a wip
+// or a detached HEAD has fewer parts than the branch the work rode on.
 export function carrierBranch(listing: string, base: string): string | undefined {
   const branches = listing.split('\n').map(l => l.trim()).filter(b => b && b !== base)
-  return branches.sort((a, b) => branchParts(a) - branchParts(b))[0]
+  return branches.find(b => !branches.some(o => b.endsWith(`/${o}`)))
 }
 
 // The forge jaira-role-pr would open a pull request on: `git config

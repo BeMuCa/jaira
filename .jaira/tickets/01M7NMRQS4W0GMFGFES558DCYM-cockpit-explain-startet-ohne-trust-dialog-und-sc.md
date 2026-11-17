@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-17T20:56:53Z
-updated-at: 2026-11-17T21:12:11Z
+updated-at: 2026-11-17T21:19:19Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-27759
@@ -27,9 +27,9 @@ outcome-what: "Explain/Discuss starten claude mit einer Read-Regel auf den Auftr
 outcome-why: "Claude Code 2.1.326 haelt den Tab am Trust-Dialog fuer --add-dir an; im Review-Worktree scheitert jaira note, die explain:-Note fehlt und der Tab schliesst nie"
 outcome-resolves: DoD 1-4
 review-summary: none
-review-gaps: "none - pass 2 added one //wintrap:ok comment line, nothing to remove"
-test-verdict: "pass: go test ./... RC=0 (wintrap clean); claude plugin test . 176/177 on this branch and on master, same single pre-existing fail (borderStyle round); DoD 1-4 checked in the tree: spawn.sh chat_rule + --allowedTools on both start lines, board.ts ticketsTree with review/feat fixture first, notes/58DCYM.md present"
-round: 3
+review-gaps: "none - pass 3: branchParts is the one shared helper for both pickers; nothing orphaned; shipped.sha256 kept both sides on the rebase onto upstream/master"
+test-verdict: "pass: rebased on upstream/master (be549519); go test ./... RC=0; claude plugin test . 177/178, the single fail (borderStyle round) also on master; new Accept test fails on the old carrierBranch, passes now; current spawn.sh/board.ts hashes in shipped.sha256"
+round: 4
 ---
 
 # Cockpit-Explain startet ohne Trust-Dialog und schreibt im richtigen Worktree
@@ -68,3 +68,7 @@ round: 3
 - **2026-11-17 21:08 · Alexander Sacharov** — bughunt: core/mod/builtin/jaira-cockpit/hooks/register.tsx:551 with board.ts:418 (carrierBranch) - with no worktree of the ticket left, the PR branch is the first of git branch --list '*/<slug>' alphabetically, not the one with the fewest parts that ticketsTree now prefers; with JAIRA_BRANCH_PREFIX sorting after 'review' (task, work, story) Herdr's review/task/<slug> comes first and Accept opens the pull request from the review branch. ran: scratch repo with branches task/mg677r and review/task/mg677r -> git branch --list '*/mg677r' prints review/task/mg677r first (with feat/ the order is right)
 - **2026-11-17 21:08 · Alexander Sacharov** — bughunt: done at 3c409f36 - 2 findings in 4 modules (spawn.sh, cockpit hooks/board.ts with its caller register.tsx, role_test.go, board.test.ts); concurrency, error paths, input, permissions checked
 - **2026-11-17 21:12 · Alexander Sacharov** — in-progress round 3 (bughunt): (1) spawn.sh resolves the chat folder with pwd -P before building the Read rule - verified by bughunt that claude needs the rule to match the real path; (2) carrierBranch in board.ts picks the branch with fewest parts too, sharing branchParts with ticketsTree; test 'a branch left behind beside the Herdr review branch' fails on the old code, passes now. Windows 8.3/UNC TEMP left unhandled: not reproducible here, regex falls back to the MSYS path. Parent asked: rebase on upstream/master before review.
+- **2026-11-17 21:14 · Alexander Sacharov** — critique pass 3: read only the bughunt repair (703f6be0). pwd -P sits right after mktemp, one line, before both rule spellings; carrierBranch shares branchParts with ticketsTree rather than a second rule. Nothing raised.
+- **2026-11-17 21:16 · Alexander Sacharov** — bughunt: core/mod/builtin/jaira-cockpit/hooks/board.ts:421-423 - carrierBranch now picks the branch with the fewest '/' parts from ANY listing, also the 'git branch --contains <sha>' one (register.tsx:557-558, ticket worked on another ticket's branch, no worktree, no */<slug> branch). There every local branch holding the commit is listed, so a one-part branch like wip, staging or test that merged/stacked the work beats the real carrier feat/<other>; Accept then counts, checks and opens the pull request from that branch (and adds a worktree repo-wip for it). Before this change the first entry won, feat/abc123 before wip. A detached HEAD in the main checkout lists as '(HEAD detached at <sha>)', one part as well, and wins too. Prefer dropping review/ branches (or comparing parts only among names that end in the same suffix) over ranking by depth. ran: git branch --contains HEAD --format=%(refname:short) in a scratch repo -> '(HEAD detached at a74c0fb)', feat/abc123, wip; node --experimental-strip-types: carrierBranch('feat/abc123\nwip\n','master') -> "wip"; old code at 117872e0~1 board.ts:412 returned feat/abc123
+- **2026-11-17 21:16 · Alexander Sacharov** — bughunt: done at 703f6be0 - 1 finding in 3 modules (board.ts, spawn.sh, role_test.go spawn tests); concurrency, error paths, input, permissions checked
+- **2026-11-17 21:19 · Alexander Sacharov** — in-progress round 4 (bughunt 2): carrierBranch no longer ranks by depth - in the git branch --contains listing a wip or detached HEAD would beat feat/<other>. It now passes by only a branch that wraps another listed one (b ends in /<o>), so review/task/<id> loses to task/<id> and everything else keeps the old first-listed order. branchParts helper removed again. Test 'a ticket worked on another ticket's branch' now lists wip after feat/mg677r; fails under depth ranking, passes now.
