@@ -639,7 +639,13 @@ func isBuiltinID(id string) bool {
 // catalogueTwin returns the catalogue file of id and its bytes when it holds
 // exactly what the board file at path holds — the pair writeThrough keeps
 // together — and nothing when there is no such file or the two already differ.
+// A built-in's id gets nothing either: its catalogue file is an override every
+// board without its own lane directory runs, and an E on one board must not
+// change the built-in for all of them.
 func catalogueTwin(path, id string) (string, []byte) {
+	if isBuiltinID(id) {
+		return "", nil
+	}
 	cat := filepath.Join(lane.UserLanesDir(), id+".md")
 	catBytes, err := os.ReadFile(cat)
 	if err != nil {

@@ -289,3 +289,18 @@ func TestWriteThroughKeepsCatalogueWhenIDChanged(t *testing.T) {
 		t.Error("catalogue file of the old id was overwritten")
 	}
 }
+
+// TestEditOfBuiltinIDDoesNotWriteThrough: a board lane carrying a built-in's
+// id whose catalogue override is byte-equal is edited on the board alone —
+// the override is what every board without its own lane directory runs.
+func TestEditOfBuiltinIDDoesNotWriteThrough(t *testing.T) {
+	catalogue := catalogueHome(t)
+	s := initBoard(t)
+	boardDir := lane.ProjectLanesDir(s.Root)
+	review := strings.Replace(deployLane, "id: deploy-check", "id: review", 1)
+	writeLaneFile(t, boardDir, "review.md", review)
+	writeLaneFile(t, catalogue, "review.md", review)
+	if to, _ := catalogueTwin(filepath.Join(boardDir, "review.md"), "review"); to != "" {
+		t.Errorf("catalogueTwin = %q, want none for a built-in id", to)
+	}
+}
