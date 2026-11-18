@@ -1,7 +1,7 @@
 ---
 id: 01M58G2A0YCD31RRC3GZ28C0QV
 title: "Eine neu angelegte Lane landet nur in einem Board, nicht im persoenlichen Katalog ~/.jaira/lanes"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: Alexander Sacharov
@@ -20,10 +20,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T17:12:38Z
+updated-at: 2026-11-18T17:12:47Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74923
 claimed-at: 2026-11-18T17:08:27Z
+outcome-what: Eine mit n angelegte Lane wird nach dem Schliessen des Editors zusaetzlich nach ~/.jaira/lanes kopiert (catalogueNewLane); Tests fuer neue und adoptierte Lanes unter JAIRA_HOME.
+outcome-why: "Lanes aus einem Repo fehlten in den Settings aller anderen Boards, weil n nur ins Board-Verzeichnis schrieb."
+outcome-resolves: "Neue und adoptierte Lanes stehen in jedem Board unter '+'."
 ---
 
 # Eine neu angelegte Lane landet nur in einem Board, nicht im persoenlichen Katalog ~/.jaira/lanes
