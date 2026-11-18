@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T17:15:16Z
+updated-at: 2026-11-18T17:15:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74923
 claimed-at: 2026-11-18T17:08:27Z
@@ -61,3 +61,4 @@ review-gaps: "none: catalogueNewLane liest die Datei vor Adopt ein zweites Mal (
 - **2026-11-18 17:13 · Alexander Sacharov** — critique: nichts — Kopie geht ueber lane.Adopt (dasselbe wie adopt() in internal/tui/lanes.go), Aufruf im bestehenden newLaneDoneMsg-Zweig; Template-Check verhindert einen Platzhalter my-lane im Katalog. Drift-Risiko steht als eigene Notiz fuer die Person.
 - **2026-11-18 17:15 · Alexander Sacharov** — bughunt: change: internal/tui/lanes.go:605 (catalogueNewLane) with lanes.go:537 (editLane) and lanes.go:648 (refreshDrift) - a lane made with n now exists twice, board file .jaira/lanes/new-lane.md and catalogue copy; a later E on the board opens the board file (l.Source), so the edit never reaches the catalogue (other boards keep the first version), the lane screen labels it 'drifted', and R then overwrites the edit with the old catalogue copy ('pulled the catalogue copy of deploy-check'). refreshDrift/editLane are older (0a15748b) but only this change puts n-made lanes on that path; ran: scratch test n -> catalogueNewLane -> edit l.Source -> newLaneScreen.drift has the id -> refreshDrift -> edited text gone
 - **2026-11-18 17:15 · Alexander Sacharov** — bughunt: change: internal/tui/lanes.go:605 - catalogueNewLane copies whatever id the person typed, including a built-in's id (review, testing, ...): Adopt only refuses an existing catalogue FILE, and a built-in has none, so a board-local variant made with n lands as ~/.jaira/lanes/review.md and replaces the built-in on every board whose lane directory is not active; ran: scratch test n with id: review -> catalogueNewLane ok -> lane.Load(fresh root) returns review builtin=false name='Board-local review' from the catalogue file
+- **2026-11-18 17:15 · Alexander Sacharov** — bughunt: done at 6fcd1288 - 2 findings (2 change, 0 pre-existing) in 3 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/release/notes/28C0QV.md internal/tui/lanecatalogue_test.go internal/tui/lanes.go internal/tui/model.go
