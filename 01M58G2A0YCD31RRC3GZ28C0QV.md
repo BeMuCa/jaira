@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T17:09:35Z
+updated-at: 2026-11-18T17:12:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74923
 claimed-at: 2026-11-18T17:08:27Z
@@ -30,7 +30,8 @@ claimed-at: 2026-11-18T17:08:27Z
 
 ## Definition of Done
 
-- [ ] Eine im Lanes-Screen neu angelegte Lane liegt danach auch in ~/.jaira/lanes und erscheint in einem zweiten Repo unter '+'; Test mit JAIRA_HOME
+- [x] Eine im Lanes-Screen neu angelegte Lane liegt danach auch in ~/.jaira/lanes und erscheint in einem zweiten Repo unter '+'; Test mit JAIRA_HOME
+  proof: internal/tui/lanes.go catalogueNewLane, internal/tui/model.go newLaneDoneMsg; TestNewLaneLandsInCatalogueAndOnAnotherBoard (JAIRA_HOME)
 - [ ] Eine Lane aus .jaira/shared/<kollege>/ landet mit a im Katalog und ist danach in jedem Board unter '+' waehlbar; Test
 - [ ] Release-Note-Zeile in core/release/notes/<ID>.md
 
