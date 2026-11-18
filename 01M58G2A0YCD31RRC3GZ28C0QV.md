@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T19:51:29Z
+updated-at: 2026-11-18T19:51:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62765
 claimed-at: 2026-11-18T19:47:57Z
@@ -115,3 +115,4 @@ Empfehlung: 1 - Kein Blocker, die Faelle sind selten und harmlos, ein weiterer D
 - **2026-11-18 19:47 · Alexander Sacharov** — Given back from signoff: 2) Zurueckgeben: Skelett-Erkennung tolerant machen und Editor-Fehlercode melden
 - **2026-11-18 19:47 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
 - **2026-11-18 19:48 · Alexander Sacharov** — decision: Skelett-Erkennung tolerant = geparste id gleich der Platzhalter-id des Templates (aus lane.Parse(lane.Template) gelesen, nicht hart my-lane). Unveraendertes Skelett bleibt still; ein veraendertes mit my-lane bekommt eine Meldung. Editor-Fehlercode: Katalog-Schritt bleibt uebersprungen (vim :cq heisst Abbruch), die Meldung haengt nur an, was das fuer den Katalog bedeutet — nicht trotzdem kopieren.
+- **2026-11-18 19:51 · Alexander Sacharov** — critique runde 4: Platzhalter-Meldung und Release-Note-Zeile 3 empfehlen E, aber E katalogisiert eine Lane ohne Katalogkopie nie (catalogueTwin). Text korrigieren, kein neues Verhalten fuer E (sonst wuerde jede bearbeitete Board-Lane katalogisiert). Sonst nichts: editorFailedMsg sitzt neben den anderen Meldungs-Helfern in lanes.go, placeholderID liest die id aus dem Template statt sie hart zu kodieren.
