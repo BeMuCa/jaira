@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T17:09:21Z
+updated-at: 2026-11-18T17:09:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74923
 claimed-at: 2026-11-18T17:08:27Z
@@ -48,3 +48,4 @@ claimed-at: 2026-11-18T17:08:27Z
 - **2026-11-18 17:08 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/6601.sock
 - **2026-11-18 17:08 · Alexander Sacharov** — Alex übernimmt den Ticket von berkc am 2026-11-18 (Teamlead-Anweisung).
 - **2026-11-18 17:08 · Alexander Sacharov** — decision: neue Lane wird automatisch auch nach ~/.jaira/lanes geschrieben (kein Extra-Key) — vom Teamlead/Alex entschieden. Test auf zweitem Rechner entfällt; Test mit JAIRA_HOME reicht. core/lane/refresh.go nicht anfassen (NH788Q läuft parallel).
+- **2026-11-18 17:09 · Alexander Sacharov** — decision: Kopie in den Katalog passiert nach dem Schliessen des Editors (newLaneDoneMsg), nicht beim Schreiben des Skeletts — erst dann steht die echte id im Frontmatter. Weg: lane.Adopt(path, UserLanesDir(), overwrite=false). Gibt es die id im Katalog schon, wird nichts ueberschrieben (Meldung im Lanes-Screen). Ein unveraendertes Skelett (Bytes == lane.Template) wird nicht katalogisiert. DoD 2 (adopt -> Katalog) macht adopt() schon heute; es fehlt nur der Test, dass die Lane danach in einem anderen Board unter '+' (lane.Installable) steht.
