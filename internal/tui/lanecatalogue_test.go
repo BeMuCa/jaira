@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -302,5 +303,59 @@ func TestEditOfBuiltinIDDoesNotWriteThrough(t *testing.T) {
 	writeLaneFile(t, catalogue, "review.md", review)
 	if to, _ := catalogueTwin(filepath.Join(boardDir, "review.md"), "review"); to != "" {
 		t.Errorf("catalogueTwin = %q, want none for a built-in id", to)
+	}
+}
+
+// TestNewLaneEditedSkeletonWithPlaceholderIDStaysOutOfCatalogue: a skeleton
+// the editor changed (here only whitespace) but whose id is still the
+// template's placeholder is not a named lane, and must not reach the
+// catalogue, where every board would offer it under '+'.
+func TestNewLaneEditedSkeletonWithPlaceholderIDStaysOutOfCatalogue(t *testing.T) {
+	catalogue := catalogueHome(t)
+	s := initBoard(t)
+	path, err := writeLaneSkeleton(lane.ProjectLanesDir(s.Root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(lane.Template+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	msg, isErr := catalogueNewLane(path)
+	if !isErr || !strings.Contains(msg, "placeholder") {
+		t.Errorf("message = %q (err %v), want an error naming the placeholder id", msg, isErr)
+	}
+	if matches, _ := filepath.Glob(filepath.Join(catalogue, "*.md")); len(matches) != 0 {
+		t.Errorf("catalogue = %v, want empty", matches)
+	}
+}
+
+// TestEditorErrorSaysCatalogueWasSkipped: an editor that exits non-zero
+// copies nothing, and the lane screen says what that means for the lane —
+// for n, that it stayed on this board; for E, that the catalogue keeps the
+// old copy.
+func TestEditorErrorSaysCatalogueWasSkipped(t *testing.T) {
+	catalogue := catalogueHome(t)
+	s := initBoard(t)
+	boardDir := lane.ProjectLanesDir(s.Root)
+	writeLaneFile(t, boardDir, "new-lane.md", deployLane)
+	path := filepath.Join(boardDir, "new-lane.md")
+
+	m, err := New(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m.laneScreen = newLaneScreen(m.store, m.lanes)
+	m.Update(newLaneDoneMsg{err: errors.New("exit status 1"), path: path})
+	if !m.laneScreen.isErr || !strings.Contains(m.laneScreen.msg, "exit status 1") || !strings.Contains(m.laneScreen.msg, "this board only") {
+		t.Errorf("n: message = %q (err %v), want the editor error and 'this board only'", m.laneScreen.msg, m.laneScreen.isErr)
+	}
+	if _, err := os.Stat(filepath.Join(catalogue, "deploy-check.md")); !os.IsNotExist(err) {
+		t.Errorf("catalogue holds deploy-check.md after an editor error (stat err %v)", err)
+	}
+
+	syncTo := filepath.Join(catalogue, "deploy-check.md")
+	m.Update(newLaneDoneMsg{err: errors.New("exit status 1"), edited: path, syncTo: syncTo, syncFrom: []byte(deployLane)})
+	if !m.laneScreen.isErr || !strings.Contains(m.laneScreen.msg, "keeps the old copy") {
+		t.Errorf("E: message = %q (err %v), want 'keeps the old copy'", m.laneScreen.msg, m.laneScreen.isErr)
 	}
 }

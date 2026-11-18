@@ -20,24 +20,33 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T18:46:37Z
+updated-at: 2026-11-18T19:51:04Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-45834
-claimed-at: 2026-11-18T18:45:09Z
-outcome-what: "Eine mit n angelegte Lane wird nach dem Editor auch nach ~/.jaira/lanes kopiert (catalogueNewLane); E schreibt in den Katalog durch, solange die Kopien byte-gleich waren und die id keinem Built-in gehoert; Drift-Kommentar entsprechend korrigiert."
-outcome-why: "Lanes aus einem Repo fehlten in den Settings aller anderen Boards, weil n nur ins Board-Verzeichnis schrieb; ein E auf einer Built-in-id haette den Override fuer alle Boards geaendert."
-outcome-resolves: "Neue und adoptierte Lanes stehen in jedem Board unter '+'; Built-in-Overrides aendern sich nicht ueber ein Board."
-review-summary: "Pressing n in the lane settings still writes the skeleton into the board's .jaira/lanes; once the editor closes (newLaneDoneMsg in internal/tui/model.go) catalogueNewLane copies the file via lane.Adopt into ~/.jaira/lanes, so every other board offers it under '+'. It skips an unedited skeleton, a deleted file, an id the catalogue already has (no overwrite, message on screen) and a built-in id (review, testing, ...), which would otherwise replace the built-in on other boards. E on a board lane whose catalogue copy held the same bytes before the edit now writes the edit through to the catalogue (writeThrough), unless the catalogue changed meanwhile or the id was changed - so the edit is not later flagged as drift and undone by R. Adopting a colleague's shared lane with a already wrote to the catalogue; only a test was added. Release note in core/release/notes/28C0QV.md."
+claimed-by: DESKTOP-RFTCH11-62765
+claimed-at: 2026-11-18T19:47:57Z
+outcome-what: "Eine mit n angelegte Lane wird nach dem Editor auch nach ~/.jaira/lanes kopiert (catalogueNewLane), ausser sie traegt noch die Platzhalter-id des Templates oder eine Built-in-id; E schreibt in den Katalog durch, solange die Kopien byte-gleich waren; bricht der Editor mit Fehlercode ab, sagt der Lanes-Screen, was das fuer den Katalog heisst."
+outcome-why: "Lanes aus einem Repo fehlten in den Settings aller anderen Boards; Signoff wollte zusaetzlich keine my-lane-Platzhalter im Katalog und keinen stillen Abbruch."
+outcome-resolves: "Neue und adoptierte Lanes stehen in jedem Board unter '+'; Built-in-Overrides und unbenannte Skelette bleiben auf ihrem Board."
+review-summary: "Nach dem Schliessen des Editors, den n im Lanes-Screen oeffnet, kopiert catalogueNewLane (internal/tui/lanes.go) die neue Board-Lane per lane.Adopt(overwrite=false) nach ~/.jaira/lanes; damit bietet jedes andere Board sie unter '+' an. Ausgelassen werden ein unveraendertes Skelett (Bytes == lane.Template), eine im Editor geloeschte Datei, eine id eines Built-ins und eine id, die der Katalog schon hat (Meldung 'on this board only'). E auf einer Board-Lane merkt sich vorher per catalogueTwin, ob die Katalogkopie byte-gleich ist (und keine Built-in-id); nur dann schreibt writeThrough die Bearbeitung danach auch in den Katalog - und auch nur, wenn der Katalog sich inzwischen nicht geaendert hat und die id gleich blieb. Das verhindert, dass R eine Bearbeitung mit der alten Katalogkopie ueberschreibt. Beides laeuft im bestehenden newLaneDoneMsg-Zweig in model.go vor dem Reload, damit Drift den neuen Stand sieht. Der Drift-Kommentar in core/lane/share.go beschreibt jetzt genau diese Regel. Adoption geteilter Lanes (a) schrieb schon vorher in den Katalog; neu ist nur der Test dafuer. 11 Tests in internal/tui/lanecatalogue_test.go mit JAIRA_HOME, Release-Note in core/release/notes/28C0QV.md."
 review-gaps: |-
-  note: an untouched skeleton that the editor saved with other line endings or a trailing newline is no longer byte-equal to lane.Template and is catalogued under the placeholder id (internal/tui/lanes.go catalogueNewLane); harmless, a second one is refused as already existing
-  note: write-through also hits a board lane carrying a built-in id whose catalogue override was byte-equal - editing it with E changes that override for every board without its own lane directory; consistent with the rule, but a wider effect than the board the person is on
-  note: the Drift comment in core/lane/share.go:132 still says every edit writes through to the catalogue immediately; true now only for the byte-equal case
-test-verdict: "pass: go build + go test -race ./... RC=0 at 55ad762d; DoD 1-3 im Tree geprueft (Proof-Tests laufen gruen); TUI per tmux auf zwei Scratch-Boards unter JAIRA_HOME: n in a -> Katalog + Meldung, b bietet 'E2E lane' an; zweites n gleicher id -> 'on this board only', Katalog-md5 unveraendert; E in a -> beide Kopien 'hello edited', kein drifted. Zwei Schreiber: Katalog-Schreiben refused bei existierender Datei (Adopt) bzw. bei geaendertem Katalog (writeThrough, TestWriteThroughLeavesACatalogueChangedMeanwhile); zwei parallele TUIs nicht gestartet"
-hunt-verdict: "pass: bughunt done at 55ad762d, 0 change, 0 pre-existing (Folge-Hunt nach den 2 Funden von 6fcd1288, die gefixt sind)"
-round: 4
-review-verdict: "both DoD items are met and tested (TestNewLaneLandsInCatalogueAndOnAnotherBoard, TestAdoptedSharedLaneIsOfferedOnEveryBoard), the release note exists; read lanes.go/model.go whole along concurrency, error paths, input and boundaries - no blocker, three notes; go test ./internal/tui ./core/lane green"
-review-round: 3
-review-check: "1. go build -o /tmp/jaira-28c0qv ./cmd/jaira  2. in a test repo with a board: export JAIRA_HOME=$(mktemp -d); /tmp/jaira-28c0qv, open the lane settings, press n  3. in the editor set id: deploy-check, save, close  4. the lane screen says 'deploy-check is on this board and in your catalogue (...)' and $JAIRA_HOME/lanes/deploy-check.md exists  5. in a second repo with a board (same JAIRA_HOME) open the lane settings, press +: deploy-check is offered  6. back in the first repo press E on deploy-check, change the name, save: the screen says 'saved on this board and in your catalogue' and the lane is not marked drifted  7. press n again and set id: review: the screen says 'on this board only ... built-in lane's id'"
+  note: catalogueNewLane erkennt ein unveraendertes Skelett nur bytegenau - speichert der Editor es mit kleiner Aenderung (z.B. Whitespace) und id my-lane, landet my-lane.md im Katalog und wird auf jedem Board unter '+' angeboten
+  note: beendet sich der Editor mit Fehlercode (z.B. vim :cq), steigt model.go vor catalogueNewLane/writeThrough aus - die Lane bleibt dann still nur auf dem Board bzw. der Katalog behaelt die alte Kopie; nur die Fehlermeldung des Editors erscheint
+  note: ohne Home-Verzeichnis ist lane.UserLanesDir() leer und catalogueTwin/writeThrough rechnen mit dem relativen Pfad <id>.md im aktuellen Verzeichnis (gleiches Altverhalten wie Export fuer Built-ins); praktisch irrelevant
+  note: writeThrough prueft den Katalog und schreibt danach ohne Lock - zwei TUI-Sitzungen koennen sich in diesem kurzen Fenster ueberschreiben; fuer eine Ein-Personen-Datei vertretbar
+test-verdict: "pass: go build ./... and go test -race -count=1 ./... green (RC=0); DoD 1-5 verified in the tree (all lane-catalogue tests pass incl. TestEditOfBuiltinIDDoesNotWriteThrough; share.go Drift comment read); E/n paths exercised through catalogueTwin/writeThrough/model.Update in tests, not in a live TUI (needs a tty and $EDITOR); failure paths: changed-meanwhile and id-change leave the catalogue alone (tests); this round adds no new write"
+hunt-verdict: "pass: bughunt done at 16a8effb, 0 change, 0 pre-existing"
+round: 5
+review-verdict: "Diff erfuellt alle 5 DoD-Punkte; go vet und go test ./internal/tui ./core/lane gruen. Die beiden Bughunt-Funde (Drift nach E, Built-in-id im Katalog) sind sauber geschlossen und getestet. Kein Defekt gefunden, nur vier kleine Notes zu Randfaellen."
+review-round: 4
+review-check: |-
+  1. Im Worktree: go build -o /tmp/jaira ./cmd/jaira
+  2. export JAIRA_HOME=$(mktemp -d); mkdir -p /tmp/r1 /tmp/r2; cd /tmp/r1 && git init -q && /tmp/jaira init; cd /tmp/r2 && git init -q && /tmp/jaira init
+  3. cd /tmp/r1 && /tmp/jaira - Lane-Settings oeffnen, n druecken, im Editor id: deploy-check und name: Deploy check setzen, speichern, schliessen
+  4. Erwartet: Meldung 'deploy-check is on this board and in your catalogue (.../lanes/deploy-check.md)'; ls $JAIRA_HOME/lanes zeigt deploy-check.md
+  5. cd /tmp/r2 && /tmp/jaira - Lane-Settings: deploy-check steht unter '+' (nicht installiert) zur Auswahl
+  6. Zurueck in /tmp/r1: deploy-check waehlen, E, Prompt-Text aendern, speichern - Meldung 'saved on this board and in your catalogue'; cat $JAIRA_HOME/lanes/deploy-check.md zeigt den neuen Text, die Lane ist nicht als drifted markiert
+  7. n noch einmal, im Editor id: review setzen - Meldung 'on this board only ... review is a built-in lane\'s id'; $JAIRA_HOME/lanes/review.md existiert nicht
+  8. Automatisch: go test ./internal/tui -run 'NewLane|Catalogue|WriteThrough|EditOf|Adopted' -v
 ---
 
 # Eine neu angelegte Lane landet nur in einem Board, nicht im persoenlichen Katalog ~/.jaira/lanes
@@ -54,6 +63,10 @@ review-check: "1. go build -o /tmp/jaira-28c0qv ./cmd/jaira  2. in a test repo w
   proof: internal/tui/lanes.go catalogueTwin (isBuiltinID guard); TestEditOfBuiltinIDDoesNotWriteThrough
 - [x] Drift-Kommentar in core/lane/share.go sagt, dass nur ein byte-gleiches Paar durchgeschrieben wird
   proof: core/lane/share.go Drift doc comment
+- [x] Ein mit n angelegtes File, das noch die Platzhalter-id des Templates (my-lane) traegt, kommt nicht in den Katalog, auch wenn es sonst veraendert wurde; Meldung nennt den Grund; Test
+  proof: internal/tui/lanes.go catalogueNewLane + placeholderID; TestNewLaneEditedSkeletonWithPlaceholderIDStaysOutOfCatalogue
+- [x] Beendet sich der Editor mit Fehlercode, sagt die Meldung im Lanes-Screen zusaetzlich, dass die Lane nur auf dem Board blieb bzw. der Katalog die alte Kopie behaelt; Test
+  proof: internal/tui/lanes.go editorFailedMsg, internal/tui/model.go case newLaneDoneMsg; TestEditorErrorSaysCatalogueWasSkipped
 
 ## Options
 
@@ -90,3 +103,15 @@ Empfehlung: 3 - beide DoD-Punkte sind erfüllt und getestet, die Hinweise änder
 - **2026-11-18 18:44 · Alexander Sacharov** — Given back from signoff: 1) Zurückgeben: Drift-Kommentar in core/lane/share.go:132 korrigieren und E auf eingebaute ids nicht durchschreiben lassen
 - **2026-11-18 18:45 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
 - **2026-11-18 18:46 · Alexander Sacharov** — decision: Built-in-Schutz sitzt in catalogueTwin, nicht in editLane — dort wird syncTo bestimmt, und catalogueNewLane nutzt dasselbe isBuiltinID. Release-Note Zeile 2 nennt jetzt auch E.
+- **2026-11-18 18:46 · Alexander Sacharov** — critique runde 3 (nach signoff-Rueckgabe): nichts — beide Rueckgabepunkte beantwortet; der Guard sitzt in catalogueTwin, wo syncTo entsteht, und nutzt dasselbe isBuiltinID wie catalogueNewLane. Dass eine Board-Lane mit Built-in-id nach E als drifted erscheint, ist die gewaehlte Folge (Option 1), kein Fund.
+- **2026-11-18 18:48 · Alexander Sacharov** — bughunt: done at 16a8effb - 0 findings in 4 modules, follow-up hunt (diff since 55ad762d; core/lane/share.go new to the list, read whole); concurrency, error paths, input, permissions checked; ran: go test ./internal/tui/ ./core/lane/ (ok); files: core/lane/share.go core/release/notes/28C0QV.md internal/tui/lanecatalogue_test.go internal/tui/lanes.go internal/tui/model.go
+- **2026-11-18 18:52 · Alexander Sacharov** — review (fresh context): kein Blocker; DoD 1-5 erfuellt, Tests gruen. Vier Notes in review-gaps (Skelett-Erkennung nur bytegenau, Editor-Fehlercode ueberspringt Katalog, leeres UserLanesDir, Check-then-write ohne Lock).
+- **2026-11-18 19:39 · Alexander Sacharov** — explain: Der Review fand keinen Defekt, nur vier Randfaelle: ein leicht veraendertes Skelett (z.B. Whitespace) mit id my-lane landet im Katalog, ein Editor-Abbruch mit Fehlercode ueberspringt den Katalog-Schritt still, fehlendes Home-Verzeichnis nutzt einen relativen Pfad, und zwei TUI-Sitzungen koennen sich beim Write-Through ueberschreiben.
+Warum: Alle fuenf DoD-Punkte sind erfuellt und die Tests gruen, die Randfaelle treffen nur seltene Situationen in einer Ein-Personen-Datei und verlieren keine Daten.
+1) Ticket so annehmen, die vier Randfaelle bleiben als Notes stehen [accept]
+2) Zurueckgeben: Skelett-Erkennung tolerant machen und Editor-Fehlercode melden [give back]
+Empfehlung: 1 - Kein Blocker, die Faelle sind selten und harmlos, ein weiterer Durchlauf kostet mehr als er bringt.
+- **2026-11-18 19:47 · Alexander Sacharov** — decision: 2) Zurueckgeben: Skelett-Erkennung tolerant machen und Editor-Fehlercode melden
+- **2026-11-18 19:47 · Alexander Sacharov** — Given back from signoff: 2) Zurueckgeben: Skelett-Erkennung tolerant machen und Editor-Fehlercode melden
+- **2026-11-18 19:47 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
+- **2026-11-18 19:48 · Alexander Sacharov** — decision: Skelett-Erkennung tolerant = geparste id gleich der Platzhalter-id des Templates (aus lane.Parse(lane.Template) gelesen, nicht hart my-lane). Unveraendertes Skelett bleibt still; ein veraendertes mit my-lane bekommt eine Meldung. Editor-Fehlercode: Katalog-Schritt bleibt uebersprungen (vim :cq heisst Abbruch), die Meldung haengt nur an, was das fuer den Katalog bedeutet — nicht trotzdem kopieren.

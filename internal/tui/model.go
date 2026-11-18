@@ -1169,8 +1169,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case newLaneDoneMsg:
 		if msg.err != nil {
+			// An editor that exits non-zero (vim :cq) is an abort: nothing is
+			// copied, but the message says what that leaves the catalogue with.
 			if m.laneScreen != nil {
-				m.laneScreen.msg, m.laneScreen.isErr = msg.err.Error(), true
+				m.laneScreen.msg, m.laneScreen.isErr = editorFailedMsg(msg), true
 			}
 			return m, nil
 		}

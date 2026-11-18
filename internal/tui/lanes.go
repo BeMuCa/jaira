@@ -600,8 +600,9 @@ func (ls *laneScreen) newLane() tea.Cmd {
 // then does the file carry the id the person gave it.
 //
 // It returns the message for the lane screen, empty when there is nothing to
-// say. A skeleton left unedited is not catalogued — its id is the template's
-// placeholder — and neither is a file the person deleted in the editor. An id
+// say. A skeleton left unedited is not catalogued, silently, and neither is a
+// file the person deleted in the editor; an edited one that still carries the
+// template's placeholder id stays on the board with a message saying why. An id
 // the catalogue already holds is never overwritten: that copy may be the one
 // other boards run, and the message says so instead.
 func catalogueNewLane(path string) (msg string, isErr bool) {
@@ -615,14 +616,29 @@ func catalogueNewLane(path string) (msg string, isErr bool) {
 	if string(b) == lane.Template {
 		return "", false
 	}
-	if l, err := lane.Parse(b, path); err == nil && isBuiltinID(l.ID) {
-		return "on this board only, not in your catalogue: " + l.ID + " is a built-in lane's id, and a catalogue file of that id would replace the built-in on every board", true
+	if l, err := lane.Parse(b, path); err == nil {
+		if l.ID == placeholderID() {
+			return "on this board only, not in your catalogue: " + l.ID + " is the template's placeholder id — give the lane an id of its own and press E", true
+		}
+		if isBuiltinID(l.ID) {
+			return "on this board only, not in your catalogue: " + l.ID + " is a built-in lane's id, and a catalogue file of that id would replace the built-in on every board", true
+		}
 	}
 	l, dst, err := lane.Adopt(path, lane.UserLanesDir(), false)
 	if err != nil {
 		return "on this board only, not in your catalogue: " + err.Error(), true
 	}
 	return l.ID + " is on this board and in your catalogue (" + dst + ")", false
+}
+
+// placeholderID is the id lane.Template carries. A new lane still holding it
+// is a skeleton the person has not named yet, whatever else they changed.
+func placeholderID() string {
+	l, err := lane.Parse([]byte(lane.Template), "template.md")
+	if err != nil {
+		return ""
+	}
+	return l.ID
 }
 
 // isBuiltinID reports whether id names a lane compiled into the binary.
@@ -979,4 +995,19 @@ func (ls *laneScreen) render(width, height int) string {
 		sb.WriteString("\n" + styMeta.Render(l))
 	}
 	return sb.String()
+}
+
+// editorFailedMsg is the lane screen's message when $EDITOR exited with an
+// error: the error itself, plus what the skipped catalogue step means for the
+// lane — a new one stays on this board only, an E edit leaves the catalogue
+// copy as it was.
+func editorFailedMsg(msg newLaneDoneMsg) string {
+	text := "editor: " + msg.err.Error()
+	switch {
+	case msg.path != "":
+		text += " — the lane stays on this board only, not in your catalogue"
+	case msg.syncTo != "":
+		text += " — your catalogue keeps the old copy (" + msg.syncTo + ")"
+	}
+	return text
 }
