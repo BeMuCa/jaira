@@ -1,7 +1,7 @@
 ---
 id: 01M58G2A0YCD31RRC3GZ28C0QV
 title: "Eine neu angelegte Lane landet nur in einem Board, nicht im persoenlichen Katalog ~/.jaira/lanes"
-status: critique
+status: in-progress
 ready: true
 creator: berkc
 assignee: Alexander Sacharov
@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T19:51:33Z
+updated-at: 2026-11-18T19:51:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62765
 claimed-at: 2026-11-18T19:47:57Z
@@ -35,7 +35,7 @@ review-gaps: |-
   note: writeThrough prueft den Katalog und schreibt danach ohne Lock - zwei TUI-Sitzungen koennen sich in diesem kurzen Fenster ueberschreiben; fuer eine Ein-Personen-Datei vertretbar
 test-verdict: "pass: go build ./... and go test -race -count=1 ./... green (RC=0); DoD 1-5 verified in the tree (all lane-catalogue tests pass incl. TestEditOfBuiltinIDDoesNotWriteThrough; share.go Drift comment read); E/n paths exercised through catalogueTwin/writeThrough/model.Update in tests, not in a live TUI (needs a tty and $EDITOR); failure paths: changed-meanwhile and id-change leave the catalogue alone (tests); this round adds no new write"
 hunt-verdict: "pass: bughunt done at 16a8effb, 0 change, 0 pre-existing"
-round: 5
+round: 6
 review-verdict: "Diff erfuellt alle 5 DoD-Punkte; go vet und go test ./internal/tui ./core/lane gruen. Die beiden Bughunt-Funde (Drift nach E, Built-in-id im Katalog) sind sauber geschlossen und getestet. Kein Defekt gefunden, nur vier kleine Notes zu Randfaellen."
 review-round: 4
 review-check: |-
