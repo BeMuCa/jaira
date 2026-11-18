@@ -68,14 +68,37 @@ func TestFirstCommandAfterUpgradeReplacesAnUneditedLane(t *testing.T) {
 	if len(lines) != 1 || !strings.Contains(lines[0], "updated lanes testing") {
 		t.Fatalf("want one line naming the updated lane, stderr:\n%s", stderr)
 	}
+	if !strings.Contains(lines[0], "'jaira update' shows what else changed") {
+		t.Errorf("the line does not point at 'jaira update' for the release notes: %q", lines[0])
+	}
 	if strings.Contains(stderr, "run 'jaira update'") {
 		t.Errorf("the old hint was printed besides the refresh:\n%s", stderr)
 	}
+	// The release notes are not swallowed: 'jaira update' still reads 1.0.0
+	// as the version that last set the board up.
+	s, err := ticket.At(st.dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := release.Stamped(s.StateDir()); got != "1.0.0" {
+		t.Errorf("Stamped = %q after the refresh, want 1.0.0 kept for 'jaira update'", got)
+	}
 
-	// The second command finds the stamp and says nothing more.
+	// The second command refreshes nothing more and is back to the hint.
 	_, stderr = captureStdio(t, func() { runCLI(t, st.dir, "list") })
 	if lines := refreshLines(stderr); len(lines) != 0 {
 		t.Errorf("second command refreshed again: %q", lines)
+	}
+	if !strings.Contains(stderr, "run 'jaira update'") {
+		t.Errorf("second command lost the hint to 'jaira update':\n%s", stderr)
+	}
+	// After 'jaira update' both stamps are current and nothing is said.
+	if out, err := runUpdate(t, st.dir); err != nil {
+		t.Fatalf("update: %v\n%s", err, out)
+	}
+	_, stderr = captureStdio(t, func() { runCLI(t, st.dir, "list") })
+	if strings.Contains(stderr, "set up by an older version") || len(refreshLines(stderr)) != 0 {
+		t.Errorf("still nudged after 'jaira update':\n%s", stderr)
 	}
 }
 
@@ -209,8 +232,8 @@ func TestConcurrentRefreshesWriteNoHalfLane(t *testing.T) {
 	}
 }
 
-// A refresh that cannot finish leaves the board unstamped and falls back to the
-// old hint, so the next command tries again and no command fails over it.
+// A refresh that cannot finish leaves its stamp unset and the old hint printed,
+// so the next command tries again and no command fails over it.
 func TestFailedRefreshFallsBackToTheHint(t *testing.T) {
 	st := newStaleSetup(t)
 	st.upgrade(t)
@@ -232,7 +255,7 @@ func TestFailedRefreshFallsBackToTheHint(t *testing.T) {
 	if !strings.Contains(stderr, "run 'jaira update'") {
 		t.Errorf("stderr = %q, want the old hint", stderr)
 	}
-	if got := release.Stamped(s.StateDir()); got == "1.0.1" {
+	if got := release.LanesRefreshed(s.StateDir()); got == "1.0.1" {
 		t.Error("a failed refresh stamped the board")
 	}
 	if string(mustRead(t, st.lan)) != string(st.laneOld) {

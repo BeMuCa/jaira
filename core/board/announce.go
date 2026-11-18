@@ -398,15 +398,20 @@ const claudeImport = "<!-- jaira: the jaira block lives in AGENTS.md -->\n@AGENT
 // keep it out of, and every teammate's clone reads that the same way. With no
 // block anywhere, both get one, which is what jaira always did.
 func chosenAgentFiles(root string) []string {
+	if have := filesWithBlock(root); len(have) > 0 {
+		return have
+	}
+	return agentFiles
+}
+
+// filesWithBlock are the agent instruction files at root that carry the block.
+func filesWithBlock(root string) []string {
 	var have []string
 	for _, name := range agentFiles {
 		b, err := os.ReadFile(filepath.Join(root, name))
 		if err == nil && strings.Contains(string(b), jairaMarkerStart) {
 			have = append(have, name)
 		}
-	}
-	if len(have) == 0 {
-		return agentFiles
 	}
 	return have
 }
@@ -423,14 +428,7 @@ func AnnounceInAgentFiles(root string, lanes []LaneFact) (written []string, err 
 // CLAUDE.md in a repository that has neither is not — that stays the act of
 // 'jaira init' and 'jaira update'.
 func RenewInAgentFiles(root string, lanes []LaneFact) (written []string, err error) {
-	var have []string
-	for _, name := range agentFiles {
-		b, err := os.ReadFile(filepath.Join(root, name))
-		if err == nil && strings.Contains(string(b), jairaMarkerStart) {
-			have = append(have, name)
-		}
-	}
-	return announceIn(root, have, lanes, false)
+	return announceIn(root, filesWithBlock(root), lanes, false)
 }
 
 // PreviewAgentFiles reports what AnnounceInAgentFiles (choice "") or ChooseAgentFiles(choice)

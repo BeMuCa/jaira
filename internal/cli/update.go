@@ -20,15 +20,20 @@ import (
 // itself.
 var updateInProgress bool
 
-// nudgeIfStale brings a board stamped by an older jaira up to date the first
-// time a newer binary opens it (refreshStaleBoard), and says so in one line on
-// stderr; only when that fails does it print the old hint to run
-// 'jaira update'. It runs from the same hook bindDriverIfShared
-// (internal/cli/share.go) uses for "this clone needs one-time setup" on the
-// one path every command takes.
+// nudgeIfStale keeps a board in step with a newer binary on the one path
+// every command takes — the same hook bindDriverIfShared
+// (internal/cli/share.go) uses for "this clone needs one-time setup".
+//
+// Two things, with a stamp each. The first command after an upgrade brings
+// the board's unedited lanes and its jaira section up to date
+// (refreshStaleBoard) and says so in one line. And as long as 'jaira update'
+// has not run under this version, a line points at it: it alone shows the
+// release notes since, including the lines the reader must act on, so the
+// refresh does not take that stamp. The command that refreshed folds the
+// pointer into its own line rather than printing two.
 //
 // A dev build's version says nothing about what is actually in it, so it
-// never nudges: nagging a developer about their own build on every invocation
+// never acts: nagging a developer about their own build on every invocation
 // would be pure noise. This writes to os.Stderr directly rather than through
 // cmd's streams, matching bindDriverIfShared, because it must reach the
 // terminal regardless of --json — stdout is reserved for the payload an agent
@@ -51,29 +56,31 @@ func nudgeIfStale(s *ticket.Store) {
 		// normal, unstamped board and still falls through to nudge below.
 		return
 	}
-	if release.Stamped(dir) == release.Current {
-		return
-	}
-	if line, err := refreshStaleBoard(s); err == nil {
-		if line != "" {
+	setUp := release.Stamped(dir) == release.Current
+	if release.LanesRefreshed(dir) != release.Current {
+		if line, err := refreshStaleBoard(s); err == nil && line != "" {
+			if !setUp {
+				line += " — 'jaira update' shows what else changed"
+			}
 			fmt.Fprintln(os.Stderr, line)
+			return
 		}
-		return
 	}
-	fmt.Fprintf(os.Stderr, "jaira: this board was set up by an older version of jaira — run 'jaira update' to bring it up to date\n")
+	if !setUp {
+		fmt.Fprintf(os.Stderr, "jaira: this board was set up by an older version of jaira — run 'jaira update' to bring it up to date\n")
+	}
 }
 
-// refreshStaleBoard does to a board stamped by an older jaira what
-// 'jaira update --lanes' would: every lane file that is an older version jaira
-// shipped is replaced, the jaira section is rewritten where a file already
-// carries it, and the board is stamped. Lanes stay in the repository, so the
-// whole team runs one flow; what this writes are ordinary changes in the
-// working tree for a person to commit.
+// refreshStaleBoard does to a board an older jaira left behind what
+// 'jaira update --lanes' does to its files: every lane file that is an older
+// version jaira shipped is replaced, and the jaira section is rewritten where
+// a file already carries it. Lanes stay in the repository, so the whole team
+// runs one flow; what this writes are ordinary changes in the working tree
+// for a person to commit.
 //
 // It returns the one line to print, "" when nothing on disk changed. A lane
-// somebody edited is never replaced, only named. An error leaves the board
-// unstamped, so the caller falls back to the old hint and the next command
-// tries again.
+// somebody edited is never replaced, only named. An error leaves the
+// lanes-refreshed stamp unset, so the next command tries again.
 //
 // The lock makes two processes started at once do the work once: the second
 // waits, finds the stamp the first wrote, and returns "". The stamp is what
@@ -84,7 +91,7 @@ func refreshStaleBoard(s *ticket.Store) (string, error) {
 		return "", err
 	}
 	defer unlock()
-	if release.Stamped(s.StateDir()) == release.Current {
+	if release.LanesRefreshed(s.StateDir()) == release.Current {
 		return "", nil
 	}
 	results, err := lane.RefreshShipped(s.Root, false)
@@ -99,7 +106,7 @@ func refreshStaleBoard(s *ticket.Store) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if err := release.Stamp(s.StateDir()); err != nil {
+	if err := release.MarkLanesRefreshed(s.StateDir()); err != nil {
 		return "", err
 	}
 	return refreshedLine(results, written), nil

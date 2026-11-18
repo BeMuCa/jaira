@@ -22,13 +22,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-18T17:07:33Z
-updated-at: 2026-11-18T17:14:49Z
+updated-at: 2026-11-18T17:17:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-72235
 claimed-at: 2026-11-18T17:08:08Z
-outcome-what: "Der erste jaira-Befehl in einem Repo, dessen Stempel aelter ist als das Binary, macht jetzt selbst, was 'jaira update --lanes' tut: unveraenderte ausgelieferte Lanes ersetzen (atomar), den jaira-Block dort erneuern, wo er steht, stempeln, und das in einer stderr-Zeile sagen. Handgeaenderte Lanes bleiben und werden genannt. Scheitert es, kommt wie bisher der Hinweis."
+outcome-what: "Der erste jaira-Befehl nach einem Upgrade macht selbst, was 'jaira update --lanes' an Dateien tut: unveraenderte ausgelieferte Lanes ersetzen (atomar, unter Lock), den jaira-Block dort erneuern, wo er steht, und das in einer stderr-Zeile sagen. Eigener Stempel lanes-refreshed; der Versions-Stempel bleibt 'jaira update' vorbehalten, damit die Release-Notes nicht verschluckt werden. Handgeaenderte Lanes bleiben und werden genannt."
 outcome-why: "Nach jedem Release musste in jedem Repo einzeln 'jaira update --lanes' getippt werden (zuletzt 0.5.14 mit der neuen testing-Lane)."
-outcome-resolves: "nudgeIfStale -> refreshStaleBoard (internal/cli/update.go), board.RenewInAgentFiles, lane.RefreshShipped via ticket.WriteAtomic; Tests in internal/cli/updateauto_test.go"
+outcome-resolves: "nudgeIfStale + refreshStaleBoard (internal/cli/update.go), release.LanesRefreshed, board.RenewInAgentFiles/filesWithBlock, lane.RefreshShipped via ticket.WriteAtomic; Tests internal/cli/updateauto_test.go"
+review-summary: "core/board/announce.go RenewInAgentFiles repeats the marker scan of chosenAgentFiles (same file, ~line 400); extract filesWithBlock(root) and let chosenAgentFiles fall back to agentFiles on an empty result"
+round: 2
 ---
 
 # Nach einem Upgrade bringt jaira unveraenderte Lanes jedes Boards selbst auf den neuen Stand
@@ -59,3 +61,5 @@ outcome-resolves: "nudgeIfStale -> refreshStaleBoard (internal/cli/update.go), b
 - **2026-11-18 17:08 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/6601.sock
 - **2026-11-18 17:09 · Alexander Sacharov** — decision: keine offene Frage an Alex. Ausloeser wie vom Teamlead vorgegeben: nudgeIfStale (internal/cli/update.go) - Stempel != Binary -> statt der Hinweiszeile laeuft dasselbe wie 'jaira update --lanes' fuer das Board: lane.RefreshShipped, jaira-Block via board.AnnounceInAgentFiles, dann release.Stamp. Gestempelt wird, damit der Hinweis verschwindet und nicht jeder Befehl Lanes laedt und hasht (Startzeit). Preis: 'jaira update' zeigt danach 'nothing has changed' statt der Release-Notes; die TUI zeigt sie weiter (notes-seen ist ein eigener Stempel). Rollen bleiben bei nudgeSkillsIfStale. Ausgabe nur eine stderr-Zeile, und nur wenn etwas ersetzt, uebersprungen oder der Block neu geschrieben wurde; sonst still stempeln. Dev-Build: nichts (wie bisher). Nebenlaeufigkeit: store.Lock('board-refresh') + Stempel nach dem Lock erneut pruefen; RefreshShipped schreibt via ticket.WriteAtomic. Fehler beim Auto-Refresh brechen keinen Befehl ab: dann wie bisher die Hinweiszeile.
 - **2026-11-18 17:14 · Alexander Sacharov** — decision: der jaira-Block wird nur dort erneuert, wo eine Datei ihn schon traegt (board.RenewInAgentFiles), nicht wie 'jaira update' auch neu angelegt: ein ungefragter Befehl soll in einem Repo ohne CLAUDE.md/AGENTS.md keine solche Datei erzeugen. Gefunden: lane.Load ueberspringt eine unlesbare Lane-Datei still, ein chmod 000 auf die Lane provoziert also keinen Fehler - der Fallback-Test blockiert stattdessen das Lock-Verzeichnis.
+- **2026-11-18 17:15 · Alexander Sacharov** — critique: RenewInAgentFiles dupliziert die Marker-Suche aus chosenAgentFiles (core/board/announce.go) - in eine Funktion filesWithBlock ziehen, chosenAgentFiles faellt bei leerem Ergebnis auf agentFiles zurueck. Sonst nichts: Ort (cli, neben dem update-Befehl), Lock+Stempel-Recheck, Fallback auf den alten Hinweis stehen.
+- **2026-11-18 17:15 · Alexander Sacharov** — decision (Teamlead, 17:15): der Auto-Refresh darf den Versions-Stempel NICHT setzen - 'jaira update' ist der einzige CLI-Ort fuer die Release-Notes inkl. '- !'-Zeilen. Also eigener Stempel <state>/lanes-refreshed; der Versions-Stempel und der Hinweis auf 'jaira update' bleiben bis dahin. Ersetzt meine Notiz zum Stempeln.
