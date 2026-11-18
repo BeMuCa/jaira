@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T17:26:19Z
+updated-at: 2026-11-18T17:26:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74923
 claimed-at: 2026-11-18T17:08:27Z
@@ -35,6 +35,8 @@ review-gaps: |-
 test-verdict: "pass: go build + go test -race ./... RC=0 at 55ad762d; DoD 1-3 im Tree geprueft (Proof-Tests laufen gruen); TUI per tmux auf zwei Scratch-Boards unter JAIRA_HOME: n in a -> Katalog + Meldung, b bietet 'E2E lane' an; zweites n gleicher id -> 'on this board only', Katalog-md5 unveraendert; E in a -> beide Kopien 'hello edited', kein drifted. Zwei Schreiber: Katalog-Schreiben refused bei existierender Datei (Adopt) bzw. bei geaendertem Katalog (writeThrough, TestWriteThroughLeavesACatalogueChangedMeanwhile); zwei parallele TUIs nicht gestartet"
 hunt-verdict: "pass: bughunt done at 55ad762d, 0 change, 0 pre-existing (Folge-Hunt nach den 2 Funden von 6fcd1288, die gefixt sind)"
 round: 3
+review-verdict: "both DoD items are met and tested (TestNewLaneLandsInCatalogueAndOnAnotherBoard, TestAdoptedSharedLaneIsOfferedOnEveryBoard), the release note exists; read lanes.go/model.go whole along concurrency, error paths, input and boundaries - no blocker, three notes; go test ./internal/tui ./core/lane green"
+review-round: 3
 ---
 
 # Eine neu angelegte Lane landet nur in einem Board, nicht im persoenlichen Katalog ~/.jaira/lanes
