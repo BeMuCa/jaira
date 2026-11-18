@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T19:53:40Z
+updated-at: 2026-11-18T19:54:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62765
 claimed-at: 2026-11-18T19:47:57Z
@@ -29,7 +29,7 @@ outcome-why: "Lanes aus einem Repo fehlten in den Settings aller anderen Boards;
 outcome-resolves: "Neue und adoptierte Lanes stehen in jedem Board unter '+'; Built-in-Overrides und unbenannte Skelette bleiben auf ihrem Board."
 review-summary: "none"
 review-gaps: "none - placeholderID und editorFailedMsg haben je einen Aufrufer, keine Dopplung im Repo (grep nach Parse(lane.Template)/my-lane); placeholderID parst das Template nur auf dem seltenen n-Pfad, kein Hot Path"
-test-verdict: "pass: go build ./... and go test -race -count=1 ./... green (RC=0); DoD 1-5 verified in the tree (all lane-catalogue tests pass incl. TestEditOfBuiltinIDDoesNotWriteThrough; share.go Drift comment read); E/n paths exercised through catalogueTwin/writeThrough/model.Update in tests, not in a live TUI (needs a tty and $EDITOR); failure paths: changed-meanwhile and id-change leave the catalogue alone (tests); this round adds no new write"
+test-verdict: "pass: go build, go vet, go test -race -count=1 ./... gruen (RC=0); DoD 1-7 in der Arbeitskopie per Test geprueft (18 Katalog-Tests PASS); Fehlerpfad: Editor exit status 1 -> Meldung nennt Fehler und 'this board only'/'keeps the old copy', Katalog unveraendert (TestEditorErrorSaysCatalogueWasSkipped); Platzhalter-Skelett mit Whitespace-Aenderung bleibt aus dem Katalog; zwei Schreiber: Adopt mit overwrite=false und writeThrough-Vergleich vor dem Schreiben unveraendert, diese Runde fuegt keinen Schreibpfad hinzu; TUI nicht interaktiv gestartet"
 hunt-verdict: "pass: bughunt done at 16a8effb, 0 change, 0 pre-existing"
 round: 6
 review-verdict: "Diff erfuellt alle 5 DoD-Punkte; go vet und go test ./internal/tui ./core/lane gruen. Die beiden Bughunt-Funde (Drift nach E, Built-in-id im Katalog) sind sauber geschlossen und getestet. Kein Defekt gefunden, nur vier kleine Notes zu Randfaellen."
