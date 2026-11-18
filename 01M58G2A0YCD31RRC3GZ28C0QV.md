@@ -20,14 +20,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T19:54:46Z
+updated-at: 2026-11-18T19:56:13Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62765
 claimed-at: 2026-11-18T19:47:57Z
 outcome-what: "Eine mit n angelegte Lane wird nach dem Editor auch nach ~/.jaira/lanes kopiert (catalogueNewLane), ausser sie traegt noch die Platzhalter-id des Templates oder eine Built-in-id; E schreibt in den Katalog durch, solange die Kopien byte-gleich waren; bricht der Editor mit Fehlercode ab, sagt der Lanes-Screen, was das fuer den Katalog heisst."
 outcome-why: "Lanes aus einem Repo fehlten in den Settings aller anderen Boards; Signoff wollte zusaetzlich keine my-lane-Platzhalter im Katalog und keinen stillen Abbruch."
 outcome-resolves: "Neue und adoptierte Lanes stehen in jedem Board unter '+'; Built-in-Overrides und unbenannte Skelette bleiben auf ihrem Board."
-review-summary: "none"
+review-summary: "Eine mit n im Lanes-Screen angelegte Lane wird nach dem Schliessen des Editors per lane.Adopt(overwrite=false) zusaetzlich nach ~/.jaira/lanes kopiert (catalogueNewLane in internal/tui/lanes.go, aufgerufen im newLaneDoneMsg-Zweig von model.go vor dem Reload), damit jedes andere Board sie unter '+' anbietet. Nicht katalogisiert werden: ein unveraendertes Skelett, eine geloeschte Datei, die Platzhalter-id my-lane, die id eines Built-ins und eine id, die der Katalog schon hat - jeweils mit Meldung im Lanes-Screen. E auf einer Board-Lane schreibt die Aenderung in den Katalog durch (catalogueTwin/writeThrough), aber nur wenn beide Kopien vorher byte-gleich waren, die id kein Built-in ist, die id unveraendert blieb und der Katalog sich waehrenddessen nicht geaendert hat; so meldet Drift die Lane nicht als 'drifted' und R zieht keine alte Kopie zurueck. Bricht der Editor mit Fehler ab, sagt die Meldung, dass der Katalog unberuehrt blieb. Dazu Drift-Kommentar in core/lane/share.go korrigiert, Release-Notes core/release/notes/28C0QV.md, 13 Tests in internal/tui/lanecatalogue_test.go mit JAIRA_HOME."
 review-gaps: "none - placeholderID und editorFailedMsg haben je einen Aufrufer, keine Dopplung im Repo (grep nach Parse(lane.Template)/my-lane); placeholderID parst das Template nur auf dem seltenen n-Pfad, kein Hot Path"
 test-verdict: "pass: go build, go vet, go test -race -count=1 ./... gruen (RC=0); DoD 1-7 in der Arbeitskopie per Test geprueft (18 Katalog-Tests PASS); Fehlerpfad: Editor exit status 1 -> Meldung nennt Fehler und 'this board only'/'keeps the old copy', Katalog unveraendert (TestEditorErrorSaysCatalogueWasSkipped); Platzhalter-Skelett mit Whitespace-Aenderung bleibt aus dem Katalog; zwei Schreiber: Adopt mit overwrite=false und writeThrough-Vergleich vor dem Schreiben unveraendert, diese Runde fuegt keinen Schreibpfad hinzu; TUI nicht interaktiv gestartet"
 hunt-verdict: "pass: bughunt done at 3238db94, 0 change, 0 pre-existing"
