@@ -20,10 +20,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T18:45:05Z
+updated-at: 2026-11-18T18:45:09Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-74923
-claimed-at: 2026-11-18T17:08:27Z
+claimed-by: DESKTOP-RFTCH11-45834
+claimed-at: 2026-11-18T18:45:09Z
 outcome-what: Eine mit n angelegte Lane wird nach dem Schliessen des Editors zusaetzlich nach ~/.jaira/lanes kopiert (catalogueNewLane); Tests fuer neue und adoptierte Lanes unter JAIRA_HOME.
 outcome-why: "Lanes aus einem Repo fehlten in den Settings aller anderen Boards, weil n nur ins Board-Verzeichnis schrieb."
 outcome-resolves: "Neue und adoptierte Lanes stehen in jedem Board unter '+'."
