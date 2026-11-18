@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T19:56:36Z
+updated-at: 2026-11-18T20:27:21Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62765
 claimed-at: 2026-11-18T19:47:57Z
@@ -112,3 +112,8 @@ Empfehlung: 1 - Kein Blocker, die Faelle sind selten und harmlos, ein weiterer D
 - **2026-11-18 19:52 · Alexander Sacharov** — critique runde 5: der eine Fund aus Runde 4 ist beantwortet - Meldung in catalogueNewLane und Release-Note Zeile 3 verweisen jetzt auf n mit eigener id statt auf E. Nichts weiter.
 - **2026-11-18 19:53 · Alexander Sacharov** — bughunt: done at 3238db94 - 0 findings in 4 modules, follow-up hunt (diff since 16a8effb: placeholderID check in catalogueNewLane, editorFailedMsg, newLaneDoneMsg error branch; no file new to the list - untracked .jaira/milestones/*.md are board data, not code, not hunted); concurrency, error paths, input, permissions checked; ran: go test ./internal/tui/ ./core/lane/ (ok); files: core/lane/share.go core/release/notes/28C0QV.md internal/tui/lanecatalogue_test.go internal/tui/lanes.go internal/tui/model.go
 - **2026-11-18 19:56 · Alexander Sacharov** — review: kein Blocker, 5 notes (Randfaelle: Platzhalter-Lane nachtraeglich benannt, gleiche id auf zwei Boards, writeThrough ohne Lock, Meldung bei Reload-Fehler, String-Praefix in editLane). Tests gruen.
+- **2026-11-18 20:27 · Alexander Sacharov** — explain: Der Review fand keinen Blocker, nur fuenf Randfaelle: eine Lane mit Platzhalter-id kommt nach Umbenennung per E nie in den Katalog, und zwei Boards mit gleicher id ergeben eine drifted-Lane, die R ueberschreiben wuerde.
+Warum: Der Hauptpfad (n legt an, Katalog bekommt die Kopie, E schreibt durch) laeuft und alle 7 DoD-Punkte sind erfuellt. Die Randfaelle sind selten und zerstoeren keine Daten im normalen Ablauf.
+1) Zurueckgeben und die Randfaelle beheben (Platzhalter-Lane, doppelte id, Lock, Reload-Meldung) [give back]
+2) Ticket so annehmen und die Randfaelle spaeter bei Bedarf einzeln aufgreifen [accept]
+Empfehlung: 2 - Tests sind gruen, kein Defekt im Hauptpfad, und die Faelle sind klein genug, dass ein Fix das Ticket nur aufblaehen wuerde.
