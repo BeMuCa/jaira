@@ -1,7 +1,7 @@
 ---
 id: 01M58G2A0YCD31RRC3GZ28C0QV
 title: "Eine neu angelegte Lane landet nur in einem Board, nicht im persoenlichen Katalog ~/.jaira/lanes"
-status: signoff
+status: in-progress
 ready: true
 creator: berkc
 assignee: Alexander Sacharov
@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T18:44:47Z
+updated-at: 2026-11-18T18:44:51Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74923
 claimed-at: 2026-11-18T17:08:27Z
@@ -34,7 +34,7 @@ review-gaps: |-
   note: the Drift comment in core/lane/share.go:132 still says every edit writes through to the catalogue immediately; true now only for the byte-equal case
 test-verdict: "pass: go build + go test -race ./... RC=0 at 55ad762d; DoD 1-3 im Tree geprueft (Proof-Tests laufen gruen); TUI per tmux auf zwei Scratch-Boards unter JAIRA_HOME: n in a -> Katalog + Meldung, b bietet 'E2E lane' an; zweites n gleicher id -> 'on this board only', Katalog-md5 unveraendert; E in a -> beide Kopien 'hello edited', kein drifted. Zwei Schreiber: Katalog-Schreiben refused bei existierender Datei (Adopt) bzw. bei geaendertem Katalog (writeThrough, TestWriteThroughLeavesACatalogueChangedMeanwhile); zwei parallele TUIs nicht gestartet"
 hunt-verdict: "pass: bughunt done at 55ad762d, 0 change, 0 pre-existing (Folge-Hunt nach den 2 Funden von 6fcd1288, die gefixt sind)"
-round: 3
+round: 4
 review-verdict: "both DoD items are met and tested (TestNewLaneLandsInCatalogueAndOnAnotherBoard, TestAdoptedSharedLaneIsOfferedOnEveryBoard), the release note exists; read lanes.go/model.go whole along concurrency, error paths, input and boundaries - no blocker, three notes; go test ./internal/tui ./core/lane green"
 review-round: 3
 review-check: "1. go build -o /tmp/jaira-28c0qv ./cmd/jaira  2. in a test repo with a board: export JAIRA_HOME=$(mktemp -d); /tmp/jaira-28c0qv, open the lane settings, press n  3. in the editor set id: deploy-check, save, close  4. the lane screen says 'deploy-check is on this board and in your catalogue (...)' and $JAIRA_HOME/lanes/deploy-check.md exists  5. in a second repo with a board (same JAIRA_HOME) open the lane settings, press +: deploy-check is offered  6. back in the first repo press E on deploy-check, change the name, save: the screen says 'saved on this board and in your catalogue' and the lane is not marked drifted  7. press n again and set id: review: the screen says 'on this board only ... built-in lane's id'"
