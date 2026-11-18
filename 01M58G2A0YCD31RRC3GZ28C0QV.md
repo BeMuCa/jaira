@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T19:47:41Z
+updated-at: 2026-11-18T19:47:53Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45834
 claimed-at: 2026-11-18T18:45:09Z
@@ -109,3 +109,4 @@ Warum: Alle fuenf DoD-Punkte sind erfuellt und die Tests gruen, die Randfaelle t
 Empfehlung: 1 - Kein Blocker, die Faelle sind selten und harmlos, ein weiterer Durchlauf kostet mehr als er bringt.
 - **2026-11-18 19:47 · Alexander Sacharov** — decision: 2) Zurueckgeben: Skelett-Erkennung tolerant machen und Editor-Fehlercode melden
 - **2026-11-18 19:47 · Alexander Sacharov** — Given back from signoff: 2) Zurueckgeben: Skelett-Erkennung tolerant machen und Editor-Fehlercode melden
+- **2026-11-18 19:47 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
