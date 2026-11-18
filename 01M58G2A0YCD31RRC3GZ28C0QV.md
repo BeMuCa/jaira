@@ -4,7 +4,7 @@ title: "Eine neu angelegte Lane landet nur in einem Board, nicht im persoenliche
 status: backlog
 ready: true
 creator: berkc
-assignee: berkc
+assignee: Alexander Sacharov
 goal: "Eine Lane, die ich in einem Repo anlege, kann ich in jedem meinem anderen Boards in den Settings auswaehlen; eine geteilte Lane eines Kollegen kann ich dort ebenfalls uebernehmen."
 context: |-
   Heute: newLane() (internal/tui/lanes.go:564) schreibt die neue Lane nach lane.ProjectLanesDir (.jaira/lanes/ des Repos). Andere Boards sehen sie nie.
@@ -20,7 +20,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-10-18T21:53:12Z
+updated-at: 2026-11-18T17:08:25Z
+updated-by: Alexander Sacharov
 ---
 
 # Eine neu angelegte Lane landet nur in einem Board, nicht im persoenlichen Katalog ~/.jaira/lanes
@@ -41,4 +42,4 @@ updated-at: 2026-10-18T21:53:12Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-11-18 17:08 · Alexander Sacharov** — Alexander Sacharov took this ticket over from berkc
