@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T18:48:15Z
+updated-at: 2026-11-18T18:49:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45834
 claimed-at: 2026-11-18T18:45:09Z
@@ -29,7 +29,7 @@ outcome-why: "Lanes aus einem Repo fehlten in den Settings aller anderen Boards,
 outcome-resolves: "Neue und adoptierte Lanes stehen in jedem Board unter '+'; Built-in-Overrides aendern sich nicht ueber ein Board."
 review-summary: "none"
 review-gaps: "none — the repair adds one guard in catalogueTwin reusing isBuiltinID (already used by catalogueNewLane), one test, and a comment; nothing duplicated, orphaned or repeated"
-test-verdict: "pass: go build + go test -race ./... RC=0 at 55ad762d; DoD 1-3 im Tree geprueft (Proof-Tests laufen gruen); TUI per tmux auf zwei Scratch-Boards unter JAIRA_HOME: n in a -> Katalog + Meldung, b bietet 'E2E lane' an; zweites n gleicher id -> 'on this board only', Katalog-md5 unveraendert; E in a -> beide Kopien 'hello edited', kein drifted. Zwei Schreiber: Katalog-Schreiben refused bei existierender Datei (Adopt) bzw. bei geaendertem Katalog (writeThrough, TestWriteThroughLeavesACatalogueChangedMeanwhile); zwei parallele TUIs nicht gestartet"
+test-verdict: "pass: go build ./... and go test -race -count=1 ./... green (RC=0); DoD 1-5 verified in the tree (all lane-catalogue tests pass incl. TestEditOfBuiltinIDDoesNotWriteThrough; share.go Drift comment read); E/n paths exercised through catalogueTwin/writeThrough/model.Update in tests, not in a live TUI (needs a tty and $EDITOR); failure paths: changed-meanwhile and id-change leave the catalogue alone (tests); this round adds no new write"
 hunt-verdict: "pass: bughunt done at 55ad762d, 0 change, 0 pre-existing (Folge-Hunt nach den 2 Funden von 6fcd1288, die gefixt sind)"
 round: 4
 review-verdict: "both DoD items are met and tested (TestNewLaneLandsInCatalogueAndOnAnotherBoard, TestAdoptedSharedLaneIsOfferedOnEveryBoard), the release note exists; read lanes.go/model.go whole along concurrency, error paths, input and boundaries - no blocker, three notes; go test ./internal/tui ./core/lane green"
