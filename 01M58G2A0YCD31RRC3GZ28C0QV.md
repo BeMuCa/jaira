@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T19:56:24Z
+updated-at: 2026-11-18T19:56:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62765
 claimed-at: 2026-11-18T19:47:57Z
@@ -111,3 +111,4 @@ Empfehlung: 1 - Kein Blocker, die Faelle sind selten und harmlos, ein weiterer D
 - **2026-11-18 19:51 · Alexander Sacharov** — critique runde 4: Platzhalter-Meldung und Release-Note-Zeile 3 empfehlen E, aber E katalogisiert eine Lane ohne Katalogkopie nie (catalogueTwin). Text korrigieren, kein neues Verhalten fuer E (sonst wuerde jede bearbeitete Board-Lane katalogisiert). Sonst nichts: editorFailedMsg sitzt neben den anderen Meldungs-Helfern in lanes.go, placeholderID liest die id aus dem Template statt sie hart zu kodieren.
 - **2026-11-18 19:52 · Alexander Sacharov** — critique runde 5: der eine Fund aus Runde 4 ist beantwortet - Meldung in catalogueNewLane und Release-Note Zeile 3 verweisen jetzt auf n mit eigener id statt auf E. Nichts weiter.
 - **2026-11-18 19:53 · Alexander Sacharov** — bughunt: done at 3238db94 - 0 findings in 4 modules, follow-up hunt (diff since 16a8effb: placeholderID check in catalogueNewLane, editorFailedMsg, newLaneDoneMsg error branch; no file new to the list - untracked .jaira/milestones/*.md are board data, not code, not hunted); concurrency, error paths, input, permissions checked; ran: go test ./internal/tui/ ./core/lane/ (ok); files: core/lane/share.go core/release/notes/28C0QV.md internal/tui/lanecatalogue_test.go internal/tui/lanes.go internal/tui/model.go
+- **2026-11-18 19:56 · Alexander Sacharov** — review: kein Blocker, 5 notes (Randfaelle: Platzhalter-Lane nachtraeglich benannt, gleiche id auf zwei Boards, writeThrough ohne Lock, Meldung bei Reload-Fehler, String-Praefix in editLane). Tests gruen.
