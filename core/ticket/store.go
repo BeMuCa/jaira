@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"sort"
 	"strings"
@@ -1543,14 +1544,22 @@ func (s *Store) lock(id string) (func(), error) {
 			f.Close()
 			return func() { os.Remove(path) }, nil
 		}
-		if !os.IsExist(err) {
+		// On Windows a lock file the previous holder has just removed stays
+		// "delete pending" until every handle on it is closed, and creating it
+		// again in that window fails with Access is denied rather than with
+		// "exists". It is the same busy lock, so it is waited for like one; a
+		// denial that does not go away still ends in an error at the deadline.
+		busy := os.IsExist(err) || (runtime.GOOS == "windows" && os.IsPermission(err))
+		if !busy {
 			return nil, err
 		}
-		if fi, statErr := os.Stat(path); statErr == nil && time.Since(fi.ModTime()) > lockStale {
-			os.Remove(path) // previous holder died
+		if breakStale(path) {
 			continue
 		}
 		if time.Now().After(deadline) {
+			if !os.IsExist(err) {
+				return nil, err
+			}
 			return nil, fmt.Errorf("ticket: timed out waiting for lock on %s", id)
 		}
 		time.Sleep(backoff)
@@ -1558,6 +1567,34 @@ func (s *Store) lock(id string) (func(), error) {
 			backoff *= 2
 		}
 	}
+}
+
+// breakStale removes the lock file at path when its holder has died - it is
+// older than lockStale - and reports whether it did. A plain stat-then-remove
+// lets two waiters both see the dead lock, the first take a fresh one and the
+// second remove that fresh one, leaving two holders. So the break is made only
+// under <path>.break, taken with O_EXCL like the lock itself, and the lock is
+// looked at again under it: a lock somebody took in the meantime is fresh and
+// stays. A .break left by a process that died inside the few instructions it
+// holds one is broken the plain way once it is stale itself.
+func breakStale(path string) bool {
+	if fi, err := os.Stat(path); err != nil || time.Since(fi.ModTime()) <= lockStale {
+		return false
+	}
+	guard := path + ".break"
+	g, err := os.OpenFile(guard, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
+	if err != nil {
+		if fi, statErr := os.Stat(guard); statErr == nil && time.Since(fi.ModTime()) > lockStale {
+			os.Remove(guard)
+		}
+		return false
+	}
+	g.Close()
+	defer os.Remove(guard)
+	if fi, err := os.Stat(path); err != nil || time.Since(fi.ModTime()) <= lockStale {
+		return false
+	}
+	return os.Remove(path) == nil
 }
 
 // Lock takes the store's advisory lock under a caller-chosen name, for state in

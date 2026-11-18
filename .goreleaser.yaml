@@ -11,6 +11,17 @@ version: 2
 before:
   hooks:
     - go mod tidy
+    # The Windows version resource - Properties > Details: company, product,
+    # file version - plus an as-invoker manifest. go-winres writes
+    # cmd/jaira/rsrc_windows_<arch>.syso from cmd/jaira/winres/winres.json,
+    # and go build links a .syso only into the build whose GOOS/GOARCH its
+    # name carries. An exe with neither is what Defender's ML heuristics
+    # flag first (32TTSS). Numeric only: a snapshot's -SNAPSHOT suffix is no
+    # Windows version.
+    - go run github.com/tc-hib/go-winres@v0.3.3 make --in cmd/jaira/winres/winres.json --out cmd/jaira/rsrc --arch amd64,arm64 --file-version {{ .Major }}.{{ .Minor }}.{{ .Patch }}.0 --product-version {{ .Major }}.{{ .Minor }}.{{ .Patch }}.0
+    # install.ps1 rides along as a release asset - the copy SignPath signed
+    # when release.yaml's sign-windows job ran, the plain one otherwise.
+    - sh scripts/signed-windows.sh stage
 
 builds:
   - id: jaira
@@ -24,6 +35,11 @@ builds:
       - -s -w -X main.version={{.Version}}
     goos: [linux, darwin, windows]
     goarch: [amd64, arm64]
+    hooks:
+      # Swaps in the SignPath-signed jaira.exe when there is one (32TTSS);
+      # every other target, and every build without ./signed, is untouched.
+      post:
+        - cmd: sh scripts/signed-windows.sh exe "{{ .Path }}" "{{ .Target }}"
 
 archives:
   - formats: [tar.gz]
@@ -36,6 +52,46 @@ archives:
 
 checksum:
   name_template: checksums.txt
+
+release:
+  extra_files:
+    - glob: ./dist-extra/install.ps1
+  # SignPath Foundation signs the Windows files free of charge for open
+  # source on condition that the download page says so - and only a
+  # release it actually signed may say so. release.yaml sets
+  # WINDOWS_SIGNED=true when sign-windows ran and succeeded.
+  footer: |
+    {{ if eq (envOrDefault "WINDOWS_SIGNED" "") "true" }}Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).{{ end }}
+
+# winget (32TTSS): every release opens a pull request on microsoft/winget-pkgs
+# with the manifests for both Windows zips, from a fork of winget-pkgs owned
+# by WINGET_PKGS_OWNER. Off unless WINGET_GITHUB_TOKEN - a token that may push
+# to that fork and open pull requests - is non-empty; without it the
+# manifests are only written to dist/. winget-pkgs scans every package with
+# Defender, so while jaira.exe is flagged the pull request fails validation.
+winget:
+  - name: jaira
+    publisher: BeMuCa
+    package_identifier: BeMuCa.jaira
+    short_description: A git-synced kanban board for the tasks coding agents generate, stored as markdown in the repository.
+    license: MIT
+    homepage: https://github.com/BeMuCa/jaira
+    publisher_url: https://github.com/BeMuCa
+    publisher_support_url: https://github.com/BeMuCa/jaira/issues
+    release_notes_url: https://github.com/BeMuCa/jaira/releases/tag/{{ .Tag }}
+    tags: [kanban, cli, git, agents]
+    skip_upload: '{{ if eq (envOrDefault "WINGET_GITHUB_TOKEN" "") "" }}true{{ else }}auto{{ end }}'
+    repository:
+      owner: '{{ envOrDefault "WINGET_PKGS_OWNER" "BeMuCa" }}'
+      name: winget-pkgs
+      branch: 'jaira-{{ .Version }}'
+      token: '{{ envOrDefault "WINGET_GITHUB_TOKEN" "" }}'
+      pull_request:
+        enabled: true
+        base:
+          owner: microsoft
+          name: winget-pkgs
+          branch: master
 
 changelog:
   sort: asc

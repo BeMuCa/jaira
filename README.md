@@ -153,6 +153,10 @@ Or download a binary from the releases page and put it on your `PATH`. Either
 way it is a single static executable with no runtime dependency: nothing to
 install alongside it, no daemon, no database.
 
+Windows Defender has flagged unsigned jaira releases as a trojan — a false
+positive of its machine-learning heuristics. What to do about it, and how the
+release reports it to Microsoft, is in [docs/WINDOWS.md](docs/WINDOWS.md).
+
 `git` is optional. jaira works fine in a directory that is not a repository; you
 only lose the parts that are about sharing (`jaira share`, the merge driver).
 

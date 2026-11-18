@@ -62,18 +62,17 @@ function Add-JairaUserPath([string]$Dir) {
 	return $true
 }
 
-# Writing the registry tells no one; this broadcast is what makes a newly
-# opened terminal see the new PATH without signing out.
+# Writing the registry tells no one; a WM_SETTINGCHANGE broadcast is what
+# makes a newly opened terminal see the new PATH without signing out. .NET
+# sends that broadcast itself whenever it writes a user variable, so setting
+# and removing a throwaway one sends it twice. Compiling C# to call user32
+# directly did the same and made this script look like a dropper to Defender
+# (32TTSS). PATH itself is never written this way: SetEnvironmentVariable
+# would store it as REG_SZ.
 function Send-JairaEnvChange {
 	try {
-		if (-not ('JairaInstall.Env' -as [type])) {
-			Add-Type -Namespace JairaInstall -Name Env -MemberDefinition @'
-[DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-public static extern IntPtr SendMessageTimeout(IntPtr hWnd, uint Msg, UIntPtr wParam, string lParam, uint fuFlags, uint uTimeout, out UIntPtr lpdwResult);
-'@
-		}
-		$result = [UIntPtr]::Zero
-		[void][JairaInstall.Env]::SendMessageTimeout([IntPtr]0xffff, 0x1a, [UIntPtr]::Zero, 'Environment', 2, 5000, [ref]$result)
+		[Environment]::SetEnvironmentVariable('JAIRA_INSTALL_ENV_REFRESH', '1', 'User')
+		[Environment]::SetEnvironmentVariable('JAIRA_INSTALL_ENV_REFRESH', $null, 'User')
 	} catch {
 		Write-Host 'note: open a new terminal (or sign out and in) for the PATH change to apply'
 	}
@@ -124,16 +123,31 @@ function Install-Jaira {
 		# and remove what earlier runs left there once nothing holds it.
 		Get-ChildItem -LiteralPath $installDir -Filter 'jaira.exe.old-*' |
 			Remove-Item -Force -ErrorAction SilentlyContinue
+		$old = "$exe.old-$PID"
 		if (Test-Path -LiteralPath $exe) {
-			Move-Item -LiteralPath $exe -Destination "$exe.old-$PID" -Force
+			Move-Item -LiteralPath $exe -Destination $old -Force
 		}
-		Copy-Item -LiteralPath (Join-Path $tmp 'x\jaira.exe') -Destination $exe
-		Remove-Item -LiteralPath "$exe.old-$PID" -Force -ErrorAction SilentlyContinue
+		# A new exe that does not get as far as printing its version - a copy
+		# that fails, an exe quarantined right after it was written or when it
+		# first starts, a folder that refuses the write - puts the old one
+		# back, or the next run would sweep the last working copy away as
+		# .old-*.
+		try {
+			Copy-Item -LiteralPath (Join-Path $tmp 'x\jaira.exe') -Destination $exe -ErrorAction Stop
+			$version = & $exe --version
+			if ($LASTEXITCODE -ne 0) { throw "$exe --version exited $LASTEXITCODE" }
+		} catch {
+			if (Test-Path -LiteralPath $old) {
+				Move-Item -LiteralPath $old -Destination $exe -Force -ErrorAction SilentlyContinue
+			}
+			throw
+		}
+		Remove-Item -LiteralPath $old -Force -ErrorAction SilentlyContinue
 	} finally {
 		Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
 	}
 
-	Write-Host "installed $(& $exe --version) to $exe"
+	Write-Host "installed $version to $exe"
 	if (Add-JairaUserPath $installDir) {
 		Send-JairaEnvChange
 		$env:Path = $env:Path.TrimEnd(';') + ';' + $installDir
