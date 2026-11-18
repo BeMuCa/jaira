@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T17:22:35Z
+updated-at: 2026-11-18T17:24:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74923
 claimed-at: 2026-11-18T17:08:27Z
@@ -29,7 +29,7 @@ outcome-why: "Lanes aus einem Repo fehlten in den Settings aller anderen Boards,
 outcome-resolves: "Neue und adoptierte Lanes stehen in jedem Board unter '+'."
 review-summary: "none"
 review-gaps: "none: kein bestehender Built-in-id-Check gefunden (internal/cli/lanes.go:418 sammelt nur ids); isBuiltinID hat einen Aufrufer, bleibt wegen Lesbarkeit; catalogueNewLane parst die Datei zweimal (Parse + Adopt) — einmal pro n, gelassen; die alte, verwaiste Kommentarzeile ueber addAvailable ('newLane writes a fresh lane skeleton into the catalogue') ist vorbestehend und blieb"
-test-verdict: "pass: go build + go test -race ./... RC=0; DoD 1-3 im Tree geprueft; TUI im tmux auf zwei Scratch-Boards: n in a -> ~/.jaira/lanes/e2e-lane.md + Meldung, Board b zeigt 'E2E lane' als verfuegbare Spalte; zweites n mit gleicher id -> 'on this board only', Katalog-md5 unveraendert; parallele Schreiber: O_EXCL im Skelett + Adopt-Refuse, nicht separat gestartet (TUI-Pfad, ein Tastendruck)"
+test-verdict: "pass: go build + go test -race ./... RC=0 at 55ad762d; DoD 1-3 im Tree geprueft (Proof-Tests laufen gruen); TUI per tmux auf zwei Scratch-Boards unter JAIRA_HOME: n in a -> Katalog + Meldung, b bietet 'E2E lane' an; zweites n gleicher id -> 'on this board only', Katalog-md5 unveraendert; E in a -> beide Kopien 'hello edited', kein drifted. Zwei Schreiber: Katalog-Schreiben refused bei existierender Datei (Adopt) bzw. bei geaendertem Katalog (writeThrough, TestWriteThroughLeavesACatalogueChangedMeanwhile); zwei parallele TUIs nicht gestartet"
 hunt-verdict: "fail: bughunt done at 6fcd1288, 2 change — E auf einer n-Lane geht nicht in den Katalog und R wirft die Bearbeitung weg; eine n-Lane mit Built-in-id (review) ersetzt den Built-in im Katalog"
 round: 3
 ---
