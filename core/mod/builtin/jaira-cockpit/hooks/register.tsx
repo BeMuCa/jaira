@@ -370,8 +370,11 @@ async function refreshBoard($: EngineInterface): Promise<void> {
 
 // What spawn.sh opened for a ticket whose pull request is merged — its tabs,
 // worktree and branch — goes without a teamlead session: a teamlead runs
-// reap.sh every round, a person's session runs it here, at its start and then
-// every REAP_EVERY_MS. Only with Herdr: without it reap.sh keeps everything.
+// reap.sh every round, a person's session runs it here, from its first minute
+// on and then every REAP_EVERY_MS — not at the start itself: a
+// tab spawn.sh opens comes up before its role line is typed, and only that
+// line says the session carries a ticket. Only with Herdr: without it reap.sh
+// keeps everything.
 // Its lines say nothing a person has to act on, so none is shown.
 async function reapMerged($: EngineInterface): Promise<void> {
   if (await carries($)) return
@@ -1145,9 +1148,6 @@ export const register: Register = (on, options) => {
     })
     await refreshBoard($)
     await refreshCache($)
-    // On the clock, not awaited here: reap.sh may ask the forge for a while,
-    // and the session's start does not wait for it.
-    $.clock.after(0, () => void reapMerged($))
     // The board moves while nobody types; the countdown moves with the clock.
     $.clock.every(60_000, () => {
       void refreshBoard($).then(() => reapMerged($))

@@ -684,16 +684,27 @@ describe('waiting for you', () => {
     expect(await (await $.ui.mount(BAND)).find({ key: 'decision-K7P2QX' })).toBeUndefined()
   })
 
-  test('a person\'s session runs reap.sh at its start and then every ten minutes, a worker\'s never', async ($, on) => {
+  test('a person\'s session runs reap.sh from its first minute on, then every ten minutes', async ($, on) => {
     const REAP = '/repo/.claude/skills/jaira-dispatcher/scripts/reap.sh'
     const w = world(on, { herdr: true })
     await startSession($)
     await w.clock.settle()
+    expect(ran(w, 'bash', REAP)).toEqual([])
+    await w.clock.advance(60_000)
     expect(ran(w, 'bash', REAP)).toEqual([['bash', REAP, '/repo', '@/repo']])
     for (let i = 0; i < 9; i++) await w.clock.advance(60_000)
     expect(ran(w, 'bash', REAP)).toHaveLength(1)
     await w.clock.advance(60_000)
     expect(ran(w, 'bash', REAP)).toHaveLength(2)
+  })
+
+  test('a tab spawn.sh opened runs no reap.sh, though its role line comes only after the start', async ($, on) => {
+    const w = world(on, { herdr: true })
+    await startSession($)
+    await w.clock.advance(30_000)
+    await $.prompt.submit({ text: '/jaira-worker MG677R --parent jaira-4c', origin: { kind: 'composer' }, wait: false })
+    await w.clock.advance(11 * 60_000)
+    expect(ran(w, 'bash', '/repo/.claude/skills/jaira-dispatcher/scripts/reap.sh')).toEqual([])
   })
 
   test('a session that carries a ticket runs no reap.sh', async ($, on) => {

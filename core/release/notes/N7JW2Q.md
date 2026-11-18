@@ -1,2 +1,2 @@
 - Run `jaira roles install` again: a worker or dispatcher started with `--parent` now closes its own Herdr tab after its report once its ticket waits in a person's lane or is done, through the new `jaira-dispatcher/scripts/close-tab.sh`; a tab with an open question or uncommitted changes outside `.jaira/` stays, and `close-tab.sh --dry-run` shows what it would do.
-- With Herdr, the jaira-cockpit now runs `reap.sh` itself at session start and every ten minutes, so tabs, worktrees and branches of merged tickets go without a teamlead session.
+- With Herdr, the jaira-cockpit now runs `reap.sh` itself a minute after session start and then every ten minutes, so tabs, worktrees and branches of merged tickets go without a teamlead session.
