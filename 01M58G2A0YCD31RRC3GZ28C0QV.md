@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T19:47:57Z
+updated-at: 2026-11-18T19:48:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62765
 claimed-at: 2026-11-18T19:47:57Z
@@ -63,6 +63,8 @@ review-check: |-
   proof: internal/tui/lanes.go catalogueTwin (isBuiltinID guard); TestEditOfBuiltinIDDoesNotWriteThrough
 - [x] Drift-Kommentar in core/lane/share.go sagt, dass nur ein byte-gleiches Paar durchgeschrieben wird
   proof: core/lane/share.go Drift doc comment
+- [ ] Ein mit n angelegtes File, das noch die Platzhalter-id des Templates (my-lane) traegt, kommt nicht in den Katalog, auch wenn es sonst veraendert wurde; Meldung nennt den Grund; Test
+- [ ] Beendet sich der Editor mit Fehlercode, sagt die Meldung im Lanes-Screen zusaetzlich, dass die Lane nur auf dem Board blieb bzw. der Katalog die alte Kopie behaelt; Test
 
 ## Options
 
