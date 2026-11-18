@@ -618,7 +618,7 @@ func catalogueNewLane(path string) (msg string, isErr bool) {
 	}
 	if l, err := lane.Parse(b, path); err == nil {
 		if l.ID == placeholderID() {
-			return "on this board only, not in your catalogue: " + l.ID + " is the template's placeholder id — give the lane an id of its own and press E", true
+			return "on this board only, not in your catalogue: " + l.ID + " is the template's placeholder id; to put a lane in your catalogue, make it with n and give it an id of its own", true
 		}
 		if isBuiltinID(l.ID) {
 			return "on this board only, not in your catalogue: " + l.ID + " is a built-in lane's id, and a catalogue file of that id would replace the built-in on every board", true

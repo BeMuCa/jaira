@@ -20,14 +20,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T19:51:04Z
+updated-at: 2026-11-18T19:52:14Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62765
 claimed-at: 2026-11-18T19:47:57Z
 outcome-what: "Eine mit n angelegte Lane wird nach dem Editor auch nach ~/.jaira/lanes kopiert (catalogueNewLane), ausser sie traegt noch die Platzhalter-id des Templates oder eine Built-in-id; E schreibt in den Katalog durch, solange die Kopien byte-gleich waren; bricht der Editor mit Fehlercode ab, sagt der Lanes-Screen, was das fuer den Katalog heisst."
 outcome-why: "Lanes aus einem Repo fehlten in den Settings aller anderen Boards; Signoff wollte zusaetzlich keine my-lane-Platzhalter im Katalog und keinen stillen Abbruch."
 outcome-resolves: "Neue und adoptierte Lanes stehen in jedem Board unter '+'; Built-in-Overrides und unbenannte Skelette bleiben auf ihrem Board."
-review-summary: "Nach dem Schliessen des Editors, den n im Lanes-Screen oeffnet, kopiert catalogueNewLane (internal/tui/lanes.go) die neue Board-Lane per lane.Adopt(overwrite=false) nach ~/.jaira/lanes; damit bietet jedes andere Board sie unter '+' an. Ausgelassen werden ein unveraendertes Skelett (Bytes == lane.Template), eine im Editor geloeschte Datei, eine id eines Built-ins und eine id, die der Katalog schon hat (Meldung 'on this board only'). E auf einer Board-Lane merkt sich vorher per catalogueTwin, ob die Katalogkopie byte-gleich ist (und keine Built-in-id); nur dann schreibt writeThrough die Bearbeitung danach auch in den Katalog - und auch nur, wenn der Katalog sich inzwischen nicht geaendert hat und die id gleich blieb. Das verhindert, dass R eine Bearbeitung mit der alten Katalogkopie ueberschreibt. Beides laeuft im bestehenden newLaneDoneMsg-Zweig in model.go vor dem Reload, damit Drift den neuen Stand sieht. Der Drift-Kommentar in core/lane/share.go beschreibt jetzt genau diese Regel. Adoption geteilter Lanes (a) schrieb schon vorher in den Katalog; neu ist nur der Test dafuer. 11 Tests in internal/tui/lanecatalogue_test.go mit JAIRA_HOME, Release-Note in core/release/notes/28C0QV.md."
+review-summary: "internal/tui/lanes.go catalogueNewLane und core/release/notes/28C0QV.md Zeile 3 raten 'give it an id and press E' - E schreibt aber nur durch, wenn catalogueTwin eine Katalogkopie findet, und eine my-lane-Lane hat keine; der Rat fuehrt ins Leere. Meldung und Note muessen sagen, was wirklich geht: die Lane bleibt auf dem Board, eine mit n neu angelegte Lane mit eigener id kommt in den Katalog."
 review-gaps: |-
   note: catalogueNewLane erkennt ein unveraendertes Skelett nur bytegenau - speichert der Editor es mit kleiner Aenderung (z.B. Whitespace) und id my-lane, landet my-lane.md im Katalog und wird auf jedem Board unter '+' angeboten
   note: beendet sich der Editor mit Fehlercode (z.B. vim :cq), steigt model.go vor catalogueNewLane/writeThrough aus - die Lane bleibt dann still nur auf dem Board bzw. der Katalog behaelt die alte Kopie; nur die Fehlermeldung des Editors erscheint
@@ -35,7 +35,7 @@ review-gaps: |-
   note: writeThrough prueft den Katalog und schreibt danach ohne Lock - zwei TUI-Sitzungen koennen sich in diesem kurzen Fenster ueberschreiben; fuer eine Ein-Personen-Datei vertretbar
 test-verdict: "pass: go build ./... and go test -race -count=1 ./... green (RC=0); DoD 1-5 verified in the tree (all lane-catalogue tests pass incl. TestEditOfBuiltinIDDoesNotWriteThrough; share.go Drift comment read); E/n paths exercised through catalogueTwin/writeThrough/model.Update in tests, not in a live TUI (needs a tty and $EDITOR); failure paths: changed-meanwhile and id-change leave the catalogue alone (tests); this round adds no new write"
 hunt-verdict: "pass: bughunt done at 16a8effb, 0 change, 0 pre-existing"
-round: 5
+round: 6
 review-verdict: "Diff erfuellt alle 5 DoD-Punkte; go vet und go test ./internal/tui ./core/lane gruen. Die beiden Bughunt-Funde (Drift nach E, Built-in-id im Katalog) sind sauber geschlossen und getestet. Kein Defekt gefunden, nur vier kleine Notes zu Randfaellen."
 review-round: 4
 review-check: |-
@@ -115,3 +115,4 @@ Empfehlung: 1 - Kein Blocker, die Faelle sind selten und harmlos, ein weiterer D
 - **2026-11-18 19:47 · Alexander Sacharov** — Given back from signoff: 2) Zurueckgeben: Skelett-Erkennung tolerant machen und Editor-Fehlercode melden
 - **2026-11-18 19:47 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
 - **2026-11-18 19:48 · Alexander Sacharov** — decision: Skelett-Erkennung tolerant = geparste id gleich der Platzhalter-id des Templates (aus lane.Parse(lane.Template) gelesen, nicht hart my-lane). Unveraendertes Skelett bleibt still; ein veraendertes mit my-lane bekommt eine Meldung. Editor-Fehlercode: Katalog-Schritt bleibt uebersprungen (vim :cq heisst Abbruch), die Meldung haengt nur an, was das fuer den Katalog bedeutet — nicht trotzdem kopieren.
+- **2026-11-18 19:51 · Alexander Sacharov** — critique runde 4: Platzhalter-Meldung und Release-Note-Zeile 3 empfehlen E, aber E katalogisiert eine Lane ohne Katalogkopie nie (catalogueTwin). Text korrigieren, kein neues Verhalten fuer E (sonst wuerde jede bearbeitete Board-Lane katalogisiert). Sonst nichts: editorFailedMsg sitzt neben den anderen Meldungs-Helfern in lanes.go, placeholderID liest die id aus dem Template statt sie hart zu kodieren.
