@@ -298,9 +298,18 @@ export function mainRepoOf(gitCommonDir: string, fallback: string): string {
 // Where the ticket's work lives, from `git worktree list --porcelain`: the
 // worktree on a branch ending in its lower-case id, else the main working
 // tree. Running `jaira move` anywhere else answers "on its ref and not on
-// your disk".
+// your disk". Herdr's review worktree of feat/<id> sits on review/feat/<id>
+// and ends in the id just the same, without the ticket on its disk: of all
+// that match, the branch with the fewest parts is the ticket's own. A
+// detached tree — the ticket's own in the middle of a rebase — ranks after
+// <prefix>/<id> and before any branch nested deeper than that.
 export function worktreeFor(porcelain: string, id: string, fallback: string): string {
-  return worktreesOf(porcelain).find(w => isTicketsTree(w, id))?.path ?? fallback
+  return ticketsTree(worktreesOf(porcelain), id)?.path ?? fallback
+}
+
+function ticketsTree(trees: Worktree[], id: string): Worktree | undefined {
+  const parts = (w: Worktree) => (w.branch === '' ? 2.5 : w.branch.split('/').length)
+  return trees.filter(w => isTicketsTree(w, id)).sort((a, b) => parts(a) - parts(b))[0]
 }
 
 type Worktree = { path: string; branch: string }
@@ -326,7 +335,7 @@ function isTicketsTree(w: Worktree, id: string): boolean {
 // lags the upstream by hundreds of commits, every one of them "ahead".
 export function branchesFor(porcelain: string, id: string): { ticket?: string; base?: string } {
   const trees = worktreesOf(porcelain)
-  const ticket = trees.find(w => isTicketsTree(w, id))?.branch
+  const ticket = ticketsTree(trees, id)?.branch
   const base = trees[0]?.branch
   return { ...(ticket ? { ticket } : {}), ...(base ? { base } : {}) }
 }
@@ -407,9 +416,14 @@ export function pendingOf(listJson: string, named: readonly string[], terminal: 
 // `git branch --list '*/<slug>'` — spawn.sh names it <prefix>/<slug>, and a
 // worktree removed after done leaves it behind — and from `git branch
 // --contains <a commit naming it>`, where it was worked on another ticket's
-// branch.
+// branch. A branch that only wraps another listed one — Herdr's
+// review/<branch> — is passed by: it lists before task/<slug> and
+// work/<slug>. Depth alone decides nothing; in the --contains listing a wip
+// or a detached HEAD has fewer parts than the branch the work rode on. A
+// detached HEAD lists as "(HEAD detached at <sha>)", which is no branch.
 export function carrierBranch(listing: string, base: string): string | undefined {
-  return listing.split('\n').map(l => l.trim()).find(b => b && b !== base)
+  const branches = listing.split('\n').map(l => l.trim()).filter(b => b && b !== base && !b.startsWith('('))
+  return branches.find(b => !branches.some(o => b.endsWith(`/${o}`)))
 }
 
 // The forge jaira-role-pr would open a pull request on: `git config

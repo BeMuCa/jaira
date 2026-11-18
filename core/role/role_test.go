@@ -732,13 +732,18 @@ esac
 		// on Windows, where Git Bash prints /tmp/... too.
 		file := strings.TrimSuffix(strings.TrimPrefix(typedLine, chatLead), chatTail)
 		dir := file[:max(strings.LastIndex(file, "/"), 0)]
-		if !strings.HasSuffix(start, "&& claude --model 'sonnet' --add-dir '"+dir+"'") {
-			t.Errorf("%s started %q, want claude --model 'sonnet' --add-dir '%s'", lane, start, dir)
+		// A Read rule on the folder, never --add-dir: since Claude Code 2.1
+		// an added directory stops the tab at a trust dialog.
+		//wintrap:ok a permission rule on a shell line, slashes as spawn.sh writes it
+		if !strings.HasSuffix(start, "&& claude --model 'sonnet' '--allowedTools=Read(/"+dir+"/**)'") {
+			t.Errorf("%s started %q, want claude --model 'sonnet' '--allowedTools=Read(/%s/**)'", lane, start, dir)
 		}
 		// Typed, a long request loses its middle (42C3RZ): the brief's
 		// longest note alone runs past 4000 characters, and all of it
-		// reaches the file while the tab gets one short line.
-		if len(typedLine) > 200 {
+		// reaches the file while the tab gets one short line: the lead, the
+		// path and the tail. The path is the temp folder's, which on macOS
+		// alone runs past 130 characters (/private/var/folders/...).
+		if len(typedLine) > len(chatLead)+len(file)+len(chatTail) || len(typedLine)-len(file) > 120 {
 			t.Errorf("%s typed %d characters into the tab, want one short line: %q", lane, len(typedLine), typedLine)
 		}
 		if !strings.Contains(prompt, long) || len(prompt) < 4000 {
@@ -759,10 +764,10 @@ esac
 			t.Errorf("%s typed line spans lines; a newline typed into the tab sends it early:\n%s", lane, typedLine)
 		}
 	}
-	if start, _ := run("explain", ""); !strings.Contains(start, "&& claude --add-dir '") {
+	if start, _ := run("explain", ""); !strings.Contains(start, "&& claude '--allowedTools=Read(") {
 		t.Errorf("no chat-model: started %q, want plain claude, the account default", start)
 	}
-	if start, _ := run("explain", "x'; rm -rf ~; '"); !strings.Contains(start, "&& claude --add-dir '") {
+	if start, _ := run("explain", "x'; rm -rf ~; '"); !strings.Contains(start, "&& claude '--allowedTools=Read(") {
 		t.Errorf("a chat-model that is no model name reached the command line: %q", start)
 	}
 	if start, prompt := run("review", "sonnet"); !strings.HasSuffix(start, "&& claude") || prompt != "/jaira-role-lane AB12CD review" {
@@ -857,10 +862,10 @@ func TestSpawnStartsClaudeWhereItsShellRuns(t *testing.T) {
 		{"wsl", "Linux", "Ubuntu", "review", "<wt>", "wsl.exe --cd '<wt>' -- bash -lic \"claude\""},
 		// cmd and PowerShell 5.1 know no &&: --cwd puts the tab in place.
 		{"git bash", "MINGW64_NT-10.0-22631", "", "review", `C:\work\repo`, `claude`},
-		// A chat's request file is outside the worktree: claude gets its
-		// folder as Windows spells it, in the double quotes cmd and
-		// PowerShell both read.
-		{"git bash chat", "MINGW64_NT-10.0-22631", "", "explain", `C:\work\repo`, `claude --add-dir "C:\work\repo"`},
+		// A chat's request file is outside the worktree: claude gets a Read
+		// rule on its folder, in the POSIX form Windows claude matches rules
+		// against, in the double quotes cmd and PowerShell both read.
+		{"git bash chat", "MINGW64_NT-10.0-22631", "", "explain", `C:\work\repo`, `claude "--allowedTools=Read(//c/work/repo/**)"`},
 	} {
 		bin := t.TempDir()
 		ran := filepath.Join(bin, "ran")
