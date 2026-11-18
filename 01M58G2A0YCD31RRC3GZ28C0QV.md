@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T18:46:50Z
+updated-at: 2026-11-18T18:46:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45834
 claimed-at: 2026-11-18T18:45:09Z
@@ -90,3 +90,4 @@ Empfehlung: 3 - beide DoD-Punkte sind erfüllt und getestet, die Hinweise änder
 - **2026-11-18 18:44 · Alexander Sacharov** — Given back from signoff: 1) Zurückgeben: Drift-Kommentar in core/lane/share.go:132 korrigieren und E auf eingebaute ids nicht durchschreiben lassen
 - **2026-11-18 18:45 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
 - **2026-11-18 18:46 · Alexander Sacharov** — decision: Built-in-Schutz sitzt in catalogueTwin, nicht in editLane — dort wird syncTo bestimmt, und catalogueNewLane nutzt dasselbe isBuiltinID. Release-Note Zeile 2 nennt jetzt auch E.
+- **2026-11-18 18:46 · Alexander Sacharov** — critique runde 3 (nach signoff-Rueckgabe): nichts — beide Rueckgabepunkte beantwortet; der Guard sitzt in catalogueTwin, wo syncTo entsteht, und nutzt dasselbe isBuiltinID wie catalogueNewLane. Dass eine Board-Lane mit Built-in-id nach E als drifted erscheint, ist die gewaehlte Folge (Option 1), kein Fund.
