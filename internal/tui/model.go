@@ -1184,6 +1184,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.laneScreen != nil {
 			m.laneScreen = newLaneScreen(m.store, m.lanes)
 		}
+		if msg.path != "" {
+			text, isErr := catalogueNewLane(msg.path)
+			if m.laneScreen != nil && text != "" {
+				m.laneScreen.msg, m.laneScreen.isErr = text, isErr
+			}
+		}
 		return m, nil
 
 	case tea.KeyPressMsg:

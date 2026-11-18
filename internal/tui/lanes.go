@@ -497,8 +497,13 @@ func (ls *laneScreen) publish() {
 }
 
 // newLaneDoneMsg reports that $EDITOR, opened on a freshly written lane
-// skeleton from the lane settings screen's 'n' key, has exited.
-type newLaneDoneMsg struct{ err error }
+// skeleton from the lane settings screen's 'n' key, has exited. path is the
+// file the 'n' key wrote, and empty when the editor was opened by E on a lane
+// that already existed: only a new lane goes into the catalogue.
+type newLaneDoneMsg struct {
+	err  error
+	path string
+}
 
 // newLane writes a fresh lane skeleton into the catalogue and opens it in
 // $EDITOR — until now, doing this meant knowing 'jaira lanes template'
@@ -559,8 +564,8 @@ func (ls *laneScreen) editLane() tea.Cmd {
 
 // newLane writes a lane skeleton into this board's own lane directory and
 // opens it: a board is its lane directory, so a file there is on the board
-// the moment the editor closes. To offer it to other boards, publish it or
-// copy it into the catalogue.
+// the moment the editor closes. When it closes, catalogueNewLane also copies
+// it into the personal catalogue, so every other board offers it under '+'.
 func (ls *laneScreen) newLane() tea.Cmd {
 	path, err := writeLaneSkeleton(lane.ProjectLanesDir(ls.store.Root))
 	if err != nil {
@@ -570,8 +575,38 @@ func (ls *laneScreen) newLane() tea.Cmd {
 	argv := append(editorCommand(), path)
 	cmd := exec.Command(argv[0], argv[1:]...)
 	return tea.ExecProcess(cmd, func(err error) tea.Msg {
-		return newLaneDoneMsg{err: err}
+		return newLaneDoneMsg{err: err, path: path}
 	})
+}
+
+// catalogueNewLane copies the lane file the 'n' key wrote, now that the
+// editor has closed on it, into the personal catalogue (lane.UserLanesDir):
+// the catalogue is what every board's '+' offers, and a lane that only one
+// board's directory holds is a lane the person's other boards never see. It
+// runs after the editor rather than when the skeleton is written because only
+// then does the file carry the id the person gave it.
+//
+// It returns the message for the lane screen, empty when there is nothing to
+// say. A skeleton left unedited is not catalogued — its id is the template's
+// placeholder — and neither is a file the person deleted in the editor. An id
+// the catalogue already holds is never overwritten: that copy may be the one
+// other boards run, and the message says so instead.
+func catalogueNewLane(path string) (msg string, isErr bool) {
+	b, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return "", false
+	}
+	if err != nil {
+		return err.Error(), true
+	}
+	if string(b) == lane.Template {
+		return "", false
+	}
+	l, dst, err := lane.Adopt(path, lane.UserLanesDir(), false)
+	if err != nil {
+		return "on this board only, not in your catalogue: " + err.Error(), true
+	}
+	return l.ID + " is on this board and in your catalogue (" + dst + ")", false
 }
 
 // writeLaneSkeleton creates a new lane skeleton file in dir under the first
