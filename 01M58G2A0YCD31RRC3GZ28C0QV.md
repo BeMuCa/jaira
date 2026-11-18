@@ -20,14 +20,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T19:51:04Z
+updated-at: 2026-11-18T19:51:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62765
 claimed-at: 2026-11-18T19:47:57Z
 outcome-what: "Eine mit n angelegte Lane wird nach dem Editor auch nach ~/.jaira/lanes kopiert (catalogueNewLane), ausser sie traegt noch die Platzhalter-id des Templates oder eine Built-in-id; E schreibt in den Katalog durch, solange die Kopien byte-gleich waren; bricht der Editor mit Fehlercode ab, sagt der Lanes-Screen, was das fuer den Katalog heisst."
 outcome-why: "Lanes aus einem Repo fehlten in den Settings aller anderen Boards; Signoff wollte zusaetzlich keine my-lane-Platzhalter im Katalog und keinen stillen Abbruch."
 outcome-resolves: "Neue und adoptierte Lanes stehen in jedem Board unter '+'; Built-in-Overrides und unbenannte Skelette bleiben auf ihrem Board."
-review-summary: "Nach dem Schliessen des Editors, den n im Lanes-Screen oeffnet, kopiert catalogueNewLane (internal/tui/lanes.go) die neue Board-Lane per lane.Adopt(overwrite=false) nach ~/.jaira/lanes; damit bietet jedes andere Board sie unter '+' an. Ausgelassen werden ein unveraendertes Skelett (Bytes == lane.Template), eine im Editor geloeschte Datei, eine id eines Built-ins und eine id, die der Katalog schon hat (Meldung 'on this board only'). E auf einer Board-Lane merkt sich vorher per catalogueTwin, ob die Katalogkopie byte-gleich ist (und keine Built-in-id); nur dann schreibt writeThrough die Bearbeitung danach auch in den Katalog - und auch nur, wenn der Katalog sich inzwischen nicht geaendert hat und die id gleich blieb. Das verhindert, dass R eine Bearbeitung mit der alten Katalogkopie ueberschreibt. Beides laeuft im bestehenden newLaneDoneMsg-Zweig in model.go vor dem Reload, damit Drift den neuen Stand sieht. Der Drift-Kommentar in core/lane/share.go beschreibt jetzt genau diese Regel. Adoption geteilter Lanes (a) schrieb schon vorher in den Katalog; neu ist nur der Test dafuer. 11 Tests in internal/tui/lanecatalogue_test.go mit JAIRA_HOME, Release-Note in core/release/notes/28C0QV.md."
+review-summary: "internal/tui/lanes.go catalogueNewLane und core/release/notes/28C0QV.md Zeile 3 raten 'give it an id and press E' - E schreibt aber nur durch, wenn catalogueTwin eine Katalogkopie findet, und eine my-lane-Lane hat keine; der Rat fuehrt ins Leere. Meldung und Note muessen sagen, was wirklich geht: die Lane bleibt auf dem Board, eine mit n neu angelegte Lane mit eigener id kommt in den Katalog."
 review-gaps: |-
   note: catalogueNewLane erkennt ein unveraendertes Skelett nur bytegenau - speichert der Editor es mit kleiner Aenderung (z.B. Whitespace) und id my-lane, landet my-lane.md im Katalog und wird auf jedem Board unter '+' angeboten
   note: beendet sich der Editor mit Fehlercode (z.B. vim :cq), steigt model.go vor catalogueNewLane/writeThrough aus - die Lane bleibt dann still nur auf dem Board bzw. der Katalog behaelt die alte Kopie; nur die Fehlermeldung des Editors erscheint
