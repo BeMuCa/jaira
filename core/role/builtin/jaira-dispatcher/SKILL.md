@@ -265,26 +265,30 @@ in-progress and repeats until it has nothing left to say. Run it to silence. Do
 not shortcut it because the worker sounded confident: the loop ending is the
 evidence, its tone is not.
 
-### Before the work leaves the agents: the bug hunt
+### The bug hunt runs inside testing
 
-Every lane read the change through the ticket, and so does the review. Defects
-that came along with copied or moved code, or that live in the lines around a
-hunk, sit outside that frame — on 2026-11-16 a ticket that took over code from
-an older project passed every lane, and an external review then found fourteen
-real defects in it.
+The `testing` lane starts the bug hunt itself — a background agent beside its
+tests — and owes `hunt-verdict` beside `test-verdict`. You start no hunter of
+your own: the testing worker does it as its prompt says. A `bughunt: change:`
+finding sends the ticket back to `in-progress` like a failed test, and that
+lane's worker reads the notes as its brief; a `pre-existing` one never does.
 
-So when the ticket changed code — its diff touches anything outside
-`.jaira/` — and the next lane is the fresh one (`review`), or a lane a person
-owns where the board has no fresh one, start one more agent before you move it
-there:
+**A board whose testing lane does not owe `hunt-verdict`** — no testing lane at
+all, as on a board fresh from `jaira init`, or an older one not yet updated —
+still gets its hunt, from you. Read it off the ticket's own board:
+`jaira show <id> --for-lane testing --json` lists the lane's outputs under
+`produces`; no `hunt-verdict` there, or exit 2 with `no_such_lane`, means the
+hunt is yours. Then, when the ticket changed
+code (anything outside `.jaira/`) and the next lane is the fresh one, or a
+lane a person owns, start one more agent before you move it there, with the id
+and nothing else:
 
     Agent(subagent_type: "claude", prompt: "Read the jaira-role-bughunt skill and hunt ticket <id>.")
 
-The id and nothing else. It moves nothing and changes no code; it leaves one
-`bughunt:` note per verified finding and a closing `bughunt: done at <commit>` line. No
-findings: move on. Findings: move the ticket back to `in-progress` and start
-that lane's worker as usual — the notes are its brief — and the loop runs to
-silence again, with a new bug hunt before the ticket leaves once more.
+A `change` finding sends the ticket back to `in-progress` and the loop runs to
+silence again, with a new hunt before it leaves; a `pre-existing` one goes to
+the person as a note when it is the ticket's own subject, or into a ticket of
+its own with `--follows <id>` when it is not.
 
 ## Transports: a tab if Herdr is here, otherwise fall back
 

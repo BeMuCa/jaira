@@ -78,3 +78,50 @@ func RefreshShipped(root string, dryRun bool) ([]Refreshed, error) {
 func shippedKey(l *Lane) string {
 	return "core/lane/builtin/" + strings.TrimPrefix(l.Source, "builtin:")
 }
+
+// PreviewRefresh is the set Load(root) returns once the refresh rs reports has
+// been written: every lane reported updated reads as this binary's version of
+// it, at its own path. A dry run renders the agent note from it, so that what
+// it says it would write is what the real run, which reloads after writing,
+// does write — previewed from the lanes still on disk, a lane whose outputs
+// the refresh changes made the note look changed when it would not be, or
+// unchanged when it would.
+func PreviewRefresh(root string, rs []Refreshed) (*Set, error) {
+	set, err := Load(root)
+	if err != nil {
+		return nil, err
+	}
+	updated := map[string]string{}
+	for _, r := range rs {
+		if r.Action == RefreshUpdated {
+			updated[r.ID] = r.Path
+		}
+	}
+	if len(updated) == 0 {
+		return set, nil
+	}
+	builtins, err := Builtins()
+	if err != nil {
+		return nil, err
+	}
+	lanes := make([]*Lane, 0, len(set.Lanes))
+	for _, l := range set.Lanes {
+		if path, ok := updated[l.ID]; ok {
+			for _, b := range builtins {
+				if b.ID != l.ID {
+					continue
+				}
+				want, err := Bytes(b)
+				if err != nil {
+					return nil, err
+				}
+				if l, err = parse(want, path, false); err != nil {
+					return nil, fmt.Errorf("lane %s: %w", b.ID, err)
+				}
+			}
+		}
+		lanes = append(lanes, l)
+	}
+	orderIDs, _ := LoadOrder(root)
+	return assemble(lanes, orderIDs, nil), nil
+}

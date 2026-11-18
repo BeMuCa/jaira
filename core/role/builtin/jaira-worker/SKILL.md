@@ -142,10 +142,10 @@ Then, until you stop:
    `jaira move <id> --to <next_lane>` (or back, where the lane found the work
    wanting). Every lane's prompt applies to you as written — the critique lane
    is not lighter because you wrote the code.
-3. **Is `next_lane` marked fresh, or a lane a person owns, and did the
-   ticket change code?** Run the bug hunt first — see "The bug hunt" below.
-   It runs once per pass through the loop, after the last lane that is yours,
-   before the work leaves your hands.
+3. **Does the board's testing lane owe no `hunt-verdict`, did the ticket
+   change code, and is `next_lane` fresh or a lane a person owns?** Run the
+   bug hunt first — see "The bug hunt" below. Where testing owes it, the hunt
+   already ran inside that lane.
    **Is `next_lane` marked fresh?** (`context: fresh` in its `--for-lane`
    payload.) Then it is not yours. Move the ticket
    into it and hand it to a new agent — see "The fresh lane" below.
@@ -199,31 +199,30 @@ them is a conflict with somebody else's branch.
 
 ## The bug hunt
 
-Every lane you ran read the change through the ticket, and so does the review
-that follows. Defects that came along with copied or moved code, or that live
-in the lines around a hunk, sit outside that frame — on 2026-11-16 a ticket
-that took over code from an older project passed every lane, and an external
-review then found fourteen real defects in it. The bug hunt is a reader
-without the frame.
+The bug hunt is part of the `testing` lane: its prompt starts the hunter as a
+background agent, runs the tests beside it and owes `hunt-verdict` as well as
+`test-verdict`. You work testing like any other lane and start the hunter the
+way its prompt says — never as a step of your own outside it. A `bughunt:
+change:` finding sends the ticket back to `in-progress` like a failed test; a
+`pre-existing` one never does.
 
-When the ticket changed code — its diff touches anything outside `.jaira/` —
-and before it goes to the fresh lane, or to a person's lane where the board has
-no fresh one, start a new agent on it:
+**A board whose testing lane does not owe `hunt-verdict`** — no testing lane at
+all, as on a board fresh from `jaira init`, or an older one not yet updated —
+still gets its hunt, from you. Read it off the ticket's own board:
+`jaira show <id> --for-lane testing --json` lists the lane's outputs under
+`produces`; no `hunt-verdict` there, or exit 2 with `no_such_lane`, means the
+hunt is yours. Then, when the ticket changed
+code (anything outside `.jaira/`) and `next_lane` is the fresh lane, or a lane
+a person owns, start one before you move it there, with the id and nothing
+else:
 
     Agent(subagent_type: "claude", prompt: "Read the jaira-role-bughunt skill and hunt ticket <id>.")
 
-The id and nothing else: no summary, no hint where to look, for the same reason
-as the fresh lane. It moves nothing and changes no code; it leaves one
-`bughunt:` note per verified finding and a closing `bughunt: done at <commit>` line. Then:
-
-- **No findings:** carry on into the fresh lane.
-- **Findings:** each one is in-progress work on this ticket. Move the ticket
-  back to `in-progress`, fix them there, and run the loop to silence again —
-  critique, optimize, testing — and the bug hunt once more before it leaves,
-  on a new agent. A finding you hold to be wrong gets a note saying why, with
-  the line that proves it; the reviewer and the person read both.
-
-It runs in your directory, and while it runs you write nothing.
+It runs in your directory; while it runs you write nothing. A `change` finding
+sends the ticket back to `in-progress`, and the loop runs to silence with a
+new hunt before it leaves again; a `pre-existing` one you sort the way the
+testing lane does — same subject as the goal, a note for the person; another
+subject, `jaira create ... --follows <id>`.
 
 ## The fresh lane
 

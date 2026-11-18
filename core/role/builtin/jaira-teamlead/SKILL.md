@@ -197,8 +197,8 @@ share files.
 
 Before a ticket that changed code goes to its review and on to a person, a
 fresh agent hunts for defects in the modules it touches —
-`/jaira-role-bughunt <id>`, run by the dispatcher or worker you started, after
-the last lane that is theirs. That reader has no ticket in its head; the lanes
+`/jaira-role-bughunt <id>`, started by the `testing` lane beside its tests,
+which owes `hunt-verdict` for it. That reader has no ticket in its head; the lanes
 and the review all read the change through one, and miss what came along with
 copied or moved code.
 
@@ -208,7 +208,7 @@ that has to be the head of the ticket's branch now — a line from an earlier
 round does not cover code a later round changed:
 
 ```bash
-jaira show <id> | grep "bughunt: done at"                  # the hunt's closing note
+jaira show <id> | grep -E -- "— bughunt: done at [0-9a-f]{7,} " | tail -n 1   # the hunt's closing note
 git rev-parse --short feat/<ticket id, lower case>         # the commit that ships
 ```
 

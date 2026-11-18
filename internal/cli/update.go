@@ -87,7 +87,8 @@ behind.
 
 --dry-run says what would be written and what would be left alone, and writes
 nothing — not even the version stamp. With --lanes the preview of the jaira
-section is computed from the lanes as they are now.
+section is computed from the lanes as --lanes would leave them, so it names
+the same files the real run writes.
 
 This neither downloads anything nor upgrades the jaira binary itself; it
 brings a board's own setup up to date with whichever binary you already have
@@ -128,7 +129,14 @@ installed.`,
 			}
 			// Re-generated with this board's current lanes: adopting a lane is
 			// exactly when the note stops matching the board.
-			boardLanes, _ := lane.Load(s.Root)
+			// A dry run wrote no lane, so it previews from the lanes as the
+			// refresh would leave them, not as they still are on disk.
+			var boardLanes *lane.Set
+			if setup.dry && setup.lanes {
+				boardLanes, _ = lane.PreviewRefresh(s.Root, setup.laneResults)
+			} else {
+				boardLanes, _ = lane.Load(s.Root)
+			}
 			var notesWritten []string
 			var noteErr error
 			if setup.dry {
