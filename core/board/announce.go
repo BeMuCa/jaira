@@ -354,9 +354,12 @@ func noteFor(lanes []LaneFact) string { return agentNote + laneSection(lanes) }
 // alone (RenewInAgentFiles). It sits on a line of its own after the start
 // marker rather than inside it, because jaira before it finds the block by the
 // start marker's exact text and would append a second block otherwise.
+//
+// A CRLF file (a Windows checkout with core.autocrlf) carries the line as
+// '-->\r\n'; read as LF-only, its version would be lost and the guard gone.
 const versionLinePrefix = "<!-- jaira:version "
 
-var versionLineRe = regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(versionLinePrefix) + `(\S+) -->\n`)
+var versionLineRe = regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(versionLinePrefix) + `(\S+) -->\r?\n`)
 
 // versioned is note as it is written: under the version line, except from a
 // dev build, whose version says nothing about what it would write.

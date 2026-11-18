@@ -455,3 +455,25 @@ func TestNewerBinaryWithTheSameTextLeavesTheVersionLine(t *testing.T) {
 		t.Error("a block that differs only in its version line reads as stale")
 	}
 }
+
+// A Windows checkout with core.autocrlf=true holds the section with CRLF line
+// endings; the version line must still be read, or the guard is gone there.
+func TestOlderBinaryLeavesANewerCRLFBlockByteForByte(t *testing.T) {
+	st := newStaleSetup(t)
+	setCurrent(t, "1.0.2")
+	captureStdio(t, func() { runCLI(t, st.dir, "list") })
+	lf := strings.Replace(string(mustRead(t, st.claudeMD)),
+		"<!-- jaira:version 1.0.2 -->\n", "<!-- jaira:version 1.0.2 -->\nA LINE ONLY 1.0.2 WRITES\n", 1)
+	crlf := strings.ReplaceAll(lf, "\n", "\r\n")
+	mustWrite(t, st.claudeMD, []byte(crlf))
+
+	setCurrent(t, "1.0.1")
+	forgetRefresh(t, st.dir)
+	_, stderr := captureStdio(t, func() { runCLI(t, st.dir, "list") })
+	if string(mustRead(t, st.claudeMD)) != crlf {
+		t.Error("an older jaira rewrote a newer CRLF block")
+	}
+	if lines := refreshLines(stderr); len(lines) != 1 || !strings.Contains(lines[0], "CLAUDE.md (1.0.2)") {
+		t.Fatalf("want the line to name the newer CRLF block, stderr:\n%s", stderr)
+	}
+}
