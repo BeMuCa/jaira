@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T18:46:58Z
+updated-at: 2026-11-18T18:47:06Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45834
 claimed-at: 2026-11-18T18:45:09Z
@@ -28,10 +28,7 @@ outcome-what: "Eine mit n angelegte Lane wird nach dem Editor auch nach ~/.jaira
 outcome-why: "Lanes aus einem Repo fehlten in den Settings aller anderen Boards, weil n nur ins Board-Verzeichnis schrieb; ein E auf einer Built-in-id haette den Override fuer alle Boards geaendert."
 outcome-resolves: "Neue und adoptierte Lanes stehen in jedem Board unter '+'; Built-in-Overrides aendern sich nicht ueber ein Board."
 review-summary: "none"
-review-gaps: |-
-  note: an untouched skeleton that the editor saved with other line endings or a trailing newline is no longer byte-equal to lane.Template and is catalogued under the placeholder id (internal/tui/lanes.go catalogueNewLane); harmless, a second one is refused as already existing
-  note: write-through also hits a board lane carrying a built-in id whose catalogue override was byte-equal - editing it with E changes that override for every board without its own lane directory; consistent with the rule, but a wider effect than the board the person is on
-  note: the Drift comment in core/lane/share.go:132 still says every edit writes through to the catalogue immediately; true now only for the byte-equal case
+review-gaps: "none — the repair adds one guard in catalogueTwin reusing isBuiltinID (already used by catalogueNewLane), one test, and a comment; nothing duplicated, orphaned or repeated"
 test-verdict: "pass: go build + go test -race ./... RC=0 at 55ad762d; DoD 1-3 im Tree geprueft (Proof-Tests laufen gruen); TUI per tmux auf zwei Scratch-Boards unter JAIRA_HOME: n in a -> Katalog + Meldung, b bietet 'E2E lane' an; zweites n gleicher id -> 'on this board only', Katalog-md5 unveraendert; E in a -> beide Kopien 'hello edited', kein drifted. Zwei Schreiber: Katalog-Schreiben refused bei existierender Datei (Adopt) bzw. bei geaendertem Katalog (writeThrough, TestWriteThroughLeavesACatalogueChangedMeanwhile); zwei parallele TUIs nicht gestartet"
 hunt-verdict: "pass: bughunt done at 55ad762d, 0 change, 0 pre-existing (Folge-Hunt nach den 2 Funden von 6fcd1288, die gefixt sind)"
 round: 4
