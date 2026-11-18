@@ -657,15 +657,20 @@ func catalogueTwin(path, id string) (string, []byte) {
 // copies part: other boards keep the old version, the lane screen calls this
 // one drifted, and R pulls the old catalogue copy back over the edit. The
 // catalogue copy is only replaced while it still holds the bytes it held when
-// the editor opened; one that changed meanwhile, or a board file that no
-// longer parses, is left alone and the message says so.
+// the editor opened; one that changed meanwhile, a board file that no longer
+// parses, or one whose id the edit changed, is left alone and the message
+// says so.
 func writeThrough(edited, catPath string, before []byte) (msg string, isErr bool) {
 	b, err := os.ReadFile(edited)
 	if err != nil || bytes.Equal(b, before) {
 		return "", false
 	}
-	if _, err := lane.Parse(b, edited); err != nil {
+	l, err := lane.Parse(b, edited)
+	if err != nil {
 		return "your catalogue keeps the old copy: " + err.Error(), true
+	}
+	if l.ID+".md" != filepath.Base(catPath) {
+		return "the id is now " + l.ID + ", so your catalogue keeps the old copy (" + catPath + ")", true
 	}
 	now, err := os.ReadFile(catPath)
 	if err != nil || !bytes.Equal(now, before) {

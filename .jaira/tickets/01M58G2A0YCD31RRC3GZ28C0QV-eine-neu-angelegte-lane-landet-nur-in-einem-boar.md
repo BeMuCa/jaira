@@ -20,18 +20,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T17:19:17Z
+updated-at: 2026-11-18T17:19:53Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74923
 claimed-at: 2026-11-18T17:08:27Z
 outcome-what: Eine mit n angelegte Lane wird nach dem Schliessen des Editors zusaetzlich nach ~/.jaira/lanes kopiert (catalogueNewLane); Tests fuer neue und adoptierte Lanes unter JAIRA_HOME.
 outcome-why: "Lanes aus einem Repo fehlten in den Settings aller anderen Boards, weil n nur ins Board-Verzeichnis schrieb."
 outcome-resolves: "Neue und adoptierte Lanes stehen in jedem Board unter '+'."
-review-summary: none
+review-summary: "internal/tui/lanes.go writeThrough: an E edit that changes id: still overwrites <alte-id>.md im Katalog mit einer Lane anderer id — parsed id gegen die Katalog-id pruefen und dann nicht schreiben"
 review-gaps: "none: catalogueNewLane liest die Datei vor Adopt ein zweites Mal (Template-Vergleich) — einmal pro n-Taste, gelassen; catalogueHome/initBoard in lanecatalogue_test.go weichen bewusst von laneTestStore ab (JAIRA_HOME statt JAIRA_LANES_DIR, zwei Boards)"
 test-verdict: "pass: go build + go test -race ./... RC=0; DoD 1-3 im Tree geprueft; TUI im tmux auf zwei Scratch-Boards: n in a -> ~/.jaira/lanes/e2e-lane.md + Meldung, Board b zeigt 'E2E lane' als verfuegbare Spalte; zweites n mit gleicher id -> 'on this board only', Katalog-md5 unveraendert; parallele Schreiber: O_EXCL im Skelett + Adopt-Refuse, nicht separat gestartet (TUI-Pfad, ein Tastendruck)"
 hunt-verdict: "fail: bughunt done at 6fcd1288, 2 change — E auf einer n-Lane geht nicht in den Katalog und R wirft die Bearbeitung weg; eine n-Lane mit Built-in-id (review) ersetzt den Built-in im Katalog"
-round: 2
+round: 3
 ---
 
 # Eine neu angelegte Lane landet nur in einem Board, nicht im persoenlichen Katalog ~/.jaira/lanes
@@ -39,7 +39,7 @@ round: 2
 ## Definition of Done
 
 - [x] Eine im Lanes-Screen neu angelegte Lane liegt danach auch in ~/.jaira/lanes und erscheint in einem zweiten Repo unter '+'; Test mit JAIRA_HOME
-  proof: internal/tui/lanes.go catalogueNewLane, internal/tui/model.go newLaneDoneMsg; TestNewLaneLandsInCatalogueAndOnAnotherBoard (JAIRA_HOME)
+  proof: internal/tui/lanes.go catalogueNewLane, internal/tui/model.go case newLaneDoneMsg; TestNewLaneLandsInCatalogueAndOnAnotherBoard (JAIRA_HOME)
 - [x] Eine Lane aus .jaira/shared/<kollege>/ landet mit a im Katalog und ist danach in jedem Board unter '+' waehlbar; Test
   proof: TestAdoptedSharedLaneIsOfferedOnEveryBoard (internal/tui/lanecatalogue_test.go) — adopt() schrieb schon in den Katalog
 - [x] Release-Note-Zeile in core/release/notes/<ID>.md
@@ -67,3 +67,4 @@ round: 2
 - **2026-11-18 17:15 · Alexander Sacharov** — bughunt: done at 6fcd1288 - 2 findings (2 change, 0 pre-existing) in 3 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/release/notes/28C0QV.md internal/tui/lanecatalogue_test.go internal/tui/lanes.go internal/tui/model.go
 - **2026-11-18 17:16 · Alexander Sacharov** — testing: zurueck wegen der 2 bughunt-change-Funde. Plan: (1) catalogueNewLane katalogisiert keine id eines Built-ins (lane.Builtins) — Meldung 'on this board only'. (2) editLane auf einer Board-Lane, deren Katalogkopie vor dem Edit byte-gleich war, schreibt nach dem Editor auch in den Katalog (write-through, wie der Drift-Kommentar in core/lane/share.go:130 es annimmt); war sie schon verschieden, bleibt der Katalog unberuehrt.
 - **2026-11-18 17:19 · Alexander Sacharov** — decision: Bughunt-Fund 1 per write-through geloest, nicht per 'E oeffnet die Katalogkopie': sonst wirkt die Bearbeitung auf diesem Board erst nach R. Write-through nur, wenn Katalog == Board vor dem Edit (catalogueTwin) und der Katalog sich waehrend des Editors nicht geaendert hat; sonst bleibt er unberuehrt. Schreiben passiert vor m.reload(), damit die Drift-Berechnung des neuen Screens den neuen Katalog sieht.
+- **2026-11-18 17:19 · Alexander Sacharov** — critique: writeThrough muss die geparste id mit der des Katalogfiles vergleichen; bei geaenderter id Katalog unberuehrt lassen und das melden.

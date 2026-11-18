@@ -271,3 +271,21 @@ func TestWriteThroughLeavesACatalogueChangedMeanwhile(t *testing.T) {
 		t.Error("catalogue copy changed meanwhile was overwritten")
 	}
 }
+
+// TestWriteThroughKeepsCatalogueWhenIDChanged: an E edit that renames the
+// lane's id does not put a lane of another id into the old catalogue file.
+func TestWriteThroughKeepsCatalogueWhenIDChanged(t *testing.T) {
+	catalogue := catalogueHome(t)
+	board := t.TempDir()
+	writeLaneFile(t, catalogue, "deploy-check.md", deployLane)
+	writeLaneFile(t, board, "deploy-check.md", strings.Replace(deployLane, "id: deploy-check", "id: deploy-gate", 1))
+
+	msg, isErr := writeThrough(filepath.Join(board, "deploy-check.md"), filepath.Join(catalogue, "deploy-check.md"), []byte(deployLane))
+	if !isErr || !strings.Contains(msg, "deploy-gate") {
+		t.Errorf("message = %q (err %v), want it to name the new id", msg, isErr)
+	}
+	b, _ := os.ReadFile(filepath.Join(catalogue, "deploy-check.md"))
+	if string(b) != deployLane {
+		t.Error("catalogue file of the old id was overwritten")
+	}
+}
