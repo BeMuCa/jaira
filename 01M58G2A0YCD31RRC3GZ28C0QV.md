@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T18:46:20Z
+updated-at: 2026-11-18T18:46:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45834
 claimed-at: 2026-11-18T18:45:09Z
@@ -89,3 +89,4 @@ Empfehlung: 3 - beide DoD-Punkte sind erfüllt und getestet, die Hinweise änder
 - **2026-11-18 18:44 · Alexander Sacharov** — decision: 1) Zurückgeben: Drift-Kommentar in core/lane/share.go:132 korrigieren und E auf eingebaute ids nicht durchschreiben lassen
 - **2026-11-18 18:44 · Alexander Sacharov** — Given back from signoff: 1) Zurückgeben: Drift-Kommentar in core/lane/share.go:132 korrigieren und E auf eingebaute ids nicht durchschreiben lassen
 - **2026-11-18 18:45 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
+- **2026-11-18 18:46 · Alexander Sacharov** — decision: Built-in-Schutz sitzt in catalogueTwin, nicht in editLane — dort wird syncTo bestimmt, und catalogueNewLane nutzt dasselbe isBuiltinID. Release-Note Zeile 2 nennt jetzt auch E.
