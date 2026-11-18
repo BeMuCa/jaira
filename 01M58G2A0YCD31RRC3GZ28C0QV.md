@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T19:52:31Z
+updated-at: 2026-11-18T19:52:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62765
 claimed-at: 2026-11-18T19:47:57Z
@@ -28,11 +28,7 @@ outcome-what: "Eine mit n angelegte Lane wird nach dem Editor auch nach ~/.jaira
 outcome-why: "Lanes aus einem Repo fehlten in den Settings aller anderen Boards; Signoff wollte zusaetzlich keine my-lane-Platzhalter im Katalog und keinen stillen Abbruch."
 outcome-resolves: "Neue und adoptierte Lanes stehen in jedem Board unter '+'; Built-in-Overrides und unbenannte Skelette bleiben auf ihrem Board."
 review-summary: "none"
-review-gaps: |-
-  note: catalogueNewLane erkennt ein unveraendertes Skelett nur bytegenau - speichert der Editor es mit kleiner Aenderung (z.B. Whitespace) und id my-lane, landet my-lane.md im Katalog und wird auf jedem Board unter '+' angeboten
-  note: beendet sich der Editor mit Fehlercode (z.B. vim :cq), steigt model.go vor catalogueNewLane/writeThrough aus - die Lane bleibt dann still nur auf dem Board bzw. der Katalog behaelt die alte Kopie; nur die Fehlermeldung des Editors erscheint
-  note: ohne Home-Verzeichnis ist lane.UserLanesDir() leer und catalogueTwin/writeThrough rechnen mit dem relativen Pfad <id>.md im aktuellen Verzeichnis (gleiches Altverhalten wie Export fuer Built-ins); praktisch irrelevant
-  note: writeThrough prueft den Katalog und schreibt danach ohne Lock - zwei TUI-Sitzungen koennen sich in diesem kurzen Fenster ueberschreiben; fuer eine Ein-Personen-Datei vertretbar
+review-gaps: "none - placeholderID und editorFailedMsg haben je einen Aufrufer, keine Dopplung im Repo (grep nach Parse(lane.Template)/my-lane); placeholderID parst das Template nur auf dem seltenen n-Pfad, kein Hot Path"
 test-verdict: "pass: go build ./... and go test -race -count=1 ./... green (RC=0); DoD 1-5 verified in the tree (all lane-catalogue tests pass incl. TestEditOfBuiltinIDDoesNotWriteThrough; share.go Drift comment read); E/n paths exercised through catalogueTwin/writeThrough/model.Update in tests, not in a live TUI (needs a tty and $EDITOR); failure paths: changed-meanwhile and id-change leave the catalogue alone (tests); this round adds no new write"
 hunt-verdict: "pass: bughunt done at 16a8effb, 0 change, 0 pre-existing"
 round: 6
