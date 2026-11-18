@@ -20,10 +20,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T19:47:53Z
+updated-at: 2026-11-18T19:47:57Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-45834
-claimed-at: 2026-11-18T18:45:09Z
+claimed-by: DESKTOP-RFTCH11-62765
+claimed-at: 2026-11-18T19:47:57Z
 outcome-what: "Eine mit n angelegte Lane wird nach dem Editor auch nach ~/.jaira/lanes kopiert (catalogueNewLane); E schreibt in den Katalog durch, solange die Kopien byte-gleich waren und die id keinem Built-in gehoert; Drift-Kommentar entsprechend korrigiert."
 outcome-why: "Lanes aus einem Repo fehlten in den Settings aller anderen Boards, weil n nur ins Board-Verzeichnis schrieb; ein E auf einer Built-in-id haette den Override fuer alle Boards geaendert."
 outcome-resolves: "Neue und adoptierte Lanes stehen in jedem Board unter '+'; Built-in-Overrides aendern sich nicht ueber ein Board."
