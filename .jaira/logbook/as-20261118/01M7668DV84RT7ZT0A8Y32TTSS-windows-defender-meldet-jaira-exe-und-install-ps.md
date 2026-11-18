@@ -1,7 +1,7 @@
 ---
 id: 01M7668DV84RT7ZT0A8Y32TTSS
 title: "Windows: Defender meldet jaira.exe und install.ps1 als Trojaner (ML-Heuristik)"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 goal: "jaira.exe und der Installer werden auf einem Windows-Rechner mit Microsoft Defender nicht mehr als Malware gemeldet, auch bei jeder neuen Version."
@@ -19,22 +19,38 @@ tags:
   - ci
 blocked-by: []
 related: []
-commits: []
+commits:
+  - bd77914c70381f5c194fc4e84465e1ed08f18586
+  - 07a374f3d5971efd74c1fc623408e573c9edca47
+  - dd3cb631771d54224ac448edaca107d6930f9363
+  - 1992dc05ee7d03202754e5691ec7282104d249d8
+  - c21570bcf3b96f9f5006a514ba6a35ff656f1df4
+  - 96cb14d3deb0dba349d0051e942afddd2d13ac81
+  - 8796d54dfaaa9d0f839951ed111b11b3dc68112e
+  - fac01dd789c789500b60ffd205290aded5e65f80
 created-at: 2026-11-11T20:54:42Z
-updated-at: 2026-11-17T22:09:12Z
+updated-at: 2026-11-18T09:00:17Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-46806
-claimed-at: 2026-11-17T21:31:20Z
+claimed-by: DESKTOP-RFTCH11-73892
+claimed-at: 2026-11-17T22:15:04Z
 question: ""
 outcome-what: "Without a signature: winget manifests and a winget-pkgs PR per release via goreleaser (off unless WINGET_GITHUB_TOKEN), a wdsi-submission artifact plus SHA256 summary per release run (scripts/wdsi-bundle.sh), docs/WINDOWS.md for the manual steps; SignPath line only on a release that was really signed; install.ps1 restores the previous jaira.exe when the new one cannot be copied in; a stale store lock is broken by one waiter only"
 outcome-why: "SignPath Foundation turned the application down on 2026-11-17; Alex chose to lower false positives without a signature and add winget as a distribution path; two bug hunts found that a quarantined new exe left the install without any jaira.exe, and that two waiters could both break the same stale lock in core/ticket/store.go lock() next to this ticket's Windows lock fix"
 outcome-resolves: "DoD 5, 6, 7; DoD 1 and the signing half of DoD 3 stay open for Alex at signoff"
-review-summary: "none"
-review-gaps: "pass 3: 8796d54d - the stale check in breakStale appears twice on purpose (cheap look, then the authoritative one under the guard); tests are four small cases, the slow probabilistic one was already dropped; nothing removed. Earlier passes stand."
-test-verdict: "pass: go test ./... RC=0 at 8796d54d; GOOS=windows go vet ./core/ticket clean; TestBreakStale* (4, -race) green - dead lock broken and guard cleaned, guard held by another waiter -> nothing removed, fresh lock untouched, dead guard cleared; install.ps1 restore and release pipeline checks from earlier passes stand. Concurrent writers: covered by the guard test and the existing TestRegisterTagsLosesNoTagUnderConcurrentWriters (green)."
+review-summary: "Without a signature, jaira.exe and install.ps1 now look less like malware, and every release is set up to report itself. (1) The release build embeds a Windows version resource in jaira.exe (company, product, version from the tag) via a go-winres before-hook from cmd/jaira/winres/winres.json. (2) install.ps1 refreshes PATH by setting and removing a throwaway user variable through .NET instead of compiling C# with Add-Type/DllImport; the update step keeps the old jaira.exe until the new one has been copied and has run --version, and puts it back otherwise. (3) release.yaml has a sign-windows job (SignPath, both exes + install.ps1) that stays skipped until vars.SIGNPATH_ORGANIZATION_ID is set; the release footer names SignPath only when that job succeeded, and README no longer names it. (4) goreleaser writes winget manifests (BeMuCa.jaira) and opens a PR on microsoft/winget-pkgs only when secret WINGET_GITHUB_TOKEN is set. (5) After each release, scripts/wdsi-bundle.sh puts both exes + install.ps1 + SHA256SUMS into artifact wdsi-submission and the hashes plus the Microsoft form link into the run summary; docs/WINDOWS.md has the manual steps. (6) Alongside: core/ticket/store.go lock() waits on Windows 'Access is denied' for a delete-pending lock file, and a stale lock is broken only under an O_EXCL <lock>.break guard, so two waiters can no longer both take it."
+review-gaps: |-
+  note: DoD 1 (Authenticode signature, signtool verify) is not met and DoD 3 is only half met (no Add-Type, but install.ps1 is unsigned) - SignPath Foundation refused on 2026-11-17; per the decision note of 2026-11-17 Alex decides in signoff whether done needs them, so this is not sent back
+  note: breakStale is safe only while the .break guard is held by a living process; a dead .break is itself removed stat-then-remove, which has the same two-waiter race one level up (needs a process dying inside microseconds - documented in the comment)
+  note: unlock (store.go, os.Remove(path)) removes whatever lock file is there, not its own: a live holder that keeps a lock longer than lockStale (30s) has it broken, and its later unlock then deletes the next holder's lock - predates this ticket
+  note: the rollback in install.ps1 (Move-Item old back over a new jaira.exe that failed --version) was run on pwsh 7 only, not on Windows PowerShell 5.1 which the irm|iex one-liner uses; if Defender still holds the new file, the SilentlyContinue move leaves the old one as .old-<pid> and the next run sweeps it
+  note: the winget, sign-windows and wdsi steps in release.yaml cannot run before a real tag; they were checked with goreleaser check and a snapshot only
+test-verdict: "pass: go test ./... RC=0 at fac01dd7; install.ps1 swap block run on Windows pwsh 7 in three cases - missing new exe and a non-exe jaira.exe both restore the old jaira.exe with no .old left, a real GOOS=windows build installs and reports its version; docs/WINDOWS.md checksum advice matches checksums.txt of 0.5.13 (archives only). Earlier passes (lock tests, goreleaser templates, wdsi-bundle) stand."
 round: 5
 blocked-reason: "wartet auf SignPath-Genehmigung, Antrag 2026-11-11"
+review-verdict: "DoD 2, 4, 5, 6, 7 are met by the diff; DoD 3 is met for the Add-Type part, DoD 1 and the signing part of DoD 3 are open because SignPath refused - Alex's call in signoff. No defect found in the shipped code: go test ./core/ticket ok, GOOS=windows go vet ok, sh -n on both scripts ok. Unsure only about the release-job path (winget/wdsi) that first runs on a real tag."
+review-round: 5
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-32ttss  2. grep -n -i 'add-type\\|dllimport' scripts/install.ps1 - prints nothing  3. grep -n -i signpath README.md - prints nothing  4. go test ./core/ticket/ - prints ok  5. go run github.com/tc-hib/go-winres@v0.3.3 make --in cmd/jaira/winres/winres.json --out cmd/jaira/rsrc --arch amd64 --file-version 0.5.14.0 --product-version 0.5.14.0 && GOOS=windows go build -o /mnt/c/Temp/j.exe ./cmd/jaira  6. In Windows Explorer: right-click C:\\Temp\\j.exe > Properties > Details - you see Product name 'jaira', Company 'jaira project', File version 0.5.14.0  7. After the next release: Actions > release run > summary shows the table 'Defender false-positive report' with 3 files and SHA256, and artifact wdsi-submission is downloadable  8. Release page footer has no SignPath line (signing is off)"
 ---
 
 # Windows: Defender meldet jaira.exe und install.ps1 als Trojaner (ML-Heuristik)
@@ -112,3 +128,14 @@ blocked-reason: "wartet auf SignPath-Genehmigung, Antrag 2026-11-11"
 - **2026-11-17 22:07 · Alexander Sacharov** — bughunt: docs/WINDOWS.md:21-22 - 'compare its SHA256 with checksums.txt (Get-FileHash jaira.exe)' kann nie passen: checksums.txt enthält nur die Archive (.goreleaser.yaml checksum ohne extra_files, Windows als zip), weder jaira.exe noch install.ps1. Wer der Anleitung folgt, findet keinen Treffer und hält die Datei für manipuliert. Abhilfe: Hash des zip prüfen lassen, oder jaira.exe/install.ps1 per checksum.extra_files bzw. das SHA256SUMS aus wdsi-bundle.sh mitveröffentlichen; ran: gh release download --repo BeMuCa/jaira --pattern checksums.txt (0.5.13: sechs Zeilen, nur .tar.gz/.zip)
 - **2026-11-17 22:07 · Alexander Sacharov** — bughunt: done at 8796d54d - 2 findings in 9 modules; concurrency, error paths, input, permissions checked
 - **2026-11-17 22:09 · Alexander Sacharov** — bughunt 3 fixed: (1) install.ps1 now runs the new exe (--version, exit code checked) inside the same try as the copy, before the old .old-<pid> is removed; a failure puts the old one back. Run on Windows pwsh 7 with the block copied out: missing source / non-exe jaira.exe -> old jaira.exe restored, no .old left; real GOOS=windows build -> installed. (2) docs/WINDOWS.md: checksums.txt lists the archives only - the user check now hashes the zip; chose docs over checksum.extra_files so checksums.txt keeps the shape install.sh/install.ps1 parse.
+- **2026-11-17 22:09 · Alexander Sacharov** — critique pass 4 (reads only fac01dd7): the start check sits in the same try as the copy, so one rollback covers both; $version reused for the install line instead of a second run. Nothing to say.
+- **2026-11-17 22:12 · Alexander Sacharov** — bughunt: done at fac01dd7 - 0 findings in 9 modules (scripts/install.ps1, scripts/signed-windows.sh, scripts/wdsi-bundle.sh, .github/workflows/release.yaml, .goreleaser.yaml, .signpath/artifact-configuration.xml, cmd/jaira/winres/winres.json, core/ticket/store.go lock+breakStale, docs/WINDOWS.md); concurrency, error paths, input, permissions checked; ran: go test -race on core/ticket lock tests and a scratch 20-waiter stale-break stress (200 rounds, never >1 holder)
+- **2026-11-17 22:15 · Alexander Sacharov** — review: no blocker. DoD 1 and the signing half of DoD 3 stay open after the SignPath refusal - left to Alex in signoff per the 2026-11-17 decision, not sent back. Five notes in review-gaps (lock .break race one level up, unlock deletes a foreign lock after 30s, 5.1 rollback untested, release path untested before a real tag).
+- **2026-11-18 08:45 · Alexander Sacharov** — explain: Der Review fand keinen Fehler im Code. Offen bleiben nur DoD 1 (Authenticode-Signatur) und der Signatur-Teil von DoD 3, weil SignPath Foundation am 2026-11-17 abgelehnt hat; dazu ein paar kleine Restrisiken (Lock-Race eine Ebene höher, unlock löscht fremdes Lock nach 30s, Rollback in install.ps1 nur auf pwsh 7 getestet, winget/wdsi-Schritte erst mit echtem Tag prüfbar).
+Warum: Ohne Signatur kann Defender jaira.exe weiter melden; die Versions-Ressource, der Installer ohne Add-Type und der Meldungs-Bundle senken das Risiko nur, sie beseitigen es nicht.
+1) Zurückgeben, bis ein Signaturweg steht (bezahltes SignPath oder neuer Antrag) und DoD 1/3 erfüllt sind [give back]
+2) Annehmen wie es ist; Signatur als eigener späterer Schritt, die Restrisiken bleiben als Notes stehen [accept]
+3) Zurückgeben nur für die kleinen Restrisiken (Rollback auf Windows PowerShell 5.1 testen, unlock-Besitzer prüfen) [give back]
+Empfehlung: 2 - die Signatur hängt an einer externen Entscheidung, die der Code nicht lösen kann, und der gelieferte Teil ist geprüft und ohne Befund.
+- **2026-11-18 08:47 · Alexander Sacharov** — decision: 2) Annehmen wie es ist; Signatur als eigener späterer Schritt, die Restrisiken bleiben als Notes stehen
+- **2026-11-18 09:00 · Alexander Sacharov** — accepted by Alex 2026-11-18 without the signature: DoD 1 and the signing half of DoD 3 stay open until a signing route exists (SignPath Foundation rejected 2026-11-17).
