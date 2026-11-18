@@ -62,7 +62,7 @@ func (u *updateSetup) json(m map[string]any) map[string]any {
 // editedError is the refusal of an update that left an edited file alone.
 func editedError() error {
 	return fail(ExitValidation, "edited",
-		"some files were edited here and left alone; 'jaira roles install --project --force' (or '--global --force') and 'jaira lanes use <id> --force' replace them")
+		"some files were edited here and left alone; 'jaira roles install --project --force' (or '--global --force') and 'jaira lanes use <id> --force' replace them (today's board; a named board's lane is replaced by hand)")
 }
 
 func refreshRoles(root string, dryRun bool) ([]roleRun, error) {
@@ -119,6 +119,12 @@ func printLaneResults(w io.Writer, results []lane.Refreshed, dry bool) {
 				fmt.Fprintf(w, "updated %s\n", r.Path)
 			}
 		case lane.RefreshSkipped:
+			if r.Board != "" {
+				// 'jaira lanes use' writes today's board only: offered here it
+				// would overwrite the lane of the same id there instead.
+				fmt.Fprintf(w, "skipped %s (edited here; a lane of board %s is replaced by hand)\n", r.Path, r.Board)
+				continue
+			}
 			fmt.Fprintf(w, "skipped %s (edited here; 'jaira lanes use %s --force' replaces it)\n", r.Path, r.ID)
 		}
 	}
@@ -129,7 +135,11 @@ func printLaneResults(w io.Writer, results []lane.Refreshed, dry bool) {
 func laneResultsJSON(results []lane.Refreshed) []map[string]any {
 	out := make([]map[string]any, 0, len(results))
 	for _, r := range results {
-		out = append(out, map[string]any{"lane": r.ID, "path": r.Path, "action": r.Action})
+		m := map[string]any{"lane": r.ID, "path": r.Path, "action": r.Action}
+		if r.Board != "" {
+			m["board"] = r.Board
+		}
+		out = append(out, m)
 	}
 	return out
 }

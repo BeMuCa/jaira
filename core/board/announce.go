@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
+
+	"github.com/BeMuCa/jaira/core/release"
 )
 
 // jairaMarker bounds the block jaira manages, so the note can be updated or
@@ -331,11 +334,12 @@ func NoteIsCurrent(root string, lanes []LaneFact) (current bool, stale []string)
 			// creates it; nothing here should nag about a file nobody wrote.
 			continue
 		}
-		want, ok := managedBlock(string(existing), noteFor(lanes))
+		bare := withoutVersion(string(existing))
+		want, ok := managedBlock(bare, noteFor(lanes))
 		if !ok {
 			continue // no managed block: this file is somebody else's entirely
 		}
-		if want != string(existing) {
+		if want != bare {
 			stale = append(stale, name)
 		}
 	}
@@ -344,6 +348,63 @@ func NoteIsCurrent(root string, lanes []LaneFact) (current bool, stale []string)
 
 // noteFor is the note as it would be written for these lanes.
 func noteFor(lanes []LaneFact) string { return agentNote + laneSection(lanes) }
+
+// versionLine opens the block with the version of jaira that last changed its
+// text, so an older jaira can tell it is looking at a newer block and leave it
+// alone (RenewInAgentFiles). It sits on a line of its own after the start
+// marker rather than inside it, because jaira before it finds the block by the
+// start marker's exact text and would append a second block otherwise.
+//
+// A CRLF file (a Windows checkout with core.autocrlf) carries the line as
+// '-->\r\n'; read as LF-only, its version would be lost and the guard gone.
+const versionLinePrefix = "<!-- jaira:version "
+
+var versionLineRe = regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(versionLinePrefix) + `(\S+) -->\r?\n`)
+
+// versioned is note as it is written: under the version line, except from a
+// dev build, whose version says nothing about what it would write.
+func versioned(note string) string {
+	if release.Current == "dev" {
+		return note
+	}
+	return versionLinePrefix + release.Current + " -->\n" + note
+}
+
+// blockBounds are where the managed block of s starts and ends, ok false
+// when s has none.
+func blockBounds(s string) (start, end int, ok bool) {
+	start = strings.Index(s, jairaMarkerStart)
+	end = strings.Index(s, jairaMarkerEnd)
+	return start, end, start >= 0 && end > start
+}
+
+// BlockVersion is the version that last changed the managed block of s, ""
+// when it carries none — written by a jaira from before the line existed.
+func BlockVersion(s string) string {
+	start, end, ok := blockBounds(s)
+	if !ok {
+		return ""
+	}
+	if m := versionLineRe.FindStringSubmatch(s[start:end]); m != nil {
+		return m[1]
+	}
+	return ""
+}
+
+// withoutVersion is s without the version line of its managed block. Whether
+// a block is current is judged on this: the line alone changing is no reason
+// to rewrite a file, or every release would leave a one-line diff behind.
+func withoutVersion(s string) string {
+	start, end, ok := blockBounds(s)
+	if !ok {
+		return s
+	}
+	loc := versionLineRe.FindStringIndex(s[start:end])
+	if loc == nil {
+		return s
+	}
+	return s[:start+loc[0]] + s[start+loc[1]:]
+}
 
 // managedBlock returns what s would become if its managed block were rewritten
 // with note, and whether s has such a block at all. One definition, used by the
@@ -398,15 +459,20 @@ const claudeImport = "<!-- jaira: the jaira block lives in AGENTS.md -->\n@AGENT
 // keep it out of, and every teammate's clone reads that the same way. With no
 // block anywhere, both get one, which is what jaira always did.
 func chosenAgentFiles(root string) []string {
+	if have := filesWithBlock(root); len(have) > 0 {
+		return have
+	}
+	return agentFiles
+}
+
+// filesWithBlock are the agent instruction files at root that carry the block.
+func filesWithBlock(root string) []string {
 	var have []string
 	for _, name := range agentFiles {
 		b, err := os.ReadFile(filepath.Join(root, name))
 		if err == nil && strings.Contains(string(b), jairaMarkerStart) {
 			have = append(have, name)
 		}
-	}
-	if len(have) == 0 {
-		return agentFiles
 	}
 	return have
 }
@@ -415,6 +481,29 @@ func chosenAgentFiles(root string) []string {
 // carry it — see chosenAgentFiles.
 func AnnounceInAgentFiles(root string, lanes []LaneFact) (written []string, err error) {
 	return announceIn(root, chosenAgentFiles(root), lanes, false)
+}
+
+// RenewInAgentFiles rewrites the block in the files that already carry it and
+// nowhere else. It is what a board brought up to date without anybody asking
+// may do: refreshing a block somebody keeps is expected, creating AGENTS.md or
+// CLAUDE.md in a repository that has neither is not — that stays the act of
+// 'jaira init' and 'jaira update'.
+//
+// A block a newer jaira wrote (BlockVersion) is left byte for byte and named
+// in newer: two people on two versions in one repository would otherwise
+// rewrite it back and forth, one commit each.
+func RenewInAgentFiles(root string, lanes []LaneFact) (written, newer []string, err error) {
+	var names []string
+	for _, name := range filesWithBlock(root) {
+		b, _ := os.ReadFile(filepath.Join(root, name))
+		if v := BlockVersion(string(b)); v != "" && release.Current != "dev" && release.Newer(v, release.Current) {
+			newer = append(newer, name+" ("+v+")")
+			continue
+		}
+		names = append(names, name)
+	}
+	written, err = announceIn(root, names, lanes, false)
+	return written, newer, err
 }
 
 // PreviewAgentFiles reports what AnnounceInAgentFiles (choice "") or ChooseAgentFiles(choice)
@@ -581,7 +670,7 @@ func announceIn(root string, names []string, lanes []LaneFact, dry bool) (writte
 func announceInAgentFile(root, name string, lanes []LaneFact, dry bool) (path string, action string, err error) {
 	path = filepath.Join(root, name)
 	note := agentNote + laneSection(lanes)
-	block := jairaMarkerStart + "\n" + note + "\n" + jairaMarkerEnd + "\n"
+	block := jairaMarkerStart + "\n" + versioned(note) + "\n" + jairaMarkerEnd + "\n"
 
 	existing, readErr := os.ReadFile(path)
 	if readErr != nil {
@@ -601,10 +690,12 @@ func announceInAgentFile(root, name string, lanes []LaneFact, dry bool) (path st
 	// block; one written before the start marker or after the end marker is
 	// ordinary user text, not the boundary, and is left alone. That rule lives
 	// in managedBlock, which the drift check reads too.
-	if updated, ok := managedBlock(s, note); ok {
-		if updated == s {
+	bare := withoutVersion(s)
+	if updated, ok := managedBlock(bare, note); ok {
+		if updated == bare {
 			return path, "unchanged", nil
 		}
+		updated, _ = managedBlock(bare, versioned(note))
 		if !dry {
 			if err := os.WriteFile(path, []byte(updated), 0o644); err != nil {
 				return path, "", err
