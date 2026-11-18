@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T17:26:34Z
+updated-at: 2026-11-18T18:43:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74923
 claimed-at: 2026-11-18T17:08:27Z
@@ -76,3 +76,9 @@ review-check: "1. go build -o /tmp/jaira-28c0qv ./cmd/jaira  2. in a test repo w
 - **2026-11-18 17:19 · Alexander Sacharov** — critique: writeThrough muss die geparste id mit der des Katalogfiles vergleichen; bei geaenderter id Katalog unberuehrt lassen und das melden.
 - **2026-11-18 17:21 · Alexander Sacharov** — critique runde 2: id-Wechsel jetzt abgefangen (writeThrough); sonst nichts — newLaneDoneMsg traegt beide Faelle (n/E), weil beide ueber denselben ExecProcess-Rueckweg kommen; ein zweiter Msg-Typ waere ein zweiter case mit identischem Reload.
 - **2026-11-18 17:22 · Alexander Sacharov** — bughunt: done at 55ad762d - 0 findings in 3 modules, follow-up hunt (diff since 6fcd1288); concurrency, error paths, input, permissions checked; files: core/release/notes/28C0QV.md internal/tui/lanecatalogue_test.go internal/tui/lanes.go internal/tui/model.go
+- **2026-11-18 18:43 · Alexander Sacharov** — explain: Der Review fand keinen Blocker, nur drei Hinweise. Eine mit n angelegte Lane wird jetzt auch in ~/.jaira/lanes kopiert, und E schreibt Änderungen in den Katalog durch. Dabei ist der Kommentar zu Drift in core/lane/share.go:132 veraltet, und E auf einer Lane mit eingebauter id ändert den Katalog-Override für alle Boards.
+Warum: Der Kommentar behauptet etwas, das nur noch im byte-gleichen Fall stimmt, und kann spätere Leser in die Irre führen. Die Wirkung auf andere Boards ist konsistent mit der Regel, aber breiter, als die Person auf ihrem Board erwartet.
+1) Zurückgeben: Drift-Kommentar in core/lane/share.go:132 korrigieren und E auf eingebaute ids nicht durchschreiben lassen [give back]
+2) Zurückgeben: nur den Drift-Kommentar korrigieren, das Durchschreiben auf eingebaute ids lassen wie es ist [give back]
+3) Ticket so annehmen, die drei Hinweise bleiben als Notes stehen [accept]
+Empfehlung: 3 - beide DoD-Punkte sind erfüllt und getestet, die Hinweise ändern kein Verhalten für den Alltag, der Kommentar lässt sich in einem späteren Commit mitnehmen.
