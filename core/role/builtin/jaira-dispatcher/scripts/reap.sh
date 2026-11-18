@@ -19,8 +19,9 @@ GitLab; 'git config jaira.forge' settles a host that names neither) is left
 alone as 'waiting'. A merged one is kept, with the reason printed, when
   - its local branch is not at the merged head: commits past it, or the head
     never fetched,
-  - one of its worktrees has changes that are not committed (changes under
-    .jaira/, the board's own files, do not count),
+  - one of its worktrees has changes that are not committed (untracked files
+    under .jaira/ and modified ticket files under .jaira/tickets/ do not
+    count),
   - one of its worktrees has a detached HEAD,
   - the ticket is back on the board in a lane other than done,
   - herdr does not answer, so an open tab cannot be told from a closed one.
@@ -29,9 +30,8 @@ alone as 'waiting'. A merged one is kept, with the reason printed, when
   -h, --help  This text.
 
 One run at a time per repository: a second one while the first still runs
-prints 'skipped: reap.sh runs already' and exits 0. The lock is reap.lock
-beside jaira/panes/, holding the pid of its run; one left by a run that died
-is taken over.
+prints 'skipped: reap.sh runs already' and exits 0. The lock is flock on
+reap.lock beside jaira/panes/; a run that dies lets go of it.
 
 Output: one line per thing done — 'closed <ticket>/<lane> <pane>', 'removed
 <worktree>', 'deleted branch <branch>' — or 'waiting <ticket>: <reason>' and
@@ -72,25 +72,20 @@ panes="$(cd "$root" && cd "$common" && pwd)/jaira/panes"
 ls "$panes"/* >/dev/null 2>&1 || exit 0
 # One run at a time per repository: every person's cockpit and every teamlead
 # start this, and two runs ask the forge twice and race each other over
-# 'git worktree remove'. The lock is a file holding the holder's pid, put in
-# place with a hard link: the link is atomic and the pid is already in it, so
-# no run ever sees a lock without its holder. Not flock: macOS has none. Not a
-# symlink: Git Bash copies instead of linking. A lock whose run died — its pid
-# gone — is taken over; a second run while the first lives skips the round,
-# the next one comes. --dry-run changes nothing and takes no lock.
+# 'git worktree remove'. The lock is flock on reap.lock, held through fd 9 for
+# as long as this shell lives: the kernel lets go of it when the run dies, so
+# no lock is ever left over to take over. flock(1) where there is one, perl's
+# flock on macOS, which ships no flock(1); with neither the run goes unlocked,
+# as before. A second run while the first lives skips the round, the next one
+# comes. --dry-run changes nothing and takes no lock.
 if [ -z "$dry" ]; then
-  lock="$(dirname "$panes")/reap.lock"
-  echo "$$" > "$lock.$$"
-  trap 'rm -f "$lock.$$"' EXIT
-  if ! ln "$lock.$$" "$lock" 2>/dev/null; then
-    holder="$(cat "$lock" 2>/dev/null || true)"
-    if [ -n "$holder" ] && kill -0 "$holder" 2>/dev/null; then
-      echo "skipped: reap.sh runs already (pid $holder)"; exit 0
-    fi
-    rm -f "$lock"
-    ln "$lock.$$" "$lock" 2>/dev/null || { echo "skipped: reap.sh runs already"; exit 0; }
+  exec 9>>"$(dirname "$panes")/reap.lock"
+  if command -v flock >/dev/null 2>&1; then
+    flock -n 9 || { echo "skipped: reap.sh runs already"; exit 0; }
+  elif command -v perl >/dev/null 2>&1; then
+    rc=0; perl -MFcntl=:flock -e 'open(my $f, ">>&=", 9) or exit 2; flock($f, LOCK_EX | LOCK_NB) or exit 1' || rc=$?
+    [ "$rc" != 1 ] || { echo "skipped: reap.sh runs already"; exit 0; }
   fi
-  trap 'rm -f "$lock" "$lock.$$"' EXIT
 fi
 # A herdr that does not answer cannot tell a closed tab from an open one; read
 # as closed, it would cost the worktree and the record of a tab still open.
@@ -194,11 +189,13 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
     # commits no branch holds, and removing the worktree would lose them.
     if ! git -C "$w" symbolic-ref -q HEAD >/dev/null; then dirty="$w has a detached HEAD"; break; fi
     if ! st="$(git -C "$w" status --porcelain)"; then dirty="git status failed in $w"; break; fi
-    # The board's own files do not count, tracked or not: a lane that changed
-    # no code leaves the ticket file modified until the next commit, and after
-    # the merge none comes. The ticket's state is on its ref, as close-tab.sh
-    # reads it too.
-    d="$(printf '%s' "$st" | grep -v '^.. \.jaira/' | cut -c4- | head -3 | tr '\n' ' ' || true)"
+    # Untracked board files do not count, nor a ticket file modified and not
+    # committed: a lane that changed no code leaves it so until the next
+    # commit, and after the merge none comes; the ticket's state is on its
+    # ref. Everything else under .jaira/ — lanes, tags, a ticket deleted by a
+    # 'jaira logbook' not yet committed — is on no ref, and --force below
+    # would delete it.
+    d="$(printf '%s' "$st" | grep -v -e '^?? \.jaira/' -e '^[ M][ M] \.jaira/tickets/' | cut -c4- | head -3 | tr '\n' ' ' || true)"
     if [ -n "$d" ]; then dirty="$w has uncommitted changes: $d"; break; fi
   done
   if [ -n "$dirty" ]; then echo "kept $t: ${dirty% }"; continue; fi
@@ -228,7 +225,7 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
 
   for w in "${wts[@]+"${wts[@]}"}"; do
     if [ -n "$dry" ]; then echo "would remove $w"; continue; fi
-    # --force for the .jaira/ changes the check above lets through.
+    # --force for the .jaira/ files the check above lets through.
     if git -C "$root" worktree remove --force "$w" >/dev/null; then echo "removed $w"
     else echo "kept $t: removing $w failed"; failed=1; fi
   done

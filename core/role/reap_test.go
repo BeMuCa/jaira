@@ -1,11 +1,11 @@
 package role
 
 import (
+	"bufio"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"testing"
 )
@@ -248,16 +248,32 @@ func TestReapClosesAMergedTicket(t *testing.T) {
 
 // Every person's cockpit and every teamlead run reap.sh: while one runs, a
 // second skips the round instead of asking the forge again and racing it over
-// 'git worktree remove'. A lock its run left behind when it died is taken over.
+// 'git worktree remove'. The lock dies with the run that held it.
 func TestReapRunsOneAtATime(t *testing.T) {
 	t.Parallel()
+	if _, err := exec.LookPath("perl"); err != nil {
+		t.Skipf("no perl to hold the lock with: %v", err)
+	}
 	r := newReapRig(t)
 	r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
 	r.write(t, r.shown, `{"status":"done"}`)
 	lock := filepath.Join(r.repo, ".git", "jaira", "reap.lock")
 
-	// A live holder: this test's own process.
-	r.write(t, lock, strconv.Itoa(os.Getpid())+"\n")
+	// Another run, as far as the lock can tell: a process holding it.
+	holder := exec.Command("perl", "-MFcntl=:flock", "-e",
+		`open(my $f, ">>", $ARGV[0]) or die; flock($f, LOCK_EX) or die; $| = 1; print "held\n"; sleep 60`, lock)
+	stdout, err := holder.StdoutPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := holder.Start(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = holder.Process.Kill(); _ = holder.Wait() })
+	if line, err := bufio.NewReader(stdout).ReadString('\n'); err != nil || line != "held\n" {
+		t.Fatalf("the holder did not take the lock: %q %v", line, err)
+	}
+
 	out := r.run(t, r.repo, "reap.sh")
 	if !strings.Contains(out, "skipped: reap.sh runs already") {
 		t.Errorf("a second run did not skip:\n%s", out)
@@ -270,18 +286,12 @@ func TestReapRunsOneAtATime(t *testing.T) {
 		t.Errorf("--dry-run stopped at the lock:\n%s", out)
 	}
 
-	// A dead holder: a process that has already exited.
-	dead := exec.Command(r.bash, "-c", "exit 0")
-	if err := dead.Run(); err != nil {
-		t.Fatal(err)
-	}
-	r.write(t, lock, strconv.Itoa(dead.Process.Pid)+"\n")
+	// The holder dies, as a run killed halfway would: the next run goes on.
+	_ = holder.Process.Kill()
+	_ = holder.Wait()
 	out = r.run(t, r.repo, "reap.sh")
 	if _, err := os.Stat(r.wt); !os.IsNotExist(err) {
-		t.Errorf("a lock left by a dead run was not taken over (%v):\n%s", err, out)
-	}
-	if left, _ := filepath.Glob(lock + "*"); len(left) != 0 {
-		t.Errorf("the run left its lock behind: %v", left)
+		t.Errorf("the lock outlived its holder (%v):\n%s", err, out)
 	}
 }
 
@@ -315,6 +325,22 @@ func TestReapKeepsWhatIsNotFinished(t *testing.T) {
 				r.write(t, filepath.Join(r.wt, "README"), "later\n")
 				r.git(t, r.wt, "commit", "-q", "-am", "later")
 			}, "kept AB12CD: feat/ab12cd is not at the merged head",
+		},
+		// Lanes, tags and a 'jaira logbook' not yet committed are on no ref:
+		// removing the worktree would lose them.
+		"board files on no ref": {
+			func(t *testing.T, r *reapRig) {
+				r.write(t, filepath.Join(r.wt, ".jaira", "lanes", "review.md"), "one\n")
+				r.write(t, filepath.Join(r.wt, ".jaira", "tickets", "ab12cd.md"), "done\n")
+				r.git(t, r.wt, "add", ".jaira")
+				r.git(t, r.wt, "commit", "-q", "-m", "board")
+				r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+				r.write(t, r.shown, `{"status":"done"}`)
+				r.write(t, filepath.Join(r.wt, ".jaira", "lanes", "review.md"), "two\n")
+				if err := os.Remove(filepath.Join(r.wt, ".jaira", "tickets", "ab12cd.md")); err != nil {
+					t.Fatal(err)
+				}
+			}, "kept AB12CD: " + r0 + " has uncommitted changes: .jaira/lanes/review.md .jaira/tickets/ab12cd.md",
 		},
 		"given back": {
 			func(t *testing.T, r *reapRig) {
