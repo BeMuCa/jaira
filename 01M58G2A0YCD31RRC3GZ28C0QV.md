@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T17:13:08Z
+updated-at: 2026-11-18T17:13:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74923
 claimed-at: 2026-11-18T17:08:27Z
@@ -28,6 +28,7 @@ outcome-what: Eine mit n angelegte Lane wird nach dem Schliessen des Editors zus
 outcome-why: "Lanes aus einem Repo fehlten in den Settings aller anderen Boards, weil n nur ins Board-Verzeichnis schrieb."
 outcome-resolves: "Neue und adoptierte Lanes stehen in jedem Board unter '+'."
 review-summary: none
+review-gaps: "none: catalogueNewLane liest die Datei vor Adopt ein zweites Mal (Template-Vergleich) — einmal pro n-Taste, gelassen; catalogueHome/initBoard in lanecatalogue_test.go weichen bewusst von laneTestStore ab (JAIRA_HOME statt JAIRA_LANES_DIR, zwei Boards)"
 ---
 
 # Eine neu angelegte Lane landet nur in einem Board, nicht im persoenlichen Katalog ~/.jaira/lanes
