@@ -257,7 +257,7 @@ func TestReapRunsOneAtATime(t *testing.T) {
 	lock := filepath.Join(r.repo, ".git", "jaira", "reap.lock")
 
 	// A live holder: this test's own process.
-	r.write(t, filepath.Join(lock, "pid"), strconv.Itoa(os.Getpid())+"\n")
+	r.write(t, lock, strconv.Itoa(os.Getpid())+"\n")
 	out := r.run(t, r.repo, "reap.sh")
 	if !strings.Contains(out, "skipped: reap.sh runs already") {
 		t.Errorf("a second run did not skip:\n%s", out)
@@ -275,13 +275,13 @@ func TestReapRunsOneAtATime(t *testing.T) {
 	if err := dead.Run(); err != nil {
 		t.Fatal(err)
 	}
-	r.write(t, filepath.Join(lock, "pid"), strconv.Itoa(dead.Process.Pid)+"\n")
+	r.write(t, lock, strconv.Itoa(dead.Process.Pid)+"\n")
 	out = r.run(t, r.repo, "reap.sh")
 	if _, err := os.Stat(r.wt); !os.IsNotExist(err) {
 		t.Errorf("a lock left by a dead run was not taken over (%v):\n%s", err, out)
 	}
-	if _, err := os.Stat(lock); !os.IsNotExist(err) {
-		t.Errorf("the run left its lock behind: %v", err)
+	if left, _ := filepath.Glob(lock + "*"); len(left) != 0 {
+		t.Errorf("the run left its lock behind: %v", left)
 	}
 }
 

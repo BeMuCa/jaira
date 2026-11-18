@@ -29,8 +29,9 @@ alone as 'waiting'. A merged one is kept, with the reason printed, when
   -h, --help  This text.
 
 One run at a time per repository: a second one while the first still runs
-prints 'skipped: reap.sh runs already' and exits 0; the lock is a directory,
-reap.lock beside jaira/panes/, and one left by a run that died is taken over.
+prints 'skipped: reap.sh runs already' and exits 0. The lock is reap.lock
+beside jaira/panes/, holding the pid of its run; one left by a run that died
+is taken over.
 
 Output: one line per thing done — 'closed <ticket>/<lane> <pane>', 'removed
 <worktree>', 'deleted branch <branch>' — or 'waiting <ticket>: <reason>' and
@@ -71,22 +72,25 @@ panes="$(cd "$root" && cd "$common" && pwd)/jaira/panes"
 ls "$panes"/* >/dev/null 2>&1 || exit 0
 # One run at a time per repository: every person's cockpit and every teamlead
 # start this, and two runs ask the forge twice and race each other over
-# 'git worktree remove'. mkdir is the lock because it is atomic everywhere and
-# flock is not on macOS. A lock whose run died — its pid gone — is taken over;
-# a second run while the first lives skips the round, the next one comes.
-# --dry-run changes nothing and takes no lock.
+# 'git worktree remove'. The lock is a file holding the holder's pid, put in
+# place with a hard link: the link is atomic and the pid is already in it, so
+# no run ever sees a lock without its holder. Not flock: macOS has none. Not a
+# symlink: Git Bash copies instead of linking. A lock whose run died — its pid
+# gone — is taken over; a second run while the first lives skips the round,
+# the next one comes. --dry-run changes nothing and takes no lock.
 if [ -z "$dry" ]; then
   lock="$(dirname "$panes")/reap.lock"
-  if ! mkdir "$lock" 2>/dev/null; then
-    holder="$(cat "$lock/pid" 2>/dev/null || true)"
+  echo "$$" > "$lock.$$"
+  trap 'rm -f "$lock.$$"' EXIT
+  if ! ln "$lock.$$" "$lock" 2>/dev/null; then
+    holder="$(cat "$lock" 2>/dev/null || true)"
     if [ -n "$holder" ] && kill -0 "$holder" 2>/dev/null; then
       echo "skipped: reap.sh runs already (pid $holder)"; exit 0
     fi
-    rm -rf "$lock"
-    mkdir "$lock" 2>/dev/null || { echo "skipped: reap.sh runs already"; exit 0; }
+    rm -f "$lock"
+    ln "$lock.$$" "$lock" 2>/dev/null || { echo "skipped: reap.sh runs already"; exit 0; }
   fi
-  echo $$ > "$lock/pid"
-  trap 'rm -rf "$lock"' EXIT
+  trap 'rm -f "$lock" "$lock.$$"' EXIT
 fi
 # A herdr that does not answer cannot tell a closed tab from an open one; read
 # as closed, it would cost the worktree and the record of a tab still open.
