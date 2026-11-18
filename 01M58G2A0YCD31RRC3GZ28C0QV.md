@@ -1,7 +1,7 @@
 ---
 id: 01M58G2A0YCD31RRC3GZ28C0QV
 title: "Eine neu angelegte Lane landet nur in einem Board, nicht im persoenlichen Katalog ~/.jaira/lanes"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: Alexander Sacharov
@@ -20,13 +20,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T18:46:23Z
+updated-at: 2026-11-18T18:46:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45834
 claimed-at: 2026-11-18T18:45:09Z
-outcome-what: Eine mit n angelegte Lane wird nach dem Schliessen des Editors zusaetzlich nach ~/.jaira/lanes kopiert (catalogueNewLane); Tests fuer neue und adoptierte Lanes unter JAIRA_HOME.
-outcome-why: "Lanes aus einem Repo fehlten in den Settings aller anderen Boards, weil n nur ins Board-Verzeichnis schrieb."
-outcome-resolves: "Neue und adoptierte Lanes stehen in jedem Board unter '+'."
+outcome-what: "Eine mit n angelegte Lane wird nach dem Editor auch nach ~/.jaira/lanes kopiert (catalogueNewLane); E schreibt in den Katalog durch, solange die Kopien byte-gleich waren und die id keinem Built-in gehoert; Drift-Kommentar entsprechend korrigiert."
+outcome-why: "Lanes aus einem Repo fehlten in den Settings aller anderen Boards, weil n nur ins Board-Verzeichnis schrieb; ein E auf einer Built-in-id haette den Override fuer alle Boards geaendert."
+outcome-resolves: "Neue und adoptierte Lanes stehen in jedem Board unter '+'; Built-in-Overrides aendern sich nicht ueber ein Board."
 review-summary: "Pressing n in the lane settings still writes the skeleton into the board's .jaira/lanes; once the editor closes (newLaneDoneMsg in internal/tui/model.go) catalogueNewLane copies the file via lane.Adopt into ~/.jaira/lanes, so every other board offers it under '+'. It skips an unedited skeleton, a deleted file, an id the catalogue already has (no overwrite, message on screen) and a built-in id (review, testing, ...), which would otherwise replace the built-in on other boards. E on a board lane whose catalogue copy held the same bytes before the edit now writes the edit through to the catalogue (writeThrough), unless the catalogue changed meanwhile or the id was changed - so the edit is not later flagged as drift and undone by R. Adopting a colleague's shared lane with a already wrote to the catalogue; only a test was added. Release note in core/release/notes/28C0QV.md."
 review-gaps: |-
   note: an untouched skeleton that the editor saved with other line endings or a trailing newline is no longer byte-equal to lane.Template and is catalogued under the placeholder id (internal/tui/lanes.go catalogueNewLane); harmless, a second one is refused as already existing
