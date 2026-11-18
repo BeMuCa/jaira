@@ -1,7 +1,7 @@
 ---
 id: 01M7NNA3JTCESHP20PB8Z66Z8E
 title: Bughunt laeuft im testing-Lane parallel zu den Tests und konvergiert
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -22,24 +22,34 @@ tags:
   - gates
 blocked-by: []
 related: []
-commits: []
+commits:
+  - adc1184685103a804e274702f486be5f1b593128
+  - 338a5ededbf20a5bef417a52883c50ffd8029357
+  - 5b249332c634560b67869ebd4382ee2c7f9e036d
+  - a8cf7fcc015738bd1b40ecbc3e72ba27d024f934
+  - 20bc47ecd4acbe1efc6cb6980f65e0cc13ca61f6
+  - 406c1473c28f1e46577d0ce944b4ad377ed95038
+  - 47862e2a1257f75494902b8f7344acd9e74faa0a
 created-at: 2026-11-17T21:06:22Z
-updated-at: 2026-11-17T22:07:28Z
+updated-at: 2026-11-18T08:48:34Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-1175
-claimed-at: 2026-11-17T21:06:50Z
+claimed-by: DESKTOP-RFTCH11-67533
+claimed-at: 2026-11-17T22:14:26Z
 foo-check: ""
 outcome-what: "Der testing-Lane startet den Bughunt als Hintergrund-Agent vor seinen Tests und schuldet hunt-verdict neben test-verdict; jaira-role-bughunt markiert Fundstellen change/pre-existing und liest im Folge-Hunt nur den Diff seit seinem letzten 'done at'; worker und dispatcher starten keinen eigenen Hunter mehr."
 outcome-why: "Der Bughunt nach testing las die Module jede Runde ganz und schickte jeden alten Fehler zurueck nach in-progress, so konvergierte die Schleife nicht; ausserhalb jedes Lanes war er zudem unsichtbar und ohne Gate."
 outcome-resolves: "Ein Ticket kommt nach einem Bughunt in hoechstens einer weiteren Runde durch: nur change-Fundstellen schicken zurueck, die Folgerunde liest nur neuen Diff, und das Gate verweigert testing ohne hunt-verdict."
-review-summary: "none"
+review-summary: "The bug hunt moves into the testing lane: the shipped testing lane (core/lane/builtin/27-testing.md, identical to .jaira/lanes/testing.md) starts jaira-role-bughunt as a background agent first, runs its three test passes itself, then waits for the hunter and owes hunt-verdict beside test-verdict (output-produces), so the gate refuses the move out of testing without it (TestTestingOwesHuntVerdict). The bughunt skill now marks every finding change or pre-existing via git blame against commits naming the ticket id, and a follow-up hunt reads its own last anchored 'done at <commit>' line and then only git diff <commit> for the files that line lists after the new 'files:' field, new files whole. Only change findings send the ticket back; pre-existing ones become a note for the person (same subject) or a --follows ticket (other subject), sorted by the testing worker. Worker and dispatcher no longer start a hunter of their own, except on a board whose testing lane does not owe hunt-verdict (read off 'jaira show <id> --for-lane testing --json', or no_such_lane). Side fix: 'jaira update --lanes --dry-run' now previews the AGENTS.md/CLAUDE.md note from the lanes as the refresh would leave them (lane.PreviewRefresh), so it names the same files the real run writes. shipped.sha256 carries the new hashes, release note core/release/notes/Z66Z8E.md."
 round: 6
-review-gaps: "none - Runde 5: PreviewRefresh sucht den Builtin per Schleife statt Map wie RefreshShipped; bei ~14 Lanes einmal pro update-Lauf belanglos, gelassen"
-test-verdict: "pass: Runde 4 auf 20bc47ec - go build+vet ok, go test -race -count=1 ./... RC=0 (inkl. TestPreviewRefreshReadsTheRefreshedLanes und dem wieder strengen TestUpdateDryRunWritesNothing); Scratch-Board: veralteter testing-Lane -> --dry-run nennt keine Agent-Datei, echter Lauf aendert auch keine; Fehlerpfad: von Hand editierter Lane -> skipped, exit 3, kein Schreiben; update schreibt im dry run nichts, parallel-Schreiber entfaellt fuer den Vorschau-Pfad"
-hunt-verdict: "fail: 1 change (bughunt done at 20bc47ec): jaira update --help (internal/cli/update.go:89-90) beschreibt noch die alte dry-run-Vorschau"
-review-verdict: "Diff erfuellt DoD 1-5: Lane-Datei und ausgelieferte Fassung identisch, Gate-Test gruen, change/pre-existing mit Pruefweg, Folge-Hunt nur Diff seit letzter Abschlusszeile, worker/dispatcher ohne separaten Hunter (Rueckfall nur ohne hunt-verdict-Lane). go test ./... RC=0 auf a8cf7fcc. Gleichzeitiges Schreiben von Hunter und testing-Agent auf dasselbe Ticket ist durch das Ticket-Lock in core/ticket/store.go:1531 abgesichert. Keine blocker; vier notes zu Prosa und Release-Notiz."
-review-round: 4
-review-check: "1. cd in den Worktree feat/z66z8e  2. go test ./core/gate -run TestTestingOwesHuntVerdict -v -> PASS  3. diff .jaira/lanes/testing.md core/lane/builtin/27-testing.md -> keine Ausgabe  4. jaira show Z66Z8E | grep -E -- '— bughunt: done at [0-9a-f]{7,} ' -> genau drei Zeilen (338a5ede, 5b249332, a8cf7fcc), keine Entscheidungsnotiz  5. auf einem Scratch-Board mit aktualisierten Lanes: Ticket in testing nur mit test-verdict, jaira move <id> --to review -> Exit 3, Meldung nennt hunt-verdict  6. jaira set <id> hunt-verdict='pass: x' und erneut move -> geht durch"
+review-gaps: |-
+  note: bughunt closing line separates files after 'files:' by spaces - a path with a space (quotePath=false) splits, the next round then reads that file whole again; costs time, loses nothing
+  note: in conversational mode no commit lands between rounds, so every closing line names the same HEAD - testing's 'closing line naming the commit you tested' check cannot tell an old round from this one, and a follow-up hunt re-reads all uncommitted work; the testing prompt still waits for its own hunter, so it only weakens the fallback check
+  note: lane.PreviewRefresh re-runs assemble on lanes Load already assembled - impliedFresh then keeps the earlier implied context marks; harmless while the refresh does not change which lane is fresh, not covered by a test
+test-verdict: "pass: Runde 5 auf 406c1473 - go build+vet ok, go test -race -count=1 ./... RC=0; jaira update --help zeigt den neuen Satz zur --lanes-Vorschau; Scratch-Board aus Runde 4: dry run und echter Lauf nennen dieselben Agent-Dateien, editierter Lane skipped exit 3"
+hunt-verdict: "pass: bughunt done at 406c1473, 0 change, 0 pre-existing (Folge-Hunt nur Diff seit 20bc47ec)"
+review-verdict: "All five DoD items hold in the tree; go vet and go test -race -count=1 ./... green; shipped.sha256 lists the five changed role/lane files; no_such_lane fallback verified (exit 2). update --lanes --dry-run checked live on a scratch board both ways: stale lane + current note -> names no agent file, real run writes none; stale lane + stale note -> names AGENTS.md and CLAUDE.md, real run writes both. No blocker; three notes on edge cases of the prompts and the preview."
+review-round: 6
+review-check: "1. cd into this worktree, run: go build -o /tmp/j ./cmd/jaira && go test ./core/gate -run TestTestingOwesHuntVerdict ./core/lane -run TestPreviewRefresh  -> both ok  2. mkdir /tmp/b && cd /tmp/b && git init && /tmp/j init && /tmp/j lanes add testing  3. replace the lane with the old one: git -C <worktree> show adc11846^:core/lane/builtin/27-testing.md > .jaira/lanes/testing.md  4. /tmp/j update  -> CLAUDE.md now says 'must produce test-verdict' only  5. /tmp/j update --lanes --dry-run  -> 'would update .../testing.md' AND 'Would tell your agents ... AGENTS.md (updated), CLAUDE.md (updated)'  6. /tmp/j update --lanes, then grep hunt-verdict CLAUDE.md  -> the testing line now names hunt-verdict  7. read core/lane/builtin/27-testing.md top to bottom: hunt started first in background, tests, test-verdict, wait, hunt-verdict; only 'bughunt: change:' sends back"
 ---
 
 # Bughunt laeuft im testing-Lane parallel zu den Tests und konvergiert
@@ -95,3 +105,11 @@ review-check: "1. cd in den Worktree feat/z66z8e  2. go test ./core/gate -run Te
 - **2026-11-17 22:02 · Alexander Sacharov** — question (Stop-Regel: testing schickt zum 3. Mal zurueck). Runde-3-Fundstelle woertlich: 'internal/cli/update.go:89-90 - jaira update --help still says With --lanes the preview of the jaira section is computed from the lanes as they are now, but update.go:134-135 now previews from lane.PreviewRefresh'. Meine Sicht: DoD stimmt, die Schleife konvergiert (2 -> 1 -> 0, nach dem Signoff-Ruecklauf 1 Satz Hilfetext); die Folge-Hunts lesen nur noch Diff. Optionen: 1) Satz korrigieren, ein weiterer Folge-Hunt, dann review (empfohlen) 2) Satz korrigieren, direkt review ohne Hunt 3) so wie es ist an die Person.
 - **2026-11-17 22:07 · Alexander Sacharov** — decision (Alex, 17.11.): noch eine Runde - Hilfetext update --help an PreviewRefresh angleichen, dann testing (Hintergrund-Hunt auf dem Diff) -> review -> signoff, Branch pushen.
 - **2026-11-17 22:07 · Alexander Sacharov** — in-progress Runde 6: internal/cli/update.go:88-91 Hilfetext sagt jetzt, dass die --lanes-Vorschau die Lanes so liest, wie --lanes sie hinterlaesst. Nicht als Fundstelle gefuehrt (vom Hunter selbst nur als ungeprueft gemeldet): assemble() auf schon von impliedFresh behandelten Lanes in PreviewRefresh - kein reproduzierendes Board.
+- **2026-11-17 22:07 · Alexander Sacharov** — critique Runde 6: nur 406c1473 (drei Zeilen Hilfetext) - beantwortet die Fundstelle; keine neue.
+- **2026-11-17 22:10 · Alexander Sacharov** — bughunt: done at 406c1473 - 0 findings (0 change, 0 pre-existing), follow-up hunt: diff since 20bc47ec is only the update --help text (internal/cli/update.go:89-91), the earlier finding is fixed; untracked .jaira/milestones/*.md are board data, not this change, not hunted; concurrency, error paths, input, permissions checked; ran: jaira update --help (new sentence, rc=0), scratch board with pre-adc11846 testing lane: update --lanes --dry-run and update --lanes name the same lane file and the same agent files (rc=0 both); go test core/lane core/gate core/shipped internal/cli core/role rc=0; files: .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/gate/huntverdict_test.go core/lane/builtin/27-testing.md core/lane/refresh.go core/lane/refresh_test.go core/release/notes/Z66Z8E.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-bughunt/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/shipped/shipped.sha256 internal/cli/update.go internal/cli/updatedry_test.go .jaira/milestones/*.md
+- **2026-11-18 08:45 · Alexander Sacharov** — explain: Der Review hat keinen Blocker gefunden, alle fünf DoD-Punkte stimmen, Tests sind grün. Es bleiben drei Randfälle: Pfade mit Leerzeichen in der bughunt-Schlusszeile, gleicher HEAD in jeder Runde im conversational-Modus, und PreviewRefresh ohne Test.
+Warum: Alle drei kosten höchstens Zeit oder schwächen den Fallback-Check, nichts geht verloren und kein Ticket bleibt hängen. Sie ändern nichts am Hauptziel, dass der Bughunt im testing-Lane läuft und konvergiert.
+1) Zurückgeben und die drei Randfälle in diesem Ticket beheben (Leerzeichen-Pfade quoten, Runden-Marke ohne Commit, Test für PreviewRefresh) [give back]
+2) Ticket so annehmen, die drei Notes bleiben als bekannte Randfälle stehen [accept]
+Empfehlung: 2 - kein Blocker, die Randfälle sind harmlos, und eine siebte Runde würde das Ticket weiter wachsen lassen.
+- **2026-11-18 08:47 · Alexander Sacharov** — decision: 2) Ticket so annehmen, die drei Notes bleiben als bekannte Randfälle stehen
