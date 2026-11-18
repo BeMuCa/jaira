@@ -356,7 +356,7 @@ func noteFor(lanes []LaneFact) string { return agentNote + laneSection(lanes) }
 // start marker's exact text and would append a second block otherwise.
 const versionLinePrefix = "<!-- jaira:version "
 
-var versionLineRe = regexp.MustCompile(`(?m)^<!-- jaira:version (\S+) -->\n`)
+var versionLineRe = regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(versionLinePrefix) + `(\S+) -->\n`)
 
 // versioned is note as it is written: under the version line, except from a
 // dev build, whose version says nothing about what it would write.
@@ -687,11 +687,12 @@ func announceInAgentFile(root, name string, lanes []LaneFact, dry bool) (path st
 	// block; one written before the start marker or after the end marker is
 	// ordinary user text, not the boundary, and is left alone. That rule lives
 	// in managedBlock, which the drift check reads too.
-	if updated, ok := managedBlock(withoutVersion(s), note); ok {
-		if updated == withoutVersion(s) {
+	bare := withoutVersion(s)
+	if updated, ok := managedBlock(bare, note); ok {
+		if updated == bare {
 			return path, "unchanged", nil
 		}
-		updated, _ = managedBlock(withoutVersion(s), versioned(note))
+		updated, _ = managedBlock(bare, versioned(note))
 		if !dry {
 			if err := os.WriteFile(path, []byte(updated), 0o644); err != nil {
 				return path, "", err

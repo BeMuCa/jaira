@@ -1,7 +1,7 @@
 ---
 id: 01M7QT1H3CVSC7KKYTJ3NH788Q
 title: Nach einem Upgrade bringt jaira unveraenderte Lanes jedes Boards selbst auf den neuen Stand
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -22,21 +22,16 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-18T17:07:33Z
-updated-at: 2026-11-18T17:38:25Z
+updated-at: 2026-11-18T17:39:06Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-72235
 claimed-at: 2026-11-18T17:08:08Z
 outcome-what: "Der erste jaira-Befehl nach einem Upgrade macht selbst, was 'jaira update --lanes' an Dateien tut: unveraenderte ausgelieferte Lanes aller Boards ersetzen (atomar, unter Lock), den jaira-Block dort erneuern, wo er steht, und das in einer stderr-Zeile sagen. Eigener Stempel lanes-refreshed; der Versions-Stempel bleibt 'jaira update' fuer die Release-Notes. Handgeaenderte Lanes bleiben und werden genannt; --dry-run laesst es aus; ein halber Fehlschlag nennt, was schon geschrieben ist. Der Block traegt die Version, die seinen Text zuletzt geaendert hat; ein aelteres jaira laesst einen neueren Block byte-gleich."
 outcome-why: "Nach jedem Release musste in jedem Repo einzeln 'jaira update --lanes' getippt werden (zuletzt 0.5.14 mit der neuen testing-Lane); ohne Richtungspruefung haetten zwei Versionen im Team den Block hin und her geschrieben."
 outcome-resolves: "nudgeIfStale + refreshStaleBoard (internal/cli/update.go), g.dryRun (root.go), release.LanesRefreshed, board.RenewInAgentFiles/BlockVersion/versioned, lane.RefreshShipped ueber alle Boards; Tests internal/cli/updateauto_test.go"
-review-summary: "Der erste jaira-Befehl in einem Arbeitsbaum nach einem Upgrade (openStore -> nudgeIfStale) ersetzt jetzt selbst jede Lane-Datei, die eine aeltere von jaira ausgelieferte Fassung ist - auf dem heutigen Board und neu auch auf benannten Boards unter .jaira/boards - atomar (ticket.WriteAtomic) und unter einer Dateisperre 'board-refresh'; danach schreibt er den jaira-Block nur in CLAUDE.md/AGENTS.md neu, die ihn schon tragen (RenewInAgentFiles, legt keine Datei an). Ein eigener Stempel lanes-refreshed im State-Verzeichnis haelt jeden spaeteren Befehl bei einem Dateilesen und laesst den version-Stempel von 'jaira update' (Release-Notes) unberuehrt. Eine Zeile auf stderr nennt aktualisierte und handgeaenderte Lanes; ein Fehler laesst den Stempel offen und nennt, was schon geschrieben wurde. Befehle mit --dry-run halten sich raus (PersistentPreRun setzt g.dryRun). 'jaira update --lanes' erfasst nun auch benannte Boards, bietet fuer deren editierte Lanes kein 'lanes use' an und liefert im JSON einen board-Schluessel."
+review-summary: "none"
 round: 5
-review-gaps: |-
-  note: Versionsschere im Team - ein aelteres jaira in einem frischen Arbeitsbaum (Stempel ist pro Arbeitsbaum) schreibt beim ersten Befehl den jaira-Block in CLAUDE.md/AGENTS.md auf seinen aelteren Text zurueck (RenewInAgentFiles prueft keine Richtung); Lanes schuetzt shipped.Known, den Block nicht. Gleiches Verhalten wie ein explizites 'jaira update', jetzt aber ungefragt
-  note: in derselben Lage meldet die Zeile die neueren Lanes als 'left alone, no version jaira shipped' - irrefuehrend, sie sind nur neuer als das Binary
-  note: TestConcurrentRefreshesWriteNoHalfLane faehrt acht Goroutinen, nicht zwei Prozesse; die Sperre ist dateibasiert, daher gleichwertig, aber DoD 4 sagt Prozesse
-  note: announceIn schreibt CLAUDE.md/AGENTS.md weiter mit os.WriteFile; ein 'jaira update' parallel zu einem anderen Befehl nimmt die board-refresh-Sperre nicht - vorbestehend, nicht hier eingefuehrt
-  note: eine Datei mit Startmarker ohne Endmarker zaehlt fuer filesWithBlock als 'traegt den Block', managedBlock scheitert daran und announceInAgentFile haengt einen zweiten Block an - vorbestehend, jetzt aber ungefragt ausgeloest
+review-gaps: "build versionLineRe from versionLinePrefix (the literal was written twice); announceInAgentFile computes withoutVersion(s) once instead of three times; left: refreshedLine's four optional parts, each with one source"
 test-verdict: "pass: go clean -testcache + go test -race ./... RC=0 at 0ae7456; DoD 1-5 via the named tests in internal/cli/updateauto_test.go; new TestSkippedNamedBoardLaneIsNotOfferedLanesUse runs 'update --lanes --dry-run' text and --json on an edited named-board lane: by-hand hint, no 'lanes use', board key only on it; scratch-board runs of rounds 1-2 unaffected by this diff (printLaneResults/laneResultsJSON only)"
 hunt-verdict: "pass: bughunt done at 0ae7456, 0 change, 0 pre-existing (round 3, after 3+1 change findings fixed in e9601cb and 0ae7456)"
 review-verdict: "Der Diff erfuellt alle fuenf DoD-Punkte, Tests in internal/cli, core/lane, core/board, core/release sind gruen, go vet sauber; kein Blocker. Gewichtigster Hinweis ist die Versionsschere: ein aelteres Binary in einem neuen Arbeitsbaum dreht den jaira-Block ungefragt zurueck - die Person sollte entscheiden, ob das vor dem Merge eine Richtungspruefung braucht."
@@ -91,3 +86,4 @@ review-check: "1. go build -ldflags '-X github.com/BeMuCa/jaira/core/release.Cur
 - **2026-11-18 17:30 · Alexander Sacharov** — bughunt: done at 0ae74560 - 0 findings in 9 modules, follow-up hunt since e9601cbe (diff of core/release/notes/NH788Q.md internal/cli/updateauto_test.go; internal/cli/updatesetup.go read whole as new); concurrency, error paths, input, permissions checked; files: core/board/announce.go core/lane/refresh.go core/release/notes/NH788Q.md core/release/release.go internal/cli/root.go internal/cli/update.go internal/cli/update_test.go internal/cli/updateauto_test.go internal/cli/updatesetup.go
 - **2026-11-18 17:33 · Alexander Sacharov** — worker: review -> signoff. Achtung review-check Schritt 1: '-X github.com/BeMuCa/jaira/core/release.Current=...' greift nicht (Execute ueberschreibt Current mit main.version) - richtig ist go build -ldflags '-X main.version=9.9.9'. Branch feat/nh788q gepusht; die Ticketdatei mit den review-Feldern ist bewusst nicht committet (review aendert keinen Code), sie faehrt mit dem logbook-Commit.
 - **2026-11-18 17:35 · Alexander Sacharov** — decision (Teamlead 17:34): ein aelteres Binary schreibt nie zurueck, was ein neueres geschrieben hat - Block wie Lanes. Umsetzung: der Block traegt direkt nach dem Startmarker '<!-- jaira:version X -->'; die Zeile zaehlt beim Vergleich 'aktuell?' nicht mit und wird nur neu geschrieben, wenn sich der Inhalt sonst aendert (sonst bekaeme jedes Repo pro Release einen Einzeilen-Diff). Der Auto-Refresh (RenewInAgentFiles) laesst eine Datei byte-gleich, deren Block-Version neuer als das Binary ist, und nennt sie. Nur der Auto-Pfad: 'jaira update' und Lane-Befehle sind die Tat einer Person und muessen den Block an die Lanes anpassen koennen. Verworfen: Version im Startmarker selbst - aeltere Binaries suchen den Marker woertlich und haengten einen zweiten Block an. Verworfen: Hashliste der Bloecke wie shipped.sha256 - der Block haengt von den Lanes des Boards ab. review-check Schritt 1 muss '-X main.version=9.9.9' heissen; schreibt der naechste frische review neu.
+- **2026-11-18 17:38 · Alexander Sacharov** — critique pass 5: nur 7b6fd017 gelesen (Teamlead-Befund Versionsschere). Richtungspruefung sitzt in RenewInAgentFiles, dem einen Auto-Pfad; 'jaira update' bleibt bewusst ausgenommen (Notiz 17:34). Kein Befund.
