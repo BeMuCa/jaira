@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T18:52:49Z
+updated-at: 2026-11-18T18:52:52Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45834
 claimed-at: 2026-11-18T18:45:09Z
@@ -101,3 +101,4 @@ Empfehlung: 3 - beide DoD-Punkte sind erfüllt und getestet, die Hinweise änder
 - **2026-11-18 18:46 · Alexander Sacharov** — decision: Built-in-Schutz sitzt in catalogueTwin, nicht in editLane — dort wird syncTo bestimmt, und catalogueNewLane nutzt dasselbe isBuiltinID. Release-Note Zeile 2 nennt jetzt auch E.
 - **2026-11-18 18:46 · Alexander Sacharov** — critique runde 3 (nach signoff-Rueckgabe): nichts — beide Rueckgabepunkte beantwortet; der Guard sitzt in catalogueTwin, wo syncTo entsteht, und nutzt dasselbe isBuiltinID wie catalogueNewLane. Dass eine Board-Lane mit Built-in-id nach E als drifted erscheint, ist die gewaehlte Folge (Option 1), kein Fund.
 - **2026-11-18 18:48 · Alexander Sacharov** — bughunt: done at 16a8effb - 0 findings in 4 modules, follow-up hunt (diff since 55ad762d; core/lane/share.go new to the list, read whole); concurrency, error paths, input, permissions checked; ran: go test ./internal/tui/ ./core/lane/ (ok); files: core/lane/share.go core/release/notes/28C0QV.md internal/tui/lanecatalogue_test.go internal/tui/lanes.go internal/tui/model.go
+- **2026-11-18 18:52 · Alexander Sacharov** — review (fresh context): kein Blocker; DoD 1-5 erfuellt, Tests gruen. Vier Notes in review-gaps (Skelett-Erkennung nur bytegenau, Editor-Fehlercode ueberspringt Katalog, leeres UserLanesDir, Check-then-write ohne Lock).
