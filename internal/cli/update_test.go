@@ -85,20 +85,16 @@ func TestNudgeIfStaleSilentOnMatchingStamp(t *testing.T) {
 	}
 }
 
-func TestNudgeIfStaleOnDifferingStampPrintsOneStderrLineOnly(t *testing.T) {
+func TestNudgeIfStaleWithNothingToRefreshStampsSilently(t *testing.T) {
 	setCurrent(t, "1.0.0")
 	_, s := updateTestStore(t) // never stamped: an absent stamp counts as differing
 
 	stdout, stderr := captureStdio(t, func() { nudgeIfStale(s) })
-	if stdout != "" {
-		t.Fatalf("nudge wrote to stdout: %q", stdout)
+	if stdout != "" || stderr != "" {
+		t.Fatalf("a board with nothing to bring up spoke: stdout=%q stderr=%q", stdout, stderr)
 	}
-	lines := strings.Split(strings.TrimRight(stderr, "\n"), "\n")
-	if len(lines) != 1 || lines[0] == "" {
-		t.Fatalf("stderr = %q, want exactly one line", stderr)
-	}
-	if !strings.Contains(stderr, "jaira update") {
-		t.Errorf("nudge line = %q, want it to point at 'jaira update'", stderr)
+	if got := release.Stamped(s.StateDir()); got != "1.0.0" {
+		t.Fatalf("Stamped = %q, want 1.0.0", got)
 	}
 }
 

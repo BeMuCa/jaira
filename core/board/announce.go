@@ -417,6 +417,22 @@ func AnnounceInAgentFiles(root string, lanes []LaneFact) (written []string, err 
 	return announceIn(root, chosenAgentFiles(root), lanes, false)
 }
 
+// RenewInAgentFiles rewrites the block in the files that already carry it and
+// nowhere else. It is what a board brought up to date without anybody asking
+// may do: refreshing a block somebody keeps is expected, creating AGENTS.md or
+// CLAUDE.md in a repository that has neither is not — that stays the act of
+// 'jaira init' and 'jaira update'.
+func RenewInAgentFiles(root string, lanes []LaneFact) (written []string, err error) {
+	var have []string
+	for _, name := range agentFiles {
+		b, err := os.ReadFile(filepath.Join(root, name))
+		if err == nil && strings.Contains(string(b), jairaMarkerStart) {
+			have = append(have, name)
+		}
+	}
+	return announceIn(root, have, lanes, false)
+}
+
 // PreviewAgentFiles reports what AnnounceInAgentFiles (choice "") or ChooseAgentFiles(choice)
 // would write, in the same words, and writes nothing.
 func PreviewAgentFiles(root, choice string, lanes []LaneFact) ([]string, error) {

@@ -20,8 +20,10 @@ import (
 // itself.
 var updateInProgress bool
 
-// nudgeIfStale prints one line on stderr when the running binary is newer
-// than the version stamped on this board — the same hook bindDriverIfShared
+// nudgeIfStale brings a board stamped by an older jaira up to date the first
+// time a newer binary opens it (refreshStaleBoard), and says so in one line on
+// stderr; only when that fails does it print the old hint to run
+// 'jaira update'. It runs from the same hook bindDriverIfShared
 // (internal/cli/share.go) uses for "this clone needs one-time setup" on the
 // one path every command takes.
 //
@@ -52,7 +54,83 @@ func nudgeIfStale(s *ticket.Store) {
 	if release.Stamped(dir) == release.Current {
 		return
 	}
+	if line, err := refreshStaleBoard(s); err == nil {
+		if line != "" {
+			fmt.Fprintln(os.Stderr, line)
+		}
+		return
+	}
 	fmt.Fprintf(os.Stderr, "jaira: this board was set up by an older version of jaira — run 'jaira update' to bring it up to date\n")
+}
+
+// refreshStaleBoard does to a board stamped by an older jaira what
+// 'jaira update --lanes' would: every lane file that is an older version jaira
+// shipped is replaced, the jaira section is rewritten where a file already
+// carries it, and the board is stamped. Lanes stay in the repository, so the
+// whole team runs one flow; what this writes are ordinary changes in the
+// working tree for a person to commit.
+//
+// It returns the one line to print, "" when nothing on disk changed. A lane
+// somebody edited is never replaced, only named. An error leaves the board
+// unstamped, so the caller falls back to the old hint and the next command
+// tries again.
+//
+// The lock makes two processes started at once do the work once: the second
+// waits, finds the stamp the first wrote, and returns "". The stamp is what
+// keeps every later command at one small file read.
+func refreshStaleBoard(s *ticket.Store) (string, error) {
+	unlock, err := s.Lock("board-refresh")
+	if err != nil {
+		return "", err
+	}
+	defer unlock()
+	if release.Stamped(s.StateDir()) == release.Current {
+		return "", nil
+	}
+	results, err := lane.RefreshShipped(s.Root, false)
+	if err != nil {
+		return "", err
+	}
+	set, err := lane.Load(s.Root)
+	if err != nil {
+		return "", err
+	}
+	written, err := board.RenewInAgentFiles(s.Root, set.Facts())
+	if err != nil {
+		return "", err
+	}
+	if err := release.Stamp(s.StateDir()); err != nil {
+		return "", err
+	}
+	return refreshedLine(results, written), nil
+}
+
+// refreshedLine says in one line what refreshStaleBoard changed, "" for nothing.
+func refreshedLine(results []lane.Refreshed, written []string) string {
+	var updated, skipped []string
+	for _, r := range results {
+		switch r.Action {
+		case lane.RefreshUpdated:
+			updated = append(updated, r.ID)
+		case lane.RefreshSkipped:
+			skipped = append(skipped, r.ID)
+		}
+	}
+	var parts []string
+	if len(updated) > 0 {
+		parts = append(parts, "updated lanes "+strings.Join(updated, ", "))
+	}
+	if len(written) > 0 {
+		parts = append(parts, "rewrote the jaira section in "+strings.Join(written, ", "))
+	}
+	if len(skipped) > 0 {
+		parts = append(parts, "left alone, no version jaira shipped: "+strings.Join(skipped, ", ")+
+			" — 'jaira update --lanes' names them")
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	return "jaira: brought this board up to " + release.Current + ": " + strings.Join(parts, "; ")
 }
 
 func newUpdateCmd() *cobra.Command {

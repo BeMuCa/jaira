@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/BeMuCa/jaira/core/shipped"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // Results of RefreshShipped, the same words 'jaira roles install' uses.
@@ -61,7 +62,9 @@ func RefreshShipped(root string, dryRun bool) ([]Refreshed, error) {
 		case shipped.Known(shippedKey(base), have):
 			r.Action = RefreshUpdated
 			if !dryRun {
-				if err := os.WriteFile(l.Source, want, 0o644); err != nil {
+				// Atomic: two jaira processes refreshing one board at once must
+				// never leave a half-written lane file for a third to load.
+				if err := ticket.WriteAtomic(l.Source, want); err != nil {
 					return out, fmt.Errorf("lane %s: %w", l.ID, err)
 				}
 			}
