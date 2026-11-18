@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T17:21:29Z
+updated-at: 2026-11-18T17:22:35Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74923
 claimed-at: 2026-11-18T17:08:27Z
@@ -69,3 +69,4 @@ round: 3
 - **2026-11-18 17:19 · Alexander Sacharov** — decision: Bughunt-Fund 1 per write-through geloest, nicht per 'E oeffnet die Katalogkopie': sonst wirkt die Bearbeitung auf diesem Board erst nach R. Write-through nur, wenn Katalog == Board vor dem Edit (catalogueTwin) und der Katalog sich waehrend des Editors nicht geaendert hat; sonst bleibt er unberuehrt. Schreiben passiert vor m.reload(), damit die Drift-Berechnung des neuen Screens den neuen Katalog sieht.
 - **2026-11-18 17:19 · Alexander Sacharov** — critique: writeThrough muss die geparste id mit der des Katalogfiles vergleichen; bei geaenderter id Katalog unberuehrt lassen und das melden.
 - **2026-11-18 17:21 · Alexander Sacharov** — critique runde 2: id-Wechsel jetzt abgefangen (writeThrough); sonst nichts — newLaneDoneMsg traegt beide Faelle (n/E), weil beide ueber denselben ExecProcess-Rueckweg kommen; ein zweiter Msg-Typ waere ein zweiter case mit identischem Reload.
+- **2026-11-18 17:22 · Alexander Sacharov** — bughunt: done at 55ad762d - 0 findings in 3 modules, follow-up hunt (diff since 6fcd1288); concurrency, error paths, input, permissions checked; files: core/release/notes/28C0QV.md internal/tui/lanecatalogue_test.go internal/tui/lanes.go internal/tui/model.go
