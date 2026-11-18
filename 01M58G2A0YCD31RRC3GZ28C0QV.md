@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T20:27:21Z
+updated-at: 2026-11-18T20:29:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62765
 claimed-at: 2026-11-18T19:47:57Z
@@ -117,3 +117,4 @@ Warum: Der Hauptpfad (n legt an, Katalog bekommt die Kopie, E schreibt durch) la
 1) Zurueckgeben und die Randfaelle beheben (Platzhalter-Lane, doppelte id, Lock, Reload-Meldung) [give back]
 2) Ticket so annehmen und die Randfaelle spaeter bei Bedarf einzeln aufgreifen [accept]
 Empfehlung: 2 - Tests sind gruen, kein Defekt im Hauptpfad, und die Faelle sind klein genug, dass ein Fix das Ticket nur aufblaehen wuerde.
+- **2026-11-18 20:29 · Alexander Sacharov** — decision: 2) Ticket so annehmen und die Randfaelle spaeter bei Bedarf einzeln aufgreifen
