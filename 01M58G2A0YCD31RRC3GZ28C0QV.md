@@ -20,14 +20,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T17:21:00Z
+updated-at: 2026-11-18T17:21:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74923
 claimed-at: 2026-11-18T17:08:27Z
 outcome-what: Eine mit n angelegte Lane wird nach dem Schliessen des Editors zusaetzlich nach ~/.jaira/lanes kopiert (catalogueNewLane); Tests fuer neue und adoptierte Lanes unter JAIRA_HOME.
 outcome-why: "Lanes aus einem Repo fehlten in den Settings aller anderen Boards, weil n nur ins Board-Verzeichnis schrieb."
 outcome-resolves: "Neue und adoptierte Lanes stehen in jedem Board unter '+'."
-review-summary: "internal/tui/lanes.go writeThrough: an E edit that changes id: still overwrites <alte-id>.md im Katalog mit einer Lane anderer id — parsed id gegen die Katalog-id pruefen und dann nicht schreiben"
+review-summary: "none"
 review-gaps: "none: catalogueNewLane liest die Datei vor Adopt ein zweites Mal (Template-Vergleich) — einmal pro n-Taste, gelassen; catalogueHome/initBoard in lanecatalogue_test.go weichen bewusst von laneTestStore ab (JAIRA_HOME statt JAIRA_LANES_DIR, zwei Boards)"
 test-verdict: "pass: go build + go test -race ./... RC=0; DoD 1-3 im Tree geprueft; TUI im tmux auf zwei Scratch-Boards: n in a -> ~/.jaira/lanes/e2e-lane.md + Meldung, Board b zeigt 'E2E lane' als verfuegbare Spalte; zweites n mit gleicher id -> 'on this board only', Katalog-md5 unveraendert; parallele Schreiber: O_EXCL im Skelett + Adopt-Refuse, nicht separat gestartet (TUI-Pfad, ein Tastendruck)"
 hunt-verdict: "fail: bughunt done at 6fcd1288, 2 change — E auf einer n-Lane geht nicht in den Katalog und R wirft die Bearbeitung weg; eine n-Lane mit Built-in-id (review) ersetzt den Built-in im Katalog"
