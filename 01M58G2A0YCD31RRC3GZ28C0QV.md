@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T18:49:00Z
+updated-at: 2026-11-18T18:49:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45834
 claimed-at: 2026-11-18T18:45:09Z
@@ -30,7 +30,7 @@ outcome-resolves: "Neue und adoptierte Lanes stehen in jedem Board unter '+'; Bu
 review-summary: "none"
 review-gaps: "none — the repair adds one guard in catalogueTwin reusing isBuiltinID (already used by catalogueNewLane), one test, and a comment; nothing duplicated, orphaned or repeated"
 test-verdict: "pass: go build ./... and go test -race -count=1 ./... green (RC=0); DoD 1-5 verified in the tree (all lane-catalogue tests pass incl. TestEditOfBuiltinIDDoesNotWriteThrough; share.go Drift comment read); E/n paths exercised through catalogueTwin/writeThrough/model.Update in tests, not in a live TUI (needs a tty and $EDITOR); failure paths: changed-meanwhile and id-change leave the catalogue alone (tests); this round adds no new write"
-hunt-verdict: "pass: bughunt done at 55ad762d, 0 change, 0 pre-existing (Folge-Hunt nach den 2 Funden von 6fcd1288, die gefixt sind)"
+hunt-verdict: "pass: bughunt done at 16a8effb, 0 change, 0 pre-existing"
 round: 4
 review-verdict: "both DoD items are met and tested (TestNewLaneLandsInCatalogueAndOnAnotherBoard, TestAdoptedSharedLaneIsOfferedOnEveryBoard), the release note exists; read lanes.go/model.go whole along concurrency, error paths, input and boundaries - no blocker, three notes; go test ./internal/tui ./core/lane green"
 review-round: 3
