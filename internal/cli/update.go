@@ -107,21 +107,21 @@ func refreshStaleBoard(s *ticket.Store) (string, error) {
 	}
 	results, err := lane.RefreshShipped(s.Root, false)
 	if err != nil {
-		return refreshedLine(results, nil), err
+		return refreshedLine(results, nil, nil), err
 	}
 	set, err := lane.Load(s.Root)
 	if err != nil {
-		return refreshedLine(results, nil), err
+		return refreshedLine(results, nil, nil), err
 	}
-	written, err := board.RenewInAgentFiles(s.Root, set.Facts())
+	written, newer, err := board.RenewInAgentFiles(s.Root, set.Facts())
 	if err == nil {
 		err = release.MarkLanesRefreshed(s.StateDir())
 	}
-	return refreshedLine(results, written), err
+	return refreshedLine(results, written, newer), err
 }
 
 // refreshedLine says in one line what refreshStaleBoard changed, "" for nothing.
-func refreshedLine(results []lane.Refreshed, written []string) string {
+func refreshedLine(results []lane.Refreshed, written, newer []string) string {
 	var updated, skipped []string
 	for _, r := range results {
 		name := r.ID
@@ -142,9 +142,14 @@ func refreshedLine(results []lane.Refreshed, written []string) string {
 	if len(written) > 0 {
 		parts = append(parts, "rewrote the jaira section in "+strings.Join(written, ", "))
 	}
+	if len(newer) > 0 {
+		parts = append(parts, "left the jaira section alone, a newer jaira wrote it: "+strings.Join(newer, ", "))
+	}
 	if len(skipped) > 0 {
-		parts = append(parts, "left alone, no version jaira shipped: "+strings.Join(skipped, ", ")+
-			" — 'jaira update --lanes' names them")
+		// An older jaira cannot tell an edited lane from one a newer jaira
+		// shipped: both are no version it knows.
+		parts = append(parts, "left alone, not a version this jaira shipped (edited, or from a newer jaira): "+
+			strings.Join(skipped, ", ")+" — 'jaira update --lanes' names them")
 	}
 	if len(parts) == 0 {
 		return ""

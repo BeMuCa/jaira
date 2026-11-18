@@ -137,6 +137,9 @@ func TestAutomaticRefreshRenewsTheJairaSection(t *testing.T) {
 	if strings.Contains(string(mustRead(t, st.claudeMD)), "AN OLD LINE") {
 		t.Error("the stale line is still in CLAUDE.md")
 	}
+	if !strings.Contains(string(mustRead(t, st.claudeMD)), "<!-- jaira:start -->\n<!-- jaira:version 1.0.1 -->\n") {
+		t.Error("the renewed block does not open with the version that wrote it")
+	}
 	if lines := refreshLines(stderr); len(lines) != 1 || !strings.Contains(lines[0], "CLAUDE.md") {
 		t.Fatalf("want the line to name CLAUDE.md, stderr:\n%s", stderr)
 	}
@@ -152,7 +155,7 @@ func TestAutomaticRefreshCreatesNoAgentFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	written, err := board.RenewInAgentFiles(dir, set.Facts())
+	written, _, err := board.RenewInAgentFiles(dir, set.Facts())
 	if err != nil || len(written) != 0 {
 		t.Fatalf("RenewInAgentFiles = %v, %v; want nothing written", written, err)
 	}
@@ -392,5 +395,63 @@ func TestSkippedNamedBoardLaneIsNotOfferedLanesUse(t *testing.T) {
 	}
 	if !found {
 		t.Errorf("JSON lanes do not list %s: %v", video, m["lanes"])
+	}
+}
+
+// forgetRefresh is a new working tree on the same repository: the stamps are
+// per working tree, the files are the repository's.
+func forgetRefresh(t *testing.T, dir string) {
+	t.Helper()
+	s, err := ticket.At(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(filepath.Join(s.StateDir(), "lanes-refreshed")); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// Two people on two versions in one repository: the older jaira must not
+// write back what the newer one wrote, or the block flips with every commit.
+func TestOlderBinaryLeavesANewerBlockByteForByte(t *testing.T) {
+	st := newStaleSetup(t)
+	setCurrent(t, "1.0.2")
+	captureStdio(t, func() { runCLI(t, st.dir, "list") })
+	newer := strings.Replace(string(mustRead(t, st.claudeMD)),
+		"<!-- jaira:version 1.0.2 -->\n", "<!-- jaira:version 1.0.2 -->\nA LINE ONLY 1.0.2 WRITES\n", 1)
+	if !strings.Contains(newer, "A LINE ONLY 1.0.2 WRITES") {
+		t.Fatalf("setup: no version line in the block:\n%s", newer)
+	}
+	mustWrite(t, st.claudeMD, []byte(newer))
+
+	setCurrent(t, "1.0.1")
+	forgetRefresh(t, st.dir)
+	_, stderr := captureStdio(t, func() { runCLI(t, st.dir, "list") })
+	if string(mustRead(t, st.claudeMD)) != newer {
+		t.Error("an older jaira rewrote the block a newer one wrote")
+	}
+	lines := refreshLines(stderr)
+	if len(lines) != 1 || !strings.Contains(lines[0], "a newer jaira wrote it: CLAUDE.md (1.0.2)") {
+		t.Fatalf("want the line to name the newer block, stderr:\n%s", stderr)
+	}
+}
+
+// The version line follows the text, not the release: a newer jaira whose
+// block says the same leaves the file alone, so a release with no change to
+// the block leaves no diff in anybody's repository.
+func TestNewerBinaryWithTheSameTextLeavesTheVersionLine(t *testing.T) {
+	st := newStaleSetup(t)
+	st.upgrade(t)
+	captureStdio(t, func() { runCLI(t, st.dir, "list") })
+	before := mustRead(t, st.claudeMD)
+
+	setCurrent(t, "1.0.2")
+	forgetRefresh(t, st.dir)
+	captureStdio(t, func() { runCLI(t, st.dir, "list") })
+	if string(mustRead(t, st.claudeMD)) != string(before) {
+		t.Error("a newer jaira with the same text rewrote the block for its version line")
+	}
+	if !st.blockCurrent(t) {
+		t.Error("a block that differs only in its version line reads as stale")
 	}
 }
