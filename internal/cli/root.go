@@ -88,6 +88,9 @@ func noArgs() cobra.PositionalArgs {
 type globals struct {
 	jsonOut bool
 	dir     string
+	// dryRun is whether the running command was given --dry-run, whatever
+	// that command calls the variable behind it.
+	dryRun bool
 }
 
 var g globals
@@ -191,6 +194,12 @@ Exit codes:
 			// is the direct route when you already know where you are.
 			return runHome(cmd)
 		},
+	}
+	// A command run with --dry-run promised to write nothing, so the automatic
+	// lane refresh in openStore holds off for it (nudgeIfStale).
+	root.PersistentPreRun = func(cmd *cobra.Command, _ []string) {
+		f := cmd.Flags().Lookup("dry-run")
+		g.dryRun = f != nil && f.Value.String() == "true"
 	}
 	root.PersistentFlags().BoolVar(&g.jsonOut, "json", false, "emit JSON on stdout and structured errors on stderr")
 	root.PersistentFlags().StringVarP(&g.dir, "dir", "C", ".", "run as if jaira was started in this directory")

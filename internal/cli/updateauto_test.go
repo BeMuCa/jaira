@@ -3,6 +3,7 @@ package cli
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -232,8 +233,8 @@ func TestConcurrentRefreshesWriteNoHalfLane(t *testing.T) {
 	}
 }
 
-// A refresh that cannot finish leaves its stamp unset and the old hint printed,
-// so the next command tries again and no command fails over it.
+// A refresh that cannot start leaves its stamp unset and says so, so the next
+// command tries again and no command fails over it.
 func TestFailedRefreshFallsBackToTheHint(t *testing.T) {
 	st := newStaleSetup(t)
 	st.upgrade(t)
@@ -252,13 +253,96 @@ func TestFailedRefreshFallsBackToTheHint(t *testing.T) {
 	if stdout != "" {
 		t.Fatalf("wrote to stdout: %q", stdout)
 	}
-	if !strings.Contains(stderr, "run 'jaira update'") {
-		t.Errorf("stderr = %q, want the old hint", stderr)
+	if !strings.Contains(stderr, "could not bring this board's lanes up to 1.0.1") || !strings.Contains(stderr, "'jaira update --lanes'") {
+		t.Errorf("stderr = %q, want the failure named with 'jaira update --lanes'", stderr)
 	}
 	if got := release.LanesRefreshed(s.StateDir()); got == "1.0.1" {
 		t.Error("a failed refresh stamped the board")
 	}
 	if string(mustRead(t, st.lan)) != string(st.laneOld) {
 		t.Error("a refresh that could not take the lock wrote a lane")
+	}
+}
+
+// A refresh that fails half way — lanes written, the agent file refused —
+// still names the lanes it wrote: the next run finds them current and would
+// never mention them again.
+func TestRefreshFailingHalfWayNamesWhatItWrote(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("a read-only file mode does not refuse the write on Windows")
+	}
+	if os.Geteuid() == 0 {
+		t.Skip("running as root: permission bits do not block writes")
+	}
+	st := newStaleSetup(t)
+	st.upgrade(t)
+	if err := os.Chmod(st.claudeMD, 0o444); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Chmod(st.claudeMD, 0o644) })
+
+	_, stderr := captureStdio(t, func() { runCLI(t, st.dir, "list") })
+	if string(mustRead(t, st.lan)) != string(shippedLane(t, "testing")) {
+		t.Fatal("setup: the lane was not written before the agent file failed")
+	}
+	if lines := refreshLines(stderr); len(lines) != 1 || !strings.Contains(lines[0], "updated lanes testing") {
+		t.Errorf("the written lane is not named, stderr:\n%s", stderr)
+	}
+	if !strings.Contains(stderr, "could not bring this board's lanes up") {
+		t.Errorf("the failure is not said, stderr:\n%s", stderr)
+	}
+	s, err := ticket.At(st.dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := release.LanesRefreshed(s.StateDir()); got == "1.0.1" {
+		t.Error("a refresh that failed half way stamped the board")
+	}
+}
+
+// A command given --dry-run promised to write nothing; the refresh waits for
+// the next command without one.
+func TestDryRunCommandDoesNotRefresh(t *testing.T) {
+	st := newStaleSetup(t)
+	id, _ := jsonCLI(t, st.dir, "create", "a ticket")["id"].(string)
+	st.upgrade(t)
+	claude := mustRead(t, st.claudeMD)
+
+	_, stderr := captureStdio(t, func() { runCLI(t, st.dir, "move", id, "--to", "todo", "--dry-run") })
+	if string(mustRead(t, st.lan)) != string(st.laneOld) {
+		t.Error("a --dry-run command replaced a lane")
+	}
+	if string(mustRead(t, st.claudeMD)) != string(claude) {
+		t.Error("a --dry-run command rewrote CLAUDE.md")
+	}
+	if lines := refreshLines(stderr); len(lines) != 0 {
+		t.Errorf("a --dry-run command reported a refresh: %q", lines)
+	}
+
+	captureStdio(t, func() { runCLI(t, st.dir, "list") })
+	if string(mustRead(t, st.lan)) != string(shippedLane(t, "testing")) {
+		t.Error("the next command without --dry-run did not refresh")
+	}
+}
+
+// A named board's lanes are the repository's as much as today's are.
+func TestRefreshReachesANamedBoard(t *testing.T) {
+	st := newStaleSetup(t)
+	lanes := filepath.Join(st.dir, ticket.DirName, "boards", "video", "lanes")
+	if err := os.MkdirAll(lanes, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	video := filepath.Join(lanes, "testing.md")
+	mustWrite(t, video, st.laneOld)
+	mustWrite(t, filepath.Join(lanes, "order"), []byte("testing\n"))
+	st.upgrade(t)
+
+	_, stderr := captureStdio(t, func() { runCLI(t, st.dir, "list") })
+	if string(mustRead(t, video)) != string(shippedLane(t, "testing")) {
+		t.Error("the named board's lane was not replaced")
+	}
+	lines := refreshLines(stderr)
+	if len(lines) != 1 || !strings.Contains(lines[0], "video/testing") {
+		t.Fatalf("want the line to name video/testing, stderr:\n%s", stderr)
 	}
 }

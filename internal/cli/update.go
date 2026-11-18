@@ -57,8 +57,18 @@ func nudgeIfStale(s *ticket.Store) {
 		return
 	}
 	setUp := release.Stamped(dir) == release.Current
-	if release.LanesRefreshed(dir) != release.Current {
-		if line, err := refreshStaleBoard(s); err == nil && line != "" {
+	if !g.dryRun && release.LanesRefreshed(dir) != release.Current {
+		line, err := refreshStaleBoard(s)
+		if err != nil {
+			// What was written before the failure is said all the same: the
+			// next run finds those lanes current and would never name them.
+			if line != "" {
+				fmt.Fprintln(os.Stderr, line)
+			}
+			fmt.Fprintf(os.Stderr, "jaira: could not bring this board's lanes up to %s (%v) — 'jaira update --lanes' does it by hand\n", release.Current, err)
+			return
+		}
+		if line != "" {
 			if !setUp {
 				line += " — 'jaira update' shows what else changed"
 			}
@@ -80,7 +90,8 @@ func nudgeIfStale(s *ticket.Store) {
 //
 // It returns the one line to print, "" when nothing on disk changed. A lane
 // somebody edited is never replaced, only named. An error leaves the
-// lanes-refreshed stamp unset, so the next command tries again.
+// lanes-refreshed stamp unset, so the next command tries again, and still
+// comes with the line for what was written before it.
 //
 // The lock makes two processes started at once do the work once: the second
 // waits, finds the stamp the first wrote, and returns "". The stamp is what
@@ -96,31 +107,32 @@ func refreshStaleBoard(s *ticket.Store) (string, error) {
 	}
 	results, err := lane.RefreshShipped(s.Root, false)
 	if err != nil {
-		return "", err
+		return refreshedLine(results, nil), err
 	}
 	set, err := lane.Load(s.Root)
 	if err != nil {
-		return "", err
+		return refreshedLine(results, nil), err
 	}
 	written, err := board.RenewInAgentFiles(s.Root, set.Facts())
-	if err != nil {
-		return "", err
+	if err == nil {
+		err = release.MarkLanesRefreshed(s.StateDir())
 	}
-	if err := release.MarkLanesRefreshed(s.StateDir()); err != nil {
-		return "", err
-	}
-	return refreshedLine(results, written), nil
+	return refreshedLine(results, written), err
 }
 
 // refreshedLine says in one line what refreshStaleBoard changed, "" for nothing.
 func refreshedLine(results []lane.Refreshed, written []string) string {
 	var updated, skipped []string
 	for _, r := range results {
+		name := r.ID
+		if r.Board != "" {
+			name = r.Board + "/" + r.ID
+		}
 		switch r.Action {
 		case lane.RefreshUpdated:
-			updated = append(updated, r.ID)
+			updated = append(updated, name)
 		case lane.RefreshSkipped:
-			skipped = append(skipped, r.ID)
+			skipped = append(skipped, name)
 		}
 	}
 	var parts []string
@@ -164,7 +176,9 @@ entry to a shared board would silently stop new tickets reaching teammates.
 --roles brings the roles, the cockpit mod and the jaira skill up to date in every
 skills directory that already holds the roles: this repository's and your
 personal one. Outside a board it does the personal one only. --lanes replaces
-every lane file on this board that is an older version of a lane jaira ships.
+every lane file of this repository's boards that is an older version of a lane
+jaira ships. The first command after an upgrade does the same by itself, and
+rewrites the jaira section where it stands, unless it was given --dry-run.
 A file you edited — one that is no version jaira ever shipped — is never
 replaced: it is named, and the command exits 3. Without --roles or --lanes only
 the jaira section is written, as before, and it says when roles or lanes are
