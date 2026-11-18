@@ -87,6 +87,8 @@ type World = {
   noRoom?: boolean
   // When set, every `herdr tab list` waits here until the test lets it go.
   heldTabs?: (() => void)[]
+  // `git worktree list --porcelain`, WORKTREES unless set.
+  worktrees?: string
 }
 
 const LANES = {
@@ -114,7 +116,9 @@ const ANSWER = (title: string) =>
 const MESSAGE = (title: string) =>
   ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-message', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as never
 
-const WORKTREES = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n\nworktree /.worktrees/repo-mg677r\nHEAD 2\nbranch refs/heads/feat/mg677r\n'
+// Herdr's review worktree of feat/mg677r is listed first and ends in the id
+// as well, without the ticket on its disk: every press must pass it by.
+const WORKTREES = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n\nworktree /.herdr/worktrees/repo/review-feat-mg677r\nHEAD 2\nbranch refs/heads/review/feat/mg677r\n\nworktree /.worktrees/repo-mg677r\nHEAD 2\nbranch refs/heads/feat/mg677r\n'
 const SPAWN = '/repo/.claude/skills/jaira-dispatcher/scripts/spawn.sh'
 // The release cache jaira writes under ~/.jaira, HOME being /home/a.
 const CACHE = '/home/a/.jaira/update-check.json'
@@ -271,7 +275,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'jaira' && args[0] === 'show') return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ handle: args[1], body: w.bodies[args[1]!] ?? '' }))
     if (cmd === 'git' && args[0] === 'rev-parse') return ok('/repo/.git\n')
     if (cmd === 'git' && args[0] === '--exec-path') return ok('C:\\Program Files\\Git\\mingw64\\libexec\\git-core\n')
-    if (cmd === 'git' && args[0] === 'worktree') return ok(WORKTREES)
+    if (cmd === 'git' && args[0] === 'worktree') return ok(w.worktrees ?? WORKTREES)
     const failed = (stderr: string) => ({ value: { exitCode: 1, stdout: '', stderr, isStdoutTruncated: false, isStderrTruncated: false } })
     if (cmd === 'git' && args[0] === 'config') return w.forge ? ok(`${w.forge}\n`) : failed('')
     if (cmd === 'git' && args[0] === 'remote' && args[1] === 'get-url') return w.origin === null ? failed("error: No such remote 'origin'") : ok(`${w.origin}\n`)
@@ -427,6 +431,15 @@ describe('waiting for you', () => {
       ['jaira', 'move', 'MG677R', '--to', 'done', '--dry-run', '--json', '@/.worktrees/repo-mg677r'],
       ['jaira', 'move', 'MG677R', '--to', 'done', '--force', '@/.worktrees/repo-mg677r'],
     ])
+  })
+
+  test('Accept finds the ticket\'s own worktree mid-rebase, detached, past the Herdr review worktree on a branch', async ($, on) => {
+    const w = world(on)
+    w.worktrees = WORKTREES.replace('branch refs/heads/feat/mg677r', 'detached')
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'accept-MG677R' })
+    expect(ran(w, 'jaira', 'move', 'MG677R')[0]?.at(-1)).toBe('@/.worktrees/repo-mg677r')
   })
 
   test('Accept, Give back and Explain are told apart by the theme\'s colours; Read explanation and Verdict stay plain', async ($, on) => {
@@ -1246,6 +1259,18 @@ describe('after Accept', () => {
     expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-zz99zz', '@/.worktrees/repo-zz99zz']])
   })
 
+  test('a branch left behind beside the Herdr review branch of it: the pull request opens from the ticket branch itself', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 2
+    w.tickets = [{ ...SIGNOFF, handle: 'ZZ99ZZ' }]
+    w.branches = ['review/task/zz99zz', 'task/zz99zz']
+    w.subjects = ['fix(ZZ99ZZ): one']
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'accept-ZZ99ZZ' })
+    expect(ran(w, 'git', 'worktree', 'add')).toEqual([['git', 'worktree', 'add', '/.worktrees/repo-zz99zz', 'task/zz99zz', '@/repo']])
+  })
+
   test('two tickets on one branch: no pull request while the other is not in done, nothing starts, and the press says which one is missing', async ($, on) => {
     const w = world(on, { herdr: true })
     w.ahead = 4
@@ -1272,7 +1297,9 @@ describe('after Accept', () => {
     w.tickets = [{ ...SIGNOFF, handle: 'ZZ99ZZ' }, { ...WORKING, handle: 'MG677R', status: 'done' }]
     w.subjects = ['feat(MG677R): cache key', 'fix(ZZ99ZZ): on the same branch']
     w.branchCommits = [{ sha: 'abc123', subject: 'fix(ZZ99ZZ): on the same branch' }]
-    w.holders = ['master', 'feat/mg677r']
+    // A wip holding the same commit has fewer parts and is no reason to leave
+    // it; a main checkout detached mid-rebase lists first and is no branch.
+    w.holders = ['(HEAD detached at abc123)', 'master', 'feat/mg677r', 'wip']
     await startSession($)
     const ui = await $.ui.mount(BAND)
     await ui.press({ key: 'accept-ZZ99ZZ' })

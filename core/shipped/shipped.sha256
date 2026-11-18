@@ -549,3 +549,11 @@ cea19a2aec991b52fd7e4bcba9d50d7b13a887f6d0fd509ed2dbadeb5f4f1cd4  core/role/buil
 39dea9c1b327b847d264779e1bd3b4498ced5b027afbbbd20c996e2e2091609b  core/role/builtin/jaira-dispatcher/SKILL.md
 52886846e7b17fb280d53f20fd53d117d7ef59a22405400c2c3e57ce331bb60a  core/role/builtin/jaira-role-bughunt/SKILL.md
 079cdcbef2656d30dafea01295d52a109eb68cd54c87945cb128f3f27a7ba998  core/role/builtin/jaira-worker/SKILL.md
+1c749bb6b324344dbb5b34ac0802905d87a2fd18ac8fd94cb87551342b04764b  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
+d7f96378c7f9d49820fca6dd7f6bf443360b3b7c87f6bdf852862adaf0c44c4e  core/mod/builtin/jaira-cockpit/hooks/board.ts
+1d20eb154267e9b346c467df7f76bb3439751c23865040a9a677ddb238d87a56  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
+627522aae374accaacd47a6ee42ac48a02fe324f210a1d8327dc4fc3f2d2056f  core/mod/builtin/jaira-cockpit/hooks/board.ts
+75bd0d31f908ec1ce822d4c95944e33cb0756d429c456f71815d017a5f67803f  core/mod/builtin/jaira-cockpit/hooks/board.ts
+c87982ed2d651a6eb37e93b28597ccabe2c02efee6054b59811587667c7e65e3  core/mod/builtin/jaira-cockpit/hooks/board.ts
+76ee8d73c3de99e5e9b86c975ac3a1f9f1d0c4b0e4a53b4ca4ed095bbe134762  core/mod/builtin/jaira-cockpit/hooks/board.ts
+445234655a58e92e5d77ff17b7ccd0b7ca51f3a94cd5e60bbc260a49853c6d99  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
