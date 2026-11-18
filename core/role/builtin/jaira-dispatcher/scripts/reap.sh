@@ -19,14 +19,18 @@ GitLab; 'git config jaira.forge' settles a host that names neither) is left
 alone as 'waiting'. A merged one is kept, with the reason printed, when
   - its local branch is not at the merged head: commits past it, or the head
     never fetched,
-  - one of its worktrees has changes that are not committed (untracked files
-    under .jaira/ do not count),
+  - one of its worktrees has changes that are not committed (changes under
+    .jaira/, the board's own files, do not count),
   - one of its worktrees has a detached HEAD,
   - the ticket is back on the board in a lane other than done,
   - herdr does not answer, so an open tab cannot be told from a closed one.
 
   --dry-run   Print what would be closed and removed, change nothing.
   -h, --help  This text.
+
+One run at a time per repository: a second one while the first still runs
+prints 'skipped: reap.sh runs already' and exits 0; the lock is a directory,
+reap.lock beside jaira/panes/, and one left by a run that died is taken over.
 
 Output: one line per thing done — 'closed <ticket>/<lane> <pane>', 'removed
 <worktree>', 'deleted branch <branch>' — or 'waiting <ticket>: <reason>' and
@@ -65,6 +69,25 @@ common="$(git -C "$root" rev-parse --git-common-dir)"
 panes="$(cd "$root" && cd "$common" && pwd)/jaira/panes"
 # No record, nothing to ask the forge about: the round costs nothing.
 ls "$panes"/* >/dev/null 2>&1 || exit 0
+# One run at a time per repository: every person's cockpit and every teamlead
+# start this, and two runs ask the forge twice and race each other over
+# 'git worktree remove'. mkdir is the lock because it is atomic everywhere and
+# flock is not on macOS. A lock whose run died — its pid gone — is taken over;
+# a second run while the first lives skips the round, the next one comes.
+# --dry-run changes nothing and takes no lock.
+if [ -z "$dry" ]; then
+  lock="$(dirname "$panes")/reap.lock"
+  if ! mkdir "$lock" 2>/dev/null; then
+    holder="$(cat "$lock/pid" 2>/dev/null || true)"
+    if [ -n "$holder" ] && kill -0 "$holder" 2>/dev/null; then
+      echo "skipped: reap.sh runs already (pid $holder)"; exit 0
+    fi
+    rm -rf "$lock"
+    mkdir "$lock" 2>/dev/null || { echo "skipped: reap.sh runs already"; exit 0; }
+  fi
+  echo $$ > "$lock/pid"
+  trap 'rm -rf "$lock"' EXIT
+fi
 # A herdr that does not answer cannot tell a closed tab from an open one; read
 # as closed, it would cost the worktree and the record of a tab still open.
 herdr_up=""; "$herdr" tab list >/dev/null 2>&1 && herdr_up=1
@@ -167,7 +190,11 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
     # commits no branch holds, and removing the worktree would lose them.
     if ! git -C "$w" symbolic-ref -q HEAD >/dev/null; then dirty="$w has a detached HEAD"; break; fi
     if ! st="$(git -C "$w" status --porcelain)"; then dirty="git status failed in $w"; break; fi
-    d="$(printf '%s' "$st" | grep -v '^?? \.jaira/' | cut -c4- | head -3 | tr '\n' ' ' || true)"
+    # The board's own files do not count, tracked or not: a lane that changed
+    # no code leaves the ticket file modified until the next commit, and after
+    # the merge none comes. The ticket's state is on its ref, as close-tab.sh
+    # reads it too.
+    d="$(printf '%s' "$st" | grep -v '^.. \.jaira/' | cut -c4- | head -3 | tr '\n' ' ' || true)"
     if [ -n "$d" ]; then dirty="$w has uncommitted changes: $d"; break; fi
   done
   if [ -n "$dirty" ]; then echo "kept $t: ${dirty% }"; continue; fi
@@ -197,7 +224,7 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
 
   for w in "${wts[@]+"${wts[@]}"}"; do
     if [ -n "$dry" ]; then echo "would remove $w"; continue; fi
-    # --force for the untracked .jaira/ files the check above lets through.
+    # --force for the .jaira/ changes the check above lets through.
     if git -C "$root" worktree remove --force "$w" >/dev/null; then echo "removed $w"
     else echo "kept $t: removing $w failed"; failed=1; fi
   done

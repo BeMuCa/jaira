@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -201,10 +202,17 @@ func TestSpawnRecordsItsTabForReap(t *testing.T) {
 func TestReapClosesAMergedTicket(t *testing.T) {
 	t.Parallel()
 	r := newReapRig(t)
+	ticket := filepath.Join(r.wt, ".jaira", "tickets", "ab12cd.md")
+	r.write(t, ticket, "in review\n")
+	r.git(t, r.wt, "add", ".jaira/tickets/ab12cd.md")
+	r.git(t, r.wt, "commit", "-q", "-m", "feat(AB12CD): ticket")
 	r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
 	r.write(t, r.shown, `{"status":"done"}`)
 	// Untracked board files are no work: AYBDJ2's rule.
 	r.write(t, filepath.Join(r.wt, ".jaira", "milestones", "m.md"), "x\n")
+	// Neither is a ticket file a lane without code left modified: after the
+	// merge no commit comes to carry it, and its state is on the ticket's ref.
+	r.write(t, ticket, "done\n")
 
 	out := r.run(t, r.repo, "reap.sh", "--dry-run")
 	for _, want := range []string{"would close AB12CD/worker p1", "would close AB12CD/review p2",
@@ -235,6 +243,45 @@ func TestReapClosesAMergedTicket(t *testing.T) {
 	}
 	if _, err := os.Stat(r.repo); err != nil {
 		t.Errorf("the main worktree went: %v", err)
+	}
+}
+
+// Every person's cockpit and every teamlead run reap.sh: while one runs, a
+// second skips the round instead of asking the forge again and racing it over
+// 'git worktree remove'. A lock its run left behind when it died is taken over.
+func TestReapRunsOneAtATime(t *testing.T) {
+	t.Parallel()
+	r := newReapRig(t)
+	r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+	r.write(t, r.shown, `{"status":"done"}`)
+	lock := filepath.Join(r.repo, ".git", "jaira", "reap.lock")
+
+	// A live holder: this test's own process.
+	r.write(t, filepath.Join(lock, "pid"), strconv.Itoa(os.Getpid())+"\n")
+	out := r.run(t, r.repo, "reap.sh")
+	if !strings.Contains(out, "skipped: reap.sh runs already") {
+		t.Errorf("a second run did not skip:\n%s", out)
+	}
+	if r.closedTabs() != "" || len(r.records(t)) != 2 {
+		t.Fatalf("the skipped run changed something: closed %q, records %v", r.closedTabs(), r.records(t))
+	}
+	// --dry-run changes nothing and waits for nobody.
+	if out := r.run(t, r.repo, "reap.sh", "--dry-run"); !strings.Contains(out, "would remove "+r.wt) {
+		t.Errorf("--dry-run stopped at the lock:\n%s", out)
+	}
+
+	// A dead holder: a process that has already exited.
+	dead := exec.Command(r.bash, "-c", "exit 0")
+	if err := dead.Run(); err != nil {
+		t.Fatal(err)
+	}
+	r.write(t, filepath.Join(lock, "pid"), strconv.Itoa(dead.Process.Pid)+"\n")
+	out = r.run(t, r.repo, "reap.sh")
+	if _, err := os.Stat(r.wt); !os.IsNotExist(err) {
+		t.Errorf("a lock left by a dead run was not taken over (%v):\n%s", err, out)
+	}
+	if _, err := os.Stat(lock); !os.IsNotExist(err) {
+		t.Errorf("the run left its lock behind: %v", err)
 	}
 }
 

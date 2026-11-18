@@ -1,7 +1,7 @@
 ---
 id: 01M7R61GC6C8D7547N7CN7JW2Q
 title: "Worker-Tabs schliessen sich selbst, sobald ihre Arbeit bei einer Person liegt oder gemergt ist"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,18 +21,25 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-18T20:37:15Z
-updated-at: 2026-11-18T20:55:12Z
+updated-at: 2026-11-18T22:52:13Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-50593
-claimed-at: 2026-11-18T20:37:42Z
-outcome-what: "New jaira-dispatcher/scripts/close-tab.sh: a worker/dispatcher started with --parent closes its own Herdr tab (detached) once its ticket is in a person's lane or done, has no open question and no uncommitted changes outside .jaira/; otherwise prints 'kept <ticket>: <reason>'. Worker, dispatcher and teamlead SKILL.md say when to run it. The jaira-cockpit runs reap.sh at session start and every 10 minutes (Herdr only, never in an agent's session). Tests in core/role/closetab_test.go and board.test.ts; release note N7JW2Q.md."
-outcome-why: "Finished worker tabs and tabs of merged tickets stayed open until Alex closed them by hand: reap.sh only ran inside a /jaira-teamlead session, and a worker whose ticket reached signoff just waited, though a give-back starts a fresh worker anyway."
-outcome-resolves: "DoD 1-4: tab closes itself in signoff/human-without-question/done after the report; stays with open question or uncommitted work; reap.sh runs without teamlead via the cockpit; release note written."
-review-summary: none
-review-gaps: "none: considered sharing the Herdr/hc detection of close-tab.sh with reap.sh/run-lane.sh/spawn.sh - each script carries its own copy by design (installed singly, no sourcing); reapMerged resolves reap.sh beside spawn.sh exactly as herdr() resolves herdr-hc.sh; nothing orphaned"
-test-verdict: "pass: go vet ./... and go test ./... -race -count=1 rc=0; cockpit 'claude plugin test' 181/182, the one failure ('with their verdict', borderStyle round) also fails on untouched HEAD 0313458e; DoD 1-4 verified (closetab_test.go, board.test.ts reap tests, notes file); live in Herdr App: own tab t7t resolves to label N7JW2Q/worker, unknown ticket -> 'kept ... exit 5' rc=0, dead parent socket -> kept rc=0, bad flag rc=2; reap.sh --dry-run on the real repo lists 5 'waiting' and changes nothing. Writes no files; two closes of one tab race harmlessly (second hc rm fails, detached)"
-hunt-verdict: "fail: bughunt done at 764f6d1, 1 change - reap at session start runs before spawn.sh types the role line, so every spawned tab reaps once"
-round: 2
+claimed-by: DESKTOP-RFTCH11-65831
+claimed-at: 2026-11-18T22:48:52Z
+outcome-what: "reap.sh nimmt einen Lock pro Repository (mkdir reap.lock, toter Halter wird uebernommen, zweiter Lauf: skipped) und zaehlt Aenderungen unter .jaira/ nicht mehr als uncommitted; dazu Tests und Release-Note-Zeile"
+outcome-why: "Rueckgabe aus signoff: parallele Cockpit-Sitzungen fragten die Forge doppelt und rangen um git worktree remove; ein Worktree mit modifizierter Ticketdatei blieb nach dem Merge stehen"
+outcome-resolves: "DoD 5 und 6 (Lock, .jaira-Aenderungen), zusaetzlich zu 1-4"
+review-summary: "Neues Skript core/role/builtin/jaira-dispatcher/scripts/close-tab.sh: Worker und Dispatcher rufen es nach ihrem Bericht an den --parent als letzten Schritt auf. Es schliesst den eigenen Herdr-Tab (abgekoppelt per setsid/nohup) nur wenn: ein --parent da ist (uds-Socket existiert), das Ticket in einer Personen-Lane (human_exit/requires_question) oder terminal liegt, keine offene question hat, der Worktree ausserhalb .jaira/ sauber ist und der Tab von spawn.sh als <ticket>/<lane> beschriftet ist; sonst druckt es 'kept <ticket>: <grund>'. Worker-/Dispatcher-/Teamlead-SKILL.md beschreiben den Aufruf. Zweitens ruft das jaira-cockpit (register.tsx reapMerged) reap.sh selbst auf: nur mit Herdr, nie in einer Sitzung, die ein Ticket traegt, ab dem ersten 60-s-Tick und dann hoechstens alle 10 Minuten - so verschwinden Tabs, Worktrees und Branches gemergter Tickets auch ohne Teamlead. Dazu Go-Tests (closetab_test.go), Cockpit-Tests (board.test.ts), Release-Note und shipped.sha256."
+review-gaps: |-
+  note: mehrere Personen-Sitzungen plus Teamlead koennen reap.sh gleichzeitig laufen lassen; ohne Lock endet der Verlierer als 'kept ... removing failed' und raeumt in der naechsten Runde auf - harmlos, aber unnoetige forge-Abfragen pro Sitzung
+  note: dass eine von spawn.sh geoeffnete Worker-Sitzung vor dem ersten Reap erkannt wird, haengt an der Annahme, dass spawn.sh die Rollenzeile innerhalb ~40 s tippt (Test deckt 30 s ab); explain-/discuss-Tabs tragen keine /jaira-Zeile und reapen daher wie Personen-Sitzungen - ebenfalls harmlos
+  note: close-tab.sh ignoriert jede Aenderung unter .jaira/ (auch ' M' der Ticketdatei), reap.sh nur '?? .jaira/' - ein Worktree mit modifizierter Ticketdatei bleibt nach dem Merge als 'uncommitted' stehen, bis der logbook-Commit sie mitnimmt
+  note: die Cockpit-Tests (board.test.ts) habe ich nicht selbst laufen lassen, nur go test ./core/role (gruen)
+test-verdict: "pass: round 2 at 6c65e71 - go vet ./... and go test ./... -race -count=1 rc=0; cockpit 'claude plugin test' 182/183, the one failure ('with their verdict') also fails on untouched HEAD 0313458e; new regression test 'a tab spawn.sh opened runs no reap.sh' fails on 764f6d1's start-time reap and passes now; DoD 1-4 re-verified; live Herdr App checks of close-tab.sh from round 1 unchanged (script untouched)"
+hunt-verdict: "pass: bughunt done at 6c65e71, 0 change, 0 pre-existing; unmeasured: real gap between session.start and the role line on Herdr (spawn.sh waits <=40 s)"
+round: 3
+review-verdict: "Diff erfuellt alle vier DoD-Punkte; kein Defekt gefunden. close-tab.sh scheitert immer in Richtung 'Tab bleibt offen', reapMerged ist auf Herdr und Personen-Sitzungen begrenzt. go test ./core/role gruen. Nur Notes, kein Blocker."
+review-round: 2
+review-check: "1. cd in den Worktree jaira-n7jw2q  2. bash core/role/builtin/jaira-dispatcher/scripts/close-tab.sh --dry-run N7JW2Q -> 'kept N7JW2Q: no parent: the report is in this tab'  3. dasselbe mit --parent x -> 'kept N7JW2Q: the ticket is in <lane>, not with a person' (solange es nicht in signoff liegt)  4. go test ./core/role -run 'CloseTab|WorkerAndDispatcherCloseTheirTab' -> ok  5. Live: einen Worker per spawn.sh mit --parent starten, bis signoff laufen lassen -> sein Herdr-Tab schliesst sich nach dem Bericht von selbst; mit offener Frage bleibt er offen  6. In einer normalen Claude-Sitzung mit Cockpit und Herdr gut eine Minute warten: reap.sh laeuft (gemergte+done Tickets verlieren Tab/Worktree/Branch)"
 ---
 
 # Worker-Tabs schliessen sich selbst, sobald ihre Arbeit bei einer Person liegt oder gemergt ist
@@ -46,7 +53,11 @@ round: 2
 - [x] reap.sh laeuft fuer gemergte Tickets ohne Teamlead-Sitzung automatisch an; Test oder dokumentierter Hook mit Test
   proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx reapMerged (ab der ersten Minute, dann alle 10 min, nur mit Herdr, nie in Agent-Sitzung); tests board.test.ts 'a person's session runs reap.sh from its first minute on, then every ten minutes', 'a tab spawn.sh opened runs no reap.sh, though its role line comes only after the start', 'a session that carries a ticket runs no reap.sh', 'without Herdr the cockpit runs no reap.sh'
 - [x] Release-Note-Zeile in core/release/notes/<ID>.md
-  proof: core/release/notes/N7JW2Q.md
+  proof: core/release/notes/N7JW2Q.md (3 lines)
+- [x] reap.sh laeuft pro Repository nur einmal gleichzeitig (Lock); ein Lock eines toten Laufs wird uebernommen; Test
+  proof: core/role/builtin/jaira-dispatcher/scripts/reap.sh lock block after the panes check (mkdir reap.lock, pid, trap); test core/role/reap_test.go TestReapRunsOneAtATime
+- [x] reap.sh zaehlt Aenderungen unter .jaira/ (auch eine modifizierte Ticketdatei) nicht als uncommitted, wie close-tab.sh; Test
+  proof: core/role/builtin/jaira-dispatcher/scripts/reap.sh dirty check grep -v '^.. \.jaira/'; test core/role/reap_test.go TestReapClosesAMergedTicket (modified .jaira/tickets/ab12cd.md)
 
 ## Options
 
@@ -67,3 +78,14 @@ round: 2
 - **2026-11-18 20:52 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1150 (reapMerged, :377) - every tab spawn.sh opens (worker, dispatcher, explain, discuss) runs reap.sh once at its session start, contrary to 'a worker's never': carrying is set only in prompt.submit (:1183-1187), but spawn.sh starts claude first (spawn.sh:349 pane run), waits for it, and types the role prompt only later (spawn.sh:412 send-text), so the clock.after(0) reap sees carries() false. With several workers spawned in a burst, that is several concurrent reap.sh runs, each asking gh about every recorded ticket (up to 120s each) and racing the person's own reap on git worktree remove; the test 'a session that carries a ticket runs no reap.sh' passes only because it pre-seeds the carrying store key. read (call order spawn.sh -> session.start -> after(0) -> carries() -> prompt.submit); blame: 764f6d12
 - **2026-11-18 20:52 · Alexander Sacharov** — bughunt: done at 764f6d12 - 1 finding (1 change, 0 pre-existing) in 4 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/N7JW2Q.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-dispatcher/scripts/close-tab.sh core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/role/closetab_test.go core/role/reap_test.go core/shipped/shipped.sha256
 - **2026-11-18 20:55 · Alexander Sacharov** — fix nach bughunt 764f6d1: kein reap beim Session-Start mehr, erst am ersten 60-s-Tick. Annahme: spawn.sh tippt die Rollenzeile spaetestens nach ~40 s (20x2 s Warten auf idle), also vor dem ersten Tick. Hash der Zwischenversion von register.tsx aus shipped.sha256 entfernt (nie ausgeliefert).
+- **2026-11-18 20:55 · Alexander Sacharov** — critique round 2: nichts. Erwogen: Agent-Tab am spawn.sh-Label (<ticket>/<lane>) sofort erkennen statt eine Minute zu warten - mehr Teile (tab list beim Start) fuer denselben Effekt; die Minute kostet nichts.
+- **2026-11-18 20:56 · Alexander Sacharov** — bughunt: done at 6c65e713 - 0 findings in 4 changed modules since 764f6d12 (register.tsx, board.test.ts, release note, shipped.sha256) plus 11 new milestone data files, follow-up hunt; concurrency, error paths, input, permissions checked; files: .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/N7JW2Q.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-dispatcher/scripts/close-tab.sh core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/role/closetab_test.go core/role/reap_test.go core/shipped/shipped.sha256
+- **2026-11-18 22:35 · Alexander Sacharov** — explain: Der Review fand keinen Defekt: Worker-Tabs schliessen sich selbst (close-tab.sh) und das Cockpit raeumt gemergte Tickets auf (reap.sh). Nur vier kleine Notes, kein Blocker.
+Warum: Die Notes sind Randfaelle - doppelte forge-Abfragen bei parallelen Sitzungen, ein Worktree mit geaenderter Ticketdatei bleibt bis zum logbook-Commit stehen - nichts geht verloren, es wird nur spaeter aufgeraeumt.
+1) Zurueckgeben: Lock fuer reap.sh einbauen und die Ticketdatei-Aenderung in reap.sh wie in close-tab.sh ignorieren [give back]
+2) Annehmen, wie es ist: die Randfaelle sind harmlos und stehen als Notes am Ticket [accept]
+Empfehlung: 2 - beide Luecken sind harmlos und selbstheilend, ein Lock waere mehr Code fuer fast keinen Nutzen.
+- **2026-11-18 22:48 · Alexander Sacharov** — decision: 1) Zurueckgeben: Lock fuer reap.sh einbauen und die Ticketdatei-Aenderung in reap.sh wie in close-tab.sh ignorieren
+- **2026-11-18 22:48 · Alexander Sacharov** — Given back from signoff: 1) Zurueckgeben: Lock fuer reap.sh einbauen und die Ticketdatei-Aenderung in reap.sh wie in close-tab.sh ignorieren
+- **2026-11-18 22:48 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
+- **2026-11-18 22:52 · Alexander Sacharov** — give-back (Lock + .jaira-Aenderungen): Lock per mkdir in <git-common-dir>/jaira/reap.lock, nicht flock (fehlt auf macOS), nicht unter panes/ (der Glob $panes/* wuerde ihn als Record lesen). Zweiter Lauf: 'skipped', exit 0, kein Warten - der naechste Cockpit-Tick kommt ohnehin. Toter Halter (kill -0 scheitert) wird uebernommen. --dry-run nimmt keinen Lock. reap.sh entfernt mit --force: eine modifizierte Ticketdatei im Worktree geht dabei verloren - gewollt, Ticket ist done und gemergt, Zustand liegt auf dem Ref.
