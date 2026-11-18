@@ -448,10 +448,21 @@ before its ticket is in `done` — not when the work is committed, and not when
 the branch is pushed. You never see the pull request: opening it is the human's
 call, and it can come long after your last worker has finished.
 
-**Your own tab is not yours to close.** Whoever started you created it, and they
-close it once they have read your report. Do not close it, and do not keep
-working to stay useful — a dispatcher whose ticket has reached a human lane is
-finished. Print the three lines and stop.
+**Your own tab closes only through `close-tab.sh`.** Do not keep working to
+stay useful — a dispatcher whose ticket has reached a human lane is finished.
+Print the three lines and stop. Started with `--parent`, send them there with
+`SendMessage`, and once it has taken them make this the very last call of your
+turn:
+
+```bash
+jaira-dispatcher/scripts/close-tab.sh --parent <session> <ticket id>
+```
+
+It closes the tab only when the ticket sits in a person's lane or in done, has
+no open question and the worktree holds nothing uncommitted outside `.jaira/`;
+otherwise it prints `kept <ticket>: <reason>` and the tab stays. A message that
+did not reach the parent means no `--parent` here: the report is then in your
+tab. Without a parent you never run it — the person reads you in this tab.
 
 ## When to stop and hand back
 

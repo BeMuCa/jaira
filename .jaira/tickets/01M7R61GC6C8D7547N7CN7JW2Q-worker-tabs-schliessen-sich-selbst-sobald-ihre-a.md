@@ -1,0 +1,57 @@
+---
+id: 01M7R61GC6C8D7547N7CN7JW2Q
+title: "Worker-Tabs schliessen sich selbst, sobald ihre Arbeit bei einer Person liegt oder gemergt ist"
+status: in-progress
+ready: true
+creator: Alexander Sacharov
+assignee: Alexander Sacharov
+goal: "Nach einem Arbeitstag stehen keine fertigen Worker-, Review- oder PR-Tabs mehr herum: ein Worker schliesst seinen Tab selbst, wenn sein Ticket bei einer Person liegt, und Tabs, Worktrees und Branches gemergter Tickets raeumt jaira auf, ohne dass jemand daran denken muss."
+context: |-
+  Was heute falsch ist: Worker-Tabs bleiben offen, bis Alex sie von Hand schliesst. Am 2026-11-18 standen in Herdr App gleichzeitig Tabs fuer 32TTSS, 58DCYM, KCRS3W, Z66Z8E (alle gemergt) und je 2 fuer NH788Q und 28C0QV (in signoff) offen; Alex: 'sie bleiben immer, und ich sage es jedes Mal'.
+  Zwei Ursachen:
+  1. reap.sh (core/role/builtin/jaira-dispatcher/scripts/reap.sh) raeumt gemergte Tickets korrekt auf (Tabs, Worktree, Branch), laeuft aber nur, wenn eine Sitzung als /jaira-teamlead arbeitet - dessen Prompt sagt 'jede Runde reap.sh'. Eine normale Sitzung, die per spawn.sh Worker startet, ruft es nie. Ein Lauf von Hand am 18.11. schloss 7 Tabs und 7 Worktrees.
+  2. Ein Worker, dessen Ticket in signoff/human angekommen ist, wartet danach nur noch. Seinen Kontext braucht niemand: entscheidet die Person im Cockpit, startet das Cockpit einen frischen Worker (am 18.11. fuer 28C0QV und NH788Q so gesehen).
+  Tabs schliessen: herdr-hc.sh 'tab close' (hc kill), in Herdr classic 'herdr tab close'. Ein Tab darf sich erst schliessen, nachdem sein Bericht an den Parent zugestellt ist.
+  Nicht schliessen: einen Tab, der auf eine Antwort der Person wartet (offene Frage), und einen Tab mit nicht committeten Aenderungen.
+  Offen fuer den Plan: wer reap.sh ohne Teamlead ausloest - Cockpit-Hook (z. B. bei jedem Board-Refresh oder SessionStart) oder spawn.sh vor jedem neuen Tab.
+definition-of-done: "Ein Worker (Rolle worker/dispatcher), dessen Ticket in einer Personen-Lane (signoff, human mit Frage beantwortet) oder done liegt, schliesst nach zugestelltem Bericht seinen eigenen Tab; Test"
+tags:
+  - cli
+blocked-by: []
+related: []
+commits: []
+created-at: 2026-11-18T20:37:15Z
+updated-at: 2026-11-18T20:48:32Z
+updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-50593
+claimed-at: 2026-11-18T20:37:42Z
+---
+
+# Worker-Tabs schliessen sich selbst, sobald ihre Arbeit bei einer Person liegt oder gemergt ist
+
+## Definition of Done
+
+- [x] Ein Worker (Rolle worker/dispatcher), dessen Ticket in einer Personen-Lane (signoff, human mit Frage beantwortet) oder done liegt, schliesst nach zugestelltem Bericht seinen eigenen Tab; Test
+  proof: core/role/builtin/jaira-dispatcher/scripts/close-tab.sh; worker/dispatcher SKILL.md 'Report'/'Your own tab'; test core/role/closetab_test.go TestCloseTabClosesAWorkerWhoseTicketIsWithAPerson (signoff, human ohne Frage, done), TestWorkerAndDispatcherCloseTheirTab
+- [x] Ein Worker mit offener Frage an die Person oder mit nicht committeten Aenderungen bleibt offen; Test
+  proof: close-tab.sh 'kept' paths; test core/role/closetab_test.go TestCloseTabKeepsAWorkerThatIsNotFinished (open question, uncommitted, untracked source, no parent, parent gone, foreign tab, not in Herdr, agent lane)
+- [x] reap.sh laeuft fuer gemergte Tickets ohne Teamlead-Sitzung automatisch an; Test oder dokumentierter Hook mit Test
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx reapMerged (session start + alle 10 min, nur mit Herdr, nie in Agent-Sitzung); tests board.test.ts 'a person's session runs reap.sh at its start and then every ten minutes', 'a session that carries a ticket runs no reap.sh', 'without Herdr the cockpit runs no reap.sh'
+- [x] Release-Note-Zeile in core/release/notes/<ID>.md
+  proof: core/release/notes/N7JW2Q.md
+
+## Options
+
+- [ ] brainstorm
+- [ ] planning
+
+## Plan
+
+<Steps, in order — filled in by the pre-process step, or by you.>
+
+## Progress
+- **2026-11-18 20:37 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/6601.sock
+- **2026-11-18 20:39 · Alexander Sacharov** — decision: Selbst-Schliessen ueber ein neues Skript jaira-dispatcher/scripts/close-tab.sh <id>, das Worker und Dispatcher als letzten Schritt nach dem Bericht aufrufen. Es schliesst nur, wenn (a) mit --parent gestartet (der Bericht ist dann beim Parent, nicht im eigenen Tab - ohne Parent liest die Person den Bericht im Tab, der darf nicht verschwinden), (b) das Ticket in einer Personen-Lane (human_exit/requires_question) oder terminal liegt, (c) question leer, (d) der Worktree sauber ist (?? .jaira/ zaehlt nicht), (e) der Tab von spawn.sh als <ticket>/<lane> beschriftet ist. Sonst druckt es 'kept: <grund>' und tut nichts. Das Schliessen laeuft abgekoppelt (setsid/nohup), weil es den eigenen claude-Prozess beendet.
+- **2026-11-18 20:39 · Alexander Sacharov** — decision: reap.sh ohne Teamlead startet das Cockpit (jaira-cockpit), beim Session-Start und danach hoechstens alle 10 Minuten aus dem 60-s-Takt; nicht in Sitzungen, die ein Agent traegt. Nicht spawn.sh: wer nach dem Merge nichts mehr startet, behielte die Tabs. Teamlead ruft es weiter jede Runde. Folge: Give back findet den Worker-Tab danach meist geschlossen und startet einen neuen Worker - so vom Ticket gewollt (Kontext: 'Seinen Kontext braucht niemand').
+- **2026-11-18 20:43 · Alexander Sacharov** — found: close-tab.sh zaehlt jede Aenderung unter .jaira/ (auch ' M' der Ticketdatei) nicht als uncommitted - nach review->signoff ist die Ticketdatei immer modifiziert (Lane ohne Code committet nichts), sonst bliebe jeder Worker offen. Test-Rig: reapRig in core/role/reap_test.go, der jaira-Stub beantwortet jetzt auch '-C <dir> lanes'; HC_TERMINAL_ID muss im Test geleert werden, sonst greift der Fallback auf die echte Sitzung. Offen: core/shipped/shipped.sha256 am Ende um die geaenderten Dateien ergaenzen (TestEveryInstalledFileIsAShippedVersion).
+- **2026-11-18 20:46 · Alexander Sacharov** — pre-existing: cockpit-Test 'the band lists the tickets in a person's lanes, with their verdict' (borderStyle round) faellt auch auf unveraendertem HEAD 0313458e - nicht von N7JW2Q. reapMerged laeuft beim Start ueber $.clock.after(0), nicht als void-Promise: sonst ruft es $.env.get nach Testende und der Lauf meldet 'a rejection nothing handled'.

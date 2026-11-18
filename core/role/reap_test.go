@@ -17,6 +17,7 @@ type reapRig struct {
 	closed                  string // every tab the herdr stub closed, a line each
 	merged                  string // what the gh stub answers for feat/ab12cd
 	shown                   string // what 'jaira show AB12CD --json' answers; absent: not found
+	lanes                   string // what 'jaira -C <dir> lanes --json' answers
 	labels                  string // the label of each pane's tab, a file per pane
 	env                     []string
 }
@@ -45,6 +46,7 @@ func newReapRig(t *testing.T) *reapRig {
 		closed:  filepath.Join(tmp, "closed"),
 		merged:  filepath.Join(tmp, "merged.json"),
 		shown:   filepath.Join(tmp, "shown.json"),
+		lanes:   filepath.Join(tmp, "lanes.json"),
 		labels:  filepath.Join(tmp, "labels"),
 	}
 	r.wt = filepath.Join(tmp, "src", ".worktrees", "jaira-ab12cd")
@@ -84,6 +86,10 @@ esac
 		"jaira": `#!/usr/bin/env bash
 if [ "$1" = -C ] && [ "$3" = show ]; then
   cat "` + r.shown + `" 2>/dev/null || exit 5
+  exit 0
+fi
+if [ "$1" = -C ] && [ "$3" = lanes ]; then
+  cat "` + r.lanes + `"
   exit 0
 fi
 exec "` + filepath.Join(strings.SplitN(path, string(os.PathListSeparator), 2)[0], "jaira") + `" "$@"
