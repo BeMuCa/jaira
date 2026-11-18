@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T18:46:16Z
+updated-at: 2026-11-18T18:46:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45834
 claimed-at: 2026-11-18T18:45:09Z
@@ -52,7 +52,8 @@ review-check: "1. go build -o /tmp/jaira-28c0qv ./cmd/jaira  2. in a test repo w
   proof: core/release/notes/28C0QV.md
 - [x] E auf einer Board-Lane mit der id eines Built-ins schreibt nicht in den Katalog durch; Test
   proof: internal/tui/lanes.go catalogueTwin (isBuiltinID guard); TestEditOfBuiltinIDDoesNotWriteThrough
-- [ ] Drift-Kommentar in core/lane/share.go sagt, dass nur ein byte-gleiches Paar durchgeschrieben wird
+- [x] Drift-Kommentar in core/lane/share.go sagt, dass nur ein byte-gleiches Paar durchgeschrieben wird
+  proof: core/lane/share.go Drift doc comment
 
 ## Options
 
