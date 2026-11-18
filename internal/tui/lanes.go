@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -500,9 +501,17 @@ func (ls *laneScreen) publish() {
 // skeleton from the lane settings screen's 'n' key, has exited. path is the
 // file the 'n' key wrote, and empty when the editor was opened by E on a lane
 // that already existed: only a new lane goes into the catalogue.
+//
+// edited, syncTo and syncFrom carry E's write-through: when the board file E
+// opened (edited) had a catalogue copy at syncTo holding the same bytes
+// (syncFrom), the edit is copied there too once the editor closes — see
+// writeThrough.
 type newLaneDoneMsg struct {
-	err  error
-	path string
+	err      error
+	path     string
+	edited   string
+	syncTo   string
+	syncFrom []byte
 }
 
 // newLane writes a fresh lane skeleton into the catalogue and opens it in
@@ -543,6 +552,8 @@ func (ls *laneScreen) editLane() tea.Cmd {
 		return nil
 	}
 	path := l.Source
+	var syncTo string
+	var syncFrom []byte
 	if l.Builtin {
 		dst := filepath.Join(lane.UserLanesDir(), l.ID+".md")
 		if _, err := os.Stat(dst); os.IsNotExist(err) {
@@ -554,11 +565,13 @@ func (ls *laneScreen) editLane() tea.Cmd {
 			dst = exported
 		}
 		path = dst
+	} else if strings.HasPrefix(path, lane.ProjectLanesDir(ls.store.Root)) {
+		syncTo, syncFrom = catalogueTwin(path, l.ID)
 	}
 	argv := append(editorCommand(), path)
 	cmd := exec.Command(argv[0], argv[1:]...)
 	return tea.ExecProcess(cmd, func(err error) tea.Msg {
-		return newLaneDoneMsg{err: err}
+		return newLaneDoneMsg{err: err, edited: path, syncTo: syncTo, syncFrom: syncFrom}
 	})
 }
 
@@ -602,11 +615,66 @@ func catalogueNewLane(path string) (msg string, isErr bool) {
 	if string(b) == lane.Template {
 		return "", false
 	}
+	if l, err := lane.Parse(b, path); err == nil && isBuiltinID(l.ID) {
+		return "on this board only, not in your catalogue: " + l.ID + " is a built-in lane's id, and a catalogue file of that id would replace the built-in on every board", true
+	}
 	l, dst, err := lane.Adopt(path, lane.UserLanesDir(), false)
 	if err != nil {
 		return "on this board only, not in your catalogue: " + err.Error(), true
 	}
 	return l.ID + " is on this board and in your catalogue (" + dst + ")", false
+}
+
+// isBuiltinID reports whether id names a lane compiled into the binary.
+func isBuiltinID(id string) bool {
+	builtins, _ := lane.Builtins()
+	for _, b := range builtins {
+		if b.ID == id {
+			return true
+		}
+	}
+	return false
+}
+
+// catalogueTwin returns the catalogue file of id and its bytes when it holds
+// exactly what the board file at path holds — the pair writeThrough keeps
+// together — and nothing when there is no such file or the two already differ.
+func catalogueTwin(path, id string) (string, []byte) {
+	cat := filepath.Join(lane.UserLanesDir(), id+".md")
+	catBytes, err := os.ReadFile(cat)
+	if err != nil {
+		return "", nil
+	}
+	boardBytes, err := os.ReadFile(path)
+	if err != nil || !bytes.Equal(catBytes, boardBytes) {
+		return "", nil
+	}
+	return cat, catBytes
+}
+
+// writeThrough copies an E edit of a board lane into the catalogue when the
+// catalogue copy was the same file before the edit. Without it the two
+// copies part: other boards keep the old version, the lane screen calls this
+// one drifted, and R pulls the old catalogue copy back over the edit. The
+// catalogue copy is only replaced while it still holds the bytes it held when
+// the editor opened; one that changed meanwhile, or a board file that no
+// longer parses, is left alone and the message says so.
+func writeThrough(edited, catPath string, before []byte) (msg string, isErr bool) {
+	b, err := os.ReadFile(edited)
+	if err != nil || bytes.Equal(b, before) {
+		return "", false
+	}
+	if _, err := lane.Parse(b, edited); err != nil {
+		return "your catalogue keeps the old copy: " + err.Error(), true
+	}
+	now, err := os.ReadFile(catPath)
+	if err != nil || !bytes.Equal(now, before) {
+		return "your catalogue copy changed meanwhile and was left alone (" + catPath + ")", true
+	}
+	if err := os.WriteFile(catPath, b, 0o644); err != nil {
+		return err.Error(), true
+	}
+	return "saved on this board and in your catalogue (" + catPath + ")", false
 }
 
 // writeLaneSkeleton creates a new lane skeleton file in dir under the first

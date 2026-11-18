@@ -1174,6 +1174,16 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
+		// The catalogue is written first, so the drift the new screen works
+		// out below already sees it.
+		var text string
+		var isErr bool
+		switch {
+		case msg.path != "":
+			text, isErr = catalogueNewLane(msg.path)
+		case msg.syncTo != "":
+			text, isErr = writeThrough(msg.edited, msg.syncTo, msg.syncFrom)
+		}
 		// The new file may parse to a fresh lane, or to a warning if it was
 		// left unedited (an id collision with the last skeleton, say) — either
 		// way a full reload is what makes the settings screen agree with it.
@@ -1183,10 +1193,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.laneScreen != nil {
 			m.laneScreen = newLaneScreen(m.store, m.lanes)
-		}
-		if msg.path != "" {
-			text, isErr := catalogueNewLane(msg.path)
-			if m.laneScreen != nil && text != "" {
+			if text != "" {
 				m.laneScreen.msg, m.laneScreen.isErr = text, isErr
 			}
 		}

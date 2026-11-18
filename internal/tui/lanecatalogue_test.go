@@ -185,3 +185,89 @@ func TestAdoptedSharedLaneIsOfferedOnEveryBoard(t *testing.T) {
 		}
 	}
 }
+
+// TestNewLaneWithBuiltinIDStaysOutOfCatalogue: a board-local lane that reuses
+// a built-in's id is not copied into the catalogue, where it would stand in
+// for the built-in on every board.
+func TestNewLaneWithBuiltinIDStaysOutOfCatalogue(t *testing.T) {
+	catalogue := catalogueHome(t)
+	dir := t.TempDir()
+	writeLaneFile(t, dir, "new-lane.md", strings.Replace(deployLane, "id: deploy-check", "id: review", 1))
+	path := filepath.Join(dir, "new-lane.md")
+	msg, isErr := catalogueNewLane(path)
+	if !isErr || !strings.Contains(msg, "built-in") {
+		t.Errorf("message = %q (err %v), want a refusal naming the built-in", msg, isErr)
+	}
+	if _, err := os.Stat(filepath.Join(catalogue, "review.md")); !os.IsNotExist(err) {
+		t.Errorf("catalogue holds review.md (stat err %v), want none", err)
+	}
+}
+
+// TestEditOfCataloguedLaneWritesThrough: after n put a lane on the board and
+// into the catalogue, an E edit of the board file reaches the catalogue too,
+// so the lane screen reports no drift and R has nothing old to pull back.
+func TestEditOfCataloguedLaneWritesThrough(t *testing.T) {
+	catalogue := catalogueHome(t)
+	s := initBoard(t)
+	boardDir := lane.ProjectLanesDir(s.Root)
+	writeLaneFile(t, boardDir, "new-lane.md", deployLane)
+	if _, isErr := catalogueNewLane(filepath.Join(boardDir, "new-lane.md")); isErr {
+		t.Fatal("setup: catalogueNewLane failed")
+	}
+
+	edited := filepath.Join(boardDir, "new-lane.md")
+	syncTo, syncFrom := catalogueTwin(edited, "deploy-check")
+	if syncTo != filepath.Join(catalogue, "deploy-check.md") {
+		t.Fatalf("catalogueTwin = %q, want the catalogue copy", syncTo)
+	}
+	changed := strings.Replace(deployLane, "Check the deploy.", "Check the deploy twice.", 1)
+	writeLaneFile(t, boardDir, "new-lane.md", changed)
+
+	m, err := New(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m.laneScreen = newLaneScreen(m.store, m.lanes)
+	m.Update(newLaneDoneMsg{edited: edited, syncTo: syncTo, syncFrom: syncFrom})
+
+	b, _ := os.ReadFile(syncTo)
+	if string(b) != changed {
+		t.Errorf("catalogue copy = %q, want the edit", b)
+	}
+	if _, drifted := m.laneScreen.drift["deploy-check"]; drifted {
+		t.Error("lane screen reports drift after the write-through")
+	}
+}
+
+// TestEditDoesNotWriteThroughAnAlreadyDifferentCatalogue: a board copy that
+// had already parted from its catalogue copy is edited on the board alone.
+func TestEditDoesNotWriteThroughAnAlreadyDifferentCatalogue(t *testing.T) {
+	catalogue := catalogueHome(t)
+	s := initBoard(t)
+	boardDir := lane.ProjectLanesDir(s.Root)
+	writeLaneFile(t, boardDir, "deploy-check.md", deployLane)
+	other := strings.Replace(deployLane, "Check the deploy.", "Another board's version.", 1)
+	writeLaneFile(t, catalogue, "deploy-check.md", other)
+	if to, _ := catalogueTwin(filepath.Join(boardDir, "deploy-check.md"), "deploy-check"); to != "" {
+		t.Errorf("catalogueTwin = %q, want none for copies that already differ", to)
+	}
+}
+
+// TestWriteThroughLeavesACatalogueChangedMeanwhile: when the catalogue copy
+// changed while the editor was open, it is not overwritten.
+func TestWriteThroughLeavesACatalogueChangedMeanwhile(t *testing.T) {
+	catalogue := catalogueHome(t)
+	board := t.TempDir()
+	writeLaneFile(t, board, "deploy-check.md", strings.Replace(deployLane, "deploy.", "deploy, edited.", 1))
+	meanwhile := strings.Replace(deployLane, "deploy.", "deploy, from elsewhere.", 1)
+	writeLaneFile(t, catalogue, "deploy-check.md", meanwhile)
+
+	msg, isErr := writeThrough(filepath.Join(board, "deploy-check.md"), filepath.Join(catalogue, "deploy-check.md"), []byte(deployLane))
+	if !isErr || !strings.Contains(msg, "meanwhile") {
+		t.Errorf("message = %q (err %v), want it to say the catalogue changed meanwhile", msg, isErr)
+	}
+	b, _ := os.ReadFile(filepath.Join(catalogue, "deploy-check.md"))
+	if string(b) != meanwhile {
+		t.Error("catalogue copy changed meanwhile was overwritten")
+	}
+}
