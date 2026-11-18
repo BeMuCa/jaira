@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -344,5 +345,52 @@ func TestRefreshReachesANamedBoard(t *testing.T) {
 	lines := refreshLines(stderr)
 	if len(lines) != 1 || !strings.Contains(lines[0], "video/testing") {
 		t.Fatalf("want the line to name video/testing, stderr:\n%s", stderr)
+	}
+}
+
+// 'jaira lanes use' writes today's board only, so an edited lane of a named
+// board must not be offered it: following that hint would overwrite today's
+// lane of the same id and leave the named one as it was.
+func TestSkippedNamedBoardLaneIsNotOfferedLanesUse(t *testing.T) {
+	st := newStaleSetup(t)
+	lanes := filepath.Join(st.dir, ticket.DirName, "boards", "video", "lanes")
+	if err := os.MkdirAll(lanes, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	video := filepath.Join(lanes, "testing.md")
+	mustWrite(t, video, append(append([]byte{}, st.laneOld...), []byte("\nmine\n")...))
+	mustWrite(t, filepath.Join(lanes, "order"), []byte("testing\n"))
+
+	out, _ := runUpdate(t, st.dir, "--lanes", "--dry-run")
+	setup := setupOutput(out)
+	if !hasLine(setup, "skipped "+video+" (edited here; a lane of board video is replaced by hand)") {
+		t.Errorf("the named board's lane is not named with the by-hand hint:\n%s", out)
+	}
+	for _, l := range strings.Split(setup, "\n") {
+		if strings.HasPrefix(l, "skipped "+video) && strings.Contains(l, "lanes use") {
+			t.Errorf("a named board's lane is offered 'jaira lanes use': %q", l)
+		}
+	}
+
+	// Exit 3 is expected: an edited lane was left alone.
+	raw, _ := runCLI(t, st.dir, "update", "--lanes", "--dry-run", "--json")
+	var m map[string]any
+	if err := json.Unmarshal([]byte(raw), &m); err != nil {
+		t.Fatalf("update --json: %v\n%s", err, raw)
+	}
+	found := false
+	for _, r := range m["lanes"].([]any) {
+		r := r.(map[string]any)
+		if r["path"] == video {
+			found = true
+			if r["board"] != "video" {
+				t.Errorf("JSON result for %s has board %v, want video", video, r["board"])
+			}
+		} else if _, ok := r["board"]; ok {
+			t.Errorf("today's lane %v carries a board key", r["path"])
+		}
+	}
+	if !found {
+		t.Errorf("JSON lanes do not list %s: %v", video, m["lanes"])
 	}
 }
