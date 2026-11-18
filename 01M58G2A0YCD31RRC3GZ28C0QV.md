@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T18:52:45Z
+updated-at: 2026-11-18T18:52:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45834
 claimed-at: 2026-11-18T18:45:09Z
@@ -38,7 +38,15 @@ hunt-verdict: "pass: bughunt done at 16a8effb, 0 change, 0 pre-existing"
 round: 4
 review-verdict: "Diff erfuellt alle 5 DoD-Punkte; go vet und go test ./internal/tui ./core/lane gruen. Die beiden Bughunt-Funde (Drift nach E, Built-in-id im Katalog) sind sauber geschlossen und getestet. Kein Defekt gefunden, nur vier kleine Notes zu Randfaellen."
 review-round: 4
-review-check: "1. go build -o /tmp/jaira-28c0qv ./cmd/jaira  2. in a test repo with a board: export JAIRA_HOME=$(mktemp -d); /tmp/jaira-28c0qv, open the lane settings, press n  3. in the editor set id: deploy-check, save, close  4. the lane screen says 'deploy-check is on this board and in your catalogue (...)' and $JAIRA_HOME/lanes/deploy-check.md exists  5. in a second repo with a board (same JAIRA_HOME) open the lane settings, press +: deploy-check is offered  6. back in the first repo press E on deploy-check, change the name, save: the screen says 'saved on this board and in your catalogue' and the lane is not marked drifted  7. press n again and set id: review: the screen says 'on this board only ... built-in lane's id'"
+review-check: |-
+  1. Im Worktree: go build -o /tmp/jaira ./cmd/jaira
+  2. export JAIRA_HOME=$(mktemp -d); mkdir -p /tmp/r1 /tmp/r2; cd /tmp/r1 && git init -q && /tmp/jaira init; cd /tmp/r2 && git init -q && /tmp/jaira init
+  3. cd /tmp/r1 && /tmp/jaira - Lane-Settings oeffnen, n druecken, im Editor id: deploy-check und name: Deploy check setzen, speichern, schliessen
+  4. Erwartet: Meldung 'deploy-check is on this board and in your catalogue (.../lanes/deploy-check.md)'; ls $JAIRA_HOME/lanes zeigt deploy-check.md
+  5. cd /tmp/r2 && /tmp/jaira - Lane-Settings: deploy-check steht unter '+' (nicht installiert) zur Auswahl
+  6. Zurueck in /tmp/r1: deploy-check waehlen, E, Prompt-Text aendern, speichern - Meldung 'saved on this board and in your catalogue'; cat $JAIRA_HOME/lanes/deploy-check.md zeigt den neuen Text, die Lane ist nicht als drifted markiert
+  7. n noch einmal, im Editor id: review setzen - Meldung 'on this board only ... review is a built-in lane\'s id'; $JAIRA_HOME/lanes/review.md existiert nicht
+  8. Automatisch: go test ./internal/tui -run 'NewLane|Catalogue|WriteThrough|EditOf|Adopted' -v
 ---
 
 # Eine neu angelegte Lane landet nur in einem Board, nicht im persoenlichen Katalog ~/.jaira/lanes
