@@ -1,7 +1,7 @@
 ---
 id: 01M58G2A0YCD31RRC3GZ28C0QV
 title: "Eine neu angelegte Lane landet nur in einem Board, nicht im persoenlichen Katalog ~/.jaira/lanes"
-status: critique
+status: in-progress
 ready: true
 creator: berkc
 assignee: Alexander Sacharov
@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T17:19:49Z
+updated-at: 2026-11-18T17:19:53Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74923
 claimed-at: 2026-11-18T17:08:27Z
@@ -31,7 +31,7 @@ review-summary: "internal/tui/lanes.go writeThrough: an E edit that changes id: 
 review-gaps: "none: catalogueNewLane liest die Datei vor Adopt ein zweites Mal (Template-Vergleich) — einmal pro n-Taste, gelassen; catalogueHome/initBoard in lanecatalogue_test.go weichen bewusst von laneTestStore ab (JAIRA_HOME statt JAIRA_LANES_DIR, zwei Boards)"
 test-verdict: "pass: go build + go test -race ./... RC=0; DoD 1-3 im Tree geprueft; TUI im tmux auf zwei Scratch-Boards: n in a -> ~/.jaira/lanes/e2e-lane.md + Meldung, Board b zeigt 'E2E lane' als verfuegbare Spalte; zweites n mit gleicher id -> 'on this board only', Katalog-md5 unveraendert; parallele Schreiber: O_EXCL im Skelett + Adopt-Refuse, nicht separat gestartet (TUI-Pfad, ein Tastendruck)"
 hunt-verdict: "fail: bughunt done at 6fcd1288, 2 change — E auf einer n-Lane geht nicht in den Katalog und R wirft die Bearbeitung weg; eine n-Lane mit Built-in-id (review) ersetzt den Built-in im Katalog"
-round: 2
+round: 3
 ---
 
 # Eine neu angelegte Lane landet nur in einem Board, nicht im persoenlichen Katalog ~/.jaira/lanes
