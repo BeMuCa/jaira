@@ -1,0 +1,4 @@
+- Explain and Discuss in the cockpit start without Claude Code's trust dialog for an added directory: update the roles with 'jaira update --roles' so the tab runs through on its own again.
+- Explain and Discuss now run in the ticket's own worktree (feat/<id>), not in a Herdr review worktree of it, so the chat's note lands and its tab closes by itself.
+- Accept on a ticket whose worktree is gone opens the pull request from its own branch (task/<id>), never from a Herdr review branch of it.
+- Accept no longer stops with an error when the main checkout is on a detached HEAD (mid-rebase or bisect) and the ticket was worked on another ticket's branch.

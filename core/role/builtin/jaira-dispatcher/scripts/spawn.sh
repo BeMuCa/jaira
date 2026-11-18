@@ -298,19 +298,32 @@ fi
 # (42C3RZ: 1395 characters arrived, the 'jaira note' instruction gone). It goes
 # into a file instead, and the tab is typed one short line that points at it.
 # The file sits in a folder of its own outside the repository — inside it,
-# git status would show it — and claude starts with that folder added, or its
-# Read would ask before opening the file. Native Windows claude reads the
-# Windows spelling of the path, which cygpath gives.
+# git status would show it — and claude starts with a rule that lets its Read
+# open that folder, or Read would ask before opening the file. A rule, not
+# --add-dir: since Claude Code 2.1 an added directory stops the tab at a trust
+# dialog nothing answers. The rule's path is absolute, so it starts with //,
+# and is written with = — --allowedTools takes every word after it. Native
+# Windows claude reads the Windows spelling of the path, which cygpath gives,
+# and matches rules in the POSIX form of that spelling: C:\x becomes /c/x.
+# A Read is allowed only where the rule matches the real path as well, so
+# the folder is named with its links resolved: macOS keeps TMPDIR under
+# /var, a link to /private/var.
 chat_dir=""
 if [ "$lane" = explain ] || [ "$lane" = discuss ]; then
   chat_dir="$(mktemp -d "${TMPDIR:-/tmp}/jaira-chat.XXXXXX")"
+  chat_dir="$(cd "$chat_dir" && pwd -P)"
   chat_file="$chat_dir/$ticket-$lane.md"
-  chat_dir_win="$chat_dir"; chat_file_win="$chat_file"
+  chat_file_win="$chat_file"; chat_rule="Read(/$chat_dir/**)"
   if [ "$on" = windows ] && command -v cygpath >/dev/null 2>&1; then
     chat_dir_win="$(cygpath -w "$chat_dir")"; chat_file_win="$(cygpath -w "$chat_file")"
+    if [[ "$chat_dir_win" =~ ^([A-Za-z]):(.*)$ ]]; then
+      # tr, not ${x,,}: macOS ships bash 3.2, which has no case conversion.
+      drive="$(printf %s "${BASH_REMATCH[1]}" | tr "[:upper:]" "[:lower:]")"; rest="${BASH_REMATCH[2]//\\//}"
+      chat_rule="Read(//$drive$rest/**)"
+    fi
   fi
 fi
-claude="claude${chat_model:+ --model '$chat_model'}${chat_dir:+ --add-dir '$chat_dir'}"
+claude="claude${chat_model:+ --model '$chat_model'}${chat_dir:+ '--allowedTools=$chat_rule'}"
 
 # The tab's shell runs on the machine Herdr itself runs on. When that is Windows
 # and this script runs in WSL, that shell has no /home/... at all: --cwd is
@@ -329,7 +342,7 @@ claude="claude${chat_model:+ --model '$chat_model'}${chat_dir:+ --add-dir '$chat
 # needs no quotes — only letters, digits and . _ - [ ] pass.
 case "$on" in
   wsl)     start="wsl.exe --cd '$wt' -- bash -lic \"$claude\"" ;;
-  windows) start="claude${chat_model:+ --model $chat_model}${chat_dir:+ --add-dir \"$chat_dir_win\"}" ;;
+  windows) start="claude${chat_model:+ --model $chat_model}${chat_dir:+ \"--allowedTools=$chat_rule\"}" ;;
   *)       start="cd '$cwd' && $claude" ;;
 esac
 
