@@ -51,6 +51,13 @@ func TestCloseTabClosesAWorkerWhoseTicketIsWithAPerson(t *testing.T) {
 			t.Parallel()
 			r, parent := newCloseTabRig(t)
 			r.write(t, r.shown, `{"status":"`+lane+`","question":""}`)
+			// Ticket files are named after their German titles: git quotes a
+			// non-ASCII path unless told not to, and the filter missed it.
+			ticket := filepath.Join(r.wt, ".jaira", "tickets", "x-größe.md")
+			r.write(t, ticket, "in review\n")
+			r.git(t, r.wt, "add", ".jaira/tickets")
+			r.git(t, r.wt, "commit", "-q", "-m", "ticket")
+			r.write(t, ticket, "moved\n")
 			r.write(t, filepath.Join(r.wt, ".jaira", "tickets", "x.md"), "moved\n")
 			if out := r.closeTab(t, "p1", "--dry-run", "--parent", parent, "ab12cd"); !strings.Contains(out, "would close AB12CD tp1") {
 				t.Fatalf("--dry-run: %q", out)

@@ -193,7 +193,7 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
     # A detached HEAD — a rebase paused, a commit checked out — may carry
     # commits no branch holds, and removing the worktree would lose them.
     if ! git -C "$w" symbolic-ref -q HEAD >/dev/null; then dirty="$w has a detached HEAD"; break; fi
-    if ! st="$(git -C "$w" status --porcelain -uall)"; then dirty="git status failed in $w"; break; fi
+    if ! st="$(git -C "$w" -c core.quotePath=false status --porcelain -uall)"; then dirty="git status failed in $w"; break; fi
     # What a ref holds does not count: tickets and milestones, untracked or
     # modified and not committed — a lane that changed no code leaves the
     # ticket file so until the next commit, and after the merge none comes.

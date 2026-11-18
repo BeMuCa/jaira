@@ -202,9 +202,11 @@ func TestSpawnRecordsItsTabForReap(t *testing.T) {
 func TestReapClosesAMergedTicket(t *testing.T) {
 	t.Parallel()
 	r := newReapRig(t)
-	ticket := filepath.Join(r.wt, ".jaira", "tickets", "ab12cd.md")
+	// A German title, as ticket files have: git quotes a non-ASCII path
+	// unless told not to, and the filter would miss it.
+	ticket := filepath.Join(r.wt, ".jaira", "tickets", "ab12cd-größe.md")
 	r.write(t, ticket, "in review\n")
-	r.git(t, r.wt, "add", ".jaira/tickets/ab12cd.md")
+	r.git(t, r.wt, "add", ".jaira/tickets")
 	r.git(t, r.wt, "commit", "-q", "-m", "feat(AB12CD): ticket")
 	r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
 	r.write(t, r.shown, `{"status":"done"}`)

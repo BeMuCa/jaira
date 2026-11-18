@@ -84,7 +84,7 @@ for i in $(seq 0 99); do
 done
 [ -n "$persons" ] || kept "the ticket is in $lane, not with a person"
 
-st="$(git -C "$root" status --porcelain)" || kept "git status failed in $root"
+st="$(git -C "$root" -c core.quotePath=false status --porcelain)" || kept "git status failed in $root"
 d="$(printf '%s\n' "$st" | grep -v '^.. \.jaira/' | cut -c4- | head -3 | tr '\n' ' ' || true)"
 [ -z "${d% }" ] || kept "uncommitted changes: ${d% }"
 
