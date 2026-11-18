@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T19:56:17Z
+updated-at: 2026-11-18T19:56:21Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62765
 claimed-at: 2026-11-18T19:47:57Z
@@ -37,8 +37,8 @@ review-gaps: |-
 test-verdict: "pass: go build, go vet, go test -race -count=1 ./... gruen (RC=0); DoD 1-7 in der Arbeitskopie per Test geprueft (18 Katalog-Tests PASS); Fehlerpfad: Editor exit status 1 -> Meldung nennt Fehler und 'this board only'/'keeps the old copy', Katalog unveraendert (TestEditorErrorSaysCatalogueWasSkipped); Platzhalter-Skelett mit Whitespace-Aenderung bleibt aus dem Katalog; zwei Schreiber: Adopt mit overwrite=false und writeThrough-Vergleich vor dem Schreiben unveraendert, diese Runde fuegt keinen Schreibpfad hinzu; TUI nicht interaktiv gestartet"
 hunt-verdict: "pass: bughunt done at 3238db94, 0 change, 0 pre-existing"
 round: 6
-review-verdict: "Diff erfuellt alle 5 DoD-Punkte; go vet und go test ./internal/tui ./core/lane gruen. Die beiden Bughunt-Funde (Drift nach E, Built-in-id im Katalog) sind sauber geschlossen und getestet. Kein Defekt gefunden, nur vier kleine Notes zu Randfaellen."
-review-round: 4
+review-verdict: "Diff erfuellt alle 7 DoD-Punkte; go vet und go test ./internal/tui ./core/lane gruen (13 neue Tests). Kein Blocker gefunden; die Notes sind Randfaelle und kein Defekt im Hauptpfad."
+review-round: 6
 review-check: |-
   1. Im Worktree: go build -o /tmp/jaira ./cmd/jaira
   2. export JAIRA_HOME=$(mktemp -d); mkdir -p /tmp/r1 /tmp/r2; cd /tmp/r1 && git init -q && /tmp/jaira init; cd /tmp/r2 && git init -q && /tmp/jaira init
