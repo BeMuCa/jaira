@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T18:44:51Z
+updated-at: 2026-11-18T18:44:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74923
 claimed-at: 2026-11-18T17:08:27Z
@@ -83,3 +83,4 @@ Warum: Der Kommentar behauptet etwas, das nur noch im byte-gleichen Fall stimmt,
 3) Ticket so annehmen, die drei Hinweise bleiben als Notes stehen [accept]
 Empfehlung: 3 - beide DoD-Punkte sind erfüllt und getestet, die Hinweise ändern kein Verhalten für den Alltag, der Kommentar lässt sich in einem späteren Commit mitnehmen.
 - **2026-11-18 18:44 · Alexander Sacharov** — decision: 1) Zurückgeben: Drift-Kommentar in core/lane/share.go:132 korrigieren und E auf eingebaute ids nicht durchschreiben lassen
+- **2026-11-18 18:44 · Alexander Sacharov** — Given back from signoff: 1) Zurückgeben: Drift-Kommentar in core/lane/share.go:132 korrigieren und E auf eingebaute ids nicht durchschreiben lassen
