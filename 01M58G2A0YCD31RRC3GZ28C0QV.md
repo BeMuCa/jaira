@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-18T21:53:12Z
-updated-at: 2026-11-18T17:26:23Z
+updated-at: 2026-11-18T17:26:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74923
 claimed-at: 2026-11-18T17:08:27Z
@@ -37,6 +37,7 @@ hunt-verdict: "pass: bughunt done at 55ad762d, 0 change, 0 pre-existing (Folge-H
 round: 3
 review-verdict: "both DoD items are met and tested (TestNewLaneLandsInCatalogueAndOnAnotherBoard, TestAdoptedSharedLaneIsOfferedOnEveryBoard), the release note exists; read lanes.go/model.go whole along concurrency, error paths, input and boundaries - no blocker, three notes; go test ./internal/tui ./core/lane green"
 review-round: 3
+review-check: "1. go build -o /tmp/jaira-28c0qv ./cmd/jaira  2. in a test repo with a board: export JAIRA_HOME=$(mktemp -d); /tmp/jaira-28c0qv, open the lane settings, press n  3. in the editor set id: deploy-check, save, close  4. the lane screen says 'deploy-check is on this board and in your catalogue (...)' and $JAIRA_HOME/lanes/deploy-check.md exists  5. in a second repo with a board (same JAIRA_HOME) open the lane settings, press +: deploy-check is offered  6. back in the first repo press E on deploy-check, change the name, save: the screen says 'saved on this board and in your catalogue' and the lane is not marked drifted  7. press n again and set id: review: the screen says 'on this board only ... built-in lane's id'"
 ---
 
 # Eine neu angelegte Lane landet nur in einem Board, nicht im persoenlichen Katalog ~/.jaira/lanes
