@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T21:44:07Z
+updated-at: 2026-11-20T21:44:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-61485
 claimed-at: 2026-11-20T21:43:50Z
@@ -208,3 +208,4 @@ Empfehlung: 2 - kein Kriterium ist gebrochen, das Gate faellt bei Zweifel zu, un
 - **2026-11-20 20:04 · Alexander Sacharov** — testing 10 zurück (2. Rücklauf aus testing in dieser Runde): Konto aus dem letzten url-Eintrag - jetzt --get-all | head -n1 auch für url; Test 'two urls'.
 - **2026-11-20 20:06 · Alexander Sacharov** — bughunt: done at 1b35fd5c - 0 findings, follow-up hunt (diff since a3137857: pr-round.sh open reads the first remote url via --get-all|head, pr_round_test.go two-urls case, shipped.sha256; no new files); concurrency, error paths, input, permissions checked; ran: go test ./core/role -run PR (ok); files: .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md AGENTS.md CLAUDE.md README.md core/gitrepo/named.go core/release/notes/JG3REW.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-role-pr/scripts/pr-round.sh core/role/builtin/jaira-teamlead/SKILL.md core/role/pr_round_test.go core/role/role_test.go core/settings/settings.go core/settings/settings_test.go core/shipped/shipped.sha256 internal/cli/prgate_test.go internal/cli/roles.go internal/cli/roles_test.go
 - **2026-11-20 20:08 · Alexander Sacharov** — worker: Lauf bei review gestoppt (Usage-Limit). Nächster Schritt: frischer Agent /jaira-role-lane JG3REW review.
+- **2026-11-20 21:44 · Alexander Sacharov** — review (fresh context): no blocker. Read the 17 commits' code whole (pr-round.sh, roles.go pr-gate, gitrepo/named.go, settings.go, SKILL texts); targeted go test runs pass. Five notes in review-gaps, all fail-closed edges or small race windows. Store.List already prefers a newer ref over a stale ticket file, so the gate does not open on a stale 'done'. The CLAUDE.md/AGENTS.md sentence sits behind the jaira:local marker, so regeneration keeps it. Worktree also carries untracked .jaira/milestones/ - not this ticket's.
