@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T21:50:22Z
+updated-at: 2026-11-20T21:50:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16592
 claimed-at: 2026-11-20T20:04:03Z
@@ -34,7 +34,7 @@ outcome-why: "Die Arbeitsweise vom 20.11.2026 stand nur im lokalen Gedaechtnis e
 outcome-resolves: Die Regeln reisen mit den ausgelieferten Rollen; jaira update --roles bringt sie zu jedem Nutzer.
 review-summary: none
 round: 3
-review-gaps: "Duplikate geprueft: Push-Gate und Rueckgabe-Regeln stehen nach critique je einmal (worker bzw. role-signoff); die Bughunt-auf-HEAD-Pruefung in role-signoff nutzt dieselbe Notiz-Konvention wie teamlead/bughunt statt einer eigenen. Kein toter Text, nichts entfernt."
+review-gaps: "none: d3a71405 fuegt nur die Leseanweisung fuer die Verdicts und die Unbekannt-Regel hinzu; nichts dupliziert, nichts entfernt"
 test-verdict: "pass: go build ./... ok, go vet core/role ok, go test ./... RC=0 (core/role inkl. TestEveryInstalledFileIsAShippedVersion und wantRoles mit jaira-role-signoff). DoD 1-4 im Baum geprueft (Abschnitte existieren, Release-Note eine Zeile je Aenderung). Funktion: roles install --into leer schreibt 39 Dateien inkl. jaira-role-signoff/SKILL.md, zweiter Lauf 39 unchanged; teamlead/SKILL.md von master wird als ausgelieferte Version erkannt und 'updated' statt 'skipped'; Ziel /proc/nope endet mit RC=1; zwei parallele Installationen ins selbe Verzeichnis ergeben identische Dateien."
 hunt-verdict: "fail: bughunt done at c02bb7ea, 2 change (test-verdict in show nicht lesbar; Rueckgabe-Zaehlung nur ueber Notes), 0 pre-existing"
 ---
