@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -161,12 +162,22 @@ func TestParallelAddIgnoreWritesTheEntryOnce(t *testing.T) {
 }
 
 func TestParsePlaceReadsWhatGitPrints(t *testing.T) {
+	// git prints an absolute path the way this system writes one: from / on
+	// Unix, from a drive with forward slashes on Windows ("C:/Users/a b").
+	abs := "/home/a b/repo/.git"
+	if runtime.GOOS == "windows" {
+		abs = "C:/Users/a b/repo/.git"
+	}
 	cases := []struct{ out, exclude, line string }{
-		{"/home/a/repo/.git\n\n", "/home/a/repo/.git/info/exclude", "/.jaira/"},
-		{"/home/a/repo/.git\nsub/dir/\n", "/home/a/repo/.git/info/exclude", "/sub/dir/.jaira/"},
-		{"C:/Users/a b/repo/.git\r\n\r\n", "C:/Users/a b/repo/.git/info/exclude", "/.jaira/"},
-		{"C:/Users/a/repo/.git\r\nweb app/\r\n", "C:/Users/a/repo/.git/info/exclude", "/web app/.jaira/"},
+		{abs + "\n\n", abs + "/info/exclude", "/.jaira/"},
+		{abs + "\r\nweb app/\r\n", abs + "/info/exclude", "/web app/.jaira/"},
+		{abs + "\nsub/dir/\n", abs + "/info/exclude", "/sub/dir/.jaira/"},
 		{"", "", ""},
+		// git before 2.31 prints the option it does not know back.
+		{"--path-format=absolute\n.git\nsub/\n", "", ""},
+		{".git\n\n", "", ""},
+		// Glob characters in a directory name stay literal.
+		{abs + "\na[1]/b*?/\n", abs + "/info/exclude", `/a\[1]/b\*\?/.jaira/`},
 	}
 	for _, c := range cases {
 		ex, line := parsePlace(c.out)
@@ -188,5 +199,47 @@ func TestOutsideGitTheEntryGoesIntoGitignore(t *testing.T) {
 	}
 	if moved, _ := MoveIgnore(root); moved {
 		t.Errorf("MoveIgnore moved the entry outside git")
+	}
+}
+
+// Two boards in one repository share info/exclude: lifting one leaves the
+// other's entry with its comment.
+func TestRemoveIgnoreLeavesTheOtherBoardsEntry(t *testing.T) {
+	root, exclude := newRepo(t)
+	sub := filepath.Join(root, "sub")
+	if err := os.MkdirAll(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, dir := range []string{root, sub} {
+		if _, err := AddIgnore(dir); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := RemoveIgnore(sub); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := os.ReadFile(exclude)
+	if !strings.Contains(string(got), privateComment+"\n"+IgnoreLine+"\n") || strings.Contains(string(got), "/sub/.jaira/") {
+		t.Errorf("exclude after lifting the subdirectory's board:\n%s", got)
+	}
+	if count(string(got), privateComment) != 1 {
+		t.Errorf("want one comment left, for the top board:\n%s", got)
+	}
+}
+
+// A directory named with glob characters is excluded as itself.
+func TestAGlobCharacterDirectoryIsExcludedLiterally(t *testing.T) {
+	root, _ := newRepo(t)
+	sub := filepath.Join(root, "a[1]")
+	if err := os.MkdirAll(filepath.Join(sub, ".jaira"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	write(t, filepath.Join(sub, ".jaira", "x.md"), "x")
+	if _, err := AddIgnore(sub); err != nil {
+		t.Fatal(err)
+	}
+	out, err := exec.Command("git", "-C", root, "status", "--porcelain", "--untracked-files=all").Output()
+	if err != nil || strings.Contains(string(out), ".jaira") {
+		t.Errorf("git sees the board in a[1]: %v\n%s", err, out)
 	}
 }

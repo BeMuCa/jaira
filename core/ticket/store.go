@@ -883,8 +883,10 @@ func commonGitDir(root string) string {
 	if err != nil {
 		return ""
 	}
-	dir := strings.TrimSpace(string(out))
-	if dir == "" {
+	// git before 2.31 prints an unknown --path-format back instead of the
+	// directory; only an absolute path is an answer.
+	dir := strings.TrimSpace(strings.SplitN(string(out), "\n", 2)[0])
+	if dir == "" || !filepath.IsAbs(filepath.FromSlash(dir)) {
 		return ""
 	}
 	return filepath.Clean(dir)

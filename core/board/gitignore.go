@@ -76,8 +76,20 @@ func parsePlace(out string) (exclude, line string) {
 	if len(parts) > 1 {
 		prefix = strings.TrimSpace(parts[1])
 	}
-	return filepath.Join(filepath.FromSlash(common), "info", "exclude"), "/" + prefix + ".jaira/"
+	// git before 2.31 does not know --path-format and prints it back as the
+	// first line, exit 0: anything that is not an absolute path is not the
+	// answer, and the board falls back to .gitignore rather than to a
+	// directory of that name inside the repository.
+	common = filepath.FromSlash(common)
+	if !filepath.IsAbs(common) {
+		return "", ""
+	}
+	return filepath.Join(common, "info", "exclude"), "/" + globEscape.Replace(prefix) + ".jaira/"
 }
+
+// globEscape keeps a directory name such as "a[1]" literal in an exclude
+// pattern, where git would read [1] as a character class.
+var globEscape = strings.NewReplacer(`\`, `\\`, "*", `\*`, "?", `\?`, "[", `\[`)
 
 // IgnoreFileName is the file a private board's entry goes into, as a person
 // reads it: info/exclude in a git repository — absolute where it lies outside
@@ -230,22 +242,24 @@ func appendEntry(path, comment, line string) error {
 }
 
 // dropEntry takes every line match accepts out of path, with the comment
-// line that carries marker and the blank line that follows it.
+// carrying marker directly above it and the blank line that follows. A
+// comment above a line match does not accept stays: info/exclude can hold
+// the entries of two boards, the top one and one in a subdirectory.
 func dropEntry(path, marker string, match func(string) bool) (changed bool, err error) {
 	existing, err := os.ReadFile(path)
 	if err != nil {
 		return false, nil
 	}
+	lines := strings.Split(string(existing), "\n")
 	var out []string
 	var skipNextBlank bool
-	for _, line := range strings.Split(string(existing), "\n") {
+	for i, line := range lines {
 		t := strings.TrimSpace(line)
 		if match(t) {
 			changed = true
 			continue
 		}
-		if strings.Contains(t, marker) {
-			changed = true
+		if strings.Contains(t, marker) && i+1 < len(lines) && match(strings.TrimSpace(lines[i+1])) {
 			skipNextBlank = true
 			continue
 		}
