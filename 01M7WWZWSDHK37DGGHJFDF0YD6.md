@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T22:47:58Z
+updated-at: 2026-11-20T22:48:35Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-91898
 claimed-at: 2026-11-20T22:44:37Z
@@ -69,3 +69,4 @@ claimed-at: 2026-11-20T22:44:37Z
 - **2026-11-20 22:45 · Alexander Sacharov** — decision: feat/df0yd6 builds on origin/feat/tw5fe2 (merged in), because TW5FE2 (blocked_by) is done but not on master yet and changes the same lane prompts (testing, review, bughunt). Once TW5FE2's PR lands, its commits drop out of this branch's diff.
 - **2026-11-20 22:47 · Alexander Sacharov** — decision (worker, settled from code): 1) two frontmatter fields: 'blocker-rule' (one sentence, free text) and 'stop-after-fix' (true/false). Empty blocker-rule = the four classes TW5FE2 already put into testing/review prompts (wrong result, data loss, crash, security hole); --for-lane hands both to testing, review and the bughunt role. 2) return origin: move writes 'back-from: <lane>', 'back-by: person|lane' (person = the from-lane is owned by a person, e.g. signoff/human) and 'back-count: <n>' = consecutive returns from that same lane, reset by a return from another lane or a person; show --json prints all three; the in-progress prompt's note-based count is replaced by reading them. 3) explain note format: one line per note with its class in brackets ([blocker] / [kleiner Rand] / [bekannte Grenze] / [nicht aus diesem Ticket]), a status line, one Empfehlung; no 'Warum:' and no fixed [give back]-first order; the cockpit colours the class marks with theme colours. Same template in texts.ts and spawn.sh.
 - **2026-11-20 22:47 · Alexander Sacharov** — question: stop-after-fix default for a ticket where nobody set it? 1) on (Recommended) - matches the rule the teamlead writes by hand daily: after a fix round only tests run, no hunt; the field turns it off per ticket. 2) off - TW5FE2's diff-only hunt stays the default; pre-process or a person turns stop-after-fix on per ticket.
+- **2026-11-20 22:48 · Alexander Sacharov** — decision: stop-after-fix is off by default (teamlead jaira-64, 2026-11-20). The diff-only hunt after a fix stays the default: it found real defects in fixes (TW5FE2 rebase fallback, JG3REW foreign comment delete, NNV39Y not-ignored). stop-after-fix=true is a deliberate per-ticket opt-out set by pre-process or a person, e.g. for text-only tickets. The brake for endless loops is the count (3 returns from the same lane -> teamlead), not skipping the hunt. Mode stays autonomous.
