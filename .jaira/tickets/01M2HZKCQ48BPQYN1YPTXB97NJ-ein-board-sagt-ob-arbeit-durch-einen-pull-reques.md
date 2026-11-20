@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:19:56Z
+updated-at: 2026-11-20T23:23:57Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -36,10 +36,10 @@ outcome-what: "Board-Datei .jaira/pr kennt den dritten Wert none: die Rollen lan
 outcome-why: "Wer allein ohne Pull Requests arbeitet, bekam eine Rolle, die vor einem nie gewollten PR anhaelt (13VMA8); die Einstellung muss mit dem Repository reisen (Teamlead-Entscheidung 20.11.: dritter Wert in .jaira/pr, Laufzeit + Block)."
 outcome-resolves: "Ein Board sagt in .jaira/pr, ob Arbeit durch einen PR (person/agent) oder direkt auf den Hauptzweig (none) kommt; ohne Datei ist alles byte-gleich wie heute."
 review-summary: "none"
-round: 5
-review-gaps: "none - UnnamedCommits reuses HandlesInSubjects rather than a second regexp; reap.sh pattern mirrors subjectScope in shell, which cannot call Go"
-test-verdict: "pass on my passes: -race suite RC=0, DoD 1-8 checked in the tree, scratch board: unnamed commit holds the gate (exit 3); blocked on the two hunt findings"
-hunt-verdict: "change x2 (round 2): (1) core/gitrepo/named.go UnnamedCommits skips merges, so an evil merge / conflict resolution with own content lands unseen under none; (2) pr-gate binds acceptance to the ticket, not to its commits - a commit made after acceptance naming a done ticket (same or another) lands unseen under none"
+round: 6
+review-gaps: "none removed. note: known limit: under .jaira/pr none, pr-gate binds a person's acceptance to the ticket, not to its commits - a commit made after the ticket reached done, naming that ticket or any other ticket already in done or the logbook, lands without anyone seeing it (bughunt round 2, F2; Teamlead 21.11. 00:15: known limit, signoff decides). Closing it means: after the move into done only .jaira/ commits for that ticket"
+test-verdict: "fail (round 3 hunt), fixed in the same round - see hunt-verdict"
+hunt-verdict: "change (round 3), fixed: diff-tree --cc hid a merge that drops one side (-s ours, checkout --ours) - landing it would undo base work. Now an unnamed merge passes only when its tree equals 'git merge-tree --write-tree' of its two parents; conflict, octopus or old git fail closed"
 ---
 
 # Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig
@@ -118,3 +118,7 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-20 23:16 · Alexander Sacharov** — Schleifenbremse: testing wuerde zum dritten Mal zurueckgeben. Fund 1 (Merge mit eigenem Inhalt) ist klar loesbar: unbenannter Merge zaehlt nur, wenn 'git diff-tree --cc -p' etwas zeigt (sauberer Merge harmlos). Fund 2 ist eine Entwurfsfrage: Annahme in done gilt heute fuer das Ticket, nicht fuer eine Commit-Liste; nach done kommen per Design 'chore(<ID>): file the ticket away'-Commits dazu. Eine Zeitschranke muesste die erlauben (nur .jaira/ nach Annahme) und braucht den Zeitpunkt des Moves nach done. Frage an Teamlead gestellt.
 - **2026-11-20 23:17 · Alexander Sacharov** — decision: Teamlead 21.11. 00:15: 1 (F1 fix, F2 known limit) - F1: unbenannter Merge passiert nur, wenn 'git diff-tree --cc -p' leer ist, mit Test. F2 (Commit nach der Annahme oder mit id eines anderen done/logbook-Tickets) als 'note: known limit:' in review-gaps fuer signoff. Vorher upstream/master (PR #149 gemergt) einmergen.
 - **2026-11-20 23:19 · Alexander Sacharov** — in-progress (Runde 3, F1): UnnamedCommits liest jetzt auch Merges; ein unbenannter Merge zaehlt nur, wenn 'git diff-tree --cc -p' Inhalt zeigt (Konfliktloesung, beim Merge hinzugefuegte Datei). upstream/master (PR #149) eingemergt, shipped.sha256 neu erzeugt (keine Upstream-Zeile verloren). go test -race ./... RC=0.
+- **2026-11-20 23:20 · Alexander Sacharov** — critique (Runde 5): diff-tree --cc nur fuer unbenannte Merges, also kein Mehraufwand im Normalfall - nichts zu sagen.
+- **2026-11-20 23:21 · Alexander Sacharov** — bughunt: change: core/gitrepo/named.go:66-73 - UnnamedCommits treats a merge as clean when 'git diff-tree --cc' is empty, but --cc hides every path whose result equals ONE parent; so a merge without a ticket handle that throws away the base's changes (git merge -s ours master, or a conflict resolved with git checkout --ours) prints nothing, passes the none gate, and the fast-forward to master silently reverts master's work. ran: scratch repo, master commits f.txt=important, feat/x runs 'git merge -s ours master' -> diff-tree --cc empty while 'git diff master HEAD' shows f.txt reverted; same result for a conflict on f.txt resolved with --ours. Possible check: compare the merge tree against what a plain re-merge would produce (git merge-tree --write-tree p1 p2), or treat any unnamed merge whose tree differs from the auto-merge result as unnamed.
+- **2026-11-20 23:21 · Alexander Sacharov** — bughunt: done at 59049e2d - 1 finding (1 change, 0 pre-existing) in 5 modules, follow-up hunt since 5e33a085 (diff of core/gitrepo/named.go, internal/cli/roles.go, internal/cli/prgate_test.go, core/role/builtin/jaira-role-pr/SKILL.md, core/shipped/shipped.sha256; no new files); concurrency, error paths, input, permissions checked; files: core/board/announce.go core/board/arrival.go core/board/arrival_test.go core/gitrepo/named.go core/release/notes/XB97NJ.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-dispatcher/scripts/reap.sh core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/reap_test.go core/settings/settings.go core/settings/settings_test.go core/shipped/shipped.sha256 internal/cli/prgate_test.go internal/cli/roles.go
+- **2026-11-20 23:23 · Alexander Sacharov** — in-progress (Runde 4, Bughunt Runde 3 = Verfeinerung von F1, nicht neu verhandelt): Pruefung 'diff-tree --cc leer' ersetzt durch 'Baum des Merges == git merge-tree --write-tree p1 p2' (core/gitrepo/named.go isPlainMerge). Faengt -s ours und checkout --ours (Ergebnis gleich einem Elternteil, fuer --cc unsichtbar). Braucht git >= 2.38; aelteres git -> Tor zu (fail closed), dann muss der Merge ein Ticket nennen. Test: TestPRGateOnANoneBoardRefusesCommitsNoTicketOwns (-s ours haelt, gleicher Merge normal gemacht passiert). -race RC=0.

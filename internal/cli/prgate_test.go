@@ -408,6 +408,27 @@ func TestPRGateOnANoneBoardRefusesCommitsNoTicketOwns(t *testing.T) {
 	}
 	git("reset", "-q", "--hard", "HEAD~1")
 
+	// A merge that drops the base's work ('-s ours') adds nothing and matches
+	// a parent, so 'diff-tree --cc' shows nothing — yet landing it would undo
+	// the base. It holds the gate as well (bughunt round 3).
+	git("checkout", "-q", "master")
+	if err := os.WriteFile(filepath.Join(dir, "f.txt"), []byte("important\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	git("add", "f.txt")
+	git("commit", "-q", "-m", "feat: important work on the base")
+	git("checkout", "-q", "feat/x")
+	git("merge", "-q", "-s", "ours", "--no-edit", "master")
+	_, err = runCLI(t, dir, "roles", "pr-gate", "master")
+	if exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "name no ticket") {
+		t.Fatalf("none, a merge that drops the base: exit %d, %v", exitCode(err), err)
+	}
+	git("reset", "-q", "--hard", "HEAD~1")
+	git("merge", "-q", "--no-ff", "--no-edit", "master")
+	if out, err := runCLI(t, dir, "roles", "pr-gate", "master"); err != nil {
+		t.Fatalf("none, the same base merged plainly: %v\n%s", err, out)
+	}
+
 	// The agent board keeps its rule: a person sees the pull request.
 	setPR(t, dir, "agent")
 	commit("wip: on an agent board")

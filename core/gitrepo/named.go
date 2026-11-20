@@ -43,11 +43,15 @@ func (r *Repo) TicketsNamed(base string) ([]string, error) {
 
 // UnnamedCommits returns the commits of base..HEAD whose subject names no
 // ticket, as "<short sha> <subject>" in the order git lists them. A merge
-// that names none counts only when it carries content of its own — a
-// conflict resolution, a file added during 'merge --no-commit' — which is
-// what 'git diff-tree --cc' shows; a clean merge brings in nothing that is
-// not listed on its own: a branch merged in shows its commits here, the base
-// merged into the branch shows nothing, since the base is excluded.
+// that names none passes only when its tree is exactly what git's own merge
+// of its two parents gives ('git merge-tree --write-tree'): such a merge
+// brings in nothing not listed on its own — a branch merged in shows its
+// commits here, the base merged into the branch nothing, since the base is
+// excluded. Anything else counts: a conflict resolution, a file added during
+// 'merge --no-commit', and a merge that drops one side ('-s ours', a
+// conflict settled with 'checkout --ours'), which 'git diff-tree --cc' hides
+// because the result matches a parent. An octopus merge, or a git too old to
+// answer (before 2.38), counts too: the gate fails closed.
 // base must already be known to name a commit (TicketsNamed checks it).
 func (r *Repo) UnnamedCommits(base string) ([]string, error) {
 	if base == "" || strings.HasPrefix(base, "-") {
@@ -63,18 +67,30 @@ func (r *Repo) UnnamedCommits(base string) ([]string, error) {
 		if len(f) != 4 || len(HandlesInSubjects(f[3])) > 0 {
 			continue
 		}
-		if len(strings.Fields(f[2])) > 1 {
-			own, err := r.run("diff-tree", "--cc", "-p", "--no-commit-id", f[0])
-			if err != nil {
-				return nil, err
-			}
-			if strings.TrimSpace(own) == "" {
-				continue
-			}
+		if parents := strings.Fields(f[2]); len(parents) > 1 && r.isPlainMerge(f[0], parents) {
+			continue
 		}
 		unnamed = append(unnamed, f[1]+" "+f[3])
 	}
 	return unnamed, nil
+}
+
+// isPlainMerge reports whether the merge commit sha has exactly two parents
+// and the tree git's own merge of them produces, without a conflict.
+func (r *Repo) isPlainMerge(sha string, parents []string) bool {
+	if len(parents) != 2 {
+		return false
+	}
+	auto, err := r.run("merge-tree", "--write-tree", parents[0], parents[1])
+	if err != nil {
+		return false // a conflict (exit 1) or a git without --write-tree
+	}
+	got, err := r.run("rev-parse", sha+"^{tree}")
+	if err != nil {
+		return false
+	}
+	first, _, _ := strings.Cut(strings.TrimSpace(auto), "\n")
+	return first != "" && strings.TrimSpace(first) == strings.TrimSpace(got)
 }
 
 // FileAt returns the content of path, relative to Dir, as the commit rev
