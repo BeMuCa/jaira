@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:23:22Z
+updated-at: 2026-11-20T19:23:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99114
 claimed-at: 2026-11-20T19:19:18Z
@@ -31,7 +31,7 @@ question: ""
 outcome-what: "Board-Dateien .jaira/pr (person|agent), .jaira/pr-reviewer und .jaira/pr-when (done|signoff, Default done); 'jaira roles list' zeigt sie; 'jaira roles pr-gate <remote>/<branch>' prueft im Binary, ob ein Agent den PR oeffnen darf (agent + jedes Ticket des Branches in done bzw. signoff); jaira-role-pr/scripts/pr-round.sh: open (Gate vor gh pr create), threads, comments, reply/comment (nie doppelt, auch bei zwei Sessions; loescht nur die eigene POST-id), request, settled (keine offenen Threads, kein ausstehendes Review); Rollentexte, Release-Note."
 outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten das pro Repo. In manchen Projekten laeuft das Review auf dem PR selbst, dort kommt done erst danach (Alex 20.11.)."
 outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
-review-summary: "Drei Board-Dateien: .jaira/pr (person|agent, Default person), .jaira/pr-reviewer (copilot, Login oder org/team; alles andere gilt als leer) und .jaira/pr-when (done|signoff, Default done); Tippfehler, CRLF, Kommentare fallen immer auf den Default zurueck. 'jaira roles list' zeigt sie (Text und --json). Neues 'jaira roles pr-gate <remote>/<branch>' im Binary: liest die Handles aus den Commit-Subjects von base..HEAD und gibt Exit 0 nur, wenn pr=agent und jedes genannte Ticket im Terminal-Lane seines Boards steht (bei signoff: signoff bis Terminal, blocked zaehlt nie) oder im Logbook liegt; archiviert, unbekannt oder unlesbar haelt es mit Exit 3 und Namen. Neues Skript jaira-role-pr/scripts/pr-round.sh fuer GitHub: open (Gate vor gh pr create, Ziel-Repo und Base explizit), threads/comments (nur Offenes), reply (antworten + resolve, wiederholbar ohne Doppelantwort, zwei Sessions hinterlassen eine Antwort, geloescht wird nur die eigene POST-id), comment (dasselbe fuer die Konversation), request (Copilot ueber den Bot-Login, Exit 4 wenn abgelehnt), settled (Exit 3 bei offenem Thread, ausstehendem Review oder CHANGES_REQUESTED). Merge/Approve kommt nirgends vor. Rollentexte (pr, teamlead, dispatcher), CLAUDE.md/AGENTS.md/README und Release-Note angepasst."
+review-summary: "none"
 round: 11
 review-gaps: |-
   note: pr-gate prueft das lokale HEAD, gh pr create oeffnet den gepushten Branch ohne --head - hat eine andere Session mehr auf den Remote-Branch gepusht, sieht das Gate diese Commits nicht (Skript open, Zeile 161/166).
