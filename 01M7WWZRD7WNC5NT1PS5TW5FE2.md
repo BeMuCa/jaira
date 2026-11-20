@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T16:57:53Z
+updated-at: 2026-11-20T16:57:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-42185
 claimed-at: 2026-11-20T16:42:15Z
@@ -83,3 +83,4 @@ hunt-verdict: "fail: bughunt done at e101fb64, 2 change - die Dritte-Rueckgabe-R
 - **2026-11-20 16:56 · Alexander Sacharov** — bughunt: change: core/lane/builtin/20-in-progress.md:69 - class: a loop lane missing from the brake's list; example: optimize sends work back with an 'optimize:' note (26-optimize.md:61) and is a declared loop (critique/optimize/testing loops), but the counted prefixes are only critique:, testing:, bughunt: change: and the review's note, so optimize returns never trigger the third-return stop; fix: name optimize in the list, or derive it from the marker in the finding above; ran: read; blame: e101fb64 (TW5FE2)
 - **2026-11-20 16:56 · Alexander Sacharov** — bughunt: done at e101fb64 - 2 findings (2 change, 0 pre-existing) in 6 modules, follow-up hunt since ab6eeb90; concurrency, error paths, input, permissions checked (third-return 'jaira move --to human --question' from in-progress passes the gate once outcomes are set, ran on a scratch board with this repo's lanes; lane copies equal builtin; manifest holds current and previous 40-review/15/20/27 hashes; go test core/shipped core/lane green); files: .jaira/lanes/in-progress.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md core/lane/builtin/15-pre-process.md core/lane/builtin/20-in-progress.md core/lane/builtin/27-testing.md core/lane/builtin/40-review.md core/release/notes/TW5FE2.md core/role/builtin/jaira-role-bughunt/SKILL.md core/shipped/shipped.sha256
 - **2026-11-20 16:57 · Alexander Sacharov** — back: testing, round 5
+- **2026-11-20 16:57 · Alexander Sacharov** — Fix der Klasse 'Rueckgaben aus gedruckten Notes zaehlen': in-progress schreibt beim Aufnehmen einer Rueckgabe selbst eine Zeile 'back: <lane>, round <n>' und zaehlt nur diese - Ursache statt Praefixliste; optimize ist darin mit genannt. Verworfen: Feld round (zaehlt alle Lanes zusammen, haelt gesunde Tickets nach 3 verschiedenen Rueckgaben an) und neue Praefixe in vier Lanes (groesser, gleiche Mehrdeutigkeit bei mehreren Notes pro Runde).
