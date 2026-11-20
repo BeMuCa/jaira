@@ -338,7 +338,10 @@ type ignoreMove struct{ moved, added bool }
 func moveIgnore(s *ticket.Store, dry bool) (ignoreMove, error) {
 	var m ignoreMove
 	repo := &gitrepo.Repo{Dir: s.Root}
-	if !repo.IsRepo() {
+	// One test for both branches: a board in git keeps its .gitignore, since
+	// the commit that took the line out would un-ignore it for every
+	// teammate who pulls it.
+	if !repo.IsRepo() || hasAttributes(s) || repo.Tracks(ticket.DirName) {
 		return m, nil
 	}
 	if board.InGitignore(s.Root) {
@@ -349,7 +352,7 @@ func moveIgnore(s *ticket.Store, dry bool) (ignoreMove, error) {
 		_, err := board.MoveIgnore(s.Root)
 		return m, err
 	}
-	if board.Ignored(s.Root) || hasAttributes(s) || repo.Tracks(ticket.DirName) {
+	if board.Ignored(s.Root) {
 		return m, nil
 	}
 	m.added = true

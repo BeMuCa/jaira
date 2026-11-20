@@ -219,15 +219,58 @@ func TestUpdateMovesTheOldGitignoreLineToExclude(t *testing.T) {
 	}
 }
 
-// A shared board is in git; update must not exclude it although nothing
-// ignores it.
-func TestUpdateLeavesASharedBoardUnexcluded(t *testing.T) {
-	dir := sharedClone(t)
-	before := readIgnore(t, dir)
-	if out, err := runUpdate(t, dir); err != nil {
-		t.Fatalf("jaira update: %v\n%s", err, out)
+// A board in git — shared, or with .jaira/ files committed — is left as it
+// is by update, whether its .gitignore excludes it or nothing does: a
+// .gitignore change committed from there would un-ignore it for every
+// teammate who pulls it, and excluding a shared board stops new tickets
+// reaching anyone.
+func TestUpdateLeavesABoardInGitAsItIs(t *testing.T) {
+	cases := []struct {
+		name string
+		make func(t *testing.T) string
+	}{
+		{"shared clone", sharedClone},
+		{"shared clone with a committed ignore line", func(t *testing.T) string {
+			dir := sharedClone(t)
+			writeOldIgnoreLine(t, dir)
+			gitRun(t, dir, "config", "user.name", "ada")
+			gitRun(t, dir, "config", "user.email", "ada@example.test")
+			gitRun(t, dir, "commit", "--quiet", "-am", "an older init made it private")
+			return dir
+		}},
+		{"committed tickets, no attributes, ignore line", func(t *testing.T) string {
+			dir := repoWithCommit(t)
+			if out, err := runCLI(t, dir, "init"); err != nil {
+				t.Fatalf("jaira init: %v\n%s", err, out)
+			}
+			if _, err := board.RemoveIgnore(dir); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(dir, ".jaira", "tickets", "x.md"), []byte("x\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			gitRun(t, dir, "add", ".jaira/tickets/x.md")
+			writeOldIgnoreLine(t, dir)
+			gitRun(t, dir, "commit", "--quiet", "-am", "tickets committed, then ignored")
+			return dir
+		}},
 	}
-	if excludesBoard(readExclude(t, dir)) || board.Ignored(dir) || readIgnore(t, dir) != before {
-		t.Errorf("update made a shared board private:\n exclude %q\n gitignore %q", readExclude(t, dir), readIgnore(t, dir))
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			dir := c.make(t)
+			before, excludeBefore, ignored := readIgnore(t, dir), readExclude(t, dir), board.Ignored(dir)
+			for _, args := range [][]string{{"--dry-run"}, nil} {
+				out, err := runUpdate(t, dir, args...)
+				if err != nil {
+					t.Fatalf("jaira update %v: %v\n%s", args, err, out)
+				}
+				if strings.Contains(out, "Moved") || strings.Contains(out, "Would move") || strings.Contains(out, "xcluded this private board") || strings.Contains(out, "Would exclude") {
+					t.Errorf("update %v reports touching a board in git:\n%s", args, out)
+				}
+			}
+			if readIgnore(t, dir) != before || readExclude(t, dir) != excludeBefore || board.Ignored(dir) != ignored {
+				t.Errorf("update changed a board in git:\n gitignore %q -> %q\n exclude %q -> %q", before, readIgnore(t, dir), excludeBefore, readExclude(t, dir))
+			}
+		})
 	}
 }
