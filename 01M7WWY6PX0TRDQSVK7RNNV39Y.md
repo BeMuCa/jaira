@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T18:18:12Z
+updated-at: 2026-11-20T18:19:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85657
 claimed-at: 2026-11-20T17:52:47Z
@@ -129,3 +129,4 @@ Empfehlung: 2 - alle 7 DoD-Punkte sind mit Tests belegt, die Funde sind Randfael
 - **2026-11-20 18:17 · Alexander Sacharov** — bughunt: change: core/board/gitignore.go:149-152 - IgnoredBy turns every git failure into 'not ignored'; with .jaira a symlink, 'git check-ignore -v .jaira/' always exits 128 (pathspec beyond a symbolic link), so moveIgnore (update.go:362) falls through to AddIgnore on every run and update reports ignore_added=true / 'Excluded ... nothing excluded it' with /.jaira/ already in info/exclude; old binary at 21742362 reported false; ran: ln -s ../store2 .jaira, jaira init, jaira update --json (ignore_added true), git check-ignore -v .jaira/ (exit 128). Side observation, not from this change: the /.jaira/ pattern does not match a symlinked .jaira at all (git status shows '?? .jaira')
 - **2026-11-20 18:17 · Alexander Sacharov** — bughunt: done at 776e1ccd - 2 findings (2 change) in 2 files, follow-up hunt (diff since 21742362: internal/cli/update.go, internal/cli/privateexclude_test.go); concurrency, error paths, input, permissions checked; files: README.md core/board/announce.go core/board/board.go core/board/exclude_test.go core/board/gitignore.go core/release/notes/NNV39Y.md core/ticket/store.go docs/COMMANDS.md internal/cli/privateexclude_test.go internal/cli/share.go internal/cli/sharestate_test.go internal/cli/tickets.go internal/cli/update.go
 - **2026-11-20 18:18 · Alexander Sacharov** — testing: vierte Rueckgabe. Beide Funde: moveIgnore setzt m.added vor AddIgnore und wirft dessen changed weg; IgnoredBy allein ersetzt Ignored. Vorschlag: ueberspringen wenn Ignored ODER IgnoredBy, und m.added aus dem Rueckgabewert von AddIgnore. Frage an die Person, da ueber der Drei-Runden-Grenze.
+- **2026-11-20 18:19 · Alexander Sacharov** — decision: ja, fixen (Ignored ODER IgnoredBy; added aus AddIgnore), ein Loop
