@@ -1,7 +1,7 @@
 ---
 id: 01M7WWY6PX0TRDQSVK7RNNV39Y
 title: Ein privates Board steht in .git/info/exclude statt in der .gitignore des Arbeitsbaums
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T16:58:39Z
+updated-at: 2026-11-20T16:58:43Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46134
 claimed-at: 2026-11-20T16:42:22Z
@@ -29,6 +29,7 @@ outcome-what: "Ein privates Board steht jetzt in <git-common-dir>/info/exclude s
 outcome-why: "Eine von jaira geaenderte .gitignore erscheint in jedem neuen Worktree als Aenderung, ein Push-Guard lehnt dann jeden Push ab; info/exclude gilt fuer alle Worktrees und taucht in keinem Diff auf."
 outcome-resolves: Neue Worktrees eines Repos mit privatem Board bleiben sauber; kein Wegraeumen der .gitignore-Zeile von Hand mehr.
 review-summary: "core/board/gitignore.go:84 IgnoreFile ist exportiert und hat genau einen Aufrufer (IgnoreFileName) — in IgnoreFileName falten, board.go:9 Kommentar anpassen; internal/cli/share.go:33-39 Long-Text ueber 80 Spalten umgebrochen — neu umbrechen wie der Rest der Datei"
+round: 2
 ---
 
 # Ein privates Board steht in .git/info/exclude statt in der .gitignore des Arbeitsbaums
