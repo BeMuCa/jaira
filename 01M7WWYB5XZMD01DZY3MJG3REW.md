@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:15:40Z
+updated-at: 2026-11-20T19:18:52Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-29476
 claimed-at: 2026-11-20T18:21:36Z
@@ -155,3 +155,4 @@ Warum: Hat eine andere Session mehr auf den Remote-Branch gepusht, sieht das Gat
 1) Hinweise 1, 2 und 4 in kurzer Runde schliessen (Gate gegen gepushten Tip, Usage-Text, Exit-Code-Kollision) [give back]
 2) Ticket so annehmen; die Hinweise bleiben als bekannte Grenzen stehen (Hinweis 3 liegt ohnehin bei CRASZS) [accept]
 Empfehlung: 1 - der Gate-Fehler bei parallelen Sessions ist die einzige echte Luecke und die Runde ist klein.
+- **2026-11-20 19:18 · Alexander Sacharov** — decision: 1) Hinweise 1, 2 und 4 in kurzer Runde schliessen (Gate gegen gepushten Tip, Usage-Text, Exit-Code-Kollision)
