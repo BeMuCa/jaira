@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T22:45:03Z
+updated-at: 2026-11-20T22:45:13Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -52,3 +52,4 @@ claimed-at: 2026-11-20T22:45:03Z
 4. Schleifenbremse: Blocker sind nur falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke. Nach einem Fix-Durchgang laeuft der Testlauf und ein Bughunt nur ueber den Diff seit dem letzten Hunt, dann review. Nach 3 Rueckgaben aus derselben Lane: Frage an den Teamlead statt weiter schleifen.
 5. Kleine Raender aus review-gaps in derselben Runde schliessen statt als note: stehen lassen - Alex schickt sie sonst ohnehin zurueck. Vorbestehendes ausserhalb des Umfangs als 'note: pre-existing: ...'.
 - **2026-11-20 18:18 · Alexander Sacharov** — Teamlead: erst starten, wenn PR #145 gemergt ist - der CI-Schritt aendert .github/workflows/ci.yaml, das #145 gerade umbaut.
+- **2026-11-20 22:45 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock; PR #145 ist seit 20.11. 17:40 gemergt, Startbedingung erfuellt
