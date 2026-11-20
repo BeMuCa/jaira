@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZWSDHK37DGGHJFDF0YD6
 title: "Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,10 +23,13 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T23:08:01Z
+updated-at: 2026-11-20T23:08:51Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-91898
 claimed-at: 2026-11-20T22:44:37Z
+outcome-what: "Tickets carry blocker-rule and stop-after-fix (set-validated, in show --json and every --for-lane payload); jaira move records back-from/back-by/back-count on every send-back; testing/review/bughunt/pre-process/in-progress prompts read them; the cockpit offers Explain only for a blocker line or a reservation, lists notes under the row, names a review of an earlier round, and Explain notes are classed and coloured. CRLF in any set value is stored as LF instead of failing."
+outcome-why: "Without a per-ticket blocker threshold and a recorded sender, every edge became a blocker, a person's return counted as a loop return, and every signoff ticket had an Explain that read as 'must change' - so tickets looped and Alex gave everything back."
+outcome-resolves: "DF0YD6 DoD 1-10. Checked: concurrency (two parallel send-backs count one, TestMoveCountsOneReturnForTwoAtOnce), error paths (bad stop-after-fix exits 2, nothing written), unusual input (quotes, umlauts, multiline, CRLF/CR in blocker-rule), permissions n/a (no new file access). go test ./... exit 0, claude plugin test 214 pass."
 ---
 
 # Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt
@@ -95,3 +98,4 @@ claimed-at: 2026-11-20T22:44:37Z
 - **2026-11-20 22:48 · Alexander Sacharov** — decision: stop-after-fix is off by default (teamlead jaira-64, 2026-11-20). The diff-only hunt after a fix stays the default: it found real defects in fixes (TW5FE2 rebase fallback, JG3REW foreign comment delete, NNV39Y not-ignored). stop-after-fix=true is a deliberate per-ticket opt-out set by pre-process or a person, e.g. for text-only tickets. The brake for endless loops is the count (3 returns from the same lane -> teamlead), not skipping the hunt. Mode stays autonomous.
 - **2026-11-20 22:55 · Alexander Sacharov** — in-progress: CRLF in any 'jaira set' value made the write fail ('value position is at end of line') - pre-existing for every field; fixed at the cause in Doc.SetScalar (core/ticket/frontmatter.go), CR/CRLF stored as LF. Concurrency test needs one Store per goroutine: a shared Store races in idIndex, but jaira never shares one (two processes = two stores).
 - **2026-11-20 22:57 · Alexander Sacharov** — in-progress pause: Go side and lane prompts done and pushed (fbc56cd1, 8a396712); DoD 1,2,4,8,9 ticked. Left: cockpit (DoD 3,5,6,7,10) = plan steps 5-7, then release-note lines for the cockpit and the full test run (go test ./..., claude plugin test in core/mod/builtin/jaira-cockpit). in-progress prompt no longer counts back: notes; the in-progress twin changed with it.
+- **2026-11-20 23:08 · Alexander Sacharov** — in-progress done, moved to critique; the first send of the move was refused as 'written first' by this session's own last plan tick (ref 0c810cc8 = disk minus the move) - a race between two sends of one session, the disk file is the superset.
