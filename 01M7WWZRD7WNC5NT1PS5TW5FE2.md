@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T18:06:45Z
+updated-at: 2026-11-20T18:06:53Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5618
 claimed-at: 2026-11-20T18:03:30Z
@@ -36,10 +36,7 @@ outcome-why: "Review- und bughunt-Schleifen liefen 10-24 Runden, weil jede Runde
 outcome-resolves: "DoD 1-7: 15-pre-process.md:38, 20-in-progress.md:29 und :66-102, 27-testing.md:41-45,98,129-134, bughunt SKILL.md:104, 40-review.md:57,117-121, shipped.sha256, core/release/notes/TW5FE2.md. Vier Kategorien: Nebenlaeufigkeit/Fehlerpfade/Rechte - nur Prompt-Text, nichts schreibt; ungewoehnliche Eingabe - Note ohne Praefix faellt weiter auf review (aeltere Lane-Prompts)."
 review-summary: "none"
 round: 10
-review-gaps: |-
-  note: DoD 6 says a follow-up round tests and hunts only the diff since the last hunt; 27-testing.md runs the whole suite again and restricts only the hunt and passes 2-3 - sensible (regressions), but a deviation from the literal DoD wording the person should confirm
-  note: in-progress reads the sender off the newest note, and 'anything else' is the review - a review that moves back without writing its note (40-review.md asks for one but nothing enforces it) leaves testing's 'testing: note:' newest and the return is counted for testing; class: sender inferred from a note nobody is forced to write; fix: have 40-review.md prefix its return note with 'review:' and list it in 20-in-progress.md
-  note: pre-existing: core/shipped/shipped.sha256 - versions that went out in a release tag can be missing from the hand-merged manifest (bughunt finding of 16:50), outside this ticket
+review-gaps: none
 test-verdict: "pass: go build ./... and go test -race -count=1 ./... RC=0 at 9fa8ce3c; DoD 1-7 proofs opened in the tree; in-progress twins byte-equal, manifest 0b70615e = sha256 at HEAD; change writes nothing (prompt text only)"
 hunt-verdict: "pass: bughunt done at 9fa8ce3c, 0 change, 0 pre-existing (earlier steal-note finding fixed in 9fa8ce3c)"
 review-verdict: "No blocker. All seven DoD items are met in the prompts; builtin and board copies are identical; go test ./core/shipped/... ./core/lane/... ./core/role/... passes. The return-counting rule rests on note conventions rather than recorded data - it works as long as each sending lane writes its note last, which the critique, optimize and testing prompts already require and the review prompt only asks for."
