@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T22:50:16Z
+updated-at: 2026-11-20T22:50:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-91898
 claimed-at: 2026-11-20T22:44:37Z
@@ -42,6 +42,7 @@ claimed-at: 2026-11-20T22:44:37Z
 - [ ] Die Explain-Ansicht im Cockpit ist farbig und auf einen Blick lesbar: Statuszeile mit gruenem Haken/rotem Kreuz je Pruefung (DoD, Tests, Blocker, bughunt auf HEAD); jede Note mit farbiger Marke nach Einordnung - rot 'Blocker', gelb 'kleiner Rand', grau/gedimmt 'bekannte Grenze', blau 'nicht aus diesem Ticket'; die Empfehlung fett mit eigener Farbe; die Notiz-Texte normal, nur die Marken farbig; funktioniert im hellen und dunklen Terminal-Thema (Theme-Farben statt fester Hex-Werte, wie das Band heute)
 - [ ] class: the loop brake reads recorded facts, never prose — every return is recorded by jaira move, whatever path moved it (CLI, cockpit, --force); parking in blocked and back records nothing; a ticket without back-* fields reads as no return (table test)
 - [ ] input classes: blocker-rule with quotes, umlauts, multiple lines and CRLF survives set/show round-trip; stop-after-fix rejects anything but true/false/empty (exit 2); two parallel moves on one ticket leave consistent back-* fields (one refused or both counted)
+- [ ] acceptance rule for the explain parser: an explain note line without a known class mark or status shape is shown as plain text, never dropped - an old note must still read as before
 
 ## Options
 
