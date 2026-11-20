@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T18:03:33Z
+updated-at: 2026-11-20T18:03:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-87225
 claimed-at: 2026-11-20T17:38:56Z
@@ -55,7 +55,7 @@ review-check: "1. cd into a scratch clone of a GitHub repo you own, with an open
 - [x] Mit Einstellung oeffnet jaira-role-pr den PR selbst und fordert den konfigurierten Reviewer (z.B. Copilot) an
   proof: core/role/builtin/jaira-role-pr/SKILL.md:37 (agent + every ticket done), core/role/builtin/jaira-role-pr/SKILL.md:361 Ask for the board's reviewer, core/role/builtin/jaira-role-pr/SKILL.md:343 pr-round.sh open; core/role/pr_round_test.go TestPRRoundRequestsTheReviewer, TestPROpensOnlyWhereTheBoardSaysAndNeverAccepts, TestPROpenRunsTheGateFirst
 - [x] Eine Kommentarrunde: jeder Kommentar bekommt 'Behoben in <sha>: ...' oder eine Begruendung, wird resolved, das Review neu angefordert
-  proof: core/role/builtin/jaira-role-pr/SKILL.md:367 Answering review comments; core/role/builtin/jaira-role-pr/scripts/pr-round.sh reply/comment/request; core/role/pr_round_test.go TestPRRoundRepliesThenResolves
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:385 Answering review comments; core/role/builtin/jaira-role-pr/scripts/pr-round.sh reply/comment/request; core/role/pr_round_test.go TestPRRoundRepliesThenResolves
 - [x] Merge und Approve macht kein Agent, auch mit Einstellung
   proof: core/role/pr_round_test.go TestPRRoundNeverMergesOrApproves, TestPROpensOnlyWhereTheBoardSaysAndNeverAccepts ('.jaira/pr never reaches merge or approve')
 - [x] Eingabeklasse PR existiert schon: kein zweiter PR, direkt zur Kommentarrunde
