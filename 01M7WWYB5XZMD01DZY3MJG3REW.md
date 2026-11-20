@@ -1,7 +1,7 @@
 ---
 id: 01M7WWYB5XZMD01DZY3MJG3REW
 title: Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T20:04:12Z
+updated-at: 2026-11-20T20:04:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-18659
 claimed-at: 2026-11-20T19:49:16Z
@@ -32,7 +32,7 @@ outcome-what: "Board-Dateien .jaira/pr (person|agent), .jaira/pr-reviewer und .j
 outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten das pro Repo. In manchen Projekten laeuft das Review auf dem PR selbst, dort kommt done erst danach (Alex 20.11.)."
 outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
 review-summary: "critique 15 (a3137857): nothing - account check moved before the gate, one pushurl entry for tip and account"
-round: 16
+round: 17
 review-gaps: "optimize (a3137857): nothing - the URL parse is plain parameter expansion, no helper in the script does it already"
 test-verdict: "pass: suite -race -count=1 RC=0 at a3137857; DoD 20 (TestPRGateReadsTheBoardFilesFromTheBase) and 21 (TestPROpenNamesTheHeadItChecked) run green; live: branch binary 'roles pr-gate origin/master' in this repo exits 3 naming origin/master (no .jaira/pr there); failure paths: 9 account-less URLs exit 3 before the gate, nothing opened; open writes only gh pr create, two-writer cases unchanged"
 hunt-verdict: "fail: bughunt done at a3137857 - 1 change: account from the last remote url entry, tip from the first"
