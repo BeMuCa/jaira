@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:03:57Z
+updated-at: 2026-11-20T22:04:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-44888
 claimed-at: 2026-11-20T22:03:49Z
@@ -41,6 +41,8 @@ review-gaps: |-
 test-verdict: "pass: Runde 4 (dae16319): go build ./... ok, go test core/role + core/shipped RC=0; gh run list --commit <sha> --workflow ci --json conclusion,headSha liefert genau den Lauf dieses Commits (an master geprueft), glab ci list --sha existiert."
 hunt-verdict: "pass: Runde-3-Fund (bughunt done at 4a0033ec) als Klasse in dae16319 behoben: jeder Status an den Kopf-Commit gebunden, fremder/kein Lauf = '?'. Kein neuer Hunt - Entscheidung Teamlead 21:58; weitere Funde dieser Klasse gehen als note an signoff."
 question: ""
+review-verdict: "The diff meets all four DoD items; no blocker. Checked: go test ./core/role ./core/shipped green, each final SKILL.md hash is in shipped.sha256, release note lines are single '- ' lines, the commands the role prescribes exist (jaira list --lane/--board, gh run list --commit/--workflow, glab ci list --sha). Three notes, all small: hardcoded feat/ branch name, intermediate hashes, and an expected ❌ hunt-on-HEAD on this ticket."
+review-round: 4
 ---
 
 # Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis
