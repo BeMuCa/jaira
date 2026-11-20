@@ -47,6 +47,7 @@ export const t = {
   bandTitle: 'jaira-cockpit',
   noRoom: 'No room for a pane here: widen the terminal and press Give back again.',
   readExplanation: 'Read explanation',
+  reviewedIn: (round: number) => `review of round ${round}, changed since`,
   explanationOf: (id: string) => `Explanation of ${id}`,
   decided: 'decided',
   decidedAs: 'Decided:',

@@ -1374,6 +1374,11 @@ export const register: Register = (on, options) => {
                 : null}
             </Box>
             {w.question !== '' ? <Text dimColor wrap="truncate-end">  ? {w.question}</Text> : null}
+            {/* A verdict an earlier round wrote: said, so a ticket moved on
+                past a refusing review does not reach the person silent. */}
+            {w.reviewedIn !== undefined ? <Text color="warning" wrap="truncate-end">  {t.reviewedIn(w.reviewedIn)}</Text> : null}
+            {/* The review's notes, read and not decided: no button. */}
+            {w.notes.map((n, i) => <Text key={`note-${w.id}-${i}`} dimColor wrap="truncate-end">  · {n}</Text>)}
           </Box>
         ))}
         {waiting.length > BAND_TICKETS

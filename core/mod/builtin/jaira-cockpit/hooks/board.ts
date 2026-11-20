@@ -19,8 +19,14 @@ export type Waiting = {
   // Whose it is; '' for nobody's.
   assignee: string
   // Whether the band offers Explain: the verdict names a reservation, or
-  // the review names a gap.
+  // the review's gaps hold a blocker: line.
   explainable: boolean
+  // The review's other findings, one per line, listed under the row without
+  // a button: notes the person reads, not decisions they must take.
+  notes: string[]
+  // The round the verdict was written in, when the ticket has moved on a
+  // round since; undefined while the verdict is this round's.
+  reviewedIn?: number
 }
 
 export type Counts = { worker: number; review: number; person: number }
@@ -116,7 +122,10 @@ export function snapshotOf(
       question: oneLine(t.question),
       acceptTo: next?.terminal === true ? next.id : null,
       assignee,
-      explainable: explainable(oneLine(t.review?.verdict), t.review?.gaps, sameRound(t)),
+      explainable: explainable(oneLine(t.review?.verdict), t.review?.gaps),
+      // Before a review the gaps hold what the optimize lane removed: no notes.
+      notes: oneLine(t.review?.verdict) === '' ? [] : notesOf(t.review?.gaps),
+      ...(sameRound(t) ? {} : { reviewedIn: t.review_round }),
     })
   }
   const ids = tickets.map(t => t.handle)
@@ -169,16 +178,20 @@ function hasReservation(verdict: string): boolean {
   return RESERVATION.test(unnegated) || REFUSAL.test(verdict)
 }
 
-// A review's gaps name one unless they are empty or say there is none, alone
-// or before a remark: 'none', 'none — the docs could say more', 'keine
-// (blockierend) ...', 'No gaps found.', 'keine Lücken'. A verdict that
-// reads as a yes ("the one weak spot ... (gap 1)") still has something a
-// person should have explained.
+// The lines of a review's gaps, each on its own, the leading list marker
+// ('- ', '1. ') dropped. A line that says there is nothing — 'none',
+// 'keine Lücken', 'No gaps found.' — is no finding.
 const NO_GAP = /^(none|keine|nothing|nichts|n\/a|-+|no (gaps?|defects?|issues?|findings?)( found)?|keine (lücken?|mängel|befunde))\s*([—–\-:(.,;!]|$)/i
+const MARKER = /^\s*(?:[-*•]|\d+[.)])\s+/
+const BLOCKER = /^blocker\s*:/i
 
-function namesGap(gaps: string | undefined): boolean {
-  const g = oneLine(gaps)
-  return g !== '' && !NO_GAP.test(g)
+function findings(gaps: string | undefined): string[] {
+  return (gaps ?? '').split(/\r?\n/).map(l => oneLine(l.replace(MARKER, ''))).filter(l => l !== '' && !NO_GAP.test(l))
+}
+
+// The findings that are no blocker: what the band lists under the row.
+function notesOf(gaps: string | undefined): string[] {
+  return findings(gaps).filter(l => !BLOCKER.test(l))
 }
 
 // Whether the verdict was written in the ticket's current round. A later
@@ -189,12 +202,15 @@ function sameRound(t: Ticket): boolean {
   return !t.review_round || t.review_round === (t.round ?? 1)
 }
 
-// Whether the band offers Explain: only for a verdict of the ticket's current
-// round, its reservation as much as the gaps beside it — before this round's
-// review the gaps hold what the optimize lane removed, and the verdict is
-// the last round's, whatever the lane is called.
-function explainable(verdict: string, gaps: string | undefined, current: boolean): boolean {
-  return current && (hasReservation(verdict) || (verdict !== '' && namesGap(gaps)))
+// Whether the band offers Explain: for a blocker the review wrote into its
+// gaps, or a verdict that names a reservation or refuses the work. Notes
+// alone — a review always has a few — are listed, not explained: an Explain
+// on every ticket read as "this must be changed". A verdict of an earlier
+// round keeps its Explain, under a line saying the ticket changed since: a
+// ticket the teamlead moved on past a refusing review must not reach the
+// person silent.
+function explainable(verdict: string, gaps: string | undefined): boolean {
+  return hasReservation(verdict) || (verdict !== '' && findings(gaps).some(l => BLOCKER.test(l)))
 }
 
 // A jaira older than the board it reads says so on a line of its own before

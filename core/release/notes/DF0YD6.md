@@ -3,3 +3,5 @@
 - Read who sent a ticket back from `back` in `jaira show <id> --json` and in the `--for-lane` payload: `from` is the lane, `by` is `person` or `lane`, `count` is the returns in a row from that lane; `jaira move` writes it into the new `back-from`, `back-by` and `back-count` frontmatter fields on every send-back.
 - Expect the in-progress lane to stop after the third return in a row from the same lane by reading `back.count`; a person's return never counts, and you no longer need to write a `Given back from <lane>:` note for jaira to tell your return from a loop lane's.
 - A value with Windows line endings (CRLF) passed to `jaira set` or `jaira create` is now stored with plain line breaks instead of failing with "value position is at end of line".
+- Expect the cockpit to offer Explain only when the review wrote a `blocker:` line or the verdict names a reservation; the review's other notes are listed under the ticket's row, without a button.
+- Expect a ticket whose review verdict is from an earlier round to say 'review of round N, changed since' in the cockpit and keep its Explain, instead of showing nothing.

@@ -986,61 +986,73 @@ describe('waiting for you', () => {
     expect(await pane.find({ type: 'Text', text: 'Decided: b) accept it as it is' })).toBeDefined()
   })
 
-  test('a verdict with a reservation from an earlier round offers no Explain', async ($, on) => {
+  test('a verdict of an earlier round keeps its Explain and says the ticket changed since', async ($, on) => {
     const w = world(on)
     const reserved = 'approve, but the cache key ignores the branch'
     w.tickets = [
       { ...SIGNOFF, handle: 'OLD123', round: 2, review_round: 1, review: { verdict: reserved, gaps: '' } },
       { ...SIGNOFF, handle: 'NEW456', round: 2, review_round: 2, review: { verdict: reserved, gaps: '' } },
+      // Review sent it back with a blocker, the teamlead moved it on past a
+      // new review: the person must not get it silent.
+      { ...SIGNOFF, handle: 'BLK789', round: 8, review_round: 7, review: { verdict: 'Zurueck an in-progress: ein Blocker', gaps: 'blocker: the export drops the last row' } },
     ]
     await startSession($)
     const band = await $.ui.mount(BAND)
-    expect(await band.find({ key: 'explain-OLD123' })).toBeUndefined()
-    expect(await band.find({ key: 'explain-NEW456' })).toBeDefined()
+    for (const id of ['OLD123', 'NEW456', 'BLK789']) expect(await band.find({ key: `explain-${id}` })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /review of round 1, changed since/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /review of round 7, changed since/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /review of round 2/ })).toBeUndefined()
   })
 
-  test('an explanation stays readable once its verdict is an earlier round\'s; only Explain waits for the new one', async ($, on) => {
+  test('an explanation stays readable once its verdict is an earlier round\'s', async ($, on) => {
     const w = world(on)
-    w.tickets = [{ ...SIGNOFF, round: 2, review_round: 1, review: { verdict: 'approve, but the cache key ignores the branch', gaps: '1. a test is missing' } }]
+    w.tickets = [{ ...SIGNOFF, round: 2, review_round: 1, review: { verdict: 'approve, but the cache key ignores the branch', gaps: 'note: a test is missing' } }]
     w.bodies.MG677R = SHAPED + '\n- **2026-10-12 15:02 · Alex** — decision: c) clear the cache on checkout\n'
     await startSession($)
     const band = await $.ui.mount(BAND)
-    expect(await band.find({ key: 'explain-MG677R' })).toBeUndefined()
     await band.press({ key: 'read-MG677R' })
     const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
     expect(await pane.find({ type: 'Text', text: 'Decided: c) clear the cache on checkout' })).toBeDefined()
   })
 
-  test('Explain is offered once the review names a gap, whatever words the verdict uses', async ($, on) => {
+  test('Explain is offered for a blocker or a reservation; notes alone are listed without a button', async ($, on) => {
     const w = world(on)
-    // WP1CHK's verdict: no word of the reservation list, a gap all the same.
-    const verdict = 'The diff meets all five DoD items and the tests prove each one (87 pass). No defect that blocks: the one weak spot is that a failed note after a successful move is not reported (gap 1), a small follow-up rather than a reason to send it back. Accept, with gap 1 either fixed now or knowingly left.'
+    const verdict = 'The diff meets all five DoD items and the tests prove each one (87 pass).'
     w.tickets = [
-      { ...SIGNOFF, handle: 'WP1CHK', review: { verdict, gaps: '1. Minor: the note after a successful move is fire-and-forget.' } },
+      // A blocker line, however the list is marked.
+      { ...SIGNOFF, handle: 'BL0CK1', review: { verdict, gaps: 'blocker: DoD 2 - an empty export still writes a header\nnote: the export test covers 1MB, not 40MB' } },
+      { ...SIGNOFF, handle: 'BL0CK2', review: { verdict, gaps: '1. Blocker: a crash on an empty file' } },
+      { ...SIGNOFF, handle: 'BL0CK3', review: { verdict, gaps: '- blocker: data loss on CRLF\r\n- note: a comment is stale' } },
+      // A reservation in the verdict, notes beside it.
+      { ...SIGNOFF, handle: 'RESRV1', review: { verdict: 'approve, but the cache key ignores the branch', gaps: 'note: a test is missing' } },
+      // Notes only: listed, no Explain.
+      { ...SIGNOFF, handle: 'NOTES1', review: { verdict, gaps: 'note: the export test covers 1MB, not 40MB\nnote: pre-existing: load.go:41 accepts an empty file' } },
+      { ...SIGNOFF, handle: 'NOTES2', review: { verdict, gaps: '1. Minor: the note after a successful move is fire-and-forget.' } },
+      // Nothing found, said in many ways.
       { ...SIGNOFF, handle: 'AB12CD', review: { verdict, gaps: 'none' } },
       { ...SIGNOFF, handle: 'EF34GH', review: { verdict: 'approve', gaps: '' } },
-      // None, with a remark after it, as reviewers on this board write it.
       { ...SIGNOFF, handle: 'GH56JK', review: { verdict, gaps: 'none — the docs could say more' } },
-      { ...SIGNOFF, handle: 'JK78LM', review: { verdict, gaps: 'keine (blockierend); eine Kleinigkeit im Kommentar' } },
-      // Said in words rather than as 'none'.
       { ...SIGNOFF, handle: 'MN12PQ', review: { verdict, gaps: 'keine Lücken' } },
       { ...SIGNOFF, handle: 'PQ34RS', review: { verdict, gaps: 'No gaps found.' } },
-      { ...SIGNOFF, handle: 'RS56TU', review: { verdict, gaps: 'No defect found — the tests cover each item' } },
-      // Not reviewed yet: what the optimize lane removed is no gap.
-      { ...HUMAN, handle: 'LM90NP', question: '', review: { verdict: '', gaps: 'inlined the single-use close element' } },
-      // A round later: the old verdict stands beside this round's optimize gaps.
-      { ...HUMAN, handle: 'TU78VW', question: '', round: 3, review_round: 2, review: { verdict, gaps: 'Runde 3: nichts entfernt' } },
-      // The verdict of this very round, and one from before rounds were counted.
-      { ...SIGNOFF, handle: 'VW90XY', round: 3, review_round: 3, review: { verdict, gaps: '1. a test is missing' } },
-      { ...SIGNOFF, handle: 'XY12ZA', round: 2, review: { verdict, gaps: '1. a test is missing' } },
+      // Not reviewed yet: a blocker-looking line of the optimize lane is no review's.
+      { ...HUMAN, handle: 'LM90NP', question: '', review: { verdict: '', gaps: 'blocker: inlined the single-use close element' } },
+      { ...HUMAN, handle: 'LM91NP', question: '', review: { verdict: '', gaps: 'inlined the single-use close element' } },
     ]
     await startSession($)
-    // Every one of them is in the band, not cut off behind '+N more'.
     const band = await $.ui.mount(BAND)
     await band.press({ key: 'more' })
     const open = await $.ui.mount(BAND)
-    for (const id of ['WP1CHK', 'VW90XY', 'XY12ZA']) expect(await open.find({ key: `explain-${id}` })).toBeDefined()
-    for (const id of ['AB12CD', 'EF34GH', 'GH56JK', 'JK78LM', 'LM90NP', 'MN12PQ', 'PQ34RS', 'RS56TU', 'TU78VW']) expect(await open.find({ key: `explain-${id}` })).toBeUndefined()
+    for (const id of ['BL0CK1', 'BL0CK2', 'BL0CK3', 'RESRV1']) expect(await open.find({ key: `explain-${id}` })).toBeDefined()
+    for (const id of ['NOTES1', 'NOTES2', 'AB12CD', 'EF34GH', 'GH56JK', 'MN12PQ', 'PQ34RS', 'LM90NP']) expect(await open.find({ key: `explain-${id}` })).toBeUndefined()
+    // The notes stand under their row as text, without a button of their own.
+    expect(await open.find({ type: 'Text', text: /· note: the export test covers 1MB, not 40MB/ })).toBeDefined()
+    expect(await open.find({ type: 'Text', text: /· note: pre-existing: load\.go:41/ })).toBeDefined()
+    expect(await open.find({ type: 'Text', text: /· Minor: the note after a successful move/ })).toBeDefined()
+    expect(await open.find({ type: 'Text', text: /· note: a comment is stale/ })).toBeDefined()
+    // A blocker is no note, and 'none' is no finding.
+    expect(await open.find({ type: 'Text', text: /· blocker:/i })).toBeUndefined()
+    expect(await open.find({ type: 'Text', text: /· none/ })).toBeUndefined()
+    expect(await open.find({ type: 'Text', text: /inlined the single-use/ })).toBeUndefined()
   })
 
   test('the whole review verdict is read from the band, with no explanation on the ticket', async ($, on) => {
