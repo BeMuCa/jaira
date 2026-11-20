@@ -42,18 +42,18 @@ func (r *Repo) TicketsNamed(base string) ([]string, error) {
 }
 
 // FileAt returns the content of path, relative to Dir, as the commit rev
-// holds it, and false when rev holds no such file. rev must already be known
-// to name a commit: any failure to read the file is reported as absent, so a
-// caller that treats absent as its safe default fails closed.
-func (r *Repo) FileAt(rev, path string) (string, bool) {
+// holds it, and "" when rev holds no such file. rev must already be known to
+// name a commit: any failure to read the file reads as empty, so a caller
+// whose default for an empty file is the safe one fails closed.
+func (r *Repo) FileAt(rev, path string) string {
 	if rev == "" || strings.HasPrefix(rev, "-") {
-		return "", false
+		return ""
 	}
 	out, err := r.run("cat-file", "blob", rev+":./"+filepath.ToSlash(path))
 	if err != nil {
-		return "", false
+		return ""
 	}
-	return out, true
+	return out
 }
 
 // HandlesInSubjects reads the handles out of a list of subjects, one per line.

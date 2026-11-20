@@ -137,11 +137,11 @@ least one commit in <base>..HEAD names a ticket in its subject
 in its board's terminal lane — or, where .jaira/pr-when says signoff, in the
 lane signoff or any lane after it up to the terminal one. Both files are
 read as <base> holds them, not off the branch's disk: a branch cannot open
-its own gate by committing them, and a board whose .jaira/ is not shared
-yet keeps a person opening it. A ticket filed into
-the logbook is past done and holds nothing up; one in the archive (rejected)
-or nowhere here (a typo, an unfetched ref) holds it. Anything else exits 3
-and says which ticket holds it.
+its own gate by committing them, and a board whose .jaira/ is not shared yet
+keeps a person opening it. A ticket filed into the logbook is past done and
+holds nothing up; one in the archive (rejected) or nowhere here (a typo, an
+unfetched ref) holds it. Anything else exits 3 and says which ticket holds
+it.
 
 jaira-role-pr runs this before it opens a pull request on its own, so the
 rule does not rest on a role's text alone. A person who invokes the role
@@ -167,8 +167,7 @@ pr_person, no_ticket, no_signoff_lane, unreadable or pending.`,
 			// .jaira/pr saying agent, or a pr-when of signoff, would
 			// otherwise open its own gate. A change to either takes effect
 			// once it has been merged into the base.
-			prFile, _ := repo.FileAt(args[0], settings.BoardPRPath("."))
-			pr := settings.PRIn(prFile)
+			pr := settings.PRIn(repo.FileAt(args[0], settings.BoardPRPath(".")))
 			if pr != settings.PRAgent {
 				return fail(ExitValidation, "pr_person",
 					"pr-gate: .jaira/pr in %s does not say agent — a person opens the pull request; hand the create line back", args[0])
@@ -195,8 +194,7 @@ pr_person, no_ticket, no_signoff_lane, unreadable or pending.`,
 			} else if err != nil {
 				return err
 			}
-			whenFile, _ := repo.FileAt(args[0], settings.BoardPRWhenPath("."))
-			when := settings.PRWhenIn(whenFile)
+			when := settings.PRWhenIn(repo.FileAt(args[0], settings.BoardPRWhenPath(".")))
 			// reached is, per board, every lane a ticket may sit in for the
 			// pull request to open: the terminal lane, and under signoff
 			// also signoff and whatever lies between it and the terminal.
