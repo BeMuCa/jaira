@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:58:32Z
+updated-at: 2026-11-20T17:59:39Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85657
 claimed-at: 2026-11-20T17:52:47Z
@@ -120,3 +120,4 @@ Empfehlung: 2 - alle 7 DoD-Punkte sind mit Tests belegt, die Funde sind Randfael
 - **2026-11-20 17:56 · Alexander Sacharov** — bughunt: done at 1164e2ee - 1 finding (1 change) in 5 files, follow-up hunt (diff since c6c3ed13: core/board/gitignore.go, core/board/exclude_test.go, internal/cli/update.go, internal/cli/privateexclude_test.go, core/release/notes/NNV39Y.md; untracked .jaira/milestones/*.md are board data, not code, not hunted); concurrency, error paths, input, permissions checked; files: README.md core/board/announce.go core/board/board.go core/board/exclude_test.go core/board/gitignore.go core/release/notes/NNV39Y.md core/ticket/store.go docs/COMMANDS.md internal/cli/privateexclude_test.go internal/cli/share.go internal/cli/sharestate_test.go internal/cli/tickets.go internal/cli/update.go
 - **2026-11-20 17:57 · Alexander Sacharov** — testing: bughunt-Fund stimmt - meine Begruendung (added schreibt die getrackte .gitignore) widerspricht init, das auf git<2.31 genau dorthin faellt. Guard nur vor den moved-Zweig; Test um den Fall 'nirgends ausgeschlossen auf altem git -> .gitignore-Zeile' erweitert.
 - **2026-11-20 17:58 · Alexander Sacharov** — critique Runde 9 (Diff 1164e2ee..21742362): nichts - Guard steht jetzt nur vor dem moved-Zweig.
+- **2026-11-20 17:59 · Alexander Sacharov** — bughunt: change: internal/cli/update.go:360 - on git before 2.31 board.Ignored (core/board/gitignore.go:136) reads only the root .gitignore, because gitPlace returns no exclude path; so moveIgnore takes a board git already ignores as excluded nowhere. jaira update then writes /.jaira/ into the tracked .gitignore and prints 'Excluded this private board in .gitignore: nothing excluded it.' Triggers when the exclusion lives in .git/info/exclude (written by a newer jaira or git in the same clone, e.g. Windows git and WSL git sharing one checkout), in core.excludesFile, or in a global ignore. Before 21742362 old git returned early and never reached this path. ran: scratch test with the old-git PATH wrapper from TestUpdateOnGitWithoutPathFormatLeavesGitignoreAlone, init, then update: git check-ignore -v gives .git/info/exclude:9:/.jaira/, InGitignore=false, Ignored=false, git status shows ' M .gitignore'. board.IgnoredBy (git check-ignore works on old git) would see the existing rule
