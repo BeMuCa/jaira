@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T18:06:37Z
+updated-at: 2026-11-20T18:06:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5618
 claimed-at: 2026-11-20T18:03:30Z
@@ -124,3 +124,4 @@ Empfehlung: 2 - kein Blocker nach den eigenen Regeln (falsches Ergebnis, Datenve
 - **2026-11-20 18:02 · Alexander Sacharov** — Given back from signoff: 1) 40-review.md lässt seine Rückgabe-Note mit "review:" beginnen und 20-in-progress.md listet das Präfix; DoD 6 wörtlich angleichen
 - **2026-11-20 18:03 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
 - **2026-11-20 18:03 · Alexander Sacharov** — back: person
+- **2026-11-20 18:06 · Alexander Sacharov** — critique: none - Runde nach signoff-Rueckgabe: drei Saetze in den bestehenden Prompts, kein neues Muster; Rueckfall 'ohne Praefix = review' bleibt bewusst fuer Boards mit aelterem review-Prompt
