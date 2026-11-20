@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:39:42Z
+updated-at: 2026-11-20T22:39:46Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
@@ -112,3 +112,4 @@ review-check: |-
 - **2026-11-20 22:35 · Alexander Sacharov** — critique: teamlead-Verweis an die neue Regel angleichen ('mehr als eine' -> 'zwei divergierte Kopien'). Lookup selbst bleibt so: einfacher geht es nicht ohne Abstammungsvergleich.
 - **2026-11-20 22:37 · Alexander Sacharov** — critique Runde 2: nichts mehr.
 - **2026-11-20 22:37 · Alexander Sacharov** — testing: gruen; kein neuer Hunt nach Teamlead-Entscheidung 21:58, hunt-on-HEAD ist daher erwartbar ❌.
+- **2026-11-20 22:39 · Alexander Sacharov** — review (fresh, after signoff return): no blocker, 4 notes (handle vs ULID in lookup, several/in-progress CI runs per commit, hard-coded done lane, expected hunt-on-HEAD ❌). Ran the lookup on this repo -> feat/twrap8 @ 7e3bc32c; gh run list --commit -> [] (not pushed) = ?.
