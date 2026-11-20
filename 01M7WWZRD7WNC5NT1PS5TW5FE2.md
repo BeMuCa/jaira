@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T18:19:26Z
+updated-at: 2026-11-20T18:19:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-37518
 claimed-at: 2026-11-20T18:18:38Z
@@ -37,7 +37,7 @@ outcome-resolves: "DoD 1-7: 15-pre-process.md:38, 20-in-progress.md:29 und :66-1
 review-summary: "none"
 round: 11
 review-gaps: none
-test-verdict: "pass: follow-up round - go build ./... ok; go test -race -count=1 ./core/lane/... ./core/shipped ./core/release/... RC=0 (packages the diff since 9fa8ce3c touches); DoD 1-7 in the tree, proof lines re-checked after the edit; .jaira/lanes in-progress/testing/review byte-equal to builtin, all three hashes in shipped.sha256; a fresh 'jaira init' from this tree ships the review: prefix in review.md and in-progress.md; prompts only - nothing writes, so no failure path or two-writer case"
+test-verdict: "pass: follow-up round since d0cb1f49 - go build ./... ok; go test -race -count=1 ./core/lane/... ./core/shipped ./core/release/... RC=0; in-progress twin byte-equal to builtin, its sha256 in shipped.sha256; release notes 8 lines, all '- '; DoD 6 proof re-pointed at 20-in-progress.md:66-102 (no prefix = back: unknown); prompts only - nothing writes, no failure path or two-writer case"
 hunt-verdict: "pass: bughunt done at d0cb1f49, 0 change, 0 pre-existing"
 review-verdict: "All 7 DoD items are met in the diff; no blocker. Verified the strings the prompts rely on exist in code: round field (move.go:134), 'Given back from <lane>:' (cockpit register.tsx:900), '<who> took this ticket over from' (refsync.go:1433), 'bughunt: done at' (bughunt SKILL), 'critique:'/'optimize:' return-note prefixes, 'jaira dod --add'. go test ./core/shipped ./core/role ./core/lane pass. Four notes are small wording edges, none changes a result."
 review-round: 10
