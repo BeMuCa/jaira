@@ -2,7 +2,7 @@
 id: 01M5ZJ5DKQZ83GYBGPJHAX8K02
 title: "Die PR-Rolle hat einen festen Schritt vor dem Push: Scan, master, Suite, DoD, Logbook"
 status: backlog
-ready: false
+ready: true
 creator: BeMuCa
 goal: "jaira-role-pr fuehrt vor jedem Push einen festen Ablauf aus: Branch auf E-Mail, Denylist-Strings und Rechnernamen pruefen, master mergen, die volle Race-Suite einmal laufen lassen, die Suite-DoD-Punkte ticken, je Ticket logbook plus chore-Commit, dann push."
 context: |-
@@ -14,11 +14,13 @@ definition-of-done: SKILL.md hat den Ablauf als nummerierte Liste; jeder Schritt
 tags:
   - docs
   - release
-blocked-by: []
-related: []
+blocked-by:
+  - 01M2HZKCQ48BPQYN1YPTXB97NJ
+related:
+  - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-10-27T20:52:23Z
-updated-at: 2026-11-20T16:40:19Z
+updated-at: 2026-11-20T16:40:22Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 ---
