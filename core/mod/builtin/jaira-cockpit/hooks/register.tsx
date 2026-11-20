@@ -250,8 +250,14 @@ async function reports($: EngineInterface, args: string): Promise<string> {
     }
     const key = keyOf(root, ticket)
     const kept = await stored($, key)
-    // Shown once, read: the next call brings only what arrived after it.
-    if (kept.some(r => r.seen !== true)) await $.store.set(key, kept.map(r => ({ ...r, seen: true })))
+    // Shown once, read: the next call brings only what arrived after it. The
+    // mark is best-effort: a store that refuses the write (full, I/O) still
+    // shows the reports, which then come again on the next read.
+    if (kept.some(r => r.seen !== true)) {
+      try {
+        await $.store.set(key, kept.map(r => ({ ...r, seen: true })))
+      } catch {}
+    }
     return showReport(ticket, kept, all)
   })
 }

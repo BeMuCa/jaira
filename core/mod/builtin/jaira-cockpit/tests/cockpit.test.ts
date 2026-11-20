@@ -384,6 +384,25 @@ describe('report since the last read, by input class', () => {
     expect((await $.command.run(typed('report K7P2QX'))).text).toContain('second')
   })
 
+  test('a store that refuses the mark: the reports are shown anyway and stay new', async ($, on) => {
+    const kept = new Map<string, unknown>([[key, old(2, undefined)]])
+    on('store.get', ($, e) => ({ value: kept.get(e.key) }))
+    on('store.set', () => {
+      throw new Error('store full')
+    })
+    on('store.delete', ($, e) => {
+      kept.delete(e.key)
+      return { value: undefined } as never
+    })
+    on('store.keys', () => ({ value: [...kept.keys()] }))
+    where(on, () => '/p')
+    for (let read = 0; read < 2; read++) {
+      const { text = '' } = await $.command.run(typed('report K7P2QX'))
+      expect(text).toContain('old 0')
+      expect(text).toContain('old 1')
+    }
+  })
+
   test('the list says how many of each ticket are new', async ($, on) => {
     mock.store(on, { [key]: [...old(1, undefined), ...old(2, true)] })
     on('session.receive', ($, e) => ({ text: e.text }))
