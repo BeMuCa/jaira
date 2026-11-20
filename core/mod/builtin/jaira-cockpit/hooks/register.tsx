@@ -193,7 +193,22 @@ async function jairaHome($: EngineInterface): Promise<string> {
 
 // ── the noise filter ─────────────────────────────────────────────────────
 
-async function keep($: EngineInterface, ticket: string, report: Report): Promise<void> {
+// Every read-modify-write of the kept reports runs one after the other:
+// keep() deletes a key before it sets it again, and a reader between the two
+// sees nothing — a writer there writes that nothing back, and the reports are
+// gone. Other processes sharing the store are beyond this lock.
+let reportsLock: Promise<unknown> = Promise.resolve()
+function locked<T>(work: () => Promise<T>): Promise<T> {
+  const run = reportsLock.then(work, work)
+  reportsLock = run.catch(() => undefined)
+  return run
+}
+
+function keep($: EngineInterface, ticket: string, report: Report): Promise<void> {
+  return locked(() => keepNow($, ticket, report))
+}
+
+async function keepNow($: EngineInterface, ticket: string, report: Report): Promise<void> {
   const root = await project($)
   const key = keyOf(root, ticket)
   const before = ((await $.store.get(key)) as Report[] | undefined) ?? []
@@ -233,16 +248,12 @@ async function reports($: EngineInterface, args: string): Promise<string> {
     const rows = await Promise.all(keys.map(async k => [k, ((await $.store.get(k)) as Report[] | undefined) ?? []] as const))
     return listReports(rows)
   }
-  const kept = await keptReports($, ticket)
-  const shown = showReport(ticket, kept, all)
-  // Shown once, read: the next call brings only what arrived after it. Read
-  // again before writing, so a report kept meanwhile stays, and stays unseen.
-  const read = new Set(kept.filter(r => r.seen !== true).map(r => r.at))
-  if (read.size > 0) {
-    const now = await keptReports($, ticket)
-    await $.store.set(keyOf(root, ticket), now.map(r => (read.has(r.at) ? { ...r, seen: true } : r)))
-  }
-  return shown
+  return locked(async () => {
+    const kept = await keptReports($, ticket)
+    // Shown once, read: the next call brings only what arrived after it.
+    if (kept.some(r => r.seen !== true)) await $.store.set(keyOf(root, ticket), kept.map(r => ({ ...r, seen: true })))
+    return showReport(ticket, kept, all)
+  })
 }
 
 // What session.receive left alone on purpose — a comment on an artifact, a

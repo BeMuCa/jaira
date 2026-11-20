@@ -1,7 +1,7 @@
 ---
 id: 01M7WX07G4E8ERZ30PH10J88M5
 title: "cockpit report liefert nur, was seit dem letzten Lesen kam, nicht alte Meldungen"
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -16,16 +16,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T16:35:28Z
-updated-at: 2026-11-20T16:54:23Z
+updated-at: 2026-11-20T17:01:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-58858
 claimed-at: 2026-11-20T16:42:48Z
 outcome-what: "/cockpit report <id> and the report tool show only reports not read yet; 'all' (tool: all: true) shows the older ones too; nothing new says so with the count of older ones"
 outcome-why: "a teamlead reading one new short line got the whole stack of up to 10 old reports, days old"
 outcome-resolves: 0J88M5
-round: 3
+round: 4
 review-summary: "none"
 review-gaps: "showReport (filter.ts:125): dropped the default all=false, its one caller always passes it. Considered and kept: reportArgs beside the command's own split in register.tsx (the tool shares it, the command alone could not); tests 219/233 beside the class table (they cover the read-new-read sequence and 'all' before the id, which the table does not). Pre-existing, left: board.test.ts 'the band lists the tickets…' fails on base 5b16e491 too (Box borderStyle)."
+test-verdict: "pass: claude plugin validate rc=0, go build ./... rc=0, claude plugin test 188 pass 1 fail — the fail is board.test.ts 'the band lists the tickets in a person's lanes' (Box borderStyle), identical on base 5b16e491; DoD 1-7 tests opened and run green. Live via claude -p --plugin-dir in three separate processes: /cockpit report 8Z6ZN0 showed the report, the second call said 'Nothing new for 8Z6ZN0 since it was last read; 1 older report(s) kept', 'all' brought it back — the mark survives a restart; /cockpit report lists 'n report(s), m new'. Failure path: unknown id answers 'No reports kept'. Two writers: marking is idempotent (sets seen on shown 'at' stamps after a re-read); the store has no compare-and-set, recorded in the round-2 note."
+hunt-verdict: "fail: bughunt done at 91edd3a5 — 1 change: marking seen is a second unlocked writer of report:<project>:<ticket>; racing keep() it can write [] and lose every kept report"
 ---
 
 # cockpit report liefert nur, was seit dem letzten Lesen kam, nicht alte Meldungen
@@ -33,7 +35,7 @@ review-gaps: "showReport (filter.ts:125): dropped the default all=false, its one
 ## Definition of Done
 
 - [x] Zweimal report auf dasselbe Ticket: der zweite Aufruf zeigt nur Neues (Test)
-  proof: core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:219 'a second report on the same ticket shows only what came since the first'; core/mod/builtin/jaira-cockpit/hooks/filter.ts:125 showReport filters seen, core/mod/builtin/jaira-cockpit/hooks/register.tsx:238 marks the shown ones seen
+  proof: core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:219 'a second report on the same ticket shows only what came since the first'; core/mod/builtin/jaira-cockpit/hooks/filter.ts:125 showReport filters seen, core/mod/builtin/jaira-cockpit/hooks/register.tsx:253 marks them seen
 - [x] Ein Parameter holt auf Wunsch auch die aelteren
   proof: core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:233 'all brings the reports already read back' and core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:259 (tool all: true); core/mod/builtin/jaira-cockpit/hooks/filter.ts:116 reportArgs
 - [x] Klasse 'noch nie gelesen': erster report zeigt alle gehaltenen Meldungen (Test)
@@ -46,6 +48,8 @@ review-gaps: "showReport (filter.ts:125): dropped the default all=false, its one
   proof: core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:356 case 'nothing new: one line, the older count and the all hint'
 - [x] Klasse 'sehr viele alte Meldungen': mehr als 10 gelesene, eine neue -> nur die neue; all zeigt hoechstens 10 (Test)
   proof: core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:358 'many old, one new: only the new one' and core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:359 'many old with all: never more than ten'
+- [x] Klasse 'Lesen waehrend eine Meldung ankommt': kein gehaltener Bericht geht verloren, der neue ist gezeigt oder bleibt ungelesen (Test)
+  proof: core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:396 'reading while a report arrives' (8 interleavings, all fail without the lock); core/mod/builtin/jaira-cockpit/hooks/register.tsx:201 locked() serializes keep() and the marking
 
 ## Options
 
@@ -63,3 +67,7 @@ review-gaps: "showReport (filter.ts:125): dropped the default all=false, its one
 - **2026-11-20 16:49 · Alexander Sacharov** — Interim rules from teamlead (Alex 20.11.2026, until TW5FE2 ships): DoD names the failure class (input classes: empty, very large, encoding/CRLF, paths with spaces, Windows, two processes at once, failure halfway; acceptance rule for heuristics); in-progress checks concurrency, error paths, unusual input, permissions, writes table tests over the class, greps sibling places, fixes the cause; findings name class+example; blockers only wrong result/data loss/crash/security; after a fix round test+hunt over the diff since last hunt only; 3 returns from one lane -> question to teamlead; close small review-gaps in the same round, pre-existing as 'note: pre-existing: ...'. Input classes for 0J88M5: never read; two sessions read the same ticket; cockpit restart between two reads; 0 new reports; very many old reports.
 - **2026-11-20 16:51 · Alexander Sacharov** — in-progress round 2 (interim rules): four categories checked. Concurrency: two sessions share the mark by design (store is per machine and project); reports() re-reads the store before writing and flags only the 'at' stamps it showed, so a report kept between read and write stays unseen — the store has no compare-and-set, so a write by keep() in the few ms between that re-read and the set can still be lost; same window keep() itself already has, not widened. Two reports with the same millisecond 'at' would be marked together — only possible when both were unseen and shown anyway. Error paths: a store failure throws into the hook's .catch, which passes the call on unchanged. Unusual input: 'report all K7P2QX', lower case, extra spaces parsed by reportArgs; a ticket literally named ALL is impossible (handles are 6 chars). Permissions: none touched. Sibling places: the report list now says how many per ticket are new (filter.ts listReports); the Ticket pane (/cockpit ticket) deliberately shows all and marks nothing — it is a view of the ticket, not a reading of news. Tests 188 pass, 1 fail = board.test.ts borderStyle, same on base.
 - **2026-11-20 16:52 · Alexander Sacharov** — critique: reports() in register.tsx has two ways to say 'all' (parameter + args); the tool call should build '<ticket> all' so reportArgs is the only parser; destructure { ticket, all } from reportArgs. Rest stands: seen flag on the report fits the existing Report shape in filter.ts, no new store key; the pane showing all is a recorded choice (note in-progress round 2).
+- **2026-11-20 16:57 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:240-244 - marking reports seen is a second unlocked writer of report:<project>:<ticket>. keep() (register.tsx:199-203, pre-existing) does get, delete, set; when reports() re-reads in the gap between keep's delete and set it gets [] and then writes [] over keep's [new, ...old], so EVERY kept report of the ticket is lost and /cockpit report says 'No reports kept'. Other interleavings drop just the newly arriving report, or write an empty list back under a key keep's TICKETS eviction just deleted (a ghost '0 report(s)' row that takes one of the 20 slots). Trigger: /cockpit report <id> or the report tool while a report for the same ticket arrives (same session via session.receive/prompt.submit, or another session of the project - the store is shared machine-wide). Before this change reports() only read the key. ran: scratch copy of the mod with a test racing $.command.run(typed('report K7P2QX')) against $.session.receive(second report) via Promise.all, claude plugin test - 12/12 delays (0-11 microtasks) and 30 microtasks end with 'No reports kept for K7P2QX', sequential control keeps both
+- **2026-11-20 16:57 · Alexander Sacharov** — bughunt: done at 91edd3a5 - 1 finding (1 change, 0 pre-existing) in 4 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/filter.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts core/release/notes/0J88M5.md
+- **2026-11-20 16:58 · Alexander Sacharov** — testing: sent back for the bughunt change finding (data loss). Class: any two read-modify-writes of one report key in this process interleave — keep()'s get/delete/set and reports()' re-read/set. Fix at the cause: one per-key lock in register.tsx that both go through; the marking writes nothing when the key is gone (no ghost row after eviction). Other processes sharing the store cannot be locked from the mod; that window is keep()'s own, pre-existing.
+- **2026-11-20 17:01 · Alexander Sacharov** — in-progress round 3: fixed the bughunt class at the cause — one in-process lock (register.tsx locked()) around keep() and the read+mark in reports(); the read and the mark now happen under the lock together, so the re-read and the 'at' set are gone (the shown reports are exactly the ones read). Race table test at 8 interleavings fails 8/8 without the lock, passes with it. Sibling writers checked: threads/carrying keys are other keys; session.start's unscoped cleanup touches only the old report:<ticket> format. Residual: another process on the same store is beyond the lock — keep()'s own pre-existing window.

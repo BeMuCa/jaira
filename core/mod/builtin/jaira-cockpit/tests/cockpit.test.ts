@@ -392,3 +392,25 @@ describe('report since the last read, by input class', () => {
     expect((await $.command.run(typed('report'))).text).toContain('K7P2QX  3 report(s), 1 new, last')
   })
 })
+
+describe('reading while a report arrives', () => {
+  // A read racing keep() at every interleaving: the new report is either
+  // shown by the read or still kept unseen after it, and no kept one is lost.
+  for (const delay of [0, 1, 2, 3, 5, 8, 11, 30]) {
+    test(`after ${delay} microtask(s)`, async ($, on) => {
+      session(on)
+      where(on, () => '/p')
+      await $.session.receive({ origin: { kind: 'peer' }, text: 'first: ticket K7P2QX moved to critique' })
+      const later = (async () => {
+        for (let i = 0; i < delay; i++) await Promise.resolve()
+        return $.session.receive({ origin: { kind: 'peer' }, text: 'second: ticket K7P2QX moved to testing' })
+      })()
+      const [shown] = await Promise.all([$.command.run(typed('report K7P2QX')), later])
+      const next = (await $.command.run(typed('report K7P2QX'))).text ?? ''
+      expect(String(shown.text).includes('second') || next.includes('second')).toBe(true)
+      const every = (await $.command.run(typed('report K7P2QX all'))).text ?? ''
+      expect(every).toContain('first')
+      expect(every).toContain('second')
+    })
+  }
+})
