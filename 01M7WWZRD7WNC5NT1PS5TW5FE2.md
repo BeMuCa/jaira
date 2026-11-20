@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T18:06:57Z
+updated-at: 2026-11-20T18:07:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5618
 claimed-at: 2026-11-20T18:03:30Z
@@ -37,7 +37,7 @@ outcome-resolves: "DoD 1-7: 15-pre-process.md:38, 20-in-progress.md:29 und :66-1
 review-summary: "none"
 round: 10
 review-gaps: none
-test-verdict: "pass: go build ./... and go test -race -count=1 ./... RC=0 at 9fa8ce3c; DoD 1-7 proofs opened in the tree; in-progress twins byte-equal, manifest 0b70615e = sha256 at HEAD; change writes nothing (prompt text only)"
+test-verdict: "pass: follow-up round - go build ./... ok; go test -race -count=1 ./core/lane/... ./core/shipped ./core/release/... RC=0 (packages the diff since 9fa8ce3c touches); DoD 1-7 in the tree, proof lines re-checked after the edit; .jaira/lanes in-progress/testing/review byte-equal to builtin, all three hashes in shipped.sha256; a fresh 'jaira init' from this tree ships the review: prefix in review.md and in-progress.md; prompts only - nothing writes, so no failure path or two-writer case"
 hunt-verdict: "pass: bughunt done at 9fa8ce3c, 0 change, 0 pre-existing (earlier steal-note finding fixed in 9fa8ce3c)"
 review-verdict: "No blocker. All seven DoD items are met in the prompts; builtin and board copies are identical; go test ./core/shipped/... ./core/lane/... ./core/role/... passes. The return-counting rule rests on note conventions rather than recorded data - it works as long as each sending lane writes its note last, which the critique, optimize and testing prompts already require and the review prompt only asks for."
 review-round: 9
