@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:05:20Z
+updated-at: 2026-11-20T17:05:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46134
 claimed-at: 2026-11-20T16:42:22Z
@@ -30,7 +30,7 @@ outcome-why: "Eine von jaira geaenderte .gitignore erscheint in jedem neuen Work
 outcome-resolves: Neue Worktrees eines Repos mit privatem Board bleiben sauber; kein Wegraeumen der .gitignore-Zeile von Hand mehr.
 review-summary: "none"
 round: 3
-review-gaps: "nichts entfernt. Geprueft: gitPlace vs. commonGitDir (core/ticket/store.go:878) — verschieden, gitPlace braucht --show-prefix im selben Aufruf; Lock aus Store.lock wiederverwendet statt nachgebaut (ticket.LockFile); RemoveLanesIgnore/AddLanesIgnore nutzen jetzt dieselben appendEntry/dropEntry (vorher zwei Kopien). Gelassen: Rueckgabewerte von MoveIgnore/AddIgnore in moveIgnore (update.go) verworfen, weil InGitignore/Ignored vorher schon entschieden haben; mehrere gitPlace-Aufrufe in init/update — kein heisser Pfad."
+review-gaps: "none: Fix-Diff 394a544a ist 5 Zeilen Code plus Test; doppelte Pruefung aus dem added-Zweig entfernt, nichts weiter uebrig"
 test-verdict: "pass: go test -race ./... gruen (RC=0, Cache geleert); DoD 1-7 an den genannten Tests im Baum geprueft; Binary: init in Repo mit eigener .gitignore -> .gitignore unveraendert, Eintrag in .git/info/exclude; info/ schreibgeschuetzt -> Warnung, kein Halbzustand, init sagt nicht 'privat' (rc 0 wie bisher bei .gitignore-Fehler); 3x init parallel -> Eintrag genau einmal"
 hunt-verdict: "fail: bughunt done at 44007130, 1 change: update verschiebt die .gitignore-Zeile auch auf einem Board mit getrackten .jaira-Dateien (update.go:344)"
 ---
