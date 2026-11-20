@@ -19,11 +19,13 @@ context: |-
 definition-of-done: "spawn.sh ruft .jaira/worktree-env auf, wenn die Datei existiert und ausfuehrbar ist, und haengt ihre Ausgabe an die .env des worktree"
 tags:
   - cli
-blocked-by: []
-related: []
+blocked-by:
+  - 01M7WWYKK8CMJSM2S45WJDDCEZ
+related:
+  - 01M7WWYKK8CMJSM2S45WJDDCEZ
 commits: []
 created-at: 2026-09-16T06:46:09Z
-updated-at: 2026-09-16T07:50:16Z
+updated-at: 2026-11-20T16:41:19Z
 updated-by: Alexander Sacharov
 ---
 
