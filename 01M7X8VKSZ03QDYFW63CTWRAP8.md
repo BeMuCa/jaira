@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:03:53Z
+updated-at: 2026-11-20T22:03:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-44888
 claimed-at: 2026-11-20T22:03:49Z
@@ -34,7 +34,10 @@ outcome-why: "Die Arbeitsweise vom 20.11.2026 stand nur im lokalen Gedaechtnis e
 outcome-resolves: Die Regeln reisen mit den ausgelieferten Rollen; jaira update --roles bringt sie zu jedem Nutzer.
 review-summary: "Ships a new read-only role jaira-role-signoff: per ticket in signoff it prints one status line (DoD x/y, tests from the CI run of exactly the branch head commit via 'gh run list --commit <sha> --workflow', bug hunt on that head, blockers, review verdict, noted returns), a table that marks every open note 🔴/🟡/⚪/🔵, one bold recommendation, and the accept/give-back lines ready to paste; five return rules end endless rounds (after two noted returns 🟡 edges go into a ready follow-up 'jaira create --follows'). The teamlead now re-reads 'jaira show' and 'gh pr list' before any list of what waits, and reports signoff/human tickets in that shape, pointing at the role for the rules. worker, dispatcher and jaira-role-pr run the project's CI gates locally before a push. README, the German how-to page, role_test wantRoles, shipped.sha256 and release note TWRAP8 follow."
 round: 4
-review-gaps: "none: 4a0033ec entfernt den Parser-Weg (Ref/grep) wieder, nichts uebrig geblieben; Teamlead-Verweis auf eine Zeile gekuerzt"
+review-gaps: |-
+  note: jaira-role-signoff/SKILL.md:55 takes the branch as feat/<id lower case>, but branches here are not always named so (fix/nh788q-windows-rename exists) and may exist only on origin; git rev-parse then fails, $head is empty, and gh run list --commit "" returns the newest runs of other branches - the headSha comparison the role asks for still yields ?, so no false ✅, but the role should say how to find the branch (git branch -a --list "*<id>*") and that an empty head is ?
+  note: shipped.sha256 gains 4 intermediate hashes each for jaira-teamlead and jaira-role-signoff SKILL.md that never shipped; harmless (go test ./core/shipped green, same pattern as earlier tickets), only the last line per file is a real release
+  note: this ticket's own status line will show bug hunt on HEAD ❌ (last hunt done at 4a0033ec, head is dae16319) - that is the teamlead decision of 21:58 (no new hunt after the one-line fix), not a missed step
 test-verdict: "pass: Runde 4 (dae16319): go build ./... ok, go test core/role + core/shipped RC=0; gh run list --commit <sha> --workflow ci --json conclusion,headSha liefert genau den Lauf dieses Commits (an master geprueft), glab ci list --sha existiert."
 hunt-verdict: "pass: Runde-3-Fund (bughunt done at 4a0033ec) als Klasse in dae16319 behoben: jeder Status an den Kopf-Commit gebunden, fremder/kein Lauf = '?'. Kein neuer Hunt - Entscheidung Teamlead 21:58; weitere Funde dieser Klasse gehen als note an signoff."
 question: ""
