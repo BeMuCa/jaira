@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T18:03:41Z
+updated-at: 2026-11-20T18:03:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-87225
 claimed-at: 2026-11-20T17:38:56Z
@@ -61,7 +61,7 @@ review-check: "1. cd into a scratch clone of a GitHub repo you own, with an open
 - [x] Eingabeklasse PR existiert schon: kein zweiter PR, direkt zur Kommentarrunde
   proof: core/role/builtin/jaira-role-pr/SKILL.md:288 One listed -> straight to Answering review comments; the setting does not change that step
 - [x] Eingabeklasse Fork vs. gleiches Repo: PR geht an das Ziel aus 'Which repository it goes to', die Kommentarrunde fragt dasselbe Repo
-  proof: core/role/builtin/jaira-role-pr/SKILL.md:376 the round runs against <owner/repo> as settled in 'Which repository it goes to', never origin; pr-round.sh takes owner/repo explicitly, open names --repo and --base; core/role/pr_round_test.go TestPROpenRunsTheGateFirst (pr create --repo up/r --base master)
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:394 the round runs against <owner/repo> as settled in 'Which repository it goes to', never origin; pr-round.sh takes owner/repo explicitly, open names --repo and --base; core/role/pr_round_test.go TestPROpenRunsTheGateFirst (pr create --repo up/r --base master)
 - [x] Eingabeklasse gh/glab nicht angemeldet oder ohne Scope: das Skript bricht mit klarer Meldung und Exit != 0 ab, nichts halb erledigt verschwiegen
   proof: core/role/pr_round_test.go TestPRRoundRefusesBeforeItWrites (not signed in -> exit 3, no write)
 - [x] Eingabeklasse Kommentar ohne Thread (PR-Konversation, Review-Body): wird beantwortet, aber nicht als resolved gemeldet
