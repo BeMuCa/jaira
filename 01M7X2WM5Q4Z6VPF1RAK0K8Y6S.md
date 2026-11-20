@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T23:01:06Z
+updated-at: 2026-11-20T23:01:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -29,7 +29,7 @@ outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, w
 review-summary: none
 round: 3
 review-gaps: "none - Runde 2 aenderte nur pipefail und eine Zuweisung in hashed(); nichts zu kuerzen"
-test-verdict: ""
+test-verdict: "pass: go vet + go test ./... RC=0 auf 9c785040; --check auf dem echten Repo exit 0 (34 Tags), fehlende Tag-Zeile exit 1, flacher Klon exit 1, unlesbarer Blob -> Generator exit 128 statt 0 (TestGenerateFailsOnAnUnreadableBlob); Aenderung schreibt nichts, kein Zwei-Schreiber-Fall"
 hunt-verdict: ""
 ---
 
