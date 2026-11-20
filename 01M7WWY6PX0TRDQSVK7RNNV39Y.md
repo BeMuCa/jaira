@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:11:47Z
+updated-at: 2026-11-20T17:14:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46134
 claimed-at: 2026-11-20T16:42:22Z
@@ -60,7 +60,7 @@ review-check: "1. cd $(mktemp -d) && git init -q && jaira init  2. git status --
 - [x] Zwei jaira-Aufrufe gleichzeitig: AddIgnore/RemoveIgnore/MoveIgnore schreiben info/exclude unter einer Sperrdatei daneben (ticket.LockFile) und per Temp-Datei + Rename; nach parallelen AddIgnore steht der Eintrag genau einmal darin (Test)
   proof: core/board/exclude_test.go TestParallelAddIgnoreWritesTheEntryOnce (-count=30 gruen)
 - [x] Windows: der Pfad von git (C:/... mit Schraegstrichen) wird zu einem gueltigen Dateipfad; CRLF-Zeilen werden erkannt und beim Entfernen bleibt der Rest der Datei byteweise erhalten (Test)
-  proof: core/board/exclude_test.go TestParsePlaceReadsWhatGitPrints, TestAddAndRemoveIgnoreOverEveryShapeOfExclude/CRLF
+  proof: core/board/exclude_test.go TestParsePlaceReadsWhatGitPrints (Windows-Laufwerkspfad auf windows-latest, git<2.31-Ausgabe), TestAddAndRemoveIgnoreOverEveryShapeOfExclude/CRLF
 
 ## Options
 
