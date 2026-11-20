@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T22:53:02Z
+updated-at: 2026-11-20T22:53:06Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -37,7 +37,8 @@ claimed-at: 2026-11-20T22:45:03Z
   proof: core/role/shipped_test.go TestInstallReplacesTheV052CockpitBoard (fails on the old manifest, passes on the new)
 - [x] Eingabeklassen: Datei in einem Tag geloescht und spaeter wieder angelegt, CRLF-Version derselben Datei, Tag ohne die Datei, Merge-Konflikt im Manifest
   proof: core/shipped/history_test.go TestCheckHoldsTheManifestAgainstEveryTag (deleted+recreated, CRLF, conflict markers, CRLF manifest), TestCheckFailsWithoutTags, TestCheckFailsOnAnUnreadableTag; tag without the file = v0.2.0 in the fixture
-- [ ] .gitattributes setzt 'core/shipped/shipped.sha256 merge=union', sodass zwei PRs, die beide Zeilen anhaengen, nicht mehr in Konflikt geraten (heute bei jedem PR: #147, feat/tw5fe2)
+- [x] .gitattributes setzt 'core/shipped/shipped.sha256 merge=union', sodass zwei PRs, die beide Zeilen anhaengen, nicht mehr in Konflikt geraten (heute bei jedem PR: #147, feat/tw5fe2)
+  proof: .gitattributes core/shipped/shipped.sha256 merge=union; core/shipped/history_test.go TestManifestMergesWithoutConflict (fails without merge=union)
 
 ## Options
 
