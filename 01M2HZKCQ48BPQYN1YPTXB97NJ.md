@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:41:01Z
+updated-at: 2026-11-20T23:41:05Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -39,7 +39,7 @@ review-summary: "none"
 round: 9
 review-gaps: "none removed. note: known limit: under .jaira/pr none, pr-gate binds a person's acceptance to the ticket, not to its commits - a commit made after the ticket reached done, naming that ticket or any other ticket already in done or the logbook, lands without anyone seeing it (Teamlead 21.11. 00:15: known limit, signoff decides). note: known limit: the merge check needs git >= 2.38 (merge-tree --write-tree); older git and shallow clones fail closed"
 test-verdict: "pass: go vet + go test -race ./... RC=0 at 01e28a76 (ae1a72ee only reap.sh + its test, core/role green); DoD 1-8 checked in the tree; scratch board: none ticket not done -> exit 3, unnamed commit -> exit 3, -s ours merge held, non-ff push refused by git, parallel 'jaira update' -> paragraph once"
-hunt-verdict: "change (round 6), fixed same round: default_base used symbolic-ref --short, which a local branch named origin/X turns into remotes/origin/X; now full ref names throughout (reap_test covers it)"
+hunt-verdict: "pass (round 7 at ae1a72ee): 0 findings"
 claimed-by: DESKTOP-RFTCH11-29927
 claimed-at: 2026-11-20T23:29:25Z
 review-verdict: "The diff meets all 8 DoD items; no blocker. Tests green here (go vet + go test for board, gitrepo, settings, internal/cli, role, shipped); checked by hand on a scratch board with the branch binary: roles list says none, jaira update writes the paragraph into both files, changing the file to 'None' makes validate report the block stale. Three notes, one of them the known limit the teamlead decided on."
