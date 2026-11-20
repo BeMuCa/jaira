@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZRD7WNC5NT1PS5TW5FE2
 title: "Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels"
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:52:58Z
+updated-at: 2026-11-20T19:53:02Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-36878
 claimed-at: 2026-11-20T19:50:05Z
@@ -35,7 +35,7 @@ outcome-what: "Release-Note-Zeile 7 in zwei '- '-Zeilen geteilt; 27-testing.md (
 outcome-why: "Rueckgabe aus signoff 19:49: Zeilen-Scan liest zwei Aenderungen in einer Zeile als zwei unvollstaendige; git diff auf verschwundenen Commit bricht ab."
 outcome-resolves: "DoD 4/6: core/release/notes/TW5FE2.md:7-8, 27-testing.md:132-135; Zwilling gleich; go test core/shipped core/lane core/release ok. Vier Kategorien: Fehlerpfad (Commit fehlt) ist der Fix selbst; sonst nur Prompt-Text."
 review-summary: "none"
-round: 14
+round: 15
 review-gaps: none
 test-verdict: "fail: suite green (RC=0, -race core/shipped lane release role), twins equal, notes 10 single lines; but bughunt change: cat-file -e passes after rebase"
 hunt-verdict: "fail: 1 change - rebase fallback check passes on a rebased-away commit"
