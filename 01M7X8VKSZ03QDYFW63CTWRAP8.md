@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T21:49:56Z
+updated-at: 2026-11-20T21:50:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16592
 claimed-at: 2026-11-20T20:04:03Z
@@ -77,3 +77,4 @@ hunt-verdict: "fail: bughunt done at c02bb7ea, 2 change (test-verdict in show ni
 - **2026-11-20 21:46 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-signoff/SKILL.md:106-110 - return rule 2 counts earlier returns only by notes starting 'Given back from signoff:', but only the role's own paste line and the cockpit write that note; a give-back done in the TUI or web board (internal/tui/signoff.go offers only accept and follow-up, a return is a plain core/move move) leaves no such note, so the count stays 0 and rule 2 keeps recommending 'give back' forever - the endless rounds the rule exists to end; the 'round' field counts every send-back incl. critique/testing loops, so it is no drop-in either; ran: grep -rn 'Given back' over core/ internal/ (only cockpit hooks/tests and this role), read internal/tui/signoff.go:151
 - **2026-11-20 21:46 · Alexander Sacharov** — bughunt: done at c02bb7ea - 2 findings (2 change, 0 pre-existing) in 8 modules, first hunt; concurrency, error paths, input, permissions checked; files: README.md core/release/notes/TWRAP8.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-role-signoff/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/role/role_test.go core/shipped/shipped.sha256 docs/how-to-work-with-jaira.html
 - **2026-11-20 21:47 · Alexander Sacharov** — testing: Suite gruen, Funktion an einer Scratch-Installation geprueft; Bughunt laeuft als Hintergrund-Agent, hunt-verdict folgt.
+- **2026-11-20 21:50 · Alexander Sacharov** — testing: zurueck wegen der 2 bughunt-change-Funde. Fix (Klasse, nicht Beispiel): (1) role-signoff liest test-/hunt-verdict aus refs/jaira/tickets/<ULID>:<ULID>.md - dort landet jeder Lane-Write; die Kopie auf dem Branch ist meist aelter, weil Lanes ohne Code nichts committen (ausprobiert: git show feat/twrap8:<ticket> hatte kein test-verdict). Nicht gefunden = '?', nie ✅. Teamlead verweist darauf. (2) Rueckgabe-Zaehlung: Notes 'Given back from signoff:' sind nur eine Untergrenze; round>1 ohne passende Notes = unbekannt -> Auswahlfrage an die Person statt Raten. Die Ursache (Board-TUI schreibt beim Zurueckschieben aus signoff keine Note) liegt im Binary, nicht in den Rollen - fuer die Person: eigenes Ticket wert.
