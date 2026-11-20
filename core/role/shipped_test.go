@@ -168,3 +168,50 @@ func TestInstallDryRunWritesNothing(t *testing.T) {
 		t.Error("a dry run touched the edited file")
 	}
 }
+
+// A cockpit hooks module exactly as v0.5.2 installed it. The manifest lost this
+// version in a hand-merged conflict (0K8Y6S), and every 'jaira update --roles'
+// on an untouched v0.5.2 install skipped it as hand-edited. The hash pins the
+// fixture to what the v0.5.2 tag carried: git show v0.5.2:<key> | sha256sum.
+func TestInstallReplacesTheV052CockpitBoard(t *testing.T) {
+	const (
+		modID = "jaira-cockpit"
+		rel   = "hooks/board.ts"
+		v052  = "a06a3c1cb1b417918cf78e6995583cd472df472db843ae09cc5a67ca597cbf8f"
+	)
+	old, err := os.ReadFile(filepath.Join("testdata", "jaira-cockpit-hooks-board-v0.5.2.ts"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := shipped.Line(modKey(modID, rel), old); got != v052+"  "+modKey(modID, rel) {
+		t.Fatalf("the fixture is not the file v0.5.2 shipped: %s", got)
+	}
+	want, err := mod.File(modID, rel)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(old) == string(want) {
+		t.Fatal("the fixture equals the current file; it must be an older version")
+	}
+
+	dir := t.TempDir()
+	if _, err := install(dir, false, true, false); err != nil {
+		t.Fatal(err)
+	}
+	dst := filepath.Join(dir, modID, filepath.FromSlash(rel))
+	if err := os.WriteFile(dst, old, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	results, err := install(dir, false, true, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, res := range results {
+		if res.Path == dst && res.Action != Updated {
+			t.Errorf("%s: got %s, want %s", res.Path, res.Action, Updated)
+		}
+	}
+	if got, _ := os.ReadFile(dst); string(got) != string(want) {
+		t.Error("the v0.5.2 board.ts was not replaced")
+	}
+}
