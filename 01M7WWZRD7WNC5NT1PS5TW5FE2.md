@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZRD7WNC5NT1PS5TW5FE2
 title: "Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels"
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T16:50:23Z
+updated-at: 2026-11-20T16:50:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-42185
 claimed-at: 2026-11-20T16:42:15Z
@@ -35,7 +35,7 @@ outcome-what: "Eingebaute Lanes pre-process, in-progress, testing und die Rolle 
 outcome-why: "Review- und bughunt-Schleifen liefen 10-24 Runden, weil jede Runde den Nachbarfall eines nur am Beispiel reparierten Fehlers fand und die vier Kategorien vor dem Code nie gefragt wurden."
 outcome-resolves: "DoD 1-4: pre-process 15-pre-process.md:38, in-progress 20-in-progress.md:29, bughunt SKILL.md:104 und testing 27-testing.md:102, eingebettet mit shipped.sha256 und core/release/notes/TW5FE2.md"
 review-summary: "none"
-round: 2
+round: 3
 review-gaps: "none: kein Code, nur Prompts; die vier Kategorien stehen jetzt auch in pre-process und in-progress - bewusst, jede Lane liest nur ihren eigenen Prompt; keine toten Stellen"
 test-verdict: "fail: DoD 5-7 (Interim-Regeln des Teamleads, nachgetragen) sind noch nicht in den Lanes; Suite gruen (go test -race ./... RC=0)"
 ---
