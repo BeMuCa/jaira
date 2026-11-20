@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZRD7WNC5NT1PS5TW5FE2
 title: "Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,9 +25,24 @@ related:
   - 01M67RWZDWBS8E44Z3KGXKS048
   - 01M67K7JAF6R9N2VSPEW3CBCN6
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
-commits: []
+commits:
+  - c69471d0d43d10a5f8ef4d44ce628d2648b7ce92
+  - ab6eeb90a89208b3abb6dc45b7387b8cc49be83c
+  - c20a3e067f09ddfef15983bf60239f382170c986
+  - e101fb6433f2bf6623720d076c07e670779cb519
+  - ad6a6ffc1d82cb2d1d3d281196ac1fea496372a3
+  - e12f36d57de61590ab73bf9d99655eeb7b6ec2cf
+  - 56d0a3b8807805017ae00054e6aaf72265ac1bed
+  - 22a9fc778db5d3e44e8561bebad17e7dc4659d54
+  - 9fa8ce3c632aec0cb83d30dbdb512dd97416df53
+  - d0cb1f49041205cbff336e1dc945791b9a617af5
+  - c3e5a7dfb1903b13efd5e72f078c56df0563398f
+  - 10b38a7ad9fe5560f1b0b3b3b9ad877d7d54717f
+  - 08c670e2f8d8e44023e944937cc53be34d9d9b90
+  - 55d334e238915c2ad15d6b5cc57a83581ea9b7c8
+  - 0d322bbf7c2268b7cc19b7a53a264d7a56e82619
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:53:28Z
+updated-at: 2026-11-20T19:54:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-36878
 claimed-at: 2026-11-20T19:50:05Z
@@ -170,3 +185,4 @@ Empfehlung: 2 - kein Blocker, die Wirkung zeigt sich erst an kuenftigen Tickets,
 - **2026-11-20 19:52 · Alexander Sacharov** — bughunt: done at 55d334e2 - 1 finding (1 change, 0 pre-existing) in 5 modules, follow-up hunt since 08c670e2; concurrency, error paths, input, permissions checked (diff: testing rebase fallback, release-note split into two single lines, manifest line c5cc9c74 = sha256 of 27-testing.md at HEAD; twins byte-equal; ran: go test ./core/shipped/... ./core/lane/... ./core/release/... exit 0; no new files since the last round); files: .jaira/lanes/in-progress.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md core/lane/builtin/15-pre-process.md core/lane/builtin/20-in-progress.md core/lane/builtin/27-testing.md core/lane/builtin/40-review.md core/release/notes/TW5FE2.md core/role/builtin/jaira-role-bughunt/SKILL.md core/shipped/shipped.sha256
 - **2026-11-20 19:52 · Alexander Sacharov** — testing: class: the follow-up round's 'is the last hunt's commit still usable' check differs from the hunt's; example: git cat-file -e passes on a rebased-away commit (reflog), diff then lists upstream's files; fix: git merge-base --is-ancestor <commit> HEAD, same as jaira-role-bughunt/SKILL.md
 - **2026-11-20 19:53 · Alexander Sacharov** — back: testing, round 15
+- **2026-11-20 19:53 · Alexander Sacharov** — critique: none - eine Pruefung durch die des bughunt-Skills ersetzt, kein neues Muster
