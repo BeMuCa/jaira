@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-20T22:54:20Z
+updated-at: 2026-11-20T22:54:24Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -40,7 +40,7 @@ round: 2
 - [x] Ein Test in core/board/announce_test.go haelt den Satz fest, dass auf einem ungeteilten Board keine Ticketdatei mitreist und der Code-Commit allein geht
   proof: TestAgentNoteSaysTheTicketCannotRideOnAnUnsharedBoard
 - [x] core/release/notes/SDBCT5.md nennt die Aenderung als eine Zeile
-  proof: core/release/notes/SDBCT5.md:1
+  proof: core/release/notes/SDBCT5.md:1-2
 - [x] Die Agent-Bloecke dieses Repos (CLAUDE.md, AGENTS.md) sind mit dem neuen Block regeneriert
   proof: CLAUDE.md:131, AGENTS.md (regenerated with 'jaira update' from this build)
 - [x] Die jaira-Rolle (core/role/jaira/SKILL.md) traegt denselben Vorbehalt wie der Block
