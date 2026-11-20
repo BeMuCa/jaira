@@ -25,15 +25,15 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:35:23Z
+updated-at: 2026-11-20T22:37:09Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
 outcome-what: "jaira-role-signoff findet die Branch des Tickets ueber den Handle als Namenssegment und waehlt unter lokalen und remote Kopien den Commit, zu dem alle anderen fuehren; divergiert = ?"
 outcome-why: "signoff-Rueckgabe: Branches heissen nicht immer feat/<id>; bughunt: lokal kann hinter remote liegen"
 outcome-resolves: "Rueckgabe aus signoff 22:27 (🟡 Branchname) und bughunt 22:32"
-review-summary: "none"
-round: 6
+review-summary: "core/role/builtin/jaira-teamlead/SKILL.md:216 still says 'or more than one' branch makes the commit unknown; since d4da7f7b several copies are fine when one leads - say 'two that diverged'"
+round: 7
 review-gaps: "nothing removed: the change is one lookup block plus a pointer in the teamlead; left the intermediate shipped.sha256 lines (already noted by review 22:04)"
 test-verdict: "pass: go build ./... and go test ./core/... green (RC=0); DoD 1-4 unchanged, branch lookup run: feat/twrap8 and fix/twrap8-x found, feat/twrap8x not, unknown handle gives empty branch and git rev-parse exits non-zero -> '?'; the change writes nothing"
 hunt-verdict: "change: 1 finding at a1b61158 - local branch taken over its remote even when behind; fixed in this round"
@@ -105,3 +105,4 @@ review-check: |-
 - **2026-11-20 22:32 · Alexander Sacharov** — bughunt: done at a1b61158 - 1 finding (1 change, 0 pre-existing) in 3 files read as diff since 4a0033ec, follow-up hunt, no new files; concurrency, error paths, input, permissions checked; go test ./core/role ./core/shipped green; files: .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md README.md core/release/notes/TWRAP8.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-role-signoff/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/role/role_test.go core/shipped/shipped.sha256 docs/how-to-work-with-jaira.html
 - **2026-11-20 22:33 · Alexander Sacharov** — testing: zurueck wegen bughunt 22:32 (lokal hinter remote -> alter Kopf). Klasse: Kandidaten-Refs nicht nach Abstammung verglichen. Fix: alle passenden Refs lokal+remote, Kopf = der Commit, von dem alle anderen Vorfahren sind; divergiert = '?'. Loest auch origin+upstream auf demselben Commit (keine zwei Kandidaten mehr). Nach Teamlead-Entscheidung 21:58 (Funde dieser Klasse keine weitere Schleife): danach Testlauf, kein neuer Hunt, direkt review.
 - **2026-11-20 22:35 · Alexander Sacharov** — in-progress: Lookup nach Abstammung an Scratch-Repo (bare + 2 Klone) geprueft: lokal hinter remote -> remote-Kopf, lokal voraus -> lokal, divergiert -> leer/'?', kein Ref -> '?', origin+up auf gleichem Commit -> ein Kopf.
+- **2026-11-20 22:35 · Alexander Sacharov** — critique: teamlead-Verweis an die neue Regel angleichen ('mehr als eine' -> 'zwei divergierte Kopien'). Lookup selbst bleibt so: einfacher geht es nicht ohne Abstammungsvergleich.
