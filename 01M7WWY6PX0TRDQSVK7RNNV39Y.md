@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T19:18:58Z
+updated-at: 2026-11-20T19:19:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-63629
 claimed-at: 2026-11-20T18:32:27Z
@@ -152,3 +152,4 @@ Warum: Die Notes sind seltene Randfaelle oder bewusste Entscheidungen (git<2.31,
 Empfehlung: 2 - der Lesefehler-Fall ist praktisch kaum erreichbar und war schon vorher so, die uebrigen Notes sind bewusst entschieden.
 - **2026-11-20 19:18 · Alexander Sacharov** — decision: 1) Zurueckgeben und appendEntry haerten, damit ein unlesbares info/exclude nie ueberschrieben wird
 - **2026-11-20 19:18 · Alexander Sacharov** — Given back from signoff: 1) Zurueckgeben und appendEntry haerten, damit ein unlesbares info/exclude nie ueberschrieben wird
+- **2026-11-20 19:19 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
