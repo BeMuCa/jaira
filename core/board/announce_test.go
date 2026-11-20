@@ -246,4 +246,19 @@ func TestAgentNoteSaysTheTicketCannotRideOnAnUnsharedBoard(t *testing.T) {
 			t.Errorf("agentNote does not contain %q", want)
 		}
 	}
+	// The jaira role states the same rule at greater length; a session that
+	// reads the role and not the block must meet the same caveat.
+	skill, err := os.ReadFile(filepath.Join("..", "role", "jaira", "SKILL.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	flatSkill := strings.Join(strings.Fields(string(skill)), " ")
+	for _, want := range []string{
+		"This rule and the next hold on a shared board only",
+		"there is no ticket file to add or commit: commit the code alone",
+	} {
+		if !strings.Contains(flatSkill, want) {
+			t.Errorf("core/role/jaira/SKILL.md does not contain %q", want)
+		}
+	}
 }
