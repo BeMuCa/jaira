@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T18:04:39Z
+updated-at: 2026-11-20T18:04:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-87225
 claimed-at: 2026-11-20T17:38:56Z
@@ -33,12 +33,7 @@ outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten d
 outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
 review-summary: "none"
 round: 7
-review-gaps: |-
-  note: pr-round.sh comments lists every conversation comment and review body each round, the agent's own earlier answers included - not answering twice there rests on the agent reading the list (DoD 10 covers threads only)
-  note: the Copilot request uses the REST login copilot-pull-request-reviewer[bot]; tested only against the fake gh in core/role/pr_round_test.go, never against live GitHub
-  note: reply checks then answers in two calls - two sessions on the same thread at once could each post the answer
-  note: the gate 'every ticket on the branch is in done' lives only in jaira-role-pr/SKILL.md; nothing in the binary checks it
-  note: this repository's own CLAUDE.md still says agents never open PRs - correct while this board has no .jaira/pr, but the two texts must be kept apart if one is ever written
+review-gaps: "removed number=0 placeholder in pr-round.sh open (number is validated only where it exists); left: reply's thread read-back (dedupe) and comment's conversation read-back share said/first_of but keep their own list/delete calls - GraphQL thread vs REST issue API, one helper would only forward; gitrepo.HandlesInSubjects mirrors cockpit board.ts ticketsNamed (TypeScript, cannot call Go); pr-gate's handle x ticket loop is O(n*m) over one branch's handles, not worth a map"
 test-verdict: "pass: go build + go test -count=1 -race ./... RC=0 auf 5db2eee4; DoD 1-11 im Baum geprueft; roles list auf Scratch-Board (default, agent+copilot aus CRLF, Shell-Zeichen -> leer, unlesbare Datei -> person); pr-round.sh threads/comments live gegen BeMuCa/jaira rc=0, falsche Nummer rc=1 ohne Schreiben; reply/request nur gegen gh-Stub (live wuerde auf echten PR schreiben); roles list schreibt nichts"
 hunt-verdict: "pass: bughunt done at 5db2eee4, 0 change, 0 pre-existing (Runde 3; Runden 1-2: 4 change, alle behoben)"
 review-verdict: "All 11 DoD items are met by the diff; settings, roles list, pr-round.sh and the role texts read whole show no defect. Related tests pass (go test ./core/settings ./core/role ./internal/cli). Only uncertainty: the Copilot reviewer request has not been tried against real GitHub."
