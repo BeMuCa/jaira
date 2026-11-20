@@ -29,8 +29,12 @@ func newInitCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "init",
 		Short: "Prepare this repository for jaira",
-		Long: `Creates .jaira/ with a tickets directory, plus a .gitignore so ephemeral
-session and lock state is never committed. Safe to run more than once.
+		Long: `Creates .jaira/ with a tickets directory. Safe to run more than once.
+
+A new board is private: .jaira/ is excluded in .git/info/exclude, which every
+worktree of the repository shares and which never shows up in a diff, so
+init leaves the tracked .gitignore alone. Outside a git repository the entry
+goes into .gitignore instead. 'jaira share' publishes the board.
 
 A board that is already in git — a fresh clone of a shared board — is set up
 on this machine and keeps its .gitignore exactly as it is: it stays shared.`,
@@ -114,16 +118,16 @@ on this machine and keeps its .gitignore exactly as it is: it stays shared.`,
 				fmt.Fprintf(os.Stderr, "jaira: warning: %s\n", w)
 			}
 			if p.IgnoreErr != nil {
-				fmt.Fprintf(os.Stderr, "jaira: warning: could not write .gitignore: %v\n", p.IgnoreErr)
+				fmt.Fprintf(os.Stderr, "jaira: warning: could not write %s: %v\n", board.IgnoreFileName(s.Root), p.IgnoreErr)
 			} else if p.Ignored {
-				fmt.Fprintf(cmd.OutOrStdout(), "This board is private: .jaira/ is gitignored, so nobody else sees it.\n")
+				fmt.Fprintf(cmd.OutOrStdout(), "This board is private: .jaira/ is excluded in %s, so nobody else sees it.\n", board.IgnoreFileName(s.Root))
 			}
 			if p.NoteErr != nil {
 				fmt.Fprintf(os.Stderr, "jaira: warning: could not update an agent instruction file: %v\n", p.NoteErr)
 			} else if line := announceLine(p.Notes); line != "" {
 				fmt.Fprint(cmd.OutOrStdout(), line)
 			}
-			// Said from .gitignore, not from why init left it alone: a board in
+			// Said from the ignore files, not from why init left it alone: a board in
 			// git can still be ignored — after 'share --undo', or in a clone of
 			// one whose ignore line was committed. Neither applies when writing
 			// the ignore entry failed; the warning above already says so.

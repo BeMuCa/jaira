@@ -1,0 +1,192 @@
+package board
+
+import (
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"sync"
+	"testing"
+)
+
+// newRepo is a git repository at a path with a space in it, as on a Windows
+// home directory, and its info/exclude.
+func newRepo(t *testing.T) (root, exclude string) {
+	t.Helper()
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not installed")
+	}
+	root = filepath.Join(t.TempDir(), "my repo")
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := exec.Command("git", "-C", root, "init", "--quiet", ".").CombinedOutput(); err != nil {
+		t.Fatalf("git init: %v\n%s", err, out)
+	}
+	return root, filepath.Join(root, ".git", "info", "exclude")
+}
+
+func count(s, line string) int {
+	n := 0
+	for _, l := range strings.Split(s, "\n") {
+		if strings.TrimSpace(l) == line {
+			n++
+		}
+	}
+	return n
+}
+
+// Every shape info/exclude is found in: AddIgnore leaves exactly one entry and
+// the person's own lines as they were; RemoveIgnore gives the file back.
+func TestAddAndRemoveIgnoreOverEveryShapeOfExclude(t *testing.T) {
+	const own = "*.log"
+	cases := []struct {
+		name    string
+		prepare func(t *testing.T, exclude string) // nil: as git init left it
+		want    string                             // the file after Add then Remove; "-" for: keep what was there
+	}{
+		{"as git init left it", nil, "-"},
+		{"missing", func(t *testing.T, ex string) { os.Remove(ex) }, ""},
+		{"no info directory", func(t *testing.T, ex string) { os.RemoveAll(filepath.Dir(ex)) }, ""},
+		{"empty", func(t *testing.T, ex string) { write(t, ex, "") }, ""},
+		{"no final newline", func(t *testing.T, ex string) { write(t, ex, own) }, own + "\n"},
+		{"CRLF", func(t *testing.T, ex string) { write(t, ex, "# mine\r\n"+own+"\r\n") }, "# mine\r\n" + own + "\r\n"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			root, exclude := newRepo(t)
+			if c.prepare != nil {
+				c.prepare(t, exclude)
+			}
+			before, _ := os.ReadFile(exclude)
+
+			changed, err := AddIgnore(root)
+			if err != nil || !changed {
+				t.Fatalf("AddIgnore = %v, %v", changed, err)
+			}
+			got, _ := os.ReadFile(exclude)
+			if n := count(string(got), IgnoreLine); n != 1 {
+				t.Fatalf("exclude holds the entry %d times: %q", n, got)
+			}
+			if !strings.HasPrefix(string(got), string(before)) {
+				t.Errorf("AddIgnore changed the lines that were there:\n before %q\n after  %q", before, got)
+			}
+			if strings.Contains(string(before), "\r\n") && strings.Count(string(got), "\n") != strings.Count(string(got), "\r\n") {
+				t.Errorf("a CRLF file got LF lines: %q", got)
+			}
+			if !Ignored(root) {
+				t.Errorf("Ignored = false after AddIgnore")
+			}
+			if _, err := os.Stat(filepath.Join(root, ".gitignore")); !os.IsNotExist(err) {
+				t.Errorf("AddIgnore wrote a .gitignore in a git repository")
+			}
+			if changed, _ := AddIgnore(root); changed {
+				t.Errorf("a second AddIgnore changed the file")
+			}
+
+			if changed, err := RemoveIgnore(root); err != nil || !changed {
+				t.Fatalf("RemoveIgnore = %v, %v", changed, err)
+			}
+			after, _ := os.ReadFile(exclude)
+			want := c.want
+			if want == "-" {
+				want = string(before)
+			}
+			if string(after) != want {
+				t.Errorf("after Add and Remove:\n got  %q\n want %q", after, want)
+			}
+			if Ignored(root) {
+				t.Errorf("Ignored = true after RemoveIgnore")
+			}
+		})
+	}
+}
+
+func write(t *testing.T, path, body string) {
+	t.Helper()
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// A board below the top of the working tree is named from that top in
+// info/exclude, whose patterns are relative to it.
+func TestABoardInASubdirectoryIsExcludedByItsOwnPath(t *testing.T) {
+	root, exclude := newRepo(t)
+	sub := filepath.Join(root, "tools", "web app")
+	if err := os.MkdirAll(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := AddIgnore(sub); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := os.ReadFile(exclude)
+	if count(string(got), "/tools/web app/.jaira/") != 1 {
+		t.Fatalf("exclude = %q, want /tools/web app/.jaira/", got)
+	}
+	if !Ignored(sub) {
+		t.Errorf("Ignored(sub) = false")
+	}
+	if Ignored(root) {
+		t.Errorf("Ignored(root) = true: the subdirectory's entry must not cover the top")
+	}
+	if err := os.MkdirAll(filepath.Join(sub, ".jaira"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	write(t, filepath.Join(sub, ".jaira", "x.md"), "x")
+	out, err := exec.Command("git", "-C", root, "status", "--porcelain", "--untracked-files=all").Output()
+	if err != nil || strings.Contains(string(out), ".jaira") {
+		t.Errorf("git sees the subdirectory's board: %v\n%s", err, out)
+	}
+}
+
+// Two processes making the same board private at once.
+func TestParallelAddIgnoreWritesTheEntryOnce(t *testing.T) {
+	root, exclude := newRepo(t)
+	var wg sync.WaitGroup
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if _, err := AddIgnore(root); err != nil {
+				t.Error(err)
+			}
+		}()
+	}
+	wg.Wait()
+	got, _ := os.ReadFile(exclude)
+	if n := count(string(got), IgnoreLine); n != 1 {
+		t.Errorf("exclude holds the entry %d times after parallel AddIgnore:\n%s", n, got)
+	}
+}
+
+func TestParsePlaceReadsWhatGitPrints(t *testing.T) {
+	cases := []struct{ out, exclude, line string }{
+		{"/home/a/repo/.git\n\n", "/home/a/repo/.git/info/exclude", "/.jaira/"},
+		{"/home/a/repo/.git\nsub/dir/\n", "/home/a/repo/.git/info/exclude", "/sub/dir/.jaira/"},
+		{"C:/Users/a b/repo/.git\r\n\r\n", "C:/Users/a b/repo/.git/info/exclude", "/.jaira/"},
+		{"C:/Users/a/repo/.git\r\nweb app/\r\n", "C:/Users/a/repo/.git/info/exclude", "/web app/.jaira/"},
+		{"", "", ""},
+	}
+	for _, c := range cases {
+		ex, line := parsePlace(c.out)
+		if filepath.ToSlash(ex) != c.exclude || line != c.line {
+			t.Errorf("parsePlace(%q) = %q, %q; want %q, %q", c.out, ex, line, c.exclude, c.line)
+		}
+	}
+}
+
+// Outside a git repository there is no info/exclude: the entry goes into
+// .gitignore, which is not tracked there.
+func TestOutsideGitTheEntryGoesIntoGitignore(t *testing.T) {
+	root := t.TempDir()
+	if _, err := AddIgnore(root); err != nil {
+		t.Fatal(err)
+	}
+	if !InGitignore(root) || !Ignored(root) {
+		t.Errorf("no .gitignore entry outside git")
+	}
+	if moved, _ := MoveIgnore(root); moved {
+		t.Errorf("MoveIgnore moved the entry outside git")
+	}
+}

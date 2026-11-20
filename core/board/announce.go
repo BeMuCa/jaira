@@ -127,10 +127,10 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  ticket's commit list from two sources: the history of the ticket file itself,\n" +
 	"  and the commits that name its id. The first source is thin by design (see the\n" +
 	"  point on lanes that change no code), and on a board that has not been shared\n" +
-	"  yet (`jaira init` gitignores `.jaira/` until `jaira share`) it does not exist\n" +
-	"  at all — so the handle in the subject line is what the list is actually built\n" +
-	"  from. Leave it out and the list stays empty and the move into the last lane\n" +
-	"  is refused\n" +
+	"  yet (`jaira init` keeps `.jaira/` out of git until `jaira share`) it does not\n" +
+	"  exist at all — so the handle in the subject line is what the list is actually\n" +
+	"  built from. Leave it out and the list stays empty and the move into the last\n" +
+	"  lane is refused\n" +
 	"- **the ticket rides with the code, never on its own.** Move the ticket first,\n" +
 	"  then `git add` the changed file under `.jaira/tickets/` alongside your source\n" +
 	"  changes and commit them together. A reviewer then sees the change and what it\n" +

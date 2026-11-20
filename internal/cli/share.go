@@ -30,12 +30,13 @@ func newShareCmd() *cobra.Command {
 		Short: "Publish the board so everyone with the repository can see it",
 		Long: `Makes the board part of the repository.
 
-A board starts private: 'jaira init' gitignores it, so your tickets are yours
-alone until you decide otherwise. Publishing is a decision, not a default — the
+A board starts private: 'jaira init' excludes it in .git/info/exclude, so your
+tickets are yours alone until you decide otherwise. Publishing is a decision, not a default — the
 tool cannot know whether these notes are ready to be read by whoever can clone
 this repository.
 
-Publishing stops ignoring .jaira/, writes the .gitattributes that tells git to
+Publishing stops ignoring .jaira/ — in .git/info/exclude, and in .gitignore
+where an older jaira put the entry —, writes the .gitattributes that tells git to
 merge tickets field by field, and registers the merge driver for this clone. The
 tickets themselves are unchanged, so this is a decision you can reverse with
 --undo rather than a migration.
@@ -72,7 +73,7 @@ You still have to commit. jaira does not commit on your behalf.`,
 				}
 				fmt.Fprintf(w, "The board is private again.\n")
 				if changed {
-					fmt.Fprintf(w, "Added %s to .gitignore.\n", board.IgnoreLine)
+					fmt.Fprintf(w, "Excluded .jaira/ in %s.\n", board.IgnoreFileName(s.Root))
 				}
 				fmt.Fprintf(w, "\nTickets already committed stay in history. To remove them:\n"+
 					"  git rm -r --cached .jaira && git commit -m \"make jaira board private\"\n")
@@ -101,7 +102,7 @@ You still have to commit. jaira does not commit on your behalf.`,
 			}
 			fmt.Fprintf(w, "The board is now part of the repository.\n")
 			if unignored {
-				fmt.Fprintf(w, "Removed %s from .gitignore.\n", board.IgnoreLine)
+				fmt.Fprintf(w, "Stopped ignoring .jaira/.\n")
 			}
 			fmt.Fprintf(w, "This project's lane files stay private: %s is still ignored.\n", board.LanesIgnoreLine)
 			if attrs {

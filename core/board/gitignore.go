@@ -2,8 +2,11 @@ package board
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // IgnoreLine is the entry that keeps a board private.
@@ -17,47 +20,223 @@ const IgnoreLine = "/.jaira/"
 // .jaira/ itself, so there is no ignored parent to negate out of.
 const LanesIgnoreLine = "/.jaira/lanes/"
 
+// privateComment heads the entry; RemoveIgnore takes it out with the line,
+// recognising it by privateMarker.
+const (
+	privateComment = "# jaira board — private to this machine. Run 'jaira share' to publish it."
+	privateMarker  = "jaira board — private"
+	lanesComment   = "# this project's lane files are this machine's, not the team's"
+	lanesMarker    = "lane files are this machine's"
+)
+
 // A board starts private. Committing tickets is what makes a board visible to
 // everyone who can read the repository, and that should be a decision rather than
 // a default — the tool has no way to know whether these notes are ready to be
 // seen, or whether this repository is even yours to publish into.
 //
-// Private and shared differ only in whether `.jaira/` is gitignored. Nothing about
+// Private and shared differ only in whether `.jaira/` is ignored. Nothing about
 // the tickets themselves changes, so going public later is not a migration.
+//
+// A private board is excluded in <git-common-dir>/info/exclude, not in the
+// .gitignore of the working tree. The .gitignore is tracked: writing to it
+// leaves every new worktree with a modified file that belongs to no change,
+// and a repository that guards its pushes against stray changes refuses
+// every push. info/exclude lives in the git directory all worktrees share,
+// applies to each of them, and never appears in a diff. Only outside a git
+// repository, where there is no info/exclude, does the entry go into
+// .gitignore — untracked there, and still in force if 'git init' comes later.
 
-// Ignored reports whether the root .gitignore excludes the board.
-func Ignored(root string) bool {
-	b, err := os.ReadFile(filepath.Join(root, ".gitignore"))
+// gitPlace is where git keeps the exclude file for root, and the pattern that
+// names root's .jaira/ in it: exclude patterns are relative to the top of the
+// working tree, so a board in a subdirectory is "/sub/.jaira/". Asked of git,
+// like commonGitDir in core/ticket, rather than resolving a worktree's .git
+// file by hand. Empty outside a repository or without git.
+func gitPlace(root string) (exclude, line string) {
+	if _, err := exec.LookPath("git"); err != nil {
+		return "", ""
+	}
+	out, err := exec.Command("git", "-C", root, "rev-parse", "--path-format=absolute", "--git-common-dir", "--show-prefix").Output()
+	if err != nil {
+		return "", ""
+	}
+	return parsePlace(string(out))
+}
+
+// parsePlace reads gitPlace's two lines of git output: the common git dir —
+// "C:/repo/.git" on Windows, which filepath makes a path of — and the prefix
+// of root below the top of the working tree, "" or "sub/dir/", always with
+// forward slashes, as exclude patterns are written.
+func parsePlace(out string) (exclude, line string) {
+	parts := strings.Split(strings.TrimRight(out, "\r\n"), "\n")
+	common := strings.TrimSpace(parts[0])
+	if common == "" {
+		return "", ""
+	}
+	prefix := ""
+	if len(parts) > 1 {
+		prefix = strings.TrimSpace(parts[1])
+	}
+	return filepath.Join(filepath.FromSlash(common), "info", "exclude"), "/" + prefix + ".jaira/"
+}
+
+// IgnoreFile is the file a private board's entry goes into: info/exclude in a
+// git repository, .gitignore outside one.
+func IgnoreFile(root string) string {
+	if exclude, _ := gitPlace(root); exclude != "" {
+		return exclude
+	}
+	return filepath.Join(root, ".gitignore")
+}
+
+// IgnoreFileName is IgnoreFile as a person reads it: relative to root where it
+// lies inside it, absolute where it does not (a worktree's shared git dir).
+func IgnoreFileName(root string) string {
+	path := IgnoreFile(root)
+	if rel, err := filepath.Rel(root, path); err == nil && !strings.HasPrefix(rel, "..") {
+		return filepath.ToSlash(rel)
+	}
+	return path
+}
+
+// boardLine reports whether line excludes the board in a file whose patterns
+// are relative to the board's root (.gitignore) — or, given the anchored
+// pattern for a subdirectory, in info/exclude.
+func boardLine(line, anchored string) bool {
+	switch t := strings.TrimSpace(line); t {
+	case IgnoreLine, ".jaira/", ".jaira":
+		return anchored == "" || anchored == IgnoreLine
+	default:
+		return anchored != "" && t == anchored
+	}
+}
+
+func lists(path, anchored string) bool {
+	b, err := os.ReadFile(path)
 	if err != nil {
 		return false
 	}
 	for _, line := range strings.Split(string(b), "\n") {
-		switch strings.TrimSpace(line) {
-		case IgnoreLine, ".jaira/", ".jaira":
+		if boardLine(line, anchored) {
 			return true
 		}
 	}
 	return false
 }
 
-// AddIgnore keeps the board out of git.
-func AddIgnore(root string) (changed bool, err error) {
-	path := filepath.Join(root, ".gitignore")
-	existing, _ := os.ReadFile(path)
-	if Ignored(root) {
-		return false, nil
+// Ignored reports whether the board is excluded: by info/exclude, or by a
+// line in the root .gitignore — an older jaira wrote it there, and a person
+// may have written it there by hand.
+func Ignored(root string) bool {
+	if InGitignore(root) {
+		return true
 	}
-	body := string(existing)
-	if body != "" && !strings.HasSuffix(body, "\n") {
-		body += "\n"
-	}
-	body += "\n# jaira board — private to this machine. Run 'jaira share' to publish it.\n" + IgnoreLine + "\n"
-	return true, os.WriteFile(path, []byte(body), 0o644)
+	exclude, line := gitPlace(root)
+	return exclude != "" && lists(exclude, line)
 }
 
-// RemoveIgnore stops excluding the board.
+// AddIgnore keeps the board out of git, in IgnoreFile.
+func AddIgnore(root string) (changed bool, err error) {
+	if InGitignore(root) {
+		return false, nil
+	}
+	exclude, line := gitPlace(root)
+	if exclude == "" {
+		return true, appendEntry(filepath.Join(root, ".gitignore"), privateComment, IgnoreLine)
+	}
+	err = locked(exclude, func() error {
+		if lists(exclude, line) {
+			return nil
+		}
+		changed = true
+		return appendEntry(exclude, privateComment, line)
+	})
+	return changed, err
+}
+
+// RemoveIgnore stops excluding the board, wherever it is excluded.
 func RemoveIgnore(root string) (changed bool, err error) {
-	path := filepath.Join(root, ".gitignore")
+	changed, err = dropEntry(filepath.Join(root, ".gitignore"), privateMarker, func(t string) bool { return boardLine(t, "") })
+	if err != nil {
+		return changed, err
+	}
+	exclude, line := gitPlace(root)
+	if exclude == "" || !lists(exclude, line) {
+		return changed, nil
+	}
+	err = locked(exclude, func() error {
+		ex, err := dropEntry(exclude, privateMarker, func(t string) bool { return boardLine(t, line) })
+		changed = changed || ex
+		return err
+	})
+	return changed, err
+}
+
+// InGitignore reports whether the root .gitignore excludes the board — the
+// place an older jaira wrote the entry, and the one MoveIgnore empties.
+func InGitignore(root string) bool {
+	return lists(filepath.Join(root, ".gitignore"), "")
+}
+
+// MoveIgnore carries an entry an older jaira wrote into the tracked .gitignore
+// over to info/exclude: the line leaves .gitignore, which the person then
+// commits once, and the board stays exactly as private as it was. Nothing
+// happens outside a git repository, where .gitignore is the place, and on a
+// .gitignore without the entry. The exclude entry is written first: a failure
+// between the two leaves the board excluded twice, never not at all.
+func MoveIgnore(root string) (moved bool, err error) {
+	exclude, line := gitPlace(root)
+	if exclude == "" || !InGitignore(root) {
+		return false, nil
+	}
+	err = locked(exclude, func() error {
+		if lists(exclude, line) {
+			return nil
+		}
+		return appendEntry(exclude, privateComment, line)
+	})
+	if err != nil {
+		return false, err
+	}
+	return dropEntry(filepath.Join(root, ".gitignore"), privateMarker, func(t string) bool { return boardLine(t, "") })
+}
+
+// locked runs fn holding a lock beside exclude. Every worktree of a repository
+// shares that one file, so the store's own locks, which live per working
+// tree, would not keep two jaira processes from reading it before either has
+// written and both adding the entry.
+func locked(exclude string, fn func() error) error {
+	if err := os.MkdirAll(filepath.Dir(exclude), 0o755); err != nil {
+		return err
+	}
+	unlock, err := ticket.LockFile(exclude + ".jaira.lock")
+	if err != nil {
+		return err
+	}
+	defer unlock()
+	return fn()
+}
+
+// appendEntry adds a comment and one pattern to the end of path, after a blank
+// line, creating the file where it does not exist, in the line endings the
+// file already uses. Written whole and renamed into place (ticket.WriteAtomic),
+// so git never reads it half written.
+func appendEntry(path, comment, line string) error {
+	existing, _ := os.ReadFile(path)
+	body := string(existing)
+	nl := "\n"
+	if strings.Contains(body, "\r\n") {
+		nl = "\r\n"
+	}
+	if body != "" && !strings.HasSuffix(body, "\n") {
+		body += nl
+	}
+	body += nl + comment + nl + line + nl
+	return ticket.WriteAtomic(path, []byte(body))
+}
+
+// dropEntry takes every line match accepts out of path, with the comment
+// line that carries marker and the blank line that follows it.
+func dropEntry(path, marker string, match func(string) bool) (changed bool, err error) {
 	existing, err := os.ReadFile(path)
 	if err != nil {
 		return false, nil
@@ -66,11 +245,11 @@ func RemoveIgnore(root string) (changed bool, err error) {
 	var skipNextBlank bool
 	for _, line := range strings.Split(string(existing), "\n") {
 		t := strings.TrimSpace(line)
-		if t == IgnoreLine || t == ".jaira/" || t == ".jaira" {
+		if match(t) {
 			changed = true
 			continue
 		}
-		if strings.Contains(t, "jaira board — private") {
+		if strings.Contains(t, marker) {
 			changed = true
 			skipNextBlank = true
 			continue
@@ -84,12 +263,19 @@ func RemoveIgnore(root string) (changed bool, err error) {
 	if !changed {
 		return false, nil
 	}
-	return true, os.WriteFile(path, []byte(strings.Join(out, "\n")), 0o644)
+	body := strings.Join(out, "\n")
+	// The blank line before the entry is what ends the file once the entry is
+	// gone: "" in an LF file, and in a CRLF file a "\r" that would be left
+	// standing alone after the last "\r\n".
+	body = strings.TrimSuffix(body, "\r")
+	return true, ticket.WriteAtomic(path, []byte(body))
 }
 
 // AddLanesIgnore keeps this project's lane directory private, independent of
-// whether the rest of the board is shared. Idempotent: calling it again once
-// the line is already present reports changed=false and writes nothing.
+// whether the rest of the board is shared. It goes into the tracked .gitignore:
+// it only matters once the board is shared, and a shared board's .gitignore is
+// committed with it. Idempotent: calling it again once the line is already
+// present reports changed=false and writes nothing.
 func AddLanesIgnore(root string) (changed bool, err error) {
 	path := filepath.Join(root, ".gitignore")
 	existing, _ := os.ReadFile(path)
@@ -98,44 +284,12 @@ func AddLanesIgnore(root string) (changed bool, err error) {
 			return false, nil
 		}
 	}
-	body := string(existing)
-	if body != "" && !strings.HasSuffix(body, "\n") {
-		body += "\n"
-	}
-	body += "\n# this project's lane files are this machine's, not the team's\n" + LanesIgnoreLine + "\n"
-	return true, os.WriteFile(path, []byte(body), 0o644)
+	return true, appendEntry(path, lanesComment, LanesIgnoreLine)
 }
 
 // RemoveLanesIgnore removes the lanes-only ignore line. Used by 'share
 // --undo': once the whole board is private again, /.jaira/ already covers
 // .jaira/lanes/, and a leftover line would be a puzzle for the next reader.
 func RemoveLanesIgnore(root string) (changed bool, err error) {
-	path := filepath.Join(root, ".gitignore")
-	existing, err := os.ReadFile(path)
-	if err != nil {
-		return false, nil
-	}
-	var out []string
-	var skipNextBlank bool
-	for _, line := range strings.Split(string(existing), "\n") {
-		t := strings.TrimSpace(line)
-		if t == LanesIgnoreLine {
-			changed = true
-			continue
-		}
-		if strings.Contains(t, "lane files are this machine's") {
-			changed = true
-			skipNextBlank = true
-			continue
-		}
-		if skipNextBlank && t == "" {
-			skipNextBlank = false
-			continue
-		}
-		out = append(out, line)
-	}
-	if !changed {
-		return false, nil
-	}
-	return true, os.WriteFile(path, []byte(strings.Join(out, "\n")), 0o644)
+	return dropEntry(filepath.Join(root, ".gitignore"), lanesMarker, func(t string) bool { return t == LanesIgnoreLine })
 }

@@ -1,0 +1,3 @@
+- A new private board is now excluded in `.git/info/exclude` instead of `.gitignore`: `jaira init` no longer leaves a modified `.gitignore` in the repository or in any of its worktrees.
+- ! Run `jaira update` once on a private board an older jaira set up: it moves the `/.jaira/` line from `.gitignore` to `.git/info/exclude`; commit the changed `.gitignore` so teammates' worktrees stay clean too, and have each teammate run `jaira update` after pulling it so their own private board stays excluded.
+- `jaira share` lifts the exclude in `.git/info/exclude` (and an old `.gitignore` line) and still keeps `/.jaira/lanes/` in `.gitignore`; `jaira share --undo` excludes the board in `.git/info/exclude` again.
