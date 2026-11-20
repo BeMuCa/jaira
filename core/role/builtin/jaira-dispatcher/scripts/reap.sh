@@ -194,13 +194,13 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
     # commits no branch holds, and removing the worktree would lose them.
     if ! git -C "$w" symbolic-ref -q HEAD >/dev/null; then dirty="$w has a detached HEAD"; break; fi
     if ! st="$(git -C "$w" -c core.quotePath=false status --porcelain -uall)"; then dirty="git status failed in $w"; break; fi
-    # What a ref holds does not count: tickets and milestones, untracked or
-    # modified and not committed — a lane that changed no code leaves the
+    # What a ref holds does not count: tickets and milestones, untracked,
+    # staged or modified and not committed — a lane that changed no code leaves the
     # ticket file so until the next commit, and after the merge none comes.
     # Everything else under .jaira/ — lanes, tags, the logbook, a ticket
     # deleted by a 'jaira logbook' not yet committed — is on no ref, and
     # --force below would delete it.
-    d="$(printf '%s' "$st" | grep -v -E '^(\?\?|[ M][ M]) \.jaira/(tickets|milestones)/' | cut -c4- | head -3 | tr '\n' ' ' || true)"
+    d="$(printf '%s' "$st" | grep -v -E '^(\?\?|[ MA][ M]) \.jaira/(tickets|milestones)/' | cut -c4- | head -3 | tr '\n' ' ' || true)"
     if [ -n "$d" ]; then dirty="$w has uncommitted changes: $d"; break; fi
   done
   if [ -n "$dirty" ]; then echo "kept $t: ${dirty% }"; continue; fi

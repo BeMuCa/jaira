@@ -216,6 +216,11 @@ func TestReapClosesAMergedTicket(t *testing.T) {
 	r.write(t, r.shown, `{"status":"done"}`)
 	// Untracked milestone files are no work: AYBDJ2's rule; a ref holds them.
 	r.write(t, filepath.Join(r.wt, ".jaira", "milestones", "m.md"), "x\n")
+	// Nor staged ones: 'A ' after a git add, 'AM' after a write on top.
+	r.write(t, filepath.Join(r.wt, ".jaira", "milestones", "a.md"), "x\n")
+	r.write(t, filepath.Join(r.wt, ".jaira", "tickets", "zz99zz.md"), "x\n")
+	r.git(t, r.wt, "add", ".jaira/milestones/a.md", ".jaira/tickets/zz99zz.md")
+	r.write(t, filepath.Join(r.wt, ".jaira", "tickets", "zz99zz.md"), "y\n")
 	// Neither is a ticket file a lane without code left modified: after the
 	// merge no commit comes to carry it, and its state is on the ticket's ref.
 	r.write(t, ticket, "done\n")
