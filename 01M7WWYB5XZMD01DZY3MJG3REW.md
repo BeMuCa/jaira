@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T16:54:18Z
+updated-at: 2026-11-20T16:56:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59469
 claimed-at: 2026-11-20T16:43:41Z
@@ -34,7 +34,8 @@ question: ""
 
 ## Definition of Done
 
-- [ ] Ohne Einstellung oeffnet kein Agent einen PR (Test oder Skill-Text belegt)
+- [x] Ohne Einstellung oeffnet kein Agent einen PR (Test oder Skill-Text belegt)
+  proof: core/settings/settings_test.go TestPRDefaultsToThePerson; core/role/builtin/jaira-role-pr/SKILL.md:37 (person default -> hand the line back); core/role/pr_round_test.go TestPROpensOnlyWhereTheBoardSaysAndNeverAccepts
 - [ ] Mit Einstellung oeffnet jaira-role-pr den PR selbst und fordert den konfigurierten Reviewer (z.B. Copilot) an
 - [ ] Eine Kommentarrunde: jeder Kommentar bekommt 'Behoben in <sha>: ...' oder eine Begruendung, wird resolved, das Review neu angefordert
 - [ ] Merge und Approve macht kein Agent, auch mit Einstellung
