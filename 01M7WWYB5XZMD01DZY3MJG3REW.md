@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:54:12Z
+updated-at: 2026-11-20T19:54:22Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-18659
 claimed-at: 2026-11-20T19:49:16Z
@@ -97,7 +97,8 @@ review-check: |-
   proof: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:86 gh() wrapper, read-backs end with 3 at lines 153,287, request maps 3 before 4; core/role/pr_round_test.go TestPRRoundLostSignInIsNeverExit4 (threads, settled, request, comment after its POST)
 - [x] pr-gate liest .jaira/pr und .jaira/pr-when aus <base>, nicht von der Platte des Branches; ein Branch, der agent/signoff selbst committet, oeffnet sein Gate nicht
   proof: internal/cli/roles.go pr-gate repo.FileAt(<base>, .jaira/pr|pr-when); internal/cli/prgate_test.go TestPRGateReadsTheBoardFilesFromTheBase; core/settings/settings_test.go PRIn/PRWhenIn in TestPRDefaultsToThePerson, TestPRWhenDefaultsToDone
-- [ ] pr-round.sh open setzt --head <account>:<branch> (Fork) bzw. <branch> (gleiches Repo) aus der Push-URL und prueft den Tip dort, wohin git push sendet
+- [x] pr-round.sh open setzt --head <account>:<branch> (Fork) bzw. <branch> (gleiches Repo) aus der Push-URL und prueft den Tip dort, wohin git push sendet
+  proof: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:227 gh pr create --head; core/role/pr_round_test.go TestPROpenNamesTheHeadItChecked (https/ssh/scp URLs, same repo any case, pushurl apart from url, URL without account -> 3)
 
 ## Options
 
