@@ -18,7 +18,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:23Z
-updated-at: 2026-10-27T20:52:23Z
+updated-at: 2026-11-20T16:40:19Z
+assignee: Alexander Sacharov
+updated-by: Alexander Sacharov
 ---
 
 # Die PR-Rolle hat einen festen Schritt vor dem Push: Scan, master, Suite, DoD, Logbook
