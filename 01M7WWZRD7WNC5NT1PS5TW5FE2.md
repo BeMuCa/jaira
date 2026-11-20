@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T17:43:07Z
+updated-at: 2026-11-20T17:43:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80126
 claimed-at: 2026-11-20T17:38:47Z
@@ -36,10 +36,7 @@ outcome-why: "Review- und bughunt-Schleifen liefen 10-24 Runden, weil jede Runde
 outcome-resolves: "DoD 1-7: 15-pre-process.md:38, 20-in-progress.md:29 und :66-97, 27-testing.md:97, bughunt SKILL.md:104, 40-review.md:57, shipped.sha256, core/release/notes/TW5FE2.md"
 review-summary: "none"
 round: 8
-review-gaps: |-
-  note: core/lane/builtin/20-in-progress.md:72-82 - class: return origin is unknowable; example: a signoff return without a note looks like a review return and is logged 'back: review', so two real review returns plus one person return escalate to human early; fix: move records the from-lane (DF0YD6/H6CD33), teamlead kept it out of this ticket
-  note: branch base - feat/tw5fe2 sits on 5b16e491 from origin/fix/nh788q-windows-rename, not on origin/master; a PR now carries the QFZDY7 and NH788Q commits too unless that branch merges first or this one is rebased
-  note: pre-existing: core/shipped/shipped.sha256 lacks 8 tagged versions (cockpit board.ts, register.tsx, texts.ts, types/index.d.ts, jaira-role-acceptance/template.html), so jaira update --roles skips those untouched installs as edited; see bughunt note 16:50
+review-gaps: "none - diff is prompt text only; left the unreleased intermediate 20-in-progress hashes in shipped.sha256 (b8ef26c5, dea4f27b, 9321dad0): harmless, and a branch install of them stays recognised"
 test-verdict: "pass: go test -race -count=1 ./... RC=0, go build ok; DoD 1-7 im Baum; Lane-Kopien byte-gleich"
 hunt-verdict: "pass: bughunt done at e12f36d5, 1 change bleibt nach Teamlead-Entscheid 17:01 (keine weitere testing-Runde) als note fuer die Person: in-progress kann eine Rueckgabe aus signoff ohne Note nicht von einer review-Rueckgabe unterscheiden - jaira zeichnet die Herkunfts-Lane nicht auf; echte Zaehlung kommt mit DF0YD6/H6CD33"
 review-verdict: "All 7 DoD items are in the diff; no blocker. The prompts are consistent with each other and with jaira-worker's own three-returns stop. The one known weakness (return origin) is a transition until move records the from-lane, as the teamlead decided. go test ./core/shipped ./core/lane ./core/role/... green."
