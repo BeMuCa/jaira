@@ -20,7 +20,8 @@ related:
   - 01M6M7EA5EG5TWJSTVNQH6CD33
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T16:35:17Z
+updated-at: 2026-11-20T16:39:15Z
+updated-by: Alexander Sacharov
 ---
 
 # Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt
