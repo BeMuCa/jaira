@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:51:05Z
+updated-at: 2026-11-20T19:51:13Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-36878
 claimed-at: 2026-11-20T19:50:05Z
@@ -36,10 +36,7 @@ outcome-why: "Rueckgabe aus signoff 19:49: Zeilen-Scan liest zwei Aenderungen in
 outcome-resolves: "DoD 4/6: core/release/notes/TW5FE2.md:7-8, 27-testing.md:132-135; Zwilling gleich; go test core/shipped core/lane core/release ok. Vier Kategorien: Fehlerpfad (Commit fehlt) ist der Fix selbst; sonst nur Prompt-Text."
 review-summary: "none"
 round: 14
-review-gaps: |-
-  note: core/release/notes/TW5FE2.md Zeile 7 traegt zwei Aenderungen in einer Zeile (review:-Prefix und testing-Folgerunde) - fix: in zwei '- '-Zeilen teilen
-  note: 27-testing.md Folgerunde 'git diff --name-only <commit>' scheitert, wenn der Commit aus 'bughunt: done at' nach einem Rebase nicht mehr existiert - fix: ein Satz 'Commit unbekannt -> ganze Suite wie in Runde 1'
-  note: core/shipped/shipped.sha256 bekommt 25 Zeilen, davon die meisten Zwischenstaende dieses Branches, die nie ausgeliefert werden - harmlos (Manifest kennt dann nur mehr Hashes), aber vor dem Merge auf die Endstaende eindampfbar
+review-gaps: none
 test-verdict: "pass: Folgerunde seit 10b38a7a: go test -count=1 ./core/lane/... ./core/shipped/... RC=0, go test ./core/role -run Shipped RC=0; Zwilling in-progress byte-gleich, neuer Manifest-Hash = sha256 HEAD; Neustart-Regel liest round aus jaira show, back: person/unknown tragen round; Vorrunde: pre-process->human ohne Plan auf Scratch-Board refused, mit Plan-Schritt nicht; nur Prompt-Text, kein Schreibpfad"
 hunt-verdict: "pass: bughunt done at 08c670e2 - 0 findings, follow-up since 10b38a7a"
 review-verdict: "Alle sieben DoD-Punkte sind im Diff erfuellt (geprueft gegen 15/20/27/40-*.md und den Bughunt-Skill); Behauptungen des Prompts gegen den Code geprueft: round steigt bei jedem Zurueckschicken (core/move/move.go:133), Cockpit schreibt 'Given back from <lane>:' und 'decision:' (register.tsx:822,900), Steal-Zeile aus refsync.go:1433, 'jaira dod --plan --add' existiert. go test ./core/lane/... ./core/shipped/... ./core/role/... gruen. Kein Blocker; drei kleine notes. Die Wirkung selbst (weniger Schleifenrunden) laesst sich nur an kuenftigen Tickets messen."
