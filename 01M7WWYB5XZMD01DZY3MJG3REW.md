@@ -1,7 +1,7 @@
 ---
 id: 01M7WWYB5XZMD01DZY3MJG3REW
 title: Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T17:38:10Z
+updated-at: 2026-11-20T17:38:14Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26453
 claimed-at: 2026-11-20T17:13:45Z
@@ -32,7 +32,7 @@ outcome-what: "Board-Dateien .jaira/pr (person|agent, Default person) und .jaira
 outcome-why: "Ein Teamlead machte jede PR-Runde von Hand (push, PR-Text, Copilot anfordern, antworten, resolve); Alex erlaubt Agenten das inzwischen, aber nur pro Repo."
 outcome-resolves: "Mit .jaira/pr=agent oeffnet jaira-role-pr den PR nach der Abnahme aller Tickets selbst, fordert den Reviewer an und faehrt eine Kommentarrunde; ohne Datei bleibt alles wie heute; Merge/Approve bleibt in jedem Fall beim Menschen."
 review-summary: "A board file .jaira/pr (one line, default person; only exactly 'agent' switches) and .jaira/pr-reviewer (copilot, a login or org/team, anything else read as empty) are read by core/settings PRFor/PRReviewerFor and shown by 'jaira roles list' (pr: line, --json pr/pr_source/pr_reviewer). jaira-role-pr's SKILL.md lets an agent run gh pr create / glab mr create only when the board says agent and every ticket on the branch is in done; otherwise it still hands the line back. A new scripts/pr-round.sh (GitHub via gh api) lists open review threads and threadless comments, answers and resolves one thread idempotently (a rerun after a failed resolve only resolves), comments on the conversation, and re-requests a reviewer (copilot mapped to its bot login, exit 4 when the request is refused, exit 3 before any write when gh is not signed in). GitLab gets the equivalent glab api lines aimed at the target project. Merge and approve stay forbidden in every text and test. Teamlead and dispatcher texts name the exception; release note and shipped hashes added."
-round: 4
+round: 5
 review-gaps: |-
   note: pr-round.sh comments lists every conversation comment and review body each round, the agent's own earlier answers included - not answering twice there rests on the agent reading the list (DoD 10 covers threads only)
   note: the Copilot request uses the REST login copilot-pull-request-reviewer[bot]; tested only against the fake gh in core/role/pr_round_test.go, never against live GitHub
