@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T16:50:06Z
+updated-at: 2026-11-20T16:50:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46134
 claimed-at: 2026-11-20T16:42:22Z
@@ -36,7 +36,7 @@ claimed-at: 2026-11-20T16:42:22Z
 - [ ] Ein Board, das die alte .gitignore-Zeile hat, wird bei jaira update umgestellt und die Zeile entfernt (Test)
 - [ ] Eingabeklassen als Tabellentest: info/exclude fehlt (auch info/ fehlt), leer, ohne Schluss-Newline, mit CRLF; Board-Wurzel mit Leerzeichen im Pfad; Board in einem Unterverzeichnis des Repos (Muster /sub/.jaira/) (Test)
 - [ ] Worktree vs. Haupt-Checkout: init/share/update aus einem Worktree schreiben in dasselbe gemeinsame info/exclude und nie in eine worktree-eigene Datei (Test)
-- [ ] Zwei jaira-Aufrufe gleichzeitig: AddIgnore/MoveIgnore laufen unter einer Sperre, der Eintrag steht danach genau einmal in info/exclude (Test)
+- [ ] Zwei jaira-Aufrufe gleichzeitig: info/exclude wird ueber Temp-Datei + Rename geschrieben, nie halb; nach parallelen AddIgnore steht der Eintrag genau einmal darin (Test)
 - [ ] Windows: der Pfad von git (C:/... mit Schraegstrichen) wird zu einem gueltigen Dateipfad; CRLF-Zeilen werden erkannt und beim Entfernen bleibt der Rest der Datei byteweise erhalten (Test)
 
 ## Options
