@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T18:07:58Z
+updated-at: 2026-11-20T18:11:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-87225
 claimed-at: 2026-11-20T17:38:56Z
@@ -68,7 +68,7 @@ review-check: "1. cd into a scratch clone of a GitHub repo you own, with an open
 - [x] Eingabeklasse .jaira/pr/.jaira/pr-reviewer leer, CRLF, Kommentar, Tippfehler, Shell-Sonderzeichen: Tabellentest, Default person / Reviewer leer
   proof: core/settings/settings_test.go TestPRDefaultsToThePerson, TestPRReviewerIsALoginOrNothing (empty, CRLF, comment, typo, shell chars)
 - [x] Das Gate 'alle Tickets des Branches in done' prueft das Binary: jaira roles pr-gate <base> mit Exit 3 und Liste der offenen Tickets; pr-round.sh open oeffnet nur nach bestandenem Gate
-  proof: internal/cli/roles.go newRolesPRGateCmd, core/gitrepo/named.go TicketsNamed; internal/cli/prgate_test.go TestPRGateOpensOnlyWhenEveryTicketOfTheBranchIsDone, TestPRGateRefusesWhatItCannotJudge; core/role/pr_round_test.go TestPROpenRunsTheGateFirst
+  proof: internal/cli/roles.go newRolesPRGateCmd (fails closed on an unreadable ticket file), core/gitrepo/named.go TicketsNamed; internal/cli/prgate_test.go TestPRGateOpensOnlyWhenEveryTicketOfTheBranchIsDone, TestPRGateRefusesWhatItCannotJudge, TestPRGateFailsClosedOnAnUnreadableTicket; core/role/pr_round_test.go TestPROpenRunsTheGateFirst
 - [x] Zwei Sessions, die denselben Thread gleichzeitig beantworten, hinterlassen genau eine Antwort
   proof: core/role/builtin/jaira-role-pr/scripts/pr-round.sh dedupe (threads) and comment read-back delete only the id this run's own POST returned; core/role/pr_round_test.go TestPRRoundReplyLeavesOneAnswerWhenTwoSessionsRace, TestPRRoundCommentSaysItOnce (person's same words before/after: never touched)
 - [x] Board-Datei .jaira/pr-when (done|signoff, Default done; leer, CRLF, Kommentar, Tippfehler -> done): Tabellentest; jaira roles list zeigt sie
