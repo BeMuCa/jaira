@@ -1,7 +1,7 @@
 ---
 id: 01M2HZKCQ48BPQYN1YPTXB97NJ
 title: "Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Wer allein an einem Repository arbeitet, bekommt keine Rolle vorgesetzt, die ihn zu einem Pull Request schickt, den er nicht will - und ein Team, das Pull Requests benutzt, bekommt die Regel weiterhin ueberall, wo ein Agent sie liest."
@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:03:38Z
+updated-at: 2026-11-20T23:03:42Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -32,6 +32,9 @@ context: |-
 
   Verwandt, aber nicht dasselbe: PWAF22 will, dass 'jaira update' das ganze Setup nachzieht. Wenn dieses Ticket dem Befehl etwas zu schreiben gibt, bekommt PWAF22 einen Grund mehr zu existieren.
 question: ""
+outcome-what: "Board-Datei .jaira/pr kennt den dritten Wert none: die Rollen landen einen Zweig ohne Pull Request per fast-forward push, sobald jaira roles pr-gate jedes Ticket in done findet; jaira update schreibt fuer none/agent einen Absatz 'How work arrives on this board' in den CLAUDE.md/AGENTS.md-Block; reap.sh raeumt bei none auf, sobald origin/HEAD den Zweig enthaelt."
+outcome-why: "Wer allein ohne Pull Requests arbeitet, bekam eine Rolle, die vor einem nie gewollten PR anhaelt (13VMA8); die Einstellung muss mit dem Repository reisen (Teamlead-Entscheidung 20.11.: dritter Wert in .jaira/pr, Laufzeit + Block)."
+outcome-resolves: "Ein Board sagt in .jaira/pr, ob Arbeit durch einen PR (person/agent) oder direkt auf den Hauptzweig (none) kommt; ohne Datei ist alles byte-gleich wie heute."
 ---
 
 # Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig
