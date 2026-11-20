@@ -1,7 +1,7 @@
 ---
 id: 01M7X2WM5Q4Z6VPF1RAK0K8Y6S
 title: "shipped.sha256 kennt jede Version, die in einem Release-Tag ausgeliefert wurde, und CI haelt das fest"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T22:53:53Z
+updated-at: 2026-11-20T22:53:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -29,6 +29,7 @@ outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, w
 review-summary: |-
   scripts/shipped-history.sh:61-67 prueft das Zeilenformat (Konfliktmarker) ein zweites Mal - core/shipped/shipped_test.go TestManifestLinesAreWellFormed tut das schon in CI und im release-notes-Lauf; Block und den Konfliktmarker-Fall in history_test.go streichen
   core/role/shipped_test.go TestInstallReplacesTheV052CockpitBoard wiederholt TestInstallReplacesAnOlderShippedVersion fuer ein zweites Fixture; beide als Tabelle (key, Fixture, Pin-Hash) in einem Test
+round: 2
 ---
 
 # shipped.sha256 kennt jede Version, die in einem Release-Tag ausgeliefert wurde, und CI haelt das fest
