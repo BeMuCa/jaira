@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-20T23:03:52Z
+updated-at: 2026-11-20T23:03:56Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -29,7 +29,10 @@ outcome-why: "Auf einem ungeteilten Board widersprach die Commit-Regel dem Zusta
 outcome-resolves: SDBCT5
 review-summary: "Der generierte Agent-Block (core/board/announce.go) sagt jetzt am Punkt 'the ticket rides with the code': dieser und der naechste Punkt gelten nur auf einem geteilten Board; solange .jaira/ ausserhalb von git liegt (jaira init bis jaira share), gibt es keine Ticketdatei zum Mitcommitten - der Code wird allein committet, das Handle im Betreff ist die ganze Verbindung. Derselbe Vorbehalt steht in der jaira-Rolle (core/role/jaira/SKILL.md, Kopie .claude/skills/jaira), in docs/AGENTS.md und in der PR-Rolle, die einen Code-Commit ohne Ticketdatei dort nicht mehr als Befund wertet. --proof stand schon vorher im Block (2143e9ad). CLAUDE.md/AGENTS.md sind regeneriert, shipped.sha256 kennt die neuen Rollen-Hashes, ein Test haelt Block- und Rollensatz fest, die Release-Note sagt 'jaira update' bzw. 'jaira update --roles'."
 round: 3
-review-gaps: "none: the diff is four prose additions, one test and two shipped.sha256 lines. The test's whitespace-flattening (strings.Fields) repeats for block and skill on purpose - both are wrapped prose; no helper exists for it in announce_test.go and one for two uses would be fluff."
+review-gaps: |-
+  note: "This point and the next hold on a shared board only" erfasst auch den Punkt 'a lane that changed no code commits nothing', dessen Kern (nichts committen) auf einem ungeteilten Board erst recht gilt - nur dessen Ticketdatei-Saetze fallen weg; lesbar, aber nicht ganz praezise
+  note: pre-existing: die fertigen Commit-Zeilen in jaira-worker SKILL.md und jaira-role-lane SKILL.md nennen weiter .jaira/tickets/<ticket>.md, das git auf einem ungeteilten Board als ignoriert ablehnt (in critique Runde 3 bewusst stehen gelassen)
+  note: der Testname nennt nur das ungeteilte Board, prueft aber auch --done --proof
 test-verdict: "pass: go test ./... -race exit 0; build ok. DoD 1-6 checked in the tree (announce.go:101/138, role SKILL.md:331, pr SKILL.md:59, docs/AGENTS.md:72, release note, test present and green). Behaviour on a scratch repo: 'jaira init' writes the block with --proof and the caveat into CLAUDE.md+AGENTS.md, .jaira/ ignored, and 'git add .jaira/tickets' is refused there ('paths are ignored') - exactly the case the caveat names; 'jaira update' rewrites a stale block back. Failure path: read-only CLAUDE.md -> update exits 1 with permission denied, file unchanged. Two writers: the change adds no write path (block writing is pre-existing), nothing to race."
 hunt-verdict: "pass: bughunt done at bb02c815, 0 findings in 10 modules"
 ---
