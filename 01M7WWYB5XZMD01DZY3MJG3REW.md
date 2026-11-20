@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T18:21:54Z
+updated-at: 2026-11-20T18:21:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-29476
 claimed-at: 2026-11-20T18:21:36Z
@@ -44,7 +44,7 @@ test-verdict: "pass: go test -race ./... RC=0 after clean cache at 106faf5c; DoD
 hunt-verdict: "pass: bughunt done at 106faf5c - 0 change, 0 pre-existing"
 review-verdict: "Nicht abnahmereif: ein Blocker. Settings, roles list, pr-round.sh (reply/comment-Dedupe, settled, request, Exit-Codes) und die Rollentexte erfuellen ihre DoD-Punkte, Tests gruen (go test ./core/role ./core/settings ./core/gitrepo, internal/cli -run PRGate|RolesList). Aber das Gate aus DoD 12 oeffnet bei einem Handle, den das Board nicht kennt - reproduziert mit dem Branch-Binary. Zurueck nach in-progress."
 review-round: 9
-review-check: "1. cd into a scratch clone of a GitHub repo you own, with an open test PR (number N)  2. run: jaira roles list  -> last line reads 'pr: person - who opens a pull request (the default); reviewer: none'  3. echo agent > .jaira/pr; echo copilot > .jaira/pr-reviewer; jaira roles list  -> 'pr: agent ... (from .jaira/pr, shared with the board); reviewer: copilot'  4. echo Agent > .jaira/pr; jaira roles list  -> back to 'pr: person' (a typo never enables it)  5. bash core/role/builtin/jaira-role-pr/scripts/pr-round.sh request <owner/repo> N copilot  -> prints 'requested: copilot' and Copilot appears as reviewer on the PR (or exit 4 with GitHub's reason if Copilot is not enabled)  6. leave one review comment on the PR, then: pr-round.sh threads <owner/repo> N  -> one JSON line with its id  7. printf 'Fixed in abc123: test' > /tmp/a.txt; pr-round.sh reply <owner/repo> N <id> /tmp/a.txt  -> the thread shows the answer and is resolved; run the same line again -> 'resolved: already', no second answer"
+review-check: "1. cd $(mktemp -d) && git init -q -b master && git config user.email a@b && git config user.name x  2. <branch-jaira> init && echo agent > .jaira/pr && git commit -q --allow-empty -m 'chore: base' && git checkout -q -b feat/x  3. git commit -q --allow-empty -m 'feat(ZZZZZZ): x'  4. <branch-jaira> roles pr-gate master; echo $?  -> heute: Exit 0 'may open'; nach dem Fix: Exit 3 mit dem unbekannten Handle  5. go test ./internal/cli -run PRGate && go test ./core/role -run PR  -> ok  6. <branch-jaira> roles list -> letzte Zeile 'pr: person ... reviewer: none; opens in: done (the default)'"
 ---
 
 # Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
