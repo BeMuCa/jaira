@@ -122,7 +122,7 @@ export function reportArgs(args: string): { ticket: string; all: boolean } {
 // One ticket's reports, each the agent's own text under one header line:
 // ticket · n of m · time · source · session. Only the unseen ones unless
 // `all`; nothing unseen says so, with how many older ones `all` would show.
-export function showReport(ticket: string, kept: readonly Report[], all = false): string {
+export function showReport(ticket: string, kept: readonly Report[], all: boolean): string {
   if (kept.length === 0) return words.noneFor(ticket)
   const reports = all ? kept : kept.filter(r => r.seen !== true)
   if (reports.length === 0) return words.nothingNew(ticket, kept.length)
