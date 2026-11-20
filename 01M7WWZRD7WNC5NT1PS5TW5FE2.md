@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T16:50:15Z
+updated-at: 2026-11-20T16:50:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-42185
 claimed-at: 2026-11-20T16:42:15Z
@@ -37,6 +37,7 @@ outcome-resolves: "DoD 1-4: pre-process 15-pre-process.md:38, in-progress 20-in-
 review-summary: "none"
 round: 2
 review-gaps: "none: kein Code, nur Prompts; die vier Kategorien stehen jetzt auch in pre-process und in-progress - bewusst, jede Lane liest nur ihren eigenen Prompt; keine toten Stellen"
+test-verdict: "fail: DoD 5-7 (Interim-Regeln des Teamleads, nachgetragen) sind noch nicht in den Lanes; Suite gruen (go test -race ./... RC=0)"
 ---
 
 # Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels
