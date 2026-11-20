@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T18:23:24Z
+updated-at: 2026-11-20T18:24:53Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85657
 claimed-at: 2026-11-20T17:52:47Z
@@ -133,3 +133,4 @@ Empfehlung: 2 - alle 7 DoD-Punkte sind mit Tests belegt, die Funde sind Randfael
 - **2026-11-20 18:19 · Alexander Sacharov** — Fragen gehen ab jetzt an den Teamlead (Alex: 'иди через тимлида'), parent session: uds:/run/user/1000/cc-socks/35112.sock
 - **2026-11-20 18:22 · Alexander Sacharov** — Umbau nach Teamlead (jaira-64): eine Quelle - board.GitIgnores (git check-ignore -v) entscheidet 'ist ignoriert', Exit != 0/1 ist ein Fehler, nie 'nicht ignoriert'; Ignored heisst nur noch 'jairas Eintrag steht da'. moveIgnore: git-Fehler -> nichts anfassen, ignore_unknown mit Grund; moved/added nur aus MoveIgnore/AddIgnore-Ergebnis. Tabellentest TestUpdateDecidesByWhatGitIgnores ersetzt TestUpdateOnGitWithoutPathFormat... und TestUpdateReportsAnAddedEntry.... Bekannte Grenze, im Test festgehalten: git<2.31 + '!/.jaira/' ueber jairas exclude-Eintrag -> update schreibt /.jaira/ in .gitignore und ueberstimmt die Negation (alter git sieht info/exclude nicht). Nicht angefasst: share.go:18/bindDriverIfShared und tickets.go nutzen Ignored weiter als 'jaira hat es privat gemacht' - anderes Thema.
 - **2026-11-20 18:23 · Alexander Sacharov** — critique Runde 11 (Diff 776e1ccd..0c153490): nichts - eine Entscheidungsquelle (GitIgnores), Fehler getrennt von 'nicht ignoriert', Meldungen aus Schreibergebnissen; Tabellentest ersetzt zwei Einzeltests.
+- **2026-11-20 18:24 · Alexander Sacharov** — bughunt: change: internal/cli/share.go:104-115 - share --json drops the error GitIgnores returns and reports still_ignored: false when git could not answer, the 'not ignored' that GitIgnores' own doc says an error must never become; only the text output warns. Trigger: .jaira a symlink plus a person's '.jaira' line in .git/info/exclude - the board stays ignored (git status does not list it), --json says still_ignored false, exit 0; ran: jaira share --json in a scratch repo (check-ignore exit 128 'beyond a symbolic link'); blame: 0c153490, c6c3ed13 (both NNV39Y)
