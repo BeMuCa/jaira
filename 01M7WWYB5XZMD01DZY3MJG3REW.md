@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T18:21:44Z
+updated-at: 2026-11-20T18:21:50Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-29476
 claimed-at: 2026-11-20T18:21:36Z
@@ -33,7 +33,13 @@ outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten d
 outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
 review-summary: "Neue Board-Dateien .jaira/pr (person|agent), .jaira/pr-reviewer (copilot, Login, org/team) und .jaira/pr-when (done|signoff), gelesen in core/settings/settings.go mit Default person/leer/done; jede Abweichung faellt auf den Default zurueck. 'jaira roles list' zeigt sie (pr, pr_source, pr_reviewer, pr_when). Neuer Befehl 'jaira roles pr-gate <remote>/<branch>' (internal/cli/roles.go): liest die Ticket-Handles aus den Commit-Subjects base..HEAD (core/gitrepo/named.go) und gibt Exit 0 nur, wenn .jaira/pr agent sagt und jedes benannte Ticket im Terminal-Lane steht (bei signoff: signoff bis Terminal); unlesbare Ticketdateien und fehlender signoff-Lane -> Exit 3. Neues Skript jaira-role-pr/scripts/pr-round.sh fuer GitHub: open (Gate, dann gh pr create), threads/comments (offene Punkte als JSON), reply (antworten + resolven, idempotent, zwei Sessions hinterlassen eine Antwort), comment (Konversation, nie doppelt), request (Reviewer, Copilot per Bot-Login, Exit 4 bei Ablehnung), settled (Runde fertig?). Merge/Approve kommen nirgends vor. SKILL.md von jaira-role-pr, teamlead und dispatcher beschreiben den Ablauf; GitLab bekommt glab-Zeilen statt Skript."
 round: 9
-review-gaps: "removed first_of (its last caller became keeper); left: keeper serves reply-dedupe, comment pre-check and comment read-back, no further sharing between GraphQL thread and REST conversation calls; settled's three reads stay separate calls (REST requested_reviewers, two GraphQL connections that page differently)"
+review-gaps: |-
+  blocker: DoD 12 - pr-gate laesst einen Handle durch, den das Board nicht kennt, und behandelt ihn als 'ins Logbook abgelegt' ohne das zu pruefen. Repro: frisches Repo, .jaira/pr=agent, ein Commit 'feat(ZZZZZZ): x' -> 'jaira roles pr-gate master' Exit 0, 'every ticket on the branch is in done: ZZZZZZ'. Ein Tippfehler im Scope, ein Ticket auf einem nicht geholten Ref oder ein abgelehntes Ticket oeffnet so den PR ohne jede Abnahme - dieselbe Fail-open-Luecke, die der Code fuer unlesbare Dateien schon schliesst (internal/cli/roles.go, Schleife ueber named; Test prgate_test.go:115 schreibt das Verhalten fest). Fix-Richtung: als abgelegt gilt nur ein Handle, den eine Datei unter .jaira/logbook/ traegt; sonst Exit 3 'unknown'.
+  note: 'done wartet auf settled' bei pr-when=signoff steht nur im Rollentext - signoff->done verschiebt eine Person, das Binary prueft settled dabei nicht (DoD 16 verlangt nur die Rolle, also kein Blocker).
+  note: jaira-role-pr/SKILL.md 'Open it': 'Exit 3 ... a ticket it names is not in done' nennt unter pr_when=signoff den falschen Lane; die Gate-Meldung selbst ist richtig.
+  note: pr-gate verweigert, sobald irgendeine Ticketdatei des Boards unlesbar oder doppelt ist (s.List PartialError), auch eine, die mit dem Branch nichts zu tun hat - gewollt fail-closed, aber ein kaputtes fremdes Ticket sperrt jeden Agent-PR.
+  note: pr-round.sh comment holt den eigenen Login mit 'gh api user'; mit einem GitHub-App-/Actions-Token liefert /user 403 und der Befehl bricht vor dem Posten mit Exit 1 ab (reply nutzt graphql viewer und hat das Problem nicht).
+  note: ein Antworttext nur aus Leerzeichen/Leerzeilen besteht body_of (-s) und wird gepostet bzw. von GitHub abgelehnt.
 test-verdict: "pass: go test -race ./... RC=0 after clean cache at 106faf5c; DoD 1-16 proofs present; real binary on a scratch board (9ef2e20b, gate code unchanged since): thresholds done/signoff, unreadable ticket -> exit 3, bad base 2, parallel pr-gate both 0; pr-round.sh open refuses before gh pr create; reply/comment/settled against fake gh only (no live GitHub here)"
 hunt-verdict: "pass: bughunt done at 106faf5c - 0 change, 0 pre-existing"
 review-verdict: "All 11 DoD items are met by the diff; settings, roles list, pr-round.sh and the role texts read whole show no defect. Related tests pass (go test ./core/settings ./core/role ./internal/cli). Only uncertainty: the Copilot reviewer request has not been tried against real GitHub."
