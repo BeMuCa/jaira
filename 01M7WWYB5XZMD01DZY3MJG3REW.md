@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T20:01:00Z
+updated-at: 2026-11-20T20:01:09Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-18659
 claimed-at: 2026-11-20T19:49:16Z
@@ -31,7 +31,7 @@ question: ""
 outcome-what: "Board-Dateien .jaira/pr (person|agent), .jaira/pr-reviewer und .jaira/pr-when (done|signoff, Default done); 'jaira roles list' zeigt sie; 'jaira roles pr-gate <remote>/<branch>' prueft im Binary, ob ein Agent den PR oeffnen darf (agent + jedes Ticket des Branches in done bzw. signoff); jaira-role-pr/scripts/pr-round.sh: open (Gate vor gh pr create), threads, comments, reply/comment (nie doppelt, auch bei zwei Sessions; loescht nur die eigene POST-id), request, settled (keine offenen Threads, kein ausstehendes Review); Rollentexte, Release-Note."
 outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten das pro Repo. In manchen Projekten laeuft das Review auf dem PR selbst, dort kommt done erst danach (Alex 20.11.)."
 outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
-review-summary: "critique 14: FileAt and help fixed in dfb23369; nothing left"
+review-summary: "critique 15 (a3137857): nothing - account check moved before the gate, one pushurl entry for tip and account"
 round: 16
 review-gaps: "optimize (3fe55258..dfb23369): nothing - FileAt has no twin in core/gitrepo (core/gitref reads ticket refs through its own runner), PRIn/PRWhenIn share firstLine with the file readers, the tr lowercasing stays for bash 3.2 on macOS"
 test-verdict: "pass: suite -race -count=1 RC=0 at dfb23369; DoD 20/21 tests run"
