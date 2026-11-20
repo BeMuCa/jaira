@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:15:30Z
+updated-at: 2026-11-20T23:16:13Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -39,7 +39,7 @@ review-summary: "none"
 round: 4
 review-gaps: "none - UnnamedCommits reuses HandlesInSubjects rather than a second regexp; reap.sh pattern mirrors subjectScope in shell, which cannot call Go"
 test-verdict: "fail: suite green with -race (RC=0); bughunt change finding - under none pr-gate let a commit that names no ticket land unseen"
-hunt-verdict: "change: internal/cli/roles.go pr-gate under none checked only commits naming a ticket; an unnamed commit (wip, merged branch) would land by fast-forward with nobody seeing it. Class fix: every non-merge commit in base..HEAD must name a ticket under none (gitrepo.UnnamedCommits). Unconfirmed side finding fixed alike: reap.sh under none counted a branch with no own work as landed - now needs a commit naming the ticket."
+hunt-verdict: "change x2 (round 2): (1) core/gitrepo/named.go UnnamedCommits skips merges, so an evil merge / conflict resolution with own content lands unseen under none; (2) pr-gate binds acceptance to the ticket, not to its commits - a commit made after acceptance naming a done ticket (same or another) lands unseen under none"
 ---
 
 # Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig
