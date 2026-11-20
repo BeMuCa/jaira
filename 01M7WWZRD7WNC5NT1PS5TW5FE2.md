@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T16:42:33Z
+updated-at: 2026-11-20T16:43:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-42185
 claimed-at: 2026-11-20T16:42:15Z
@@ -54,3 +54,4 @@ claimed-at: 2026-11-20T16:42:15Z
 ## Progress
 - **2026-11-20 16:35 · Alexander Sacharov** — Alex 20.11.2026: er schickt inzwischen jedes Ticket wegen der Review-Funde zurueck, bis die Raender zu sind ('Raender offen lassen ist schlecht'). Jede Note ist also faktisch eine weitere Runde mit dem Menschen - die Raender billiger vor dem Code zu benennen spart genau diese Runden.
 - **2026-11-20 16:42 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock
+- **2026-11-20 16:43 · Alexander Sacharov** — decision: keine offene Entscheidung fuer die Person. Selbst gesetzt: (1) pre-process laeuft nur mit Option planning (requires-option) - deshalb benennt in-progress Klasse/Eingabeklassen/Annahmeregel selbst, wenn kein Plan-Lane lief; (2) 'Work only within the plan's scope' bleibt, aber Geschwister-Stellen derselben Fehlerklasse gelten ausdruecklich als im Scope, andere Nachbarprobleme weiter nur als Note; (3) pre-process schreibt die Punkte mit 'jaira dod <id> --add' in die DoD, nicht nur in den Plan, weil nur die DoD das Gate liest; (4) critique, review und Tier bleiben unveraendert - nicht in der DoD; (5) jede geaenderte eingebaute Datei bekommt ihren sha256 in core/shipped/shipped.sha256, .jaira/lanes bekommt dieselbe Fassung.
