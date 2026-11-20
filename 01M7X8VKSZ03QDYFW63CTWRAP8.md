@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T20:10:40Z
+updated-at: 2026-11-20T20:10:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16592
 claimed-at: 2026-11-20T20:04:03Z
@@ -41,7 +41,8 @@ claimed-at: 2026-11-20T20:04:03Z
   proof: core/role/builtin/jaira-role-signoff/SKILL.md (## The return rules, ## Per ticket)
 - [x] jaira-worker/jaira-dispatcher: vor jedem Push die Gates des Projekts lokal laufen lassen, die CI sonst rot machen (im Skill allgemein formuliert)
   proof: jaira-worker/SKILL.md ### Before you push; jaira-dispatcher/SKILL.md ## Before anything is pushed; jaira-role-pr/SKILL.md ## Push the branch
-- [ ] Release-Note und shipped.sha256; die Rollen-Tests (core/role) gruen
+- [x] Release-Note und shipped.sha256; die Rollen-Tests (core/role) gruen
+  proof: core/release/notes/TWRAP8.md; core/shipped/shipped.sha256; go test ./core/role ok
 
 ## Options
 
