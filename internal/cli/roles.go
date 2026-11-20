@@ -156,9 +156,9 @@ needs no gate: their invocation is the decision.
 Where .jaira/pr says none the same gate decides whether the branch may land
 on <base> without a pull request: every ticket in the terminal lane, and
 .jaira/pr-when is not read — with no pull request there is no review on one
-to wait for. And every commit in <base>..HEAD, merges aside, must name a
-ticket: nobody reads the branch after the gate, so a commit no ticket owns
-would land unseen. --json carries may_open,
+to wait for. And every commit in <base>..HEAD must name a ticket — a merge
+only when it carries content of its own: nobody reads the branch after the
+gate, so a commit no ticket owns would land unseen. --json carries may_open,
 pr, pr_when and tickets; a refusal is the usual error, its reason
 pr_person, no_ticket, no_signoff_lane, unreadable, pending or, under none,
 unnamed.`,

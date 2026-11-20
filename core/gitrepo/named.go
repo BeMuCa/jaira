@@ -41,30 +41,38 @@ func (r *Repo) TicketsNamed(base string) ([]string, error) {
 	return HandlesInSubjects(out), nil
 }
 
-// UnnamedCommits returns the commits of base..HEAD, merges aside, whose
-// subject names no ticket, as "<short sha> <subject>" in the order git lists
-// them. A merge commit is left out because what it brings in is listed on its
-// own: a branch merged in without handles shows its commits here, the merge
-// of the base into the branch shows nothing, since the base is excluded.
+// UnnamedCommits returns the commits of base..HEAD whose subject names no
+// ticket, as "<short sha> <subject>" in the order git lists them. A merge
+// that names none counts only when it carries content of its own — a
+// conflict resolution, a file added during 'merge --no-commit' — which is
+// what 'git diff-tree --cc' shows; a clean merge brings in nothing that is
+// not listed on its own: a branch merged in shows its commits here, the base
+// merged into the branch shows nothing, since the base is excluded.
 // base must already be known to name a commit (TicketsNamed checks it).
 func (r *Repo) UnnamedCommits(base string) ([]string, error) {
 	if base == "" || strings.HasPrefix(base, "-") {
 		return nil, ErrNoSuchRef
 	}
-	out, err := r.run("log", "--no-merges", "--format=%h %s", base+"..HEAD", "--")
+	out, err := r.run("log", "--format=%H%x00%h%x00%P%x00%s", base+"..HEAD", "--")
 	if err != nil {
 		return nil, err
 	}
 	var unnamed []string
 	for _, line := range strings.Split(out, "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" {
+		f := strings.SplitN(strings.TrimSpace(line), "\x00", 4)
+		if len(f) != 4 || len(HandlesInSubjects(f[3])) > 0 {
 			continue
 		}
-		_, subject, _ := strings.Cut(line, " ")
-		if len(HandlesInSubjects(subject)) == 0 {
-			unnamed = append(unnamed, line)
+		if len(strings.Fields(f[2])) > 1 {
+			own, err := r.run("diff-tree", "--cc", "-p", "--no-commit-id", f[0])
+			if err != nil {
+				return nil, err
+			}
+			if strings.TrimSpace(own) == "" {
+				continue
+			}
 		}
+		unnamed = append(unnamed, f[1]+" "+f[3])
 	}
 	return unnamed, nil
 }

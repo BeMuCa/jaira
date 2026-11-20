@@ -391,6 +391,23 @@ func TestPRGateOnANoneBoardRefusesCommitsNoTicketOwns(t *testing.T) {
 		}
 		git("reset", "-q", "--hard", "HEAD~1")
 	}
+	// A merge that names no ticket and carries content of its own — here a
+	// file added during the merge — holds it like any unnamed commit.
+	git("checkout", "-q", "master")
+	git("commit", "-q", "--allow-empty", "-m", "chore: base moves again")
+	git("checkout", "-q", "feat/x")
+	git("merge", "-q", "--no-ff", "--no-commit", "master")
+	if err := os.WriteFile(filepath.Join(dir, "smuggled.txt"), []byte("x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	git("add", "smuggled.txt")
+	git("commit", "-q", "--no-edit", "-m", "Merge branch 'master' into feat/x")
+	_, err := runCLI(t, dir, "roles", "pr-gate", "master")
+	if exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "Merge branch 'master' into feat/x") {
+		t.Fatalf("none, a merge with content of its own: exit %d, %v", exitCode(err), err)
+	}
+	git("reset", "-q", "--hard", "HEAD~1")
+
 	// The agent board keeps its rule: a person sees the pull request.
 	setPR(t, dir, "agent")
 	commit("wip: on an agent board")
