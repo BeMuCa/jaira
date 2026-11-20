@@ -108,8 +108,8 @@ round fixes both at once.
       jaira note <handle> "testing: class: <the fault>; example: <what you saw, the evidence>; fix: <at the cause, test over the class>"
       jaira move <handle> --to in-progress
 
-  The ticket comes back to you only when the class is fixed: on the next
-  round, try a neighbour of the example as well as the example itself. A
+  When the ticket comes back, a finding is passed only when its class is
+  fixed: try a neighbour of the example as well as the example itself. A
   neighbour still failing is the same finding again, not a new one.
 
   The hunter's `change` notes are already the brief for whoever fixes them;

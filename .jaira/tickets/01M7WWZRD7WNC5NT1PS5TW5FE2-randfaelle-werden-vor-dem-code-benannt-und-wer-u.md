@@ -27,13 +27,15 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T16:46:10Z
+updated-at: 2026-11-20T16:47:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-42185
 claimed-at: 2026-11-20T16:42:15Z
 outcome-what: "Eingebaute Lanes pre-process, in-progress, testing und die Rolle jaira-role-bughunt verlangen jetzt Fehlerklasse statt Beispiel: pre-process schreibt Klasse, Eingabeklassen und Annahmeregel als DoD-Punkte; in-progress repariert an der Ursache, testet die Klasse parametrisiert, sucht Geschwister-Stellen und prueft die vier Kategorien vor dem Move; testing/bughunt melden Klasse + Beispiel. .jaira/lanes nachgezogen, sha256 in shipped.sha256, Release-Note."
 outcome-why: "Review- und bughunt-Schleifen liefen 10-24 Runden, weil jede Runde den Nachbarfall eines nur am Beispiel reparierten Fehlers fand und die vier Kategorien vor dem Code nie gefragt wurden."
 outcome-resolves: "DoD 1-4: pre-process 15-pre-process.md:38, in-progress 20-in-progress.md:29, bughunt SKILL.md:104 und testing 27-testing.md:102, eingebettet mit shipped.sha256 und core/release/notes/TW5FE2.md"
+review-summary: "core/lane/builtin/27-testing.md:110 'The ticket comes back to you only when the class is fixed' beschreibt etwas, das testing nicht steuert (der Ticket kommt nach jedem in-progress zurueck) - als Regel fuer den Pass formulieren: pass erst, wenn auch ein Nachbar des Beispiels geht; core/lane/builtin/20-in-progress.md:35 'Where no planning step ran and it does not' ist unklar, welches 'it' - 'and the definition of done does not name them'"
+round: 2
 ---
 
 # Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels
@@ -47,7 +49,7 @@ outcome-resolves: "DoD 1-4: pre-process 15-pre-process.md:38, in-progress 20-in-
 - [x] bughunt- und testing-Prompt: ein Fund nennt die Klasse und das Beispiel; der Rueckweg nach in-progress verlangt den Fix der Klasse
   proof: core/role/builtin/jaira-role-bughunt/SKILL.md:104; core/lane/builtin/27-testing.md:102 (class + example; return only when the class is fixed)
 - [x] Die eingebetteten Lanes und Rollen sind geaendert, mit Release-Note
-  proof: core/shipped/shipped.sha256:560-563; .jaira/lanes/{pre-process,in-progress,testing}.md byte-equal to builtin; core/release/notes/TW5FE2.md; go test ./core/shipped ./core/lane ./core/role/... ok
+  proof: core/shipped/shipped.sha256:560-565; .jaira/lanes/{pre-process,in-progress,testing}.md byte-equal to builtin; core/release/notes/TW5FE2.md; go test ./core/shipped ./core/lane ./core/role/... ok
 
 ## Options
 
@@ -62,3 +64,4 @@ outcome-resolves: "DoD 1-4: pre-process 15-pre-process.md:38, in-progress 20-in-
 - **2026-11-20 16:35 · Alexander Sacharov** — Alex 20.11.2026: er schickt inzwischen jedes Ticket wegen der Review-Funde zurueck, bis die Raender zu sind ('Raender offen lassen ist schlecht'). Jede Note ist also faktisch eine weitere Runde mit dem Menschen - die Raender billiger vor dem Code zu benennen spart genau diese Runden.
 - **2026-11-20 16:42 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock
 - **2026-11-20 16:43 · Alexander Sacharov** — decision: keine offene Entscheidung fuer die Person. Selbst gesetzt: (1) pre-process laeuft nur mit Option planning (requires-option) - deshalb benennt in-progress Klasse/Eingabeklassen/Annahmeregel selbst, wenn kein Plan-Lane lief; (2) 'Work only within the plan's scope' bleibt, aber Geschwister-Stellen derselben Fehlerklasse gelten ausdruecklich als im Scope, andere Nachbarprobleme weiter nur als Note; (3) pre-process schreibt die Punkte mit 'jaira dod <id> --add' in die DoD, nicht nur in den Plan, weil nur die DoD das Gate liest; (4) critique, review und Tier bleiben unveraendert - nicht in der DoD; (5) jede geaenderte eingebaute Datei bekommt ihren sha256 in core/shipped/shipped.sha256, .jaira/lanes bekommt dieselbe Fassung.
+- **2026-11-20 16:46 · Alexander Sacharov** — critique: testing.md:110 als Pass-Regel formulieren (pass nur, wenn auch ein Nachbar geht); in-progress.md:35 'it' durch 'the definition of done' ersetzen. Sonst nichts: vier Kategorien bewusst in jeder Lane wiederholt, weil jede Lane nur ihren eigenen Prompt liest.

@@ -34,8 +34,8 @@ the next example of a mistake that was fixed for one example only. So:
 
 - **Know the class before you write code.** The definition of done names the
   class of fault, the input classes and, for a heuristic, the acceptance rule.
-  Where no planning step ran and it does not, name them yourself first and
-  write them on the ticket with `jaira dod <id> --add`.
+  Where the definition of done does not — no planning step ran — name them
+  yourself first and write them on the ticket with `jaira dod <id> --add`.
 - **Fix the cause, not the example.** A finding or a ticket arrives as one
   example: "3 / 12" is not removed. A fix that adds "3 / 12" to a pattern is
   found out next round by "3/12". Ask why the example fails, and change that —
