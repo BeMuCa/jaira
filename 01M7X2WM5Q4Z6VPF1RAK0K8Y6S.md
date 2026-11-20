@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T23:03:29Z
+updated-at: 2026-11-20T23:03:47Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -30,7 +30,7 @@ review-summary: none
 round: 4
 review-gaps: "none - Runde 3: eine Zeile in hashed() und ein Test, der den alten Generator-Test als Tabelle ueber beide Modi ersetzt"
 test-verdict: "pass: go vet + go test ./... RC=0 auf 55ae3718; --check echtes Repo exit 0 (34 Tags), Generator-Ausgabe gleich dem committeten Manifest; unlesbarer Blob stoppt Generator und --check ohne den Hash der leeren Datei (TestUnreadableBlobStopsTheScript, rot ohne den Fix); Aenderung schreibt nichts"
-hunt-verdict: ""
+hunt-verdict: "pass: bughunt done at 55ae3718, 0 change, 0 pre-existing (Runde 3, Diff seit 9c785040); Fund aus Runde 2 behoben, Test rot ohne den Fix (selbst geprueft)"
 ---
 
 # shipped.sha256 kennt jede Version, die in einem Release-Tag ausgeliefert wurde, und CI haelt das fest
