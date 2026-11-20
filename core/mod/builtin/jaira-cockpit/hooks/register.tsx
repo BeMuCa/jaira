@@ -208,7 +208,7 @@ function keep($: EngineInterface, ticket: string, report: Report): Promise<void>
   return locked(async () => {
     const root = await project($)
     const key = keyOf(root, ticket)
-    const before = ((await $.store.get(key)) as Report[] | undefined) ?? []
+    const before = await stored($, key)
     // Delete first so the key moves to the end of the store's insertion order:
     // the first keys are then the tickets heard from longest ago.
     await $.store.delete(key)
