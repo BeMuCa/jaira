@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T16:44:35Z
+updated-at: 2026-11-20T16:44:40Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59469
 claimed-at: 2026-11-20T16:43:41Z
@@ -51,3 +51,4 @@ claimed-at: 2026-11-20T16:43:41Z
 - **2026-11-20 16:43 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock
 - **2026-11-20 16:44 · Alexander Sacharov** — decision (settled, worker): die Einstellung ist eine Board-Datei wie .jaira/release - .jaira/pr, eine Zeile 'person' (Default, wie heute) oder 'agent'; der Reviewer steht in .jaira/pr-reviewer (z.B. copilot). Grund: Vorbild ReleaseFor in core/settings/settings.go, reist mit dem Repo (XB97NJ: nicht settings.json, nicht git config); sichtbar ueber 'jaira roles list --json' wie release.
 - **2026-11-20 16:44 · Alexander Sacharov** — decision (settled, worker): die Kommentarrunde laeuft ueber Rollentext plus ein Skript in jaira-role-pr/scripts (offene Threads listen, antworten, resolve per gh api graphql, Review neu anfordern) - der Teamlead wollte 'pr-round <ID>'; ein Skript macht den GraphQL-Teil wiederholbar. Merge/Approve bleibt in jedem Fall verboten.
+- **2026-11-20 16:44 · Alexander Sacharov** — question: Wann darf ein Agent mit .jaira/pr=agent den PR oeffnen? 1) (Recommended) Sobald alle Tickets des Branches in done sind - wie der Cockpit-Accept heute; die Abnahme der Person ist die Freigabe, Copilot reviewt danach. 2) Schon in signoff - Copilot reviewt, bevor die Person abnimmt; die Person sieht Copilot-Ergebnis beim Accept, aber ein PR existiert fuer noch nicht abgenommene Arbeit. 3) Nur auf ausdrueckliche Freigabe pro PR (Teamlead gibt --by-person weiter, nachdem die Person ja gesagt hat) - Einstellung spart nur die Handarbeit, nicht die Frage.
