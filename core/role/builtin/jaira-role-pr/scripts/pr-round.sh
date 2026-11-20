@@ -68,7 +68,9 @@ body_of() {
 
 case "$cmd" in
   threads)
-    gh api graphql --paginate -F owner="$owner" -F name="$name" -F number="$number" \
+    # -f for every string: -F turns a value of digits into a number, and a
+    # repository named 2048 would then fail the String! it is declared as.
+    gh api graphql --paginate -f owner="$owner" -f name="$name" -F number="$number" \
       -f query="$threads_query" \
       --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved | not)
             | {id, path, line, outdated: .isOutdated,
@@ -85,11 +87,29 @@ case "$cmd" in
     [ $# -eq 2 ] || { usage >&2; exit 2; }
     thread=$1 file=$2
     body_of "$file"
-    gh api graphql -F thread="$thread" -F body=@"$file" -f query='
-      mutation($thread:ID!,$body:String!){
-        addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$thread,body:$body}){comment{url}}}' \
-      --jq '.data.addPullRequestReviewThreadReply.comment.url'
-    gh api graphql -F thread="$thread" -f query='
+    # Answer and resolve are two calls, and the second can fail after the
+    # first went through. Run again, the thread is still listed open; its last
+    # comment is then already ours, so only the resolve is repeated and the
+    # reviewer never gets the same answer twice.
+    state=$(gh api graphql -f thread="$thread" -f query='
+      query($thread:ID!){viewer{login}
+        node(id:$thread){... on PullRequestReviewThread{isResolved comments(last:1){nodes{author{login}}}}}}' \
+      --jq 'if .data.node == null then "missing"
+            elif .data.node.isResolved then "resolved"
+            elif (.data.node.comments.nodes[0].author.login // "") == .data.viewer.login then "answered"
+            else "open" end')
+    case "$state" in
+      missing) die "no review thread '$thread' on $repo#$number" 1 ;;
+      resolved) echo "resolved: already"; exit 0 ;;
+      answered) echo "answered: already, resolving" ;;
+      *)
+        gh api graphql -f thread="$thread" -F body=@"$file" -f query='
+          mutation($thread:ID!,$body:String!){
+            addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$thread,body:$body}){comment{url}}}' \
+          --jq '.data.addPullRequestReviewThreadReply.comment.url'
+        ;;
+    esac
+    gh api graphql -f thread="$thread" -f query='
       mutation($thread:ID!){resolveReviewThread(input:{threadId:$thread}){thread{isResolved}}}' \
       --jq '"resolved: \(.data.resolveReviewThread.thread.isResolved)"'
     ;;
@@ -100,10 +120,11 @@ case "$cmd" in
     ;;
   request)
     [ $# -eq 1 ] || { usage >&2; exit 2; }
-    reviewer=$1
+    # A login is written with or without its @; the API takes it without.
+    reviewer=${1#@}
     # gh pr edit --add-reviewer takes no special value for Copilot; the REST
     # endpoint takes its bot login.
-    [ "$reviewer" = copilot ] || [ "$reviewer" = @copilot ] && reviewer='copilot-pull-request-reviewer[bot]'
+    [ "$reviewer" = copilot ] && reviewer='copilot-pull-request-reviewer[bot]'
     case "$reviewer" in
       */*) field="team_reviewers[]=${reviewer#*/}" ;;
       *) field="reviewers[]=$reviewer" ;;

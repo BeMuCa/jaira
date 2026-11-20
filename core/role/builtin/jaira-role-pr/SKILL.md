@@ -402,7 +402,9 @@ one that is not resolvable is the conversation, answered and left as it is.
 The script exits 3 before writing anything when gh is not signed in, and 1
 with gh's own message when a write fails half way. Then report which threads
 are answered and which are not — the next round picks up the rest, because
-`threads` lists them still open.
+`threads` lists them still open. Running `reply` again on a thread whose answer
+went through but whose resolve did not only resolves it: the reviewer never
+gets the same answer twice.
 
 - One comment, one reply, one commit. Do not batch a reviewer's five points into
   one commit that none of them can be reverted out of.

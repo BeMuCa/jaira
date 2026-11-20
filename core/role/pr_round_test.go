@@ -13,13 +13,14 @@ import (
 // makes 'auth status' fail, GH_POST=fail makes every --method POST fail, and
 // GH_FIXTURE is the JSON a read answers with, run through the real jq with
 // the filter the script hands --jq — so the filter itself is what is tested;
-// GH_ISSUES answers the conversation's comments instead.
+// GH_ISSUES answers the conversation's comments instead, and GH_STATE the
+// query reply asks before it writes.
 const fakeGH = `#!/usr/bin/env bash
 printf '%s\t' "$@" >> "$GH_LOG"; printf '\n' >> "$GH_LOG"
 [ "$1" = auth ] && { [ "${GH_AUTH:-}" = fail ] && exit 1; exit 0; }
 for a in "$@"; do [ "$a" = POST ] && [ "${GH_POST:-}" = fail ] && { echo "HTTP 422: Reviews may only be requested from collaborators" >&2; exit 1; }; done
 filter="" fixture=${GH_FIXTURE:-}
-case "$*" in *"/issues/"*) fixture=${GH_ISSUES:-} ;; esac
+case "$*" in *"/issues/"*) fixture=${GH_ISSUES:-} ;; *"viewer{login}"*) fixture=${GH_STATE:-} ;; esac
 while [ $# -gt 0 ]; do [ "$1" = --jq ] && filter=$2; shift; done
 if [ -n "$filter" ] && [ -n "$fixture" ]; then jq -r "$filter" "$fixture"; else echo '{}'; fi
 `
@@ -139,6 +140,9 @@ func TestPRRoundListsOnlyWhatIsOpen(t *testing.T) {
 		 {"id":"PRRT_open","isResolved":false,"isOutdated":true,"path":"dir with space/ü.go","line":null,"comments":{"nodes":[{"author":null,"body":"line\r\nwith \"quotes\" and $(id)","url":"u2"}]}}
 		]}}}}}`)
 	out, code := p.run([]string{"GH_FIXTURE=" + threads}, "threads", "o/r", "7")
+	if !strings.Contains(strings.Join(p.calls(), "\n"), "-f\towner=o\t-f\tname=r\t") {
+		t.Errorf("threads must hand owner and name as strings (-f):\n%s", strings.Join(p.calls(), "\n"))
+	}
 	if code != 0 || strings.Contains(out, "PRRT_done") || !strings.Contains(out, "PRRT_open") || !strings.Contains(out, `"author":"ghost"`) {
 		t.Errorf("threads: exit %d, want only PRRT_open with a ghost author\n%s", code, out)
 	}
@@ -160,7 +164,8 @@ func TestPRRoundListsOnlyWhatIsOpen(t *testing.T) {
 func TestPRRoundRepliesThenResolves(t *testing.T) {
 	p := newPRRound(t)
 	answer := fixtureFile(t, "answer.md", "Fixed in abc123: `x` -> \"y\"; $(id)\r\n")
-	out, code := p.run(nil, "reply", "o/r", "7", "PRRT_open", answer)
+	open := fixtureFile(t, "open.json", `{"data":{"viewer":{"login":"me"},"node":{"isResolved":false,"comments":{"nodes":[{"author":{"login":"copilot-pull-request-reviewer"}}]}}}}`)
+	out, code := p.run([]string{"GH_STATE=" + open}, "reply", "o/r", "7", "PRRT_open", answer)
 	if code != 0 {
 		t.Fatalf("reply: exit %d\n%s", code, out)
 	}
@@ -186,6 +191,7 @@ func TestPRRoundRequestsTheReviewer(t *testing.T) {
 		"copilot":         "reviewers[]=copilot-pull-request-reviewer[bot]",
 		"@copilot":        "reviewers[]=copilot-pull-request-reviewer[bot]",
 		"monalisa":        "reviewers[]=monalisa",
+		"@monalisa":       "reviewers[]=monalisa",
 		"myorg/team-name": "team_reviewers[]=team-name",
 	} {
 		out, code := p.run(nil, "request", "o/r", "7", reviewer)
@@ -255,6 +261,39 @@ func TestPROpensOnlyWhereTheBoardSaysAndNeverAccepts(t *testing.T) {
 		}
 		if !strings.Contains(string(b), "`agent`") || !strings.Contains(string(b), "in done") {
 			t.Errorf("%s still says only a person opens a pull request, without the board's exception", id)
+		}
+	}
+}
+
+// Answer and resolve are two calls. A round run again after the resolve
+// failed finds the thread open with our answer last, and only resolves it; a
+// thread already resolved is left alone; a thread that does not exist is
+// refused before anything is written. The class: no thread ever gets the same
+// answer twice (JG3REW, bughunt).
+func TestPRRoundReplyIsSafeToRunAgain(t *testing.T) {
+	p := newPRRound(t)
+	answer := fixtureFile(t, "answer.md", "Fixed in abc123.\n")
+	for _, c := range []struct {
+		name, state     string
+		code            int
+		posts, resolves bool
+	}{
+		{"answered, resolve failed", `{"data":{"viewer":{"login":"me"},"node":{"isResolved":false,"comments":{"nodes":[{"author":{"login":"me"}}]}}}}`, 0, false, true},
+		{"already resolved", `{"data":{"viewer":{"login":"me"},"node":{"isResolved":true,"comments":{"nodes":[{"author":{"login":"me"}}]}}}}`, 0, false, false},
+		{"no such thread", `{"data":{"viewer":{"login":"me"},"node":null}}`, 1, false, false},
+		{"ghost author", `{"data":{"viewer":{"login":"me"},"node":{"isResolved":false,"comments":{"nodes":[{"author":null}]}}}}`, 0, true, true},
+	} {
+		state := fixtureFile(t, "state.json", c.state)
+		out, code := p.run([]string{"GH_STATE=" + state}, "reply", "o/r", "7", "PRRT_x", answer)
+		calls := strings.Join(p.calls(), "\n")
+		if code != c.code {
+			t.Errorf("%s: exit %d, want %d\n%s", c.name, code, c.code, out)
+		}
+		if got := strings.Contains(calls, "addPullRequestReviewThreadReply"); got != c.posts {
+			t.Errorf("%s: posted an answer %v, want %v\n%s", c.name, got, c.posts, calls)
+		}
+		if got := strings.Contains(calls, "resolveReviewThread"); got != c.resolves {
+			t.Errorf("%s: resolved %v, want %v\n%s", c.name, got, c.resolves, calls)
 		}
 	}
 }

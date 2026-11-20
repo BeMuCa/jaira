@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T16:59:29Z
+updated-at: 2026-11-20T17:04:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59469
 claimed-at: 2026-11-20T16:43:41Z
@@ -31,10 +31,11 @@ question: ""
 outcome-what: "Board-Dateien .jaira/pr (person|agent, Default person) und .jaira/pr-reviewer; settings.PRFor/PRReviewerFor; 'jaira roles list' zeigt pr/pr_source/pr_reviewer; jaira-role-pr: Abschnitt 'Whether this board lets an agent open it', create nur bei person-Aufruf oder agent+alle Tickets done, Reviewer anfordern, eine Kommentarrunde ueber neues scripts/pr-round.sh (threads, comments, reply=antworten+resolve, comment, request); teamlead/dispatcher nennen die Ausnahme; Release-Note."
 outcome-why: "Ein Teamlead machte jede PR-Runde von Hand (push, PR-Text, Copilot anfordern, antworten, resolve); Alex erlaubt Agenten das inzwischen, aber nur pro Repo."
 outcome-resolves: "Mit .jaira/pr=agent oeffnet jaira-role-pr den PR nach der Abnahme aller Tickets selbst, fordert den Reviewer an und faehrt eine Kommentarrunde; ohne Datei bleibt alles wie heute; Merge/Approve bleibt in jedem Fall beim Menschen."
-review-summary: |-
-  core/settings/settings.go PRReviewerFor kopiert die Zeichenpruefung aus modelName mit zwei Zeichen mehr - eine Funktion (word(v, extra)) fuer beide statt zwei Schleifen
-  core/role/builtin/jaira-role-pr/SKILL.md GitLab-Absatz der Kommentarrunde: glab api 'projects/:id/...' setzt das Projekt des aktuellen Verzeichnisses ein (origin, im Fork falsch) und 'glab mr note' antwortet auf der MR statt im Thread - Diskussionen per glab api 'projects/<owner%2Frepo>/merge_requests/<n>/discussions' listen, in der Diskussion antworten (POST .../discussions/<id>/notes) und dort resolven
-round: 2
+review-summary: none
+round: 3
+review-gaps: "none - geprueft: PRFor folgt bewusst ReleaseFor (gleiches Muster, eigene Werte), Zeichenpruefung seit critique 1 eine Funktion word(); pr-round.sh hat kein Gegenstueck im Repo (grep requested_reviewers/resolveReviewThread: nur hier); kein toter Code, alle neuen Funktionen haben Aufrufer; roles list liest zwei kleine Dateien mehr, kein heisser Pfad"
+test-verdict: "pass: go build + go test -count=1 -race ./... RC=0; DoD 1-11 gegen den Baum geprueft (Tests laufen); roles list auf Scratch-Board: default person/none, agent+copilot aus CRLF-Datei, Shell-Zeichen im Reviewer -> leer, unlesbare .jaira/pr -> person; pr-round.sh threads/comments gegen BeMuCa/jaira #138-#144 rc=0, falsche PR-Nummer rc=1 ohne Schreiben; Schreibwege (reply/request) nur gegen gh-Stub, nicht live; zwei Schreiber: roles list schreibt nichts, doppelte Runde siehe hunt"
+hunt-verdict: "fail: bughunt done at d527d5a9, 3 change (numerische owner/name per -F, reply nicht wiederholbar nach gescheitertem resolve, @login ausser @copilot), 0 pre-existing"
 ---
 
 # Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
@@ -60,7 +61,7 @@ round: 2
 - [x] Eingabeklasse Copilot nicht verfuegbar (Reviewer-Anfrage abgelehnt): wird gemeldet, PR bleibt offen, kein Abbruch der Runde
   proof: core/role/pr_round_test.go TestPRRoundRequestsTheReviewer (GH_POST=fail -> exit 4 with gh's reason); core/role/builtin/jaira-role-pr/SKILL.md:340
 - [x] Eingabeklasse zweite Runde auf denselben Kommentaren: bereits resolved Threads werden nicht erneut beantwortet
-  proof: core/role/pr_round_test.go TestPRRoundListsOnlyWhatIsOpen (resolved PRRT_done not listed)
+  proof: core/role/pr_round_test.go TestPRRoundListsOnlyWhatIsOpen (resolved thread not listed), TestPRRoundReplyIsSafeToRunAgain (answered/resolved thread gets no second answer)
 - [x] Eingabeklasse .jaira/pr/.jaira/pr-reviewer leer, CRLF, Kommentar, Tippfehler, Shell-Sonderzeichen: Tabellentest, Default person / Reviewer leer
   proof: core/settings/settings_test.go TestPRDefaultsToThePerson, TestPRReviewerIsALoginOrNothing (empty, CRLF, comment, typo, shell chars)
 
@@ -88,3 +89,9 @@ round: 2
 - **2026-11-20 16:48 · Alexander Sacharov** — Interim-Regeln (Alex 20.11.2026 via Teamlead, gelten bis TW5FE2): 1) DoD nennt Fehlerklassen (leer, gross, Sonderzeichen/CRLF, Leerzeichen-Pfade, Windows, zwei Prozesse, Fehler auf halbem Weg; Heuristik -> Annahmeregel). 2) in-progress prueft vor dem Move Nebenlaeufigkeit, Fehlerpfade, ungewoehnliche Eingabe, Rechte; Tabellentests ueber die Klasse; Geschwister-Stellen per grep mitziehen; Fix an der Ursache. 3) Fund nennt Klasse+Beispiel, Rueckweg verlangt Fix der Klasse. 4) Blocker nur falsches Ergebnis/Datenverlust/Absturz/Sicherheitsluecke; nach Fix-Durchgang Test+Bughunt nur ueber Diff seit letztem Hunt, dann review; nach 3 Rueckgaben derselben Lane Frage an Teamlead. 5) kleine review-gaps in derselben Runde schliessen; Vorbestehendes als 'note: pre-existing: ...'.
 - **2026-11-20 16:51 · Alexander Sacharov** — pr-round.sh request: gh pr edit --add-reviewer kennt keinen Spezialwert fuer Copilot (gh 2.83.1 --help sagt das ausdruecklich); darum REST POST requested_reviewers mit 'copilot-pull-request-reviewer[bot]'. Gegen ein echtes Repo nicht ausprobiert - nur gegen einen gh-Stub; ein abgelehnter Request endet mit Exit 4 und die Rolle meldet ihn. Der Stub wendet den --jq-Filter mit echtem jq an, damit der Filter selbst getestet ist.
 - **2026-11-20 16:57 · Alexander Sacharov** — critique 1: (a) PRReviewerFor dupliziert modelName-Zeichenpruefung -> gemeinsamer Helfer. (b) GitLab-Runde: ':id' im glab api ist das Projekt des aktuellen Verzeichnisses (glab api --help: 'populated with values from the repository of the current directory'), im Fork also origin statt Ziel; glab mr note antwortet nicht im Thread. Fix: URL-kodiertes <owner/repo> und discussions-API.
+- **2026-11-20 16:59 · Alexander Sacharov** — critique 2: beide Funde aus critique 1 behoben in d527d5a9 (word() in settings.go; GitLab ueber discussions-API mit <owner%2Frepo>). Nichts Neues.
+- **2026-11-20 17:01 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:71 - 'threads' passes owner and name with -F, which gh converts to a JSON integer when the value is all digits (a repo named 2048, a numeric login); the query declares them String!, which a GraphQL server refuses for an Int, so 'threads' fails on such a repository; use -f for owner and name; ran: GH_TOKEN=dummy GH_DEBUG=api gh api graphql -F owner=someone -F name=2048 ... (gh 2.83.1 sent GraphQL variables {"name":2048,...})
+- **2026-11-20 17:01 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:88-94 - 'reply' posts the answer and then resolves in a second call; when the resolve fails (exit 1) the thread is answered but stays open, and SKILL.md:404 says the next round picks it up because 'threads' still lists it, so the next round posts a second answer to the same thread; read
+- **2026-11-20 17:01 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:109 - a .jaira/pr-reviewer of '@alice' passes PRReviewerFor (core/settings/settings.go:323 allows @) but only '@copilot' loses its @; 'request' sends reviewers[]=@alice, which is not a login, so every review request fails with exit 4; read
+- **2026-11-20 17:01 · Alexander Sacharov** — bughunt: done at d527d5a9 - 3 findings (3 change, 0 pre-existing) in 6 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/release/notes/JG3REW.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-role-pr/scripts/pr-round.sh core/role/builtin/jaira-teamlead/SKILL.md core/role/pr_round_test.go core/role/role_test.go core/settings/settings.go core/settings/settings_test.go core/shipped/shipped.sha256 internal/cli/roles.go internal/cli/roles_test.go
+- **2026-11-20 17:02 · Alexander Sacharov** — testing 1: Klasse statt Beispiel - (1) jede GraphQL-String-Variable mit -f statt -F (auch thread id); (2) reply wird idempotent: steht als letzter Kommentar im Thread schon einer des angemeldeten Nutzers, wird nur noch resolved; (3) ein fuehrendes @ wird fuer jeden Reviewer entfernt, nicht nur copilot.
