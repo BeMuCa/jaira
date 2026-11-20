@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:49:49Z
+updated-at: 2026-11-20T19:50:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99353
 claimed-at: 2026-11-20T19:19:21Z
@@ -166,3 +166,4 @@ Warum: Eine Zeile mit zwei Aenderungen wird vom Zeilen-Scan als zwei unvollstaen
 Empfehlung: 2 - kein Blocker, die Wirkung zeigt sich erst an kuenftigen Tickets, und die Zeilen-Teilung laesst sich beim Merge in einer Minute nachziehen.
 - **2026-11-20 19:49 · Alexander Sacharov** — decision: 1) Zurueckgeben: Release-Note-Zeile teilen und den Satz 'Commit unbekannt -> ganze Suite wie in Runde 1' in 27-testing.md ergaenzen
 - **2026-11-20 19:49 · Alexander Sacharov** — Given back from signoff: 1) Zurueckgeben: Release-Note-Zeile teilen und den Satz 'Commit unbekannt -> ganze Suite wie in Runde 1' in 27-testing.md ergaenzen
+- **2026-11-20 19:50 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
