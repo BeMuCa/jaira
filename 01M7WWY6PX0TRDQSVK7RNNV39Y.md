@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T19:32:29Z
+updated-at: 2026-11-20T19:32:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96533
 claimed-at: 2026-11-20T19:19:14Z
@@ -168,3 +168,4 @@ Empfehlung: 2 - der Lesefehler-Fall ist praktisch kaum erreichbar und war schon 
 - **2026-11-20 19:27 · Alexander Sacharov** — testing Runde 2 zurueck (2. Rueckgabe dieser signoff-Runde): 'the board stays private' nur, wenn jairas Eintrag noch steht (board.Ignored), sonst roher Fehler. Test um zweites share auf geteiltem Board erweitert.
 - **2026-11-20 19:27 · Alexander Sacharov** — critique Runde 15 (Diff dde1cf1c..7e69b451): nichts - Ignored liest jairas eigenen Eintrag, genau die Aussage der Meldung.
 - **2026-11-20 19:29 · Alexander Sacharov** — bughunt: done at 7e69b451 - 0 findings in 2 files, follow-up hunt (diff since dde1cf1c: internal/cli/share.go internal/cli/privateexclude_test.go; checked board.Ignored on an unreadable .gitignore falls back to info/exclude and only ever under-claims privacy; ran: go test -run TestShareWithAnUnreadableGitignore -count=3); concurrency, error paths, input, permissions checked; files: README.md core/board/announce.go core/board/board.go core/board/exclude_test.go core/board/gitignore.go core/release/notes/NNV39Y.md core/ticket/store.go docs/COMMANDS.md internal/cli/privateexclude_test.go internal/cli/share.go internal/cli/sharestate_test.go internal/cli/tickets.go internal/cli/update.go
+- **2026-11-20 19:32 · Alexander Sacharov** — review (Runde 12, frischer Kontext): keine Blocker. Tests gruen; init/Worktree/share/undo/update-Migration/Teamkollege/Unterverzeichnis von Hand mit gebautem Binary nachgestellt. Vier Notes in review-gaps (Extra-git-Prozess pro Befehl bei geteilten Boards, absoluter Pfad bei Unterverzeichnis-Board, Teams mit absichtlicher .gitignore-Zeile, liegengebliebene Sperrdatei).
