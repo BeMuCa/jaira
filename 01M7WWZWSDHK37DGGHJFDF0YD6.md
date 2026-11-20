@@ -15,12 +15,15 @@ context: |-
 definition-of-done: "Ticket-Felder fuer Blocker-Kriterium und stop-after-fix; jaira show --for-lane gibt sie testing, bughunt und review mit (Test)"
 tags:
   - gates
-blocked-by: []
+blocked-by:
+  - 01M7WWZRD7WNC5NT1PS5TW5FE2
 related:
   - 01M6M7EA5EG5TWJSTVNQH6CD33
+  - 01M5ZJ4KA5N2PH7Q4WY4F1V59P
+  - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T16:39:15Z
+updated-at: 2026-11-20T16:39:18Z
 updated-by: Alexander Sacharov
 ---
 
