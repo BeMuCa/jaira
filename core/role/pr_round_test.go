@@ -447,6 +447,58 @@ func TestPROpenOnlyFromThePushedTip(t *testing.T) {
 	}
 }
 
+// open names the head itself — the branch the tip check read, on the account
+// it was pushed to — instead of leaving gh to guess it from the checkout: in
+// a fork the guess need not be the commits the gate judged (JG3REW, given
+// back from signoff, Alex 2026-11-20).
+func TestPROpenNamesTheHeadItChecked(t *testing.T) {
+	p := newPRRound(t)
+	body := fixtureFile(t, "body.md", "## Why\n")
+	work := pushedCheckout(t)
+	p.dir = work
+	bare := filepath.Join(filepath.Dir(work), "origin.git")
+	for _, c := range []struct{ url, repo, head string }{
+		{"https://github.com/me/r.git", "up/r", "me:feat/x"},
+		{"git@github.com:me/r.git", "up/r", "me:feat/x"},
+		{"ssh://git@github.com/me/r/", "up/r", "me:feat/x"},
+		{"https://github.com/me/r", "me/r", "feat/x"},
+		{"git@github.com:Me/r.git", "me/r", "feat/x"},
+	} {
+		// The configured URL is GitHub's; insteadOf sends the push and the
+		// tip check to the bare repository beside the checkout.
+		gitIn(t, work, "config", "remote.origin.url", c.url)
+		gitIn(t, work, "config", "url."+bare+".insteadOf", c.url)
+		out, code := p.run(nil, "open", c.repo, "origin", "master", "t", body)
+		calls := strings.Join(p.calls(), "\n")
+		if code != 0 || !strings.Contains(calls, "pr\tcreate\t--repo\t"+c.repo+"\t--base\tmaster\t--head\t"+c.head+"\t") {
+			t.Errorf("%s into %s: exit %d, want --head %s\n%s\n%s", c.url, c.repo, code, c.head, out, calls)
+		}
+		gitIn(t, work, "config", "--unset", "url."+bare+".insteadOf")
+	}
+	// A URL with no account in it opens nothing rather than a guess.
+	gitIn(t, work, "config", "remote.origin.url", "nowhere")
+	gitIn(t, work, "config", "url."+bare+".insteadOf", "nowhere")
+	if out, code := p.run(nil, "open", "up/r", "origin", "master", "t", body); code != 3 ||
+		!strings.Contains(out, "which account") || strings.Contains(strings.Join(p.calls(), "\n"), "pr\tcreate") {
+		t.Errorf("URL without an account: exit %d, want 3 and nothing opened\n%s", code, out)
+	}
+	// A pushurl apart from the URL fetched from: the tip is read, and the
+	// account taken, where git push sends the branch.
+	gitIn(t, work, "config", "remote.origin.url", "https://github.com/up/r.git")
+	gitIn(t, work, "config", "remote.origin.pushurl", "git@github.com:me/r.git")
+	gitIn(t, work, "config", "url."+bare+".insteadOf", "git@github.com:me/r.git")
+	if out, code := p.run(nil, "open", "up/r", "origin", "master", "t", body); code != 0 ||
+		!strings.Contains(strings.Join(p.calls(), "\n"), "--head\tme:feat/x\t") {
+		t.Errorf("pushurl apart from the url: exit %d, want --head me:feat/x\n%s", code, out)
+	}
+	gitIn(t, work, "config", "remote.origin.pushurl", "nowhere")
+	gitIn(t, work, "config", "--add", "url."+bare+".insteadOf", "nowhere")
+	if out, code := p.run(nil, "open", "up/r", "origin", "master", "t", body); code != 3 ||
+		!strings.Contains(out, "which account") || strings.Contains(strings.Join(p.calls(), "\n"), "pr\tcreate") {
+		t.Errorf("URL without an account: exit %d, want 3 and nothing opened\n%s", code, out)
+	}
+}
+
 // gh ends with 4 when its sign-in has run out, and 4 is the script's
 // 'reviewer not requested'. A sign-in lost after the check before writing is
 // reported as what it is, exit 3, in every command (JG3REW review-gaps 4).

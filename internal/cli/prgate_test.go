@@ -60,8 +60,65 @@ func prGateFixture(t *testing.T) (dir string, ticketIn func(status string) strin
 
 func setPR(t *testing.T, dir, value string) {
 	t.Helper()
-	if err := os.WriteFile(settings.BoardPRPath(dir), []byte(value+"\n"), 0o644); err != nil {
+	onBase(t, dir, settings.BoardPRPath(dir), value)
+}
+
+// onBase commits a board file with value into master, the base the gate
+// reads it from, and returns to feat/x, where the file is then not on disk.
+func onBase(t *testing.T, dir, path, value string) {
+	t.Helper()
+	run := func(args ...string) {
+		t.Helper()
+		if out, err := exec.Command("git", append([]string{"-C", dir}, args...)...).CombinedOutput(); err != nil {
+			t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, out)
+		}
+	}
+	run("checkout", "-q", "master")
+	if err := os.WriteFile(path, []byte(value+"\n"), 0o644); err != nil {
 		t.Fatal(err)
+	}
+	run("add", "-f", path)
+	run("commit", "-q", "-m", "chore: board says "+value)
+	run("checkout", "-q", "feat/x")
+}
+
+// The board files are read as the base holds them: a branch that writes or
+// commits .jaira/pr saying agent, or pr-when saying signoff, does not open
+// its own gate (JG3REW, given back from signoff, Alex 2026-11-20).
+func TestPRGateReadsTheBoardFilesFromTheBase(t *testing.T) {
+	dir, ticketIn, commit := prGateFixture(t)
+	done := ticketIn("done")
+	commit("feat(" + done + "): accepted")
+	path := settings.BoardPRPath(dir)
+	if err := os.WriteFile(path, []byte("agent\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := runCLI(t, dir, "roles", "pr-gate", "master"); exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "in master does not say agent") {
+		t.Fatalf("agent only on disk: exit %d, %v", exitCode(err), err)
+	}
+	if out, err := exec.Command("git", "-C", dir, "add", "-f", path).CombinedOutput(); err != nil {
+		t.Fatalf("git add: %v\n%s", err, out)
+	}
+	commit("chore(" + done + "): the branch says agent itself")
+	if _, err := runCLI(t, dir, "roles", "pr-gate", "master"); exitCode(err) != ExitValidation {
+		t.Fatalf("agent committed on the branch only: exit %d, %v", exitCode(err), err)
+	}
+
+	// With agent in the base, a signoff that only the branch says leaves the
+	// gate at done.
+	dir, ticketIn, commit = prGateFixture(t)
+	setPR(t, dir, "agent")
+	commit("feat(" + ticketIn("signoff") + "): waiting")
+	setPRWhenOnDisk := settings.BoardPRWhenPath(dir)
+	if err := os.WriteFile(setPRWhenOnDisk, []byte("signoff\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := runCLI(t, dir, "roles", "pr-gate", "master"); exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "in done") {
+		t.Fatalf("signoff only on disk: exit %d, %v", exitCode(err), err)
+	}
+	setPRWhen(t, dir, "signoff")
+	if out, err := runCLI(t, dir, "roles", "pr-gate", "master"); err != nil {
+		t.Fatalf("signoff in the base: %v\n%s", err, out)
 	}
 }
 
@@ -136,9 +193,7 @@ func TestHandlesInSubjects(t *testing.T) {
 
 func setPRWhen(t *testing.T, dir, value string) {
 	t.Helper()
-	if err := os.WriteFile(settings.BoardPRWhenPath(dir), []byte(value+"\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	onBase(t, dir, settings.BoardPRWhenPath(dir), value)
 }
 
 // Where the review happens on the pull request, it opens once every ticket

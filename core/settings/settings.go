@@ -180,7 +180,13 @@ func boardLine(path string) string {
 	if err != nil {
 		return ""
 	}
-	for _, line := range strings.Split(string(b), "\n") {
+	return firstLine(string(b))
+}
+
+// firstLine is the first line of a board file's content that is neither
+// blank nor a comment, trimmed.
+func firstLine(content string) string {
+	for _, line := range strings.Split(content, "\n") {
 		line = strings.TrimSpace(line)
 		if line != "" && !strings.HasPrefix(line, "#") {
 			return line
@@ -312,6 +318,16 @@ func PRFor(root string) (who, source string) {
 	return PRPerson, "the default"
 }
 
+// PRIn reads the content of a .jaira/pr file — one taken from a commit
+// rather than from disk — the way PRFor reads the file: PRAgent only when it
+// says so, PRPerson for anything else, missing included.
+func PRIn(content string) string {
+	if firstLine(content) == PRAgent {
+		return PRAgent
+	}
+	return PRPerson
+}
+
 // PRReviewerFor returns the reviewer the board at root names, or "" when it
 // names none or names something that is not a login. The role passes it to
 // gh and glab on a command line, so anything but letters, digits and
@@ -351,6 +367,15 @@ func PRWhenFor(root string) (when, source string) {
 		return PRWhenSignoff, "from .jaira/pr-when, shared with the board"
 	}
 	return PRWhenDone, "the default"
+}
+
+// PRWhenIn reads the content of a .jaira/pr-when file taken from a commit
+// the way PRWhenFor reads the file on disk.
+func PRWhenIn(content string) string {
+	if firstLine(content) == PRWhenSignoff {
+		return PRWhenSignoff
+	}
+	return PRWhenDone
 }
 
 // The two values of Dispatch.

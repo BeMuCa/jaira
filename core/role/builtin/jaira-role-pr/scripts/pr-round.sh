@@ -192,7 +192,11 @@ case "$cmd" in
       upstream|tracking)
         pushed=$(git config "branch.$cur.merge") || die "'$cur' tracks no branch to push to — push it first: git push -u $pushremote HEAD" 3 ;;
     esac
-    tip=$(git ls-remote "$pushremote" "$pushed" | cut -f1) ||
+    # Read where git push sends it: a remote's pushurl, where it has one,
+    # is not the URL it fetches from.
+    pushurl=$(git remote get-url --push "$pushremote") ||
+      die "$pushremote has no URL to push to — nothing is opened" 3
+    tip=$(git ls-remote "$pushurl" "$pushed" | cut -f1) ||
       die "could not read '$pushed' from $pushremote — nothing is opened" 3
     here=$(git rev-parse HEAD)
     [ -n "$tip" ] || die "'$cur' is not pushed to $pushremote yet — push it first: git push -u $pushremote HEAD" 3
@@ -205,7 +209,22 @@ case "$cmd" in
       die "not opened — hand the create line back to a person" 3
     fi
     echo "$gate"
-    gh pr create --repo "$repo" --base "$branch" --title "$title" --body-file "$file"
+    # --head names the branch the tip check above read, on the account it
+    # was pushed to: left to itself gh guesses the head from the checkout,
+    # and in a fork that guess need not be the commits the gate judged. The
+    # URL is read as configured, before insteadOf rewrites it: the account
+    # is the second-to-last part of host:owner/name or host/owner/name.
+    url=$(git config "remote.$pushremote.pushurl" || git config "remote.$pushremote.url") ||
+      die "$pushremote has no URL — nothing is opened" 3
+    url=${url%/}; url=${url%.git}; rest=${url%/*}
+    headowner=${rest##*[/:]}
+    [ -n "$headowner" ] && [ "$headowner" != "$rest" ] ||
+      die "cannot tell which account $pushremote ($url) belongs to — nothing is opened" 3
+    head=${pushed#refs/heads/}
+    # Into its own repository the branch name alone is the head.
+    [ "$(printf '%s' "$headowner" | tr '[:upper:]' '[:lower:]')" = "$(printf '%s' "$owner" | tr '[:upper:]' '[:lower:]')" ] ||
+      head=$headowner:$head
+    gh pr create --repo "$repo" --base "$branch" --head "$head" --title "$title" --body-file "$file"
     ;;
   threads)
     # -f for every string: -F turns a value of digits into a number, and a

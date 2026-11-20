@@ -352,6 +352,10 @@ func TestPRDefaultsToThePerson(t *testing.T) {
 		if got, _ := settings.PRFor(root); got != want {
 			t.Errorf(".jaira/pr %q: %q, want %q", in, got, want)
 		}
+		// The gate reads the same content out of the base commit.
+		if got := settings.PRIn(in); got != want {
+			t.Errorf("PRIn(%q): %q, want %q", in, got, want)
+		}
 	}
 	if err := os.WriteFile(settings.BoardPRPath(root), []byte("agent\n"), 0o644); err != nil {
 		t.Fatal(err)
@@ -391,6 +395,9 @@ func TestPRWhenDefaultsToDone(t *testing.T) {
 		}
 		if got, _ := settings.PRWhenFor(root); got != want {
 			t.Errorf(".jaira/pr-when %q: %q, want %q", in, got, want)
+		}
+		if got := settings.PRWhenIn(in); got != want {
+			t.Errorf("PRWhenIn(%q): %q, want %q", in, got, want)
 		}
 	}
 }

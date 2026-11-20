@@ -131,11 +131,14 @@ func newRolesPRGateCmd() *cobra.Command {
 		Short: "Say whether an agent may open this branch's pull request",
 		Long: `Says whether an agent may open the pull request of the checked-out branch
 against <base> — the default branch of the repository it goes to, as
-<remote>/<branch>. Exit 0 only when the board's .jaira/pr says agent, at
+<remote>/<branch>. Exit 0 only when .jaira/pr says agent in <base> itself, at
 least one commit in <base>..HEAD names a ticket in its subject
 (type(A3K9QP): ...), and every ticket named that is still on the board sits
 in its board's terminal lane — or, where .jaira/pr-when says signoff, in the
-lane signoff or any lane after it up to the terminal one. A ticket filed into
+lane signoff or any lane after it up to the terminal one. Both files are
+read as <base> holds them, not off the branch's disk: a branch cannot open
+its own gate by committing them, and a board whose .jaira/ is not shared
+yet keeps a person opening it. A ticket filed into
 the logbook is past done and holds nothing up; one in the archive (rejected)
 or nowhere here (a typo, an unfetched ref) holds it. Anything else exits 3
 and says which ticket holds it.
@@ -151,17 +154,24 @@ pr_person, no_ticket, no_signoff_lane, unreadable or pending.`,
 			if err != nil {
 				return err
 			}
-			named, err := (&gitrepo.Repo{Dir: s.Root}).TicketsNamed(args[0])
+			repo := &gitrepo.Repo{Dir: s.Root}
+			named, err := repo.TicketsNamed(args[0])
 			if errors.Is(err, gitrepo.ErrNoSuchRef) {
 				return fail(ExitUsage, "no_such_ref", "pr-gate: %q is no commit here — fetch the remote first", args[0])
 			}
 			if err != nil {
 				return err
 			}
-			pr, _ := settings.PRFor(s.Root)
+			// Both board files are read as the base holds them, never off
+			// the disk of the branch being judged: a branch that commits
+			// .jaira/pr saying agent, or a pr-when of signoff, would
+			// otherwise open its own gate. A change to either takes effect
+			// once it has been merged into the base.
+			prFile, _ := repo.FileAt(args[0], settings.BoardPRPath("."))
+			pr := settings.PRIn(prFile)
 			if pr != settings.PRAgent {
 				return fail(ExitValidation, "pr_person",
-					"pr-gate: this board's .jaira/pr does not say agent — a person opens the pull request; hand the create line back")
+					"pr-gate: .jaira/pr in %s does not say agent — a person opens the pull request; hand the create line back", args[0])
 			}
 			if len(named) == 0 {
 				return fail(ExitValidation, "no_ticket",
@@ -185,7 +195,8 @@ pr_person, no_ticket, no_signoff_lane, unreadable or pending.`,
 			} else if err != nil {
 				return err
 			}
-			when, _ := settings.PRWhenFor(s.Root)
+			whenFile, _ := repo.FileAt(args[0], settings.BoardPRWhenPath("."))
+			when := settings.PRWhenIn(whenFile)
 			// reached is, per board, every lane a ticket may sit in for the
 			// pull request to open: the terminal lane, and under signoff
 			// also signoff and whatever lies between it and the terminal.

@@ -81,6 +81,9 @@ board, under any setting. A person still accepts the pull request.
 
 `.jaira/pr`, `.jaira/pr-reviewer` and `.jaira/pr-when` are one line each,
 committed with the board so every clone inherits them. A person writes them; you never do.
+The gate reads `.jaira/pr` and `.jaira/pr-when` as the base branch holds
+them, not as your checkout does: a change to either counts once it is merged
+into the base, and a branch that commits one opens nothing early.
 
 ## Before you push anything
 
@@ -355,7 +358,9 @@ or in signoff where `pr_when` says so), was rejected, or is not known here at
 all; the message says which. Do not look for another way to open it. The
 script also refuses with 3 before the gate when the checkout is not the
 pushed tip of its branch: the gate reads the checkout, the pull request
-carries what was pushed. Pull or push until they agree and run it again; on
+carries what was pushed. It names that pushed branch as the head itself —
+`<account>:<branch>` from a fork, the account read off the push URL — and
+refuses with 3 when the URL names no account. Pull or push until they agree and run it again; on
 GitLab compare `git rev-parse HEAD` with the pushed branch yourself first.
 
 **An agent invoked you on a `person` board, or a ticket on the branch is not in
