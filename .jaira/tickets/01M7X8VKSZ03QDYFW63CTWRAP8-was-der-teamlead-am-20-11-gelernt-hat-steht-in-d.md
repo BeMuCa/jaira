@@ -1,7 +1,7 @@
 ---
 id: 01M7X8VKSZ03QDYFW63CTWRAP8
 title: "Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T21:54:45Z
+updated-at: 2026-11-20T21:59:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16592
 claimed-at: 2026-11-20T20:04:03Z
@@ -34,9 +34,10 @@ outcome-why: "Die Arbeitsweise vom 20.11.2026 stand nur im lokalen Gedaechtnis e
 outcome-resolves: Die Regeln reisen mit den ausgelieferten Rollen; jaira update --roles bringt sie zu jedem Nutzer.
 review-summary: none
 round: 4
-review-gaps: "none: d3a71405 fuegt nur die Leseanweisung fuer die Verdicts und die Unbekannt-Regel hinzu; nichts dupliziert, nichts entfernt"
-test-verdict: "pass: Runde 2 (d3a71405): go build ./... ok, go test core/role + core/shipped RC=0 (Runde 1: go test ./... RC=0, nur Markdown/shipped seitdem). Neue Leseanweisung ausprobiert: git show refs/jaira/tickets/<ULID>:<ULID>.md liefert beide Verdict-Zeilen; die Branch-Kopie hatte keine - deshalb der Ref. Schreibt nichts, also keine parallelen Writer."
-hunt-verdict: "fail: bughunt done at d3a71405, 3 change (round>1-Regel feuert bei jeder Lane-Schleife; Ref fehlt auf ungeteilten Boards; grep sieht Block-Skalare nicht), 0 pre-existing"
+review-gaps: "none: 4a0033ec entfernt den Parser-Weg (Ref/grep) wieder, nichts uebrig geblieben; Teamlead-Verweis auf eine Zeile gekuerzt"
+test-verdict: "pass: Runde 3 (4a0033ec): go build ./... ok, go test core/role + core/shipped RC=0. Neue CI-Befehle ausprobiert: gh run list --branch master --limit 1 liefert den Lauf; gh pr checks feat/twrap8 ohne PR endet mit RC=1 - die Rolle nimmt dann gh run list, wie beschrieben. Rolle schreibt nichts, also kein Parallel-Schreibfall."
+hunt-verdict: "fail: bughunt done at 4a0033ec, 1 change (tests-Check bindet den CI-Lauf nicht an den Commit des Branch-Kopfs), 0 pre-existing"
+question: ""
 ---
 
 # Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis
@@ -83,3 +84,7 @@ hunt-verdict: "fail: bughunt done at d3a71405, 3 change (round>1-Regel feuert be
 - **2026-11-20 21:52 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-signoff/SKILL.md:60 - grep '^(test|hunt)-verdict:' shows only the key line; a verdict holding a newline (or written with jaira set --append, which set --help recommends for review fields across loop rounds) is stored as a block scalar and the grep prints 'test-verdict: |-' with no pass:/fail:, so the check reads as not pass; ran: scratch board, jaira set test-verdict='fail: round one' then --append 'pass: round two' -> grep prints 'test-verdict: |-'
 - **2026-11-20 21:52 · Alexander Sacharov** — bughunt: done at d3a71405 - 3 findings (3 change, 0 pre-existing) in 2 modules read as diff since c02bb7ea plus 11 new untracked milestone data files, follow-up hunt; concurrency, error paths, input, permissions checked; files: .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md README.md core/release/notes/TWRAP8.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-role-signoff/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/role/role_test.go core/shipped/shipped.sha256 docs/how-to-work-with-jaira.html
 - **2026-11-20 21:54 · Alexander Sacharov** — testing Runde 2: Klasse der 3 Funde = die Rolle parste das Rohformat des Tickets (Ref/Frontmatter), das jaira show nicht ausgibt. Fix an der Ursache: Mechanismus entfernt statt geflickt. tests = CI-Lauf des Branch-Kopfs (gh pr checks / gh run list --branch / glab ci status), sonst '?'. Rueckgaben = Zahl der 'Given back from signoff:'-Notes als Untergrenze sichtbar auf der Statuszeile; round ausdruecklich kein Ersatz (steigt mit jeder Lane-Schleife). Die .jaira/milestones/-Dateien im Worktree sind nicht von diesem Ticket (untracked, unangetastet).
+- **2026-11-20 21:57 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-signoff/SKILL.md:54-57 - the tests check is said to be 'the CI run on the branch head' but neither command ties the run to a commit: 'gh pr checks <branch>' reports the PR's last pushed head and 'gh run list --branch <branch> --limit 1' the newest run of any workflow, so a branch with local commits after the last push (a give-back round not pushed yet) gets ✅ for older code, while the bug-hunt check right below compares against git rev-parse of the local head; and on this repo --limit 1 without --workflow ci picks the release-tag run once a PR was closed; ran: gh run list --repo BeMuCa/jaira --limit 1 (newest run on feat/n7jw2q is release-tag, 'completed skipped'), gh pr checks --help (no sha column); fix: compare headSha via --json headSha / --commit $(git rev-parse <branch>) and --workflow ci, else '?'
+- **2026-11-20 21:57 · Alexander Sacharov** — bughunt: done at 4a0033ec - 1 finding (1 change, 0 pre-existing) in 3 files read as diff since d3a71405, follow-up hunt, no new files; concurrency, error paths, input, permissions checked; go test ./core/role ./core/shipped ./core/lane green; files: .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md README.md core/release/notes/TWRAP8.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-role-signoff/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/role/role_test.go core/shipped/shipped.sha256 docs/how-to-work-with-jaira.html
+- **2026-11-20 21:58 · Alexander Sacharov** — Frage an den Teamlead (testing schickt zum 3. Mal zurueck, Stopp-Regel): Runde-3-Fund: 'tests-Check nimmt gh pr checks / gh run list --limit 1 ohne Commit-Bindung - Branch mit ungepushten Commits bekommt ✅ fuer alten Code; --limit 1 ohne --workflow kann den release-tag-Lauf greifen.' Einschaetzung: DoD ist richtig, die Funde werden kleiner (Runde 1: 2, Runde 2: 3 aus derselben Klasse 'Rohdaten lesen', Runde 3: 1 Ein-Zeilen-Rand). Optionen: 1) (empfohlen) Ein-Zeilen-Fix: Lauf per 'gh run list --commit $(git rev-parse <branch>)' an den Kopf binden, kein Lauf fuer diesen Commit = '?'; danach testing ohne neuen Hunt-Durchgang direkt zu review. 2) Fix wie 1, aber volle Schleife mit neuem Bughunt. 3) Nicht fixen, als 🟡 an signoff weitergeben.
+- **2026-11-20 21:58 · Alexander Sacharov** — decision (Teamlead jaira-64, 21:58): Option 1. Jeder Status der Rolle ist an den Kopf-Commit des Branches gebunden; kein Lauf fuer diesen Commit = '?', nie ✅; gh run list --commit <sha> --workflow <ci>. Danach Testlauf, kein neuer Hunt, direkt review. Weitere Funde dieser Klasse gehen als note an signoff, keine vierte Runde.

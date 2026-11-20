@@ -48,16 +48,24 @@ left: say so in one line and stop.
 
 ### 1. The status line
 
-One line, each check with ✅ or ❌:
+One line, each check with ✅ or ❌. Every check is about the commit that would
+ship — the head of the ticket's branch — and nothing older:
+
+```bash
+head=$(git rev-parse feat/<id lower case>)
+```
+
+A result that belongs to another commit, or no result at all, is `?`, never ✅.
 
 - **DoD** `x/y` ticked, from `dod_items`
-- **tests** — the CI run on the branch head: `gh pr checks <branch>` once a
-  pull request exists, else `gh run list --branch <branch> --limit 1` (`glab
-  ci status` on GitLab). No run yet: `?`, never ✅ — the testing lane ran on
-  someone's machine, and its verdict is not printed by `jaira show`
-- **bug hunt on HEAD** — the last `— bughunt: done at <sha> ` note names the
-  head of the ticket's branch (`git rev-parse --short feat/<id lower case>`).
-  An older sha does not cover what a later round changed: ❌
+- **tests** — the CI run for exactly that commit, of the workflow that runs the
+  tests (named in `.github/workflows/`): `gh run list --commit "$head"
+  --workflow <ci workflow> --json conclusion,headSha`; on GitLab `glab ci list
+  --sha "$head"`. A run for an older commit says nothing about this one: `?` —
+  and if the branch is ahead of what was pushed, say that is why
+- **bug hunt on HEAD** — the last `— bughunt: done at <sha> ` note names
+  `$head` (compare the short form). An older sha does not cover what a later
+  round changed: ❌
 - **blocker** — none, or how many 🔴 the table below holds
 - **review** — `review-verdict`
 - **returns from signoff** — how many are noted (see return rule 2)
