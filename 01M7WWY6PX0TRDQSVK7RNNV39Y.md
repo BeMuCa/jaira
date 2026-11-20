@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T19:21:41Z
+updated-at: 2026-11-20T19:21:52Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96533
 claimed-at: 2026-11-20T19:19:14Z
@@ -30,11 +30,7 @@ outcome-why: "signoff-Rueckgabe: ein unlesbares info/exclude wurde bisher durch 
 outcome-resolves: Datenverlust bei unlesbarer Ausschlussdatei
 review-summary: "none"
 round: 13
-review-gaps: |-
-  note: appendEntry ignoriert einen Lesefehler (pre-existing): ist info/exclude unlesbar, aber das Verzeichnis beschreibbar, ersetzt der Rename die Datei durch nur jairas Eintrag - praktisch kaum erreichbar
-  note: update nimmt auch eine von Hand geschriebene .jaira/-Zeile ohne jaira-Kommentar aus der getrackten .gitignore (bewusst, critique Runde 2) - ein Team, das .jaira/ fuer alle ignoriert haben wollte, muss die Aenderung nicht committen
-  note: Ignored kostet auf jedem Befehl eines geteilten Boards einen git-Aufruf mehr (gitPlace, ~2-3 ms, critique-Note)
-  note: bekannte Grenze, im Test festgehalten: git<2.31 plus ein !/.jaira/ ueber jairas Eintrag
+review-gaps: "none - Diff 79d71506: eine Pruefung in appendEntry, Idiom errors.Is(err, fs.ErrNotExist) wie im Rest des Repos; nichts doppelt, nichts tot"
 test-verdict: "pass: go build/vet/test -count=1 ./... RC=0 at cbff5424; DoD 1-9 Proofs gruen (Tabelle 28 Faelle inkl. share-Schritt); Binary: share --json auf Symlink-.jaira -> still_ignored null + ignore_unknown mit Grund; parallele Schreiber durch TestParallelAddIgnoreWritesTheEntryOnce und frueheren Doppellauf (Eintrag einmal)"
 hunt-verdict: "pass: bughunt done at cbff5424, 0 change, 0 pre-existing"
 review-verdict: "Der Diff erfuellt alle 9 DoD-Punkte, jeder mit Test; go test ./core/board ./core/ticket ./internal/cli und go vet gruen. Mit gebautem Binary nachgespielt: init + neuer Worktree lassen git status sauber, share/--undo, Migration einer alten .gitignore-Zeile (zweites update meldet nichts), Teamkollege ohne Ausschluss wird ausgeschlossen, Board in 'sub dir/' bekommt /sub dir/.jaira/. Kein Blocker; vier Notes, davon eine pre-existing."
