@@ -1,7 +1,7 @@
 ---
 id: 01M7WWYB5XZMD01DZY3MJG3REW
 title: Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T16:57:44Z
+updated-at: 2026-11-20T16:57:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59469
 claimed-at: 2026-11-20T16:43:41Z
@@ -34,6 +34,7 @@ outcome-resolves: "Mit .jaira/pr=agent oeffnet jaira-role-pr den PR nach der Abn
 review-summary: |-
   core/settings/settings.go PRReviewerFor kopiert die Zeichenpruefung aus modelName mit zwei Zeichen mehr - eine Funktion (word(v, extra)) fuer beide statt zwei Schleifen
   core/role/builtin/jaira-role-pr/SKILL.md GitLab-Absatz der Kommentarrunde: glab api 'projects/:id/...' setzt das Projekt des aktuellen Verzeichnisses ein (origin, im Fork falsch) und 'glab mr note' antwortet auf der MR statt im Thread - Diskussionen per glab api 'projects/<owner%2Frepo>/merge_requests/<n>/discussions' listen, in der Diskussion antworten (POST .../discussions/<id>/notes) und dort resolven
+round: 2
 ---
 
 # Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
