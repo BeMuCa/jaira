@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T16:52:59Z
+updated-at: 2026-11-20T16:53:03Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-42185
 claimed-at: 2026-11-20T16:42:15Z
@@ -54,7 +54,8 @@ test-verdict: "fail: DoD 5-7 (Interim-Regeln des Teamleads, nachgetragen) sind n
   proof: core/shipped/shipped.sha256:560-569; .jaira/lanes/{pre-process,in-progress,testing,review}.md byte-equal to builtin; core/release/notes/TW5FE2.md; go test ./core/shipped ./core/lane ./core/role/... ok
 - [x] pre-process nennt die Standard-Eingabeklassen: leer, sehr gross, Sonderzeichen/Kodierung/CRLF, Pfade mit Leerzeichen, Windows, zwei Prozesse gleichzeitig, Fehler auf halbem Weg
   proof: core/lane/builtin/15-pre-process.md:48-55
-- [ ] Schleifenbremse in testing, review und in-progress: Blocker nur falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke; Folgerunde testet und huntet nur den Diff seit dem letzten Hunt; nach 3 Rueckgaben aus derselben Lane eine Frage statt Runde 4
+- [x] Schleifenbremse in testing, review und in-progress: Blocker nur falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke; Folgerunde testet und huntet nur den Diff seit dem letzten Hunt; nach 3 Rueckgaben aus derselben Lane eine Frage statt Runde 4
+  proof: core/lane/builtin/27-testing.md:97 (blocker = four kinds), 27-testing.md:125-128 (follow-up round diff only, then review); core/lane/builtin/40-review.md:57; core/lane/builtin/20-in-progress.md:66 (third return -> human question)
 - [ ] Kleine Raender der Aenderung aus review-gaps werden in derselben Runde geschlossen statt als note: zur Person zu gehen; Vorbestehendes ausserhalb des Umfangs steht als 'note: pre-existing: ...'
 
 ## Options
