@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T18:06:55Z
+updated-at: 2026-11-20T18:07:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-87225
 claimed-at: 2026-11-20T17:38:56Z
@@ -34,7 +34,7 @@ outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestand
 review-summary: "none"
 round: 7
 review-gaps: "removed number=0 placeholder in pr-round.sh open (number is validated only where it exists); left: reply's thread read-back (dedupe) and comment's conversation read-back share said/first_of but keep their own list/delete calls - GraphQL thread vs REST issue API, one helper would only forward; gitrepo.HandlesInSubjects mirrors cockpit board.ts ticketsNamed (TypeScript, cannot call Go); pr-gate's handle x ticket loop is O(n*m) over one branch's handles, not worth a map"
-test-verdict: "pass: go build + go test -count=1 -race ./... RC=0 auf 5db2eee4; DoD 1-11 im Baum geprueft; roles list auf Scratch-Board (default, agent+copilot aus CRLF, Shell-Zeichen -> leer, unlesbare Datei -> person); pr-round.sh threads/comments live gegen BeMuCa/jaira rc=0, falsche Nummer rc=1 ohne Schreiben; reply/request nur gegen gh-Stub (live wuerde auf echten PR schreiben); roles list schreibt nichts"
+test-verdict: "pass: go test -race ./... RC=0 after clean cache; DoD 1-16 proofs present; real binary on a scratch board: pr-gate person->3, backlog->3, signoff board+ticket in signoff->0, done board+signoff->3, done->0 (--json may_open), bad base->2, two parallel pr-gate both 0 (read-only); pr-round.sh open with real jaira + fake gh: gate refused->exit 3, no pr create; passed->pr create --repo o/r --base master"
 hunt-verdict: "pass: bughunt done at 5db2eee4, 0 change, 0 pre-existing (Runde 3; Runden 1-2: 4 change, alle behoben)"
 review-verdict: "All 11 DoD items are met by the diff; settings, roles list, pr-round.sh and the role texts read whole show no defect. Related tests pass (go test ./core/settings ./core/role ./internal/cli). Only uncertainty: the Copilot reviewer request has not been tried against real GitHub."
 review-round: 4
