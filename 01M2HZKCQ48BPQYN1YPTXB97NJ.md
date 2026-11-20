@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:23:40Z
+updated-at: 2026-11-20T23:23:45Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -38,7 +38,7 @@ outcome-resolves: "Ein Board sagt in .jaira/pr, ob Arbeit durch einen PR (person
 review-summary: "none"
 round: 5
 review-gaps: "none removed. note: known limit: under .jaira/pr none, pr-gate binds a person's acceptance to the ticket, not to its commits - a commit made after the ticket reached done, naming that ticket or any other ticket already in done or the logbook, lands without anyone seeing it (bughunt round 2, F2; Teamlead 21.11. 00:15: known limit, signoff decides). Closing it means: after the move into done only .jaira/ commits for that ticket"
-test-verdict: "pass on my passes: -race suite RC=0, DoD 1-8 checked in the tree, scratch board: unnamed commit holds the gate (exit 3); blocked on the two hunt findings"
+test-verdict: "fail (round 3 hunt), fixed in the same round - see hunt-verdict"
 hunt-verdict: "change (round 3), fixed: diff-tree --cc hid a merge that drops one side (-s ours, checkout --ours) - landing it would undo base work. Now an unnamed merge passes only when its tree equals 'git merge-tree --write-tree' of its two parents; conflict, octopus or old git fail closed"
 ---
 
