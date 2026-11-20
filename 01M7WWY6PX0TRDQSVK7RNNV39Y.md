@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:52:59Z
+updated-at: 2026-11-20T17:53:03Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85657
 claimed-at: 2026-11-20T17:52:47Z
@@ -39,7 +39,7 @@ test-verdict: "pass: go build/vet/test -count=1 ./... RC=0 at c6c3ed13; DoD 8 Pr
 hunt-verdict: "pass: bughunt done at c6c3ed13, 0 change, 0 pre-existing"
 review-verdict: "Nicht annehmen: alle 8 DoD-Punkte mit Tests belegt, go test core/board, core/ticket, internal/cli gruen, Code sonst sauber (Sperre, Atomic-Write, Fallback, check-ignore inkl. negierter Muster geprueft). Ein Blocker: jaira update meldet auf git<2.31 bei jedem Lauf eine Verschiebung, die nicht stattfand, und fordert zum Commit auf - genau der Fallback-Pfad, den d62bafaa eingefuehrt hat. Ein-Zeilen-Fix."
 review-round: 7
-review-check: "1. cd $(mktemp -d) && git init -q && jaira init  2. Ausgabe sagt: '.jaira/ is excluded in .git/info/exclude'  3. git status --short zeigt kein .jaira/ und keine .gitignore  4. tail -2 .git/info/exclude zeigt den jaira-Kommentar und /.jaira/  5. git commit -q --allow-empty -m x && git worktree add -q ../wt && git -C ../wt status --short – kein .jaira/, keine .gitignore  6. jaira share – info/exclude hat kein /.jaira/ mehr; git status zeigt .jaira/ und .gitignore (darin nur /.jaira/lanes/)  7. Altbestand in einem frischen Repo: git init -q && printf '/.jaira/\\n' > .gitignore && mkdir -p .jaira/tickets && jaira update --dry-run – sagt 'Would move this private board's entry from .gitignore to .git/info/exclude'  8. jaira update – sagt 'Moved ...'; cat .gitignore ist leer, tail -2 .git/info/exclude zeigt /.jaira/  9. Automatisch: go test ./core/board ./internal/cli"
+review-check: "1. cd $(mktemp -d) && git init -q && git commit -q --allow-empty -m i  2. jaira init  3. git status --short zeigt kein .gitignore; cat .git/info/exclude zeigt '/.jaira/'  4. git worktree add ../wt && git -C ../wt status --short ist leer  5. jaira share; .git/info/exclude hat die Zeile nicht mehr, .gitignore hat '/.jaira/lanes/'  6. jaira share --undo; Ausgabe nennt 'jaira update' fuer Teamkollegen, exclude hat die Zeile wieder  7. altes Board: rm .git/info/exclude-Zeile, printf '/.jaira/\\n' >> .gitignore, jaira update -> 'Moved ... to .git/info/exclude', Zeile ist aus .gitignore raus  8. (Blocker) mit git<2.31 bzw. einem Wrapper, der --path-format=absolute zurueckgibt: jaira update sagt heute faelschlich 'Moved ... from .gitignore to .gitignore' - nach dem Fix sagt es nichts. Automatisch: go test ./core/board ./internal/cli -run 'Ignore|Exclude|Share|Update'"
 ---
 
 # Ein privates Board steht in .git/info/exclude statt in der .gitignore des Arbeitsbaums
