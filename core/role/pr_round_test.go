@@ -19,11 +19,12 @@ import (
 // GH_ISSUES_AFTER the conversation read back once something was posted;
 // GH_REQUESTED the reviewers a pull request still waits for, GH_OPINIONS each
 // reviewer's latest verdict. GH_LOST=1 makes every call after 'auth status'
-// end with 4, the way gh does once its sign-in has run out.
+// end with 4, the way gh does once its sign-in has run out; GH_LOST=after
+// does so only once something was posted.
 const fakeGH = `#!/usr/bin/env bash
 printf '%s\t' "$@" >> "$GH_LOG"; printf '\n' >> "$GH_LOG"
 [ "$1" = auth ] && { [ "${GH_AUTH:-}" = fail ] && exit 1; exit 0; }
-[ -n "${GH_LOST:-}" ] && { echo "To get started with GitHub CLI, please run:  gh auth login" >&2; exit 4; }
+[ -n "${GH_LOST:-}" ] && { [ "$GH_LOST" != after ] || { grep -q POST "$GH_LOG" && ! printf '%s ' "$@" | grep -q POST; }; } && { echo "To get started with GitHub CLI, please run:  gh auth login" >&2; exit 4; }
 for a in "$@"; do [ "$a" = POST ] && [ "${GH_POST:-}" = fail ] && { echo "HTTP 422: Reviews may only be requested from collaborators" >&2; exit 1; }; done
 filter="" fixture=${GH_FIXTURE:-}
 case "$*" in *"latestOpinionatedReviews"*) fixture=${GH_OPINIONS:-} ;; *"requested_reviewers"*) fixture=${GH_REQUESTED:-} ;; *"POST repos/"*"/issues/"*) fixture=${GH_POSTED:-} ;; *"/issues/"*) fixture=${GH_ISSUES:-}; [ -n "${GH_ISSUES_AFTER:-}" ] && grep -q POST "$GH_LOG" && fixture=$GH_ISSUES_AFTER ;; *"comments(last:100)"*) fixture=${GH_AFTER:-} ;; *"viewer{login}"*) fixture=${GH_STATE:-} ;; esac
@@ -378,7 +379,7 @@ func pushedCheckout(t *testing.T) string {
 	return work
 }
 
-func gitIn(t *testing.T, dir string, args ...string) string {
+func gitIn(t *testing.T, dir string, args ...string) {
 	t.Helper()
 	cmd := exec.Command("git", append([]string{"-c", "user.email=a@b", "-c", "user.name=x", "-c", "commit.gpgsign=false"}, args...)...)
 	cmd.Dir = dir
@@ -387,7 +388,6 @@ func gitIn(t *testing.T, dir string, args ...string) string {
 	if err != nil {
 		t.Fatalf("git %v: %v\n%s", args, err, out)
 	}
-	return strings.TrimSpace(string(out))
 }
 
 // The gate reads the checkout's commits while gh opens the branch as pushed:
@@ -411,6 +411,20 @@ func TestPROpenOnlyFromThePushedTip(t *testing.T) {
 		!strings.Contains(out, "pull or push until they agree") || strings.Contains(strings.Join(p.calls(), "\n"), "pr-gate") {
 		t.Errorf("push ahead of the checkout: exit %d, want 3 before the gate runs\n%s", code, out)
 	}
+	// A single-branch clone has no remote-tracking ref for feat/x, and the
+	// branch is pushed all the same: the push target comes from the
+	// configuration.
+	clone := filepath.Join(t.TempDir(), "clone")
+	gitIn(t, work, "push", "-q", "origin", "master")
+	gitIn(t, filepath.Dir(clone), "clone", "-q", "--single-branch", "-b", "master", filepath.Join(filepath.Dir(work), "origin.git"), clone)
+	gitIn(t, clone, "checkout", "-q", "-b", "feat/y")
+	gitIn(t, clone, "commit", "-q", "--allow-empty", "-m", "feat(A3K9QP): y")
+	gitIn(t, clone, "push", "-q", "-u", "origin", "HEAD")
+	p.dir = clone
+	if out, code := p.run(nil, "open", "up/r", "origin", "master", "t", body); code != 0 || !strings.Contains(strings.Join(p.calls(), "\n"), "pr\tcreate") {
+		t.Errorf("single-branch clone, pushed: exit %d, want the pull request opened\n%s", code, out)
+	}
+	p.dir = work
 	gitIn(t, work, "checkout", "-q", "-b", "feat/local")
 	if out, code := p.run(nil, "open", "up/r", "origin", "master", "t", body); code != 3 || !strings.Contains(out, "push it first") {
 		t.Errorf("branch never pushed: exit %d, want 3 saying to push first\n%s", code, out)
@@ -434,6 +448,16 @@ func TestPRRoundLostSignInIsNeverExit4(t *testing.T) {
 		if out, code := p.run([]string{"GH_LOST=1"}, args...); code != 3 || !strings.Contains(out, "gh auth login") {
 			t.Errorf("%v with the sign-in gone: exit %d, want 3 naming gh auth login\n%s", args, code, out)
 		}
+	}
+	// Lost between the post and the read-back: the answer went out, the run
+	// still ends with 3, never as a finished 0.
+	user := fixtureFile(t, "user.json", `{"data":{"viewer":{"login":"me"}}}`)
+	issues := fixtureFile(t, "issues.json", `[{"id":1,"user":{"login":"copilot"},"body":"why?"}]`)
+	posted := fixtureFile(t, "posted.json", `{"id":9,"html_url":"c9"}`)
+	answer := fixtureFile(t, "answer.md", "Renamed it.\n")
+	out, code := p.run([]string{"GH_LOST=after", "GH_STATE=" + user, "GH_ISSUES=" + issues, "GH_POSTED=" + posted}, "comment", "o/r", "7", answer)
+	if code != 3 || !strings.Contains(out, "c9") || !strings.Contains(out, "gh auth login") || strings.Contains(out, "could not read") {
+		t.Errorf("comment, sign-in lost after posting: exit %d, want 3 after printing c9\n%s", code, out)
 	}
 }
 

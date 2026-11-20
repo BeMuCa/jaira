@@ -56,7 +56,7 @@ GitHub only. On GitLab the role's text names the glab commands instead.
 USAGE
 }
 
-die() { echo "pr-round.sh: $*" >&2; exit "${2:-1}"; }
+die() { echo "pr-round.sh: $1" >&2; exit "${2:-1}"; }
 
 [ "${1:-}" = -h ] || [ "${1:-}" = --help ] && { usage; exit 0; }
 [ $# -ge 3 ] || { usage >&2; exit 2; }
@@ -141,12 +141,17 @@ dedupe() {
   [ -n "$mine_id" ] || return 0
   # The newest 100, oldest first: they hold the answer just posted and any
   # copy beside it however long the thread has grown.
-  if ! first=$(gh api graphql -f thread="$thread" -f query='
+  local rc=0
+  first=$(gh api graphql -f thread="$thread" -f query='
     query($thread:ID!){viewer{login}
       node(id:$thread){... on PullRequestReviewThread{comments(last:100){nodes{id author{login} body}}}}}' \
     --jq "$saidjq"' .data as $d | $d.node.comments.nodes[]
           | "\(if (.author.login // "") == $d.viewer.login then "me" else "other" end) \(.id) \(.body | said)"' |
-    keeper me "$(said "$file")" "$mine_id"); then
+    keeper me "$(said "$file")" "$mine_id") || rc=$?
+  # 3 is gh() reporting a lost sign-in, already said: it ends the run, as
+  # every command promises. Any other failure only leaves the check undone.
+  [ "$rc" -ne 3 ] || exit 3
+  if [ "$rc" -ne 0 ]; then
     echo "pr-round.sh: could not read the thread back to check for a second answer — look at it once" >&2
     return 0
   fi
@@ -174,11 +179,17 @@ case "$cmd" in
     # or misses ones it carries.
     cur=$(git symbolic-ref --quiet --short HEAD) ||
       die "HEAD is detached — check out the branch to open, so the gate and the pull request read the same commits" 3
-    pushref=$(git for-each-ref --format='%(push:remotename) %(push)' "refs/heads/$cur")
-    pushremote=${pushref%% *} pushed=${pushref#* }
-    [ -n "$pushremote" ] && [ -n "$pushed" ] ||
-      die "'$cur' has no branch to push to — push it first: git push -u <remote> HEAD" 3
-    pushed=refs/heads/${pushed#refs/remotes/"$pushremote"/}
+    # Read from the configuration, not from a remote-tracking ref: a
+    # single-branch clone or a push-only remote has none, and the branch is
+    # pushed all the same. 'git push' sends it under its own name, or under
+    # the branch it tracks where push.default says upstream.
+    pushremote=$(git for-each-ref --format='%(push:remotename)' "refs/heads/$cur")
+    [ -n "$pushremote" ] ||
+      die "'$cur' has no remote to push to — push it first: git push -u <remote> HEAD" 3
+    pushed=refs/heads/$cur
+    if [ "$(git config push.default || true)" = upstream ]; then
+      pushed=$(git config "branch.$cur.merge") || die "'$cur' tracks no branch to push to — push it first: git push -u $pushremote HEAD" 3
+    fi
     tip=$(git ls-remote "$pushremote" "$pushed" | cut -f1) ||
       die "could not read '$pushed' from $pushremote — nothing is opened" 3
     here=$(git rev-parse HEAD)
@@ -271,7 +282,10 @@ case "$cmd" in
     [ -n "$first" ] && { echo "commented: already"; exit 0; }
     posted=$(gh api --method POST "repos/$repo/issues/$number/comments" -F body=@"$file" --jq '"\(.id) \(.html_url)"')
     echo "${posted#* }"
-    if ! first=$(convo | keeper "$viewer" "$mine" "${posted%% *}"); then
+    rc=0
+    first=$(convo | keeper "$viewer" "$mine" "${posted%% *}") || rc=$?
+    [ "$rc" -ne 3 ] || exit 3
+    if [ "$rc" -ne 0 ]; then
       echo "pr-round.sh: could not read the conversation back to check for a second answer — look at it once" >&2
       first=""
     fi
