@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T23:09:15Z
+updated-at: 2026-11-20T23:09:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-91898
 claimed-at: 2026-11-20T22:44:37Z
@@ -100,3 +100,4 @@ review-summary: none
 - **2026-11-20 22:55 · Alexander Sacharov** — in-progress: CRLF in any 'jaira set' value made the write fail ('value position is at end of line') - pre-existing for every field; fixed at the cause in Doc.SetScalar (core/ticket/frontmatter.go), CR/CRLF stored as LF. Concurrency test needs one Store per goroutine: a shared Store races in idIndex, but jaira never shares one (two processes = two stores).
 - **2026-11-20 22:57 · Alexander Sacharov** — in-progress pause: Go side and lane prompts done and pushed (fbc56cd1, 8a396712); DoD 1,2,4,8,9 ticked. Left: cockpit (DoD 3,5,6,7,10) = plan steps 5-7, then release-note lines for the cockpit and the full test run (go test ./..., claude plugin test in core/mod/builtin/jaira-cockpit). in-progress prompt no longer counts back: notes; the in-progress twin changed with it.
 - **2026-11-20 23:08 · Alexander Sacharov** — in-progress done, moved to critique; the first send of the move was refused as 'written first' by this session's own last plan tick (ref 0c810cc8 = disk minus the move) - a race between two sends of one session, the disk file is the superset.
+- **2026-11-20 23:09 · Alexander Sacharov** — critique: none. Let stand: core/move/move.go isPersons repeats the person-lane predicate gate.go:212, web_source.go:256 and snake.go:67 inline too - a Lane method would touch three unrelated files, not this ticket's scope; explain parser accepts German class aliases (kleiner Rand, bekannte Grenze, nicht aus diesem Ticket) because the explain chat answers in the person's language and may translate the marks - three map entries, kept.
