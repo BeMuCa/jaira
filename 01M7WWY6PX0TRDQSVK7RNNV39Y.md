@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:46:52Z
+updated-at: 2026-11-20T17:47:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60542
 claimed-at: 2026-11-20T17:19:23Z
@@ -57,7 +57,7 @@ review-check: "1. cd $(mktemp -d) && git init -q && jaira init  2. Ausgabe sagt:
 - [x] Windows: der Pfad von git (C:/... mit Schraegstrichen) wird zu einem gueltigen Dateipfad; CRLF-Zeilen werden erkannt und beim Entfernen bleibt der Rest der Datei byteweise erhalten (Test)
   proof: core/board/exclude_test.go TestParsePlaceReadsWhatGitPrints (Windows-Laufwerkspfad auf windows-latest, git<2.31-Ausgabe), TestAddAndRemoveIgnoreOverEveryShapeOfExclude/CRLF
 - [x] Signoff-Rueckgabe: dropEntry nimmt nur die Leerzeile direkt nach dem Eintrag; share entfernt aus info/exclude nur jairas verankerte Zeile, warnt bei einer handgeschriebenen und meldet still_ignored; share --undo sagt, dass Teamkollegen jaira update laufen lassen (Test)
-  proof: core/board/exclude_test.go TestDropEntryTakesOnlyTheBlankLineThatFollowsTheEntry, TestRemoveIgnoreLeavesAnUnanchoredLineAPersonWrote; internal/cli/privateexclude_test.go TestShareLeavesAPersonsUnanchoredExcludeLineAndSaysSo
+  proof: core/board/exclude_test.go TestDropEntryTakesOnlyTheBlankLineThatFollowsTheEntry, TestRemoveIgnoreLeavesAnUnanchoredLineAPersonWrote; internal/cli/privateexclude_test.go TestShareLeavesAPersonsUnanchoredExcludeLineAndSaysSo, TestShareOfABoardInASubdirectorySeesAnUnanchoredExcludeLine
 
 ## Options
 
