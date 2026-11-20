@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T18:27:33Z
+updated-at: 2026-11-20T18:30:39Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-29476
 claimed-at: 2026-11-20T18:21:36Z
@@ -31,7 +31,7 @@ question: ""
 outcome-what: "Board-Dateien .jaira/pr (person|agent), .jaira/pr-reviewer und .jaira/pr-when (done|signoff, Default done); 'jaira roles list' zeigt sie; 'jaira roles pr-gate <remote>/<branch>' prueft im Binary, ob ein Agent den PR oeffnen darf (agent + jedes Ticket des Branches in done bzw. signoff); jaira-role-pr/scripts/pr-round.sh: open (Gate vor gh pr create), threads, comments, reply/comment (nie doppelt, auch bei zwei Sessions; loescht nur die eigene POST-id), request, settled (keine offenen Threads, kein ausstehendes Review); Rollentexte, Release-Note."
 outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten das pro Repo. In manchen Projekten laeuft das Review auf dem PR selbst, dort kommt done erst danach (Alex 20.11.)."
 outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
-review-summary: "none"
+review-summary: "Drei Board-Dateien: .jaira/pr (person|agent, Default person), .jaira/pr-reviewer (copilot, Login oder org/team; alles andere gilt als leer) und .jaira/pr-when (done|signoff, Default done); Tippfehler, CRLF, Kommentare fallen immer auf den Default zurueck. 'jaira roles list' zeigt sie (Text und --json). Neues 'jaira roles pr-gate <remote>/<branch>' im Binary: liest die Handles aus den Commit-Subjects von base..HEAD und gibt Exit 0 nur, wenn pr=agent und jedes genannte Ticket im Terminal-Lane seines Boards steht (bei signoff: signoff bis Terminal, blocked zaehlt nie) oder im Logbook liegt; archiviert, unbekannt oder unlesbar haelt es mit Exit 3 und Namen. Neues Skript jaira-role-pr/scripts/pr-round.sh fuer GitHub: open (Gate vor gh pr create, Ziel-Repo und Base explizit), threads/comments (nur Offenes), reply (antworten + resolve, wiederholbar ohne Doppelantwort, zwei Sessions hinterlassen eine Antwort, geloescht wird nur die eigene POST-id), comment (dasselbe fuer die Konversation), request (Copilot ueber den Bot-Login, Exit 4 wenn abgelehnt), settled (Exit 3 bei offenem Thread, ausstehendem Review oder CHANGES_REQUESTED). Merge/Approve kommt nirgends vor. Rollentexte (pr, teamlead, dispatcher), CLAUDE.md/AGENTS.md/README und Release-Note angepasst."
 round: 10
 review-gaps: |-
   blocker: DoD 12 - pr-gate laesst einen Handle durch, den das Board nicht kennt, und behandelt ihn als 'ins Logbook abgelegt' ohne das zu pruefen. Repro: frisches Repo, .jaira/pr=agent, ein Commit 'feat(ZZZZZZ): x' -> 'jaira roles pr-gate master' Exit 0, 'every ticket on the branch is in done: ZZZZZZ'. Ein Tippfehler im Scope, ein Ticket auf einem nicht geholten Ref oder ein abgelehntes Ticket oeffnet so den PR ohne jede Abnahme - dieselbe Fail-open-Luecke, die der Code fuer unlesbare Dateien schon schliesst (internal/cli/roles.go, Schleife ueber named; Test prgate_test.go:115 schreibt das Verhalten fest). Fix-Richtung: als abgelegt gilt nur ein Handle, den eine Datei unter .jaira/logbook/ traegt; sonst Exit 3 'unknown'.
