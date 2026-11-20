@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:37:51Z
+updated-at: 2026-11-20T19:48:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99114
 claimed-at: 2026-11-20T19:19:18Z
@@ -189,3 +189,8 @@ Empfehlung: 1 - der Gate-Fehler bei parallelen Sessions ist die einzige echte Lu
 - **2026-11-20 19:33 · Alexander Sacharov** — critique 12 / optimize (nur 0bc5b11a): nichts.
 - **2026-11-20 19:34 · Alexander Sacharov** — bughunt: done at 0bc5b11a - 0 findings, follow-up hunt (diff since 7d8d7872: pr-round.sh open push.default upstream|tracking, pr_round_test.go, shipped.sha256 - hash matches the script; no new files); concurrency, error paths, input, permissions checked; ran: go test ./core/role -run 'PRRound|PROpen' (ok), go test ./core/shipped (ok); files: .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md AGENTS.md CLAUDE.md README.md core/gitrepo/named.go core/release/notes/JG3REW.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-role-pr/scripts/pr-round.sh core/role/builtin/jaira-teamlead/SKILL.md core/role/pr_round_test.go core/role/role_test.go core/settings/settings.go core/settings/settings_test.go core/shipped/shipped.sha256 internal/cli/prgate_test.go internal/cli/roles.go internal/cli/roles_test.go
 - **2026-11-20 19:37 · Alexander Sacharov** — review: kein Blocker. 6 Notes in review-gaps (Gate liest .jaira/pr aus dem Branch selbst; open ohne --head im Fork; GitLab ohne Tip-Pruefung im Code; altes jaira im PATH gibt unklare Meldung; Copilot-Anfrage nur gemockt getestet; fremde Milestone-Datei im Worktree).
+- **2026-11-20 19:48 · Alexander Sacharov** — explain: Der Review fand keinen Blocker; alle 19 DoD-Punkte sind erfuellt. Es bleiben sechs Hinweise, die wichtigste: das Gate liest .jaira/pr aus dem eigenen Branch, nicht aus der Basis, und pr-round.sh open ruft gh pr create ohne --head.
+Warum: Ein Branch koennte .jaira/pr mit agent selbst committen und so sein eigenes Gate oeffnen; das ist nur im Diff sichtbar, und der PR bleibt ohnehin Sache des Maintainers. Im Fork ist der geoeffnete Head nicht ausdruecklich der gepruefte Tip. Echtes GitHub wurde nie getestet, nur ein gemocktes gh.
+1) Gate aus der Basis lesen und --head <fork-owner>:<branch> setzen, dann erneut pruefen [give back]
+2) Ticket so annehmen; die sechs Hinweise bleiben als Notes stehen, ein erster echter PR zeigt den Rest [accept]
+Empfehlung: 2 - kein Kriterium ist gebrochen, das Gate faellt bei Zweifel zu, und die Luecken zeigen sich am schnellsten an einem echten PR.
