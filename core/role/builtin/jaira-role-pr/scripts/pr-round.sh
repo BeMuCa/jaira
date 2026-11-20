@@ -202,6 +202,31 @@ case "$cmd" in
     [ -n "$tip" ] || die "'$cur' is not pushed to $pushremote yet — push it first: git push -u $pushremote HEAD" 3
     [ "$tip" = "$here" ] ||
       die "the pushed ${pushed#refs/heads/} on $pushremote is at ${tip:0:12}, this checkout at ${here:0:12} — pull or push until they agree, then open it again" 3
+    # --head names the branch the tip check above read, on the account it
+    # was pushed to: left to itself gh guesses the head from the checkout,
+    # and in a fork that guess need not be the commits the gate judged. The
+    # URL is the same entry get-url --push read — the first pushurl, else
+    # the url — as configured, before insteadOf rewrites it. Only
+    # <scheme>://host/<owner>/<name> and host:<owner>/<name> name an
+    # account; anything else opens nothing rather than a guess,
+    # and is refused before the gate runs.
+    url=$(git config --get-all "remote.$pushremote.pushurl" | head -n1 || true)
+    [ -n "$url" ] || url=$(git config "remote.$pushremote.url") ||
+      die "$pushremote has no URL — nothing is opened" 3
+    path=${url%/}; path=${path%.git}
+    case "$path" in
+      *://*) path=${path#*://}; case "$path" in */*) path=${path#*/} ;; *) path= ;; esac ;;
+      *:*) path=${path#*:} ;;
+      *) path= ;;
+    esac
+    path=${path#/}
+    case "$path" in
+      ?*/?*/*|/*|*//*) headowner= ;;
+      ?*/?*) headowner=${path%/*} ;;
+      *) headowner= ;;
+    esac
+    [ -n "$headowner" ] ||
+      die "cannot tell which account $pushremote ($url) belongs to — nothing is opened" 3
     # The gate is the binary's, not this script's: whether the board says
     # agent, and whether every ticket the branch names is far enough along.
     if ! gate=$(jaira roles pr-gate "$remote/$branch" 2>&1); then
@@ -209,17 +234,6 @@ case "$cmd" in
       die "not opened — hand the create line back to a person" 3
     fi
     echo "$gate"
-    # --head names the branch the tip check above read, on the account it
-    # was pushed to: left to itself gh guesses the head from the checkout,
-    # and in a fork that guess need not be the commits the gate judged. The
-    # URL is read as configured, before insteadOf rewrites it: the account
-    # is the second-to-last part of host:owner/name or host/owner/name.
-    url=$(git config "remote.$pushremote.pushurl" || git config "remote.$pushremote.url") ||
-      die "$pushremote has no URL — nothing is opened" 3
-    url=${url%/}; url=${url%.git}; rest=${url%/*}
-    headowner=${rest##*[/:]}
-    [ -n "$headowner" ] && [ "$headowner" != "$rest" ] ||
-      die "cannot tell which account $pushremote ($url) belongs to — nothing is opened" 3
     head=${pushed#refs/heads/}
     # Into its own repository the branch name alone is the head.
     [ "$(printf '%s' "$headowner" | tr '[:upper:]' '[:lower:]')" = "$(printf '%s' "$owner" | tr '[:upper:]' '[:lower:]')" ] ||

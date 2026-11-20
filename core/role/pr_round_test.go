@@ -372,7 +372,10 @@ func pushedCheckout(t *testing.T) string {
 	gitIn(t, root, "init", "-q", "--bare", "origin.git")
 	gitIn(t, root, "init", "-q", "-b", "master", "work")
 	gitIn(t, work, "commit", "-q", "--allow-empty", "-m", "chore: base")
-	gitIn(t, work, "remote", "add", "origin", filepath.Join(root, "origin.git"))
+	// The URL is GitHub's, as a real one is; insteadOf sends the push and
+	// the tip check to the bare repository beside the checkout.
+	gitIn(t, work, "remote", "add", "origin", "https://github.com/me/r.git")
+	gitIn(t, work, "config", "url."+filepath.Join(root, "origin.git")+".insteadOf", "https://github.com/me/r.git")
 	gitIn(t, work, "checkout", "-q", "-b", "feat/x")
 	gitIn(t, work, "commit", "-q", "--allow-empty", "-m", "feat(A3K9QP): x")
 	gitIn(t, work, "push", "-q", "-u", "origin", "HEAD")
@@ -417,6 +420,8 @@ func TestPROpenOnlyFromThePushedTip(t *testing.T) {
 	clone := filepath.Join(t.TempDir(), "clone")
 	gitIn(t, work, "push", "-q", "origin", "master")
 	gitIn(t, filepath.Dir(clone), "clone", "-q", "--single-branch", "-b", "master", filepath.Join(filepath.Dir(work), "origin.git"), clone)
+	gitIn(t, clone, "remote", "set-url", "origin", "https://github.com/me/r.git")
+	gitIn(t, clone, "config", "url."+filepath.Join(filepath.Dir(work), "origin.git")+".insteadOf", "https://github.com/me/r.git")
 	gitIn(t, clone, "checkout", "-q", "-b", "feat/y")
 	gitIn(t, clone, "commit", "-q", "--allow-empty", "-m", "feat(A3K9QP): y")
 	gitIn(t, clone, "push", "-q", "-u", "origin", "HEAD")
@@ -475,12 +480,17 @@ func TestPROpenNamesTheHeadItChecked(t *testing.T) {
 		}
 		gitIn(t, work, "config", "--unset", "url."+bare+".insteadOf")
 	}
-	// A URL with no account in it opens nothing rather than a guess.
-	gitIn(t, work, "config", "remote.origin.url", "nowhere")
-	gitIn(t, work, "config", "url."+bare+".insteadOf", "nowhere")
-	if out, code := p.run(nil, "open", "up/r", "origin", "master", "t", body); code != 3 ||
-		!strings.Contains(out, "which account") || strings.Contains(strings.Join(p.calls(), "\n"), "pr\tcreate") {
-		t.Errorf("URL without an account: exit %d, want 3 and nothing opened\n%s", code, out)
+	// A URL with no account in it opens nothing rather than a guess: no
+	// path, one part only, the host taken for the account, a local path,
+	// three parts (bughunt).
+	for _, url := range []string{"nowhere", "mine:r", "gh:r.git", "server:r.git", "https://github.com/r",
+		"https://github.com/r/", "/srv/git/r.git", "file:///srv/me/r.git", "https://gitlab.com/g/sub/r.git"} {
+		gitIn(t, work, "config", "remote.origin.url", url)
+		gitIn(t, work, "config", "url."+bare+".insteadOf", url)
+		if out, code := p.run(nil, "open", "up/r", "origin", "master", "t", body); code != 3 ||
+			!strings.Contains(out, "which account") || strings.Contains(strings.Join(p.calls(), "\n"), "pr\tcreate") {
+			t.Errorf("URL %s without an account: exit %d, want 3 and nothing opened\n%s", url, code, out)
+		}
 	}
 	// A pushurl apart from the URL fetched from: the tip is read, and the
 	// account taken, where git push sends the branch.
@@ -491,6 +501,14 @@ func TestPROpenNamesTheHeadItChecked(t *testing.T) {
 		!strings.Contains(strings.Join(p.calls(), "\n"), "--head\tme:feat/x\t") {
 		t.Errorf("pushurl apart from the url: exit %d, want --head me:feat/x\n%s", code, out)
 	}
+	// Two pushurls: git push sends to both, the tip is read at the first,
+	// and the account is the first one's too (bughunt).
+	gitIn(t, work, "config", "--add", "remote.origin.pushurl", "git@github.com:other/r.git")
+	if out, code := p.run(nil, "open", "up/r", "origin", "master", "t", body); code != 0 ||
+		!strings.Contains(strings.Join(p.calls(), "\n"), "--head\tme:feat/x\t") {
+		t.Errorf("two pushurls: exit %d, want --head me:feat/x from the first\n%s", code, out)
+	}
+	gitIn(t, work, "config", "--unset-all", "remote.origin.pushurl")
 	gitIn(t, work, "config", "remote.origin.pushurl", "nowhere")
 	gitIn(t, work, "config", "--add", "url."+bare+".insteadOf", "nowhere")
 	if out, code := p.run(nil, "open", "up/r", "origin", "master", "t", body); code != 3 ||
