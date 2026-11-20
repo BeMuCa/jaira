@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T20:01:14Z
+updated-at: 2026-11-20T20:01:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-18659
 claimed-at: 2026-11-20T19:49:16Z
@@ -33,7 +33,7 @@ outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten d
 outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
 review-summary: "critique 15 (a3137857): nothing - account check moved before the gate, one pushurl entry for tip and account"
 round: 16
-review-gaps: "optimize (3fe55258..dfb23369): nothing - FileAt has no twin in core/gitrepo (core/gitref reads ticket refs through its own runner), PRIn/PRWhenIn share firstLine with the file readers, the tr lowercasing stays for bash 3.2 on macOS"
+review-gaps: "optimize (a3137857): nothing - the URL parse is plain parameter expansion, no helper in the script does it already"
 test-verdict: "pass: suite -race -count=1 RC=0 at dfb23369; DoD 20/21 tests run"
 hunt-verdict: "fail: bughunt done at dfb23369 - 2 change in pr-round.sh open (account read from URLs without one; account from last pushurl, tip from first)"
 review-verdict: "Diff erfuellt alle 19 DoD-Punkte; 13 Commits, Liste vollstaendig. Gate, Settings und pr-round.sh ganz gelesen entlang Nebenlaeufigkeit (Dedupe bei zwei Sessions korrekt fuer jede Reihenfolge, loescht nur die eigene ID), Fehlerpfade (Login-Verlust -> 3, Teilschritte bei reply wiederholbar), ungewoehnliche Eingaben (Typo/CRLF -> Default, Shell-Zeichen im Reviewer gefiltert, Base mit '-' abgelehnt) und Grenzen (Gate faellt bei Zweifel zu). Kein Blocker; sechs Notes, keine davon bricht ein Kriterium. Betroffene Tests gruen (core/role, core/settings, internal/cli). Nicht geprueft: echtes GitHub (alles gegen ein gemocktes gh)."
