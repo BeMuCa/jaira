@@ -23,10 +23,10 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T18:17:53Z
+updated-at: 2026-11-20T18:21:36Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-87225
-claimed-at: 2026-11-20T17:38:56Z
+claimed-by: DESKTOP-RFTCH11-29476
+claimed-at: 2026-11-20T18:21:36Z
 question: ""
 outcome-what: "Board-Dateien .jaira/pr (person|agent), .jaira/pr-reviewer und .jaira/pr-when (done|signoff, Default done); 'jaira roles list' zeigt sie; 'jaira roles pr-gate <remote>/<branch>' prueft im Binary, ob ein Agent den PR oeffnen darf (agent + jedes Ticket des Branches in done bzw. signoff); jaira-role-pr/scripts/pr-round.sh: open (Gate vor gh pr create), threads, comments, reply/comment (nie doppelt, auch bei zwei Sessions; loescht nur die eigene POST-id), request, settled (keine offenen Threads, kein ausstehendes Review); Rollentexte, Release-Note."
 outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten das pro Repo. In manchen Projekten laeuft das Review auf dem PR selbst, dort kommt done erst danach (Alex 20.11.)."
