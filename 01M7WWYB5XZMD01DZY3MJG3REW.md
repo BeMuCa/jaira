@@ -1,7 +1,7 @@
 ---
 id: 01M7WWYB5XZMD01DZY3MJG3REW
 title: Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T18:14:06Z
+updated-at: 2026-11-20T18:14:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-87225
 claimed-at: 2026-11-20T17:38:56Z
@@ -32,7 +32,7 @@ outcome-what: "Board-Dateien .jaira/pr (person|agent), .jaira/pr-reviewer und .j
 outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten das pro Repo. In manchen Projekten laeuft das Review auf dem PR selbst, dort kommt done erst danach (Alex 20.11.)."
 outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
 review-summary: "none"
-round: 8
+round: 9
 review-gaps: "removed first_of (its last caller became keeper); left: keeper serves reply-dedupe, comment pre-check and comment read-back, no further sharing between GraphQL thread and REST conversation calls; settled's three reads stay separate calls (REST requested_reviewers, two GraphQL connections that page differently)"
 test-verdict: "pass: go test -race ./... RC=0 after clean cache at 9ef2e20b; DoD 1-16 proofs present; real binary on a scratch board: done ticket -> pr-gate 0, the same ticket with a conflict marker -> exit 3 reason unreadable, no may_open; earlier round: person/backlog/signoff/done thresholds, bad base 2, parallel pr-gate both 0, pr-round.sh open refuses before gh pr create; reply/comment/settled exercised against fake gh only (no live GitHub here)"
 hunt-verdict: "pass: bughunt done at 9ef2e20b - 0 change, 0 pre-existing; edge reported (thread over 100 comments: dedupe misses its own id, leaves the copy, deletes nothing) taken into in-progress as a one-word fix"
