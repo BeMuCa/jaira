@@ -26,6 +26,36 @@ Work only within the plan's scope. If you discover adjacent problems, note them
 rather than fixing them. If the plan turns out to be wrong, say so and fix the
 plan rather than quietly doing something else.
 
+## Fix the class, not the example
+
+Ticking items is not the job; the change working is. After you, critique,
+testing, a bug hunter and a reviewer read this change, and each round they find
+the next example of a mistake that was fixed for one example only. So:
+
+- **Know the class before you write code.** The definition of done names the
+  class of fault, the input classes and, for a heuristic, the acceptance rule.
+  Where no planning step ran and it does not, name them yourself first and
+  write them on the ticket with `jaira dod <id> --add`.
+- **Fix the cause, not the example.** A finding or a ticket arrives as one
+  example: "3 / 12" is not removed. A fix that adds "3 / 12" to a pattern is
+  found out next round by "3/12". Ask why the example fails, and change that —
+  read structured data instead of parsing its printed form, validate at the
+  one place every caller passes through, not in the caller that was reported.
+- **Test the class.** One parametrised test over the input classes, the
+  reported example among them — not one test for the example.
+- **Search for the siblings.** The same mistake lives wherever the same code
+  was copied or the same pattern was used: other write paths, other commands,
+  other parsers of the same format. Grep for them and fix them in this change.
+  Siblings of this fault are within the plan's scope; a different problem you
+  find on the way is still a note.
+- **Check the four categories yourself before you move.** Concurrency (two
+  writers at once), error paths (a step failing halfway, an error dropped or
+  reported as success), unusual input (empty, huge, duplicated, another
+  encoding or locale), permissions (what it trusts from outside). Go through
+  each for the code you changed, and say in your outcome which you checked and
+  what you found. The testing lane and the bug hunt check exactly these; a
+  defect they find that you could have found yourself is a round lost.
+
 ## Progress notes
 
 Write a note with `jaira note <id> <text>`. You are writing to yourself, in a

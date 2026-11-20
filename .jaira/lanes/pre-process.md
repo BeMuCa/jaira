@@ -35,6 +35,37 @@ per step, in the order they should happen:
 Keep the steps at the size of a thing you can finish and mark done. "Implement
 the feature" is not a step; it is the whole ticket restated.
 
+## Name the edges before the code
+
+Review and bug hunt find what nobody named before the code was written, and
+every round they find one more example of the same mistake. Name the edges here,
+where they cost a sentence instead of a round:
+
+- **The class, not the symptom.** A ticket that says "NUL breaks tool A" is one
+  example of "anything the database cannot store, in every tool that writes to
+  it". Say which class of fault this is and where else in the code it can
+  happen. When the context only names the symptom, the class is your job.
+- **The input classes.** List the kinds of input the change must handle, not
+  one example of each — for a page number "3 / 12", "3/12", "Page 3 of 12", a
+  missing one; for an amount "0,05", "2,50", "1.234,56", a negative, an empty
+  field. Go through the four categories the testing lane and the bug hunt check
+  afterwards — concurrency, error paths, unusual input, permissions — and write
+  down each one that applies, or that it does not.
+- **An acceptance rule where the change is a heuristic.** A parser, a
+  detector, a guess at structure is never right for every input, and without a
+  rule saying which mistake is the lesser one the loop never ends. Write it as
+  one sentence: "losing body text is worse than keeping a stray header".
+  Where only a person can say which mistake is worse, move the ticket to the
+  human lane with that question.
+
+These go into the definition of done, not only into the plan — the gate reads
+the definition of done, and so does every lane after you:
+
+```bash
+jaira dod <id> --add "every write tool rejects or strips what the store cannot hold (NUL, invalid UTF-8), one parametrised test over all of them"
+jaira dod <id> --add "acceptance rule: losing body text is worse than keeping a stray header"
+```
+
 When the plan rests on something you had to work out, put that reasoning in a
 note (`jaira note <id> <text>`), so the next reader knows why the plan looks
 like this rather than re-deriving it.

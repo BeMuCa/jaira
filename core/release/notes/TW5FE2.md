@@ -1,0 +1,3 @@
+- Expect the shipped pre-process lane to write the class of fault, the input classes and, for a heuristic, an acceptance rule into the definition of done with 'jaira dod --add', before any code is written.
+- Expect the shipped in-progress lane to fix the cause instead of the reported example, test the whole input class in one parametrised test, fix sibling places of the same fault in the same change, and go through concurrency, error paths, unusual input and permissions itself before it moves the ticket on.
+- Expect testing and the bug hunt to report every finding as a class plus the example they saw; a ticket sent back to in-progress returns only when the class is fixed, and the next round tries a neighbour of the example too.

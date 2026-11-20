@@ -99,10 +99,18 @@ round fixes both at once.
   `test-verdict`, `hunt-verdict`, or both. For a failed pass put the detail
   into a note for the implementing agent that picks it up — what is broken,
   the exact evidence (verbatim output, file:line), and how you would fix it.
+  Name the class of fault and the example you saw, both: the input that failed
+  is one example, and a fix for only that example comes back next round as its
+  neighbour ("3 / 12" fixed, "3/12" still broken). The fix you suggest is a fix
+  of the class — at its cause, with a test over the class — not of the example.
   Then send it back:
 
-      jaira note <handle> "testing: <what is wrong, the evidence, the suggested fix>"
+      jaira note <handle> "testing: class: <the fault>; example: <what you saw, the evidence>; fix: <at the cause, test over the class>"
       jaira move <handle> --to in-progress
+
+  The ticket comes back to you only when the class is fixed: on the next
+  round, try a neighbour of the example as well as the example itself. A
+  neighbour still failing is the same finding again, not a new one.
 
   The hunter's `change` notes are already the brief for whoever fixes them;
   do not copy them. The ticket runs the loop again — implementing, critique,
