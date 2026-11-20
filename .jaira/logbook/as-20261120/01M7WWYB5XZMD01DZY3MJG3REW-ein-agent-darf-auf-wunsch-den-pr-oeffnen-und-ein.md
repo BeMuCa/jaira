@@ -1,7 +1,7 @@
 ---
 id: 01M7WWYB5XZMD01DZY3MJG3REW
 title: Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,30 +21,46 @@ related:
   - 01M5ZJ5DKQZ83GYBGPJHAX8K02
   - 01M2N12WVABVRYM7C923WATJDQ
   - 01M7WWYG213BWB06A7D1CRASZS
-commits: []
+commits:
+  - 423ec7e1c93af280cb91cc0c7c0fc27cadb43c48
+  - d527d5a93a2f3b4d116dafb47820847ae0f3d332
+  - 1dd8e6d78221050b3a673662c9daede70b8cb69a
+  - 5db2eee469a380e7a83e16de2a8f647422c83fa4
+  - c471d6607c9110448f9396b483fd0de991989f65
+  - 866397f6213e5e64306c0176acd18ac3630d12ca
+  - a5fc3403303f83953b9c56959f7551c08fc00f53
+  - 9ef2e20b1fee723f575fb282da1cd7091ec7d019
+  - 106faf5ccb7f843f141ada28a8f148fd307cae64
+  - 007f461a4c820023cbd0b7c79dd9a7faf987391c
+  - 8569d9b616ed93ccd14b7b03e73d5922bb9f3e74
+  - 7d8d787248f7b735e8612fd9f031571f0889ead4
+  - 0bc5b11a1bdc601e2ea7c92cb8d525fbbded5217
+  - 3fe5525865c4ba4a10c4fe413fb098177f5e38a9
+  - dfb233696147513a2557d411c00868fa62a06f70
+  - a3137857c0f592208a2cde9b30c52da35624efae
+  - 1b35fd5c4e09cc19e2faf04434252ed176bfa323
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T20:05:56Z
+updated-at: 2026-11-20T22:43:18Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-18659
-claimed-at: 2026-11-20T19:49:16Z
+claimed-by: DESKTOP-RFTCH11-61485
+claimed-at: 2026-11-20T21:43:50Z
 question: ""
 outcome-what: "Board-Dateien .jaira/pr (person|agent), .jaira/pr-reviewer und .jaira/pr-when (done|signoff, Default done); 'jaira roles list' zeigt sie; 'jaira roles pr-gate <remote>/<branch>' prueft im Binary, ob ein Agent den PR oeffnen darf (agent + jedes Ticket des Branches in done bzw. signoff); jaira-role-pr/scripts/pr-round.sh: open (Gate vor gh pr create), threads, comments, reply/comment (nie doppelt, auch bei zwei Sessions; loescht nur die eigene POST-id), request, settled (keine offenen Threads, kein ausstehendes Review); Rollentexte, Release-Note."
 outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten das pro Repo. In manchen Projekten laeuft das Review auf dem PR selbst, dort kommt done erst danach (Alex 20.11.)."
 outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
-review-summary: "critique 15 (a3137857): nothing - account check moved before the gate, one pushurl entry for tip and account"
+review-summary: "Adds a board setting that lets an agent open a pull request and work one review round, default unchanged. Three committed one-line files: .jaira/pr (agent|person, anything else = person), .jaira/pr-reviewer (copilot, login or org/team, anything outside letters/digits/._-[]/@ = none), .jaira/pr-when (signoff|done, default done); 'jaira roles list' shows all three. New command 'jaira roles pr-gate <remote>/<branch>' reads .jaira/pr and pr-when as the BASE commit holds them (a branch cannot open its own gate), collects the ticket handles from the scopes of base..HEAD subjects, and exits 0 only when every one is in the terminal lane (or, under signoff, signoff..terminal) or filed in the logbook; archived, unknown or unreadable handles and a board without signoff hold it with exit 3. Ticket state comes from Store.List, so a ref newer than the disk file wins. New scripts/pr-round.sh (GitHub): open checks that HEAD is the pushed tip where git push actually sends it, derives --head <account>:<branch> from the push URL, runs the gate, then gh pr create; threads/comments list only open items; reply answers + resolves and is safe to rerun; comment never repeats itself; both read back after posting and delete only their own duplicate so two racing sessions leave one answer; request asks Copilot/login/team and exits 4 (PR stays) when refused; settled exits 3 while a thread is open, a review is requested or a latest review requests changes. A gh sign-in lost mid-run is always exit 3. SKILL.md of jaira-role-pr, teamlead and dispatcher describe the flow; merge/approve stay a person's in every path. Release note core/release/notes/JG3REW.md included."
 round: 17
-review-gaps: "optimize (a3137857): nothing - the URL parse is plain parameter expansion, no helper in the script does it already"
-test-verdict: "pass: suite -race -count=1 RC=0 at a3137857; DoD 20 (TestPRGateReadsTheBoardFilesFromTheBase) and 21 (TestPROpenNamesTheHeadItChecked) run green; live: branch binary 'roles pr-gate origin/master' in this repo exits 3 naming origin/master (no .jaira/pr there); failure paths: 9 account-less URLs exit 3 before the gate, nothing opened; open writes only gh pr create, two-writer cases unchanged"
-hunt-verdict: "fail: bughunt done at a3137857 - 1 change: account from the last remote url entry, tip from the first"
-review-verdict: "Diff erfuellt alle 19 DoD-Punkte; 13 Commits, Liste vollstaendig. Gate, Settings und pr-round.sh ganz gelesen entlang Nebenlaeufigkeit (Dedupe bei zwei Sessions korrekt fuer jede Reihenfolge, loescht nur die eigene ID), Fehlerpfade (Login-Verlust -> 3, Teilschritte bei reply wiederholbar), ungewoehnliche Eingaben (Typo/CRLF -> Default, Shell-Zeichen im Reviewer gefiltert, Base mit '-' abgelehnt) und Grenzen (Gate faellt bei Zweifel zu). Kein Blocker; sechs Notes, keine davon bricht ein Kriterium. Betroffene Tests gruen (core/role, core/settings, internal/cli). Nicht geprueft: echtes GitHub (alles gegen ein gemocktes gh)."
-review-round: 13
-review-check: |-
-  1. cd /home/alex/projects/.worktrees/jaira-jg3rew
-  2. go test ./core/role ./core/settings ./internal/cli -run 'PR|Handles' -> alle ok
-  3. go run ./cmd/jaira roles list | tail -1 -> Zeile 'pr: person ... reviewer: none; opens in: done (the default)'
-  4. go run ./cmd/jaira roles pr-gate HEAD~13 -> '.jaira/pr does not say agent', exit status 3
-  5. echo agent > .jaira/pr; go run ./cmd/jaira roles pr-gate HEAD~13 -> exit 3, Meldung nennt JG3REW mit seiner Lane als nicht in done; danach rm .jaira/pr
-  6. bash core/role/builtin/jaira-role-pr/scripts/pr-round.sh --help -> Befehle open, threads, comments, reply, comment, request, settled; kein merge, kein approve
+review-gaps: |-
+  note: race window in pr-round.sh open - the tip check, the gate and gh pr create are three steps; a push by another session in between gives a pull request carrying commits the gate never judged (small, the gate re-runs nowhere after create)
+  note: open compares only the account of the push URL with <owner>; a fork under the same owner with a different repo name gets --head <branch> and gh looks for the branch in the target repo instead
+  note: said() normalises CR and trailing blanks only - if GitHub trims leading blank lines of a stored body, an answer file that starts with an empty line never matches itself and a second round posts it again (not verified against GitHub)
+  note: git ls-remote <url> refs/heads/<b> matches by trailing path, so a second ref ending in the same path would give a two-line tip and a confusing "pull or push until they agree" refusal (fails closed, cosmetic)
+  note: the GitLab path has no script - gate, tip check and settled are manual glab lines in SKILL.md and are covered by no test
+test-verdict: "pass: suite -race -count=1 RC=0 at 1b35fd5c; DoD 20/21 tests green; live gate exit 3 naming origin/master; account-less URLs exit 3 before the gate"
+hunt-verdict: "pass: bughunt done at 1b35fd5c, 0 change, 0 pre-existing"
+review-verdict: "All 21 definition-of-done items are met by the diff and their proofs point at real tests; go test for core/settings, core/role and internal/cli (PR|Roles filters) passes. Read pr-round.sh, roles.go pr-gate, gitrepo/named.go and settings.go whole along concurrency, error paths, unusual input and permissions: the gate fails closed everywhere I tried (bad base, unreadable ticket, archive/unknown handle, no signoff lane, board files off the base), every write fails loudly, a lost sign-in is exit 3. No blocker; five notes, all edge cases that fail closed or are small race windows."
+review-round: 17
+review-check: "1. In this worktree run: go test ./core/settings ./core/role ./internal/cli -run 'PR|Roles' -count=1 - all ok.  2. jaira roles list - last line reads 'pr: person ... reviewer: none; opens in: done (the default)'.  3. jaira roles pr-gate origin/master; echo $? - prints 'pr-gate: .jaira/pr in origin/master does not say agent ...' and 3, because master has no .jaira/pr.  4. echo agent > .jaira/pr; jaira roles pr-gate origin/master; echo $? - still 3 with the same message: the file only on disk does not open the gate. rm .jaira/pr afterwards.  5. bash core/role/builtin/jaira-role-pr/scripts/pr-round.sh --help - lists open, threads, comments, reply, comment, request, settled and the exit codes 0/2/3/4/1.  6. Live round (optional, needs a throwaway GitHub PR): pr-round.sh threads <owner/repo> <n> lists open threads; reply <owner/repo> <n> <thread-id> answer.txt answers and resolves it; running the same reply again prints 'resolved: already' and posts nothing."
 ---
 
 # Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
@@ -207,3 +223,12 @@ Empfehlung: 2 - kein Kriterium ist gebrochen, das Gate faellt bei Zweifel zu, un
 - **2026-11-20 20:03 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:214 - with no pushurl and two 'url' entries on the push remote, the tip is checked at the first url (git remote get-url --push returns the first) but the account comes from 'git config remote.<r>.url', which returns the LAST entry, so --head names the other account's branch, not the commits the gate judged; fix: git config --get-all remote.<r>.url | head -n1, same as the pushurl line; ran: git remote add origin git@github.com:me/r.git; git config --add remote.origin.url git@github.com:other/r.git -> get-url --push = me/r, git config remote.origin.url = other/r; blame: a3137857 (names JG3REW)
 - **2026-11-20 20:03 · Alexander Sacharov** — bughunt: done at a3137857 - 1 finding (1 change, 0 pre-existing), follow-up hunt (diff since dfb23369: pr-round.sh open account parsing moved before the gate, pr_round_test.go, release note, shipped.sha256; no new files); concurrency, error paths, input, permissions checked; ran: go test ./core/role (ok); files: .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md AGENTS.md CLAUDE.md README.md core/gitrepo/named.go core/release/notes/JG3REW.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-role-pr/scripts/pr-round.sh core/role/builtin/jaira-teamlead/SKILL.md core/role/pr_round_test.go core/role/role_test.go core/settings/settings.go core/settings/settings_test.go core/shipped/shipped.sha256 internal/cli/prgate_test.go internal/cli/roles.go internal/cli/roles_test.go
 - **2026-11-20 20:04 · Alexander Sacharov** — testing 10 zurück (2. Rücklauf aus testing in dieser Runde): Konto aus dem letzten url-Eintrag - jetzt --get-all | head -n1 auch für url; Test 'two urls'.
+- **2026-11-20 20:06 · Alexander Sacharov** — bughunt: done at 1b35fd5c - 0 findings, follow-up hunt (diff since a3137857: pr-round.sh open reads the first remote url via --get-all|head, pr_round_test.go two-urls case, shipped.sha256; no new files); concurrency, error paths, input, permissions checked; ran: go test ./core/role -run PR (ok); files: .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md AGENTS.md CLAUDE.md README.md core/gitrepo/named.go core/release/notes/JG3REW.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-role-pr/scripts/pr-round.sh core/role/builtin/jaira-teamlead/SKILL.md core/role/pr_round_test.go core/role/role_test.go core/settings/settings.go core/settings/settings_test.go core/shipped/shipped.sha256 internal/cli/prgate_test.go internal/cli/roles.go internal/cli/roles_test.go
+- **2026-11-20 20:08 · Alexander Sacharov** — worker: Lauf bei review gestoppt (Usage-Limit). Nächster Schritt: frischer Agent /jaira-role-lane JG3REW review.
+- **2026-11-20 21:44 · Alexander Sacharov** — review (fresh context): no blocker. Read the 17 commits' code whole (pr-round.sh, roles.go pr-gate, gitrepo/named.go, settings.go, SKILL texts); targeted go test runs pass. Five notes in review-gaps, all fail-closed edges or small race windows. Store.List already prefers a newer ref over a stale ticket file, so the gate does not open on a stale 'done'. The CLAUDE.md/AGENTS.md sentence sits behind the jaira:local marker, so regeneration keeps it. Worktree also carries untracked .jaira/milestones/ - not this ticket's.
+- **2026-11-20 22:28 · Alexander Sacharov** — explain: Der Reviewer fand keinen Blocker; alle 21 Definition-of-done-Punkte sind erfüllt, die Tests laufen. Übrig sind fünf kleine Randfälle in pr-round.sh und im GitLab-Pfad, die alle sicher abschalten (fail closed) oder nur ein kleines Race-Fenster sind.
+Warum: Der PR-Öffnen-Weg läuft ohne Mensch dazwischen, darum zählt jede Lücke im Gate; hier ist aber keine offen, die einen ungeprüften PR öffnet, außer dem engen Zeitfenster zwischen Tip-Check, Gate und gh pr create.
+1) Zurückgeben und die Randfälle beheben (Gate nach create erneut prüfen, Fork mit anderem Repo-Namen, führende Leerzeilen in said(), ls-remote exakt matchen, Test für GitLab) [give back]
+2) Annehmen wie es ist; die fünf Randfälle bleiben als Notes am Ticket stehen [accept]
+Empfehlung: 2 - kein Blocker, jeder Befund schlägt geschlossen fehl oder ist klein, und weiteres Härten vergrößert den Umfang gegen die Regel 'kleiner als paca'.
+- **2026-11-20 22:42 · Alexander Sacharov** — decision: 2) Annehmen wie es ist; die fünf Randfälle bleiben als Notes am Ticket stehen
