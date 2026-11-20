@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZRD7WNC5NT1PS5TW5FE2
 title: "Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T18:15:24Z
+updated-at: 2026-11-20T18:17:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5618
 claimed-at: 2026-11-20T18:03:30Z
@@ -35,7 +35,7 @@ outcome-what: "Eingebaute Lanes pre-process, in-progress, testing, review und di
 outcome-why: "Review- und bughunt-Schleifen liefen 10-24 Runden, weil jede Runde den Nachbarfall eines nur am Beispiel reparierten Fehlers fand und die vier Kategorien vor dem Code nie gefragt wurden; die Rueckgabe einer Person darf dabei nicht als Schleifenrunde zaehlen, und eine review-Rueckgabe ohne eigene Note wurde testing zugerechnet."
 outcome-resolves: "DoD 1-7: 15-pre-process.md:38, 20-in-progress.md:29 und :66-102, 27-testing.md:41-45,98,129-134, bughunt SKILL.md:104, 40-review.md:57,117-121, shipped.sha256, core/release/notes/TW5FE2.md. Vier Kategorien: Nebenlaeufigkeit/Fehlerpfade/Rechte - nur Prompt-Text, nichts schreibt; ungewoehnliche Eingabe - Note ohne Praefix faellt weiter auf review (aeltere Lane-Prompts)."
 review-summary: "Only prompt text changed, no Go code. pre-process now has to write the class of fault, the input classes (empty/huge, encoding/CRLF, spaces/Windows, two writers, failure halfway) and, for a heuristic, an acceptance rule into the DoD via 'jaira dod --add'. in-progress has to fix the cause instead of the example, test the class in one parametrised test, fix sibling places, check the four categories itself and close small edges in the same round; on a returned ticket it writes 'back: <lane>, round N', reads the sender off the newest note (Given back from/decision: = person, critique:/optimize:/testing:/review:, bughunt: counts for testing) and after the third return from one lane moves to human with a question. testing and review send back only for four blocker kinds (wrong result, data loss, crash, security hole); testing names class + example and a follow-up round tests and hunts only the diff since 'bughunt: done at <commit>'; review's return note starts 'review:'; bughunt findings carry class + example. Embedded lanes (core/lane/builtin) and the board's .jaira/lanes copies are identical, shipped.sha256 is extended, 7 one-line release notes in core/release/notes/TW5FE2.md."
-round: 10
+round: 11
 review-gaps: |-
   note: in-progress 'back:' line on a restarted session - a fresh worker in the same round sees its own predecessor's note as newest and falls into 'anything else - the review sent it', writing a second back: line that counts toward the wrong lane; fix: say 'skip when a back: line with the current round already exists' in 20-in-progress.md
   note: pre-process 'move the ticket to the human lane with that question' is refused by the gate (missing_lane_output plan) when the plan is not written yet; fix: say 'write the plan first, then move' in 15-pre-process.md
