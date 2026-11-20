@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZRD7WNC5NT1PS5TW5FE2
 title: "Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -27,13 +27,13 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:24:39Z
+updated-at: 2026-11-20T19:24:43Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99353
 claimed-at: 2026-11-20T19:19:21Z
-outcome-what: "Drei Prompt-Saetze nach signoff-Rueckgabe: pre-process schreibt Plan-Schritte vor dem Move mit Frage nach human; in-progress schreibt nach Neustart keine zweite back:-Zeile; testing-Folgerunde sprachneutral (Tests zu den geaenderten Dateien statt packages)."
-outcome-why: "Person gab aus signoff zurueck: gate.go refuses pre-process->human with empty plan, once-per-round unklar fuer neuen Worker, 'packages' ist Go-Wortlaut."
-outcome-resolves: "DoD 1-7 wie zuvor; neu 15-pre-process.md:90, 20-in-progress.md:72-74, 27-testing.md:130; Zwillinge in .jaira/lanes gleich; shipped.sha256 drei Zeilen; Release-Note eine Zeile. Vier Kategorien: nur Prompt-Text, nichts schreibt, kein Nebenlaeufigkeits-/Rechte-Pfad; Fehlerpfad pre-process->human jetzt vom Gate erlaubt."
+outcome-what: "Neustart-Regel in 20-in-progress.md: jede back:-Zeile endet auf ', round <n>' (auch back: person/unknown); ein Neustart sucht die Zeile mit dem aktuellen round und schreibt keine zweite."
+outcome-why: "bughunt 19:23: Vergleich 'neuer als die Absender-Note' liest beim Neustart die eigene back:-Zeile als Absender und schreibt eine zweite."
+outcome-resolves: "DoD 6: 20-in-progress.md:72-76 und :88,:96 (round in jeder back:-Zeile); Zwilling gleich; shipped.sha256 eine Zeile. Vier Kategorien: Neustart mitten in der Runde ist der Fehlerpfad und jetzt abgedeckt; sonst nur Prompt-Text."
 review-summary: "none - drei Saetze in bestehenden Absaetzen, kein neues Muster; pre-process-Regel steht nach allen drei human-Moves des Lanes und gilt fuer alle; Gate bewusst nicht geaendert (Note 20:21)"
 round: 13
 review-gaps: "none - drei Saetze, keine Wiederholung im Prompt, nichts verwaist"
