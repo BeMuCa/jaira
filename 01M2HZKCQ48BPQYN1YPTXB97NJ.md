@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:24:11Z
+updated-at: 2026-11-20T23:24:16Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -37,7 +37,7 @@ outcome-why: "Wer allein ohne Pull Requests arbeitet, bekam eine Rolle, die vor 
 outcome-resolves: "Ein Board sagt in .jaira/pr, ob Arbeit durch einen PR (person/agent) oder direkt auf den Hauptzweig (none) kommt; ohne Datei ist alles byte-gleich wie heute."
 review-summary: "none"
 round: 6
-review-gaps: "none removed. note: known limit: under .jaira/pr none, pr-gate binds a person's acceptance to the ticket, not to its commits - a commit made after the ticket reached done, naming that ticket or any other ticket already in done or the logbook, lands without anyone seeing it (bughunt round 2, F2; Teamlead 21.11. 00:15: known limit, signoff decides). Closing it means: after the move into done only .jaira/ commits for that ticket"
+review-gaps: "none removed. note: known limit: under .jaira/pr none, pr-gate binds a person's acceptance to the ticket, not to its commits - a commit made after the ticket reached done, naming that ticket or any other ticket already in done or the logbook, lands without anyone seeing it (bughunt round 2, F2; Teamlead 21.11. 00:15: known limit, signoff decides). Closing it means: after the move into done only .jaira/ commits for that ticket. note: known limit: the merge check needs git >= 2.38 (merge-tree --write-tree); older git fails closed, so an unnamed merge must name a ticket there"
 test-verdict: "fail (round 3 hunt), fixed in the same round - see hunt-verdict"
 hunt-verdict: "change (round 3), fixed: diff-tree --cc hid a merge that drops one side (-s ours, checkout --ours) - landing it would undo base work. Now an unnamed merge passes only when its tree equals 'git merge-tree --write-tree' of its two parents; conflict, octopus or old git fail closed"
 ---
