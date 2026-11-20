@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:42:04Z
+updated-at: 2026-11-20T22:42:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
@@ -34,11 +34,7 @@ outcome-why: "signoff-Rueckgabe (Branchname) plus bughunt 22:32 und review-gaps 
 outcome-resolves: "Rueckgabe aus signoff 22:27, review-gaps 1-2 vom 22:39"
 review-summary: "none"
 round: 8
-review-gaps: |-
-  note: the branch lookup greps for <id>; given the full ULID instead of the six-character handle it matches no branch and every check reads ? - the role could say 'the handle' explicitly
-  note: gh run list --commit can return several runs for one commit (push and pull_request events) and a run still in progress has an empty conclusion; the role does not say to take the latest completed one or that in-progress is ?
-  note: the accept line hard-codes --to done; on a board whose terminal lane is named differently it fails (same assumption as teamlead/acceptance, left on purpose)
-  note: on this ticket the bug-hunt-on-HEAD check will read ❌ - no hunt after a1b61158 by teamlead decision 21:58
+review-gaps: "none: two sentences added to the lookup and the tests check, nothing to remove"
 test-verdict: "pass: go build ./... and go test ./core/... green (RC=0) at 7e3bc32c; lookup exercised on bare repo + 2 clones: local behind remote -> remote head, local ahead -> local, diverged -> ?, no ref -> ?, two remotes on one commit -> one head; the change writes nothing"
 hunt-verdict: "pass: last hunt at a1b61158 found 1 change, fixed in d4da7f7b; no new hunt over d4da7f7b..7e3bc32c by teamlead decision 21:58 (findings of the head-binding class go to signoff as a note) - hunt-on-HEAD therefore reads ❌ by design"
 question: ""
