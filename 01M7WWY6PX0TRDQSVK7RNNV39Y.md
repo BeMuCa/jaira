@@ -21,14 +21,14 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:19:23Z
+updated-at: 2026-11-20T17:19:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60542
 claimed-at: 2026-11-20T17:19:23Z
 outcome-what: "Ein privates Board steht jetzt in <git-common-dir>/info/exclude statt in der getrackten .gitignore (core/board/gitignore.go); jaira update verschiebt eine alte .gitignore-Zeile dorthin und schliesst ein privates Board ohne Ausschluss dort aus; share/--undo arbeiten auf beiden Dateien; ticket.LockFile aus Store.lock herausgezogen."
 outcome-why: "Eine von jaira geaenderte .gitignore erscheint in jedem neuen Worktree als Aenderung, ein Push-Guard lehnt dann jeden Push ab; info/exclude gilt fuer alle Worktrees und taucht in keinem Diff auf."
 outcome-resolves: Neue Worktrees eines Repos mit privatem Board bleiben sauber; kein Wegraeumen der .gitignore-Zeile von Hand mehr.
-review-summary: "none"
+review-summary: "Ein privates Board wird jetzt in <git-common-dir>/info/exclude ausgeschlossen statt in der getrackten .gitignore. core/board/gitignore.go fragt git (rev-parse --path-format=absolute --git-common-dir --show-prefix) nach der gemeinsamen exclude-Datei und dem verankerten Muster (/sub/.jaira/ fuer ein Board im Unterverzeichnis, Glob-Zeichen escaped); AddIgnore/RemoveIgnore/MoveIgnore schreiben sie unter einer Sperrdatei daneben (neues ticket.LockFile, aus Store.lock herausgeloest) und per WriteAtomic, CRLF bleibt erhalten. Ausserhalb von git und bei git < 2.31 (das --path-format zurueckgibt) bleibt .gitignore der Ort. jaira update verschiebt eine alte /.jaira/-Zeile aus .gitignore nach info/exclude bzw. schliesst ein nirgends ausgeschlossenes privates Board aus – aber nur wenn weder .jaira/.gitattributes existiert noch etwas unter .jaira/ getrackt ist. share hebt beide Orte auf und laesst /.jaira/lanes/ in .gitignore; share --undo schreibt wieder info/exclude. Hilfetexte, README, COMMANDS.md und eine Release-Note (mit ! fuer den einmaligen update-Lauf) sind angepasst."
 round: 4
 review-gaps: "none: Fix-Diff d62bafaa ohne Doppelung oder toten Code; parsePlace bleibt die einzige Stelle, die gitPlace-Ausgabe liest"
 test-verdict: "pass: go test ./... gruen (RC=0) auf d62bafaa, -race ueber core/board core/ticket internal/cli gruen; git<2.31 per Wrapper nachgestellt: init faellt auf .gitignore zurueck, kein '--path-format=absolute/'-Verzeichnis; DoD 1-7 an den Tests geprueft"
