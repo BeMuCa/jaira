@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T16:49:01Z
+updated-at: 2026-11-20T16:49:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59469
 claimed-at: 2026-11-20T16:43:41Z
@@ -55,7 +55,7 @@ question: ""
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] core/settings: PRFor/PRReviewerFor aus .jaira/pr und .jaira/pr-reviewer, Default person; Tests
+- [x] core/settings: PRFor/PRReviewerFor aus .jaira/pr und .jaira/pr-reviewer, Default person; Tests
 - [ ] jaira roles list: pr, pr_source, pr_reviewer in Text und --json; Test
 - [ ] scripts/pr-round.sh in jaira-role-pr: threads, reply (antworten+resolve), rerequest; GitHub ueber gh api
 - [ ] jaira-role-pr SKILL.md: Abschnitt zur Einstellung, done-Gate, Reviewer anfordern, Kommentarrunde; teamlead/dispatcher/worker-Saetze angleichen; role_test
