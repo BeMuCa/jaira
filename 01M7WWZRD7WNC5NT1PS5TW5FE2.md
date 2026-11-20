@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:21:37Z
+updated-at: 2026-11-20T19:21:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99353
 claimed-at: 2026-11-20T19:19:21Z
@@ -145,3 +145,4 @@ Empfehlung: 2 - это не блокеры (неверный результат,
 - **2026-11-20 19:19 · Alexander Sacharov** — Given back from signoff: 1) Вернуть в in-progress и поправить три формулировки (по одному предложению в 15-pre-process.md, 20-in-progress.md, 27-testing.md)
 - **2026-11-20 19:19 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
 - **2026-11-20 19:19 · Alexander Sacharov** — back: person
+- **2026-11-20 19:21 · Alexander Sacharov** — Runde nach signoff 19:19: drei Saetze. pre-process: gate.go OutputOwed verlangt plan auch beim Move nach human (to > from), also Plan-Schritte + Frage als Schritt vor dem Move - nicht den Gate geaendert, weil ein Ticket ohne Plan sonst unbemerkt durch pre-process laeuft. in-progress: back:-Zeile neuer als die Absender-Note = schon geschrieben. testing: 'packages' -> 'tests that cover the files'.
