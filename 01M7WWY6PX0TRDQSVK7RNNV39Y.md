@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T18:32:55Z
+updated-at: 2026-11-20T19:15:25Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-63629
 claimed-at: 2026-11-20T18:32:27Z
@@ -144,3 +144,4 @@ Empfehlung: 2 - alle 7 DoD-Punkte sind mit Tests belegt, die Funde sind Randfael
 - **2026-11-20 18:28 · Alexander Sacharov** — critique Runde 12 (Diff 0c153490..cbff5424): nichts - share behandelt git-Fehler wie update.
 - **2026-11-20 18:28 · Alexander Sacharov** — bughunt: done at cbff5424 - 0 findings in 3 files, follow-up hunt (diff since 0c153490: internal/cli/share.go internal/cli/privateexclude_test.go core/release/notes/NNV39Y.md; ran: share --json on a symlinked and a plain .jaira, related go tests pass); concurrency, error paths, input, permissions checked; files: README.md core/board/announce.go core/board/board.go core/board/exclude_test.go core/board/gitignore.go core/release/notes/NNV39Y.md core/ticket/store.go docs/COMMANDS.md internal/cli/privateexclude_test.go internal/cli/share.go internal/cli/sharestate_test.go internal/cli/tickets.go internal/cli/update.go
 - **2026-11-20 18:32 · Alexander Sacharov** — review Runde 3 (fresh, cbff5424): kein Blocker. Code ganz gelesen (gitignore.go, share.go, update.go moveIgnore, store.go Lock), Tests+vet gruen, Ablauf mit gebautem Binary nachgespielt inkl. Worktree, Migration, Teamkollege, Unterverzeichnis mit Leerzeichen. git check-ignore -v meldet bei !/.jaira/ Exit 1 (git 2.43) - der Negations-Fall ist auf neuem git korrekt. Vier Notes in review-gaps.
+- **2026-11-20 19:15 · Alexander Sacharov** — decision: git<2.31 bleibt unterstuetzt (Alex ueber Teamlead jaira-64, 20.11.2026) - Fallback auf .gitignore bleibt, die Grenze git<2.31 + !/.jaira/ ueber jairas Eintrag bleibt bekannt und im Tabellentest festgehalten.
