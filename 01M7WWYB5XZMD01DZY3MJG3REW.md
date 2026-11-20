@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T17:10:53Z
+updated-at: 2026-11-20T17:11:44Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59469
 claimed-at: 2026-11-20T16:43:41Z
@@ -34,7 +34,7 @@ outcome-resolves: "Mit .jaira/pr=agent oeffnet jaira-role-pr den PR nach der Abn
 review-summary: none
 round: 4
 review-gaps: "none - Fix 5db2eee4: Body kommt in derselben Abfrage mit, kein zweiter Aufruf"
-test-verdict: "pass: go test -count=1 -race ./... RC=0 auf 1dd8e6d7; Fix-Tests TestPRRoundReplyIsSafeToRunAgain, -f-Pruefung und @login gruen"
+test-verdict: "pass: go build + go test -count=1 -race ./... RC=0 auf 5db2eee4; DoD 1-11 im Baum geprueft; roles list auf Scratch-Board (default, agent+copilot aus CRLF, Shell-Zeichen -> leer, unlesbare Datei -> person); pr-round.sh threads/comments live gegen BeMuCa/jaira rc=0, falsche Nummer rc=1 ohne Schreiben; reply/request nur gegen gh-Stub (live wuerde auf echten PR schreiben); roles list schreibt nichts"
 hunt-verdict: "fail: bughunt done at 1dd8e6d7, 1 change: reply haelt einen Thread fuer beantwortet, sobald der letzte Kommentar vom selben gh-Login stammt - unter dem Konto des Maintainers wird dessen eigene Bitte ohne Antwort resolved"
 ---
 
