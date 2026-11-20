@@ -11,7 +11,7 @@ import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from '
 import { digest } from './digest.ts'
 import {
   agentName, AGENT_ORIGINS, clipReport, DIGESTED, isAgentReport, isUnscoped, keyOf, listReports, NOTIFICATION,
-  projectKeys, REPORTS_PER_TICKET, rewriteRow, showReport, stamp, TICKETS, type Report,
+  projectKeys, reportArgs, REPORTS_PER_TICKET, rewriteRow, showReport, stamp, TICKETS, type Report,
 } from './filter.ts'
 import { body, source } from './frame.ts'
 import { add, appended, emptyTotals, row, rowsOf, type Totals } from './metrics.ts'
@@ -197,16 +197,29 @@ async function jairaHome($: EngineInterface): Promise<string> {
 
 // ── the noise filter ─────────────────────────────────────────────────────
 
-async function keep($: EngineInterface, ticket: string, report: Report): Promise<void> {
-  const root = await project($)
-  const key = keyOf(root, ticket)
-  const before = ((await $.store.get(key)) as Report[] | undefined) ?? []
-  // Delete first so the key moves to the end of the store's insertion order:
-  // the first keys are then the tickets heard from longest ago.
-  await $.store.delete(key)
-  await $.store.set(key, [{ ...report, text: clipReport(report.text) }, ...before].slice(0, REPORTS_PER_TICKET))
-  const tickets = projectKeys(await $.store.keys(), root)
-  for (const old of tickets.slice(0, Math.max(0, tickets.length - TICKETS))) await $.store.delete(old)
+// Every read-modify-write of the kept reports runs one after the other:
+// keep() deletes a key before it sets it again, and a reader between the two
+// sees nothing — a writer there writes that nothing back, and the reports are
+// gone. Other processes sharing the store are beyond this lock.
+let reportsLock: Promise<unknown> = Promise.resolve()
+function locked<T>(work: () => Promise<T>): Promise<T> {
+  const run = reportsLock.then(work, work)
+  reportsLock = run.catch(() => undefined)
+  return run
+}
+
+function keep($: EngineInterface, ticket: string, report: Report): Promise<void> {
+  return locked(async () => {
+    const root = await project($)
+    const key = keyOf(root, ticket)
+    const before = await stored($, key)
+    // Delete first so the key moves to the end of the store's insertion order:
+    // the first keys are then the tickets heard from longest ago.
+    await $.store.delete(key)
+    await $.store.set(key, [{ ...report, text: clipReport(report.text) }, ...before].slice(0, REPORTS_PER_TICKET))
+    const tickets = projectKeys(await $.store.keys(), root)
+    for (const old of tickets.slice(0, Math.max(0, tickets.length - TICKETS))) await $.store.delete(old)
+  })
 }
 
 // The text the conversation gets instead, with the report kept; undefined
@@ -225,19 +238,36 @@ async function shorten($: EngineInterface, text: string, origin: string, agent?:
   return text.replace(report, () => short.line)
 }
 
-async function keptReports($: EngineInterface, ticket: string): Promise<Report[]> {
-  return ((await $.store.get(keyOf(await project($), ticket))) as Report[] | undefined) ?? []
+async function stored($: EngineInterface, key: string): Promise<Report[]> {
+  return ((await $.store.get(key)) as Report[] | undefined) ?? []
 }
 
+// Read under the lock too, or a read between keep()'s delete and set finds
+// the ticket empty. The project is taken inside it: read and write one key.
 async function reports($: EngineInterface, args: string): Promise<string> {
-  const root = await project($)
-  const ticket = args.trim().toUpperCase()
-  if (ticket === '') {
-    const keys = projectKeys(await $.store.keys(), root).reverse()
-    const rows = await Promise.all(keys.map(async k => [k, ((await $.store.get(k)) as Report[] | undefined) ?? []] as const))
-    return listReports(rows)
+  const { ticket, all } = reportArgs(args)
+  return locked(async () => {
+    const root = await project($)
+    if (ticket === '') {
+      const keys = projectKeys(await $.store.keys(), root).reverse()
+      return listReports(await Promise.all(keys.map(async k => [k, await stored($, k)] as const)))
+    }
+    return showReport(ticket, await readReports($, keyOf(root, ticket)), all)
+  })
+}
+
+// A ticket's kept reports, marked read: shown once, the next report call
+// brings only what arrived after it. Call it under the lock. The mark is
+// best-effort: a store that refuses the write (full, I/O) still shows the
+// reports, which then come again on the next read.
+async function readReports($: EngineInterface, key: string): Promise<Report[]> {
+  const kept = await stored($, key)
+  if (kept.some(r => r.seen !== true)) {
+    try {
+      await $.store.set(key, kept.map(r => ({ ...r, seen: true })))
+    } catch {}
   }
-  return showReport(ticket, await keptReports($, ticket))
+  return kept
 }
 
 // What session.receive left alone on purpose — a comment on an artifact, a
@@ -1134,10 +1164,13 @@ export const register: Register = (on, options) => {
     await $.tool.register({
       name: 'report',
       description:
-        'Returns the full text of the agent reports and task-notifications about one jaira ticket that reached this conversation shortened to one line, newest first. Without a ticket, lists the tickets that have kept reports.',
+        'Returns the full text of the agent reports and task-notifications about one jaira ticket that reached this conversation shortened to one line, newest first — only those not read yet, unless all is true. Without a ticket, lists the tickets that have kept reports.',
       inputSchema: {
         type: 'object',
-        properties: { ticket: { type: 'string', description: 'The ticket handle, e.g. MG677R.' } },
+        properties: {
+          ticket: { type: 'string', description: 'The ticket handle, e.g. MG677R.' },
+          all: { type: 'boolean', description: 'Also the reports already read before. Default false: only the new ones.' },
+        },
       },
     })
     await $.tool.register({
@@ -1220,8 +1253,8 @@ export const register: Register = (on, options) => {
   on('tool.call', async ($, e, next) => {
     if (e.tool === 'mcp__jaira-cockpit__report') {
       // A tool's arguments ride on `e` beside `tool`, not under a key of their own.
-      const { ticket } = e as { ticket?: unknown }
-      return { result: await reports($, typeof ticket === 'string' ? ticket : '') }
+      const { ticket, all } = e as { ticket?: unknown; all?: unknown }
+      return { result: await reports($, `${typeof ticket === 'string' ? ticket : ''}${all === true ? ' all' : ''}`) }
     }
     if (e.tool === 'mcp__jaira-cockpit__workers') return { result: await workers($, share) }
     totals = { ...totals, tools: totals.tools + 1 }
@@ -1576,7 +1609,8 @@ export const register: Register = (on, options) => {
     const id = await read($, paneAtom)
     const { Box, Text } = $.ui.resolve(e)
     if (id === null) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
-    const kept = await keptReports($, id)
+    // Opening a ticket reads its reports: they count as read, as after report.
+    const kept = await locked(async () => readReports($, keyOf(await project($), id)))
     let csv = ''
     try {
       csv = await $.fs.read(`${await home($)}/.jaira/metrics.csv`)

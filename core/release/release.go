@@ -181,6 +181,16 @@ func Stamped(dir string) string { return readVersion(dir, "version") }
 // Stamp records Current as the version that last prepared dir.
 func Stamp(dir string) error { return writeCurrent(dir, "version") }
 
+// LanesRefreshed reads <dir>/lanes-refreshed: the version whose shipped lanes
+// were last brought onto this working tree without anybody asking, "" when
+// none. A stamp of its own, beside Stamped, because that refresh must not
+// claim the board was set up: 'jaira update' reads Stamped to show the
+// release notes since, and that stays its job.
+func LanesRefreshed(dir string) string { return readVersion(dir, "lanes-refreshed") }
+
+// MarkLanesRefreshed records Current as the version LanesRefreshed reads.
+func MarkLanesRefreshed(dir string) error { return writeCurrent(dir, "lanes-refreshed") }
+
 // NotesSeen reads <dir>/notes-seen: the last version whose release notes the
 // user closed in the TUI, "" when none. It sits next to the stamp, per working
 // tree and never in git: "I read them" is one person's fact, not the team's.
