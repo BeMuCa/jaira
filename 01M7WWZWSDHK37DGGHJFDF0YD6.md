@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T22:49:44Z
+updated-at: 2026-11-20T22:49:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-91898
 claimed-at: 2026-11-20T22:44:37Z
@@ -52,6 +52,7 @@ claimed-at: 2026-11-20T22:44:37Z
 
 - [ ] schema: fields blocker-rule, stop-after-fix, back-from, back-by, back-count in core/ticket/schema.go; jaira set checks stop-after-fix is true/false/empty like mode
 - [ ] move: on every send-back write back-from, back-by (person when the from-lane is not agentic or needs a human exit/question, else lane) and back-count (consecutive returns from the same lane since a person's or another lane's return); table test in core/move
+- [ ] show --json prints the five fields; --for-lane payload carries blocker_rule (ticket's, else the default four classes) and stop_after_fix beside mode, also in the plain-text header; test in internal/cli
 
 ## Progress
 - **2026-11-20 16:48 · Alexander Sacharov** — Interim-Regeln (Alex 20.11.2026, gelten ab sofort bis TW5FE2 ausgeliefert ist):
