@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T17:08:12Z
+updated-at: 2026-11-20T17:08:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-42185
 claimed-at: 2026-11-20T16:42:15Z
@@ -44,6 +44,7 @@ test-verdict: "pass: go test -race -count=1 ./... RC=0, go build ok; DoD 1-7 im 
 hunt-verdict: "pass: bughunt done at e12f36d5, 1 change bleibt nach Teamlead-Entscheid 17:01 (keine weitere testing-Runde) als note fuer die Person: in-progress kann eine Rueckgabe aus signoff ohne Note nicht von einer review-Rueckgabe unterscheiden - jaira zeichnet die Herkunfts-Lane nicht auf; echte Zaehlung kommt mit DF0YD6/H6CD33"
 review-verdict: "All 7 DoD items are in the diff; no blocker. The prompts are consistent with each other and with jaira-worker's own three-returns stop. The one known weakness (return origin) is a transition until move records the from-lane, as the teamlead decided. go test ./core/shipped ./core/lane ./core/role/... green."
 review-round: 6
+review-check: "1. git diff 5b16e491..HEAD -- core/lane/builtin core/role/builtin  - only prompt text, four lane files and the bughunt skill  2. open core/lane/builtin/15-pre-process.md, section 'Name the edges before the code' - the seven input classes and 'jaira dod <id> --add' are there  3. open core/lane/builtin/20-in-progress.md, sections 'Fix the class, not the example' and 'The third return from the same lane' - 'back: person' resets the count, third return moves to human with --question  4. open core/lane/builtin/27-testing.md:97 - blocker is exactly four kinds  5. run: for f in pre-process in-progress testing review; do cmp core/lane/builtin/*-$f.md .jaira/lanes/$f.md && echo $f ok; done  - four lines 'ok'  6. run: go test ./core/shipped ./core/lane ./core/role/...  - three 'ok' lines"
 ---
 
 # Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels
