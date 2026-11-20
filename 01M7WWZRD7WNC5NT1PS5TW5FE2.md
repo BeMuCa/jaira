@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T18:23:12Z
+updated-at: 2026-11-20T18:23:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-37518
 claimed-at: 2026-11-20T18:18:38Z
@@ -43,8 +43,8 @@ review-gaps: |-
   note: pre-existing: core/shipped/shipped.sha256 fehlen 8 getaggte Versionen (board.ts, register.tsx, texts.ts, types/index.d.ts, template.html) - siehe bughunt-Note 16:50, Teamlead klaert
 test-verdict: "pass: follow-up round since d0cb1f49 - go build ./... ok; go test -race -count=1 ./core/lane/... ./core/shipped ./core/release/... RC=0; in-progress twin byte-equal to builtin, its sha256 in shipped.sha256; release notes 8 lines, all '- '; DoD 6 proof re-pointed at 20-in-progress.md:66-102 (no prefix = back: unknown); prompts only - nothing writes, no failure path or two-writer case"
 hunt-verdict: "pass: bughunt done at c3e5a7df, 0 change, 0 pre-existing"
-review-verdict: "All 7 DoD items are met in the diff; no blocker. Verified the strings the prompts rely on exist in code: round field (move.go:134), 'Given back from <lane>:' (cockpit register.tsx:900), '<who> took this ticket over from' (refsync.go:1433), 'bughunt: done at' (bughunt SKILL), 'critique:'/'optimize:' return-note prefixes, 'jaira dod --add'. go test ./core/shipped ./core/role ./core/lane pass. Four notes are small wording edges, none changes a result."
-review-round: 10
+review-verdict: "Alle 7 DoD-Punkte sind im Baum erfuellt, kein Blocker: reine Prompt-Aenderung, Twins byte-gleich, Manifest-Hashes stimmen, go test ./core/lane ./core/shipped ./core/role ./core/release gruen. Drei kleine Wortlaut-Raender als note; die Rueckgabe-Zaehlung bleibt eine Note-Konvention bis move die Herkunfts-Lane schreibt (DF0YD6/H6CD33) - bekannt und vom Teamlead so entschieden."
+review-round: 11
 review-check: "1. cd into the TW5FE2 worktree  2. go test ./core/shipped ./core/role ./core/lane - all three print ok  3. open core/lane/builtin/15-pre-process.md - section 'Name the edges before the code' lists the 7 input classes and the jaira dod --add examples  4. open core/lane/builtin/20-in-progress.md - sections 'Fix the class, not the example' and 'The third return from the same lane' are there  5. diff .jaira/lanes/in-progress.md core/lane/builtin/20-in-progress.md - prints nothing  6. cat core/release/notes/TW5FE2.md - 7 lines, each starting '- ', none wrapped"
 ---
 
