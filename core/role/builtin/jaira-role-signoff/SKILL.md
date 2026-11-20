@@ -51,9 +51,22 @@ left: say so in one line and stop.
 One line, each check with ✅ or ❌. Every check is about the commit that would
 ship — the head of the ticket's branch — and nothing older:
 
+The ticket's branch is the one whose name carries its six-character handle as
+a segment of its own — `feat/twrap8`, `fix/TWRAP8-signoff`, `alsa/twrap8` —
+the rule `jaira create` uses to read a ticket off a branch. Never assume a
+`feat/` prefix:
+
 ```bash
-head=$(git rev-parse feat/<id lower case>)
+seg='(^|[^[:alnum:]])<id>([^[:alnum:]]|$)'
+branch=$(git for-each-ref --format='%(refname:short)' refs/heads | grep -iE "$seg")
+[ -z "$branch" ] && branch=$(git for-each-ref --format='%(refname:short)' refs/remotes | grep -iE "$seg")
+head=$(git rev-parse "$branch")
 ```
+
+A local branch wins over a remote one: it holds what was not pushed yet.
+Exactly one name must come back. None, or more than one: every check below is
+`?`, and the status line names the candidates — which branch ships is the
+person's to say, not yours to guess.
 
 A result that belongs to another commit, or no result at all, is `?`, never ✅.
 

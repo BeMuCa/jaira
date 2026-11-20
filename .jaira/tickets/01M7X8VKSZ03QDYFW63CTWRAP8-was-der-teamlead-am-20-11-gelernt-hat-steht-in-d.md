@@ -1,7 +1,7 @@
 ---
 id: 01M7X8VKSZ03QDYFW63CTWRAP8
 title: "Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis"
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,19 +25,30 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T21:59:01Z
+updated-at: 2026-11-20T22:30:45Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-16592
-claimed-at: 2026-11-20T20:04:03Z
-outcome-what: "Neue Rolle jaira-role-signoff (Statuszeile, markierte Notes-Tabelle, eine Empfehlung, Rueckgabe-Regeln); Teamlead liest den Stand vor jeder Liste neu und berichtet signoff in dieser Form; worker, dispatcher und jaira-role-pr lassen vor jedem Push die CI-Gates des Projekts lokal laufen."
-outcome-why: "Die Arbeitsweise vom 20.11.2026 stand nur im lokalen Gedaechtnis einer Teamlead-Session; jeder andere Teamlead haette dieselben Fehler gemacht (veraltete Listen, Rueckgaben wegen Notes ohne Einordnung, rote PRs durch fehlende shipped.sha256-Zeilen)."
-outcome-resolves: Die Regeln reisen mit den ausgelieferten Rollen; jaira update --roles bringt sie zu jedem Nutzer.
-review-summary: none
-round: 4
-review-gaps: "none: 4a0033ec entfernt den Parser-Weg (Ref/grep) wieder, nichts uebrig geblieben; Teamlead-Verweis auf eine Zeile gekuerzt"
-test-verdict: "pass: Runde 3 (4a0033ec): go build ./... ok, go test core/role + core/shipped RC=0. Neue CI-Befehle ausprobiert: gh run list --branch master --limit 1 liefert den Lauf; gh pr checks feat/twrap8 ohne PR endet mit RC=1 - die Rolle nimmt dann gh run list, wie beschrieben. Rolle schreibt nichts, also kein Parallel-Schreibfall."
-hunt-verdict: "fail: bughunt done at 4a0033ec, 1 change (tests-Check bindet den CI-Lauf nicht an den Commit des Branch-Kopfs), 0 pre-existing"
+claimed-by: DESKTOP-RFTCH11-68388
+claimed-at: 2026-11-20T22:28:29Z
+outcome-what: "jaira-role-signoff findet die Branch des Tickets ueber den Handle als Namenssegment statt feat/<id> anzunehmen; teamlead verweist darauf"
+outcome-why: "signoff-Rueckgabe: Branches heissen nicht immer feat/<id>, dann waren alle Checks falsch gebunden"
+outcome-resolves: "Rueckgabe aus signoff 22:27 (🟡 Branchname)"
+review-summary: "Ships a new read-only role jaira-role-signoff: per ticket in signoff it prints one status line (DoD x/y, tests from the CI run of exactly the branch head commit via 'gh run list --commit <sha> --workflow', bug hunt on that head, blockers, review verdict, noted returns), a table that marks every open note 🔴/🟡/⚪/🔵, one bold recommendation, and the accept/give-back lines ready to paste; five return rules end endless rounds (after two noted returns 🟡 edges go into a ready follow-up 'jaira create --follows'). The teamlead now re-reads 'jaira show' and 'gh pr list' before any list of what waits, and reports signoff/human tickets in that shape, pointing at the role for the rules. worker, dispatcher and jaira-role-pr run the project's CI gates locally before a push. README, the German how-to page, role_test wantRoles, shipped.sha256 and release note TWRAP8 follow."
+round: 5
+review-gaps: |-
+  note: jaira-role-signoff/SKILL.md:55 takes the branch as feat/<id lower case>, but branches here are not always named so (fix/nh788q-windows-rename exists) and may exist only on origin; git rev-parse then fails, $head is empty, and gh run list --commit "" returns the newest runs of other branches - the headSha comparison the role asks for still yields ?, so no false ✅, but the role should say how to find the branch (git branch -a --list "*<id>*") and that an empty head is ?
+  note: shipped.sha256 gains 4 intermediate hashes each for jaira-teamlead and jaira-role-signoff SKILL.md that never shipped; harmless (go test ./core/shipped green, same pattern as earlier tickets), only the last line per file is a real release
+  note: this ticket's own status line will show bug hunt on HEAD ❌ (last hunt done at 4a0033ec, head is dae16319) - that is the teamlead decision of 21:58 (no new hunt after the one-line fix), not a missed step
+test-verdict: "pass: Runde 4 (dae16319): go build ./... ok, go test core/role + core/shipped RC=0; gh run list --commit <sha> --workflow ci --json conclusion,headSha liefert genau den Lauf dieses Commits (an master geprueft), glab ci list --sha existiert."
+hunt-verdict: "pass: Runde-3-Fund (bughunt done at 4a0033ec) als Klasse in dae16319 behoben: jeder Status an den Kopf-Commit gebunden, fremder/kein Lauf = '?'. Kein neuer Hunt - Entscheidung Teamlead 21:58; weitere Funde dieser Klasse gehen als note an signoff."
 question: ""
+review-verdict: "The diff meets all four DoD items; no blocker. Checked: go test ./core/role ./core/shipped green, each final SKILL.md hash is in shipped.sha256, release note lines are single '- ' lines, the commands the role prescribes exist (jaira list --lane/--board, gh run list --commit/--workflow, glab ci list --sha). Three notes, all small: hardcoded feat/ branch name, intermediate hashes, and an expected ❌ hunt-on-HEAD on this ticket."
+review-round: 4
+review-check: |-
+  1. cd /home/alex/projects/.worktrees/jaira-twrap8 && go test ./core/role ./core/shipped  -> both lines say ok
+  2. jaira roles install  (from this branch build: go run ./cmd/jaira roles install) -> ~/.claude/skills/jaira-role-signoff/SKILL.md exists
+  3. In a Claude session in a repo with a ticket in signoff, type /jaira-role-signoff  -> per ticket you see one status line with ✅/❌/?, a table with 🔴/🟡/⚪/🔵 marks, one bold accept/give back, and two paste-ready lines (jaira move <id> --to done --force / jaira note ... Given back from signoff ... && jaira move <id> --to in-progress)
+  4. Ask the teamlead "what waits for me?" twice  -> before each list it runs jaira show and gh pr list; the second time, with nothing changed, it does not repeat the list
+  5. Open core/role/builtin/jaira-worker/SKILL.md, section "Before you push"  -> it tells the worker to run the CI gates locally before pushing
 ---
 
 # Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis
@@ -88,3 +99,7 @@ question: ""
 - **2026-11-20 21:57 · Alexander Sacharov** — bughunt: done at 4a0033ec - 1 finding (1 change, 0 pre-existing) in 3 files read as diff since d3a71405, follow-up hunt, no new files; concurrency, error paths, input, permissions checked; go test ./core/role ./core/shipped ./core/lane green; files: .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md README.md core/release/notes/TWRAP8.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-role-signoff/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/role/role_test.go core/shipped/shipped.sha256 docs/how-to-work-with-jaira.html
 - **2026-11-20 21:58 · Alexander Sacharov** — Frage an den Teamlead (testing schickt zum 3. Mal zurueck, Stopp-Regel): Runde-3-Fund: 'tests-Check nimmt gh pr checks / gh run list --limit 1 ohne Commit-Bindung - Branch mit ungepushten Commits bekommt ✅ fuer alten Code; --limit 1 ohne --workflow kann den release-tag-Lauf greifen.' Einschaetzung: DoD ist richtig, die Funde werden kleiner (Runde 1: 2, Runde 2: 3 aus derselben Klasse 'Rohdaten lesen', Runde 3: 1 Ein-Zeilen-Rand). Optionen: 1) (empfohlen) Ein-Zeilen-Fix: Lauf per 'gh run list --commit $(git rev-parse <branch>)' an den Kopf binden, kein Lauf fuer diesen Commit = '?'; danach testing ohne neuen Hunt-Durchgang direkt zu review. 2) Fix wie 1, aber volle Schleife mit neuem Bughunt. 3) Nicht fixen, als 🟡 an signoff weitergeben.
 - **2026-11-20 21:58 · Alexander Sacharov** — decision (Teamlead jaira-64, 21:58): Option 1. Jeder Status der Rolle ist an den Kopf-Commit des Branches gebunden; kein Lauf fuer diesen Commit = '?', nie ✅; gh run list --commit <sha> --workflow <ci>. Danach Testlauf, kein neuer Hunt, direkt review. Weitere Funde dieser Klasse gehen als note an signoff, keine vierte Runde.
+- **2026-11-20 22:04 · Alexander Sacharov** — review: no blocker, 3 notes (hardcoded feat/ branch name in signoff status line, intermediate shipped.sha256 hashes, expected hunt-on-HEAD ❌ per teamlead decision 21:58); checked go test ./core/role ./core/shipped green and that every prescribed command/flag exists
+- **2026-11-20 22:27 · Alexander Sacharov** — Given back from signoff: │ вернуть ради 🟡: роль должна сама находить ветку, если она называется не feat/<id>
+- **2026-11-20 22:28 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
+- **2026-11-20 22:30 · Alexander Sacharov** — in-progress Runde nach signoff-Rueckgabe: Branch-Lookup nach der Regel von jaira create (internal/cli/tickets.go branchTicket: Handle als eigenes Segment des Branchnamens) - lokal vor remote, genau ein Treffer sonst '?' und Kandidaten nennen. Geschwisterstelle teamlead SKILL.md (hunt-cover-Check) verweist darauf. Geprueft: feat/twrap8 und fix/twrap8-x gefunden, feat/twrap8x nicht, unbekannter Handle leer.
