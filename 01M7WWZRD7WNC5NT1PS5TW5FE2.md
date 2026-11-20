@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZRD7WNC5NT1PS5TW5FE2
 title: "Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels"
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:23:34Z
+updated-at: 2026-11-20T19:24:14Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99353
 claimed-at: 2026-11-20T19:19:21Z
@@ -35,10 +35,10 @@ outcome-what: "Drei Prompt-Saetze nach signoff-Rueckgabe: pre-process schreibt P
 outcome-why: "Person gab aus signoff zurueck: gate.go refuses pre-process->human with empty plan, once-per-round unklar fuer neuen Worker, 'packages' ist Go-Wortlaut."
 outcome-resolves: "DoD 1-7 wie zuvor; neu 15-pre-process.md:90, 20-in-progress.md:72-74, 27-testing.md:130; Zwillinge in .jaira/lanes gleich; shipped.sha256 drei Zeilen; Release-Note eine Zeile. Vier Kategorien: nur Prompt-Text, nichts schreibt, kein Nebenlaeufigkeits-/Rechte-Pfad; Fehlerpfad pre-process->human jetzt vom Gate erlaubt."
 review-summary: "none - drei Saetze in bestehenden Absaetzen, kein neues Muster; pre-process-Regel steht nach allen drei human-Moves des Lanes und gilt fuer alle; Gate bewusst nicht geaendert (Note 20:21)"
-round: 12
+round: 13
 review-gaps: "none - drei Saetze, keine Wiederholung im Prompt, nichts verwaist"
 test-verdict: "pass: go test -count=1 ./core/lane/... ./core/shipped/... ./core/role/... ./core/release/... RC=0 (Folgerunde: Tests der seit d0cb1f49/c3e5a7df geaenderten Dateien); DoD 1-7 im Baum, Zwillinge byte-gleich, drei neue Manifest-Hashes = sha256 HEAD; Funktion auf Scratch-Board mit diesen Lanes: pre-process->human ohne Plan RC=3 'lane pre-process declares it produces plan, which is still empty', nach 'dod --plan --add' faellt diese Verletzung weg; Fehlerpfad = genau dieser Refuse; schreibt nichts Neues (nur Prompt-Text), zwei Schreiber entfallen"
-hunt-verdict: "pass: bughunt done at c3e5a7df, 0 change, 0 pre-existing"
+hunt-verdict: "change: 20-in-progress.md:72-74 restart rule compares against the sender's note, which a restarted worker misreads - see bughunt note 19:23"
 review-verdict: "Alle 7 DoD-Punkte sind im Baum erfuellt, kein Blocker: reine Prompt-Aenderung, Twins byte-gleich, Manifest-Hashes stimmen, go test ./core/lane ./core/shipped ./core/role ./core/release gruen. Drei kleine Wortlaut-Raender als note; die Rueckgabe-Zaehlung bleibt eine Note-Konvention bis move die Herkunfts-Lane schreibt (DF0YD6/H6CD33) - bekannt und vom Teamlead so entschieden."
 review-round: 11
 review-check: "1. cd /home/alex/projects/.worktrees/jaira-tw5fe2  2. go test -count=1 ./core/lane/... ./core/shipped/... ./core/role/...  -> alles ok  3. for f in pre-process in-progress testing review; do cmp core/lane/builtin/*-$f.md .jaira/lanes/$f.md && echo same $f; done  -> viermal same  4. sed -n 29,104p core/lane/builtin/20-in-progress.md  -> Abschnitte 'Fix the class, not the example' und 'The third return from the same lane' mit back:-Zeilen und Absender-Liste  5. sed -n 38,76p core/lane/builtin/15-pre-process.md  -> Abschnitt 'Name the edges before the code' mit den sieben Eingabeklassen und jaira dod --add  6. cat core/release/notes/TW5FE2.md  -> 8 einzeilige Zeilen, keine umbrochen"
