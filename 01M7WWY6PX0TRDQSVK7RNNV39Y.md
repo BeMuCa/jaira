@@ -1,7 +1,7 @@
 ---
 id: 01M7WWY6PX0TRDQSVK7RNNV39Y
 title: Ein privates Board steht in .git/info/exclude statt in der .gitignore des Arbeitsbaums
-status: todo
+status: pre-process
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T16:43:39Z
+updated-at: 2026-11-20T16:43:43Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46134
 claimed-at: 2026-11-20T16:42:22Z
