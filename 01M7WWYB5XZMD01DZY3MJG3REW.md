@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T16:56:26Z
+updated-at: 2026-11-20T16:56:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59469
 claimed-at: 2026-11-20T16:43:41Z
@@ -44,7 +44,8 @@ question: ""
   proof: core/role/pr_round_test.go TestPRRoundNeverMergesOrApproves, TestPROpensOnlyWhereTheBoardSaysAndNeverAccepts ('.jaira/pr never reaches merge or approve')
 - [x] Eingabeklasse PR existiert schon: kein zweiter PR, direkt zur Kommentarrunde
   proof: core/role/builtin/jaira-role-pr/SKILL.md:270 One listed -> straight to Answering review comments; the setting does not change that step
-- [ ] Eingabeklasse Fork vs. gleiches Repo: PR geht an das Ziel aus 'Which repository it goes to', die Kommentarrunde fragt dasselbe Repo
+- [x] Eingabeklasse Fork vs. gleiches Repo: PR geht an das Ziel aus 'Which repository it goes to', die Kommentarrunde fragt dasselbe Repo
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:356 the round runs against <owner/repo> as settled in 'Which repository it goes to', never origin; pr-round.sh takes owner/repo explicitly
 - [ ] Eingabeklasse gh/glab nicht angemeldet oder ohne Scope: das Skript bricht mit klarer Meldung und Exit != 0 ab, nichts halb erledigt verschwiegen
 - [ ] Eingabeklasse Kommentar ohne Thread (PR-Konversation, Review-Body): wird beantwortet, aber nicht als resolved gemeldet
 - [ ] Eingabeklasse Copilot nicht verfuegbar (Reviewer-Anfrage abgelehnt): wird gemeldet, PR bleibt offen, kein Abbruch der Runde
