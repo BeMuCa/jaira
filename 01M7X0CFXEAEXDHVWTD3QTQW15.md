@@ -16,14 +16,15 @@ context: |-
   Verwandt: 76ERHH (Decide scheitert bei Ticket nur auf dem Ref - Punkt 4 der Meldung), R80Z4G (spawn.sh nimmt vorhandenen Branch wieder auf), X2TGXG (Worker findet seinen Teamlead nach Neustart).
 definition-of-done: "Der Start-Prompt eines Give back nennt die parent session des Tickets und verbietet AskUserQuestion; danach geht eine Zeile '<ID> given back: <Entscheidung>, Worker <name>' an den Teamlead (Test im Cockpit)"
 tags: []
-blocked-by: []
+blocked-by:
+  - 01M7WX00JXRK922S029Q76ERHH
 related:
   - 01M7WX00JXRK922S029Q76ERHH
   - 01M6M878R42NEHQ7HDP0R80Z4G
   - 01M5MNWDKYJGC78B3EKMX2TGXG
 commits: []
 created-at: 2026-11-20T17:34:35Z
-updated-at: 2026-11-20T17:34:50Z
+updated-at: 2026-11-20T17:34:52Z
 updated-by: Alexander Sacharov
 ---
 
