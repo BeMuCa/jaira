@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T22:54:52Z
+updated-at: 2026-11-20T22:54:56Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -42,7 +42,7 @@ question: ""
 - [ ] Die Einstellung reist mit dem Repository, nicht mit dem Rechner und nicht mit dem Klon: wer klont, erbt sie. Nachgestellt an einem frischen Klon.
 - [ ] Ein ausgelieferter Rollen-Prompt richtet sich danach, obwohl er fuer alle gleich ausgeliefert wird - und wie er davon erfaehrt, steht begruendet im Ticket, nicht nur im Code.
 - [ ] Ein Board ohne Einstellung verhaelt sich wie heute: durch einen Pull Request. Wer nichts tut, merkt nichts.
-- [ ] Eine Zeile in core/release/NOTES.md unter ## Unreleased.
+- [ ] Eine Zeile in core/release/notes/XB97NJ.md (die Notiz-Dateien ersetzen seit AR97K9 core/release/NOTES.md).
 
 ## Options
 
