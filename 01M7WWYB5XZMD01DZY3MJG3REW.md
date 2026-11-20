@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T17:38:14Z
+updated-at: 2026-11-20T17:38:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26453
 claimed-at: 2026-11-20T17:13:45Z
@@ -115,3 +115,4 @@ Warum: Lehnt GitHub den Login ab, scheitert nur der Schritt 'Review neu anforder
 2) Annehmen und Schritte 5-7 der Prüfliste bei der Abnahme gegen ein echtes Test-PR laufen lassen [accept]
 Empfehlung: 2 - die Lücken sind dokumentiert und ungefährlich, der Live-Test ist die einzige Unsicherheit und gehört in die Abnahme.
 - **2026-11-20 17:38 · Alexander Sacharov** — decision: 1) Zurückgeben: das Gate im Binary prüfen und die Doppelantwort sperren, bevor es angenommen wird
+- **2026-11-20 17:38 · Alexander Sacharov** — Given back from signoff: 1) Zurückgeben: das Gate im Binary prüfen und die Doppelantwort sperren, bevor es angenommen wird
