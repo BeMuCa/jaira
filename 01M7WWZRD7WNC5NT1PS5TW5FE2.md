@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZRD7WNC5NT1PS5TW5FE2
 title: "Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T16:46:35Z
+updated-at: 2026-11-20T16:46:39Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-42185
 claimed-at: 2026-11-20T16:42:15Z
@@ -35,6 +35,7 @@ outcome-what: "Eingebaute Lanes pre-process, in-progress, testing und die Rolle 
 outcome-why: "Review- und bughunt-Schleifen liefen 10-24 Runden, weil jede Runde den Nachbarfall eines nur am Beispiel reparierten Fehlers fand und die vier Kategorien vor dem Code nie gefragt wurden."
 outcome-resolves: "DoD 1-4: pre-process 15-pre-process.md:38, in-progress 20-in-progress.md:29, bughunt SKILL.md:104 und testing 27-testing.md:102, eingebettet mit shipped.sha256 und core/release/notes/TW5FE2.md"
 review-summary: "core/lane/builtin/27-testing.md:110 'The ticket comes back to you only when the class is fixed' beschreibt etwas, das testing nicht steuert (der Ticket kommt nach jedem in-progress zurueck) - als Regel fuer den Pass formulieren: pass erst, wenn auch ein Nachbar des Beispiels geht; core/lane/builtin/20-in-progress.md:35 'Where no planning step ran and it does not' ist unklar, welches 'it' - 'and the definition of done does not name them'"
+round: 2
 ---
 
 # Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels
