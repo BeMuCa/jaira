@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:48:00Z
+updated-at: 2026-11-20T17:48:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60542
 claimed-at: 2026-11-20T17:19:23Z
@@ -30,7 +30,7 @@ outcome-why: "Eine von jaira geaenderte .gitignore erscheint in jedem neuen Work
 outcome-resolves: Neue Worktrees eines Repos mit privatem Board bleiben sauber; kein Wegraeumen der .gitignore-Zeile von Hand mehr.
 review-summary: "none"
 round: 7
-review-gaps: "none - Diff d62bafaa..750e2acf geprueft: boardLine bleibt fuer Erkennung und .gitignore in Gebrauch, kein toter Code; still_ignored kostet nur in share einen git-Aufruf"
+review-gaps: "none - Diff 750e2acf..c6c3ed13: IgnoredBy hat einen Aufrufer (share), kein Duplikat (kein anderes check-ignore im Code); nichts verwaist"
 test-verdict: "pass: go build/vet/test -count=1 ./... RC=0 at 750e2acf; DoD 8 proofs run green"
 hunt-verdict: "fail: bughunt done at 750e2acf, 1 change - still_ignored misses an unanchored .jaira/ for a board in a subdirectory"
 review-verdict: "Der Diff erfuellt alle 7 DoD-Punkte, jeder mit Test (core/board/exclude_test.go, internal/cli/privateexclude_test.go); go vet und go test ./core/board ./core/ticket ./internal/cli gruen. Keine Defekte entlang Nebenlaeufigkeit (Sperre um Read-Modify-Write, atomares Rename), Fehlerpfaden (exclude zuerst, dann .gitignore – nie ungeschuetzt), Eingaben (fehlende Datei/Verzeichnis, CRLF, Leerzeichen, Glob-Zeichen, alte git-Version) und Grenzen (geteilte Boards werden von update nie angefasst). Vier Anmerkungen, kein Blocker."
