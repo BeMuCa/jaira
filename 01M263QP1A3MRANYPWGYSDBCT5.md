@@ -18,10 +18,12 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-20T16:49:07Z
+updated-at: 2026-11-20T22:44:44Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-94615
+claimed-at: 2026-11-20T22:44:44Z
 ---
 
 # Der Agent-Block nennt --proof, und die Gitignore-Regel verweist auf die Commit-Regel
