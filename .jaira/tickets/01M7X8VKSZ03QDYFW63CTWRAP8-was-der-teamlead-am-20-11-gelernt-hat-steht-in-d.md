@@ -25,27 +25,31 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:37:09Z
+updated-at: 2026-11-20T22:41:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
-outcome-what: "jaira-role-signoff findet die Branch des Tickets ueber den Handle als Namenssegment und waehlt unter lokalen und remote Kopien den Commit, zu dem alle anderen fuehren; divergiert = ?"
-outcome-why: "signoff-Rueckgabe: Branches heissen nicht immer feat/<id>; bughunt: lokal kann hinter remote liegen"
-outcome-resolves: "Rueckgabe aus signoff 22:27 (🟡 Branchname) und bughunt 22:32"
-review-summary: "core/role/builtin/jaira-teamlead/SKILL.md:216 still says 'or more than one' branch makes the commit unknown; since d4da7f7b several copies are fine when one leads - say 'two that diverged'"
-round: 7
-review-gaps: "nothing removed: the change is one lookup block plus a pointer in the teamlead; left the intermediate shipped.sha256 lines (already noted by review 22:04)"
-test-verdict: "pass: go build ./... and go test ./core/... green (RC=0); DoD 1-4 unchanged, branch lookup run: feat/twrap8 and fix/twrap8-x found, feat/twrap8x not, unknown handle gives empty branch and git rev-parse exits non-zero -> '?'; the change writes nothing"
-hunt-verdict: "change: 1 finding at a1b61158 - local branch taken over its remote even when behind; fixed in this round"
+outcome-what: "jaira-role-signoff: Branch per Handle-Segment, neueste von lokal/remote, divergiert = ?; Lookup nennt ausdruecklich den Handle statt der ULID; CI: neuester Lauf des Commits entscheidet, laufend = ?"
+outcome-why: "signoff-Rueckgabe (Branchname) plus bughunt 22:32 und review-gaps 22:39"
+outcome-resolves: "Rueckgabe aus signoff 22:27, review-gaps 1-2 vom 22:39"
+review-summary: "Ships a new read-only role /jaira-role-signoff: per ticket in signoff it finds the ticket's branch by its handle (local and remote copies compared by ancestry, diverged or missing = ?), binds every check (DoD, CI run via gh run list --commit/--workflow, bughunt note) to that head commit, sorts every open note into 🔴/🟡/⚪/🔵, and gives one recommendation from five return rules (after two noted returns from signoff 🟡 edges go to a ready follow-up ticket) with paste-ready accept/give-back lines. jaira-teamlead now re-reads lanes and open PRs before listing what waits, uses that decision shape for signoff/human tickets and points to the role for the return rules and branch lookup. jaira-worker, jaira-dispatcher and jaira-role-pr gain a generic 'run the project's CI gates locally before pushing' section. README, how-to page, role_test wantRoles, shipped.sha256 and release note TWRAP8.md updated."
+round: 8
+review-gaps: |-
+  note: the branch lookup greps for <id>; given the full ULID instead of the six-character handle it matches no branch and every check reads ? - the role could say 'the handle' explicitly
+  note: gh run list --commit can return several runs for one commit (push and pull_request events) and a run still in progress has an empty conclusion; the role does not say to take the latest completed one or that in-progress is ?
+  note: the accept line hard-codes --to done; on a board whose terminal lane is named differently it fails (same assumption as teamlead/acceptance, left on purpose)
+  note: on this ticket the bug-hunt-on-HEAD check will read ❌ - no hunt after a1b61158 by teamlead decision 21:58
+test-verdict: "pass: go build ./... and go test ./core/... green (RC=0) at 7e3bc32c; lookup exercised on bare repo + 2 clones: local behind remote -> remote head, local ahead -> local, diverged -> ?, no ref -> ?, two remotes on one commit -> one head; the change writes nothing"
+hunt-verdict: "pass: last hunt at a1b61158 found 1 change, fixed in d4da7f7b; no new hunt over d4da7f7b..7e3bc32c by teamlead decision 21:58 (findings of the head-binding class go to signoff as a note) - hunt-on-HEAD therefore reads ❌ by design"
 question: ""
-review-verdict: "The diff meets all four DoD items; no blocker. Checked: go test ./core/role ./core/shipped green, each final SKILL.md hash is in shipped.sha256, release note lines are single '- ' lines, the commands the role prescribes exist (jaira list --lane/--board, gh run list --commit/--workflow, glab ci list --sha). Three notes, all small: hardcoded feat/ branch name, intermediate hashes, and an expected ❌ hunt-on-HEAD on this ticket."
-review-round: 4
+review-verdict: "All four DoD items are met; no blocker. Verified: go test ./core/role ./core/shipped green, every builtin SKILL.md hash is in shipped.sha256, release-note lines are single '- ' lines, every prescribed flag exists (jaira list --lane/--board, jaira create --follows, gh run list --commit/--workflow, glab ci list --sha), and the ancestry lookup run on this repo resolves feat/twrap8 to 7e3bc32c. The role is read-only, so concurrency/permission risks are limited to the lines it hands the person; the four notes are small edges."
+review-round: 7
 review-check: |-
-  1. cd /home/alex/projects/.worktrees/jaira-twrap8 && go test ./core/role ./core/shipped  -> both lines say ok
-  2. jaira roles install  (from this branch build: go run ./cmd/jaira roles install) -> ~/.claude/skills/jaira-role-signoff/SKILL.md exists
-  3. In a Claude session in a repo with a ticket in signoff, type /jaira-role-signoff  -> per ticket you see one status line with ✅/❌/?, a table with 🔴/🟡/⚪/🔵 marks, one bold accept/give back, and two paste-ready lines (jaira move <id> --to done --force / jaira note ... Given back from signoff ... && jaira move <id> --to in-progress)
-  4. Ask the teamlead "what waits for me?" twice  -> before each list it runs jaira show and gh pr list; the second time, with nothing changed, it does not repeat the list
-  5. Open core/role/builtin/jaira-worker/SKILL.md, section "Before you push"  -> it tells the worker to run the CI gates locally before pushing
+  1. cd /home/alex/projects/.worktrees/jaira-twrap8 && go test ./core/role ./core/shipped -> both lines say ok
+  2. go run ./cmd/jaira roles install -> ~/.claude/skills/jaira-role-signoff/SKILL.md exists
+  3. In a Claude session in this repo type /jaira-role-signoff TWRAP8 -> one status line with ✅/❌/? (tests ? because the branch is not pushed, bug hunt ❌), a table with 🔴/🟡/⚪/🔵 marks, one bold accept/give back, two paste-ready lines
+  4. Ask the teamlead "what waits for me?" twice -> it runs jaira show and gh pr list before each list and does not repeat an unchanged list
+  5. Open core/role/builtin/jaira-worker/SKILL.md, section "Before you push" -> it says to run the CI gates locally before pushing
 ---
 
 # Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis
@@ -106,3 +110,7 @@ review-check: |-
 - **2026-11-20 22:33 · Alexander Sacharov** — testing: zurueck wegen bughunt 22:32 (lokal hinter remote -> alter Kopf). Klasse: Kandidaten-Refs nicht nach Abstammung verglichen. Fix: alle passenden Refs lokal+remote, Kopf = der Commit, von dem alle anderen Vorfahren sind; divergiert = '?'. Loest auch origin+upstream auf demselben Commit (keine zwei Kandidaten mehr). Nach Teamlead-Entscheidung 21:58 (Funde dieser Klasse keine weitere Schleife): danach Testlauf, kein neuer Hunt, direkt review.
 - **2026-11-20 22:35 · Alexander Sacharov** — in-progress: Lookup nach Abstammung an Scratch-Repo (bare + 2 Klone) geprueft: lokal hinter remote -> remote-Kopf, lokal voraus -> lokal, divergiert -> leer/'?', kein Ref -> '?', origin+up auf gleichem Commit -> ein Kopf.
 - **2026-11-20 22:35 · Alexander Sacharov** — critique: teamlead-Verweis an die neue Regel angleichen ('mehr als eine' -> 'zwei divergierte Kopien'). Lookup selbst bleibt so: einfacher geht es nicht ohne Abstammungsvergleich.
+- **2026-11-20 22:37 · Alexander Sacharov** — critique Runde 2: nichts mehr.
+- **2026-11-20 22:37 · Alexander Sacharov** — testing: gruen; kein neuer Hunt nach Teamlead-Entscheidung 21:58, hunt-on-HEAD ist daher erwartbar ❌.
+- **2026-11-20 22:39 · Alexander Sacharov** — review (fresh, after signoff return): no blocker, 4 notes (handle vs ULID in lookup, several/in-progress CI runs per commit, hard-coded done lane, expected hunt-on-HEAD ❌). Ran the lookup on this repo -> feat/twrap8 @ 7e3bc32c; gh run list --commit -> [] (not pushed) = ?.
+- **2026-11-20 22:40 · Alexander Sacharov** — worker: aus signoff zurueck nach in-progress nach Interim-Regel 5 - die zwei kleinen Raender aus review-gaps 22:39 (ULID statt Handle im Lookup; mehrere/laufende CI-Laeufe pro Commit) werden in derselben Runde geschlossen statt als note zu Alex zu gehen. Dritte (done-Lane fest) und vierte (hunt-on-HEAD ❌) bleiben notes.

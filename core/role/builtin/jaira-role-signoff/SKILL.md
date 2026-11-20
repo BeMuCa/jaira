@@ -51,13 +51,13 @@ left: say so in one line and stop.
 One line, each check with ✅ or ❌. Every check is about the commit that would
 ship — the head of the ticket's branch — and nothing older:
 
-The ticket's branch is the one whose name carries its six-character handle as
+The ticket's branch is the one whose name carries its six-character handle (`handle` in `jaira show <id> --json`) as
 a segment of its own — `feat/twrap8`, `fix/TWRAP8-signoff`, `alsa/twrap8` —
 the rule `jaira create` uses to read a ticket off a branch. Never assume a
 `feat/` prefix:
 
 ```bash
-seg='(^|[^[:alnum:]])<id>([^[:alnum:]]|$)'
+seg='(^|[^[:alnum:]])<handle>([^[:alnum:]]|$)'   # the six characters, never the ULID
 refs=$(git for-each-ref --format='%(refname:short)' refs/heads refs/remotes | grep -iE "$seg")
 head=
 for r in $refs; do
@@ -80,8 +80,12 @@ A result that belongs to another commit, or no result at all, is `?`, never ✅.
 - **tests** — the CI run for exactly that commit, of the workflow that runs the
   tests (named in `.github/workflows/`): `gh run list --commit "$head"
   --workflow <ci workflow> --json conclusion,headSha`; on GitLab `glab ci list
-  --sha "$head"`. A run for an older commit says nothing about this one: `?` —
-  and if the branch is ahead of what was pushed, say that is why
+  --sha "$head"`. One commit can have several runs (a push and a pull request
+  event, a re-run): the newest decides — `gh` lists newest first. Its
+  conclusion `success` is ✅, a failure ❌, and a run still queued or in
+  progress (empty conclusion) is `?`. A run for an older commit says nothing
+  about this one: `?` — and if the branch is ahead of what was pushed, say
+  that is why
 - **bug hunt on HEAD** — the last `— bughunt: done at <sha> ` note names
   `$head` (compare the short form). An older sha does not cover what a later
   round changed: ❌
