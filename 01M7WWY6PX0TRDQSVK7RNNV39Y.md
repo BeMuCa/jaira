@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T19:27:27Z
+updated-at: 2026-11-20T19:27:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96533
 claimed-at: 2026-11-20T19:19:14Z
@@ -30,7 +30,7 @@ outcome-why: "signoff-Rueckgabe: ein unlesbares info/exclude wurde bisher durch 
 outcome-resolves: Datenverlust bei unlesbarer Ausschlussdatei
 review-summary: "none"
 round: 15
-review-gaps: "none - Diff dde1cf1c: zwei Aufrufe getauscht, eine Fehlerumhuellung, ein Test"
+review-gaps: "none - Diff 7e69b451: eine Bedingung um die Meldung"
 test-verdict: "fail->fixed: suite gruen bei dde1cf1c, Funktion mit Binary geprueft (Fehlerpfad, zwei Schreiber); bughunt: share auf schon geteiltem Board meldete 'stays private'"
 hunt-verdict: "1 change (falsche 'stays private'-Meldung auf geteiltem Board) - zurueck in in-progress"
 review-verdict: "Der Diff erfuellt alle 9 DoD-Punkte, jeder mit Test; go test ./core/board ./core/ticket ./internal/cli und go vet gruen. Mit gebautem Binary nachgespielt: init + neuer Worktree lassen git status sauber, share/--undo, Migration einer alten .gitignore-Zeile (zweites update meldet nichts), Teamkollege ohne Ausschluss wird ausgeschlossen, Board in 'sub dir/' bekommt /sub dir/.jaira/. Kein Blocker; vier Notes, davon eine pre-existing."
