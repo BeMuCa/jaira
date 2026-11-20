@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T18:21:36Z
+updated-at: 2026-11-20T18:21:44Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-29476
 claimed-at: 2026-11-20T18:21:36Z
@@ -31,7 +31,7 @@ question: ""
 outcome-what: "Board-Dateien .jaira/pr (person|agent), .jaira/pr-reviewer und .jaira/pr-when (done|signoff, Default done); 'jaira roles list' zeigt sie; 'jaira roles pr-gate <remote>/<branch>' prueft im Binary, ob ein Agent den PR oeffnen darf (agent + jedes Ticket des Branches in done bzw. signoff); jaira-role-pr/scripts/pr-round.sh: open (Gate vor gh pr create), threads, comments, reply/comment (nie doppelt, auch bei zwei Sessions; loescht nur die eigene POST-id), request, settled (keine offenen Threads, kein ausstehendes Review); Rollentexte, Release-Note."
 outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten das pro Repo. In manchen Projekten laeuft das Review auf dem PR selbst, dort kommt done erst danach (Alex 20.11.)."
 outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
-review-summary: "none"
+review-summary: "Neue Board-Dateien .jaira/pr (person|agent), .jaira/pr-reviewer (copilot, Login, org/team) und .jaira/pr-when (done|signoff), gelesen in core/settings/settings.go mit Default person/leer/done; jede Abweichung faellt auf den Default zurueck. 'jaira roles list' zeigt sie (pr, pr_source, pr_reviewer, pr_when). Neuer Befehl 'jaira roles pr-gate <remote>/<branch>' (internal/cli/roles.go): liest die Ticket-Handles aus den Commit-Subjects base..HEAD (core/gitrepo/named.go) und gibt Exit 0 nur, wenn .jaira/pr agent sagt und jedes benannte Ticket im Terminal-Lane steht (bei signoff: signoff bis Terminal); unlesbare Ticketdateien und fehlender signoff-Lane -> Exit 3. Neues Skript jaira-role-pr/scripts/pr-round.sh fuer GitHub: open (Gate, dann gh pr create), threads/comments (offene Punkte als JSON), reply (antworten + resolven, idempotent, zwei Sessions hinterlassen eine Antwort), comment (Konversation, nie doppelt), request (Reviewer, Copilot per Bot-Login, Exit 4 bei Ablehnung), settled (Runde fertig?). Merge/Approve kommen nirgends vor. SKILL.md von jaira-role-pr, teamlead und dispatcher beschreiben den Ablauf; GitLab bekommt glab-Zeilen statt Skript."
 round: 9
 review-gaps: "removed first_of (its last caller became keeper); left: keeper serves reply-dedupe, comment pre-check and comment read-back, no further sharing between GraphQL thread and REST conversation calls; settled's three reads stay separate calls (REST requested_reviewers, two GraphQL connections that page differently)"
 test-verdict: "pass: go test -race ./... RC=0 after clean cache at 106faf5c; DoD 1-16 proofs present; real binary on a scratch board (9ef2e20b, gate code unchanged since): thresholds done/signoff, unreadable ticket -> exit 3, bad base 2, parallel pr-gate both 0; pr-round.sh open refuses before gh pr create; reply/comment/settled against fake gh only (no live GitHub here)"
