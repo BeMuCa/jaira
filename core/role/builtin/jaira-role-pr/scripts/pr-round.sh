@@ -127,9 +127,11 @@ keeper() {
 dedupe() {
   local mine_id=$1 first
   [ -n "$mine_id" ] || return 0
+  # The newest 100, oldest first: they hold the answer just posted and any
+  # copy beside it however long the thread has grown.
   if ! first=$(gh api graphql -f thread="$thread" -f query='
     query($thread:ID!){viewer{login}
-      node(id:$thread){... on PullRequestReviewThread{comments(first:100){nodes{id author{login} body}}}}}' \
+      node(id:$thread){... on PullRequestReviewThread{comments(last:100){nodes{id author{login} body}}}}}' \
     --jq "$saidjq"' .data as $d | $d.node.comments.nodes[]
           | "\(if (.author.login // "") == $d.viewer.login then "me" else "other" end) \(.id) \(.body | said)"' |
     keeper me "$(said "$file")" "$mine_id"); then

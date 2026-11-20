@@ -24,7 +24,7 @@ printf '%s\t' "$@" >> "$GH_LOG"; printf '\n' >> "$GH_LOG"
 [ "$1" = auth ] && { [ "${GH_AUTH:-}" = fail ] && exit 1; exit 0; }
 for a in "$@"; do [ "$a" = POST ] && [ "${GH_POST:-}" = fail ] && { echo "HTTP 422: Reviews may only be requested from collaborators" >&2; exit 1; }; done
 filter="" fixture=${GH_FIXTURE:-}
-case "$*" in *"latestOpinionatedReviews"*) fixture=${GH_OPINIONS:-} ;; *"requested_reviewers"*) fixture=${GH_REQUESTED:-} ;; *"POST repos/"*"/issues/"*) fixture=${GH_POSTED:-} ;; *"/issues/"*) fixture=${GH_ISSUES:-}; [ -n "${GH_ISSUES_AFTER:-}" ] && grep -q POST "$GH_LOG" && fixture=$GH_ISSUES_AFTER ;; *"comments(first:100)"*) fixture=${GH_AFTER:-} ;; *"viewer{login}"*) fixture=${GH_STATE:-} ;; esac
+case "$*" in *"latestOpinionatedReviews"*) fixture=${GH_OPINIONS:-} ;; *"requested_reviewers"*) fixture=${GH_REQUESTED:-} ;; *"POST repos/"*"/issues/"*) fixture=${GH_POSTED:-} ;; *"/issues/"*) fixture=${GH_ISSUES:-}; [ -n "${GH_ISSUES_AFTER:-}" ] && grep -q POST "$GH_LOG" && fixture=$GH_ISSUES_AFTER ;; *"comments(last:100)"*) fixture=${GH_AFTER:-} ;; *"viewer{login}"*) fixture=${GH_STATE:-} ;; esac
 while [ $# -gt 0 ]; do [ "$1" = --jq ] && filter=$2; shift; done
 if [ -n "$filter" ] && [ -n "$fixture" ]; then jq -r "$filter" "$fixture"; else echo '{}'; fi
 `
