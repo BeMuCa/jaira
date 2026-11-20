@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:38:12Z
+updated-at: 2026-11-20T17:38:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60542
 claimed-at: 2026-11-20T17:19:23Z
@@ -103,3 +103,4 @@ Warum: Die ersten drei sind kosmetisch oder kosten wenige ms; der vierte aendert
 2) Ticket so annehmen und die vier Punkte als bekannte Grenzen stehen lassen [accept]
 Empfehlung: 2 - alle 7 DoD-Punkte sind mit Tests belegt, die Funde sind Randfaelle ohne Datenverlust und wuerden das Ticket nur vergroessern.
 - **2026-11-20 17:38 · Alexander Sacharov** — decision: 1) Die Anmerkungen beheben (dropEntry, unverankerte Zeile, undo-Hinweis) und zurueck in die Pruefung
+- **2026-11-20 17:38 · Alexander Sacharov** — Given back from signoff: 1) Die Anmerkungen beheben (dropEntry, unverankerte Zeile, undo-Hinweis) und zurueck in die Pruefung
