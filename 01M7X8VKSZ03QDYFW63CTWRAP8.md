@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:44:13Z
+updated-at: 2026-11-20T22:44:21Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
@@ -114,3 +114,4 @@ review-check: |-
 - **2026-11-20 22:37 · Alexander Sacharov** — testing: gruen; kein neuer Hunt nach Teamlead-Entscheidung 21:58, hunt-on-HEAD ist daher erwartbar ❌.
 - **2026-11-20 22:39 · Alexander Sacharov** — review (fresh, after signoff return): no blocker, 4 notes (handle vs ULID in lookup, several/in-progress CI runs per commit, hard-coded done lane, expected hunt-on-HEAD ❌). Ran the lookup on this repo -> feat/twrap8 @ 7e3bc32c; gh run list --commit -> [] (not pushed) = ?.
 - **2026-11-20 22:40 · Alexander Sacharov** — worker: aus signoff zurueck nach in-progress nach Interim-Regel 5 - die zwei kleinen Raender aus review-gaps 22:39 (ULID statt Handle im Lookup; mehrere/laufende CI-Laeufe pro Commit) werden in derselben Runde geschlossen statt als note zu Alex zu gehen. Dritte (done-Lane fest) und vierte (hunt-on-HEAD ❌) bleiben notes.
+- **2026-11-20 22:44 · Alexander Sacharov** — review (fresh, at b443a4cb): no blocker; 4 notes in review-gaps - JSON key names in signoff role, bughunt sha behind HEAD (text-only commits, read whole here), branch stacked on unmerged fix/nh788q-windows-rename, pre-existing return-count floor
