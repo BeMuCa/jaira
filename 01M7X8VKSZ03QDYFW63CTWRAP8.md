@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T21:59:01Z
+updated-at: 2026-11-20T22:00:43Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16592
 claimed-at: 2026-11-20T20:04:03Z
@@ -35,7 +35,7 @@ outcome-resolves: Die Regeln reisen mit den ausgelieferten Rollen; jaira update 
 review-summary: none
 round: 4
 review-gaps: "none: 4a0033ec entfernt den Parser-Weg (Ref/grep) wieder, nichts uebrig geblieben; Teamlead-Verweis auf eine Zeile gekuerzt"
-test-verdict: "pass: Runde 3 (4a0033ec): go build ./... ok, go test core/role + core/shipped RC=0. Neue CI-Befehle ausprobiert: gh run list --branch master --limit 1 liefert den Lauf; gh pr checks feat/twrap8 ohne PR endet mit RC=1 - die Rolle nimmt dann gh run list, wie beschrieben. Rolle schreibt nichts, also kein Parallel-Schreibfall."
+test-verdict: "pass: Runde 4 (dae16319): go build ./... ok, go test core/role + core/shipped RC=0; gh run list --commit <sha> --workflow ci --json conclusion,headSha liefert genau den Lauf dieses Commits (an master geprueft), glab ci list --sha existiert."
 hunt-verdict: "fail: bughunt done at 4a0033ec, 1 change (tests-Check bindet den CI-Lauf nicht an den Commit des Branch-Kopfs), 0 pre-existing"
 question: ""
 ---
