@@ -27,8 +27,10 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T16:42:13Z
+updated-at: 2026-11-20T16:42:15Z
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-42185
+claimed-at: 2026-11-20T16:42:15Z
 ---
 
 # Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels
