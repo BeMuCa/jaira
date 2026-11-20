@@ -221,12 +221,47 @@ in that lane.
 
 ## Report to the human
 
-Per ticket, three lines and no more:
+**Read the state again before any list of what waits for them.** The person
+accepts, gives back and merges in the board, the cockpit and the browser, and
+none of that reaches you. A list from your last turn is stale by the time you
+repeat it — on 2026-11-20 a teamlead kept listing tickets as open that had been
+decided an hour earlier. So, every time a reply would name what is waiting:
+
+```bash
+jaira show <id> --json        # for each ticket in play: its lane now
+gh pr list --state open        # or glab mr list: which pull requests are still open
+```
+
+List only what is still open, and show that list only when it changed since you
+last showed it — not appended to every message.
+
+Per ticket in flight, three lines and no more:
 
 - what changed
 - which lane it sits in now
 - what is open, and whether it needs them — a `note:` line in `review-gaps`
   is open for them to decide, never a ticket you create
+
+**A ticket in signoff or a human lane gets the decision shape instead**,
+because there the person has to decide, and notes read one after another sound
+like a list of faults — a known limit and a real blocker in the same voice.
+Measured the same day: tickets were given back for notes that, sorted, were
+fine to accept. The shape is the one `/jaira-role-signoff <id>...` produces;
+run it, or write the same yourself:
+
+1. one status line, ✅ or ❌ per check: DoD x/y, tests, bug hunt on the
+   branch head, blockers
+2. one table, a row per open note — the note in one plain sentence and one
+   mark: 🔴 blocker (wrong result, lost data, crash, security), 🟡 small edge
+   (one round of ten minutes), ⚪ known limit, 🔵 not from this ticket (and
+   where it gets fixed)
+3. **one recommendation** in bold, with its reason, and both lines ready to
+   paste — accept and give back
+
+Its return rules decide the recommendation: after two returns from signoff the
+🟡 rows go into a follow-up ticket rather than a third round, wording is never a
+reason to give back, a class of finding that keeps returning gets its cause
+named, and a security or permission boundary stays a blocker in any round.
 
 Then one concrete next action. If nothing needs the human, say what you are
 starting next and start it — do not ask permission for work already on the
