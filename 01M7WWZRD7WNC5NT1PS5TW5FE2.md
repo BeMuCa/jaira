@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T16:53:41Z
+updated-at: 2026-11-20T16:53:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-42185
 claimed-at: 2026-11-20T16:42:15Z
@@ -79,3 +79,4 @@ test-verdict: "fail: DoD 5-7 (Interim-Regeln des Teamleads, nachgetragen) sind n
 - **2026-11-20 16:50 · Alexander Sacharov** — testing: Suite gruen (go test -race -count=1 ./... RC=0), DoD 1-4 im Baum; zurueck nach in-progress, weil die Interim-Regeln als DoD 5-7 nachgetragen sind. Laufender bughunt deckt nur ab6eeb90.
 - **2026-11-20 16:50 · Alexander Sacharov** — bughunt: pre-existing: core/shipped/shipped.sha256 (read by core/role/install.go:147 writeFile) - class: versions that went out in a release tag are missing from the hand-merged manifest, so 'jaira update --roles' takes an untouched install of them for a person's edit and skips it (Skipped, needs --force); example: core/mod/builtin/jaira-cockpit/hooks/board.ts as shipped in v0.5.2/v0.5.3 (sha256 a06a3c1c...), and 7 more tagged versions of register.tsx, texts.ts, types/index.d.ts, board.ts and jaira-role-acceptance/template.html; the files TW5FE2 touches are complete; never in the manifest (git log -S<hash> on shipped.sha256 is empty); ran: scripts/shipped-history.sh vs the committed manifest (59 lines only in the generated output, none only in the committed one), then checked each against git ls-tree of the v* tags (8 shipped)
 - **2026-11-20 16:50 · Alexander Sacharov** — bughunt: done at ab6eeb90 - 1 finding (0 change, 1 pre-existing) in 5 modules, first hunt; concurrency, error paths, input, permissions checked (dod --add on pre-process and two parallel dod --add on a scratch board: both land; CLI flags named by the prompts exist; lane copies equal builtin; manifest has every version of the touched files; go test core/shipped core/lane core/role core/release green); files: .jaira/lanes/in-progress.md .jaira/lanes/pre-process.md .jaira/lanes/testing.md core/lane/builtin/15-pre-process.md core/lane/builtin/20-in-progress.md core/lane/builtin/27-testing.md core/release/notes/TW5FE2.md core/role/builtin/jaira-role-bughunt/SKILL.md core/shipped/shipped.sha256
+- **2026-11-20 16:53 · Alexander Sacharov** — critique: testing.md:102 nicht-blockierende Funde als Note 'testing: note: ...' am Ticket, hunt-verdict pass mit Zaehlung; in-progress.md:68 'a review note' statt 'a review blocker:'.
