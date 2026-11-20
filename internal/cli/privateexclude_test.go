@@ -570,3 +570,51 @@ func nullableBool(b *bool) string {
 	}
 	return fmt.Sprint(*b)
 }
+
+// A .gitignore jaira cannot read stops share before it touches the exclude:
+// the board stays private, the .gitignore keeps every byte, and the error
+// says so. A share run again once the file is readable completes.
+func TestShareWithAnUnreadableGitignoreLeavesTheBoardPrivate(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("chmod 000 does not make a file unreadable on Windows")
+	}
+	if os.Geteuid() == 0 {
+		t.Skip("root reads a file with mode 000")
+	}
+	dir := repoWithCommit(t)
+	if out, err := runCLI(t, dir, "init"); err != nil {
+		t.Fatalf("jaira init: %v\n%s", err, out)
+	}
+	gi := filepath.Join(dir, ".gitignore")
+	want, err := os.ReadFile(gi)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(gi, 0); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Chmod(gi, 0o644) })
+
+	out, err := runCLI(t, dir, "share")
+	if err == nil {
+		t.Fatalf("jaira share with an unreadable .gitignore: err = nil\n%s", out)
+	}
+	if !strings.Contains(err.Error()+out, "stays private") {
+		t.Errorf("share error does not say the board stays private: %v\n%s", err, out)
+	}
+	if !excludesBoard(readExclude(t, dir)) {
+		t.Errorf("info/exclude lost the board's entry after a failed share:\n%s", readExclude(t, dir))
+	}
+	if err := os.Chmod(gi, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := os.ReadFile(gi); string(got) != string(want) {
+		t.Errorf(".gitignore changed by a failed share:\n got %q\nwant %q", got, want)
+	}
+	if out, err := runCLI(t, dir, "share"); err != nil {
+		t.Fatalf("jaira share once .gitignore is readable: %v\n%s", err, out)
+	}
+	if excludesBoard(readExclude(t, dir)) {
+		t.Errorf("info/exclude still excludes the board after share:\n%s", readExclude(t, dir))
+	}
+}

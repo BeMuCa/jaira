@@ -85,11 +85,14 @@ You still have to commit. jaira does not commit on your behalf.`,
 				return nil
 			}
 
-			unignored, err := board.RemoveIgnore(s.Root)
-			if err != nil {
-				return err
-			}
+			// The lanes line first: a .gitignore jaira cannot write stops share
+			// while the board is still excluded, not halfway with the exclude
+			// gone and .jaira/lanes/ showing as untracked.
 			lanesIgnored, err := board.AddLanesIgnore(s.Root)
+			if err != nil {
+				return fmt.Errorf("the board stays private: %w", err)
+			}
+			unignored, err := board.RemoveIgnore(s.Root)
 			if err != nil {
 				return err
 			}
