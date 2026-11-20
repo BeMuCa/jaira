@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T17:13:56Z
+updated-at: 2026-11-20T17:14:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26453
 claimed-at: 2026-11-20T17:13:45Z
@@ -43,6 +43,7 @@ test-verdict: "pass: go build + go test -count=1 -race ./... RC=0 auf 5db2eee4; 
 hunt-verdict: "pass: bughunt done at 5db2eee4, 0 change, 0 pre-existing (Runde 3; Runden 1-2: 4 change, alle behoben)"
 review-verdict: "All 11 DoD items are met by the diff; settings, roles list, pr-round.sh and the role texts read whole show no defect. Related tests pass (go test ./core/settings ./core/role ./internal/cli). Only uncertainty: the Copilot reviewer request has not been tried against real GitHub."
 review-round: 4
+review-check: "1. cd into a scratch clone of a GitHub repo you own, with an open test PR (number N)  2. run: jaira roles list  -> last line reads 'pr: person - who opens a pull request (the default); reviewer: none'  3. echo agent > .jaira/pr; echo copilot > .jaira/pr-reviewer; jaira roles list  -> 'pr: agent ... (from .jaira/pr, shared with the board); reviewer: copilot'  4. echo Agent > .jaira/pr; jaira roles list  -> back to 'pr: person' (a typo never enables it)  5. bash core/role/builtin/jaira-role-pr/scripts/pr-round.sh request <owner/repo> N copilot  -> prints 'requested: copilot' and Copilot appears as reviewer on the PR (or exit 4 with GitHub's reason if Copilot is not enabled)  6. leave one review comment on the PR, then: pr-round.sh threads <owner/repo> N  -> one JSON line with its id  7. printf 'Fixed in abc123: test' > /tmp/a.txt; pr-round.sh reply <owner/repo> N <id> /tmp/a.txt  -> the thread shows the answer and is resolved; run the same line again -> 'resolved: already', no second answer"
 ---
 
 # Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
