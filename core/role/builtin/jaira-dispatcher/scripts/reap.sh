@@ -143,11 +143,15 @@ merged_head() {
 prmode="$( (cd "$root" && jaira roles list --json 2>/dev/null) | jaira json get pr --default person 2>/dev/null || true)"
 
 # origin's default branch under none: origin/HEAD, which a clone sets, or
-# origin/main or origin/master where it is missing (git init + remote add);
+# origin/main or origin/master where it is missing (git init + remote add) or
+# points at a branch that is gone;
 # nothing when none of them is there.
 default_base() {
   local b
   b="$(git -C "$root" symbolic-ref -q --short refs/remotes/origin/HEAD 2>/dev/null || true)"
+  # origin/HEAD can dangle: the remote renamed its default branch and a
+  # 'fetch --prune' took the old one away. Then fall back as if it were unset.
+  if [ -n "$b" ] && ! git -C "$root" rev-parse --verify -q "refs/remotes/$b" >/dev/null 2>&1; then b=""; fi
   if [ -z "$b" ]; then
     for b in origin/main origin/master ""; do
       [ -n "$b" ] && git -C "$root" rev-parse --verify -q "refs/remotes/$b" >/dev/null 2>&1 && break
