@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T16:59:50Z
+updated-at: 2026-11-20T17:01:02Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-42185
 claimed-at: 2026-11-20T16:42:15Z
@@ -37,7 +37,7 @@ outcome-resolves: "DoD 1-4: pre-process 15-pre-process.md:38, in-progress 20-in-
 review-summary: none
 round: 5
 review-gaps: "none: Zaehlregel ersetzt die Praefixliste, nichts Doppeltes oder Verwaistes"
-test-verdict: "pass: go test -race -count=1 ./... RC=0, go build ok; DoD 1-7 im Baum geprueft; alle vier Lanes liefern ihren --for-lane-Payload; .jaira/lanes byte-gleich mit builtin"
+test-verdict: "pass: go test -race -count=1 ./... RC=0, go build ok; in-progress-Kopie byte-gleich"
 hunt-verdict: "fail: bughunt done at e101fb64, 2 change - die Dritte-Rueckgabe-Regel in in-progress zaehlt Notes-Praefixe (testing: note:, mehrere bughunt: change: pro Runde, review ohne Praefix) und vergisst optimize"
 ---
 
