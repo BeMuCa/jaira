@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T23:09:24Z
+updated-at: 2026-11-20T23:10:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-91898
 claimed-at: 2026-11-20T22:44:37Z
@@ -31,6 +31,7 @@ outcome-what: "Tickets carry blocker-rule and stop-after-fix (set-validated, in 
 outcome-why: "Without a per-ticket blocker threshold and a recorded sender, every edge became a blocker, a person's return counted as a loop return, and every signoff ticket had an Explain that read as 'must change' - so tickets looped and Alex gave everything back."
 outcome-resolves: "DF0YD6 DoD 1-10. Checked: concurrency (two parallel send-backs count one, TestMoveCountsOneReturnForTwoAtOnce), error paths (bad stop-after-fix exits 2, nothing written), unusual input (quotes, umlauts, multiline, CRLF/CR in blocker-rule), permissions n/a (no new file access). go test ./... exit 0, claude plugin test 214 pass."
 review-summary: none
+review-gaps: "folded the back object of show --json and the --for-lane payload into one backJSON (internal/cli/tickets.go); hoisted the review verdict read three times per ticket in the cockpit's snapshotOf (board.ts); left the person-lane predicate repeated in gate.go, web_source.go, snake.go and move.go (pre-existing pattern, critique note); no dead code: namesGap went with the rule it served, sameRound still has its caller"
 ---
 
 # Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt
