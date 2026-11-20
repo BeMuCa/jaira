@@ -46,11 +46,19 @@ where they cost a sentence instead of a round:
   it". Say which class of fault this is and where else in the code it can
   happen. When the context only names the symptom, the class is your job.
 - **The input classes.** List the kinds of input the change must handle, not
-  one example of each — for a page number "3 / 12", "3/12", "Page 3 of 12", a
-  missing one; for an amount "0,05", "2,50", "1.234,56", a negative, an empty
-  field. Go through the four categories the testing lane and the bug hunt check
-  afterwards — concurrency, error paths, unusual input, permissions — and write
-  down each one that applies, or that it does not.
+  one example of each. Start from the ones every change meets, and say for each
+  whether it applies:
+  - empty, and very large
+  - special characters, another encoding, CRLF line endings
+  - paths with spaces, and Windows
+  - two processes writing at the same time
+  - a failure halfway through
+
+  Then the ones of this subject — for a page number "3 / 12", "3/12", "Page 3
+  of 12", a missing one; for an amount "0,05", "2,50", "1.234,56", a negative,
+  an empty field. That covers the four categories the testing lane and the bug
+  hunt check afterwards — concurrency, error paths, unusual input,
+  permissions; add what permissions mean here, or that they do not apply.
 - **An acceptance rule where the change is a heuristic.** A parser, a
   detector, a guess at structure is never right for every input, and without a
   rule saying which mistake is the lesser one the loop never ends. Write it as

@@ -94,7 +94,15 @@ fields are owed: the gate refuses the move out of this lane while either is
 empty. A red suite does not cancel the hunt either: wait for it, so the next
 round fixes both at once.
 
-- **Findings.** A failed pass, or a `change` finding from the hunt. Write the
+**What sends it back is a blocker, and only four things are:** a wrong result,
+data loss, a crash, a security hole. A failed gate or an unmet
+definition-of-done item is a wrong result. Anything smaller of this change —
+a missing guard that breaks nothing yet, a test that covers the example but
+not its neighbour — rides along in the note of a round that goes back anyway,
+and is otherwise a `note:` line for the review; it alone never starts a round.
+
+- **Findings.** A failed pass, or a `change` finding from the hunt that is a
+  blocker. Write the
   field it belongs to as `fail: <what is wrong, in one line>` —
   `test-verdict`, `hunt-verdict`, or both. For a failed pass put the detail
   into a note for the implementing agent that picks it up — what is broken,
@@ -114,8 +122,10 @@ round fixes both at once.
 
   The hunter's `change` notes are already the brief for whoever fixes them;
   do not copy them. The ticket runs the loop again — implementing, critique,
-  optimize, and back here — until you have nothing left to find. The next
-  hunt reads only what changed since this one, so the loop ends.
+  optimize, and back here — until you have nothing left to find. A round after
+  a fix tests the whole suite again, but the hunt and your own passes 2 and 3
+  read only what changed since the last hunt, so the loop ends; then the
+  ticket goes on to review.
 - **Pass.** Both fields start with `pass:`. Say what you ran and what you
   saw, and move the ticket on. Never certify what you did not run: "the tests
   probably cover it" is a finding about the tests, not a pass.

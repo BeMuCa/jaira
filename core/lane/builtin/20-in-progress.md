@@ -55,6 +55,26 @@ the next example of a mistake that was fixed for one example only. So:
   each for the code you changed, and say in your outcome which you checked and
   what you found. The testing lane and the bug hunt check exactly these; a
   defect they find that you could have found yourself is a round lost.
+- **Close the small edges in the same round.** When the ticket comes back,
+  the notes that sent it carry blockers and often smaller edges of this change
+  beside them: a missing case of the class, a one-line guard, a test that
+  covers the example but not its neighbour. Close those too, now — a small
+  edge left as a note reaches the person, who sends the ticket back for it
+  anyway. A fault that was there before this change and lies outside its scope
+  stays a note.
+
+## The third return from the same lane
+
+Count the returns in the ticket's notes: every lane that sends work back here
+leaves a note starting with its name (`critique:`, `testing:`, `bughunt:
+change:`, a review `blocker:`). When this is the third time the same lane sent
+the ticket back, do not start a fourth round. Move it to the human lane with
+the question instead — the third round's findings, and whether the definition
+of done is wrong or the loop reads deeper every round without ending:
+
+```bash
+jaira move <id> --to human --question "testing sent this back three times: <findings>. DoD wrong or loop without end? I would <...>"
+```
 
 ## Progress notes
 
