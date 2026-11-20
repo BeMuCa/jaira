@@ -25,7 +25,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-16T11:54:25Z
-updated-at: 2026-09-16T11:54:25Z
+updated-at: 2026-11-20T16:40:36Z
+updated-by: Alexander Sacharov
 ---
 
 # Der GitLab-Arm der pr-Rolle benutzt ein abgekuendigtes Flag und laesst --head weg
