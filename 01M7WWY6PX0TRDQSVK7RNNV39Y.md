@@ -19,7 +19,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T16:34:22Z
+updated-at: 2026-11-20T16:39:48Z
+updated-by: Alexander Sacharov
 ---
 
 # Ein privates Board steht in .git/info/exclude statt in der .gitignore des Arbeitsbaums
