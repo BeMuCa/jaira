@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -399,24 +400,27 @@ func TestUpdateDecidesByWhatGitIgnores(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	// still: whether share, run after update, finds a rule jaira did not
+	// write still ignoring the board. A symlinked .jaira is unknown instead.
 	sources := []struct {
 		name     string
 		prepare  func(t *testing.T, dir, exclude, xdg string)
 		new, old outcome
+		still    bool
 	}{
-		{"jaira's line in .gitignore", func(t *testing.T, dir, _, _ string) { writeOldIgnoreLine(t, dir) }, moved, nothing},
+		{"jaira's line in .gitignore", func(t *testing.T, dir, _, _ string) { writeOldIgnoreLine(t, dir) }, moved, nothing, false},
 		{"jaira's entry in info/exclude", func(t *testing.T, dir, _, _ string) {
 			if _, err := board.AddIgnore(dir); err != nil {
 				t.Fatal(err)
 			}
-		}, nothing, nothing},
-		{"a person's .jaira/ in info/exclude", func(t *testing.T, _, exclude, _ string) { appendTo(t, exclude, ".jaira/") }, nothing, nothing},
+		}, nothing, nothing, false},
+		{"a person's .jaira/ in info/exclude", func(t *testing.T, _, exclude, _ string) { appendTo(t, exclude, ".jaira/") }, nothing, nothing, true},
 		{"core.excludesFile", func(t *testing.T, dir, _, _ string) {
 			f := filepath.Join(t.TempDir(), "ignore")
 			appendTo(t, f, ".jaira/")
 			gitRun(t, dir, "config", "core.excludesFile", f)
-		}, nothing, nothing},
-		{"global ignore file", func(t *testing.T, _, _, xdg string) { appendTo(t, filepath.Join(xdg, "git", "ignore"), ".jaira/") }, nothing, nothing},
+		}, nothing, nothing, true},
+		{"global ignore file", func(t *testing.T, _, _, xdg string) { appendTo(t, filepath.Join(xdg, "git", "ignore"), ".jaira/") }, nothing, nothing, true},
 		// The person's negation wins over jaira's entry; update does not
 		// write a second one on top. Old git cannot see info/exclude, so it
 		// adds the line to .gitignore — below the negation, which it then
@@ -426,8 +430,8 @@ func TestUpdateDecidesByWhatGitIgnores(t *testing.T) {
 				t.Fatal(err)
 			}
 			appendTo(t, filepath.Join(dir, ".gitignore"), "!/.jaira/")
-		}, nothing, addedGitignore},
-		{"nothing", func(*testing.T, string, string, string) {}, addedExclude, addedGitignore},
+		}, nothing, addedGitignore, false},
+		{"nothing", func(*testing.T, string, string, string) {}, addedExclude, addedGitignore, false},
 	}
 	for _, src := range sources {
 		for _, oldGit := range []bool{false, true} {
@@ -525,8 +529,44 @@ func TestUpdateDecidesByWhatGitIgnores(t *testing.T) {
 							t.Errorf("not added to .gitignore alone: exclude %q, .gitignore %q", exAfter, giAfter)
 						}
 					}
+
+					// share asks the same git: a rule it did not write is
+					// reported, and a git that cannot answer is unknown.
+					out, err = runCLI(t, dir, "share", "--json")
+					if err != nil {
+						t.Fatalf("share --json: %v\n%s", err, out)
+					}
+					wantStill := src.still
+					// Old git gives share no path to info/exclude, so
+					// jaira's own entry there stays — and share says so.
+					if oldGit && src.name == "jaira's entry in info/exclude" {
+						wantStill = true
+					}
+					var got struct {
+						Still   *bool  `json:"still_ignored"`
+						Unknown string `json:"ignore_unknown"`
+					}
+					if err := json.Unmarshal([]byte(out[strings.Index(out, "{"):]), &got); err != nil {
+						t.Fatalf("share --json: %v\n%s", err, out)
+					}
+					switch {
+					case symlink:
+						if got.Still != nil || got.Unknown == "" {
+							t.Errorf("share on a symlinked .jaira: still_ignored %s, ignore_unknown %q; want null and a reason", nullableBool(got.Still), got.Unknown)
+						}
+					case got.Still == nil || *got.Still != wantStill || got.Unknown != "":
+						t.Errorf("share: still_ignored %s, ignore_unknown %q; want %v", nullableBool(got.Still), got.Unknown, wantStill)
+					}
 				})
 			}
 		}
 	}
+}
+
+// nullableBool prints a decoded JSON bool as JSON does, null included.
+func nullableBool(b *bool) string {
+	if b == nil {
+		return "null"
+	}
+	return fmt.Sprint(*b)
 }

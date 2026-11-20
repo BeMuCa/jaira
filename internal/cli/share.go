@@ -103,15 +103,22 @@ You still have to commit. jaira does not commit on your behalf.`,
 			// every board in the repository, stays, and keeps this one out of git.
 			ignoredBy, ignoreErr := board.GitIgnores(s.Root)
 
+			// A git that cannot answer is "unknown", never "not ignored":
+			// still_ignored is null then, and ignore_unknown says why.
+			var stillIgnored any = ignoredBy != ""
+			unknown := ""
+			if ignoreErr != nil {
+				stillIgnored, unknown = nil, ignoreErr.Error()
+			}
 			if g.jsonOut {
 				return emit(w, map[string]any{
 					"shared": true, "unignored": unignored, "lanes_ignored": lanesIgnored,
 					"gitattributes_written": attrs, "merge_driver_installed": installed,
-					"still_ignored": ignoredBy != "",
+					"still_ignored": stillIgnored, "ignore_unknown": unknown,
 				})
 			}
-			if ignoreErr != nil {
-				fmt.Fprintf(cmd.ErrOrStderr(), "jaira: warning: could not ask git whether .jaira/ is still ignored: %v\n", ignoreErr)
+			if unknown != "" {
+				fmt.Fprintf(cmd.ErrOrStderr(), "jaira: warning: git could not say whether .jaira/ is still ignored (%s)\n", unknown)
 			}
 			if ignoredBy != "" {
 				fmt.Fprintf(cmd.ErrOrStderr(), "jaira: warning: a rule jaira did not write still ignores .jaira/ (%s); "+
