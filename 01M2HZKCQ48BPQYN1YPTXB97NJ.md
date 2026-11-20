@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:44:15Z
+updated-at: 2026-11-20T23:44:19Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -48,7 +48,7 @@ claimed-by: DESKTOP-RFTCH11-29927
 claimed-at: 2026-11-20T23:29:25Z
 review-verdict: "Diff erfuellt alle acht DoD-Punkte; keine Blocker gefunden. Tests der beruehrten Pakete gruen (core/board, settings, gitrepo, role, shipped, internal/cli). Die vier Notes sind Randfaelle und Vertrauensgrenzen, keine Defekte des Ausgelieferten."
 review-round: 9
-review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/b && cd /tmp/b && git init -q -b master && git commit -q --allow-empty -m init && /tmp/jaira init  3. /tmp/jaira roles list --json | /tmp/jaira json get pr  -> prints 'person', and CLAUDE.md has no section 'How work arrives on this board'  4. echo none > .jaira/pr && /tmp/jaira roles list --json | /tmp/jaira json get pr  -> prints 'none'  5. /tmp/jaira update && grep -A2 'How work arrives' CLAUDE.md  -> the paragraph '.jaira/pr says none: this project takes no pull requests'  6. echo None > .jaira/pr && /tmp/jaira validate  -> warning that the jaira block in AGENTS.md and CLAUDE.md no longer matches  7. Gate itself (needs a remote): go test ./internal/cli -run 'TestPRGateLetsANoneBoardLandOnlyDoneWork|TestPRGateOnANoneBoardRefusesCommitsNoTicketOwns|TestPRGateOnANoneBoardNeverAsksForACreateLine' -v  -> all PASS"
+review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/solo && cd /tmp/solo && git init -q && /tmp/jaira init  3. printf 'none\\n' > .jaira/pr && /tmp/jaira roles list  -> pr zeigt 'none'  4. /tmp/jaira validate  -> Warnung 'no longer matches this board's lanes or its .jaira/pr'  5. /tmp/jaira update && grep -A3 'How work arrives' CLAUDE.md  -> Absatz 'takes no pull requests'  6. rm .jaira/pr && /tmp/jaira update && grep -c 'How work arrives' CLAUDE.md  -> 0  7. Gate-Logik: go test ./internal/cli -run 'TestPRGate.*None' -v  -> alle PASS (done-only, unbenannte Commits/Merges halten, kein create line)"
 ---
 
 # Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig
