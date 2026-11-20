@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T17:53:30Z
+updated-at: 2026-11-20T17:53:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80126
 claimed-at: 2026-11-20T17:38:47Z
@@ -36,7 +36,10 @@ outcome-why: "Review- und bughunt-Schleifen liefen 10-24 Runden, weil jede Runde
 outcome-resolves: "DoD 1-7: 15-pre-process.md:38, 20-in-progress.md:29 und :66-97, 27-testing.md:97, bughunt SKILL.md:104, 40-review.md:57, shipped.sha256, core/release/notes/TW5FE2.md"
 review-summary: "Only prompts change, no Go code. pre-process now writes the class of fault, the input classes (empty/huge, encoding/CRLF, spaces/Windows, two writers, failure halfway, plus subject-specific ones) and, for a heuristic, an acceptance rule into the DoD via 'jaira dod --add'. in-progress gets 'fix the class, not the example': name the class itself when no plan ran, fix the cause, one parametrised test over the class, grep and fix sibling places, self-check the four categories and report them in the outcome, close small edges from the returning notes in the same round. in-progress also keeps its own 'back: <lane>, round N' line per returned round, reads the sender off the newest note (skipping cockpit: and steal lines; 'Given back from'/'decision:' = person, resets the count) and on the third return from one lane moves to human with a question instead of round 4. testing and review send back only for four blocker kinds (wrong result, data loss, crash, security hole); smaller edges ride along or stay a 'testing: note:'; findings name class + example + class fix; a returned finding passes only when a neighbour of the example passes too; follow-up hunt and passes 2-3 read only the diff since the last hunt. bughunt findings name class and example. Board copies in .jaira/lanes are byte-identical to core/lane/builtin; shipped.sha256 carries every intermediate hash; release note TW5FE2.md has six one-line entries."
 round: 9
-review-gaps: "none - one sentence of prompt text; left the unreleased intermediate 20-in-progress hashes in shipped.sha256: harmless, a branch install of them stays recognised"
+review-gaps: |-
+  note: DoD 6 says a follow-up round tests and hunts only the diff since the last hunt; 27-testing.md runs the whole suite again and restricts only the hunt and passes 2-3 - sensible (regressions), but a deviation from the literal DoD wording the person should confirm
+  note: in-progress reads the sender off the newest note, and 'anything else' is the review - a review that moves back without writing its note (40-review.md asks for one but nothing enforces it) leaves testing's 'testing: note:' newest and the return is counted for testing; class: sender inferred from a note nobody is forced to write; fix: have 40-review.md prefix its return note with 'review:' and list it in 20-in-progress.md
+  note: pre-existing: core/shipped/shipped.sha256 - versions that went out in a release tag can be missing from the hand-merged manifest (bughunt finding of 16:50), outside this ticket
 test-verdict: "pass: go build ./... and go test -race -count=1 ./... RC=0 at 9fa8ce3c; DoD 1-7 proofs opened in the tree; in-progress twins byte-equal, manifest 0b70615e = sha256 at HEAD; change writes nothing (prompt text only)"
 hunt-verdict: "pass: bughunt done at 9fa8ce3c, 0 change, 0 pre-existing (earlier steal-note finding fixed in 9fa8ce3c)"
 review-verdict: "All 7 DoD items are in the diff; no blocker. The prompts are consistent with each other and with jaira-worker's own three-returns stop. The one known weakness (return origin) is a transition until move records the from-lane, as the teamlead decided. go test ./core/shipped ./core/lane ./core/role/... green."
