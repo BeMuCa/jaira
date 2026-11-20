@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:57:45Z
+updated-at: 2026-11-20T17:58:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85657
 claimed-at: 2026-11-20T17:52:47Z
@@ -59,7 +59,7 @@ review-check: "1. cd $(mktemp -d) && git init -q && git commit -q --allow-empty 
 - [x] Signoff-Rueckgabe: dropEntry nimmt nur die Leerzeile direkt nach dem Eintrag; share entfernt aus info/exclude nur jairas verankerte Zeile, warnt bei einer handgeschriebenen und meldet still_ignored; share --undo sagt, dass Teamkollegen jaira update laufen lassen (Test)
   proof: core/board/exclude_test.go TestDropEntryTakesOnlyTheBlankLineThatFollowsTheEntry, TestRemoveIgnoreLeavesAnUnanchoredLineAPersonWrote; internal/cli/privateexclude_test.go TestShareLeavesAPersonsUnanchoredExcludeLineAndSaysSo, TestShareOfABoardInASubdirectorySeesAnUnanchoredExcludeLine
 - [x] jaira update auf git < 2.31 (kein info/exclude-Ort) meldet keine Verschiebung und laesst .gitignore stehen (Test)
-  proof: internal/cli/privateexclude_test.go TestUpdateOnGitWithoutPathFormatLeavesGitignoreAlone (faellt auf dem Code ohne den Guard in update.go moveIgnore)
+  proof: internal/cli/privateexclude_test.go TestUpdateOnGitWithoutPathFormatLeavesGitignoreAlone (Zeile bleibt; fehlender Ausschluss landet in .gitignore wie bei init)
 
 ## Options
 
