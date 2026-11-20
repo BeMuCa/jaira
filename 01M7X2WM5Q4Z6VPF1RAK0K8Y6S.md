@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T23:01:48Z
+updated-at: 2026-11-20T23:02:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -77,3 +77,4 @@ hunt-verdict: "fail: --check haengt bei unlesbarem Blob noch den Hash der leeren
 - **2026-11-20 23:01 · Alexander Sacharov** — bughunt: change: scripts/shipped-history.sh:75-79 (--check) - the 9c785040 guard only holds in generate mode: in --check, hashed runs inside missing=$(...), and bash does not inherit set -e into a command substitution, so a blob git cannot read is still hashed as the empty file. The check exits 1, but it prints 'append: e3b0c44298fc...b855  <path>' as the missing version. Anyone who appends that line gets a manifest holding the empty-file hash, and on that clone the check then passes. Fix: shopt -s inherit_errexit, or stop on cat-file failure explicitly; the new TestGenerateFailsOnAnUnreadableBlob covers generate only. ran: fixture repo with tag v0.1.0, removed the loose blob, scripts/shipped-history.sh --check (exit 1, 'fatal: bad file', suggests the e3b0c4... line); generate mode exits 128
 - **2026-11-20 23:01 · Alexander Sacharov** — bughunt: done at 9c785040 - 1 finding (1 change, 0 pre-existing) in 2 modules, follow-up hunt since 5a091b69; concurrency, error paths, input, permissions checked; files: .gitattributes .github/workflows/ci.yaml .github/workflows/release-notes.yaml core/release/notes/0K8Y6S.md core/role/shipped_test.go core/role/testdata/jaira-cockpit-hooks-board-v0.5.2.ts core/shipped/history_test.go core/shipped/shipped.sha256 scripts/shipped-history.sh
 - **2026-11-20 23:01 · Alexander Sacharov** — Stand 00:01: testing Runde 2, test-verdict pass, Bughunt Runde 2 (nur Diff seit 5a091b69) laeuft. Branch gepusht bis 9c785040. Danach: hunt-verdict, dann review (fresh, neuer Agent).
+- **2026-11-20 23:02 · Alexander Sacharov** — testing Runde 2 Fund (change) behoben: hashed() bricht mit '|| exit 1' ab, weil --check es in $(...) ohne set -e laufen laesst; inherit_errexit verworfen, weil es den ganzen Rest des Skripts mit aendert. Test TestUnreadableBlobStopsTheScript deckt Generator und --check (rot ohne || exit 1). Geschwister: listing=$(...) hatte schon || exit 1.
