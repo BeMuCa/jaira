@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:52:07Z
+updated-at: 2026-11-20T19:52:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-36878
 claimed-at: 2026-11-20T19:50:05Z
@@ -37,8 +37,8 @@ outcome-resolves: "DoD 4/6: core/release/notes/TW5FE2.md:7-8, 27-testing.md:132-
 review-summary: "none"
 round: 14
 review-gaps: none
-test-verdict: "pass: Folgerunde seit 10b38a7a: go test -count=1 ./core/lane/... ./core/shipped/... RC=0, go test ./core/role -run Shipped RC=0; Zwilling in-progress byte-gleich, neuer Manifest-Hash = sha256 HEAD; Neustart-Regel liest round aus jaira show, back: person/unknown tragen round; Vorrunde: pre-process->human ohne Plan auf Scratch-Board refused, mit Plan-Schritt nicht; nur Prompt-Text, kein Schreibpfad"
-hunt-verdict: "pass: bughunt done at 08c670e2 - 0 findings, follow-up since 10b38a7a"
+test-verdict: "fail: suite green (RC=0, -race core/shipped lane release role), twins equal, notes 10 single lines; but bughunt change: cat-file -e passes after rebase"
+hunt-verdict: "fail: 1 change - rebase fallback check passes on a rebased-away commit"
 review-verdict: "Alle sieben DoD-Punkte sind im Diff erfuellt (geprueft gegen 15/20/27/40-*.md und den Bughunt-Skill); Behauptungen des Prompts gegen den Code geprueft: round steigt bei jedem Zurueckschicken (core/move/move.go:133), Cockpit schreibt 'Given back from <lane>:' und 'decision:' (register.tsx:822,900), Steal-Zeile aus refsync.go:1433, 'jaira dod --plan --add' existiert. go test ./core/lane/... ./core/shipped/... ./core/role/... gruen. Kein Blocker; drei kleine notes. Die Wirkung selbst (weniger Schleifenrunden) laesst sich nur an kuenftigen Tickets messen."
 review-round: 13
 review-check: |-
