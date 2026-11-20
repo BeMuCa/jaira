@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T20:01:22Z
+updated-at: 2026-11-20T20:03:13Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-18659
 claimed-at: 2026-11-20T19:49:16Z
@@ -34,7 +34,7 @@ outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestand
 review-summary: "critique 15 (a3137857): nothing - account check moved before the gate, one pushurl entry for tip and account"
 round: 16
 review-gaps: "optimize (a3137857): nothing - the URL parse is plain parameter expansion, no helper in the script does it already"
-test-verdict: "pass: suite -race -count=1 RC=0 at dfb23369; DoD 20/21 tests run"
+test-verdict: "pass: suite -race -count=1 RC=0 at a3137857; DoD 20 (TestPRGateReadsTheBoardFilesFromTheBase) and 21 (TestPROpenNamesTheHeadItChecked) run green; live: branch binary 'roles pr-gate origin/master' in this repo exits 3 naming origin/master (no .jaira/pr there); failure paths: 9 account-less URLs exit 3 before the gate, nothing opened; open writes only gh pr create, two-writer cases unchanged"
 hunt-verdict: "fail: bughunt done at dfb23369 - 2 change in pr-round.sh open (account read from URLs without one; account from last pushurl, tip from first)"
 review-verdict: "Diff erfuellt alle 19 DoD-Punkte; 13 Commits, Liste vollstaendig. Gate, Settings und pr-round.sh ganz gelesen entlang Nebenlaeufigkeit (Dedupe bei zwei Sessions korrekt fuer jede Reihenfolge, loescht nur die eigene ID), Fehlerpfade (Login-Verlust -> 3, Teilschritte bei reply wiederholbar), ungewoehnliche Eingaben (Typo/CRLF -> Default, Shell-Zeichen im Reviewer gefiltert, Base mit '-' abgelehnt) und Grenzen (Gate faellt bei Zweifel zu). Kein Blocker; sechs Notes, keine davon bricht ein Kriterium. Betroffene Tests gruen (core/role, core/settings, internal/cli). Nicht geprueft: echtes GitHub (alles gegen ein gemocktes gh)."
 review-round: 13
