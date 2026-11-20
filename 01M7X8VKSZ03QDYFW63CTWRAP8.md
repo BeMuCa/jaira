@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:37:21Z
+updated-at: 2026-11-20T22:37:25Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
@@ -34,7 +34,7 @@ outcome-why: "signoff-Rueckgabe: Branches heissen nicht immer feat/<id>; bughunt
 outcome-resolves: "Rueckgabe aus signoff 22:27 (🟡 Branchname) und bughunt 22:32"
 review-summary: "none"
 round: 7
-review-gaps: "nothing removed: the change is one lookup block plus a pointer in the teamlead; left the intermediate shipped.sha256 lines (already noted by review 22:04)"
+review-gaps: "none: lookup is one loop, the teamlead only points at it"
 test-verdict: "pass: go build ./... and go test ./core/... green (RC=0); DoD 1-4 unchanged, branch lookup run: feat/twrap8 and fix/twrap8-x found, feat/twrap8x not, unknown handle gives empty branch and git rev-parse exits non-zero -> '?'; the change writes nothing"
 hunt-verdict: "change: 1 finding at a1b61158 - local branch taken over its remote even when behind; fixed in this round"
 question: ""
