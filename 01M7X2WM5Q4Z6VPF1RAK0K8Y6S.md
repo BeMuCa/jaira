@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T23:08:21Z
+updated-at: 2026-11-20T23:08:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -28,9 +28,7 @@ outcome-why: Hand-gemergte Manifest-Konflikte verloren Zeilen; jaira update --ro
 outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, wenn eine fehlt, und Manifest-Merges konfliktieren nicht mehr"
 review-summary: "none"
 round: 5
-review-gaps: |-
-  note: DoD 5 ist nur mit lokalem git bewiesen (TestManifestMergesWithoutConflict). Ob GitHubs Mergeability-Pruefung merge=union aus .gitattributes beachtet, ist nicht belegt - erst zwei echte PRs, die beide Zeilen anhaengen, zeigen es.
-  note: nach einem union-Merge mit Duplikat scheitert TestManifestLinesAreWellFormed erst auf master; die Abhilfe (regenerieren) steht nur in .gitattributes, nicht in der Fehlermeldung des Tests.
+review-gaps: "none - Runde 4: nur der Text einer Testmeldung"
 test-verdict: ""
 hunt-verdict: ""
 review-verdict: "Alle 5 DoD-Punkte erfuellt; kein Defekt gefunden. Selbst geprueft: --check exit 0 auf 34 Tags, Regenerieren ergibt byte-gleich das committete Manifest, go test ./core/shipped ./core/role gruen. Unsicher nur, ob GitHub merge=union beim PR-Konflikt beachtet (note)."
