@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-20T22:58:54Z
+updated-at: 2026-11-20T22:58:57Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -73,3 +73,4 @@ round: 3
 - **2026-11-20 22:45 · Alexander Sacharov** — decision: open decisions none. Finding at start (20.11.): part 1 is already shipped - core/board/announce.go:101 names --proof (commit 2143e9ad). Part 3 is already shipped too - 'jaira update' rewrites the block via board.AnnounceInAgentFiles (internal/cli/update.go:257). The old separate gitignore caveat (was line 216) is now folded into the 'every commit names the ticket id' point. What is still missing: the 'ticket rides with the code' point and the 'commit it' sentence of 'commits nothing' read as if .jaira/ were always in git; on an unshared board (.git/info/exclude since jaira init) there is no ticket file to git add. Fix: one sentence on the rides-with-code point saying this and the next point assume a shared board, and what to do instead.
 - **2026-11-20 22:50 · Alexander Sacharov** — critique: sibling site core/role/jaira/SKILL.md:317 has the same rides-with-code rule without the unshared-board caveat; mirror the sentence there. Placement in announce.go (on the rides-with-code point, not on the commit-id point that already names the unshared board) stands: the caveat belongs where the rule is that it qualifies.
 - **2026-11-20 22:54 · Alexander Sacharov** — critique round 2: two more sibling sites, docs/AGENTS.md:68 and jaira-role-pr SKILL.md:49 (point 2 would flag a missing ticket file on an unshared board). Added there too. grep 'rides with the code' over core/ and docs/ finds no further site after this.
+- **2026-11-20 22:58 · Alexander Sacharov** — critique round 3: nothing left that needs a return. Left standing on purpose: the ready-to-paste commit lines in jaira-worker SKILL.md:103 and jaira-role-lane SKILL.md:86/288 still name .jaira/tickets/<ticket>.md; on an unshared board git refuses that path as ignored, and the agent already has the caveat from the block and the jaira role. Not a blocker under interim rule 4 (no wrong result, no data loss); a third critique return would trip the loop brake for a cosmetic line.
