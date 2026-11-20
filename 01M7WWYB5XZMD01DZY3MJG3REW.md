@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:26:40Z
+updated-at: 2026-11-20T19:29:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99114
 claimed-at: 2026-11-20T19:19:18Z
@@ -78,7 +78,7 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-jg3rew && go build -o 
 - [x] Bei pr-when=signoff verlangt die Rolle vor done eine fertige PR-Runde: pr-round.sh settled -> Exit 3 mit offenen Threads/ausstehenden Reviews, sonst 0
   proof: core/role/builtin/jaira-role-pr/scripts/pr-round.sh settled (open threads, requested reviewers, latest review CHANGES_REQUESTED); core/role/builtin/jaira-role-pr/SKILL.md:70 done waits for it, :427 settled in the round (GitLab blocking_discussions_resolved); core/role/pr_round_test.go TestPRRoundSettledOnlyWhenNothingIsOpen
 - [x] pr-round.sh open oeffnet nur, wenn der Checkout der gepushte Tip seines Branches ist (sonst Exit 3 vor dem Gate)
-  proof: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:171-187; core/role/pr_round_test.go TestPROpenOnlyFromThePushedTip (ahead, behind, never pushed, detached), TestPROpenRunsTheGateFirst
+  proof: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:176-198 (push target from config, also single-branch clones); core/role/pr_round_test.go TestPROpenOnlyFromThePushedTip (ahead, behind, single-branch clone, never pushed, detached)
 - [x] pr-round.sh usage zu open nennt done oder signoff laut .jaira/pr-when
   proof: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:18 usage open
 - [x] Ein mitten im Lauf abgelaufener gh-Login endet in jedem Befehl mit Exit 3, nie mit dem Exit 4 'Reviewer abgelehnt'
