@@ -388,4 +388,14 @@ func TestUpdateOnGitWithoutPathFormatLeavesGitignoreAlone(t *testing.T) {
 	if !board.InGitignore(dir) {
 		t.Errorf("update took the line out of .gitignore on old git: %q", readIgnore(t, dir))
 	}
+
+	// A teammate who pulled the commit that took the line out: nothing
+	// excludes the board, and on old git update puts it where init would.
+	if _, err := board.RemoveIgnore(dir); err != nil {
+		t.Fatal(err)
+	}
+	out, err := runUpdate(t, dir)
+	if err != nil || !strings.Contains(out, "Excluded this private board in .gitignore") || !board.InGitignore(dir) {
+		t.Errorf("update on old git with no exclude: %v, InGitignore = %v\n%s", err, board.InGitignore(dir), out)
+	}
 }
