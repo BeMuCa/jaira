@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:33:03Z
+updated-at: 2026-11-20T23:33:07Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -134,3 +134,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-20 23:25 · Alexander Sacharov** — bughunt: done at 282565fb - 0 findings in 2 modules, follow-up hunt since 59049e2d (diff of core/gitrepo/named.go, internal/cli/prgate_test.go; no new files); concurrency, error paths, input, permissions checked; files: core/board/announce.go core/board/arrival.go core/board/arrival_test.go core/gitrepo/named.go core/release/notes/XB97NJ.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-dispatcher/scripts/reap.sh core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/reap_test.go core/settings/settings.go core/settings/settings_test.go core/shipped/shipped.sha256 internal/cli/prgate_test.go internal/cli/roles.go
 - **2026-11-20 23:29 · Alexander Sacharov** — review (fresh context): keine Blocker, 8/8 DoD erfuellt; 3 notes in review-gaps (known limit F2, validate-Meldung nennt Lanes statt .jaira/pr, reap.sh misst nur an origin/HEAD). Tests + Handprobe am Scratch-Board gruen.
 - **2026-11-20 23:30 · Alexander Sacharov** — Aus signoff zurueck nach in-progress (Interim-Regel 5: kleine Raender aus review-gaps in derselben Runde schliessen): (a) validate-Warnung nennt nur die Lanes als Ursache, auch wenn .jaira/pr sich geaendert hat -> 'lanes or .jaira/pr'; (b) reap.sh unter none misst nur an origin/HEAD -> Rueckfall auf origin/main, origin/master, und eine eigene waiting-Meldung, wenn keiner da ist (git remote set-head origin --auto).
+- **2026-11-20 23:33 · Alexander Sacharov** — critique (Runde 7): zwei kleine Raender aus review geschlossen, beide eng (eine Meldung, ein Rueckfall in reap.sh) - nichts zu sagen.
