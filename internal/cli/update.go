@@ -357,7 +357,9 @@ func moveIgnore(s *ticket.Store, dry bool) (ignoreMove, error) {
 		_, err := board.MoveIgnore(s.Root)
 		return m, err
 	}
-	if board.Ignored(s.Root) {
+	// Asked of git: on git before 2.31 jaira cannot name info/exclude, and an
+	// entry there, or any rule jaira did not write, keeps the board out too.
+	if board.IgnoredBy(s.Root) != "" {
 		return m, nil
 	}
 	m.added = true

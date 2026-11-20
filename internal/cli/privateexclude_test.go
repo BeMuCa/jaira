@@ -389,12 +389,27 @@ func TestUpdateOnGitWithoutPathFormatLeavesGitignoreAlone(t *testing.T) {
 		t.Errorf("update took the line out of .gitignore on old git: %q", readIgnore(t, dir))
 	}
 
-	// A teammate who pulled the commit that took the line out: nothing
-	// excludes the board, and on old git update puts it where init would.
+	// Excluded in info/exclude, which old git gives jaira no path to: update
+	// asks git, and writes nothing.
 	if _, err := board.RemoveIgnore(dir); err != nil {
 		t.Fatal(err)
 	}
+	exclude := filepath.Join(dir, ".git", "info", "exclude")
+	before, _ := os.ReadFile(exclude)
+	if err := os.WriteFile(exclude, append(before, []byte("/.jaira/\n")...), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	out, err := runUpdate(t, dir)
+	if err != nil || strings.Contains(out, "this private board in") || board.InGitignore(dir) {
+		t.Errorf("update on old git with the board in info/exclude: %v, InGitignore = %v\n%s", err, board.InGitignore(dir), out)
+	}
+	if err := os.WriteFile(exclude, before, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// A teammate who pulled the commit that took the line out: nothing
+	// excludes the board, and on old git update puts it where init would.
+	out, err = runUpdate(t, dir)
 	if err != nil || !strings.Contains(out, "Excluded this private board in .gitignore") || !board.InGitignore(dir) {
 		t.Errorf("update on old git with no exclude: %v, InGitignore = %v\n%s", err, board.InGitignore(dir), out)
 	}
