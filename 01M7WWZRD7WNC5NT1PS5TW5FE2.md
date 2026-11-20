@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T16:58:27Z
+updated-at: 2026-11-20T16:58:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-42185
 claimed-at: 2026-11-20T16:42:15Z
@@ -36,7 +36,7 @@ outcome-why: "Review- und bughunt-Schleifen liefen 10-24 Runden, weil jede Runde
 outcome-resolves: "DoD 1-4: pre-process 15-pre-process.md:38, in-progress 20-in-progress.md:29, bughunt SKILL.md:104 und testing 27-testing.md:102, eingebettet mit shipped.sha256 und core/release/notes/TW5FE2.md"
 review-summary: none
 round: 5
-review-gaps: "none: nur Prompt-Text; die vier Kategorien und die Blocker-Definition stehen bewusst in jeder Lane, die sie anwendet, weil jede nur ihren eigenen Prompt liest; nichts verwaist"
+review-gaps: "none: Zaehlregel ersetzt die Praefixliste, nichts Doppeltes oder Verwaistes"
 test-verdict: "pass: go test -race -count=1 ./... RC=0, go build ok; DoD 1-7 im Baum geprueft; alle vier Lanes liefern ihren --for-lane-Payload; .jaira/lanes byte-gleich mit builtin"
 hunt-verdict: "fail: bughunt done at e101fb64, 2 change - die Dritte-Rueckgabe-Regel in in-progress zaehlt Notes-Praefixe (testing: note:, mehrere bughunt: change: pro Runde, review ohne Praefix) und vergisst optimize"
 ---
