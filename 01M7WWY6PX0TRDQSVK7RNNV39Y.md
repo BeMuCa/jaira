@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T19:34:47Z
+updated-at: 2026-11-20T19:59:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96533
 claimed-at: 2026-11-20T19:19:14Z
@@ -170,6 +170,11 @@ Empfehlung: 2 - der Lesefehler-Fall ist praktisch kaum erreichbar und war schon 
 - **2026-11-20 19:29 · Alexander Sacharov** — bughunt: done at 7e69b451 - 0 findings in 2 files, follow-up hunt (diff since dde1cf1c: internal/cli/share.go internal/cli/privateexclude_test.go; checked board.Ignored on an unreadable .gitignore falls back to info/exclude and only ever under-claims privacy; ran: go test -run TestShareWithAnUnreadableGitignore -count=3); concurrency, error paths, input, permissions checked; files: README.md core/board/announce.go core/board/board.go core/board/exclude_test.go core/board/gitignore.go core/release/notes/NNV39Y.md core/ticket/store.go docs/COMMANDS.md internal/cli/privateexclude_test.go internal/cli/share.go internal/cli/sharestate_test.go internal/cli/tickets.go internal/cli/update.go
 - **2026-11-20 19:32 · Alexander Sacharov** — review (Runde 12, frischer Kontext): keine Blocker. Tests gruen; init/Worktree/share/undo/update-Migration/Teamkollege/Unterverzeichnis von Hand mit gebautem Binary nachgestellt. Vier Notes in review-gaps (Extra-git-Prozess pro Befehl bei geteilten Boards, absoluter Pfad bei Unterverzeichnis-Board, Teams mit absichtlicher .gitignore-Zeile, liegengebliebene Sperrdatei).
 - **2026-11-20 19:34 · Alexander Sacharov** — explain: Ревью не нашло дефектов: приватная доска теперь исключается через .git/info/exclude, а не через отслеживаемую .gitignore; все 10 пунктов DoD выполнены, тесты зелёные. Осталось четыре некритичных замечания (лишний git-процесс на команду у общих досок, длинный абсолютный путь для доски в подкаталоге, перенос строки из .gitignore у команд, которые держат /.jaira/ там намеренно, залежавшийся lock-файл после сбоя).
+Warum: Приватная доска больше не пачкает общую .gitignore и git status, а блокеров у ревью нет. Замечания про удобство и скорость, не про корректность.
+1) Принять тикет как есть, замечания не чинить [accept]
+2) Вернуть в работу: кэш Ignored на процесс, чтобы убрать лишний git-процесс (заметно на Windows) [give back]
+Empfehlung: 1 - блокеров нет, всё проверено руками, а кэш можно сделать отдельно, если Windows правда тормозит.
+- **2026-11-20 19:59 · Alexander Sacharov** — explain: Ревью не нашло дефектов: приватная доска теперь исключается через .git/info/exclude, а не через отслеживаемую .gitignore; все 10 пунктов DoD выполнены, тесты зелёные. Осталось четыре некритичных замечания (лишний git-процесс на команду у общих досок, длинный абсолютный путь для доски в подкаталоге, перенос строки из .gitignore у команд, которые держат /.jaira/ там намеренно, залежавшийся lock-файл после сбоя).
 Warum: Приватная доска больше не пачкает общую .gitignore и git status, а блокеров у ревью нет. Замечания про удобство и скорость, не про корректность.
 1) Принять тикет как есть, замечания не чинить [accept]
 2) Вернуть в работу: кэш Ignored на процесс, чтобы убрать лишний git-процесс (заметно на Windows) [give back]
