@@ -347,3 +347,16 @@ func TestPRGateLetsANoneBoardLandOnlyDoneWork(t *testing.T) {
 		t.Fatalf("none --json: %v\n%s", err, out)
 	}
 }
+
+// Under none there is no create line to hand back: every refusal tells the
+// agent to push the branch and stop instead (XB97NJ, found in testing).
+func TestPRGateOnANoneBoardNeverAsksForACreateLine(t *testing.T) {
+	dir, _, commit := prGateFixture(t)
+	setPR(t, dir, "none")
+	commit("chore: no ticket")
+	_, err := runCLI(t, dir, "roles", "pr-gate", "master")
+	if exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "push the branch and stop") ||
+		strings.Contains(err.Error(), "create line") {
+		t.Fatalf("none, no ticket named: exit %d, %v", exitCode(err), err)
+	}
+}

@@ -183,9 +183,15 @@ pr_person, no_ticket, no_signoff_lane, unreadable or pending.`,
 				return fail(ExitValidation, "pr_person",
 					"pr-gate: .jaira/pr in %s says neither agent nor none — a person opens the pull request; hand the create line back", args[0])
 			}
+			// What the agent does on a no: hand the create line back where a
+			// person opens pull requests; under none there is no such line.
+			then := "hand the create line back"
+			if pr == settings.PRNone {
+				then = "push the branch and stop"
+			}
 			if len(named) == 0 {
 				return fail(ExitValidation, "no_ticket",
-					"pr-gate: no commit in %s..HEAD names a ticket — nobody accepted anything on this branch; hand the create line back", args[0])
+					"pr-gate: no commit in %s..HEAD names a ticket — nobody accepted anything on this branch; %s", args[0], then)
 			}
 			// A ticket file that cannot be read is not a ticket filed away:
 			// it would drop out of the list and look past done. A problem
@@ -198,7 +204,7 @@ pr_person, no_ticket, no_signoff_lane, unreadable or pending.`,
 					for _, h := range named {
 						if strings.Contains(p, h) {
 							return fail(ExitValidation, "unreadable",
-								"pr-gate: %s cannot be read, so whether it is accepted cannot be told — %s; fix it, or hand the create line back", h, p)
+								"pr-gate: %s cannot be read, so whether it is accepted cannot be told — %s; fix it, or %s", h, p, then)
 						}
 					}
 				}
@@ -249,7 +255,6 @@ pr_person, no_ticket, no_signoff_lane, unreadable or pending.`,
 				}
 			}
 			if len(pending) > 0 {
-				then := "hand the create line back"
 				if pr == settings.PRNone {
 					then = "push the branch and stop; it lands once they are"
 				}
