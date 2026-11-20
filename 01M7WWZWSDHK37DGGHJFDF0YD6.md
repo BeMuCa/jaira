@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T22:44:26Z
+updated-at: 2026-11-20T22:44:28Z
 updated-by: Alexander Sacharov
 ---
 
@@ -63,3 +63,4 @@ updated-by: Alexander Sacharov
 - eine Tabelle, eine Zeile je Note: | # | was (ein Satz, Alltagssprache) | Einordnung |; Einordnung ist eine von: bekannte Grenze (nicht loesbar, dokumentiert), kleiner Rand (formal ok, eine Runde ~10 min), nicht aus diesem Ticket (wo es erledigt wird), Blocker
 - dann genau eine Empfehlung mit Grund in einem Satz, und welche Note sie betrifft
 - kein 'Warum: why it matters' pro Note, keine feste Reihenfolge give back zuerst; der neutrale Fall (nur bekannte Grenzen / fremde Notes) sagt ausdruecklich 'kann so angenommen werden'
+- **2026-11-20 22:44 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock
