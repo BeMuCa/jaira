@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T22:59:53Z
+updated-at: 2026-11-20T23:02:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -27,8 +27,8 @@ outcome-what: "Manifest neu erzeugt (8 Tag-Versionen fehlten, u.a. cockpit board
 outcome-why: Hand-gemergte Manifest-Konflikte verloren Zeilen; jaira update --roles hielt dann eine unberuehrte Installation fuer handgeaendert und uebersprang sie still
 outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, wenn eine fehlt, und Manifest-Merges konfliktieren nicht mehr"
 review-summary: none
-round: 3
-review-gaps: "none - geprueft: Git-Hilfen in history_test.go folgen dem Muster jedes Pakets (eigener run-Helfer wie core/refsync/refsync_test.go:284), kein gemeinsamer Helfer vorhanden; hashed/installed haben je zwei Aufrufer im Skript; olderAcceptance wird von TestInstallDryRunWritesNothing weiter gebraucht"
+round: 4
+review-gaps: "none - Runde 2 aenderte nur pipefail und eine Zuweisung in hashed(); nichts zu kuerzen"
 test-verdict: ""
 hunt-verdict: ""
 ---
@@ -74,3 +74,7 @@ hunt-verdict: ""
 - **2026-11-20 22:58 · Alexander Sacharov** — bughunt: pre-existing: scripts/shipped-history.sh:46 (and :97-103) - in generate mode an unreadable blob (partial clone offline, damaged object) is hashed as the empty file and the script still exits 0, since nothing sets pipefail and the failure sits inside $(...): the real version's line is dropped from the redirected manifest and e3b0c442...  <path> appears in its place, so an empty file at that path counts as shipped. --check fails closed on it, because the wrong hash shows up as missing, so only untagged versions slip through. blame: the same cat-file|sha256sum line is in 61543e22^ (moved into hashed() by the change, behaviour unchanged); ran: hashed fed a nonexistent blob id -> 'fatal: bad file' on stderr, e3b0c442... line on stdout, exit=0
 - **2026-11-20 22:58 · Alexander Sacharov** — bughunt: done at 5a091b69 - 1 finding (0 change, 1 pre-existing) in 6 modules, first hunt; concurrency, error paths, input, permissions checked; files: .gitattributes .github/workflows/ci.yaml .github/workflows/release-notes.yaml core/release/notes/0K8Y6S.md core/role/shipped_test.go core/role/testdata/jaira-cockpit-hooks-board-v0.5.2.ts core/shipped/history_test.go core/shipped/shipped.sha256 scripts/shipped-history.sh
 - **2026-11-20 22:59 · Alexander Sacharov** — testing Runde 1: bughunt-Fund pre-existing (unlesbarer Blob -> Hash der leeren Datei, exit 0) gehoert zum Ziel des Tickets (Manifest korrekt) -> nach Interim-Regel 5 in dieser Runde behoben: set -o pipefail + Hash in eigener Zuweisung, Test TestGenerateFailsOnAnUnreadableBlob (rot ohne pipefail). Fork-Tags: origin (sashasoft90) hat 0 v*-Tags, aber dort laufen keine Actions (gh run list leer); PRs laufen im Upstream-Kontext, der die Tags hat.
+- **2026-11-20 23:01 · Alexander Sacharov** — bughunt: change: scripts/shipped-history.sh:75-79 (--check) - the 9c785040 guard only holds in generate mode: in --check, hashed runs inside missing=$(...), and bash does not inherit set -e into a command substitution, so a blob git cannot read is still hashed as the empty file. The check exits 1, but it prints 'append: e3b0c44298fc...b855  <path>' as the missing version. Anyone who appends that line gets a manifest holding the empty-file hash, and on that clone the check then passes. Fix: shopt -s inherit_errexit, or stop on cat-file failure explicitly; the new TestGenerateFailsOnAnUnreadableBlob covers generate only. ran: fixture repo with tag v0.1.0, removed the loose blob, scripts/shipped-history.sh --check (exit 1, 'fatal: bad file', suggests the e3b0c4... line); generate mode exits 128
+- **2026-11-20 23:01 · Alexander Sacharov** — bughunt: done at 9c785040 - 1 finding (1 change, 0 pre-existing) in 2 modules, follow-up hunt since 5a091b69; concurrency, error paths, input, permissions checked; files: .gitattributes .github/workflows/ci.yaml .github/workflows/release-notes.yaml core/release/notes/0K8Y6S.md core/role/shipped_test.go core/role/testdata/jaira-cockpit-hooks-board-v0.5.2.ts core/shipped/history_test.go core/shipped/shipped.sha256 scripts/shipped-history.sh
+- **2026-11-20 23:01 · Alexander Sacharov** — Stand 00:01: testing Runde 2, test-verdict pass, Bughunt Runde 2 (nur Diff seit 5a091b69) laeuft. Branch gepusht bis 9c785040. Danach: hunt-verdict, dann review (fresh, neuer Agent).
+- **2026-11-20 23:02 · Alexander Sacharov** — testing Runde 2 Fund (change) behoben: hashed() bricht mit '|| exit 1' ab, weil --check es in $(...) ohne set -e laufen laesst; inherit_errexit verworfen, weil es den ganzen Rest des Skripts mit aendert. Test TestUnreadableBlobStopsTheScript deckt Generator und --check (rot ohne || exit 1). Geschwister: listing=$(...) hatte schon || exit 1.

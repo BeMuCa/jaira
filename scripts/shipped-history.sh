@@ -45,7 +45,8 @@ hashed() {
 		[ -n "$path" ] || continue
 		# Apart from the printf: a blob git cannot read (a partial clone offline,
 		# a damaged object) must stop the script, not be hashed as the empty file.
-		sum=$(git cat-file blob "$blob" | sha256sum)
+		# Said with || exit: --check runs this inside $(...), where set -e is off.
+		sum=$(git cat-file blob "$blob" | sha256sum) || exit 1
 		printf '%s  %s\n' "${sum%% *}" "$path"
 	done
 }
