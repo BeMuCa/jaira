@@ -6,7 +6,7 @@ package board
 
 // Prepared reports what preparing a new board did.
 type Prepared struct {
-	Ignored   bool // IgnoreFile gained the entry on this run
+	Ignored   bool // the ignore file (IgnoreFileName) gained the entry on this run
 	IgnoreErr error
 	Notes     []string // agent files touched, as "NAME (action)"
 	NoteErr   error

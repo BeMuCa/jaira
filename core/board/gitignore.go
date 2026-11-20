@@ -79,19 +79,14 @@ func parsePlace(out string) (exclude, line string) {
 	return filepath.Join(filepath.FromSlash(common), "info", "exclude"), "/" + prefix + ".jaira/"
 }
 
-// IgnoreFile is the file a private board's entry goes into: info/exclude in a
-// git repository, .gitignore outside one.
-func IgnoreFile(root string) string {
-	if exclude, _ := gitPlace(root); exclude != "" {
-		return exclude
-	}
-	return filepath.Join(root, ".gitignore")
-}
-
-// IgnoreFileName is IgnoreFile as a person reads it: relative to root where it
-// lies inside it, absolute where it does not (a worktree's shared git dir).
+// IgnoreFileName is the file a private board's entry goes into, as a person
+// reads it: info/exclude in a git repository — absolute where it lies outside
+// root, as a worktree's shared git dir does — and .gitignore outside one.
 func IgnoreFileName(root string) string {
-	path := IgnoreFile(root)
+	path, _ := gitPlace(root)
+	if path == "" {
+		return ".gitignore"
+	}
 	if rel, err := filepath.Rel(root, path); err == nil && !strings.HasPrefix(rel, "..") {
 		return filepath.ToSlash(rel)
 	}
@@ -134,7 +129,7 @@ func Ignored(root string) bool {
 	return exclude != "" && lists(exclude, line)
 }
 
-// AddIgnore keeps the board out of git, in IgnoreFile.
+// AddIgnore keeps the board out of git, in the file IgnoreFileName names.
 func AddIgnore(root string) (changed bool, err error) {
 	if InGitignore(root) {
 		return false, nil
