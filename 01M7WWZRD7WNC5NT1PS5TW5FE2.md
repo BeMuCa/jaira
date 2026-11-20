@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:22:05Z
+updated-at: 2026-11-20T19:22:13Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99353
 claimed-at: 2026-11-20T19:19:21Z
@@ -36,11 +36,7 @@ outcome-why: "Person gab aus signoff zurueck: gate.go refuses pre-process->human
 outcome-resolves: "DoD 1-7 wie zuvor; neu 15-pre-process.md:90, 20-in-progress.md:72-74, 27-testing.md:130; Zwillinge in .jaira/lanes gleich; shipped.sha256 drei Zeilen; Release-Note eine Zeile. Vier Kategorien: nur Prompt-Text, nichts schreibt, kein Nebenlaeufigkeits-/Rechte-Pfad; Fehlerpfad pre-process->human jetzt vom Gate erlaubt."
 review-summary: "none - drei Saetze in bestehenden Absaetzen, kein neues Muster; pre-process-Regel steht nach allen drei human-Moves des Lanes und gilt fuer alle; Gate bewusst nicht geaendert (Note 20:21)"
 round: 12
-review-gaps: |-
-  note: pre-process sagt bei einer Heuristik, deren Annahmeregel nur eine Person kennt, 'move the ticket to the human lane' (15-pre-process.md:66), aber gate.go:438 verweigert den Vorwaertsmove, solange plan leer ist; Klasse: Prompt-Anweisung zu einem Move, den das Gate ablehnt; Fix: ein Satz 'schreib zuerst den Plan bis dahin, dann move --question'
-  note: 'once per round' fuer die back:-Zeile (20-in-progress.md) sagt nicht, wie ein neu gestarteter Worker das prueft; Klasse: doppelte Zaehlzeile nach Neustart; Fix: 'steht schon eine back:-Zeile mit dieser round, schreib keine zweite'
-  note: testing Pass 1 spricht von 'packages' (27-testing.md:~132), Go-Wortlaut auf einem sprachneutralen Board; Fix: 'the tests of what git diff touches'
-  note: pre-existing: core/shipped/shipped.sha256 fehlen 8 getaggte Versionen (board.ts, register.tsx, texts.ts, types/index.d.ts, template.html) - siehe bughunt-Note 16:50, Teamlead klaert
+review-gaps: "none - drei Saetze, keine Wiederholung im Prompt, nichts verwaist"
 test-verdict: "pass: follow-up round since d0cb1f49 - go build ./... ok; go test -race -count=1 ./core/lane/... ./core/shipped ./core/release/... RC=0; in-progress twin byte-equal to builtin, its sha256 in shipped.sha256; release notes 8 lines, all '- '; DoD 6 proof re-pointed at 20-in-progress.md:66-102 (no prefix = back: unknown); prompts only - nothing writes, no failure path or two-writer case"
 hunt-verdict: "pass: bughunt done at c3e5a7df, 0 change, 0 pre-existing"
 review-verdict: "Alle 7 DoD-Punkte sind im Baum erfuellt, kein Blocker: reine Prompt-Aenderung, Twins byte-gleich, Manifest-Hashes stimmen, go test ./core/lane ./core/shipped ./core/role ./core/release gruen. Drei kleine Wortlaut-Raender als note; die Rueckgabe-Zaehlung bleibt eine Note-Konvention bis move die Herkunfts-Lane schreibt (DF0YD6/H6CD33) - bekannt und vom Teamlead so entschieden."
