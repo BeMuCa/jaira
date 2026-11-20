@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:06:21Z
+updated-at: 2026-11-20T23:09:10Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -38,6 +38,7 @@ outcome-resolves: "Ein Board sagt in .jaira/pr, ob Arbeit durch einen PR (person
 review-summary: "none"
 round: 2
 review-gaps: "none - checked: settings.PRIn/PRFor are now one-line delegations to board (kept: roles.go and tests call them, removing would widen the diff for nothing); board.PRModeIn repeats settings.firstLine on purpose (board may not import settings); every new function has callers; agent paragraph in arrivalSection is the decision of 20.11. (block for agents without a role), not speculative"
+test-verdict: "fail: suite green with -race (RC=0) and DoD 1-8 verified, but on a none board the no_ticket and unreadable refusals of pr-gate still said 'hand the create line back' - there is no create line under none (scratch board, exit 3 was right, the advice wrong)"
 ---
 
 # Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig
@@ -104,3 +105,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-20 23:03 · Alexander Sacharov** — in-progress: Fund beim Bauen - reap.sh fragte nur nach einem gemergten PR; bei none waere der Worktree nie entfernt worden. Jetzt: bei none gilt 'origin/HEAD enthaelt die Spitze des Zweigs' als gemergt. Zweiter Fund (vorbestehend, nicht dieses Ticket): ein frischer Klon eines geteilten Boards ohne committete Ticket-Dateien hat kein .jaira/tickets, ist bis 'jaira init' kein Board, und roles list sagt dort fuer JEDE Board-Datei (pr, release, pr-when) den Default. shipped.sha256 neu erzeugt (nur hinzugefuegt/umsortiert, keine Zeile entfernt).
 - **2026-11-20 23:04 · Alexander Sacharov** — critique (Runde 1): einziger Fund - Dateiname 'pr' doppelt (board/arrival.go literal, settings.prFile). Fix: board.PRFileName, settings.prFile = board.PRFileName. Sonst geprueft und stehen gelassen: settings delegiert an board (Importrichtung settings->board erzwingt den Ort, Note Plan); PRModeIn dupliziert settings.firstLine bewusst, weil board settings nicht importieren darf; reap.sh liest pr aus der Hauptcheckout-Platte = Stand des Hauptzweigs, passend zur Gate-Regel.
 - **2026-11-20 23:06 · Alexander Sacharov** — critique (Runde 2): der Fund aus Runde 1 ist behoben (946b7188, board.PRFileName); nichts weiter - die anderen Punkte stehen in der Note von Runde 1.
+- **2026-11-20 23:09 · Alexander Sacharov** — bughunt: change: internal/cli/roles.go:182 (with core/gitrepo/named.go:37 and core/role/builtin/jaira-role-pr/SKILL.md:280) - under .jaira/pr none the gate judges only commits whose subject names a ticket; a commit in <base>..HEAD that names none (wip, a stray commit from another session, a merged-in branch without handles) is not checked at all, and the branch lands on the default branch by fast-forward with nobody having seen it - under agent a person still merges, under none nothing else stands in the way; ran: scratch test in internal/cli with prGateFixture, setPR none, one done ticket, commit 'feat(<id>): accepted' then 'wip: something nobody accepted' -> pr-gate master exit 0, 'the branch may land on master with a fast-forward push'
