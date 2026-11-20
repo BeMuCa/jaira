@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T16:57:42Z
+updated-at: 2026-11-20T16:57:46Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46134
 claimed-at: 2026-11-20T16:42:22Z
@@ -59,7 +59,7 @@ claimed-at: 2026-11-20T16:42:22Z
 - [x] board-Tests: neues Board + neuer Worktree lassen git status sauber; Eintrag steht in info/exclude
 - [x] share/share --undo: Ausgaben nennen die Datei; Test dass lanes-Zeile bleibt und exclude leer wird
 - [x] jaira update: MigrateIgnore (alte .gitignore-Zeile -> exclude; privates Board ohne Ausschluss -> exclude) + Test
-- [ ] init-/share-/update-Hilfetexte, docs/COMMANDS.md, README, Release-Note core/release/notes/NNV39Y.md
+- [x] init-/share-/update-Hilfetexte, docs/COMMANDS.md, README, Release-Note core/release/notes/NNV39Y.md
 
 ## Progress
 - **2026-11-20 16:42 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock
