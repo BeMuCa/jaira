@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-20T22:54:15Z
+updated-at: 2026-11-20T22:54:20Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -43,7 +43,8 @@ round: 2
   proof: core/release/notes/SDBCT5.md:1
 - [x] Die Agent-Bloecke dieses Repos (CLAUDE.md, AGENTS.md) sind mit dem neuen Block regeneriert
   proof: CLAUDE.md:131, AGENTS.md (regenerated with 'jaira update' from this build)
-- [ ] Die jaira-Rolle (core/role/jaira/SKILL.md) traegt denselben Vorbehalt wie der Block
+- [x] Die jaira-Rolle (core/role/jaira/SKILL.md) traegt denselben Vorbehalt wie der Block
+  proof: core/role/jaira/SKILL.md:331; TestAgentNoteSaysTheTicketCannotRideOnAnUnsharedBoard
 
 ## Options
 
