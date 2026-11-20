@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T19:25:08Z
+updated-at: 2026-11-20T19:25:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96533
 claimed-at: 2026-11-20T19:19:14Z
@@ -157,3 +157,4 @@ Empfehlung: 2 - der Lesefehler-Fall ist praktisch kaum erreichbar und war schon 
 - **2026-11-20 19:23 · Alexander Sacharov** — bughunt: change: internal/cli/share.go:88-95 with core/board/gitignore.go:268-271 - plain 'jaira share' with an unreadable .gitignore now fails halfway: RemoveIgnore has already taken /.jaira/ out of info/exclude when AddLanesIgnore returns the new read error, so it exits 1 with no .gitattributes, no merge driver and .jaira/lanes/ (meant to stay private) showing as untracked; the message is only the raw 'open .gitignore: permission denied' and does not say the board is already un-ignored. Running share again after a chmod heals it. Unclear whether this is worse than before (then .gitignore was overwritten), marked change because the error path is new in 79d71506; ran: jaira init; printf 'x\n' > .gitignore; chmod 000 .gitignore; jaira share (exit 1, exclude entry gone, git status lists .jaira/lanes/*)
 - **2026-11-20 19:23 · Alexander Sacharov** — bughunt: done at 79d71506 - 2 findings (2 change, 0 pre-existing) in 3 files, follow-up hunt (diff since cbff5424: core/board/gitignore.go core/board/exclude_test.go core/release/notes/NNV39Y.md, plus callers of appendEntry in core/board/board.go internal/cli/share.go internal/cli/update.go internal/cli/tickets.go; ran: init and share with chmod 000 info/exclude and .gitignore); concurrency, error paths, input, permissions checked; untracked .jaira/milestones/*.md are board data, not read; files: README.md core/board/announce.go core/board/board.go core/board/exclude_test.go core/board/gitignore.go core/release/notes/NNV39Y.md core/ticket/store.go docs/COMMANDS.md internal/cli/privateexclude_test.go internal/cli/share.go internal/cli/sharestate_test.go internal/cli/tickets.go internal/cli/update.go
 - **2026-11-20 19:24 · Alexander Sacharov** — testing: beide bughunt-Funde stimmen. Fix: share schreibt AddLanesIgnore VOR RemoveIgnore - ein Schreibfehler an .gitignore laesst das Board privat, Fehler sagt 'the board stays private'; Test TestShareWithAnUnreadableGitignoreLeavesTheBoardPrivate (faellt ohne Umstellung). Release-Note: init warnt nur (Prepare-Vertrag, unveraendert), share/--undo/update brechen ab.
+- **2026-11-20 19:25 · Alexander Sacharov** — critique Runde 14 (Diff 79d71506..dde1cf1c): nichts - Reihenfolge tauschen ist die kleinste Form, kein Rollback noetig.
