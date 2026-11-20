@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T18:17:14Z
+updated-at: 2026-11-20T18:17:44Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-87225
 claimed-at: 2026-11-20T17:38:56Z
@@ -34,7 +34,7 @@ outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestand
 review-summary: "none"
 round: 9
 review-gaps: "removed first_of (its last caller became keeper); left: keeper serves reply-dedupe, comment pre-check and comment read-back, no further sharing between GraphQL thread and REST conversation calls; settled's three reads stay separate calls (REST requested_reviewers, two GraphQL connections that page differently)"
-test-verdict: "pass: go test -race ./... RC=0 after clean cache at 9ef2e20b; DoD 1-16 proofs present; real binary on a scratch board: done ticket -> pr-gate 0, the same ticket with a conflict marker -> exit 3 reason unreadable, no may_open; earlier round: person/backlog/signoff/done thresholds, bad base 2, parallel pr-gate both 0, pr-round.sh open refuses before gh pr create; reply/comment/settled exercised against fake gh only (no live GitHub here)"
+test-verdict: "pass: go test -race ./... RC=0 after clean cache at 106faf5c; DoD 1-16 proofs present; real binary on a scratch board (9ef2e20b, gate code unchanged since): thresholds done/signoff, unreadable ticket -> exit 3, bad base 2, parallel pr-gate both 0; pr-round.sh open refuses before gh pr create; reply/comment/settled against fake gh only (no live GitHub here)"
 hunt-verdict: "pass: bughunt done at 9ef2e20b - 0 change, 0 pre-existing; edge reported (thread over 100 comments: dedupe misses its own id, leaves the copy, deletes nothing) taken into in-progress as a one-word fix"
 review-verdict: "All 11 DoD items are met by the diff; settings, roles list, pr-round.sh and the role texts read whole show no defect. Related tests pass (go test ./core/settings ./core/role ./internal/cli). Only uncertainty: the Copilot reviewer request has not been tried against real GitHub."
 review-round: 4
