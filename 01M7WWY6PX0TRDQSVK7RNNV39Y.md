@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:53:03Z
+updated-at: 2026-11-20T17:53:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85657
 claimed-at: 2026-11-20T17:52:47Z
@@ -115,3 +115,4 @@ Empfehlung: 2 - alle 7 DoD-Punkte sind mit Tests belegt, die Funde sind Randfael
 - **2026-11-20 17:46 · Alexander Sacharov** — testing: Fix an der Klasse statt boardLine zu erweitern - share fragt git selbst (git check-ignore -q .jaira/ im Board-Root): erfasst jede Regel, die jaira nicht kennt (unverankert, **/.jaira, verschachtelte .gitignore, core.excludesFile). Test: Board im Unterverzeichnis + unverankerte Zeile -> Warnung und still_ignored true.
 - **2026-11-20 17:47 · Alexander Sacharov** — critique Runde 7 (Diff 750e2acf..c6c3ed13): nichts - IgnoredBy fragt git, ersetzt in share den eigenen Parser; Ignored bleibt fuer die Stellen, an denen jaira selbst schreibt.
 - **2026-11-20 17:49 · Alexander Sacharov** — bughunt: done at c6c3ed13 - 0 findings in 5 files, follow-up hunt (diff since 750e2acf: core/board/gitignore.go, internal/cli/share.go, internal/cli/privateexclude_test.go, docs/COMMANDS.md, core/release/notes/NNV39Y.md); concurrency, error paths, input, permissions checked; files: README.md core/board/announce.go core/board/board.go core/board/exclude_test.go core/board/gitignore.go core/release/notes/NNV39Y.md core/ticket/store.go docs/COMMANDS.md internal/cli/privateexclude_test.go internal/cli/share.go internal/cli/sharestate_test.go internal/cli/tickets.go internal/cli/update.go
+- **2026-11-20 17:53 · Alexander Sacharov** — review Runde 2 (fresh): blocker - internal/cli/update.go:347 moveIgnore setzt moved=true ohne den Rueckgabewert von board.MoveIgnore zu lesen; auf git<2.31 (gitPlace leer, Eintrag liegt per Fallback in .gitignore) meldet jedes jaira update 'Moved ... from .gitignore to .gitignore — commit the changed .gitignore once' und --json ignore_moved:true, ohne etwas zu aendern. Nachgestellt mit git-Wrapper und gebautem Binary. Fix an der Klasse: moved/added nur melden, wenn es einen git-Ort gibt (IgnoreFileName != .gitignore) bzw. aus dem Rueckgabewert; Test mit git<2.31-Wrapper. Rest: drei notes in review-gaps.
