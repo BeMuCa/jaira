@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T19:32:16Z
+updated-at: 2026-11-20T19:32:21Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96533
 claimed-at: 2026-11-20T19:19:14Z
@@ -30,7 +30,11 @@ outcome-why: "signoff-Rueckgabe: ein unlesbares info/exclude wurde bisher durch 
 outcome-resolves: Datenverlust bei unlesbarer Ausschlussdatei
 review-summary: "Ein privates Board wird jetzt in <git-common-dir>/info/exclude ausgeschlossen statt in der getrackten .gitignore (core/board/gitignore.go): gitPlace fragt git per rev-parse --git-common-dir --show-prefix nach Datei und Muster (/sub/.jaira/ fuer ein Board im Unterverzeichnis, Glob-Zeichen escaped); ohne Repo oder auf git < 2.31 bleibt .gitignore der Ort. AddIgnore/RemoveIgnore/MoveIgnore schreiben info/exclude unter einer Sperrdatei daneben (neues ticket.LockFile, aus Store.lock herausgeloest) und per WriteAtomic; appendEntry ueberschreibt eine unlesbare Datei nie, haelt CRLF; dropEntry nimmt nur jairas Kommentar+Zeile und die Leerzeile direkt danach. share schreibt zuerst /.jaira/lanes/ in .gitignore, hebt dann nur jairas verankerten Eintrag auf und fragt git check-ignore, ob noch eine fremde Regel das Board ausschliesst (Warnung, --json still_ignored/ignore_unknown). share --undo schliesst wieder in info/exclude aus und sagt, dass Teamkollegen jaira update laufen lassen. jaira update verschiebt die alte .gitignore-Zeile eines privaten Boards nach info/exclude bzw. schliesst ein privates Board aus, das nichts ausschliesst; ein Board mit .gitattributes oder getrackten Dateien bleibt unberuehrt, ein git ohne Antwort (Symlink) ebenfalls. README, COMMANDS.md, Hilfetexte, Agent-Block und core/release/notes/NNV39Y.md sind nachgezogen."
 round: 15
-review-gaps: "none - Diff 7e69b451: eine Bedingung um die Meldung"
+review-gaps: |-
+  note: board.Ignored startet fuer jedes geteilte Board bei jedem Befehl einen zusaetzlichen git-Prozess (openStore -> bindDriverIfShared -> Ignored -> gitPlace) - auf Linux ~2 ms, auf Windows spuerbar mehr; ein Cache pro Prozess oder die Reihenfolge InGitignore/hasAttributes vor gitPlace wuerde das sparen
+  note: bei einem Board im Unterverzeichnis nennt init/share --undo den absoluten Pfad von info/exclude (IgnoreFileName gibt bei ../-Pfad absolut zurueck) - korrekt, aber lang
+  note: ein Team, das /.jaira/ absichtlich in der committeten .gitignore fuehrt, bekommt die Zeile von jaira update nach info/exclude verschoben; die !-Release-Note sagt das, die Entscheidung bleibt beim Menschen
+  note: info/exclude.jaira.lock bleibt nach einem Absturz in .git/info liegen, bis breakStale es als veraltet bricht - harmlos, nur sichtbar
 test-verdict: "pass: go test -race internal/cli+core/board gruen (RC=0) bei 7e69b451, voller Lauf -race gruen bei 79d71506; DoD 10 per Test; Binary: share/--undo mit chmod 000 brechen ab, Dateien byteweise erhalten, Board bleibt privat; zwei parallele share --undo -> Eintrag einmal"
 hunt-verdict: "0 findings at 7e69b451 (follow-up hunt ueber dde1cf1c..7e69b451)"
 review-verdict: "Der Diff erfuellt alle 9 DoD-Punkte, jeder mit Test; go test ./core/board ./core/ticket ./internal/cli und go vet gruen. Mit gebautem Binary nachgespielt: init + neuer Worktree lassen git status sauber, share/--undo, Migration einer alten .gitignore-Zeile (zweites update meldet nichts), Teamkollege ohne Ausschluss wird ausgeschlossen, Board in 'sub dir/' bekommt /sub dir/.jaira/. Kein Blocker; vier Notes, davon eine pre-existing."
