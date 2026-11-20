@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T19:26:20Z
+updated-at: 2026-11-20T19:26:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96533
 claimed-at: 2026-11-20T19:19:14Z
@@ -160,3 +160,4 @@ Empfehlung: 2 - der Lesefehler-Fall ist praktisch kaum erreichbar und war schon 
 - **2026-11-20 19:25 · Alexander Sacharov** — critique Runde 14 (Diff 79d71506..dde1cf1c): nichts - Reihenfolge tauschen ist die kleinste Form, kein Rollback noetig.
 - **2026-11-20 19:25 · Alexander Sacharov** — testing Runde 2 (dde1cf1c, gebautes Binary): init sauber; share mit chmod 000 .gitignore -> exit 1 'the board stays private', /.jaira/ bleibt in info/exclude; share --undo mit chmod 000 info/exclude -> exit 1, Datei byteweise erhalten ('mine' bleibt); zwei parallele share --undo -> Eintrag genau einmal. Beobachtet, gelassen: share mit unlesbarem info/exclude meldet geteilt und laesst die Zeile stehen (dropEntry liest Fehler als 'nichts da') - git kann die Datei dann auch nicht lesen, ignoriert also nichts; kein Datenverlust.
 - **2026-11-20 19:26 · Alexander Sacharov** — bughunt: change: internal/cli/share.go:91-94 - share has no already-shared guard, so re-running 'jaira share' on a board that is already shared, with a .gitignore it cannot read, fails with 'the board stays private: open .gitignore: permission denied' although the board is shared and git does not ignore it; the message reports a state that does not exist (AddLanesIgnore swallows its own read error at core/board/gitignore.go:344 and fails later in appendEntry); ran: init; share (exit 0); chmod 000 .gitignore; share (exit 1, 'stays private'); git check-ignore -q .jaira/x (exit 1, not ignored)
+- **2026-11-20 19:26 · Alexander Sacharov** — bughunt: done at dde1cf1c - 1 finding (1 change, 0 pre-existing) in 3 files, follow-up hunt (diff since 79d71506: internal/cli/share.go internal/cli/privateexclude_test.go core/release/notes/NNV39Y.md; checked boardLine/dropEntry cannot drop the lanes line now written first; ran: share twice with chmod 000 .gitignore, init with chmod 000 info/exclude); concurrency, error paths, input, permissions checked; untracked .jaira/milestones/*.md are board data, not read; files: README.md core/board/announce.go core/board/board.go core/board/exclude_test.go core/board/gitignore.go core/release/notes/NNV39Y.md core/ticket/store.go docs/COMMANDS.md internal/cli/privateexclude_test.go internal/cli/share.go internal/cli/sharestate_test.go internal/cli/tickets.go internal/cli/update.go
