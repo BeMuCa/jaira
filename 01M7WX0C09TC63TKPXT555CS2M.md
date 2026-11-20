@@ -12,12 +12,13 @@ context: |-
   Verwandt: MVR4PY (Cockpit liest Lane und Urteil aus einer festen Schlusszeile).
 definition-of-done: "jaira-worker und jaira-dispatcher schreiben die Schlussmeldung im festen Format, dokumentiert im Skill"
 tags: []
-blocked-by: []
+blocked-by:
+  - 01M7WX07G4E8ERZ30PH10J88M5
 related:
   - 01M67RXSPRWC7WVBCCM7MVR4PY
 commits: []
 created-at: 2026-11-20T16:35:33Z
-updated-at: 2026-11-20T16:40:53Z
+updated-at: 2026-11-20T16:40:56Z
 updated-by: Alexander Sacharov
 ---
 
