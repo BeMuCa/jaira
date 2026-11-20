@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T16:45:57Z
+updated-at: 2026-11-20T16:46:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-42185
 claimed-at: 2026-11-20T16:42:15Z
@@ -41,7 +41,8 @@ claimed-at: 2026-11-20T16:42:15Z
   proof: core/lane/builtin/15-pre-process.md:38 (Name the edges before the code: class, input classes, acceptance rule, jaira dod --add)
 - [x] in-progress-Prompt verlangt: Tests ueber die Klasse (parametrisiert), Suche nach Geschwister-Stellen, Selbstpruefung der vier Kategorien vor dem Move, Fix an der Ursache statt am Beispiel
   proof: core/lane/builtin/20-in-progress.md:29 (Fix the class, not the example: cause, parametrised test, siblings in scope, four categories before move)
-- [ ] bughunt- und testing-Prompt: ein Fund nennt die Klasse und das Beispiel; der Rueckweg nach in-progress verlangt den Fix der Klasse
+- [x] bughunt- und testing-Prompt: ein Fund nennt die Klasse und das Beispiel; der Rueckweg nach in-progress verlangt den Fix der Klasse
+  proof: core/role/builtin/jaira-role-bughunt/SKILL.md:104; core/lane/builtin/27-testing.md:102 (class + example; return only when the class is fixed)
 - [ ] Die eingebetteten Lanes und Rollen sind geaendert, mit Release-Note
 
 ## Options
