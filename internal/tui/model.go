@@ -1169,10 +1169,22 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case newLaneDoneMsg:
 		if msg.err != nil {
+			// An editor that exits non-zero (vim :cq) is an abort: nothing is
+			// copied, but the message says what that leaves the catalogue with.
 			if m.laneScreen != nil {
-				m.laneScreen.msg, m.laneScreen.isErr = msg.err.Error(), true
+				m.laneScreen.msg, m.laneScreen.isErr = editorFailedMsg(msg), true
 			}
 			return m, nil
+		}
+		// The catalogue is written first, so the drift the new screen works
+		// out below already sees it.
+		var text string
+		var isErr bool
+		switch {
+		case msg.path != "":
+			text, isErr = catalogueNewLane(msg.path)
+		case msg.syncTo != "":
+			text, isErr = writeThrough(msg.edited, msg.syncTo, msg.syncFrom)
 		}
 		// The new file may parse to a fresh lane, or to a warning if it was
 		// left unedited (an id collision with the last skeleton, say) — either
@@ -1183,6 +1195,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.laneScreen != nil {
 			m.laneScreen = newLaneScreen(m.store, m.lanes)
+			if text != "" {
+				m.laneScreen.msg, m.laneScreen.isErr = text, isErr
+			}
 		}
 		return m, nil
 
