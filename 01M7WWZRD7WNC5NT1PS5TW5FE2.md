@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T17:03:51Z
+updated-at: 2026-11-20T17:04:53Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-42185
 claimed-at: 2026-11-20T16:42:15Z
@@ -37,7 +37,7 @@ outcome-resolves: "DoD 1-4: pre-process 15-pre-process.md:38, in-progress 20-in-
 review-summary: none
 round: 6
 review-gaps: "none: ein Absatz ersetzt die round-Annahme, nichts Doppeltes"
-test-verdict: "pass: go test -race -count=1 ./... RC=0, go build ok; in-progress-Kopie byte-gleich"
+test-verdict: "pass: go test -race -count=1 ./... RC=0, go build ok; DoD 1-7 im Baum; Lane-Kopien byte-gleich"
 hunt-verdict: "fail: bughunt done at ad6a6ffc, 1 change - 'round > 1' zaehlt auch Rueckgaben einer Person aus signoff/human als Loop-Rueckgabe"
 ---
 
