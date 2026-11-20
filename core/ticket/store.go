@@ -1647,7 +1647,25 @@ func WriteAtomic(path string, data []byte) error {
 	if err := os.Chmod(tmpName, 0o644); err != nil {
 		return err
 	}
-	return os.Rename(tmpName, path)
+	return renameOver(tmpName, path)
+}
+
+// renameOver replaces path with tmp. On Windows a rename onto a file that
+// another process has open for reading - a second jaira loading the lanes, an
+// editor, a virus scanner - fails with Access is denied until that handle
+// closes, which is a matter of milliseconds. It is tried again for over a
+// second there; everywhere else, and for any other error, the first answer
+// stands.
+func renameOver(tmp, path string) error {
+	err := os.Rename(tmp, path)
+	if runtime.GOOS != "windows" {
+		return err
+	}
+	for wait := 5 * time.Millisecond; err != nil && os.IsPermission(err) && wait <= 640*time.Millisecond; wait *= 2 {
+		time.Sleep(wait)
+		err = os.Rename(tmp, path)
+	}
+	return err
 }
 
 // Save writes a ticket that the caller already mutated, without taking a lock.
