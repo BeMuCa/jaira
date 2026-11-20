@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T23:11:52Z
+updated-at: 2026-11-20T23:11:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -28,7 +28,9 @@ outcome-why: Hand-gemergte Manifest-Konflikte verloren Zeilen; jaira update --ro
 outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, wenn eine fehlt, und Manifest-Merges konfliktieren nicht mehr"
 review-summary: "scripts/shipped-history.sh bekommt --check: es listet jede Datei-Version aus allen v*-Tags (ls-tree je Tag, lanes/ und .claude/skills/jaira auf den heutigen Einbettungspfad abgebildet), hasht die rohen Blob-Bytes und bricht mit den anzuhaengenden Zeilen ab, wenn eine im Manifest fehlt; ohne Tags, bei unlesbarem Tag oder unlesbarem Blob scheitert es statt gruen zu sein. Generator und Check laufen mit pipefail und LC_ALL=C. core/shipped/shipped.sha256 ist neu generiert (8 fehlende Tag-Versionen ergaenzt, keine Zeile verloren, eingesortiert). CI bekommt Job shipped-manifest, release-notes.yaml fuehrt den Check vor dem Release-PR aus (beide fetch-depth 0). .gitattributes setzt merge=union auf das Manifest. Tests: Fixture-Repo mit Tags (geloescht+wieder angelegt, CRLF, CRLF-Manifest, ohne Tags, unlesbarer Tag/Blob, union-Merge) und ein Tabellentest, der eine unveraenderte v0.5.2-board.ts per install ersetzt statt Skipped."
 round: 5
-review-gaps: "none - Runde 4: nur der Text einer Testmeldung"
+review-gaps: |-
+  note: scripts/shipped-history.sh > core/shipped/shipped.sha256 (die im Skript und in der Testmeldung empfohlene Zeile) kuerzt das Manifest, bevor das Skript laeuft - scheitert es (flacher Klon, unlesbarer Blob), steht danach nur der Header oder ein Teil im Arbeitsbaum; Exit-Code und git diff zeigen es, verloren ist nichts Committetes
+  note: ob GitHubs Mergeability-Pruefung im PR merge=union aus .gitattributes beachtet, ist nur lokal (TestManifestMergesWithoutConflict) belegt; erst zwei echte PRs zeigen es
 test-verdict: "pass: go vet + go test ./... RC=0 auf 722c9c6e; Runde 4 aendert nur eine Testmeldung"
 hunt-verdict: "pass: bughunt done at 722c9c6e, 0 change, 0 pre-existing"
 review-verdict: "Alle 5 DoD-Punkte erfuellt; kein Defekt gefunden. Selbst geprueft: --check exit 0 auf 34 Tags, Regenerieren ergibt byte-gleich das committete Manifest, go test ./core/shipped ./core/role gruen. Unsicher nur, ob GitHub merge=union beim PR-Konflikt beachtet (note)."
