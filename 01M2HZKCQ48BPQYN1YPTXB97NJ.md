@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:13:17Z
+updated-at: 2026-11-20T23:13:21Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -39,6 +39,7 @@ review-summary: "none"
 round: 3
 review-gaps: "none - the then-text is built once and used by all three refusals; nothing else changed since the last optimize pass"
 test-verdict: "fail: suite green with -race (RC=0); bughunt change finding - under none pr-gate let a commit that names no ticket land unseen"
+hunt-verdict: "change: internal/cli/roles.go pr-gate under none checked only commits naming a ticket; an unnamed commit (wip, merged branch) would land by fast-forward with nobody seeing it. Class fix: every non-merge commit in base..HEAD must name a ticket under none (gitrepo.UnnamedCommits). Unconfirmed side finding fixed alike: reap.sh under none counted a branch with no own work as landed - now needs a commit naming the ticket."
 ---
 
 # Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig
