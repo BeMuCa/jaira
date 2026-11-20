@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T22:28:03Z
+updated-at: 2026-11-20T22:42:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-61485
 claimed-at: 2026-11-20T21:43:50Z
@@ -214,3 +214,4 @@ Warum: Der PR-Öffnen-Weg läuft ohne Mensch dazwischen, darum zählt jede Lück
 1) Zurückgeben und die Randfälle beheben (Gate nach create erneut prüfen, Fork mit anderem Repo-Namen, führende Leerzeilen in said(), ls-remote exakt matchen, Test für GitLab) [give back]
 2) Annehmen wie es ist; die fünf Randfälle bleiben als Notes am Ticket stehen [accept]
 Empfehlung: 2 - kein Blocker, jeder Befund schlägt geschlossen fehl oder ist klein, und weiteres Härten vergrößert den Umfang gegen die Regel 'kleiner als paca'.
+- **2026-11-20 22:42 · Alexander Sacharov** — decision: 2) Annehmen wie es ist; die fünf Randfälle bleiben als Notes am Ticket stehen
