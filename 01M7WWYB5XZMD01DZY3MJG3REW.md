@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:37:37Z
+updated-at: 2026-11-20T19:37:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99114
 claimed-at: 2026-11-20T19:19:18Z
@@ -44,7 +44,13 @@ test-verdict: "pass bei 0bc5b11a: Suite go test -race -count=1 ./... RC=0; DoD 1
 hunt-verdict: "0 findings at 0bc5b11a (Runden davor: 2 change bei 8569d9b6, 1 change bei 7d8d7872 - alle behoben)"
 review-verdict: "Diff erfuellt alle 19 DoD-Punkte; 13 Commits, Liste vollstaendig. Gate, Settings und pr-round.sh ganz gelesen entlang Nebenlaeufigkeit (Dedupe bei zwei Sessions korrekt fuer jede Reihenfolge, loescht nur die eigene ID), Fehlerpfade (Login-Verlust -> 3, Teilschritte bei reply wiederholbar), ungewoehnliche Eingaben (Typo/CRLF -> Default, Shell-Zeichen im Reviewer gefiltert, Base mit '-' abgelehnt) und Grenzen (Gate faellt bei Zweifel zu). Kein Blocker; sechs Notes, keine davon bricht ein Kriterium. Betroffene Tests gruen (core/role, core/settings, internal/cli). Nicht geprueft: echtes GitHub (alles gegen ein gemocktes gh)."
 review-round: 13
-review-check: "1. cd /home/alex/projects/.worktrees/jaira-jg3rew && go build -o /tmp/jg ./cmd/jaira  2. cd $(mktemp -d) && git init -q -b master && git config user.email a@b && git config user.name x && /tmp/jg init  3. echo agent > .jaira/pr && git add -A && git commit -qm 'chore: base' && git checkout -qb feat/x && git commit -q --allow-empty -m 'feat(ZZZZZZ): x'  4. /tmp/jg roles pr-gate master; echo $?  -> 'ZZZZZZ (unknown)', Exit 3  5. /tmp/jg roles list | tail -1  -> 'pr: agent ... reviewer: none; opens in: done (the default)'  6. echo signoff > .jaira/pr-when && /tmp/jg roles list | tail -1  -> 'opens in: signoff'  7. live: auf einem Test-PR scripts/pr-round.sh threads <owner/repo> <nr> -> nur offene Threads als JSON-Zeilen; settled -> Exit 3 mit Liste, solange etwas offen ist"
+review-check: |-
+  1. cd /home/alex/projects/.worktrees/jaira-jg3rew
+  2. go test ./core/role ./core/settings ./internal/cli -run 'PR|Handles' -> alle ok
+  3. go run ./cmd/jaira roles list | tail -1 -> Zeile 'pr: person ... reviewer: none; opens in: done (the default)'
+  4. go run ./cmd/jaira roles pr-gate HEAD~13 -> '.jaira/pr does not say agent', exit status 3
+  5. echo agent > .jaira/pr; go run ./cmd/jaira roles pr-gate HEAD~13 -> exit 3, Meldung nennt JG3REW mit seiner Lane als nicht in done; danach rm .jaira/pr
+  6. bash core/role/builtin/jaira-role-pr/scripts/pr-round.sh --help -> Befehle open, threads, comments, reply, comment, request, settled; kein merge, kein approve
 ---
 
 # Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
