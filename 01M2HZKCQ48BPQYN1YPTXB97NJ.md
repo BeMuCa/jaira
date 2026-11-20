@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:03:25Z
+updated-at: 2026-11-20T23:03:30Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -67,7 +67,7 @@ question: ""
 - [x] core/board/arrival.go: PR-Modus person|agent|none parsen (PRModeIn/PRModeFor) + arrivalSection(mode); settings.PRFor/PRIn delegieren, PRNone dazu
 - [x] announce.go: noteFor/announceInAgentFile/NoteIsCurrent haengen arrivalSection(PRModeFor(root)) an; person -> leer, Block unveraendert
 - [x] roles.go: roles list zeigt none mit Satz; pr-gate: none laesst bei allen Tickets in done durch (pr_when ignoriert), json traegt pr
-- [ ] Rollentexte: jaira-role-pr Abschnitt 'Land it' fuer none (gate, merge base, push HEAD:<branch>, nie --force); teamlead/dispatcher/worker je ein Satz; shipped.sha256 neu
+- [x] Rollentexte: jaira-role-pr Abschnitt 'Land it' fuer none (gate, merge base, push HEAD:<branch>, nie --force); teamlead/dispatcher/worker je ein Satz; shipped.sha256 neu
 - [ ] Tests: Tabellentest Eingabeklassen, Block byte-gleich ohne Datei, Absatz bei none/agent, NoteIsCurrent-Drift, pr-gate none; Release-Note; Nachstellen an zwei Boards + frischem Klon
 
 ## Progress
