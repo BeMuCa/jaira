@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:02:59Z
+updated-at: 2026-11-20T23:03:02Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -46,7 +46,8 @@ question: ""
   proof: Begruendung als decision-Note auf dem Ticket (Plan, 20.11.); Laufzeit: jaira-role-pr/SKILL.md:62 liest pr aus roles list; Block: core/board/arrival.go:65 arrivalSection
 - [x] Ein Board ohne Einstellung verhaelt sich wie heute: durch einen Pull Request. Wer nichts tut, merkt nichts.
   proof: core/board/arrival_test.go TestNoteWithoutPRFileIsUnchanged (Block byte-gleich ohne Datei/person/Tippfehler); pr-gate ohne Datei weiter pr_person; team-Board im Nachstellen ohne Absatz
-- [ ] Eine Zeile in core/release/notes/XB97NJ.md (die Notiz-Dateien ersetzen seit AR97K9 core/release/NOTES.md).
+- [x] Eine Zeile in core/release/notes/XB97NJ.md (die Notiz-Dateien ersetzen seit AR97K9 core/release/NOTES.md).
+  proof: core/release/notes/XB97NJ.md
 - [ ] Eingabeklassen der Datei .jaira/pr per Tabellentest: fehlt, leer, nur Kommentar, CRLF, Gross-/Kleinschreibung ('None'), Leerzeichen um den Wert, Tippfehler ('nnone'), zwei Zeilen - nur exakt 'none' heisst kein PR, alles Unbekannte bleibt person.
 - [ ] Der Block ist byte-gleich zu heute, wo .jaira/pr fehlt oder person sagt; ein Board mit none/agent bekommt den passenden Absatz durch jaira update, und jaira validate meldet den Block als veraltet, sobald die Datei sich aendert.
 - [ ] Bei none landet die Arbeit nur durch das Tor: jaira roles pr-gate laesst erst durch, wenn jedes Ticket des Zweigs in done ist, liest .jaira/pr vom Basis-Zweig, und das Landen ist ein fast-forward push - ein abgelehnter (nicht fast-forward) Push wird nie mit --force wiederholt.
