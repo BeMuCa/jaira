@@ -147,7 +147,8 @@ dedupe() {
 
 body_of() {
   [ -f "$1" ] || die "no file '$1' to read the answer from" 2
-  [ -s "$1" ] || die "'$1' is empty — an answer needs words" 2
+  # Blanks alone are no answer either: GitHub refuses them, or posts nothing.
+  [ -n "$(tr -d '[:space:]' < "$1")" ] || die "'$1' is empty — an answer needs words" 2
 }
 
 case "$cmd" in
@@ -229,7 +230,9 @@ case "$cmd" in
     # after them — a remark, an objection, the maintainer's own words — means
     # the answer is owed again. After posting, the conversation is read back
     # the way dedupe reads a thread, for two sessions posting at once.
-    viewer=$(gh api user --jq .login)
+    # viewer, not /user: an app or Actions token is refused on /user, and
+    # reply already asks GraphQL the same way.
+    viewer=$(gh api graphql -f query='query{viewer{login}}' --jq .data.viewer.login)
     mine=$(said "$file")
     convo() {
       gh api --paginate "repos/$repo/issues/$number/comments" \

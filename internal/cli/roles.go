@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -135,8 +136,9 @@ least one commit in <base>..HEAD names a ticket in its subject
 (type(A3K9QP): ...), and every ticket named that is still on the board sits
 in its board's terminal lane — or, where .jaira/pr-when says signoff, in the
 lane signoff or any lane after it up to the terminal one. A ticket filed into
-the logbook is past done and holds nothing up. Anything else exits 3 and says
-which ticket holds it.
+the logbook is past done and holds nothing up; one in the archive (rejected)
+or nowhere here (a typo, an unfetched ref) holds it. Anything else exits 3
+and says which ticket holds it.
 
 jaira-role-pr runs this before it opens a pull request on its own, so the
 rule does not rest on a role's text alone. A person who invokes the role
@@ -166,16 +168,21 @@ pr_person, no_ticket, no_signoff_lane, unreadable or pending.`,
 					"pr-gate: no commit in %s..HEAD names a ticket — nobody accepted anything on this branch; hand the create line back", args[0])
 			}
 			// A ticket file that cannot be read is not a ticket filed away:
-			// it would drop out of the list and look past done. The gate
-			// fails closed instead — whichever ticket it is, nobody can say
-			// it was accepted.
+			// it would drop out of the list and look past done. A problem
+			// naming a handle of this branch fails the gate closed; one
+			// about another ticket of the board is not this branch's.
 			all, err := s.List()
 			var pe *ticket.PartialError
 			if errors.As(err, &pe) {
-				return fail(ExitValidation, "unreadable",
-					"pr-gate: a ticket file on this board cannot be read, so whether every ticket on the branch is accepted cannot be told — %v; fix it, or hand the create line back", pe)
-			}
-			if err != nil {
+				for _, p := range pe.Problems {
+					for _, h := range named {
+						if strings.Contains(p, h) {
+							return fail(ExitValidation, "unreadable",
+								"pr-gate: %s cannot be read, so whether it is accepted cannot be told — %s; fix it, or hand the create line back", h, p)
+						}
+					}
+				}
+			} else if err != nil {
 				return err
 			}
 			when, _ := settings.PRWhenFor(s.Root)
@@ -187,10 +194,12 @@ pr_person, no_ticket, no_signoff_lane, unreadable or pending.`,
 			reached := map[string]map[string]bool{}
 			var pending []string
 			for _, h := range named {
+				onBoard := false
 				for _, t := range all {
 					if ticket.Handle(t.ID) != h {
 						continue
 					}
+					onBoard = true
 					b := lane.BoardOf(t)
 					ok, known := reached[b]
 					if !known {
@@ -201,6 +210,15 @@ pr_person, no_ticket, no_signoff_lane, unreadable or pending.`,
 					}
 					if !ok[t.Status] {
 						pending = append(pending, h+" ("+t.Status+")")
+					}
+				}
+				// Off the board, a handle counts only where the logbook holds
+				// it: filed there from done. Archived means rejected, and
+				// unknown may be a typo in a scope or a ticket on a ref
+				// nobody fetched — neither was accepted by anyone.
+				if !onBoard {
+					if where := filedWhere(s, h); where != "logbook" {
+						pending = append(pending, h+" ("+where+")")
 					}
 				}
 			}
@@ -216,6 +234,21 @@ pr_person, no_ticket, no_signoff_lane, unreadable or pending.`,
 			return nil
 		},
 	}
+}
+
+// filedWhere says where a handle that is not on the board lives: "logbook",
+// "archive" (rejected), or "unknown" — not here at all.
+func filedWhere(s *ticket.Store, handle string) string {
+	_, path, err := s.LoadAnywhere(handle)
+	switch {
+	case err != nil:
+		return "unknown"
+	case strings.HasPrefix(path, s.LogbookDir()+string(filepath.Separator)):
+		return "logbook"
+	case strings.HasPrefix(path, s.ArchiveDir()+string(filepath.Separator)):
+		return "archive"
+	}
+	return "unknown"
 }
 
 // lanesReached is the set of lanes on board b in which a ticket counts as

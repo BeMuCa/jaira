@@ -113,6 +113,7 @@ func TestPRRoundRefusesBeforeItWrites(t *testing.T) {
 	p := newPRRound(t)
 	answer := fixtureFile(t, "answer with space.md", "Fixed in abc123: renamed it.\n")
 	empty := fixtureFile(t, "empty.md", "")
+	blank := fixtureFile(t, "blank.md", "  \r\n\t\n")
 	for _, c := range []struct {
 		name string
 		env  []string
@@ -125,6 +126,7 @@ func TestPRRoundRefusesBeforeItWrites(t *testing.T) {
 		{"unknown command", nil, []string{"merge", "o/r", "7"}, 2},
 		{"too few arguments", nil, []string{"reply", "o/r", "7", "PRRT_1"}, 2},
 		{"empty answer", nil, []string{"reply", "o/r", "7", "PRRT_1", empty}, 2},
+		{"blanks only", nil, []string{"comment", "o/r", "7", blank}, 2},
 		{"missing answer", nil, []string{"comment", "o/r", "7", filepath.Join(t.TempDir(), "nope")}, 2},
 		{"not signed in", []string{"GH_AUTH=fail"}, []string{"reply", "o/r", "7", "PRRT_1", answer}, 3},
 	} {
@@ -408,7 +410,7 @@ func TestPRRoundReplyLeavesOneAnswerWhenTwoSessionsRace(t *testing.T) {
 func TestPRRoundCommentSaysItOnce(t *testing.T) {
 	p := newPRRound(t)
 	answer := fixtureFile(t, "answer.md", "Renamed it.  \r\nSee abc123.\r\n")
-	user := fixtureFile(t, "user.json", `{"login":"me"}`)
+	user := fixtureFile(t, "user.json", `{"data":{"viewer":{"login":"me"}}}`)
 	for _, c := range []struct {
 		name, issues   string
 		posts, deletes bool
@@ -420,7 +422,7 @@ func TestPRRoundCommentSaysItOnce(t *testing.T) {
 		{"said before, then objected to", `[{"id":1,"user":{"login":"me"},"body":"Renamed it.\nSee abc123."},{"id":2,"user":{"login":"copilot"},"body":"no"}]`, true, false},
 	} {
 		issues := fixtureFile(t, "issues.json", c.issues)
-		out, code := p.run([]string{"GH_FIXTURE=" + user, "GH_ISSUES=" + issues}, "comment", "o/r", "7", answer)
+		out, code := p.run([]string{"GH_STATE=" + user, "GH_ISSUES=" + issues}, "comment", "o/r", "7", answer)
 		calls := strings.Join(p.calls(), "\n")
 		if code != 0 {
 			t.Errorf("%s: exit %d\n%s", c.name, code, out)
@@ -446,7 +448,7 @@ func TestPRRoundCommentSaysItOnce(t *testing.T) {
 		"the person said it after":       {`[{"id":9,"user":{"login":"me"},"body":"Renamed it.\nSee abc123."},{"id":11,"user":{"login":"me"},"body":"Renamed it.\nSee abc123."}]`, false},
 	} {
 		afterFile := fixtureFile(t, "after.json", after.issues)
-		out, code := p.run([]string{"GH_FIXTURE=" + user, "GH_ISSUES=" + before, "GH_ISSUES_AFTER=" + afterFile, "GH_POSTED=" + posted}, "comment", "o/r", "7", answer)
+		out, code := p.run([]string{"GH_STATE=" + user, "GH_ISSUES=" + before, "GH_ISSUES_AFTER=" + afterFile, "GH_POSTED=" + posted}, "comment", "o/r", "7", answer)
 		calls := strings.Join(p.calls(), "\n")
 		deleted := strings.Contains(calls, "DELETE\trepos/o/r/issues/comments/9")
 		for _, call := range p.calls() {

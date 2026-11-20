@@ -112,10 +112,11 @@ func TestPRGateRefusesWhatItCannotJudge(t *testing.T) {
 		t.Fatalf("handle only in a body counted: %v", err)
 	}
 
-	// A handle the board does not hold is filed away, past done.
-	commit("feat(ZZZZZZ): filed long ago")
-	if out, err := runCLI(t, dir, "roles", "pr-gate", "master"); err != nil {
-		t.Fatalf("filed-away ticket held it up: %v\n%s", err, out)
+	// A handle nothing here knows — a typo in a scope, a ticket on a ref
+	// nobody fetched — was accepted by nobody: it holds the gate (review).
+	commit("feat(ZZZZZZ): nobody knows it")
+	if _, err := runCLI(t, dir, "roles", "pr-gate", "master"); exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "ZZZZZZ (unknown)") {
+		t.Fatalf("unknown handle: exit %d, %v", exitCode(err), err)
 	}
 
 	for _, base := range []string{"nosuchbranch", "--all", ""} {
@@ -214,5 +215,41 @@ func TestPRGateFailsClosedOnAnUnreadableTicket(t *testing.T) {
 	out, err := runCLI(t, dir, "--json", "roles", "pr-gate", "master")
 	if exitCode(err) != ExitValidation || strings.Contains(out, "may_open") {
 		t.Fatalf("unreadable ticket: exit %d, %v\n%s", exitCode(err), err, out)
+	}
+}
+
+// Off the board, only the logbook means accepted: a ticket filed there from
+// done holds nothing up, a rejected one in the archive does. A ticket file
+// that cannot be read holds the gate only when it is one of the branch's.
+func TestPRGateReadsFiledTicketsByWhereTheyAre(t *testing.T) {
+	dir, ticketIn, commit := prGateFixture(t)
+	setPR(t, dir, "agent")
+	filed, rejected := ticketIn("done"), ticketIn("backlog")
+	commit("feat(" + filed + "): accepted and filed")
+	if out, err := runCLI(t, dir, "logbook", filed); err != nil {
+		t.Fatalf("logbook: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, dir, "roles", "pr-gate", "master"); err != nil {
+		t.Fatalf("a ticket in the logbook held it up: %v\n%s", err, out)
+	}
+
+	// Another ticket of the board, broken, is not this branch's business.
+	other := filepath.Join(dir, ".jaira", "tickets", fileOf(t, dir, ticketIn("todo")))
+	if err := os.WriteFile(other, []byte("<<<<<<< HEAD\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runCLI(t, dir, "roles", "pr-gate", "master"); err != nil {
+		t.Fatalf("an unrelated unreadable ticket held it up: %v\n%s", err, out)
+	}
+	if err := os.Remove(other); err != nil {
+		t.Fatal(err)
+	}
+
+	commit("fix(" + rejected + "): will not be done")
+	if out, err := runCLI(t, dir, "reject", rejected, "--why", "not wanted", "--force"); err != nil {
+		t.Fatalf("reject: %v\n%s", err, out)
+	}
+	if _, err := runCLI(t, dir, "roles", "pr-gate", "master"); exitCode(err) != ExitValidation || !strings.Contains(err.Error(), rejected+" (archive)") {
+		t.Fatalf("a rejected ticket: exit %d, %v", exitCode(err), err)
 	}
 }

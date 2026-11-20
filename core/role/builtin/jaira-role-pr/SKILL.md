@@ -350,8 +350,9 @@ jaira roles pr-gate <remote>/<branch> && glab mr create --target-project <owner/
 ```
 
 Exit 3 from either is the board's no — `.jaira/pr` does not say agent, no
-commit names a ticket, or a ticket it names is not in done; the message says
-which. Do not look for another way to open it.
+commit names a ticket, or a ticket it names is not far enough along (in done,
+or in signoff where `pr_when` says so), was rejected, or is not known here at
+all; the message says which. Do not look for another way to open it.
 
 **An agent invoked you on a `person` board, or a ticket on the branch is not in
 done: do not run it.** Hand the line back written out and ready to paste, with
