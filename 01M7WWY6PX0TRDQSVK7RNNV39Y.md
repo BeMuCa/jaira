@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:56:57Z
+updated-at: 2026-11-20T17:57:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85657
 claimed-at: 2026-11-20T17:52:47Z
@@ -31,8 +31,8 @@ outcome-resolves: Neue Worktrees eines Repos mit privatem Board bleiben sauber; 
 review-summary: "none"
 round: 8
 review-gaps: "none - Diff c6c3ed13..1164e2ee: ein Guard, eine Newline-Korrektur, ein Test; nichts doppelt oder verwaist"
-test-verdict: "pass: go build/vet/test -count=1 ./... RC=0 at c6c3ed13; DoD 8 Proofs gruen; Binary im Wegwerf-Repo: init laesst git status ohne .jaira/, share mit handgeschriebener .jaira/-Zeile warnt mit '.git/info/exclude:8:.jaira/' und laesst sie stehen, --undo nennt jaira update; info/ schreibgeschuetzt -> share und --undo exit 1; zwei parallele share --undo -> Eintrag genau einmal"
-hunt-verdict: "pass: bughunt done at c6c3ed13, 0 change, 0 pre-existing"
+test-verdict: "pass: go build/vet/test -count=1 ./... RC=0 at 1164e2ee; Binary: update --dry-run/Move auf altem .gitignore-Board, parallele updates -> Eintrag einmal"
+hunt-verdict: "fail: bughunt done at 1164e2ee, 1 change - Guard in moveIgnore unterdrueckt auf git<2.31 auch den added-Zweig"
 review-verdict: "Nicht annehmen: alle 8 DoD-Punkte mit Tests belegt, go test core/board, core/ticket, internal/cli gruen, Code sonst sauber (Sperre, Atomic-Write, Fallback, check-ignore inkl. negierter Muster geprueft). Ein Blocker: jaira update meldet auf git<2.31 bei jedem Lauf eine Verschiebung, die nicht stattfand, und fordert zum Commit auf - genau der Fallback-Pfad, den d62bafaa eingefuehrt hat. Ein-Zeilen-Fix."
 review-round: 7
 review-check: "1. cd $(mktemp -d) && git init -q && git commit -q --allow-empty -m i  2. jaira init  3. git status --short zeigt kein .gitignore; cat .git/info/exclude zeigt '/.jaira/'  4. git worktree add ../wt && git -C ../wt status --short ist leer  5. jaira share; .git/info/exclude hat die Zeile nicht mehr, .gitignore hat '/.jaira/lanes/'  6. jaira share --undo; Ausgabe nennt 'jaira update' fuer Teamkollegen, exclude hat die Zeile wieder  7. altes Board: rm .git/info/exclude-Zeile, printf '/.jaira/\\n' >> .gitignore, jaira update -> 'Moved ... to .git/info/exclude', Zeile ist aus .gitignore raus  8. (Blocker) mit git<2.31 bzw. einem Wrapper, der --path-format=absolute zurueckgibt: jaira update sagt heute faelschlich 'Moved ... from .gitignore to .gitignore' - nach dem Fix sagt es nichts. Automatisch: go test ./core/board ./internal/cli -run 'Ignore|Exclude|Share|Update'"
