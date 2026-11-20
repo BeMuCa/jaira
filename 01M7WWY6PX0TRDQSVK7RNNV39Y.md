@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:57:37Z
+updated-at: 2026-11-20T17:57:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85657
 claimed-at: 2026-11-20T17:52:47Z
@@ -118,3 +118,4 @@ Empfehlung: 2 - alle 7 DoD-Punkte sind mit Tests belegt, die Funde sind Randfael
 - **2026-11-20 17:55 · Alexander Sacharov** — critique Runde 8 (Diff c6c3ed13..1164e2ee): nichts - Guard am Anfang von moveIgnore vor beiden Zweigen, wie die Privat-Pruefung davor.
 - **2026-11-20 17:56 · Alexander Sacharov** — bughunt: change: internal/cli/update.go:349 - the new IgnoreFileName()==".gitignore" guard returns before the 'excluded nowhere' branch too, not only before the move: on git before 2.31 a private board that nothing excludes (a teammate pulled the commit that took the line out of .gitignore, as the release note tells them to) now stays visible as '?? .jaira/' after 'jaira update', where before 1164e2ee AddIgnore wrote the .gitignore line; ran: built jaira, git wrapper echoing --path-format back (as in TestUpdateOnGitWithoutPathFormatLeavesGitignoreAlone), init, removed the exclude line, 'jaira update' (exit 0) - git status still lists .jaira/, while the same update on real git excludes it; blame: 1164e2ee (names NNV39Y)
 - **2026-11-20 17:56 · Alexander Sacharov** — bughunt: done at 1164e2ee - 1 finding (1 change) in 5 files, follow-up hunt (diff since c6c3ed13: core/board/gitignore.go, core/board/exclude_test.go, internal/cli/update.go, internal/cli/privateexclude_test.go, core/release/notes/NNV39Y.md; untracked .jaira/milestones/*.md are board data, not code, not hunted); concurrency, error paths, input, permissions checked; files: README.md core/board/announce.go core/board/board.go core/board/exclude_test.go core/board/gitignore.go core/release/notes/NNV39Y.md core/ticket/store.go docs/COMMANDS.md internal/cli/privateexclude_test.go internal/cli/share.go internal/cli/sharestate_test.go internal/cli/tickets.go internal/cli/update.go
+- **2026-11-20 17:57 · Alexander Sacharov** — testing: bughunt-Fund stimmt - meine Begruendung (added schreibt die getrackte .gitignore) widerspricht init, das auf git<2.31 genau dorthin faellt. Guard nur vor den moved-Zweig; Test um den Fall 'nirgends ausgeschlossen auf altem git -> .gitignore-Zeile' erweitert.
