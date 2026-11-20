@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T22:58:34Z
+updated-at: 2026-11-20T22:59:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -29,7 +29,8 @@ outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, w
 review-summary: none
 round: 2
 review-gaps: "none - geprueft: Git-Hilfen in history_test.go folgen dem Muster jedes Pakets (eigener run-Helfer wie core/refsync/refsync_test.go:284), kein gemeinsamer Helfer vorhanden; hashed/installed haben je zwei Aufrufer im Skript; olderAcceptance wird von TestInstallDryRunWritesNothing weiter gebraucht"
-test-verdict: "pass: go build + go test -race (shipped, role, lane, mod) RC=0 bei geleertem Cache, vorher go test ./... RC=0; DoD 1-5 im Baum geprueft; --check auf dem echten Repo: 34 Tags, exit 0; eine Tag-Zeile (board.ts v0.5.2) entfernt -> exit 1 mit der Zeile; flacher Klon -> exit 1; Aenderung schreibt nichts (Check nur lesend, Generator nach stdout), daher kein Zwei-Schreiber-Fall"
+test-verdict: ""
+hunt-verdict: ""
 ---
 
 # shipped.sha256 kennt jede Version, die in einem Release-Tag ausgeliefert wurde, und CI haelt das fest
