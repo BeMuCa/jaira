@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T17:01:32Z
+updated-at: 2026-11-20T17:01:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59469
 claimed-at: 2026-11-20T16:43:41Z
@@ -89,3 +89,4 @@ review-gaps: "none - geprueft: PRFor folgt bewusst ReleaseFor (gleiches Muster, 
 - **2026-11-20 16:57 · Alexander Sacharov** — critique 1: (a) PRReviewerFor dupliziert modelName-Zeichenpruefung -> gemeinsamer Helfer. (b) GitLab-Runde: ':id' im glab api ist das Projekt des aktuellen Verzeichnisses (glab api --help: 'populated with values from the repository of the current directory'), im Fork also origin statt Ziel; glab mr note antwortet nicht im Thread. Fix: URL-kodiertes <owner/repo> und discussions-API.
 - **2026-11-20 16:59 · Alexander Sacharov** — critique 2: beide Funde aus critique 1 behoben in d527d5a9 (word() in settings.go; GitLab ueber discussions-API mit <owner%2Frepo>). Nichts Neues.
 - **2026-11-20 17:01 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:71 - 'threads' passes owner and name with -F, which gh converts to a JSON integer when the value is all digits (a repo named 2048, a numeric login); the query declares them String!, which a GraphQL server refuses for an Int, so 'threads' fails on such a repository; use -f for owner and name; ran: GH_TOKEN=dummy GH_DEBUG=api gh api graphql -F owner=someone -F name=2048 ... (gh 2.83.1 sent GraphQL variables {"name":2048,...})
+- **2026-11-20 17:01 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:88-94 - 'reply' posts the answer and then resolves in a second call; when the resolve fails (exit 1) the thread is answered but stays open, and SKILL.md:404 says the next round picks it up because 'threads' still lists it, so the next round posts a second answer to the same thread; read
