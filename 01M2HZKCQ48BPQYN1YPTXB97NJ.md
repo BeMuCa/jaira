@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:29:29Z
+updated-at: 2026-11-20T23:29:33Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -37,7 +37,10 @@ outcome-why: "Wer allein ohne Pull Requests arbeitet, bekam eine Rolle, die vor 
 outcome-resolves: "Ein Board sagt in .jaira/pr, ob Arbeit durch einen PR (person/agent) oder direkt auf den Hauptzweig (none) kommt; ohne Datei ist alles byte-gleich wie heute."
 review-summary: "Third value 'none' in .jaira/pr (core/board/arrival.go PRModeIn/PRModeFor; only the exact word, everything else stays person; settings.PRFor/PRIn delegate). jaira update writes a 'How work arrives on this board' paragraph into the CLAUDE.md/AGENTS.md block for agent/none and nothing for person, so an unconfigured board's block stays byte-identical; NoteIsCurrent includes it, so changing the file shows as drift. roles list reports none and forces pr_when=done. pr-gate accepts none read from the base: every named ticket in done or in the logbook, and every commit in base..HEAD must name a ticket - an unnamed merge passes only when its tree equals 'git merge-tree --write-tree' of its parents (catches conflict resolutions, -s ours, files added during merge; fails closed on git < 2.38). jaira-role-pr gets a 'Land it' section (gate, merge base, gate again, fast-forward push HEAD:<branch>, never --force); teamlead/dispatcher get one sentence; reap.sh under none treats a branch as merged once origin/HEAD contains its tip and a commit names the ticket, instead of asking the forge. Release note in core/release/notes/XB97NJ.md."
 round: 6
-review-gaps: "none removed. note: known limit: under .jaira/pr none, pr-gate binds a person's acceptance to the ticket, not to its commits - a commit made after the ticket reached done, naming that ticket or any other ticket already in done or the logbook, lands without anyone seeing it (bughunt round 2, F2; Teamlead 21.11. 00:15: known limit, signoff decides). Closing it means: after the move into done only .jaira/ commits for that ticket. note: known limit: the merge check needs git >= 2.38 (merge-tree --write-tree); older git fails closed, so an unnamed merge must name a ticket there"
+review-gaps: |-
+  note: known limit: under none the gate checks that named tickets are in done, not that their commits existed at acceptance - a commit added after acceptance, or one naming another done/logbook ticket, lands unseen (teamlead decision 21.11., for signoff)
+  note: after a change of .jaira/pr, jaira validate warns 'the jaira block ... no longer matches this board's lanes' - the lanes did not change, the pr file did; the wording points at the wrong cause
+  note: reap.sh landed_head measures only against refs/remotes/origin/HEAD - a clone without that symbolic ref (git init + remote add) or a default remote not named origin stays 'waiting ... has not landed' forever under none; safe (nothing removed), but the message is wrong there
 test-verdict: "pass: go vet + go test -race ./... RC=0 at 282565fb; DoD 1-8 checked in the tree; scratch board: none ticket not done -> exit 3 'push the branch and stop', unnamed commit -> exit 3, non-fast-forward push refused by git, two parallel 'jaira update' -> paragraph once per file"
 hunt-verdict: "pass (round 4 at 282565fb): 0 findings; fail-closed cases (merge with -X options, shallow clone, git < 2.38) hold the gate as documented"
 claimed-by: DESKTOP-RFTCH11-29927
