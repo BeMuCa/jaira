@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:29:36Z
+updated-at: 2026-11-20T19:34:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99353
 claimed-at: 2026-11-20T19:19:21Z
@@ -159,3 +159,8 @@ Empfehlung: 2 - это не блокеры (неверный результат,
 - **2026-11-20 19:24 · Alexander Sacharov** — Fix Klasse 'Neustart erkennt eigene back:-Zeile nicht': Vergleich mit der Absender-Note verworfen (Neustart liest eigene Zeile als Absender); jetzt traegt jede back:-Zeile ', round <n>' - auch person/unknown - und der Neustart sucht die Zeile mit dem aktuellen round aus jaira show. Unabhaengig davon, welche Note die neueste ist.
 - **2026-11-20 19:25 · Alexander Sacharov** — critique: none - round in back:-Zeile, vorhandenes Feld
 - **2026-11-20 19:26 · Alexander Sacharov** — bughunt: done at 08c670e2 - 0 findings in 3 modules, follow-up hunt since 10b38a7a; concurrency, error paths, input, permissions checked (diff: in-progress back: lines end in the round they were written for, back: person/unknown take ', round <n>', one manifest line; twins byte-equal; manifest d3e1e609 = sha256 of 20-in-progress.md at HEAD, a second line for the file is the append-only history; 'since the last back: person' still matches the new suffixed form; ran: go test ./core/shipped/... ./core/lane/... exit 0; no new files since the last round); files: .jaira/lanes/in-progress.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md core/lane/builtin/15-pre-process.md core/lane/builtin/20-in-progress.md core/lane/builtin/27-testing.md core/lane/builtin/40-review.md core/release/notes/TW5FE2.md core/role/builtin/jaira-role-bughunt/SKILL.md core/shipped/shipped.sha256
+- **2026-11-20 19:34 · Alexander Sacharov** — explain: Review ohne Blocker, alle sieben DoD-Punkte erfuellt; drei kleine Randpunkte: Release-Note-Zeile 7 traegt zwei Aenderungen in einer Zeile, testing-Folgerunde bricht bei unbekanntem bughunt-Commit nach Rebase, shipped.sha256 hat 25 Zeilen mit vielen Zwischenstaenden.
+Warum: Eine Zeile mit zwei Aenderungen wird vom Zeilen-Scan als zwei unvollstaendige Eintraege gelesen; die anderen zwei Punkte sind harmlos, koennen aber spaeter stoeren.
+1) Zurueckgeben: Release-Note-Zeile teilen und den Satz 'Commit unbekannt -> ganze Suite wie in Runde 1' in 27-testing.md ergaenzen [give back]
+2) Ticket so annehmen und die drei Punkte als bekannte kleine Raender stehen lassen [accept]
+Empfehlung: 2 - kein Blocker, die Wirkung zeigt sich erst an kuenftigen Tickets, und die Zeilen-Teilung laesst sich beim Merge in einer Minute nachziehen.
