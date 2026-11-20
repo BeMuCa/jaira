@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T22:50:55Z
+updated-at: 2026-11-20T22:51:00Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -67,3 +67,12 @@ Nicht als Freibrief lesen: 'spaeter nachziehen' gilt fuer die Form, nicht fuer K
 4. Schleifenbremse: Blocker sind nur falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke. Nach einem Fix-Durchgang laeuft der Testlauf und ein Bughunt nur ueber den Diff seit dem letzten Hunt, dann review. Nach 3 Rueckgaben aus derselben Lane: Frage an den Teamlead statt weiter schleifen.
 5. Kleine Raender aus review-gaps in derselben Runde schliessen statt als note: stehen lassen - Alex schickt sie sonst ohnehin zurueck. Vorbestehendes ausserhalb des Umfangs als 'note: pre-existing: ...'.
 - **2026-11-20 22:50 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock
+- **2026-11-20 22:51 · Alexander Sacharov** — Worker 2026-11-20, vor dem Plan - offene Entscheidungen. Lage: JG3REW (done, Branch feat/jg3rew, NOCH NICHT auf master) hat .jaira/pr (person|agent) eingefuehrt; die Rollen lesen es zur Laufzeit ueber 'jaira roles list'. Das ist genau die Board-Datei, die dieses Ticket braucht, und ein Laufzeit-Weg statt des im September gewaehlten erzeugten Blocks.
+F1 Wo steht die Einstellung?
+ 1) (empfohlen) dritter Wert in .jaira/pr: person|agent|none - 'none' = kein PR, Arbeit direkt auf den Hauptzweig. Eine Datei, ein Begriff; Branch baut auf feat/jg3rew auf oder wartet auf dessen Merge.
+ 2) eigene Datei .jaira/flow (pr|direct) - unabhaengig von JG3REW, aber zwei Dateien fuer ein Thema.
+F2 Wie erfaehrt der ausgelieferte Prompt davon?
+ 1) (empfohlen) beides: der Prompt liest es zur Laufzeit (roles list, wie JG3REW) UND jaira update schreibt den Absatz im CLAUDE.md/AGENTS.md-Block passend (PR-Absatz bzw. 'direkt auf master, kein PR'). Agenten ohne Rollen-Skill lesen den Block.
+ 2) nur erzeugter Block, Prompt sagt 'der Block gilt vor mir' - Entscheidung vom 15.09., aber dann gibt es zwei Mechanismen fuer .jaira/pr.
+ 3) nur Laufzeit, Block bleibt fest.
+Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
