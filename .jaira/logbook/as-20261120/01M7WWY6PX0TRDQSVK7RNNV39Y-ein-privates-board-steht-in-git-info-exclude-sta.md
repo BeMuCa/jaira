@@ -1,7 +1,7 @@
 ---
 id: 01M7WWY6PX0TRDQSVK7RNNV39Y
 title: Ein privates Board steht in .git/info/exclude statt in der .gitignore des Arbeitsbaums
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,23 +19,42 @@ blocked-by: []
 related:
   - 01M263QP1A3MRANYPWGYSDBCT5
   - 01M4TRC37SNBER05X090DPSFGE
-commits: []
+commits:
+  - 03e359db008f2ac54c6aaeb81f050cbf9b67e656
+  - 440071302dbdad9385de7a0366cb64f5096b6ea6
+  - 394a544aa3ab616ebb4aecb04b697b0a70f3f131
+  - d62bafaa6d2880cf018b62102097a375cfd759be
+  - 75e2b8b5ff5fc7c80d33967862256c0d54dd2447
+  - 750e2acfa9eb62a0b30325f5a1b85795ad6b3b13
+  - c6c3ed13946997d9637f6d0d0115a332559ef743
+  - 1164e2ee9c51f447013eb9eac0bac41d34b8c8b2
+  - 21742362195e1eb6788435ab13279097be1deb5f
+  - 776e1ccd212585d8edb21fa91f4ed44b47bd3c92
+  - 0c153490e9062fb31a4fa8be9759351c94872805
+  - cbff542407429469a278bb7071428102ca4a77cf
+  - 79d71506fb2d2ca1cca62536338215949c5c91b5
+  - dde1cf1c70b82a32e45f03e37d86cb9194fbc576
+  - 7e69b45179e4d9290854fc1a5e18cc0bb84a0020
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T19:27:10Z
+updated-at: 2026-11-20T20:04:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96533
 claimed-at: 2026-11-20T19:19:14Z
 outcome-what: "appendEntry ueberschreibt eine unlesbare info/exclude oder .gitignore nie mehr; Lesefehler wird gemeldet"
 outcome-why: "signoff-Rueckgabe: ein unlesbares info/exclude wurde bisher durch nur jairas Eintrag ersetzt"
 outcome-resolves: Datenverlust bei unlesbarer Ausschlussdatei
-review-summary: "none"
+review-summary: "Ein privates Board wird jetzt in <git-common-dir>/info/exclude ausgeschlossen statt in der getrackten .gitignore (core/board/gitignore.go): gitPlace fragt git per rev-parse --git-common-dir --show-prefix nach Datei und Muster (/sub/.jaira/ fuer ein Board im Unterverzeichnis, Glob-Zeichen escaped); ohne Repo oder auf git < 2.31 bleibt .gitignore der Ort. AddIgnore/RemoveIgnore/MoveIgnore schreiben info/exclude unter einer Sperrdatei daneben (neues ticket.LockFile, aus Store.lock herausgeloest) und per WriteAtomic; appendEntry ueberschreibt eine unlesbare Datei nie, haelt CRLF; dropEntry nimmt nur jairas Kommentar+Zeile und die Leerzeile direkt danach. share schreibt zuerst /.jaira/lanes/ in .gitignore, hebt dann nur jairas verankerten Eintrag auf und fragt git check-ignore, ob noch eine fremde Regel das Board ausschliesst (Warnung, --json still_ignored/ignore_unknown). share --undo schliesst wieder in info/exclude aus und sagt, dass Teamkollegen jaira update laufen lassen. jaira update verschiebt die alte .gitignore-Zeile eines privaten Boards nach info/exclude bzw. schliesst ein privates Board aus, das nichts ausschliesst; ein Board mit .gitattributes oder getrackten Dateien bleibt unberuehrt, ein git ohne Antwort (Symlink) ebenfalls. README, COMMANDS.md, Hilfetexte, Agent-Block und core/release/notes/NNV39Y.md sind nachgezogen."
 round: 15
-review-gaps: "none - Diff dde1cf1c: zwei Aufrufe getauscht, eine Fehlerumhuellung, ein Test"
-test-verdict: "fail->fixed: suite gruen bei dde1cf1c, Funktion mit Binary geprueft (Fehlerpfad, zwei Schreiber); bughunt: share auf schon geteiltem Board meldete 'stays private'"
-hunt-verdict: "1 change (falsche 'stays private'-Meldung auf geteiltem Board) - zurueck in in-progress"
-review-verdict: "Der Diff erfuellt alle 9 DoD-Punkte, jeder mit Test; go test ./core/board ./core/ticket ./internal/cli und go vet gruen. Mit gebautem Binary nachgespielt: init + neuer Worktree lassen git status sauber, share/--undo, Migration einer alten .gitignore-Zeile (zweites update meldet nichts), Teamkollege ohne Ausschluss wird ausgeschlossen, Board in 'sub dir/' bekommt /sub dir/.jaira/. Kein Blocker; vier Notes, davon eine pre-existing."
-review-round: 12
-review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/r && cd /tmp/r && git init && git commit --allow-empty -m init  3. /tmp/jaira init -> Ausgabe: 'excluded in .git/info/exclude'  4. git status --short -> kein .gitignore und kein .jaira/ in der Liste  5. tail -2 .git/info/exclude -> zeigt /.jaira/  6. git worktree add ../r-wt && git -C ../r-wt status --short -> leer  7. /tmp/jaira share --json -> unignored true, still_ignored false; git status zeigt jetzt ?? .jaira/  8. Alte Boards: in einem Repo mit committeter .gitignore-Zeile /.jaira/ 'jaira update' laufen lassen -> 'Moved this private board's entry from .gitignore to .git/info/exclude', git diff zeigt nur die entfernte Zeile; ein zweites 'jaira update --json' meldet ignore_moved false"
+review-gaps: |-
+  note: board.Ignored startet fuer jedes geteilte Board bei jedem Befehl einen zusaetzlichen git-Prozess (openStore -> bindDriverIfShared -> Ignored -> gitPlace) - auf Linux ~2 ms, auf Windows spuerbar mehr; ein Cache pro Prozess oder die Reihenfolge InGitignore/hasAttributes vor gitPlace wuerde das sparen
+  note: bei einem Board im Unterverzeichnis nennt init/share --undo den absoluten Pfad von info/exclude (IgnoreFileName gibt bei ../-Pfad absolut zurueck) - korrekt, aber lang
+  note: ein Team, das /.jaira/ absichtlich in der committeten .gitignore fuehrt, bekommt die Zeile von jaira update nach info/exclude verschoben; die !-Release-Note sagt das, die Entscheidung bleibt beim Menschen
+  note: info/exclude.jaira.lock bleibt nach einem Absturz in .git/info liegen, bis breakStale es als veraltet bricht - harmlos, nur sichtbar
+test-verdict: "pass: go test -race internal/cli+core/board gruen (RC=0) bei 7e69b451, voller Lauf -race gruen bei 79d71506; DoD 10 per Test; Binary: share/--undo mit chmod 000 brechen ab, Dateien byteweise erhalten, Board bleibt privat; zwei parallele share --undo -> Eintrag einmal"
+hunt-verdict: "0 findings at 7e69b451 (follow-up hunt ueber dde1cf1c..7e69b451)"
+review-verdict: "Der Diff erfuellt alle 10 DoD-Punkte; die genannten Tests laufen gruen (core/board, core/ticket, internal/cli). Von Hand nachgestellt: init + Worktree lassen git status sauber, share/--undo, Altboard-Migration per update, Teamkollege ohne Eintrag, Board im Unterverzeichnis, negierte Regel in check-ignore (Exit 1, korrekt). Keine Defekte gefunden - nur vier Notes, keine davon blockiert."
+review-round: 15
+review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/t && cd /tmp/t && git init && git commit --allow-empty -m init  3. /tmp/jaira init  4. git status --short zeigt KEINE .gitignore und kein .jaira/; tail -2 .git/info/exclude zeigt /.jaira/  5. git worktree add ../t2 && cd ../t2 && /tmp/jaira init && git status --short - wieder keine .gitignore  6. cd /tmp/t && /tmp/jaira share - .jaira/ erscheint als ?? und .gitignore enthaelt nur /.jaira/lanes/; /.jaira/ ist aus .git/info/exclude verschwunden  7. /tmp/jaira share --undo - die letzte Zeile sagt, Teamkollegen sollen jaira update laufen lassen; .jaira/ ist wieder weg aus git status  8. Altboard: printf '/.jaira/\\n' >> .gitignore && sed -i '/jaira/d' .git/info/exclude && /tmp/jaira update - Ausgabe 'Moved this private board's entry from .gitignore to .git/info/exclude', .gitignore ohne die Zeile, .jaira/ nicht in git status"
 ---
 
 # Ein privates Board steht in .git/info/exclude statt in der .gitignore des Arbeitsbaums
@@ -162,3 +181,17 @@ Empfehlung: 2 - der Lesefehler-Fall ist praktisch kaum erreichbar und war schon 
 - **2026-11-20 19:26 · Alexander Sacharov** — bughunt: change: internal/cli/share.go:91-94 - share has no already-shared guard, so re-running 'jaira share' on a board that is already shared, with a .gitignore it cannot read, fails with 'the board stays private: open .gitignore: permission denied' although the board is shared and git does not ignore it; the message reports a state that does not exist (AddLanesIgnore swallows its own read error at core/board/gitignore.go:344 and fails later in appendEntry); ran: init; share (exit 0); chmod 000 .gitignore; share (exit 1, 'stays private'); git check-ignore -q .jaira/x (exit 1, not ignored)
 - **2026-11-20 19:26 · Alexander Sacharov** — bughunt: done at dde1cf1c - 1 finding (1 change, 0 pre-existing) in 3 files, follow-up hunt (diff since 79d71506: internal/cli/share.go internal/cli/privateexclude_test.go core/release/notes/NNV39Y.md; checked boardLine/dropEntry cannot drop the lanes line now written first; ran: share twice with chmod 000 .gitignore, init with chmod 000 info/exclude); concurrency, error paths, input, permissions checked; untracked .jaira/milestones/*.md are board data, not read; files: README.md core/board/announce.go core/board/board.go core/board/exclude_test.go core/board/gitignore.go core/release/notes/NNV39Y.md core/ticket/store.go docs/COMMANDS.md internal/cli/privateexclude_test.go internal/cli/share.go internal/cli/sharestate_test.go internal/cli/tickets.go internal/cli/update.go
 - **2026-11-20 19:27 · Alexander Sacharov** — testing Runde 2 zurueck (2. Rueckgabe dieser signoff-Runde): 'the board stays private' nur, wenn jairas Eintrag noch steht (board.Ignored), sonst roher Fehler. Test um zweites share auf geteiltem Board erweitert.
+- **2026-11-20 19:27 · Alexander Sacharov** — critique Runde 15 (Diff dde1cf1c..7e69b451): nichts - Ignored liest jairas eigenen Eintrag, genau die Aussage der Meldung.
+- **2026-11-20 19:29 · Alexander Sacharov** — bughunt: done at 7e69b451 - 0 findings in 2 files, follow-up hunt (diff since dde1cf1c: internal/cli/share.go internal/cli/privateexclude_test.go; checked board.Ignored on an unreadable .gitignore falls back to info/exclude and only ever under-claims privacy; ran: go test -run TestShareWithAnUnreadableGitignore -count=3); concurrency, error paths, input, permissions checked; files: README.md core/board/announce.go core/board/board.go core/board/exclude_test.go core/board/gitignore.go core/release/notes/NNV39Y.md core/ticket/store.go docs/COMMANDS.md internal/cli/privateexclude_test.go internal/cli/share.go internal/cli/sharestate_test.go internal/cli/tickets.go internal/cli/update.go
+- **2026-11-20 19:32 · Alexander Sacharov** — review (Runde 12, frischer Kontext): keine Blocker. Tests gruen; init/Worktree/share/undo/update-Migration/Teamkollege/Unterverzeichnis von Hand mit gebautem Binary nachgestellt. Vier Notes in review-gaps (Extra-git-Prozess pro Befehl bei geteilten Boards, absoluter Pfad bei Unterverzeichnis-Board, Teams mit absichtlicher .gitignore-Zeile, liegengebliebene Sperrdatei).
+- **2026-11-20 19:34 · Alexander Sacharov** — explain: Ревью не нашло дефектов: приватная доска теперь исключается через .git/info/exclude, а не через отслеживаемую .gitignore; все 10 пунктов DoD выполнены, тесты зелёные. Осталось четыре некритичных замечания (лишний git-процесс на команду у общих досок, длинный абсолютный путь для доски в подкаталоге, перенос строки из .gitignore у команд, которые держат /.jaira/ там намеренно, залежавшийся lock-файл после сбоя).
+Warum: Приватная доска больше не пачкает общую .gitignore и git status, а блокеров у ревью нет. Замечания про удобство и скорость, не про корректность.
+1) Принять тикет как есть, замечания не чинить [accept]
+2) Вернуть в работу: кэш Ignored на процесс, чтобы убрать лишний git-процесс (заметно на Windows) [give back]
+Empfehlung: 1 - блокеров нет, всё проверено руками, а кэш можно сделать отдельно, если Windows правда тормозит.
+- **2026-11-20 19:59 · Alexander Sacharov** — explain: Ревью не нашло дефектов: приватная доска теперь исключается через .git/info/exclude, а не через отслеживаемую .gitignore; все 10 пунктов DoD выполнены, тесты зелёные. Осталось четыре некритичных замечания (лишний git-процесс на команду у общих досок, длинный абсолютный путь для доски в подкаталоге, перенос строки из .gitignore у команд, которые держат /.jaira/ там намеренно, залежавшийся lock-файл после сбоя).
+Warum: Приватная доска больше не пачкает общую .gitignore и git status, а блокеров у ревью нет. Замечания про удобство и скорость, не про корректность.
+1) Принять тикет как есть, замечания не чинить [accept]
+2) Вернуть в работу: кэш Ignored на процесс, чтобы убрать лишний git-процесс (заметно на Windows) [give back]
+Empfehlung: 1 - блокеров нет, всё проверено руками, а кэш можно сделать отдельно, если Windows правда тормозит.
+- **2026-11-20 20:03 · Alexander Sacharov** — decision: 1) Принять тикет как есть, замечания не чинить
