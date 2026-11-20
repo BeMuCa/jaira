@@ -27,14 +27,14 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T17:42:32Z
+updated-at: 2026-11-20T17:43:02Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80126
 claimed-at: 2026-11-20T17:38:47Z
 outcome-what: "Eingebaute Lanes pre-process, in-progress, testing, review und die Rolle jaira-role-bughunt: pre-process schreibt Fehlerklasse, Standard-Eingabeklassen und Annahmeregel als DoD-Punkte; in-progress repariert die Ursache, testet die Klasse, zieht Geschwister mit, prueft die vier Kategorien, schliesst kleine Raender in derselben Runde und fragt nach der dritten Rueckgabe derselben Lane - den Absender liest es aus der neuesten Note ('Given back from'/'decision:' = Person, setzt zurueck); testing/bughunt melden Klasse + Beispiel; testing und review schicken nur fuer Blocker zurueck, 'note: pre-existing:' fuer Altes. .jaira/lanes nachgezogen, shipped.sha256, Release-Note."
 outcome-why: "Review- und bughunt-Schleifen liefen 10-24 Runden, weil jede Runde den Nachbarfall eines nur am Beispiel reparierten Fehlers fand und die vier Kategorien vor dem Code nie gefragt wurden; die Rueckgabe einer Person darf dabei nicht als Schleifenrunde zaehlen."
 outcome-resolves: "DoD 1-7: 15-pre-process.md:38, 20-in-progress.md:29 und :66-97, 27-testing.md:97, bughunt SKILL.md:104, 40-review.md:57, shipped.sha256, core/release/notes/TW5FE2.md"
-review-summary: "Only prompt text changes, no Go code. pre-process now names the class of fault, the standard input classes (empty/huge, encoding/CRLF, spaces/Windows paths, two writers, failure halfway) and for heuristics an acceptance rule, and writes them into the DoD with 'jaira dod --add'. in-progress fixes the cause instead of the example, tests the class in one parametrised test, fixes sibling places, checks the four categories itself and closes small edges in the same round; it logs every return as its own 'back: <lane>, round n' note ('back: person' for a person's return, which resets the count) and on the third return from one lane moves to human with a question. testing and review send back only for four blocker kinds (wrong result, data loss, crash, security hole); testing writes the rest as 'testing: note:', names class + example, passes a finding only when a neighbour of the example works too, and a follow-up round hunts only the diff since the last hunt. bughunt names class and example. Board copies in .jaira/lanes are byte-equal to builtin, every new version is in core/shipped/shipped.sha256, release note core/release/notes/TW5FE2.md has five one-line entries."
+review-summary: "none"
 round: 8
 review-gaps: |-
   note: core/lane/builtin/20-in-progress.md:72-82 - class: return origin is unknowable; example: a signoff return without a note looks like a review return and is logged 'back: review', so two real review returns plus one person return escalate to human early; fix: move records the from-lane (DF0YD6/H6CD33), teamlead kept it out of this ticket
