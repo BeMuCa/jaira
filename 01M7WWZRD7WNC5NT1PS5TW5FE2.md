@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T18:09:36Z
+updated-at: 2026-11-20T18:09:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5618
 claimed-at: 2026-11-20T18:03:30Z
@@ -38,7 +38,7 @@ review-summary: "none"
 round: 10
 review-gaps: none
 test-verdict: "pass: follow-up round - go build ./... ok; go test -race -count=1 ./core/lane/... ./core/shipped ./core/release/... RC=0 (packages the diff since 9fa8ce3c touches); DoD 1-7 in the tree, proof lines re-checked after the edit; .jaira/lanes in-progress/testing/review byte-equal to builtin, all three hashes in shipped.sha256; a fresh 'jaira init' from this tree ships the review: prefix in review.md and in-progress.md; prompts only - nothing writes, so no failure path or two-writer case"
-hunt-verdict: "pass: bughunt done at 9fa8ce3c, 0 change, 0 pre-existing (earlier steal-note finding fixed in 9fa8ce3c)"
+hunt-verdict: "pass: bughunt done at d0cb1f49, 0 change, 0 pre-existing"
 review-verdict: "No blocker. All seven DoD items are met in the prompts; builtin and board copies are identical; go test ./core/shipped/... ./core/lane/... ./core/role/... passes. The return-counting rule rests on note conventions rather than recorded data - it works as long as each sending lane writes its note last, which the critique, optimize and testing prompts already require and the review prompt only asks for."
 review-round: 9
 review-check: "1. cd /home/alex/projects/.worktrees/jaira-tw5fe2  2. git diff c69471d0^ HEAD -- core/lane/builtin/20-in-progress.md - see sections 'Fix the class, not the example' and 'The third return from the same lane'  3. git diff c69471d0^ HEAD -- core/lane/builtin/15-pre-process.md - see 'Name the edges before the code' with the input-class list  4. diff core/lane/builtin/20-in-progress.md .jaira/lanes/in-progress.md - prints nothing (copies equal)  5. go test ./core/shipped/... ./core/lane/... - both ok  6. real check: on the next ticket that runs through pre-process, jaira show <id> shows DoD items naming a class of fault and input classes"
