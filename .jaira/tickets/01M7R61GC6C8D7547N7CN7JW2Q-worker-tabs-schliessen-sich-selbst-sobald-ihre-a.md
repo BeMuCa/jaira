@@ -21,26 +21,27 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-18T20:37:15Z
-updated-at: 2026-11-20T18:23:37Z
+updated-at: 2026-11-20T19:26:51Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-35719
-claimed-at: 2026-11-20T18:08:45Z
-outcome-what: "close-tab.sh und reap.sh fragen 'uncommitted' ueber ein gemeinsames Skript uncommitted.sh mit der Regel von reap.sh; Tabellentest ueber beide Skripte; Hilfetexte und Release-Note nennen die Regel"
-outcome-why: "Rueckgabe aus signoff (Person): zwei verschiedene Filter fuer denselben Begriff 'uncommitted unter .jaira/'"
-outcome-resolves: "DoD 9, dazu 1-8"
+claimed-by: DESKTOP-RFTCH11-97503
+claimed-at: 2026-11-20T19:19:16Z
+outcome-what: "Zusaetzlich: worker- und dispatcher-SKILL.md beschreiben die Schliess-Regel wie uncommitted.sh (lanes/tags/logbook halten den Tab offen)"
+outcome-why: "Rueckgabe aus signoff 2026-11-20: Doku widersprach uncommitted.sh"
+outcome-resolves: "DoD 10, dazu 1-9"
 review-summary: "none"
-review-gaps: "entfernt: Faelle, die der neue Tabellentest doppelt - reap_test.go 'board files on no ref', 'untracked board files on no ref' und die gestagten Dateien in TestReapClosesAMergedTicket; closetab_test.go 'uncommitted', 'untracked source'; DoD-2/6-Proofs nachgezogen. Gelassen: TestReapClosesAMergedTicket mit Umlaut-Ticket (prueft das echte Entfernen, nicht nur --dry-run)"
-test-verdict: "pass: go vet/build ok, go test -race -count=1 ./... RC=0; DoD 6: TestReapClosesAMergedTicket mit gestagten A/AM Ticket- und Milestone-Dateien gruen, ohne Fix rot (kept ... uncommitted changes: .jaira/milestones/a.md .jaira/tickets/zz99zz.md); reap.sh --dry-run live im Repo rc 0 (nur waiting-Zeilen); DoD 7/8 unveraendert seit Lauf auf 249b7699 (183/0); schreibt nichts Neues, kein Zwei-Schreiber-Test"
-hunt-verdict: "pass: bughunt done at e955f977, 0 change, 0 pre-existing (Filter gegen ??/A/AM/M/MM/AD/D/R und .jaira/lanes geprueft)"
-round: 11
-review-verdict: "Kein Blocker. Alle 8 DoD-Punkte durch Code und Tests gedeckt. close-tab.sh und reap.sh ganz gelesen (Nebenlaeufigkeit: flock + geschlossenes fd 9; Fehlerpfade: ERR-Trap, jeder Zweifel = kept; Eingabe: Umlaute per quotePath=false, Kleinbuchstaben-Slug; Rechte: nur Tabs mit spawn.sh-Label, nie main/eigener Worktree). Selbst ausgefuehrt: go test ./core/role -run 'TestCloseTab|TestReap|TestWorkerAndDispatcher' ok, claude plugin test im Cockpit 183 pass 0 fail. Unsicher bleibt nur das echte Herdr-Verhalten beim Selbst-Schliessen."
-review-round: 10
+review-gaps: "none - Folgerunde aendert nur zwei Doku-Absaetze (worker/dispatcher SKILL.md) und zwei Hash-Zeilen in shipped.sha256; nichts doppelt, nichts tot"
+test-verdict: "pass: go vet/build ok, go test -race -count=1 ./... RC=0; DoD 9: TestUncommittedIsOneRuleForCloseTabAndReap 11 Faelle gruen, mit alter close-tab.sh rot in genau den 4 abweichenden Klassen (logbook, Ticket geloescht, Lane, tags); live: uncommitted.sh in diesem Worktree (nur untracked milestones) leer rc 0, mit untracked .jaira/tags-Datei gezaehlt, ausserhalb eines Repos rc 1; reap.sh --dry-run live rc 0; liest nur, kein Zwei-Schreiber-Test"
+hunt-verdict: "pass: bughunt done at 79ceaf7e, 0 change, 0 pre-existing"
+round: 12
+review-verdict: "The diff meets DoD 1-7 and 9 with tests (go test ./core/role ok, cockpit 183/183 locally); no defects found in close-tab.sh, uncommitted.sh, reap.sh or reapMerged. DoD 8 is met as far as the job exists and is green locally; a green CI run is not yet observable because the branch has no run."
+review-round: 11
 review-check: |-
-  1. cd /home/alex/projects/.worktrees/jaira-n7jw2q && go test ./core/role -run 'CloseTab|Reap' -count=1 -> ok
-  2. cd core/mod/builtin/jaira-cockpit && claude plugin test . -> '183 pass, 0 fail'
-  3. Im Tab eines Tickets in in-progress: core/role/builtin/jaira-dispatcher/scripts/close-tab.sh --dry-run --parent x <ID> -> 'kept <ID>: the ticket is in in-progress, not with a person'
-  4. Echt: per Cockpit einen Worker auf ein kleines Ticket starten; kommt es in signoff an und ist der Bericht beim Teamlead, verschwindet der Worker-Tab von selbst
-  5. Nach git push: Actions-Tab, Job 'cockpit' ist gruen
+  1. cd /home/alex/projects/.worktrees/jaira-n7jw2q
+  2. go test ./core/role -run 'TestCloseTab|TestUncommitted|TestReap' -> ok
+  3. cd core/mod/builtin/jaira-cockpit && claude plugin test -> 183 pass, 0 fail
+  4. In a Herdr tab with a ticket in signoff and a clean worktree: core/role/builtin/jaira-dispatcher/scripts/close-tab.sh --dry-run --parent <session> <ID> -> prints "would close <ID> <tab>"
+  5. Touch any source file, run step 4 again -> prints "kept <ID>: uncommitted changes: <file>"
+  6. After pushing: GitHub Actions on the PR shows the "cockpit" job green
 ---
 
 # Worker-Tabs schliessen sich selbst, sobald ihre Arbeit bei einer Person liegt oder gemergt ist
@@ -56,7 +57,7 @@ review-check: |-
 - [x] Release-Note-Zeile in core/release/notes/<ID>.md
   proof: core/release/notes/N7JW2Q.md (3 lines)
 - [x] reap.sh laeuft pro Repository nur einmal gleichzeitig (Lock); ein Lock eines toten Laufs wird uebernommen; Test
-  proof: core/role/builtin/jaira-dispatcher/scripts/reap.sh lock block after the panes check (pid file, ln to reap.lock, takeover when kill -0 fails); test core/role/reap_test.go TestReapRunsOneAtATime
+  proof: core/role/builtin/jaira-dispatcher/scripts/reap.sh Lock-Block: flock -n auf reap.lock (fd 9, Rumpf in '{ } 9>&-', perl-Fallback auf macOS) - der Kernel gibt das Lock eines toten Laufs frei; test core/role/reap_test.go TestReapRunsOneAtATime
 - [x] reap.sh zaehlt Aenderungen unter .jaira/ (auch eine modifizierte Ticketdatei) nicht als uncommitted, wie close-tab.sh; Test
   proof: core/role/builtin/jaira-dispatcher/scripts/uncommitted.sh (grep -v -E '^(\?\?|[ MA][ M]) \.jaira/(tickets|milestones)/'), von reap.sh und close-tab.sh aufgerufen; test core/role/uncommitted_test.go TestUncommittedIsOneRuleForCloseTabAndReap (Ticket modifiziert/untracked/gestagt, Milestone AM zaehlen nicht; Lane, tags, logbook, geloeschtes Ticket zaehlen), TestReapClosesAMergedTicket (modifizierte Umlaut-Ticketdatei)
 - [x] close-tab.sh endet in jeder Fehlerklasse mit 'kept <grund>' und exit 0: jeder set -e-Pfad (z.B. scheiterndes 'jaira json get'), herdr nicht erreichbar, Tab schon weg, Lane auf dem Board unbekannt, Lanes des Boards nicht lesbar; Test je Klasse; Geschwister-Skripte unter jaira-dispatcher/scripts geprueft
@@ -65,6 +66,8 @@ review-check: |-
   proof: .github/workflows/ci.yaml job cockpit (claude-code 2.1.329 gepinnt); tests/board.test.ts borderStyle-Test repariert; lokal ohne Login 183 pass 0 fail
 - [x] close-tab.sh und reap.sh fragen 'uncommitted' ueber eine gemeinsame Regel (jaira-dispatcher/scripts/uncommitted.sh, die strengere von reap.sh): Tabellentest ueber beide Skripte fuer jede Klasse - sauber; Ticket modifiziert (Umlaut), untracked, gestagt; Milestone gestagt+modifiziert; Ticket geloescht; Lane modifiziert; tags/logbook untracked; Quelle modifiziert/untracked; git status scheitert
   proof: core/role/builtin/jaira-dispatcher/scripts/uncommitted.sh, aufgerufen in close-tab.sh und reap.sh; core/role/uncommitted_test.go TestUncommittedIsOneRuleForCloseTabAndReap (11 Faelle, mit alter close-tab.sh rot in logbook/ticket deleted/lane/tags), TestUncommittedFailsWhereGitDoes
+- [x] jaira-worker/SKILL.md und jaira-dispatcher/SKILL.md beschreiben die Schliess-Regel wie uncommitted.sh sie prueft (nur neue/geaenderte Ticket- und Milestone-Dateien unter .jaira/ zaehlen nicht)
+  proof: core/role/builtin/jaira-worker/SKILL.md:396, core/role/builtin/jaira-dispatcher/SKILL.md:462; shipped.sha256 ergaenzt, go test ./role ./lane ok
 
 ## Options
 
@@ -142,3 +145,15 @@ Warum: Alle 8 DoD-Punkte sind durch Code und Tests gedeckt (183 Cockpit-Tests gr
 2) Ticket so annehmen; Herdr-Verhalten und CI-Job beim ersten echten Einsatz und ersten Push beobachten [accept]
 Empfehlung: 2 - das Risiko ist begrenzt (Tab bleibt im Zweifel offen), und ein echter Lauf zeigt mehr als ein weiterer Review.
 - **2026-11-20 18:17 · Alexander Sacharov** — Given back from signoff (Person, per CLI): Dirty-Filter vereinheitlichen - close-tab.sh und reap.sh bekommen einen gemeinsamen Filter fuer 'uncommitted unter .jaira/', die strengere Regel von reap.sh gilt, ein gemeinsames Snippet fuer beide, Tabellentest ueber beide Skripte. Echtes Herdr und CI-Job auf GitHub bleiben Pruefschritte bei Abnahme bzw. erstem PR.
+- **2026-11-20 18:25 · Alexander Sacharov** — bughunt: done at 79ceaf7e - 0 findings, follow-up hunt since e955f977: uncommitted.sh and uncommitted_test.go read whole (new to the list), close-tab.sh, reap.sh, closetab_test.go, reap_test.go, shipped.sha256 and the release note read as diff; concurrency, error paths, input, permissions checked; ran: go test ./role -run 'Reap|CloseTab|Uncommitted' -count=1 (ok), sha256sum of the three scripts against shipped.sha256 (match), uncommitted.sh on a missing dir (exit 1), without dir (exit 2), on a ticket file with a truncated UTF-8 byte and with umlauts (not quoted, not counted); files: .github/workflows/ci.yaml .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/N7JW2Q.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-dispatcher/scripts/close-tab.sh core/role/builtin/jaira-dispatcher/scripts/reap.sh core/role/builtin/jaira-dispatcher/scripts/uncommitted.sh core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/role/closetab_test.go core/role/reap_test.go core/role/uncommitted_test.go core/shipped/shipped.sha256
+- **2026-11-20 18:30 · Alexander Sacharov** — Frage an Teamlead (Regel 4, das waere die 4. Rueckgabe aus signoff): Review-Note 3 - jaira-dispatcher/SKILL.md:462 und jaira-worker/SKILL.md:396 sagen noch 'nothing uncommitted outside .jaira/', uncommitted.sh zaehlt lanes/tags/logbook mit. 1) (empfohlen) Noch eine Runde: die zwei Zeilen auf 'nichts, was uncommitted.sh zaehlt' aendern, Diff-Hunt + frische Review, ~15 min. 2) So annehmen, die zwei Zeilen als eigenes Folgeticket. Uebrige Notes: Push erledigt (origin = 79ceaf7e), DoD-5-Proof auf flock korrigiert, CI-Job laeuft erst im PR, Parent ohne uds: bleibt bekannte Grenze.
+- **2026-11-20 19:15 · Alexander Sacharov** — explain: Review fand keinen Code-Fehler. Offen ist nur Text: jaira-dispatcher/SKILL.md:462 und jaira-worker/SKILL.md:396 sagen 'nothing uncommitted outside .jaira/', aber uncommitted.sh nimmt nur .jaira/tickets und .jaira/milestones aus; lanes, tags und logbook zaehlen mit.
+Warum: Wer die Skills liest, glaubt, eine geaenderte Lane-Datei blockiere das Schliessen nicht, und wundert sich, warum der Tab offen bleibt; die Doku widerspricht dem Verhalten.
+1) Noch eine Runde: die zwei Zeilen auf 'nichts, was uncommitted.sh zaehlt' aendern, Diff-Hunt und frische Review, ca. 15 Minuten [give back]
+2) Ticket so annehmen; die zwei Zeilen spaeter in einem anderen Ticket korrigieren [accept]
+Empfehlung: 1 - es sind nur zwei Zeilen, und eine Doku, die dem Skript widerspricht, kostet spaeter mehr als die Runde jetzt.
+- **2026-11-20 19:18 · Alexander Sacharov** — decision: 1) Noch eine Runde: die zwei Zeilen auf 'nichts, was uncommitted.sh zaehlt' aendern, Diff-Hunt und frische Review, ca. 15 Minuten
+- **2026-11-20 19:18 · Alexander Sacharov** — Given back from signoff: 1) Noch eine Runde: die zwei Zeilen auf 'nichts, was uncommitted.sh zaehlt' aendern, Diff-Hunt und frische Review, ca. 15 Minuten
+- **2026-11-20 19:19 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
+- **2026-11-20 19:26 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock (Teamlead jaira-64). Runde 2026-11-20 19:2x: worker- und dispatcher-SKILL.md auf die Regel von uncommitted.sh umgeschrieben (DoD 10), shipped.sha256 um beide Hashes ergaenzt; DoD-5-Proof nannte flock schon.
+- **2026-11-20 19:26 · Alexander Sacharov** — critique (Folgepass, nur die zwei Absaetze gelesen): none - die Beschreibung deckt sich mit dem grep in uncommitted.sh (?? und [ MA][ M] unter tickets/milestones durchgelassen, geloeschte Tickets und lane/tags/logbook zaehlen).

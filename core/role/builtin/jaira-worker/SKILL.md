@@ -393,7 +393,9 @@ jaira-dispatcher/scripts/close-tab.sh --parent <session> <ticket id>
 agent".) Nobody needs your context any more: a ticket given back gets a new
 worker, and what you knew is on the ticket. The script decides, not you — it
 closes only when the ticket sits in a person's lane or in done, has no open
-question and your worktree holds nothing uncommitted outside `.jaira/`, and
-otherwise prints `kept <ticket>: <reason>` and leaves the tab. A message that
-did not reach the parent means no `--parent` here: the report is then in your
-tab, and the tab stays. Without a parent you never run it.
+question and your worktree holds nothing `uncommitted.sh` counts — it lets
+through only new or changed ticket and milestone files under `.jaira/`, so a
+changed lane, tag or logbook file keeps the tab — and otherwise prints
+`kept <ticket>: <reason>` and leaves the tab. A message that did not reach the
+parent means no `--parent` here: the report is then in your tab, and the tab
+stays. Without a parent you never run it.
