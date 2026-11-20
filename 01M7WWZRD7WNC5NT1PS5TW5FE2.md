@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T17:43:21Z
+updated-at: 2026-11-20T17:45:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80126
 claimed-at: 2026-11-20T17:38:47Z
@@ -107,3 +107,4 @@ Empfehlung: 2 - der Teamlead hat das bewusst aus diesem Ticket genommen, alle 7 
 - **2026-11-20 17:39 · Alexander Sacharov** — Plan Rueckgabe signoff: Herkunft aus den Notes seit der letzten eigenen back:-Zeile lesen. 'Given back from <lane>:' (schreibt das Cockpit bei jeder Rueckgabe einer Person, register.tsx:900) oder 'decision:' (Cockpit-Antwort, register.tsx:822) => back: person. Sonst die neueste Note mit critique:/optimize:/testing:/bughunt: nennt die Lane; keine davon => review. Wer von Hand zurueckgibt, schreibt dieselbe Zeile - steht im Prompt und in der Release-Note. Kein Go-Code.
 - **2026-11-20 17:42 · Alexander Sacharov** — critique: eine Antwort, die per Nachricht kommt (Teamlead via SendMessage), landet als Note ohne Praefix und wird als review-Rueckgabe gelesen - in-progress.md: Antwort als 'decision: <answer>' notieren
 - **2026-11-20 17:42 · Alexander Sacharov** — back: critique, round 1
+- **2026-11-20 17:45 · Alexander Sacharov** — bughunt: change: core/lane/builtin/20-in-progress.md:80-92 (and its twin .jaira/lanes/in-progress.md) - the sender is read off the newest note, skipping only 'cockpit:' lines, but jaira itself writes a note too: 'jaira pull <id> --steal' appends '<actor> took this ticket over from <holder>' (core/refsync/refsync.go:1433) whenever the ticket's assignee is someone else. A teammate who pulls a ticket that critique/testing or a person sent back then finds that line newest, it falls under 'anything else - the review sent it', and the round is written as 'back: review' - a person's return counted as a loop round, or a loop round booked on the wrong lane toward the third-return stop. Class: any machine-written note landing after the sender's (today only the steal note). Fix: pass over 'took this ticket over from' lines as well as 'cockpit:' (or read past every note whose author did not send it); read: refsync.go:1426-1435, 20-in-progress.md:79-92, blame 56d0a3b8 names TW5FE2
