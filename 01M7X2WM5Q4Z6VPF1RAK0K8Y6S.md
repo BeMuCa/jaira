@@ -1,7 +1,7 @@
 ---
 id: 01M7X2WM5Q4Z6VPF1RAK0K8Y6S
 title: "shipped.sha256 kennt jede Version, die in einem Release-Tag ausgeliefert wurde, und CI haelt das fest"
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T22:59:40Z
+updated-at: 2026-11-20T22:59:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -27,7 +27,7 @@ outcome-what: "Manifest neu erzeugt (8 Tag-Versionen fehlten, u.a. cockpit board
 outcome-why: Hand-gemergte Manifest-Konflikte verloren Zeilen; jaira update --roles hielt dann eine unberuehrte Installation fuer handgeaendert und uebersprang sie still
 outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, wenn eine fehlt, und Manifest-Merges konfliktieren nicht mehr"
 review-summary: none
-round: 2
+round: 3
 review-gaps: "none - geprueft: Git-Hilfen in history_test.go folgen dem Muster jedes Pakets (eigener run-Helfer wie core/refsync/refsync_test.go:284), kein gemeinsamer Helfer vorhanden; hashed/installed haben je zwei Aufrufer im Skript; olderAcceptance wird von TestInstallDryRunWritesNothing weiter gebraucht"
 test-verdict: ""
 hunt-verdict: ""
