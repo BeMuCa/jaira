@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:56:21Z
+updated-at: 2026-11-20T19:56:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-18659
 claimed-at: 2026-11-20T19:49:16Z
@@ -33,13 +33,7 @@ outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten d
 outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
 review-summary: "critique 14: FileAt and help fixed in dfb23369; nothing left"
 round: 15
-review-gaps: |-
-  note: .jaira/pr wird aus dem Checkout gelesen, nicht aus der Basis - ein Branch, der .jaira/pr mit agent selbst committet, schaltet sein eigenes Gate frei; sichtbar nur im Diff
-  note: pr-round.sh open ruft gh pr create ohne --head; im Fork waehlt gh den Head selbst, der gepruefte Tip (push-Remote) und der geoeffnete Head sind nicht ausdruecklich dieselbe Referenz - --head <fork-owner>:<branch> wuerde sie binden
-  note: auf GitLab prueft kein Code, dass der Checkout der gepushte Tip ist - nur der SKILL-Text verlangt den Vergleich
-  note: pr-round.sh open ruft jaira aus PATH; ein aelteres installiertes Binary ohne pr-gate verweigert (Exit 3, sicher), aber die Meldung sagt nicht, dass jaira zu alt ist
-  note: die Copilot-Anfrage ueber reviewers[]=copilot-pull-request-reviewer[bot] ist nur gegen gemocktes gh getestet; ob GitHub sie annimmt, zeigt erst ein echter PR (Exit 4 faengt es ab)
-  note: der Worktree traegt eine fremde unversionierte Datei .jaira/milestones/abnahme-2026-11-A4140M.md - gehoert nicht zu diesem Ticket, nicht mitcommitten
+review-gaps: "optimize (3fe55258..dfb23369): nothing - FileAt has no twin in core/gitrepo (core/gitref reads ticket refs through its own runner), PRIn/PRWhenIn share firstLine with the file readers, the tr lowercasing stays for bash 3.2 on macOS"
 test-verdict: "pass bei 0bc5b11a: Suite go test -race -count=1 ./... RC=0; DoD 17-19 im Baum belegt (TestPROpenOnlyFromThePushedTip, TestPRRoundLostSignInIsNeverExit4, usage open); live mit Branch-Binary: single-branch-Klon gepusht -> Gate laeuft, ein Commit voraus -> Exit 3 mit beiden shas, Meldungen ohne Code-Anhang; schreibt nur ueber gh, Zwei-Session-Faelle in Tests unveraendert gruen"
 hunt-verdict: "0 findings at 0bc5b11a (Runden davor: 2 change bei 8569d9b6, 1 change bei 7d8d7872 - alle behoben)"
 review-verdict: "Diff erfuellt alle 19 DoD-Punkte; 13 Commits, Liste vollstaendig. Gate, Settings und pr-round.sh ganz gelesen entlang Nebenlaeufigkeit (Dedupe bei zwei Sessions korrekt fuer jede Reihenfolge, loescht nur die eigene ID), Fehlerpfade (Login-Verlust -> 3, Teilschritte bei reply wiederholbar), ungewoehnliche Eingaben (Typo/CRLF -> Default, Shell-Zeichen im Reviewer gefiltert, Base mit '-' abgelehnt) und Grenzen (Gate faellt bei Zweifel zu). Kein Blocker; sechs Notes, keine davon bricht ein Kriterium. Betroffene Tests gruen (core/role, core/settings, internal/cli). Nicht geprueft: echtes GitHub (alles gegen ein gemocktes gh)."
