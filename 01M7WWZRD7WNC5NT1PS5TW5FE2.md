@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T17:47:00Z
+updated-at: 2026-11-20T17:47:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80126
 claimed-at: 2026-11-20T17:38:47Z
@@ -38,7 +38,7 @@ review-summary: "none"
 round: 8
 review-gaps: "none - diff is prompt text only; left the unreleased intermediate 20-in-progress hashes in shipped.sha256 (b8ef26c5, dea4f27b, 9321dad0): harmless, and a branch install of them stays recognised"
 test-verdict: "pass: go build ./... and go test -race -count=1 ./... RC=0 at 22a9fc77; DoD 1-7 proofs opened in the tree; builtin and .jaira/lanes in-progress identical; manifest lines match sha256; no writer in the change (prompt text only)"
-hunt-verdict: "pass: bughunt done at e12f36d5, 1 change bleibt nach Teamlead-Entscheid 17:01 (keine weitere testing-Runde) als note fuer die Person: in-progress kann eine Rueckgabe aus signoff ohne Note nicht von einer review-Rueckgabe unterscheiden - jaira zeichnet die Herkunfts-Lane nicht auf; echte Zaehlung kommt mit DF0YD6/H6CD33"
+hunt-verdict: "fail: bughunt done at 22a9fc77, 1 change - the 'took this ticket over from' note that jaira pull --steal writes lands newest and is read as a review return"
 review-verdict: "All 7 DoD items are in the diff; no blocker. The prompts are consistent with each other and with jaira-worker's own three-returns stop. The one known weakness (return origin) is a transition until move records the from-lane, as the teamlead decided. go test ./core/shipped ./core/lane ./core/role/... green."
 review-round: 6
 review-check: "1. git diff 5b16e491..HEAD -- core/lane/builtin core/role/builtin  - only prompt text, four lane files and the bughunt skill  2. open core/lane/builtin/15-pre-process.md, section 'Name the edges before the code' - the seven input classes and 'jaira dod <id> --add' are there  3. open core/lane/builtin/20-in-progress.md, sections 'Fix the class, not the example' and 'The third return from the same lane' - 'back: person' resets the count, third return moves to human with --question  4. open core/lane/builtin/27-testing.md:97 - blocker is exactly four kinds  5. run: for f in pre-process in-progress testing review; do cmp core/lane/builtin/*-$f.md .jaira/lanes/$f.md && echo $f ok; done  - four lines 'ok'  6. run: go test ./core/shipped ./core/lane ./core/role/...  - three 'ok' lines"
