@@ -78,8 +78,9 @@ jaira note <id> "back: testing, round 3"
 
 `round` counts every way back, a person's included, so it only says that the
 ticket was sent back, not by whom. jaira records no lane it came from, so
-read the sender off the newest note, passing over `cockpit:` lines — the lane
-that sends work back writes its note last:
+read the sender off the newest note, passing over the lines no sender wrote —
+`cockpit:` and `<who> took this ticket over from <holder>`, which
+`jaira pull --steal` adds. The lane that sends work back writes its note last:
 
 - `Given back from <lane>:` or `decision:` — a person sent it or answered
   you. Write `back: person`: it is the person's word, not a loop, so do what
