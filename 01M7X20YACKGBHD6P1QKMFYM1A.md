@@ -21,7 +21,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-11-20T18:03:14Z
-updated-at: 2026-11-20T18:03:38Z
+updated-at: 2026-11-20T18:03:41Z
 updated-by: Alexander Sacharov
 ---
 
@@ -33,6 +33,7 @@ updated-by: Alexander Sacharov
 - [ ] Give back mit Auswahl schreibt eine Note 'Given back from signoff: beheben: <Notes woertlich>' und der Worker arbeitet genau diese ab; nicht angehakte Notes bleiben als akzeptiert vermerkt (Test)
 - [ ] Eine nicht angehakte Note, die kein Blocker ist, haelt Accept nicht auf; ein nicht angehakter Blocker fragt einmal nach (Test)
 - [ ] Eingabeklassen: keine Notes, nur ein Blocker, sehr viele Notes (Scrollen), Note ueber mehrere Zeilen, review-gaps aus frueherer Runde, zwei Personen/Sessions entscheiden gleichzeitig
+- [ ] Je Note waehlt die Person eine von drei Entscheidungen: jetzt beheben (geht mit Give back an den Worker) / spaeter im Folge-Ticket (jaira legt ein Ticket mit follows=<dieses> an, Kontext = Note woertlich) / so annehmen (bekannte Grenze); jede Entscheidung steht danach als Note am Ticket, sodass die naechste Abnahme sie nicht neu fragt (Test)
 
 ## Options
 
