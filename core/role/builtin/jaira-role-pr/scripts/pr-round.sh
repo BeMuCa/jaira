@@ -211,8 +211,8 @@ case "$cmd" in
     # account; anything else opens nothing rather than a guess,
     # and is refused before the gate runs.
     url=$(git config --get-all "remote.$pushremote.pushurl" | head -n1 || true)
-    [ -n "$url" ] || url=$(git config "remote.$pushremote.url") ||
-      die "$pushremote has no URL — nothing is opened" 3
+    [ -n "$url" ] || url=$(git config --get-all "remote.$pushremote.url" | head -n1 || true)
+    [ -n "$url" ] || die "$pushremote has no URL — nothing is opened" 3
     path=${url%/}; path=${path%.git}
     case "$path" in
       *://*) path=${path#*://}; case "$path" in */*) path=${path#*/} ;; *) path= ;; esac ;;

@@ -508,7 +508,15 @@ func TestPROpenNamesTheHeadItChecked(t *testing.T) {
 		!strings.Contains(strings.Join(p.calls(), "\n"), "--head\tme:feat/x\t") {
 		t.Errorf("two pushurls: exit %d, want --head me:feat/x from the first\n%s", code, out)
 	}
+	// No pushurl and two urls: the first one, both for the tip and the
+	// account (bughunt).
 	gitIn(t, work, "config", "--unset-all", "remote.origin.pushurl")
+	gitIn(t, work, "config", "remote.origin.url", "git@github.com:me/r.git")
+	gitIn(t, work, "config", "--add", "remote.origin.url", "git@github.com:other/r.git")
+	if out, code := p.run(nil, "open", "up/r", "origin", "master", "t", body); code != 0 ||
+		!strings.Contains(strings.Join(p.calls(), "\n"), "--head\tme:feat/x\t") {
+		t.Errorf("two urls: exit %d, want --head me:feat/x from the first\n%s", code, out)
+	}
 	gitIn(t, work, "config", "remote.origin.pushurl", "nowhere")
 	gitIn(t, work, "config", "--add", "url."+bare+".insteadOf", "nowhere")
 	if out, code := p.run(nil, "open", "up/r", "origin", "master", "t", body); code != 3 ||
