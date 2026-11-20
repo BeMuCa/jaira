@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:03:42Z
+updated-at: 2026-11-20T23:05:46Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -35,6 +35,8 @@ question: ""
 outcome-what: "Board-Datei .jaira/pr kennt den dritten Wert none: die Rollen landen einen Zweig ohne Pull Request per fast-forward push, sobald jaira roles pr-gate jedes Ticket in done findet; jaira update schreibt fuer none/agent einen Absatz 'How work arrives on this board' in den CLAUDE.md/AGENTS.md-Block; reap.sh raeumt bei none auf, sobald origin/HEAD den Zweig enthaelt."
 outcome-why: "Wer allein ohne Pull Requests arbeitet, bekam eine Rolle, die vor einem nie gewollten PR anhaelt (13VMA8); die Einstellung muss mit dem Repository reisen (Teamlead-Entscheidung 20.11.: dritter Wert in .jaira/pr, Laufzeit + Block)."
 outcome-resolves: "Ein Board sagt in .jaira/pr, ob Arbeit durch einen PR (person/agent) oder direkt auf den Hauptzweig (none) kommt; ohne Datei ist alles byte-gleich wie heute."
+review-summary: "core/board/arrival.go:52 spells the file name \"pr\" a second time beside settings.prFile (core/settings/settings.go) - two definitions of one board file name drift; export board.PRFileName and let settings.prFile be it"
+round: 2
 ---
 
 # Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig
@@ -46,7 +48,7 @@ outcome-resolves: "Ein Board sagt in .jaira/pr, ob Arbeit durch einen PR (person
 - [x] Die Einstellung reist mit dem Repository, nicht mit dem Rechner und nicht mit dem Klon: wer klont, erbt sie. Nachgestellt an einem frischen Klon.
   proof: frischer Klon eines solo-Boards mit committeter .jaira/pr=none: nach jaira init sagt roles list 'none', jaira update schreibt den Absatz; die Datei liegt in .jaira/ (core/board/arrival.go:52 PRModeFor), nicht in settings.json oder git config
 - [x] Ein ausgelieferter Rollen-Prompt richtet sich danach, obwohl er fuer alle gleich ausgeliefert wird - und wie er davon erfaehrt, steht begruendet im Ticket, nicht nur im Code.
-  proof: Begruendung als decision-Note auf dem Ticket (Plan, 20.11.); Laufzeit: jaira-role-pr/SKILL.md:62 liest pr aus roles list; Block: core/board/arrival.go:65 arrivalSection
+  proof: Begruendung als decision-Note auf dem Ticket (Plan, 20.11.); Laufzeit: jaira-role-pr/SKILL.md:62 liest pr aus roles list; Block: core/board/arrival.go:68 arrivalSection
 - [x] Ein Board ohne Einstellung verhaelt sich wie heute: durch einen Pull Request. Wer nichts tut, merkt nichts.
   proof: core/board/arrival_test.go TestNoteWithoutPRFileIsUnchanged (Block byte-gleich ohne Datei/person/Tippfehler); pr-gate ohne Datei weiter pr_person; team-Board im Nachstellen ohne Absatz
 - [x] Eine Zeile in core/release/notes/XB97NJ.md (die Notiz-Dateien ersetzen seit AR97K9 core/release/NOTES.md).
@@ -99,3 +101,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-20 22:53 · Alexander Sacharov** — decision: Teamlead 20.11. 23:00: 1/1 - F1: dritter Wert 'none' in .jaira/pr. F2: beide Wege - die Rolle liest zur Laufzeit (roles list), und jaira update schreibt den passenden Absatz in den CLAUDE.md/AGENTS.md-Block. Baut auf feat/jg3rew auf (PR #149, noch nicht gemergt). Modus bleibt autonom: Alex schlaeft, Teamlead will bis signoff durchgezogen; weitere Fragen an den Teamlead.
 - **2026-11-20 22:55 · Alexander Sacharov** — decision (Plan, Begruendung fuer DoD 3): Der ausgelieferte Prompt erfaehrt es auf zwei Wegen, beide aus derselben Datei .jaira/pr. (a) Laufzeit: jaira-role-pr und teamlead lesen 'jaira roles list --json | jaira json get pr' wie seit JG3REW - darum gilt es sofort nach dem Merge der Datei, ohne dass jemand update laufen laesst, und eine Rolle kann nicht mit einem veralteten Block auseinanderlaufen. (b) Block: jaira update schreibt fuer agent/none einen Absatz 'Wie Arbeit ankommt' in den CLAUDE.md/AGENTS.md-Block, fuer Agenten ohne jaira-Skill. Bei person/fehlender Datei schreibt der Block NICHTS Neues - byte-gleich zu heute (DoD 4): die Regel 'Agent pusht und haelt an' steht heute in den Rollen und im local-Teil dieses Repos, nicht im erzeugten Block, und ein neuer Absatz bei allen Boards wuerde jedes Board als 'veraltet' melden. Parsing liegt in core/board (settings importiert board, nicht umgekehrt), settings delegiert. none heisst: ein Zweig pro Ticket bleibt (Worktrees brauchen ihn), aber er landet ohne PR: jaira-role-pr laesst pr-gate (alle Tickets in done; pr-when ist bei none bedeutungslos) laufen, merged <remote>/<branch> in den Zweig und schiebt 'git push <remote> HEAD:<branch>' - nur fast-forward, nie --force. Die Annahme in done ist die Entscheidung, wie bei agent.
 - **2026-11-20 23:03 · Alexander Sacharov** — in-progress: Fund beim Bauen - reap.sh fragte nur nach einem gemergten PR; bei none waere der Worktree nie entfernt worden. Jetzt: bei none gilt 'origin/HEAD enthaelt die Spitze des Zweigs' als gemergt. Zweiter Fund (vorbestehend, nicht dieses Ticket): ein frischer Klon eines geteilten Boards ohne committete Ticket-Dateien hat kein .jaira/tickets, ist bis 'jaira init' kein Board, und roles list sagt dort fuer JEDE Board-Datei (pr, release, pr-when) den Default. shipped.sha256 neu erzeugt (nur hinzugefuegt/umsortiert, keine Zeile entfernt).
+- **2026-11-20 23:04 · Alexander Sacharov** — critique (Runde 1): einziger Fund - Dateiname 'pr' doppelt (board/arrival.go literal, settings.prFile). Fix: board.PRFileName, settings.prFile = board.PRFileName. Sonst geprueft und stehen gelassen: settings delegiert an board (Importrichtung settings->board erzwingt den Ort, Note Plan); PRModeIn dupliziert settings.firstLine bewusst, weil board settings nicht importieren darf; reap.sh liest pr aus der Hauptcheckout-Platte = Stand des Hauptzweigs, passend zur Gate-Regel.

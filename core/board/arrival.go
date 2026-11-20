@@ -25,6 +25,9 @@ const (
 	PRNone = "none"
 )
 
+// PRFileName is the board file under .jaira/ that holds one of the three.
+const PRFileName = "pr"
+
 // PRModeIn reads the content of a .jaira/pr file: the first line that is
 // neither blank nor a comment, trimmed, and exactly "agent" or "none" —
 // anything else, missing and misspelt included, is PRPerson. A typo must
@@ -50,7 +53,7 @@ func PRModeFor(root string) string {
 	if root == "" {
 		return PRPerson
 	}
-	b, err := os.ReadFile(filepath.Join(root, ticket.DirName, "pr"))
+	b, err := os.ReadFile(filepath.Join(root, ticket.DirName, PRFileName))
 	if err != nil {
 		return PRPerson
 	}

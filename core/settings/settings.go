@@ -294,7 +294,7 @@ const (
 // for a review and answer one round of comments. A board file like
 // releaseFile and for the same reason: whether a project lets agents open
 // pull requests is the project's, not one machine's and not one clone's.
-const prFile = "pr"
+const prFile = board.PRFileName
 
 // prReviewerFile names the reviewer an agent asks for when it opens a pull
 // request under PRAgent — "copilot", or a login.
