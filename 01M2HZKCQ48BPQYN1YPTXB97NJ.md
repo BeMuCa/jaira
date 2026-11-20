@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:32:56Z
+updated-at: 2026-11-20T23:33:03Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -35,7 +35,7 @@ question: ""
 outcome-what: "Board-Datei .jaira/pr kennt den dritten Wert none: die Rollen landen einen Zweig ohne Pull Request per fast-forward push, sobald jaira roles pr-gate jedes Ticket in done findet; jaira update schreibt fuer none/agent einen Absatz 'How work arrives on this board' in den CLAUDE.md/AGENTS.md-Block; reap.sh raeumt bei none auf, sobald origin/HEAD den Zweig enthaelt."
 outcome-why: "Wer allein ohne Pull Requests arbeitet, bekam eine Rolle, die vor einem nie gewollten PR anhaelt (13VMA8); die Einstellung muss mit dem Repository reisen (Teamlead-Entscheidung 20.11.: dritter Wert in .jaira/pr, Laufzeit + Block)."
 outcome-resolves: "Ein Board sagt in .jaira/pr, ob Arbeit durch einen PR (person/agent) oder direkt auf den Hauptzweig (none) kommt; ohne Datei ist alles byte-gleich wie heute."
-review-summary: "Third value 'none' in .jaira/pr (core/board/arrival.go PRModeIn/PRModeFor; only the exact word, everything else stays person; settings.PRFor/PRIn delegate). jaira update writes a 'How work arrives on this board' paragraph into the CLAUDE.md/AGENTS.md block for agent/none and nothing for person, so an unconfigured board's block stays byte-identical; NoteIsCurrent includes it, so changing the file shows as drift. roles list reports none and forces pr_when=done. pr-gate accepts none read from the base: every named ticket in done or in the logbook, and every commit in base..HEAD must name a ticket - an unnamed merge passes only when its tree equals 'git merge-tree --write-tree' of its parents (catches conflict resolutions, -s ours, files added during merge; fails closed on git < 2.38). jaira-role-pr gets a 'Land it' section (gate, merge base, gate again, fast-forward push HEAD:<branch>, never --force); teamlead/dispatcher get one sentence; reap.sh under none treats a branch as merged once origin/HEAD contains its tip and a commit names the ticket, instead of asking the forge. Release note in core/release/notes/XB97NJ.md."
+review-summary: "none"
 round: 7
 review-gaps: |-
   note: known limit: under none the gate checks that named tickets are in done, not that their commits existed at acceptance - a commit added after acceptance, or one naming another done/logbook ticket, lands unseen (teamlead decision 21.11., for signoff)
