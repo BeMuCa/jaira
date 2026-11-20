@@ -13,9 +13,11 @@ pr-round.sh open <owner/repo> <remote> <branch> <title> <body-file>
   open      <owner/repo> <remote> <branch> <title> <body-file>
             Open the pull request of the checked-out branch into <branch> of
             <owner/repo> — the agent's way in, on a board whose .jaira/pr says
-            agent. 'jaira roles pr-gate <remote>/<branch>' runs first: unless
-            every ticket the branch's commits name is in done, nothing is
-            opened and the script exits 3 with the gate's reason.
+            agent. The checkout must be the pushed tip of its branch, and
+            'jaira roles pr-gate <remote>/<branch>' runs first: unless every
+            ticket the branch's commits name is in done — or in signoff,
+            where .jaira/pr-when says so — nothing is opened and the script
+            exits 3 with the reason.
   threads   <owner/repo> <number>
             Every review thread that is not resolved yet, one JSON object per
             line: id, path, line, outdated, and its comments (author, body,
@@ -43,8 +45,9 @@ pr-round.sh open <owner/repo> <remote> <branch> <title> <body-file>
             requests changes; exit 3 listing each of them. On a board whose .jaira/pr-when
             says signoff, done waits for exit 0.
 
-Exit codes: 0 done; 2 usage; 3 gh missing or not signed in to github.com,
-(open) the board does not let an agent open this pull request, or
+Exit codes: 0 done; 2 usage; 3 gh missing or not signed in to github.com
+(also when the sign-in runs out half way), (open) the checkout is not the
+pushed tip or the board does not let an agent open this pull request, or
 (settled) the review round is not over;
 4 the reviewer could not be requested (the pull request stays as it is — say
 so and carry on); 1 anything else that failed, with gh's own message.
@@ -77,6 +80,15 @@ command -v gh >/dev/null 2>&1 || die "gh is not installed" 3
 # has to say which. Each write below still fails loudly on its own.
 gh auth status --hostname github.com >/dev/null 2>&1 ||
   die "gh is not signed in to github.com — run: gh auth login" 3
+# gh ends with 4 when it needs a sign-in, and 4 is this script's 'reviewer
+# not requested'. A token that runs out after the check above is a sign-in
+# problem, so every gh call below reports it as one: exit 3.
+gh() {
+  local rc=0
+  command gh "$@" || rc=$?
+  [ "$rc" -ne 4 ] || die "gh lost its sign-in to github.com half way — run: gh auth login, then run this again" 3
+  return "$rc"
+}
 
 # Comments of one thread beyond the first 50 are not needed to answer it.
 threads_query='query($owner:String!,$name:String!,$number:Int!,$endCursor:String){
@@ -156,8 +168,25 @@ case "$cmd" in
     remote=$1 branch=$2 title=$3 file=$4
     body_of "$file"
     command -v jaira >/dev/null 2>&1 || die "jaira is not on PATH — the gate cannot run, so nothing is opened" 3
+    # The gate reads the commits of the checkout; gh opens the branch as it
+    # was pushed. Another session may have pushed more since, so the two must
+    # be the same commit, or the gate judges commits the pull request lacks
+    # or misses ones it carries.
+    cur=$(git symbolic-ref --quiet --short HEAD) ||
+      die "HEAD is detached — check out the branch to open, so the gate and the pull request read the same commits" 3
+    pushref=$(git for-each-ref --format='%(push:remotename) %(push)' "refs/heads/$cur")
+    pushremote=${pushref%% *} pushed=${pushref#* }
+    [ -n "$pushremote" ] && [ -n "$pushed" ] ||
+      die "'$cur' has no branch to push to — push it first: git push -u <remote> HEAD" 3
+    pushed=refs/heads/${pushed#refs/remotes/"$pushremote"/}
+    tip=$(git ls-remote "$pushremote" "$pushed" | cut -f1) ||
+      die "could not read '$pushed' from $pushremote — nothing is opened" 3
+    here=$(git rev-parse HEAD)
+    [ -n "$tip" ] || die "'$cur' is not pushed to $pushremote yet — push it first: git push -u $pushremote HEAD" 3
+    [ "$tip" = "$here" ] ||
+      die "the pushed ${pushed#refs/heads/} on $pushremote is at ${tip:0:12}, this checkout at ${here:0:12} — pull or push until they agree, then open it again" 3
     # The gate is the binary's, not this script's: whether the board says
-    # agent, and whether every ticket the branch names is in done.
+    # agent, and whether every ticket the branch names is far enough along.
     if ! gate=$(jaira roles pr-gate "$remote/$branch" 2>&1); then
       echo "$gate" >&2
       die "not opened — hand the create line back to a person" 3
@@ -286,10 +315,12 @@ case "$cmd" in
       */*) field="team_reviewers[]=${reviewer#*/}" ;;
       *) field="reviewers[]=$reviewer" ;;
     esac
-    if ! out=$(gh api --method POST "repos/$repo/pulls/$number/requested_reviewers" -f "$field" 2>&1); then
+    out=$(gh api --method POST "repos/$repo/pulls/$number/requested_reviewers" -f "$field" 2>&1) || {
+      rc=$?
+      [ "$rc" -eq 3 ] && { echo "$out" >&2; exit 3; }
       echo "pr-round.sh: could not request a review from $1 — $out" >&2
       exit 4
-    fi
+    }
     echo "requested: $1"
     ;;
   *)

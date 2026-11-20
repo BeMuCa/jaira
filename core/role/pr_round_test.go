@@ -18,10 +18,12 @@ import (
 // it posted; GH_POSTED answers a conversation comment's POST, and
 // GH_ISSUES_AFTER the conversation read back once something was posted;
 // GH_REQUESTED the reviewers a pull request still waits for, GH_OPINIONS each
-// reviewer's latest verdict.
+// reviewer's latest verdict. GH_LOST=1 makes every call after 'auth status'
+// end with 4, the way gh does once its sign-in has run out.
 const fakeGH = `#!/usr/bin/env bash
 printf '%s\t' "$@" >> "$GH_LOG"; printf '\n' >> "$GH_LOG"
 [ "$1" = auth ] && { [ "${GH_AUTH:-}" = fail ] && exit 1; exit 0; }
+[ -n "${GH_LOST:-}" ] && { echo "To get started with GitHub CLI, please run:  gh auth login" >&2; exit 4; }
 for a in "$@"; do [ "$a" = POST ] && [ "${GH_POST:-}" = fail ] && { echo "HTTP 422: Reviews may only be requested from collaborators" >&2; exit 1; }; done
 filter="" fixture=${GH_FIXTURE:-}
 case "$*" in *"latestOpinionatedReviews"*) fixture=${GH_OPINIONS:-} ;; *"requested_reviewers"*) fixture=${GH_REQUESTED:-} ;; *"POST repos/"*"/issues/"*) fixture=${GH_POSTED:-} ;; *"/issues/"*) fixture=${GH_ISSUES:-}; [ -n "${GH_ISSUES_AFTER:-}" ] && grep -q POST "$GH_LOG" && fixture=$GH_ISSUES_AFTER ;; *"comments(last:100)"*) fixture=${GH_AFTER:-} ;; *"viewer{login}"*) fixture=${GH_STATE:-} ;; esac
@@ -43,6 +45,7 @@ type prRound struct {
 	script string
 	log    string
 	env    []string
+	dir    string
 }
 
 func newPRRound(t *testing.T) *prRound {
@@ -80,6 +83,7 @@ func (p *prRound) run(env []string, args ...string) (string, int) {
 	_ = os.Remove(p.log)
 	cmd := exec.Command(p.bash, append([]string{p.script}, args...)...)
 	cmd.Env = append(append([]string{}, p.env...), env...)
+	cmd.Dir = p.dir
 	out, err := cmd.CombinedOutput()
 	code := 0
 	if ee, ok := err.(*exec.ExitError); ok {
@@ -332,6 +336,7 @@ func TestPRRoundReplyIsSafeToRunAgain(t *testing.T) {
 // back from signoff).
 func TestPROpenRunsTheGateFirst(t *testing.T) {
 	p := newPRRound(t)
+	p.dir = pushedCheckout(t)
 	body := fixtureFile(t, "body.md", "## Why\n")
 	out, code := p.run([]string{"JAIRA_GATE=fail"}, "open", "up/r", "upstream", "master", "feat(A3K9QP): x", body)
 	calls := strings.Join(p.calls(), "\n")
@@ -353,6 +358,81 @@ func TestPROpenRunsTheGateFirst(t *testing.T) {
 	} {
 		if out, code := p.run(nil, args...); code != 2 || strings.Contains(strings.Join(p.calls(), "\n"), "create") {
 			t.Errorf("%v: exit %d, want 2 and nothing opened\n%s", args, code, out)
+		}
+	}
+}
+
+// pushedCheckout is a repository whose branch feat/x is pushed to origin, a
+// bare repository beside it, so the checkout is the pushed tip.
+func pushedCheckout(t *testing.T) string {
+	t.Helper()
+	root := t.TempDir()
+	work := filepath.Join(root, "work")
+	gitIn(t, root, "init", "-q", "--bare", "origin.git")
+	gitIn(t, root, "init", "-q", "-b", "master", "work")
+	gitIn(t, work, "commit", "-q", "--allow-empty", "-m", "chore: base")
+	gitIn(t, work, "remote", "add", "origin", filepath.Join(root, "origin.git"))
+	gitIn(t, work, "checkout", "-q", "-b", "feat/x")
+	gitIn(t, work, "commit", "-q", "--allow-empty", "-m", "feat(A3K9QP): x")
+	gitIn(t, work, "push", "-q", "-u", "origin", "HEAD")
+	return work
+}
+
+func gitIn(t *testing.T, dir string, args ...string) string {
+	t.Helper()
+	cmd := exec.Command("git", append([]string{"-c", "user.email=a@b", "-c", "user.name=x", "-c", "commit.gpgsign=false"}, args...)...)
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_NOSYSTEM=1")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("git %v: %v\n%s", args, err, out)
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// The gate reads the checkout's commits while gh opens the branch as pushed:
+// open refuses unless they are the same commit, so commits another session
+// pushed since are never opened past a gate that did not see them, and a
+// local commit not pushed yet never passes it on the pull request's behalf
+// (JG3REW review-gaps 1).
+func TestPROpenOnlyFromThePushedTip(t *testing.T) {
+	p := newPRRound(t)
+	body := fixtureFile(t, "body.md", "## Why\n")
+	work := pushedCheckout(t)
+	p.dir = work
+	gitIn(t, work, "commit", "-q", "--allow-empty", "-m", "feat(B7XQ2M): not pushed")
+	if out, code := p.run(nil, "open", "up/r", "origin", "master", "t", body); code != 3 ||
+		!strings.Contains(out, "pull or push until they agree") || strings.Contains(strings.Join(p.calls(), "\n"), "create") {
+		t.Errorf("checkout ahead of the push: exit %d, want 3 and nothing opened\n%s", code, out)
+	}
+	gitIn(t, work, "push", "-q")
+	gitIn(t, work, "reset", "-q", "--hard", "HEAD~1")
+	if out, code := p.run(nil, "open", "up/r", "origin", "master", "t", body); code != 3 ||
+		!strings.Contains(out, "pull or push until they agree") || strings.Contains(strings.Join(p.calls(), "\n"), "pr-gate") {
+		t.Errorf("push ahead of the checkout: exit %d, want 3 before the gate runs\n%s", code, out)
+	}
+	gitIn(t, work, "checkout", "-q", "-b", "feat/local")
+	if out, code := p.run(nil, "open", "up/r", "origin", "master", "t", body); code != 3 || !strings.Contains(out, "push it first") {
+		t.Errorf("branch never pushed: exit %d, want 3 saying to push first\n%s", code, out)
+	}
+	gitIn(t, work, "checkout", "-q", "--detach")
+	if out, code := p.run(nil, "open", "up/r", "origin", "master", "t", body); code != 3 || !strings.Contains(out, "detached") {
+		t.Errorf("detached HEAD: exit %d, want 3\n%s", code, out)
+	}
+}
+
+// gh ends with 4 when its sign-in has run out, and 4 is the script's
+// 'reviewer not requested'. A sign-in lost after the check before writing is
+// reported as what it is, exit 3, in every command (JG3REW review-gaps 4).
+func TestPRRoundLostSignInIsNeverExit4(t *testing.T) {
+	p := newPRRound(t)
+	for _, args := range [][]string{
+		{"threads", "o/r", "7"},
+		{"settled", "o/r", "7"},
+		{"request", "o/r", "7", "copilot"},
+	} {
+		if out, code := p.run([]string{"GH_LOST=1"}, args...); code != 3 || !strings.Contains(out, "gh auth login") {
+			t.Errorf("%v with the sign-in gone: exit %d, want 3 naming gh auth login\n%s", args, code, out)
 		}
 	}
 }

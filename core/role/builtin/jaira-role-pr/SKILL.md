@@ -352,7 +352,11 @@ jaira roles pr-gate <remote>/<branch> && glab mr create --target-project <owner/
 Exit 3 from either is the board's no — `.jaira/pr` does not say agent, no
 commit names a ticket, or a ticket it names is not far enough along (in done,
 or in signoff where `pr_when` says so), was rejected, or is not known here at
-all; the message says which. Do not look for another way to open it.
+all; the message says which. Do not look for another way to open it. The
+script also refuses with 3 before the gate when the checkout is not the
+pushed tip of its branch: the gate reads the checkout, the pull request
+carries what was pushed. Pull or push until they agree and run it again; on
+GitLab compare `git rev-parse HEAD` with the pushed branch yourself first.
 
 **An agent invoked you on a `person` board, or a ticket on the branch is not in
 done: do not run it.** Hand the line back written out and ready to paste, with
@@ -381,7 +385,8 @@ enabled for the repository, a login without access. It is not a reason to
 close anything: the pull request stays open, you report the reason gh gave,
 and the round below waits for whoever reviews it instead. Exit 3 means gh is
 not signed in to github.com: report the `gh auth login` line it printed and
-stop — nothing was written.
+stop — nothing was written, unless it says the sign-in ran out half way,
+from any command: then say which answers went out before it.
 
 ## Answering review comments
 
