@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T21:52:17Z
+updated-at: 2026-11-20T21:54:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16592
 claimed-at: 2026-11-20T20:04:03Z
@@ -36,7 +36,7 @@ review-summary: none
 round: 3
 review-gaps: "none: d3a71405 fuegt nur die Leseanweisung fuer die Verdicts und die Unbekannt-Regel hinzu; nichts dupliziert, nichts entfernt"
 test-verdict: "pass: Runde 2 (d3a71405): go build ./... ok, go test core/role + core/shipped RC=0 (Runde 1: go test ./... RC=0, nur Markdown/shipped seitdem). Neue Leseanweisung ausprobiert: git show refs/jaira/tickets/<ULID>:<ULID>.md liefert beide Verdict-Zeilen; die Branch-Kopie hatte keine - deshalb der Ref. Schreibt nichts, also keine parallelen Writer."
-hunt-verdict: "fail: bughunt done at c02bb7ea, 2 change (test-verdict in show nicht lesbar; Rueckgabe-Zaehlung nur ueber Notes), 0 pre-existing"
+hunt-verdict: "fail: bughunt done at d3a71405, 3 change (round>1-Regel feuert bei jeder Lane-Schleife; Ref fehlt auf ungeteilten Boards; grep sieht Block-Skalare nicht), 0 pre-existing"
 ---
 
 # Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis
