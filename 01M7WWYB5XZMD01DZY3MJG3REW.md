@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T16:56:51Z
+updated-at: 2026-11-20T16:56:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59469
 claimed-at: 2026-11-20T16:43:41Z
@@ -70,7 +70,7 @@ question: ""
 - [x] jaira roles list: pr, pr_source, pr_reviewer in Text und --json; Test
 - [x] scripts/pr-round.sh in jaira-role-pr: threads, reply (antworten+resolve), rerequest; GitHub ueber gh api
 - [x] jaira-role-pr SKILL.md: Abschnitt zur Einstellung, done-Gate, Reviewer anfordern, Kommentarrunde; teamlead/dispatcher/worker-Saetze angleichen; role_test
-- [ ] Release-Note core/release/notes/JG3REW.md, Suite, Commit
+- [x] Release-Note core/release/notes/JG3REW.md, Suite, Commit
 
 ## Progress
 - **2026-11-20 16:43 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock
