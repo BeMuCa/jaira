@@ -124,8 +124,9 @@ export function snapshotOf(
       acceptTo: next?.terminal === true ? next.id : null,
       assignee,
       explainable: explainable(verdict, t.review?.gaps),
-      // Before a review the gaps hold what the optimize lane removed: no notes.
-      notes: verdict === '' ? [] : notesOf(t.review?.gaps),
+      // Before a review, and after a later round's optimize lane rewrote
+      // them, the gaps hold what optimize removed, not the review's notes.
+      notes: verdict === '' || !sameRound(t) ? [] : notesOf(t.review?.gaps),
       ...(sameRound(t) ? {} : { reviewedIn: t.review_round }),
     })
   }

@@ -350,3 +350,25 @@ func fullBoard(t *testing.T) (*ticket.Store, gate.Env) {
 	}
 	return s, env
 }
+
+// A person moving the ticket in the board is a person, whichever lane the
+// ticket leaves: three returns from testing made by hand never reach the
+// third-return stop.
+func TestMoveRecordsAPersonAtTheBoard(t *testing.T) {
+	s, env := fullBoard(t)
+	tk := mk(t, s, map[string]string{ticket.FieldStatus: "testing", ticket.FieldAssignee: "berk"})
+	for range 3 {
+		for _, to := range []string{"in-progress", "testing"} {
+			if _, err := Move(s, env, tk.ID, Request{To: to, Actor: "berk", Force: true, ByPerson: true}); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	got, err := s.Load(tk.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.BackFrom != "testing" || got.BackBy != ticket.BackByPerson || got.BackCount != 1 {
+		t.Fatalf("three returns by a person read %q/%q/%d, want testing/person/1", got.BackFrom, got.BackBy, got.BackCount)
+	}
+}

@@ -1053,6 +1053,18 @@ describe('waiting for you', () => {
     expect(await band.find({ type: 'Text', text: /review of round 2/ })).toBeUndefined()
   })
 
+  test('a later round\'s optimize gaps are no review notes under the row', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { ...HUMAN, handle: 'OPT123', question: '', round: 2, review_round: 1, review: { verdict: 'approve', gaps: 'removed the unused helper\nnote: inlined the close element' } },
+      { ...SIGNOFF, handle: 'CUR456', round: 2, review_round: 2, review: { verdict: 'approve', gaps: 'note: a test is missing' } },
+    ]
+    await startSession($)
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ type: 'Text', text: /removed the unused helper|inlined the close element/ })).toBeUndefined()
+    expect(await band.find({ type: 'Text', text: /· note: a test is missing/ })).toBeDefined()
+  })
+
   test('an explanation stays readable once its verdict is an earlier round\'s', async ($, on) => {
     const w = world(on)
     w.tickets = [{ ...SIGNOFF, round: 2, review_round: 1, review: { verdict: 'approve, but the cache key ignores the branch', gaps: 'note: a test is missing' } }]

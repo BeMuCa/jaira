@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZWSDHK37DGGHJFDF0YD6
 title: "Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt"
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,15 +23,18 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T23:10:34Z
+updated-at: 2026-11-20T23:16:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-91898
 claimed-at: 2026-11-20T22:44:37Z
-outcome-what: "Tickets carry blocker-rule and stop-after-fix (set-validated, in show --json and every --for-lane payload); jaira move records back-from/back-by/back-count on every send-back; testing/review/bughunt/pre-process/in-progress prompts read them; the cockpit offers Explain only for a blocker line or a reservation, lists notes under the row, names a review of an earlier round, and Explain notes are classed and coloured. CRLF in any set value is stored as LF instead of failing."
-outcome-why: "Without a per-ticket blocker threshold and a recorded sender, every edge became a blocker, a person's return counted as a loop return, and every signoff ticket had an Explain that read as 'must change' - so tickets looped and Alex gave everything back."
-outcome-resolves: "DF0YD6 DoD 1-10. Checked: concurrency (two parallel send-backs count one, TestMoveCountsOneReturnForTwoAtOnce), error paths (bad stop-after-fix exits 2, nothing written), unusual input (quotes, umlauts, multiline, CRLF/CR in blocker-rule), permissions n/a (no new file access). go test ./... exit 0, claude plugin test 214 pass."
+outcome-what: "As before, plus: a send-back made in the board (TUI move and force move) is recorded as a person's, whatever lane it leaves; the cockpit lists review notes only for a verdict of the current round."
+outcome-why: "The bug hunt found a person's TUI return from a loop lane counted toward the third-return stop, and optimize's rewritten gaps shown as review notes on a later round."
+outcome-resolves: "Both bughunt change findings of ac850761: core/move Request.ByPerson (TestMoveRecordsAPersonAtTheBoard), board.ts notes gated by sameRound (test 'a later round's optimize gaps are no review notes under the row'); go test -race core/move internal/tui RC=0, claude plugin test 215 pass."
 review-summary: none
 review-gaps: "folded the back object of show --json and the --for-lane payload into one backJSON (internal/cli/tickets.go); hoisted the review verdict read three times per ticket in the cockpit's snapshotOf (board.ts); left the person-lane predicate repeated in gate.go, web_source.go, snake.go and move.go (pre-existing pattern, critique note); no dead code: namesGap went with the rule it served, sameRound still has its caller"
+test-verdict: "pass: go test -race ./... RC=0, claude plugin test 214 pass RC=0; DoD 1-10 checked in the tree; binary on a scratch board: stop-after-fix=yes exits 2 and writes nothing, blocker-rule with CRLF stored as LF, signoff->in-progress records person/1, two testing returns record testing/lane/2, the for-lane payload and its plain header carry blocker_rule, stop_after_fix, round and back; two parallel send-backs from testing count one return (round +1, count +1), jaira validate clean. The cockpit pane checked by its tests only, not live."
+hunt-verdict: "fail: bughunt done at ac850761, 2 change (optimize gaps listed as review notes on a later round; a person's TUI send-back from a loop lane recorded as by lane), 0 pre-existing"
+round: 2
 ---
 
 # Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt
@@ -102,3 +105,8 @@ review-gaps: "folded the back object of show --json and the --for-lane payload i
 - **2026-11-20 22:57 · Alexander Sacharov** — in-progress pause: Go side and lane prompts done and pushed (fbc56cd1, 8a396712); DoD 1,2,4,8,9 ticked. Left: cockpit (DoD 3,5,6,7,10) = plan steps 5-7, then release-note lines for the cockpit and the full test run (go test ./..., claude plugin test in core/mod/builtin/jaira-cockpit). in-progress prompt no longer counts back: notes; the in-progress twin changed with it.
 - **2026-11-20 23:08 · Alexander Sacharov** — in-progress done, moved to critique; the first send of the move was refused as 'written first' by this session's own last plan tick (ref 0c810cc8 = disk minus the move) - a race between two sends of one session, the disk file is the superset.
 - **2026-11-20 23:09 · Alexander Sacharov** — critique: none. Let stand: core/move/move.go isPersons repeats the person-lane predicate gate.go:212, web_source.go:256 and snake.go:67 inline too - a Lane method would touch three unrelated files, not this ticket's scope; explain parser accepts German class aliases (kleiner Rand, bekannte Grenze, nicht aus diesem Ticket) because the explain chat answers in the person's language and may translate the marks - three map entries, kept.
+- **2026-11-20 23:13 · Alexander Sacharov** — testing: test-verdict pass written; bughunt running in background at ac850761 - a restarted worker waits for its 'bughunt: done at ac850761' line or starts a new hunt.
+- **2026-11-20 23:13 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/board.ts:128 - notes are listed from review-gaps whenever a verdict exists, with no sameRound check (the old explainable() had one for exactly this reason). From round 2 on, the optimize lane overwrites review-gaps before review runs again, so a ticket waiting in human with a round-1 verdict shows optimize's removal list ('removed helper fooBar ...') under its row as the review's notes. Trigger: round=2, review_round=1, status human, verdict set, gaps written by optimize; ran: node --experimental-strip-types on snapshotOf with that ticket -> notes = the two optimize lines, reviewedIn 1
+- **2026-11-20 23:13 · Alexander Sacharov** — bughunt: change: core/move/move.go:171 - recordBack decides person vs lane only from the lane left (isPersons), never from who moved. A person who sends a ticket back from critique/optimize/testing in the TUI (internal/tui/model.go:2056 move.Move without Interactive) is recorded as back-by=lane and raises back-count, so in-progress can hit its third-return stop on a person's own send-back and the 'by: person, whatever the count' rule in 20-in-progress.md never applies to it. Trigger: TUI move testing->in-progress three times; read (move.Request.Interactive exists but recordBack does not get it; TUI path 47b1737 is old, the classification is new)
+- **2026-11-20 23:13 · Alexander Sacharov** — bughunt: done at ac850761 - 2 findings (2 change, 0 pre-existing) in 8 modules, first hunt; concurrency, error paths, input, permissions checked; files: .jaira/lanes/in-progress.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md core/lane/builtin/15-pre-process.md core/lane/builtin/20-in-progress.md core/lane/builtin/27-testing.md core/lane/builtin/40-review.md core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/move/move.go core/move/move_test.go core/release/notes/DF0YD6.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/builtin/jaira-role-bughunt/SKILL.md core/role/role_test.go core/shipped/shipped.sha256 core/ticket/frontmatter.go core/ticket/schema.go internal/cli/flow.go internal/cli/loopbrake_test.go internal/cli/tickets.go
+- **2026-11-20 23:16 · Alexander Sacharov** — testing: class: a send-back's sender read off the lane alone, and review notes read off gaps whatever round wrote them; example: TUI return from testing counted toward the third-return stop, a human-lane ticket with round 2 / review_round 1 listed optimize's lines as review notes; fix: move.Request.ByPerson set by both TUI move sites (Interactive counts too), notes only for a verdict of the current round; tests TestMoveRecordsAPersonAtTheBoard and 'a later round's optimize gaps are no review notes under the row'.
