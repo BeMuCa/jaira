@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:29:36Z
+updated-at: 2026-11-20T23:29:40Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -47,6 +47,7 @@ claimed-by: DESKTOP-RFTCH11-29927
 claimed-at: 2026-11-20T23:29:25Z
 review-verdict: "The diff meets all 8 DoD items; no blocker. Tests green here (go vet + go test for board, gitrepo, settings, internal/cli, role, shipped); checked by hand on a scratch board with the branch binary: roles list says none, jaira update writes the paragraph into both files, changing the file to 'None' makes validate report the block stale. Three notes, one of them the known limit the teamlead decided on."
 review-round: 6
+review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/b && cd /tmp/b && git init -q -b master && git commit -q --allow-empty -m init && /tmp/jaira init  3. /tmp/jaira roles list --json | /tmp/jaira json get pr  -> prints 'person', and CLAUDE.md has no section 'How work arrives on this board'  4. echo none > .jaira/pr && /tmp/jaira roles list --json | /tmp/jaira json get pr  -> prints 'none'  5. /tmp/jaira update && grep -A2 'How work arrives' CLAUDE.md  -> the paragraph '.jaira/pr says none: this project takes no pull requests'  6. echo None > .jaira/pr && /tmp/jaira validate  -> warning that the jaira block in AGENTS.md and CLAUDE.md no longer matches  7. Gate itself (needs a remote): go test ./internal/cli -run 'TestPRGateLetsANoneBoardLandOnlyDoneWork|TestPRGateOnANoneBoardRefusesCommitsNoTicketOwns|TestPRGateOnANoneBoardNeverAsksForACreateLine' -v  -> all PASS"
 ---
 
 # Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig
