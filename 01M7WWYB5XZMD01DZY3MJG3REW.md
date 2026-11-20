@@ -1,7 +1,7 @@
 ---
 id: 01M7WWYB5XZMD01DZY3MJG3REW
 title: Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:55:01Z
+updated-at: 2026-11-20T19:55:05Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-18659
 claimed-at: 2026-11-20T19:49:16Z
@@ -32,7 +32,7 @@ outcome-what: "Board-Dateien .jaira/pr (person|agent), .jaira/pr-reviewer und .j
 outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten das pro Repo. In manchen Projekten laeuft das Review auf dem PR selbst, dort kommt done erst danach (Alex 20.11.)."
 outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
 review-summary: "core/gitrepo/named.go FileAt returns a bool both callers discard - return the string alone; internal/cli/roles.go pr-gate Long has a short broken line after the new sentence - reflow"
-round: 14
+round: 15
 review-gaps: |-
   note: .jaira/pr wird aus dem Checkout gelesen, nicht aus der Basis - ein Branch, der .jaira/pr mit agent selbst committet, schaltet sein eigenes Gate frei; sichtbar nur im Diff
   note: pr-round.sh open ruft gh pr create ohne --head; im Fork waehlt gh den Head selbst, der gepruefte Tip (push-Remote) und der geoeffnete Head sind nicht ausdruecklich dieselbe Referenz - --head <fork-owner>:<branch> wuerde sie binden
