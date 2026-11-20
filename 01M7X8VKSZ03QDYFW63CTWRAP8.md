@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:37:54Z
+updated-at: 2026-11-20T22:37:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
@@ -107,3 +107,4 @@ review-check: |-
 - **2026-11-20 22:35 · Alexander Sacharov** — in-progress: Lookup nach Abstammung an Scratch-Repo (bare + 2 Klone) geprueft: lokal hinter remote -> remote-Kopf, lokal voraus -> lokal, divergiert -> leer/'?', kein Ref -> '?', origin+up auf gleichem Commit -> ein Kopf.
 - **2026-11-20 22:35 · Alexander Sacharov** — critique: teamlead-Verweis an die neue Regel angleichen ('mehr als eine' -> 'zwei divergierte Kopien'). Lookup selbst bleibt so: einfacher geht es nicht ohne Abstammungsvergleich.
 - **2026-11-20 22:37 · Alexander Sacharov** — critique Runde 2: nichts mehr.
+- **2026-11-20 22:37 · Alexander Sacharov** — testing: gruen; kein neuer Hunt nach Teamlead-Entscheidung 21:58, hunt-on-HEAD ist daher erwartbar ❌.
