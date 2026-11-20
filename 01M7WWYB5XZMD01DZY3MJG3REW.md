@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:51:23Z
+updated-at: 2026-11-20T19:51:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-18659
 claimed-at: 2026-11-20T19:49:16Z
@@ -199,3 +199,4 @@ Empfehlung: 2 - kein Kriterium ist gebrochen, das Gate faellt bei Zweifel zu, un
 - **2026-11-20 19:48 · Alexander Sacharov** — Given back from signoff: 1) Gate aus der Basis lesen und --head <fork-owner>:<branch> setzen, dann erneut pruefen
 - **2026-11-20 19:48 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
 - **2026-11-20 19:49 · Alexander Sacharov** — worker (neu, 2026-11-20): übernimmt Rückgabe aus signoff - Gate liest .jaira/pr aus der Basis, open setzt --head <fork-owner>:<branch>
+- **2026-11-20 19:51 · Alexander Sacharov** — Rückgabe Teil 1: Gate liest .jaira/pr UND .jaira/pr-when aus <base> (git cat-file blob <base>:./.jaira/pr) - pr-when gehört zur selben Klasse: ein Branch mit signoff würde sonst früher öffnen. Folge: ein nicht geteiltes Board (.jaira gitignored) bleibt bei person; eine Änderung an .jaira/pr wirkt erst nach dem Merge in die Basis. pr-reviewer bleibt von der Platte gelesen (öffnet nichts). roles list zeigt weiter die Platte.
