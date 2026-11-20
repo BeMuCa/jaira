@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T22:57:31Z
+updated-at: 2026-11-20T22:57:42Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-91898
 claimed-at: 2026-11-20T22:44:37Z
@@ -89,3 +89,4 @@ claimed-at: 2026-11-20T22:44:37Z
 - **2026-11-20 22:47 · Alexander Sacharov** — question: stop-after-fix default for a ticket where nobody set it? 1) on (Recommended) - matches the rule the teamlead writes by hand daily: after a fix round only tests run, no hunt; the field turns it off per ticket. 2) off - TW5FE2's diff-only hunt stays the default; pre-process or a person turns stop-after-fix on per ticket.
 - **2026-11-20 22:48 · Alexander Sacharov** — decision: stop-after-fix is off by default (teamlead jaira-64, 2026-11-20). The diff-only hunt after a fix stays the default: it found real defects in fixes (TW5FE2 rebase fallback, JG3REW foreign comment delete, NNV39Y not-ignored). stop-after-fix=true is a deliberate per-ticket opt-out set by pre-process or a person, e.g. for text-only tickets. The brake for endless loops is the count (3 returns from the same lane -> teamlead), not skipping the hunt. Mode stays autonomous.
 - **2026-11-20 22:55 · Alexander Sacharov** — in-progress: CRLF in any 'jaira set' value made the write fail ('value position is at end of line') - pre-existing for every field; fixed at the cause in Doc.SetScalar (core/ticket/frontmatter.go), CR/CRLF stored as LF. Concurrency test needs one Store per goroutine: a shared Store races in idIndex, but jaira never shares one (two processes = two stores).
+- **2026-11-20 22:57 · Alexander Sacharov** — in-progress pause: Go side and lane prompts done and pushed (fbc56cd1, 8a396712); DoD 1,2,4,8,9 ticked. Left: cockpit (DoD 3,5,6,7,10) = plan steps 5-7, then release-note lines for the cockpit and the full test run (go test ./..., claude plugin test in core/mod/builtin/jaira-cockpit). in-progress prompt no longer counts back: notes; the in-progress twin changed with it.
