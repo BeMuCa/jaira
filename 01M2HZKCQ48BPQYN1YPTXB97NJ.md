@@ -1,7 +1,7 @@
 ---
 id: 01M2HZKCQ48BPQYN1YPTXB97NJ
 title: "Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig"
-status: review
+status: signoff
 ready: true
 creator: Alexander Sacharov
 goal: "Wer allein an einem Repository arbeitet, bekommt keine Rolle vorgesetzt, die ihn zu einem Pull Request schickt, den er nicht will - und ein Team, das Pull Requests benutzt, bekommt die Regel weiterhin ueberall, wo ein Agent sie liest."
@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:44:26Z
+updated-at: 2026-11-20T23:44:30Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
