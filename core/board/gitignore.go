@@ -3,6 +3,7 @@ package board
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -260,9 +261,14 @@ func locked(exclude string, fn func() error) error {
 // appendEntry adds a comment and one pattern to the end of path, after a blank
 // line, creating the file where it does not exist, in the line endings the
 // file already uses. Written whole and renamed into place (ticket.WriteAtomic),
-// so git never reads it half written.
+// so git never reads it half written. A file that exists but cannot be read
+// is an error, never an empty file: writing "nothing + the entry" over it
+// would lose every line a person or git put there.
 func appendEntry(path, comment, line string) error {
-	existing, _ := os.ReadFile(path)
+	existing, err := os.ReadFile(path)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
 	body := string(existing)
 	nl := "\n"
 	if strings.Contains(body, "\r\n") {

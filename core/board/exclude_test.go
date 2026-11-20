@@ -293,3 +293,57 @@ func TestRemoveIgnoreLeavesAnUnanchoredLineAPersonWrote(t *testing.T) {
 		t.Errorf("Ignored = false although the person's line still excludes the board")
 	}
 }
+
+// A file that exists but cannot be read is never replaced by "the entry
+// alone": every writer that appends (AddIgnore into info/exclude or the
+// .gitignore fallback, MoveIgnore, AddLanesIgnore) fails instead, and the
+// file keeps every byte.
+func TestAppendEntryNeverOverwritesAFileItCannotRead(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("chmod 000 does not make a file unreadable on Windows")
+	}
+	if os.Geteuid() == 0 {
+		t.Skip("root reads a file with mode 000")
+	}
+	for _, name := range []string{"info/exclude", ".gitignore"} {
+		t.Run(name, func(t *testing.T) {
+			dir := t.TempDir()
+			path := filepath.Join(dir, filepath.FromSlash(name))
+			if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			want := []byte("# a person's rules\n*.log\n")
+			if err := os.WriteFile(path, want, 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Chmod(path, 0); err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { os.Chmod(path, 0o644) })
+
+			if err := appendEntry(path, privateComment, IgnoreLine); err == nil {
+				t.Fatal("appendEntry on an unreadable file: err = nil, want the read error")
+			}
+			if err := os.Chmod(path, 0o644); err != nil {
+				t.Fatal(err)
+			}
+			got, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(got) != string(want) {
+				t.Fatalf("file changed:\n got %q\nwant %q", got, want)
+			}
+		})
+	}
+	t.Run("missing file is created", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "exclude")
+		if err := appendEntry(path, privateComment, IgnoreLine); err != nil {
+			t.Fatal(err)
+		}
+		got, _ := os.ReadFile(path)
+		if !strings.Contains(string(got), IgnoreLine) {
+			t.Fatalf("got %q, want the entry", got)
+		}
+	})
+}
