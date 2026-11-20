@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:31:13Z
+updated-at: 2026-11-20T22:31:21Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
@@ -34,10 +34,7 @@ outcome-why: "signoff-Rueckgabe: Branches heissen nicht immer feat/<id>, dann wa
 outcome-resolves: "Rueckgabe aus signoff 22:27 (🟡 Branchname)"
 review-summary: "none"
 round: 5
-review-gaps: |-
-  note: jaira-role-signoff/SKILL.md:55 takes the branch as feat/<id lower case>, but branches here are not always named so (fix/nh788q-windows-rename exists) and may exist only on origin; git rev-parse then fails, $head is empty, and gh run list --commit "" returns the newest runs of other branches - the headSha comparison the role asks for still yields ?, so no false ✅, but the role should say how to find the branch (git branch -a --list "*<id>*") and that an empty head is ?
-  note: shipped.sha256 gains 4 intermediate hashes each for jaira-teamlead and jaira-role-signoff SKILL.md that never shipped; harmless (go test ./core/shipped green, same pattern as earlier tickets), only the last line per file is a real release
-  note: this ticket's own status line will show bug hunt on HEAD ❌ (last hunt done at 4a0033ec, head is dae16319) - that is the teamlead decision of 21:58 (no new hunt after the one-line fix), not a missed step
+review-gaps: "nothing removed: the change is one lookup block plus a pointer in the teamlead; left the intermediate shipped.sha256 lines (already noted by review 22:04)"
 test-verdict: "pass: Runde 4 (dae16319): go build ./... ok, go test core/role + core/shipped RC=0; gh run list --commit <sha> --workflow ci --json conclusion,headSha liefert genau den Lauf dieses Commits (an master geprueft), glab ci list --sha existiert."
 hunt-verdict: "pass: Runde-3-Fund (bughunt done at 4a0033ec) als Klasse in dae16319 behoben: jeder Status an den Kopf-Commit gebunden, fremder/kein Lauf = '?'. Kein neuer Hunt - Entscheidung Teamlead 21:58; weitere Funde dieser Klasse gehen als note an signoff."
 question: ""
