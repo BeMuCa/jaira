@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:09:41Z
+updated-at: 2026-11-20T23:09:45Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -37,7 +37,7 @@ outcome-why: "Wer allein ohne Pull Requests arbeitet, bekam eine Rolle, die vor 
 outcome-resolves: "Ein Board sagt in .jaira/pr, ob Arbeit durch einen PR (person/agent) oder direkt auf den Hauptzweig (none) kommt; ohne Datei ist alles byte-gleich wie heute."
 review-summary: "none"
 round: 3
-review-gaps: "none - checked: settings.PRIn/PRFor are now one-line delegations to board (kept: roles.go and tests call them, removing would widen the diff for nothing); board.PRModeIn repeats settings.firstLine on purpose (board may not import settings); every new function has callers; agent paragraph in arrivalSection is the decision of 20.11. (block for agents without a role), not speculative"
+review-gaps: "none - the then-text is built once and used by all three refusals; nothing else changed since the last optimize pass"
 test-verdict: "fail: suite green with -race (RC=0) and DoD 1-8 verified, but on a none board the no_ticket and unreadable refusals of pr-gate still said 'hand the create line back' - there is no create line under none (scratch board, exit 3 was right, the advice wrong)"
 ---
 
