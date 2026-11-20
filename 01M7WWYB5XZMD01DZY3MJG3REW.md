@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:23:07Z
+updated-at: 2026-11-20T19:23:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99114
 claimed-at: 2026-11-20T19:19:18Z
@@ -85,7 +85,8 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-jg3rew && go build -o 
   proof: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:171-187; core/role/pr_round_test.go TestPROpenOnlyFromThePushedTip (ahead, behind, never pushed, detached), TestPROpenRunsTheGateFirst
 - [x] pr-round.sh usage zu open nennt done oder signoff laut .jaira/pr-when
   proof: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:18 usage open
-- [ ] Ein mitten im Lauf abgelaufener gh-Login endet in jedem Befehl mit Exit 3, nie mit dem Exit 4 'Reviewer abgelehnt'
+- [x] Ein mitten im Lauf abgelaufener gh-Login endet in jedem Befehl mit Exit 3, nie mit dem Exit 4 'Reviewer abgelehnt'
+  proof: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:86 gh() wrapper, request maps 3 before 4; core/role/pr_round_test.go TestPRRoundLostSignInIsNeverExit4
 
 ## Options
 
