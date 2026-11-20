@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:29:58Z
+updated-at: 2026-11-20T19:30:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99114
 claimed-at: 2026-11-20T19:19:18Z
@@ -171,3 +171,4 @@ Empfehlung: 1 - der Gate-Fehler bei parallelen Sessions ist die einzige echte Lu
 - **2026-11-20 19:29 · Alexander Sacharov** — testing 7 zurueck, behoben: (a) bughunt 1 - open liest das Push-Ziel aus der Konfiguration (%(push:remotename), Name des Branches bzw. branch.<b>.merge bei push.default=upstream) statt aus %(push), das in single-branch-Klonen leer ist; (b) bughunt 2 - Read-back in comment und dedupe beendet den Lauf mit 3, wenn gh() einen verlorenen Login meldet, statt als Warnung mit 0 zu enden; Mutationspruefung: Test faellt ohne Fix; (c) eigener Fund - die() druckte den Exitcode mit ($* -> $1). Suite -race RC=0.
 - **2026-11-20 19:29 · Alexander Sacharov** — critique 11 / optimize (nur 7d8d7872): nichts. push.default=nothing/matching nicht eigens behandelt: dann gilt der Branchname, und fehlt er auf dem Remote, sagt ls-remote 'not pushed yet' - das richtige Ergebnis.
 - **2026-11-20 19:29 · Alexander Sacharov** — testing 8 (7d8d7872): Suite -race RC=0. Live mit Branch-Binary im single-branch-Klon: gepushter Branch besteht die Tip-Pruefung und erreicht das Gate (Exit 3 vom Gate, weil der Klon kein .jaira hat); ein Commit mehr -> Exit 3 mit beiden shas; Meldungen ohne angehaengten Code. Schreibt nichts Neues ausser gh-POSTs, Zwei-Session-Faelle unveraendert (Tests).
+- **2026-11-20 19:30 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:190 - open compares push.default only with 'upstream'; git still accepts the deprecated synonym 'tracking', pushes the branch to its upstream (branch.<cur>.merge), and open then looks up refs/heads/<cur>, finds nothing and refuses a pushed branch with exit 3 'not pushed yet' (the %(push) reading before 7d8d7872 resolved it); ran: scratch repo, feat/z tracking origin/remote-z, push.default=tracking, git push -> refs/heads/remote-z on origin, pr-round.sh open -> exit 3; same with push.default=upstream -> exit 0
