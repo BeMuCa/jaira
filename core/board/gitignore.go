@@ -102,10 +102,21 @@ func IgnoreFileName(root string) string {
 	if path == "" {
 		return ".gitignore"
 	}
-	if rel, err := filepath.Rel(root, path); err == nil && !strings.HasPrefix(rel, "..") {
+	// git prints the path resolved (/private/var on macOS, the long name on
+	// Windows) while root may come through a symlink or an 8.3 short name;
+	// resolve both, or the relative name falls back to the absolute path.
+	if rel, err := filepath.Rel(resolved(root), resolved(path)); err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 		return filepath.ToSlash(rel)
 	}
 	return path
+}
+
+// resolved is p with its symlinks evaluated, or p itself where that fails.
+func resolved(p string) string {
+	if r, err := filepath.EvalSymlinks(p); err == nil {
+		return r
+	}
+	return p
 }
 
 // boardLine reports whether line excludes the board in a file whose patterns

@@ -347,3 +347,24 @@ func TestAppendEntryNeverOverwritesAFileItCannotRead(t *testing.T) {
 		}
 	})
 }
+
+// TestIgnoreFileNameIsRelativeThroughASymlinkedRoot: git prints the common dir
+// resolved, as /private/var for macOS's /var temp dirs, so a root reached
+// through a symlink must still name the file .git/info/exclude, not an
+// absolute path.
+func TestIgnoreFileNameIsRelativeThroughASymlinkedRoot(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlinks need privileges on Windows")
+	}
+	root, _ := newRepo(t)
+	link := filepath.Join(t.TempDir(), "link")
+	if err := os.Symlink(root, link); err != nil {
+		t.Fatal(err)
+	}
+	if got := IgnoreFileName(link); got != ".git/info/exclude" {
+		t.Errorf("IgnoreFileName through a symlink = %q, want .git/info/exclude", got)
+	}
+	if got := IgnoreFileName(root); got != ".git/info/exclude" {
+		t.Errorf("IgnoreFileName = %q, want .git/info/exclude", got)
+	}
+}
