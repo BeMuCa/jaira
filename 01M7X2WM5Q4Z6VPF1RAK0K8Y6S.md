@@ -1,7 +1,7 @@
 ---
 id: 01M7X2WM5Q4Z6VPF1RAK0K8Y6S
 title: "shipped.sha256 kennt jede Version, die in einem Release-Tag ausgeliefert wurde, und CI haelt das fest"
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T23:01:43Z
+updated-at: 2026-11-20T23:01:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -27,7 +27,7 @@ outcome-what: "Manifest neu erzeugt (8 Tag-Versionen fehlten, u.a. cockpit board
 outcome-why: Hand-gemergte Manifest-Konflikte verloren Zeilen; jaira update --roles hielt dann eine unberuehrte Installation fuer handgeaendert und uebersprang sie still
 outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, wenn eine fehlt, und Manifest-Merges konfliktieren nicht mehr"
 review-summary: none
-round: 3
+round: 4
 review-gaps: "none - Runde 2 aenderte nur pipefail und eine Zuweisung in hashed(); nichts zu kuerzen"
 test-verdict: "pass: go vet + go test ./... RC=0 auf 9c785040; --check auf dem echten Repo exit 0 (34 Tags), fehlende Tag-Zeile exit 1, flacher Klon exit 1, unlesbarer Blob -> Generator exit 128 statt 0 (TestGenerateFailsOnAnUnreadableBlob); Aenderung schreibt nichts, kein Zwei-Schreiber-Fall"
 hunt-verdict: "fail: --check haengt bei unlesbarem Blob noch den Hash der leeren Datei an (set -e gilt nicht in $(...))"
