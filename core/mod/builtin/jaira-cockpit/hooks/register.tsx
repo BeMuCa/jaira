@@ -248,18 +248,22 @@ async function reports($: EngineInterface, args: string): Promise<string> {
       const keys = projectKeys(await $.store.keys(), root).reverse()
       return listReports(await Promise.all(keys.map(async k => [k, await stored($, k)] as const)))
     }
-    const key = keyOf(root, ticket)
-    const kept = await stored($, key)
-    // Shown once, read: the next call brings only what arrived after it. The
-    // mark is best-effort: a store that refuses the write (full, I/O) still
-    // shows the reports, which then come again on the next read.
-    if (kept.some(r => r.seen !== true)) {
-      try {
-        await $.store.set(key, kept.map(r => ({ ...r, seen: true })))
-      } catch {}
-    }
-    return showReport(ticket, kept, all)
+    return showReport(ticket, await readReports($, keyOf(root, ticket)), all)
   })
+}
+
+// A ticket's kept reports, marked read: shown once, the next report call
+// brings only what arrived after it. Call it under the lock. The mark is
+// best-effort: a store that refuses the write (full, I/O) still shows the
+// reports, which then come again on the next read.
+async function readReports($: EngineInterface, key: string): Promise<Report[]> {
+  const kept = await stored($, key)
+  if (kept.some(r => r.seen !== true)) {
+    try {
+      await $.store.set(key, kept.map(r => ({ ...r, seen: true })))
+    } catch {}
+  }
+  return kept
 }
 
 // What session.receive left alone on purpose — a comment on an artifact, a
@@ -1581,7 +1585,8 @@ export const register: Register = (on, options) => {
     const id = await read($, paneAtom)
     const { Box, Text } = $.ui.resolve(e)
     if (id === null) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
-    const kept = await locked(async () => stored($, keyOf(await project($), id)))
+    // Opening a ticket reads its reports: they count as read, as after report.
+    const kept = await locked(async () => readReports($, keyOf(await project($), id)))
     let csv = ''
     try {
       csv = await $.fs.read(`${await home($)}/.jaira/metrics.csv`)
