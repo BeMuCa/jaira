@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T20:05:58Z
+updated-at: 2026-11-20T20:10:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16592
 claimed-at: 2026-11-20T20:04:03Z
@@ -39,7 +39,8 @@ claimed-at: 2026-11-20T20:04:03Z
   proof: core/role/builtin/jaira-teamlead/SKILL.md ## Report to the human
 - [x] Neue Rolle jaira-role-signoff <id>...: liest Tickets in signoff, gibt die Tabelle mit Einordnung und Empfehlung nach den Rueckgabe-Regeln aus, fertige move-Befehle und ein Folge-Ticket fuer gelbe Raender nach der zweiten Rueckgabe; aendert nichts selbst
   proof: core/role/builtin/jaira-role-signoff/SKILL.md (## The return rules, ## Per ticket)
-- [ ] jaira-worker/jaira-dispatcher: vor jedem Push die Gates des Projekts lokal laufen lassen, die CI sonst rot machen (im Skill allgemein formuliert)
+- [x] jaira-worker/jaira-dispatcher: vor jedem Push die Gates des Projekts lokal laufen lassen, die CI sonst rot machen (im Skill allgemein formuliert)
+  proof: jaira-worker/SKILL.md ### Before you push; jaira-dispatcher/SKILL.md ## Before anything is pushed; jaira-role-pr/SKILL.md ## Push the branch
 - [ ] Release-Note und shipped.sha256; die Rollen-Tests (core/role) gruen
 
 ## Options
