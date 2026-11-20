@@ -20,8 +20,9 @@ It closes only when all of these hold, and otherwise prints
   - the ticket sits in a lane a person owns (one that takes a question, or
     one only a person moves work out of) or in the terminal lane,
   - the ticket has no open question: a worker waiting for an answer stays,
-  - the directory has no uncommitted changes outside .jaira/ (the board's own
-    writes ride with the next commit and are not lost when a tab closes),
+  - the directory has no uncommitted changes, as uncommitted.sh beside this
+    file counts them - the same rule reap.sh asks (ticket and milestone files
+    ride with the next commit and are on the board's refs),
   - this runs in a tab spawn.sh labelled <ticket>/<lane>.
 
 The tab closes in the background, detached from this process: closing it ends
@@ -89,14 +90,14 @@ for i in $(seq 0 99); do
 done
 [ -n "$persons" ] || kept "the ticket is in $lane, not with a person"
 
-st="$(git -C "$root" -c core.quotePath=false status --porcelain)" || kept "git status failed in $root"
-d="$(printf '%s\n' "$st" | grep -v '^.. \.jaira/' | cut -c4- | head -3 | tr '\n' ' ' || true)"
-[ -z "${d% }" ] || kept "uncommitted changes: ${d% }"
+here="$(cd "$(dirname "$0")" && pwd)"
+d="$("$here/uncommitted.sh" "$root")" || kept "git status failed in $root"
+[ -z "$d" ] || kept "uncommitted changes: $d"
 
 herdr="${HERDR_BIN_PATH:-herdr}"
 if [ "${HERDR_ENV:-}" != 1 ] && [ -n "${HC_TERMINAL_ID:-}" ] \
   && command -v "${HC_BIN:-hc}" >/dev/null 2>&1; then
-  herdr="$(cd "$(dirname "$0")" && pwd)/herdr-hc.sh"
+  herdr="$here/herdr-hc.sh"
 fi
 pane="${HERDR_PANE_ID:-${HC_TERMINAL_ID:-}}"
 { [ "${HERDR_ENV:-}" = 1 ] || [ "${herdr##*/}" = herdr-hc.sh ]; } && [ -n "$pane" ] \
