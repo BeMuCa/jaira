@@ -18,7 +18,8 @@ related:
   - 01M6HZQPZZFAF3MXY3AWQFWRXH
 commits: []
 created-at: 2026-11-20T16:34:31Z
-updated-at: 2026-11-20T16:34:31Z
+updated-at: 2026-11-20T16:40:28Z
+updated-by: Alexander Sacharov
 ---
 
 # Ein offener PR wird begleitet: jaira sieht neue Kommentare, CI-Stand und wartende Re-Requests und meldet sie
