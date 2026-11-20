@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:29:33Z
+updated-at: 2026-11-20T19:29:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99114
 claimed-at: 2026-11-20T19:19:18Z
@@ -33,7 +33,7 @@ outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten d
 outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
 review-summary: "none"
 round: 12
-review-gaps: "none: nur gitIn ohne ungenutzten Rueckgabewert (pr_round_test.go); kein vorhandener git-Testhelfer in core/role"
+review-gaps: "none"
 test-verdict: "pass: go test -race ./... RC=0 after clean cache at 007f461a; DoD 1-16 proofs present; review-check replayed with the branch binary: unknown handle ZZZZZZ -> exit 3 '(unknown)', roles list without files -> 'pr: person ... opens in: done (the default)'; earlier rounds: thresholds done/signoff, unreadable branch ticket -> 3, logbook passes, archive holds (TestPRGateReadsFiledTicketsByWhereTheyAre), pr-round.sh open refuses before gh pr create; reply/comment/settled against fake gh only"
 hunt-verdict: "pass: bughunt done at 007f461a - 0 change, 0 pre-existing"
 review-verdict: "Abnahmereif, kein Blocker. Der Blocker der letzten Runde ist behoben: mit dem Branch-Binary in einem frischen Repo gibt 'pr-gate master' fuer 'feat(ZZZZZZ): x' jetzt Exit 3 'ZZZZZZ (unknown)'. Alle 16 DoD-Punkte sind durch Code und Tests belegt; go test ./core/role ./core/settings ./core/gitrepo ./internal/cli gruen. pr-round.sh ganz gelesen: Dedupe-Logik (Lauf gleicher Worte, nur eigene id geloescht) haelt in beiden Reihenfolgen zweier Sessions; nur Hinweise, siehe gaps. Nicht live gegen GitHub geprueft - die Tests laufen gegen ein gh-Fake."
