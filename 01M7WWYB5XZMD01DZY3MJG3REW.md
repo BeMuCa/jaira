@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T16:56:18Z
+updated-at: 2026-11-20T16:56:21Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59469
 claimed-at: 2026-11-20T16:43:41Z
@@ -40,7 +40,8 @@ question: ""
   proof: core/role/builtin/jaira-role-pr/SKILL.md:37 (agent + every ticket done), core/role/builtin/jaira-role-pr/SKILL.md:323 Ask for the board's reviewer; core/role/pr_round_test.go TestPRRoundRequestsTheReviewer, TestPROpensOnlyWhereTheBoardSaysAndNeverAccepts
 - [x] Eine Kommentarrunde: jeder Kommentar bekommt 'Behoben in <sha>: ...' oder eine Begruendung, wird resolved, das Review neu angefordert
   proof: core/role/builtin/jaira-role-pr/scripts/pr-round.sh reply/request; core/role/pr_round_test.go TestPRRoundRepliesThenResolves; core/role/builtin/jaira-role-pr/SKILL.md:350 Answering review comments
-- [ ] Merge und Approve macht kein Agent, auch mit Einstellung
+- [x] Merge und Approve macht kein Agent, auch mit Einstellung
+  proof: core/role/pr_round_test.go TestPRRoundNeverMergesOrApproves, TestPROpensOnlyWhereTheBoardSaysAndNeverAccepts ('.jaira/pr never reaches merge or approve')
 - [ ] Eingabeklasse PR existiert schon: kein zweiter PR, direkt zur Kommentarrunde
 - [ ] Eingabeklasse Fork vs. gleiches Repo: PR geht an das Ziel aus 'Which repository it goes to', die Kommentarrunde fragt dasselbe Repo
 - [ ] Eingabeklasse gh/glab nicht angemeldet oder ohne Scope: das Skript bricht mit klarer Meldung und Exit != 0 ab, nichts halb erledigt verschwiegen
