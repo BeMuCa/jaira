@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:31:46Z
+updated-at: 2026-11-20T22:32:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
@@ -101,3 +101,4 @@ review-check: |-
 - **2026-11-20 22:28 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
 - **2026-11-20 22:30 · Alexander Sacharov** — in-progress Runde nach signoff-Rueckgabe: Branch-Lookup nach der Regel von jaira create (internal/cli/tickets.go branchTicket: Handle als eigenes Segment des Branchnamens) - lokal vor remote, genau ein Treffer sonst '?' und Kandidaten nennen. Geschwisterstelle teamlead SKILL.md (hunt-cover-Check) verweist darauf. Geprueft: feat/twrap8 und fix/twrap8-x gefunden, feat/twrap8x nicht, unbekannter Handle leer.
 - **2026-11-20 22:31 · Alexander Sacharov** — critique (Runde nach signoff): nichts. Bewusst stehen gelassen: Remote-Fallback kann bei zwei Remotes (Fork + upstream) zwei Kandidaten liefern -> '?' mit Kandidaten statt Raten, das ist gewollt.
+- **2026-11-20 22:32 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-signoff/SKILL.md:61-66 - the branch lookup takes a local branch over its remote even when the local one is behind it (pushed from another worktree, clone or teammate, not yet pulled): $head is then a superseded commit, so a green CI run or an old hunt note for that commit shows ✅ while the PR ships the newer remote head, and a hunt on the real head shows ❌. 'A local branch wins: it holds what was not pushed yet' only holds when local is ahead; compare local with its upstream (git rev-list --left-right --count) and treat diverged/behind as ?. Side effect of the same lookup: with no local branch and the branch on both origin and upstream (already the case for feat/parent-auto, feat/worker-kein-bump) it returns two names and every check is ?; ran: scratch repo, clone a pushes feat/twrap8 'one', clone b pushes 'two', a fetches; snippet picks feat/twrap8 at 'one' while origin/feat/twrap8 is 'two'
