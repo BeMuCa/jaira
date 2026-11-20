@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T18:19:18Z
+updated-at: 2026-11-20T18:19:21Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-37518
 claimed-at: 2026-11-20T18:18:38Z
@@ -36,11 +36,7 @@ outcome-why: "Review- und bughunt-Schleifen liefen 10-24 Runden, weil jede Runde
 outcome-resolves: "DoD 1-7: 15-pre-process.md:38, 20-in-progress.md:29 und :66-102, 27-testing.md:41-45,98,129-134, bughunt SKILL.md:104, 40-review.md:57,117-121, shipped.sha256, core/release/notes/TW5FE2.md. Vier Kategorien: Nebenlaeufigkeit/Fehlerpfade/Rechte - nur Prompt-Text, nichts schreibt; ungewoehnliche Eingabe - Note ohne Praefix (auch aeltere review-Prompts) = back: unknown, zaehlt nicht."
 review-summary: "none"
 round: 11
-review-gaps: |-
-  note: in-progress 'back:' line on a restarted session - a fresh worker in the same round sees its own predecessor's note as newest and falls into 'anything else - the review sent it', writing a second back: line that counts toward the wrong lane; fix: say 'skip when a back: line with the current round already exists' in 20-in-progress.md
-  note: pre-process 'move the ticket to the human lane with that question' is refused by the gate (missing_lane_output plan) when the plan is not written yet; fix: say 'write the plan first, then move' in 15-pre-process.md
-  note: pre-existing: lane prompts (critique, now in-progress and pre-process) say 'jaira move --to human --question', while the jaira-role-lane skill tells a lane worker to set question= and stay in its lane - two rules for the same situation
-  note: testing follow-up round says 'tests of the packages git diff --name-only <commit> touches' - Go wording; on another stack 'package' means nothing and git diff fails if <commit> was rebased away; fix: 'the tests covering the changed files; whole suite if the commit is unknown'
+review-gaps: none
 test-verdict: "pass: follow-up round - go build ./... ok; go test -race -count=1 ./core/lane/... ./core/shipped ./core/release/... RC=0 (packages the diff since 9fa8ce3c touches); DoD 1-7 in the tree, proof lines re-checked after the edit; .jaira/lanes in-progress/testing/review byte-equal to builtin, all three hashes in shipped.sha256; a fresh 'jaira init' from this tree ships the review: prefix in review.md and in-progress.md; prompts only - nothing writes, so no failure path or two-writer case"
 hunt-verdict: "pass: bughunt done at d0cb1f49, 0 change, 0 pre-existing"
 review-verdict: "All 7 DoD items are met in the diff; no blocker. Verified the strings the prompts rely on exist in code: round field (move.go:134), 'Given back from <lane>:' (cockpit register.tsx:900), '<who> took this ticket over from' (refsync.go:1433), 'bughunt: done at' (bughunt SKILL), 'critique:'/'optimize:' return-note prefixes, 'jaira dod --add'. go test ./core/shipped ./core/role ./core/lane pass. Four notes are small wording edges, none changes a result."
