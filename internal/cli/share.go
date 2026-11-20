@@ -77,6 +77,11 @@ You still have to commit. jaira does not commit on your behalf.`,
 				}
 				fmt.Fprintf(w, "\nTickets already committed stay in history. To remove them:\n"+
 					"  git rm -r --cached .jaira && git commit -m \"make jaira board private\"\n")
+				// info/exclude belongs to this clone. A teammate who pulls that
+				// commit has no exclude entry of their own until jaira writes one.
+				fmt.Fprintf(w, "\nThe exclude entry is this clone's only. A teammate who keeps the board\n"+
+					"runs 'jaira update' once after pulling that commit, or their tickets\n"+
+					"show up as untracked files.\n")
 				return nil
 			}
 
@@ -93,12 +98,21 @@ You still have to commit. jaira does not commit on your behalf.`,
 				return err
 			}
 			installed, driverErr := ensureMergeDriver(s.Root)
+			// RemoveIgnore takes out jaira's own entries only. A line a person
+			// wrote, such as an unanchored .jaira/ in info/exclude that covers
+			// every board in the repository, stays, and keeps this one out of git.
+			stillIgnored := board.Ignored(s.Root)
 
 			if g.jsonOut {
 				return emit(w, map[string]any{
 					"shared": true, "unignored": unignored, "lanes_ignored": lanesIgnored,
 					"gitattributes_written": attrs, "merge_driver_installed": installed,
+					"still_ignored": stillIgnored,
 				})
+			}
+			if stillIgnored {
+				fmt.Fprintf(cmd.ErrOrStderr(), "jaira: warning: a line jaira did not write still ignores .jaira/ (in .gitignore or %s); "+
+					"git will not see the tickets until you remove it by hand\n", board.IgnoreFileName(s.Root))
 			}
 			fmt.Fprintf(w, "The board is now part of the repository.\n")
 			if unignored {

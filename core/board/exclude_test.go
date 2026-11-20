@@ -243,3 +243,51 @@ func TestAGlobCharacterDirectoryIsExcludedLiterally(t *testing.T) {
 		t.Errorf("git sees the board in a[1]: %v\n%s", err, out)
 	}
 }
+
+// dropEntry takes out the blank line directly after the entry it removes and
+// no other: a blank line further down belongs to what stands above it.
+func TestDropEntryTakesOnlyTheBlankLineThatFollowsTheEntry(t *testing.T) {
+	cases := []struct{ name, in, want string }{
+		{"entry at the end", "a\n\n# jaira board — private\n/.jaira/\n", "a\n"},
+		{"blank right after", "# jaira board — private\n/.jaira/\n\nfoo\n", "foo\n"},
+		{"no blank right after", "# jaira board — private\n/.jaira/\nfoo\n\nbar\n", "foo\n\nbar\n"},
+		{"entry without its comment", "/.jaira/\n\nfoo\n", "\nfoo\n"},
+		{"CRLF, no blank right after", "# jaira board — private\r\n/.jaira/\r\nfoo\r\n\r\nbar\r\n", "foo\r\n\r\nbar\r\n"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "exclude")
+			write(t, path, c.in)
+			if changed, err := dropEntry(path, privateMarker, func(s string) bool { return s == IgnoreLine }); err != nil || !changed {
+				t.Fatalf("dropEntry = %v, %v", changed, err)
+			}
+			if got, _ := os.ReadFile(path); string(got) != c.want {
+				t.Errorf("got %q, want %q", got, c.want)
+			}
+		})
+	}
+}
+
+// An unanchored ".jaira/" a person wrote into info/exclude excludes every
+// board in the repository. Sharing the top board takes out only jaira's own
+// anchored entry: the person's line stays, the board in the subdirectory
+// stays private, and Ignored still reports the top board as excluded.
+func TestRemoveIgnoreLeavesAnUnanchoredLineAPersonWrote(t *testing.T) {
+	root, exclude := newRepo(t)
+	write(t, exclude, ".jaira/\n")
+	if !Ignored(root) {
+		t.Fatalf("Ignored = false with .jaira/ in info/exclude")
+	}
+	if changed, _ := AddIgnore(root); changed {
+		t.Errorf("AddIgnore wrote an entry beside a line that already excludes the board")
+	}
+	if changed, err := RemoveIgnore(root); err != nil || changed {
+		t.Fatalf("RemoveIgnore = %v, %v; want nothing changed", changed, err)
+	}
+	if got, _ := os.ReadFile(exclude); string(got) != ".jaira/\n" {
+		t.Errorf("exclude after RemoveIgnore: %q, want the person's line alone", got)
+	}
+	if !Ignored(root) {
+		t.Errorf("Ignored = false although the person's line still excludes the board")
+	}
+}

@@ -274,3 +274,44 @@ func TestUpdateLeavesABoardInGitAsItIs(t *testing.T) {
 		})
 	}
 }
+
+// A ".jaira/" a person wrote into info/exclude is not jaira's to remove: it
+// covers every board in the repository. share leaves it, says that git still
+// ignores the board, and --undo tells the person that the entry it writes is
+// this clone's alone.
+func TestShareLeavesAPersonsUnanchoredExcludeLineAndSaysSo(t *testing.T) {
+	dir := repoWithCommit(t)
+	if out, err := runCLI(t, dir, "init"); err != nil {
+		t.Fatalf("jaira init: %v\n%s", err, out)
+	}
+	common := strings.TrimSpace(gitOut(t, dir, "rev-parse", "--path-format=absolute", "--git-common-dir"))
+	exclude := filepath.Join(common, "info", "exclude")
+	if err := os.WriteFile(exclude, []byte(readExclude(t, dir)+".jaira/\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, err := runCLI(t, dir, "share")
+	if err != nil {
+		t.Fatalf("jaira share: %v\n%s", err, out)
+	}
+	if excludesBoard(readExclude(t, dir)) {
+		t.Errorf("share left jaira's own entry:\n%s", readExclude(t, dir))
+	}
+	if !strings.Contains(readExclude(t, dir), ".jaira/\n") {
+		t.Errorf("share took out the person's line:\n%s", readExclude(t, dir))
+	}
+	if !strings.Contains(out, "still ignores .jaira/") {
+		t.Errorf("share did not say the board is still ignored:\n%s", out)
+	}
+	out, err = runCLI(t, dir, "share", "--json")
+	if err != nil || !strings.Contains(out, `"still_ignored": true`) {
+		t.Errorf("share --json = %v\n%s", err, out)
+	}
+
+	out, err = runCLI(t, dir, "share", "--undo")
+	if err != nil {
+		t.Fatalf("jaira share --undo: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "jaira update") {
+		t.Errorf("share --undo does not tell teammates to run jaira update:\n%s", out)
+	}
+}

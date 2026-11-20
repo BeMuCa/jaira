@@ -170,8 +170,12 @@ func RemoveIgnore(root string) (changed bool, err error) {
 	if exclude == "" || !lists(exclude, line) {
 		return changed, nil
 	}
+	// Only jaira's own, anchored entry leaves info/exclude. An unanchored
+	// ".jaira/" there is a person's line and excludes every board in the
+	// repository, one in a subdirectory too: taking it out to share the top
+	// board would publish that one as well. It stays, and Ignored still says so.
 	err = locked(exclude, func() error {
-		ex, err := dropEntry(exclude, privateMarker, func(t string) bool { return boardLine(t, line) })
+		ex, err := dropEntry(exclude, privateMarker, func(t string) bool { return t == line })
 		changed = changed || ex
 		return err
 	})
@@ -252,19 +256,25 @@ func dropEntry(path, marker string, match func(string) bool) (changed bool, err 
 	}
 	lines := strings.Split(string(existing), "\n")
 	var out []string
-	var skipNextBlank bool
+	// droppedComment: the line before was a marker comment taken out with
+	// its entry. blankFollows: the line before was such an entry, so a blank
+	// line here is the one that belonged to it — and only here: a blank line
+	// further down belongs to whatever stands above it.
+	var droppedComment, blankFollows bool
 	for i, line := range lines {
 		t := strings.TrimSpace(line)
+		wasComment, wasEntry := droppedComment, blankFollows
+		droppedComment, blankFollows = false, false
 		if match(t) {
 			changed = true
+			blankFollows = wasComment
 			continue
 		}
 		if strings.Contains(t, marker) && i+1 < len(lines) && match(strings.TrimSpace(lines[i+1])) {
-			skipNextBlank = true
+			droppedComment = true
 			continue
 		}
-		if skipNextBlank && t == "" {
-			skipNextBlank = false
+		if wasEntry && t == "" {
 			continue
 		}
 		out = append(out, line)
