@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-20T22:44:44Z
+updated-at: 2026-11-20T22:44:48Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -48,3 +48,4 @@ claimed-at: 2026-11-20T22:44:44Z
 3. bughunt/testing: ein Fund nennt Klasse und Beispiel; der Rueckweg verlangt den Fix der Klasse, nicht des einen Beispiels.
 4. Schleifenbremse: Blocker sind nur falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke. Nach einem Fix-Durchgang laeuft der Testlauf und ein Bughunt nur ueber den Diff seit dem letzten Hunt, dann review. Nach 3 Rueckgaben aus derselben Lane: Frage an den Teamlead statt weiter schleifen.
 5. Kleine Raender aus review-gaps in derselben Runde schliessen statt als note: stehen lassen - Alex schickt sie sonst ohnehin zurueck. Vorbestehendes ausserhalb des Umfangs als 'note: pre-existing: ...'.
+- **2026-11-20 22:44 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock
