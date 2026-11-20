@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T17:53:39Z
+updated-at: 2026-11-20T17:53:43Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80126
 claimed-at: 2026-11-20T17:38:47Z
@@ -44,7 +44,7 @@ test-verdict: "pass: go build ./... and go test -race -count=1 ./... RC=0 at 9fa
 hunt-verdict: "pass: bughunt done at 9fa8ce3c, 0 change, 0 pre-existing (earlier steal-note finding fixed in 9fa8ce3c)"
 review-verdict: "No blocker. All seven DoD items are met in the prompts; builtin and board copies are identical; go test ./core/shipped/... ./core/lane/... ./core/role/... passes. The return-counting rule rests on note conventions rather than recorded data - it works as long as each sending lane writes its note last, which the critique, optimize and testing prompts already require and the review prompt only asks for."
 review-round: 9
-review-check: "1. git diff 5b16e491..HEAD -- core/lane/builtin core/role/builtin  - only prompt text, four lane files and the bughunt skill  2. open core/lane/builtin/15-pre-process.md, section 'Name the edges before the code' - the seven input classes and 'jaira dod <id> --add' are there  3. open core/lane/builtin/20-in-progress.md, sections 'Fix the class, not the example' and 'The third return from the same lane' - 'back: person' resets the count, third return moves to human with --question  4. open core/lane/builtin/27-testing.md:97 - blocker is exactly four kinds  5. run: for f in pre-process in-progress testing review; do cmp core/lane/builtin/*-$f.md .jaira/lanes/$f.md && echo $f ok; done  - four lines 'ok'  6. run: go test ./core/shipped ./core/lane ./core/role/...  - three 'ok' lines"
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-tw5fe2  2. git diff c69471d0^ HEAD -- core/lane/builtin/20-in-progress.md - see sections 'Fix the class, not the example' and 'The third return from the same lane'  3. git diff c69471d0^ HEAD -- core/lane/builtin/15-pre-process.md - see 'Name the edges before the code' with the input-class list  4. diff core/lane/builtin/20-in-progress.md .jaira/lanes/in-progress.md - prints nothing (copies equal)  5. go test ./core/shipped/... ./core/lane/... - both ok  6. real check: on the next ticket that runs through pre-process, jaira show <id> shows DoD items naming a class of fault and input classes"
 ---
 
 # Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels
