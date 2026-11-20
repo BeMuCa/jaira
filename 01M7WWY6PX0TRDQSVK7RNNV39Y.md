@@ -21,14 +21,14 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:43:33Z
+updated-at: 2026-11-20T17:43:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60542
 claimed-at: 2026-11-20T17:19:23Z
 outcome-what: "Ein privates Board steht jetzt in <git-common-dir>/info/exclude statt in der getrackten .gitignore (core/board/gitignore.go); jaira update verschiebt eine alte .gitignore-Zeile dorthin und schliesst ein privates Board ohne Ausschluss dort aus; share/--undo arbeiten auf beiden Dateien; ticket.LockFile aus Store.lock herausgezogen."
 outcome-why: "Eine von jaira geaenderte .gitignore erscheint in jedem neuen Worktree als Aenderung, ein Push-Guard lehnt dann jeden Push ab; info/exclude gilt fuer alle Worktrees und taucht in keinem Diff auf."
 outcome-resolves: Neue Worktrees eines Repos mit privatem Board bleiben sauber; kein Wegraeumen der .gitignore-Zeile von Hand mehr.
-review-summary: "internal/cli/share.go:113 warning names '.gitignore or <exclude>', but RemoveIgnore has just removed every .jaira form from .gitignore, so only info/exclude can still hold the line - name only board.IgnoreFileName(s.Root)"
+review-summary: "none"
 round: 6
 review-gaps: |-
   note: dropEntry setzt skipNextBlank am Marker und loescht dann die naechste Leerzeile irgendwo spaeter, wenn direkt nach dem Eintrag keine folgt – "# jaira board — private\n/.jaira/\nfoo\n\nbar" wird zu "foo\nbar" (per Wegwerftest geprueft); nur kosmetisch
