@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T17:38:47Z
+updated-at: 2026-11-20T17:39:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80126
 claimed-at: 2026-11-20T17:38:47Z
@@ -106,3 +106,4 @@ Empfehlung: 2 - der Teamlead hat das bewusst aus diesem Ticket genommen, alle 7 
 - **2026-11-20 17:38 · Alexander Sacharov** — decision: 1) Zurueckgeben: die Regel in 20-in-progress.md so aendern, dass sie nur mit dem arbeitet, was jaira show ausgibt (z.B. die Person schreibt bei Rueckgabe eine Note)
 - **2026-11-20 17:38 · Alexander Sacharov** — Given back from signoff: 1) Zurueckgeben: die Regel in 20-in-progress.md so aendern, dass sie nur mit dem arbeitet, was jaira show ausgibt (z.B. die Person schreibt bei Rueckgabe eine Note)
 - **2026-11-20 17:38 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
+- **2026-11-20 17:39 · Alexander Sacharov** — back: person
