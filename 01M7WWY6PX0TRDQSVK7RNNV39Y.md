@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:11:01Z
+updated-at: 2026-11-20T17:11:05Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46134
 claimed-at: 2026-11-20T16:42:22Z
@@ -38,6 +38,8 @@ review-gaps: |-
   note: Ignored() kostet einen git-Aufruf pro Kommando (bindDriverIfShared) - auf Windows eher 20-50 ms als die gemessenen 2,4 ms unter Linux; bewusst in critique gelassen
 test-verdict: "pass: go test -race ./... gruen (RC=0) auf 394a544a; DoD 1-7 an den Tests geprueft; Binary: Board in git mit committeter /.jaira/-Zeile -> update rc 0, git status leer; vorige Runde: init/Schreibschutz/3x parallel wie notiert"
 hunt-verdict: "pass: bughunt done at 394a544a, 0 findings (Folgerunde ueber den Fix-Diff); Runde 1 (44007130): 1 change, behoben in 394a544a"
+review-verdict: "Zurueck nach in-progress: DoD 1-7 sind erfuellt und getestet (go test ./core/board ./core/ticket ./internal/cli gruen, Paralleltest 30/30), aber auf git < 2.31 (Ubuntu 20.04, Debian 11) macht init das Board nicht privat und legt ein Verzeichnis '--path-format=absolute/' im Repo an - falsches Ergebnis mit Datenpreisgabe, Fix ist eine Zeile."
+review-round: 3
 ---
 
 # Ein privates Board steht in .git/info/exclude statt in der .gitignore des Arbeitsbaums
