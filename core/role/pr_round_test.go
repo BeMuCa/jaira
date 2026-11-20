@@ -366,6 +366,11 @@ func TestPRRoundReplyLeavesOneAnswerWhenTwoSessionsRace(t *testing.T) {
 		{"this session posted first", `[{"id":"C0","author":{"login":"copilot"},"body":"rename"},{"id":"C2","author":{"login":"me"},"body":"Fixed in abc123.\r\n"},{"id":"C3","author":{"login":"me"},"body":"Fixed in abc123."}]`, false},
 		{"an earlier answer of other words", `[{"id":"C1","author":{"login":"me"},"body":"Will look at it."},{"id":"C2","author":{"login":"me"},"body":"Fixed in abc123."}]`, false},
 		{"the same words from someone else", `[{"id":"C1","author":{"login":"copilot"},"body":"Fixed in abc123."},{"id":"C2","author":{"login":"me"},"body":"Fixed in abc123."}]`, false},
+		// The agent writes under the person's login: a comment of theirs with
+		// the same words is indistinguishable from another session's copy,
+		// and is never what gets removed — only this run's own post is.
+		{"the person wrote the same words before", `[{"id":"P1","author":{"login":"me"},"body":"Fixed in abc123."},{"id":"C2","author":{"login":"me"},"body":"Fixed in abc123."}]`, true},
+		{"the person wrote the same words after", `[{"id":"C2","author":{"login":"me"},"body":"Fixed in abc123."},{"id":"P3","author":{"login":"me"},"body":"Fixed in abc123."}]`, false},
 	} {
 		after := fixtureFile(t, "after.json", `{"data":{"viewer":{"login":"me"},"node":{"comments":{"nodes":`+c.after+`}}}}`)
 		out, code := p.run([]string{"GH_STATE=" + open, "GH_FIXTURE=" + posted, "GH_AFTER=" + after}, "reply", "o/r", "7", "PRRT_x", answer)
@@ -376,6 +381,11 @@ func TestPRRoundReplyLeavesOneAnswerWhenTwoSessionsRace(t *testing.T) {
 		deleted := strings.Contains(calls, "deletePullRequestReviewComment") && strings.Contains(calls, "id=C2")
 		if deleted != c.deletes || (!c.deletes && strings.Contains(calls, "deletePullRequestReviewComment")) {
 			t.Errorf("%s: removed this copy %v, want %v\n%s", c.name, deleted, c.deletes, calls)
+		}
+		for _, other := range []string{"id=C0", "id=C1", "id=C3", "id=P1", "id=P3"} {
+			if strings.Contains(calls, other) {
+				t.Errorf("%s: touched %s, which this run did not post\n%s", c.name, other, calls)
+			}
 		}
 	}
 }
@@ -422,11 +432,17 @@ func TestPRRoundCommentSaysItOnce(t *testing.T) {
 	}{
 		"the other session posted first": {`[{"id":8,"user":{"login":"me"},"body":"Renamed it.\nSee abc123."},{"id":9,"user":{"login":"me"},"body":"Renamed it.\nSee abc123."}]`, true},
 		"this session posted first":      {`[{"id":9,"user":{"login":"me"},"body":"Renamed it.\nSee abc123."},{"id":10,"user":{"login":"me"},"body":"Renamed it.\nSee abc123."}]`, false},
+		"the person said it after":       {`[{"id":9,"user":{"login":"me"},"body":"Renamed it.\nSee abc123."},{"id":11,"user":{"login":"me"},"body":"Renamed it.\nSee abc123."}]`, false},
 	} {
 		afterFile := fixtureFile(t, "after.json", after.issues)
 		out, code := p.run([]string{"GH_FIXTURE=" + user, "GH_ISSUES=" + before, "GH_ISSUES_AFTER=" + afterFile, "GH_POSTED=" + posted}, "comment", "o/r", "7", answer)
 		calls := strings.Join(p.calls(), "\n")
 		deleted := strings.Contains(calls, "DELETE\trepos/o/r/issues/comments/9")
+		for _, call := range p.calls() {
+			if strings.Contains(call, "DELETE") && strings.TrimRight(call, "\t") != "api\t--method\tDELETE\trepos/o/r/issues/comments/9" {
+				t.Errorf("%s: removed a comment this run did not post: %q", name, call)
+			}
+		}
 		if code != 0 || deleted != after.deletes || (!after.deletes && strings.Contains(calls, "DELETE")) {
 			t.Errorf("%s: exit %d, removed this copy %v, want %v\n%s\n%s", name, code, deleted, after.deletes, out, calls)
 		}

@@ -1,7 +1,7 @@
 ---
 id: 01M7WWYB5XZMD01DZY3MJG3REW
 title: Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T17:53:58Z
+updated-at: 2026-11-20T17:56:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-87225
 claimed-at: 2026-11-20T17:38:56Z
@@ -31,8 +31,8 @@ question: ""
 outcome-what: "Board-Dateien .jaira/pr (person|agent, Default person) und .jaira/pr-reviewer; settings.PRFor/PRReviewerFor; 'jaira roles list' zeigt pr/pr_source/pr_reviewer; jaira-role-pr: Abschnitt 'Whether this board lets an agent open it', create nur bei person-Aufruf oder agent+alle Tickets done, Reviewer anfordern, eine Kommentarrunde ueber neues scripts/pr-round.sh (threads, comments, reply=antworten+resolve, comment, request); teamlead/dispatcher nennen die Ausnahme; Release-Note."
 outcome-why: "Ein Teamlead machte jede PR-Runde von Hand (push, PR-Text, Copilot anfordern, antworten, resolve); Alex erlaubt Agenten das inzwischen, aber nur pro Repo."
 outcome-resolves: "Mit .jaira/pr=agent oeffnet jaira-role-pr den PR nach der Abnahme aller Tickets selbst, fordert den Reviewer an und faehrt eine Kommentarrunde; ohne Datei bleibt alles wie heute; Merge/Approve bleibt in jedem Fall beim Menschen."
-review-summary: "A board file .jaira/pr (one line, default person; only exactly 'agent' switches) and .jaira/pr-reviewer (copilot, a login or org/team, anything else read as empty) are read by core/settings PRFor/PRReviewerFor and shown by 'jaira roles list' (pr: line, --json pr/pr_source/pr_reviewer). jaira-role-pr's SKILL.md lets an agent run gh pr create / glab mr create only when the board says agent and every ticket on the branch is in done; otherwise it still hands the line back. A new scripts/pr-round.sh (GitHub via gh api) lists open review threads and threadless comments, answers and resolves one thread idempotently (a rerun after a failed resolve only resolves), comments on the conversation, and re-requests a reviewer (copilot mapped to its bot login, exit 4 when the request is refused, exit 3 before any write when gh is not signed in). GitLab gets the equivalent glab api lines aimed at the target project. Merge and approve stay forbidden in every text and test. Teamlead and dispatcher texts name the exception; release note and shipped hashes added."
-round: 5
+review-summary: "core/role/pr_round_test.go TestPRRoundReplyLeavesOneAnswerWhenTwoSessionsRace/TestPRRoundCommentSaysItOnce assert only that the just-posted copy is removed, not that nothing else ever is - add rows where the person's own comment with the same words (no agent involved) stands before and after ours, and assert every delete names exactly the id this run's own POST returned (teamlead jaira-64: a person's deleted comment is data loss)"
+round: 6
 review-gaps: |-
   note: pr-round.sh comments lists every conversation comment and review body each round, the agent's own earlier answers included - not answering twice there rests on the agent reading the list (DoD 10 covers threads only)
   note: the Copilot request uses the REST login copilot-pull-request-reviewer[bot]; tested only against the fake gh in core/role/pr_round_test.go, never against live GitHub
@@ -75,7 +75,7 @@ review-check: "1. cd into a scratch clone of a GitHub repo you own, with an open
 - [x] Das Gate 'alle Tickets des Branches in done' prueft das Binary: jaira roles pr-gate <base> mit Exit 3 und Liste der offenen Tickets; pr-round.sh open oeffnet nur nach bestandenem Gate
   proof: internal/cli/roles.go newRolesPRGateCmd, core/gitrepo/named.go TicketsNamed; internal/cli/prgate_test.go TestPRGateOpensOnlyWhenEveryTicketOfTheBranchIsDone, TestPRGateRefusesWhatItCannotJudge; core/role/pr_round_test.go TestPROpenRunsTheGateFirst
 - [x] Zwei Sessions, die denselben Thread gleichzeitig beantworten, hinterlassen genau eine Antwort
-  proof: core/role/builtin/jaira-role-pr/scripts/pr-round.sh dedupe (threads) and comment read-back; core/role/pr_round_test.go TestPRRoundReplyLeavesOneAnswerWhenTwoSessionsRace, TestPRRoundCommentSaysItOnce
+  proof: core/role/builtin/jaira-role-pr/scripts/pr-round.sh dedupe (threads) and comment read-back delete only the id this run's own POST returned; core/role/pr_round_test.go TestPRRoundReplyLeavesOneAnswerWhenTwoSessionsRace, TestPRRoundCommentSaysItOnce (person's same words before/after: never touched)
 
 ## Options
 
@@ -124,3 +124,5 @@ Empfehlung: 2 - die Lücken sind dokumentiert und ungefährlich, der Live-Test i
 - **2026-11-20 17:40 · Alexander Sacharov** — runde 5 (zurueck aus signoff, Alex 17:38): decision (worker, settled): das Gate wird ein Kommando 'jaira roles pr-gate <base>' - liest .jaira/pr, die Handles aus 'git log --format=%s <base>..HEAD' (Scope type(ID[,ID]): wie ticketsNamed im Cockpit, board.ts), und jeden Handle auf dem Board (Store.List, ref-Stand eingeschlossen): nicht im Terminal-Lane seines Boards -> Exit 3 mit Liste; nicht auf dem Board (logbook) haelt nichts auf; kein Handle -> Exit 3. Unter roles, weil 'roles list' schon pr zeigt - kein neues Top-Level-Kommando. pr-round.sh bekommt 'open', das das Gate vor gh pr create laufen laesst; GitLab: SKILL ruft das Gate vor glab mr create.
 - **2026-11-20 17:40 · Alexander Sacharov** — decision (worker, settled): Doppelantwort - nach dem Posten liest reply die Kommentare des Threads; der frueheste Kommentar desselben Logins mit demselben Text bleibt, ist es nicht der eigene, loescht reply den eigenen (deletePullRequestReviewComment). Gilt fuer jede Reihenfolge zweier Sessions, auch auf zwei Rechnern; ein flock wuerde nur eine Maschine abdecken und fehlt auf macOS.
 - **2026-11-20 17:48 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock (teamlead jaira-64) - Fragen per SendMessage, Schlussbericht dorthin. Interim-Regel 5: die review-gaps-notes werden in dieser Runde geschlossen: (1) comment prueft vor dem Posten, ob derselbe Text desselben Logins schon im Gespraech steht; (2) Copilot live bleibt Abnahmeschritt (review-check 5); (3) Doppelantwort und (4) Gate im Binary siehe oben; (5) CLAUDE.md nennt die Ausnahme. Dazu Bughunt-Rest: Vergleich ignoriert Leerraum am Zeilenende, falls GitHub ihn kappt.
+- **2026-11-20 17:54 · Alexander Sacharov** — critique 5 (nur c471d660): nichts. Gelesen: pr-gate (roles.go, gitrepo/named.go), pr-round.sh open/said/first_of/dedupe/comment. Absichtlich so gelassen: reply erkennt 'schon beantwortet' am LETZTEN Kommentar, comment an IRGENDEINEM - im Thread muss nach einem Widerspruch des Reviewers erneut geantwortet werden, das Gespraech hat nichts zu resolven. Die Handle-Lesart ist board.ts ticketsNamed nachgebaut; das Cockpit hat einen anderen Ausloeser (Person drueckt Accept) und bleibt bei sich.
+- **2026-11-20 17:55 · Alexander Sacharov** — critique 5b (nach Hinweis teamlead jaira-64): core/role/pr_round_test.go TestPRRoundReplyLeavesOneAnswerWhenTwoSessionsRace/TestPRRoundCommentSaysItOnce assert only that the just-posted copy is removed, not that nothing else ever is - add rows where the person's own comment with the same words (no agent involved) stands before and after ours, and assert every delete names exactly the id this run's own POST returned (teamlead jaira-64: a person's deleted comment is data loss). Kein Codefehler: dedupe und comment loeschen nur die id, die der eigene POST dieses Laufs zurueckgab - nie einen fremden oder aelteren Kommentar; eine Agent-Markierung waere schwaecher als diese Regel und braucht es nicht. Fehlt nur der Test, der das festnagelt.
