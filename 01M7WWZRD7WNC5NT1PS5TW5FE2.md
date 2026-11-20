@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZRD7WNC5NT1PS5TW5FE2
 title: "Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:49:41Z
+updated-at: 2026-11-20T19:49:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99353
 claimed-at: 2026-11-20T19:19:21Z
@@ -35,7 +35,7 @@ outcome-what: "Neustart-Regel in 20-in-progress.md: jede back:-Zeile endet auf '
 outcome-why: "bughunt 19:23: Vergleich 'neuer als die Absender-Note' liest beim Neustart die eigene back:-Zeile als Absender und schreibt eine zweite."
 outcome-resolves: "DoD 6: 20-in-progress.md:72-76 und :88,:96 (round in jeder back:-Zeile); Zwilling gleich; shipped.sha256 eine Zeile. Vier Kategorien: Neustart mitten in der Runde ist der Fehlerpfad und jetzt abgedeckt; sonst nur Prompt-Text."
 review-summary: "Nur Prompt-Text, kein Go-Code: 15-pre-process.md verlangt Fehlerklasse, Standard-Eingabeklassen (leer/gross, Kodierung/CRLF, Leerzeichen-Pfade/Windows, zwei Prozesse, Abbruch mittendrin) und bei Heuristiken eine Annahmeregel als 'jaira dod --add', und einen Plan vor jedem Move nach human. 20-in-progress.md: Ursache statt Beispiel fixen, parametrisierter Test ueber die Klasse, Geschwister-Stellen greppen, vier Kategorien selbst pruefen, kleine Raender in derselben Runde schliessen; dazu eine Rueckgabe-Zaehlung per 'back: <lane>, round <n>'-Zeile (Absender aus der neuesten Note, cockpit:/Steal-Zeile uebersprungen, person/decision setzt zurueck, unknown zaehlt nicht) und Stopp mit Frage nach der dritten Rueckgabe derselben Lane. 27-testing.md und 40-review.md: Blocker nur falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke; testing-Funde als Klasse+Beispiel, Folgerunde nur ueber den Diff seit 'bughunt: done at'; review-Rueckgabe-Note beginnt mit 'review:'; 'note: pre-existing:'. Bughunt-Skill: Fund nennt Klasse und Beispiel. Board-Kopien in .jaira/lanes byte-gleich, shipped.sha256 und Release-Note TW5FE2.md ergaenzt."
-round: 13
+round: 14
 review-gaps: |-
   note: core/release/notes/TW5FE2.md Zeile 7 traegt zwei Aenderungen in einer Zeile (review:-Prefix und testing-Folgerunde) - fix: in zwei '- '-Zeilen teilen
   note: 27-testing.md Folgerunde 'git diff --name-only <commit>' scheitert, wenn der Commit aus 'bughunt: done at' nach einem Rebase nicht mehr existiert - fix: ein Satz 'Commit unbekannt -> ganze Suite wie in Runde 1'
