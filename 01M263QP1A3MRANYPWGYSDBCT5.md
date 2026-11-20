@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-20T23:02:28Z
+updated-at: 2026-11-20T23:03:52Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -27,7 +27,7 @@ claimed-at: 2026-11-20T22:44:44Z
 outcome-what: "Der generierte Agent-Block sagt im Punkt 'the ticket rides with the code', dass dieser und der naechste Punkt nur auf einem geteilten Board gelten: ohne geteiltes .jaira/ gibt es keine Ticketdatei zum Mitcommitten, der Code geht allein mit dem Handle im Betreff. Test haelt den Satz und --proof fest; CLAUDE.md/AGENTS.md dieses Repos regeneriert; Release-Note."
 outcome-why: "Auf einem ungeteilten Board widersprach die Commit-Regel dem Zustand des Boards: ein Agent kann eine ignorierte Datei nicht mitcommitten und las die Regel als kaputt. --proof und 'jaira update' waren schon ausgeliefert (2143e9ad, update.go:257) und brauchten nur den Test."
 outcome-resolves: SDBCT5
-review-summary: "none"
+review-summary: "Der generierte Agent-Block (core/board/announce.go) sagt jetzt am Punkt 'the ticket rides with the code': dieser und der naechste Punkt gelten nur auf einem geteilten Board; solange .jaira/ ausserhalb von git liegt (jaira init bis jaira share), gibt es keine Ticketdatei zum Mitcommitten - der Code wird allein committet, das Handle im Betreff ist die ganze Verbindung. Derselbe Vorbehalt steht in der jaira-Rolle (core/role/jaira/SKILL.md, Kopie .claude/skills/jaira), in docs/AGENTS.md und in der PR-Rolle, die einen Code-Commit ohne Ticketdatei dort nicht mehr als Befund wertet. --proof stand schon vorher im Block (2143e9ad). CLAUDE.md/AGENTS.md sind regeneriert, shipped.sha256 kennt die neuen Rollen-Hashes, ein Test haelt Block- und Rollensatz fest, die Release-Note sagt 'jaira update' bzw. 'jaira update --roles'."
 round: 3
 review-gaps: "none: the diff is four prose additions, one test and two shipped.sha256 lines. The test's whitespace-flattening (strings.Fields) repeats for block and skill on purpose - both are wrapped prose; no helper exists for it in announce_test.go and one for two uses would be fluff."
 test-verdict: "pass: go test ./... -race exit 0; build ok. DoD 1-6 checked in the tree (announce.go:101/138, role SKILL.md:331, pr SKILL.md:59, docs/AGENTS.md:72, release note, test present and green). Behaviour on a scratch repo: 'jaira init' writes the block with --proof and the caveat into CLAUDE.md+AGENTS.md, .jaira/ ignored, and 'git add .jaira/tickets' is refused there ('paths are ignored') - exactly the case the caveat names; 'jaira update' rewrites a stale block back. Failure path: read-only CLAUDE.md -> update exits 1 with permission denied, file unchanged. Two writers: the change adds no write path (block writing is pre-existing), nothing to race."
