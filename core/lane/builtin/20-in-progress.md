@@ -65,45 +65,31 @@ the next example of a mistake that was fixed for one example only. So:
 
 ## The third return from the same lane
 
-The lanes' own notes do not count returns: one round leaves several
-`bughunt: change:` notes and testing writes `testing: note:` on a round that
-passes. So keep the count yourself. When you pick up a ticket that was sent back — `round` in
-`jaira show <id> --json` is above 1 — find out who sent it and write one line
-before anything else, once per round. Every `back:` line ends in the
-`round` it was written for. Look for one with the current `round` first: when
-it is there, a session before you was stopped mid-round and already wrote it,
-so write no second one:
+jaira counts the returns itself. `back` in this lane's payload
+(`jaira show <id> --for-lane in-progress --json`) is the last send-back as the
+move recorded it:
 
-```bash
-jaira note <id> "back: testing, round 3"
-```
+- `from` — the lane the ticket came back from
+- `by` — `person` when a person sent it (signoff, human, any lane no agent
+  works), `lane` when a loop lane did
+- `count` — how many returns in a row came from that same lane; a person's
+  return, or one from another lane, starts it again at 1
 
-`round` counts every way back, a person's included, so it only says that the
-ticket was sent back, not by whom. jaira records no lane it came from, so
-read the sender off the newest note, passing over the lines no sender wrote —
-`cockpit:` and `<who> took this ticket over from <holder>`, which
-`jaira pull --steal` adds. The lane that sends work back writes its note last:
+`by: person` is the person's word, not a loop: do what they asked, whatever
+the count. Their reason is in the newest `Given back from <lane>:` or
+`decision:` note.
 
-- `Given back from <lane>:` or `decision:` — a person sent it or answered
-  you. Write `back: person, round <n>`: it is the person's word, not a loop, so do what
-  they asked. The cockpit writes these lines; a person who gives work back by
-  hand writes the same one, `jaira note <id> "Given back from signoff: <why>"`.
-  An answer that reaches you by message instead goes onto the ticket as
-  `decision: <answer>` before you act on it
-- `critique:`, `optimize:`, `testing:` or `review:` — that lane; `bughunt:`
-  counts for testing
-- anything else — nobody said who sent it. Write `back: unknown, round <n>`: it counts
-  for no lane, so a guess never brings the third-return stop forward
-
-Then count your `back:` lines for that lane since the last `back: person`.
-When this is the third, do
-not start a fourth round. Move the ticket to the human lane with the question
-instead — the third round's findings, and whether the definition of done is
-wrong or the loop reads deeper every round without ending:
+`by: lane` with `count` 3 is the third return from the same lane: do not start
+a fourth round. Move the ticket to the human lane with the question instead —
+the third round's findings, and whether the definition of done is wrong or the
+loop reads deeper every round without ending:
 
 ```bash
 jaira move <id> --to human --question "testing sent this back three times: <findings>. DoD wrong or loop without end? I would <...>"
 ```
+
+A ticket from before jaira recorded this has an empty `from` and `count` 0:
+it counts as no return.
 
 ## Progress notes
 

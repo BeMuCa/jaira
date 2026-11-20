@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T22:55:19Z
+updated-at: 2026-11-20T22:57:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-91898
 claimed-at: 2026-11-20T22:44:37Z
@@ -33,15 +33,20 @@ claimed-at: 2026-11-20T22:44:37Z
 
 ## Definition of Done
 
-- [ ] Ticket-Felder fuer Blocker-Kriterium und stop-after-fix; jaira show --for-lane gibt sie testing, bughunt und review mit (Test)
-- [ ] Mit stop-after-fix laeuft nach einem Fix-Durchgang nur der Testlauf, kein neuer Bughunt
+- [x] Ticket-Felder fuer Blocker-Kriterium und stop-after-fix; jaira show --for-lane gibt sie testing, bughunt und review mit (Test)
+  proof: internal/cli/flow.go (blocker_rule/stop_after_fix beside mode) + core/lane/builtin/27-testing.md, 40-review.md, jaira-role-bughunt/SKILL.md read them; TestForLaneCarriesTheLoopBrake, TestBlockerRuleRoundTrip, TestSetRefusesUnknownStopAfterFix
+- [x] Mit stop-after-fix laeuft nach einem Fix-Durchgang nur der Testlauf, kein neuer Bughunt
+  proof: core/lane/builtin/27-testing.md: stop_after_fix and round > 1 -> no hunt, hunt-verdict 'pass: stop-after-fix'
 - [ ] Das Cockpit zeigt Explain nur, wenn review-gaps eine blocker:-Zeile hat oder das Urteil einen Vorbehalt nennt; reine note:-Zeilen stehen als Liste ohne Knopf (Test in board.test.ts)
-- [ ] jaira zeichnet bei jedem Rueckweg die Herkunfts-Lane auf und ob eine Person oder eine Schleifen-Lane zurueckgeschickt hat; jaira show --json gibt beides aus, und die Schleifenzaehlung zaehlt nur Rueckgaben derselben Schleifen-Lane (Test: signoff->in-progress zaehlt nicht)
+- [x] jaira zeichnet bei jedem Rueckweg die Herkunfts-Lane auf und ob eine Person oder eine Schleifen-Lane zurueckgeschickt hat; jaira show --json gibt beides aus, und die Schleifenzaehlung zaehlt nur Rueckgaben derselben Schleifen-Lane (Test: signoff->in-progress zaehlt nicht)
+  proof: core/move/move.go recordBack; TestMoveRecordsWhoSentItBack (signoff->in-progress is person, resets the count), TestMoveCountsOneReturnForTwoAtOnce; show --json 'back'; 20-in-progress.md reads back.count
 - [ ] Die Explain-Vorlage (core/mod/builtin/jaira-cockpit/hooks/texts.ts:76-80) ordnet jede Note zuerst ein (Defekt / Rand in diesem Ticket / vorbestehend / nur Hinweis), sagt ausdruecklich, wenn nichts davon die Abnahme verlangt, und gibt keine feste Reihenfolge 1) [give back] 2) [accept] mehr vor - heute zwingt die Vorlage 'Warum: why it matters' und give back als erste Option, das liest sich immer wie 'muss geaendert werden'
 - [ ] Steht ein Ticket in signoff/human und ist sein review-verdict aus einer frueheren Runde (review_round < round), schweigt das Cockpit nicht: das Band sagt 'Review von Runde N, seitdem geaendert' und zeigt die alten Funde mit Explain; heute blendet sameRound() in board.ts:189 Explain dann aus (Test)
 - [ ] Die Explain-Ansicht im Cockpit ist farbig und auf einen Blick lesbar: Statuszeile mit gruenem Haken/rotem Kreuz je Pruefung (DoD, Tests, Blocker, bughunt auf HEAD); jede Note mit farbiger Marke nach Einordnung - rot 'Blocker', gelb 'kleiner Rand', grau/gedimmt 'bekannte Grenze', blau 'nicht aus diesem Ticket'; die Empfehlung fett mit eigener Farbe; die Notiz-Texte normal, nur die Marken farbig; funktioniert im hellen und dunklen Terminal-Thema (Theme-Farben statt fester Hex-Werte, wie das Band heute)
-- [ ] class: the loop brake reads recorded facts, never prose — every return is recorded by jaira move, whatever path moved it (CLI, cockpit, --force); parking in blocked and back records nothing; a ticket without back-* fields reads as no return (table test)
-- [ ] input classes: blocker-rule with quotes, umlauts, multiple lines and CRLF survives set/show round-trip; stop-after-fix rejects anything but true/false/empty (exit 2); two parallel moves on one ticket leave consistent back-* fields (one refused or both counted)
+- [x] class: the loop brake reads recorded facts, never prose — every return is recorded by jaira move, whatever path moved it (CLI, cockpit, --force); parking in blocked and back records nothing; a ticket without back-* fields reads as no return (table test)
+  proof: core/move/move_test.go TestMoveRecordsWhoSentItBack (parking, old ticket without fields, --force path)
+- [x] input classes: blocker-rule with quotes, umlauts, multiple lines and CRLF survives set/show round-trip; stop-after-fix rejects anything but true/false/empty (exit 2); two parallel moves on one ticket leave consistent back-* fields (one refused or both counted)
+  proof: internal/cli/loopbrake_test.go TestBlockerRuleRoundTrip (quotes, umlauts, multiline, CRLF, lone CR), TestSetRefusesUnknownStopAfterFix; core/move TestMoveCountsOneReturnForTwoAtOnce
 - [ ] acceptance rule for the explain parser: an explain note line without a known class mark or status shape is shown as plain text, never dropped - an old note must still read as before
 
 ## Options
@@ -56,11 +61,12 @@ claimed-at: 2026-11-20T22:44:37Z
 - [x] schema: fields blocker-rule, stop-after-fix, back-from, back-by, back-count in core/ticket/schema.go; jaira set checks stop-after-fix is true/false/empty like mode
 - [x] move: on every send-back write back-from, back-by (person when the from-lane is not agentic or needs a human exit/question, else lane) and back-count (consecutive returns from the same lane since a person's or another lane's return); table test in core/move
 - [x] show --json prints the five fields; --for-lane payload carries blocker_rule (ticket's, else the default four classes) and stop_after_fix beside mode, also in the plain-text header; test in internal/cli
-- [ ] lane prompts + twins: testing skips the hunt in a fix round when stop_after_fix, reads blocker_rule; review reads blocker_rule; bughunt skill marks a change finding that meets the rule; in-progress third-return reads back-from/back-by/back-count instead of counting notes; pre-process may set the two fields; shipped.sha256
+- [x] lane prompts + twins: testing skips the hunt in a fix round when stop_after_fix, reads blocker_rule; review reads blocker_rule; bughunt skill marks a change finding that meets the rule; in-progress third-return reads back-from/back-by/back-count instead of counting notes; pre-process may set the two fields; shipped.sha256
 - [ ] cockpit board.ts: Explain only for a blocker: line or a reservation; note: lines listed under the row without a button; a review of an older round shows 'Review von Runde N, seitdem geaendert' with Explain; tests in board.test.ts
 - [ ] explain template in texts.ts and spawn.sh: status line, one line per note with [class], one Empfehlung, no Warum:, no fixed give-back-first order, neutral case says it can be accepted
 - [ ] explain pane: parse status line and class marks, colour them with theme colours (error/warning/dim/suggestion), recommendation bold; old notes without marks render as before; tests
 - [ ] release note core/release/notes/DF0YD6.md; go test ./... and claude plugin test in the cockpit dir, exit codes checked
+- [-] (duplicate of step 5, added by mistake)
 
 ## Progress
 - **2026-11-20 16:48 · Alexander Sacharov** — Interim-Regeln (Alex 20.11.2026, gelten ab sofort bis TW5FE2 ausgeliefert ist):

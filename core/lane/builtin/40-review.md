@@ -54,10 +54,11 @@ Write four things, in this order:
 2. `review-gaps` — what is missing or unconvincing, one finding per line, and
    every line starts with what kind of finding it is:
 
-   - `blocker:` — the diff breaks a definition-of-done item, or ships one of
-     four things: a wrong result, data loss, a crash, a security hole —
-     whether it was written here or came along with copied or moved code.
-     Nothing else is a blocker.
+   - `blocker:` — the diff breaks a definition-of-done item, or ships what
+     the ticket's `blocker_rule` names (this lane's payload; by default a
+     wrong result, data loss, a crash, a security hole) — whether it was
+     written here or came along with copied or moved code. Nothing else is a
+     blocker.
    - `note:` — everything else: a simpler form, a missing test of something
      that works, a neighbouring fault, a "would be nice". Name the class and
      the fix in the line, so whoever carries the ticket can close a small edge
