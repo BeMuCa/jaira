@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:19:39Z
+updated-at: 2026-11-20T17:20:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60542
 claimed-at: 2026-11-20T17:19:23Z
@@ -39,7 +39,7 @@ test-verdict: "pass: go test ./... gruen (RC=0) auf d62bafaa, -race ueber core/b
 hunt-verdict: "pass: bughunt done at d62bafaa, 0 findings (Folgerunde ueber den Diff seit 394a544a)"
 review-verdict: "Der Diff erfuellt alle 7 DoD-Punkte, jeder mit Test (core/board/exclude_test.go, internal/cli/privateexclude_test.go); go vet und go test ./core/board ./core/ticket ./internal/cli gruen. Keine Defekte entlang Nebenlaeufigkeit (Sperre um Read-Modify-Write, atomares Rename), Fehlerpfaden (exclude zuerst, dann .gitignore – nie ungeschuetzt), Eingaben (fehlende Datei/Verzeichnis, CRLF, Leerzeichen, Glob-Zeichen, alte git-Version) und Grenzen (geteilte Boards werden von update nie angefasst). Vier Anmerkungen, kein Blocker."
 review-round: 4
-review-check: "1. cd $(mktemp -d) && git init -q && jaira init  2. Ausgabe sagt: '.jaira/ is excluded in .git/info/exclude'  3. git status --short zeigt NICHTS (keine .gitignore, kein .jaira/)  4. tail -3 .git/info/exclude zeigt den jaira-Kommentar und /.jaira/  5. git commit -q --allow-empty -m x && git worktree add -q ../wt && git -C ../wt status --short – ebenfalls leer  6. jaira share – info/exclude hat kein /.jaira/ mehr, git status zeigt .jaira/ und .gitignore (nur mit /.jaira/lanes/)  7. Altbestand: in einem frischen Repo printf '/.jaira/\\n' > .gitignore && mkdir .jaira && jaira update --dry-run sagt 'Would move ... to .git/info/exclude'; jaira update verschiebt sie, .gitignore ist danach leer  8. Automatisch: go test ./core/board ./internal/cli -run 'Exclude|Ignore|Private|Update|Share|Glob|ParsePlace'"
+review-check: "1. cd $(mktemp -d) && git init -q && jaira init  2. Ausgabe sagt: '.jaira/ is excluded in .git/info/exclude'  3. git status --short zeigt kein .jaira/ und keine .gitignore  4. tail -2 .git/info/exclude zeigt den jaira-Kommentar und /.jaira/  5. git commit -q --allow-empty -m x && git worktree add -q ../wt && git -C ../wt status --short – kein .jaira/, keine .gitignore  6. jaira share – info/exclude hat kein /.jaira/ mehr; git status zeigt .jaira/ und .gitignore (darin nur /.jaira/lanes/)  7. Altbestand in einem frischen Repo: git init -q && printf '/.jaira/\\n' > .gitignore && mkdir -p .jaira/tickets && jaira update --dry-run – sagt 'Would move this private board's entry from .gitignore to .git/info/exclude'  8. jaira update – sagt 'Moved ...'; cat .gitignore ist leer, tail -2 .git/info/exclude zeigt /.jaira/  9. Automatisch: go test ./core/board ./internal/cli"
 ---
 
 # Ein privates Board steht in .git/info/exclude statt in der .gitignore des Arbeitsbaums
