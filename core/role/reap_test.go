@@ -476,11 +476,20 @@ func TestReapOnANoneBoardWaitsForTheDefaultBranch(t *testing.T) {
 	r := newReapRig(t)
 	r.write(t, filepath.Join(r.repo, ".jaira", "pr"), "none\n")
 	r.write(t, filepath.Join(r.repo, ".jaira", "tickets", ".keep"), "")
-	r.git(t, r.wt, "commit", "-q", "--allow-empty", "-m", "feat(AB12CD): the work")
 	r.write(t, r.shown, `{"status":"done"}`)
 	base := r.git(t, r.repo, "rev-parse", "master")
 	r.git(t, r.repo, "update-ref", "refs/remotes/origin/master", base)
 	r.git(t, r.repo, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/master")
+
+	// A branch with no work of its own yet sits on the default branch from
+	// the start: that is not landed, whatever the ticket's lane says.
+	if out := r.run(t, r.repo, "reap.sh"); !strings.Contains(out, "waiting AB12CD") {
+		t.Fatalf("no work on the branch yet, want waiting:\n%s", out)
+	}
+	if _, err := os.Stat(r.wt); err != nil {
+		t.Fatalf("worktree removed before any work landed: %v", err)
+	}
+	r.git(t, r.wt, "commit", "-q", "--allow-empty", "-m", "feat(AB12CD): the work")
 
 	out := r.run(t, r.repo, "reap.sh")
 	if !strings.Contains(out, "waiting AB12CD: feat/ab12cd has not landed") {

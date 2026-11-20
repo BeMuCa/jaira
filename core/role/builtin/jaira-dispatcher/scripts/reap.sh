@@ -142,13 +142,16 @@ merged_head() {
 # tip is what merged means.
 prmode="$( (cd "$root" && jaira roles list --json 2>/dev/null) | jaira json get pr --default person 2>/dev/null || true)"
 
-# Under none: the branch's tip once origin's default branch contains it, or
-# nothing — not landed yet, or no origin/HEAD to measure it against.
+# Under none: the branch's tip once origin's default branch contains it and
+# a commit there names the ticket ($2), or nothing — not landed yet, no
+# origin/HEAD to measure it against, or a branch with no work of its own yet,
+# whose tip the default branch contains from the start.
 landed_head() {
   local base tip
   base="$(git -C "$root" symbolic-ref -q --short refs/remotes/origin/HEAD 2>/dev/null || true)"
   tip="$(git -C "$root" rev-parse --verify -q "refs/heads/$1" 2>/dev/null || true)"
-  if [ -n "$base" ] && [ -n "$tip" ] && git -C "$root" merge-base --is-ancestor "$tip" "$base" 2>/dev/null; then
+  if [ -n "$base" ] && [ -n "$tip" ] && git -C "$root" merge-base --is-ancestor "$tip" "$base" 2>/dev/null \
+    && grep -qE "^[a-z]+\\(([^)]*[, ])?$2([, ][^)]*)?\\)!?:" <<<"$(git -C "$root" log --format=%s "$tip" --)"; then
     echo "$tip"
   fi
 }
@@ -180,7 +183,7 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
   [ -n "$branch" ] || branch="${JAIRA_BRANCH_PREFIX:-feat}/$(printf '%s' "$t" | tr '[:upper:]' '[:lower:]')"
 
   if [ "$prmode" = none ]; then
-    head="$(landed_head "$branch")"
+    head="$(landed_head "$branch" "$t")"
     if [ -z "$head" ]; then echo "waiting $t: $branch has not landed on origin's default branch"; continue; fi
   else
     if [ -z "$forge" ]; then

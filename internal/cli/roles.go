@@ -156,9 +156,12 @@ needs no gate: their invocation is the decision.
 Where .jaira/pr says none the same gate decides whether the branch may land
 on <base> without a pull request: every ticket in the terminal lane, and
 .jaira/pr-when is not read — with no pull request there is no review on one
-to wait for. --json carries may_open,
+to wait for. And every commit in <base>..HEAD, merges aside, must name a
+ticket: nobody reads the branch after the gate, so a commit no ticket owns
+would land unseen. --json carries may_open,
 pr, pr_when and tickets; a refusal is the usual error, its reason
-pr_person, no_ticket, no_signoff_lane, unreadable or pending.`,
+pr_person, no_ticket, no_signoff_lane, unreadable, pending or, under none,
+unnamed.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
@@ -192,6 +195,21 @@ pr_person, no_ticket, no_signoff_lane, unreadable or pending.`,
 			if len(named) == 0 {
 				return fail(ExitValidation, "no_ticket",
 					"pr-gate: no commit in %s..HEAD names a ticket — nobody accepted anything on this branch; %s", args[0], then)
+			}
+			// Under none nobody reads the branch after the gate: a pull
+			// request would show a commit that names no ticket to a person
+			// before it merges, a fast-forward push shows it to nobody. So
+			// every commit must belong to a ticket a person accepted.
+			if pr == settings.PRNone {
+				unnamed, err := repo.UnnamedCommits(args[0])
+				if err != nil {
+					return err
+				}
+				if len(unnamed) > 0 {
+					return fail(ExitValidation, "unnamed",
+						"pr-gate: %d commit(s) in %s..HEAD name no ticket, and without a pull request nobody would see them before they land — %s; name a ticket in each (git rebase) or %s",
+						len(unnamed), args[0], strings.Join(unnamed, "; "), then)
+				}
 			}
 			// A ticket file that cannot be read is not a ticket filed away:
 			// it would drop out of the list and look past done. A problem

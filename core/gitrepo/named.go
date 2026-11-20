@@ -41,6 +41,34 @@ func (r *Repo) TicketsNamed(base string) ([]string, error) {
 	return HandlesInSubjects(out), nil
 }
 
+// UnnamedCommits returns the commits of base..HEAD, merges aside, whose
+// subject names no ticket, as "<short sha> <subject>" in the order git lists
+// them. A merge commit is left out because what it brings in is listed on its
+// own: a branch merged in without handles shows its commits here, the merge
+// of the base into the branch shows nothing, since the base is excluded.
+// base must already be known to name a commit (TicketsNamed checks it).
+func (r *Repo) UnnamedCommits(base string) ([]string, error) {
+	if base == "" || strings.HasPrefix(base, "-") {
+		return nil, ErrNoSuchRef
+	}
+	out, err := r.run("log", "--no-merges", "--format=%h %s", base+"..HEAD", "--")
+	if err != nil {
+		return nil, err
+	}
+	var unnamed []string
+	for _, line := range strings.Split(out, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		_, subject, _ := strings.Cut(line, " ")
+		if len(HandlesInSubjects(subject)) == 0 {
+			unnamed = append(unnamed, line)
+		}
+	}
+	return unnamed, nil
+}
+
 // FileAt returns the content of path, relative to Dir, as the commit rev
 // holds it, and "" when rev holds no such file. rev must already be known to
 // name a commit: any failure to read the file reads as empty, so a caller

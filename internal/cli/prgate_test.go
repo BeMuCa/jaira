@@ -360,3 +360,41 @@ func TestPRGateOnANoneBoardNeverAsksForACreateLine(t *testing.T) {
 		t.Fatalf("none, no ticket named: exit %d, %v", exitCode(err), err)
 	}
 }
+
+// Under none nothing reads the branch after the gate, so a commit no ticket
+// owns — a wip, a branch merged in without handles — holds it; a merge of the
+// base into the branch does not (XB97NJ, bughunt).
+func TestPRGateOnANoneBoardRefusesCommitsNoTicketOwns(t *testing.T) {
+	dir, ticketIn, commit := prGateFixture(t)
+	setPR(t, dir, "none")
+	done := ticketIn("done")
+	commit("feat(" + done + "): accepted")
+	git := func(args ...string) {
+		t.Helper()
+		if out, err := exec.Command("git", append([]string{"-C", dir}, args...)...).CombinedOutput(); err != nil {
+			t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, out)
+		}
+	}
+	// The base moves on and is merged into the branch: no unnamed commit.
+	git("checkout", "-q", "master")
+	git("commit", "-q", "--allow-empty", "-m", "chore: somebody else's base commit")
+	git("checkout", "-q", "feat/x")
+	git("merge", "-q", "--no-ff", "--no-edit", "master")
+	if out, err := runCLI(t, dir, "roles", "pr-gate", "master"); err != nil {
+		t.Fatalf("base merged in, every own commit named: %v\n%s", err, out)
+	}
+	for _, subject := range []string{"wip: half a thought", "fix: no scope", "feat(nothandle): lower case"} {
+		commit(subject)
+		_, err := runCLI(t, dir, "roles", "pr-gate", "master")
+		if exitCode(err) != ExitValidation || !strings.Contains(err.Error(), subject) || !strings.Contains(err.Error(), "name no ticket") {
+			t.Errorf("none, %q on the branch: exit %d, %v", subject, exitCode(err), err)
+		}
+		git("reset", "-q", "--hard", "HEAD~1")
+	}
+	// The agent board keeps its rule: a person sees the pull request.
+	setPR(t, dir, "agent")
+	commit("wip: on an agent board")
+	if out, err := runCLI(t, dir, "roles", "pr-gate", "master"); err != nil {
+		t.Fatalf("agent board, an unnamed commit: %v\n%s", err, out)
+	}
+}

@@ -292,6 +292,9 @@ git push <remote> HEAD:<branch>                    # a fast-forward of the defau
 
 The gate reads `.jaira/pr` as `<remote>/<branch>` holds it, like the `agent`
 gate does: a branch cannot switch its own board to `none` and land itself.
+Under `none` it also refuses a branch with a commit that names no ticket —
+no pull request shows it to anyone first. Exit 3 names those commits; say
+so and stop, the branch stays pushed.
 A merge that conflicts is not yours to settle alone: abort it, say which files,
 and stop. A push the remote refuses — somebody landed in between — is
 answered by fetching and merging again, never by `--force`, `--force-with-lease`

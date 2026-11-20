@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:09:27Z
+updated-at: 2026-11-20T23:13:37Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -36,9 +36,10 @@ outcome-what: "Board-Datei .jaira/pr kennt den dritten Wert none: die Rollen lan
 outcome-why: "Wer allein ohne Pull Requests arbeitet, bekam eine Rolle, die vor einem nie gewollten PR anhaelt (13VMA8); die Einstellung muss mit dem Repository reisen (Teamlead-Entscheidung 20.11.: dritter Wert in .jaira/pr, Laufzeit + Block)."
 outcome-resolves: "Ein Board sagt in .jaira/pr, ob Arbeit durch einen PR (person/agent) oder direkt auf den Hauptzweig (none) kommt; ohne Datei ist alles byte-gleich wie heute."
 review-summary: "none"
-round: 3
-review-gaps: "none - checked: settings.PRIn/PRFor are now one-line delegations to board (kept: roles.go and tests call them, removing would widen the diff for nothing); board.PRModeIn repeats settings.firstLine on purpose (board may not import settings); every new function has callers; agent paragraph in arrivalSection is the decision of 20.11. (block for agents without a role), not speculative"
-test-verdict: "fail: suite green with -race (RC=0) and DoD 1-8 verified, but on a none board the no_ticket and unreadable refusals of pr-gate still said 'hand the create line back' - there is no create line under none (scratch board, exit 3 was right, the advice wrong)"
+round: 4
+review-gaps: "none - the then-text is built once and used by all three refusals; nothing else changed since the last optimize pass"
+test-verdict: "fail: suite green with -race (RC=0); bughunt change finding - under none pr-gate let a commit that names no ticket land unseen"
+hunt-verdict: "change: internal/cli/roles.go pr-gate under none checked only commits naming a ticket; an unnamed commit (wip, merged branch) would land by fast-forward with nobody seeing it. Class fix: every non-merge commit in base..HEAD must name a ticket under none (gitrepo.UnnamedCommits). Unconfirmed side finding fixed alike: reap.sh under none counted a branch with no own work as landed - now needs a commit naming the ticket."
 ---
 
 # Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig
@@ -60,7 +61,7 @@ test-verdict: "fail: suite green with -race (RC=0) and DoD 1-8 verified, but on 
 - [x] Der Block ist byte-gleich zu heute, wo .jaira/pr fehlt oder person sagt; ein Board mit none/agent bekommt den passenden Absatz durch jaira update, und jaira validate meldet den Block als veraltet, sobald die Datei sich aendert.
   proof: core/board/arrival_test.go TestNoteSaysHowWorkArrivesAndDriftsWithTheFile (Absatz bei none/agent, NoteIsCurrent stale nach Dateiwechsel, Absatz weg nach Entfernen)
 - [x] Bei none landet die Arbeit nur durch das Tor: jaira roles pr-gate laesst erst durch, wenn jedes Ticket des Zweigs in done ist, liest .jaira/pr vom Basis-Zweig, und das Landen ist ein fast-forward push - ein abgelehnter (nicht fast-forward) Push wird nie mit --force wiederholt.
-  proof: internal/cli/prgate_test.go TestPRGateLetsANoneBoardLandOnlyDoneWork (none nur auf Disk -> nein, signoff -> nein, done -> ja); jaira-role-pr/SKILL.md 'Land it' + Boundaries: nie --force; reap.sh: none wartet auf origin/HEAD (core/role/reap_test.go TestReapOnANoneBoardWaitsForTheDefaultBranch)
+  proof: internal/cli/prgate_test.go TestPRGateLetsANoneBoardLandOnlyDoneWork + TestPRGateOnANoneBoardRefusesCommitsNoTicketOwns (unbenannte Commits halten unter none) + TestPRGateOnANoneBoardNeverAsksForACreateLine; jaira-role-pr/SKILL.md 'Land it' + Boundaries: nie --force; core/role/reap_test.go TestReapOnANoneBoardWaitsForTheDefaultBranch
 
 ## Options
 
@@ -108,3 +109,5 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-20 23:09 · Alexander Sacharov** — bughunt: change: internal/cli/roles.go:182 (with core/gitrepo/named.go:37 and core/role/builtin/jaira-role-pr/SKILL.md:280) - under .jaira/pr none the gate judges only commits whose subject names a ticket; a commit in <base>..HEAD that names none (wip, a stray commit from another session, a merged-in branch without handles) is not checked at all, and the branch lands on the default branch by fast-forward with nobody having seen it - under agent a person still merges, under none nothing else stands in the way; ran: scratch test in internal/cli with prGateFixture, setPR none, one done ticket, commit 'feat(<id>): accepted' then 'wip: something nobody accepted' -> pr-gate master exit 0, 'the branch may land on master with a fast-forward push'
 - **2026-11-20 23:09 · Alexander Sacharov** — testing (Runde 1): Gates gruen (go vet, go test -race ./..., RC=0). Funktion am Scratch-Board: none-Ticket nicht in done -> pr-gate exit 3 'push the branch and stop'; Push auf den Hauptzweig, der nicht fast-forward ist -> git verweigert (exit 1); zwei parallele 'jaira update' -> Absatz genau einmal je Datei. Fund: no_ticket/unreadable-Meldung riet unter none zur create line - behoben in internal/cli/roles.go (then-Text je Modus), Test TestPRGateOnANoneBoardNeverAsksForACreateLine.
 - **2026-11-20 23:09 · Alexander Sacharov** — bughunt: done at 946b7188 - 1 finding (1 change, 0 pre-existing) in 6 modules, first hunt (uncommitted roles.go edit by a parallel session included); concurrency, error paths, input, permissions checked; files: core/board/announce.go core/board/arrival.go core/board/arrival_test.go core/release/notes/XB97NJ.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-dispatcher/scripts/reap.sh core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/reap_test.go core/settings/settings.go core/settings/settings_test.go core/shipped/shipped.sha256 internal/cli/prgate_test.go internal/cli/roles.go
+- **2026-11-20 23:09 · Alexander Sacharov** — critique (Runde 3, nach dem testing-Fix): Meldungstext je Modus an einer Stelle (then) - passt, nichts zu sagen.
+- **2026-11-20 23:13 · Alexander Sacharov** — in-progress (Runde 2, Bughunt-Fund): Klasse 'unter none sieht niemand den Zweig nach dem Tor' -> pr-gate verweigert unter none jeden Nicht-Merge-Commit in base..HEAD ohne Ticket-Handle (Grund 'unnamed'; core/gitrepo/named.go UnnamedCommits); Merges aus der Basis bleiben erlaubt; bei agent unveraendert, dort sieht ein Mensch den PR. reap.sh unter none: gelandet erst, wenn origin/HEAD die Spitze enthaelt UND ein Commit dort das Ticket nennt (Zweig ohne eigene Arbeit sonst sofort 'gelandet'). Grep ueber Here-String statt Pipe, weil set -o pipefail + grep -q sonst SIGPIPE als Fehlschlag liest; \b vermieden (BSD grep).
