@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T22:57:24Z
+updated-at: 2026-11-20T22:57:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -69,3 +69,4 @@ test-verdict: "pass: go build + go test -race (shipped, role, lane, mod) RC=0 be
 - **2026-11-20 22:53 · Alexander Sacharov** — Gefunden: die alten 8 fehlenden Zeilen standen unsortiert am Ende des Manifests (von Hand angehaengt) - Regenerieren sortiert sie ein, daher der grosse Diff ohne verlorene Zeile. Das Skript setzt jetzt LC_ALL=C: unter anderer Locale sortierte Manifeste wuerden bei merge=union Duplikate erzeugen. Bekannte Grenze: Pfade mit Leerzeichen kann das Manifest-Format nicht (Regex [^ ]+ hier wie in TestManifestLinesAreWellFormed); keine solche Datei existiert. Ein Duplikat nach einem union-Merge laesst TestManifestLinesAreWellFormed scheitern -> regenerieren.
 - **2026-11-20 22:53 · Alexander Sacharov** — critique: (1) Formatpruefung im Skript doppelt TestManifestLinesAreWellFormed -> streichen. (2) zwei fast gleiche Install-Tests -> Tabellentest. Bewusst stehen gelassen: Pruefung gegen Tags statt gegen die ganze History (Note 'Offene Entscheidungen' Punkt 2).
 - **2026-11-20 22:54 · Alexander Sacharov** — critique Runde 2: beide Funde behoben (5a091b69), nichts Neues.
+- **2026-11-20 22:57 · Alexander Sacharov** — Stand 23:59: testing laeuft, test-verdict pass gesetzt; Bughunt-Agent laeuft im Hintergrund (Ergebnis kommt als bughunt:-Notes). Branch feat/0k8y6s gepusht (61543e22, 5a091b69). Ein neuer Worker: Bughunt-Notes lesen, hunt-verdict setzen, dann review (fresh).
