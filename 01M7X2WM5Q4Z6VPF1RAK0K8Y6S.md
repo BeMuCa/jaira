@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T22:54:57Z
+updated-at: 2026-11-20T22:55:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -28,6 +28,7 @@ outcome-why: Hand-gemergte Manifest-Konflikte verloren Zeilen; jaira update --ro
 outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, wenn eine fehlt, und Manifest-Merges konfliktieren nicht mehr"
 review-summary: none
 round: 2
+review-gaps: "none - geprueft: Git-Hilfen in history_test.go folgen dem Muster jedes Pakets (eigener run-Helfer wie core/refsync/refsync_test.go:284), kein gemeinsamer Helfer vorhanden; hashed/installed haben je zwei Aufrufer im Skript; olderAcceptance wird von TestInstallDryRunWritesNothing weiter gebraucht"
 ---
 
 # shipped.sha256 kennt jede Version, die in einem Release-Tag ausgeliefert wurde, und CI haelt das fest
