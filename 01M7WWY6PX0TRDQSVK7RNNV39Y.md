@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T18:17:23Z
+updated-at: 2026-11-20T18:17:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85657
 claimed-at: 2026-11-20T17:52:47Z
@@ -127,3 +127,4 @@ Empfehlung: 2 - alle 7 DoD-Punkte sind mit Tests belegt, die Funde sind Randfael
 - **2026-11-20 18:15 · Alexander Sacharov** — critique Runde 10 (Diff 21742362..HEAD): nichts - eine Zeile, IgnoredBy wie in share.
 - **2026-11-20 18:17 · Alexander Sacharov** — bughunt: change: internal/cli/update.go:362 - moveIgnore now asks git (IgnoredBy) but AddIgnore checks jaira's own line, and line 365 sets m.added before AddIgnore while line 369 drops its 'changed' result; when info/exclude already holds /.jaira/ but a tracked .gitignore un-ignores it with '!/.jaira/', every 'jaira update' prints 'Excluded this private board in .git/info/exclude: nothing excluded it.' and --json reports ignore_added=true, though nothing is written and the board stays unignored; at 21742362 the same repo was silent with ignore_added=false; ran: init, commit .gitignore '!/.jaira/', jaira update x2 (both print the line, md5 of info/exclude unchanged), jaira-old update (0 lines, ignore_added false)
 - **2026-11-20 18:17 · Alexander Sacharov** — bughunt: change: core/board/gitignore.go:149-152 - IgnoredBy turns every git failure into 'not ignored'; with .jaira a symlink, 'git check-ignore -v .jaira/' always exits 128 (pathspec beyond a symbolic link), so moveIgnore (update.go:362) falls through to AddIgnore on every run and update reports ignore_added=true / 'Excluded ... nothing excluded it' with /.jaira/ already in info/exclude; old binary at 21742362 reported false; ran: ln -s ../store2 .jaira, jaira init, jaira update --json (ignore_added true), git check-ignore -v .jaira/ (exit 128). Side observation, not from this change: the /.jaira/ pattern does not match a symlinked .jaira at all (git status shows '?? .jaira')
+- **2026-11-20 18:17 · Alexander Sacharov** — bughunt: done at 776e1ccd - 2 findings (2 change) in 2 files, follow-up hunt (diff since 21742362: internal/cli/update.go, internal/cli/privateexclude_test.go); concurrency, error paths, input, permissions checked; files: README.md core/board/announce.go core/board/board.go core/board/exclude_test.go core/board/gitignore.go core/release/notes/NNV39Y.md core/ticket/store.go docs/COMMANDS.md internal/cli/privateexclude_test.go internal/cli/share.go internal/cli/sharestate_test.go internal/cli/tickets.go internal/cli/update.go
