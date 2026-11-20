@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:04:04Z
+updated-at: 2026-11-20T17:04:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46134
 claimed-at: 2026-11-20T16:42:22Z
@@ -80,3 +80,4 @@ hunt-verdict: "fail: bughunt done at 44007130, 1 change: update verschiebt die .
 - **2026-11-20 17:00 · Alexander Sacharov** — critique Runde 2: nichts mehr. Steht auf der vorigen critique-Note (Kosten von Ignored, zweiter git-Aufruf). Bewusst gelassen: MoveIgnore nimmt auch eine von Hand geschriebene .jaira/-Zeile aus .gitignore — gleiche Wirkung, Ziel des Tickets.
 - **2026-11-20 17:02 · Alexander Sacharov** — bughunt: change: internal/cli/update.go:344 - moveIgnore moves a .gitignore entry before it checks whether the board is shared (the hasAttributes/Tracks guard is only on line 352), so 'jaira update' on a board whose .jaira/ files are committed but whose tracked .gitignore lists /.jaira/ (the 'clone of one whose ignore line was committed' case tickets.go names) rewrites the team's tracked .gitignore and tells the user to commit it, although update's help (update.go:185) says such a board is never touched; once committed, teammates lose the ignore and their private tickets show up as untracked; ran: git init, jaira init, jaira share --undo, append /.jaira/ to .gitignore, git add -f .jaira .gitignore && commit, jaira update (exit 0, prints 'Moved this private board's entry ... commit the changed .gitignore once', git status shows ' M .gitignore')
 - **2026-11-20 17:03 · Alexander Sacharov** — bughunt: done at 44007130 - 1 finding (1 change, 0 pre-existing) in 6 modules, first hunt; concurrency, error paths, input, permissions checked; files: README.md core/board/announce.go core/board/board.go core/board/exclude_test.go core/board/gitignore.go core/release/notes/NNV39Y.md core/ticket/store.go docs/COMMANDS.md internal/cli/privateexclude_test.go internal/cli/share.go internal/cli/sharestate_test.go internal/cli/tickets.go internal/cli/update.go
+- **2026-11-20 17:04 · Alexander Sacharov** — testing: Klasse des bughunt-Funds: jeder Zweig von moveIgnore (update.go) muss hinter derselben Privat-Pruefung stehen (keine .jaira/.gitattributes, nichts unter .jaira/ getrackt). Heute prueft nur der 'added'-Zweig sie; der 'moved'-Zweig aendert die committete .gitignore auch auf einem Board, das in git ist — nach dem Commit waere es fuer Teamkollegen nicht mehr ignoriert. Fix: Pruefung an den Anfang von moveIgnore; Test fuer beide Zweige ueber die Klasse (Attribute / getrackte Datei).
