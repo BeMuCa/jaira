@@ -1,7 +1,7 @@
 ---
 id: 01M7X8VKSZ03QDYFW63CTWRAP8
 title: "Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,13 +25,13 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:30:41Z
+updated-at: 2026-11-20T22:30:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
-outcome-what: "Neue Rolle jaira-role-signoff (Statuszeile, markierte Notes-Tabelle, eine Empfehlung, Rueckgabe-Regeln); Teamlead liest den Stand vor jeder Liste neu und berichtet signoff in dieser Form; worker, dispatcher und jaira-role-pr lassen vor jedem Push die CI-Gates des Projekts lokal laufen."
-outcome-why: "Die Arbeitsweise vom 20.11.2026 stand nur im lokalen Gedaechtnis einer Teamlead-Session; jeder andere Teamlead haette dieselben Fehler gemacht (veraltete Listen, Rueckgaben wegen Notes ohne Einordnung, rote PRs durch fehlende shipped.sha256-Zeilen)."
-outcome-resolves: Die Regeln reisen mit den ausgelieferten Rollen; jaira update --roles bringt sie zu jedem Nutzer.
+outcome-what: "jaira-role-signoff findet die Branch des Tickets ueber den Handle als Namenssegment statt feat/<id> anzunehmen; teamlead verweist darauf"
+outcome-why: "signoff-Rueckgabe: Branches heissen nicht immer feat/<id>, dann waren alle Checks falsch gebunden"
+outcome-resolves: "Rueckgabe aus signoff 22:27 (🟡 Branchname)"
 review-summary: "Ships a new read-only role jaira-role-signoff: per ticket in signoff it prints one status line (DoD x/y, tests from the CI run of exactly the branch head commit via 'gh run list --commit <sha> --workflow', bug hunt on that head, blockers, review verdict, noted returns), a table that marks every open note 🔴/🟡/⚪/🔵, one bold recommendation, and the accept/give-back lines ready to paste; five return rules end endless rounds (after two noted returns 🟡 edges go into a ready follow-up 'jaira create --follows'). The teamlead now re-reads 'jaira show' and 'gh pr list' before any list of what waits, and reports signoff/human tickets in that shape, pointing at the role for the rules. worker, dispatcher and jaira-role-pr run the project's CI gates locally before a push. README, the German how-to page, role_test wantRoles, shipped.sha256 and release note TWRAP8 follow."
 round: 5
 review-gaps: |-
