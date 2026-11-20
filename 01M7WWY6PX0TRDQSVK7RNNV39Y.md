@@ -21,14 +21,14 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:52:48Z
+updated-at: 2026-11-20T17:52:51Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85657
 claimed-at: 2026-11-20T17:52:47Z
 outcome-what: "Ein privates Board steht jetzt in <git-common-dir>/info/exclude statt in der getrackten .gitignore (core/board/gitignore.go); jaira update verschiebt eine alte .gitignore-Zeile dorthin und schliesst ein privates Board ohne Ausschluss dort aus; share/--undo arbeiten auf beiden Dateien; ticket.LockFile aus Store.lock herausgezogen."
 outcome-why: "Eine von jaira geaenderte .gitignore erscheint in jedem neuen Worktree als Aenderung, ein Push-Guard lehnt dann jeden Push ab; info/exclude gilt fuer alle Worktrees und taucht in keinem Diff auf."
 outcome-resolves: Neue Worktrees eines Repos mit privatem Board bleiben sauber; kein Wegraeumen der .gitignore-Zeile von Hand mehr.
-review-summary: "none"
+review-summary: "Ein privates Board wird jetzt in <git-common-dir>/info/exclude ausgeschlossen statt in der getrackten .gitignore (core/board/gitignore.go: gitPlace fragt git per rev-parse --path-format=absolute --git-common-dir --show-prefix; Unterverzeichnis-Boards bekommen /sub/.jaira/ mit escapten Glob-Zeichen). Schreiben laeuft unter einer Sperrdatei neben exclude (ticket.LockFile, aus Store.lock herausgezogen) und per Temp-Datei+Rename. Ohne git oder auf git<2.31 (relative erste Zeile) faellt alles auf .gitignore zurueck; commonGitDir in core/ticket bekam dieselbe IsAbs-Pruefung. share entfernt nur jairas verankerte Zeile, fragt danach git check-ignore und warnt/meldet still_ignored, wenn eine fremde Regel das Board weiter ausblendet; share --undo sagt, dass Teamkollegen jaira update laufen lassen. jaira update (moveIgnore) verschiebt bei einem privaten Board (keine .gitattributes, nichts getrackt) eine alte .gitignore-Zeile nach info/exclude oder setzt den Ausschluss, wenn er fehlt; geteilte Boards bleiben unberuehrt. Doku, Hilfetexte, Release-Note und Tests fuer alle 8 DoD-Punkte."
 round: 7
 review-gaps: "none - Diff 750e2acf..c6c3ed13: IgnoredBy hat einen Aufrufer (share), kein Duplikat (kein anderes check-ignore im Code); nichts verwaist"
 test-verdict: "pass: go build/vet/test -count=1 ./... RC=0 at c6c3ed13; DoD 8 Proofs gruen; Binary im Wegwerf-Repo: init laesst git status ohne .jaira/, share mit handgeschriebener .jaira/-Zeile warnt mit '.git/info/exclude:8:.jaira/' und laesst sie stehen, --undo nennt jaira update; info/ schreibgeschuetzt -> share und --undo exit 1; zwei parallele share --undo -> Eintrag genau einmal"
