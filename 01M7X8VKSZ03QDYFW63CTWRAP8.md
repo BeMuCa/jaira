@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:42:29Z
+updated-at: 2026-11-20T22:42:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
@@ -36,7 +36,7 @@ review-summary: "none"
 round: 8
 review-gaps: "none: two sentences added to the lookup and the tests check, nothing to remove"
 test-verdict: "pass: go test ./core/... green (RC=0) at b443a4cb; text-only change to the lookup comment and the tests check, the lookup itself unchanged since d4da7f7b and exercised there; writes nothing"
-hunt-verdict: "pass: last hunt at a1b61158 found 1 change, fixed in d4da7f7b; no new hunt over d4da7f7b..7e3bc32c by teamlead decision 21:58 (findings of the head-binding class go to signoff as a note) - hunt-on-HEAD therefore reads ❌ by design"
+hunt-verdict: "pass: last hunt at a1b61158 found 1 change, fixed in d4da7f7b; no new hunt since by teamlead decision 21:58 - hunt-on-HEAD reads ❌ by design"
 question: ""
 review-verdict: "All four DoD items are met; no blocker. Verified: go test ./core/role ./core/shipped green, every builtin SKILL.md hash is in shipped.sha256, release-note lines are single '- ' lines, every prescribed flag exists (jaira list --lane/--board, jaira create --follows, gh run list --commit/--workflow, glab ci list --sha), and the ancestry lookup run on this repo resolves feat/twrap8 to 7e3bc32c. The role is read-only, so concurrency/permission risks are limited to the lines it hands the person; the four notes are small edges."
 review-round: 7
