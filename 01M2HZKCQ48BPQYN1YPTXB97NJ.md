@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:33:10Z
+updated-at: 2026-11-20T23:33:14Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -37,10 +37,7 @@ outcome-why: "Wer allein ohne Pull Requests arbeitet, bekam eine Rolle, die vor 
 outcome-resolves: "Ein Board sagt in .jaira/pr, ob Arbeit durch einen PR (person/agent) oder direkt auf den Hauptzweig (none) kommt; ohne Datei ist alles byte-gleich wie heute."
 review-summary: "none"
 round: 7
-review-gaps: |-
-  note: known limit: under none the gate checks that named tickets are in done, not that their commits existed at acceptance - a commit added after acceptance, or one naming another done/logbook ticket, lands unseen (teamlead decision 21.11., for signoff)
-  note: after a change of .jaira/pr, jaira validate warns 'the jaira block ... no longer matches this board's lanes' - the lanes did not change, the pr file did; the wording points at the wrong cause
-  note: reap.sh landed_head measures only against refs/remotes/origin/HEAD - a clone without that symbolic ref (git init + remote add) or a default remote not named origin stays 'waiting ... has not landed' forever under none; safe (nothing removed), but the message is wrong there
+review-gaps: "none removed. note: known limit: under .jaira/pr none, pr-gate binds a person's acceptance to the ticket, not to its commits - a commit made after the ticket reached done, naming that ticket or any other ticket already in done or the logbook, lands without anyone seeing it (Teamlead 21.11. 00:15: known limit, signoff decides). note: known limit: the merge check needs git >= 2.38 (merge-tree --write-tree); older git and shallow clones fail closed"
 test-verdict: "pass: go vet + go test -race ./... RC=0 at 282565fb; DoD 1-8 checked in the tree; scratch board: none ticket not done -> exit 3 'push the branch and stop', unnamed commit -> exit 3, non-fast-forward push refused by git, two parallel 'jaira update' -> paragraph once per file"
 hunt-verdict: "pass (round 4 at 282565fb): 0 findings; fail-closed cases (merge with -X options, shallow clone, git < 2.38) hold the gate as documented"
 claimed-by: DESKTOP-RFTCH11-29927
