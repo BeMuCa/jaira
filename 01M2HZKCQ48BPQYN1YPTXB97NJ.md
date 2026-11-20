@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:15:22Z
+updated-at: 2026-11-20T23:15:26Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -113,3 +113,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-20 23:13 · Alexander Sacharov** — in-progress (Runde 2, Bughunt-Fund): Klasse 'unter none sieht niemand den Zweig nach dem Tor' -> pr-gate verweigert unter none jeden Nicht-Merge-Commit in base..HEAD ohne Ticket-Handle (Grund 'unnamed'; core/gitrepo/named.go UnnamedCommits); Merges aus der Basis bleiben erlaubt; bei agent unveraendert, dort sieht ein Mensch den PR. reap.sh unter none: gelandet erst, wenn origin/HEAD die Spitze enthaelt UND ein Commit dort das Ticket nennt (Zweig ohne eigene Arbeit sonst sofort 'gelandet'). Grep ueber Here-String statt Pipe, weil set -o pipefail + grep -q sonst SIGPIPE als Fehlschlag liest; \b vermieden (BSD grep).
 - **2026-11-20 23:13 · Alexander Sacharov** — critique (Runde 4): UnnamedCommits neben TicketsNamed liest base..HEAD ein zweites Mal - stehen gelassen: eigener Aufrufer nur unter none, ein kombinierter Rueckgabewert wuerde den agent-Pfad mitaendern. Sonst nichts.
 - **2026-11-20 23:15 · Alexander Sacharov** — bughunt: change: core/gitrepo/named.go:55 - UnnamedCommits runs git log --no-merges, so under .jaira/pr none a merge commit that carries its own changes (conflict resolution or edits added with merge --no-commit) is never checked and lands unseen with no ticket naming it; ran: scratch test - feat(<done>) commit, then git merge --no-ff --no-commit master + new file unseen.go + commit, then jaira roles pr-gate master -> exit 0, 'may land on master'
+- **2026-11-20 23:15 · Alexander Sacharov** — bughunt: change: internal/cli/roles.go:199-212 + 246-266 - under none the gate checks only that each named ticket is in done, not that its commits existed when the person accepted it: a commit made after acceptance (feat(<done handle>): ...) or one naming any other done/logbook ticket passes and fast-forwards onto master unseen, contrary to the new comment 'every commit must belong to a ticket a person accepted'; ran: scratch test - ticket in done, extra commit feat(<it>) after the fact, pr-gate master -> exit 0
