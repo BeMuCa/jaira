@@ -8,7 +8,14 @@ set -euo pipefail
 usage() {
   cat <<'USAGE'
 pr-round.sh <command> <owner/repo> <number> [args]
+pr-round.sh open <owner/repo> <remote> <branch> <title> <body-file>
 
+  open      <owner/repo> <remote> <branch> <title> <body-file>
+            Open the pull request of the checked-out branch into <branch> of
+            <owner/repo> — the agent's way in, on a board whose .jaira/pr says
+            agent. 'jaira roles pr-gate <remote>/<branch>' runs first: unless
+            every ticket the branch's commits name is in done, nothing is
+            opened and the script exits 3 with the gate's reason.
   threads   <owner/repo> <number>
             Every review thread that is not resolved yet, one JSON object per
             line: id, path, line, outdated, and its comments (author, body,
@@ -21,13 +28,18 @@ pr-round.sh <command> <owner/repo> <number> [args]
             be resolved.
   reply     <owner/repo> <number> <thread-id> <body-file>
             Answer one thread with the text of <body-file> ('Fixed in <sha>:
-            ...' or the reason it stays), then resolve it.
+            ...' or the reason it stays), then resolve it. Two sessions
+            answering the same thread at once leave one answer: the later
+            one removes its own copy.
   comment   <owner/repo> <number> <body-file>
             Answer on the conversation, for a comment that has no thread.
+            The same words under the same login already there: nothing is
+            posted, so a second round never says it twice.
   request   <owner/repo> <number> <reviewer>
             Ask <reviewer> for a review again. 'copilot' asks GitHub Copilot.
 
-Exit codes: 0 done; 2 usage; 3 gh missing or not signed in to github.com;
+Exit codes: 0 done; 2 usage; 3 gh missing or not signed in to github.com,
+or (open) the board does not let an agent open this pull request;
 4 the reviewer could not be requested (the pull request stays as it is — say
 so and carry on); 1 anything else that failed, with gh's own message.
 
@@ -40,9 +52,17 @@ die() { echo "pr-round.sh: $*" >&2; exit "${2:-1}"; }
 [ "${1:-}" = -h ] || [ "${1:-}" = --help ] && { usage; exit 0; }
 [ $# -ge 3 ] || { usage >&2; exit 2; }
 
-cmd=$1 repo=$2 number=$3
-shift 3
+cmd=$1 repo=$2
 case "$repo" in */*) ;; *) die "'$repo' is not owner/repo" 2 ;; esac
+if [ "$cmd" = open ]; then
+  # open has no number yet: it is the call that makes one.
+  [ $# -eq 6 ] || { usage >&2; exit 2; }
+  number=0
+  shift 2
+else
+  number=$3
+  shift 3
+fi
 case "$number" in ''|*[!0-9]*) die "'$number' is not a pull request number" 2 ;; esac
 owner=${repo%%/*} name=${repo#*/}
 
@@ -61,12 +81,70 @@ threads_query='query($owner:String!,$name:String!,$number:Int!,$endCursor:String
       nodes{id isResolved isOutdated path line
         comments(first:50){nodes{author{login} body url}}}}}}}'
 
+# said is a text as this script compares it: CR dropped, blanks at the end
+# of every line and newlines at the end of the text dropped, as base64 — so
+# a forge that trims what it stores still matches, and no reviewer's text
+# reaches a shell or a jq program. saidjq is the same in jq, for the bodies
+# gh returns.
+said() { printf '%s' "$(tr -d '\r' < "$1" | sed 's/[[:space:]]*$//')" | base64 | tr -d '\n'; }
+saidjq='def said: gsub("\r"; "") | gsub("[ \t]+\n"; "\n") | sub("[ \t\n]+$"; "") | @base64;'
+
+# first_of reads "<id> <said>" lines and prints the first id whose text is
+# $1. It reads to the end, never breaking out: under pipefail a gh cut off
+# by a closed pipe would end the script.
+first_of() {
+  local found="" id b
+  while read -r id b; do
+    if [ -z "$found" ] && [ "$b" = "$1" ]; then found=$id; fi
+  done
+  echo "$found"
+}
+
+# dedupe keeps one answer where two sessions answered the same thread at
+# once. The check before posting cannot see an answer still in flight, so
+# after posting the thread is read again: the earliest comment of this login
+# with this text stays, and if it is not the one just posted, that one is
+# removed. Every order of two sessions ends with exactly one — whichever
+# reads after both posted sees the other first, whichever reads before sees
+# only its own.
+dedupe() {
+  local mine_id=$1 first
+  [ -n "$mine_id" ] || return 0
+  if ! first=$(gh api graphql -f thread="$thread" -f query='
+    query($thread:ID!){viewer{login}
+      node(id:$thread){... on PullRequestReviewThread{comments(first:100){nodes{id author{login} body}}}}}' \
+    --jq "$saidjq"' .data as $d | $d.node.comments.nodes[]
+          | select((.author.login // "") == $d.viewer.login)
+          | "\(.id) \(.body | said)"' | first_of "$(said "$file")"); then
+    echo "pr-round.sh: could not read the thread back to check for a second answer — look at it once" >&2
+    return 0
+  fi
+  if [ -n "$first" ] && [ "$first" != "$mine_id" ]; then
+    gh api graphql -f id="$mine_id" -f query='
+      mutation($id:ID!){deletePullRequestReviewComment(input:{id:$id}){clientMutationId}}' >/dev/null
+    echo "answered: by another session at the same time, removed this copy"
+  fi
+}
+
 body_of() {
   [ -f "$1" ] || die "no file '$1' to read the answer from" 2
   [ -s "$1" ] || die "'$1' is empty — an answer needs words" 2
 }
 
 case "$cmd" in
+  open)
+    remote=$1 branch=$2 title=$3 file=$4
+    body_of "$file"
+    command -v jaira >/dev/null 2>&1 || die "jaira is not on PATH — the gate cannot run, so nothing is opened" 3
+    # The gate is the binary's, not this script's: whether the board says
+    # agent, and whether every ticket the branch names is in done.
+    if ! gate=$(jaira roles pr-gate "$remote/$branch" 2>&1); then
+      echo "$gate" >&2
+      die "not opened — hand the create line back to a person" 3
+    fi
+    echo "$gate"
+    gh pr create --repo "$repo" --base "$branch" --title "$title" --body-file "$file"
+    ;;
   threads)
     # -f for every string: -F turns a value of digits into a number, and a
     # repository named 2048 would then fail the String! it is declared as.
@@ -96,26 +174,26 @@ case "$cmd" in
     resp=$(gh api graphql -f thread="$thread" -f query='
       query($thread:ID!){viewer{login}
         node(id:$thread){... on PullRequestReviewThread{isResolved comments(last:1){nodes{author{login} body}}}}}' \
-      --jq 'if .data.node == null then "missing"
+      --jq "$saidjq"' if .data.node == null then "missing"
             elif .data.node.isResolved then "resolved"
             elif (.data.node.comments.nodes[0].author.login // "") == .data.viewer.login
-              then "mine\n" + (.data.node.comments.nodes[0].body // "")
+              then "mine \(.data.node.comments.nodes[0].body // "" | said)"
             else "open" end')
-    state=${resp%%$'\n'*}
+    state=${resp%% *}
     if [ "$state" = mine ]; then
-      last=$(printf '%s' "${resp#*$'\n'}" | tr -d '\r')
-      mine=$(tr -d '\r' < "$file")
-      [ "$last" = "$mine" ] && state=answered || state=open
+      [ "${resp#* }" = "$(said "$file")" ] && state=answered || state=open
     fi
     case "$state" in
       missing) die "no review thread '$thread' on $repo#$number" 1 ;;
       resolved) echo "resolved: already"; exit 0 ;;
       answered) echo "answered: already, resolving" ;;
       *)
-        gh api graphql -f thread="$thread" -F body=@"$file" -f query='
+        posted=$(gh api graphql -f thread="$thread" -F body=@"$file" -f query='
           mutation($thread:ID!,$body:String!){
-            addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$thread,body:$body}){comment{url}}}' \
-          --jq '.data.addPullRequestReviewThreadReply.comment.url'
+            addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$thread,body:$body}){comment{id url}}}' \
+          --jq '.data.addPullRequestReviewThreadReply.comment | "\(.id) \(.url)"')
+        echo "${posted#* }"
+        dedupe "${posted%% *}"
         ;;
     esac
     gh api graphql -f thread="$thread" -f query='
@@ -124,8 +202,35 @@ case "$cmd" in
     ;;
   comment)
     [ $# -eq 1 ] || { usage >&2; exit 2; }
-    body_of "$1"
-    gh pr comment "$number" --repo "$repo" --body-file "$1"
+    file=$1
+    body_of "$file"
+    # The conversation has nothing to resolve, so what keeps a second round
+    # from saying the same thing twice is the text: the same words under the
+    # same login already there, and nothing is posted. Other words under the
+    # same login are the maintainer's own remark or an earlier answer, and do
+    # not stop this one. After posting, the conversation is read back the way
+    # dedupe reads a thread, for two sessions posting at the same moment.
+    viewer=$(gh api user --jq .login)
+    mine=$(said "$file")
+    convo() {
+      gh api --paginate "repos/$repo/issues/$number/comments" \
+        --jq "$saidjq"' .[] | "\(.user.login // "") \(.id) \(.body | said)"' |
+        while read -r login id b; do
+          if [ "$login" = "$viewer" ]; then echo "$id $b"; fi
+        done
+    }
+    first=$(convo | first_of "$mine")
+    [ -n "$first" ] && { echo "commented: already"; exit 0; }
+    posted=$(gh api --method POST "repos/$repo/issues/$number/comments" -F body=@"$file" --jq '"\(.id) \(.html_url)"')
+    echo "${posted#* }"
+    if ! first=$(convo | first_of "$mine"); then
+      echo "pr-round.sh: could not read the conversation back to check for a second answer — look at it once" >&2
+      first=""
+    fi
+    if [ -n "$first" ] && [ "$first" != "${posted%% *}" ]; then
+      gh api --method DELETE "repos/$repo/issues/comments/${posted%% *}" >/dev/null
+      echo "commented: by another session at the same time, removed this copy"
+    fi
     ;;
   request)
     [ $# -eq 1 ] || { usage >&2; exit 2; }

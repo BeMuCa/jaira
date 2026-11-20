@@ -14,15 +14,25 @@ import (
 // GH_FIXTURE is the JSON a read answers with, run through the real jq with
 // the filter the script hands --jq — so the filter itself is what is tested;
 // GH_ISSUES answers the conversation's comments instead, and GH_STATE the
-// query reply asks before it writes.
+// query reply asks before it writes, GH_AFTER the thread it reads back after
+// it posted; GH_POSTED answers a conversation comment's POST, and
+// GH_ISSUES_AFTER the conversation read back once something was posted.
 const fakeGH = `#!/usr/bin/env bash
 printf '%s\t' "$@" >> "$GH_LOG"; printf '\n' >> "$GH_LOG"
 [ "$1" = auth ] && { [ "${GH_AUTH:-}" = fail ] && exit 1; exit 0; }
 for a in "$@"; do [ "$a" = POST ] && [ "${GH_POST:-}" = fail ] && { echo "HTTP 422: Reviews may only be requested from collaborators" >&2; exit 1; }; done
 filter="" fixture=${GH_FIXTURE:-}
-case "$*" in *"/issues/"*) fixture=${GH_ISSUES:-} ;; *"viewer{login}"*) fixture=${GH_STATE:-} ;; esac
+case "$*" in *"POST repos/"*"/issues/"*) fixture=${GH_POSTED:-} ;; *"/issues/"*) fixture=${GH_ISSUES:-}; [ -n "${GH_ISSUES_AFTER:-}" ] && grep -q POST "$GH_LOG" && fixture=$GH_ISSUES_AFTER ;; *"comments(first:100)"*) fixture=${GH_AFTER:-} ;; *"viewer{login}"*) fixture=${GH_STATE:-} ;; esac
 while [ $# -gt 0 ]; do [ "$1" = --jq ] && filter=$2; shift; done
 if [ -n "$filter" ] && [ -n "$fixture" ]; then jq -r "$filter" "$fixture"; else echo '{}'; fi
+`
+
+// fakeJaira stands in for the binary's gate: JAIRA_GATE=fail refuses the way
+// 'jaira roles pr-gate' does, with exit 3 and the ticket that holds it.
+const fakeJaira = `#!/usr/bin/env bash
+printf '%s\t' jaira "$@" >> "$GH_LOG"; printf '\n' >> "$GH_LOG"
+[ "${JAIRA_GATE:-}" = fail ] && { echo "jaira: pr-gate: not every ticket on the branch is in done — B7XQ2M (review)" >&2; exit 3; }
+echo "pr-gate: an agent may open it — every ticket on the branch is done: A3K9QP"
 `
 
 type prRound struct {
@@ -48,6 +58,9 @@ func newPRRound(t *testing.T) *prRound {
 	}
 	bin := t.TempDir()
 	if err := os.WriteFile(filepath.Join(bin, "gh"), []byte(fakeGH), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(bin, "jaira"), []byte(fakeJaira), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	log := filepath.Join(t.TempDir(), "gh.log")
@@ -242,6 +255,9 @@ func TestPROpensOnlyWhereTheBoardSaysAndNeverAccepts(t *testing.T) {
 		"every ticket the branch's commits name is in the board's",
 		"you are back to `person` for\n  this run",
 		"or the board says\n`agent` and every ticket on the branch is in done",
+		"jaira roles pr-gate <remote>/<branch>` at **Open",
+		"scripts/pr-round.sh open <owner/repo> <remote> <branch>",
+		"jaira roles pr-gate <remote>/<branch> && glab mr create",
 		"scripts/pr-round.sh request <owner/repo> <number> <pr_reviewer>",
 		"scripts/pr-round.sh threads  <owner/repo> <number>",
 		"scripts/pr-round.sh reply <owner/repo> <number> <thread id> <file>",
@@ -298,6 +314,121 @@ func TestPRRoundReplyIsSafeToRunAgain(t *testing.T) {
 		}
 		if got := strings.Contains(calls, "resolveReviewThread"); got != c.resolves {
 			t.Errorf("%s: resolved %v, want %v\n%s", c.name, got, c.resolves, calls)
+		}
+	}
+}
+
+// An agent opens the pull request through the script, and the script asks the
+// binary first: the gate 'every ticket on the branch is in done' no longer
+// rests on the role's text alone. Refused, nothing is opened (JG3REW, given
+// back from signoff).
+func TestPROpenRunsTheGateFirst(t *testing.T) {
+	p := newPRRound(t)
+	body := fixtureFile(t, "body.md", "## Why\n")
+	out, code := p.run([]string{"JAIRA_GATE=fail"}, "open", "up/r", "upstream", "master", "feat(A3K9QP): x", body)
+	calls := strings.Join(p.calls(), "\n")
+	if code != 3 || !strings.Contains(out, "B7XQ2M (review)") || strings.Contains(calls, "pr\tcreate") {
+		t.Errorf("gate refused: exit %d, want 3 naming the ticket and no pr create\n%s\n%s", code, out, calls)
+	}
+	if !strings.Contains(calls, "jaira\troles\tpr-gate\tupstream/master") {
+		t.Errorf("open must ask the gate about <remote>/<branch>:\n%s", calls)
+	}
+	out, code = p.run(nil, "open", "up/r", "upstream", "master", "feat(A3K9QP): x", body)
+	calls = strings.Join(p.calls(), "\n")
+	gate, create := strings.Index(calls, "pr-gate"), strings.Index(calls, "pr\tcreate\t--repo\tup/r\t--base\tmaster\t")
+	if code != 0 || gate < 0 || create < gate {
+		t.Errorf("gate passed: exit %d, want the gate and then pr create into up/r master\n%s\n%s", code, out, calls)
+	}
+	for _, args := range [][]string{
+		{"open", "up/r", "upstream", "master", "title"},
+		{"open", "up/r", "upstream", "master", "title", filepath.Join(t.TempDir(), "nope")},
+	} {
+		if out, code := p.run(nil, args...); code != 2 || strings.Contains(strings.Join(p.calls(), "\n"), "create") {
+			t.Errorf("%v: exit %d, want 2 and nothing opened\n%s", args, code, out)
+		}
+	}
+}
+
+// Two sessions answering the same thread at once both pass the check before
+// posting. Read back afterwards, the earliest answer of this login with this
+// text stays; the later copy removes itself, whichever session it was
+// (JG3REW, given back from signoff).
+func TestPRRoundReplyLeavesOneAnswerWhenTwoSessionsRace(t *testing.T) {
+	p := newPRRound(t)
+	answer := fixtureFile(t, "answer.md", "Fixed in abc123.\r\n")
+	open := fixtureFile(t, "open.json", `{"data":{"viewer":{"login":"me"},"node":{"isResolved":false,"comments":{"nodes":[{"author":{"login":"copilot"},"body":"rename"}]}}}}`)
+	posted := fixtureFile(t, "posted.json", `{"data":{"addPullRequestReviewThreadReply":{"comment":{"id":"C2","url":"u2"}}}}`)
+	for _, c := range []struct {
+		name, after string
+		deletes     bool
+	}{
+		{"the other session posted first", `[{"id":"C0","author":{"login":"copilot"},"body":"rename"},{"id":"C1","author":{"login":"me"},"body":"Fixed in abc123."},{"id":"C2","author":{"login":"me"},"body":"Fixed in abc123."}]`, true},
+		{"this session posted first", `[{"id":"C0","author":{"login":"copilot"},"body":"rename"},{"id":"C2","author":{"login":"me"},"body":"Fixed in abc123.\r\n"},{"id":"C3","author":{"login":"me"},"body":"Fixed in abc123."}]`, false},
+		{"an earlier answer of other words", `[{"id":"C1","author":{"login":"me"},"body":"Will look at it."},{"id":"C2","author":{"login":"me"},"body":"Fixed in abc123."}]`, false},
+		{"the same words from someone else", `[{"id":"C1","author":{"login":"copilot"},"body":"Fixed in abc123."},{"id":"C2","author":{"login":"me"},"body":"Fixed in abc123."}]`, false},
+	} {
+		after := fixtureFile(t, "after.json", `{"data":{"viewer":{"login":"me"},"node":{"comments":{"nodes":`+c.after+`}}}}`)
+		out, code := p.run([]string{"GH_STATE=" + open, "GH_FIXTURE=" + posted, "GH_AFTER=" + after}, "reply", "o/r", "7", "PRRT_x", answer)
+		calls := strings.Join(p.calls(), "\n")
+		if code != 0 || !strings.Contains(calls, "resolveReviewThread") {
+			t.Errorf("%s: exit %d, want 0 and the thread resolved\n%s\n%s", c.name, code, out, calls)
+		}
+		deleted := strings.Contains(calls, "deletePullRequestReviewComment") && strings.Contains(calls, "id=C2")
+		if deleted != c.deletes || (!c.deletes && strings.Contains(calls, "deletePullRequestReviewComment")) {
+			t.Errorf("%s: removed this copy %v, want %v\n%s", c.name, deleted, c.deletes, calls)
+		}
+	}
+}
+
+// The conversation has nothing to resolve: the text is what keeps a second
+// round from posting the same answer twice, and what keeps two sessions at
+// once to one copy. Other words under the same login — the maintainer's own
+// remark — never stop an answer. A forge that trims blanks at the ends of
+// lines still matches (JG3REW, review-gaps closed in round 5).
+func TestPRRoundCommentSaysItOnce(t *testing.T) {
+	p := newPRRound(t)
+	answer := fixtureFile(t, "answer.md", "Renamed it.  \r\nSee abc123.\r\n")
+	user := fixtureFile(t, "user.json", `{"login":"me"}`)
+	for _, c := range []struct {
+		name, issues   string
+		posts, deletes bool
+	}{
+		{"nothing said yet", `[{"id":1,"user":{"login":"copilot"},"body":"why?"}]`, true, false},
+		{"said in an earlier round, trimmed by the forge", `[{"id":1,"user":{"login":"me"},"body":"Renamed it.\nSee abc123."}]`, false, false},
+		{"the maintainer's own remark", `[{"id":1,"user":{"login":"me"},"body":"please rename"}]`, true, false},
+		{"the same words from someone else", `[{"id":1,"user":{"login":"copilot"},"body":"Renamed it.\nSee abc123."}]`, true, false},
+	} {
+		issues := fixtureFile(t, "issues.json", c.issues)
+		out, code := p.run([]string{"GH_FIXTURE=" + user, "GH_ISSUES=" + issues}, "comment", "o/r", "7", answer)
+		calls := strings.Join(p.calls(), "\n")
+		if code != 0 {
+			t.Errorf("%s: exit %d\n%s", c.name, code, out)
+		}
+		if got := strings.Contains(calls, "--method\tPOST\trepos/o/r/issues/7/comments\t-F\tbody=@"+answer); got != c.posts {
+			t.Errorf("%s: posted %v, want %v\n%s", c.name, got, c.posts, calls)
+		}
+		if strings.Contains(calls, "DELETE") {
+			t.Errorf("%s: removed a comment\n%s", c.name, calls)
+		}
+	}
+
+	// Two sessions at once: both found nothing before posting. Read back, the
+	// earlier copy stays and the later one removes itself.
+	posted := fixtureFile(t, "posted.json", `{"id":9,"html_url":"c9"}`)
+	before := fixtureFile(t, "before.json", `[]`)
+	for name, after := range map[string]struct {
+		issues  string
+		deletes bool
+	}{
+		"the other session posted first": {`[{"id":8,"user":{"login":"me"},"body":"Renamed it.\nSee abc123."},{"id":9,"user":{"login":"me"},"body":"Renamed it.\nSee abc123."}]`, true},
+		"this session posted first":      {`[{"id":9,"user":{"login":"me"},"body":"Renamed it.\nSee abc123."},{"id":10,"user":{"login":"me"},"body":"Renamed it.\nSee abc123."}]`, false},
+	} {
+		afterFile := fixtureFile(t, "after.json", after.issues)
+		out, code := p.run([]string{"GH_FIXTURE=" + user, "GH_ISSUES=" + before, "GH_ISSUES_AFTER=" + afterFile, "GH_POSTED=" + posted}, "comment", "o/r", "7", answer)
+		calls := strings.Join(p.calls(), "\n")
+		deleted := strings.Contains(calls, "DELETE\trepos/o/r/issues/comments/9")
+		if code != 0 || deleted != after.deletes || (!after.deletes && strings.Contains(calls, "DELETE")) {
+			t.Errorf("%s: exit %d, removed this copy %v, want %v\n%s\n%s", name, code, deleted, after.deletes, out, calls)
 		}
 	}
 }

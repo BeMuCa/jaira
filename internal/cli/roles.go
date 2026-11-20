@@ -2,14 +2,19 @@ package cli
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/BeMuCa/jaira/core/board"
+	"github.com/BeMuCa/jaira/core/gitrepo"
+	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/role"
 	"github.com/BeMuCa/jaira/core/settings"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // newRolesCmd groups the role prompts the binary ships.
@@ -27,7 +32,7 @@ in ~/.jaira/settings.json, a worker who carries it through every lane itself —
 and the agents they hand lanes to. They are compiled into this binary, and
 'jaira roles install' writes them into your agent's skills directory.`,
 	}
-	cmd.AddCommand(newRolesListCmd(), newRolesInstallCmd())
+	cmd.AddCommand(newRolesListCmd(), newRolesInstallCmd(), newRolesPRGateCmd())
 	return cmd
 }
 
@@ -58,7 +63,8 @@ repository's instructions say. Carried as release, and where it came from as
 release_source.
 
 And who opens a pull request: "agent" when the board's .jaira/pr says so —
-an agent then opens it itself once every ticket on the branch is in done,
+an agent then opens it itself once every ticket on the branch is in done
+('jaira roles pr-gate' checks that),
 asks for the reviewer .jaira/pr-reviewer names and answers one round of
 comments — and "person" otherwise, an agent pushing the branch and handing
 the create line back. Carried as pr, pr_source and pr_reviewer. Merging and
@@ -107,6 +113,90 @@ approving stay a person's either way.`,
 			fmt.Fprintf(w, "python: %s — what the roles run their Python scripts with (%s)\n", py, pySource)
 			fmt.Fprintf(w, "release: %s — who touches the version and the changelog (%s)\n", release, releaseSource)
 			fmt.Fprintf(w, "pr: %s — who opens a pull request (%s); reviewer: %s\n", pr, prSource, cmp.Or(reviewer, "none"))
+			return nil
+		},
+	}
+}
+
+func newRolesPRGateCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "pr-gate <base>",
+		Short: "Say whether an agent may open this branch's pull request",
+		Long: `Says whether an agent may open the pull request of the checked-out branch
+against <base> — the default branch of the repository it goes to, as
+<remote>/<branch>. Exit 0 only when the board's .jaira/pr says agent, at
+least one commit in <base>..HEAD names a ticket in its subject
+(type(A3K9QP): ...), and every ticket named that is still on the board sits
+in its board's terminal lane. A ticket filed into the logbook is past done
+and holds nothing up. Anything else exits 3 and says which ticket holds it.
+
+jaira-role-pr runs this before it opens a pull request on its own, so the
+rule does not rest on a role's text alone. A person who invokes the role
+needs no gate: their invocation is the decision. --json carries may_open,
+pr and tickets; a refusal is the usual error, its reason pr_person,
+no_ticket or pending.`,
+		Args: exactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			s, err := openStore()
+			if err != nil {
+				return err
+			}
+			named, err := (&gitrepo.Repo{Dir: s.Root}).TicketsNamed(args[0])
+			if errors.Is(err, gitrepo.ErrNoSuchRef) {
+				return fail(ExitUsage, "no_such_ref", "pr-gate: %q is no commit here — fetch the remote first", args[0])
+			}
+			if err != nil {
+				return err
+			}
+			pr, _ := settings.PRFor(s.Root)
+			if pr != settings.PRAgent {
+				return fail(ExitValidation, "pr_person",
+					"pr-gate: this board's .jaira/pr does not say agent — a person opens the pull request; hand the create line back")
+			}
+			if len(named) == 0 {
+				return fail(ExitValidation, "no_ticket",
+					"pr-gate: no commit in %s..HEAD names a ticket — nobody accepted anything on this branch; hand the create line back", args[0])
+			}
+			all, err := s.List()
+			if err != nil {
+				var pe *ticket.PartialError
+				if !errors.As(err, &pe) {
+					return err
+				}
+			}
+			terminal := map[string]string{}
+			var pending []string
+			for _, h := range named {
+				for _, t := range all {
+					if ticket.Handle(t.ID) != h {
+						continue
+					}
+					b := lane.BoardOf(t)
+					term, ok := terminal[b]
+					if !ok {
+						lanes, err := boardLanes(s, b)
+						if err != nil {
+							return err
+						}
+						if l := lanes.Terminal(); l != nil {
+							term = l.ID
+						}
+						terminal[b] = term
+					}
+					if term == "" || t.Status != term {
+						pending = append(pending, h+" ("+t.Status+")")
+					}
+				}
+			}
+			if len(pending) > 0 {
+				return fail(ExitValidation, "pending",
+					"pr-gate: not every ticket on the branch is in done — %s; hand the create line back", strings.Join(pending, ", "))
+			}
+			w := cmd.OutOrStdout()
+			if g.jsonOut {
+				return emit(w, map[string]any{"may_open": true, "pr": pr, "tickets": named})
+			}
+			fmt.Fprintf(w, "pr-gate: an agent may open it — every ticket on the branch is done: %s\n", strings.Join(named, ", "))
 			return nil
 		},
 	}

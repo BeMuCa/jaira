@@ -54,9 +54,9 @@ jaira roles list --json | jaira json get pr_reviewer   # copilot, a login, or em
   acceptance of each of them is the decision the rule above asks for, given
   once per ticket instead of once per pull request. One of them not there yet
   — in signoff, in review, anywhere else — and you are back to `person` for
-  this run: push, hand the line back, say which ticket holds it. You check this
-  at **Open it**, after **File the finished tickets away** has read every
-  handle.
+  this run: push, hand the line back, say which ticket holds it. The binary
+  checks this, not you: `jaira roles pr-gate <remote>/<branch>` at **Open
+  it**, after **File the finished tickets away** — exit 0 or no pull request.
 
 What `agent` never changes: you do not merge and you do not approve, on any
 board, under any setting. A person still accepts the pull request.
@@ -315,6 +315,26 @@ glab mr create --target-project <owner/repo> --title "<title>" --description "$(
 
 Then report the URL.
 
+**Invoked by an agent on an `agent` board, you open it only through the
+gate**, never with the lines above. `<remote>` and `<branch>` are the remote
+and the default branch you counted the handles against in **File the
+finished tickets away**. On GitHub the script beside this file runs the gate
+and then the create command:
+
+```bash
+scripts/pr-round.sh open <owner/repo> <remote> <branch> "<title>" <the description you wrote>
+```
+
+On GitLab run the gate yourself and the create command only on exit 0:
+
+```bash
+jaira roles pr-gate <remote>/<branch> && glab mr create --target-project <owner/repo> --title "<title>" --description "$(cat <the description you wrote>)"
+```
+
+Exit 3 from either is the board's no — `.jaira/pr` does not say agent, no
+commit names a ticket, or a ticket it names is not in done; the message says
+which. Do not look for another way to open it.
+
 **An agent invoked you on a `person` board, or a ticket on the branch is not in
 done: do not run it.** Hand the line back written out and ready to paste, with
 the target repository already filled in, and say the branch is pushed and
@@ -379,7 +399,8 @@ body of a submitted review. Answer the ones that ask something with
 `scripts/pr-round.sh comment <owner/repo> <number> <file>`; a review body that
 only summarises its own threads needs no answer. Read the list against the
 answers already on the pull request, and skip what you answered in an earlier
-round.
+round; `comment` posts nothing where the same words under the same login are
+already there, and two sessions posting at once leave one copy.
 
 When every thread is answered, ask again:
 `scripts/pr-round.sh request <owner/repo> <number> <pr_reviewer>` — or the
@@ -404,7 +425,9 @@ with gh's own message when a write fails half way. Then report which threads
 are answered and which are not — the next round picks up the rest, because
 `threads` lists them still open. Running `reply` again on a thread whose answer
 went through but whose resolve did not only resolves it: the reviewer never
-gets the same answer twice.
+gets the same answer twice. Two sessions answering one thread at the same
+moment leave one answer too: after posting, `reply` reads the thread back and
+removes its own copy when the same words of the same login stand above it.
 
 - One comment, one reply, one commit. Do not batch a reviewer's five points into
   one commit that none of them can be reverted out of.
@@ -420,8 +443,8 @@ gets the same answer twice.
 - On GitHub: never `gh pr merge`. Never `gh pr review --approve`.
 - On GitLab: never `glab mr merge`. Never `glab mr approve`.
 - `gh pr create` / `glab mr create` is yours to run **only** when a person
-  invoked this role, or the board's `.jaira/pr` says `agent` and every ticket
-  on the branch is in done. Otherwise, invoked by an agent, writing that line
+  invoked this role, or the board's `.jaira/pr` says `agent` and `jaira roles
+  pr-gate` passed. Otherwise, invoked by an agent, writing that line
   out is the job and running it is the person's.
 - `.jaira/pr` never reaches merge or approve. No setting does.
 - Never force-push a branch someone has already reviewed. If history must
