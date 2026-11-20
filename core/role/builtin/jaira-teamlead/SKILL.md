@@ -258,10 +258,9 @@ run it, or write the same yourself:
 3. **one recommendation** in bold, with its reason, and both lines ready to
    paste — accept and give back
 
-Its return rules decide the recommendation: after two returns from signoff the
-🟡 rows go into a follow-up ticket rather than a third round, wording is never a
-reason to give back, a class of finding that keeps returning gets its cause
-named, and a security or permission boundary stays a blocker in any round.
+The recommendation follows the return rules in `jaira-role-signoff` — read
+them there, not from memory: they are what ends a ticket going round signoff
+forever.
 
 Then one concrete next action. If nothing needs the human, say what you are
 starting next and start it — do not ask permission for work already on the

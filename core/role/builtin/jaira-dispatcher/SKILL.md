@@ -455,21 +455,10 @@ finished. Print the three lines and stop.
 
 ## Before anything is pushed
 
-Whoever pushes the ticket's branch — a worker of yours, `/jaira-role-pr`, or
-you when the person asks — runs the project's own gates locally first: the
-checks its CI runs and that turn a pull request red when they fail. Read them
-off the repository, not from memory: the CI workflow (`.github/workflows/`,
-`.gitlab-ci.yml`), the test and lint tasks in `Taskfile.yml`, `Makefile` or
-`package.json`, and any check the repository's instructions name.
-
-The class this catches is the gate nobody thinks of as a test: a generated file
-or checksum list that has to be regenerated with the change, a formatter or
-linter run in CI only, a manifest that must name every new file. On 2026-11-20
-several pull requests went red for a line missing in such a list that one local
-test run would have named. Put the line into the brief of the worker that
-pushes, and do not report a pushed branch as ready without its gate result. A
-red gate is fixed before the push, in a new commit — never pushed with a
-promise.
+Whoever pushes the ticket's branch — a worker of yours or `/jaira-role-pr` —
+runs the project's own CI gates locally first, as `jaira-worker` describes under
+"Before you push". Put that line into the brief of the worker that pushes, and
+do not report a pushed branch as ready without its gate result.
 
 ## When to stop and hand back
 

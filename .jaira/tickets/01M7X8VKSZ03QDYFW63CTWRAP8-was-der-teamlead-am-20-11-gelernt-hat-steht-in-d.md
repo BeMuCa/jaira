@@ -1,7 +1,7 @@
 ---
 id: 01M7X8VKSZ03QDYFW63CTWRAP8
 title: "Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,10 +25,17 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T20:10:48Z
+updated-at: 2026-11-20T21:43:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16592
 claimed-at: 2026-11-20T20:04:03Z
+outcome-what: "Neue Rolle jaira-role-signoff (Statuszeile, markierte Notes-Tabelle, eine Empfehlung, Rueckgabe-Regeln); Teamlead liest den Stand vor jeder Liste neu und berichtet signoff in dieser Form; worker, dispatcher und jaira-role-pr lassen vor jedem Push die CI-Gates des Projekts lokal laufen."
+outcome-why: "Die Arbeitsweise vom 20.11.2026 stand nur im lokalen Gedaechtnis einer Teamlead-Session; jeder andere Teamlead haette dieselben Fehler gemacht (veraltete Listen, Rueckgaben wegen Notes ohne Einordnung, rote PRs durch fehlende shipped.sha256-Zeilen)."
+outcome-resolves: Die Regeln reisen mit den ausgelieferten Rollen; jaira update --roles bringt sie zu jedem Nutzer.
+review-summary: |-
+  core/role/builtin/jaira-dispatcher/SKILL.md '## Before anything is pushed' wiederholt den Push-Gate-Absatz aus jaira-worker fast woertlich, obwohl der Dispatcher selbst nicht pusht: auf drei Saetze kuerzen (wer pusht, laesst die Gates laufen; in den Brief des pushenden Workers; kein gepushter Branch ohne Gate-Ergebnis als fertig melden)
+  core/role/builtin/jaira-teamlead/SKILL.md '## Report to the human' wiederholt die vier Rueckgabe-Regeln aus jaira-role-signoff - zwei Kopien laufen auseinander: durch einen Verweis auf die Rolle ersetzen
+round: 2
 ---
 
 # Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis
@@ -63,3 +70,4 @@ claimed-at: 2026-11-20T20:04:03Z
 - **2026-11-20 20:04 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock
 - **2026-11-20 20:04 · Alexander Sacharov** — decision (worker, keine offene Frage): (1) neue Rolle heisst jaira-role-signoff, nur lesend, Ausgabe in der Sprache der Person; Marken wie im Kontext (rot/gelb/weiss/blau als Emoji, weil Terminal-Markdown keine Farben hat). (2) Push-Gate steht allgemein in jaira-worker, jaira-dispatcher UND jaira-role-pr (die dritte Stelle, die pusht - Geschwisterstelle nach Interim-Regel 2). Beispiel fuer dieses Repo nur als Beispiel. (3) README-Rollentabelle und docs/how-to-work-with-jaira.html bekommen die neue Rolle, wantRoles in role_test.go auch. (4) 'Schlussbericht der Worker mit Feldern' aus dem Ziel ist 55CS2M und steht nicht in der DoD - nicht hier.
 - **2026-11-20 20:10 · Alexander Sacharov** — Stand bei Usage-Limit: DoD 1-3 geschrieben, Release-Note + shipped.sha256 angehaengt, core/role gruen, committed. Offen: DoD 4 abhaken, Lanes critique/optimize/testing/review. Hashes in shipped.sha256 muessen nach jeder weiteren SKILL.md-Aenderung neu angehaengt werden.
+- **2026-11-20 21:41 · Alexander Sacharov** — critique: (1) Push-Gate-Text im Dispatcher kuerzen, er pusht nicht selbst. (2) Rueckgabe-Regeln im Teamlead durch Verweis auf jaira-role-signoff ersetzen, damit es nur eine Quelle gibt. Stehen gelassen: Statuszeile+Tabelle+Empfehlung bleiben im Teamlead ausgeschrieben, weil DoD 1 genau das im Teamlead-Abschnitt verlangt.
