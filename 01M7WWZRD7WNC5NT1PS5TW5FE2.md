@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZRD7WNC5NT1PS5TW5FE2
 title: "Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels"
-status: testing
+status: review
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T18:09:59Z
+updated-at: 2026-11-20T18:10:03Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5618
 claimed-at: 2026-11-20T18:03:30Z
