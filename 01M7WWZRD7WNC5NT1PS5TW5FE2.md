@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:51:17Z
+updated-at: 2026-11-20T19:52:03Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-36878
 claimed-at: 2026-11-20T19:50:05Z
@@ -166,3 +166,4 @@ Empfehlung: 2 - kein Blocker, die Wirkung zeigt sich erst an kuenftigen Tickets,
 - **2026-11-20 19:50 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
 - **2026-11-20 19:50 · Alexander Sacharov** — back: person, round 14
 - **2026-11-20 19:51 · Alexander Sacharov** — critique: none - Runde nach signoff 19:49, eine geteilte Release-Note-Zeile und ein Rueckfall-Satz im bestehenden Folgerunden-Absatz
+- **2026-11-20 19:52 · Alexander Sacharov** — bughunt: change: core/lane/builtin/27-testing.md:133 (twin .jaira/lanes/testing.md:133) - the rebase fallback tests 'git cat-file -e <commit>', but a rebased-away commit stays in the object store (reflog), so the check passes and pass 1 narrows to 'git diff --name-only <old>': that lists the files upstream changed, not the change's own files (identical content in old and new tip), so the change's tests are skipped exactly after a rebase onto new master; meanwhile the bughunt skill (jaira-role-bughunt/SKILL.md:55) uses 'git merge-base --is-ancestor <commit> HEAD' and hunts whole, so testing and hunt disagree on the same round. Fix: use the same is-ancestor check as the hunt; ran: scratch repo, branch f rebased onto master -> cat-file -e old =0, is-ancestor =1, diff --name-only old = only master's file m, not f
