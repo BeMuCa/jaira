@@ -96,14 +96,6 @@ func TestCloseTabKeepsAWorkerThatIsNotFinished(t *testing.T) {
 		"agent's lane": {func(t *testing.T, r *reapRig) {
 			r.write(t, r.shown, `{"status":"in-progress","question":""}`)
 		}, "p1", "", "the ticket is in in-progress, not with a person"},
-		"uncommitted": {func(t *testing.T, r *reapRig) {
-			r.write(t, r.shown, `{"status":"signoff","question":""}`)
-			r.write(t, filepath.Join(r.wt, "README"), "changed\n")
-		}, "p1", "", "uncommitted changes: README"},
-		"untracked source": {func(t *testing.T, r *reapRig) {
-			r.write(t, r.shown, `{"status":"signoff","question":""}`)
-			r.write(t, filepath.Join(r.wt, "new.go"), "package x\n")
-		}, "p1", "", "uncommitted changes: new.go"},
 		"no parent": {func(t *testing.T, r *reapRig) {
 			r.write(t, r.shown, `{"status":"signoff","question":""}`)
 		}, "p1", "-", "no parent: the report is in this tab"},

@@ -1,7 +1,7 @@
 ---
 id: 01M7R61GC6C8D7547N7CN7JW2Q
 title: "Worker-Tabs schliessen sich selbst, sobald ihre Arbeit bei einer Person liegt oder gemergt ist"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,18 +21,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-18T20:37:15Z
-updated-at: 2026-11-20T18:21:17Z
+updated-at: 2026-11-20T18:23:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35719
 claimed-at: 2026-11-20T18:08:45Z
 outcome-what: "close-tab.sh und reap.sh fragen 'uncommitted' ueber ein gemeinsames Skript uncommitted.sh mit der Regel von reap.sh; Tabellentest ueber beide Skripte; Hilfetexte und Release-Note nennen die Regel"
 outcome-why: "Rueckgabe aus signoff (Person): zwei verschiedene Filter fuer denselben Begriff 'uncommitted unter .jaira/'"
 outcome-resolves: "DoD 9, dazu 1-8"
-review-summary: "Neues Skript jaira-dispatcher/scripts/close-tab.sh: ein Worker/Dispatcher mit --parent schliesst nach dem Bericht seinen eigenen Herdr-Tab, aber nur wenn das Ticket in einer Personen-Lane (human_exit, requires_question) oder terminal liegt, keine offene Frage hat, ausserhalb .jaira/ nichts uncommittet ist und der Tab von spawn.sh als <ID>/<lane> beschriftet wurde; jeder andere Fall und jeder unerwartete Fehler (ERR-Trap) endet als 'kept <ID>: <grund>' mit exit 0. reap.sh laeuft jetzt per flock (perl-Fallback auf macOS) nur einmal pro Repo, ein toter Lauf gibt den Lock per Kernel frei, Kinder erben fd 9 nicht; neue, gestagte oder modifizierte Dateien unter .jaira/tickets und .jaira/milestones zaehlen nicht mehr als uncommitted, lanes/tags/logbook halten den Worktree weiter. Das Cockpit startet reap.sh ab der ersten Minute alle 10 min selbst, nur mit Herdr und nie in einer Sitzung, die ein Ticket traegt. Worker-, Dispatcher- und Teamlead-SKILL.md beschreiben das; ci.yaml hat einen Job 'cockpit' (claude plugin test, claude-code 2.1.329 gepinnt), ein borderStyle-Test wurde an 2.1.329 angepasst; Release-Note N7JW2Q.md mit 3 Zeilen."
-review-gaps: |-
-  note: close-tab.sh nimmt ganz .jaira/ vom Dirty-Check aus, reap.sh nur tickets/ und milestones/ - fuer das Tab-Schliessen harmlos (es loescht nichts), aber zwei verschiedene Filter fuer denselben Begriff "uncommitted"
-  note: das Schliessen des eigenen Tabs (setsid herdr tab close bzw. herdr-hc.sh) ist nur gegen ein Fake-herdr getestet, nicht in echtem Herdr/Herdr App
-  note: der CI-Job cockpit ist noch nie auf GitHub gelaufen; lokal 183 pass, ob claude plugin test im Runner ohne Login startet, zeigt erst der erste Push
+review-summary: "none"
+review-gaps: "entfernt: Faelle, die der neue Tabellentest doppelt - reap_test.go 'board files on no ref', 'untracked board files on no ref' und die gestagten Dateien in TestReapClosesAMergedTicket; closetab_test.go 'uncommitted', 'untracked source'; DoD-2/6-Proofs nachgezogen. Gelassen: TestReapClosesAMergedTicket mit Umlaut-Ticket (prueft das echte Entfernen, nicht nur --dry-run)"
 test-verdict: "pass: go vet/build ok, go test -race -count=1 ./... RC=0; DoD 6: TestReapClosesAMergedTicket mit gestagten A/AM Ticket- und Milestone-Dateien gruen, ohne Fix rot (kept ... uncommitted changes: .jaira/milestones/a.md .jaira/tickets/zz99zz.md); reap.sh --dry-run live im Repo rc 0 (nur waiting-Zeilen); DoD 7/8 unveraendert seit Lauf auf 249b7699 (183/0); schreibt nichts Neues, kein Zwei-Schreiber-Test"
 hunt-verdict: "pass: bughunt done at e955f977, 0 change, 0 pre-existing (Filter gegen ??/A/AM/M/MM/AD/D/R und .jaira/lanes geprueft)"
 round: 11
@@ -53,7 +50,7 @@ review-check: |-
 - [x] Ein Worker (Rolle worker/dispatcher), dessen Ticket in einer Personen-Lane (signoff, human mit Frage beantwortet) oder done liegt, schliesst nach zugestelltem Bericht seinen eigenen Tab; Test
   proof: core/role/builtin/jaira-dispatcher/scripts/close-tab.sh; worker/dispatcher SKILL.md 'Report'/'Your own tab'; test core/role/closetab_test.go TestCloseTabClosesAWorkerWhoseTicketIsWithAPerson (signoff, human ohne Frage, done), TestWorkerAndDispatcherCloseTheirTab
 - [x] Ein Worker mit offener Frage an die Person oder mit nicht committeten Aenderungen bleibt offen; Test
-  proof: close-tab.sh 'kept' paths; test core/role/closetab_test.go TestCloseTabKeepsAWorkerThatIsNotFinished (open question, uncommitted, untracked source, no parent, parent gone, foreign tab, not in Herdr, agent lane)
+  proof: close-tab.sh 'kept' paths; core/role/closetab_test.go TestCloseTabKeepsAWorkerThatIsNotFinished (open question, no parent, parent gone, foreign tab, not in Herdr, agent lane, Fehlerklassen); uncommitted: core/role/uncommitted_test.go TestUncommittedIsOneRuleForCloseTabAndReap
 - [x] reap.sh laeuft fuer gemergte Tickets ohne Teamlead-Sitzung automatisch an; Test oder dokumentierter Hook mit Test
   proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx reapMerged (ab der ersten Minute, dann alle 10 min, nur mit Herdr, nie in Agent-Sitzung); tests board.test.ts 'a person's session runs reap.sh from its first minute on, then every ten minutes', 'a tab spawn.sh opened runs no reap.sh, though its role line comes only after the start', 'a session that carries a ticket runs no reap.sh', 'without Herdr the cockpit runs no reap.sh'
 - [x] Release-Note-Zeile in core/release/notes/<ID>.md
@@ -61,7 +58,7 @@ review-check: |-
 - [x] reap.sh laeuft pro Repository nur einmal gleichzeitig (Lock); ein Lock eines toten Laufs wird uebernommen; Test
   proof: core/role/builtin/jaira-dispatcher/scripts/reap.sh lock block after the panes check (pid file, ln to reap.lock, takeover when kill -0 fails); test core/role/reap_test.go TestReapRunsOneAtATime
 - [x] reap.sh zaehlt Aenderungen unter .jaira/ (auch eine modifizierte Ticketdatei) nicht als uncommitted, wie close-tab.sh; Test
-  proof: core/role/builtin/jaira-dispatcher/scripts/reap.sh dirty check grep -v -E '^(\?\?|[ MA][ M]) \.jaira/(tickets|milestones)/'; test core/role/reap_test.go TestReapClosesAMergedTicket (modifizierte, untracked und gestagte A/AM Ticket- und Milestone-Dateien), TestReapKeeps 'board files on no ref'/'untracked board files on no ref'
+  proof: core/role/builtin/jaira-dispatcher/scripts/uncommitted.sh (grep -v -E '^(\?\?|[ MA][ M]) \.jaira/(tickets|milestones)/'), von reap.sh und close-tab.sh aufgerufen; test core/role/uncommitted_test.go TestUncommittedIsOneRuleForCloseTabAndReap (Ticket modifiziert/untracked/gestagt, Milestone AM zaehlen nicht; Lane, tags, logbook, geloeschtes Ticket zaehlen), TestReapClosesAMergedTicket (modifizierte Umlaut-Ticketdatei)
 - [x] close-tab.sh endet in jeder Fehlerklasse mit 'kept <grund>' und exit 0: jeder set -e-Pfad (z.B. scheiterndes 'jaira json get'), herdr nicht erreichbar, Tab schon weg, Lane auf dem Board unbekannt, Lanes des Boards nicht lesbar; Test je Klasse; Geschwister-Skripte unter jaira-dispatcher/scripts geprueft
   proof: close-tab.sh ERR-trap nach kept(); core/role/closetab_test.go TestCloseTabKeepsAWorkerThatIsNotFinished: 'jaira json get fails' (ohne Trap exit 7), 'herdr not reachable', 'tab already gone', 'lane the board does not list', 'board whose lanes cannot be read'; spawn.sh/run-lane.sh haben Fehlercodes im Vertrag, reap.sh verspricht exit 0 nur fuers Behalten
 - [x] Die Cockpit-Tests (claude plugin test in core/mod/builtin/jaira-cockpit) laufen in ci.yaml und sind gruen

@@ -216,11 +216,6 @@ func TestReapClosesAMergedTicket(t *testing.T) {
 	r.write(t, r.shown, `{"status":"done"}`)
 	// Untracked milestone files are no work: AYBDJ2's rule; a ref holds them.
 	r.write(t, filepath.Join(r.wt, ".jaira", "milestones", "m.md"), "x\n")
-	// Nor staged ones: 'A ' after a git add, 'AM' after a write on top.
-	r.write(t, filepath.Join(r.wt, ".jaira", "milestones", "a.md"), "x\n")
-	r.write(t, filepath.Join(r.wt, ".jaira", "tickets", "zz99zz.md"), "x\n")
-	r.git(t, r.wt, "add", ".jaira/milestones/a.md", ".jaira/tickets/zz99zz.md")
-	r.write(t, filepath.Join(r.wt, ".jaira", "tickets", "zz99zz.md"), "y\n")
 	// Neither is a ticket file a lane without code left modified: after the
 	// merge no commit comes to carry it, and its state is on the ticket's ref.
 	r.write(t, ticket, "done\n")
@@ -336,32 +331,6 @@ func TestReapKeepsWhatIsNotFinished(t *testing.T) {
 				r.write(t, filepath.Join(r.wt, "README"), "later\n")
 				r.git(t, r.wt, "commit", "-q", "-am", "later")
 			}, "kept AB12CD: feat/ab12cd is not at the merged head",
-		},
-		// Lanes, tags and a 'jaira logbook' not yet committed are on no ref:
-		// removing the worktree would lose them.
-		"board files on no ref": {
-			func(t *testing.T, r *reapRig) {
-				r.write(t, filepath.Join(r.wt, ".jaira", "lanes", "review.md"), "one\n")
-				r.write(t, filepath.Join(r.wt, ".jaira", "tickets", "ab12cd.md"), "done\n")
-				r.git(t, r.wt, "add", ".jaira")
-				r.git(t, r.wt, "commit", "-q", "-m", "board")
-				r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
-				r.write(t, r.shown, `{"status":"done"}`)
-				r.write(t, filepath.Join(r.wt, ".jaira", "lanes", "review.md"), "two\n")
-				if err := os.Remove(filepath.Join(r.wt, ".jaira", "tickets", "ab12cd.md")); err != nil {
-					t.Fatal(err)
-				}
-			}, "kept AB12CD: " + r0 + " has uncommitted changes: .jaira/lanes/review.md .jaira/tickets/ab12cd.md",
-		},
-		// So are lanes, tags and logbook entries nobody has committed yet.
-		"untracked board files on no ref": {
-			func(t *testing.T, r *reapRig) {
-				r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
-				r.write(t, r.shown, `{"status":"done"}`)
-				r.write(t, filepath.Join(r.wt, ".jaira", "milestones", "m.md"), "x\n")
-				r.write(t, filepath.Join(r.wt, ".jaira", "lanes", "new.md"), "x\n")
-				r.write(t, filepath.Join(r.wt, ".jaira", "logbook", "me-2026-11-19", "ab12cd.md"), "x\n")
-			}, "kept AB12CD: " + r0 + " has uncommitted changes: .jaira/lanes/new.md .jaira/logbook/me-2026-11-19/ab12cd.md",
 		},
 		"given back": {
 			func(t *testing.T, r *reapRig) {
