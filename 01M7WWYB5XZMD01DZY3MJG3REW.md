@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T18:11:15Z
+updated-at: 2026-11-20T18:11:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-87225
 claimed-at: 2026-11-20T17:38:56Z
@@ -76,7 +76,7 @@ review-check: "1. cd into a scratch clone of a GitHub repo you own, with an open
 - [x] pr-gate bei signoff: jedes Ticket des Branches in signoff oder done; bei done wie bisher; Board ohne signoff-Lane -> Exit 3 mit Grund
   proof: internal/cli/roles.go lanesReached; internal/cli/prgate_test.go TestPRGateOpensInSignoffWhereTheBoardSaysSo (signoff/done pass; review, human, blocked, in-progress hold), TestPRGateRefusesSignoffOnABoardWithoutIt, TestPRGateOpensOnlyWhenEveryTicketOfTheBranchIsDone
 - [x] Bei pr-when=signoff verlangt die Rolle vor done eine fertige PR-Runde: pr-round.sh settled -> Exit 3 mit offenen Threads/ausstehenden Reviews, sonst 0
-  proof: core/role/builtin/jaira-role-pr/scripts/pr-round.sh settled; core/role/builtin/jaira-role-pr/SKILL.md:70 done waits for it, core/role/builtin/jaira-role-pr/SKILL.md:427 settled in the round (GitLab blocking_discussions_resolved); core/role/pr_round_test.go TestPRRoundSettledOnlyWhenNothingIsOpen
+  proof: core/role/builtin/jaira-role-pr/scripts/pr-round.sh settled (open threads, requested reviewers, latest review CHANGES_REQUESTED); core/role/builtin/jaira-role-pr/SKILL.md:70 done waits for it, :427 settled in the round (GitLab blocking_discussions_resolved); core/role/pr_round_test.go TestPRRoundSettledOnlyWhenNothingIsOpen
 
 ## Options
 
