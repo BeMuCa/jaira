@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:20:02Z
+updated-at: 2026-11-20T23:20:07Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -118,3 +118,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-20 23:16 · Alexander Sacharov** — Schleifenbremse: testing wuerde zum dritten Mal zurueckgeben. Fund 1 (Merge mit eigenem Inhalt) ist klar loesbar: unbenannter Merge zaehlt nur, wenn 'git diff-tree --cc -p' etwas zeigt (sauberer Merge harmlos). Fund 2 ist eine Entwurfsfrage: Annahme in done gilt heute fuer das Ticket, nicht fuer eine Commit-Liste; nach done kommen per Design 'chore(<ID>): file the ticket away'-Commits dazu. Eine Zeitschranke muesste die erlauben (nur .jaira/ nach Annahme) und braucht den Zeitpunkt des Moves nach done. Frage an Teamlead gestellt.
 - **2026-11-20 23:17 · Alexander Sacharov** — decision: Teamlead 21.11. 00:15: 1 (F1 fix, F2 known limit) - F1: unbenannter Merge passiert nur, wenn 'git diff-tree --cc -p' leer ist, mit Test. F2 (Commit nach der Annahme oder mit id eines anderen done/logbook-Tickets) als 'note: known limit:' in review-gaps fuer signoff. Vorher upstream/master (PR #149 gemergt) einmergen.
 - **2026-11-20 23:19 · Alexander Sacharov** — in-progress (Runde 3, F1): UnnamedCommits liest jetzt auch Merges; ein unbenannter Merge zaehlt nur, wenn 'git diff-tree --cc -p' Inhalt zeigt (Konfliktloesung, beim Merge hinzugefuegte Datei). upstream/master (PR #149) eingemergt, shipped.sha256 neu erzeugt (keine Upstream-Zeile verloren). go test -race ./... RC=0.
+- **2026-11-20 23:20 · Alexander Sacharov** — critique (Runde 5): diff-tree --cc nur fuer unbenannte Merges, also kein Mehraufwand im Normalfall - nichts zu sagen.
