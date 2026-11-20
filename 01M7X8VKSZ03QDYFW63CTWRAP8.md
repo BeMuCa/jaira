@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:37:51Z
+updated-at: 2026-11-20T22:37:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
@@ -36,7 +36,7 @@ review-summary: "none"
 round: 7
 review-gaps: "none: lookup is one loop, the teamlead only points at it"
 test-verdict: "pass: go build ./... and go test ./core/... green (RC=0) at 7e3bc32c; lookup exercised on bare repo + 2 clones: local behind remote -> remote head, local ahead -> local, diverged -> ?, no ref -> ?, two remotes on one commit -> one head; the change writes nothing"
-hunt-verdict: "change: 1 finding at a1b61158 - local branch taken over its remote even when behind; fixed in this round"
+hunt-verdict: "pass: last hunt at a1b61158 found 1 change, fixed in d4da7f7b; no new hunt over d4da7f7b..7e3bc32c by teamlead decision 21:58 (findings of the head-binding class go to signoff as a note) - hunt-on-HEAD therefore reads ❌ by design"
 question: ""
 review-verdict: "The diff meets all four DoD items; no blocker. Checked: go test ./core/role ./core/shipped green, each final SKILL.md hash is in shipped.sha256, release note lines are single '- ' lines, the commands the role prescribes exist (jaira list --lane/--board, gh run list --commit/--workflow, glab ci list --sha). Three notes, all small: hardcoded feat/ branch name, intermediate hashes, and an expected ❌ hunt-on-HEAD on this ticket."
 review-round: 4
