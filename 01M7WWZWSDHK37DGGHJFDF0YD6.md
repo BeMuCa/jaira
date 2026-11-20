@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T23:24:02Z
+updated-at: 2026-11-20T23:24:35Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-7433
 claimed-at: 2026-11-20T23:21:22Z
@@ -121,3 +121,4 @@ review-check: "1. go test ./core/move -run 'TestMoveRecords|TestMoveCountsOne' -
 - **2026-11-20 23:20 · Alexander Sacharov** — bughunt: done at 1789d202 - 0 findings (0 change, 0 pre-existing) in 6 modules, follow-up hunt since ac850761 (diff: board.ts, board.test.ts, move.go, move_test.go, notes, shipped.sha256; whole: internal/tui/model.go); concurrency, error paths, input, permissions checked; files: .jaira/lanes/in-progress.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md core/lane/builtin/15-pre-process.md core/lane/builtin/20-in-progress.md core/lane/builtin/27-testing.md core/lane/builtin/40-review.md core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/move/move.go core/move/move_test.go core/release/notes/DF0YD6.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/builtin/jaira-role-bughunt/SKILL.md core/role/role_test.go core/shipped/shipped.sha256 core/ticket/frontmatter.go core/ticket/schema.go internal/cli/flow.go internal/cli/loopbrake_test.go internal/cli/tickets.go internal/tui/model.go
 - **2026-11-20 23:20 · Alexander Sacharov** — testing passed (hunt 1789d202 clean); moved to review, a fresh agent runs it in its own Herdr tab (run-lane.sh). A restarted worker: if the ticket is still in review with no review-verdict, look for the DF0YD6/review tab before starting another.
 - **2026-11-20 23:23 · Alexander Sacharov** — review (fresh, 1789d202): no blocker; 3 notes in review-gaps (count>=3 wording, plain-CLI person send-back counts as lane, earlier-round verdict lists no notes). Tests green: go test 6 pkgs, claude plugin test 215 pass.
+- **2026-11-20 23:24 · Alexander Sacharov** — worker stopped: ticket in signoff after a fresh review without a blocker; branch feat/df0yd6 pushed at 1789d202; the ticket file carries the review fields uncommitted. Open for the person: review note 1 (count 3 or more) is a small edge worth a mini round; notes 2 and 3 are known limits.
