@@ -277,9 +277,11 @@ The cockpit's Give back button decides by itself. When you send it back:
 
 The limit is a share of the model's context window, the cockpit's setting
 `workerContextShare` (percent, default 50), never a fixed number of tokens: a
-large task on a large window keeps its worker. The tab closes for good when
-`reap.sh` finds the ticket done and its pull request merged; you do not close it
-by hand.
+large task on a large window keeps its worker. A worker you started closes its
+own tab once its report reached you and its ticket waits for a person
+(`close-tab.sh`), so a ticket given back from there usually gets a new worker;
+whatever is left closes when `reap.sh` finds the ticket done and its pull
+request merged. You do not close it by hand.
 
 Its worktree outlives it, and by longer than the pull request: `reap.sh` removes
 it only when both hold — the ticket in `done` and the pull request merged.

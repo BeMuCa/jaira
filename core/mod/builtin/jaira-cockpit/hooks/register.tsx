@@ -130,6 +130,10 @@ let overviewOpen = false
 // Whether the Workers tab is reading the board right now: a read that takes
 // longer than READ_FRAMES is not started a second time beside it.
 let reading = false
+// When reap.sh last ran from here: it asks the forge about every ticket that
+// has a tab, so it runs at most every REAP_EVERY_MS, not with each refresh.
+let reapedAt: number | undefined
+const REAP_EVERY_MS = 10 * 60_000
 
 // ── shared helpers ───────────────────────────────────────────────────────
 
@@ -392,6 +396,26 @@ async function refreshBoard($: EngineInterface): Promise<void> {
     if (kind === 'discuss' && fresh !== undefined) await update($, decidedAtom, d => ({ ...d, [id]: fresh.text }))
     if (tab !== undefined) await run($, [bin!, 'tab', 'close', tab.tab_id], board.dir)
   }
+}
+
+// What spawn.sh opened for a ticket whose pull request is merged — its tabs,
+// worktree and branch — goes without a teamlead session: a teamlead runs
+// reap.sh every round, a person's session runs it here, from its first minute
+// on and then every REAP_EVERY_MS — not at the start itself: a
+// tab spawn.sh opens comes up before its role line is typed, and only that
+// line says the session carries a ticket. Only with Herdr: without it reap.sh
+// keeps everything.
+// Its lines say nothing a person has to act on, so none is shown.
+async function reapMerged($: EngineInterface): Promise<void> {
+  if (await carries($)) return
+  if (!board || (await herdr($)) === undefined) return
+  const now = await $.clock.now()
+  if (reapedAt !== undefined && now - reapedAt < REAP_EVERY_MS) return
+  reapedAt = now
+  const script = await spawnScript($)
+  if (script === undefined) return
+  const [sh = 'bash', spawn = ''] = script
+  await run($, [sh, spawn.replace(/spawn\.sh$/, 'reap.sh'), board.repo], board.repo, 120_000)
 }
 
 // Once a session, when the board is found: a jaira older than the cockpit
@@ -1159,7 +1183,7 @@ export const register: Register = (on, options) => {
     await refreshCache($)
     // The board moves while nobody types; the countdown moves with the clock.
     $.clock.every(60_000, () => {
-      void refreshBoard($)
+      void refreshBoard($).then(() => reapMerged($))
       void refreshCache($)
       void update($, minuteAtom, n => n + 1)
     })
