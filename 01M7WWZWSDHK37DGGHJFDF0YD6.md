@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T23:20:46Z
+updated-at: 2026-11-20T23:20:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-91898
 claimed-at: 2026-11-20T22:44:37Z
@@ -113,3 +113,4 @@ round: 2
 - **2026-11-20 23:16 · Alexander Sacharov** — critique round 2: none - read only 1789d202; ByPerson beside Interactive is the narrow shape: Interactive also opens the human-exit gate, which a TUI move must not get by this change.
 - **2026-11-20 23:18 · Alexander Sacharov** — testing round 3: test-verdict pass; bughunt running over the diff since ac850761 at 1789d202.
 - **2026-11-20 23:20 · Alexander Sacharov** — bughunt: done at 1789d202 - 0 findings (0 change, 0 pre-existing) in 6 modules, follow-up hunt since ac850761 (diff: board.ts, board.test.ts, move.go, move_test.go, notes, shipped.sha256; whole: internal/tui/model.go); concurrency, error paths, input, permissions checked; files: .jaira/lanes/in-progress.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md core/lane/builtin/15-pre-process.md core/lane/builtin/20-in-progress.md core/lane/builtin/27-testing.md core/lane/builtin/40-review.md core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/move/move.go core/move/move_test.go core/release/notes/DF0YD6.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/builtin/jaira-role-bughunt/SKILL.md core/role/role_test.go core/shipped/shipped.sha256 core/ticket/frontmatter.go core/ticket/schema.go internal/cli/flow.go internal/cli/loopbrake_test.go internal/cli/tickets.go internal/tui/model.go
+- **2026-11-20 23:20 · Alexander Sacharov** — testing passed (hunt 1789d202 clean); moved to review, a fresh agent runs it in its own Herdr tab (run-lane.sh). A restarted worker: if the ticket is still in review with no review-verdict, look for the DF0YD6/review tab before starting another.
