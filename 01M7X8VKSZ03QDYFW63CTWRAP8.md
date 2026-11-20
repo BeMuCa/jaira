@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T21:58:22Z
+updated-at: 2026-11-20T21:58:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16592
 claimed-at: 2026-11-20T20:04:03Z
@@ -37,6 +37,7 @@ round: 4
 review-gaps: "none: 4a0033ec entfernt den Parser-Weg (Ref/grep) wieder, nichts uebrig geblieben; Teamlead-Verweis auf eine Zeile gekuerzt"
 test-verdict: "pass: Runde 3 (4a0033ec): go build ./... ok, go test core/role + core/shipped RC=0. Neue CI-Befehle ausprobiert: gh run list --branch master --limit 1 liefert den Lauf; gh pr checks feat/twrap8 ohne PR endet mit RC=1 - die Rolle nimmt dann gh run list, wie beschrieben. Rolle schreibt nichts, also kein Parallel-Schreibfall."
 hunt-verdict: "fail: bughunt done at 4a0033ec, 1 change (tests-Check bindet den CI-Lauf nicht an den Commit des Branch-Kopfs), 0 pre-existing"
+question: "testing zum 3. Mal zurueck: 1) Ein-Zeilen-Fix + direkt review (empfohlen) 2) Fix + volle Schleife 3) als Rand an signoff"
 ---
 
 # Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis
