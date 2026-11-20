@@ -20,10 +20,14 @@ definition-of-done: "pre-process-Prompt verlangt: Fehlerklasse statt Symptom, Ei
 tags:
   - gates
 blocked-by: []
-related: []
+related:
+  - 01M7WWZWSDHK37DGGHJFDF0YD6
+  - 01M67RWZDWBS8E44Z3KGXKS048
+  - 01M67K7JAF6R9N2VSPEW3CBCN6
+  - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T16:39:40Z
+updated-at: 2026-11-20T16:39:43Z
 updated-by: Alexander Sacharov
 ---
 
