@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:09:49Z
+updated-at: 2026-11-20T23:13:17Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -38,7 +38,7 @@ outcome-resolves: "Ein Board sagt in .jaira/pr, ob Arbeit durch einen PR (person
 review-summary: "none"
 round: 3
 review-gaps: "none - the then-text is built once and used by all three refusals; nothing else changed since the last optimize pass"
-test-verdict: "fail: suite green with -race (RC=0) and DoD 1-8 verified, but on a none board the no_ticket and unreadable refusals of pr-gate still said 'hand the create line back' - there is no create line under none (scratch board, exit 3 was right, the advice wrong)"
+test-verdict: "fail: suite green with -race (RC=0); bughunt change finding - under none pr-gate let a commit that names no ticket land unseen"
 ---
 
 # Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig
