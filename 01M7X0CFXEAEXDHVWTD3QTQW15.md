@@ -23,7 +23,8 @@ related:
   - 01M5MNWDKYJGC78B3EKMX2TGXG
 commits: []
 created-at: 2026-11-20T17:34:35Z
-updated-at: 2026-11-20T17:34:35Z
+updated-at: 2026-11-20T17:34:50Z
+updated-by: Alexander Sacharov
 ---
 
 # Give back im Cockpit startet den neuen Worker mit Teamlead, im Worktree mit dem Code und nie doppelt
