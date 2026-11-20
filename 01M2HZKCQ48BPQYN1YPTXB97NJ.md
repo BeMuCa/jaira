@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T22:55:04Z
+updated-at: 2026-11-20T22:55:16Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -86,3 +86,4 @@ F2 Wie erfaehrt der ausgelieferte Prompt davon?
  3) nur Laufzeit, Block bleibt fest.
 Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-20 22:53 · Alexander Sacharov** — decision: Teamlead 20.11. 23:00: 1/1 - F1: dritter Wert 'none' in .jaira/pr. F2: beide Wege - die Rolle liest zur Laufzeit (roles list), und jaira update schreibt den passenden Absatz in den CLAUDE.md/AGENTS.md-Block. Baut auf feat/jg3rew auf (PR #149, noch nicht gemergt). Modus bleibt autonom: Alex schlaeft, Teamlead will bis signoff durchgezogen; weitere Fragen an den Teamlead.
+- **2026-11-20 22:55 · Alexander Sacharov** — decision (Plan, Begruendung fuer DoD 3): Der ausgelieferte Prompt erfaehrt es auf zwei Wegen, beide aus derselben Datei .jaira/pr. (a) Laufzeit: jaira-role-pr und teamlead lesen 'jaira roles list --json | jaira json get pr' wie seit JG3REW - darum gilt es sofort nach dem Merge der Datei, ohne dass jemand update laufen laesst, und eine Rolle kann nicht mit einem veralteten Block auseinanderlaufen. (b) Block: jaira update schreibt fuer agent/none einen Absatz 'Wie Arbeit ankommt' in den CLAUDE.md/AGENTS.md-Block, fuer Agenten ohne jaira-Skill. Bei person/fehlender Datei schreibt der Block NICHTS Neues - byte-gleich zu heute (DoD 4): die Regel 'Agent pusht und haelt an' steht heute in den Rollen und im local-Teil dieses Repos, nicht im erzeugten Block, und ein neuer Absatz bei allen Boards wuerde jedes Board als 'veraltet' melden. Parsing liegt in core/board (settings importiert board, nicht umgekehrt), settings delegiert. none heisst: ein Zweig pro Ticket bleibt (Worktrees brauchen ihn), aber er landet ohne PR: jaira-role-pr laesst pr-gate (alle Tickets in done; pr-when ist bei none bedeutungslos) laufen, merged <remote>/<branch> in den Zweig und schiebt 'git push <remote> HEAD:<branch>' - nur fast-forward, nie --force. Die Annahme in done ist die Entscheidung, wie bei agent.
