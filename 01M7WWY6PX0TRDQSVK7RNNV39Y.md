@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T19:21:57Z
+updated-at: 2026-11-20T19:23:05Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96533
 claimed-at: 2026-11-20T19:19:14Z
@@ -153,3 +153,4 @@ Empfehlung: 2 - der Lesefehler-Fall ist praktisch kaum erreichbar und war schon 
 - **2026-11-20 19:19 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
 - **2026-11-20 19:20 · Alexander Sacharov** — signoff-Rueckgabe 2 umgesetzt: appendEntry (gitignore.go) bricht bei jedem Lesefehler ausser fs.ErrNotExist ab statt leer weiterzuschreiben. Ein Fix deckt alle Schreiber: AddIgnore (exclude + .gitignore-Fallback), MoveIgnore (exclude-Eintrag zuerst, also bleibt .gitignore unberuehrt), AddLanesIgnore. dropEntry/lists lesen bei Fehler 'nichts da' und schreiben dann nicht - kein Datenverlust, gelassen. Test per chmod 000, uebersprungen auf Windows und als root.
 - **2026-11-20 19:21 · Alexander Sacharov** — critique Runde 13 (Diff cbff5424..79d71506): nichts - Pruefung im Callee appendEntry deckt alle vier Schreiber in einer Stelle; AddLanesIgnore liest weiter mit '_', faellt aber im folgenden appendEntry - kein zweiter Check noetig.
+- **2026-11-20 19:23 · Alexander Sacharov** — bughunt: change: core/release/notes/NNV39Y.md:7 - the note says 'jaira init ... now stop with the read error', but init does not stop: Prepare's AddIgnore error is only a warning (internal/cli/tickets.go:120), init exits 0 and the board is left created and not excluded; ran: git init; printf '# mine\n*.log\n' > .git/info/exclude; chmod 000 .git/info/exclude; jaira init (exit 0, 'warning: could not write .git/info/exclude: permission denied', .jaira/ untracked, exclude unchanged). The note also misses plain 'jaira share', which now stops too (next finding)
