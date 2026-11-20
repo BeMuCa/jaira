@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-20T23:04:05Z
+updated-at: 2026-11-20T23:04:13Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -88,3 +88,4 @@ review-check: |-
 - **2026-11-20 22:54 · Alexander Sacharov** — critique round 2: two more sibling sites, docs/AGENTS.md:68 and jaira-role-pr SKILL.md:49 (point 2 would flag a missing ticket file on an unshared board). Added there too. grep 'rides with the code' over core/ and docs/ finds no further site after this.
 - **2026-11-20 22:58 · Alexander Sacharov** — critique round 3: nothing left that needs a return. Left standing on purpose: the ready-to-paste commit lines in jaira-worker SKILL.md:103 and jaira-role-lane SKILL.md:86/288 still name .jaira/tickets/<ticket>.md; on an unshared board git refuses that path as ignored, and the agent already has the caveat from the block and the jaira role. Not a blocker under interim rule 4 (no wrong result, no data loss); a third critique return would trip the loop brake for a cosmetic line.
 - **2026-11-20 23:02 · Alexander Sacharov** — bughunt: done at bb02c815 - 0 findings in 10 modules, first hunt; concurrency, error paths, input, permissions checked; files: .claude/skills/jaira/SKILL.md .jaira/tags AGENTS.md CLAUDE.md core/board/announce.go core/board/announce_test.go core/release/notes/SDBCT5.md core/role/builtin/jaira-role-pr/SKILL.md core/role/jaira/SKILL.md core/shipped/shipped.sha256 docs/AGENTS.md
+- **2026-11-20 23:04 · Alexander Sacharov** — review: pass, keine Blocker. Eigener Check: frischer Build, git init + jaira init -> Block in CLAUDE.md/AGENTS.md traegt den Vorbehalt, .jaira/ bleibt aus git; Hashes in shipped.sha256 stimmen mit den Dateien; .claude/skills/jaira = core/role/jaira byte-gleich; go test board/role/cli -count=1 gruen. Drei notes in review-gaps.
