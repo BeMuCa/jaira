@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T23:20:21Z
+updated-at: 2026-11-20T23:20:42Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-91898
 claimed-at: 2026-11-20T22:44:37Z
@@ -33,7 +33,7 @@ outcome-resolves: "Both bughunt change findings of ac850761: core/move Request.B
 review-summary: none
 review-gaps: "none - round 2 read only 1789d202 (ByPerson field, one sameRound guard, two tests); nothing duplicated, dead or repeated"
 test-verdict: "pass: round 3 over the diff since ac850761 (ancestor of HEAD): go test -race core/move internal/tui core/role core/shipped RC=0, claude plugin test 215 pass; both findings checked with a neighbour: TUI plain and force move both pass ByPerson, CLI moves from loop lanes still record lane (TestMoveRecordsWhoSentItBack), current-round notes still listed, stale and pre-review ones not"
-hunt-verdict: "fail: bughunt done at ac850761, 2 change (optimize gaps listed as review notes on a later round; a person's TUI send-back from a loop lane recorded as by lane), 0 pre-existing"
+hunt-verdict: "pass: bughunt done at 1789d202, 0 change, 0 pre-existing (follow-up hunt over the diff since ac850761)"
 round: 2
 ---
 
