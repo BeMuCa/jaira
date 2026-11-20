@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T17:01:46Z
+updated-at: 2026-11-20T17:01:50Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59469
 claimed-at: 2026-11-20T16:43:41Z
@@ -91,3 +91,4 @@ review-gaps: "none - geprueft: PRFor folgt bewusst ReleaseFor (gleiches Muster, 
 - **2026-11-20 17:01 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:71 - 'threads' passes owner and name with -F, which gh converts to a JSON integer when the value is all digits (a repo named 2048, a numeric login); the query declares them String!, which a GraphQL server refuses for an Int, so 'threads' fails on such a repository; use -f for owner and name; ran: GH_TOKEN=dummy GH_DEBUG=api gh api graphql -F owner=someone -F name=2048 ... (gh 2.83.1 sent GraphQL variables {"name":2048,...})
 - **2026-11-20 17:01 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:88-94 - 'reply' posts the answer and then resolves in a second call; when the resolve fails (exit 1) the thread is answered but stays open, and SKILL.md:404 says the next round picks it up because 'threads' still lists it, so the next round posts a second answer to the same thread; read
 - **2026-11-20 17:01 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:109 - a .jaira/pr-reviewer of '@alice' passes PRReviewerFor (core/settings/settings.go:323 allows @) but only '@copilot' loses its @; 'request' sends reviewers[]=@alice, which is not a login, so every review request fails with exit 4; read
+- **2026-11-20 17:01 · Alexander Sacharov** — bughunt: done at d527d5a9 - 3 findings (3 change, 0 pre-existing) in 6 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/release/notes/JG3REW.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-role-pr/scripts/pr-round.sh core/role/builtin/jaira-teamlead/SKILL.md core/role/pr_round_test.go core/role/role_test.go core/settings/settings.go core/settings/settings_test.go core/shipped/shipped.sha256 internal/cli/roles.go internal/cli/roles_test.go
