@@ -1,7 +1,7 @@
 ---
 id: 01M7WWYB5XZMD01DZY3MJG3REW
 title: Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,14 +23,14 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T18:03:48Z
+updated-at: 2026-11-20T18:04:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-87225
 claimed-at: 2026-11-20T17:38:56Z
 question: ""
-outcome-what: "Board-Dateien .jaira/pr (person|agent, Default person) und .jaira/pr-reviewer; settings.PRFor/PRReviewerFor; 'jaira roles list' zeigt pr/pr_source/pr_reviewer; jaira-role-pr: Abschnitt 'Whether this board lets an agent open it', create nur bei person-Aufruf oder agent+alle Tickets done, Reviewer anfordern, eine Kommentarrunde ueber neues scripts/pr-round.sh (threads, comments, reply=antworten+resolve, comment, request); teamlead/dispatcher nennen die Ausnahme; Release-Note."
-outcome-why: "Ein Teamlead machte jede PR-Runde von Hand (push, PR-Text, Copilot anfordern, antworten, resolve); Alex erlaubt Agenten das inzwischen, aber nur pro Repo."
-outcome-resolves: "Mit .jaira/pr=agent oeffnet jaira-role-pr den PR nach der Abnahme aller Tickets selbst, fordert den Reviewer an und faehrt eine Kommentarrunde; ohne Datei bleibt alles wie heute; Merge/Approve bleibt in jedem Fall beim Menschen."
+outcome-what: "Board-Dateien .jaira/pr (person|agent), .jaira/pr-reviewer und .jaira/pr-when (done|signoff, Default done); 'jaira roles list' zeigt sie; 'jaira roles pr-gate <remote>/<branch>' prueft im Binary, ob ein Agent den PR oeffnen darf (agent + jedes Ticket des Branches in done bzw. signoff); jaira-role-pr/scripts/pr-round.sh: open (Gate vor gh pr create), threads, comments, reply/comment (nie doppelt, auch bei zwei Sessions; loescht nur die eigene POST-id), request, settled (keine offenen Threads, kein ausstehendes Review); Rollentexte, Release-Note."
+outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten das pro Repo. In manchen Projekten laeuft das Review auf dem PR selbst, dort kommt done erst danach (Alex 20.11.)."
+outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
 review-summary: "none"
 round: 7
 review-gaps: |-
