@@ -2258,6 +2258,18 @@ describe('metrics and the pane', () => {
     expect(await pane.find({ type: 'Text', text: 'Ticket MG677R: review -> signoff, review-verdict="approve"' })).toBeDefined()
     expect(await pane.find({ type: 'Text', text: 'worker · cost_eq 38 · peak 90k · 10 min · 12 tools' })).toBeDefined()
   })
+
+  test('/cockpit ticket reads the reports: the next report has nothing new, a later one is new', async ($, on) => {
+    world(on)
+    await startSession($)
+    await $.session.receive({ origin: { kind: 'peer' }, text: 'Ticket MG677R: review -> signoff, review-verdict="approve"' })
+    await $.command.run(typed('ticket MG677R'))
+    const pane = await $.ui.mount({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-ticket', props: { title: 'Ticket MG677R', isFocused: false, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } } as never)
+    expect(await pane.find({ type: 'Text', text: 'Ticket MG677R: review -> signoff, review-verdict="approve"' })).toBeDefined()
+    expect((await $.command.run(typed('report MG677R'))).text).toStartWith('Nothing new for MG677R')
+    await $.session.receive({ origin: { kind: 'peer' }, text: 'Ticket MG677R: signoff -> review' })
+    expect((await $.command.run(typed('report MG677R'))).text).toContain('signoff -> review')
+  })
 })
 
 const OVERVIEW = { plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-overview', props: { title: 'Board overview', isFocused: true, bodyColumns: 160, placement: 'dock', scroll: { offset: 0, bodyRows: 40 }, view: {} } } as never
