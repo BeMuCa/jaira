@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T17:14:06Z
+updated-at: 2026-11-20T17:25:06Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26453
 claimed-at: 2026-11-20T17:13:45Z
@@ -109,3 +109,8 @@ review-check: "1. cd into a scratch clone of a GitHub repo you own, with an open
 - **2026-11-20 17:07 · Alexander Sacharov** — testing 2: Klasse = 'beantwortet' wird am Autor statt an der Antwort erkannt. Fix: als beantwortet gilt nur, wenn der letzte Kommentar vom selben Login stammt UND sein Text gleich dem Antworttext ist (CR und Rand-Leerraum ignoriert). Sonst wird gepostet.
 - **2026-11-20 17:09 · Alexander Sacharov** — critique 4 (nur Fix 5db2eee4): beantwortet = gleicher Login UND gleicher Text; deckt Wiederholung ab, laesst Maintainer-Bemerkungen offen. Nichts Neues.
 - **2026-11-20 17:10 · Alexander Sacharov** — bughunt: done at 5db2eee4 - 0 findings in 1 module, follow-up hunt (diff since 1dd8e6d7: pr-round.sh reply, pr_round_test.go, shipped.sha256; no new files); concurrency, error paths, input, permissions checked; files: .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md core/release/notes/JG3REW.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-role-pr/scripts/pr-round.sh core/role/builtin/jaira-teamlead/SKILL.md core/role/pr_round_test.go core/role/role_test.go core/settings/settings.go core/settings/settings_test.go core/shipped/shipped.sha256 internal/cli/roles.go internal/cli/roles_test.go
+- **2026-11-20 17:25 · Alexander Sacharov** — explain: Alle 11 Punkte der Definition of Done sind erfüllt, Tests laufen grün. Offen ist nur: die Copilot-Anfrage (Login copilot-pull-request-reviewer[bot]) lief bisher nur gegen ein gefälschtes gh, nie gegen echtes GitHub.
+Warum: Lehnt GitHub den Login ab, scheitert nur der Schritt 'Review neu anfordern' (Exit 4 mit Begründung); Push, Antworten und resolve sind davon nicht betroffen. Zwei kleine Lücken bleiben: das Gate 'alle Tickets im Branch sind done' steht nur im SKILL.md, und zwei Sessions könnten dieselbe Antwort doppelt posten.
+1) Zurückgeben: das Gate im Binary prüfen und die Doppelantwort sperren, bevor es angenommen wird [give back]
+2) Annehmen und Schritte 5-7 der Prüfliste bei der Abnahme gegen ein echtes Test-PR laufen lassen [accept]
+Empfehlung: 2 - die Lücken sind dokumentiert und ungefährlich, der Live-Test ist die einzige Unsicherheit und gehört in die Abnahme.
