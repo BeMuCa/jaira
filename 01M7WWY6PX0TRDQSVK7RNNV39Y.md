@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:00:33Z
+updated-at: 2026-11-20T17:00:38Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46134
 claimed-at: 2026-11-20T16:42:22Z
@@ -74,3 +74,4 @@ round: 2
 - **2026-11-20 16:50 · Alexander Sacharov** — decision Nebenlaeufigkeit: keine Sperrdatei. info/exclude ist pro Repo gemeinsam, die Store-Sperren liegen pro Arbeitsbaum und wuerden zwei Worktrees nicht serialisieren. Stattdessen: lesen, Inhalt bauen, Temp-Datei im selben Verzeichnis, Rename. Zwei parallele AddIgnore bauen beide 'alt + ein Eintrag', der letzte Rename gewinnt -> genau ein Eintrag, nie eine halbe Datei. Verlorenes Update nur, wenn ein Dritter zeitgleich eine andere Zeile schreibt; das nehmen wir hin.
 - **2026-11-20 16:55 · Alexander Sacharov** — Korrektur zur decision Nebenlaeufigkeit: Rename allein reicht NICHT — TestParallelAddIgnoreWritesTheEntryOnce fiel in 2 von 15 Laeufen mit doppeltem Eintrag (B liest nach As Rename, prueft aber vor As Schreiben). Jetzt Sperrdatei <info/exclude>.jaira.lock; die Logik von Store.lock ist dafuer als ticket.LockFile(path) herausgezogen (gleiche Stale-/Windows-Behandlung), nicht nachgebaut. 30 von 30 Laeufen gruen. Ausserdem gefunden: CRLF-exclude bekam nach Add+Remove ein einzelnes \r am Ende — gefixt in dropEntry.
 - **2026-11-20 16:58 · Alexander Sacharov** — critique: (1) IgnoreFile in IgnoreFileName falten, exportierte Funktion mit einem Aufrufer. (2) share.go Long-Text neu umbrechen. Stehen gelassen: Ignored() kostet auf geteilten Boards einen git-Aufruf mehr pro Kommando (bindDriverIfShared) — gemessen 2,4 ms unter Linux; die Alternative, .git-Datei/commondir selbst aufzuloesen, lehnt core/ticket/store.go:870 aus gutem Grund ab. Der zweite git-Aufruf neben commonGitDir (store.go:878) ist gewollt: gitPlace braucht zusaetzlich --show-prefix, in einem Aufruf.
+- **2026-11-20 17:00 · Alexander Sacharov** — critique Runde 2: nichts mehr. Steht auf der vorigen critique-Note (Kosten von Ignored, zweiter git-Aufruf). Bewusst gelassen: MoveIgnore nimmt auch eine von Hand geschriebene .jaira/-Zeile aus .gitignore — gleiche Wirkung, Ziel des Tickets.
