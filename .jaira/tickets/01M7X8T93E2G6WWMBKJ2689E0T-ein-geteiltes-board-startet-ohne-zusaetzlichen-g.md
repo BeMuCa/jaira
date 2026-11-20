@@ -19,13 +19,15 @@ related: []
 follows: 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-11-20T20:01:56Z
-updated-at: 2026-11-20T22:51:37Z
+updated-at: 2026-11-20T22:53:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-14124
 claimed-at: 2026-11-20T22:45:18Z
 outcome-what: Die Merge-Treiber-Pruefung bei jedem Befehl fragt git in einem rev-parse nach Arbeitsbaum und info/exclude (board.Probe) statt in zwei; ein geteiltes Board startet wieder 2 git-Prozesse wie vor NNV39Y.
 outcome-why: NNV39Y hatte jedem Befehl eines geteilten Boards einen git-Prozess fuer die Ignore-Pruefung hinzugefuegt; Projektregel instant startup.
 outcome-resolves: Der zusaetzliche git-Prozess pro Befehl aus der NNV39Y-review.
+review-summary: "core/board/gitignore.go:166 Probe wiederholt gitPlace (LookPath + exec rev-parse) als zweiten Weg zu git; gitPlace soll derselbe eine rev-parse-Aufruf sein, der --is-inside-work-tree mitliefert, und Probe nur InGitignore + diesen Aufruf lesen"
+round: 2
 ---
 
 # Ein geteiltes Board startet ohne zusaetzlichen git-Prozess pro Befehl
@@ -64,3 +66,5 @@ outcome-resolves: Der zusaetzliche git-Prozess pro Befehl aus der NNV39Y-review.
 - **2026-11-20 22:45 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock
 - **2026-11-20 22:46 · Alexander Sacharov** — decision: bindDriverIfShared startete vor NNV39Y 2 git-Prozesse (rev-parse --is-inside-work-tree fuer IsRepo, config --get fuer den Treiber), seit NNV39Y 3 (dazu gitPlace). Statt Cache oder .git-Datei von Hand aufloesen: IsRepo und gitPlace in EINEN rev-parse-Aufruf zusammenlegen (board.Probe). Damit wieder 2, der Ignore-Check kostet keinen eigenen Prozess. --is-inside-work-tree steht als LETZTES Argument: git<2.31 gibt --path-format=absolute als erste Zeile zurueck, die Zeilenzahl davor ist dann verschoben, die letzte Zeile bleibt die Antwort. InGitignore (Dateilesen) laeuft vorher und spart den git-Aufruf ganz, wenn es schon entscheidet.
 - **2026-11-20 22:51 · Alexander Sacharov** — in-progress: vier Kategorien geprueft. Nebenlaeufigkeit: Probe schreibt nichts. Fehlerpfad: git fehlt/scheitert -> inRepo=false -> kein Binden, wie vorher IsRepo. Unlesbares info/exclude -> nicht ignoriert, wie Ignored. Eingabe: Leerzeichen, CRLF, Glob-Zeichen ueber parsePlace. Geschwister: isShared/share/update/init rufen Ignored weiter, laufen aber nicht bei jedem Befehl. Bleibt pro Befehl: config --get in ensureMergeDriver (vor NNV39Y schon da, nicht Teil dieses Tickets). Keine Release-Note: kein sichtbares Verhalten aendert sich, nur ein Prozess weniger.
+- **2026-11-20 22:52 · Alexander Sacharov** — critique: Probe und gitPlace sind zwei Kopien desselben git-Aufrufs. Ein interner place(root) liefert inRepo, exclude, line aus einem rev-parse; gitPlace verwirft inRepo, Probe nutzt alles. parseProbe parst den Ort auch bei inRepo=false, damit gitPlace in einem .git-Verzeichnis unveraendert bleibt.
+- **2026-11-20 22:53 · Alexander Sacharov** — critique-Fund umgesetzt: gitPlace = place() ohne inRepo, Probe = InGitignore + place(). Ein git-Weg. Tests core/board + internal/cli gruen.

@@ -27,7 +27,7 @@ func TestParseProbeReadsWhatGitPrints(t *testing.T) {
 		{abs + "\r\n\r\ntrue\r\n", true, abs + "/info/exclude", "/.jaira/"},
 		{abs + "\nsub/dir/\ntrue\n", true, abs + "/info/exclude", "/sub/dir/.jaira/"},
 		{abs + "\r\nweb app/\r\ntrue\r\n", true, abs + "/info/exclude", "/web app/.jaira/"},
-		{abs + "\n\nfalse\n", false, "", ""},
+		{abs + "\n\nfalse\n", false, abs + "/info/exclude", "/.jaira/"},
 		{"--path-format=absolute\n.git\nsub/\ntrue\n", true, "", ""},
 		{"--path-format=absolute\n.git\n\nfalse\n", false, "", ""},
 		{"", false, "", ""},

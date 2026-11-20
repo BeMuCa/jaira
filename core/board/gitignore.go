@@ -55,14 +55,33 @@ const (
 // like commonGitDir in core/ticket, rather than resolving a worktree's .git
 // file by hand. Empty outside a repository or without git.
 func gitPlace(root string) (exclude, line string) {
+	_, exclude, line = place(root)
+	return exclude, line
+}
+
+// place is gitPlace and whether root lies inside a working tree, from one
+// git process. --is-inside-work-tree goes last: git before 2.31 prints the
+// --path-format it does not know back as an extra first line, and the last
+// line stays the answer either way.
+func place(root string) (inRepo bool, exclude, line string) {
 	if _, err := exec.LookPath("git"); err != nil {
-		return "", ""
+		return false, "", ""
 	}
-	out, err := exec.Command("git", "-C", root, "rev-parse", "--path-format=absolute", "--git-common-dir", "--show-prefix").Output()
+	out, err := exec.Command("git", "-C", root, "rev-parse", "--path-format=absolute", "--git-common-dir", "--show-prefix", "--is-inside-work-tree").Output()
 	if err != nil {
-		return "", ""
+		return false, "", ""
 	}
-	return parsePlace(string(out))
+	return parseProbe(string(out))
+}
+
+// parseProbe reads place's git output: parsePlace's lines, then "true" or
+// "false" for --is-inside-work-tree. A git directory that is no working tree
+// still has its exclude file.
+func parseProbe(out string) (inRepo bool, exclude, line string) {
+	lines := strings.Split(strings.TrimRight(out, "\r\n"), "\n")
+	inRepo = strings.TrimSpace(lines[len(lines)-1]) == "true"
+	exclude, line = parsePlace(strings.Join(lines[:len(lines)-1], "\n"))
+	return inRepo, exclude, line
 }
 
 // parsePlace reads gitPlace's two lines of git output: the common git dir —
@@ -167,30 +186,8 @@ func Probe(root string) (inRepo, ignored bool) {
 	if InGitignore(root) {
 		return false, true
 	}
-	if _, err := exec.LookPath("git"); err != nil {
-		return false, false
-	}
-	// --is-inside-work-tree goes last: git before 2.31 prints the
-	// --path-format it does not know back as an extra first line, and the
-	// last line stays the answer either way.
-	out, err := exec.Command("git", "-C", root, "rev-parse", "--path-format=absolute", "--git-common-dir", "--show-prefix", "--is-inside-work-tree").Output()
-	if err != nil {
-		return false, false
-	}
-	inRepo, exclude, line := parseProbe(string(out))
+	inRepo, exclude, line := place(root)
 	return inRepo, exclude != "" && lists(exclude, line)
-}
-
-// parseProbe reads Probe's git output: gitPlace's lines, then "true" or
-// "false" for --is-inside-work-tree.
-func parseProbe(out string) (inRepo bool, exclude, line string) {
-	lines := strings.Split(strings.TrimRight(out, "\r\n"), "\n")
-	last := strings.TrimSpace(lines[len(lines)-1])
-	if last != "true" {
-		return false, "", ""
-	}
-	exclude, line = parsePlace(strings.Join(lines[:len(lines)-1], "\n"))
-	return true, exclude, line
 }
 
 // GitIgnores is the one answer to "does git ignore this board": it asks git
