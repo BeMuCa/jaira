@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:14:34Z
+updated-at: 2026-11-20T17:14:38Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46134
 claimed-at: 2026-11-20T16:42:22Z
@@ -54,7 +54,7 @@ review-check: "1. cd $(mktemp -d) && git init -q && jaira init  2. git status --
 - [x] Ein Board, das die alte .gitignore-Zeile hat, wird bei jaira update umgestellt und die Zeile entfernt (Test)
   proof: internal/cli/privateexclude_test.go TestUpdateMovesTheOldGitignoreLineToExclude, TestUpdateLeavesABoardInGitAsItIs
 - [x] Eingabeklassen als Tabellentest: info/exclude fehlt (auch info/ fehlt), leer, ohne Schluss-Newline, mit CRLF; Board-Wurzel mit Leerzeichen im Pfad; Board in einem Unterverzeichnis des Repos (Muster /sub/.jaira/) (Test)
-  proof: core/board/exclude_test.go TestAddAndRemoveIgnoreOverEveryShapeOfExclude, TestABoardInASubdirectoryIsExcludedByItsOwnPath
+  proof: core/board/exclude_test.go TestAddAndRemoveIgnoreOverEveryShapeOfExclude, TestABoardInASubdirectoryIsExcludedByItsOwnPath, TestAGlobCharacterDirectoryIsExcludedLiterally, TestRemoveIgnoreLeavesTheOtherBoardsEntry
 - [x] Worktree vs. Haupt-Checkout: init/share/update aus einem Worktree schreiben in dasselbe gemeinsame info/exclude und nie in eine worktree-eigene Datei (Test)
   proof: internal/cli/privateexclude_test.go TestANewPrivateBoardAndItsWorktreesLeaveGitStatusClean (git-dir des Worktrees bleibt leer; share/--undo im Worktree)
 - [x] Zwei jaira-Aufrufe gleichzeitig: AddIgnore/RemoveIgnore/MoveIgnore schreiben info/exclude unter einer Sperrdatei daneben (ticket.LockFile) und per Temp-Datei + Rename; nach parallelen AddIgnore steht der Eintrag genau einmal darin (Test)
