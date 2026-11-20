@@ -116,6 +116,7 @@ saidjq='def said: gsub("\r"; "") | gsub("[ \t]+\n"; "\n") | sub("[ \t\n]+$"; "")
 keeper() {
   local who=$1 want=$2 stop=$3 run="" out="" found="" w id b
   while read -r w id b; do
+    b=${b%$'\r'}
     [ -n "$found" ] && continue
     if [ "$w" = "$who" ] && [ "$b" = "$want" ]; then
       [ -n "$run" ] || run=$id
@@ -274,6 +275,7 @@ case "$cmd" in
             elif (.data.node.comments.nodes[0].author.login // "") == .data.viewer.login
               then "mine \(.data.node.comments.nodes[0].body // "" | said)"
             else "open" end')
+    resp=${resp%$'\r'}
     state=${resp%% *}
     if [ "$state" = mine ]; then
       [ "${resp#* }" = "$(said "$file")" ] && state=answered || state=open
@@ -287,6 +289,7 @@ case "$cmd" in
           mutation($thread:ID!,$body:String!){
             addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$thread,body:$body}){comment{id url}}}' \
           --jq '.data.addPullRequestReviewThreadReply.comment | "\(.id) \(.url)"')
+        posted=${posted%$'\r'}
         echo "${posted#* }"
         dedupe "${posted%% *}"
         ;;
@@ -308,6 +311,7 @@ case "$cmd" in
     # viewer, not /user: an app or Actions token is refused on /user, and
     # reply already asks GraphQL the same way.
     viewer=$(gh api graphql -f query='query{viewer{login}}' --jq .data.viewer.login)
+    viewer=${viewer%$'\r'}
     mine=$(said "$file")
     convo() {
       gh api --paginate "repos/$repo/issues/$number/comments" \
@@ -316,6 +320,7 @@ case "$cmd" in
     first=$(convo | keeper "$viewer" "$mine" "")
     [ -n "$first" ] && { echo "commented: already"; exit 0; }
     posted=$(gh api --method POST "repos/$repo/issues/$number/comments" -F body=@"$file" --jq '"\(.id) \(.html_url)"')
+    posted=${posted%$'\r'}
     echo "${posted#* }"
     rc=0
     first=$(convo | keeper "$viewer" "$mine" "${posted%% *}") || rc=$?
