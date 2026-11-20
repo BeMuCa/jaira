@@ -23,18 +23,24 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T23:21:22Z
+updated-at: 2026-11-20T23:23:50Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-7433
 claimed-at: 2026-11-20T23:21:22Z
 outcome-what: "As before, plus: a send-back made in the board (TUI move and force move) is recorded as a person's, whatever lane it leaves; the cockpit lists review notes only for a verdict of the current round."
 outcome-why: "The bug hunt found a person's TUI return from a loop lane counted toward the third-return stop, and optimize's rewritten gaps shown as review notes on a later round."
 outcome-resolves: "Both bughunt change findings of ac850761: core/move Request.ByPerson (TestMoveRecordsAPersonAtTheBoard), board.ts notes gated by sameRound (test 'a later round's optimize gaps are no review notes under the row'); go test -race core/move internal/tui RC=0, claude plugin test 215 pass."
-review-summary: none
-review-gaps: "none - round 2 read only 1789d202 (ByPerson field, one sameRound guard, two tests); nothing duplicated, dead or repeated"
+review-summary: "Ticket frontmatter gains blocker-rule (free text, default = wrong result/data loss/crash/security hole) and stop-after-fix (true/false/empty, set refuses anything else); show --json and the --for-lane payload carry blocker_rule, stop_after_fix, round and back. jaira move now writes back-from/back-by/back-count on every send-back inside the locked Mutate: by=person when the lane left is a person's (not agentic, human-exit or question lane) or the move came from the TUI (new Request.ByPerson, set at both TUI move sites), count = returns in a row from the same loop lane, reset by a person or another lane; parking in blocked records nothing. The in-progress prompt reads back.count instead of counting notes; testing skips the hunt in a fix round when stop_after_fix; review, testing and the bughunt skill read blocker_rule. SetScalar turns CR/CRLF into LF for every field. Cockpit: Explain only for a blocker: line in gaps or a reserving/refusing verdict, other gaps listed under the row without a button (only for a current-round verdict), an earlier-round verdict shows 'review of round N, changed since' and keeps its Explain; the Explain template (texts.ts and spawn.sh) asks for a Status line, one [class] line per note and a Recommendation with no fixed give-back-first order, and the pane colours ticks/crosses, class marks and the recommendation with theme colours; lines in neither shape stay plain text."
+review-gaps: |-
+  note: small edge: core/lane/builtin/20-in-progress.md (and twin) stops on 'count 3' - a count above 3 (a stop ignored once) reads as no stop; say 'count 3 or more'
+  note: known limit: a person sending back from a loop lane with the plain CLI (jaira move, not the TUI) is recorded as back-by=lane and counts toward the third-return stop - only the TUI sets ByPerson; the release note says 'any move made in the board', which is accurate
+  note: known limit: for a verdict of an earlier round the cockpit lists no notes under the row (they may be optimize's), so DoD 6 'zeigt die alten Funde' holds only through Explain, which needs a blocker: line or a reserving verdict - a clean earlier-round review shows just the 'changed since' line
 test-verdict: "pass: round 3 over the diff since ac850761 (ancestor of HEAD): go test -race core/move internal/tui core/role core/shipped RC=0, claude plugin test 215 pass; both findings checked with a neighbour: TUI plain and force move both pass ByPerson, CLI moves from loop lanes still record lane (TestMoveRecordsWhoSentItBack), current-round notes still listed, stale and pre-review ones not"
 hunt-verdict: "pass: bughunt done at 1789d202, 0 change, 0 pre-existing (follow-up hunt over the diff since ac850761)"
 round: 2
+review-verdict: "The diff meets all ten DoD items; no blocker. go test (core/move, core/ticket, internal/cli, core/role, core/shipped, internal/tui) and claude plugin test (215 pass) green at 1789d202. Three small notes, none needs a round."
+review-round: 2
+review-check: "1. go test ./core/move -run 'TestMoveRecords|TestMoveCountsOne' -v  -> all PASS (send-back record, person at the board, two moves at once)  2. go test ./internal/cli -run 'LoopBrake|BlockerRule|StopAfterFix' -v  -> PASS  3. jaira set <any test ticket> stop-after-fix=yes  -> refused, exit 2, message names stop-after-fix  4. jaira move <ticket in testing> --to in-progress --force, then jaira show <id> --json | jaira json get back  -> from testing, by lane, count 1  5. cd core/mod/builtin/jaira-cockpit && claude plugin test  -> 215 pass  6. in the cockpit (claude --plugin-dir core/mod/builtin/jaira-cockpit), a signoff ticket whose review-gaps holds only note: lines shows them as '· ...' under the row with no Explain button"
 ---
 
 # Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt
