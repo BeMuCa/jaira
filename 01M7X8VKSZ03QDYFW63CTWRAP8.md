@@ -1,7 +1,7 @@
 ---
 id: 01M7X8VKSZ03QDYFW63CTWRAP8
 title: "Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:40:16Z
+updated-at: 2026-11-20T22:40:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
@@ -33,7 +33,7 @@ outcome-what: "jaira-role-signoff findet die Branch des Tickets ueber den Handle
 outcome-why: "signoff-Rueckgabe: Branches heissen nicht immer feat/<id>; bughunt: lokal kann hinter remote liegen"
 outcome-resolves: "Rueckgabe aus signoff 22:27 (🟡 Branchname) und bughunt 22:32"
 review-summary: "Ships a new read-only role /jaira-role-signoff: per ticket in signoff it finds the ticket's branch by its handle (local and remote copies compared by ancestry, diverged or missing = ?), binds every check (DoD, CI run via gh run list --commit/--workflow, bughunt note) to that head commit, sorts every open note into 🔴/🟡/⚪/🔵, and gives one recommendation from five return rules (after two noted returns from signoff 🟡 edges go to a ready follow-up ticket) with paste-ready accept/give-back lines. jaira-teamlead now re-reads lanes and open PRs before listing what waits, uses that decision shape for signoff/human tickets and points to the role for the return rules and branch lookup. jaira-worker, jaira-dispatcher and jaira-role-pr gain a generic 'run the project's CI gates locally before pushing' section. README, how-to page, role_test wantRoles, shipped.sha256 and release note TWRAP8.md updated."
-round: 7
+round: 8
 review-gaps: |-
   note: the branch lookup greps for <id>; given the full ULID instead of the six-character handle it matches no branch and every check reads ? - the role could say 'the handle' explicitly
   note: gh run list --commit can return several runs for one commit (push and pull_request events) and a run still in progress has an empty conclusion; the role does not say to take the latest completed one or that in-progress is ?
