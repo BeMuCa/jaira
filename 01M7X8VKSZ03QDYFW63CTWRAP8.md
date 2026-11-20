@@ -25,14 +25,14 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:42:38Z
+updated-at: 2026-11-20T22:44:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
 outcome-what: "jaira-role-signoff: Branch per Handle-Segment, neueste von lokal/remote, divergiert = ?; Lookup nennt ausdruecklich den Handle statt der ULID; CI: neuester Lauf des Commits entscheidet, laufend = ?"
 outcome-why: "signoff-Rueckgabe (Branchname) plus bughunt 22:32 und review-gaps 22:39"
 outcome-resolves: "Rueckgabe aus signoff 22:27, review-gaps 1-2 vom 22:39"
-review-summary: "none"
+review-summary: "Ships the 20.11 teamlead lessons as roles, no Go code: a new read-only role jaira-role-signoff (status line bound to the branch head commit - branch found by the ticket handle as a name segment, newest of local/remote copies by ancestry, divergence = ?; tests from the CI run of exactly that commit; bughunt note must name HEAD - then a table marking every open note 🔴/🟡/⚪/🔵, one recommendation and paste-ready accept/give-back lines, plus return rules: after two noted 'Given back from signoff:' returns small edges go to a follow-up ticket). jaira-teamlead re-reads lanes and open PRs before any 'waiting for you' list, reports signoff tickets in that shape and points to the signoff role for the rules; its hunt check no longer assumes feat/<id>. jaira-worker gets 'Before you push' (run the project's CI gates locally, read off the repo), jaira-role-pr and jaira-dispatcher point to it. README, docs/how-to-work-with-jaira.html, role_test wantRoles, shipped.sha256 and release note TWRAP8.md follow."
 round: 8
 review-gaps: "none: two sentences added to the lookup and the tests check, nothing to remove"
 test-verdict: "pass: go test ./core/... green (RC=0) at b443a4cb; text-only change to the lookup comment and the tests check, the lookup itself unchanged since d4da7f7b and exercised there; writes nothing"
