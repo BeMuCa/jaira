@@ -340,3 +340,55 @@ describe('kept reports', () => {
     expect(text).toMatch(/── MG677R · 1 of 2 · [^\n]* · task-notification · Agent "review MG677R" completed · session a1b2c3d4 ──\nReview of ticket MG677R done/)
   })
 })
+
+describe('report since the last read, by input class', () => {
+  const key = 'report:/p:K7P2QX'
+  const old = (n: number, seen: boolean | undefined) =>
+    Array.from({ length: n }, (_, i) => ({
+      at: `2026-11-1${i % 10}T10:0${i % 10}:00.000Z`,
+      origin: 'peer',
+      session: 's0',
+      text: `old ${i}: ticket K7P2QX moved`,
+      ...(seen === undefined ? {} : { seen }),
+    }))
+  const cases: Array<{ name: string; kept: ReturnType<typeof old>; arrives?: string; args: string; has: string[]; hasNot: string[] }> = [
+    { name: 'never read: every kept one', kept: old(3, undefined), args: 'K7P2QX', has: ['old 0', 'old 2', '1 of 3'], hasNot: [] },
+    { name: 'nothing new: one line, the older count and the all hint', kept: old(3, true), args: 'K7P2QX', has: ['Nothing new for K7P2QX since it was last read; 3 older report(s) kept: /cockpit report K7P2QX all'], hasNot: ['old 0'] },
+    { name: 'a restart between reads: the mark is in the store', kept: old(2, true), arrives: 'fresh: ticket K7P2QX moved to testing', args: 'K7P2QX', has: ['fresh', '1 of 1'], hasNot: ['old 0', 'old 1'] },
+    { name: 'many old, one new: only the new one', kept: old(10, true), arrives: 'fresh: ticket K7P2QX moved to testing', args: 'K7P2QX', has: ['fresh', '1 of 1'], hasNot: ['old 0', 'old 8'] },
+    { name: 'many old with all: never more than ten', kept: old(10, true), arrives: 'fresh: ticket K7P2QX moved to testing', args: 'K7P2QX all', has: ['fresh', '1 of 10', '10 of 10', 'old 8'], hasNot: ['old 9', 'of 11'] },
+  ]
+  for (const c of cases) {
+    test(c.name, async ($, on) => {
+      mock.store(on, { [key]: c.kept })
+      on('session.receive', ($, e) => ({ text: e.text }))
+      on('prompt.submit', ($, e) => ({ text: e.text, origin: e.origin }))
+      where(on, () => '/p')
+      if (c.arrives !== undefined) await $.session.receive({ origin: { kind: 'peer' }, text: c.arrives })
+      const { text = '' } = await $.command.run(typed(`report ${c.args}`))
+      for (const want of c.has) expect(text).toContain(want)
+      for (const not of c.hasNot) expect(text).not.toContain(not)
+    })
+  }
+
+  test('two sessions read the same ticket: read in one is read in the other', async ($, on) => {
+    session(on)
+    let id = 'aaaaaaaaaaaa'
+    on('session.repo', () => ({ value: { root: '/p', remote: null, internal: false, name: null } }))
+    on('session.id', () => ({ value: id }))
+    await $.session.receive({ origin: { kind: 'peer' }, text: 'first: ticket K7P2QX moved to critique' })
+    expect((await $.command.run(typed('report K7P2QX'))).text).toContain('first')
+    id = 'bbbbbbbbbbbb'
+    expect((await $.command.run(typed('report K7P2QX'))).text).toStartWith('Nothing new for K7P2QX')
+    await $.session.receive({ origin: { kind: 'peer' }, text: 'second: ticket K7P2QX moved to testing' })
+    expect((await $.command.run(typed('report K7P2QX'))).text).toContain('second')
+  })
+
+  test('the list says how many of each ticket are new', async ($, on) => {
+    mock.store(on, { [key]: [...old(1, undefined), ...old(2, true)] })
+    on('session.receive', ($, e) => ({ text: e.text }))
+    on('prompt.submit', ($, e) => ({ text: e.text, origin: e.origin }))
+    where(on, () => '/p')
+    expect((await $.command.run(typed('report'))).text).toContain('K7P2QX  3 report(s), 1 new, last')
+  })
+})

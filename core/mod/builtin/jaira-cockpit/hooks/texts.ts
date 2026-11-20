@@ -126,6 +126,7 @@ export const filterWords = {
   list: 'Tickets with kept reports in this project, most recent first:',
   hint: '/cockpit report <id> shows one.',
   count: (n: number) => `${n} report(s)`,
+  unread: (n: number) => `${n} new`,
   last: 'last',
   of: 'of',
 }

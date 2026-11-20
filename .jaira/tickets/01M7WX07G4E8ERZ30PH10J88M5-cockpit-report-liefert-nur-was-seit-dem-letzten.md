@@ -16,13 +16,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T16:35:28Z
-updated-at: 2026-11-20T16:48:44Z
+updated-at: 2026-11-20T16:51:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-58858
 claimed-at: 2026-11-20T16:42:48Z
 outcome-what: "/cockpit report <id> and the report tool show only reports not read yet; 'all' (tool: all: true) shows the older ones too; nothing new says so with the count of older ones"
 outcome-why: "a teamlead reading one new short line got the whole stack of up to 10 old reports, days old"
 outcome-resolves: 0J88M5
+round: 2
 ---
 
 # cockpit report liefert nur, was seit dem letzten Lesen kam, nicht alte Meldungen
@@ -33,6 +34,16 @@ outcome-resolves: 0J88M5
   proof: core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:219 'a second report on the same ticket shows only what came since the first'; core/mod/builtin/jaira-cockpit/hooks/filter.ts:126 showReport filters seen, register.tsx:236 marks shown ones seen
 - [x] Ein Parameter holt auf Wunsch auch die aelteren
   proof: core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:233 'all brings the reports already read back' and core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:259 (tool all: true); core/mod/builtin/jaira-cockpit/hooks/filter.ts:116 reportArgs
+- [x] Klasse 'noch nie gelesen': erster report zeigt alle gehaltenen Meldungen (Test)
+  proof: core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:355 case 'never read: every kept one' (reports without a seen flag, kept before this change, count as unseen)
+- [x] Klasse 'zwei Sessions lesen dasselbe Ticket': gelesen ist gelesen fuer das Projekt, die zweite Session bekommt nur Neues (Test)
+  proof: core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:374 'two sessions read the same ticket: read in one is read in the other'
+- [x] Klasse 'Neustart des Cockpits zwischen zwei Lesevorgaengen': die Lesemarke ueberlebt (Test)
+  proof: core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:357 case 'a restart between reads: the mark is in the store' (fresh plugin instance on a store seeded with seen reports)
+- [x] Klasse '0 neue Meldungen': eine Zeile mit Zahl der aelteren und dem all-Hinweis (Test)
+  proof: core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:356 case 'nothing new: one line, the older count and the all hint'
+- [x] Klasse 'sehr viele alte Meldungen': mehr als 10 gelesene, eine neue -> nur die neue; all zeigt hoechstens 10 (Test)
+  proof: core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:358 'many old, one new: only the new one' and core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:359 'many old with all: never more than ten'
 
 ## Options
 
@@ -47,3 +58,5 @@ outcome-resolves: 0J88M5
 - **2026-11-20 16:42 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock
 - **2026-11-20 16:43 · Alexander Sacharov** — decision (worker, no open question): 'read' is marked on the kept report itself (seen: true), shared across sessions of the project — the store is machine-wide and one person reads it; a per-session mark would show the 10 old ones again in every new teamlead session, which is the bug. Default report shows only unseen and marks them seen; 'all' (/cockpit report <id> all, tool arg all: true) shows every kept one. Nothing new: one line saying so, with the count of older ones and the 'all' hint. Reports kept before this change carry no flag and count as unseen once.
 - **2026-11-20 16:48 · Alexander Sacharov** — in-progress: claude plugin test 181 pass, 1 fail — 'the band lists the tickets in a person's lanes' (board.test.ts, expects Box borderStyle 'round'), fails the same on base 5b16e491, unrelated. Marking re-reads the store before writing and flags only the reports it showed (by 'at'), so one kept meanwhile is not lost or swallowed. The Ticket pane (/cockpit ticket) still shows all kept reports and marks nothing.
+- **2026-11-20 16:49 · Alexander Sacharov** — Interim rules from teamlead (Alex 20.11.2026, until TW5FE2 ships): DoD names the failure class (input classes: empty, very large, encoding/CRLF, paths with spaces, Windows, two processes at once, failure halfway; acceptance rule for heuristics); in-progress checks concurrency, error paths, unusual input, permissions, writes table tests over the class, greps sibling places, fixes the cause; findings name class+example; blockers only wrong result/data loss/crash/security; after a fix round test+hunt over the diff since last hunt only; 3 returns from one lane -> question to teamlead; close small review-gaps in the same round, pre-existing as 'note: pre-existing: ...'. Input classes for 0J88M5: never read; two sessions read the same ticket; cockpit restart between two reads; 0 new reports; very many old reports.
+- **2026-11-20 16:51 · Alexander Sacharov** — in-progress round 2 (interim rules): four categories checked. Concurrency: two sessions share the mark by design (store is per machine and project); reports() re-reads the store before writing and flags only the 'at' stamps it showed, so a report kept between read and write stays unseen — the store has no compare-and-set, so a write by keep() in the few ms between that re-read and the set can still be lost; same window keep() itself already has, not widened. Two reports with the same millisecond 'at' would be marked together — only possible when both were unseen and shown anyway. Error paths: a store failure throws into the hook's .catch, which passes the call on unchanged. Unusual input: 'report all K7P2QX', lower case, extra spaces parsed by reportArgs; a ticket literally named ALL is impossible (handles are 6 chars). Permissions: none touched. Sibling places: the report list now says how many per ticket are new (filter.ts listReports); the Ticket pane (/cockpit ticket) deliberately shows all and marks nothing — it is a view of the ticket, not a reading of news. Tests 188 pass, 1 fail = board.test.ts borderStyle, same on base.

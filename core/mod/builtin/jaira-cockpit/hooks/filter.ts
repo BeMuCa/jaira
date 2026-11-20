@@ -107,7 +107,7 @@ export function stamp(at: string): string {
 export function listReports(rows: ReadonlyArray<readonly [string, Report[]]>): string {
   if (rows.length === 0) return words.none
   const lines = rows.map(([k, reports]) =>
-    `${ticketOfKey(k)}  ${words.count(reports.length)}, ${words.last} ${stamp(reports[0]?.at ?? '?')}`)
+    `${ticketOfKey(k)}  ${words.count(reports.length)}, ${words.unread(reports.filter(r => r.seen !== true).length)}, ${words.last} ${stamp(reports[0]?.at ?? '?')}`)
   return `${words.list}\n${lines.join('\n')}\n\n${words.hint}`
 }
 
