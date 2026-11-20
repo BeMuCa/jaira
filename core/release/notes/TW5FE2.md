@@ -5,3 +5,4 @@
 - Expect the in-progress lane to stop after the third return from the same lane and move the ticket to the human lane with a question instead of starting a fourth round.
 - When you give a ticket back to in-progress by hand rather than through the cockpit, write `jaira note <id> "Given back from <lane>: <why>"`; the in-progress lane reads that line to tell your return from a loop lane's and does not count it toward the third-return stop.
 - When review sends a ticket back to in-progress, expect its note to start with `review:`; testing, on a round after a fix, runs only the tests of what changed since the last bug hunt instead of the whole suite.
+- A ticket that comes back to in-progress without a note naming its sender (`critique:`, `optimize:`, `testing:`, `review:`, `Given back from <lane>:` or `decision:`) is logged `back: unknown` and no longer counted against the review, so start your return note with one of these.

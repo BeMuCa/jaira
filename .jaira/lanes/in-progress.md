@@ -89,8 +89,8 @@ read the sender off the newest note, passing over the lines no sender wrote —
   `decision: <answer>` before you act on it
 - `critique:`, `optimize:`, `testing:` or `review:` — that lane; `bughunt:`
   counts for testing
-- anything else — the review sent it; a review on an older lane prompt
-  writes its note without the prefix
+- anything else — nobody said who sent it. Write `back: unknown`: it counts
+  for no lane, so a guess never brings the third-return stop forward
 
 Then count your `back:` lines for that lane since the last `back: person`.
 When this is the third, do
