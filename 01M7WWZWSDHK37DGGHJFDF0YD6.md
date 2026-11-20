@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T18:00:10Z
+updated-at: 2026-11-20T18:00:12Z
 updated-by: Alexander Sacharov
 ---
 
@@ -57,3 +57,8 @@ updated-by: Alexander Sacharov
 - **2026-11-20 17:05 · Alexander Sacharov** — Aus TW5FE2 (bughunt e12f36d5): der Prompt-Zaehler in in-progress kann eine Rueckgabe der Person aus signoff nicht von einer review-Rueckgabe unterscheiden - jaira speichert die Herkunfts-Lane nicht (show --json unterscheidet sich nur in status/next_lane/round; sendsBack in core/move/move.go:133 erhoeht round bei jedem Rueckweg, updated_by ist derselbe git-Nutzer). Folge: nach zwei echten review-Rueckgaben eskaliert in-progress, statt zu tun, was die Person wollte. Die echte Zaehlung gehoert ins Binary - neuer DoD-Punkt hier.
 - **2026-11-20 17:45 · Alexander Sacharov** — Alex 20.11.2026: 'aus dem Text der Beschreibung im Cockpit habe ich immer das Gefuehl, dass man es korrigieren muss.' Ursache in texts.ts:78-80: Explain gibt es nur bei einem Fund, die Vorlage verlangt 'Warum: why it matters' und setzt [give back] als Option 1. Alex schickt deshalb (und weil er keine offenen Raender will) jedes Ticket zurueck.
 - **2026-11-20 17:57 · Alexander Sacharov** — Beobachtet 20.11.2026 in einem anderen Projekt: review Runde 7 schickt mit Blocker zurueck, Stopp-Regel nach drei Rueckgaben, Teamlead entscheidet 'Befund richtig, Verhalten so gewollt' und schiebt das Ticket ohne neues Review nach signoff. round=8, review_round=7 -> sameRound() false -> kein Explain, obwohl review-verdict 'Zurueck an in-progress: ein Blocker' und eine blocker:-Zeile auf dem Ticket stehen. Die Person sieht nichts. Verwandt: F1V59P (Verdikt 'zurueck' sperrt signoff).
+- **2026-11-20 18:00 · Alexander Sacharov** — Alex 20.11.2026 zur Explain-Form (DoD 5): 'so wie du es hier erklaerst, ist es sofort verstaendlich; die Beschreibung im Cockpit klingt wie eine Katastrophe.' Vorbild ist die Form, die der Teamlead im Chat benutzt:
+- eine Kopfzeile mit dem Stand: Lane, DoD x/y, Tests, 'kein Blocker' / 'Blocker: ...', bughunt auf HEAD ja/nein
+- eine Tabelle, eine Zeile je Note: | # | was (ein Satz, Alltagssprache) | Einordnung |; Einordnung ist eine von: bekannte Grenze (nicht loesbar, dokumentiert), kleiner Rand (formal ok, eine Runde ~10 min), nicht aus diesem Ticket (wo es erledigt wird), Blocker
+- dann genau eine Empfehlung mit Grund in einem Satz, und welche Note sie betrifft
+- kein 'Warum: why it matters' pro Note, keine feste Reihenfolge give back zuerst; der neutrale Fall (nur bekannte Grenzen / fremde Notes) sagt ausdruecklich 'kann so angenommen werden'
