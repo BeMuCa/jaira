@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T18:32:31Z
+updated-at: 2026-11-20T18:32:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-63629
 claimed-at: 2026-11-20T18:32:27Z
@@ -30,7 +30,11 @@ outcome-why: "Eine von jaira geaenderte .gitignore erscheint in jedem neuen Work
 outcome-resolves: Neue Worktrees eines Repos mit privatem Board bleiben sauber; kein Wegraeumen der .gitignore-Zeile von Hand mehr.
 review-summary: "Ein privates Board wird jetzt in <git-common-dir>/info/exclude ausgeschlossen statt in der getrackten .gitignore: gitPlace fragt git (rev-parse --path-format=absolute --git-common-dir --show-prefix) nach Datei und Muster (/sub/.jaira/ fuer ein Board im Unterverzeichnis, Glob-Zeichen escapet); nur ohne git oder auf git<2.31 bleibt .gitignore der Ort. AddIgnore/RemoveIgnore/MoveIgnore schreiben info/exclude unter einer Sperrdatei (ticket.LockFile, aus Store.lock herausgezogen) per Temp-Datei+Rename; dropEntry nimmt nur jairas Kommentar und die Leerzeile direkt danach mit und haelt CRLF/Schluss-Newline. share entfernt nur jairas verankerte Zeile und fragt danach git check-ignore, ob noch eine fremde Regel greift (Warnung, still_ignored; null+ignore_unknown wenn git nicht antwortet). update verschiebt eine alte .gitignore-Zeile nach info/exclude bzw. schliesst ein nirgends ausgeschlossenes privates Board aus - nie bei .jaira/.gitattributes oder getrackten .jaira-Dateien; --json meldet ignore_moved/ignore_added/ignore_unknown. commonGitDir (store.go) nimmt wie parsePlace nur einen absoluten Pfad an."
 round: 12
-review-gaps: "none - Diff 0c153490..cbff5424: share-Schritt in die bestehende Tabelle statt eigener Test"
+review-gaps: |-
+  note: appendEntry ignoriert einen Lesefehler (pre-existing): ist info/exclude unlesbar, aber das Verzeichnis beschreibbar, ersetzt der Rename die Datei durch nur jairas Eintrag - praktisch kaum erreichbar
+  note: update nimmt auch eine von Hand geschriebene .jaira/-Zeile ohne jaira-Kommentar aus der getrackten .gitignore (bewusst, critique Runde 2) - ein Team, das .jaira/ fuer alle ignoriert haben wollte, muss die Aenderung nicht committen
+  note: Ignored kostet auf jedem Befehl eines geteilten Boards einen git-Aufruf mehr (gitPlace, ~2-3 ms, critique-Note)
+  note: bekannte Grenze, im Test festgehalten: git<2.31 plus ein !/.jaira/ ueber jairas Eintrag
 test-verdict: "pass: go build/vet/test -count=1 ./... RC=0 at cbff5424; DoD 1-9 Proofs gruen (Tabelle 28 Faelle inkl. share-Schritt); Binary: share --json auf Symlink-.jaira -> still_ignored null + ignore_unknown mit Grund; parallele Schreiber durch TestParallelAddIgnoreWritesTheEntryOnce und frueheren Doppellauf (Eintrag einmal)"
 hunt-verdict: "pass: bughunt done at cbff5424, 0 change, 0 pre-existing"
 review-verdict: "Nicht annehmen: alle 8 DoD-Punkte mit Tests belegt, go test core/board, core/ticket, internal/cli gruen, Code sonst sauber (Sperre, Atomic-Write, Fallback, check-ignore inkl. negierter Muster geprueft). Ein Blocker: jaira update meldet auf git<2.31 bei jedem Lauf eine Verschiebung, die nicht stattfand, und fordert zum Commit auf - genau der Fallback-Pfad, den d62bafaa eingefuehrt hat. Ein-Zeilen-Fix."
