@@ -1,0 +1,66 @@
+---
+id: 01M7X8T93E2G6WWMBKJ2689E0T
+title: Ein geteiltes Board startet ohne zusaetzlichen git-Prozess pro Befehl
+status: critique
+ready: true
+creator: Alexander Sacharov
+assignee: Alexander Sacharov
+goal: "Jeder jaira-Befehl auf einem geteilten Board startet nicht mehr git, nur um zu pruefen, ob das Board ignoriert ist; die Startzeit ist wieder die von vor NNV39Y."
+context: |-
+  Seit NNV39Y: openStore -> bindDriverIfShared -> board.Ignored -> gitPlace startet auf jedem Befehl eines geteilten Boards einen git-Prozess (review-Note NNV39Y, 20.11.2026): ~2 ms auf Linux, auf Windows spuerbar mehr.
+  Projektregel: Instant startup - das Board wird staendig angeschaut, ein langsames wird nicht geoeffnet.
+  Der Teamlead hat zweimal verlangt, den Aufruf zu entfernen; er blieb, das Ticket wurde ohne ihn angenommen, um keine dritte Runde zu drehen.
+  Ideen aus der review: erst die billigen Pruefungen (InGitignore, hasAttributes) und gitPlace nur, wenn sie nichts entscheiden; oder Ergebnis pro Prozess cachen.
+definition-of-done: "Ein Befehl auf einem geteilten Board startet keinen git-Prozess fuer die Ignore-Pruefung mehr (Test zaehlt die git-Aufrufe, z.B. mit einer git-Huelle im PATH)"
+tags:
+  - cli
+blocked-by: []
+related: []
+follows: 01M7WWY6PX0TRDQSVK7RNNV39Y
+commits: []
+created-at: 2026-11-20T20:01:56Z
+updated-at: 2026-11-20T22:51:37Z
+updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-14124
+claimed-at: 2026-11-20T22:45:18Z
+outcome-what: Die Merge-Treiber-Pruefung bei jedem Befehl fragt git in einem rev-parse nach Arbeitsbaum und info/exclude (board.Probe) statt in zwei; ein geteiltes Board startet wieder 2 git-Prozesse wie vor NNV39Y.
+outcome-why: NNV39Y hatte jedem Befehl eines geteilten Boards einen git-Prozess fuer die Ignore-Pruefung hinzugefuegt; Projektregel instant startup.
+outcome-resolves: Der zusaetzliche git-Prozess pro Befehl aus der NNV39Y-review.
+---
+
+# Ein geteiltes Board startet ohne zusaetzlichen git-Prozess pro Befehl
+
+## Definition of Done
+
+- [x] Ein Befehl auf einem geteilten Board startet keinen git-Prozess fuer die Ignore-Pruefung mehr (Test zaehlt die git-Aufrufe, z.B. mit einer git-Huelle im PATH)
+  proof: internal/cli/share.go:177 board.Probe; TestTheMergeDriverCheckStartsNoGitForTheIgnoreCheck (git-Huelle zaehlt: geteilt = rev-parse+config, wie vor NNV39Y; alter Code faellt in 4 Faellen)
+- [x] Private Boards und die Migration aus NNV39Y verhalten sich unveraendert (bestehende Tests gruen)
+  proof: go test ./... -count=1 exit 0; TestProbeAgreesWithIsRepoAndIgnored (core/board/probe_test.go:46)
+- [x] Eingabeklassen: geteiltes Board mit .gitattributes, ohne, Board im Unterverzeichnis, git<2.31, Windows
+  proof: TestTheMergeDriverCheckStartsNoGitForTheIgnoreCheck (mit/ohne .gitattributes, Unterverzeichnis 'web app', git<2.31, privat exclude/.gitignore); Windows: TestParseProbeReadsWhatGitPrints (C:/-Pfad, CRLF), GOOS=windows go vet
+
+## Options
+
+- [ ] brainstorm
+- [ ] planning
+
+## Plan
+
+<Steps, in order — filled in by the pre-process step, or by you.>
+
+- [x] board.Probe: ein rev-parse liefert Arbeitsbaum + info/exclude
+- [x] parseProbe-Tabellentest (alt-git, CRLF, Windows-Pfad, Unterverzeichnis, ausserhalb Arbeitsbaum)
+- [x] bindDriverIfShared nutzt Probe statt Ignored+IsRepo
+- [x] cli-Test zaehlt git-Aufrufe ueber Huelle im PATH (mit/ohne .gitattributes, Unterverzeichnis, privat, alt-git)
+- [x] go test ./... + gofmt
+
+## Progress
+- **2026-11-20 20:02 · Alexander Sacharov** — Interim-Regeln (Alex 20.11.2026, gelten ab sofort bis TW5FE2 ausgeliefert ist):
+1. pre-process: die DoD nennt die Fehlerklasse statt des Symptoms, die Eingabeklassen (leer, sehr gross, Sonderzeichen/Kodierung/CRLF, Pfade mit Leerzeichen, Windows, zwei Prozesse gleichzeitig, Fehler auf halbem Weg) und bei einer Heuristik eine Annahmeregel - als DoD-Punkte (jaira dod <id> --add).
+2. in-progress: vor dem Move selbst die vier Kategorien pruefen (Nebenlaeufigkeit, Fehlerpfade, ungewoehnliche Eingabe, Rechte). Tests ueber die Klasse (Tabellentest), Geschwister-Stellen per grep suchen und mitziehen, Fix an der Ursache statt am Beispiel. Nicht nur Haken setzen: wer umsetzt, denkt die Raender selbst.
+3. bughunt/testing: ein Fund nennt Klasse und Beispiel; der Rueckweg verlangt den Fix der Klasse, nicht des einen Beispiels.
+4. Schleifenbremse: Blocker sind nur falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke. Nach einem Fix-Durchgang laeuft der Testlauf und ein Bughunt nur ueber den Diff seit dem letzten Hunt, dann review. Nach 3 Rueckgaben aus derselben Lane: Frage an den Teamlead statt weiter schleifen.
+5. Kleine Raender aus review-gaps in derselben Runde schliessen statt als note: stehen lassen - Alex schickt sie sonst ohnehin zurueck. Vorbestehendes ausserhalb des Umfangs als 'note: pre-existing: ...'.
+- **2026-11-20 22:45 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock
+- **2026-11-20 22:46 · Alexander Sacharov** — decision: bindDriverIfShared startete vor NNV39Y 2 git-Prozesse (rev-parse --is-inside-work-tree fuer IsRepo, config --get fuer den Treiber), seit NNV39Y 3 (dazu gitPlace). Statt Cache oder .git-Datei von Hand aufloesen: IsRepo und gitPlace in EINEN rev-parse-Aufruf zusammenlegen (board.Probe). Damit wieder 2, der Ignore-Check kostet keinen eigenen Prozess. --is-inside-work-tree steht als LETZTES Argument: git<2.31 gibt --path-format=absolute als erste Zeile zurueck, die Zeilenzahl davor ist dann verschoben, die letzte Zeile bleibt die Antwort. InGitignore (Dateilesen) laeuft vorher und spart den git-Aufruf ganz, wenn es schon entscheidet.
+- **2026-11-20 22:51 · Alexander Sacharov** — in-progress: vier Kategorien geprueft. Nebenlaeufigkeit: Probe schreibt nichts. Fehlerpfad: git fehlt/scheitert -> inRepo=false -> kein Binden, wie vorher IsRepo. Unlesbares info/exclude -> nicht ignoriert, wie Ignored. Eingabe: Leerzeichen, CRLF, Glob-Zeichen ueber parsePlace. Geschwister: isShared/share/update/init rufen Ignored weiter, laufen aber nicht bei jedem Befehl. Bleibt pro Befehl: config --get in ensureMergeDriver (vor NNV39Y schon da, nicht Teil dieses Tickets). Keine Release-Note: kein sichtbares Verhalten aendert sich, nur ein Prozess weniger.

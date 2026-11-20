@@ -167,13 +167,14 @@ You still have to commit. jaira does not commit on your behalf.`,
 // attributes file is the signal that the board is shared, so its presence is what
 // triggers binding.
 func bindDriverIfShared(s *ticket.Store) {
-	if !hasAttributes(s) || board.Ignored(s.Root) {
+	if !hasAttributes(s) {
 		return
 	}
 	// Without a repository there is nothing to merge and nothing to configure.
 	// Warning about a merge driver on every single command in a directory that
-	// is not under git is noise about a feature that cannot apply.
-	if !(&gitrepo.Repo{Dir: s.Root}).IsRepo() {
+	// is not under git is noise about a feature that cannot apply. Probe asks
+	// git both things in one process: this runs on every command.
+	if inRepo, ignored := board.Probe(s.Root); ignored || !inRepo {
 		return
 	}
 	installed, err := ensureMergeDriver(s.Root)
