@@ -16,7 +16,9 @@ record, and neither the main worktree nor the one this runs in is removed.
 
 A ticket whose branch has no merged pull request yet (gh on GitHub, glab on
 GitLab; 'git config jaira.forge' settles a host that names neither) is left
-alone as 'waiting'. A merged one is kept, with the reason printed, when
+alone as 'waiting'. On a board whose .jaira/pr says none there are no pull
+requests: there the branch counts as merged once origin's default branch
+(origin/HEAD) contains its tip, and no forge is asked. A merged one is kept, with the reason printed, when
   - its local branch is not at the merged head: commits past it, or the head
     never fetched,
   - one of its worktrees has changes that are not committed, as
@@ -135,6 +137,22 @@ merged_head() {
   esac
 }
 
+# How work arrives on this board ('jaira roles list'): under none there is no
+# pull request to ask about, and the default branch containing the branch's
+# tip is what merged means.
+prmode="$( (cd "$root" && jaira roles list --json 2>/dev/null) | jaira json get pr --default person 2>/dev/null || true)"
+
+# Under none: the branch's tip once origin's default branch contains it, or
+# nothing — not landed yet, or no origin/HEAD to measure it against.
+landed_head() {
+  local base tip
+  base="$(git -C "$root" symbolic-ref -q --short refs/remotes/origin/HEAD 2>/dev/null || true)"
+  tip="$(git -C "$root" rev-parse --verify -q "refs/heads/$1" 2>/dev/null || true)"
+  if [ -n "$base" ] && [ -n "$tip" ] && git -C "$root" merge-base --is-ancestor "$tip" "$base" 2>/dev/null; then
+    echo "$tip"
+  fi
+}
+
 field() { sed -n "s/^$1=//p" "$2" | head -1; }
 
 # A worker passes its slug, in lower case, where a teamlead passes the handle:
@@ -161,14 +179,19 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
   done
   [ -n "$branch" ] || branch="${JAIRA_BRANCH_PREFIX:-feat}/$(printf '%s' "$t" | tr '[:upper:]' '[:lower:]')"
 
-  if [ -z "$forge" ]; then
-    echo "kept $t: cannot tell the forge from origin; set it with 'git config jaira.forge github' (or gitlab)"; continue
+  if [ "$prmode" = none ]; then
+    head="$(landed_head "$branch")"
+    if [ -z "$head" ]; then echo "waiting $t: $branch has not landed on origin's default branch"; continue; fi
+  else
+    if [ -z "$forge" ]; then
+      echo "kept $t: cannot tell the forge from origin; set it with 'git config jaira.forge github' (or gitlab)"; continue
+    fi
+    if ! head="$(merged_head "$branch" 2>/dev/null)"; then
+      echo "kept $t: asking $forge about $branch failed"; continue
+    fi
+    # Work still under way, the usual case: named, but not as something kept.
+    if [ -z "$head" ]; then echo "waiting $t: $branch has no merged pull request"; continue; fi
   fi
-  if ! head="$(merged_head "$branch" 2>/dev/null)"; then
-    echo "kept $t: asking $forge about $branch failed"; continue
-  fi
-  # Work still under way, the usual case: named, but not as something kept.
-  if [ -z "$head" ]; then echo "waiting $t: $branch has no merged pull request"; continue; fi
 
   # A merged pull request is not the end when the ticket came back: a person
   # gave it back and its worker answers there. Filed away reads as done; a

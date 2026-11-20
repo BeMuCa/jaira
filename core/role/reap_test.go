@@ -466,3 +466,36 @@ func TestReapNeverRemovesTheWorktreeItRunsIn(t *testing.T) {
 		t.Errorf("removed the worktree it runs in (%v):\n%s", err, out)
 	}
 }
+
+// A board whose .jaira/pr says none has no pull request to ask about: the
+// ticket's worktree goes once origin's default branch contains its branch,
+// and waits until then — it is never kept forever for a merge that cannot
+// come (XB97NJ).
+func TestReapOnANoneBoardWaitsForTheDefaultBranch(t *testing.T) {
+	t.Parallel()
+	r := newReapRig(t)
+	r.write(t, filepath.Join(r.repo, ".jaira", "pr"), "none\n")
+	r.write(t, filepath.Join(r.repo, ".jaira", "tickets", ".keep"), "")
+	r.git(t, r.wt, "commit", "-q", "--allow-empty", "-m", "feat(AB12CD): the work")
+	r.write(t, r.shown, `{"status":"done"}`)
+	base := r.git(t, r.repo, "rev-parse", "master")
+	r.git(t, r.repo, "update-ref", "refs/remotes/origin/master", base)
+	r.git(t, r.repo, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/master")
+
+	out := r.run(t, r.repo, "reap.sh")
+	if !strings.Contains(out, "waiting AB12CD: feat/ab12cd has not landed") {
+		t.Fatalf("not landed yet, want waiting:\n%s", out)
+	}
+	if _, err := os.Stat(r.wt); err != nil {
+		t.Fatalf("worktree removed before it landed: %v", err)
+	}
+
+	r.git(t, r.repo, "update-ref", "refs/remotes/origin/master", r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+	out = r.run(t, r.repo, "reap.sh")
+	if _, err := os.Stat(r.wt); !os.IsNotExist(err) {
+		t.Errorf("landed and done, worktree still there (%v):\n%s", err, out)
+	}
+	if strings.Contains(out, "pull request") {
+		t.Errorf("a none board asked about a pull request:\n%s", out)
+	}
+}

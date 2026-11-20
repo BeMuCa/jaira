@@ -345,6 +345,13 @@ func TestPRDefaultsToThePerson(t *testing.T) {
 		"agents\n":                    settings.PRPerson,
 		"person\nagent\n":             settings.PRPerson,
 		"agent; rm -rf /\n":           settings.PRPerson,
+		"none\n":                      settings.PRNone,
+		"none\r\n":                    settings.PRNone,
+		"# no PRs\n\n\t none  \n":     settings.PRNone,
+		"None\n":                      settings.PRPerson,
+		"nnone\n":                     settings.PRPerson,
+		"none agent\n":                settings.PRPerson,
+		"person\nnone\n":              settings.PRPerson,
 	} {
 		if err := os.WriteFile(settings.BoardPRPath(root), []byte(in), 0o644); err != nil {
 			t.Fatal(err)

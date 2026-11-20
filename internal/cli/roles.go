@@ -68,7 +68,10 @@ an agent then opens it itself once every ticket on the branch is in done
 ('jaira roles pr-gate' checks that),
 asks for the reviewer .jaira/pr-reviewer names and answers one round of
 comments — and "person" otherwise, an agent pushing the branch and handing
-the create line back. Carried as pr, pr_source and pr_reviewer. And when:
+the create line back. "none" when .jaira/pr says so: the project takes no
+pull requests, and a branch whose tickets are all in done lands on the
+default branch with a fast-forward push ('jaira roles pr-gate' checks that
+too). Carried as pr, pr_source and pr_reviewer. And when:
 "signoff" when the board's .jaira/pr-when says so — the pull request opens
 once every ticket is in signoff, and its review round has to be finished
 before done — and "done" otherwise. Carried as pr_when and pr_when_source.
@@ -91,6 +94,9 @@ Merging and approving stay a person's either way.`,
 			pr, prSource := settings.PRFor(root)
 			reviewer := settings.PRReviewerFor(root)
 			prWhen, prWhenSource := settings.PRWhenFor(root)
+			if pr == settings.PRNone {
+				prWhen, prWhenSource = settings.PRWhenDone, "no pull request under .jaira/pr none"
+			}
 			if g.jsonOut {
 				arr := make([]map[string]any, 0, len(roles))
 				for _, r := range roles {
@@ -131,7 +137,7 @@ func newRolesPRGateCmd() *cobra.Command {
 		Short: "Say whether an agent may open this branch's pull request",
 		Long: `Says whether an agent may open the pull request of the checked-out branch
 against <base> — the default branch of the repository it goes to, as
-<remote>/<branch>. Exit 0 only when .jaira/pr says agent in <base> itself, at
+<remote>/<branch>. Exit 0 only when .jaira/pr says agent or none in <base> itself, at
 least one commit in <base>..HEAD names a ticket in its subject
 (type(A3K9QP): ...), and every ticket named that is still on the board sits
 in its board's terminal lane — or, where .jaira/pr-when says signoff, in the
@@ -145,7 +151,12 @@ it.
 
 jaira-role-pr runs this before it opens a pull request on its own, so the
 rule does not rest on a role's text alone. A person who invokes the role
-needs no gate: their invocation is the decision. --json carries may_open,
+needs no gate: their invocation is the decision.
+
+Where .jaira/pr says none the same gate decides whether the branch may land
+on <base> without a pull request: every ticket in the terminal lane, and
+.jaira/pr-when is not read — with no pull request there is no review on one
+to wait for. --json carries may_open,
 pr, pr_when and tickets; a refusal is the usual error, its reason
 pr_person, no_ticket, no_signoff_lane, unreadable or pending.`,
 		Args: exactArgs(1),
@@ -168,9 +179,9 @@ pr_person, no_ticket, no_signoff_lane, unreadable or pending.`,
 			// otherwise open its own gate. A change to either takes effect
 			// once it has been merged into the base.
 			pr := settings.PRIn(repo.FileAt(args[0], settings.BoardPRPath(".")))
-			if pr != settings.PRAgent {
+			if pr == settings.PRPerson {
 				return fail(ExitValidation, "pr_person",
-					"pr-gate: .jaira/pr in %s does not say agent — a person opens the pull request; hand the create line back", args[0])
+					"pr-gate: .jaira/pr in %s says neither agent nor none — a person opens the pull request; hand the create line back", args[0])
 			}
 			if len(named) == 0 {
 				return fail(ExitValidation, "no_ticket",
@@ -195,6 +206,12 @@ pr_person, no_ticket, no_signoff_lane, unreadable or pending.`,
 				return err
 			}
 			when := settings.PRWhenIn(repo.FileAt(args[0], settings.BoardPRWhenPath(".")))
+			// Without a pull request there is no review on one to wait for:
+			// under none the branch lands on the default branch, and only a
+			// person's acceptance in done is the go-ahead for that.
+			if pr == settings.PRNone {
+				when = settings.PRWhenDone
+			}
 			// reached is, per board, every lane a ticket may sit in for the
 			// pull request to open: the terminal lane, and under signoff
 			// also signoff and whatever lies between it and the terminal.
@@ -232,12 +249,20 @@ pr_person, no_ticket, no_signoff_lane, unreadable or pending.`,
 				}
 			}
 			if len(pending) > 0 {
+				then := "hand the create line back"
+				if pr == settings.PRNone {
+					then = "push the branch and stop; it lands once they are"
+				}
 				return fail(ExitValidation, "pending",
-					"pr-gate: not every ticket on the branch is in %s — %s; hand the create line back", when, strings.Join(pending, ", "))
+					"pr-gate: not every ticket on the branch is in %s — %s; %s", when, strings.Join(pending, ", "), then)
 			}
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
 				return emit(w, map[string]any{"may_open": true, "pr": pr, "pr_when": when, "tickets": named})
+			}
+			if pr == settings.PRNone {
+				fmt.Fprintf(w, "pr-gate: no pull request on this board — the branch may land on %s with a fast-forward push; every ticket on it is in done: %s\n", args[0], strings.Join(named, ", "))
+				return nil
 			}
 			fmt.Fprintf(w, "pr-gate: an agent may open it — every ticket on the branch is in %s: %s\n", when, strings.Join(named, ", "))
 			return nil

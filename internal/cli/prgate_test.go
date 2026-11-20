@@ -93,7 +93,7 @@ func TestPRGateReadsTheBoardFilesFromTheBase(t *testing.T) {
 	if err := os.WriteFile(path, []byte("agent\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := runCLI(t, dir, "roles", "pr-gate", "master"); exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "in master does not say agent") {
+	if _, err := runCLI(t, dir, "roles", "pr-gate", "master"); exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "in master says neither agent nor none") {
 		t.Fatalf("agent only on disk: exit %d, %v", exitCode(err), err)
 	}
 	if out, err := exec.Command("git", "-C", dir, "add", "-f", path).CombinedOutput(); err != nil {
@@ -306,5 +306,44 @@ func TestPRGateReadsFiledTicketsByWhereTheyAre(t *testing.T) {
 	}
 	if _, err := runCLI(t, dir, "roles", "pr-gate", "master"); exitCode(err) != ExitValidation || !strings.Contains(err.Error(), rejected+" (archive)") {
 		t.Fatalf("a rejected ticket: exit %d, %v", exitCode(err), err)
+	}
+}
+
+// On a board that takes no pull requests the same gate decides whether a
+// branch may land on the default branch: every ticket in done, read off the
+// base, and pr-when is not read — with no pull request there is no review on
+// one to wait for (XB97NJ).
+func TestPRGateLetsANoneBoardLandOnlyDoneWork(t *testing.T) {
+	dir, ticketIn, commit := prGateFixture(t)
+	inSignoff := ticketIn("signoff")
+	commit("feat(" + inSignoff + "): waiting for a person")
+
+	// none only on the branch's disk opens nothing.
+	if err := os.WriteFile(settings.BoardPRPath(dir), []byte("none\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := runCLI(t, dir, "roles", "pr-gate", "master"); exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "neither agent nor none") {
+		t.Fatalf("none only on disk: exit %d, %v", exitCode(err), err)
+	}
+
+	setPR(t, dir, "none")
+	setPRWhen(t, dir, "signoff")
+	_, err := runCLI(t, dir, "roles", "pr-gate", "master")
+	if exitCode(err) != ExitValidation || !strings.Contains(err.Error(), inSignoff+" (signoff)") ||
+		!strings.Contains(err.Error(), "push the branch and stop") {
+		t.Fatalf("none, a ticket in signoff with pr-when signoff: exit %d, %v", exitCode(err), err)
+	}
+
+	dir, ticketIn, commit = prGateFixture(t)
+	setPR(t, dir, "none")
+	done := ticketIn("done")
+	commit("feat(" + done + "): accepted")
+	out, err := runCLI(t, dir, "roles", "pr-gate", "master")
+	if err != nil || !strings.Contains(out, "fast-forward push") || !strings.Contains(out, done) {
+		t.Fatalf("none, every ticket done: %v\n%s", err, out)
+	}
+	out, err = runCLI(t, dir, "roles", "pr-gate", "master", "--json")
+	if err != nil || !strings.Contains(out, `"pr": "none"`) || !strings.Contains(out, `"pr_when": "done"`) {
+		t.Fatalf("none --json: %v\n%s", err, out)
 	}
 }

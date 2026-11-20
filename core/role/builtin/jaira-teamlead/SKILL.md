@@ -249,6 +249,9 @@ board.
   ticket is in signoff, and done waits until `scripts/pr-round.sh settled`
   finds no thread open, no review requested and none requesting changes —
   say so when the person accepts. Merging and approving stay the maintainer's there too.
+  Where `pr` says `none` the project takes no pull requests: once every ticket
+  on the branch is in done, start `/jaira-role-pr <id>` and it lands the branch
+  on the default branch through `jaira roles pr-gate` and a fast-forward push.
 - A permission your session was refused is not something to route around by
   starting a worker. Take it back to the human.
 

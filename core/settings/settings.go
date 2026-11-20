@@ -35,6 +35,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/BeMuCa/jaira/core/board"
 	"github.com/BeMuCa/jaira/core/gitref"
 	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/snapshot"
@@ -279,10 +280,12 @@ func ReleaseFor(root string) (owner, source string) {
 	return ReleaseWorker, "the default"
 }
 
-// The two values of the board's pr file.
+// The three values of the board's pr file. They live in core/board, which
+// also writes them into the agent note; these are the same constants.
 const (
-	PRPerson = "person"
-	PRAgent  = "agent"
+	PRPerson = board.PRPerson
+	PRAgent  = board.PRAgent
+	PRNone   = board.PRNone
 )
 
 // prFile is the board's answer to who opens a pull request: "person" when an
@@ -307,26 +310,22 @@ func BoardPRReviewerPath(root string) string {
 	return filepath.Join(root, ticket.DirName, prReviewerFile)
 }
 
-// PRFor returns PRAgent when the board at root names it, and PRPerson
-// otherwise, with where it came from in words a person can read. Person is
-// the default because it is what ran before there was a choice, and because
-// a typo must never be what lets an agent open a pull request.
+// PRFor returns PRAgent or PRNone when the board at root names it, and
+// PRPerson otherwise, with where it came from in words a person can read.
+// Person is the default because it is what ran before there was a choice, and
+// because a typo must never be what lets an agent open a pull request or push
+// to the default branch.
 func PRFor(root string) (who, source string) {
-	if root != "" && boardLine(BoardPRPath(root)) == PRAgent {
-		return PRAgent, "from .jaira/pr, shared with the board"
+	if who = board.PRModeFor(root); who != PRPerson {
+		return who, "from .jaira/pr, shared with the board"
 	}
 	return PRPerson, "the default"
 }
 
 // PRIn reads the content of a .jaira/pr file — one taken from a commit
-// rather than from disk — the way PRFor reads the file: PRAgent only when it
-// says so, PRPerson for anything else, missing included.
-func PRIn(content string) string {
-	if firstLine(content) == PRAgent {
-		return PRAgent
-	}
-	return PRPerson
-}
+// rather than from disk — the way PRFor reads the file: PRAgent or PRNone
+// only when it says exactly that, PRPerson for anything else, missing included.
+func PRIn(content string) string { return board.PRModeIn(content) }
 
 // PRReviewerFor returns the reviewer the board at root names, or "" when it
 // names none or names something that is not a login. The role passes it to

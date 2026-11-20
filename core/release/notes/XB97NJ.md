@@ -1,0 +1,1 @@
+- Working alone without pull requests? Commit a one-line `.jaira/pr` saying `none` and run `jaira update`: the roles then land a branch on the default branch with a fast-forward push once every ticket on it is in done, instead of stopping at a pull request nobody opens. Without the file nothing changes.

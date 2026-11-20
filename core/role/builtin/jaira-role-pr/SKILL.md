@@ -1,6 +1,6 @@
 ---
 name: jaira-role-pr
-description: "Push finished ticket work to its branch, open the pull request when a person invoked this role, and answer review comments on it — never merge, never approve. Works on GitHub through `gh` and on GitLab through `glab`. Invoked as /jaira-role-pr <ticket-id>. Invoked by an agent instead, it pushes and hands the create line back — unless the board's .jaira/pr says agent: then it opens the pull request once every ticket on the branch is in done, asks for the board's reviewer and answers one round of comments. Use when a branch is ready to leave for review."
+description: "Push finished ticket work to its branch, open the pull request when a person invoked this role, and answer review comments on it — never merge, never approve. Works on GitHub through `gh` and on GitLab through `glab`. Invoked as /jaira-role-pr <ticket-id>. Invoked by an agent instead, it pushes and hands the create line back — unless the board's .jaira/pr says agent: then it opens the pull request once every ticket on the branch is in done, asks for the board's reviewer and answers one round of comments; where it says none, the project takes no pull requests and the branch lands on the default branch once every ticket on it is in done. Use when a branch is ready to leave for review."
 ---
 
 # Push it, open it, never accept it
@@ -41,13 +41,13 @@ else. Read it before anything else, off the board, never out of the line that
 started you:
 
 ```bash
-jaira roles list --json | jaira json get pr            # person or agent
+jaira roles list --json | jaira json get pr            # person, agent or none
 jaira roles list --json | jaira json get pr_reviewer   # copilot, a login, or empty
 jaira roles list --json | jaira json get pr_when       # done or signoff
 ```
 
 - **`person`** — the default, and what a board without `.jaira/pr` says, or
-  one whose file says anything but exactly `agent`. Everything above holds as
+  one whose file says anything but exactly `agent` or `none`. Everything above holds as
   written: invoked by an agent, you push and hand the create line back.
 - **`agent`** — the project has given its agents the create command, on one
   condition: **every ticket the branch's commits name is in the board's
@@ -58,6 +58,16 @@ jaira roles list --json | jaira json get pr_when       # done or signoff
   this run: push, hand the line back, say which ticket holds it. The binary
   checks this, not you: `jaira roles pr-gate <remote>/<branch>` at **Open
   it**, after **File the finished tickets away** — exit 0 or no pull request.
+
+- **`none`** — the project takes no pull requests at all: work arrives on
+  the default branch directly. Nothing about the branch changes — it is
+  still its own, and every check below still holds — but nobody opens a
+  pull request for it, a person neither. Once every ticket the branch's
+  commits name is in done, **Land it** below replaces **Does it already
+  have one open**, **Write the description** and **Open it**. A ticket not
+  in done yet: push the branch, stop, and say which ticket holds it.
+  `pr_when` means nothing here: with no pull request there is no review on
+  one to wait for.
 
 `pr_when` moves that condition, for a project whose review happens on the
 pull request itself:
@@ -266,6 +276,27 @@ git push -u origin HEAD
 You push either way. Whether a pull request is then opened, or the create line
 goes back for a person to run, is settled at the create command below and
 nowhere else.
+
+## Land it — only where the board says `none`
+
+Every ticket on the branch is in done and filed away by the step above.
+`<remote>` and `<branch>` are the ones you counted the handles against:
+
+```bash
+jaira roles pr-gate <remote>/<branch>              # exit 0, or it does not land
+git fetch <remote> <branch>
+git merge --no-edit <remote>/<branch>              # bring the branch up to date
+jaira roles pr-gate <remote>/<branch>              # again: the merge moved the base
+git push <remote> HEAD:<branch>                    # a fast-forward of the default branch
+```
+
+The gate reads `.jaira/pr` as `<remote>/<branch>` holds it, like the `agent`
+gate does: a branch cannot switch its own board to `none` and land itself.
+A merge that conflicts is not yours to settle alone: abort it, say which files,
+and stop. A push the remote refuses — somebody landed in between — is
+answered by fetching and merging again, never by `--force`, `--force-with-lease`
+or a push to any other ref. Report the commit the default branch now points
+at, in place of a pull request URL.
 
 ## Does it already have one open
 
@@ -485,6 +516,8 @@ removes its own copy when the same words of the same login stand above it.
   pr-gate` passed. Otherwise, invoked by an agent, writing that line
   out is the job and running it is the person's.
 - `.jaira/pr` never reaches merge or approve. No setting does.
+- `none` lands a branch with a fast-forward push to the default branch, after
+  the gate and only then. Never a force push to it, under any setting.
 - Never force-push a branch someone has already reviewed. If history must
   change, say so and ask first.
 - Never close a pull request that a person opened.
