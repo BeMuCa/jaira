@@ -21,22 +21,18 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:43:33Z
+updated-at: 2026-11-20T17:47:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60542
 claimed-at: 2026-11-20T17:19:23Z
 outcome-what: "Ein privates Board steht jetzt in <git-common-dir>/info/exclude statt in der getrackten .gitignore (core/board/gitignore.go); jaira update verschiebt eine alte .gitignore-Zeile dorthin und schliesst ein privates Board ohne Ausschluss dort aus; share/--undo arbeiten auf beiden Dateien; ticket.LockFile aus Store.lock herausgezogen."
 outcome-why: "Eine von jaira geaenderte .gitignore erscheint in jedem neuen Worktree als Aenderung, ein Push-Guard lehnt dann jeden Push ab; info/exclude gilt fuer alle Worktrees und taucht in keinem Diff auf."
 outcome-resolves: Neue Worktrees eines Repos mit privatem Board bleiben sauber; kein Wegraeumen der .gitignore-Zeile von Hand mehr.
-review-summary: "internal/cli/share.go:113 warning names '.gitignore or <exclude>', but RemoveIgnore has just removed every .jaira form from .gitignore, so only info/exclude can still hold the line - name only board.IgnoreFileName(s.Root)"
-round: 6
-review-gaps: |-
-  note: dropEntry setzt skipNextBlank am Marker und loescht dann die naechste Leerzeile irgendwo spaeter, wenn direkt nach dem Eintrag keine folgt – "# jaira board — private\n/.jaira/\nfoo\n\nbar" wird zu "foo\nbar" (per Wegwerftest geprueft); nur kosmetisch
-  note: boardLine akzeptiert fuer das Top-Board auch ein unverankertes .jaira/ in info/exclude; share des Top-Boards entfernt eine solche handgeschriebene Zeile und hebt damit auch den Ausschluss eines Boards im Unterverzeichnis auf
-  note: bindDriverIfShared ruft auf jedem Befehl eines geteilten Boards board.Ignored – das startet jetzt ein zusaetzliches git rev-parse pro Aufruf (neben IsRepo und git config); auf Windows einige ms mehr Startzeit
-  note: share --undo schreibt nur noch ins lokale info/exclude; vorher landete die Zeile in der .gitignore und, committet, galt sie fuer alle – Teamkollegen bleiben nach einem undo-Commit ohne Ausschluss, bis sie jaira update laufen lassen (das greift erst, wenn .jaira/ nicht mehr getrackt ist)
-test-verdict: "pass: go test ./... gruen (RC=0) auf d62bafaa, -race ueber core/board core/ticket internal/cli gruen; git<2.31 per Wrapper nachgestellt: init faellt auf .gitignore zurueck, kein '--path-format=absolute/'-Verzeichnis; DoD 1-7 an den Tests geprueft"
-hunt-verdict: "pass: bughunt done at d62bafaa, 0 findings (Folgerunde ueber den Diff seit 394a544a)"
+review-summary: "none"
+round: 7
+review-gaps: "none - Diff d62bafaa..750e2acf geprueft: boardLine bleibt fuer Erkennung und .gitignore in Gebrauch, kein toter Code; still_ignored kostet nur in share einen git-Aufruf"
+test-verdict: "pass: go build/vet/test -count=1 ./... RC=0 at 750e2acf; DoD 8 proofs run green"
+hunt-verdict: "fail: bughunt done at 750e2acf, 1 change - still_ignored misses an unanchored .jaira/ for a board in a subdirectory"
 review-verdict: "Der Diff erfuellt alle 7 DoD-Punkte, jeder mit Test (core/board/exclude_test.go, internal/cli/privateexclude_test.go); go vet und go test ./core/board ./core/ticket ./internal/cli gruen. Keine Defekte entlang Nebenlaeufigkeit (Sperre um Read-Modify-Write, atomares Rename), Fehlerpfaden (exclude zuerst, dann .gitignore – nie ungeschuetzt), Eingaben (fehlende Datei/Verzeichnis, CRLF, Leerzeichen, Glob-Zeichen, alte git-Version) und Grenzen (geteilte Boards werden von update nie angefasst). Vier Anmerkungen, kein Blocker."
 review-round: 4
 review-check: "1. cd $(mktemp -d) && git init -q && jaira init  2. Ausgabe sagt: '.jaira/ is excluded in .git/info/exclude'  3. git status --short zeigt kein .jaira/ und keine .gitignore  4. tail -2 .git/info/exclude zeigt den jaira-Kommentar und /.jaira/  5. git commit -q --allow-empty -m x && git worktree add -q ../wt && git -C ../wt status --short – kein .jaira/, keine .gitignore  6. jaira share – info/exclude hat kein /.jaira/ mehr; git status zeigt .jaira/ und .gitignore (darin nur /.jaira/lanes/)  7. Altbestand in einem frischen Repo: git init -q && printf '/.jaira/\\n' > .gitignore && mkdir -p .jaira/tickets && jaira update --dry-run – sagt 'Would move this private board's entry from .gitignore to .git/info/exclude'  8. jaira update – sagt 'Moved ...'; cat .gitignore ist leer, tail -2 .git/info/exclude zeigt /.jaira/  9. Automatisch: go test ./core/board ./internal/cli"
@@ -61,7 +57,7 @@ review-check: "1. cd $(mktemp -d) && git init -q && jaira init  2. Ausgabe sagt:
 - [x] Windows: der Pfad von git (C:/... mit Schraegstrichen) wird zu einem gueltigen Dateipfad; CRLF-Zeilen werden erkannt und beim Entfernen bleibt der Rest der Datei byteweise erhalten (Test)
   proof: core/board/exclude_test.go TestParsePlaceReadsWhatGitPrints (Windows-Laufwerkspfad auf windows-latest, git<2.31-Ausgabe), TestAddAndRemoveIgnoreOverEveryShapeOfExclude/CRLF
 - [x] Signoff-Rueckgabe: dropEntry nimmt nur die Leerzeile direkt nach dem Eintrag; share entfernt aus info/exclude nur jairas verankerte Zeile, warnt bei einer handgeschriebenen und meldet still_ignored; share --undo sagt, dass Teamkollegen jaira update laufen lassen (Test)
-  proof: core/board/exclude_test.go TestDropEntryTakesOnlyTheBlankLineThatFollowsTheEntry, TestRemoveIgnoreLeavesAnUnanchoredLineAPersonWrote; internal/cli/privateexclude_test.go TestShareLeavesAPersonsUnanchoredExcludeLineAndSaysSo
+  proof: core/board/exclude_test.go TestDropEntryTakesOnlyTheBlankLineThatFollowsTheEntry, TestRemoveIgnoreLeavesAnUnanchoredLineAPersonWrote; internal/cli/privateexclude_test.go TestShareLeavesAPersonsUnanchoredExcludeLineAndSaysSo, TestShareOfABoardInASubdirectorySeesAnUnanchoredExcludeLine
 
 ## Options
 
@@ -109,3 +105,7 @@ Empfehlung: 2 - alle 7 DoD-Punkte sind mit Tests belegt, die Funde sind Randfael
 - **2026-11-20 17:38 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
 - **2026-11-20 17:42 · Alexander Sacharov** — signoff-Rueckgabe umgesetzt: (1) dropEntry: Leerzeile nur, wenn sie direkt auf einen mit Kommentar entfernten Eintrag folgt. (2) unverankertes .jaira/ in info/exclude: Ignored zaehlt es weiter (es schliesst das Board ja aus), RemoveIgnore nimmt aus exclude aber nur die exakte verankerte Zeile; share warnt auf stderr und meldet still_ignored in --json statt die Zeile still zu entfernen und dabei ein Unterverzeichnis-Board mit zu veroeffentlichen. Verworfen: unverankerte Zeile gar nicht mehr als Ausschluss zaehlen - dann meldet share 'geteilt', obwohl git das Board weiter ignoriert. (3) share --undo nennt jaira update fuer Teamkollegen. Kosten von Ignored (vierte Anmerkung) bleiben, wie entschieden.
 - **2026-11-20 17:43 · Alexander Sacharov** — critique Runde 5 (Diff d62bafaa..75e2b8b5): internal/cli/share.go:113 warning names '.gitignore or <exclude>', but RemoveIgnore has just removed every .jaira form from .gitignore, so only info/exclude can still hold the line - name only board.IgnoreFileName(s.Root). Stehen gelassen: dropEntry mit zwei Flags statt Index des letzten Eintrags - gleich viel Code.
+- **2026-11-20 17:43 · Alexander Sacharov** — critique Runde 6 (Diff 75e2b8b5..750e2acf): nichts - Warnung nennt nur noch info/exclude.
+- **2026-11-20 17:45 · Alexander Sacharov** — bughunt: change: internal/cli/share.go:104 (via core/board/gitignore.go:113-116 boardLine) - share's new still_ignored check misses a hand-written unanchored '.jaira/' in info/exclude for a board in a subdirectory: boardLine only accepts '.jaira/' when the anchored line is the top-level '/.jaira/', so Ignored(sub) is false, share prints no warning and --json says still_ignored:false although git still ignores sub/.jaira/; ran: repo with board in sub/, jaira init, echo '.jaira/' >> .git/info/exclude, jaira share --json -> still_ignored false, git check-ignore -v sub/.jaira/x -> .git/info/exclude:8:.jaira/
+- **2026-11-20 17:45 · Alexander Sacharov** — bughunt: done at 750e2acf - 1 finding (1 change, 0 pre-existing) in 6 files, follow-up hunt (diff since d62bafaa: core/board/gitignore.go, core/board/exclude_test.go, internal/cli/share.go, internal/cli/privateexclude_test.go, docs/COMMANDS.md, core/release/notes/NNV39Y.md); concurrency, error paths, input, permissions checked; files: README.md core/board/announce.go core/board/board.go core/board/exclude_test.go core/board/gitignore.go core/release/notes/NNV39Y.md core/ticket/store.go docs/COMMANDS.md internal/cli/privateexclude_test.go internal/cli/share.go internal/cli/sharestate_test.go internal/cli/tickets.go internal/cli/update.go
+- **2026-11-20 17:46 · Alexander Sacharov** — testing: Fix an der Klasse statt boardLine zu erweitern - share fragt git selbst (git check-ignore -q .jaira/ im Board-Root): erfasst jede Regel, die jaira nicht kennt (unverankert, **/.jaira, verschachtelte .gitignore, core.excludesFile). Test: Board im Unterverzeichnis + unverankerte Zeile -> Warnung und still_ignored true.

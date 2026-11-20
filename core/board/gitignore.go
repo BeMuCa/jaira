@@ -141,6 +141,19 @@ func Ignored(root string) bool {
 	return exclude != "" && lists(exclude, line)
 }
 
+// IgnoredBy asks git which rule still ignores the board's .jaira/, as
+// "<file>:<line>:<pattern>", or "" when git does not ignore it. Ignored reads
+// only the places jaira writes; this sees every rule git applies — an
+// unanchored or "**/" pattern, a nested .gitignore, core.excludesFile.
+func IgnoredBy(root string) string {
+	out, err := exec.Command("git", "-C", root, "check-ignore", "-v", ".jaira/").Output()
+	if err != nil {
+		return ""
+	}
+	source, _, _ := strings.Cut(strings.TrimSpace(string(out)), "\t")
+	return source
+}
+
 // AddIgnore keeps the board out of git, in the file IgnoreFileName names.
 func AddIgnore(root string) (changed bool, err error) {
 	if InGitignore(root) {

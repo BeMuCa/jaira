@@ -315,3 +315,28 @@ func TestShareLeavesAPersonsUnanchoredExcludeLineAndSaysSo(t *testing.T) {
 		t.Errorf("share --undo does not tell teammates to run jaira update:\n%s", out)
 	}
 }
+
+// The rule that still ignores the board need not be one jaira can parse: an
+// unanchored .jaira/ also covers a board in a subdirectory. share asks git.
+func TestShareOfABoardInASubdirectorySeesAnUnanchoredExcludeLine(t *testing.T) {
+	dir := repoWithCommit(t)
+	sub := filepath.Join(dir, "sub")
+	if err := os.MkdirAll(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runCLI(t, sub, "init"); err != nil {
+		t.Fatalf("jaira init: %v\n%s", err, out)
+	}
+	common := strings.TrimSpace(gitOut(t, dir, "rev-parse", "--path-format=absolute", "--git-common-dir"))
+	exclude := filepath.Join(common, "info", "exclude")
+	if err := os.WriteFile(exclude, []byte(readExclude(t, dir)+".jaira/\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, err := runCLI(t, sub, "share", "--json")
+	if err != nil || !strings.Contains(out, `"still_ignored": true`) {
+		t.Errorf("share --json in sub = %v\n%s", err, out)
+	}
+	if !strings.Contains(readExclude(t, dir), ".jaira/\n") {
+		t.Errorf("share took out the person's line:\n%s", readExclude(t, dir))
+	}
+}

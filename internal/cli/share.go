@@ -98,21 +98,21 @@ You still have to commit. jaira does not commit on your behalf.`,
 				return err
 			}
 			installed, driverErr := ensureMergeDriver(s.Root)
-			// RemoveIgnore takes out jaira's own entries only. A line a person
+			// RemoveIgnore takes out jaira's own entries only. A rule a person
 			// wrote, such as an unanchored .jaira/ in info/exclude that covers
 			// every board in the repository, stays, and keeps this one out of git.
-			stillIgnored := board.Ignored(s.Root)
+			ignoredBy := board.IgnoredBy(s.Root)
 
 			if g.jsonOut {
 				return emit(w, map[string]any{
 					"shared": true, "unignored": unignored, "lanes_ignored": lanesIgnored,
 					"gitattributes_written": attrs, "merge_driver_installed": installed,
-					"still_ignored": stillIgnored,
+					"still_ignored": ignoredBy != "",
 				})
 			}
-			if stillIgnored {
-				fmt.Fprintf(cmd.ErrOrStderr(), "jaira: warning: a line jaira did not write still ignores .jaira/ in %s; "+
-					"git will not see the tickets until you remove it by hand\n", board.IgnoreFileName(s.Root))
+			if ignoredBy != "" {
+				fmt.Fprintf(cmd.ErrOrStderr(), "jaira: warning: a rule jaira did not write still ignores .jaira/ (%s); "+
+					"git will not see the tickets until you remove it by hand\n", ignoredBy)
 			}
 			fmt.Fprintf(w, "The board is now part of the repository.\n")
 			if unignored {
