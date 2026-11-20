@@ -450,10 +450,23 @@ call — or `/jaira-role-pr`'s, on a board whose `.jaira/pr` says `agent`, once
 every ticket on the branch is in done (in signoff, where `.jaira/pr-when` says
 signoff) — and it can come long after your last worker has finished.
 
-**Your own tab is not yours to close.** Whoever started you created it, and they
-close it once they have read your report. Do not close it, and do not keep
-working to stay useful — a dispatcher whose ticket has reached a human lane is
-finished. Print the three lines and stop.
+**Your own tab closes only through `close-tab.sh`.** Do not keep working to
+stay useful — a dispatcher whose ticket has reached a human lane is finished.
+Print the three lines and stop. Started with `--parent`, send them there with
+`SendMessage`, and once it has taken them make this the very last call of your
+turn:
+
+```bash
+jaira-dispatcher/scripts/close-tab.sh --parent <session> <ticket id>
+```
+
+It closes the tab only when the ticket sits in a person's lane or in done, has
+no open question and the worktree holds nothing `uncommitted.sh` counts — it
+lets through only new or changed ticket and milestone files under `.jaira/`, so
+a changed lane, tag or logbook file keeps the tab; otherwise it prints
+`kept <ticket>: <reason>` and the tab stays. A message that did not reach the
+parent means no `--parent` here: the report is then in your tab. Without a
+parent you never run it — the person reads you in this tab.
 
 ## When to stop and hand back
 

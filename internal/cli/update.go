@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/BeMuCa/jaira/core/board"
+	"github.com/BeMuCa/jaira/core/gitrepo"
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/release"
 	"github.com/BeMuCa/jaira/core/ticket"
@@ -174,9 +175,14 @@ already carry the section. Claude Code reads AGENTS.md only where there is no
 CLAUDE.md, so 'agents' deletes a CLAUDE.md left empty and puts an
 '@AGENTS.md' import into one that still holds anything else.
 
-It does not touch .gitignore. 'jaira init' makes a new board private; whether
-this board is shared is a decision already taken, and re-adding the ignore
-entry to a shared board would silently stop new tickets reaching teammates.
+It never changes whether this board is shared: 'jaira init' makes a new board
+private, 'jaira share' publishes it, and re-adding the ignore entry to a shared
+board would silently stop new tickets reaching teammates. A private board
+whose entry an older jaira wrote into the tracked .gitignore has it moved to
+.git/info/exclude, which no worktree shows as a change; commit the .gitignore
+that leaves behind once. A private board excluded nowhere — a teammate whose
+.gitignore lost the line in that commit — is excluded there too. A board with
+.jaira/.gitattributes or committed files under .jaira/ is never touched.
 
 --roles brings the roles, the cockpit mod and the jaira skill up to date in every
 skills directory that already holds the roles: this repository's and your
@@ -258,6 +264,10 @@ installed.`,
 					return err
 				}
 			}
+			ignore, err := moveIgnore(s, setup.dry)
+			if err != nil {
+				return fail(ExitError, "prepare_failed", "could not move the board's ignore entry: %v", err)
+			}
 			// Stamp last: if the note had failed, the board would not actually
 			// be prepared by this version, and must not claim to be.
 			if !setup.dry {
@@ -270,8 +280,9 @@ installed.`,
 			if g.jsonOut {
 				return emit(w, setup.json(map[string]any{
 					"root": s.Root, "version": release.Current, "previous": previous,
-					"agent_notes": notesWritten,
-					"notes":       entriesJSON(notes),
+					"agent_notes":  notesWritten,
+					"ignore_moved": ignore.moved, "ignore_added": ignore.added, "ignore_unknown": ignore.unknown,
+					"notes": entriesJSON(notes),
 				}))
 			}
 
@@ -285,6 +296,7 @@ installed.`,
 				if setup.roles {
 					printRoleRuns(w, setup.roleRuns, s.Root, true)
 				}
+				fmt.Fprint(w, ignore.line(s.Root, true))
 				fmt.Fprint(w, hintLines(s.Root, setup.roles, setup.lanes))
 				fmt.Fprintln(w, "nothing was written (--dry-run)")
 				return nil
@@ -296,6 +308,7 @@ installed.`,
 			if setup.roles {
 				printRoleRuns(w, setup.roleRuns, s.Root, false)
 			}
+			fmt.Fprint(w, ignore.line(s.Root, false))
 			fmt.Fprint(w, hintLines(s.Root, setup.roles, setup.lanes))
 			if len(notes) == 0 {
 				fmt.Fprintf(w, "\nNothing has changed since the version that last set this board up.\n")
@@ -311,6 +324,79 @@ installed.`,
 	cmd.Flags().BoolVar(&setup.lanes, "lanes", false, "also replace this board's lane files that are an older version of a lane jaira ships")
 	cmd.Flags().BoolVar(&setup.dry, "dry-run", false, "say what would be written and what is left alone, and write nothing")
 	return cmd
+}
+
+// ignoreMove is what moveIgnore did, or would do on a dry run.
+type ignoreMove struct {
+	moved, added bool
+	unknown      string // why git could not say whether the board is ignored; nothing was touched
+}
+
+// moveIgnore keeps a private board private without the tracked .gitignore:
+// an entry an older jaira wrote there moves to .git/info/exclude, and a
+// private board excluded nowhere — a teammate who pulled the commit that took
+// the line out of .gitignore — is excluded there. Private means no
+// .jaira/.gitattributes and nothing under .jaira/ committed; a shared board is
+// left exactly as it is, as is every board outside a git repository.
+func moveIgnore(s *ticket.Store, dry bool) (ignoreMove, error) {
+	var m ignoreMove
+	repo := &gitrepo.Repo{Dir: s.Root}
+	// One test for both branches: a board in git keeps its .gitignore, since
+	// the commit that took the line out would un-ignore it for every
+	// teammate who pulls it.
+	if !repo.IsRepo() || hasAttributes(s) || repo.Tracks(ticket.DirName) {
+		return m, nil
+	}
+	// git decides whether the board is ignored, and nothing else does. A git
+	// that cannot answer — a symlinked .jaira — leaves everything as it is.
+	by, err := board.GitIgnores(s.Root)
+	if err != nil {
+		m.unknown = err.Error()
+		return m, nil
+	}
+	if board.InGitignore(s.Root) {
+		// Where git names no info/exclude — before 2.31 it does not know
+		// --path-format — .gitignore is the place, and there is nothing to move.
+		if board.IgnoreFileName(s.Root) == ".gitignore" {
+			return m, nil
+		}
+		if dry {
+			m.moved = true
+			return m, nil
+		}
+		m.moved, err = board.MoveIgnore(s.Root)
+		return m, err
+	}
+	if by != "" {
+		return m, nil
+	}
+	// Not ignored. AddIgnore writes only where jaira's entry is missing: a
+	// "!/.jaira/" a person wrote above it is theirs, and a second entry
+	// would not change it.
+	if dry {
+		m.added = !board.Ignored(s.Root)
+		return m, nil
+	}
+	m.added, err = board.AddIgnore(s.Root)
+	return m, err
+}
+
+// line says what moveIgnore did, "" for nothing.
+func (m ignoreMove) line(root string, dry bool) string {
+	file := board.IgnoreFileName(root)
+	switch {
+	case m.unknown != "":
+		return fmt.Sprintf("Left this private board's ignore entry alone: git could not say whether .jaira/ is ignored (%s).\n", m.unknown)
+	case m.moved && dry:
+		return fmt.Sprintf("Would move this private board's entry from .gitignore to %s.\n", file)
+	case m.moved:
+		return fmt.Sprintf("Moved this private board's entry from .gitignore to %s — commit the changed .gitignore once.\n", file)
+	case m.added && dry:
+		return fmt.Sprintf("Would exclude this private board in %s: nothing excludes it yet.\n", file)
+	case m.added:
+		return fmt.Sprintf("Excluded this private board in %s: nothing excluded it.\n", file)
+	}
+	return ""
 }
 
 // writeNotes prints the release notes. A change marked important ("- ! text"

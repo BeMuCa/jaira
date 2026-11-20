@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -497,8 +498,21 @@ func (ls *laneScreen) publish() {
 }
 
 // newLaneDoneMsg reports that $EDITOR, opened on a freshly written lane
-// skeleton from the lane settings screen's 'n' key, has exited.
-type newLaneDoneMsg struct{ err error }
+// skeleton from the lane settings screen's 'n' key, has exited. path is the
+// file the 'n' key wrote, and empty when the editor was opened by E on a lane
+// that already existed: only a new lane goes into the catalogue.
+//
+// edited, syncTo and syncFrom carry E's write-through: when the board file E
+// opened (edited) had a catalogue copy at syncTo holding the same bytes
+// (syncFrom), the edit is copied there too once the editor closes — see
+// writeThrough.
+type newLaneDoneMsg struct {
+	err      error
+	path     string
+	edited   string
+	syncTo   string
+	syncFrom []byte
+}
 
 // newLane writes a fresh lane skeleton into the catalogue and opens it in
 // $EDITOR — until now, doing this meant knowing 'jaira lanes template'
@@ -538,6 +552,8 @@ func (ls *laneScreen) editLane() tea.Cmd {
 		return nil
 	}
 	path := l.Source
+	var syncTo string
+	var syncFrom []byte
 	if l.Builtin {
 		dst := filepath.Join(lane.UserLanesDir(), l.ID+".md")
 		if _, err := os.Stat(dst); os.IsNotExist(err) {
@@ -549,18 +565,20 @@ func (ls *laneScreen) editLane() tea.Cmd {
 			dst = exported
 		}
 		path = dst
+	} else if strings.HasPrefix(path, lane.ProjectLanesDir(ls.store.Root)) {
+		syncTo, syncFrom = catalogueTwin(path, l.ID)
 	}
 	argv := append(editorCommand(), path)
 	cmd := exec.Command(argv[0], argv[1:]...)
 	return tea.ExecProcess(cmd, func(err error) tea.Msg {
-		return newLaneDoneMsg{err: err}
+		return newLaneDoneMsg{err: err, edited: path, syncTo: syncTo, syncFrom: syncFrom}
 	})
 }
 
 // newLane writes a lane skeleton into this board's own lane directory and
 // opens it: a board is its lane directory, so a file there is on the board
-// the moment the editor closes. To offer it to other boards, publish it or
-// copy it into the catalogue.
+// the moment the editor closes. When it closes, catalogueNewLane also copies
+// it into the personal catalogue, so every other board offers it under '+'.
 func (ls *laneScreen) newLane() tea.Cmd {
 	path, err := writeLaneSkeleton(lane.ProjectLanesDir(ls.store.Root))
 	if err != nil {
@@ -570,8 +588,120 @@ func (ls *laneScreen) newLane() tea.Cmd {
 	argv := append(editorCommand(), path)
 	cmd := exec.Command(argv[0], argv[1:]...)
 	return tea.ExecProcess(cmd, func(err error) tea.Msg {
-		return newLaneDoneMsg{err: err}
+		return newLaneDoneMsg{err: err, path: path}
 	})
+}
+
+// catalogueNewLane copies the lane file the 'n' key wrote, now that the
+// editor has closed on it, into the personal catalogue (lane.UserLanesDir):
+// the catalogue is what every board's '+' offers, and a lane that only one
+// board's directory holds is a lane the person's other boards never see. It
+// runs after the editor rather than when the skeleton is written because only
+// then does the file carry the id the person gave it.
+//
+// It returns the message for the lane screen, empty when there is nothing to
+// say. A skeleton left unedited is not catalogued, silently, and neither is a
+// file the person deleted in the editor; an edited one that still carries the
+// template's placeholder id stays on the board with a message saying why. An id
+// the catalogue already holds is never overwritten: that copy may be the one
+// other boards run, and the message says so instead.
+func catalogueNewLane(path string) (msg string, isErr bool) {
+	b, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return "", false
+	}
+	if err != nil {
+		return err.Error(), true
+	}
+	if string(b) == lane.Template {
+		return "", false
+	}
+	if l, err := lane.Parse(b, path); err == nil {
+		if l.ID == placeholderID() {
+			return "on this board only, not in your catalogue: " + l.ID + " is the template's placeholder id; to put a lane in your catalogue, make it with n and give it an id of its own", true
+		}
+		if isBuiltinID(l.ID) {
+			return "on this board only, not in your catalogue: " + l.ID + " is a built-in lane's id, and a catalogue file of that id would replace the built-in on every board", true
+		}
+	}
+	l, dst, err := lane.Adopt(path, lane.UserLanesDir(), false)
+	if err != nil {
+		return "on this board only, not in your catalogue: " + err.Error(), true
+	}
+	return l.ID + " is on this board and in your catalogue (" + dst + ")", false
+}
+
+// placeholderID is the id lane.Template carries. A new lane still holding it
+// is a skeleton the person has not named yet, whatever else they changed.
+func placeholderID() string {
+	l, err := lane.Parse([]byte(lane.Template), "template.md")
+	if err != nil {
+		return ""
+	}
+	return l.ID
+}
+
+// isBuiltinID reports whether id names a lane compiled into the binary.
+func isBuiltinID(id string) bool {
+	builtins, _ := lane.Builtins()
+	for _, b := range builtins {
+		if b.ID == id {
+			return true
+		}
+	}
+	return false
+}
+
+// catalogueTwin returns the catalogue file of id and its bytes when it holds
+// exactly what the board file at path holds — the pair writeThrough keeps
+// together — and nothing when there is no such file or the two already differ.
+// A built-in's id gets nothing either: its catalogue file is an override every
+// board without its own lane directory runs, and an E on one board must not
+// change the built-in for all of them.
+func catalogueTwin(path, id string) (string, []byte) {
+	if isBuiltinID(id) {
+		return "", nil
+	}
+	cat := filepath.Join(lane.UserLanesDir(), id+".md")
+	catBytes, err := os.ReadFile(cat)
+	if err != nil {
+		return "", nil
+	}
+	boardBytes, err := os.ReadFile(path)
+	if err != nil || !bytes.Equal(catBytes, boardBytes) {
+		return "", nil
+	}
+	return cat, catBytes
+}
+
+// writeThrough copies an E edit of a board lane into the catalogue when the
+// catalogue copy was the same file before the edit. Without it the two
+// copies part: other boards keep the old version, the lane screen calls this
+// one drifted, and R pulls the old catalogue copy back over the edit. The
+// catalogue copy is only replaced while it still holds the bytes it held when
+// the editor opened; one that changed meanwhile, a board file that no longer
+// parses, or one whose id the edit changed, is left alone and the message
+// says so.
+func writeThrough(edited, catPath string, before []byte) (msg string, isErr bool) {
+	b, err := os.ReadFile(edited)
+	if err != nil || bytes.Equal(b, before) {
+		return "", false
+	}
+	l, err := lane.Parse(b, edited)
+	if err != nil {
+		return "your catalogue keeps the old copy: " + err.Error(), true
+	}
+	if l.ID+".md" != filepath.Base(catPath) {
+		return "the id is now " + l.ID + ", so your catalogue keeps the old copy (" + catPath + ")", true
+	}
+	now, err := os.ReadFile(catPath)
+	if err != nil || !bytes.Equal(now, before) {
+		return "your catalogue copy changed meanwhile and was left alone (" + catPath + ")", true
+	}
+	if err := os.WriteFile(catPath, b, 0o644); err != nil {
+		return err.Error(), true
+	}
+	return "saved on this board and in your catalogue (" + catPath + ")", false
 }
 
 // writeLaneSkeleton creates a new lane skeleton file in dir under the first
@@ -865,4 +995,19 @@ func (ls *laneScreen) render(width, height int) string {
 		sb.WriteString("\n" + styMeta.Render(l))
 	}
 	return sb.String()
+}
+
+// editorFailedMsg is the lane screen's message when $EDITOR exited with an
+// error: the error itself, plus what the skipped catalogue step means for the
+// lane — a new one stays on this board only, an E edit leaves the catalogue
+// copy as it was.
+func editorFailedMsg(msg newLaneDoneMsg) string {
+	text := "editor: " + msg.err.Error()
+	switch {
+	case msg.path != "":
+		text += " — the lane stays on this board only, not in your catalogue"
+	case msg.syncTo != "":
+		text += " — your catalogue keeps the old copy (" + msg.syncTo + ")"
+	}
+	return text
 }

@@ -52,6 +52,22 @@ jobs:
             exit 1
           }
 
+  # The jaira-cockpit mod's tests (core/mod/builtin/jaira-cockpit/tests) run
+  # only inside Claude Code: 'claude plugin test' is its own test runner and
+  # needs no login. Pinned, because the tests read the engine's rendered tree
+  # and a new release has changed it under them before (2.1.329 wraps the band
+  # in a Box of its own). Raise the pin on purpose, with the tests green.
+  cockpit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - run: npm install -g @anthropic-ai/claude-code@2.1.329
+      - run: claude plugin test .
+        working-directory: core/mod/builtin/jaira-cockpit
+
   test:
     # Tested on all three platforms because the store touches the filesystem and
     # shells out to git, both of which differ across them. WSL2's file-watch

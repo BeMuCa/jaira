@@ -216,6 +216,31 @@ describe('/cockpit', () => {
     expect((await $.command.run(typed('report'))).text).toContain('K7P2QX')
   })
 
+  test('a second report on the same ticket shows only what came since the first', async ($, on) => {
+    session(on)
+    await $.session.receive({ origin: { kind: 'peer' }, text: 'first: ticket K7P2QX moved to critique' })
+    expect((await $.command.run(typed('report K7P2QX'))).text).toContain('first')
+    expect((await $.command.run(typed('report K7P2QX'))).text).toBe(
+      'Nothing new for K7P2QX since it was last read; 1 older report(s) kept: /cockpit report K7P2QX all',
+    )
+    await $.session.receive({ origin: { kind: 'peer' }, text: 'second: ticket K7P2QX moved to testing' })
+    const { text = '' } = await $.command.run(typed('report K7P2QX'))
+    expect(text).toContain('second')
+    expect(text).not.toContain('first')
+    expect(text).toContain('K7P2QX · 1 of 1 ·')
+  })
+
+  test('all brings the reports already read back', async ($, on) => {
+    session(on)
+    await $.session.receive({ origin: { kind: 'peer' }, text: 'first: ticket K7P2QX moved to critique' })
+    await $.command.run(typed('report K7P2QX'))
+    await $.session.receive({ origin: { kind: 'peer' }, text: 'second: ticket K7P2QX moved to testing' })
+    const { text = '' } = await $.command.run(typed('report K7P2QX all'))
+    expect(text).toContain('second')
+    expect(text).toContain('first')
+    expect((await $.command.run(typed('report all k7p2qx'))).text).toContain('first')
+  })
+
   test('without a subcommand, or an unknown one, lists the subcommands', async ($, on) => {
     session(on)
     expect((await $.command.run(typed())).text).toContain('report [id]')
@@ -229,6 +254,16 @@ describe('the report tool', () => {
     await $.session.receive({ origin: NOTIFICATION, text: REPORT })
     const ran = await $.tool.call({ tool: 'mcp__jaira-cockpit__report', ticket: 'MG677R' })
     expect(String(ran.result)).toContain('forty more lines of findings')
+  })
+
+  test('shows only what was not read yet, and all of it on request', async ($, on) => {
+    session(on)
+    await $.session.receive({ origin: NOTIFICATION, text: REPORT })
+    await $.tool.call({ tool: 'mcp__jaira-cockpit__report', ticket: 'MG677R' })
+    const again = await $.tool.call({ tool: 'mcp__jaira-cockpit__report', ticket: 'MG677R' })
+    expect(String(again.result)).toStartWith('Nothing new for MG677R')
+    const every = await $.tool.call({ tool: 'mcp__jaira-cockpit__report', ticket: 'MG677R', all: true })
+    expect(String(every.result)).toContain('forty more lines of findings')
   })
 })
 
@@ -304,4 +339,133 @@ describe('kept reports', () => {
     expect(text).toMatch(/── MG677R · 2 of 2 · \d{4}-\d\d-\d\d \d\d:\d\d · peer · general-purpose · session a1b2c3d4 ──\nTicket MG677R: review -> signoff\.\nreview-verdict="approve"\nFindings: none\./)
     expect(text).toMatch(/── MG677R · 1 of 2 · [^\n]* · task-notification · Agent "review MG677R" completed · session a1b2c3d4 ──\nReview of ticket MG677R done/)
   })
+})
+
+describe('report since the last read, by input class', () => {
+  const key = 'report:/p:K7P2QX'
+  const old = (n: number, seen: boolean | undefined) =>
+    Array.from({ length: n }, (_, i) => ({
+      at: `2026-11-1${i % 10}T10:0${i % 10}:00.000Z`,
+      origin: 'peer',
+      session: 's0',
+      text: `old ${i}: ticket K7P2QX moved`,
+      ...(seen === undefined ? {} : { seen }),
+    }))
+  const cases: Array<{ name: string; kept: ReturnType<typeof old>; arrives?: string; args: string; has: string[]; hasNot: string[] }> = [
+    { name: 'never read: every kept one', kept: old(3, undefined), args: 'K7P2QX', has: ['old 0', 'old 2', '1 of 3'], hasNot: [] },
+    { name: 'nothing new: one line, the older count and the all hint', kept: old(3, true), args: 'K7P2QX', has: ['Nothing new for K7P2QX since it was last read; 3 older report(s) kept: /cockpit report K7P2QX all'], hasNot: ['old 0'] },
+    { name: 'a restart between reads: the mark is in the store', kept: old(2, true), arrives: 'fresh: ticket K7P2QX moved to testing', args: 'K7P2QX', has: ['fresh', '1 of 1'], hasNot: ['old 0', 'old 1'] },
+    { name: 'many old, one new: only the new one', kept: old(10, true), arrives: 'fresh: ticket K7P2QX moved to testing', args: 'K7P2QX', has: ['fresh', '1 of 1'], hasNot: ['old 0', 'old 8'] },
+    { name: 'many old with all: never more than ten', kept: old(10, true), arrives: 'fresh: ticket K7P2QX moved to testing', args: 'K7P2QX all', has: ['fresh', '1 of 10', '10 of 10', 'old 8'], hasNot: ['old 9', 'of 11'] },
+  ]
+  for (const c of cases) {
+    test(c.name, async ($, on) => {
+      mock.store(on, { [key]: c.kept })
+      on('session.receive', ($, e) => ({ text: e.text }))
+      on('prompt.submit', ($, e) => ({ text: e.text, origin: e.origin }))
+      where(on, () => '/p')
+      if (c.arrives !== undefined) await $.session.receive({ origin: { kind: 'peer' }, text: c.arrives })
+      const { text = '' } = await $.command.run(typed(`report ${c.args}`))
+      for (const want of c.has) expect(text).toContain(want)
+      for (const not of c.hasNot) expect(text).not.toContain(not)
+    })
+  }
+
+  test('two sessions read the same ticket: read in one is read in the other', async ($, on) => {
+    session(on)
+    let id = 'aaaaaaaaaaaa'
+    on('session.repo', () => ({ value: { root: '/p', remote: null, internal: false, name: null } }))
+    on('session.id', () => ({ value: id }))
+    await $.session.receive({ origin: { kind: 'peer' }, text: 'first: ticket K7P2QX moved to critique' })
+    expect((await $.command.run(typed('report K7P2QX'))).text).toContain('first')
+    id = 'bbbbbbbbbbbb'
+    expect((await $.command.run(typed('report K7P2QX'))).text).toStartWith('Nothing new for K7P2QX')
+    await $.session.receive({ origin: { kind: 'peer' }, text: 'second: ticket K7P2QX moved to testing' })
+    expect((await $.command.run(typed('report K7P2QX'))).text).toContain('second')
+  })
+
+  test('all marks the unseen ones read too: the next read has nothing new', async ($, on) => {
+    mock.store(on, { [key]: [...old(1, undefined), ...old(2, true)] })
+    on('session.receive', ($, e) => ({ text: e.text }))
+    on('prompt.submit', ($, e) => ({ text: e.text, origin: e.origin }))
+    where(on, () => '/p')
+    expect((await $.command.run(typed('report K7P2QX all'))).text).toContain('old 0')
+    expect((await $.command.run(typed('report K7P2QX'))).text).toStartWith('Nothing new for K7P2QX')
+  })
+
+  test('a store that refuses the mark: the reports are shown anyway and stay new', async ($, on) => {
+    const kept = new Map<string, unknown>([[key, old(2, undefined)]])
+    on('store.get', ($, e) => ({ value: kept.get(e.key) }))
+    on('store.set', () => {
+      throw new Error('store full')
+    })
+    on('store.delete', ($, e) => {
+      kept.delete(e.key)
+      return { value: undefined } as never
+    })
+    on('store.keys', () => ({ value: [...kept.keys()] }))
+    where(on, () => '/p')
+    for (let read = 0; read < 2; read++) {
+      const { text = '' } = await $.command.run(typed('report K7P2QX'))
+      expect(text).toContain('old 0')
+      expect(text).toContain('old 1')
+    }
+  })
+
+  test('the list says how many of each ticket are new', async ($, on) => {
+    mock.store(on, { [key]: [...old(1, undefined), ...old(2, true)] })
+    on('session.receive', ($, e) => ({ text: e.text }))
+    on('prompt.submit', ($, e) => ({ text: e.text, origin: e.origin }))
+    where(on, () => '/p')
+    expect((await $.command.run(typed('report'))).text).toContain('K7P2QX  3 report(s), 1 new, last')
+  })
+})
+
+describe('reading while a report arrives', () => {
+  // A read racing keep() at every interleaving: the new report is either
+  // shown by the read or still kept unseen after it, and no kept one is lost.
+  for (const delay of [0, 1, 2, 3, 5, 8, 11, 30]) {
+    test(`after ${delay} microtask(s)`, async ($, on) => {
+      session(on)
+      where(on, () => '/p')
+      await $.session.receive({ origin: { kind: 'peer' }, text: 'first: ticket K7P2QX moved to critique' })
+      const later = (async () => {
+        for (let i = 0; i < delay; i++) await Promise.resolve()
+        return $.session.receive({ origin: { kind: 'peer' }, text: 'second: ticket K7P2QX moved to testing' })
+      })()
+      const [shown] = await Promise.all([$.command.run(typed('report K7P2QX')), later])
+      const next = (await $.command.run(typed('report K7P2QX'))).text ?? ''
+      expect(String(shown.text).includes('second') || next.includes('second')).toBe(true)
+      const every = (await $.command.run(typed('report K7P2QX all'))).text ?? ''
+      expect(every).toContain('first')
+      expect(every).toContain('second')
+    })
+  }
+})
+
+describe('the project changing while a read waits', () => {
+  // The read takes its project once, under the lock, and writes back the key
+  // it read: another project's reports are never written over this one's.
+  for (const delay of [0, 1, 2, 3, 5, 8, 11, 20]) {
+    test(`after ${delay} microtask(s)`, async ($, on) => {
+      session(on)
+      let root = '/a'
+      where(on, () => root)
+      await $.session.receive({ origin: { kind: 'peer' }, text: 'a-first: ticket K7P2QX moved to critique' })
+      root = '/b'
+      await $.session.receive({ origin: { kind: 'peer' }, text: 'b-first: ticket K7P2QX moved to critique' })
+      root = '/a'
+      const arriving = $.session.receive({ origin: { kind: 'peer' }, text: 'a-second: ticket K7P2QX moved to testing' })
+      const reading = $.command.run(typed('report K7P2QX'))
+      for (let i = 0; i < delay; i++) await Promise.resolve()
+      root = '/b'
+      await Promise.all([arriving, reading])
+      root = '/a'
+      const a = (await $.command.run(typed('report K7P2QX all'))).text ?? ''
+      expect(a).toContain('a-first')
+      expect(a).not.toContain('b-first')
+      root = '/b'
+      expect((await $.command.run(typed('report K7P2QX all'))).text ?? '').toContain('b-first')
+    })
+  }
 })

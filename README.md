@@ -245,20 +245,24 @@ and names `jaira update --roles`.
 
 **No update path changes whether the board is shared.** `jaira update`,
 `jaira self upgrade`, `go install` of a newer build, the first command after
-the binary changed, and `jaira init` run again all leave `.gitignore` exactly
-as it was: a shared board stays shared, a private one stays private. Only
-`jaira share` and `jaira share --undo` change it.
+the binary changed, and `jaira init` run again leave a shared board shared and
+a private one private. Only `jaira share` and `jaira share --undo` change it.
+The one thing `jaira update` moves is where a private board is excluded: an
+entry an older jaira wrote into `.gitignore` goes to `.git/info/exclude`, and
+the changed `.gitignore` is yours to commit once.
 
 ## Start
 
 ```bash
 cd your-repo
-jaira init      # creates .jaira/, private and gitignored
+jaira init      # creates .jaira/, private: excluded in .git/info/exclude
 jaira           # opens the board
 ```
 
-**A board starts private.** `init` gitignores it, so your tickets are yours alone.
-When you want the team to have them:
+**A board starts private.** `init` excludes it in `.git/info/exclude`, so your
+tickets are yours alone. That file belongs to the repository's git directory,
+covers every worktree, and never shows up in a diff: the tracked `.gitignore`
+stays untouched. When you want the team to have them:
 
 ```bash
 jaira share
