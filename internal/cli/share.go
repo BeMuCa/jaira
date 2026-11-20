@@ -90,7 +90,10 @@ You still have to commit. jaira does not commit on your behalf.`,
 			// gone and .jaira/lanes/ showing as untracked.
 			lanesIgnored, err := board.AddLanesIgnore(s.Root)
 			if err != nil {
-				return fmt.Errorf("the board stays private: %w", err)
+				if board.Ignored(s.Root) {
+					return fmt.Errorf("the board stays private: %w", err)
+				}
+				return err
 			}
 			unignored, err := board.RemoveIgnore(s.Root)
 			if err != nil {

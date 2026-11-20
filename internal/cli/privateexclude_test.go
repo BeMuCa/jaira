@@ -617,4 +617,16 @@ func TestShareWithAnUnreadableGitignoreLeavesTheBoardPrivate(t *testing.T) {
 	if excludesBoard(readExclude(t, dir)) {
 		t.Errorf("info/exclude still excludes the board after share:\n%s", readExclude(t, dir))
 	}
+
+	// Shared already: the same failure must not claim the board is private.
+	if err := os.Chmod(gi, 0); err != nil {
+		t.Fatal(err)
+	}
+	out, err = runCLI(t, dir, "share")
+	if err == nil {
+		t.Fatalf("second jaira share with an unreadable .gitignore: err = nil\n%s", out)
+	}
+	if strings.Contains(err.Error()+out, "stays private") {
+		t.Errorf("share on a shared board says it stays private: %v\n%s", err, out)
+	}
 }
