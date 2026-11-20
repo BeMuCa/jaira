@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-20T23:03:56Z
+updated-at: 2026-11-20T23:04:00Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -35,6 +35,8 @@ review-gaps: |-
   note: der Testname nennt nur das ungeteilte Board, prueft aber auch --done --proof
 test-verdict: "pass: go test ./... -race exit 0; build ok. DoD 1-6 checked in the tree (announce.go:101/138, role SKILL.md:331, pr SKILL.md:59, docs/AGENTS.md:72, release note, test present and green). Behaviour on a scratch repo: 'jaira init' writes the block with --proof and the caveat into CLAUDE.md+AGENTS.md, .jaira/ ignored, and 'git add .jaira/tickets' is refused there ('paths are ignored') - exactly the case the caveat names; 'jaira update' rewrites a stale block back. Failure path: read-only CLAUDE.md -> update exits 1 with permission denied, file unchanged. Two writers: the change adds no write path (block writing is pre-existing), nothing to race."
 hunt-verdict: "pass: bughunt done at bb02c815, 0 findings in 10 modules"
+review-verdict: pass
+review-round: 3
 ---
 
 # Der Agent-Block nennt --proof, und die Gitignore-Regel verweist auf die Commit-Regel
