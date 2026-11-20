@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T17:47:56Z
+updated-at: 2026-11-20T17:48:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80126
 claimed-at: 2026-11-20T17:38:47Z
@@ -36,7 +36,7 @@ outcome-why: "Review- und bughunt-Schleifen liefen 10-24 Runden, weil jede Runde
 outcome-resolves: "DoD 1-7: 15-pre-process.md:38, 20-in-progress.md:29 und :66-97, 27-testing.md:97, bughunt SKILL.md:104, 40-review.md:57, shipped.sha256, core/release/notes/TW5FE2.md"
 review-summary: "none"
 round: 9
-review-gaps: "none - diff is prompt text only; left the unreleased intermediate 20-in-progress hashes in shipped.sha256 (b8ef26c5, dea4f27b, 9321dad0): harmless, and a branch install of them stays recognised"
+review-gaps: "none - one sentence of prompt text; left the unreleased intermediate 20-in-progress hashes in shipped.sha256: harmless, a branch install of them stays recognised"
 test-verdict: "pass: go build ./... and go test -race -count=1 ./... RC=0 at 22a9fc77; DoD 1-7 proofs opened in the tree; builtin and .jaira/lanes in-progress identical; manifest lines match sha256; no writer in the change (prompt text only)"
 hunt-verdict: "fail: bughunt done at 22a9fc77, 1 change - the 'took this ticket over from' note that jaira pull --steal writes lands newest and is read as a review return"
 review-verdict: "All 7 DoD items are in the diff; no blocker. The prompts are consistent with each other and with jaira-worker's own three-returns stop. The one known weakness (return origin) is a transition until move records the from-lane, as the teamlead decided. go test ./core/shipped ./core/lane ./core/role/... green."
