@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:16:21Z
+updated-at: 2026-11-20T23:16:25Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -31,7 +31,7 @@ context: |-
   Damit steht die Frage, die dieses Ticket beantworten muss: die Rollen-Prompts werden fuer alle gleich ausgeliefert und koennen nicht pro Projekt verschieden sein. Wie erfaehrt ein ausgelieferter Prompt, dass dieses Board es anders haelt? Entweder er liest die Einstellung zur Laufzeit, oder der erzeugte Block gilt vor ihm und der Prompt sagt das ausdruecklich. Das ist die Entscheidung, nicht die Umsetzung.
 
   Verwandt, aber nicht dasselbe: PWAF22 will, dass 'jaira update' das ganze Setup nachzieht. Wenn dieses Ticket dem Befehl etwas zu schreiben gibt, bekommt PWAF22 einen Grund mehr zu existieren.
-question: ""
+question: "testing gibt zum 3. Mal zurueck. Fund 1 (Merge mit eigenem Inhalt unter none) fixen? Fund 2 (Commits nach der Annahme mit id eines done-Tickets): 1) als bekannte Grenze notieren, signoff entscheidet (empfohlen) 2) jetzt bauen: nach dem Move nach done nur noch .jaira/-Commits erlaubt"
 outcome-what: "Board-Datei .jaira/pr kennt den dritten Wert none: die Rollen landen einen Zweig ohne Pull Request per fast-forward push, sobald jaira roles pr-gate jedes Ticket in done findet; jaira update schreibt fuer none/agent einen Absatz 'How work arrives on this board' in den CLAUDE.md/AGENTS.md-Block; reap.sh raeumt bei none auf, sobald origin/HEAD den Zweig enthaelt."
 outcome-why: "Wer allein ohne Pull Requests arbeitet, bekam eine Rolle, die vor einem nie gewollten PR anhaelt (13VMA8); die Einstellung muss mit dem Repository reisen (Teamlead-Entscheidung 20.11.: dritter Wert in .jaira/pr, Laufzeit + Block)."
 outcome-resolves: "Ein Board sagt in .jaira/pr, ob Arbeit durch einen PR (person/agent) oder direkt auf den Hauptzweig (none) kommt; ohne Datei ist alles byte-gleich wie heute."
