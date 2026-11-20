@@ -24,7 +24,7 @@ related:
   - 01M5MNWDKYJGC78B3EKMX2TGXG
 commits: []
 created-at: 2026-11-20T17:34:35Z
-updated-at: 2026-11-20T20:01:18Z
+updated-at: 2026-11-20T20:01:20Z
 updated-by: Alexander Sacharov
 ---
 
@@ -36,6 +36,7 @@ updated-by: Alexander Sacharov
 - [ ] Give back findet den Branch mit den Commits des Tickets (Commits mit der ID, PR-Branch) und dessen Worktree und startet dort; nur ohne solchen Branch entsteht feat/<id> (Test: Branch mit anderem Namen)
 - [ ] Laeuft fuer das Ticket schon ein Worker, startet Give back keinen zweiten, sondern schickt ihm die Entscheidung (Test: zweimal Give back hintereinander = ein Worker)
 - [ ] Eingabeklassen: Ticket ohne parent-Note, parent-Session tot, zwei Branches mit Commits der ID, Worktree geloescht aber Branch da, zwei Give back gleichzeitig
+- [ ] Jede Entscheidung der Person im Cockpit (Accept, Give back, Decide) schickt dem Teamlead des Tickets sofort eine Zeile '<ID>: <Entscheidung> (Person, Cockpit)'; heute erfaehrt der Teamlead davon nichts und listet laengst entschiedene Tickets weiter als offen (Alex 20.11.2026: 'du bekommst die Info nicht schnell und wiederholst dich')
 
 ## Options
 
