@@ -584,3 +584,6 @@ caf2ffad538ee64f150481ec46012438dd16ed534b19d9425f9dc649ff91f6d8  core/lane/buil
 d3e1e60962c2a2310155338649d869ce86db4d47c1e1f716633786eeebc0a86d  core/lane/builtin/20-in-progress.md
 c5cc9c7468fa5e36ed9a723960cee2bb7c188cf47c3242a6f7ebe83d6a06880f  core/lane/builtin/27-testing.md
 7183bb2639647f4087dab1283bd0fa05f0e58bb7e57293ba8e3e2d9fc4582ce5  core/lane/builtin/27-testing.md
+4d7ee9eca7ba04e7934e56d3257f60a7f8558553b65aeb454270f3450ebe1cdb  core/mod/builtin/jaira-cockpit/hooks/filter.ts
+7cfa05c7dada8459ac422615537b2362187e8f524681f0215965cd7cdf16f7d6  core/mod/builtin/jaira-cockpit/hooks/register.tsx
+1c08b6d6c04aa22507de4ed162ca43e1ea70abf1133d2a1ae204dd5c87dd3819  core/mod/builtin/jaira-cockpit/hooks/texts.ts
