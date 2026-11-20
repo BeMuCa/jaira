@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T19:59:26Z
+updated-at: 2026-11-20T20:03:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96533
 claimed-at: 2026-11-20T19:19:14Z
@@ -179,3 +179,4 @@ Warum: Приватная доска больше не пачкает общую
 1) Принять тикет как есть, замечания не чинить [accept]
 2) Вернуть в работу: кэш Ignored на процесс, чтобы убрать лишний git-процесс (заметно на Windows) [give back]
 Empfehlung: 1 - блокеров нет, всё проверено руками, а кэш можно сделать отдельно, если Windows правда тормозит.
+- **2026-11-20 20:03 · Alexander Sacharov** — decision: 1) Принять тикет как есть, замечания не чинить
