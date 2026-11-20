@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T18:13:08Z
+updated-at: 2026-11-20T18:13:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5618
 claimed-at: 2026-11-20T18:03:30Z
@@ -45,7 +45,7 @@ test-verdict: "pass: follow-up round - go build ./... ok; go test -race -count=1
 hunt-verdict: "pass: bughunt done at d0cb1f49, 0 change, 0 pre-existing"
 review-verdict: "All 7 DoD items are met in the diff; no blocker. Verified the strings the prompts rely on exist in code: round field (move.go:134), 'Given back from <lane>:' (cockpit register.tsx:900), '<who> took this ticket over from' (refsync.go:1433), 'bughunt: done at' (bughunt SKILL), 'critique:'/'optimize:' return-note prefixes, 'jaira dod --add'. go test ./core/shipped ./core/role ./core/lane pass. Four notes are small wording edges, none changes a result."
 review-round: 10
-review-check: "1. cd /home/alex/projects/.worktrees/jaira-tw5fe2  2. git diff c69471d0^ HEAD -- core/lane/builtin/20-in-progress.md - see sections 'Fix the class, not the example' and 'The third return from the same lane'  3. git diff c69471d0^ HEAD -- core/lane/builtin/15-pre-process.md - see 'Name the edges before the code' with the input-class list  4. diff core/lane/builtin/20-in-progress.md .jaira/lanes/in-progress.md - prints nothing (copies equal)  5. go test ./core/shipped/... ./core/lane/... - both ok  6. real check: on the next ticket that runs through pre-process, jaira show <id> shows DoD items naming a class of fault and input classes"
+review-check: "1. cd into the TW5FE2 worktree  2. go test ./core/shipped ./core/role ./core/lane - all three print ok  3. open core/lane/builtin/15-pre-process.md - section 'Name the edges before the code' lists the 7 input classes and the jaira dod --add examples  4. open core/lane/builtin/20-in-progress.md - sections 'Fix the class, not the example' and 'The third return from the same lane' are there  5. diff .jaira/lanes/in-progress.md core/lane/builtin/20-in-progress.md - prints nothing  6. cat core/release/notes/TW5FE2.md - 7 lines, each starting '- ', none wrapped"
 ---
 
 # Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels
