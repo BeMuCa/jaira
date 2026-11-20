@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T17:41:49Z
+updated-at: 2026-11-20T17:42:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80126
 claimed-at: 2026-11-20T17:38:47Z
@@ -108,3 +108,4 @@ Empfehlung: 2 - der Teamlead hat das bewusst aus diesem Ticket genommen, alle 7 
 - **2026-11-20 17:38 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
 - **2026-11-20 17:39 · Alexander Sacharov** — back: person
 - **2026-11-20 17:39 · Alexander Sacharov** — Plan Rueckgabe signoff: Herkunft aus den Notes seit der letzten eigenen back:-Zeile lesen. 'Given back from <lane>:' (schreibt das Cockpit bei jeder Rueckgabe einer Person, register.tsx:900) oder 'decision:' (Cockpit-Antwort, register.tsx:822) => back: person. Sonst die neueste Note mit critique:/optimize:/testing:/bughunt: nennt die Lane; keine davon => review. Wer von Hand zurueckgibt, schreibt dieselbe Zeile - steht im Prompt und in der Release-Note. Kein Go-Code.
+- **2026-11-20 17:42 · Alexander Sacharov** — critique: eine Antwort, die per Nachricht kommt (Teamlead via SendMessage), landet als Note ohne Praefix und wird als review-Rueckgabe gelesen - in-progress.md: Antwort als 'decision: <answer>' notieren
