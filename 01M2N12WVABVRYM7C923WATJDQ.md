@@ -21,11 +21,13 @@ definition-of-done: "core/role/builtin/jaira-role-pr/SKILL.md nennt im GitLab-Zw
 tags:
   - docs
   - cli
-blocked-by: []
-related: []
+blocked-by:
+  - 01M7WWYG213BWB06A7D1CRASZS
+related:
+  - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-16T11:54:25Z
-updated-at: 2026-11-20T16:40:36Z
+updated-at: 2026-11-20T16:40:38Z
 updated-by: Alexander Sacharov
 ---
 
