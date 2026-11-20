@@ -5,3 +5,5 @@
 - A value with Windows line endings (CRLF) passed to `jaira set` or `jaira create` is now stored with plain line breaks instead of failing with "value position is at end of line".
 - Expect the cockpit to offer Explain only when the review wrote a `blocker:` line or the verdict names a reservation; the review's other notes are listed under the ticket's row, without a button.
 - Expect a ticket whose review verdict is from an earlier round to say 'review of round N, changed since' in the cockpit and keep its Explain, instead of showing nothing.
+- Expect the cockpit's Explain to write a status line (DoD, tests, blockers, bughunt on HEAD, each ok or fail), one line per review note marked [blocker], [small edge], [known limit] or [not this ticket], and one recommendation that says plainly when the ticket can be accepted as it is; options no longer come in a fixed give-back-first order.
+- Expect the explanation pane to draw a green tick or a red cross per check, colour only the class marks (blocker red, small edge yellow, known limit dim, not this ticket blue) and show the recommendation bold; explanations written before keep reading as they did.

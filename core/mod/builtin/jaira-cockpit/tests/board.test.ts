@@ -735,9 +735,13 @@ describe('waiting for you', () => {
     expect(asked).toContain('start one subagent (Agent tool)')
     // In the ticket's worktree, and in the shape the cockpit reads back.
     expect(asked).toContain("jaira -C '/.worktrees/repo-mg677r' note MG677R \"explain: ")
-    expect(asked).toContain('Warum: ')
-    expect(asked).toContain('Empfehlung: ')
+    expect(asked).toContain('Status: DoD ')
+    expect(asked).toContain('Recommendation: ')
+    for (const cls of ['[blocker]', '[small edge]', '[known limit]', '[not this ticket]']) expect(asked).toContain(cls)
     expect(asked).toContain('[give back]')
+    // Nothing reads as "this must be changed" by its shape alone.
+    expect(asked).not.toContain('Warum:')
+    expect(asked).toContain('can be accepted as it is')
   })
 
   test('without Herdr, Discuss talks the question through in this chat', async ($, on) => {
@@ -850,6 +854,51 @@ describe('waiting for you', () => {
     .replace('b) accept it as it is', '2) accept it as it is [accept]')
     .replace('c) clear the cache', '3) clear the cache')
     .replace('Empfehlung: a', 'Empfehlung: 1')
+
+  const CLASSED = [
+    '## Progress',
+    '',
+    '- **2026-11-20 18:00 · Alex** — explain: Status: DoD 7/7 ok | tests ok | blockers ok | bughunt on HEAD fail',
+    '[small edge] the export test covers 1MB, not 40MB',
+    '[known limit] Windows paths longer than 260 characters are not read',
+    '[not this ticket] the stale comment in load.go belongs to K7Q2MX',
+    'Status of a thing in prose, no checks here',
+    '1) accept it as it is [accept]',
+    '2) close the small edge first [give back]',
+    'Recommendation: 1 - no note is a blocker, it can be accepted as it is',
+  ].join('\n')
+
+  test('a classed explanation shows its checks, coloured class marks and the recommendation apart', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = CLASSED
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    // A tick or a cross per check, in the theme's colours.
+    const all = await pane.findAll({ type: 'Text' })
+    expect(all.filter(x => x.text === '✓ ' && x.props.color === 'success')).toHaveLength(3)
+    expect(all.filter(x => x.text === '✗ ' && x.props.color === 'error')).toHaveLength(1)
+    expect(await pane.find({ type: 'Text', text: 'bughunt on HEAD' })).toBeDefined()
+    // Only the marks coloured; the note text plain beside them.
+    expect(all.some(x => x.text === '[small edge]' && x.props.color === 'warning')).toBe(true)
+    expect(all.some(x => x.text === '[known limit]' && x.props.dimColor === true)).toBe(true)
+    expect(all.some(x => x.text === '[not this ticket]' && x.props.color === 'suggestion')).toBe(true)
+    expect(await pane.find({ type: 'Text', text: /the export test covers 1MB, not 40MB$/ })).toBeDefined()
+    // A line in neither shape stays as written.
+    expect(await pane.find({ type: 'Text', text: 'Status of a thing in prose, no checks here' })).toBeDefined()
+    // The recommendation bold, in a colour of its own; the option it names chosen.
+    expect(all.some(x => x.text === 'Recommendation: 1 - no note is a blocker, it can be accepted as it is' && x.props.bold === true && x.props.color === 'claude')).toBe(true)
+    expect((await pane.find({ key: 'pick-MG677R-1' }))?.props.autoFocus).toBe(true)
+  })
+
+  test('a blocker mark is red', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = CLASSED.replace('[small edge]', '[blocker]')
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    expect((await pane.findAll({ type: 'Text' })).some(x => x.text === '[blocker]' && x.props.color === 'error')).toBe(true)
+  })
 
   test('a shaped explanation reads as paragraphs and one line per option, the recommended one chosen', async ($, on) => {
     const w = world(on)

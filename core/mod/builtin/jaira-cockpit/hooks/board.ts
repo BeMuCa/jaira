@@ -279,26 +279,69 @@ export function explanationNotes(showJson: string): { text: string; decided?: st
 // apart for the choice with what each does, and the option recommended. A
 // note with no option line — one written before the shape was asked for —
 // is one part, whole, as it was always shown.
+//
+// Since DF0YD6 the note also has a status line, `Status: DoD 7/7 ok | tests
+// ok | blocker fail | bughunt on HEAD ok`, one line per review note opening
+// with its class — `[blocker]`, `[small edge]`, `[known limit]`, `[not this
+// ticket]` — and the recommendation as a part of its own, so the pane can
+// colour each. A line in neither shape stays a text part: an older note reads
+// as it always did.
 export type Action = 'giveBack' | 'accept'
 export type Option = { key: string; text: string; action?: Action }
-export type Part = { kind: 'text'; text: string } | ({ kind: 'option' } & Option)
+export type NoteClass = 'blocker' | 'edge' | 'limit' | 'elsewhere'
+export type Check = { label: string; ok?: boolean }
+export type Part =
+  | { kind: 'text'; text: string }
+  | ({ kind: 'option' } & Option)
+  | { kind: 'status'; checks: Check[] }
+  | { kind: 'note'; cls: NoteClass; label: string; text: string }
+  | { kind: 'recommendation'; text: string }
 export type Explanation = { parts: Part[]; options: Option[]; recommended?: string }
 
 const OPTION = /^\s*\(?([1-6]|[a-f])\)\s+(.+)$/
 const MARK = /\s*\[(give back|accept)\]\s*$/i
 const RECOMMENDED = /^\s*(?:empfehlung|recommendation)\s*:\s*\(?([1-6]|[a-f])\b/i
+const RECOMMENDATION = /^\s*(?:empfehlung|recommendation)\s*:/i
+const STATUS = /^\s*(?:status|stand)\s*:\s*(.+)$/i
+const CLASS = /^\s*\[(blocker|small edge|kleiner rand|known limit|bekannte grenze|not this ticket|nicht aus diesem ticket)\]\s*(.*)$/i
+const CLASSES: Record<string, NoteClass> = {
+  'blocker': 'blocker', 'small edge': 'edge', 'kleiner rand': 'edge', 'known limit': 'limit',
+  'bekannte grenze': 'limit', 'not this ticket': 'elsewhere', 'nicht aus diesem ticket': 'elsewhere',
+}
+const PASSED = /^(ok|pass|yes|ja|✓)$/i
+const FAILED = /^(fail|no|nein|✗)$/i
 
-export function explanationOf(text: string): Explanation {
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '')
-  const parts: Part[] = lines.map(l => {
-    const m = OPTION.exec(l)
-    if (!m) return { kind: 'text', text: l }
+// One check of the status line: its last word says whether it passed, and
+// is drawn as the mark instead; a check with neither word is shown as is.
+function checkOf(segment: string): Check {
+  const words = segment.trim().split(/\s+/)
+  const last = words[words.length - 1] ?? ''
+  if (words.length > 1 && PASSED.test(last)) return { label: words.slice(0, -1).join(' '), ok: true }
+  if (words.length > 1 && FAILED.test(last)) return { label: words.slice(0, -1).join(' '), ok: false }
+  return { label: segment.trim() }
+}
+
+function partOf(l: string): Part {
+  const m = OPTION.exec(l)
+  if (m) {
     const mark = MARK.exec(m[2]!)?.[1]?.toLowerCase()
     const text = m[2]!.replace(MARK, '').trim()
     return { kind: 'option', key: m[1]!, text, ...(mark ? { action: mark === 'accept' ? 'accept' : 'giveBack' } : {}) }
-  })
-  const options = parts.flatMap(({ kind, ...o }) => (kind === 'option' ? [o as Option] : []))
-  if (options.length === 0) return { parts: [{ kind: 'text', text: text.trim() }], options }
+  }
+  const status = STATUS.exec(l)
+  if (status && status[1]!.includes('|')) return { kind: 'status', checks: status[1]!.split('|').map(checkOf).filter(c => c.label !== '') }
+  const note = CLASS.exec(l)
+  if (note) return { kind: 'note', cls: CLASSES[note[1]!.toLowerCase()]!, label: note[1]!, text: note[2]!.trim() }
+  if (RECOMMENDATION.test(l)) return { kind: 'recommendation', text: l }
+  return { kind: 'text', text: l }
+}
+
+export function explanationOf(text: string): Explanation {
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '')
+  const parts: Part[] = lines.map(partOf)
+  const options = parts.flatMap(p => (p.kind === 'option' ? [{ key: p.key, text: p.text, ...(p.action ? { action: p.action } : {}) }] : []))
+  const shaped = parts.some(p => p.kind === 'status' || p.kind === 'note')
+  if (options.length === 0 && !shaped) return { parts: [{ kind: 'text', text: text.trim() }], options }
   const recommended = lines.map(l => RECOMMENDED.exec(l)?.[1]).find(k => k !== undefined && options.some(o => o.key === k))
   return { parts, options, ...(recommended !== undefined ? { recommended } : {}) }
 }
