@@ -344,6 +344,11 @@ func moveIgnore(s *ticket.Store, dry bool) (ignoreMove, error) {
 	if !repo.IsRepo() || hasAttributes(s) || repo.Tracks(ticket.DirName) {
 		return m, nil
 	}
+	// Where git names no info/exclude — before 2.31 it does not know
+	// --path-format — .gitignore is the place, and there is nothing to move.
+	if board.IgnoreFileName(s.Root) == ".gitignore" {
+		return m, nil
+	}
 	if board.InGitignore(s.Root) {
 		m.moved = true
 		if dry {

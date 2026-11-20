@@ -300,6 +300,14 @@ func dropEntry(path, marker string, match func(string) bool) (changed bool, err 
 	// gone: "" in an LF file, and in a CRLF file a "\r" that would be left
 	// standing alone after the last "\r\n".
 	body = strings.TrimSuffix(body, "\r")
+	// An entry with no blank line before it took the file's last newline
+	// with it: "a\n# jaira…\n/.jaira/\n" must end "a\n", not "a".
+	if body != "" && !strings.HasSuffix(body, "\n") && strings.HasSuffix(string(existing), "\n") {
+		if strings.HasSuffix(string(existing), "\r\n") {
+			body += "\r"
+		}
+		body += "\n"
+	}
 	return true, ticket.WriteAtomic(path, []byte(body))
 }
 

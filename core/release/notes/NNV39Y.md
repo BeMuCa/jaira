@@ -3,3 +3,4 @@
 - `jaira share` lifts the exclude in `.git/info/exclude` (and an old `.gitignore` line) and still keeps `/.jaira/lanes/` in `.gitignore`; `jaira share --undo` excludes the board in `.git/info/exclude` again.
 - `jaira share` removes only the entries jaira wrote; when a rule of yours still ignores `.jaira/` (such as an unanchored `.jaira/` in `.git/info/exclude`, which covers every board in the repository), it names that rule in a warning and reports `still_ignored` in `--json` — remove the rule yourself.
 - After `jaira share --undo` and its commit, have each teammate who keeps the board run `jaira update` once: the exclude entry is per clone, and `share --undo` now says so.
+- `jaira update --json` reports `ignore_moved` and `ignore_added` for the private board's exclude entry; on git older than 2.31 `.gitignore` stays the place and `jaira update` leaves it alone.

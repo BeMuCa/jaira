@@ -2,7 +2,9 @@ package cli
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -338,5 +340,52 @@ func TestShareOfABoardInASubdirectorySeesAnUnanchoredExcludeLine(t *testing.T) {
 	}
 	if !strings.Contains(readExclude(t, dir), ".jaira/\n") {
 		t.Errorf("share took out the person's line:\n%s", readExclude(t, dir))
+	}
+}
+
+// On git before 2.31, which prints --path-format back instead of a path,
+// .gitignore stays the place: update moves nothing and says nothing.
+func TestUpdateOnGitWithoutPathFormatLeavesGitignoreAlone(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the git wrapper is a shell script")
+	}
+	dir := repoWithCommit(t)
+	if out, err := runCLI(t, dir, "init"); err != nil {
+		t.Fatalf("jaira init: %v\n%s", err, out)
+	}
+	if _, err := board.RemoveIgnore(dir); err != nil {
+		t.Fatal(err)
+	}
+	writeOldIgnoreLine(t, dir)
+	gitRun(t, dir, "commit", "--quiet", "-am", "an older init made it private")
+
+	real, err := exec.LookPath("git")
+	if err != nil {
+		t.Skip("git not installed")
+	}
+	bin := t.TempDir()
+	// Echo the option back as old git does, then hand git the rest.
+	wrapper := "#!/bin/sh\nseen=\nn=$#\ni=0\nwhile [ $i -lt $n ]; do a=$1; shift; i=$((i+1))\n" +
+		"  if [ \"$a\" = --path-format=absolute ]; then seen=1; else set -- \"$@\" \"$a\"; fi\ndone\n" +
+		"[ -n \"$seen\" ] && echo --path-format=absolute\nexec " + real + " \"$@\"\n"
+	if err := os.WriteFile(filepath.Join(bin, "git"), []byte(wrapper), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	if board.IgnoreFileName(dir) != ".gitignore" {
+		t.Fatalf("the wrapper does not act like old git: IgnoreFileName = %q", board.IgnoreFileName(dir))
+	}
+
+	for _, args := range [][]string{{"--dry-run"}, nil} {
+		out, err := runUpdate(t, dir, args...)
+		if err != nil {
+			t.Fatalf("jaira update %v: %v\n%s", args, err, out)
+		}
+		if strings.Contains(out, "private board's entry") || strings.Contains(out, "this private board in") {
+			t.Errorf("update %v reports an ignore change on old git:\n%s", args, out)
+		}
+	}
+	if !board.InGitignore(dir) {
+		t.Errorf("update took the line out of .gitignore on old git: %q", readIgnore(t, dir))
 	}
 }

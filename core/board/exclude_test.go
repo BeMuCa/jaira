@@ -252,6 +252,8 @@ func TestDropEntryTakesOnlyTheBlankLineThatFollowsTheEntry(t *testing.T) {
 		{"blank right after", "# jaira board — private\n/.jaira/\n\nfoo\n", "foo\n"},
 		{"no blank right after", "# jaira board — private\n/.jaira/\nfoo\n\nbar\n", "foo\n\nbar\n"},
 		{"entry without its comment", "/.jaira/\n\nfoo\n", "\nfoo\n"},
+		{"no blank line before, at the end", "a\n# jaira board — private\n/.jaira/\n", "a\n"},
+		{"CRLF, no blank line before, at the end", "a\r\n# jaira board — private\r\n/.jaira/\r\n", "a\r\n"},
 		{"CRLF, no blank right after", "# jaira board — private\r\n/.jaira/\r\nfoo\r\n\r\nbar\r\n", "foo\r\n\r\nbar\r\n"},
 	}
 	for _, c := range cases {
