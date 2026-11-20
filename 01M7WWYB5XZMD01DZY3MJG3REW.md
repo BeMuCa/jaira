@@ -23,8 +23,10 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T16:43:38Z
+updated-at: 2026-11-20T16:43:41Z
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-59469
+claimed-at: 2026-11-20T16:43:41Z
 ---
 
 # Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
