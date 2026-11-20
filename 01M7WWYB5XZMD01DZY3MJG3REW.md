@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T16:51:38Z
+updated-at: 2026-11-20T16:51:43Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59469
 claimed-at: 2026-11-20T16:43:41Z
@@ -68,3 +68,4 @@ question: ""
 - **2026-11-20 16:44 · Alexander Sacharov** — question: Wann darf ein Agent mit .jaira/pr=agent den PR oeffnen? 1) (Recommended) Sobald alle Tickets des Branches in done sind - wie der Cockpit-Accept heute; die Abnahme der Person ist die Freigabe, Copilot reviewt danach. 2) Schon in signoff - Copilot reviewt, bevor die Person abnimmt; die Person sieht Copilot-Ergebnis beim Accept, aber ein PR existiert fuer noch nicht abgenommene Arbeit. 3) Nur auf ausdrueckliche Freigabe pro PR (Teamlead gibt --by-person weiter, nachdem die Person ja gesagt hat) - Einstellung spart nur die Handarbeit, nicht die Frage.
 - **2026-11-20 16:47 · Alexander Sacharov** — answer (Alex via teamlead, 2026-11-20): 1) - ein Agent oeffnet den PR mit .jaira/pr=agent erst, wenn alle Tickets des Branches in done sind; die Abnahme der Person ist die Freigabe, Copilot reviewt danach. Die selbst getroffenen Entscheidungen bleiben stehen. Mode bleibt autonom (eine beantwortete Frage).
 - **2026-11-20 16:48 · Alexander Sacharov** — Interim-Regeln (Alex 20.11.2026 via Teamlead, gelten bis TW5FE2): 1) DoD nennt Fehlerklassen (leer, gross, Sonderzeichen/CRLF, Leerzeichen-Pfade, Windows, zwei Prozesse, Fehler auf halbem Weg; Heuristik -> Annahmeregel). 2) in-progress prueft vor dem Move Nebenlaeufigkeit, Fehlerpfade, ungewoehnliche Eingabe, Rechte; Tabellentests ueber die Klasse; Geschwister-Stellen per grep mitziehen; Fix an der Ursache. 3) Fund nennt Klasse+Beispiel, Rueckweg verlangt Fix der Klasse. 4) Blocker nur falsches Ergebnis/Datenverlust/Absturz/Sicherheitsluecke; nach Fix-Durchgang Test+Bughunt nur ueber Diff seit letztem Hunt, dann review; nach 3 Rueckgaben derselben Lane Frage an Teamlead. 5) kleine review-gaps in derselben Runde schliessen; Vorbestehendes als 'note: pre-existing: ...'.
+- **2026-11-20 16:51 · Alexander Sacharov** — pr-round.sh request: gh pr edit --add-reviewer kennt keinen Spezialwert fuer Copilot (gh 2.83.1 --help sagt das ausdruecklich); darum REST POST requested_reviewers mit 'copilot-pull-request-reviewer[bot]'. Gegen ein echtes Repo nicht ausprobiert - nur gegen einen gh-Stub; ein abgelehnter Request endet mit Exit 4 und die Rolle meldet ihn. Der Stub wendet den --jq-Filter mit echtem jq an, damit der Filter selbst getestet ist.
