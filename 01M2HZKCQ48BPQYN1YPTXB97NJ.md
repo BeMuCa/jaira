@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:29:25Z
+updated-at: 2026-11-20T23:29:29Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -35,7 +35,7 @@ question: ""
 outcome-what: "Board-Datei .jaira/pr kennt den dritten Wert none: die Rollen landen einen Zweig ohne Pull Request per fast-forward push, sobald jaira roles pr-gate jedes Ticket in done findet; jaira update schreibt fuer none/agent einen Absatz 'How work arrives on this board' in den CLAUDE.md/AGENTS.md-Block; reap.sh raeumt bei none auf, sobald origin/HEAD den Zweig enthaelt."
 outcome-why: "Wer allein ohne Pull Requests arbeitet, bekam eine Rolle, die vor einem nie gewollten PR anhaelt (13VMA8); die Einstellung muss mit dem Repository reisen (Teamlead-Entscheidung 20.11.: dritter Wert in .jaira/pr, Laufzeit + Block)."
 outcome-resolves: "Ein Board sagt in .jaira/pr, ob Arbeit durch einen PR (person/agent) oder direkt auf den Hauptzweig (none) kommt; ohne Datei ist alles byte-gleich wie heute."
-review-summary: "none"
+review-summary: "Third value 'none' in .jaira/pr (core/board/arrival.go PRModeIn/PRModeFor; only the exact word, everything else stays person; settings.PRFor/PRIn delegate). jaira update writes a 'How work arrives on this board' paragraph into the CLAUDE.md/AGENTS.md block for agent/none and nothing for person, so an unconfigured board's block stays byte-identical; NoteIsCurrent includes it, so changing the file shows as drift. roles list reports none and forces pr_when=done. pr-gate accepts none read from the base: every named ticket in done or in the logbook, and every commit in base..HEAD must name a ticket - an unnamed merge passes only when its tree equals 'git merge-tree --write-tree' of its parents (catches conflict resolutions, -s ours, files added during merge; fails closed on git < 2.38). jaira-role-pr gets a 'Land it' section (gate, merge base, gate again, fast-forward push HEAD:<branch>, never --force); teamlead/dispatcher get one sentence; reap.sh under none treats a branch as merged once origin/HEAD contains its tip and a commit names the ticket, instead of asking the forge. Release note in core/release/notes/XB97NJ.md."
 round: 6
 review-gaps: "none removed. note: known limit: under .jaira/pr none, pr-gate binds a person's acceptance to the ticket, not to its commits - a commit made after the ticket reached done, naming that ticket or any other ticket already in done or the logbook, lands without anyone seeing it (bughunt round 2, F2; Teamlead 21.11. 00:15: known limit, signoff decides). Closing it means: after the move into done only .jaira/ commits for that ticket. note: known limit: the merge check needs git >= 2.38 (merge-tree --write-tree); older git fails closed, so an unnamed merge must name a ticket there"
 test-verdict: "pass: go vet + go test -race ./... RC=0 at 282565fb; DoD 1-8 checked in the tree; scratch board: none ticket not done -> exit 3 'push the branch and stop', unnamed commit -> exit 3, non-fast-forward push refused by git, two parallel 'jaira update' -> paragraph once per file"
