@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T17:54:55Z
+updated-at: 2026-11-20T17:54:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-87225
 claimed-at: 2026-11-20T17:38:56Z
@@ -124,3 +124,4 @@ Empfehlung: 2 - die Lücken sind dokumentiert und ungefährlich, der Live-Test i
 - **2026-11-20 17:40 · Alexander Sacharov** — runde 5 (zurueck aus signoff, Alex 17:38): decision (worker, settled): das Gate wird ein Kommando 'jaira roles pr-gate <base>' - liest .jaira/pr, die Handles aus 'git log --format=%s <base>..HEAD' (Scope type(ID[,ID]): wie ticketsNamed im Cockpit, board.ts), und jeden Handle auf dem Board (Store.List, ref-Stand eingeschlossen): nicht im Terminal-Lane seines Boards -> Exit 3 mit Liste; nicht auf dem Board (logbook) haelt nichts auf; kein Handle -> Exit 3. Unter roles, weil 'roles list' schon pr zeigt - kein neues Top-Level-Kommando. pr-round.sh bekommt 'open', das das Gate vor gh pr create laufen laesst; GitLab: SKILL ruft das Gate vor glab mr create.
 - **2026-11-20 17:40 · Alexander Sacharov** — decision (worker, settled): Doppelantwort - nach dem Posten liest reply die Kommentare des Threads; der frueheste Kommentar desselben Logins mit demselben Text bleibt, ist es nicht der eigene, loescht reply den eigenen (deletePullRequestReviewComment). Gilt fuer jede Reihenfolge zweier Sessions, auch auf zwei Rechnern; ein flock wuerde nur eine Maschine abdecken und fehlt auf macOS.
 - **2026-11-20 17:48 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock (teamlead jaira-64) - Fragen per SendMessage, Schlussbericht dorthin. Interim-Regel 5: die review-gaps-notes werden in dieser Runde geschlossen: (1) comment prueft vor dem Posten, ob derselbe Text desselben Logins schon im Gespraech steht; (2) Copilot live bleibt Abnahmeschritt (review-check 5); (3) Doppelantwort und (4) Gate im Binary siehe oben; (5) CLAUDE.md nennt die Ausnahme. Dazu Bughunt-Rest: Vergleich ignoriert Leerraum am Zeilenende, falls GitHub ihn kappt.
+- **2026-11-20 17:54 · Alexander Sacharov** — critique 5 (nur c471d660): nichts. Gelesen: pr-gate (roles.go, gitrepo/named.go), pr-round.sh open/said/first_of/dedupe/comment. Absichtlich so gelassen: reply erkennt 'schon beantwortet' am LETZTEN Kommentar, comment an IRGENDEINEM - im Thread muss nach einem Widerspruch des Reviewers erneut geantwortet werden, das Gespraech hat nichts zu resolven. Die Handle-Lesart ist board.ts ticketsNamed nachgebaut; das Cockpit hat einen anderen Ausloeser (Person drueckt Accept) und bleibt bei sich.
