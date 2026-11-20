@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T16:57:24Z
+updated-at: 2026-11-20T16:57:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-42185
 claimed-at: 2026-11-20T16:42:15Z
@@ -38,6 +38,7 @@ review-summary: none
 round: 4
 review-gaps: "none: nur Prompt-Text; die vier Kategorien und die Blocker-Definition stehen bewusst in jeder Lane, die sie anwendet, weil jede nur ihren eigenen Prompt liest; nichts verwaist"
 test-verdict: "pass: go test -race -count=1 ./... RC=0, go build ok; DoD 1-7 im Baum geprueft; alle vier Lanes liefern ihren --for-lane-Payload; .jaira/lanes byte-gleich mit builtin"
+hunt-verdict: "fail: bughunt done at e101fb64, 2 change - die Dritte-Rueckgabe-Regel in in-progress zaehlt Notes-Praefixe (testing: note:, mehrere bughunt: change: pro Runde, review ohne Praefix) und vergisst optimize"
 ---
 
 # Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels
