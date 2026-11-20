@@ -23,7 +23,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T16:35:12Z
+updated-at: 2026-11-20T16:35:47Z
+updated-by: Alexander Sacharov
 ---
 
 # Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels
