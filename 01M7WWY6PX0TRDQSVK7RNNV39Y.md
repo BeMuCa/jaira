@@ -21,10 +21,10 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T19:19:11Z
+updated-at: 2026-11-20T19:19:35Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-63629
-claimed-at: 2026-11-20T18:32:27Z
+claimed-by: DESKTOP-RFTCH11-96533
+claimed-at: 2026-11-20T19:19:14Z
 outcome-what: "Ein privates Board steht jetzt in <git-common-dir>/info/exclude statt in der getrackten .gitignore (core/board/gitignore.go); jaira update verschiebt eine alte .gitignore-Zeile dorthin und schliesst ein privates Board ohne Ausschluss dort aus; share/--undo arbeiten auf beiden Dateien; ticket.LockFile aus Store.lock herausgezogen."
 outcome-why: "Eine von jaira geaenderte .gitignore erscheint in jedem neuen Worktree als Aenderung, ein Push-Guard lehnt dann jeden Push ab; info/exclude gilt fuer alle Worktrees und taucht in keinem Diff auf."
 outcome-resolves: Neue Worktrees eines Repos mit privatem Board bleiben sauber; kein Wegraeumen der .gitignore-Zeile von Hand mehr.
@@ -64,6 +64,7 @@ review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/r && cd /tmp
   proof: core/board/exclude_test.go TestDropEntryTakesOnlyTheBlankLineThatFollowsTheEntry, TestRemoveIgnoreLeavesAnUnanchoredLineAPersonWrote; internal/cli/privateexclude_test.go TestShareLeavesAPersonsUnanchoredExcludeLineAndSaysSo, TestShareOfABoardInASubdirectorySeesAnUnanchoredExcludeLine, TestUpdateDecidesByWhatGitIgnores (share-Schritt je Zeile)
 - [x] jaira update auf git < 2.31 (kein info/exclude-Ort) meldet keine Verschiebung und laesst .gitignore stehen (Test)
   proof: internal/cli/privateexclude_test.go TestUpdateDecidesByWhatGitIgnores (28 Faelle: 7 Quellen x git alt/neu x .jaira Verzeichnis/Symlink)
+- [ ] appendEntry ueberschreibt eine vorhandene, aber unlesbare Datei (info/exclude, .gitignore) nie: Lesefehler ausser 'fehlt' bricht ab, die Datei bleibt byteweise gleich (Test)
 
 ## Options
 
