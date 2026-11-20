@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T23:06:52Z
+updated-at: 2026-11-20T23:06:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -28,7 +28,9 @@ outcome-why: Hand-gemergte Manifest-Konflikte verloren Zeilen; jaira update --ro
 outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, wenn eine fehlt, und Manifest-Merges konfliktieren nicht mehr"
 review-summary: "scripts/shipped-history.sh bekommt einen Modus --check: er listet jede Datei-Version aus jedem v*-Tag (git ls-tree), hasht die Blob-Bytes roh unter dem heutigen Einbettungspfad und schlaegt fehl, wenn eine davon in core/shipped/shipped.sha256 fehlt (ebenso ohne Tags, bei unlesbarem Tag oder Blob). CI fuehrt das als Job shipped-manifest bei jedem PR aus, release-notes.yaml vor dem Release-PR (beide mit fetch-depth 0). Das Manifest ist neu erzeugt: die 8 verlorenen Versionen (u.a. board.ts aus v0.5.2) stehen drin, keine Zeile ging verloren. .gitattributes setzt merge=union auf das Manifest, das Skript sortiert unter LC_ALL=C. Ein Tabellentest beweist, dass eine unveraenderte board.ts aus v0.5.2 ersetzt statt uebersprungen wird; Go-Tests mit Temp-Repo decken geloescht/wieder angelegt, CRLF, Tag ohne Datei, fehlende Tags, unlesbaren Tag/Blob und den union-Merge ab."
 round: 4
-review-gaps: "none - Runde 3: eine Zeile in hashed() und ein Test, der den alten Generator-Test als Tabelle ueber beide Modi ersetzt"
+review-gaps: |-
+  note: DoD 5 ist nur mit lokalem git bewiesen (TestManifestMergesWithoutConflict). Ob GitHubs Mergeability-Pruefung merge=union aus .gitattributes beachtet, ist nicht belegt - erst zwei echte PRs, die beide Zeilen anhaengen, zeigen es.
+  note: nach einem union-Merge mit Duplikat scheitert TestManifestLinesAreWellFormed erst auf master; die Abhilfe (regenerieren) steht nur in .gitattributes, nicht in der Fehlermeldung des Tests.
 test-verdict: "pass: go vet + go test ./... RC=0 auf 55ae3718; --check echtes Repo exit 0 (34 Tags), Generator-Ausgabe gleich dem committeten Manifest; unlesbarer Blob stoppt Generator und --check ohne den Hash der leeren Datei (TestUnreadableBlobStopsTheScript, rot ohne den Fix); Aenderung schreibt nichts"
 hunt-verdict: "pass: bughunt done at 55ae3718, 0 change, 0 pre-existing (Runde 3, Diff seit 9c785040); Fund aus Runde 2 behoben, Test rot ohne den Fix (selbst geprueft)"
 ---
