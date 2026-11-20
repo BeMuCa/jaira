@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T18:18:38Z
+updated-at: 2026-11-20T18:18:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-37518
 claimed-at: 2026-11-20T18:18:38Z
@@ -63,7 +63,7 @@ review-check: "1. cd into the TW5FE2 worktree  2. go test ./core/shipped ./core/
 - [x] pre-process nennt die Standard-Eingabeklassen: leer, sehr gross, Sonderzeichen/Kodierung/CRLF, Pfade mit Leerzeichen, Windows, zwei Prozesse gleichzeitig, Fehler auf halbem Weg
   proof: core/lane/builtin/15-pre-process.md:48-55
 - [x] Schleifenbremse in testing, review und in-progress: Blocker nur falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke; Folgerunde testet und huntet nur den Diff seit dem letzten Hunt; nach 3 Rueckgaben aus derselben Lane eine Frage statt Runde 4
-  proof: core/lane/builtin/27-testing.md:98 (blocker = four kinds), 27-testing.md:41-45,129-134 (follow-up round: tests of the packages changed since the last hunt, hunt and passes 2-3 on that diff, then review); core/lane/builtin/40-review.md:57 and :117-121 (return note starts review:); core/lane/builtin/20-in-progress.md:66-102 (own back: lines; review: names the review; Given back from/decision: = back: person; third -> human question)
+  proof: core/lane/builtin/27-testing.md:98 (blocker = four kinds), 27-testing.md:41-45,129-134 (follow-up round: tests of what changed since the last hunt, hunt and passes 2-3 on that diff, then review); core/lane/builtin/40-review.md:57 and :117-121 (return note starts review:); core/lane/builtin/20-in-progress.md:66-102 (own back: lines; critique:/optimize:/testing:/review: name the lane, Given back from/decision: = back: person, no prefix = back: unknown, counted for no lane; third -> human question)
 - [x] Kleine Raender der Aenderung aus review-gaps werden in derselben Runde geschlossen statt als note: zur Person zu gehen; Vorbestehendes ausserhalb des Umfangs steht als 'note: pre-existing: ...'
   proof: core/lane/builtin/20-in-progress.md:58 (close small edges in the same round); core/lane/builtin/40-review.md:61-66 (note names class and fix; note: pre-existing:)
 
