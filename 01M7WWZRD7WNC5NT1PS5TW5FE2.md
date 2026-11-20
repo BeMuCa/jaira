@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZRD7WNC5NT1PS5TW5FE2
 title: "Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T18:02:45Z
+updated-at: 2026-11-20T18:02:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80126
 claimed-at: 2026-11-20T17:38:47Z
@@ -35,7 +35,7 @@ outcome-what: "Eingebaute Lanes pre-process, in-progress, testing, review und di
 outcome-why: "Review- und bughunt-Schleifen liefen 10-24 Runden, weil jede Runde den Nachbarfall eines nur am Beispiel reparierten Fehlers fand und die vier Kategorien vor dem Code nie gefragt wurden; die Rueckgabe einer Person darf dabei nicht als Schleifenrunde zaehlen."
 outcome-resolves: "DoD 1-7: 15-pre-process.md:38, 20-in-progress.md:29 und :66-97, 27-testing.md:97, bughunt SKILL.md:104, 40-review.md:57, shipped.sha256, core/release/notes/TW5FE2.md"
 review-summary: "Only prompts change, no Go code. pre-process now writes the class of fault, the input classes (empty/huge, encoding/CRLF, spaces/Windows, two writers, failure halfway, plus subject-specific ones) and, for a heuristic, an acceptance rule into the DoD via 'jaira dod --add'. in-progress gets 'fix the class, not the example': name the class itself when no plan ran, fix the cause, one parametrised test over the class, grep and fix sibling places, self-check the four categories and report them in the outcome, close small edges from the returning notes in the same round. in-progress also keeps its own 'back: <lane>, round N' line per returned round, reads the sender off the newest note (skipping cockpit: and steal lines; 'Given back from'/'decision:' = person, resets the count) and on the third return from one lane moves to human with a question instead of round 4. testing and review send back only for four blocker kinds (wrong result, data loss, crash, security hole); smaller edges ride along or stay a 'testing: note:'; findings name class + example + class fix; a returned finding passes only when a neighbour of the example passes too; follow-up hunt and passes 2-3 read only the diff since the last hunt. bughunt findings name class and example. Board copies in .jaira/lanes are byte-identical to core/lane/builtin; shipped.sha256 carries every intermediate hash; release note TW5FE2.md has six one-line entries."
-round: 9
+round: 10
 review-gaps: |-
   note: DoD 6 says a follow-up round tests and hunts only the diff since the last hunt; 27-testing.md runs the whole suite again and restricts only the hunt and passes 2-3 - sensible (regressions), but a deviation from the literal DoD wording the person should confirm
   note: in-progress reads the sender off the newest note, and 'anything else' is the review - a review that moves back without writing its note (40-review.md asks for one but nothing enforces it) leaves testing's 'testing: note:' newest and the return is counted for testing; class: sender inferred from a note nobody is forced to write; fix: have 40-review.md prefix its return note with 'review:' and list it in 20-in-progress.md
