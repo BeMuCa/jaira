@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T17:57:28Z
+updated-at: 2026-11-20T17:57:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-87225
 claimed-at: 2026-11-20T17:38:56Z
@@ -76,6 +76,9 @@ review-check: "1. cd into a scratch clone of a GitHub repo you own, with an open
   proof: internal/cli/roles.go newRolesPRGateCmd, core/gitrepo/named.go TicketsNamed; internal/cli/prgate_test.go TestPRGateOpensOnlyWhenEveryTicketOfTheBranchIsDone, TestPRGateRefusesWhatItCannotJudge; core/role/pr_round_test.go TestPROpenRunsTheGateFirst
 - [x] Zwei Sessions, die denselben Thread gleichzeitig beantworten, hinterlassen genau eine Antwort
   proof: core/role/builtin/jaira-role-pr/scripts/pr-round.sh dedupe (threads) and comment read-back delete only the id this run's own POST returned; core/role/pr_round_test.go TestPRRoundReplyLeavesOneAnswerWhenTwoSessionsRace, TestPRRoundCommentSaysItOnce (person's same words before/after: never touched)
+- [ ] Board-Datei .jaira/pr-when (done|signoff, Default done; leer, CRLF, Kommentar, Tippfehler -> done): Tabellentest; jaira roles list zeigt sie
+- [ ] pr-gate bei signoff: jedes Ticket des Branches in signoff oder done; bei done wie bisher; Board ohne signoff-Lane -> Exit 3 mit Grund
+- [ ] Bei pr-when=signoff verlangt die Rolle vor done eine fertige PR-Runde: pr-round.sh settled -> Exit 3 mit offenen Threads/ausstehenden Reviews, sonst 0
 
 ## Options
 
