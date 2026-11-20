@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -345,28 +344,6 @@ func TestShareOfABoardInASubdirectorySeesAnUnanchoredExcludeLine(t *testing.T) {
 	}
 }
 
-// useOldGit puts a git first on PATH that acts like git before 2.31: it
-// prints --path-format=absolute back instead of a path, as jaira's fallback
-// to .gitignore expects.
-func useOldGit(t *testing.T) {
-	t.Helper()
-	if runtime.GOOS == "windows" {
-		t.Skip("the git wrapper is a shell script")
-	}
-	real, err := exec.LookPath("git")
-	if err != nil {
-		t.Skip("git not installed")
-	}
-	bin := t.TempDir()
-	wrapper := "#!/bin/sh\nseen=\nn=$#\ni=0\nwhile [ $i -lt $n ]; do a=$1; shift; i=$((i+1))\n" +
-		"  if [ \"$a\" = --path-format=absolute ]; then seen=1; else set -- \"$@\" \"$a\"; fi\ndone\n" +
-		"[ -n \"$seen\" ] && echo --path-format=absolute\nexec " + real + " \"$@\"\n"
-	if err := os.WriteFile(filepath.Join(bin, "git"), []byte(wrapper), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
-}
-
 // What jaira update writes and says, over the whole class "what ignores the
 // board": git decides (check-ignore), every rule counts, a git that cannot
 // answer leaves everything alone, and a report names only a write that
@@ -470,7 +447,7 @@ func TestUpdateDecidesByWhatGitIgnores(t *testing.T) {
 						}
 					}
 					if oldGit {
-						useOldGit(t)
+						countGit(t, true) // git before 2.31
 					}
 					read := func(p string) string { b, _ := os.ReadFile(p); return string(b) }
 					gitignore := filepath.Join(dir, ".gitignore")

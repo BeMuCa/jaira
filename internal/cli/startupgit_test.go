@@ -15,7 +15,7 @@ import (
 // countGit puts a git first on PATH that writes each call's subcommand as one
 // line into the file it returns, then runs the real git. With old set it also
 // acts like git before 2.31, printing --path-format=absolute back in place of
-// using it, as useOldGit does.
+// using it.
 func countGit(t *testing.T, old bool) (log string) {
 	t.Helper()
 	if runtime.GOOS == "windows" {
