@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:44:08Z
+updated-at: 2026-11-20T23:44:11Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -37,7 +37,11 @@ outcome-why: "Wer allein ohne Pull Requests arbeitet, bekam eine Rolle, die vor 
 outcome-resolves: "Ein Board sagt in .jaira/pr, ob Arbeit durch einen PR (person/agent) oder direkt auf den Hauptzweig (none) kommt; ohne Datei ist alles byte-gleich wie heute."
 review-summary: "Neuer Wert 'none' fuer .jaira/pr: core/board/arrival.go liest die Datei (nur exakt 'none'/'agent' zaehlt, alles andere bleibt person) und haengt bei none/agent einen Absatz 'How work arrives on this board' an den CLAUDE.md/AGENTS.md-Block - ohne Datei bleibt der Block byte-gleich, jaira validate meldet ihn als veraltet, sobald die Datei wechselt. jaira roles list zeigt none (pr_when dann fest done). jaira roles pr-gate laesst unter none (gelesen vom Basis-Zweig) nur durch, wenn jedes Ticket in done/logbook ist UND jeder Commit in base..HEAD ein Ticket nennt; ein unbenannter Merge zaehlt nur, wenn sein Baum exakt gits eigener Merge der Eltern ist (merge-tree --write-tree) - Konfliktloesungen, -s ours und eingeschmuggelte Dateien halten das Tor. jaira-role-pr bekommt 'Land it': Gate, Basis hereinmergen, Gate erneut, fast-forward push auf den Hauptzweig, nie --force. reap.sh fragt unter none keinen Forge, sondern wartet, bis origins Hauptzweig (origin/HEAD, sonst origin/main|master, haengender origin/HEAD = unset) die Spitze enthaelt und ein Commit dort das Ticket nennt. Teamlead/Dispatcher je ein Satz, Release-Note, shipped.sha256 neu."
 round: 9
-review-gaps: "none removed. note: known limit: under .jaira/pr none, pr-gate binds a person's acceptance to the ticket, not to its commits - a commit made after the ticket reached done, naming that ticket or any other ticket already in done or the logbook, lands without anyone seeing it (Teamlead 21.11. 00:15: known limit, signoff decides). note: known limit: the merge check needs git >= 2.38 (merge-tree --write-tree); older git and shallow clones fail closed"
+review-gaps: |-
+  note: reap.sh misst das Landen nur an origin; jaira-role-pr landet auf <remote> - in einem Fork-Setup (Landen auf upstream) wartet reap dann ewig mit 'has not landed'
+  note: eine .jaira/pr mit BOM (Windows-Notepad) liest sich still als person, und roles list sagt dann 'the default' obwohl eine Datei da ist - sicher, aber verwirrend; ein Hinweis in roles list waere hilfreich
+  note: unter none prueft pr-gate die Ticket-Status aus dem lokalen Store, nicht vom Basis-Zweig; ein von Hand auf done gesetztes Ticket-File oder ein Commit, der ein laengst abgelegtes Logbook-Ticket nennt, landet ohne dass ein Mensch es sieht - dieselbe Vertrauensannahme wie bei agent, nur ohne PR dahinter
+  note: landed_head liest pro Ticket die ganze Historie der Spitze (git log tip) - auf grossen Repos langsam, korrekt
 test-verdict: "pass: go vet + go test -race ./... RC=0 at 01e28a76 (ae1a72ee only reap.sh + its test, core/role green); DoD 1-8 checked in the tree; scratch board: none ticket not done -> exit 3, unnamed commit -> exit 3, -s ours merge held, non-ff push refused by git, parallel 'jaira update' -> paragraph once"
 hunt-verdict: "pass (round 7 at ae1a72ee): 0 findings"
 claimed-by: DESKTOP-RFTCH11-29927
