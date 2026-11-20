@@ -27,10 +27,10 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:19:17Z
+updated-at: 2026-11-20T19:19:32Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-37518
-claimed-at: 2026-11-20T18:18:38Z
+claimed-by: DESKTOP-RFTCH11-99353
+claimed-at: 2026-11-20T19:19:21Z
 outcome-what: "Eingebaute Lanes pre-process, in-progress, testing, review und die Rolle jaira-role-bughunt: pre-process schreibt Fehlerklasse, Standard-Eingabeklassen und Annahmeregel als DoD-Punkte; in-progress repariert die Ursache, testet die Klasse, zieht Geschwister mit, prueft die vier Kategorien, schliesst kleine Raender in derselben Runde und fragt nach der dritten Rueckgabe derselben Lane. Absender einer Rueckgabe nur ueber feste Praefixe: critique:/optimize:/testing:/review: = Lane, 'Given back from'/'decision:' = Person (setzt zurueck), ohne Praefix = back: unknown, zaehlt fuer keine Lane; review schreibt seine Rueckgabe-Note mit 'review:'; testing testet und huntet in Folgerunden nur den Diff seit dem letzten Hunt; testing/bughunt melden Klasse + Beispiel; testing und review schicken nur fuer Blocker zurueck. .jaira/lanes nachgezogen, shipped.sha256, Release-Note."
 outcome-why: "Review- und bughunt-Schleifen liefen 10-24 Runden, weil jede Runde den Nachbarfall eines nur am Beispiel reparierten Fehlers fand und die vier Kategorien vor dem Code nie gefragt wurden; die Rueckgabe einer Person darf nicht als Schleifenrunde zaehlen, und eine Rueckgabe ohne erkennbaren Absender darf keiner Lane geraten zugerechnet werden."
 outcome-resolves: "DoD 1-7: 15-pre-process.md:38, 20-in-progress.md:29 und :66-102, 27-testing.md:41-45,98,129-134, bughunt SKILL.md:104, 40-review.md:57,117-121, shipped.sha256, core/release/notes/TW5FE2.md. Vier Kategorien: Nebenlaeufigkeit/Fehlerpfade/Rechte - nur Prompt-Text, nichts schreibt; ungewoehnliche Eingabe - Note ohne Praefix (auch aeltere review-Prompts) = back: unknown, zaehlt nicht."
@@ -144,3 +144,4 @@ Empfehlung: 2 - это не блокеры (неверный результат,
 - **2026-11-20 19:18 · Alexander Sacharov** — decision: 1) Вернуть в in-progress и поправить три формулировки (по одному предложению в 15-pre-process.md, 20-in-progress.md, 27-testing.md)
 - **2026-11-20 19:19 · Alexander Sacharov** — Given back from signoff: 1) Вернуть в in-progress и поправить три формулировки (по одному предложению в 15-pre-process.md, 20-in-progress.md, 27-testing.md)
 - **2026-11-20 19:19 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
+- **2026-11-20 19:19 · Alexander Sacharov** — back: person
