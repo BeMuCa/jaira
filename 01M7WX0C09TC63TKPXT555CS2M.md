@@ -17,7 +17,8 @@ related:
   - 01M67RXSPRWC7WVBCCM7MVR4PY
 commits: []
 created-at: 2026-11-20T16:35:33Z
-updated-at: 2026-11-20T16:35:33Z
+updated-at: 2026-11-20T16:40:53Z
+updated-by: Alexander Sacharov
 ---
 
 # Ein Worker meldet signoff in einer Zeile mit festen Feldern: Branch, Commits, Guard, offene Notes
