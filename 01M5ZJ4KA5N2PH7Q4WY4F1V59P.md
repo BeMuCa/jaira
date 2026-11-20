@@ -2,7 +2,7 @@
 id: 01M5ZJ4KA5N2PH7Q4WY4F1V59P
 title: "Ein Review-Verdikt 'zurueckschicken' laesst das Ticket nicht nach signoff"
 status: backlog
-ready: false
+ready: true
 creator: BeMuCa
 goal: "Steht im review-verdict der Review-Lane 'send back' (oder das Gegenstueck des Boards), nimmt jaira move aus review nur noch in-progress als Ziel; signoff wird mit Exit 3 abgelehnt und nennt das Verdikt."
 context: |-
@@ -15,11 +15,13 @@ context: |-
 definition-of-done: "Ein Move aus review nach signoff mit review-verdict 'send back' wird mit Exit 3 abgelehnt; die Meldung nennt das Verdikt und die erlaubte Ziellane"
 tags:
   - gates
-blocked-by: []
-related: []
+blocked-by:
+  - 01M6M7EA5EG5TWJSTVNQH6CD33
+related:
+  - 01M7WWZWSDHK37DGGHJFDF0YD6
 commits: []
 created-at: 2026-10-27T20:51:56Z
-updated-at: 2026-11-20T16:39:32Z
+updated-at: 2026-11-20T16:39:34Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 ---
