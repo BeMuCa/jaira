@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T17:09:59Z
+updated-at: 2026-11-20T17:10:02Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59469
 claimed-at: 2026-11-20T16:43:41Z
@@ -33,7 +33,7 @@ outcome-why: "Ein Teamlead machte jede PR-Runde von Hand (push, PR-Text, Copilot
 outcome-resolves: "Mit .jaira/pr=agent oeffnet jaira-role-pr den PR nach der Abnahme aller Tickets selbst, fordert den Reviewer an und faehrt eine Kommentarrunde; ohne Datei bleibt alles wie heute; Merge/Approve bleibt in jedem Fall beim Menschen."
 review-summary: none
 round: 4
-review-gaps: "none - Fix 1dd8e6d7 gelesen: die zusaetzliche Abfrage vor reply ist der Preis der Wiederholbarkeit (ein Aufruf pro Thread), kein Duplikat, kein toter Code"
+review-gaps: "none - Fix 5db2eee4: Body kommt in derselben Abfrage mit, kein zweiter Aufruf"
 test-verdict: "pass: go test -count=1 -race ./... RC=0 auf 1dd8e6d7; Fix-Tests TestPRRoundReplyIsSafeToRunAgain, -f-Pruefung und @login gruen"
 hunt-verdict: "fail: bughunt done at 1dd8e6d7, 1 change: reply haelt einen Thread fuer beantwortet, sobald der letzte Kommentar vom selben gh-Login stammt - unter dem Konto des Maintainers wird dessen eigene Bitte ohne Antwort resolved"
 ---
