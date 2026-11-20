@@ -1,7 +1,7 @@
 ---
 id: 01M7WWY6PX0TRDQSVK7RNNV39Y
 title: Ein privates Board steht in .git/info/exclude statt in der .gitignore des Arbeitsbaums
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T19:24:56Z
+updated-at: 2026-11-20T19:25:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96533
 claimed-at: 2026-11-20T19:19:14Z
@@ -29,7 +29,7 @@ outcome-what: "appendEntry ueberschreibt eine unlesbare info/exclude oder .gitig
 outcome-why: "signoff-Rueckgabe: ein unlesbares info/exclude wurde bisher durch nur jairas Eintrag ersetzt"
 outcome-resolves: Datenverlust bei unlesbarer Ausschlussdatei
 review-summary: "none"
-round: 13
+round: 14
 review-gaps: "none - Diff 79d71506: eine Pruefung in appendEntry, Idiom errors.Is(err, fs.ErrNotExist) wie im Rest des Repos; nichts doppelt, nichts tot"
 test-verdict: "fail->fixed: suite -race gruen (RC=0) bei 79d71506; DoD 10 per Test belegt; aber share mit unlesbarer .gitignore liess das Board halb geteilt (bughunt)"
 hunt-verdict: "2 change (Release-Note init stoppt nicht; share halb geteilt) - zurueck in in-progress"
