@@ -19,7 +19,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:51:56Z
-updated-at: 2026-10-27T20:51:56Z
+updated-at: 2026-11-20T16:39:32Z
+assignee: Alexander Sacharov
+updated-by: Alexander Sacharov
 ---
 
 # Ein Review-Verdikt 'zurueckschicken' laesst das Ticket nicht nach signoff
