@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:16:40Z
+updated-at: 2026-11-20T17:16:44Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46134
 claimed-at: 2026-11-20T16:42:22Z
@@ -32,7 +32,7 @@ review-summary: "none"
 round: 4
 review-gaps: "none: Fix-Diff d62bafaa ohne Doppelung oder toten Code; parsePlace bleibt die einzige Stelle, die gitPlace-Ausgabe liest"
 test-verdict: "pass: go test ./... gruen (RC=0) auf d62bafaa, -race ueber core/board core/ticket internal/cli gruen; git<2.31 per Wrapper nachgestellt: init faellt auf .gitignore zurueck, kein '--path-format=absolute/'-Verzeichnis; DoD 1-7 an den Tests geprueft"
-hunt-verdict: "pass: bughunt done at 394a544a, 0 findings (Folgerunde ueber den Fix-Diff); Runde 1 (44007130): 1 change, behoben in 394a544a"
+hunt-verdict: "pass: bughunt done at d62bafaa, 0 findings (Folgerunde ueber den Diff seit 394a544a)"
 review-verdict: "Zurueck nach in-progress: DoD 1-7 sind erfuellt und getestet (go test ./core/board ./core/ticket ./internal/cli gruen, Paralleltest 30/30), aber auf git < 2.31 (Ubuntu 20.04, Debian 11) macht init das Board nicht privat und legt ein Verzeichnis '--path-format=absolute/' im Repo an - falsches Ergebnis mit Datenpreisgabe, Fix ist eine Zeile."
 review-round: 3
 review-check: "1. cd $(mktemp -d) && git init -q && jaira init  2. git status --short zeigt nur AGENTS.md/CLAUDE.md, NICHT .jaira/  3. tail -2 .git/info/exclude zeigt den jaira-Kommentar und /.jaira/  4. git worktree add ../wt && cd ../wt && git status --short ist leer  5. jaira share -> info/exclude ohne /.jaira/, .gitignore hat /.jaira/lanes/  6. jaira share --undo -> /.jaira/ wieder in .git/info/exclude  7. altes git: go test ./core/board -run TestParsePlaceReadsWhatGitPrints mit dem neuen Fall \"--path-format=absolute\\n.git\\n\" -> exclude muss \"\" sein"
