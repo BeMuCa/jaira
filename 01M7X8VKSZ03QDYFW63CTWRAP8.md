@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:28:29Z
+updated-at: 2026-11-20T22:30:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
@@ -102,3 +102,4 @@ review-check: |-
 - **2026-11-20 22:04 · Alexander Sacharov** — review: no blocker, 3 notes (hardcoded feat/ branch name in signoff status line, intermediate shipped.sha256 hashes, expected hunt-on-HEAD ❌ per teamlead decision 21:58); checked go test ./core/role ./core/shipped green and that every prescribed command/flag exists
 - **2026-11-20 22:27 · Alexander Sacharov** — Given back from signoff: │ вернуть ради 🟡: роль должна сама находить ветку, если она называется не feat/<id>
 - **2026-11-20 22:28 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
+- **2026-11-20 22:30 · Alexander Sacharov** — in-progress Runde nach signoff-Rueckgabe: Branch-Lookup nach der Regel von jaira create (internal/cli/tickets.go branchTicket: Handle als eigenes Segment des Branchnamens) - lokal vor remote, genau ein Treffer sonst '?' und Kandidaten nennen. Geschwisterstelle teamlead SKILL.md (hunt-cover-Check) verweist darauf. Geprueft: feat/twrap8 und fix/twrap8-x gefunden, feat/twrap8x nicht, unbekannter Handle leer.
