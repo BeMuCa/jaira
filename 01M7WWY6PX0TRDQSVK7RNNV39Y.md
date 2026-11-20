@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:20:08Z
+updated-at: 2026-11-20T17:25:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60542
 claimed-at: 2026-11-20T17:19:23Z
@@ -97,3 +97,8 @@ review-check: "1. cd $(mktemp -d) && git init -q && jaira init  2. Ausgabe sagt:
 - **2026-11-20 17:14 · Alexander Sacharov** — critique Runde 4 (Diff 394a544a..d62bafaa): nichts — IsAbs an der Stelle, wo git-Ausgabe gelesen wird, in beiden Lesern; Escape als ein Replacer.
 - **2026-11-20 17:16 · Alexander Sacharov** — bughunt: done at d62bafaa - 0 findings in 3 modules, follow-up hunt (diff since 394a544a: core/board/gitignore.go, core/board/exclude_test.go, core/ticket/store.go); concurrency, error paths, input, permissions checked; files: README.md core/board/announce.go core/board/board.go core/board/exclude_test.go core/board/gitignore.go core/release/notes/NNV39Y.md core/ticket/store.go docs/COMMANDS.md internal/cli/privateexclude_test.go internal/cli/share.go internal/cli/sharestate_test.go internal/cli/tickets.go internal/cli/update.go
 - **2026-11-20 17:20 · Alexander Sacharov** — review (fresh): kein Blocker. 7/7 DoD mit Tests, go test board/ticket/cli gruen; review-check Schritte 7-8 im Wegwerf-Repo mit gebautem Binary nachgespielt. Vier notes in review-gaps (dropEntry-Leerzeile, unverankertes .jaira/ in exclude, ein git-Aufruf mehr pro Befehl auf geteilten Boards, share --undo nur noch lokal).
+- **2026-11-20 17:25 · Alexander Sacharov** — explain: Der Review fand keinen Blocker, nur vier kleine Anmerkungen: dropEntry loescht bei einem Randfall eine fremde Leerzeile, share kann eine handgeschriebene unverankerte .jaira/-Zeile aus info/exclude entfernen, geteilte Boards starten pro Befehl einen git-Aufruf mehr, und share --undo schreibt nur noch lokal.
+Warum: Die ersten drei sind kosmetisch oder kosten wenige ms; der vierte aendert das Verhalten fuer Teamkollegen, die nach einem undo-Commit ohne Ausschluss bleiben, bis sie jaira update laufen lassen.
+1) Die Anmerkungen beheben (dropEntry, unverankerte Zeile, undo-Hinweis) und zurueck in die Pruefung [give back]
+2) Ticket so annehmen und die vier Punkte als bekannte Grenzen stehen lassen [accept]
+Empfehlung: 2 - alle 7 DoD-Punkte sind mit Tests belegt, die Funde sind Randfaelle ohne Datenverlust und wuerden das Ticket nur vergroessern.
