@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T17:53:47Z
+updated-at: 2026-11-20T17:59:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80126
 claimed-at: 2026-11-20T17:38:47Z
@@ -115,3 +115,8 @@ Empfehlung: 2 - der Teamlead hat das bewusst aus diesem Ticket genommen, alle 7 
 - **2026-11-20 17:47 · Alexander Sacharov** — testing: class: machine-written notes after the sender's are read as the sender; example: 'jaira pull --steal' note (refsync.go:1433) -> 'back: review'; fix: pass over every line jaira or the cockpit writes itself - 'cockpit:' and '<who> took this ticket over from <holder>' (the only AppendNote outside 'jaira note', checked by grep)
 - **2026-11-20 17:47 · Alexander Sacharov** — back: testing, round 1
 - **2026-11-20 17:48 · Alexander Sacharov** — bughunt: done at 9fa8ce3c - 0 findings in 3 modules, follow-up hunt since 22a9fc77; concurrency, error paths, input, permissions checked (diff: one sentence in the in-progress prompt twins plus one manifest line; twins byte-equal; manifest 0b70615e = sha256 of 20-in-progress.md at HEAD; steal note wording matches refsync.go:1433; the only AppendNote callers are jaira note and pull --steal, cockpit writes only decision:/Given back from/cockpit: - all covered); files: .jaira/lanes/in-progress.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md core/lane/builtin/15-pre-process.md core/lane/builtin/20-in-progress.md core/lane/builtin/27-testing.md core/lane/builtin/40-review.md core/release/notes/TW5FE2.md core/role/builtin/jaira-role-bughunt/SKILL.md core/shipped/shipped.sha256
+- **2026-11-20 17:59 · Alexander Sacharov** — explain: Nur Prompts geändert, kein Go-Code; alle 7 DoD-Punkte erfüllt, kein Blocker. Zwei kleine Lücken: Wenn review ein Ticket ohne eigene Note zurückgibt, zählt in-progress die Rückgabe für testing; und testing läuft bei Folgerunden komplett (nicht nur Diff), was vom DoD-Wortlaut abweicht.
+Warum: Die Zählung der Rückläufe (3. Rückgabe = Frage an die Person) hängt an Note-Konventionen; eine falsch zugeordnete Rückgabe verschiebt nur, wann die Schleife stoppt. Der volle Testlauf ist sinnvoll wegen Regressionen, ist aber eine bewusste Abweichung.
+1) 40-review.md lässt seine Rückgabe-Note mit "review:" beginnen und 20-in-progress.md listet das Präfix; DoD 6 wörtlich angleichen [give back]
+2) Ticket so annehmen; Lücke und Abweichung bleiben als bekannte Einschränkung [accept]
+Empfehlung: 2 - kein Blocker nach den eigenen Regeln (falsches Ergebnis, Datenverlust, Absturz, Sicherheitslücke trifft nichts davon zu), der Schaden der Lücke ist klein.
