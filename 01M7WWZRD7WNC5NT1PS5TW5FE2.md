@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T16:56:13Z
+updated-at: 2026-11-20T16:57:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-42185
 claimed-at: 2026-11-20T16:42:15Z
@@ -37,7 +37,7 @@ outcome-resolves: "DoD 1-4: pre-process 15-pre-process.md:38, in-progress 20-in-
 review-summary: none
 round: 4
 review-gaps: "none: nur Prompt-Text; die vier Kategorien und die Blocker-Definition stehen bewusst in jeder Lane, die sie anwendet, weil jede nur ihren eigenen Prompt liest; nichts verwaist"
-test-verdict: "fail: DoD 5-7 (Interim-Regeln des Teamleads, nachgetragen) sind noch nicht in den Lanes; Suite gruen (go test -race ./... RC=0)"
+test-verdict: "pass: go test -race -count=1 ./... RC=0, go build ok; DoD 1-7 im Baum geprueft; alle vier Lanes liefern ihren --for-lane-Payload; .jaira/lanes byte-gleich mit builtin"
 ---
 
 # Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels
