@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T19:32:25Z
+updated-at: 2026-11-20T19:32:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96533
 claimed-at: 2026-11-20T19:19:14Z
@@ -39,7 +39,7 @@ test-verdict: "pass: go test -race internal/cli+core/board gruen (RC=0) bei 7e69
 hunt-verdict: "0 findings at 7e69b451 (follow-up hunt ueber dde1cf1c..7e69b451)"
 review-verdict: "Der Diff erfuellt alle 10 DoD-Punkte; die genannten Tests laufen gruen (core/board, core/ticket, internal/cli). Von Hand nachgestellt: init + Worktree lassen git status sauber, share/--undo, Altboard-Migration per update, Teamkollege ohne Eintrag, Board im Unterverzeichnis, negierte Regel in check-ignore (Exit 1, korrekt). Keine Defekte gefunden - nur vier Notes, keine davon blockiert."
 review-round: 15
-review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/r && cd /tmp/r && git init && git commit --allow-empty -m init  3. /tmp/jaira init -> Ausgabe: 'excluded in .git/info/exclude'  4. git status --short -> kein .gitignore und kein .jaira/ in der Liste  5. tail -2 .git/info/exclude -> zeigt /.jaira/  6. git worktree add ../r-wt && git -C ../r-wt status --short -> leer  7. /tmp/jaira share --json -> unignored true, still_ignored false; git status zeigt jetzt ?? .jaira/  8. Alte Boards: in einem Repo mit committeter .gitignore-Zeile /.jaira/ 'jaira update' laufen lassen -> 'Moved this private board's entry from .gitignore to .git/info/exclude', git diff zeigt nur die entfernte Zeile; ein zweites 'jaira update --json' meldet ignore_moved false"
+review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/t && cd /tmp/t && git init && git commit --allow-empty -m init  3. /tmp/jaira init  4. git status --short zeigt KEINE .gitignore und kein .jaira/; tail -2 .git/info/exclude zeigt /.jaira/  5. git worktree add ../t2 && cd ../t2 && /tmp/jaira init && git status --short - wieder keine .gitignore  6. cd /tmp/t && /tmp/jaira share - .jaira/ erscheint als ?? und .gitignore enthaelt nur /.jaira/lanes/; /.jaira/ ist aus .git/info/exclude verschwunden  7. /tmp/jaira share --undo - die letzte Zeile sagt, Teamkollegen sollen jaira update laufen lassen; .jaira/ ist wieder weg aus git status  8. Altboard: printf '/.jaira/\\n' >> .gitignore && sed -i '/jaira/d' .git/info/exclude && /tmp/jaira update - Ausgabe 'Moved this private board's entry from .gitignore to .git/info/exclude', .gitignore ohne die Zeile, .jaira/ nicht in git status"
 ---
 
 # Ein privates Board steht in .git/info/exclude statt in der .gitignore des Arbeitsbaums
