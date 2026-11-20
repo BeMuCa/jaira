@@ -23,13 +23,14 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T23:08:51Z
+updated-at: 2026-11-20T23:09:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-91898
 claimed-at: 2026-11-20T22:44:37Z
 outcome-what: "Tickets carry blocker-rule and stop-after-fix (set-validated, in show --json and every --for-lane payload); jaira move records back-from/back-by/back-count on every send-back; testing/review/bughunt/pre-process/in-progress prompts read them; the cockpit offers Explain only for a blocker line or a reservation, lists notes under the row, names a review of an earlier round, and Explain notes are classed and coloured. CRLF in any set value is stored as LF instead of failing."
 outcome-why: "Without a per-ticket blocker threshold and a recorded sender, every edge became a blocker, a person's return counted as a loop return, and every signoff ticket had an Explain that read as 'must change' - so tickets looped and Alex gave everything back."
 outcome-resolves: "DF0YD6 DoD 1-10. Checked: concurrency (two parallel send-backs count one, TestMoveCountsOneReturnForTwoAtOnce), error paths (bad stop-after-fix exits 2, nothing written), unusual input (quotes, umlauts, multiline, CRLF/CR in blocker-rule), permissions n/a (no new file access). go test ./... exit 0, claude plugin test 214 pass."
+review-summary: none
 ---
 
 # Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt
