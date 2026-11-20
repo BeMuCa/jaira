@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:43:41Z
+updated-at: 2026-11-20T17:43:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60542
 claimed-at: 2026-11-20T17:19:23Z
@@ -109,3 +109,4 @@ Empfehlung: 2 - alle 7 DoD-Punkte sind mit Tests belegt, die Funde sind Randfael
 - **2026-11-20 17:38 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
 - **2026-11-20 17:42 · Alexander Sacharov** — signoff-Rueckgabe umgesetzt: (1) dropEntry: Leerzeile nur, wenn sie direkt auf einen mit Kommentar entfernten Eintrag folgt. (2) unverankertes .jaira/ in info/exclude: Ignored zaehlt es weiter (es schliesst das Board ja aus), RemoveIgnore nimmt aus exclude aber nur die exakte verankerte Zeile; share warnt auf stderr und meldet still_ignored in --json statt die Zeile still zu entfernen und dabei ein Unterverzeichnis-Board mit zu veroeffentlichen. Verworfen: unverankerte Zeile gar nicht mehr als Ausschluss zaehlen - dann meldet share 'geteilt', obwohl git das Board weiter ignoriert. (3) share --undo nennt jaira update fuer Teamkollegen. Kosten von Ignored (vierte Anmerkung) bleiben, wie entschieden.
 - **2026-11-20 17:43 · Alexander Sacharov** — critique Runde 5 (Diff d62bafaa..75e2b8b5): internal/cli/share.go:113 warning names '.gitignore or <exclude>', but RemoveIgnore has just removed every .jaira form from .gitignore, so only info/exclude can still hold the line - name only board.IgnoreFileName(s.Root). Stehen gelassen: dropEntry mit zwei Flags statt Index des letzten Eintrags - gleich viel Code.
+- **2026-11-20 17:43 · Alexander Sacharov** — critique Runde 6 (Diff 75e2b8b5..750e2acf): nichts - Warnung nennt nur noch info/exclude.
