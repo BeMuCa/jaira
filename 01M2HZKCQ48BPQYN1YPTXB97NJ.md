@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:03:06Z
+updated-at: 2026-11-20T23:03:10Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -50,7 +50,8 @@ question: ""
   proof: core/release/notes/XB97NJ.md
 - [x] Eingabeklassen der Datei .jaira/pr per Tabellentest: fehlt, leer, nur Kommentar, CRLF, Gross-/Kleinschreibung ('None'), Leerzeichen um den Wert, Tippfehler ('nnone'), zwei Zeilen - nur exakt 'none' heisst kein PR, alles Unbekannte bleibt person.
   proof: core/board/arrival_test.go TestPRModeInTakesOnlyTheExactWord + core/settings/settings_test.go TestPRDefaultsToThePerson (none-Faelle)
-- [ ] Der Block ist byte-gleich zu heute, wo .jaira/pr fehlt oder person sagt; ein Board mit none/agent bekommt den passenden Absatz durch jaira update, und jaira validate meldet den Block als veraltet, sobald die Datei sich aendert.
+- [x] Der Block ist byte-gleich zu heute, wo .jaira/pr fehlt oder person sagt; ein Board mit none/agent bekommt den passenden Absatz durch jaira update, und jaira validate meldet den Block als veraltet, sobald die Datei sich aendert.
+  proof: core/board/arrival_test.go TestNoteSaysHowWorkArrivesAndDriftsWithTheFile (Absatz bei none/agent, NoteIsCurrent stale nach Dateiwechsel, Absatz weg nach Entfernen)
 - [ ] Bei none landet die Arbeit nur durch das Tor: jaira roles pr-gate laesst erst durch, wenn jedes Ticket des Zweigs in done ist, liest .jaira/pr vom Basis-Zweig, und das Landen ist ein fast-forward push - ein abgelehnter (nicht fast-forward) Push wird nie mit --force wiederholt.
 
 ## Options
