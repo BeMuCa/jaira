@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T20:04:16Z
+updated-at: 2026-11-20T20:04:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-18659
 claimed-at: 2026-11-20T19:49:16Z
@@ -92,7 +92,7 @@ review-check: |-
 - [x] pr-gate liest .jaira/pr und .jaira/pr-when aus <base>, nicht von der Platte des Branches; ein Branch, der agent/signoff selbst committet, oeffnet sein Gate nicht
   proof: internal/cli/roles.go pr-gate repo.FileAt(<base>, .jaira/pr|pr-when); internal/cli/prgate_test.go TestPRGateReadsTheBoardFilesFromTheBase; core/settings/settings_test.go PRIn/PRWhenIn in TestPRDefaultsToThePerson, TestPRWhenDefaultsToDone
 - [x] pr-round.sh open setzt --head <account>:<branch> (Fork) bzw. <branch> (gleiches Repo) aus der Push-URL und prueft den Tip dort, wohin git push sendet
-  proof: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:208-232 account from the first pushurl, only scheme://host/<owner>/<name> or host:<owner>/<name>; core/role/builtin/jaira-role-pr/scripts/pr-round.sh:241 gh pr create --head; core/role/pr_round_test.go TestPROpenNamesTheHeadItChecked (https/ssh/scp, same repo any case, pushurl apart from url, two pushurls, 9 URLs without an account -> 3)
+  proof: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:208-232 account from the first pushurl, else the first url, only scheme://host/<owner>/<name> or host:<owner>/<name>; core/role/builtin/jaira-role-pr/scripts/pr-round.sh:241 gh pr create --head; core/role/pr_round_test.go TestPROpenNamesTheHeadItChecked (https/ssh/scp, same repo any case, pushurl apart from url, two pushurls, two urls, 9 URLs without an account -> 3)
 
 ## Options
 
