@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T18:19:09Z
+updated-at: 2026-11-20T18:19:14Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-37518
 claimed-at: 2026-11-20T18:18:38Z
@@ -134,3 +134,4 @@ Warum: Die ersten zwei Luecken betreffen genau die Rundenzaehlung und den Gate-A
 Empfehlung: 1 - die Fixes sind wenige Zeilen Prompt-Text, und die ersten beiden betreffen die neue Rundenlogik selbst.
 - **2026-11-20 18:18 · Alexander Sacharov** — Given back from signoff (Person, per CLI): Absender-Präfix für review
 - **2026-11-20 18:18 · Alexander Sacharov** — back: person
+- **2026-11-20 18:19 · Alexander Sacharov** — critique: none - eine Zeile in der Absender-Liste; 'back: unknown' passt in das bestehende back:-Muster, kein neuer Mechanismus
