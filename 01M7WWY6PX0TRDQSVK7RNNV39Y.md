@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:00:42Z
+updated-at: 2026-11-20T17:00:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46134
 claimed-at: 2026-11-20T16:42:22Z
@@ -30,6 +30,7 @@ outcome-why: "Eine von jaira geaenderte .gitignore erscheint in jedem neuen Work
 outcome-resolves: Neue Worktrees eines Repos mit privatem Board bleiben sauber; kein Wegraeumen der .gitignore-Zeile von Hand mehr.
 review-summary: "none"
 round: 2
+review-gaps: "nichts entfernt. Geprueft: gitPlace vs. commonGitDir (core/ticket/store.go:878) — verschieden, gitPlace braucht --show-prefix im selben Aufruf; Lock aus Store.lock wiederverwendet statt nachgebaut (ticket.LockFile); RemoveLanesIgnore/AddLanesIgnore nutzen jetzt dieselben appendEntry/dropEntry (vorher zwei Kopien). Gelassen: Rueckgabewerte von MoveIgnore/AddIgnore in moveIgnore (update.go) verworfen, weil InGitignore/Ignored vorher schon entschieden haben; mehrere gitPlace-Aufrufe in init/update — kein heisser Pfad."
 ---
 
 # Ein privates Board steht in .git/info/exclude statt in der .gitignore des Arbeitsbaums
