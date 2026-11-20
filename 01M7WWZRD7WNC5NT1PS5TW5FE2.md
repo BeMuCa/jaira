@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T18:13:04Z
+updated-at: 2026-11-20T18:13:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5618
 claimed-at: 2026-11-20T18:03:30Z
@@ -43,8 +43,8 @@ review-gaps: |-
   note: testing follow-up round says 'tests of the packages git diff --name-only <commit> touches' - Go wording; on another stack 'package' means nothing and git diff fails if <commit> was rebased away; fix: 'the tests covering the changed files; whole suite if the commit is unknown'
 test-verdict: "pass: follow-up round - go build ./... ok; go test -race -count=1 ./core/lane/... ./core/shipped ./core/release/... RC=0 (packages the diff since 9fa8ce3c touches); DoD 1-7 in the tree, proof lines re-checked after the edit; .jaira/lanes in-progress/testing/review byte-equal to builtin, all three hashes in shipped.sha256; a fresh 'jaira init' from this tree ships the review: prefix in review.md and in-progress.md; prompts only - nothing writes, so no failure path or two-writer case"
 hunt-verdict: "pass: bughunt done at d0cb1f49, 0 change, 0 pre-existing"
-review-verdict: "No blocker. All seven DoD items are met in the prompts; builtin and board copies are identical; go test ./core/shipped/... ./core/lane/... ./core/role/... passes. The return-counting rule rests on note conventions rather than recorded data - it works as long as each sending lane writes its note last, which the critique, optimize and testing prompts already require and the review prompt only asks for."
-review-round: 9
+review-verdict: "All 7 DoD items are met in the diff; no blocker. Verified the strings the prompts rely on exist in code: round field (move.go:134), 'Given back from <lane>:' (cockpit register.tsx:900), '<who> took this ticket over from' (refsync.go:1433), 'bughunt: done at' (bughunt SKILL), 'critique:'/'optimize:' return-note prefixes, 'jaira dod --add'. go test ./core/shipped ./core/role ./core/lane pass. Four notes are small wording edges, none changes a result."
+review-round: 10
 review-check: "1. cd /home/alex/projects/.worktrees/jaira-tw5fe2  2. git diff c69471d0^ HEAD -- core/lane/builtin/20-in-progress.md - see sections 'Fix the class, not the example' and 'The third return from the same lane'  3. git diff c69471d0^ HEAD -- core/lane/builtin/15-pre-process.md - see 'Name the edges before the code' with the input-class list  4. diff core/lane/builtin/20-in-progress.md .jaira/lanes/in-progress.md - prints nothing (copies equal)  5. go test ./core/shipped/... ./core/lane/... - both ok  6. real check: on the next ticket that runs through pre-process, jaira show <id> shows DoD items naming a class of fault and input classes"
 ---
 
