@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T23:13:01Z
+updated-at: 2026-11-20T23:13:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-91898
 claimed-at: 2026-11-20T22:44:37Z
@@ -104,3 +104,4 @@ test-verdict: "pass: go test -race ./... RC=0, claude plugin test 214 pass RC=0;
 - **2026-11-20 23:08 · Alexander Sacharov** — in-progress done, moved to critique; the first send of the move was refused as 'written first' by this session's own last plan tick (ref 0c810cc8 = disk minus the move) - a race between two sends of one session, the disk file is the superset.
 - **2026-11-20 23:09 · Alexander Sacharov** — critique: none. Let stand: core/move/move.go isPersons repeats the person-lane predicate gate.go:212, web_source.go:256 and snake.go:67 inline too - a Lane method would touch three unrelated files, not this ticket's scope; explain parser accepts German class aliases (kleiner Rand, bekannte Grenze, nicht aus diesem Ticket) because the explain chat answers in the person's language and may translate the marks - three map entries, kept.
 - **2026-11-20 23:13 · Alexander Sacharov** — testing: test-verdict pass written; bughunt running in background at ac850761 - a restarted worker waits for its 'bughunt: done at ac850761' line or starts a new hunt.
+- **2026-11-20 23:13 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/board.ts:128 - notes are listed from review-gaps whenever a verdict exists, with no sameRound check (the old explainable() had one for exactly this reason). From round 2 on, the optimize lane overwrites review-gaps before review runs again, so a ticket waiting in human with a round-1 verdict shows optimize's removal list ('removed helper fooBar ...') under its row as the review's notes. Trigger: round=2, review_round=1, status human, verdict set, gaps written by optimize; ran: node --experimental-strip-types on snapshotOf with that ticket -> notes = the two optimize lines, reviewedIn 1
