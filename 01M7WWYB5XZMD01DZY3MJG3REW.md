@@ -21,7 +21,8 @@ related:
   - 01M2HZKCQ48BPQYN1YPTXB97NJ
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T16:34:26Z
+updated-at: 2026-11-20T16:40:03Z
+updated-by: Alexander Sacharov
 ---
 
 # Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
