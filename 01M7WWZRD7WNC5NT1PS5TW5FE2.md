@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T18:23:08Z
+updated-at: 2026-11-20T18:23:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-37518
 claimed-at: 2026-11-20T18:18:38Z
@@ -36,7 +36,11 @@ outcome-why: "Review- und bughunt-Schleifen liefen 10-24 Runden, weil jede Runde
 outcome-resolves: "DoD 1-7: 15-pre-process.md:38, 20-in-progress.md:29 und :66-102, 27-testing.md:41-45,98,129-134, bughunt SKILL.md:104, 40-review.md:57,117-121, shipped.sha256, core/release/notes/TW5FE2.md. Vier Kategorien: Nebenlaeufigkeit/Fehlerpfade/Rechte - nur Prompt-Text, nichts schreibt; ungewoehnliche Eingabe - Note ohne Praefix (auch aeltere review-Prompts) = back: unknown, zaehlt nicht."
 review-summary: "Nur Prompt-Texte, kein Go-Code. pre-process benennt vor dem Code Fehlerklasse, Eingabeklassen (leer/gross, Kodierung/CRLF, Pfade mit Leerzeichen/Windows, zwei Prozesse, Fehler auf halbem Weg) und bei Heuristik eine Annahmeregel und schreibt sie mit 'jaira dod --add' in die DoD. in-progress fixt die Ursache statt des Beispiels, testet die Klasse parametrisiert, zieht Geschwister-Stellen mit, prueft die vier Kategorien selbst und schliesst kleine Raender in derselben Runde; zaehlt Rueckgaben ueber eigene 'back: <lane>, round n'-Zeilen (Absender aus der neuesten Note: Given back from/decision: = person und setzt zurueck, critique:/optimize:/testing:/review:/bughunt: = Lane, sonst unknown) und geht bei der dritten Rueckgabe derselben Lane mit Frage nach human. testing und review schicken nur fuer vier Blockerarten zurueck (falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke), Funde nennen Klasse und Beispiel, Folgerunden testen nur den Diff seit dem letzten Hunt; review-Rueckgabenote beginnt mit 'review:'. bughunt-Skill verlangt Klasse+Beispiel. Board-Kopien in .jaira/lanes byte-gleich, shipped.sha256 und Release-Note nachgezogen."
 round: 11
-review-gaps: none
+review-gaps: |-
+  note: pre-process sagt bei einer Heuristik, deren Annahmeregel nur eine Person kennt, 'move the ticket to the human lane' (15-pre-process.md:66), aber gate.go:438 verweigert den Vorwaertsmove, solange plan leer ist; Klasse: Prompt-Anweisung zu einem Move, den das Gate ablehnt; Fix: ein Satz 'schreib zuerst den Plan bis dahin, dann move --question'
+  note: 'once per round' fuer die back:-Zeile (20-in-progress.md) sagt nicht, wie ein neu gestarteter Worker das prueft; Klasse: doppelte Zaehlzeile nach Neustart; Fix: 'steht schon eine back:-Zeile mit dieser round, schreib keine zweite'
+  note: testing Pass 1 spricht von 'packages' (27-testing.md:~132), Go-Wortlaut auf einem sprachneutralen Board; Fix: 'the tests of what git diff touches'
+  note: pre-existing: core/shipped/shipped.sha256 fehlen 8 getaggte Versionen (board.ts, register.tsx, texts.ts, types/index.d.ts, template.html) - siehe bughunt-Note 16:50, Teamlead klaert
 test-verdict: "pass: follow-up round since d0cb1f49 - go build ./... ok; go test -race -count=1 ./core/lane/... ./core/shipped ./core/release/... RC=0; in-progress twin byte-equal to builtin, its sha256 in shipped.sha256; release notes 8 lines, all '- '; DoD 6 proof re-pointed at 20-in-progress.md:66-102 (no prefix = back: unknown); prompts only - nothing writes, no failure path or two-writer case"
 hunt-verdict: "pass: bughunt done at c3e5a7df, 0 change, 0 pre-existing"
 review-verdict: "All 7 DoD items are met in the diff; no blocker. Verified the strings the prompts rely on exist in code: round field (move.go:134), 'Given back from <lane>:' (cockpit register.tsx:900), '<who> took this ticket over from' (refsync.go:1433), 'bughunt: done at' (bughunt SKILL), 'critique:'/'optimize:' return-note prefixes, 'jaira dod --add'. go test ./core/shipped ./core/role ./core/lane pass. Four notes are small wording edges, none changes a result."
