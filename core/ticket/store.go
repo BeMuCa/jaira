@@ -883,8 +883,10 @@ func commonGitDir(root string) string {
 	if err != nil {
 		return ""
 	}
-	dir := strings.TrimSpace(string(out))
-	if dir == "" {
+	// git before 2.31 prints an unknown --path-format back instead of the
+	// directory; only an absolute path is an answer.
+	dir := strings.TrimSpace(strings.SplitN(string(out), "\n", 2)[0])
+	if dir == "" || !filepath.IsAbs(filepath.FromSlash(dir)) {
 		return ""
 	}
 	return filepath.Clean(dir)
@@ -1533,7 +1535,31 @@ func (s *Store) lock(id string) (func(), error) {
 	if err := os.MkdirAll(s.locksDir(), 0o755); err != nil {
 		return nil, err
 	}
-	path := filepath.Join(s.locksDir(), id+".lock")
+	unlock, err := lockFile(filepath.Join(s.locksDir(), id+".lock"))
+	if err == errLockTimeout {
+		return nil, fmt.Errorf("ticket: timed out waiting for lock on %s", id)
+	}
+	return unlock, err
+}
+
+// errLockTimeout is lockFile's answer when the lock stayed taken; each caller
+// names what it was waiting for.
+var errLockTimeout = errors.New("ticket: timed out waiting for lock")
+
+// LockFile takes the advisory lock file at path — created with O_EXCL, waited
+// for with backoff, broken when its holder died — the one the store's own
+// locks are made of, for a file outside any store that two jaira processes
+// write: the info/exclude every worktree of a repository shares. Its directory
+// must exist. The caller must call the returned function, normally with defer.
+func LockFile(path string) (func(), error) {
+	unlock, err := lockFile(path)
+	if err == errLockTimeout {
+		return nil, fmt.Errorf("ticket: timed out waiting for lock %s", path)
+	}
+	return unlock, err
+}
+
+func lockFile(path string) (func(), error) {
 	deadline := time.Now().Add(lockTimeout)
 	backoff := 2 * time.Millisecond
 
@@ -1560,7 +1586,7 @@ func (s *Store) lock(id string) (func(), error) {
 			if !os.IsExist(err) {
 				return nil, err
 			}
-			return nil, fmt.Errorf("ticket: timed out waiting for lock on %s", id)
+			return nil, errLockTimeout
 		}
 		time.Sleep(backoff)
 		if backoff < 100*time.Millisecond {

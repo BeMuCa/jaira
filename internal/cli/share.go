@@ -30,15 +30,16 @@ func newShareCmd() *cobra.Command {
 		Short: "Publish the board so everyone with the repository can see it",
 		Long: `Makes the board part of the repository.
 
-A board starts private: 'jaira init' gitignores it, so your tickets are yours
-alone until you decide otherwise. Publishing is a decision, not a default — the
-tool cannot know whether these notes are ready to be read by whoever can clone
-this repository.
+A board starts private: 'jaira init' excludes it in .git/info/exclude, so
+your tickets are yours alone until you decide otherwise. Publishing is a
+decision, not a default — the tool cannot know whether these notes are ready
+to be read by whoever can clone this repository.
 
-Publishing stops ignoring .jaira/, writes the .gitattributes that tells git to
-merge tickets field by field, and registers the merge driver for this clone. The
-tickets themselves are unchanged, so this is a decision you can reverse with
---undo rather than a migration.
+Publishing stops ignoring .jaira/ (in .git/info/exclude, and in .gitignore
+where an older jaira put the entry), writes the .gitattributes that tells git
+to merge tickets field by field, and registers the merge driver for this
+clone. The tickets themselves are unchanged, so this is a decision you can
+reverse with --undo rather than a migration.
 
 You still have to commit. jaira does not commit on your behalf.`,
 		Args: noArgs(),
@@ -72,18 +73,29 @@ You still have to commit. jaira does not commit on your behalf.`,
 				}
 				fmt.Fprintf(w, "The board is private again.\n")
 				if changed {
-					fmt.Fprintf(w, "Added %s to .gitignore.\n", board.IgnoreLine)
+					fmt.Fprintf(w, "Excluded .jaira/ in %s.\n", board.IgnoreFileName(s.Root))
 				}
 				fmt.Fprintf(w, "\nTickets already committed stay in history. To remove them:\n"+
 					"  git rm -r --cached .jaira && git commit -m \"make jaira board private\"\n")
+				// info/exclude belongs to this clone. A teammate who pulls that
+				// commit has no exclude entry of their own until jaira writes one.
+				fmt.Fprintf(w, "\nThe exclude entry is this clone's only. A teammate who keeps the board\n"+
+					"runs 'jaira update' once after pulling that commit, or their tickets\n"+
+					"show up as untracked files.\n")
 				return nil
 			}
 
-			unignored, err := board.RemoveIgnore(s.Root)
+			// The lanes line first: a .gitignore jaira cannot write stops share
+			// while the board is still excluded, not halfway with the exclude
+			// gone and .jaira/lanes/ showing as untracked.
+			lanesIgnored, err := board.AddLanesIgnore(s.Root)
 			if err != nil {
+				if board.Ignored(s.Root) {
+					return fmt.Errorf("the board stays private: %w", err)
+				}
 				return err
 			}
-			lanesIgnored, err := board.AddLanesIgnore(s.Root)
+			unignored, err := board.RemoveIgnore(s.Root)
 			if err != nil {
 				return err
 			}
@@ -92,16 +104,35 @@ You still have to commit. jaira does not commit on your behalf.`,
 				return err
 			}
 			installed, driverErr := ensureMergeDriver(s.Root)
+			// RemoveIgnore takes out jaira's own entries only. A rule a person
+			// wrote, such as an unanchored .jaira/ in info/exclude that covers
+			// every board in the repository, stays, and keeps this one out of git.
+			ignoredBy, ignoreErr := board.GitIgnores(s.Root)
 
+			// A git that cannot answer is "unknown", never "not ignored":
+			// still_ignored is null then, and ignore_unknown says why.
+			var stillIgnored any = ignoredBy != ""
+			unknown := ""
+			if ignoreErr != nil {
+				stillIgnored, unknown = nil, ignoreErr.Error()
+			}
 			if g.jsonOut {
 				return emit(w, map[string]any{
 					"shared": true, "unignored": unignored, "lanes_ignored": lanesIgnored,
 					"gitattributes_written": attrs, "merge_driver_installed": installed,
+					"still_ignored": stillIgnored, "ignore_unknown": unknown,
 				})
+			}
+			if unknown != "" {
+				fmt.Fprintf(cmd.ErrOrStderr(), "jaira: warning: git could not say whether .jaira/ is still ignored (%s)\n", unknown)
+			}
+			if ignoredBy != "" {
+				fmt.Fprintf(cmd.ErrOrStderr(), "jaira: warning: a rule jaira did not write still ignores .jaira/ (%s); "+
+					"git will not see the tickets until you remove it by hand\n", ignoredBy)
 			}
 			fmt.Fprintf(w, "The board is now part of the repository.\n")
 			if unignored {
-				fmt.Fprintf(w, "Removed %s from .gitignore.\n", board.IgnoreLine)
+				fmt.Fprintf(w, "Stopped ignoring .jaira/.\n")
 			}
 			fmt.Fprintf(w, "This project's lane files stay private: %s is still ignored.\n", board.LanesIgnoreLine)
 			if attrs {
