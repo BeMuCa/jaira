@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T23:13:40Z
+updated-at: 2026-11-20T23:16:06Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-91898
 claimed-at: 2026-11-20T22:44:37Z
@@ -33,6 +33,7 @@ outcome-resolves: "DF0YD6 DoD 1-10. Checked: concurrency (two parallel send-back
 review-summary: none
 review-gaps: "folded the back object of show --json and the --for-lane payload into one backJSON (internal/cli/tickets.go); hoisted the review verdict read three times per ticket in the cockpit's snapshotOf (board.ts); left the person-lane predicate repeated in gate.go, web_source.go, snake.go and move.go (pre-existing pattern, critique note); no dead code: namesGap went with the rule it served, sameRound still has its caller"
 test-verdict: "pass: go test -race ./... RC=0, claude plugin test 214 pass RC=0; DoD 1-10 checked in the tree; binary on a scratch board: stop-after-fix=yes exits 2 and writes nothing, blocker-rule with CRLF stored as LF, signoff->in-progress records person/1, two testing returns record testing/lane/2, the for-lane payload and its plain header carry blocker_rule, stop_after_fix, round and back; two parallel send-backs from testing count one return (round +1, count +1), jaira validate clean. The cockpit pane checked by its tests only, not live."
+hunt-verdict: "fail: bughunt done at ac850761, 2 change (optimize gaps listed as review notes on a later round; a person's TUI send-back from a loop lane recorded as by lane), 0 pre-existing"
 ---
 
 # Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt
