@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-20T22:58:31Z
+updated-at: 2026-11-20T22:58:35Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -45,7 +45,8 @@ round: 3
   proof: CLAUDE.md:131, AGENTS.md (regenerated with 'jaira update' from this build)
 - [x] Die jaira-Rolle (core/role/jaira/SKILL.md) traegt denselben Vorbehalt wie der Block
   proof: core/role/jaira/SKILL.md:331; TestAgentNoteSaysTheTicketCannotRideOnAnUnsharedBoard
-- [ ] Die PR-Rolle und docs/AGENTS.md werten einen Code-Commit ohne Ticketdatei auf einem ungeteilten Board nicht als Fehler
+- [x] Die PR-Rolle und docs/AGENTS.md werten einen Code-Commit ohne Ticketdatei auf einem ungeteilten Board nicht als Fehler
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:59, docs/AGENTS.md:72; go test ./... -race exit 0
 
 ## Options
 
