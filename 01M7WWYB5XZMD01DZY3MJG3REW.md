@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T16:43:50Z
+updated-at: 2026-11-20T16:44:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59469
 claimed-at: 2026-11-20T16:43:41Z
@@ -49,3 +49,4 @@ claimed-at: 2026-11-20T16:43:41Z
 
 ## Progress
 - **2026-11-20 16:43 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock
+- **2026-11-20 16:44 · Alexander Sacharov** — decision (settled, worker): die Einstellung ist eine Board-Datei wie .jaira/release - .jaira/pr, eine Zeile 'person' (Default, wie heute) oder 'agent'; der Reviewer steht in .jaira/pr-reviewer (z.B. copilot). Grund: Vorbild ReleaseFor in core/settings/settings.go, reist mit dem Repo (XB97NJ: nicht settings.json, nicht git config); sichtbar ueber 'jaira roles list --json' wie release.
