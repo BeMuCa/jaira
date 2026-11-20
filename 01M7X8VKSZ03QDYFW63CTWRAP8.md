@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T20:05:54Z
+updated-at: 2026-11-20T20:05:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16592
 claimed-at: 2026-11-20T20:04:03Z
@@ -37,7 +37,8 @@ claimed-at: 2026-11-20T20:04:03Z
 
 - [x] jaira-teamlead/SKILL.md: Abschnitt 'Report to the human' verlangt die Statuszeile + eingeordnete Tabelle + eine Empfehlung fuer signoff/human und das Neu-Lesen des Stands vor jeder Liste offener Entscheidungen
   proof: core/role/builtin/jaira-teamlead/SKILL.md ## Report to the human
-- [ ] Neue Rolle jaira-role-signoff <id>...: liest Tickets in signoff, gibt die Tabelle mit Einordnung und Empfehlung nach den Rueckgabe-Regeln aus, fertige move-Befehle und ein Folge-Ticket fuer gelbe Raender nach der zweiten Rueckgabe; aendert nichts selbst
+- [x] Neue Rolle jaira-role-signoff <id>...: liest Tickets in signoff, gibt die Tabelle mit Einordnung und Empfehlung nach den Rueckgabe-Regeln aus, fertige move-Befehle und ein Folge-Ticket fuer gelbe Raender nach der zweiten Rueckgabe; aendert nichts selbst
+  proof: core/role/builtin/jaira-role-signoff/SKILL.md (## The return rules, ## Per ticket)
 - [ ] jaira-worker/jaira-dispatcher: vor jedem Push die Gates des Projekts lokal laufen lassen, die CI sonst rot machen (im Skill allgemein formuliert)
 - [ ] Release-Note und shipped.sha256; die Rollen-Tests (core/role) gruen
 
