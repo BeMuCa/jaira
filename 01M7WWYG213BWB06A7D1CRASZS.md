@@ -13,12 +13,15 @@ context: |-
   Verwandt: QFWRXH (PR-Spalte auf dem Board), das Ticket mit der optionalen PR-Runde.
 definition-of-done: "Ein Befehl oder eine Cockpit-Ansicht zeigt je Ticket mit PR: offene/beantwortete Kommentare, CI-Stand, ob ein Review aussteht"
 tags: []
-blocked-by: []
+blocked-by:
+  - 01M5ZJ5DKQZ83GYBGPJHAX8K02
 related:
+  - 01M7WWYB5XZMD01DZY3MJG3REW
   - 01M6HZQPZZFAF3MXY3AWQFWRXH
+  - 01M7WX040JC9Z202EH852EF48S
 commits: []
 created-at: 2026-11-20T16:34:31Z
-updated-at: 2026-11-20T16:40:28Z
+updated-at: 2026-11-20T16:40:30Z
 updated-by: Alexander Sacharov
 ---
 
