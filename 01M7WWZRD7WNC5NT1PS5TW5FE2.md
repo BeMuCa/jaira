@@ -27,10 +27,10 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T18:03:11Z
+updated-at: 2026-11-20T18:03:30Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-80126
-claimed-at: 2026-11-20T17:38:47Z
+claimed-by: DESKTOP-RFTCH11-5618
+claimed-at: 2026-11-20T18:03:30Z
 outcome-what: "Eingebaute Lanes pre-process, in-progress, testing, review und die Rolle jaira-role-bughunt: pre-process schreibt Fehlerklasse, Standard-Eingabeklassen und Annahmeregel als DoD-Punkte; in-progress repariert die Ursache, testet die Klasse, zieht Geschwister mit, prueft die vier Kategorien, schliesst kleine Raender in derselben Runde und fragt nach der dritten Rueckgabe derselben Lane - den Absender liest es aus der neuesten Note ('Given back from'/'decision:' = Person, setzt zurueck); testing/bughunt melden Klasse + Beispiel; testing und review schicken nur fuer Blocker zurueck, 'note: pre-existing:' fuer Altes. .jaira/lanes nachgezogen, shipped.sha256, Release-Note."
 outcome-why: "Review- und bughunt-Schleifen liefen 10-24 Runden, weil jede Runde den Nachbarfall eines nur am Beispiel reparierten Fehlers fand und die vier Kategorien vor dem Code nie gefragt wurden; die Rueckgabe einer Person darf dabei nicht als Schleifenrunde zaehlen."
 outcome-resolves: "DoD 1-7: 15-pre-process.md:38, 20-in-progress.md:29 und :66-97, 27-testing.md:97, bughunt SKILL.md:104, 40-review.md:57, shipped.sha256, core/release/notes/TW5FE2.md"
