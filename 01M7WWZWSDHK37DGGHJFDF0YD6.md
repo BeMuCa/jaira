@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T23:07:46Z
+updated-at: 2026-11-20T23:07:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-91898
 claimed-at: 2026-11-20T22:44:37Z
@@ -51,7 +51,8 @@ claimed-at: 2026-11-20T22:44:37Z
   proof: core/move/move_test.go TestMoveRecordsWhoSentItBack (parking, old ticket without fields, --force path)
 - [x] input classes: blocker-rule with quotes, umlauts, multiple lines and CRLF survives set/show round-trip; stop-after-fix rejects anything but true/false/empty (exit 2); two parallel moves on one ticket leave consistent back-* fields (one refused or both counted)
   proof: internal/cli/loopbrake_test.go TestBlockerRuleRoundTrip (quotes, umlauts, multiline, CRLF, lone CR), TestSetRefusesUnknownStopAfterFix; core/move TestMoveCountsOneReturnForTwoAtOnce
-- [ ] acceptance rule for the explain parser: an explain note line without a known class mark or status shape is shown as plain text, never dropped - an old note must still read as before
+- [x] acceptance rule for the explain parser: an explain note line without a known class mark or status shape is shown as plain text, never dropped - an old note must still read as before
+  proof: board.ts partOf falls back to a text part; legacy SHAPED/MARKED explanation tests still pass (214 pass, claude plugin test)
 
 ## Options
 
