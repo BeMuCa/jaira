@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T23:02:53Z
+updated-at: 2026-11-20T23:03:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -78,3 +78,4 @@ hunt-verdict: ""
 - **2026-11-20 23:01 · Alexander Sacharov** — bughunt: done at 9c785040 - 1 finding (1 change, 0 pre-existing) in 2 modules, follow-up hunt since 5a091b69; concurrency, error paths, input, permissions checked; files: .gitattributes .github/workflows/ci.yaml .github/workflows/release-notes.yaml core/release/notes/0K8Y6S.md core/role/shipped_test.go core/role/testdata/jaira-cockpit-hooks-board-v0.5.2.ts core/shipped/history_test.go core/shipped/shipped.sha256 scripts/shipped-history.sh
 - **2026-11-20 23:01 · Alexander Sacharov** — Stand 00:01: testing Runde 2, test-verdict pass, Bughunt Runde 2 (nur Diff seit 5a091b69) laeuft. Branch gepusht bis 9c785040. Danach: hunt-verdict, dann review (fresh, neuer Agent).
 - **2026-11-20 23:02 · Alexander Sacharov** — testing Runde 2 Fund (change) behoben: hashed() bricht mit '|| exit 1' ab, weil --check es in $(...) ohne set -e laufen laesst; inherit_errexit verworfen, weil es den ganzen Rest des Skripts mit aendert. Test TestUnreadableBlobStopsTheScript deckt Generator und --check (rot ohne || exit 1). Geschwister: listing=$(...) hatte schon || exit 1.
+- **2026-11-20 23:03 · Alexander Sacharov** — bughunt: done at 55ae3718 - 0 findings in 2 modules, follow-up hunt since 9c785040; concurrency, error paths, input, permissions checked; ran: go test ./shipped/ -run 'TestUnreadableBlob|TestCheck' (pass); files: .gitattributes .github/workflows/ci.yaml .github/workflows/release-notes.yaml core/release/notes/0K8Y6S.md core/role/shipped_test.go core/role/testdata/jaira-cockpit-hooks-board-v0.5.2.ts core/shipped/history_test.go core/shipped/shipped.sha256 scripts/shipped-history.sh
