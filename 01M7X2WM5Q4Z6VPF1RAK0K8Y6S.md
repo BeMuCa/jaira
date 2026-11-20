@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T23:11:56Z
+updated-at: 2026-11-20T23:12:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -33,8 +33,8 @@ review-gaps: |-
   note: ob GitHubs Mergeability-Pruefung im PR merge=union aus .gitattributes beachtet, ist nur lokal (TestManifestMergesWithoutConflict) belegt; erst zwei echte PRs zeigen es
 test-verdict: "pass: go vet + go test ./... RC=0 auf 722c9c6e; Runde 4 aendert nur eine Testmeldung"
 hunt-verdict: "pass: bughunt done at 722c9c6e, 0 change, 0 pre-existing"
-review-verdict: "Alle 5 DoD-Punkte erfuellt; kein Defekt gefunden. Selbst geprueft: --check exit 0 auf 34 Tags, Regenerieren ergibt byte-gleich das committete Manifest, go test ./core/shipped ./core/role gruen. Unsicher nur, ob GitHub merge=union beim PR-Konflikt beachtet (note)."
-review-round: 4
+review-verdict: "Diff erfuellt alle 5 DoD-Punkte, keine Defekte gefunden. Selbst geprueft: --check gruen auf 34 Tags, mit dem alten Manifest rot (8 Versionen); Regenerieren ergibt byte-gleich das committete Manifest; 0 Zeilen gegenueber master verloren; TestInstallReplacesAnOlderShippedVersion faellt mit dem alten Manifest, besteht mit dem neuen; go test ./shipped ./role gruen."
+review-round: 5
 review-check: "1. cd in den Worktree feat/0k8y6s  2. scripts/shipped-history.sh --check -> 'every version in 34 v* tag(s) is in core/shipped/shipped.sha256', exit 0  3. git show v0.5.2:core/mod/builtin/jaira-cockpit/hooks/board.ts | sha256sum -> a06a3c1c...; grep a06a3c1c core/shipped/shipped.sha256 findet die Zeile  4. eine Zeile aus core/shipped/shipped.sha256 loeschen, Schritt 2 wiederholen -> exit 1 und genau diese Zeile als 'append:' ausgegeben; danach git checkout core/shipped/shipped.sha256  5. go test ./core/shipped/ ./core/role/ -run 'Check|Unreadable|Merges|ReplacesAnOlder' -> ok  6. im naechsten PR: Job shipped-manifest erscheint in den Checks und ist gruen"
 ---
 
