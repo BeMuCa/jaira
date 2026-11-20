@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T22:44:37Z
+updated-at: 2026-11-20T22:45:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-91898
 claimed-at: 2026-11-20T22:44:37Z
@@ -66,3 +66,4 @@ claimed-at: 2026-11-20T22:44:37Z
 - dann genau eine Empfehlung mit Grund in einem Satz, und welche Note sie betrifft
 - kein 'Warum: why it matters' pro Note, keine feste Reihenfolge give back zuerst; der neutrale Fall (nur bekannte Grenzen / fremde Notes) sagt ausdruecklich 'kann so angenommen werden'
 - **2026-11-20 22:44 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock
+- **2026-11-20 22:45 · Alexander Sacharov** — decision: feat/df0yd6 builds on origin/feat/tw5fe2 (merged in), because TW5FE2 (blocked_by) is done but not on master yet and changes the same lane prompts (testing, review, bughunt). Once TW5FE2's PR lands, its commits drop out of this branch's diff.
