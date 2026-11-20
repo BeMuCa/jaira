@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:55:42Z
+updated-at: 2026-11-20T17:55:46Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85657
 claimed-at: 2026-11-20T17:52:47Z
@@ -30,11 +30,7 @@ outcome-why: "Eine von jaira geaenderte .gitignore erscheint in jedem neuen Work
 outcome-resolves: Neue Worktrees eines Repos mit privatem Board bleiben sauber; kein Wegraeumen der .gitignore-Zeile von Hand mehr.
 review-summary: "none"
 round: 8
-review-gaps: |-
-  blocker: internal/cli/update.go:347 - auf git<2.31 setzt moveIgnore m.moved=true und ignoriert das Ergebnis von board.MoveIgnore, das dort (gitPlace leer) nichts tut: jedes jaira update meldet "Moved this private board's entry from .gitignore to .gitignore — commit the changed .gitignore once." und --json ignore_moved:true, obwohl nichts geaendert wurde (nachgestellt mit git-Wrapper, der --path-format zurueckgibt). Fix: m.moved aus dem Rueckgabewert von MoveIgnore bzw. bei --dry-run nur, wenn IgnoreFileName nicht .gitignore ist; Testfall git<2.31 in TestUpdate...
-  note: core/board/gitignore.go dropEntry - steht der jaira-Eintrag ohne Leerzeile davor am Dateiende ("a\n# jaira…\n/.jaira/\n"), fehlt danach das Schluss-Newline ("a")
-  note: pre-existing: appendEntry verwirft einen Lesefehler (os.ReadFile ausser not-exist) und schreibt per Rename nur den Eintrag - eine unlesbare, aber ersetzbare exclude/.gitignore verliert ihren Inhalt
-  note: die neuen JSON-Keys ignore_moved/ignore_added (update) und still_ignored (share) nennt nur die share-Release-Note
+review-gaps: "none - Diff c6c3ed13..1164e2ee: ein Guard, eine Newline-Korrektur, ein Test; nichts doppelt oder verwaist"
 test-verdict: "pass: go build/vet/test -count=1 ./... RC=0 at c6c3ed13; DoD 8 Proofs gruen; Binary im Wegwerf-Repo: init laesst git status ohne .jaira/, share mit handgeschriebener .jaira/-Zeile warnt mit '.git/info/exclude:8:.jaira/' und laesst sie stehen, --undo nennt jaira update; info/ schreibgeschuetzt -> share und --undo exit 1; zwei parallele share --undo -> Eintrag genau einmal"
 hunt-verdict: "pass: bughunt done at c6c3ed13, 0 change, 0 pre-existing"
 review-verdict: "Nicht annehmen: alle 8 DoD-Punkte mit Tests belegt, go test core/board, core/ticket, internal/cli gruen, Code sonst sauber (Sperre, Atomic-Write, Fallback, check-ignore inkl. negierter Muster geprueft). Ein Blocker: jaira update meldet auf git<2.31 bei jedem Lauf eine Verschiebung, die nicht stattfand, und fordert zum Commit auf - genau der Fallback-Pfad, den d62bafaa eingefuehrt hat. Ein-Zeilen-Fix."
