@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-20T22:59:02Z
+updated-at: 2026-11-20T22:59:09Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -29,6 +29,7 @@ outcome-why: "Auf einem ungeteilten Board widersprach die Commit-Regel dem Zusta
 outcome-resolves: SDBCT5
 review-summary: "none"
 round: 3
+review-gaps: "none: the diff is four prose additions, one test and two shipped.sha256 lines. The test's whitespace-flattening (strings.Fields) repeats for block and skill on purpose - both are wrapped prose; no helper exists for it in announce_test.go and one for two uses would be fluff."
 ---
 
 # Der Agent-Block nennt --proof, und die Gitignore-Regel verweist auf die Commit-Regel
