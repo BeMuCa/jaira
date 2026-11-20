@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:19:03Z
+updated-at: 2026-11-20T19:19:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-37518
 claimed-at: 2026-11-20T18:18:38Z
@@ -143,3 +143,4 @@ Warum: pre-process велит перейти в human-lane, а gate.go:438 та�
 Empfehlung: 2 - это не блокеры (неверный результат, потеря данных, падение, дыра в безопасности), а возврат даст ещё один круг ради трёх фраз.
 - **2026-11-20 19:18 · Alexander Sacharov** — decision: 1) Вернуть в in-progress и поправить три формулировки (по одному предложению в 15-pre-process.md, 20-in-progress.md, 27-testing.md)
 - **2026-11-20 19:19 · Alexander Sacharov** — Given back from signoff: 1) Вернуть в in-progress и поправить три формулировки (по одному предложению в 15-pre-process.md, 20-in-progress.md, 27-testing.md)
+- **2026-11-20 19:19 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
