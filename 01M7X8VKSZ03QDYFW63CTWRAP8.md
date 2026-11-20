@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:04:01Z
+updated-at: 2026-11-20T22:04:05Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-44888
 claimed-at: 2026-11-20T22:03:49Z
@@ -43,6 +43,12 @@ hunt-verdict: "pass: Runde-3-Fund (bughunt done at 4a0033ec) als Klasse in dae16
 question: ""
 review-verdict: "The diff meets all four DoD items; no blocker. Checked: go test ./core/role ./core/shipped green, each final SKILL.md hash is in shipped.sha256, release note lines are single '- ' lines, the commands the role prescribes exist (jaira list --lane/--board, gh run list --commit/--workflow, glab ci list --sha). Three notes, all small: hardcoded feat/ branch name, intermediate hashes, and an expected ❌ hunt-on-HEAD on this ticket."
 review-round: 4
+review-check: |-
+  1. cd /home/alex/projects/.worktrees/jaira-twrap8 && go test ./core/role ./core/shipped  -> both lines say ok
+  2. jaira roles install  (from this branch build: go run ./cmd/jaira roles install) -> ~/.claude/skills/jaira-role-signoff/SKILL.md exists
+  3. In a Claude session in a repo with a ticket in signoff, type /jaira-role-signoff  -> per ticket you see one status line with ✅/❌/?, a table with 🔴/🟡/⚪/🔵 marks, one bold accept/give back, and two paste-ready lines (jaira move <id> --to done --force / jaira note ... Given back from signoff ... && jaira move <id> --to in-progress)
+  4. Ask the teamlead "what waits for me?" twice  -> before each list it runs jaira show and gh pr list; the second time, with nothing changed, it does not repeat the list
+  5. Open core/role/builtin/jaira-worker/SKILL.md, section "Before you push"  -> it tells the worker to run the CI gates locally before pushing
 ---
 
 # Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis
