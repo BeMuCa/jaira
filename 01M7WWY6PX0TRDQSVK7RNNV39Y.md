@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:05:28Z
+updated-at: 2026-11-20T17:06:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46134
 claimed-at: 2026-11-20T16:42:22Z
@@ -83,3 +83,4 @@ hunt-verdict: "fail: bughunt done at 44007130, 1 change: update verschiebt die .
 - **2026-11-20 17:04 · Alexander Sacharov** — testing: Klasse des bughunt-Funds: jeder Zweig von moveIgnore (update.go) muss hinter derselben Privat-Pruefung stehen (keine .jaira/.gitattributes, nichts unter .jaira/ getrackt). Heute prueft nur der 'added'-Zweig sie; der 'moved'-Zweig aendert die committete .gitignore auch auf einem Board, das in git ist — nach dem Commit waere es fuer Teamkollegen nicht mehr ignoriert. Fix: Pruefung an den Anfang von moveIgnore; Test fuer beide Zweige ueber die Klasse (Attribute / getrackte Datei).
 - **2026-11-20 17:04 · Alexander Sacharov** — bughunt-Fund behoben an der Klasse: moveIgnore prueft 'in git' (Attribute oder getrackte .jaira-Datei) jetzt einmal am Anfang fuer beide Zweige. TestUpdateLeavesABoardInGitAsItIs deckt shared clone, shared clone mit committeter Zeile und getrackte Tickets ohne Attribute ab, je mit und ohne --dry-run; faellt auf dem alten Code in 2 von 3 Faellen.
 - **2026-11-20 17:05 · Alexander Sacharov** — critique Runde 3 (Diff 44007130..394a544a): nichts — die Privat-Pruefung steht jetzt einmal vor beiden Zweigen, kein neues Muster.
+- **2026-11-20 17:06 · Alexander Sacharov** — bughunt: done at 394a544a - 0 findings in 2 modules, follow-up hunt (diff since 44007130: internal/cli/update.go, internal/cli/privateexclude_test.go); concurrency, error paths, input, permissions checked; files: README.md core/board/announce.go core/board/board.go core/board/exclude_test.go core/board/gitignore.go core/release/notes/NNV39Y.md core/ticket/store.go docs/COMMANDS.md internal/cli/privateexclude_test.go internal/cli/share.go internal/cli/sharestate_test.go internal/cli/tickets.go internal/cli/update.go
