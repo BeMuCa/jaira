@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T17:56:50Z
+updated-at: 2026-11-20T17:57:21Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-87225
 claimed-at: 2026-11-20T17:38:56Z
@@ -127,3 +127,4 @@ Empfehlung: 2 - die Lücken sind dokumentiert und ungefährlich, der Live-Test i
 - **2026-11-20 17:54 · Alexander Sacharov** — critique 5 (nur c471d660): nichts. Gelesen: pr-gate (roles.go, gitrepo/named.go), pr-round.sh open/said/first_of/dedupe/comment. Absichtlich so gelassen: reply erkennt 'schon beantwortet' am LETZTEN Kommentar, comment an IRGENDEINEM - im Thread muss nach einem Widerspruch des Reviewers erneut geantwortet werden, das Gespraech hat nichts zu resolven. Die Handle-Lesart ist board.ts ticketsNamed nachgebaut; das Cockpit hat einen anderen Ausloeser (Person drueckt Accept) und bleibt bei sich.
 - **2026-11-20 17:55 · Alexander Sacharov** — critique 5b (nach Hinweis teamlead jaira-64): core/role/pr_round_test.go TestPRRoundReplyLeavesOneAnswerWhenTwoSessionsRace/TestPRRoundCommentSaysItOnce assert only that the just-posted copy is removed, not that nothing else ever is - add rows where the person's own comment with the same words (no agent involved) stands before and after ours, and assert every delete names exactly the id this run's own POST returned (teamlead jaira-64: a person's deleted comment is data loss). Kein Codefehler: dedupe und comment loeschen nur die id, die der eigene POST dieses Laufs zurueckgab - nie einen fremden oder aelteren Kommentar; eine Agent-Markierung waere schwaecher als diese Regel und braucht es nicht. Fehlt nur der Test, der das festnagelt.
 - **2026-11-20 17:56 · Alexander Sacharov** — decision (teamlead jaira-64, 2026-11-20): keine Agent-Markierung in Antworten. reply/comment loeschen nur die id, die ihr eigener POST in diesem Lauf zurueckgab, und nur wenn derselbe Text desselben Logins frueher steht - das ist strenger als eine Markierung (die liesse sich kopieren, die eigene POST-id nicht). Ein Kommentar der Person wird so in keiner Reihenfolge geloescht; Test TestPRRoundReplyLeavesOneAnswerWhenTwoSessionsRace/TestPRRoundCommentSaysItOnce.
+- **2026-11-20 17:57 · Alexander Sacharov** — decision (Alex via teamlead jaira-64, 2026-11-20, korrigiert 'PR erst in done'): woertlich 'im Projekt machen wir den PR und dort kommt noch ein Review. Deshalb kommt done erst, wenn alle Reviews fertig sind.' -> Board-Datei .jaira/pr-when = done|signoff, Default done (dieses Repo bleibt: done, dann PR). signoff: pr-gate laesst zu, sobald jedes Ticket des Branches in signoff oder done ist; done kommt erst, wenn der PR keine offenen Threads und kein ausstehendes Review hat.
