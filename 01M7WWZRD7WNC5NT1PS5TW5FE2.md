@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:25:05Z
+updated-at: 2026-11-20T19:25:09Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99353
 claimed-at: 2026-11-20T19:19:21Z
@@ -36,7 +36,7 @@ outcome-why: "bughunt 19:23: Vergleich 'neuer als die Absender-Note' liest beim 
 outcome-resolves: "DoD 6: 20-in-progress.md:72-76 und :88,:96 (round in jeder back:-Zeile); Zwilling gleich; shipped.sha256 eine Zeile. Vier Kategorien: Neustart mitten in der Runde ist der Fehlerpfad und jetzt abgedeckt; sonst nur Prompt-Text."
 review-summary: "none - round-Nummer in der back:-Zeile ist die kleinste Form; nutzt das vorhandene round-Feld aus jaira show statt eines neuen Musters"
 round: 13
-review-gaps: "none - drei Saetze, keine Wiederholung im Prompt, nichts verwaist"
+review-gaps: "none - drei Ersetzungen, nichts verwaist"
 test-verdict: "pass: go test -count=1 ./core/lane/... ./core/shipped/... ./core/role/... ./core/release/... RC=0 (Folgerunde: Tests der seit d0cb1f49/c3e5a7df geaenderten Dateien); DoD 1-7 im Baum, Zwillinge byte-gleich, drei neue Manifest-Hashes = sha256 HEAD; Funktion auf Scratch-Board mit diesen Lanes: pre-process->human ohne Plan RC=3 'lane pre-process declares it produces plan, which is still empty', nach 'dod --plan --add' faellt diese Verletzung weg; Fehlerpfad = genau dieser Refuse; schreibt nichts Neues (nur Prompt-Text), zwei Schreiber entfallen"
 hunt-verdict: "change: 20-in-progress.md:72-74 restart rule compares against the sender's note, which a restarted worker misreads - see bughunt note 19:23"
 review-verdict: "Alle 7 DoD-Punkte sind im Baum erfuellt, kein Blocker: reine Prompt-Aenderung, Twins byte-gleich, Manifest-Hashes stimmen, go test ./core/lane ./core/shipped ./core/role ./core/release gruen. Drei kleine Wortlaut-Raender als note; die Rueckgabe-Zaehlung bleibt eine Note-Konvention bis move die Herkunfts-Lane schreibt (DF0YD6/H6CD33) - bekannt und vom Teamlead so entschieden."
