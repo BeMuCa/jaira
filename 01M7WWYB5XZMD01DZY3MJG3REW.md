@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:23:49Z
+updated-at: 2026-11-20T19:24:03Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99114
 claimed-at: 2026-11-20T19:19:18Z
@@ -33,11 +33,7 @@ outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten d
 outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
 review-summary: "none"
 round: 11
-review-gaps: |-
-  note: pr-gate prueft das lokale HEAD, gh pr create oeffnet den gepushten Branch ohne --head - hat eine andere Session mehr auf den Remote-Branch gepusht, sieht das Gate diese Commits nicht (Skript open, Zeile 161/166).
-  note: pr-round.sh usage (Zeile 17) sagt bei open weiter "every ticket ... is in done" - unter pr-when=signoff ist es signoff; die Gate-Meldung selbst ist richtig.
-  note: "done wartet auf settled" bei pr-when=signoff steht nur im Rollentext; eine Person, die signoff->done schiebt, wird vom Binary nicht gebremst (laut outcome bei CRASZS, DoD verlangt nur die Rolle).
-  note: ausser in request reicht das Skript gh-Exitcodes durch; gh selbst endet bei fehlender Anmeldung mit 4, was mit dem dokumentierten Exit 4 (Reviewer abgelehnt) kollidiert - durch den Auth-Check vorab nur bei mitten im Lauf ablaufendem Token.
+review-gaps: "none: nur gitIn ohne ungenutzten Rueckgabewert (pr_round_test.go); kein vorhandener git-Testhelfer in core/role"
 test-verdict: "pass: go test -race ./... RC=0 after clean cache at 007f461a; DoD 1-16 proofs present; review-check replayed with the branch binary: unknown handle ZZZZZZ -> exit 3 '(unknown)', roles list without files -> 'pr: person ... opens in: done (the default)'; earlier rounds: thresholds done/signoff, unreadable branch ticket -> 3, logbook passes, archive holds (TestPRGateReadsFiledTicketsByWhereTheyAre), pr-round.sh open refuses before gh pr create; reply/comment/settled against fake gh only"
 hunt-verdict: "pass: bughunt done at 007f461a - 0 change, 0 pre-existing"
 review-verdict: "Abnahmereif, kein Blocker. Der Blocker der letzten Runde ist behoben: mit dem Branch-Binary in einem frischen Repo gibt 'pr-gate master' fuer 'feat(ZZZZZZ): x' jetzt Exit 3 'ZZZZZZ (unknown)'. Alle 16 DoD-Punkte sind durch Code und Tests belegt; go test ./core/role ./core/settings ./core/gitrepo ./internal/cli gruen. pr-round.sh ganz gelesen: Dedupe-Logik (Lauf gleicher Worte, nur eigene id geloescht) haelt in beiden Reihenfolgen zweier Sessions; nur Hinweise, siehe gaps. Nicht live gegen GitHub geprueft - die Tests laufen gegen ein gh-Fake."
