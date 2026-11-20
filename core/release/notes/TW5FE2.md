@@ -3,3 +3,4 @@
 - Expect testing and the bug hunt to report every finding as a class plus the example they saw; a ticket sent back to in-progress returns only when the class is fixed, and the next round tries a neighbour of the example too.
 - Expect testing and review to send a ticket back only for a blocker - a wrong result, data loss, a crash or a security hole; smaller edges of the change ride along when a round goes back anyway, and a fault from before the change outside its scope is written as 'note: pre-existing: ...'.
 - Expect the in-progress lane to stop after the third return from the same lane and move the ticket to the human lane with a question instead of starting a fourth round.
+- When you give a ticket back to in-progress by hand rather than through the cockpit, write `jaira note <id> "Given back from <lane>: <why>"`; the in-progress lane reads that line to tell your return from a loop lane's and does not count it toward the third-return stop.

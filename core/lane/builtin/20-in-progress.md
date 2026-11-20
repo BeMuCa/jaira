@@ -77,9 +77,17 @@ jaira note <id> "back: testing, round 3"
 ```
 
 `round` counts every way back, a person's included, so it only says that the
-ticket was sent back, not by whom. A person sent it when it comes from a lane
-a person owns (signoff, human) or answers a question you asked: write
-`back: person` — it is the person's word, not a loop, so do what they asked.
+ticket was sent back, not by whom. jaira records no lane it came from, so
+read the sender off the newest note, passing over `cockpit:` lines — the lane
+that sends work back writes its note last:
+
+- `Given back from <lane>:` or `decision:` — a person sent it or answered
+  you. Write `back: person`: it is the person's word, not a loop, so do what
+  they asked. The cockpit writes these lines; a person who gives work back by
+  hand writes the same one, `jaira note <id> "Given back from signoff: <why>"`
+- `critique:`, `optimize:` or `testing:` — that lane; `bughunt:` counts for
+  testing
+- anything else — the review sent it
 
 Then count your `back:` lines for that lane since the last `back: person`.
 When this is the third, do
