@@ -17,11 +17,13 @@ definition-of-done: Ohne Einstellung oeffnet kein Agent einen PR (Test oder Skil
 tags: []
 blocked-by: []
 related:
-  - 01M5ZJ5DKQZ83GYBGPJHAX8K02
   - 01M2HZKCQ48BPQYN1YPTXB97NJ
+  - 01M5ZJ5DKQZ83GYBGPJHAX8K02
+  - 01M2N12WVABVRYM7C923WATJDQ
+  - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T16:40:03Z
+updated-at: 2026-11-20T16:40:06Z
 updated-by: Alexander Sacharov
 ---
 
