@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T22:46:28Z
+updated-at: 2026-11-20T22:52:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -29,7 +29,8 @@ claimed-at: 2026-11-20T22:45:03Z
 
 ## Definition of Done
 
-- [ ] Alle Datei-Versionen aus allen v*-Tags stehen in core/shipped/shipped.sha256 (Test oder Skript-Pruefung)
+- [x] Alle Datei-Versionen aus allen v*-Tags stehen in core/shipped/shipped.sha256 (Test oder Skript-Pruefung)
+  proof: scripts/shipped-history.sh --check (exit 0 on 34 tags; was: 8 missing); core/shipped/shipped.sha256 regenerated, 0 lines lost
 - [ ] Ein CI-Schritt prueft gegen die Tags und schlaegt fehl, wenn eine ausgelieferte Version fehlt; laeuft auch im release-notes-Workflow vor dem Release-PR
 - [ ] jaira update --roles auf einer unveraenderten v0.5.2-Installation von board.ts ueberschreibt sie statt Skipped (Test)
 - [ ] Eingabeklassen: Datei in einem Tag geloescht und spaeter wieder angelegt, CRLF-Version derselben Datei, Tag ohne die Datei, Merge-Konflikt im Manifest
