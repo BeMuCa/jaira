@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-20T22:49:34Z
+updated-at: 2026-11-20T22:49:38Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -36,7 +36,8 @@ claimed-at: 2026-11-20T22:44:44Z
   proof: TestAgentNoteSaysTheTicketCannotRideOnAnUnsharedBoard
 - [x] core/release/notes/SDBCT5.md nennt die Aenderung als eine Zeile
   proof: core/release/notes/SDBCT5.md:1
-- [ ] Die Agent-Bloecke dieses Repos (CLAUDE.md, AGENTS.md) sind mit dem neuen Block regeneriert
+- [x] Die Agent-Bloecke dieses Repos (CLAUDE.md, AGENTS.md) sind mit dem neuen Block regeneriert
+  proof: CLAUDE.md:131, AGENTS.md (regenerated with 'jaira update' from this build)
 
 ## Options
 
