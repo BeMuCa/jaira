@@ -1,7 +1,7 @@
 ---
 id: 01M7WWYB5XZMD01DZY3MJG3REW
 title: Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:48:38Z
+updated-at: 2026-11-20T19:48:42Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99114
 claimed-at: 2026-11-20T19:19:18Z
@@ -32,7 +32,7 @@ outcome-what: "Board-Dateien .jaira/pr (person|agent), .jaira/pr-reviewer und .j
 outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten das pro Repo. In manchen Projekten laeuft das Review auf dem PR selbst, dort kommt done erst danach (Alex 20.11.)."
 outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
 review-summary: "Neue Board-Dateien .jaira/pr (person|agent, Default person), .jaira/pr-reviewer (copilot, Login oder org/team) und .jaira/pr-when (done|signoff, Default done) werden in core/settings gelesen; jeder andere Inhalt faellt auf den Default zurueck, der Reviewer nur aus Buchstaben/Ziffern/._-[]/@. 'jaira roles list' zeigt sie (pr, pr_source, pr_reviewer, pr_when, pr_when_source). Neues 'jaira roles pr-gate <remote>/<branch>' liest die Handles aus den Commit-Subjects von base..HEAD und gibt nur Exit 0, wenn .jaira/pr agent sagt und jedes genannte Ticket in der Terminal-Lane (bzw. ab signoff) steht oder im Logbook liegt; archiviert, unbekannt, unlesbar, blocked oder fehlende signoff-Lane -> Exit 3 mit Grund. Neues scripts/pr-round.sh fuer GitHub: open (nur wenn Checkout = gepushter Tip laut push-Konfiguration, dann Gate, dann gh pr create), threads/comments (nur Offenes), reply (antworten + resolven, idempotent, zwei gleichzeitige Sessions hinterlassen eine Antwort), comment (nicht doppelt), request (Copilot ueber Bot-Login, Ablehnung = Exit 4), settled (keine offenen Threads, keine angefragten Reviews, kein CHANGES_REQUESTED). Ein verlorener gh-Login ist ueberall Exit 3. jaira-role-pr SKILL.md beschreibt den Agent-Pfad, GitLab ueber glab api; Merge/Approve bleiben verboten."
-round: 13
+round: 14
 review-gaps: |-
   note: .jaira/pr wird aus dem Checkout gelesen, nicht aus der Basis - ein Branch, der .jaira/pr mit agent selbst committet, schaltet sein eigenes Gate frei; sichtbar nur im Diff
   note: pr-round.sh open ruft gh pr create ohne --head; im Fork waehlt gh den Head selbst, der gepruefte Tip (push-Remote) und der geoeffnete Head sind nicht ausdruecklich dieselbe Referenz - --head <fork-owner>:<branch> wuerde sie binden
