@@ -23,16 +23,16 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T17:56:17Z
+updated-at: 2026-11-20T18:04:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-87225
 claimed-at: 2026-11-20T17:38:56Z
 question: ""
-outcome-what: "Board-Dateien .jaira/pr (person|agent, Default person) und .jaira/pr-reviewer; settings.PRFor/PRReviewerFor; 'jaira roles list' zeigt pr/pr_source/pr_reviewer; jaira-role-pr: Abschnitt 'Whether this board lets an agent open it', create nur bei person-Aufruf oder agent+alle Tickets done, Reviewer anfordern, eine Kommentarrunde ueber neues scripts/pr-round.sh (threads, comments, reply=antworten+resolve, comment, request); teamlead/dispatcher nennen die Ausnahme; Release-Note."
-outcome-why: "Ein Teamlead machte jede PR-Runde von Hand (push, PR-Text, Copilot anfordern, antworten, resolve); Alex erlaubt Agenten das inzwischen, aber nur pro Repo."
-outcome-resolves: "Mit .jaira/pr=agent oeffnet jaira-role-pr den PR nach der Abnahme aller Tickets selbst, fordert den Reviewer an und faehrt eine Kommentarrunde; ohne Datei bleibt alles wie heute; Merge/Approve bleibt in jedem Fall beim Menschen."
-review-summary: "core/role/pr_round_test.go TestPRRoundReplyLeavesOneAnswerWhenTwoSessionsRace/TestPRRoundCommentSaysItOnce assert only that the just-posted copy is removed, not that nothing else ever is - add rows where the person's own comment with the same words (no agent involved) stands before and after ours, and assert every delete names exactly the id this run's own POST returned (teamlead jaira-64: a person's deleted comment is data loss)"
-round: 6
+outcome-what: "Board-Dateien .jaira/pr (person|agent), .jaira/pr-reviewer und .jaira/pr-when (done|signoff, Default done); 'jaira roles list' zeigt sie; 'jaira roles pr-gate <remote>/<branch>' prueft im Binary, ob ein Agent den PR oeffnen darf (agent + jedes Ticket des Branches in done bzw. signoff); jaira-role-pr/scripts/pr-round.sh: open (Gate vor gh pr create), threads, comments, reply/comment (nie doppelt, auch bei zwei Sessions; loescht nur die eigene POST-id), request, settled (keine offenen Threads, kein ausstehendes Review); Rollentexte, Release-Note."
+outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten das pro Repo. In manchen Projekten laeuft das Review auf dem PR selbst, dort kommt done erst danach (Alex 20.11.)."
+outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
+review-summary: "none"
+round: 7
 review-gaps: |-
   note: pr-round.sh comments lists every conversation comment and review body each round, the agent's own earlier answers included - not answering twice there rests on the agent reading the list (DoD 10 covers threads only)
   note: the Copilot request uses the REST login copilot-pull-request-reviewer[bot]; tested only against the fake gh in core/role/pr_round_test.go, never against live GitHub
@@ -53,21 +53,21 @@ review-check: "1. cd into a scratch clone of a GitHub repo you own, with an open
 - [x] Ohne Einstellung oeffnet kein Agent einen PR (Test oder Skill-Text belegt)
   proof: core/settings/settings_test.go TestPRDefaultsToThePerson; core/role/builtin/jaira-role-pr/SKILL.md:37 (person default -> hand the line back); core/role/pr_round_test.go TestPROpensOnlyWhereTheBoardSaysAndNeverAccepts
 - [x] Mit Einstellung oeffnet jaira-role-pr den PR selbst und fordert den konfigurierten Reviewer (z.B. Copilot) an
-  proof: core/role/builtin/jaira-role-pr/SKILL.md:37 (agent + every ticket done), core/role/builtin/jaira-role-pr/SKILL.md:343 Ask for the board's reviewer, core/role/builtin/jaira-role-pr/SKILL.md:325 pr-round.sh open; core/role/pr_round_test.go TestPRRoundRequestsTheReviewer, TestPROpensOnlyWhereTheBoardSaysAndNeverAccepts, TestPROpenRunsTheGateFirst
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:37 (agent + every ticket done), core/role/builtin/jaira-role-pr/SKILL.md:361 Ask for the board's reviewer, core/role/builtin/jaira-role-pr/SKILL.md:343 pr-round.sh open; core/role/pr_round_test.go TestPRRoundRequestsTheReviewer, TestPROpensOnlyWhereTheBoardSaysAndNeverAccepts, TestPROpenRunsTheGateFirst
 - [x] Eine Kommentarrunde: jeder Kommentar bekommt 'Behoben in <sha>: ...' oder eine Begruendung, wird resolved, das Review neu angefordert
-  proof: core/role/builtin/jaira-role-pr/SKILL.md:367 Answering review comments; core/role/builtin/jaira-role-pr/scripts/pr-round.sh reply/comment/request; core/role/pr_round_test.go TestPRRoundRepliesThenResolves
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:385 Answering review comments; core/role/builtin/jaira-role-pr/scripts/pr-round.sh reply/comment/request; core/role/pr_round_test.go TestPRRoundRepliesThenResolves
 - [x] Merge und Approve macht kein Agent, auch mit Einstellung
   proof: core/role/pr_round_test.go TestPRRoundNeverMergesOrApproves, TestPROpensOnlyWhereTheBoardSaysAndNeverAccepts ('.jaira/pr never reaches merge or approve')
 - [x] Eingabeklasse PR existiert schon: kein zweiter PR, direkt zur Kommentarrunde
-  proof: core/role/builtin/jaira-role-pr/SKILL.md:270 One listed -> straight to Answering review comments; the setting does not change that step
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:288 One listed -> straight to Answering review comments; the setting does not change that step
 - [x] Eingabeklasse Fork vs. gleiches Repo: PR geht an das Ziel aus 'Which repository it goes to', die Kommentarrunde fragt dasselbe Repo
-  proof: core/role/builtin/jaira-role-pr/SKILL.md:376 the round runs against <owner/repo> as settled in 'Which repository it goes to', never origin; pr-round.sh takes owner/repo explicitly, open names --repo and --base; core/role/pr_round_test.go TestPROpenRunsTheGateFirst (pr create --repo up/r --base master)
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:394 the round runs against <owner/repo> as settled in 'Which repository it goes to', never origin; pr-round.sh takes owner/repo explicitly, open names --repo and --base; core/role/pr_round_test.go TestPROpenRunsTheGateFirst (pr create --repo up/r --base master)
 - [x] Eingabeklasse gh/glab nicht angemeldet oder ohne Scope: das Skript bricht mit klarer Meldung und Exit != 0 ab, nichts halb erledigt verschwiegen
   proof: core/role/pr_round_test.go TestPRRoundRefusesBeforeItWrites (not signed in -> exit 3, no write)
 - [x] Eingabeklasse Kommentar ohne Thread (PR-Konversation, Review-Body): wird beantwortet, aber nicht als resolved gemeldet
   proof: core/role/pr_round_test.go TestPRRoundListsOnlyWhatIsOpen (comments listed apart), TestPRRoundCommentSaysItOnce (comment answers, never resolves, never twice)
 - [x] Eingabeklasse Copilot nicht verfuegbar (Reviewer-Anfrage abgelehnt): wird gemeldet, PR bleibt offen, kein Abbruch der Runde
-  proof: core/role/pr_round_test.go TestPRRoundRequestsTheReviewer (GH_POST=fail -> exit 4 with gh's reason); core/role/builtin/jaira-role-pr/SKILL.md:360
+  proof: core/role/pr_round_test.go TestPRRoundRequestsTheReviewer (GH_POST=fail -> exit 4 with gh's reason); core/role/builtin/jaira-role-pr/SKILL.md:378
 - [x] Eingabeklasse zweite Runde auf denselben Kommentaren: bereits resolved Threads werden nicht erneut beantwortet
   proof: core/role/pr_round_test.go TestPRRoundListsOnlyWhatIsOpen (resolved thread not listed), TestPRRoundReplyIsSafeToRunAgain, TestPRRoundCommentSaysItOnce (said in an earlier round -> nothing posted)
 - [x] Eingabeklasse .jaira/pr/.jaira/pr-reviewer leer, CRLF, Kommentar, Tippfehler, Shell-Sonderzeichen: Tabellentest, Default person / Reviewer leer
@@ -76,6 +76,12 @@ review-check: "1. cd into a scratch clone of a GitHub repo you own, with an open
   proof: internal/cli/roles.go newRolesPRGateCmd, core/gitrepo/named.go TicketsNamed; internal/cli/prgate_test.go TestPRGateOpensOnlyWhenEveryTicketOfTheBranchIsDone, TestPRGateRefusesWhatItCannotJudge; core/role/pr_round_test.go TestPROpenRunsTheGateFirst
 - [x] Zwei Sessions, die denselben Thread gleichzeitig beantworten, hinterlassen genau eine Antwort
   proof: core/role/builtin/jaira-role-pr/scripts/pr-round.sh dedupe (threads) and comment read-back delete only the id this run's own POST returned; core/role/pr_round_test.go TestPRRoundReplyLeavesOneAnswerWhenTwoSessionsRace, TestPRRoundCommentSaysItOnce (person's same words before/after: never touched)
+- [x] Board-Datei .jaira/pr-when (done|signoff, Default done; leer, CRLF, Kommentar, Tippfehler -> done): Tabellentest; jaira roles list zeigt sie
+  proof: core/settings/settings.go PRWhenFor; core/settings/settings_test.go TestPRWhenDefaultsToDone (empty, CRLF, comment, typo, second line, shell chars); internal/cli/roles_test.go TestRolesListReportsTheBoardsPR (pr_when, 'opens in: signoff')
+- [x] pr-gate bei signoff: jedes Ticket des Branches in signoff oder done; bei done wie bisher; Board ohne signoff-Lane -> Exit 3 mit Grund
+  proof: internal/cli/roles.go lanesReached; internal/cli/prgate_test.go TestPRGateOpensInSignoffWhereTheBoardSaysSo (signoff/done pass; review, human, blocked, in-progress hold), TestPRGateRefusesSignoffOnABoardWithoutIt, TestPRGateOpensOnlyWhenEveryTicketOfTheBranchIsDone
+- [x] Bei pr-when=signoff verlangt die Rolle vor done eine fertige PR-Runde: pr-round.sh settled -> Exit 3 mit offenen Threads/ausstehenden Reviews, sonst 0
+  proof: core/role/builtin/jaira-role-pr/scripts/pr-round.sh settled; core/role/builtin/jaira-role-pr/SKILL.md:70 done waits for it, core/role/builtin/jaira-role-pr/SKILL.md:427 settled in the round (GitLab blocking_discussions_resolved); core/role/pr_round_test.go TestPRRoundSettledOnlyWhenNothingIsOpen
 
 ## Options
 
@@ -126,3 +132,6 @@ Empfehlung: 2 - die Lücken sind dokumentiert und ungefährlich, der Live-Test i
 - **2026-11-20 17:48 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock (teamlead jaira-64) - Fragen per SendMessage, Schlussbericht dorthin. Interim-Regel 5: die review-gaps-notes werden in dieser Runde geschlossen: (1) comment prueft vor dem Posten, ob derselbe Text desselben Logins schon im Gespraech steht; (2) Copilot live bleibt Abnahmeschritt (review-check 5); (3) Doppelantwort und (4) Gate im Binary siehe oben; (5) CLAUDE.md nennt die Ausnahme. Dazu Bughunt-Rest: Vergleich ignoriert Leerraum am Zeilenende, falls GitHub ihn kappt.
 - **2026-11-20 17:54 · Alexander Sacharov** — critique 5 (nur c471d660): nichts. Gelesen: pr-gate (roles.go, gitrepo/named.go), pr-round.sh open/said/first_of/dedupe/comment. Absichtlich so gelassen: reply erkennt 'schon beantwortet' am LETZTEN Kommentar, comment an IRGENDEINEM - im Thread muss nach einem Widerspruch des Reviewers erneut geantwortet werden, das Gespraech hat nichts zu resolven. Die Handle-Lesart ist board.ts ticketsNamed nachgebaut; das Cockpit hat einen anderen Ausloeser (Person drueckt Accept) und bleibt bei sich.
 - **2026-11-20 17:55 · Alexander Sacharov** — critique 5b (nach Hinweis teamlead jaira-64): core/role/pr_round_test.go TestPRRoundReplyLeavesOneAnswerWhenTwoSessionsRace/TestPRRoundCommentSaysItOnce assert only that the just-posted copy is removed, not that nothing else ever is - add rows where the person's own comment with the same words (no agent involved) stands before and after ours, and assert every delete names exactly the id this run's own POST returned (teamlead jaira-64: a person's deleted comment is data loss). Kein Codefehler: dedupe und comment loeschen nur die id, die der eigene POST dieses Laufs zurueckgab - nie einen fremden oder aelteren Kommentar; eine Agent-Markierung waere schwaecher als diese Regel und braucht es nicht. Fehlt nur der Test, der das festnagelt.
+- **2026-11-20 17:56 · Alexander Sacharov** — decision (teamlead jaira-64, 2026-11-20): keine Agent-Markierung in Antworten. reply/comment loeschen nur die id, die ihr eigener POST in diesem Lauf zurueckgab, und nur wenn derselbe Text desselben Logins frueher steht - das ist strenger als eine Markierung (die liesse sich kopieren, die eigene POST-id nicht). Ein Kommentar der Person wird so in keiner Reihenfolge geloescht; Test TestPRRoundReplyLeavesOneAnswerWhenTwoSessionsRace/TestPRRoundCommentSaysItOnce.
+- **2026-11-20 17:57 · Alexander Sacharov** — decision (Alex via teamlead jaira-64, 2026-11-20, korrigiert 'PR erst in done'): woertlich 'im Projekt machen wir den PR und dort kommt noch ein Review. Deshalb kommt done erst, wenn alle Reviews fertig sind.' -> Board-Datei .jaira/pr-when = done|signoff, Default done (dieses Repo bleibt: done, dann PR). signoff: pr-gate laesst zu, sobald jedes Ticket des Branches in signoff oder done ist; done kommt erst, wenn der PR keine offenen Threads und kein ausstehendes Review hat.
+- **2026-11-20 17:57 · Alexander Sacharov** — decision (worker, settled): (a) die Pruefung 'PR-Runde fertig' wird pr-round.sh settled <owner/repo> <number> (Exit 0 / 3 mit offenen Threads und ausstehenden Reviewern); die Rolle verlangt sie vor done. (b) KEIN Gate in 'jaira move ... done' im Binary: es muesste GitHub fragen, jeder move haengte dann an Netz und gh-Login, und die Annahme in signoff ist eine Person (Cockpit Accept) - das gehoert zu CRASZS (PR begleiten), wie teamlead als Rueckfall erlaubt. (c) Board ohne Lane 'signoff' mit pr-when=signoff: pr-gate verweigert mit Exit 3 und sagt warum, statt zu raten. (d) optimize-Runde unterbrochen; die Bereinigung in pr-round.sh (number=0 entfernt) reist im naechsten Commit mit.

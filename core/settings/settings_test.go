@@ -361,6 +361,40 @@ func TestPRDefaultsToThePerson(t *testing.T) {
 	}
 }
 
+// pr-when opens a pull request before acceptance only when the board says
+// exactly signoff; anything else — no file, a typo, a second line — keeps the
+// order this repository runs: done, then the pull request (JG3REW).
+func TestPRWhenDefaultsToDone(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if got, src := settings.PRWhenFor(root); got != settings.PRWhenDone || src != "the default" {
+		t.Errorf("no file: %q (%s), want done, the default", got, src)
+	}
+	if got, _ := settings.PRWhenFor(""); got != settings.PRWhenDone {
+		t.Errorf("outside a board: %q, want done", got)
+	}
+	for in, want := range map[string]string{
+		"":                                  settings.PRWhenDone,
+		"signoff\n":                         settings.PRWhenSignoff,
+		"signoff\r\n":                       settings.PRWhenSignoff,
+		"# review on the PR\n\n signoff \n": settings.PRWhenSignoff,
+		"done\n":                            settings.PRWhenDone,
+		"Signoff\n":                         settings.PRWhenDone,
+		"sign-off\n":                        settings.PRWhenDone,
+		"done\nsignoff\n":                   settings.PRWhenDone,
+		"signoff; rm -rf /\n":               settings.PRWhenDone,
+	} {
+		if err := os.WriteFile(settings.BoardPRWhenPath(root), []byte(in), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if got, _ := settings.PRWhenFor(root); got != want {
+			t.Errorf(".jaira/pr-when %q: %q, want %q", in, got, want)
+		}
+	}
+}
+
 // The reviewer goes onto a gh or glab command line, so only a login survives.
 func TestPRReviewerIsALoginOrNothing(t *testing.T) {
 	root := t.TempDir()

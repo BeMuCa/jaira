@@ -323,6 +323,36 @@ func PRReviewerFor(root string) string {
 	return word(boardLine(BoardPRReviewerPath(root)), "._-[]/@")
 }
 
+// The two values of the board's pr-when file: the lane every ticket on a
+// branch must have reached before an agent opens its pull request.
+const (
+	PRWhenDone    = "done"
+	PRWhenSignoff = "signoff"
+)
+
+// prWhenFile says when an agent opens a pull request under PRAgent. "done"
+// for a project that reviews before it accepts — the person's acceptance is
+// the go-ahead, the pull request comes after. "signoff" for a project whose
+// review happens on the pull request itself: it opens while the person has
+// yet to accept, and done waits until its review round is finished.
+const prWhenFile = "pr-when"
+
+// BoardPRWhenPath is where the board at root says when a pull request opens.
+func BoardPRWhenPath(root string) string {
+	return filepath.Join(root, ticket.DirName, prWhenFile)
+}
+
+// PRWhenFor returns PRWhenSignoff when the board at root names it, and
+// PRWhenDone otherwise, with where it came from. Done is the default because
+// it is what ran before there was a choice, and because a typo must never be
+// what opens a pull request on work nobody has accepted.
+func PRWhenFor(root string) (when, source string) {
+	if root != "" && boardLine(BoardPRWhenPath(root)) == PRWhenSignoff {
+		return PRWhenSignoff, "from .jaira/pr-when, shared with the board"
+	}
+	return PRWhenDone, "the default"
+}
+
 // The two values of Dispatch.
 const (
 	DispatchLanes  = "lanes"

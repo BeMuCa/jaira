@@ -173,9 +173,18 @@ func TestRolesListReportsTheBoardsPR(t *testing.T) {
 	if p := read(); p["pr"] != "agent" || !strings.Contains(fmt.Sprint(p["pr_source"]), ".jaira/pr") || p["pr_reviewer"] != "copilot" {
 		t.Errorf("pr=%v source=%v reviewer=%v, want agent from .jaira/pr, copilot", p["pr"], p["pr_source"], p["pr_reviewer"])
 	}
+	if p := read(); p["pr_when"] != "done" || p["pr_when_source"] != "the default" {
+		t.Errorf("no .jaira/pr-when: pr_when=%v source=%v, want done, the default", p["pr_when"], p["pr_when_source"])
+	}
+	if err := os.WriteFile(settings.BoardPRWhenPath(board), []byte("signoff\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if p := read(); p["pr_when"] != "signoff" || !strings.Contains(fmt.Sprint(p["pr_when_source"]), ".jaira/pr-when") {
+		t.Errorf("pr_when=%v source=%v, want signoff from .jaira/pr-when", p["pr_when"], p["pr_when_source"])
+	}
 	out, err := runCLI(t, board, "roles", "list")
-	if err != nil || !strings.Contains(out, "pr: agent") || !strings.Contains(out, "reviewer: copilot") {
-		t.Errorf("roles list does not say who opens a pull request: %v\n%s", err, out)
+	if err != nil || !strings.Contains(out, "pr: agent") || !strings.Contains(out, "reviewer: copilot") || !strings.Contains(out, "opens in: signoff") {
+		t.Errorf("roles list does not say who opens a pull request, and when: %v\n%s", err, out)
 	}
 }
 

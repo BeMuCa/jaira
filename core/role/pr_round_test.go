@@ -16,13 +16,14 @@ import (
 // GH_ISSUES answers the conversation's comments instead, and GH_STATE the
 // query reply asks before it writes, GH_AFTER the thread it reads back after
 // it posted; GH_POSTED answers a conversation comment's POST, and
-// GH_ISSUES_AFTER the conversation read back once something was posted.
+// GH_ISSUES_AFTER the conversation read back once something was posted;
+// GH_REQUESTED the reviewers a pull request still waits for.
 const fakeGH = `#!/usr/bin/env bash
 printf '%s\t' "$@" >> "$GH_LOG"; printf '\n' >> "$GH_LOG"
 [ "$1" = auth ] && { [ "${GH_AUTH:-}" = fail ] && exit 1; exit 0; }
 for a in "$@"; do [ "$a" = POST ] && [ "${GH_POST:-}" = fail ] && { echo "HTTP 422: Reviews may only be requested from collaborators" >&2; exit 1; }; done
 filter="" fixture=${GH_FIXTURE:-}
-case "$*" in *"POST repos/"*"/issues/"*) fixture=${GH_POSTED:-} ;; *"/issues/"*) fixture=${GH_ISSUES:-}; [ -n "${GH_ISSUES_AFTER:-}" ] && grep -q POST "$GH_LOG" && fixture=$GH_ISSUES_AFTER ;; *"comments(first:100)"*) fixture=${GH_AFTER:-} ;; *"viewer{login}"*) fixture=${GH_STATE:-} ;; esac
+case "$*" in *"requested_reviewers"*) fixture=${GH_REQUESTED:-} ;; *"POST repos/"*"/issues/"*) fixture=${GH_POSTED:-} ;; *"/issues/"*) fixture=${GH_ISSUES:-}; [ -n "${GH_ISSUES_AFTER:-}" ] && grep -q POST "$GH_LOG" && fixture=$GH_ISSUES_AFTER ;; *"comments(first:100)"*) fixture=${GH_AFTER:-} ;; *"viewer{login}"*) fixture=${GH_STATE:-} ;; esac
 while [ $# -gt 0 ]; do [ "$1" = --jq ] && filter=$2; shift; done
 if [ -n "$filter" ] && [ -n "$fixture" ]; then jq -r "$filter" "$fixture"; else echo '{}'; fi
 `
@@ -259,6 +260,10 @@ func TestPROpensOnlyWhereTheBoardSaysAndNeverAccepts(t *testing.T) {
 		"scripts/pr-round.sh open <owner/repo> <remote> <branch>",
 		"jaira roles pr-gate <remote>/<branch> && glab mr create",
 		"scripts/pr-round.sh request <owner/repo> <number> <pr_reviewer>",
+		"jaira roles list --json | jaira json get pr_when",
+		"**done waits for it**",
+		"scripts/pr-round.sh settled <owner/repo> <number>",
+		"blocking_discussions_resolved",
 		"scripts/pr-round.sh threads  <owner/repo> <number>",
 		"scripts/pr-round.sh reply <owner/repo> <number> <thread id> <file>",
 		"`Fixed in <sha>: <what changed>`",
@@ -275,7 +280,7 @@ func TestPROpensOnlyWhereTheBoardSaysAndNeverAccepts(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !strings.Contains(string(b), "`agent`") || !strings.Contains(string(b), "in done") {
+		if !strings.Contains(string(b), "`agent`") || !strings.Contains(string(b), "in done") || !strings.Contains(string(b), "signoff") {
 			t.Errorf("%s still says only a person opens a pull request, without the board's exception", id)
 		}
 	}
@@ -446,5 +451,43 @@ func TestPRRoundCommentSaysItOnce(t *testing.T) {
 		if code != 0 || deleted != after.deletes || (!after.deletes && strings.Contains(calls, "DELETE")) {
 			t.Errorf("%s: exit %d, removed this copy %v, want %v\n%s\n%s", name, code, deleted, after.deletes, out, calls)
 		}
+	}
+}
+
+// On a board whose review happens on the pull request, done waits until the
+// round is over: no thread open, no reviewer still asked. Each thing in the
+// way is named; a resolved thread and an empty request list are not
+// (JG3REW, pr-when signoff).
+func TestPRRoundSettledOnlyWhenNothingIsOpen(t *testing.T) {
+	p := newPRRound(t)
+	threads := func(resolved bool) string {
+		return fixtureFile(t, "threads.json", `{"data":{"repository":{"pullRequest":{"reviewThreads":{
+			"pageInfo":{"hasNextPage":false,"endCursor":null},
+			"nodes":[{"id":"PRRT_1","isResolved":`+map[bool]string{true: "true", false: "false"}[resolved]+`,"isOutdated":false,"path":"dir with space/a.go","line":7,"comments":{"nodes":[{"author":{"login":"copilot"},"body":"x","url":"u1"}]}}]}}}}}`)
+	}
+	none := fixtureFile(t, "none.json", `{"users":[],"teams":[]}`)
+	asked := fixtureFile(t, "asked.json", `{"users":[{"login":"Copilot"}],"teams":[{"slug":"core"}]}`)
+	for _, c := range []struct {
+		name, threads, requested string
+		code                     int
+		says                     []string
+	}{
+		{"everything answered", threads(true), none, 0, []string{"settled"}},
+		{"a thread open", threads(false), none, 3, []string{"open thread: dir with space/a.go:7 u1"}},
+		{"a review still asked", threads(true), asked, 3, []string{"review pending: Copilot", "review pending: core"}},
+		{"both", threads(false), asked, 3, []string{"open thread:", "review pending: Copilot"}},
+	} {
+		out, code := p.run([]string{"GH_FIXTURE=" + c.threads, "GH_REQUESTED=" + c.requested}, "settled", "o/r", "7")
+		if code != c.code {
+			t.Errorf("%s: exit %d, want %d\n%s", c.name, code, c.code, out)
+		}
+		for _, want := range c.says {
+			if !strings.Contains(out, want) {
+				t.Errorf("%s: does not say %q\n%s", c.name, want, out)
+			}
+		}
+	}
+	if out, code := p.run(nil, "settled", "o/r", "7", "extra"); code != 2 {
+		t.Errorf("settled with an extra argument: exit %d, want 2\n%s", code, out)
 	}
 }

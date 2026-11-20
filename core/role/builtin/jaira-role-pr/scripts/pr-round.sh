@@ -37,9 +37,15 @@ pr-round.sh open <owner/repo> <remote> <branch> <title> <body-file>
             posted, so a second round never says it twice.
   request   <owner/repo> <number> <reviewer>
             Ask <reviewer> for a review again. 'copilot' asks GitHub Copilot.
+  settled   <owner/repo> <number>
+            Whether the review round is over: exit 0 when no thread is open
+            and no review is still requested, exit 3 listing each open thread
+            and each reviewer still asked. On a board whose .jaira/pr-when
+            says signoff, done waits for exit 0.
 
 Exit codes: 0 done; 2 usage; 3 gh missing or not signed in to github.com,
-or (open) the board does not let an agent open this pull request;
+(open) the board does not let an agent open this pull request, or
+(settled) the review round is not over;
 4 the reviewer could not be requested (the pull request stays as it is — say
 so and carry on); 1 anything else that failed, with gh's own message.
 
@@ -57,13 +63,12 @@ case "$repo" in */*) ;; *) die "'$repo' is not owner/repo" 2 ;; esac
 if [ "$cmd" = open ]; then
   # open has no number yet: it is the call that makes one.
   [ $# -eq 6 ] || { usage >&2; exit 2; }
-  number=0
   shift 2
 else
   number=$3
+  case "$number" in ''|*[!0-9]*) die "'$number' is not a pull request number" 2 ;; esac
   shift 3
 fi
-case "$number" in ''|*[!0-9]*) die "'$number' is not a pull request number" 2 ;; esac
 owner=${repo%%/*} name=${repo#*/}
 
 command -v gh >/dev/null 2>&1 || die "gh is not installed" 3
@@ -231,6 +236,23 @@ case "$cmd" in
       gh api --method DELETE "repos/$repo/issues/comments/${posted%% *}" >/dev/null
       echo "commented: by another session at the same time, removed this copy"
     fi
+    ;;
+  settled)
+    [ $# -eq 0 ] || { usage >&2; exit 2; }
+    # Both lists in full before deciding: a round is over only when neither
+    # has anything, and the report names everything still in the way.
+    open=$(gh api graphql --paginate -f owner="$owner" -f name="$name" -F number="$number" \
+      -f query="$threads_query" \
+      --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved | not)
+            | "open thread: \(.path):\(.line // "-") \(.comments.nodes[0].url // "")"')
+    pending=$(gh api "repos/$repo/pulls/$number/requested_reviewers" \
+      --jq '(.users // [])[] , (.teams // [])[] | "review pending: \(.login // .slug)"')
+    if [ -z "$open$pending" ]; then
+      echo "settled: no thread open, no review requested"
+      exit 0
+    fi
+    printf '%s\n' "$open" "$pending" | sed '/^$/d' >&2
+    exit 3
     ;;
   request)
     [ $# -eq 1 ] || { usage >&2; exit 2; }

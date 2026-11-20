@@ -43,6 +43,7 @@ started you:
 ```bash
 jaira roles list --json | jaira json get pr            # person or agent
 jaira roles list --json | jaira json get pr_reviewer   # copilot, a login, or empty
+jaira roles list --json | jaira json get pr_when       # done or signoff
 ```
 
 - **`person`** — the default, and what a board without `.jaira/pr` says, or
@@ -58,11 +59,28 @@ jaira roles list --json | jaira json get pr_reviewer   # copilot, a login, or em
   checks this, not you: `jaira roles pr-gate <remote>/<branch>` at **Open
   it**, after **File the finished tickets away** — exit 0 or no pull request.
 
+`pr_when` moves that condition, for a project whose review happens on the
+pull request itself:
+
+- **`done`** — the default: as above. The person accepts, then the pull
+  request opens and its reviewer reads the accepted work.
+- **`signoff`** — the pull request opens once every ticket on the branch is
+  in `signoff` (or already in done): the model review is through and a person
+  is about to accept. The review round on the pull request — Copilot's, a
+  person's — is part of that acceptance, so **done waits for it**: before a
+  ticket of this branch moves into done, `scripts/pr-round.sh settled
+  <owner/repo> <number>` must exit 0 — no thread open, no review still
+  requested. Exit 3 lists what is in the way; the ticket stays in signoff
+  and you report that list. The gate reads `pr_when` itself: you pass it
+  nothing. Once the person has moved the tickets into done, this role runs
+  once more: **File the finished tickets away** commits them and the push
+  lands on the pull request already open.
+
 What `agent` never changes: you do not merge and you do not approve, on any
 board, under any setting. A person still accepts the pull request.
 
-`.jaira/pr` and `.jaira/pr-reviewer` are one line each, committed with the
-board so every clone inherits them. A person writes them; you never do.
+`.jaira/pr`, `.jaira/pr-reviewer` and `.jaira/pr-when` are one line each,
+committed with the board so every clone inherits them. A person writes them; you never do.
 
 ## Before you push anything
 
@@ -405,6 +423,15 @@ already there, and two sessions posting at once leave one copy.
 When every thread is answered, ask again:
 `scripts/pr-round.sh request <owner/repo> <number> <pr_reviewer>` — or the
 person who reviewed, when the board names none.
+
+On a board whose `pr_when` is `signoff`, report where the round stands with
+`scripts/pr-round.sh settled <owner/repo> <number>`: exit 0 is what lets a
+ticket of this branch into done, exit 3 lists what still holds it. On GitLab
+the merge request itself says it:
+
+```bash
+glab api "projects/<owner%2Frepo>/merge_requests/<number>" | jaira json get blocking_discussions_resolved   # true, or done waits
+```
 
 On GitLab there is no script; `glab api` does the same three steps. Name the
 project as `<owner/repo>` with its slash written `%2F` — never `:id`, which

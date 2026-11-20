@@ -447,8 +447,8 @@ Only remove a worktree or close a pane you created yourself, and a worktree not
 before its ticket is in `done` — not when the work is committed, and not when
 the branch is pushed. You never see the pull request: opening it is the human's
 call — or `/jaira-role-pr`'s, on a board whose `.jaira/pr` says `agent`, once
-every ticket on the branch is in done — and it can come long after your last
-worker has finished.
+every ticket on the branch is in done (in signoff, where `.jaira/pr-when` says
+signoff) — and it can come long after your last worker has finished.
 
 **Your own tab is not yours to close.** Whoever started you created it, and they
 close it once they have read your report. Do not close it, and do not keep

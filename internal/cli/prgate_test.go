@@ -132,3 +132,65 @@ func TestHandlesInSubjects(t *testing.T) {
 		t.Errorf("handles = %v, want %v", got, want)
 	}
 }
+
+func setPRWhen(t *testing.T, dir, value string) {
+	t.Helper()
+	if err := os.WriteFile(settings.BoardPRWhenPath(dir), []byte(value+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// Where the review happens on the pull request, it opens once every ticket
+// is in signoff — or past it, in done; earlier lanes and the parking lane
+// still hold it. Without .jaira/pr-when nothing short of done opens it
+// (JG3REW, Alex 2026-11-20).
+func TestPRGateOpensInSignoffWhereTheBoardSaysSo(t *testing.T) {
+	dir, ticketIn, commit := prGateFixture(t)
+	setPR(t, dir, "agent")
+	inSignoff, inDone := ticketIn("signoff"), ticketIn("done")
+	commit("feat(" + inSignoff + "," + inDone + "): accepted and waiting")
+
+	if _, err := runCLI(t, dir, "roles", "pr-gate", "master"); exitCode(err) != ExitValidation ||
+		!strings.Contains(err.Error(), "in done") || !strings.Contains(err.Error(), inSignoff+" (signoff)") {
+		t.Fatalf("pr-when done, a ticket in signoff: %v", err)
+	}
+	setPRWhen(t, dir, "signoff")
+	if out, err := runCLI(t, dir, "roles", "pr-gate", "master"); err != nil || !strings.Contains(out, "in signoff") {
+		t.Fatalf("pr-when signoff, tickets in signoff and done: %v\n%s", err, out)
+	}
+	for _, status := range []string{"review", "human", "blocked", "in-progress"} {
+		h := ticketIn(status)
+		commit("fix(" + h + "): not there yet")
+		_, err := runCLI(t, dir, "roles", "pr-gate", "master")
+		if exitCode(err) != ExitValidation || !strings.Contains(err.Error(), h+" ("+status+")") {
+			t.Errorf("pr-when signoff, a ticket in %s: exit %d, %v", status, exitCode(err), err)
+		}
+		if err := os.Remove(filepath.Join(dir, ".jaira", "tickets", fileOf(t, dir, h))); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// A board that has no lane signoff before its terminal lane cannot honour
+// pr-when signoff: the gate says so rather than open on a guess.
+func TestPRGateRefusesSignoffOnABoardWithoutIt(t *testing.T) {
+	dir, ticketIn, commit := prGateFixture(t)
+	setPR(t, dir, "agent")
+	setPRWhen(t, dir, "signoff")
+	commit("feat(" + ticketIn("done") + "): done")
+	if out, err := runCLI(t, dir, "lanes", "remove", "signoff"); err != nil {
+		t.Fatalf("lanes remove signoff: %v\n%s", err, out)
+	}
+	if _, err := runCLI(t, dir, "roles", "pr-gate", "master"); exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "no lane signoff") {
+		t.Fatalf("no signoff lane: exit %d, %v", exitCode(err), err)
+	}
+}
+
+func fileOf(t *testing.T, dir, handle string) string {
+	t.Helper()
+	m, _ := filepath.Glob(filepath.Join(dir, ".jaira", "tickets", "*"+handle+"-*.md"))
+	if len(m) != 1 {
+		t.Fatalf("ticket file of %s: %v", handle, m)
+	}
+	return filepath.Base(m[0])
+}

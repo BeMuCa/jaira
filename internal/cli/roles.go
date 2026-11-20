@@ -67,8 +67,11 @@ an agent then opens it itself once every ticket on the branch is in done
 ('jaira roles pr-gate' checks that),
 asks for the reviewer .jaira/pr-reviewer names and answers one round of
 comments — and "person" otherwise, an agent pushing the branch and handing
-the create line back. Carried as pr, pr_source and pr_reviewer. Merging and
-approving stay a person's either way.`,
+the create line back. Carried as pr, pr_source and pr_reviewer. And when:
+"signoff" when the board's .jaira/pr-when says so — the pull request opens
+once every ticket is in signoff, and its review round has to be finished
+before done — and "done" otherwise. Carried as pr_when and pr_when_source.
+Merging and approving stay a person's either way.`,
 		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			roles, err := role.Builtins()
@@ -86,6 +89,7 @@ approving stay a person's either way.`,
 			release, releaseSource := settings.ReleaseFor(root)
 			pr, prSource := settings.PRFor(root)
 			reviewer := settings.PRReviewerFor(root)
+			prWhen, prWhenSource := settings.PRWhenFor(root)
 			if g.jsonOut {
 				arr := make([]map[string]any, 0, len(roles))
 				for _, r := range roles {
@@ -100,6 +104,7 @@ approving stay a person's either way.`,
 					"python": py, "python_source": pySource,
 					"release": release, "release_source": releaseSource,
 					"pr": pr, "pr_source": prSource, "pr_reviewer": reviewer,
+					"pr_when": prWhen, "pr_when_source": prWhenSource,
 				})
 			}
 			fmt.Fprintf(w, "%-24s %s\n", "ID", "DESCRIPTION")
@@ -112,7 +117,8 @@ approving stay a person's either way.`,
 				cmp.Or(chat, "account default"), chatSource)
 			fmt.Fprintf(w, "python: %s — what the roles run their Python scripts with (%s)\n", py, pySource)
 			fmt.Fprintf(w, "release: %s — who touches the version and the changelog (%s)\n", release, releaseSource)
-			fmt.Fprintf(w, "pr: %s — who opens a pull request (%s); reviewer: %s\n", pr, prSource, cmp.Or(reviewer, "none"))
+			fmt.Fprintf(w, "pr: %s — who opens a pull request (%s); reviewer: %s; opens in: %s (%s)\n",
+				pr, prSource, cmp.Or(reviewer, "none"), prWhen, prWhenSource)
 			return nil
 		},
 	}
@@ -127,14 +133,16 @@ against <base> — the default branch of the repository it goes to, as
 <remote>/<branch>. Exit 0 only when the board's .jaira/pr says agent, at
 least one commit in <base>..HEAD names a ticket in its subject
 (type(A3K9QP): ...), and every ticket named that is still on the board sits
-in its board's terminal lane. A ticket filed into the logbook is past done
-and holds nothing up. Anything else exits 3 and says which ticket holds it.
+in its board's terminal lane — or, where .jaira/pr-when says signoff, in the
+lane signoff or any lane after it up to the terminal one. A ticket filed into
+the logbook is past done and holds nothing up. Anything else exits 3 and says
+which ticket holds it.
 
 jaira-role-pr runs this before it opens a pull request on its own, so the
 rule does not rest on a role's text alone. A person who invokes the role
 needs no gate: their invocation is the decision. --json carries may_open,
-pr and tickets; a refusal is the usual error, its reason pr_person,
-no_ticket or pending.`,
+pr, pr_when and tickets; a refusal is the usual error, its reason
+pr_person, no_ticket, no_signoff_lane or pending.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
@@ -164,7 +172,13 @@ no_ticket or pending.`,
 					return err
 				}
 			}
-			terminal := map[string]string{}
+			when, _ := settings.PRWhenFor(s.Root)
+			// reached is, per board, every lane a ticket may sit in for the
+			// pull request to open: the terminal lane, and under signoff
+			// also signoff and whatever lies between it and the terminal.
+			// A parking lane ordered after the terminal one is not among
+			// them: blocked work has not reached anything.
+			reached := map[string]map[string]bool{}
 			var pending []string
 			for _, h := range named {
 				for _, t := range all {
@@ -172,34 +186,63 @@ no_ticket or pending.`,
 						continue
 					}
 					b := lane.BoardOf(t)
-					term, ok := terminal[b]
-					if !ok {
-						lanes, err := boardLanes(s, b)
-						if err != nil {
+					ok, known := reached[b]
+					if !known {
+						if ok, err = lanesReached(s, b, when); err != nil {
 							return err
 						}
-						if l := lanes.Terminal(); l != nil {
-							term = l.ID
-						}
-						terminal[b] = term
+						reached[b] = ok
 					}
-					if term == "" || t.Status != term {
+					if !ok[t.Status] {
 						pending = append(pending, h+" ("+t.Status+")")
 					}
 				}
 			}
 			if len(pending) > 0 {
 				return fail(ExitValidation, "pending",
-					"pr-gate: not every ticket on the branch is in done — %s; hand the create line back", strings.Join(pending, ", "))
+					"pr-gate: not every ticket on the branch is in %s — %s; hand the create line back", when, strings.Join(pending, ", "))
 			}
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
-				return emit(w, map[string]any{"may_open": true, "pr": pr, "tickets": named})
+				return emit(w, map[string]any{"may_open": true, "pr": pr, "pr_when": when, "tickets": named})
 			}
-			fmt.Fprintf(w, "pr-gate: an agent may open it — every ticket on the branch is done: %s\n", strings.Join(named, ", "))
+			fmt.Fprintf(w, "pr-gate: an agent may open it — every ticket on the branch is in %s: %s\n", when, strings.Join(named, ", "))
 			return nil
 		},
 	}
+}
+
+// lanesReached is the set of lanes on board b in which a ticket counts as
+// far enough along for the pull request to open under when.
+func lanesReached(s *ticket.Store, b, when string) (map[string]bool, error) {
+	lanes, err := boardLanes(s, b)
+	if err != nil {
+		return nil, err
+	}
+	term := lanes.Terminal()
+	if term == nil {
+		return nil, fail(ExitValidation, "no_terminal_lane", "pr-gate: board %q has no terminal lane, so nothing on it is ever done", cmp.Or(b, "default"))
+	}
+	from := term.ID
+	if when == settings.PRWhenSignoff {
+		from = settings.PRWhenSignoff
+	}
+	out := map[string]bool{}
+	in := false
+	for _, l := range lanes.Lanes {
+		in = in || l.ID == from
+		if in {
+			out[l.ID] = true
+		}
+		if l.ID == term.ID {
+			break
+		}
+	}
+	if !out[term.ID] {
+		return nil, fail(ExitValidation, "no_signoff_lane",
+			"pr-gate: .jaira/pr-when says signoff, but board %q has no lane signoff before its terminal lane — fix the file or the board", cmp.Or(b, "default"))
+	}
+	return out, nil
 }
 
 func newRolesInstallCmd() *cobra.Command {
