@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T23:08:31Z
+updated-at: 2026-11-20T23:09:02Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -84,3 +84,4 @@ review-check: "1. cd in den Worktree feat/0k8y6s  2. scripts/shipped-history.sh 
 - **2026-11-20 23:03 · Alexander Sacharov** — bughunt: done at 55ae3718 - 0 findings in 2 modules, follow-up hunt since 9c785040; concurrency, error paths, input, permissions checked; ran: go test ./shipped/ -run 'TestUnreadableBlob|TestCheck' (pass); files: .gitattributes .github/workflows/ci.yaml .github/workflows/release-notes.yaml core/release/notes/0K8Y6S.md core/role/shipped_test.go core/role/testdata/jaira-cockpit-hooks-board-v0.5.2.ts core/shipped/history_test.go core/shipped/shipped.sha256 scripts/shipped-history.sh
 - **2026-11-20 23:04 · Alexander Sacharov** — Stand 00:04: in review, Review-Agent in eigenem Herdr-Tab gestartet (run-lane.sh --no-worktree). Branch gepusht bis 55ae3718; Ticketdatei ungespeichert im Worktree (Lanes ohne Code).
 - **2026-11-20 23:07 · Alexander Sacharov** — review-gaps Runde 1: Duplikat-Meldung in TestManifestLinesAreWellFormed nennt jetzt die Abhilfe (regenerieren). Offen fuer die Person, nicht per Code loesbar: ob GitHubs Konfliktpruefung im PR merge=union aus .gitattributes beachtet - erst zwei echte PRs zeigen es; lokal (git merge) belegt TestManifestMergesWithoutConflict.
+- **2026-11-20 23:09 · Alexander Sacharov** — bughunt: done at 722c9c6e - 0 findings in 1 module, follow-up hunt since 55ae3718 (diff: one error message in core/shipped/shipped_test.go; its remedy checked against scripts/shipped-history.sh, whose final sort -u does drop duplicates); concurrency, error paths, input, permissions checked; ran: go test ./shipped/ (pass); files: .gitattributes .github/workflows/ci.yaml .github/workflows/release-notes.yaml core/release/notes/0K8Y6S.md core/role/shipped_test.go core/role/testdata/jaira-cockpit-hooks-board-v0.5.2.ts core/shipped/history_test.go core/shipped/shipped.sha256 core/shipped/shipped_test.go scripts/shipped-history.sh
