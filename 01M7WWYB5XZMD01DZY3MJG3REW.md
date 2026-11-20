@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T17:05:16Z
+updated-at: 2026-11-20T17:05:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59469
 claimed-at: 2026-11-20T16:43:41Z
@@ -33,7 +33,7 @@ outcome-why: "Ein Teamlead machte jede PR-Runde von Hand (push, PR-Text, Copilot
 outcome-resolves: "Mit .jaira/pr=agent oeffnet jaira-role-pr den PR nach der Abnahme aller Tickets selbst, fordert den Reviewer an und faehrt eine Kommentarrunde; ohne Datei bleibt alles wie heute; Merge/Approve bleibt in jedem Fall beim Menschen."
 review-summary: none
 round: 3
-review-gaps: "none - geprueft: PRFor folgt bewusst ReleaseFor (gleiches Muster, eigene Werte), Zeichenpruefung seit critique 1 eine Funktion word(); pr-round.sh hat kein Gegenstueck im Repo (grep requested_reviewers/resolveReviewThread: nur hier); kein toter Code, alle neuen Funktionen haben Aufrufer; roles list liest zwei kleine Dateien mehr, kein heisser Pfad"
+review-gaps: "none - Fix 1dd8e6d7 gelesen: die zusaetzliche Abfrage vor reply ist der Preis der Wiederholbarkeit (ein Aufruf pro Thread), kein Duplikat, kein toter Code"
 test-verdict: "pass: go build + go test -count=1 -race ./... RC=0; DoD 1-11 gegen den Baum geprueft (Tests laufen); roles list auf Scratch-Board: default person/none, agent+copilot aus CRLF-Datei, Shell-Zeichen im Reviewer -> leer, unlesbare .jaira/pr -> person; pr-round.sh threads/comments gegen BeMuCa/jaira #138-#144 rc=0, falsche PR-Nummer rc=1 ohne Schreiben; Schreibwege (reply/request) nur gegen gh-Stub, nicht live; zwei Schreiber: roles list schreibt nichts, doppelte Runde siehe hunt"
 hunt-verdict: "fail: bughunt done at d527d5a9, 3 change (numerische owner/name per -F, reply nicht wiederholbar nach gescheitertem resolve, @login ausser @copilot), 0 pre-existing"
 ---
