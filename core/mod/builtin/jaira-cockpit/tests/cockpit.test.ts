@@ -384,6 +384,15 @@ describe('report since the last read, by input class', () => {
     expect((await $.command.run(typed('report K7P2QX'))).text).toContain('second')
   })
 
+  test('all marks the unseen ones read too: the next read has nothing new', async ($, on) => {
+    mock.store(on, { [key]: [...old(1, undefined), ...old(2, true)] })
+    on('session.receive', ($, e) => ({ text: e.text }))
+    on('prompt.submit', ($, e) => ({ text: e.text, origin: e.origin }))
+    where(on, () => '/p')
+    expect((await $.command.run(typed('report K7P2QX all'))).text).toContain('old 0')
+    expect((await $.command.run(typed('report K7P2QX'))).text).toStartWith('Nothing new for K7P2QX')
+  })
+
   test('a store that refuses the mark: the reports are shown anyway and stay new', async ($, on) => {
     const kept = new Map<string, unknown>([[key, old(2, undefined)]])
     on('store.get', ($, e) => ({ value: kept.get(e.key) }))
