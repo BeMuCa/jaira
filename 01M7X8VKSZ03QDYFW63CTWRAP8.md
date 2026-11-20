@@ -1,7 +1,7 @@
 ---
 id: 01M7X8VKSZ03QDYFW63CTWRAP8
 title: "Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:35:38Z
+updated-at: 2026-11-20T22:35:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
@@ -33,7 +33,7 @@ outcome-what: "jaira-role-signoff findet die Branch des Tickets ueber den Handle
 outcome-why: "signoff-Rueckgabe: Branches heissen nicht immer feat/<id>; bughunt: lokal kann hinter remote liegen"
 outcome-resolves: "Rueckgabe aus signoff 22:27 (🟡 Branchname) und bughunt 22:32"
 review-summary: "core/role/builtin/jaira-teamlead/SKILL.md:216 still says 'or more than one' branch makes the commit unknown; since d4da7f7b several copies are fine when one leads - say 'two that diverged'"
-round: 6
+round: 7
 review-gaps: "nothing removed: the change is one lookup block plus a pointer in the teamlead; left the intermediate shipped.sha256 lines (already noted by review 22:04)"
 test-verdict: "pass: go build ./... and go test ./core/... green (RC=0); DoD 1-4 unchanged, branch lookup run: feat/twrap8 and fix/twrap8-x found, feat/twrap8x not, unknown handle gives empty branch and git rev-parse exits non-zero -> '?'; the change writes nothing"
 hunt-verdict: "change: 1 finding at a1b61158 - local branch taken over its remote even when behind; fixed in this round"
