@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T17:08:25Z
+updated-at: 2026-11-20T17:25:13Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-42185
 claimed-at: 2026-11-20T16:42:15Z
@@ -98,3 +98,8 @@ review-check: "1. git diff 5b16e491..HEAD -- core/lane/builtin core/role/builtin
 - **2026-11-20 17:03 · Alexander Sacharov** — bughunt: change: core/lane/builtin/20-in-progress.md:72-82 (and .jaira/lanes/in-progress.md:72-82) - class: the rule now says 'find out who sent it' and 'a person sent it when it comes from a lane a person owns (signoff, human)', but jaira records nothing the in-progress agent can read that says which lane a ticket came from: jaira show --json has no from-lane or move history, a signoff/human return writes no note, and updated_by is the same git user the agents run as; e12f36d5 also dropped the one hint the old text gave (the newest notes name the sending lane). So a person's return from signoff without a note still looks exactly like a review return (newest note is the review's) and is logged 'back: review', the count is not reset, and after two real review returns in-progress escalates to human instead of doing what the person asked - the case the round set out to close. Fix needs either evidence (e.g. the person writes a note, or move records the from-lane) or a rule that works from what show prints. ran: scratch board, jaira note <id> 'review: fine'; move --to signoff; move --to in-progress (exit 0): show --json diff is only status, next_lane, round 2->3; no note, no from-lane
 - **2026-11-20 17:03 · Alexander Sacharov** — bughunt: done at e12f36d5 - 1 finding (1 change, 0 pre-existing) in 3 modules, follow-up hunt since ad6a6ffc; concurrency, error paths, input, permissions checked (diff touched only the in-progress prompt twins and the manifest; board copy identical to builtin; new manifest line dea4f27b matches sha256 of 20-in-progress.md; sendsBack excludes blocked, so parking does not bump round); files: .jaira/lanes/in-progress.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md core/lane/builtin/15-pre-process.md core/lane/builtin/20-in-progress.md core/lane/builtin/27-testing.md core/lane/builtin/40-review.md core/release/notes/TW5FE2.md core/role/builtin/jaira-role-bughunt/SKILL.md core/shipped/shipped.sha256
 - **2026-11-20 17:05 · Alexander Sacharov** — note: change aus Hunt e12f36d5, nach Teamlead-Entscheid nicht mehr in dieser Runde: jaira show zeigt keine Herkunfts-Lane, eine Rueckgabe aus signoff ohne Note sieht fuer in-progress wie eine review-Rueckgabe aus; der Prompt-Zaehler bleibt Uebergang bis DF0YD6/H6CD33 (move schreibt from-lane).
+- **2026-11-20 17:25 · Alexander Sacharov** — explain: Der Zaehler fuer Rueckgaben in in-progress kann nicht erkennen, aus welcher Lane ein Ticket zurueckkam; eine Rueckgabe aus signoff ohne Note sieht wie eine review-Rueckgabe aus.
+Warum: Nach zwei echten review-Rueckgaben plus einer Rueckgabe der Person eskaliert in-progress zu frueh an human, statt zu tun, was die Person wollte.
+1) Zurueckgeben: die Regel in 20-in-progress.md so aendern, dass sie nur mit dem arbeitet, was jaira show ausgibt (z.B. die Person schreibt bei Rueckgabe eine Note) [give back]
+2) So annehmen: der Prompt-Zaehler bleibt ein Uebergang, bis move die from-lane schreibt (DF0YD6/H6CD33) [accept]
+Empfehlung: 2 - der Teamlead hat das bewusst aus diesem Ticket genommen, alle 7 DoD-Punkte sind erfuellt, und die echte Loesung braucht Go-Code in move.
