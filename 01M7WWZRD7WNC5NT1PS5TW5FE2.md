@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T16:59:47Z
+updated-at: 2026-11-20T16:59:50Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-42185
 claimed-at: 2026-11-20T16:42:15Z
@@ -85,3 +85,4 @@ hunt-verdict: "fail: bughunt done at e101fb64, 2 change - die Dritte-Rueckgabe-R
 - **2026-11-20 16:57 · Alexander Sacharov** — back: testing, round 5
 - **2026-11-20 16:57 · Alexander Sacharov** — Fix der Klasse 'Rueckgaben aus gedruckten Notes zaehlen': in-progress schreibt beim Aufnehmen einer Rueckgabe selbst eine Zeile 'back: <lane>, round <n>' und zaehlt nur diese - Ursache statt Praefixliste; optimize ist darin mit genannt. Verworfen: Feld round (zaehlt alle Lanes zusammen, haelt gesunde Tickets nach 3 verschiedenen Rueckgaben an) und neue Praefixe in vier Lanes (groesser, gleiche Mehrdeutigkeit bei mehreren Notes pro Runde).
 - **2026-11-20 16:59 · Alexander Sacharov** — bughunt: change: core/lane/builtin/20-in-progress.md:72 (and .jaira/lanes/in-progress.md:72) - class: the rule reads 'round above 1' as 'a loop lane sent it back', but core/move/move.go:133 sendsBack bumps round on every move to an earlier lane, including a person's return from signoff or human; the prompt then picks the sender only among 'critique, optimize, testing or review' from the newest notes, so a signoff return (newest note: the review's, no prefix) is logged as 'back: review' and, after two real review returns, makes in-progress escalate to human instead of doing what the person asked; a human answer after the third-return escalation is likewise logged against the loop lane. Example: signoff -> in-progress. ran: scratch board with this repo's lanes, jaira move <id> --to in-progress from signoff (exit 0, round 2->3) and from human (round 3->4)
+- **2026-11-20 16:59 · Alexander Sacharov** — bughunt: done at ad6a6ffc - 1 finding (1 change, 0 pre-existing) in 3 modules, follow-up hunt since e101fb64; concurrency, error paths, input, permissions checked (new block identical in builtin and board copy; manifest line b8ef26c5 matches sha256 of 20-in-progress.md; round exists in jaira show --json; 'back:' prefix collides with no other reader); files: .jaira/lanes/in-progress.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md core/lane/builtin/15-pre-process.md core/lane/builtin/20-in-progress.md core/lane/builtin/27-testing.md core/lane/builtin/40-review.md core/release/notes/TW5FE2.md core/role/builtin/jaira-role-bughunt/SKILL.md core/shipped/shipped.sha256
