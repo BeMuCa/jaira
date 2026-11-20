@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T18:00:12Z
+updated-at: 2026-11-20T18:00:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85657
 claimed-at: 2026-11-20T17:52:47Z
@@ -122,3 +122,4 @@ Empfehlung: 2 - alle 7 DoD-Punkte sind mit Tests belegt, die Funde sind Randfael
 - **2026-11-20 17:58 · Alexander Sacharov** — critique Runde 9 (Diff 1164e2ee..21742362): nichts - Guard steht jetzt nur vor dem moved-Zweig.
 - **2026-11-20 17:59 · Alexander Sacharov** — bughunt: change: internal/cli/update.go:360 - on git before 2.31 board.Ignored (core/board/gitignore.go:136) reads only the root .gitignore, because gitPlace returns no exclude path; so moveIgnore takes a board git already ignores as excluded nowhere. jaira update then writes /.jaira/ into the tracked .gitignore and prints 'Excluded this private board in .gitignore: nothing excluded it.' Triggers when the exclusion lives in .git/info/exclude (written by a newer jaira or git in the same clone, e.g. Windows git and WSL git sharing one checkout), in core.excludesFile, or in a global ignore. Before 21742362 old git returned early and never reached this path. ran: scratch test with the old-git PATH wrapper from TestUpdateOnGitWithoutPathFormatLeavesGitignoreAlone, init, then update: git check-ignore -v gives .git/info/exclude:9:/.jaira/, InGitignore=false, Ignored=false, git status shows ' M .gitignore'. board.IgnoredBy (git check-ignore works on old git) would see the existing rule
 - **2026-11-20 17:59 · Alexander Sacharov** — bughunt: done at 21742362 - 1 finding (1 change) in 3 files, follow-up hunt (diff since 1164e2ee: internal/cli/update.go, internal/cli/privateexclude_test.go, core/release/notes/NNV39Y.md); concurrency, error paths, input, permissions checked; files: README.md core/board/announce.go core/board/board.go core/board/exclude_test.go core/board/gitignore.go core/release/notes/NNV39Y.md core/ticket/store.go docs/COMMANDS.md internal/cli/privateexclude_test.go internal/cli/share.go internal/cli/sharestate_test.go internal/cli/tickets.go internal/cli/update.go
+- **2026-11-20 18:00 · Alexander Sacharov** — testing: dritte Rueckgabe aus testing (750e2acf, 1164e2ee, 21742362) - Stopp nach Regel, Frage an die Person. Alle drei Funde liegen auf demselben Rand: Ignored liest nur die Dateien, die jaira selbst schreibt, nicht was git tatsaechlich ausblendet. Vorschlag: im added-Zweig von moveIgnore board.IgnoredBy (git check-ignore) statt board.Ignored - eine Zeile, deckt git<2.31, fremde Regeln, core.excludesFile. Frage: 1) so fixen und Loop einmal weiterlaufen lassen [empfohlen] 2) added-Zweig auf git<2.31 ganz weglassen 3) annehmen, git<2.31 als bekannte Grenze.
