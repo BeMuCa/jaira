@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T21:46:51Z
+updated-at: 2026-11-20T21:46:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16592
 claimed-at: 2026-11-20T20:04:03Z
@@ -72,3 +72,4 @@ review-gaps: "Duplikate geprueft: Push-Gate und Rueckgabe-Regeln stehen nach cri
 - **2026-11-20 21:41 · Alexander Sacharov** — critique: (1) Push-Gate-Text im Dispatcher kuerzen, er pusht nicht selbst. (2) Rueckgabe-Regeln im Teamlead durch Verweis auf jaira-role-signoff ersetzen, damit es nur eine Quelle gibt. Stehen gelassen: Statuszeile+Tabelle+Empfehlung bleiben im Teamlead ausgeschrieben, weil DoD 1 genau das im Teamlead-Abschnitt verlangt.
 - **2026-11-20 21:43 · Alexander Sacharov** — critique runde 2: beide Funde der Runde 1 umgesetzt (c02bb7ea). Stehen gelassen: 'jaira move <id> --to done --force' in jaira-role-signoff nennt die Ziel-Lane fest - signoff->done ist die ausgelieferte Lane-Folge, und dieselbe Annahme steht schon in teamlead/acceptance.
 - **2026-11-20 21:46 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-signoff/SKILL.md:40,54 - the status line takes 'tests' from test-verdict and says to read it with 'jaira show <id> --json', but neither 'jaira show' nor 'show --json' prints test-verdict (or hunt-verdict) - the field sits only in the ticket frontmatter; an agent following the role reports tests as unknown/❌ on every ticket or guesses; jaira-teamlead/SKILL.md 'Report to the human' inherits the same check; ran: scratch board, 'jaira set <id> test-verdict="pass: x"' (rc 0, written to frontmatter), then 'jaira show <id> --json | grep test-verdict' and 'jaira show <id> | grep -i verdict' both empty
+- **2026-11-20 21:46 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-signoff/SKILL.md:106-110 - return rule 2 counts earlier returns only by notes starting 'Given back from signoff:', but only the role's own paste line and the cockpit write that note; a give-back done in the TUI or web board (internal/tui/signoff.go offers only accept and follow-up, a return is a plain core/move move) leaves no such note, so the count stays 0 and rule 2 keeps recommending 'give back' forever - the endless rounds the rule exists to end; the 'round' field counts every send-back incl. critique/testing loops, so it is no drop-in either; ran: grep -rn 'Given back' over core/ internal/ (only cockpit hooks/tests and this role), read internal/tui/signoff.go:151
