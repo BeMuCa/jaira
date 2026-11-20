@@ -23,11 +23,11 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T16:47:30Z
+updated-at: 2026-11-20T16:47:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59469
 claimed-at: 2026-11-20T16:43:41Z
-question: Wann darf ein Agent mit .jaira/pr=agent den PR oeffnen? 1) done (empfohlen) 2) schon in signoff 3) nur auf Freigabe pro PR
+question: ""
 ---
 
 # Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
