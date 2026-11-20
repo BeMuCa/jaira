@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:58:03Z
+updated-at: 2026-11-20T19:58:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-18659
 claimed-at: 2026-11-20T19:49:16Z
@@ -34,8 +34,8 @@ outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestand
 review-summary: "critique 14: FileAt and help fixed in dfb23369; nothing left"
 round: 15
 review-gaps: "optimize (3fe55258..dfb23369): nothing - FileAt has no twin in core/gitrepo (core/gitref reads ticket refs through its own runner), PRIn/PRWhenIn share firstLine with the file readers, the tr lowercasing stays for bash 3.2 on macOS"
-test-verdict: "pass bei 0bc5b11a: Suite go test -race -count=1 ./... RC=0; DoD 17-19 im Baum belegt (TestPROpenOnlyFromThePushedTip, TestPRRoundLostSignInIsNeverExit4, usage open); live mit Branch-Binary: single-branch-Klon gepusht -> Gate laeuft, ein Commit voraus -> Exit 3 mit beiden shas, Meldungen ohne Code-Anhang; schreibt nur ueber gh, Zwei-Session-Faelle in Tests unveraendert gruen"
-hunt-verdict: "0 findings at 0bc5b11a (Runden davor: 2 change bei 8569d9b6, 1 change bei 7d8d7872 - alle behoben)"
+test-verdict: "pass: suite -race -count=1 RC=0 at dfb23369; DoD 20/21 tests run"
+hunt-verdict: "fail: bughunt done at dfb23369 - 2 change in pr-round.sh open (account read from URLs without one; account from last pushurl, tip from first)"
 review-verdict: "Diff erfuellt alle 19 DoD-Punkte; 13 Commits, Liste vollstaendig. Gate, Settings und pr-round.sh ganz gelesen entlang Nebenlaeufigkeit (Dedupe bei zwei Sessions korrekt fuer jede Reihenfolge, loescht nur die eigene ID), Fehlerpfade (Login-Verlust -> 3, Teilschritte bei reply wiederholbar), ungewoehnliche Eingaben (Typo/CRLF -> Default, Shell-Zeichen im Reviewer gefiltert, Base mit '-' abgelehnt) und Grenzen (Gate faellt bei Zweifel zu). Kein Blocker; sechs Notes, keine davon bricht ein Kriterium. Betroffene Tests gruen (core/role, core/settings, internal/cli). Nicht geprueft: echtes GitHub (alles gegen ein gemocktes gh)."
 review-round: 13
 review-check: |-
