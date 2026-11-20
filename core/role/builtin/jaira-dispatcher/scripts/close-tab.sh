@@ -55,6 +55,10 @@ t="$(printf '%s' "$t" | tr '[:lower:]' '[:upper:]')"
 dir="${2:-$PWD}"
 
 kept() { echo "kept $t: $*"; exit 0; }
+# What this script did not foresee - 'jaira json get' on broken JSON, a tool
+# that is gone - keeps the tab too, instead of ending it under set -e with
+# that command's exit code against the exit 0 promised above.
+trap 'kept "line $LINENO failed (exit $?)"' ERR
 
 case "$parent" in
   "")     kept "no parent: the report is in this tab" ;;

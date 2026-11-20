@@ -83,14 +83,18 @@ case "$*" in
 esac
 `,
 		// Everything but 'show' goes to this tree's jaira: the scripts read
-		// their JSON with it.
+		// their JSON with it - unless shown.json.json-fails exists, which
+		// stands for a jaira whose 'json get' refuses (an older build).
 		"jaira": `#!/usr/bin/env bash
+if [ "$1" = json ] && [ -e "` + r.shown + `.json-fails" ]; then
+  exit 7
+fi
 if [ "$1" = -C ] && [ "$3" = show ]; then
   cat "` + r.shown + `" 2>/dev/null || exit 5
   exit 0
 fi
 if [ "$1" = -C ] && [ "$3" = lanes ]; then
-  cat "` + r.lanes + `"
+  cat "` + r.lanes + `" 2>/dev/null || exit 5
   exit 0
 fi
 exec "` + filepath.Join(strings.SplitN(path, string(os.PathListSeparator), 2)[0], "jaira") + `" "$@"

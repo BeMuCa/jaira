@@ -380,7 +380,8 @@ describe('waiting for you', () => {
     await startSession($)
     const ui = await $.ui.mount(BAND)
     // A frame of its own, titled, so it reads as the cockpit and not as chat.
-    expect((await ui.find({ type: 'Box' }))?.props.borderStyle).toBe('round')
+    // Not the first Box: Claude Code 2.1.329 mounts the band inside one of its own.
+    expect((await ui.findAll({ type: 'Box' })).some(x => x.props.borderStyle === 'round')).toBe(true)
     expect(await ui.find({ type: 'Text', text: 'jaira-cockpit' })).toBeDefined()
     expect((await ui.find({ text: 'Waiting for you' }))).toBeDefined()
     expect((await ui.find({ type: 'Text', text: /MG677R \| signoff \| approve mit Vorbehalt/ }))).toBeDefined()

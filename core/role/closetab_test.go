@@ -114,6 +114,30 @@ func TestCloseTabKeepsAWorkerThatIsNotFinished(t *testing.T) {
 			r.write(t, r.shown, `{"status":"signoff","question":""}`)
 			r.write(t, filepath.Join(r.labels, "p9"), "ZZ99ZZ/worker\n")
 		}, "p9", "", "spawn.sh did not open it"},
+		// A 'jaira json get' that fails - an older jaira without --default -
+		// is a reason to stay, not an exit code the --help never promised.
+		"jaira json get fails": {func(t *testing.T, r *reapRig) {
+			r.write(t, r.shown, `{"status":"signoff","question":""}`)
+			r.write(t, r.shown+".json-fails", "")
+		}, "p1", "", "failed (exit 7)"},
+		// The classes the tab's own state can be in: herdr not there at all,
+		// a pane whose tab is gone, a lane the board does not list.
+		"herdr not reachable": {func(t *testing.T, r *reapRig) {
+			r.write(t, r.shown, `{"status":"signoff","question":""}`)
+			r.env = append(r.env, "HERDR_BIN_PATH="+filepath.Join(r.wt, "no-herdr"))
+		}, "p1", "", "herdr does not know pane p1"},
+		"tab already gone": {func(t *testing.T, r *reapRig) {
+			r.write(t, r.shown, `{"status":"signoff","question":""}`)
+		}, "p42", "", "spawn.sh did not open it"},
+		"lane the board does not list": {func(t *testing.T, r *reapRig) {
+			r.write(t, r.shown, `{"status":"parked","question":""}`)
+		}, "p1", "", "the ticket is in parked, not with a person"},
+		"board whose lanes cannot be read": {func(t *testing.T, r *reapRig) {
+			r.write(t, r.shown, `{"status":"signoff","question":"","board":"gone"}`)
+			if err := os.Remove(r.lanes); err != nil {
+				t.Fatal(err)
+			}
+		}, "p1", "", "jaira lanes failed"},
 		"not in Herdr": {func(t *testing.T, r *reapRig) {
 			r.write(t, r.shown, `{"status":"signoff","question":""}`)
 		}, "", "", "not in a Herdr tab"},
