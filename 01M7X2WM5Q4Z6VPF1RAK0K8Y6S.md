@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T23:02:38Z
+updated-at: 2026-11-20T23:02:53Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -29,7 +29,7 @@ outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, w
 review-summary: none
 round: 4
 review-gaps: "none - Runde 3: eine Zeile in hashed() und ein Test, der den alten Generator-Test als Tabelle ueber beide Modi ersetzt"
-test-verdict: ""
+test-verdict: "pass: go vet + go test ./... RC=0 auf 55ae3718; --check echtes Repo exit 0 (34 Tags), Generator-Ausgabe gleich dem committeten Manifest; unlesbarer Blob stoppt Generator und --check ohne den Hash der leeren Datei (TestUnreadableBlobStopsTheScript, rot ohne den Fix); Aenderung schreibt nichts"
 hunt-verdict: ""
 ---
 
