@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:43:50Z
+updated-at: 2026-11-20T17:43:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60542
 claimed-at: 2026-11-20T17:19:23Z
@@ -30,11 +30,7 @@ outcome-why: "Eine von jaira geaenderte .gitignore erscheint in jedem neuen Work
 outcome-resolves: Neue Worktrees eines Repos mit privatem Board bleiben sauber; kein Wegraeumen der .gitignore-Zeile von Hand mehr.
 review-summary: "none"
 round: 6
-review-gaps: |-
-  note: dropEntry setzt skipNextBlank am Marker und loescht dann die naechste Leerzeile irgendwo spaeter, wenn direkt nach dem Eintrag keine folgt – "# jaira board — private\n/.jaira/\nfoo\n\nbar" wird zu "foo\nbar" (per Wegwerftest geprueft); nur kosmetisch
-  note: boardLine akzeptiert fuer das Top-Board auch ein unverankertes .jaira/ in info/exclude; share des Top-Boards entfernt eine solche handgeschriebene Zeile und hebt damit auch den Ausschluss eines Boards im Unterverzeichnis auf
-  note: bindDriverIfShared ruft auf jedem Befehl eines geteilten Boards board.Ignored – das startet jetzt ein zusaetzliches git rev-parse pro Aufruf (neben IsRepo und git config); auf Windows einige ms mehr Startzeit
-  note: share --undo schreibt nur noch ins lokale info/exclude; vorher landete die Zeile in der .gitignore und, committet, galt sie fuer alle – Teamkollegen bleiben nach einem undo-Commit ohne Ausschluss, bis sie jaira update laufen lassen (das greift erst, wenn .jaira/ nicht mehr getrackt ist)
+review-gaps: "none - Diff d62bafaa..750e2acf geprueft: boardLine bleibt fuer Erkennung und .gitignore in Gebrauch, kein toter Code; still_ignored kostet nur in share einen git-Aufruf"
 test-verdict: "pass: go test ./... gruen (RC=0) auf d62bafaa, -race ueber core/board core/ticket internal/cli gruen; git<2.31 per Wrapper nachgestellt: init faellt auf .gitignore zurueck, kein '--path-format=absolute/'-Verzeichnis; DoD 1-7 an den Tests geprueft"
 hunt-verdict: "pass: bughunt done at d62bafaa, 0 findings (Folgerunde ueber den Diff seit 394a544a)"
 review-verdict: "Der Diff erfuellt alle 7 DoD-Punkte, jeder mit Test (core/board/exclude_test.go, internal/cli/privateexclude_test.go); go vet und go test ./core/board ./core/ticket ./internal/cli gruen. Keine Defekte entlang Nebenlaeufigkeit (Sperre um Read-Modify-Write, atomares Rename), Fehlerpfaden (exclude zuerst, dann .gitignore – nie ungeschuetzt), Eingaben (fehlende Datei/Verzeichnis, CRLF, Leerzeichen, Glob-Zeichen, alte git-Version) und Grenzen (geteilte Boards werden von update nie angefasst). Vier Anmerkungen, kein Blocker."
