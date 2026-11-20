@@ -27,14 +27,14 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:24:53Z
+updated-at: 2026-11-20T19:24:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99353
 claimed-at: 2026-11-20T19:19:21Z
 outcome-what: "Neustart-Regel in 20-in-progress.md: jede back:-Zeile endet auf ', round <n>' (auch back: person/unknown); ein Neustart sucht die Zeile mit dem aktuellen round und schreibt keine zweite."
 outcome-why: "bughunt 19:23: Vergleich 'neuer als die Absender-Note' liest beim Neustart die eigene back:-Zeile als Absender und schreibt eine zweite."
 outcome-resolves: "DoD 6: 20-in-progress.md:72-76 und :88,:96 (round in jeder back:-Zeile); Zwilling gleich; shipped.sha256 eine Zeile. Vier Kategorien: Neustart mitten in der Runde ist der Fehlerpfad und jetzt abgedeckt; sonst nur Prompt-Text."
-review-summary: "none - drei Saetze in bestehenden Absaetzen, kein neues Muster; pre-process-Regel steht nach allen drei human-Moves des Lanes und gilt fuer alle; Gate bewusst nicht geaendert (Note 20:21)"
+review-summary: "none - round-Nummer in der back:-Zeile ist die kleinste Form; nutzt das vorhandene round-Feld aus jaira show statt eines neuen Musters"
 round: 13
 review-gaps: "none - drei Saetze, keine Wiederholung im Prompt, nichts verwaist"
 test-verdict: "pass: go test -count=1 ./core/lane/... ./core/shipped/... ./core/role/... ./core/release/... RC=0 (Folgerunde: Tests der seit d0cb1f49/c3e5a7df geaenderten Dateien); DoD 1-7 im Baum, Zwillinge byte-gleich, drei neue Manifest-Hashes = sha256 HEAD; Funktion auf Scratch-Board mit diesen Lanes: pre-process->human ohne Plan RC=3 'lane pre-process declares it produces plan, which is still empty', nach 'dod --plan --add' faellt diese Verletzung weg; Fehlerpfad = genau dieser Refuse; schreibt nichts Neues (nur Prompt-Text), zwei Schreiber entfallen"
