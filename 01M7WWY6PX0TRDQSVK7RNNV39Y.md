@@ -1,7 +1,7 @@
 ---
 id: 01M7WWY6PX0TRDQSVK7RNNV39Y
 title: Ein privates Board steht in .git/info/exclude statt in der .gitignore des Arbeitsbaums
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:43:18Z
+updated-at: 2026-11-20T17:43:22Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60542
 claimed-at: 2026-11-20T17:19:23Z
@@ -29,7 +29,7 @@ outcome-what: "Ein privates Board steht jetzt in <git-common-dir>/info/exclude s
 outcome-why: "Eine von jaira geaenderte .gitignore erscheint in jedem neuen Worktree als Aenderung, ein Push-Guard lehnt dann jeden Push ab; info/exclude gilt fuer alle Worktrees und taucht in keinem Diff auf."
 outcome-resolves: Neue Worktrees eines Repos mit privatem Board bleiben sauber; kein Wegraeumen der .gitignore-Zeile von Hand mehr.
 review-summary: "internal/cli/share.go:113 warning names '.gitignore or <exclude>', but RemoveIgnore has just removed every .jaira form from .gitignore, so only info/exclude can still hold the line - name only board.IgnoreFileName(s.Root)"
-round: 5
+round: 6
 review-gaps: |-
   note: dropEntry setzt skipNextBlank am Marker und loescht dann die naechste Leerzeile irgendwo spaeter, wenn direkt nach dem Eintrag keine folgt – "# jaira board — private\n/.jaira/\nfoo\n\nbar" wird zu "foo\nbar" (per Wegwerftest geprueft); nur kosmetisch
   note: boardLine akzeptiert fuer das Top-Board auch ein unverankertes .jaira/ in info/exclude; share des Top-Boards entfernt eine solche handgeschriebene Zeile und hebt damit auch den Ausschluss eines Boards im Unterverzeichnis auf
