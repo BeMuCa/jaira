@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T22:54:48Z
+updated-at: 2026-11-20T22:54:52Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -66,3 +66,4 @@ round: 2
 - **2026-11-20 22:46 · Alexander Sacharov** — Offene Entscheidungen: keine, selbst entschieden: (1) Pruefung als 'scripts/shipped-history.sh --check' im selben Skript, damit Pfad-Mapping (lanes/, .claude/skills/jaira) nur einmal existiert. (2) Geprueft wird gegen die Tags, nicht gegen jede History-Version: Zwischenstaende auf Branches wurden nie ausgeliefert, und die Version im Arbeitsbaum haelt schon TestEveryInstalledFileIsAShippedVersion fest. (3) Keine v*-Tags im Klon = Fehler, nicht gruen: ein Check, der nichts prueft, darf nicht bestehen. (4) Blob-Bytes roh hashen (cat-file), keine CRLF-Umwandlung - das ist, was der Build einbettete. (5) Skript-Test als Go-Test mit Temp-Repo, auf Windows uebersprungen (CI-Schritt laeuft auf ubuntu). Stand vor dem Fix: Generator liefert 75 Zeilen, die im Manifest fehlen; kein Manifest-Eintrag fehlt im Generator (nichts geht durch Regenerieren verloren).
 - **2026-11-20 22:53 · Alexander Sacharov** — Gefunden: die alten 8 fehlenden Zeilen standen unsortiert am Ende des Manifests (von Hand angehaengt) - Regenerieren sortiert sie ein, daher der grosse Diff ohne verlorene Zeile. Das Skript setzt jetzt LC_ALL=C: unter anderer Locale sortierte Manifeste wuerden bei merge=union Duplikate erzeugen. Bekannte Grenze: Pfade mit Leerzeichen kann das Manifest-Format nicht (Regex [^ ]+ hier wie in TestManifestLinesAreWellFormed); keine solche Datei existiert. Ein Duplikat nach einem union-Merge laesst TestManifestLinesAreWellFormed scheitern -> regenerieren.
 - **2026-11-20 22:53 · Alexander Sacharov** — critique: (1) Formatpruefung im Skript doppelt TestManifestLinesAreWellFormed -> streichen. (2) zwei fast gleiche Install-Tests -> Tabellentest. Bewusst stehen gelassen: Pruefung gegen Tags statt gegen die ganze History (Note 'Offene Entscheidungen' Punkt 2).
+- **2026-11-20 22:54 · Alexander Sacharov** — critique Runde 2: beide Funde behoben (5a091b69), nichts Neues.
