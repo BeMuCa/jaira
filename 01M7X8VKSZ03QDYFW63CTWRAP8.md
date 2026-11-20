@@ -25,10 +25,10 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:44:26Z
+updated-at: 2026-11-20T23:02:05Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-68388
-claimed-at: 2026-11-20T22:28:29Z
+claimed-by: DESKTOP-RFTCH11-60390
+claimed-at: 2026-11-20T23:02:05Z
 outcome-what: "jaira-role-signoff: Branch per Handle-Segment, neueste von lokal/remote, divergiert = ?; Lookup nennt ausdruecklich den Handle statt der ULID; CI: neuester Lauf des Commits entscheidet, laufend = ?"
 outcome-why: "signoff-Rueckgabe (Branchname) plus bughunt 22:32 und review-gaps 22:39"
 outcome-resolves: "Rueckgabe aus signoff 22:27, review-gaps 1-2 vom 22:39"
