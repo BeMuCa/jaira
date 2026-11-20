@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T18:30:43Z
+updated-at: 2026-11-20T18:30:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-29476
 claimed-at: 2026-11-20T18:21:36Z
@@ -40,8 +40,8 @@ review-gaps: |-
   note: ausser in request reicht das Skript gh-Exitcodes durch; gh selbst endet bei fehlender Anmeldung mit 4, was mit dem dokumentierten Exit 4 (Reviewer abgelehnt) kollidiert - durch den Auth-Check vorab nur bei mitten im Lauf ablaufendem Token.
 test-verdict: "pass: go test -race ./... RC=0 after clean cache at 007f461a; DoD 1-16 proofs present; review-check replayed with the branch binary: unknown handle ZZZZZZ -> exit 3 '(unknown)', roles list without files -> 'pr: person ... opens in: done (the default)'; earlier rounds: thresholds done/signoff, unreadable branch ticket -> 3, logbook passes, archive holds (TestPRGateReadsFiledTicketsByWhereTheyAre), pr-round.sh open refuses before gh pr create; reply/comment/settled against fake gh only"
 hunt-verdict: "pass: bughunt done at 007f461a - 0 change, 0 pre-existing"
-review-verdict: "Nicht abnahmereif: ein Blocker. Settings, roles list, pr-round.sh (reply/comment-Dedupe, settled, request, Exit-Codes) und die Rollentexte erfuellen ihre DoD-Punkte, Tests gruen (go test ./core/role ./core/settings ./core/gitrepo, internal/cli -run PRGate|RolesList). Aber das Gate aus DoD 12 oeffnet bei einem Handle, den das Board nicht kennt - reproduziert mit dem Branch-Binary. Zurueck nach in-progress."
-review-round: 9
+review-verdict: "Abnahmereif, kein Blocker. Der Blocker der letzten Runde ist behoben: mit dem Branch-Binary in einem frischen Repo gibt 'pr-gate master' fuer 'feat(ZZZZZZ): x' jetzt Exit 3 'ZZZZZZ (unknown)'. Alle 16 DoD-Punkte sind durch Code und Tests belegt; go test ./core/role ./core/settings ./core/gitrepo ./internal/cli gruen. pr-round.sh ganz gelesen: Dedupe-Logik (Lauf gleicher Worte, nur eigene id geloescht) haelt in beiden Reihenfolgen zweier Sessions; nur Hinweise, siehe gaps. Nicht live gegen GitHub geprueft - die Tests laufen gegen ein gh-Fake."
+review-round: 10
 review-check: "1. cd $(mktemp -d) && git init -q -b master && git config user.email a@b && git config user.name x  2. <branch-jaira> init && echo agent > .jaira/pr && git commit -q --allow-empty -m 'chore: base' && git checkout -q -b feat/x  3. git commit -q --allow-empty -m 'feat(ZZZZZZ): x'  4. <branch-jaira> roles pr-gate master; echo $?  -> heute: Exit 0 'may open'; nach dem Fix: Exit 3 mit dem unbekannten Handle  5. go test ./internal/cli -run PRGate && go test ./core/role -run PR  -> ok  6. <branch-jaira> roles list -> letzte Zeile 'pr: person ... reviewer: none; opens in: done (the default)'"
 ---
 
