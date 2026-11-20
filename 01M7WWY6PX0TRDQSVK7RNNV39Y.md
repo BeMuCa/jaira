@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:58:23Z
+updated-at: 2026-11-20T17:58:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85657
 claimed-at: 2026-11-20T17:52:47Z
@@ -30,7 +30,7 @@ outcome-why: "Eine von jaira geaenderte .gitignore erscheint in jedem neuen Work
 outcome-resolves: Neue Worktrees eines Repos mit privatem Board bleiben sauber; kein Wegraeumen der .gitignore-Zeile von Hand mehr.
 review-summary: "none"
 round: 9
-review-gaps: "none - Diff c6c3ed13..1164e2ee: ein Guard, eine Newline-Korrektur, ein Test; nichts doppelt oder verwaist"
+review-gaps: "none - Diff 1164e2ee..21742362: Guard verschoben, Testfall ergaenzt"
 test-verdict: "pass: go build/vet/test -count=1 ./... RC=0 at 1164e2ee; Binary: update --dry-run/Move auf altem .gitignore-Board, parallele updates -> Eintrag einmal"
 hunt-verdict: "fail: bughunt done at 1164e2ee, 1 change - Guard in moveIgnore unterdrueckt auf git<2.31 auch den added-Zweig"
 review-verdict: "Nicht annehmen: alle 8 DoD-Punkte mit Tests belegt, go test core/board, core/ticket, internal/cli gruen, Code sonst sauber (Sperre, Atomic-Write, Fallback, check-ignore inkl. negierter Muster geprueft). Ein Blocker: jaira update meldet auf git<2.31 bei jedem Lauf eine Verschiebung, die nicht stattfand, und fordert zum Commit auf - genau der Fallback-Pfad, den d62bafaa eingefuehrt hat. Ein-Zeilen-Fix."
