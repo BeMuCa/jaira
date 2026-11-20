@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:44:08Z
+updated-at: 2026-11-20T22:44:13Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
@@ -45,10 +45,10 @@ question: ""
 review-verdict: "All four DoD items met, no blocker. Checked: go test ./core/role ./core/shipped green (shipped fresh, -count=1), every flag the role prescribes exists (jaira list --lane/--board, gh run list --commit/--workflow, glab ci list --sha), the cockpit really writes 'Given back from <lane>:' (core/mod/builtin/jaira-cockpit/hooks/register.tsx:900), the branch lookup handles none/diverged copies by leaving head empty. Role is read-only, so concurrency/permission risk is limited to lines the person runs. Four notes, all small."
 review-round: 8
 review-check: |-
-  1. cd /home/alex/projects/.worktrees/jaira-twrap8 && go test ./core/role ./core/shipped -> both lines say ok
+  1. cd /home/alex/projects/.worktrees/jaira-twrap8 && go test ./core/role ./core/shipped -count=1 -> both lines say ok
   2. go run ./cmd/jaira roles install -> ~/.claude/skills/jaira-role-signoff/SKILL.md exists
-  3. In a Claude session in this repo type /jaira-role-signoff TWRAP8 -> one status line with ✅/❌/? (tests ? because the branch is not pushed, bug hunt ❌), a table with 🔴/🟡/⚪/🔵 marks, one bold accept/give back, two paste-ready lines
-  4. Ask the teamlead "what waits for me?" twice -> it runs jaira show and gh pr list before each list and does not repeat an unchanged list
+  3. In a Claude session in this repo type /jaira-role-signoff TWRAP8 -> one status line with ✅/❌/? (tests ? while unpushed, bug hunt ❌), a table with 🔴/🟡/⚪/🔵 marks, one bold recommendation, two paste-ready lines; nothing on the ticket changes (git status shows no new ticket edits)
+  4. Ask the teamlead "what waits for me?" twice -> it runs jaira show and gh pr list before each answer and does not repeat an unchanged list
   5. Open core/role/builtin/jaira-worker/SKILL.md, section "Before you push" -> it says to run the CI gates locally before pushing
 ---
 
