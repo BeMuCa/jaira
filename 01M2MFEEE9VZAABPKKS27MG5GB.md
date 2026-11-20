@@ -25,7 +25,7 @@ related:
   - 01M7WWYKK8CMJSM2S45WJDDCEZ
 commits: []
 created-at: 2026-09-16T06:46:09Z
-updated-at: 2026-11-20T16:41:19Z
+updated-at: 2026-11-20T16:50:18Z
 updated-by: Alexander Sacharov
 ---
 
@@ -70,3 +70,9 @@ Vier Dinge, die der Umzug nicht von selbst mitbringt: (1) Der Port-Versatz bleib
 Was der Umzug loest, gemessen: das Exemplar von spawn.sh in einem anderen Projekt war auf 159 Zeilen gewachsen - IMAGE_NS, COMPOSE_PROFILES, AZIMUTT_PORT, VITE_PORT_HOST, BACKEND_PORT_HOST, dazu ein pg_dump der Hauptdatenbank. Alles davon traegt Namen, die nur dieses eine Projekt kennt. 'roles install' ueberschreibt so eine Datei nicht, sie friert nur ein: jede Verbesserung an spawn.sh wird bei dem Anwender still uebersprungen.
 
 Nicht projektspezifisch und daher in spawn.sh gehoerend, nicht in den Hook: --no-worktree und der Lane-Name 'dispatch'.
+- **2026-11-20 16:50 · Alexander Sacharov** — Interim-Regeln (Alex 20.11.2026, gelten ab sofort bis TW5FE2 ausgeliefert ist):
+1. pre-process: die DoD nennt die Fehlerklasse statt des Symptoms, die Eingabeklassen (leer, sehr gross, Sonderzeichen/Kodierung/CRLF, Pfade mit Leerzeichen, Windows, zwei Prozesse gleichzeitig, Fehler auf halbem Weg) und bei einer Heuristik eine Annahmeregel - als DoD-Punkte (jaira dod <id> --add).
+2. in-progress: vor dem Move selbst die vier Kategorien pruefen (Nebenlaeufigkeit, Fehlerpfade, ungewoehnliche Eingabe, Rechte). Tests ueber die Klasse (Tabellentest), Geschwister-Stellen per grep suchen und mitziehen, Fix an der Ursache statt am Beispiel. Nicht nur Haken setzen: wer umsetzt, denkt die Raender selbst.
+3. bughunt/testing: ein Fund nennt Klasse und Beispiel; der Rueckweg verlangt den Fix der Klasse, nicht des einen Beispiels.
+4. Schleifenbremse: Blocker sind nur falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke. Nach einem Fix-Durchgang laeuft der Testlauf und ein Bughunt nur ueber den Diff seit dem letzten Hunt, dann review. Nach 3 Rueckgaben aus derselben Lane: Frage an den Teamlead statt weiter schleifen.
+5. Kleine Raender aus review-gaps in derselben Runde schliessen statt als note: stehen lassen - Alex schickt sie sonst ohnehin zurueck. Vorbestehendes ausserhalb des Umfangs als 'note: pre-existing: ...'.
