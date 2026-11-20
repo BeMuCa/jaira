@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T19:20:52Z
+updated-at: 2026-11-20T19:20:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96533
 claimed-at: 2026-11-20T19:19:14Z
@@ -155,3 +155,4 @@ Empfehlung: 2 - der Lesefehler-Fall ist praktisch kaum erreichbar und war schon 
 - **2026-11-20 19:18 · Alexander Sacharov** — decision: 1) Zurueckgeben und appendEntry haerten, damit ein unlesbares info/exclude nie ueberschrieben wird
 - **2026-11-20 19:18 · Alexander Sacharov** — Given back from signoff: 1) Zurueckgeben und appendEntry haerten, damit ein unlesbares info/exclude nie ueberschrieben wird
 - **2026-11-20 19:19 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
+- **2026-11-20 19:20 · Alexander Sacharov** — signoff-Rueckgabe 2 umgesetzt: appendEntry (gitignore.go) bricht bei jedem Lesefehler ausser fs.ErrNotExist ab statt leer weiterzuschreiben. Ein Fix deckt alle Schreiber: AddIgnore (exclude + .gitignore-Fallback), MoveIgnore (exclude-Eintrag zuerst, also bleibt .gitignore unberuehrt), AddLanesIgnore. dropEntry/lists lesen bei Fehler 'nichts da' und schreiben dann nicht - kein Datenverlust, gelassen. Test per chmod 000, uebersprungen auf Windows und als root.
