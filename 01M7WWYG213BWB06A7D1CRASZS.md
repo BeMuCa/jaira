@@ -21,7 +21,7 @@ related:
   - 01M7WX040JC9Z202EH852EF48S
 commits: []
 created-at: 2026-11-20T16:34:31Z
-updated-at: 2026-11-20T17:58:18Z
+updated-at: 2026-11-20T17:58:20Z
 updated-by: Alexander Sacharov
 ---
 
@@ -48,3 +48,4 @@ updated-by: Alexander Sacharov
 3. bughunt/testing: ein Fund nennt Klasse und Beispiel; der Rueckweg verlangt den Fix der Klasse, nicht des einen Beispiels.
 4. Schleifenbremse: Blocker sind nur falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke. Nach einem Fix-Durchgang laeuft der Testlauf und ein Bughunt nur ueber den Diff seit dem letzten Hunt, dann review. Nach 3 Rueckgaben aus derselben Lane: Frage an den Teamlead statt weiter schleifen.
 5. Kleine Raender aus review-gaps in derselben Runde schliessen statt als note: stehen lassen - Alex schickt sie sonst ohnehin zurueck. Vorbestehendes ausserhalb des Umfangs als 'note: pre-existing: ...'.
+- **2026-11-20 17:58 · Alexander Sacharov** — von JG3REW (teamlead jaira-64, 2026-11-20): zwei Punkte gehoeren hierher. (1) Auf Boards mit .jaira/pr-when=signoff darf ein Ticket erst nach done, wenn der PR keine offenen Threads und kein ausstehendes Review hat. JG3REW prueft das nur in der Rolle jaira-role-pr (scripts/pr-round.sh settled <owner/repo> <number>, Exit 3 mit Liste). Ein Gate in 'jaira move ... done' im Binary fehlt bewusst: jeder move haengte sonst an Netz und gh-Login. (2) Der Cockpit-Accept (core/mod/builtin/jaira-cockpit/hooks/board.ts stepAfterAccept) oeffnet den PR erst, wenn alle Tickets in done sind. Bei pr-when=signoff muss er den PR schon in signoff oeffnen und vor done 'settled' abwarten.
