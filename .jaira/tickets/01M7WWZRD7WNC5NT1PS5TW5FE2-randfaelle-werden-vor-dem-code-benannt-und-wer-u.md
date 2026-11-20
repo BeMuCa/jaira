@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T17:41:49Z
+updated-at: 2026-11-20T17:42:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80126
 claimed-at: 2026-11-20T17:38:47Z
@@ -35,7 +35,7 @@ outcome-what: "Eingebaute Lanes pre-process, in-progress, testing, review und di
 outcome-why: "Review- und bughunt-Schleifen liefen 10-24 Runden, weil jede Runde den Nachbarfall eines nur am Beispiel reparierten Fehlers fand und die vier Kategorien vor dem Code nie gefragt wurden; die Rueckgabe einer Person darf dabei nicht als Schleifenrunde zaehlen."
 outcome-resolves: "DoD 1-7: 15-pre-process.md:38, 20-in-progress.md:29 und :66-97, 27-testing.md:97, bughunt SKILL.md:104, 40-review.md:57, shipped.sha256, core/release/notes/TW5FE2.md"
 review-summary: "Only prompt text changes, no Go code. pre-process now names the class of fault, the standard input classes (empty/huge, encoding/CRLF, spaces/Windows paths, two writers, failure halfway) and for heuristics an acceptance rule, and writes them into the DoD with 'jaira dod --add'. in-progress fixes the cause instead of the example, tests the class in one parametrised test, fixes sibling places, checks the four categories itself and closes small edges in the same round; it logs every return as its own 'back: <lane>, round n' note ('back: person' for a person's return, which resets the count) and on the third return from one lane moves to human with a question. testing and review send back only for four blocker kinds (wrong result, data loss, crash, security hole); testing writes the rest as 'testing: note:', names class + example, passes a finding only when a neighbour of the example works too, and a follow-up round hunts only the diff since the last hunt. bughunt names class and example. Board copies in .jaira/lanes are byte-equal to builtin, every new version is in core/shipped/shipped.sha256, release note core/release/notes/TW5FE2.md has five one-line entries."
-round: 7
+round: 8
 review-gaps: |-
   note: core/lane/builtin/20-in-progress.md:72-82 - class: return origin is unknowable; example: a signoff return without a note looks like a review return and is logged 'back: review', so two real review returns plus one person return escalate to human early; fix: move records the from-lane (DF0YD6/H6CD33), teamlead kept it out of this ticket
   note: branch base - feat/tw5fe2 sits on 5b16e491 from origin/fix/nh788q-windows-rename, not on origin/master; a PR now carries the QFZDY7 and NH788Q commits too unless that branch merges first or this one is rebased
@@ -58,11 +58,11 @@ review-check: "1. git diff 5b16e491..HEAD -- core/lane/builtin core/role/builtin
 - [x] bughunt- und testing-Prompt: ein Fund nennt die Klasse und das Beispiel; der Rueckweg nach in-progress verlangt den Fix der Klasse
   proof: core/role/builtin/jaira-role-bughunt/SKILL.md:104; core/lane/builtin/27-testing.md:112,121 (class + example; passed only when the class is fixed)
 - [x] Die eingebetteten Lanes und Rollen sind geaendert, mit Release-Note
-  proof: core/shipped/shipped.sha256:560-574; .jaira/lanes/{pre-process,in-progress,testing,review}.md byte-equal to builtin; core/release/notes/TW5FE2.md; go test ./core/shipped ./core/lane ./core/role/... ok
+  proof: core/shipped/shipped.sha256:560-575; .jaira/lanes/{pre-process,in-progress,testing,review}.md byte-equal to builtin; core/release/notes/TW5FE2.md; go test ./core/shipped ./core/lane ./core/role/... ok
 - [x] pre-process nennt die Standard-Eingabeklassen: leer, sehr gross, Sonderzeichen/Kodierung/CRLF, Pfade mit Leerzeichen, Windows, zwei Prozesse gleichzeitig, Fehler auf halbem Weg
   proof: core/lane/builtin/15-pre-process.md:48-55
 - [x] Schleifenbremse in testing, review und in-progress: Blocker nur falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke; Folgerunde testet und huntet nur den Diff seit dem letzten Hunt; nach 3 Rueckgaben aus derselben Lane eine Frage statt Runde 4
-  proof: core/lane/builtin/27-testing.md:97 (blocker = four kinds), 27-testing.md:127-130 (follow-up round diff only, then review); core/lane/builtin/40-review.md:57; core/lane/builtin/20-in-progress.md:66-97 (own back: lines per round; sender read off the newest note, 'Given back from'/'decision:' = back: person resets; third -> human question)
+  proof: core/lane/builtin/27-testing.md:97 (blocker = four kinds), 27-testing.md:127-130 (follow-up round diff only, then review); core/lane/builtin/40-review.md:57; core/lane/builtin/20-in-progress.md:66-99 (own back: lines per round; sender read off the newest note, 'Given back from'/'decision:' = back: person resets; third -> human question)
 - [x] Kleine Raender der Aenderung aus review-gaps werden in derselben Runde geschlossen statt als note: zur Person zu gehen; Vorbestehendes ausserhalb des Umfangs steht als 'note: pre-existing: ...'
   proof: core/lane/builtin/20-in-progress.md:58 (close small edges in the same round); core/lane/builtin/40-review.md:61-66 (note names class and fix; note: pre-existing:)
 
@@ -108,3 +108,5 @@ Empfehlung: 2 - der Teamlead hat das bewusst aus diesem Ticket genommen, alle 7 
 - **2026-11-20 17:38 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
 - **2026-11-20 17:39 · Alexander Sacharov** — back: person
 - **2026-11-20 17:39 · Alexander Sacharov** — Plan Rueckgabe signoff: Herkunft aus den Notes seit der letzten eigenen back:-Zeile lesen. 'Given back from <lane>:' (schreibt das Cockpit bei jeder Rueckgabe einer Person, register.tsx:900) oder 'decision:' (Cockpit-Antwort, register.tsx:822) => back: person. Sonst die neueste Note mit critique:/optimize:/testing:/bughunt: nennt die Lane; keine davon => review. Wer von Hand zurueckgibt, schreibt dieselbe Zeile - steht im Prompt und in der Release-Note. Kein Go-Code.
+- **2026-11-20 17:42 · Alexander Sacharov** — critique: eine Antwort, die per Nachricht kommt (Teamlead via SendMessage), landet als Note ohne Praefix und wird als review-Rueckgabe gelesen - in-progress.md: Antwort als 'decision: <answer>' notieren
+- **2026-11-20 17:42 · Alexander Sacharov** — back: critique, round 1

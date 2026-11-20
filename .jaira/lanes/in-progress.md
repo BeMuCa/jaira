@@ -84,7 +84,9 @@ that sends work back writes its note last:
 - `Given back from <lane>:` or `decision:` — a person sent it or answered
   you. Write `back: person`: it is the person's word, not a loop, so do what
   they asked. The cockpit writes these lines; a person who gives work back by
-  hand writes the same one, `jaira note <id> "Given back from signoff: <why>"`
+  hand writes the same one, `jaira note <id> "Given back from signoff: <why>"`.
+  An answer that reaches you by message instead goes onto the ticket as
+  `decision: <answer>` before you act on it
 - `critique:`, `optimize:` or `testing:` — that lane; `bughunt:` counts for
   testing
 - anything else — the review sent it
