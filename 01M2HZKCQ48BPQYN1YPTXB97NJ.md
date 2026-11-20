@@ -1,7 +1,7 @@
 ---
 id: 01M2HZKCQ48BPQYN1YPTXB97NJ
 title: "Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig"
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Wer allein an einem Repository arbeitet, bekommt keine Rolle vorgesetzt, die ihn zu einem Pull Request schickt, den er nicht will - und ein Team, das Pull Requests benutzt, bekommt die Regel weiterhin ueberall, wo ein Agent sie liest."
@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:17:08Z
+updated-at: 2026-11-20T23:17:12Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -36,7 +36,7 @@ outcome-what: "Board-Datei .jaira/pr kennt den dritten Wert none: die Rollen lan
 outcome-why: "Wer allein ohne Pull Requests arbeitet, bekam eine Rolle, die vor einem nie gewollten PR anhaelt (13VMA8); die Einstellung muss mit dem Repository reisen (Teamlead-Entscheidung 20.11.: dritter Wert in .jaira/pr, Laufzeit + Block)."
 outcome-resolves: "Ein Board sagt in .jaira/pr, ob Arbeit durch einen PR (person/agent) oder direkt auf den Hauptzweig (none) kommt; ohne Datei ist alles byte-gleich wie heute."
 review-summary: "none"
-round: 4
+round: 5
 review-gaps: "none - UnnamedCommits reuses HandlesInSubjects rather than a second regexp; reap.sh pattern mirrors subjectScope in shell, which cannot call Go"
 test-verdict: "pass on my passes: -race suite RC=0, DoD 1-8 checked in the tree, scratch board: unnamed commit holds the gate (exit 3); blocked on the two hunt findings"
 hunt-verdict: "change x2 (round 2): (1) core/gitrepo/named.go UnnamedCommits skips merges, so an evil merge / conflict resolution with own content lands unseen under none; (2) pr-gate binds acceptance to the ticket, not to its commits - a commit made after acceptance naming a done ticket (same or another) lands unseen under none"
