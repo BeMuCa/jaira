@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T17:02:35Z
+updated-at: 2026-11-20T17:02:39Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59469
 claimed-at: 2026-11-20T16:43:41Z
@@ -94,3 +94,4 @@ hunt-verdict: "fail: bughunt done at d527d5a9, 3 change (numerische owner/name p
 - **2026-11-20 17:01 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:88-94 - 'reply' posts the answer and then resolves in a second call; when the resolve fails (exit 1) the thread is answered but stays open, and SKILL.md:404 says the next round picks it up because 'threads' still lists it, so the next round posts a second answer to the same thread; read
 - **2026-11-20 17:01 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:109 - a .jaira/pr-reviewer of '@alice' passes PRReviewerFor (core/settings/settings.go:323 allows @) but only '@copilot' loses its @; 'request' sends reviewers[]=@alice, which is not a login, so every review request fails with exit 4; read
 - **2026-11-20 17:01 · Alexander Sacharov** — bughunt: done at d527d5a9 - 3 findings (3 change, 0 pre-existing) in 6 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/release/notes/JG3REW.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-role-pr/scripts/pr-round.sh core/role/builtin/jaira-teamlead/SKILL.md core/role/pr_round_test.go core/role/role_test.go core/settings/settings.go core/settings/settings_test.go core/shipped/shipped.sha256 internal/cli/roles.go internal/cli/roles_test.go
+- **2026-11-20 17:02 · Alexander Sacharov** — testing 1: Klasse statt Beispiel - (1) jede GraphQL-String-Variable mit -f statt -F (auch thread id); (2) reply wird idempotent: steht als letzter Kommentar im Thread schon einer des angemeldeten Nutzers, wird nur noch resolved; (3) ein fuehrendes @ wird fuer jeden Reviewer entfernt, nicht nur copilot.
