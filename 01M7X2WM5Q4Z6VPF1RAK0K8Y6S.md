@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T22:58:31Z
+updated-at: 2026-11-20T22:58:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -71,3 +71,4 @@ test-verdict: "pass: go build + go test -race (shipped, role, lane, mod) RC=0 be
 - **2026-11-20 22:54 · Alexander Sacharov** — critique Runde 2: beide Funde behoben (5a091b69), nichts Neues.
 - **2026-11-20 22:57 · Alexander Sacharov** — Stand 23:59: testing laeuft, test-verdict pass gesetzt; Bughunt-Agent laeuft im Hintergrund (Ergebnis kommt als bughunt:-Notes). Branch feat/0k8y6s gepusht (61543e22, 5a091b69). Ein neuer Worker: Bughunt-Notes lesen, hunt-verdict setzen, dann review (fresh).
 - **2026-11-20 22:58 · Alexander Sacharov** — bughunt: pre-existing: scripts/shipped-history.sh:46 (and :97-103) - in generate mode an unreadable blob (partial clone offline, damaged object) is hashed as the empty file and the script still exits 0, since nothing sets pipefail and the failure sits inside $(...): the real version's line is dropped from the redirected manifest and e3b0c442...  <path> appears in its place, so an empty file at that path counts as shipped. --check fails closed on it, because the wrong hash shows up as missing, so only untagged versions slip through. blame: the same cat-file|sha256sum line is in 61543e22^ (moved into hashed() by the change, behaviour unchanged); ran: hashed fed a nonexistent blob id -> 'fatal: bad file' on stderr, e3b0c442... line on stdout, exit=0
+- **2026-11-20 22:58 · Alexander Sacharov** — bughunt: done at 5a091b69 - 1 finding (0 change, 1 pre-existing) in 6 modules, first hunt; concurrency, error paths, input, permissions checked; files: .gitattributes .github/workflows/ci.yaml .github/workflows/release-notes.yaml core/release/notes/0K8Y6S.md core/role/shipped_test.go core/role/testdata/jaira-cockpit-hooks-board-v0.5.2.ts core/shipped/history_test.go core/shipped/shipped.sha256 scripts/shipped-history.sh
