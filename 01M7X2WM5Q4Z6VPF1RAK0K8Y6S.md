@@ -1,7 +1,7 @@
 ---
 id: 01M7X2WM5Q4Z6VPF1RAK0K8Y6S
 title: "shipped.sha256 kennt jede Version, die in einem Release-Tag ausgeliefert wurde, und CI haelt das fest"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T23:07:09Z
+updated-at: 2026-11-20T23:07:46Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -27,7 +27,7 @@ outcome-what: "Manifest neu erzeugt (8 Tag-Versionen fehlten, u.a. cockpit board
 outcome-why: Hand-gemergte Manifest-Konflikte verloren Zeilen; jaira update --roles hielt dann eine unberuehrte Installation fuer handgeaendert und uebersprang sie still
 outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, wenn eine fehlt, und Manifest-Merges konfliktieren nicht mehr"
 review-summary: "scripts/shipped-history.sh bekommt einen Modus --check: er listet jede Datei-Version aus jedem v*-Tag (git ls-tree), hasht die Blob-Bytes roh unter dem heutigen Einbettungspfad und schlaegt fehl, wenn eine davon in core/shipped/shipped.sha256 fehlt (ebenso ohne Tags, bei unlesbarem Tag oder Blob). CI fuehrt das als Job shipped-manifest bei jedem PR aus, release-notes.yaml vor dem Release-PR (beide mit fetch-depth 0). Das Manifest ist neu erzeugt: die 8 verlorenen Versionen (u.a. board.ts aus v0.5.2) stehen drin, keine Zeile ging verloren. .gitattributes setzt merge=union auf das Manifest, das Skript sortiert unter LC_ALL=C. Ein Tabellentest beweist, dass eine unveraenderte board.ts aus v0.5.2 ersetzt statt uebersprungen wird; Go-Tests mit Temp-Repo decken geloescht/wieder angelegt, CRLF, Tag ohne Datei, fehlende Tags, unlesbaren Tag/Blob und den union-Merge ab."
-round: 4
+round: 5
 review-gaps: |-
   note: DoD 5 ist nur mit lokalem git bewiesen (TestManifestMergesWithoutConflict). Ob GitHubs Mergeability-Pruefung merge=union aus .gitattributes beachtet, ist nicht belegt - erst zwei echte PRs, die beide Zeilen anhaengen, zeigen es.
   note: nach einem union-Merge mit Duplikat scheitert TestManifestLinesAreWellFormed erst auf master; die Abhilfe (regenerieren) steht nur in .gitattributes, nicht in der Fehlermeldung des Tests.
