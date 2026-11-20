@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T17:13:48Z
+updated-at: 2026-11-20T17:13:52Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26453
 claimed-at: 2026-11-20T17:13:45Z
@@ -33,7 +33,12 @@ outcome-why: "Ein Teamlead machte jede PR-Runde von Hand (push, PR-Text, Copilot
 outcome-resolves: "Mit .jaira/pr=agent oeffnet jaira-role-pr den PR nach der Abnahme aller Tickets selbst, fordert den Reviewer an und faehrt eine Kommentarrunde; ohne Datei bleibt alles wie heute; Merge/Approve bleibt in jedem Fall beim Menschen."
 review-summary: "A board file .jaira/pr (one line, default person; only exactly 'agent' switches) and .jaira/pr-reviewer (copilot, a login or org/team, anything else read as empty) are read by core/settings PRFor/PRReviewerFor and shown by 'jaira roles list' (pr: line, --json pr/pr_source/pr_reviewer). jaira-role-pr's SKILL.md lets an agent run gh pr create / glab mr create only when the board says agent and every ticket on the branch is in done; otherwise it still hands the line back. A new scripts/pr-round.sh (GitHub via gh api) lists open review threads and threadless comments, answers and resolves one thread idempotently (a rerun after a failed resolve only resolves), comments on the conversation, and re-requests a reviewer (copilot mapped to its bot login, exit 4 when the request is refused, exit 3 before any write when gh is not signed in). GitLab gets the equivalent glab api lines aimed at the target project. Merge and approve stay forbidden in every text and test. Teamlead and dispatcher texts name the exception; release note and shipped hashes added."
 round: 4
-review-gaps: "none - Fix 5db2eee4: Body kommt in derselben Abfrage mit, kein zweiter Aufruf"
+review-gaps: |-
+  note: pr-round.sh comments lists every conversation comment and review body each round, the agent's own earlier answers included - not answering twice there rests on the agent reading the list (DoD 10 covers threads only)
+  note: the Copilot request uses the REST login copilot-pull-request-reviewer[bot]; tested only against the fake gh in core/role/pr_round_test.go, never against live GitHub
+  note: reply checks then answers in two calls - two sessions on the same thread at once could each post the answer
+  note: the gate 'every ticket on the branch is in done' lives only in jaira-role-pr/SKILL.md; nothing in the binary checks it
+  note: this repository's own CLAUDE.md still says agents never open PRs - correct while this board has no .jaira/pr, but the two texts must be kept apart if one is ever written
 test-verdict: "pass: go build + go test -count=1 -race ./... RC=0 auf 5db2eee4; DoD 1-11 im Baum geprueft; roles list auf Scratch-Board (default, agent+copilot aus CRLF, Shell-Zeichen -> leer, unlesbare Datei -> person); pr-round.sh threads/comments live gegen BeMuCa/jaira rc=0, falsche Nummer rc=1 ohne Schreiben; reply/request nur gegen gh-Stub (live wuerde auf echten PR schreiben); roles list schreibt nichts"
 hunt-verdict: "pass: bughunt done at 5db2eee4, 0 change, 0 pre-existing (Runde 3; Runden 1-2: 4 change, alle behoben)"
 ---
