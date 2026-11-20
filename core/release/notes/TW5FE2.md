@@ -4,3 +4,4 @@
 - Expect testing and review to send a ticket back only for a blocker - a wrong result, data loss, a crash or a security hole; smaller edges of the change ride along when a round goes back anyway, and a fault from before the change outside its scope is written as 'note: pre-existing: ...'.
 - Expect the in-progress lane to stop after the third return from the same lane and move the ticket to the human lane with a question instead of starting a fourth round.
 - When you give a ticket back to in-progress by hand rather than through the cockpit, write `jaira note <id> "Given back from <lane>: <why>"`; the in-progress lane reads that line to tell your return from a loop lane's and does not count it toward the third-return stop.
+- When review sends a ticket back to in-progress, expect its note to start with `review:`; testing, on a round after a fix, runs only the tests of what changed since the last bug hunt instead of the whole suite.

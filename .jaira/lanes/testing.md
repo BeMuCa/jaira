@@ -38,10 +38,11 @@ after your passes, from that skill, as a reader who has not seen the ticket.
 
 Then your three passes, in this order:
 
-1. **Gates.** Build everything and run the whole suite the way this repository
+1. **Gates.** Build everything and run the suite the way this repository
    does it, with the race detector and a cleared cache where that is the house
-   rule. Red here ends the pass — record the failing output verbatim, never a
-   summary of it.
+   rule — the whole suite the first time, and in a round after a fix only the
+   tests of what changed since the last hunt (see below). Red here ends the
+   pass — record the failing output verbatim, never a summary of it.
 2. **The demand.** Take the definition of done item by item and verify each one
    against the working tree, not against the outcome's account. A proof line
    names a file or a test: open that file, run that test. A criterion you could
@@ -125,9 +126,11 @@ alone never starts a round.
   The hunter's `change` notes are already the brief for whoever fixes them;
   do not copy them. The ticket runs the loop again — implementing, critique,
   optimize, and back here — until you have nothing left to find. A round after
-  a fix tests the whole suite again, but the hunt and your own passes 2 and 3
-  read only what changed since the last hunt, so the loop ends; then the
-  ticket goes on to review.
+  a fix tests and hunts only what changed since the last hunt — the commit in
+  its `bughunt: done at <commit>` line: pass 1 runs the tests of the packages
+  `git diff --name-only <commit>` touches, and passes 2 and 3 and the hunt
+  read only that diff, so the loop ends; the whole suite ran in the first
+  round and runs again in CI. Then the ticket goes on to review.
 - **Pass.** Both fields start with `pass:`. Say what you ran and what you
   saw, and move the ticket on. Never certify what you did not run: "the tests
   probably cover it" is a finding about the tests, not a pass.

@@ -114,9 +114,11 @@ its criteria and ships no defect has no blocker, however much you could add to
 it.
 
 Then move the ticket on. A blocker sends it back to the lane the work was done
-in (`in-progress` on the default board), with the reason in a note
-(`jaira note <id> <text>`), so the implementer reading the ticket later sees it
-in the trail rather than only in a field the next review overwrites. Without a
+in (`in-progress` on the default board), with the reason in a note that
+starts `review:` (`jaira note <id> "review: <blocker>"`), written last before
+the move, so the implementer reading the ticket later sees it in the trail
+rather than only in a field the next review overwrites, and counts the return
+for this lane. Without a
 blocker it goes on to the person, notes and all. You are not the last word: a
 person reads your verdict alongside the implementer's account and decides. Say
 plainly when you are unsure rather than rounding up to approval.

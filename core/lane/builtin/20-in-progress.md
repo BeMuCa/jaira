@@ -66,9 +66,8 @@ the next example of a mistake that was fixed for one example only. So:
 ## The third return from the same lane
 
 The lanes' own notes do not count returns: one round leaves several
-`bughunt: change:` notes, testing writes `testing: note:` on a round that
-passes, and the review's note has no fixed prefix. So keep the count
-yourself. When you pick up a ticket that was sent back — `round` in
+`bughunt: change:` notes and testing writes `testing: note:` on a round that
+passes. So keep the count yourself. When you pick up a ticket that was sent back — `round` in
 `jaira show <id> --json` is above 1 — find out who sent it and write one line
 before anything else, once per round:
 
@@ -88,9 +87,10 @@ read the sender off the newest note, passing over the lines no sender wrote —
   hand writes the same one, `jaira note <id> "Given back from signoff: <why>"`.
   An answer that reaches you by message instead goes onto the ticket as
   `decision: <answer>` before you act on it
-- `critique:`, `optimize:` or `testing:` — that lane; `bughunt:` counts for
-  testing
-- anything else — the review sent it
+- `critique:`, `optimize:`, `testing:` or `review:` — that lane; `bughunt:`
+  counts for testing
+- anything else — the review sent it; a review on an older lane prompt
+  writes its note without the prefix
 
 Then count your `back:` lines for that lane since the last `back: person`.
 When this is the third, do
