@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T18:04:58Z
+updated-at: 2026-11-20T18:06:38Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-87225
 claimed-at: 2026-11-20T17:38:56Z
@@ -131,3 +131,4 @@ Empfehlung: 2 - die Lücken sind dokumentiert und ungefährlich, der Live-Test i
 - **2026-11-20 17:57 · Alexander Sacharov** — decision (Alex via teamlead jaira-64, 2026-11-20, korrigiert 'PR erst in done'): woertlich 'im Projekt machen wir den PR und dort kommt noch ein Review. Deshalb kommt done erst, wenn alle Reviews fertig sind.' -> Board-Datei .jaira/pr-when = done|signoff, Default done (dieses Repo bleibt: done, dann PR). signoff: pr-gate laesst zu, sobald jedes Ticket des Branches in signoff oder done ist; done kommt erst, wenn der PR keine offenen Threads und kein ausstehendes Review hat.
 - **2026-11-20 17:57 · Alexander Sacharov** — decision (worker, settled): (a) die Pruefung 'PR-Runde fertig' wird pr-round.sh settled <owner/repo> <number> (Exit 0 / 3 mit offenen Threads und ausstehenden Reviewern); die Rolle verlangt sie vor done. (b) KEIN Gate in 'jaira move ... done' im Binary: es muesste GitHub fragen, jeder move haengte dann an Netz und gh-Login, und die Annahme in signoff ist eine Person (Cockpit Accept) - das gehoert zu CRASZS (PR begleiten), wie teamlead als Rueckfall erlaubt. (c) Board ohne Lane 'signoff' mit pr-when=signoff: pr-gate verweigert mit Exit 3 und sagt warum, statt zu raten. (d) optimize-Runde unterbrochen; die Bereinigung in pr-round.sh (number=0 entfernt) reist im naechsten Commit mit.
 - **2026-11-20 18:04 · Alexander Sacharov** — critique 6 (a5fc3403, pr-when): nichts. Absichtlich so gelassen: lanesReached (internal/cli/roles.go) sucht die Lane mit der id 'signoff' - wie internal/cli/web_source.go:33; die strukturelle Lesart 'erste Lane, die eine Person besitzt' (core/lane/lane.go impliedFresh) waere robuster gegen umbenannte Lanes, aber das Wort in .jaira/pr-when IST der Lane-Name, und ein Board ohne sie bekommt Exit 3 mit Grund statt einer Vermutung. Kein Binary-Gate fuer move->done: decision oben, liegt bei CRASZS.
+- **2026-11-20 18:06 · Alexander Sacharov** — bughunt: change: internal/cli/roles.go:168-174 - pr-gate swallows ticket.PartialError, so a named ticket whose file cannot be read (conflict marker, broken frontmatter) drops out of 'all' and is treated like a ticket filed into the logbook: the gate opens. Input: branch commit feat(0207QE) with 0207QE in brainstorm and line 1 of its file replaced by '<<<<<<< HEAD'; ran: scratch repo, jaira roles pr-gate master (exit 3 with valid file, exit 0 and may_open:true with the broken one). Blame c471d660.
