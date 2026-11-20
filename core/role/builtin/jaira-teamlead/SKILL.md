@@ -250,7 +250,8 @@ fine to accept. The shape is the one `/jaira-role-signoff <id>...` produces;
 run it, or write the same yourself:
 
 1. one status line, ✅ or ❌ per check: DoD x/y, tests, bug hunt on the
-   branch head, blockers
+   branch head, blockers — `jaira show` does not print the test and hunt
+   verdicts; `jaira-role-signoff` says where to read them
 2. one table, a row per open note — the note in one plain sentence and one
    mark: 🔴 blocker (wrong result, lost data, crash, security), 🟡 small edge
    (one round of ten minutes), ⚪ known limit, 🔵 not from this ticket (and
