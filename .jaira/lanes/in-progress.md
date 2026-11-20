@@ -65,12 +65,22 @@ the next example of a mistake that was fixed for one example only. So:
 
 ## The third return from the same lane
 
-Count the returns in the ticket's notes: every lane that sends work back here
-leaves a note — `critique:`, `testing:`, `bughunt: change:`, or the review's
-note on its blocker. When this is the third time the same lane sent the
-ticket back, do not start a fourth round. Move it to the human lane with
-the question instead — the third round's findings, and whether the definition
-of done is wrong or the loop reads deeper every round without ending:
+The lanes' own notes do not count returns: one round leaves several
+`bughunt: change:` notes, testing writes `testing: note:` on a round that
+passes, and the review's note has no fixed prefix. So keep the count
+yourself. When you pick up a ticket that was sent back — `round` in
+`jaira show <id> --json` is above 1 — find the lane that sent it (the newest
+notes on the ticket say which: critique, optimize, testing or review) and write
+one line before anything else, once per round:
+
+```bash
+jaira note <id> "back: testing, round 3"
+```
+
+Then count your own `back:` lines for that lane. When this is the third, do
+not start a fourth round. Move the ticket to the human lane with the question
+instead — the third round's findings, and whether the definition of done is
+wrong or the loop reads deeper every round without ending:
 
 ```bash
 jaira move <id> --to human --question "testing sent this back three times: <findings>. DoD wrong or loop without end? I would <...>"
