@@ -87,16 +87,18 @@ func parseProbe(out string) (inRepo bool, exclude, line string) {
 // parsePlace reads gitPlace's two lines of git output: the common git dir —
 // "C:/repo/.git" on Windows, which filepath makes a path of — and the prefix
 // of root below the top of the working tree, "" or "sub/dir/", always with
-// forward slashes, as exclude patterns are written.
+// forward slashes, as exclude patterns are written. Only the line ending
+// comes off a line: a space at either end belongs to a directory's name
+// (" sub/"), and an entry without it excludes nothing.
 func parsePlace(out string) (exclude, line string) {
 	parts := strings.Split(strings.TrimRight(out, "\r\n"), "\n")
-	common := strings.TrimSpace(parts[0])
+	common := strings.TrimSuffix(parts[0], "\r")
 	if common == "" {
 		return "", ""
 	}
 	prefix := ""
 	if len(parts) > 1 {
-		prefix = strings.TrimSpace(parts[1])
+		prefix = strings.TrimSuffix(parts[1], "\r")
 	}
 	// git before 2.31 does not know --path-format and prints it back as the
 	// first line, exit 0: anything that is not an absolute path is not the

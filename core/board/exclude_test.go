@@ -113,31 +113,41 @@ func write(t *testing.T, path, body string) {
 // A board below the top of the working tree is named from that top in
 // info/exclude, whose patterns are relative to it.
 func TestABoardInASubdirectoryIsExcludedByItsOwnPath(t *testing.T) {
-	root, exclude := newRepo(t)
-	sub := filepath.Join(root, "tools", "web app")
-	if err := os.MkdirAll(sub, 0o755); err != nil {
-		t.Fatal(err)
+	// A space at either end of a name is part of it; Windows refuses a
+	// trailing one.
+	names := []string{"tools/web app", " sub"}
+	if runtime.GOOS != "windows" {
+		names = append(names, "sub ")
 	}
-	if _, err := AddIgnore(sub); err != nil {
-		t.Fatal(err)
-	}
-	got, _ := os.ReadFile(exclude)
-	if count(string(got), "/tools/web app/.jaira/") != 1 {
-		t.Fatalf("exclude = %q, want /tools/web app/.jaira/", got)
-	}
-	if !Ignored(sub) {
-		t.Errorf("Ignored(sub) = false")
-	}
-	if Ignored(root) {
-		t.Errorf("Ignored(root) = true: the subdirectory's entry must not cover the top")
-	}
-	if err := os.MkdirAll(filepath.Join(sub, ".jaira"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	write(t, filepath.Join(sub, ".jaira", "x.md"), "x")
-	out, err := exec.Command("git", "-C", root, "status", "--porcelain", "--untracked-files=all").Output()
-	if err != nil || strings.Contains(string(out), ".jaira") {
-		t.Errorf("git sees the subdirectory's board: %v\n%s", err, out)
+	for _, name := range names {
+		t.Run(name, func(t *testing.T) {
+			root, exclude := newRepo(t)
+			sub := filepath.Join(root, filepath.FromSlash(name))
+			if err := os.MkdirAll(sub, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := AddIgnore(sub); err != nil {
+				t.Fatal(err)
+			}
+			got, _ := os.ReadFile(exclude)
+			if want := "/" + name + "/.jaira/"; !strings.Contains(string(got), "\n"+want+"\n") {
+				t.Fatalf("exclude = %q, want %q", got, want)
+			}
+			if !Ignored(sub) {
+				t.Errorf("Ignored(sub) = false")
+			}
+			if Ignored(root) {
+				t.Errorf("Ignored(root) = true: the subdirectory's entry must not cover the top")
+			}
+			if err := os.MkdirAll(filepath.Join(sub, ".jaira"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			write(t, filepath.Join(sub, ".jaira", "x.md"), "x")
+			out, err := exec.Command("git", "-C", root, "status", "--porcelain", "--untracked-files=all").Output()
+			if err != nil || strings.Contains(string(out), ".jaira") {
+				t.Errorf("git sees the subdirectory's board: %v\n%s", err, out)
+			}
+		})
 	}
 }
 
@@ -176,6 +186,10 @@ func TestParsePlaceReadsWhatGitPrints(t *testing.T) {
 		// git before 2.31 prints the option it does not know back.
 		{"--path-format=absolute\n.git\nsub/\n", "", ""},
 		{".git\n\n", "", ""},
+		// A space at either end of a directory's name is part of it.
+		{abs + "\n sub /\n", abs + "/info/exclude", "/ sub /.jaira/"},
+		{abs + "\r\n sub/\r\n", abs + "/info/exclude", "/ sub/.jaira/"},
+		{" " + abs + "\n\n", "", ""},
 		// Glob characters in a directory name stay literal.
 		{abs + "\na[1]/b*?/\n", abs + "/info/exclude", `/a\[1]/b\*\?/.jaira/`},
 	}

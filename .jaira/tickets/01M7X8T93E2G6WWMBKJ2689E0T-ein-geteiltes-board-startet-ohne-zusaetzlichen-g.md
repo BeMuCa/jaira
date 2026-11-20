@@ -1,7 +1,7 @@
 ---
 id: 01M7X8T93E2G6WWMBKJ2689E0T
 title: Ein geteiltes Board startet ohne zusaetzlichen git-Prozess pro Befehl
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,7 +19,7 @@ related: []
 follows: 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-11-20T20:01:56Z
-updated-at: 2026-11-20T22:55:28Z
+updated-at: 2026-11-20T23:02:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-14124
 claimed-at: 2026-11-20T22:45:18Z
@@ -27,8 +27,10 @@ outcome-what: Die Merge-Treiber-Pruefung bei jedem Befehl fragt git in einem rev
 outcome-why: NNV39Y hatte jedem Befehl eines geteilten Boards einen git-Prozess fuer die Ignore-Pruefung hinzugefuegt; Projektregel instant startup.
 outcome-resolves: Der zusaetzliche git-Prozess pro Befehl aus der NNV39Y-review.
 review-summary: "none"
-round: 2
+round: 3
 review-gaps: "useOldGit (internal/cli/privateexclude_test.go) entfernt: countGit(t, true) traegt dasselbe Alt-git-Skript, der eine Aufrufer nutzt es direkt. Gelassen: gitrepo.IsRepo neben Probe.inRepo - IsRepo bleibt fuer share/andere Aufrufer, Probe ist die Ein-Prozess-Variante fuer den Pfad pro Befehl. Kein toter Code, keine Kosten auf heissen Pfaden uebrig ausser config --get (vorbestehend)."
+test-verdict: "pass: go vet ./... + scripts/test-shard.sh 0 1 -race nach go clean -testcache RC=0; DoD 1-3 im Baum geprueft (Tests laufen, Proofs zeigen auf share.go:177, probe_test.go:46); Binary auf Scratch-Board (init+share): jaira list startet 8 git-Prozesse statt 9 auf e31801dc, der eigene rev-parse --git-common-dir ist weg; unlesbares .git/info -> list exit 0; Aenderung schreibt nichts, kein Zwei-Schreiber-Fall"
+hunt-verdict: "pass: bughunt done at d91c9986, 0 change, 1 pre-existing (parsePlace TrimSpace auf dem Praefix) - wird in diese Runde gefaltet als DoD 4"
 ---
 
 # Ein geteiltes Board startet ohne zusaetzlichen git-Prozess pro Befehl
@@ -41,6 +43,8 @@ review-gaps: "useOldGit (internal/cli/privateexclude_test.go) entfernt: countGit
   proof: go test ./... -count=1 exit 0; TestProbeAgreesWithIsRepoAndIgnored (core/board/probe_test.go:46)
 - [x] Eingabeklassen: geteiltes Board mit .gitattributes, ohne, Board im Unterverzeichnis, git<2.31, Windows
   proof: TestTheMergeDriverCheckStartsNoGitForTheIgnoreCheck (mit/ohne .gitattributes, Unterverzeichnis 'web app', git<2.31, privat exclude/.gitignore); Windows: TestParseProbeReadsWhatGitPrints (C:/-Pfad, CRLF), GOOS=windows go vet
+- [x] Ein Board in einem Verzeichnis mit fuehrendem oder abschliessendem Leerzeichen im Namen bekommt einen Exclude-Eintrag, der es wirklich ausschliesst (parsePlace kuerzt das --show-prefix nur um das Zeilenende)
+  proof: core/board/gitignore.go parsePlace TrimSuffix \r; TestABoardInASubdirectoryIsExcludedByItsOwnPath (' sub', 'sub ', git status sieht kein .jaira), TestParsePlaceReadsWhatGitPrints; alter Code faellt in 4 Faellen
 
 ## Options
 
@@ -70,3 +74,7 @@ review-gaps: "useOldGit (internal/cli/privateexclude_test.go) entfernt: countGit
 - **2026-11-20 22:52 · Alexander Sacharov** — critique: Probe und gitPlace sind zwei Kopien desselben git-Aufrufs. Ein interner place(root) liefert inRepo, exclude, line aus einem rev-parse; gitPlace verwirft inRepo, Probe nutzt alles. parseProbe parst den Ort auch bei inRepo=false, damit gitPlace in einem .git-Verzeichnis unveraendert bleibt.
 - **2026-11-20 22:53 · Alexander Sacharov** — critique-Fund umgesetzt: gitPlace = place() ohne inRepo, Probe = InGitignore + place(). Ein git-Weg. Tests core/board + internal/cli gruen.
 - **2026-11-20 22:54 · Alexander Sacharov** — critique Runde 2: nichts mehr. Ein git-Weg (place), Probe am richtigen Ort (core/board neben Ignored), Aufrufer nur bindDriverIfShared - die anderen Ignored-Aufrufer laufen nicht pro Befehl.
+- **2026-11-20 22:56 · Alexander Sacharov** — bughunt: pre-existing: core/board/gitignore.go:99 - parsePlace runs strings.TrimSpace on the --show-prefix line, so a board in a directory whose name starts with a space (' sub') gets the exclude entry '/sub/.jaira/', which matches nothing: jaira init reports the board private while git status lists every file under ' sub/.jaira/' as untracked, and Ignored/Probe still say ignored because they look for the same wrong line; blame: 03e359db0 (NNV39Y, before the ticket); ran: git init; mkdir ' sub'; jaira init in it (exit 0), tail .git/info/exclude -> /sub/.jaira/, git status --porcelain -> ?? ' sub/.jaira/lanes/...'
+- **2026-11-20 22:56 · Alexander Sacharov** — bughunt: done at d91c9986 - 1 finding (0 change, 1 pre-existing) in 2 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/board/gitignore.go core/board/probe_test.go internal/cli/privateexclude_test.go internal/cli/share.go internal/cli/startupgit_test.go
+- **2026-11-20 23:00 · Alexander Sacharov** — testing: bughunt-Fund pre-existing (core/board/gitignore.go parsePlace TrimSpace auf --show-prefix, ' sub' -> '/sub/.jaira/') gleiches Modul, gleicher Gegenstand, Einzeiler -> nach Interim-Regel 5 in dieses Ticket gefaltet (DoD 4) statt Satellitenticket. Fix: Praefix nur um \r kuerzen; Tabellentest in TestParsePlaceReadsWhatGitPrints + echter git-Lauf.
+- **2026-11-20 23:02 · Alexander Sacharov** — Geschwister der Klasse 'TrimSpace auf einem Pfad aus git': core/gitrepo/git.go:57 Root() kuerzt --show-toplevel mit TrimSpace - ein Repository-Verzeichnis mit Leerzeichen am Namensende wuerde falsch. Anderes Modul, nicht angefasst: note: pre-existing. core/ticket/store.go:882 endet immer auf .git, unkritisch.
