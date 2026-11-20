@@ -225,17 +225,16 @@ async function keptReports($: EngineInterface, ticket: string): Promise<Report[]
   return ((await $.store.get(keyOf(await project($), ticket))) as Report[] | undefined) ?? []
 }
 
-async function reports($: EngineInterface, args: string, all = false): Promise<string> {
+async function reports($: EngineInterface, args: string): Promise<string> {
   const root = await project($)
-  const wanted = reportArgs(args)
-  const ticket = wanted.ticket
+  const { ticket, all } = reportArgs(args)
   if (ticket === '') {
     const keys = projectKeys(await $.store.keys(), root).reverse()
     const rows = await Promise.all(keys.map(async k => [k, ((await $.store.get(k)) as Report[] | undefined) ?? []] as const))
     return listReports(rows)
   }
   const kept = await keptReports($, ticket)
-  const shown = showReport(ticket, kept, all || wanted.all)
+  const shown = showReport(ticket, kept, all)
   // Shown once, read: the next call brings only what arrived after it. Read
   // again before writing, so a report kept meanwhile stays, and stays unseen.
   const read = new Set(kept.filter(r => r.seen !== true).map(r => r.at))
@@ -1210,7 +1209,7 @@ export const register: Register = (on, options) => {
     if (e.tool === 'mcp__jaira-cockpit__report') {
       // A tool's arguments ride on `e` beside `tool`, not under a key of their own.
       const { ticket, all } = e as { ticket?: unknown; all?: unknown }
-      return { result: await reports($, typeof ticket === 'string' ? ticket : '', all === true) }
+      return { result: await reports($, `${typeof ticket === 'string' ? ticket : ''}${all === true ? ' all' : ''}`) }
     }
     if (e.tool === 'mcp__jaira-cockpit__workers') return { result: await workers($, share) }
     totals = { ...totals, tools: totals.tools + 1 }
