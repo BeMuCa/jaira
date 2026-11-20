@@ -194,3 +194,25 @@ func fileOf(t *testing.T, dir, handle string) string {
 	}
 	return filepath.Base(m[0])
 }
+
+// A ticket whose file cannot be read — a merge conflict left in it, a broken
+// frontmatter — drops out of the board's list. The gate must not read that
+// as filed away and open: it refuses (JG3REW, bughunt).
+func TestPRGateFailsClosedOnAnUnreadableTicket(t *testing.T) {
+	dir, ticketIn, commit := prGateFixture(t)
+	setPR(t, dir, "agent")
+	h := ticketIn("brainstorm")
+	commit("feat(" + h + "): half done")
+	path := filepath.Join(dir, ".jaira", "tickets", fileOf(t, dir, h))
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, append([]byte("<<<<<<< HEAD\n"), raw...), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, err := runCLI(t, dir, "--json", "roles", "pr-gate", "master")
+	if exitCode(err) != ExitValidation || strings.Contains(out, "may_open") {
+		t.Fatalf("unreadable ticket: exit %d, %v\n%s", exitCode(err), err, out)
+	}
+}

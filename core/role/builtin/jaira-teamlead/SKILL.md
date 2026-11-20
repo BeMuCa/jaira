@@ -247,8 +247,8 @@ board.
   the pull request, asks for the board's reviewer and answers one round of
   comments. Where `jaira json get pr_when` says `signoff`, that is once every
   ticket is in signoff, and done waits until `scripts/pr-round.sh settled`
-  finds no thread open and no review requested — say so when the person
-  accepts. Merging and approving stay the maintainer's there too.
+  finds no thread open, no review requested and none requesting changes —
+  say so when the person accepts. Merging and approving stay the maintainer's there too.
 - A permission your session was refused is not something to route around by
   starting a worker. Take it back to the human.
 

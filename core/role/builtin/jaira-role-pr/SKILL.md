@@ -70,7 +70,7 @@ pull request itself:
   person's — is part of that acceptance, so **done waits for it**: before a
   ticket of this branch moves into done, `scripts/pr-round.sh settled
   <owner/repo> <number>` must exit 0 — no thread open, no review still
-  requested. Exit 3 lists what is in the way; the ticket stays in signoff
+  requested, no reviewer whose latest review requests changes. Exit 3 lists what is in the way; the ticket stays in signoff
   and you report that list. The gate reads `pr_when` itself: you pass it
   nothing. Once the person has moved the tickets into done, this role runs
   once more: **File the finished tickets away** commits them and the push

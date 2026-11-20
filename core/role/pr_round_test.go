@@ -17,13 +17,14 @@ import (
 // query reply asks before it writes, GH_AFTER the thread it reads back after
 // it posted; GH_POSTED answers a conversation comment's POST, and
 // GH_ISSUES_AFTER the conversation read back once something was posted;
-// GH_REQUESTED the reviewers a pull request still waits for.
+// GH_REQUESTED the reviewers a pull request still waits for, GH_OPINIONS each
+// reviewer's latest verdict.
 const fakeGH = `#!/usr/bin/env bash
 printf '%s\t' "$@" >> "$GH_LOG"; printf '\n' >> "$GH_LOG"
 [ "$1" = auth ] && { [ "${GH_AUTH:-}" = fail ] && exit 1; exit 0; }
 for a in "$@"; do [ "$a" = POST ] && [ "${GH_POST:-}" = fail ] && { echo "HTTP 422: Reviews may only be requested from collaborators" >&2; exit 1; }; done
 filter="" fixture=${GH_FIXTURE:-}
-case "$*" in *"requested_reviewers"*) fixture=${GH_REQUESTED:-} ;; *"POST repos/"*"/issues/"*) fixture=${GH_POSTED:-} ;; *"/issues/"*) fixture=${GH_ISSUES:-}; [ -n "${GH_ISSUES_AFTER:-}" ] && grep -q POST "$GH_LOG" && fixture=$GH_ISSUES_AFTER ;; *"comments(first:100)"*) fixture=${GH_AFTER:-} ;; *"viewer{login}"*) fixture=${GH_STATE:-} ;; esac
+case "$*" in *"latestOpinionatedReviews"*) fixture=${GH_OPINIONS:-} ;; *"requested_reviewers"*) fixture=${GH_REQUESTED:-} ;; *"POST repos/"*"/issues/"*) fixture=${GH_POSTED:-} ;; *"/issues/"*) fixture=${GH_ISSUES:-}; [ -n "${GH_ISSUES_AFTER:-}" ] && grep -q POST "$GH_LOG" && fixture=$GH_ISSUES_AFTER ;; *"comments(first:100)"*) fixture=${GH_AFTER:-} ;; *"viewer{login}"*) fixture=${GH_STATE:-} ;; esac
 while [ $# -gt 0 ]; do [ "$1" = --jq ] && filter=$2; shift; done
 if [ -n "$filter" ] && [ -n "$fixture" ]; then jq -r "$filter" "$fixture"; else echo '{}'; fi
 `
@@ -376,6 +377,10 @@ func TestPRRoundReplyLeavesOneAnswerWhenTwoSessionsRace(t *testing.T) {
 		// and is never what gets removed — only this run's own post is.
 		{"the person wrote the same words before", `[{"id":"P1","author":{"login":"me"},"body":"Fixed in abc123."},{"id":"C2","author":{"login":"me"},"body":"Fixed in abc123."}]`, true},
 		{"the person wrote the same words after", `[{"id":"C2","author":{"login":"me"},"body":"Fixed in abc123."},{"id":"P3","author":{"login":"me"},"body":"Fixed in abc123."}]`, false},
+		// The reviewer objected to an earlier answer of the same words: the
+		// repeat is a new answer to the objection, not a copy (bughunt).
+		{"the same answer again after an objection", `[{"id":"C1","author":{"login":"me"},"body":"Fixed in abc123."},{"id":"R1","author":{"login":"copilot"},"body":"still wrong"},{"id":"C2","author":{"login":"me"},"body":"Fixed in abc123."}]`, false},
+		{"two copies after an objection", `[{"id":"C1","author":{"login":"me"},"body":"Fixed in abc123."},{"id":"R1","author":{"login":"copilot"},"body":"still wrong"},{"id":"C0","author":{"login":"me"},"body":"Fixed in abc123."},{"id":"C2","author":{"login":"me"},"body":"Fixed in abc123."}]`, true},
 	} {
 		after := fixtureFile(t, "after.json", `{"data":{"viewer":{"login":"me"},"node":{"comments":{"nodes":`+c.after+`}}}}`)
 		out, code := p.run([]string{"GH_STATE=" + open, "GH_FIXTURE=" + posted, "GH_AFTER=" + after}, "reply", "o/r", "7", "PRRT_x", answer)
@@ -412,6 +417,7 @@ func TestPRRoundCommentSaysItOnce(t *testing.T) {
 		{"said in an earlier round, trimmed by the forge", `[{"id":1,"user":{"login":"me"},"body":"Renamed it.\nSee abc123."}]`, false, false},
 		{"the maintainer's own remark", `[{"id":1,"user":{"login":"me"},"body":"please rename"}]`, true, false},
 		{"the same words from someone else", `[{"id":1,"user":{"login":"copilot"},"body":"Renamed it.\nSee abc123."}]`, true, false},
+		{"said before, then objected to", `[{"id":1,"user":{"login":"me"},"body":"Renamed it.\nSee abc123."},{"id":2,"user":{"login":"copilot"},"body":"no"}]`, true, false},
 	} {
 		issues := fixtureFile(t, "issues.json", c.issues)
 		out, code := p.run([]string{"GH_FIXTURE=" + user, "GH_ISSUES=" + issues}, "comment", "o/r", "7", answer)
@@ -466,18 +472,27 @@ func TestPRRoundSettledOnlyWhenNothingIsOpen(t *testing.T) {
 			"nodes":[{"id":"PRRT_1","isResolved":`+map[bool]string{true: "true", false: "false"}[resolved]+`,"isOutdated":false,"path":"dir with space/a.go","line":7,"comments":{"nodes":[{"author":{"login":"copilot"},"body":"x","url":"u1"}]}}]}}}}}`)
 	}
 	none := fixtureFile(t, "none.json", `{"users":[],"teams":[]}`)
+	opinions := func(states ...string) string {
+		var nodes []string
+		for i, st := range states {
+			nodes = append(nodes, `{"state":"`+st+`","author":{"login":"r`+string(rune('0'+i))+`"}}`)
+		}
+		return fixtureFile(t, "opinions.json", `{"data":{"repository":{"pullRequest":{"latestOpinionatedReviews":{"nodes":[`+strings.Join(nodes, ",")+`]}}}}}`)
+	}
+	approved := opinions("APPROVED", "COMMENTED")
 	asked := fixtureFile(t, "asked.json", `{"users":[{"login":"Copilot"}],"teams":[{"slug":"core"}]}`)
 	for _, c := range []struct {
-		name, threads, requested string
-		code                     int
-		says                     []string
+		name, threads, requested, opinions string
+		code                               int
+		says                               []string
 	}{
-		{"everything answered", threads(true), none, 0, []string{"settled"}},
-		{"a thread open", threads(false), none, 3, []string{"open thread: dir with space/a.go:7 u1"}},
-		{"a review still asked", threads(true), asked, 3, []string{"review pending: Copilot", "review pending: core"}},
-		{"both", threads(false), asked, 3, []string{"open thread:", "review pending: Copilot"}},
+		{"everything answered", threads(true), none, approved, 0, []string{"settled"}},
+		{"a thread open", threads(false), none, approved, 3, []string{"open thread: dir with space/a.go:7 u1"}},
+		{"a review still asked", threads(true), asked, approved, 3, []string{"review pending: Copilot", "review pending: core"}},
+		{"changes requested in a review body alone", threads(true), none, opinions("APPROVED", "CHANGES_REQUESTED"), 3, []string{"changes requested: r1"}},
+		{"all of it", threads(false), asked, opinions("CHANGES_REQUESTED"), 3, []string{"open thread:", "review pending: Copilot", "changes requested: r0"}},
 	} {
-		out, code := p.run([]string{"GH_FIXTURE=" + c.threads, "GH_REQUESTED=" + c.requested}, "settled", "o/r", "7")
+		out, code := p.run([]string{"GH_FIXTURE=" + c.threads, "GH_REQUESTED=" + c.requested, "GH_OPINIONS=" + c.opinions}, "settled", "o/r", "7")
 		if code != c.code {
 			t.Errorf("%s: exit %d, want %d\n%s", c.name, code, c.code, out)
 		}

@@ -33,14 +33,14 @@ pr-round.sh open <owner/repo> <remote> <branch> <title> <body-file>
             one removes its own copy.
   comment   <owner/repo> <number> <body-file>
             Answer on the conversation, for a comment that has no thread.
-            The same words under the same login already there: nothing is
-            posted, so a second round never says it twice.
+            Where the conversation already ends in these words under this
+            login, nothing is posted, so a second round never says it twice.
   request   <owner/repo> <number> <reviewer>
             Ask <reviewer> for a review again. 'copilot' asks GitHub Copilot.
   settled   <owner/repo> <number>
-            Whether the review round is over: exit 0 when no thread is open
-            and no review is still requested, exit 3 listing each open thread
-            and each reviewer still asked. On a board whose .jaira/pr-when
+            Whether the review round is over: exit 0 when no thread is open,
+            no review is still requested and no reviewer's latest review
+            requests changes; exit 3 listing each of them. On a board whose .jaira/pr-when
             says signoff, done waits for exit 0.
 
 Exit codes: 0 done; 2 usage; 3 gh missing or not signed in to github.com,
@@ -94,24 +94,36 @@ threads_query='query($owner:String!,$name:String!,$number:Int!,$endCursor:String
 said() { printf '%s' "$(tr -d '\r' < "$1" | sed 's/[[:space:]]*$//')" | base64 | tr -d '\n'; }
 saidjq='def said: gsub("\r"; "") | gsub("[ \t]+\n"; "\n") | sub("[ \t\n]+$"; "") | @base64;'
 
-# first_of reads "<id> <said>" lines and prints the first id whose text is
-# $1. It reads to the end, never breaking out: under pipefail a gh cut off
-# by a closed pipe would end the script.
-first_of() {
-  local found="" id b
-  while read -r id b; do
-    if [ -z "$found" ] && [ "$b" = "$1" ]; then found=$id; fi
+# keeper reads "<who> <id> <said>" lines, oldest first, and prints the
+# first id of the unbroken run of <who> = $1 saying $2 that reaches the
+# comment $3 — or the end of the list, when $3 is empty. Any other comment,
+# another author's or other words, ends a run: an answer repeated after a
+# reviewer objected is a new answer, not a copy. It reads to the end, never
+# breaking out: under pipefail a gh cut off by a closed pipe would end the
+# script.
+keeper() {
+  local who=$1 want=$2 stop=$3 run="" out="" found="" w id b
+  while read -r w id b; do
+    [ -n "$found" ] && continue
+    if [ "$w" = "$who" ] && [ "$b" = "$want" ]; then
+      [ -n "$run" ] || run=$id
+    else
+      run=""
+    fi
+    if [ -n "$stop" ] && [ "$id" = "$stop" ]; then out=$run; found=1; fi
   done
-  echo "$found"
+  if [ -z "$stop" ]; then out=$run; fi
+  echo "$out"
 }
 
 # dedupe keeps one answer where two sessions answered the same thread at
 # once. The check before posting cannot see an answer still in flight, so
-# after posting the thread is read again: the earliest comment of this login
-# with this text stays, and if it is not the one just posted, that one is
-# removed. Every order of two sessions ends with exactly one — whichever
-# reads after both posted sees the other first, whichever reads before sees
-# only its own.
+# after posting the thread is read again: the run of this login's comments
+# with this text that ends in the one just posted keeps its first, and if
+# that is not the one just posted, that one is removed. Every order of two
+# sessions ends with exactly one — whichever reads after both posted sees
+# the other first, whichever reads before sees only its own. Only the id
+# this run posted is ever removed: a person's comment never is.
 dedupe() {
   local mine_id=$1 first
   [ -n "$mine_id" ] || return 0
@@ -119,8 +131,8 @@ dedupe() {
     query($thread:ID!){viewer{login}
       node(id:$thread){... on PullRequestReviewThread{comments(first:100){nodes{id author{login} body}}}}}' \
     --jq "$saidjq"' .data as $d | $d.node.comments.nodes[]
-          | select((.author.login // "") == $d.viewer.login)
-          | "\(.id) \(.body | said)"' | first_of "$(said "$file")"); then
+          | "\(if (.author.login // "") == $d.viewer.login then "me" else "other" end) \(.id) \(.body | said)"' |
+    keeper me "$(said "$file")" "$mine_id"); then
     echo "pr-round.sh: could not read the thread back to check for a second answer — look at it once" >&2
     return 0
   fi
@@ -210,25 +222,22 @@ case "$cmd" in
     file=$1
     body_of "$file"
     # The conversation has nothing to resolve, so what keeps a second round
-    # from saying the same thing twice is the text: the same words under the
-    # same login already there, and nothing is posted. Other words under the
-    # same login are the maintainer's own remark or an earlier answer, and do
-    # not stop this one. After posting, the conversation is read back the way
-    # dedupe reads a thread, for two sessions posting at the same moment.
+    # from saying the same thing twice is the text: where the conversation
+    # ends in these words under this login, nothing is posted. Anything said
+    # after them — a remark, an objection, the maintainer's own words — means
+    # the answer is owed again. After posting, the conversation is read back
+    # the way dedupe reads a thread, for two sessions posting at once.
     viewer=$(gh api user --jq .login)
     mine=$(said "$file")
     convo() {
       gh api --paginate "repos/$repo/issues/$number/comments" \
-        --jq "$saidjq"' .[] | "\(.user.login // "") \(.id) \(.body | said)"' |
-        while read -r login id b; do
-          if [ "$login" = "$viewer" ]; then echo "$id $b"; fi
-        done
+        --jq "$saidjq"' .[] | "\(.user.login // "-") \(.id) \(.body | said)"'
     }
-    first=$(convo | first_of "$mine")
+    first=$(convo | keeper "$viewer" "$mine" "")
     [ -n "$first" ] && { echo "commented: already"; exit 0; }
     posted=$(gh api --method POST "repos/$repo/issues/$number/comments" -F body=@"$file" --jq '"\(.id) \(.html_url)"')
     echo "${posted#* }"
-    if ! first=$(convo | first_of "$mine"); then
+    if ! first=$(convo | keeper "$viewer" "$mine" "${posted%% *}"); then
       echo "pr-round.sh: could not read the conversation back to check for a second answer — look at it once" >&2
       first=""
     fi
@@ -247,11 +256,18 @@ case "$cmd" in
             | "open thread: \(.path):\(.line // "-") \(.comments.nodes[0].url // "")"')
     pending=$(gh api "repos/$repo/pulls/$number/requested_reviewers" \
       --jq '(.users // [])[] , (.teams // [])[] | "review pending: \(.login // .slug)"')
-    if [ -z "$open$pending" ]; then
+    # A review that requested changes may say so only in its body, with no
+    # thread to stay open: each reviewer's latest verdict is read as well.
+    changes=$(gh api graphql -f owner="$owner" -f name="$name" -F number="$number" -f query='
+      query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){
+        pullRequest(number:$number){latestOpinionatedReviews(first:100){nodes{state author{login}}}}}}' \
+      --jq '.data.repository.pullRequest.latestOpinionatedReviews.nodes[]
+            | select(.state == "CHANGES_REQUESTED") | "changes requested: \(.author.login // "ghost")"')
+    if [ -z "$open$pending$changes" ]; then
       echo "settled: no thread open, no review requested"
       exit 0
     fi
-    printf '%s\n' "$open" "$pending" | sed '/^$/d' >&2
+    printf '%s\n' "$open" "$pending" "$changes" | sed '/^$/d' >&2
     exit 3
     ;;
   request)

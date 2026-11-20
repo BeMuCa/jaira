@@ -142,7 +142,7 @@ jaira-role-pr runs this before it opens a pull request on its own, so the
 rule does not rest on a role's text alone. A person who invokes the role
 needs no gate: their invocation is the decision. --json carries may_open,
 pr, pr_when and tickets; a refusal is the usual error, its reason
-pr_person, no_ticket, no_signoff_lane or pending.`,
+pr_person, no_ticket, no_signoff_lane, unreadable or pending.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
@@ -165,12 +165,18 @@ pr_person, no_ticket, no_signoff_lane or pending.`,
 				return fail(ExitValidation, "no_ticket",
 					"pr-gate: no commit in %s..HEAD names a ticket — nobody accepted anything on this branch; hand the create line back", args[0])
 			}
+			// A ticket file that cannot be read is not a ticket filed away:
+			// it would drop out of the list and look past done. The gate
+			// fails closed instead — whichever ticket it is, nobody can say
+			// it was accepted.
 			all, err := s.List()
+			var pe *ticket.PartialError
+			if errors.As(err, &pe) {
+				return fail(ExitValidation, "unreadable",
+					"pr-gate: a ticket file on this board cannot be read, so whether every ticket on the branch is accepted cannot be told — %v; fix it, or hand the create line back", pe)
+			}
 			if err != nil {
-				var pe *ticket.PartialError
-				if !errors.As(err, &pe) {
-					return err
-				}
+				return err
 			}
 			when, _ := settings.PRWhenFor(s.Root)
 			// reached is, per board, every lane a ticket may sit in for the
