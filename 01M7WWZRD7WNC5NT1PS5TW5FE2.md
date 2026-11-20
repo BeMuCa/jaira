@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZRD7WNC5NT1PS5TW5FE2
 title: "Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -27,13 +27,13 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:21:41Z
+updated-at: 2026-11-20T19:21:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99353
 claimed-at: 2026-11-20T19:19:21Z
-outcome-what: "Eingebaute Lanes pre-process, in-progress, testing, review und die Rolle jaira-role-bughunt: pre-process schreibt Fehlerklasse, Standard-Eingabeklassen und Annahmeregel als DoD-Punkte; in-progress repariert die Ursache, testet die Klasse, zieht Geschwister mit, prueft die vier Kategorien, schliesst kleine Raender in derselben Runde und fragt nach der dritten Rueckgabe derselben Lane. Absender einer Rueckgabe nur ueber feste Praefixe: critique:/optimize:/testing:/review: = Lane, 'Given back from'/'decision:' = Person (setzt zurueck), ohne Praefix = back: unknown, zaehlt fuer keine Lane; review schreibt seine Rueckgabe-Note mit 'review:'; testing testet und huntet in Folgerunden nur den Diff seit dem letzten Hunt; testing/bughunt melden Klasse + Beispiel; testing und review schicken nur fuer Blocker zurueck. .jaira/lanes nachgezogen, shipped.sha256, Release-Note."
-outcome-why: "Review- und bughunt-Schleifen liefen 10-24 Runden, weil jede Runde den Nachbarfall eines nur am Beispiel reparierten Fehlers fand und die vier Kategorien vor dem Code nie gefragt wurden; die Rueckgabe einer Person darf nicht als Schleifenrunde zaehlen, und eine Rueckgabe ohne erkennbaren Absender darf keiner Lane geraten zugerechnet werden."
-outcome-resolves: "DoD 1-7: 15-pre-process.md:38, 20-in-progress.md:29 und :66-102, 27-testing.md:41-45,98,129-134, bughunt SKILL.md:104, 40-review.md:57,117-121, shipped.sha256, core/release/notes/TW5FE2.md. Vier Kategorien: Nebenlaeufigkeit/Fehlerpfade/Rechte - nur Prompt-Text, nichts schreibt; ungewoehnliche Eingabe - Note ohne Praefix (auch aeltere review-Prompts) = back: unknown, zaehlt nicht."
+outcome-what: "Drei Prompt-Saetze nach signoff-Rueckgabe: pre-process schreibt Plan-Schritte vor dem Move mit Frage nach human; in-progress schreibt nach Neustart keine zweite back:-Zeile; testing-Folgerunde sprachneutral (Tests zu den geaenderten Dateien statt packages)."
+outcome-why: "Person gab aus signoff zurueck: gate.go refuses pre-process->human with empty plan, once-per-round unklar fuer neuen Worker, 'packages' ist Go-Wortlaut."
+outcome-resolves: "DoD 1-7 wie zuvor; neu 15-pre-process.md:90, 20-in-progress.md:72-74, 27-testing.md:130; Zwillinge in .jaira/lanes gleich; shipped.sha256 drei Zeilen; Release-Note eine Zeile. Vier Kategorien: nur Prompt-Text, nichts schreibt, kein Nebenlaeufigkeits-/Rechte-Pfad; Fehlerpfad pre-process->human jetzt vom Gate erlaubt."
 review-summary: "Nur Prompt-Texte, kein Go-Code. pre-process benennt vor dem Code Fehlerklasse, Eingabeklassen (leer/gross, Kodierung/CRLF, Pfade mit Leerzeichen/Windows, zwei Prozesse, Fehler auf halbem Weg) und bei Heuristik eine Annahmeregel und schreibt sie mit 'jaira dod --add' in die DoD. in-progress fixt die Ursache statt des Beispiels, testet die Klasse parametrisiert, zieht Geschwister-Stellen mit, prueft die vier Kategorien selbst und schliesst kleine Raender in derselben Runde; zaehlt Rueckgaben ueber eigene 'back: <lane>, round n'-Zeilen (Absender aus der neuesten Note: Given back from/decision: = person und setzt zurueck, critique:/optimize:/testing:/review:/bughunt: = Lane, sonst unknown) und geht bei der dritten Rueckgabe derselben Lane mit Frage nach human. testing und review schicken nur fuer vier Blockerarten zurueck (falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke), Funde nennen Klasse und Beispiel, Folgerunden testen nur den Diff seit dem letzten Hunt; review-Rueckgabenote beginnt mit 'review:'. bughunt-Skill verlangt Klasse+Beispiel. Board-Kopien in .jaira/lanes byte-gleich, shipped.sha256 und Release-Note nachgezogen."
 round: 12
 review-gaps: |-
