@@ -27,10 +27,10 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:50:01Z
+updated-at: 2026-11-20T19:50:14Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-99353
-claimed-at: 2026-11-20T19:19:21Z
+claimed-by: DESKTOP-RFTCH11-36878
+claimed-at: 2026-11-20T19:50:05Z
 outcome-what: "Neustart-Regel in 20-in-progress.md: jede back:-Zeile endet auf ', round <n>' (auch back: person/unknown); ein Neustart sucht die Zeile mit dem aktuellen round und schreibt keine zweite."
 outcome-why: "bughunt 19:23: Vergleich 'neuer als die Absender-Note' liest beim Neustart die eigene back:-Zeile als Absender und schreibt eine zweite."
 outcome-resolves: "DoD 6: 20-in-progress.md:72-76 und :88,:96 (round in jeder back:-Zeile); Zwilling gleich; shipped.sha256 eine Zeile. Vier Kategorien: Neustart mitten in der Runde ist der Fehlerpfad und jetzt abgedeckt; sonst nur Prompt-Text."
@@ -167,3 +167,4 @@ Empfehlung: 2 - kein Blocker, die Wirkung zeigt sich erst an kuenftigen Tickets,
 - **2026-11-20 19:49 · Alexander Sacharov** — decision: 1) Zurueckgeben: Release-Note-Zeile teilen und den Satz 'Commit unbekannt -> ganze Suite wie in Runde 1' in 27-testing.md ergaenzen
 - **2026-11-20 19:49 · Alexander Sacharov** — Given back from signoff: 1) Zurueckgeben: Release-Note-Zeile teilen und den Satz 'Commit unbekannt -> ganze Suite wie in Runde 1' in 27-testing.md ergaenzen
 - **2026-11-20 19:50 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
+- **2026-11-20 19:50 · Alexander Sacharov** — back: person, round 14
