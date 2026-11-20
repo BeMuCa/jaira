@@ -25,14 +25,14 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:41:56Z
+updated-at: 2026-11-20T22:42:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
 outcome-what: "jaira-role-signoff: Branch per Handle-Segment, neueste von lokal/remote, divergiert = ?; Lookup nennt ausdruecklich den Handle statt der ULID; CI: neuester Lauf des Commits entscheidet, laufend = ?"
 outcome-why: "signoff-Rueckgabe (Branchname) plus bughunt 22:32 und review-gaps 22:39"
 outcome-resolves: "Rueckgabe aus signoff 22:27, review-gaps 1-2 vom 22:39"
-review-summary: "Ships a new read-only role /jaira-role-signoff: per ticket in signoff it finds the ticket's branch by its handle (local and remote copies compared by ancestry, diverged or missing = ?), binds every check (DoD, CI run via gh run list --commit/--workflow, bughunt note) to that head commit, sorts every open note into 🔴/🟡/⚪/🔵, and gives one recommendation from five return rules (after two noted returns from signoff 🟡 edges go to a ready follow-up ticket) with paste-ready accept/give-back lines. jaira-teamlead now re-reads lanes and open PRs before listing what waits, uses that decision shape for signoff/human tickets and points to the role for the return rules and branch lookup. jaira-worker, jaira-dispatcher and jaira-role-pr gain a generic 'run the project's CI gates locally before pushing' section. README, how-to page, role_test wantRoles, shipped.sha256 and release note TWRAP8.md updated."
+review-summary: "none"
 round: 8
 review-gaps: |-
   note: the branch lookup greps for <id>; given the full ULID instead of the six-character handle it matches no branch and every check reads ? - the role could say 'the handle' explicitly
