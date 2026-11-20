@@ -1,7 +1,7 @@
 ---
 id: 01M7X8VKSZ03QDYFW63CTWRAP8
 title: "Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T21:41:35Z
+updated-at: 2026-11-20T21:41:40Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16592
 claimed-at: 2026-11-20T20:04:03Z
@@ -35,6 +35,7 @@ outcome-resolves: Die Regeln reisen mit den ausgelieferten Rollen; jaira update 
 review-summary: |-
   core/role/builtin/jaira-dispatcher/SKILL.md '## Before anything is pushed' wiederholt den Push-Gate-Absatz aus jaira-worker fast woertlich, obwohl der Dispatcher selbst nicht pusht: auf drei Saetze kuerzen (wer pusht, laesst die Gates laufen; in den Brief des pushenden Workers; kein gepushter Branch ohne Gate-Ergebnis als fertig melden)
   core/role/builtin/jaira-teamlead/SKILL.md '## Report to the human' wiederholt die vier Rueckgabe-Regeln aus jaira-role-signoff - zwei Kopien laufen auseinander: durch einen Verweis auf die Rolle ersetzen
+round: 2
 ---
 
 # Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis
