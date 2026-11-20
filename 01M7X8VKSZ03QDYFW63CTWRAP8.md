@@ -1,7 +1,7 @@
 ---
 id: 01M7X8VKSZ03QDYFW63CTWRAP8
 title: "Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis"
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T21:54:37Z
+updated-at: 2026-11-20T21:54:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16592
 claimed-at: 2026-11-20T20:04:03Z
@@ -33,7 +33,7 @@ outcome-what: "Neue Rolle jaira-role-signoff (Statuszeile, markierte Notes-Tabel
 outcome-why: "Die Arbeitsweise vom 20.11.2026 stand nur im lokalen Gedaechtnis einer Teamlead-Session; jeder andere Teamlead haette dieselben Fehler gemacht (veraltete Listen, Rueckgaben wegen Notes ohne Einordnung, rote PRs durch fehlende shipped.sha256-Zeilen)."
 outcome-resolves: Die Regeln reisen mit den ausgelieferten Rollen; jaira update --roles bringt sie zu jedem Nutzer.
 review-summary: none
-round: 3
+round: 4
 review-gaps: "none: d3a71405 fuegt nur die Leseanweisung fuer die Verdicts und die Unbekannt-Regel hinzu; nichts dupliziert, nichts entfernt"
 test-verdict: "pass: Runde 2 (d3a71405): go build ./... ok, go test core/role + core/shipped RC=0 (Runde 1: go test ./... RC=0, nur Markdown/shipped seitdem). Neue Leseanweisung ausprobiert: git show refs/jaira/tickets/<ULID>:<ULID>.md liefert beide Verdict-Zeilen; die Branch-Kopie hatte keine - deshalb der Ref. Schreibt nichts, also keine parallelen Writer."
 hunt-verdict: "fail: bughunt done at d3a71405, 3 change (round>1-Regel feuert bei jeder Lane-Schleife; Ref fehlt auf ungeteilten Boards; grep sieht Block-Skalare nicht), 0 pre-existing"
