@@ -1,7 +1,7 @@
 ---
 id: 01M7X8VKSZ03QDYFW63CTWRAP8
 title: "Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,10 +25,13 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T20:10:48Z
+updated-at: 2026-11-20T21:41:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16592
 claimed-at: 2026-11-20T20:04:03Z
+outcome-what: "Neue Rolle jaira-role-signoff (Statuszeile, markierte Notes-Tabelle, eine Empfehlung, Rueckgabe-Regeln); Teamlead liest den Stand vor jeder Liste neu und berichtet signoff in dieser Form; worker, dispatcher und jaira-role-pr lassen vor jedem Push die CI-Gates des Projekts lokal laufen."
+outcome-why: "Die Arbeitsweise vom 20.11.2026 stand nur im lokalen Gedaechtnis einer Teamlead-Session; jeder andere Teamlead haette dieselben Fehler gemacht (veraltete Listen, Rueckgaben wegen Notes ohne Einordnung, rote PRs durch fehlende shipped.sha256-Zeilen)."
+outcome-resolves: Die Regeln reisen mit den ausgelieferten Rollen; jaira update --roles bringt sie zu jedem Nutzer.
 ---
 
 # Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis
