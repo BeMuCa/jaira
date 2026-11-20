@@ -148,13 +148,15 @@ prmode="$( (cd "$root" && jaira roles list --json 2>/dev/null) | jaira json get 
 # nothing when none of them is there.
 default_base() {
   local b
-  b="$(git -C "$root" symbolic-ref -q --short refs/remotes/origin/HEAD 2>/dev/null || true)"
+  # Full ref names throughout: --short would spell origin/X as remotes/origin/X
+  # where a local branch is called origin/X.
+  b="$(git -C "$root" symbolic-ref -q refs/remotes/origin/HEAD 2>/dev/null || true)"
   # origin/HEAD can dangle: the remote renamed its default branch and a
   # 'fetch --prune' took the old one away. Then fall back as if it were unset.
-  if [ -n "$b" ] && ! git -C "$root" rev-parse --verify -q "refs/remotes/$b" >/dev/null 2>&1; then b=""; fi
+  if [ -n "$b" ] && ! git -C "$root" rev-parse --verify -q "$b" >/dev/null 2>&1; then b=""; fi
   if [ -z "$b" ]; then
-    for b in origin/main origin/master ""; do
-      [ -n "$b" ] && git -C "$root" rev-parse --verify -q "refs/remotes/$b" >/dev/null 2>&1 && break
+    for b in refs/remotes/origin/main refs/remotes/origin/master ""; do
+      [ -n "$b" ] && git -C "$root" rev-parse --verify -q "$b" >/dev/null 2>&1 && break
     done
   fi
   printf '%s' "$b"

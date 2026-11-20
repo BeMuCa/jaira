@@ -491,6 +491,10 @@ func TestReapOnANoneBoardWaitsForTheDefaultBranch(t *testing.T) {
 	// origin/master beside it (or without origin/HEAD at all) is enough.
 	base := r.git(t, r.repo, "rev-parse", "master")
 	r.git(t, r.repo, "update-ref", "refs/remotes/origin/master", base)
+	// A valid origin/HEAD beside a local branch that is also called
+	// origin/master: the remote one is still the base (bughunt round 6).
+	r.git(t, r.repo, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/master")
+	r.git(t, r.repo, "branch", "origin/master", base)
 
 	// A branch with no work of its own yet sits on the default branch from
 	// the start: that is not landed, whatever the ticket's lane says.
