@@ -266,6 +266,64 @@ func ReleaseFor(root string) (owner, source string) {
 	return ReleaseWorker, "the default"
 }
 
+// The two values of the board's pr file.
+const (
+	PRPerson = "person"
+	PRAgent  = "agent"
+)
+
+// prFile is the board's answer to who opens a pull request: "person" when an
+// agent pushes the branch and hands the create line back, "agent" when an
+// agent may open it itself once every ticket on the branch is in done, ask
+// for a review and answer one round of comments. A board file like
+// releaseFile and for the same reason: whether a project lets agents open
+// pull requests is the project's, not one machine's and not one clone's.
+const prFile = "pr"
+
+// prReviewerFile names the reviewer an agent asks for when it opens a pull
+// request under PRAgent — "copilot", or a login.
+const prReviewerFile = "pr-reviewer"
+
+// BoardPRPath is where the board at root says who opens a pull request.
+func BoardPRPath(root string) string {
+	return filepath.Join(root, ticket.DirName, prFile)
+}
+
+// BoardPRReviewerPath is where the board at root names its reviewer.
+func BoardPRReviewerPath(root string) string {
+	return filepath.Join(root, ticket.DirName, prReviewerFile)
+}
+
+// PRFor returns PRAgent when the board at root names it, and PRPerson
+// otherwise, with where it came from in words a person can read. Person is
+// the default because it is what ran before there was a choice, and because
+// a typo must never be what lets an agent open a pull request.
+func PRFor(root string) (who, source string) {
+	if root != "" && boardLine(BoardPRPath(root)) == PRAgent {
+		return PRAgent, "from .jaira/pr, shared with the board"
+	}
+	return PRPerson, "the default"
+}
+
+// PRReviewerFor returns the reviewer the board at root names, or "" when it
+// names none or names something that is not a login. The role passes it to
+// gh and glab on a command line, so anything but letters, digits and
+// . _ - [ ] / @ is treated as unset rather than carried into a shell.
+func PRReviewerFor(root string) string {
+	if root == "" {
+		return ""
+	}
+	v := boardLine(BoardPRReviewerPath(root))
+	for _, r := range v {
+		ok := r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' ||
+			strings.ContainsRune("._-[]/@", r)
+		if !ok {
+			return ""
+		}
+	}
+	return v
+}
+
 // The two values of Dispatch.
 const (
 	DispatchLanes  = "lanes"

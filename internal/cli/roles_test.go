@@ -147,6 +147,38 @@ func TestRolesListReportsTheBoardsRelease(t *testing.T) {
 	}
 }
 
+// jaira-role-pr reads who opens a pull request off 'roles list': the board's
+// .jaira/pr and .jaira/pr-reviewer, a person and no reviewer without them.
+func TestRolesListReportsTheBoardsPR(t *testing.T) {
+	t.Setenv("JAIRA_HOME", t.TempDir())
+	board := lanesTestProject(t)
+	read := func() map[string]any {
+		t.Helper()
+		out, err := runCLI(t, board, "--json", "roles", "list")
+		var p map[string]any
+		if err != nil || json.Unmarshal([]byte(out), &p) != nil {
+			t.Fatalf("roles list --json on a board: %v\n%s", err, out)
+		}
+		return p
+	}
+	if p := read(); p["pr"] != "person" || p["pr_source"] != "the default" || p["pr_reviewer"] != "" {
+		t.Errorf("no .jaira/pr: pr=%v source=%v reviewer=%v, want person, the default, none", p["pr"], p["pr_source"], p["pr_reviewer"])
+	}
+	if err := os.WriteFile(settings.BoardPRPath(board), []byte("agent\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(settings.BoardPRReviewerPath(board), []byte("copilot\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if p := read(); p["pr"] != "agent" || !strings.Contains(fmt.Sprint(p["pr_source"]), ".jaira/pr") || p["pr_reviewer"] != "copilot" {
+		t.Errorf("pr=%v source=%v reviewer=%v, want agent from .jaira/pr, copilot", p["pr"], p["pr_source"], p["pr_reviewer"])
+	}
+	out, err := runCLI(t, board, "roles", "list")
+	if err != nil || !strings.Contains(out, "pr: agent") || !strings.Contains(out, "reviewer: copilot") {
+		t.Errorf("roles list does not say who opens a pull request: %v\n%s", err, out)
+	}
+}
+
 // --project with no agent directory in the repository still lands somewhere an
 // agent looks: .claude/skills.
 func TestRolesInstallProjectWritesSevenRoles(t *testing.T) {

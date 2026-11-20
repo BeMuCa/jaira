@@ -55,7 +55,14 @@ And who touches the repository's version and changelog: "teamlead" when the
 board's .jaira/release says so — one line, committed, shared with everybody
 on the board — and "worker" otherwise, every ticket bringing its own as the
 repository's instructions say. Carried as release, and where it came from as
-release_source.`,
+release_source.
+
+And who opens a pull request: "agent" when the board's .jaira/pr says so —
+an agent then opens it itself once every ticket on the branch is in done,
+asks for the reviewer .jaira/pr-reviewer names and answers one round of
+comments — and "person" otherwise, an agent pushing the branch and handing
+the create line back. Carried as pr, pr_source and pr_reviewer. Merging and
+approving stay a person's either way.`,
 		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			roles, err := role.Builtins()
@@ -71,6 +78,8 @@ release_source.`,
 			chat, chatSource := cur.ChatModelFor(root)
 			py, pySource := cur.PythonCommand()
 			release, releaseSource := settings.ReleaseFor(root)
+			pr, prSource := settings.PRFor(root)
+			reviewer := settings.PRReviewerFor(root)
 			if g.jsonOut {
 				arr := make([]map[string]any, 0, len(roles))
 				for _, r := range roles {
@@ -84,6 +93,7 @@ release_source.`,
 					"chat_model": chat, "chat_model_source": chatSource,
 					"python": py, "python_source": pySource,
 					"release": release, "release_source": releaseSource,
+					"pr": pr, "pr_source": prSource, "pr_reviewer": reviewer,
 				})
 			}
 			fmt.Fprintf(w, "%-24s %s\n", "ID", "DESCRIPTION")
@@ -96,6 +106,7 @@ release_source.`,
 				cmp.Or(chat, "account default"), chatSource)
 			fmt.Fprintf(w, "python: %s — what the roles run their Python scripts with (%s)\n", py, pySource)
 			fmt.Fprintf(w, "release: %s — who touches the version and the changelog (%s)\n", release, releaseSource)
+			fmt.Fprintf(w, "pr: %s — who opens a pull request (%s); reviewer: %s\n", pr, prSource, cmp.Or(reviewer, "none"))
 			return nil
 		},
 	}

@@ -1,0 +1,3 @@
+- Let agents open pull requests on a board by committing `.jaira/pr` with the line `agent`: /jaira-role-pr started by an agent then opens the pull request once every ticket on the branch is in done, instead of handing the create line back. Without the file nothing changes; merging and approving stay a person's either way.
+- Name the reviewer an opened pull request asks for in `.jaira/pr-reviewer` (`copilot`, a login, or `org/team`); /jaira-role-pr requests it and answers one round of review comments with its new scripts/pr-round.sh — run 'jaira roles install' to get the script.
+- Read the setting back with 'jaira roles list': it prints a 'pr:' line, and --json carries pr, pr_source and pr_reviewer.
