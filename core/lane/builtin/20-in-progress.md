@@ -69,9 +69,10 @@ The lanes' own notes do not count returns: one round leaves several
 `bughunt: change:` notes and testing writes `testing: note:` on a round that
 passes. So keep the count yourself. When you pick up a ticket that was sent back — `round` in
 `jaira show <id> --json` is above 1 — find out who sent it and write one line
-before anything else, once per round. A `back:` line newer than the sender's
-note means a session before you already wrote it for this round — a worker
-restarted mid-round writes no second one:
+before anything else, once per round. Every `back:` line ends in the
+`round` it was written for. Look for one with the current `round` first: when
+it is there, a session before you was stopped mid-round and already wrote it,
+so write no second one:
 
 ```bash
 jaira note <id> "back: testing, round 3"
@@ -84,14 +85,14 @@ read the sender off the newest note, passing over the lines no sender wrote —
 `jaira pull --steal` adds. The lane that sends work back writes its note last:
 
 - `Given back from <lane>:` or `decision:` — a person sent it or answered
-  you. Write `back: person`: it is the person's word, not a loop, so do what
+  you. Write `back: person, round <n>`: it is the person's word, not a loop, so do what
   they asked. The cockpit writes these lines; a person who gives work back by
   hand writes the same one, `jaira note <id> "Given back from signoff: <why>"`.
   An answer that reaches you by message instead goes onto the ticket as
   `decision: <answer>` before you act on it
 - `critique:`, `optimize:`, `testing:` or `review:` — that lane; `bughunt:`
   counts for testing
-- anything else — nobody said who sent it. Write `back: unknown`: it counts
+- anything else — nobody said who sent it. Write `back: unknown, round <n>`: it counts
   for no lane, so a guess never brings the third-return stop forward
 
 Then count your `back:` lines for that lane since the last `back: person`.
