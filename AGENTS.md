@@ -93,15 +93,18 @@ Working a ticket:
   ticket's commit list from two sources: the history of the ticket file itself,
   and the commits that name its id. The first source is thin by design (see the
   point on lanes that change no code), and on a board that has not been shared
-  yet (`jaira init` gitignores `.jaira/` until `jaira share`) it does not exist
-  at all — so the handle in the subject line is what the list is actually built
-  from. Leave it out and the list stays empty and the move into the last lane
-  is refused
+  yet (`jaira init` keeps `.jaira/` out of git until `jaira share`) it does not
+  exist at all — so the handle in the subject line is what the list is actually
+  built from. Leave it out and the list stays empty and the move into the last
+  lane is refused
 - **the ticket rides with the code, never on its own.** Move the ticket first,
   then `git add` the changed file under `.jaira/tickets/` alongside your source
   changes and commit them together. A reviewer then sees the change and what it
   was for in one place, instead of a diff whose ticket is still in whatever
-  state the last commit left it
+  state the last commit left it. This point and the next hold on a shared
+  board only: where `.jaira/` is still out of git (`jaira init` until
+  `jaira share`), there is no ticket file to add or commit — commit the code
+  alone, and the handle in its subject is the whole link
 - **a lane that changed no code commits nothing.** critique, testing and review
   leave a note and a lane change and no source change; a commit carrying only
   that is bookkeeping, and a branch with one of them per lane hides the work

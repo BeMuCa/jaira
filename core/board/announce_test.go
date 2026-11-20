@@ -228,3 +228,22 @@ func TestAgentNoteNamesReject(t *testing.T) {
 		}
 	}
 }
+
+// TestAgentNoteSaysTheTicketCannotRideOnAnUnsharedBoard guards the two rules
+// an agent on a private board cannot follow as written. The block tells it to
+// verify a ticked item with --proof and to commit the ticket file with the
+// code; on a board 'jaira init' keeps out of git there is no file to add, and
+// without this caveat the agent reads the rule as broken rather than as not
+// meant for its board.
+func TestAgentNoteSaysTheTicketCannotRideOnAnUnsharedBoard(t *testing.T) {
+	flat := strings.Join(strings.Fields(agentNote), " ")
+	for _, want := range []string{
+		"--done --proof",
+		"This point and the next hold on a shared board only",
+		"there is no ticket file to add or commit — commit the code alone",
+	} {
+		if !strings.Contains(flat, want) {
+			t.Errorf("agentNote does not contain %q", want)
+		}
+	}
+}

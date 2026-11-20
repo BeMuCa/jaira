@@ -1,0 +1,1 @@
+- Run 'jaira update' to refresh the jaira block in CLAUDE.md/AGENTS.md: it now tells agents that on a board not shared yet the ticket file cannot ride in the code commit, so they commit the code alone with the ticket handle in its subject.

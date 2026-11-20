@@ -1,10 +1,10 @@
 ---
 id: 01M263QP1A3MRANYPWGYSDBCT5
 title: "Der Agent-Block nennt --proof, und die Gitignore-Regel verweist auf die Commit-Regel"
-status: backlog
+status: critique
 ready: true
 creator: BeMuCa
-assignee: BeMuCa
+assignee: Alexander Sacharov
 goal: "Zwei nachgemessene Luecken im generierten Block sind geschlossen: der Nachweis beim Abhaken, und der Widerspruch auf einem ungeteilten Board"
 context: |-
   Zwei Befunde aus einer Multi-Agent-Session am 10.09., beide nachgeprueft und beide enger als ursprünglich gemeldet.
@@ -14,17 +14,33 @@ context: |-
 definition-of-done: "Der generierte Block nennt --proof beim Abhaken; der Gitignore-Vorbehalt sagt ausdruecklich, dass die Commit-Regel auf einem ungeteilten Board anders lautet; 'jaira update' schreibt beides auf ein bestehendes Board; go test ./... -race gruen"
 tags:
   - docs
-blocked-by: []
+blocked-by:
+  - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-09-10T16:52:07Z
+updated-at: 2026-11-20T22:50:05Z
+related:
+  - 01M7WWY6PX0TRDQSVK7RNNV39Y
+updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-94615
+claimed-at: 2026-11-20T22:44:44Z
+outcome-what: "Der generierte Agent-Block sagt im Punkt 'the ticket rides with the code', dass dieser und der naechste Punkt nur auf einem geteilten Board gelten: ohne geteiltes .jaira/ gibt es keine Ticketdatei zum Mitcommitten, der Code geht allein mit dem Handle im Betreff. Test haelt den Satz und --proof fest; CLAUDE.md/AGENTS.md dieses Repos regeneriert; Release-Note."
+outcome-why: "Auf einem ungeteilten Board widersprach die Commit-Regel dem Zustand des Boards: ein Agent kann eine ignorierte Datei nicht mitcommitten und las die Regel als kaputt. --proof und 'jaira update' waren schon ausgeliefert (2143e9ad, update.go:257) und brauchten nur den Test."
+outcome-resolves: SDBCT5
 ---
 
 # Der Agent-Block nennt --proof, und die Gitignore-Regel verweist auf die Commit-Regel
 
 ## Definition of Done
 
-- [ ] Der generierte Block nennt --proof beim Abhaken; der Gitignore-Vorbehalt sagt ausdruecklich, dass die Commit-Regel auf einem ungeteilten Board anders lautet; 'jaira update' schreibt beides auf ein bestehendes Board; go test ./... -race gruen
+- [x] Der generierte Block nennt --proof beim Abhaken; der Gitignore-Vorbehalt sagt ausdruecklich, dass die Commit-Regel auf einem ungeteilten Board anders lautet; 'jaira update' schreibt beides auf ein bestehendes Board; go test ./... -race gruen
+  proof: core/board/announce.go:101 (--proof), core/board/announce.go:138 (unshared-board caveat), internal/cli/update.go:257 (jaira update rewrites the block); go test ./... -race exit 0
+- [x] Ein Test in core/board/announce_test.go haelt den Satz fest, dass auf einem ungeteilten Board keine Ticketdatei mitreist und der Code-Commit allein geht
+  proof: TestAgentNoteSaysTheTicketCannotRideOnAnUnsharedBoard
+- [x] core/release/notes/SDBCT5.md nennt die Aenderung als eine Zeile
+  proof: core/release/notes/SDBCT5.md:1
+- [x] Die Agent-Bloecke dieses Repos (CLAUDE.md, AGENTS.md) sind mit dem neuen Block regeneriert
+  proof: CLAUDE.md:131, AGENTS.md (regenerated with 'jaira update' from this build)
 
 ## Options
 
@@ -35,5 +51,17 @@ updated-at: 2026-09-10T16:52:07Z
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-## Progress
+- [x] Satz im Punkt 'ticket rides with the code' in core/board/announce.go
+- [x] Test in announce_test.go
+- [x] Release-Note
+- [x] Agent-Dateien des Repos regenerieren, go test ./... -race
 
+## Progress
+- **2026-11-20 16:49 · Alexander Sacharov** — Interim-Regeln (Alex 20.11.2026, gelten ab sofort bis TW5FE2 ausgeliefert ist):
+1. pre-process: die DoD nennt die Fehlerklasse statt des Symptoms, die Eingabeklassen (leer, sehr gross, Sonderzeichen/Kodierung/CRLF, Pfade mit Leerzeichen, Windows, zwei Prozesse gleichzeitig, Fehler auf halbem Weg) und bei einer Heuristik eine Annahmeregel - als DoD-Punkte (jaira dod <id> --add).
+2. in-progress: vor dem Move selbst die vier Kategorien pruefen (Nebenlaeufigkeit, Fehlerpfade, ungewoehnliche Eingabe, Rechte). Tests ueber die Klasse (Tabellentest), Geschwister-Stellen per grep suchen und mitziehen, Fix an der Ursache statt am Beispiel. Nicht nur Haken setzen: wer umsetzt, denkt die Raender selbst.
+3. bughunt/testing: ein Fund nennt Klasse und Beispiel; der Rueckweg verlangt den Fix der Klasse, nicht des einen Beispiels.
+4. Schleifenbremse: Blocker sind nur falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke. Nach einem Fix-Durchgang laeuft der Testlauf und ein Bughunt nur ueber den Diff seit dem letzten Hunt, dann review. Nach 3 Rueckgaben aus derselben Lane: Frage an den Teamlead statt weiter schleifen.
+5. Kleine Raender aus review-gaps in derselben Runde schliessen statt als note: stehen lassen - Alex schickt sie sonst ohnehin zurueck. Vorbestehendes ausserhalb des Umfangs als 'note: pre-existing: ...'.
+- **2026-11-20 22:44 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock
+- **2026-11-20 22:45 · Alexander Sacharov** — decision: open decisions none. Finding at start (20.11.): part 1 is already shipped - core/board/announce.go:101 names --proof (commit 2143e9ad). Part 3 is already shipped too - 'jaira update' rewrites the block via board.AnnounceInAgentFiles (internal/cli/update.go:257). The old separate gitignore caveat (was line 216) is now folded into the 'every commit names the ticket id' point. What is still missing: the 'ticket rides with the code' point and the 'commit it' sentence of 'commits nothing' read as if .jaira/ were always in git; on an unshared board (.git/info/exclude since jaira init) there is no ticket file to git add. Fix: one sentence on the rides-with-code point saying this and the next point assume a shared board, and what to do instead.
