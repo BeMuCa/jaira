@@ -1,7 +1,7 @@
 ---
 id: 01M7WWYB5XZMD01DZY3MJG3REW
 title: Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T18:07:53Z
+updated-at: 2026-11-20T18:07:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-87225
 claimed-at: 2026-11-20T17:38:56Z
@@ -32,7 +32,7 @@ outcome-what: "Board-Dateien .jaira/pr (person|agent), .jaira/pr-reviewer und .j
 outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten das pro Repo. In manchen Projekten laeuft das Review auf dem PR selbst, dort kommt done erst danach (Alex 20.11.)."
 outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
 review-summary: "none"
-round: 7
+round: 8
 review-gaps: "removed number=0 placeholder in pr-round.sh open (number is validated only where it exists); left: reply's thread read-back (dedupe) and comment's conversation read-back share said/first_of but keep their own list/delete calls - GraphQL thread vs REST issue API, one helper would only forward; gitrepo.HandlesInSubjects mirrors cockpit board.ts ticketsNamed (TypeScript, cannot call Go); pr-gate's handle x ticket loop is O(n*m) over one branch's handles, not worth a map"
 test-verdict: "pass: go test -race ./... RC=0 after clean cache; DoD 1-16 proofs present; real binary on a scratch board: pr-gate person->3, backlog->3, signoff board+ticket in signoff->0, done board+signoff->3, done->0 (--json may_open), bad base->2, two parallel pr-gate both 0 (read-only); pr-round.sh open with real jaira + fake gh: gate refused->exit 3, no pr create; passed->pr create --repo o/r --base master"
 hunt-verdict: "fail: bughunt done at a5fc3403 - 3 change: pr-gate swallows unreadable ticket files (fails open); dedupe keeps the earliest same-text comment of the whole thread, so an answer repeated after a reviewer's objection removes itself; settled ignores a CHANGES_REQUESTED review"
