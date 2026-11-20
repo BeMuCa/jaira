@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T18:07:45Z
+updated-at: 2026-11-20T18:07:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-87225
 claimed-at: 2026-11-20T17:38:56Z
@@ -35,7 +35,7 @@ review-summary: "none"
 round: 7
 review-gaps: "removed number=0 placeholder in pr-round.sh open (number is validated only where it exists); left: reply's thread read-back (dedupe) and comment's conversation read-back share said/first_of but keep their own list/delete calls - GraphQL thread vs REST issue API, one helper would only forward; gitrepo.HandlesInSubjects mirrors cockpit board.ts ticketsNamed (TypeScript, cannot call Go); pr-gate's handle x ticket loop is O(n*m) over one branch's handles, not worth a map"
 test-verdict: "pass: go test -race ./... RC=0 after clean cache; DoD 1-16 proofs present; real binary on a scratch board: pr-gate person->3, backlog->3, signoff board+ticket in signoff->0, done board+signoff->3, done->0 (--json may_open), bad base->2, two parallel pr-gate both 0 (read-only); pr-round.sh open with real jaira + fake gh: gate refused->exit 3, no pr create; passed->pr create --repo o/r --base master"
-hunt-verdict: "pass: bughunt done at 5db2eee4, 0 change, 0 pre-existing (Runde 3; Runden 1-2: 4 change, alle behoben)"
+hunt-verdict: "fail: bughunt done at a5fc3403 - 3 change: pr-gate swallows unreadable ticket files (fails open); dedupe keeps the earliest same-text comment of the whole thread, so an answer repeated after a reviewer's objection removes itself; settled ignores a CHANGES_REQUESTED review"
 review-verdict: "All 11 DoD items are met by the diff; settings, roles list, pr-round.sh and the role texts read whole show no defect. Related tests pass (go test ./core/settings ./core/role ./internal/cli). Only uncertainty: the Copilot reviewer request has not been tried against real GitHub."
 review-round: 4
 review-check: "1. cd into a scratch clone of a GitHub repo you own, with an open test PR (number N)  2. run: jaira roles list  -> last line reads 'pr: person - who opens a pull request (the default); reviewer: none'  3. echo agent > .jaira/pr; echo copilot > .jaira/pr-reviewer; jaira roles list  -> 'pr: agent ... (from .jaira/pr, shared with the board); reviewer: copilot'  4. echo Agent > .jaira/pr; jaira roles list  -> back to 'pr: person' (a typo never enables it)  5. bash core/role/builtin/jaira-role-pr/scripts/pr-round.sh request <owner/repo> N copilot  -> prints 'requested: copilot' and Copilot appears as reviewer on the PR (or exit 4 with GitHub's reason if Copilot is not enabled)  6. leave one review comment on the PR, then: pr-round.sh threads <owner/repo> N  -> one JSON line with its id  7. printf 'Fixed in abc123: test' > /tmp/a.txt; pr-round.sh reply <owner/repo> N <id> /tmp/a.txt  -> the thread shows the answer and is resolved; run the same line again -> 'resolved: already', no second answer"
