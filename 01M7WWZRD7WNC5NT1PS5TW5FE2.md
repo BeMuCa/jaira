@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:22:17Z
+updated-at: 2026-11-20T19:22:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99353
 claimed-at: 2026-11-20T19:19:21Z
@@ -37,7 +37,7 @@ outcome-resolves: "DoD 1-7 wie zuvor; neu 15-pre-process.md:90, 20-in-progress.m
 review-summary: "none - drei Saetze in bestehenden Absaetzen, kein neues Muster; pre-process-Regel steht nach allen drei human-Moves des Lanes und gilt fuer alle; Gate bewusst nicht geaendert (Note 20:21)"
 round: 12
 review-gaps: "none - drei Saetze, keine Wiederholung im Prompt, nichts verwaist"
-test-verdict: "pass: follow-up round since d0cb1f49 - go build ./... ok; go test -race -count=1 ./core/lane/... ./core/shipped ./core/release/... RC=0; in-progress twin byte-equal to builtin, its sha256 in shipped.sha256; release notes 8 lines, all '- '; DoD 6 proof re-pointed at 20-in-progress.md:66-102 (no prefix = back: unknown); prompts only - nothing writes, no failure path or two-writer case"
+test-verdict: "pass: go test -count=1 ./core/lane/... ./core/shipped/... ./core/role/... ./core/release/... RC=0 (Folgerunde: Tests der seit d0cb1f49/c3e5a7df geaenderten Dateien); DoD 1-7 im Baum, Zwillinge byte-gleich, drei neue Manifest-Hashes = sha256 HEAD; Funktion auf Scratch-Board mit diesen Lanes: pre-process->human ohne Plan RC=3 'lane pre-process declares it produces plan, which is still empty', nach 'dod --plan --add' faellt diese Verletzung weg; Fehlerpfad = genau dieser Refuse; schreibt nichts Neues (nur Prompt-Text), zwei Schreiber entfallen"
 hunt-verdict: "pass: bughunt done at c3e5a7df, 0 change, 0 pre-existing"
 review-verdict: "Alle 7 DoD-Punkte sind im Baum erfuellt, kein Blocker: reine Prompt-Aenderung, Twins byte-gleich, Manifest-Hashes stimmen, go test ./core/lane ./core/shipped ./core/role ./core/release gruen. Drei kleine Wortlaut-Raender als note; die Rueckgabe-Zaehlung bleibt eine Note-Konvention bis move die Herkunfts-Lane schreibt (DF0YD6/H6CD33) - bekannt und vom Teamlead so entschieden."
 review-round: 11
