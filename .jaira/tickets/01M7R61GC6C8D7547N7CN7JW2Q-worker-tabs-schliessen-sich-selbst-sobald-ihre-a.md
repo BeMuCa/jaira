@@ -21,21 +21,21 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-18T20:37:15Z
-updated-at: 2026-11-20T17:52:12Z
+updated-at: 2026-11-20T17:53:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74035
 claimed-at: 2026-11-20T17:38:34Z
-outcome-what: "close-tab.sh haelt den Tab bei jedem unvorhergesehenen Fehler (ERR-Trap, exit 0) mit Tests je Fehlerklasse; die Cockpit-Tests laufen als eigener CI-Job, der auf master rote Band-Test ist repariert"
+outcome-what: "close-tab.sh haelt den Tab bei jedem unvorhergesehenen Fehler (ERR-Trap, exit 0) mit Tests je Fehlerklasse; die Cockpit-Tests laufen als eigener CI-Job, der auf master rote Band-Test ist repariert; Trap-Kommentar nennt den echten Fehlerfall"
 outcome-why: "Rueckgabe aus signoff: --help versprach immer exit 0, und board.test.ts lief nirgends - ein Test war dadurch unbemerkt rot"
 outcome-resolves: "DoD 7 und 8, zusaetzlich zu 1-6"
-review-summary: "Neues Skript jaira-dispatcher/scripts/close-tab.sh: ein mit --parent gestarteter Worker/Dispatcher schliesst als letzten Schritt seinen eigenen Herdr-Tab, aber nur wenn das Ticket in einer Personen-Lane (human_exit/requires_question) oder terminal liegt, keine offene Frage hat, ausserhalb .jaira/ nichts uncommitted ist und der Tab von spawn.sh als <ticket>/<lane> beschriftet ist; sonst 'kept <grund>'. Worker- und Dispatcher-SKILL.md rufen es nach dem Bericht auf. Das Cockpit (register.tsx reapMerged) startet reap.sh in einer Personen-Sitzung mit Herdr ab dem ersten 60-s-Tick und dann alle 10 min, nie in einer Sitzung, die ein Ticket traegt. reap.sh selbst: flock-Lock pro Repository (fd 9, Kinder erben ihn nicht dank '{ } 9>&-'; perl-Fallback auf macOS), zweiter Lauf 'skipped'; neue/modifizierte Dateien unter .jaira/tickets und .jaira/milestones zaehlen nicht als uncommitted, lanes/tags/logbook halten den Worktree; beide Skripte lesen git status mit core.quotePath=false, damit Umlaut-Ticketnamen den Filter treffen."
+review-summary: "core/role/builtin/jaira-dispatcher/scripts/close-tab.sh:58 Kommentar nennt 'jaira json get on broken JSON' als Fall - falsch, json get --default gibt bei kaputtem JSON rc 0; den echten Fall nennen: ein json get, das sich weigert (aelteres jaira ohne --default), oder ein fehlendes Werkzeug"
 review-gaps: |-
   note: board.test.ts (Cockpit-Tests fuer reapMerged) laeuft in keiner CI-Pipeline; im Review nicht ausgefuehrt, nur gelesen
   note: close-tab.sh verspricht in --help immer exit 0, laeuft aber unter set -e - ein scheiterndes 'jaira json get' (z.B. kaputtes JSON) endet mit exit != 0 statt 'kept'
   note: dass bash 3.2 (macOS) den bei '{ } 9>&-' gesicherten fd close-on-exec setzt, ist nur unter Linux gemessen
 test-verdict: "fail: suite green (RC=0), DoD 1-6 verified; but kill -9 of a run leaves reap.lock.<pid> behind for good"
 hunt-verdict: "fail: 2 change findings - stale-lock takeover is check-then-act (3/50 rounds two holders); '^.. .jaira/' lets --force delete uncommitted lanes/tags/logbook"
-round: 8
+round: 9
 review-verdict: "Der Diff erfuellt alle sechs DoD-Punkte; close-tab.sh und reap.sh ganz gelesen (Nebenlaeufigkeit, Fehlerpfade, Umlaut-/untracked-Eingaben, was --force loeschen darf), go test ./role ./shipped gruen. Kein Defekt gefunden, nur drei Notes."
 review-round: 7
 review-check: |-
@@ -131,3 +131,4 @@ Empfehlung: 2 - Kein Defekt, die Luecken sind klein und selten, und mehr Arbeit 
 - **2026-11-20 17:43 · Alexander Sacharov** — Ruecklauf signoff 2026-11-20: board.test.ts war auch auf master rot (1 von 183): 'the band lists the tickets...' las borderStyle vom ersten Box; Claude Code 2.1.329 legt eine eigene column-Box um das gemountete Band. Test sucht jetzt irgendeine Box mit borderStyle round. Ohne diesen Fix waere der neue CI-Job sofort rot.
 - **2026-11-20 17:47 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock (teamlead jaira-64). Interim-Regeln vom Teamlead 2026-11-20: (1) DoD nennt Fehler- und Eingabeklassen - close-tab.sh: jeder set -e-Pfad, Tab schon zu, herdr nicht erreichbar, Ticket-Lane unbekannt; (2) vor dem Move selbst pruefen: Nebenlaeufigkeit, Fehlerpfade, Eingabe, Rechte; Tests ueber die Klasse, Geschwister-Stellen per grep (alle Skripte unter jaira-dispatcher/scripts mit set -e), Fix an der Ursache; (3) Bughunt-Funde als Klasse; (4) Blocker nur: falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke; nach Fix nur Diff-Hunt; nach 3 Rueckgaben aus einer Lane Frage an den Teamlead; (5) kleine Raender in derselben Runde schliessen - keine offenen Notes.
 - **2026-11-20 17:52 · Alexander Sacharov** — decision: (1) Review-Note 'kaputtes JSON endet mit exit != 0' stimmt so nicht - jaira json get --default gibt bei jedem kaputten Input rc 0. Echter Fall: json get selbst scheitert (aelteres jaira ohne --default). Fix an der Ursache: ERR-Trap in close-tab.sh, jeder unvorhergesehene Fehler wird 'kept ... line N failed (exit X)'. (2) CI: eigener Job 'cockpit', claude-code per npm auf 2.1.329 gepinnt, weil die Tests den gerenderten Baum lesen und eine neue Version ihn schon einmal veraendert hat; Pin bewusst anheben.
+- **2026-11-20 17:52 · Alexander Sacharov** — critique: core/role/builtin/jaira-dispatcher/scripts/close-tab.sh:58 Kommentar nennt 'jaira json get on broken JSON' als Fall - falsch, json get --default gibt bei kaputtem JSON rc 0; den echten Fall nennen: ein json get, das sich weigert (aelteres jaira ohne --default), oder ein fehlendes Werkzeug

@@ -564,3 +564,4 @@ e1a76bfd3cb092f514d918347cd1138a8b508d5de52d1dfc9b475035cf4c4f0f  core/role/buil
 8a687e7f3771ea62a559a06ba4efb7f9f66f4ab9756e609bbd5dbf1deebe03cf  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 6a5d89ca2686cab3f23c22a715e4183c56085a96d996d2d3322d0dfccd55195a  core/role/builtin/jaira-dispatcher/scripts/reap.sh
 ba4c7b7bd5a70b2f470136eb5f9aff60b099b50028a6cc8da412c903d0b104b9  core/role/builtin/jaira-dispatcher/scripts/close-tab.sh
+f772671b5cf587ad3e20a4c491a08067920c589cbae6f107462e7bf9b51af26c  core/role/builtin/jaira-dispatcher/scripts/close-tab.sh
