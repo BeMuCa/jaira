@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-20T23:04:00Z
+updated-at: 2026-11-20T23:04:05Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -37,6 +37,11 @@ test-verdict: "pass: go test ./... -race exit 0; build ok. DoD 1-6 checked in th
 hunt-verdict: "pass: bughunt done at bb02c815, 0 findings in 10 modules"
 review-verdict: pass
 review-round: 3
+review-check: |-
+  1. In einem leeren Verzeichnis: git init && jaira init (mit diesem Build)
+  2. grep -n "hold on a shared board only" CLAUDE.md AGENTS.md - je eine Treffer-Zeile im Punkt 'the ticket rides with the code'
+  3. git status --short zeigt nur CLAUDE.md und AGENTS.md, kein .jaira/ - genau der Fall, den der Satz beschreibt
+  4. In einem bestehenden Board: jaira update schreibt denselben Satz in den Block; go test ./core/board -run TestAgentNoteSaysTheTicketCannotRideOnAnUnsharedBoard ist gruen
 ---
 
 # Der Agent-Block nennt --proof, und die Gitignore-Regel verweist auf die Commit-Regel
