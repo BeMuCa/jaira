@@ -21,7 +21,7 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-11-20T18:03:14Z
-updated-at: 2026-11-20T18:03:41Z
+updated-at: 2026-11-20T18:03:44Z
 updated-by: Alexander Sacharov
 ---
 
@@ -51,3 +51,4 @@ updated-by: Alexander Sacharov
 3. bughunt/testing: ein Fund nennt Klasse und Beispiel; der Rueckweg verlangt den Fix der Klasse, nicht des einen Beispiels.
 4. Schleifenbremse: Blocker sind nur falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke. Nach einem Fix-Durchgang laeuft der Testlauf und ein Bughunt nur ueber den Diff seit dem letzten Hunt, dann review. Nach 3 Rueckgaben aus derselben Lane: Frage an den Teamlead statt weiter schleifen.
 5. Kleine Raender aus review-gaps in derselben Runde schliessen statt als note: stehen lassen - Alex schickt sie sonst ohnehin zurueck. Vorbestehendes ausserhalb des Umfangs als 'note: pre-existing: ...'.
+- **2026-11-20 18:03 · Alexander Sacharov** — Alex 20.11.2026, Praezisierung: 'wenn Dinge schon da sind oder wir entscheiden, sie im naechsten Ticket zu beheben usw., dann muss man das in der Abnahme auswaehlen und markieren.' Also nicht nur Haken 'beheben ja/nein', sondern je Note: jetzt / Folge-Ticket / annehmen - und die Wahl wird festgehalten.
