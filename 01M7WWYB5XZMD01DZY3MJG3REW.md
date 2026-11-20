@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T17:55:21Z
+updated-at: 2026-11-20T17:55:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-87225
 claimed-at: 2026-11-20T17:38:56Z
@@ -125,3 +125,4 @@ Empfehlung: 2 - die Lücken sind dokumentiert und ungefährlich, der Live-Test i
 - **2026-11-20 17:40 · Alexander Sacharov** — decision (worker, settled): Doppelantwort - nach dem Posten liest reply die Kommentare des Threads; der frueheste Kommentar desselben Logins mit demselben Text bleibt, ist es nicht der eigene, loescht reply den eigenen (deletePullRequestReviewComment). Gilt fuer jede Reihenfolge zweier Sessions, auch auf zwei Rechnern; ein flock wuerde nur eine Maschine abdecken und fehlt auf macOS.
 - **2026-11-20 17:48 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock (teamlead jaira-64) - Fragen per SendMessage, Schlussbericht dorthin. Interim-Regel 5: die review-gaps-notes werden in dieser Runde geschlossen: (1) comment prueft vor dem Posten, ob derselbe Text desselben Logins schon im Gespraech steht; (2) Copilot live bleibt Abnahmeschritt (review-check 5); (3) Doppelantwort und (4) Gate im Binary siehe oben; (5) CLAUDE.md nennt die Ausnahme. Dazu Bughunt-Rest: Vergleich ignoriert Leerraum am Zeilenende, falls GitHub ihn kappt.
 - **2026-11-20 17:54 · Alexander Sacharov** — critique 5 (nur c471d660): nichts. Gelesen: pr-gate (roles.go, gitrepo/named.go), pr-round.sh open/said/first_of/dedupe/comment. Absichtlich so gelassen: reply erkennt 'schon beantwortet' am LETZTEN Kommentar, comment an IRGENDEINEM - im Thread muss nach einem Widerspruch des Reviewers erneut geantwortet werden, das Gespraech hat nichts zu resolven. Die Handle-Lesart ist board.ts ticketsNamed nachgebaut; das Cockpit hat einen anderen Ausloeser (Person drueckt Accept) und bleibt bei sich.
+- **2026-11-20 17:55 · Alexander Sacharov** — critique 5b (nach Hinweis teamlead jaira-64): core/role/pr_round_test.go TestPRRoundReplyLeavesOneAnswerWhenTwoSessionsRace/TestPRRoundCommentSaysItOnce assert only that the just-posted copy is removed, not that nothing else ever is - add rows where the person's own comment with the same words (no agent involved) stands before and after ours, and assert every delete names exactly the id this run's own POST returned (teamlead jaira-64: a person's deleted comment is data loss). Kein Codefehler: dedupe und comment loeschen nur die id, die der eigene POST dieses Laufs zurueckgab - nie einen fremden oder aelteren Kommentar; eine Agent-Markierung waere schwaecher als diese Regel und braucht es nicht. Fehlt nur der Test, der das festnagelt.
