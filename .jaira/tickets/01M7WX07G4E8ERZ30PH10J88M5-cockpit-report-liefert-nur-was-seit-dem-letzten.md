@@ -1,7 +1,7 @@
 ---
 id: 01M7WX07G4E8ERZ30PH10J88M5
 title: "cockpit report liefert nur, was seit dem letzten Lesen kam, nicht alte Meldungen"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T16:35:28Z
-updated-at: 2026-11-20T17:01:18Z
+updated-at: 2026-11-20T17:02:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-58858
 claimed-at: 2026-11-20T16:42:48Z
@@ -25,7 +25,7 @@ outcome-why: "a teamlead reading one new short line got the whole stack of up to
 outcome-resolves: 0J88M5
 round: 4
 review-summary: "none"
-review-gaps: "showReport (filter.ts:125): dropped the default all=false, its one caller always passes it. Considered and kept: reportArgs beside the command's own split in register.tsx (the tool shares it, the command alone could not); tests 219/233 beside the class table (they cover the read-new-read sequence and 'all' before the id, which the table does not). Pre-existing, left: board.test.ts 'the band lists the tickets…' fails on base 5b16e491 too (Box borderStyle)."
+review-gaps: "round 3: folded keepNow back into keep() as the body of its locked() call (it only forwarded). Earlier: dropped showReport's unused default all=false. Kept: reportArgs, tests 219/233 beside the class table. Pre-existing, left: board.test.ts borderStyle test red on base 5b16e491 too."
 test-verdict: "pass: claude plugin validate rc=0, go build ./... rc=0, claude plugin test 188 pass 1 fail — the fail is board.test.ts 'the band lists the tickets in a person's lanes' (Box borderStyle), identical on base 5b16e491; DoD 1-7 tests opened and run green. Live via claude -p --plugin-dir in three separate processes: /cockpit report 8Z6ZN0 showed the report, the second call said 'Nothing new for 8Z6ZN0 since it was last read; 1 older report(s) kept', 'all' brought it back — the mark survives a restart; /cockpit report lists 'n report(s), m new'. Failure path: unknown id answers 'No reports kept'. Two writers: marking is idempotent (sets seen on shown 'at' stamps after a re-read); the store has no compare-and-set, recorded in the round-2 note."
 hunt-verdict: "fail: bughunt done at 91edd3a5 — 1 change: marking seen is a second unlocked writer of report:<project>:<ticket>; racing keep() it can write [] and lose every kept report"
 ---
@@ -35,7 +35,7 @@ hunt-verdict: "fail: bughunt done at 91edd3a5 — 1 change: marking seen is a se
 ## Definition of Done
 
 - [x] Zweimal report auf dasselbe Ticket: der zweite Aufruf zeigt nur Neues (Test)
-  proof: core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:219 'a second report on the same ticket shows only what came since the first'; core/mod/builtin/jaira-cockpit/hooks/filter.ts:125 showReport filters seen, core/mod/builtin/jaira-cockpit/hooks/register.tsx:253 marks them seen
+  proof: core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:219 'a second report on the same ticket shows only what came since the first'; core/mod/builtin/jaira-cockpit/hooks/filter.ts:125 showReport filters seen, core/mod/builtin/jaira-cockpit/hooks/register.tsx:251 marks them seen
 - [x] Ein Parameter holt auf Wunsch auch die aelteren
   proof: core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:233 'all brings the reports already read back' and core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:259 (tool all: true); core/mod/builtin/jaira-cockpit/hooks/filter.ts:116 reportArgs
 - [x] Klasse 'noch nie gelesen': erster report zeigt alle gehaltenen Meldungen (Test)
@@ -71,3 +71,4 @@ hunt-verdict: "fail: bughunt done at 91edd3a5 — 1 change: marking seen is a se
 - **2026-11-20 16:57 · Alexander Sacharov** — bughunt: done at 91edd3a5 - 1 finding (1 change, 0 pre-existing) in 4 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/filter.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts core/release/notes/0J88M5.md
 - **2026-11-20 16:58 · Alexander Sacharov** — testing: sent back for the bughunt change finding (data loss). Class: any two read-modify-writes of one report key in this process interleave — keep()'s get/delete/set and reports()' re-read/set. Fix at the cause: one per-key lock in register.tsx that both go through; the marking writes nothing when the key is gone (no ghost row after eviction). Other processes sharing the store cannot be locked from the mod; that window is keep()'s own, pre-existing.
 - **2026-11-20 17:01 · Alexander Sacharov** — in-progress round 3: fixed the bughunt class at the cause — one in-process lock (register.tsx locked()) around keep() and the read+mark in reports(); the read and the mark now happen under the lock together, so the re-read and the 'at' set are gone (the shown reports are exactly the ones read). Race table test at 8 interleavings fails 8/8 without the lock, passes with it. Sibling writers checked: threads/carrying keys are other keys; session.start's unscoped cleanup touches only the old report:<ticket> format. Residual: another process on the same store is beyond the lock — keep()'s own pre-existing window.
+- **2026-11-20 17:01 · Alexander Sacharov** — critique round 3: none — the module-level lock follows the existing module-level state in register.tsx (untouched, shortened); a lock in the store is not possible from a mod.

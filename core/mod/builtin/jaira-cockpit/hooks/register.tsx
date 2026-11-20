@@ -205,19 +205,17 @@ function locked<T>(work: () => Promise<T>): Promise<T> {
 }
 
 function keep($: EngineInterface, ticket: string, report: Report): Promise<void> {
-  return locked(() => keepNow($, ticket, report))
-}
-
-async function keepNow($: EngineInterface, ticket: string, report: Report): Promise<void> {
-  const root = await project($)
-  const key = keyOf(root, ticket)
-  const before = ((await $.store.get(key)) as Report[] | undefined) ?? []
-  // Delete first so the key moves to the end of the store's insertion order:
-  // the first keys are then the tickets heard from longest ago.
-  await $.store.delete(key)
-  await $.store.set(key, [{ ...report, text: clipReport(report.text) }, ...before].slice(0, REPORTS_PER_TICKET))
-  const tickets = projectKeys(await $.store.keys(), root)
-  for (const old of tickets.slice(0, Math.max(0, tickets.length - TICKETS))) await $.store.delete(old)
+  return locked(async () => {
+    const root = await project($)
+    const key = keyOf(root, ticket)
+    const before = ((await $.store.get(key)) as Report[] | undefined) ?? []
+    // Delete first so the key moves to the end of the store's insertion order:
+    // the first keys are then the tickets heard from longest ago.
+    await $.store.delete(key)
+    await $.store.set(key, [{ ...report, text: clipReport(report.text) }, ...before].slice(0, REPORTS_PER_TICKET))
+    const tickets = projectKeys(await $.store.keys(), root)
+    for (const old of tickets.slice(0, Math.max(0, tickets.length - TICKETS))) await $.store.delete(old)
+  })
 }
 
 // The text the conversation gets instead, with the report kept; undefined
