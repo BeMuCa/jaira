@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-20T22:44:48Z
+updated-at: 2026-11-20T22:45:40Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -49,3 +49,4 @@ claimed-at: 2026-11-20T22:44:44Z
 4. Schleifenbremse: Blocker sind nur falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke. Nach einem Fix-Durchgang laeuft der Testlauf und ein Bughunt nur ueber den Diff seit dem letzten Hunt, dann review. Nach 3 Rueckgaben aus derselben Lane: Frage an den Teamlead statt weiter schleifen.
 5. Kleine Raender aus review-gaps in derselben Runde schliessen statt als note: stehen lassen - Alex schickt sie sonst ohnehin zurueck. Vorbestehendes ausserhalb des Umfangs als 'note: pre-existing: ...'.
 - **2026-11-20 22:44 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock
+- **2026-11-20 22:45 · Alexander Sacharov** — decision: open decisions none. Finding at start (20.11.): part 1 is already shipped - core/board/announce.go:101 names --proof (commit 2143e9ad). Part 3 is already shipped too - 'jaira update' rewrites the block via board.AnnounceInAgentFiles (internal/cli/update.go:257). The old separate gitignore caveat (was line 216) is now folded into the 'every commit names the ticket id' point. What is still missing: the 'ticket rides with the code' point and the 'commit it' sentence of 'commits nothing' read as if .jaira/ were always in git; on an unshared board (.git/info/exclude since jaira init) there is no ticket file to git add. Fix: one sentence on the rides-with-code point saying this and the next point assume a shared board, and what to do instead.
