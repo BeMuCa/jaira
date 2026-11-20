@@ -1,7 +1,7 @@
 ---
 id: 01M7WWYB5XZMD01DZY3MJG3REW
 title: Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T17:55:26Z
+updated-at: 2026-11-20T17:55:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-87225
 claimed-at: 2026-11-20T17:38:56Z
@@ -32,7 +32,7 @@ outcome-what: "Board-Dateien .jaira/pr (person|agent, Default person) und .jaira
 outcome-why: "Ein Teamlead machte jede PR-Runde von Hand (push, PR-Text, Copilot anfordern, antworten, resolve); Alex erlaubt Agenten das inzwischen, aber nur pro Repo."
 outcome-resolves: "Mit .jaira/pr=agent oeffnet jaira-role-pr den PR nach der Abnahme aller Tickets selbst, fordert den Reviewer an und faehrt eine Kommentarrunde; ohne Datei bleibt alles wie heute; Merge/Approve bleibt in jedem Fall beim Menschen."
 review-summary: "core/role/pr_round_test.go TestPRRoundReplyLeavesOneAnswerWhenTwoSessionsRace/TestPRRoundCommentSaysItOnce assert only that the just-posted copy is removed, not that nothing else ever is - add rows where the person's own comment with the same words (no agent involved) stands before and after ours, and assert every delete names exactly the id this run's own POST returned (teamlead jaira-64: a person's deleted comment is data loss)"
-round: 5
+round: 6
 review-gaps: |-
   note: pr-round.sh comments lists every conversation comment and review body each round, the agent's own earlier answers included - not answering twice there rests on the agent reading the list (DoD 10 covers threads only)
   note: the Copilot request uses the REST login copilot-pull-request-reviewer[bot]; tested only against the fake gh in core/role/pr_round_test.go, never against live GitHub
