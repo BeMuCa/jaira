@@ -477,9 +477,14 @@ func TestReapOnANoneBoardWaitsForTheDefaultBranch(t *testing.T) {
 	r.write(t, filepath.Join(r.repo, ".jaira", "pr"), "none\n")
 	r.write(t, filepath.Join(r.repo, ".jaira", "tickets", ".keep"), "")
 	r.write(t, r.shown, `{"status":"done"}`)
+	// No origin ref at all: nothing to measure against, and it says how to
+	// fix that rather than claiming the branch has not landed.
+	if out := r.run(t, r.repo, "reap.sh"); !strings.Contains(out, "cannot tell origin's default branch") {
+		t.Fatalf("no origin refs, want the set-head hint:\n%s", out)
+	}
+	// origin/master without origin/HEAD (git init + remote add) is enough.
 	base := r.git(t, r.repo, "rev-parse", "master")
 	r.git(t, r.repo, "update-ref", "refs/remotes/origin/master", base)
-	r.git(t, r.repo, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/master")
 
 	// A branch with no work of its own yet sits on the default branch from
 	// the start: that is not landed, whatever the ticket's lane says.
