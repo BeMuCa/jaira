@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:23:11Z
+updated-at: 2026-11-20T19:23:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99114
 claimed-at: 2026-11-20T19:19:18Z
@@ -165,3 +165,4 @@ Empfehlung: 1 - der Gate-Fehler bei parallelen Sessions ist die einzige echte Lu
 - **2026-11-20 19:19 · Alexander Sacharov** — Given back from signoff: 1) Hinweise 1, 2 und 4 in kurzer Runde schliessen (Gate gegen gepushten Tip, Usage-Text, Exit-Code-Kollision)
 - **2026-11-20 19:19 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
 - **2026-11-20 19:19 · Alexander Sacharov** — worker runde 6 (neue Session): Auftrag aus decision 19:18 - review-gaps 1 (open: Gate gegen gepushten Tip statt lokales HEAD), 2 (usage open: done|signoff), 4 (gh-Exit 4 vs. dokumentiertes Exit 4). Keine offenen Entscheidungen.
+- **2026-11-20 19:23 · Alexander Sacharov** — runde 6: open vergleicht HEAD mit dem gepushten Tip per ls-remote (git for-each-ref %(push:remotename) %(push); %(push:remoteref) ist bei push.default=simple leer, git 2.43). Kein --head an gh pr create: gh liest denselben Tracking-Eintrag, fuer einen Fork waere --head owner:branch aus der Remote-URL eine zweite Lesart. gh-Exit 4 -> 3 ueber eine gh()-Huelle fuer alle Aufrufe nach dem Auth-Check.
