@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:37:29Z
+updated-at: 2026-11-20T19:37:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99114
 claimed-at: 2026-11-20T19:19:18Z
@@ -33,7 +33,13 @@ outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten d
 outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
 review-summary: "Neue Board-Dateien .jaira/pr (person|agent, Default person), .jaira/pr-reviewer (copilot, Login oder org/team) und .jaira/pr-when (done|signoff, Default done) werden in core/settings gelesen; jeder andere Inhalt faellt auf den Default zurueck, der Reviewer nur aus Buchstaben/Ziffern/._-[]/@. 'jaira roles list' zeigt sie (pr, pr_source, pr_reviewer, pr_when, pr_when_source). Neues 'jaira roles pr-gate <remote>/<branch>' liest die Handles aus den Commit-Subjects von base..HEAD und gibt nur Exit 0, wenn .jaira/pr agent sagt und jedes genannte Ticket in der Terminal-Lane (bzw. ab signoff) steht oder im Logbook liegt; archiviert, unbekannt, unlesbar, blocked oder fehlende signoff-Lane -> Exit 3 mit Grund. Neues scripts/pr-round.sh fuer GitHub: open (nur wenn Checkout = gepushter Tip laut push-Konfiguration, dann Gate, dann gh pr create), threads/comments (nur Offenes), reply (antworten + resolven, idempotent, zwei gleichzeitige Sessions hinterlassen eine Antwort), comment (nicht doppelt), request (Copilot ueber Bot-Login, Ablehnung = Exit 4), settled (keine offenen Threads, keine angefragten Reviews, kein CHANGES_REQUESTED). Ein verlorener gh-Login ist ueberall Exit 3. jaira-role-pr SKILL.md beschreibt den Agent-Pfad, GitLab ueber glab api; Merge/Approve bleiben verboten."
 round: 13
-review-gaps: "none"
+review-gaps: |-
+  note: .jaira/pr wird aus dem Checkout gelesen, nicht aus der Basis - ein Branch, der .jaira/pr mit agent selbst committet, schaltet sein eigenes Gate frei; sichtbar nur im Diff
+  note: pr-round.sh open ruft gh pr create ohne --head; im Fork waehlt gh den Head selbst, der gepruefte Tip (push-Remote) und der geoeffnete Head sind nicht ausdruecklich dieselbe Referenz - --head <fork-owner>:<branch> wuerde sie binden
+  note: auf GitLab prueft kein Code, dass der Checkout der gepushte Tip ist - nur der SKILL-Text verlangt den Vergleich
+  note: pr-round.sh open ruft jaira aus PATH; ein aelteres installiertes Binary ohne pr-gate verweigert (Exit 3, sicher), aber die Meldung sagt nicht, dass jaira zu alt ist
+  note: die Copilot-Anfrage ueber reviewers[]=copilot-pull-request-reviewer[bot] ist nur gegen gemocktes gh getestet; ob GitHub sie annimmt, zeigt erst ein echter PR (Exit 4 faengt es ab)
+  note: der Worktree traegt eine fremde unversionierte Datei .jaira/milestones/abnahme-2026-11-A4140M.md - gehoert nicht zu diesem Ticket, nicht mitcommitten
 test-verdict: "pass bei 0bc5b11a: Suite go test -race -count=1 ./... RC=0; DoD 17-19 im Baum belegt (TestPROpenOnlyFromThePushedTip, TestPRRoundLostSignInIsNeverExit4, usage open); live mit Branch-Binary: single-branch-Klon gepusht -> Gate laeuft, ein Commit voraus -> Exit 3 mit beiden shas, Meldungen ohne Code-Anhang; schreibt nur ueber gh, Zwei-Session-Faelle in Tests unveraendert gruen"
 hunt-verdict: "0 findings at 0bc5b11a (Runden davor: 2 change bei 8569d9b6, 1 change bei 7d8d7872 - alle behoben)"
 review-verdict: "Abnahmereif, kein Blocker. Der Blocker der letzten Runde ist behoben: mit dem Branch-Binary in einem frischen Repo gibt 'pr-gate master' fuer 'feat(ZZZZZZ): x' jetzt Exit 3 'ZZZZZZ (unknown)'. Alle 16 DoD-Punkte sind durch Code und Tests belegt; go test ./core/role ./core/settings ./core/gitrepo ./internal/cli gruen. pr-round.sh ganz gelesen: Dedupe-Logik (Lauf gleicher Worte, nur eigene id geloescht) haelt in beiden Reihenfolgen zweier Sessions; nur Hinweise, siehe gaps. Nicht live gegen GitHub geprueft - die Tests laufen gegen ein gh-Fake."
