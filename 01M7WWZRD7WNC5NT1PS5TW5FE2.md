@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZRD7WNC5NT1PS5TW5FE2
 title: "Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:18:56Z
+updated-at: 2026-11-20T19:19:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-37518
 claimed-at: 2026-11-20T18:18:38Z
@@ -35,7 +35,7 @@ outcome-what: "Eingebaute Lanes pre-process, in-progress, testing, review und di
 outcome-why: "Review- und bughunt-Schleifen liefen 10-24 Runden, weil jede Runde den Nachbarfall eines nur am Beispiel reparierten Fehlers fand und die vier Kategorien vor dem Code nie gefragt wurden; die Rueckgabe einer Person darf nicht als Schleifenrunde zaehlen, und eine Rueckgabe ohne erkennbaren Absender darf keiner Lane geraten zugerechnet werden."
 outcome-resolves: "DoD 1-7: 15-pre-process.md:38, 20-in-progress.md:29 und :66-102, 27-testing.md:41-45,98,129-134, bughunt SKILL.md:104, 40-review.md:57,117-121, shipped.sha256, core/release/notes/TW5FE2.md. Vier Kategorien: Nebenlaeufigkeit/Fehlerpfade/Rechte - nur Prompt-Text, nichts schreibt; ungewoehnliche Eingabe - Note ohne Praefix (auch aeltere review-Prompts) = back: unknown, zaehlt nicht."
 review-summary: "Nur Prompt-Texte, kein Go-Code. pre-process benennt vor dem Code Fehlerklasse, Eingabeklassen (leer/gross, Kodierung/CRLF, Pfade mit Leerzeichen/Windows, zwei Prozesse, Fehler auf halbem Weg) und bei Heuristik eine Annahmeregel und schreibt sie mit 'jaira dod --add' in die DoD. in-progress fixt die Ursache statt des Beispiels, testet die Klasse parametrisiert, zieht Geschwister-Stellen mit, prueft die vier Kategorien selbst und schliesst kleine Raender in derselben Runde; zaehlt Rueckgaben ueber eigene 'back: <lane>, round n'-Zeilen (Absender aus der neuesten Note: Given back from/decision: = person und setzt zurueck, critique:/optimize:/testing:/review:/bughunt: = Lane, sonst unknown) und geht bei der dritten Rueckgabe derselben Lane mit Frage nach human. testing und review schicken nur fuer vier Blockerarten zurueck (falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke), Funde nennen Klasse und Beispiel, Folgerunden testen nur den Diff seit dem letzten Hunt; review-Rueckgabenote beginnt mit 'review:'. bughunt-Skill verlangt Klasse+Beispiel. Board-Kopien in .jaira/lanes byte-gleich, shipped.sha256 und Release-Note nachgezogen."
-round: 11
+round: 12
 review-gaps: |-
   note: pre-process sagt bei einer Heuristik, deren Annahmeregel nur eine Person kennt, 'move the ticket to the human lane' (15-pre-process.md:66), aber gate.go:438 verweigert den Vorwaertsmove, solange plan leer ist; Klasse: Prompt-Anweisung zu einem Move, den das Gate ablehnt; Fix: ein Satz 'schreib zuerst den Plan bis dahin, dann move --question'
   note: 'once per round' fuer die back:-Zeile (20-in-progress.md) sagt nicht, wie ein neu gestarteter Worker das prueft; Klasse: doppelte Zaehlzeile nach Neustart; Fix: 'steht schon eine back:-Zeile mit dieser round, schreib keine zweite'
