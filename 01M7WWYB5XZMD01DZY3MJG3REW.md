@@ -1,7 +1,7 @@
 ---
 id: 01M7WWYB5XZMD01DZY3MJG3REW
 title: Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
-status: review
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T18:22:01Z
+updated-at: 2026-11-20T18:22:05Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-29476
 claimed-at: 2026-11-20T18:21:36Z
@@ -32,7 +32,7 @@ outcome-what: "Board-Dateien .jaira/pr (person|agent), .jaira/pr-reviewer und .j
 outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten das pro Repo. In manchen Projekten laeuft das Review auf dem PR selbst, dort kommt done erst danach (Alex 20.11.)."
 outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
 review-summary: "Neue Board-Dateien .jaira/pr (person|agent), .jaira/pr-reviewer (copilot, Login, org/team) und .jaira/pr-when (done|signoff), gelesen in core/settings/settings.go mit Default person/leer/done; jede Abweichung faellt auf den Default zurueck. 'jaira roles list' zeigt sie (pr, pr_source, pr_reviewer, pr_when). Neuer Befehl 'jaira roles pr-gate <remote>/<branch>' (internal/cli/roles.go): liest die Ticket-Handles aus den Commit-Subjects base..HEAD (core/gitrepo/named.go) und gibt Exit 0 nur, wenn .jaira/pr agent sagt und jedes benannte Ticket im Terminal-Lane steht (bei signoff: signoff bis Terminal); unlesbare Ticketdateien und fehlender signoff-Lane -> Exit 3. Neues Skript jaira-role-pr/scripts/pr-round.sh fuer GitHub: open (Gate, dann gh pr create), threads/comments (offene Punkte als JSON), reply (antworten + resolven, idempotent, zwei Sessions hinterlassen eine Antwort), comment (Konversation, nie doppelt), request (Reviewer, Copilot per Bot-Login, Exit 4 bei Ablehnung), settled (Runde fertig?). Merge/Approve kommen nirgends vor. SKILL.md von jaira-role-pr, teamlead und dispatcher beschreiben den Ablauf; GitLab bekommt glab-Zeilen statt Skript."
-round: 9
+round: 10
 review-gaps: |-
   blocker: DoD 12 - pr-gate laesst einen Handle durch, den das Board nicht kennt, und behandelt ihn als 'ins Logbook abgelegt' ohne das zu pruefen. Repro: frisches Repo, .jaira/pr=agent, ein Commit 'feat(ZZZZZZ): x' -> 'jaira roles pr-gate master' Exit 0, 'every ticket on the branch is in done: ZZZZZZ'. Ein Tippfehler im Scope, ein Ticket auf einem nicht geholten Ref oder ein abgelehntes Ticket oeffnet so den PR ohne jede Abnahme - dieselbe Fail-open-Luecke, die der Code fuer unlesbare Dateien schon schliesst (internal/cli/roles.go, Schleife ueber named; Test prgate_test.go:115 schreibt das Verhalten fest). Fix-Richtung: als abgelegt gilt nur ein Handle, den eine Datei unter .jaira/logbook/ traegt; sonst Exit 3 'unknown'.
   note: 'done wartet auf settled' bei pr-when=signoff steht nur im Rollentext - signoff->done verschiebt eine Person, das Binary prueft settled dabei nicht (DoD 16 verlangt nur die Rolle, also kein Blocker).
