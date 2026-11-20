@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:52:51Z
+updated-at: 2026-11-20T17:52:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85657
 claimed-at: 2026-11-20T17:52:47Z
@@ -30,7 +30,11 @@ outcome-why: "Eine von jaira geaenderte .gitignore erscheint in jedem neuen Work
 outcome-resolves: Neue Worktrees eines Repos mit privatem Board bleiben sauber; kein Wegraeumen der .gitignore-Zeile von Hand mehr.
 review-summary: "Ein privates Board wird jetzt in <git-common-dir>/info/exclude ausgeschlossen statt in der getrackten .gitignore (core/board/gitignore.go: gitPlace fragt git per rev-parse --path-format=absolute --git-common-dir --show-prefix; Unterverzeichnis-Boards bekommen /sub/.jaira/ mit escapten Glob-Zeichen). Schreiben laeuft unter einer Sperrdatei neben exclude (ticket.LockFile, aus Store.lock herausgezogen) und per Temp-Datei+Rename. Ohne git oder auf git<2.31 (relative erste Zeile) faellt alles auf .gitignore zurueck; commonGitDir in core/ticket bekam dieselbe IsAbs-Pruefung. share entfernt nur jairas verankerte Zeile, fragt danach git check-ignore und warnt/meldet still_ignored, wenn eine fremde Regel das Board weiter ausblendet; share --undo sagt, dass Teamkollegen jaira update laufen lassen. jaira update (moveIgnore) verschiebt bei einem privaten Board (keine .gitattributes, nichts getrackt) eine alte .gitignore-Zeile nach info/exclude oder setzt den Ausschluss, wenn er fehlt; geteilte Boards bleiben unberuehrt. Doku, Hilfetexte, Release-Note und Tests fuer alle 8 DoD-Punkte."
 round: 7
-review-gaps: "none - Diff 750e2acf..c6c3ed13: IgnoredBy hat einen Aufrufer (share), kein Duplikat (kein anderes check-ignore im Code); nichts verwaist"
+review-gaps: |-
+  blocker: internal/cli/update.go:347 - auf git<2.31 setzt moveIgnore m.moved=true und ignoriert das Ergebnis von board.MoveIgnore, das dort (gitPlace leer) nichts tut: jedes jaira update meldet "Moved this private board's entry from .gitignore to .gitignore — commit the changed .gitignore once." und --json ignore_moved:true, obwohl nichts geaendert wurde (nachgestellt mit git-Wrapper, der --path-format zurueckgibt). Fix: m.moved aus dem Rueckgabewert von MoveIgnore bzw. bei --dry-run nur, wenn IgnoreFileName nicht .gitignore ist; Testfall git<2.31 in TestUpdate...
+  note: core/board/gitignore.go dropEntry - steht der jaira-Eintrag ohne Leerzeile davor am Dateiende ("a\n# jaira…\n/.jaira/\n"), fehlt danach das Schluss-Newline ("a")
+  note: pre-existing: appendEntry verwirft einen Lesefehler (os.ReadFile ausser not-exist) und schreibt per Rename nur den Eintrag - eine unlesbare, aber ersetzbare exclude/.gitignore verliert ihren Inhalt
+  note: die neuen JSON-Keys ignore_moved/ignore_added (update) und still_ignored (share) nennt nur die share-Release-Note
 test-verdict: "pass: go build/vet/test -count=1 ./... RC=0 at c6c3ed13; DoD 8 Proofs gruen; Binary im Wegwerf-Repo: init laesst git status ohne .jaira/, share mit handgeschriebener .jaira/-Zeile warnt mit '.git/info/exclude:8:.jaira/' und laesst sie stehen, --undo nennt jaira update; info/ schreibgeschuetzt -> share und --undo exit 1; zwei parallele share --undo -> Eintrag genau einmal"
 hunt-verdict: "pass: bughunt done at c6c3ed13, 0 change, 0 pre-existing"
 review-verdict: "Der Diff erfuellt alle 7 DoD-Punkte, jeder mit Test (core/board/exclude_test.go, internal/cli/privateexclude_test.go); go vet und go test ./core/board ./core/ticket ./internal/cli gruen. Keine Defekte entlang Nebenlaeufigkeit (Sperre um Read-Modify-Write, atomares Rename), Fehlerpfaden (exclude zuerst, dann .gitignore – nie ungeschuetzt), Eingaben (fehlende Datei/Verzeichnis, CRLF, Leerzeichen, Glob-Zeichen, alte git-Version) und Grenzen (geteilte Boards werden von update nie angefasst). Vier Anmerkungen, kein Blocker."
