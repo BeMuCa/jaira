@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:32:53Z
+updated-at: 2026-11-20T22:33:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
@@ -36,7 +36,7 @@ review-summary: "none"
 round: 5
 review-gaps: "nothing removed: the change is one lookup block plus a pointer in the teamlead; left the intermediate shipped.sha256 lines (already noted by review 22:04)"
 test-verdict: "pass: go build ./... and go test ./core/... green (RC=0); DoD 1-4 unchanged, branch lookup run: feat/twrap8 and fix/twrap8-x found, feat/twrap8x not, unknown handle gives empty branch and git rev-parse exits non-zero -> '?'; the change writes nothing"
-hunt-verdict: "pass: Runde-3-Fund (bughunt done at 4a0033ec) als Klasse in dae16319 behoben: jeder Status an den Kopf-Commit gebunden, fremder/kein Lauf = '?'. Kein neuer Hunt - Entscheidung Teamlead 21:58; weitere Funde dieser Klasse gehen als note an signoff."
+hunt-verdict: "change: 1 finding at a1b61158 - local branch taken over its remote even when behind; fixed in this round"
 question: ""
 review-verdict: "The diff meets all four DoD items; no blocker. Checked: go test ./core/role ./core/shipped green, each final SKILL.md hash is in shipped.sha256, release note lines are single '- ' lines, the commands the role prescribes exist (jaira list --lane/--board, gh run list --commit/--workflow, glab ci list --sha). Three notes, all small: hardcoded feat/ branch name, intermediate hashes, and an expected ❌ hunt-on-HEAD on this ticket."
 review-round: 4
