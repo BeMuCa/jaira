@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:23:02Z
+updated-at: 2026-11-20T19:23:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99353
 claimed-at: 2026-11-20T19:19:21Z
@@ -144,3 +144,4 @@ Empfehlung: 2 - это не блокеры (неверный результат,
 - **2026-11-20 19:21 · Alexander Sacharov** — Runde nach signoff 19:19: drei Saetze. pre-process: gate.go OutputOwed verlangt plan auch beim Move nach human (to > from), also Plan-Schritte + Frage als Schritt vor dem Move - nicht den Gate geaendert, weil ein Ticket ohne Plan sonst unbemerkt durch pre-process laeuft. in-progress: back:-Zeile neuer als die Absender-Note = schon geschrieben. testing: 'packages' -> 'tests that cover the files'.
 - **2026-11-20 19:22 · Alexander Sacharov** — critique: none - Runde nach signoff 19:19, drei Saetze ohne neues Muster
 - **2026-11-20 19:23 · Alexander Sacharov** — testing: pass, round after signoff 19:19 - gate refuse pre-process->human ohne Plan auf Scratch-Board nachgestellt
+- **2026-11-20 19:23 · Alexander Sacharov** — bughunt: change: core/lane/builtin/20-in-progress.md:72-74 (twin .jaira/lanes/in-progress.md) - the new restart rule skips a second back: line only when a back: line is newer than 'the sender's note', but the sender is read off 'the newest note, passing over' only cockpit: and the steal line (:82-84); on a restart the newest note is the first session's own back: line or its progress note, which the pass-over list does not name, so the restarted worker reads that as the sender, sees no back: line newer than it, falls into 'anything else' and writes a second line (back: unknown, round N) - the rule meant to prevent the duplicate produces one and the round is counted twice for the unknown/no-lane bucket; same gap when the round's sender had no prefix at all, since then there is no sender's note to compare against; a check on the round number already written in the line ('back: <lane>, round N' for the current round) would anchor it; blame: 10b38a7a, 9fa8ce3c (both TW5FE2); read
