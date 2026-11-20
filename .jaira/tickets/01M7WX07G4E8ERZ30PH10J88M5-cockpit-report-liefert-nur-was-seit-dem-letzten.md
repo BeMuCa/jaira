@@ -1,0 +1,49 @@
+---
+id: 01M7WX07G4E8ERZ30PH10J88M5
+title: "cockpit report liefert nur, was seit dem letzten Lesen kam, nicht alte Meldungen"
+status: critique
+ready: true
+creator: Alexander Sacharov
+assignee: Alexander Sacharov
+goal: mcp__jaira-cockpit__report und /cockpit report zeigen standardmaessig nur Meldungen seit dem letzten Lesen; aeltere nur auf ausdruecklichen Wunsch.
+context: |-
+  Bug: report haengt alte Nachrichten an (z.B. 10 von 10, Tage alt). Wer eine neue Kurzmeldung lesen will, liest den ganzen Stapel.
+  Gemeldet von einem Teamlead am 20.11.2026, Alex: "das ist ein Bug".
+  Die Meldungen werden im Cockpit gekuerzt ("[shortened by jaira-cockpit]") und gespeichert; report liest sie zurueck.
+definition-of-done: "Zweimal report auf dasselbe Ticket: der zweite Aufruf zeigt nur Neues (Test)"
+tags: []
+blocked-by: []
+related: []
+commits: []
+created-at: 2026-11-20T16:35:28Z
+updated-at: 2026-11-20T16:48:44Z
+updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-58858
+claimed-at: 2026-11-20T16:42:48Z
+outcome-what: "/cockpit report <id> and the report tool show only reports not read yet; 'all' (tool: all: true) shows the older ones too; nothing new says so with the count of older ones"
+outcome-why: "a teamlead reading one new short line got the whole stack of up to 10 old reports, days old"
+outcome-resolves: 0J88M5
+---
+
+# cockpit report liefert nur, was seit dem letzten Lesen kam, nicht alte Meldungen
+
+## Definition of Done
+
+- [x] Zweimal report auf dasselbe Ticket: der zweite Aufruf zeigt nur Neues (Test)
+  proof: core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:219 'a second report on the same ticket shows only what came since the first'; core/mod/builtin/jaira-cockpit/hooks/filter.ts:126 showReport filters seen, register.tsx:236 marks shown ones seen
+- [x] Ein Parameter holt auf Wunsch auch die aelteren
+  proof: core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:233 'all brings the reports already read back' and core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:259 (tool all: true); core/mod/builtin/jaira-cockpit/hooks/filter.ts:116 reportArgs
+
+## Options
+
+- [ ] brainstorm
+- [ ] planning
+
+## Plan
+
+<Steps, in order — filled in by the pre-process step, or by you.>
+
+## Progress
+- **2026-11-20 16:42 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock
+- **2026-11-20 16:43 · Alexander Sacharov** — decision (worker, no open question): 'read' is marked on the kept report itself (seen: true), shared across sessions of the project — the store is machine-wide and one person reads it; a per-session mark would show the 10 old ones again in every new teamlead session, which is the bug. Default report shows only unseen and marks them seen; 'all' (/cockpit report <id> all, tool arg all: true) shows every kept one. Nothing new: one line saying so, with the count of older ones and the 'all' hint. Reports kept before this change carry no flag and count as unseen once.
+- **2026-11-20 16:48 · Alexander Sacharov** — in-progress: claude plugin test 181 pass, 1 fail — 'the band lists the tickets in a person's lanes' (board.test.ts, expects Box borderStyle 'round'), fails the same on base 5b16e491, unrelated. Marking re-reads the store before writing and flags only the reports it showed (by 'at'), so one kept meanwhile is not lost or swallowed. The Ticket pane (/cockpit ticket) still shows all kept reports and marks nothing.

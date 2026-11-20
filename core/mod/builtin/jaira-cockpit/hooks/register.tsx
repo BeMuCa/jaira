@@ -11,7 +11,7 @@ import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from '
 import { digest } from './digest.ts'
 import {
   agentName, AGENT_ORIGINS, clipReport, DIGESTED, isAgentReport, isUnscoped, keyOf, listReports, NOTIFICATION,
-  projectKeys, REPORTS_PER_TICKET, rewriteRow, showReport, stamp, TICKETS, type Report,
+  projectKeys, reportArgs, REPORTS_PER_TICKET, rewriteRow, showReport, stamp, TICKETS, type Report,
 } from './filter.ts'
 import { body, source } from './frame.ts'
 import { add, appended, emptyTotals, row, rowsOf, type Totals } from './metrics.ts'
@@ -225,15 +225,25 @@ async function keptReports($: EngineInterface, ticket: string): Promise<Report[]
   return ((await $.store.get(keyOf(await project($), ticket))) as Report[] | undefined) ?? []
 }
 
-async function reports($: EngineInterface, args: string): Promise<string> {
+async function reports($: EngineInterface, args: string, all = false): Promise<string> {
   const root = await project($)
-  const ticket = args.trim().toUpperCase()
+  const wanted = reportArgs(args)
+  const ticket = wanted.ticket
   if (ticket === '') {
     const keys = projectKeys(await $.store.keys(), root).reverse()
     const rows = await Promise.all(keys.map(async k => [k, ((await $.store.get(k)) as Report[] | undefined) ?? []] as const))
     return listReports(rows)
   }
-  return showReport(ticket, await keptReports($, ticket))
+  const kept = await keptReports($, ticket)
+  const shown = showReport(ticket, kept, all || wanted.all)
+  // Shown once, read: the next call brings only what arrived after it. Read
+  // again before writing, so a report kept meanwhile stays, and stays unseen.
+  const read = new Set(kept.filter(r => r.seen !== true).map(r => r.at))
+  if (read.size > 0) {
+    const now = await keptReports($, ticket)
+    await $.store.set(keyOf(root, ticket), now.map(r => (read.has(r.at) ? { ...r, seen: true } : r)))
+  }
+  return shown
 }
 
 // What session.receive left alone on purpose — a comment on an artifact, a
@@ -1110,10 +1120,13 @@ export const register: Register = (on, options) => {
     await $.tool.register({
       name: 'report',
       description:
-        'Returns the full text of the agent reports and task-notifications about one jaira ticket that reached this conversation shortened to one line, newest first. Without a ticket, lists the tickets that have kept reports.',
+        'Returns the full text of the agent reports and task-notifications about one jaira ticket that reached this conversation shortened to one line, newest first — only those not read yet, unless all is true. Without a ticket, lists the tickets that have kept reports.',
       inputSchema: {
         type: 'object',
-        properties: { ticket: { type: 'string', description: 'The ticket handle, e.g. MG677R.' } },
+        properties: {
+          ticket: { type: 'string', description: 'The ticket handle, e.g. MG677R.' },
+          all: { type: 'boolean', description: 'Also the reports already read before. Default false: only the new ones.' },
+        },
       },
     })
     await $.tool.register({
@@ -1196,8 +1209,8 @@ export const register: Register = (on, options) => {
   on('tool.call', async ($, e, next) => {
     if (e.tool === 'mcp__jaira-cockpit__report') {
       // A tool's arguments ride on `e` beside `tool`, not under a key of their own.
-      const { ticket } = e as { ticket?: unknown }
-      return { result: await reports($, typeof ticket === 'string' ? ticket : '') }
+      const { ticket, all } = e as { ticket?: unknown; all?: unknown }
+      return { result: await reports($, typeof ticket === 'string' ? ticket : '', all === true) }
     }
     if (e.tool === 'mcp__jaira-cockpit__workers') return { result: await workers($, share) }
     totals = { ...totals, tools: totals.tools + 1 }

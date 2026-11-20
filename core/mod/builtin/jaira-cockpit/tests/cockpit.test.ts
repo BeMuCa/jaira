@@ -216,6 +216,31 @@ describe('/cockpit', () => {
     expect((await $.command.run(typed('report'))).text).toContain('K7P2QX')
   })
 
+  test('a second report on the same ticket shows only what came since the first', async ($, on) => {
+    session(on)
+    await $.session.receive({ origin: { kind: 'peer' }, text: 'first: ticket K7P2QX moved to critique' })
+    expect((await $.command.run(typed('report K7P2QX'))).text).toContain('first')
+    expect((await $.command.run(typed('report K7P2QX'))).text).toBe(
+      'Nothing new for K7P2QX since it was last read; 1 older report(s) kept: /cockpit report K7P2QX all',
+    )
+    await $.session.receive({ origin: { kind: 'peer' }, text: 'second: ticket K7P2QX moved to testing' })
+    const { text = '' } = await $.command.run(typed('report K7P2QX'))
+    expect(text).toContain('second')
+    expect(text).not.toContain('first')
+    expect(text).toContain('K7P2QX · 1 of 1 ·')
+  })
+
+  test('all brings the reports already read back', async ($, on) => {
+    session(on)
+    await $.session.receive({ origin: { kind: 'peer' }, text: 'first: ticket K7P2QX moved to critique' })
+    await $.command.run(typed('report K7P2QX'))
+    await $.session.receive({ origin: { kind: 'peer' }, text: 'second: ticket K7P2QX moved to testing' })
+    const { text = '' } = await $.command.run(typed('report K7P2QX all'))
+    expect(text).toContain('second')
+    expect(text).toContain('first')
+    expect((await $.command.run(typed('report all k7p2qx'))).text).toContain('first')
+  })
+
   test('without a subcommand, or an unknown one, lists the subcommands', async ($, on) => {
     session(on)
     expect((await $.command.run(typed())).text).toContain('report [id]')
@@ -229,6 +254,16 @@ describe('the report tool', () => {
     await $.session.receive({ origin: NOTIFICATION, text: REPORT })
     const ran = await $.tool.call({ tool: 'mcp__jaira-cockpit__report', ticket: 'MG677R' })
     expect(String(ran.result)).toContain('forty more lines of findings')
+  })
+
+  test('shows only what was not read yet, and all of it on request', async ($, on) => {
+    session(on)
+    await $.session.receive({ origin: NOTIFICATION, text: REPORT })
+    await $.tool.call({ tool: 'mcp__jaira-cockpit__report', ticket: 'MG677R' })
+    const again = await $.tool.call({ tool: 'mcp__jaira-cockpit__report', ticket: 'MG677R' })
+    expect(String(again.result)).toStartWith('Nothing new for MG677R')
+    const every = await $.tool.call({ tool: 'mcp__jaira-cockpit__report', ticket: 'MG677R', all: true })
+    expect(String(every.result)).toContain('forty more lines of findings')
   })
 })
 
