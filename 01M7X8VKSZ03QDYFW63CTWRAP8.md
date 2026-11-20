@@ -25,16 +25,14 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T21:43:23Z
+updated-at: 2026-11-20T21:43:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16592
 claimed-at: 2026-11-20T20:04:03Z
 outcome-what: "Neue Rolle jaira-role-signoff (Statuszeile, markierte Notes-Tabelle, eine Empfehlung, Rueckgabe-Regeln); Teamlead liest den Stand vor jeder Liste neu und berichtet signoff in dieser Form; worker, dispatcher und jaira-role-pr lassen vor jedem Push die CI-Gates des Projekts lokal laufen."
 outcome-why: "Die Arbeitsweise vom 20.11.2026 stand nur im lokalen Gedaechtnis einer Teamlead-Session; jeder andere Teamlead haette dieselben Fehler gemacht (veraltete Listen, Rueckgaben wegen Notes ohne Einordnung, rote PRs durch fehlende shipped.sha256-Zeilen)."
 outcome-resolves: Die Regeln reisen mit den ausgelieferten Rollen; jaira update --roles bringt sie zu jedem Nutzer.
-review-summary: |-
-  core/role/builtin/jaira-dispatcher/SKILL.md '## Before anything is pushed' wiederholt den Push-Gate-Absatz aus jaira-worker fast woertlich, obwohl der Dispatcher selbst nicht pusht: auf drei Saetze kuerzen (wer pusht, laesst die Gates laufen; in den Brief des pushenden Workers; kein gepushter Branch ohne Gate-Ergebnis als fertig melden)
-  core/role/builtin/jaira-teamlead/SKILL.md '## Report to the human' wiederholt die vier Rueckgabe-Regeln aus jaira-role-signoff - zwei Kopien laufen auseinander: durch einen Verweis auf die Rolle ersetzen
+review-summary: none
 round: 2
 ---
 
