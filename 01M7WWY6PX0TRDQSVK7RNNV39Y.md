@@ -1,7 +1,7 @@
 ---
 id: 01M7WWY6PX0TRDQSVK7RNNV39Y
 title: Ein privates Board steht in .git/info/exclude statt in der .gitignore des Arbeitsbaums
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,13 +21,13 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T19:20:55Z
+updated-at: 2026-11-20T19:21:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96533
 claimed-at: 2026-11-20T19:19:14Z
-outcome-what: "Ein privates Board steht jetzt in <git-common-dir>/info/exclude statt in der getrackten .gitignore (core/board/gitignore.go); jaira update verschiebt eine alte .gitignore-Zeile dorthin und schliesst ein privates Board ohne Ausschluss dort aus; share/--undo arbeiten auf beiden Dateien; ticket.LockFile aus Store.lock herausgezogen."
-outcome-why: "Eine von jaira geaenderte .gitignore erscheint in jedem neuen Worktree als Aenderung, ein Push-Guard lehnt dann jeden Push ab; info/exclude gilt fuer alle Worktrees und taucht in keinem Diff auf."
-outcome-resolves: Neue Worktrees eines Repos mit privatem Board bleiben sauber; kein Wegraeumen der .gitignore-Zeile von Hand mehr.
+outcome-what: "appendEntry ueberschreibt eine unlesbare info/exclude oder .gitignore nie mehr; Lesefehler wird gemeldet"
+outcome-why: "signoff-Rueckgabe: ein unlesbares info/exclude wurde bisher durch nur jairas Eintrag ersetzt"
+outcome-resolves: Datenverlust bei unlesbarer Ausschlussdatei
 review-summary: "Ein privates Board wird jetzt in <git-common-dir>/info/exclude ausgeschlossen statt in der getrackten .gitignore: gitPlace fragt git (rev-parse --path-format=absolute --git-common-dir --show-prefix) nach Datei und Muster (/sub/.jaira/ fuer ein Board im Unterverzeichnis, Glob-Zeichen escapet); nur ohne git oder auf git<2.31 bleibt .gitignore der Ort. AddIgnore/RemoveIgnore/MoveIgnore schreiben info/exclude unter einer Sperrdatei (ticket.LockFile, aus Store.lock herausgezogen) per Temp-Datei+Rename; dropEntry nimmt nur jairas Kommentar und die Leerzeile direkt danach mit und haelt CRLF/Schluss-Newline. share entfernt nur jairas verankerte Zeile und fragt danach git check-ignore, ob noch eine fremde Regel greift (Warnung, still_ignored; null+ignore_unknown wenn git nicht antwortet). update verschiebt eine alte .gitignore-Zeile nach info/exclude bzw. schliesst ein nirgends ausgeschlossenes privates Board aus - nie bei .jaira/.gitattributes oder getrackten .jaira-Dateien; --json meldet ignore_moved/ignore_added/ignore_unknown. commonGitDir (store.go) nimmt wie parsePlace nur einen absoluten Pfad an."
 round: 13
 review-gaps: |-
