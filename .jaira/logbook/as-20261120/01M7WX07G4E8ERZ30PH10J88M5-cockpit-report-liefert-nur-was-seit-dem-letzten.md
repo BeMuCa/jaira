@@ -1,7 +1,7 @@
 ---
 id: 01M7WX07G4E8ERZ30PH10J88M5
 title: "cockpit report liefert nur, was seit dem letzten Lesen kam, nicht alte Meldungen"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -14,9 +14,20 @@ definition-of-done: "Zweimal report auf dasselbe Ticket: der zweite Aufruf zeigt
 tags: []
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 7cca80632935ef994ac504a4305ae862d476aab1
+  - 9e075f5246f50563051ef143339ab2341d298279
+  - 7de2571b275c916ac5043aa2397245030e74de53
+  - 91edd3a5cc3a4b5a0b0f66c4eab6fd89145572e9
+  - b0998d97cb95ac00caa246c3be0926398d3cda4c
+  - 94b52a22fad9357f24a906642221af921c057667
+  - c78ec6085d94fb486a017f0119ce8f303cb881a6
+  - 585204f67242d5201b9a6b8b56acb010620ca509
+  - c6e52ad65212ff84c4e7e9217afbbb9ef68bfa15
+  - 06bc0b6d1637c8f470a7da48c33d53328c239059
+  - d84995de494bebac789820dc057777208fa28870
 created-at: 2026-11-20T16:35:28Z
-updated-at: 2026-11-20T18:03:55Z
+updated-at: 2026-11-20T19:19:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-18832
 claimed-at: 2026-11-20T18:01:17Z
@@ -24,16 +35,18 @@ outcome-what: "/cockpit report and the report tool show only the reports that ar
 outcome-why: "the teamlead read the same ten old reports on every call and missed the new one among them"
 outcome-resolves: "0J88M5: report shows only what is new since the last read"
 round: 8
-review-summary: "Each kept report gets a 'seen' flag. /cockpit report <id> and the report tool now show only the reports without it and then mark all of that ticket's reports seen in the shared store, so a second read (any session of the project, also after a restart) gets only what arrived since. 'all' (/cockpit report <id> all, tool argument all: true) shows every kept one (at most 10). Nothing new gives one line with the older count and the all hint; the list without an id adds 'n new' per ticket. keep(), the read+mark and the pane read now run one after another through an in-process promise lock (register.tsx locked()), and the project is resolved once inside it, so a read racing a new report or a project switch loses nothing. A store that refuses the mark still shows the reports, which stay new. Reports from before the change have no flag and count as unseen."
+review-summary: "/cockpit report <id> und das Tool mcp__jaira-cockpit__report zeigen jetzt nur Meldungen ohne seen-Flag und setzen danach seen:true auf alle gehaltenen Meldungen des Tickets (readReports, register.tsx); 'all' (Text-Argument bzw. all:true im Tool) zeigt alle bis zu 10. Ohne Neues kommt eine Zeile 'Nothing new for <id> ...; n older report(s) kept: /cockpit report <id> all'. Die Liste ohne id zeigt pro Ticket 'n new'. /cockpit ticket <id> markiert beim Rendern ebenfalls gelesen. keep(), report-Lesen und Pane laufen hinter einem prozessweiten Promise-Lock und lesen das Projekt einmal unter dem Lock, so dass ein Lesen zwischen delete und set von keep() nichts verliert und kein fremdes Projekt ueberschreibt. Schlaegt das Schreiben der Lesemarke fehl, werden die Meldungen trotzdem gezeigt und bleiben neu. Alte Meldungen ohne Flag gelten als ungelesen. Release-Note core/release/notes/0J88M5.md mit drei Zeilen."
 review-gaps: |-
-  note: two Claude processes of one project can still drop a write when keep() in one and keep() or the seen mark in the other hit the same key within milliseconds - $.store has no compare-and-set; documented at register.tsx:196-199 and in the 17:46 note, decided as a known limit
-  note: /cockpit ticket <id> (the pane) shows the reports but does not mark them seen - consistent with the DoD, which names only report and the tool
-  note: board.test.ts 'the band lists the tickets in a person's lanes' fails (expected "round", got undefined) - file untouched by this diff, outside the change
-test-verdict: "pass round 5: claude plugin test core/mod/builtin/jaira-cockpit 206 pass, 1 fail outside the change (board.test.ts band, same on base); DoD 1-10 verified, proofs re-pointed after the new test; new test cockpit.test.ts:387 passes; failure path (:396) and two-writer interleavings (:424, :446) green"
-hunt-verdict: "pass: bughunt done at 06bc0b6d, 0 findings, diff since c6e52ad6 (one test)"
-review-verdict: "All 10 DoD items are met; claude plugin test core/mod/builtin/jaira-cockpit: 206 pass, 1 fail in board.test.ts outside the change. Read filter.ts, texts.ts and register.tsx (project, keep, reports, tool registration, tool.call, pane) whole along concurrency, error paths, unusual input and permissions: the in-process lock covers every read-modify-write of a report key, the mark skips an empty key (no ghost row), a refused mark is swallowed only for the mark, odd arguments ('ALL', extra spaces, 'all' alone) parse sanely. No blocker; the cross-process window is the one residual and was decided as a known limit."
-review-round: 7
-review-check: "1. cd core/mod/builtin/jaira-cockpit && claude plugin test - expect 206 pass, 1 fail (only 'waiting for you > the band lists the tickets in a person's lanes'). 2. Live: claude --plugin-dir /home/alex/projects/.worktrees/jaira-0j88m5/core/mod/builtin/jaira-cockpit in this repo, let an agent report on a ticket. 3. Type /cockpit report <ID> - the report is shown in full. 4. Type it again - one line: 'Nothing new for <ID> since it was last read; 1 older report(s) kept: /cockpit report <ID> all'. 5. Type /cockpit report <ID> all - the old report is back. 6. Type /cockpit report - the row reads '<ID>  1 report(s), 0 new, last ...'."
+  note: die Lesemarke ist ein read-modify-write ueber Prozesse hinweg - der Lock gilt nur in einem Prozess (Kommentar register.tsx sagt es); kommt in Session A eine Meldung zwischen get und set eines Lesens in Session B an, ueberschreibt B sie. Vorher schrieb nur keep(), jetzt schreibt auch jedes Lesen mit Ungelesenem und jedes Pane-Rendern; Fenster im Millisekundenbereich, zwei Teamlead-Sessions auf demselben Projekt noetig
+  note: der Pane rendert bei jeder boardAtom-Aenderung neu und markiert dabei auch Meldungen gelesen, die eintreffen, waehrend /cockpit ticket offen ist - sie stehen dort sichtbar, also konsistent, aber ungetestet
+  note: der Branch steht auf fix/nh788q-windows-rename (5b16e491), nicht auf master - ein PR von feat/0j88m5 bringt ci.yaml, scripts/test-shard.sh, core/ticket/store.go und notes/NH788Q.md von QFZDY7/NH788Q mit, solange die nicht gemergt sind
+  note: claude plugin test: 207 pass, 1 fail ('waiting for you > the band lists the tickets in a person's lanes') - schlaegt auf Basis 5b16e491 genauso fehl, nicht von diesem Ticket
+  note: worktree_diff im Payload ist nur das ungetrackte .jaira/milestones/ - gehoert nicht zu diesem Ticket
+test-verdict: "pass: claude plugin test core/mod/builtin/jaira-cockpit 207 pass, 1 fail (rc=1) = board.test.ts 'the band lists the tickets in a person's lanes' borderStyle, outside the diff and red on base; go test ./core/release ok (note format). DoD 1-11 opened in the tree, proofs point at the right lines. Function: board.test.ts:2262 mounts the real Ticket pane, report afterwards says Nothing new, a later report is new. Failure path: the pane goes through readReports(), whose refused-store path is cockpit.test.ts:396. Two writers: the pane's mark runs under the same locked() as keep(), raced by cockpit.test.ts:424."
+hunt-verdict: "pass: bughunt done at d84995de, 0 change, 0 pre-existing"
+review-verdict: "approve: der Diff (11 Commits 7cca806..d84995d) erfuellt DoD 1-11, jede Klasse hat ihren Tabellentest und alle 29 neuen Tests sind gruen; validate gruen. Kein Blocker. Unsicher bleibt nur die Lesemarke zwischen zwei Claude-Prozessen (erste Note): der Lock schuetzt nur innerhalb eines Prozesses, und ein dort verlorener Bericht waere genau das, was DoD 8 ausschliesst - fuer zwei Sessions ist das nicht getestet und nicht testbar."
+review-round: 8
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-0j88m5  2. claude plugin test core/mod/builtin/jaira-cockpit -> '207 pass, 1 fail'; der eine Fehler ist 'the band lists the tickets...' und kommt von der Basis  3. claude --plugin-dir core/mod/builtin/jaira-cockpit starten  4. einen Hintergrund-Agenten starten, der nur 'Ticket MG677R: review -> signoff, review-verdict=\"approve\"' antwortet, warten bis er fertig ist  5. /cockpit report MG677R -> der volle Bericht, '1 of 1'  6. /cockpit report MG677R nochmal -> 'Nothing new for MG677R since it was last read; 1 older report(s) kept: /cockpit report MG677R all'  7. /cockpit report MG677R all -> der Bericht wieder  8. /cockpit report -> Zeile 'MG677R  1 report(s), 0 new, last ...'  9. zweiten Agenten mit 'Ticket MG677R: signoff -> review' starten, dann /cockpit ticket MG677R -> Pane zeigt beide  10. /cockpit report MG677R -> 'Nothing new for MG677R'"
 ---
 
 # cockpit report liefert nur, was seit dem letzten Lesen kam, nicht alte Meldungen
@@ -117,3 +130,17 @@ Empfehlung: 2 - das Prozess-Fenster ist entschieden und dokumentiert (register.t
 │     │                                                                                                           │ тикет — это и есть прочитать
 - **2026-11-20 18:00 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
 - **2026-11-20 18:03 · Alexander Sacharov** — in-progress round 7 (given back from signoff: pane must mark read): the mark moved into one helper readReports() (register.tsx:259), used by reports() and by the Ticket pane under locked(). The pane re-renders, and every render marks again - harmless, the mark is idempotent and writes nothing once all are seen or the key is empty (no ghost row). New DoD 11, test board.test.ts:2262. Proofs 1, 10 re-pointed. claude plugin test: 207 pass, 1 fail = board.test.ts band borderStyle, outside. Release note line added.
+- **2026-11-20 18:04 · Alexander Sacharov** — critique round 7: none - readReports() is the single place for read+mark, both callers already ran under locked(); the pane marking on every render is the idempotent mark, not a second writer pattern. Re-rendering an open pane marks a report that arrives while it is open - it is on screen, so read is right.
+- **2026-11-20 18:07 · Alexander Sacharov** — bughunt: done at d84995de - 0 findings in 1 module, follow-up hunt since 06bc0b6d (diff only: register.tsx readReports() extracted from reports() unchanged in behaviour, Pane render now marks the ticket's reports read under the same locked() as keep(), so no lost update; 0J88M5.md one line added, format ok; board.test.ts new to the list, its 0J88M5 hunk read: test exercises pane-read then report then a later report; filter.ts, texts.ts, cockpit.test.ts unchanged; untracked .jaira/milestones/*.md are board data, skipped); concurrency, error paths, input, permissions checked; ran: claude plugin test core/mod/builtin/jaira-cockpit (207 pass, 1 fail outside the change: board.test.ts band verdict, same as last round); files: core/mod/builtin/jaira-cockpit/hooks/filter.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/0J88M5.md
+- **2026-11-20 18:07 · Alexander Sacharov** — testing round 7: hunter could not verify from the mod whether the engine renders a pane that is docked but not visible; if it does, a report arriving while the pane stays open counts as read unseen. Not checkable from plugin code; left as known limit for the person.
+- **2026-11-20 18:15 · Alexander Sacharov** — explain: Die Lesemarke (seen) ist ein read-modify-write ueber Prozesse hinweg, der Lock gilt nur innerhalb eines Prozesses. Kommt in Session A eine Meldung zwischen get und set eines Lesens in Session B an, ueberschreibt B sie.
+Warum: Ein so verlorener Bericht waere genau das, was DoD 8 ausschliesst. Das Fenster liegt im Millisekundenbereich und braucht zwei Teamlead-Sessions auf demselben Projekt; getestet und testbar ist es nicht.
+1) Zurueckgeben und die Lesemarke prozessuebergreifend absichern (z.B. Datei-Lock oder Marke je Meldung statt je Projekt) [give back]
+2) Ticket so annehmen und das Prozess-Fenster als bekannte Grenze stehen lassen [accept]
+Empfehlung: 2 - das Risiko ist theoretisch (Millisekunden, zwei Sessions), der Diff erfuellt DoD 1-11, alle neuen Tests sind gruen und es gibt keinen Blocker.
+- **2026-11-20 19:15 · Alexander Sacharov** — explain: Die Lesemarke (seen) ist ein read-modify-write über Prozesse hinweg, der Lock gilt nur innerhalb eines Prozesses. Kommt in Session A eine Meldung zwischen get und set eines Lesens in Session B an, überschreibt B sie.
+Warum: Ein so verlorener Bericht wäre genau das, was DoD 8 ausschließt. Das Fenster liegt im Millisekundenbereich und braucht zwei Teamlead-Sessions auf demselben Projekt; getestet und testbar ist es nicht.
+1) Zurückgeben und die Lesemarke prozessübergreifend absichern (z.B. Datei-Lock oder Marke je Meldung statt je Projekt) [give back]
+2) Ticket so annehmen und das Prozess-Fenster als bekannte Grenze stehen lassen [accept]
+Empfehlung: 2 - das Risiko ist theoretisch (Millisekunden, zwei Sessions), der Diff erfüllt DoD 1-11, alle neuen Tests sind grün und es gibt keinen Blocker.
+- **2026-11-20 19:18 · Alexander Sacharov** — decision: 2) Ticket so annehmen und das Prozess-Fenster als bekannte Grenze stehen lassen
