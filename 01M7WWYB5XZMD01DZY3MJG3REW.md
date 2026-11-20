@@ -1,7 +1,7 @@
 ---
 id: 01M7WWYB5XZMD01DZY3MJG3REW
 title: Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T17:07:43Z
+updated-at: 2026-11-20T17:07:47Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59469
 claimed-at: 2026-11-20T16:43:41Z
@@ -32,7 +32,7 @@ outcome-what: "Board-Dateien .jaira/pr (person|agent, Default person) und .jaira
 outcome-why: "Ein Teamlead machte jede PR-Runde von Hand (push, PR-Text, Copilot anfordern, antworten, resolve); Alex erlaubt Agenten das inzwischen, aber nur pro Repo."
 outcome-resolves: "Mit .jaira/pr=agent oeffnet jaira-role-pr den PR nach der Abnahme aller Tickets selbst, fordert den Reviewer an und faehrt eine Kommentarrunde; ohne Datei bleibt alles wie heute; Merge/Approve bleibt in jedem Fall beim Menschen."
 review-summary: none
-round: 3
+round: 4
 review-gaps: "none - Fix 1dd8e6d7 gelesen: die zusaetzliche Abfrage vor reply ist der Preis der Wiederholbarkeit (ein Aufruf pro Thread), kein Duplikat, kein toter Code"
 test-verdict: "pass: go test -count=1 -race ./... RC=0 auf 1dd8e6d7; Fix-Tests TestPRRoundReplyIsSafeToRunAgain, -f-Pruefung und @login gruen"
 hunt-verdict: "fail: bughunt done at 1dd8e6d7, 1 change: reply haelt einen Thread fuer beantwortet, sobald der letzte Kommentar vom selben gh-Login stammt - unter dem Konto des Maintainers wird dessen eigene Bitte ohne Antwort resolved"
