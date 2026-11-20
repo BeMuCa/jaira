@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T22:51:00Z
+updated-at: 2026-11-20T22:53:06Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -76,3 +76,4 @@ F2 Wie erfaehrt der ausgelieferte Prompt davon?
  2) nur erzeugter Block, Prompt sagt 'der Block gilt vor mir' - Entscheidung vom 15.09., aber dann gibt es zwei Mechanismen fuer .jaira/pr.
  3) nur Laufzeit, Block bleibt fest.
 Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
+- **2026-11-20 22:53 · Alexander Sacharov** — decision: Teamlead 20.11. 23:00: 1/1 - F1: dritter Wert 'none' in .jaira/pr. F2: beide Wege - die Rolle liest zur Laufzeit (roles list), und jaira update schreibt den passenden Absatz in den CLAUDE.md/AGENTS.md-Block. Baut auf feat/jg3rew auf (PR #149, noch nicht gemergt). Modus bleibt autonom: Alex schlaeft, Teamlead will bis signoff durchgezogen; weitere Fragen an den Teamlead.
