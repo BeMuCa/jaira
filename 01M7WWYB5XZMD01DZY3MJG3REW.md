@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T16:59:29Z
+updated-at: 2026-11-20T16:59:38Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59469
 claimed-at: 2026-11-20T16:43:41Z
@@ -31,9 +31,7 @@ question: ""
 outcome-what: "Board-Dateien .jaira/pr (person|agent, Default person) und .jaira/pr-reviewer; settings.PRFor/PRReviewerFor; 'jaira roles list' zeigt pr/pr_source/pr_reviewer; jaira-role-pr: Abschnitt 'Whether this board lets an agent open it', create nur bei person-Aufruf oder agent+alle Tickets done, Reviewer anfordern, eine Kommentarrunde ueber neues scripts/pr-round.sh (threads, comments, reply=antworten+resolve, comment, request); teamlead/dispatcher nennen die Ausnahme; Release-Note."
 outcome-why: "Ein Teamlead machte jede PR-Runde von Hand (push, PR-Text, Copilot anfordern, antworten, resolve); Alex erlaubt Agenten das inzwischen, aber nur pro Repo."
 outcome-resolves: "Mit .jaira/pr=agent oeffnet jaira-role-pr den PR nach der Abnahme aller Tickets selbst, fordert den Reviewer an und faehrt eine Kommentarrunde; ohne Datei bleibt alles wie heute; Merge/Approve bleibt in jedem Fall beim Menschen."
-review-summary: |-
-  core/settings/settings.go PRReviewerFor kopiert die Zeichenpruefung aus modelName mit zwei Zeichen mehr - eine Funktion (word(v, extra)) fuer beide statt zwei Schleifen
-  core/role/builtin/jaira-role-pr/SKILL.md GitLab-Absatz der Kommentarrunde: glab api 'projects/:id/...' setzt das Projekt des aktuellen Verzeichnisses ein (origin, im Fork falsch) und 'glab mr note' antwortet auf der MR statt im Thread - Diskussionen per glab api 'projects/<owner%2Frepo>/merge_requests/<n>/discussions' listen, in der Diskussion antworten (POST .../discussions/<id>/notes) und dort resolven
+review-summary: none
 round: 2
 ---
 
