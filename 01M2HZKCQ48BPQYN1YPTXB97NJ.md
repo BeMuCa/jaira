@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:29:40Z
+updated-at: 2026-11-20T23:29:47Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -132,3 +132,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-20 23:23 · Alexander Sacharov** — in-progress (Runde 4, Bughunt Runde 3 = Verfeinerung von F1, nicht neu verhandelt): Pruefung 'diff-tree --cc leer' ersetzt durch 'Baum des Merges == git merge-tree --write-tree p1 p2' (core/gitrepo/named.go isPlainMerge). Faengt -s ours und checkout --ours (Ergebnis gleich einem Elternteil, fuer --cc unsichtbar). Braucht git >= 2.38; aelteres git -> Tor zu (fail closed), dann muss der Merge ein Ticket nennen. Test: TestPRGateOnANoneBoardRefusesCommitsNoTicketOwns (-s ours haelt, gleicher Merge normal gemacht passiert). -race RC=0.
 - **2026-11-20 23:24 · Alexander Sacharov** — critique (Runde 6): merge-tree statt diff-tree ist der direkte Weg (git's eigenes Ergebnis als Massstab), fail closed bei altem git ist richtig fuer ein Tor - nichts zu sagen.
 - **2026-11-20 23:25 · Alexander Sacharov** — bughunt: done at 282565fb - 0 findings in 2 modules, follow-up hunt since 59049e2d (diff of core/gitrepo/named.go, internal/cli/prgate_test.go; no new files); concurrency, error paths, input, permissions checked; files: core/board/announce.go core/board/arrival.go core/board/arrival_test.go core/gitrepo/named.go core/release/notes/XB97NJ.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-dispatcher/scripts/reap.sh core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/reap_test.go core/settings/settings.go core/settings/settings_test.go core/shipped/shipped.sha256 internal/cli/prgate_test.go internal/cli/roles.go
+- **2026-11-20 23:29 · Alexander Sacharov** — review (fresh context): keine Blocker, 8/8 DoD erfuellt; 3 notes in review-gaps (known limit F2, validate-Meldung nennt Lanes statt .jaira/pr, reap.sh misst nur an origin/HEAD). Tests + Handprobe am Scratch-Board gruen.
