@@ -56,7 +56,9 @@ ticket, not something you fix here:
    bookkeeping. Leave that file alone here: **File the finished tickets away**
    below commits it, filed into the logbook, for every ticket that is in done —
    the one exception, and the step that settles it. Anything else uncommitted is
-   a finding: stop and say so.
+   a finding: stop and say so. On a board that has not been shared yet,
+   `.jaira/` is out of git and there is no ticket file to carry: a code commit
+   without one is the rule there, not a finding.
 3. **Every commit names the ticket id.** On a board that has not been shared,
    the handle in the commit message is the only thing tying a commit to a
    ticket, and the commit list is derived from it.
