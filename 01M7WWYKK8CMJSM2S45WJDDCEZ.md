@@ -17,7 +17,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T16:34:35Z
-updated-at: 2026-11-20T16:34:35Z
+updated-at: 2026-11-20T16:41:11Z
+updated-by: Alexander Sacharov
 ---
 
 # Was worktree-setup beim Spawn aufbaut, baut reap.sh beim Aufraeumen wieder ab
