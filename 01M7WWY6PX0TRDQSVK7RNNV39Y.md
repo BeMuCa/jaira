@@ -16,10 +16,12 @@ definition-of-done: "Ein neues privates Board und jeder neue Worktree davon lass
 tags:
   - cli
 blocked-by: []
-related: []
+related:
+  - 01M263QP1A3MRANYPWGYSDBCT5
+  - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T16:39:48Z
+updated-at: 2026-11-20T16:39:51Z
 updated-by: Alexander Sacharov
 ---
 
