@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T17:53:45Z
+updated-at: 2026-11-20T17:53:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-87225
 claimed-at: 2026-11-20T17:38:56Z
@@ -69,7 +69,7 @@ review-check: "1. cd into a scratch clone of a GitHub repo you own, with an open
 - [x] Eingabeklasse Copilot nicht verfuegbar (Reviewer-Anfrage abgelehnt): wird gemeldet, PR bleibt offen, kein Abbruch der Runde
   proof: core/role/pr_round_test.go TestPRRoundRequestsTheReviewer (GH_POST=fail -> exit 4 with gh's reason); core/role/builtin/jaira-role-pr/SKILL.md:360
 - [x] Eingabeklasse zweite Runde auf denselben Kommentaren: bereits resolved Threads werden nicht erneut beantwortet
-  proof: core/role/pr_round_test.go TestPRRoundListsOnlyWhatIsOpen (resolved thread not listed), TestPRRoundReplyIsSafeToRunAgain (answered/resolved thread gets no second answer)
+  proof: core/role/pr_round_test.go TestPRRoundListsOnlyWhatIsOpen (resolved thread not listed), TestPRRoundReplyIsSafeToRunAgain, TestPRRoundCommentSaysItOnce (said in an earlier round -> nothing posted)
 - [x] Eingabeklasse .jaira/pr/.jaira/pr-reviewer leer, CRLF, Kommentar, Tippfehler, Shell-Sonderzeichen: Tabellentest, Default person / Reviewer leer
   proof: core/settings/settings_test.go TestPRDefaultsToThePerson, TestPRReviewerIsALoginOrNothing (empty, CRLF, comment, typo, shell chars)
 - [ ] Das Gate 'alle Tickets des Branches in done' prueft das Binary: jaira roles pr-gate <base> mit Exit 3 und Liste der offenen Tickets; pr-round.sh open oeffnet nur nach bestandenem Gate
