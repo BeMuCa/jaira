@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T19:25:26Z
+updated-at: 2026-11-20T19:25:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96533
 claimed-at: 2026-11-20T19:19:14Z
@@ -30,7 +30,7 @@ outcome-why: "signoff-Rueckgabe: ein unlesbares info/exclude wurde bisher durch 
 outcome-resolves: Datenverlust bei unlesbarer Ausschlussdatei
 review-summary: "none"
 round: 14
-review-gaps: "none - Diff 79d71506: eine Pruefung in appendEntry, Idiom errors.Is(err, fs.ErrNotExist) wie im Rest des Repos; nichts doppelt, nichts tot"
+review-gaps: "none - Diff dde1cf1c: zwei Aufrufe getauscht, eine Fehlerumhuellung, ein Test"
 test-verdict: "fail->fixed: suite -race gruen (RC=0) bei 79d71506; DoD 10 per Test belegt; aber share mit unlesbarer .gitignore liess das Board halb geteilt (bughunt)"
 hunt-verdict: "2 change (Release-Note init stoppt nicht; share halb geteilt) - zurueck in in-progress"
 review-verdict: "Der Diff erfuellt alle 9 DoD-Punkte, jeder mit Test; go test ./core/board ./core/ticket ./internal/cli und go vet gruen. Mit gebautem Binary nachgespielt: init + neuer Worktree lassen git status sauber, share/--undo, Migration einer alten .gitignore-Zeile (zweites update meldet nichts), Teamkollege ohne Ausschluss wird ausgeschlossen, Board in 'sub dir/' bekommt /sub dir/.jaira/. Kein Blocker; vier Notes, davon eine pre-existing."
