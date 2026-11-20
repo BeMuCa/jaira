@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:26:01Z
+updated-at: 2026-11-20T19:26:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99353
 claimed-at: 2026-11-20T19:19:21Z
@@ -37,8 +37,8 @@ outcome-resolves: "DoD 6: 20-in-progress.md:72-76 und :88,:96 (round in jeder ba
 review-summary: "none - round-Nummer in der back:-Zeile ist die kleinste Form; nutzt das vorhandene round-Feld aus jaira show statt eines neuen Musters"
 round: 13
 review-gaps: "none - drei Ersetzungen, nichts verwaist"
-test-verdict: "pass: go test -count=1 ./core/lane/... ./core/shipped/... ./core/role/... ./core/release/... RC=0 (Folgerunde: Tests der seit d0cb1f49/c3e5a7df geaenderten Dateien); DoD 1-7 im Baum, Zwillinge byte-gleich, drei neue Manifest-Hashes = sha256 HEAD; Funktion auf Scratch-Board mit diesen Lanes: pre-process->human ohne Plan RC=3 'lane pre-process declares it produces plan, which is still empty', nach 'dod --plan --add' faellt diese Verletzung weg; Fehlerpfad = genau dieser Refuse; schreibt nichts Neues (nur Prompt-Text), zwei Schreiber entfallen"
-hunt-verdict: "change: 20-in-progress.md:72-74 restart rule compares against the sender's note, which a restarted worker misreads - see bughunt note 19:23"
+test-verdict: "pass: Folgerunde seit 10b38a7a: go test -count=1 ./core/lane/... ./core/shipped/... RC=0, go test ./core/role -run Shipped RC=0; Zwilling in-progress byte-gleich, neuer Manifest-Hash = sha256 HEAD; Neustart-Regel liest round aus jaira show, back: person/unknown tragen round; Vorrunde: pre-process->human ohne Plan auf Scratch-Board refused, mit Plan-Schritt nicht; nur Prompt-Text, kein Schreibpfad"
+hunt-verdict: "pass: bughunt done at 08c670e2 - 0 findings, follow-up since 10b38a7a"
 review-verdict: "Alle 7 DoD-Punkte sind im Baum erfuellt, kein Blocker: reine Prompt-Aenderung, Twins byte-gleich, Manifest-Hashes stimmen, go test ./core/lane ./core/shipped ./core/role ./core/release gruen. Drei kleine Wortlaut-Raender als note; die Rueckgabe-Zaehlung bleibt eine Note-Konvention bis move die Herkunfts-Lane schreibt (DF0YD6/H6CD33) - bekannt und vom Teamlead so entschieden."
 review-round: 11
 review-check: "1. cd /home/alex/projects/.worktrees/jaira-tw5fe2  2. go test -count=1 ./core/lane/... ./core/shipped/... ./core/role/...  -> alles ok  3. for f in pre-process in-progress testing review; do cmp core/lane/builtin/*-$f.md .jaira/lanes/$f.md && echo same $f; done  -> viermal same  4. sed -n 29,104p core/lane/builtin/20-in-progress.md  -> Abschnitte 'Fix the class, not the example' und 'The third return from the same lane' mit back:-Zeilen und Absender-Liste  5. sed -n 38,76p core/lane/builtin/15-pre-process.md  -> Abschnitt 'Name the edges before the code' mit den sieben Eingabeklassen und jaira dod --add  6. cat core/release/notes/TW5FE2.md  -> 8 einzeilige Zeilen, keine umbrochen"
