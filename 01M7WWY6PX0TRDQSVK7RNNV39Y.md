@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T19:25:52Z
+updated-at: 2026-11-20T19:26:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96533
 claimed-at: 2026-11-20T19:19:14Z
@@ -159,3 +159,4 @@ Empfehlung: 2 - der Lesefehler-Fall ist praktisch kaum erreichbar und war schon 
 - **2026-11-20 19:24 · Alexander Sacharov** — testing: beide bughunt-Funde stimmen. Fix: share schreibt AddLanesIgnore VOR RemoveIgnore - ein Schreibfehler an .gitignore laesst das Board privat, Fehler sagt 'the board stays private'; Test TestShareWithAnUnreadableGitignoreLeavesTheBoardPrivate (faellt ohne Umstellung). Release-Note: init warnt nur (Prepare-Vertrag, unveraendert), share/--undo/update brechen ab.
 - **2026-11-20 19:25 · Alexander Sacharov** — critique Runde 14 (Diff 79d71506..dde1cf1c): nichts - Reihenfolge tauschen ist die kleinste Form, kein Rollback noetig.
 - **2026-11-20 19:25 · Alexander Sacharov** — testing Runde 2 (dde1cf1c, gebautes Binary): init sauber; share mit chmod 000 .gitignore -> exit 1 'the board stays private', /.jaira/ bleibt in info/exclude; share --undo mit chmod 000 info/exclude -> exit 1, Datei byteweise erhalten ('mine' bleibt); zwei parallele share --undo -> Eintrag genau einmal. Beobachtet, gelassen: share mit unlesbarem info/exclude meldet geteilt und laesst die Zeile stehen (dropEntry liest Fehler als 'nichts da') - git kann die Datei dann auch nicht lesen, ignoriert also nichts; kein Datenverlust.
+- **2026-11-20 19:26 · Alexander Sacharov** — bughunt: change: internal/cli/share.go:91-94 - share has no already-shared guard, so re-running 'jaira share' on a board that is already shared, with a .gitignore it cannot read, fails with 'the board stays private: open .gitignore: permission denied' although the board is shared and git does not ignore it; the message reports a state that does not exist (AddLanesIgnore swallows its own read error at core/board/gitignore.go:344 and fails later in appendEntry); ran: init; share (exit 0); chmod 000 .gitignore; share (exit 1, 'stays private'); git check-ignore -q .jaira/x (exit 1, not ignored)
