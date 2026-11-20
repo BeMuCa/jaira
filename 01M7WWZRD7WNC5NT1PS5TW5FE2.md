@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T18:23:16Z
+updated-at: 2026-11-20T18:23:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-37518
 claimed-at: 2026-11-20T18:18:38Z
@@ -45,7 +45,7 @@ test-verdict: "pass: follow-up round since d0cb1f49 - go build ./... ok; go test
 hunt-verdict: "pass: bughunt done at c3e5a7df, 0 change, 0 pre-existing"
 review-verdict: "Alle 7 DoD-Punkte sind im Baum erfuellt, kein Blocker: reine Prompt-Aenderung, Twins byte-gleich, Manifest-Hashes stimmen, go test ./core/lane ./core/shipped ./core/role ./core/release gruen. Drei kleine Wortlaut-Raender als note; die Rueckgabe-Zaehlung bleibt eine Note-Konvention bis move die Herkunfts-Lane schreibt (DF0YD6/H6CD33) - bekannt und vom Teamlead so entschieden."
 review-round: 11
-review-check: "1. cd into the TW5FE2 worktree  2. go test ./core/shipped ./core/role ./core/lane - all three print ok  3. open core/lane/builtin/15-pre-process.md - section 'Name the edges before the code' lists the 7 input classes and the jaira dod --add examples  4. open core/lane/builtin/20-in-progress.md - sections 'Fix the class, not the example' and 'The third return from the same lane' are there  5. diff .jaira/lanes/in-progress.md core/lane/builtin/20-in-progress.md - prints nothing  6. cat core/release/notes/TW5FE2.md - 7 lines, each starting '- ', none wrapped"
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-tw5fe2  2. go test -count=1 ./core/lane/... ./core/shipped/... ./core/role/...  -> alles ok  3. for f in pre-process in-progress testing review; do cmp core/lane/builtin/*-$f.md .jaira/lanes/$f.md && echo same $f; done  -> viermal same  4. sed -n 29,104p core/lane/builtin/20-in-progress.md  -> Abschnitte 'Fix the class, not the example' und 'The third return from the same lane' mit back:-Zeilen und Absender-Liste  5. sed -n 38,76p core/lane/builtin/15-pre-process.md  -> Abschnitt 'Name the edges before the code' mit den sieben Eingabeklassen und jaira dod --add  6. cat core/release/notes/TW5FE2.md  -> 8 einzeilige Zeilen, keine umbrochen"
 ---
 
 # Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels
