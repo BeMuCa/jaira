@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T16:58:11Z
+updated-at: 2026-11-20T17:02:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-42185
 claimed-at: 2026-11-20T16:42:15Z
@@ -35,10 +35,10 @@ outcome-what: "Eingebaute Lanes pre-process, in-progress, testing, review und di
 outcome-why: "Review- und bughunt-Schleifen liefen 10-24 Runden, weil jede Runde den Nachbarfall eines nur am Beispiel reparierten Fehlers fand und die vier Kategorien vor dem Code nie gefragt wurden."
 outcome-resolves: "DoD 1-4: pre-process 15-pre-process.md:38, in-progress 20-in-progress.md:29, bughunt SKILL.md:104 und testing 27-testing.md:102, eingebettet mit shipped.sha256 und core/release/notes/TW5FE2.md"
 review-summary: none
-round: 5
-review-gaps: "none: nur Prompt-Text; die vier Kategorien und die Blocker-Definition stehen bewusst in jeder Lane, die sie anwendet, weil jede nur ihren eigenen Prompt liest; nichts verwaist"
-test-verdict: "pass: go test -race -count=1 ./... RC=0, go build ok; DoD 1-7 im Baum geprueft; alle vier Lanes liefern ihren --for-lane-Payload; .jaira/lanes byte-gleich mit builtin"
-hunt-verdict: "fail: bughunt done at e101fb64, 2 change - die Dritte-Rueckgabe-Regel in in-progress zaehlt Notes-Praefixe (testing: note:, mehrere bughunt: change: pro Runde, review ohne Praefix) und vergisst optimize"
+round: 6
+review-gaps: "none: Zaehlregel ersetzt die Praefixliste, nichts Doppeltes oder Verwaistes"
+test-verdict: "pass: go test -race -count=1 ./... RC=0, go build ok; in-progress-Kopie byte-gleich"
+hunt-verdict: "fail: bughunt done at ad6a6ffc, 1 change - 'round > 1' zaehlt auch Rueckgaben einer Person aus signoff/human als Loop-Rueckgabe"
 ---
 
 # Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels
@@ -52,11 +52,11 @@ hunt-verdict: "fail: bughunt done at e101fb64, 2 change - die Dritte-Rueckgabe-R
 - [x] bughunt- und testing-Prompt: ein Fund nennt die Klasse und das Beispiel; der Rueckweg nach in-progress verlangt den Fix der Klasse
   proof: core/role/builtin/jaira-role-bughunt/SKILL.md:104; core/lane/builtin/27-testing.md:112,121 (class + example; passed only when the class is fixed)
 - [x] Die eingebetteten Lanes und Rollen sind geaendert, mit Release-Note
-  proof: core/shipped/shipped.sha256:560-572; .jaira/lanes/{pre-process,in-progress,testing,review}.md byte-equal to builtin; core/release/notes/TW5FE2.md; go test ./core/shipped ./core/lane ./core/role/... ok
+  proof: core/shipped/shipped.sha256:560-573; .jaira/lanes/{pre-process,in-progress,testing,review}.md byte-equal to builtin; core/release/notes/TW5FE2.md; go test ./core/shipped ./core/lane ./core/role/... ok
 - [x] pre-process nennt die Standard-Eingabeklassen: leer, sehr gross, Sonderzeichen/Kodierung/CRLF, Pfade mit Leerzeichen, Windows, zwei Prozesse gleichzeitig, Fehler auf halbem Weg
   proof: core/lane/builtin/15-pre-process.md:48-55
 - [x] Schleifenbremse in testing, review und in-progress: Blocker nur falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke; Folgerunde testet und huntet nur den Diff seit dem letzten Hunt; nach 3 Rueckgaben aus derselben Lane eine Frage statt Runde 4
-  proof: core/lane/builtin/27-testing.md:97 (blocker = four kinds), 27-testing.md:127-130 (follow-up round diff only, then review); core/lane/builtin/40-review.md:57; core/lane/builtin/20-in-progress.md:66-87 (own 'back: <lane>, round <n>' lines, third -> human question)
+  proof: core/lane/builtin/27-testing.md:97 (blocker = four kinds), 27-testing.md:127-130 (follow-up round diff only, then review); core/lane/builtin/40-review.md:57; core/lane/builtin/20-in-progress.md:66-92 (own back: lines per round, back: person resets, third -> human question)
 - [x] Kleine Raender der Aenderung aus review-gaps werden in derselben Runde geschlossen statt als note: zur Person zu gehen; Vorbestehendes ausserhalb des Umfangs steht als 'note: pre-existing: ...'
   proof: core/lane/builtin/20-in-progress.md:58 (close small edges in the same round); core/lane/builtin/40-review.md:61-66 (note names class and fix; note: pre-existing:)
 
@@ -84,3 +84,8 @@ hunt-verdict: "fail: bughunt done at e101fb64, 2 change - die Dritte-Rueckgabe-R
 - **2026-11-20 16:56 · Alexander Sacharov** — bughunt: done at e101fb64 - 2 findings (2 change, 0 pre-existing) in 6 modules, follow-up hunt since ab6eeb90; concurrency, error paths, input, permissions checked (third-return 'jaira move --to human --question' from in-progress passes the gate once outcomes are set, ran on a scratch board with this repo's lanes; lane copies equal builtin; manifest holds current and previous 40-review/15/20/27 hashes; go test core/shipped core/lane green); files: .jaira/lanes/in-progress.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md core/lane/builtin/15-pre-process.md core/lane/builtin/20-in-progress.md core/lane/builtin/27-testing.md core/lane/builtin/40-review.md core/release/notes/TW5FE2.md core/role/builtin/jaira-role-bughunt/SKILL.md core/shipped/shipped.sha256
 - **2026-11-20 16:57 · Alexander Sacharov** — back: testing, round 5
 - **2026-11-20 16:57 · Alexander Sacharov** — Fix der Klasse 'Rueckgaben aus gedruckten Notes zaehlen': in-progress schreibt beim Aufnehmen einer Rueckgabe selbst eine Zeile 'back: <lane>, round <n>' und zaehlt nur diese - Ursache statt Praefixliste; optimize ist darin mit genannt. Verworfen: Feld round (zaehlt alle Lanes zusammen, haelt gesunde Tickets nach 3 verschiedenen Rueckgaben an) und neue Praefixe in vier Lanes (groesser, gleiche Mehrdeutigkeit bei mehreren Notes pro Runde).
+- **2026-11-20 16:59 · Alexander Sacharov** — bughunt: change: core/lane/builtin/20-in-progress.md:72 (and .jaira/lanes/in-progress.md:72) - class: the rule reads 'round above 1' as 'a loop lane sent it back', but core/move/move.go:133 sendsBack bumps round on every move to an earlier lane, including a person's return from signoff or human; the prompt then picks the sender only among 'critique, optimize, testing or review' from the newest notes, so a signoff return (newest note: the review's, no prefix) is logged as 'back: review' and, after two real review returns, makes in-progress escalate to human instead of doing what the person asked; a human answer after the third-return escalation is likewise logged against the loop lane. Example: signoff -> in-progress. ran: scratch board with this repo's lanes, jaira move <id> --to in-progress from signoff (exit 0, round 2->3) and from human (round 3->4)
+- **2026-11-20 16:59 · Alexander Sacharov** — bughunt: done at ad6a6ffc - 1 finding (1 change, 0 pre-existing) in 3 modules, follow-up hunt since e101fb64; concurrency, error paths, input, permissions checked (new block identical in builtin and board copy; manifest line b8ef26c5 matches sha256 of 20-in-progress.md; round exists in jaira show --json; 'back:' prefix collides with no other reader); files: .jaira/lanes/in-progress.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md core/lane/builtin/15-pre-process.md core/lane/builtin/20-in-progress.md core/lane/builtin/27-testing.md core/lane/builtin/40-review.md core/release/notes/TW5FE2.md core/role/builtin/jaira-role-bughunt/SKILL.md core/shipped/shipped.sha256
+- **2026-11-20 17:01 · Alexander Sacharov** — Frage an den Teamlead: testing hat TW5FE2 zum dritten Mal zurueckgeschickt (1: nachgetragene Interim-DoD 5-7, 2: Rueckgaben nach Notes-Praefixen gezaehlt, 3: 'round > 1' zaehlt auch Rueckgaben aus signoff/human). Runde 3 verbatim: in-progress.md:72 liest round>1 als Loop-Rueckgabe, move.go:133 erhoeht round bei jedem Rueckweg, auch von einer Person. Einschaetzung: DoD stimmt, die Schleife wird nicht tiefer - Runde 1 war Umfangserweiterung, 2 und 3 sind dieselbe Klasse (Zaehlregel), jeder Fix kleiner. Vorschlag: eine Runde noch - Rueckgabe einer Person (signoff/human) wird als 'back: person' notiert, zaehlt nicht und setzt die Zaehlung zurueck; danach review. Optionen: 1) Ja, eine Runde, dann review (empfohlen) 2) Nein, so an review/Person geben, Fund als note
+- **2026-11-20 17:01 · Alexander Sacharov** — Teamlead-Antwort 17:01: Option 1, eine Runde. Rueckgabe aus einer Menschen-Lane (signoff, human, jede Lane mit requires-human-exit) und die Antwort einer Person nach einer Eskalation werden 'back: person' notiert, zaehlen nicht und setzen die Zaehlung zurueck; nicht auf round allein stuetzen. Danach Testlauf, Bughunt nur ueber den Diff, dann review - keine weitere Runde aus testing, was danach kommt ist note: fuer die Person. shipped.sha256-Fund bleibt note: pre-existing, Teamlead klaert mit Alex. Prompt-Zaehler klein halten, echte Zaehlung kommt mit DF0YD6/H6CD33.
+- **2026-11-20 17:01 · Alexander Sacharov** — back: testing, round 6

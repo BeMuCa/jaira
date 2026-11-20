@@ -69,15 +69,20 @@ The lanes' own notes do not count returns: one round leaves several
 `bughunt: change:` notes, testing writes `testing: note:` on a round that
 passes, and the review's note has no fixed prefix. So keep the count
 yourself. When you pick up a ticket that was sent back — `round` in
-`jaira show <id> --json` is above 1 — find the lane that sent it (the newest
-notes on the ticket say which: critique, optimize, testing or review) and write
-one line before anything else, once per round:
+`jaira show <id> --json` is above 1 — find out who sent it and write one line
+before anything else, once per round:
 
 ```bash
 jaira note <id> "back: testing, round 3"
 ```
 
-Then count your own `back:` lines for that lane. When this is the third, do
+`round` counts every way back, a person's included, so it only says that the
+ticket was sent back, not by whom. A person sent it when it comes from a lane
+a person owns (signoff, human) or answers a question you asked: write
+`back: person` — it is the person's word, not a loop, so do what they asked.
+
+Then count your `back:` lines for that lane since the last `back: person`.
+When this is the third, do
 not start a fourth round. Move the ticket to the human lane with the question
 instead — the third round's findings, and whether the definition of done is
 wrong or the loop reads deeper every round without ending:
