@@ -98,12 +98,14 @@ round fixes both at once.
 data loss, a crash, a security hole. A failed gate or an unmet
 definition-of-done item is a wrong result. Anything smaller of this change —
 a missing guard that breaks nothing yet, a test that covers the example but
-not its neighbour — rides along in the note of a round that goes back anyway,
-and is otherwise a `note:` line for the review; it alone never starts a round.
+not its neighbour — rides along in the note of a round that goes back anyway.
+Otherwise it is a note on the ticket for the review and the person
+(`jaira note <handle> "testing: note: <class; example; fix>"`, the hunter's own
+note where it came from the hunt), counted in a verdict that still passes; it
+alone never starts a round.
 
 - **Findings.** A failed pass, or a `change` finding from the hunt that is a
-  blocker. Write the
-  field it belongs to as `fail: <what is wrong, in one line>` —
+  blocker. Write the field it belongs to as `fail: <what is wrong, in one line>` —
   `test-verdict`, `hunt-verdict`, or both. For a failed pass put the detail
   into a note for the implementing agent that picks it up — what is broken,
   the exact evidence (verbatim output, file:line), and how you would fix it.

@@ -66,9 +66,9 @@ the next example of a mistake that was fixed for one example only. So:
 ## The third return from the same lane
 
 Count the returns in the ticket's notes: every lane that sends work back here
-leaves a note starting with its name (`critique:`, `testing:`, `bughunt:
-change:`, a review `blocker:`). When this is the third time the same lane sent
-the ticket back, do not start a fourth round. Move it to the human lane with
+leaves a note — `critique:`, `testing:`, `bughunt: change:`, or the review's
+note on its blocker. When this is the third time the same lane sent the
+ticket back, do not start a fourth round. Move it to the human lane with
 the question instead — the third round's findings, and whether the definition
 of done is wrong or the loop reads deeper every round without ending:
 
