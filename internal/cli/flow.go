@@ -726,7 +726,7 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			// lane files before an older board could hand it on.
 			"blocker_rule":   ticket.BlockerRule(t),
 			"stop_after_fix": t.StopAfterFix,
-			"back":           map[string]any{"from": t.BackFrom, "by": t.BackBy, "count": t.BackCount},
+			"back":           backJSON(t),
 			"round":          ticket.CurrentRound(t),
 			"prompt":         l.Prompt,
 			"input":          fields,

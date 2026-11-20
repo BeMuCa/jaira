@@ -114,17 +114,18 @@ export function snapshotOf(
     if (isMine) counts.person++
     const next = t.next_lane === undefined ? undefined : byId.get(t.next_lane)
     const into = isMine ? waiting : theirs
+    const verdict = oneLine(t.review?.verdict)
     into.push({
       id: t.handle,
       title: t.title,
       lane: t.status,
-      verdict: oneLine(t.review?.verdict),
+      verdict,
       question: oneLine(t.question),
       acceptTo: next?.terminal === true ? next.id : null,
       assignee,
-      explainable: explainable(oneLine(t.review?.verdict), t.review?.gaps),
+      explainable: explainable(verdict, t.review?.gaps),
       // Before a review the gaps hold what the optimize lane removed: no notes.
-      notes: oneLine(t.review?.verdict) === '' ? [] : notesOf(t.review?.gaps),
+      notes: verdict === '' ? [] : notesOf(t.review?.gaps),
       ...(sameRound(t) ? {} : { reviewedIn: t.review_round }),
     })
   }

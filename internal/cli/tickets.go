@@ -1675,6 +1675,12 @@ func nextLaneID(t *ticket.Ticket, lanes *lane.Set) string {
 	return ""
 }
 
+// backJSON is the last send-back as jaira recorded it, as show --json and
+// the --for-lane payload both print it.
+func backJSON(t *ticket.Ticket) map[string]any {
+	return map[string]any{"from": t.BackFrom, "by": t.BackBy, "count": t.BackCount}
+}
+
 func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 	_, known := lanes.Get(t.Status)
 	dodComplete, _ := t.DoDComplete()
@@ -1735,7 +1741,7 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		// The last send-back as jaira recorded it: the lane it came from,
 		// "person" or "lane", and how many in a row came from that lane.
 		// Empty and 0 until a ticket is first sent back.
-		"back":       map[string]any{"from": t.BackFrom, "by": t.BackBy, "count": t.BackCount},
+		"back":       backJSON(t),
 		"next_lane":  nextLaneID(t, lanes),
 		"created_at": nonZero(t.CreatedAt),
 		"updated_at": nonZero(t.UpdatedAt),
