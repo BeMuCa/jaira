@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:11:17Z
+updated-at: 2026-11-20T17:11:47Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46134
 claimed-at: 2026-11-20T16:42:22Z
@@ -93,3 +93,4 @@ review-check: "1. cd $(mktemp -d) && git init -q && jaira init  2. git status --
 - **2026-11-20 17:05 · Alexander Sacharov** — critique Runde 3 (Diff 44007130..394a544a): nichts — die Privat-Pruefung steht jetzt einmal vor beiden Zweigen, kein neues Muster.
 - **2026-11-20 17:06 · Alexander Sacharov** — bughunt: done at 394a544a - 0 findings in 2 modules, follow-up hunt (diff since 44007130: internal/cli/update.go, internal/cli/privateexclude_test.go); concurrency, error paths, input, permissions checked; files: README.md core/board/announce.go core/board/board.go core/board/exclude_test.go core/board/gitignore.go core/release/notes/NNV39Y.md core/ticket/store.go docs/COMMANDS.md internal/cli/privateexclude_test.go internal/cli/share.go internal/cli/sharestate_test.go internal/cli/tickets.go internal/cli/update.go
 - **2026-11-20 17:11 · Alexander Sacharov** — review: blocker - auf git < 2.31 reicht rev-parse die unbekannte Option --path-format=absolute als erste Ausgabezeile durch; parsePlace nimmt sie als git-common-dir, init schreibt ./--path-format=absolute/info/exclude ins Repo und das Board bleibt sichtbar (nachgestellt mit git-Wrapper). Fix: in parsePlace nur einen absoluten Pfad als common dir annehmen, sonst Fallback; Tabellenfall dazu. Rest der review-gaps sind notes.
+- **2026-11-20 17:11 · Alexander Sacharov** — review Runde 1 zurueck: (1) Blocker git<2.31: parsePlace nimmt eine relative erste Zeile ('--path-format=absolute') als common dir -> Fix an der Klasse: nur absolute Pfade annehmen, sonst kein git-Ort (Fallback .gitignore); dieselbe Pruefung in commonGitDir (core/ticket/store.go) mitziehen, gleiche Ursache. (2) dropEntry nimmt jeden jaira-Kommentar mit -> nur den Kommentar direkt ueber einer entfernten Zeile. (3) Glob-Zeichen im Unterverzeichnis-Praefix escapen. Gelassen: Kosten von Ignored auf Windows (critique-Note).
