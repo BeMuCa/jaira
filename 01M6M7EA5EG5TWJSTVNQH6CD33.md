@@ -2,7 +2,7 @@
 id: 01M6M7EA5EG5TWJSTVNQH6CD33
 title: A lane can say how many times it may send work back before a person decides
 status: backlog
-ready: false
+ready: true
 creator: berkc
 goal: "A loop lane declares max-rounds: <n>, and once a ticket has been sent back from it n times the next send-back goes to a person instead of to in-progress."
 context: |-
@@ -14,12 +14,14 @@ context: |-
 definition-of-done: "A lane file may declare max-rounds: <n>; the loader refuses a non-positive or non-numeric value"
 tags:
   - gates
-blocked-by: []
-related: []
+blocked-by:
+  - 01M7WWZWSDHK37DGGHJFDF0YD6
+related:
+  - 01M7WWZWSDHK37DGGHJFDF0YD6
 follows: 01M67K7GEZF694985EHTENCFVZ
 commits: []
 created-at: 2026-11-04T21:29:03Z
-updated-at: 2026-11-20T16:39:24Z
+updated-at: 2026-11-20T16:39:26Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 ---
