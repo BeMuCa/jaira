@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:16:13Z
+updated-at: 2026-11-20T23:16:18Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -38,7 +38,7 @@ outcome-resolves: "Ein Board sagt in .jaira/pr, ob Arbeit durch einen PR (person
 review-summary: "none"
 round: 4
 review-gaps: "none - UnnamedCommits reuses HandlesInSubjects rather than a second regexp; reap.sh pattern mirrors subjectScope in shell, which cannot call Go"
-test-verdict: "fail: suite green with -race (RC=0); bughunt change finding - under none pr-gate let a commit that names no ticket land unseen"
+test-verdict: "pass on my passes: -race suite RC=0, DoD 1-8 checked in the tree, scratch board: unnamed commit holds the gate (exit 3); blocked on the two hunt findings"
 hunt-verdict: "change x2 (round 2): (1) core/gitrepo/named.go UnnamedCommits skips merges, so an evil merge / conflict resolution with own content lands unseen under none; (2) pr-gate binds acceptance to the ticket, not to its commits - a commit made after acceptance naming a done ticket (same or another) lands unseen under none"
 ---
 
