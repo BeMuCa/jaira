@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:27:52Z
+updated-at: 2026-11-20T22:27:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-44888
 claimed-at: 2026-11-20T22:03:49Z
@@ -100,3 +100,4 @@ review-check: |-
 - **2026-11-20 21:58 · Alexander Sacharov** — Frage an den Teamlead (testing schickt zum 3. Mal zurueck, Stopp-Regel): Runde-3-Fund: 'tests-Check nimmt gh pr checks / gh run list --limit 1 ohne Commit-Bindung - Branch mit ungepushten Commits bekommt ✅ fuer alten Code; --limit 1 ohne --workflow kann den release-tag-Lauf greifen.' Einschaetzung: DoD ist richtig, die Funde werden kleiner (Runde 1: 2, Runde 2: 3 aus derselben Klasse 'Rohdaten lesen', Runde 3: 1 Ein-Zeilen-Rand). Optionen: 1) (empfohlen) Ein-Zeilen-Fix: Lauf per 'gh run list --commit $(git rev-parse <branch>)' an den Kopf binden, kein Lauf fuer diesen Commit = '?'; danach testing ohne neuen Hunt-Durchgang direkt zu review. 2) Fix wie 1, aber volle Schleife mit neuem Bughunt. 3) Nicht fixen, als 🟡 an signoff weitergeben.
 - **2026-11-20 21:58 · Alexander Sacharov** — decision (Teamlead jaira-64, 21:58): Option 1. Jeder Status der Rolle ist an den Kopf-Commit des Branches gebunden; kein Lauf fuer diesen Commit = '?', nie ✅; gh run list --commit <sha> --workflow <ci>. Danach Testlauf, kein neuer Hunt, direkt review. Weitere Funde dieser Klasse gehen als note an signoff, keine vierte Runde.
 - **2026-11-20 22:04 · Alexander Sacharov** — review: no blocker, 3 notes (hardcoded feat/ branch name in signoff status line, intermediate shipped.sha256 hashes, expected hunt-on-HEAD ❌ per teamlead decision 21:58); checked go test ./core/role ./core/shipped green and that every prescribed command/flag exists
+- **2026-11-20 22:27 · Alexander Sacharov** — Given back from signoff: │ вернуть ради 🟡: роль должна сама находить ветку, если она называется не feat/<id>
