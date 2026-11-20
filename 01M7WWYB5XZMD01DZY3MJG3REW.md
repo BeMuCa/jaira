@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T16:56:34Z
+updated-at: 2026-11-20T16:56:38Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59469
 claimed-at: 2026-11-20T16:43:41Z
@@ -48,7 +48,8 @@ question: ""
   proof: core/role/builtin/jaira-role-pr/SKILL.md:356 the round runs against <owner/repo> as settled in 'Which repository it goes to', never origin; pr-round.sh takes owner/repo explicitly
 - [x] Eingabeklasse gh/glab nicht angemeldet oder ohne Scope: das Skript bricht mit klarer Meldung und Exit != 0 ab, nichts halb erledigt verschwiegen
   proof: core/role/pr_round_test.go TestPRRoundRefusesBeforeItWrites (not signed in -> exit 3, no write)
-- [ ] Eingabeklasse Kommentar ohne Thread (PR-Konversation, Review-Body): wird beantwortet, aber nicht als resolved gemeldet
+- [x] Eingabeklasse Kommentar ohne Thread (PR-Konversation, Review-Body): wird beantwortet, aber nicht als resolved gemeldet
+  proof: core/role/pr_round_test.go TestPRRoundListsOnlyWhatIsOpen (comments listed apart); pr-round.sh comment answers without resolving
 - [ ] Eingabeklasse Copilot nicht verfuegbar (Reviewer-Anfrage abgelehnt): wird gemeldet, PR bleibt offen, kein Abbruch der Runde
 - [ ] Eingabeklasse zweite Runde auf denselben Kommentaren: bereits resolved Threads werden nicht erneut beantwortet
 - [ ] Eingabeklasse .jaira/pr/.jaira/pr-reviewer leer, CRLF, Kommentar, Tippfehler, Shell-Sonderzeichen: Tabellentest, Default person / Reviewer leer
