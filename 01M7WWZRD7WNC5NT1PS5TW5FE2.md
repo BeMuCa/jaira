@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZRD7WNC5NT1PS5TW5FE2
 title: "Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -27,13 +27,13 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:53:24Z
+updated-at: 2026-11-20T19:53:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-36878
 claimed-at: 2026-11-20T19:50:05Z
-outcome-what: "Release-Note-Zeile 7 in zwei '- '-Zeilen geteilt; 27-testing.md (und Board-Kopie): Folgerunde prueft 'git cat-file -e <commit>', fehlt der Commit nach Rebase -> ganze Suite und ganzer Hunt wie Runde 1; shipped.sha256 eine Zeile."
-outcome-why: "Rueckgabe aus signoff 19:49: Zeilen-Scan liest zwei Aenderungen in einer Zeile als zwei unvollstaendige; git diff auf verschwundenen Commit bricht ab."
-outcome-resolves: "DoD 4/6: core/release/notes/TW5FE2.md:7-8, 27-testing.md:132-135; Zwilling gleich; go test core/shipped core/lane core/release ok. Vier Kategorien: Fehlerpfad (Commit fehlt) ist der Fix selbst; sonst nur Prompt-Text."
+outcome-what: "27-testing.md (und Zwilling): Rebase-Rueckfall prueft 'git merge-base --is-ancestor <commit> HEAD' statt 'git cat-file -e'; Release-Note-Zeile 8 entsprechend; shipped.sha256 eine Zeile."
+outcome-why: "bughunt 19:52: cat-file -e besteht nach Rebase (Commit im reflog), git diff listet dann upstreams Dateien und ueberspringt die Tests der Aenderung; bughunt-Skill nutzt is-ancestor."
+outcome-resolves: "DoD 6: 27-testing.md:133-137, gleiche Pruefung wie jaira-role-bughunt/SKILL.md:54-55; Geschwister: grep cat-file/diff --name-only in core/lane/builtin und core/role/builtin - nur diese Stelle. Vier Kategorien: Fehlerpfad (Rebase) ist der Fix; sonst Prompt-Text."
 review-summary: "none"
 round: 15
 review-gaps: none
