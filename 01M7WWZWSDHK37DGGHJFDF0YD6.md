@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T23:07:58Z
+updated-at: 2026-11-20T23:08:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-91898
 claimed-at: 2026-11-20T22:44:37Z
@@ -70,7 +70,7 @@ claimed-at: 2026-11-20T22:44:37Z
 - [x] cockpit board.ts: Explain only for a blocker: line or a reservation; note: lines listed under the row without a button; a review of an older round shows 'Review von Runde N, seitdem geaendert' with Explain; tests in board.test.ts
 - [x] explain template in texts.ts and spawn.sh: status line, one line per note with [class], one Empfehlung, no Warum:, no fixed give-back-first order, neutral case says it can be accepted
 - [x] explain pane: parse status line and class marks, colour them with theme colours (error/warning/dim/suggestion), recommendation bold; old notes without marks render as before; tests
-- [ ] release note core/release/notes/DF0YD6.md; go test ./... and claude plugin test in the cockpit dir, exit codes checked
+- [x] release note core/release/notes/DF0YD6.md; go test ./... and claude plugin test in the cockpit dir, exit codes checked
 - [-] (duplicate of step 5, added by mistake)
 
 ## Progress
