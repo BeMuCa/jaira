@@ -19,17 +19,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T22:54:37Z
+updated-at: 2026-11-20T22:59:53Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
 outcome-what: "Manifest neu erzeugt (8 Tag-Versionen fehlten, u.a. cockpit board.ts v0.5.2/0.5.3); scripts/shipped-history.sh --check haelt es gegen jeden v*-Tag und laeuft in ci.yaml (Job shipped-manifest) und im release-notes-Workflow; .gitattributes merge=union fuer das Manifest; LC_ALL=C im Skript"
 outcome-why: Hand-gemergte Manifest-Konflikte verloren Zeilen; jaira update --roles hielt dann eine unberuehrte Installation fuer handgeaendert und uebersprang sie still
 outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, wenn eine fehlt, und Manifest-Merges konfliktieren nicht mehr"
-review-summary: |-
-  scripts/shipped-history.sh:61-67 prueft das Zeilenformat (Konfliktmarker) ein zweites Mal - core/shipped/shipped_test.go TestManifestLinesAreWellFormed tut das schon in CI und im release-notes-Lauf; Block und den Konfliktmarker-Fall in history_test.go streichen
-  core/role/shipped_test.go TestInstallReplacesTheV052CockpitBoard wiederholt TestInstallReplacesAnOlderShippedVersion fuer ein zweites Fixture; beide als Tabelle (key, Fixture, Pin-Hash) in einem Test
-round: 2
+review-summary: none
+round: 3
+review-gaps: "none - geprueft: Git-Hilfen in history_test.go folgen dem Muster jedes Pakets (eigener run-Helfer wie core/refsync/refsync_test.go:284), kein gemeinsamer Helfer vorhanden; hashed/installed haben je zwei Aufrufer im Skript; olderAcceptance wird von TestInstallDryRunWritesNothing weiter gebraucht"
+test-verdict: ""
+hunt-verdict: ""
 ---
 
 # shipped.sha256 kennt jede Version, die in einem Release-Tag ausgeliefert wurde, und CI haelt das fest
@@ -68,3 +69,8 @@ round: 2
 - **2026-11-20 22:46 · Alexander Sacharov** — Offene Entscheidungen: keine, selbst entschieden: (1) Pruefung als 'scripts/shipped-history.sh --check' im selben Skript, damit Pfad-Mapping (lanes/, .claude/skills/jaira) nur einmal existiert. (2) Geprueft wird gegen die Tags, nicht gegen jede History-Version: Zwischenstaende auf Branches wurden nie ausgeliefert, und die Version im Arbeitsbaum haelt schon TestEveryInstalledFileIsAShippedVersion fest. (3) Keine v*-Tags im Klon = Fehler, nicht gruen: ein Check, der nichts prueft, darf nicht bestehen. (4) Blob-Bytes roh hashen (cat-file), keine CRLF-Umwandlung - das ist, was der Build einbettete. (5) Skript-Test als Go-Test mit Temp-Repo, auf Windows uebersprungen (CI-Schritt laeuft auf ubuntu). Stand vor dem Fix: Generator liefert 75 Zeilen, die im Manifest fehlen; kein Manifest-Eintrag fehlt im Generator (nichts geht durch Regenerieren verloren).
 - **2026-11-20 22:53 · Alexander Sacharov** — Gefunden: die alten 8 fehlenden Zeilen standen unsortiert am Ende des Manifests (von Hand angehaengt) - Regenerieren sortiert sie ein, daher der grosse Diff ohne verlorene Zeile. Das Skript setzt jetzt LC_ALL=C: unter anderer Locale sortierte Manifeste wuerden bei merge=union Duplikate erzeugen. Bekannte Grenze: Pfade mit Leerzeichen kann das Manifest-Format nicht (Regex [^ ]+ hier wie in TestManifestLinesAreWellFormed); keine solche Datei existiert. Ein Duplikat nach einem union-Merge laesst TestManifestLinesAreWellFormed scheitern -> regenerieren.
 - **2026-11-20 22:53 · Alexander Sacharov** — critique: (1) Formatpruefung im Skript doppelt TestManifestLinesAreWellFormed -> streichen. (2) zwei fast gleiche Install-Tests -> Tabellentest. Bewusst stehen gelassen: Pruefung gegen Tags statt gegen die ganze History (Note 'Offene Entscheidungen' Punkt 2).
+- **2026-11-20 22:54 · Alexander Sacharov** — critique Runde 2: beide Funde behoben (5a091b69), nichts Neues.
+- **2026-11-20 22:57 · Alexander Sacharov** — Stand 23:59: testing laeuft, test-verdict pass gesetzt; Bughunt-Agent laeuft im Hintergrund (Ergebnis kommt als bughunt:-Notes). Branch feat/0k8y6s gepusht (61543e22, 5a091b69). Ein neuer Worker: Bughunt-Notes lesen, hunt-verdict setzen, dann review (fresh).
+- **2026-11-20 22:58 · Alexander Sacharov** — bughunt: pre-existing: scripts/shipped-history.sh:46 (and :97-103) - in generate mode an unreadable blob (partial clone offline, damaged object) is hashed as the empty file and the script still exits 0, since nothing sets pipefail and the failure sits inside $(...): the real version's line is dropped from the redirected manifest and e3b0c442...  <path> appears in its place, so an empty file at that path counts as shipped. --check fails closed on it, because the wrong hash shows up as missing, so only untagged versions slip through. blame: the same cat-file|sha256sum line is in 61543e22^ (moved into hashed() by the change, behaviour unchanged); ran: hashed fed a nonexistent blob id -> 'fatal: bad file' on stderr, e3b0c442... line on stdout, exit=0
+- **2026-11-20 22:58 · Alexander Sacharov** — bughunt: done at 5a091b69 - 1 finding (0 change, 1 pre-existing) in 6 modules, first hunt; concurrency, error paths, input, permissions checked; files: .gitattributes .github/workflows/ci.yaml .github/workflows/release-notes.yaml core/release/notes/0K8Y6S.md core/role/shipped_test.go core/role/testdata/jaira-cockpit-hooks-board-v0.5.2.ts core/shipped/history_test.go core/shipped/shipped.sha256 scripts/shipped-history.sh
+- **2026-11-20 22:59 · Alexander Sacharov** — testing Runde 1: bughunt-Fund pre-existing (unlesbarer Blob -> Hash der leeren Datei, exit 0) gehoert zum Ziel des Tickets (Manifest korrekt) -> nach Interim-Regel 5 in dieser Runde behoben: set -o pipefail + Hash in eigener Zuweisung, Test TestGenerateFailsOnAnUnreadableBlob (rot ohne pipefail). Fork-Tags: origin (sashasoft90) hat 0 v*-Tags, aber dort laufen keine Actions (gh run list leer); PRs laufen im Upstream-Kontext, der die Tags hat.

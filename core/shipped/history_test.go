@@ -214,3 +214,17 @@ func TestCheckFailsOnAnUnreadableTag(t *testing.T) {
 		t.Fatalf("check with a tag naming a blob passed:\n%s", out)
 	}
 }
+
+// A version git cannot read back — a partial clone offline, a damaged object —
+// stops the generator. Hashed as the empty file it would drop the real
+// version's line from the manifest and exit 0.
+func TestGenerateFailsOnAnUnreadableBlob(t *testing.T) {
+	r := newFixtureRepo(t)
+	blob := strings.TrimSpace(r.git("rev-parse", "v0.1.0:"+key))
+	if err := os.Remove(filepath.Join(r.dir, ".git", "objects", blob[:2], blob[2:])); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := r.run("bash", "scripts/shipped-history.sh"); err == nil {
+		t.Fatalf("the generator passed over an unreadable blob:\n%s", out)
+	}
+}

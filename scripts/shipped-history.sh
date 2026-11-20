@@ -14,7 +14,7 @@
 # Needs a full clone (a shallow one silently drops versions) and sha256sum
 # (coreutils; Linux, WSL, Git Bash). The output is append-only in practice: a
 # line that disappears turns a file jaira wrote back into "edited".
-set -eu
+set -euo pipefail
 # One byte order on every machine: a manifest sorted under another locale
 # reorders lines, and two such branches merge into duplicates.
 export LC_ALL=C
@@ -43,7 +43,10 @@ hashed() {
 		.claude/skills/jaira/SKILL.md) path=core/role/jaira/SKILL.md ;;
 		esac
 		[ -n "$path" ] || continue
-		printf '%s  %s\n' "$(git cat-file blob "$blob" | sha256sum | cut -d' ' -f1)" "$path"
+		# Apart from the printf: a blob git cannot read (a partial clone offline,
+		# a damaged object) must stop the script, not be hashed as the empty file.
+		sum=$(git cat-file blob "$blob" | sha256sum)
+		printf '%s  %s\n' "${sum%% *}" "$path"
 	done
 }
 
