@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T17:38:18Z
+updated-at: 2026-11-20T17:38:21Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-42185
 claimed-at: 2026-11-20T16:42:15Z
@@ -104,3 +104,4 @@ Warum: Nach zwei echten review-Rueckgaben plus einer Rueckgabe der Person eskali
 2) So annehmen: der Prompt-Zaehler bleibt ein Uebergang, bis move die from-lane schreibt (DF0YD6/H6CD33) [accept]
 Empfehlung: 2 - der Teamlead hat das bewusst aus diesem Ticket genommen, alle 7 DoD-Punkte sind erfuellt, und die echte Loesung braucht Go-Code in move.
 - **2026-11-20 17:38 · Alexander Sacharov** — decision: 1) Zurueckgeben: die Regel in 20-in-progress.md so aendern, dass sie nur mit dem arbeitet, was jaira show ausgibt (z.B. die Person schreibt bei Rueckgabe eine Note)
+- **2026-11-20 17:38 · Alexander Sacharov** — Given back from signoff: 1) Zurueckgeben: die Regel in 20-in-progress.md so aendern, dass sie nur mit dem arbeitet, was jaira show ausgibt (z.B. die Person schreibt bei Rueckgabe eine Note)
