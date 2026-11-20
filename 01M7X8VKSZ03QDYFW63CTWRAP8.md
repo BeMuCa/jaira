@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:44:00Z
+updated-at: 2026-11-20T22:44:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
@@ -34,7 +34,11 @@ outcome-why: "signoff-Rueckgabe (Branchname) plus bughunt 22:32 und review-gaps 
 outcome-resolves: "Rueckgabe aus signoff 22:27, review-gaps 1-2 vom 22:39"
 review-summary: "Ships the 20.11 teamlead lessons as roles, no Go code: a new read-only role jaira-role-signoff (status line bound to the branch head commit - branch found by the ticket handle as a name segment, newest of local/remote copies by ancestry, divergence = ?; tests from the CI run of exactly that commit; bughunt note must name HEAD - then a table marking every open note 🔴/🟡/⚪/🔵, one recommendation and paste-ready accept/give-back lines, plus return rules: after two noted 'Given back from signoff:' returns small edges go to a follow-up ticket). jaira-teamlead re-reads lanes and open PRs before any 'waiting for you' list, reports signoff tickets in that shape and points to the signoff role for the rules; its hunt check no longer assumes feat/<id>. jaira-worker gets 'Before you push' (run the project's CI gates locally, read off the repo), jaira-role-pr and jaira-dispatcher point to it. README, docs/how-to-work-with-jaira.html, role_test wantRoles, shipped.sha256 and release note TWRAP8.md follow."
 round: 8
-review-gaps: "none: two sentences added to the lookup and the tests check, nothing to remove"
+review-gaps: |-
+  note: jaira-role-signoff tells the agent to read "notes" and "review-verdict" from jaira show --json, but that JSON has no notes key (notes sit in body) and the verdict is .review.verdict - an agent finds it, the wording could name the real keys
+  note: the last bughunt note names a1b61158 while HEAD is b443a4cb; the three later commits change only signoff SKILL.md text and shipped.sha256, which this review read whole - by the role's own rule its status line shows bug hunt ❌ for this ticket
+  note: feat/twrap8 is stacked on fix/nh788q-windows-rename (5b16e491: QFZDY7 CI shards, NH788Q store.go), which is not on master - a PR to master carries those two commits too until that branch is merged; rebase onto master if it lands first
+  note: pre-existing: the return count is a floor because a give-back done as a plain move in the TUI/web board writes no "Given back from signoff:" note - the role says so on the status line
 test-verdict: "pass: go test ./core/... green (RC=0) at b443a4cb; text-only change to the lookup comment and the tests check, the lookup itself unchanged since d4da7f7b and exercised there; writes nothing"
 hunt-verdict: "pass: last hunt at a1b61158 found 1 change, fixed in d4da7f7b; no new hunt since by teamlead decision 21:58 - hunt-on-HEAD reads ❌ by design"
 question: ""
