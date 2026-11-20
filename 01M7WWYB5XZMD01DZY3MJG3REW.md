@@ -1,7 +1,7 @@
 ---
 id: 01M7WWYB5XZMD01DZY3MJG3REW
 title: Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:26:18Z
+updated-at: 2026-11-20T19:26:40Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99114
 claimed-at: 2026-11-20T19:19:18Z
@@ -32,7 +32,7 @@ outcome-what: "Board-Dateien .jaira/pr (person|agent), .jaira/pr-reviewer und .j
 outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten das pro Repo. In manchen Projekten laeuft das Review auf dem PR selbst, dort kommt done erst danach (Alex 20.11.)."
 outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
 review-summary: "none"
-round: 11
+round: 12
 review-gaps: "none: nur gitIn ohne ungenutzten Rueckgabewert (pr_round_test.go); kein vorhandener git-Testhelfer in core/role"
 test-verdict: "pass: go test -race ./... RC=0 after clean cache at 007f461a; DoD 1-16 proofs present; review-check replayed with the branch binary: unknown handle ZZZZZZ -> exit 3 '(unknown)', roles list without files -> 'pr: person ... opens in: done (the default)'; earlier rounds: thresholds done/signoff, unreadable branch ticket -> 3, logbook passes, archive holds (TestPRGateReadsFiledTicketsByWhereTheyAre), pr-round.sh open refuses before gh pr create; reply/comment/settled against fake gh only"
 hunt-verdict: "pass: bughunt done at 007f461a - 0 change, 0 pre-existing"
