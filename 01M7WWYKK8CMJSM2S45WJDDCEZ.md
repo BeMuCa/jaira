@@ -13,11 +13,14 @@ context: |-
   Alex 20.11.2026: "ok, aber man muss es auch schliessen".
 definition-of-done: "reap.sh ruft ein ausfuehrbares .jaira/worktree-teardown mit denselben Argumenten wie das Setup auf, bevor es den Worktree entfernt (Test)"
 tags: []
-blocked-by: []
-related: []
+blocked-by:
+  - 01M7R61GC6C8D7547N7CN7JW2Q
+related:
+  - 01M2MFEEE9VZAABPKKS27MG5GB
+  - 01M6M72EN4ZZ2JBZJ1Q6DSDPZ4
 commits: []
 created-at: 2026-11-20T16:34:35Z
-updated-at: 2026-11-20T16:41:11Z
+updated-at: 2026-11-20T16:41:14Z
 updated-by: Alexander Sacharov
 ---
 
