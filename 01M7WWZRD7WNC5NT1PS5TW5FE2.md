@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:24:57Z
+updated-at: 2026-11-20T19:25:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99353
 claimed-at: 2026-11-20T19:19:21Z
@@ -148,3 +148,4 @@ Empfehlung: 2 - это не блокеры (неверный результат,
 - **2026-11-20 19:23 · Alexander Sacharov** — bughunt: done at 10b38a7a - 1 finding (1 change) in 3 modules, follow-up hunt since c3e5a7df; concurrency, error paths, input, permissions checked (diff: pre-process plan-before-question rule, in-progress restart back: rule, testing 'tests that cover the files', one release-note line, three manifest lines; twins byte-equal; manifest hashes 88e871b7/59f90bc2/4aaa6f0b = sha256 of the three lane files at HEAD; ran: scratch board, move pre-process->human with empty plan refused 'produces plan, which is still empty', with one plan step exit 0; go test ./core/lane/... ./core/shipped/... ./core/release/... exit 0; no new files since the last round); files: .jaira/lanes/in-progress.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md core/lane/builtin/15-pre-process.md core/lane/builtin/20-in-progress.md core/lane/builtin/27-testing.md core/lane/builtin/40-review.md core/release/notes/TW5FE2.md core/role/builtin/jaira-role-bughunt/SKILL.md core/shipped/shipped.sha256
 - **2026-11-20 19:24 · Alexander Sacharov** — back: testing, round 13
 - **2026-11-20 19:24 · Alexander Sacharov** — Fix Klasse 'Neustart erkennt eigene back:-Zeile nicht': Vergleich mit der Absender-Note verworfen (Neustart liest eigene Zeile als Absender); jetzt traegt jede back:-Zeile ', round <n>' - auch person/unknown - und der Neustart sucht die Zeile mit dem aktuellen round aus jaira show. Unabhaengig davon, welche Note die neueste ist.
+- **2026-11-20 19:25 · Alexander Sacharov** — critique: none - round in back:-Zeile, vorhandenes Feld
