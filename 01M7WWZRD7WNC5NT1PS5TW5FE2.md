@@ -27,14 +27,14 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:50:43Z
+updated-at: 2026-11-20T19:50:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-36878
 claimed-at: 2026-11-20T19:50:05Z
 outcome-what: "Release-Note-Zeile 7 in zwei '- '-Zeilen geteilt; 27-testing.md (und Board-Kopie): Folgerunde prueft 'git cat-file -e <commit>', fehlt der Commit nach Rebase -> ganze Suite und ganzer Hunt wie Runde 1; shipped.sha256 eine Zeile."
 outcome-why: "Rueckgabe aus signoff 19:49: Zeilen-Scan liest zwei Aenderungen in einer Zeile als zwei unvollstaendige; git diff auf verschwundenen Commit bricht ab."
 outcome-resolves: "DoD 4/6: core/release/notes/TW5FE2.md:7-8, 27-testing.md:132-135; Zwilling gleich; go test core/shipped core/lane core/release ok. Vier Kategorien: Fehlerpfad (Commit fehlt) ist der Fix selbst; sonst nur Prompt-Text."
-review-summary: "Nur Prompt-Text, kein Go-Code: 15-pre-process.md verlangt Fehlerklasse, Standard-Eingabeklassen (leer/gross, Kodierung/CRLF, Leerzeichen-Pfade/Windows, zwei Prozesse, Abbruch mittendrin) und bei Heuristiken eine Annahmeregel als 'jaira dod --add', und einen Plan vor jedem Move nach human. 20-in-progress.md: Ursache statt Beispiel fixen, parametrisierter Test ueber die Klasse, Geschwister-Stellen greppen, vier Kategorien selbst pruefen, kleine Raender in derselben Runde schliessen; dazu eine Rueckgabe-Zaehlung per 'back: <lane>, round <n>'-Zeile (Absender aus der neuesten Note, cockpit:/Steal-Zeile uebersprungen, person/decision setzt zurueck, unknown zaehlt nicht) und Stopp mit Frage nach der dritten Rueckgabe derselben Lane. 27-testing.md und 40-review.md: Blocker nur falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke; testing-Funde als Klasse+Beispiel, Folgerunde nur ueber den Diff seit 'bughunt: done at'; review-Rueckgabe-Note beginnt mit 'review:'; 'note: pre-existing:'. Bughunt-Skill: Fund nennt Klasse und Beispiel. Board-Kopien in .jaira/lanes byte-gleich, shipped.sha256 und Release-Note TW5FE2.md ergaenzt."
+review-summary: "none"
 round: 14
 review-gaps: |-
   note: core/release/notes/TW5FE2.md Zeile 7 traegt zwei Aenderungen in einer Zeile (review:-Prefix und testing-Folgerunde) - fix: in zwei '- '-Zeilen teilen
