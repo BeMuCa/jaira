@@ -281,7 +281,7 @@ installed.`,
 				return emit(w, setup.json(map[string]any{
 					"root": s.Root, "version": release.Current, "previous": previous,
 					"agent_notes":  notesWritten,
-					"ignore_moved": ignore.moved, "ignore_added": ignore.added,
+					"ignore_moved": ignore.moved, "ignore_added": ignore.added, "ignore_unknown": ignore.unknown,
 					"notes": entriesJSON(notes),
 				}))
 			}
@@ -327,7 +327,10 @@ installed.`,
 }
 
 // ignoreMove is what moveIgnore did, or would do on a dry run.
-type ignoreMove struct{ moved, added bool }
+type ignoreMove struct {
+	moved, added bool
+	unknown      string // why git could not say whether the board is ignored; nothing was touched
+}
 
 // moveIgnore keeps a private board private without the tracked .gitignore:
 // an entry an older jaira wrote there moves to .git/info/exclude, and a
@@ -344,29 +347,37 @@ func moveIgnore(s *ticket.Store, dry bool) (ignoreMove, error) {
 	if !repo.IsRepo() || hasAttributes(s) || repo.Tracks(ticket.DirName) {
 		return m, nil
 	}
+	// git decides whether the board is ignored, and nothing else does. A git
+	// that cannot answer — a symlinked .jaira — leaves everything as it is.
+	by, err := board.GitIgnores(s.Root)
+	if err != nil {
+		m.unknown = err.Error()
+		return m, nil
+	}
 	if board.InGitignore(s.Root) {
 		// Where git names no info/exclude — before 2.31 it does not know
 		// --path-format — .gitignore is the place, and there is nothing to move.
 		if board.IgnoreFileName(s.Root) == ".gitignore" {
 			return m, nil
 		}
-		m.moved = true
 		if dry {
+			m.moved = true
 			return m, nil
 		}
-		_, err := board.MoveIgnore(s.Root)
+		m.moved, err = board.MoveIgnore(s.Root)
 		return m, err
 	}
-	// Asked of git: on git before 2.31 jaira cannot name info/exclude, and an
-	// entry there, or any rule jaira did not write, keeps the board out too.
-	if board.IgnoredBy(s.Root) != "" {
+	if by != "" {
 		return m, nil
 	}
-	m.added = true
+	// Not ignored. AddIgnore writes only where jaira's entry is missing: a
+	// "!/.jaira/" a person wrote above it is theirs, and a second entry
+	// would not change it.
 	if dry {
+		m.added = !board.Ignored(s.Root)
 		return m, nil
 	}
-	_, err := board.AddIgnore(s.Root)
+	m.added, err = board.AddIgnore(s.Root)
 	return m, err
 }
 
@@ -374,6 +385,8 @@ func moveIgnore(s *ticket.Store, dry bool) (ignoreMove, error) {
 func (m ignoreMove) line(root string, dry bool) string {
 	file := board.IgnoreFileName(root)
 	switch {
+	case m.unknown != "":
+		return fmt.Sprintf("Left this private board's ignore entry alone: git could not say whether .jaira/ is ignored (%s).\n", m.unknown)
 	case m.moved && dry:
 		return fmt.Sprintf("Would move this private board's entry from .gitignore to %s.\n", file)
 	case m.moved:

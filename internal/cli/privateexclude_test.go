@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -343,28 +344,19 @@ func TestShareOfABoardInASubdirectorySeesAnUnanchoredExcludeLine(t *testing.T) {
 	}
 }
 
-// On git before 2.31, which prints --path-format back instead of a path,
-// .gitignore stays the place: update moves nothing and says nothing.
-func TestUpdateOnGitWithoutPathFormatLeavesGitignoreAlone(t *testing.T) {
+// useOldGit puts a git first on PATH that acts like git before 2.31: it
+// prints --path-format=absolute back instead of a path, as jaira's fallback
+// to .gitignore expects.
+func useOldGit(t *testing.T) {
+	t.Helper()
 	if runtime.GOOS == "windows" {
 		t.Skip("the git wrapper is a shell script")
 	}
-	dir := repoWithCommit(t)
-	if out, err := runCLI(t, dir, "init"); err != nil {
-		t.Fatalf("jaira init: %v\n%s", err, out)
-	}
-	if _, err := board.RemoveIgnore(dir); err != nil {
-		t.Fatal(err)
-	}
-	writeOldIgnoreLine(t, dir)
-	gitRun(t, dir, "commit", "--quiet", "-am", "an older init made it private")
-
 	real, err := exec.LookPath("git")
 	if err != nil {
 		t.Skip("git not installed")
 	}
 	bin := t.TempDir()
-	// Echo the option back as old git does, then hand git the rest.
 	wrapper := "#!/bin/sh\nseen=\nn=$#\ni=0\nwhile [ $i -lt $n ]; do a=$1; shift; i=$((i+1))\n" +
 		"  if [ \"$a\" = --path-format=absolute ]; then seen=1; else set -- \"$@\" \"$a\"; fi\ndone\n" +
 		"[ -n \"$seen\" ] && echo --path-format=absolute\nexec " + real + " \"$@\"\n"
@@ -372,45 +364,169 @@ func TestUpdateOnGitWithoutPathFormatLeavesGitignoreAlone(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
-	if board.IgnoreFileName(dir) != ".gitignore" {
-		t.Fatalf("the wrapper does not act like old git: IgnoreFileName = %q", board.IgnoreFileName(dir))
-	}
+}
 
-	for _, args := range [][]string{{"--dry-run"}, nil} {
-		out, err := runUpdate(t, dir, args...)
-		if err != nil {
-			t.Fatalf("jaira update %v: %v\n%s", args, err, out)
+// What jaira update writes and says, over the whole class "what ignores the
+// board": git decides (check-ignore), every rule counts, a git that cannot
+// answer leaves everything alone, and a report names only a write that
+// happened. Each source × git before/after 2.31 × .jaira a directory or a
+// symlink.
+func TestUpdateDecidesByWhatGitIgnores(t *testing.T) {
+	type outcome string
+	const (
+		nothing        outcome = "nothing"
+		moved          outcome = "moved to info/exclude"
+		addedExclude   outcome = "added to info/exclude"
+		addedGitignore outcome = "added to .gitignore"
+		unknown        outcome = "unknown, nothing touched"
+	)
+	count := func(s, line string) int {
+		n := 0
+		for _, l := range strings.Split(s, "\n") {
+			if strings.TrimSpace(l) == line {
+				n++
+			}
 		}
-		if strings.Contains(out, "private board's entry") || strings.Contains(out, "this private board in") {
-			t.Errorf("update %v reports an ignore change on old git:\n%s", args, out)
+		return n
+	}
+	appendTo := func(t *testing.T, path, line string) {
+		t.Helper()
+		b, _ := os.ReadFile(path)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, append(b, []byte(line+"\n")...), 0o644); err != nil {
+			t.Fatal(err)
 		}
 	}
-	if !board.InGitignore(dir) {
-		t.Errorf("update took the line out of .gitignore on old git: %q", readIgnore(t, dir))
+	sources := []struct {
+		name     string
+		prepare  func(t *testing.T, dir, exclude, xdg string)
+		new, old outcome
+	}{
+		{"jaira's line in .gitignore", func(t *testing.T, dir, _, _ string) { writeOldIgnoreLine(t, dir) }, moved, nothing},
+		{"jaira's entry in info/exclude", func(t *testing.T, dir, _, _ string) {
+			if _, err := board.AddIgnore(dir); err != nil {
+				t.Fatal(err)
+			}
+		}, nothing, nothing},
+		{"a person's .jaira/ in info/exclude", func(t *testing.T, _, exclude, _ string) { appendTo(t, exclude, ".jaira/") }, nothing, nothing},
+		{"core.excludesFile", func(t *testing.T, dir, _, _ string) {
+			f := filepath.Join(t.TempDir(), "ignore")
+			appendTo(t, f, ".jaira/")
+			gitRun(t, dir, "config", "core.excludesFile", f)
+		}, nothing, nothing},
+		{"global ignore file", func(t *testing.T, _, _, xdg string) { appendTo(t, filepath.Join(xdg, "git", "ignore"), ".jaira/") }, nothing, nothing},
+		// The person's negation wins over jaira's entry; update does not
+		// write a second one on top. Old git cannot see info/exclude, so it
+		// adds the line to .gitignore — below the negation, which it then
+		// overrides: the one row where old git does worse.
+		{"!/.jaira/ over jaira's entry", func(t *testing.T, dir, _, _ string) {
+			if _, err := board.AddIgnore(dir); err != nil {
+				t.Fatal(err)
+			}
+			appendTo(t, filepath.Join(dir, ".gitignore"), "!/.jaira/")
+		}, nothing, addedGitignore},
+		{"nothing", func(*testing.T, string, string, string) {}, addedExclude, addedGitignore},
 	}
+	for _, src := range sources {
+		for _, oldGit := range []bool{false, true} {
+			for _, symlink := range []bool{false, true} {
+				want := src.new
+				if oldGit {
+					want = src.old
+				}
+				if symlink {
+					want = unknown
+				}
+				name := fmt.Sprintf("%s/old git %v/symlink %v", src.name, oldGit, symlink)
+				t.Run(name, func(t *testing.T) {
+					if symlink && runtime.GOOS == "windows" {
+						t.Skip("symlinks need privileges on Windows")
+					}
+					xdg := t.TempDir()
+					t.Setenv("XDG_CONFIG_HOME", xdg)
+					t.Setenv("GIT_CONFIG_GLOBAL", filepath.Join(xdg, "gitconfig"))
+					dir := repoWithCommit(t)
+					if out, err := runCLI(t, dir, "init"); err != nil {
+						t.Fatalf("jaira init: %v\n%s", err, out)
+					}
+					if _, err := board.RemoveIgnore(dir); err != nil {
+						t.Fatal(err)
+					}
+					exclude := filepath.Join(dir, ".git", "info", "exclude")
+					src.prepare(t, dir, exclude, xdg)
+					if symlink {
+						store := filepath.Join(t.TempDir(), "store")
+						if err := os.Rename(filepath.Join(dir, ".jaira"), store); err != nil {
+							t.Fatal(err)
+						}
+						if err := os.Symlink(store, filepath.Join(dir, ".jaira")); err != nil {
+							t.Fatal(err)
+						}
+					}
+					if oldGit {
+						useOldGit(t)
+					}
+					read := func(p string) string { b, _ := os.ReadFile(p); return string(b) }
+					gitignore := filepath.Join(dir, ".gitignore")
+					exBefore, giBefore := read(exclude), read(gitignore)
 
-	// Excluded in info/exclude, which old git gives jaira no path to: update
-	// asks git, and writes nothing.
-	if _, err := board.RemoveIgnore(dir); err != nil {
-		t.Fatal(err)
-	}
-	exclude := filepath.Join(dir, ".git", "info", "exclude")
-	before, _ := os.ReadFile(exclude)
-	if err := os.WriteFile(exclude, append(before, []byte("/.jaira/\n")...), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	out, err := runUpdate(t, dir)
-	if err != nil || strings.Contains(out, "this private board in") || board.InGitignore(dir) {
-		t.Errorf("update on old git with the board in info/exclude: %v, InGitignore = %v\n%s", err, board.InGitignore(dir), out)
-	}
-	if err := os.WriteFile(exclude, before, 0o644); err != nil {
-		t.Fatal(err)
-	}
+					dry, err := runUpdate(t, dir, "--dry-run")
+					if err != nil {
+						t.Fatalf("update --dry-run: %v\n%s", err, dry)
+					}
+					if read(exclude) != exBefore || read(gitignore) != giBefore {
+						t.Errorf("--dry-run wrote")
+					}
+					out, err := runUpdate(t, dir)
+					if err != nil {
+						t.Fatalf("update: %v\n%s", err, out)
+					}
+					exAfter, giAfter := read(exclude), read(gitignore)
+					exGained := count(exAfter, board.IgnoreLine) > count(exBefore, board.IgnoreLine)
+					giGained := count(giAfter, board.IgnoreLine) > count(giBefore, board.IgnoreLine)
 
-	// A teammate who pulled the commit that took the line out: nothing
-	// excludes the board, and on old git update puts it where init would.
-	out, err = runUpdate(t, dir)
-	if err != nil || !strings.Contains(out, "Excluded this private board in .gitignore") || !board.InGitignore(dir) {
-		t.Errorf("update on old git with no exclude: %v, InGitignore = %v\n%s", err, board.InGitignore(dir), out)
+					says := map[outcome][2]string{
+						moved:          {"Would move this private board's entry", "Moved this private board's entry"},
+						addedExclude:   {"Would exclude this private board in .git/info/exclude", "Excluded this private board in .git/info/exclude"},
+						addedGitignore: {"Would exclude this private board in .gitignore", "Excluded this private board in .gitignore"},
+						unknown:        {"git could not say whether .jaira/ is ignored", "git could not say whether .jaira/ is ignored"},
+					}
+					if want == nothing {
+						for _, o := range []string{dry, out} {
+							if strings.Contains(o, "private board's entry") || strings.Contains(o, "this private board in") || strings.Contains(o, "could not say") {
+								t.Errorf("reports an ignore change, want none:\n%s", o)
+							}
+						}
+					} else {
+						if !strings.Contains(dry, says[want][0]) {
+							t.Errorf("--dry-run does not say %q:\n%s", says[want][0], dry)
+						}
+						if !strings.Contains(out, says[want][1]) {
+							t.Errorf("update does not say %q:\n%s", says[want][1], out)
+						}
+					}
+					switch want {
+					case nothing, unknown:
+						if exAfter != exBefore || giAfter != giBefore {
+							t.Errorf("wrote although it should not:\n exclude %q -> %q\n .gitignore %q -> %q", exBefore, exAfter, giBefore, giAfter)
+						}
+					case moved:
+						if !exGained || count(giAfter, board.IgnoreLine) != 0 {
+							t.Errorf("not moved: exclude %q, .gitignore %q", exAfter, giAfter)
+						}
+					case addedExclude:
+						if !exGained || giAfter != giBefore {
+							t.Errorf("not added to exclude alone: exclude %q, .gitignore %q", exAfter, giAfter)
+						}
+					case addedGitignore:
+						if !giGained || exAfter != exBefore {
+							t.Errorf("not added to .gitignore alone: exclude %q, .gitignore %q", exAfter, giAfter)
+						}
+					}
+				})
+			}
+		}
 	}
 }

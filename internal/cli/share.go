@@ -101,7 +101,7 @@ You still have to commit. jaira does not commit on your behalf.`,
 			// RemoveIgnore takes out jaira's own entries only. A rule a person
 			// wrote, such as an unanchored .jaira/ in info/exclude that covers
 			// every board in the repository, stays, and keeps this one out of git.
-			ignoredBy := board.IgnoredBy(s.Root)
+			ignoredBy, ignoreErr := board.GitIgnores(s.Root)
 
 			if g.jsonOut {
 				return emit(w, map[string]any{
@@ -109,6 +109,9 @@ You still have to commit. jaira does not commit on your behalf.`,
 					"gitattributes_written": attrs, "merge_driver_installed": installed,
 					"still_ignored": ignoredBy != "",
 				})
+			}
+			if ignoreErr != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "jaira: warning: could not ask git whether .jaira/ is still ignored: %v\n", ignoreErr)
 			}
 			if ignoredBy != "" {
 				fmt.Fprintf(cmd.ErrOrStderr(), "jaira: warning: a rule jaira did not write still ignores .jaira/ (%s); "+

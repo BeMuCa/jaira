@@ -1,6 +1,8 @@
 package board
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -130,9 +132,10 @@ func lists(path, anchored string) bool {
 	return false
 }
 
-// Ignored reports whether the board is excluded: by info/exclude, or by a
-// line in the root .gitignore — an older jaira wrote it there, and a person
-// may have written it there by hand.
+// Ignored reports whether jaira's entry for the board is written: in
+// info/exclude, or as a line in the root .gitignore — an older jaira wrote it
+// there, and a person may have written it there by hand. It is not whether
+// git ignores the board; GitIgnores answers that.
 func Ignored(root string) bool {
 	if InGitignore(root) {
 		return true
@@ -141,17 +144,31 @@ func Ignored(root string) bool {
 	return exclude != "" && lists(exclude, line)
 }
 
-// IgnoredBy asks git which rule still ignores the board's .jaira/, as
-// "<file>:<line>:<pattern>", or "" when git does not ignore it. Ignored reads
-// only the places jaira writes; this sees every rule git applies — an
-// unanchored or "**/" pattern, a nested .gitignore, core.excludesFile.
-func IgnoredBy(root string) string {
-	out, err := exec.Command("git", "-C", root, "check-ignore", "-v", ".jaira/").Output()
-	if err != nil {
-		return ""
+// GitIgnores is the one answer to "does git ignore this board": it asks git
+// (check-ignore) for the board's .jaira/ and gives back the rule that does it,
+// as "<file>:<line>:<pattern>", or "" when nothing ignores it. Every rule git
+// applies counts — jaira's entry, a person's line in info/exclude, a nested
+// .gitignore, core.excludesFile, a "!/.jaira/" negation — on any git version.
+// A git that cannot answer (exit other than 0 or 1: a symlinked .jaira, no
+// repository) is an error, never "not ignored". Ignored, by contrast, only
+// says whether jaira's own entry is written.
+func GitIgnores(root string) (by string, err error) {
+	cmd := exec.Command("git", "-C", root, "check-ignore", "-v", ".jaira/")
+	var stderr strings.Builder
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
+	var exit *exec.ExitError
+	switch {
+	case err == nil:
+		by, _, _ = strings.Cut(strings.TrimSpace(string(out)), "\t")
+		return by, nil
+	case errors.As(err, &exit) && exit.ExitCode() == 1:
+		return "", nil
 	}
-	source, _, _ := strings.Cut(strings.TrimSpace(string(out)), "\t")
-	return source
+	if msg := strings.TrimSpace(stderr.String()); msg != "" {
+		return "", fmt.Errorf("git check-ignore: %s", msg)
+	}
+	return "", fmt.Errorf("git check-ignore: %w", err)
 }
 
 // AddIgnore keeps the board out of git, in the file IgnoreFileName names.
