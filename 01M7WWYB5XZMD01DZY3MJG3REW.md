@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T17:01:50Z
+updated-at: 2026-11-20T17:02:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59469
 claimed-at: 2026-11-20T16:43:41Z
@@ -34,6 +34,7 @@ outcome-resolves: "Mit .jaira/pr=agent oeffnet jaira-role-pr den PR nach der Abn
 review-summary: none
 round: 2
 review-gaps: "none - geprueft: PRFor folgt bewusst ReleaseFor (gleiches Muster, eigene Werte), Zeichenpruefung seit critique 1 eine Funktion word(); pr-round.sh hat kein Gegenstueck im Repo (grep requested_reviewers/resolveReviewThread: nur hier); kein toter Code, alle neuen Funktionen haben Aufrufer; roles list liest zwei kleine Dateien mehr, kein heisser Pfad"
+test-verdict: "pass: go build + go test -count=1 -race ./... RC=0; DoD 1-11 gegen den Baum geprueft (Tests laufen); roles list auf Scratch-Board: default person/none, agent+copilot aus CRLF-Datei, Shell-Zeichen im Reviewer -> leer, unlesbare .jaira/pr -> person; pr-round.sh threads/comments gegen BeMuCa/jaira #138-#144 rc=0, falsche PR-Nummer rc=1 ohne Schreiben; Schreibwege (reply/request) nur gegen gh-Stub, nicht live; zwei Schreiber: roles list schreibt nichts, doppelte Runde siehe hunt"
 ---
 
 # Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
