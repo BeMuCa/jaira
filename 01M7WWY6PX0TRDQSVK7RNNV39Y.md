@@ -21,14 +21,14 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T19:29:38Z
+updated-at: 2026-11-20T19:32:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96533
 claimed-at: 2026-11-20T19:19:14Z
 outcome-what: "appendEntry ueberschreibt eine unlesbare info/exclude oder .gitignore nie mehr; Lesefehler wird gemeldet"
 outcome-why: "signoff-Rueckgabe: ein unlesbares info/exclude wurde bisher durch nur jairas Eintrag ersetzt"
 outcome-resolves: Datenverlust bei unlesbarer Ausschlussdatei
-review-summary: "none"
+review-summary: "Ein privates Board wird jetzt in <git-common-dir>/info/exclude ausgeschlossen statt in der getrackten .gitignore (core/board/gitignore.go): gitPlace fragt git per rev-parse --git-common-dir --show-prefix nach Datei und Muster (/sub/.jaira/ fuer ein Board im Unterverzeichnis, Glob-Zeichen escaped); ohne Repo oder auf git < 2.31 bleibt .gitignore der Ort. AddIgnore/RemoveIgnore/MoveIgnore schreiben info/exclude unter einer Sperrdatei daneben (neues ticket.LockFile, aus Store.lock herausgeloest) und per WriteAtomic; appendEntry ueberschreibt eine unlesbare Datei nie, haelt CRLF; dropEntry nimmt nur jairas Kommentar+Zeile und die Leerzeile direkt danach. share schreibt zuerst /.jaira/lanes/ in .gitignore, hebt dann nur jairas verankerten Eintrag auf und fragt git check-ignore, ob noch eine fremde Regel das Board ausschliesst (Warnung, --json still_ignored/ignore_unknown). share --undo schliesst wieder in info/exclude aus und sagt, dass Teamkollegen jaira update laufen lassen. jaira update verschiebt die alte .gitignore-Zeile eines privaten Boards nach info/exclude bzw. schliesst ein privates Board aus, das nichts ausschliesst; ein Board mit .gitattributes oder getrackten Dateien bleibt unberuehrt, ein git ohne Antwort (Symlink) ebenfalls. README, COMMANDS.md, Hilfetexte, Agent-Block und core/release/notes/NNV39Y.md sind nachgezogen."
 round: 15
 review-gaps: "none - Diff 7e69b451: eine Bedingung um die Meldung"
 test-verdict: "pass: go test -race internal/cli+core/board gruen (RC=0) bei 7e69b451, voller Lauf -race gruen bei 79d71506; DoD 10 per Test; Binary: share/--undo mit chmod 000 brechen ab, Dateien byteweise erhalten, Board bleibt privat; zwei parallele share --undo -> Eintrag einmal"
