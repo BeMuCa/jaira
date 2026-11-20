@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T21:43:54Z
+updated-at: 2026-11-20T21:43:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-61485
 claimed-at: 2026-11-20T21:43:50Z
@@ -33,7 +33,12 @@ outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten d
 outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
 review-summary: "Adds a board setting that lets an agent open a pull request and work one review round, default unchanged. Three committed one-line files: .jaira/pr (agent|person, anything else = person), .jaira/pr-reviewer (copilot, login or org/team, anything outside letters/digits/._-[]/@ = none), .jaira/pr-when (signoff|done, default done); 'jaira roles list' shows all three. New command 'jaira roles pr-gate <remote>/<branch>' reads .jaira/pr and pr-when as the BASE commit holds them (a branch cannot open its own gate), collects the ticket handles from the scopes of base..HEAD subjects, and exits 0 only when every one is in the terminal lane (or, under signoff, signoff..terminal) or filed in the logbook; archived, unknown or unreadable handles and a board without signoff hold it with exit 3. Ticket state comes from Store.List, so a ref newer than the disk file wins. New scripts/pr-round.sh (GitHub): open checks that HEAD is the pushed tip where git push actually sends it, derives --head <account>:<branch> from the push URL, runs the gate, then gh pr create; threads/comments list only open items; reply answers + resolves and is safe to rerun; comment never repeats itself; both read back after posting and delete only their own duplicate so two racing sessions leave one answer; request asks Copilot/login/team and exits 4 (PR stays) when refused; settled exits 3 while a thread is open, a review is requested or a latest review requests changes. A gh sign-in lost mid-run is always exit 3. SKILL.md of jaira-role-pr, teamlead and dispatcher describe the flow; merge/approve stay a person's in every path. Release note core/release/notes/JG3REW.md included."
 round: 17
-review-gaps: "optimize (1b35fd5c): nothing"
+review-gaps: |-
+  note: race window in pr-round.sh open - the tip check, the gate and gh pr create are three steps; a push by another session in between gives a pull request carrying commits the gate never judged (small, the gate re-runs nowhere after create)
+  note: open compares only the account of the push URL with <owner>; a fork under the same owner with a different repo name gets --head <branch> and gh looks for the branch in the target repo instead
+  note: said() normalises CR and trailing blanks only - if GitHub trims leading blank lines of a stored body, an answer file that starts with an empty line never matches itself and a second round posts it again (not verified against GitHub)
+  note: git ls-remote <url> refs/heads/<b> matches by trailing path, so a second ref ending in the same path would give a two-line tip and a confusing "pull or push until they agree" refusal (fails closed, cosmetic)
+  note: the GitLab path has no script - gate, tip check and settled are manual glab lines in SKILL.md and are covered by no test
 test-verdict: "pass: suite -race -count=1 RC=0 at 1b35fd5c; DoD 20/21 tests green; live gate exit 3 naming origin/master; account-less URLs exit 3 before the gate"
 hunt-verdict: "pass: bughunt done at 1b35fd5c, 0 change, 0 pre-existing"
 review-verdict: "Diff erfuellt alle 19 DoD-Punkte; 13 Commits, Liste vollstaendig. Gate, Settings und pr-round.sh ganz gelesen entlang Nebenlaeufigkeit (Dedupe bei zwei Sessions korrekt fuer jede Reihenfolge, loescht nur die eigene ID), Fehlerpfade (Login-Verlust -> 3, Teilschritte bei reply wiederholbar), ungewoehnliche Eingaben (Typo/CRLF -> Default, Shell-Zeichen im Reviewer gefiltert, Base mit '-' abgelehnt) und Grenzen (Gate faellt bei Zweifel zu). Kein Blocker; sechs Notes, keine davon bricht ein Kriterium. Betroffene Tests gruen (core/role, core/settings, internal/cli). Nicht geprueft: echtes GitHub (alles gegen ein gemocktes gh)."
