@@ -1,0 +1,50 @@
+---
+id: 01M7X8VKSZ03QDYFW63CTWRAP8
+title: "Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis"
+status: backlog
+ready: true
+creator: Alexander Sacharov
+assignee: Alexander Sacharov
+goal: "Jeder Teamlead, der jaira installiert, bekommt die Arbeitsweise, die sich am 20.11.2026 bewaehrt hat: Stand vor jeder Liste neu lesen, Signoff-Bericht als Statuszeile plus eingeordnete Tabelle, eine Signoff-Rolle mit Rueckgabe-Regeln, Schlussbericht der Worker mit Feldern."
+context: |-
+  Heute stehen diese Regeln nur im lokalen Gedaechtnis einer Teamlead-Session auf einem Rechner; jeder andere Teamlead (Kollegen, andere Projekte) macht dieselben Fehler.
+  Was an einem Tag schiefging und wie es geloest wurde:
+  1. Der Teamlead listete laengst entschiedene Tickets als offen - Entscheidungen im Cockpit/Browser erreichen ihn nicht. Regel: vor jeder Liste "wartet auf dich" jaira show je Ticket und gh pr list lesen, die Liste nur bei Aenderung zeigen. (Teil im Binary: QTQW15 DoD 5.)
+  2. Die Person schickte fast jedes Ticket zurueck, weil der Explain-Text jede Note wie einen Fehler klingen laesst. Die Form, die sofort verstanden wurde: Statuszeile (DoD, Tests, Blocker, bughunt auf HEAD) + Tabelle je Note mit Marke (rot Blocker, gelb kleiner Rand, weiss bekannte Grenze, blau nicht aus diesem Ticket) + eine Empfehlung + beide move-Befehle.
+  3. Rueckgabe-Regeln, die Endlosrunden beenden: nach 2 Rueckgaben aus signoff gehen gelbe Raender in ein Folge-Ticket; Wortlaut allein ist nie ein Rueckgabegrund; wiederholen sich Funde einer Klasse, wird die Ursache benannt. Ausnahme: Rechte-/Sicherheitsgrenzen bleiben Blocker.
+  4. Ein per Cockpit neu gestarteter Worker kennt seinen Teamlead nicht (QTQW15) - bis dahin schickt der Teamlead ihm eine Zeile.
+  5. PRs scheiterten an fehlenden Zeilen in core/shipped/shipped.sha256 - vor jedem Push go test ./core/role -run Shipped (nur dieses Repo; allgemein: die Projekt-Gates vor dem Push).
+  Verwandt: DF0YD6 (Explain-Form im Cockpit), MFYM1A (Haken je Note), 55CS2M (Schlussbericht mit festen Feldern), TW5FE2 (Lane-Regeln, done).
+definition-of-done: "jaira-teamlead/SKILL.md: Abschnitt 'Report to the human' verlangt die Statuszeile + eingeordnete Tabelle + eine Empfehlung fuer signoff/human und das Neu-Lesen des Stands vor jeder Liste offener Entscheidungen"
+tags: []
+blocked-by: []
+related:
+  - 01M7WWZWSDHK37DGGHJFDF0YD6
+  - 01M7X20YACKGBHD6P1QKMFYM1A
+  - 01M7WX0C09TC63TKPXT555CS2M
+  - 01M7X0CFXEAEXDHVWTD3QTQW15
+commits: []
+created-at: 2026-11-20T20:02:40Z
+updated-at: 2026-11-20T20:02:40Z
+---
+
+# Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis
+
+## Definition of Done
+
+- [ ] jaira-teamlead/SKILL.md: Abschnitt 'Report to the human' verlangt die Statuszeile + eingeordnete Tabelle + eine Empfehlung fuer signoff/human und das Neu-Lesen des Stands vor jeder Liste offener Entscheidungen
+- [ ] Neue Rolle jaira-role-signoff <id>...: liest Tickets in signoff, gibt die Tabelle mit Einordnung und Empfehlung nach den Rueckgabe-Regeln aus, fertige move-Befehle und ein Folge-Ticket fuer gelbe Raender nach der zweiten Rueckgabe; aendert nichts selbst
+- [ ] jaira-worker/jaira-dispatcher: vor jedem Push die Gates des Projekts lokal laufen lassen, die CI sonst rot machen (im Skill allgemein formuliert)
+- [ ] Release-Note und shipped.sha256; die Rollen-Tests (core/role) gruen
+
+## Options
+
+- [ ] brainstorm
+- [ ] planning
+
+## Plan
+
+<Steps, in order — filled in by the pre-process step, or by you.>
+
+## Progress
+
