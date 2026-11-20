@@ -51,23 +51,16 @@ left: say so in one line and stop.
 One line, each check with ✅ or ❌:
 
 - **DoD** `x/y` ticked, from `dod_items`
-- **tests** and **hunt** — `test-verdict` and `hunt-verdict`, each `pass:` or
-  not. `jaira show` prints neither: they are frontmatter fields of the ticket
-  file. Read them there, without writing anything:
-
-  ```bash
-  u=$(jaira show <id> --json | jaira json get id)       # the full id, not the handle
-  git show "refs/jaira/tickets/$u:$u.md" | grep -E '^(test|hunt)-verdict:'
-  ```
-
-  That ref is where every lane's write lands, committed or not; the copy on
-  the ticket's branch is usually older, because lanes that change no code
-  commit nothing. Neither field there: the check is `?`, never ✅
+- **tests** — the CI run on the branch head: `gh pr checks <branch>` once a
+  pull request exists, else `gh run list --branch <branch> --limit 1` (`glab
+  ci status` on GitLab). No run yet: `?`, never ✅ — the testing lane ran on
+  someone's machine, and its verdict is not printed by `jaira show`
 - **bug hunt on HEAD** — the last `— bughunt: done at <sha> ` note names the
   head of the ticket's branch (`git rev-parse --short feat/<id lower case>`).
   An older sha does not cover what a later round changed: ❌
 - **blocker** — none, or how many 🔴 the table below holds
 - **review** — `review-verdict`
+- **returns from signoff** — how many are noted (see return rule 2)
 
 ### 2. The table
 
@@ -115,12 +108,11 @@ round signoff forever, each round finding the next smaller edge.
 1. **Any 🔴 → give back.** Only the 🔴 rows, and the 🟡 rows with them.
 2. **Only 🟡, ⚪ and 🔵:** count the ticket's earlier returns from signoff —
    the notes that start `Given back from signoff:`, which the cockpit and the
-   give-back line above write. A ticket moved back by hand in the board leaves
-   no such note, so the count is a floor, not the answer: where `round` in
-   `show --json` is above 1 and the notes do not account for it, the count is
-   unknown — say so on the status line and put it to the person as a choice
-   (returned twice or more: accept with a follow-up / fewer: give back) instead
-   of recommending a fourth round on a guess.
+   give-back line above write. A ticket moved back by hand in the board
+   leaves no such note, so the count is a floor: put it on the status line
+   (`returns from signoff: 1 noted`), where the person sees it and can say it
+   was more. `round` is no substitute — it rises with every critique, optimize
+   and testing loop too.
    - fewer than two: **give back**, the 🟡 rows by number — one small round
      costs less than a follow-up ticket nobody picks up
    - two or more: **accept**, and hand back a ready follow-up ticket for the
