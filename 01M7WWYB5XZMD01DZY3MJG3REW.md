@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:56:38Z
+updated-at: 2026-11-20T19:57:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-18659
 claimed-at: 2026-11-20T19:49:16Z
@@ -200,3 +200,4 @@ Empfehlung: 2 - kein Kriterium ist gebrochen, das Gate faellt bei Zweifel zu, un
 - **2026-11-20 19:54 · Alexander Sacharov** — Rückgabe Teil 2: --head aus der konfigurierten Push-URL (vor insteadOf) - Konto = vorletzter Teil von host:owner/name bzw. host/owner/name; gleiches Konto wie Ziel (Gross/Klein egal) -> nur Branchname. Dabei gefunden, gleiche Klasse: die Tip-Prüfung las mit ls-remote <remote> die Fetch-URL, git push sendet aber an pushurl - jetzt ls-remote gegen 'git remote get-url --push'. Grenze: ein Fork unter anderem Repo-Namen als upstream wird von gh mit owner:branch nicht gefunden (API kennt nur owner:branch); nicht behandelt.
 - **2026-11-20 19:55 · Alexander Sacharov** — critique 13 (nur 3fe55258): (a) FileAt-bool ungenutzt -> weg; (b) Long-Text umbrechen. Stehen gelassen: open liest die URL zweimal (get-url --push für die Tip-Prüfung, roh aus der Config fürs Konto) - das Konto so, wie der Nutzer es schrieb, und die Tests prüfen https/ssh/scp-Formen über insteadOf; roles list zeigt weiter die Platte, die Gate-Meldung nennt die Basis.
 - **2026-11-20 19:56 · Alexander Sacharov** — critique 14 (dfb23369): beide Funde behoben, nichts Neues.
+- **2026-11-20 19:57 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:217-222 - the account check passes for push URLs that hold no account: a URL with no slash (an insteadOf alias like 'mine:r' or 'gh:r.git', a scp-style 'server:r.git') makes the repository name the account (head 'r:feat/x'), and 'https://github.com/r' makes the host the account ('github.com:feat/x'); the script then hands gh a wrong --head instead of exiting 3 as the release note promises ('a push URL without an account exits 3'); ran: the script's own parse lines on those URLs (all accepted, owner 'r', 'r', 'github.com')
