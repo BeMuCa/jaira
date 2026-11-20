@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:22:55Z
+updated-at: 2026-11-20T19:23:02Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99353
 claimed-at: 2026-11-20T19:19:21Z
@@ -143,3 +143,4 @@ Empfehlung: 2 - это не блокеры (неверный результат,
 - **2026-11-20 19:19 · Alexander Sacharov** — back: person
 - **2026-11-20 19:21 · Alexander Sacharov** — Runde nach signoff 19:19: drei Saetze. pre-process: gate.go OutputOwed verlangt plan auch beim Move nach human (to > from), also Plan-Schritte + Frage als Schritt vor dem Move - nicht den Gate geaendert, weil ein Ticket ohne Plan sonst unbemerkt durch pre-process laeuft. in-progress: back:-Zeile neuer als die Absender-Note = schon geschrieben. testing: 'packages' -> 'tests that cover the files'.
 - **2026-11-20 19:22 · Alexander Sacharov** — critique: none - Runde nach signoff 19:19, drei Saetze ohne neues Muster
+- **2026-11-20 19:23 · Alexander Sacharov** — testing: pass, round after signoff 19:19 - gate refuse pre-process->human ohne Plan auf Scratch-Board nachgestellt
