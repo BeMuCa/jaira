@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T17:02:29Z
+updated-at: 2026-11-20T17:02:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-42185
 claimed-at: 2026-11-20T16:42:15Z
@@ -36,7 +36,7 @@ outcome-why: "Review- und bughunt-Schleifen liefen 10-24 Runden, weil jede Runde
 outcome-resolves: "DoD 1-4: pre-process 15-pre-process.md:38, in-progress 20-in-progress.md:29, bughunt SKILL.md:104 und testing 27-testing.md:102, eingebettet mit shipped.sha256 und core/release/notes/TW5FE2.md"
 review-summary: none
 round: 6
-review-gaps: "none: Zaehlregel ersetzt die Praefixliste, nichts Doppeltes oder Verwaistes"
+review-gaps: "none: ein Absatz ersetzt die round-Annahme, nichts Doppeltes"
 test-verdict: "pass: go test -race -count=1 ./... RC=0, go build ok; in-progress-Kopie byte-gleich"
 hunt-verdict: "fail: bughunt done at ad6a6ffc, 1 change - 'round > 1' zaehlt auch Rueckgaben einer Person aus signoff/human als Loop-Rueckgabe"
 ---
