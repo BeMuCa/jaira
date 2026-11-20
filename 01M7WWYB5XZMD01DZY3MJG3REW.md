@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:19:00Z
+updated-at: 2026-11-20T19:19:14Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-29476
 claimed-at: 2026-11-20T18:21:36Z
@@ -157,3 +157,4 @@ Warum: Hat eine andere Session mehr auf den Remote-Branch gepusht, sieht das Gat
 Empfehlung: 1 - der Gate-Fehler bei parallelen Sessions ist die einzige echte Luecke und die Runde ist klein.
 - **2026-11-20 19:18 · Alexander Sacharov** — decision: 1) Hinweise 1, 2 und 4 in kurzer Runde schliessen (Gate gegen gepushten Tip, Usage-Text, Exit-Code-Kollision)
 - **2026-11-20 19:19 · Alexander Sacharov** — Given back from signoff: 1) Hinweise 1, 2 und 4 in kurzer Runde schliessen (Gate gegen gepushten Tip, Usage-Text, Exit-Code-Kollision)
+- **2026-11-20 19:19 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
