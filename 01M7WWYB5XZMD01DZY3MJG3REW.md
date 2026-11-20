@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T21:43:59Z
+updated-at: 2026-11-20T21:44:03Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-61485
 claimed-at: 2026-11-20T21:43:50Z
@@ -41,8 +41,8 @@ review-gaps: |-
   note: the GitLab path has no script - gate, tip check and settled are manual glab lines in SKILL.md and are covered by no test
 test-verdict: "pass: suite -race -count=1 RC=0 at 1b35fd5c; DoD 20/21 tests green; live gate exit 3 naming origin/master; account-less URLs exit 3 before the gate"
 hunt-verdict: "pass: bughunt done at 1b35fd5c, 0 change, 0 pre-existing"
-review-verdict: "Diff erfuellt alle 19 DoD-Punkte; 13 Commits, Liste vollstaendig. Gate, Settings und pr-round.sh ganz gelesen entlang Nebenlaeufigkeit (Dedupe bei zwei Sessions korrekt fuer jede Reihenfolge, loescht nur die eigene ID), Fehlerpfade (Login-Verlust -> 3, Teilschritte bei reply wiederholbar), ungewoehnliche Eingaben (Typo/CRLF -> Default, Shell-Zeichen im Reviewer gefiltert, Base mit '-' abgelehnt) und Grenzen (Gate faellt bei Zweifel zu). Kein Blocker; sechs Notes, keine davon bricht ein Kriterium. Betroffene Tests gruen (core/role, core/settings, internal/cli). Nicht geprueft: echtes GitHub (alles gegen ein gemocktes gh)."
-review-round: 13
+review-verdict: "All 21 definition-of-done items are met by the diff and their proofs point at real tests; go test for core/settings, core/role and internal/cli (PR|Roles filters) passes. Read pr-round.sh, roles.go pr-gate, gitrepo/named.go and settings.go whole along concurrency, error paths, unusual input and permissions: the gate fails closed everywhere I tried (bad base, unreadable ticket, archive/unknown handle, no signoff lane, board files off the base), every write fails loudly, a lost sign-in is exit 3. No blocker; five notes, all edge cases that fail closed or are small race windows."
+review-round: 17
 review-check: |-
   1. cd /home/alex/projects/.worktrees/jaira-jg3rew
   2. go test ./core/role ./core/settings ./internal/cli -run 'PR|Handles' -> alle ok
