@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:13:25Z
+updated-at: 2026-11-20T23:13:29Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -110,3 +110,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-20 23:09 · Alexander Sacharov** — testing (Runde 1): Gates gruen (go vet, go test -race ./..., RC=0). Funktion am Scratch-Board: none-Ticket nicht in done -> pr-gate exit 3 'push the branch and stop'; Push auf den Hauptzweig, der nicht fast-forward ist -> git verweigert (exit 1); zwei parallele 'jaira update' -> Absatz genau einmal je Datei. Fund: no_ticket/unreadable-Meldung riet unter none zur create line - behoben in internal/cli/roles.go (then-Text je Modus), Test TestPRGateOnANoneBoardNeverAsksForACreateLine.
 - **2026-11-20 23:09 · Alexander Sacharov** — bughunt: done at 946b7188 - 1 finding (1 change, 0 pre-existing) in 6 modules, first hunt (uncommitted roles.go edit by a parallel session included); concurrency, error paths, input, permissions checked; files: core/board/announce.go core/board/arrival.go core/board/arrival_test.go core/release/notes/XB97NJ.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-dispatcher/scripts/reap.sh core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/reap_test.go core/settings/settings.go core/settings/settings_test.go core/shipped/shipped.sha256 internal/cli/prgate_test.go internal/cli/roles.go
 - **2026-11-20 23:09 · Alexander Sacharov** — critique (Runde 3, nach dem testing-Fix): Meldungstext je Modus an einer Stelle (then) - passt, nichts zu sagen.
+- **2026-11-20 23:13 · Alexander Sacharov** — in-progress (Runde 2, Bughunt-Fund): Klasse 'unter none sieht niemand den Zweig nach dem Tor' -> pr-gate verweigert unter none jeden Nicht-Merge-Commit in base..HEAD ohne Ticket-Handle (Grund 'unnamed'; core/gitrepo/named.go UnnamedCommits); Merges aus der Basis bleiben erlaubt; bei agent unveraendert, dort sieht ein Mensch den PR. reap.sh unter none: gelandet erst, wenn origin/HEAD die Spitze enthaelt UND ein Commit dort das Ticket nennt (Zweig ohne eigene Arbeit sonst sofort 'gelandet'). Grep ueber Here-String statt Pipe, weil set -o pipefail + grep -q sonst SIGPIPE als Fehlschlag liest; \b vermieden (BSD grep).
