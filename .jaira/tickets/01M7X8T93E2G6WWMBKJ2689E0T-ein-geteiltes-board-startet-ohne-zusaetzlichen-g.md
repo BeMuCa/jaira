@@ -1,7 +1,7 @@
 ---
 id: 01M7X8T93E2G6WWMBKJ2689E0T
 title: Ein geteiltes Board startet ohne zusaetzlichen git-Prozess pro Befehl
-status: testing
+status: signoff
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,18 +19,25 @@ related: []
 follows: 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-11-20T20:01:56Z
-updated-at: 2026-11-20T23:03:16Z
+updated-at: 2026-11-20T23:11:38Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-14124
 claimed-at: 2026-11-20T22:45:18Z
 outcome-what: Die Merge-Treiber-Pruefung bei jedem Befehl fragt git in einem rev-parse nach Arbeitsbaum und info/exclude (board.Probe) statt in zwei; ein geteiltes Board startet wieder 2 git-Prozesse wie vor NNV39Y.
 outcome-why: NNV39Y hatte jedem Befehl eines geteilten Boards einen git-Prozess fuer die Ignore-Pruefung hinzugefuegt; Projektregel instant startup.
 outcome-resolves: Der zusaetzliche git-Prozess pro Befehl aus der NNV39Y-review.
-review-summary: "none"
+review-summary: "bindDriverIfShared, das bei jedem Befehl laeuft, fragte git bisher zweimal (gitPlace fuer den info/exclude-Eintrag, dann IsRepo); jetzt fragt board.Probe beides mit einem rev-parse (--git-common-dir --show-prefix --is-inside-work-tree), ein .gitignore-Eintrag auf der Platte entscheidet ganz ohne git. gitPlace teilt sich dieselbe place()-Funktion. Nebenbei schneidet parsePlace vom --show-prefix nur noch das Zeilenende ab statt TrimSpace, so dass ein Board in ' sub' den Eintrag '/ sub/.jaira/' bekommt statt des wirkungslosen '/sub/.jaira/'; Release-Note dazu."
 round: 3
-review-gaps: "Runde 3: nichts zu entfernen - Einzeiler in parsePlace und Testtabelle. Aus Runde 2 gilt: useOldGit in countGit gefaltet."
-test-verdict: "pass: go vet ./... + scripts/test-shard.sh 0 1 -race nach go clean -testcache RC=0; DoD 1-3 im Baum geprueft (Tests laufen, Proofs zeigen auf share.go:177, probe_test.go:46); Binary auf Scratch-Board (init+share): jaira list startet 8 git-Prozesse statt 9 auf e31801dc, der eigene rev-parse --git-common-dir ist weg; unlesbares .git/info -> list exit 0; Aenderung schreibt nichts, kein Zwei-Schreiber-Fall"
-hunt-verdict: "pass: bughunt done at d91c9986, 0 change, 1 pre-existing (parsePlace TrimSpace auf dem Praefix) - wird in diese Runde gefaltet als DoD 4"
+review-gaps: |-
+  note: der Zaehltest ruft bindDriverIfShared direkt auf, nicht einen ganzen Befehl; von Hand nachgezaehlt: jaira list auf geteiltem Board 9 git-Prozesse (master e31801dc) -> 8
+  note: ein Board in ' sub', das ein aelteres jaira privat gemacht hat, behaelt nach jaira update den alten falschen Eintrag '/sub/.jaira/' in info/exclude neben dem richtigen; er macht stillschweigend ein Board in einem echten Verzeichnis 'sub' privat, falls es eines gibt
+  note: Probe liefert inRepo=false, sobald die Root-.gitignore den Eintrag hat (so dokumentiert) - ein kuenftiger Aufrufer, der inRepo allein liest, bekommt fuer ein Repo false
+  note: ein Verzeichnisname mit Zeilenumbruch zerlegt die rev-parse-Ausgabe weiterhin falsch (vorher schon so, exotisch)
+test-verdict: "pass: Runde 2 - go clean -testcache + scripts/test-shard.sh 0 1 -race RC=0 auf cac9bda1; DoD 1-4 im Baum; Binary: jaira list 8 statt 9 git-Prozesse; Board in ' sub' bekommt '/ sub/.jaira/', git status -uall zeigt kein .jaira; alter Eintrag '/sub/.jaira/' wird von jaira update ersetzt; Aenderung schreibt nur ueber das bestehende gesperrte AddIgnore"
+hunt-verdict: "pass: bughunt done at cac9bda1, 0 change, 0 pre-existing (Folgehunt seit d91c9986)"
+review-verdict: "Diff erfuellt alle vier DoD-Punkte; go test ./core/board ./internal/cli gruen, GOOS=windows go vet sauber, gofmt sauber; Ende-zu-Ende geprueft: ein git-Prozess weniger pro Befehl, Board in ' sub' wirklich ausgeschlossen. Kein Blocker."
+review-round: 3
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-689e0t && go test ./internal/cli -run TestTheMergeDriverCheckStartsNoGitForTheIgnoreCheck -v -count=1  -> alle 8 Faelle PASS  2. go test ./core/board -run 'TestABoardInASubdirectoryIsExcludedByItsOwnPath|TestParsePlaceReadsWhatGitPrints|TestParseProbe' -v -count=1  -> PASS  3. Von Hand: mkdir -p /tmp/r/' sub' && cd /tmp/r && git init -q && cd ' sub' && jaira init  4. tail -2 /tmp/r/.git/info/exclude  -> zeigt '/ sub/.jaira/' (mit Leerzeichen)  5. git -C /tmp/r status --short -uall  -> keine Zeile mit ' sub/.jaira'"
 ---
 
 # Ein geteiltes Board startet ohne zusaetzlichen git-Prozess pro Befehl
@@ -79,3 +86,7 @@ hunt-verdict: "pass: bughunt done at d91c9986, 0 change, 1 pre-existing (parsePl
 - **2026-11-20 23:00 · Alexander Sacharov** — testing: bughunt-Fund pre-existing (core/board/gitignore.go parsePlace TrimSpace auf --show-prefix, ' sub' -> '/sub/.jaira/') gleiches Modul, gleicher Gegenstand, Einzeiler -> nach Interim-Regel 5 in dieses Ticket gefaltet (DoD 4) statt Satellitenticket. Fix: Praefix nur um \r kuerzen; Tabellentest in TestParsePlaceReadsWhatGitPrints + echter git-Lauf.
 - **2026-11-20 23:02 · Alexander Sacharov** — Geschwister der Klasse 'TrimSpace auf einem Pfad aus git': core/gitrepo/git.go:57 Root() kuerzt --show-toplevel mit TrimSpace - ein Repository-Verzeichnis mit Leerzeichen am Namensende wuerde falsch. Anderes Modul, nicht angefasst: note: pre-existing. core/ticket/store.go:882 endet immer auf .git, unkritisch.
 - **2026-11-20 23:03 · Alexander Sacharov** — critique Runde 3 (DoD 4): Fix sitzt in parsePlace, der einen Stelle, die git-Zeilen liest; kein neuer Weg, nichts zu sagen. Release-Note core/release/notes/689E0T.md: sichtbar fuer Boards in ' sub' (jetzt wirklich privat), jaira update repariert den alten Eintrag - am Binary geprueft.
+- **2026-11-20 23:04 · Alexander Sacharov** — bughunt: done at cac9bda1 - 0 findings (0 change, 0 pre-existing) in 1 module, follow-up hunt since d91c9986 (diff of core/board/gitignore.go; core/board/exclude_test.go and core/release/notes/689E0T.md read whole); concurrency, error paths, input, permissions checked; ran: go test ./core/board ./internal/cli -run 'Place|Probe|Ignore|Exclude|Subdirectory|Startup|Private' (ok); files: core/board/exclude_test.go core/board/gitignore.go core/board/probe_test.go core/release/notes/689E0T.md internal/cli/privateexclude_test.go internal/cli/share.go internal/cli/startupgit_test.go
+- **2026-11-20 23:08 · Alexander Sacharov** — Stand 00:10: testing pass (Runde 2), Branch feat/689e0t gepusht (cac9bda1), Ticket in review - frische review-Agentin gestartet. Faellt der Rechner vorher aus: neuer Worker startet review neu (run-lane.sh --no-worktree 689E0T review).
+- **2026-11-20 23:10 · Alexander Sacharov** — review: kein Blocker. Von Hand nachgezaehlt: jaira list auf geteiltem Board 9 -> 8 git-Prozesse gegen master e31801dc; Board in ' sub' bekommt '/ sub/.jaira/' und git status zeigt seine .jaira nicht. Vier notes in review-gaps.
+- **2026-11-20 23:11 · Alexander Sacharov** — nach review (Luecke 2): der alte falsche Eintrag '/sub/.jaira/' kann nicht automatisch weg - er koennte einem echten Board in 'sub' gehoeren. Release-Note sagt jetzt, ihn von Hand zu loeschen. Luecken 3 (Probe inRepo=false bei .gitignore-Eintrag, dokumentiert) und 4 (Zeilenumbruch im Verzeichnisnamen, vorbestehend) bleiben bewusst stehen.
