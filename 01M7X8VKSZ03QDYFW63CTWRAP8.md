@@ -1,7 +1,7 @@
 ---
 id: 01M7X8VKSZ03QDYFW63CTWRAP8
 title: "Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,13 +25,13 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:35:19Z
+updated-at: 2026-11-20T22:35:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
-outcome-what: "jaira-role-signoff findet die Branch des Tickets ueber den Handle als Namenssegment statt feat/<id> anzunehmen; teamlead verweist darauf"
-outcome-why: "signoff-Rueckgabe: Branches heissen nicht immer feat/<id>, dann waren alle Checks falsch gebunden"
-outcome-resolves: "Rueckgabe aus signoff 22:27 (🟡 Branchname)"
+outcome-what: "jaira-role-signoff findet die Branch des Tickets ueber den Handle als Namenssegment und waehlt unter lokalen und remote Kopien den Commit, zu dem alle anderen fuehren; divergiert = ?"
+outcome-why: "signoff-Rueckgabe: Branches heissen nicht immer feat/<id>; bughunt: lokal kann hinter remote liegen"
+outcome-resolves: "Rueckgabe aus signoff 22:27 (🟡 Branchname) und bughunt 22:32"
 review-summary: "none"
 round: 6
 review-gaps: "nothing removed: the change is one lookup block plus a pointer in the teamlead; left the intermediate shipped.sha256 lines (already noted by review 22:04)"
