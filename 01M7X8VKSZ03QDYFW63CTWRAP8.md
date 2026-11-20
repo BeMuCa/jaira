@@ -1,7 +1,7 @@
 ---
 id: 01M7X8VKSZ03QDYFW63CTWRAP8
 title: "Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis"
-status: testing
+status: review
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:00:47Z
+updated-at: 2026-11-20T22:00:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16592
 claimed-at: 2026-11-20T20:04:03Z
