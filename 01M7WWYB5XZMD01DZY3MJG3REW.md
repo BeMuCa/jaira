@@ -1,7 +1,7 @@
 ---
 id: 01M7WWYB5XZMD01DZY3MJG3REW
 title: Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:58:42Z
+updated-at: 2026-11-20T19:58:46Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-18659
 claimed-at: 2026-11-20T19:49:16Z
@@ -32,7 +32,7 @@ outcome-what: "Board-Dateien .jaira/pr (person|agent), .jaira/pr-reviewer und .j
 outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten das pro Repo. In manchen Projekten laeuft das Review auf dem PR selbst, dort kommt done erst danach (Alex 20.11.)."
 outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
 review-summary: "critique 14: FileAt and help fixed in dfb23369; nothing left"
-round: 15
+round: 16
 review-gaps: "optimize (3fe55258..dfb23369): nothing - FileAt has no twin in core/gitrepo (core/gitref reads ticket refs through its own runner), PRIn/PRWhenIn share firstLine with the file readers, the tr lowercasing stays for bash 3.2 on macOS"
 test-verdict: "pass: suite -race -count=1 RC=0 at dfb23369; DoD 20/21 tests run"
 hunt-verdict: "fail: bughunt done at dfb23369 - 2 change in pr-round.sh open (account read from URLs without one; account from last pushurl, tip from first)"
