@@ -1,7 +1,7 @@
 ---
 id: 01M7R61GC6C8D7547N7CN7JW2Q
 title: "Worker-Tabs schliessen sich selbst, sobald ihre Arbeit bei einer Person liegt oder gemergt ist"
-status: testing
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,29 +19,45 @@ tags:
   - cli
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 764f6d121783c59028f524beddff3e2a5d0ce6b3
+  - 6c65e71308c44c5128856a6fb39820c4b591cea6
+  - ddd56ac566c35471436dec8c96f4abdf0d221701
+  - ae8f06369f3f089251017bd24b3a2884c446e738
+  - e10b37f78996b98c2e8340269d938c3c9302efab
+  - 1c4898d6ca088913a08f0708f0c1fe87111679fc
+  - 8076ed279d5fd9571785c74ea136cd1b9a1d28f8
+  - 12a385f3baf2f40992aaebe724676edb2005c4d6
+  - 249b7699a3c14957ded163040bffde0acc0edd15
+  - e955f977db730176c66719794f9c9b159a126d1a
+  - 45efab107e41325c7a48681c138961320622ab03
+  - 79ceaf7e3aa751d3b9fd2c0bf0f22442f979f76a
+  - 8d6d79f19948af9f96983fc458c3634db629d9d7
 created-at: 2026-11-18T20:37:15Z
-updated-at: 2026-11-20T19:26:51Z
+updated-at: 2026-11-20T19:48:47Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-97503
 claimed-at: 2026-11-20T19:19:16Z
 outcome-what: "Zusaetzlich: worker- und dispatcher-SKILL.md beschreiben die Schliess-Regel wie uncommitted.sh (lanes/tags/logbook halten den Tab offen)"
 outcome-why: "Rueckgabe aus signoff 2026-11-20: Doku widersprach uncommitted.sh"
 outcome-resolves: "DoD 10, dazu 1-9"
-review-summary: "none"
-review-gaps: "none - Folgerunde aendert nur zwei Doku-Absaetze (worker/dispatcher SKILL.md) und zwei Hash-Zeilen in shipped.sha256; nichts doppelt, nichts tot"
-test-verdict: "pass: go vet/build ok, go test -race -count=1 ./... RC=0; DoD 9: TestUncommittedIsOneRuleForCloseTabAndReap 11 Faelle gruen, mit alter close-tab.sh rot in genau den 4 abweichenden Klassen (logbook, Ticket geloescht, Lane, tags); live: uncommitted.sh in diesem Worktree (nur untracked milestones) leer rc 0, mit untracked .jaira/tags-Datei gezaehlt, ausserhalb eines Repos rc 1; reap.sh --dry-run live rc 0; liest nur, kein Zwei-Schreiber-Test"
-hunt-verdict: "pass: bughunt done at 79ceaf7e, 0 change, 0 pre-existing"
+review-summary: "Workers and dispatchers started with --parent now end their turn with the new jaira-dispatcher/scripts/close-tab.sh: it closes their own Herdr tab (detached, via setsid/nohup) only when the ticket is in a person's lane or done, has no open question, the worktree holds nothing uncommitted.sh counts, and the tab carries spawn.sh's <ticket>/<lane> label; every other case, including any unforeseen failure (ERR trap), prints 'kept <ticket>: <reason>' and exits 0. The new uncommitted.sh is the one rule both close-tab.sh and reap.sh ask: new/staged/modified files under .jaira/tickets and .jaira/milestones do not count (refs hold them), everything else does, read with core.quotePath=false so umlaut ticket names match. reap.sh now holds a flock (perl fallback on macOS) on .git/jaira/reap.lock so only one run per repository goes at a time, with the lock hidden from children by '{ } 9>&-'. The jaira-cockpit runs reap.sh from its first 60-s tick and then every 10 minutes, only with Herdr and never in a session carrying a ticket. CI gets a 'cockpit' job running claude plugin test on pinned claude-code 2.1.329; worker/dispatcher/teamlead skills, release notes and shipped.sha256 follow."
+review-gaps: |-
+  note: close-tab.sh checks a --parent that is not uds: only for being non-empty - a parent that is gone keeps no tab open in that case (known limit, see notes)
+  note: the tab close itself is tested only against a fake herdr; real Herdr/Herdr App is first checked at acceptance
+  note: the CI job 'cockpit' has not run on GitHub yet, and the 2.1.329 pin must be raised by hand
+  note: the worktree carries 11 untracked .jaira/milestones/ files that belong to no ticket on this branch - do not commit them with N7JW2Q
+test-verdict: "pass: go build/vet ok, go test -count=1 ./... RC=0; DoD 10 im Baum (worker SKILL.md:396, dispatcher SKILL.md:462), Regel deckt sich mit uncommitted.sh:31; TestUncommittedIsOneRuleForCloseTabAndReap (lane/tags/logbook zaehlen) und TestEveryInstalledFileIsAShippedVersion gruen; Aenderung ist Doku, schreibt nichts - kein Parallel-Schreiber-Fall"
+hunt-verdict: "pass: bughunt done at 8d6d79f1, 0 change, 0 pre-existing"
 round: 12
-review-verdict: "The diff meets DoD 1-7 and 9 with tests (go test ./core/role ok, cockpit 183/183 locally); no defects found in close-tab.sh, uncommitted.sh, reap.sh or reapMerged. DoD 8 is met as far as the job exists and is green locally; a green CI run is not yet observable because the branch has no run."
-review-round: 11
+review-verdict: "The diff meets all 10 DoD items; no defect found after reading close-tab.sh, uncommitted.sh, reap.sh and reapMerged whole. Ran myself: go test ./role ./shipped ok, claude plugin test in jaira-cockpit 183 pass 0 fail. Unverified: real Herdr tab close and macOS bash 3.2/perl flock path."
+review-round: 12
 review-check: |-
-  1. cd /home/alex/projects/.worktrees/jaira-n7jw2q
-  2. go test ./core/role -run 'TestCloseTab|TestUncommitted|TestReap' -> ok
-  3. cd core/mod/builtin/jaira-cockpit && claude plugin test -> 183 pass, 0 fail
-  4. In a Herdr tab with a ticket in signoff and a clean worktree: core/role/builtin/jaira-dispatcher/scripts/close-tab.sh --dry-run --parent <session> <ID> -> prints "would close <ID> <tab>"
-  5. Touch any source file, run step 4 again -> prints "kept <ID>: uncommitted changes: <file>"
-  6. After pushing: GitHub Actions on the PR shows the "cockpit" job green
+  1. cd core && go test ./role -run 'CloseTab|Reap|Uncommitted|WorkerAndDispatcher' -count=1 -> ok
+  2. cd core/mod/builtin/jaira-cockpit && claude plugin test . -> 183 pass, 0 fail
+  3. In a Herdr tab spawned by spawn.sh for a ticket in signoff: bash core/role/builtin/jaira-dispatcher/scripts/close-tab.sh --dry-run --parent uds:<live socket> <id> -> prints 'would close <ID> <tab>'
+  4. Same with a source file edited in the worktree -> prints 'kept <ID>: uncommitted changes: <path>'
+  5. Run core/role/builtin/jaira-dispatcher/scripts/reap.sh twice at the same time in a repo with spawn records -> the second prints 'skipped: reap.sh runs already'
 ---
 
 # Worker-Tabs schliessen sich selbst, sobald ihre Arbeit bei einer Person liegt oder gemergt ist
@@ -157,3 +173,10 @@ Empfehlung: 1 - es sind nur zwei Zeilen, und eine Doku, die dem Skript widerspri
 - **2026-11-20 19:19 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
 - **2026-11-20 19:26 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock (Teamlead jaira-64). Runde 2026-11-20 19:2x: worker- und dispatcher-SKILL.md auf die Regel von uncommitted.sh umgeschrieben (DoD 10), shipped.sha256 um beide Hashes ergaenzt; DoD-5-Proof nannte flock schon.
 - **2026-11-20 19:26 · Alexander Sacharov** — critique (Folgepass, nur die zwei Absaetze gelesen): none - die Beschreibung deckt sich mit dem grep in uncommitted.sh (?? und [ MA][ M] unter tickets/milestones durchgelassen, geloeschte Tickets und lane/tags/logbook zaehlen).
+- **2026-11-20 19:28 · Alexander Sacharov** — bughunt: done at 8d6d79f1 - 0 findings, follow-up hunt since 79ceaf7e: jaira-dispatcher/SKILL.md, jaira-worker/SKILL.md and shipped.sha256 read as diff, no file new to the list; concurrency, error paths, input, permissions checked; checked the SKILL.md wording against uncommitted.sh (only ??/staged/modified ticket and milestone files pass, deletions and other .jaira files counted - matches); ran: sha256sum of both SKILL.md against the two new shipped.sha256 lines (match), go test ./shipped ./role -count=1 (ok); files: .github/workflows/ci.yaml .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/N7JW2Q.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-dispatcher/scripts/close-tab.sh core/role/builtin/jaira-dispatcher/scripts/reap.sh core/role/builtin/jaira-dispatcher/scripts/uncommitted.sh core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/role/closetab_test.go core/role/reap_test.go core/role/uncommitted_test.go core/shipped/shipped.sha256
+- **2026-11-20 19:33 · Alexander Sacharov** — review (fresh, nach Doku-Runde 8d6d79f1): kein Blocker, 4 notes in review-gaps. Selbst gelaufen: go test ./role ./shipped ok, claude plugin test Cockpit 183/0. commits (13) = git log 0313458e..HEAD; worktree_diff nur fremde untracked .jaira/milestones/.
+- **2026-11-20 19:34 · Alexander Sacharov** — explain: Der Review fand keinen Fehler; alle 10 DoD-Punkte sind erfuellt, Tests laufen (go test ok, Cockpit 183/0). Offen sind nur vier Hinweise: close-tab.sh prueft ein --parent ohne uds: nur auf "nicht leer", das echte Herdr-Schliessen ist nur gegen ein Fake-Herdr getestet, der CI-Job 'cockpit' lief auf GitHub noch nie (Pin 2.1.329 von Hand heben) und 11 fremde .jaira/milestones/-Dateien liegen untracked im Worktree.
+Warum: Das Schliessen eines echten Tabs und der macOS-Pfad (bash 3.2, perl flock) sind unbelegt; ein Fehler dort liesse Tabs stehen oder schlimmstenfalls einen Tab zu frueh zu, aber nie Arbeit verloren gehen (jeder unklare Fall endet mit 'kept').
+1) Zurueckgeben: erst den Herdr-Tab-Schliessvorgang und den macOS-Pfad real pruefen und den CI-Job einmal laufen lassen, dann erneut vorlegen [give back]
+2) So annehmen: die Hinweise sind bekannte Grenzen, das echte Herdr wird ohnehin bei der Abnahme geprueft; die fremden Milestone-Dateien nicht mitcommitten [accept]
+Empfehlung: 2 - kein Defekt gefunden, Fehlerfaelle sind abgesichert (ERR-Trap, 'kept'), und die offenen Punkte lassen sich nur in der echten Umgebung beim Abnehmen klaeren.
