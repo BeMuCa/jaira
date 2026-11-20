@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T21:55:07Z
+updated-at: 2026-11-20T21:56:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16592
 claimed-at: 2026-11-20T20:04:03Z
@@ -35,7 +35,7 @@ outcome-resolves: Die Regeln reisen mit den ausgelieferten Rollen; jaira update 
 review-summary: none
 round: 4
 review-gaps: "none: 4a0033ec entfernt den Parser-Weg (Ref/grep) wieder, nichts uebrig geblieben; Teamlead-Verweis auf eine Zeile gekuerzt"
-test-verdict: "pass: Runde 2 (d3a71405): go build ./... ok, go test core/role + core/shipped RC=0 (Runde 1: go test ./... RC=0, nur Markdown/shipped seitdem). Neue Leseanweisung ausprobiert: git show refs/jaira/tickets/<ULID>:<ULID>.md liefert beide Verdict-Zeilen; die Branch-Kopie hatte keine - deshalb der Ref. Schreibt nichts, also keine parallelen Writer."
+test-verdict: "pass: Runde 3 (4a0033ec): go build ./... ok, go test core/role + core/shipped RC=0. Neue CI-Befehle ausprobiert: gh run list --branch master --limit 1 liefert den Lauf; gh pr checks feat/twrap8 ohne PR endet mit RC=1 - die Rolle nimmt dann gh run list, wie beschrieben. Rolle schreibt nichts, also kein Parallel-Schreibfall."
 hunt-verdict: "fail: bughunt done at d3a71405, 3 change (round>1-Regel feuert bei jeder Lane-Schleife; Ref fehlt auf ungeteilten Boards; grep sieht Block-Skalare nicht), 0 pre-existing"
 ---
 
