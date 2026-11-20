@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T19:26:24Z
+updated-at: 2026-11-20T19:26:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96533
 claimed-at: 2026-11-20T19:19:14Z
@@ -31,8 +31,8 @@ outcome-resolves: Datenverlust bei unlesbarer Ausschlussdatei
 review-summary: "none"
 round: 14
 review-gaps: "none - Diff dde1cf1c: zwei Aufrufe getauscht, eine Fehlerumhuellung, ein Test"
-test-verdict: "fail->fixed: suite -race gruen (RC=0) bei 79d71506; DoD 10 per Test belegt; aber share mit unlesbarer .gitignore liess das Board halb geteilt (bughunt)"
-hunt-verdict: "2 change (Release-Note init stoppt nicht; share halb geteilt) - zurueck in in-progress"
+test-verdict: "fail->fixed: suite gruen bei dde1cf1c, Funktion mit Binary geprueft (Fehlerpfad, zwei Schreiber); bughunt: share auf schon geteiltem Board meldete 'stays private'"
+hunt-verdict: "1 change (falsche 'stays private'-Meldung auf geteiltem Board) - zurueck in in-progress"
 review-verdict: "Der Diff erfuellt alle 9 DoD-Punkte, jeder mit Test; go test ./core/board ./core/ticket ./internal/cli und go vet gruen. Mit gebautem Binary nachgespielt: init + neuer Worktree lassen git status sauber, share/--undo, Migration einer alten .gitignore-Zeile (zweites update meldet nichts), Teamkollege ohne Ausschluss wird ausgeschlossen, Board in 'sub dir/' bekommt /sub dir/.jaira/. Kein Blocker; vier Notes, davon eine pre-existing."
 review-round: 12
 review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/r && cd /tmp/r && git init && git commit --allow-empty -m init  3. /tmp/jaira init -> Ausgabe: 'excluded in .git/info/exclude'  4. git status --short -> kein .gitignore und kein .jaira/ in der Liste  5. tail -2 .git/info/exclude -> zeigt /.jaira/  6. git worktree add ../r-wt && git -C ../r-wt status --short -> leer  7. /tmp/jaira share --json -> unignored true, still_ignored false; git status zeigt jetzt ?? .jaira/  8. Alte Boards: in einem Repo mit committeter .gitignore-Zeile /.jaira/ 'jaira update' laufen lassen -> 'Moved this private board's entry from .gitignore to .git/info/exclude', git diff zeigt nur die entfernte Zeile; ein zweites 'jaira update --json' meldet ignore_moved false"
