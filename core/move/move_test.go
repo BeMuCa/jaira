@@ -241,3 +241,112 @@ func TestMovedHearsEveryWrittenMove(t *testing.T) {
 		t.Fatalf("heard %v, want [backlog>todo]", heard)
 	}
 }
+
+// Every send-back records the lane it came from, whether a person or a lane
+// sent it, and how many in a row came from that same lane: a person's return
+// or one from another lane starts the count again, parking records nothing,
+// and going on records nothing.
+func TestMoveRecordsWhoSentItBack(t *testing.T) {
+	s, env := fullBoard(t)
+	tk := mk(t, s, map[string]string{ticket.FieldStatus: "in-progress", ticket.FieldAssignee: "berk"})
+	back := func() (string, string, int) {
+		got, err := s.Load(tk.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return got.BackFrom, got.BackBy, got.BackCount
+	}
+	if from, by, n := back(); from != "" || by != "" || n != 0 {
+		t.Fatalf("a ticket never sent back reads %q/%q/%d, want nothing", from, by, n)
+	}
+	steps := []struct {
+		to       string
+		from, by string
+		n        int
+	}{
+		{"testing", "", "", 0},                  // going on records nothing
+		{"in-progress", "testing", "lane", 1},   // testing's first return
+		{"testing", "testing", "lane", 1},       // going on keeps the record
+		{"in-progress", "testing", "lane", 2},   // its second in a row
+		{"critique", "testing", "lane", 2},      //
+		{"in-progress", "critique", "lane", 1},  // another lane starts again
+		{"testing", "critique", "lane", 1},      //
+		{"blocked", "critique", "lane", 1},      // parking is no return
+		{"testing", "critique", "lane", 1},      // nor is coming back from it
+		{"in-progress", "testing", "lane", 1},   // testing again, but not in a row
+		{"signoff", "testing", "lane", 1},       //
+		{"in-progress", "signoff", "person", 1}, // the person's wish is no loop
+		{"testing", "signoff", "person", 1},     //
+		{"in-progress", "testing", "lane", 1},   // and starts the lane's count again
+		{"testing", "testing", "lane", 1},       //
+		{"in-progress", "testing", "lane", 2},   //
+		{"testing", "testing", "lane", 2},       //
+		{"in-progress", "testing", "lane", 3},   // the third: the prompt stops here
+	}
+	for i, st := range steps {
+		if _, err := Move(s, env, tk.ID, Request{To: st.to, Actor: "berk", Force: true}); err != nil {
+			t.Fatal(err)
+		}
+		if from, by, n := back(); from != st.from || by != st.by || n != st.n {
+			t.Fatalf("step %d, after the move to %s: %q/%q/%d, want %q/%q/%d", i, st.to, from, by, n, st.from, st.by, st.n)
+		}
+	}
+}
+
+// Two processes sending the same ticket back at once count one return, not
+// two: the second re-reads the ticket inside the lock and finds it already
+// in the lane it asked for.
+func TestMoveCountsOneReturnForTwoAtOnce(t *testing.T) {
+	s, env := fullBoard(t)
+	tk := mk(t, s, map[string]string{ticket.FieldStatus: "testing", ticket.FieldAssignee: "berk"})
+	errs := make(chan error, 2)
+	// A store each, as two processes have: one Store is not shared
+	// between goroutines anywhere in jaira.
+	for range 2 {
+		own, err := ticket.At(s.Root)
+		if err != nil {
+			t.Fatal(err)
+		}
+		go func() {
+			_, err := Move(own, env, tk.ID, Request{To: "in-progress", Actor: "berk", Force: true})
+			errs <- err
+		}()
+	}
+	for range 2 {
+		if err := <-errs; err != nil {
+			t.Logf("one move refused: %v", err)
+		}
+	}
+	got, err := s.Load(tk.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Status != "in-progress" || ticket.CurrentRound(got) != 2 || got.BackFrom != "testing" || got.BackCount != 1 {
+		t.Fatalf("two moves at once left %s, round %d, back %q/%d; want in-progress, round 2, testing/1",
+			got.Status, ticket.CurrentRound(got), got.BackFrom, got.BackCount)
+	}
+}
+
+// fullBoard is fixture with the whole shipped set, loop lanes included: the
+// default board has neither critique nor testing.
+func fullBoard(t *testing.T) (*ticket.Store, gate.Env) {
+	t.Helper()
+	s, env := fixture(t)
+	files, err := filepath.Glob(filepath.Join("..", "lane", "builtin", "*.md"))
+	if err != nil || len(files) == 0 {
+		t.Fatalf("no shipped lanes found: %v", err)
+	}
+	for _, f := range files {
+		b, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(lane.ProjectLanesDir(s.Root), filepath.Base(f)), b, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if env.Lanes, err = lane.Load(s.Root); err != nil {
+		t.Fatal(err)
+	}
+	return s, env
+}

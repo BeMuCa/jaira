@@ -718,13 +718,22 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			// context sits beside mode for the same reason: it says who runs
 			// the lane. "fresh" means not the session that carried the ticket
 			// here — a new agent that has seen none of its work.
-			"context":  l.Context,
-			"prompt":   l.Prompt,
-			"input":    fields,
-			"diff":     diff,
-			"produces": l.OutputProduces,
-			"missing":  missing,
-			"complete": len(missing) == 0,
+			"context": l.Context,
+			// The loop brake, beside mode for the same reason: it says how
+			// the lane judges, not what with. Every lane gets it — testing,
+			// review and the bug hunt testing starts read it — rather than
+			// through input-requires, which would mean editing every board's
+			// lane files before an older board could hand it on.
+			"blocker_rule":   ticket.BlockerRule(t),
+			"stop_after_fix": t.StopAfterFix,
+			"back":           map[string]any{"from": t.BackFrom, "by": t.BackBy, "count": t.BackCount},
+			"round":          ticket.CurrentRound(t),
+			"prompt":         l.Prompt,
+			"input":          fields,
+			"diff":           diff,
+			"produces":       l.OutputProduces,
+			"missing":        missing,
+			"complete":       len(missing) == 0,
 		}
 		// The uncommitted half rides in a key of its own, and only when there
 		// is one: a key that is always there is read as a field, and an empty
@@ -766,6 +775,15 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 		head += fmt.Sprintf(", context: %s", l.Context)
 	}
 	fmt.Fprintf(w, "# Lane: %s   (%s)\n\n", l.Name, head)
+	// The loop brake under the header, for a lane read as plain text.
+	fmt.Fprintf(w, "blockers: %s\n", ticket.BlockerRule(t))
+	if t.StopAfterFix {
+		fmt.Fprintf(w, "stop-after-fix: a round after a fix runs the tests only, no new bug hunt\n")
+	}
+	if t.BackFrom != "" {
+		fmt.Fprintf(w, "round %d, sent back from %s (%s), %d in a row from that lane\n", ticket.CurrentRound(t), t.BackFrom, t.BackBy, t.BackCount)
+	}
+	fmt.Fprintln(w)
 	if l.Prompt != "" {
 		fmt.Fprintf(w, "%s\n\n", l.Prompt)
 	}

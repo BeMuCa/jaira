@@ -134,6 +134,9 @@ func Move(s *ticket.Store, env gate.Env, id string, req Request) (*Result, error
 			if err := t.Doc().SetRaw(ticket.FieldRound, strconv.Itoa(ticket.CurrentRound(t)+1)); err != nil {
 				return err
 			}
+			if err := recordBack(t, env.Lanes, t.Status); err != nil {
+				return err
+			}
 		}
 		if err := t.Doc().SetScalar(ticket.FieldStatus, req.To); err != nil {
 			return err
@@ -156,6 +159,37 @@ func Move(s *ticket.Store, env gate.Env, id string, req Request) (*Result, error
 		Moved(s, t, from, env.Lanes)
 	}
 	return res, nil
+}
+
+// recordBack writes who sent the ticket back: the lane it leaves, whether a
+// person or a lane sent it, and how many returns in a row came from that
+// lane. A person's return, or one from another lane, starts the count again:
+// the third-return stop is about a loop lane that keeps finding more, and a
+// person's wish is not a loop. Written by the move itself, so every path that
+// sends work back — the CLI, the cockpit, --force — records it the same way.
+func recordBack(t *ticket.Ticket, lanes *lane.Set, from string) error {
+	by := ticket.BackByLane
+	if l, ok := lanes.Get(from); !ok || isPersons(l) {
+		by = ticket.BackByPerson
+	}
+	n := 1
+	if by == ticket.BackByLane && t.BackFrom == from && t.BackBy == ticket.BackByLane {
+		n = t.BackCount + 1
+	}
+	d := t.Doc()
+	if err := d.SetScalar(ticket.FieldBackFrom, from); err != nil {
+		return err
+	}
+	if err := d.SetScalar(ticket.FieldBackBy, by); err != nil {
+		return err
+	}
+	return d.SetRaw(ticket.FieldBackCount, strconv.Itoa(n))
+}
+
+// isPersons reports a lane whose work a person does: one no agent steps
+// through, or one only a person may leave or enter with a question.
+func isPersons(l *lane.Lane) bool {
+	return !l.Agentic || l.RequiresHumanExit || l.RequiresQuestion
 }
 
 // sendsBack reports a move to an earlier lane of the board, the one that

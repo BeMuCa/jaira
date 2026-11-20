@@ -928,6 +928,15 @@ func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env, notesLast int, kid
 	// the ticket rather than in a session. row() skips an empty value, so a
 	// ticket without a mode costs no line.
 	row("mode", t.Mode)
+	// Only what differs from the default costs a line: a ticket's own blocker
+	// rule, a skipped hunt, a recorded send-back.
+	row("blockers", t.BlockerRule)
+	if t.StopAfterFix {
+		row("after fix", "tests only, no new bug hunt")
+	}
+	if t.BackFrom != "" {
+		row("back", fmt.Sprintf("from %s (%s), %d in a row", t.BackFrom, dash(t.BackBy), t.BackCount))
+	}
 	row("tags", strings.Join(t.Tags, " "))
 	row("goal", t.Goal)
 	row("context", t.Context)
@@ -1189,6 +1198,16 @@ its end. Review fields keep their history across loop rounds that way.`,
 						if !ok {
 							return fail(ExitUsage, "bad_mode",
 								"mode is %q or empty, got %q", ticket.ModeConversational, v)
+						}
+						v = canon
+					}
+					// stop-after-fix is read as exactly "true"; checked for
+					// the same reason as mode above.
+					if k == ticket.FieldStopAfterFix {
+						canon, ok := ticket.CanonicalStopAfterFix(v)
+						if !ok {
+							return fail(ExitUsage, "bad_stop_after_fix",
+								"stop-after-fix is true, false or empty, got %q", v)
 						}
 						v = canon
 					}
@@ -1708,10 +1727,19 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		// so a reader can tell a verdict from one a later round left standing.
 		"round":        ticket.CurrentRound(t),
 		"review_round": t.ReviewRound,
-		"next_lane":    nextLaneID(t, lanes),
-		"created_at":   nonZero(t.CreatedAt),
-		"updated_at":   nonZero(t.UpdatedAt),
-		"updated_by":   t.UpdatedBy,
+		// What sends work back on this ticket — its own rule, else the
+		// default — and whether a fix round skips the bug hunt, so the lanes
+		// and the bug hunter read one answer instead of each its own guess.
+		"blocker_rule":   ticket.BlockerRule(t),
+		"stop_after_fix": t.StopAfterFix,
+		// The last send-back as jaira recorded it: the lane it came from,
+		// "person" or "lane", and how many in a row came from that lane.
+		// Empty and 0 until a ticket is first sent back.
+		"back":       map[string]any{"from": t.BackFrom, "by": t.BackBy, "count": t.BackCount},
+		"next_lane":  nextLaneID(t, lanes),
+		"created_at": nonZero(t.CreatedAt),
+		"updated_at": nonZero(t.UpdatedAt),
+		"updated_by": t.UpdatedBy,
 	}
 }
 
