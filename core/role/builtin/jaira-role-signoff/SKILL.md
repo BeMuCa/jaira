@@ -58,15 +58,21 @@ the rule `jaira create` uses to read a ticket off a branch. Never assume a
 
 ```bash
 seg='(^|[^[:alnum:]])<id>([^[:alnum:]]|$)'
-branch=$(git for-each-ref --format='%(refname:short)' refs/heads | grep -iE "$seg")
-[ -z "$branch" ] && branch=$(git for-each-ref --format='%(refname:short)' refs/remotes | grep -iE "$seg")
-head=$(git rev-parse "$branch")
+refs=$(git for-each-ref --format='%(refname:short)' refs/heads refs/remotes | grep -iE "$seg")
+head=
+for r in $refs; do
+  c=$(git rev-parse "$r")
+  if [ -z "$head" ] || git merge-base --is-ancestor "$head" "$c"; then head=$c
+  elif ! git merge-base --is-ancestor "$c" "$head"; then head=; break; fi
+done
 ```
 
-A local branch wins over a remote one: it holds what was not pushed yet.
-Exactly one name must come back. None, or more than one: every check below is
-`?`, and the status line names the candidates — which branch ships is the
-person's to say, not yours to guess.
+Local and remote copies are compared by ancestry, not by where they live: the
+head is the commit every other copy leads up to — a local branch ahead of its
+push, or a remote one a teammate pushed after your last fetch. No copy at all,
+or two that diverged: `head` stays empty, every check below is `?`, and the
+status line names `$refs` — which one ships is the person's to say, not yours
+to guess.
 
 A result that belongs to another commit, or no result at all, is `?`, never ✅.
 
