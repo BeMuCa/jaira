@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T21:43:45Z
+updated-at: 2026-11-20T21:43:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16592
 claimed-at: 2026-11-20T20:04:03Z
@@ -34,6 +34,7 @@ outcome-why: "Die Arbeitsweise vom 20.11.2026 stand nur im lokalen Gedaechtnis e
 outcome-resolves: Die Regeln reisen mit den ausgelieferten Rollen; jaira update --roles bringt sie zu jedem Nutzer.
 review-summary: none
 round: 2
+review-gaps: "Duplikate geprueft: Push-Gate und Rueckgabe-Regeln stehen nach critique je einmal (worker bzw. role-signoff); die Bughunt-auf-HEAD-Pruefung in role-signoff nutzt dieselbe Notiz-Konvention wie teamlead/bughunt statt einer eigenen. Kein toter Text, nichts entfernt."
 ---
 
 # Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis
