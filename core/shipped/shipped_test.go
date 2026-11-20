@@ -33,7 +33,7 @@ func TestManifestLinesAreWellFormed(t *testing.T) {
 			t.Errorf("malformed manifest line %q: want 64 lowercase hex, two spaces, a path", l)
 		}
 		if seen[l] {
-			t.Errorf("duplicate manifest line %q", l)
+			t.Errorf("duplicate manifest line %q; a merge=union merge of two branches that added it both leaves one - regenerate: scripts/shipped-history.sh > core/shipped/shipped.sha256", l)
 		}
 		seen[l] = true
 	}

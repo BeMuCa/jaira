@@ -19,18 +19,23 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T23:02:20Z
+updated-at: 2026-11-20T23:08:06Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
 outcome-what: "Manifest neu erzeugt (8 Tag-Versionen fehlten, u.a. cockpit board.ts v0.5.2/0.5.3); scripts/shipped-history.sh --check haelt es gegen jeden v*-Tag und laeuft in ci.yaml (Job shipped-manifest) und im release-notes-Workflow; .gitattributes merge=union fuer das Manifest; LC_ALL=C im Skript"
 outcome-why: Hand-gemergte Manifest-Konflikte verloren Zeilen; jaira update --roles hielt dann eine unberuehrte Installation fuer handgeaendert und uebersprang sie still
 outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, wenn eine fehlt, und Manifest-Merges konfliktieren nicht mehr"
-review-summary: none
-round: 4
-review-gaps: "none - Runde 2 aenderte nur pipefail und eine Zuweisung in hashed(); nichts zu kuerzen"
+review-summary: "scripts/shipped-history.sh bekommt einen Modus --check: er listet jede Datei-Version aus jedem v*-Tag (git ls-tree), hasht die Blob-Bytes roh unter dem heutigen Einbettungspfad und schlaegt fehl, wenn eine davon in core/shipped/shipped.sha256 fehlt (ebenso ohne Tags, bei unlesbarem Tag oder Blob). CI fuehrt das als Job shipped-manifest bei jedem PR aus, release-notes.yaml vor dem Release-PR (beide mit fetch-depth 0). Das Manifest ist neu erzeugt: die 8 verlorenen Versionen (u.a. board.ts aus v0.5.2) stehen drin, keine Zeile ging verloren. .gitattributes setzt merge=union auf das Manifest, das Skript sortiert unter LC_ALL=C. Ein Tabellentest beweist, dass eine unveraenderte board.ts aus v0.5.2 ersetzt statt uebersprungen wird; Go-Tests mit Temp-Repo decken geloescht/wieder angelegt, CRLF, Tag ohne Datei, fehlende Tags, unlesbaren Tag/Blob und den union-Merge ab."
+round: 5
+review-gaps: |-
+  note: DoD 5 ist nur mit lokalem git bewiesen (TestManifestMergesWithoutConflict). Ob GitHubs Mergeability-Pruefung merge=union aus .gitattributes beachtet, ist nicht belegt - erst zwei echte PRs, die beide Zeilen anhaengen, zeigen es.
+  note: nach einem union-Merge mit Duplikat scheitert TestManifestLinesAreWellFormed erst auf master; die Abhilfe (regenerieren) steht nur in .gitattributes, nicht in der Fehlermeldung des Tests.
 test-verdict: ""
 hunt-verdict: ""
+review-verdict: "Alle 5 DoD-Punkte erfuellt; kein Defekt gefunden. Selbst geprueft: --check exit 0 auf 34 Tags, Regenerieren ergibt byte-gleich das committete Manifest, go test ./core/shipped ./core/role gruen. Unsicher nur, ob GitHub merge=union beim PR-Konflikt beachtet (note)."
+review-round: 4
+review-check: "1. cd in den Worktree feat/0k8y6s  2. scripts/shipped-history.sh --check -> 'every version in 34 v* tag(s) is in core/shipped/shipped.sha256', exit 0  3. git show v0.5.2:core/mod/builtin/jaira-cockpit/hooks/board.ts | sha256sum -> a06a3c1c...; grep a06a3c1c core/shipped/shipped.sha256 findet die Zeile  4. eine Zeile aus core/shipped/shipped.sha256 loeschen, Schritt 2 wiederholen -> exit 1 und genau diese Zeile als 'append:' ausgegeben; danach git checkout core/shipped/shipped.sha256  5. go test ./core/shipped/ ./core/role/ -run 'Check|Unreadable|Merges|ReplacesAnOlder' -> ok  6. im naechsten PR: Job shipped-manifest erscheint in den Checks und ist gruen"
 ---
 
 # shipped.sha256 kennt jede Version, die in einem Release-Tag ausgeliefert wurde, und CI haelt das fest
@@ -78,3 +83,6 @@ hunt-verdict: ""
 - **2026-11-20 23:01 · Alexander Sacharov** — bughunt: done at 9c785040 - 1 finding (1 change, 0 pre-existing) in 2 modules, follow-up hunt since 5a091b69; concurrency, error paths, input, permissions checked; files: .gitattributes .github/workflows/ci.yaml .github/workflows/release-notes.yaml core/release/notes/0K8Y6S.md core/role/shipped_test.go core/role/testdata/jaira-cockpit-hooks-board-v0.5.2.ts core/shipped/history_test.go core/shipped/shipped.sha256 scripts/shipped-history.sh
 - **2026-11-20 23:01 · Alexander Sacharov** — Stand 00:01: testing Runde 2, test-verdict pass, Bughunt Runde 2 (nur Diff seit 5a091b69) laeuft. Branch gepusht bis 9c785040. Danach: hunt-verdict, dann review (fresh, neuer Agent).
 - **2026-11-20 23:02 · Alexander Sacharov** — testing Runde 2 Fund (change) behoben: hashed() bricht mit '|| exit 1' ab, weil --check es in $(...) ohne set -e laufen laesst; inherit_errexit verworfen, weil es den ganzen Rest des Skripts mit aendert. Test TestUnreadableBlobStopsTheScript deckt Generator und --check (rot ohne || exit 1). Geschwister: listing=$(...) hatte schon || exit 1.
+- **2026-11-20 23:03 · Alexander Sacharov** — bughunt: done at 55ae3718 - 0 findings in 2 modules, follow-up hunt since 9c785040; concurrency, error paths, input, permissions checked; ran: go test ./shipped/ -run 'TestUnreadableBlob|TestCheck' (pass); files: .gitattributes .github/workflows/ci.yaml .github/workflows/release-notes.yaml core/release/notes/0K8Y6S.md core/role/shipped_test.go core/role/testdata/jaira-cockpit-hooks-board-v0.5.2.ts core/shipped/history_test.go core/shipped/shipped.sha256 scripts/shipped-history.sh
+- **2026-11-20 23:04 · Alexander Sacharov** — Stand 00:04: in review, Review-Agent in eigenem Herdr-Tab gestartet (run-lane.sh --no-worktree). Branch gepusht bis 55ae3718; Ticketdatei ungespeichert im Worktree (Lanes ohne Code).
+- **2026-11-20 23:07 · Alexander Sacharov** — review-gaps Runde 1: Duplikat-Meldung in TestManifestLinesAreWellFormed nennt jetzt die Abhilfe (regenerieren). Offen fuer die Person, nicht per Code loesbar: ob GitHubs Konfliktpruefung im PR merge=union aus .gitattributes beachtet - erst zwei echte PRs zeigen es; lokal (git merge) belegt TestManifestMergesWithoutConflict.
