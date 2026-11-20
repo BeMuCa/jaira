@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T18:11:12Z
+updated-at: 2026-11-20T18:11:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-87225
 claimed-at: 2026-11-20T17:38:56Z
@@ -70,7 +70,7 @@ review-check: "1. cd into a scratch clone of a GitHub repo you own, with an open
 - [x] Das Gate 'alle Tickets des Branches in done' prueft das Binary: jaira roles pr-gate <base> mit Exit 3 und Liste der offenen Tickets; pr-round.sh open oeffnet nur nach bestandenem Gate
   proof: internal/cli/roles.go newRolesPRGateCmd (fails closed on an unreadable ticket file), core/gitrepo/named.go TicketsNamed; internal/cli/prgate_test.go TestPRGateOpensOnlyWhenEveryTicketOfTheBranchIsDone, TestPRGateRefusesWhatItCannotJudge, TestPRGateFailsClosedOnAnUnreadableTicket; core/role/pr_round_test.go TestPROpenRunsTheGateFirst
 - [x] Zwei Sessions, die denselben Thread gleichzeitig beantworten, hinterlassen genau eine Antwort
-  proof: core/role/builtin/jaira-role-pr/scripts/pr-round.sh dedupe (threads) and comment read-back delete only the id this run's own POST returned; core/role/pr_round_test.go TestPRRoundReplyLeavesOneAnswerWhenTwoSessionsRace, TestPRRoundCommentSaysItOnce (person's same words before/after: never touched)
+  proof: core/role/builtin/jaira-role-pr/scripts/pr-round.sh keeper/dedupe (threads) and comment read-back delete only the id this run's own POST returned, and only inside an unbroken run of the same words; core/role/pr_round_test.go TestPRRoundReplyLeavesOneAnswerWhenTwoSessionsRace (incl. same answer again after an objection), TestPRRoundCommentSaysItOnce
 - [x] Board-Datei .jaira/pr-when (done|signoff, Default done; leer, CRLF, Kommentar, Tippfehler -> done): Tabellentest; jaira roles list zeigt sie
   proof: core/settings/settings.go PRWhenFor; core/settings/settings_test.go TestPRWhenDefaultsToDone (empty, CRLF, comment, typo, second line, shell chars); internal/cli/roles_test.go TestRolesListReportsTheBoardsPR (pr_when, 'opens in: signoff')
 - [x] pr-gate bei signoff: jedes Ticket des Branches in signoff oder done; bei done wie bisher; Board ohne signoff-Lane -> Exit 3 mit Grund
