@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:39:38Z
+updated-at: 2026-11-20T22:39:42Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
@@ -45,11 +45,11 @@ question: ""
 review-verdict: "All four DoD items are met; no blocker. Verified: go test ./core/role ./core/shipped green, every builtin SKILL.md hash is in shipped.sha256, release-note lines are single '- ' lines, every prescribed flag exists (jaira list --lane/--board, jaira create --follows, gh run list --commit/--workflow, glab ci list --sha), and the ancestry lookup run on this repo resolves feat/twrap8 to 7e3bc32c. The role is read-only, so concurrency/permission risks are limited to the lines it hands the person; the four notes are small edges."
 review-round: 7
 review-check: |-
-  1. cd /home/alex/projects/.worktrees/jaira-twrap8 && go test ./core/role ./core/shipped  -> both lines say ok
-  2. jaira roles install  (from this branch build: go run ./cmd/jaira roles install) -> ~/.claude/skills/jaira-role-signoff/SKILL.md exists
-  3. In a Claude session in a repo with a ticket in signoff, type /jaira-role-signoff  -> per ticket you see one status line with ✅/❌/?, a table with 🔴/🟡/⚪/🔵 marks, one bold accept/give back, and two paste-ready lines (jaira move <id> --to done --force / jaira note ... Given back from signoff ... && jaira move <id> --to in-progress)
-  4. Ask the teamlead "what waits for me?" twice  -> before each list it runs jaira show and gh pr list; the second time, with nothing changed, it does not repeat the list
-  5. Open core/role/builtin/jaira-worker/SKILL.md, section "Before you push"  -> it tells the worker to run the CI gates locally before pushing
+  1. cd /home/alex/projects/.worktrees/jaira-twrap8 && go test ./core/role ./core/shipped -> both lines say ok
+  2. go run ./cmd/jaira roles install -> ~/.claude/skills/jaira-role-signoff/SKILL.md exists
+  3. In a Claude session in this repo type /jaira-role-signoff TWRAP8 -> one status line with ✅/❌/? (tests ? because the branch is not pushed, bug hunt ❌), a table with 🔴/🟡/⚪/🔵 marks, one bold accept/give back, two paste-ready lines
+  4. Ask the teamlead "what waits for me?" twice -> it runs jaira show and gh pr list before each list and does not repeat an unchanged list
+  5. Open core/role/builtin/jaira-worker/SKILL.md, section "Before you push" -> it says to run the CI gates locally before pushing
 ---
 
 # Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis
