@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T20:06:07Z
+updated-at: 2026-11-20T20:06:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-18659
 claimed-at: 2026-11-20T19:49:16Z
@@ -33,7 +33,7 @@ outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten d
 outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
 review-summary: "critique 16 (1b35fd5c): nothing - one line, same reading as the pushurl line"
 round: 17
-review-gaps: "optimize (a3137857): nothing - the URL parse is plain parameter expansion, no helper in the script does it already"
+review-gaps: "optimize (1b35fd5c): nothing"
 test-verdict: "pass: suite -race -count=1 RC=0 at a3137857; DoD 20 (TestPRGateReadsTheBoardFilesFromTheBase) and 21 (TestPROpenNamesTheHeadItChecked) run green; live: branch binary 'roles pr-gate origin/master' in this repo exits 3 naming origin/master (no .jaira/pr there); failure paths: 9 account-less URLs exit 3 before the gate, nothing opened; open writes only gh pr create, two-writer cases unchanged"
 hunt-verdict: "fail: bughunt done at a3137857 - 1 change: account from the last remote url entry, tip from the first"
 review-verdict: "Diff erfuellt alle 19 DoD-Punkte; 13 Commits, Liste vollstaendig. Gate, Settings und pr-round.sh ganz gelesen entlang Nebenlaeufigkeit (Dedupe bei zwei Sessions korrekt fuer jede Reihenfolge, loescht nur die eigene ID), Fehlerpfade (Login-Verlust -> 3, Teilschritte bei reply wiederholbar), ungewoehnliche Eingaben (Typo/CRLF -> Default, Shell-Zeichen im Reviewer gefiltert, Base mit '-' abgelehnt) und Grenzen (Gate faellt bei Zweifel zu). Kein Blocker; sechs Notes, keine davon bricht ein Kriterium. Betroffene Tests gruen (core/role, core/settings, internal/cli). Nicht geprueft: echtes GitHub (alles gegen ein gemocktes gh)."
