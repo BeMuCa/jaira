@@ -1,7 +1,7 @@
 ---
 id: 01M2HZKCQ48BPQYN1YPTXB97NJ
 title: "Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig"
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Wer allein an einem Repository arbeitet, bekommt keine Rolle vorgesetzt, die ihn zu einem Pull Request schickt, den er nicht will - und ein Team, das Pull Requests benutzt, bekommt die Regel weiterhin ueberall, wo ein Agent sie liest."
@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:09:13Z
+updated-at: 2026-11-20T23:09:17Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -36,7 +36,7 @@ outcome-what: "Board-Datei .jaira/pr kennt den dritten Wert none: die Rollen lan
 outcome-why: "Wer allein ohne Pull Requests arbeitet, bekam eine Rolle, die vor einem nie gewollten PR anhaelt (13VMA8); die Einstellung muss mit dem Repository reisen (Teamlead-Entscheidung 20.11.: dritter Wert in .jaira/pr, Laufzeit + Block)."
 outcome-resolves: "Ein Board sagt in .jaira/pr, ob Arbeit durch einen PR (person/agent) oder direkt auf den Hauptzweig (none) kommt; ohne Datei ist alles byte-gleich wie heute."
 review-summary: "none"
-round: 2
+round: 3
 review-gaps: "none - checked: settings.PRIn/PRFor are now one-line delegations to board (kept: roles.go and tests call them, removing would widen the diff for nothing); board.PRModeIn repeats settings.firstLine on purpose (board may not import settings); every new function has callers; agent paragraph in arrivalSection is the decision of 20.11. (block for agents without a role), not speculative"
 test-verdict: "fail: suite green with -race (RC=0) and DoD 1-8 verified, but on a none board the no_ticket and unreadable refusals of pr-gate still said 'hand the create line back' - there is no create line under none (scratch board, exit 3 was right, the advice wrong)"
 ---
