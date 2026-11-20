@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:10:57Z
+updated-at: 2026-11-20T17:11:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46134
 claimed-at: 2026-11-20T16:42:22Z
@@ -30,7 +30,12 @@ outcome-why: "Eine von jaira geaenderte .gitignore erscheint in jedem neuen Work
 outcome-resolves: Neue Worktrees eines Repos mit privatem Board bleiben sauber; kein Wegraeumen der .gitignore-Zeile von Hand mehr.
 review-summary: "Ein privates Board wird jetzt per 'git rev-parse --path-format=absolute --git-common-dir --show-prefix' in <git-common-dir>/info/exclude ausgeschlossen (Muster /<prefix>.jaira/), nicht mehr in der getrackten .gitignore; ohne git bleibt .gitignore der Ort. Schreiben unter Sperrdatei info/exclude.jaira.lock (ticket.LockFile, aus Store.lock herausgezogen) und per WriteAtomic, CRLF wird erhalten. share/share --undo heben den Ausschluss in beiden Dateien auf bzw. setzen ihn in info/exclude; /.jaira/lanes/ bleibt in .gitignore. jaira update verschiebt eine alte .gitignore-Zeile nach info/exclude bzw. setzt den Ausschluss fuer ein privates Board ohne Ausschluss - nie bei einem Board mit .jaira/.gitattributes oder getrackten .jaira-Dateien. Hilfetexte, README, COMMANDS.md, Release-Note angepasst."
 round: 3
-review-gaps: "none: Fix-Diff 394a544a ist 5 Zeilen Code plus Test; doppelte Pruefung aus dem added-Zweig entfernt, nichts weiter uebrig"
+review-gaps: |-
+  blocker: unusual input / git < 2.31 - gitPlace (core/board/gitignore.go) uebergibt --path-format=absolute; aelteres git kennt die Option nicht und gibt sie als erste Zeile aus (git rev-parse reicht unbekannte --Optionen durch, exit 0). parsePlace nimmt "--path-format=absolute" als common dir: jaira init legt ./--path-format=absolute/info/exclude im Repo an, info/exclude bleibt leer, git status zeigt ?? .jaira/ und ?? --path-format=absolute/ - das Board ist NICHT privat (nachgestellt mit einem git-Wrapper, der das alte Verhalten emuliert). Fix: erste Zeile nur annehmen, wenn filepath.IsAbs(filepath.FromSlash(common)) gilt, sonst "" (Fallback .gitignore) - plus Tabellenfall in TestParsePlaceReadsWhatGitPrints
+  note: pre-existing: commonGitDir in core/ticket/store.go:878 hat dieselbe Schwaeche (liefert "--path-format=absolute\n.git" als Schluessel fuer stateKey) - gleiche IsAbs-Pruefung waere billig
+  note: dropEntry entfernt in info/exclude JEDE Kommentarzeile mit privateMarker - bei zwei Boards (Wurzel + /sub/.jaira/) nimmt share im einen den Kommentar des anderen mit, dessen Musterzeile bleibt kommentarlos stehen (kosmetisch)
+  note: ein Unterverzeichnis mit Glob-Zeichen im Namen (z.B. a[1]) ergibt ein Muster /a[1]/.jaira/, das git als Zeichenklasse liest - das Board waere nicht ausgeschlossen; selten, Escapen von []*? waere die Abhilfe
+  note: Ignored() kostet einen git-Aufruf pro Kommando (bindDriverIfShared) - auf Windows eher 20-50 ms als die gemessenen 2,4 ms unter Linux; bewusst in critique gelassen
 test-verdict: "pass: go test -race ./... gruen (RC=0) auf 394a544a; DoD 1-7 an den Tests geprueft; Binary: Board in git mit committeter /.jaira/-Zeile -> update rc 0, git status leer; vorige Runde: init/Schreibschutz/3x parallel wie notiert"
 hunt-verdict: "pass: bughunt done at 394a544a, 0 findings (Folgerunde ueber den Fix-Diff); Runde 1 (44007130): 1 change, behoben in 394a544a"
 ---
