@@ -130,7 +130,10 @@ alone never starts a round.
   its `bughunt: done at <commit>` line: pass 1 runs the tests that cover the files
   `git diff --name-only <commit>` touches, and passes 2 and 3 and the hunt
   read only that diff, so the loop ends; the whole suite ran in the first
-  round and runs again in CI. Then the ticket goes on to review.
+  round and runs again in CI. When `git cat-file -e <commit>` fails — the
+  commit is gone after a rebase — there is no diff to narrow to: run the
+  whole suite and hunt the whole change, as in the first round. Then the
+  ticket goes on to review.
 - **Pass.** Both fields start with `pass:`. Say what you ran and what you
   saw, and move the ticket on. Never certify what you did not run: "the tests
   probably cover it" is a finding about the tests, not a pass.
