@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T18:19:45Z
+updated-at: 2026-11-20T18:20:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-37518
 claimed-at: 2026-11-20T18:18:38Z
@@ -131,3 +131,4 @@ Empfehlung: 1 - die Fixes sind wenige Zeilen Prompt-Text, und die ersten beiden 
 - **2026-11-20 18:18 · Alexander Sacharov** — Given back from signoff (Person, per CLI): Absender-Präfix für review
 - **2026-11-20 18:18 · Alexander Sacharov** — back: person
 - **2026-11-20 18:19 · Alexander Sacharov** — critique: none - eine Zeile in der Absender-Liste; 'back: unknown' passt in das bestehende back:-Muster, kein neuer Mechanismus
+- **2026-11-20 18:20 · Alexander Sacharov** — bughunt: done at c3e5a7df - 0 findings in 3 modules, follow-up hunt since d0cb1f49; concurrency, error paths, input, permissions checked (diff: 'anything else' now writes back: unknown and counts for no lane, one release-note line, one manifest line; twins byte-equal; manifest caf2ffad = sha256 of 20-in-progress.md at HEAD; every note the code writes on a return - cockpit decision:/Given back from/cockpit:, refsync steal line - is named or skipped by the rule; no new files since the last round; ran: go test ./core/lane/... ./core/shipped/... ./core/release/... exit 0); files: .jaira/lanes/in-progress.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md core/lane/builtin/15-pre-process.md core/lane/builtin/20-in-progress.md core/lane/builtin/27-testing.md core/lane/builtin/40-review.md core/release/notes/TW5FE2.md core/role/builtin/jaira-role-bughunt/SKILL.md core/shipped/shipped.sha256
