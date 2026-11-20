@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T18:27:09Z
+updated-at: 2026-11-20T18:27:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-29476
 claimed-at: 2026-11-20T18:21:36Z
@@ -41,7 +41,7 @@ review-gaps: |-
   note: pr-round.sh comment holt den eigenen Login mit 'gh api user'; mit einem GitHub-App-/Actions-Token liefert /user 403 und der Befehl bricht vor dem Posten mit Exit 1 ab (reply nutzt graphql viewer und hat das Problem nicht).
   note: ein Antworttext nur aus Leerzeichen/Leerzeilen besteht body_of (-s) und wird gepostet bzw. von GitHub abgelehnt.
 test-verdict: "pass: go test -race ./... RC=0 after clean cache at 007f461a; DoD 1-16 proofs present; review-check replayed with the branch binary: unknown handle ZZZZZZ -> exit 3 '(unknown)', roles list without files -> 'pr: person ... opens in: done (the default)'; earlier rounds: thresholds done/signoff, unreadable branch ticket -> 3, logbook passes, archive holds (TestPRGateReadsFiledTicketsByWhereTheyAre), pr-round.sh open refuses before gh pr create; reply/comment/settled against fake gh only"
-hunt-verdict: "pass: bughunt done at 106faf5c - 0 change, 0 pre-existing"
+hunt-verdict: "pass: bughunt done at 007f461a - 0 change, 0 pre-existing"
 review-verdict: "Nicht abnahmereif: ein Blocker. Settings, roles list, pr-round.sh (reply/comment-Dedupe, settled, request, Exit-Codes) und die Rollentexte erfuellen ihre DoD-Punkte, Tests gruen (go test ./core/role ./core/settings ./core/gitrepo, internal/cli -run PRGate|RolesList). Aber das Gate aus DoD 12 oeffnet bei einem Handle, den das Board nicht kennt - reproduziert mit dem Branch-Binary. Zurueck nach in-progress."
 review-round: 9
 review-check: "1. cd $(mktemp -d) && git init -q -b master && git config user.email a@b && git config user.name x  2. <branch-jaira> init && echo agent > .jaira/pr && git commit -q --allow-empty -m 'chore: base' && git checkout -q -b feat/x  3. git commit -q --allow-empty -m 'feat(ZZZZZZ): x'  4. <branch-jaira> roles pr-gate master; echo $?  -> heute: Exit 0 'may open'; nach dem Fix: Exit 3 mit dem unbekannten Handle  5. go test ./internal/cli -run PRGate && go test ./core/role -run PR  -> ok  6. <branch-jaira> roles list -> letzte Zeile 'pr: person ... reviewer: none; opens in: done (the default)'"
