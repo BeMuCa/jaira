@@ -25,14 +25,14 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:30:45Z
+updated-at: 2026-11-20T22:31:05Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
 outcome-what: "jaira-role-signoff findet die Branch des Tickets ueber den Handle als Namenssegment statt feat/<id> anzunehmen; teamlead verweist darauf"
 outcome-why: "signoff-Rueckgabe: Branches heissen nicht immer feat/<id>, dann waren alle Checks falsch gebunden"
 outcome-resolves: "Rueckgabe aus signoff 22:27 (🟡 Branchname)"
-review-summary: "Ships a new read-only role jaira-role-signoff: per ticket in signoff it prints one status line (DoD x/y, tests from the CI run of exactly the branch head commit via 'gh run list --commit <sha> --workflow', bug hunt on that head, blockers, review verdict, noted returns), a table that marks every open note 🔴/🟡/⚪/🔵, one bold recommendation, and the accept/give-back lines ready to paste; five return rules end endless rounds (after two noted returns 🟡 edges go into a ready follow-up 'jaira create --follows'). The teamlead now re-reads 'jaira show' and 'gh pr list' before any list of what waits, and reports signoff/human tickets in that shape, pointing at the role for the rules. worker, dispatcher and jaira-role-pr run the project's CI gates locally before a push. README, the German how-to page, role_test wantRoles, shipped.sha256 and release note TWRAP8 follow."
+review-summary: "none"
 round: 5
 review-gaps: |-
   note: jaira-role-signoff/SKILL.md:55 takes the branch as feat/<id lower case>, but branches here are not always named so (fix/nh788q-windows-rename exists) and may exist only on origin; git rev-parse then fails, $head is empty, and gh run list --commit "" returns the newest runs of other branches - the headSha comparison the role asks for still yields ?, so no false ✅, but the role should say how to find the branch (git branch -a --list "*<id>*") and that an empty head is ?
