@@ -58,13 +58,6 @@ if [ "${1:-}" = --check ]; then
 		echo "shipped-history: this clone has no v* tags, so nothing could be checked; fetch them (git fetch --tags)" >&2
 		exit 1
 	fi
-	# A line that is no entry — a conflict marker left from a merge, say — is
-	# a manifest nobody can trust, whatever else it holds.
-	bad=$(tr -d '\r' <"$manifest" | grep -nvE '^(#.*|[0-9a-f]{64}  [^ ]+|)$' || true)
-	if [ -n "$bad" ]; then
-		printf 'shipped-history: %s has lines that are no entry:\n%s\n' "$manifest" "$bad" >&2
-		exit 1
-	fi
 	# Listed apart from the pipeline below: a tag git cannot read must stop the
 	# check, not leave it comparing fewer versions and passing.
 	listing=$(

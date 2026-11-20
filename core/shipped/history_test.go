@@ -137,7 +137,6 @@ func TestCheckHoldsTheManifestAgainstEveryTag(t *testing.T) {
 		// git stores the CRLF bytes, and a build of that commit embedded them:
 		// the LF version's hash is a different version.
 		{"the LF hash in place of the CRLF version", strings.Replace(full, lineCRLF, Line(key, []byte("b\n")), 1), false, lineCRLF},
-		{"a merge conflict left in the manifest", full + "<<<<<<< HEAD\n" + lineA + "\n=======\n>>>>>>> other\n", false, "<<<<<<< HEAD"},
 		{"a manifest with CRLF line endings", strings.ReplaceAll(full, "\n", "\r\n"), true, ""},
 	}
 	for _, c := range cases {

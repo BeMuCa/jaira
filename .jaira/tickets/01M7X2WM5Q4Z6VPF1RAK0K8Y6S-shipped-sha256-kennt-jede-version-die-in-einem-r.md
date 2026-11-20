@@ -19,13 +19,17 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T22:53:26Z
+updated-at: 2026-11-20T22:54:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
 outcome-what: "Manifest neu erzeugt (8 Tag-Versionen fehlten, u.a. cockpit board.ts v0.5.2/0.5.3); scripts/shipped-history.sh --check haelt es gegen jeden v*-Tag und laeuft in ci.yaml (Job shipped-manifest) und im release-notes-Workflow; .gitattributes merge=union fuer das Manifest; LC_ALL=C im Skript"
 outcome-why: Hand-gemergte Manifest-Konflikte verloren Zeilen; jaira update --roles hielt dann eine unberuehrte Installation fuer handgeaendert und uebersprang sie still
 outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, wenn eine fehlt, und Manifest-Merges konfliktieren nicht mehr"
+review-summary: |-
+  scripts/shipped-history.sh:61-67 prueft das Zeilenformat (Konfliktmarker) ein zweites Mal - core/shipped/shipped_test.go TestManifestLinesAreWellFormed tut das schon in CI und im release-notes-Lauf; Block und den Konfliktmarker-Fall in history_test.go streichen
+  core/role/shipped_test.go TestInstallReplacesTheV052CockpitBoard wiederholt TestInstallReplacesAnOlderShippedVersion fuer ein zweites Fixture; beide als Tabelle (key, Fixture, Pin-Hash) in einem Test
+round: 2
 ---
 
 # shipped.sha256 kennt jede Version, die in einem Release-Tag ausgeliefert wurde, und CI haelt das fest
@@ -37,9 +41,9 @@ outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, w
 - [x] Ein CI-Schritt prueft gegen die Tags und schlaegt fehl, wenn eine ausgelieferte Version fehlt; laeuft auch im release-notes-Workflow vor dem Release-PR
   proof: .github/workflows/ci.yaml job shipped-manifest; .github/workflows/release-notes.yaml step 'Every version a release shipped is in the manifest' (fetch-depth: 0)
 - [x] jaira update --roles auf einer unveraenderten v0.5.2-Installation von board.ts ueberschreibt sie statt Skipped (Test)
-  proof: core/role/shipped_test.go TestInstallReplacesTheV052CockpitBoard (fails on the old manifest, passes on the new)
+  proof: core/role/shipped_test.go TestInstallReplacesAnOlderShippedVersion/cockpit_board.ts_v0.5.2 (fails on the old manifest)
 - [x] Eingabeklassen: Datei in einem Tag geloescht und spaeter wieder angelegt, CRLF-Version derselben Datei, Tag ohne die Datei, Merge-Konflikt im Manifest
-  proof: core/shipped/history_test.go TestCheckHoldsTheManifestAgainstEveryTag (deleted+recreated, CRLF, conflict markers, CRLF manifest), TestCheckFailsWithoutTags, TestCheckFailsOnAnUnreadableTag; tag without the file = v0.2.0 in the fixture
+  proof: core/shipped/history_test.go TestCheckHoldsTheManifestAgainstEveryTag (deleted+recreated, CRLF version, CRLF manifest; v0.2.0 = tag without the file), TestCheckFailsWithoutTags, TestCheckFailsOnAnUnreadableTag; conflict markers: core/shipped/shipped_test.go TestManifestLinesAreWellFormed
 - [x] .gitattributes setzt 'core/shipped/shipped.sha256 merge=union', sodass zwei PRs, die beide Zeilen anhaengen, nicht mehr in Konflikt geraten (heute bei jedem PR: #147, feat/tw5fe2)
   proof: .gitattributes core/shipped/shipped.sha256 merge=union; core/shipped/history_test.go TestManifestMergesWithoutConflict (fails without merge=union)
 
@@ -63,3 +67,4 @@ outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, w
 - **2026-11-20 22:45 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock; PR #145 ist seit 20.11. 17:40 gemergt, Startbedingung erfuellt
 - **2026-11-20 22:46 · Alexander Sacharov** — Offene Entscheidungen: keine, selbst entschieden: (1) Pruefung als 'scripts/shipped-history.sh --check' im selben Skript, damit Pfad-Mapping (lanes/, .claude/skills/jaira) nur einmal existiert. (2) Geprueft wird gegen die Tags, nicht gegen jede History-Version: Zwischenstaende auf Branches wurden nie ausgeliefert, und die Version im Arbeitsbaum haelt schon TestEveryInstalledFileIsAShippedVersion fest. (3) Keine v*-Tags im Klon = Fehler, nicht gruen: ein Check, der nichts prueft, darf nicht bestehen. (4) Blob-Bytes roh hashen (cat-file), keine CRLF-Umwandlung - das ist, was der Build einbettete. (5) Skript-Test als Go-Test mit Temp-Repo, auf Windows uebersprungen (CI-Schritt laeuft auf ubuntu). Stand vor dem Fix: Generator liefert 75 Zeilen, die im Manifest fehlen; kein Manifest-Eintrag fehlt im Generator (nichts geht durch Regenerieren verloren).
 - **2026-11-20 22:53 · Alexander Sacharov** — Gefunden: die alten 8 fehlenden Zeilen standen unsortiert am Ende des Manifests (von Hand angehaengt) - Regenerieren sortiert sie ein, daher der grosse Diff ohne verlorene Zeile. Das Skript setzt jetzt LC_ALL=C: unter anderer Locale sortierte Manifeste wuerden bei merge=union Duplikate erzeugen. Bekannte Grenze: Pfade mit Leerzeichen kann das Manifest-Format nicht (Regex [^ ]+ hier wie in TestManifestLinesAreWellFormed); keine solche Datei existiert. Ein Duplikat nach einem union-Merge laesst TestManifestLinesAreWellFormed scheitern -> regenerieren.
+- **2026-11-20 22:53 · Alexander Sacharov** — critique: (1) Formatpruefung im Skript doppelt TestManifestLinesAreWellFormed -> streichen. (2) zwei fast gleiche Install-Tests -> Tabellentest. Bewusst stehen gelassen: Pruefung gegen Tags statt gegen die ganze History (Note 'Offene Entscheidungen' Punkt 2).
