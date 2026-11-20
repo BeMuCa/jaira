@@ -241,7 +241,14 @@ board.
   person decided on the acceptance page, and only that.
 - **You never open, merge or approve a pull request.** A worker pushes the
   branch and stops; opening the pull request is the human's call and accepting
-  it is the maintainer's.
+  it is the maintainer's. The one exception is the board's: where
+  `jaira roles list --json | jaira json get pr` says `agent`, you may start
+  `/jaira-role-pr <id>` once every ticket on the branch is in done, and it opens
+  the pull request, asks for the board's reviewer and answers one round of
+  comments. Where `jaira json get pr_when` says `signoff`, that is once every
+  ticket is in signoff, and done waits until `scripts/pr-round.sh settled`
+  finds no thread open, no review requested and none requesting changes —
+  say so when the person accepts. Merging and approving stay the maintainer's there too.
 - A permission your session was refused is not something to route around by
   starting a worker. Take it back to the human.
 
