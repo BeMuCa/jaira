@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:54:57Z
+updated-at: 2026-11-20T19:55:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-18659
 claimed-at: 2026-11-20T19:49:16Z
@@ -204,3 +204,4 @@ Empfehlung: 2 - kein Kriterium ist gebrochen, das Gate faellt bei Zweifel zu, un
 - **2026-11-20 19:49 · Alexander Sacharov** — worker (neu, 2026-11-20): übernimmt Rückgabe aus signoff - Gate liest .jaira/pr aus der Basis, open setzt --head <fork-owner>:<branch>
 - **2026-11-20 19:51 · Alexander Sacharov** — Rückgabe Teil 1: Gate liest .jaira/pr UND .jaira/pr-when aus <base> (git cat-file blob <base>:./.jaira/pr) - pr-when gehört zur selben Klasse: ein Branch mit signoff würde sonst früher öffnen. Folge: ein nicht geteiltes Board (.jaira gitignored) bleibt bei person; eine Änderung an .jaira/pr wirkt erst nach dem Merge in die Basis. pr-reviewer bleibt von der Platte gelesen (öffnet nichts). roles list zeigt weiter die Platte.
 - **2026-11-20 19:54 · Alexander Sacharov** — Rückgabe Teil 2: --head aus der konfigurierten Push-URL (vor insteadOf) - Konto = vorletzter Teil von host:owner/name bzw. host/owner/name; gleiches Konto wie Ziel (Gross/Klein egal) -> nur Branchname. Dabei gefunden, gleiche Klasse: die Tip-Prüfung las mit ls-remote <remote> die Fetch-URL, git push sendet aber an pushurl - jetzt ls-remote gegen 'git remote get-url --push'. Grenze: ein Fork unter anderem Repo-Namen als upstream wird von gh mit owner:branch nicht gefunden (API kennt nur owner:branch); nicht behandelt.
+- **2026-11-20 19:55 · Alexander Sacharov** — critique 13 (nur 3fe55258): (a) FileAt-bool ungenutzt -> weg; (b) Long-Text umbrechen. Stehen gelassen: open liest die URL zweimal (get-url --push für die Tip-Prüfung, roh aus der Config fürs Konto) - das Konto so, wie der Nutzer es schrieb, und die Tests prüfen https/ssh/scp-Formen über insteadOf; roles list zeigt weiter die Platte, die Gate-Meldung nennt die Basis.
