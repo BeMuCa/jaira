@@ -1,7 +1,7 @@
 ---
 id: 01M7WWY6PX0TRDQSVK7RNNV39Y
 title: Ein privates Board steht in .git/info/exclude statt in der .gitignore des Arbeitsbaums
-status: review
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:11:14Z
+updated-at: 2026-11-20T17:11:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46134
 claimed-at: 2026-11-20T16:42:22Z
@@ -29,7 +29,7 @@ outcome-what: "Ein privates Board steht jetzt in <git-common-dir>/info/exclude s
 outcome-why: "Eine von jaira geaenderte .gitignore erscheint in jedem neuen Worktree als Aenderung, ein Push-Guard lehnt dann jeden Push ab; info/exclude gilt fuer alle Worktrees und taucht in keinem Diff auf."
 outcome-resolves: Neue Worktrees eines Repos mit privatem Board bleiben sauber; kein Wegraeumen der .gitignore-Zeile von Hand mehr.
 review-summary: "Ein privates Board wird jetzt per 'git rev-parse --path-format=absolute --git-common-dir --show-prefix' in <git-common-dir>/info/exclude ausgeschlossen (Muster /<prefix>.jaira/), nicht mehr in der getrackten .gitignore; ohne git bleibt .gitignore der Ort. Schreiben unter Sperrdatei info/exclude.jaira.lock (ticket.LockFile, aus Store.lock herausgezogen) und per WriteAtomic, CRLF wird erhalten. share/share --undo heben den Ausschluss in beiden Dateien auf bzw. setzen ihn in info/exclude; /.jaira/lanes/ bleibt in .gitignore. jaira update verschiebt eine alte .gitignore-Zeile nach info/exclude bzw. setzt den Ausschluss fuer ein privates Board ohne Ausschluss - nie bei einem Board mit .jaira/.gitattributes oder getrackten .jaira-Dateien. Hilfetexte, README, COMMANDS.md, Release-Note angepasst."
-round: 3
+round: 4
 review-gaps: |-
   blocker: unusual input / git < 2.31 - gitPlace (core/board/gitignore.go) uebergibt --path-format=absolute; aelteres git kennt die Option nicht und gibt sie als erste Zeile aus (git rev-parse reicht unbekannte --Optionen durch, exit 0). parsePlace nimmt "--path-format=absolute" als common dir: jaira init legt ./--path-format=absolute/info/exclude im Repo an, info/exclude bleibt leer, git status zeigt ?? .jaira/ und ?? --path-format=absolute/ - das Board ist NICHT privat (nachgestellt mit einem git-Wrapper, der das alte Verhalten emuliert). Fix: erste Zeile nur annehmen, wenn filepath.IsAbs(filepath.FromSlash(common)) gilt, sonst "" (Fallback .gitignore) - plus Tabellenfall in TestParsePlaceReadsWhatGitPrints
   note: pre-existing: commonGitDir in core/ticket/store.go:878 hat dieselbe Schwaeche (liefert "--path-format=absolute\n.git" als Schluessel fuer stateKey) - gleiche IsAbs-Pruefung waere billig
