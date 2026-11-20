@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:48:18Z
+updated-at: 2026-11-20T19:48:38Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99114
 claimed-at: 2026-11-20T19:19:18Z
@@ -194,3 +194,4 @@ Warum: Ein Branch koennte .jaira/pr mit agent selbst committen und so sein eigen
 1) Gate aus der Basis lesen und --head <fork-owner>:<branch> setzen, dann erneut pruefen [give back]
 2) Ticket so annehmen; die sechs Hinweise bleiben als Notes stehen, ein erster echter PR zeigt den Rest [accept]
 Empfehlung: 2 - kein Kriterium ist gebrochen, das Gate faellt bei Zweifel zu, und die Luecken zeigen sich am schnellsten an einem echten PR.
+- **2026-11-20 19:48 · Alexander Sacharov** — decision: 1) Gate aus der Basis lesen und --head <fork-owner>:<branch> setzen, dann erneut pruefen
