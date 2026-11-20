@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:44:04Z
+updated-at: 2026-11-20T22:44:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
@@ -42,8 +42,8 @@ review-gaps: |-
 test-verdict: "pass: go test ./core/... green (RC=0) at b443a4cb; text-only change to the lookup comment and the tests check, the lookup itself unchanged since d4da7f7b and exercised there; writes nothing"
 hunt-verdict: "pass: last hunt at a1b61158 found 1 change, fixed in d4da7f7b; no new hunt since by teamlead decision 21:58 - hunt-on-HEAD reads ❌ by design"
 question: ""
-review-verdict: "All four DoD items are met; no blocker. Verified: go test ./core/role ./core/shipped green, every builtin SKILL.md hash is in shipped.sha256, release-note lines are single '- ' lines, every prescribed flag exists (jaira list --lane/--board, jaira create --follows, gh run list --commit/--workflow, glab ci list --sha), and the ancestry lookup run on this repo resolves feat/twrap8 to 7e3bc32c. The role is read-only, so concurrency/permission risks are limited to the lines it hands the person; the four notes are small edges."
-review-round: 7
+review-verdict: "All four DoD items met, no blocker. Checked: go test ./core/role ./core/shipped green (shipped fresh, -count=1), every flag the role prescribes exists (jaira list --lane/--board, gh run list --commit/--workflow, glab ci list --sha), the cockpit really writes 'Given back from <lane>:' (core/mod/builtin/jaira-cockpit/hooks/register.tsx:900), the branch lookup handles none/diverged copies by leaving head empty. Role is read-only, so concurrency/permission risk is limited to lines the person runs. Four notes, all small."
+review-round: 8
 review-check: |-
   1. cd /home/alex/projects/.worktrees/jaira-twrap8 && go test ./core/role ./core/shipped -> both lines say ok
   2. go run ./cmd/jaira roles install -> ~/.claude/skills/jaira-role-signoff/SKILL.md exists
