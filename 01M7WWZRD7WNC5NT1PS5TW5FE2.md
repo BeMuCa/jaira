@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T18:17:56Z
+updated-at: 2026-11-20T18:18:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5618
 claimed-at: 2026-11-20T18:03:30Z
@@ -132,3 +132,4 @@ Warum: Die ersten zwei Luecken betreffen genau die Rundenzaehlung und den Gate-A
 1) Zurueckgeben: die vier Luecken in den Lane-Prompts schliessen (back:-Zeile nur einmal pro Runde, Plan vor dem Move, testing ohne Go-Wortlaut; Widerspruch zur Role-Skill notieren) [give back]
 2) So annehmen: die vier Luecken bleiben als Notes am Ticket stehen, kein Blocker [accept]
 Empfehlung: 1 - die Fixes sind wenige Zeilen Prompt-Text, und die ersten beiden betreffen die neue Rundenlogik selbst.
+- **2026-11-20 18:18 · Alexander Sacharov** — Given back from signoff (Person, per CLI): Absender-Präfix für review
