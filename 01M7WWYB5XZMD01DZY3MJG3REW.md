@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:51:27Z
+updated-at: 2026-11-20T19:54:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-18659
 claimed-at: 2026-11-20T19:49:16Z
@@ -95,7 +95,8 @@ review-check: |-
   proof: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:18 usage open
 - [x] Ein mitten im Lauf abgelaufener gh-Login endet in jedem Befehl mit Exit 3, nie mit dem Exit 4 'Reviewer abgelehnt'
   proof: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:86 gh() wrapper, read-backs end with 3 at lines 153,287, request maps 3 before 4; core/role/pr_round_test.go TestPRRoundLostSignInIsNeverExit4 (threads, settled, request, comment after its POST)
-- [ ] pr-gate liest .jaira/pr und .jaira/pr-when aus <base>, nicht von der Platte des Branches; ein Branch, der agent/signoff selbst committet, oeffnet sein Gate nicht
+- [x] pr-gate liest .jaira/pr und .jaira/pr-when aus <base>, nicht von der Platte des Branches; ein Branch, der agent/signoff selbst committet, oeffnet sein Gate nicht
+  proof: internal/cli/roles.go pr-gate repo.FileAt(<base>, .jaira/pr|pr-when); internal/cli/prgate_test.go TestPRGateReadsTheBoardFilesFromTheBase; core/settings/settings_test.go PRIn/PRWhenIn in TestPRDefaultsToThePerson, TestPRWhenDefaultsToDone
 
 ## Options
 
