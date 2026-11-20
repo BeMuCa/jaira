@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T22:39:34Z
+updated-at: 2026-11-20T22:39:38Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68388
 claimed-at: 2026-11-20T22:28:29Z
@@ -42,8 +42,8 @@ review-gaps: |-
 test-verdict: "pass: go build ./... and go test ./core/... green (RC=0) at 7e3bc32c; lookup exercised on bare repo + 2 clones: local behind remote -> remote head, local ahead -> local, diverged -> ?, no ref -> ?, two remotes on one commit -> one head; the change writes nothing"
 hunt-verdict: "pass: last hunt at a1b61158 found 1 change, fixed in d4da7f7b; no new hunt over d4da7f7b..7e3bc32c by teamlead decision 21:58 (findings of the head-binding class go to signoff as a note) - hunt-on-HEAD therefore reads ❌ by design"
 question: ""
-review-verdict: "The diff meets all four DoD items; no blocker. Checked: go test ./core/role ./core/shipped green, each final SKILL.md hash is in shipped.sha256, release note lines are single '- ' lines, the commands the role prescribes exist (jaira list --lane/--board, gh run list --commit/--workflow, glab ci list --sha). Three notes, all small: hardcoded feat/ branch name, intermediate hashes, and an expected ❌ hunt-on-HEAD on this ticket."
-review-round: 4
+review-verdict: "All four DoD items are met; no blocker. Verified: go test ./core/role ./core/shipped green, every builtin SKILL.md hash is in shipped.sha256, release-note lines are single '- ' lines, every prescribed flag exists (jaira list --lane/--board, jaira create --follows, gh run list --commit/--workflow, glab ci list --sha), and the ancestry lookup run on this repo resolves feat/twrap8 to 7e3bc32c. The role is read-only, so concurrency/permission risks are limited to the lines it hands the person; the four notes are small edges."
+review-round: 7
 review-check: |-
   1. cd /home/alex/projects/.worktrees/jaira-twrap8 && go test ./core/role ./core/shipped  -> both lines say ok
   2. jaira roles install  (from this branch build: go run ./cmd/jaira roles install) -> ~/.claude/skills/jaira-role-signoff/SKILL.md exists
