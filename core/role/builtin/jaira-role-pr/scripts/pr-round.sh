@@ -89,15 +89,24 @@ case "$cmd" in
     body_of "$file"
     # Answer and resolve are two calls, and the second can fail after the
     # first went through. Run again, the thread is still listed open; its last
-    # comment is then already ours, so only the resolve is repeated and the
-    # reviewer never gets the same answer twice.
-    state=$(gh api graphql -f thread="$thread" -f query='
+    # comment is then this very answer, so only the resolve is repeated and
+    # the reviewer never gets the same answer twice. The text decides, not the
+    # author alone: an agent writes under the maintainer's own login, and the
+    # maintainer's own remark in a thread is a question still owed an answer.
+    resp=$(gh api graphql -f thread="$thread" -f query='
       query($thread:ID!){viewer{login}
-        node(id:$thread){... on PullRequestReviewThread{isResolved comments(last:1){nodes{author{login}}}}}}' \
+        node(id:$thread){... on PullRequestReviewThread{isResolved comments(last:1){nodes{author{login} body}}}}}' \
       --jq 'if .data.node == null then "missing"
             elif .data.node.isResolved then "resolved"
-            elif (.data.node.comments.nodes[0].author.login // "") == .data.viewer.login then "answered"
+            elif (.data.node.comments.nodes[0].author.login // "") == .data.viewer.login
+              then "mine\n" + (.data.node.comments.nodes[0].body // "")
             else "open" end')
+    state=${resp%%$'\n'*}
+    if [ "$state" = mine ]; then
+      last=$(printf '%s' "${resp#*$'\n'}" | tr -d '\r')
+      mine=$(tr -d '\r' < "$file")
+      [ "$last" = "$mine" ] && state=answered || state=open
+    fi
     case "$state" in
       missing) die "no review thread '$thread' on $repo#$number" 1 ;;
       resolved) echo "resolved: already"; exit 0 ;;

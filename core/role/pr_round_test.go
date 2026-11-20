@@ -269,7 +269,8 @@ func TestPROpensOnlyWhereTheBoardSaysAndNeverAccepts(t *testing.T) {
 // failed finds the thread open with our answer last, and only resolves it; a
 // thread already resolved is left alone; a thread that does not exist is
 // refused before anything is written. The class: no thread ever gets the same
-// answer twice (JG3REW, bughunt).
+// answer twice, and no question goes unanswered because it was written under
+// the same login the agent works with — the maintainer's (JG3REW, bughunt).
 func TestPRRoundReplyIsSafeToRunAgain(t *testing.T) {
 	p := newPRRound(t)
 	answer := fixtureFile(t, "answer.md", "Fixed in abc123.\n")
@@ -278,7 +279,10 @@ func TestPRRoundReplyIsSafeToRunAgain(t *testing.T) {
 		code            int
 		posts, resolves bool
 	}{
-		{"answered, resolve failed", `{"data":{"viewer":{"login":"me"},"node":{"isResolved":false,"comments":{"nodes":[{"author":{"login":"me"}}]}}}}`, 0, false, true},
+		{"answered, resolve failed", `{"data":{"viewer":{"login":"me"},"node":{"isResolved":false,"comments":{"nodes":[{"author":{"login":"me"},"body":"Fixed in abc123."}]}}}}`, 0, false, true},
+		{"answered with CRLF", `{"data":{"viewer":{"login":"me"},"node":{"isResolved":false,"comments":{"nodes":[{"author":{"login":"me"},"body":"Fixed in abc123.\r\n"}]}}}}`, 0, false, true},
+		{"the maintainer's own remark", `{"data":{"viewer":{"login":"me"},"node":{"isResolved":false,"comments":{"nodes":[{"author":{"login":"me"},"body":"please rename this"}]}}}}`, 0, true, true},
+		{"someone else wrote the same words", `{"data":{"viewer":{"login":"me"},"node":{"isResolved":false,"comments":{"nodes":[{"author":{"login":"copilot"},"body":"Fixed in abc123."}]}}}}`, 0, true, true},
 		{"already resolved", `{"data":{"viewer":{"login":"me"},"node":{"isResolved":true,"comments":{"nodes":[{"author":{"login":"me"}}]}}}}`, 0, false, false},
 		{"no such thread", `{"data":{"viewer":{"login":"me"},"node":null}}`, 1, false, false},
 		{"ghost author", `{"data":{"viewer":{"login":"me"},"node":{"isResolved":false,"comments":{"nodes":[{"author":null}]}}}}`, 0, true, true},
