@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T18:15:52Z
+updated-at: 2026-11-20T18:17:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-85657
 claimed-at: 2026-11-20T17:52:47Z
@@ -125,3 +125,4 @@ Empfehlung: 2 - alle 7 DoD-Punkte sind mit Tests belegt, die Funde sind Randfael
 - **2026-11-20 18:00 · Alexander Sacharov** — testing: dritte Rueckgabe aus testing (750e2acf, 1164e2ee, 21742362) - Stopp nach Regel, Frage an die Person. Alle drei Funde liegen auf demselben Rand: Ignored liest nur die Dateien, die jaira selbst schreibt, nicht was git tatsaechlich ausblendet. Vorschlag: im added-Zweig von moveIgnore board.IgnoredBy (git check-ignore) statt board.Ignored - eine Zeile, deckt git<2.31, fremde Regeln, core.excludesFile. Frage: 1) so fixen und Loop einmal weiterlaufen lassen [empfohlen] 2) added-Zweig auf git<2.31 ganz weglassen 3) annehmen, git<2.31 als bekannte Grenze.
 - **2026-11-20 18:14 · Alexander Sacharov** — decision: 1) im added-Zweig von moveIgnore git fragen (IgnoredBy) statt Ignored, Loop einmal weiter
 - **2026-11-20 18:15 · Alexander Sacharov** — critique Runde 10 (Diff 21742362..HEAD): nichts - eine Zeile, IgnoredBy wie in share.
+- **2026-11-20 18:17 · Alexander Sacharov** — bughunt: change: internal/cli/update.go:362 - moveIgnore now asks git (IgnoredBy) but AddIgnore checks jaira's own line, and line 365 sets m.added before AddIgnore while line 369 drops its 'changed' result; when info/exclude already holds /.jaira/ but a tracked .gitignore un-ignores it with '!/.jaira/', every 'jaira update' prints 'Excluded this private board in .git/info/exclude: nothing excluded it.' and --json reports ignore_added=true, though nothing is written and the board stays unignored; at 21742362 the same repo was silent with ignore_added=false; ran: init, commit .gitignore '!/.jaira/', jaira update x2 (both print the line, md5 of info/exclude unchanged), jaira-old update (0 lines, ignore_added false)
