@@ -414,3 +414,30 @@ describe('reading while a report arrives', () => {
     })
   }
 })
+
+describe('the project changing while a read waits', () => {
+  // The read takes its project once, under the lock, and writes back the key
+  // it read: another project's reports are never written over this one's.
+  for (const delay of [0, 1, 2, 3, 5, 8, 11, 20]) {
+    test(`after ${delay} microtask(s)`, async ($, on) => {
+      session(on)
+      let root = '/a'
+      where(on, () => root)
+      await $.session.receive({ origin: { kind: 'peer' }, text: 'a-first: ticket K7P2QX moved to critique' })
+      root = '/b'
+      await $.session.receive({ origin: { kind: 'peer' }, text: 'b-first: ticket K7P2QX moved to critique' })
+      root = '/a'
+      const arriving = $.session.receive({ origin: { kind: 'peer' }, text: 'a-second: ticket K7P2QX moved to testing' })
+      const reading = $.command.run(typed('report K7P2QX'))
+      for (let i = 0; i < delay; i++) await Promise.resolve()
+      root = '/b'
+      await Promise.all([arriving, reading])
+      root = '/a'
+      const a = (await $.command.run(typed('report K7P2QX all'))).text ?? ''
+      expect(a).toContain('a-first')
+      expect(a).not.toContain('b-first')
+      root = '/b'
+      expect((await $.command.run(typed('report K7P2QX all'))).text ?? '').toContain('b-first')
+    })
+  }
+})

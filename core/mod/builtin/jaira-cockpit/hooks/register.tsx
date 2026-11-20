@@ -234,22 +234,24 @@ async function shorten($: EngineInterface, text: string, origin: string, agent?:
   return text.replace(report, () => short.line)
 }
 
-async function keptReports($: EngineInterface, ticket: string): Promise<Report[]> {
-  return ((await $.store.get(keyOf(await project($), ticket))) as Report[] | undefined) ?? []
+async function stored($: EngineInterface, key: string): Promise<Report[]> {
+  return ((await $.store.get(key)) as Report[] | undefined) ?? []
 }
 
+// Read under the lock too, or a read between keep()'s delete and set finds
+// the ticket empty. The project is taken inside it: read and write one key.
 async function reports($: EngineInterface, args: string): Promise<string> {
-  const root = await project($)
   const { ticket, all } = reportArgs(args)
-  if (ticket === '') {
-    const keys = projectKeys(await $.store.keys(), root).reverse()
-    const rows = await Promise.all(keys.map(async k => [k, ((await $.store.get(k)) as Report[] | undefined) ?? []] as const))
-    return listReports(rows)
-  }
   return locked(async () => {
-    const kept = await keptReports($, ticket)
+    const root = await project($)
+    if (ticket === '') {
+      const keys = projectKeys(await $.store.keys(), root).reverse()
+      return listReports(await Promise.all(keys.map(async k => [k, await stored($, k)] as const)))
+    }
+    const key = keyOf(root, ticket)
+    const kept = await stored($, key)
     // Shown once, read: the next call brings only what arrived after it.
-    if (kept.some(r => r.seen !== true)) await $.store.set(keyOf(root, ticket), kept.map(r => ({ ...r, seen: true })))
+    if (kept.some(r => r.seen !== true)) await $.store.set(key, kept.map(r => ({ ...r, seen: true })))
     return showReport(ticket, kept, all)
   })
 }
@@ -1573,7 +1575,7 @@ export const register: Register = (on, options) => {
     const id = await read($, paneAtom)
     const { Box, Text } = $.ui.resolve(e)
     if (id === null) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
-    const kept = await keptReports($, id)
+    const kept = await locked(async () => stored($, keyOf(await project($), id)))
     let csv = ''
     try {
       csv = await $.fs.read(`${await home($)}/.jaira/metrics.csv`)
