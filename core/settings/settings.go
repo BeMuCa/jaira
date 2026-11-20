@@ -223,10 +223,17 @@ func (s Settings) ChatModelFor(root string) (name, source string) {
 // letters, digits and . _ - [ ] is treated as unset rather than carried into
 // a shell.
 func modelName(v string) string {
+	return word(v, "._-[]")
+}
+
+// word returns v trimmed when it holds nothing but ASCII letters, digits and
+// the runes in extra, and "" otherwise — for a board value that ends up on a
+// command line.
+func word(v, extra string) string {
 	v = strings.TrimSpace(v)
 	for _, r := range v {
 		ok := r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' ||
-			strings.ContainsRune("._-[]", r)
+			strings.ContainsRune(extra, r)
 		if !ok {
 			return ""
 		}
@@ -313,15 +320,7 @@ func PRReviewerFor(root string) string {
 	if root == "" {
 		return ""
 	}
-	v := boardLine(BoardPRReviewerPath(root))
-	for _, r := range v {
-		ok := r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' ||
-			strings.ContainsRune("._-[]/@", r)
-		if !ok {
-			return ""
-		}
-	}
-	return v
+	return word(boardLine(BoardPRReviewerPath(root)), "._-[]/@")
 }
 
 // The two values of Dispatch.

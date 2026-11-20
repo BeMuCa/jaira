@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T16:57:10Z
+updated-at: 2026-11-20T16:59:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59469
 claimed-at: 2026-11-20T16:43:41Z
@@ -31,6 +31,10 @@ question: ""
 outcome-what: "Board-Dateien .jaira/pr (person|agent, Default person) und .jaira/pr-reviewer; settings.PRFor/PRReviewerFor; 'jaira roles list' zeigt pr/pr_source/pr_reviewer; jaira-role-pr: Abschnitt 'Whether this board lets an agent open it', create nur bei person-Aufruf oder agent+alle Tickets done, Reviewer anfordern, eine Kommentarrunde ueber neues scripts/pr-round.sh (threads, comments, reply=antworten+resolve, comment, request); teamlead/dispatcher nennen die Ausnahme; Release-Note."
 outcome-why: "Ein Teamlead machte jede PR-Runde von Hand (push, PR-Text, Copilot anfordern, antworten, resolve); Alex erlaubt Agenten das inzwischen, aber nur pro Repo."
 outcome-resolves: "Mit .jaira/pr=agent oeffnet jaira-role-pr den PR nach der Abnahme aller Tickets selbst, fordert den Reviewer an und faehrt eine Kommentarrunde; ohne Datei bleibt alles wie heute; Merge/Approve bleibt in jedem Fall beim Menschen."
+review-summary: |-
+  core/settings/settings.go PRReviewerFor kopiert die Zeichenpruefung aus modelName mit zwei Zeichen mehr - eine Funktion (word(v, extra)) fuer beide statt zwei Schleifen
+  core/role/builtin/jaira-role-pr/SKILL.md GitLab-Absatz der Kommentarrunde: glab api 'projects/:id/...' setzt das Projekt des aktuellen Verzeichnisses ein (origin, im Fork falsch) und 'glab mr note' antwortet auf der MR statt im Thread - Diskussionen per glab api 'projects/<owner%2Frepo>/merge_requests/<n>/discussions' listen, in der Diskussion antworten (POST .../discussions/<id>/notes) und dort resolven
+round: 2
 ---
 
 # Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
@@ -83,3 +87,4 @@ outcome-resolves: "Mit .jaira/pr=agent oeffnet jaira-role-pr den PR nach der Abn
 - **2026-11-20 16:47 · Alexander Sacharov** — answer (Alex via teamlead, 2026-11-20): 1) - ein Agent oeffnet den PR mit .jaira/pr=agent erst, wenn alle Tickets des Branches in done sind; die Abnahme der Person ist die Freigabe, Copilot reviewt danach. Die selbst getroffenen Entscheidungen bleiben stehen. Mode bleibt autonom (eine beantwortete Frage).
 - **2026-11-20 16:48 · Alexander Sacharov** — Interim-Regeln (Alex 20.11.2026 via Teamlead, gelten bis TW5FE2): 1) DoD nennt Fehlerklassen (leer, gross, Sonderzeichen/CRLF, Leerzeichen-Pfade, Windows, zwei Prozesse, Fehler auf halbem Weg; Heuristik -> Annahmeregel). 2) in-progress prueft vor dem Move Nebenlaeufigkeit, Fehlerpfade, ungewoehnliche Eingabe, Rechte; Tabellentests ueber die Klasse; Geschwister-Stellen per grep mitziehen; Fix an der Ursache. 3) Fund nennt Klasse+Beispiel, Rueckweg verlangt Fix der Klasse. 4) Blocker nur falsches Ergebnis/Datenverlust/Absturz/Sicherheitsluecke; nach Fix-Durchgang Test+Bughunt nur ueber Diff seit letztem Hunt, dann review; nach 3 Rueckgaben derselben Lane Frage an Teamlead. 5) kleine review-gaps in derselben Runde schliessen; Vorbestehendes als 'note: pre-existing: ...'.
 - **2026-11-20 16:51 · Alexander Sacharov** — pr-round.sh request: gh pr edit --add-reviewer kennt keinen Spezialwert fuer Copilot (gh 2.83.1 --help sagt das ausdruecklich); darum REST POST requested_reviewers mit 'copilot-pull-request-reviewer[bot]'. Gegen ein echtes Repo nicht ausprobiert - nur gegen einen gh-Stub; ein abgelehnter Request endet mit Exit 4 und die Rolle meldet ihn. Der Stub wendet den --jq-Filter mit echtem jq an, damit der Filter selbst getestet ist.
+- **2026-11-20 16:57 · Alexander Sacharov** — critique 1: (a) PRReviewerFor dupliziert modelName-Zeichenpruefung -> gemeinsamer Helfer. (b) GitLab-Runde: ':id' im glab api ist das Projekt des aktuellen Verzeichnisses (glab api --help: 'populated with values from the repository of the current directory'), im Fork also origin statt Ziel; glab mr note antwortet nicht im Thread. Fix: URL-kodiertes <owner/repo> und discussions-API.

@@ -385,10 +385,19 @@ When every thread is answered, ask again:
 `scripts/pr-round.sh request <owner/repo> <number> <pr_reviewer>` — or the
 person who reviewed, when the board names none.
 
-On GitLab: `glab mr view <number> --repo <owner/repo> --comments` lists the
-discussions, `glab mr note <number> --repo <owner/repo> -m "<answer>"` answers,
-and a discussion is resolved with
-`glab api --method PUT "projects/:id/merge_requests/<number>/discussions/<discussion id>?resolved=true"`.
+On GitLab there is no script; `glab api` does the same three steps. Name the
+project as `<owner/repo>` with its slash written `%2F` — never `:id`, which
+glab fills in from the repository of the current directory, `origin`, and in a
+fork that is the wrong project:
+
+```bash
+glab api "projects/<owner%2Frepo>/merge_requests/<number>/discussions"                  # each .notes[0].resolvable and .resolved
+glab api --method POST "projects/<owner%2Frepo>/merge_requests/<number>/discussions/<id>/notes" -F body=@<file>
+glab api --method PUT  "projects/<owner%2Frepo>/merge_requests/<number>/discussions/<id>?resolved=true"
+```
+
+Answer only the discussions whose notes are resolvable and not resolved yet;
+one that is not resolvable is the conversation, answered and left as it is.
 
 The script exits 3 before writing anything when gh is not signed in, and 1
 with gh's own message when a write fails half way. Then report which threads
