@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-20T22:49:43Z
+updated-at: 2026-11-20T22:49:47Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -49,7 +49,7 @@ claimed-at: 2026-11-20T22:44:44Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 - [x] Satz im Punkt 'ticket rides with the code' in core/board/announce.go
-- [ ] Test in announce_test.go
+- [x] Test in announce_test.go
 - [ ] Release-Note
 - [ ] Agent-Dateien des Repos regenerieren, go test ./... -race
 
