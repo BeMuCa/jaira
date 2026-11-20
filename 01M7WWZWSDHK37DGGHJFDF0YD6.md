@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T22:57:09Z
+updated-at: 2026-11-20T22:57:14Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-91898
 claimed-at: 2026-11-20T22:44:37Z
@@ -35,7 +35,8 @@ claimed-at: 2026-11-20T22:44:37Z
 
 - [x] Ticket-Felder fuer Blocker-Kriterium und stop-after-fix; jaira show --for-lane gibt sie testing, bughunt und review mit (Test)
   proof: internal/cli/flow.go (blocker_rule/stop_after_fix beside mode) + core/lane/builtin/27-testing.md, 40-review.md, jaira-role-bughunt/SKILL.md read them; TestForLaneCarriesTheLoopBrake, TestBlockerRuleRoundTrip, TestSetRefusesUnknownStopAfterFix
-- [ ] Mit stop-after-fix laeuft nach einem Fix-Durchgang nur der Testlauf, kein neuer Bughunt
+- [x] Mit stop-after-fix laeuft nach einem Fix-Durchgang nur der Testlauf, kein neuer Bughunt
+  proof: core/lane/builtin/27-testing.md: stop_after_fix and round > 1 -> no hunt, hunt-verdict 'pass: stop-after-fix'
 - [ ] Das Cockpit zeigt Explain nur, wenn review-gaps eine blocker:-Zeile hat oder das Urteil einen Vorbehalt nennt; reine note:-Zeilen stehen als Liste ohne Knopf (Test in board.test.ts)
 - [ ] jaira zeichnet bei jedem Rueckweg die Herkunfts-Lane auf und ob eine Person oder eine Schleifen-Lane zurueckgeschickt hat; jaira show --json gibt beides aus, und die Schleifenzaehlung zaehlt nur Rueckgaben derselben Schleifen-Lane (Test: signoff->in-progress zaehlt nicht)
 - [ ] Die Explain-Vorlage (core/mod/builtin/jaira-cockpit/hooks/texts.ts:76-80) ordnet jede Note zuerst ein (Defekt / Rand in diesem Ticket / vorbestehend / nur Hinweis), sagt ausdruecklich, wenn nichts davon die Abnahme verlangt, und gibt keine feste Reihenfolge 1) [give back] 2) [accept] mehr vor - heute zwingt die Vorlage 'Warum: why it matters' und give back als erste Option, das liest sich immer wie 'muss geaendert werden'
