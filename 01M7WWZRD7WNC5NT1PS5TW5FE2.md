@@ -27,21 +27,30 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:26:27Z
+updated-at: 2026-11-20T19:29:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99353
 claimed-at: 2026-11-20T19:19:21Z
 outcome-what: "Neustart-Regel in 20-in-progress.md: jede back:-Zeile endet auf ', round <n>' (auch back: person/unknown); ein Neustart sucht die Zeile mit dem aktuellen round und schreibt keine zweite."
 outcome-why: "bughunt 19:23: Vergleich 'neuer als die Absender-Note' liest beim Neustart die eigene back:-Zeile als Absender und schreibt eine zweite."
 outcome-resolves: "DoD 6: 20-in-progress.md:72-76 und :88,:96 (round in jeder back:-Zeile); Zwilling gleich; shipped.sha256 eine Zeile. Vier Kategorien: Neustart mitten in der Runde ist der Fehlerpfad und jetzt abgedeckt; sonst nur Prompt-Text."
-review-summary: "none - round-Nummer in der back:-Zeile ist die kleinste Form; nutzt das vorhandene round-Feld aus jaira show statt eines neuen Musters"
+review-summary: "Nur Prompt-Text, kein Go-Code: 15-pre-process.md verlangt Fehlerklasse, Standard-Eingabeklassen (leer/gross, Kodierung/CRLF, Leerzeichen-Pfade/Windows, zwei Prozesse, Abbruch mittendrin) und bei Heuristiken eine Annahmeregel als 'jaira dod --add', und einen Plan vor jedem Move nach human. 20-in-progress.md: Ursache statt Beispiel fixen, parametrisierter Test ueber die Klasse, Geschwister-Stellen greppen, vier Kategorien selbst pruefen, kleine Raender in derselben Runde schliessen; dazu eine Rueckgabe-Zaehlung per 'back: <lane>, round <n>'-Zeile (Absender aus der neuesten Note, cockpit:/Steal-Zeile uebersprungen, person/decision setzt zurueck, unknown zaehlt nicht) und Stopp mit Frage nach der dritten Rueckgabe derselben Lane. 27-testing.md und 40-review.md: Blocker nur falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke; testing-Funde als Klasse+Beispiel, Folgerunde nur ueber den Diff seit 'bughunt: done at'; review-Rueckgabe-Note beginnt mit 'review:'; 'note: pre-existing:'. Bughunt-Skill: Fund nennt Klasse und Beispiel. Board-Kopien in .jaira/lanes byte-gleich, shipped.sha256 und Release-Note TW5FE2.md ergaenzt."
 round: 13
-review-gaps: "none - drei Ersetzungen, nichts verwaist"
+review-gaps: |-
+  note: core/release/notes/TW5FE2.md Zeile 7 traegt zwei Aenderungen in einer Zeile (review:-Prefix und testing-Folgerunde) - fix: in zwei '- '-Zeilen teilen
+  note: 27-testing.md Folgerunde 'git diff --name-only <commit>' scheitert, wenn der Commit aus 'bughunt: done at' nach einem Rebase nicht mehr existiert - fix: ein Satz 'Commit unbekannt -> ganze Suite wie in Runde 1'
+  note: core/shipped/shipped.sha256 bekommt 25 Zeilen, davon die meisten Zwischenstaende dieses Branches, die nie ausgeliefert werden - harmlos (Manifest kennt dann nur mehr Hashes), aber vor dem Merge auf die Endstaende eindampfbar
 test-verdict: "pass: Folgerunde seit 10b38a7a: go test -count=1 ./core/lane/... ./core/shipped/... RC=0, go test ./core/role -run Shipped RC=0; Zwilling in-progress byte-gleich, neuer Manifest-Hash = sha256 HEAD; Neustart-Regel liest round aus jaira show, back: person/unknown tragen round; Vorrunde: pre-process->human ohne Plan auf Scratch-Board refused, mit Plan-Schritt nicht; nur Prompt-Text, kein Schreibpfad"
 hunt-verdict: "pass: bughunt done at 08c670e2 - 0 findings, follow-up since 10b38a7a"
-review-verdict: "Alle 7 DoD-Punkte sind im Baum erfuellt, kein Blocker: reine Prompt-Aenderung, Twins byte-gleich, Manifest-Hashes stimmen, go test ./core/lane ./core/shipped ./core/role ./core/release gruen. Drei kleine Wortlaut-Raender als note; die Rueckgabe-Zaehlung bleibt eine Note-Konvention bis move die Herkunfts-Lane schreibt (DF0YD6/H6CD33) - bekannt und vom Teamlead so entschieden."
-review-round: 11
-review-check: "1. cd /home/alex/projects/.worktrees/jaira-tw5fe2  2. go test -count=1 ./core/lane/... ./core/shipped/... ./core/role/...  -> alles ok  3. for f in pre-process in-progress testing review; do cmp core/lane/builtin/*-$f.md .jaira/lanes/$f.md && echo same $f; done  -> viermal same  4. sed -n 29,104p core/lane/builtin/20-in-progress.md  -> Abschnitte 'Fix the class, not the example' und 'The third return from the same lane' mit back:-Zeilen und Absender-Liste  5. sed -n 38,76p core/lane/builtin/15-pre-process.md  -> Abschnitt 'Name the edges before the code' mit den sieben Eingabeklassen und jaira dod --add  6. cat core/release/notes/TW5FE2.md  -> 8 einzeilige Zeilen, keine umbrochen"
+review-verdict: "Alle sieben DoD-Punkte sind im Diff erfuellt (geprueft gegen 15/20/27/40-*.md und den Bughunt-Skill); Behauptungen des Prompts gegen den Code geprueft: round steigt bei jedem Zurueckschicken (core/move/move.go:133), Cockpit schreibt 'Given back from <lane>:' und 'decision:' (register.tsx:822,900), Steal-Zeile aus refsync.go:1433, 'jaira dod --plan --add' existiert. go test ./core/lane/... ./core/shipped/... ./core/role/... gruen. Kein Blocker; drei kleine notes. Die Wirkung selbst (weniger Schleifenrunden) laesst sich nur an kuenftigen Tickets messen."
+review-round: 13
+review-check: |-
+  1. cd /home/alex/projects/.worktrees/jaira-tw5fe2
+  2. go test -count=1 ./core/lane/... ./core/shipped/... ./core/role/...  -> alle Pakete ok
+  3. for f in pre-process:15 in-progress:20 testing:27 review:40; do cmp core/lane/builtin/${f#*:}-${f%:*}.md .jaira/lanes/${f%:*}.md && echo same; done  -> viermal same
+  4. sed -n 29,107p core/lane/builtin/20-in-progress.md  -> Abschnitte 'Fix the class, not the example' und 'The third return from the same lane'
+  5. grep -n "four things\|pre-existing" core/lane/builtin/40-review.md core/lane/builtin/27-testing.md  -> Blocker-Definition mit vier Arten in beiden
+  6. cat core/release/notes/TW5FE2.md  -> 9 Zeilen, jede beginnt mit '- '
 ---
 
 # Randfaelle werden vor dem Code benannt, und wer umsetzt, prueft die Fehlerklasse statt des Beispiels
