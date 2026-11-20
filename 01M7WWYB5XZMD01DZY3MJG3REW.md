@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T21:44:03Z
+updated-at: 2026-11-20T21:44:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-61485
 claimed-at: 2026-11-20T21:43:50Z
@@ -43,13 +43,7 @@ test-verdict: "pass: suite -race -count=1 RC=0 at 1b35fd5c; DoD 20/21 tests gree
 hunt-verdict: "pass: bughunt done at 1b35fd5c, 0 change, 0 pre-existing"
 review-verdict: "All 21 definition-of-done items are met by the diff and their proofs point at real tests; go test for core/settings, core/role and internal/cli (PR|Roles filters) passes. Read pr-round.sh, roles.go pr-gate, gitrepo/named.go and settings.go whole along concurrency, error paths, unusual input and permissions: the gate fails closed everywhere I tried (bad base, unreadable ticket, archive/unknown handle, no signoff lane, board files off the base), every write fails loudly, a lost sign-in is exit 3. No blocker; five notes, all edge cases that fail closed or are small race windows."
 review-round: 17
-review-check: |-
-  1. cd /home/alex/projects/.worktrees/jaira-jg3rew
-  2. go test ./core/role ./core/settings ./internal/cli -run 'PR|Handles' -> alle ok
-  3. go run ./cmd/jaira roles list | tail -1 -> Zeile 'pr: person ... reviewer: none; opens in: done (the default)'
-  4. go run ./cmd/jaira roles pr-gate HEAD~13 -> '.jaira/pr does not say agent', exit status 3
-  5. echo agent > .jaira/pr; go run ./cmd/jaira roles pr-gate HEAD~13 -> exit 3, Meldung nennt JG3REW mit seiner Lane als nicht in done; danach rm .jaira/pr
-  6. bash core/role/builtin/jaira-role-pr/scripts/pr-round.sh --help -> Befehle open, threads, comments, reply, comment, request, settled; kein merge, kein approve
+review-check: "1. In this worktree run: go test ./core/settings ./core/role ./internal/cli -run 'PR|Roles' -count=1 - all ok.  2. jaira roles list - last line reads 'pr: person ... reviewer: none; opens in: done (the default)'.  3. jaira roles pr-gate origin/master; echo $? - prints 'pr-gate: .jaira/pr in origin/master does not say agent ...' and 3, because master has no .jaira/pr.  4. echo agent > .jaira/pr; jaira roles pr-gate origin/master; echo $? - still 3 with the same message: the file only on disk does not open the gate. rm .jaira/pr afterwards.  5. bash core/role/builtin/jaira-role-pr/scripts/pr-round.sh --help - lists open, threads, comments, reply, comment, request, settled and the exit codes 0/2/3/4/1.  6. Live round (optional, needs a throwaway GitHub PR): pr-round.sh threads <owner/repo> <n> lists open threads; reply <owner/repo> <n> <thread-id> answer.txt answers and resolves it; running the same reply again prints 'resolved: already' and posts nothing."
 ---
 
 # Ein Agent darf auf Wunsch den PR oeffnen und eine Review-Runde (Copilot) selbst fahren
