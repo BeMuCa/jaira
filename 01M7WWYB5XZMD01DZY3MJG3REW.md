@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:35:18Z
+updated-at: 2026-11-20T19:37:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99114
 claimed-at: 2026-11-20T19:19:18Z
@@ -31,7 +31,7 @@ question: ""
 outcome-what: "Board-Dateien .jaira/pr (person|agent), .jaira/pr-reviewer und .jaira/pr-when (done|signoff, Default done); 'jaira roles list' zeigt sie; 'jaira roles pr-gate <remote>/<branch>' prueft im Binary, ob ein Agent den PR oeffnen darf (agent + jedes Ticket des Branches in done bzw. signoff); jaira-role-pr/scripts/pr-round.sh: open (Gate vor gh pr create), threads, comments, reply/comment (nie doppelt, auch bei zwei Sessions; loescht nur die eigene POST-id), request, settled (keine offenen Threads, kein ausstehendes Review); Rollentexte, Release-Note."
 outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten das pro Repo. In manchen Projekten laeuft das Review auf dem PR selbst, dort kommt done erst danach (Alex 20.11.)."
 outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
-review-summary: "none"
+review-summary: "Neue Board-Dateien .jaira/pr (person|agent, Default person), .jaira/pr-reviewer (copilot, Login oder org/team) und .jaira/pr-when (done|signoff, Default done) werden in core/settings gelesen; jeder andere Inhalt faellt auf den Default zurueck, der Reviewer nur aus Buchstaben/Ziffern/._-[]/@. 'jaira roles list' zeigt sie (pr, pr_source, pr_reviewer, pr_when, pr_when_source). Neues 'jaira roles pr-gate <remote>/<branch>' liest die Handles aus den Commit-Subjects von base..HEAD und gibt nur Exit 0, wenn .jaira/pr agent sagt und jedes genannte Ticket in der Terminal-Lane (bzw. ab signoff) steht oder im Logbook liegt; archiviert, unbekannt, unlesbar, blocked oder fehlende signoff-Lane -> Exit 3 mit Grund. Neues scripts/pr-round.sh fuer GitHub: open (nur wenn Checkout = gepushter Tip laut push-Konfiguration, dann Gate, dann gh pr create), threads/comments (nur Offenes), reply (antworten + resolven, idempotent, zwei gleichzeitige Sessions hinterlassen eine Antwort), comment (nicht doppelt), request (Copilot ueber Bot-Login, Ablehnung = Exit 4), settled (keine offenen Threads, keine angefragten Reviews, kein CHANGES_REQUESTED). Ein verlorener gh-Login ist ueberall Exit 3. jaira-role-pr SKILL.md beschreibt den Agent-Pfad, GitLab ueber glab api; Merge/Approve bleiben verboten."
 round: 13
 review-gaps: "none"
 test-verdict: "pass bei 0bc5b11a: Suite go test -race -count=1 ./... RC=0; DoD 17-19 im Baum belegt (TestPROpenOnlyFromThePushedTip, TestPRRoundLostSignInIsNeverExit4, usage open); live mit Branch-Binary: single-branch-Klon gepusht -> Gate laeuft, ein Commit voraus -> Exit 3 mit beiden shas, Meldungen ohne Code-Anhang; schreibt nur ueber gh, Zwei-Session-Faelle in Tests unveraendert gruen"
