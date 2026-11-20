@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-20T22:54:28Z
+updated-at: 2026-11-20T22:54:50Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -27,7 +27,7 @@ claimed-at: 2026-11-20T22:44:44Z
 outcome-what: "Der generierte Agent-Block sagt im Punkt 'the ticket rides with the code', dass dieser und der naechste Punkt nur auf einem geteilten Board gelten: ohne geteiltes .jaira/ gibt es keine Ticketdatei zum Mitcommitten, der Code geht allein mit dem Handle im Betreff. Test haelt den Satz und --proof fest; CLAUDE.md/AGENTS.md dieses Repos regeneriert; Release-Note."
 outcome-why: "Auf einem ungeteilten Board widersprach die Commit-Regel dem Zustand des Boards: ein Agent kann eine ignorierte Datei nicht mitcommitten und las die Regel als kaputt. --proof und 'jaira update' waren schon ausgeliefert (2143e9ad, update.go:257) und brauchten nur den Test."
 outcome-resolves: SDBCT5
-review-summary: "core/role/jaira/SKILL.md:317 carries the same rule ('The ticket rides with the code', git add .jaira/tickets/) with the same gap on an unshared board; the role is shipped to every board beside the block - add the same caveat there, or a session that reads the skill instead of the block still hits 'paths are ignored'"
+review-summary: "docs/AGENTS.md:68 and core/role/builtin/jaira-role-pr/SKILL.md:49 state the rides-with-code rule without the unshared-board caveat; the PR role would report a code commit without its ticket file as a finding on a board where the file cannot be in git - add the caveat to both"
 round: 2
 ---
 
