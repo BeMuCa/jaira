@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T23:07:58Z
+updated-at: 2026-11-20T23:08:02Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -31,8 +31,8 @@ round: 5
 review-gaps: |-
   note: DoD 5 ist nur mit lokalem git bewiesen (TestManifestMergesWithoutConflict). Ob GitHubs Mergeability-Pruefung merge=union aus .gitattributes beachtet, ist nicht belegt - erst zwei echte PRs, die beide Zeilen anhaengen, zeigen es.
   note: nach einem union-Merge mit Duplikat scheitert TestManifestLinesAreWellFormed erst auf master; die Abhilfe (regenerieren) steht nur in .gitattributes, nicht in der Fehlermeldung des Tests.
-test-verdict: "pass: go vet + go test ./... RC=0 auf 55ae3718; --check echtes Repo exit 0 (34 Tags), Generator-Ausgabe gleich dem committeten Manifest; unlesbarer Blob stoppt Generator und --check ohne den Hash der leeren Datei (TestUnreadableBlobStopsTheScript, rot ohne den Fix); Aenderung schreibt nichts"
-hunt-verdict: "pass: bughunt done at 55ae3718, 0 change, 0 pre-existing (Runde 3, Diff seit 9c785040); Fund aus Runde 2 behoben, Test rot ohne den Fix (selbst geprueft)"
+test-verdict: ""
+hunt-verdict: ""
 review-verdict: "Alle 5 DoD-Punkte erfuellt; kein Defekt gefunden. Selbst geprueft: --check exit 0 auf 34 Tags, Regenerieren ergibt byte-gleich das committete Manifest, go test ./core/shipped ./core/role gruen. Unsicher nur, ob GitHub merge=union beim PR-Konflikt beachtet (note)."
 review-round: 4
 review-check: "1. cd in den Worktree feat/0k8y6s  2. scripts/shipped-history.sh --check -> 'every version in 34 v* tag(s) is in core/shipped/shipped.sha256', exit 0  3. git show v0.5.2:core/mod/builtin/jaira-cockpit/hooks/board.ts | sha256sum -> a06a3c1c...; grep a06a3c1c core/shipped/shipped.sha256 findet die Zeile  4. eine Zeile aus core/shipped/shipped.sha256 loeschen, Schritt 2 wiederholen -> exit 1 und genau diese Zeile als 'append:' ausgegeben; danach git checkout core/shipped/shipped.sha256  5. go test ./core/shipped/ ./core/role/ -run 'Check|Unreadable|Merges|ReplacesAnOlder' -> ok  6. im naechsten PR: Job shipped-manifest erscheint in den Checks und ist gruen"
