@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T16:59:38Z
+updated-at: 2026-11-20T16:59:42Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59469
 claimed-at: 2026-11-20T16:43:41Z
@@ -86,3 +86,4 @@ round: 2
 - **2026-11-20 16:48 · Alexander Sacharov** — Interim-Regeln (Alex 20.11.2026 via Teamlead, gelten bis TW5FE2): 1) DoD nennt Fehlerklassen (leer, gross, Sonderzeichen/CRLF, Leerzeichen-Pfade, Windows, zwei Prozesse, Fehler auf halbem Weg; Heuristik -> Annahmeregel). 2) in-progress prueft vor dem Move Nebenlaeufigkeit, Fehlerpfade, ungewoehnliche Eingabe, Rechte; Tabellentests ueber die Klasse; Geschwister-Stellen per grep mitziehen; Fix an der Ursache. 3) Fund nennt Klasse+Beispiel, Rueckweg verlangt Fix der Klasse. 4) Blocker nur falsches Ergebnis/Datenverlust/Absturz/Sicherheitsluecke; nach Fix-Durchgang Test+Bughunt nur ueber Diff seit letztem Hunt, dann review; nach 3 Rueckgaben derselben Lane Frage an Teamlead. 5) kleine review-gaps in derselben Runde schliessen; Vorbestehendes als 'note: pre-existing: ...'.
 - **2026-11-20 16:51 · Alexander Sacharov** — pr-round.sh request: gh pr edit --add-reviewer kennt keinen Spezialwert fuer Copilot (gh 2.83.1 --help sagt das ausdruecklich); darum REST POST requested_reviewers mit 'copilot-pull-request-reviewer[bot]'. Gegen ein echtes Repo nicht ausprobiert - nur gegen einen gh-Stub; ein abgelehnter Request endet mit Exit 4 und die Rolle meldet ihn. Der Stub wendet den --jq-Filter mit echtem jq an, damit der Filter selbst getestet ist.
 - **2026-11-20 16:57 · Alexander Sacharov** — critique 1: (a) PRReviewerFor dupliziert modelName-Zeichenpruefung -> gemeinsamer Helfer. (b) GitLab-Runde: ':id' im glab api ist das Projekt des aktuellen Verzeichnisses (glab api --help: 'populated with values from the repository of the current directory'), im Fork also origin statt Ziel; glab mr note antwortet nicht im Thread. Fix: URL-kodiertes <owner/repo> und discussions-API.
+- **2026-11-20 16:59 · Alexander Sacharov** — critique 2: beide Funde aus critique 1 behoben in d527d5a9 (word() in settings.go; GitLab ueber discussions-API mit <owner%2Frepo>). Nichts Neues.
