@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T18:13:18Z
+updated-at: 2026-11-20T18:15:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5618
 claimed-at: 2026-11-20T18:03:30Z
@@ -127,3 +127,8 @@ Empfehlung: 2 - kein Blocker nach den eigenen Regeln (falsches Ergebnis, Datenve
 - **2026-11-20 18:03 · Alexander Sacharov** — back: person
 - **2026-11-20 18:06 · Alexander Sacharov** — critique: none - Runde nach signoff-Rueckgabe: drei Saetze in den bestehenden Prompts, kein neues Muster; Rueckfall 'ohne Praefix = review' bleibt bewusst fuer Boards mit aelterem review-Prompt
 - **2026-11-20 18:09 · Alexander Sacharov** — bughunt: done at d0cb1f49 - 0 findings in 6 modules, follow-up hunt since 9fa8ce3c; concurrency, error paths, input, permissions checked (diff: review: prefix in in-progress/review prompt twins, testing follow-up round narrowed to the packages git diff touches, one release-note line, three manifest lines; twins byte-equal; manifest hashes = sha256 of the three builtin lanes at HEAD; lane manifest check lives in core/lane, so narrowing still runs it; testing waits for the hunter before its verdict, so async bughunt: notes cannot land after a review: note; ran: go test ./... exit 0); files: .jaira/lanes/in-progress.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md core/lane/builtin/15-pre-process.md core/lane/builtin/20-in-progress.md core/lane/builtin/27-testing.md core/lane/builtin/40-review.md core/release/notes/TW5FE2.md core/role/builtin/jaira-role-bughunt/SKILL.md core/shipped/shipped.sha256
+- **2026-11-20 18:15 · Alexander Sacharov** — explain: Review fand keinen Blocker: alle 7 DoD-Punkte sind erfuellt, nur Prompt-Text geaendert, Tests gruen. Es bleiben vier kleine Wortlaut-Luecken: ein neuer Worker kann nach Neustart eine zweite back:-Zeile schreiben, pre-process kann ohne Plan nicht zu human wechseln, human-Regel widerspricht der Role-Skill, und die testing-Runde ist Go-spezifisch formuliert.
+Warum: Die ersten zwei Luecken betreffen genau die Rundenzaehlung und den Gate-Ablauf, die dieses Ticket einfuehrt; ungefixt zaehlt eine Runde falsch oder ein Move wird abgelehnt. Die anderen zwei aendern kein Ergebnis.
+1) Zurueckgeben: die vier Luecken in den Lane-Prompts schliessen (back:-Zeile nur einmal pro Runde, Plan vor dem Move, testing ohne Go-Wortlaut; Widerspruch zur Role-Skill notieren) [give back]
+2) So annehmen: die vier Luecken bleiben als Notes am Ticket stehen, kein Blocker [accept]
+Empfehlung: 1 - die Fixes sind wenige Zeilen Prompt-Text, und die ersten beiden betreffen die neue Rundenlogik selbst.
