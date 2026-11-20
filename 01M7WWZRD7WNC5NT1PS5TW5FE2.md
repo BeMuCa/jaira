@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T18:02:49Z
+updated-at: 2026-11-20T18:02:53Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80126
 claimed-at: 2026-11-20T17:38:47Z
@@ -121,3 +121,4 @@ Warum: Die Zählung der Rückläufe (3. Rückgabe = Frage an die Person) hängt 
 2) Ticket so annehmen; Lücke und Abweichung bleiben als bekannte Einschränkung [accept]
 Empfehlung: 2 - kein Blocker nach den eigenen Regeln (falsches Ergebnis, Datenverlust, Absturz, Sicherheitslücke trifft nichts davon zu), der Schaden der Lücke ist klein.
 - **2026-11-20 18:02 · Alexander Sacharov** — decision: 1) 40-review.md lässt seine Rückgabe-Note mit "review:" beginnen und 20-in-progress.md listet das Präfix; DoD 6 wörtlich angleichen
+- **2026-11-20 18:02 · Alexander Sacharov** — Given back from signoff: 1) 40-review.md lässt seine Rückgabe-Note mit "review:" beginnen und 20-in-progress.md listet das Präfix; DoD 6 wörtlich angleichen
