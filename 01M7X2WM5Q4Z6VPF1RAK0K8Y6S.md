@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T23:06:56Z
+updated-at: 2026-11-20T23:07:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -33,6 +33,8 @@ review-gaps: |-
   note: nach einem union-Merge mit Duplikat scheitert TestManifestLinesAreWellFormed erst auf master; die Abhilfe (regenerieren) steht nur in .gitattributes, nicht in der Fehlermeldung des Tests.
 test-verdict: "pass: go vet + go test ./... RC=0 auf 55ae3718; --check echtes Repo exit 0 (34 Tags), Generator-Ausgabe gleich dem committeten Manifest; unlesbarer Blob stoppt Generator und --check ohne den Hash der leeren Datei (TestUnreadableBlobStopsTheScript, rot ohne den Fix); Aenderung schreibt nichts"
 hunt-verdict: "pass: bughunt done at 55ae3718, 0 change, 0 pre-existing (Runde 3, Diff seit 9c785040); Fund aus Runde 2 behoben, Test rot ohne den Fix (selbst geprueft)"
+review-verdict: "Alle 5 DoD-Punkte erfuellt; kein Defekt gefunden. Selbst geprueft: --check exit 0 auf 34 Tags, Regenerieren ergibt byte-gleich das committete Manifest, go test ./core/shipped ./core/role gruen. Unsicher nur, ob GitHub merge=union beim PR-Konflikt beachtet (note)."
+review-round: 4
 ---
 
 # shipped.sha256 kennt jede Version, die in einem Release-Tag ausgeliefert wurde, und CI haelt das fest
