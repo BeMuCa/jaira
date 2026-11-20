@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T21:43:50Z
+updated-at: 2026-11-20T21:43:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-61485
 claimed-at: 2026-11-20T21:43:50Z
@@ -31,7 +31,7 @@ question: ""
 outcome-what: "Board-Dateien .jaira/pr (person|agent), .jaira/pr-reviewer und .jaira/pr-when (done|signoff, Default done); 'jaira roles list' zeigt sie; 'jaira roles pr-gate <remote>/<branch>' prueft im Binary, ob ein Agent den PR oeffnen darf (agent + jedes Ticket des Branches in done bzw. signoff); jaira-role-pr/scripts/pr-round.sh: open (Gate vor gh pr create), threads, comments, reply/comment (nie doppelt, auch bei zwei Sessions; loescht nur die eigene POST-id), request, settled (keine offenen Threads, kein ausstehendes Review); Rollentexte, Release-Note."
 outcome-why: "Ein Teamlead machte jede PR-Runde von Hand; Alex erlaubt Agenten das pro Repo. In manchen Projekten laeuft das Review auf dem PR selbst, dort kommt done erst danach (Alex 20.11.)."
 outcome-resolves: "Mit .jaira/pr=agent oeffnet ein Agent den PR nur nach bestandenem pr-gate - nach done, oder mit .jaira/pr-when=signoff schon in signoff, wobei done dann auf 'settled' wartet; ohne Dateien bleibt alles wie heute; Merge/Approve bleibt beim Menschen; Gate fuer move->done und Cockpit-Accept bei signoff liegen bei CRASZS."
-review-summary: "critique 16 (1b35fd5c): nothing - one line, same reading as the pushurl line"
+review-summary: "Adds a board setting that lets an agent open a pull request and work one review round, default unchanged. Three committed one-line files: .jaira/pr (agent|person, anything else = person), .jaira/pr-reviewer (copilot, login or org/team, anything outside letters/digits/._-[]/@ = none), .jaira/pr-when (signoff|done, default done); 'jaira roles list' shows all three. New command 'jaira roles pr-gate <remote>/<branch>' reads .jaira/pr and pr-when as the BASE commit holds them (a branch cannot open its own gate), collects the ticket handles from the scopes of base..HEAD subjects, and exits 0 only when every one is in the terminal lane (or, under signoff, signoff..terminal) or filed in the logbook; archived, unknown or unreadable handles and a board without signoff hold it with exit 3. Ticket state comes from Store.List, so a ref newer than the disk file wins. New scripts/pr-round.sh (GitHub): open checks that HEAD is the pushed tip where git push actually sends it, derives --head <account>:<branch> from the push URL, runs the gate, then gh pr create; threads/comments list only open items; reply answers + resolves and is safe to rerun; comment never repeats itself; both read back after posting and delete only their own duplicate so two racing sessions leave one answer; request asks Copilot/login/team and exits 4 (PR stays) when refused; settled exits 3 while a thread is open, a review is requested or a latest review requests changes. A gh sign-in lost mid-run is always exit 3. SKILL.md of jaira-role-pr, teamlead and dispatcher describe the flow; merge/approve stay a person's in every path. Release note core/release/notes/JG3REW.md included."
 round: 17
 review-gaps: "optimize (1b35fd5c): nothing"
 test-verdict: "pass: suite -race -count=1 RC=0 at 1b35fd5c; DoD 20/21 tests green; live gate exit 3 naming origin/master; account-less URLs exit 3 before the gate"
