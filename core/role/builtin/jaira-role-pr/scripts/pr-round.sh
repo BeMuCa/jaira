@@ -182,14 +182,16 @@ case "$cmd" in
     # Read from the configuration, not from a remote-tracking ref: a
     # single-branch clone or a push-only remote has none, and the branch is
     # pushed all the same. 'git push' sends it under its own name, or under
-    # the branch it tracks where push.default says upstream.
+    # the branch it tracks where push.default says upstream (or tracking,
+    # its older name).
     pushremote=$(git for-each-ref --format='%(push:remotename)' "refs/heads/$cur")
     [ -n "$pushremote" ] ||
       die "'$cur' has no remote to push to — push it first: git push -u <remote> HEAD" 3
     pushed=refs/heads/$cur
-    if [ "$(git config push.default || true)" = upstream ]; then
-      pushed=$(git config "branch.$cur.merge") || die "'$cur' tracks no branch to push to — push it first: git push -u $pushremote HEAD" 3
-    fi
+    case "$(git config push.default || true)" in
+      upstream|tracking)
+        pushed=$(git config "branch.$cur.merge") || die "'$cur' tracks no branch to push to — push it first: git push -u $pushremote HEAD" 3 ;;
+    esac
     tip=$(git ls-remote "$pushremote" "$pushed" | cut -f1) ||
       die "could not read '$pushed' from $pushremote — nothing is opened" 3
     here=$(git rev-parse HEAD)

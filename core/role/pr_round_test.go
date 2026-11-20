@@ -424,6 +424,18 @@ func TestPROpenOnlyFromThePushedTip(t *testing.T) {
 	if out, code := p.run(nil, "open", "up/r", "origin", "master", "t", body); code != 0 || !strings.Contains(strings.Join(p.calls(), "\n"), "pr\tcreate") {
 		t.Errorf("single-branch clone, pushed: exit %d, want the pull request opened\n%s", code, out)
 	}
+	// push.default upstream, or tracking, its older name, pushes a branch
+	// under the name it tracks, not its own.
+	gitIn(t, clone, "checkout", "-q", "-b", "feat/z")
+	gitIn(t, clone, "push", "-q", "origin", "HEAD:refs/heads/remote-z")
+	gitIn(t, clone, "config", "branch.feat/z.remote", "origin")
+	gitIn(t, clone, "config", "branch.feat/z.merge", "refs/heads/remote-z")
+	for _, mode := range []string{"upstream", "tracking"} {
+		gitIn(t, clone, "config", "push.default", mode)
+		if out, code := p.run(nil, "open", "up/r", "origin", "master", "t", body); code != 0 {
+			t.Errorf("push.default=%s, branch pushed as remote-z: exit %d, want the pull request opened\n%s", mode, code, out)
+		}
+	}
 	p.dir = work
 	gitIn(t, work, "checkout", "-q", "-b", "feat/local")
 	if out, code := p.run(nil, "open", "up/r", "origin", "master", "t", body); code != 3 || !strings.Contains(out, "push it first") {
