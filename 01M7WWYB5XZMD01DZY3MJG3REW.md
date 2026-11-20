@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:26:05Z
+updated-at: 2026-11-20T19:26:09Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99114
 claimed-at: 2026-11-20T19:19:18Z
@@ -164,3 +164,5 @@ Empfehlung: 1 - der Gate-Fehler bei parallelen Sessions ist die einzige echte Lu
 - **2026-11-20 19:23 · Alexander Sacharov** — runde 6: open vergleicht HEAD mit dem gepushten Tip per ls-remote (git for-each-ref %(push:remotename) %(push); %(push:remoteref) ist bei push.default=simple leer, git 2.43). Kein --head an gh pr create: gh liest denselben Tracking-Eintrag, fuer einen Fork waere --head owner:branch aus der Remote-URL eine zweite Lesart. gh-Exit 4 -> 3 ueber eine gh()-Huelle fuer alle Aufrufe nach dem Auth-Check.
 - **2026-11-20 19:23 · Alexander Sacharov** — critique 10 (nur 8569d9b6, review-gaps 1/2/4): nichts. Tip-Pruefung im Skript statt im Binary gelassen: pr-gate liest base..HEAD, und welcher Remote-Branch gh oeffnet, weiss nur der Aufruf von gh pr create; ein zweites Argument an pr-gate waere eine zweite Lesart derselben Tracking-Konfiguration. gh()-Huelle statt Pruefung pro Aufruf: eine Stelle fuer alle gh-Aufrufe nach dem Auth-Check.
 - **2026-11-20 19:26 · Alexander Sacharov** — testing 7 (8569d9b6+gitIn): Suite -race RC=0. Live mit Branch-Binary: nie gepusht -> 3, Checkout vor Push -> 3 mit beiden shas, gleicher Tip -> Gate laeuft (Exit 3 ohne Board). Fund: die() druckt den Exitcode ans Ende der Meldung ('... HEAD 3'), weil es $* statt $1 ausgibt - betrifft jede die-Zeile mit Code; Fix nach dem Hunt.
+- **2026-11-20 19:26 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:177-180 - open reads the pushed branch from %(push), which is empty whenever no remote-tracking ref maps the push destination (single-branch or CI-style clone whose remote.origin.fetch names only master, a push-only fork remote); the branch is pushed yet open refuses with exit 3 'has no branch to push to — push it first', and pushing again changes nothing, so the agent can never open it; blame 8569d9b6; ran: git clone --single-branch, checkout -b feat/x, push -u origin HEAD, then pr-round.sh open up/r origin master t body.md (exit 3, ls-remote shows refs/heads/feat/x at HEAD)
+- **2026-11-20 19:26 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-pr/scripts/pr-round.sh:274 (with the gh() wrapper at :86-91) - comment exits 0 when the sign-in runs out after the POST: the wrapper's die only leaves the convo|keeper subshell, the 'if !' turns it into the read-back warning, and the script ends 0, against the new usage/release-note promise that a sign-in lost half way exits 3 from any command; reached only through 8569d9b6's new contract, line itself older; ran: fake gh answering the POST then exit 4 on the read-back, pr-round.sh comment o/r 7 body.md (prints 'lost its sign-in', exit 0)
