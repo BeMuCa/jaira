@@ -69,7 +69,9 @@ The lanes' own notes do not count returns: one round leaves several
 `bughunt: change:` notes and testing writes `testing: note:` on a round that
 passes. So keep the count yourself. When you pick up a ticket that was sent back — `round` in
 `jaira show <id> --json` is above 1 — find out who sent it and write one line
-before anything else, once per round:
+before anything else, once per round. A `back:` line newer than the sender's
+note means a session before you already wrote it for this round — a worker
+restarted mid-round writes no second one:
 
 ```bash
 jaira note <id> "back: testing, round 3"

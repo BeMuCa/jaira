@@ -127,7 +127,7 @@ alone never starts a round.
   do not copy them. The ticket runs the loop again — implementing, critique,
   optimize, and back here — until you have nothing left to find. A round after
   a fix tests and hunts only what changed since the last hunt — the commit in
-  its `bughunt: done at <commit>` line: pass 1 runs the tests of the packages
+  its `bughunt: done at <commit>` line: pass 1 runs the tests that cover the files
   `git diff --name-only <commit>` touches, and passes 2 and 3 and the hunt
   read only that diff, so the loop ends; the whole suite ran in the first
   round and runs again in CI. Then the ticket goes on to review.

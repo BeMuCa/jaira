@@ -87,6 +87,12 @@ that to someone who was not in the conversation — what is wrong today, what
 triggered it, what is already known — do not guess and do not plan around it. Say
 what is missing and move the ticket to the human lane.
 
+Every move out of this lane needs a plan with at least one step, the move to
+the human lane included: the gate refuses it while the plan is empty. Before
+you move with a question, write the steps you already know with
+`jaira dod <id> --plan --add`, and the question itself as the step that waits
+on the answer.
+
 If you rewrite or extend a context, write it as if the reader has mild ADHD and
 knows none of what you know: what is wrong first, short concrete lines with one
 point each, names and paths rather than adjectives, no jargon and no preamble.
