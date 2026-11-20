@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:33:18Z
+updated-at: 2026-11-20T23:34:05Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -132,3 +132,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-20 23:29 · Alexander Sacharov** — review (fresh context): keine Blocker, 8/8 DoD erfuellt; 3 notes in review-gaps (known limit F2, validate-Meldung nennt Lanes statt .jaira/pr, reap.sh misst nur an origin/HEAD). Tests + Handprobe am Scratch-Board gruen.
 - **2026-11-20 23:30 · Alexander Sacharov** — Aus signoff zurueck nach in-progress (Interim-Regel 5: kleine Raender aus review-gaps in derselben Runde schliessen): (a) validate-Warnung nennt nur die Lanes als Ursache, auch wenn .jaira/pr sich geaendert hat -> 'lanes or .jaira/pr'; (b) reap.sh unter none misst nur an origin/HEAD -> Rueckfall auf origin/main, origin/master, und eine eigene waiting-Meldung, wenn keiner da ist (git remote set-head origin --auto).
 - **2026-11-20 23:33 · Alexander Sacharov** — critique (Runde 7): zwei kleine Raender aus review geschlossen, beide eng (eine Meldung, ein Rueckfall in reap.sh) - nichts zu sagen.
+- **2026-11-20 23:34 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-dispatcher/scripts/reap.sh:150 - default_base takes origin/HEAD without checking that its target exists; after the remote's default branch is renamed (master->main) and 'git fetch --prune' deletes origin/master, origin/HEAD dangles, default_base still returns origin/master, the line-200 hint never fires and landed_head's merge-base fails (exit 128), so under none every ticket waits forever with 'has not landed' instead of falling back to origin/main or saying 'run git remote set-head origin --auto'; ran: scratch repo with origin/main and origin/HEAD -> refs/remotes/origin/master, symbolic-ref --short printed origin/master, merge-base --is-ancestor exit 128; blame 001f2eb0 (names XB97NJ)
