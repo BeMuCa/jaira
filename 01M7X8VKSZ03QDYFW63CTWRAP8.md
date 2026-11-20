@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T20:10:36Z
+updated-at: 2026-11-20T20:10:40Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16592
 claimed-at: 2026-11-20T20:04:03Z
@@ -61,3 +61,4 @@ claimed-at: 2026-11-20T20:04:03Z
 5. Kleine Raender aus review-gaps in derselben Runde schliessen statt als note: stehen lassen - Alex schickt sie sonst ohnehin zurueck. Vorbestehendes ausserhalb des Umfangs als 'note: pre-existing: ...'.
 - **2026-11-20 20:04 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/35112.sock
 - **2026-11-20 20:04 · Alexander Sacharov** — decision (worker, keine offene Frage): (1) neue Rolle heisst jaira-role-signoff, nur lesend, Ausgabe in der Sprache der Person; Marken wie im Kontext (rot/gelb/weiss/blau als Emoji, weil Terminal-Markdown keine Farben hat). (2) Push-Gate steht allgemein in jaira-worker, jaira-dispatcher UND jaira-role-pr (die dritte Stelle, die pusht - Geschwisterstelle nach Interim-Regel 2). Beispiel fuer dieses Repo nur als Beispiel. (3) README-Rollentabelle und docs/how-to-work-with-jaira.html bekommen die neue Rolle, wantRoles in role_test.go auch. (4) 'Schlussbericht der Worker mit Feldern' aus dem Ziel ist 55CS2M und steht nicht in der DoD - nicht hier.
+- **2026-11-20 20:10 · Alexander Sacharov** — Stand bei Usage-Limit: DoD 1-3 geschrieben, Release-Note + shipped.sha256 angehaengt, core/role gruen, committed. Offen: DoD 4 abhaken, Lanes critique/optimize/testing/review. Hashes in shipped.sha256 muessen nach jeder weiteren SKILL.md-Aenderung neu angehaengt werden.
