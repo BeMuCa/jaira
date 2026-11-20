@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T16:56:47Z
+updated-at: 2026-11-20T16:56:51Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59469
 claimed-at: 2026-11-20T16:43:41Z
@@ -54,7 +54,8 @@ question: ""
   proof: core/role/pr_round_test.go TestPRRoundRequestsTheReviewer (GH_POST=fail -> exit 4 with gh's reason); core/role/builtin/jaira-role-pr/SKILL.md:340
 - [x] Eingabeklasse zweite Runde auf denselben Kommentaren: bereits resolved Threads werden nicht erneut beantwortet
   proof: core/role/pr_round_test.go TestPRRoundListsOnlyWhatIsOpen (resolved PRRT_done not listed)
-- [ ] Eingabeklasse .jaira/pr/.jaira/pr-reviewer leer, CRLF, Kommentar, Tippfehler, Shell-Sonderzeichen: Tabellentest, Default person / Reviewer leer
+- [x] Eingabeklasse .jaira/pr/.jaira/pr-reviewer leer, CRLF, Kommentar, Tippfehler, Shell-Sonderzeichen: Tabellentest, Default person / Reviewer leer
+  proof: core/settings/settings_test.go TestPRDefaultsToThePerson, TestPRReviewerIsALoginOrNothing (empty, CRLF, comment, typo, shell chars)
 
 ## Options
 
