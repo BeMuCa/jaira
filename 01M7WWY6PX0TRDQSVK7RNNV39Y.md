@@ -21,7 +21,7 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T19:25:33Z
+updated-at: 2026-11-20T19:25:52Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96533
 claimed-at: 2026-11-20T19:19:14Z
@@ -158,3 +158,4 @@ Empfehlung: 2 - der Lesefehler-Fall ist praktisch kaum erreichbar und war schon 
 - **2026-11-20 19:23 · Alexander Sacharov** — bughunt: done at 79d71506 - 2 findings (2 change, 0 pre-existing) in 3 files, follow-up hunt (diff since cbff5424: core/board/gitignore.go core/board/exclude_test.go core/release/notes/NNV39Y.md, plus callers of appendEntry in core/board/board.go internal/cli/share.go internal/cli/update.go internal/cli/tickets.go; ran: init and share with chmod 000 info/exclude and .gitignore); concurrency, error paths, input, permissions checked; untracked .jaira/milestones/*.md are board data, not read; files: README.md core/board/announce.go core/board/board.go core/board/exclude_test.go core/board/gitignore.go core/release/notes/NNV39Y.md core/ticket/store.go docs/COMMANDS.md internal/cli/privateexclude_test.go internal/cli/share.go internal/cli/sharestate_test.go internal/cli/tickets.go internal/cli/update.go
 - **2026-11-20 19:24 · Alexander Sacharov** — testing: beide bughunt-Funde stimmen. Fix: share schreibt AddLanesIgnore VOR RemoveIgnore - ein Schreibfehler an .gitignore laesst das Board privat, Fehler sagt 'the board stays private'; Test TestShareWithAnUnreadableGitignoreLeavesTheBoardPrivate (faellt ohne Umstellung). Release-Note: init warnt nur (Prepare-Vertrag, unveraendert), share/--undo/update brechen ab.
 - **2026-11-20 19:25 · Alexander Sacharov** — critique Runde 14 (Diff 79d71506..dde1cf1c): nichts - Reihenfolge tauschen ist die kleinste Form, kein Rollback noetig.
+- **2026-11-20 19:25 · Alexander Sacharov** — testing Runde 2 (dde1cf1c, gebautes Binary): init sauber; share mit chmod 000 .gitignore -> exit 1 'the board stays private', /.jaira/ bleibt in info/exclude; share --undo mit chmod 000 info/exclude -> exit 1, Datei byteweise erhalten ('mine' bleibt); zwei parallele share --undo -> Eintrag genau einmal. Beobachtet, gelassen: share mit unlesbarem info/exclude meldet geteilt und laesst die Zeile stehen (dropEntry liest Fehler als 'nichts da') - git kann die Datei dann auch nicht lesen, ignoriert also nichts; kein Datenverlust.
