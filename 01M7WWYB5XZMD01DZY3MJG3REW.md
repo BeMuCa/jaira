@@ -23,7 +23,7 @@ related:
   - 01M7WWYG213BWB06A7D1CRASZS
 commits: []
 created-at: 2026-11-20T16:34:26Z
-updated-at: 2026-11-20T19:37:33Z
+updated-at: 2026-11-20T19:37:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99114
 claimed-at: 2026-11-20T19:19:18Z
@@ -42,8 +42,8 @@ review-gaps: |-
   note: der Worktree traegt eine fremde unversionierte Datei .jaira/milestones/abnahme-2026-11-A4140M.md - gehoert nicht zu diesem Ticket, nicht mitcommitten
 test-verdict: "pass bei 0bc5b11a: Suite go test -race -count=1 ./... RC=0; DoD 17-19 im Baum belegt (TestPROpenOnlyFromThePushedTip, TestPRRoundLostSignInIsNeverExit4, usage open); live mit Branch-Binary: single-branch-Klon gepusht -> Gate laeuft, ein Commit voraus -> Exit 3 mit beiden shas, Meldungen ohne Code-Anhang; schreibt nur ueber gh, Zwei-Session-Faelle in Tests unveraendert gruen"
 hunt-verdict: "0 findings at 0bc5b11a (Runden davor: 2 change bei 8569d9b6, 1 change bei 7d8d7872 - alle behoben)"
-review-verdict: "Abnahmereif, kein Blocker. Der Blocker der letzten Runde ist behoben: mit dem Branch-Binary in einem frischen Repo gibt 'pr-gate master' fuer 'feat(ZZZZZZ): x' jetzt Exit 3 'ZZZZZZ (unknown)'. Alle 16 DoD-Punkte sind durch Code und Tests belegt; go test ./core/role ./core/settings ./core/gitrepo ./internal/cli gruen. pr-round.sh ganz gelesen: Dedupe-Logik (Lauf gleicher Worte, nur eigene id geloescht) haelt in beiden Reihenfolgen zweier Sessions; nur Hinweise, siehe gaps. Nicht live gegen GitHub geprueft - die Tests laufen gegen ein gh-Fake."
-review-round: 10
+review-verdict: "Diff erfuellt alle 19 DoD-Punkte; 13 Commits, Liste vollstaendig. Gate, Settings und pr-round.sh ganz gelesen entlang Nebenlaeufigkeit (Dedupe bei zwei Sessions korrekt fuer jede Reihenfolge, loescht nur die eigene ID), Fehlerpfade (Login-Verlust -> 3, Teilschritte bei reply wiederholbar), ungewoehnliche Eingaben (Typo/CRLF -> Default, Shell-Zeichen im Reviewer gefiltert, Base mit '-' abgelehnt) und Grenzen (Gate faellt bei Zweifel zu). Kein Blocker; sechs Notes, keine davon bricht ein Kriterium. Betroffene Tests gruen (core/role, core/settings, internal/cli). Nicht geprueft: echtes GitHub (alles gegen ein gemocktes gh)."
+review-round: 13
 review-check: "1. cd /home/alex/projects/.worktrees/jaira-jg3rew && go build -o /tmp/jg ./cmd/jaira  2. cd $(mktemp -d) && git init -q -b master && git config user.email a@b && git config user.name x && /tmp/jg init  3. echo agent > .jaira/pr && git add -A && git commit -qm 'chore: base' && git checkout -qb feat/x && git commit -q --allow-empty -m 'feat(ZZZZZZ): x'  4. /tmp/jg roles pr-gate master; echo $?  -> 'ZZZZZZ (unknown)', Exit 3  5. /tmp/jg roles list | tail -1  -> 'pr: agent ... reviewer: none; opens in: done (the default)'  6. echo signoff > .jaira/pr-when && /tmp/jg roles list | tail -1  -> 'opens in: signoff'  7. live: auf einem Test-PR scripts/pr-round.sh threads <owner/repo> <nr> -> nur offene Threads als JSON-Zeilen; settled -> Exit 3 mit Liste, solange etwas offen ist"
 ---
 
