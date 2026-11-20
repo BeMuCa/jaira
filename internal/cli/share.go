@@ -111,7 +111,7 @@ You still have to commit. jaira does not commit on your behalf.`,
 				})
 			}
 			if stillIgnored {
-				fmt.Fprintf(cmd.ErrOrStderr(), "jaira: warning: a line jaira did not write still ignores .jaira/ (in .gitignore or %s); "+
+				fmt.Fprintf(cmd.ErrOrStderr(), "jaira: warning: a line jaira did not write still ignores .jaira/ in %s; "+
 					"git will not see the tickets until you remove it by hand\n", board.IgnoreFileName(s.Root))
 			}
 			fmt.Fprintf(w, "The board is now part of the repository.\n")

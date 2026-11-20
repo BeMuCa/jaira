@@ -21,15 +21,15 @@ related:
   - 01M4TRC37SNBER05X090DPSFGE
 commits: []
 created-at: 2026-11-20T16:34:22Z
-updated-at: 2026-11-20T17:42:54Z
+updated-at: 2026-11-20T17:43:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60542
 claimed-at: 2026-11-20T17:19:23Z
 outcome-what: "Ein privates Board steht jetzt in <git-common-dir>/info/exclude statt in der getrackten .gitignore (core/board/gitignore.go); jaira update verschiebt eine alte .gitignore-Zeile dorthin und schliesst ein privates Board ohne Ausschluss dort aus; share/--undo arbeiten auf beiden Dateien; ticket.LockFile aus Store.lock herausgezogen."
 outcome-why: "Eine von jaira geaenderte .gitignore erscheint in jedem neuen Worktree als Aenderung, ein Push-Guard lehnt dann jeden Push ab; info/exclude gilt fuer alle Worktrees und taucht in keinem Diff auf."
 outcome-resolves: Neue Worktrees eines Repos mit privatem Board bleiben sauber; kein Wegraeumen der .gitignore-Zeile von Hand mehr.
-review-summary: "Ein privates Board wird jetzt in <git-common-dir>/info/exclude ausgeschlossen statt in der getrackten .gitignore. core/board/gitignore.go fragt git (rev-parse --path-format=absolute --git-common-dir --show-prefix) nach der gemeinsamen exclude-Datei und dem verankerten Muster (/sub/.jaira/ fuer ein Board im Unterverzeichnis, Glob-Zeichen escaped); AddIgnore/RemoveIgnore/MoveIgnore schreiben sie unter einer Sperrdatei daneben (neues ticket.LockFile, aus Store.lock herausgeloest) und per WriteAtomic, CRLF bleibt erhalten. Ausserhalb von git und bei git < 2.31 (das --path-format zurueckgibt) bleibt .gitignore der Ort. jaira update verschiebt eine alte /.jaira/-Zeile aus .gitignore nach info/exclude bzw. schliesst ein nirgends ausgeschlossenes privates Board aus – aber nur wenn weder .jaira/.gitattributes existiert noch etwas unter .jaira/ getrackt ist. share hebt beide Orte auf und laesst /.jaira/lanes/ in .gitignore; share --undo schreibt wieder info/exclude. Hilfetexte, README, COMMANDS.md und eine Release-Note (mit ! fuer den einmaligen update-Lauf) sind angepasst."
-round: 5
+review-summary: "internal/cli/share.go:113 warning names '.gitignore or <exclude>', but RemoveIgnore has just removed every .jaira form from .gitignore, so only info/exclude can still hold the line - name only board.IgnoreFileName(s.Root)"
+round: 6
 review-gaps: |-
   note: dropEntry setzt skipNextBlank am Marker und loescht dann die naechste Leerzeile irgendwo spaeter, wenn direkt nach dem Eintrag keine folgt – "# jaira board — private\n/.jaira/\nfoo\n\nbar" wird zu "foo\nbar" (per Wegwerftest geprueft); nur kosmetisch
   note: boardLine akzeptiert fuer das Top-Board auch ein unverankertes .jaira/ in info/exclude; share des Top-Boards entfernt eine solche handgeschriebene Zeile und hebt damit auch den Ausschluss eines Boards im Unterverzeichnis auf
@@ -108,3 +108,4 @@ Empfehlung: 2 - alle 7 DoD-Punkte sind mit Tests belegt, die Funde sind Randfael
 - **2026-11-20 17:38 · Alexander Sacharov** — Given back from signoff: 1) Die Anmerkungen beheben (dropEntry, unverankerte Zeile, undo-Hinweis) und zurueck in die Pruefung
 - **2026-11-20 17:38 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
 - **2026-11-20 17:42 · Alexander Sacharov** — signoff-Rueckgabe umgesetzt: (1) dropEntry: Leerzeile nur, wenn sie direkt auf einen mit Kommentar entfernten Eintrag folgt. (2) unverankertes .jaira/ in info/exclude: Ignored zaehlt es weiter (es schliesst das Board ja aus), RemoveIgnore nimmt aus exclude aber nur die exakte verankerte Zeile; share warnt auf stderr und meldet still_ignored in --json statt die Zeile still zu entfernen und dabei ein Unterverzeichnis-Board mit zu veroeffentlichen. Verworfen: unverankerte Zeile gar nicht mehr als Ausschluss zaehlen - dann meldet share 'geteilt', obwohl git das Board weiter ignoriert. (3) share --undo nennt jaira update fuer Teamkollegen. Kosten von Ignored (vierte Anmerkung) bleiben, wie entschieden.
+- **2026-11-20 17:43 · Alexander Sacharov** — critique Runde 5 (Diff d62bafaa..75e2b8b5): internal/cli/share.go:113 warning names '.gitignore or <exclude>', but RemoveIgnore has just removed every .jaira form from .gitignore, so only info/exclude can still hold the line - name only board.IgnoreFileName(s.Root). Stehen gelassen: dropEntry mit zwei Flags statt Index des letzten Eintrags - gleich viel Code.
