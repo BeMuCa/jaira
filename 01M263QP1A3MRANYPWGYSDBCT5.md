@@ -1,7 +1,7 @@
 ---
 id: 01M263QP1A3MRANYPWGYSDBCT5
 title: "Der Agent-Block nennt --proof, und die Gitignore-Regel verweist auf die Commit-Regel"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 assignee: Alexander Sacharov
@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-20T22:50:29Z
+updated-at: 2026-11-20T22:50:34Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -28,6 +28,7 @@ outcome-what: "Der generierte Agent-Block sagt im Punkt 'the ticket rides with t
 outcome-why: "Auf einem ungeteilten Board widersprach die Commit-Regel dem Zustand des Boards: ein Agent kann eine ignorierte Datei nicht mitcommitten und las die Regel als kaputt. --proof und 'jaira update' waren schon ausgeliefert (2143e9ad, update.go:257) und brauchten nur den Test."
 outcome-resolves: SDBCT5
 review-summary: "core/role/jaira/SKILL.md:317 carries the same rule ('The ticket rides with the code', git add .jaira/tickets/) with the same gap on an unshared board; the role is shipped to every board beside the block - add the same caveat there, or a session that reads the skill instead of the block still hits 'paths are ignored'"
+round: 2
 ---
 
 # Der Agent-Block nennt --proof, und die Gitignore-Regel verweist auf die Commit-Regel
