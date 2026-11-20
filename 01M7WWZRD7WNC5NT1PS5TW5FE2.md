@@ -27,7 +27,7 @@ related:
   - 01M5ZJ4NNCYN6YBWVAPWAHG254
 commits: []
 created-at: 2026-11-20T16:35:12Z
-updated-at: 2026-11-20T19:53:12Z
+updated-at: 2026-11-20T19:53:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-36878
 claimed-at: 2026-11-20T19:50:05Z
@@ -65,7 +65,7 @@ review-check: |-
 - [x] pre-process nennt die Standard-Eingabeklassen: leer, sehr gross, Sonderzeichen/Kodierung/CRLF, Pfade mit Leerzeichen, Windows, zwei Prozesse gleichzeitig, Fehler auf halbem Weg
   proof: core/lane/builtin/15-pre-process.md:48-55
 - [x] Schleifenbremse in testing, review und in-progress: Blocker nur falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke; Folgerunde testet und huntet nur den Diff seit dem letzten Hunt; nach 3 Rueckgaben aus derselben Lane eine Frage statt Runde 4
-  proof: core/lane/builtin/27-testing.md:98 (blocker = four kinds), 27-testing.md:41-45,129-137 (follow-up round: tests covering the files changed since the last hunt, whole suite when that commit is gone, then review); core/lane/builtin/40-review.md:57 and :117-121 (return note starts review:); core/lane/builtin/20-in-progress.md:66-106 (own back: lines carrying their round, one per round even after a restart; critique:/optimize:/testing:/review: name the lane, Given back from/decision: = back: person, no prefix = back: unknown; third -> human question); 15-pre-process.md:90 (plan steps before a question move)
+  proof: core/lane/builtin/27-testing.md:98 (blocker = four kinds), 27-testing.md:41-45,129-138 (follow-up round: tests covering the files changed since the last hunt; whole suite when that commit is no longer an ancestor of HEAD, same check as the hunt; then review); core/lane/builtin/40-review.md:57 and :117-121 (return note starts review:); core/lane/builtin/20-in-progress.md:66-106 (own back: lines carrying their round, one per round even after a restart; critique:/optimize:/testing:/review: name the lane, Given back from/decision: = back: person, no prefix = back: unknown; third -> human question); 15-pre-process.md:90 (plan steps before a question move)
 - [x] Kleine Raender der Aenderung aus review-gaps werden in derselben Runde geschlossen statt als note: zur Person zu gehen; Vorbestehendes ausserhalb des Umfangs steht als 'note: pre-existing: ...'
   proof: core/lane/builtin/20-in-progress.md:58 (close small edges in the same round); core/lane/builtin/40-review.md:61-66 (note names class and fix; note: pre-existing:)
 
