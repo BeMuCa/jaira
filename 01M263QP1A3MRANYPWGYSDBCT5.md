@@ -4,7 +4,7 @@ title: "Der Agent-Block nennt --proof, und die Gitignore-Regel verweist auf die 
 status: backlog
 ready: true
 creator: BeMuCa
-assignee: BeMuCa
+assignee: Alexander Sacharov
 goal: "Zwei nachgemessene Luecken im generierten Block sind geschlossen: der Nachweis beim Abhaken, und der Widerspruch auf einem ungeteilten Board"
 context: |-
   Zwei Befunde aus einer Multi-Agent-Session am 10.09., beide nachgeprueft und beide enger als ursprünglich gemeldet.
@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-20T22:45:49Z
+updated-at: 2026-11-20T22:46:02Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
