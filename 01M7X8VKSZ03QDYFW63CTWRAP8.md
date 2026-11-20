@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-20T20:04:46Z
+updated-at: 2026-11-20T20:05:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16592
 claimed-at: 2026-11-20T20:04:03Z
@@ -35,7 +35,8 @@ claimed-at: 2026-11-20T20:04:03Z
 
 ## Definition of Done
 
-- [ ] jaira-teamlead/SKILL.md: Abschnitt 'Report to the human' verlangt die Statuszeile + eingeordnete Tabelle + eine Empfehlung fuer signoff/human und das Neu-Lesen des Stands vor jeder Liste offener Entscheidungen
+- [x] jaira-teamlead/SKILL.md: Abschnitt 'Report to the human' verlangt die Statuszeile + eingeordnete Tabelle + eine Empfehlung fuer signoff/human und das Neu-Lesen des Stands vor jeder Liste offener Entscheidungen
+  proof: core/role/builtin/jaira-teamlead/SKILL.md ## Report to the human
 - [ ] Neue Rolle jaira-role-signoff <id>...: liest Tickets in signoff, gibt die Tabelle mit Einordnung und Empfehlung nach den Rueckgabe-Regeln aus, fertige move-Befehle und ein Folge-Ticket fuer gelbe Raender nach der zweiten Rueckgabe; aendert nichts selbst
 - [ ] jaira-worker/jaira-dispatcher: vor jedem Push die Gates des Projekts lokal laufen lassen, die CI sonst rot machen (im Skill allgemein formuliert)
 - [ ] Release-Note und shipped.sha256; die Rollen-Tests (core/role) gruen
