@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T22:54:33Z
+updated-at: 2026-11-20T22:54:48Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -47,7 +47,7 @@ question: ""
 ## Options
 
 - [ ] brainstorm
-- [ ] planning
+- [x] planning
 
 ## Plan
 
