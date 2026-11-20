@@ -19,8 +19,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T22:45:00Z
+updated-at: 2026-11-20T22:45:03Z
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-2906
+claimed-at: 2026-11-20T22:45:03Z
 ---
 
 # shipped.sha256 kennt jede Version, die in einem Release-Tag ausgeliefert wurde, und CI haelt das fest
