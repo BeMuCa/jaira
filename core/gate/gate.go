@@ -37,6 +37,7 @@ const (
 	CodeStepNotChosen   = "step_not_chosen"
 	CodeNotOwner        = "not_owner"
 	CodeMaxRounds       = "max_rounds"
+	CodeVerdictSendBack = "verdict_sends_back"
 )
 
 // Violation is one reason a move was refused. Field is set when the fix is to
@@ -475,7 +476,64 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 		}
 	}
 
+	// A verdict says which way the ticket goes, and the move must go that way.
+	// Nothing else read the field before: a review that wrote "send back"
+	// still saw its ticket land in sign-off, in front of a person, unapproved.
+	// Only a lane that declares its words is read, and only its send-back
+	// word refuses. A move made in the board is a person deciding.
+	if !req.Interactive && !target.RequiresBlockedReason {
+		vs = append(vs, verdictAgainstMove(env.Lanes, t, target)...)
+	}
+
 	return vs
+}
+
+// verdictAgainstMove refuses a move that lands past a lane whose verdict sent
+// the work back — from that lane, or around it: blocked is drawn last, so
+// blocked → signoff is not even a forward move, and a ticket parked from
+// review would otherwise walk into sign-off past its own send-back. Any other
+// verdict passes, free text included: only the send-back word is a rail.
+func verdictAgainstMove(set *lane.Set, t *ticket.Ticket, target *lane.Lane) Violations {
+	to := set.Index(target.ID)
+	for i, cur := range set.Lanes {
+		if !cur.DeclaresVerdicts() || to <= i {
+			continue
+		}
+		if word, back := cur.SendsBackBy(t.ReviewVerdict); back {
+			return Violations{{
+				Code:  CodeVerdictSendBack,
+				Field: ticket.FieldReviewVerdict,
+				Message: fmt.Sprintf(
+					"%s says %q: lane %q sent %s back, so it may not go on to %q. Move it back to %s — or, as the person deciding, pass --force",
+					ticket.FieldReviewVerdict, word, cur.ID, ticket.Handle(t.ID), target.ID, sendBackTo(set, cur)),
+			}}
+		}
+	}
+	return nil
+}
+
+// sendBackTo names where a sent-back ticket goes from cur: its declared back
+// edges, else the last earlier lane that produces the outcome — the lane the
+// work was done in, in-progress on the default board — else "an earlier lane".
+func sendBackTo(set *lane.Set, cur *lane.Lane) string {
+	if len(cur.RejectsTo) > 0 {
+		return quoteAll(cur.RejectsTo)
+	}
+	at := set.Index(cur.ID)
+	for i := at - 1; i >= 0; i-- {
+		if slices.Contains(set.Lanes[i].OutputProduces, ticket.FieldOutcomeWhat) {
+			return fmt.Sprintf("%q", set.Lanes[i].ID)
+		}
+	}
+	return "an earlier lane"
+}
+
+func quoteAll(ws []string) string {
+	q := make([]string, len(ws))
+	for i, w := range ws {
+		q[i] = fmt.Sprintf("%q", w)
+	}
+	return strings.Join(q, " or ")
 }
 
 // OutputOwed lists the fields lane l declares it produces that ticket t has not
