@@ -503,26 +503,22 @@ async function ticketDir($: EngineInterface, b: { dir: string; repo: string }, i
   return r?.exitCode === 0 ? worktreeFor(r.stdout, id, b.repo) : b.repo
 }
 
-type Done = { ok: true } | { ok: false; why: string }
+type Done = { ok: true; out: string } | { ok: false; why: string }
 
 async function jaira($: EngineInterface, cwd: string, args: string[]): Promise<Done> {
   const r = await run($, ['jaira', ...args], cwd, 30_000)
   if (r === undefined) return { ok: false, why: 'jaira did not run' }
   if (r.exitCode !== 0) return { ok: false, why: withoutWarnings(r.stderr || r.stdout) || `jaira exited ${r.exitCode}` }
-  return { ok: true }
+  return { ok: true, out: withoutWarnings(r.stdout) }
 }
 
-// A press's move, told apart from one another session made first: jaira
-// answers a move to the lane the ticket already sits in with exit 0 and
+// Whether a press's move found the ticket moved by another session first:
+// jaira answers a move to the lane the ticket already sits in with exit 0 and
 // '<handle> is already in <lane>' (internal/cli/flow.go), and a second Give
 // back or Accept that went on from there would write its note, create its
 // follow-ups and hand the work out a second time.
-async function moveTo($: EngineInterface, dir: string, id: string, to: string, force = false): Promise<Done | { ok: 'already' }> {
-  const r = await run($, ['jaira', 'move', id, '--to', to, ...(force ? ['--force'] : [])], dir, 30_000)
-  if (r === undefined) return { ok: false, why: 'jaira did not run' }
-  if (r.exitCode !== 0) return { ok: false, why: withoutWarnings(r.stderr || r.stdout) || `jaira exited ${r.exitCode}` }
-  if (withoutWarnings(r.stdout).split(/\r?\n/).some(l => l.trim() === `${id} is already in ${to}`)) return { ok: 'already' }
-  return { ok: true }
+function movedBefore(d: Done, id: string, to: string): boolean {
+  return d.ok && d.out.split(/\r?\n/).some(l => l.trim() === `${id} is already in ${to}`)
 }
 
 // Someone else's move came first: nothing of this press is written.
@@ -562,8 +558,8 @@ async function accept($: EngineInterface, w: Waiting, after?: (dir: string) => P
   const dry = await run($, ['jaira', 'move', w.id, '--to', w.acceptTo, '--dry-run', '--json'], dir, 30_000)
   const refused = dry === undefined ? 'jaira did not run' : dry.exitCode === 0 ? undefined : otherRefusal(dry.stderr || dry.stdout)
   if (refused !== undefined) return fail($, `${t.accept} ${w.id}`, refused)
-  const done = await moveTo($, dir, w.id, w.acceptTo, true)
-  if (done.ok === 'already') return movedFirst($, t.accept, w.id, w.acceptTo)
+  const done = await jaira($, dir, ['move', w.id, '--to', w.acceptTo, '--force'])
+  if (movedBefore(done, w.id, w.acceptTo)) return movedFirst($, t.accept, w.id, w.acceptTo)
   if (done.ok) {
     // What the person decided on the review's notes goes onto the ticket once
     // it is accepted, as Give back writes it once the ticket went back: a
@@ -1092,8 +1088,8 @@ async function giveBack($: EngineInterface, id: string, lane: string, given: str
   // Back to an earlier lane needs no --force since jaira 0.3.7 (MIN_JAIRA),
   // so any other refusal of the move still stops it. The move goes first: a
   // note written before a refused move would say the ticket went back.
-  const moved = await moveTo($, dir, id, 'in-progress')
-  if (moved.ok === 'already') return movedFirst($, t.giveBack, id, 'in-progress')
+  const moved = await jaira($, dir, ['move', id, '--to', 'in-progress'])
+  if (movedBefore(moved, id, 'in-progress')) return movedFirst($, t.giveBack, id, 'in-progress')
   if (!moved.ok) return fail($, `${t.giveBack} ${id}`, moved.why)
   // Decisions on the review's notes are written out only now: a follow-up
   // ticket is created for a ticket that really went back.

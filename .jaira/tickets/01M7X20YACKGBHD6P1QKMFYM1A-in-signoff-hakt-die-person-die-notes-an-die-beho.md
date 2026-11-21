@@ -1,7 +1,7 @@
 ---
 id: 01M7X20YACKGBHD6P1QKMFYM1A
 title: "In signoff hakt die Person die Notes an, die behoben werden sollen, und Give back nimmt genau diese mit"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,17 +21,17 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-11-20T18:03:14Z
-updated-at: 2026-11-21T19:49:30Z
+updated-at: 2026-11-21T19:51:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74844
 claimed-at: 2026-11-21T19:40:51Z
-outcome-what: "The cockpit's Give back pane lists every review note as a row the person switches between fix now, follow-up and accept; Give back sends only the fix-now notes, Accept in the pane records the rest, follow-ups become tickets with follows set, and the next acceptance starts each note as it was decided."
-outcome-why: Alex gives nearly every ticket back to close some of its review notes and had to say in words which; the choice per note and its record on the ticket were missing.
-outcome-resolves: "DoD 1-6: tests in core/mod/builtin/jaira-cockpit/tests/board.test.ts 'give back with the review notes'; in-progress prompt names the beheben: list."
-review-summary: "Der Give-back-Pane im Cockpit listet jetzt jede Zeile aus review-gaps als eigene Zeile (Fortsetzungszeilen nur bei blocker:/note:-Praefixen angehaengt, Klasse aus dem Praefix oder - bei gleicher Anzahl - aus der Explain-Note). Ein Druck schaltet fix now -> follow-up -> accept; Vorwahl: Blocker/kleiner Rand = fix now, bekannte Grenze = accept, pre-existing = follow-up. Give back liest den Lane-Status neu, verschiebt nach in-progress, legt fuer follow-up-Notes per 'jaira create --follows=<id> -- <titel>' Tickets an und schreibt eine Note 'Given back from <lane>: beheben: / Folge-Ticket: / angenommen:' mit jeder Note woertlich (Freitext als 'dazu:' unter beheben:). Accept im Pane verweigert bei offenen fix-now-Notes, fragt bei einem nicht behobenen Blocker einmal nach und schreibt nach erfolgreichem Move dieselbe Note als 'Accepted from <lane>:'. decisionsOf liest diese Notes bei der naechsten Abnahme zurueck, sodass entschiedene Notes (inkl. Handle eines schon angelegten Folge-Tickets) vorbelegt sind und kein zweites Ticket entsteht. Der in-progress-Lane-Prompt sagt dem Worker, nur beheben: abzuarbeiten. backMessage macht die mehrzeilige Begruendung einzeilig fuer die Herdr-Eingabe."
-round: 5
-back-from: signoff
-back-by: person
+outcome-what: "Round 6 after Alex's give-back: every review note but a blocker starts as accept (no follow-up nobody chose); the band's Accept opens the notes pane when the review (Explain class included) names a blocker; accepting a blocker not fixed in the pane needs a typed reason, written as a decision note; a Give back or Accept whose move jaira answers 'already in' writes nothing."
+outcome-why: "Alex gave it back from signoff: preselected follow-ups filed tickets on a bare Accept, the band's Accept bypassed blockers, and two sessions pressing at once both wrote notes and follow-ups."
+outcome-resolves: "DoD 1, 3, 7 reworded/added per Alex 21.11.; tests in core/mod/builtin/jaira-cockpit/tests/board.test.ts (259 pass); four categories: concurrency (already-in), error paths (note failure shown), input (blank/multiline reason, Explain-classed blocker), permissions (none new)."
+review-summary: "core/mod/builtin/jaira-cockpit/hooks/register.tsx:520 moveTo repeats jaira()'s three error lines (did not run / exit code / withoutWarnings); let jaira() hand back stdout on success and test 'already in' on that, one runner instead of two"
+round: 6
+back-from: critique
+back-by: lane
 back-count: 1
 review-gaps: |-
   note: Nebenlaeufigkeit - stillIn() liest den Status und erst danach folgt der Move; zwei Sessions, die im selben Moment Give back oder Accept druecken, kommen beide durch, weil 'jaira move' auf die Lane, in der das Ticket schon steht, mit exit 0 antwortet ('X is already in done', geprueft im Scratch-Repo). Folge: doppelte Folge-Tickets, doppelte Entscheidungs-Note, bei Give back zwei Uebergaben an Worker. Fix: in giveBack()/accept() (register.tsx) die Antwort 'is already in' des Moves als 'meanwhile decided' behandeln und dann nichts schreiben. Fenster ist klein (Sekunden, gleiche Maschine).
@@ -72,7 +72,7 @@ review-check: |-
 - [x] Annahmeregel der Heuristik (Klasse aus der Explain-Note nur bei gleicher Anzahl, Fortsetzungszeilen nur bei Praefixen): eine Note falsch eingeordnet ist besser als eine Note verloren oder zwei verschmolzen - keine Zeile aus review-gaps faellt weg (Tabellentest)
   proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts: 'an Explain note that classes fewer notes ... is not matched by position', 'gaps without prefixes ... none merged'; core/mod/builtin/jaira-cockpit/hooks/board.ts gapItems
 - [x] Zwei Sessions druecken gleichzeitig Give back oder Accept: meldet der Move 'already in' (Ticket schon in der Ziellane), schreibt die zweite nichts - keine Note, kein Folge-Ticket, keine Uebergabe (Test)
-  proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts: 'a move another session made first: the second press writes nothing' (back, accept, band-accept); hooks/register.tsx moveTo
+  proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts: 'a move another session made first: the second press writes nothing' (back, accept, band-accept); hooks/register.tsx movedBefore
 
 ## Options
 
@@ -126,3 +126,4 @@ review-check: |-
 - **2026-11-21 19:40 · Alexander Sacharov** — decision: Alex 21.11. ergänzt (2): Annehmen trotz blocker nur mit Begründung — im Pane ein Pflichtfeld 'warum trotzdem annehmen', ohne Text kein Accept; die Begründung landet als decision-Note am Ticket. Grund: ein blocker ist zu beheben, wer ihn stehen lässt, muss sagen warum.
 - **2026-11-21 19:41 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/2274544.sock (Worker Runde 6 nach Give back aus signoff)
 - **2026-11-21 19:49 · Alexander Sacharov** — Runde 6 (Give back 19:39/19:40): 'already in' wird am Klartext der Move-Antwort erkannt ('<handle> is already in <lane>', internal/cli/flow.go), nicht mit --json: --json haette die Fehlertexte im Fehler-Pane zu JSON gemacht und ein Dutzend argv-Tests geaendert. Accept im Band liest dieselben Notes wie der Pane (reviewItems, Explain-Klasse inklusive) statt nur 'blocker:' zu suchen - sonst haetten Band und Pane einen Blocker verschieden gesehen. Bewusst nicht: die [accept]-Option im Explain-Pane (decide) nimmt ohne Pflichtfeld an - die gewaehlte Option steht dort schon als 'decision:'-Note, das ist die Begruendung. Pflichtfeld ersetzt 'zweiter Druck nimmt an' (warned entfernt). shipped.sha256 mit scripts/shipped-history.sh --write neu - nach jeder weiteren Aenderung an hooks/ wieder noetig.
+- **2026-11-21 19:50 · Alexander Sacharov** — critique 5: moveTo dupliziert jaira() - jaira() gibt stdout zurueck, 'already in' wird darauf geprueft. Stehen gelassen: decide() (Explain-Pane) schreibt seine 'decision:'-Note vor giveBack/accept - eine doppelte decision-Note bei Gleichzeitig-Klick dort ist vorbestehend und nicht Alex' Punkt 3 (giveBack()/accept()).
