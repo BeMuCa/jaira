@@ -8,14 +8,14 @@ import {
   type Action, type Agent, type NoteClass, type Option, type Waiting,
 } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
-import { digest } from './digest.ts'
+import { digest, reportLine } from './digest.ts'
 import {
   agentName, AGENT_ORIGINS, clipReport, DIGESTED, isAgentReport, isUnscoped, keyOf, listReports, NOTIFICATION,
   projectKeys, reportArgs, REPORTS_PER_TICKET, rewriteRow, showReport, stamp, TICKETS, type Report,
 } from './filter.ts'
 import { body, source } from './frame.ts'
 import { add, appended, emptyTotals, row, rowsOf, type Totals } from './metrics.ts'
-import { COLORS, HATS, overviewOf, pickOf, reportLine, stoneOf, workerKey, workersOf } from './overview.ts'
+import { COLORS, HATS, overviewOf, pickOf, stoneOf, workerKey, workersOf } from './overview.ts'
 import { drawOverview, type OverviewTab } from './overview-pane.tsx'
 import {
   backMessage, carrierOf, carrierTab, chooseWorker, DEFAULT_CONTEXT_SHARE, isExpired, RECORD_PREFIX, selfLine, startOf, tabsOf,
@@ -68,7 +68,7 @@ const upgradeAtom = atom({ plugin: 'jaira-cockpit', key: 'upgrade' } as const, n
 const workersAtom = atom({ plugin: 'jaira-cockpit', key: 'workers' } as const, null)
 const workersSinceAtom = atom({ plugin: 'jaira-cockpit', key: 'workersSince' } as const, {})
 const workersReportsAtom = atom({ plugin: 'jaira-cockpit', key: 'workersReports' } as const, {})
-const workersStoneAtom = atom({ plugin: 'jaira-cockpit', key: 'workersStone' } as const, { open: -1, fellAt: -1 })
+const workersFellAtom = atom({ plugin: 'jaira-cockpit', key: 'workersFell' } as const, -1)
 const workersColorsAtom = atom({ plugin: 'jaira-cockpit', key: 'workersColors' } as const, {})
 const workersHatsAtom = atom({ plugin: 'jaira-cockpit', key: 'workersHats' } as const, {})
 const workersFrameAtom = atom({ plugin: 'jaira-cockpit', key: 'workersFrame' } as const, 0)
@@ -867,7 +867,7 @@ async function frame($: EngineInterface): Promise<void> {
 
 // How many frames ago the stone lost its last chunk; -1 when none ever fell.
 async function fallingOf($: EngineInterface): Promise<number> {
-  const { fellAt } = await read($, workersStoneAtom)
+  const fellAt = await read($, workersFellAtom)
   return fellAt < 0 ? -1 : (await read($, workersFrameAtom)) - fellAt
 }
 
@@ -910,14 +910,14 @@ async function readWorkers($: EngineInterface): Promise<void> {
     const keys = [...new Set(workers.map(workerKey))]
     const now = await $.clock.now()
     const frameNow = await read($, workersFrameAtom)
-    const open = stoneOf(workers)
+    const before = await read($, workersAtom)
     const reports = await lastReports($, ids)
     await update($, workersReportsAtom, () => reports)
     await update($, workersAtom, () => workers)
     await update($, workersColorsAtom, kept => pickOf(ids, kept, COLORS))
     await update($, workersHatsAtom, kept => pickOf(ids, kept, Object.keys(HATS)))
     await update($, workersSinceAtom, kept => Object.fromEntries(keys.map(k => [k, kept[k] ?? now])))
-    await update($, workersStoneAtom, s => ({ open, fellAt: s.open >= 0 && open < s.open ? frameNow : s.fellAt }))
+    if (before !== null && stoneOf(workers) < stoneOf(before)) await update($, workersFellAtom, () => frameNow)
   } finally {
     reading = false
   }

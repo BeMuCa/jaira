@@ -72,14 +72,14 @@ declare module 'claude-code' {
       // The Workers tab: its agents, read while it is open; each ticket's
       // colour and hat, kept while it stays on the board; when each agent
       // (<id>/<kind>) was first seen; the first line of each ticket's last
-      // report; the stone's open work at the last read and the frame it last
-      // lost a chunk (-1: never); and the frame the animation is at.
+      // report; the frame the stone last lost a chunk (-1: never); and the
+      // frame the animation is at.
       workers: Worker[] | null
       workersColors: Record<string, string>
       workersHats: Record<string, string>
       workersSince: Record<string, number>
       workersReports: Record<string, string>
-      workersStone: { open: number; fellAt: number }
+      workersFell: number
       workersFrame: number
     }
   }

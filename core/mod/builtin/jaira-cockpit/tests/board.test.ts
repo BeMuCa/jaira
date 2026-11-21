@@ -1,6 +1,7 @@
 import type { On, SessionRateLimit } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
-import { durationOf, reportLine, stoneSize } from '../hooks/overview.ts'
+import { reportLine } from '../hooks/digest.ts'
+import { durationOf, stoneSize } from '../hooks/overview.ts'
 
 // A world beneath the plugin: a repository at /repo with a board, jaira, git
 // and Herdr answering from memory, and every command the plugin runs

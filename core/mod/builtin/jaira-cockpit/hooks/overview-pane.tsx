@@ -27,7 +27,7 @@ export type OverviewTab = 'queue' | 'log' | 'workers'
 // the first line of each ticket's last report, the time now, how many
 // frames ago the stone last lost a chunk (-1: none falling), the frame the
 // animation is at, and the pane's room, in cells.
-export type WorkersScene = {
+type WorkersScene = {
   workers: Worker[] | null
   colors: Record<string, string>
   hats: Record<string, string>
@@ -57,7 +57,7 @@ const LEGS = { stand: '  ▘▘ ▝▝  ', sit: '  ▀▀▀▀▀  ' }
 const MINI_HEAD = '▐▛▜▌'
 const MINI_LEGS = ['▝▘▝▘', '▗▘▝▖']
 // A chunk falls this many frames once the stone lost one.
-export const FALL_FRAMES = 6
+const FALL_FRAMES = 6
 
 function put(row: Cell[], x: number, text: string, style: Style = {}): void {
   ;[...text].forEach((ch, i) => {

@@ -23,13 +23,21 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-21T19:09:25Z
-updated-at: 2026-11-21T19:59:54Z
+updated-at: 2026-11-21T20:01:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-243922
 claimed-at: 2026-11-21T19:47:52Z
 outcome-what: "Workers-Tab neu: workersOf liefert nur echte Agenten (Herdr-Tab <ID>/<rolle> oder Subagent) mit Rolle und offenen DoD-Punkten; eine Szene mit einem Stein (stoneSize, wächst mit der Wurzel der offenen Punkte), Krabben links/rechts am Boden, kleine Krabben wenn zu viele; ein Brocken fällt, wenn die offenen Punkte weniger werden; darunter eine Zeile pro Agent (ID, Lane, Rolle, Zustand, seit wann, erste Zeile des letzten Berichts). Walk-/Bahn-Logik (progressOf, stepOf, Spot) entfernt."
 outcome-why: "Bahnen pro Figur brauchten ab 5 Agenten Scrollen, zeigten weder Rolle noch Dauer noch Tätigkeit, und Tickets mit offener Frage ohne Agent (auch fremde, seit Oktober liegende) standen als Figur da."
 outcome-resolves: "DoD 1-5: nur Agenten (Test), ein Stein mit Größenberechnung (Test), eine Zeile pro Agent (Test), live geprüft + Release-Note, 1-30 Agenten passen in 40×100 (parametrisierter Test)."
+review-summary: |-
+  core/mod/builtin/jaira-cockpit/hooks/register.tsx: workersStone keeps the last open count beside fellAt only to compare; workersAtom already holds the previous workers — compare stoneOf(previous) and keep a single workersFell frame number
+  core/mod/builtin/jaira-cockpit/hooks/overview.ts reportLine parses report text, which hooks/digest.ts already does (digest, ticketOf, laneOf) — move it there
+  core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx exports WorkersScene and FALL_FRAMES with no caller outside the file — drop the exports
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # Cockpit-Workers: ein Steinbruch statt einzelner Bahnen, und nur Tickets mit eigenem Agenten
@@ -67,3 +75,4 @@ outcome-resolves: "DoD 1-5: nur Agenten (Test), ein Stein mit Größenberechnung
 - **2026-11-21 19:48 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/2274544.sock
 - **2026-11-21 19:49 · Alexander Sacharov** — decision (worker, offene Punkte aus dem Kontext selbst entschieden): (1) Der Stein misst die offenen DoD-Punkte (superseded zählt nicht) aller Tickets, an denen gerade ein Agent ist — der Vorschlag aus dem Kontext. Ohne offene Punkte bleibt ein Kieselstein, damit die Szene nie leer ist. (2) Fragen ohne Agent bekommen keinen neuen Ort: das Band zeigt Tickets in human/signoff schon als 'waiting for you'; der Workers-Tab zeigt nur Agenten. (3) 'seit wann' = seit das Cockpit den Agenten zum ersten Mal sieht (pro <ID>/<rolle> gemerkt, solange er lebt): Herdr-Tabs und Subagenten nennen keine Startzeit, die Session-Records auch nicht. (4) Rolle = Teil nach '/' im Tab-Label; Subagent = 'subagent'. Zustand: working / resting / waits (Ticket hat offene Frage). (5) Brocken: verschwindet ein Ticket mit offenen Punkten aus der Szene, fällt einige Frames lang ein Brocken vom Stein.
 - **2026-11-21 19:59 · Alexander Sacharov** — gefunden: der Pane-Test zählt Zeilen über findAll — eine Bildzeile aus nur einem Stil erscheint dort doppelt (äußerer Text + einzelner Run); pictureOf in tests/board.test.ts entdoppelt deshalb. Live-Check geht ohne Person: tmux new-session ... 'claude --plugin-dir <mod>', Klick per SGR-Maus-Sequenz (tmux send-keys -l ESC[<0;x;yM/m); unter ~200 Spalten sagt das Cockpit 'No room for a pane'. 6-Minuten-Clock-Advance mit laufenden Frames läuft in den 5-s-Testtimeout — Test wechselt den Tab, damit keine Frames laufen. Vier Kategorien: Nebenläufigkeit (readWorkers hat 'reading'-Sperre, Berichte unter dem reports-Lock), Fehlerpfade (Store-Fehler → Zeilen ohne Bericht statt leerer Tab), ungewöhnliche Eingaben (leerer/reiner Tag-Bericht → Titel; 0/negativ offene Punkte → Kiesel; zu viele Agenten → '+N more' im Bild, Zeilen bleiben), Rechte: nichts Neues von außen.
+- **2026-11-21 20:00 · Alexander Sacharov** — critique (Runde 1): (1) register.tsx workersStone {open, fellAt} → nur fellAt; vorheriges open aus workersAtom (stoneOf) vor dem Überschreiben. (2) reportLine gehört nach hooks/digest.ts zu den anderen Report-Parsern. (3) overview-pane.tsx: export von WorkersScene und FALL_FRAMES weg, keiner außerhalb nutzt sie.

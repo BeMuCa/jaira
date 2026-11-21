@@ -110,3 +110,10 @@ export function digest(text: string): { ticket: string; line: string } | undefin
 function clip(s: string, n: number): string {
   return s.length <= n ? s : `${s.slice(0, n - 1)}…`
 }
+
+// The first line of a kept report worth reading: a task notification's
+// result, else the text, without its tags and blank lines.
+export function reportLine(text: string): string {
+  const body = /<result>([\s\S]*?)(?:<\/result>|$)/.exec(text)?.[1] ?? text
+  return body.split('\n').map(l => l.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()).find(l => l !== '') ?? ''
+}

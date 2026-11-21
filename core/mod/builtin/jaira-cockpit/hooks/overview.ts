@@ -197,13 +197,6 @@ export function stoneSize(open: number, maxW: number, maxH: number): { w: number
   return fit(4 + Math.round(4 * s), 1 + Math.round(s))
 }
 
-// The first line of a kept report worth reading: a task notification's
-// result, else the text, without its tags and blank lines.
-export function reportLine(text: string): string {
-  const body = /<result>([\s\S]*?)(?:<\/result>|$)/.exec(text)?.[1] ?? text
-  return body.split('\n').map(l => oneLine(l.replace(/<[^>]*>/g, ''))).find(l => l !== '') ?? ''
-}
-
 // How long an agent has been seen, in plain units: under a minute, minutes,
 // then hours and minutes.
 export function durationOf(ms: number): string {
