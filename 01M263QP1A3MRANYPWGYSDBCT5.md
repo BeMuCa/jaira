@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-21T08:18:15Z
+updated-at: 2026-11-21T08:18:19Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -34,8 +34,8 @@ review-gaps: |-
   note: core/release/notes/SDBCT5.md:2 lists jaira, jaira-worker and jaira-role-lane but not jaira-role-pr, whose point 2 also changed and is refreshed by the same jaira update --roles
 test-verdict: "pass: go test ./... -race RC=0; TestAgentNoteNamesProofAndTheUnsharedBoardCaveat RC=0; DoD 1-7 verified in the tree; scratch board (git init + jaira init with this build): CLAUDE.md/AGENTS.md carry the reworded caveat, .jaira/ stays out of git; go test ./core/role ./core/shipped green after appending 3 manifest hashes"
 hunt-verdict: "pass: bughunt done at d71e5e86 (diff since bb02c815), 0 change, 0 pre-existing"
-review-verdict: pass
-review-round: 3
+review-verdict: "pass - all 7 DoD items hold in the diff; current hashes of the 4 changed roles are in shipped.sha256; .claude/skills/jaira equals core/role/jaira byte for byte; agent blocks in CLAUDE.md and AGENTS.md are identical; no further live commit line names .jaira/tickets without the caveat; go test core/board core/role core/shipped internal/cli -count=1 green. Two cosmetic notes, no blocker."
+review-round: 4
 review-check: |-
   1. In einem leeren Verzeichnis: git init && jaira init (mit diesem Build)
   2. grep -n "hold on a shared board only" CLAUDE.md AGENTS.md - je eine Treffer-Zeile im Punkt 'the ticket rides with the code'
