@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:04:26Z
+updated-at: 2026-11-21T09:04:39Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
@@ -163,3 +163,4 @@ back-count: 1
 - **2026-11-21 08:57 · Alexander Sacharov** — Given back from signoff (Teamlead im Auftrag Alex 21.11.): bughunt.on_head darf auf einem sauberen Ticket nicht rot sein - Alex liest Rot als Katastrophe. Klasse 'falsch rot' an der Ursache schliessen: 1) conversational mode: uncommittete Aenderungen von vor dem Hunt zaehlen nicht (Vergleich gegen den Stand zur Hunt-Zeit, z.B. Hash der gejagten Dateien in der Closing-Note, oder nur Aenderungen nach dem Hunt-Zeitpunkt). 2) stop-after-fix=true ohne Hunt: 'skipped' statt fail, Brief traegt stop_after_fix. 3) untracked Dateien ausserhalb des Codes (.jaira/**) zaehlen nie. 4) ChangedSince-Docstring nennt die Grenze 'Commit ohne ID'. 5) explainable: fuer fruehere Runde ohne verdict_gaps keine review.gaps als Blocker-Quelle. Tests je Fall. Diff-Hunt, review, signoff, push.
 - **2026-11-21 09:03 · Alexander Sacharov** — round 9 (teamlead give-back, class 'falsely red'): 1) an uncommitted file counts by its mtime against the hunt note's time, tracked or not (conversational edits before the hunt no longer turn it red; a deleted file has no time and counts); 2) brief bughunt.skipped when the ticket sets stop-after-fix and the hunt does not cover HEAD (or there is none) - templates write 'bughunt on HEAD skipped', the pane draws it without a mark; 3) untracked files under .jaira/ never count; 4) ChangedSince docstring names 'a ticket commit without its id is not seen'; 5) board.ts explainable reads blockers only from the review's own gaps (current round or the kept copy), BLK789 keeps Explain through its refusing verdict. Tests: TestChangedSince +4, TestBriefCarriesTheHunt/TestBriefSkipsTheHuntOnStopAfterFix, cockpit 'earlier-round verdict without a kept copy...' and 'a hunt skipped on purpose...'.
 - **2026-11-21 09:04 · Alexander Sacharov** — critique round 9: none - read cf0cdfef. Let stand: skipped is stop_after_fix && not on HEAD without looking at the round - in round 1 the hunt always runs (27-testing.md), so 'not on HEAD' with stop-after-fix is the fix round the ticket opted out of; reading the round would add a second source for the same fact.
+- **2026-11-21 09:04 · Alexander Sacharov** — testing round 9: bughunt running over the diff since 81dcbbee at cf0cdfef.
