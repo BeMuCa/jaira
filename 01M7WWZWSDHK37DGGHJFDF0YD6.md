@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:39:03Z
+updated-at: 2026-11-21T08:40:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
@@ -146,3 +146,4 @@ back-count: 1
 - **2026-11-21 08:38 · Alexander Sacharov** — critique round 5: none - read 190a55ec. Let stand: 'on HEAD' by HEAD equality alone would be simpler but turns red on every master merge (the review's own example); ChangedSince sits in core/gitrepo beside Diff/WorktreeDiff and reuses codeOnly; the git call runs only for --brief, which only the Explain/Discuss chats ask for, never list/show --json.
 - **2026-11-21 08:38 · Alexander Sacharov** — testing round 5: bughunt running over the diff since 553b37f3 at 190a55ec.
 - **2026-11-21 08:39 · Alexander Sacharov** — testing round 5 finding (own pass): class: a hunt file list token that names no file is trusted as a path; example: 'files: a b.go' (one file with a space) splits into 'a' and 'b.go', neither exists, ChangedSince sees no change -> on_head true while 'a b.go' changed. Fix: a listed path that is neither in the hunt commit nor on disk makes ChangedSince read all code (conservative: a false red, never a false green).
+- **2026-11-21 08:40 · Alexander Sacharov** — bughunt: change: core/gitrepo/git.go:327-349 (ChangedSince, aufgerufen von lastHunt in internal/cli/tickets.go) - prueft nicht, ob der Hunt-Commit ein Vorfahr von HEAD ist. Hat das Ticket keinen Worktree mehr, faellt ticketDir (register.tsx:499) auf den Haupt-Checkout auf master zurueck; dort liefert 'git log --first-parent --no-merges <hunt>..HEAD' auf einer master-Historie aus PR-Merges nichts und der Worktree ist sauber, also on_head=true - auch wenn der Feature-Branch nach dem Hunt weitere, nie gejagte Commits auf genau den gelesenen Dateien hat. Explain schreibt dann 'bughunt on HEAD ok'. ran: Scratch-Repo (master init, feat: X, dann Y auf a.go nach dem Hunt, master: --no-ff Merge eines anderen Branches), go run mit gitrepo.ChangedSince(X, [a.go]) auf master -> 'changed false err <nil>'. Abhilfe naheliegend: 'merge-base --is-ancestor <commit> HEAD' vorab, sonst Fehler/false.
