@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZWSDHK37DGGHJFDF0YD6
 title: "Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt"
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,18 +23,18 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:18:29Z
+updated-at: 2026-11-21T08:18:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
-outcome-what: "Round 3: in-progress stops at back.count 3 or more; jaira move typed at a terminal records a person's send-back; jaira keeps the review's own gaps beside its verdict (review-verdict-gaps, show --json review.verdict_gaps) and the cockpit lists them for an earlier-round verdict, Explain prompts read them."
-outcome-why: "Alex gave the ticket back from signoff on 21.11. to close all three review notes in this round instead of leaving them as notes."
-outcome-resolves: "Review notes 1-3 of 1789d202. Checked: concurrency (copy inside locked Mutate), error paths (unreadable verdict/round -> no copy), input (multiline/CRLF gaps via SetScalar, empty gaps copied empty, three write orders tested), permissions (TTY rule opens no gate). go test ./... RC=0, claude plugin test 216 pass."
+outcome-what: "Round 3 as before, plus: both Explain prompts read verdict_gaps only when it is not empty, so a ticket reviewed before jaira kept the copy explains its review-gaps as before."
+outcome-why: "The round-3 bug hunt found the prompts took an empty verdict_gaps on every older reviewed ticket as an earlier-round verdict and reported no notes and 'blockers ok'."
+outcome-resolves: "bughunt change at c8de2b8a (texts.ts:79, spawn.sh:396); claude plugin test 216 pass with the rule asserted; go test core/role core/shipped core/lane RC=0."
 review-summary: "none"
 review-gaps: "none - c8de2b8a: no second TTY check in the repo (grep IsTerminal/isatty: none), nothing orphaned (sameRound still has callers), no fluff worth a change"
 test-verdict: "pass: go test ./... RC=0 at c8de2b8a (core/lane after the manifest line), go test -race -count=1 internal/cli core/ticket core/move RC=0, claude plugin test 216 pass; DoD 11 verified in the tree; scratch board: pipe move review->in-progress back by=lane, same move under script(1) (real TTY) by=person; verdict+CRLF gaps then a later-round gaps write -> verdict_gaps keeps 'note: a\\nblocker: b', plain show prints 'gaps at verdict'; set on a missing ticket exits 5; parallel set review-gaps + review-verdict both land, verdict_gaps consistent with gaps"
 hunt-verdict: "fail: 1 change finding at c8de2b8a - Explain prompts (texts.ts:79, spawn.sh:396) read an empty verdict_gaps on a ticket reviewed before the field as 'earlier round'"
-round: 3
+round: 4
 review-verdict: "The diff meets all ten DoD items; no blocker. go test (core/move, core/ticket, internal/cli, core/role, core/shipped, internal/tui) and claude plugin test (215 pass) green at 1789d202. Three small notes, none needs a round."
 review-round: 2
 review-check: "1. go test ./core/move -run 'TestMoveRecords|TestMoveCountsOne' -v  -> all PASS (send-back record, person at the board, two moves at once)  2. go test ./internal/cli -run 'LoopBrake|BlockerRule|StopAfterFix' -v  -> PASS  3. jaira set <any test ticket> stop-after-fix=yes  -> refused, exit 2, message names stop-after-fix  4. jaira move <ticket in testing> --to in-progress --force, then jaira show <id> --json | jaira json get back  -> from testing, by lane, count 1  5. cd core/mod/builtin/jaira-cockpit && claude plugin test  -> 215 pass  6. in the cockpit (claude --plugin-dir core/mod/builtin/jaira-cockpit), a signoff ticket whose review-gaps holds only note: lines shows them as '· ...' under the row with no Explain button"
