@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-21T08:07:43Z
+updated-at: 2026-11-21T08:07:47Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -29,10 +29,7 @@ outcome-why: "Auf einem ungeteilten Board widersprach die Commit-Regel dem Zusta
 outcome-resolves: SDBCT5
 review-summary: "Round after signoff return: nothing to return. The three new caveat sentences (jaira-worker SKILL.md:107, jaira-role-lane SKILL.md:90/293) sit next to the commit line they qualify, the same placement the block uses (announce.go:138); a shared helper is not possible across markdown roles. Wording in block and jaira role now says the next point holds all the more instead of excluding it. Standing on the 22:58 note for the earlier rounds."
 round: 4
-review-gaps: |-
-  note: "This point and the next hold on a shared board only" erfasst auch den Punkt 'a lane that changed no code commits nothing', dessen Kern (nichts committen) auf einem ungeteilten Board erst recht gilt - nur dessen Ticketdatei-Saetze fallen weg; lesbar, aber nicht ganz praezise
-  note: pre-existing: die fertigen Commit-Zeilen in jaira-worker SKILL.md und jaira-role-lane SKILL.md nennen weiter .jaira/tickets/<ticket>.md, das git auf einem ungeteilten Board als ignoriert ablehnt (in critique Runde 3 bewusst stehen gelassen)
-  note: der Testname nennt nur das ungeteilte Board, prueft aber auch --done --proof
+review-gaps: "none: the round adds three sentences and a renamed test; nothing duplicated or unused"
 test-verdict: "pass: go test ./... -race exit 0; build ok. DoD 1-6 checked in the tree (announce.go:101/138, role SKILL.md:331, pr SKILL.md:59, docs/AGENTS.md:72, release note, test present and green). Behaviour on a scratch repo: 'jaira init' writes the block with --proof and the caveat into CLAUDE.md+AGENTS.md, .jaira/ ignored, and 'git add .jaira/tickets' is refused there ('paths are ignored') - exactly the case the caveat names; 'jaira update' rewrites a stale block back. Failure path: read-only CLAUDE.md -> update exits 1 with permission denied, file unchanged. Two writers: the change adds no write path (block writing is pre-existing), nothing to race."
 hunt-verdict: "pass: bughunt done at bb02c815, 0 findings in 10 modules"
 review-verdict: pass
