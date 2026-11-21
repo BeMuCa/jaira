@@ -29,8 +29,8 @@ type Request struct {
 	Interactive bool
 	// ByPerson marks a move a person made in the board, whatever lane it
 	// leaves: a send-back is recorded as theirs (back-by: person) and never
-	// counts toward a loop lane's third return. Unlike Interactive it opens
-	// no gate.
+	// counts toward a loop lane's third return, and the gate never refuses
+	// it for a lane's max-rounds. Unlike Interactive it opens no other gate.
 	ByPerson bool
 	// Force writes despite refusals; what was overridden is returned, the
 	// caller says it out loud. Nothing marks the ticket itself (deliberate).
@@ -121,7 +121,7 @@ func Move(s *ticket.Store, env gate.Env, id string, req Request) (*Result, error
 	vs := gate.CheckAdvance(env, gated, gate.Request{
 		To: req.To, Question: req.Question, Reason: req.Reason,
 		Actor: req.Actor, ActorAliases: req.ActorAliases,
-		Interactive: req.Interactive,
+		Interactive: req.Interactive, ByPerson: req.ByPerson,
 	})
 	if len(vs) > 0 && !req.Force {
 		return &Result{Ticket: t, Refused: vs}, nil
@@ -135,7 +135,7 @@ func Move(s *ticket.Store, env gate.Env, id string, req Request) (*Result, error
 			}
 			t.Assignee = req.Actor
 		}
-		if sendsBack(env.Lanes, t.Status, req.To) {
+		if env.Lanes.SendsBack(t.Status, req.To) {
 			if err := t.Doc().SetRaw(ticket.FieldRound, strconv.Itoa(ticket.CurrentRound(t)+1)); err != nil {
 				return err
 			}
@@ -195,21 +195,4 @@ func recordBack(t *ticket.Ticket, lanes *lane.Set, from string, byPerson bool) e
 // through, or one only a person may leave or enter with a question.
 func isPersons(l *lane.Lane) bool {
 	return !l.Agentic || l.RequiresHumanExit || l.RequiresQuestion
-}
-
-// sendsBack reports a move to an earlier lane of the board, the one that
-// starts a new round. Parking does not: a ticket going to blocked and coming
-// back from it is the same round, whichever side of the work lane blocked is
-// drawn on. A lane this installation does not know counts nothing.
-func sendsBack(lanes *lane.Set, from, to string) bool {
-	f, t := lanes.Index(from), lanes.Index(to)
-	if f < 0 || t < 0 || t >= f {
-		return false
-	}
-	for _, id := range []string{from, to} {
-		if l, ok := lanes.Get(id); ok && l.RequiresBlockedReason {
-			return false
-		}
-	}
-	return true
 }

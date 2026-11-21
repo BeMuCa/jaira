@@ -2033,7 +2033,7 @@ func (m *Model) applyMove() {
 		full.Assignee = me
 	}
 	vs := gate.CheckAdvance(env, full, gate.Request{
-		To: target.ID, Actor: me, ActorAliases: identity.Aliases(m.store.Root),
+		To: target.ID, Actor: me, ActorAliases: identity.Aliases(m.store.Root), ByPerson: true,
 	})
 	if len(vs) > 0 {
 		m.pending = &pendingMove{

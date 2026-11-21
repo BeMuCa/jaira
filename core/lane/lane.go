@@ -139,6 +139,13 @@ type Lane struct {
 	// followed.
 	RejectsTo []string
 
+	// MaxRounds is how many times in a row this lane may send a ticket back
+	// before a person decides instead: the (MaxRounds+1)-th send-back from it
+	// is refused by the gate and names the lane a person answers in. 0 means
+	// no limit. It counts back-count — returns in a row from this lane —
+	// so a person's send-back, or one from another lane, starts it again.
+	MaxRounds int
+
 	// RequiresSpecified marks the first lane, in precedence order, that sets
 	// this: the boundary between thinking about a ticket and working on it.
 	// Everything before it is a place a half-formed ticket may sit; nothing at
@@ -382,6 +389,16 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 			return nil, fmt.Errorf("lane %s: holds needs terminal: true — the logbook records finished work, and trimming a working lane would file unfinished tickets as done", source)
 		}
 		l.Holds = n
+	}
+	if f.Has("max-rounds") {
+		// Present but unreadable is refused rather than read as "no limit": a
+		// typo would otherwise switch off the one brake the line was written for.
+		m := strings.TrimSpace(str("max-rounds"))
+		n, err := strconv.Atoi(m)
+		if err != nil || n <= 0 {
+			return nil, fmt.Errorf("lane %s: max-rounds must be a whole number above 0, got %q", source, m)
+		}
+		l.MaxRounds = n
 	}
 	l.LogbookOnEntry = boolOf("logbook-on-entry")
 	if l.LogbookOnEntry && !l.Terminal {
@@ -918,6 +935,7 @@ func lanesEquivalent(base, replacement *Lane) bool {
 		base.RequiresSpecified == replacement.RequiresSpecified &&
 		base.Prompt == replacement.Prompt &&
 		slices.Equal(base.RejectsTo, replacement.RejectsTo) &&
+		base.MaxRounds == replacement.MaxRounds &&
 		slices.Equal(base.InputRequires, replacement.InputRequires) &&
 		slices.Equal(base.OutputProduces, replacement.OutputProduces)
 }

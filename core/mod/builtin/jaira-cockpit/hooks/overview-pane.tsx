@@ -6,7 +6,7 @@
 // `$` lives there.
 
 import type { ElementTable } from 'claude-code'
-import { clockOf, COLORS, HATS, HISTORY_DAYS, slotOf, SPINNER, type Overview, type Row, type Spot, type Walker } from './overview.ts'
+import { clockOf, COLORS, HATS, HISTORY_DAYS, slotOf, SPINNER, type Event, type Overview, type Row, type Spot, type Walker } from './overview.ts'
 import { overviewWords as w } from './texts.ts'
 
 const SEP = ' | '
@@ -104,15 +104,35 @@ function trackRows(scene: WorkersScene): Cell[][] {
   return rows
 }
 
-// `people`: the names the Log is filtered to; empty shows everybody.
-type OverviewState = { tab: OverviewTab; folded: Record<string, boolean>; people: string[] }
-type OverviewActions = { close: () => void; tab: (tab: OverviewTab) => void; fold: (key: string) => void; person: (name: string) => void; everybody: () => void }
+// The sign each kind of Log line starts with. Only single code points the
+// terminal draws two cells wide by default (Emoji_Presentation): a sign that
+// needs a variation selector (↩️) is one cell in one terminal and two in
+// another, and shifts every column after it.
+const KIND_SIGN: Record<Event['kind'], string> = { created: '🆕', parked: '🔙' }
+
+// `people`: the names the Log is filtered to, `lanes` the lanes; empty shows all.
+type OverviewState = { tab: OverviewTab; folded: Record<string, boolean>; people: string[]; lanes: string[] }
+type OverviewActions = {
+  close: () => void
+  tab: (tab: OverviewTab) => void
+  fold: (key: string) => void
+  person: (name: string) => void
+  everybody: () => void
+  lane: (id: string) => void
+  allLanes: () => void
+}
 
 // `view` null: the board could not be read.
 export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview | null, state: OverviewState, act: OverviewActions, scene: WorkersScene) {
   const person = (who: string) => <Text key="who" color={personColor(who)}>{who}</Text>
-  const closeButton = <Button key="overview-close" label={w.close} onPress={act.close} />
-  if (view === null) return <Box flexDirection="column"><Text dimColor>{w.unread}</Text>{closeButton}</Box>
+  // Close beside the tabs, framed and padded: larger than a tab, and never
+  // below a long list. A Button takes no size, so the frame is a Box's.
+  const closeButton = (
+    <Box key="overview-close-frame" borderStyle="round" paddingX={1}>
+      <Button key="overview-close" label={w.close} onPress={act.close}><Text bold>{`  ${w.close}  `}</Text></Button>
+    </Box>
+  )
+  if (view === null) return <Box flexDirection="column">{closeButton}<Text dimColor>{w.unread}</Text></Box>
   const tabButton = (tab: OverviewTab, label: string) => (
     <Button key={`overview-tab-${tab}`} label={label} variant={state.tab === tab ? 'primary' : undefined} dimColor={state.tab !== tab} onPress={() => act.tab(tab)} />
   )
@@ -144,20 +164,35 @@ export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview
     section('queue', w.queue, view.queue),
     section('parked', w.parked, view.parked),
   ]
-  // The Log filters to the people chosen, several at once, as `u` does on the
-  // board; a day with nobody chosen in it drops out.
-  const names = [...new Set(view.history.flatMap(d => d.events.map(ev => ev.who)).filter(Boolean))].sort()
-  const chosen = (who: string) => state.people.length === 0 || state.people.includes(who)
-  const days = view.history.map(d => ({ ...d, events: d.events.filter(ev => chosen(ev.who)) })).filter(d => d.events.length > 0)
-  const log = [
-    <Box key="people" flexDirection="row" flexWrap="wrap" columnGap={2} marginTop={1}>
-      <Button key="overview-people-all" label={w.everybody} variant={state.people.length === 0 ? 'primary' : undefined} dimColor={state.people.length !== 0} onPress={act.everybody} />
-      {names.map(name => (
-        <Button key={`overview-person-${name}`} label={name} variant={state.people.includes(name) ? 'primary' : undefined} dimColor={!state.people.includes(name)} onPress={() => act.person(name)}>
-          <Text color={personColor(name)}>{name}</Text>
+  // The Log filters to the people chosen and to the lanes chosen — the lane a
+  // ticket stands in now — several of each at once, as `u` does on the board;
+  // both filters hold together, and a day left with nothing drops out.
+  const events = view.history.flatMap(d => d.events)
+  // A button for every value in today's events and for every value chosen: a
+  // chosen lane or person with no event left (the ticket moved on, the events
+  // aged out) keeps its button, so the filter it sets can still be undone.
+  const names = [...new Set([...events.map(ev => ev.who), ...state.people].filter(Boolean))].sort()
+  const present = new Set([...events.map(ev => ev.lane), ...state.lanes].filter(Boolean))
+  // Board order; a lane the board no longer names (or a view kept from before
+  // lanes were read) goes last, so no event is left without its button.
+  const order = view.lanes ?? []
+  const laneIds = [...order.filter(l => present.has(l)), ...[...present].filter(l => !order.includes(l)).sort()]
+  const chosen = (ev: Event) =>
+    (state.people.length === 0 || state.people.includes(ev.who)) && (state.lanes.length === 0 || state.lanes.includes(ev.lane))
+  const days = view.history.map(d => ({ ...d, events: d.events.filter(chosen) })).filter(d => d.events.length > 0)
+  const filterRow = (key: string, prefix: string, allKey: string, picked: string[], all: () => void, items: string[], pick: (id: string) => void, look: (id: string) => string | undefined) => (
+    <Box key={key} flexDirection="row" flexWrap="wrap" columnGap={2} marginTop={1}>
+      <Button key={allKey} label={w.everybody} variant={picked.length === 0 ? 'primary' : undefined} dimColor={picked.length !== 0} onPress={all} />
+      {items.map(id => (
+        <Button key={`${prefix}-${id}`} label={id} variant={picked.includes(id) ? 'primary' : undefined} dimColor={!picked.includes(id)} onPress={() => pick(id)}>
+          <Text color={look(id)}>{id}</Text>
         </Button>
       ))}
-    </Box>,
+    </Box>
+  )
+  const log = [
+    filterRow('people', 'overview-person', 'overview-people-all', state.people, act.everybody, names, act.person, personColor),
+    filterRow('lanes', 'overview-lane', 'overview-lanes-all', state.lanes, act.allLanes, laneIds, act.lane, () => undefined),
     <Box key="history" marginTop={1}><Text bold>{w.history(HISTORY_DAYS)}</Text></Box>,
     days.length === 0 ? <Text key="history-none" dimColor>{w.none}</Text> : null,
     ...days.map(d => (
@@ -165,7 +200,7 @@ export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview
         <Text dimColor>── {d.day} ──</Text>
         {d.events.map(ev => (
           <Text key={`${d.day}-${ev.kind}-${ev.id}`} wrap="wrap">
-            {clockOf(ev.at)}  <Text bold>{ev.id}</Text><Text dimColor>{SEP}{ev.lane}{SEP}</Text>{ev.title}<Text dimColor>{SEP}</Text>
+            {KIND_SIGN[ev.kind]} {clockOf(ev.at)}  <Text bold>{ev.id}</Text><Text dimColor>{SEP}{ev.lane}{SEP}</Text>{ev.title}<Text dimColor>{SEP}</Text>
             {ev.kind === 'created' ? w.created : <Text color={GROUP.parked}>{w.putBack}</Text>}
             {ev.who !== '' ? [w.by, person(ev.who)] : null}
           </Text>
@@ -195,13 +230,13 @@ export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview
   }
   return (
     <Box flexDirection="column">
-      <Box flexDirection="row" columnGap={2}>
+      <Box flexDirection="row" columnGap={2} alignItems="center">
         {tabButton('queue', w.tabQueue)}
         {tabButton('log', w.tabLog)}
         {tabButton('workers', w.tabWorkers)}
+        {closeButton}
       </Box>
       {state.tab === 'queue' ? queue : state.tab === 'log' ? log : workers()}
-      {closeButton}
     </Box>
   )
 }
