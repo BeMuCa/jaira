@@ -281,7 +281,8 @@ func TestPrePushScanReadsTheListAsWritten(t *testing.T) {
 
 // The caller's git config must not change what the scan reads: with
 // diff.relative set and the scan started in a subdirectory, git show would
-// leave out every file above it, and the mention would pass (AX8K02).
+// leave out every file above it, and the mention would pass; and a
+// denylist named relative to that subdirectory must still be found (AX8K02).
 func TestPrePushScanIgnoresDiffRelative(t *testing.T) {
 	bash, err := exec.LookPath("bash")
 	if err != nil {
@@ -300,7 +301,11 @@ func TestPrePushScanIgnoresDiffRelative(t *testing.T) {
 	r.commit("feat: x", map[string]string{"top.txt": "for acmecorp\n", "sub/keep.txt": "clean\n"})
 	cmd := exec.Command(bash, script, "main")
 	cmd.Dir = filepath.Join(r.dir, "sub")
-	cmd.Env = append(append([]string{}, r.env...), "JAIRA_MENTION_DENYLIST="+fixtureFile(t, "deny", "acmecorp\n"), "JAIRA_SCAN_HOSTNAME=")
+	// The list is named relative to where the scan starts, as a caller would.
+	if err := os.WriteFile(filepath.Join(r.dir, "sub", "deny.txt"), []byte("acmecorp\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cmd.Env = append(append([]string{}, r.env...), "JAIRA_MENTION_DENYLIST=deny.txt", "JAIRA_SCAN_HOSTNAME=")
 	b, err := cmd.CombinedOutput()
 	code := 0
 	if ee, ok := err.(*exec.ExitError); ok {

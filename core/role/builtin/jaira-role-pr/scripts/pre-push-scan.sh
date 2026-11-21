@@ -56,9 +56,6 @@ case "${1:-}" in -h|--help) usage; exit 0 ;; esac
 base=$1
 git rev-parse --verify --quiet "$base^{commit}" >/dev/null ||
   die "$base is not a commit in this repository — fetch it first" 2
-# From the top: with diff.relative set, git show run in a subdirectory would
-# leave out every file outside it.
-cd "$(git rev-parse --show-toplevel)"
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
@@ -150,7 +147,7 @@ scan() {
   local c=$1 short kind pat mode n
   short=$(git rev-parse --short "$c")
   git -c core.quotePath=false diff-tree --cc --root -r --name-only --no-commit-id "$c" >"$tmp/names"
-  git -c core.quotePath=false show --no-show-signature --format= --cc --unified=0 --no-renames \
+  git -c core.quotePath=false show --no-show-signature --no-relative --format= --cc --unified=0 --no-renames \
     --no-prefix --no-color --no-ext-diff --no-textconv --text "$c" >"$tmp/diff"
   # Both awks run on bytes: a file that is not UTF-8 is read without
   # 'Invalid multibyte data' on stderr, and paths and lines stay as git wrote them.
