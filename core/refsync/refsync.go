@@ -367,15 +367,11 @@ func (y *Syncer) readMilestoneRefs() (map[string]gitref.MilestoneRef, error) {
 	return refs, nil
 }
 
-// pendingMilestone reports whether a write of this milestone is queued, under
-// its ref key, its ID or its old name.
-func (y *Syncer) pendingMilestone(keys ...string) bool {
-	for _, k := range keys {
-		if _, ok := y.Box.PendingMilestone(k); ok {
-			return true
-		}
-	}
-	return false
+// pendingMilestone reports whether a write of the milestone with this ID is
+// queued.
+func (y *Syncer) pendingMilestone(id string) bool {
+	_, ok := y.Box.PendingMilestone(id)
+	return ok
 }
 
 // MilestonesFetched is what one fetch did to the milestones: which changed,

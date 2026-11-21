@@ -391,7 +391,11 @@ func (r *Repo) ReadMilestones(known map[string]MilestoneRef) (map[string]Milesto
 }
 
 // batch runs one cat-file --batch pass and returns each object's bytes in the
-// order asked, nil for one that is missing.
+// order asked, nil for one that is missing. Each answer is
+// "<sha> <type> <size>\n<size bytes>\n", or a line ending in "missing" for an
+// object that is not there. Parsing by the declared size rather than by
+// scanning for the next header is what makes a file containing the word
+// "blob" harmless.
 func (r *Repo) batch(in string, n int) ([][]byte, error) {
 	stdout, _, err := r.run(in, "cat-file", "--batch")
 	if err != nil {
@@ -695,36 +699,14 @@ func (r *Repo) ReadMany(ids []string) (map[string][]byte, error) {
 	for _, id := range ids {
 		fmt.Fprintf(&in, "%s:%s.md\n", RefName(id), id)
 	}
-	stdout, _, err := r.run(in.String(), "cat-file", "--batch")
+	blobs, err := r.batch(in.String(), len(ids))
 	if err != nil {
-		if errors.Is(err, ErrNoGit) {
-			return nil, err
-		}
-		return nil, fmt.Errorf("gitref: cat-file --batch: %w", err)
+		return nil, err
 	}
-	// Each answer is "<sha> blob <size>\n<size bytes>\n", or a line ending in
-	// "missing" for a ref that has gone. Parsing by the declared size rather
-	// than by scanning for the next header is what makes a ticket containing
-	// the word "blob" harmless.
-	rest := stdout
-	for _, id := range ids {
-		nl := strings.IndexByte(rest, '\n')
-		if nl < 0 {
-			break
+	for i, id := range ids {
+		if blobs[i] != nil { // missing, ambiguous: not an error, just nothing to show
+			out[id] = blobs[i]
 		}
-		header := rest[:nl]
-		rest = rest[nl+1:]
-		fields := strings.Fields(header)
-		if len(fields) < 3 {
-			continue // missing, ambiguous: not an error, just nothing to show
-		}
-		var size int
-		if _, err := fmt.Sscanf(fields[2], "%d", &size); err != nil || size > len(rest) {
-			break
-		}
-		out[id] = []byte(rest[:size])
-		rest = rest[size:]
-		rest = strings.TrimPrefix(rest, "\n")
 	}
 	return out, nil
 }

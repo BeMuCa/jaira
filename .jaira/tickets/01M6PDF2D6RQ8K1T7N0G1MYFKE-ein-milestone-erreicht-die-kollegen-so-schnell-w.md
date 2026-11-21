@@ -1,7 +1,7 @@
 ---
 id: 01M6PDF2D6RQ8K1T7N0G1MYFKE
 title: "Ein Milestone erreicht die Kollegen so schnell wie ein Ticket, ueber einen Ref"
-status: critique
+status: testing
 ready: true
 creator: BeMuCa
 goal: "Ein angelegter oder geaenderter Milestone liegt auf einem Ref wie Tickets und Epics und erscheint bei Kollegen mit dem naechsten Fetch, ohne Commit und Merge."
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:49Z
-updated-at: 2026-11-21T21:31:33Z
+updated-at: 2026-11-21T21:40:05Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-2695889"
@@ -27,15 +27,8 @@ claimed-at: 2026-11-21T20:57:50Z
 outcome-what: "Milestones live on refs/jaira/milestones/<ID> only. core/milestone reads and writes through a Refs interface (unsent outbox entry, else local ref, read in three git calls); no file is created or read under .jaira/milestones/. Files an older build left there are taken onto their ref once and deleted (milestone.Import): stale copies go without a write, unseen edits are merged, a file with no ref waits for a fetch that reached the remote. A board without a remote keeps milestones on local refs and queues them leased on no-ref, so a later remote receives them. jaira logbook <milestone> only marks the ref filed; jaira restore takes a milestone name/ID; the logbook listing names filed milestones. The adoption of 0.4.x writes to old name refs after migration and the local milestone-bases are gone."
 outcome-why: "Alex 21.11.: milestones were committed back and forth (12 files swept into master by a logbook commit) and a stale file overwrote the ref (KWQCYZ); with the file as a second truth neither can be prevented. The ref as the only copy removes both causes."
 outcome-resolves: "Round 2 give-back: milestone reads and writes only the ref, existing files migrated once and deleted, local ref without a remote, logbook = status filed only; review note 1 (fetch output says queued, not sent)."
-review-summary: |-
-  core/milestone/import.go:236 hadBefore takes an anonymous struct that repeats Import's local file type - name the type once (diskFile) and pass it
-  internal/cli/milestones.go: a milestone write on a board outside git surfaces refsync.ErrNoMilestoneRefs as a plain error (exit 1, message repeats itself); map it the way internal/cli/epics.go:65 maps epic.ErrNoRefs: fail(ExitValidation, "no_refs", ...) in editRefusal and create, and say exit 3 in docs/COMMANDS.md
-  internal/cli/milestones_test.go:458 comment still names IncomingMilestones writing files; say what the test now guards
-review-gaps: |-
-  note: wording - jaira fetch prints 'now sent to the remote' and the board 'sent to the remote' at the moment the write is only queued; the flush comes after (CLI: at command end, board: next tick). If that flush fails the line was wrong, though flushRefs warns. Fix: say 'queued for the remote' or print after the flush
-  note: a filed milestone (marked line, file still in .jaira/milestones) that never had a ref is published too; harmless - other clones skip a filed ref they do not have - but untested
-  note: a ref deleted on the remote by hand (git push origin :refs/jaira/milestones/<ID>) is recreated by the next fetch from any clone that still has the file; jaira itself never deletes a milestone ref, so only manual deletion hits this
-  note: pre-existing: Syncer.dirty is a plain bool written from the board's fetch goroutine and the command path (refsync.go:74); the new fetched flag is atomic, dirty is not
+review-summary: none
+review-gaps: "gitref.ReadMany now reads through the new gitref.batch instead of its own copy of the cat-file --batch parser (core/gitref/gitref.go); refsync.pendingMilestone took a variadic list every caller passed one key to - now one ID; earlier in this round store.LogbookMilestone and gitref.ListMilestones were removed (no callers left). Left: LoadAll is asked several times per milestone command (milestoneLabel, afterIDs, reportTwins), each one for-each-ref plus an outbox read - cheap and pre-existing in shape; ticket.Store.FiledMilestone/refuseIfFiled stay for logbook files of older builds without a ref."
 test-verdict: "pass: Runde 2 - go vet ./... + GOOS=windows vet gruen, go test ./... RC=0, -race core/refsync RC=0; DoD 1-4 im Baum geprueft; E2E: Milestone vor dem Remote -> erster fetch sendet ihn, Ref auf dem Remote; unerreichbarer Remote -> exit 1, nichts gesendet (Test TestAFailedFetchAfterAGoodOneSendsNothing, TestNothingIsSentWithoutAFetchThatReachedTheRemote); zwei fetch parallel -> genau einer sendet, je ein Commit pro Ref"
 hunt-verdict: "pass: Runde 2 bei 10e5c341c, 0 Befunde in 6 Modulen; die 2 Befunde aus Runde 1 behoben (bdf5a870d, 10e5c341c)"
 round: 6
@@ -110,3 +103,4 @@ mode: ""
 - **2026-11-21 21:24 · Alexander Sacharov** — Stand 01:30: alle Tests gruen (go test ./... exit 0). Doku (COMMANDS.md, AGENTS.md, core/role/jaira/SKILL.md, README, Agentenblock core/board/announce.go) und Release-Notiz neu. Entscheidung: jaira logbook (Liste) nennt abgelegte Milestones aus den Refs (milestones_filed), weil sie sonst nirgends mehr sichtbar sind. ticket.Store.LogbookMilestone und gitref.ListMilestones entfernt (keine Aufrufer). Die Repo-eigene CLAUDE.md wird nicht von Hand regeneriert - das macht jaira update.
 - **2026-11-21 21:29 · Alexander Sacharov** — critique (Runde 2, Pass 1): drei Befunde - (1) core/milestone/import.go hadBefore anonymer struct -> benannter Typ; (2) ErrNoMilestoneRefs in der CLI wie epics.go:65 auf exit 3 'no_refs' abbilden, Doku sagt exit 3; (3) veralteter Kommentar internal/cli/milestones_test.go:458. Design sonst bestaetigt: Refs-Interface folgt core/epic/epic.go:75; Cache in ReadMilestones gerechtfertigt durch den Refresh-Timer des Boards; refuseIfFiled/FiledMilestone bleibt fuer Logbook-Dateien alter Builds ohne Ref.
 - **2026-11-21 21:31 · Alexander Sacharov** — critique Pass 1 erledigt: diskFile benannt (core/milestone/import.go), ErrNoMilestoneRefs -> exit 3 no_refs (internal/cli/milestones.go refuseNoRefs, Test TestAMilestoneOutsideGitIsRefusedLikeAnEpic), Kommentar im Test korrigiert.
+- **2026-11-21 21:31 · Alexander Sacharov** — critique Pass 2: alle drei Befunde aus Pass 1 in 34c4a7e6d beantwortet; nichts Neues. -> optimize
