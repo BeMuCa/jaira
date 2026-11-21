@@ -1,6 +1,6 @@
 ---
 name: jaira-role-pr
-description: "Push finished ticket work to its branch, open the pull request when a person invoked this role, and answer review comments on it — never merge, never approve. Works on GitHub through `gh` and on GitLab through `glab`. Invoked as /jaira-role-pr <ticket-id>. Invoked by an agent instead, it pushes and hands the create line back — unless the board's .jaira/pr says agent: then it opens the pull request once every ticket on the branch is in done, asks for the board's reviewer and answers one round of comments. Use when a branch is ready to leave for review."
+description: "Push finished ticket work to its branch, open the pull request when a person invoked this role, and answer review comments on it — never merge, never approve. Works on GitHub through `gh` and on GitLab through `glab`. Invoked as /jaira-role-pr <ticket-id>. Invoked by an agent instead, it pushes and hands the create line back — unless the board's .jaira/pr says agent: then it opens the pull request once every ticket on the branch is in done, asks for the board's reviewer and answers one round of comments; where it says none, the project takes no pull requests and the branch lands on the default branch once every ticket on it is in done. Use when a branch is ready to leave for review."
 ---
 
 # Push it, open it, never accept it
@@ -41,13 +41,23 @@ else. Read it before anything else, off the board, never out of the line that
 started you:
 
 ```bash
-jaira roles list --json | jaira json get pr            # person or agent
+jaira roles list --json | jaira json get pr            # person, agent or none
 jaira roles list --json | jaira json get pr_reviewer   # copilot, a login, or empty
 jaira roles list --json | jaira json get pr_when       # done or signoff
 ```
 
+All three come from the base — origin's default branch — never from this
+checkout's files, which may be the branch's own word for itself;
+`pr_source` says where they came from and when the branch changes
+`.jaira/pr`. Once **Which repository it goes to** has named `<remote>/<branch>`
+— in a fork the parent's default branch, not origin's — read them again with
+`jaira roles list --json --base <remote>/<branch>`; that answer is the one you
+act on. Exit 3 `no_such_ref`: that ref is not here yet — `git fetch <remote>
+<branch>` and read again. The gates check it once more: `jaira roles pr-gate` refuses to open
+where the base says `none`, and `--land` refuses to land where it does not.
+
 - **`person`** — the default, and what a board without `.jaira/pr` says, or
-  one whose file says anything but exactly `agent`. Everything above holds as
+  one whose file says anything but exactly `agent` or `none`. Everything above holds as
   written: invoked by an agent, you push and hand the create line back.
 - **`agent`** — the project has given its agents the create command, on one
   condition: **every ticket the branch's commits name is in the board's
@@ -58,6 +68,16 @@ jaira roles list --json | jaira json get pr_when       # done or signoff
   this run: push, hand the line back, say which ticket holds it. The binary
   checks this, not you: `jaira roles pr-gate <remote>/<branch>` at **Open
   it**, after **File the finished tickets away** — exit 0 or no pull request.
+
+- **`none`** — the project takes no pull requests at all: work arrives on
+  the default branch directly. Nothing about the branch changes — it is
+  still its own, and every check below still holds — but nobody opens a
+  pull request for it, a person neither. Once every ticket the branch's
+  commits name is in done, **Land it** below replaces **Does it already
+  have one open**, **Write the description** and **Open it**. A ticket not
+  in done yet: push the branch, stop, and say which ticket holds it.
+  `pr_when` means nothing here: with no pull request there is no review on
+  one to wait for.
 
 `pr_when` moves that condition, for a project whose review happens on the
 pull request itself:
@@ -148,6 +168,13 @@ and on a bad day a different forge.
    Report that the forge is unsettled, hand the person that one line to run —
    it is rung 1 above, so once it is set the ladder answers on the first step —
    and say the role runs again from the top afterwards.
+
+   **Not where `pr` says `none`.** Landing needs git, not a forge, and without
+   one there is no fork to ask about: the repository it goes to is `origin`
+   itself, `<remote>` is `origin` and `<branch>` its default branch
+   (`git ls-remote --symref origin HEAD`). Skip **Which repository it goes
+   to** and go on. No `origin` at all: there is nothing to land on — say so
+   and stop.
 
 GitLab calls it a **merge request**. Read "pull request" below as "merge
 request" while you are on GitLab; the rule over it does not change with the
@@ -274,6 +301,38 @@ git push -u origin HEAD
 You push either way. Whether a pull request is then opened, or the create line
 goes back for a person to run, is settled at the create command below and
 nowhere else.
+
+## Land it — only where the board says `none`
+
+Every ticket on the branch is in done and filed away by the step above.
+`<remote>` and `<branch>` are the ones you counted the handles against:
+
+```bash
+jaira roles pr-gate --land <remote>/<branch>       # exit 0, or it does not land
+git fetch <remote> <branch>
+git merge --no-edit <remote>/<branch>              # bring the branch up to date
+jaira roles pr-gate --land <remote>/<branch>       # again: the merge moved the base
+git push <remote> HEAD:<branch>                    # a fast-forward of the default branch
+```
+
+The gate reads `.jaira/pr` as `<remote>/<branch>` holds it, like the `agent`
+gate does: a branch cannot switch its own board to `none` and land itself.
+`--land` is what makes that hold here: `pr` from `jaira roles list` is this
+checkout's word and may be the branch's own, so without `--land` a base
+saying `agent` would pass on the agent rules. Exit 3 `not_none`: the base
+takes pull requests — go back to **Does it already have one open**.
+Under `none` it also refuses a branch with a commit that names no ticket —
+a merge too, when it carries content of its own, such as a conflict resolution
+— because no pull request shows it to anyone first. Exit 3 names those commits; say
+so and stop, the branch stays pushed. A revert is a commit like any other and
+names its ticket the same way: write it as `fix(<ID>): revert <what>`, or run
+`git revert --edit` and give it that subject instead of git's own
+`Revert "..."`, which names no ticket and holds the gate.
+A merge that conflicts is not yours to settle alone: abort it, say which files,
+and stop. A push the remote refuses — somebody landed in between — is
+answered by fetching and merging again, never by `--force`, `--force-with-lease`
+or a push to any other ref. Report the commit the default branch now points
+at, in place of a pull request URL.
 
 ## Does it already have one open
 
@@ -493,6 +552,8 @@ removes its own copy when the same words of the same login stand above it.
   pr-gate` passed. Otherwise, invoked by an agent, writing that line
   out is the job and running it is the person's.
 - `.jaira/pr` never reaches merge or approve. No setting does.
+- `none` lands a branch with a fast-forward push to the default branch, after
+  the gate and only then. Never a force push to it, under any setting.
 - Never force-push a branch someone has already reviewed. If history must
   change, say so and ask first.
 - Never close a pull request that a person opened.
