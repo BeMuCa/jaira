@@ -233,7 +233,11 @@ not merge one, and does not approve one. Opening it is the maintainer's call,
 given as an instruction — so the person who wrote the change is never the person
 who decides it arrives. This is the same rule the board already applies to lanes
 — a review agent cannot certify its own work — said once more where it also has
-to hold.
+to hold. This repository's board has no `.jaira/pr`; a board
+that commits one saying `agent` lets jaira-role-pr open the pull request once
+`jaira roles pr-gate` finds every ticket on the branch in done, or in signoff
+where `.jaira/pr-when` says so — merging and approving stay the maintainer's
+there too.
 <!-- jaira:end -->
 
 ## Client-facing changes go in core/release/notes/
