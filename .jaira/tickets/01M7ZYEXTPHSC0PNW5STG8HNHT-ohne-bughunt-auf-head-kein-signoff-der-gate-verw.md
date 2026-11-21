@@ -1,7 +1,7 @@
 ---
 id: 01M7ZYEXTPHSC0PNW5STG8HNHT
 title: "Ohne Bughunt auf HEAD kein signoff: der Gate verweigert den Schritt, wenn bughunt.state fail ist"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -20,13 +20,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-21T20:58:41Z
-updated-at: 2026-11-21T21:06:21Z
+updated-at: 2026-11-21T21:08:02Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2700790
 claimed-at: 2026-11-21T20:59:16Z
 outcome-what: "jaira move into signoff refuses a ticket that changed code and whose newest bug hunt does not cover HEAD (needs_bughunt), or whose hunted files are uncommitted (hunt_uncommitted), on boards whose testing lane owes hunt-verdict"
 outcome-why: 1MYFKE reached signoff on 21.11. with a commit after its last hunt and bughunt.state fail; only the teamlead checked that by hand
 outcome-resolves: "G8HNHT: the gate reads bughunt.state; ok, skipped and tickets without code changes pass; --force overrides"
+review-summary: none
+review-gaps: "folded TouchesCode (one caller) into gitrepo.HuntCheck; no existing helper lists a commit set's files (Diff/Stat render text) so the git show stays; left gitrepo.HuntReport beside gate.HuntReport (import cycle, see note); proofs re-checked, none pointed at TouchesCode"
 ---
 
 # Ohne Bughunt auf HEAD kein signoff: der Gate verweigert den Schritt, wenn bughunt.state fail ist
@@ -59,3 +61,4 @@ outcome-resolves: "G8HNHT: the gate reads bughunt.state; ok, skipped and tickets
 - **2026-11-21 21:00 · Alexander Sacharov** — question (open, for the person): A fresh 'jaira init' board has signoff but no testing lane and no bughunt. Should the gate apply there too? 1) Only on boards with a lane that produces hunt-verdict (Recommended) — boards without hunts unchanged, no surprise for users who never run bughunt. 2) On every board — every code ticket needs a /jaira-role-bughunt note before signoff, or --force.
 - **2026-11-21 21:00 · Alexander Sacharov** — decision: Variante 1 (Teamlead 21.11.): der Gate gilt nur auf Boards, deren Lanes hunt-verdict produzieren; Boards ohne Bughunt ändern sich nicht. Gate nur vor Lanes mit requires-human-exit (signoff), nicht vor human.
 - **2026-11-21 21:06 · Alexander Sacharov** — in-progress: hunt state logic moved from internal/cli/tickets.go to core/gitrepo/hunt.go (LastHunt, TouchesCode, HuntCheck) so CLI and TUI share it; gitrepo cannot import gate (core/board tests import gitrepo → import cycle), so gitrepo.HuntReport mirrors gate.HuntReport and callers convert. A TUI move (Interactive) is not refused, like the verdict rail: a person in the board decides. 'unknown' also covers git failing to answer; the message says so.
+- **2026-11-21 21:06 · Alexander Sacharov** — critique (pass 1, read the diff): let stand — (a) gitrepo.HuntReport mirroring gate.HuntReport: forced by the import cycle (in-progress note), a struct conversion keeps the callers one line each; (b) state strings as literals in gate: gate stays git-free by design, like DeriveCommits; (c) blocked→signoff re-checks the hunt: the ticket returns to a person's lane, the check belongs there too. No finding.

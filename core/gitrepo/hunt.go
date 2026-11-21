@@ -78,20 +78,6 @@ func (r *Repo) newestHunt(t *ticket.Ticket) *Hunt {
 	return nil
 }
 
-// TouchesCode reports whether any of these commits changed a path that is
-// not board data (isBoardData): a ticket whose commits carry only its own
-// file, tags or milestones changed no code, and has nothing to hunt.
-func (r *Repo) TouchesCode(shas []string) (bool, error) {
-	if len(shas) == 0 {
-		return false, nil
-	}
-	out, err := r.run(append([]string{"-c", "core.quotePath=false", "show", "--no-renames", "--format=", "--name-only", "-z"}, shas...)...)
-	if err != nil {
-		return false, err
-	}
-	return anyCode(out), nil
-}
-
 // HuntReport has the fields of gate.HuntReport, so a caller converts one to
 // the other. gitrepo cannot import gate: core/board's tests import gitrepo,
 // and gate reaches core/board through lane.
@@ -103,15 +89,18 @@ type HuntReport struct {
 }
 
 // HuntCheck is what the gate asks before a ticket reaches the lane a person
-// releases (gate.Env.Hunt): whether its commits changed code, its newest
-// hunt and HEAD. Git failing to list the commits reads as no code changed —
-// the gate refuses on what git shows, never on what it could not read.
+// releases (gate.Env.Hunt): whether its commits changed a path that is not
+// board data (isBoardData) — a ticket whose commits carry only its own file,
+// tags or milestones has nothing to hunt — its newest hunt and HEAD. Git
+// failing to list the commits reads as no code changed: the gate refuses on
+// what git shows, never on what it could not read.
 func (r *Repo) HuntCheck(t *ticket.Ticket) HuntReport {
 	shas, err := r.CommitsForTicket(t.Path, t.ID)
-	if err != nil {
+	if err != nil || len(shas) == 0 { // git show without a commit shows HEAD
 		return HuntReport{}
 	}
-	if code, err := r.TouchesCode(shas); err != nil || !code {
+	files, err := r.run(append([]string{"-c", "core.quotePath=false", "show", "--no-renames", "--format=", "--name-only", "-z"}, shas...)...)
+	if err != nil || !anyCode(files) {
 		return HuntReport{}
 	}
 	rep := HuntReport{CodeChanged: true}
