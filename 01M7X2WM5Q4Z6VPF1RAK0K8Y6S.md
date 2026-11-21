@@ -19,14 +19,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:15:16Z
+updated-at: 2026-11-21T08:15:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
 outcome-what: "Manifest neu erzeugt (8 Tag-Versionen fehlten, u.a. cockpit board.ts v0.5.2/0.5.3); scripts/shipped-history.sh --check haelt es gegen jeden v*-Tag und laeuft in ci.yaml (Job shipped-manifest) und im release-notes-Workflow; .gitattributes merge=union fuer das Manifest; LC_ALL=C im Skript"
 outcome-why: Hand-gemergte Manifest-Konflikte verloren Zeilen; jaira update --roles hielt dann eine unberuehrte Installation fuer handgeaendert und uebersprang sie still
 outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, wenn eine fehlt, und Manifest-Merges konfliktieren nicht mehr"
-review-summary: "scripts/shipped-history.sh got two modes. --check lists every installed-file version in every v* tag (git ls-tree per tag, raw blob bytes hashed, lanes/ and .claude/skills/jaira mapped to today's embed path) and fails with the lines to append when the committed manifest lacks one; it fails on a clone without tags, on an unreadable tag and on an unreadable blob instead of passing. --write builds the manifest into a temp file beside it and renames it only on success. CI got a shipped-manifest job (fetch-depth 0) and the release-notes workflow runs --check before it opens the release PR. .gitattributes merges the manifest with merge=union. The manifest was regenerated: 75 lines added (including the v0.5.2 cockpit board.ts that a hand merge had lost), none removed. A new table test installs the real v0.5.2 board.ts (fixture pinned to the tag's hash) and expects Updated, not Skipped. Test messages now name --write instead of '> manifest'; TestEveryManifestPathExists uses strings.Cut instead of l[66:]."
+review-summary: "Runde 3 nach signoff: keine Funde. 53926c5f folgt der Form des Blob-Falls (sum=$(...) || exit 1, printf mit ${sum%% *}) statt einer neuen; Test im Muster von TestUnreadableBlobStopsTheScript."
 round: 8
 review-gaps: |-
   note: unclear whether GitHub's own PR merge honours merge=union when it checks for conflicts; a local git merge does (proven by TestManifestMergesWithoutConflict and by commit 29ee4690, where the union left duplicates that the test caught)
