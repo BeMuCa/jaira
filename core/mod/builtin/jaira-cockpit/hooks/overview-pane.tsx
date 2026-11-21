@@ -177,19 +177,19 @@ export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview
   const chosen = (ev: Event) =>
     (state.people.length === 0 || state.people.includes(ev.who)) && (state.lanes.length === 0 || state.lanes.includes(ev.lane))
   const days = view.history.map(d => ({ ...d, events: d.events.filter(chosen) })).filter(d => d.events.length > 0)
-  const filterRow = (key: string, allKey: string, picked: string[], all: () => void, items: string[], pick: (id: string) => void, look: (id: string) => string | undefined) => (
+  const filterRow = (key: string, prefix: string, allKey: string, picked: string[], all: () => void, items: string[], pick: (id: string) => void, look: (id: string) => string | undefined) => (
     <Box key={key} flexDirection="row" flexWrap="wrap" columnGap={2} marginTop={1}>
       <Button key={allKey} label={w.everybody} variant={picked.length === 0 ? 'primary' : undefined} dimColor={picked.length !== 0} onPress={all} />
       {items.map(id => (
-        <Button key={`${key === 'people' ? 'overview-person' : 'overview-lane'}-${id}`} label={id} variant={picked.includes(id) ? 'primary' : undefined} dimColor={!picked.includes(id)} onPress={() => pick(id)}>
+        <Button key={`${prefix}-${id}`} label={id} variant={picked.includes(id) ? 'primary' : undefined} dimColor={!picked.includes(id)} onPress={() => pick(id)}>
           <Text color={look(id)}>{id}</Text>
         </Button>
       ))}
     </Box>
   )
   const log = [
-    filterRow('people', 'overview-people-all', state.people, act.everybody, names, act.person, personColor),
-    filterRow('lanes', 'overview-lanes-all', state.lanes, act.allLanes, laneIds, act.lane, () => undefined),
+    filterRow('people', 'overview-person', 'overview-people-all', state.people, act.everybody, names, act.person, personColor),
+    filterRow('lanes', 'overview-lane', 'overview-lanes-all', state.lanes, act.allLanes, laneIds, act.lane, () => undefined),
     <Box key="history" marginTop={1}><Text bold>{w.history(HISTORY_DAYS)}</Text></Box>,
     days.length === 0 ? <Text key="history-none" dimColor>{w.none}</Text> : null,
     ...days.map(d => (
