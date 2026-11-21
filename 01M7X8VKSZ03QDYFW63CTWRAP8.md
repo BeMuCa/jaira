@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:39:15Z
+updated-at: 2026-11-21T08:39:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1876460
 claimed-at: 2026-11-21T08:39:00Z
@@ -43,7 +43,7 @@ hunt-verdict: "clean: diff hunt at 10348a71 (HEAD), 0 findings"
 question: ""
 review-verdict: "Diff erfuellt alle vier DoD-Punkte; geprueft: jaira show --json hat handle/dod_items[].done/review.verdict, jaira list --lane/--board, jaira create --follows/--assignee, glab ci list --sha existieren, der Cockpit schreibt 'Given back from signoff:'; go test ./core/role ./core/shipped gruen; alle 14 Commits nennen TWRAP8. Keine Blocker, drei Notes."
 review-round: 12
-review-check: "1. cd /home/alex/projects/.worktrees/jaira-twrap8  2. go test ./core/role/... ./core/shipped/...  -> beide ok  3. go build -o /tmp/jaira-tw ./cmd/jaira && /tmp/jaira-tw roles install --dry-run 2>&1 | grep signoff  -> jaira-role-signoff steht in der Liste (sonst: ls core/role/builtin/jaira-role-signoff/SKILL.md)  4. in einer Claude-Session in diesem Repo: /jaira-role-signoff TWRAP8  -> eine Statuszeile mit Haken/Kreuz/?, eine Tabelle mit roten/gelben/weissen/blauen Marken, eine fette Empfehlung und zwei fertige Zeilen (jaira move ... --to done --force / jaira note ... && jaira move ... --to in-progress)  5. pruefen, dass die Session dabei nichts am Ticket geaendert hat: git status zeigt keine neue Aenderung an der Ticketdatei"
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-twrap8  2. go test ./core/role/... ./core/shipped/...  -> beide ok  3. go build -o /tmp/jaira-tw ./cmd/jaira && /tmp/jaira-tw roles list | grep signoff  -> eine Zeile jaira-role-signoff mit Beschreibung  4. in einer Claude-Session in diesem Repo: /jaira-role-signoff TWRAP8  -> eine Statuszeile mit Haken/Kreuz/?, eine Tabelle mit roten/gelben/weissen/blauen Marken, eine fette Empfehlung und zwei fertige Zeilen (jaira move ... --to done --force / jaira note ... && jaira move ... --to in-progress)  5. danach git status: die Ticketdatei hat sich durch die Session nicht veraendert"
 ---
 
 # Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis
