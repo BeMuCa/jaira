@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:41:33Z
+updated-at: 2026-11-21T08:41:37Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -174,3 +174,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-21 08:35 · Alexander Sacharov** — question (3. Ruecklauf aus testing in diesem Lauf, an Teamlead jaira-31): Runde 11 fand (1) Revert verliert nach 'git rebase' die sha-Verbindung zum Zweig-Commit -> Tor zu, obwohl die Gate-Meldung selbst zu rebase raet; (2) sha256-Repos: Muster nimmt nur 40 hex. Ursache: jede Runde findet eine tiefere Kante derselben Revert-Regel (Runde 10 Basis-Revert, Runde 11 Rebase/sha256) - die Regel waechst, nicht der DoD. Optionen: 1) (Recommended) eine Runde noch: Revert zaehlt als Ticket-Commit, wenn der zurueckgenommene Commit KEIN Vorfahre der Basis ist (unbekannte sha nach rebase/gc kann nicht auf der Basis liegen), Muster 40|64 hex; danach Diff-Hunt, und ein weiterer Fund an der Revert-Regel geht als known limit an Alex statt in Runde 12. 2) Revert-Lesung ganz zurueck: Gate liest nur type(ID):, jaira-role-pr sagt, den Revert-Betreff als fix(<ID>): revert ... zu schreiben (Alex' Alternative aus der Rueckgabe) - kleiner, keine Kanten mehr. 3) Ticket so in signoff, beide Funde als known limit (Tor faellt sicher zu).
 - **2026-11-21 08:35 · Alexander Sacharov** — Teamlead 21.11. 09:40: 2 (revert reading dropped, rule in jaira-role-pr; my own give-back had asked for it in the gate)
 - **2026-11-21 08:41 · Alexander Sacharov** — in-progress (Runde 10): Revert-Lesung entfernt (gitrepo subjectScope, reap.sh landed_head, cockpit board.ts zurueck auf den Stand von 2bf13dd8). Gate-Meldung fuer unbenannte Commits nennt jetzt die Form 'type(<ID>): ... - a revert too, as fix(<ID>): revert <what> (git rebase -i, reword)'; jaira-role-pr 'Land it' sagt: Revert als fix(<ID>): revert <what> schreiben oder git revert --edit. Tests: TestPRGateOnANoneBoardRefusesGitsRevertSubject (nackter Revert abgelehnt mit Form-Hinweis, umbenannt passiert), gitrepo-Tests fuer UnnamedCommits/isPlainMerge bleiben. Damit entfallen die Funde aus Runde 10 (Basis-Revert) und 11 (rebase, sha256) mit der Regel.
+- **2026-11-21 08:41 · Alexander Sacharov** — critique (Runde 13): kleinste Form - eine Regel (Betreff nennt das Ticket), eine Meldung, die sagt wie. Nichts zu sagen.
