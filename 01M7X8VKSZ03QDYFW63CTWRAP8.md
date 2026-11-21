@@ -1,7 +1,7 @@
 ---
 id: 01M7X8VKSZ03QDYFW63CTWRAP8
 title: "Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,13 +25,13 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:51:42Z
+updated-at: 2026-11-21T08:51:46Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1876460
 claimed-at: 2026-11-21T08:39:00Z
-outcome-what: "an empty branch head leaves only the head-bound checks unknown"
-outcome-why: "fresh review 21.11. round 2: the text made DoD and review ? too"
-outcome-resolves: "DoD, blocker, review and returns stay readable when the head is unknown"
+outcome-what: "signoff: a ❌ on the status line gives back before any table rule, ? is named in the reason; hunt sha compared as a prefix of the full head in signoff and teamlead"
+outcome-why: "fresh review 21.11. blocker: a red CI run or a missing hunt could still end in a bold accept; short shas differ in length between clones"
+outcome-resolves: "the recommendation can no longer contradict its own status line, and the hunt check holds in any clone"
 review-summary: "Ships a new read-only role /jaira-role-signoff (core/role/builtin/jaira-role-signoff/SKILL.md): per signoff ticket it reads jaira show --json fresh, finds the ticket's branch by its handle and takes as head the copy every local/remote copy is an ancestor of, prints one status line (DoD, CI run of exactly that head, bughunt note naming the head, blockers, review verdict, noted returns), a table sorting every open note into blocker/small edge/known limit/not this ticket, and one bold recommendation driven by five return rules, with accept/give-back lines and a follow-up create line after two returns. The teamlead's 'Report to the human' now re-reads lanes and open PRs before listing what waits, and uses that shape for signoff/human tickets, deferring the rules to the role; its hunt check no longer assumes feat/<id>. Worker, dispatcher and jaira-role-pr get a 'run the project's CI gates locally before every push' rule. README, docs/how-to-work-with-jaira.html, role_test.go wantRoles, shipped.sha256 and core/release/notes/TWRAP8.md follow."
 round: 14
 review-gaps: |-
