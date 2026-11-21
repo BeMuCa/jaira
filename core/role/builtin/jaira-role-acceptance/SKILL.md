@@ -160,7 +160,9 @@ This is the part that saves the person's time. Do it with care.
 `person` lists the ticket's **open** definition-of-done items that start with
 `seen by a person:`, as `{"n": <.dod_items[].n>, "text": ...}` — not the
 ticked or superseded ones (`.state` `todo` or `doing` only). `[]` when there
-are none; the key itself is required, and `build.py` refuses data without it.
+are none; always write it, even empty. A ticket without the key (a set built
+before it existed) reads as none — when you extend such a set, fill it in for
+every old ticket. An item of any other shape is refused by `build.py`.
 `next_lane` is the ticket's `next_lane` from `jaira show --json`;
 `return_lane` is the lane where this board does the work (the lane before the
 review loop, `in-progress` on the default board) — read it off `jaira lanes`,
@@ -271,8 +273,9 @@ $(jaira roles list --json | jaira json get python) <this skill's folder>/build.p
 
 Publish report.html as its own artifact (no capabilities, `icon` `report`)
 and give the person its link; keep `report.md` beside data.json. Per block it
-lists accepted, not accepted and open tickets, and for every failed step what
-was expected, what was seen and what you decided. Each read-back writes a new
+lists accepted, not accepted and open tickets, the open `seen by a person:`
+items, and for every failed step what was expected, what was seen and what
+you decided. Each read-back writes a new
 record; an older one stays as it was.
 
 Reply: accepted n, back n (ids), new bugs n (ids), open n, questions, and the
