@@ -61,6 +61,12 @@ gone by now: $4 is another ticket's worktree where spawn.sh ran in one, and $1
 moved after a 'git worktree move'. Use absolute paths inside the teardown, or
 cd into $1 where it is there; never rely on $4.
 
+A worker's tab that close-tab.sh parked in a person's lane — its record says
+parked= — is handed back to close-tab.sh --reap first, whatever the forge
+says: it closes once the ticket is done or filed away, or the park is older
+than JAIRA_CACHE_WINDOW seconds (default 3600), and its lines
+('closing <ticket> <tab>', 'kept <ticket>: ...') are printed as they come.
+
 Output: one line per thing done — 'closed <ticket>/<lane> <pane>', 'tore down
 <worktree>', 'removed <worktree>', 'deleted branch <branch>' — or 'waiting
 <ticket>: <reason>' and 'kept <ticket>: <reason>'; with --dry-run the first
@@ -69,7 +75,7 @@ kept: keeping is the answer, not a failure.
 
 Environment: HERDR_BIN_PATH, HERDR_PANE_ID (this pane is never closed),
 JAIRA_BRANCH_PREFIX (default feat), JAIRA_TEARDOWN_TIMEOUT (seconds, default
-300).
+300), JAIRA_CACHE_WINDOW (seconds a parked tab stays, default 3600).
 USAGE
 }
 
@@ -125,6 +131,23 @@ fi
 # A herdr that does not answer cannot tell a closed tab from an open one; read
 # as closed, it would cost the worktree and the record of a tab still open.
 herdr_up=""; "$herdr" tab list >/dev/null 2>&1 && herdr_up=1
+
+# A worker's tab parked in a person's lane (close-tab.sh wrote parked= into
+# its record) stays while its prompt cache is warm, so a give-back reaches it.
+# close-tab.sh --reap holds the rule when it closes: once the ticket is done or
+# filed away, or the park is older than the cache window. Asked before any
+# forge: a parked tab is closed whether or not a pull request exists.
+if [ -n "$herdr_up" ]; then
+  for f in "$panes"/*; do
+    [ -f "$f" ] && grep -q '^parked=' "$f" || continue
+    pane="$(sed -n 's/^pane=//p' "$f" | head -1)"
+    [ "$pane" != "${HERDR_PANE_ID:-${HC_TERMINAL_ID:-}}" ] || continue
+    w="$(sed -n 's/^worktree=//p' "$f" | head -1)"
+    [ -d "$w" ] || w="$root"
+    "$here/close-tab.sh" ${dry:+--dry-run} --reap --pane "$pane" \
+      "$(sed -n 's/^ticket=//p' "$f" | head -1)" "$w" || true
+  done
+fi
 # Physical paths throughout: on macOS the temp directory is a symlink, and git
 # reports the resolved path where cd keeps the one it was given.
 # Seconds a .jaira/worktree-teardown may run before it counts as failed.

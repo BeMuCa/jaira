@@ -1,6 +1,7 @@
 package role
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -41,42 +42,189 @@ func newCloseTabRig(t *testing.T) (*reapRig, string) {
 	return r, "uds:" + sock
 }
 
-// A worker whose ticket waits for a person — in signoff, in human with the
-// question gone, or done — closes its own tab once its report went to the
-// parent. Board files under .jaira/ are no reason to stay.
-func TestCloseTabClosesAWorkerWhoseTicketIsWithAPerson(t *testing.T) {
+// A worker whose ticket is done closes its own tab once its report went to
+// the parent. Board files under .jaira/ are no reason to stay.
+func TestCloseTabClosesAWorkerWhoseTicketIsDone(t *testing.T) {
 	t.Parallel()
-	for _, lane := range []string{"signoff", "human", "done"} {
+	r, parent := newCloseTabRig(t)
+	r.write(t, r.shown, `{"status":"done","question":""}`)
+	// Ticket files are named after their German titles: git quotes a
+	// non-ASCII path unless told not to, and the filter missed it.
+	ticket := filepath.Join(r.wt, ".jaira", "tickets", "x-größe.md")
+	r.write(t, ticket, "in review\n")
+	r.git(t, r.wt, "add", ".jaira/tickets")
+	r.git(t, r.wt, "commit", "-q", "-m", "ticket")
+	r.write(t, ticket, "moved\n")
+	r.write(t, filepath.Join(r.wt, ".jaira", "tickets", "x.md"), "moved\n")
+	if out := r.closeTab(t, "p1", "--dry-run", "--parent", parent, "ab12cd"); !strings.Contains(out, "would close AB12CD tp1") {
+		t.Fatalf("--dry-run: %q", out)
+	}
+	if r.closedTabs() != "" {
+		t.Fatalf("--dry-run closed %q", r.closedTabs())
+	}
+	out := r.closeTab(t, "p1", "--parent", parent, "AB12CD")
+	if !strings.Contains(out, "closing AB12CD tp1") {
+		t.Fatalf("output %q", out)
+	}
+	r.waitClosed(t, "tp1")
+}
+
+// waitClosed waits for the detached close, which runs after the script has
+// returned.
+func (r *reapRig) waitClosed(t *testing.T, want string) {
+	t.Helper()
+	for i := 0; i < 50 && r.closedTabs() != want; i++ {
+		time.Sleep(100 * time.Millisecond)
+	}
+	if got := r.closedTabs(); got != want {
+		t.Errorf("closed %q, want %q", got, want)
+	}
+}
+
+// The worker's own record, as spawn.sh wrote it for pane p1.
+func (r *reapRig) workerRecord(t *testing.T) string {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join(r.repo, ".git", "jaira", "panes", "p1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(b)
+}
+
+// A worker whose ticket waits for a person in a lane it can come back from —
+// signoff, or human with the question gone — keeps its tab while its prompt
+// cache is warm, so a give-back reaches it: it parks the tab in its record
+// and closes nothing. --dry-run parks nothing.
+func TestCloseTabParksAWorkerWhoseTicketIsWithAPerson(t *testing.T) {
+	t.Parallel()
+	for _, lane := range []string{"signoff", "human"} {
 		t.Run(lane, func(t *testing.T) {
 			t.Parallel()
 			r, parent := newCloseTabRig(t)
 			r.write(t, r.shown, `{"status":"`+lane+`","question":""}`)
-			// Ticket files are named after their German titles: git quotes a
-			// non-ASCII path unless told not to, and the filter missed it.
-			ticket := filepath.Join(r.wt, ".jaira", "tickets", "x-größe.md")
-			r.write(t, ticket, "in review\n")
-			r.git(t, r.wt, "add", ".jaira/tickets")
-			r.git(t, r.wt, "commit", "-q", "-m", "ticket")
-			r.write(t, ticket, "moved\n")
-			r.write(t, filepath.Join(r.wt, ".jaira", "tickets", "x.md"), "moved\n")
-			if out := r.closeTab(t, "p1", "--dry-run", "--parent", parent, "ab12cd"); !strings.Contains(out, "would close AB12CD tp1") {
+			if out := r.closeTab(t, "p1", "--dry-run", "--parent", parent, "AB12CD"); !strings.Contains(out, "kept AB12CD: cache warm until ") {
 				t.Fatalf("--dry-run: %q", out)
 			}
-			if r.closedTabs() != "" {
-				t.Fatalf("--dry-run closed %q", r.closedTabs())
+			if rec := r.workerRecord(t); strings.Contains(rec, "parked=") {
+				t.Fatalf("--dry-run parked: %q", rec)
 			}
+			before := time.Now().Unix()
 			out := r.closeTab(t, "p1", "--parent", parent, "AB12CD")
-			if !strings.Contains(out, "closing AB12CD tp1") {
+			if !strings.HasPrefix(out, "kept AB12CD: cache warm until ") || !strings.Contains(out, "reap.sh closes it after") {
 				t.Fatalf("output %q", out)
 			}
-			// The close runs detached, after the script has returned.
-			for i := 0; i < 50 && r.closedTabs() == ""; i++ {
-				time.Sleep(100 * time.Millisecond)
+			rec := r.workerRecord(t)
+			if !strings.HasPrefix(rec, "pane=p1\nticket=AB12CD\nlane=worker\nworktree="+r.wt+"\nparked=") {
+				t.Fatalf("record %q", rec)
 			}
-			if got := r.closedTabs(); got != "tp1" {
-				t.Errorf("closed %q, want tp1", got)
+			// Parked twice - given back, carried again, finished again - is one
+			// line with the newer time, never two.
+			r.closeTab(t, "p1", "--parent", parent, "AB12CD")
+			if n := strings.Count(r.workerRecord(t), "parked="); n != 1 {
+				t.Errorf("%d parked= lines: %q", n, r.workerRecord(t))
+			}
+			var at int64
+			if _, err := fmt.Sscanf(r.workerRecord(t)[strings.Index(r.workerRecord(t), "parked=")+7:], "%d", &at); err != nil || at < before {
+				t.Errorf("parked=%d, want a time from %d on (%v)", at, before, err)
+			}
+			time.Sleep(200 * time.Millisecond)
+			if got := r.closedTabs(); got != "" {
+				t.Errorf("closed %q", got)
 			}
 		})
+	}
+}
+
+// reap.sh hands every parked tab back to close-tab.sh --reap, which closes it
+// once the cache window is over, the ticket is done or filed away - and only
+// then, whatever the forge says. A closed or vanished tab is unparked, so the
+// next round leaves it alone.
+func TestReapClosesAParkedTabOnceItsCacheIsCold(t *testing.T) {
+	t.Parallel()
+	for name, c := range map[string]struct {
+		setup  func(t *testing.T, r *reapRig)
+		closes bool
+		says   string
+	}{
+		"cache warm": {func(t *testing.T, r *reapRig) {}, false, "kept AB12CD: cache warm for 60 more min"},
+		"window over": {func(t *testing.T, r *reapRig) {
+			r.env = append(r.env, "JAIRA_CACHE_WINDOW=0")
+		}, true, "closing AB12CD tp1"},
+		"ticket done": {func(t *testing.T, r *reapRig) {
+			r.write(t, r.shown, `{"status":"done","question":""}`)
+		}, true, "closing AB12CD tp1"},
+		"ticket filed away": {func(t *testing.T, r *reapRig) {
+			if err := os.Remove(r.shown); err != nil {
+				t.Fatal(err)
+			}
+		}, true, "closing AB12CD tp1"},
+		"given back to the same worker": {func(t *testing.T, r *reapRig) {
+			r.write(t, r.shown, `{"status":"in-progress","question":""}`)
+			r.env = append(r.env, "JAIRA_CACHE_WINDOW=0")
+		}, false, "kept AB12CD: the ticket is in in-progress, not with a person"},
+		"agent working": {func(t *testing.T, r *reapRig) {
+			r.write(t, filepath.Join(r.labels, "p1.status"), "working\n")
+			r.env = append(r.env, "JAIRA_CACHE_WINDOW=0")
+		}, false, "kept AB12CD: its agent is working"},
+		"open question": {func(t *testing.T, r *reapRig) {
+			r.write(t, r.shown, `{"status":"human","question":"which one?"}`)
+			r.env = append(r.env, "JAIRA_CACHE_WINDOW=0")
+		}, false, "kept AB12CD: the ticket has an open question"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			r, parent := newCloseTabRig(t)
+			r.write(t, r.shown, `{"status":"signoff","question":""}`)
+			r.closeTab(t, "p1", "--parent", parent, "AB12CD")
+			c.setup(t, r)
+			if out := r.run(t, r.repo, "reap.sh", "--dry-run"); c.closes && !strings.Contains(out, "would close AB12CD tp1") {
+				t.Errorf("--dry-run: %q", out)
+			}
+			if !strings.Contains(r.workerRecord(t), "parked=") {
+				t.Fatalf("--dry-run unparked: %q", r.workerRecord(t))
+			}
+			out := r.run(t, r.repo, "reap.sh")
+			if !strings.Contains(out, c.says) {
+				t.Fatalf("output %q, want %q", out, c.says)
+			}
+			if !c.closes {
+				time.Sleep(200 * time.Millisecond)
+				if got := r.closedTabs(); got != "" {
+					t.Errorf("closed %q", got)
+				}
+				if !strings.Contains(r.workerRecord(t), "parked=") {
+					t.Errorf("unparked a tab it kept: %q", r.workerRecord(t))
+				}
+				return
+			}
+			r.waitClosed(t, "tp1")
+			// The record stays for the merged-ticket reap, which removes the
+			// worktree; only its parked= line goes.
+			if rec := r.workerRecord(t); strings.Contains(rec, "parked=") {
+				t.Errorf("record still parked after the close: %q", rec)
+			}
+			if out := r.run(t, r.repo, "reap.sh"); strings.Contains(out, "AB12CD tp1") {
+				t.Errorf("second round asked about the closed tab again: %q", out)
+			}
+		})
+	}
+}
+
+// A parked tab the person closed by hand is unparked on the next round.
+func TestReapUnparksATabThatIsGone(t *testing.T) {
+	t.Parallel()
+	r, parent := newCloseTabRig(t)
+	r.write(t, r.shown, `{"status":"signoff","question":""}`)
+	r.closeTab(t, "p1", "--parent", parent, "AB12CD")
+	r.write(t, filepath.Join(r.labels, "p1"), "\n")
+	if out := r.run(t, r.repo, "reap.sh"); !strings.Contains(out, "spawn.sh did not open it") {
+		t.Fatalf("output %q", out)
+	}
+	if rec := r.workerRecord(t); strings.Contains(rec, "parked=") {
+		t.Errorf("still parked: %q", rec)
+	}
+	if got := r.closedTabs(); got != "" {
+		t.Errorf("closed %q", got)
 	}
 }
 
