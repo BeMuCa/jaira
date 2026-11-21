@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:57:28Z
+updated-at: 2026-11-21T08:57:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2485785
 claimed-at: 2026-11-21T08:57:23Z
@@ -34,7 +34,10 @@ outcome-why: "fresh review 21.11. blocker: a red CI run or a missing hunt could 
 outcome-resolves: "the recommendation can no longer contradict its own status line, and the hunt check holds in any clone"
 review-summary: "Ships no code, only role texts. (1) New built-in role jaira-role-signoff (core/role/builtin/jaira-role-signoff/SKILL.md): read-only; per ticket in signoff it prints one status line (DoD x/y, CI of the branch head commit, bughunt note naming that head, blockers, review verdict, counted 'Given back from signoff:' notes), a table that marks every open note red/yellow/white/blue, one bold recommendation following return rules 0-5 (a red check always gives back; after two noted returns yellow edges go into a ready 'jaira create --follows' line instead of a third round), and the accept/give-back lines for the person to paste. It finds the branch head by the handle as a name segment across local and remote copies, choosing the copy all others are ancestors of, and reports ? when none leads. (2) jaira-teamlead: re-read lanes and open PRs before any list of open decisions, show it only when changed, report signoff/human tickets in the role's shape; bughunt check now compares the note sha as a prefix of the full head sha of the handle branch instead of feat/<id> short form. (3) jaira-worker, jaira-dispatcher and jaira-role-pr: run the project's own CI gates locally before every push, read off the repo (workflows, task runner), red gate = no push. (4) README + docs/how-to-work-with-jaira.html role tables, wantRoles in role_test.go, release note TWRAP8.md, shipped.sha256 regenerated."
 round: 14
-review-gaps: "optimize 21.11. round 6: nothing to remove."
+review-gaps: |-
+  note: core/role/builtin/jaira-role-signoff/SKILL.md:99-101 - the continuation lines of the "bug hunt on HEAD" bullet lost their two-space indent; renders as a lazy continuation, cosmetic only
+  note: the role lists signoff tickets on other boards with --lane signoff; a board whose person lane has another name is silently skipped (wording assumption, no wrong result on this repo)
+  note: worktree has an untracked .jaira/milestones/ (abnahme-2026-11, hackathon-vorbereitung) that belongs to no ticket here - keep it out of this ticket's commits
 test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at a3af8998; DoD 1-4 verified in the tree; return rule 0 puts a status-line ❌ ahead of the table, sha prefix compare in both roles. Roles write nothing - no concurrent-writer case."
 hunt-verdict: "clean: diff hunt at a3af8998 (HEAD), 0 findings"
 question: ""
