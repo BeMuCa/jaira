@@ -151,7 +151,8 @@ if roles="$( (cd "$root" && jaira roles list --json) 2>"$prerr")"; then
   prmode="$(jaira json get pr --default person <<<"$roles" 2>/dev/null)" \
     || prwhy="'jaira json get pr' cannot read what 'jaira roles list --json' printed — an older jaira? run 'jaira self upgrade'"
 else
-  prwhy="'jaira roles list' failed: $(grep -v 'older version' "$prerr" | tail -1)"
+  prwhy="'jaira roles list' failed: $( (grep -v 'older version' "$prerr" || true) | tail -1)"
+  [ "${prwhy%: }" != "$prwhy" ] && prwhy="${prwhy}no message (exit status only)"
 fi
 rm -f "$prerr"
 

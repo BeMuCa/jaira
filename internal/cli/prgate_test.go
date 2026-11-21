@@ -437,23 +437,60 @@ func TestPRGateOnANoneBoardRefusesCommitsNoTicketOwns(t *testing.T) {
 	}
 }
 
-// Under none a revert of a ticket's commit, with the subject git writes for
-// it (Revert "type(ID): ..."), is that ticket's commit: it passes when the
-// ticket is in done and holds the gate like any of its commits when it is
-// not — never as an unnamed commit nobody can land.
+// Under none a revert with the subject git writes for it (Revert "type(ID):
+// ...") is a commit of ID only where it takes back a commit of the branch
+// itself: then the two cancel out and the ticket's state decides. A revert of
+// work the base already has is new work nobody accepted, even when the
+// reverted commit's ticket is long in done: it holds the gate as unnamed.
 func TestPRGateOnANoneBoardReadsARevertAsItsTicketsCommit(t *testing.T) {
 	dir, ticketIn, commit := prGateFixture(t)
 	setPR(t, dir, "none")
+	git := func(args ...string) {
+		t.Helper()
+		if out, err := exec.Command("git", append([]string{"-C", dir}, args...)...).CombinedOutput(); err != nil {
+			t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, out)
+		}
+	}
+	write := func(name, content string) {
+		t.Helper()
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		git("add", name)
+	}
 	done := ticketIn("done")
+	write("w.txt", "work\n")
 	commit("feat(" + done + "): accepted")
-	commit(`Revert "feat(` + done + `): accepted"`)
+	git("revert", "--no-edit", "HEAD")
 	if out, err := runCLI(t, dir, "roles", "pr-gate", "master"); err != nil {
-		t.Fatalf("none, a revert of a done ticket's commit: %v\n%s", err, out)
+		t.Fatalf("none, a revert of the branch's own commit of a done ticket: %v\n%s", err, out)
 	}
 	open := ticketIn("in-progress")
-	commit(`Revert "fix(` + open + `): not accepted"`)
+	write("o.txt", "open\n")
+	commit("fix(" + open + "): not accepted")
+	git("revert", "--no-edit", "HEAD")
 	_, err := runCLI(t, dir, "roles", "pr-gate", "master")
 	if exitCode(err) != ExitValidation || strings.Contains(err.Error(), "name no ticket") || !strings.Contains(err.Error(), open) {
 		t.Fatalf("none, a revert naming a ticket not in done: exit %d, %v", exitCode(err), err)
+	}
+	git("reset", "-q", "--hard", "HEAD~2")
+
+	// The base's work, reverted on the branch: nobody accepted taking it back.
+	git("checkout", "-q", "master")
+	write("b.txt", "landed\n")
+	commit("feat(" + done + "): landed long ago")
+	git("checkout", "-q", "feat/x")
+	git("merge", "-q", "--no-edit", "master")
+	git("revert", "--no-edit", "master")
+	_, err = runCLI(t, dir, "roles", "pr-gate", "master")
+	if exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "name no ticket") || !strings.Contains(err.Error(), `Revert "feat(`+done+`): landed long ago"`) {
+		t.Fatalf("none, a revert of the base's work: exit %d, %v", exitCode(err), err)
+	}
+	// A subject that only looks like git's, with no line saying what it
+	// reverts, is the same: fails closed.
+	git("reset", "-q", "--hard", "HEAD~1")
+	commit(`Revert "feat(` + done + `): accepted"`)
+	if _, err = runCLI(t, dir, "roles", "pr-gate", "master"); exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "name no ticket") {
+		t.Fatalf("none, a revert subject with no reverted commit: exit %d, %v", exitCode(err), err)
 	}
 }

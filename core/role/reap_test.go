@@ -95,6 +95,10 @@ esac
 if [ "$1" = json ] && [ -e "` + r.shown + `.json-fails" ]; then
   exit 7
 fi
+if [ "$1" = roles ] && [ -e "` + r.shown + `.roles-silent" ]; then
+  echo "jaira: this board was set up by an older version of jaira" >&2
+  exit 4
+fi
 if [ "$1" = roles ] && [ -e "` + r.shown + `.roles-fails" ]; then
   echo "jaira: this board was set up by an older version of jaira" >&2
   echo "jaira: roles list: cannot read .jaira/lanes" >&2
@@ -603,5 +607,11 @@ func TestReapNamesAFailingRolesListAsTheCause(t *testing.T) {
 	}
 	if _, err := os.Stat(r.wt); err != nil {
 		t.Fatalf("worktree removed although how work arrives is unknown: %v", err)
+	}
+	// A failure with nothing on stderr but the older-version notice: still
+	// named, and the run goes on to the end under pipefail (bughunt round 10).
+	r.write(t, r.shown+".roles-silent", "")
+	if out := r.run(t, r.repo, "reap.sh"); !strings.Contains(out, "'jaira roles list' failed: no message (exit status only)") {
+		t.Fatalf("roles list failed silently, want it named:\n%s", out)
 	}
 }

@@ -69,6 +69,20 @@ func TestUnnamedCommitsCountsOnlyWhatNoTicketOwns(t *testing.T) {
 	if named, _ := repo.TicketsNamed("main"); !reflect.DeepEqual(named, []string{"A3K9QP"}) {
 		t.Errorf("TicketsNamed = %v, want [A3K9QP]", named)
 	}
+	// A revert of the base's own work takes back what nobody on this branch
+	// did: it names no ticket of the branch, whatever its subject says.
+	git("checkout", "-q", "main")
+	fixtureCommit(t, dir, map[string]string{"c": "1\n"}, "chore(BASE01): c", at())
+	git("checkout", "-q", "feat")
+	git("merge", "-q", "--no-edit", "main")
+	git("revert", "--no-edit", "main") // Revert "chore(BASE01): c"
+	got, err = repo.UnnamedCommits("main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 2 || !strings.Contains(got[0], `Revert "chore(BASE01): c"`) {
+		t.Errorf("UnnamedCommits = %q, want the revert of the base and 'tidy up'", got)
+	}
 	for _, base := range []string{"", "-p"} {
 		if _, err := repo.UnnamedCommits(base); err != ErrNoSuchRef {
 			t.Errorf("UnnamedCommits(%q) err = %v, want ErrNoSuchRef", base, err)
