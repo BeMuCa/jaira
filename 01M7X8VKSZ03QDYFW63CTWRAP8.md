@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:39:30Z
+updated-at: 2026-11-21T08:39:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1876460
 claimed-at: 2026-11-21T08:39:00Z
@@ -121,3 +121,4 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-twrap8  2. go test ./c
 - **2026-11-21 08:31 · Alexander Sacharov** — review (fresh, at 558c8205): no blocker, 3 notes (✅/❌ wording vs ?, hard-coded done lane, pre-existing return-count floor). Head lookup on this repo -> 558c8205 = HEAD, last hunt names it; all prescribed commands/flags/JSON keys verified; go test ./core/role ./core/shipped green.
 - **2026-11-21 08:35 · Alexander Sacharov** — worker: review 21.11. Rand 1 geschlossen (Statuszeile ✅, ❌ oder ? - in signoff und teamlead). Rand 2 (done-Lane fest im accept-Befehl) = note: known limit: signoff->done ist die ausgelieferte Lane-Folge, ein Board mit anders benanntem Endlane passt die Zeile an; eine Erkennung kostet mehr als sie spart. Rand 3 = note: pre-existing (Rueckgabezaehler, Ursache im Binary).
 - **2026-11-21 08:37 · Alexander Sacharov** — bughunt: done at 10348a71 - 0 findings in 3 files read as diff since 558c8205, follow-up hunt, no new files; the status-line wording now allows ? in both roles and matches the stale-result rule (signoff SKILL.md:84-99, teamlead SKILL.md:258-262); new shipped.sha256 lines equal sha256 of the current files; concurrency, error paths, input, permissions checked; go test ./core/role ./core/shipped -count=1 green; files: .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md README.md core/release/notes/TWRAP8.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-role-signoff/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/role/role_test.go core/shipped/shipped.sha256 docs/how-to-work-with-jaira.html
+- **2026-11-21 08:39 · Alexander Sacharov** — review (frischer Kontext, Runde 12): keine Blocker; drei Notes in review-gaps (Zwischen-Hashes in shipped.sha256, Wortlaut ? bei leerem head, kein Test fuer die Lookup-Schleife).
