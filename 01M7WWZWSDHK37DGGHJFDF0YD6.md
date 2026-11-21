@@ -23,10 +23,10 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:51:56Z
+updated-at: 2026-11-21T08:56:28Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-26190
-claimed-at: 2026-11-21T08:01:01Z
+claimed-by: DESKTOP-RFTCH11-2455354
+claimed-at: 2026-11-21T08:56:28Z
 outcome-what: "Round 7: on_head also turns false for an untracked file inside the hunted paths written after the hunt finished."
 outcome-why: "The round-7 hunter showed git diff HEAD never lists untracked files, so an edited new file left on_head true."
 outcome-resolves: "bughunt change at 7d73a41d (core/gitrepo/git.go:353); TestChangedSince 16 cases; go test core/gitrepo internal/cli RC=0. Checked: error paths (stat failure -> changed), input (-z, --full-name, spaces), concurrency/permissions unchanged (read-only)."
