@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:59:24Z
+updated-at: 2026-11-21T09:59:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3647270
 claimed-at: 2026-11-21T09:36:24Z
@@ -214,3 +214,4 @@ back-count: 1
 - **2026-11-21 09:53 · Alexander Sacharov** — critique/optimize round 16: none. testing round 16: bughunt running over the diff since e1363ba1 at 9b94f206. testing has sent back twice in a row since the teamlead's final give-back - a third return goes to the teamlead as a question, not into round 17.
 - **2026-11-21 09:55 · Alexander Sacharov** — testing round 16 passed (hunt 9b94f206 clean); pushed 9b94f206. Moved to review, a fresh agent runs it via run-lane.sh; per the teamlead whatever it finds goes to signoff as a known limit.
 - **2026-11-21 09:59 · Alexander Sacharov** — review round 16 (fresh, 9b94f206): no blocker; 4 notes (ambiguous short hunt sha reads fail, Explain format line still ok|fail, documented squash/conversational limit, untracked .jaira/milestones not this ticket). go test ./... ok, plugin test 220 pass; brief probed: clean -> ok, uncommitted edit to a hunted file -> unknown.
+- **2026-11-21 09:59 · Alexander Sacharov** — worker stopped: ticket in signoff after the fresh review of round 16 without a blocker; feat/df0yd6 pushed at 9b94f206; ticket file carries the review fields uncommitted. Review notes 1-4 stay known limits per the teamlead's final-round ruling (09:37). Report sent to the parent session.
