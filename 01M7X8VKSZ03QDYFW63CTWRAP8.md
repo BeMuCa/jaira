@@ -1,7 +1,7 @@
 ---
 id: 01M7X8VKSZ03QDYFW63CTWRAP8
 title: "Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis"
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T09:23:23Z
+updated-at: 2026-11-21T09:23:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2485785
 claimed-at: 2026-11-21T08:57:23Z
@@ -33,7 +33,7 @@ outcome-what: "signoff decides the .jaira-only hunt exemption first, without a h
 outcome-why: "bughunt 09:14: the exemption and the empty-head ? had no stated precedence, and such tickets usually have no branch"
 outcome-resolves: "a bookkeeping-only ticket reads – on the hunt check whether or not a branch exists"
 review-summary: "critique 21.11. round 9: precedence now explicit in both places (empty-head paragraph points to the exemption; the exemption says 'before the head'); --branches --remotes is required, --all would count the ticket refs. Nothing to change."
-round: 17
+round: 18
 review-gaps: "optimize 21.11. round 9: nothing to remove."
 test-verdict: "fail: gates green at 033e06a7; bughunt 09:22 change: exemption scan case-sensitive and vacuously true when no commit is found"
 hunt-verdict: "change: 1 finding at 033e06a7 (vacuous – exemption)"
