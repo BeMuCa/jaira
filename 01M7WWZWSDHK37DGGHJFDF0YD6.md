@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZWSDHK37DGGHJFDF0YD6
 title: "Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,13 +23,13 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:03:57Z
+updated-at: 2026-11-21T09:04:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
-outcome-what: "Round 7: on_head also turns false for an untracked file inside the hunted paths written after the hunt finished."
-outcome-why: "The round-7 hunter showed git diff HEAD never lists untracked files, so an edited new file left on_head true."
-outcome-resolves: "bughunt change at 7d73a41d (core/gitrepo/git.go:353); TestChangedSince 16 cases; go test core/gitrepo internal/cli RC=0. Checked: error paths (stat failure -> changed), input (-z, --full-name, spaces), concurrency/permissions unchanged (read-only)."
+outcome-what: "Round 9: bughunt on HEAD is red only on a real change since the hunt: uncommitted files count by their time, .jaira/ untracked never, stop-after-fix reads 'skipped'; Explain no longer reads a blocker out of a later lane's review-gaps."
+outcome-why: "Teamlead for Alex 21.11.: on_head must not be red on a clean ticket - Alex reads red as a catastrophe; the round-8 review listed five ways it was."
+outcome-resolves: "review round 8 notes 1-5. Checked: concurrency (read-only), error paths (stat failure/deleted -> changed, unknown commit -> fail), input (-z paths, spaces, .jaira prefix), permissions (none new). go test ./... RC=0, claude plugin test 218 pass."
 review-summary: "Ticket traegt jetzt blocker-rule (Default: falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke) und stop-after-fix (true/false, set verweigert anderes mit Exit 2, Lesen case-insensitiv); show --json und --for-lane geben blocker_rule, stop_after_fix, back und round aus, testing/review/bughunt/pre-process-Prompts lesen sie. jaira move schreibt bei jedem Rueckweg back-from/back-by/back-count (person bei Personen-Lane, TUI-Move oder CLI-Move am Terminal; Zaehler nur fuer dieselbe Schleifen-Lane in Folge), in-progress stoppt bei count>=3 statt Notes zu zaehlen. jaira set kopiert review-gaps nach review-verdict-gaps in der Runde des Verdikts. show --brief traegt bughunt {at,on_head}: on_head = Hunt-Commit ist Vorfahr von HEAD, kein Nicht-Merge-Commit mit der Ticket-ID seither und keine uncommittete/untracked-nach-Hunt-Aenderung an den gejagten Dateien. Cockpit: Explain nur bei blocker:-Zeile oder Vorbehalt, note:-Zeilen als Liste ohne Knopf, 'review of round N, changed since' fuer ein altes Verdikt; Explain-Vorlage (texts.ts + spawn.sh) schreibt Statuszeile, [Klasse] je Note und eine Empfehlung ohne feste give-back-Reihenfolge; die Explain-Ansicht faerbt Haken/Kreuze, Marken und Empfehlung mit Theme-Farben, alte Notes bleiben Text. Nebenbei: CRLF in jaira set wird zu LF statt den Schreibvorgang zu brechen."
 review-gaps: |-
   note: bughunt.on_head ist in conversational mode immer false: der Hunt liest uncommittete, getrackte Aenderungen, und ChangedSince (core/gitrepo/git.go, git diff --name-only HEAD) zaehlt jede uncommittete Aenderung an einer gejagten Datei, auch eine von vor dem Hunt - die Statuszeile zeigt dann ein rotes Kreuz auf einem sauberen Ticket; Fix der Klasse: fuer getrackte Aenderungen dieselbe mtime-gegen-Hunt-Zeit-Regel wie untrackedSince sie fuer untracked Dateien schon hat.
