@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:49:26Z
+updated-at: 2026-11-21T09:49:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3647270
 claimed-at: 2026-11-21T09:36:24Z
@@ -32,7 +32,7 @@ outcome-why: "The round-14 hunter found it read unknown (dim ?) while the releas
 outcome-resolves: "bughunt change at 4ddb51bc; go test ./... RC=0."
 review-summary: "none"
 review-gaps: none - one early return changed
-test-verdict: "pass: go test -count=1 ./... RC=0 at 4ddb51bc, claude plugin test 220 pass; TestHuntCoverage 22 cases, TestUnreadableStopAfterFixIsReported; scratch board end to end: clean -> ok, uncommitted hunted file -> unknown, ticket commit -> fail, hand-written 'stop-after-fix: yes' -> jaira validate warning bad_stop_after_fix; read-only git"
+test-verdict: "pass: go test -count=1 ./... RC=0 at e1363ba1; a hunt at a missing commit reads fail (gitrepo and CLI tests)"
 hunt-verdict: "fail: 1 change finding at 4ddb51bc - a hunt commit this repository does not have read unknown, the docs promise fail"
 round: 15
 review-verdict: "The diff meets all 11 definition-of-done items; go test ./... and the cockpit's 219 tests pass, and the branch binary shows blocker_rule, stop_after_fix, back and bughunt on this ticket. I found no blocker; the notes are edges of the bughunt-on-HEAD heuristic and the loop count, all erring towards a red mark or documented. Unsure only about the atATerminal rule: an agent harness with a TTY counts as a person, which the in-progress prompt states but nothing enforces."
