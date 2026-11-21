@@ -1,7 +1,7 @@
 ---
 id: 01M7X2WM5Q4Z6VPF1RAK0K8Y6S
 title: "shipped.sha256 kennt jede Version, die in einem Release-Tag ausgeliefert wurde, und CI haelt das fest"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:14:06Z
+updated-at: 2026-11-21T08:14:38Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
@@ -27,7 +27,7 @@ outcome-what: "Manifest neu erzeugt (8 Tag-Versionen fehlten, u.a. cockpit board
 outcome-why: Hand-gemergte Manifest-Konflikte verloren Zeilen; jaira update --roles hielt dann eine unberuehrte Installation fuer handgeaendert und uebersprang sie still
 outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, wenn eine fehlt, und Manifest-Merges konfliktieren nicht mehr"
 review-summary: "scripts/shipped-history.sh got two modes. --check lists every installed-file version in every v* tag (git ls-tree per tag, raw blob bytes hashed, lanes/ and .claude/skills/jaira mapped to today's embed path) and fails with the lines to append when the committed manifest lacks one; it fails on a clone without tags, on an unreadable tag and on an unreadable blob instead of passing. --write builds the manifest into a temp file beside it and renames it only on success. CI got a shipped-manifest job (fetch-depth 0) and the release-notes workflow runs --check before it opens the release PR. .gitattributes merges the manifest with merge=union. The manifest was regenerated: 75 lines added (including the v0.5.2 cockpit board.ts that a hand merge had lost), none removed. A new table test installs the real v0.5.2 board.ts (fixture pinned to the tag's hash) and expects Updated, not Skipped. Test messages now name --write instead of '> manifest'; TestEveryManifestPathExists uses strings.Cut instead of l[66:]."
-round: 7
+round: 8
 review-gaps: |-
   note: unclear whether GitHub's own PR merge honours merge=union when it checks for conflicts; a local git merge does (proven by TestManifestMergesWithoutConflict and by commit 29ee4690, where the union left duplicates that the test caught)
   note: pre-existing: the working-tree loop in generate() (sha256sum <"$f" inside $(...)) prints a line with an empty hash when a file is in the index but gone from disk; it does not stop the script, unlike the blob path this ticket fixed. TestManifestLinesAreWellFormed catches that line, so nothing ships silently
