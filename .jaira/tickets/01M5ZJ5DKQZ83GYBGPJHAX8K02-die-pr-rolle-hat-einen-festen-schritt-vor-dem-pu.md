@@ -20,36 +20,40 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-10-27T20:52:23Z
-updated-at: 2026-11-21T19:59:24Z
+updated-at: 2026-11-21T20:05:20Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75677
 claimed-at: 2026-11-21T19:41:03Z
-outcome-what: "The exit-3 advice names renaming the branch, and a failing git symbolic-ref stops the scan instead of skipping the branch name"
-outcome-why: "Bughunt at 2e0d6366: a branch-name hit was told to rewrite commits; '|| true' hid a git error as a detached HEAD"
-outcome-resolves: "Every place a push publishes is scanned, branch name included, the advice fits the hit, and the one encoding limit is stated"
-review-summary: "none"
-review-gaps: "none: 2e0d6366 adds one loop over the branch name in the existing deny/host shape, one usage paragraph and two subtests; nothing orphaned"
-round: 7
-back-from: testing
-back-by: lane
+outcome-what: "pre-push-scan reads from the repository's top level and without signature lines, whatever the caller's git config"
+outcome-why: "Review at 0037622a: diff.relative=true in a subdirectory let a mention in a top-level file pass; log.showSignature put key UIDs into the scanned text"
+outcome-resolves: "Every place a push publishes is scanned, independent of the caller's directory and git config; advice fits the hit; the encoding limit is stated"
+review-summary: "Adds core/role/builtin/jaira-role-pr/scripts/pre-push-scan.sh and rewrites 'Push the branch' in the PR role's SKILL.md as seven fixed steps: scan, merge the default branch, full suite + CI gates, tick the suite DoD items with --proof, logbook + chore commit per done ticket, scan again, push. The script walks every commit of <base>..HEAD and checks its own added lines (for a merge only lines new against every parent, via --cc), changed file names, message, author/committer name and email, plus HEAD's branch name, against an ERE denylist read from outside the repo (UTF-8/BOM/UTF-16 read as written; NUL, other encodings or an invalid pattern exit 2) and against this machine's short name. A denylist hit exits 3 and prints only commit, file and line (a file whose own name matches is named by its index); a hostname hit is a warning. Case folding of non-ASCII picks a UTF-8 locale regardless of the caller's. Covered by TestPrePushScan (20 cases) and TestPrePushScanReadsTheListAsWritten; script registered in role_test.go and shipped.sha256; release note core/release/notes/AX8K02.md."
+review-gaps: |-
+  note: fail-open under git config diff.relative=true when the script runs from a subdirectory - git show (porcelain) then drops files outside the cwd, so a mention in a top-level file passes with exit 0 (reproduced in a scratch repo); fix: cd "$(git rev-parse --show-toplevel)" at the start or pass --no-relative to git show
+  note: with log.showSignature=true, git show/git log -1 print gpg verification lines into the scanned diff and message, so the signer's key UID can raise a false denylist stop (fails closed, not open); fix: add --no-show-signature to both calls
+  note: a very short machine name (e.g. 'pc') matches as a substring of many lines and floods the report with warnings; harmless (warnings only) but could be matched as a word (-w) instead
+  note: shipped.sha256 gains the hashes of 9 intermediate script versions and 2 SKILL.md versions that never shipped in a release; harmless noise from scripts/shipped-history.sh --write
+round: 8
+back-from: signoff
+back-by: person
 back-count: 1
-hunt-verdict: "pass: bughunt done at 2e0d6366f, 1 change (not a blocker: exit-3 advice said only 'rewrite the commits' for a branch-name hit), fixed in this round with the unverified symbolic-ref error path; 0 pre-existing"
-test-verdict: "pass: round after the review edges, diff since 974ea8622: go test -race ./core/role ./core/shipped RC=0, go vet RC=0, shipped-history --check RC=0; 'branch name' subtest exits 3 and fails on 974ea862; detached HEAD on a scratch repo exits 0 with no branch line; Latin-1 subtest exits 0 as the usage now says; release note still one line per change (3 lines); proofs refreshed to :217 and 20 subtests"
-review-verdict: "Diff erfuellt alle 8 DoD-Punkte; der Review-Blocker der letzten Runde (Merge-Spalten bei --cc) ist an der Ursache behoben und getestet. Skript ganz gelesen entlang Nebenlaeufigkeit (eigenes mktemp-Verzeichnis, keine geteilten Zustaende), Fehlerpfaden (grep exit 2 und git-Fehler enden nie als 'kein Treffer', kein grep -q in Pipes unter pipefail), ungewoehnlicher Eingabe und Grenzen (Report gibt nie Muster oder Treffertext aus). Zwei kleine Raender als note, beide ausserhalb der DoD-Klassen. go test ./core/role -race und ./core/shipped gruen bei 974ea862. Kein Blocker."
-review-round: 5
+hunt-verdict: "pass: bughunt done at 0037622a2, 0 change, 0 pre-existing (follow-up hunt of the diff since 2e0d6366f)"
+test-verdict: "pass: diff since 2e0d6366f: go test -race ./core/role ./core/shipped RC=0, go vet RC=0, shipped-history --check RC=0; 'branch name' subtest now also asserts 'rename the branch'; detached HEAD on a scratch repo exits 0"
+review-verdict: "All eight DoD items are met by the diff; the scan does what it claims on the cases I tried (evil merge adding a new file, tab in a file name, merge-only lines). No blocker. One fail-open edge exists only under a non-default git config (diff.relative=true + subdirectory cwd) - a one-line fix worth doing before merge, but it does not break a DoD item under default config."
+review-round: 7
 review-verdict-gaps: |-
-  note: Dateiinhalt in anderer Kodierung als die Liste wird nicht erkannt - Klasse: Inhalt nicht-UTF-8; Beispiel: Commit fuegt Latin-1 'M\xfcller' hinzu, Liste 'müller' (UTF-8) -> exit 0 (nachgestellt im Scratch-Repo). ASCII-Erwaehnungen trifft der Scan auch in UTF-16-Dateien (NUL-Strip). Fix: in der Usage sagen, dass nicht-ASCII-Muster nur UTF-8-Inhalt treffen, oder den Hinweis im Report ausgeben.
-  note: der Branch-Name, den Schritt 7 (git push -u origin HEAD) veroeffentlicht, wird nicht gescannt - Beispiel: Branch feat/acme mit 'acme' in der Liste -> exit 0 (nachgestellt). Fix: git symbolic-ref --short HEAD als weiteres Feld durch lines() schicken. Bei jaira-erzeugten Branches (feat/<id>) praktisch ohne Risiko.
+  note: fail-open under git config diff.relative=true when the script runs from a subdirectory - git show (porcelain) then drops files outside the cwd, so a mention in a top-level file passes with exit 0 (reproduced in a scratch repo); fix: cd "$(git rev-parse --show-toplevel)" at the start or pass --no-relative to git show
+  note: with log.showSignature=true, git show/git log -1 print gpg verification lines into the scanned diff and message, so the signer's key UID can raise a false denylist stop (fails closed, not open); fix: add --no-show-signature to both calls
+  note: a very short machine name (e.g. 'pc') matches as a substring of many lines and floods the report with warnings; harmless (warnings only) but could be matched as a word (-w) instead
+  note: shipped.sha256 gains the hashes of 9 intermediate script versions and 2 SKILL.md versions that never shipped in a release; harmless noise from scripts/shipped-history.sh --write
 review-check: |-
-  1. cd core && go test ./role -run PrePush -count=1 -v  -> TestPrePushScan (19 Faelle) und TestPrePushScanReadsTheListAsWritten: alle PASS
-  2. In einem leeren Ordner: git init -b main && git commit --allow-empty -m init && git checkout -b feat/x
-  3. echo "for AcmeCorp" > a.txt && git add a.txt && git commit -m add
-  4. echo acmecorp > /tmp/list
-  5. JAIRA_MENTION_DENYLIST=/tmp/list bash <worktree>/core/role/builtin/jaira-role-pr/scripts/pre-push-scan.sh main ; echo $?
-  6. Erwartet: Zeile '<hash> a.txt:1: matches the denylist', nirgends das Wort AcmeCorp, am Ende 3
-  7. Liste loeschen (rm /tmp/list), Schritt 5 wiederholen: 'not found at ... not checked', exit 0
-  8. core/role/builtin/jaira-role-pr/SKILL.md, Abschnitt 'Push the branch': 7 nummerierte Schritte, jeder mit Befehl und 'Stops on:'
+  1. cd /home/alex/projects/.worktrees/jaira-ax8k02/core && go test ./role -run 'TestPrePushScan' -count=1 -v  -> 2 tests and their subtests PASS
+  2. printf 'zorgcorp\n' > /tmp/deny
+  3. in any scratch repo with a branch: echo zorgcorp > x && git add x && git commit -m t
+  4. JAIRA_MENTION_DENYLIST=/tmp/deny bash /home/alex/projects/.worktrees/jaira-ax8k02/core/role/builtin/jaira-role-pr/scripts/pre-push-scan.sh <the base branch>  -> prints '<sha> x:1: matches the denylist', never the word zorgcorp, exit code 3 (echo $?)
+  5. rm /tmp/deny and run step 4 again -> 'not found ... its strings were not checked', exit 0
+  6. open core/role/builtin/jaira-role-pr/SKILL.md, section 'Push the branch: the same seven steps every time' -> seven numbered steps, each with a 'Stops on:' line
 ---
 
 # Die PR-Rolle hat einen festen Schritt vor dem Push: Scan, master, Suite, DoD, Logbook
@@ -130,3 +134,5 @@ review-check: |-
 - **2026-11-21 19:58 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-pr/scripts/pre-push-scan.sh:237 - class: the closing stop line names commits as the only thing to fix, but a hit can now come from the branch name alone (lines 227-232), which no commit rewrite clears; example: branch feat/AcmeCorp-x with clean commits and denylist 'acmecorp' prints 'branch name: matches the denylist' and then '1 denylist hit(s) — do not push; rewrite the commits named above' (exit 3) - the fix is renaming the branch; not a blocker (the push still stops, exit code right); ran: scratch repo with that branch and denylist, rc=3
 - **2026-11-21 19:58 · Alexander Sacharov** — bughunt: done at 2e0d6366f - 1 finding (1 change, not a blocker) in 4 changed modules, follow-up hunt of the diff since 974ea8622 (pre-push-scan.sh branch-name check and usage text, pre_push_scan_test.go two new cases, shipped.sha256 new hash, release note line); SKILL.md and role_test.go unchanged; concurrency, error paths, input, permissions checked; ran: go test ./core/role -run PrePush, go test ./core/shipped, scratch repo with a denylisted branch name (exit 3, case-insensitive) and a detached HEAD (exit 0, the push of a detached HEAD by 'git push -u origin HEAD' fails anyway); files: core/role/builtin/jaira-role-pr/scripts/pre-push-scan.sh core/role/builtin/jaira-role-pr/SKILL.md core/role/pre_push_scan_test.go core/role/role_test.go core/release/notes/AX8K02.md core/shipped/shipped.sha256
 - **2026-11-21 19:59 · Alexander Sacharov** — testing → in-progress by the worker, not for a blocker: the hunt's one change finding (exit-3 line advised rewriting commits for a branch-name hit) is a one-line text fix, closed in-round per interim rule 5. Same pass: symbolic-ref's '|| true' hid a real git error as 'no branch'; now exit 1 (detached) is the only one let through, any other dies with git's code.
+- **2026-11-21 20:00 · Alexander Sacharov** — bughunt: done at 0037622a2 - 0 findings in 3 changed modules, follow-up hunt of the diff since 2e0d6366f (pre-push-scan.sh symbolic-ref exit-code split and stop text, pre_push_scan_test.go one expectation, shipped.sha256 new hash); SKILL.md, role_test.go and the release note unchanged since; untracked .jaira/milestones/ files are board data, not part of the change, not read; concurrency, error paths, input, permissions checked; ran: go test ./core/role -run PrePush, go test ./core/shipped, scratch repo with a denylisted branch (exit 3, new text), detached HEAD (exit 0), HEAD as symref to refs/other/<denylisted> (exit 3); files: core/role/builtin/jaira-role-pr/scripts/pre-push-scan.sh core/role/builtin/jaira-role-pr/SKILL.md core/role/pre_push_scan_test.go core/role/role_test.go core/release/notes/AX8K02.md core/shipped/shipped.sha256
+- **2026-11-21 20:05 · Alexander Sacharov** — worker: review 3 passed (signoff) with 4 notes. Closed in-round, class 'the caller's git config changes what the scan reads': the script cd's to the toplevel (diff.relative in a subdirectory dropped files above it - fail open; TestPrePushScanIgnoresDiffRelative fails on 0037622a), and git show / both git log -1 calls get --no-show-signature (signature lines in the scanned text, fail closed; not tested, needs gpg). Left as notes for the person: a very short machine name floods warnings (warning only; -w would change what a hostname hit means), and shipped.sha256 carries hashes of unreleased intermediate versions (what shipped-history.sh --write does; harmless).
