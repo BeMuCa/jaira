@@ -63,6 +63,108 @@ describe('session.receive', () => {
     expect(text).toBe('[shortened by jaira-cockpit] MG677R · → signoff · approve mit vorbehalt — full report: /cockpit report MG677R')
   })
 
+  // The fixed status line a worker or dispatcher ends its report with: read
+  // from that line alone, whatever the free text above it says.
+  const LINE = 'jaira: 55CS2M in-progress -> signoff · branch: feat/55cs2m · commits: a1b2c3d..e4f5a6b (3) · gates: ok · notes: 1 · verdict: approve with reservations'
+  const SHORT = (rest: string) => `[shortened by jaira-cockpit] ${rest} — full report: /cockpit report 55CS2M`
+  const lineCases: Array<{ name: string; text: string; want: string }> = [
+    {
+      name: 'the full line',
+      text: `Implemented the status line.\nTicket 55CS2M sits in signoff.\n${LINE}`,
+      want: SHORT('55CS2M · in-progress → signoff · approve with reservations · feat/55cs2m · commits a1b2c3d..e4f5a6b (3) · gates ok · notes 1'),
+    },
+    {
+      name: 'empty values are dashes and are left out',
+      text: 'Brainstorm only.\njaira: 55CS2M brainstorm -> todo · branch: - · commits: - · gates: none · notes: 0 · verdict: -',
+      want: SHORT('55CS2M · brainstorm → todo · gates none · notes 0'),
+    },
+    {
+      name: 'a missing key is left out, an unknown one ignored',
+      text: 'jaira: 55CS2M testing -> review · branch: feat/55cs2m · colour: blue',
+      want: SHORT('55CS2M · testing → review · feat/55cs2m'),
+    },
+    {
+      name: 'CRLF line ends',
+      text: `Done.\r\n${LINE}\r\n`,
+      want: SHORT('55CS2M · in-progress → signoff · approve with reservations · feat/55cs2m · commits a1b2c3d..e4f5a6b (3) · gates ok · notes 1'),
+    },
+    {
+      name: 'the line not last, inside a task-notification',
+      text: `<task-notification>\n<status>completed</status>\n<result>\n${LINE}\n</result>\n</task-notification>`,
+      want: SHORT('55CS2M · in-progress → signoff · approve with reservations · feat/55cs2m · commits a1b2c3d..e4f5a6b (3) · gates ok · notes 1'),
+    },
+    {
+      name: 'two lines: the last one counts, and names the ticket over a handle named more often',
+      text: 'Ticket K7P2QX, K7P2QX and K7P2QX quoted:\njaira: K7P2QX review -> signoff · verdict: approve\njaira: 55CS2M critique -> optimize · verdict: a · b · c',
+      want: SHORT('55CS2M · critique → optimize · a · b · c'),
+    },
+    {
+      name: 'a verdict mentioning a lane arrow does not move the lanes',
+      text: 'jaira: 55CS2M review -> in-progress · gates: red · verdict: sent back, wants review -> signoff later',
+      want: SHORT('55CS2M · review → in-progress · sent back, wants review -> signoff later · gates red'),
+    },
+    {
+      name: 'a closing frame tag on the same line is not part of the verdict',
+      text: `<result>\nDone.\njaira: 55CS2M review -> signoff · verdict: approve</result>\n</task-notification>`,
+      want: SHORT('55CS2M · review → signoff · approve'),
+    },
+    {
+      name: 'a message framed on one line, opening and closing tag around the status line',
+      text: 'Another Claude session sent a message:\n<agent-message from="w">jaira: 55CS2M testing -> human · notes: 2 · verdict: sent back</agent-message>',
+      want: SHORT('55CS2M · testing → human · sent back · notes 2'),
+    },
+    {
+      name: 'a question in the verdict is shown twice (known limit), never dropped',
+      text: 'jaira: 55CS2M critique -> human · verdict: approve · question: shall we?',
+      want: SHORT('55CS2M · critique → human · approve · question: shall we? · question: shall we?'),
+    },
+    {
+      name: 'an open question above the status line is kept',
+      text: 'open question: keep the cache?\njaira: 55CS2M critique -> human · verdict: -',
+      want: SHORT('55CS2M · critique → human · question: keep the cache?'),
+    },
+    {
+      name: 'a question under a key outside the format is still shown',
+      text: 'jaira: 55CS2M critique -> human · notes: 1 · question: keep cache? · verdict: approve',
+      want: SHORT('55CS2M · critique → human · approve · notes 1 · question: keep cache?'),
+    },
+    {
+      name: 'a short question equal to a shown field is still shown',
+      text: 'Frage: 1\njaira: 55CS2M critique -> human · notes: 1 · verdict: approve',
+      want: SHORT('55CS2M · critique → human · approve · notes 1 · question: 1'),
+    },
+    {
+      name: 'a verdict clipped before its question ends: the question in full beside it',
+      text: `jaira: 55CS2M critique -> human · verdict: question: ${'q'.repeat(60)}?`,
+      want: SHORT(`55CS2M · critique → human · question: ${'q'.repeat(49)}… · question: ${'q'.repeat(60)}?`),
+    },
+    {
+      name: 'every field is clipped, not only the verdict',
+      text: `jaira: 55CS2M testing -> review · branch: feat/${'x'.repeat(100)} · verdict: ${'v'.repeat(100)}`,
+      want: SHORT(`55CS2M · testing → review · ${'v'.repeat(59)}… · feat/${'x'.repeat(54)}…`),
+    },
+  ]
+  for (const c of lineCases) {
+    test(`status line: ${c.name}`, async ($, on) => {
+      session(on)
+      const { text } = await $.session.receive({ origin: { kind: 'peer-send-message' }, text: c.text })
+      expect(text).toBe(c.want)
+    })
+  }
+
+  test('status line: a failure above it still keeps the report whole', async ($, on) => {
+    session(on)
+    const failed = `go test: 3 failed\n${LINE}`
+    const { text } = await $.session.receive({ origin: { kind: 'peer-send-message' }, text: failed })
+    expect(text).toBe(failed)
+  })
+
+  test('status line: lowercase handle and lanes, unicode arrow', async ($, on) => {
+    session(on)
+    const { text } = await $.session.receive({ origin: { kind: 'peer-send-message' }, text: 'jaira: 55cs2m Testing → Human · notes: 2' })
+    expect(text).toBe(SHORT('55CS2M · testing → human · notes 2'))
+  })
+
   test('a report without a ticket passes unchanged', async ($, on) => {
     session(on)
     const plain = 'Agent finished: refactored the parser, all tests pass.'

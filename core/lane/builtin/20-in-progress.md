@@ -101,6 +101,12 @@ jaira move <id> --to human --question "testing sent this back three times: <find
 A ticket from before jaira recorded this has an empty `from` and `count` 0:
 it counts as no return.
 
+A loop lane that declares `max-rounds` (the shipped critique, optimize and
+testing: 3) does not need you to count: jaira itself refuses its next
+send-back past the limit (`max_rounds`, exit 3) and names the lane a person
+answers in. `rounds_left` in that lane's `--for-lane` payload says how many
+remain.
+
 In conversational mode you hand back commit lines instead of committing, so
 the bug hunt reads your work uncommitted; once that work is committed the
 hunt no longer covers HEAD and `bughunt` in `jaira show <id> --brief` reads

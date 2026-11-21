@@ -454,6 +454,18 @@ That returns the prompt, only the declared fields, and the diff of the ticket's
 own commits. If the agent chose its own context, the contract would be a
 suggestion.
 
+**A loop lane can stop itself.** `max-rounds: <n>` in a lane file is how many
+times in a row that lane may send a ticket back; the next send-back is refused
+(exit 3) with a message naming the lane a person answers in, usually `human`.
+The shipped critique, optimize and testing lanes say `max-rounds: 3`. The count
+is the ticket's `back-count`: a send-back made by a person — in the board, or
+`jaira move` typed at a terminal — is never refused and starts it again, as
+does one from another lane; the hand-off into a lane a person answers in (one that
+takes a question and no agent works) is never refused, wherever the board draws it; and `--force` overrides it like any
+refusal.
+`--for-lane` hands on `max_rounds` and `rounds_left` for such a lane. The value
+must be a whole number above 0; anything else is refused when the lane loads.
+
 Both agent files (`CLAUDE.md`, `AGENTS.md`) carry a generated block naming this
 board's lanes in order, any loop a lane declares, and for each lane whether an
 agent may work it at all. It also says the thing that is easy to assume wrong:
