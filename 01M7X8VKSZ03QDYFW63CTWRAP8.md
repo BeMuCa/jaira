@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:57:32Z
+updated-at: 2026-11-21T08:57:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2485785
 claimed-at: 2026-11-21T08:57:23Z
@@ -41,8 +41,8 @@ review-gaps: |-
 test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at a3af8998; DoD 1-4 verified in the tree; return rule 0 puts a status-line ❌ ahead of the table, sha prefix compare in both roles. Roles write nothing - no concurrent-writer case."
 hunt-verdict: "clean: diff hunt at a3af8998 (HEAD), 0 findings"
 question: ""
-review-verdict: "give back: DoD 1, 3 and 4 are met and go test ./core/role ./core/shipped is green, but DoD 2's recommendation ignores the status line's own ❌ checks, so the role can recommend accepting a ticket whose CI failed at the head; a three-line rule closes it"
-review-round: 13
+review-verdict: "The diff meets all four DoD items; every command the new role tells the person to run exists with the flags it names (jaira list --lane/--board, show --json keys status/handle/dod_items.done/review.*, create --follows/--assignee, gh run list --commit, glab ci list --sha), the 'Given back from signoff:' prefix matches what the cockpit writes, and go test ./core/role ./core/shipped pass with -count=1. No blocker; three cosmetic notes."
+review-round: 14
 review-check: "1. cd /home/alex/projects/.worktrees/jaira-twrap8  2. go test ./core/role ./core/shipped -count=1 - both print ok  3. open core/role/builtin/jaira-role-signoff/SKILL.md, section '### 1. The status line': tests and bug hunt can be ❌  4. read '## The return rules': rules 1-5 only look at 🔴/🟡/⚪/🔵 rows - nothing says what a ❌ test or hunt does to the recommendation  5. after the fix there is a rule there that turns a ❌ into 'give back' (or 'start the hunt')  6. optionally: run /jaira-role-signoff on a signoff ticket whose CI run failed - the bold line must not say accept"
 ---
 
