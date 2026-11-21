@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:18:12Z
+updated-at: 2026-11-21T08:18:16Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -46,8 +46,8 @@ test-verdict: "pass (round 7): go vet + go test -race ./... RC=0 at 2bf13dd8; Do
 hunt-verdict: "pass (round 9 at 2bf13dd8): 0 findings"
 claimed-by: DESKTOP-RFTCH11-30002
 claimed-at: 2026-11-21T08:01:23Z
-review-verdict: "Diff erfuellt alle acht DoD-Punkte; keine Blocker gefunden. Tests der beruehrten Pakete gruen (core/board, settings, gitrepo, role, shipped, internal/cli). Die vier Notes sind Randfaelle und Vertrauensgrenzen, keine Defekte des Ausgelieferten."
-review-round: 9
+review-verdict: "Der Diff erfuellt alle 8 DoD-Punkte; go test fuer core/board, core/settings, core/gitrepo, core/role, internal/cli gruen, go vet sauber. Kein Defekt gefunden: Gate faellt bei Tippfehler, fehlender Datei, unbekanntem Handle, fremdem Commit und nicht-trivialem Merge geschlossen; .jaira/pr kommt aus dem Basis-Zweig. Nur Notes, kein Blocker."
+review-round: 12
 review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/solo && cd /tmp/solo && git init -q && /tmp/jaira init  3. printf 'none\\n' > .jaira/pr && /tmp/jaira roles list  -> pr zeigt 'none'  4. /tmp/jaira validate  -> Warnung 'no longer matches this board's lanes or its .jaira/pr'  5. /tmp/jaira update && grep -A3 'How work arrives' CLAUDE.md  -> Absatz 'takes no pull requests'  6. rm .jaira/pr && /tmp/jaira update && grep -c 'How work arrives' CLAUDE.md  -> 0  7. Gate-Logik: go test ./internal/cli -run 'TestPRGate.*None' -v  -> alle PASS (done-only, unbenannte Commits/Merges halten, kein create line)"
 ---
 
