@@ -1,7 +1,7 @@
 ---
 id: 01M2HZKCQ48BPQYN1YPTXB97NJ
 title: "Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Wer allein an einem Repository arbeitet, bekommt keine Rolle vorgesetzt, die ihn zu einem Pull Request schickt, den er nicht will - und ein Team, das Pull Requests benutzt, bekommt die Regel weiterhin ueberall, wo ein Agent sie liest."
@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:47:46Z
+updated-at: 2026-11-21T08:51:50Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -36,7 +36,7 @@ outcome-what: "Board haelt in .jaira/pr fest, wie Arbeit ankommt (person/agent/n
 outcome-why: "Ein Solo-Projekt ohne Pull Requests blieb an einem PR haengen, den niemand oeffnet"
 outcome-resolves: "XB97NJ"
 review-summary: "Ein Board kann jetzt in .jaira/pr 'none' sagen (neben person/agent). core/board/arrival.go liest die Datei streng (nur exakt agent/none zaehlt; BOM, CRLF, Kommentare ignoriert; alles andere = person) und haengt bei agent/none einen Absatz 'How work arrives on this board' an den jaira-Block in CLAUDE.md/AGENTS.md; ohne Datei bleibt der Block byte-gleich, validate meldet Drift bei Dateiwechsel. 'jaira roles list' liefert pr=none, pr_when=done und nennt ein Wort, das nicht griff. 'jaira roles pr-gate' laesst unter none einen Zweig durch, wenn .jaira/pr auf der Basis none sagt, jedes genannte Ticket in done/logbook ist und jeder Commit ein Ticket im Betreff nennt (Merges nur, wenn ihr Baum exakt gits eigener Merge der Eltern ist - core/gitrepo/named.go). jaira-role-pr bekommt 'Land it': Gate, Basis mergen, Gate erneut, fast-forward push, nie --force. reap.sh zaehlt unter none einen Zweig als gemerged, sobald der Default-Branch des Ziel-Remotes (origin oder Fork-Parent) seine Spitze enthaelt. Dispatcher/Teamlead erwaehnen none; drei Release-Zeilen."
-round: 15
+round: 16
 review-gaps: |-
   note: cockpit Accept (core/mod/builtin/jaira-cockpit/hooks/register.tsx afterAccept) liest .jaira/pr nicht - unter none startet es trotzdem die pr-Rolle (die dann korrekt landet), meldet aber "opening the pull request" (texts.ts:21), und ohne GitHub/GitLab-origin bricht es mit noForge ab, obwohl Landen keinen Forge braucht
   note: ein Commit, der ein schon im Logbook abgelegtes Ticket nennt (fix(<alteID>): ...), passiert das none-Tor ohne neue Annahme - bekannte Grenze der Betreff-Regel, im Ticket bewusst so entschieden (Runde 10)
@@ -173,3 +173,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-21 08:43 · Alexander Sacharov** — bughunt: done at 221fbba5 - 0 findings in 8 modules, follow-up hunt since bfbb234c (diff of core/gitrepo/named.go core/gitrepo/named_test.go core/mod/builtin/jaira-cockpit/hooks/board.ts core/release/notes/XB97NJ.md core/role/builtin/jaira-dispatcher/scripts/reap.sh core/role/builtin/jaira-role-pr/SKILL.md core/shipped/shipped.sha256 internal/cli/prgate_test.go internal/cli/roles.go; no new file in list); concurrency, error paths, input, permissions checked; ran: sha256 of board.ts/reap.sh/SKILL.md against shipped.sha256 (all present), grep for leftover Revert/Reapply readers (none), go test ./core/gitrepo ./core/role ./core/shipped ./internal/cli (ok); files: .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md core/board/announce.go core/board/arrival.go core/board/arrival_test.go core/gitrepo/named.go core/gitrepo/named_test.go core/mod/builtin/jaira-cockpit/hooks/board.ts core/release/notes/XB97NJ.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-dispatcher/scripts/reap.sh core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/reap_test.go core/settings/settings.go core/settings/settings_test.go core/shipped/shipped.sha256 internal/cli/prgate_test.go internal/cli/roles.go internal/cli/validate.go
 - **2026-11-21 08:46 · Alexander Sacharov** — review (21.11.): kein Blocker. go test core/board core/gitrepo core/settings core/role core/shipped internal/cli gruen, Wegwerf-Board nachgestellt. 3 Notes in review-gaps: cockpit Accept liest .jaira/pr nicht (Text 'opening the pull request', noForge ohne GitHub/GitLab), Logbook-Ticket im Betreff passiert das Tor, reap faellt bei stummem gh auf origin zurueck.
 - **2026-11-21 08:47 · Alexander Sacharov** — Given back from signoff (Teamlead im Auftrag Alex 21.11.): 1) cockpit Accept (register.tsx afterAccept, texts.ts:21) liest .jaira/pr: unter none Text 'landing on <base>' statt 'opening the pull request', und kein noForge-Abbruch ohne GitHub/GitLab-origin, weil Landen keinen Forge braucht; cockpit-Test. 2) reap.sh land_remote: antwortet gh nicht, nennt die Wartezeile diese Ursache statt 'has not landed on origin'. Note 2 (Logbook-ID) bleibt known limit. Danach Diff-Hunt, review, signoff, push.
+- **2026-11-21 08:51 · Alexander Sacharov** — in-progress (Runde 11, 21.11.): (1) Cockpit Accept unter none: register.tsx landsWithoutPullRequest liest .jaira/pr wie jaira (erste Zeile, BOM weg, exakt none); dann kein pr-list, kein noForge, Forge nur fuer die bessere Basis, pr-Lane startet (landet hinter pr-gate), Texte landStarted/landWaits/landNeedsHerdr. Tests board.test.ts: none ohne origin, none mit gh tot, none mit offenem Ticket, Tippfehler bleibt PR-Pfad (216 pass). (2) reap.sh: gh repo view scheitert -> ghwhy, die waiting-Zeile unter none nennt gh als Ursache; stderr getrennt vom JSON. Test TestReapOnANoneBoardNamesAnUnansweringGh. Logbook-ID-Note bleibt known limit (Teamlead).
