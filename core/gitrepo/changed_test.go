@@ -80,6 +80,12 @@ func TestChangedSince(t *testing.T) {
 		{"a lane prompt is code", func(t *testing.T, dir string) {
 			fixtureCommit(t, dir, map[string]string{".jaira/lanes/testing.md": "p2"}, "fix(DF0YD6): prompt", later)
 		}, nil, true},
+		{"a named board's lane prompt is code", func(t *testing.T, dir string) {
+			fixtureCommit(t, dir, map[string]string{".jaira/boards/video/lanes/testing.md": "p2"}, "fix(DF0YD6): prompt", later)
+		}, nil, true},
+		{"a named board's other data is not", func(t *testing.T, dir string) {
+			fixtureCommit(t, dir, map[string]string{".jaira/boards/video/notes.md": "n"}, "chore(DF0YD6): board", later)
+		}, nil, false},
 		{"an untracked file written after the hunt", func(t *testing.T, dir string) {
 			write(t, dir, "new.go", "n")
 		}, nil, true},

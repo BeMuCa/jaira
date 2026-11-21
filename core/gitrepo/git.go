@@ -364,9 +364,23 @@ func (r *Repo) ChangedSince(commit, ticketID string, hunted time.Time, paths []s
 }
 
 // isBoardData reports a path under .jaira/ that is no lane prompt: tickets,
-// tags, milestones, settings — what the board writes, not code.
+// tags, milestones, settings — what the board writes, not code. Lane prompts
+// are today's board's in .jaira/lanes/ and a named board's in
+// .jaira/boards/<name>/lanes/ (core/lane boardLanesDir).
 func isBoardData(p string) bool {
-	return strings.HasPrefix(p, ".jaira/") && !strings.HasPrefix(p, ".jaira/lanes/")
+	rest, ok := strings.CutPrefix(p, ".jaira/")
+	if !ok {
+		return false
+	}
+	if strings.HasPrefix(rest, "lanes/") {
+		return false
+	}
+	if board, ok := strings.CutPrefix(rest, "boards/"); ok {
+		if _, file, ok := strings.Cut(board, "/"); ok && strings.HasPrefix(file, "lanes/") {
+			return false
+		}
+	}
+	return true
 }
 
 // writtenSince reports a file inside specs that is not committed — changed
