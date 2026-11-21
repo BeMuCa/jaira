@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:27:34Z
+updated-at: 2026-11-21T08:27:38Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-31394
 claimed-at: 2026-11-21T08:01:32Z
@@ -34,11 +34,7 @@ outcome-why: "fresh review 21.11.: the role gave two answers for an older sha, t
 outcome-resolves: "both roles read a stale CI run as ? and a stale hunt as ❌; the pasted follow-up is complete; the teamlead names the same checks as the role"
 review-summary: "critique 21.11. round 3: the ?/❌ split is a reason, not a patch - unknown CI is not a failure, a missing hunt is missing work; teamlead now says the same. Nothing to change."
 round: 11
-review-gaps: |-
-  note: SKILL.md:83 says a result for another commit is ?, but the bug-hunt check (line 97) marks an older sha as a cross - two answers for the same case
-  note: the ready follow-up line (SKILL.md:169) has no --assignee; per the board rules a ticket without one cannot leave the backlog, so the person has to add it
-  note: teamlead's status-line list (DoD, tests, hunt, blockers) is shorter than the signoff role's (also review verdict and returns); harmless since it defers to the role, but the two can drift
-  note: the worktree holds untracked .jaira/milestones/*.md that do not belong to this ticket - do not commit them with it
+review-gaps: "optimize 21.11. round 3: nothing to remove; teamlead keeps the six check names only, the reading stays in the role."
 test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at 8cdb3a0d; DoD 1-4 verified in the tree; signoff keys checked against the live jaira show --json (notes key absent, rc=5); head lookup run on a scratch repo: none/one/diverged/merge listed later/equal copies/local behind remote/twrap8x - all as the text says. The role writes nothing, so no concurrent-writer case."
 hunt-verdict: "clean: diff hunt at 8cdb3a0d (HEAD), 0 findings; the 08:13 finding fixed in 8cdb3a0d"
 question: ""
