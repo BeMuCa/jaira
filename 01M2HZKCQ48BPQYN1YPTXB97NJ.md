@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:52:04Z
+updated-at: 2026-11-21T08:52:09Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -176,3 +176,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-21 08:46 · Alexander Sacharov** — review (21.11.): kein Blocker. go test core/board core/gitrepo core/settings core/role core/shipped internal/cli gruen, Wegwerf-Board nachgestellt. 3 Notes in review-gaps: cockpit Accept liest .jaira/pr nicht (Text 'opening the pull request', noForge ohne GitHub/GitLab), Logbook-Ticket im Betreff passiert das Tor, reap faellt bei stummem gh auf origin zurueck.
 - **2026-11-21 08:47 · Alexander Sacharov** — Given back from signoff (Teamlead im Auftrag Alex 21.11.): 1) cockpit Accept (register.tsx afterAccept, texts.ts:21) liest .jaira/pr: unter none Text 'landing on <base>' statt 'opening the pull request', und kein noForge-Abbruch ohne GitHub/GitLab-origin, weil Landen keinen Forge braucht; cockpit-Test. 2) reap.sh land_remote: antwortet gh nicht, nennt die Wartezeile diese Ursache statt 'has not landed on origin'. Note 2 (Logbook-ID) bleibt known limit. Danach Diff-Hunt, review, signoff, push.
 - **2026-11-21 08:51 · Alexander Sacharov** — in-progress (Runde 11, 21.11.): (1) Cockpit Accept unter none: register.tsx landsWithoutPullRequest liest .jaira/pr wie jaira (erste Zeile, BOM weg, exakt none); dann kein pr-list, kein noForge, Forge nur fuer die bessere Basis, pr-Lane startet (landet hinter pr-gate), Texte landStarted/landWaits/landNeedsHerdr. Tests board.test.ts: none ohne origin, none mit gh tot, none mit offenem Ticket, Tippfehler bleibt PR-Pfad (216 pass). (2) reap.sh: gh repo view scheitert -> ghwhy, die waiting-Zeile unter none nennt gh als Ursache; stderr getrennt vom JSON. Test TestReapOnANoneBoardNamesAnUnansweringGh. Logbook-ID-Note bleibt known limit (Teamlead).
+- **2026-11-21 08:52 · Alexander Sacharov** — critique (Runde 14): cockpit liest .jaira/pr selbst (zweite Lesart neben board.PRWordIn) statt 'jaira roles list' zu starten - ein Prozess weniger pro Accept, und das Tor liest die Datei vom Basis-Zweig ohnehin neu; eine falsche Lesart kostet hoechstens den Text. Akzeptiert.
