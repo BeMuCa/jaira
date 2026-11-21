@@ -109,7 +109,9 @@ HEADER
 			awk -F'\t' '{ split($1, m, " ") } m[4] !~ /^0+$/ { print m[4], $2 }' | sort -u | hashed
 		# the working tree's own versions, so this script alone makes the tests pass
 		embedded | while read -r f; do
-			printf '%s  %s\n' "$(sha256sum <"$f" | cut -d' ' -f1)" "$f"
+			# in the index but gone from disk: stop, as for a blob above
+			sum=$(sha256sum <"$f") || exit 1
+			printf '%s  %s\n' "${sum%% *}" "$f"
 		done
 	} | installed | sort -k2,2 -k1,1 -u
 }

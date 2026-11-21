@@ -72,6 +72,31 @@ func (r *fixtureRepo) read(rel string) string {
 	return string(b)
 }
 
+// A file the index lists but the disk lacks stops the generator, like an
+// unreadable blob: it must not come out as a line with an empty hash.
+func TestFileMissingFromDiskStopsTheScript(t *testing.T) {
+	for _, args := range [][]string{{}, {"--write"}} {
+		t.Run(strings.Join(append([]string{"shipped-history.sh"}, args...), " "), func(t *testing.T) {
+			r := newFixtureRepo(t)
+			before := r.generated()
+			r.write("core/shipped/shipped.sha256", before)
+			if err := os.Remove(filepath.Join(r.dir, filepath.FromSlash(key))); err != nil {
+				t.Fatal(err)
+			}
+			out, err := r.run("bash", append([]string{"scripts/shipped-history.sh"}, args...)...)
+			if err == nil {
+				t.Fatalf("the script passed over a file missing from disk:\n%s", out)
+			}
+			if strings.Contains(out, "\n  "+key) || strings.HasPrefix(out, "  "+key) {
+				t.Errorf("the script printed a line without a hash:\n%s", out)
+			}
+			if got := r.read("core/shipped/shipped.sha256"); got != before {
+				t.Errorf("a failed run changed the manifest:\n%s", got)
+			}
+		})
+	}
+}
+
 // --write puts exactly what the script prints in place of the manifest.
 func TestWriteReplacesTheManifest(t *testing.T) {
 	r := newFixtureRepo(t)
