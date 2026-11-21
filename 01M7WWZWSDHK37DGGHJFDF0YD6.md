@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:04:19Z
+updated-at: 2026-11-21T09:04:22Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
@@ -31,12 +31,7 @@ outcome-what: "Round 9: bughunt on HEAD is red only on a real change since the h
 outcome-why: "Teamlead for Alex 21.11.: on_head must not be red on a clean ticket - Alex reads red as a catastrophe; the round-8 review listed five ways it was."
 outcome-resolves: "review round 8 notes 1-5. Checked: concurrency (read-only), error paths (stat failure/deleted -> changed, unknown commit -> fail), input (-z paths, spaces, .jaira prefix), permissions (none new). go test ./... RC=0, claude plugin test 218 pass."
 review-summary: "none"
-review-gaps: |-
-  note: bughunt.on_head ist in conversational mode immer false: der Hunt liest uncommittete, getrackte Aenderungen, und ChangedSince (core/gitrepo/git.go, git diff --name-only HEAD) zaehlt jede uncommittete Aenderung an einer gejagten Datei, auch eine von vor dem Hunt - die Statuszeile zeigt dann ein rotes Kreuz auf einem sauberen Ticket; Fix der Klasse: fuer getrackte Aenderungen dieselbe mtime-gegen-Hunt-Zeit-Regel wie untrackedSince sie fuer untracked Dateien schon hat.
-  note: bughunt on HEAD ist bei stop-after-fix=true nach einer Fix-Runde absichtlich ohne Hunt und zeigt dann fail (roter Pfeil fuer eine gewollte Abwahl); die Explain-Vorlage koennte bei stop_after_fix 'skipped' statt fail schreiben - dafuer braeuchte der Brief stop_after_fix.
-  note: ChangedSince erkennt eigene Commits nur an der Ticket-ID in der Message, nicht an der zweiten Quelle der Commit-Liste (Commits, die die Ticket-Datei beruehren); ein Commit ohne ID-Handle, der gejagten Code aendert, laesst on_head true - durch die Hausregel abgedeckt, im Docstring von ChangedSince als Grenze benennbar.
-  note: pre-existing aus Runde 4, unveraendert: board.ts explainable nimmt fuer ein Verdikt frueherer Runde ohne verdict_gaps-Kopie review.gaps (dann optimize-Zeilen) als Blocker-Quelle; harmlos, solange optimize nie mit blocker: beginnt.
-  note: ohne Hunt-Dateiliste (codeOnly) zaehlt jede spaeter geschriebene untracked Datei im ganzen Repo, auch .jaira/milestones/* - ein jaira milestone add aus einer anderen Session faerbt bughunt on HEAD rot; konservativ (nur falsch rot, nie falsch gruen).
+review-gaps: "none - cf0cdfef: writtenSince replaces untrackedSince and the diff check (one pass over both lists), nothing left orphaned"
 test-verdict: "pass: go test -count=1 ./... RC=0 at 81dcbbee; TestChangedSince 16 cases incl. untracked written after/before the hunt and outside the hunted paths; claude plugin test 216 pass (no TS change since round 5); read-only git, no parallel-writer case"
 hunt-verdict: "pass: follow-up hunt since 7d73a41d at 81dcbbee, 0 findings"
 round: 9
