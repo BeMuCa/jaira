@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:15:36Z
+updated-at: 2026-11-21T08:16:21Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
@@ -102,3 +102,4 @@ review-check: "1. cd into the repository on branch feat/0k8y6s  2. run: scripts/
 - **2026-11-21 08:11 · Alexander Sacharov** — bughunt: done at 29ee4690 - 0 findings in 1 module, follow-up hunt since 6f5ba869 (diff: only core/shipped/shipped.sha256 regenerated; no file new to the list; untracked .jaira/milestones/ are board data, not read); concurrency, error paths, input, permissions checked; ran: go test ./shipped/ ./role/ ./lane/ (pass), scripts/shipped-history.sh --check (pass), comm of manifest entries against 6f5ba869, 7f2d86fe and upstream/master (no entry lost, none added, 0 duplicate keys); files: .gitattributes .github/workflows/ci.yaml .github/workflows/release-notes.yaml core/lane/refresh_test.go core/release/notes/0K8Y6S.md core/role/shipped_test.go core/role/testdata/jaira-cockpit-hooks-board-v0.5.2.ts core/shipped/history_test.go core/shipped/shipped.sha256 core/shipped/shipped_test.go scripts/shipped-history.sh
 - **2026-11-21 08:12 · Alexander Sacharov** — Stand 08:15: in review, Review-Agent per run-lane.sh --no-worktree gestartet; Branch gepusht bis 29ee4690 (inkl. Merge upstream/master).
 - **2026-11-21 08:15 · Alexander Sacharov** — review-gaps 'pre-existing: leerer Hash bei fehlender Datei' nach Alex' Ansage (alle Funde in dieser Runde) behoben statt als note stehen gelassen: gleiche Klasse wie der unlesbare Blob. Geschwister gesucht: keine weitere Hash-Stelle im Skript. GitHub+merge=union und Pfade mit Leerzeichen bleiben known limit.
+- **2026-11-21 08:16 · Alexander Sacharov** — bughunt: done at 53926c5f - 0 findings in 2 modules, follow-up hunt since 29ee4690 (diff: scripts/shipped-history.sh generate() loop, core/shipped/history_test.go new test; no file new to the list); concurrency, error paths, input, permissions checked; ran: go test ./shipped/ ./role/ ./lane/ (pass), scripts/shipped-history.sh --check (pass), in a scratch worktree: chmod 000 on an embedded file (exit 1), rm of an embedded file with --write (fails, manifest byte-identical, no temp file left); files: .gitattributes .github/workflows/ci.yaml .github/workflows/release-notes.yaml core/lane/refresh_test.go core/release/notes/0K8Y6S.md core/role/shipped_test.go core/role/testdata/jaira-cockpit-hooks-board-v0.5.2.ts core/shipped/history_test.go core/shipped/shipped.sha256 core/shipped/shipped_test.go scripts/shipped-history.sh
