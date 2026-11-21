@@ -105,7 +105,9 @@ A CI result that belongs to another commit, or no result at all, is `?`,
 never ✅ — nobody knows yet. The bug hunt is different: it is the board's own
 work, so a hunt that does not name the head was not done there, and that is ❌.
 
-- **DoD** `x/y` ticked, from `.dod_items[].done`
+- **DoD** `x/y` ticked, from `.dod_items[].done`. An open item that starts
+  with `seen by a person:` is named beside it — `2/3, open: seen by a person:
+  <what>` — as a step the person takes before accepting, not as missing work
 - **tests** — the CI run for exactly that commit, of the workflow that runs the
   tests (named in `.github/workflows/`): `gh run list --commit "$head"
   --workflow <ci workflow> --json conclusion,headSha`; on GitLab `glab ci list

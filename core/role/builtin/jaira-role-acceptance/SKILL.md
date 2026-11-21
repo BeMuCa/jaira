@@ -94,6 +94,10 @@ Run it now, in the ticket's worktree. Record `status` (`pass`/`fail`), a
 one-line `summary` (`5 passed`, `no output`), the last ~40 lines as `output`,
 and the time as `ran_at`.
 
+A step for a definition-of-done item that starts with `seen by a person:` is
+always **person**, even when it is a command: the item exists because a
+machine's answer is not what the person sees.
+
 Never run, even though it is a command:
 - anything that writes: `curl -X POST`, `jaira dod --done`, an SQL update
 - anything that costs tokens or starts a model run
@@ -208,6 +212,13 @@ out what the person decided, nothing else. Say that `--force` was used. The
 next lane is the route's next step, not the terminal lane the board's `a` key
 jumps to: the page confirms behaviour, and whatever the board still asks after
 the person — a model review, a sign-off — still runs.
+
+Before that move, tick every `seen by a person:` item of an accepted ticket
+whose step the person passed, with their mark as the proof — `jaira dod <id>
+<n> --done --proof "seen by <person> on <page>, step <n>"`. This is the one
+`dod --done` you write: it records what the person did, it decides nothing.
+An item whose step the person did not mark stays open and the ticket is not
+accepted.
 
 **Every failed step is a case, and working it out is your job, not the
 person's.** A "no" says something is wrong; it does not say what. For each
