@@ -116,11 +116,12 @@ fi
 # Where the pull requests are, as jaira-role-pr settles it: origin's own
 # repository, or its parent when origin is a fork. Named, never left to gh: in
 # a fork clone without an upstream remote gh asks the fork, which has none.
-repo=""
+repo=""; fork=""
 if [ "$forge" = github ] && origin="$(git -C "$root" remote get-url origin 2>/dev/null)" \
   && view="$(gh repo view "$origin" --json isFork,parent,nameWithOwner 2>/dev/null)"; then
   if [ "$(jaira json get isFork --default false <<<"$view")" = true ]; then
     repo="$(jaira json get parent.owner.login <<<"$view")/$(jaira json get parent.name <<<"$view")"
+    fork=1
   else
     repo="$(jaira json get nameWithOwner <<<"$view")"
   fi
@@ -143,18 +144,27 @@ merged_head() {
 # tip is what merged means.
 prmode="$( (cd "$root" && jaira roles list --json 2>/dev/null) | jaira json get pr --default person 2>/dev/null || true)"
 
-# The remote work lands on under none, as jaira-role-pr settles it: the one
-# whose URL names <owner/repo> — origin's parent when origin is a fork, so a
-# fork clone measures the upstream it pushes to and not its own fork, which
-# never receives the landing. origin where <owner/repo> is not known (no gh,
-# not GitHub); nothing when it is known and no remote here names it.
+# The remote work lands on under none, as jaira-role-pr settles it: origin,
+# or — where origin is a fork — the remote that points at its parent, so a
+# fork clone measures the upstream it lands on and not its own fork, which
+# never receives the landing. The parent is matched by URL first, then by
+# asking gh what each remote's URL resolves to: a repository renamed or moved
+# since the remote was added keeps its old URL, which GitHub redirects.
+# Nothing when origin is a fork and no remote here points at its parent.
 land_remote() {
   local r url pat
-  if [ -z "$repo" ]; then echo origin; return; fi
+  if [ -z "$fork" ]; then echo origin; return; fi
   pat="[:/]$(printf '%s' "$repo" | sed 's/[.]/[.]/g')(\.git)?/?\$"
   for r in $(git -C "$root" remote); do
     url="$(git -C "$root" remote get-url "$r" 2>/dev/null || true)"
     if grep -qiE "$pat" <<<"$url"; then echo "$r"; return; fi
+  done
+  for r in $(git -C "$root" remote); do
+    [ "$r" = origin ] && continue
+    url="$(git -C "$root" remote get-url "$r" 2>/dev/null || true)"
+    [ -n "$url" ] || continue
+    if [ "$( (gh repo view "$url" --json nameWithOwner 2>/dev/null || true) | jaira json get nameWithOwner --default "" 2>/dev/null)" \
+      = "$repo" ]; then echo "$r"; return; fi
   done
 }
 

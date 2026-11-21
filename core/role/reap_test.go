@@ -76,7 +76,13 @@ esac
 		"gh": `#!/usr/bin/env bash
 case "$*" in
   "repo view git@github.com:someone/jaira.git --json"*)
-    echo '{"isFork":true,"nameWithOwner":"someone/jaira","parent":{"name":"jaira","owner":{"login":"upstream"}}}' ;;
+    if [ -e "` + r.merged + `.notfork" ]; then
+      echo '{"isFork":false,"nameWithOwner":"renamed/jaira"}'
+    else
+      echo '{"isFork":true,"nameWithOwner":"someone/jaira","parent":{"name":"jaira","owner":{"login":"upstream"}}}'
+    fi ;;
+  "repo view git@github.com:formerly/jaira.git --json nameWithOwner")
+    echo '{"nameWithOwner":"upstream/jaira"}' ;;
   "pr list --head feat/ab12cd --state merged --limit 1 --json headRefOid --repo upstream/jaira")
     cat "` + r.merged + `" 2>/dev/null || echo '[]' ;;
   *) echo "unexpected gh $*" >&2; exit 1 ;;
@@ -483,6 +489,13 @@ func TestReapOnANoneBoardWaitsForTheDefaultBranch(t *testing.T) {
 	if out := r.run(t, r.repo, "reap.sh"); !strings.Contains(out, "no remote here points at upstream/jaira") {
 		t.Fatalf("fork without its parent as a remote, want the add hint:\n%s", out)
 	}
+	// A remote added before the parent was renamed keeps its old URL; gh
+	// follows GitHub's redirect and says it is the parent all the same.
+	r.git(t, r.repo, "remote", "add", "old", "git@github.com:formerly/jaira.git")
+	if out := r.run(t, r.repo, "reap.sh"); !strings.Contains(out, "cannot tell old's default branch") {
+		t.Fatalf("parent known only under its old name, want it found:\n%s", out)
+	}
+	r.git(t, r.repo, "remote", "remove", "old")
 	r.git(t, r.repo, "remote", "add", "up", "https://github.com/Upstream/jaira.git")
 	// No ref of it at all: nothing to measure against, and it says how to
 	// fix that rather than claiming the branch has not landed.
@@ -542,5 +555,26 @@ func TestReapOnANoneBoardWaitsForTheDefaultBranch(t *testing.T) {
 	}
 	if strings.Contains(out, "pull request") {
 		t.Errorf("a none board asked about a pull request:\n%s", out)
+	}
+}
+
+// Not a fork, but renamed since it was cloned: gh answers with the new name,
+// origin's URL still has the old one, and origin is still where work lands —
+// never 'no remote here points at it' (bughunt round 8).
+func TestReapOnANoneBoardMeasuresARenamedOrigin(t *testing.T) {
+	t.Parallel()
+	r := newReapRig(t)
+	r.write(t, r.merged+".notfork", "")
+	r.write(t, filepath.Join(r.repo, ".jaira", "pr"), "none\n")
+	r.write(t, filepath.Join(r.repo, ".jaira", "tickets", ".keep"), "")
+	r.write(t, r.shown, `{"status":"done"}`)
+	r.git(t, r.wt, "commit", "-q", "--allow-empty", "-m", "feat(AB12CD): the work")
+	r.git(t, r.repo, "update-ref", "refs/remotes/origin/master", r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+	out := r.run(t, r.repo, "reap.sh")
+	if strings.Contains(out, "no remote here points at") {
+		t.Fatalf("renamed origin read as missing:\n%s", out)
+	}
+	if _, err := os.Stat(r.wt); !os.IsNotExist(err) {
+		t.Errorf("landed on origin and done, worktree still there (%v):\n%s", err, out)
 	}
 }
