@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:56:36Z
+updated-at: 2026-11-21T08:56:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
@@ -40,8 +40,8 @@ review-gaps: |-
 test-verdict: "pass: go test -count=1 ./... RC=0 at 81dcbbee; TestChangedSince 16 cases incl. untracked written after/before the hunt and outside the hunted paths; claude plugin test 216 pass (no TS change since round 5); read-only git, no parallel-writer case"
 hunt-verdict: "pass: follow-up hunt since 7d73a41d at 81dcbbee, 0 findings"
 round: 8
-review-verdict: "Zurueck an in-progress: ein Blocker. Go-Seite, Lane-Prompts und Cockpit-Logik erfuellen DoD 1-6 und 8-11 (go test ./... gruen, claude plugin test 216 pass); der Statuspunkt 'bughunt on HEAD' der neuen Explain-Statuszeile (DoD 7) kann aus den Daten, die der Explain-Chat bekommt, im Normalfall nicht ok werden."
-review-round: 4
+review-verdict: "Kein Blocker. DoD 1-11 sind im Code erfuellt; der Blocker aus Runde 4 (bughunt on HEAD aus 4 Notes nicht ableitbar) ist an der Ursache behoben: --brief traegt bughunt.on_head aus git, und Explain-Vorlage und spawn.sh lesen es. go test -count=1 ./... RC=0, claude plugin test 216 pass. Die fuenf notes sind Raender des on_head-Signals (falsch rot in conversational mode und bei stop-after-fix) und eine bekannte Grenze; keine davon ist ein falsches Ergebnis im Sinn der DoD ausser im conversational mode, wo nur die Statusmarke falsch rot ist."
+review-round: 8
 review-check: "1. go build -o /tmp/jaira-b ./cmd/jaira  2. /tmp/jaira-b set <ein Test-Ticket> stop-after-fix=yes -> Exit 2, 'stop-after-fix is true, false or empty'  3. /tmp/jaira-b show DF0YD6 --json | grep -o '\"blocker_rule\":[^,]*' -> der Default-Satz  4. go test ./core/move -run TestMoveRecordsWhoSentItBack -v -> PASS (signoff->in-progress = person, zaehlt nicht)  5. cd core/mod/builtin/jaira-cockpit && claude plugin test . -> 216 pass  6. Blocker selbst sehen: /tmp/jaira-b show N71NVG --brief | grep -c 'bughunt: done at' -> 0, obwohl die Vorlage den Status daraus liest  7. Im Cockpit bei einem Ticket in signoff mit blocker:-Zeile Explain druecken -> Statuszeile mit Haken/Kreuzen, [blocker] rot; heute steht dort 'bughunt on HEAD' mit rotem Kreuz"
 review-verdict-gaps: |-
   blocker: DoD 7 - der Statuspunkt 'bughunt on HEAD' ist im ueblichen Fall falsch rot: die Explain-Vorlage (texts.ts:81, spawn.sh:396) laesst ihn aus der neuesten 'bughunt: done at <commit>'-Note lesen, aber die Explain-Chats bekommen nur show --brief mit den 4 neuesten Notes (tickets.go briefNotes=4) und sollen das Ticket nicht nochmal ganz lesen; nach testing-, review- und Worker-Note ist die Hunt-Note draussen - geprueft: bei N71NVG, K6BGB0, V38STG, X3A8RZ (signoff/human) steht in notes_last keine. Ausserdem ist HEAD hier 9d2e0f59 (Upstream-Merge), der Hunt lief auf 553b37f3 -> fail, obwohl seitdem kein Ticket-Code dazukam. Ein rotes Kreuz auf einem sauberen Ticket ist genau das 'muss geaendert werden'-Gefuehl, das das Ticket abschaffen soll. Fix der Klasse: brief traegt die neueste bughunt-done-Zeile als eigenes Feld (unabhaengig von notes_last), und 'on HEAD' gilt auch, wenn git diff <hunt-commit> HEAD keine der Dateien des Hunts beruehrt; Test in loopbrake_test/role_test.
