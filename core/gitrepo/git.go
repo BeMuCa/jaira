@@ -343,8 +343,7 @@ func (r *Repo) ChangedSince(commit, ticketID string, paths []string) (bool, erro
 	if err != nil {
 		return false, err
 	}
-	pattern := fmt.Sprintf(`(^|[^0-9A-Za-z])(%s|%s)([^0-9A-Za-z]|$)`, ticketID, ticket.Handle(ticketID))
-	own, err := r.run(append([]string{"log", "--no-merges", "--format=%h", "--extended-regexp", "--regexp-ignore-case", "--grep=" + pattern, commit + "..HEAD", "--"}, specs...)...)
+	own, err := r.run(append([]string{"log", "--no-merges", "--format=%h", "--extended-regexp", "--regexp-ignore-case", "--grep=" + namesTicket(ticketID), commit + "..HEAD", "--"}, specs...)...)
 	if err != nil {
 		return false, err
 	}

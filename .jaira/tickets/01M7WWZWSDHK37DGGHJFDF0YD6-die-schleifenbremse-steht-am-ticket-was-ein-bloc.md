@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZWSDHK37DGGHJFDF0YD6
 title: "Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:44:39Z
+updated-at: 2026-11-21T08:45:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
@@ -31,10 +31,10 @@ outcome-what: "Round 6: on_head requires the hunt commit in HEAD's history, coun
 outcome-why: "Testing round 5: the hunter found a main checkout on master read a feature branch's hunt as on HEAD; the scratch run found a file list split at a space read as unchanged."
 outcome-resolves: "both round-5 findings; TestChangedSince (12 cases incl. not-an-ancestor, split list, other ticket's commit, master merge); go test core/gitrepo internal/cli core/ticket RC=0. Checked: concurrency (read-only git), error paths (invalid id/unknown commit -> error -> on_head false; ls-tree error surfaces), input (spaces, -z, literal pathspecs, unknown paths), permissions (handle pattern built only from a ValidID)."
 review-summary: "none"
-review-gaps: "none - 190a55ec: the only Go reader of 'bughunt: done at' is the new huntDone (grep), git helpers reuse runTolerating/codeOnly, nothing orphaned"
+review-gaps: "folded the ticket-reference regex into gitrepo.namesTicket (derive.go), used by CommitsForTicket and ChangedSince - it was written twice"
 test-verdict: "fail: suite green at 190a55ec, but own scratch run: 'files: a b.go' split at the space read as unchanged (on_head true on a changed file)"
 hunt-verdict: "fail: 1 change finding at 190a55ec - ChangedSince does not check the hunt commit is an ancestor of HEAD (main checkout on master -> on_head true)"
-round: 6
+round: 7
 review-verdict: "Zurueck an in-progress: ein Blocker. Go-Seite, Lane-Prompts und Cockpit-Logik erfuellen DoD 1-6 und 8-11 (go test ./... gruen, claude plugin test 216 pass); der Statuspunkt 'bughunt on HEAD' der neuen Explain-Statuszeile (DoD 7) kann aus den Daten, die der Explain-Chat bekommt, im Normalfall nicht ok werden."
 review-round: 4
 review-check: "1. go build -o /tmp/jaira-b ./cmd/jaira  2. /tmp/jaira-b set <ein Test-Ticket> stop-after-fix=yes -> Exit 2, 'stop-after-fix is true, false or empty'  3. /tmp/jaira-b show DF0YD6 --json | grep -o '\"blocker_rule\":[^,]*' -> der Default-Satz  4. go test ./core/move -run TestMoveRecordsWhoSentItBack -v -> PASS (signoff->in-progress = person, zaehlt nicht)  5. cd core/mod/builtin/jaira-cockpit && claude plugin test . -> 216 pass  6. Blocker selbst sehen: /tmp/jaira-b show N71NVG --brief | grep -c 'bughunt: done at' -> 0, obwohl die Vorlage den Status daraus liest  7. Im Cockpit bei einem Ticket in signoff mit blocker:-Zeile Explain druecken -> Statuszeile mit Haken/Kreuzen, [blocker] rot; heute steht dort 'bughunt on HEAD' mit rotem Kreuz"
@@ -149,3 +149,4 @@ back-count: 1
 - **2026-11-21 08:40 · Alexander Sacharov** — bughunt: change: core/gitrepo/git.go:327-349 (ChangedSince, aufgerufen von lastHunt in internal/cli/tickets.go) - prueft nicht, ob der Hunt-Commit ein Vorfahr von HEAD ist. Hat das Ticket keinen Worktree mehr, faellt ticketDir (register.tsx:499) auf den Haupt-Checkout auf master zurueck; dort liefert 'git log --first-parent --no-merges <hunt>..HEAD' auf einer master-Historie aus PR-Merges nichts und der Worktree ist sauber, also on_head=true - auch wenn der Feature-Branch nach dem Hunt weitere, nie gejagte Commits auf genau den gelesenen Dateien hat. Explain schreibt dann 'bughunt on HEAD ok'. ran: Scratch-Repo (master init, feat: X, dann Y auf a.go nach dem Hunt, master: --no-ff Merge eines anderen Branches), go run mit gitrepo.ChangedSince(X, [a.go]) auf master -> 'changed false err <nil>'. Abhilfe naheliegend: 'merge-base --is-ancestor <commit> HEAD' vorab, sonst Fehler/false.
 - **2026-11-21 08:40 · Alexander Sacharov** — bughunt: done at 190a55ec - 1 finding (1 change, 0 pre-existing) in 5 modules, follow-up hunt since 553b37f3 (diff: internal/cli/tickets.go, core/ticket/schema.go, texts.ts, spawn.sh, 20-in-progress.md, in-progress.md, board.test.ts, role_test.go, loopbrake_test.go, shipped.sha256, DF0YD6.md; new files read whole: core/gitrepo/git.go, core/gitrepo/changed_test.go, core/ticket/decode_once_test.go, core/ticket/stopafterfix_test.go, internal/cli/jsonget_test.go); concurrency, error paths, input, permissions checked; ran: go test ./core/gitrepo/ ./core/ticket/ ./internal/cli/ (ok); files: .jaira/lanes/in-progress.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md core/gitrepo/changed_test.go core/gitrepo/git.go core/lane/builtin/15-pre-process.md core/lane/builtin/20-in-progress.md core/lane/builtin/27-testing.md core/lane/builtin/40-review.md core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/move/move.go core/move/move_test.go core/release/notes/DF0YD6.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/builtin/jaira-role-bughunt/SKILL.md core/role/role_test.go core/shipped/shipped.sha256 core/ticket/decode_once_test.go core/ticket/frontmatter.go core/ticket/schema.go core/ticket/stopafterfix_test.go go.mod internal/cli/flow.go internal/cli/jsonget_test.go internal/cli/loopbrake_test.go internal/cli/tickets.go internal/tui/model.go
 - **2026-11-21 08:44 · Alexander Sacharov** — testing round 5: class: on_head trusted git ranges and a file list it could not vouch for; examples: hunt commit not in HEAD's history (cockpit falls back to the main checkout on master) and a file list split at a space; fix: hunt must be an ancestor of HEAD (else on_head false), a listed path neither in the hunt commit nor on disk widens to all code, and own work is now 'non-merge commits naming the ticket' (any ancestor, not first-parent) so a branch already merged into master still sees its unhunted commits; TestChangedSince 12 cases.
+- **2026-11-21 08:45 · Alexander Sacharov** — critique round 6: none - read 076f191b; 'own work = commits naming the ticket' is the same source the ticket's commit list is built from (CommitsForTicket), so it holds wherever that list holds.

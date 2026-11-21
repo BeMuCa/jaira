@@ -64,9 +64,7 @@ func (r *Repo) CommitsForTicket(ticketPath, ticketID string) ([]string, error) {
 	// is worse than a missing one. Matching is case-insensitive because a
 	// ULID is uppercase Crockford base32 and nobody types it that way, the
 	// same reason ticket.NormalizeIDPrefix exists.
-	handle := ticket.Handle(ticketID)
-	pattern := fmt.Sprintf(`(^|[^0-9A-Za-z])(%s|%s)([^0-9A-Za-z]|$)`, ticketID, handle)
-	if out, err := r.run("log", "--format=%H", "--extended-regexp", "--regexp-ignore-case", "--grep="+pattern); err == nil {
+	if out, err := r.run("log", "--format=%H", "--extended-regexp", "--regexp-ignore-case", "--grep="+namesTicket(ticketID)); err == nil {
 		for _, line := range strings.Split(out, "\n") {
 			if sha := strings.TrimSpace(line); sha != "" {
 				found[sha] = true
@@ -114,4 +112,11 @@ func (r *Repo) CommitsForTicket(ticketPath, ticketID string) ([]string, error) {
 		sorted[i], sorted[j] = sorted[j], sorted[i]
 	}
 	return sorted, nil
+}
+
+// namesTicket is the --extended-regexp pattern for a commit message that
+// names the ticket: its ULID or its handle, bounded as a reference. The id
+// must be a ValidID — nothing in it is escaped.
+func namesTicket(ticketID string) string {
+	return fmt.Sprintf(`(^|[^0-9A-Za-z])(%s|%s)([^0-9A-Za-z]|$)`, ticketID, ticket.Handle(ticketID))
 }
