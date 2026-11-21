@@ -1,7 +1,7 @@
 ---
 id: 01M7X8VKSZ03QDYFW63CTWRAP8
 title: "Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,13 +25,13 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T09:34:41Z
+updated-at: 2026-11-21T09:34:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2485785
 claimed-at: 2026-11-21T08:57:23Z
-outcome-what: "the .jaira-only hunt exemption needs at least one found commit; the scan matches the handle case-insensitively"
-outcome-why: "bughunt 09:22: a lower-case handle or no found commit made an unhunted code ticket read as exempt"
-outcome-resolves: "– only for a ticket proven to touch nothing but .jaira/; unknown stays ?"
+outcome-what: "signoff reads the .jaira-only hunt exemption off jaira's own derivation (show --for-lane <diff lane> --json) instead of a git-log scan"
+outcome-why: "teamlead 10:30 option 1: three hunts in a row found edges of the scan, one class - re-implementing jaira's commit derivation in shell"
+outcome-resolves: "the exemption uses exactly the commits jaira counts as the ticket's; no diff stays ?"
 review-summary: "critique 21.11. round 10: exemption now needs positive evidence, matching jaira's own case-insensitive derivation; unknown stays ?. Nothing to change."
 round: 19
 review-gaps: "optimize 21.11. round 10: nothing to remove."
