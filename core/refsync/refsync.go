@@ -490,8 +490,8 @@ func (y *Syncer) FetchMilestones(s *ticket.Store) (MilestonesFetched, error) {
 		return out, err
 	}
 	// After Migrate, so a file it just moved to its ID is looked at under that
-	// ID, and after the network round trip the caller made, so "no ref here"
-	// means none on the remote either as of this fetch.
+	// ID. Whether "no ref here" also means none on the remote is the caller's
+	// fetch to say; publishUnsent reads that off the syncer.
 	published, perr := y.publishUnsent(s.Root)
 	out.Published = published
 	if err == nil {
@@ -507,10 +507,10 @@ func (y *Syncer) FetchMilestones(s *ticket.Store) (MilestonesFetched, error) {
 // this it would stay on one disk however often that clone fetches, which is
 // the one thing a milestone ref is there to prevent.
 //
-// It runs only when the last fetch reached the remote. Offline,
-// a missing ref may be a teammate's milestone this clone has not fetched yet,
-// and a write queued against no ref would be merged into theirs from an empty
-// base when it is finally sent — their removals undone, nobody told.
+// It runs only when the last fetch reached the remote. Offline, a missing ref
+// may be a teammate's milestone this clone has not fetched yet, and a write
+// queued against no ref would be merged into theirs from an empty base when it
+// is finally sent — their removals undone, nobody told.
 //
 // An ID carried by two files is left alone: which of them is the milestone is
 // a person's call, and a ref written from either would decide it for them. A

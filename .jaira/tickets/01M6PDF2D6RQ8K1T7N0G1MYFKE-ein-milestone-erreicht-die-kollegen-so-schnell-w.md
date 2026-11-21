@@ -1,7 +1,7 @@
 ---
 id: 01M6PDF2D6RQ8K1T7N0G1MYFKE
 title: "Ein Milestone erreicht die Kollegen so schnell wie ein Ticket, ueber einen Ref"
-status: in-progress
+status: review
 ready: true
 creator: BeMuCa
 goal: "Ein angelegter oder geaenderter Milestone liegt auf einem Ref wie Tickets und Epics und erscheint bei Kollegen mit dem naechsten Fetch, ohne Commit und Merge."
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:49Z
-updated-at: 2026-11-21T20:45:35Z
+updated-at: 2026-11-21T20:49:13Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2112118
@@ -27,10 +27,10 @@ claimed-at: 2026-11-21T20:33:18Z
 outcome-what: "jaira fetch (und der Board-Fetch) schickt eine ID-benannte Milestone-Datei ohne Ref und ohne wartenden Outbox-Eintrag einmal auf refs/jaira/milestones/<ID> und nennt sie (Text, JSON milestones_published, Board-Zeile)."
 outcome-why: "Milestones liegen seit 0YGWXQ/EBTX6X schon auf Refs; die einzige Luecke war eine Datei, die vor dem Remote angelegt wurde - Migrate uebergeht ID-benannte Dateien, so blieb sie fuer immer auf einer Platte."
 outcome-resolves: "Jeder Milestone dieses Boards erreicht die Kollegen mit dem naechsten Fetch, auch einer aus der Zeit ohne Remote."
-review-summary: "core/refsync/refsync.go fetch(): der Merker war prozessweit und blieb nach einem guten Fetch true - im Board (Fetch per Timer) haetten spaetere Offline-Ticks wieder gesendet. Behoben: er heisst jetzt 'der letzte Fetch erreichte den Remote' (Store(err == nil)), Test TestAFailedFetchAfterAGoodOneSendsNothing. Sonst keine Befunde; Ort (FetchMilestones statt Migrate) und Wiederverwendung wie in Runde 1."
-review-gaps: "nichts zu entfernen: ~40 Zeilen Kern in core/refsync/refsync.go publishUnsent, je eine Ausgabezeile in internal/cli/fetch.go und internal/tui/refs.go; der Zwillings-Ausschluss ist ein map-Zaehler und hat einen eigenen Test."
-test-verdict: "pass: go vet ./... und GOOS=windows vet gruen, go test ./... RC=0, -race core/refsync RC=0; DoD 1-4 im Baum geprueft; Normalfall: Milestone vor dem Remote angelegt, erster jaira fetch meldet 'now sent to the remote', Ref auf dem Remote, zweiter fetch sendet nichts; Fehlerpfad: unerreichbarer Remote -> fetch exit 1, kein Ref, nichts gemeldet, nach Reparatur kommt er an; zwei fetch parallel: genau einer sendet m1,m2, je ein Commit pro Ref, Outbox leer"
-hunt-verdict: "change: 2 Befunde (1 blocker) - publishUnsent sendet auch ohne erfolgreichen Fetch (ErrOffline), und ein nicht lesbarer Milestone-File bricht den ganzen fetch ab"
+review-summary: "Runde 3: keine Befunde. Merker 'letzter Fetch' haelt im Board-Timer; Flush/Pull/Release/refresh setzen ihn mit, was richtig ist - jeder davon ist ein Fetch. Zwei Kommentare in core/refsync/refsync.go an den Merker angepasst (FetchMilestones, publishUnsent)."
+review-gaps: "nichts zu entfernen: fetch() ist der eine Weg zu Repo.Fetch in refsync, publishUnsent ~40 Zeilen, zwei Ausgabezeilen (CLI, Board)."
+test-verdict: "pass: Runde 2 - go vet ./... + GOOS=windows vet gruen, go test ./... RC=0, -race core/refsync RC=0; DoD 1-4 im Baum geprueft; E2E: Milestone vor dem Remote -> erster fetch sendet ihn, Ref auf dem Remote; unerreichbarer Remote -> exit 1, nichts gesendet (Test TestAFailedFetchAfterAGoodOneSendsNothing, TestNothingIsSentWithoutAFetchThatReachedTheRemote); zwei fetch parallel -> genau einer sendet, je ein Commit pro Ref"
+hunt-verdict: "pass: Runde 2 bei 10e5c341c, 0 Befunde in 6 Modulen; die 2 Befunde aus Runde 1 behoben (bdf5a870d, 10e5c341c)"
 round: 3
 back-from: critique
 back-by: lane
@@ -74,3 +74,4 @@ back-count: 1
 - **2026-11-21 20:41 · Alexander Sacharov** — bughunt: done at fd04ce378 - 2 findings (2 change, 1 of them a blocker, 0 pre-existing) in 5 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/refsync/publish_test.go core/refsync/refsync.go core/release/notes/1MYFKE.md internal/cli/fetch.go internal/cli/milestones.go internal/tui/refs.go
 - **2026-11-21 20:44 · Alexander Sacharov** — Runde 2 (Bughunt-Befunde behoben): (1) publishUnsent laeuft nur, wenn ein Fetch in diesem Prozess den Remote erreicht hat - Syncer.fetch() setzt dafuer ein atomic.Bool; alle Repo.Fetch-Aufrufe in refsync gehen jetzt durch ihn. Offline heisst 'kein lokaler Ref' nicht 'kein Ref auf dem Remote'. Test TestNothingIsSentWithoutAFetchThatReachedTheRemote. (2) eine nicht lesbare Datei wird uebersprungen und als RecordError (Warnung) gemeldet, die anderen gehen raus. Test TestAnUnreadableFileDoesNotStopTheOthers.
 - **2026-11-21 20:45 · Alexander Sacharov** — Critique Runde 2: fetched-Merker auf 'letzter Fetch' umgestellt (vorher: irgendein Fetch im Prozess), sonst haette der Board-Timer nach einem guten Fetch offline wieder gesendet.
+- **2026-11-21 20:48 · Alexander Sacharov** — bughunt: done at 10e5c341c - 0 findings in 6 modules, follow-up hunt since fd04ce378 (diff incl. uncommitted refsync.go; core/refsync/epic.go new to the list, read whole); concurrency, error paths, input, permissions checked; ran: go test -race ./core/refsync/ ./internal/cli/ ./internal/tui/ (ok); files: core/refsync/epic.go core/refsync/publish_test.go core/refsync/refsync.go core/release/notes/1MYFKE.md internal/cli/fetch.go internal/cli/milestones.go internal/tui/refs.go
