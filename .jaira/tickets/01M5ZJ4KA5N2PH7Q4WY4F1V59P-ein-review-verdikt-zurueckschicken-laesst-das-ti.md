@@ -1,7 +1,7 @@
 ---
 id: 01M5ZJ4KA5N2PH7Q4WY4F1V59P
 title: "Ein Review-Verdikt 'zurueckschicken' laesst das Ticket nicht nach signoff"
-status: critique
+status: testing
 ready: true
 creator: BeMuCa
 goal: "Steht im review-verdict der Review-Lane 'send back' (oder das Gegenstueck des Boards), nimmt jaira move aus review nur noch in-progress als Ziel; signoff wird mit Exit 3 abgelehnt und nennt das Verdikt."
@@ -21,7 +21,7 @@ related:
   - 01M7WWZWSDHK37DGGHJFDF0YD6
 commits: []
 created-at: 2026-10-27T20:51:56Z
-updated-at: 2026-11-21T20:04:03Z
+updated-at: 2026-11-21T20:04:36Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-238286
@@ -34,7 +34,7 @@ round: 3
 back-from: testing
 back-by: lane
 back-count: 1
-review-gaps: "inlined the one-use test helper mustLane in core/gate/verdict_test.go; searched for an existing verdict/word normaliser (none - lane.normVerdict is the only one) and for a quote-list helper (quoteAll now serves both messages); no dead code: VerdictNone is the empty-verdict return, the output contract refuses that case"
+review-gaps: "folded the second ReadVerdict call in verdictRefusal into a parameter (gate.go); left the rest: no dead code after the repair (quoteAll '(none)' branch already removed with the both-lists rule)"
 test-verdict: "pass: go test ./... green earlier, -race on gate/lane/cli/tui RC=0 after the last commits; DoD 1-6 verified in the tree; scratch board: send back -> signoff exit 3 naming send-back and in-progress, ticket stays in review; free text 'looks fine' exit 3; for-lane review carries verdicts accept/send-back; two parallel moves (signoff + in-progress) - signoff refused exit 3, in-progress landed"
 hunt-verdict: "fail: bughunt done at 5b8824110, 2 change (send-back bypass via blocked - blocker; a lane with only one verdict list never lets a ticket on), 1 pre-existing (a move that skips review is not checked - note for the person)"
 ---
@@ -83,3 +83,4 @@ hunt-verdict: "fail: bughunt done at 5b8824110, 2 change (send-back bypass via b
 - **2026-11-21 20:01 · Alexander Sacharov** — bughunt: done at 5b8824110 - 3 findings (2 change, 1 blocker; 1 pre-existing) in 6 modules, first hunt; concurrency, error paths, input, permissions checked; files: .claude/skills/jaira/SKILL.md .jaira/lanes/review.md core/gate/gate.go core/gate/verdict_test.go core/lane/builtin/40-review.md core/lane/lane.go core/lane/verdict.go core/lane/verdict_test.go core/release/notes/F1V59P.md core/role/jaira/SKILL.md core/shipped/shipped.sha256 internal/cli/flow.go internal/cli/verdict_test.go scripts/demoworld.sh
 - **2026-11-21 20:02 · Alexander Sacharov** — testing: back to in-progress for the two bughunt change findings. Fix of the class: the send-back rule must hold for every move that lands past the verdict lane, not only a move out of it — blocked is drawn last, so blocked→signoff is not even 'forward'. The unknown-word rule stays on the move out of the verdict lane. A lane declaring only one of the two lists is refused at load.
 - **2026-11-21 20:03 · Alexander Sacharov** — fix round 2: verdictAgainstMove now walks every verdict lane the target lies past (send-back refused from review, blocked or a skip ahead; unknown word refused out of review or out of parking); lane parse refuses one list alone, so quoteAll's '(none)' branch went. For the person (pre-existing, bughunt finding 3, gate.go ~470 since 610e33a41a): a move that skips review entirely (in-progress -> signoff) is not checked for review outputs at all - not this ticket's scope; decide note vs. own ticket.
+- **2026-11-21 20:04 · Alexander Sacharov** — critique round 3: read only the repair (441596a7a) against the two bughunt findings; both addressed; nothing breaking the DoD.

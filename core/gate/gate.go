@@ -501,7 +501,7 @@ func verdictAgainstMove(set *lane.Set, t *ticket.Ticket, target *lane.Lane) Viol
 		if !cur.DeclaresVerdicts() || to <= i {
 			continue
 		}
-		kind, _ := cur.ReadVerdict(t.ReviewVerdict)
+		kind, word := cur.ReadVerdict(t.ReviewVerdict)
 		// Out of a parking lane counts as out of the lane it was parked from:
 		// blocked does not say which that was, and it returns there.
 		leaving := t.Status == cur.ID
@@ -509,14 +509,13 @@ func verdictAgainstMove(set *lane.Set, t *ticket.Ticket, target *lane.Lane) Viol
 			leaving = true
 		}
 		if kind == lane.VerdictSendBack || (kind == lane.VerdictUnknown && leaving) {
-			return verdictRefusal(set, cur, t, target)
+			return verdictRefusal(set, cur, t, target, kind, word)
 		}
 	}
 	return nil
 }
 
-func verdictRefusal(set *lane.Set, cur *lane.Lane, t *ticket.Ticket, target *lane.Lane) Violations {
-	kind, word := cur.ReadVerdict(t.ReviewVerdict)
+func verdictRefusal(set *lane.Set, cur *lane.Lane, t *ticket.Ticket, target *lane.Lane, kind, word string) Violations {
 	back := sendBackTo(set, cur)
 	switch kind {
 	case lane.VerdictSendBack:
