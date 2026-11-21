@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-21T08:25:27Z
+updated-at: 2026-11-21T08:25:31Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -30,8 +30,8 @@ outcome-resolves: SDBCT5
 review-summary: "Ein Satz an der Regel 'the ticket rides with the code' im generierten Agent-Block (core/board/announce.go), in der jaira-Rolle (core/role/jaira/SKILL.md + .claude-Kopie) und in docs/AGENTS.md: auf einem noch nicht geteilten Board gibt es keine Ticketdatei, also nur den Code committen, der Handle im Subject ist die einzige Verbindung; der Punkt 'commits nothing' gilt dort erst recht. Die fertigen Commit-Zeilen in jaira-worker und jaira-role-lane sagen, die Ticketdatei dort wegzulassen (git verweigert sie als ignoriert); jaira-role-pr wertet einen Code-Commit ohne Ticketdatei dort nicht mehr als Befund. --proof stand schon im Block. Ein Test haelt die Saetze in Block und Rolle fest; CLAUDE.md/AGENTS.md sind regeneriert, shipped.sha256 und Release-Note ergaenzt."
 round: 5
 review-gaps: |-
-  note: core/board/announce_test.go:232 - the doc comment still names the old test TestAgentNoteSaysTheTicketCannotRideOnAnUnsharedBoard; the func is TestAgentNoteNamesProofAndTheUnsharedBoardCaveat
-  note: core/release/notes/SDBCT5.md:2 lists jaira, jaira-worker and jaira-role-lane but not jaira-role-pr, whose point 2 also changed and is refreshed by the same jaira update --roles
+  note: core/shipped/shipped.sha256 bekommt je zwei Hashes fuer core/role/jaira/SKILL.md und jaira-role-pr/SKILL.md, davon je einer ein Zwischenstand dieses Branches, der nie ausgeliefert wurde - harmlos (nur Append), aber Ballast im Manifest
+  note: der Test prueft die Rolle core/role/jaira/SKILL.md, nicht die neuen Saetze in jaira-worker, jaira-role-lane, jaira-role-pr und docs/AGENTS.md - die sind reine Prosa, ein Wegfall faellt keinem Test auf
 test-verdict: "pass: no code change since 99be9268; go test -race ./... RC=0 at 24658f47, go test ./core/board ./core/role ./core/shipped RC=0 at 99be9268; DoD 1-7 hold in the tree"
 hunt-verdict: "pass: bughunt done at 99be9268 (diff since d71e5e86: 99be9268 + shipped.sha256 union of 24658f47), 0 change, 0 pre-existing"
 review-verdict: "pass - all 7 DoD items hold in the diff; current hashes of the 4 changed roles are in shipped.sha256; .claude/skills/jaira equals core/role/jaira byte for byte; agent blocks in CLAUDE.md and AGENTS.md are identical; no further live commit line names .jaira/tickets without the caveat; go test core/board core/role core/shipped internal/cli -count=1 green. Two cosmetic notes, no blocker."
