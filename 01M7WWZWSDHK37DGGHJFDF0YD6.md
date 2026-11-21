@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:10:55Z
+updated-at: 2026-11-21T08:10:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
@@ -126,3 +126,4 @@ review-check: "1. go test ./core/move -run 'TestMoveRecords|TestMoveCountsOne' -
 - **2026-11-20 23:24 · Alexander Sacharov** — worker stopped: ticket in signoff after a fresh review without a blocker; branch feat/df0yd6 pushed at 1789d202; the ticket file carries the review fields uncommitted. Open for the person: review note 1 (count 3 or more) is a small edge worth a mini round; notes 2 and 3 are known limits.
 - **2026-11-21 07:59 · Alexander Sacharov** — Given back from signoff: Alex 21.11. alle Funde in dieser Runde schliessen. 1) 20-in-progress.md + Zwilling: 'count 3 or more' statt 'count 3'. 2) Pruefen, ob ein CLI-'jaira move' eines Menschen aus einer Loop-Lane als person zaehlen kann (z.B. ohne Agent-Umgebung/Interactive-TTY); wenn klein, bauen, sonst als known limit begruenden. 3) Cockpit: fuer ein Verdict einer frueheren Runde die alten Review-Funde (nicht optimize-Zeilen) wieder zeigen, damit DoD 6 ohne Explain gilt. Danach Diff-Hunt, review, signoff, push.
 - **2026-11-21 08:01 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/4205.sock
+- **2026-11-21 08:10 · Alexander Sacharov** — round 3 decisions: (2) a CLI move counts as a person's when stdin and stdout are both a terminal - agent shells (Claude Code Bash, Codex, Herdr tabs) run through pipes; checked: this session's Bash has no TTY. known limit: '! jaira move' inside a Claude session and scripts have no terminal and still record by=lane; ByPerson opens no gate, so a faked terminal only resets a loop count. A --by-person flag was rejected: any agent could pass it. (3) fixed at the cause instead of guessing by line shape: jaira copies review-gaps into review-verdict-gaps whenever verdict or gaps are written in the verdict's round (inside the locked Mutate); the cockpit and both Explain prompts read the copy for an earlier-round verdict; an older ticket without the copy lists no notes, as before.
