@@ -1270,7 +1270,11 @@ The pull request belongs to the maintainer from the moment it exists. An agent
 pushes its branch and stops there: it does not open the pull request, does not
 merge one, and does not approve one. Opening it is the maintainer's call, given
 as an instruction — so whoever wrote the change is never whoever decides it
-arrives.
+arrives. This repository's board has no `.jaira/pr`; a board
+that commits one saying `agent` lets jaira-role-pr open the pull request once
+`jaira roles pr-gate` finds every ticket on the branch in done, or in signoff
+where `.jaira/pr-when` says so — merging and approving stay the maintainer's
+there too.
 
 Layering is enforced by the module graph: `core/` imports nothing from `cmd/` or
 `internal/`. The CLI and the TUI are peers over the same core, which is the only
