@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:54:08Z
+updated-at: 2026-11-21T08:54:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1876460
 claimed-at: 2026-11-21T08:39:00Z
@@ -35,7 +35,7 @@ outcome-resolves: "the recommendation can no longer contradict its own status li
 review-summary: "critique 21.11. round 6: rule 0 is placed ahead of the table rules where it belongs - a check is no note; teamlead keeps pointing to the role, no second copy of the rules. Nothing to change."
 round: 14
 review-gaps: "optimize 21.11. round 6: nothing to remove."
-test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at 390088c7; DoD 1-4 verified in the tree; empty head now leaves only tests and hunt as ?. Roles write nothing - no concurrent-writer case."
+test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at a3af8998; DoD 1-4 verified in the tree; return rule 0 puts a status-line ❌ ahead of the table, sha prefix compare in both roles. Roles write nothing - no concurrent-writer case."
 hunt-verdict: "clean: diff hunt at 390088c7 (HEAD), 0 findings"
 question: ""
 review-verdict: "give back: DoD 1, 3 and 4 are met and go test ./core/role ./core/shipped is green, but DoD 2's recommendation ignores the status line's own ❌ checks, so the role can recommend accepting a ticket whose CI failed at the head; a three-line rule closes it"
