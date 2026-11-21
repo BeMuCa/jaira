@@ -25,10 +25,10 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T09:38:23Z
+updated-at: 2026-11-21T09:41:21Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-2485785
-claimed-at: 2026-11-21T08:57:23Z
+claimed-by: DESKTOP-RFTCH11-3769961
+claimed-at: 2026-11-21T09:41:21Z
 outcome-what: "signoff reads the .jaira-only hunt exemption off jaira's own derivation (show --for-lane <diff lane> --json) instead of a git-log scan"
 outcome-why: "teamlead 10:30 option 1: three hunts in a row found edges of the scan, one class - re-implementing jaira's commit derivation in shell"
 outcome-resolves: "the exemption uses exactly the commits jaira counts as the ticket's; no diff stays ?"
