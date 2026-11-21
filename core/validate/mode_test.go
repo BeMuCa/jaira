@@ -66,3 +66,29 @@ func TestKnownModesAreNotReported(t *testing.T) {
 		}
 	}
 }
+
+// stop-after-fix reads as on only for "true": a hand-written "yes" reads as
+// off without a word, so validate names it and the repair; what jaira reads
+// as meant is silent.
+func TestUnreadableStopAfterFixIsReported(t *testing.T) {
+	for _, c := range []struct {
+		value string
+		warn  bool
+	}{
+		{"yes", true}, {"on", true}, {"1", true},
+		{"", false}, {"true", false}, {"false", false}, {"True", false}, {" true ", false},
+	} {
+		tkt := tk(ticket.NewID(time.Now()), "saf", "todo")
+		tkt.Goal, tkt.Context, tkt.Assignee, tkt.DoD = "g", "c", "berk", "d"
+		tkt.StopAfterFixRaw = c.value
+		ps := Tickets([]*ticket.Ticket{tkt}, lanes(t), nil)
+		if has(ps, CodeBadStopAfterFix) != c.warn {
+			t.Errorf("stop-after-fix %q: reported %v, want %v (%v)", c.value, !c.warn, c.warn, codes(ps))
+		}
+		for _, p := range ps {
+			if p.Code == CodeBadStopAfterFix && (p.Severity != SeverityWarning || !strings.Contains(p.Message, c.value) || !strings.Contains(p.Message, "stop-after-fix=true")) {
+				t.Errorf("stop-after-fix %q: %+v, want a warning naming the value and the repair", c.value, p)
+			}
+		}
+	}
+}

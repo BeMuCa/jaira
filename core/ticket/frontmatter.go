@@ -275,6 +275,11 @@ func (d *Doc) Keys() []string {
 // place, preserving the line's indentation, quoting style and trailing comment.
 // A missing key is appended at the end of the frontmatter.
 func (d *Doc) SetScalar(key, val string) error {
+	// A carriage return is stored as the line break it means: left in, it
+	// ends the line in the middle of the value and every later write of the
+	// file is refused ("value position is at end of line"). One place, so
+	// every field and every writer — set, create, note — gets the same.
+	val = strings.ReplaceAll(strings.ReplaceAll(val, "\r\n", "\n"), "\r", "\n")
 	node, err := d.find(key)
 	if err != nil {
 		return err

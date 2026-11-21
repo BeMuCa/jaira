@@ -74,6 +74,24 @@ jaira dod <id> --add "every write tool rejects or strips what the store cannot h
 jaira dod <id> --add "acceptance rule: losing body text is worse than keeping a stray header"
 ```
 
+## The loop brake
+
+testing, review and the bug hunt send work back for a blocker and for nothing
+else. What a blocker is lives on the ticket, so it is set once, here, where it
+costs a sentence:
+
+- **`blocker-rule`** — leave it empty and the default holds: a wrong result,
+  data loss, a crash, a security hole. Set it where this ticket needs a
+  narrower or a wider line, in one sentence a later lane can apply:
+  `jaira set <id> blocker-rule="a wrong total or a lost row; layout is never one"`.
+- **`stop-after-fix`** — off by default: every round after a fix hunts the
+  diff since the last hunt, and that hunt finds defects in the fix itself.
+  Turn it on only where a further hunt cannot find anything worth a round — a
+  ticket that changes prompts or docs and no code:
+  `jaira set <id> stop-after-fix=true`.
+
+A person can change either later; say in a note why you set one.
+
 When the plan rests on something you had to work out, put that reasoning in a
 note (`jaira note <id> <text>`), so the next reader knows why the plan looks
 like this rather than re-deriving it.

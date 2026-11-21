@@ -448,7 +448,9 @@ before its ticket is in `done` — not when the work is committed, and not when
 the branch is pushed. You never see the pull request: opening it is the human's
 call — or `/jaira-role-pr`'s, on a board whose `.jaira/pr` says `agent`, once
 every ticket on the branch is in done (in signoff, where `.jaira/pr-when` says
-signoff) — and it can come long after your last worker has finished.
+signoff) — and it can come long after your last worker has finished. A board
+whose `.jaira/pr` says `none` has no pull request at all: `/jaira-role-pr`
+lands the branch on the default branch once every ticket on it is in done.
 
 **Your own tab closes only through `close-tab.sh`.** Do not keep working to
 stay useful — a dispatcher whose ticket has reached a human lane is finished.
@@ -467,6 +469,13 @@ a changed lane, tag or logbook file keeps the tab; otherwise it prints
 `kept <ticket>: <reason>` and the tab stays. A message that did not reach the
 parent means no `--parent` here: the report is then in your tab. Without a
 parent you never run it — the person reads you in this tab.
+
+## Before anything is pushed
+
+Whoever pushes the ticket's branch — a worker of yours or `/jaira-role-pr` —
+runs the project's own CI gates locally first, as `jaira-worker` describes under
+"Before you push". Put that line into the brief of the worker that pushes, and
+do not report a pushed branch as ready without its gate result.
 
 ## When to stop and hand back
 

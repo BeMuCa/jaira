@@ -339,7 +339,7 @@ func NoteIsCurrent(root string, lanes []LaneFact) (current bool, stale []string)
 			continue
 		}
 		bare := withoutVersion(string(existing))
-		want, ok := managedBlock(bare, noteFor(lanes))
+		want, ok := managedBlock(bare, noteFor(root, lanes))
 		if !ok {
 			continue // no managed block: this file is somebody else's entirely
 		}
@@ -350,8 +350,11 @@ func NoteIsCurrent(root string, lanes []LaneFact) (current bool, stale []string)
 	return len(stale) == 0, stale
 }
 
-// noteFor is the note as it would be written for these lanes.
-func noteFor(lanes []LaneFact) string { return agentNote + laneSection(lanes) }
+// noteFor is the note as it would be written for these lanes on the board at
+// root: the commands, the lanes, and how work arrives there (.jaira/pr).
+func noteFor(root string, lanes []LaneFact) string {
+	return agentNote + laneSection(lanes) + arrivalSection(PRModeFor(root))
+}
 
 // versionLine opens the block with the version of jaira that last changed its
 // text, so an older jaira can tell it is looking at a newer block and leave it
@@ -673,7 +676,7 @@ func announceIn(root string, names []string, lanes []LaneFact, dry bool) (writte
 // the user wrote is not something a tool should do invisibly.
 func announceInAgentFile(root, name string, lanes []LaneFact, dry bool) (path string, action string, err error) {
 	path = filepath.Join(root, name)
-	note := agentNote + laneSection(lanes)
+	note := noteFor(root, lanes)
 	block := jairaMarkerStart + "\n" + versioned(note) + "\n" + jairaMarkerEnd + "\n"
 
 	existing, readErr := os.ReadFile(path)

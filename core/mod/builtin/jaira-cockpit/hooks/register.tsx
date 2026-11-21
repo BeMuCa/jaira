@@ -5,7 +5,7 @@ import {
   branchesFor, carrierBranch, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
   explanationNotes, explanationOf, isOlder, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, upgradeCheckOf,
-  type Action, type Agent, type Option, type Waiting,
+  type Action, type Agent, type NoteClass, type Option, type Waiting,
 } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
 import { digest } from './digest.ts'
@@ -590,13 +590,30 @@ async function pullTarget($: EngineInterface, repoDir: string): Promise<Target |
 // A forge that cannot be asked leaves the pull request unchecked: the rule
 // gets undefined for it, and the hint says why no pull request was looked
 // at. A string is a failure: no pull request is opened, and the pane says why.
-type Decided = { step: StepAfterAccept; branch?: string; hint: string }
+//
+// A board whose .jaira/pr says none (XB97NJ) takes no pull requests: the pr
+// lane lands the branch instead, behind 'jaira roles pr-gate'. Landing needs
+// a remote, not a forge: a host that names no forge lands on origin, as
+// jaira-role-pr does there. What the role cannot land past stops here too,
+// with its reason — no origin at all, a forge that does not answer (whether
+// origin is a fork cannot be told), a fork whose parent no remote points at.
+// The step is the same 'pr' and `land` says which of the two it is.
+type Decided = { step: StepAfterAccept; branch?: string; hint: string; land?: boolean }
 
 async function decideStep($: EngineInterface, b: { dir: string; repo: string }, id: string, terminal: string, porcelain: string): Promise<Decided | string> {
   const found = branchesFor(porcelain, id)
-  const target = await pullTarget($, b.repo)
-  if (typeof target === 'string') return { step: stepAfterAccept(0, [], undefined), hint: t.prUnchecked(target) }
-  const base = target?.base ?? found.base
+  const asked = await pullTarget($, b.repo)
+  // Under none a reason is held until there is something to land: a branch
+  // with nothing ahead, or a ticket still open, is no failure.
+  const target = typeof asked === 'string' ? undefined : asked
+  // Without a forge to name it, the base is origin's default branch — what
+  // 'pr-gate --land' and jaira-role-pr read — and the local one only where
+  // origin has none to show.
+  const base = target?.base ?? await originDefault($, b.repo) ?? found.base
+  // The base decides, as the gate does: this checkout's .jaira/pr may be the
+  // branch's own word for itself.
+  const land = base !== undefined && await landsWithoutPullRequest($, b.repo, base)
+  if (typeof asked === 'string' && !land) return { step: stepAfterAccept(0, [], undefined), hint: t.prUnchecked(asked) }
   let branch = found.ticket
   // No worktree: the branch spawn.sh named <prefix>/<slug>, left behind
   // when the worktree went; else the branch whose commits name the ticket,
@@ -620,7 +637,13 @@ async function decideStep($: EngineInterface, b: { dir: string; repo: string }, 
   const list = await run($, ['jaira', 'list', '--json'], b.dir, 30_000)
   if (list?.exitCode !== 0) return `jaira list: ${withoutWarnings(list?.stderr ?? '') || 'did not run'}`
   const pending = pendingOf(list.stdout, ticketsNamed(subjects.stdout), terminal)
-  if (pending.length > 0) return { step: stepAfterAccept(ahead, pending, false), branch, hint: t.prWaits(branch, pending) }
+  if (pending.length > 0) return { step: stepAfterAccept(ahead, pending, false), branch, hint: land ? t.landWaits(branch, pending) : t.prWaits(branch, pending), land }
+  if (land && typeof asked === 'string') return t.cannotLand(asked)
+  if (land && target === undefined) {
+    const origin = await run($, ['git', 'remote', 'get-url', 'origin'], b.repo)
+    if (origin?.exitCode !== 0) return t.cannotLand(t.noOrigin)
+  }
+  if (land) return { step: stepAfterAccept(ahead, pending, false), branch, hint: '', land }
   if (target === undefined) return t.noForge(branch)
   const cmd = pullRequestsCommand(target.on, target.repo, branch)
   const listed = await run($, cmd, b.repo, 30_000)
@@ -645,12 +668,12 @@ async function afterAccept($: EngineInterface, id: string, terminal: string): Pr
   const decided = await decideStep($, b, id, terminal, trees?.exitCode === 0 ? trees.stdout : '')
   const stuck = (why: string) => fail($, t.afterAccept(id), `${why}\n${t.staysDone(id)}`)
   if (typeof decided === 'string') return stuck(decided)
-  const { step, branch, hint } = decided
+  const { step, branch, hint, land } = decided
   // No pull request to open: only why not, where there is a reason.
   if (step !== 'pr' || branch === undefined) return hint ? say($, t.acceptedNoPr(id, hint)) : undefined
   const bin = await herdr($)
   const script = await spawnScript($)
-  if (bin === undefined || script === undefined) return stuck(t.prNeedsHerdr(branch))
+  if (bin === undefined || script === undefined) return stuck(land ? t.landNeedsHerdr(branch) : t.prNeedsHerdr(branch))
   // In the worktree that carries the branch — the role pushes from there —
   // checked out again beside the repository where it went after done.
   let wt = trees?.exitCode === 0 ? worktreeOfBranch(trees.stdout, branch) : undefined
@@ -661,7 +684,30 @@ async function afterAccept($: EngineInterface, id: string, terminal: string): Pr
   }
   const r = await run($, [...script, '--no-worktree', id.toLowerCase(), id, 'pr', wt], wt, 120_000)
   if (r?.exitCode !== 0) return stuck(`spawn.sh: ${output(r).slice(-160)}`)
-  return say($, t.prStarted(id, branch))
+  return say($, land ? t.landStarted(id, branch) : t.prStarted(id, branch))
+}
+
+// origin's default branch as a remote-tracking name: origin/HEAD where it
+// resolves, else origin/main or origin/master; undefined when origin has
+// none of them here.
+async function originDefault($: EngineInterface, repo: string): Promise<string | undefined> {
+  const head = await run($, ['git', 'rev-parse', '--abbrev-ref', '--verify', '-q', 'refs/remotes/origin/HEAD'], repo)
+  if (head?.exitCode === 0 && head.stdout.trim()) return head.stdout.trim()
+  const refs = await run($, ['git', 'for-each-ref', '--format=%(refname:short)', 'refs/remotes/origin/main', 'refs/remotes/origin/master'], repo)
+  if (refs?.exitCode !== 0) return undefined
+  return refs.stdout.split('\n').map(l => l.trim()).find(l => l === 'origin/main') ?? refs.stdout.split('\n').map(l => l.trim()).find(l => l === 'origin/master')
+}
+
+// Whether .jaira/pr says none as base holds it, read as jaira reads it: the
+// first line that is neither blank nor a comment, a byte order mark dropped,
+// exactly 'none'. No such file in base, or anything else in it, is the pull
+// request path, as before. Read from the base, as 'jaira roles pr-gate
+// --land' reads it, never off this checkout's disk.
+async function landsWithoutPullRequest($: EngineInterface, repo: string, base: string): Promise<boolean> {
+  const shown = await run($, ['git', 'show', `${base}:.jaira/pr`], repo)
+  if (shown?.exitCode !== 0) return false
+  const word = shown.stdout.replace(/^\uFEFF/, '').split('\n').map(l => l.trim()).find(l => l !== '' && !l.startsWith('#'))
+  return word === 'none'
 }
 
 // The person's jaira settings, where jaira reads them: JAIRA_HOME, else
@@ -1374,6 +1420,11 @@ export const register: Register = (on, options) => {
                 : null}
             </Box>
             {w.question !== '' ? <Text dimColor wrap="truncate-end">  ? {w.question}</Text> : null}
+            {/* A verdict an earlier round wrote: said, so a ticket moved on
+                past a refusing review does not reach the person silent. */}
+            {w.reviewedIn !== undefined ? <Text color="warning" wrap="truncate-end">  {t.reviewedIn(w.reviewedIn)}</Text> : null}
+            {/* The review's notes, read and not decided: no button. */}
+            {w.notes.map((n, i) => <Text key={`note-${w.id}-${i}`} dimColor wrap="truncate-end">  · {n}</Text>)}
           </Box>
         ))}
         {waiting.length > BAND_TICKETS
@@ -1478,6 +1529,13 @@ export const register: Register = (on, options) => {
     // colours for that step, whether the review recommends it, highlighted;
     // the rest of the row neutral. Drawn as many rows as it needs.
     const mark = (a: Action) => (a === 'accept' ? t.actionAccept : t.actionGiveBack)
+    // A review note's class in the theme's colours, so a light terminal reads
+    // them too: a blocker red, a small edge yellow, a known limit dim, one
+    // that belongs to another ticket blue.
+    const noteMark = (cls: NoteClass, label: string) =>
+      cls === 'limit'
+        ? <Text dimColor>{`[${label}]`}</Text>
+        : <Text bold color={cls === 'blocker' ? 'error' : cls === 'edge' ? 'warning' : 'suggestion'}>{`[${label}]`}</Text>
     const said = (o: Option) =>
       `${o.text}${o.action !== undefined ? ` ${mark(o.action)}` : ''}${o.key === x.recommended ? ` ${t.recommended}` : ''}`
     const line = (o: Option) => (
@@ -1504,8 +1562,23 @@ export const register: Register = (on, options) => {
           ? open
             ? <Button key={`pick-${id}-${p.key}`} plain hotkey={digit(p.key)} label={said(p)} {...(p.key === (x.recommended ?? x.options[0]?.key) ? { autoFocus: true as const } : {})} onPress={() => pick(p)}>{line(p)}</Button>
             : <Box key={`part-${i}`} flexDirection="row"><Text bold>{`  ${p.key}) `}</Text>{line(p)}</Box>
+          // The status line: a green tick or a red cross per check.
+          : p.kind === 'status'
+            ? <Box key={`part-${i}`} flexDirection="row" marginBottom={1}><Text wrap="wrap">{p.checks.map((c, j) => (
+                <Text key={`check-${j}`}>
+                  {j > 0 ? '   ' : ''}
+                  {c.unknown ? <Text dimColor>{'? '}</Text> : c.ok === undefined ? null : <Text color={c.ok ? 'success' : 'error'}>{c.ok ? '✓ ' : '✗ '}</Text>}
+                  {c.label}
+                </Text>
+              ))}</Text></Box>
+          // A review note: only its class mark coloured, the text plain.
+          : p.kind === 'note'
+            ? <Box key={`part-${i}`} flexDirection="row"><Text wrap="wrap">{noteMark(p.cls, p.label)} {p.text}</Text></Box>
+          // The recommendation, bold in a colour of its own.
+          : p.kind === 'recommendation'
+            ? <Box key={`part-${i}`} marginTop={1}><Text wrap="wrap" bold color="claude">{p.text}</Text></Box>
           // A paragraph a line apart; the options one under the other.
-          : <Box key={`part-${i}`} marginTop={i > 0 ? 1 : 0} marginBottom={x.parts[i + 1]?.kind === 'option' ? 1 : 0}><Text wrap="wrap">{p.text}</Text></Box>)}
+          : <Box key={`part-${i}`} marginTop={i > 0 && x.parts[i - 1]?.kind !== 'status' ? 1 : 0} marginBottom={x.parts[i + 1]?.kind === 'option' ? 1 : 0}><Text wrap="wrap">{p.text}</Text></Box>)}
         {/* Answered already, on the ticket: the choice is read, not offered again. */}
         {open
           ? <Box marginTop={1}><Button key={`pick-${id}-own`} plain hotkey={ownDigit} {...(x.options.length === 0 ? { autoFocus: true as const } : {})} label={t.ownAnswer} onPress={() => void askOwnAnswer($, id)} /></Box>

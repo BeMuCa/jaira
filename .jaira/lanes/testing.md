@@ -29,6 +29,13 @@ no hint where to look:
     Agent(subagent_type: "claude", run_in_background: true,
           prompt: "Read the jaira-role-bughunt skill and hunt ticket <handle>.")
 
+**Except after a fix on a ticket that opts out.** `stop_after_fix: true` in
+this lane's payload (`jaira show <handle> --for-lane testing --json`) and
+`round` above 1: start no hunt this round, run your passes over what changed
+since the last hunt, and write
+`hunt-verdict="pass: stop-after-fix, no hunt in round <n>"`. Off — the default
+— the hunt runs every round, over the diff since the last one.
+
 It changes nothing and moves nothing; it leaves one `bughunt:` note per
 verified finding and a closing `bughunt: done at <commit>` line. Do not wait for
 it: run your own passes now, yourself. Where the change touches nothing outside
@@ -95,9 +102,10 @@ fields are owed: the gate refuses the move out of this lane while either is
 empty. A red suite does not cancel the hunt either: wait for it, so the next
 round fixes both at once.
 
-**What sends it back is a blocker, and only four things are:** a wrong result,
-data loss, a crash, a security hole. A failed gate or an unmet
-definition-of-done item is a wrong result. Anything smaller of this change —
+**What sends it back is a blocker, and the ticket says what one is:**
+`blocker_rule` in this lane's payload. Where the ticket sets none it is the
+default — a wrong result, data loss, a crash, a security hole — and a failed
+gate or an unmet definition-of-done item is a wrong result under any rule. Anything smaller of this change —
 a missing guard that breaks nothing yet, a test that covers the example but
 not its neighbour — rides along in the note of a round that goes back anyway.
 Otherwise it is a note on the ticket for the review and the person

@@ -39,6 +39,10 @@ const (
 	CodeUndeclaredDep = "undeclared_dependency"
 	CodeBadTag        = "bad_tag"
 	CodeBadMode       = "bad_mode"
+	// CodeBadStopAfterFix: stop-after-fix holds a value jaira reads as off
+	// though somebody wrote something — "yes", "on". jaira set refuses it;
+	// a hand edit or a merge does not.
+	CodeBadStopAfterFix = "bad_stop_after_fix"
 	// CodeDanglingParent, CodeSelfParent and CodeParentCycle guard the parent
 	// chain. It is followed recursively wherever children are rendered, so a
 	// ring in it is a hung view rather than a wrong one — which is why a
@@ -219,6 +223,14 @@ func TicketsOnBoards(ts []*ticket.Ticket, lanesOf func(*ticket.Ticket) *lane.Set
 			add(CodeBadMode, SeverityWarning, ticket.FieldMode,
 				"mode %q is not a mode: an agent reads it as no mode at all and runs autonomously; set it with 'jaira set %s mode=%s' or clear it with 'mode='",
 				t.Mode, handleOf(t.ID), ticket.ModeConversational)
+		}
+		// stop-after-fix is read as on only for "true" (any case, trimmed):
+		// a hand-written "yes" turns the hunt after a fix back on without a
+		// word. A warning, like a bad mode: the ticket itself is intact.
+		if _, ok := ticket.CanonicalStopAfterFix(t.StopAfterFixRaw); !ok {
+			add(CodeBadStopAfterFix, SeverityWarning, ticket.FieldStopAfterFix,
+				"stop-after-fix %q is not true or false: jaira reads it as off and runs the bug hunt after a fix; set it with 'jaira set %s stop-after-fix=true' or clear it with 'stop-after-fix='",
+				t.StopAfterFixRaw, handleOf(t.ID))
 		}
 
 		declared := make(map[string]bool, len(t.BlockedBy))

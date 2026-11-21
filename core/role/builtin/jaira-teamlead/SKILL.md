@@ -209,8 +209,17 @@ round does not cover code a later round changed:
 
 ```bash
 jaira show <id> | grep -E -- "— bughunt: done at [0-9a-f]{7,} " | tail -n 1   # the hunt's closing note
-git rev-parse --short feat/<ticket id, lower case>         # the commit that ships
+git rev-parse <the ticket's branch>                       # the commit that ships
 ```
+
+The note's sha covers the commit when it is a prefix of that full sha — two
+clones abbreviate to different lengths, so never compare two short forms.
+
+The ticket's branch is the one whose name carries its handle as a segment —
+not necessarily `feat/<id>`; `jaira-role-signoff` holds the lookup, which
+takes the copy every other local and remote copy leads up to. No such branch,
+or copies that diverged with none leading on from the rest: the commit is
+unknown, and so is the hunt's cover.
 
 No such line naming that commit, on a ticket whose diff touches anything
 outside `.jaira/`: the hunt was skipped. Do not report the ticket as ready. Start the hunt yourself —
@@ -221,12 +230,49 @@ in that lane.
 
 ## Report to the human
 
-Per ticket, three lines and no more:
+**Read the state again before any list of what waits for them.** The person
+accepts, gives back and merges in the board, the cockpit and the browser, and
+none of that reaches you. A list from your last turn is stale by the time you
+repeat it — on 2026-11-20 a teamlead kept listing tickets as open that had been
+decided an hour earlier. So, every time a reply would name what is waiting:
+
+```bash
+jaira show <id> --json        # for each ticket in play: its lane now
+gh pr list --state open        # or glab mr list: which pull requests are still open
+```
+
+List only what is still open, and show that list only when it changed since you
+last showed it — not appended to every message.
+
+Per ticket in flight, three lines and no more:
 
 - what changed
 - which lane it sits in now
 - what is open, and whether it needs them — a `note:` line in `review-gaps`
   is open for them to decide, never a ticket you create
+
+**A ticket in signoff or a human lane gets the decision shape instead**,
+because there the person has to decide, and notes read one after another sound
+like a list of faults — a known limit and a real blocker in the same voice.
+Measured the same day: tickets were given back for notes that, sorted, were
+fine to accept. The shape is the one `/jaira-role-signoff <id>...` produces;
+run it, or write the same yourself:
+
+1. one status line, ✅, ❌ or `?` per check — the checks and how to read each are
+   the role's, so the two lists cannot drift: DoD x/y, tests, bug hunt on the
+   branch head, blockers, review verdict, returns from signoff — each bound to
+   the branch's head commit; a CI run for an older commit is `?`, a hunt for
+   one is ❌, never ✅
+2. one table, a row per open note — the note in one plain sentence and one
+   mark: 🔴 blocker (wrong result, lost data, crash, security), 🟡 small edge
+   (one round of ten minutes), ⚪ known limit, 🔵 not from this ticket (and
+   where it gets fixed)
+3. **one recommendation** in bold, with its reason, and both lines ready to
+   paste — accept and give back
+
+The recommendation follows the return rules in `jaira-role-signoff` — read
+them there, not from memory: they are what ends a ticket going round signoff
+forever.
 
 Then one concrete next action. If nothing needs the human, say what you are
 starting next and start it — do not ask permission for work already on the
@@ -249,6 +295,9 @@ board.
   ticket is in signoff, and done waits until `scripts/pr-round.sh settled`
   finds no thread open, no review requested and none requesting changes —
   say so when the person accepts. Merging and approving stay the maintainer's there too.
+  Where `pr` says `none` the project takes no pull requests: once every ticket
+  on the branch is in done, start `/jaira-role-pr <id>` and it lands the branch
+  on the default branch through `jaira roles pr-gate` and a fast-forward push.
 - A permission your session was refused is not something to route around by
   starting a worker. Take it back to the human.
 

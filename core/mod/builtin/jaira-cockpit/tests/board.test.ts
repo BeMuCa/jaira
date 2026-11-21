@@ -72,6 +72,12 @@ type World = {
   toasts: string[]
   // `git remote -v`.
   remotes: string
+  // .jaira/pr as the base holds it (`git show <base>:.jaira/pr`); undefined:
+  // no such file there.
+  basePr?: string
+  // origin's default branch where no forge names it (`git rev-parse
+  // --abbrev-ref origin/HEAD`); undefined: origin/HEAD not set here.
+  originHead?: string
   // The forge answers `repo view` but refuses `pr list`.
   prListFails: boolean
   nextFails: boolean
@@ -273,6 +279,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     }
     if (cmd === 'jaira' && args[0] === 'whoami') return ok(w.me === undefined ? '' : JSON.stringify(w.me))
     if (cmd === 'jaira' && args[0] === 'show') return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ handle: args[1], body: w.bodies[args[1]!] ?? '' }))
+    if (cmd === 'git' && args[0] === 'rev-parse' && args[1] === '--abbrev-ref') return w.originHead === undefined ? { value: { exitCode: 1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } } : ok(`${w.originHead}\n`)
     if (cmd === 'git' && args[0] === 'rev-parse') return ok('/repo/.git\n')
     if (cmd === 'git' && args[0] === '--exec-path') return ok('C:\\Program Files\\Git\\mingw64\\libexec\\git-core\n')
     if (cmd === 'git' && args[0] === 'worktree') return ok(w.worktrees ?? WORKTREES)
@@ -294,6 +301,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
         : { path_with_namespace: 'acme/repo', forked_from_project: { path_with_namespace: 'upstream/repo' }, default_branch: 'master' }))
     }
     if (cmd === 'git' && args[0] === 'remote' && args[1] === '-v') return ok(w.remotes)
+    if (cmd === 'git' && args[0] === 'show' && args[1]?.endsWith(':.jaira/pr')) return w.basePr === undefined ? failed(`fatal: path '.jaira/pr' does not exist in '${args[1].split(':')[0]}'`) : ok(w.basePr)
     if (cmd === 'git' && args[0] === 'branch' && args[1] === '--contains') return ok(w.holders.join('\n'))
     if (cmd === 'git' && args[0] === 'branch') return ok(w.branches.join('\n'))
     // Newest first, as git prints them. A --grep reads the whole message,
@@ -735,9 +743,20 @@ describe('waiting for you', () => {
     expect(asked).toContain('start one subagent (Agent tool)')
     // In the ticket's worktree, and in the shape the cockpit reads back.
     expect(asked).toContain("jaira -C '/.worktrees/repo-mg677r' note MG677R \"explain: ")
-    expect(asked).toContain('Warum: ')
-    expect(asked).toContain('Empfehlung: ')
+    expect(asked).toContain('Status: DoD ')
+    expect(asked).toContain('Recommendation: ')
+    // a ticket reviewed before jaira kept the copy has an empty verdict_gaps: its notes stay in review-gaps
+    expect(asked).toContain('Where review.verdict_gaps is not empty and differs from review.gaps')
+    // the hunt's note has scrolled out of the four newest notes by then: the brief says whether it covers the code
+    expect(asked).toContain("bughunt on HEAD ends in the brief's bughunt.state word as it stands")
+    // the format line and the status sentence name all four words, so unknown is never written as fail
+    expect(asked).toContain('bughunt on HEAD ok|fail|unknown|skipped')
+    expect(asked).not.toContain('each check ends in ok or fail')
+    for (const cls of ['[blocker]', '[small edge]', '[known limit]', '[not this ticket]']) expect(asked).toContain(cls)
     expect(asked).toContain('[give back]')
+    // Nothing reads as "this must be changed" by its shape alone.
+    expect(asked).not.toContain('Warum:')
+    expect(asked).toContain('can be accepted as it is')
   })
 
   test('without Herdr, Discuss talks the question through in this chat', async ($, on) => {
@@ -850,6 +869,84 @@ describe('waiting for you', () => {
     .replace('b) accept it as it is', '2) accept it as it is [accept]')
     .replace('c) clear the cache', '3) clear the cache')
     .replace('Empfehlung: a', 'Empfehlung: 1')
+
+  const CLASSED = [
+    '## Progress',
+    '',
+    '- **2026-11-20 18:00 · Alex** — explain: Status: DoD 7/7 ok | tests ok | blockers ok | bughunt on HEAD fail',
+    '[small edge] the export test covers 1MB, not 40MB',
+    '[known limit] Windows paths longer than 260 characters are not read',
+    '[not this ticket] the stale comment in load.go belongs to K7Q2MX',
+    'Status of a thing in prose, no checks here',
+    '1) accept it as it is [accept]',
+    '2) close the small edge first [give back]',
+    'Recommendation: 1 - no note is a blocker, it can be accepted as it is',
+  ].join('\n')
+
+  test('a classed explanation shows its checks, coloured class marks and the recommendation apart', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = CLASSED
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    // A tick or a cross per check, in the theme's colours.
+    const all = await pane.findAll({ type: 'Text' })
+    expect(all.filter(x => x.text === '✓ ' && x.props.color === 'success')).toHaveLength(3)
+    expect(all.filter(x => x.text === '✗ ' && x.props.color === 'error')).toHaveLength(1)
+    expect(await pane.find({ type: 'Text', text: 'bughunt on HEAD' })).toBeDefined()
+    // Only the marks coloured; the note text plain beside them.
+    expect(all.some(x => x.text === '[small edge]' && x.props.color === 'warning')).toBe(true)
+    expect(all.some(x => x.text === '[known limit]' && x.props.dimColor === true)).toBe(true)
+    expect(all.some(x => x.text === '[not this ticket]' && x.props.color === 'suggestion')).toBe(true)
+    expect(await pane.find({ type: 'Text', text: /the export test covers 1MB, not 40MB$/ })).toBeDefined()
+    // A line in neither shape stays as written.
+    expect(await pane.find({ type: 'Text', text: 'Status of a thing in prose, no checks here' })).toBeDefined()
+    // The recommendation bold, in a colour of its own; the option it names chosen.
+    expect(all.some(x => x.text === 'Recommendation: 1 - no note is a blocker, it can be accepted as it is' && x.props.bold === true && x.props.color === 'claude')).toBe(true)
+    expect((await pane.find({ key: 'pick-MG677R-1' }))?.props.autoFocus).toBe(true)
+  })
+
+  test('a hunt skipped on purpose is drawn without a cross', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = CLASSED.replace('bughunt on HEAD fail', 'bughunt on HEAD skipped')
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    expect(await pane.find({ type: 'Text', text: /bughunt on HEAD skipped/ })).toBeDefined()
+    const all = await pane.findAll({ type: 'Text' })
+    expect(all.filter(x => x.text === '✗ ')).toHaveLength(0)
+    expect(all.filter(x => x.text === '✓ ')).toHaveLength(3)
+  })
+
+  test('a hunt nobody can judge is a dim question mark, not a cross', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = CLASSED.replace('bughunt on HEAD fail', 'bughunt on HEAD unknown')
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    const all = await pane.findAll({ type: 'Text' })
+    expect(all.some(x => x.text === '? ' && x.props.dimColor === true)).toBe(true)
+    expect(all.filter(x => x.text === '✗ ')).toHaveLength(0)
+    expect(await pane.find({ type: 'Text', text: 'bughunt on HEAD' })).toBeDefined()
+  })
+
+  test('a blocker mark is red', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = CLASSED.replace('[small edge]', '[blocker]')
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    expect((await pane.findAll({ type: 'Text' })).some(x => x.text === '[blocker]' && x.props.color === 'error')).toBe(true)
+  })
+
+  test('a class mark in markdown emphasis is still a class mark', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = CLASSED.replace('[small edge]', '**[blocker]**')
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    expect((await pane.findAll({ type: 'Text' })).some(x => x.text === '[blocker]' && x.props.color === 'error')).toBe(true)
+  })
 
   test('a shaped explanation reads as paragraphs and one line per option, the recommended one chosen', async ($, on) => {
     const w = world(on)
@@ -986,61 +1083,114 @@ describe('waiting for you', () => {
     expect(await pane.find({ type: 'Text', text: 'Decided: b) accept it as it is' })).toBeDefined()
   })
 
-  test('a verdict with a reservation from an earlier round offers no Explain', async ($, on) => {
+  test('a verdict of an earlier round keeps its Explain and says the ticket changed since', async ($, on) => {
     const w = world(on)
     const reserved = 'approve, but the cache key ignores the branch'
     w.tickets = [
       { ...SIGNOFF, handle: 'OLD123', round: 2, review_round: 1, review: { verdict: reserved, gaps: '' } },
       { ...SIGNOFF, handle: 'NEW456', round: 2, review_round: 2, review: { verdict: reserved, gaps: '' } },
+      // Review sent it back with a blocker, the teamlead moved it on past a
+      // new review: the person must not get it silent.
+      { ...SIGNOFF, handle: 'BLK789', round: 8, review_round: 7, review: { verdict: 'Zurueck an in-progress: ein Blocker', gaps: 'blocker: the export drops the last row' } },
     ]
     await startSession($)
     const band = await $.ui.mount(BAND)
-    expect(await band.find({ key: 'explain-OLD123' })).toBeUndefined()
-    expect(await band.find({ key: 'explain-NEW456' })).toBeDefined()
+    for (const id of ['OLD123', 'NEW456', 'BLK789']) expect(await band.find({ key: `explain-${id}` })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /review of round 1, changed since/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /review of round 7, changed since/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /review of round 2/ })).toBeUndefined()
   })
 
-  test('an explanation stays readable once its verdict is an earlier round\'s; only Explain waits for the new one', async ($, on) => {
+  test('a later round\'s optimize gaps are no review notes under the row', async ($, on) => {
     const w = world(on)
-    w.tickets = [{ ...SIGNOFF, round: 2, review_round: 1, review: { verdict: 'approve, but the cache key ignores the branch', gaps: '1. a test is missing' } }]
+    w.tickets = [
+      { ...HUMAN, handle: 'OPT123', question: '', round: 2, review_round: 1, review: { verdict: 'approve', gaps: 'removed the unused helper\nnote: inlined the close element' } },
+      { ...SIGNOFF, handle: 'CUR456', round: 2, review_round: 2, review: { verdict: 'approve', gaps: 'note: a test is missing' } },
+    ]
+    await startSession($)
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ type: 'Text', text: /removed the unused helper|inlined the close element/ })).toBeUndefined()
+    expect(await band.find({ type: 'Text', text: /· note: a test is missing/ })).toBeDefined()
+  })
+
+  test('a verdict of an earlier round lists the review\'s own notes, kept beside it, not optimize\'s', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { ...HUMAN, handle: 'OLD123', question: '', round: 3, review_round: 2, review: { verdict: 'approve', gaps: 'removed the unused helper', verdict_gaps: 'note: the export test covers 1MB, not 40MB' } },
+      { ...SIGNOFF, handle: 'BLK456', round: 2, review_round: 1, review: { verdict: 'approve', gaps: 'none', verdict_gaps: 'blocker: DoD 2 - an empty export writes a header' } },
+    ]
+    await startSession($)
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ type: 'Text', text: /· note: the export test covers 1MB/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /removed the unused helper/ })).toBeUndefined()
+    // the blocker kept beside an earlier verdict offers Explain; notes alone do not
+    expect(await band.find({ key: 'explain-BLK456' })).toBeDefined()
+    expect(await band.find({ key: 'explain-OLD123' })).toBeUndefined()
+  })
+
+  test('an earlier-round verdict without a kept copy reads no blocker out of a later lane\'s gaps', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, handle: 'OPB123', round: 3, review_round: 2, review: { verdict: 'approve', gaps: 'blocker: removed the unused helper' } }]
+    await startSession($)
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ key: 'explain-OPB123' })).toBeUndefined()
+    expect(await band.find({ type: 'Text', text: /removed the unused helper/ })).toBeUndefined()
+  })
+
+  test('an explanation stays readable once its verdict is an earlier round\'s', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, round: 2, review_round: 1, review: { verdict: 'approve, but the cache key ignores the branch', gaps: 'note: a test is missing' } }]
     w.bodies.MG677R = SHAPED + '\n- **2026-10-12 15:02 · Alex** — decision: c) clear the cache on checkout\n'
     await startSession($)
     const band = await $.ui.mount(BAND)
-    expect(await band.find({ key: 'explain-MG677R' })).toBeUndefined()
     await band.press({ key: 'read-MG677R' })
     const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
     expect(await pane.find({ type: 'Text', text: 'Decided: c) clear the cache on checkout' })).toBeDefined()
   })
 
-  test('Explain is offered once the review names a gap, whatever words the verdict uses', async ($, on) => {
+  test('Explain is offered for a blocker or a reservation; notes alone are listed without a button', async ($, on) => {
     const w = world(on)
-    // WP1CHK's verdict: no word of the reservation list, a gap all the same.
-    const verdict = 'The diff meets all five DoD items and the tests prove each one (87 pass). No defect that blocks: the one weak spot is that a failed note after a successful move is not reported (gap 1), a small follow-up rather than a reason to send it back. Accept, with gap 1 either fixed now or knowingly left.'
+    const verdict = 'The diff meets all five DoD items and the tests prove each one (87 pass).'
     w.tickets = [
-      { ...SIGNOFF, handle: 'WP1CHK', review: { verdict, gaps: '1. Minor: the note after a successful move is fire-and-forget.' } },
+      // A blocker line, however the list is marked.
+      { ...SIGNOFF, handle: 'BL0CK1', review: { verdict, gaps: 'blocker: DoD 2 - an empty export still writes a header\nnote: the export test covers 1MB, not 40MB' } },
+      { ...SIGNOFF, handle: 'BL0CK2', review: { verdict, gaps: '1. Blocker: a crash on an empty file' } },
+      { ...SIGNOFF, handle: 'BL0CK3', review: { verdict, gaps: '- blocker: data loss on CRLF\r\n- note: a comment is stale' } },
+      // ... and however it is emphasised in markdown.
+      { ...SIGNOFF, handle: 'BL0CK4', review: { verdict, gaps: '**blocker:** a crash on an empty file' } },
+      { ...SIGNOFF, handle: 'BL0CK5', review: { verdict, gaps: '- **Blocker**: data loss on CRLF' } },
+      { ...SIGNOFF, handle: 'BL0CK6', review: { verdict, gaps: '`blocker`: the gate is skipped' } },
+      // A reservation in the verdict, notes beside it.
+      { ...SIGNOFF, handle: 'RESRV1', review: { verdict: 'approve, but the cache key ignores the branch', gaps: 'note: a test is missing' } },
+      // Notes only: listed, no Explain.
+      { ...SIGNOFF, handle: 'NOTES1', review: { verdict, gaps: 'note: the export test covers 1MB, not 40MB\nnote: pre-existing: load.go:41 accepts an empty file' } },
+      { ...SIGNOFF, handle: 'NOTES2', review: { verdict, gaps: '1. Minor: the note after a successful move is fire-and-forget.' } },
+      { ...SIGNOFF, handle: 'NOTES3', review: { verdict, gaps: '**note:** the blocker: rule reads fine' } },
+      // Nothing found, said in many ways.
       { ...SIGNOFF, handle: 'AB12CD', review: { verdict, gaps: 'none' } },
       { ...SIGNOFF, handle: 'EF34GH', review: { verdict: 'approve', gaps: '' } },
-      // None, with a remark after it, as reviewers on this board write it.
       { ...SIGNOFF, handle: 'GH56JK', review: { verdict, gaps: 'none — the docs could say more' } },
-      { ...SIGNOFF, handle: 'JK78LM', review: { verdict, gaps: 'keine (blockierend); eine Kleinigkeit im Kommentar' } },
-      // Said in words rather than as 'none'.
       { ...SIGNOFF, handle: 'MN12PQ', review: { verdict, gaps: 'keine Lücken' } },
       { ...SIGNOFF, handle: 'PQ34RS', review: { verdict, gaps: 'No gaps found.' } },
-      { ...SIGNOFF, handle: 'RS56TU', review: { verdict, gaps: 'No defect found — the tests cover each item' } },
-      // Not reviewed yet: what the optimize lane removed is no gap.
-      { ...HUMAN, handle: 'LM90NP', question: '', review: { verdict: '', gaps: 'inlined the single-use close element' } },
-      // A round later: the old verdict stands beside this round's optimize gaps.
-      { ...HUMAN, handle: 'TU78VW', question: '', round: 3, review_round: 2, review: { verdict, gaps: 'Runde 3: nichts entfernt' } },
-      // The verdict of this very round, and one from before rounds were counted.
-      { ...SIGNOFF, handle: 'VW90XY', round: 3, review_round: 3, review: { verdict, gaps: '1. a test is missing' } },
-      { ...SIGNOFF, handle: 'XY12ZA', round: 2, review: { verdict, gaps: '1. a test is missing' } },
+      // Not reviewed yet: a blocker-looking line of the optimize lane is no review's.
+      { ...HUMAN, handle: 'LM90NP', question: '', review: { verdict: '', gaps: 'blocker: inlined the single-use close element' } },
+      { ...HUMAN, handle: 'LM91NP', question: '', review: { verdict: '', gaps: 'inlined the single-use close element' } },
     ]
     await startSession($)
-    // Every one of them is in the band, not cut off behind '+N more'.
     const band = await $.ui.mount(BAND)
     await band.press({ key: 'more' })
     const open = await $.ui.mount(BAND)
-    for (const id of ['WP1CHK', 'VW90XY', 'XY12ZA']) expect(await open.find({ key: `explain-${id}` })).toBeDefined()
-    for (const id of ['AB12CD', 'EF34GH', 'GH56JK', 'JK78LM', 'LM90NP', 'MN12PQ', 'PQ34RS', 'RS56TU', 'TU78VW']) expect(await open.find({ key: `explain-${id}` })).toBeUndefined()
+    for (const id of ['BL0CK1', 'BL0CK2', 'BL0CK3', 'BL0CK4', 'BL0CK5', 'BL0CK6', 'RESRV1']) expect(await open.find({ key: `explain-${id}` })).toBeDefined()
+    for (const id of ['NOTES1', 'NOTES2', 'NOTES3', 'AB12CD', 'EF34GH', 'GH56JK', 'MN12PQ', 'PQ34RS', 'LM90NP']) expect(await open.find({ key: `explain-${id}` })).toBeUndefined()
+    // The notes stand under their row as text, without a button of their own.
+    expect(await open.find({ type: 'Text', text: /· note: the export test covers 1MB, not 40MB/ })).toBeDefined()
+    expect(await open.find({ type: 'Text', text: /· note: pre-existing: load\.go:41/ })).toBeDefined()
+    expect(await open.find({ type: 'Text', text: /· Minor: the note after a successful move/ })).toBeDefined()
+    expect(await open.find({ type: 'Text', text: /· note: a comment is stale/ })).toBeDefined()
+    // A blocker is no note, and 'none' is no finding.
+    expect(await open.find({ type: 'Text', text: /· blocker:/i })).toBeUndefined()
+    expect(await open.find({ type: 'Text', text: /· none/ })).toBeUndefined()
+    expect(await open.find({ type: 'Text', text: /inlined the single-use/ })).toBeUndefined()
   })
 
   test('the whole review verdict is read from the band, with no explanation on the ticket', async ($, on) => {
@@ -1445,6 +1595,83 @@ describe('after Accept', () => {
     const w = world(on, { herdr: true })
     w.ahead = 3
     w.origin = null
+    await press($)
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
+    expect(await failure($)).toContain('needs an origin on GitHub or GitLab')
+  })
+
+  test('.jaira/pr says none and the host names no forge: the press lands on origin through the pr lane, asks no pull request, and says landing', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.origin = 'git@git.example.de:acme/repo.git'
+    w.basePr = '# solo\nnone\n'
+    await press($)
+    expect(ran(w, 'gh')).toEqual([])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'mg677r', 'MG677R', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+    expect(w.toasts.at(-1)).toContain('MG677R: landing feat/mg677r on the default branch')
+    expect(w.toasts.join('\n')).not.toContain('pull request for')
+  })
+
+  test('.jaira/pr says none and there is no origin: nothing lands, and the pane says there is nothing to land on', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.origin = null
+    w.basePr = 'none\n'
+    await press($)
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
+    expect(await failure($)).toContain('no remote origin to land on')
+  })
+
+  test('.jaira/pr says none and the forge does not answer: nothing lands, since whether origin is a fork cannot be told, and the pane says why', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 2
+    w.prs = null
+    w.basePr = '\uFEFFnone\r\n'
+    await press($)
+    expect(prLane(w)).toEqual([])
+    const why = await failure($)
+    expect(why).toContain('Nothing lands from here')
+    expect(why).toContain('gh: command not found')
+  })
+
+  test('.jaira/pr says none and another ticket on the branch is not in done: nothing lands, and the press says which', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 2
+    w.origin = null
+    w.subjects = ['feat(MG677R): cache key', 'fix(T8QS1Y): filter']
+    w.basePr = 'none\n'
+    await press($)
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
+    expect(w.toasts.at(-1)).toBe('MG677R accepted; feat/mg677r does not land yet: T8QS1Y not in done')
+  })
+
+  test('.jaira/pr says none only in this checkout, not in the base: the base decides, so it is the pull request path', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.origin = null
+    w.files.set('/repo/.jaira/pr', 'none\n')
+    await press($)
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
+    expect(await failure($)).toContain('needs an origin on GitHub or GitLab')
+  })
+
+  test('.jaira/pr says none and no forge names the base: it is read from origin\'s default branch, as the gate reads it, not the local one', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 2
+    w.origin = 'git@git.example.de:acme/repo.git'
+    w.originHead = 'origin/main'
+    w.basePr = 'none\n'
+    await press($)
+    expect(ran(w, 'git', 'show')).toEqual([['git', 'show', 'origin/main:.jaira/pr', '@/repo']])
+    expect(ran(w, 'git', 'log', '--format=%s')).toEqual([['git', 'log', '--format=%s', 'origin/main..feat/mg677r', '@/repo']])
+    expect(prLane(w)).toHaveLength(1)
+  })
+
+  test('.jaira/pr with a typo is the pull request path: no forge still says so', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.origin = null
+    w.basePr = 'nnone\n'
     await press($)
     expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(await failure($)).toContain('needs an origin on GitHub or GitLab')

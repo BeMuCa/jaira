@@ -74,9 +74,16 @@ esac
 `,
 		// origin is a fork: the pull requests are asked for on its parent.
 		"gh": `#!/usr/bin/env bash
+if [ -e "` + r.merged + `.gh-down" ]; then echo "error connecting to api.github.com" >&2; exit 1; fi
 case "$*" in
   "repo view git@github.com:someone/jaira.git --json"*)
-    echo '{"isFork":true,"nameWithOwner":"someone/jaira","parent":{"name":"jaira","owner":{"login":"upstream"}}}' ;;
+    if [ -e "` + r.merged + `.notfork" ]; then
+      echo '{"isFork":false,"nameWithOwner":"renamed/jaira"}'
+    else
+      echo '{"isFork":true,"nameWithOwner":"someone/jaira","parent":{"name":"jaira","owner":{"login":"upstream"}}}'
+    fi ;;
+  "repo view git@github.com:formerly/jaira.git --json nameWithOwner")
+    echo '{"nameWithOwner":"upstream/jaira"}' ;;
   "pr list --head feat/ab12cd --state merged --limit 1 --json headRefOid --repo upstream/jaira")
     cat "` + r.merged + `" 2>/dev/null || echo '[]' ;;
   *) echo "unexpected gh $*" >&2; exit 1 ;;
@@ -88,6 +95,15 @@ esac
 		"jaira": `#!/usr/bin/env bash
 if [ "$1" = json ] && [ -e "` + r.shown + `.json-fails" ]; then
   exit 7
+fi
+if [ "$1" = roles ] && [ -e "` + r.shown + `.roles-silent" ]; then
+  echo "jaira: this board was set up by an older version of jaira" >&2
+  exit 4
+fi
+if [ "$1" = roles ] && [ -e "` + r.shown + `.roles-fails" ]; then
+  echo "jaira: this board was set up by an older version of jaira" >&2
+  echo "jaira: roles list: cannot read .jaira/lanes" >&2
+  exit 4
 fi
 if [ "$1" = -C ] && [ "$3" = show ]; then
   cat "` + r.shown + `" 2>/dev/null || exit 5
@@ -137,6 +153,18 @@ func (r *reapRig) git(t *testing.T, dir string, args ...string) string {
 		t.Fatalf("git %v: %v\n%s", args, err, out)
 	}
 	return strings.TrimSpace(string(out))
+}
+
+// noneOnBase commits .jaira/pr none into master, where 'jaira roles list'
+// reads it — the base decides, never the checkout's disk — and brings the
+// ticket's branch up to it, so every origin ref a test points at master or
+// past it holds the file.
+func (r *reapRig) noneOnBase(t *testing.T) {
+	t.Helper()
+	r.write(t, filepath.Join(r.repo, ".jaira", "pr"), "none\n")
+	r.git(t, r.repo, "add", "-f", ".jaira/pr")
+	r.git(t, r.repo, "commit", "-q", "-m", "chore: no pull requests")
+	r.git(t, r.wt, "merge", "-q", "--ff-only", "master")
 }
 
 func (r *reapRig) write(t *testing.T, path, body string) {
@@ -486,5 +514,157 @@ func TestReapNeverRemovesTheWorktreeItRunsIn(t *testing.T) {
 	}
 	if _, err := os.Stat(r.wt); err != nil || strings.Contains(out, "removed") {
 		t.Errorf("removed the worktree it runs in (%v):\n%s", err, out)
+	}
+}
+
+// A board whose .jaira/pr says none has no pull request to ask about: the
+// ticket's worktree goes once origin's default branch contains its branch,
+// and waits until then — it is never kept forever for a merge that cannot
+// come (XB97NJ).
+func TestReapOnANoneBoardWaitsForTheDefaultBranch(t *testing.T) {
+	t.Parallel()
+	r := newReapRig(t)
+	r.noneOnBase(t)
+	r.write(t, filepath.Join(r.repo, ".jaira", "tickets", ".keep"), "")
+	r.write(t, r.shown, `{"status":"done"}`)
+	// origin is a fork (the rig's gh says so): work lands on its parent, and
+	// with no remote here pointing at it, it says how to add one rather
+	// than measuring the fork, which never receives the landing.
+	if out := r.run(t, r.repo, "reap.sh"); !strings.Contains(out, "no remote here points at upstream/jaira") {
+		t.Fatalf("fork without its parent as a remote, want the add hint:\n%s", out)
+	}
+	// A remote added before the parent was renamed keeps its old URL; gh
+	// follows GitHub's redirect and says it is the parent all the same.
+	r.git(t, r.repo, "remote", "add", "old", "git@github.com:formerly/jaira.git")
+	if out := r.run(t, r.repo, "reap.sh"); !strings.Contains(out, "cannot tell old's default branch") {
+		t.Fatalf("parent known only under its old name, want it found:\n%s", out)
+	}
+	r.git(t, r.repo, "remote", "remove", "old")
+	r.git(t, r.repo, "remote", "add", "up", "https://github.com/Upstream/jaira.git")
+	// No ref of it at all: nothing to measure against, and it says how to
+	// fix that rather than claiming the branch has not landed.
+	if out := r.run(t, r.repo, "reap.sh"); !strings.Contains(out, "cannot tell up's default branch") {
+		t.Fatalf("no up refs, want the set-head hint:\n%s", out)
+	}
+	// up/HEAD left dangling (the remote renamed master to main and a
+	// prune took up/master away) counts as unset, not as a base.
+	r.git(t, r.repo, "symbolic-ref", "refs/remotes/up/HEAD", "refs/remotes/up/gone")
+	if out := r.run(t, r.repo, "reap.sh"); !strings.Contains(out, "cannot tell up's default branch") {
+		t.Fatalf("dangling up/HEAD, want the set-head hint:\n%s", out)
+	}
+	// up/master beside it (or without up/HEAD at all) is enough.
+	base := r.git(t, r.repo, "rev-parse", "master")
+	r.git(t, r.repo, "update-ref", "refs/remotes/up/master", base)
+	// A valid up/HEAD beside a local branch that is also called
+	// up/master: the remote one is still the base (bughunt round 6).
+	r.git(t, r.repo, "symbolic-ref", "refs/remotes/up/HEAD", "refs/remotes/up/master")
+	r.git(t, r.repo, "branch", "up/master", base)
+
+	// A branch with no work of its own yet sits on the default branch from
+	// the start: that is not landed, whatever the ticket's lane says.
+	if out := r.run(t, r.repo, "reap.sh"); !strings.Contains(out, "waiting AB12CD") {
+		t.Fatalf("no work on the branch yet, want waiting:\n%s", out)
+	}
+	if _, err := os.Stat(r.wt); err != nil {
+		t.Fatalf("worktree removed before any work landed: %v", err)
+	}
+	// A body line naming the ticket is not a subject that does: --grep finds
+	// it, the subject check does not take it.
+	r.git(t, r.wt, "commit", "-q", "--allow-empty", "-m", "chore: tidy", "-m", "feat(AB12CD): only mentioned")
+	r.git(t, r.repo, "update-ref", "refs/remotes/up/master", r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+	if out := r.run(t, r.repo, "reap.sh"); !strings.Contains(out, "waiting AB12CD: feat/ab12cd has not landed") {
+		t.Fatalf("only a body line names the ticket, want waiting:\n%s", out)
+	}
+	r.git(t, r.wt, "commit", "-q", "--allow-empty", "-m", "feat(AB12CD): the work")
+
+	out := r.run(t, r.repo, "reap.sh")
+	if !strings.Contains(out, "waiting AB12CD: feat/ab12cd has not landed") {
+		t.Fatalf("not landed yet, want waiting:\n%s", out)
+	}
+	if _, err := os.Stat(r.wt); err != nil {
+		t.Fatalf("worktree removed before it landed: %v", err)
+	}
+
+	// The fork's own default branch carrying it is not landing: work lands
+	// on the parent.
+	tip := r.git(t, r.repo, "rev-parse", "feat/ab12cd")
+	r.git(t, r.repo, "update-ref", "refs/remotes/origin/master", tip)
+	if out := r.run(t, r.repo, "reap.sh"); !strings.Contains(out, "waiting AB12CD: feat/ab12cd has not landed on up's") {
+		t.Fatalf("only the fork has it, want waiting:\n%s", out)
+	}
+	r.git(t, r.repo, "update-ref", "refs/remotes/up/master", tip)
+	out = r.run(t, r.repo, "reap.sh")
+	if _, err := os.Stat(r.wt); !os.IsNotExist(err) {
+		t.Errorf("landed and done, worktree still there (%v):\n%s", err, out)
+	}
+	if strings.Contains(out, "pull request") {
+		t.Errorf("a none board asked about a pull request:\n%s", out)
+	}
+}
+
+// Not a fork, but renamed since it was cloned: gh answers with the new name,
+// origin's URL still has the old one, and origin is still where work lands —
+// never 'no remote here points at it' (bughunt round 8).
+func TestReapOnANoneBoardMeasuresARenamedOrigin(t *testing.T) {
+	t.Parallel()
+	r := newReapRig(t)
+	r.write(t, r.merged+".notfork", "")
+	r.noneOnBase(t)
+	r.write(t, filepath.Join(r.repo, ".jaira", "tickets", ".keep"), "")
+	r.write(t, r.shown, `{"status":"done"}`)
+	r.git(t, r.wt, "commit", "-q", "--allow-empty", "-m", "feat(AB12CD): the work")
+	r.git(t, r.repo, "update-ref", "refs/remotes/origin/master", r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+	out := r.run(t, r.repo, "reap.sh")
+	if strings.Contains(out, "no remote here points at") {
+		t.Fatalf("renamed origin read as missing:\n%s", out)
+	}
+	if _, err := os.Stat(r.wt); !os.IsNotExist(err) {
+		t.Errorf("landed on origin and done, worktree still there (%v):\n%s", err, out)
+	}
+}
+
+// When 'jaira roles list' fails, how work arrives cannot be told: reap keeps
+// every ticket and says so, rather than reading the board as person and
+// waiting for a pull request a none board never opens.
+func TestReapNamesAFailingRolesListAsTheCause(t *testing.T) {
+	t.Parallel()
+	r := newReapRig(t)
+	r.noneOnBase(t)
+	r.write(t, filepath.Join(r.repo, ".jaira", "tickets", ".keep"), "")
+	r.write(t, r.shown, `{"status":"done"}`)
+	r.write(t, r.shown+".roles-fails", "")
+	out := r.run(t, r.repo, "reap.sh")
+	if !strings.Contains(out, "kept AB12CD: cannot tell how work arrives on this board — 'jaira roles list' failed: jaira: roles list: cannot read .jaira/lanes") {
+		t.Fatalf("roles list failed, want it named:\n%s", out)
+	}
+	if strings.Contains(out, "pull request") {
+		t.Errorf("fell back to the pull request path:\n%s", out)
+	}
+	if _, err := os.Stat(r.wt); err != nil {
+		t.Fatalf("worktree removed although how work arrives is unknown: %v", err)
+	}
+	// A failure with nothing on stderr but the older-version notice: still
+	// named, and the run goes on to the end under pipefail (bughunt round 10).
+	r.write(t, r.shown+".roles-silent", "")
+	if out := r.run(t, r.repo, "reap.sh"); !strings.Contains(out, "'jaira roles list' failed: no message (exit status only)") {
+		t.Fatalf("roles list failed silently, want it named:\n%s", out)
+	}
+}
+
+// When gh does not answer, whether origin is a fork cannot be told: reap
+// measures at origin, and a ticket that waits there names gh as the cause
+// rather than only saying it has not landed (review note, 21.11.).
+func TestReapOnANoneBoardNamesAnUnansweringGh(t *testing.T) {
+	t.Parallel()
+	r := newReapRig(t)
+	r.write(t, r.merged+".gh-down", "")
+	r.noneOnBase(t)
+	r.write(t, filepath.Join(r.repo, ".jaira", "tickets", ".keep"), "")
+	r.write(t, r.shown, `{"status":"done"}`)
+	r.git(t, r.wt, "commit", "-q", "--allow-empty", "-m", "feat(AB12CD): the work")
+	r.git(t, r.repo, "update-ref", "refs/remotes/origin/master", r.git(t, r.repo, "rev-parse", "master"))
+	out := r.run(t, r.repo, "reap.sh")
+	if !strings.Contains(out, "waiting AB12CD: feat/ab12cd has not landed on origin's default branch; gh repo view did not answer (error connecting to api.github.com)") {
+		t.Fatalf("gh down, want it named as the cause:\n%s", out)
 	}
 }
