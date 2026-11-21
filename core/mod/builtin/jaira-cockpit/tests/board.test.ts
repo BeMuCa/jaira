@@ -342,6 +342,8 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
   return w
 }
 
+// A Log line's start: its kind's sign, the clock and two spaces; `$1` keeps the sign.
+const LOG_LINE = /^(\p{Emoji_Presentation}) \d\d:\d\d {2}/u
 const BAND = { plugin: 'jaira-cockpit', surface: 'terminal', component: 'AbovePrompt', props: { hasSurvey: false, isWorking: false, maxRows: 20, bodyColumns: 120, scroll: { offset: 0, bodyRows: 20 }, view: {} } } as const
 
 // The engine's `$` a test body is handed.
@@ -2580,7 +2582,7 @@ describe('the overview', () => {
     const texts = (await pane.findAll({ type: 'Text' })).map(x => x.text)
     // Queue is the open tab: one section beneath the other, each heading a fold button with its count.
     const labels = (await pane.findAll({ type: 'Button' } as never)).map(b => (b.props as { label: string }).label)
-    expect(labels).toEqual(['Queue', 'Log', 'Workers', '▾ In work (1)', '▾ Queue (1)', '▾ Put back (2)', 'Close'])
+    expect(labels).toEqual(['Queue', 'Log', 'Workers', 'Close', '▾ In work (1)', '▾ Queue (1)', '▾ Put back (2)'])
     expect((await pane.findAll({ type: 'Box' })).filter(b => 'width' in b.props)).toEqual([])
     expect(texts).not.toContain('Created and put back, last 7 days')
     expect(texts).toContain('T8QS1Y | in-progress | filter')
@@ -2614,12 +2616,12 @@ describe('the overview', () => {
     const days = history.filter(x => /^── \d{4}-\d\d-\d\d ──$/.test(x))
     expect(days).toHaveLength(4)
     expect([...days].sort().reverse()).toEqual(days)
-    const events = history.filter(x => /^\d\d:\d\d {2}/.test(x)).map(x => x.slice(7))
+    const events = history.filter(x => LOG_LINE.test(x)).map(x => x.replace(LOG_LINE, '$1 '))
     expect(events).toEqual([
-      'N1N1N1 | backlog | new today | created by Alex',
-      'W1W1W1 | in-progress | started | created by Alex',
-      'P1P1P1 | blocked | put back | put back by Alex',
-      'P1P1P1 | blocked | put back | created by Berk',
+      '🆕 N1N1N1 | backlog | new today | created by Alex',
+      '🆕 W1W1W1 | in-progress | started | created by Alex',
+      '🔙 P1P1P1 | blocked | put back | put back by Alex',
+      '🆕 P1P1P1 | blocked | put back | created by Berk',
     ])
   })
 
@@ -2724,10 +2726,10 @@ describe('the overview', () => {
     expect(await pane.find({ key: 'overview-people-all' })).toBeUndefined()
     await pane.press({ key: 'overview-tab-log' })
     const labels = (await pane.findAll({ type: 'Button' } as never)).map(b => (b.props as { label: string }).label)
-    expect(labels).toEqual(['Queue', 'Log', 'Workers', 'All', 'Alex', 'Berk', 'Carla', 'Close'])
+    expect(labels).toEqual(['Queue', 'Log', 'Workers', 'Close', 'All', 'Alex', 'Berk', 'Carla', 'All', 'backlog'])
     // A name button is drawn in that person's colour.
     expect((await pane.find({ type: 'Text', text: /^Berk$/ }))?.props.color).toBeDefined()
-    const handles = async () => (await pane.findAll({ type: 'Text', text: /^\d\d:\d\d {2}/ })).map(x => x.text.slice(7, 13))
+    const handles = async () => (await pane.findAll({ type: 'Text', text: LOG_LINE })).map(x => x.text.replace(LOG_LINE, '').slice(0, 6))
     const days = async () => (await pane.findAll({ type: 'Text', text: /^── / })).length
     expect(await handles()).toEqual(['N1N1N1', 'B1B1B1', 'C1C1C1'])
     await pane.press({ key: 'overview-person-Berk' })
@@ -2747,6 +2749,90 @@ describe('the overview', () => {
     await pane.press({ key: 'overview-people-all' })
     expect(await handles()).toEqual(['N1N1N1', 'B1B1B1', 'C1C1C1'])
     expect((await pane.find({ key: 'overview-people-all' }))?.props.variant).toBe('primary')
+  })
+
+  test('the Log filters to the lanes chosen, in board order, several at once, together with the people filter', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { handle: 'N1N1N1', title: 'new', status: 'backlog', creator: 'Alex', updated_by: 'Alex', created_at: ago(0.01), updated_at: ago(0.01) },
+      { handle: 'B1B1B1', title: 'stuck', status: 'blocked', creator: 'Berk', updated_by: 'Berk', blocked_reason: 'x', created_at: ago(0.02), updated_at: ago(0.02) },
+      { handle: 'S1S1S1', title: 'judged', status: 'signoff', creator: 'Alex', created_at: ago(0.03), updated_at: ago(0.03) },
+      { handle: 'W1W1W1', title: 'started', status: 'in-progress', creator: 'Berk', assignee: 'Berk', created_at: ago(0.04), updated_at: ago(0.04) },
+    ]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const pane = await $.ui.mount(OVERVIEW)
+    await pane.press({ key: 'overview-tab-log' })
+    const lanes = (await pane.findAll({ type: 'Button' } as never))
+      .map(b => (b.props as { key?: string }).key ?? '')
+      .filter(k => k.startsWith('overview-lane-'))
+      .map(k => k.slice('overview-lane-'.length))
+    // The board's lanes in its order; one it does not name goes last.
+    expect(lanes).toEqual(['in-progress', 'signoff', 'backlog', 'blocked'])
+    const handles = async () => (await pane.findAll({ type: 'Text', text: LOG_LINE })).map(x => x.text.replace(LOG_LINE, '').slice(0, 6))
+    expect(await handles()).toEqual(['N1N1N1', 'B1B1B1', 'S1S1S1', 'W1W1W1'])
+    await pane.press({ key: 'overview-lane-blocked' })
+    expect(await handles()).toEqual(['B1B1B1'])
+    expect((await pane.find({ key: 'overview-lane-blocked' }))?.props.variant).toBe('primary')
+    await pane.press({ key: 'overview-lane-signoff' })
+    expect(await handles()).toEqual(['B1B1B1', 'S1S1S1'])
+    // Both filters hold at once: blocked or signoff, and Alex's.
+    await pane.press({ key: 'overview-person-Alex' })
+    expect(await handles()).toEqual(['S1S1S1'])
+    await pane.press({ key: 'overview-lane-signoff' })
+    expect(await handles()).toEqual([])
+    expect(await pane.find({ type: 'Text', text: 'none' })).toBeDefined()
+    await pane.press({ key: 'overview-lanes-all' })
+    expect(await handles()).toEqual(['N1N1N1', 'S1S1S1'])
+    expect((await pane.find({ key: 'overview-lanes-all' }))?.props.variant).toBe('primary')
+  })
+
+  test('Close stands in the tab row, framed and wider than a tab, on every tab and on an unread board', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...WORKING, assignee: 'Alex', updated_at: ago(0.1) }]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const pane = await $.ui.mount(OVERVIEW)
+    for (const tab of ['queue', 'log', 'workers']) {
+      await pane.press({ key: `overview-tab-${tab}` })
+      const frame = await pane.find({ key: 'overview-close-frame' })
+      expect(frame?.props).toMatchObject({ borderStyle: 'round', paddingX: 1 })
+      const labels = (await pane.findAll({ type: 'Button' } as never)).map(b => (b.props as { label: string }).label)
+      expect(labels.slice(0, 4)).toEqual(['Queue', 'Log', 'Workers', 'Close'])
+    }
+    // What Close draws is longer than the longest tab's label.
+    const closeText = (await pane.find({ type: 'Text', text: /^ +Close +$/ }))?.text ?? ''
+    expect(closeText.length).toBeGreaterThan('Workers'.length)
+    await pane.press({ key: 'overview-close' })
+    await pane.unmount()
+    w.nextFails = true
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    expect(await (await $.ui.mount(OVERVIEW)).find({ key: 'overview-close-frame' })).toBeDefined()
+  })
+
+  test('every Log line starts with its kind\'s sign, one wide code point, so no column shifts', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { handle: 'N1N1N1', title: 'new', status: 'backlog', creator: 'Alex', created_at: ago(0.01), updated_at: ago(0.01) },
+      { handle: 'P1P1P1', title: 'back', status: 'blocked', creator: 'Berk', updated_by: 'Alex', blocked_reason: 'x', created_at: ago(5), updated_at: ago(2) },
+    ]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const pane = await $.ui.mount(OVERVIEW)
+    await pane.press({ key: 'overview-tab-log' })
+    const lines = (await pane.findAll({ type: 'Text', text: /\d\d:\d\d {2}[0-9A-Z]{6} / })).map(x => x.text)
+    expect(lines).toHaveLength(3)
+    const signs = lines.map(l => [...l][0]!)
+    // Created and put back read apart, and the same kind always the same sign.
+    expect(new Set(signs).size).toBe(2)
+    for (const [i, line] of lines.entries()) {
+      // A single code point a terminal draws two cells wide by default: no
+      // variation selector, no joiner, nothing a terminal may draw one cell.
+      expect(signs[i]).toMatch(/^\p{Emoji_Presentation}$/u)
+      expect(line).not.toMatch(/[\uFE0E\uFE0F\u200D]/)
+      // The clock starts at the same column on every line.
+      expect([...line].indexOf(line.match(/\d\d:\d\d/)![0][0]!)).toBe(2)
+    }
   })
 
   test('a board that cannot be read says so', async ($, on) => {
@@ -2808,9 +2894,10 @@ describe('the workers tab', () => {
     ]
     await startSession($)
     const tracks = await tracksOf(await workersTab($))
-    // Board order of the lanes; 40 rows less the tab row and Close: 38, two of them rules.
+    // Board order of the lanes; 40 rows less the tab row, three high with the
+    // framed Close in it: 37, two of them rules.
     expect(tracks.map(walls)).toEqual([['in-progress', 'critique'], ['review', 'signoff'], ['human', 'review']])
-    expect(tracks.map(t => t.length)).toEqual([12, 12, 12])
+    expect(tracks.map(t => t.length)).toEqual([11, 11, 11])
     const said = tracks.map(t => t.at(-1)!.slice(1, -1).trim())
     expect(said).toEqual(['T8QS1Y · working · filter', 'R1R1R1 · resting · judged', 'K7P2QX · waits for an answer · tags popup'])
     // Resting sits with z z above its hat; a question stands with (?) above it.
