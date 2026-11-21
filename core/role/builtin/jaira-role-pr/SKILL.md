@@ -306,7 +306,9 @@ stops stops the push: report what stopped it and push nothing.
    encoding, or holds an invalid pattern: a scan that cannot read its list
    never passes. Any other non-zero exit is git's own: stop and report it.
    Does not stop on: a warning for this machine's name, or a missing list —
-   carry both into the report as the script prints them.
+   carry both into the report as the script prints them. Its summary counts
+   the patterns and names no path — keep it that way in the report: a home
+   directory carries a name too.
 2. **Bring the base in.**
    `git fetch <remote> <branch> && git merge --no-edit <remote>/<branch>`
    Stops on: a conflict. `git merge --abort`, name the files, stop. Settling

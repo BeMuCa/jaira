@@ -17,6 +17,7 @@ author's and committer's name and email — and the name of the branch the
 push publishes, HEAD's. A merge is checked for what it adds
 itself, a conflict resolution, and not for what it brings in from its
 parents.
+A file kept in Git LFS is scanned as its pointer, not as its content.
 
 Two lists are matched, case-insensitively:
 
@@ -31,6 +32,8 @@ Two lists are matched, case-insensitively:
                  UTF-8 only, not the same word in Latin-1 or UTF-16.
                  A hit stops the push. No file, or one with no pattern in it:
                  the scan says the strings were not checked and goes on.
+                 The summary counts the patterns and never names the list's
+                 path: a home directory carries a name too.
   this machine   its name as 'uname -n' gives it, up to the first dot
                  ($JAIRA_SCAN_HOSTNAME overrides it, empty switches it off).
                  A hit is a warning: it names the place and does not stop.
@@ -75,7 +78,7 @@ done
 list=${JAIRA_MENTION_DENYLIST:-$HOME/.config/jaira/mention-denylist}
 deny=$tmp/deny
 : >"$deny"
-denylist_state="not found at $list, its strings were not checked"
+denylist_state="no list, its strings were not checked"
 if [ -e "$list" ]; then
   [ -r "$list" ] && [ -f "$list" ] || die "the denylist $list cannot be read" 2
   # Read the list as it was written, or not at all: a pattern dropped on the
@@ -103,9 +106,9 @@ if [ -e "$list" ]; then
   LC_ALL=$fold grep -Eqi -f "$deny" </dev/null 2>/dev/null || rc=$?
   [ "$rc" -le 1 ] || die "the denylist $list holds a pattern grep cannot read" 2
   if [ -s "$deny" ]; then
-    denylist_state="$(wc -l <"$deny" | tr -d ' ') pattern(s) from $list"
+    denylist_state="$(wc -l <"$deny" | tr -d ' ') pattern(s)"
   else
-    denylist_state="$list holds no pattern, its strings were not checked"
+    denylist_state="the list holds no pattern, its strings were not checked"
   fi
 fi
 

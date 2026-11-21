@@ -200,7 +200,11 @@ func TestPrePushScan(t *testing.T) {
 					t.Errorf("output lacks %q\n%s", w, out)
 				}
 			}
-			for _, n := range append(c.never, mention, "acme-corp", host) {
+			never := append(c.never, mention, "acme-corp", host)
+			if c.code != 2 { // only a refused list names its path, so it can be fixed
+				never = append(never, list, filepath.Dir(list))
+			}
+			for _, n := range never {
 				if strings.Contains(strings.ToLower(out), strings.ToLower(n)) {
 					t.Errorf("output carries %q\n%s", n, out)
 				}

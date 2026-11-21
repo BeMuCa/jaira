@@ -20,36 +20,30 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-10-27T20:52:23Z
-updated-at: 2026-11-21T20:07:57Z
+updated-at: 2026-11-21T20:15:20Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-75677
-claimed-at: 2026-11-21T19:41:03Z
-outcome-what: "pre-push-scan passes --no-relative to git show instead of changing directory, so a relative denylist path still resolves where the caller started"
-outcome-why: "Bughunt blocker at 46dba32e: the cd to the top level made a relative JAIRA_MENTION_DENYLIST point elsewhere and the gate passed"
-outcome-resolves: "Every place a push publishes is scanned, independent of the caller's directory and git config; advice fits the hit; the encoding limit is stated"
-review-summary: "none"
-review-gaps: "none: 46dba32e adds one cd and one flag on three git calls beside the existing --no-ext-diff/--no-textconv; nothing orphaned"
-round: 9
-back-from: testing
-back-by: lane
+claimed-by: DESKTOP-RFTCH11-1585083
+claimed-at: 2026-11-21T20:13:32Z
+outcome-what: "pre-push-scan's summary counts the denylist patterns without naming the list's path; the usage states Git LFS files are scanned as pointers"
+outcome-why: "Signoff give-back: a scanner for foreign names must not itself carry /home/<user> into the report, and the LFS limit was unstated"
+outcome-resolves: "The scan report names no path of the person's machine outside a refused-list error; the LFS limit is documented"
+review-summary: "The PR role's push section is now seven fixed steps (scan, merge the base, full suite once, tick the DoD items that waited for it, logbook finished tickets, scan again, push), each with its command and its stop condition. The scan is a new shipped script, scripts/pre-push-scan.sh <base>: for every commit of <base>..HEAD it checks added lines (a merge only for lines new against every parent), changed file names, the message, author/committer name and email, and finally HEAD's branch name, against a denylist outside the repo (~/.config/jaira/mention-denylist or JAIRA_MENTION_DENYLIST; UTF-8 or UTF-16 with BOM, anything else or an invalid pattern exits 2) and against this machine's name. A denylist hit exits 3 and names only commit and file:line (a matching file name by its index), never the text; a machine-name hit is a warning. Git config that changes what diff prints (diff.relative, showSignature, quotePath, textconv, ext-diff, renames) is overridden. role_test.go and shipped.sha256 ship the script; a release note tells users to run jaira update --roles and where the denylist lives."
+review-gaps: |-
+  note: Git LFS - a file tracked by LFS is scanned as its pointer only; its content leaves with the push through the LFS pre-push upload unscanned. Fix: say so in the usage text (or scan git lfs pointer targets later); no LFS in this repo
+  note: the summary line prints the denylist path ('N pattern(s) from /home/<user>/.config/...') and SKILL step 1 says to carry it into the report - the report then names the local account. Fix: print ~ for $HOME or only 'N pattern(s)'
+round: 10
+back-from: signoff
+back-by: person
 back-count: 1
-hunt-verdict: "fail: bughunt done at 46dba32ec, 1 change blocker - the cd to the top level resolved a relative JAIRA_MENTION_DENYLIST against the wrong directory and passed the gate"
-test-verdict: "pass: diff since 0037622a2: go test -race ./core/role ./core/shipped RC=0, go vet RC=0, shipped-history --check RC=0; TestPrePushScanIgnoresDiffRelative exits 3 from sub/ with diff.relative=true and fails on 0037622a; --no-show-signature accepted by git 2.43 on all three calls (every subtest passes through them)"
-review-verdict: "All eight DoD items are met by the diff; the scan does what it claims on the cases I tried (evil merge adding a new file, tab in a file name, merge-only lines). No blocker. One fail-open edge exists only under a non-default git config (diff.relative=true + subdirectory cwd) - a one-line fix worth doing before merge, but it does not break a DoD item under default config."
-review-round: 7
+hunt-verdict: "pass: bughunt done at 7249eccb8, 0 change, 0 pre-existing (follow-up hunt of the diff since 46dba32ec)"
+test-verdict: "pass: diff since 46dba32ec: go test -race ./core/role ./core/shipped RC=0, go vet RC=0, shipped-history --check RC=0; TestPrePushScanIgnoresDiffRelative (sub/, diff.relative=true, relative denylist path) exits 3 and fails on both 46dba32e and 0037622a"
+review-verdict: "the diff meets all eight DoD items; no blocker. Read pre-push-scan.sh whole along concurrency (single process, temp dir per run), error paths (grep/git/symbolic-ref errors die instead of reading as no hit; pipes into grep -q avoided), unusual input (merges, CRLF, NUL, BOM/UTF-16, quoted and spaced paths, relative denylist from a subdirectory) and boundaries (nothing matched is echoed). go test ./core/role -race and ./core/shipped pass at 7249eccb. Two notes, both small edges outside the DoD."
+review-round: 9
 review-verdict-gaps: |-
-  note: fail-open under git config diff.relative=true when the script runs from a subdirectory - git show (porcelain) then drops files outside the cwd, so a mention in a top-level file passes with exit 0 (reproduced in a scratch repo); fix: cd "$(git rev-parse --show-toplevel)" at the start or pass --no-relative to git show
-  note: with log.showSignature=true, git show/git log -1 print gpg verification lines into the scanned diff and message, so the signer's key UID can raise a false denylist stop (fails closed, not open); fix: add --no-show-signature to both calls
-  note: a very short machine name (e.g. 'pc') matches as a substring of many lines and floods the report with warnings; harmless (warnings only) but could be matched as a word (-w) instead
-  note: shipped.sha256 gains the hashes of 9 intermediate script versions and 2 SKILL.md versions that never shipped in a release; harmless noise from scripts/shipped-history.sh --write
-review-check: |-
-  1. cd /home/alex/projects/.worktrees/jaira-ax8k02/core && go test ./role -run 'TestPrePushScan' -count=1 -v  -> 2 tests and their subtests PASS
-  2. printf 'zorgcorp\n' > /tmp/deny
-  3. in any scratch repo with a branch: echo zorgcorp > x && git add x && git commit -m t
-  4. JAIRA_MENTION_DENYLIST=/tmp/deny bash /home/alex/projects/.worktrees/jaira-ax8k02/core/role/builtin/jaira-role-pr/scripts/pre-push-scan.sh <the base branch>  -> prints '<sha> x:1: matches the denylist', never the word zorgcorp, exit code 3 (echo $?)
-  5. rm /tmp/deny and run step 4 again -> 'not found ... its strings were not checked', exit 0
-  6. open core/role/builtin/jaira-role-pr/SKILL.md, section 'Push the branch: the same seven steps every time' -> seven numbered steps, each with a 'Stops on:' line
+  note: Git LFS - a file tracked by LFS is scanned as its pointer only; its content leaves with the push through the LFS pre-push upload unscanned. Fix: say so in the usage text (or scan git lfs pointer targets later); no LFS in this repo
+  note: the summary line prints the denylist path ('N pattern(s) from /home/<user>/.config/...') and SKILL step 1 says to carry it into the report - the report then names the local account. Fix: print ~ for $HOME or only 'N pattern(s)'
+review-check: "1. cd into any git repo with a branch that has commits on top of main  2. echo acme > /tmp/deny  3. echo 'hello acme' > x.txt && git add x.txt && git commit -m t  4. JAIRA_MENTION_DENYLIST=/tmp/deny <worktree>/core/role/builtin/jaira-role-pr/scripts/pre-push-scan.sh main; echo $?  5. see '<sha> x.txt:1: matches the denylist', no word 'acme' in the output, exit 3  6. git reset --hard HEAD~1 and run step 4 again: summary line only, exit 0  7. printf '\\377\\376a\\000c\\000' > /tmp/deny (UTF-16) works; printf '\\xe9\\n' > /tmp/deny (Latin-1) gives exit 2. Automated: go test ./core/role -run PrePush"
 ---
 
 # Die PR-Rolle hat einen festen Schritt vor dem Push: Scan, master, Suite, DoD, Logbook
@@ -57,9 +51,9 @@ review-check: |-
 ## Definition of Done
 
 - [x] SKILL.md hat den Ablauf als nummerierte Liste; jeder Schritt nennt den Befehl und das Abbruchkriterium
-  proof: core/role/builtin/jaira-role-pr/SKILL.md:289-343: seven numbered steps, each with its command and a 'Stops on:' line
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:289-345: seven numbered steps, each with its command and a 'Stops on:' line
 - [x] Ein Treffer im Scan bricht vor dem Push ab und nennt Datei und Commit, nie den String selbst im Report
-  proof: pre-push-scan.sh exit 3 prints '<commit> <file>:<line>: matches the denylist' only; TestPrePushScan (core/role/pre_push_scan_test.go:68) and TestPrePushScanReadsTheListAsWritten (:217) assert no output carries the mention; SKILL.md step 1 and step 7 (:340)
+  proof: pre-push-scan.sh exit 3 prints '<commit> <file>:<line>: matches the denylist' only, and its summary counts patterns without the list's path; TestPrePushScan (core/role/pre_push_scan_test.go:68) asserts no output carries the mention, and outside exit 2 neither the list's path nor its directory; TestPrePushScanReadsTheListAsWritten (:221); SKILL.md step 1 and step 7 (:342)
 - [x] Die Suite-DoD-Punkte werden mit --proof auf den Lauf getickt, danach braucht der done-Move kein --force
   proof: SKILL.md step 4; rehearsal 2026-11-21: before the tick 'jaira move 7HBYF4 --to done' refused with 'criterion 2 ... is still open', after 'jaira dod 7HBYF4 2 --done --proof go test ./... -race exit 0 at 9d6b689' the DoD reason is gone; only signoff's human checkpoint remains, which a person passes
 - [x] Auf einem Scratch-Branch nachgestellt: der Ablauf laeuft durch und pusht
@@ -71,7 +65,7 @@ review-check: |-
 - [x] This machine's name in a commit is a warning that names file and commit and does not stop the push (decision 19:07, variant 1)
   proof: TestPrePushScan/this_machine's_name_only_warns: exit 0, 'warning: ... names this machine', no 'do not push'
 - [x] Fault class: the denylist is read differently than it was written. A list with a UTF-8 BOM or in UTF-16 is read as written; one in any other encoding, or with NUL bytes, stops with exit 2; non-ASCII letters fold case whatever the caller's locale
-  proof: TestPrePushScanReadsTheListAsWritten, core/role/pre_push_scan_test.go:217: BOM and UTF-16LE read, UTF-16 without BOM and Latin-1 exit 2, LC_ALL=C still folds MÜLLER; all 5 fail on the 0555f5ab script; a non-ASCII pattern does not match Latin-1 text, as the usage says
+  proof: TestPrePushScanReadsTheListAsWritten, core/role/pre_push_scan_test.go:221: BOM and UTF-16LE read, UTF-16 without BOM and Latin-1 exit 2, LC_ALL=C still folds MÜLLER; all 5 fail on the 0555f5ab script; a non-ASCII pattern does not match Latin-1 text, as the usage says
 
 ## Options
 
@@ -135,3 +129,7 @@ review-check: |-
 - **2026-11-21 20:06 · Alexander Sacharov** — bughunt: change: blocker: core/role/builtin/jaira-role-pr/scripts/pre-push-scan.sh:61 - class: a relative path the caller hands in is resolved after the new cd to the top level, so it points somewhere else; the only such input is $JAIRA_MENTION_DENYLIST (line 81, read and tested with -e after the cd); example: started in sub/ with JAIRA_MENTION_DENYLIST=deny.txt (sub/deny.txt holds the pattern), the scan looks for <top>/deny.txt, reports 'not found at deny.txt, its strings were not checked' and exits 0 on a commit that adds the denylisted word — the gate passes; ran: scratch repo, new script exit 0, script at 0037622a2 exit 3 with 'top.txt:1: matches the denylist'; line from 46dba32ec (names AX8K02)
 - **2026-11-21 20:06 · Alexander Sacharov** — bughunt: done at 46dba32ec - 1 finding (1 change, blocker) in 3 changed modules, follow-up hunt of the diff since 0037622a2 (pre-push-scan.sh cd to top level and --no-show-signature, pre_push_scan_test.go new diff.relative test, shipped.sha256 new hash); SKILL.md, role_test.go and the release note unchanged since; concurrency, error paths, input, permissions checked; ran: scratch repo from a subdirectory with relative and absolute denylist paths, and from inside .git (rev-parse --show-toplevel fails, cd stays put, scan still correct); files: core/role/builtin/jaira-role-pr/scripts/pre-push-scan.sh core/role/builtin/jaira-role-pr/SKILL.md core/role/pre_push_scan_test.go core/role/role_test.go core/release/notes/AX8K02.md core/shipped/shipped.sha256
 - **2026-11-21 20:07 · Alexander Sacharov** — hunt blocker at 46dba32e fixed by the smaller design (edges grow -> smaller design): the cd to the top level is gone again, git show gets --no-relative instead - the alternative review 3 named. Nothing the caller hands in is resolved anywhere else now. TestPrePushScanIgnoresDiffRelative runs from sub/ with diff.relative=true and JAIRA_MENTION_DENYLIST=deny.txt relative to sub/: fails on 46dba32e (list not found, exit 0) and on 0037622a (top.txt left out, exit 0).
+- **2026-11-21 20:09 · Alexander Sacharov** — bughunt: done at 7249eccb8 - 0 findings in 3 changed modules, follow-up hunt of the diff since 46dba32ec (pre-push-scan.sh drops the cd to top level and passes --no-relative to git show, pre_push_scan_test.go denylist named relative to the subdirectory, shipped.sha256 new hash); SKILL.md, role_test.go and the release note unchanged since; .jaira/milestones/ untracked board data, no code; concurrency, error paths, input, permissions checked; ran: scratch repo with diff.relative=true from sub/deep with relative denylist, from inside .git with absolute denylist, and a merge adding a top-level line (all hits found, names masked, rc=3); go test ./role -run PrePushScan ok; files: core/role/builtin/jaira-role-pr/scripts/pre-push-scan.sh core/role/builtin/jaira-role-pr/SKILL.md core/role/pre_push_scan_test.go core/role/role_test.go core/release/notes/AX8K02.md core/shipped/shipped.sha256
+- **2026-11-21 20:12 · Alexander Sacharov** — Given back from signoff: nur zwei Zeilen, kein neues Verhalten: (1) Summary druckt nur 'N pattern(s)', keinen Pfad — ein Scanner gegen fremde Namen darf /home/<user> nicht in den Bericht tragen (SKILL Schritt 1 entsprechend). (2) Ein Satz in der Usage: LFS-Dateien werden nur als Pointer gescannt. Sonst nichts anfassen; neue Ränder als note, nicht als Runde.
+- **2026-11-21 20:13 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/2274544.sock (worker after give-back 2)
+- **2026-11-21 20:15 · Alexander Sacharov** — give-back 2 done: summary prints 'N pattern(s)' / 'no list' / 'the list holds no pattern', never the path; only exit-2 errors still name it, because that is the file the person must fix (left as is: 'sonst nichts anfassen'). Usage + SKILL step 1 say so; usage says LFS files are scanned as pointers. TestPrePushScan now forbids the list path and its directory in output unless exit 2 - 36 failures on 7249eccb8, green now.
