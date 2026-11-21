@@ -1,7 +1,7 @@
 ---
 id: 01M7Z6T8TS8CRXA4FH218R8VTS
 title: "Die Rollen-Tests in core/role warten nicht mehr auf Sekunden-Pausen, die für ein echtes Terminal gedacht sind"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -20,13 +20,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-21T14:05:27Z
-updated-at: 2026-11-21T14:10:53Z
+updated-at: 2026-11-21T14:11:43Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-842456
 claimed-at: 2026-11-21T14:05:56Z
 outcome-what: spawn.sh liest JAIRA_SPAWN_PAUSE für seine zwei Wartezeiten (Default 2 s/1 s unverändert); die core/role-Tests setzen sie in TestMain auf 0
 outcome-why: "jeder spawn.sh-Aufruf im Test schlief 3 s auf ein claude, das es nicht gibt; newReapRig ruft spawn.sh zweimal, daher die 6,5 s pro TestReap*"
 outcome-resolves: "go test ./core/role 89,5 s -> 4,4 s lokal"
+review-summary: none
+review-gaps: "reap_test.go: r.write + os.Chmod für den sleep-Stub zu einem os.WriteFile(...,0o755) zusammengelegt, wie newReapRig seine Stubs schreibt; sonst nichts - spawn.sh-Änderung sind zwei Parameter-Expansionen und der Kopftext, kein Duplikat gefunden (grep JAIRA_SPAWN/SPAWN_PAUSE)"
 ---
 
 # Die Rollen-Tests in core/role warten nicht mehr auf Sekunden-Pausen, die für ein echtes Terminal gedacht sind
@@ -53,3 +55,4 @@ outcome-resolves: "go test ./core/role 89,5 s -> 4,4 s lokal"
 - **2026-11-21 14:05 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/4205.sock
 - **2026-11-21 14:08 · Alexander Sacharov** — Ursache reap gefunden: newReapRig (core/role/reap_test.go:126-127) ruft spawn.sh zweimal auf, jeder Aufruf schläft 2+1 s = 6 s pro Rig; reap.sh selbst wartet nie. TestUncommittedFailsWhereGitDoes (6,2 s) nutzt dasselbe Rig. Also ein Hebel: die Pausen in spawn.sh. reap.sh bekommt keine Variable, es hat keine Pause. Vorher: go test -count=1 ./core/role = 89,5 s (lokal, WSL, 2026-11-21).
 - **2026-11-21 14:10 · Alexander Sacharov** — Nachher: go test -count=1 ./core/role = 4,4 s (vorher 89,5 s), mit -race 5,4 s; go test ./... grün. Hebel: JAIRA_SPAWN_PAUSE in spawn.sh, TestMain (core/role/main_test.go) setzt 0 für alle Tests des Pakets statt in jedem der ~10 cmd.Env-Blöcke. Leer/ungesetzt = 2 s und 1 s wie vorher; TestSpawnPausesAsLongAsBeforeWithoutTheVariable prüft das mit einem sleep-Stub auf PATH (Mutation 2->3 macht ihn rot). Kein Release-Note: die Variable ist ein Test-Hebel, kein Nutzer muss etwas anders tun und ohne sie ändert sich nichts. core/shipped/shipped.sha256 per scripts/shipped-history.sh --write ergänzt (Test verlangt es für jede geänderte ausgelieferte Datei).
+- **2026-11-21 14:11 · Alexander Sacharov** — critique: nichts. Erwogen und verworfen: ein No-op-sleep auf PATH (in built.dir von jairaPath) statt der Variable - kein Eingriff in spawn.sh, aber er schaltet jedes sleep in jedem Skripttest ab (run-lane.sh, herdr-hc.sh) und ist für den nächsten Leser überraschend; die Ticket-Richtung verlangt ausdrücklich die Variable. JAIRA_SPAWN_PAUSE passt zu JAIRA_NO_WORKTREE/JAIRA_BRANCH_PREFIX im selben Kopf. Eine Variable für beide Pausen statt zwei: Tests brauchen nur 0.

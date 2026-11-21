@@ -185,8 +185,7 @@ func TestSpawnPausesAsLongAsBeforeWithoutTheVariable(t *testing.T) {
 	r := newReapRig(t)
 	bin := filepath.Join(filepath.Dir(r.closed), "bin")
 	slept := filepath.Join(bin, "slept")
-	r.write(t, filepath.Join(bin, "sleep"), "#!/usr/bin/env bash\necho \"$*\" >> "+slept+"\n")
-	if err := os.Chmod(filepath.Join(bin, "sleep"), 0o755); err != nil {
+	if err := os.WriteFile(filepath.Join(bin, "sleep"), []byte("#!/usr/bin/env bash\necho \"$*\" >> "+slept+"\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	r.env = append(r.env, "JAIRA_SPAWN_PAUSE=")
