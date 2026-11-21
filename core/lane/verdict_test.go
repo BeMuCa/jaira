@@ -8,6 +8,22 @@ import (
 // A lane file that names verdict words wrongly is refused at load rather than
 // read as some other rule: a word that both accepts and sends back, or words
 // on a lane that writes no review-verdict.
+// A declared word and a verdict fold through the same normalisation, so a word
+// that starts with markup or a digit reads as itself.
+func TestDeclaredWordsMatchTheirVerdicts(t *testing.T) {
+	l := &Lane{VerdictSendBack: []string{"reject", "1", "2nd-look"}}
+	for _, v := range []string{"#reject: x", "-1: x", "2nd-look, DoD 2", "**Reject**"} {
+		if _, back := l.SendsBackBy(v); !back {
+			t.Errorf("%q: not read as a send-back", v)
+		}
+	}
+	for _, v := range []string{"12: x", "2nd-looks"} {
+		if w, back := l.SendsBackBy(v); back {
+			t.Errorf("%q: read as send-back %q", v, w)
+		}
+	}
+}
+
 func TestVerdictWordsParse(t *testing.T) {
 	head := "---\nid: r\nagentic: true\nmodel-tier: strong\n"
 	for _, c := range []struct {
@@ -20,6 +36,8 @@ func TestVerdictWordsParse(t *testing.T) {
 		{"both ways", "output-produces: [review-verdict]\nverdict-accept: [go]\nverdict-send-back: [Go]\n", "begins with", nil, nil},
 		{"accept starts with send-back", "output-produces: [review-verdict]\nverdict-accept: [no blockers]\nverdict-send-back: [no]\n", "begins with", nil, nil},
 		{"accept only shares letters", "output-produces: [review-verdict]\nverdict-accept: [nothing]\nverdict-send-back: [no]\n", "", []string{"nothing"}, []string{"no"}},
+		{"words with markup", "output-produces: [review-verdict]\nverdict-accept: [\"**ok**\"]\nverdict-send-back: [\"#reject\", \"-1\", 2nd-look]\n", "", []string{"ok"}, []string{"reject", "1", "2nd-look"}},
+		{"word without letters", "output-produces: [review-verdict]\nverdict-accept: [accept]\nverdict-send-back: [send-back, \"❌\"]\n", "no letter or digit", nil, nil},
 		{"accept alone", "output-produces: [review-verdict]\nverdict-accept: [accept]\n", "come together", nil, nil},
 		{"send-back alone", "output-produces: [review-verdict]\nverdict-send-back: [send-back]\n", "come together", nil, nil},
 		{"no verdict field", "output-produces: [review-summary]\nverdict-accept: [accept]\nverdict-send-back: [no]\n", "output-produces", nil, nil},
