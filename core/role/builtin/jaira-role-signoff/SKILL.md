@@ -22,13 +22,31 @@ also the person who writes the reason down.
 
 ## Which tickets
 
-The ids you were given. None given: every ticket in signoff, on every board:
+The ids you were given. None given: every ticket waiting for a person's
+acceptance, on every board. "signoff" is the shipped name of that lane, not a
+fact about every board — each board names its own lanes, so read them off its
+lane configuration and never assume one:
 
 ```bash
-jaira boards
-jaira list --lane signoff --json                    # today's board
-jaira list --lane signoff --board <name> --json     # every other board
+jaira boards --json                          # .boards[].name
+jaira lanes --board <name> --json            # .lanes[], in board order
+jaira list --lane <its accept lane> --board <name> --json
 ```
+
+Per board, three lanes matter, each found by what it does, not by its id:
+
+- **the accept lane** — `human_exit` true and `requires_question` false: a
+  person moves work on out of it. A board may have none (nothing to report
+  there) or more than one (report each)
+- **the terminal lane** — `terminal` true: where the accept line moves to
+- **the work lane** — the one whose `output_produces` holds `outcome-what`:
+  where the give-back line sends the ticket
+
+A board where a lane you need cannot be found this way gets `?` in place of
+that move line and one sentence saying which lane is missing — never the
+shipped name as a guess. Below, `signoff`, `done` and `in-progress` stand for
+these three lanes of the ticket's board (`board` in `jaira show <id> --json`,
+`default` where empty).
 
 ## Read the state now, never from memory
 
@@ -97,7 +115,7 @@ work, so a hunt that does not name the head was not done there, and that is ❌.
   that is why
 - **bug hunt on HEAD** — the last `— bughunt: done at <sha> ` note names
   `$head` — the note's sha is a prefix of the full `$head`, whatever length
-either clone abbreviates to. An older sha does not cover what a later
+  either clone abbreviates to. An older sha does not cover what a later
   round changed: ❌
 - **blocker** — none, or how many 🔴 the table below holds
 - **review** — `.review.verdict`
@@ -133,8 +151,8 @@ Bold, one line, with its reason: **accept** or **give back**, never both, never
 "up to you". Then both lines, ready to paste:
 
 ```bash
-jaira move <id> --to done --force      # accept: signoff only lets a person move on
-jaira note <id> "Given back from signoff: <the rows to fix, by number>" && jaira move <id> --to in-progress
+jaira move <id> --to <terminal lane> --force      # accept: only a person moves on
+jaira note <id> "Given back from <accept lane>: <the rows to fix, by number>" && jaira move <id> --to <work lane>
 ```
 
 `--force` on the accept line is the person's to pass: the gate refuses an
@@ -156,7 +174,7 @@ line comes first: the table only sorts notes, and a red check is no note.
    recommendation's reason.
 1. **Any 🔴 → give back.** Only the 🔴 rows, and the 🟡 rows with them.
 2. **Only 🟡, ⚪ and 🔵:** count the ticket's earlier returns from signoff —
-   the notes that start `Given back from signoff:`, which the cockpit and the
+   the notes that start `Given back from <accept lane>:`, which the cockpit and the
    give-back line above write. A ticket moved back by hand in the board
    leaves no such note, so the count is a floor: put it on the status line
    (`returns from signoff: 1 noted`), where the person sees it and can say it
