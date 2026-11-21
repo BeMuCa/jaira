@@ -40,8 +40,8 @@ func (l *Lane) RoundsLeft(t *ticket.Ticket) (int, bool) {
 
 // PersonLane names the lane a person answers in when l has used up its
 // rounds: the first of l's back edges that takes a question, else the board's
-// first lane that does, else its first human checkpoint. Empty when the board
-// has none of them.
+// first lane that does. Empty when the board has none: a sign-off lane is not
+// offered instead, since it is for reviewed work, not an undecided loop.
 func (s *Set) PersonLane(l *Lane) string {
 	for _, id := range l.RejectsTo {
 		if r, ok := s.Get(id); ok && r.RequiresQuestion {
@@ -50,11 +50,6 @@ func (s *Set) PersonLane(l *Lane) string {
 	}
 	for _, r := range s.Lanes {
 		if r.RequiresQuestion {
-			return r.ID
-		}
-	}
-	for _, r := range s.Lanes {
-		if r.RequiresHumanExit {
 			return r.ID
 		}
 	}

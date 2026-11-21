@@ -21,7 +21,7 @@ related:
 follows: 01M67K7GEZF694985EHTENCFVZ
 commits: []
 created-at: 2026-11-04T21:29:03Z
-updated-at: 2026-11-21T19:08:59Z
+updated-at: 2026-11-21T19:09:53Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2282179
@@ -29,6 +29,11 @@ claimed-at: 2026-11-21T19:01:08Z
 outcome-what: "A lane file may declare max-rounds: <n>; the gate refuses that lane's (n+1)-th send-back in a row (exit 3, code max_rounds) naming the human lane; --for-lane and lanes show carry max_rounds/rounds_left; the shipped critique, optimize and testing lanes declare 3."
 outcome-why: "The three-returns stop lived only in the worker role's prose, so an agent that did not read it looped forever and a board could not pick another limit."
 outcome-resolves: "DoD 1-5: parse refusal (TestParseMaxRounds), gate refusal + rounds_left (internal/cli/maxrounds_test.go, core/gate/maxrounds_test.go), README + core/release/notes/H6CD33.md, edge table (person, other lane, force, parking, no limit), shipped lanes. Checked: concurrency (gate reads, move mutates — same race as every gate), error paths (bad value refused, lane skipped with warning), unusual input (empty, list, quoted, huge, negative), permissions (a faked terminal escapes only what --force already does)."
+review-summary: "core/lane/rounds.go PersonLane falls back to the first requires-human-exit lane (signoff): speculative, and it points an agent at moving an unfinished loop into sign-off; drop that fallback — a board with no question lane gets the generic 'the lane a person answers in'"
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # A lane can say how many times it may send work back before a person decides
@@ -72,3 +77,4 @@ outcome-resolves: "DoD 1-5: parse refusal (TestParseMaxRounds), gate refusal + r
 - **2026-11-21 19:01 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/2274544.sock
 - **2026-11-21 19:02 · Alexander Sacharov** — decision (worker, no open question for the person): (1) the limit counts back-count — returns in a row from that lane, as DF0YD6 records them; a person's send-back or one from another lane starts it again, same rule as the worker's third-return stop. (2) the gate refuses the (n+1)-th send-back (DoD 2), it does not redirect; --force overrides like every refusal; a move made by a person (board or terminal, ByPerson/Interactive) is never refused — the person is the one deciding. (3) the shipped loop lanes critique, optimize, testing get max-rounds: 3, the number the worker role already uses, so the binary knows the rule without a board edit. (4) the human lane named is the first rejects-to lane that takes a question, else the board's first question lane. (5) --for-lane carries max_rounds and rounds_left only for a lane that declares max-rounds.
 - **2026-11-21 19:08 · Alexander Sacharov** — found out: sendsBack lived in core/move only; moved it to lane.Set.SendsBack so the gate and the round counter share one definition. ByPerson (terminal) now also reaches the gate — TUI pre-check and CLI --dry-run pass it too, else they would predict a refusal the real move does not make. A lane file with a bad max-rounds is skipped with a warning like any other unparsable lane file (readLaneDir), not a board failure. This repo's own .jaira/lanes copies carry no max-rounds until 'jaira update --lanes' — not run here, that is the maintainer's call.
+- **2026-11-21 19:09 · Alexander Sacharov** — critique: drop PersonLane's third fallback to a requires-human-exit lane (core/lane/rounds.go) — signoff is for reviewed work, not for an undecided loop; no question lane → generic wording. Everything else let stand: one gate check, back-count reused, SendsBack shared.

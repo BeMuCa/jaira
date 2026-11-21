@@ -116,3 +116,22 @@ func TestRoundsLeft(t *testing.T) {
 		t.Error("a lane without max-rounds reports a limit")
 	}
 }
+
+// The person's lane is one that takes a question, never a sign-off lane.
+func TestPersonLane(t *testing.T) {
+	human := &Lane{ID: "human", RequiresQuestion: true}
+	ask := &Lane{ID: "ask", RequiresQuestion: true}
+	signoff := &Lane{ID: "signoff", RequiresHumanExit: true}
+	loop := &Lane{ID: "testing", RejectsTo: []string{"in-progress", "ask"}}
+	set := assemble([]*Lane{loop, human, ask, signoff}, nil, nil)
+	if got := set.PersonLane(loop); got != "ask" {
+		t.Errorf("rejects-to names ask, got %q", got)
+	}
+	if got := set.PersonLane(&Lane{ID: "critique"}); got != "human" {
+		t.Errorf("no back edge to a question lane: got %q, want the board's first, human", got)
+	}
+	bare := assemble([]*Lane{loop, signoff}, nil, nil)
+	if got := bare.PersonLane(loop); got != "" {
+		t.Errorf("a board with only a sign-off lane offered %q", got)
+	}
+}
