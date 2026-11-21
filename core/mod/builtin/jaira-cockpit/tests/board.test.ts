@@ -741,6 +741,9 @@ describe('waiting for you', () => {
     expect(asked).toContain('Where review.verdict_gaps is not empty and differs from review.gaps')
     // the hunt's note has scrolled out of the four newest notes by then: the brief says whether it covers the code
     expect(asked).toContain("bughunt on HEAD ends in the brief's bughunt.state word as it stands")
+    // the format line and the status sentence name all four words, so unknown is never written as fail
+    expect(asked).toContain('bughunt on HEAD ok|fail|unknown|skipped')
+    expect(asked).not.toContain('each check ends in ok or fail')
     for (const cls of ['[blocker]', '[small edge]', '[known limit]', '[not this ticket]']) expect(asked).toContain(cls)
     expect(asked).toContain('[give back]')
     // Nothing reads as "this must be changed" by its shape alone.
