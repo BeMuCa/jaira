@@ -135,7 +135,11 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  then `git add` the changed file under `.jaira/tickets/` alongside your source\n" +
 	"  changes and commit them together. A reviewer then sees the change and what it\n" +
 	"  was for in one place, instead of a diff whose ticket is still in whatever\n" +
-	"  state the last commit left it\n" +
+	"  state the last commit left it. On a board not shared yet (`.jaira/` stays out\n" +
+	"  of git from `jaira init` until `jaira share`) there is no ticket file to add\n" +
+	"  or commit — commit the code alone, and the handle in its subject is the\n" +
+	"  whole link. The next point holds there all the more; only its sentences\n" +
+	"  about the ticket file fall away\n" +
 	"- **a lane that changed no code commits nothing.** critique, testing and review\n" +
 	"  leave a note and a lane change and no source change; a commit carrying only\n" +
 	"  that is bookkeeping, and a branch with one of them per lane hides the work\n" +
@@ -335,7 +339,7 @@ func NoteIsCurrent(root string, lanes []LaneFact) (current bool, stale []string)
 			continue
 		}
 		bare := withoutVersion(string(existing))
-		want, ok := managedBlock(bare, noteFor(lanes))
+		want, ok := managedBlock(bare, noteFor(root, lanes))
 		if !ok {
 			continue // no managed block: this file is somebody else's entirely
 		}
@@ -346,8 +350,11 @@ func NoteIsCurrent(root string, lanes []LaneFact) (current bool, stale []string)
 	return len(stale) == 0, stale
 }
 
-// noteFor is the note as it would be written for these lanes.
-func noteFor(lanes []LaneFact) string { return agentNote + laneSection(lanes) }
+// noteFor is the note as it would be written for these lanes on the board at
+// root: the commands, the lanes, and how work arrives there (.jaira/pr).
+func noteFor(root string, lanes []LaneFact) string {
+	return agentNote + laneSection(lanes) + arrivalSection(PRModeFor(root))
+}
 
 // versionLine opens the block with the version of jaira that last changed its
 // text, so an older jaira can tell it is looking at a newer block and leave it
@@ -669,7 +676,7 @@ func announceIn(root string, names []string, lanes []LaneFact, dry bool) (writte
 // the user wrote is not something a tool should do invisibly.
 func announceInAgentFile(root, name string, lanes []LaneFact, dry bool) (path string, action string, err error) {
 	path = filepath.Join(root, name)
-	note := agentNote + laneSection(lanes)
+	note := noteFor(root, lanes)
 	block := jairaMarkerStart + "\n" + versioned(note) + "\n" + jairaMarkerEnd + "\n"
 
 	existing, readErr := os.ReadFile(path)

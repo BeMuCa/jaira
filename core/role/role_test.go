@@ -24,6 +24,7 @@ var wantRoles = []string{
 	"jaira-role-logbook-summary",
 	"jaira-role-pr",
 	"jaira-role-research",
+	"jaira-role-signoff",
 	"jaira-role-tester",
 	"jaira-teamlead",
 	"jaira-worker",

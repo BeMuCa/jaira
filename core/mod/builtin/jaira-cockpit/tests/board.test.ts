@@ -72,6 +72,12 @@ type World = {
   toasts: string[]
   // `git remote -v`.
   remotes: string
+  // .jaira/pr as the base holds it (`git show <base>:.jaira/pr`); undefined:
+  // no such file there.
+  basePr?: string
+  // origin's default branch where no forge names it (`git rev-parse
+  // --abbrev-ref origin/HEAD`); undefined: origin/HEAD not set here.
+  originHead?: string
   // The forge answers `repo view` but refuses `pr list`.
   prListFails: boolean
   nextFails: boolean
@@ -273,6 +279,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     }
     if (cmd === 'jaira' && args[0] === 'whoami') return ok(w.me === undefined ? '' : JSON.stringify(w.me))
     if (cmd === 'jaira' && args[0] === 'show') return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ handle: args[1], body: w.bodies[args[1]!] ?? '' }))
+    if (cmd === 'git' && args[0] === 'rev-parse' && args[1] === '--abbrev-ref') return w.originHead === undefined ? { value: { exitCode: 1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } } : ok(`${w.originHead}\n`)
     if (cmd === 'git' && args[0] === 'rev-parse') return ok('/repo/.git\n')
     if (cmd === 'git' && args[0] === '--exec-path') return ok('C:\\Program Files\\Git\\mingw64\\libexec\\git-core\n')
     if (cmd === 'git' && args[0] === 'worktree') return ok(w.worktrees ?? WORKTREES)
@@ -294,6 +301,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
         : { path_with_namespace: 'acme/repo', forked_from_project: { path_with_namespace: 'upstream/repo' }, default_branch: 'master' }))
     }
     if (cmd === 'git' && args[0] === 'remote' && args[1] === '-v') return ok(w.remotes)
+    if (cmd === 'git' && args[0] === 'show' && args[1]?.endsWith(':.jaira/pr')) return w.basePr === undefined ? failed(`fatal: path '.jaira/pr' does not exist in '${args[1].split(':')[0]}'`) : ok(w.basePr)
     if (cmd === 'git' && args[0] === 'branch' && args[1] === '--contains') return ok(w.holders.join('\n'))
     if (cmd === 'git' && args[0] === 'branch') return ok(w.branches.join('\n'))
     // Newest first, as git prints them. A --grep reads the whole message,
@@ -1587,6 +1595,83 @@ describe('after Accept', () => {
     const w = world(on, { herdr: true })
     w.ahead = 3
     w.origin = null
+    await press($)
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
+    expect(await failure($)).toContain('needs an origin on GitHub or GitLab')
+  })
+
+  test('.jaira/pr says none and the host names no forge: the press lands on origin through the pr lane, asks no pull request, and says landing', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.origin = 'git@git.example.de:acme/repo.git'
+    w.basePr = '# solo\nnone\n'
+    await press($)
+    expect(ran(w, 'gh')).toEqual([])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'mg677r', 'MG677R', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+    expect(w.toasts.at(-1)).toContain('MG677R: landing feat/mg677r on the default branch')
+    expect(w.toasts.join('\n')).not.toContain('pull request for')
+  })
+
+  test('.jaira/pr says none and there is no origin: nothing lands, and the pane says there is nothing to land on', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.origin = null
+    w.basePr = 'none\n'
+    await press($)
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
+    expect(await failure($)).toContain('no remote origin to land on')
+  })
+
+  test('.jaira/pr says none and the forge does not answer: nothing lands, since whether origin is a fork cannot be told, and the pane says why', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 2
+    w.prs = null
+    w.basePr = '\uFEFFnone\r\n'
+    await press($)
+    expect(prLane(w)).toEqual([])
+    const why = await failure($)
+    expect(why).toContain('Nothing lands from here')
+    expect(why).toContain('gh: command not found')
+  })
+
+  test('.jaira/pr says none and another ticket on the branch is not in done: nothing lands, and the press says which', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 2
+    w.origin = null
+    w.subjects = ['feat(MG677R): cache key', 'fix(T8QS1Y): filter']
+    w.basePr = 'none\n'
+    await press($)
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
+    expect(w.toasts.at(-1)).toBe('MG677R accepted; feat/mg677r does not land yet: T8QS1Y not in done')
+  })
+
+  test('.jaira/pr says none only in this checkout, not in the base: the base decides, so it is the pull request path', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.origin = null
+    w.files.set('/repo/.jaira/pr', 'none\n')
+    await press($)
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
+    expect(await failure($)).toContain('needs an origin on GitHub or GitLab')
+  })
+
+  test('.jaira/pr says none and no forge names the base: it is read from origin\'s default branch, as the gate reads it, not the local one', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 2
+    w.origin = 'git@git.example.de:acme/repo.git'
+    w.originHead = 'origin/main'
+    w.basePr = 'none\n'
+    await press($)
+    expect(ran(w, 'git', 'show')).toEqual([['git', 'show', 'origin/main:.jaira/pr', '@/repo']])
+    expect(ran(w, 'git', 'log', '--format=%s')).toEqual([['git', 'log', '--format=%s', 'origin/main..feat/mg677r', '@/repo']])
+    expect(prLane(w)).toHaveLength(1)
+  })
+
+  test('.jaira/pr with a typo is the pull request path: no forge still says so', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.origin = null
+    w.basePr = 'nnone\n'
     await press($)
     expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(await failure($)).toContain('needs an origin on GitHub or GitLab')

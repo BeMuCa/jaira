@@ -33,7 +33,7 @@ func TestManifestLinesAreWellFormed(t *testing.T) {
 			t.Errorf("malformed manifest line %q: want 64 lowercase hex, two spaces, a path", l)
 		}
 		if seen[l] {
-			t.Errorf("duplicate manifest line %q", l)
+			t.Errorf("duplicate manifest line %q; a merge=union merge of two branches that added it both leaves one - regenerate: scripts/shipped-history.sh --write", l)
 		}
 		seen[l] = true
 	}
@@ -46,7 +46,7 @@ func TestKnownMatchesPathAndBytes(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !Known(path, b) {
-		t.Errorf("the current %s is not in the manifest; run scripts/shipped-history.sh > core/shipped/shipped.sha256", path)
+		t.Errorf("the current %s is not in the manifest; run scripts/shipped-history.sh --write", path)
 	}
 	if Known(path, append(append([]byte{}, b...), '\n')) {
 		t.Error("a file with one more byte must not be known")
@@ -62,7 +62,11 @@ func TestKnownMatchesPathAndBytes(t *testing.T) {
 func TestEveryManifestPathExists(t *testing.T) {
 	seen := map[string]bool{}
 	for _, l := range entries() {
-		path := l[66:]
+		_, path, ok := strings.Cut(l, "  ")
+		if !ok || path == "" {
+			// TestManifestLinesAreWellFormed names the line; there is no path to look for
+			continue
+		}
 		if seen[path] {
 			continue
 		}

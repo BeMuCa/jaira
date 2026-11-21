@@ -126,7 +126,7 @@ because capture is meant to be cheap. Use --strict to fail on those too.`,
 				// A warning, not an error: a stale note misleads an agent, it
 				// does not damage a ticket, and 'jaira update' fixes it.
 				if len(noteStale) > 0 {
-					fmt.Fprintf(w, "\nwarning the jaira block in %s no longer matches this board's lanes; run 'jaira update'\n",
+					fmt.Fprintf(w, "\nwarning the jaira block in %s no longer matches this board's lanes or its .jaira/pr; run 'jaira update'\n",
 						strings.Join(noteStale, " and "))
 				}
 			}

@@ -345,6 +345,13 @@ func TestPRDefaultsToThePerson(t *testing.T) {
 		"agents\n":                    settings.PRPerson,
 		"person\nagent\n":             settings.PRPerson,
 		"agent; rm -rf /\n":           settings.PRPerson,
+		"none\n":                      settings.PRNone,
+		"none\r\n":                    settings.PRNone,
+		"# no PRs\n\n\t none  \n":     settings.PRNone,
+		"None\n":                      settings.PRPerson,
+		"nnone\n":                     settings.PRPerson,
+		"none agent\n":                settings.PRPerson,
+		"person\nnone\n":              settings.PRPerson,
 	} {
 		if err := os.WriteFile(settings.BoardPRPath(root), []byte(in), 0o644); err != nil {
 			t.Fatal(err)
@@ -389,6 +396,7 @@ func TestPRWhenDefaultsToDone(t *testing.T) {
 		"sign-off\n":                        settings.PRWhenDone,
 		"done\nsignoff\n":                   settings.PRWhenDone,
 		"signoff; rm -rf /\n":               settings.PRWhenDone,
+		"\xef\xbb\xbfsignoff\r\n":           settings.PRWhenSignoff,
 	} {
 		if err := os.WriteFile(settings.BoardPRWhenPath(root), []byte(in), 0o644); err != nil {
 			t.Fatal(err)
@@ -433,6 +441,29 @@ func TestPRReviewerIsALoginOrNothing(t *testing.T) {
 		}
 		if got := settings.PRReviewerFor(root); got != want {
 			t.Errorf(".jaira/pr-reviewer %q: %q, want %q", in, got, want)
+		}
+	}
+}
+
+// A .jaira/pr that is there but reads as person says so in its source, so a
+// typo or a stray word is visible in 'jaira roles list' instead of looking
+// like no file at all.
+func TestPRSourceSaysWhenTheFileDidNotTake(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for in, want := range map[string]string{
+		"nnone\n":              `the default — .jaira/pr says "nnone", which is neither agent nor none`,
+		"# only a comment\n":   "the default — .jaira/pr is there but says nothing",
+		"person\n":             "from .jaira/pr, shared with the board",
+		"\xef\xbb\xbfnone\r\n": "from .jaira/pr, shared with the board",
+	} {
+		if err := os.WriteFile(settings.BoardPRPath(root), []byte(in), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if _, src := settings.PRFor(root); src != want {
+			t.Errorf(".jaira/pr %q: source %q, want %q", in, src, want)
 		}
 	}
 }

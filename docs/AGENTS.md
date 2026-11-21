@@ -69,7 +69,9 @@ declares it as an output — so a review that skips it cannot leave the lane.
 the changed file under `.jaira/tickets/` next to your source changes and commit
 them together. A reviewer reading that commit sees the change and what it was
 for at once; split across two commits they get a diff whose ticket is still in
-the state the previous commit left it.
+the state the previous commit left it. On a board that has not been shared yet
+(`jaira init` keeps `.jaira/` out of git until `jaira share`) there is no ticket
+file to stage: commit the code alone, with the ticket handle in the subject.
 
 **A lane that changed no code commits nothing.** critique, testing and review
 leave a note and a lane change and no source change, and a commit carrying only

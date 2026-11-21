@@ -41,7 +41,11 @@ core/web/ui/** text eol=lf
 # The list of every shipped version of every installed file is embedded and
 # compared by hash; the fixtures the tests hold against it are older versions of
 # those files. A CRLF checkout changes every hash.
-core/shipped/shipped.sha256 text eol=lf
+# merge=union: two branches that both add lines no longer conflict; git keeps
+# the lines of both. scripts/shipped-history.sh --check (CI) catches a merge
+# that lost a line anyway, and a duplicate the union left fails the shipped
+# tests until the file is regenerated.
+core/shipped/shipped.sha256 text eol=lf merge=union
 core/role/testdata/** text eol=lf
 core/lane/testdata/** text eol=lf
 
