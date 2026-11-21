@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:43:56Z
+updated-at: 2026-11-21T08:44:16Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -47,8 +47,8 @@ review-gaps: |-
   note: worktree_diff enthaelt nur unversionierte .jaira/milestones/*.md, die nichts mit diesem Ticket zu tun haben - nicht mit in die Ticket-Commits nehmen
   optimize Runde 8: nichts zu entfernen.
   optimize Runde 10: Revert-Code restlos entfernt (revertSubject, revertedCommit, revertsBranchWork); nichts weiter.
-test-verdict: "fail (round 9): go vet + go test -race ./... RC=0 at bfbb234c; bughunt 2 change findings"
-hunt-verdict: "change (round 11): revert after rebase loses its sha link; sha256 repos never match the 40-hex pattern"
+test-verdict: "pass (round 10): go vet + go test -race ./... RC=0 at 221fbba5; DoD 8 proof refreshed (TestPRGateOnANoneBoardRefusesGitsRevertSubject: bare Revert refused naming fix(<ID>): revert <what>, reworded passes); gitrepo UnnamedCommits/isPlainMerge tests; reap names a failing or silent roles list (reap_test); gate writes nothing, nothing to race"
+hunt-verdict: "pass (round 12 at 221fbba5): 0 findings"
 claimed-by: DESKTOP-RFTCH11-30002
 claimed-at: 2026-11-21T08:01:23Z
 review-verdict: "Der Diff erfuellt alle 8 DoD-Punkte; go test fuer core/board, core/settings, core/gitrepo, core/role, internal/cli gruen, go vet sauber. Kein Defekt gefunden: Gate faellt bei Tippfehler, fehlender Datei, unbekanntem Handle, fremdem Commit und nicht-trivialem Merge geschlossen; .jaira/pr kommt aus dem Basis-Zweig. Nur Notes, kein Blocker."
