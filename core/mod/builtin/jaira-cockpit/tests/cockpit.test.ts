@@ -124,6 +124,21 @@ describe('session.receive', () => {
       want: SHORT('55CS2M · critique → human · question: keep the cache?'),
     },
     {
+      name: 'a question under a key outside the format is still shown',
+      text: 'jaira: 55CS2M critique -> human · notes: 1 · question: keep cache? · verdict: approve',
+      want: SHORT('55CS2M · critique → human · approve · notes 1 · question: keep cache?'),
+    },
+    {
+      name: 'a quoted copy of the line above it: the question once',
+      text: '> jaira: 55CS2M critique -> human · verdict: question: keep cache?\njaira: 55CS2M critique -> human · verdict: question: keep cache?',
+      want: SHORT('55CS2M · critique → human · question: keep cache?'),
+    },
+    {
+      name: 'a verdict clipped before its question ends: the question in full beside it',
+      text: `jaira: 55CS2M critique -> human · verdict: question: ${'q'.repeat(60)}?`,
+      want: SHORT(`55CS2M · critique → human · question: ${'q'.repeat(49)}… · question: ${'q'.repeat(60)}?`),
+    },
+    {
       name: 'every field is clipped, not only the verdict',
       text: `jaira: 55CS2M testing -> review · branch: feat/${'x'.repeat(100)} · verdict: ${'v'.repeat(100)}`,
       want: SHORT(`55CS2M · testing → review · ${'v'.repeat(59)}… · feat/${'x'.repeat(54)}…`),

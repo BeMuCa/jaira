@@ -84,7 +84,9 @@ export function verdictOf(text: string): string | undefined {
   return word ? word[1]!.toLowerCase() : undefined
 }
 
-const QUESTION = /(?:--question\s+["“]|\b(?:open question|offene frage|question|frage)\s*[:=]\s*["“]?)([^"\n”]+)/i
+// A question ends at a quote, the line's end, or a "·" — the separator of a
+// status line, whose next field is not part of the question.
+const QUESTION = /(?:--question\s+["“]|\b(?:open question|offene frage|question|frage)\s*[:=]\s*["“]?)([^"\n”·]+)/i
 const NO_QUESTION = /^(?:none|no|keine|nein|nichts|-|—)\b/i
 
 export function questionOf(text: string): string | undefined {
@@ -110,8 +112,6 @@ export type StatusLine = {
   gates?: string
   notes?: string
   verdict?: string
-  // The line as it stood in the report, so the rest can be read without it.
-  raw: string
 }
 
 const FIELDS = ['branch', 'commits', 'gates', 'notes'] as const
@@ -133,7 +133,7 @@ export function statusLineOf(text: string): StatusLine | undefined {
   for (let i = lines.length - 1; i >= 0; i--) {
     const m = STATUS_HEAD.exec(lines[i]!.replace(FRAME_OPEN, '').replace(FRAME_CLOSE, ''))
     if (!m) continue
-    const line: StatusLine = { ticket: m[1]!.toUpperCase(), from: m[2]!.toLowerCase(), to: m[3]!.toLowerCase(), raw: lines[i]! }
+    const line: StatusLine = { ticket: m[1]!.toUpperCase(), from: m[2]!.toLowerCase(), to: m[3]!.toLowerCase() }
     let rest = (m[4] ?? '').trim()
     const verdict = /(?:^|·)\s*verdict:\s*(.*)$/i.exec(rest)
     if (verdict) {
@@ -172,9 +172,9 @@ export function digest(text: string): { ticket: string; line: string } | undefin
         status.notes === undefined ? undefined : `${words.notes} ${status.notes}`,
       ].map(p => (p === undefined ? undefined : clip(p, 60)))
     : [ticket, laneOf(text), verdictOf(text)]
-  // A question asked in the status line's verdict is already in the line.
-  const question = questionOf(status ? text.replace(status.raw, '') : text)
-  if (question !== undefined) parts.push(`${words.question}: ${question}`)
+  // A question the status line's verdict already shows is not shown twice.
+  const question = questionOf(text)
+  if (question !== undefined && !parts.some(p => p?.includes(question))) parts.push(`${words.question}: ${question}`)
   const line = parts.filter(p => p !== undefined).join(' · ')
   return { ticket, line: `${words.marker} ${line} — ${words.fullReport}: /cockpit report ${ticket}` }
 }
