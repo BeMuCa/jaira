@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -345,28 +344,6 @@ func TestShareOfABoardInASubdirectorySeesAnUnanchoredExcludeLine(t *testing.T) {
 	}
 }
 
-// useOldGit puts a git first on PATH that acts like git before 2.31: it
-// prints --path-format=absolute back instead of a path, as jaira's fallback
-// to .gitignore expects.
-func useOldGit(t *testing.T) {
-	t.Helper()
-	if runtime.GOOS == "windows" {
-		t.Skip("the git wrapper is a shell script")
-	}
-	real, err := exec.LookPath("git")
-	if err != nil {
-		t.Skip("git not installed")
-	}
-	bin := t.TempDir()
-	wrapper := "#!/bin/sh\nseen=\nn=$#\ni=0\nwhile [ $i -lt $n ]; do a=$1; shift; i=$((i+1))\n" +
-		"  if [ \"$a\" = --path-format=absolute ]; then seen=1; else set -- \"$@\" \"$a\"; fi\ndone\n" +
-		"[ -n \"$seen\" ] && echo --path-format=absolute\nexec " + real + " \"$@\"\n"
-	if err := os.WriteFile(filepath.Join(bin, "git"), []byte(wrapper), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
-}
-
 // What jaira update writes and says, over the whole class "what ignores the
 // board": git decides (check-ignore), every rule counts, a git that cannot
 // answer leaves everything alone, and a report names only a write that
@@ -470,7 +447,7 @@ func TestUpdateDecidesByWhatGitIgnores(t *testing.T) {
 						}
 					}
 					if oldGit {
-						useOldGit(t)
+						countGit(t, true) // git before 2.31
 					}
 					read := func(p string) string { b, _ := os.ReadFile(p); return string(b) }
 					gitignore := filepath.Join(dir, ".gitignore")
@@ -628,5 +605,49 @@ func TestShareWithAnUnreadableGitignoreLeavesTheBoardPrivate(t *testing.T) {
 	}
 	if strings.Contains(err.Error()+out, "stays private") {
 		t.Errorf("share on a shared board says it stays private: %v\n%s", err, out)
+	}
+}
+
+// A board in " sub" that an older jaira made private carries "/sub/.jaira/",
+// a line that excludes nothing of it. update writes the right entry and takes
+// that one out, and says so; --dry-run only says it would.
+func TestUpdateDropsTheEntryAnOlderJairaWroteWithoutTheLeadingSpace(t *testing.T) {
+	dir := repoWithCommit(t)
+	root := filepath.Join(dir, " sub")
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runCLI(t, root, "init"); err != nil {
+		t.Fatalf("jaira init: %v\n%s", err, out)
+	}
+	// What the older jaira left: its own entry, without the space.
+	common := strings.TrimSpace(gitOut(t, dir, "rev-parse", "--path-format=absolute", "--git-common-dir"))
+	exclude := filepath.Join(common, "info", "exclude")
+	f, err := os.OpenFile(exclude, os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Fprint(f, "\n# jaira board — private to this machine. Run 'jaira share' to publish it.\n/sub/.jaira/\n")
+	f.Close()
+	stale := func() bool { return strings.Contains(readExclude(t, dir), "\n/sub/.jaira/\n") }
+
+	dry, err := runUpdate(t, root, "--dry-run")
+	if err != nil || !strings.Contains(dry, "Would remove /sub/.jaira/") || !stale() {
+		t.Fatalf("--dry-run: %v, stale line there = %v, output:\n%s", err, stale(), dry)
+	}
+	out, err := runUpdate(t, root)
+	if err != nil || !strings.Contains(out, "Removed /sub/.jaira/") {
+		t.Fatalf("jaira update: %v\n%s", err, out)
+	}
+	if stale() || !strings.Contains(readExclude(t, dir), "\n/ sub/.jaira/\n") {
+		t.Errorf("exclude after update:\n%s", readExclude(t, dir))
+	}
+	if again, err := runUpdate(t, root, "--json"); err != nil || !strings.Contains(again, `"ignore_stale_dropped": ""`) {
+		t.Errorf("a second update: %v\n%s", err, again)
+	}
+	for _, line := range statusOf(t, dir) {
+		if strings.Contains(line, ".jaira") {
+			t.Errorf("git sees the board: %q", line)
+		}
 	}
 }
