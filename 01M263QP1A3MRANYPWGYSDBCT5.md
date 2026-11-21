@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-21T08:10:07Z
+updated-at: 2026-11-21T08:10:24Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -31,7 +31,7 @@ review-summary: "Round after signoff return: nothing to return. The three new ca
 round: 4
 review-gaps: "none: the round adds three sentences and a renamed test; nothing duplicated or unused"
 test-verdict: "pass: go test ./... -race RC=0; TestAgentNoteNamesProofAndTheUnsharedBoardCaveat RC=0; DoD 1-7 verified in the tree; scratch board (git init + jaira init with this build): CLAUDE.md/AGENTS.md carry the reworded caveat, .jaira/ stays out of git; go test ./core/role ./core/shipped green after appending 3 manifest hashes"
-hunt-verdict: "pass: bughunt done at bb02c815, 0 findings in 10 modules"
+hunt-verdict: "pass: bughunt done at d71e5e86 (diff since bb02c815), 0 change, 0 pre-existing"
 review-verdict: pass
 review-round: 3
 review-check: |-
