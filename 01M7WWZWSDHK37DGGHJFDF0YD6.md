@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZWSDHK37DGGHJFDF0YD6
 title: "Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt"
-status: review
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:28:03Z
+updated-at: 2026-11-21T08:28:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
@@ -38,7 +38,7 @@ review-gaps: |-
   note: board.ts explainable nimmt fuer ein Verdict frueherer Runde ohne Kopie review.gaps (dann die von optimize) als Blocker-Quelle; harmlos, solange optimize nie mit 'blocker:' beginnt.
 test-verdict: "pass: round 4 changed only the two Explain prompt sentences and one assertion - claude plugin test 216 pass (rule asserted in 'without Herdr, Explain asks...'), go test core/role core/shipped core/lane RC=0; writes nothing new, so no parallel-writer case"
 hunt-verdict: "pass: follow-up hunt since c8de2b8a at 553b37f3, 0 findings"
-round: 4
+round: 5
 review-verdict: "Zurueck an in-progress: ein Blocker. Go-Seite, Lane-Prompts und Cockpit-Logik erfuellen DoD 1-6 und 8-11 (go test ./... gruen, claude plugin test 216 pass); der Statuspunkt 'bughunt on HEAD' der neuen Explain-Statuszeile (DoD 7) kann aus den Daten, die der Explain-Chat bekommt, im Normalfall nicht ok werden."
 review-round: 4
 review-check: "1. go build -o /tmp/jaira-b ./cmd/jaira  2. /tmp/jaira-b set <ein Test-Ticket> stop-after-fix=yes -> Exit 2, 'stop-after-fix is true, false or empty'  3. /tmp/jaira-b show DF0YD6 --json | grep -o '\"blocker_rule\":[^,]*' -> der Default-Satz  4. go test ./core/move -run TestMoveRecordsWhoSentItBack -v -> PASS (signoff->in-progress = person, zaehlt nicht)  5. cd core/mod/builtin/jaira-cockpit && claude plugin test . -> 216 pass  6. Blocker selbst sehen: /tmp/jaira-b show N71NVG --brief | grep -c 'bughunt: done at' -> 0, obwohl die Vorlage den Status daraus liest  7. Im Cockpit bei einem Ticket in signoff mit blocker:-Zeile Explain druecken -> Statuszeile mit Haken/Kreuzen, [blocker] rot; heute steht dort 'bughunt on HEAD' mit rotem Kreuz"
@@ -47,6 +47,9 @@ review-verdict-gaps: |-
   note: atATerminal (internal/cli/flow.go:927) - ein Agent-Harness, das Befehle in einem PTY ausfuehrt, schreibt jede Loop-Rueckgabe als by=person; dann erreicht count nie 3 und die Schleifenbremse ist fuer dieses Harness still aus. Im Code als Grenze benannt; ein Satz dazu in 20-in-progress.md waere ehrlich.
   note: stop-after-fix wird beim Lesen als exakt 'true' verglichen (schema.go decodeFields); von Hand eingetragenes 'True' oder 'yes' liest still als aus - beim Dekodieren ToLower/TrimSpace wie CanonicalStopAfterFix.
   note: board.ts explainable nimmt fuer ein Verdict frueherer Runde ohne Kopie review.gaps (dann die von optimize) als Blocker-Quelle; harmlos, solange optimize nie mit 'blocker:' beginnt.
+back-from: review
+back-by: lane
+back-count: 1
 ---
 
 # Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt
