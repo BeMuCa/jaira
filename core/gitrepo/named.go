@@ -13,7 +13,11 @@ var ErrNoSuchRef = errors.New("no such commit")
 
 // subjectScope is the scope of a commit subject the way this board's commits
 // are written: type(A3K9QP): ..., or type(A3K9QP,B7XQ2M)!: ... for several.
-var subjectScope = regexp.MustCompile(`^[a-z]+\(([^)]*)\)!?:`)
+// The subject git itself writes for 'git revert' — Revert "type(A3K9QP): ..."
+// — and for reverting that again — Reapply "...", or Revert "Revert "..."" in
+// a git before 2.43 — names the same tickets: the revert is work on the ticket
+// it undoes, and under .jaira/pr none an unnamed commit holds the gate.
+var subjectScope = regexp.MustCompile(`^(?:(?:Revert|Reapply) ")*[a-z]+\(([^)]*)\)!?:`)
 
 var handleShape = regexp.MustCompile(`^[0-9A-Z]{6}$`)
 

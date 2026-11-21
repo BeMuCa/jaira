@@ -142,7 +142,18 @@ merged_head() {
 # How work arrives on this board ('jaira roles list'): under none there is no
 # pull request to ask about, and the default branch containing the branch's
 # tip is what merged means.
-prmode="$( (cd "$root" && jaira roles list --json 2>/dev/null) | jaira json get pr --default person 2>/dev/null || true)"
+# When it cannot be told, nothing is reaped and every ticket says why: read as
+# person instead, a none board would wait for a pull request that never comes
+# and say 'no merged pull request', which names the wrong cause.
+prmode=""; prwhy=""
+prerr="$(mktemp)"
+if roles="$( (cd "$root" && jaira roles list --json) 2>"$prerr")"; then
+  prmode="$(jaira json get pr --default person <<<"$roles" 2>/dev/null)" \
+    || prwhy="'jaira json get pr' cannot read what 'jaira roles list --json' printed — an older jaira? run 'jaira self upgrade'"
+else
+  prwhy="'jaira roles list' failed: $(grep -v 'older version' "$prerr" | tail -1)"
+fi
+rm -f "$prerr"
 
 # The remote work lands on under none, as jaira-role-pr settles it: origin,
 # or — where origin is a fork — the remote that points at its parent, so a
@@ -198,7 +209,7 @@ default_base() {
 landed_head() {
   local base="$3" tip pat
   tip="$(git -C "$root" rev-parse --verify -q "refs/heads/$1" 2>/dev/null || true)"
-  pat="^[a-z]+\\(([^)]*[, ])?$2([, ][^)]*)?\\)!?:"
+  pat="^((Revert|Reapply) \")*[a-z]+\\(([^)]*[, ])?$2([, ][^)]*)?\\)!?:"
   if [ -n "$base" ] && [ -n "$tip" ] && git -C "$root" merge-base --is-ancestor "$tip" "$base" 2>/dev/null \
     && grep -qE "$pat" <<<"$(git -C "$root" log -E --grep="$pat" --format=%s "$tip" --)"; then
     echo "$tip"
@@ -231,6 +242,9 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
   done
   [ -n "$branch" ] || branch="${JAIRA_BRANCH_PREFIX:-feat}/$(printf '%s' "$t" | tr '[:upper:]' '[:lower:]')"
 
+  if [ -n "$prwhy" ]; then
+    echo "kept $t: cannot tell how work arrives on this board — $prwhy"; continue
+  fi
   if [ "$prmode" = none ]; then
     lr="$(land_remote)"
     if [ -z "$lr" ]; then

@@ -436,3 +436,24 @@ func TestPRGateOnANoneBoardRefusesCommitsNoTicketOwns(t *testing.T) {
 		t.Fatalf("agent board, an unnamed commit: %v\n%s", err, out)
 	}
 }
+
+// Under none a revert of a ticket's commit, with the subject git writes for
+// it (Revert "type(ID): ..."), is that ticket's commit: it passes when the
+// ticket is in done and holds the gate like any of its commits when it is
+// not — never as an unnamed commit nobody can land.
+func TestPRGateOnANoneBoardReadsARevertAsItsTicketsCommit(t *testing.T) {
+	dir, ticketIn, commit := prGateFixture(t)
+	setPR(t, dir, "none")
+	done := ticketIn("done")
+	commit("feat(" + done + "): accepted")
+	commit(`Revert "feat(` + done + `): accepted"`)
+	if out, err := runCLI(t, dir, "roles", "pr-gate", "master"); err != nil {
+		t.Fatalf("none, a revert of a done ticket's commit: %v\n%s", err, out)
+	}
+	open := ticketIn("in-progress")
+	commit(`Revert "fix(` + open + `): not accepted"`)
+	_, err := runCLI(t, dir, "roles", "pr-gate", "master")
+	if exitCode(err) != ExitValidation || strings.Contains(err.Error(), "name no ticket") || !strings.Contains(err.Error(), open) {
+		t.Fatalf("none, a revert naming a ticket not in done: exit %d, %v", exitCode(err), err)
+	}
+}

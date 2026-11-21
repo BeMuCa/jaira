@@ -295,7 +295,8 @@ gate does: a branch cannot switch its own board to `none` and land itself.
 Under `none` it also refuses a branch with a commit that names no ticket —
 a merge too, when it carries content of its own, such as a conflict resolution
 — because no pull request shows it to anyone first. Exit 3 names those commits; say
-so and stop, the branch stays pushed.
+so and stop, the branch stays pushed. A revert keeps the subject `git revert`
+writes, `Revert "type(<ID>): ..."`: the gate reads it as a commit of `<ID>`.
 A merge that conflicts is not yours to settle alone: abort it, say which files,
 and stop. A push the remote refuses — somebody landed in between — is
 answered by fetching and merging again, never by `--force`, `--force-with-lease`

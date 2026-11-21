@@ -693,3 +693,6 @@ f7edf0c6cbbba221c42eedf7d29ff01620bcb540961975a688e11b28591520f8  core/role/jair
 ff3723b545abc2ca383efd8ea3ee8164f094912881a5051b732580015cb4c65e  core/role/jaira/SKILL.md
 dd6b526b7a2611bc51a5a2ed8bc9debc31251169f43768d46b89b202a7198f5a  core/role/builtin/jaira-dispatcher/scripts/reap.sh
 7b11dc0fe6345333e6c7653ea60d49a9e058c797088c49043ae2141b5a0ea2dc  core/role/builtin/jaira-dispatcher/scripts/reap.sh
+fc211337c0ea874d97becfcc77e554a30043a9c3208e1f57501c0c2d889ca61f  core/role/builtin/jaira-dispatcher/scripts/reap.sh
+be6d9a9b7f03c4ab980521d37eabc5f354cb30a5909e8e51d69b3e7eb290b48a  core/role/builtin/jaira-role-pr/SKILL.md
+77071ab827465b19f68ecba2fe19a29e19df5464771665f8dbca1d2b23e336c6  core/mod/builtin/jaira-cockpit/hooks/board.ts

@@ -95,6 +95,11 @@ esac
 if [ "$1" = json ] && [ -e "` + r.shown + `.json-fails" ]; then
   exit 7
 fi
+if [ "$1" = roles ] && [ -e "` + r.shown + `.roles-fails" ]; then
+  echo "jaira: this board was set up by an older version of jaira" >&2
+  echo "jaira: roles list: cannot read .jaira/lanes" >&2
+  exit 4
+fi
 if [ "$1" = -C ] && [ "$3" = show ]; then
   cat "` + r.shown + `" 2>/dev/null || exit 5
   exit 0
@@ -576,5 +581,27 @@ func TestReapOnANoneBoardMeasuresARenamedOrigin(t *testing.T) {
 	}
 	if _, err := os.Stat(r.wt); !os.IsNotExist(err) {
 		t.Errorf("landed on origin and done, worktree still there (%v):\n%s", err, out)
+	}
+}
+
+// When 'jaira roles list' fails, how work arrives cannot be told: reap keeps
+// every ticket and says so, rather than reading the board as person and
+// waiting for a pull request a none board never opens.
+func TestReapNamesAFailingRolesListAsTheCause(t *testing.T) {
+	t.Parallel()
+	r := newReapRig(t)
+	r.write(t, filepath.Join(r.repo, ".jaira", "pr"), "none\n")
+	r.write(t, filepath.Join(r.repo, ".jaira", "tickets", ".keep"), "")
+	r.write(t, r.shown, `{"status":"done"}`)
+	r.write(t, r.shown+".roles-fails", "")
+	out := r.run(t, r.repo, "reap.sh")
+	if !strings.Contains(out, "kept AB12CD: cannot tell how work arrives on this board — 'jaira roles list' failed: jaira: roles list: cannot read .jaira/lanes") {
+		t.Fatalf("roles list failed, want it named:\n%s", out)
+	}
+	if strings.Contains(out, "pull request") {
+		t.Errorf("fell back to the pull request path:\n%s", out)
+	}
+	if _, err := os.Stat(r.wt); err != nil {
+		t.Fatalf("worktree removed although how work arrives is unknown: %v", err)
 	}
 }
