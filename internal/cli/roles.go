@@ -2,14 +2,20 @@ package cli
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/BeMuCa/jaira/core/board"
+	"github.com/BeMuCa/jaira/core/gitrepo"
+	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/role"
 	"github.com/BeMuCa/jaira/core/settings"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // newRolesCmd groups the role prompts the binary ships.
@@ -27,7 +33,7 @@ in ~/.jaira/settings.json, a worker who carries it through every lane itself —
 and the agents they hand lanes to. They are compiled into this binary, and
 'jaira roles install' writes them into your agent's skills directory.`,
 	}
-	cmd.AddCommand(newRolesListCmd(), newRolesInstallCmd())
+	cmd.AddCommand(newRolesListCmd(), newRolesInstallCmd(), newRolesPRGateCmd())
 	return cmd
 }
 
@@ -55,7 +61,18 @@ And who touches the repository's version and changelog: "teamlead" when the
 board's .jaira/release says so — one line, committed, shared with everybody
 on the board — and "worker" otherwise, every ticket bringing its own as the
 repository's instructions say. Carried as release, and where it came from as
-release_source.`,
+release_source.
+
+And who opens a pull request: "agent" when the board's .jaira/pr says so —
+an agent then opens it itself once every ticket on the branch is in done
+('jaira roles pr-gate' checks that),
+asks for the reviewer .jaira/pr-reviewer names and answers one round of
+comments — and "person" otherwise, an agent pushing the branch and handing
+the create line back. Carried as pr, pr_source and pr_reviewer. And when:
+"signoff" when the board's .jaira/pr-when says so — the pull request opens
+once every ticket is in signoff, and its review round has to be finished
+before done — and "done" otherwise. Carried as pr_when and pr_when_source.
+Merging and approving stay a person's either way.`,
 		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			roles, err := role.Builtins()
@@ -71,6 +88,9 @@ release_source.`,
 			chat, chatSource := cur.ChatModelFor(root)
 			py, pySource := cur.PythonCommand()
 			release, releaseSource := settings.ReleaseFor(root)
+			pr, prSource := settings.PRFor(root)
+			reviewer := settings.PRReviewerFor(root)
+			prWhen, prWhenSource := settings.PRWhenFor(root)
 			if g.jsonOut {
 				arr := make([]map[string]any, 0, len(roles))
 				for _, r := range roles {
@@ -84,6 +104,8 @@ release_source.`,
 					"chat_model": chat, "chat_model_source": chatSource,
 					"python": py, "python_source": pySource,
 					"release": release, "release_source": releaseSource,
+					"pr": pr, "pr_source": prSource, "pr_reviewer": reviewer,
+					"pr_when": prWhen, "pr_when_source": prWhenSource,
 				})
 			}
 			fmt.Fprintf(w, "%-24s %s\n", "ID", "DESCRIPTION")
@@ -96,9 +118,179 @@ release_source.`,
 				cmp.Or(chat, "account default"), chatSource)
 			fmt.Fprintf(w, "python: %s — what the roles run their Python scripts with (%s)\n", py, pySource)
 			fmt.Fprintf(w, "release: %s — who touches the version and the changelog (%s)\n", release, releaseSource)
+			fmt.Fprintf(w, "pr: %s — who opens a pull request (%s); reviewer: %s; opens in: %s (%s)\n",
+				pr, prSource, cmp.Or(reviewer, "none"), prWhen, prWhenSource)
 			return nil
 		},
 	}
+}
+
+func newRolesPRGateCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "pr-gate <base>",
+		Short: "Say whether an agent may open this branch's pull request",
+		Long: `Says whether an agent may open the pull request of the checked-out branch
+against <base> — the default branch of the repository it goes to, as
+<remote>/<branch>. Exit 0 only when .jaira/pr says agent in <base> itself, at
+least one commit in <base>..HEAD names a ticket in its subject
+(type(A3K9QP): ...), and every ticket named that is still on the board sits
+in its board's terminal lane — or, where .jaira/pr-when says signoff, in the
+lane signoff or any lane after it up to the terminal one. Both files are
+read as <base> holds them, not off the branch's disk: a branch cannot open
+its own gate by committing them, and a board whose .jaira/ is not shared yet
+keeps a person opening it. A ticket filed into the logbook is past done and
+holds nothing up; one in the archive (rejected) or nowhere here (a typo, an
+unfetched ref) holds it. Anything else exits 3 and says which ticket holds
+it.
+
+jaira-role-pr runs this before it opens a pull request on its own, so the
+rule does not rest on a role's text alone. A person who invokes the role
+needs no gate: their invocation is the decision. --json carries may_open,
+pr, pr_when and tickets; a refusal is the usual error, its reason
+pr_person, no_ticket, no_signoff_lane, unreadable or pending.`,
+		Args: exactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			s, err := openStore()
+			if err != nil {
+				return err
+			}
+			repo := &gitrepo.Repo{Dir: s.Root}
+			named, err := repo.TicketsNamed(args[0])
+			if errors.Is(err, gitrepo.ErrNoSuchRef) {
+				return fail(ExitUsage, "no_such_ref", "pr-gate: %q is no commit here — fetch the remote first", args[0])
+			}
+			if err != nil {
+				return err
+			}
+			// Both board files are read as the base holds them, never off
+			// the disk of the branch being judged: a branch that commits
+			// .jaira/pr saying agent, or a pr-when of signoff, would
+			// otherwise open its own gate. A change to either takes effect
+			// once it has been merged into the base.
+			pr := settings.PRIn(repo.FileAt(args[0], settings.BoardPRPath(".")))
+			if pr != settings.PRAgent {
+				return fail(ExitValidation, "pr_person",
+					"pr-gate: .jaira/pr in %s does not say agent — a person opens the pull request; hand the create line back", args[0])
+			}
+			if len(named) == 0 {
+				return fail(ExitValidation, "no_ticket",
+					"pr-gate: no commit in %s..HEAD names a ticket — nobody accepted anything on this branch; hand the create line back", args[0])
+			}
+			// A ticket file that cannot be read is not a ticket filed away:
+			// it would drop out of the list and look past done. A problem
+			// naming a handle of this branch fails the gate closed; one
+			// about another ticket of the board is not this branch's.
+			all, err := s.List()
+			var pe *ticket.PartialError
+			if errors.As(err, &pe) {
+				for _, p := range pe.Problems {
+					for _, h := range named {
+						if strings.Contains(p, h) {
+							return fail(ExitValidation, "unreadable",
+								"pr-gate: %s cannot be read, so whether it is accepted cannot be told — %s; fix it, or hand the create line back", h, p)
+						}
+					}
+				}
+			} else if err != nil {
+				return err
+			}
+			when := settings.PRWhenIn(repo.FileAt(args[0], settings.BoardPRWhenPath(".")))
+			// reached is, per board, every lane a ticket may sit in for the
+			// pull request to open: the terminal lane, and under signoff
+			// also signoff and whatever lies between it and the terminal.
+			// A parking lane ordered after the terminal one is not among
+			// them: blocked work has not reached anything.
+			reached := map[string]map[string]bool{}
+			var pending []string
+			for _, h := range named {
+				onBoard := false
+				for _, t := range all {
+					if ticket.Handle(t.ID) != h {
+						continue
+					}
+					onBoard = true
+					b := lane.BoardOf(t)
+					ok, known := reached[b]
+					if !known {
+						if ok, err = lanesReached(s, b, when); err != nil {
+							return err
+						}
+						reached[b] = ok
+					}
+					if !ok[t.Status] {
+						pending = append(pending, h+" ("+t.Status+")")
+					}
+				}
+				// Off the board, a handle counts only where the logbook holds
+				// it: filed there from done. Archived means rejected, and
+				// unknown may be a typo in a scope or a ticket on a ref
+				// nobody fetched — neither was accepted by anyone.
+				if !onBoard {
+					if where := filedWhere(s, h); where != "logbook" {
+						pending = append(pending, h+" ("+where+")")
+					}
+				}
+			}
+			if len(pending) > 0 {
+				return fail(ExitValidation, "pending",
+					"pr-gate: not every ticket on the branch is in %s — %s; hand the create line back", when, strings.Join(pending, ", "))
+			}
+			w := cmd.OutOrStdout()
+			if g.jsonOut {
+				return emit(w, map[string]any{"may_open": true, "pr": pr, "pr_when": when, "tickets": named})
+			}
+			fmt.Fprintf(w, "pr-gate: an agent may open it — every ticket on the branch is in %s: %s\n", when, strings.Join(named, ", "))
+			return nil
+		},
+	}
+}
+
+// filedWhere says where a handle that is not on the board lives: "logbook",
+// "archive" (rejected), or "unknown" — not here at all.
+func filedWhere(s *ticket.Store, handle string) string {
+	_, path, err := s.LoadAnywhere(handle)
+	switch {
+	case err != nil:
+		return "unknown"
+	case strings.HasPrefix(path, s.LogbookDir()+string(filepath.Separator)):
+		return "logbook"
+	case strings.HasPrefix(path, s.ArchiveDir()+string(filepath.Separator)):
+		return "archive"
+	}
+	return "unknown"
+}
+
+// lanesReached is the set of lanes on board b in which a ticket counts as
+// far enough along for the pull request to open under when.
+func lanesReached(s *ticket.Store, b, when string) (map[string]bool, error) {
+	lanes, err := boardLanes(s, b)
+	if err != nil {
+		return nil, err
+	}
+	term := lanes.Terminal()
+	if term == nil {
+		return nil, fail(ExitValidation, "no_terminal_lane", "pr-gate: board %q has no terminal lane, so nothing on it is ever done", cmp.Or(b, "default"))
+	}
+	from := term.ID
+	if when == settings.PRWhenSignoff {
+		from = settings.PRWhenSignoff
+	}
+	out := map[string]bool{}
+	in := false
+	for _, l := range lanes.Lanes {
+		in = in || l.ID == from
+		if in {
+			out[l.ID] = true
+		}
+		if l.ID == term.ID {
+			break
+		}
+	}
+	if !out[term.ID] {
+		return nil, fail(ExitValidation, "no_signoff_lane",
+			"pr-gate: .jaira/pr-when says signoff, but board %q has no lane signoff before its terminal lane — fix the file or the board", cmp.Or(b, "default"))
+	}
+	return out, nil
 }
 
 func newRolesInstallCmd() *cobra.Command {
