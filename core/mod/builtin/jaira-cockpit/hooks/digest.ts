@@ -94,13 +94,77 @@ export function questionOf(text: string): string | undefined {
   return q === '' || NO_QUESTION.test(q) ? undefined : clip(q, 100)
 }
 
+// The status line a worker or dispatcher ends its report with (see the
+// Report section of jaira-worker and jaira-dispatcher):
+//
+//   jaira: 55CS2M in-progress -> signoff · branch: feat/55cs2m · commits: a1b2c3d..e4f5a6b (3) · gates: ok · notes: 1 · verdict: approve
+//
+// Fixed keys in a fixed order, "-" for an empty value; verdict comes last and
+// keeps everything after its key, so its text may hold a "·" of its own.
+export type StatusLine = {
+  ticket: string
+  from: string
+  to: string
+  branch?: string
+  commits?: string
+  gates?: string
+  notes?: string
+  verdict?: string
+}
+
+const STATUS_KEYS = ['branch', 'commits', 'gates', 'notes', 'verdict'] as const
+const STATUS_HEAD = new RegExp(
+  `^\\s*jaira:\\s+(${HANDLE})\\s+([a-z][a-z-]*)\\s*(?:->|→)\\s*([a-z][a-z-]*)\\s*(?:·\\s*(.*))?$`,
+  'i',
+)
+
+// The last such line in the report, or undefined when there is none: a
+// report quoting an earlier one still ends with its own. A key that is
+// missing or holds "-" is left out; a key not in STATUS_KEYS is ignored.
+export function statusLineOf(text: string): StatusLine | undefined {
+  const lines = text.split(/\r?\n/)
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const m = STATUS_HEAD.exec(lines[i]!)
+    if (!m) continue
+    const line: StatusLine = { ticket: m[1]!.toUpperCase(), from: m[2]!.toLowerCase(), to: m[3]!.toLowerCase() }
+    let rest = (m[4] ?? '').trim()
+    const verdict = /(?:^|·)\s*verdict:\s*(.*)$/i.exec(rest)
+    if (verdict) {
+      line.verdict = verdict[1]!.trim()
+      rest = rest.slice(0, verdict.index)
+    }
+    for (const field of rest.split('·')) {
+      const kv = /^\s*([a-z]+):\s*(.*?)\s*$/i.exec(field)
+      if (!kv) continue
+      const key = kv[1]!.toLowerCase()
+      if (key !== 'verdict' && (STATUS_KEYS as readonly string[]).includes(key)) line[key as Exclude<typeof STATUS_KEYS[number], 'verdict'>] = kv[2]!
+    }
+    for (const key of STATUS_KEYS) if (line[key] === '' || line[key] === '-') delete line[key]
+    return line
+  }
+  return undefined
+}
+
 // The line the chat shows instead of the report, or undefined when the
 // report must be passed on whole: no ticket recognisable, or a failure.
+// A report that ends with a status line is read from that line alone; one
+// without it is guessed at as before.
 export function digest(text: string): { ticket: string; line: string } | undefined {
   if (isFailure(text)) return undefined
-  const ticket = ticketOf(text)
+  const status = statusLineOf(text)
+  const ticket = status?.ticket ?? ticketOf(text)
   if (ticket === undefined) return undefined
-  const parts = [ticket, laneOf(text), verdictOf(text)]
+  const parts = status
+    ? [
+        ticket,
+        `${status.from} → ${status.to}`,
+        status.verdict,
+        status.branch,
+        status.commits === undefined ? undefined : `commits ${status.commits}`,
+        status.gates === undefined ? undefined : `gates ${status.gates}`,
+        status.notes === undefined ? undefined : `notes ${status.notes}`,
+      ].map(p => (p === undefined ? undefined : clip(p, 60)))
+    : [ticket, laneOf(text), verdictOf(text)]
   const question = questionOf(text)
   if (question !== undefined) parts.push(`${words.question}: ${question}`)
   const line = parts.filter(p => p !== undefined).join(' · ')
