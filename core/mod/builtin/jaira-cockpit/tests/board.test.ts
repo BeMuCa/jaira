@@ -2923,8 +2923,12 @@ describe('the workers tab', () => {
 
   test('a report\'s first line: a notification\'s result without tags and blank lines, else the text', () => {
     expect(reportLine('<task-notification>\n<summary>x</summary>\n<result>\n\n  done: moved.\nmore\n</result>')).toBe('done: moved.')
-    expect(reportLine('\n\n<b>plain</b> message\nsecond')).toBe('plain message')
+    expect(reportLine('<task-notification>\n<task-id>a1</task-id> <status>done</status>\nplain message\nsecond')).toBe('plain message')
     expect(reportLine('')).toBe('')
+    expect(reportLine('<result>\n</result>')).toBe('')
+    // Angle brackets inside a line of content are content, never stripped.
+    for (const line of ['keyed by Map<string, number> and a < b check > fixed', 'if n<3 then x>2', 'moved <id> to critique', '<b>bold</b> start'])
+      expect(reportLine(`<task-notification>\n<result>\n${line}\n</result>`)).toBe(line)
   })
 
   test('a ticket with an open question and no agent is no figure; one with an agent waits for the answer', async ($, on) => {

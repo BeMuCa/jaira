@@ -112,8 +112,11 @@ function clip(s: string, n: number): string {
 }
 
 // The first line of a kept report worth reading: a task notification's
-// result, else the text, without its tags and blank lines.
+// result, else the text, past blank lines and lines that are nothing but
+// tags and whole elements (`<task-id>a1</task-id>`). A line of content keeps every angle bracket it has: `Map<K, V>` or
+// `n<3 then x>2` is what the agent wrote, not markup.
+const TAGS_ONLY = /^(?:<([a-z][\w-]*)[^<>]*>[^<>]*<\/\1>\s*|<[^<>]*>\s*)+$/i
 export function reportLine(text: string): string {
   const body = /<result>([\s\S]*?)(?:<\/result>|$)/.exec(text)?.[1] ?? text
-  return body.split('\n').map(l => l.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()).find(l => l !== '') ?? ''
+  return body.split('\n').map(l => l.replace(/\s+/g, ' ').trim()).find(l => l !== '' && !TAGS_ONLY.test(l)) ?? ''
 }
