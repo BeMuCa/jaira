@@ -1,7 +1,7 @@
 ---
 id: 01M7X8VKSZ03QDYFW63CTWRAP8
 title: "Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,22 +25,18 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:01:43Z
+updated-at: 2026-11-21T08:17:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-31394
 claimed-at: 2026-11-21T08:01:32Z
-outcome-what: "jaira-role-signoff: Branch per Handle-Segment, neueste von lokal/remote, divergiert = ?; Lookup nennt ausdruecklich den Handle statt der ULID; CI: neuester Lauf des Commits entscheidet, laufend = ?"
-outcome-why: "signoff-Rueckgabe (Branchname) plus bughunt 22:32 und review-gaps 22:39"
-outcome-resolves: "Rueckgabe aus signoff 22:27, review-gaps 1-2 vom 22:39"
-review-summary: "Ships the 20.11 teamlead lessons as roles, no Go code: a new read-only role jaira-role-signoff (status line bound to the branch head commit - branch found by the ticket handle as a name segment, newest of local/remote copies by ancestry, divergence = ?; tests from the CI run of exactly that commit; bughunt note must name HEAD - then a table marking every open note 🔴/🟡/⚪/🔵, one recommendation and paste-ready accept/give-back lines, plus return rules: after two noted 'Given back from signoff:' returns small edges go to a follow-up ticket). jaira-teamlead re-reads lanes and open PRs before any 'waiting for you' list, reports signoff tickets in that shape and points to the signoff role for the rules; its hunt check no longer assumes feat/<id>. jaira-worker gets 'Before you push' (run the project's CI gates locally, read off the repo), jaira-role-pr and jaira-dispatcher point to it. README, docs/how-to-work-with-jaira.html, role_test wantRoles, shipped.sha256 and release note TWRAP8.md follow."
-round: 9
-review-gaps: |-
-  note: jaira-role-signoff tells the agent to read "notes" and "review-verdict" from jaira show --json, but that JSON has no notes key (notes sit in body) and the verdict is .review.verdict - an agent finds it, the wording could name the real keys
-  note: the last bughunt note names a1b61158 while HEAD is b443a4cb; the three later commits change only signoff SKILL.md text and shipped.sha256, which this review read whole - by the role's own rule its status line shows bug hunt ❌ for this ticket
-  note: feat/twrap8 is stacked on fix/nh788q-windows-rename (5b16e491: QFZDY7 CI shards, NH788Q store.go), which is not on master - a PR to master carries those two commits too until that branch is merged; rebase onto master if it lands first
-  note: pre-existing: the return count is a floor because a give-back done as a plain move in the TUI/web board writes no "Given back from signoff:" note - the role says so on the status line
-test-verdict: "pass: go test ./core/... green (RC=0) at b443a4cb; text-only change to the lookup comment and the tests check, the lookup itself unchanged since d4da7f7b and exercised there; writes nothing"
-hunt-verdict: "pass: last hunt at a1b61158 found 1 change, fixed in d4da7f7b; no new hunt since by teamlead decision 21:58 - hunt-on-HEAD reads ❌ by design"
+outcome-what: "signoff's branch-head lookup no longer depends on ref order; teamlead pointer worded the same"
+outcome-why: "bughunt 08:13: a diverged early copy ended the loop before a later copy that descends from both"
+outcome-resolves: "head is the copy every other copy is an ancestor of, whatever order for-each-ref lists them in"
+review-summary: "critique 21.11.: key names now match jaira show --json (checked against the live payload of TWRAP8: status, handle, dod_items[].done, review.verdict/gaps/summary, notes only in body); merge brought no conflict in the roles' own text, only the manifest. Nothing to change."
+round: 10
+review-gaps: "optimize 21.11.: the new paragraph is the only addition; nothing duplicated elsewhere, no dead text. Nothing to remove."
+test-verdict: "fail: suite green (go vet, go test ./..., check-ticket-commits RC=0), DoD 1-4 verified in the tree, keys checked against the live payload; bughunt 08:13 change: branch-head loop order-dependent (diverged early copy breaks before a later merge copy)"
+hunt-verdict: "change: 1 finding at 367d125f (order-dependent head loop, fails safe as ?)"
 question: ""
 review-verdict: "All four DoD items met, no blocker. Checked: go test ./core/role ./core/shipped green (shipped fresh, -count=1), every flag the role prescribes exists (jaira list --lane/--board, gh run list --commit/--workflow, glab ci list --sha), the cockpit really writes 'Given back from <lane>:' (core/mod/builtin/jaira-cockpit/hooks/register.tsx:900), the branch lookup handles none/diverged copies by leaving head empty. Role is read-only, so concurrency/permission risk is limited to lines the person runs. Four notes, all small."
 review-round: 8
@@ -117,3 +113,7 @@ review-check: |-
 - **2026-11-20 22:44 · Alexander Sacharov** — review (fresh, at b443a4cb): no blocker; 4 notes in review-gaps - JSON key names in signoff role, bughunt sha behind HEAD (text-only commits, read whole here), branch stacked on unmerged fix/nh788q-windows-rename, pre-existing return-count floor
 - **2026-11-21 08:00 · Alexander Sacharov** — Given back from signoff: Alex 21.11. alle Funde in dieser Runde schliessen. 1) jaira-role-signoff nennt die echten JSON-Schluessel von jaira show --json (Notes im body, Verdict unter .review.verdict). 2) Der letzte Bughunt deckt HEAD nicht - nach dem Fix Diff-Hunt auf den neuen HEAD. 3) master enthaelt fix/nh788q inzwischen: upstream/master einmergen, Manifest per Union aufloesen. Rueckgabezaehler-Untergrenze bleibt note: pre-existing. review, signoff, push.
 - **2026-11-21 08:01 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/4205.sock
+- **2026-11-21 08:11 · Alexander Sacharov** — in-progress Runde 21.11.: jaira-role-signoff nennt jetzt die echten Schluessel (.review.verdict/.gaps, .dod_items[].done, Notes im .body unter ## Progress - es gibt keinen notes-Key). Geschwister geprueft: teamlead liest Notes per 'jaira show <id>' Text + grep, das stimmt. upstream/master gemerged (367d125f), shipped.sha256 per Union + neue Hashes der auto-gemergten SKILL.md; fix/nh788q ist jetzt in master, Stapel-Hinweis aus review 22:44 erledigt. go vet + go test ./... + check-ticket-commits lokal gruen. Rueckgabezaehler-Untergrenze bleibt note: pre-existing.
+- **2026-11-21 08:13 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-signoff/SKILL.md:69-73 - the branch-head loop depends on ref order: it breaks at the first copy that diverged from the head so far, before a later copy that descends from both is seen, so head stays empty and every check reads ? although the text right below says the head is the commit every other copy leads up to. Order is fixed by for-each-ref (heads, then remotes alphabetically): local feat/x with an unpushed commit, origin/feat/x with a teammate's commit, upstream/feat/x with the merge of both -> empty head instead of the upstream commit. Fails safe (only ?, never a wrong ✅). ran: scratch repo with exactly that layout, loop copied verbatim -> head=[] while the merge commit descends both
+- **2026-11-21 08:13 · Alexander Sacharov** — bughunt: done at 367d125f - 1 finding (1 change, 0 pre-existing) in 4 files read as diff since a1b61158, follow-up hunt, no new files; diff from the upstream merge (pr-round.sh, close-tab.sh, reap.sh, uncommitted.sh and their tests) belongs to other tickets and was not hunted; concurrency, error paths, input, permissions checked; jaira show --json keys and gh run list --commit/--workflow checked against the real tools; go test ./core/role ./core/shipped green; files: .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md README.md core/release/notes/TWRAP8.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-role-signoff/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/role/role_test.go core/shipped/shipped.sha256 docs/how-to-work-with-jaira.html
+- **2026-11-21 08:17 · Alexander Sacharov** — in-progress: Kopf-Suche jetzt ordnungsunabhaengig - fuer jede Kopie pruefen, ob alle anderen ihre Vorfahren sind (n^2, n<=3 Refs). Der alte Ein-Durchlauf-Vergleich brach bei der ersten Divergenz ab, bevor eine spaetere Merge-Kopie kam. Scratch-Repo geprueft: keine/eine/divergiert/Merge spaeter in der Reihenfolge/gleiche Kopien/lokal hinter remote/twrap8x ignoriert - alle wie erwartet. teamlead-Verweis angeglichen.

@@ -66,17 +66,17 @@ the rule `jaira create` uses to read a ticket off a branch. Never assume a
 seg='(^|[^[:alnum:]])<handle>([^[:alnum:]]|$)'   # the six characters, never the ULID
 refs=$(git for-each-ref --format='%(refname:short)' refs/heads refs/remotes | grep -iE "$seg")
 head=
-for r in $refs; do
-  c=$(git rev-parse "$r")
-  if [ -z "$head" ] || git merge-base --is-ancestor "$head" "$c"; then head=$c
-  elif ! git merge-base --is-ancestor "$c" "$head"; then head=; break; fi
+for c in $refs; do                 # the copy every other copy is an ancestor of
+  for r in $refs; do git merge-base --is-ancestor "$r" "$c" || continue 2; done
+  head=$(git rev-parse "$c"); break
 done
 ```
 
 Local and remote copies are compared by ancestry, not by where they live: the
 head is the commit every other copy leads up to — a local branch ahead of its
 push, or a remote one a teammate pushed after your last fetch. No copy at all,
-or two that diverged: `head` stays empty, every check below is `?`, and the
+or copies that diverged with none of them leading on from all the others:
+`head` stays empty, every check below is `?`, and the
 status line names `$refs` — which one ships is the person's to say, not yours
 to guess.
 

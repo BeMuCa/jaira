@@ -214,8 +214,9 @@ git rev-parse --short <the ticket's branch>               # the commit that ship
 
 The ticket's branch is the one whose name carries its handle as a segment —
 not necessarily `feat/<id>`; `jaira-role-signoff` holds the lookup, which
-takes the newest of its local and remote copies. No such branch, or two copies
-that diverged: the commit is unknown, and so is the hunt's cover.
+takes the copy every other local and remote copy leads up to. No such branch,
+or copies that diverged with none leading on from the rest: the commit is
+unknown, and so is the hunt's cover.
 
 No such line naming that commit, on a ticket whose diff touches anything
 outside `.jaira/`: the hunt was skipped. Do not report the ticket as ready. Start the hunt yourself —
