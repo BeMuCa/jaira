@@ -36,6 +36,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 LANGS = ("de", "en", "ru")
 
+# A definition-of-done item that starts with this is ticked by a person only.
+PERSON = "seen by a person:"
+
 
 def load(path):
     return json.loads(Path(path).read_text(encoding="utf-8"))
@@ -137,7 +140,13 @@ def plan(data_path, db_path):
         comment = said(comments, tid)
         if s["verdict"] == "accept":
             print(f"# {tid}: accepted - every step ok")
-            print(f"jaira move {tid} --to {t['next_lane']} --force")
+            # --force passes an unticked definition of done; an item only a
+            # person ticks is handed to them before the move, never run here.
+            seen = [(n, d) for n, d in enumerate(t.get("dod", []), 1) if d.strip().startswith(PERSON)]
+            for n, d in seen:
+                print(f"# {tid}: for the person - {d}")
+            ticks = "".join(f"jaira dod {tid} {n} --done --proof {shlex.quote('<what I saw, where>')} && " for n, _ in seen)
+            print(f"{ticks}jaira move {tid} --to {t['next_lane']} --force" + ("   # the person runs this line" if seen else ""))
             if comment:
                 print(f"jaira note {tid} {shlex.quote(f'acceptance (round {rnd}), accepted: {comment}')}")
         elif s["verdict"] == "fail":

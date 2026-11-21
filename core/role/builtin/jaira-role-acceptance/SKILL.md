@@ -157,6 +157,8 @@ This is the part that saves the person's time. Do it with care.
 }
 ```
 
+`dod` is every item's text from `.dod_items[]`, in order and all of them —
+`build.py plan` numbers them from 1 for the `jaira dod` line it prints.
 `next_lane` is the ticket's `next_lane` from `jaira show --json`;
 `return_lane` is the lane where this board does the work (the lane before the
 review loop, `in-progress` on the default board) — read it off `jaira lanes`,
@@ -213,12 +215,11 @@ next lane is the route's next step, not the terminal lane the board's `a` key
 jumps to: the page confirms behaviour, and whatever the board still asks after
 the person — a model review, a sign-off — still runs.
 
-Before that move, tick every `seen by a person:` item of an accepted ticket
-whose step the person passed, with their mark as the proof — `jaira dod <id>
-<n> --done --proof "seen by <person> on <page>, step <n>"`. This is the one
-`dod --done` you write: it records what the person did, it decides nothing.
-An item whose step the person did not mark stays open and the ticket is not
-accepted.
+A `seen by a person:` item is not ticked by you, and `--force` would carry
+the ticket past it unticked. So for an accepted ticket that has one,
+`build.py plan` prints the item and a single line for the person: its tick,
+then the move. Hand that line to the person and do not run it — they run it
+once they have looked. Their other accepted tickets you move as above.
 
 **Every failed step is a case, and working it out is your job, not the
 person's.** A "no" says something is wrong; it does not say what. For each

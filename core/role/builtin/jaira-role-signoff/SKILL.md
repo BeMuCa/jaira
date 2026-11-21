@@ -175,6 +175,14 @@ jaira note <id> "Given back from <accept lane>: <the rows to fix, by number>" &&
 agent's move out of signoff, and the line is handed to the person precisely so
 that they, not you, run it.
 
+`--force` also passes an unticked definition of done. So for every open
+`seen by a person:` item, the accept line starts with its tick, which the
+person runs once they have looked:
+
+```bash
+jaira dod <id> <n> --done --proof "<what I saw, where>" && jaira move <id> --to <terminal lane> --force
+```
+
 ## The return rules
 
 These decide the recommendation. They exist because without them a ticket goes

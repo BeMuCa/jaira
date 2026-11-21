@@ -627,11 +627,13 @@ f99828571d42f11692afcb1531049bfdd28015c39abe1a4b3f260a2a655d2416  core/role/buil
 fdeacaf618a20237298fa33c66a259a9e8757085e4b71ae3779ce6eb027c5879  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
 a5e85fe6229c6ac419240ce9eb4ba56a7ace38e7d160cd7100145c165b3f02a5  core/role/builtin/jaira-dispatcher/scripts/uncommitted.sh
 5961261ed1245eac9b68b196924cc7247926f19bdbf2be4ad55c5974fb95e477  core/role/builtin/jaira-role-acceptance/SKILL.md
+7c1bba7aa1321a1b2ad880b9e192019bd53c1ed2e64e6a8222ddf567cd7152ab  core/role/builtin/jaira-role-acceptance/SKILL.md
 7cf17ba6f6dc9d1fed3d340ccf7dc6fad1bb704731f5b9f1eae0fa24fd483149  core/role/builtin/jaira-role-acceptance/SKILL.md
 a7a39adfbc0b1c84be3f830c01e940e1735c0bd9456430f5fcfb34c7b0add15b  core/role/builtin/jaira-role-acceptance/SKILL.md
 ee1cfbedad113f835506bc395766bccc0b87d06495b500fe151bec3c18c25abd  core/role/builtin/jaira-role-acceptance/SKILL.md
 fd5a41aeee713af8ffa28ec84f6d3228f18381843fb33c8a4138adc296680e07  core/role/builtin/jaira-role-acceptance/SKILL.md
 17335440dc3747adc817bce85fb9c658bdea28f687f05b861454a304a15a27ce  core/role/builtin/jaira-role-acceptance/build.py
+195c1ef9401d2e6155e1e97babd59aa272ad31c499c59c52dd8f9612f660585c  core/role/builtin/jaira-role-acceptance/build.py
 7eee8af43de06ce89683715d46fa3bb60fa12aabdfafd8dc0f6855edb253e397  core/role/builtin/jaira-role-acceptance/build.py
 91e2eec19ed2be1f0352e51aae90292561981a9d5aa1a2f0a97e047be23b5a04  core/role/builtin/jaira-role-acceptance/build.py
 b828373f395635c714bef5002cf3f7a9a571bea0c5a3632fcb0fa26599dedf9e  core/role/builtin/jaira-role-acceptance/build.py
@@ -790,6 +792,7 @@ f4a2450aa885713596d2458d1b854aade7ff097caa68b1096c839e878a5f70d7  core/role/buil
 6cf8b85e6294048775c19d0ebeab182de1b6443b249ed72594f0d6c6cd76d7ce  core/role/builtin/jaira-role-signoff/SKILL.md
 81470998f6e9932a4becc49fcbb555f5f3b71f2057ec35ea8eaa6a8a8c78bfeb  core/role/builtin/jaira-role-signoff/SKILL.md
 86bfdc935aa3d2a38bd8e1189e863c3835d7b22475bb4ac2ad36b0b2e07c2125  core/role/builtin/jaira-role-signoff/SKILL.md
+936664eb5643555e599868fd56509425e1a2c7e87fb0f2b0e3d330483fdbcff5  core/role/builtin/jaira-role-signoff/SKILL.md
 983ec8a6ccaf7c2f491fd2703949050aa7bd0b971f0263460b86f33136672dd2  core/role/builtin/jaira-role-signoff/SKILL.md
 a9058c4ea43799517e50fd1e3f82e089d84acb2a55e311836f9a4c6a0215eaaa  core/role/builtin/jaira-role-signoff/SKILL.md
 bb52105c4ce716cba7c6182e2fc76d7357b35b9893c4163fadb002f7a6d17d18  core/role/builtin/jaira-role-signoff/SKILL.md
