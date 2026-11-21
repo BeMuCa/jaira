@@ -25,14 +25,14 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:27:20Z
+updated-at: 2026-11-21T08:27:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-31394
 claimed-at: 2026-11-21T08:01:32Z
 outcome-what: "signoff role: one rule for stale results (CI ?, hunt ❌), follow-up line with --assignee; teamlead lists all six status checks"
 outcome-why: "fresh review 21.11.: the role gave two answers for an older sha, the follow-up ticket could not leave the backlog, and the teamlead's list could drift from the role's"
 outcome-resolves: "both roles read a stale CI run as ? and a stale hunt as ❌; the pasted follow-up is complete; the teamlead names the same checks as the role"
-review-summary: "Adds the new role /jaira-role-signoff (core/role/builtin/jaira-role-signoff/SKILL.md): it reads tickets in signoff fresh, finds the ticket's branch by its handle as a name segment and takes the copy every other copy descends from (diverged copies -> unknown), builds a status line bound to that head commit (DoD x/y, newest CI run of that commit, bughunt note naming that sha, blockers, review verdict, noted returns), sorts every open note into blocker/small edge/known limit/not this ticket, and gives one recommendation by five return rules (after two noted 'Given back from signoff:' returns small edges go into a ready follow-up ticket). It writes nothing; the accept/give-back lines are for the person. The teamlead now re-reads lanes and open PRs before listing what waits and reports signoff/human tickets in that shape; worker, dispatcher and jaira-role-pr run the project's CI gates locally before every push. Role registered in role_test.go, shipped.sha256 regenerated, README and how-to table rows, release note TWRAP8.md with three one-line entries."
+review-summary: "critique 21.11. round 3: the ?/❌ split is a reason, not a patch - unknown CI is not a failure, a missing hunt is missing work; teamlead now says the same. Nothing to change."
 round: 11
 review-gaps: |-
   note: SKILL.md:83 says a result for another commit is ?, but the bug-hunt check (line 97) marks an older sha as a cross - two answers for the same case
