@@ -798,7 +798,8 @@ id, title, goal, question, review, the newest finished bug hunt as bughunt
 (its commit; on_head: no commit naming the ticket since, and no file
 written since and not committed, touched the files it read; skipped: the
 ticket sets stop-after-fix and the hunt does not cover HEAD; null without
-one), the newest four notes as notes_last and how many
+a finished hunt, except on a stop-after-fix ticket, where it is skipped with
+an empty at), the newest four notes as notes_last and how many
 there are as notes_total.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
