@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZWSDHK37DGGHJFDF0YD6
 title: "Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt"
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,9 +21,32 @@ related:
   - 01M6M7EA5EG5TWJSTVNQH6CD33
   - 01M5ZJ4KA5N2PH7Q4WY4F1V59P
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
-commits: []
+commits:
+  - 94ea71ccbe6d6521f78ef5a6507118015d733810
+  - fbc56cd1ddd2f59a51562430ef1a273d5f0d1cb7
+  - 8a396712ea3a49f62531a4e31fd8ff9c521b5784
+  - 9ea914dabcd794a3fbdc43af01f92d8eca58aafe
+  - ff7edc20addb15ee067dec23f01c2ebe1b953798
+  - ac8507617be298fa9e9a02511af7da00222b8317
+  - 1789d2026baf6b686561965c25465b91e20fecd4
+  - c8de2b8aa7887092a08119c156d79ca9f3be92e8
+  - 553b37f396b800cc8b9add474e67709e90a3430e
+  - 9d2e0f593ab7d9716b5c50085c334b8a16757a2a
+  - 190a55ecf013473892a56ec02012734b7813c21a
+  - 076f191bd5f2e334d3965c20394a3909a95ee432
+  - 7d73a41dbfa2566e5de2bb0bc2806e03a09d8d8f
+  - 81dcbbeebbe7064b85d33e3061f5d76d8fd84ab7
+  - cf0cdfeffeab240811e0b2f8f83eb3389858bf8e
+  - a61874782308dcde333188df2f687266bfd57483
+  - c4e1fe344d1fb1789a7d022aef01e8177222c04e
+  - 058e8d2fcd6148a509e8020f486d0c4299603cf3
+  - 220d5b511a182827cfb96a8a4c3a04ddccafcc0d
+  - 4ddb51bccc96f01b407574350c23573109c502d4
+  - e1363ba157f156f5b7c8252f1824120b657be8b2
+  - 9b94f206a02b1287a0a13a7e2626cd26ea77b070
+  - 1e6a3d7e55438e197c4d8df738d21b3e0eec4c31
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T10:04:07Z
+updated-at: 2026-11-21T13:42:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3647270
 claimed-at: 2026-11-21T09:36:24Z
@@ -216,3 +239,8 @@ back-count: 1
 - **2026-11-21 09:59 · Alexander Sacharov** — review round 16 (fresh, 9b94f206): no blocker; 4 notes (ambiguous short hunt sha reads fail, Explain format line still ok|fail, documented squash/conversational limit, untracked .jaira/milestones not this ticket). go test ./... ok, plugin test 220 pass; brief probed: clean -> ok, uncommitted edit to a hunted file -> unknown.
 - **2026-11-21 09:59 · Alexander Sacharov** — worker stopped: ticket in signoff after the fresh review of round 16 without a blocker; feat/df0yd6 pushed at 9b94f206; ticket file carries the review fields uncommitted. Review notes 1-4 stay known limits per the teamlead's final-round ruling (09:37). Report sent to the parent session.
 - **2026-11-21 10:04 · Alexander Sacharov** — after signoff (teamlead 10:00, text only, no loop): review note 2 closed - the Explain format line in texts.ts and spawn.sh reads 'bughunt on HEAD ok|fail|unknown|skipped' and the status sentence no longer opens with 'each check ends in ok or fail' (DoD, tests, blockers: ok|fail; bughunt: four words), so Explain does not write fail where it means unknown. Test asserts both. Notes 1 and 3 stay known limits.
+- **2026-11-21 13:25 · Alexander Sacharov** — explain: Der Review fand keinen Blocker, nur Hinweise. Der wichtigste: ein kurzer Hunt-Commit (7+ Hex) kann in einem gewachsenen Repo mehrdeutig werden, dann liest der Hunt 'fail' statt 'unknown'. Die uebrigen: bekanntes Limit bei Squash/Rebase-Merge, ein fremder untracked Ordner .jaira/milestones; die Format-Zeile im Explain ist schon behoben (1e6a3d7e).
+Warum: Ein falsches Rot ist selten und heilt beim naechsten Hunt; es blockiert nichts und verliert keine Daten.
+1) Zurueckgeben: der Hunt schreibt den vollen sha oder unterscheidet Mehrdeutigkeit von fehlendem Commit [give back]
+2) Ticket so annehmen, das Limit bleibt dokumentiert, .jaira/milestones nicht mitcommitten [accept]
+Empfehlung: 2 - das Risiko ist selten und harmlos, ein weiterer Fix-Durchlauf wuerde nur neue Randfaelle erzeugen.
