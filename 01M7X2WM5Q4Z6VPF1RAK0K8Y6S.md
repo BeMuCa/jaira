@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:03:49Z
+updated-at: 2026-11-21T08:03:53Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
@@ -53,6 +53,7 @@ review-check: "1. cd in den Worktree feat/0k8y6s  2. scripts/shipped-history.sh 
 - [x] .gitattributes setzt 'core/shipped/shipped.sha256 merge=union', sodass zwei PRs, die beide Zeilen anhaengen, nicht mehr in Konflikt geraten (heute bei jedem PR: #147, feat/tw5fe2)
   proof: .gitattributes core/shipped/shipped.sha256 merge=union; core/shipped/history_test.go TestManifestMergesWithoutConflict (fails without merge=union)
 - [ ] scripts/shipped-history.sh --write ersetzt das Manifest erst nach vollstaendiger Erzeugung; Skript-Hilfe und Testmeldungen nennen diese Form statt '> core/shipped/shipped.sha256'
+- [ ] TestEveryManifestPathExists panict nicht bei einer kurzen Manifestzeile
 
 ## Options
 
