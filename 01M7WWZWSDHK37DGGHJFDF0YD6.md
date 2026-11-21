@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:44:20Z
+updated-at: 2026-11-21T09:44:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3647270
 claimed-at: 2026-11-21T09:36:24Z
@@ -31,12 +31,7 @@ outcome-what: "Round 14: bughunt on HEAD compares commits only - ok, fail, or un
 outcome-why: "Teamlead for Alex 21.11. (final round): the mtime comparison caused the last review's falsely red and falsely green edges; remove the cause instead of patching it."
 outcome-resolves: "review round 13 notes 1, 2 (cause removed), 3 and 5 (one sentence each), 4 (validate warning). go test ./... RC=0, claude plugin test 220 pass; scratch board: clean ok, uncommitted unknown, ticket commit fail, validate warns on 'yes'."
 review-summary: "none"
-review-gaps: |-
-  note: bughunt on HEAD errs red when an uncommitted file was written in the same minute before the hunt note - core/gitrepo/git.go writtenSince compares mtime with the note stamp, which is truncated to the minute (core/ticket/body.go Notes); fix: compare against the end of that minute, or let the hunt note carry seconds
-  note: bughunt on HEAD errs green for a file edited while the hunt was still running - the reference time is when the hunt finished, not when it read the file; known limit of a note-based stamp, harmless in the usual flow where testing edits nothing
-  note: the third-return stop counts only consecutive returns from one lane (core/move/move.go recordBack) - critique and testing taking turns never reach count 3; matches DoD 4 as written, the in-progress prompt could say so
-  note: a hand-edited stop-after-fix like "yes" reads as off without a warning (core/ticket/schema.go decodeFields); jaira set refuses it, a hand edit does not
-  note: a hunt run on uncommitted work turns bughunt on HEAD red once that same work is committed afterwards (conversational mode commits after the lanes) - errs safe, worth one sentence in the brief help
+review-gaps: none - 4ddb51bc removed writtenSince/untracked mtime code; anyCode is the one filter for all three git lists
 test-verdict: "pass: claude plugin test 219 pass at 220d5b51 (BL0CK4-6 offer Explain, NOTES3 does not, '**[blocker]**' drawn red); go test core/role core/shipped core/lane ok; parsing only, no writes"
 hunt-verdict: "pass: follow-up hunt since 058e8d2f at 220d5b51, 0 findings"
 round: 14
