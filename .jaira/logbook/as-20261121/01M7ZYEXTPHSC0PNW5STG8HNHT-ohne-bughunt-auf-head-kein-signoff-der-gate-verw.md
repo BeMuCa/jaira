@@ -1,7 +1,7 @@
 ---
 id: 01M7ZYEXTPHSC0PNW5STG8HNHT
 title: "Ohne Bughunt auf HEAD kein signoff: der Gate verweigert den Schritt, wenn bughunt.state fail ist"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -18,23 +18,45 @@ tags:
   - gates
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 90cf6c7afc3e3cb2df95db5ae29b976e87b12ddb
+  - 2551070be6736b5be0553ab1972a575c48f016cf
+  - d3bd3c577a0766828e4e3b4759d6dfe131ac9369
 created-at: 2026-11-21T20:58:41Z
-updated-at: 2026-11-21T21:13:45Z
+updated-at: 2026-11-21T21:42:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2700790
 claimed-at: 2026-11-21T20:59:16Z
 outcome-what: "jaira move into signoff refuses a ticket that changed code and whose newest bug hunt does not cover HEAD (needs_bughunt), or whose hunted files are uncommitted (hunt_uncommitted), on boards whose testing lane owes hunt-verdict"
 outcome-why: 1MYFKE reached signoff on 21.11. with a commit after its last hunt and bughunt.state fail; only the teamlead checked that by hand
 outcome-resolves: "G8HNHT: the gate reads bughunt.state; ok, skipped and tickets without code changes pass; --force overrides"
-review-summary: none
-review-gaps: "folded TouchesCode (one caller) into gitrepo.HuntCheck; no existing helper lists a commit set's files (Diff/Stat render text) so the git show stays; left gitrepo.HuntReport beside gate.HuntReport (import cycle, see note); proofs re-checked, none pointed at TouchesCode"
-test-verdict: "pass: go vet + go test -count=1 ./... green (RC=0); DoD 1-5 verified (tests named in proofs run); scratch board with testing lane via built binary: no hunt → exit 3 needs_bughunt, hunt at HEAD passes, uncommitted → 'commit them first', commit after hunt → refused naming hunt sha and HEAD, --force lands in signoff exit 0, board without testing lane → no hunt refusal; change writes nothing (gate only), so no two-writer case"
-hunt-verdict: "fail: bughunt done at 2551070, 1 change blocker (board in a repo subdirectory: ticket-file-only commit reads as code → false needs_bughunt), 1 change edge (uncommitted-only code passes; note for the person)"
+review-summary: "The move gate now asks git, before a ticket enters a lane a person releases (signoff), whether the ticket's commits changed anything outside .jaira/ and whether its newest 'bughunt: done at' note still covers HEAD; a missing or stale hunt is refused with needs_bughunt, uncommitted changes in hunted files (or git not answering) with hunt_uncommitted, both exit 3 and overridable by --force. ok and stop-after-fix (skipped) pass; human is not guarded; a board with no lane producing hunt-verdict is untouched and never calls git. The hunt-reading code moved from internal/cli/tickets.go to core/gitrepo/hunt.go so CLI and TUI share it, and board-data detection now strips a subdirectory board's prefix."
+review-gaps: |-
+  note: the in-progress note says a TUI move is not refused, but only the signoff screen sets Interactive; the TUI move dialog (internal/tui/model.go:2039, ByPerson) is refused and offers f to override - consistent with the other gates, but the note and gate.go comment overstate it; a TUI test of the dialog path is missing
+  note: anyCode runs git rev-parse --show-prefix on every call, three times per HuntCoverage; compute the prefix once per Repo or per HuntCheck
+  note: the refusal prints HEAD as a full 40-char sha beside the hunt's short one (testing note); HeadSHA could be shortened in HuntCheck
+  note: known limit - code that exists only uncommitted, with no code commit of the ticket, reads as no code changed and passes the gate (bughunt finding, left for the person)
+  note: pre-existing: codeOnly's ':(exclude,top).jaira/tickets' in Diff/WorktreeDiff keeps the root anchoring for a subdirectory board, so ticket files show in review diffs there
+test-verdict: "pass: round 2 — go vet + go test -count=1 ./... green (RC=0, wintrap included); DoD 1-5 re-verified; subdirectory board covered by TestHuntCheckBoardInSubdirectory; round-1 scratch-board run (no hunt/stale/uncommitted refused exit 3, hunt at HEAD passes, --force lands, board without testing unchanged) still holds — round 2 changed only board-data matching; change writes nothing"
+hunt-verdict: "pass: bughunt done at d3bd3c577, 0 change, 0 pre-existing; round-1 edge (uncommitted-only code passes) stays a note for the person"
 round: 2
 back-from: testing
 back-by: lane
 back-count: 1
+review-verdict: "accept: all five DoD items hold in code and tests (core/gate/bughunt_test.go, core/gitrepo/huntcheck_test.go, core/move/move_test.go); the round-2 subdirectory fix is covered; go test of gate, gitrepo, move, cli, tui passes; no blocker found"
+review-round: 2
+review-verdict-gaps: |-
+  note: the in-progress note says a TUI move is not refused, but only the signoff screen sets Interactive; the TUI move dialog (internal/tui/model.go:2039, ByPerson) is refused and offers f to override - consistent with the other gates, but the note and gate.go comment overstate it; a TUI test of the dialog path is missing
+  note: anyCode runs git rev-parse --show-prefix on every call, three times per HuntCoverage; compute the prefix once per Repo or per HuntCheck
+  note: the refusal prints HEAD as a full 40-char sha beside the hunt's short one (testing note); HeadSHA could be shortened in HuntCheck
+  note: known limit - code that exists only uncommitted, with no code commit of the ticket, reads as no code changed and passes the gate (bughunt finding, left for the person)
+  note: pre-existing: codeOnly's ':(exclude,top).jaira/tickets' in Diff/WorktreeDiff keeps the root anchoring for a subdirectory board, so ticket files show in review diffs there
+review-check: |-
+  1. cd into a scratch clone of a repo whose board has the testing lane (hunt-verdict), make a ticket, commit a code file with fix(<ID>): in the subject
+  2. move the ticket up to review, then run: jaira move <ID> --to signoff
+  3. expect exit 3 and a message 'no bug hunt finished on it' naming /jaira-role-bughunt <ID>
+  4. add a note: jaira note <ID> "bughunt: done at $(git rev-parse --short HEAD) - 0 findings; files: <your file>" and repeat the move: it passes
+  5. automated: go test ./core/gate -run 'TestSignoffNeedsHuntOnHEAD|TestHuntRuleScope' and go test ./core/gitrepo -run TestHuntCheck - all ok
 ---
 
 # Ohne Bughunt auf HEAD kein signoff: der Gate verweigert den Schritt, wenn bughunt.state fail ist
@@ -74,3 +96,5 @@ back-count: 1
 - **2026-11-21 21:11 · Alexander Sacharov** — bughunt: done at 2551070be - 2 findings (2 change, 1 of them blocker, 0 pre-existing) in 5 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/gate/bughunt_test.go core/gate/gate.go core/gitrepo/hunt.go core/gitrepo/huntcheck_test.go core/move/move_test.go core/release/notes/G8HNHT.md internal/cli/root.go internal/cli/tickets.go internal/tui/model.go
 - **2026-11-21 21:11 · Alexander Sacharov** — testing: class: board-data detection compares repo-root-relative git paths against a board-relative '.jaira/' prefix; example: board at sub/.jaira, commit carrying only sub/.jaira/tickets/X.md → CodeChanged true, refused; fix: strip the board's prefix (git rev-parse --show-prefix) before isBoardData, in anyCode and codeOnly alike, test with a board in a subdirectory. Edge (uncommitted-only code passes the gate) stays a note for the person: refusing it would also stop a conversational ticket whose code the person has not committed yet.
 - **2026-11-21 21:13 · Alexander Sacharov** — in-progress (round 2): anyCode is now a Repo method that strips the board's prefix (git rev-parse --show-prefix) before isBoardData; a path outside the board's directory counts as code. This fixes HuntCheck and HuntCoverage's codeOnly fallback alike, since both filter git's output through anyCode. Pre-existing and left alone: codeOnly's ':(exclude,top).jaira/tickets' in Diff/WorktreeDiff has the same root anchoring for a subdirectory board (ticket files show in the review diff there) — not this ticket's subject.
+- **2026-11-21 21:13 · Alexander Sacharov** — critique (pass 2, only the round-2 fix): prefix stripped in the one place both callers filter through; nothing to add.
+- **2026-11-21 21:15 · Alexander Sacharov** — bughunt: done at d3bd3c577 - 0 findings in 3 modules, follow-up hunt since 2551070be (diff of core/gitrepo/hunt.go core/gitrepo/huntcheck_test.go; core/gitrepo/git.go new to the list, read whole); concurrency, error paths, input, permissions checked; files: core/gate/bughunt_test.go core/gate/gate.go core/gitrepo/git.go core/gitrepo/hunt.go core/gitrepo/huntcheck_test.go core/move/move_test.go core/release/notes/G8HNHT.md internal/cli/root.go internal/cli/tickets.go internal/tui/model.go
