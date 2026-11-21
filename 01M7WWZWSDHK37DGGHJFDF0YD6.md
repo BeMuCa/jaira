@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-20T23:24:35Z
+updated-at: 2026-11-21T07:59:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-7433
 claimed-at: 2026-11-20T23:21:22Z
@@ -122,3 +122,4 @@ review-check: "1. go test ./core/move -run 'TestMoveRecords|TestMoveCountsOne' -
 - **2026-11-20 23:20 · Alexander Sacharov** — testing passed (hunt 1789d202 clean); moved to review, a fresh agent runs it in its own Herdr tab (run-lane.sh). A restarted worker: if the ticket is still in review with no review-verdict, look for the DF0YD6/review tab before starting another.
 - **2026-11-20 23:23 · Alexander Sacharov** — review (fresh, 1789d202): no blocker; 3 notes in review-gaps (count>=3 wording, plain-CLI person send-back counts as lane, earlier-round verdict lists no notes). Tests green: go test 6 pkgs, claude plugin test 215 pass.
 - **2026-11-20 23:24 · Alexander Sacharov** — worker stopped: ticket in signoff after a fresh review without a blocker; branch feat/df0yd6 pushed at 1789d202; the ticket file carries the review fields uncommitted. Open for the person: review note 1 (count 3 or more) is a small edge worth a mini round; notes 2 and 3 are known limits.
+- **2026-11-21 07:59 · Alexander Sacharov** — Given back from signoff: Alex 21.11. alle Funde in dieser Runde schliessen. 1) 20-in-progress.md + Zwilling: 'count 3 or more' statt 'count 3'. 2) Pruefen, ob ein CLI-'jaira move' eines Menschen aus einer Loop-Lane als person zaehlen kann (z.B. ohne Agent-Umgebung/Interactive-TTY); wenn klein, bauen, sonst als known limit begruenden. 3) Cockpit: fuer ein Verdict einer frueheren Runde die alten Review-Funde (nicht optimize-Zeilen) wieder zeigen, damit DoD 6 ohne Explain gilt. Danach Diff-Hunt, review, signoff, push.
