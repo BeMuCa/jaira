@@ -976,9 +976,10 @@ async function createFollowUps($: EngineInterface, dir: string, id: string, onBo
   const lost: string[] = []
   // A note an earlier acceptance already made a follow-up keeps that ticket.
   for (const i of items.filter(x => x.choice === 'later' && x.follow === undefined)) {
-    // Every value with '=': a finding that starts with '-' ('-race fails')
-    // is never read as a flag.
-    const r = await run($, ['jaira', 'create', `--title=${followTitle(i.text)}`, `--context=${i.text}`, `--follows=${id}`, ...(onBoard ? [`--board=${onBoard}`] : []), '--json'], dir, 30_000)
+    // Every value with '=' and the title, which jaira create takes only as
+    // its argument, after '--': a finding that starts with '-' ('-race
+    // fails') is never read as a flag.
+    const r = await run($, ['jaira', 'create', `--context=${i.text}`, `--follows=${id}`, ...(onBoard ? [`--board=${onBoard}`] : []), '--json', '--', followTitle(i.text)], dir, 30_000)
     const handle = r?.exitCode === 0 ? createdHandle(r.stdout) : undefined
     if (handle === undefined) lost.push(i.text)
     out.set(i.text, handle ?? `(not created: ${oneLine(withoutWarnings(output(r))).slice(0, 120).replace(/[()]/g, '')})`)

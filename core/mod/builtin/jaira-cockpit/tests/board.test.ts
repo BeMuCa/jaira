@@ -2184,7 +2184,7 @@ describe('give back with the review notes', () => {
       '- note: the export test covers 1MB, not 40MB',
     ].join('\n'))
     expect(ran(w, 'jaira', 'create')).toEqual([[
-      'jaira', 'create', '--title=the log rotates at midnight UTC', '--context=note: pre-existing: the log rotates at midnight UTC', '--follows=MG677R', '--json', '@/.worktrees/repo-mg677r',
+      'jaira', 'create', '--context=note: pre-existing: the log rotates at midnight UTC', '--follows=MG677R', '--json', '--', 'the log rotates at midnight UTC', '@/.worktrees/repo-mg677r',
     ]])
     // The move first: a follow-up only for a ticket that really went back.
     const at = (verb: string) => w.ran.findIndex(r => r[0] === 'jaira' && r[1] === verb)
@@ -2226,7 +2226,9 @@ describe('give back with the review notes', () => {
     const pane = await openPane($)
     await pane.press({ key: 'gap-MG677R-0' })
     await pane.input({ key: 'reason-MG677R', text: 'and the docs' })
-    expect(ran(w, 'jaira', 'create')[0]?.slice(2, 5)).toEqual(['--title=-race fails in core/gitref', '--context=-race fails in core/gitref', '--follows=MG677R'])
+    // jaira create takes the title only as its argument: after '--', where
+    // jaira itself (checked by hand: exit 0) reads '-race' as a title.
+    expect(ran(w, 'jaira', 'create')[0]?.slice(2, 7)).toEqual(['--context=-race fails in core/gitref', '--follows=MG677R', '--json', '--', '-race fails in core/gitref'])
   })
 
   test('a note kept a follow-up at the next acceptance keeps its ticket: no second one is created', async ($, on) => {
