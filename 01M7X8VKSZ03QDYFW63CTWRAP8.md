@@ -1,7 +1,7 @@
 ---
 id: 01M7X8VKSZ03QDYFW63CTWRAP8
 title: "Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis"
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:13:31Z
+updated-at: 2026-11-21T08:13:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-31394
 claimed-at: 2026-11-21T08:01:32Z
@@ -33,7 +33,7 @@ outcome-what: "jaira-role-signoff names the real keys of jaira show --json; upst
 outcome-why: "signoff give-back 21.11.: the role named keys the JSON does not have, and the branch was stacked on an unmerged branch"
 outcome-resolves: "the role reads verdict, gaps, DoD and notes where they actually are; the branch carries only TWRAP8 on top of master"
 review-summary: "critique 21.11.: key names now match jaira show --json (checked against the live payload of TWRAP8: status, handle, dod_items[].done, review.verdict/gaps/summary, notes only in body); merge brought no conflict in the roles' own text, only the manifest. Nothing to change."
-round: 9
+round: 10
 review-gaps: "optimize 21.11.: the new paragraph is the only addition; nothing duplicated elsewhere, no dead text. Nothing to remove."
 test-verdict: "fail: suite green (go vet, go test ./..., check-ticket-commits RC=0), DoD 1-4 verified in the tree, keys checked against the live payload; bughunt 08:13 change: branch-head loop order-dependent (diverged early copy breaks before a later merge copy)"
 hunt-verdict: "change: 1 finding at 367d125f (order-dependent head loop, fails safe as ?)"
