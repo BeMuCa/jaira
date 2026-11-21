@@ -105,7 +105,9 @@ A CI result that belongs to another commit, or no result at all, is `?`,
 never ✅ — nobody knows yet. The bug hunt is different: it is the board's own
 work, so a hunt that does not name the head was not done there, and that is ❌.
 
-- **DoD** `x/y` ticked, from `.dod_items[].done`
+- **DoD** `x/y` ticked, from `.dod_items[].done`. An open item that starts
+  with `seen by a person:` is named beside it — `2/3, open: seen by a person:
+  <what>` — as a step the person takes before accepting, not as missing work
 - **tests** — the CI run for exactly that commit, of the workflow that runs the
   tests (named in `.github/workflows/`): `gh run list --commit "$head"
   --workflow <ci workflow> --json conclusion,headSha`; on GitLab `glab ci list
@@ -172,6 +174,14 @@ jaira note <id> "Given back from <accept lane>: <the rows to fix, by number>" &&
 `--force` on the accept line is the person's to pass: the gate refuses an
 agent's move out of signoff, and the line is handed to the person precisely so
 that they, not you, run it.
+
+`--force` also passes an unticked definition of done. So for every open
+`seen by a person:` item, the accept line starts with its tick, which the
+person runs once they have looked:
+
+```bash
+jaira dod <id> <n> --done --proof "<what I saw, where>" && jaira move <id> --to <terminal lane> --force
+```
 
 ## The return rules
 
