@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-21T08:22:14Z
+updated-at: 2026-11-21T08:22:35Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -33,7 +33,7 @@ review-gaps: |-
   note: core/board/announce_test.go:232 - the doc comment still names the old test TestAgentNoteSaysTheTicketCannotRideOnAnUnsharedBoard; the func is TestAgentNoteNamesProofAndTheUnsharedBoardCaveat
   note: core/release/notes/SDBCT5.md:2 lists jaira, jaira-worker and jaira-role-lane but not jaira-role-pr, whose point 2 also changed and is refreshed by the same jaira update --roles
 test-verdict: "pass: go test ./... -race RC=0; TestAgentNoteNamesProofAndTheUnsharedBoardCaveat RC=0; DoD 1-7 verified in the tree; scratch board (git init + jaira init with this build): CLAUDE.md/AGENTS.md carry the reworded caveat, .jaira/ stays out of git; go test ./core/role ./core/shipped green after appending 3 manifest hashes"
-hunt-verdict: "pass: bughunt done at d71e5e86 (diff since bb02c815), 0 change, 0 pre-existing"
+hunt-verdict: "pass: bughunt done at 99be9268 (diff since d71e5e86: 99be9268 + shipped.sha256 union of 24658f47), 0 change, 0 pre-existing"
 review-verdict: "pass - all 7 DoD items hold in the diff; current hashes of the 4 changed roles are in shipped.sha256; .claude/skills/jaira equals core/role/jaira byte for byte; agent blocks in CLAUDE.md and AGENTS.md are identical; no further live commit line names .jaira/tickets without the caveat; go test core/board core/role core/shipped internal/cli -count=1 green. Two cosmetic notes, no blocker."
 review-round: 4
 review-check: "1. cd into the worktree jaira-sdbct5 and run: go build -o /tmp/jaira-sdbct5 ./cmd/jaira  2. mkdir /tmp/t && cd /tmp/t && git init && /tmp/jaira-sdbct5 init  3. open /tmp/t/CLAUDE.md, find the point 'the ticket rides with the code' - it ends with 'On a board not shared yet ... commit the code alone ... The next point holds there all the more'  4. git status in /tmp/t shows no .jaira/ - that is the unshared board the sentence is about  5. in the worktree: go test ./core/board -run TestAgentNoteNamesProofAndTheUnsharedBoardCaveat -count=1 -> ok  6. grep -n 'not shared yet' core/role/builtin/jaira-worker/SKILL.md core/role/builtin/jaira-role-lane/SKILL.md -> one line under each ready-to-paste commit block"
