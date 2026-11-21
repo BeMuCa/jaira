@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:10:44Z
+updated-at: 2026-11-21T09:10:51Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
@@ -32,7 +32,7 @@ outcome-why: "The round-9 hunter showed jaira tag / milestone writes to tracked 
 outcome-resolves: "bughunt change at cf0cdfef (git.go writtenSince); TestChangedSince 19 cases; go test ./... RC=0. Checked: input (-z names, quotePath off), error paths unchanged, read-only."
 review-summary: "none"
 review-gaps: "none - a6187478: the two path loops in writtenSince folded into one; nothing orphaned"
-test-verdict: "pass: go test -count=1 ./... RC=0 at cf0cdfef, claude plugin test 218 pass; scratch board end to end: uncommitted edit from before the hunt + untracked .jaira/milestones file -> on_head true; edit after the hunt -> false; stop-after-fix then -> skipped true; read-only git, no parallel-writer case"
+test-verdict: "pass: go test -count=1 ./... RC=0 at a6187478; TestChangedSince 19 cases; scratch board: hunt without a file list, then jaira tag (board data) -> on_head true, then a code edit -> false; read-only git, no parallel-writer case"
 hunt-verdict: "fail: 1 change finding at cf0cdfef - tracked board data (.jaira/tags, milestones) changed after the hunt reads on_head false"
 round: 10
 review-verdict: "Kein Blocker. DoD 1-11 sind im Code erfuellt; der Blocker aus Runde 4 (bughunt on HEAD aus 4 Notes nicht ableitbar) ist an der Ursache behoben: --brief traegt bughunt.on_head aus git, und Explain-Vorlage und spawn.sh lesen es. go test -count=1 ./... RC=0, claude plugin test 216 pass. Die fuenf notes sind Raender des on_head-Signals (falsch rot in conversational mode und bei stop-after-fix) und eine bekannte Grenze; keine davon ist ein falsches Ergebnis im Sinn der DoD ausser im conversational mode, wo nur die Statusmarke falsch rot ist."
