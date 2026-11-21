@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:13:49Z
+updated-at: 2026-11-21T08:13:53Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
@@ -34,8 +34,8 @@ review-gaps: |-
   note: known limit, written down by the implementer: paths with spaces do not fit the manifest format; no such file exists today
 test-verdict: "pass: go build ./... und go test ./... gruen (rc=0) auf 29ee4690 nach Merge von upstream/master; DoD 1-7 im Baum belegt (Tests aus den proofs einzeln gelaufen); --write: zwei parallele Laeufe ergeben ein sortiertes Manifest ohne Duplikat, flacher Klon exit 1 bei unveraendertem Manifest, unlesbarer Blob per Test (Manifest unveraendert, keine Temp-Datei)"
 hunt-verdict: "pass: bughunt done at 29ee4690, 0 change, 0 pre-existing (Runde davor: 1 change, Duplikate nach union-Merge, behoben in 29ee4690)"
-review-verdict: "Diff erfuellt alle 5 DoD-Punkte, keine Defekte gefunden. Selbst geprueft: --check gruen auf 34 Tags, mit dem alten Manifest rot (8 Versionen); Regenerieren ergibt byte-gleich das committete Manifest; 0 Zeilen gegenueber master verloren; TestInstallReplacesAnOlderShippedVersion faellt mit dem alten Manifest, besteht mit dem neuen; go test ./shipped ./role gruen."
-review-round: 5
+review-verdict: "All 7 DoD items are met, and I checked them myself: --check passes on all 34 tags; a regenerated manifest is byte-identical to the committed one; no line of the master manifest was lost and none is duplicated; master's manifest lacked the v0.5.2 board.ts hash, so the new test would have failed there; go test ./core/shipped ./core/role ./core/lane passes. No blocker. Error paths (shallow clone, no tags, unreadable tag or blob, a failed --write) stop the script and leave the manifest untouched. Not verified: shellcheck (not installed here) and whether GitHub honours merge=union server-side."
+review-round: 7
 review-check: "1. cd in den Worktree feat/0k8y6s  2. scripts/shipped-history.sh --check  -> 'every version in 34 v* tag(s) is in core/shipped/shipped.sha256', exit 0  3. git show master:core/shipped/shipped.sha256 > core/shipped/shipped.sha256 && scripts/shipped-history.sh --check  -> 'lacks 8 version(s)' plus die Zeilen, exit 1  4. (cd core && go test ./role -run TestInstallReplacesAnOlderShippedVersion)  -> FAIL 'not replaced'  5. git checkout core/shipped/shipped.sha256, Schritt 4 wiederholen -> ok  6. (cd core && go test ./shipped)  -> ok"
 ---
 
