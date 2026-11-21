@@ -1,7 +1,7 @@
 ---
 id: 01M2HZKCQ48BPQYN1YPTXB97NJ
 title: "Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig"
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Wer allein an einem Repository arbeitet, bekommt keine Rolle vorgesetzt, die ihn zu einem Pull Request schickt, den er nicht will - und ein Team, das Pull Requests benutzt, bekommt die Regel weiterhin ueberall, wo ein Agent sie liest."
@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:54:44Z
+updated-at: 2026-11-21T08:54:47Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -38,7 +38,7 @@ outcome-resolves: "XB97NJ"
 review-summary: |-
   Ein Board kann jetzt in .jaira/pr 'none' sagen (neben person/agent). core/board/arrival.go liest die Datei streng (nur exakt agent/none zaehlt; BOM, CRLF, Kommentare ignoriert; alles andere = person) und haengt bei agent/none einen Absatz 'How work arrives on this board' an den jaira-Block in CLAUDE.md/AGENTS.md; ohne Datei bleibt der Block byte-gleich, validate meldet Drift bei Dateiwechsel. 'jaira roles list' liefert pr=none, pr_when=done und nennt ein Wort, das nicht griff. 'jaira roles pr-gate' laesst unter none einen Zweig durch, wenn .jaira/pr auf der Basis none sagt, jedes genannte Ticket in done/logbook ist und jeder Commit ein Ticket im Betreff nennt (Merges nur, wenn ihr Baum exakt gits eigener Merge der Eltern ist - core/gitrepo/named.go). jaira-role-pr bekommt 'Land it': Gate, Basis mergen, Gate erneut, fast-forward push, nie --force. reap.sh zaehlt unter none einen Zweig als gemerged, sobald der Default-Branch des Ziel-Remotes (origin oder Fork-Parent) seine Spitze enthaelt. Dispatcher/Teamlead erwaehnen none; drei Release-Zeilen.
   Runde 11: cockpit Accept liest .jaira/pr und landet unter none ohne Forge (Text 'landing', kein noForge); reap.sh nennt ein nicht antwortendes gh als Ursache des Wartens.
-round: 16
+round: 17
 review-gaps: |-
   note: cockpit Accept (core/mod/builtin/jaira-cockpit/hooks/register.tsx afterAccept) liest .jaira/pr nicht - unter none startet es trotzdem die pr-Rolle (die dann korrekt landet), meldet aber "opening the pull request" (texts.ts:21), und ohne GitHub/GitLab-origin bricht es mit noForge ab, obwohl Landen keinen Forge braucht
   note: ein Commit, der ein schon im Logbook abgelegtes Ticket nennt (fix(<alteID>): ...), passiert das none-Tor ohne neue Annahme - bekannte Grenze der Betreff-Regel, im Ticket bewusst so entschieden (Runde 10)
