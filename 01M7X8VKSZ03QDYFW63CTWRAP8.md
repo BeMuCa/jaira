@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:17:30Z
+updated-at: 2026-11-21T08:17:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-31394
 claimed-at: 2026-11-21T08:01:32Z
@@ -34,7 +34,7 @@ outcome-why: "bughunt 08:13: a diverged early copy ended the loop before a later
 outcome-resolves: "head is the copy every other copy is an ancestor of, whatever order for-each-ref lists them in"
 review-summary: "critique 21.11. round 2: the order-independent check is the direct reading of the sentence under it ('the commit every other copy leads up to'); nothing to change."
 round: 10
-review-gaps: "optimize 21.11.: the new paragraph is the only addition; nothing duplicated elsewhere, no dead text. Nothing to remove."
+review-gaps: "optimize 21.11. round 2: loop is four lines, shorter than the one it replaced; nothing to remove."
 test-verdict: "fail: suite green (go vet, go test ./..., check-ticket-commits RC=0), DoD 1-4 verified in the tree, keys checked against the live payload; bughunt 08:13 change: branch-head loop order-dependent (diverged early copy breaks before a later merge copy)"
 hunt-verdict: "change: 1 finding at 367d125f (order-dependent head loop, fails safe as ?)"
 question: ""
