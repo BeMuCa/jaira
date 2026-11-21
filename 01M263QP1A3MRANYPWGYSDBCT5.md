@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-20T23:04:46Z
+updated-at: 2026-11-21T08:00:16Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -90,3 +90,4 @@ review-check: |-
 - **2026-11-20 23:02 · Alexander Sacharov** — bughunt: done at bb02c815 - 0 findings in 10 modules, first hunt; concurrency, error paths, input, permissions checked; files: .claude/skills/jaira/SKILL.md .jaira/tags AGENTS.md CLAUDE.md core/board/announce.go core/board/announce_test.go core/release/notes/SDBCT5.md core/role/builtin/jaira-role-pr/SKILL.md core/role/jaira/SKILL.md core/shipped/shipped.sha256 docs/AGENTS.md
 - **2026-11-20 23:04 · Alexander Sacharov** — review: pass, keine Blocker. Eigener Check: frischer Build, git init + jaira init -> Block in CLAUDE.md/AGENTS.md traegt den Vorbehalt, .jaira/ bleibt aus git; Hashes in shipped.sha256 stimmen mit den Dateien; .claude/skills/jaira = core/role/jaira byte-gleich; go test board/role/cli -count=1 gruen. Drei notes in review-gaps.
 - **2026-11-20 23:04 · Alexander Sacharov** — worker stop 21.11. 00:05: in signoff, review verdict pass. Branch feat/sdbct5 pushed (3 commits, last bb02c815). Ticket file modified in the worktree on purpose - no code commit follows; the logbook commit after acceptance carries it. Open for the person: three note: lines in review-gaps (caveat wording also covers 'commits nothing'; commit lines in jaira-worker/jaira-role-lane SKILL.md still name .jaira/tickets/; test name).
+- **2026-11-21 08:00 · Alexander Sacharov** — Given back from signoff: Alex 21.11. alle Funde in dieser Runde schliessen. 1) Fertige Commit-Zeilen in jaira-worker SKILL.md und jaira-role-lane SKILL.md (+ alle Kopien, grep) nennen .jaira/tickets/<ticket>.md auch auf ungeteiltem Board - wie in den anderen Rollen anpassen. 2) Die Einschraenkung 'This point and the next hold on a shared board only' praezise fassen: 'commits nothing' gilt erst recht, nur die Ticketdatei-Saetze fallen weg. 3) Testname nennt auch --done --proof. Manifest-Hashes nachtragen, Diff-Hunt, review, signoff, push.
