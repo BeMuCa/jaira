@@ -50,6 +50,9 @@ type World = {
   // The bughunt key `jaira show --brief --json` gives, by id; an id without
   // one gets a brief without the key, as from a jaira older than it.
   hunts: Record<string, { at: string; state: string } | null>
+  // The commits `git merge-base --is-ancestor <commit> HEAD` finds in the
+  // checkout it runs in, by directory ('@/...'); any other answers 1.
+  contains: Record<string, string[]>
   // What the plugin submitted to this session's conversation itself.
   submitted: string[]
   // The panes the plugin opened, and closed, by id and title.
@@ -164,6 +167,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     toasts: [],
     bodies: {},
     hunts: {},
+    contains: {},
     submitted: [],
     opened: [],
     closed: [],
@@ -301,6 +305,9 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'git' && args[0] === 'rev-parse') return ok('/repo/.git\n')
     if (cmd === 'git' && args[0] === '--exec-path') return ok('C:\\Program Files\\Git\\mingw64\\libexec\\git-core\n')
     if (cmd === 'git' && args[0] === 'worktree') return ok(w.worktrees ?? WORKTREES)
+    if (cmd === 'git' && args[0] === 'merge-base' && args[1] === '--is-ancestor') {
+      return (w.contains[`@${e.init?.cwd ?? ''}`] ?? []).includes(args[2]!) ? ok('') : { value: { exitCode: 1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+    }
     const failed = (stderr: string) => ({ value: { exitCode: 1, stdout: '', stderr, isStdoutTruncated: false, isStderrTruncated: false } })
     // A follow-up gets the next handle, F00001 and on; createFails refuses it.
     if (cmd === 'jaira' && args[0] === 'create') {
@@ -470,6 +477,35 @@ describe('waiting for you', () => {
       expect(texts).toContain(text)
     }
     expect(texts.some(x => /review of round 2, changed since/.test(x))).toBe(true)
+  })
+
+  test('a hunt\'s fail is a red cross only in a checkout that holds the hunt\'s commit', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      // In its own worktree, which holds the hunt: the fail stands.
+      { ...SIGNOFF, review: { verdict: 'approve' } },
+      // No worktree of its own: read in the main checkout, which does not.
+      { ...SIGNOFF, handle: 'AB12CD', review: { verdict: 'approve' } },
+    ]
+    w.hunts = { MG677R: { at: 'abc1234', state: 'fail' }, AB12CD: { at: 'def5678', state: 'fail' } }
+    w.contains = { '@/.worktrees/repo-mg677r': ['abc1234'] }
+    await startSession($)
+    await w.clock.advance(60_000)
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ type: 'Text', text: /^MG677R \| signoff \| DoD \? \| bughunt ✗/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /^AB12CD \| signoff \| DoD \? \| bughunt \?/ })).toBeDefined()
+    expect(ran(w, 'git', 'merge-base', '--is-ancestor', 'def5678', 'HEAD')[0]?.at(-1)).toBe('@/repo')
+  })
+
+  test('an earlier review whose notes were not kept counts nothing: unknown, not zero', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, round: 3, review_round: 2, review: { verdict: 'back to in-progress: gap 1', gaps: 'removed a helper' } }]
+    await startSession($)
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ type: 'Text', text: /MG677R \| signoff \| .*\? blockers \| \? notes \| review of round 2/ })).toBeDefined()
+    const { texts } = await verdictOf($, band, 'MG677R')
+    expect(texts).toContain('The notes of that review were not kept: a later lane rewrote them.')
+    expect(texts.some(x => /removed a helper/.test(x))).toBe(false)
   })
 
   test('the Explain pane starts with the ticket\'s title and goal', async ($, on) => {

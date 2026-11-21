@@ -30,6 +30,9 @@ export type Waiting = {
   // one. The band counts them; the Verdict pane lists them whole.
   blockers: string[]
   notes: string[]
+  // False where the review's findings are unknown: a verdict of an earlier
+  // round whose gaps jaira did not keep. The band then counts nothing.
+  findingsKnown: boolean
   // The review's own gaps as written, blockers included: what the Give back
   // pane lists one by one for the person to decide. '' before a review.
   gaps: string
@@ -143,6 +146,7 @@ export function snapshotOf(
       // optimize lane rewrote review-gaps they are in the copy jaira kept.
       blockers: verdict === '' ? [] : blockersOf(reviewGaps(t)),
       notes: verdict === '' ? [] : notesOf(reviewGaps(t)),
+      findingsKnown: verdict === '' || sameRound(t) || reviewGaps(t) !== undefined,
       gaps: verdict === '' ? '' : reviewGaps(t) ?? '',
       ...(sameRound(t) ? {} : { reviewedIn: t.review_round }),
     })
@@ -782,13 +786,15 @@ export function followTitle(text: string): string {
 // ok, fail, unknown or skipped as jaira worked it out against the checkout
 // it ran in; fail where no hunt finished (bughunt null); undefined where the
 // brief has no bughunt key — a jaira older than the hunt state — or did not
-// parse, so the band says it does not know rather than guess.
+// parse, so the band says it does not know rather than guess. `at` is the
+// commit the hunt ran at, '' where none finished: jaira also answers fail
+// for a checkout that does not hold that commit, which the caller checks.
 export type Hunt = 'ok' | 'fail' | 'unknown' | 'skipped'
 const HUNTS = new Set<string>(['ok', 'fail', 'unknown', 'skipped'])
-export function huntOf(briefJson: string): Hunt | undefined {
-  const brief = parse<{ bughunt?: { state?: string } | null }>(withoutWarnings(briefJson))
+export function huntOf(briefJson: string): { state: Hunt; at: string } | undefined {
+  const brief = parse<{ bughunt?: { state?: string; at?: string } | null }>(withoutWarnings(briefJson))
   if (brief === undefined || !('bughunt' in brief)) return undefined
-  if (brief.bughunt === null) return 'fail'
+  if (brief.bughunt === null) return { state: 'fail', at: '' }
   const state = brief.bughunt?.state ?? ''
-  return HUNTS.has(state) ? (state as Hunt) : undefined
+  return HUNTS.has(state) ? { state: state as Hunt, at: brief.bughunt?.at ?? '' } : undefined
 }

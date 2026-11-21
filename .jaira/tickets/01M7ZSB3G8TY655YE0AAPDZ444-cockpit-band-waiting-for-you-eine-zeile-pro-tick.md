@@ -1,7 +1,7 @@
 ---
 id: 01M7ZSB3G8TY655YE0AAPDZ444
 title: "Cockpit-Band 'Waiting for you': eine Zeile pro Ticket statt Verdikt und alle Notes"
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,7 +24,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-21T19:29:13Z
-updated-at: 2026-11-21T20:48:30Z
+updated-at: 2026-11-21T20:59:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2166591
 claimed-at: 2026-11-21T20:34:45Z
@@ -32,11 +32,13 @@ outcome-what: "The cockpit band shows one row per waiting ticket: id, lane, DoD/
 outcome-why: "Three tickets in signoff filled ~10 band lines with clipped verdicts and every review note, unreadable"
 outcome-resolves: PDZ444
 review-summary: none
-round: 2
-back-from: critique
+round: 3
+back-from: testing
 back-by: lane
 back-count: 1
 review-gaps: "folded the two new 'waiting or theirs by id' lookups (Verdict and Explain panes) into waitingTicket() in register.tsx; left the older inline copy in refreshBoard's chat loop (it reads the fresh view, not the atom); left blockersOf/notesOf each splitting the gaps once - per refresh, a handful of lines"
+test-verdict: "pass: suite green (284, rc=0), DoD 1-5 verified; see hunt-verdict for the two change findings"
+hunt-verdict: "fail: bughunt done at c0d6a73b1 - 2 change blockers: false red bughunt mark outside the ticket's checkout; unknown review findings shown as 0 blockers / 0 notes"
 ---
 
 # Cockpit-Band 'Waiting for you': eine Zeile pro Ticket statt Verdikt und alle Notes
@@ -76,3 +78,8 @@ review-gaps: "folded the two new 'waiting or theirs by id' lookups (Verdict and 
 - **2026-11-21 20:45 · Alexander Sacharov** — in-progress: bughunt mark reads 'jaira show <id> --brief --json' per shown ticket in its worktree (one extra jaira call per shown ticket per refresh, max 3 unless expanded). An earlier-round verdict without verdict_gaps counts 0 blockers/0 notes - same rule as before (reviewGaps), the row then shows 'review of round N' in warning colour. Verdict button now shows also for a question alone (human lane) since the question left the row.
 - **2026-11-21 20:46 · Alexander Sacharov** — critique 1: drop the stray Text argument of marks(); showVerdict toast falls back to the question when there is no verdict. Left as is: two jaira show calls per shown ticket (show --json carries the body for explanationNotes, only --brief carries bughunt; --brief keeps 4 notes, so it cannot replace the body read).
 - **2026-11-21 20:47 · Alexander Sacharov** — critique 2: nothing left; the two round-1 findings are fixed (register.tsx marks call, showVerdict toast).
+- **2026-11-21 20:49 · Alexander Sacharov** — testing: note: cost - an expanded band runs one extra 'jaira show --brief --json' per waiting ticket each refresh (16 on this board today), each doing the git hunt-coverage check; fine at 3 shown, watch it if the expanded band feels slow
+- **2026-11-21 20:52 · Alexander Sacharov** — bughunt: change: blocker: core/mod/builtin/jaira-cockpit/hooks/register.tsx:387 - class: the band reads the hunt state (jaira show --brief) in the main checkout whenever the ticket has no worktree whose branch/path ends in its slug (worktree removed, work on another ticket's branch, a worktree named otherwise, or git worktree list failing); jaira's HuntCoverage answers fail when the checkout does not contain the hunt's commit, so a hunted ticket shows a red 'bughunt ✗' that is not true. Same fallback feeds the Explain prompt's 'bughunt on HEAD' (ticketDir, register.tsx:516), which predates this ticket. example: F1V59P and AX8K02 read state=ok in their worktrees and state=fail from /home/alex/projects/jaira (main=fail wt=ok). ran: jaira show <id> --brief --json in both checkouts
+- **2026-11-21 20:52 · Alexander Sacharov** — bughunt: change: blocker: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1518-1521 - class: an earlier-round verdict without a verdict_gaps copy (rounds stamped since 13PQB3/2026-10-12, copy kept only since DF0YD6/2026-11-21) gets blockers=[] and notes=[] from reviewGaps() (board.ts:229-232, which means 'unknown'), and the new row prints that as a definite '0 blockers | 0 notes' - also the Verdict pane lists no notes; the review's findings are unknown, not zero. example: 1K3RA8 (human, round 10, review_round 9, verdict 'Zurueck nach in-progress wegen Gap 1...', no verdict_gaps) yields blockers=0 notes=0 gaps=''. ran: node --experimental-strip-types on snapshotOf() with the live jaira lanes/list JSON
+- **2026-11-21 20:52 · Alexander Sacharov** — bughunt: done at c0d6a73b1 - 2 findings (2 change, 0 pre-existing) in 5 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/PDZ444.md core/shipped/shipped.sha256
+- **2026-11-21 20:53 · Alexander Sacharov** — fix plan for the two hunt findings: (1) a brief's 'fail' is only believed when the hunt's commit is in the checkout it was read in (git merge-base --is-ancestor <at> HEAD in that dir); otherwise the mark is '?' - fixes every no-own-worktree case at the cause, not by finding the worktree better. (2) Waiting gets findingsKnown = reviewGaps(t) !== undefined; unknown -> row '? blockers | ? notes', Verdict pane says the notes of that round were not kept.

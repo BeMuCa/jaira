@@ -387,7 +387,15 @@ async function refreshBoard($: EngineInterface): Promise<void> {
     const dir = trees?.exitCode === 0 ? worktreeFor(trees.stdout, w.id, board.repo) : board.repo
     const brief = await run($, ['jaira', 'show', w.id, '--brief', '--json'], dir)
     const hunt = brief?.exitCode === 0 ? huntOf(brief.stdout) : undefined
-    if (hunt !== undefined) hunts[w.id] = hunt
+    if (hunt === undefined) continue
+    // jaira says fail, too, for a checkout without the hunt's commit — the
+    // main one, where the ticket's worktree is gone or named otherwise. That
+    // fail says nothing about the code: '?', not a red cross.
+    if (hunt.state === 'fail' && hunt.at !== '') {
+      const held = await run($, ['git', 'merge-base', '--is-ancestor', hunt.at, 'HEAD'], dir)
+      if (held?.exitCode !== 0) continue
+    }
+    hunts[w.id] = hunt.state
   }
   await update($, explainedAtom, () => explained)
   await update($, huntsAtom, () => hunts)
@@ -1517,8 +1525,8 @@ export const register: Register = (on, options) => {
       `${SEP}${t.markHunt} `, hunt === 'skipped' ? <Text key="hunt" dimColor>–</Text> : tick('hunt', hunt === 'ok' ? true : hunt === 'fail' ? false : undefined),
       ...(w.verdict !== ''
         ? [
-          SEP, <Text key="blockers" {...(w.blockers.length > 0 ? { color: 'error' as const, bold: true } : { dimColor: true })}>{t.markBlockers(w.blockers.length)}</Text>,
-          SEP, <Text key="notes" dimColor>{t.markNotes(w.notes.length)}</Text>,
+          SEP, <Text key="blockers" {...(w.blockers.length > 0 ? { color: 'error' as const, bold: true } : { dimColor: true })}>{w.findingsKnown ? t.markBlockers(w.blockers.length) : t.markBlockersUnknown}</Text>,
+          SEP, <Text key="notes" dimColor>{w.findingsKnown ? t.markNotes(w.notes.length) : t.markNotesUnknown}</Text>,
         ]
         : []),
       // A verdict an earlier round wrote: said, so a ticket moved on past a
@@ -1887,6 +1895,7 @@ export const register: Register = (on, options) => {
         {w.question !== '' ? <Text color="warning" wrap="wrap">? {w.question}</Text> : null}
         <Box marginTop={1}><Text wrap="wrap"><Text bold>{t.verdictHeading}</Text> {w.verdict !== '' ? w.verdict : t.noVerdict}</Text></Box>
         {w.blockers.length + w.notes.length > 0 ? <Box marginTop={1}><Text bold>{t.notesHeading}</Text></Box> : null}
+        {!w.findingsKnown ? <Box marginTop={1}><Text dimColor wrap="wrap">{t.notesNotKept}</Text></Box> : null}
         {w.blockers.map((n, i) => <Text key={`blocker-${i}`} wrap="wrap"><Text bold color="error">[blocker]</Text> {n}</Text>)}
         {w.notes.map((n, i) => <Text key={`note-${i}`} wrap="wrap">· {n}</Text>)}
         <Button key="verdict-close" label={t.close} onPress={() => void $.ui.close({ id: VERDICT })} />
