@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:52:13Z
+updated-at: 2026-11-21T08:52:16Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -43,6 +43,7 @@ review-gaps: |-
   note: cockpit Accept (core/mod/builtin/jaira-cockpit/hooks/register.tsx afterAccept) liest .jaira/pr nicht - unter none startet es trotzdem die pr-Rolle (die dann korrekt landet), meldet aber "opening the pull request" (texts.ts:21), und ohne GitHub/GitLab-origin bricht es mit noForge ab, obwohl Landen keinen Forge braucht
   note: ein Commit, der ein schon im Logbook abgelegtes Ticket nennt (fix(<alteID>): ...), passiert das none-Tor ohne neue Annahme - bekannte Grenze der Betreff-Regel, im Ticket bewusst so entschieden (Runde 10)
   note: reap.sh land_remote faellt auf origin zurueck, wenn gh nicht antwortet; in einem Fork-Klon wartet das Ticket dann dauerhaft mit "has not landed on origin's default branch" - sicher (nichts geloescht), aber die Ursache ist falsch benannt
+  optimize Runde 11: nichts zu entfernen.
 test-verdict: "pass (round 10): go vet + go test -race ./... RC=0 at 221fbba5; DoD 8 proof refreshed (TestPRGateOnANoneBoardRefusesGitsRevertSubject: bare Revert refused naming fix(<ID>): revert <what>, reworded passes); gitrepo UnnamedCommits/isPlainMerge tests; reap names a failing or silent roles list (reap_test); gate writes nothing, nothing to race"
 hunt-verdict: "pass (round 12 at 221fbba5): 0 findings"
 claimed-by: DESKTOP-RFTCH11-2127254
