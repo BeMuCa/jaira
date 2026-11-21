@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-21T08:15:32Z
+updated-at: 2026-11-21T08:18:11Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -27,7 +27,7 @@ claimed-at: 2026-11-21T08:01:01Z
 outcome-what: "Der generierte Agent-Block sagt im Punkt 'the ticket rides with the code', dass dieser und der naechste Punkt nur auf einem geteilten Board gelten: ohne geteiltes .jaira/ gibt es keine Ticketdatei zum Mitcommitten, der Code geht allein mit dem Handle im Betreff. Test haelt den Satz und --proof fest; CLAUDE.md/AGENTS.md dieses Repos regeneriert; Release-Note."
 outcome-why: "Auf einem ungeteilten Board widersprach die Commit-Regel dem Zustand des Boards: ein Agent kann eine ignorierte Datei nicht mitcommitten und las die Regel als kaputt. --proof und 'jaira update' waren schon ausgeliefert (2143e9ad, update.go:257) und brauchten nur den Test."
 outcome-resolves: SDBCT5
-review-summary: "Round after signoff return: nothing to return. The three new caveat sentences (jaira-worker SKILL.md:107, jaira-role-lane SKILL.md:90/293) sit next to the commit line they qualify, the same placement the block uses (announce.go:138); a shared helper is not possible across markdown roles. Wording in block and jaira role now says the next point holds all the more instead of excluding it. Standing on the 22:58 note for the earlier rounds."
+review-summary: "On a board 'jaira init' keeps out of git there is no ticket file to commit, yet every place that tells an agent to commit the ticket with the code read as if .jaira/ were always tracked. The branch adds one caveat sentence to each such place: the generated agent block (core/board/announce.go, regenerated into CLAUDE.md/AGENTS.md), the jaira role and its repo mirror, docs/AGENTS.md, the PR role (a code commit without a ticket file is not a finding there), and the ready-to-paste commit lines in jaira-worker and jaira-role-lane (leave the ticket file out of git add, git refuses it as ignored). The caveat says 'commits nothing' still holds, only the ticket-file sentences fall away. A test pins the wording in block and role, the manifest gets the new role hashes, a release note tells users to run jaira update / --roles."
 round: 4
 review-gaps: "none: the round adds three sentences and a renamed test; nothing duplicated or unused"
 test-verdict: "pass: go test ./... -race RC=0; TestAgentNoteNamesProofAndTheUnsharedBoardCaveat RC=0; DoD 1-7 verified in the tree; scratch board (git init + jaira init with this build): CLAUDE.md/AGENTS.md carry the reworded caveat, .jaira/ stays out of git; go test ./core/role ./core/shipped green after appending 3 manifest hashes"
