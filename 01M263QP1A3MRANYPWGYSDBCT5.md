@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-21T08:22:44Z
+updated-at: 2026-11-21T08:25:27Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -27,7 +27,7 @@ claimed-at: 2026-11-21T08:01:01Z
 outcome-what: "Der generierte Agent-Block sagt im Punkt 'the ticket rides with the code', dass dieser und der naechste Punkt nur auf einem geteilten Board gelten: ohne geteiltes .jaira/ gibt es keine Ticketdatei zum Mitcommitten, der Code geht allein mit dem Handle im Betreff. Test haelt den Satz und --proof fest; CLAUDE.md/AGENTS.md dieses Repos regeneriert; Release-Note."
 outcome-why: "Auf einem ungeteilten Board widersprach die Commit-Regel dem Zustand des Boards: ein Agent kann eine ignorierte Datei nicht mitcommitten und las die Regel als kaputt. --proof und 'jaira update' waren schon ausgeliefert (2143e9ad, update.go:257) und brauchten nur den Test."
 outcome-resolves: SDBCT5
-review-summary: "On a board 'jaira init' keeps out of git there is no ticket file to commit, yet every place that tells an agent to commit the ticket with the code read as if .jaira/ were always tracked. The branch adds one caveat sentence to each such place: the generated agent block (core/board/announce.go, regenerated into CLAUDE.md/AGENTS.md), the jaira role and its repo mirror, docs/AGENTS.md, the PR role (a code commit without a ticket file is not a finding there), and the ready-to-paste commit lines in jaira-worker and jaira-role-lane (leave the ticket file out of git add, git refuses it as ignored). The caveat says 'commits nothing' still holds, only the ticket-file sentences fall away. A test pins the wording in block and role, the manifest gets the new role hashes, a release note tells users to run jaira update / --roles."
+review-summary: "Ein Satz an der Regel 'the ticket rides with the code' im generierten Agent-Block (core/board/announce.go), in der jaira-Rolle (core/role/jaira/SKILL.md + .claude-Kopie) und in docs/AGENTS.md: auf einem noch nicht geteilten Board gibt es keine Ticketdatei, also nur den Code committen, der Handle im Subject ist die einzige Verbindung; der Punkt 'commits nothing' gilt dort erst recht. Die fertigen Commit-Zeilen in jaira-worker und jaira-role-lane sagen, die Ticketdatei dort wegzulassen (git verweigert sie als ignoriert); jaira-role-pr wertet einen Code-Commit ohne Ticketdatei dort nicht mehr als Befund. --proof stand schon im Block. Ein Test haelt die Saetze in Block und Rolle fest; CLAUDE.md/AGENTS.md sind regeneriert, shipped.sha256 und Release-Note ergaenzt."
 round: 5
 review-gaps: |-
   note: core/board/announce_test.go:232 - the doc comment still names the old test TestAgentNoteSaysTheTicketCannotRideOnAnUnsharedBoard; the func is TestAgentNoteNamesProofAndTheUnsharedBoardCaveat
