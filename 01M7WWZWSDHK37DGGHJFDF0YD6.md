@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:19:17Z
+updated-at: 2026-11-21T08:19:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
@@ -130,3 +130,4 @@ review-check: "1. go test ./core/move -run 'TestMoveRecords|TestMoveCountsOne' -
 - **2026-11-21 08:14 · Alexander Sacharov** — bughunt: done at c8de2b8a - 1 finding (1 change, 0 pre-existing) in 8 modules, follow-up hunt since 1789d202 (diff: in-progress lane md x2, board.ts, board.test.ts, texts.ts, notes, spawn.sh, shipped.sha256, schema.go, flow.go, tickets.go, loopbrake_test.go; whole: go.mod; .jaira/milestones/* are untracked board data, not code); concurrency, error paths, input, permissions checked; files: .jaira/lanes/in-progress.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md core/lane/builtin/15-pre-process.md core/lane/builtin/20-in-progress.md core/lane/builtin/27-testing.md core/lane/builtin/40-review.md core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/move/move.go core/move/move_test.go core/release/notes/DF0YD6.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/builtin/jaira-role-bughunt/SKILL.md core/role/role_test.go core/shipped/shipped.sha256 core/ticket/frontmatter.go core/ticket/schema.go go.mod internal/cli/flow.go internal/cli/loopbrake_test.go internal/cli/tickets.go internal/tui/model.go
 - **2026-11-21 08:18 · Alexander Sacharov** — testing round 3: class: a derived field absent on old tickets read as a signal; example: Explain prompt took empty verdict_gaps != gaps as an earlier-round verdict, found no notes and wrote 'blockers ok'; fix: both prompts switch only when verdict_gaps is not empty (as board.ts reviewGaps already does), test asserts the rule in the Explain prompt.
 - **2026-11-21 08:19 · Alexander Sacharov** — critique round 4: none - read 553b37f3 only; the prompt rule now matches board.ts reviewGaps (empty copy -> review-gaps).
+- **2026-11-21 08:19 · Alexander Sacharov** — testing round 4: bughunt running over the diff since c8de2b8a at 553b37f3.
