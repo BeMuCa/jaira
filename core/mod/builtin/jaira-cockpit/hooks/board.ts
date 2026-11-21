@@ -648,9 +648,10 @@ export type Decided = { choice: Choice; follow?: string }
 const PREFIXED = /^[*_`]*\s*(blocker|note)\s*[*_`]*\s*:/i
 const PRE_EXISTING = /^[*_`]*\s*note\s*[*_`]*\s*:\s*[*_`]*\s*pre-?existing\b/i
 
-// What each class starts as: what the person would fix in this round now, a
-// boundary drawn on purpose accepted, someone else's subject a follow-up.
-const PRESELECTED: Record<NoteClass, Choice> = { blocker: 'now', edge: 'now', limit: 'accept', elsewhere: 'later' }
+// What each class starts as: a blocker fixed now, every other note accepted
+// (Alex 21.11.2026). A follow-up ticket is created only for a row the person
+// turned to it: a press on Accept alone files nothing on the shared board.
+const PRESELECTED: Record<NoteClass, Choice> = { blocker: 'now', edge: 'accept', limit: 'accept', elsewhere: 'accept' }
 
 // The findings of a review's gaps, each with its class and what it starts
 // as. A line without 'blocker:' or 'note:' continues the finding above it —

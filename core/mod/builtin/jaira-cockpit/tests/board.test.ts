@@ -97,6 +97,8 @@ type World = {
   worktrees?: string
   // `jaira create` of a follow-up fails.
   createFails?: boolean
+  // Another session's move came first: jaira answers this one 'already in'.
+  movedFirst?: boolean
 }
 
 const LANES = {
@@ -245,6 +247,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'jaira' && args[0] === 'list' && on !== undefined) return ok(JSON.stringify({ count: on.tickets.length, tickets: on.tickets }))
     if (cmd === 'jaira' && args[0] === 'lanes') return ok(JSON.stringify(w.oldJaira ? { lanes: LANES.lanes.map(({ human_exit, requires_question, ...l }) => l) } : LANES))
     if (cmd === 'jaira' && args[0] === 'list') return ok(JSON.stringify({ count: w.tickets.length, tickets: w.tickets }))
+    if (cmd === 'jaira' && args[0] === 'move' && w.movedFirst && !args.includes('--dry-run')) return ok(`${args[1]} is already in ${args[3]}\n`)
     if (cmd === 'jaira' && args[0] === 'move' && args.includes('--dry-run')) {
       const error = (w.warns ? `${OLDER}\n` : '') + JSON.stringify({ error: { code: 3, reason: 'gate_refused', violations: w.refusals } })
       return { value: { exitCode: 3, stdout: '', stderr: error, isStdoutTruncated: false, isStderrTruncated: false } }
@@ -2127,14 +2130,14 @@ describe('give back with the review notes', () => {
   }
   const notes = (w: World) => ran(w, 'jaira', 'note', 'MG677R').map(r => r[3])
 
-  test('every note of the review is a row; blockers and small edges start as fix now, a fault from elsewhere as a follow-up', async ($, on) => {
+  test('every note of the review is a row; a blocker starts as fix now, every other note as accepted - no follow-up nobody chose', async ($, on) => {
     withGaps(on, GAPS)
     await startSession($)
     const pane = await openPane($)
     expect(await rows(pane)).toEqual([
       '[fix now] [blocker] blocker: DoD 2 - an empty export still writes a header',
-      '[fix now] note: the export test covers 1MB, not 40MB',
-      '[follow-up] [not this ticket] note: pre-existing: the log rotates at midnight UTC',
+      '[accept] note: the export test covers 1MB, not 40MB',
+      '[accept] [not this ticket] note: pre-existing: the log rotates at midnight UTC',
     ])
     // The first row takes the keyboard; the field below is for anything else.
     expect((await pane.find({ key: 'gap-MG677R-0' }))?.props.autoFocus).toBe(true)
@@ -2155,7 +2158,7 @@ describe('give back with the review notes', () => {
     expect((await rows(await openPane($)))[0]).toStartWith('[fix now] [blocker]')
   })
 
-  test('a press changes a row: fix now, follow-up, accept, fix now again', async ($, on) => {
+  test('a press changes a row: accept, fix now, follow-up, accept again', async ($, on) => {
     withGaps(on, 'note: the size')
     await startSession($)
     const pane = await openPane($)
@@ -2164,16 +2167,16 @@ describe('give back with the review notes', () => {
       seen.push((await rows(pane))[0]!.split(']')[0]! + ']')
       await pane.press({ key: 'gap-MG677R-0' })
       }
-    expect(seen).toEqual(['[fix now]', '[follow-up]', '[accept]', '[fix now]'])
+    expect(seen).toEqual(['[accept]', '[fix now]', '[follow-up]', '[accept]'])
   })
 
   test('Give back writes exactly the notes to fix, the follow-ups with their tickets and the accepted ones, after the move', async ($, on) => {
     const w = withGaps(on, GAPS)
     await startSession($)
     const pane = await openPane($)
-    // The size note: fix now -> follow-up -> accept.
-    await pane.press({ key: 'gap-MG677R-1' })
-    await pane.press({ key: 'gap-MG677R-1' })
+    // The clock note: accept -> fix now -> follow-up.
+    await pane.press({ key: 'gap-MG677R-2' })
+    await pane.press({ key: 'gap-MG677R-2' })
     await pane.input({ key: 'reason-MG677R', text: '' })
     expect(notes(w)[0]).toBe([
       'Given back from signoff: beheben:',
@@ -2195,7 +2198,9 @@ describe('give back with the review notes', () => {
   test('what the person types goes along under the notes, on one line', async ($, on) => {
     const w = withGaps(on, 'note: the size')
     await startSession($)
-    await (await openPane($)).input({ key: 'reason-MG677R', text: 'and the docs' })
+    const pane = await openPane($)
+    await pane.press({ key: 'gap-MG677R-0' })
+    await pane.input({ key: 'reason-MG677R', text: 'and the docs' })
     expect(notes(w)[0]).toBe('Given back from signoff: beheben:\n- note: the size\ndazu: and the docs')
   })
 
@@ -2203,7 +2208,6 @@ describe('give back with the review notes', () => {
     const w = withGaps(on, 'note: the size')
     await startSession($)
     const pane = await openPane($)
-    await pane.press({ key: 'gap-MG677R-0' })
     await pane.input({ key: 'reason-MG677R', text: ' ' })
     expect(ran(w, 'jaira', 'move')).toEqual([])
     expect(w.closed).toEqual([])
@@ -2214,7 +2218,11 @@ describe('give back with the review notes', () => {
     const w = withGaps(on, 'note: the size\nnote: pre-existing: the clock')
     w.createFails = true
     await startSession($)
-    await (await openPane($)).input({ key: 'reason-MG677R', text: '' })
+    const pane = await openPane($)
+    await pane.press({ key: 'gap-MG677R-0' })
+    await pane.press({ key: 'gap-MG677R-1' })
+    await pane.press({ key: 'gap-MG677R-1' })
+    await pane.input({ key: 'reason-MG677R', text: '' })
     expect(notes(w)[0]).toBe('Given back from signoff: beheben:\n- note: the size\nFolge-Ticket:\n- (not created: jaira: the board is locked): note: pre-existing: the clock')
     // Heard, not only noted: the toast after it says the ticket went back.
     expect(w.opened).toContainEqual({ id: 'cockpit-message', title: 'Follow-up tickets of MG677R failed', focus: true })
@@ -2224,6 +2232,7 @@ describe('give back with the review notes', () => {
     const w = withGaps(on, '-race fails in core/gitref')
     await startSession($)
     const pane = await openPane($)
+    await pane.press({ key: 'gap-MG677R-0' })
     await pane.press({ key: 'gap-MG677R-0' })
     await pane.input({ key: 'reason-MG677R', text: 'and the docs' })
     // jaira create takes the title only as its argument: after '--', where
@@ -2244,8 +2253,6 @@ describe('give back with the review notes', () => {
     const w = withGaps(on, 'note: the size')
     await startSession($)
     const pane = await openPane($)
-    await pane.press({ key: 'gap-MG677R-0' })
-    await pane.press({ key: 'gap-MG677R-0' })
     await pane.input({ key: 'reason-MG677R', text: 'the docs are missing' })
     expect(notes(w)[0]).toBe('Given back from signoff: beheben:\ndazu: the docs are missing\nangenommen:\n- note: the size')
   })
@@ -2261,6 +2268,7 @@ describe('give back with the review notes', () => {
     const w = withGaps(on, 'note: the size')
     await startSession($)
     const pane = await openPane($)
+    await pane.press({ key: 'gap-MG677R-0' })
     await pane.press({ key: 'gaps-accept-MG677R' })
     expect(ran(w, 'jaira', 'move')).toEqual([])
     expect(w.toasts.at(-1)).toBe('MG677R: 1 note is marked fix now - press Give back, or mark it follow-up or accept')
@@ -2270,9 +2278,9 @@ describe('give back with the review notes', () => {
     const w = withGaps(on, 'note: the size\nnote: pre-existing: the clock')
     await startSession($)
     const pane = await openPane($)
-    // the size: fix now -> follow-up -> accept
-    await pane.press({ key: 'gap-MG677R-0' })
-    await pane.press({ key: 'gap-MG677R-0' })
+    // the clock: accept -> fix now -> follow-up
+    await pane.press({ key: 'gap-MG677R-1' })
+    await pane.press({ key: 'gap-MG677R-1' })
     await pane.press({ key: 'gaps-accept-MG677R' })
     expect(notes(w)[0]).toBe('Accepted from signoff: Folge-Ticket:\n- F00001: note: pre-existing: the clock\nangenommen:\n- note: the size')
     const forced = w.ran.findIndex(r => r[1] === 'move' && r.includes('--force'))
@@ -2291,19 +2299,80 @@ describe('give back with the review notes', () => {
     expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toEqual([])
   })
 
-  test('a blocker not marked fix now asks once; the second press accepts', async ($, on) => {
-    const w = withGaps(on, 'blocker: the header')
+  test('a blocker not marked fix now is accepted only with a reason, which goes onto the ticket as a decision', async ($, on) => {
+    const w = withGaps(on, 'blocker: the header\nnote: the size')
     await startSession($)
     const pane = await openPane($)
+    // Fix now: no field for a reason, the plain Accept.
+    expect(await pane.find({ key: 'why-MG677R' })).toBeUndefined()
     await pane.press({ key: 'gap-MG677R-0' })
     await pane.press({ key: 'gap-MG677R-0' })
-    await pane.press({ key: 'gaps-accept-MG677R' })
-    expect(ran(w, 'jaira', 'move')).toEqual([])
-    expect(w.toasts.at(-1)).toBe('MG677R: a blocker is not marked fix now - press Accept again to accept it anyway')
-    await pane.press({ key: 'gaps-accept-MG677R' })
+    // Not fix now: the Accept button gives way to the required field.
+    expect(await pane.find({ key: 'gaps-accept-MG677R' })).toBeUndefined()
+    for (const empty of ['', '   ', '\n']) {
+      await pane.input({ key: 'why-MG677R', text: empty })
+      expect(ran(w, 'jaira', 'move')).toEqual([])
+      expect(w.closed).toEqual([])
+      expect(w.toasts.at(-1)).toBe('MG677R: a blocker is not marked fix now - type why it is accepted anyway, or mark it fix now and press Give back')
+    }
+    await pane.input({ key: 'why-MG677R', text: 'the header is\nharmless for now' })
     expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
-    expect(notes(w)[0]).toBe('Accepted from signoff: angenommen:\n- blocker: the header')
+    expect(notes(w)).toEqual([
+      'Accepted from signoff: angenommen:\n- blocker: the header\n- note: the size',
+      'decision: accepted with a blocker not fixed: the header is harmless for now',
+    ])
   })
+
+  test('the band\'s Accept accepts at once without a blocker, an Explain note that calls a blocker a small edge included', async ($, on) => {
+    const w = withGaps(on, 'blocker: the header')
+    w.bodies.MG677R = '## Progress\n- **2026-11-21 10:00 · Alex** — explain: Status: DoD 3/3 ok\n[small edge] the header\n'
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
+    expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
+    expect(w.opened.map(o => o.id)).not.toContain('cockpit-give-back')
+  })
+
+  // A blocker by its prefix, in markdown, or by the Explain note's class.
+  for (const [gaps, explain] of [
+    ['blocker: the header', ''],
+    ['- **Blocker:** the header\nnote: the size', ''],
+    ['note: the header\nnote: the size', '[blocker] the header\n[small edge] the size'],
+  ] as const) {
+    test(`the band's Accept with a blocker in the review opens the notes and moves nothing: ${JSON.stringify(gaps)}`, async ($, on) => {
+      const w = withGaps(on, gaps)
+      if (explain !== '') w.bodies.MG677R = `## Progress\n- **2026-11-21 10:00 · Alex** — explain: Status: DoD 3/3 ok\n${explain}\n`
+      await startSession($)
+      await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
+      expect(ran(w, 'jaira', 'move')).toEqual([])
+      expect(w.opened.at(-1)).toEqual({ id: 'cockpit-give-back', title: 'Give back MG677R', focus: true })
+    })
+  }
+
+  for (const press of ['back', 'accept', 'band-accept'] as const) {
+    test(`a move another session made first: the second press writes nothing (${press})`, async ($, on) => {
+      const w = withGaps(on, 'note: the size\nnote: pre-existing: the clock')
+      w.movedFirst = true
+      await startSession($)
+      if (press === 'band-accept') await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
+      else {
+        const pane = await openPane($)
+        await pane.press({ key: 'gap-MG677R-0' })
+        await pane.press({ key: 'gap-MG677R-1' })
+        await pane.press({ key: 'gap-MG677R-1' })
+        if (press === 'back') await pane.input({ key: 'reason-MG677R', text: 'and the docs' })
+        else {
+          await pane.press({ key: 'gap-MG677R-0' })
+          await pane.press({ key: 'gap-MG677R-0' })
+          await pane.press({ key: 'gaps-accept-MG677R' })
+        }
+      }
+      expect(ran(w, 'jaira', 'move').filter(r => !r.includes('--dry-run'))).toHaveLength(1)
+      expect(ran(w, 'jaira', 'create')).toEqual([])
+      expect(ran(w, 'jaira', 'note')).toEqual([])
+      expect(w.ran.filter(r => r[0] === 'herdr' || r[1] === SPAWN)).toEqual([])
+      expect(w.opened.at(-1)?.title).toBe(`${press === 'back' ? 'Give back' : 'Accept'} MG677R failed`)
+    })
+  }
 
   test('the next acceptance starts every note decided before as it was decided, follow-ups included', async ($, on) => {
     const w = withGaps(on, GAPS)
@@ -2336,7 +2405,7 @@ describe('give back with the review notes', () => {
       '- note: the size',
     ].join('\n')
     await startSession($)
-    expect(await rows(await openPane($))).toEqual(['[accept] note: the size (decided before)', '[fix now] note: the docs'])
+    expect(await rows(await openPane($))).toEqual(['[accept] note: the size (decided before)', '[accept] note: the docs'])
   })
 
   // The input classes of the ticket, one row each.
@@ -2352,13 +2421,13 @@ describe('give back with the review notes', () => {
   test('a note wrapped over lines is one row, a blank line and a none dropped, CRLF and emphasis read', async ($, on) => {
     withGaps(on, '- note: a long finding\n  that wraps here\n- **blocker:** the header\r\n\nnone')
     await startSession($)
-    expect(await rows(await openPane($))).toEqual(['[fix now] note: a long finding that wraps here', '[fix now] [blocker] **blocker:** the header'])
+    expect(await rows(await openPane($))).toEqual(['[accept] note: a long finding that wraps here', '[fix now] [blocker] **blocker:** the header'])
   })
 
   test('gaps without prefixes, as an older review wrote them, are a row per line, none merged', async ($, on) => {
     withGaps(on, 'first finding\nsecond finding')
     await startSession($)
-    expect(await rows(await openPane($))).toEqual(['[fix now] first finding', '[fix now] second finding'])
+    expect(await rows(await openPane($))).toEqual(['[accept] first finding', '[accept] second finding'])
   })
 
   test('a review of an earlier round lists its own notes, not what a later lane wrote into review-gaps', async ($, on) => {
@@ -2372,7 +2441,7 @@ describe('give back with the review notes', () => {
     await startSession($)
     const all = await rows(await openPane($))
     expect(all).toHaveLength(40)
-    expect(all[39]).toBe('[fix now] note: finding 39')
+    expect(all[39]).toBe('[accept] note: finding 39')
   })
 
   test('decided meanwhile by someone else: nothing is moved, created or noted, and the pane says who was faster', async ($, on) => {
@@ -2380,6 +2449,7 @@ describe('give back with the review notes', () => {
     await startSession($)
     const pane = await openPane($)
     w.tickets = w.tickets.map(x => ((x as { handle: string }).handle === 'MG677R' ? { ...(x as object), status: 'in-progress' } : x))
+    await pane.press({ key: 'gap-MG677R-0' })
     await pane.input({ key: 'reason-MG677R', text: '' })
     expect(ran(w, 'jaira', 'move')).toEqual([])
     expect(ran(w, 'jaira', 'create')).toEqual([])
@@ -2395,7 +2465,10 @@ describe('give back with the review notes', () => {
     w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker' }]
     w.tickets = [{ ...SIGNOFF, review: { verdict: SIGNOFF.review.verdict, gaps: 'note: the size\nnote: the docs' } }]
     await startSession($)
-    const typed = (await openPane($)).input({ key: 'reason-MG677R', text: '' })
+    const pane = await openPane($)
+    await pane.press({ key: 'gap-MG677R-0' })
+    await pane.press({ key: 'gap-MG677R-1' })
+    const typed = pane.input({ key: 'reason-MG677R', text: '' })
     await w.clock.advance(1000)
     await typed
     const sent = ran(w, 'herdr', 'pane', 'send-text', 'w1:p9')[0]?.[4] ?? ''

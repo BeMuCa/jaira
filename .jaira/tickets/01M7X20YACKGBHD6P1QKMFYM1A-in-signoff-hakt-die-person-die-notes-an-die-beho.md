@@ -1,7 +1,7 @@
 ---
 id: 01M7X20YACKGBHD6P1QKMFYM1A
 title: "In signoff hakt die Person die Notes an, die behoben werden sollen, und Give back nimmt genau diese mit"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,39 +21,58 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-11-20T18:03:14Z
-updated-at: 2026-11-21T19:26:41Z
+updated-at: 2026-11-21T19:49:30Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-2283240
-claimed-at: 2026-11-21T19:01:13Z
+claimed-by: DESKTOP-RFTCH11-74844
+claimed-at: 2026-11-21T19:40:51Z
 outcome-what: "The cockpit's Give back pane lists every review note as a row the person switches between fix now, follow-up and accept; Give back sends only the fix-now notes, Accept in the pane records the rest, follow-ups become tickets with follows set, and the next acceptance starts each note as it was decided."
 outcome-why: Alex gives nearly every ticket back to close some of its review notes and had to say in words which; the choice per note and its record on the ticket were missing.
 outcome-resolves: "DoD 1-6: tests in core/mod/builtin/jaira-cockpit/tests/board.test.ts 'give back with the review notes'; in-progress prompt names the beheben: list."
-review-summary: "none"
-round: 4
-back-from: testing
-back-by: lane
-back-count: 2
-review-gaps: "none"
-test-verdict: "pass (round 2): claude plugin test 252/252 RC=0, go test core/lane core/shipped internal/cli RC=0, shipped-history --check RC=0; the four hunt findings each have a test (kept follow-up creates no ticket, '-race...' goes as --title=, refused Accept writes/creates nothing and accepted one notes after the move, dazu: under beheben: and read past); DoD 1-6 proofs still name existing tests"
-hunt-verdict: "fail (round 2): bughunt change blocker - jaira create needs the title positional, --title= alone exits 2, every follow-up fails"
+review-summary: "Der Give-back-Pane im Cockpit listet jetzt jede Zeile aus review-gaps als eigene Zeile (Fortsetzungszeilen nur bei blocker:/note:-Praefixen angehaengt, Klasse aus dem Praefix oder - bei gleicher Anzahl - aus der Explain-Note). Ein Druck schaltet fix now -> follow-up -> accept; Vorwahl: Blocker/kleiner Rand = fix now, bekannte Grenze = accept, pre-existing = follow-up. Give back liest den Lane-Status neu, verschiebt nach in-progress, legt fuer follow-up-Notes per 'jaira create --follows=<id> -- <titel>' Tickets an und schreibt eine Note 'Given back from <lane>: beheben: / Folge-Ticket: / angenommen:' mit jeder Note woertlich (Freitext als 'dazu:' unter beheben:). Accept im Pane verweigert bei offenen fix-now-Notes, fragt bei einem nicht behobenen Blocker einmal nach und schreibt nach erfolgreichem Move dieselbe Note als 'Accepted from <lane>:'. decisionsOf liest diese Notes bei der naechsten Abnahme zurueck, sodass entschiedene Notes (inkl. Handle eines schon angelegten Folge-Tickets) vorbelegt sind und kein zweites Ticket entsteht. Der in-progress-Lane-Prompt sagt dem Worker, nur beheben: abzuarbeiten. backMessage macht die mehrzeilige Begruendung einzeilig fuer die Herdr-Eingabe."
+round: 5
+back-from: signoff
+back-by: person
+back-count: 1
+review-gaps: |-
+  note: Nebenlaeufigkeit - stillIn() liest den Status und erst danach folgt der Move; zwei Sessions, die im selben Moment Give back oder Accept druecken, kommen beide durch, weil 'jaira move' auf die Lane, in der das Ticket schon steht, mit exit 0 antwortet ('X is already in done', geprueft im Scratch-Repo). Folge: doppelte Folge-Tickets, doppelte Entscheidungs-Note, bei Give back zwei Uebergaben an Worker. Fix: in giveBack()/accept() (register.tsx) die Antwort 'is already in' des Moves als 'meanwhile decided' behandeln und dann nichts schreiben. Fenster ist klein (Sekunden, gleiche Maschine).
+  note: Vorwahl pre-existing = follow-up (board.ts PRESELECTED) heisst: wer im Pane nur Accept drueckt, legt fuer jede pre-existing-Note ein Ticket an, ohne eine Zeile angefasst zu haben. Steht als Entscheidung in der Worker-Note Punkt 3 und widerspricht DoD 1 nicht woertlich; Alex sollte es bewusst so wollen.
+  note: der Accept-Knopf im Band (nicht im Pane) nimmt weiterhin ohne Entscheidungen an und fragt bei einem Blocker nicht nach - bewusst so laut Worker-Note Punkt 7, aber zwei Wege zum Annehmen mit unterschiedlichem Verhalten.
+test-verdict: "pass (round 3): claude plugin test 252/252 RC=0, shipped-history --check RC=0; the follow-up argv checked against the real jaira binary in a scratch repo (exit 0, handle/follows/title '-race fails'/context right); DoD 1-6 proofs name existing tests"
+hunt-verdict: "pass (round 3): 0 findings at cfcc52bb, follow-up hunt since 81052fbd; rounds 1-2 change findings all fixed"
+review-verdict: "Die DoD-Punkte 1-6 sind im Diff erfuellt und durch Tests in tests/board.test.ts belegt; 'claude plugin test .' 252 pass / 0 fail, 'go test ./core/...' gruen. Kein Blocker. Einzige echte Schwachstelle: echtes Gleichzeitig-Druecken in zwei Sessions (Move auf die gleiche Lane gibt exit 0) - kleines Fenster, als note mit Fix vermerkt."
+review-round: 4
+review-verdict-gaps: |-
+  note: Nebenlaeufigkeit - stillIn() liest den Status und erst danach folgt der Move; zwei Sessions, die im selben Moment Give back oder Accept druecken, kommen beide durch, weil 'jaira move' auf die Lane, in der das Ticket schon steht, mit exit 0 antwortet ('X is already in done', geprueft im Scratch-Repo). Folge: doppelte Folge-Tickets, doppelte Entscheidungs-Note, bei Give back zwei Uebergaben an Worker. Fix: in giveBack()/accept() (register.tsx) die Antwort 'is already in' des Moves als 'meanwhile decided' behandeln und dann nichts schreiben. Fenster ist klein (Sekunden, gleiche Maschine).
+  note: Vorwahl pre-existing = follow-up (board.ts PRESELECTED) heisst: wer im Pane nur Accept drueckt, legt fuer jede pre-existing-Note ein Ticket an, ohne eine Zeile angefasst zu haben. Steht als Entscheidung in der Worker-Note Punkt 3 und widerspricht DoD 1 nicht woertlich; Alex sollte es bewusst so wollen.
+  note: der Accept-Knopf im Band (nicht im Pane) nimmt weiterhin ohne Entscheidungen an und fragt bei einem Blocker nicht nach - bewusst so laut Worker-Note Punkt 7, aber zwei Wege zum Annehmen mit unterschiedlichem Verhalten.
+review-check: |-
+  1. Im Worktree: cd core/mod/builtin/jaira-cockpit && claude plugin test .  -> '252 pass, 0 fail'.
+  2. Live: claude --plugin-dir /home/alex/projects/.worktrees/jaira-mfym1a/core/mod/builtin/jaira-cockpit in einem Repo mit einem Ticket in signoff, dessen review-gaps eine blocker:-, eine note:- und eine note: pre-existing:-Zeile hat.
+  3. Im Band Give back druecken -> Pane zeigt drei Zeilen: [fix now] [blocker] ..., [fix now] ..., [follow-up] [not this ticket] ....
+  4. Die zweite Zeile zweimal druecken -> sie steht auf [accept].
+  5. Give back druecken (Feld leer lassen) -> Ticket steht in in-progress; jaira show <id> zeigt eine Note 'Given back from signoff: beheben: - blocker: ... / Folge-Ticket: - <HANDLE>: note: pre-existing: ... / angenommen: - note: ...'; jaira show <HANDLE> zeigt follows=<id> und die Note woertlich als Kontext.
+  6. Ticket wieder nach signoff bringen, Give back erneut oeffnen -> die drei Notes stehen wie entschieden, mit '(decided before)'; die follow-up-Zeile legt beim naechsten Druck kein zweites Ticket an.
+  7. Alle Zeilen auf accept/follow-up stellen, Accept im Pane druecken -> erster Druck: Hinweis 'a blocker is not marked fix now'; zweiter Druck: Ticket in done, Note 'Accepted from signoff: ...'.
 ---
 
 # In signoff hakt die Person die Notes an, die behoben werden sollen, und Give back nimmt genau diese mit
 
 ## Definition of Done
 
-- [x] Jede Note aus review-gaps steht mit Haken in der Ansicht; Blocker und kleine Raender sind vorausgewaehlt, bekannte Grenzen und fremde Notes nicht (Test)
-  proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts: 'every note of the review is a row; blockers and small edges start as fix now...' + 'the Explain note classes a known limit...'
+- [x] Jede Note aus review-gaps steht als Zeile in der Ansicht; ein Blocker ist auf 'jetzt beheben' vorausgewaehlt, jede andere Note auf 'annehmen' - ein Folge-Ticket nur, wenn die Person die Zeile selbst umstellt (Test)
+  proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts: 'every note of the review is a row; a blocker starts as fix now, every other note as accepted...'; core/mod/builtin/jaira-cockpit/hooks/board.ts PRESELECTED
 - [x] Give back mit Auswahl schreibt eine Note 'Given back from signoff: beheben: <Notes woertlich>' und der Worker arbeitet genau diese ab; nicht angehakte Notes bleiben als akzeptiert vermerkt (Test)
   proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts: 'Give back writes exactly the notes to fix...'; core/lane/builtin/20-in-progress.md 'A give-back with decisions is the list'
-- [x] Eine nicht angehakte Note, die kein Blocker ist, haelt Accept nicht auf; ein nicht angehakter Blocker fragt einmal nach (Test)
-  proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts: 'a note that is no blocker, not marked fix now, does not hold Accept...' + 'a blocker not marked fix now asks once; the second press accepts'
+- [x] Eine Note, die kein Blocker ist, haelt Accept nicht auf. Accept im Band: ohne Blocker sofort, mit Blocker oeffnet er den Give-back-Pane. Accept im Pane mit einem Blocker nicht auf 'jetzt' nur mit Begruendung im Pflichtfeld; ohne Text kein Accept; die Begruendung steht als decision-Note am Ticket (Test)
+  proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts: 'a note that is no blocker, not marked fix now, does not hold Accept...', 'the band's Accept accepts at once without a blocker...', 'the band's Accept with a blocker in the review opens the notes...' (3 classes), 'a blocker not marked fix now is accepted only with a reason...'; hooks/register.tsx acceptFromBand
 - [x] Eingabeklassen: keine Notes, nur ein Blocker, sehr viele Notes (Scrollen), Note ueber mehrere Zeilen, review-gaps aus frueherer Runde, zwei Personen/Sessions entscheiden gleichzeitig
   proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts: 'no notes: the pane asks...', 'very many notes are all rows', 'a note wrapped over lines is one row...', 'a review of an earlier round lists its own notes...', 'decided meanwhile by someone else...'
 - [x] Je Note waehlt die Person eine von drei Entscheidungen: jetzt beheben (geht mit Give back an den Worker) / spaeter im Folge-Ticket (jaira legt ein Ticket mit follows=<dieses> an, Kontext = Note woertlich) / so annehmen (bekannte Grenze); jede Entscheidung steht danach als Note am Ticket, sodass die naechste Abnahme sie nicht neu fragt (Test)
   proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts: 'a press changes a row...', 'Give back writes exactly...' (follow-up via jaira create --follows), 'the next acceptance starts every note decided before as it was decided...'
 - [x] Annahmeregel der Heuristik (Klasse aus der Explain-Note nur bei gleicher Anzahl, Fortsetzungszeilen nur bei Praefixen): eine Note falsch eingeordnet ist besser als eine Note verloren oder zwei verschmolzen - keine Zeile aus review-gaps faellt weg (Tabellentest)
   proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts: 'an Explain note that classes fewer notes ... is not matched by position', 'gaps without prefixes ... none merged'; core/mod/builtin/jaira-cockpit/hooks/board.ts gapItems
+- [x] Zwei Sessions druecken gleichzeitig Give back oder Accept: meldet der Move 'already in' (Ticket schon in der Ziellane), schreibt die zweite nichts - keine Note, kein Folge-Ticket, keine Uebergabe (Test)
+  proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts: 'a move another session made first: the second press writes nothing' (back, accept, band-accept); hooks/register.tsx moveTo
 
 ## Options
 
@@ -101,3 +120,9 @@ hunt-verdict: "fail (round 2): bughunt change blocker - jaira create needs the t
 - **2026-11-21 19:24 · Alexander Sacharov** — bughunt: change: blocker: core/mod/builtin/jaira-cockpit/hooks/register.tsx:981 - class: createFollowUps passes the title only as --title=, but jaira create still demands a positional title (internal/cli/tickets.go: Args minArgs(1); --title is a hidden override, not a replacement), so every follow-up creation exits 2 on both paths, Give back and Accept; example: any note marked Folge-Ticket gets '(not created: ... create needs at least 1 argument(s), received 0)' and no ticket exists; the tests in tests/board.test.ts mock jaira and assert the broken argv, so they pass; a positional after '--' keeps a leading '-' safe (jaira create -- '-race fails' --context=x exits 0); ran: jaira create --title=foo --context=bar --follows=none --json in a scratch repo (exit 2, usage error); blame: 81052fbd (names MFYM1A)
 - **2026-11-21 19:25 · Alexander Sacharov** — bughunt: done at 81052fbd - 1 finding (1 change, 1 blocker, 0 pre-existing) in 8 modules, follow-up hunt since cdc8f51a; concurrency, error paths, input, permissions checked; files: .jaira/lanes/in-progress.md core/lane/builtin/20-in-progress.md core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/sessions.ts core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/MFYM1A.md core/shipped/shipped.sha256
 - **2026-11-21 19:26 · Alexander Sacharov** — Fix nach Bughunt 2: jaira create nimmt den Titel nur positional (--title ist versteckt und ueberschreibt nur). Jetzt: Werte mit '=', dann '--', dann der Titel. Gegen echtes jaira in einem Scratch-Repo geprueft: 'jaira create --context=... --follows=<id> --json -- -race fails' -> exit 0, handle/follows/title/context richtig. Die Mock-Tests hatten den falschen argv bestaetigt - deshalb diesmal am echten Binary.
+- **2026-11-21 19:26 · Alexander Sacharov** — critique 4 (nur e. Zeile argv): passt. Nichts.
+- **2026-11-21 19:27 · Alexander Sacharov** — bughunt: done at cfcc52bb - 0 findings in 3 modules, follow-up hunt since 81052fbd; concurrency, error paths, input, permissions checked; ran: jaira create --context=... --follows=... --json -- '<title>' with '-race ...', '--help', a two-line and a blank title (all exit 0, title kept); files: .jaira/lanes/in-progress.md core/lane/builtin/20-in-progress.md core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/sessions.ts core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/MFYM1A.md core/shipped/shipped.sha256
+- **2026-11-21 19:39 · Alexander Sacharov** — Given back from signoff (decision: Alex 21.11.): (1) Vorwahl: jede Note ausser blocker steht auf 'annehmen'; ein Folge-Ticket nur, wenn die Person die Zeile selbst auf follow-up stellt (PRESELECTED in board.ts). (2) Accept im Band: ohne blocker sofort wie jetzt; mit blocker oeffnet er das Give-back/Notes-Pane statt anzunehmen. (3) Gleichzeitiger Klick: Antwort 'is already in' des Moves in giveBack()/accept() als 'meanwhile decided' behandeln und nichts schreiben (keine doppelten Folge-Tickets/Notes).
+- **2026-11-21 19:40 · Alexander Sacharov** — decision: Alex 21.11. ergänzt (2): Annehmen trotz blocker nur mit Begründung — im Pane ein Pflichtfeld 'warum trotzdem annehmen', ohne Text kein Accept; die Begründung landet als decision-Note am Ticket. Grund: ein blocker ist zu beheben, wer ihn stehen lässt, muss sagen warum.
+- **2026-11-21 19:41 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/2274544.sock (Worker Runde 6 nach Give back aus signoff)
+- **2026-11-21 19:49 · Alexander Sacharov** — Runde 6 (Give back 19:39/19:40): 'already in' wird am Klartext der Move-Antwort erkannt ('<handle> is already in <lane>', internal/cli/flow.go), nicht mit --json: --json haette die Fehlertexte im Fehler-Pane zu JSON gemacht und ein Dutzend argv-Tests geaendert. Accept im Band liest dieselben Notes wie der Pane (reviewItems, Explain-Klasse inklusive) statt nur 'blocker:' zu suchen - sonst haetten Band und Pane einen Blocker verschieden gesehen. Bewusst nicht: die [accept]-Option im Explain-Pane (decide) nimmt ohne Pflichtfeld an - die gewaehlte Option steht dort schon als 'decision:'-Note, das ist die Begruendung. Pflichtfeld ersetzt 'zweiter Druck nimmt an' (warned entfernt). shipped.sha256 mit scripts/shipped-history.sh --write neu - nach jeder weiteren Aenderung an hooks/ wieder noetig.
