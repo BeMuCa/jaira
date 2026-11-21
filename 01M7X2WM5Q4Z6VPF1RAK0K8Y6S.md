@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:18:15Z
+updated-at: 2026-11-21T08:18:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
@@ -28,7 +28,9 @@ outcome-why: Hand-gemergte Manifest-Konflikte verloren Zeilen; jaira update --ro
 outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, wenn eine fehlt, und Manifest-Merges konfliktieren nicht mehr"
 review-summary: "scripts/shipped-history.sh bekommt --check (hasht jede Version installierter Dateien aus allen v*-Tags per git cat-file, roh mit CRLF, und meldet fehlende Manifestzeilen mit exit 1; ohne Tags oder bei unlesbarem Tag/Blob ebenfalls exit 1) und --write (erzeugt in eine Temp-Datei neben dem Manifest, mv erst bei Erfolg); set -euo pipefail, LC_ALL=C, fehlende Datei/Blob bricht ab statt leeren Hash zu schreiben. CI-Job shipped-manifest und ein Schritt im release-notes-Workflow (beide fetch-depth 0) fuehren --check aus. .gitattributes setzt merge=union fuer das Manifest. Das Manifest ist regeneriert: 0 Zeilen gegenueber upstream/master verloren, neu u.a. board.ts aus v0.5.2/v0.5.3 (a06a3c1c...), deshalb ersetzt jaira update --roles diese Installation jetzt. Tests: Fixture-Repo mit 3 Tags (geloescht/wieder angelegt, CRLF, Tag ohne Datei), union-Merge, unlesbarer Blob/Tag, fehlende Datei; Install-Tabellentest mit gepinntem v0.5.2-board.ts; TestEveryManifestPathExists ohne Panic; Hinweise nennen --write. Release-Note vorhanden."
 round: 8
-review-gaps: "none: 53926c5f ersetzt eine Zeile durch zwei, das cut in der Pipe faellt weg; nichts verwaist"
+review-gaps: |-
+  note: known limit: ob GitHubs PR-Merge merge=union aus .gitattributes beachtet, belegt erst ein echter PR; lokal belegt TestManifestMergesWithoutConflict, und ein union-Duplikat liesse die PR-CI (TestManifestLinesAreWellFormed) vor dem Merge rot werden
+  note: known limit: Pfade mit Leerzeichen kann das Manifestformat nicht abbilden; heute existiert keine solche Datei
 test-verdict: "pass: go build ./... und go test ./... gruen (rc=0) auf 53926c5f; DoD 1-8 im Baum belegt; TestFileMissingFromDiskStopsTheScript rot ohne Fix, gruen mit; Manifest durch den Fix unveraendert, --check gruen auf 34 Tags"
 hunt-verdict: "pass: bughunt done at 53926c5f, 0 change, 0 pre-existing"
 review-verdict: "All 7 DoD items are met, and I checked them myself: --check passes on all 34 tags; a regenerated manifest is byte-identical to the committed one; no line of the master manifest was lost and none is duplicated; master's manifest lacked the v0.5.2 board.ts hash, so the new test would have failed there; go test ./core/shipped ./core/role ./core/lane passes. No blocker. Error paths (shallow clone, no tags, unreadable tag or blob, a failed --write) stop the script and leave the manifest untouched. Not verified: shellcheck (not installed here) and whether GitHub honours merge=union server-side."
