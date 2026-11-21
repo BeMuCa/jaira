@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:10:51Z
+updated-at: 2026-11-21T09:12:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
@@ -169,3 +169,4 @@ back-count: 1
 - **2026-11-21 09:10 · Alexander Sacharov** — testing round 9: class: board data counted as code; example: jaira tag rewrites tracked .jaira/tags after a hunt without a file list -> fail; fix: isBoardData (everything under .jaira/ but .jaira/lanes/) never counts in ChangedSince - commits (log --name-only, filtered) and uncommitted files alike; TestChangedSince +3 (tags no paths, milestone listed, lane prompt still counts).
 - **2026-11-21 09:10 · Alexander Sacharov** — critique round 10: none - read a6187478; isBoardData is the one place that decides board data, beside codeOnly (which keeps tickets/logbook/archive out of review diffs - a narrower question, left as is).
 - **2026-11-21 09:10 · Alexander Sacharov** — testing round 10: bughunt running over the diff since cf0cdfef at a6187478.
+- **2026-11-21 09:12 · Alexander Sacharov** — bughunt: change: core/gitrepo/git.go:369 - isBoardData exempts only .jaira/lanes/ as lane prompts; a named board keeps its prompts in .jaira/boards/<name>/lanes/ (core/lane/boards.go:50), so a commit naming the ticket that rewrites such a prompt is read as board data and bughunt.on_head stays true, with the hunt's file list empty or naming that prompt; blame: a6187478 (names DF0YD6); ran: scratch test in core/gitrepo committing .jaira/boards/video/lanes/testing.md p1->p2 under fix(DF0YD6) -> ChangedSince=false for paths nil and for the listed prompt (want true, as the 'a lane prompt is code' case for .jaira/lanes/)
