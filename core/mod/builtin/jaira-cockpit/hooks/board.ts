@@ -661,8 +661,8 @@ const PRESELECTED: Record<NoteClass, Choice> = { blocker: 'now', edge: 'accept',
 // as many notes as there are findings: then its classes count, in order,
 // which is where a known limit comes from. A 'blocker:' line stays a blocker
 // whatever the Explain note says at its position: matching by position may
-// be off, and a blocker read as a known limit would be accepted unseen. A note decided before, word for
-// word, starts as it was decided. The acceptance rule: a finding classed
+// be off, and a blocker read as a known limit would be accepted unseen. A
+// note decided before, word for word, starts as it was decided. The acceptance rule: a finding classed
 // wrong is better than one lost or two merged — no line of the gaps but a
 // "none" ever drops out.
 export function gapItems(gaps: string | undefined, explainText?: string, decided?: ReadonlyMap<string, Decided>): GapItem[] {

@@ -21,17 +21,17 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-11-20T18:03:14Z
-updated-at: 2026-11-21T20:07:45Z
+updated-at: 2026-11-21T20:08:51Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1040215
 claimed-at: 2026-11-21T20:04:37Z
 outcome-what: "Round 6 after Alex's give-back: every review note but a blocker starts as accept (no follow-up nobody chose); the band's Accept opens the notes pane when the review (Explain class included) names a blocker; accepting a blocker not fixed in the pane needs a typed reason, written as a decision note; a Give back or Accept whose move jaira answers 'already in' writes nothing."
 outcome-why: "Alex gave it back from signoff: preselected follow-ups filed tickets on a bare Accept, the band's Accept bypassed blockers, and two sessions pressing at once both wrote notes and follow-ups."
 outcome-resolves: "DoD 1, 3, 7 reworded/added per Alex 21.11.; tests in core/mod/builtin/jaira-cockpit/tests/board.test.ts (259 pass); four categories: concurrency (already-in), error paths (note failure shown), input (blank/multiline reason, Explain-classed blocker), permissions (none new)."
-review-summary: "Im Give-back-Pane des Cockpits steht jede Zeile aus review-gaps als eigene Knopfzeile (gapItems in hooks/board.ts: Praefix blocker:/note:, Fortsetzungszeilen nur bei Praefixen, Klasse aus der Explain-Note nur bei gleicher Anzahl). Ein Druck schaltet fix now -> follow-up -> accept; Blocker starten auf fix now, alles andere auf accept, frueher entschiedene Notes so wie entschieden (decisionsOf liest die 'Given back from'/'Accepted from'-Notes zurueck). Give back schreibt 'Given back from <lane>: beheben: ... / Folge-Ticket: ... / angenommen: ...' und legt Folge-Tickets erst nach gelungenem Move mit jaira create --follows an; Accept im Pane verlangt bei einem nicht auf fix now stehenden Blocker eine Begruendung, die als decision-Note landet. Der Band-Accept nimmt ohne Blocker sofort an und oeffnet mit Blocker den Pane. Vor dem Schreiben wird die Lane neu gelesen, und meldet der Move 'already in', schreibt die zweite Session nichts. Der in-progress-Prompt (builtin + .jaira/lanes) sagt dem Worker, nur 'beheben:' abzuarbeiten; backMessage macht die mehrzeilige Begruendung einzeilig."
-round: 8
-back-from: signoff
-back-by: person
+review-summary: "core/mod/builtin/jaira-cockpit/hooks/board.ts:661-663 the new comment sentence runs past the wrap of the block; rewrap it. Otherwise the shape fits: BLOCKER is the same prefix test notesOf/explainable use for the band, so band, notes and pane now agree on 'blocker:' lines."
+round: 9
+back-from: critique
+back-by: lane
 back-count: 1
 review-gaps: |-
   note: a review line prefixed 'blocker:' takes its class from the Explain note by position whenever the counts match (board.ts gapItems): when the Explain note lists the same notes in another order, the blocker becomes edge, starts as accept, and the band's Accept accepts at once without the required reason - fix: a line with a blocker: prefix never classes below blocker, whatever the Explain note says
@@ -130,3 +130,4 @@ review-check: "1. Einen Testticket mit review-gaps 'blocker: x' und 'note: y' in
 - **2026-11-21 20:03 · Alexander Sacharov** — Given back from signoff: nur Review-Note 1 — eine Zeile mit 'blocker:'-Präfix fällt nie unter blocker, egal was die Explain-Note per Position sagt (board.ts gapItems). Notes 2 und 3 sind known limits und bleiben.
 - **2026-11-21 20:04 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/2274544.sock (Worker Runde 7 nach Give back 20:03)
 - **2026-11-21 20:07 · Alexander Sacharov** — Runde 7 (Give back 20:03, Review-Note 1): gapItems prueft BLOCKER vor der Explain-Klasse per Position - eine 'blocker:'-Zeile ist immer blocker; die Explain-Klasse gilt nur fuer Zeilen ohne blocker:-Praefix (note:, unpraefixiert). Der Test 'the band's Accept accepts at once ... an Explain note that calls a blocker a small edge included' hielt genau die alte Regel fest und ist umgedreht: derselbe Fall steht jetzt in der Blocker-Schleife (oeffnet den Pane). Umgekehrt bleibt: '[blocker]' in Explain macht eine note:-Zeile zum Blocker. shipped.sha256 neu.
+- **2026-11-21 20:08 · Alexander Sacharov** — critique 8: nur ein Kommentar-Umbruch in board.ts gapItems; Form passt - BLOCKER ist derselbe Praefix-Test, den notesOf/explainable fuers Band nehmen.
