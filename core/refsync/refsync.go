@@ -26,6 +26,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/BeMuCa/jaira/core/gitref"
@@ -71,6 +72,11 @@ type Syncer struct {
 	// wrote a ticket has a reason to send, and jaira list must never wait for
 	// a remote.
 	dirty bool
+
+	// fetched records that a fetch in this process reached the remote. Only
+	// then does "no ref in this tree" mean "no ref on the remote" — offline,
+	// it may only mean this clone has not fetched a teammate's milestone yet.
+	fetched atomic.Bool
 
 	// extraMu guards extraCache: the decoded ticket of each ref-only ticket,
 	// with the commit hash it was decoded from. A hash is a content address, so
@@ -499,12 +505,17 @@ func (y *Syncer) FetchMilestones(s *ticket.Store) (MilestonesFetched, error) {
 // this it would stay on one disk however often that clone fetches, which is
 // the one thing a milestone ref is there to prevent.
 //
+// It runs only once a fetch in this process has reached the remote. Offline,
+// a missing ref may be a teammate's milestone this clone has not fetched yet,
+// and a write queued against no ref would be merged into theirs from an empty
+// base when it is finally sent — their removals undone, nobody told.
+//
 // An ID carried by two files is left alone: which of them is the milestone is
-// a person's call, and a ref written from either would decide it for them.
-// A file that could not be queued does not stop the others; the first such
-// failure comes back as a *milestone.RecordError after all of them.
+// a person's call, and a ref written from either would decide it for them. A
+// file that could not be read or queued does not stop the others; the first
+// such failure comes back as a *milestone.RecordError after all of them.
 func (y *Syncer) publishUnsent(root string) ([]string, error) {
-	if y == nil || y.Usable() != nil {
+	if y == nil || y.Usable() != nil || !y.fetched.Load() {
 		return nil, nil
 	}
 	files := milestoneFiles(root)
@@ -521,10 +532,10 @@ func (y *Syncer) publishUnsent(root string) ([]string, error) {
 			continue
 		}
 		content, err := os.ReadFile(filepath.Join(milestone.Dir(root), m.File))
-		if err != nil {
-			return sent, err
+		if err == nil {
+			err = y.RecordMilestone(m.ID, m.File, content)
 		}
-		if err := y.RecordMilestone(m.ID, m.File, content); err != nil {
+		if err != nil {
 			if first == nil {
 				first = &milestone.RecordError{Name: m.Name, Err: err}
 			}
@@ -568,13 +579,22 @@ func (y *Syncer) OldRefHad(name string, content []byte) bool {
 	return y.Repo.MilestoneHad(name, content)
 }
 
+// fetch is Repo.Fetch, remembering that the remote was reached.
+func (y *Syncer) fetch() error {
+	err := y.Repo.Fetch()
+	if err == nil {
+		y.fetched.Store(true)
+	}
+	return err
+}
+
 // FetchRefs brings the refs here and reports whether it did. An unreachable
 // remote is not an error: whoever asks carries on without it.
 func (y *Syncer) FetchRefs() bool {
 	if y == nil || y.Usable() != nil {
 		return false
 	}
-	return y.Repo.Fetch() == nil
+	return y.fetch() == nil
 }
 
 // HasMilestoneRef reports whether this tree has the ref of the milestone with
@@ -721,7 +741,7 @@ func (y *Syncer) Flush() ([]Report, error) {
 	if len(entries) == 0 {
 		return nil, nil
 	}
-	if err := y.Repo.Fetch(); err != nil {
+	if err := y.fetch(); err != nil {
 		// An unreachable remote is not an error here: it is the state the
 		// outbox exists for. The queue stays as it is and the next command
 		// tries again.
@@ -1006,7 +1026,7 @@ func (y *Syncer) Incoming() ([]Arrival, error) {
 	if y == nil || y.Usable() != nil {
 		return nil, nil
 	}
-	if err := y.Repo.Fetch(); err != nil {
+	if err := y.fetch(); err != nil {
 		if errors.Is(err, gitref.ErrOffline) || errors.Is(err, gitref.ErrNoGit) {
 			return nil, nil
 		}
@@ -1394,7 +1414,7 @@ var ErrUnsent = errors.New("refsync: the ticket has a write here that has not be
 // this clone knows of, and a repeated pull has always worked without a network.
 func (y *Syncer) refresh(id, path string) (*Pulled, error) {
 	out := &Pulled{ID: id, Path: path, AlreadyHere: true}
-	if err := y.Repo.Fetch(); err != nil && !errors.Is(err, gitref.ErrOffline) && !errors.Is(err, gitref.ErrNoGit) {
+	if err := y.fetch(); err != nil && !errors.Is(err, gitref.ErrOffline) && !errors.Is(err, gitref.ErrNoGit) {
 		return nil, err
 	}
 	file, err := y.Store.Load(id)
@@ -1463,7 +1483,7 @@ func (y *Syncer) Pull(id string, steal bool) (*Pulled, error) {
 	if path, ok := y.localPath(id); ok {
 		return y.refresh(id, path)
 	}
-	if err := y.Repo.Fetch(); err != nil {
+	if err := y.fetch(); err != nil {
 		return nil, err
 	}
 	content, lease, err := y.Repo.Read(id)
@@ -1558,7 +1578,7 @@ func (y *Syncer) Release(id string, force bool) (*Released, error) {
 	if err := y.Usable(); err != nil {
 		return nil, err
 	}
-	if err := y.Repo.Fetch(); err != nil {
+	if err := y.fetch(); err != nil {
 		return nil, err
 	}
 	content, lease, err := y.Repo.Read(id)

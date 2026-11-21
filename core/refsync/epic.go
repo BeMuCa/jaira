@@ -119,7 +119,7 @@ func (y *Syncer) rebaseEpic(r outbox.Result) outbox.Result {
 			// Somebody wrote it again between our read and our push: their
 			// state is now the one to merge onto, ours stays what it was.
 			base, ours = theirs, merged
-			if ferr := y.Repo.Fetch(); ferr != nil {
+			if ferr := y.fetch(); ferr != nil {
 				err = ferr
 			} else {
 				continue
