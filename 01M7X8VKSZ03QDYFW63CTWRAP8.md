@@ -1,7 +1,7 @@
 ---
 id: 01M7X8VKSZ03QDYFW63CTWRAP8
 title: "Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,13 +25,13 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:43:19Z
+updated-at: 2026-11-21T08:43:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1876460
 claimed-at: 2026-11-21T08:39:00Z
-outcome-what: "status line allows ? in both roles"
-outcome-why: "fresh review 21.11.: the first sentence said ✅ or ❌ only"
-outcome-resolves: "a reader of the first sentence no longer rounds ? to ❌"
+outcome-what: "an empty branch head leaves only the head-bound checks unknown"
+outcome-why: "fresh review 21.11. round 2: the text made DoD and review ? too"
+outcome-resolves: "DoD, blocker, review and returns stay readable when the head is unknown"
 review-summary: "Neue Rolle core/role/builtin/jaira-role-signoff/SKILL.md: liest Tickets in signoff frisch (jaira show --json, gh pr list), findet den Branch-Kopf ueber das Handle als eigenes Segment im Branchnamen und Ancestry aller lokalen/remote Kopien, gibt pro Ticket eine Statuszeile (DoD, CI-Lauf genau fuer den Kopf, Bughunt auf dem Kopf, Blocker, Review, Rueckgaben), eine Tabelle der offenen Punkte mit Marke rot/gelb/weiss/blau und eine fett gesetzte Empfehlung samt accept- und give-back-Zeile aus; nach zwei Rueckgaben akzeptieren plus fertige jaira-create-Zeile fuer die gelben Punkte; schreibt selbst nichts. jaira-teamlead verlangt jetzt das Neu-Lesen von Lanes und offenen PRs vor jeder Liste und verweist fuer signoff/human auf diese Form; der Branch-Lookup im Bughunt-Check folgt derselben Regel statt feat/<id>. jaira-worker, jaira-dispatcher und jaira-role-pr laufen vor jedem Push die CI-Gates des Projekts lokal. Dazu README- und how-to-Zeile, drei Release-Notes, Rolle in wantRoles, Hashes in shipped.sha256."
 round: 13
 review-gaps: |-
