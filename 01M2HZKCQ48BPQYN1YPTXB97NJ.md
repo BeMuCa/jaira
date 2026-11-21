@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:15:07Z
+updated-at: 2026-11-21T08:15:32Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -45,8 +45,8 @@ review-gaps: |-
   note: unter none prueft pr-gate die Ticket-Status aus dem lokalen Store, nicht vom Basis-Zweig; ein von Hand auf done gesetztes Ticket-File oder ein Commit, der ein laengst abgelegtes Logbook-Ticket nennt, landet ohne dass ein Mensch es sieht - dieselbe Vertrauensannahme wie bei agent, nur ohne PR dahinter
   note: landed_head liest pro Ticket die ganze Historie der Spitze (git log tip) - auf grossen Repos langsam, korrekt
   optimize Runde 6: nichts zu entfernen - firstLine bleibt als ein Einzeiler auf PRWordIn (ein Leseweg fuer alle Board-Dateien), land_remote/default_base ersetzen die alte origin-feste Variante ohne Rest.
-test-verdict: "fail (round 6): go vet + go test -race ./... RC=0 at 94b9dcad; bughunt change: reap land_remote matches gh's current nameWithOwner against remote URLs, so a renamed/transferred repo never lands"
-hunt-verdict: "change (round 8): renamed GitHub repo -> land_remote empty, reap waits forever"
+test-verdict: "pass (round 7): go vet + go test -race ./... RC=0 at 2bf13dd8; DoD 1-8 proofs re-checked after line shifts; scratch board: BOM+CRLF 'none' -> pr none, 'nnone' -> person with the word named in the source, chmod 000 .jaira/pr -> person 'the default' exit 0 (safe; note: small edge: an unreadable file is not named as such); reap: fork/parent by URL and by gh redirect, renamed non-fork origin reaps; writes: roles list/reap write no board file, nothing to race"
+hunt-verdict: "pass (round 9 at 2bf13dd8): 0 findings"
 claimed-by: DESKTOP-RFTCH11-30002
 claimed-at: 2026-11-21T08:01:23Z
 review-verdict: "Diff erfuellt alle acht DoD-Punkte; keine Blocker gefunden. Tests der beruehrten Pakete gruen (core/board, settings, gitrepo, role, shipped, internal/cli). Die vier Notes sind Randfaelle und Vertrauensgrenzen, keine Defekte des Ausgelieferten."
