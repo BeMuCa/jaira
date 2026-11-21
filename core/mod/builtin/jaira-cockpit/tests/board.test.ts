@@ -1165,7 +1165,8 @@ describe('waiting for you', () => {
     await pane.press({ key: 'pick-MG677R-1' })
     expect(ran(w, 'jaira', 'note').map(r => r[3]).slice(0, 2)).toEqual(['decision: 1) add the branch to the key', 'Given back from signoff: 1) add the branch to the key'])
     expect(ran(w, 'jaira', 'move', 'MG677R')[0]?.slice(0, 5)).toEqual(['jaira', 'move', 'MG677R', '--to', 'in-progress'])
-    expect(w.submitted).toEqual([])
+    // The decision itself is not sent: only the line every Give back hands this session.
+    expect(w.submitted).toEqual(["jaira-cockpit: the person gave MG677R back in the cockpit (signoff -> in-progress), no worker started (the ticket's note says why): 1) add the branch to the key"])
   })
 
   test('an option marked [accept] accepts the ticket as the band\'s Accept does', async ($, on) => {
@@ -1176,7 +1177,7 @@ describe('waiting for you', () => {
     await (await $.ui.mount(EXPLANATION('Explanation of MG677R'))).press({ key: 'pick-MG677R-2' })
     expect(ran(w, 'jaira', 'note').map(r => r[3])).toEqual(['decision: 2) accept it as it is'])
     expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
-    expect(w.submitted).toEqual([])
+    expect(w.submitted).toEqual(['jaira-cockpit: the person accepted MG677R in the cockpit (signoff -> done)'])
   })
 
   test('after a restart an answered explanation is read with its decision, not offered again; a newer one is open', async ($, on) => {
@@ -1862,6 +1863,7 @@ describe('after Accept', () => {
     await press($)
     expect(ran(w, 'git', 'log')).toEqual([])
     expect(ran(w, 'bash', SPAWN)).toEqual([])
+    expect(w.submitted).toEqual([])
   })
 
   test('an agent\'s session has no Accept, so it can never open a pull request', async ($, on) => {
@@ -1925,6 +1927,7 @@ describe('give back', () => {
     await giveBack($, w)
     expect(ran(w, 'jaira', 'move', 'MG677R')).toHaveLength(1)
     expect(ran(w, 'jaira', 'note')).toEqual([])
+    expect(w.submitted).toEqual([])
     expect(w.opened.at(-1)).toEqual({ id: 'cockpit-message', title: 'Give back MG677R failed', focus: true })
   })
 
@@ -2441,6 +2444,7 @@ describe('give back with the review notes', () => {
     expect(ran(w, 'jaira', 'note')).toEqual([])
     expect(ran(w, 'jaira', 'create')).toEqual([])
     expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toEqual([])
+    expect(w.submitted).toEqual([])
   })
 
   test('a blocker not marked fix now is accepted only with a reason, which goes onto the ticket as a decision', async ($, on) => {
@@ -2517,6 +2521,7 @@ describe('give back with the review notes', () => {
       expect(ran(w, 'jaira', 'note')).toEqual([])
       expect(w.ran.filter(r => r[0] === 'herdr' || r[1] === SPAWN)).toEqual([])
       expect(w.opened.at(-1)?.title).toBe(`${press === 'back' ? 'Give back' : 'Accept'} MG677R failed`)
+      expect(w.submitted).toEqual([])
     })
   }
 
@@ -2620,6 +2625,53 @@ describe('give back with the review notes', () => {
     const sent = ran(w, 'herdr', 'pane', 'send-text', 'w1:p9')[0]?.[4] ?? ''
     expect(sent).toContain('Reason: beheben: - note: the size - note: the docs - also a note')
     expect(sent).not.toContain('\n')
+  })
+})
+
+// 409XCV: the teamlead's session hears of a press in the same minute, as one
+// line, and only of a move that went through.
+describe('the line a press hands this session', () => {
+  test('Accept: one line, with the pull request the press started, so the teamlead starts no second one', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
+    expect(w.submitted).toEqual(['jaira-cockpit: the person accepted MG677R in the cockpit (signoff -> done); MG677R: opening the pull request for feat/mg677r in a Herdr tab'])
+  })
+
+  test('Accept whose next step fails: still one line, since the ticket is in done', async ($, on) => {
+    const w = world(on)
+    w.ahead = 3
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
+    expect(w.submitted).toEqual(['jaira-cockpit: the person accepted MG677R in the cockpit (signoff -> done); the next step after MG677R failed, see the cockpit'])
+  })
+
+  test('Give back: one line naming who carries the work now, the reason on one line', async ($, on) => {
+    const w = world(on, { herdr: true, store: { 'session:old': {
+      session: 'old', pane: 'w1:p9', cwd: '/x', repo: '/repo', ticket: 'MG677R', role: 'worker', lane: '',
+      lastAnswerAt: 1_000_000 - 20 * 60_000, tokens: 300_000, window: 500_000, ttl: 3_600_000, updatedAt: 1_000_000 - 20 * 60_000,
+    } } })
+    w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker' }]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'back-MG677R' })
+    await (await $.ui.mount(GIVE('Give back MG677R'))).input({ key: 'reason-MG677R', text: 'der Branch\nfehlt   im Schluessel ' + 'x'.repeat(200) })
+    expect(w.submitted).toHaveLength(1)
+    const line = w.submitted[0]!
+    expect(line.startsWith('jaira-cockpit: the person gave MG677R back in the cockpit (signoff -> in-progress), a new worker started: der Branch fehlt im Schluessel xx')).toBe(true)
+    expect(line).not.toContain('\n')
+    expect(line.endsWith('…')).toBe(true)
+  })
+
+  test('a reason cut at its limit never splits a character outside the BMP', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'back-MG677R' })
+    // 118 characters, then emoji: the cut at 119 falls inside a surrogate pair by UTF-16 index.
+    await (await $.ui.mount(GIVE('Give back MG677R'))).input({ key: 'reason-MG677R', text: 'x'.repeat(118) + '\u{1F44D}\u{1F44D}\u{1F44D} passt nicht' })
+    const line = w.submitted[0]!
+    expect(line.endsWith('x\u{1F44D}…')).toBe(true)
+    expect(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(line)).toBe(false)
   })
 })
 
