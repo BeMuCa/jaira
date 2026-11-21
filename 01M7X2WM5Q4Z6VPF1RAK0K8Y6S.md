@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:18:27Z
+updated-at: 2026-11-21T08:18:35Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
@@ -105,3 +105,4 @@ review-check: "1. cd in den Worktree feat/0k8y6s  2. scripts/shipped-history.sh 
 - **2026-11-21 08:12 · Alexander Sacharov** — Stand 08:15: in review, Review-Agent per run-lane.sh --no-worktree gestartet; Branch gepusht bis 29ee4690 (inkl. Merge upstream/master).
 - **2026-11-21 08:15 · Alexander Sacharov** — review-gaps 'pre-existing: leerer Hash bei fehlender Datei' nach Alex' Ansage (alle Funde in dieser Runde) behoben statt als note stehen gelassen: gleiche Klasse wie der unlesbare Blob. Geschwister gesucht: keine weitere Hash-Stelle im Skript. GitHub+merge=union und Pfade mit Leerzeichen bleiben known limit.
 - **2026-11-21 08:16 · Alexander Sacharov** — bughunt: done at 53926c5f - 0 findings in 2 modules, follow-up hunt since 29ee4690 (diff: scripts/shipped-history.sh generate() loop, core/shipped/history_test.go new test; no file new to the list); concurrency, error paths, input, permissions checked; ran: go test ./shipped/ ./role/ ./lane/ (pass), scripts/shipped-history.sh --check (pass), in a scratch worktree: chmod 000 on an embedded file (exit 1), rm of an embedded file with --write (fails, manifest byte-identical, no temp file left); files: .gitattributes .github/workflows/ci.yaml .github/workflows/release-notes.yaml core/lane/refresh_test.go core/release/notes/0K8Y6S.md core/role/shipped_test.go core/role/testdata/jaira-cockpit-hooks-board-v0.5.2.ts core/shipped/history_test.go core/shipped/shipped.sha256 core/shipped/shipped_test.go scripts/shipped-history.sh
+- **2026-11-21 08:18 · Alexander Sacharov** — review (fresh, Runde 3): keine Blocker, 2 known-limit-notes. Selbst geprueft: Tests gruen, --check gruen auf 34 Tags, Regenerieren byte-gleich, 0 Zeilen gegenueber upstream/master verloren.
