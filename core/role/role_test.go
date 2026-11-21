@@ -12,6 +12,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // The roles this binary ships. Named rather than counted, because the
@@ -1439,6 +1441,42 @@ func TestCodeChangingRolesLeaveTheReleaseAndFormatOnlyTheirFiles(t *testing.T) {
 			if !strings.Contains(text, want) {
 				t.Errorf("%s does not say %q", id, want)
 			}
+		}
+	}
+}
+
+// Roles that neither change code nor judge it run on haiku; the ones that
+// judge — critique and review through jaira-role-lane, the bug hunt — and the
+// ones that write code stay on the model they were started on (Y2CD9X).
+// jaira-role-pr stays off the list: its code-fix agent inherits the role's
+// model, and a model: haiku there would hand every review fix to haiku.
+// Claude Code reads model: out of the SKILL.md header for the turn the skill
+// runs, so the header is the whole mechanism.
+func TestRoleModels(t *testing.T) {
+	haiku := map[string]bool{
+		"jaira-role-tester":          true,
+		"jaira-role-logbook-summary": true,
+	}
+	roles, err := Builtins()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range roles {
+		b, err := File(r.ID, skillFile)
+		if err != nil {
+			t.Fatalf("%s: %v", r.ID, err)
+		}
+		d, err := ticket.ParseDoc(b)
+		if err != nil {
+			t.Fatalf("%s: %v", r.ID, err)
+		}
+		got, _, _ := d.Scalar("model")
+		want := ""
+		if haiku[r.ID] {
+			want = "haiku"
+		}
+		if got != want {
+			t.Errorf("%s: model %q, want %q", r.ID, got, want)
 		}
 	}
 }

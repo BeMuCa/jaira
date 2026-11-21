@@ -525,8 +525,15 @@ scripts/pr-round.sh comments <owner/repo> <number>   # conversation and review b
 `threads` lists only threads nobody resolved yet, so a second round never
 answers a point twice. For each of them, in order:
 
-1. Fix it, if it is right and in scope: one commit, the ticket's handle in the
-   subject, pushed.
+1. Fix it, if it is right and in scope — but not yourself. A point that needs a
+   code change goes to a worker, with the thread and nothing else:
+   `Agent(subagent_type: "claude", prompt: "Ticket <id>, branch <branch>: make
+   exactly this review point, one commit with <id> in the subject, do not push,
+   print the sha. <path:line> <comment text>")`. Name no model: the worker runs
+   on the one this role runs on, the session's. That is also why this role
+   carries no `model:` line — one there would hand every code fix to that
+   model. It runs in your directory and you write nothing while it runs; then
+   push its commit.
 2. Write the answer to a file — `Fixed in <sha>: <what changed>` with the
    commit you just pushed, or the reason it stays as it is.
 3. `scripts/pr-round.sh reply <owner/repo> <number> <thread id> <file>` —
