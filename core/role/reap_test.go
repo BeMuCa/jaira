@@ -742,10 +742,14 @@ func TestReapTearsDownWhatTheSetupBuilt(t *testing.T) {
 			if c.timeout != "" {
 				r.env = append(r.env, "JAIRA_TEARDOWN_TIMEOUT="+c.timeout)
 			}
-			if c.noTimeout || c.fakeTimeout {
+			{
 				dir := pathOf(r.env)
 				if c.noTimeout {
 					dir = pathWithout(t, r.env, "timeout", "gtimeout")
+				} else {
+					// macOS runners have neither timeout nor gtimeout: one
+					// last on PATH, so the host's own still goes first.
+					dir += string(os.PathListSeparator) + stubTimeout(t, r)
 				}
 				if c.fakeTimeout {
 					fake := t.TempDir()
@@ -818,6 +822,31 @@ func pathOf(env []string) string {
 		}
 	}
 	return path
+}
+
+// stubTimeout is a directory holding a timeout(1) that takes -k as
+// coreutils' does: it signals the command's whole process group and exits
+// 124 when the time ran out.
+func stubTimeout(t *testing.T, r *reapRig) string {
+	t.Helper()
+	dir := t.TempDir()
+	p := filepath.Join(dir, "timeout")
+	r.write(t, p, `#!/usr/bin/env bash
+[ "$1" = -k ] || exit 125
+k=$2 s=$3; shift 3
+flag=$(mktemp) && rm -f "$flag" || exit 125
+set -m
+"$@" & pid=$!
+( sleep "$s"; : > "$flag"; kill -TERM -- -"$pid"; sleep "$k"; kill -KILL -- -"$pid" ) </dev/null >/dev/null 2>&1 & w=$!
+wait "$pid"; rc=$?
+kill -- -"$w" 2>/dev/null
+if [ -e "$flag" ]; then rm -f "$flag"; exit 124; fi
+exit "$rc"
+`)
+	if err := os.Chmod(p, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return dir
 }
 
 // pathWithout is env's PATH as one directory of links to every program on it
