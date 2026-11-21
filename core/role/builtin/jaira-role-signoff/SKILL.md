@@ -76,7 +76,8 @@ Local and remote copies are compared by ancestry, not by where they live: the
 head is the commit every other copy leads up to — a local branch ahead of its
 push, or a remote one a teammate pushed after your last fetch. No copy at all,
 or copies that diverged with none of them leading on from all the others:
-`head` stays empty, every check below is `?`, and the
+`head` stays empty, the two checks bound to it — tests and bug hunt — are
+`?` (DoD, blocker, review and returns are read off the ticket as usual), and the
 status line names `$refs` — which one ships is the person's to say, not yours
 to guess.
 
