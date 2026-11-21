@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:08:07Z
+updated-at: 2026-11-21T08:08:10Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -148,3 +148,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-21 08:02 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/4205.sock (teamlead jaira-31, 21.11.)
 - **2026-11-21 08:07 · Alexander Sacharov** — in-progress (Runde 6, 21.11.): (1) BOM: board.PRWordIn strippt BOM; settings.firstLine laeuft darueber -> gilt fuer pr, pr-when, release, pr-reviewer, chat-model (Klasse, nicht Beispiel). roles list: Quelle nennt das unbekannte Wort bzw. 'says nothing', statt 'the default' wie ohne Datei. (2) reap.sh unter none: land_remote = Remote, dessen URL <owner/repo> nennt (origin oder sein Parent bei GitHub-Fork, wie jaira-role-pr); keiner da -> waiting mit 'git remote add'-Hinweis statt den Fork zu messen. (3) landed_head: git log --grep filtert in git, Shell liest nur Treffer-Subjects; Subject-Check bleibt (Body-Zeile zaehlt nicht, Test). note: known limit: Fork-Erkennung braucht gh (GitHub); ohne gh oder auf GitLab misst reap an origin - nichts geht verloren, ein Fork-Setup wartet nur.
 - **2026-11-21 08:07 · Alexander Sacharov** — critique (Runde 8): settings.PRFor liest .jaira/pr relativ zum cwd, bevor es root=="" prueft - Ergebnis wird verworfen, aber ein Lesen ausserhalb des Boards ist falsch. Zurueck: erst root pruefen. Sonst: land_remote-Muster verankert am [:/] vor dem Owner (kein foo-upstream/jaira-Treffer), case-insensitiv wie GitHub - ok.
+- **2026-11-21 08:08 · Alexander Sacharov** — critique (Runde 9): nichts mehr zu sagen.
