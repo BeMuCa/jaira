@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-21T08:21:18Z
+updated-at: 2026-11-21T08:21:26Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -94,3 +94,4 @@ review-check: "1. cd into the worktree jaira-sdbct5 and run: go build -o /tmp/ja
 - **2026-11-21 08:18 · Alexander Sacharov** — review (fresh, 21.11.): pass. Read the whole branch diff vs b2349aa1, checked manifest hashes, mirror byte-equality, CLAUDE.md/AGENTS.md block equality, grep for live commit lines without the caveat; go test core/board core/role core/shipped internal/cli green. Two cosmetic notes in review-gaps (stale test name in a doc comment; release note line 2 omits jaira-role-pr).
 - **2026-11-21 08:19 · Alexander Sacharov** — after review (pass): both review-gaps notes closed in the same round - announce_test.go:232 doc comment names the renamed test; release note line 2 names jaira-role-pr too. Text-only, go test ./core/board green; not re-reviewed.
 - **2026-11-21 08:21 · Alexander Sacharov** — Given back from signoff (Teamlead im Auftrag Alex 21.11., alle Funde schliessen): 1) core/board/announce_test.go:232 Doc-Kommentar nennt den alten Testnamen. 2) core/release/notes/SDBCT5.md:2 auch jaira-role-pr nennen. Danach Diff-Hunt auf HEAD (letzter Hunt deckt d71e5e86, nicht HEAD), review, signoff, push.
+- **2026-11-21 08:21 · Alexander Sacharov** — give-back 21.11. 08:21 by teamlead jaira-31 was a read error (stale review-gaps); 99be9268 already closed both notes. No code change; diff hunt on HEAD and a fresh review follow.
