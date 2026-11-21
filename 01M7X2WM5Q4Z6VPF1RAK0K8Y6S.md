@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:12:02Z
+updated-at: 2026-11-21T08:12:05Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
@@ -30,7 +30,7 @@ review-summary: "Runde nach signoff: keine Funde. dea24113 (--write, strings.Cut
 round: 7
 review-gaps: "manifest-Pfad einmal oben im Skript (7f2d86fe); 29ee4690 ist reine Regenerierung, nichts zu entfernen"
 test-verdict: "pass: go build ./... und go test ./... gruen (rc=0) auf 29ee4690 nach Merge von upstream/master; DoD 1-7 im Baum belegt (Tests aus den proofs einzeln gelaufen); --write: zwei parallele Laeufe ergeben ein sortiertes Manifest ohne Duplikat, flacher Klon exit 1 bei unveraendertem Manifest, unlesbarer Blob per Test (Manifest unveraendert, keine Temp-Datei)"
-hunt-verdict: "fail: bughunt done at 6f5ba869, 1 change (99 Duplikate nach union-Merge), 0 pre-existing"
+hunt-verdict: "pass: bughunt done at 29ee4690, 0 change, 0 pre-existing (Runde davor: 1 change, Duplikate nach union-Merge, behoben in 29ee4690)"
 review-verdict: "Diff erfuellt alle 5 DoD-Punkte, keine Defekte gefunden. Selbst geprueft: --check gruen auf 34 Tags, mit dem alten Manifest rot (8 Versionen); Regenerieren ergibt byte-gleich das committete Manifest; 0 Zeilen gegenueber master verloren; TestInstallReplacesAnOlderShippedVersion faellt mit dem alten Manifest, besteht mit dem neuen; go test ./shipped ./role gruen."
 review-round: 5
 review-check: "1. cd in den Worktree feat/0k8y6s  2. scripts/shipped-history.sh --check  -> 'every version in 34 v* tag(s) is in core/shipped/shipped.sha256', exit 0  3. git show master:core/shipped/shipped.sha256 > core/shipped/shipped.sha256 && scripts/shipped-history.sh --check  -> 'lacks 8 version(s)' plus die Zeilen, exit 1  4. (cd core && go test ./role -run TestInstallReplacesAnOlderShippedVersion)  -> FAIL 'not replaced'  5. git checkout core/shipped/shipped.sha256, Schritt 4 wiederholen -> ok  6. (cd core && go test ./shipped)  -> ok"
