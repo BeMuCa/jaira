@@ -1,7 +1,7 @@
 ---
 id: 01M7ZYRRKJ8Q77ZZ3B8WY2CD9X
 title: "Rollen, die weder Code ändern noch urteilen, laufen auf haiku"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -17,30 +17,39 @@ tags:
   - gates
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 2a672cfb40c950cc9c13d61be7a94fddbfc65801
+  - 7bb4c47dbf7cd5b5cd3476f2c4165d0866ad14a1
+  - 6f57eee71482b17cc1c8bf81bfa64d87c440297b
+  - 6822ec61b3857da5339ab2d9c7eb7aba3b892c77
+  - 270f5b044686d3210f1131e87d9a657b42b60c6a
+  - b5ec4070197353a63d6c813e5329b780c978a395
 created-at: 2026-11-21T21:04:04Z
-updated-at: 2026-11-21T22:17:59Z
+updated-at: 2026-11-21T22:45:50Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-3504002
-claimed-at: 2026-11-21T21:13:37Z
+claimed-by: DESKTOP-RFTCH11-1274804
+claimed-at: 2026-11-21T22:44:29Z
 outcome-what: "tester and logbook-summary roles carry model: haiku; the pr role carries none and hands code-changing review points to an agent that inherits the session's model"
 outcome-why: "pushing and running suites need no strong model, but a model: line on the pr role would be inherited by its code-fix agent"
 outcome-resolves: "test and summary runs cost haiku prices; critique, review, bughunt and code fixes stay on the session model"
-review-summary: "none"
+review-summary: "Adds 'model: haiku' to the SKILL.md headers of jaira-role-tester and jaira-role-logbook-summary, so Claude Code runs those two roles on haiku. jaira-role-pr keeps no model: line (it had one in round 1, removed in 6822ec61b after the bughunt proved a subagent inherits the skill's haiku); its comment-answering step 1 now hands a code-changing review point to an Agent with no model, which therefore runs on the session's model. TestRoleModels pins the model field of every builtin role (haiku only for tester and logbook-summary, empty for all others incl. pr, lane, bughunt). Release note core/release/notes/Y2CD9X.md has two lines; shipped.sha256 records the new hashes of the three SKILL.md files (re-recorded after the upstream/master merge)."
 round: 4
 back-from: testing
 back-by: lane
 back-count: 1
-review-gaps: none
-test-verdict: "pass: round 3 tests of changed files green with -race (core/role, core/shipped, core/release RC=0), shipped-history --check RC=0, vet RC=0; DoD 1-3 checked in tree (SKILL.md:484-491 names no model, note line 2 says session's model, new pr hash in shipped.sha256); built binary, roles install --into scratch writes the new pr text and model: haiku in exactly pr/tester/logbook-summary; install into /proc/nope exits 1; two parallel installs: files correct, one exits 3 on a race (pre-existing, note)"
-hunt-verdict: "fail: bughunt done at 6f57eee71, 1 change blocker: Agent without model inside a model: haiku skill runs on haiku (measured: parent opus, child haiku), so pr step 1 and release note line 2 are wrong"
-review-verdict: "Diff meets all three DoD items: exactly pr/tester/logbook-summary carry model: haiku and TestRoleModels fails if any judging role gains a model line; a code-changing PR point goes to an opus worker; release note and shipped.sha256 are present. Checked the other paths in jaira-role-pr that could change code (none-mode merge, conflicts) - it aborts conflicts and stops, so haiku never resolves code there. tester only reads logs. No blocker; three notes about robustness of the opus hand-off."
-review-round: 2
+review-gaps: |-
+  note: known limit, not testable from Go: that Claude Code switches to haiku on a model: line in a SKILL.md header is harness behaviour; TestRoleModels only pins the header text
+  note: known limit: an account or provider without the haiku alias (or --agent copilot, which likely ignores model:) runs tester and logbook-summary on whatever it falls back to; nothing in jaira checks this
+  note: the worktree holds uncommitted 0.6.0 jaira-update edits (.jaira/lanes/{critique,in-progress,optimize,testing}.md, AGENTS.md, CLAUDE.md) that are not this ticket - keep them out of the logbook commit (git add only the ticket file)
+test-verdict: "pass: round 4 at b5ec40701: full go test ./... after upstream merge green except TestReapTearsDownWhatTheSetupBuilt/hangs once under load (passes alone; reap.sh untouched); vet RC=0, shipped-history --check RC=0, TestRoleModels -race ok; built binary installs model: haiku in exactly tester and logbook-summary, pr has none and carries the new step 1; DoD 1-4 checked in tree; writes nothing new beyond roles install (parallel-install race noted earlier, pre-existing)"
+hunt-verdict: "pass: bughunt done at b5ec40701, 0 change, 0 pre-existing"
+review-verdict: "accept: all 4 DoD items hold in the diff (tester+logbook-summary on haiku, pr/lane/bughunt without model:, pr fix agent inherits the session model, note + shipped hashes); go test ./core/role ./core/shipped pass; no defect found in the touched files"
+review-round: 4
 review-verdict-gaps: |-
-  note: jaira-role-pr step 1 hard-codes model "opus"; an account or agent host without opus fails that call - name it as "the strongest model you have, never haiku" or fall back to sonnet if opus is refused
-  note: jaira-role-pr step 1 pushes the subagent's commit without checking it - add one line: confirm the printed sha exists on HEAD and its subject names <id> before pushing
-  note: model: haiku is installed verbatim for --agent copilot too, where the header and the Agent(model) step likely mean nothing; harmless, but untested (bughunt known limit)
-review-check: "1. cd into this worktree  2. go test ./core/role -run TestRoleModels -count=1  -> ok  3. head -5 core/role/builtin/jaira-role-pr/SKILL.md -> line 'model: haiku' under description; same for jaira-role-tester and jaira-role-logbook-summary  4. grep -l '^model:' core/role/builtin/*/SKILL.md -> exactly those three files, no jaira-role-lane, no jaira-role-bughunt  5. sed -n 484,492p core/role/builtin/jaira-role-pr/SKILL.md -> step 1 sends code-changing points to Agent with model opus  6. Live check (optional): in a fresh claude session run /jaira-role-tester and look at the model shown in the status line -> haiku for that turn"
+  note: known limit, not testable from Go: that Claude Code switches to haiku on a model: line in a SKILL.md header is harness behaviour; TestRoleModels only pins the header text
+  note: known limit: an account or provider without the haiku alias (or --agent copilot, which likely ignores model:) runs tester and logbook-summary on whatever it falls back to; nothing in jaira checks this
+  note: the worktree holds uncommitted 0.6.0 jaira-update edits (.jaira/lanes/{critique,in-progress,optimize,testing}.md, AGENTS.md, CLAUDE.md) that are not this ticket - keep them out of the logbook commit (git add only the ticket file)
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-y2cd9x  2. go test ./core/role -run TestRoleModels -v  -> PASS  3. grep -rn '^model:' core/role/builtin/*/SKILL.md  -> exactly two lines: jaira-role-tester and jaira-role-logbook-summary, both 'model: haiku'  4. sed -n 480,495p core/role/builtin/jaira-role-pr/SKILL.md  -> step 1 hands a code fix to Agent(...) with no model and says why pr has no model: line  5. cat core/release/notes/Y2CD9X.md  -> two one-line notes, tester+logbook-summary on haiku, pr fix agent on the session's model  6. live (optional): in a Claude Code session run /jaira-role-tester and check the status line shows haiku while it runs"
 ---
 
 # Rollen, die weder Code ändern noch urteilen, laufen auf haiku
@@ -84,3 +93,7 @@ review-check: "1. cd into this worktree  2. go test ./core/role -run TestRoleMod
 - **2026-11-21 22:01 · Alexander Sacharov** — question for Alex (give-back premise disproved by bughunt 21:17: Agent without model inherits haiku from the skill): how does the pr role's code-fix agent get a strong model on every account? 1) (Recommended) name opus, fall back to sonnet if opus is refused, never haiku — keeps pr on haiku, works on accounts without opus. 2) drop model: haiku from the pr role entirely — pr runs on the session model, haiku stays only on tester and logbook-summary; simplest, pr gets dearer. 3) start the fix as its own session (spawn.sh worker) — session model, but heavy and walks lanes on a ticket already in signoff/done.
 - **2026-11-21 22:01 · Alexander Sacharov** — decision: Variante 2 (Teamlead 21.11. nachts, Alex' Regel 'Ränder wachsen → kleineres Design'): model: haiku aus der pr-Rolle entfernen; pr läuft auf dem Modell der Session, Code-Fix-Agent ohne model erbt es damit richtig. haiku bleibt bei tester und logbook-summary. Keine Opus/Sonnet-Fallback-Logik.
 - **2026-11-21 22:17 · Alexander Sacharov** — in-progress round 4: variant 2 done (6822ec61b): model: haiku removed from pr role, step 1 says why, TestRoleModels pins tester+logbook-summary only, note line 1 reworded. Merged upstream/master (v0.6.0 shipped meanwhile, shipped-history went red); pr hash re-recorded after the merge. Foreign uncommitted 0.6.0 'jaira update' edits (.jaira/lanes/*, AGENTS.md, CLAUDE.md) found in this worktree: set aside for the merge and put back, not committed by me. TestReapTearsDownWhatTheSetupBuilt/hangs failed once under full-suite load (20s vs 1s bound), passes alone; reap.sh untouched by this branch.
+- **2026-11-21 22:19 · Alexander Sacharov** — testing round 4: tests and function pass done, test-verdict written; waiting for bughunt.
+- **2026-11-21 22:24 · Alexander Sacharov** — bughunt: done at b5ec40701 - 0 findings in 9 modules, follow-up hunt since 6f57eee71 (diff only for the 6 files read before; new and read whole: .jaira/lanes/critique.md .jaira/lanes/in-progress.md .jaira/lanes/optimize.md .jaira/lanes/testing.md AGENTS.md CLAUDE.md as their uncommitted jaira-update diff); concurrency, error paths, input, permissions checked; ran: go test ./core/role/ ./core/shipped/ (ok); files: .jaira/lanes/critique.md .jaira/lanes/in-progress.md .jaira/lanes/optimize.md .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/release/notes/Y2CD9X.md core/role/builtin/jaira-role-logbook-summary/SKILL.md core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-role-tester/SKILL.md core/role/role_test.go core/shipped/shipped.sha256
+- **2026-11-21 22:40 · Alexander Sacharov** — review handed to a fresh agent via run-lane.sh (herdr tab)
+- **2026-11-21 22:41 · Alexander Sacharov** — review: run-lane.sh failed twice ('claude did not come up in t19s/t19t', exit 1, tabs t19s and t19t may be left open); review handed to a fresh subagent instead
