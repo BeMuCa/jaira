@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:13:45Z
+updated-at: 2026-11-21T08:13:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
@@ -28,7 +28,10 @@ outcome-why: Hand-gemergte Manifest-Konflikte verloren Zeilen; jaira update --ro
 outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, wenn eine fehlt, und Manifest-Merges konfliktieren nicht mehr"
 review-summary: "scripts/shipped-history.sh got two modes. --check lists every installed-file version in every v* tag (git ls-tree per tag, raw blob bytes hashed, lanes/ and .claude/skills/jaira mapped to today's embed path) and fails with the lines to append when the committed manifest lacks one; it fails on a clone without tags, on an unreadable tag and on an unreadable blob instead of passing. --write builds the manifest into a temp file beside it and renames it only on success. CI got a shipped-manifest job (fetch-depth 0) and the release-notes workflow runs --check before it opens the release PR. .gitattributes merges the manifest with merge=union. The manifest was regenerated: 75 lines added (including the v0.5.2 cockpit board.ts that a hand merge had lost), none removed. A new table test installs the real v0.5.2 board.ts (fixture pinned to the tag's hash) and expects Updated, not Skipped. Test messages now name --write instead of '> manifest'; TestEveryManifestPathExists uses strings.Cut instead of l[66:]."
 round: 7
-review-gaps: "manifest-Pfad einmal oben im Skript (7f2d86fe); 29ee4690 ist reine Regenerierung, nichts zu entfernen"
+review-gaps: |-
+  note: unclear whether GitHub's own PR merge honours merge=union when it checks for conflicts; a local git merge does (proven by TestManifestMergesWithoutConflict and by commit 29ee4690, where the union left duplicates that the test caught)
+  note: pre-existing: the working-tree loop in generate() (sha256sum <"$f" inside $(...)) prints a line with an empty hash when a file is in the index but gone from disk; it does not stop the script, unlike the blob path this ticket fixed. TestManifestLinesAreWellFormed catches that line, so nothing ships silently
+  note: known limit, written down by the implementer: paths with spaces do not fit the manifest format; no such file exists today
 test-verdict: "pass: go build ./... und go test ./... gruen (rc=0) auf 29ee4690 nach Merge von upstream/master; DoD 1-7 im Baum belegt (Tests aus den proofs einzeln gelaufen); --write: zwei parallele Laeufe ergeben ein sortiertes Manifest ohne Duplikat, flacher Klon exit 1 bei unveraendertem Manifest, unlesbarer Blob per Test (Manifest unveraendert, keine Temp-Datei)"
 hunt-verdict: "pass: bughunt done at 29ee4690, 0 change, 0 pre-existing (Runde davor: 1 change, Duplikate nach union-Merge, behoben in 29ee4690)"
 review-verdict: "Diff erfuellt alle 5 DoD-Punkte, keine Defekte gefunden. Selbst geprueft: --check gruen auf 34 Tags, mit dem alten Manifest rot (8 Versionen); Regenerieren ergibt byte-gleich das committete Manifest; 0 Zeilen gegenueber master verloren; TestInstallReplacesAnOlderShippedVersion faellt mit dem alten Manifest, besteht mit dem neuen; go test ./shipped ./role gruen."
