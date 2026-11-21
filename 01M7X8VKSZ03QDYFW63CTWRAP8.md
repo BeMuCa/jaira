@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:47:31Z
+updated-at: 2026-11-21T08:47:35Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1876460
 claimed-at: 2026-11-21T08:39:00Z
@@ -41,8 +41,8 @@ review-gaps: |-
 test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at 390088c7; DoD 1-4 verified in the tree; empty head now leaves only tests and hunt as ?. Roles write nothing - no concurrent-writer case."
 hunt-verdict: "clean: diff hunt at 390088c7 (HEAD), 0 findings"
 question: ""
-review-verdict: "Diff erfuellt alle vier DoD-Punkte; geprueft: jaira show --json hat handle/dod_items[].done/review.verdict, jaira list --lane/--board, jaira create --follows/--assignee, glab ci list --sha existieren, der Cockpit schreibt 'Given back from signoff:'; go test ./core/role ./core/shipped gruen; alle 14 Commits nennen TWRAP8. Keine Blocker, drei Notes."
-review-round: 12
+review-verdict: "give back: DoD 1, 3 and 4 are met and go test ./core/role ./core/shipped is green, but DoD 2's recommendation ignores the status line's own ❌ checks, so the role can recommend accepting a ticket whose CI failed at the head; a three-line rule closes it"
+review-round: 13
 review-check: "1. cd /home/alex/projects/.worktrees/jaira-twrap8  2. go test ./core/role/... ./core/shipped/...  -> beide ok  3. go build -o /tmp/jaira-tw ./cmd/jaira && /tmp/jaira-tw roles list | grep signoff  -> eine Zeile jaira-role-signoff mit Beschreibung  4. in einer Claude-Session in diesem Repo: /jaira-role-signoff TWRAP8  -> eine Statuszeile mit Haken/Kreuz/?, eine Tabelle mit roten/gelben/weissen/blauen Marken, eine fette Empfehlung und zwei fertige Zeilen (jaira move ... --to done --force / jaira note ... && jaira move ... --to in-progress)  5. danach git status: die Ticketdatei hat sich durch die Session nicht veraendert"
 ---
 
