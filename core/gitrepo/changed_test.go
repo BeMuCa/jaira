@@ -70,6 +70,16 @@ func TestChangedSince(t *testing.T) {
 			}
 			write(t, dir, ".jaira/milestones/q4-ABC123.md", "m")
 		}, []string{"a.go", ".jaira/milestones/q4-ABC123.md"}, false},
+		{"tracked board data changed after the hunt, no paths", func(t *testing.T, dir string) {
+			fixtureCommit(t, dir, map[string]string{".jaira/tags": "ui red"}, "chore(DF0YD6): tag", later)
+			write(t, dir, ".jaira/tags", "ui red\ngates blue")
+		}, nil, false},
+		{"tracked board data changed after the hunt, listed", func(t *testing.T, dir string) {
+			fixtureCommit(t, dir, map[string]string{".jaira/milestones/q4-ABC123.md": "m"}, "chore(DF0YD6): milestone", later)
+		}, []string{"a.go", ".jaira/milestones/q4-ABC123.md"}, false},
+		{"a lane prompt is code", func(t *testing.T, dir string) {
+			fixtureCommit(t, dir, map[string]string{".jaira/lanes/testing.md": "p2"}, "fix(DF0YD6): prompt", later)
+		}, nil, true},
 		{"an untracked file written after the hunt", func(t *testing.T, dir string) {
 			write(t, dir, "new.go", "n")
 		}, nil, true},

@@ -331,9 +331,10 @@ func (r *Repo) WorktreeDiff() (string, error) {
 // that is no ancestor of HEAD — the hunt ran on a branch this checkout does
 // not have — tells nothing and reads as changed. An uncommitted file counts
 // by its time, not by being uncommitted: in conversational mode the worker
-// does not commit, and the hunt read those changes as they were. An
-// untracked file under .jaira/ is board data — milestones, a pulled ticket
-// — and never counts. Paths are relative to the
+// does not commit, and the hunt read those changes as they were. Board
+// data — everything under .jaira/ but the lane prompts — never counts,
+// tracked or not: a tag, a milestone or a pulled ticket changes no code.
+// Paths are relative to the
 // repository root; none, or one that is neither in commit nor on disk (a
 // file list split at a space inside a name), means all code (codeOnly).
 func (r *Repo) ChangedSince(commit, ticketID string, hunted time.Time, paths []string) (bool, error) {
@@ -350,18 +351,26 @@ func (r *Repo) ChangedSince(commit, ticketID string, hunted time.Time, paths []s
 	if err != nil {
 		return false, err
 	}
-	own, err := r.run(append([]string{"log", "--no-merges", "--format=%h", "--extended-regexp", "--regexp-ignore-case", "--grep=" + namesTicket(ticketID), commit + "..HEAD", "--"}, specs...)...)
+	own, err := r.run(append([]string{"-c", "core.quotePath=false", "log", "--no-merges", "--format=", "--name-only", "-z", "--extended-regexp", "--regexp-ignore-case", "--grep=" + namesTicket(ticketID), commit + "..HEAD", "--"}, specs...)...)
 	if err != nil {
 		return false, err
 	}
-	if strings.TrimSpace(own) != "" {
-		return true, nil
+	for _, p := range strings.Split(own, "\x00") {
+		if p = strings.TrimSpace(p); p != "" && !isBoardData(p) {
+			return true, nil
+		}
 	}
 	return r.writtenSince(hunted, specs)
 }
 
+// isBoardData reports a path under .jaira/ that is no lane prompt: tickets,
+// tags, milestones, settings — what the board writes, not code.
+func isBoardData(p string) bool {
+	return strings.HasPrefix(p, ".jaira/") && !strings.HasPrefix(p, ".jaira/lanes/")
+}
+
 // writtenSince reports a file inside specs that is not committed — changed
-// against HEAD, or untracked outside .jaira/ — and was written after t. A
+// against HEAD, or untracked — and no board data, written after t. A
 // tracked file deleted since HEAD has no time and counts.
 func (r *Repo) writtenSince(t time.Time, specs []string) (bool, error) {
 	root, err := r.Root()
@@ -377,13 +386,8 @@ func (r *Repo) writtenSince(t time.Time, specs []string) (bool, error) {
 		return false, err
 	}
 	var paths []string
-	for _, p := range strings.Split(changed, "\x00") {
-		if p != "" {
-			paths = append(paths, p)
-		}
-	}
-	for _, p := range strings.Split(others, "\x00") {
-		if p != "" && !strings.HasPrefix(p, ".jaira/") {
+	for _, p := range strings.Split(changed+"\x00"+others, "\x00") {
+		if p != "" && !isBoardData(p) {
 			paths = append(paths, p)
 		}
 	}
