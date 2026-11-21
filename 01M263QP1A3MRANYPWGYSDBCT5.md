@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-21T08:18:11Z
+updated-at: 2026-11-21T08:18:15Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -29,7 +29,9 @@ outcome-why: "Auf einem ungeteilten Board widersprach die Commit-Regel dem Zusta
 outcome-resolves: SDBCT5
 review-summary: "On a board 'jaira init' keeps out of git there is no ticket file to commit, yet every place that tells an agent to commit the ticket with the code read as if .jaira/ were always tracked. The branch adds one caveat sentence to each such place: the generated agent block (core/board/announce.go, regenerated into CLAUDE.md/AGENTS.md), the jaira role and its repo mirror, docs/AGENTS.md, the PR role (a code commit without a ticket file is not a finding there), and the ready-to-paste commit lines in jaira-worker and jaira-role-lane (leave the ticket file out of git add, git refuses it as ignored). The caveat says 'commits nothing' still holds, only the ticket-file sentences fall away. A test pins the wording in block and role, the manifest gets the new role hashes, a release note tells users to run jaira update / --roles."
 round: 4
-review-gaps: "none: the round adds three sentences and a renamed test; nothing duplicated or unused"
+review-gaps: |-
+  note: core/board/announce_test.go:232 - the doc comment still names the old test TestAgentNoteSaysTheTicketCannotRideOnAnUnsharedBoard; the func is TestAgentNoteNamesProofAndTheUnsharedBoardCaveat
+  note: core/release/notes/SDBCT5.md:2 lists jaira, jaira-worker and jaira-role-lane but not jaira-role-pr, whose point 2 also changed and is refreshed by the same jaira update --roles
 test-verdict: "pass: go test ./... -race RC=0; TestAgentNoteNamesProofAndTheUnsharedBoardCaveat RC=0; DoD 1-7 verified in the tree; scratch board (git init + jaira init with this build): CLAUDE.md/AGENTS.md carry the reworded caveat, .jaira/ stays out of git; go test ./core/role ./core/shipped green after appending 3 manifest hashes"
 hunt-verdict: "pass: bughunt done at d71e5e86 (diff since bb02c815), 0 change, 0 pre-existing"
 review-verdict: pass
