@@ -1,7 +1,7 @@
 ---
 id: 01M7X2WM5Q4Z6VPF1RAK0K8Y6S
 title: "shipped.sha256 kennt jede Version, die in einem Release-Tag ausgeliefert wurde, und CI haelt das fest"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:08:31Z
+updated-at: 2026-11-21T08:10:14Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
