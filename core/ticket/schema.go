@@ -130,6 +130,36 @@ const (
 	// — and a reader treats the verdict as it always did.
 	FieldReviewRound = "review-round"
 
+	// FieldReviewVerdictGaps is review-gaps as it stood beside the verdict,
+	// copied by the write of either in the verdict's own round. From the next
+	// round on the loop lanes rewrite review-gaps (optimize lists what it
+	// removed), so without the copy a verdict left standing has lost its
+	// findings. Absent: a verdict from before the field.
+	FieldReviewVerdictGaps = "review-verdict-gaps"
+
+	// FieldBlockerRule is the one sentence that says what on this ticket is a
+	// blocker — what alone sends work back — set by pre-process or a person.
+	// Without one every edge a later lane finds reads as a reason for another
+	// round, and every fix is new code the next hunt goes after. Empty means
+	// DefaultBlockerRule.
+	FieldBlockerRule = "blocker-rule"
+
+	// FieldStopAfterFix, "true", says a round after a fix runs the tests only
+	// and starts no new bug hunt. Off by default: the hunt over the diff since
+	// the last one finds defects in the fix itself; a ticket opts out on
+	// purpose, a text-only one for instance.
+	FieldStopAfterFix = "stop-after-fix"
+
+	// FieldBackFrom, FieldBackBy and FieldBackCount record the last send-back,
+	// written by the move itself: the lane it came from, whether a person or a
+	// lane sent it (BackByPerson, BackByLane), and how many returns in a row
+	// came from that same lane. round alone counts every way back, a person's
+	// included, so a lane counting its own returns off it stops a ticket the
+	// person sent back with a wish. Absent means no return was recorded.
+	FieldBackFrom  = "back-from"
+	FieldBackBy    = "back-by"
+	FieldBackCount = "back-count"
+
 	// FieldParent is the ticket this one is a part of — the child names the
 	// parent, never the other way round. A parent field on the child is the
 	// only direction that can always be written: the parent may be in the
@@ -211,6 +241,34 @@ const ModeConversational = "conversational"
 func CanonicalMode(v string) (string, bool) {
 	v = strings.TrimSpace(v)
 	return v, v == "" || v == ModeConversational
+}
+
+// DefaultBlockerRule is what a ticket without FieldBlockerRule counts as a
+// blocker: the four classes the testing and review lanes have named since
+// TW5FE2.
+const DefaultBlockerRule = "a wrong result (a failed gate or an unmet definition-of-done item included), data loss, a crash, a security hole"
+
+// BlockerRule is the ticket's own rule, else DefaultBlockerRule.
+func BlockerRule(t *Ticket) string {
+	if r := strings.TrimSpace(t.BlockerRule); r != "" {
+		return r
+	}
+	return DefaultBlockerRule
+}
+
+// Who sent a ticket back, as FieldBackBy records it.
+const (
+	BackByPerson = "person"
+	BackByLane   = "lane"
+)
+
+// CanonicalStopAfterFix reports whether v is a value FieldStopAfterFix
+// accepts — "true", "false" or empty — and returns the form to store. A typo
+// stored silently ("yes", "on") would read as off while the person believes
+// the hunt is skipped.
+func CanonicalStopAfterFix(v string) (string, bool) {
+	v = strings.ToLower(strings.TrimSpace(v))
+	return v, v == "" || v == "true" || v == "false"
 }
 
 // canonicalOrder is the order in which fields are written into a new ticket.
@@ -325,6 +383,21 @@ type Ticket struct {
 	Round int
 	// ReviewRound is the round ReviewVerdict was written in, 0 when unknown.
 	ReviewRound int
+	// ReviewVerdictGaps is the review's own gaps, kept beside its verdict.
+	ReviewVerdictGaps string
+	// BlockerRule is the ticket's own blocker rule, "" when it has none;
+	// BlockerRule() falls back to the default.
+	BlockerRule string
+	// StopAfterFix: a fix round runs the tests only, no new bug hunt.
+	StopAfterFix bool
+	// StopAfterFixRaw is stop-after-fix as written, for validate to name a
+	// value that reads as off without anybody meaning it ("yes").
+	StopAfterFixRaw string
+	// BackFrom, BackBy and BackCount describe the last send-back; empty and 0
+	// when none was recorded.
+	BackFrom  string
+	BackBy    string
+	BackCount int
 
 	Outcome Outcome
 
@@ -716,6 +789,14 @@ func decodeFields(d *Doc, f *Fields, path string) (*Ticket, error) {
 	t.ReviewCheck = str(FieldReviewCheck)
 	t.Round = count(str(FieldRound))
 	t.ReviewRound = count(str(FieldReviewRound))
+	t.ReviewVerdictGaps = str(FieldReviewVerdictGaps)
+	t.BlockerRule = str(FieldBlockerRule)
+	t.StopAfterFixRaw = str(FieldStopAfterFix)
+	stopAfterFix, _ := CanonicalStopAfterFix(t.StopAfterFixRaw)
+	t.StopAfterFix = stopAfterFix == "true"
+	t.BackFrom = str(FieldBackFrom)
+	t.BackBy = str(FieldBackBy)
+	t.BackCount = count(str(FieldBackCount))
 	t.DoDItems = ParseDoDItems(t.Body)
 	t.PlanItems = ParsePlanItems(t.Body)
 	t.Options = ParseOptions(t.Body)

@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -793,8 +794,14 @@ from the ticket, and the count is always printed, so a reader is never left
 thinking they have seen everything.
 
 --brief prints one line of JSON with only what a chat about the ticket needs:
-id, title, goal, question, review, the newest four notes as notes_last and how
-many there are as notes_total.`,
+id, title, goal, question, review, the newest finished bug hunt as bughunt
+(at: its commit; state: ok when no commit naming the ticket since touched
+the files it read, fail when one did, unknown when a file it read is changed
+and not committed - in conversational mode, committing the hunted work after
+the hunt turns it fail until the next hunt - and skipped on a stop-after-fix
+ticket whose hunt does not cover HEAD; null without a finished hunt, except
+on a stop-after-fix ticket, where it is skipped with an empty at), the newest four notes as notes_last and how many
+there are as notes_total.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
@@ -821,7 +828,7 @@ many there are as notes_total.`,
 				return showForLane(cmd, s, env, t, forLane)
 			}
 			if brief {
-				line, err := compactJSON(ticketBrief(ticketJSON(t, env.Lanes), t.Body))
+				line, err := compactJSON(ticketBrief(ticketJSON(t, env.Lanes), t.Body, lastHunt(&gitrepo.Repo{Dir: s.Root}, t)))
 				if err != nil {
 					return err
 				}
@@ -840,7 +847,7 @@ many there are as notes_total.`,
 	}
 	cmd.Flags().StringVar(&forLane, "for-lane", "", "assemble the bounded input a lane's agent should receive")
 	cmd.Flags().IntVar(&notesLast, "notes-last", 0, "show only the newest n progress notes (0 shows all)")
-	cmd.Flags().BoolVar(&brief, "brief", false, "one line of JSON: title, goal, question, review and the newest notes")
+	cmd.Flags().BoolVar(&brief, "brief", false, "one line of JSON: title, goal, question, review, the newest bug hunt and the newest notes")
 	return cmd
 }
 
@@ -862,21 +869,92 @@ const briefNotes = 4
 // proof is most of a chat's context for nothing. spawn.sh used to build it with
 // python3, which a Windows machine may not have (issue #79); notes split where
 // ticket.Notes splits them, at a dated heading, and the fields keep its order.
-func ticketBrief(j map[string]any, body string) any {
+func ticketBrief(j map[string]any, body string, hunt *huntState) any {
 	notes := []string{}
 	for _, n := range ticket.Notes(body) {
 		notes = append(notes, n.Raw)
 	}
 	last := notes[max(0, len(notes)-briefNotes):]
 	return struct {
-		ID         any      `json:"id"`
-		Title      any      `json:"title"`
-		Goal       any      `json:"goal"`
-		Question   any      `json:"question"`
-		Review     any      `json:"review"`
-		NotesLast  []string `json:"notes_last"`
-		NotesTotal int      `json:"notes_total"`
-	}{j["handle"], j["title"], j["goal"], j["question"], j["review"], last, len(notes)}
+		ID         any        `json:"id"`
+		Title      any        `json:"title"`
+		Goal       any        `json:"goal"`
+		Question   any        `json:"question"`
+		Review     any        `json:"review"`
+		Bughunt    *huntState `json:"bughunt"`
+		NotesLast  []string   `json:"notes_last"`
+		NotesTotal int        `json:"notes_total"`
+	}{j["handle"], j["title"], j["goal"], j["question"], j["review"], hunt, last, len(notes)}
+}
+
+// huntState is the newest finished bug hunt: the commit it ran at, and what
+// it says about the code now. A chat handed four notes cannot work that out:
+// the hunt's note has scrolled out of them by the time a ticket waits for a
+// person, and a merge from master moves HEAD past the hunt's commit without
+// changing anything it read. State is one of:
+//
+//   - ok: nothing the ticket committed since touched the files it read
+//   - fail: a commit of the ticket since then did, or this checkout does not
+//     contain the hunt's commit
+//   - unknown: no such commit, but a file it read is changed and not
+//     committed — git cannot tell whether the hunt saw that change; also
+//     when git cannot answer at all. Never drawn red: no clock is read
+//   - skipped: the ticket sets stop-after-fix, so a fix round runs its tests
+//     and no hunt — a hunt that no longer covers the code, or none at all,
+//     is the choice the ticket made, not a fault
+type huntState struct {
+	At    string `json:"at"`
+	State string `json:"state"`
+}
+
+// huntDone is the closing line a bug hunt writes: "bughunt: done at <commit>
+// ...; files: <path> <path>". The file list is the hunt's own account of what
+// it read; without one the hunt is taken to have read all code.
+var huntDone = regexp.MustCompile(`^bughunt: done at ([0-9a-f]{7,40})\b`)
+
+// lastHunt reads the newest hunt off the notes, nil when none finished and
+// the ticket does not set stop-after-fix.
+func lastHunt(repo *gitrepo.Repo, t *ticket.Ticket) *huntState {
+	h := newestHunt(repo, t)
+	if t.StopAfterFix && (h == nil || h.State == huntFail) {
+		if h == nil {
+			h = &huntState{}
+		}
+		h.State = huntSkipped
+	}
+	return h
+}
+
+const (
+	huntOK      = "ok"
+	huntFail    = "fail"
+	huntUnknown = "unknown"
+	huntSkipped = "skipped"
+)
+
+func newestHunt(repo *gitrepo.Repo, t *ticket.Ticket) *huntState {
+	notes := ticket.Notes(t.Body)
+	for i := len(notes) - 1; i >= 0; i-- {
+		text := strings.TrimSpace(notes[i].Text)
+		m := huntDone.FindStringSubmatch(text)
+		if m == nil {
+			continue
+		}
+		var files []string
+		if at := strings.LastIndex(text, "files: "); at >= 0 {
+			files = strings.Fields(text[at+len("files: "):])
+		}
+		state, err := repo.HuntCoverage(m[1], t.ID, files)
+		switch {
+		case err != nil || state == gitrepo.HuntUnknown:
+			return &huntState{At: m[1], State: huntUnknown}
+		case state == gitrepo.HuntStale:
+			return &huntState{At: m[1], State: huntFail}
+		default:
+			return &huntState{At: m[1], State: huntOK}
+		}
+	}
+	return nil
 }
 
 // printDetail renders one ticket for a person. notesLast caps how many Progress
@@ -928,6 +1006,15 @@ func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env, notesLast int, kid
 	// the ticket rather than in a session. row() skips an empty value, so a
 	// ticket without a mode costs no line.
 	row("mode", t.Mode)
+	// Only what differs from the default costs a line: a ticket's own blocker
+	// rule, a skipped hunt, a recorded send-back.
+	row("blockers", t.BlockerRule)
+	if t.StopAfterFix {
+		row("after fix", "tests only, no new bug hunt")
+	}
+	if t.BackFrom != "" {
+		row("back", fmt.Sprintf("from %s (%s), %d in a row", t.BackFrom, dash(t.BackBy), t.BackCount))
+	}
 	row("tags", strings.Join(t.Tags, " "))
 	row("goal", t.Goal)
 	row("context", t.Context)
@@ -988,6 +1075,9 @@ func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env, notesLast int, kid
 		fmt.Fprintf(w, "\nReview\n")
 		row("  summary", t.ReviewSummary)
 		row("  gaps", t.ReviewGaps)
+		if t.ReviewVerdictGaps != t.ReviewGaps {
+			row("  gaps at verdict", t.ReviewVerdictGaps)
+		}
 		row("  verdict", t.ReviewVerdict)
 		row("  check", t.ReviewCheck)
 	}
@@ -1106,6 +1196,7 @@ its end. Review fields keep their history across loop rounds that way.`,
 			// landed says where a board change put a ticket whose lane the new
 			// board does not have; empty when its lane came along.
 			landed := ""
+			reviewWritten := false
 			t, err := s.Mutate(id, func(t *ticket.Ticket) error {
 				for _, a := range assignments {
 					k, v, ok := strings.Cut(a, "=")
@@ -1192,6 +1283,16 @@ its end. Review fields keep their history across loop rounds that way.`,
 						}
 						v = canon
 					}
+					// stop-after-fix is read as exactly "true"; checked for
+					// the same reason as mode above.
+					if k == ticket.FieldStopAfterFix {
+						canon, ok := ticket.CanonicalStopAfterFix(v)
+						if !ok {
+							return fail(ExitUsage, "bad_stop_after_fix",
+								"stop-after-fix is true, false or empty, got %q", v)
+						}
+						v = canon
+					}
 					if err := t.Doc().SetScalar(k, v); err != nil {
 						return err
 					}
@@ -1202,6 +1303,12 @@ its end. Review fields keep their history across loop rounds that way.`,
 							return err
 						}
 					}
+					if k == ticket.FieldReviewVerdict || k == ticket.FieldReviewGaps {
+						reviewWritten = true
+					}
+				}
+				if reviewWritten {
+					return keepVerdictGaps(t)
 				}
 				return nil
 			})
@@ -1656,6 +1763,12 @@ func nextLaneID(t *ticket.Ticket, lanes *lane.Set) string {
 	return ""
 }
 
+// backJSON is the last send-back as jaira recorded it, as show --json and
+// the --for-lane payload both print it.
+func backJSON(t *ticket.Ticket) map[string]any {
+	return map[string]any{"from": t.BackFrom, "by": t.BackBy, "count": t.BackCount}
+}
+
 func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 	_, known := lanes.Get(t.Status)
 	dodComplete, _ := t.DoDComplete()
@@ -1699,6 +1812,9 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		"review": map[string]string{
 			"summary": t.ReviewSummary, "gaps": t.ReviewGaps,
 			"verdict": t.ReviewVerdict, "check": t.ReviewCheck,
+			// The gaps as they stood beside the verdict, for a verdict a
+			// later round left standing (its gaps are the loop lanes' by then).
+			"verdict_gaps": t.ReviewVerdictGaps,
 		},
 		"rejected": rejectionJSON(t.Rejected),
 		// Where this goes when the current step is finished, so the route is not
@@ -1708,10 +1824,19 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		// so a reader can tell a verdict from one a later round left standing.
 		"round":        ticket.CurrentRound(t),
 		"review_round": t.ReviewRound,
-		"next_lane":    nextLaneID(t, lanes),
-		"created_at":   nonZero(t.CreatedAt),
-		"updated_at":   nonZero(t.UpdatedAt),
-		"updated_by":   t.UpdatedBy,
+		// What sends work back on this ticket — its own rule, else the
+		// default — and whether a fix round skips the bug hunt, so the lanes
+		// and the bug hunter read one answer instead of each its own guess.
+		"blocker_rule":   ticket.BlockerRule(t),
+		"stop_after_fix": t.StopAfterFix,
+		// The last send-back as jaira recorded it: the lane it came from,
+		// "person" or "lane", and how many in a row came from that lane.
+		// Empty and 0 until a ticket is first sent back.
+		"back":       backJSON(t),
+		"next_lane":  nextLaneID(t, lanes),
+		"created_at": nonZero(t.CreatedAt),
+		"updated_at": nonZero(t.UpdatedAt),
+		"updated_by": t.UpdatedBy,
 	}
 }
 
@@ -1826,4 +1951,19 @@ func rejectionJSON(r ticket.Rejection) map[string]string {
 		at = r.At.UTC().Format(time.RFC3339)
 	}
 	return map[string]string{"kind": r.Kind, "why": r.Why, "by": r.By, "at": at, "duplicate_of": r.DuplicateOf}
+}
+
+// keepVerdictGaps copies review-gaps beside the verdict while both belong to
+// the verdict's round: written in either order, in one call or two, the copy
+// is the review's own findings. From the next round on a loop lane rewrites
+// review-gaps and the copy stays as the review left it.
+func keepVerdictGaps(t *ticket.Ticket) error {
+	d := t.Doc()
+	verdict, _, _ := d.Scalar(ticket.FieldReviewVerdict)
+	round, _, _ := d.Scalar(ticket.FieldReviewRound)
+	if strings.TrimSpace(verdict) == "" || strings.TrimSpace(round) != strconv.Itoa(ticket.CurrentRound(t)) {
+		return nil
+	}
+	gaps, _, _ := d.Scalar(ticket.FieldReviewGaps)
+	return d.SetScalar(ticket.FieldReviewVerdictGaps, gaps)
 }

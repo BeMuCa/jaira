@@ -36,7 +36,8 @@ derives a ticket's commits — not by a merge base: `origin/HEAD` can name a
 fork that is hundreds of commits behind, and the files of all those commits
 are not this change. Read nothing else of the ticket: `jaira show` only ever
 runs piped into the one `grep` below, for your own closing line of the last
-round.
+round, and as `jaira show <id> --json | jaira json get blocker_rule` for the
+ticket's blocker rule.
 
 **Given paths:** those files or directories.
 
@@ -130,6 +131,12 @@ too: old code that a new call now reaches with input it never got before is a
 `change`. Where the evidence does not settle it, mark it `change` and say in
 the finding why it was unclear — a `pre-existing` mark is a promise that the
 change did not do this.
+
+A `change` finding also says whether it is a blocker. The ticket's rule is
+the one field you read besides its id, `blocker_rule` — by default a wrong result, data loss, a crash, a security
+hole. A finding that is one starts `bughunt: change: blocker:`; any other
+`change` finding is an edge that rides along in a round that goes back
+anyway, and never starts one by itself.
 
 Only a `change` finding is work on this ticket. A `pre-existing` one never
 sends it back: whoever carries the ticket sorts it into a note for the person

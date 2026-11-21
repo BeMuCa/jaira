@@ -5,7 +5,7 @@ import {
   branchesFor, carrierBranch, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
   explanationNotes, explanationOf, isOlder, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, upgradeCheckOf,
-  type Action, type Agent, type Option, type Waiting,
+  type Action, type Agent, type NoteClass, type Option, type Waiting,
 } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
 import { digest } from './digest.ts'
@@ -1420,6 +1420,11 @@ export const register: Register = (on, options) => {
                 : null}
             </Box>
             {w.question !== '' ? <Text dimColor wrap="truncate-end">  ? {w.question}</Text> : null}
+            {/* A verdict an earlier round wrote: said, so a ticket moved on
+                past a refusing review does not reach the person silent. */}
+            {w.reviewedIn !== undefined ? <Text color="warning" wrap="truncate-end">  {t.reviewedIn(w.reviewedIn)}</Text> : null}
+            {/* The review's notes, read and not decided: no button. */}
+            {w.notes.map((n, i) => <Text key={`note-${w.id}-${i}`} dimColor wrap="truncate-end">  · {n}</Text>)}
           </Box>
         ))}
         {waiting.length > BAND_TICKETS
@@ -1524,6 +1529,13 @@ export const register: Register = (on, options) => {
     // colours for that step, whether the review recommends it, highlighted;
     // the rest of the row neutral. Drawn as many rows as it needs.
     const mark = (a: Action) => (a === 'accept' ? t.actionAccept : t.actionGiveBack)
+    // A review note's class in the theme's colours, so a light terminal reads
+    // them too: a blocker red, a small edge yellow, a known limit dim, one
+    // that belongs to another ticket blue.
+    const noteMark = (cls: NoteClass, label: string) =>
+      cls === 'limit'
+        ? <Text dimColor>{`[${label}]`}</Text>
+        : <Text bold color={cls === 'blocker' ? 'error' : cls === 'edge' ? 'warning' : 'suggestion'}>{`[${label}]`}</Text>
     const said = (o: Option) =>
       `${o.text}${o.action !== undefined ? ` ${mark(o.action)}` : ''}${o.key === x.recommended ? ` ${t.recommended}` : ''}`
     const line = (o: Option) => (
@@ -1550,8 +1562,23 @@ export const register: Register = (on, options) => {
           ? open
             ? <Button key={`pick-${id}-${p.key}`} plain hotkey={digit(p.key)} label={said(p)} {...(p.key === (x.recommended ?? x.options[0]?.key) ? { autoFocus: true as const } : {})} onPress={() => pick(p)}>{line(p)}</Button>
             : <Box key={`part-${i}`} flexDirection="row"><Text bold>{`  ${p.key}) `}</Text>{line(p)}</Box>
+          // The status line: a green tick or a red cross per check.
+          : p.kind === 'status'
+            ? <Box key={`part-${i}`} flexDirection="row" marginBottom={1}><Text wrap="wrap">{p.checks.map((c, j) => (
+                <Text key={`check-${j}`}>
+                  {j > 0 ? '   ' : ''}
+                  {c.unknown ? <Text dimColor>{'? '}</Text> : c.ok === undefined ? null : <Text color={c.ok ? 'success' : 'error'}>{c.ok ? '✓ ' : '✗ '}</Text>}
+                  {c.label}
+                </Text>
+              ))}</Text></Box>
+          // A review note: only its class mark coloured, the text plain.
+          : p.kind === 'note'
+            ? <Box key={`part-${i}`} flexDirection="row"><Text wrap="wrap">{noteMark(p.cls, p.label)} {p.text}</Text></Box>
+          // The recommendation, bold in a colour of its own.
+          : p.kind === 'recommendation'
+            ? <Box key={`part-${i}`} marginTop={1}><Text wrap="wrap" bold color="claude">{p.text}</Text></Box>
           // A paragraph a line apart; the options one under the other.
-          : <Box key={`part-${i}`} marginTop={i > 0 ? 1 : 0} marginBottom={x.parts[i + 1]?.kind === 'option' ? 1 : 0}><Text wrap="wrap">{p.text}</Text></Box>)}
+          : <Box key={`part-${i}`} marginTop={i > 0 && x.parts[i - 1]?.kind !== 'status' ? 1 : 0} marginBottom={x.parts[i + 1]?.kind === 'option' ? 1 : 0}><Text wrap="wrap">{p.text}</Text></Box>)}
         {/* Answered already, on the ticket: the choice is read, not offered again. */}
         {open
           ? <Box marginTop={1}><Button key={`pick-${id}-own`} plain hotkey={ownDigit} {...(x.options.length === 0 ? { autoFocus: true as const } : {})} label={t.ownAnswer} onPress={() => void askOwnAnswer($, id)} /></Box>

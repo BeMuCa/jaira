@@ -2054,7 +2054,7 @@ func (m *Model) applyMove() {
 	// Move re-runs the gate itself; nothing has changed the ticket between the
 	// pre-check above and here, so it lands the same verdict and writes.
 	res, err := move.Move(m.store, env, full.ID, move.Request{
-		To: target.ID, Actor: me, ActorAliases: identity.Aliases(m.store.Root),
+		To: target.ID, Actor: me, ActorAliases: identity.Aliases(m.store.Root), ByPerson: true,
 		ClaimOnPull: true, Folder: m.settleFolder(), Prepare: m.settlePrepare(),
 	})
 	if err != nil {
@@ -2110,7 +2110,7 @@ func (m *Model) forceMove() {
 	m.pending = nil
 	res, err := move.Move(m.store, m.gateEnv(), p.ticketID, move.Request{
 		To: p.target.ID, Actor: p.actor, ActorAliases: identity.Aliases(m.store.Root),
-		Force: true, ClaimOnPull: true, Folder: m.settleFolder(), Prepare: m.settlePrepare(),
+		Force: true, ByPerson: true, ClaimOnPull: true, Folder: m.settleFolder(), Prepare: m.settlePrepare(),
 	})
 	if err != nil {
 		m.notify(err.Error(), true)
