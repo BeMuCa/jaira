@@ -25,10 +25,10 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:37:46Z
+updated-at: 2026-11-21T08:39:00Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-31394
-claimed-at: 2026-11-21T08:01:32Z
+claimed-by: DESKTOP-RFTCH11-1876460
+claimed-at: 2026-11-21T08:39:00Z
 outcome-what: "status line allows ? in both roles"
 outcome-why: "fresh review 21.11.: the first sentence said ✅ or ❌ only"
 outcome-resolves: "a reader of the first sentence no longer rounds ? to ❌"
