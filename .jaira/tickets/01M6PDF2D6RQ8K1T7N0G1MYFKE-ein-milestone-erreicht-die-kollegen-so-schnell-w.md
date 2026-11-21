@@ -1,7 +1,7 @@
 ---
 id: 01M6PDF2D6RQ8K1T7N0G1MYFKE
 title: "Ein Milestone erreicht die Kollegen so schnell wie ein Ticket, ueber einen Ref"
-status: testing
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Ein angelegter oder geaenderter Milestone liegt auf einem Ref wie Tickets und Epics und erscheint bei Kollegen mit dem naechsten Fetch, ohne Commit und Merge."
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:49Z
-updated-at: 2026-11-21T21:40:05Z
+updated-at: 2026-11-21T21:40:36Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-2695889"
@@ -29,10 +29,10 @@ outcome-why: "Alex 21.11.: milestones were committed back and forth (12 files sw
 outcome-resolves: "Round 2 give-back: milestone reads and writes only the ref, existing files migrated once and deleted, local ref without a remote, logbook = status filed only; review note 1 (fetch output says queued, not sent)."
 review-summary: none
 review-gaps: "gitref.ReadMany now reads through the new gitref.batch instead of its own copy of the cat-file --batch parser (core/gitref/gitref.go); refsync.pendingMilestone took a variadic list every caller passed one key to - now one ID; earlier in this round store.LogbookMilestone and gitref.ListMilestones were removed (no callers left). Left: LoadAll is asked several times per milestone command (milestoneLabel, afterIDs, reportTwins), each one for-each-ref plus an outbox read - cheap and pre-existing in shape; ticket.Store.FiledMilestone/refuseIfFiled stay for logbook files of older builds without a ref."
-test-verdict: "pass: Runde 2 - go vet ./... + GOOS=windows vet gruen, go test ./... RC=0, -race core/refsync RC=0; DoD 1-4 im Baum geprueft; E2E: Milestone vor dem Remote -> erster fetch sendet ihn, Ref auf dem Remote; unerreichbarer Remote -> exit 1, nichts gesendet (Test TestAFailedFetchAfterAGoodOneSendsNothing, TestNothingIsSentWithoutAFetchThatReachedTheRemote); zwei fetch parallel -> genau einer sendet, je ein Commit pro Ref"
+test-verdict: "fail: go test ./... red in core/role: TestJairaSkillMatchesTheRepositoryCopy and TestEveryInstalledFileIsAShippedVersion after the SKILL.md edit"
 hunt-verdict: "pass: Runde 2 bei 10e5c341c, 0 Befunde in 6 Modulen; die 2 Befunde aus Runde 1 behoben (bdf5a870d, 10e5c341c)"
-round: 6
-back-from: critique
+round: 7
+back-from: testing
 back-by: lane
 back-count: 1
 review-verdict: "DoD 1-4 met: the gap DoD 3 still had (ID-named file without ref) is closed and tested in core/refsync/publish_test.go, including the offline case the first bughunt found. No blocker; four notes, all small. go test -race ./core/refsync ./internal/cli ./internal/tui passes."
@@ -104,3 +104,4 @@ mode: ""
 - **2026-11-21 21:29 · Alexander Sacharov** — critique (Runde 2, Pass 1): drei Befunde - (1) core/milestone/import.go hadBefore anonymer struct -> benannter Typ; (2) ErrNoMilestoneRefs in der CLI wie epics.go:65 auf exit 3 'no_refs' abbilden, Doku sagt exit 3; (3) veralteter Kommentar internal/cli/milestones_test.go:458. Design sonst bestaetigt: Refs-Interface folgt core/epic/epic.go:75; Cache in ReadMilestones gerechtfertigt durch den Refresh-Timer des Boards; refuseIfFiled/FiledMilestone bleibt fuer Logbook-Dateien alter Builds ohne Ref.
 - **2026-11-21 21:31 · Alexander Sacharov** — critique Pass 1 erledigt: diskFile benannt (core/milestone/import.go), ErrNoMilestoneRefs -> exit 3 no_refs (internal/cli/milestones.go refuseNoRefs, Test TestAMilestoneOutsideGitIsRefusedLikeAnEpic), Kommentar im Test korrigiert.
 - **2026-11-21 21:31 · Alexander Sacharov** — critique Pass 2: alle drei Befunde aus Pass 1 in 34c4a7e6d beantwortet; nichts Neues. -> optimize
+- **2026-11-21 21:40 · Alexander Sacharov** — testing: class: a shipped role file edited without its two companions; example: core/role/jaira/SKILL.md changed -> 'core/role/jaira/SKILL.md and .claude/skills/jaira/SKILL.md differ' (jairaskill_test.go:16) and 'core/shipped/shipped.sha256 lacks the version of 1 file(s) ... 80247ba4...  core/role/jaira/SKILL.md' (shipped_test.go:74); fix: copy the file over .claude/skills/jaira/SKILL.md and run scripts/shipped-history.sh --write
