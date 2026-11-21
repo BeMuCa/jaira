@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:16:30Z
+updated-at: 2026-11-21T09:16:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
@@ -33,7 +33,7 @@ outcome-resolves: "bughunt change at a6187478; TestChangedSince 21 cases; go tes
 review-summary: "none"
 review-gaps: "none - isBoardData mirrors boardLanesDir's layout in one function"
 test-verdict: "pass: go test -count=1 ./... RC=0 at c4e1fe34; TestChangedSince 21 cases incl. a named board's lane prompt (counts) and its other data (does not); read-only git"
-hunt-verdict: "fail: 1 change finding at a6187478 - a named board's lane prompts (.jaira/boards/<name>/lanes/) read as board data"
+hunt-verdict: "pass: follow-up hunt since a6187478 at c4e1fe34, 0 findings"
 round: 11
 review-verdict: "Kein Blocker. DoD 1-11 sind im Code erfuellt; der Blocker aus Runde 4 (bughunt on HEAD aus 4 Notes nicht ableitbar) ist an der Ursache behoben: --brief traegt bughunt.on_head aus git, und Explain-Vorlage und spawn.sh lesen es. go test -count=1 ./... RC=0, claude plugin test 216 pass. Die fuenf notes sind Raender des on_head-Signals (falsch rot in conversational mode und bei stop-after-fix) und eine bekannte Grenze; keine davon ist ein falsches Ergebnis im Sinn der DoD ausser im conversational mode, wo nur die Statusmarke falsch rot ist."
 review-round: 8
