@@ -13,7 +13,7 @@ export type ThreadTally = { questions: number; stale: number }
 export type OverviewRow = { id: string; lane: string; title: string; who: string; reason: string }
 export type OverviewEvent = OverviewRow & { kind: 'created' | 'parked'; at: string }
 export type Overview = {
-  working: OverviewRow[]; queue: OverviewRow[]; parked: OverviewRow[]; history: { day: string; events: OverviewEvent[] }[]
+  working: OverviewRow[]; queue: OverviewRow[]; parked: OverviewRow[]; history: { day: string; events: OverviewEvent[] }[]; lanes: string[]
 }
 
 // What the Workers tab draws: these mirror hooks/overview.ts.
@@ -29,6 +29,9 @@ declare module 'claude-code' {
       threads: ThreadTally
       // The ticket the Give back pane asks "what is missing?" about.
       giving: string | null
+      // The review notes that pane lists, each with what the person chose
+      // for it (fix now, follow-up, accept).
+      choosing: { id: string; items: { text: string; cls: 'blocker' | 'edge' | 'limit' | 'elsewhere'; choice: 'now' | 'later' | 'accept'; earlier?: 'now' | 'later' | 'accept'; follow?: string }[] } | null
       // The ticket the pane shows.
       paneTicket: string | null
       // Moves once a minute, so the cache countdown redraws.
@@ -69,6 +72,7 @@ declare module 'claude-code' {
       overviewTab: 'queue' | 'log' | 'workers'
       overviewFolded: Record<string, boolean>
       overviewPeople: string[]
+      overviewLanes: string[]
       // The Workers tab: its figures, read while it is open; where each
       // ticket's figures stand on their track; each ticket's colour and hat,
       // kept while it stays on the board; and the frame the animation is at.
