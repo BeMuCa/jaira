@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:11:46Z
+updated-at: 2026-11-21T08:12:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
@@ -31,10 +31,7 @@ outcome-what: "Round 3: in-progress stops at back.count 3 or more; jaira move ty
 outcome-why: "Alex gave the ticket back from signoff on 21.11. to close all three review notes in this round instead of leaving them as notes."
 outcome-resolves: "Review notes 1-3 of 1789d202. Checked: concurrency (copy inside locked Mutate), error paths (unreadable verdict/round -> no copy), input (multiline/CRLF gaps via SetScalar, empty gaps copied empty, three write orders tested), permissions (TTY rule opens no gate). go test ./... RC=0, claude plugin test 216 pass."
 review-summary: "none"
-review-gaps: |-
-  note: small edge: core/lane/builtin/20-in-progress.md (and twin) stops on 'count 3' - a count above 3 (a stop ignored once) reads as no stop; say 'count 3 or more'
-  note: known limit: a person sending back from a loop lane with the plain CLI (jaira move, not the TUI) is recorded as back-by=lane and counts toward the third-return stop - only the TUI sets ByPerson; the release note says 'any move made in the board', which is accurate
-  note: known limit: for a verdict of an earlier round the cockpit lists no notes under the row (they may be optimize's), so DoD 6 'zeigt die alten Funde' holds only through Explain, which needs a blocker: line or a reserving verdict - a clean earlier-round review shows just the 'changed since' line
+review-gaps: "none - c8de2b8a: no second TTY check in the repo (grep IsTerminal/isatty: none), nothing orphaned (sameRound still has callers), no fluff worth a change"
 test-verdict: "pass: round 3 over the diff since ac850761 (ancestor of HEAD): go test -race core/move internal/tui core/role core/shipped RC=0, claude plugin test 215 pass; both findings checked with a neighbour: TUI plain and force move both pass ByPerson, CLI moves from loop lanes still record lane (TestMoveRecordsWhoSentItBack), current-round notes still listed, stale and pre-review ones not"
 hunt-verdict: "pass: bughunt done at 1789d202, 0 change, 0 pre-existing (follow-up hunt over the diff since ac850761)"
 round: 3
