@@ -12,6 +12,23 @@ export const t = {
   theirs: (n: number, names: string[]) => `${n} waiting for ${names.join(', ')}`,
   reasonLabel: 'What is missing?',
   reasonPlaceholder: 'goes onto the ticket as a note',
+  // The Give back pane with the review's notes, one row each.
+  gapsHeading: 'Review notes - press a row to change what happens to it:',
+  choice: { now: '[fix now]', later: '[follow-up]', accept: '[accept]' } as Record<string, string>,
+  decidedBefore: '(decided before)',
+  moreLabel: 'Anything else?',
+  morePlaceholder: 'optional, goes onto the ticket with the notes',
+  acceptWithNow: (id: string, n: number) => `${id}: ${n} note${n === 1 ? ' is' : 's are'} marked fix now - press Give back, or mark ${n === 1 ? 'it' : 'them'} follow-up or accept`,
+  blockerNeedsWhy: (id: string) => `${id}: a blocker is not marked fix now - type why it is accepted anyway, or mark it fix now and press Give back`,
+  blockerNeedsTyping: (id: string) => `${id}: the review names a blocker - accepting it needs a reason typed in a terminal or on the desktop; nothing was accepted`,
+  whyLabel: 'Why accept it with the blocker?',
+  whyPlaceholder: 'required - goes onto the ticket as a decision',
+  acceptedDespite: 'accepted with a blocker not fixed',
+  alreadyIn: (id: string, lane: string) => `${id} is already in ${lane}: someone else decided it meanwhile. Nothing was written.`,
+  nothingToFix: (id: string) => `${id}: no note is marked fix now and nothing is typed - mark one, type what is missing, or press Accept`,
+  followUpsOf: (id: string) => `Follow-up tickets of ${id}`,
+  followUpsLost: (id: string, texts: string[]) => `These notes of ${id} were marked follow-up, but jaira created no ticket for them; the note on ${id} names each as not created:\n${texts.map(x => `- ${x}`).join('\n')}`,
+  movedMeanwhile: (id: string, lane: string, now: string) => `${id} is no longer in ${lane} but in ${now}: someone else decided it meanwhile. Nothing was written.`,
   accepted: (id: string, lane: string) => `${id} accepted: ${lane}`,
   returnedTo: (id: string, who: 'old' | 'new' | 'none') =>
     who === 'none' ? `${id} back in in-progress; no worker started (the ticket's note says why)` : `${id} given back to ${who === 'old' ? 'the worker that carried it' : 'a new worker'}`,
@@ -154,9 +171,14 @@ export const overviewWords = {
   tabQueue: 'Queue',
   tabLog: 'Log',
   tabWorkers: 'Workers',
-  // What a figure on the Workers tab is doing, beneath it in so many words.
+  // What an agent on the Workers tab is doing, on its line in so many words.
   states: { working: 'working', idle: 'resting', question: 'waits for an answer' },
   noWorkers: 'No agent on the board right now.',
+  // Above the stone: the definition-of-done items still open on the tickets
+  // with an agent at them.
+  stoneOpen: (n: number) => `${n} open`,
+  // Agents the picture has no room for; their lines are beneath it all the same.
+  moreWorkers: (n: number) => `+${n} more`,
   everybody: 'All',
   none: 'none',
   history: (days: number) => `Created and put back, last ${days} days`,

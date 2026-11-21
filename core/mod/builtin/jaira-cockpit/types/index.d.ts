@@ -17,8 +17,7 @@ export type Overview = {
 }
 
 // What the Workers tab draws: these mirror hooks/overview.ts.
-export type Walker = { id: string; state: 'working' | 'idle' | 'question'; lane: string; next: string; title: string; progress: number }
-export type Spot = { lane: string; x: number }
+export type Worker = { id: string; role: string; state: 'working' | 'idle' | 'question'; lane: string; title: string; open: number }
 
 declare module 'claude-code' {
   interface PluginState {
@@ -29,6 +28,9 @@ declare module 'claude-code' {
       threads: ThreadTally
       // The ticket the Give back pane asks "what is missing?" about.
       giving: string | null
+      // The review notes that pane lists, each with what the person chose
+      // for it (fix now, follow-up, accept).
+      choosing: { id: string; items: { text: string; cls: 'blocker' | 'edge' | 'limit' | 'elsewhere'; choice: 'now' | 'later' | 'accept'; earlier?: 'now' | 'later' | 'accept'; follow?: string }[] } | null
       // The ticket the pane shows.
       paneTicket: string | null
       // Moves once a minute, so the cache countdown redraws.
@@ -70,13 +72,17 @@ declare module 'claude-code' {
       overviewFolded: Record<string, boolean>
       overviewPeople: string[]
       overviewLanes: string[]
-      // The Workers tab: its figures, read while it is open; where each
-      // ticket's figures stand on their track; each ticket's colour and hat,
-      // kept while it stays on the board; and the frame the animation is at.
-      workers: Walker[] | null
-      workersWhere: Record<string, Spot>
+      // The Workers tab: its agents, read while it is open; each ticket's
+      // colour and hat, kept while it stays on the board; when each agent
+      // (<id>/<kind>) was first seen; the first line of each ticket's last
+      // report; the frame the stone last lost a chunk (-1: never); and the
+      // frame the animation is at.
+      workers: Worker[] | null
       workersColors: Record<string, string>
       workersHats: Record<string, string>
+      workersSince: Record<string, number>
+      workersReports: Record<string, string>
+      workersFell: number
       workersFrame: number
     }
   }

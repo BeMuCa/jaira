@@ -1,5 +1,7 @@
 import type { On, SessionRateLimit } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
+import { reportLine } from '../hooks/digest.ts'
+import { durationOf, stoneSize } from '../hooks/overview.ts'
 
 // A world beneath the plugin: a repository at /repo with a board, jaira, git
 // and Herdr answering from memory, and every command the plugin runs
@@ -95,6 +97,10 @@ type World = {
   heldTabs?: (() => void)[]
   // `git worktree list --porcelain`, WORKTREES unless set.
   worktrees?: string
+  // `jaira create` of a follow-up fails.
+  createFails?: boolean
+  // Another session's move came first: jaira answers this one 'already in'.
+  movedFirst?: boolean
 }
 
 const LANES = {
@@ -243,6 +249,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'jaira' && args[0] === 'list' && on !== undefined) return ok(JSON.stringify({ count: on.tickets.length, tickets: on.tickets }))
     if (cmd === 'jaira' && args[0] === 'lanes') return ok(JSON.stringify(w.oldJaira ? { lanes: LANES.lanes.map(({ human_exit, requires_question, ...l }) => l) } : LANES))
     if (cmd === 'jaira' && args[0] === 'list') return ok(JSON.stringify({ count: w.tickets.length, tickets: w.tickets }))
+    if (cmd === 'jaira' && args[0] === 'move' && w.movedFirst && !args.includes('--dry-run')) return ok(`${args[1]} is already in ${args[3]}\n`)
     if (cmd === 'jaira' && args[0] === 'move' && args.includes('--dry-run')) {
       const error = (w.warns ? `${OLDER}\n` : '') + JSON.stringify({ error: { code: 3, reason: 'gate_refused', violations: w.refusals } })
       return { value: { exitCode: 3, stdout: '', stderr: error, isStdoutTruncated: false, isStderrTruncated: false } }
@@ -278,12 +285,20 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
       return { value: { exitCode: 1, stdout: '', stderr: 'jaira: ticket file is locked', isStdoutTruncated: false, isStderrTruncated: false } }
     }
     if (cmd === 'jaira' && args[0] === 'whoami') return ok(w.me === undefined ? '' : JSON.stringify(w.me))
-    if (cmd === 'jaira' && args[0] === 'show') return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ handle: args[1], body: w.bodies[args[1]!] ?? '' }))
+    if (cmd === 'jaira' && args[0] === 'show') {
+      const status = (w.tickets.find(x => (x as { handle: string }).handle === args[1]) as { status?: string } | undefined)?.status
+      return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ handle: args[1], body: w.bodies[args[1]!] ?? '', ...(status !== undefined ? { status, board: '' } : {}) }))
+    }
     if (cmd === 'git' && args[0] === 'rev-parse' && args[1] === '--abbrev-ref') return w.originHead === undefined ? { value: { exitCode: 1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } } : ok(`${w.originHead}\n`)
     if (cmd === 'git' && args[0] === 'rev-parse') return ok('/repo/.git\n')
     if (cmd === 'git' && args[0] === '--exec-path') return ok('C:\\Program Files\\Git\\mingw64\\libexec\\git-core\n')
     if (cmd === 'git' && args[0] === 'worktree') return ok(w.worktrees ?? WORKTREES)
     const failed = (stderr: string) => ({ value: { exitCode: 1, stdout: '', stderr, isStdoutTruncated: false, isStderrTruncated: false } })
+    // A follow-up gets the next handle, F00001 and on; createFails refuses it.
+    if (cmd === 'jaira' && args[0] === 'create') {
+      if (w.createFails) return failed('jaira: the board is locked')
+      return ok(JSON.stringify({ handle: `F${String(w.ran.filter(r => r[0] === 'jaira' && r[1] === 'create').length).padStart(5, '0')}` }))
+    }
     if (cmd === 'git' && args[0] === 'config') return w.forge ? ok(`${w.forge}\n`) : failed('')
     if (cmd === 'git' && args[0] === 'remote' && args[1] === 'get-url') return w.origin === null ? failed("error: No such remote 'origin'") : ok(`${w.origin}\n`)
     if ((cmd === 'gh' || cmd === 'glab') && w.prs === null) return failed(`${cmd}: command not found`)
@@ -2096,6 +2111,390 @@ describe('a newer jaira release', () => {
   })
 })
 
+describe('give back with the review notes', () => {
+  const GAPS = 'blocker: DoD 2 - an empty export still writes a header\nnote: the export test covers 1MB, not 40MB\nnote: pre-existing: the log rotates at midnight UTC'
+  function withGaps(on: On, gaps: string, extra: Record<string, unknown> = {}) {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, review: { verdict: SIGNOFF.review.verdict, gaps }, ...extra }, HUMAN, WORKING]
+    return w
+  }
+  async function openPane($: Test$) {
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'back-MG677R' })
+    return $.ui.mount(GIVE('Give back MG677R'))
+  }
+  type Mounted = Awaited<ReturnType<typeof openPane>>
+  async function rows(pane: Mounted) {
+    const out: string[] = []
+    for (let i = 0; ; i++) {
+      const row = await pane.find({ key: `gap-MG677R-${i}` })
+      if (row === undefined) return out
+      out.push(row.text)
+    }
+  }
+  const notes = (w: World) => ran(w, 'jaira', 'note', 'MG677R').map(r => r[3])
+
+  test('every note of the review is a row; a blocker starts as fix now, every other note as accepted - no follow-up nobody chose', async ($, on) => {
+    withGaps(on, GAPS)
+    await startSession($)
+    const pane = await openPane($)
+    expect(await rows(pane)).toEqual([
+      '[fix now] [blocker] blocker: DoD 2 - an empty export still writes a header',
+      '[accept] note: the export test covers 1MB, not 40MB',
+      '[accept] [not this ticket] note: pre-existing: the log rotates at midnight UTC',
+    ])
+    // The first row takes the keyboard; the field below is for anything else.
+    expect((await pane.find({ key: 'gap-MG677R-0' }))?.props.autoFocus).toBe(true)
+    expect((await pane.find({ key: 'reason-MG677R' }))?.props.autoFocus).toBeUndefined()
+  })
+
+  test('the Explain note classes a known limit, which starts as accepted, when it classes every note', async ($, on) => {
+    const w = withGaps(on, GAPS)
+    w.bodies.MG677R = '## Progress\n- **2026-11-21 10:00 · Alex** — explain: Status: DoD 3/3 ok | tests ok\n[blocker] the header\n[small edge] the size\n[known limit] the clock\n1) fix it [give back]\n'
+    await startSession($)
+    expect((await rows(await openPane($)))[2]).toBe('[accept] [known limit] note: pre-existing: the log rotates at midnight UTC')
+  })
+
+  test('a blocker: line stays a blocker whatever class the Explain note gives its position', async ($, on) => {
+    const w = withGaps(on, GAPS)
+    // Every note classed, so position counts - but the first is a known limit there.
+    w.bodies.MG677R = '## Progress\n- **2026-11-21 10:00 · Alex** — explain: Status: DoD 3/3 ok\n[known limit] the header\n[small edge] the size\n[known limit] the clock\n'
+    await startSession($)
+    expect(await rows(await openPane($))).toEqual([
+      '[fix now] [blocker] blocker: DoD 2 - an empty export still writes a header',
+      '[accept] note: the export test covers 1MB, not 40MB',
+      '[accept] [known limit] note: pre-existing: the log rotates at midnight UTC',
+    ])
+  })
+
+  test('an Explain note that classes fewer notes than the review wrote is not matched by position', async ($, on) => {
+    const w = withGaps(on, GAPS)
+    w.bodies.MG677R = '## Progress\n- **2026-11-21 10:00 · Alex** — explain: Status: DoD 3/3 ok\n[known limit] the clock\n'
+    await startSession($)
+    expect((await rows(await openPane($)))[0]).toStartWith('[fix now] [blocker]')
+  })
+
+  test('a press changes a row: accept, fix now, follow-up, accept again', async ($, on) => {
+    withGaps(on, 'note: the size')
+    await startSession($)
+    const pane = await openPane($)
+    const seen: string[] = []
+    for (let i = 0; i < 4; i++) {
+      seen.push((await rows(pane))[0]!.split(']')[0]! + ']')
+      await pane.press({ key: 'gap-MG677R-0' })
+      }
+    expect(seen).toEqual(['[accept]', '[fix now]', '[follow-up]', '[accept]'])
+  })
+
+  test('Give back writes exactly the notes to fix, the follow-ups with their tickets and the accepted ones, after the move', async ($, on) => {
+    const w = withGaps(on, GAPS)
+    await startSession($)
+    const pane = await openPane($)
+    // The clock note: accept -> fix now -> follow-up.
+    await pane.press({ key: 'gap-MG677R-2' })
+    await pane.press({ key: 'gap-MG677R-2' })
+    await pane.input({ key: 'reason-MG677R', text: '' })
+    expect(notes(w)[0]).toBe([
+      'Given back from signoff: beheben:',
+      '- blocker: DoD 2 - an empty export still writes a header',
+      'Folge-Ticket:',
+      '- F00001: note: pre-existing: the log rotates at midnight UTC',
+      'angenommen:',
+      '- note: the export test covers 1MB, not 40MB',
+    ].join('\n'))
+    expect(ran(w, 'jaira', 'create')).toEqual([[
+      'jaira', 'create', '--context=note: pre-existing: the log rotates at midnight UTC', '--follows=MG677R', '--json', '--', 'the log rotates at midnight UTC', '@/.worktrees/repo-mg677r',
+    ]])
+    // The move first: a follow-up only for a ticket that really went back.
+    const at = (verb: string) => w.ran.findIndex(r => r[0] === 'jaira' && r[1] === verb)
+    expect(at('move')).toBeLessThan(at('create'))
+    expect(w.closed).toContain('cockpit-give-back')
+  })
+
+  test('what the person types goes along under the notes, on one line', async ($, on) => {
+    const w = withGaps(on, 'note: the size')
+    await startSession($)
+    const pane = await openPane($)
+    await pane.press({ key: 'gap-MG677R-0' })
+    await pane.input({ key: 'reason-MG677R', text: 'and the docs' })
+    expect(notes(w)[0]).toBe('Given back from signoff: beheben:\n- note: the size\ndazu: and the docs')
+  })
+
+  test('nothing marked fix now and nothing typed gives nothing back and keeps the pane open', async ($, on) => {
+    const w = withGaps(on, 'note: the size')
+    await startSession($)
+    const pane = await openPane($)
+    await pane.input({ key: 'reason-MG677R', text: ' ' })
+    expect(ran(w, 'jaira', 'move')).toEqual([])
+    expect(w.closed).toEqual([])
+    expect(w.toasts.at(-1)).toBe('MG677R: no note is marked fix now and nothing is typed - mark one, type what is missing, or press Accept')
+  })
+
+  test('a follow-up that could not be created is named so, and the note is still written', async ($, on) => {
+    const w = withGaps(on, 'note: the size\nnote: pre-existing: the clock')
+    w.createFails = true
+    await startSession($)
+    const pane = await openPane($)
+    await pane.press({ key: 'gap-MG677R-0' })
+    await pane.press({ key: 'gap-MG677R-1' })
+    await pane.press({ key: 'gap-MG677R-1' })
+    await pane.input({ key: 'reason-MG677R', text: '' })
+    expect(notes(w)[0]).toBe('Given back from signoff: beheben:\n- note: the size\nFolge-Ticket:\n- (not created: jaira: the board is locked): note: pre-existing: the clock')
+    // Heard, not only noted: the toast after it says the ticket went back.
+    expect(w.opened).toContainEqual({ id: 'cockpit-message', title: 'Follow-up tickets of MG677R failed', focus: true })
+  })
+
+  test('every value of the follow-up goes with =, so a finding starting with - is no flag', async ($, on) => {
+    const w = withGaps(on, '-race fails in core/gitref')
+    await startSession($)
+    const pane = await openPane($)
+    await pane.press({ key: 'gap-MG677R-0' })
+    await pane.press({ key: 'gap-MG677R-0' })
+    await pane.input({ key: 'reason-MG677R', text: 'and the docs' })
+    // jaira create takes the title only as its argument: after '--', where
+    // jaira itself (checked by hand: exit 0) reads '-race' as a title.
+    expect(ran(w, 'jaira', 'create')[0]?.slice(2, 7)).toEqual(['--context=-race fails in core/gitref', '--follows=MG677R', '--json', '--', '-race fails in core/gitref'])
+  })
+
+  test('a note kept a follow-up at the next acceptance keeps its ticket: no second one is created', async ($, on) => {
+    const w = withGaps(on, 'note: the size\nnote: pre-existing: the clock')
+    w.bodies.MG677R = '## Progress\n- **2026-11-20 10:00 · Alex** — Given back from signoff: beheben:\n- note: the size\nFolge-Ticket:\n- A1B2C3: note: pre-existing: the clock\n'
+    await startSession($)
+    await (await openPane($)).input({ key: 'reason-MG677R', text: '' })
+    expect(ran(w, 'jaira', 'create')).toEqual([])
+    expect(notes(w)[0]).toBe('Given back from signoff: beheben:\n- note: the size\nFolge-Ticket:\n- A1B2C3: note: pre-existing: the clock')
+  })
+
+  test('words typed with no note to fix still open the beheben: list the worker reads', async ($, on) => {
+    const w = withGaps(on, 'note: the size')
+    await startSession($)
+    const pane = await openPane($)
+    await pane.input({ key: 'reason-MG677R', text: 'the docs are missing' })
+    expect(notes(w)[0]).toBe('Given back from signoff: beheben:\ndazu: the docs are missing\nangenommen:\n- note: the size')
+  })
+
+  test('the dazu: line does not end the decisions read back after it', async ($, on) => {
+    const w = withGaps(on, 'note: the size')
+    w.bodies.MG677R = '## Progress\n- **2026-11-20 10:00 · Alex** — Given back from signoff: beheben:\ndazu: the docs\nangenommen:\n- note: the size\n'
+    await startSession($)
+    expect(await rows(await openPane($))).toEqual(['[accept] note: the size (decided before)'])
+  })
+
+  test('Accept with notes still marked fix now is refused and says so', async ($, on) => {
+    const w = withGaps(on, 'note: the size')
+    await startSession($)
+    const pane = await openPane($)
+    await pane.press({ key: 'gap-MG677R-0' })
+    await pane.press({ key: 'gaps-accept-MG677R' })
+    expect(ran(w, 'jaira', 'move')).toEqual([])
+    expect(w.toasts.at(-1)).toBe('MG677R: 1 note is marked fix now - press Give back, or mark it follow-up or accept')
+  })
+
+  test('a note that is no blocker, not marked fix now, does not hold Accept: the decisions go onto the ticket once it is accepted', async ($, on) => {
+    const w = withGaps(on, 'note: the size\nnote: pre-existing: the clock')
+    await startSession($)
+    const pane = await openPane($)
+    // the clock: accept -> fix now -> follow-up
+    await pane.press({ key: 'gap-MG677R-1' })
+    await pane.press({ key: 'gap-MG677R-1' })
+    await pane.press({ key: 'gaps-accept-MG677R' })
+    expect(notes(w)[0]).toBe('Accepted from signoff: Folge-Ticket:\n- F00001: note: pre-existing: the clock\nangenommen:\n- note: the size')
+    const forced = w.ran.findIndex(r => r[1] === 'move' && r.includes('--force'))
+    const noted = w.ran.findIndex(r => r[1] === 'note')
+    expect(forced).toBeLessThan(noted)
+    expect(forced).toBeLessThan(w.ran.findIndex(r => r[1] === 'create'))
+  })
+
+  test('an Accept the gates refuse writes no decisions and creates no follow-up', async ($, on) => {
+    const w = withGaps(on, 'note: pre-existing: the clock')
+    w.refusals.push({ code: 'dod_open', message: 'DoD 2 is not ticked' })
+    await startSession($)
+    await (await openPane($)).press({ key: 'gaps-accept-MG677R' })
+    expect(ran(w, 'jaira', 'note')).toEqual([])
+    expect(ran(w, 'jaira', 'create')).toEqual([])
+    expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toEqual([])
+  })
+
+  test('a blocker not marked fix now is accepted only with a reason, which goes onto the ticket as a decision', async ($, on) => {
+    const w = withGaps(on, 'blocker: the header\nnote: the size')
+    await startSession($)
+    const pane = await openPane($)
+    // Fix now: no field for a reason, the plain Accept.
+    expect(await pane.find({ key: 'why-MG677R' })).toBeUndefined()
+    await pane.press({ key: 'gap-MG677R-0' })
+    await pane.press({ key: 'gap-MG677R-0' })
+    // Not fix now: the Accept button gives way to the required field.
+    expect(await pane.find({ key: 'gaps-accept-MG677R' })).toBeUndefined()
+    for (const empty of ['', '   ', '\n']) {
+      await pane.input({ key: 'why-MG677R', text: empty })
+      expect(ran(w, 'jaira', 'move')).toEqual([])
+      expect(w.closed).toEqual([])
+      expect(w.toasts.at(-1)).toBe('MG677R: a blocker is not marked fix now - type why it is accepted anyway, or mark it fix now and press Give back')
+    }
+    await pane.input({ key: 'why-MG677R', text: 'the header is\nharmless for now' })
+    expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
+    expect(notes(w)).toEqual([
+      'Accepted from signoff: angenommen:\n- blocker: the header\n- note: the size',
+      'decision: accepted with a blocker not fixed: the header is harmless for now',
+    ])
+  })
+
+  test('the band\'s Accept accepts at once without a blocker', async ($, on) => {
+    const w = withGaps(on, 'note: the header')
+    w.bodies.MG677R = '## Progress\n- **2026-11-21 10:00 · Alex** — explain: Status: DoD 3/3 ok\n[small edge] the header\n'
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
+    expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
+    expect(w.opened.map(o => o.id)).not.toContain('cockpit-give-back')
+  })
+
+  // A blocker by its prefix, in markdown, or by the Explain note's class;
+  // a 'blocker:' line the Explain note calls a small edge stays a blocker.
+  for (const [gaps, explain] of [
+    ['blocker: the header', ''],
+    ['blocker: the header', '[small edge] the header'],
+    ['- **Blocker:** the header\nnote: the size', ''],
+    ['note: the header\nnote: the size', '[blocker] the header\n[small edge] the size'],
+  ] as const) {
+    test(`the band's Accept with a blocker in the review opens the notes and moves nothing: ${JSON.stringify(gaps)}${explain === '' ? '' : ` (Explain: ${JSON.stringify(explain)})`}`, async ($, on) => {
+      const w = withGaps(on, gaps)
+      if (explain !== '') w.bodies.MG677R = `## Progress\n- **2026-11-21 10:00 · Alex** — explain: Status: DoD 3/3 ok\n${explain}\n`
+      await startSession($)
+      await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
+      expect(ran(w, 'jaira', 'move')).toEqual([])
+      expect(w.opened.at(-1)).toEqual({ id: 'cockpit-give-back', title: 'Give back MG677R', focus: true })
+    })
+  }
+
+  for (const press of ['back', 'accept', 'band-accept'] as const) {
+    test(`a move another session made first: the second press writes nothing (${press})`, async ($, on) => {
+      const w = withGaps(on, 'note: the size\nnote: pre-existing: the clock')
+      w.movedFirst = true
+      await startSession($)
+      if (press === 'band-accept') await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
+      else {
+        const pane = await openPane($)
+        await pane.press({ key: 'gap-MG677R-0' })
+        await pane.press({ key: 'gap-MG677R-1' })
+        await pane.press({ key: 'gap-MG677R-1' })
+        if (press === 'back') await pane.input({ key: 'reason-MG677R', text: 'and the docs' })
+        else {
+          await pane.press({ key: 'gap-MG677R-0' })
+          await pane.press({ key: 'gap-MG677R-0' })
+          await pane.press({ key: 'gaps-accept-MG677R' })
+        }
+      }
+      expect(ran(w, 'jaira', 'move').filter(r => !r.includes('--dry-run'))).toHaveLength(1)
+      expect(ran(w, 'jaira', 'create')).toEqual([])
+      expect(ran(w, 'jaira', 'note')).toEqual([])
+      expect(w.ran.filter(r => r[0] === 'herdr' || r[1] === SPAWN)).toEqual([])
+      expect(w.opened.at(-1)?.title).toBe(`${press === 'back' ? 'Give back' : 'Accept'} MG677R failed`)
+    })
+  }
+
+  test('the next acceptance starts every note decided before as it was decided, follow-ups included', async ($, on) => {
+    const w = withGaps(on, GAPS)
+    w.bodies.MG677R = [
+      '## Progress',
+      '- **2026-11-20 10:00 · Alex** — Given back from signoff: beheben:',
+      '- blocker: DoD 2 - an empty export still writes a header',
+      'Folge-Ticket:',
+      '- A1B2C3: note: the export test covers 1MB, not 40MB',
+      'angenommen:',
+      '- note: pre-existing: the log rotates at midnight UTC',
+      '- **2026-11-20 11:00 · Alex** — cockpit: given back to a new worker - x',
+    ].join('\n')
+    await startSession($)
+    expect(await rows(await openPane($))).toEqual([
+      '[fix now] [blocker] blocker: DoD 2 - an empty export still writes a header (decided before)',
+      '[follow-up] note: the export test covers 1MB, not 40MB (decided before)',
+      '[accept] [not this ticket] note: pre-existing: the log rotates at midnight UTC (decided before)',
+    ])
+  })
+
+  test('a newer decision wins over an older one; a note given back with words only decides nothing', async ($, on) => {
+    const w = withGaps(on, 'note: the size\nnote: the docs')
+    w.bodies.MG677R = [
+      '## Progress',
+      '- **2026-11-19 10:00 · Alex** — Given back from signoff: beheben:',
+      '- note: the size',
+      '- **2026-11-19 12:00 · Alex** — Given back from signoff: note: the docs',
+      '- **2026-11-20 10:00 · Alex** — Accepted from signoff: angenommen:',
+      '- note: the size',
+    ].join('\n')
+    await startSession($)
+    expect(await rows(await openPane($))).toEqual(['[accept] note: the size (decided before)', '[accept] note: the docs'])
+  })
+
+  // The input classes of the ticket, one row each.
+  test('no notes: the pane asks what is missing, as before', async ($, on) => {
+    withGaps(on, 'none')
+    await startSession($)
+    const pane = await openPane($)
+    expect(await rows(pane)).toEqual([])
+    expect((await pane.find({ key: 'reason-MG677R' }))?.props.autoFocus).toBe(true)
+    expect(await pane.find({ key: 'gaps-accept-MG677R' })).toBeUndefined()
+  })
+
+  test('a note wrapped over lines is one row, a blank line and a none dropped, CRLF and emphasis read', async ($, on) => {
+    withGaps(on, '- note: a long finding\n  that wraps here\n- **blocker:** the header\r\n\nnone')
+    await startSession($)
+    expect(await rows(await openPane($))).toEqual(['[accept] note: a long finding that wraps here', '[fix now] [blocker] **blocker:** the header'])
+  })
+
+  test('gaps without prefixes, as an older review wrote them, are a row per line, none merged', async ($, on) => {
+    withGaps(on, 'first finding\nsecond finding')
+    await startSession($)
+    expect(await rows(await openPane($))).toEqual(['[accept] first finding', '[accept] second finding'])
+  })
+
+  test('a review of an earlier round lists its own notes, not what a later lane wrote into review-gaps', async ($, on) => {
+    withGaps(on, 'note: optimize says this', { round: 2, review_round: 1, review: { verdict: SIGNOFF.review.verdict, gaps: 'note: optimize says this', verdict_gaps: 'blocker: the review said this' } })
+    await startSession($)
+    expect(await rows(await openPane($))).toEqual(['[fix now] [blocker] blocker: the review said this'])
+  })
+
+  test('very many notes are all rows', async ($, on) => {
+    withGaps(on, Array.from({ length: 40 }, (_, i) => `note: finding ${i}`).join('\n'))
+    await startSession($)
+    const all = await rows(await openPane($))
+    expect(all).toHaveLength(40)
+    expect(all[39]).toBe('[accept] note: finding 39')
+  })
+
+  test('decided meanwhile by someone else: nothing is moved, created or noted, and the pane says who was faster', async ($, on) => {
+    const w = withGaps(on, 'note: the size\nnote: pre-existing: the clock')
+    await startSession($)
+    const pane = await openPane($)
+    w.tickets = w.tickets.map(x => ((x as { handle: string }).handle === 'MG677R' ? { ...(x as object), status: 'in-progress' } : x))
+    await pane.press({ key: 'gap-MG677R-0' })
+    await pane.input({ key: 'reason-MG677R', text: '' })
+    expect(ran(w, 'jaira', 'move')).toEqual([])
+    expect(ran(w, 'jaira', 'create')).toEqual([])
+    expect(ran(w, 'jaira', 'note')).toEqual([])
+    expect(w.opened.at(-1)).toEqual({ id: 'cockpit-message', title: 'Give back MG677R failed', focus: true })
+  })
+
+  test('the old worker gets the decisions on one line, the ticket keeps the lines', async ($, on) => {
+    const w = world(on, { herdr: true, store: { 'session:old': {
+      session: 'old', pane: 'w1:p9', cwd: '/x', repo: '/repo', ticket: 'MG677R', role: 'worker', lane: '',
+      lastAnswerAt: 1_000_000 - 60_000, tokens: 80_000, window: 1_000_000, ttl: 3_600_000, updatedAt: 1_000_000 - 60_000,
+    } } })
+    w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker' }]
+    w.tickets = [{ ...SIGNOFF, review: { verdict: SIGNOFF.review.verdict, gaps: 'note: the size\nnote: the docs' } }]
+    await startSession($)
+    const pane = await openPane($)
+    await pane.press({ key: 'gap-MG677R-0' })
+    await pane.press({ key: 'gap-MG677R-1' })
+    const typed = pane.input({ key: 'reason-MG677R', text: '' })
+    await w.clock.advance(1000)
+    await typed
+    const sent = ran(w, 'herdr', 'pane', 'send-text', 'w1:p9')[0]?.[4] ?? ''
+    expect(sent).toContain('Reason: beheben: - note: the size - note: the docs - also a note')
+    expect(sent).not.toContain('\n')
+  })
+})
+
 describe('give back, the edges', () => {
   test('a record a day old decides nothing and is dropped', async ($, on) => {
     const w = world(on, { herdr: true, store: { 'session:old': {
@@ -2879,79 +3278,198 @@ describe('the overview', () => {
 
 describe('the workers tab', () => {
   const WIDTH = 160
-  const workersTab = async ($: Test$) => {
+  const workersTab = async ($: Test$, columns = WIDTH, rows = 40) => {
     await (await $.ui.mount(BAND)).press({ key: 'overview' })
-    const pane = await $.ui.mount(OVERVIEW)
+    const base = OVERVIEW as { props: { scroll: object } }
+    const pane = await $.ui.mount({ ...base, props: { ...base.props, bodyColumns: columns, scroll: { ...base.props.scroll, bodyRows: rows } } } as never)
     await pane.press({ key: 'overview-tab-workers' })
     return pane
   }
   type Pane = Awaited<ReturnType<typeof workersTab>>
-  // The tracks as drawn, top to bottom, each a list of its lines: findAll
-  // gives a line's Text before the runs within it, so only whole lines of the
-  // pane's width are taken, and the rule between two tracks splits them.
-  const tracksOf = async (pane: Pane) => {
-    const lines = (await pane.findAll({ type: 'Text' })).map(x => x.text)
-    const tracks: string[][] = [[]]
-    let skip = 0
-    for (const line of lines) {
-      if (skip > 0 && line.length < WIDTH) continue
-      if (line.length !== WIDTH) continue
-      skip = 1
-      if (/^─+$/.test(line)) tracks.push([])
-      else tracks.at(-1)!.push(line)
-    }
-    return tracks.filter(t => t.length > 0)
-  }
-  // Where a track's crab stands: the column its head starts at.
-  const crabAt = (track: string[]) => track.map(l => l.indexOf('▐▛███▜▌')).find(i => i >= 0)! - 1
-  const walls = (track: string[]) => track[0]!.slice(1, -1).trim().split(/\s{2,}/)
-  // The column a share of the way across puts the crab at, as the pane draws
-  // it 160 cells wide: two cells inside the wall, ten the crab and its spark.
-  const column = (x: number) => 2 + Math.round(x * (WIDTH - 4 - 10))
-  const plan = (done: number, of: number) => Array.from({ length: of }, (_, i) => ({ done: i < done, state: i < done ? 'done' : 'todo' }))
+  const texts = async (pane: Pane) => (await pane.findAll({ type: 'Text' })).map(x => x.text)
+  // The picture's rows: whole lines of the pane's width. A row of one style
+  // is its own single run too: findAll gives it twice in a row.
+  const pictureOf = async (pane: Pane, columns = WIDTH) =>
+    (await texts(pane)).filter((t, i, all) => t.length === columns && !/^[A-Z0-9]{6}  /.test(t) && all[i - 1] !== t)
+  // One line per agent beneath the picture, its trailing room trimmed.
+  const linesOf = async (pane: Pane) => (await texts(pane)).filter(t => /^[A-Z0-9]{6}  /.test(t)).map(t => t.replace(/\s+$/, ''))
+  const dod = (done: number, of: number) => Array.from({ length: of }, (_, i) => ({ done: i < done, state: i < done ? 'done' : 'todo' }))
 
-  test('one track per figure fills the pane, walled by its lane and the next, with who does what in plain words', async ($, on) => {
+  test('the stone: a pebble for nothing open, never smaller for more, never past its box', () => {
+    expect(stoneSize(0, 30, 10)).toEqual({ w: 3, h: 1 })
+    expect(stoneSize(-2, 30, 10)).toEqual({ w: 3, h: 1 })
+    let last = stoneSize(0, 30, 10)
+    for (const open of [1, 2, 3, 5, 9, 16, 40, 100, 1000]) {
+      const size = stoneSize(open, 30, 10)
+      expect(size.w).toBeGreaterThanOrEqual(last.w)
+      expect(size.h).toBeGreaterThanOrEqual(last.h)
+      expect(size.w).toBeLessThanOrEqual(30)
+      expect(size.h).toBeLessThanOrEqual(10)
+      last = size
+    }
+    // Four times the work reads larger, not four times as wide.
+    expect(stoneSize(4, 99, 99)).toEqual({ w: 12, h: 3 })
+    expect(stoneSize(16, 99, 99)).toEqual({ w: 20, h: 5 })
+    // A box smaller than a pebble still holds one cell.
+    expect(stoneSize(9, 0, 0)).toEqual({ w: 1, h: 1 })
+  })
+
+  test('how long an agent has been seen reads in minutes, then hours', () => {
+    expect([0, 59_999, 60_000, 59 * 60_000, 65 * 60_000, 25 * 3_600_000, -5].map(durationOf)).toEqual(['<1m', '<1m', '1m', '59m', '1h05', '25h00', '<1m'])
+  })
+
+  test('a report\'s first line: a notification\'s result without tags and blank lines, else the text', () => {
+    expect(reportLine('<task-notification>\n<summary>x</summary>\n<result>\n\n  done: moved.\nmore\n</result>')).toBe('done: moved.')
+    expect(reportLine('<task-notification>\n<task-id>a1</task-id> <status>done</status>\nplain message\nsecond')).toBe('plain message')
+    expect(reportLine('')).toBe('')
+    expect(reportLine('<result>\n</result>')).toBe('')
+    // Angle brackets inside a line of content are content, never stripped.
+    for (const line of ['keyed by Map<string, number> and a < b check > fixed', 'if n<3 then x>2', 'moved <id> to critique', '<b>bold</b> start'])
+      expect(reportLine(`<task-notification>\n<result>\n${line}\n</result>`)).toBe(line)
+    // A line an agent wrote to make a pattern backtrack is read in linear time.
+    for (const line of ['<a></a>'.repeat(5000) + 'x', '<a>'.repeat(5000) + 'x', '<a '.repeat(5000) + '>x', `<${'a'.repeat(20000)}>x</b>`]) {
+      const start = performance.now()
+      expect(reportLine(`<result>\n${line}\n</result>`)).toBe(line)
+      expect(performance.now() - start).toBeLessThan(200)
+    }
+  })
+
+  test('a ticket with an open question and no agent is no figure; one with an agent waits for the answer', async ($, on) => {
     const w = world(on, { herdr: true })
-    w.tickets = [
-      HUMAN,
-      { ...WORKING, assignee: 'Alex', next_lane: 'critique' },
-      { handle: 'R1R1R1', title: 'judged', status: 'review', next_lane: 'signoff', question: '' },
-      { handle: 'D1D1D1', title: 'finished', status: 'done', question: '' },
+    const asking = { handle: 'Q1Q1Q1', title: 'asks', status: 'human', next_lane: 'review', question: 'which one?' }
+    w.tickets = [HUMAN, asking, { ...WORKING, assignee: 'Alex' }]
+    w.tabs = [
+      { tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' },
+      { tab_id: 'w1:t2', label: 'Q1Q1Q1/worker', agent_status: 'idle' },
     ]
+    await startSession($)
+    const lines = await linesOf(await workersTab($))
+    expect(lines.map(l => l.slice(0, 6))).toEqual(['T8QS1Y', 'Q1Q1Q1'])
+    expect(lines[1]).toContain('waits for an answer')
+    expect(lines.join('\n')).not.toContain('K7P2QX')
+  })
+
+  test('only tickets with an open question and nobody on them: nobody on the board', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tickets = [HUMAN, { handle: 'Z1Z1Z1', title: 'old', status: 'signoff', next_lane: 'done', question: 'accept?' }]
+    await startSession($)
+    expect(await (await workersTab($)).find({ type: 'Text', text: 'No agent on the board right now.' })).toBeDefined()
+  })
+
+  test('one line per agent: ticket, lane, kind, state, how long it has been seen, and the first line of its last report', async ($, on) => {
+    const report = '<task-notification>\n<task-id>a1</task-id>\n<result>\n\nT8QS1Y: tests green, moving to critique.\nsecond line\n</result>\n</task-notification>'
+    const w = world(on, { herdr: true, store: { 'report:/repo:T8QS1Y': [{ at: '2026-11-21T10:00:00Z', origin: 'peer', session: 's', text: report }] } })
+    w.tickets = [{ ...WORKING, assignee: 'Alex' }, { handle: 'R1R1R1', title: 'judged', status: 'review', next_lane: 'signoff', question: '' }]
     w.tabs = [
       { tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' },
       { tab_id: 'w1:t2', label: 'R1R1R1/review', agent_status: 'idle' },
-      // A person's own chat is not an agent, and a finished ticket has no lane to stand in.
+      // A person's own chat is not an agent.
       { tab_id: 'w1:t3', label: 'T8QS1Y/explain', agent_status: 'working' },
-      { tab_id: 'w1:t4', label: 'D1D1D1/worker', agent_status: 'idle' },
     ]
+    w.agents = [{ id: 'a1', description: 'bughunt T8QS1Y', type: 'claude', status: 'running' }]
     await startSession($)
-    const tracks = await tracksOf(await workersTab($))
-    // Board order of the lanes; 40 rows less the tab row, three high with the
-    // framed Close in it: 37, two of them rules.
-    expect(tracks.map(walls)).toEqual([['in-progress', 'critique'], ['review', 'signoff'], ['human', 'review']])
-    expect(tracks.map(t => t.length)).toEqual([11, 11, 11])
-    const said = tracks.map(t => t.at(-1)!.slice(1, -1).trim())
-    expect(said).toEqual(['T8QS1Y · working · filter', 'R1R1R1 · resting · judged', 'K7P2QX · waits for an answer · tags popup'])
-    // Resting sits with z z above its hat; a question stands with (?) above it.
-    expect(tracks[1]!.some(l => l.includes('z z'))).toBe(true)
-    expect(tracks[1]!.some(l => l.includes('▀▀▀▀▀'))).toBe(true)
-    expect(tracks[2]!.some(l => l.includes('(?)'))).toBe(true)
-    expect(tracks[0]!.some(l => l.includes('(?)') || l.includes('z z'))).toBe(false)
+    const pane = await workersTab($)
+    expect(await linesOf(pane)).toEqual([
+      'T8QS1Y  in-progress  subagent  working    <1m  T8QS1Y: tests green, moving to critique.',
+      'T8QS1Y  in-progress  worker    working    <1m  T8QS1Y: tests green, moving to critique.',
+      'R1R1R1  review       review    resting    <1m  judged',
+    ])
+    // Read again after another tab: the time it was first seen stays.
+    await pane.press({ key: 'overview-tab-queue' })
+    await w.clock.advance(6 * 60_000)
+    await pane.press({ key: 'overview-tab-workers' })
+    expect((await linesOf(pane))[1]).toBe('T8QS1Y  in-progress  worker    working     6m  T8QS1Y: tests green, moving to critique.')
   })
 
-  test('the crab stands as far across as its ticket has come: its plan, else its definition of done, else at the left wall', async ($, on) => {
+  test('every agent stands at one stone, its count the open definition-of-done items of the tickets with an agent', async ($, on) => {
     const w = world(on, { herdr: true })
     w.tickets = [
-      { handle: 'A1A1A1', title: 'a', status: 'in-progress', question: '', plan_items: plan(1, 4), dod_items: plan(0, 2) },
-      { handle: 'B1B1B1', title: 'b', status: 'in-progress', question: '', plan_items: [], dod_items: [...plan(1, 2), { done: false, state: 'superseded' }] },
-      { handle: 'C1C1C1', title: 'c', status: 'in-progress', question: '' },
-      { handle: 'E1E1E1', title: 'e', status: 'in-progress', question: '', dod_items: plan(3, 3) },
+      { ...WORKING, assignee: 'Alex', dod_items: [...dod(1, 4), { done: false, state: 'superseded' }] },
+      { handle: 'C1C1C1', title: 'judged', status: 'critique', question: '', dod_items: dod(0, 2) },
+      // No agent on it: its work is not at the stone.
+      { handle: 'N1N1N1', title: 'idle', status: 'in-progress', question: '', dod_items: dod(0, 9) },
     ]
-    w.tabs = w.tickets.map((t, i) => ({ tab_id: `w1:t${i}`, label: `${(t as { handle: string }).handle}/worker`, agent_status: 'working' }))
+    w.tabs = [
+      { tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' },
+      { tab_id: 'w1:t2', label: 'C1C1C1/worker', agent_status: 'working' },
+      { tab_id: 'w1:t3', label: 'C1C1C1/bughunt', agent_status: 'working' },
+    ]
     await startSession($)
-    const tracks = await tracksOf(await workersTab($))
-    expect(tracks.map(crabAt)).toEqual([column(1 / 4), column(1 / 2), column(0), column(1)])
+    const picture = await pictureOf(await workersTab($))
+    // Three open on T8QS1Y, two on C1C1C1 counted once however many work it.
+    expect(picture.some(l => l.includes('5 open'))).toBe(true)
+    // Three crabs on one ground line, none on a track of its own.
+    expect(picture.filter(l => l.includes('▐▛███▜▌')).join('').split('▐▛███▜▌').length - 1).toBe(3)
+    expect(picture.filter(l => /^─+$/.test(l))).toHaveLength(1)
+  })
+
+  test('a definition-of-done item ticked makes the stone smaller, and a chunk falls from it', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tickets = [{ ...WORKING, assignee: 'Alex', dod_items: dod(0, 9) }]
+    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' }]
+    await startSession($)
+    const pane = await workersTab($)
+    // The stone's cells: its runs of rock, which no crab's run matches.
+    const stone = async () => (await texts(pane)).filter(t => /^(▟█*▙|█+|▄+)$/.test(t)).join('').length
+    const big = await stone()
+    const before = await pictureOf(pane)
+    expect(before.some(l => l.includes('9 open'))).toBe(true)
+    expect(before.some(l => l.includes('▞'))).toBe(false)
+    w.tickets = [{ ...WORKING, assignee: 'Alex', dod_items: dod(8, 9) }]
+    await w.clock.advance(5000)
+    const after = await pictureOf(pane)
+    expect(after.some(l => l.includes('1 open'))).toBe(true)
+    expect(after.some(l => l.includes('▞'))).toBe(true)
+    expect(await stone()).toBeLessThan(big)
+    // It has fallen after a few frames.
+    await w.clock.advance(250 * 8)
+    expect((await pictureOf(pane)).some(l => l.includes('▞'))).toBe(false)
+  })
+
+  for (const n of [1, 4, 8, 16, 30]) {
+    test(`${n} agents and all their lines fit 40 rows × 100 columns without scrolling`, async ($, on) => {
+      const w = world(on, { herdr: true })
+      const ids = Array.from({ length: n }, (_, i) => `A${String(i).padStart(2, '0')}AAA`)
+      w.tickets = ids.map(handle => ({ handle, title: handle, status: 'in-progress', question: '', dod_items: dod(0, 3) }))
+      w.tabs = ids.map((id, i) => ({ tab_id: `w1:t${i}`, label: `${id}/worker`, agent_status: 'working' }))
+      await startSession($)
+      const pane = await workersTab($, 100, 40)
+      const picture = await pictureOf(pane, 100)
+      const lines = await linesOf(pane)
+      expect(lines).toHaveLength(n)
+      // 40 rows less the tab row, three high with the framed Close in it.
+      expect(picture.length + lines.length).toBeLessThanOrEqual(37)
+      const crabs = picture.join('\n')
+      const big = crabs.split('▐▛███▜▌').length - 1
+      const small = crabs.split('▐▛▜▌').length - 1
+      // Every agent stands in the picture: the big crab while they all fit, else the small one.
+      expect(big + small).toBe(n)
+      expect(big === n || small === n).toBe(true)
+      if (n === 30) expect(small).toBe(n)
+    })
+  }
+
+  test('working hammers in place; resting sits still', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tickets = [{ ...WORKING, assignee: 'Alex' }]
+    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' }]
+    await startSession($)
+    const pane = await workersTab($)
+    const seen: string[] = []
+    for (let i = 0; i < 4; i++) {
+      seen.push((await pictureOf(pane)).join('\n').replace(/[✻✳✶✢]/g, ''))
+      await w.clock.advance(250)
+    }
+    expect(new Set(seen).size).toBe(2)
+    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'idle' }]
+    await w.clock.advance(5000)
+    const resting: string[] = []
+    for (let i = 0; i < 4; i++) {
+      resting.push((await pictureOf(pane)).join('\n'))
+      await w.clock.advance(250)
+    }
+    expect(new Set(resting).size).toBe(1)
+    expect(resting[0]).toContain('▀▀▀▀▀')
   })
 
   test('two tickets never wear the same colour or hat, and each keeps both on every read', async ($, on) => {
@@ -2963,32 +3481,21 @@ describe('the workers tab', () => {
     ]
     await startSession($)
     const pane = await workersTab($)
-    // Each track's head in its colour, and the hat on the line above it.
-    const looks = async () => {
-      const heads = (await pane.findAll({ type: 'Text' })).filter(x => x.text.includes('▐▛███▜▌') && x.text.length < WIDTH)
-      const tracks = await tracksOf(pane)
-      return tracks.map((t, i) => {
-        const x = crabAt(t)
-        const head = t.findIndex(l => l.includes('▐▛███▜▌'))
-        return { color: (heads[i]!.props as { color?: string }).color, hat: t[head - 1]!.slice(x + 1, x + 8) }
-      })
-    }
-    const first = await looks()
-    expect(first[0]!.color).toBeDefined()
-    expect(first[0]!.color).not.toBe(first[1]!.color)
-    expect(first[0]!.hat.trim()).not.toBe('')
-    expect(first[0]!.hat).not.toBe(first[1]!.hat)
-    // Four more join: the first two keep theirs, and all six differ in both.
+    // Each ticket's colour as its line's handle wears it.
+    const colors = async () => Object.fromEntries((await pane.findAll({ type: 'Text' }))
+      .filter(x => /^[A-Z0-9]{6}$/.test(x.text) && (x.props as { bold?: boolean }).bold === true)
+      .map(x => [x.text, (x.props as { color?: string }).color]))
+    const first = await colors()
+    expect(first.T8QS1Y).toBeDefined()
+    expect(first.T8QS1Y).not.toBe(first.C1C1C1)
     const more = ['A1A1A1', 'A2A2A2', 'A3A3A3', 'A4A4A4']
     w.tickets = [...w.tickets, ...more.map(handle => ({ handle, title: handle, status: 'in-progress', question: '' }))]
     w.tabs = [...w.tabs, ...more.map((id, i) => ({ tab_id: `w1:x${i}`, label: `${id}/worker`, agent_status: 'working' }))]
     await w.clock.advance(5000)
-    const after = await looks()
-    const byId = (await tracksOf(pane)).map(t => t.at(-1)!.slice(1, -1).trim().slice(0, 6))
-    expect(after[byId.indexOf('T8QS1Y')]).toEqual(first[0])
-    expect(after[byId.indexOf('C1C1C1')]).toEqual(first[1])
-    expect(new Set(after.map(l => l.color)).size).toBe(6)
-    expect(new Set(after.map(l => l.hat)).size).toBe(6)
+    const after = await colors()
+    expect(after.T8QS1Y).toBe(first.T8QS1Y)
+    expect(after.C1C1C1).toBe(first.C1C1C1)
+    expect(new Set(Object.values(after)).size).toBe(6)
   })
 
   test('once a ticket leaves, two that had to share a colour never keep sharing it', async ($, on) => {
@@ -3001,116 +3508,11 @@ describe('the workers tab', () => {
     board(ids)
     await startSession($)
     const pane = await workersTab($)
-    const colors = async () => (await pane.findAll({ type: 'Text' })).filter(x => x.text.includes('▐▛███▜▌') && x.text.length < WIDTH).map(x => (x.props as { color?: string }).color)
-    // Seven tickets, six colours: two share one.
+    const colors = async () => (await pane.findAll({ type: 'Text' })).filter(x => /^[A-Z]{6}$/.test(x.text) && (x.props as { bold?: boolean }).bold === true).map(x => (x.props as { color?: string }).color)
     expect(new Set(await colors()).size).toBe(6)
     board(ids.filter(id => id !== 'BBBBBB'))
     await w.clock.advance(5000)
     expect(new Set(await colors()).size).toBe(6)
-  })
-
-  test('working moves its arms in place; resting sits still', async ($, on) => {
-    const w = world(on, { herdr: true })
-    w.tickets = [{ ...WORKING, assignee: 'Alex' }, { handle: 'C1C1C1', title: 'judged', status: 'critique', question: '' }]
-    w.tabs = [
-      { tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' },
-      { tab_id: 'w1:t2', label: 'C1C1C1/worker', agent_status: 'idle' },
-    ]
-    await startSession($)
-    const pane = await workersTab($)
-    const seen: string[][] = []
-    for (let i = 0; i < 4; i++) {
-      seen.push((await tracksOf(pane)).map(t => t.slice(0, -1).join('\n')))
-      await w.clock.advance(250)
-    }
-    expect(new Set(seen.map(s => s[0]!.replace(/[✻✳✶✢]/g, ''))).size).toBe(2)
-    expect(new Set(seen.map(s => s[1]!)).size).toBe(1)
-  })
-
-  test('a ticket that came further walks there column by column, its legs stepping', async ($, on) => {
-    const w = world(on, { herdr: true })
-    w.tickets = [{ ...WORKING, assignee: 'Alex', next_lane: 'critique', plan_items: plan(0, 2) }]
-    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' }]
-    await startSession($)
-    const pane = await workersTab($)
-    expect(crabAt((await tracksOf(pane))[0]!)).toBe(column(0))
-    w.tickets = [{ ...WORKING, assignee: 'Alex', next_lane: 'critique', plan_items: plan(1, 2) }]
-    // Read again after 5 s: one step on in that frame, one each frame after.
-    await w.clock.advance(5000)
-    const steps: number[] = []
-    const legs: string[] = []
-    for (let i = 0; i < 3; i++) {
-      const track = (await tracksOf(pane))[0]!
-      steps.push(crabAt(track))
-      legs.push(track.at(-2)!.slice(crabAt(track), crabAt(track) + 9))
-      await w.clock.advance(250)
-    }
-    expect(steps).toEqual([column(1 / 40), column(2 / 40), column(3 / 40)])
-    expect(legs[0]).not.toBe(legs[1])
-    expect(legs[0]).toBe(legs[2])
-    // It stops where its progress puts it.
-    await w.clock.advance(250 * 30)
-    expect(crabAt((await tracksOf(pane))[0]!)).toBe(column(1 / 2))
-  })
-
-  test('a ticket that moved on walks to the right wall, the walls move along, and it starts again at the left', async ($, on) => {
-    const w = world(on, { herdr: true })
-    w.tickets = [{ ...WORKING, assignee: 'Alex', next_lane: 'critique', plan_items: plan(1, 2) }]
-    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' }]
-    await startSession($)
-    const pane = await workersTab($)
-    w.tickets = [{ ...WORKING, status: 'critique', next_lane: 'review', plan_items: plan(0, 2) }]
-    await w.clock.advance(5000)
-    let track = (await tracksOf(pane))[0]!
-    expect(walls(track)).toEqual(['in-progress', 'critique'])
-    expect(crabAt(track)).toBeGreaterThan(column(1 / 2))
-    for (let i = 0; i < 40 && walls(track)[0] === 'in-progress'; i++) {
-      expect(crabAt(track)).toBeLessThanOrEqual(column(1))
-      await w.clock.advance(250)
-      track = (await tracksOf(pane))[0]!
-    }
-    // The old right wall is the left one now, and the crab is back at it.
-    expect(walls(track)).toEqual(['critique', 'review'])
-    expect(crabAt(track)).toBe(column(0))
-  })
-
-  test('on a narrow pane the walls\' names are cut to half the line each, never written over each other', async ($, on) => {
-    const w = world(on, { herdr: true })
-    w.tickets = [{ ...WORKING, assignee: 'Alex', next_lane: 'critique' }]
-    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' }]
-    await startSession($)
-    await (await $.ui.mount(BAND)).press({ key: 'overview' })
-    const narrow = { ...(OVERVIEW as { props: object }), props: { ...(OVERVIEW as { props: object }).props, bodyColumns: 24 } } as never
-    const pane = await $.ui.mount(narrow)
-    await pane.press({ key: 'overview-tab-workers' })
-    const top = (await pane.findAll({ type: 'Text' })).map(x => x.text).find(t => t.startsWith('┃ ') && t.length === 24)
-    // 24 cells: nine for each name, the walls and the gaps around them.
-    expect(top).toBe('┃ in-progre  critique  ┃')
-  })
-
-  test('on a pane too narrow for it, the line beneath the crab ends before the right wall', async ($, on) => {
-    const w = world(on, { herdr: true })
-    w.tickets = [HUMAN]
-    await startSession($)
-    await (await $.ui.mount(BAND)).press({ key: 'overview' })
-    const narrow = { ...(OVERVIEW as { props: object }), props: { ...(OVERVIEW as { props: object }).props, bodyColumns: 30 } } as never
-    const pane = await $.ui.mount(narrow)
-    await pane.press({ key: 'overview-tab-workers' })
-    const caption = (await pane.findAll({ type: 'Text' })).map(x => x.text).find(t => t.includes('K7P2QX ·') && t.length === 30)
-    expect(caption).toBe('┃ K7P2QX · waits for an answ ┃')
-  })
-
-  test('a subagent of this session has a track too, at work or resting', async ($, on) => {
-    const w = world(on)
-    w.tickets = [{ ...WORKING, assignee: 'Alex' }, { handle: 'C1C1C1', title: 'judged', status: 'critique', question: '' }]
-    w.agents = [
-      { id: 'a1', description: 'work lane in-progress of T8QS1Y', type: 'claude', status: 'running' },
-      { id: 'a2', description: 'critique C1C1C1', type: 'claude', status: 'idle' },
-      { id: 'a3', description: 'old run of C1C1C1', type: 'claude', status: 'completed' },
-    ]
-    await startSession($)
-    const said = (await tracksOf(await workersTab($))).map(t => t.at(-1)!.slice(1, -1).trim())
-    expect(said).toEqual(['T8QS1Y · working · filter', 'C1C1C1 · resting · judged'])
   })
 
   test('nobody on the board says so', async ($, on) => {

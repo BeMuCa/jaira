@@ -1000,6 +1000,15 @@ esac
 		if want := strings.Join([]string{shellDir(t, bash, wt), "ab12cd", off, shellDir(t, bash, root)}, "\n") + "\n"; string(got) != want {
 			t.Errorf("the setup got\n%s\nwant worktree, slug, offset %s and root:\n%s", got, off, want)
 		}
+		// The same four, written down for reap.sh to hand the teardown.
+		gd, gerr := exec.Command("git", "-C", wt, "rev-parse", "--absolute-git-dir").Output()
+		if gerr != nil {
+			t.Fatal(gerr)
+		}
+		rec, _ := os.ReadFile(filepath.Join(strings.TrimSpace(string(gd)), "jaira-setup"))
+		if want := "worktree=" + shellDir(t, bash, wt) + "\nslug=ab12cd\noffset=" + off + "\nroot=" + shellDir(t, bash, root) + "\n"; string(rec) != want {
+			t.Errorf("spawn.sh recorded\n%s\nwant\n%s", rec, want)
+		}
 		if env, _ := os.ReadFile(filepath.Join(wt, ".env")); string(env) != "FROM_SETUP=1\n" {
 			t.Errorf("spawn.sh wrote into the .env the setup made:\n%s", env)
 		}
