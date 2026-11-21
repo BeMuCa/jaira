@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:45:07Z
+updated-at: 2026-11-21T08:45:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
@@ -31,7 +31,7 @@ outcome-what: "Round 6: on_head requires the hunt commit in HEAD's history, coun
 outcome-why: "Testing round 5: the hunter found a main checkout on master read a feature branch's hunt as on HEAD; the scratch run found a file list split at a space read as unchanged."
 outcome-resolves: "both round-5 findings; TestChangedSince (12 cases incl. not-an-ancestor, split list, other ticket's commit, master merge); go test core/gitrepo internal/cli core/ticket RC=0. Checked: concurrency (read-only git), error paths (invalid id/unknown commit -> error -> on_head false; ls-tree error surfaces), input (spaces, -z, literal pathspecs, unknown paths), permissions (handle pattern built only from a ValidID)."
 review-summary: "none"
-review-gaps: "none - 190a55ec: the only Go reader of 'bughunt: done at' is the new huntDone (grep), git helpers reuse runTolerating/codeOnly, nothing orphaned"
+review-gaps: "folded the ticket-reference regex into gitrepo.namesTicket (derive.go), used by CommitsForTicket and ChangedSince - it was written twice"
 test-verdict: "fail: suite green at 190a55ec, but own scratch run: 'files: a b.go' split at the space read as unchanged (on_head true on a changed file)"
 hunt-verdict: "fail: 1 change finding at 190a55ec - ChangedSince does not check the hunt commit is an ancestor of HEAD (main checkout on master -> on_head true)"
 round: 6
