@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:18:30Z
+updated-at: 2026-11-21T08:19:34Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -155,3 +155,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-21 08:13 · Alexander Sacharov** — critique (Runde 10): Fork-Pfad bleibt der einzige, der Remotes sucht; nicht-Fork landet immer auf origin wie vor 4582d699 - nichts zu sagen.
 - **2026-11-21 08:15 · Alexander Sacharov** — bughunt: done at 2bf13dd8 - 0 findings in 2 modules, follow-up hunt since 94b9dcad (diff of core/role/builtin/jaira-dispatcher/scripts/reap.sh core/role/reap_test.go core/shipped/shipped.sha256; no new file in list); concurrency, error paths, input, permissions checked; ran: go test ./core/role -run Reap -count=3 (ok); files: .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md core/board/announce.go core/board/arrival.go core/board/arrival_test.go core/gitrepo/named.go core/release/notes/XB97NJ.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-dispatcher/scripts/reap.sh core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/reap_test.go core/settings/settings.go core/settings/settings_test.go core/shipped/shipped.sha256 internal/cli/prgate_test.go internal/cli/roles.go internal/cli/validate.go
 - **2026-11-21 08:18 · Alexander Sacharov** — review (fresh): kein Blocker, 4 Notes in review-gaps; Tests gruen. Weiter nach signoff.
+- **2026-11-21 08:19 · Alexander Sacharov** — Given back from signoff (Teamlead im Auftrag Alex 21.11., alle Funde schliessen): 1) Revert-Commits unter none: Gate erkennt 'Revert "type(ID): ..."' als Commit von ID (oder jaira-role-pr sagt klar, wie der Betreff zu schreiben ist) - lieber im Gate loesen, mit Test. 2) Eigene Tests fuer UnnamedCommits/isPlainMerge in core/gitrepo. 3) reap.sh: scheitert 'jaira roles list', nennt es die Ursache statt still auf den PR-Pfad zu fallen. Note 4 (milestones) ist kein Fund. Diff-Hunt, review, signoff, push.
