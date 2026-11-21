@@ -1,7 +1,7 @@
 ---
 id: 01M5ZJ5DKQZ83GYBGPJHAX8K02
 title: "Die PR-Rolle hat einen festen Schritt vor dem Push: Scan, master, Suite, DoD, Logbook"
-status: testing
+status: critique
 ready: true
 creator: BeMuCa
 goal: "jaira-role-pr fuehrt vor jedem Push einen festen Ablauf aus: Branch auf E-Mail, Denylist-Strings und Rechnernamen pruefen, master mergen, die volle Race-Suite einmal laufen lassen, die Suite-DoD-Punkte ticken, je Ticket logbook plus chore-Commit, dann push."
@@ -20,7 +20,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-10-27T20:52:23Z
-updated-at: 2026-11-21T19:26:20Z
+updated-at: 2026-11-21T19:29:10Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2284393
@@ -30,10 +30,10 @@ outcome-why: "For two batches the pre-push step was done by hand from memory: su
 outcome-resolves: "jaira-role-pr runs one fixed, checkable sequence before every push; a denylist hit stops it without repeating the string; suite DoD items get ticked so done needs no --force."
 review-summary: "none - the shape stands on the 19:02 decision note (script beside the role like pr-round.sh, tested from core/role like pr_round_test.go) and the 19:06 decision (hostname warns). Per-commit scan rather than the net diff is what the class needs (19:10 note b). The repeated git log calls per commit are optimize's, not a design question."
 review-gaps: "pre-push-scan.sh: message and emails were read by six git log calls per commit, three per list - now two, before the list loop, author and committer from one call. Searched for an existing scanner to call instead: none in the repo (scripts/check-ticket-commits.sh checks ticket files, not mentions; T22Z2C's check-mentions.sh is on no ref here). Left: the two deny/host loops - the name list must be complete for both lists before content hits are mapped, so they cannot merge. Nothing dead, no forwarding wrappers."
-round: 2
+round: 3
 back-from: testing
 back-by: lane
-back-count: 1
+back-count: 2
 ---
 
 # Die PR-Rolle hat einen festen Schritt vor dem Push: Scan, master, Suite, DoD, Logbook
@@ -92,3 +92,6 @@ back-count: 1
 - **2026-11-21 19:22 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-pr/scripts/pre-push-scan.sh:138-139 - class: commit fields a push publishes that the scan never reads: author name and committer name (%an/%cn); only %B, %ae, %ce are read, though the header (line 2) promises every commit a push would publish. Example: GIT_AUTHOR_NAME='Alex AcmeCorp', committer name 'AcmeCorp Bot', empty commit -> exit 0, no hit. Marked not a blocker: the usage text names five places on purpose, so whether names belong in scope is the carrier's call. ran: scratch repo, git log -1 --format='%an / %cn' shows both, scan exit 0
 - **2026-11-21 19:22 · Alexander Sacharov** — bughunt: done at 0555f5ab - 3 findings (3 change, 1 of them blocker, 0 pre-existing) in 4 modules, first hunt; concurrency, error paths, input, permissions checked; .jaira/milestones/* are untracked board data, not code, not hunted; files: core/role/builtin/jaira-role-pr/scripts/pre-push-scan.sh core/role/builtin/jaira-role-pr/SKILL.md core/role/pre_push_scan_test.go core/role/role_test.go core/release/notes/AX8K02.md core/shipped/shipped.sha256 .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/release-0-6-0-FWV78J.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md
 - **2026-11-21 19:25 · Alexander Sacharov** — round 2 (bughunt 19:22): fixed the class 'list read differently than written' at the one place the list is read: UTF-16 with BOM goes through iconv, NUL bytes or non-UTF-8 exit 2 (iconv -f UTF-8 -t UTF-8 checks), UTF-8 BOM stripped (printf'd bytes in sed, not \xEF - BSD sed has no \x), filter with grep -a. Case folding: the script picks the first locale that folds U-umlaut (caller's, C.UTF-8, C.utf8, en_US.UTF-8), and says so in the summary when none does. Names: %an/%cn read with the emails. Usage exit-code text now says git's own code (testing note). Mutation: the 7 new subtests fail on 0555f5ab's script.
+- **2026-11-21 19:28 · Alexander Sacharov** — bughunt: change: blocker: core/role/builtin/jaira-role-pr/scripts/pre-push-scan.sh:94 - class: a denylist whose lines are separated by something other than LF or CRLF is not split into patterns but glued (tr -d '\r' deletes a bare CR instead of turning it into a line break), so its patterns silently never match and the scan passes; the comment above says the list is read as written or refused, this input is neither; example: a list saved with classic-Mac CR-only line endings, 'foo<CR>acmecorp<CR>', becomes the single pattern 'fooacmecorp', and a commit adding 'for acmecorp' exits 0 instead of 3 (with only 'acmecorp<CR>' it still works, because there is one line); blame: 9c99329e (names AX8K02); ran: printf 'foo\racmecorp\r' > l; JAIRA_MENTION_DENYLIST=l JAIRA_SCAN_HOSTNAME= bash pre-push-scan.sh main in a scratch repo whose branch adds 'for acmecorp' (exit 0; same list with LF exits 3)
+- **2026-11-21 19:28 · Alexander Sacharov** — bughunt: done at dd38bac2 - 1 finding (1 change, blocker; 0 pre-existing), follow-up hunt of the diff since 0555f5ab; concurrency, error paths, input, permissions checked; .jaira/milestones/* are untracked board data, not hunted; files: core/role/builtin/jaira-role-pr/scripts/pre-push-scan.sh core/role/builtin/jaira-role-pr/SKILL.md core/role/pre_push_scan_test.go core/role/role_test.go core/release/notes/AX8K02.md core/shipped/shipped.sha256 .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/release-0-6-0-FWV78J.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md
+- **2026-11-21 19:29 · Alexander Sacharov** — round 3 (bughunt dd38bac2): line separators were the same class as round 2 - the list read differently than written. Every CR now becomes a line break (CRLF leaves an empty line, dropped with the blanks), and trailing blanks are stripped from each pattern: kept, they demanded a blank in the text and matched nothing. Both new subtests fail on dd38bac2's script. Left as the hunter judged them, semantics rather than defects: a doubled BOM and a form feed inside a pattern.

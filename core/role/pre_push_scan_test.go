@@ -223,6 +223,8 @@ func TestPrePushScanReadsTheListAsWritten(t *testing.T) {
 		{"UTF-16LE with BOM", utf16le("# list\r\nacmecorp\r\n"), "for acmecorp\n", "", 3, "matches the denylist"},
 		{"UTF-16 without BOM", utf16le("acmecorp\n")[2:], "for acmecorp\n", "", 2, "NUL bytes"},
 		{"Latin-1", "acmecorp\nm\xfcller\n", "for acmecorp\n", "", 2, "not UTF-8"},
+		{"lines ending in CR only", "foo\racmecorp\r", "for acmecorp\n", "", 3, "matches the denylist"},
+		{"CRLF and trailing blanks", "foo \t\r\nacmecorp  \r\n", "for acmecorp.\n", "", 3, "matches the denylist"},
 		{"C locale still folds non-ASCII", "müller\n", "MÜLLER GmbH\n", "C", 3, "matches the denylist"},
 	} {
 		t.Run(c.name, func(t *testing.T) {

@@ -24,7 +24,8 @@ Two lists are matched, case-insensitively:
                  else ~/.config/jaira/mention-denylist. It lives outside the
                  repository on purpose: a list inside it would be the mention.
                  UTF-8, with or without a BOM, or UTF-16 with its BOM; any
-                 other encoding is refused rather than half read.
+                 other encoding is refused rather than half read. Lines may
+                 end in LF, CRLF or CR; blanks at a line's end are ignored.
                  A hit stops the push. No file, or one with no pattern in it:
                  the scan says the strings were not checked and goes on.
   this machine   its name as 'uname -n' gives it, up to the first dot
@@ -89,9 +90,12 @@ if [ -e "$list" ]; then
     command -v iconv >/dev/null || die "the denylist $list holds non-ASCII text and iconv is missing to check it is UTF-8" 2
     iconv -f UTF-8 -t UTF-8 <"$tmp/list" >/dev/null 2>&1 || die "the denylist $list is not UTF-8 — save it as UTF-8" 2
   fi
-  # A BOM would stick to the first pattern; a file written on Windows ends its
-  # lines in CR, which would make every pattern demand a CR the content has not.
-  LC_ALL=C sed "1s/^$(printf '\357\273\277')//" "$tmp/list" | tr -d '\r' |
+  # A BOM would stick to the first pattern. A line ends in LF, CRLF or a lone
+  # CR (an old Mac file): every CR becomes a line break, and the empty line
+  # CRLF leaves behind is dropped with the blank ones. Trailing blanks are an
+  # editor's, not the pattern's: kept, they would demand a blank in the text.
+  LC_ALL=C sed "1s/^$(printf '\357\273\277')//" "$tmp/list" | tr '\r' '\n' |
+    LC_ALL=C sed 's/[[:blank:]]*$//' |
     { LC_ALL=C grep -a -v -e '^[[:space:]]*#' -e '^[[:space:]]*$' || true; } >"$deny"
   rc=0
   LC_ALL=$fold grep -Eqi -f "$deny" </dev/null 2>/dev/null || rc=$?
