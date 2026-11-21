@@ -25,14 +25,14 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T09:34:45Z
+updated-at: 2026-11-21T09:34:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2485785
 claimed-at: 2026-11-21T08:57:23Z
 outcome-what: "signoff reads the .jaira-only hunt exemption off jaira's own derivation (show --for-lane <diff lane> --json) instead of a git-log scan"
 outcome-why: "teamlead 10:30 option 1: three hunts in a row found edges of the scan, one class - re-implementing jaira's commit derivation in shell"
 outcome-resolves: "the exemption uses exactly the commits jaira counts as the ticket's; no diff stays ?"
-review-summary: "critique 21.11. round 10: exemption now needs positive evidence, matching jaira's own case-insensitive derivation; unknown stays ?. Nothing to change."
+review-summary: "critique 21.11. round 11: the cause is gone - no git-log in the role; the diff lane is found by input_requires like the other lanes by their flags. Nothing to change."
 round: 19
 review-gaps: "optimize 21.11. round 10: nothing to remove."
 test-verdict: "fail: gates green at dc95045a; bughunt 09:29 change: commit scan also matches jaira/board branch commits (added <ULID>) touching board/*.md"
