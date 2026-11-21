@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:34:29Z
+updated-at: 2026-11-21T08:34:34Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -168,3 +168,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-21 08:32 · Alexander Sacharov** — in-progress (Runde 9): (a) reap.sh: grep im prwhy-Zweig mit '|| true' - unter pipefail beendete leeres stderr den Lauf stumm; leere Meldung -> 'no message (exit status only)', Test. (b) Revert nur als Commit seines Tickets, wenn der zurueckgenommene Commit (Body 'This reverts commit <sha>.') in base..HEAD liegt (core/gitrepo revertsBranchWork, Menge aus demselben git log, kein extra merge-base); sonst unbenannt -> Tor zu. Tests in gitrepo und internal/cli mit echtem git revert; Rolle + Release-Note sagen: Revert von Basis-Arbeit braucht ein eigenes Ticket.
 - **2026-11-21 08:32 · Alexander Sacharov** — critique (Runde 12): Die Grenze 'nur Arbeit des Zweigs' ist die richtige - ein Revert, der sich auf dem Zweig aufhebt, braucht keine Annahme; einer, der Gelandetes zuruecknimmt, schon. Nichts zu sagen.
 - **2026-11-21 08:34 · Alexander Sacharov** — bughunt: change: core/gitrepo/named.go:108 (revertsBranchWork) - a revert of the branch's own commit stops counting as its ticket's once the branch is rebased: the body keeps 'This reverts commit <old sha>', which is no longer in base..HEAD, so pr-gate under none lists it as 'name no ticket' although its subject names the ticket - and the gate's own message tells the user to 'git rebase'; ran: scratch Go test (commit fix(A3K9QP) + git revert on feat: UnnamedCommits = []; after main moves on and 'git rebase main': UnnamedCommits = [Revert "fix(A3K9QP): w"])
+- **2026-11-21 08:34 · Alexander Sacharov** — bughunt: change: core/gitrepo/named.go:96 (revertedCommit) - the pattern takes exactly 40 hex digits followed by \b; in a repository created with --object-format=sha256 git writes 64, \b never matches after the 40th, so every revert, even of the branch's own commit, counts as unnamed and pr-gate under none refuses the branch; ran: scratch Go test in a sha256 repo (commit fix(A3K9QP) + git revert: UnnamedCommits = [Revert "fix(A3K9QP): w"])
