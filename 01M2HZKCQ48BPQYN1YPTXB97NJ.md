@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:18:08Z
+updated-at: 2026-11-21T08:18:12Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -38,11 +38,10 @@ outcome-resolves: "XB97NJ"
 review-summary: "Eine Datei .jaira/pr mit dem Wort 'none' sagt jetzt: dieses Projekt nimmt keine Pull Requests. core/board/arrival.go liest die Datei (nur exakt 'agent'/'none' zaehlen, BOM/CRLF/Kommentare werden ignoriert, alles andere bleibt 'person') und schreibt bei agent/none einen eigenen Absatz in den jaira-Block von CLAUDE.md/AGENTS.md; ohne Datei bleibt der Block byte-gleich, jaira validate meldet ihn als veraltet, wenn die Datei wechselt. 'jaira roles list' meldet pr=none (und nennt ein Wort, das nicht griff). 'jaira roles pr-gate' laesst unter none einen Zweig landen, wenn .jaira/pr im Basis-Zweig none sagt, jedes genannte Ticket in done/logbook ist und jeder Commit ein Ticket nennt - Merges nur, wenn ihr Baum exakt gits eigener Merge der Eltern ist (core/gitrepo/named.go UnnamedCommits). jaira-role-pr bekommt den Schritt 'Land it' (Gate, Basis mergen, Gate erneut, fast-forward push, nie --force); dispatcher/teamlead erwaehnen none; reap.sh zaehlt einen Zweig unter none als gemerged, sobald der Default-Branch des Ziel-Remotes (origin oder bei einem Fork dessen Parent) seine Spitze enthaelt und ein Commit dort das Ticket nennt. Release-Notiz in core/release/notes/XB97NJ.md."
 round: 12
 review-gaps: |-
-  note: reap.sh misst das Landen nur an origin; jaira-role-pr landet auf <remote> - in einem Fork-Setup (Landen auf upstream) wartet reap dann ewig mit 'has not landed'
-  note: eine .jaira/pr mit BOM (Windows-Notepad) liest sich still als person, und roles list sagt dann 'the default' obwohl eine Datei da ist - sicher, aber verwirrend; ein Hinweis in roles list waere hilfreich
-  note: unter none prueft pr-gate die Ticket-Status aus dem lokalen Store, nicht vom Basis-Zweig; ein von Hand auf done gesetztes Ticket-File oder ein Commit, der ein laengst abgelegtes Logbook-Ticket nennt, landet ohne dass ein Mensch es sieht - dieselbe Vertrauensannahme wie bei agent, nur ohne PR dahinter
-  note: landed_head liest pro Ticket die ganze Historie der Spitze (git log tip) - auf grossen Repos langsam, korrekt
-  optimize Runde 6: nichts zu entfernen - firstLine bleibt als ein Einzeiler auf PRWordIn (ein Leseweg fuer alle Board-Dateien), land_remote/default_base ersetzen die alte origin-feste Variante ohne Rest.
+  note: unter none lehnt das Gate einen Revert-Commit ab (Betreff 'Revert "fix(X)..."' passt nicht auf type(ID):) - faellt sicher zu, steht aber nirgends in jaira-role-pr; der Agent muss den Betreff umschreiben
+  note: UnnamedCommits/isPlainMerge in core/gitrepo/named.go haben keinen eigenen Test im Paket, nur ueber internal/cli/prgate_test.go
+  note: reap.sh faellt still auf den PR-Pfad zurueck, wenn 'jaira roles list' scheitert; auf einem none-Board steht dann 'no merged pull request' statt der Ursache
+  note: worktree_diff enthaelt nur unversionierte .jaira/milestones/*.md, die nichts mit diesem Ticket zu tun haben - nicht mit in die Ticket-Commits nehmen
 test-verdict: "pass (round 7): go vet + go test -race ./... RC=0 at 2bf13dd8; DoD 1-8 proofs re-checked after line shifts; scratch board: BOM+CRLF 'none' -> pr none, 'nnone' -> person with the word named in the source, chmod 000 .jaira/pr -> person 'the default' exit 0 (safe; note: small edge: an unreadable file is not named as such); reap: fork/parent by URL and by gh redirect, renamed non-fork origin reaps; writes: roles list/reap write no board file, nothing to race"
 hunt-verdict: "pass (round 9 at 2bf13dd8): 0 findings"
 claimed-by: DESKTOP-RFTCH11-30002
