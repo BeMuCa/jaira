@@ -17,8 +17,9 @@ record, and neither the main worktree nor the one this runs in is removed.
 A ticket whose branch has no merged pull request yet (gh on GitHub, glab on
 GitLab; 'git config jaira.forge' settles a host that names neither) is left
 alone as 'waiting'. On a board whose .jaira/pr says none there are no pull
-requests: there the branch counts as merged once origin's default branch
-(origin/HEAD) contains its tip, and no forge is asked. A merged one is kept, with the reason printed, when
+requests: there the branch counts as merged once the default branch of the
+remote work lands on contains its tip — origin, or its parent where origin is
+a GitHub fork — and no forge is asked about a pull request. A merged one is kept, with the reason printed, when
   - its local branch is not at the merged head: commits past it, or the head
     never fetched,
   - one of its worktrees has changes that are not committed, as
@@ -142,36 +143,54 @@ merged_head() {
 # tip is what merged means.
 prmode="$( (cd "$root" && jaira roles list --json 2>/dev/null) | jaira json get pr --default person 2>/dev/null || true)"
 
-# origin's default branch under none: origin/HEAD, which a clone sets, or
-# origin/main or origin/master where it is missing (git init + remote add) or
-# points at a branch that is gone;
-# nothing when none of them is there.
+# The remote work lands on under none, as jaira-role-pr settles it: the one
+# whose URL names <owner/repo> — origin's parent when origin is a fork, so a
+# fork clone measures the upstream it pushes to and not its own fork, which
+# never receives the landing. origin where <owner/repo> is not known (no gh,
+# not GitHub); nothing when it is known and no remote here names it.
+land_remote() {
+  local r url pat
+  if [ -z "$repo" ]; then echo origin; return; fi
+  pat="[:/]$(printf '%s' "$repo" | sed 's/[.]/[.]/g')(\.git)?/?\$"
+  for r in $(git -C "$root" remote); do
+    url="$(git -C "$root" remote get-url "$r" 2>/dev/null || true)"
+    if grep -qiE "$pat" <<<"$url"; then echo "$r"; return; fi
+  done
+}
+
+# That remote's default branch: <remote>/HEAD, which a clone sets, or
+# <remote>/main or <remote>/master where it is missing (git init + remote add)
+# or points at a branch that is gone; nothing when none of them is there.
 default_base() {
-  local b
+  local r="$1" b
+  [ -n "$r" ] || return 0
   # Full ref names throughout: --short would spell origin/X as remotes/origin/X
   # where a local branch is called origin/X.
-  b="$(git -C "$root" symbolic-ref -q refs/remotes/origin/HEAD 2>/dev/null || true)"
-  # origin/HEAD can dangle: the remote renamed its default branch and a
+  b="$(git -C "$root" symbolic-ref -q "refs/remotes/$r/HEAD" 2>/dev/null || true)"
+  # <remote>/HEAD can dangle: the remote renamed its default branch and a
   # 'fetch --prune' took the old one away. Then fall back as if it were unset.
   if [ -n "$b" ] && ! git -C "$root" rev-parse --verify -q "$b" >/dev/null 2>&1; then b=""; fi
   if [ -z "$b" ]; then
-    for b in refs/remotes/origin/main refs/remotes/origin/master ""; do
+    for b in "refs/remotes/$r/main" "refs/remotes/$r/master" ""; do
       [ -n "$b" ] && git -C "$root" rev-parse --verify -q "$b" >/dev/null 2>&1 && break
     done
   fi
   printf '%s' "$b"
 }
 
-# Under none: the branch's tip once origin's default branch contains it and
-# a commit there names the ticket ($2), or nothing — not landed yet, no
-# origin/HEAD to measure it against, or a branch with no work of its own yet,
-# whose tip the default branch contains from the start.
+# Under none: the branch's tip once the default branch ($3) contains it and a
+# commit there names the ticket ($2), or nothing — not landed yet, or a branch
+# with no work of its own yet, whose tip the default branch contains from the
+# start. git does the search (--grep, in C) and hands over only the commits
+# with a line naming the ticket; the subject check then reads those few,
+# instead of every subject of the whole history passing through the shell on
+# every run. --grep also matches a body line, so the subject is checked again.
 landed_head() {
-  local base tip
-  base="$(default_base)"
+  local base="$3" tip pat
   tip="$(git -C "$root" rev-parse --verify -q "refs/heads/$1" 2>/dev/null || true)"
+  pat="^[a-z]+\\(([^)]*[, ])?$2([, ][^)]*)?\\)!?:"
   if [ -n "$base" ] && [ -n "$tip" ] && git -C "$root" merge-base --is-ancestor "$tip" "$base" 2>/dev/null \
-    && grep -qE "^[a-z]+\\(([^)]*[, ])?$2([, ][^)]*)?\\)!?:" <<<"$(git -C "$root" log --format=%s "$tip" --)"; then
+    && grep -qE "$pat" <<<"$(git -C "$root" log -E --grep="$pat" --format=%s "$tip" --)"; then
     echo "$tip"
   fi
 }
@@ -203,11 +222,16 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
   [ -n "$branch" ] || branch="${JAIRA_BRANCH_PREFIX:-feat}/$(printf '%s' "$t" | tr '[:upper:]' '[:lower:]')"
 
   if [ "$prmode" = none ]; then
-    if [ -z "$(default_base)" ]; then
-      echo "waiting $t: cannot tell origin's default branch; run 'git remote set-head origin --auto'"; continue
+    lr="$(land_remote)"
+    if [ -z "$lr" ]; then
+      echo "waiting $t: no remote here points at $repo, where work lands; add one ('git remote add upstream <its URL>')"; continue
     fi
-    head="$(landed_head "$branch" "$t")"
-    if [ -z "$head" ]; then echo "waiting $t: $branch has not landed on origin's default branch"; continue; fi
+    base="$(default_base "$lr")"
+    if [ -z "$base" ]; then
+      echo "waiting $t: cannot tell $lr's default branch; run 'git remote set-head $lr --auto'"; continue
+    fi
+    head="$(landed_head "$branch" "$t" "$base")"
+    if [ -z "$head" ]; then echo "waiting $t: $branch has not landed on $lr's default branch"; continue; fi
   else
     if [ -z "$forge" ]; then
       echo "kept $t: cannot tell the forge from origin; set it with 'git config jaira.forge github' (or gitlab)"; continue

@@ -30,6 +30,7 @@ package settings
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -185,16 +186,9 @@ func boardLine(path string) string {
 }
 
 // firstLine is the first line of a board file's content that is neither
-// blank nor a comment, trimmed.
-func firstLine(content string) string {
-	for _, line := range strings.Split(content, "\n") {
-		line = strings.TrimSpace(line)
-		if line != "" && !strings.HasPrefix(line, "#") {
-			return line
-		}
-	}
-	return ""
-}
+// blank nor a comment, trimmed, a byte order mark in front of it dropped —
+// the same reading every one-line board file gets as .jaira/pr does.
+func firstLine(content string) string { return board.PRWordIn(content) }
 
 // SetBoardChatModel writes the board's chat model; "" removes the file, so
 // the machine's fallback applies again.
@@ -319,7 +313,20 @@ func PRFor(root string) (who, source string) {
 	if who = board.PRModeFor(root); who != PRPerson {
 		return who, "from .jaira/pr, shared with the board"
 	}
-	return PRPerson, "the default"
+	// A file that is there but reads as person must not look like no file at
+	// all: someone who wrote "none" with a typo has to see why it did not take.
+	b, err := os.ReadFile(BoardPRPath(root))
+	if root == "" || err != nil {
+		return PRPerson, "the default"
+	}
+	switch w := board.PRWordIn(string(b)); w {
+	case "":
+		return PRPerson, "the default — .jaira/pr is there but says nothing"
+	case PRPerson:
+		return PRPerson, "from .jaira/pr, shared with the board"
+	default:
+		return PRPerson, fmt.Sprintf("the default — .jaira/pr says %q, which is neither agent nor none", w)
+	}
 }
 
 // PRIn reads the content of a .jaira/pr file — one taken from a commit

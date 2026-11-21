@@ -1,1 +1,2 @@
 - Working alone without pull requests? Commit a one-line `.jaira/pr` saying `none` and run `jaira update`: the roles then land a branch on the default branch with a fast-forward push once every ticket on it is in done, instead of stopping at a pull request nobody opens. Without the file nothing changes.
+- A `.jaira/pr` (or `pr-when`, `release`) saved with a byte order mark now reads as what it says; when `.jaira/pr` holds a word that is neither `agent` nor `none`, `jaira roles list` names that word instead of claiming the default.

@@ -477,24 +477,31 @@ func TestReapOnANoneBoardWaitsForTheDefaultBranch(t *testing.T) {
 	r.write(t, filepath.Join(r.repo, ".jaira", "pr"), "none\n")
 	r.write(t, filepath.Join(r.repo, ".jaira", "tickets", ".keep"), "")
 	r.write(t, r.shown, `{"status":"done"}`)
-	// No origin ref at all: nothing to measure against, and it says how to
+	// origin is a fork (the rig's gh says so): work lands on its parent, and
+	// with no remote here pointing at it, it says how to add one rather
+	// than measuring the fork, which never receives the landing.
+	if out := r.run(t, r.repo, "reap.sh"); !strings.Contains(out, "no remote here points at upstream/jaira") {
+		t.Fatalf("fork without its parent as a remote, want the add hint:\n%s", out)
+	}
+	r.git(t, r.repo, "remote", "add", "up", "https://github.com/Upstream/jaira.git")
+	// No ref of it at all: nothing to measure against, and it says how to
 	// fix that rather than claiming the branch has not landed.
-	if out := r.run(t, r.repo, "reap.sh"); !strings.Contains(out, "cannot tell origin's default branch") {
-		t.Fatalf("no origin refs, want the set-head hint:\n%s", out)
+	if out := r.run(t, r.repo, "reap.sh"); !strings.Contains(out, "cannot tell up's default branch") {
+		t.Fatalf("no up refs, want the set-head hint:\n%s", out)
 	}
-	// origin/HEAD left dangling (the remote renamed master to main and a
-	// prune took origin/master away) counts as unset, not as a base.
-	r.git(t, r.repo, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/gone")
-	if out := r.run(t, r.repo, "reap.sh"); !strings.Contains(out, "cannot tell origin's default branch") {
-		t.Fatalf("dangling origin/HEAD, want the set-head hint:\n%s", out)
+	// up/HEAD left dangling (the remote renamed master to main and a
+	// prune took up/master away) counts as unset, not as a base.
+	r.git(t, r.repo, "symbolic-ref", "refs/remotes/up/HEAD", "refs/remotes/up/gone")
+	if out := r.run(t, r.repo, "reap.sh"); !strings.Contains(out, "cannot tell up's default branch") {
+		t.Fatalf("dangling up/HEAD, want the set-head hint:\n%s", out)
 	}
-	// origin/master beside it (or without origin/HEAD at all) is enough.
+	// up/master beside it (or without up/HEAD at all) is enough.
 	base := r.git(t, r.repo, "rev-parse", "master")
-	r.git(t, r.repo, "update-ref", "refs/remotes/origin/master", base)
-	// A valid origin/HEAD beside a local branch that is also called
-	// origin/master: the remote one is still the base (bughunt round 6).
-	r.git(t, r.repo, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/master")
-	r.git(t, r.repo, "branch", "origin/master", base)
+	r.git(t, r.repo, "update-ref", "refs/remotes/up/master", base)
+	// A valid up/HEAD beside a local branch that is also called
+	// up/master: the remote one is still the base (bughunt round 6).
+	r.git(t, r.repo, "symbolic-ref", "refs/remotes/up/HEAD", "refs/remotes/up/master")
+	r.git(t, r.repo, "branch", "up/master", base)
 
 	// A branch with no work of its own yet sits on the default branch from
 	// the start: that is not landed, whatever the ticket's lane says.
@@ -503,6 +510,13 @@ func TestReapOnANoneBoardWaitsForTheDefaultBranch(t *testing.T) {
 	}
 	if _, err := os.Stat(r.wt); err != nil {
 		t.Fatalf("worktree removed before any work landed: %v", err)
+	}
+	// A body line naming the ticket is not a subject that does: --grep finds
+	// it, the subject check does not take it.
+	r.git(t, r.wt, "commit", "-q", "--allow-empty", "-m", "chore: tidy", "-m", "feat(AB12CD): only mentioned")
+	r.git(t, r.repo, "update-ref", "refs/remotes/up/master", r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+	if out := r.run(t, r.repo, "reap.sh"); !strings.Contains(out, "waiting AB12CD: feat/ab12cd has not landed") {
+		t.Fatalf("only a body line names the ticket, want waiting:\n%s", out)
 	}
 	r.git(t, r.wt, "commit", "-q", "--allow-empty", "-m", "feat(AB12CD): the work")
 
@@ -514,7 +528,14 @@ func TestReapOnANoneBoardWaitsForTheDefaultBranch(t *testing.T) {
 		t.Fatalf("worktree removed before it landed: %v", err)
 	}
 
-	r.git(t, r.repo, "update-ref", "refs/remotes/origin/master", r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+	// The fork's own default branch carrying it is not landing: work lands
+	// on the parent.
+	tip := r.git(t, r.repo, "rev-parse", "feat/ab12cd")
+	r.git(t, r.repo, "update-ref", "refs/remotes/origin/master", tip)
+	if out := r.run(t, r.repo, "reap.sh"); !strings.Contains(out, "waiting AB12CD: feat/ab12cd has not landed on up's") {
+		t.Fatalf("only the fork has it, want waiting:\n%s", out)
+	}
+	r.git(t, r.repo, "update-ref", "refs/remotes/up/master", tip)
 	out = r.run(t, r.repo, "reap.sh")
 	if _, err := os.Stat(r.wt); !os.IsNotExist(err) {
 		t.Errorf("landed and done, worktree still there (%v):\n%s", err, out)

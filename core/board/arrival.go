@@ -28,21 +28,29 @@ const (
 // PRFileName is the board file under .jaira/ that holds one of the three.
 const PRFileName = "pr"
 
-// PRModeIn reads the content of a .jaira/pr file: the first line that is
-// neither blank nor a comment, trimmed, and exactly "agent" or "none" —
-// anything else, missing and misspelt included, is PRPerson. A typo must
-// never be what lets an agent open a pull request or push to the default
-// branch.
-func PRModeIn(content string) string {
+// PRWordIn is the first line of a .jaira/pr file's content — or any other
+// one-line board file's: settings reads pr-when, release and the rest through
+// it — that is neither blank nor a comment, trimmed; "" when there is none. A UTF-8 byte order mark
+// in front of it — what an editor on Windows may save — is not part of it.
+func PRWordIn(content string) string {
+	content = strings.TrimPrefix(content, "\uFEFF")
 	for _, line := range strings.Split(content, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-		if line == PRAgent || line == PRNone {
-			return line
-		}
-		return PRPerson
+		return line
+	}
+	return ""
+}
+
+// PRModeIn reads the content of a .jaira/pr file: its PRWordIn, when that is
+// exactly "agent" or "none" — anything else, missing and misspelt included, is
+// PRPerson. A typo must never be what lets an agent open a pull request or
+// push to the default branch.
+func PRModeIn(content string) string {
+	if w := PRWordIn(content); w == PRAgent || w == PRNone {
+		return w
 	}
 	return PRPerson
 }
