@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:28:07Z
+updated-at: 2026-11-21T08:37:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
@@ -69,7 +69,7 @@ back-count: 1
 - [x] Steht ein Ticket in signoff/human und ist sein review-verdict aus einer frueheren Runde (review_round < round), schweigt das Cockpit nicht: das Band sagt 'Review von Runde N, seitdem geaendert' und zeigt die alten Funde mit Explain; heute blendet sameRound() in board.ts:189 Explain dann aus (Test)
   proof: board.ts reviewedIn + register.tsx t.reviewedIn line; tests/board.test.ts 'a verdict of an earlier round keeps its Explain and says the ticket changed since' (BLK789: round 8, review_round 7)
 - [x] Die Explain-Ansicht im Cockpit ist farbig und auf einen Blick lesbar: Statuszeile mit gruenem Haken/rotem Kreuz je Pruefung (DoD, Tests, Blocker, bughunt auf HEAD); jede Note mit farbiger Marke nach Einordnung - rot 'Blocker', gelb 'kleiner Rand', grau/gedimmt 'bekannte Grenze', blau 'nicht aus diesem Ticket'; die Empfehlung fett mit eigener Farbe; die Notiz-Texte normal, nur die Marken farbig; funktioniert im hellen und dunklen Terminal-Thema (Theme-Farben statt fester Hex-Werte, wie das Band heute)
-  proof: hooks/board.ts explanationOf (status/note/recommendation parts) + register.tsx pane (success/error ticks, error/warning/dim/suggestion marks, bold claude recommendation); tests 'a classed explanation shows its checks...' and 'a blocker mark is red'
+  proof: hooks/board.ts explanationOf + register.tsx pane colours; status 'bughunt on HEAD' from brief bughunt.on_head: internal/cli/tickets.go lastHunt + core/gitrepo ChangedSince (TestBriefCarriesTheHunt, TestChangedSince); texts.ts/spawn.sh read it; tests 'a classed explanation shows its checks...', 'a blocker mark is red', 'without Herdr, Explain asks...'
 - [x] class: the loop brake reads recorded facts, never prose — every return is recorded by jaira move, whatever path moved it (CLI, cockpit, --force); parking in blocked and back records nothing; a ticket without back-* fields reads as no return (table test)
   proof: core/move/move_test.go TestMoveRecordsWhoSentItBack (parking, old ticket without fields, --force path)
 - [x] input classes: blocker-rule with quotes, umlauts, multiple lines and CRLF survives set/show round-trip; stop-after-fix rejects anything but true/false/empty (exit 2); two parallel moves on one ticket leave consistent back-* fields (one refused or both counted)
