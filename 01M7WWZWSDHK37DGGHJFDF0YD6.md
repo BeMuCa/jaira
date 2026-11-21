@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:20:08Z
+updated-at: 2026-11-21T08:20:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
@@ -33,7 +33,7 @@ outcome-resolves: "bughunt change at c8de2b8a (texts.ts:79, spawn.sh:396); claud
 review-summary: "none"
 review-gaps: "none - 553b37f3 changes two prompt sentences and one assertion"
 test-verdict: "pass: round 4 changed only the two Explain prompt sentences and one assertion - claude plugin test 216 pass (rule asserted in 'without Herdr, Explain asks...'), go test core/role core/shipped core/lane RC=0; writes nothing new, so no parallel-writer case"
-hunt-verdict: "fail: 1 change finding at c8de2b8a - Explain prompts (texts.ts:79, spawn.sh:396) read an empty verdict_gaps on a ticket reviewed before the field as 'earlier round'"
+hunt-verdict: "pass: follow-up hunt since c8de2b8a at 553b37f3, 0 findings"
 round: 4
 review-verdict: "The diff meets all ten DoD items; no blocker. go test (core/move, core/ticket, internal/cli, core/role, core/shipped, internal/tui) and claude plugin test (215 pass) green at 1789d202. Three small notes, none needs a round."
 review-round: 2
