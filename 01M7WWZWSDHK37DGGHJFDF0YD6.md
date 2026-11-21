@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZWSDHK37DGGHJFDF0YD6
 title: "Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,13 +23,13 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:51:49Z
+updated-at: 2026-11-21T09:51:52Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3647270
 claimed-at: 2026-11-21T09:36:24Z
-outcome-what: "Round 15: a hunt at a commit this repository does not have reads fail, as documented."
-outcome-why: "The round-14 hunter found it read unknown (dim ?) while the release note and huntState doc promise fail."
-outcome-resolves: "bughunt change at 4ddb51bc; go test ./... RC=0."
+outcome-what: "Round 16: without git, outside a repository or before the first commit the hunt state is unknown; only a hunt commit missing from a working repository reads fail."
+outcome-why: "The round-15 hunter showed e1363ba1 turned every git failure into fail, so a board outside git would show 'bughunt on HEAD fail' forever."
+outcome-resolves: "bughunt change at e1363ba1; go test core/gitrepo internal/cli ok."
 review-summary: "none"
 review-gaps: none - one early return changed
 test-verdict: "pass: go test -count=1 ./... RC=0 at e1363ba1; a hunt at a missing commit reads fail (gitrepo and CLI tests)"
