@@ -1,7 +1,7 @@
 ---
 id: 01M2HZKCQ48BPQYN1YPTXB97NJ
 title: "Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig"
-status: review
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Wer allein an einem Repository arbeitet, bekommt keine Rolle vorgesetzt, die ihn zu einem Pull Request schickt, den er nicht will - und ein Team, das Pull Requests benutzt, bekommt die Regel weiterhin ueberall, wo ein Agent sie liest."
@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T09:07:11Z
+updated-at: 2026-11-21T09:07:15Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -36,7 +36,7 @@ outcome-what: "Board haelt in .jaira/pr fest, wie Arbeit ankommt (person/agent/n
 outcome-why: "Ein Solo-Projekt ohne Pull Requests blieb an einem PR haengen, den niemand oeffnet"
 outcome-resolves: "XB97NJ"
 review-summary: "Ein Board kann jetzt in .jaira/pr 'none' sagen (neben person/agent). core/board/arrival.go liest die Datei streng (nur exakt 'none'/'agent', BOM/CRLF/Kommentar toleriert, alles andere person) und haengt bei none/agent einen Absatz 'How work arrives on this board' an den jaira-Block in CLAUDE.md/AGENTS.md; ohne Datei oder bei person bleibt der Block byte-gleich, validate meldet Drift wenn sich die Datei aendert. settings.PRFor/PRIn delegieren dahin und nennen ein Wort, das nicht greift. 'jaira roles pr-gate' laesst unter none (gelesen vom Basis-Zweig) nur durch, wenn jedes Ticket in done/logbook ist und jeder Commit in base..HEAD ein Ticket nennt; ein Merge ohne Ticket nur, wenn sein Tree exakt gits eigener Merge der Eltern ist (gitrepo.UnnamedCommits/isPlainMerge, fail closed). jaira-role-pr bekommt 'Land it': gate, fetch, merge, gate, git push <remote> HEAD:<default>, nie --force; Revert als fix(<ID>): revert. reap.sh zaehlt unter none einen Zweig als gemerged, wenn der Default-Branch der Landestelle (origin bzw. Fork-Parent) seinen Tip enthaelt; Cockpit-Accept startet unter none 'landing' statt PR. Release-Note mit vier Zeilen."
-round: 17
+round: 18
 review-gaps: |-
   blocker: DoD 1/2 - auf einem nicht geteilten Board (jaira init gitignored /.jaira/) reist .jaira/pr nicht mit und steht nicht im Basis-Zweig; trotzdem sagt 'jaira roles list' "pr: none (from .jaira/pr, shared with the board)", die Rolle geht in 'Land it', und 'jaira roles pr-gate master' verweigert mit "says neither agent nor none - a person opens the pull request; hand the create line back" (exit 3) - falsche Ursache, und unter none gibt es keine create line. Nachgestellt: git init, jaira init, echo none > .jaira/pr, Branch-Binary. Fix klein: PRFor-source und Gate-Meldung erkennen "nur lokal / fehlt im Basis-Zweig" (jaira share oder committen); Release-Note-Zeile 1 nennt die Voraussetzung
   note: das Wording "shared with the board" galt schon fuer agent - vorbestehend, unter none aber der Normalfall fuer Solo-Nutzer
