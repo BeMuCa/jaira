@@ -25,14 +25,14 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T09:11:26Z
+updated-at: 2026-11-21T09:11:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2485785
 claimed-at: 2026-11-21T08:57:23Z
 outcome-what: "signoff's hunt check exempts tickets whose diff touches only .jaira/"
 outcome-why: "fresh review: rule 0 would give back a bookkeeping-only ticket the teamlead and testing lane exempt"
 outcome-resolves: "signoff, teamlead and testing agree on when a hunt is owed"
-review-summary: "Ships a new read-only role /jaira-role-signoff: per ticket in a board's accept lane (found by human_exit/terminal/output_produces in 'jaira lanes --json', not by name) it prints one status line (DoD, CI run of the branch head via gh/glab, bughunt note naming the head, blockers, review verdict, noted returns), a table marking every open note 🔴/🟡/⚪/🔵, and one bold recommendation driven by return rules 0-5 (red check or 🔴 gives back; only 🟡 gives back until two noted returns, then accept plus a ready follow-up 'jaira create'), with accept and give-back lines to paste. The teamlead's 'Report to the human' now re-reads lanes and open PRs before listing what waits, uses that shape for signoff/human tickets and points to the role for the rules; its hunt check compares a note sha as prefix of the full branch head instead of assuming feat/<id>. jaira-worker gets 'Before you push' (run the repo's CI gates locally, read off workflows/Taskfile/instructions), jaira-role-pr and jaira-dispatcher point at it. README, the German how-to table, wantRoles, shipped.sha256 and a 3-line release note follow."
+review-summary: "critique 21.11. round 8: exemption is the teamlead's and testing lane's own rule, now stated once more where the check lives. Nothing to change."
 round: 16
 review-gaps: |-
   note: jaira-role-signoff marks a missing bughunt on the head as ❌ (give back) for every ticket, while jaira-teamlead SKILL.md exempts tickets whose diff touches only .jaira/ - a bookkeeping-only ticket in signoff would be given back by the role but not by the teamlead
