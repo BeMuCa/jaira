@@ -62,6 +62,7 @@ const overviewAtom = atom({ plugin: 'jaira-cockpit', key: 'overview' } as const,
 const overviewTabAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewTab' } as const, 'queue')
 const overviewFoldedAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewFolded' } as const, {})
 const overviewPeopleAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewPeople' } as const, [])
+const overviewLanesAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewLanes' } as const, [])
 const releaseAtom = atom({ plugin: 'jaira-cockpit', key: 'release' } as const, null)
 const upgradeAtom = atom({ plugin: 'jaira-cockpit', key: 'upgrade' } as const, null)
 const workersAtom = atom({ plugin: 'jaira-cockpit', key: 'workers' } as const, null)
@@ -92,10 +93,12 @@ const BUSY_MS = 20_000
 const FRAME_MS = 250
 const READ_FRAMES = 20
 // The Overview pane's own rows, beside the Workers tab's tracks: its tab
-// row and its Close button.
-const OVERVIEW_ROWS = 2
+// row, three high since the framed Close stands in it.
+const OVERVIEW_ROWS = 3
 // Between the parts of a line: the band's one separator.
 const SEP = ' | '
+// A filter's choice with one item pressed: out if it was in, in if it was not.
+const toggled = (chosen: string[], x: string) => (chosen.includes(x) ? chosen.filter(y => y !== x) : [...chosen, x])
 
 // ── what this module keeps between events (a reload starts it over) ──────
 
@@ -1617,7 +1620,7 @@ export const register: Register = (on, options) => {
   })
 
   on('ui.render', { component: 'Pane', requestId: OVERVIEW }, async ($, e) =>
-    drawOverview($.ui.resolve(e), await read($, overviewAtom), { tab: await read($, overviewTabAtom), folded: await read($, overviewFoldedAtom), people: await read($, overviewPeopleAtom) }, {
+    drawOverview($.ui.resolve(e), await read($, overviewAtom), { tab: await read($, overviewTabAtom), folded: await read($, overviewFoldedAtom), people: await read($, overviewPeopleAtom), lanes: await read($, overviewLanesAtom) }, {
       close: () => {
         overviewOpen = false
         stopFrames()
@@ -1625,8 +1628,10 @@ export const register: Register = (on, options) => {
       },
       tab: tab => void showTab($, tab),
       fold: key => void update($, overviewFoldedAtom, f => ({ ...f, [key]: !f[key] })),
-      person: name => void update($, overviewPeopleAtom, p => (p.includes(name) ? p.filter(x => x !== name) : [...p, name])),
+      person: name => void update($, overviewPeopleAtom, p => toggled(p, name)),
       everybody: () => void update($, overviewPeopleAtom, () => []),
+      lane: id => void update($, overviewLanesAtom, l => toggled(l, id)),
+      allLanes: () => void update($, overviewLanesAtom, () => []),
     }, {
       walkers: await read($, workersAtom),
       where: await read($, workersWhereAtom),

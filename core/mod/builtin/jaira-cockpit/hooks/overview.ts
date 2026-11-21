@@ -21,7 +21,9 @@ export type Row = {
 export type Event = Row & { kind: 'created' | 'parked'; at: string }
 export type Day = { day: string; events: Event[] }
 
-export type Overview = { working: Row[]; queue: Row[]; parked: Row[]; history: Day[] }
+// `lanes`: the board's lanes in its own order, so the Log's lane filter
+// reads as the board does.
+export type Overview = { working: Row[]; queue: Row[]; parked: Row[]; history: Day[]; lanes: string[] }
 
 // How far back the history reaches: a weekend and a day off on top of the
 // night a person slept through.
@@ -111,7 +113,7 @@ export function overviewOf(lanesJson: string, listJson: string, nextJson: string
     if (history.at(-1)?.day !== day) history.push({ day, events: [] })
     history.at(-1)!.events.push(e)
   }
-  return { working, queue, parked, history }
+  return { working, queue, parked, history, lanes: [...lanes.keys()] }
 }
 
 // ── the Workers tab: every agent on the board on a track of its own ──────
