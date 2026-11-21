@@ -129,7 +129,10 @@ lines() {
   local rc=0
   LC_ALL=$fold grep -n -a -i "$2" -f "$1" -- "$3" >"$tmp/grep" || rc=$?
   [ "$rc" -le 1 ] || die "grep failed on $3" 1
-  cut -d: -f1 <"$tmp/grep"
+  # BSD grep (macOS) in a UTF-8 locale matches nothing on a line that is not
+  # valid UTF-8; a second pass on bytes finds the ASCII patterns there too.
+  [ "$fold" = C ] || LC_ALL=C grep -n -a -i "$2" -f "$1" -- "$3" >>"$tmp/grep" 2>/dev/null || true
+  cut -d: -f1 <"$tmp/grep" | sort -n -u
 }
 
 stops=0
