@@ -1,7 +1,7 @@
 ---
 id: 01M7X2WM5Q4Z6VPF1RAK0K8Y6S
 title: "shipped.sha256 kennt jede Version, die in einem Release-Tag ausgeliefert wurde, und CI haelt das fest"
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:04:58Z
+updated-at: 2026-11-21T08:10:14Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
@@ -27,10 +27,10 @@ outcome-what: "Manifest neu erzeugt (8 Tag-Versionen fehlten, u.a. cockpit board
 outcome-why: Hand-gemergte Manifest-Konflikte verloren Zeilen; jaira update --roles hielt dann eine unberuehrte Installation fuer handgeaendert und uebersprang sie still
 outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, wenn eine fehlt, und Manifest-Merges konfliktieren nicht mehr"
 review-summary: "Runde nach signoff (dea24113): keine Funde. --write sitzt im selben Skript wie --check (ein Pfad-Mapping, Note 'Offene Entscheidungen' 1); generate() als Funktion statt zweiter Kopie; stdout-Modus bleibt, weil die Fixture-Tests und Scratch-Vergleiche ihn brauchen; strings.Cut in TestEveryManifestPathExists ueberlaesst das Melden der kaputten Zeile TestManifestLinesAreWellFormed statt es doppelt zu pruefen."
-round: 6
+round: 7
 review-gaps: "manifest=core/shipped/shipped.sha256 stand zweimal (--check, --write) -> einmal oben im Skript; sonst nichts: generate() hat zwei Aufrufer, read() im Test drei, keine verwaiste Stelle"
-test-verdict: "pass: go vet + go test ./... RC=0 auf 722c9c6e; Runde 4 aendert nur eine Testmeldung"
-hunt-verdict: "pass: bughunt done at 722c9c6e, 0 change, 0 pre-existing"
+test-verdict: "fail: go test ./... rot nur in core/shipped TestManifestLinesAreWellFormed (Duplikate nach union-Merge 6f5ba869); DoD 1-7 sonst im Baum belegt; zwei parallele --write ergeben ein sortiertes Manifest ohne Duplikat; flacher Klon: exit 1, Manifest unveraendert"
+hunt-verdict: "fail: bughunt done at 6f5ba869, 1 change (99 Duplikate nach union-Merge), 0 pre-existing"
 review-verdict: "Diff erfuellt alle 5 DoD-Punkte, keine Defekte gefunden. Selbst geprueft: --check gruen auf 34 Tags, mit dem alten Manifest rot (8 Versionen); Regenerieren ergibt byte-gleich das committete Manifest; 0 Zeilen gegenueber master verloren; TestInstallReplacesAnOlderShippedVersion faellt mit dem alten Manifest, besteht mit dem neuen; go test ./shipped ./role gruen."
 review-round: 5
 review-check: "1. cd in den Worktree feat/0k8y6s  2. scripts/shipped-history.sh --check  -> 'every version in 34 v* tag(s) is in core/shipped/shipped.sha256', exit 0  3. git show master:core/shipped/shipped.sha256 > core/shipped/shipped.sha256 && scripts/shipped-history.sh --check  -> 'lacks 8 version(s)' plus die Zeilen, exit 1  4. (cd core && go test ./role -run TestInstallReplacesAnOlderShippedVersion)  -> FAIL 'not replaced'  5. git checkout core/shipped/shipped.sha256, Schritt 4 wiederholen -> ok  6. (cd core && go test ./shipped)  -> ok"
@@ -94,3 +94,6 @@ review-check: "1. cd in den Worktree feat/0k8y6s  2. scripts/shipped-history.sh 
 - **2026-11-21 08:00 · Alexander Sacharov** — Given back from signoff: Alex 21.11. alle Funde in dieser Runde schliessen. 1) Die empfohlene Zeile 'scripts/shipped-history.sh > core/shipped/shipped.sha256' kuerzt das Manifest vor dem Lauf: das Skript schreibt selbst (z.B. --write: in Temp-Datei, bei Erfolg mv), Skript-Hilfe, Testmeldung und shipped_test.go-Hinweis nennen diese Form. 2) shipped_test.go:65 l[66:] panict bei kurzer Zeile - saubere Fehlermeldung. merge=union auf GitHub bleibt note bis zwei echte PRs. Diff-Hunt, review, signoff, push.
 - **2026-11-21 08:01 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/4205.sock
 - **2026-11-21 08:04 · Alexander Sacharov** — Runde nach signoff: --write statt Umleitung (Temp-Datei neben dem Manifest, chmod 644, mv; trap raeumt bei Fehler). stdout-Modus bleibt fuer Scratch-Vergleiche und die Tests. Alle Hinweise in core/role, core/lane, core/shipped nennen --write; Logbook-Eintraege bleiben Geschichte. Keine Release-Note: Entwickler-Skript, fuer Nutzer nicht sichtbar.
+- **2026-11-21 08:07 · Alexander Sacharov** — Merge upstream/master (Teamlead-Auftrag): union-Merge des Manifests liess 14+ Duplikate (master hatte Zeilen am Ende angehaengt, dieser Branch dieselben eingesortiert) - genau der Fall, den TestManifestLinesAreWellFormed meldet; Abhilfe --write, nach Ende des Bughunts. Einmaliger Effekt: ab jetzt sortiert jeder Branch mit --write, angehaengte Zeilen von Hand bleiben die Quelle solcher Duplikate. Sonst ist go test ./... gruen.
+- **2026-11-21 08:07 · Alexander Sacharov** — bughunt: change: core/shipped/shipped.sha256 (whole file) - HEAD carries 99 duplicate manifest lines, so go test ./shipped/ fails TestManifestLinesAreWellFormed; the merge=union merge 6f5ba869 (upstream/master into feat/0k8y6s, names the ticket via the branch) made them: both parents 7f2d86fe and 6f5ba869^2 have 0 duplicates, the merge has 99; no line is lost or missing (regenerated manifest equals sort -u of the committed one) and scripts/shipped-history.sh --check passes, so CI's check alone would not see it; remedy: scripts/shipped-history.sh --write and commit; ran: cd core && go test ./shipped/ (FAIL), git show <c>:core/shipped/shipped.sha256 | grep -v '^#' | sort | uniq -d | wc -l for 7f2d86fe/6f5ba869^2/6f5ba869 (0/0/99)
+- **2026-11-21 08:08 · Alexander Sacharov** — bughunt: done at 6f5ba869 - 1 finding (1 change, 0 pre-existing) in 6 modules, follow-up hunt since 722c9c6e (diff: --write in scripts/shipped-history.sh with its tests and messages, the manifest after the upstream merge; core/lane/refresh_test.go new to the list, read whole; untracked .jaira/milestones/ are board data, not read); concurrency, error paths, input, permissions checked; ran: go test ./shipped/ (FAIL) ./role/ ./lane/ (pass), scripts/shipped-history.sh --check (pass), --write in a scratch clone; files: .gitattributes .github/workflows/ci.yaml .github/workflows/release-notes.yaml core/lane/refresh_test.go core/release/notes/0K8Y6S.md core/role/shipped_test.go core/role/testdata/jaira-cockpit-hooks-board-v0.5.2.ts core/shipped/history_test.go core/shipped/shipped.sha256 core/shipped/shipped_test.go scripts/shipped-history.sh
