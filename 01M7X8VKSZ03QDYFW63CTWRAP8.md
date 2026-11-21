@@ -1,7 +1,7 @@
 ---
 id: 01M7X8VKSZ03QDYFW63CTWRAP8
 title: "Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,13 +25,13 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:11:33Z
+updated-at: 2026-11-21T08:11:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-31394
 claimed-at: 2026-11-21T08:01:32Z
-outcome-what: "jaira-role-signoff: Branch per Handle-Segment, neueste von lokal/remote, divergiert = ?; Lookup nennt ausdruecklich den Handle statt der ULID; CI: neuester Lauf des Commits entscheidet, laufend = ?"
-outcome-why: "signoff-Rueckgabe (Branchname) plus bughunt 22:32 und review-gaps 22:39"
-outcome-resolves: "Rueckgabe aus signoff 22:27, review-gaps 1-2 vom 22:39"
+outcome-what: "jaira-role-signoff names the real keys of jaira show --json; upstream/master merged, manifest by union"
+outcome-why: "signoff give-back 21.11.: the role named keys the JSON does not have, and the branch was stacked on an unmerged branch"
+outcome-resolves: "the role reads verdict, gaps, DoD and notes where they actually are; the branch carries only TWRAP8 on top of master"
 review-summary: "Ships the 20.11 teamlead lessons as roles, no Go code: a new read-only role jaira-role-signoff (status line bound to the branch head commit - branch found by the ticket handle as a name segment, newest of local/remote copies by ancestry, divergence = ?; tests from the CI run of exactly that commit; bughunt note must name HEAD - then a table marking every open note 🔴/🟡/⚪/🔵, one recommendation and paste-ready accept/give-back lines, plus return rules: after two noted 'Given back from signoff:' returns small edges go to a follow-up ticket). jaira-teamlead re-reads lanes and open PRs before any 'waiting for you' list, reports signoff tickets in that shape and points to the signoff role for the rules; its hunt check no longer assumes feat/<id>. jaira-worker gets 'Before you push' (run the project's CI gates locally, read off the repo), jaira-role-pr and jaira-dispatcher point to it. README, docs/how-to-work-with-jaira.html, role_test wantRoles, shipped.sha256 and release note TWRAP8.md follow."
 round: 9
 review-gaps: |-
