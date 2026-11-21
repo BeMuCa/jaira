@@ -26,6 +26,85 @@ Work only within the plan's scope. If you discover adjacent problems, note them
 rather than fixing them. If the plan turns out to be wrong, say so and fix the
 plan rather than quietly doing something else.
 
+## Fix the class, not the example
+
+Ticking items is not the job; the change working is. After you, critique,
+testing, a bug hunter and a reviewer read this change, and each round they find
+the next example of a mistake that was fixed for one example only. So:
+
+- **Know the class before you write code.** The definition of done names the
+  class of fault, the input classes and, for a heuristic, the acceptance rule.
+  Where the definition of done does not — no planning step ran — name them
+  yourself first and write them on the ticket with `jaira dod <id> --add`.
+- **Fix the cause, not the example.** A finding or a ticket arrives as one
+  example: "3 / 12" is not removed. A fix that adds "3 / 12" to a pattern is
+  found out next round by "3/12". Ask why the example fails, and change that —
+  read structured data instead of parsing its printed form, validate at the
+  one place every caller passes through, not in the caller that was reported.
+- **Test the class.** One parametrised test over the input classes, the
+  reported example among them — not one test for the example.
+- **Search for the siblings.** The same mistake lives wherever the same code
+  was copied or the same pattern was used: other write paths, other commands,
+  other parsers of the same format. Grep for them and fix them in this change.
+  Siblings of this fault are within the plan's scope; a different problem you
+  find on the way is still a note.
+- **Check the four categories yourself before you move.** Concurrency (two
+  writers at once), error paths (a step failing halfway, an error dropped or
+  reported as success), unusual input (empty, huge, duplicated, another
+  encoding or locale), permissions (what it trusts from outside). Go through
+  each for the code you changed, and say in your outcome which you checked and
+  what you found. The testing lane and the bug hunt check exactly these; a
+  defect they find that you could have found yourself is a round lost.
+- **Close the small edges in the same round.** When the ticket comes back,
+  the notes that sent it carry blockers and often smaller edges of this change
+  beside them: a missing case of the class, a one-line guard, a test that
+  covers the example but not its neighbour. Close those too, now — a small
+  edge left as a note reaches the person, who sends the ticket back for it
+  anyway. A fault that was there before this change and lies outside its scope
+  stays a note.
+
+## The third return from the same lane
+
+The lanes' own notes do not count returns: one round leaves several
+`bughunt: change:` notes and testing writes `testing: note:` on a round that
+passes. So keep the count yourself. When you pick up a ticket that was sent back — `round` in
+`jaira show <id> --json` is above 1 — find out who sent it and write one line
+before anything else, once per round. Every `back:` line ends in the
+`round` it was written for. Look for one with the current `round` first: when
+it is there, a session before you was stopped mid-round and already wrote it,
+so write no second one:
+
+```bash
+jaira note <id> "back: testing, round 3"
+```
+
+`round` counts every way back, a person's included, so it only says that the
+ticket was sent back, not by whom. jaira records no lane it came from, so
+read the sender off the newest note, passing over the lines no sender wrote —
+`cockpit:` and `<who> took this ticket over from <holder>`, which
+`jaira pull --steal` adds. The lane that sends work back writes its note last:
+
+- `Given back from <lane>:` or `decision:` — a person sent it or answered
+  you. Write `back: person, round <n>`: it is the person's word, not a loop, so do what
+  they asked. The cockpit writes these lines; a person who gives work back by
+  hand writes the same one, `jaira note <id> "Given back from signoff: <why>"`.
+  An answer that reaches you by message instead goes onto the ticket as
+  `decision: <answer>` before you act on it
+- `critique:`, `optimize:`, `testing:` or `review:` — that lane; `bughunt:`
+  counts for testing
+- anything else — nobody said who sent it. Write `back: unknown, round <n>`: it counts
+  for no lane, so a guess never brings the third-return stop forward
+
+Then count your `back:` lines for that lane since the last `back: person`.
+When this is the third, do
+not start a fourth round. Move the ticket to the human lane with the question
+instead — the third round's findings, and whether the definition of done is
+wrong or the loop reads deeper every round without ending:
+
+```bash
+jaira move <id> --to human --question "testing sent this back three times: <findings>. DoD wrong or loop without end? I would <...>"
+```
+
 ## Progress notes
 
 Write a note with `jaira note <id> <text>`. You are writing to yourself, in a
