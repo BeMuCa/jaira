@@ -25,14 +25,14 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:17:17Z
+updated-at: 2026-11-21T08:17:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-31394
 claimed-at: 2026-11-21T08:01:32Z
 outcome-what: "signoff's branch-head lookup no longer depends on ref order; teamlead pointer worded the same"
 outcome-why: "bughunt 08:13: a diverged early copy ended the loop before a later copy that descends from both"
 outcome-resolves: "head is the copy every other copy is an ancestor of, whatever order for-each-ref lists them in"
-review-summary: "critique 21.11.: key names now match jaira show --json (checked against the live payload of TWRAP8: status, handle, dod_items[].done, review.verdict/gaps/summary, notes only in body); merge brought no conflict in the roles' own text, only the manifest. Nothing to change."
+review-summary: "critique 21.11. round 2: the order-independent check is the direct reading of the sentence under it ('the commit every other copy leads up to'); nothing to change."
 round: 10
 review-gaps: "optimize 21.11.: the new paragraph is the only addition; nothing duplicated elsewhere, no dead text. Nothing to remove."
 test-verdict: "fail: suite green (go vet, go test ./..., check-ticket-commits RC=0), DoD 1-4 verified in the tree, keys checked against the live payload; bughunt 08:13 change: branch-head loop order-dependent (diverged early copy breaks before a later merge copy)"
