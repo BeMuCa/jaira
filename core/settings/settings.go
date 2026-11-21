@@ -180,7 +180,13 @@ func boardLine(path string) string {
 	if err != nil {
 		return ""
 	}
-	for _, line := range strings.Split(string(b), "\n") {
+	return firstLine(string(b))
+}
+
+// firstLine is the first line of a board file's content that is neither
+// blank nor a comment, trimmed.
+func firstLine(content string) string {
+	for _, line := range strings.Split(content, "\n") {
 		line = strings.TrimSpace(line)
 		if line != "" && !strings.HasPrefix(line, "#") {
 			return line
@@ -223,10 +229,17 @@ func (s Settings) ChatModelFor(root string) (name, source string) {
 // letters, digits and . _ - [ ] is treated as unset rather than carried into
 // a shell.
 func modelName(v string) string {
+	return word(v, "._-[]")
+}
+
+// word returns v trimmed when it holds nothing but ASCII letters, digits and
+// the runes in extra, and "" otherwise — for a board value that ends up on a
+// command line.
+func word(v, extra string) string {
 	v = strings.TrimSpace(v)
 	for _, r := range v {
 		ok := r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' ||
-			strings.ContainsRune("._-[]", r)
+			strings.ContainsRune(extra, r)
 		if !ok {
 			return ""
 		}
@@ -264,6 +277,105 @@ func ReleaseFor(root string) (owner, source string) {
 		return ReleaseTeamlead, "from .jaira/release, shared with the board"
 	}
 	return ReleaseWorker, "the default"
+}
+
+// The two values of the board's pr file.
+const (
+	PRPerson = "person"
+	PRAgent  = "agent"
+)
+
+// prFile is the board's answer to who opens a pull request: "person" when an
+// agent pushes the branch and hands the create line back, "agent" when an
+// agent may open it itself once every ticket on the branch is in done, ask
+// for a review and answer one round of comments. A board file like
+// releaseFile and for the same reason: whether a project lets agents open
+// pull requests is the project's, not one machine's and not one clone's.
+const prFile = "pr"
+
+// prReviewerFile names the reviewer an agent asks for when it opens a pull
+// request under PRAgent — "copilot", or a login.
+const prReviewerFile = "pr-reviewer"
+
+// BoardPRPath is where the board at root says who opens a pull request.
+func BoardPRPath(root string) string {
+	return filepath.Join(root, ticket.DirName, prFile)
+}
+
+// BoardPRReviewerPath is where the board at root names its reviewer.
+func BoardPRReviewerPath(root string) string {
+	return filepath.Join(root, ticket.DirName, prReviewerFile)
+}
+
+// PRFor returns PRAgent when the board at root names it, and PRPerson
+// otherwise, with where it came from in words a person can read. Person is
+// the default because it is what ran before there was a choice, and because
+// a typo must never be what lets an agent open a pull request.
+func PRFor(root string) (who, source string) {
+	if root != "" && boardLine(BoardPRPath(root)) == PRAgent {
+		return PRAgent, "from .jaira/pr, shared with the board"
+	}
+	return PRPerson, "the default"
+}
+
+// PRIn reads the content of a .jaira/pr file — one taken from a commit
+// rather than from disk — the way PRFor reads the file: PRAgent only when it
+// says so, PRPerson for anything else, missing included.
+func PRIn(content string) string {
+	if firstLine(content) == PRAgent {
+		return PRAgent
+	}
+	return PRPerson
+}
+
+// PRReviewerFor returns the reviewer the board at root names, or "" when it
+// names none or names something that is not a login. The role passes it to
+// gh and glab on a command line, so anything but letters, digits and
+// . _ - [ ] / @ is treated as unset rather than carried into a shell.
+func PRReviewerFor(root string) string {
+	if root == "" {
+		return ""
+	}
+	return word(boardLine(BoardPRReviewerPath(root)), "._-[]/@")
+}
+
+// The two values of the board's pr-when file: the lane every ticket on a
+// branch must have reached before an agent opens its pull request.
+const (
+	PRWhenDone    = "done"
+	PRWhenSignoff = "signoff"
+)
+
+// prWhenFile says when an agent opens a pull request under PRAgent. "done"
+// for a project that reviews before it accepts — the person's acceptance is
+// the go-ahead, the pull request comes after. "signoff" for a project whose
+// review happens on the pull request itself: it opens while the person has
+// yet to accept, and done waits until its review round is finished.
+const prWhenFile = "pr-when"
+
+// BoardPRWhenPath is where the board at root says when a pull request opens.
+func BoardPRWhenPath(root string) string {
+	return filepath.Join(root, ticket.DirName, prWhenFile)
+}
+
+// PRWhenFor returns PRWhenSignoff when the board at root names it, and
+// PRWhenDone otherwise, with where it came from. Done is the default because
+// it is what ran before there was a choice, and because a typo must never be
+// what opens a pull request on work nobody has accepted.
+func PRWhenFor(root string) (when, source string) {
+	if root != "" && boardLine(BoardPRWhenPath(root)) == PRWhenSignoff {
+		return PRWhenSignoff, "from .jaira/pr-when, shared with the board"
+	}
+	return PRWhenDone, "the default"
+}
+
+// PRWhenIn reads the content of a .jaira/pr-when file taken from a commit
+// the way PRWhenFor reads the file on disk.
+func PRWhenIn(content string) string {
+	if firstLine(content) == PRWhenSignoff {
+		return PRWhenSignoff
+	}
+	return PRWhenDone
 }
 
 // The two values of Dispatch.
