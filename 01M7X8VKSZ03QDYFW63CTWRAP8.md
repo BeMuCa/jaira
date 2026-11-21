@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:19:51Z
+updated-at: 2026-11-21T08:19:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-31394
 claimed-at: 2026-11-21T08:01:32Z
@@ -35,7 +35,7 @@ outcome-resolves: "head is the copy every other copy is an ancestor of, whatever
 review-summary: "critique 21.11. round 2: the order-independent check is the direct reading of the sentence under it ('the commit every other copy leads up to'); nothing to change."
 round: 10
 review-gaps: "optimize 21.11. round 2: loop is four lines, shorter than the one it replaced; nothing to remove."
-test-verdict: "fail: suite green (go vet, go test ./..., check-ticket-commits RC=0), DoD 1-4 verified in the tree, keys checked against the live payload; bughunt 08:13 change: branch-head loop order-dependent (diverged early copy breaks before a later merge copy)"
+test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at 8cdb3a0d; DoD 1-4 verified in the tree; signoff keys checked against the live jaira show --json (notes key absent, rc=5); head lookup run on a scratch repo: none/one/diverged/merge listed later/equal copies/local behind remote/twrap8x - all as the text says. The role writes nothing, so no concurrent-writer case."
 hunt-verdict: "change: 1 finding at 367d125f (order-dependent head loop, fails safe as ?)"
 question: ""
 review-verdict: "All four DoD items met, no blocker. Checked: go test ./core/role ./core/shipped green (shipped fresh, -count=1), every flag the role prescribes exists (jaira list --lane/--board, gh run list --commit/--workflow, glab ci list --sha), the cockpit really writes 'Given back from <lane>:' (core/mod/builtin/jaira-cockpit/hooks/register.tsx:900), the branch lookup handles none/diverged copies by leaving head empty. Role is read-only, so concurrency/permission risk is limited to lines the person runs. Four notes, all small."
