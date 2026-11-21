@@ -1,22 +1,22 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, Register } from 'claude-code'
+import type { ElementTable, EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
 import {
   branchesFor, carrierBranch, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
-  explanationNotes, explanationOf, isOlder, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
+  explanationNotes, explanationOf, huntOf, isOlder, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, upgradeCheckOf,
   createdHandle, decisionLines, oneLine, decisionsOf, followTitle, gapItems, nextChoice, standOf,
-  type Action, type Agent, type GapItem, type NoteClass, type Option, type Waiting,
+  type Action, type Agent, type GapItem, type Hunt, type NoteClass, type Option, type Waiting,
 } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
-import { digest } from './digest.ts'
+import { digest, reportLine } from './digest.ts'
 import {
   agentName, AGENT_ORIGINS, clipReport, DIGESTED, isAgentReport, isUnscoped, keyOf, listReports, NOTIFICATION,
   projectKeys, reportArgs, REPORTS_PER_TICKET, rewriteRow, showReport, stamp, TICKETS, type Report,
 } from './filter.ts'
 import { body, source } from './frame.ts'
 import { add, appended, emptyTotals, row, rowsOf, type Totals } from './metrics.ts'
-import { COLORS, HATS, overviewOf, pickOf, stepOf, workersOf } from './overview.ts'
+import { COLORS, HATS, overviewOf, pickOf, stoneOf, workerKey, workersOf } from './overview.ts'
 import { drawOverview, type OverviewTab } from './overview-pane.tsx'
 import {
   backMessage, carrierOf, carrierTab, chooseWorker, DEFAULT_CONTEXT_SHARE, isExpired, RECORD_PREFIX, selfLine, startOf, tabsOf,
@@ -54,6 +54,8 @@ const noticeAtom = atom({ plugin: 'jaira-cockpit', key: 'notice' } as const, nul
 const messageAtom = atom({ plugin: 'jaira-cockpit', key: 'message' } as const, null)
 const explainedAtom = atom({ plugin: 'jaira-cockpit', key: 'explained' } as const, {})
 const decidedAtom = atom({ plugin: 'jaira-cockpit', key: 'decided' } as const, {})
+const verdictAtom = atom({ plugin: 'jaira-cockpit', key: 'verdictTicket' } as const, null)
+const huntsAtom = atom({ plugin: 'jaira-cockpit', key: 'hunts' } as const, {})
 const explainingAtom = atom({ plugin: 'jaira-cockpit', key: 'explaining' } as const, null)
 const answeringAtom = atom({ plugin: 'jaira-cockpit', key: 'answering' } as const, null)
 const usedAtom = atom({ plugin: 'jaira-cockpit', key: 'used' } as const, '')
@@ -68,7 +70,9 @@ const overviewLanesAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewLanes' }
 const releaseAtom = atom({ plugin: 'jaira-cockpit', key: 'release' } as const, null)
 const upgradeAtom = atom({ plugin: 'jaira-cockpit', key: 'upgrade' } as const, null)
 const workersAtom = atom({ plugin: 'jaira-cockpit', key: 'workers' } as const, null)
-const workersWhereAtom = atom({ plugin: 'jaira-cockpit', key: 'workersWhere' } as const, {})
+const workersSinceAtom = atom({ plugin: 'jaira-cockpit', key: 'workersSince' } as const, {})
+const workersReportsAtom = atom({ plugin: 'jaira-cockpit', key: 'workersReports' } as const, {})
+const workersFellAtom = atom({ plugin: 'jaira-cockpit', key: 'workersFell' } as const, -1)
 const workersColorsAtom = atom({ plugin: 'jaira-cockpit', key: 'workersColors' } as const, {})
 const workersHatsAtom = atom({ plugin: 'jaira-cockpit', key: 'workersHats' } as const, {})
 const workersFrameAtom = atom({ plugin: 'jaira-cockpit', key: 'workersFrame' } as const, 0)
@@ -77,6 +81,7 @@ const PANE = 'cockpit-ticket'
 const MESSAGE = 'cockpit-message'
 const GIVE_BACK = 'cockpit-give-back'
 const EXPLANATION = 'cockpit-explanation'
+const VERDICT = 'cockpit-verdict'
 const ANSWER = 'cockpit-answer'
 const OVERVIEW = 'cockpit-overview'
 const UPGRADE = 'cockpit-upgrade'
@@ -89,12 +94,12 @@ const RELEASE = 'release'
 const BAND_TICKETS = 3
 // How long a pressed row stays locked when its action has not ended by then.
 const BUSY_MS = 20_000
-// The Workers tab's frame: the figures move each frame, and the board is
-// read again every READ_FRAMES, so a ticket that moved on walks without a
-// reopening.
+// The Workers tab's frame: the figures hammer each frame, and the board is
+// read again every READ_FRAMES, so an agent that came or went shows without
+// a reopening.
 const FRAME_MS = 250
 const READ_FRAMES = 20
-// The Overview pane's own rows, beside the Workers tab's tracks: its tab
+// The Overview pane's own rows, beside the Workers tab's picture: its tab
 // row, three high since the framed Close stands in it.
 const OVERVIEW_ROWS = 3
 // Between the parts of a line: the band's one separator.
@@ -373,12 +378,29 @@ async function refreshBoard($: EngineInterface): Promise<void> {
   // for a new one waits for that round's verdict.
   const shownIds = (await read($, expandedAtom)) ? view.waiting : view.waiting.slice(0, BAND_TICKETS)
   const explained: Record<string, { text: string; decided?: string }> = {}
+  // The newest bug hunt of each, as jaira works it out against the checkout
+  // the ticket's code is in: its own worktree, where there is one.
+  const hunts: Record<string, Hunt> = {}
+  const trees = shownIds.length > 0 ? await run($, ['git', 'worktree', 'list', '--porcelain'], board.dir) : undefined
   for (const w of shownIds) {
     const shown = await run($, ['jaira', 'show', w.id, '--json'], board.dir)
     const notes = shown?.exitCode === 0 ? explanationNotes(shown.stdout) : undefined
     if (notes !== undefined) explained[w.id] = notes
+    const dir = trees?.exitCode === 0 ? worktreeFor(trees.stdout, w.id, board.repo) : board.repo
+    const brief = await run($, ['jaira', 'show', w.id, '--brief', '--json'], dir)
+    const hunt = brief?.exitCode === 0 ? huntOf(brief.stdout) : undefined
+    if (hunt === undefined) continue
+    // jaira says fail, too, for a checkout without the hunt's commit — the
+    // main one, where the ticket's worktree is gone or named otherwise. That
+    // fail says nothing about the code: '?', not a red cross.
+    if (hunt.state === 'fail' && hunt.at !== '') {
+      const held = await run($, ['git', 'merge-base', '--is-ancestor', hunt.at, 'HEAD'], dir)
+      if (held?.exitCode !== 0) continue
+    }
+    hunts[w.id] = hunt.state
   }
   await update($, explainedAtom, () => explained)
+  await update($, huntsAtom, () => hunts)
   // A chat has done its part once its note is on the ticket — stamped to the
   // minute, so from the minute it was opened: an Explain chat's explanation,
   // a Discuss chat's decision, which the band then offers to read. A Discuss
@@ -542,6 +564,26 @@ async function show($: EngineInterface, title: string, text: string): Promise<vo
   await update($, messageAtom, () => ({ title, text }))
   const opened = await $.ui.open({ id: MESSAGE, title, focus: true, closeOnEscape: true })
   if (!opened.isPlaced) $.ui.toast(`${title}: ${text}`)
+}
+
+// A ticket waiting for a person, this one's or a teammate's.
+async function waitingTicket($: EngineInterface, id: string | null): Promise<Waiting | undefined> {
+  const view = await read($, boardAtom)
+  return [...(view?.waiting ?? []), ...(view?.theirs ?? [])].find(w => w.id === id)
+}
+
+// Whether the band offers Verdict: there is something the row does not say.
+function hasVerdict(w: Waiting): boolean {
+  return w.verdict !== '' || w.question !== '' || w.blockers.length + w.notes.length > 0
+}
+
+// The Verdict pane: what the band's row leaves out, whole.
+async function showVerdict($: EngineInterface, id: string): Promise<void> {
+  await update($, verdictAtom, () => id)
+  const opened = await $.ui.open({ id: VERDICT, title: t.verdictOf(id), focus: true, closeOnEscape: true })
+  if (opened.isPlaced) return
+  const w = (await read($, boardAtom))?.waiting.find(x => x.id === id)
+  if (w !== undefined) $.ui.toast(`${t.verdictOf(id)}: ${w.verdict || w.question}`)
 }
 
 async function fail($: EngineInterface, what: string, why: string): Promise<void> {
@@ -883,13 +925,37 @@ function stopFrames(): void {
 async function frame($: EngineInterface): Promise<void> {
   const n = await update($, workersFrameAtom, f => f + 1)
   if (n % READ_FRAMES === 0) await readWorkers($)
-  const walkers = await read($, workersAtom)
-  if (walkers !== null) await update($, workersWhereAtom, where => stepOf(where, walkers))
+}
+
+// How many frames ago the stone lost its last chunk; -1 when none ever fell.
+async function fallingOf($: EngineInterface): Promise<number> {
+  const fellAt = await read($, workersFellAtom)
+  return fellAt < 0 ? -1 : (await read($, workersFrameAtom)) - fellAt
+}
+
+// The first line of the last report kept for each ticket, under the
+// reports' lock like every other read of them; marks none read.
+// A store that cannot be read leaves the lines without reports, not the tab
+// without agents.
+async function lastReports($: EngineInterface, ids: readonly string[]): Promise<Record<string, string>> {
+  return locked(async () => {
+    const lines: Record<string, string> = {}
+    try {
+      const root = await project($)
+      for (const id of ids) {
+        const last = (await stored($, keyOf(root, id)))[0]
+        const line = typeof last?.text === 'string' ? reportLine(last.text) : ''
+        if (line !== '') lines[id] = line
+      }
+    } catch {}
+    return lines
+  })
 }
 
 // Who is on the board: its tickets, Herdr's tabs and this session's
-// subagents. A ticket seen before keeps where its figures have walked to,
-// its colour and its hat; one gone drops out of all three.
+// subagents. A ticket seen before keeps its colour and its hat, an agent
+// the time it was first seen; one gone drops out. The stone loses a chunk
+// when the open work at it is less than at the read before.
 async function readWorkers($: EngineInterface): Promise<void> {
   const dir = overviewDir
   if (dir === undefined || reading) return
@@ -901,12 +967,19 @@ async function readWorkers($: EngineInterface): Promise<void> {
       return
     }
     const { tabs, agents } = await agentsOf($, dir)
-    const walkers = workersOf(lanes.stdout, list.stdout, tabs, agents)
-    const ids = [...new Set(walkers.map(f => f.id))]
-    await update($, workersAtom, () => walkers)
+    const workers = workersOf(lanes.stdout, list.stdout, tabs, agents)
+    const ids = [...new Set(workers.map(f => f.id))]
+    const keys = [...new Set(workers.map(workerKey))]
+    const now = await $.clock.now()
+    const frameNow = await read($, workersFrameAtom)
+    const before = await read($, workersAtom)
+    const reports = await lastReports($, ids)
+    await update($, workersReportsAtom, () => reports)
+    await update($, workersAtom, () => workers)
     await update($, workersColorsAtom, kept => pickOf(ids, kept, COLORS))
     await update($, workersHatsAtom, kept => pickOf(ids, kept, Object.keys(HATS)))
-    await update($, workersWhereAtom, where => Object.fromEntries(Object.entries(where).filter(([id]) => ids.includes(id))))
+    await update($, workersSinceAtom, kept => Object.fromEntries(keys.map(k => [k, kept[k] ?? now])))
+    if (before !== null && stoneOf(workers) < stoneOf(before)) await update($, workersFellAtom, () => frameNow)
   } finally {
     reading = false
   }
@@ -1446,6 +1519,7 @@ export const register: Register = (on, options) => {
     const theirsOpen = await read($, theirsOpenAtom)
     const busy = await read($, busyAtom)
     const release = await read($, releaseAtom)
+    const hunts = await read($, huntsAtom)
     await read($, minuteAtom)
     const now = await $.clock.now()
     const waiting = view?.waiting ?? []
@@ -1475,6 +1549,24 @@ export const register: Register = (on, options) => {
       ...(hasThreads ? [{ text: t.threadsOpen(counts.questions, counts.stale), color: 'warning' as const }] : []),
     ]
     const shown = expanded ? waiting : waiting.slice(0, BAND_TICKETS)
+    // A ticket's marks, in the theme's colours: a green tick or a red cross
+    // per check, a dim '?' where nobody can tell, the review's blockers red.
+    const tick = (key: string, ok: boolean | undefined) =>
+      ok === undefined ? <Text key={key} dimColor>?</Text> : <Text key={key} color={ok ? 'success' : 'error'}>{ok ? '✓' : '✗'}</Text>
+    const marks = (w: Waiting, hunt: Hunt | undefined) => [
+      `${t.markDod} `, tick('dod', w.dodComplete),
+      `${SEP}${t.markHunt} `, hunt === 'skipped' ? <Text key="hunt" dimColor>–</Text> : tick('hunt', hunt === 'ok' ? true : hunt === 'fail' ? false : undefined),
+      ...(w.verdict !== ''
+        ? [
+          SEP, <Text key="blockers" {...(w.blockers.length > 0 ? { color: 'error' as const, bold: true } : { dimColor: true })}>{w.findingsKnown ? t.markBlockers(w.blockers.length) : t.markBlockersUnknown}</Text>,
+          SEP, <Text key="notes" dimColor>{w.findingsKnown ? t.markNotes(w.notes.length) : t.markNotesUnknown}</Text>,
+        ]
+        : []),
+      // A verdict an earlier round wrote: said, so a ticket moved on past a
+      // refusing review does not reach the person silent.
+      ...(w.reviewedIn !== undefined ? [SEP, <Text key="old" color="warning">{t.markOldReview(w.reviewedIn)}</Text>] : []),
+      ...(w.question !== '' ? [SEP, <Text key="question" color="warning">?</Text>] : []),
+    ]
     // A frame of its own, so the band reads as the cockpit's and not as chat.
     return (
       <Box flexDirection="column" borderStyle="round" borderDimColor paddingX={1}>
@@ -1496,11 +1588,13 @@ export const register: Register = (on, options) => {
           )
           : null}
         {waiting.length > 0 ? <Box marginTop={1}><Text bold>{t.waiting}</Text></Box> : null}
+        {/* One row per ticket: its marks say whether it can be accepted, the
+            verdict, the notes and the question are a press on Verdict away. */}
         {shown.map(w => (
           <Box key={`row-${w.id}`} flexDirection="column">
             <Box flexDirection="row">
               <Text wrap="truncate-end">
-                <Text bold>{w.id}</Text>{SEP}{w.lane}{w.verdict !== '' ? `${SEP}${w.verdict}` : ''}{' '}
+                <Text bold>{w.id}</Text>{SEP}{w.lane}{SEP}{marks(w, hunts[w.id])}{' '}
               </Text>
               {/* Told apart by colour before they are read: the theme's own, so a
                   light terminal reads them too; the focus inverts them as any.
@@ -1518,19 +1612,13 @@ export const register: Register = (on, options) => {
               {explained[w.id] !== undefined
                 ? <Button key={`read-${w.id}`} label={t.readExplanation} onPress={() => void readExplanation($, w.id, explained[w.id]!)} />
                 : null}
-              {w.verdict !== ''
-                ? <Button key={`verdict-${w.id}`} label={t.verdict} onPress={() => void show($, t.verdictOf(w.id), w.verdict)} />
+              {hasVerdict(w)
+                ? <Button key={`verdict-${w.id}`} label={t.verdict} onPress={() => void showVerdict($, w.id)} />
                 : null}
               {w.question !== ''
                 ? <Button key={`discuss-${w.id}`} label={t.discuss} onPress={() => void once($, w.id, () => openChat($, w.id, 'discuss'))} />
                 : null}
             </Box>
-            {w.question !== '' ? <Text dimColor wrap="truncate-end">  ? {w.question}</Text> : null}
-            {/* A verdict an earlier round wrote: said, so a ticket moved on
-                past a refusing review does not reach the person silent. */}
-            {w.reviewedIn !== undefined ? <Text color="warning" wrap="truncate-end">  {t.reviewedIn(w.reviewedIn)}</Text> : null}
-            {/* The review's notes, read and not decided: no button. */}
-            {w.notes.map((n, i) => <Text key={`note-${w.id}-${i}`} dimColor wrap="truncate-end">  · {n}</Text>)}
           </Box>
         ))}
         {waiting.length > BAND_TICKETS
@@ -1687,6 +1775,7 @@ export const register: Register = (on, options) => {
     if (explaining === null) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
     const { id, decided } = explaining
     const x = explanationOf(explaining.text)
+    const ticket = await waitingTicket($, id)
     const open = decided === undefined
     const pick = (o: Option) => {
       void $.ui.close({ id: EXPLANATION })
@@ -1721,7 +1810,8 @@ export const register: Register = (on, options) => {
     const ownDigit = String(x.options.length + 1)
     return (
       <Box flexDirection="column">
-        <Text bold>{t.explanationOf(id)}</Text>
+        {about(Text, ticket)}
+        <Box marginTop={ticket !== undefined ? 1 : 0}><Text bold>{t.explanationOf(id)}</Text></Box>
         {x.parts.map((p, i) => p.kind === 'option'
           // Open, each option is a row of its own to pick: the engine's
           // Select draws one line per option and cuts a long one, so the
@@ -1797,10 +1887,13 @@ export const register: Register = (on, options) => {
       lane: id => void update($, overviewLanesAtom, l => toggled(l, id)),
       allLanes: () => void update($, overviewLanesAtom, () => []),
     }, {
-      walkers: await read($, workersAtom),
-      where: await read($, workersWhereAtom),
+      workers: await read($, workersAtom),
       colors: await read($, workersColorsAtom),
       hats: await read($, workersHatsAtom),
+      since: await read($, workersSinceAtom),
+      reports: await read($, workersReportsAtom),
+      now: await $.clock.now(),
+      falling: await fallingOf($),
       frame: await read($, workersFrameAtom),
       columns: e.props.bodyColumns,
       rows: e.props.scroll.bodyRows - OVERVIEW_ROWS,
@@ -1815,6 +1908,36 @@ export const register: Register = (on, options) => {
     }
     return next(e)
   }).catch(($, e, next) => next(e))
+
+  // What the ticket is for, before anything about it: a pane opened from the
+  // band is read by someone who may not remember the ticket.
+  const about = (Text: ElementTable['Text'], w: Waiting | undefined) =>
+    w === undefined
+      ? []
+      : [
+        <Text key="about-title" bold wrap="wrap">{w.title}</Text>,
+        ...(w.goal !== '' ? [<Text key="about-goal" wrap="wrap"><Text bold>{t.goal}</Text> {w.goal}</Text>] : []),
+      ]
+
+  on('ui.render', { component: 'Pane', requestId: VERDICT }, async ($, e) => {
+    const id = await read($, verdictAtom)
+    const { Box, Button, Text } = $.ui.resolve(e)
+    const w = await waitingTicket($, id)
+    if (w === undefined) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
+    return (
+      <Box flexDirection="column">
+        {about(Text, w)}
+        <Box marginTop={1}><Text dimColor wrap="wrap">{w.id}{SEP}{w.lane}{w.reviewedIn !== undefined ? `${SEP}${t.reviewedIn(w.reviewedIn)}` : ''}</Text></Box>
+        {w.question !== '' ? <Text color="warning" wrap="wrap">? {w.question}</Text> : null}
+        <Box marginTop={1}><Text wrap="wrap"><Text bold>{t.verdictHeading}</Text> {w.verdict !== '' ? w.verdict : t.noVerdict}</Text></Box>
+        {w.blockers.length + w.notes.length > 0 ? <Box marginTop={1}><Text bold>{t.notesHeading}</Text></Box> : null}
+        {!w.findingsKnown ? <Box marginTop={1}><Text dimColor wrap="wrap">{t.notesNotKept}</Text></Box> : null}
+        {w.blockers.map((n, i) => <Text key={`blocker-${i}`} wrap="wrap"><Text bold color="error">[blocker]</Text> {n}</Text>)}
+        {w.notes.map((n, i) => <Text key={`note-${i}`} wrap="wrap">· {n}</Text>)}
+        <Button key="verdict-close" label={t.close} onPress={() => void $.ui.close({ id: VERDICT })} />
+      </Box>
+    )
+  })
 
   on('ui.render', { component: 'Pane', requestId: MESSAGE }, async ($, e) => {
     const message = await read($, messageAtom)

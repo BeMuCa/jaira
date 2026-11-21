@@ -1,5 +1,7 @@
 import type { On, SessionRateLimit } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
+import { reportLine } from '../hooks/digest.ts'
+import { durationOf, stoneSize } from '../hooks/overview.ts'
 
 // A world beneath the plugin: a repository at /repo with a board, jaira, git
 // and Herdr answering from memory, and every command the plugin runs
@@ -47,6 +49,12 @@ type World = {
   me?: { identity: string; aliases: string[] }
   // The ticket bodies `jaira show --json` gives, by id.
   bodies: Record<string, string>
+  // The bughunt key `jaira show --brief --json` gives, by id; an id without
+  // one gets a brief without the key, as from a jaira older than it.
+  hunts: Record<string, { at: string; state: string } | null>
+  // The commits `git merge-base --is-ancestor <commit> HEAD` finds in the
+  // checkout it runs in, by directory ('@/...'); any other answers 1.
+  contains: Record<string, string[]>
   // What the plugin submitted to this session's conversation itself.
   submitted: string[]
   // The panes the plugin opened, and closed, by id and title.
@@ -123,6 +131,8 @@ const EXPLANATION = (title: string) =>
   ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-explanation', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as never
 const ANSWER = (title: string) =>
   ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-answer', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as never
+const VERDICT = (title: string) =>
+  ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-verdict', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as never
 const MESSAGE = (title: string) =>
   ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-message', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as never
 
@@ -158,6 +168,8 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     noteFails: false,
     toasts: [],
     bodies: {},
+    hunts: {},
+    contains: {},
     submitted: [],
     opened: [],
     closed: [],
@@ -283,6 +295,10 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
       return { value: { exitCode: 1, stdout: '', stderr: 'jaira: ticket file is locked', isStdoutTruncated: false, isStderrTruncated: false } }
     }
     if (cmd === 'jaira' && args[0] === 'whoami') return ok(w.me === undefined ? '' : JSON.stringify(w.me))
+    if (cmd === 'jaira' && args[0] === 'show' && args.includes('--brief')) {
+      const id = args[1]!
+      return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ id, ...(id in w.hunts ? { bughunt: w.hunts[id] } : {}) }))
+    }
     if (cmd === 'jaira' && args[0] === 'show') {
       const status = (w.tickets.find(x => (x as { handle: string }).handle === args[1]) as { status?: string } | undefined)?.status
       return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ handle: args[1], body: w.bodies[args[1]!] ?? '', ...(status !== undefined ? { status, board: '' } : {}) }))
@@ -291,6 +307,9 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'git' && args[0] === 'rev-parse') return ok('/repo/.git\n')
     if (cmd === 'git' && args[0] === '--exec-path') return ok('C:\\Program Files\\Git\\mingw64\\libexec\\git-core\n')
     if (cmd === 'git' && args[0] === 'worktree') return ok(w.worktrees ?? WORKTREES)
+    if (cmd === 'git' && args[0] === 'merge-base' && args[1] === '--is-ancestor') {
+      return (w.contains[`@${e.init?.cwd ?? ''}`] ?? []).includes(args[2]!) ? ok('') : { value: { exitCode: 1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+    }
     const failed = (stderr: string) => ({ value: { exitCode: 1, stdout: '', stderr, isStdoutTruncated: false, isStderrTruncated: false } })
     // A follow-up gets the next handle, F00001 and on; createFails refuses it.
     if (cmd === 'jaira' && args[0] === 'create') {
@@ -365,6 +384,15 @@ type Test$ = Parameters<Extract<Parameters<typeof test>[1], (...args: never[]) =
 const typed = (args = '') =>
   ({ command: 'cockpit', args, origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 120 } }) as const
 
+// The Verdict pane of a ticket, opened from the band: what the row leaves out.
+async function verdictOf($: Test$, band: { press: (q: { key: string }) => Promise<unknown> }, id: string) {
+  await band.press({ key: `verdict-${id}` })
+  const pane = await $.ui.mount(VERDICT(`Review verdict of ${id}`))
+  const texts = (await pane.findAll({ type: 'Text' })).map(x => x.text)
+  await pane.unmount()
+  return { texts, find: async (q: { type: 'Text'; text: string | RegExp }) => texts.find(x => (typeof q.text === 'string' ? x === q.text : q.text.test(x))) }
+}
+
 async function startSession($: Test$) {
   await $.session.start({ source: 'startup', cwd: '/repo', surface: null, isInteractive: true } as never)
 }
@@ -407,9 +435,91 @@ describe('waiting for you', () => {
     expect((await ui.findAll({ type: 'Box' })).some(x => x.props.borderStyle === 'round')).toBe(true)
     expect(await ui.find({ type: 'Text', text: 'jaira-cockpit' })).toBeDefined()
     expect((await ui.find({ text: 'Waiting for you' }))).toBeDefined()
-    expect((await ui.find({ type: 'Text', text: /MG677R \| signoff \| approve mit Vorbehalt/ }))).toBeDefined()
+    expect((await ui.find({ type: 'Text', text: /MG677R \| signoff \| DoD/ }))).toBeDefined()
     expect((await ui.find({ type: 'Text', text: /K7P2QX \| human/ }))).toBeDefined()
+    // The verdict is a press on Verdict away, not in the row.
+    expect(await ui.find({ text: /approve mit Vorbehalt/ })).toBeUndefined()
     expect(await ui.find({ text: /T8QS1Y/ })).toBeUndefined()
+  })
+
+  test('a ticket in the band is one row: its marks, no verdict, no notes, no question under it', async ($, on) => {
+    const w = world(on)
+    const verdict = 'approve, but the cache key ignores the branch'
+    w.tickets = [
+      { ...SIGNOFF, goal: 'Two branches never share a cache entry.', dod_complete: true, round: 3, review_round: 2, question: 'keep the old key?', review: { verdict, gaps: 'removed a helper', verdict_gaps: 'blocker: the key ignores the branch\nnote: a test is missing\nnote: a comment is stale' } },
+      { ...SIGNOFF, handle: 'AB12CD', dod_complete: false, review: { verdict: 'approve', gaps: 'none' } },
+      { ...SIGNOFF, handle: 'EF34GH', review: { verdict: 'approve' } },
+    ]
+    w.hunts = { MG677R: { at: 'abc1234', state: 'ok' }, AB12CD: null }
+    await startSession($)
+    // Read once the band is up: the hunts are read for the tickets it shows.
+    await w.clock.advance(60_000)
+    const band = await $.ui.mount(BAND)
+    for (const id of ['MG677R', 'AB12CD', 'EF34GH']) {
+      const row = await band.find({ key: `row-${id}` })
+      expect(row?.children.length).toBe(1)
+    }
+    expect(await band.find({ text: /ignores the branch|a test is missing|keep the old key/ })).toBeUndefined()
+    expect(await band.find({ type: 'Text', text: 'MG677R | signoff | DoD ✓ | bughunt ✓ | 1 blocker | 2 notes | review of round 2 | ? ' })).toBeDefined()
+    // No hunt finished is a cross; a jaira that does not say, or a ticket
+    // with no dod_complete, a '?'.
+    expect(await band.find({ type: 'Text', text: 'AB12CD | signoff | DoD ✗ | bughunt ✗ | 0 blockers | 0 notes ' })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: 'EF34GH | signoff | DoD ? | bughunt ? | 0 blockers | 0 notes ' })).toBeDefined()
+    // The hunt is read where the ticket's code is: its own worktree.
+    expect(ran(w, 'jaira', 'show', 'MG677R', '--brief', '--json')[0]?.at(-1)).toBe('@/.worktrees/repo-mg677r')
+    // The marks in the theme's colours.
+    const row = await band.find({ key: 'row-MG677R' })
+    const colours = JSON.stringify(row)
+    expect(colours).toContain('"color":"success"')
+    expect(colours).toContain('"color":"error"')
+    // Everything left out of the row is in the Verdict pane, the goal on top.
+    const { texts } = await verdictOf($, band, 'MG677R')
+    expect(texts.slice(0, 2)).toEqual(['cache key', 'Goal: Two branches never share a cache entry.'])
+    for (const text of ['? keep the old key?', `Verdict: ${verdict}`, '[blocker] blocker: the key ignores the branch', '· note: a test is missing', '· note: a comment is stale']) {
+      expect(texts).toContain(text)
+    }
+    expect(texts.some(x => /review of round 2, changed since/.test(x))).toBe(true)
+  })
+
+  test('a hunt\'s fail is a red cross only in a checkout that holds the hunt\'s commit', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      // In its own worktree, which holds the hunt: the fail stands.
+      { ...SIGNOFF, review: { verdict: 'approve' } },
+      // No worktree of its own: read in the main checkout, which does not.
+      { ...SIGNOFF, handle: 'AB12CD', review: { verdict: 'approve' } },
+    ]
+    w.hunts = { MG677R: { at: 'abc1234', state: 'fail' }, AB12CD: { at: 'def5678', state: 'fail' } }
+    w.contains = { '@/.worktrees/repo-mg677r': ['abc1234'] }
+    await startSession($)
+    await w.clock.advance(60_000)
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ type: 'Text', text: /^MG677R \| signoff \| DoD \? \| bughunt ✗/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /^AB12CD \| signoff \| DoD \? \| bughunt \?/ })).toBeDefined()
+    expect(ran(w, 'git', 'merge-base', '--is-ancestor', 'def5678', 'HEAD')[0]?.at(-1)).toBe('@/repo')
+  })
+
+  test('an earlier review whose notes were not kept counts nothing: unknown, not zero', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, round: 3, review_round: 2, review: { verdict: 'back to in-progress: gap 1', gaps: 'removed a helper' } }]
+    await startSession($)
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ type: 'Text', text: /MG677R \| signoff \| .*\? blockers \| \? notes \| review of round 2/ })).toBeDefined()
+    const { texts } = await verdictOf($, band, 'MG677R')
+    expect(texts).toContain('The notes of that review were not kept: a later lane rewrote them.')
+    expect(texts.some(x => /removed a helper/.test(x))).toBe(false)
+  })
+
+  test('the Explain pane starts with the ticket\'s title and goal', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, goal: 'Two branches never share a cache entry.' }]
+    w.bodies.MG677R = '## Progress\n\n- **2026-10-12 15:00 · Alex** — explain: The key leaves out the branch.'
+    await startSession($)
+    const band = await $.ui.mount(BAND)
+    await band.press({ key: 'read-MG677R' })
+    const texts = (await (await $.ui.mount(EXPLANATION('Explanation of MG677R'))).findAll({ type: 'Text' })).map(x => x.text)
+    expect(texts.slice(0, 2)).toEqual(['cache key', 'Goal: Two branches never share a cache entry.'])
+    expect(texts.indexOf('Explanation of MG677R')).toBeGreaterThan(1)
   })
 
   test('tickets waiting on another board are listed too, each by its own board\'s lanes', async ($, on) => {
@@ -673,7 +783,11 @@ describe('waiting for you', () => {
     const w = world(on, { herdr: true })
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    expect(await ui.find({ type: 'Text', text: /\? Popup oder eigene Seite\?/ })).toBeDefined()
+    // The row marks the question; the question itself is in the Verdict pane.
+    expect(await ui.find({ text: /Popup oder eigene Seite/ })).toBeUndefined()
+    expect(await ui.find({ type: 'Text', text: /K7P2QX \| human \| .* \| \?/ })).toBeDefined()
+    await ui.press({ key: 'verdict-K7P2QX' })
+    expect(await (await $.ui.mount(VERDICT('Review verdict of K7P2QX'))).find({ type: 'Text', text: '? Popup oder eigene Seite?' })).toBeDefined()
     await ui.press({ key: 'discuss-K7P2QX' })
     // The chat sends its decision to this session, by its messaging socket.
     expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 8)).toEqual(['bash', SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'k7p2qx', 'K7P2QX', 'discuss'])
@@ -1111,9 +1225,12 @@ describe('waiting for you', () => {
     await startSession($)
     const band = await $.ui.mount(BAND)
     for (const id of ['OLD123', 'NEW456', 'BLK789']) expect(await band.find({ key: `explain-${id}` })).toBeDefined()
-    expect(await band.find({ type: 'Text', text: /review of round 1, changed since/ })).toBeDefined()
-    expect(await band.find({ type: 'Text', text: /review of round 7, changed since/ })).toBeDefined()
+    // The row marks it; the Verdict pane says it whole.
+    expect(await band.find({ type: 'Text', text: /OLD123 \| signoff \| .*review of round 1/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /BLK789 \| signoff \| .*review of round 7/ })).toBeDefined()
     expect(await band.find({ type: 'Text', text: /review of round 2/ })).toBeUndefined()
+    expect(await (await verdictOf($, band, 'OLD123')).find({ type: 'Text', text: /review of round 1, changed since/ })).toBeDefined()
+    expect(await (await verdictOf($, band, 'NEW456')).find({ type: 'Text', text: /changed since/ })).toBeUndefined()
   })
 
   test('a later round\'s optimize gaps are no review notes under the row', async ($, on) => {
@@ -1124,8 +1241,8 @@ describe('waiting for you', () => {
     ]
     await startSession($)
     const band = await $.ui.mount(BAND)
-    expect(await band.find({ type: 'Text', text: /removed the unused helper|inlined the close element/ })).toBeUndefined()
-    expect(await band.find({ type: 'Text', text: /· note: a test is missing/ })).toBeDefined()
+    expect(await (await verdictOf($, band, 'OPT123')).find({ type: 'Text', text: /removed the unused helper|inlined the close element/ })).toBeUndefined()
+    expect(await (await verdictOf($, band, 'CUR456')).find({ type: 'Text', text: /· note: a test is missing/ })).toBeDefined()
   })
 
   test('a verdict of an earlier round lists the review\'s own notes, kept beside it, not optimize\'s', async ($, on) => {
@@ -1136,8 +1253,10 @@ describe('waiting for you', () => {
     ]
     await startSession($)
     const band = await $.ui.mount(BAND)
-    expect(await band.find({ type: 'Text', text: /· note: the export test covers 1MB/ })).toBeDefined()
-    expect(await band.find({ type: 'Text', text: /removed the unused helper/ })).toBeUndefined()
+    const old = await verdictOf($, band, 'OLD123')
+    expect(await old.find({ type: 'Text', text: /· note: the export test covers 1MB/ })).toBeDefined()
+    expect(await old.find({ type: 'Text', text: /removed the unused helper/ })).toBeUndefined()
+    expect(await (await verdictOf($, band, 'BLK456')).find({ type: 'Text', text: /\[blocker\] blocker: DoD 2 - an empty export writes a header/ })).toBeDefined()
     // the blocker kept beside an earlier verdict offers Explain; notes alone do not
     expect(await band.find({ key: 'explain-BLK456' })).toBeDefined()
     expect(await band.find({ key: 'explain-OLD123' })).toBeUndefined()
@@ -1197,29 +1316,40 @@ describe('waiting for you', () => {
     const open = await $.ui.mount(BAND)
     for (const id of ['BL0CK1', 'BL0CK2', 'BL0CK3', 'BL0CK4', 'BL0CK5', 'BL0CK6', 'RESRV1']) expect(await open.find({ key: `explain-${id}` })).toBeDefined()
     for (const id of ['NOTES1', 'NOTES2', 'NOTES3', 'AB12CD', 'EF34GH', 'GH56JK', 'MN12PQ', 'PQ34RS', 'LM90NP']) expect(await open.find({ key: `explain-${id}` })).toBeUndefined()
-    // The notes stand under their row as text, without a button of their own.
-    expect(await open.find({ type: 'Text', text: /· note: the export test covers 1MB, not 40MB/ })).toBeDefined()
-    expect(await open.find({ type: 'Text', text: /· note: pre-existing: load\.go:41/ })).toBeDefined()
-    expect(await open.find({ type: 'Text', text: /· Minor: the note after a successful move/ })).toBeDefined()
-    expect(await open.find({ type: 'Text', text: /· note: a comment is stale/ })).toBeDefined()
-    // A blocker is no note, and 'none' is no finding.
-    expect(await open.find({ type: 'Text', text: /· blocker:/i })).toBeUndefined()
-    expect(await open.find({ type: 'Text', text: /· none/ })).toBeUndefined()
-    expect(await open.find({ type: 'Text', text: /inlined the single-use/ })).toBeUndefined()
+    // The row counts them; the notes themselves stand in the Verdict pane.
+    expect(await open.find({ text: /export test covers/ })).toBeUndefined()
+    expect(await open.find({ type: 'Text', text: /NOTES1 \| signoff \| .*0 blockers \| 2 notes/ })).toBeDefined()
+    expect(await open.find({ type: 'Text', text: /BL0CK3 \| signoff \| .*1 blocker \| 1 note $/ })).toBeDefined()
+    expect(await open.find({ type: 'Text', text: /AB12CD \| signoff \| .*0 blockers \| 0 notes/ })).toBeDefined()
+    const notes1 = await verdictOf($, open, 'NOTES1')
+    expect(await notes1.find({ type: 'Text', text: /· note: the export test covers 1MB, not 40MB/ })).toBeDefined()
+    expect(await notes1.find({ type: 'Text', text: /· note: pre-existing: load\.go:41/ })).toBeDefined()
+    expect(await (await verdictOf($, open, 'NOTES2')).find({ type: 'Text', text: /· Minor: the note after a successful move/ })).toBeDefined()
+    const block3 = await verdictOf($, open, 'BL0CK3')
+    expect(await block3.find({ type: 'Text', text: /· note: a comment is stale/ })).toBeDefined()
+    // A blocker is listed as one, not as a note, and 'none' is no finding.
+    expect(await block3.find({ type: 'Text', text: /\[blocker\] blocker: data loss on CRLF/ })).toBeDefined()
+    expect(await block3.find({ type: 'Text', text: /· blocker:/i })).toBeUndefined()
+    expect(await (await verdictOf($, open, 'AB12CD')).find({ type: 'Text', text: /none/ })).toBeUndefined()
+    expect(await open.find({ key: 'verdict-LM91NP' })).toBeUndefined()
   })
 
   test('the whole review verdict is read from the band, with no explanation on the ticket', async ($, on) => {
     const w = world(on)
     const long = 'The diff meets all five DoD items; the one weak spot is the cache key, which leaves out the branch, so two branches share an entry.'
-    w.tickets = [{ ...SIGNOFF, review: { verdict: long } }, HUMAN]
+    w.tickets = [{ ...SIGNOFF, review: { verdict: long } }, { ...HUMAN, question: '' }]
     await startSession($)
     const band = await $.ui.mount(BAND)
     expect(await band.find({ key: 'read-MG677R' })).toBeUndefined()
-    // No verdict, no button.
+    // No verdict, no notes, no question: no button.
     expect(await band.find({ key: 'verdict-K7P2QX' })).toBeUndefined()
     await band.press({ key: 'verdict-MG677R' })
-    expect(w.opened).toEqual([{ id: 'cockpit-message', title: 'Review verdict of MG677R', focus: true }])
-    expect(await (await $.ui.mount(MESSAGE('Review verdict of MG677R'))).find({ type: 'Text', text: long })).toBeDefined()
+    expect(w.opened).toEqual([{ id: 'cockpit-verdict', title: 'Review verdict of MG677R', focus: true }])
+    const pane = await $.ui.mount(VERDICT('Review verdict of MG677R'))
+    expect(await pane.find({ type: 'Text', text: `Verdict: ${long}` })).toBeDefined()
+    // It starts with what the ticket is for.
+    const texts = (await pane.findAll({ type: 'Text' })).map(x => x.text)
+    expect(texts[0]).toBe('cache key')
   })
 
   test('the Explain tab closes once its explanation is on the ticket, not on an older one', async ($, on) => {
@@ -3276,79 +3406,198 @@ describe('the overview', () => {
 
 describe('the workers tab', () => {
   const WIDTH = 160
-  const workersTab = async ($: Test$) => {
+  const workersTab = async ($: Test$, columns = WIDTH, rows = 40) => {
     await (await $.ui.mount(BAND)).press({ key: 'overview' })
-    const pane = await $.ui.mount(OVERVIEW)
+    const base = OVERVIEW as { props: { scroll: object } }
+    const pane = await $.ui.mount({ ...base, props: { ...base.props, bodyColumns: columns, scroll: { ...base.props.scroll, bodyRows: rows } } } as never)
     await pane.press({ key: 'overview-tab-workers' })
     return pane
   }
   type Pane = Awaited<ReturnType<typeof workersTab>>
-  // The tracks as drawn, top to bottom, each a list of its lines: findAll
-  // gives a line's Text before the runs within it, so only whole lines of the
-  // pane's width are taken, and the rule between two tracks splits them.
-  const tracksOf = async (pane: Pane) => {
-    const lines = (await pane.findAll({ type: 'Text' })).map(x => x.text)
-    const tracks: string[][] = [[]]
-    let skip = 0
-    for (const line of lines) {
-      if (skip > 0 && line.length < WIDTH) continue
-      if (line.length !== WIDTH) continue
-      skip = 1
-      if (/^─+$/.test(line)) tracks.push([])
-      else tracks.at(-1)!.push(line)
-    }
-    return tracks.filter(t => t.length > 0)
-  }
-  // Where a track's crab stands: the column its head starts at.
-  const crabAt = (track: string[]) => track.map(l => l.indexOf('▐▛███▜▌')).find(i => i >= 0)! - 1
-  const walls = (track: string[]) => track[0]!.slice(1, -1).trim().split(/\s{2,}/)
-  // The column a share of the way across puts the crab at, as the pane draws
-  // it 160 cells wide: two cells inside the wall, ten the crab and its spark.
-  const column = (x: number) => 2 + Math.round(x * (WIDTH - 4 - 10))
-  const plan = (done: number, of: number) => Array.from({ length: of }, (_, i) => ({ done: i < done, state: i < done ? 'done' : 'todo' }))
+  const texts = async (pane: Pane) => (await pane.findAll({ type: 'Text' })).map(x => x.text)
+  // The picture's rows: whole lines of the pane's width. A row of one style
+  // is its own single run too: findAll gives it twice in a row.
+  const pictureOf = async (pane: Pane, columns = WIDTH) =>
+    (await texts(pane)).filter((t, i, all) => t.length === columns && !/^[A-Z0-9]{6}  /.test(t) && all[i - 1] !== t)
+  // One line per agent beneath the picture, its trailing room trimmed.
+  const linesOf = async (pane: Pane) => (await texts(pane)).filter(t => /^[A-Z0-9]{6}  /.test(t)).map(t => t.replace(/\s+$/, ''))
+  const dod = (done: number, of: number) => Array.from({ length: of }, (_, i) => ({ done: i < done, state: i < done ? 'done' : 'todo' }))
 
-  test('one track per figure fills the pane, walled by its lane and the next, with who does what in plain words', async ($, on) => {
+  test('the stone: a pebble for nothing open, never smaller for more, never past its box', () => {
+    expect(stoneSize(0, 30, 10)).toEqual({ w: 3, h: 1 })
+    expect(stoneSize(-2, 30, 10)).toEqual({ w: 3, h: 1 })
+    let last = stoneSize(0, 30, 10)
+    for (const open of [1, 2, 3, 5, 9, 16, 40, 100, 1000]) {
+      const size = stoneSize(open, 30, 10)
+      expect(size.w).toBeGreaterThanOrEqual(last.w)
+      expect(size.h).toBeGreaterThanOrEqual(last.h)
+      expect(size.w).toBeLessThanOrEqual(30)
+      expect(size.h).toBeLessThanOrEqual(10)
+      last = size
+    }
+    // Four times the work reads larger, not four times as wide.
+    expect(stoneSize(4, 99, 99)).toEqual({ w: 12, h: 3 })
+    expect(stoneSize(16, 99, 99)).toEqual({ w: 20, h: 5 })
+    // A box smaller than a pebble still holds one cell.
+    expect(stoneSize(9, 0, 0)).toEqual({ w: 1, h: 1 })
+  })
+
+  test('how long an agent has been seen reads in minutes, then hours', () => {
+    expect([0, 59_999, 60_000, 59 * 60_000, 65 * 60_000, 25 * 3_600_000, -5].map(durationOf)).toEqual(['<1m', '<1m', '1m', '59m', '1h05', '25h00', '<1m'])
+  })
+
+  test('a report\'s first line: a notification\'s result without tags and blank lines, else the text', () => {
+    expect(reportLine('<task-notification>\n<summary>x</summary>\n<result>\n\n  done: moved.\nmore\n</result>')).toBe('done: moved.')
+    expect(reportLine('<task-notification>\n<task-id>a1</task-id> <status>done</status>\nplain message\nsecond')).toBe('plain message')
+    expect(reportLine('')).toBe('')
+    expect(reportLine('<result>\n</result>')).toBe('')
+    // Angle brackets inside a line of content are content, never stripped.
+    for (const line of ['keyed by Map<string, number> and a < b check > fixed', 'if n<3 then x>2', 'moved <id> to critique', '<b>bold</b> start'])
+      expect(reportLine(`<task-notification>\n<result>\n${line}\n</result>`)).toBe(line)
+    // A line an agent wrote to make a pattern backtrack is read in linear time.
+    for (const line of ['<a></a>'.repeat(5000) + 'x', '<a>'.repeat(5000) + 'x', '<a '.repeat(5000) + '>x', `<${'a'.repeat(20000)}>x</b>`]) {
+      const start = performance.now()
+      expect(reportLine(`<result>\n${line}\n</result>`)).toBe(line)
+      expect(performance.now() - start).toBeLessThan(200)
+    }
+  })
+
+  test('a ticket with an open question and no agent is no figure; one with an agent waits for the answer', async ($, on) => {
     const w = world(on, { herdr: true })
-    w.tickets = [
-      HUMAN,
-      { ...WORKING, assignee: 'Alex', next_lane: 'critique' },
-      { handle: 'R1R1R1', title: 'judged', status: 'review', next_lane: 'signoff', question: '' },
-      { handle: 'D1D1D1', title: 'finished', status: 'done', question: '' },
+    const asking = { handle: 'Q1Q1Q1', title: 'asks', status: 'human', next_lane: 'review', question: 'which one?' }
+    w.tickets = [HUMAN, asking, { ...WORKING, assignee: 'Alex' }]
+    w.tabs = [
+      { tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' },
+      { tab_id: 'w1:t2', label: 'Q1Q1Q1/worker', agent_status: 'idle' },
     ]
+    await startSession($)
+    const lines = await linesOf(await workersTab($))
+    expect(lines.map(l => l.slice(0, 6))).toEqual(['T8QS1Y', 'Q1Q1Q1'])
+    expect(lines[1]).toContain('waits for an answer')
+    expect(lines.join('\n')).not.toContain('K7P2QX')
+  })
+
+  test('only tickets with an open question and nobody on them: nobody on the board', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tickets = [HUMAN, { handle: 'Z1Z1Z1', title: 'old', status: 'signoff', next_lane: 'done', question: 'accept?' }]
+    await startSession($)
+    expect(await (await workersTab($)).find({ type: 'Text', text: 'No agent on the board right now.' })).toBeDefined()
+  })
+
+  test('one line per agent: ticket, lane, kind, state, how long it has been seen, and the first line of its last report', async ($, on) => {
+    const report = '<task-notification>\n<task-id>a1</task-id>\n<result>\n\nT8QS1Y: tests green, moving to critique.\nsecond line\n</result>\n</task-notification>'
+    const w = world(on, { herdr: true, store: { 'report:/repo:T8QS1Y': [{ at: '2026-11-21T10:00:00Z', origin: 'peer', session: 's', text: report }] } })
+    w.tickets = [{ ...WORKING, assignee: 'Alex' }, { handle: 'R1R1R1', title: 'judged', status: 'review', next_lane: 'signoff', question: '' }]
     w.tabs = [
       { tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' },
       { tab_id: 'w1:t2', label: 'R1R1R1/review', agent_status: 'idle' },
-      // A person's own chat is not an agent, and a finished ticket has no lane to stand in.
+      // A person's own chat is not an agent.
       { tab_id: 'w1:t3', label: 'T8QS1Y/explain', agent_status: 'working' },
-      { tab_id: 'w1:t4', label: 'D1D1D1/worker', agent_status: 'idle' },
     ]
+    w.agents = [{ id: 'a1', description: 'bughunt T8QS1Y', type: 'claude', status: 'running' }]
     await startSession($)
-    const tracks = await tracksOf(await workersTab($))
-    // Board order of the lanes; 40 rows less the tab row, three high with the
-    // framed Close in it: 37, two of them rules.
-    expect(tracks.map(walls)).toEqual([['in-progress', 'critique'], ['review', 'signoff'], ['human', 'review']])
-    expect(tracks.map(t => t.length)).toEqual([11, 11, 11])
-    const said = tracks.map(t => t.at(-1)!.slice(1, -1).trim())
-    expect(said).toEqual(['T8QS1Y · working · filter', 'R1R1R1 · resting · judged', 'K7P2QX · waits for an answer · tags popup'])
-    // Resting sits with z z above its hat; a question stands with (?) above it.
-    expect(tracks[1]!.some(l => l.includes('z z'))).toBe(true)
-    expect(tracks[1]!.some(l => l.includes('▀▀▀▀▀'))).toBe(true)
-    expect(tracks[2]!.some(l => l.includes('(?)'))).toBe(true)
-    expect(tracks[0]!.some(l => l.includes('(?)') || l.includes('z z'))).toBe(false)
+    const pane = await workersTab($)
+    expect(await linesOf(pane)).toEqual([
+      'T8QS1Y  in-progress  subagent  working    <1m  T8QS1Y: tests green, moving to critique.',
+      'T8QS1Y  in-progress  worker    working    <1m  T8QS1Y: tests green, moving to critique.',
+      'R1R1R1  review       review    resting    <1m  judged',
+    ])
+    // Read again after another tab: the time it was first seen stays.
+    await pane.press({ key: 'overview-tab-queue' })
+    await w.clock.advance(6 * 60_000)
+    await pane.press({ key: 'overview-tab-workers' })
+    expect((await linesOf(pane))[1]).toBe('T8QS1Y  in-progress  worker    working     6m  T8QS1Y: tests green, moving to critique.')
   })
 
-  test('the crab stands as far across as its ticket has come: its plan, else its definition of done, else at the left wall', async ($, on) => {
+  test('every agent stands at one stone, its count the open definition-of-done items of the tickets with an agent', async ($, on) => {
     const w = world(on, { herdr: true })
     w.tickets = [
-      { handle: 'A1A1A1', title: 'a', status: 'in-progress', question: '', plan_items: plan(1, 4), dod_items: plan(0, 2) },
-      { handle: 'B1B1B1', title: 'b', status: 'in-progress', question: '', plan_items: [], dod_items: [...plan(1, 2), { done: false, state: 'superseded' }] },
-      { handle: 'C1C1C1', title: 'c', status: 'in-progress', question: '' },
-      { handle: 'E1E1E1', title: 'e', status: 'in-progress', question: '', dod_items: plan(3, 3) },
+      { ...WORKING, assignee: 'Alex', dod_items: [...dod(1, 4), { done: false, state: 'superseded' }] },
+      { handle: 'C1C1C1', title: 'judged', status: 'critique', question: '', dod_items: dod(0, 2) },
+      // No agent on it: its work is not at the stone.
+      { handle: 'N1N1N1', title: 'idle', status: 'in-progress', question: '', dod_items: dod(0, 9) },
     ]
-    w.tabs = w.tickets.map((t, i) => ({ tab_id: `w1:t${i}`, label: `${(t as { handle: string }).handle}/worker`, agent_status: 'working' }))
+    w.tabs = [
+      { tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' },
+      { tab_id: 'w1:t2', label: 'C1C1C1/worker', agent_status: 'working' },
+      { tab_id: 'w1:t3', label: 'C1C1C1/bughunt', agent_status: 'working' },
+    ]
     await startSession($)
-    const tracks = await tracksOf(await workersTab($))
-    expect(tracks.map(crabAt)).toEqual([column(1 / 4), column(1 / 2), column(0), column(1)])
+    const picture = await pictureOf(await workersTab($))
+    // Three open on T8QS1Y, two on C1C1C1 counted once however many work it.
+    expect(picture.some(l => l.includes('5 open'))).toBe(true)
+    // Three crabs on one ground line, none on a track of its own.
+    expect(picture.filter(l => l.includes('▐▛███▜▌')).join('').split('▐▛███▜▌').length - 1).toBe(3)
+    expect(picture.filter(l => /^─+$/.test(l))).toHaveLength(1)
+  })
+
+  test('a definition-of-done item ticked makes the stone smaller, and a chunk falls from it', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tickets = [{ ...WORKING, assignee: 'Alex', dod_items: dod(0, 9) }]
+    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' }]
+    await startSession($)
+    const pane = await workersTab($)
+    // The stone's cells: its runs of rock, which no crab's run matches.
+    const stone = async () => (await texts(pane)).filter(t => /^(▟█*▙|█+|▄+)$/.test(t)).join('').length
+    const big = await stone()
+    const before = await pictureOf(pane)
+    expect(before.some(l => l.includes('9 open'))).toBe(true)
+    expect(before.some(l => l.includes('▞'))).toBe(false)
+    w.tickets = [{ ...WORKING, assignee: 'Alex', dod_items: dod(8, 9) }]
+    await w.clock.advance(5000)
+    const after = await pictureOf(pane)
+    expect(after.some(l => l.includes('1 open'))).toBe(true)
+    expect(after.some(l => l.includes('▞'))).toBe(true)
+    expect(await stone()).toBeLessThan(big)
+    // It has fallen after a few frames.
+    await w.clock.advance(250 * 8)
+    expect((await pictureOf(pane)).some(l => l.includes('▞'))).toBe(false)
+  })
+
+  for (const n of [1, 4, 8, 16, 30]) {
+    test(`${n} agents and all their lines fit 40 rows × 100 columns without scrolling`, async ($, on) => {
+      const w = world(on, { herdr: true })
+      const ids = Array.from({ length: n }, (_, i) => `A${String(i).padStart(2, '0')}AAA`)
+      w.tickets = ids.map(handle => ({ handle, title: handle, status: 'in-progress', question: '', dod_items: dod(0, 3) }))
+      w.tabs = ids.map((id, i) => ({ tab_id: `w1:t${i}`, label: `${id}/worker`, agent_status: 'working' }))
+      await startSession($)
+      const pane = await workersTab($, 100, 40)
+      const picture = await pictureOf(pane, 100)
+      const lines = await linesOf(pane)
+      expect(lines).toHaveLength(n)
+      // 40 rows less the tab row, three high with the framed Close in it.
+      expect(picture.length + lines.length).toBeLessThanOrEqual(37)
+      const crabs = picture.join('\n')
+      const big = crabs.split('▐▛███▜▌').length - 1
+      const small = crabs.split('▐▛▜▌').length - 1
+      // Every agent stands in the picture: the big crab while they all fit, else the small one.
+      expect(big + small).toBe(n)
+      expect(big === n || small === n).toBe(true)
+      if (n === 30) expect(small).toBe(n)
+    })
+  }
+
+  test('working hammers in place; resting sits still', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tickets = [{ ...WORKING, assignee: 'Alex' }]
+    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' }]
+    await startSession($)
+    const pane = await workersTab($)
+    const seen: string[] = []
+    for (let i = 0; i < 4; i++) {
+      seen.push((await pictureOf(pane)).join('\n').replace(/[✻✳✶✢]/g, ''))
+      await w.clock.advance(250)
+    }
+    expect(new Set(seen).size).toBe(2)
+    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'idle' }]
+    await w.clock.advance(5000)
+    const resting: string[] = []
+    for (let i = 0; i < 4; i++) {
+      resting.push((await pictureOf(pane)).join('\n'))
+      await w.clock.advance(250)
+    }
+    expect(new Set(resting).size).toBe(1)
+    expect(resting[0]).toContain('▀▀▀▀▀')
   })
 
   test('two tickets never wear the same colour or hat, and each keeps both on every read', async ($, on) => {
@@ -3360,32 +3609,21 @@ describe('the workers tab', () => {
     ]
     await startSession($)
     const pane = await workersTab($)
-    // Each track's head in its colour, and the hat on the line above it.
-    const looks = async () => {
-      const heads = (await pane.findAll({ type: 'Text' })).filter(x => x.text.includes('▐▛███▜▌') && x.text.length < WIDTH)
-      const tracks = await tracksOf(pane)
-      return tracks.map((t, i) => {
-        const x = crabAt(t)
-        const head = t.findIndex(l => l.includes('▐▛███▜▌'))
-        return { color: (heads[i]!.props as { color?: string }).color, hat: t[head - 1]!.slice(x + 1, x + 8) }
-      })
-    }
-    const first = await looks()
-    expect(first[0]!.color).toBeDefined()
-    expect(first[0]!.color).not.toBe(first[1]!.color)
-    expect(first[0]!.hat.trim()).not.toBe('')
-    expect(first[0]!.hat).not.toBe(first[1]!.hat)
-    // Four more join: the first two keep theirs, and all six differ in both.
+    // Each ticket's colour as its line's handle wears it.
+    const colors = async () => Object.fromEntries((await pane.findAll({ type: 'Text' }))
+      .filter(x => /^[A-Z0-9]{6}$/.test(x.text) && (x.props as { bold?: boolean }).bold === true)
+      .map(x => [x.text, (x.props as { color?: string }).color]))
+    const first = await colors()
+    expect(first.T8QS1Y).toBeDefined()
+    expect(first.T8QS1Y).not.toBe(first.C1C1C1)
     const more = ['A1A1A1', 'A2A2A2', 'A3A3A3', 'A4A4A4']
     w.tickets = [...w.tickets, ...more.map(handle => ({ handle, title: handle, status: 'in-progress', question: '' }))]
     w.tabs = [...w.tabs, ...more.map((id, i) => ({ tab_id: `w1:x${i}`, label: `${id}/worker`, agent_status: 'working' }))]
     await w.clock.advance(5000)
-    const after = await looks()
-    const byId = (await tracksOf(pane)).map(t => t.at(-1)!.slice(1, -1).trim().slice(0, 6))
-    expect(after[byId.indexOf('T8QS1Y')]).toEqual(first[0])
-    expect(after[byId.indexOf('C1C1C1')]).toEqual(first[1])
-    expect(new Set(after.map(l => l.color)).size).toBe(6)
-    expect(new Set(after.map(l => l.hat)).size).toBe(6)
+    const after = await colors()
+    expect(after.T8QS1Y).toBe(first.T8QS1Y)
+    expect(after.C1C1C1).toBe(first.C1C1C1)
+    expect(new Set(Object.values(after)).size).toBe(6)
   })
 
   test('once a ticket leaves, two that had to share a colour never keep sharing it', async ($, on) => {
@@ -3398,116 +3636,11 @@ describe('the workers tab', () => {
     board(ids)
     await startSession($)
     const pane = await workersTab($)
-    const colors = async () => (await pane.findAll({ type: 'Text' })).filter(x => x.text.includes('▐▛███▜▌') && x.text.length < WIDTH).map(x => (x.props as { color?: string }).color)
-    // Seven tickets, six colours: two share one.
+    const colors = async () => (await pane.findAll({ type: 'Text' })).filter(x => /^[A-Z]{6}$/.test(x.text) && (x.props as { bold?: boolean }).bold === true).map(x => (x.props as { color?: string }).color)
     expect(new Set(await colors()).size).toBe(6)
     board(ids.filter(id => id !== 'BBBBBB'))
     await w.clock.advance(5000)
     expect(new Set(await colors()).size).toBe(6)
-  })
-
-  test('working moves its arms in place; resting sits still', async ($, on) => {
-    const w = world(on, { herdr: true })
-    w.tickets = [{ ...WORKING, assignee: 'Alex' }, { handle: 'C1C1C1', title: 'judged', status: 'critique', question: '' }]
-    w.tabs = [
-      { tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' },
-      { tab_id: 'w1:t2', label: 'C1C1C1/worker', agent_status: 'idle' },
-    ]
-    await startSession($)
-    const pane = await workersTab($)
-    const seen: string[][] = []
-    for (let i = 0; i < 4; i++) {
-      seen.push((await tracksOf(pane)).map(t => t.slice(0, -1).join('\n')))
-      await w.clock.advance(250)
-    }
-    expect(new Set(seen.map(s => s[0]!.replace(/[✻✳✶✢]/g, ''))).size).toBe(2)
-    expect(new Set(seen.map(s => s[1]!)).size).toBe(1)
-  })
-
-  test('a ticket that came further walks there column by column, its legs stepping', async ($, on) => {
-    const w = world(on, { herdr: true })
-    w.tickets = [{ ...WORKING, assignee: 'Alex', next_lane: 'critique', plan_items: plan(0, 2) }]
-    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' }]
-    await startSession($)
-    const pane = await workersTab($)
-    expect(crabAt((await tracksOf(pane))[0]!)).toBe(column(0))
-    w.tickets = [{ ...WORKING, assignee: 'Alex', next_lane: 'critique', plan_items: plan(1, 2) }]
-    // Read again after 5 s: one step on in that frame, one each frame after.
-    await w.clock.advance(5000)
-    const steps: number[] = []
-    const legs: string[] = []
-    for (let i = 0; i < 3; i++) {
-      const track = (await tracksOf(pane))[0]!
-      steps.push(crabAt(track))
-      legs.push(track.at(-2)!.slice(crabAt(track), crabAt(track) + 9))
-      await w.clock.advance(250)
-    }
-    expect(steps).toEqual([column(1 / 40), column(2 / 40), column(3 / 40)])
-    expect(legs[0]).not.toBe(legs[1])
-    expect(legs[0]).toBe(legs[2])
-    // It stops where its progress puts it.
-    await w.clock.advance(250 * 30)
-    expect(crabAt((await tracksOf(pane))[0]!)).toBe(column(1 / 2))
-  })
-
-  test('a ticket that moved on walks to the right wall, the walls move along, and it starts again at the left', async ($, on) => {
-    const w = world(on, { herdr: true })
-    w.tickets = [{ ...WORKING, assignee: 'Alex', next_lane: 'critique', plan_items: plan(1, 2) }]
-    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' }]
-    await startSession($)
-    const pane = await workersTab($)
-    w.tickets = [{ ...WORKING, status: 'critique', next_lane: 'review', plan_items: plan(0, 2) }]
-    await w.clock.advance(5000)
-    let track = (await tracksOf(pane))[0]!
-    expect(walls(track)).toEqual(['in-progress', 'critique'])
-    expect(crabAt(track)).toBeGreaterThan(column(1 / 2))
-    for (let i = 0; i < 40 && walls(track)[0] === 'in-progress'; i++) {
-      expect(crabAt(track)).toBeLessThanOrEqual(column(1))
-      await w.clock.advance(250)
-      track = (await tracksOf(pane))[0]!
-    }
-    // The old right wall is the left one now, and the crab is back at it.
-    expect(walls(track)).toEqual(['critique', 'review'])
-    expect(crabAt(track)).toBe(column(0))
-  })
-
-  test('on a narrow pane the walls\' names are cut to half the line each, never written over each other', async ($, on) => {
-    const w = world(on, { herdr: true })
-    w.tickets = [{ ...WORKING, assignee: 'Alex', next_lane: 'critique' }]
-    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' }]
-    await startSession($)
-    await (await $.ui.mount(BAND)).press({ key: 'overview' })
-    const narrow = { ...(OVERVIEW as { props: object }), props: { ...(OVERVIEW as { props: object }).props, bodyColumns: 24 } } as never
-    const pane = await $.ui.mount(narrow)
-    await pane.press({ key: 'overview-tab-workers' })
-    const top = (await pane.findAll({ type: 'Text' })).map(x => x.text).find(t => t.startsWith('┃ ') && t.length === 24)
-    // 24 cells: nine for each name, the walls and the gaps around them.
-    expect(top).toBe('┃ in-progre  critique  ┃')
-  })
-
-  test('on a pane too narrow for it, the line beneath the crab ends before the right wall', async ($, on) => {
-    const w = world(on, { herdr: true })
-    w.tickets = [HUMAN]
-    await startSession($)
-    await (await $.ui.mount(BAND)).press({ key: 'overview' })
-    const narrow = { ...(OVERVIEW as { props: object }), props: { ...(OVERVIEW as { props: object }).props, bodyColumns: 30 } } as never
-    const pane = await $.ui.mount(narrow)
-    await pane.press({ key: 'overview-tab-workers' })
-    const caption = (await pane.findAll({ type: 'Text' })).map(x => x.text).find(t => t.includes('K7P2QX ·') && t.length === 30)
-    expect(caption).toBe('┃ K7P2QX · waits for an answ ┃')
-  })
-
-  test('a subagent of this session has a track too, at work or resting', async ($, on) => {
-    const w = world(on)
-    w.tickets = [{ ...WORKING, assignee: 'Alex' }, { handle: 'C1C1C1', title: 'judged', status: 'critique', question: '' }]
-    w.agents = [
-      { id: 'a1', description: 'work lane in-progress of T8QS1Y', type: 'claude', status: 'running' },
-      { id: 'a2', description: 'critique C1C1C1', type: 'claude', status: 'idle' },
-      { id: 'a3', description: 'old run of C1C1C1', type: 'claude', status: 'completed' },
-    ]
-    await startSession($)
-    const said = (await tracksOf(await workersTab($))).map(t => t.at(-1)!.slice(1, -1).trim())
-    expect(said).toEqual(['T8QS1Y · working · filter', 'C1C1C1 · resting · judged'])
   })
 
   test('nobody on the board says so', async ($, on) => {

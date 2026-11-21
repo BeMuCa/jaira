@@ -17,8 +17,7 @@ export type Overview = {
 }
 
 // What the Workers tab draws: these mirror hooks/overview.ts.
-export type Walker = { id: string; state: 'working' | 'idle' | 'question'; lane: string; next: string; title: string; progress: number }
-export type Spot = { lane: string; x: number }
+export type Worker = { id: string; role: string; state: 'working' | 'idle' | 'question'; lane: string; title: string; open: number }
 
 declare module 'claude-code' {
   interface PluginState {
@@ -50,6 +49,11 @@ declare module 'claude-code' {
       // the ticket the own-answer pane asks about.
       explaining: { id: string; text: string; decided?: string } | null
       answering: string | null
+      // The ticket the Verdict pane shows: its goal, verdict and every note.
+      verdictTicket: string | null
+      // The newest bug hunt of each ticket the band shows, as jaira's brief
+      // says it stands: ok, fail, unknown or skipped.
+      hunts: Record<string, 'ok' | 'fail' | 'unknown' | 'skipped'>
       // The explanation an Explain chat wrote onto each ticket the band shows,
       // and the decision that answered it, when one did.
       explained: Record<string, { text: string; decided?: string }>
@@ -73,13 +77,17 @@ declare module 'claude-code' {
       overviewFolded: Record<string, boolean>
       overviewPeople: string[]
       overviewLanes: string[]
-      // The Workers tab: its figures, read while it is open; where each
-      // ticket's figures stand on their track; each ticket's colour and hat,
-      // kept while it stays on the board; and the frame the animation is at.
-      workers: Walker[] | null
-      workersWhere: Record<string, Spot>
+      // The Workers tab: its agents, read while it is open; each ticket's
+      // colour and hat, kept while it stays on the board; when each agent
+      // (<id>/<kind>) was first seen; the first line of each ticket's last
+      // report; the frame the stone last lost a chunk (-1: never); and the
+      // frame the animation is at.
+      workers: Worker[] | null
       workersColors: Record<string, string>
       workersHats: Record<string, string>
+      workersSince: Record<string, number>
+      workersReports: Record<string, string>
+      workersFell: number
       workersFrame: number
     }
   }
