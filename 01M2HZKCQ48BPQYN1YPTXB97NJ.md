@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T09:42:51Z
+updated-at: 2026-11-21T09:42:55Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -42,8 +42,8 @@ review-gaps: |-
   note: pr-gate liest den Lane-Stand der Tickets von der Platte des Zweigs, den es beurteilt - unter none ist das die einzige Pruefung vor dem Push auf den Hauptzweig. Ein Zweig, der sein Ticket per --force nach done schreibt, kommt durch; das ist dieselbe Vertrauensgrenze wie bei agent (JG3REW), unter none aber ohne Pull Request als zweiten Blick
   note: Basis-Datei .jaira/pr wird in gate (FileAt ./.jaira/pr relativ zu s.Root) und Cockpit (git show base:.jaira/pr relativ zum Repo-Root) verschieden adressiert; gleich, solange das Board im Repo-Root liegt - bei einem Board in einem Unterverzeichnis lesen beide verschieden
   note: roles list ohne --base nimmt origins Default - in einem Fork-Klon ist das der Fork, nicht der Parent; jaira-role-pr sagt deshalb, mit --base erneut zu lesen, reap reicht --base selbst durch
-test-verdict: "pass with known limits (round 15): go vet + go test -race ./... RC=0 at aae6eb28; cockpit 218 pass; gates read only the base (open refuses none, --land refuses non-none: TestPRGateNeverOpensOnABaseThatTakesNone, TestPRGateLandOnlyWhereTheBaseSaysNone); roles list from the base (TestRolesListReadsTheBoardFilesFromTheBase); 3 hunt findings recorded as known limit per teamlead"
-hunt-verdict: "known limit (round 17 at aae6eb28): 3 findings, wording/path only, gates hold - see note"
+test-verdict: "pass with known limit (round 16): go vet + go test -race ./... RC=0 at 8747367e; cockpit 219 pass; roles list --base unresolvable -> exit 3 no_such_ref, branch behind base not called changing (TestRolesListBaseMustResolveAndComparesWithTheMergeBase); cockpit without forge reads origin/main (board.test.ts)"
+hunt-verdict: "known limit (round 18 at 8747367e): 1 narrow finding (cockpit for-each-ref short name beside a local branch called origin/main), recorded as known limit per teamlead"
 claimed-by: DESKTOP-RFTCH11-3584823
 claimed-at: 2026-11-21T09:34:03Z
 review-verdict: "Der Diff erfuellt alle acht DoD-Punkte; go test (board, gitrepo, settings, role, internal/cli, shipped) und claude plugin test im Cockpit (218/218) gruen. Kein Defekt gefunden, der einen Blocker traegt: jede unklare Lage (Tippfehler, fehlende Basis, gh antwortet nicht, Octopus-Merge, altes git) faellt auf person bzw. 'kein Landen' zurueck. Vier Notes, die ein Mensch beim Annehmen abwaegen kann - am ehesten der still auf die Platte zurueckfallende --base."
