@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T09:41:25Z
+updated-at: 2026-11-21T09:41:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3769961
 claimed-at: 2026-11-21T09:41:21Z
@@ -34,7 +34,10 @@ outcome-why: "teamlead 10:30 option 1: three hunts in a row found edges of the s
 outcome-resolves: "the exemption uses exactly the commits jaira counts as the ticket's; no diff stays ?"
 review-summary: "Ships a new read-only role /jaira-role-signoff (core/role/builtin/jaira-role-signoff/SKILL.md): per ticket in a board's accept lane it builds one status line (DoD x/y, CI run for the branch head, bughunt note naming the head, blocker count, review verdict, noted returns), a table that marks every open note 🔴/🟡/⚪/🔵, and one bold recommendation driven by return rules 0-5, with accept, give-back and (after two returns) follow-up lines to paste. Lanes are found by flags (human_exit, terminal, output_produces outcome-what), the branch by the handle segment and ancestry, the .jaira-only hunt exemption from jaira's own show --for-lane diff. The teamlead's 'Report to the human' now re-reads lanes and open PRs before listing anything and uses the same shape, pointing to the role for the rules; worker, dispatcher and jaira-role-pr run the project's CI gates locally before a push. README, docs table, wantRoles, shipped.sha256 and a release note come along."
 round: 19
-review-gaps: "optimize 21.11. round 11: the replacement is shorter than the scan; nothing to remove."
+review-gaps: |-
+  note: known limit (already noted 09:38): a ticket whose commits touch only its ticket or logbook file gets diff "" from jaira show --for-lane, so the hunt check reads ? instead of – ; fails safe, never a false ✅
+  note: the .jaira-only exemption also reads .worktree_diff, which is repo-wide - unrelated uncommitted code in the same checkout turns – into ❌; fails safe, only run it in the ticket's own worktree
+  note: the worktree carries untracked .jaira/milestones/ files that are not part of this ticket - do not git add them with it
 test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at cb9e353e; DoD 1-4 verified in the tree; the role now reads the change off jaira's derivation (checked in this worktree: git+worktree, 20 commits; from master: 0 commits -> ?). Roles write nothing - no concurrent-writer case."
 hunt-verdict: "known limit: 1 finding at cb9e353e (a .jaira-only ticket reads ? not –; fails safe) - sent to signoff as note per teamlead 10:30"
 question: ""
