@@ -21,13 +21,18 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-11-20T18:03:14Z
-updated-at: 2026-11-21T19:14:27Z
+updated-at: 2026-11-21T19:15:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2283240
 claimed-at: 2026-11-21T19:01:13Z
 outcome-what: "The cockpit's Give back pane lists every review note as a row the person switches between fix now, follow-up and accept; Give back sends only the fix-now notes, Accept in the pane records the rest, follow-ups become tickets with follows set, and the next acceptance starts each note as it was decided."
 outcome-why: Alex gives nearly every ticket back to close some of its review notes and had to say in words which; the choice per note and its record on the ticket were missing.
 outcome-resolves: "DoD 1-6: tests in core/mod/builtin/jaira-cockpit/tests/board.test.ts 'give back with the review notes'; in-progress prompt names the beheben: list."
+review-summary: "core/mod/builtin/jaira-cockpit/hooks/board.ts gapItems: its first line re-implements findings() in the same file (split, MARKER, oneLine, NO_GAP) - call findings(gaps) and only merge the continuation lines"
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # In signoff hakt die Person die Notes an, die behoben werden sollen, und Give back nimmt genau diese mit
@@ -81,3 +86,4 @@ outcome-resolves: "DoD 1-6: tests in core/mod/builtin/jaira-cockpit/tests/board.
 6. Gleichzeitig: vor dem Anwenden liest der Pane den Ticketstatus neu; steht das Ticket nicht mehr in der Lane, wird nichts geschrieben und gesagt, wer schneller war. Folge-Tickets erst nach erfolgreichem Move bzw. vor Accept.
 7. Accept im Pane mit Notes auf 'jetzt' wird abgelehnt (Hinweis: Give back oder umstellen); ein Blocker nicht auf 'jetzt' fragt einmal (zweiter Druck nimmt an). Der Accept-Knopf im Band bleibt wie er ist.
 - **2026-11-21 19:14 · Alexander Sacharov** — in-progress: vier Kategorien geprueft. Nebenlaeufigkeit: Status wird vor dem Anwenden neu gelesen (Test 'decided meanwhile'); zwei Druecke in einer Session sperrt once()/close(). Fehlerpfade: jaira create scheitert -> '(not created: ...)' in der Note, Note scheitert bei Accept -> Meldung mit Text; refused dry-run schreibt nichts. Eingabe: CRLF, Leerzeilen, none, Markdown-Betonung, Fortsetzungszeilen, 40 Notes getestet; Notes stehen als '- <text>' in der Note, jaira erkennt Notes nur am Datum, also bricht '- **blocker:**' nichts. Rechte: keine neuen. Bewusst nicht: der Accept-Knopf im Band fragt nicht nach (nur der im Pane); Freitext gilt nur fuer Give back, Accept im Pane hat kein Feld.
+- **2026-11-21 19:15 · Alexander Sacharov** — critique 1: gapItems in hooks/board.ts dupliziert findings() (gleiche Datei) - findings(gaps) nehmen, nur Fortsetzungszeilen zusammenfuehren. Stehen gelassen: Explain-Pane-[give back] ohne Notes-Auswahl (decision-Note Punkt 2), deutsche Ueberschriften beheben:/angenommen: (DoD 2 woertlich).

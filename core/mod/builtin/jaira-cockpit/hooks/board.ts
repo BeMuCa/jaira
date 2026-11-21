@@ -660,7 +660,7 @@ const PRESELECTED: Record<NoteClass, Choice> = { blocker: 'now', edge: 'now', li
 // wrong is better than one lost or two merged — no line of the gaps but a
 // "none" ever drops out.
 export function gapItems(gaps: string | undefined, explainText?: string, decided?: ReadonlyMap<string, Choice>): GapItem[] {
-  const lines = (gaps ?? '').split(/\r?\n/).map(l => oneLine(l.replace(MARKER, ''))).filter(l => l !== '' && !NO_GAP.test(l))
+  const lines = findings(gaps)
   const prefixed = lines.some(l => PREFIXED.test(l))
   const texts: string[] = []
   for (const l of lines) {
