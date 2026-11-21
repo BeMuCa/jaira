@@ -485,11 +485,12 @@ answers a point twice. For each of them, in order:
    haiku (`model:` above), which is enough to push, read and answer, not to
    change code. A point that needs a code change goes to a worker on the normal
    model, with the thread and nothing else:
-   `Agent(subagent_type: "claude", model: "opus", prompt: "Ticket <id>, branch
-   <branch>: make exactly this review point, one commit with <id> in the
-   subject, do not push, print the sha. <path:line> <comment text>")`. Name the
-   model: left out, the worker inherits haiku from this role. It runs in your
-   directory and you write nothing while it runs; then push its commit.
+   `Agent(subagent_type: "claude", prompt: "Ticket <id>, branch <branch>: make
+   exactly this review point, one commit with <id> in the subject, do not push,
+   print the sha. <path:line> <comment text>")`. Name no model: without one the
+   worker runs on the session's model, whatever this account has, and a fixed
+   name fails on an account without it. It runs in your directory and you write
+   nothing while it runs; then push its commit.
 2. Write the answer to a file — `Fixed in <sha>: <what changed>` with the
    commit you just pushed, or the reason it stays as it is.
 3. `scripts/pr-round.sh reply <owner/repo> <number> <thread id> <file>` —
