@@ -177,6 +177,29 @@ func (r *reapRig) closedTabs() string {
 	return strings.TrimSpace(string(b))
 }
 
+// A real run keeps the pauses a terminal needs: 2 s between the looks at the
+// tab, 1 s before the Enter. Only JAIRA_SPAWN_PAUSE, which TestMain sets to 0,
+// shortens them; a sleep on PATH records what the script asked for.
+func TestSpawnPausesAsLongAsBeforeWithoutTheVariable(t *testing.T) {
+	t.Parallel()
+	r := newReapRig(t)
+	bin := filepath.Join(filepath.Dir(r.closed), "bin")
+	slept := filepath.Join(bin, "slept")
+	r.write(t, filepath.Join(bin, "sleep"), "#!/usr/bin/env bash\necho \"$*\" >> "+slept+"\n")
+	if err := os.Chmod(filepath.Join(bin, "sleep"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	r.env = append(r.env, "JAIRA_SPAWN_PAUSE=")
+	r.run(t, r.wt, "spawn.sh", "--no-worktree", "ab12cd", "ab12cd", "critique", r.wt)
+	b, err := os.ReadFile(slept)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := string(b); got != "2\n1\n" {
+		t.Errorf("spawn.sh slept %q, want 2 s between looks and 1 s before Enter", got)
+	}
+}
+
 // spawn.sh leaves a record of every tab it opens — the pane, the ticket, the
 // lane, the worktree — in the repository's git directory, where every
 // worktree of it finds the same one.
