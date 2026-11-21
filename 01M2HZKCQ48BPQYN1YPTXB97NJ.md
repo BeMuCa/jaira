@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:18:16Z
+updated-at: 2026-11-21T08:18:20Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -48,7 +48,7 @@ claimed-by: DESKTOP-RFTCH11-30002
 claimed-at: 2026-11-21T08:01:23Z
 review-verdict: "Der Diff erfuellt alle 8 DoD-Punkte; go test fuer core/board, core/settings, core/gitrepo, core/role, internal/cli gruen, go vet sauber. Kein Defekt gefunden: Gate faellt bei Tippfehler, fehlender Datei, unbekanntem Handle, fremdem Commit und nicht-trivialem Merge geschlossen; .jaira/pr kommt aus dem Basis-Zweig. Nur Notes, kein Blocker."
 review-round: 12
-review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/solo && cd /tmp/solo && git init -q && /tmp/jaira init  3. printf 'none\\n' > .jaira/pr && /tmp/jaira roles list  -> pr zeigt 'none'  4. /tmp/jaira validate  -> Warnung 'no longer matches this board's lanes or its .jaira/pr'  5. /tmp/jaira update && grep -A3 'How work arrives' CLAUDE.md  -> Absatz 'takes no pull requests'  6. rm .jaira/pr && /tmp/jaira update && grep -c 'How work arrives' CLAUDE.md  -> 0  7. Gate-Logik: go test ./internal/cli -run 'TestPRGate.*None' -v  -> alle PASS (done-only, unbenannte Commits/Merges halten, kein create line)"
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-xb97nj && go build -o /tmp/jaira-x ./cmd/jaira  2. in einem Wegwerf-Repo mit Board: echo none > .jaira/pr && /tmp/jaira-x roles list --json | /tmp/jaira-x json get pr  -> 'none'  3. echo nnone > .jaira/pr && /tmp/jaira-x roles list  -> pr person, Quelle nennt 'nnone'  4. mit none: /tmp/jaira-x update, dann grep -n 'How work arrives' CLAUDE.md -> Absatz da; rm .jaira/pr && /tmp/jaira-x validate -> Warnung 'no longer matches ... .jaira/pr'  5. go test ./internal/cli -run TestPRGate -v -> alle PASS (none laesst nur done durch, lehnt unbenannte Commits und Merges mit eigenem Inhalt ab)"
 ---
 
 # Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig
