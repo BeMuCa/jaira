@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZWSDHK37DGGHJFDF0YD6
 title: "Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:27:13Z
+updated-at: 2026-11-21T09:31:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
@@ -38,7 +38,7 @@ review-gaps: |-
   note: das Cockpit erkennt Blocker nur an einer Zeile, die mit blocker: beginnt (board.ts BLOCKER); eine formatierte Marke wie **blocker:** wird als Note gelistet und bietet kein Explain - der Review-Prompt verlangt die nackte Form, daher nur ein Rand
 test-verdict: "pass: 058e8d2f changes the show --help text and one release-note line; go build ok, show --help prints the new sentence, go test internal/cli Brief ok, release note still one line per change"
 hunt-verdict: "pass: follow-up hunt since c4e1fe34 at 058e8d2f, 0 findings"
-round: 12
+round: 13
 review-verdict: "Der Diff erfuellt alle 11 DoD-Punkte; Go-Tests (go test ./core/... ./internal/...) und Cockpit-Tests (claude plugin test, 218 pass) gruen. Keinen Blocker gefunden: ChangedSince faellt bei Unklarheit (fremder Commit, unlesbare Dateiliste, Note ohne Zeit, Minutengenauigkeit) immer auf 'nicht auf HEAD' zurueck, recordBack laeuft in derselben Mutation wie der round-Zaehler. Vier Notes, davon die wichtigste: die Bremse zaehlt nur Rueckgaben derselben Lane in Folge."
 review-round: 12
 review-check: |-
@@ -192,3 +192,4 @@ back-count: 1
 - **2026-11-21 09:23 · Alexander Sacharov** — testing round 12 passed (hunt 058e8d2f clean); pushed 058e8d2f. Moved to review, a fresh agent runs it via run-lane.sh.
 - **2026-11-21 09:26 · Alexander Sacharov** — worker stopped: ticket in signoff after the 4th fresh review without a blocker (round 12); feat/df0yd6 pushed at 058e8d2f; ticket file carries the review fields uncommitted. Open for the person: review note 4 (**blocker:** form) is a small edge, notes 1 and 3 known limits, note 2 = TW5FE2 commits ride on this branch. Report sent to the parent session.
 - **2026-11-21 09:27 · Alexander Sacharov** — Given back from signoff (Teamlead im Auftrag Alex 21.11.): nur Note 4 - cockpit erkennt blocker auch in Markdown-Form ('**blocker:**', '- blocker:', 'Blocker:'), Test. Note 1 (back-count nur gleiche Lane) bleibt known limit wie DoD 4, Note 3 known limit, Note 2 erledigt sich mit PR #150. Danach Diff-Hunt, review, signoff, push.
+- **2026-11-21 09:31 · Alexander Sacharov** — round 13 (teamlead give-back, note 4): class: a marker under markdown emphasis read as a different line; fix: board.ts BLOCKER tolerates emphasis around the label (**blocker:**, **Blocker**:, `blocker`:; '- ' and case were already handled), sibling CLASS for explain marks (**[blocker]**) the same; the only other parser of review gaps is none (grep in Go: no blocker: parsing). Tests: BL0CK4-6 offer Explain, NOTES3 ('**note:** the blocker: rule...') does not, 'a class mark in markdown emphasis is still a class mark'.
