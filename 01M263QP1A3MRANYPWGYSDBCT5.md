@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-21T08:01:08Z
+updated-at: 2026-11-21T08:06:57Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -51,7 +51,7 @@ review-check: |-
 - [x] Der generierte Block nennt --proof beim Abhaken; der Gitignore-Vorbehalt sagt ausdruecklich, dass die Commit-Regel auf einem ungeteilten Board anders lautet; 'jaira update' schreibt beides auf ein bestehendes Board; go test ./... -race gruen
   proof: core/board/announce.go:101 (--proof), core/board/announce.go:138 (unshared-board caveat), internal/cli/update.go:257 (jaira update rewrites the block); go test ./... -race exit 0
 - [x] Ein Test in core/board/announce_test.go haelt den Satz fest, dass auf einem ungeteilten Board keine Ticketdatei mitreist und der Code-Commit allein geht
-  proof: TestAgentNoteSaysTheTicketCannotRideOnAnUnsharedBoard
+  proof: TestAgentNoteNamesProofAndTheUnsharedBoardCaveat
 - [x] core/release/notes/SDBCT5.md nennt die Aenderung als eine Zeile
   proof: core/release/notes/SDBCT5.md:1-2
 - [x] Die Agent-Bloecke dieses Repos (CLAUDE.md, AGENTS.md) sind mit dem neuen Block regeneriert
