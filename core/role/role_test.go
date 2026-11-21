@@ -1199,8 +1199,8 @@ func TestSpawnGivesEveryWorktreeItsOwnOffset(t *testing.T) {
 	}
 }
 
-// The offset lock: two spawns at once, a lock a killed spawn.sh left behind,
-// and a lock that cannot be made at all.
+// The offset lock: two spawns at once, a spawn.sh killed while it holds it,
+// and a lock that cannot be opened at all.
 func TestSpawnOffsetLock(t *testing.T) {
 	r := newOffsetRepo(t)
 	lock := filepath.Join(r.root, ".git", "jaira-offset.lock")
@@ -1234,44 +1234,57 @@ func TestSpawnOffsetLock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Left behind by a killed spawn.sh three minutes ago: taken over at once.
-	if err := os.Mkdir(lock, 0o755); err != nil {
+	// A spawn.sh killed inside the lock leaves nothing held: its checkout
+	// hook still runs for 5 seconds, yet the next spawn does not wait for it.
+	if err := os.WriteFile(hook, []byte("#!/bin/sh\nsleep 5\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	old := time.Now().Add(-3 * time.Minute)
-	if err := os.Chtimes(lock, old, old); err != nil {
+	killed := r.spawnCmd("twb0r6")
+	if err := killed.Start(); err != nil {
+		t.Fatal(err)
+	}
+	for deadline := time.Now().Add(10 * time.Second); ; {
+		if _, err := os.Stat(filepath.Join(r.base, ".worktrees", "repo-twb0r6")); err == nil {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("spawn.sh twb0r6 never got as far as making its worktree")
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	if err := killed.Process.Kill(); err != nil {
+		t.Fatal(err)
+	}
+	_ = killed.Wait()
+	if err := os.Remove(hook); err != nil {
 		t.Fatal(err)
 	}
 	start := time.Now()
-	out, err := r.spawnCmd("twb0r6").CombinedOutput()
-	if err != nil {
-		t.Fatalf("spawn.sh beside a stale lock: %v\n%s", err, out)
+	if out, err := r.spawnCmd("e8x8ye").CombinedOutput(); err != nil {
+		t.Fatalf("spawn.sh after a killed one: %v\n%s", err, out)
 	}
-	if !strings.Contains(string(out), "took over") {
-		t.Errorf("spawn.sh does not say it took the stale lock over:\n%s", out)
-	}
-	if d := time.Since(start); d > 20*time.Second {
-		t.Errorf("spawn.sh waited %v on a stale lock instead of taking it over", d)
-	}
-	if _, err := os.Stat(lock); !os.IsNotExist(err) {
-		t.Errorf("the lock stands after spawn.sh ended: %v", err)
+	if d := time.Since(start); d > 3*time.Second {
+		t.Errorf("spawn.sh waited %v after a killed spawn.sh: the lock outlived it", d)
 	}
 
-	// Something that is not a lock directory sits where the lock goes:
-	// mkdir can never succeed, so spawn.sh stops at once instead of waiting.
-	if err := os.WriteFile(lock, nil, 0o644); err != nil {
+	// A directory sits where the lock file goes: it can never be opened, so
+	// spawn.sh stops at once instead of waiting.
+	if err := os.Remove(lock); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(lock, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	start = time.Now()
-	out, err = r.spawnCmd("k2x2yk").CombinedOutput()
+	out, err := r.spawnCmd("k2x2yk").CombinedOutput()
 	if err == nil {
 		t.Fatalf("spawn.sh ran although its lock cannot be made:\n%s", out)
 	}
-	if !strings.Contains(string(out), "cannot make the lock") {
-		t.Errorf("spawn.sh does not say the lock cannot be made:\n%s", out)
+	if !strings.Contains(string(out), "cannot open the lock") {
+		t.Errorf("spawn.sh does not say the lock cannot be opened:\n%s", out)
 	}
 	if d := time.Since(start); d > 5*time.Second {
-		t.Errorf("spawn.sh took %v to give up on a lock it cannot make", d)
+		t.Errorf("spawn.sh took %v to give up on a lock it cannot open", d)
 	}
 	if _, err := os.Stat(filepath.Join(r.base, ".worktrees", "repo-k2x2yk")); !os.IsNotExist(err) {
 		t.Errorf("spawn.sh made the worktree although it got no lock: %v", err)

@@ -203,58 +203,32 @@ if [ ! -d "$wt" ]; then
   if [ -x "$setup" ] || [ -f "$root/.env" ]; then
     common="$(cd "$root" && cd "$(git rev-parse --git-common-dir)" && pwd)"
     # Looking, making the worktree and writing its offset down are one step,
-    # or two spawns at once both take the same free offset.
+    # or two spawns at once both take the same free offset. It is flock on jaira-offset.lock, held through fd 9 as reap.sh holds its
+    # reap.lock: the kernel lets go of it when this shell dies, so a killed
+    # spawn.sh leaves nothing behind for the next one to take over. A second
+    # spawn waits for the first, up to 600 seconds, which covers a checkout
+    # with slow hooks. flock(1) where there is one, perl's flock on macOS;
+    # with neither it runs unlocked, and says so.
     lock="$common/jaira-offset.lock"
-    # The wait covers a 'git worktree add' with slow checkout hooks; a lock
-    # older than 120 seconds is one a killed spawn.sh left behind, and is
-    # taken over rather than waited out: nobody has to remove it by hand.
-    #
-    # Seconds since the lock was made; 0 when that cannot be told. stat -c is
-    # GNU and Git Bash, stat -f BSD and macOS.
-    lock_age() {
-      local m
-      m="$(stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null)" || m=""
-      case "$m" in ''|*[!0-9]*) echo 0 ;; *) echo $(( $(date +%s) - m )) ;; esac
-    }
-    tries=0
-    until mkdir "$lock" 2>/dev/null; do
-      if [ ! -d "$lock" ]; then
-        # Released between the two looks, or not makeable at all: one more
-        # try tells which. Not makeable and held by nobody, waiting changes
-        # nothing.
-        mkdir "$lock" 2>/dev/null && break
-        if [ ! -d "$lock" ]; then
-          echo "cannot make the lock $lock: is $common writable, and is" \
-               "nothing but a spawn.sh lock directory in that place?" >&2
-          exit 1
-        fi
-      fi
-      if [ "$(lock_age "$lock")" -ge 120 ]; then
-        # Renamed away first: of two spawns that both find it stale, only one
-        # rename succeeds. One that renamed a lock taken a moment ago instead
-        # puts it back.
-        stale="$lock.stale.$$"
-        if mv "$lock" "$stale" 2>/dev/null; then
-          if [ "$(lock_age "$stale")" -ge 120 ]; then
-            echo "took over $lock: it had stood for over 120 seconds" >&2
-            rmdir "$stale" 2>/dev/null || true
-          else
-            # Into an empty place only: a lock already there would swallow it.
-            if [ ! -e "$lock" ]; then mv "$stale" "$lock" 2>/dev/null || true; fi
-            rmdir "$stale" 2>/dev/null || true
-          fi
-          continue
-        fi
-      fi
-      tries=$((tries + 1))
-      if [ "$tries" -ge 1500 ]; then
-        echo "$lock has stood for 150 seconds and could not be taken over:" \
-             "remove it when no spawn.sh runs for $root" >&2
-        exit 1
-      fi
-      sleep 0.1
-    done
-    trap 'rmdir "$lock" 2>/dev/null || true' EXIT
+    if ! { exec 9>>"$lock"; } 2>/dev/null; then
+      echo "cannot open the lock $lock: is $common writable, and is" \
+           "nothing but a file in that place?" >&2
+      exit 1
+    fi
+    rc=0
+    if command -v flock >/dev/null 2>&1; then
+      flock -w 600 9 || rc=$?
+    elif command -v perl >/dev/null 2>&1; then
+      perl -MFcntl=:flock -e 'alarm 600; open(my $f, ">>&=", 9) or exit 2; flock($f, LOCK_EX) or exit 1' || rc=$?
+    else
+      echo "neither flock nor perl here: $wt gets its offset unlocked," \
+           "and a spawn.sh started at the same moment may get the same one" >&2
+    fi
+    if [ "$rc" != 0 ]; then
+      echo "could not take $lock in 600 seconds: a spawn.sh for $root" \
+           "still makes its worktree, or hangs" >&2
+      exit 1
+    fi
 
     # What every other worktree holds: its jaira-offset, else the offset its
     # jaira-setup or .env names — a worktree made before offsets were written
@@ -289,12 +263,13 @@ if [ ! -d "$wt" ]; then
     fi
   fi
 
-  git -C "$root" worktree add "$wt" -b "$branch" >&2
+  # 9>&-: a checkout hook that leaves something running must not keep the
+  # offset lock held through an inherited fd 9.
+  git -C "$root" worktree add "$wt" -b "$branch" >&2 9>&-
   if [ -n "$off" ]; then
     printf '%s\n' "$off" > "$(git -C "$wt" rev-parse --absolute-git-dir)/jaira-offset" \
       || echo "could not write the offset $off down for $wt: the next worktree may get it too" >&2
-    rmdir "$lock" 2>/dev/null || true
-    trap - EXIT
+    exec 9>&-
   fi
 
   if [ -x "$setup" ]; then
