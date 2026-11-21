@@ -22,21 +22,35 @@ related: []
 follows: 01M7Z6T8TS8CRXA4FH218R8VTS
 commits: []
 created-at: 2026-11-21T18:40:24Z
-updated-at: 2026-11-21T19:58:45Z
+updated-at: 2026-11-21T20:06:29Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-241203
-claimed-at: 2026-11-21T19:47:49Z
-outcome-what: "spawn.sh hands each new worktree a port offset no other existing worktree of the repository holds: starts at the old slug hash, skips taken ones, under a lock that waits up to 120 s, and writes it to jaira-offset in the worktree's git dir; worktrees whose directory is gone hold nothing, relative gitdir paths resolved against the worktree's git dir"
-outcome-why: "cksum%40 alone gave 8r8vts, 32ttss and twb0r6 the same offset; two stacks on the same ports"
+claimed-by: DESKTOP-RFTCH11-987290
+claimed-at: 2026-11-21T20:03:04Z
+outcome-what: "spawn.sh hands each new worktree a port offset no other existing worktree of the repository holds: starts at the old slug hash, skips taken ones, under a lock written to jaira-offset in the worktree's git dir; a lock older than 120 s is taken over, a lock that cannot be made stops spawn.sh at once; worktrees whose directory is gone hold nothing, relative gitdir paths resolved against the worktree's git dir"
+outcome-why: "cksum%40 alone gave 8r8vts, 32ttss and twb0r6 the same offset; two stacks on the same ports. Given back: a killed spawn must not block every later one, an unmakeable lock must not cost 120 s"
 outcome-resolves: Zwei gleichzeitig laufende Worker bekommen nie denselben Port-Offset
-review-summary: "round 2: no findings. The 120 s wait and the skip of directory-less worktrees are each a line in the existing loop; no new pattern."
-review-gaps: "none in round 2: the gitdir read moved up so the .env fallback reuses $w instead of reading gitdir a second time"
-test-verdict: "pass: round 2 (since d82c472): go test -race ./role ./shipped green (RC=0), TestSpawnGivesEveryWorktreeItsOwnOffset now also covers a hand-deleted worktree freeing its offset; scratch repo with a post-checkout hook sleeping 12 s: two parallel spawns of 8r8vts and 32ttss both exit 0 with offsets 6 and 5. Round 1: full suite with -race green, 4 parallel spawns distinct, all-40-taken and foreign lock exit 1 with nothing left behind"
-hunt-verdict: "fail: bughunt done at 231d2a909, 1 change: a relative path in worktrees/<id>/gitdir (worktree.useRelativePaths, git 2.48+) is resolved against spawn.sh's cwd, so a live worktree counts as gone and its offset is handed out again"
-round: 3
-back-from: testing
-back-by: lane
-back-count: 2
+review-summary: "spawn.sh hands out a worktree's port offset (1-40) once, when the worktree is made: it starts at the old cksum(slug)%40+1 and takes the next offset no other standing worktree of the repo holds, wrapping. What a worktree holds is read from a new jaira-offset file in its git dir, else the offset= in its jaira-setup, else the '# worker stack' line of its .env (worktrees from before). Worktrees whose directory is gone hold nothing; a relative gitdir (git 2.48 useRelativePaths) is resolved against the git dir. A mkdir lock in the git common dir covers look-up, 'git worktree add' and writing jaira-offset, so two parallel spawns cannot pick the same free slot; it waits up to 120 s. With all 40 taken it exits 1 before anything is made, only where a setup or .env needs ports. USAGE and core/release/notes/DBJHNE.md say so; role_test covers collision, keep-on-respawn, freed offset, deleted worktree and relative gitdir."
+review-gaps: |-
+  note: no test runs two spawn.sh in parallel - the lock is only proven by the bughunt's scratch run; a test with a post-checkout hook that sleeps 1 s and two spawns at once would pin it
+  note: mkdir of the lock failing for another reason than "exists" (read-only common dir, permissions) waits the full 120 s and then blames a dead spawn.sh; fix: stop at once when the lock dir does not exist after a failed mkdir
+  note: a SIGKILLed spawn leaves jaira-offset.lock, and every later spawn waits 120 s and fails until a person removes it (known, accepted in critique); a lock older than 120 s by mtime could be taken over instead
+  note: two spawns of the same slug at once - the second waits for the lock, then fails in git worktree add because the first made the directory; was a race before too, now it is at least serialised
+  note: branch feat/dbjhne carries JDDCEZ's 9 commits under its own 3 (git log master..HEAD) - JDDCEZ must land first or the PR shows both
+test-verdict: "pass: round 3 (since 231d2a909): go test -race ./role ./shipped green (RC=0); TestSpawnGivesEveryWorktreeItsOwnOffset now rewrites twb0r6's gitdir relative (as git 2.48 useRelativePaths does) and k2x2yk, hashing to 5, gets 8. Rounds 1-2: full suite -race green, parallel spawns distinct (also with a 12 s post-checkout hook), all-40-taken and foreign lock exit 1 leaving nothing"
+hunt-verdict: "pass: bughunt done at d263a0319, 0 change, 0 pre-existing (rounds 1-2 change findings fixed in 231d2a909 and d263a0319)"
+round: 4
+back-from: signoff
+back-by: person
+back-count: 1
+review-verdict: "the diff meets all three DoD items; no blocker found. Offset allocation is correct for standing, legacy, deleted and relative-gitdir worktrees, and the lock covers the race the goal is about. Open points are edge cases of the lock (no parallel test, stale-lock and permission paths) - known limits, not wrong results. go test ./core/role ./core/shipped passes."
+review-round: 3
+review-verdict-gaps: |-
+  note: no test runs two spawn.sh in parallel - the lock is only proven by the bughunt's scratch run; a test with a post-checkout hook that sleeps 1 s and two spawns at once would pin it
+  note: mkdir of the lock failing for another reason than "exists" (read-only common dir, permissions) waits the full 120 s and then blames a dead spawn.sh; fix: stop at once when the lock dir does not exist after a failed mkdir
+  note: a SIGKILLed spawn leaves jaira-offset.lock, and every later spawn waits 120 s and fails until a person removes it (known, accepted in critique); a lock older than 120 s by mtime could be taken over instead
+  note: two spawns of the same slug at once - the second waits for the lock, then fails in git worktree add because the first made the directory; was a race before too, now it is at least serialised
+  note: branch feat/dbjhne carries JDDCEZ's 9 commits under its own 3 (git log master..HEAD) - JDDCEZ must land first or the PR shows both
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-dbjhne  2. go test ./core/role -run TestSpawnGivesEveryWorktreeItsOwnOffset -v  3. expect PASS: 8r8vts and 32ttss (same hash, 5 held by twb0r6) get 6 and 7, 8r8vts respawned keeps 6, a deleted worktree frees its offset, k2x2yk with a relative gitdir gets 8  4. live: from a repo with a .env, run spawn.sh for two slugs that share a hash, then: cat <repo>/.git/worktrees/*/jaira-offset - two different numbers"
 ---
 
 # spawn.sh vergibt zwei laufenden Workern denselben Port-Offset
@@ -49,6 +63,12 @@ back-count: 2
   proof: TestSpawnGivesEveryWorktreeItsOwnOffset: 8r8vts spawned again keeps 6; the offset is handed out only inside spawn.sh's 'if [ ! -d "$wt" ]'
 - [x] Offset 0 bleibt frei für das Hauptverzeichnis; Bereich 1-40 bleibt, oder die Änderung steht in der USAGE und in einer Release-Note
   proof: spawn.sh: o=$(( (start + i) % 40 + 1 )) stays 1-40; TestSpawnGivesEveryWorktreeItsOwnOffset; USAGE + core/release/notes/DBJHNE.md say the new rule
+- [x] Ein Lock älter als 120 s (mtime) wird übernommen statt zu warten und zu scheitern
+  proof: spawn.sh:232 lock_age >= 120 → mv + take over; TestSpawnOffsetLock (stale lock 3 min old, 'took over', <20 s)
+- [x] mkdir des Locks scheitert und das Lock-Verzeichnis existiert nicht → sofortiger Abbruch mit klarer Meldung
+  proof: spawn.sh:221-230 'cannot make the lock' exit 1; TestSpawnOffsetLock (file at lock path, fails in <5 s, no worktree made)
+- [x] Test: zwei spawn.sh parallel bekommen verschiedene Offsets
+  proof: core/role/role_test.go TestSpawnOffsetLock: 8r8vts+32ttss in parallel with a 1 s post-checkout hook get different offsets; fails with the lock removed
 
 ## Options
 
@@ -75,3 +95,7 @@ back-count: 2
 - **2026-11-21 19:55 · Alexander Sacharov** — testing: class: the lock timeout is shorter than what it guards; example: post-checkout hook sleeping 12 s, second parallel spawn exits 1 and says to remove the lock the first one holds; fix: wait as long as a worktree add can reasonably take (120 s) and say in the message to remove it only when no spawn.sh runs. Rides along: skip worktree entries whose directory is gone (prunable) when counting taken offsets.
 - **2026-11-21 19:57 · Alexander Sacharov** — bughunt: change: blocker: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:230-231 - class: the path read from $common/worktrees/<id>/gitdir is tested with [ -d ] against spawn.sh's own working directory, but git 2.48+ with worktree.useRelativePaths=true (or worktree add --relative-paths) stores it relative to that worktrees/<id> directory; every such live worktree is skipped as 'deleted', its jaira-offset is not counted, and the next spawn can be handed the same offset - two workers on one stack, the defect this ticket removes. Same relative path also feeds the .env fallback at :237. Before 231d2a909 a worktree with jaira-offset was counted without looking at gitdir. Fix direction: resolve a non-absolute gitdir from $gd (cd "$gd" && cd "$(dirname ...)"); role_test.go covers only absolute gitdir. example: gitdir '../../../../wt/x/.git' with jaira-offset 7, spawn.sh run from $HOME -> skipped; ran: scratch simulation of lines 229-231 (skipped from cwd, held from $gd); git here is 2.43, so git's own relative write was taken from the git-worktree docs (worktree.useRelativePaths, 2.48), not run
 - **2026-11-21 19:57 · Alexander Sacharov** — bughunt: done at 231d2a909 - 1 finding (1 change, blocker; 0 pre-existing) in 4 files, follow-up hunt since d82c472b8 (diff in spawn.sh, role_test.go, shipped.sha256; DBJHNE.md unchanged); concurrency, error paths, input, permissions checked; files: core/release/notes/DBJHNE.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/role_test.go core/shipped/shipped.sha256
+- **2026-11-21 19:59 · Alexander Sacharov** — testing: round 3 is the third testing round; the lane sent work back twice (lock timeout + prunable worktrees; relative gitdir). A third send-back stops for the person.
+- **2026-11-21 19:59 · Alexander Sacharov** — bughunt: done at d263a0319 - 0 findings in 4 files, follow-up hunt since 231d2a909 (diff in spawn.sh, role_test.go, shipped.sha256; DBJHNE.md unchanged); concurrency, error paths, input, permissions checked; ran: go test ./role -run 'Offset|Spawn' (pass); files: core/release/notes/DBJHNE.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/role_test.go core/shipped/shipped.sha256
+- **2026-11-21 20:02 · Alexander Sacharov** — Given back from signoff: (1) Lock älter als 120 s (mtime) übernehmen statt warten und scheitern — ein per SIGKILL beendeter spawn darf nicht jeden weiteren spawn blockieren, bis jemand von Hand aufräumt. (2) mkdir des Locks scheitert und das Verzeichnis existiert nicht → sofort mit klarer Meldung abbrechen, nicht 120 s warten. (3) Test: zwei spawn.sh parallel bekommen verschiedene Offsets.
+- **2026-11-21 20:06 · Alexander Sacharov** — give-back round: stale = lock dir mtime >= 120 s via stat -c %Y / stat -f %m (find -mmin rounds differently on GNU and BSD: GNU -mmin +2 only matched at 180 s). Takeover renames the lock away first (atomic, only one wins); a renamer whose renamed dir turns out fresh puts it back if the place is empty. A live spawn whose checkout takes over 120 s now loses its lock - accepted, that is what the person asked for. Lock that cannot be made: one retry after a failed mkdir with no dir standing, then exit 1. Test setup moved into newOffsetRepo, shared by both offset tests; the parallel test was checked to fail with the lock disabled.

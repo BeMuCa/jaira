@@ -206,14 +206,50 @@ if [ ! -d "$wt" ]; then
     # or two spawns at once both take the same free offset.
     lock="$common/jaira-offset.lock"
     # The wait covers a 'git worktree add' with slow checkout hooks; a lock
-    # older than that is one a killed spawn.sh left behind.
+    # older than 120 seconds is one a killed spawn.sh left behind, and is
+    # taken over rather than waited out: nobody has to remove it by hand.
+    #
+    # Seconds since the lock was made; 0 when that cannot be told. stat -c is
+    # GNU and Git Bash, stat -f BSD and macOS.
+    lock_age() {
+      local m
+      m="$(stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null)" || m=""
+      case "$m" in ''|*[!0-9]*) echo 0 ;; *) echo $(( $(date +%s) - m )) ;; esac
+    }
     tries=0
     until mkdir "$lock" 2>/dev/null; do
+      if [ ! -d "$lock" ]; then
+        # Released between the two looks, or not makeable at all: one more
+        # try tells which. Not makeable and held by nobody, waiting changes
+        # nothing.
+        mkdir "$lock" 2>/dev/null && break
+        if [ ! -d "$lock" ]; then
+          echo "cannot make the lock $lock: is $common writable, and is" \
+               "nothing but a spawn.sh lock directory in that place?" >&2
+          exit 1
+        fi
+      fi
+      if [ "$(lock_age "$lock")" -ge 120 ]; then
+        # Renamed away first: of two spawns that both find it stale, only one
+        # rename succeeds. One that renamed a lock taken a moment ago instead
+        # puts it back.
+        stale="$lock.stale.$$"
+        if mv "$lock" "$stale" 2>/dev/null; then
+          if [ "$(lock_age "$stale")" -ge 120 ]; then
+            echo "took over $lock: it had stood for over 120 seconds" >&2
+            rmdir "$stale" 2>/dev/null || true
+          else
+            # Into an empty place only: a lock already there would swallow it.
+            if [ ! -e "$lock" ]; then mv "$stale" "$lock" 2>/dev/null || true; fi
+            rmdir "$stale" 2>/dev/null || true
+          fi
+          continue
+        fi
+      fi
       tries=$((tries + 1))
-      if [ "$tries" -ge 1200 ]; then
-        echo "$lock has stood for 120 seconds: a spawn.sh died while it made a" \
-             "worktree, or one is still making it. Remove the lock only when no" \
-             "spawn.sh runs for $root" >&2
+      if [ "$tries" -ge 1500 ]; then
+        echo "$lock has stood for 150 seconds and could not be taken over:" \
+             "remove it when no spawn.sh runs for $root" >&2
         exit 1
       fi
       sleep 0.1

@@ -1,1 +1,2 @@
 - `spawn.sh` no longer gives two worktrees of one repository the same port offset: a new worktree takes the next offset (1-40) no other worktree holds, so expect a worker's ports to differ from the slug-derived ones; with all 40 taken it stops before making anything — remove a finished worktree first.
+- `spawn.sh` takes over an offset lock (`.git/jaira-offset.lock`) older than 120 seconds instead of failing, and stops at once with "cannot make the lock" when the lock cannot be created at all — no more removing a lock left by a killed spawn by hand.

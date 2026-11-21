@@ -9,7 +9,9 @@ import (
 	"runtime"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 )
 
 // The roles this binary ships. Named rather than counted, because the
@@ -1060,7 +1062,18 @@ esac
 // free one instead. A worktree made before offsets were written down still
 // holds the one its .env names, and a worktree that stands keeps its offset
 // when spawn.sh is run for it again.
-func TestSpawnGivesEveryWorktreeItsOwnOffset(t *testing.T) {
+// offsetRepo is a repository with a .env, so spawn.sh hands its worktrees a
+// port offset, and a herdr stub that opens tabs. spawnCmd runs spawn.sh for
+// a slug; offset reads the offset that slug's worktree got.
+type offsetRepo struct {
+	base, root string
+	git        func(args ...string)
+	spawnCmd   func(slug string) *exec.Cmd
+	offset     func(slug string) string
+}
+
+func newOffsetRepo(t *testing.T) offsetRepo {
+	t.Helper()
 	bash, err := exec.LookPath("bash")
 	if err != nil {
 		t.Skipf("no bash on this machine: %v", err)
@@ -1099,29 +1112,42 @@ esac
 	git("init", "-q")
 	git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", "x")
 
+	return offsetRepo{
+		base: base,
+		root: root,
+		git:  git,
+		spawnCmd: func(slug string) *exec.Cmd {
+			cmd := exec.Command(bash, spawn, slug, strings.ToUpper(slug), "review", root)
+			cmd.Dir = root
+			cmd.Env = append(os.Environ(), "HERDR_ENV=1", "HERDR_BIN_PATH="+filepath.Join(bin, "herdr"),
+				"HERDR_WORKSPACE_ID=", "JAIRA_NO_WORKTREE=", "JAIRA_SPAWN_PAUSE=0",
+				"PATH="+bin+string(os.PathListSeparator)+path)
+			return cmd
+		},
+		offset: func(slug string) string {
+			t.Helper()
+			env, err := os.ReadFile(filepath.Join(base, ".worktrees", "repo-"+slug, ".env"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, off, ok := strings.Cut(string(env), "# worker stack: slug="+slug+" offset=")
+			if !ok {
+				t.Fatalf("the .env of %s names no offset:\n%s", slug, env)
+			}
+			off, _, _ = strings.Cut(off, "\n")
+			return off
+		},
+	}
+}
+
+func TestSpawnGivesEveryWorktreeItsOwnOffset(t *testing.T) {
+	r := newOffsetRepo(t)
+	base, root, git, offset := r.base, r.root, r.git, r.offset
 	spawnSlug := func(slug string) {
 		t.Helper()
-		cmd := exec.Command(bash, spawn, slug, strings.ToUpper(slug), "review", root)
-		cmd.Dir = root
-		cmd.Env = append(os.Environ(), "HERDR_ENV=1", "HERDR_BIN_PATH="+filepath.Join(bin, "herdr"),
-			"HERDR_WORKSPACE_ID=", "JAIRA_NO_WORKTREE=", "JAIRA_SPAWN_PAUSE=0",
-			"PATH="+bin+string(os.PathListSeparator)+path)
-		if out, err := cmd.CombinedOutput(); err != nil {
+		if out, err := r.spawnCmd(slug).CombinedOutput(); err != nil {
 			t.Fatalf("spawn.sh %s: %v\n%s", slug, err, out)
 		}
-	}
-	offset := func(slug string) string {
-		t.Helper()
-		env, err := os.ReadFile(filepath.Join(base, ".worktrees", "repo-"+slug, ".env"))
-		if err != nil {
-			t.Fatal(err)
-		}
-		_, off, ok := strings.Cut(string(env), "# worker stack: slug="+slug+" offset=")
-		if !ok {
-			t.Fatalf("the .env of %s names no offset:\n%s", slug, env)
-		}
-		off, _, _ = strings.Cut(off, "\n")
-		return off
 	}
 
 	// A worktree from before: made by hand, its offset only in its .env.
@@ -1170,6 +1196,85 @@ esac
 	spawnSlug("k2x2yk")
 	if k := offset("k2x2yk"); k != "8" {
 		t.Errorf("k2x2yk got offset %s, want 8: a relative gitdir must not hide twb0r6's 5", k)
+	}
+}
+
+// The offset lock: two spawns at once, a lock a killed spawn.sh left behind,
+// and a lock that cannot be made at all.
+func TestSpawnOffsetLock(t *testing.T) {
+	r := newOffsetRepo(t)
+	lock := filepath.Join(r.root, ".git", "jaira-offset.lock")
+
+	// A checkout that takes a second keeps the first spawn inside the lock
+	// while the second arrives. 8r8vts and 32ttss hash to the same 5.
+	hook := filepath.Join(r.root, ".git", "hooks", "post-checkout")
+	if err := os.WriteFile(hook, []byte("#!/bin/sh\nsleep 1\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	var wg sync.WaitGroup
+	outs := make([][]byte, 2)
+	errs := make([]error, 2)
+	for i, slug := range []string{"8r8vts", "32ttss"} {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			outs[i], errs[i] = r.spawnCmd(slug).CombinedOutput()
+		}()
+	}
+	wg.Wait()
+	for i := range errs {
+		if errs[i] != nil {
+			t.Fatalf("parallel spawn.sh %d: %v\n%s", i, errs[i], outs[i])
+		}
+	}
+	if a, b := r.offset("8r8vts"), r.offset("32ttss"); a == b {
+		t.Errorf("two spawns at once both got offset %s", a)
+	}
+	if err := os.Remove(hook); err != nil {
+		t.Fatal(err)
+	}
+
+	// Left behind by a killed spawn.sh three minutes ago: taken over at once.
+	if err := os.Mkdir(lock, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	old := time.Now().Add(-3 * time.Minute)
+	if err := os.Chtimes(lock, old, old); err != nil {
+		t.Fatal(err)
+	}
+	start := time.Now()
+	out, err := r.spawnCmd("twb0r6").CombinedOutput()
+	if err != nil {
+		t.Fatalf("spawn.sh beside a stale lock: %v\n%s", err, out)
+	}
+	if !strings.Contains(string(out), "took over") {
+		t.Errorf("spawn.sh does not say it took the stale lock over:\n%s", out)
+	}
+	if d := time.Since(start); d > 20*time.Second {
+		t.Errorf("spawn.sh waited %v on a stale lock instead of taking it over", d)
+	}
+	if _, err := os.Stat(lock); !os.IsNotExist(err) {
+		t.Errorf("the lock stands after spawn.sh ended: %v", err)
+	}
+
+	// Something that is not a lock directory sits where the lock goes:
+	// mkdir can never succeed, so spawn.sh stops at once instead of waiting.
+	if err := os.WriteFile(lock, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	start = time.Now()
+	out, err = r.spawnCmd("k2x2yk").CombinedOutput()
+	if err == nil {
+		t.Fatalf("spawn.sh ran although its lock cannot be made:\n%s", out)
+	}
+	if !strings.Contains(string(out), "cannot make the lock") {
+		t.Errorf("spawn.sh does not say the lock cannot be made:\n%s", out)
+	}
+	if d := time.Since(start); d > 5*time.Second {
+		t.Errorf("spawn.sh took %v to give up on a lock it cannot make", d)
+	}
+	if _, err := os.Stat(filepath.Join(r.base, ".worktrees", "repo-k2x2yk")); !os.IsNotExist(err) {
+		t.Errorf("spawn.sh made the worktree although it got no lock: %v", err)
 	}
 }
 
