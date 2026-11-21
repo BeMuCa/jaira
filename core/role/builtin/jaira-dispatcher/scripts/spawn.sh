@@ -228,6 +228,8 @@ if [ ! -d "$wt" ]; then
     for gd in "$common"/worktrees/*/; do
       [ -f "$gd/gitdir" ] || continue
       w="$(dirname "$(cat "$gd/gitdir")")"
+      # worktree.useRelativePaths (git 2.48+) writes it relative to $gd.
+      case "$w" in /*|[A-Za-z]:*) ;; *) w="$gd$w" ;; esac
       [ -d "$w" ] || continue
       o=""
       if [ -f "$gd/jaira-offset" ]; then

@@ -22,21 +22,21 @@ related: []
 follows: 01M7Z6T8TS8CRXA4FH218R8VTS
 commits: []
 created-at: 2026-11-21T18:40:24Z
-updated-at: 2026-11-21T19:56:07Z
+updated-at: 2026-11-21T19:58:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-241203
 claimed-at: 2026-11-21T19:47:49Z
-outcome-what: "spawn.sh hands each new worktree a port offset no other existing worktree of the repository holds: starts at the old slug hash, skips taken ones, under a lock that waits up to 120 s, and writes it to jaira-offset in the worktree's git dir; worktrees whose directory is gone hold nothing"
+outcome-what: "spawn.sh hands each new worktree a port offset no other existing worktree of the repository holds: starts at the old slug hash, skips taken ones, under a lock that waits up to 120 s, and writes it to jaira-offset in the worktree's git dir; worktrees whose directory is gone hold nothing, relative gitdir paths resolved against the worktree's git dir"
 outcome-why: "cksum%40 alone gave 8r8vts, 32ttss and twb0r6 the same offset; two stacks on the same ports"
 outcome-resolves: Zwei gleichzeitig laufende Worker bekommen nie denselben Port-Offset
-review-summary: "no findings. jaira-offset beside jaira-setup (same place, core/role/builtin/jaira-dispatcher/scripts/spawn.sh) is needed rather than reading jaira-setup/.env only: those are written after the setup ran, outside the lock, and a setup that starts a container stack takes longer than the 10 s another spawn waits. Lock kept: a teamlead spawns several workers at once. Legacy reads (jaira-setup offset=, .env '# worker stack' line) cover worktrees made before this and cost one elif each."
-review-gaps: "none — the jaira-setup offset is read with sed in spawn.sh; reap.sh's field() reads the same file but lives in another script and sharing it would mean a sourced helper for one line, so left as is. No dead code, no hoisting worth it (one pass over at most a few dozen worktree dirs per new worktree)."
-test-verdict: "pass: go build + go test -race ./... with cleared cache green (RC=0); DoD 1-3 verified (TestSpawnGivesEveryWorktreeItsOwnOffset run, USAGE line and core/release/notes/DBJHNE.md read); scratch repo: 4 spawns in parallel (8r8vts, 32ttss, twb0r6 all hash 5, ab12cd 31) got 6, 7, 5, 31 and the lock was gone after; all 40 taken exits 1 with no worktree, no branch, no lock left; a foreign lock exits 1 after 10 s naming it and is left in place"
-hunt-verdict: "fail: bughunt done at d82c472, 2 change: lock wait (10 s) shorter than a slow 'git worktree add' and its message tells to remove a live lock; a prunable worktree's offset stays taken"
-round: 2
+review-summary: "round 2: no findings. The 120 s wait and the skip of directory-less worktrees are each a line in the existing loop; no new pattern."
+review-gaps: "none in round 2: the gitdir read moved up so the .env fallback reuses $w instead of reading gitdir a second time"
+test-verdict: "pass: round 2 (since d82c472): go test -race ./role ./shipped green (RC=0), TestSpawnGivesEveryWorktreeItsOwnOffset now also covers a hand-deleted worktree freeing its offset; scratch repo with a post-checkout hook sleeping 12 s: two parallel spawns of 8r8vts and 32ttss both exit 0 with offsets 6 and 5. Round 1: full suite with -race green, 4 parallel spawns distinct, all-40-taken and foreign lock exit 1 with nothing left behind"
+hunt-verdict: "fail: bughunt done at 231d2a909, 1 change: a relative path in worktrees/<id>/gitdir (worktree.useRelativePaths, git 2.48+) is resolved against spawn.sh's cwd, so a live worktree counts as gone and its offset is handed out again"
+round: 3
 back-from: testing
 back-by: lane
-back-count: 1
+back-count: 2
 ---
 
 # spawn.sh vergibt zwei laufenden Workern denselben Port-Offset
@@ -73,3 +73,5 @@ back-count: 1
 - **2026-11-21 19:54 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:224-237 - class: every entry under <common>/worktrees/ counts as holding its offset, including prunable ones whose directory is gone (removed with rm -rf rather than 'git worktree remove'); their offsets stay blocked until 'git worktree prune', and with enough of them spawn.sh refuses with 'every port offset 1-40 is held' while far fewer worktrees exist, and its hint (reap.sh) does not free them; example: worktree repo-bbbbbb deleted by hand, still listed as prunable with jaira-offset 8 - slug eeeeee, which starts at 8, gets 9; ran: scratch repo + spawn.sh with a herdr stub, offsets read back from .git/worktrees/*/jaira-offset
 - **2026-11-21 19:54 · Alexander Sacharov** — bughunt: done at d82c472b8 - 2 findings (2 change, 0 pre-existing, no blocker) in 4 files, first hunt; concurrency, error paths, input, permissions checked; files: core/release/notes/DBJHNE.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/role_test.go core/shipped/shipped.sha256
 - **2026-11-21 19:55 · Alexander Sacharov** — testing: class: the lock timeout is shorter than what it guards; example: post-checkout hook sleeping 12 s, second parallel spawn exits 1 and says to remove the lock the first one holds; fix: wait as long as a worktree add can reasonably take (120 s) and say in the message to remove it only when no spawn.sh runs. Rides along: skip worktree entries whose directory is gone (prunable) when counting taken offsets.
+- **2026-11-21 19:57 · Alexander Sacharov** — bughunt: change: blocker: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:230-231 - class: the path read from $common/worktrees/<id>/gitdir is tested with [ -d ] against spawn.sh's own working directory, but git 2.48+ with worktree.useRelativePaths=true (or worktree add --relative-paths) stores it relative to that worktrees/<id> directory; every such live worktree is skipped as 'deleted', its jaira-offset is not counted, and the next spawn can be handed the same offset - two workers on one stack, the defect this ticket removes. Same relative path also feeds the .env fallback at :237. Before 231d2a909 a worktree with jaira-offset was counted without looking at gitdir. Fix direction: resolve a non-absolute gitdir from $gd (cd "$gd" && cd "$(dirname ...)"); role_test.go covers only absolute gitdir. example: gitdir '../../../../wt/x/.git' with jaira-offset 7, spawn.sh run from $HOME -> skipped; ran: scratch simulation of lines 229-231 (skipped from cwd, held from $gd); git here is 2.43, so git's own relative write was taken from the git-worktree docs (worktree.useRelativePaths, 2.48), not run
+- **2026-11-21 19:57 · Alexander Sacharov** — bughunt: done at 231d2a909 - 1 finding (1 change, blocker; 0 pre-existing) in 4 files, follow-up hunt since d82c472b8 (diff in spawn.sh, role_test.go, shipped.sha256; DBJHNE.md unchanged); concurrency, error paths, input, permissions checked; files: core/release/notes/DBJHNE.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/role_test.go core/shipped/shipped.sha256

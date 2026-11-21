@@ -1159,6 +1159,18 @@ esac
 	if e := offset("e8x8ye"); e != "6" {
 		t.Errorf("e8x8ye got offset %s, want the 6 a deleted worktree no longer holds", e)
 	}
+
+	// git 2.48+ with worktree.useRelativePaths writes the worktree's path
+	// relative to its own git directory: twb0r6 still holds 5, k2x2yk (hash 5)
+	// goes past it and past 6 and 7.
+	gd := filepath.Join(root, ".git", "worktrees", "repo-twb0r6")
+	if err := os.WriteFile(filepath.Join(gd, "gitdir"), []byte("../../../../.worktrees/repo-twb0r6/.git\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	spawnSlug("k2x2yk")
+	if k := offset("k2x2yk"); k != "8" {
+		t.Errorf("k2x2yk got offset %s, want 8: a relative gitdir must not hide twb0r6's 5", k)
+	}
 }
 
 // shellDir is dir as bash spells it after cd'ing there, the form spawn.sh
