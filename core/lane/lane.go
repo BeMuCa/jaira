@@ -146,12 +146,13 @@ type Lane struct {
 	// so a person's send-back, or one from another lane, starts it again.
 	MaxRounds int
 
-	// VerdictAccept and VerdictSendBack are the words review-verdict may
-	// start with on this lane, and what each means: one lets the ticket go on,
-	// the other sends it back. Anything else is no verdict. The gate reads the
-	// word and refuses a move that goes the other way — a reviewer that wrote
-	// "send-back" cannot have its ticket land in sign-off. Both empty means the
-	// lane declares no vocabulary and the verdict is free text, as before.
+	// VerdictAccept and VerdictSendBack are the words review-verdict starts
+	// with on this lane: one lets the ticket go on, the other sends it back.
+	// The gate reads only the send-back word and refuses every move past the
+	// lane while it stands — a reviewer that wrote "send-back" cannot have its
+	// ticket land in sign-off. Any other verdict passes, free text included.
+	// Both empty means the lane declares no words and nothing reads the
+	// verdict, as before.
 	VerdictAccept   []string
 	VerdictSendBack []string
 

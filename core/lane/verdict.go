@@ -2,17 +2,6 @@ package lane
 
 import "strings"
 
-// The three things a review-verdict can mean on a lane that declares its
-// words. VerdictNone is an empty field — the lane's output contract already
-// refuses that — and VerdictUnknown is a value that starts with neither kind
-// of word: no verdict at all.
-const (
-	VerdictNone     = ""
-	VerdictAccept   = "accept"
-	VerdictSendBack = "send-back"
-	VerdictUnknown  = "unknown"
-)
-
 // verdictWords normalises the words a lane file declares.
 func verdictWords(ws []string) []string {
 	var out []string
@@ -37,28 +26,20 @@ func (l *Lane) DeclaresVerdicts() bool {
 	return len(l.VerdictAccept)+len(l.VerdictSendBack) > 0
 }
 
-// ReadVerdict classifies a review-verdict against the lane's words. The word is
-// everything on the first line before the first ':' — or that whole line when it has none —
-// so "send-back: DoD 2 unmet", "Send back" and "accept" all read; a sentence
-// that merely contains a word somewhere does not. Returns the word as written
-// in the lane file beside its kind.
-func (l *Lane) ReadVerdict(v string) (kind, word string) {
-	v = strings.TrimSpace(v)
-	if v == "" {
-		return VerdictNone, ""
-	}
-	head, _, _ := strings.Cut(v, "\n")
+// SendsBackBy reports whether review-verdict v sends the work back on this
+// lane, and the word it does it with. The word is everything on the first line
+// before the first ':' — or that whole line when it has none — so
+// "send-back: DoD 2 unmet" and "Send back" both read; a sentence that merely
+// contains the word somewhere does not. Every other verdict, free text
+// included, sends nothing back.
+func (l *Lane) SendsBackBy(v string) (string, bool) {
+	head, _, _ := strings.Cut(strings.TrimSpace(v), "\n")
 	head, _, _ = strings.Cut(head, ":")
 	n := normVerdict(head)
 	for _, w := range l.VerdictSendBack {
 		if n == w {
-			return VerdictSendBack, w
+			return w, true
 		}
 	}
-	for _, w := range l.VerdictAccept {
-		if n == w {
-			return VerdictAccept, w
-		}
-	}
-	return VerdictUnknown, strings.TrimSpace(head)
+	return "", false
 }

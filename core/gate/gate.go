@@ -499,7 +499,7 @@ func verdictAgainstMove(set *lane.Set, t *ticket.Ticket, target *lane.Lane) Viol
 		if !cur.DeclaresVerdicts() || to <= i {
 			continue
 		}
-		if kind, word := cur.ReadVerdict(t.ReviewVerdict); kind == lane.VerdictSendBack {
+		if word, back := cur.SendsBackBy(t.ReviewVerdict); back {
 			return Violations{{
 				Code:  CodeVerdictSendBack,
 				Field: ticket.FieldReviewVerdict,

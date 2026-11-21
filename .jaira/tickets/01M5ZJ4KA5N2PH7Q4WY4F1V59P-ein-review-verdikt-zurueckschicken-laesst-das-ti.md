@@ -1,7 +1,7 @@
 ---
 id: 01M5ZJ4KA5N2PH7Q4WY4F1V59P
 title: "Ein Review-Verdikt 'zurueckschicken' laesst das Ticket nicht nach signoff"
-status: critique
+status: testing
 ready: true
 creator: BeMuCa
 goal: "Steht im review-verdict der Review-Lane 'send back' (oder das Gegenstueck des Boards), nimmt jaira move aus review nur noch in-progress als Ziel; signoff wird mit Exit 3 abgelehnt und nennt das Verdikt."
@@ -21,7 +21,7 @@ related:
   - 01M7WWZWSDHK37DGGHJFDF0YD6
 commits: []
 created-at: 2026-10-27T20:51:56Z
-updated-at: 2026-11-21T20:12:32Z
+updated-at: 2026-11-21T20:14:01Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-238286
@@ -34,7 +34,7 @@ round: 5
 back-from: testing
 back-by: lane
 back-count: 3
-review-gaps: "none - the round-4 change only removes lines"
+review-gaps: "replaced lane.ReadVerdict and its four kind constants by SendsBackBy: after the decision the only caller asks whether the verdict sends back, so accept/unknown/none were a distinction nobody read; updated the Lane field comment that still said 'anything else is no verdict'"
 test-verdict: "pass: round 4 - go test ./... RC=0 at d4067a5e4; DoD 1-6 hold (TestSendBackVerdictHasNoWayAround covers blocked->signoff send-back refused and old free-text verdict let back); gate writes nothing"
 hunt-verdict: "fail: bughunt done at d4067a5e4, 1 change blocker: unknown verdict laundered via blocked (review->blocked->signoff); the round before found the opposite edge - see question"
 ---
@@ -93,3 +93,4 @@ hunt-verdict: "fail: bughunt done at d4067a5e4, 1 change blocker: unknown verdic
 - **2026-11-21 20:10 · Alexander Sacharov** — question (worker, testing would send back a 3rd time - the loop flips on one rule): blocked does not record which lane a ticket was parked from. Round 2 counted any exit from blocked as leaving review -> a ticket parked from signoff with an old free-text verdict cannot get back (finding e5182f04c). Round 3 dropped that -> review->blocked->signoff carries an unknown verdict into signoff (blocker d4067a5e4). The send-back rule itself (DoD 1) holds on every route either way. Options: 1 (recommended) drop the unknown-word refusal: only send-back is enforced, on every route past review; a free-text verdict passes as today, the lane prompt asks for the words - smallest, no edge left, DoD 1-6 hold. 2 restore round 2 (exit from blocked = leaving review): unknown words also refused out of blocked; a ticket parked from signoff/done with a pre-release free-text verdict needs --force once. 3 record the lane a ticket was parked from (new frontmatter field) - closes both edges, bigger, own ticket.
 - **2026-11-21 20:10 · Alexander Sacharov** — decision: Variante 1 (Alex' Regel 'Ränder wachsen → kleineres Design', 21.11.): die Weigerung für unbekannte Verdikt-Wörter fällt weg; erzwungen wird nur send-back, auf jedem Weg hinter review (blocked eingeschlossen). Freitext geht durch wie heute. 40-review.md:96-97 entsprechend anpassen. Herkunfts-Lane von blocked aufzeichnen ist nicht Teil dieses Tickets.
 - **2026-11-21 20:12 · Alexander Sacharov** — decision applied: unknown-word refusal and CodeVerdictUnknown removed (gate.go, verdict_test.go table now expects free text to pass); 40-review.md step 3 and the release note say only send-back refuses, from review or from blocked. go test ./... RC=0.
+- **2026-11-21 20:12 · Alexander Sacharov** — critique round 5: read only 2a0e996e5 (the applied decision); matches the decision note, nothing else.
