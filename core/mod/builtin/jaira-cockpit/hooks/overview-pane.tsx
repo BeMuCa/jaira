@@ -99,9 +99,9 @@ function sceneRows(scene: WorkersScene, workers: Worker[], room: number): Cell[]
   // The stone keeps a third of the width and one line above it for its count.
   const size = stoneSize(open, Math.floor(width / 3), ground - 1)
   const stone = { x: Math.floor((width - size.w) / 2), w: size.w }
-  const fits = (s: Sprite) => placesOf(workers.length, width, ground, stone, s).length === workers.length
-  const sprite = fits(BIG) ? BIG : SMALL
-  const places = placesOf(workers.length, width, ground, stone, sprite)
+  const big = placesOf(workers.length, width, ground, stone, BIG)
+  const sprite = big.length === workers.length ? BIG : SMALL
+  const places = sprite === BIG ? big : placesOf(workers.length, width, ground, stone, SMALL)
   // Only as high as the tallest of stone, its count and the figures.
   const top = Math.min(ground - size.h - 1, ...places.map(p => p.y))
   const blank = () => Array.from({ length: width }, () => ({ ch: ' ' }) as Cell)
