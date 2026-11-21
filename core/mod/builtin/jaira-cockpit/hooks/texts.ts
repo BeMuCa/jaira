@@ -171,9 +171,14 @@ export const overviewWords = {
   tabQueue: 'Queue',
   tabLog: 'Log',
   tabWorkers: 'Workers',
-  // What a figure on the Workers tab is doing, beneath it in so many words.
+  // What an agent on the Workers tab is doing, on its line in so many words.
   states: { working: 'working', idle: 'resting', question: 'waits for an answer' },
   noWorkers: 'No agent on the board right now.',
+  // Above the stone: the definition-of-done items still open on the tickets
+  // with an agent at them.
+  stoneOpen: (n: number) => `${n} open`,
+  // Agents the picture has no room for; their lines are beneath it all the same.
+  moreWorkers: (n: number) => `+${n} more`,
   everybody: 'All',
   none: 'none',
   history: (days: number) => `Created and put back, last ${days} days`,
