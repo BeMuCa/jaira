@@ -25,14 +25,14 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T09:05:55Z
+updated-at: 2026-11-21T09:07:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2485785
 claimed-at: 2026-11-21T08:57:23Z
 outcome-what: "signoff role reads each board's accept, terminal and work lane from its lane config instead of the shipped names; indent fixed"
 outcome-why: "teamlead give-back 08:58: a board whose person lane has another name was silently skipped"
 outcome-resolves: "every board's waiting tickets are found and its move lines name its own lanes, or say ? where a lane is missing"
-review-summary: "critique 21.11. round 7: lanes found by their flags (human_exit, terminal, output_produces) - the same facts the binary uses (core/lane/lane.go impliedFresh reads human_exit && !question); one sentence maps the shipped names used later in the text onto them, so the rest of the role reads unchanged. Nothing to change."
+review-summary: "Ships a new read-only role /jaira-role-signoff: per ticket in a board's accept lane (found by human_exit/terminal/output_produces in 'jaira lanes --json', not by name) it prints one status line (DoD, CI run of the branch head via gh/glab, bughunt note naming the head, blockers, review verdict, noted returns), a table marking every open note 🔴/🟡/⚪/🔵, and one bold recommendation driven by return rules 0-5 (red check or 🔴 gives back; only 🟡 gives back until two noted returns, then accept plus a ready follow-up 'jaira create'), with accept and give-back lines to paste. The teamlead's 'Report to the human' now re-reads lanes and open PRs before listing what waits, uses that shape for signoff/human tickets and points to the role for the rules; its hunt check compares a note sha as prefix of the full branch head instead of assuming feat/<id>. jaira-worker gets 'Before you push' (run the repo's CI gates locally, read off workflows/Taskfile/instructions), jaira-role-pr and jaira-dispatcher point at it. README, the German how-to table, wantRoles, shipped.sha256 and a 3-line release note follow."
 round: 15
 review-gaps: "optimize 21.11. round 7: nothing to remove."
 test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at ec3858d3; DoD 1-4 verified in the tree; lane discovery run on this board (signoff/done/in-progress), a fresh jaira init board, and a scratch board with signoff renamed to abnahme (found, list --lane abnahme rc=0). Roles write nothing - no concurrent-writer case."
