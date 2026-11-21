@@ -29,6 +29,8 @@ if [ "$(git rev-parse --is-shallow-repository)" != false ]; then
 	exit 1
 fi
 
+manifest=core/shipped/shipped.sha256
+
 # What the binary installs. The cockpit mod's tests/ folder is embedded for its
 # own tests but never written to a skills directory (core/mod/mod.go).
 embedded() { git ls-files core/role/builtin core/mod/builtin core/lane/builtin core/role/jaira | grep -v '/tests/'; }
@@ -61,7 +63,6 @@ hashed() {
 installed() { awk 'NR==FNR { keep[$1]=1; next } keep[$2]' <(embedded) -; }
 
 if [ "${1:-}" = --check ]; then
-	manifest=core/shipped/shipped.sha256
 	tags=$(git tag -l 'v*')
 	if [ -z "$tags" ]; then
 		echo "shipped-history: this clone has no v* tags, so nothing could be checked; fetch them (git fetch --tags)" >&2
@@ -114,7 +115,6 @@ HEADER
 }
 
 if [ "${1:-}" = --write ]; then
-	manifest=core/shipped/shipped.sha256
 	# Beside the manifest, so the mv below is a rename on one file system.
 	tmp=$(mktemp "$manifest.XXXXXX")
 	trap 'rm -f "$tmp"' EXIT
