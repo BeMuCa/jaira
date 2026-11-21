@@ -285,8 +285,9 @@ func RemoveIgnore(root string) (changed bool, err error) {
 // that excludes nothing of it. It is "" wherever that line is not provably
 // this board's own: the path starts with no space (the old entry was the
 // right one), the line is not there, a copy of it lacks jaira's comment
-// directly above (a person wrote it), or a board stands in the directory
-// the line names (it is that board's entry).
+// directly above (a person wrote it), a board stands in the directory the
+// line names in any worktree of the repository (it is that board's entry),
+// or git cannot list those worktrees.
 func StaleEntry(root string) (exclude, line string) {
 	_, exclude, prefix := rawPlace(root)
 	trimmed := strings.TrimSpace(prefix)
@@ -297,21 +298,37 @@ func StaleEntry(root string) (exclude, line string) {
 	if !ownEntry(exclude, line) {
 		return "", ""
 	}
-	// The top of the working tree is root less one directory per "/" in
-	// its prefix; the stale line names the trimmed path below it. git's
-	// prefix runs from the real top, so walk up from root's real path, not
-	// from a symlink to it.
-	top, err := filepath.Abs(resolved(root))
+	// info/exclude belongs to the git directory every worktree shares, so
+	// the line may be the entry of a board in sub of any of them.
+	tops, err := worktrees(root)
 	if err != nil {
 		return "", ""
 	}
-	for range strings.Count(prefix, "/") {
-		top = filepath.Dir(top)
-	}
-	if _, err := os.Lstat(filepath.Join(top, filepath.FromSlash(trimmed), ticket.DirName)); !errors.Is(err, fs.ErrNotExist) {
-		return "", ""
+	for _, top := range tops {
+		if _, err := os.Lstat(filepath.Join(top, filepath.FromSlash(trimmed), ticket.DirName)); !errors.Is(err, fs.ErrNotExist) {
+			return "", ""
+		}
 	}
 	return exclude, line
+}
+
+// worktrees is the top of every working tree of root's repository, the
+// main one and each linked one, as 'git worktree list' names them.
+func worktrees(root string) ([]string, error) {
+	out, err := exec.Command("git", "-C", root, "worktree", "list", "--porcelain").Output()
+	if err != nil {
+		return nil, err
+	}
+	var tops []string
+	for _, l := range strings.Split(string(out), "\n") {
+		if top, ok := strings.CutPrefix(strings.TrimSuffix(l, "\r"), "worktree "); ok {
+			tops = append(tops, filepath.FromSlash(top))
+		}
+	}
+	if len(tops) == 0 {
+		return nil, errors.New("git worktree list named no working tree")
+	}
+	return tops, nil
 }
 
 // ownEntry reports whether line stands in path, and every time with jaira's

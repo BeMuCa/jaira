@@ -2,6 +2,7 @@ package board
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -119,5 +120,48 @@ func TestParallelDropStaleEntry(t *testing.T) {
 	got, _ := os.ReadFile(exclude)
 	if n != 1 || count(string(got), "/sub/.jaira/") != 0 || !Ignored(board) {
 		t.Errorf("dropped %d times; exclude:\n%s", n, got)
+	}
+}
+
+// info/exclude is shared by every worktree of a repository: the line a
+// private board in sub of another worktree relies on stays, whichever
+// worktree the repair runs in.
+func TestDropStaleEntryKeepsTheEntryOfABoardInAnotherWorktree(t *testing.T) {
+	root, exclude := newRepo(t)
+	for _, args := range [][]string{
+		{"-c", "user.name=a", "-c", "user.email=a@example.test", "commit", "--quiet", "--allow-empty", "-m", "x"},
+		{"worktree", "add", "--quiet", "--detach", "../w 2"},
+	} {
+		if out, err := exec.Command("git", append([]string{"-C", root}, args...)...).CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	other := filepath.Join(filepath.Dir(root), "w 2")
+	if err := os.MkdirAll(filepath.Join(root, "sub", ".jaira"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := AddIgnore(filepath.Join(root, "sub")); err != nil {
+		t.Fatal(err)
+	}
+	board := filepath.Join(other, " sub")
+	if err := os.MkdirAll(board, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := AddIgnore(board); err != nil {
+		t.Fatal(err)
+	}
+	before, _ := os.ReadFile(exclude)
+	if dropped, err := DropStaleEntry(board); err != nil || dropped != "" {
+		t.Fatalf("DropStaleEntry = %q, %v; the main checkout's board in sub needs the line", dropped, err)
+	}
+	if after, _ := os.ReadFile(exclude); string(after) != string(before) {
+		t.Errorf("exclude changed:\n before %q\n after  %q", before, after)
+	}
+	// Without that board the line is stale for every worktree, and goes.
+	if err := os.RemoveAll(filepath.Join(root, "sub", ".jaira")); err != nil {
+		t.Fatal(err)
+	}
+	if dropped, err := DropStaleEntry(board); err != nil || dropped != "/sub/.jaira/" {
+		t.Errorf("DropStaleEntry = %q, %v; want the stale line", dropped, err)
 	}
 }
