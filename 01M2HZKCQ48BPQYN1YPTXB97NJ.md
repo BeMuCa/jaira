@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T09:47:10Z
+updated-at: 2026-11-21T09:47:14Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -38,10 +38,10 @@ outcome-resolves: "XB97NJ"
 review-summary: "Ein Board sagt in einer committeten Datei .jaira/pr, wie Arbeit ankommt: person (Default, auch fuer fehlend/leer/Tippfehler), agent oder neu none. core/board/arrival.go liest das Wort (erste Nicht-Kommentar-Zeile, BOM weg, nur exakt agent/none zaehlt) und schreibt bei agent/none einen eigenen Absatz in den CLAUDE.md/AGENTS.md-Block; ohne Datei bleibt der Block byte-gleich, validate meldet ihn als veraltet, wenn .jaira/pr sich aendert. jaira roles list liest pr/pr-when/pr-reviewer jetzt aus der Basis (origin-Default oder --base, unbekannter Ref = Exit 3), nicht von der Platte des Zweigs, und sagt, wenn der Zweig .jaira/pr aendert. jaira roles pr-gate trennt zwei Fragen: ohne --land verweigert es eine none-Basis (no_pull_requests), mit --land laesst es nur durch, wenn die Basis selbst none sagt, jedes Ticket in done ist und jeder Commit ein Ticket nennt (Merges nur, wenn ihr Baum exakt gits eigener Merge ist; Reverts als fix(<ID>): revert ...). jaira-role-pr bekommt einen Abschnitt 'Land it': Gate, fetch, merge, Gate erneut, git push <remote> HEAD:<branch> - nie --force. reap.sh zaehlt unter none einen Zweig als gelandet, sobald der Default-Branch des Lande-Remotes (origin bzw. Parent eines Forks) seine Spitze enthaelt; das Cockpit startet bei Accept unter none das Landen statt eines PR. Release-Notiz core/release/notes/XB97NJ.md mit sieben Zeilen."
 round: 21
 review-gaps: |-
-  note: jaira roles list --base <ref> mit einem ref, der hier kein Commit ist (Tippfehler, nicht gefetcht), liest still die Platte, und pr_source sagt 'no base to read it from' - obwohl eine Basis genannt wurde (nachgestellt: --base nosuch/ref -> person, read off this disk). Die Tore lesen die Basis selbst und verweigern no_such_ref, deshalb kein Blocker; ein expliziter --base sollte aber laut scheitern
-  note: pr-gate liest den Lane-Stand der Tickets von der Platte des Zweigs, den es beurteilt - unter none ist das die einzige Pruefung vor dem Push auf den Hauptzweig. Ein Zweig, der sein Ticket per --force nach done schreibt, kommt durch; das ist dieselbe Vertrauensgrenze wie bei agent (JG3REW), unter none aber ohne Pull Request als zweiten Blick
-  note: Basis-Datei .jaira/pr wird in gate (FileAt ./.jaira/pr relativ zu s.Root) und Cockpit (git show base:.jaira/pr relativ zum Repo-Root) verschieden adressiert; gleich, solange das Board im Repo-Root liegt - bei einem Board in einem Unterverzeichnis lesen beide verschieden
-  note: roles list ohne --base nimmt origins Default - in einem Fork-Klon ist das der Fork, nicht der Parent; jaira-role-pr sagt deshalb, mit --base erneut zu lesen, reap reicht --base selbst durch
+  note: Das Tor liest den Status der Tickets aus den Ticket-Dateien des zu landenden Zweigs selbst (s.List() auf dem Checkout) - unter agent ebenso schon vorher; unter none ist es aber die letzte Pruefung vor einem Push auf den Default-Branch, ohne Person dazwischen. Ein Agent kann done nur mit --force setzen, daher kein Blocker.
+  note: Cockpit originDefault (register.tsx) liest %(refname:short); bei einer lokalen Branch origin/main ohne origin/HEAD faellt es auf die lokale Basis zurueck - bereits als known limit (Runde 18) notiert, die Tore lesen weiter die Basis.
+  note: Die 11 untracked Dateien unter .jaira/milestones/ im Worktree gehoeren nicht zu diesem Ticket und duerfen nicht mit diesem Zweig committet werden.
+  note: boardArrival ruft board.PRModeFor(root) zweimal hintereinander (roles.go, changed-Block) - eine Variable reicht.
 test-verdict: "pass with known limit (round 16): go vet + go test -race ./... RC=0 at 8747367e; cockpit 219 pass; roles list --base unresolvable -> exit 3 no_such_ref, branch behind base not called changing (TestRolesListBaseMustResolveAndComparesWithTheMergeBase); cockpit without forge reads origin/main (board.test.ts)"
 hunt-verdict: "known limit (round 18 at 8747367e): 1 narrow finding (cockpit for-each-ref short name beside a local branch called origin/main), recorded as known limit per teamlead"
 claimed-by: DESKTOP-RFTCH11-3584823
