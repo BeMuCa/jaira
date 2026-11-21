@@ -83,14 +83,14 @@ if [ -e "$list" ]; then
   [ -r "$list" ] && [ -f "$list" ] || die "the denylist $list cannot be read" 2
   # Read the list as it was written, or not at all: a pattern dropped on the
   # way reads as "no hit" and the push goes out.
-  case "$(head -c 2 "$list" | od -An -tx1 | tr -d ' \n')" in
+  case "$(head -c 2 "$list" | od -An -tx1 | LC_ALL=C tr -d ' \n')" in
   fffe | feff)
     command -v iconv >/dev/null || die "the denylist $list is UTF-16 and iconv is missing" 2
     iconv -f UTF-16 -t UTF-8 <"$list" >"$tmp/list" 2>/dev/null || die "the denylist $list is not valid UTF-16" 2
     ;;
   *) cat <"$list" >"$tmp/list" ;;
   esac
-  [ "$(tr -d '\000' <"$tmp/list" | wc -c)" = "$(wc -c <"$tmp/list")" ] ||
+  [ "$(LC_ALL=C tr -d '\000' <"$tmp/list" | wc -c)" = "$(wc -c <"$tmp/list")" ] ||
     die "the denylist $list holds NUL bytes — save it as UTF-8" 2
   if LC_ALL=C grep -q '[^ -~[:space:]]' "$tmp/list"; then
     command -v iconv >/dev/null || die "the denylist $list holds non-ASCII text and iconv is missing to check it is UTF-8" 2
@@ -100,13 +100,13 @@ if [ -e "$list" ]; then
   # CR (an old Mac file): every CR becomes a line break, and the empty line
   # CRLF leaves behind is dropped with the blank ones. A pattern is taken as
   # written, a blank at its end included.
-  LC_ALL=C sed "1s/^$(printf '\357\273\277')//" "$tmp/list" | tr '\r' '\n' |
+  LC_ALL=C sed "1s/^$(printf '\357\273\277')//" "$tmp/list" | LC_ALL=C tr '\r' '\n' |
     { LC_ALL=C grep -a -v -e '^[[:space:]]*#' -e '^[[:space:]]*$' || true; } >"$deny"
   rc=0
   LC_ALL=$fold grep -Eqi -f "$deny" </dev/null 2>/dev/null || rc=$?
   [ "$rc" -le 1 ] || die "the denylist $list holds a pattern grep cannot read" 2
   if [ -s "$deny" ]; then
-    denylist_state="$(wc -l <"$deny" | tr -d ' ') pattern(s)"
+    denylist_state="$(wc -l <"$deny" | LC_ALL=C tr -d ' ') pattern(s)"
   else
     denylist_state="the list holds no pattern, its strings were not checked"
   fi
@@ -154,7 +154,7 @@ scan() {
     --no-prefix --no-color --no-ext-diff --no-textconv --text "$c" >"$tmp/diff"
   # Both awks run on bytes: a file that is not UTF-8 is read without
   # 'Invalid multibyte data' on stderr, and paths and lines stay as git wrote them.
-  tr -d '\000' <"$tmp/diff" | LC_ALL=C awk -v adds="$tmp/adds" -v locs="$tmp/locs" '
+  LC_ALL=C tr -d '\000' <"$tmp/diff" | LC_ALL=C awk -v adds="$tmp/adds" -v locs="$tmp/locs" '
     BEGIN { printf "" > adds; printf "" > locs }
     /^diff --(git|cc|combined) / { h = 1; path = ""; next }
     h && /^\+\+\+ / { path = substr($0, 5); sub(/\t$/, "", path); next }
@@ -188,7 +188,7 @@ scan() {
     if [ "$kind" = deny ]; then pat=$deny mode=-E; else pat=$hostfile mode=-F; fi
     lines "$pat" "$mode" "$tmp/names" >"$tmp/n"
     while IFS= read -r n; do
-      printf '%s\t%s\n' "$n" "$(sed -n "${n}p" "$tmp/names")" >>"$tmp/flagged"
+      printf '%s\t%s\n' "$n" "$(LC_ALL=C sed -n "${n}p" "$tmp/names")" >>"$tmp/flagged"
       report "$kind" "$short file $n of its changed files, by its name"
     done <"$tmp/n"
   done
