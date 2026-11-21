@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T09:11:54Z
+updated-at: 2026-11-21T09:15:50Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -77,7 +77,7 @@ review-check: |-
 - [x] Der Block ist byte-gleich zu heute, wo .jaira/pr fehlt oder person sagt; ein Board mit none/agent bekommt den passenden Absatz durch jaira update, und jaira validate meldet den Block als veraltet, sobald die Datei sich aendert.
   proof: core/board/arrival_test.go TestNoteSaysHowWorkArrivesAndDriftsWithTheFile (Absatz bei none/agent, NoteIsCurrent stale nach Dateiwechsel, Absatz weg nach Entfernen)
 - [x] Bei none landet die Arbeit nur durch das Tor: jaira roles pr-gate laesst erst durch, wenn jedes Ticket des Zweigs in done ist, liest .jaira/pr vom Basis-Zweig, und das Landen ist ein fast-forward push - ein abgelehnter (nicht fast-forward) Push wird nie mit --force wiederholt.
-  proof: internal/cli/prgate_test.go TestPRGateLetsANoneBoardLandOnlyDoneWork + TestPRGateOnANoneBoardRefusesCommitsNoTicketOwns + TestPRGateOnANoneBoardRefusesGitsRevertSubject + TestPRGateOnANoneBoardNeverAsksForACreateLine; core/gitrepo/named_test.go (UnnamedCommits, isPlainMerge); jaira-role-pr/SKILL.md 'Land it' (Revert als fix(<ID>): revert) + Boundaries: nie --force; core/role/reap_test.go TestReapOnANoneBoardWaitsForTheDefaultBranch
+  proof: internal/cli/prgate_test.go TestPRGateLetsANoneBoardLandOnlyDoneWork + TestPRGateOnANoneBoardRefusesCommitsNoTicketOwns + TestPRGateOnANoneBoardRefusesGitsRevertSubject + TestPRGateLandOnlyWhereTheBaseSaysNone + TestPRGateOnANoneBoardNeverAsksForACreateLine; core/gitrepo/named_test.go; jaira-role-pr/SKILL.md 'Land it' (pr-gate --land) + Boundaries: nie --force; core/role/reap_test.go TestReapOnANoneBoardWaitsForTheDefaultBranch
 
 ## Options
 
