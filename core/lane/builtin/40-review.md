@@ -8,6 +8,8 @@ terminal: false
 model-tier: strong
 input-requires: [goal, definition-of-done, diff]
 output-produces: [review-summary, review-gaps, review-verdict, review-check]
+verdict-accept: [accept]
+verdict-send-back: [send-back]
 description: A second model has judged the diff. Not yet accepted by a person.
 ---
 # Prompt
@@ -88,9 +90,13 @@ Write four things, in this order:
    ticket is the person's decision when they accept the work, not yours and
    not the next agent's.
 
-3. `review-verdict` — your conclusion.
+3. `review-verdict` — your conclusion, starting with one of this lane's two
+   words and a colon: `accept` when there is no blocker, `send-back` when there
+   is one. The move reads the word: a `send-back` verdict refuses every move
+   past review, whichever lane the ticket moves from; a move back stays free.
 
-       jaira set <handle> review-verdict="the diff matches the criteria; no defects found"
+       jaira set <handle> review-verdict="accept: the diff matches the criteria; no defects found"
+       jaira set <handle> review-verdict="send-back: DoD 2 - an empty export still writes a header"
 
 4. `review-check` — how a person checks this themselves, as a flow: do this,
    then that, then look at this. Every field above is an account of what
