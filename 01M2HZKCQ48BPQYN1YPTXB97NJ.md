@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T09:07:03Z
+updated-at: 2026-11-21T09:07:07Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -49,7 +49,13 @@ claimed-by: DESKTOP-RFTCH11-2127254
 claimed-at: 2026-11-21T08:46:28Z
 review-verdict: "Zurueck nach in-progress: der Kern ist sauber und gut getestet (strenges Parsen, byte-gleicher Block, Gate fail closed, nie --force), alle Tests gruen. Ein Defekt im neuen none-Pfad: auf einem nicht geteilten Board behauptet roles list 'none, shared with the board', das Gate verweigert mit falscher Ursache und verweist auf eine create line, die es unter none nicht gibt. Sicher (nichts landet), aber genau die Solo-Zielgruppe trifft das."
 review-round: 17
-review-check: "1. go build -o /tmp/j ./cmd/jaira  2. mkdir /tmp/b && cd /tmp/b && git init -q && git commit -q --allow-empty -m init && /tmp/j init  3. /tmp/j roles list --json | /tmp/j json get pr -> 'person'  4. echo none > .jaira/pr && /tmp/j validate -> Warnung 'no longer matches this board's lanes or its .jaira/pr'  5. /tmp/j update && grep 'How work arrives' CLAUDE.md -> eine Zeile  6. echo nnone > .jaira/pr && /tmp/j roles list --json | /tmp/j json get pr_source -> nennt \"nnone\", 'neither agent nor none'  7. Gate: go test ./internal/cli -run PRGate -v -> u.a. TestPRGateLetsANoneBoardLandOnlyDoneWork und TestPRGateOnANoneBoardRefusesGitsRevertSubject PASS"
+review-check: |-
+  1. go build -o /tmp/jb ./cmd/jaira
+  2. mkdir /tmp/solo && cd /tmp/solo && git init -b master && git commit --allow-empty -m init && /tmp/jb init
+  3. echo none > .jaira/pr && git add .gitignore AGENTS.md CLAUDE.md && git commit -m "chore(AAAAAA): x" && git checkout -b feat/x
+  4. /tmp/jb roles list | grep '^pr:'  - heute: "none ... shared with the board", obwohl .jaira/ gitignored ist
+  5. /tmp/jb roles pr-gate master; echo $?  - heute: exit 3 "says neither agent nor none ... hand the create line back"; nach dem Fix: die Meldung sagt, dass .jaira/pr in master fehlt (Board nicht geteilt / nicht committet)
+  6. go test ./core/board ./core/settings ./core/gitrepo ./internal/cli -run 'PR|Note|Unnamed|Gate'  - ok
 ---
 
 # Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig
