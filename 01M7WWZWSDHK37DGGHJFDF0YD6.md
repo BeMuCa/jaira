@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:20:58Z
+updated-at: 2026-11-21T09:21:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
@@ -37,8 +37,8 @@ review-gaps: |-
 test-verdict: "pass: go test -count=1 ./... RC=0 at c4e1fe34; TestChangedSince 21 cases incl. a named board's lane prompt (counts) and its other data (does not); read-only git"
 hunt-verdict: "pass: follow-up hunt since a6187478 at c4e1fe34, 0 findings"
 round: 11
-review-verdict: "Kein Blocker. DoD 1-11 sind im Code erfuellt; der Blocker aus Runde 4 (bughunt on HEAD aus 4 Notes nicht ableitbar) ist an der Ursache behoben: --brief traegt bughunt.on_head aus git, und Explain-Vorlage und spawn.sh lesen es. go test -count=1 ./... RC=0, claude plugin test 216 pass. Die fuenf notes sind Raender des on_head-Signals (falsch rot in conversational mode und bei stop-after-fix) und eine bekannte Grenze; keine davon ist ein falsches Ergebnis im Sinn der DoD ausser im conversational mode, wo nur die Statusmarke falsch rot ist."
-review-round: 8
+review-verdict: "Kein Blocker. DoD 1-11 im Code erfuellt; die Runden 9-11 (on_head aus git statt aus Notes, mtime statt 'uncommitted', Board-Daten ausgenommen, Lane-Prompts benannter Boards als Code) sind korrekt und getestet. Geprueft: go test -count=1 ./core/gitrepo ./internal/cli ./core/move ./core/ticket ok; claude plugin test 218 pass; von Hand: Aenderung an core/gitrepo/derive.go -> on_head false, touch einer .jaira/milestones-Datei -> on_head true. Die zwei notes sind ein bekannter Rand des mtime-Signals und eine Doku-Unschaerfe, kein falsches Ergebnis im Sinn der DoD."
+review-round: 11
 review-check: "1. go build -o /tmp/jaira-b ./cmd/jaira  2. /tmp/jaira-b set <Test-Ticket> stop-after-fix=yes -> Exit 2, 'stop-after-fix is true, false or empty'  3. /tmp/jaira-b show DF0YD6 --brief | grep -o '\"bughunt\":{[^}]*}' -> {\"at\":\"81dcbbee\",\"on_head\":true}  4. echo x >> core/gitrepo/git.go; Schritt 3 wiederholen -> on_head:false; git checkout core/gitrepo/git.go  5. go test ./core/move -run TestMoveRecordsWhoSentItBack -v -> PASS (signoff->in-progress = person, zaehlt nicht)  6. go test ./core/gitrepo -run TestChangedSince -v -> 16 Faelle PASS  7. cd core/mod/builtin/jaira-cockpit && claude plugin test -> 216 pass  8. im Cockpit ein Ticket in signoff mit nur note:-Zeilen: Notes stehen als '· ...' unter der Zeile, kein Explain-Knopf"
 review-verdict-gaps: |-
   blocker: DoD 7 - der Statuspunkt 'bughunt on HEAD' ist im ueblichen Fall falsch rot: die Explain-Vorlage (texts.ts:81, spawn.sh:396) laesst ihn aus der neuesten 'bughunt: done at <commit>'-Note lesen, aber die Explain-Chats bekommen nur show --brief mit den 4 neuesten Notes (tickets.go briefNotes=4) und sollen das Ticket nicht nochmal ganz lesen; nach testing-, review- und Worker-Note ist die Hunt-Note draussen - geprueft: bei N71NVG, K6BGB0, V38STG, X3A8RZ (signoff/human) steht in notes_last keine. Ausserdem ist HEAD hier 9d2e0f59 (Upstream-Merge), der Hunt lief auf 553b37f3 -> fail, obwohl seitdem kein Ticket-Code dazukam. Ein rotes Kreuz auf einem sauberen Ticket ist genau das 'muss geaendert werden'-Gefuehl, das das Ticket abschaffen soll. Fix der Klasse: brief traegt die neueste bughunt-done-Zeile als eigenes Feld (unabhaengig von notes_last), und 'on HEAD' gilt auch, wenn git diff <hunt-commit> HEAD keine der Dateien des Hunts beruehrt; Test in loopbrake_test/role_test.
