@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:10:43Z
+updated-at: 2026-11-21T08:10:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
@@ -67,7 +67,8 @@ review-check: "1. go test ./core/move -run 'TestMoveRecords|TestMoveCountsOne' -
   proof: internal/cli/loopbrake_test.go TestBlockerRuleRoundTrip (quotes, umlauts, multiline, CRLF, lone CR), TestSetRefusesUnknownStopAfterFix; core/move TestMoveCountsOneReturnForTwoAtOnce
 - [x] acceptance rule for the explain parser: an explain note line without a known class mark or status shape is shown as plain text, never dropped - an old note must still read as before
   proof: board.ts partOf falls back to a text part; legacy SHAPED/MARKED explanation tests still pass (214 pass, claude plugin test)
-- [ ] round 3 (signoff 21.11.): in-progress stops at back.count 3 or more; a CLI 'jaira move' typed at a terminal is a person's send-back; a verdict of an earlier round keeps the review's own gaps (review-verdict-gaps) and the cockpit lists them
+- [x] round 3 (signoff 21.11.): in-progress stops at back.count 3 or more; a CLI 'jaira move' typed at a terminal is a person's send-back; a verdict of an earlier round keeps the review's own gaps (review-verdict-gaps) and the cockpit lists them
+  proof: core/lane/builtin/20-in-progress.md 'count 3 or more'; internal/cli/flow.go atATerminal -> TestCLIMoveAtATerminalIsAPersons; internal/cli/tickets.go keepVerdictGaps -> TestVerdictKeepsItsGaps; board.ts reviewGaps -> test 'a verdict of an earlier round lists the review's own notes...'
 
 ## Options
 
