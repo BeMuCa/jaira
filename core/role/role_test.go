@@ -1447,11 +1447,12 @@ func TestCodeChangingRolesLeaveTheReleaseAndFormatOnlyTheirFiles(t *testing.T) {
 // Roles that neither change code nor judge it run on haiku; the ones that
 // judge — critique and review through jaira-role-lane, the bug hunt — and the
 // ones that write code stay on the model they were started on (Y2CD9X).
+// jaira-role-pr stays off the list: its code-fix agent inherits the role's
+// model, and a model: haiku there would hand every review fix to haiku.
 // Claude Code reads model: out of the SKILL.md header for the turn the skill
 // runs, so the header is the whole mechanism.
 func TestRoleModels(t *testing.T) {
 	haiku := map[string]bool{
-		"jaira-role-pr":              true,
 		"jaira-role-tester":          true,
 		"jaira-role-logbook-summary": true,
 	}
