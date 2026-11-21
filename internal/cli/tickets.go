@@ -795,8 +795,10 @@ thinking they have seen everything.
 
 --brief prints one line of JSON with only what a chat about the ticket needs:
 id, title, goal, question, review, the newest finished bug hunt as bughunt
-(its commit, and on_head: no commit naming the ticket since, and no
-uncommitted change, touched the files it read; null without one), the newest four notes as notes_last and how many
+(its commit; on_head: no commit naming the ticket since, and no file
+written since and not committed, touched the files it read; skipped: the
+ticket sets stop-after-fix and the hunt does not cover HEAD; null without
+one), the newest four notes as notes_last and how many
 there are as notes_total.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -889,9 +891,14 @@ func ticketBrief(j map[string]any, body string, hunt *huntState) any {
 // note has scrolled out of them by the time a ticket waits for a person, and
 // a merge from master moves HEAD past the hunt's commit without changing
 // anything it read.
+//
+// Skipped marks a hunt left out on purpose: the ticket sets stop-after-fix,
+// so a fix round runs its tests and no hunt, and a hunt that no longer covers
+// the code — or none at all — is the choice the ticket made, not a fault.
 type huntState struct {
-	At     string `json:"at"`
-	OnHead bool   `json:"on_head"`
+	At      string `json:"at"`
+	OnHead  bool   `json:"on_head"`
+	Skipped bool   `json:"skipped"`
 }
 
 // huntDone is the closing line a bug hunt writes: "bughunt: done at <commit>
@@ -903,6 +910,17 @@ var huntDone = regexp.MustCompile(`^bughunt: done at ([0-9a-f]{7,40})\b`)
 // commit git does not know — rebased away, never fetched — is not on HEAD,
 // and neither is one this checkout's HEAD does not descend from.
 func lastHunt(repo *gitrepo.Repo, t *ticket.Ticket) *huntState {
+	h := newestHunt(repo, t)
+	if t.StopAfterFix && (h == nil || !h.OnHead) {
+		if h == nil {
+			h = &huntState{}
+		}
+		h.Skipped = true
+	}
+	return h
+}
+
+func newestHunt(repo *gitrepo.Repo, t *ticket.Ticket) *huntState {
 	notes := ticket.Notes(t.Body)
 	for i := len(notes) - 1; i >= 0; i-- {
 		text := strings.TrimSpace(notes[i].Text)

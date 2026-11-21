@@ -125,7 +125,7 @@ export function snapshotOf(
       question: oneLine(t.question),
       acceptTo: next?.terminal === true ? next.id : null,
       assignee,
-      explainable: explainable(verdict, reviewGaps(t) ?? t.review?.gaps),
+      explainable: explainable(verdict, reviewGaps(t)),
       // Before a review there are no review notes; after a later round's
       // optimize lane rewrote review-gaps they are in the copy jaira kept.
       notes: verdict === '' ? [] : notesOf(reviewGaps(t)),
@@ -200,7 +200,9 @@ function notesOf(gaps: string | undefined): string[] {
 
 // The review's own gaps: review-gaps in the verdict's round, the copy jaira
 // kept beside the verdict after that. Undefined for an earlier-round verdict
-// read by a jaira that keeps no copy: review-gaps then may be optimize's.
+// without a copy: review-gaps then may be optimize's, and neither the notes
+// under the row nor Explain read a blocker out of them — only a verdict that
+// reserves or refuses still offers Explain.
 function reviewGaps(t: Ticket): string | undefined {
   if (sameRound(t)) return t.review?.gaps
   return t.review?.verdict_gaps || undefined

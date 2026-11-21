@@ -203,7 +203,40 @@ func TestBriefCarriesTheHunt(t *testing.T) {
 		t.Errorf("right after the hunt: %v, want at %s, on_head true", got, at)
 	}
 	edit("a2")
-	if got, _ := hunt().(map[string]any); got["on_head"] != false {
-		t.Errorf("after an edit to a hunted file: %v, want on_head false", got)
+	if got, _ := hunt().(map[string]any); got["on_head"] != false || got["skipped"] != false {
+		t.Errorf("after an edit to a hunted file: %v, want on_head false, not skipped", got)
+	}
+	// stop-after-fix: a fix round runs no hunt by choice - skipped, not a fault
+	if out, err := runCLI(t, dir, "set", h, "stop-after-fix=true"); err != nil {
+		t.Fatalf("set: %v\n%s", err, out)
+	}
+	if got, _ := hunt().(map[string]any); got["on_head"] != false || got["skipped"] != true {
+		t.Errorf("stop-after-fix after an edit: %v, want skipped", got)
+	}
+	edit("a")
+	if got, _ := hunt().(map[string]any); got["on_head"] != true || got["skipped"] != false {
+		t.Errorf("stop-after-fix with the hunt on HEAD: %v, want on_head true, not skipped", got)
+	}
+}
+
+// A ticket that runs no hunt after a fix and has none yet reads skipped.
+func TestBriefSkipsTheHuntOnStopAfterFix(t *testing.T) {
+	dir, h := newModeTicket(t)
+	if out, err := exec.Command("git", "-C", dir, "init", "-q").CombinedOutput(); err != nil {
+		t.Fatalf("git init: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, dir, "set", h, "stop-after-fix=true"); err != nil {
+		t.Fatalf("set: %v\n%s", err, out)
+	}
+	out, err := runCLI(t, dir, "show", h, "--brief")
+	if err != nil {
+		t.Fatalf("show --brief: %v\n%s", err, out)
+	}
+	var b map[string]any
+	if err := json.Unmarshal([]byte(out[strings.Index(out, "{"):]), &b); err != nil {
+		t.Fatalf("brief is no JSON: %v\n%s", err, out)
+	}
+	if got, _ := b["bughunt"].(map[string]any); got["skipped"] != true || got["on_head"] != false {
+		t.Errorf("bughunt is %v, want skipped", b["bughunt"])
 	}
 }

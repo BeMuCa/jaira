@@ -46,6 +46,30 @@ func TestChangedSince(t *testing.T) {
 		{"no paths reads all code", func(t *testing.T, dir string) {
 			fixtureCommit(t, dir, map[string]string{"b.go": "b2"}, "fix(DF0YD6): b", later)
 		}, nil, true},
+		{"an uncommitted edit from before the hunt (conversational mode)", func(t *testing.T, dir string) {
+			write(t, dir, "a.go", "a3")
+			old := time.Now().Add(-time.Hour)
+			if err := os.Chtimes(filepath.Join(dir, "a.go"), old, old); err != nil {
+				t.Fatal(err)
+			}
+		}, []string{"a.go"}, false},
+		{"a hunted file deleted, not committed", func(t *testing.T, dir string) {
+			if err := os.Remove(filepath.Join(dir, "a.go")); err != nil {
+				t.Fatal(err)
+			}
+		}, []string{"a.go"}, true},
+		{"untracked board data under .jaira, no paths", func(t *testing.T, dir string) {
+			if err := os.MkdirAll(filepath.Join(dir, ".jaira", "milestones"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			write(t, dir, ".jaira/milestones/q4-ABC123.md", "m")
+		}, nil, false},
+		{"untracked board data under .jaira, listed", func(t *testing.T, dir string) {
+			if err := os.MkdirAll(filepath.Join(dir, ".jaira", "milestones"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			write(t, dir, ".jaira/milestones/q4-ABC123.md", "m")
+		}, []string{"a.go", ".jaira/milestones/q4-ABC123.md"}, false},
 		{"an untracked file written after the hunt", func(t *testing.T, dir string) {
 			write(t, dir, "new.go", "n")
 		}, nil, true},

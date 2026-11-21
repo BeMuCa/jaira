@@ -740,7 +740,7 @@ describe('waiting for you', () => {
     // a ticket reviewed before jaira kept the copy has an empty verdict_gaps: its notes stay in review-gaps
     expect(asked).toContain('Where review.verdict_gaps is not empty and differs from review.gaps')
     // the hunt's note has scrolled out of the four newest notes by then: the brief says whether it covers the code
-    expect(asked).toContain("bughunt on HEAD is the brief's bughunt.on_head")
+    expect(asked).toContain("bughunt on HEAD is the brief's bughunt: skipped when bughunt.skipped is true")
     for (const cls of ['[blocker]', '[small edge]', '[known limit]', '[not this ticket]']) expect(asked).toContain(cls)
     expect(asked).toContain('[give back]')
     // Nothing reads as "this must be changed" by its shape alone.
@@ -893,6 +893,18 @@ describe('waiting for you', () => {
     // The recommendation bold, in a colour of its own; the option it names chosen.
     expect(all.some(x => x.text === 'Recommendation: 1 - no note is a blocker, it can be accepted as it is' && x.props.bold === true && x.props.color === 'claude')).toBe(true)
     expect((await pane.find({ key: 'pick-MG677R-1' }))?.props.autoFocus).toBe(true)
+  })
+
+  test('a hunt skipped on purpose is drawn without a cross', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = CLASSED.replace('bughunt on HEAD fail', 'bughunt on HEAD skipped')
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    expect(await pane.find({ type: 'Text', text: /bughunt on HEAD skipped/ })).toBeDefined()
+    const all = await pane.findAll({ type: 'Text' })
+    expect(all.filter(x => x.text === '✗ ')).toHaveLength(0)
+    expect(all.filter(x => x.text === '✓ ')).toHaveLength(3)
   })
 
   test('a blocker mark is red', async ($, on) => {
@@ -1082,6 +1094,15 @@ describe('waiting for you', () => {
     // the blocker kept beside an earlier verdict offers Explain; notes alone do not
     expect(await band.find({ key: 'explain-BLK456' })).toBeDefined()
     expect(await band.find({ key: 'explain-OLD123' })).toBeUndefined()
+  })
+
+  test('an earlier-round verdict without a kept copy reads no blocker out of a later lane\'s gaps', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, handle: 'OPB123', round: 3, review_round: 2, review: { verdict: 'approve', gaps: 'blocker: removed the unused helper' } }]
+    await startSession($)
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ key: 'explain-OPB123' })).toBeUndefined()
+    expect(await band.find({ type: 'Text', text: /removed the unused helper/ })).toBeUndefined()
   })
 
   test('an explanation stays readable once its verdict is an earlier round\'s', async ($, on) => {

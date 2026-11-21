@@ -322,14 +322,18 @@ func (r *Repo) WorktreeDiff() (string, error) {
 
 // ChangedSince reports whether the ticket's own work touched paths after
 // commit: a commit since then that names the ticket and is no merge, or a
-// change not committed yet. Every commit of a ticket names it (the house
-// rule its commit list is built from), so master merged into the branch —
-// work other people reviewed — does not count, on the branch or after it was
-// merged; what a merge's conflict resolution wrote does not either. A commit
+// file not committed and written after hunted, the time the hunt finished.
+// Every commit of a ticket names it (the house rule its commit list is built
+// from), so master merged into the branch — work other people reviewed —
+// does not count, on the branch or after it was merged; what a merge's
+// conflict resolution wrote does not either. The limit of that rule: a
+// commit of this ticket that does not name it is not seen either. A commit
 // that is no ancestor of HEAD — the hunt ran on a branch this checkout does
-// not have — tells nothing and reads as changed. git keeps no history of an
-// untracked file, so one inside paths counts as changed when it was written
-// after hunted, the time the hunt finished. Paths are relative to the
+// not have — tells nothing and reads as changed. An uncommitted file counts
+// by its time, not by being uncommitted: in conversational mode the worker
+// does not commit, and the hunt read those changes as they were. An
+// untracked file under .jaira/ is board data — milestones, a pulled ticket
+// — and never counts. Paths are relative to the
 // repository root; none, or one that is neither in commit nor on disk (a
 // file list split at a space inside a name), means all code (codeOnly).
 func (r *Repo) ChangedSince(commit, ticketID string, hunted time.Time, paths []string) (bool, error) {
@@ -353,19 +357,18 @@ func (r *Repo) ChangedSince(commit, ticketID string, hunted time.Time, paths []s
 	if strings.TrimSpace(own) != "" {
 		return true, nil
 	}
-	open, err := r.run(append([]string{"diff", "--name-only", "HEAD", "--"}, specs...)...)
+	return r.writtenSince(hunted, specs)
+}
+
+// writtenSince reports a file inside specs that is not committed — changed
+// against HEAD, or untracked outside .jaira/ — and was written after t. A
+// tracked file deleted since HEAD has no time and counts.
+func (r *Repo) writtenSince(t time.Time, specs []string) (bool, error) {
+	root, err := r.Root()
 	if err != nil {
 		return false, err
 	}
-	if strings.TrimSpace(open) != "" {
-		return true, nil
-	}
-	return r.untrackedSince(hunted, specs)
-}
-
-// untrackedSince reports an untracked file inside specs written after t.
-func (r *Repo) untrackedSince(t time.Time, specs []string) (bool, error) {
-	root, err := r.Root()
+	changed, err := r.run(append([]string{"-c", "core.quotePath=false", "diff", "--name-only", "-z", "HEAD", "--"}, specs...)...)
 	if err != nil {
 		return false, err
 	}
@@ -373,10 +376,18 @@ func (r *Repo) untrackedSince(t time.Time, specs []string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	for _, p := range strings.Split(others, "\x00") {
-		if p == "" {
-			continue
+	var paths []string
+	for _, p := range strings.Split(changed, "\x00") {
+		if p != "" {
+			paths = append(paths, p)
 		}
+	}
+	for _, p := range strings.Split(others, "\x00") {
+		if p != "" && !strings.HasPrefix(p, ".jaira/") {
+			paths = append(paths, p)
+		}
+	}
+	for _, p := range paths {
 		fi, err := os.Stat(filepath.Join(root, filepath.FromSlash(p)))
 		if err != nil || fi.ModTime().After(t) {
 			return true, nil
