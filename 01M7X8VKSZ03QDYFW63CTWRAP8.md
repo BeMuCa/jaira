@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T09:14:06Z
+updated-at: 2026-11-21T09:14:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2485785
 claimed-at: 2026-11-21T08:57:23Z
@@ -35,7 +35,7 @@ outcome-resolves: "signoff, teamlead and testing agree on when a hunt is owed"
 review-summary: "critique 21.11. round 8: exemption is the teamlead's and testing lane's own rule, now stated once more where the check lives. Nothing to change."
 round: 16
 review-gaps: "optimize 21.11. round 8: nothing to remove."
-test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at ec3858d3; DoD 1-4 verified in the tree; lane discovery run on this board (signoff/done/in-progress), a fresh jaira init board, and a scratch board with signoff renamed to abnahme (found, list --lane abnahme rc=0). Roles write nothing - no concurrent-writer case."
+test-verdict: "fail: gates green at 025cef00; bughunt 09:14 change: '–' exemption vs empty-head '?' has no stated precedence"
 hunt-verdict: "clean: diff hunt at ec3858d3 (HEAD), 0 findings"
 question: ""
 review-verdict: "All four DoD items are met by the diff. Every CLI field and flag the new role relies on was checked against the binary built from this branch (boards/lanes --json keys, show --json review.*/dod_items/handle/board, list --lane, gh run list --commit/--workflow, glab ci list --sha); lane discovery resolves to signoff/done/in-progress on this board. go test ./core/role ./core/shipped green, last bughunt note names HEAD ec3858d3. No blocker; two notes."
