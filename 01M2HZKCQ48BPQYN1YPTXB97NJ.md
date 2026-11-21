@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T09:27:06Z
+updated-at: 2026-11-21T09:27:10Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -202,3 +202,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-21 09:18 · Alexander Sacharov** — question (3. Ruecklauf aus testing in dieser Rueckgabe, an Teamlead jaira-31): Runde 16: Spiegel des --land-Lochs - das einfache pr-gate (Frage 'darf ein Agent den PR oeffnen') sagt exit 0 auch, wenn die Basis none sagt; ein Zweig, der .jaira/pr agent committet, oeffnet dann einen PR auf einem Board ohne PRs (geringer Schaden: ein Mensch sieht den PR). Runden 13/15/16 waren drei verschiedene Kanten derselben Frage 'wer entscheidet: Basis oder Checkout' - jetzt vollstaendig, wenn beide Fragen getrennt sind. Optionen: 1) (Recommended) eine Runde: einfaches pr-gate = nur Oeffnen, verweigert eine none-Basis (Grund no_pull_requests, 'land with --land'); --land = nur Landen; Tests auf --land umstellen; danach Diff-Hunt, und ein weiterer Fund geht als known limit an Alex. 2) So in signoff, Fund als known limit (ein PR mehr, den ein Mensch sieht).
 - **2026-11-21 09:18 · Alexander Sacharov** — Teamlead 21.11. 10:20: 1 + Basis entscheidet ueberall
 - **2026-11-21 09:26 · Alexander Sacharov** — in-progress (Runde 15, 'Basis entscheidet ueberall'): (a) pr-gate ohne --land beantwortet nur 'darf ein Agent oeffnen' und verweigert eine none-Basis (no_pull_requests, 'land with --land'); --land nur Landen. None-Tests auf --land umgestellt, neuer Test TestPRGateNeverOpensOnABaseThatTakesNone. (b) roles list liest pr/pr-when/pr-reviewer aus der Basis (--base <ref>, sonst origin/HEAD|main|master als volle Refs); pr_source nennt die Basis und 'this branch changes .jaira/pr to X', ohne Basis 'read off this disk'. Test TestRolesListReadsTheBoardFilesFromTheBase. (c) jaira-role-pr liest pr aus der Basis und nach 'Which repository' erneut mit --base <remote>/<branch>. (d) Cockpit liest .jaira/pr per 'git show <base>:.jaira/pr' (Basis = Ziel des PR bzw. lokaler Default), Test: none nur im Checkout -> PR-Pfad; 218 pass. (e) reap.sh: Landing-Remote und -Basis einmal pro Lauf, roles list mit --base dahin; Tests committen .jaira/pr auf master (noneOnBase). Bewusst nicht: CLAUDE.md-Block (announce.go) liest die Platte - er beschreibt die Datei, die jaira update im Checkout schreibt, entscheidet nichts.
+- **2026-11-21 09:27 · Alexander Sacharov** — critique (Runde 18): Ein Prinzip statt Einzelfixes; die eine bewusste Ausnahme (CLAUDE.md-Block) ist begruendet. Nichts zu sagen.
