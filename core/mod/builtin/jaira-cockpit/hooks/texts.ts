@@ -26,6 +26,8 @@ export const t = {
   noRemoteFor: (repo: string) => `Pull requests go to ${repo}, and no remote here points at it: add it with git remote add upstream <its URL>.`,
   landStarted: (id: string, branch: string) => `${id}: landing ${branch} on the default branch in a Herdr tab (no pull requests on this board)`,
   landWaits: (branch: string, pending: string[]) => `${branch} does not land yet: ${pending.join(', ')} not in done`,
+  cannotLand: (why: string) => `Nothing lands from here: ${why}`,
+  noOrigin: 'this repository has no remote origin to land on.',
   landNeedsHerdr: (branch: string) => `${branch} lands on the default branch from a Herdr tab of its own (HERDR_ENV=1 or Herdr App, and spawn.sh from jaira roles install).`,
   prNeedsHerdr: (branch: string) => `${branch} needs a pull request, which opens in a Herdr tab of its own (HERDR_ENV=1 or Herdr App, and spawn.sh from jaira roles install).`,
   noteOn: (id: string) => `Note on ${id}`,

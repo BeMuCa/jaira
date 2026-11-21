@@ -593,8 +593,11 @@ async function pullTarget($: EngineInterface, repoDir: string): Promise<Target |
 //
 // A board whose .jaira/pr says none (XB97NJ) takes no pull requests: the pr
 // lane lands the branch instead, behind 'jaira roles pr-gate'. Landing needs
-// no forge, so a forge that cannot be told or asked only costs the better
-// base; the step is the same 'pr' and `land` says which of the two it is.
+// a remote, not a forge: a host that names no forge lands on origin, as
+// jaira-role-pr does there. What the role cannot land past stops here too,
+// with its reason — no origin at all, a forge that does not answer (whether
+// origin is a fork cannot be told), a fork whose parent no remote points at.
+// The step is the same 'pr' and `land` says which of the two it is.
 type Decided = { step: StepAfterAccept; branch?: string; hint: string; land?: boolean }
 
 async function decideStep($: EngineInterface, b: { dir: string; repo: string }, id: string, terminal: string, porcelain: string): Promise<Decided | string> {
@@ -602,6 +605,8 @@ async function decideStep($: EngineInterface, b: { dir: string; repo: string }, 
   const land = await landsWithoutPullRequest($, b.dir)
   const asked = await pullTarget($, b.repo)
   if (typeof asked === 'string' && !land) return { step: stepAfterAccept(0, [], undefined), hint: t.prUnchecked(asked) }
+  // Under none a reason is held until there is something to land: a branch
+  // with nothing ahead, or a ticket still open, is no failure.
   const target = typeof asked === 'string' ? undefined : asked
   const base = target?.base ?? found.base
   let branch = found.ticket
@@ -628,6 +633,11 @@ async function decideStep($: EngineInterface, b: { dir: string; repo: string }, 
   if (list?.exitCode !== 0) return `jaira list: ${withoutWarnings(list?.stderr ?? '') || 'did not run'}`
   const pending = pendingOf(list.stdout, ticketsNamed(subjects.stdout), terminal)
   if (pending.length > 0) return { step: stepAfterAccept(ahead, pending, false), branch, hint: land ? t.landWaits(branch, pending) : t.prWaits(branch, pending), land }
+  if (land && typeof asked === 'string') return t.cannotLand(asked)
+  if (land && target === undefined) {
+    const origin = await run($, ['git', 'remote', 'get-url', 'origin'], b.repo)
+    if (origin?.exitCode !== 0) return t.cannotLand(t.noOrigin)
+  }
   if (land) return { step: stepAfterAccept(ahead, pending, false), branch, hint: '', land }
   if (target === undefined) return t.noForge(branch)
   const cmd = pullRequestsCommand(target.on, target.repo, branch)

@@ -1450,26 +1450,38 @@ describe('after Accept', () => {
     expect(await failure($)).toContain('needs an origin on GitHub or GitLab')
   })
 
-  test('.jaira/pr says none and there is no forge: the press lands the branch through the pr lane, asks no pull request, and says landing', async ($, on) => {
+  test('.jaira/pr says none and the host names no forge: the press lands on origin through the pr lane, asks no pull request, and says landing', async ($, on) => {
     const w = world(on, { herdr: true })
     w.ahead = 3
-    w.origin = null
+    w.origin = 'git@git.example.de:acme/repo.git'
     w.files.set('/repo/.jaira/pr', '# solo\nnone\n')
     await press($)
-    expect(ran(w, 'gh', 'pr')).toEqual([])
+    expect(ran(w, 'gh')).toEqual([])
     expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'mg677r', 'MG677R', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
     expect(w.toasts.at(-1)).toContain('MG677R: landing feat/mg677r on the default branch')
     expect(w.toasts.join('\n')).not.toContain('pull request for')
   })
 
-  test('.jaira/pr says none and the forge does not answer: it still lands', async ($, on) => {
+  test('.jaira/pr says none and there is no origin: nothing lands, and the pane says there is nothing to land on', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.origin = null
+    w.files.set('/repo/.jaira/pr', 'none\n')
+    await press($)
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
+    expect(await failure($)).toContain('no remote origin to land on')
+  })
+
+  test('.jaira/pr says none and the forge does not answer: nothing lands, since whether origin is a fork cannot be told, and the pane says why', async ($, on) => {
     const w = world(on, { herdr: true })
     w.ahead = 2
     w.prs = null
     w.files.set('/repo/.jaira/pr', '\uFEFFnone\r\n')
     await press($)
-    expect(prLane(w)).toHaveLength(1)
-    expect(w.toasts.at(-1)).toContain('landing feat/mg677r')
+    expect(prLane(w)).toEqual([])
+    const why = await failure($)
+    expect(why).toContain('Nothing lands from here')
+    expect(why).toContain('gh: command not found')
   })
 
   test('.jaira/pr says none and another ticket on the branch is not in done: nothing lands, and the press says which', async ($, on) => {

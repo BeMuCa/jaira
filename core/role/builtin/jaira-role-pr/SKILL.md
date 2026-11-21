@@ -157,6 +157,13 @@ and on a bad day a different forge.
    it is rung 1 above, so once it is set the ladder answers on the first step —
    and say the role runs again from the top afterwards.
 
+   **Not where `pr` says `none`.** Landing needs git, not a forge, and without
+   one there is no fork to ask about: the repository it goes to is `origin`
+   itself, `<remote>` is `origin` and `<branch>` its default branch
+   (`git ls-remote --symref origin HEAD`). Skip **Which repository it goes
+   to** and go on. No `origin` at all: there is nothing to land on — say so
+   and stop.
+
 GitLab calls it a **merge request**. Read "pull request" below as "merge
 request" while you are on GitLab; the rule over it does not change with the
 word.
