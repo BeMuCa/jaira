@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:31:42Z
+updated-at: 2026-11-21T09:31:46Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
@@ -31,11 +31,7 @@ outcome-what: "Round 13: the cockpit recognises a blocker line and an explain cl
 outcome-why: "Teamlead for Alex 21.11.: review note 4 - a '**blocker:**' line was listed as a note without Explain."
 outcome-resolves: "review round 12 note 4; claude plugin test 219 pass; go test core/role core/shipped core/lane ok. Checked: input (emphasis, case, list markers, mid-line 'blocker:' stays a note); no concurrency/permission surface (pure parsing)."
 review-summary: "none"
-review-gaps: |-
-  note: back-count zaehlt nur Rueckgaben derselben Lane in Folge (core/move/move.go recordBack) - ein Ticket, das abwechselnd von critique und testing zurueckkommt, erreicht nie count 3 und die Schleifenbremse in 20-in-progress.md greift nicht; Klasse: Bremse ueber zwei Schleifen-Lanes; Fix: zusaetzlich die Lane-Rueckgaben seit der letzten Personen-Rueckgabe zaehlen, oder das Verhalten im in-progress-Prompt als bekannte Grenze nennen
-  note: der Branch traegt die 16 Commits von TW5FE2 (c69471d0..4fdef044), die nicht auf master sind - ein PR fuer DF0YD6 bringt TW5FE2 mit; erst TW5FE2 mergen oder beide bewusst in einem PR
-  note: ein Personen-Rueckweg aus einer Schleifen-Lane per `! jaira move` in einer Claude-Sitzung hat kein Terminal und wird als lane gezaehlt (internal/cli/flow.go atATerminal) - im Code dokumentiert, betrifft nur Rueckwege aus critique/optimize/testing/review
-  note: das Cockpit erkennt Blocker nur an einer Zeile, die mit blocker: beginnt (board.ts BLOCKER); eine formatierte Marke wie **blocker:** wird als Note gelistet und bietet kein Explain - der Review-Prompt verlangt die nackte Form, daher nur ein Rand
+review-gaps: "none - two regexes widened, no new code path"
 test-verdict: "pass: 058e8d2f changes the show --help text and one release-note line; go build ok, show --help prints the new sentence, go test internal/cli Brief ok, release note still one line per change"
 hunt-verdict: "pass: follow-up hunt since c4e1fe34 at 058e8d2f, 0 findings"
 round: 13
