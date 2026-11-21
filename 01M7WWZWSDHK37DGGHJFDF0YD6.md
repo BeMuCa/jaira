@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:38:36Z
+updated-at: 2026-11-21T08:38:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
@@ -144,3 +144,4 @@ back-count: 1
 - **2026-11-21 08:28 · Alexander Sacharov** — review: blocker - DoD 7: 'bughunt on HEAD' in the Explain status line reads the newest 'bughunt: done at' note, but the Explain chat only gets show --brief with the 4 newest notes and is told not to read the ticket again; on N71NVG/K6BGB0/V38STG/X3A8RZ none is there, and HEAD 9d2e0f59 (upstream merge) != hunt 553b37f3 anyway -> red cross on a clean ticket. Fix the class: brief carries the newest hunt line as its own field; 'on HEAD' also holds when git diff <hunt> HEAD touches none of the hunted files.
 - **2026-11-21 08:37 · Alexander Sacharov** — round 5 (review blocker DoD 7): class = a status the Explain chat had to reconstruct from notes it is not given. Fix in the binary: show --brief carries bughunt {at, on_head}; on_head = no non-merge commit on the branch's first-parent line since the hunt and no uncommitted change touches the hunt's 'files:' list (none listed: all code). Acceptance rule: a merge from master does not count - it brings work reviewed elsewhere; its conflict resolution is not checked either. Known limit: an untracked file the hunt read and that was edited later is not seen (git diff HEAD ignores untracked). Review note 2 (PTY harness) closed with a sentence in 20-in-progress.md; note 3 (stop-after-fix 'True') closed in Decode; note 4 is a known limit: board.ts explainable falls back to review-gaps for an earlier-round verdict without a copy, which is exactly the BLK789 case (blocker of an older review on a ticket from before the copy) and must keep its Explain; optimize writing a 'blocker:' line would be needed to mislead it. decode_once_test.go mirror decoder now decodes the DF0YD6 fields (the ticket file carries them since the branch build wrote them).
 - **2026-11-21 08:38 · Alexander Sacharov** — critique round 5: none - read 190a55ec. Let stand: 'on HEAD' by HEAD equality alone would be simpler but turns red on every master merge (the review's own example); ChangedSince sits in core/gitrepo beside Diff/WorktreeDiff and reuses codeOnly; the git call runs only for --brief, which only the Explain/Discuss chats ask for, never list/show --json.
+- **2026-11-21 08:38 · Alexander Sacharov** — testing round 5: bughunt running over the diff since 553b37f3 at 190a55ec.
