@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:23:00Z
+updated-at: 2026-11-21T08:23:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-31394
 claimed-at: 2026-11-21T08:01:32Z
@@ -34,7 +34,11 @@ outcome-why: "bughunt 08:13: a diverged early copy ended the loop before a later
 outcome-resolves: "head is the copy every other copy is an ancestor of, whatever order for-each-ref lists them in"
 review-summary: "Adds the new role /jaira-role-signoff (core/role/builtin/jaira-role-signoff/SKILL.md): it reads tickets in signoff fresh, finds the ticket's branch by its handle as a name segment and takes the copy every other copy descends from (diverged copies -> unknown), builds a status line bound to that head commit (DoD x/y, newest CI run of that commit, bughunt note naming that sha, blockers, review verdict, noted returns), sorts every open note into blocker/small edge/known limit/not this ticket, and gives one recommendation by five return rules (after two noted 'Given back from signoff:' returns small edges go into a ready follow-up ticket). It writes nothing; the accept/give-back lines are for the person. The teamlead now re-reads lanes and open PRs before listing what waits and reports signoff/human tickets in that shape; worker, dispatcher and jaira-role-pr run the project's CI gates locally before every push. Role registered in role_test.go, shipped.sha256 regenerated, README and how-to table rows, release note TWRAP8.md with three one-line entries."
 round: 10
-review-gaps: "optimize 21.11. round 2: loop is four lines, shorter than the one it replaced; nothing to remove."
+review-gaps: |-
+  note: SKILL.md:83 says a result for another commit is ?, but the bug-hunt check (line 97) marks an older sha as a cross - two answers for the same case
+  note: the ready follow-up line (SKILL.md:169) has no --assignee; per the board rules a ticket without one cannot leave the backlog, so the person has to add it
+  note: teamlead's status-line list (DoD, tests, hunt, blockers) is shorter than the signoff role's (also review verdict and returns); harmless since it defers to the role, but the two can drift
+  note: the worktree holds untracked .jaira/milestones/*.md that do not belong to this ticket - do not commit them with it
 test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at 8cdb3a0d; DoD 1-4 verified in the tree; signoff keys checked against the live jaira show --json (notes key absent, rc=5); head lookup run on a scratch repo: none/one/diverged/merge listed later/equal copies/local behind remote/twrap8x - all as the text says. The role writes nothing, so no concurrent-writer case."
 hunt-verdict: "clean: diff hunt at 8cdb3a0d (HEAD), 0 findings; the 08:13 finding fixed in 8cdb3a0d"
 question: ""
