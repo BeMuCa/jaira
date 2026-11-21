@@ -462,7 +462,10 @@ turn:
 jaira-dispatcher/scripts/close-tab.sh --parent <session> <ticket id>
 ```
 
-It closes the tab only when the ticket sits in a person's lane or in done, has
+In done it closes the tab; in signoff or another person's lane it keeps it
+while the prompt cache is warm (`kept <ticket>: cache warm until HH:MM`), and
+`reap.sh` closes it once that window is over or the ticket is done. It closes
+or parks the tab only when the ticket sits in a person's lane or in done, has
 no open question and the worktree holds nothing `uncommitted.sh` counts — it
 lets through only new or changed ticket and milestone files under `.jaira/`, so
 a changed lane, tag or logbook file keeps the tab; otherwise it prints

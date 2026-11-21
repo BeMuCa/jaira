@@ -1,6 +1,17 @@
 // Every text the cockpit shows a person, in English whatever language the
 // person speaks with Claude: one set of words, the same on every machine.
 
+import { oneLine } from './board.ts'
+
+// A text a person typed, as part of one line: whitespace collapsed (board.ts
+// oneLine), cut at max characters with an ellipsis. Counted in code points:
+// a cut by UTF-16 index splits an emoji and leaves a lone surrogate in the
+// prompt this session is handed.
+function inLine(text: string, max: number): string {
+  const chars = Array.from(oneLine(text))
+  return chars.length <= max ? chars.join('') : `${chars.slice(0, max - 1).join('').trimEnd()}…`
+}
+
 export const t = {
   waiting: 'Waiting for you',
   accept: 'Accept',
@@ -32,6 +43,13 @@ export const t = {
   accepted: (id: string, lane: string) => `${id} accepted: ${lane}`,
   returnedTo: (id: string, who: 'old' | 'new' | 'none') =>
     who === 'none' ? `${id} back in in-progress; no worker started (the ticket's note says why)` : `${id} given back to ${who === 'old' ? 'the worker that carried it' : 'a new worker'}`,
+  // The one line Accept and Give back hand this session, the teamlead's,
+  // after a move that went through: what happened, and what already runs.
+  toSessionAccepted: (id: string, from: string, to: string, next: string) =>
+    `jaira-cockpit: the person accepted ${id} in the cockpit (${from} -> ${to})${next ? `; ${inLine(next, 200)}` : ''}`,
+  toSessionGivenBack: (id: string, from: string, who: 'old' | 'new' | 'none', reason: string) =>
+    `jaira-cockpit: the person gave ${id} back in the cockpit (${from} -> in-progress), ${who === 'old' ? 'handed to the worker that carried it' : who === 'new' ? 'a new worker started' : "no worker started (the ticket's note says why)"}: ${inLine(reason, 120)}`,
+  afterAcceptFailed: (id: string) => `the next step after ${id} failed, see the cockpit`,
   failed: (what: string) => `${what} failed`,
   afterAccept: (id: string) => `Next step after ${id}`,
   staysDone: (id: string) => `${id} stays in done; start the next step by hand.`,

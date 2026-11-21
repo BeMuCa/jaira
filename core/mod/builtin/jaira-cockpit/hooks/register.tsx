@@ -611,7 +611,11 @@ async function accept($: EngineInterface, w: Waiting, after?: (dir: string) => P
     // refused or failed Accept writes nothing and creates no follow-up.
     if (after !== undefined) await after(dir)
     await say($, t.accepted(w.id, w.acceptTo))
-    await afterAccept($, w.id, w.acceptTo)
+    const next = await afterAccept($, w.id, w.acceptTo)
+    // One line into this session, the teamlead's, once the press has done
+    // all it does: it goes on from there — logbook, the next worker — without
+    // the person typing it, and never starts the pull request Accept started.
+    void $.prompt.submit({ text: t.toSessionAccepted(w.id, w.lane, w.acceptTo, next) })
   } else await fail($, `${t.accept} ${w.id}`, done.why)
   await refreshBoard($)
 }
@@ -727,17 +731,25 @@ async function decideStep($: EngineInterface, b: { dir: string; repo: string }, 
 // nothing to its "accepted" but why none was opened, where there is a reason. A step that cannot run
 // starts nothing and says why in the message pane; the ticket stays in done,
 // where the press put it: accepted is accepted, and what follows is the
-// person's to start by hand then.
-async function afterAccept($: EngineInterface, id: string, terminal: string): Promise<void> {
-  if (!board) return
+// person's to start by hand then. It answers what it said, for the line
+// Accept hands this session; '' where it said nothing.
+async function afterAccept($: EngineInterface, id: string, terminal: string): Promise<string> {
+  if (!board) return ''
   const b = board
   const trees = await run($, ['git', 'worktree', 'list', '--porcelain'], b.dir)
   const decided = await decideStep($, b, id, terminal, trees?.exitCode === 0 ? trees.stdout : '')
-  const stuck = (why: string) => fail($, t.afterAccept(id), `${why}\n${t.staysDone(id)}`)
+  const stuck = async (why: string) => {
+    await fail($, t.afterAccept(id), `${why}\n${t.staysDone(id)}`)
+    return t.afterAcceptFailed(id)
+  }
+  const said = async (text: string) => {
+    await say($, text)
+    return text
+  }
   if (typeof decided === 'string') return stuck(decided)
   const { step, branch, hint, land } = decided
   // No pull request to open: only why not, where there is a reason.
-  if (step !== 'pr' || branch === undefined) return hint ? say($, t.acceptedNoPr(id, hint)) : undefined
+  if (step !== 'pr' || branch === undefined) return hint ? said(t.acceptedNoPr(id, hint)) : ''
   const bin = await herdr($)
   const script = await spawnScript($)
   if (bin === undefined || script === undefined) return stuck(land ? t.landNeedsHerdr(branch) : t.prNeedsHerdr(branch))
@@ -751,7 +763,7 @@ async function afterAccept($: EngineInterface, id: string, terminal: string): Pr
   }
   const r = await run($, [...script, '--no-worktree', id.toLowerCase(), id, 'pr', wt], wt, 120_000)
   if (r?.exitCode !== 0) return stuck(`spawn.sh: ${output(r).slice(-160)}`)
-  return say($, land ? t.landStarted(id, branch) : t.prStarted(id, branch))
+  return said(land ? t.landStarted(id, branch) : t.prStarted(id, branch))
 }
 
 // origin's default branch as a remote-tracking name: origin/HEAD where it
@@ -1184,6 +1196,9 @@ async function giveBack($: EngineInterface, id: string, lane: string, given: str
     const to = who === 'old' ? 'the old worker' : who === 'new' ? 'a new worker' : 'nobody (no worker started)'
     await jaira($, dir, ['note', id, `cockpit: given back to ${to} - ${why}`])
     await say($, t.returnedTo(id, who))
+    // One line into this session, the teamlead's: the work is back and who
+    // carries it now, so it starts no second worker beside this one.
+    void $.prompt.submit({ text: t.toSessionGivenBack(id, lane, who, reason) })
     await refreshBoard($)
   }
   const bin = await herdr($)
