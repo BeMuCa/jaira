@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:46:32Z
+updated-at: 2026-11-21T08:46:36Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -38,12 +38,9 @@ outcome-resolves: "XB97NJ"
 review-summary: "Ein Board kann jetzt in .jaira/pr 'none' sagen (neben person/agent). core/board/arrival.go liest die Datei streng (nur exakt agent/none zaehlt; BOM, CRLF, Kommentare ignoriert; alles andere = person) und haengt bei agent/none einen Absatz 'How work arrives on this board' an den jaira-Block in CLAUDE.md/AGENTS.md; ohne Datei bleibt der Block byte-gleich, validate meldet Drift bei Dateiwechsel. 'jaira roles list' liefert pr=none, pr_when=done und nennt ein Wort, das nicht griff. 'jaira roles pr-gate' laesst unter none einen Zweig durch, wenn .jaira/pr auf der Basis none sagt, jedes genannte Ticket in done/logbook ist und jeder Commit ein Ticket im Betreff nennt (Merges nur, wenn ihr Baum exakt gits eigener Merge der Eltern ist - core/gitrepo/named.go). jaira-role-pr bekommt 'Land it': Gate, Basis mergen, Gate erneut, fast-forward push, nie --force. reap.sh zaehlt unter none einen Zweig als gemerged, sobald der Default-Branch des Ziel-Remotes (origin oder Fork-Parent) seine Spitze enthaelt. Dispatcher/Teamlead erwaehnen none; drei Release-Zeilen."
 round: 15
 review-gaps: |-
-  note: unter none lehnt das Gate einen Revert-Commit ab (Betreff 'Revert "fix(X)..."' passt nicht auf type(ID):) - faellt sicher zu, steht aber nirgends in jaira-role-pr; der Agent muss den Betreff umschreiben
-  note: UnnamedCommits/isPlainMerge in core/gitrepo/named.go haben keinen eigenen Test im Paket, nur ueber internal/cli/prgate_test.go
-  note: reap.sh faellt still auf den PR-Pfad zurueck, wenn 'jaira roles list' scheitert; auf einem none-Board steht dann 'no merged pull request' statt der Ursache
-  note: worktree_diff enthaelt nur unversionierte .jaira/milestones/*.md, die nichts mit diesem Ticket zu tun haben - nicht mit in die Ticket-Commits nehmen
-  optimize Runde 8: nichts zu entfernen.
-  optimize Runde 10: Revert-Code restlos entfernt (revertSubject, revertedCommit, revertsBranchWork); nichts weiter.
+  note: cockpit Accept (core/mod/builtin/jaira-cockpit/hooks/register.tsx afterAccept) liest .jaira/pr nicht - unter none startet es trotzdem die pr-Rolle (die dann korrekt landet), meldet aber "opening the pull request" (texts.ts:21), und ohne GitHub/GitLab-origin bricht es mit noForge ab, obwohl Landen keinen Forge braucht
+  note: ein Commit, der ein schon im Logbook abgelegtes Ticket nennt (fix(<alteID>): ...), passiert das none-Tor ohne neue Annahme - bekannte Grenze der Betreff-Regel, im Ticket bewusst so entschieden (Runde 10)
+  note: reap.sh land_remote faellt auf origin zurueck, wenn gh nicht antwortet; in einem Fork-Klon wartet das Ticket dann dauerhaft mit "has not landed on origin's default branch" - sicher (nichts geloescht), aber die Ursache ist falsch benannt
 test-verdict: "pass (round 10): go vet + go test -race ./... RC=0 at 221fbba5; DoD 8 proof refreshed (TestPRGateOnANoneBoardRefusesGitsRevertSubject: bare Revert refused naming fix(<ID>): revert <what>, reworded passes); gitrepo UnnamedCommits/isPlainMerge tests; reap names a failing or silent roles list (reap_test); gate writes nothing, nothing to race"
 hunt-verdict: "pass (round 12 at 221fbba5): 0 findings"
 claimed-by: DESKTOP-RFTCH11-2127254
