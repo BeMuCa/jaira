@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-21T08:18:36Z
+updated-at: 2026-11-21T08:19:10Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -92,3 +92,4 @@ review-check: "1. cd into the worktree jaira-sdbct5 and run: go build -o /tmp/ja
 - **2026-11-21 08:07 · Alexander Sacharov** — round after signoff return (21.11.): all three review-gaps notes closed. 1) commit lines in jaira-worker SKILL.md:103 and jaira-role-lane SKILL.md:86/288 now say to leave the ticket file out on an unshared board; grep 'git add.*.jaira/tickets' finds no further live site (rest: .planning, NOTES.md history, testdata). 2) caveat reworded in block and jaira role: no longer 'this point and the next hold on a shared board only', instead 'the next point holds there all the more; only its sentences about the ticket file fall away'. 3) test renamed TestAgentNoteNamesProofAndTheUnsharedBoardCaveat, asserts the new sentence. Manifest: 3 hashes appended. Release note line 2 names jaira-worker and jaira-role-lane.
 - **2026-11-21 08:10 · Alexander Sacharov** — bughunt: done at d71e5e86 - 0 findings in 11 modules, follow-up hunt (diff since bb02c815; jaira-worker and jaira-role-lane SKILL.md new, read at the changed sections); concurrency, error paths, input, permissions checked; ran: go test ./... exit 0, sha256sum of the 3 changed roles matches shipped.sha256:580-582, .claude/skills/jaira = core/role/jaira byte-equal, git add <code> <ignored ticket> on an exclude'd .jaira exits 1 and stages the code - as the new lines say; files: .claude/skills/jaira/SKILL.md .jaira/tags AGENTS.md CLAUDE.md core/board/announce.go core/board/announce_test.go core/release/notes/SDBCT5.md core/role/builtin/jaira-role-lane/SKILL.md core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/role/jaira/SKILL.md core/shipped/shipped.sha256 docs/AGENTS.md
 - **2026-11-21 08:18 · Alexander Sacharov** — review (fresh, 21.11.): pass. Read the whole branch diff vs b2349aa1, checked manifest hashes, mirror byte-equality, CLAUDE.md/AGENTS.md block equality, grep for live commit lines without the caveat; go test core/board core/role core/shipped internal/cli green. Two cosmetic notes in review-gaps (stale test name in a doc comment; release note line 2 omits jaira-role-pr).
+- **2026-11-21 08:19 · Alexander Sacharov** — after review (pass): both review-gaps notes closed in the same round - announce_test.go:232 doc comment names the renamed test; release note line 2 names jaira-role-pr too. Text-only, go test ./core/board green; not re-reviewed.
