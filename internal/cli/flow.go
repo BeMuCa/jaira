@@ -745,6 +745,16 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			payload["max_rounds"] = l.MaxRounds
 			payload["rounds_left"] = left
 		}
+		// Only for a lane that declares its verdict words: the words
+		// review-verdict must start with, and which way each sends the
+		// ticket. The move reads the same lists, so what the lane is told
+		// here is what it is held to.
+		if l.DeclaresVerdicts() {
+			payload["verdicts"] = map[string][]string{
+				"accept":    l.VerdictAccept,
+				"send_back": l.VerdictSendBack,
+			}
+		}
 		// The uncommitted half rides in a key of its own, and only when there
 		// is one: a key that is always there is read as a field, and an empty
 		// one beside every payload trains the reader to skip it.
