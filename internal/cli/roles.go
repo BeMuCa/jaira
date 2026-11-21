@@ -138,7 +138,8 @@ Merging and approving stay a person's either way.`,
 }
 
 func newRolesPRGateCmd() *cobra.Command {
-	return &cobra.Command{
+	var land bool
+	cmd := &cobra.Command{
 		Use:   "pr-gate <base>",
 		Short: "Say whether an agent may open this branch's pull request",
 		Long: `Says whether an agent may open the pull request of the checked-out branch
@@ -167,7 +168,12 @@ only when it carries content of its own: nobody reads the branch after the
 gate, so a commit no ticket owns would land unseen. --json carries may_open,
 pr, pr_when and tickets; a refusal is the usual error, its reason
 pr_person, no_ticket, no_signoff_lane, unreadable, pending or, under none,
-unnamed.`,
+unnamed.
+
+--land asks the landing question alone: exit 0 only where <base> itself
+says none. jaira-role-pr lands only behind it, so a branch that commits
+.jaira/pr none over a base saying agent or person never lands on the agent
+rules — reason not_none.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
@@ -188,6 +194,13 @@ unnamed.`,
 			// otherwise open its own gate. A change to either takes effect
 			// once it has been merged into the base.
 			pr := settings.PRIn(repo.FileAt(args[0], settings.BoardPRPath(".")))
+			// Landing is decided by the base alone: what this checkout's
+			// .jaira/pr says — and roles list reports — may be the branch's
+			// own word for itself.
+			if land && pr != settings.PRNone {
+				return fail(ExitValidation, "not_none",
+					"pr-gate --land: .jaira/pr in %s says %s, not none — nothing lands without a pull request here; push the branch and stop", args[0], pr)
+			}
 			if pr == settings.PRPerson {
 				// This checkout saying otherwise is a file not yet committed
 				// on the base, not a board that wants a person: say that, and
@@ -304,6 +317,8 @@ unnamed.`,
 			return nil
 		},
 	}
+	cmd.Flags().BoolVar(&land, "land", false, "exit 0 only where <base> says none: the branch may land without a pull request")
+	return cmd
 }
 
 // filedWhere says where a handle that is not on the board lives: "logbook",

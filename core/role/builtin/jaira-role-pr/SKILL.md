@@ -290,15 +290,19 @@ Every ticket on the branch is in done and filed away by the step above.
 `<remote>` and `<branch>` are the ones you counted the handles against:
 
 ```bash
-jaira roles pr-gate <remote>/<branch>              # exit 0, or it does not land
+jaira roles pr-gate --land <remote>/<branch>       # exit 0, or it does not land
 git fetch <remote> <branch>
 git merge --no-edit <remote>/<branch>              # bring the branch up to date
-jaira roles pr-gate <remote>/<branch>              # again: the merge moved the base
+jaira roles pr-gate --land <remote>/<branch>       # again: the merge moved the base
 git push <remote> HEAD:<branch>                    # a fast-forward of the default branch
 ```
 
 The gate reads `.jaira/pr` as `<remote>/<branch>` holds it, like the `agent`
 gate does: a branch cannot switch its own board to `none` and land itself.
+`--land` is what makes that hold here: `pr` from `jaira roles list` is this
+checkout's word and may be the branch's own, so without `--land` a base
+saying `agent` would pass on the agent rules. Exit 3 `not_none`: the base
+takes pull requests — go back to **Does it already have one open**.
 Under `none` it also refuses a branch with a commit that names no ticket —
 a merge too, when it carries content of its own, such as a conflict resolution
 — because no pull request shows it to anyone first. Exit 3 names those commits; say

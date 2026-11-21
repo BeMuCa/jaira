@@ -491,3 +491,40 @@ func TestAnUncommittedPRFileIsNamedAsSuch(t *testing.T) {
 		t.Fatalf("gate, .jaira/pr none committed on master: %v\n%s", err, out)
 	}
 }
+
+// Landing is the base's decision alone: a branch that commits .jaira/pr none
+// over a base saying agent passes the plain gate on the agent rules, so
+// --land refuses it with not_none — and lets only a base saying none through
+// (bughunt round 15).
+func TestPRGateLandOnlyWhereTheBaseSaysNone(t *testing.T) {
+	dir, ticketIn, commit := prGateFixture(t)
+	setPR(t, dir, "agent")
+	done := ticketIn("done")
+	commit("feat(" + done + "): accepted")
+	path := settings.BoardPRPath(dir)
+	if err := os.WriteFile(path, []byte("none\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := exec.Command("git", "-C", dir, "add", "-f", path).CombinedOutput(); err != nil {
+		t.Fatalf("git add: %v\n%s", err, out)
+	}
+	commit("chore(" + done + "): the branch says none itself")
+	commit("chore: names no ticket")
+	if _, err := runCLI(t, dir, "roles", "pr-gate", "master"); err != nil {
+		t.Fatalf("the plain gate on agent rules should pass here (that is the hole --land closes): %v", err)
+	}
+	_, err := runCLI(t, dir, "roles", "pr-gate", "--land", "master")
+	if exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "says agent, not none") {
+		t.Fatalf("--land over a base saying agent: exit %d, %v", exitCode(err), err)
+	}
+
+	dir, ticketIn, commit = prGateFixture(t)
+	commit("feat(" + ticketIn("done") + "): accepted")
+	if _, err := runCLI(t, dir, "roles", "pr-gate", "--land", "master"); exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "says person, not none") {
+		t.Fatalf("--land over a base with no .jaira/pr: exit %d, %v", exitCode(err), err)
+	}
+	setPR(t, dir, "none")
+	if out, err := runCLI(t, dir, "roles", "pr-gate", "--land", "master"); err != nil {
+		t.Fatalf("--land over a base saying none: %v\n%s", err, out)
+	}
+}
