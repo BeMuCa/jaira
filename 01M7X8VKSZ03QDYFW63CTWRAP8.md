@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T09:07:23Z
+updated-at: 2026-11-21T09:07:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2485785
 claimed-at: 2026-11-21T08:57:23Z
@@ -40,8 +40,8 @@ review-gaps: |-
 test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at ec3858d3; DoD 1-4 verified in the tree; lane discovery run on this board (signoff/done/in-progress), a fresh jaira init board, and a scratch board with signoff renamed to abnahme (found, list --lane abnahme rc=0). Roles write nothing - no concurrent-writer case."
 hunt-verdict: "clean: diff hunt at ec3858d3 (HEAD), 0 findings"
 question: ""
-review-verdict: "The diff meets all four DoD items; every command the new role tells the person to run exists with the flags it names (jaira list --lane/--board, show --json keys status/handle/dod_items.done/review.*, create --follows/--assignee, gh run list --commit, glab ci list --sha), the 'Given back from signoff:' prefix matches what the cockpit writes, and go test ./core/role ./core/shipped pass with -count=1. No blocker; three cosmetic notes."
-review-round: 14
+review-verdict: "All four DoD items are met by the diff. Every CLI field and flag the new role relies on was checked against the binary built from this branch (boards/lanes --json keys, show --json review.*/dod_items/handle/board, list --lane, gh run list --commit/--workflow, glab ci list --sha); lane discovery resolves to signoff/done/in-progress on this board. go test ./core/role ./core/shipped green, last bughunt note names HEAD ec3858d3. No blocker; two notes."
+review-round: 15
 review-check: "1. cd /home/alex/projects/.worktrees/jaira-twrap8  2. go test -count=1 ./core/role/ ./core/shipped/ - both print ok (about 90 s)  3. open core/role/builtin/jaira-role-signoff/SKILL.md - it says 'You change nothing', has status line, table with four marks and return rules 0-5  4. in a Claude session in this repo type /jaira-role-signoff with a ticket id that sits in signoff - you get one status line, one table, one bold accept or give back, and two paste-ready lines; nothing on the board changed (git status shows no new ticket change)  5. grep -n 'Before you push' core/role/builtin/jaira-worker/SKILL.md - the pre-push gate section is there"
 ---
 
