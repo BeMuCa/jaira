@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:08:10Z
+updated-at: 2026-11-21T08:08:26Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -35,7 +35,9 @@ question: ""
 outcome-what: "Board haelt in .jaira/pr fest, wie Arbeit ankommt (person/agent/none); Rollen, pr-gate, reap und der CLAUDE.md-Block richten sich danach; Runde 6: BOM in allen einzeiligen Board-Dateien, roles list nennt ein nicht genommenes Wort, reap misst am Remote, auf das gelandet wird"
 outcome-why: "Ein Solo-Projekt ohne Pull Requests blieb an einem PR haengen, den niemand oeffnet"
 outcome-resolves: "XB97NJ"
-review-summary: "Neuer Wert 'none' fuer .jaira/pr: core/board/arrival.go liest die Datei (nur exakt 'none'/'agent' zaehlt, alles andere bleibt person) und haengt bei none/agent einen Absatz 'How work arrives on this board' an den CLAUDE.md/AGENTS.md-Block - ohne Datei bleibt der Block byte-gleich, jaira validate meldet ihn als veraltet, sobald die Datei wechselt. jaira roles list zeigt none (pr_when dann fest done). jaira roles pr-gate laesst unter none (gelesen vom Basis-Zweig) nur durch, wenn jedes Ticket in done/logbook ist UND jeder Commit in base..HEAD ein Ticket nennt; ein unbenannter Merge zaehlt nur, wenn sein Baum exakt gits eigener Merge der Eltern ist (merge-tree --write-tree) - Konfliktloesungen, -s ours und eingeschmuggelte Dateien halten das Tor. jaira-role-pr bekommt 'Land it': Gate, Basis hereinmergen, Gate erneut, fast-forward push auf den Hauptzweig, nie --force. reap.sh fragt unter none keinen Forge, sondern wartet, bis origins Hauptzweig (origin/HEAD, sonst origin/main|master, haengender origin/HEAD = unset) die Spitze enthaelt und ein Commit dort das Ticket nennt. Teamlead/Dispatcher je ein Satz, Release-Note, shipped.sha256 neu."
+review-summary: |-
+  Neuer Wert 'none' fuer .jaira/pr: core/board/arrival.go liest die Datei (nur exakt 'none'/'agent' zaehlt, alles andere bleibt person) und haengt bei none/agent einen Absatz 'How work arrives on this board' an den CLAUDE.md/AGENTS.md-Block - ohne Datei bleibt der Block byte-gleich, jaira validate meldet ihn als veraltet, sobald die Datei wechselt. jaira roles list zeigt none (pr_when dann fest done). jaira roles pr-gate laesst unter none (gelesen vom Basis-Zweig) nur durch, wenn jedes Ticket in done/logbook ist UND jeder Commit in base..HEAD ein Ticket nennt; ein unbenannter Merge zaehlt nur, wenn sein Baum exakt gits eigener Merge der Eltern ist (merge-tree --write-tree) - Konfliktloesungen, -s ours und eingeschmuggelte Dateien halten das Tor. jaira-role-pr bekommt 'Land it': Gate, Basis hereinmergen, Gate erneut, fast-forward push auf den Hauptzweig, nie --force. reap.sh fragt unter none keinen Forge, sondern wartet, bis origins Hauptzweig (origin/HEAD, sonst origin/main|master, haengender origin/HEAD = unset) die Spitze enthaelt und ein Commit dort das Ticket nennt. Teamlead/Dispatcher je ein Satz, Release-Note, shipped.sha256 neu.
+  Runde 6 (21.11.): board.PRWordIn liest die erste Zeile jeder einzeiligen Board-Datei ohne BOM (pr, pr-when, release, pr-reviewer, chat-model ueber settings.firstLine); settings.PRFor nennt in der Quelle ein nicht genommenes Wort bzw. eine leere Datei; reap.sh unter none misst am Remote, dessen URL <owner/repo> nennt (Fork -> Parent wie jaira-role-pr), und laesst git log --grep die Commits filtern.
 round: 11
 review-gaps: |-
   note: reap.sh misst das Landen nur an origin; jaira-role-pr landet auf <remote> - in einem Fork-Setup (Landen auf upstream) wartet reap dann ewig mit 'has not landed'
