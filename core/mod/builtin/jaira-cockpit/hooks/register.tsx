@@ -556,6 +556,12 @@ async function show($: EngineInterface, title: string, text: string): Promise<vo
   if (!opened.isPlaced) $.ui.toast(`${title}: ${text}`)
 }
 
+// A ticket waiting for a person, this one's or a teammate's.
+async function waitingTicket($: EngineInterface, id: string | null): Promise<Waiting | undefined> {
+  const view = await read($, boardAtom)
+  return [...(view?.waiting ?? []), ...(view?.theirs ?? [])].find(w => w.id === id)
+}
+
 // Whether the band offers Verdict: there is something the row does not say.
 function hasVerdict(w: Waiting): boolean {
   return w.verdict !== '' || w.question !== '' || w.blockers.length + w.notes.length > 0
@@ -567,7 +573,7 @@ async function showVerdict($: EngineInterface, id: string): Promise<void> {
   const opened = await $.ui.open({ id: VERDICT, title: t.verdictOf(id), focus: true, closeOnEscape: true })
   if (opened.isPlaced) return
   const w = (await read($, boardAtom))?.waiting.find(x => x.id === id)
-  if (w !== undefined) $.ui.toast(`${t.verdictOf(id)}: ${w.verdict}`)
+  if (w !== undefined) $.ui.toast(`${t.verdictOf(id)}: ${w.verdict || w.question}`)
 }
 
 async function fail($: EngineInterface, what: string, why: string): Promise<void> {
@@ -1547,7 +1553,7 @@ export const register: Register = (on, options) => {
           <Box key={`row-${w.id}`} flexDirection="column">
             <Box flexDirection="row">
               <Text wrap="truncate-end">
-                <Text bold>{w.id}</Text>{SEP}{w.lane}{SEP}{marks(w, hunts[w.id], Text)}{' '}
+                <Text bold>{w.id}</Text>{SEP}{w.lane}{SEP}{marks(w, hunts[w.id])}{' '}
               </Text>
               {/* Told apart by colour before they are read: the theme's own, so a
                   light terminal reads them too; the focus inverts them as any.
@@ -1728,8 +1734,7 @@ export const register: Register = (on, options) => {
     if (explaining === null) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
     const { id, decided } = explaining
     const x = explanationOf(explaining.text)
-    const view = await read($, boardAtom)
-    const ticket = [...(view?.waiting ?? []), ...(view?.theirs ?? [])].find(w => w.id === id)
+    const ticket = await waitingTicket($, id)
     const open = decided === undefined
     const pick = (o: Option) => {
       void $.ui.close({ id: EXPLANATION })
@@ -1873,8 +1878,7 @@ export const register: Register = (on, options) => {
   on('ui.render', { component: 'Pane', requestId: VERDICT }, async ($, e) => {
     const id = await read($, verdictAtom)
     const { Box, Button, Text } = $.ui.resolve(e)
-    const view = await read($, boardAtom)
-    const w = [...(view?.waiting ?? []), ...(view?.theirs ?? [])].find(x => x.id === id)
+    const w = await waitingTicket($, id)
     if (w === undefined) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
     return (
       <Box flexDirection="column">

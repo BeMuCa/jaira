@@ -1,7 +1,7 @@
 ---
 id: 01M7ZSB3G8TY655YE0AAPDZ444
 title: "Cockpit-Band 'Waiting for you': eine Zeile pro Ticket statt Verdikt und alle Notes"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,13 +24,19 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-21T19:29:13Z
-updated-at: 2026-11-21T20:46:10Z
+updated-at: 2026-11-21T20:48:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2166591
 claimed-at: 2026-11-21T20:34:45Z
 outcome-what: "The cockpit band shows one row per waiting ticket: id, lane, DoD/bughunt marks, blocker and note counts, old-review and question marks; a new Verdict pane holds title, goal, question, verdict and every review finding; the Explain pane opens with title and goal"
 outcome-why: "Three tickets in signoff filled ~10 band lines with clipped verdicts and every review note, unreadable"
 outcome-resolves: PDZ444
+review-summary: none
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
+review-gaps: "folded the two new 'waiting or theirs by id' lookups (Verdict and Explain panes) into waitingTicket() in register.tsx; left the older inline copy in refreshBoard's chat loop (it reads the fresh view, not the atom); left blockersOf/notesOf each splitting the gaps once - per refresh, a handful of lines"
 ---
 
 # Cockpit-Band 'Waiting for you': eine Zeile pro Ticket statt Verdikt und alle Notes
@@ -68,3 +74,5 @@ outcome-resolves: PDZ444
 - **2026-11-21 20:34 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/2274544.sock
 - **2026-11-21 20:35 · Alexander Sacharov** — decisions (settled, no person needed): (1) one row = 'ID · lane · DoD ✓/✗ · bughunt ✓/✗/? · blockers N · notes N' + buttons; question line, 'reviewed in round N' line and note lines leave the band too (DoD 1 says exactly one line) - the row keeps a dim '?' mark when a question is open, the Discuss button stays. (2) Verdict button shows whenever there is a verdict, notes or a question; it opens a pane: title, goal, then lane/round line, question, verdict, then every review finding (blockers first) - nothing lost. (3) Bughunt state comes from 'jaira show <id> --brief --json' (bughunt.state; null = ✗, unknown/skipped = dim ?/–), run in the ticket's own dir (ticketDir) because HuntCoverage reads that checkout; only for the shown tickets, beside the existing show --json. (4) DoD mark from list --json dod_complete; goal added to Waiting from list --json. (5) Explain pane gets title + goal on top via the waiting entry.
 - **2026-11-21 20:45 · Alexander Sacharov** — in-progress: bughunt mark reads 'jaira show <id> --brief --json' per shown ticket in its worktree (one extra jaira call per shown ticket per refresh, max 3 unless expanded). An earlier-round verdict without verdict_gaps counts 0 blockers/0 notes - same rule as before (reviewGaps), the row then shows 'review of round N' in warning colour. Verdict button now shows also for a question alone (human lane) since the question left the row.
+- **2026-11-21 20:46 · Alexander Sacharov** — critique 1: drop the stray Text argument of marks(); showVerdict toast falls back to the question when there is no verdict. Left as is: two jaira show calls per shown ticket (show --json carries the body for explanationNotes, only --brief carries bughunt; --brief keeps 4 notes, so it cannot replace the body read).
+- **2026-11-21 20:47 · Alexander Sacharov** — critique 2: nothing left; the two round-1 findings are fixed (register.tsx marks call, showVerdict toast).
