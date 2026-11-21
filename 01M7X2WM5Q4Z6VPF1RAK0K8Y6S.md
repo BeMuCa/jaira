@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:04:58Z
+updated-at: 2026-11-21T08:07:22Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
@@ -94,3 +94,4 @@ review-check: "1. cd in den Worktree feat/0k8y6s  2. scripts/shipped-history.sh 
 - **2026-11-21 08:00 · Alexander Sacharov** — Given back from signoff: Alex 21.11. alle Funde in dieser Runde schliessen. 1) Die empfohlene Zeile 'scripts/shipped-history.sh > core/shipped/shipped.sha256' kuerzt das Manifest vor dem Lauf: das Skript schreibt selbst (z.B. --write: in Temp-Datei, bei Erfolg mv), Skript-Hilfe, Testmeldung und shipped_test.go-Hinweis nennen diese Form. 2) shipped_test.go:65 l[66:] panict bei kurzer Zeile - saubere Fehlermeldung. merge=union auf GitHub bleibt note bis zwei echte PRs. Diff-Hunt, review, signoff, push.
 - **2026-11-21 08:01 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/4205.sock
 - **2026-11-21 08:04 · Alexander Sacharov** — Runde nach signoff: --write statt Umleitung (Temp-Datei neben dem Manifest, chmod 644, mv; trap raeumt bei Fehler). stdout-Modus bleibt fuer Scratch-Vergleiche und die Tests. Alle Hinweise in core/role, core/lane, core/shipped nennen --write; Logbook-Eintraege bleiben Geschichte. Keine Release-Note: Entwickler-Skript, fuer Nutzer nicht sichtbar.
+- **2026-11-21 08:07 · Alexander Sacharov** — Merge upstream/master (Teamlead-Auftrag): union-Merge des Manifests liess 14+ Duplikate (master hatte Zeilen am Ende angehaengt, dieser Branch dieselben eingesortiert) - genau der Fall, den TestManifestLinesAreWellFormed meldet; Abhilfe --write, nach Ende des Bughunts. Einmaliger Effekt: ab jetzt sortiert jeder Branch mit --write, angehaengte Zeilen von Hand bleiben die Quelle solcher Duplikate. Sonst ist go test ./... gruen.
