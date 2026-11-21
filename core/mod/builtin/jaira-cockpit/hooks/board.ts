@@ -9,9 +9,14 @@ import type { Tab } from './sessions.ts'
 export type Waiting = {
   id: string
   title: string
+  // What the ticket is for, so a pane about it starts with the why.
+  goal: string
   lane: string
   verdict: string
   question: string
+  // Whether every definition-of-done item is ticked; undefined where jaira
+  // did not say (a build before dod_complete).
+  dodComplete?: boolean
   // Where Accept moves it: the ticket's next lane, when that lane is the
   // board's terminal one (signoff -> done); null where the next lane is
   // still work to do (human -> review), so a press never skips a review.
@@ -21,8 +26,9 @@ export type Waiting = {
   // Whether the band offers Explain: the verdict names a reservation, or
   // the review's gaps hold a blocker: line.
   explainable: boolean
-  // The review's other findings, one per line, listed under the row without
-  // a button: notes the person reads, not decisions they must take.
+  // The review's findings, one per line: its blocker lines, and every other
+  // one. The band counts them; the Verdict pane lists them whole.
+  blockers: string[]
   notes: string[]
   // The review's own gaps as written, blockers included: what the Give back
   // pane lists one by one for the person to decide. '' before a review.
@@ -38,7 +44,9 @@ export type Lane = { id: string; agentic: boolean; terminal?: boolean; context: 
 type Ticket = {
   handle: string
   title: string
+  goal?: string
   status: string
+  dod_complete?: boolean
   next_lane?: string
   question?: string
   assignee?: string
@@ -123,14 +131,17 @@ export function snapshotOf(
     into.push({
       id: t.handle,
       title: t.title,
+      goal: (t.goal ?? '').trim(),
       lane: t.status,
       verdict,
       question: oneLine(t.question),
+      ...(typeof t.dod_complete === 'boolean' ? { dodComplete: t.dod_complete } : {}),
       acceptTo: next?.terminal === true ? next.id : null,
       assignee,
       explainable: explainable(verdict, reviewGaps(t)),
       // Before a review there are no review notes; after a later round's
       // optimize lane rewrote review-gaps they are in the copy jaira kept.
+      blockers: verdict === '' ? [] : blockersOf(reviewGaps(t)),
       notes: verdict === '' ? [] : notesOf(reviewGaps(t)),
       gaps: verdict === '' ? '' : reviewGaps(t) ?? '',
       ...(sameRound(t) ? {} : { reviewedIn: t.review_round }),
@@ -201,7 +212,11 @@ function findings(gaps: string | undefined): string[] {
   return (gaps ?? '').split(/\r?\n/).map(l => oneLine(l.replace(MARKER, ''))).filter(l => l !== '' && !NO_GAP.test(l))
 }
 
-// The findings that are no blocker: what the band lists under the row.
+// The findings that are a blocker, and those that are not.
+function blockersOf(gaps: string | undefined): string[] {
+  return findings(gaps).filter(l => BLOCKER.test(l))
+}
+
 function notesOf(gaps: string | undefined): string[] {
   return findings(gaps).filter(l => !BLOCKER.test(l))
 }
@@ -232,7 +247,7 @@ function sameRound(t: Ticket): boolean {
 // ticket the teamlead moved on past a refusing review must not reach the
 // person silent.
 function explainable(verdict: string, gaps: string | undefined): boolean {
-  return hasReservation(verdict) || (verdict !== '' && findings(gaps).some(l => BLOCKER.test(l)))
+  return hasReservation(verdict) || (verdict !== '' && blockersOf(gaps).length > 0)
 }
 
 // A jaira older than the board it reads says so on a line of its own before
@@ -761,4 +776,19 @@ export function standOf(showJson: string): { status?: string; board: string } {
 export function followTitle(text: string): string {
   const bare = text.replace(PREFIXED, '').trim().replace(/^[*_`]*\s*pre-?existing\s*[*_`]*\s*:/i, '').trim() || text
   return bare.length <= 72 ? bare : `${bare.slice(0, 71).trimEnd()}…`
+}
+
+// The newest bug hunt's state, read off `jaira show <id> --brief --json`:
+// ok, fail, unknown or skipped as jaira worked it out against the checkout
+// it ran in; fail where no hunt finished (bughunt null); undefined where the
+// brief has no bughunt key — a jaira older than the hunt state — or did not
+// parse, so the band says it does not know rather than guess.
+export type Hunt = 'ok' | 'fail' | 'unknown' | 'skipped'
+const HUNTS = new Set<string>(['ok', 'fail', 'unknown', 'skipped'])
+export function huntOf(briefJson: string): Hunt | undefined {
+  const brief = parse<{ bughunt?: { state?: string } | null }>(withoutWarnings(briefJson))
+  if (brief === undefined || !('bughunt' in brief)) return undefined
+  if (brief.bughunt === null) return 'fail'
+  const state = brief.bughunt?.state ?? ''
+  return HUNTS.has(state) ? (state as Hunt) : undefined
 }

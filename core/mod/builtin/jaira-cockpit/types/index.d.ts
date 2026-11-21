@@ -50,6 +50,11 @@ declare module 'claude-code' {
       // the ticket the own-answer pane asks about.
       explaining: { id: string; text: string; decided?: string } | null
       answering: string | null
+      // The ticket the Verdict pane shows: its goal, verdict and every note.
+      verdictTicket: string | null
+      // The newest bug hunt of each ticket the band shows, as jaira's brief
+      // says it stands: ok, fail, unknown or skipped.
+      hunts: Record<string, 'ok' | 'fail' | 'unknown' | 'skipped'>
       // The explanation an Explain chat wrote onto each ticket the band shows,
       // and the decision that answered it, when one did.
       explained: Record<string, { text: string; decided?: string }>

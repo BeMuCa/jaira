@@ -70,6 +70,17 @@ export const t = {
   noRoom: 'No room for a pane here: widen the terminal and press Give back again.',
   readExplanation: 'Read explanation',
   reviewedIn: (round: number) => `review of round ${round}, changed since`,
+  // The band's row: one mark per check, counts for the review's findings.
+  markDod: 'DoD',
+  markHunt: 'bughunt',
+  markBlockers: (n: number) => `${n} blocker${n === 1 ? '' : 's'}`,
+  markNotes: (n: number) => `${n} note${n === 1 ? '' : 's'}`,
+  markOldReview: (round: number) => `review of round ${round}`,
+  // The Verdict pane: what the ticket is for, then the review whole.
+  goal: 'Goal:',
+  verdictHeading: 'Verdict:',
+  notesHeading: 'Review notes:',
+  noVerdict: 'not reviewed yet',
   explanationOf: (id: string) => `Explanation of ${id}`,
   decided: 'decided',
   decidedAs: 'Decided:',
