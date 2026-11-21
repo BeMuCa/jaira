@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:22:34Z
+updated-at: 2026-11-21T09:22:43Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
@@ -177,3 +177,4 @@ back-count: 1
 - **2026-11-21 09:18 · Alexander Sacharov** — testing round 11 passed (hunt c4e1fe34 clean); pushed c4e1fe34. Moved to review, a fresh agent runs it via run-lane.sh.
 - **2026-11-21 09:21 · Alexander Sacharov** — review round 11 (fresh): no blocker; 2 notes (mtime minute granularity of on_head, skipped-without-hunt object vs 'null' in release note). go tests + plugin test 218 pass, on_head probed by hand.
 - **2026-11-21 09:22 · Alexander Sacharov** — round 12 (review round 11, small edge 2): --brief help text and the release note now say that a stop-after-fix ticket without a finished hunt gets {at: '', skipped: true}, not null. Review note 1 stays a known limit: the hunt note carries only the minute it was written, so a file changed during the hunt after it was read reads as covered; a start time in the closing-note format is a change to jaira-role-bughunt, not this ticket's scope.
+- **2026-11-21 09:22 · Alexander Sacharov** — testing round 12: bughunt running over the diff since c4e1fe34 at 058e8d2f (help text + release note only).
