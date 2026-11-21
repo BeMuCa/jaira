@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:31:19Z
+updated-at: 2026-11-21T08:31:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-31394
 claimed-at: 2026-11-21T08:01:32Z
@@ -43,7 +43,12 @@ hunt-verdict: "clean: diff hunt at 558c8205 (HEAD), 0 findings"
 question: ""
 review-verdict: "All four DoD items are met by the diff. No blocker: every command and flag the role prescribes exists (jaira list --lane/--board, gh run list --commit/--workflow, glab ci list --sha, jaira create --assignee), the JSON keys it names match jaira show --json, the head lookup on this repo returns 558c8205 = HEAD, and the last bughunt note names that commit. go test ./core/role ./core/shipped green. Uncommitted .jaira/milestones/ files in the worktree are not this ticket's."
 review-round: 11
-review-check: "1. jaira update --roles (with a binary built from this branch: go build -o /tmp/jaira ./cmd/jaira, then /tmp/jaira update --roles)  2. in Claude Code type /jaira-role-signoff  3. you should see one block per ticket in signoff: a status line with checkmarks/crosses/?, a table with one mark per note (red/yellow/white/blue), one bold recommendation, and two ready lines (move --to done --force, and note + move --to in-progress)  4. confirm nothing changed: git status shows no ticket file modified by the role  5. go test ./core/role ./core/shipped -count=1 -> both ok"
+review-check: |-
+  1. cd into the feat/twrap8 checkout and run: go test ./core/role ./core/shipped - both print ok
+  2. go run ./cmd/jaira roles install (or jaira update --roles from this build) - ~/.claude/skills/jaira-role-signoff/SKILL.md appears
+  3. In Claude Code on this repo type /jaira-role-signoff TWRAP8 - you see one status line with DoD 4/4, tests ? (branch not pushed yet, no CI run for 558c8205), bug hunt ✅, review verdict, returns 2 noted
+  4. Below it: a table with one row per review note, each marked 🔴/🟡/⚪/🔵, then one bold recommendation and two lines starting jaira move TWRAP8 --to done --force and jaira note TWRAP8 "Given back from signoff: ...
+  5. Check that nothing changed: jaira show TWRAP8 --json still has status signoff and no new note
 ---
 
 # Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis
