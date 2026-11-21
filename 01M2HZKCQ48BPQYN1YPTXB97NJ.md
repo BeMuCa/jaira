@@ -1,7 +1,7 @@
 ---
 id: 01M2HZKCQ48BPQYN1YPTXB97NJ
 title: "Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Wer allein an einem Repository arbeitet, bekommt keine Rolle vorgesetzt, die ihn zu einem Pull Request schickt, den er nicht will - und ein Team, das Pull Requests benutzt, bekommt die Regel weiterhin ueberall, wo ein Agent sie liest."
@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T09:35:36Z
+updated-at: 2026-11-21T09:40:19Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -36,7 +36,7 @@ outcome-what: "Board haelt in .jaira/pr fest, wie Arbeit ankommt (person/agent/n
 outcome-why: "Ein Solo-Projekt ohne Pull Requests blieb an einem PR haengen, den niemand oeffnet"
 outcome-resolves: "XB97NJ"
 review-summary: "Ein Board sagt jetzt in einer committeten Datei .jaira/pr, wie Arbeit ankommt: person (Default, wie bisher), agent (JG3REW) oder neu none - kein Pull Request, der Zweig landet per fast-forward push auf dem Hauptzweig. Gelesen wird nur das exakte Wort (BOM, Kommentar, CRLF, Tippfehler -> person) in core/board/arrival.go; settings.PRFor/PRIn lesen durch dieselbe Funktion, und roles list nennt ein Wort, das nicht greift. jaira update schreibt bei agent/none einen Absatz 'How work arrives on this board' in den CLAUDE.md/AGENTS.md-Block, ohne Datei bleibt der Block byte-gleich, validate meldet ihn als veraltet, wenn die Datei wechselt. roles list liest pr/pr-when/pr-reviewer jetzt vom Basis-Zweig (origin-Default oder --base) statt von der Platte und sagt, wenn der Zweig .jaira/pr aendert. pr-gate trennt zwei Fragen: ohne --land verweigert es eine Basis mit none (no_pull_requests), mit --land laesst es nur durch, wo die Basis selbst none sagt (not_none); unter none muss jedes Ticket in done sein, pr-when zaehlt nicht, und jeder Commit in base..HEAD muss ein Ticket nennen - ein Merge nur dann nicht, wenn sein Baum genau git merge-tree der beiden Eltern ist (gitrepo.UnnamedCommits). jaira-role-pr bekommt einen Abschnitt 'Land it' (gate, fetch, merge, gate, push, nie --force), Teamlead/Dispatcher einen Satz dazu; reap.sh zaehlt unter none einen Zweig als gemerged, sobald der Default-Zweig des Lande-Remotes (origin, bei einem Fork der Remote auf den Parent) seinen Tip enthaelt und ein Commit das Ticket nennt; der Cockpit-Accept startet unter none 'landing' statt eines Pull Requests. Sieben Zeilen in core/release/notes/XB97NJ.md."
-round: 20
+round: 21
 review-gaps: |-
   note: jaira roles list --base <ref> mit einem ref, der hier kein Commit ist (Tippfehler, nicht gefetcht), liest still die Platte, und pr_source sagt 'no base to read it from' - obwohl eine Basis genannt wurde (nachgestellt: --base nosuch/ref -> person, read off this disk). Die Tore lesen die Basis selbst und verweigern no_such_ref, deshalb kein Blocker; ein expliziter --base sollte aber laut scheitern
   note: pr-gate liest den Lane-Stand der Tickets von der Platte des Zweigs, den es beurteilt - unter none ist das die einzige Pruefung vor dem Push auf den Hauptzweig. Ein Zweig, der sein Ticket per --force nach done schreibt, kommt durch; das ist dieselbe Vertrauensgrenze wie bei agent (JG3REW), unter none aber ohne Pull Request als zweiten Blick
@@ -201,3 +201,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-21 09:29 · Alexander Sacharov** — note: known limit (Runde 17, Teamlead: kein Runde 18): (1) 'roles list --base <ref>' mit nicht aufloesbarem Ref faellt still auf die Platte zurueck statt zu scheitern; (2) pr_source meldet 'this branch changes .jaira/pr' auch fuer einen Zweig, der vor der Datei auf der Basis abgezweigt ist (Vergleich mit der Basis statt der Merge-Basis), samt falschem share-Hinweis; (3) Cockpit ohne Forge liest .jaira/pr vom lokalen Default-Branch, Gate/Rolle von origin/<default> - lokaler master hinter origin -> Accept sagt noForge statt landing. Alle drei: nur Weg- und Wortwahl; beide Tore lesen weiter nur die Basis (oeffnen verweigert none, --land verweigert nicht-none), es landet oder oeffnet nichts falsch. Fix-Skizze: --base pruefen (exit 2), mit merge-base vergleichen, Cockpit-Basis = origin/<default> wenn vorhanden.
 - **2026-11-21 09:34 · Alexander Sacharov** — review (fresh context, 21.11.): kein Blocker. Diff gegen alle 8 DoD gelesen, Module arrival.go, settings.go, gitrepo/named.go, cli/roles.go, reap.sh, Cockpit register.tsx ganz gelesen. go test der fuenf Pakete + claude plugin test (218/218) gruen. Nachgestellt: roles list --base nosuch/ref faellt still auf die Platte zurueck (note in review-gaps); die Tore verweigern das selbst mit no_such_ref.
 - **2026-11-21 09:35 · Alexander Sacharov** — Given back from signoff (Teamlead im Auftrag Alex 21.11. 10:40, letzte Runde): die drei known limits aus Runde 17 sind mechanisch, keine neue Heuristik - schliessen: (1) roles list --base <ref>, das kein Commit ist, scheitert mit Exit 3 und no_such_ref wie die Tore. (2) pr_source vergleicht mit der Merge-Basis (git diff base...HEAD -- .jaira/pr), nicht mit der Basis; kein share-Hinweis, wenn der Zweig nichts aendert. (3) Cockpit liest die Basis wie pr-gate --land (origin/<default>), nicht den lokalen Default-Branch. Je ein Test. Danach Diff-Hunt + review; was dann noch kommt, geht als known limit in signoff - endgueltig.
+- **2026-11-21 09:40 · Alexander Sacharov** — in-progress (Runde 16, letzte laut Teamlead): drei known limits aus Runde 17 geschlossen. (1) roles list --base mit nicht aufloesbarem Ref -> exit 3 no_such_ref, kein Rueckfall auf die Platte; Rolle sagt 'fetch, dann erneut'. (2) 'this branch changes .jaira/pr' nur, wenn die Platte von der Merge-Basis abweicht (gitrepo.MergeBase), nicht von der Basis. (3) Cockpit ohne Forge: Basis = origin/<default> (rev-parse --abbrev-ref origin/HEAD, sonst origin/main|master), lokal nur als letzter Rueckfall. Tests: TestRolesListBaseMustResolveAndComparesWithTheMergeBase; board.test.ts 'no forge names the base' (219 pass).
