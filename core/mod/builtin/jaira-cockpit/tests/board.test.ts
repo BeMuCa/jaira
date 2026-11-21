@@ -737,6 +737,8 @@ describe('waiting for you', () => {
     expect(asked).toContain("jaira -C '/.worktrees/repo-mg677r' note MG677R \"explain: ")
     expect(asked).toContain('Status: DoD ')
     expect(asked).toContain('Recommendation: ')
+    // a ticket reviewed before jaira kept the copy has an empty verdict_gaps: its notes stay in review-gaps
+    expect(asked).toContain('Where review.verdict_gaps is not empty and differs from review.gaps')
     for (const cls of ['[blocker]', '[small edge]', '[known limit]', '[not this ticket]']) expect(asked).toContain(cls)
     expect(asked).toContain('[give back]')
     // Nothing reads as "this must be changed" by its shape alone.
