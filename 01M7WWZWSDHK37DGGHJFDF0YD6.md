@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZWSDHK37DGGHJFDF0YD6
 title: "Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt"
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:49:09Z
+updated-at: 2026-11-21T08:49:13Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
@@ -34,7 +34,7 @@ review-summary: "none"
 review-gaps: "none - 7d73a41d only moves the pattern into namesTicket"
 test-verdict: "pass: go test -count=1 ./... RC=0 at 7d73a41d, -race core/gitrepo RC=0, claude plugin test 216 pass (round 5, no TS change since); DoD 7 checked on a scratch board: no hunt -> bughunt null; hunt with 'files: a b.go' clean -> on_head true, after a commit naming the ticket -> false, new hunt -> true; unknown commit -> false; writes: none (read-only git), so no parallel-writer case"
 hunt-verdict: "fail: 1 change finding at 7d73a41d - untracked files edited after the hunt are invisible to git diff HEAD"
-round: 7
+round: 8
 review-verdict: "Zurueck an in-progress: ein Blocker. Go-Seite, Lane-Prompts und Cockpit-Logik erfuellen DoD 1-6 und 8-11 (go test ./... gruen, claude plugin test 216 pass); der Statuspunkt 'bughunt on HEAD' der neuen Explain-Statuszeile (DoD 7) kann aus den Daten, die der Explain-Chat bekommt, im Normalfall nicht ok werden."
 review-round: 4
 review-check: "1. go build -o /tmp/jaira-b ./cmd/jaira  2. /tmp/jaira-b set <ein Test-Ticket> stop-after-fix=yes -> Exit 2, 'stop-after-fix is true, false or empty'  3. /tmp/jaira-b show DF0YD6 --json | grep -o '\"blocker_rule\":[^,]*' -> der Default-Satz  4. go test ./core/move -run TestMoveRecordsWhoSentItBack -v -> PASS (signoff->in-progress = person, zaehlt nicht)  5. cd core/mod/builtin/jaira-cockpit && claude plugin test . -> 216 pass  6. Blocker selbst sehen: /tmp/jaira-b show N71NVG --brief | grep -c 'bughunt: done at' -> 0, obwohl die Vorlage den Status daraus liest  7. Im Cockpit bei einem Ticket in signoff mit blocker:-Zeile Explain druecken -> Statuszeile mit Haken/Kreuzen, [blocker] rot; heute steht dort 'bughunt on HEAD' mit rotem Kreuz"
