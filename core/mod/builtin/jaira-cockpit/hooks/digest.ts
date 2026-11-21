@@ -110,6 +110,8 @@ export type StatusLine = {
   gates?: string
   notes?: string
   verdict?: string
+  // The line as it stood in the report, so the rest can be read without it.
+  raw: string
 }
 
 const FIELDS = ['branch', 'commits', 'gates', 'notes'] as const
@@ -117,6 +119,11 @@ const STATUS_HEAD = new RegExp(
   `^\\s*jaira:\\s+(${HANDLE})\\s+([a-z][a-z-]*)\\s*(?:->|→)\\s*([a-z][a-z-]*)\\s*(?:·\\s*(.*))?$`,
   'i',
 )
+// The engine's frame around a message — <result>, <agent-message from="…">
+// and their closing tags — can share the physical line with the status line,
+// on either side. They are not part of it.
+const FRAME_OPEN = /^(?:\s*<[a-z][a-z-]*(?:\s[^>]*)?>)+/i
+const FRAME_CLOSE = /(?:<\/[a-z][a-z-]*>\s*)+$/i
 
 // The last such line in the report, or undefined when there is none: a
 // report quoting an earlier one still ends with its own. A key that is
@@ -124,9 +131,9 @@ const STATUS_HEAD = new RegExp(
 export function statusLineOf(text: string): StatusLine | undefined {
   const lines = text.split(/\r?\n/)
   for (let i = lines.length - 1; i >= 0; i--) {
-    const m = STATUS_HEAD.exec(lines[i]!)
+    const m = STATUS_HEAD.exec(lines[i]!.replace(FRAME_OPEN, '').replace(FRAME_CLOSE, ''))
     if (!m) continue
-    const line: StatusLine = { ticket: m[1]!.toUpperCase(), from: m[2]!.toLowerCase(), to: m[3]!.toLowerCase() }
+    const line: StatusLine = { ticket: m[1]!.toUpperCase(), from: m[2]!.toLowerCase(), to: m[3]!.toLowerCase(), raw: lines[i]! }
     let rest = (m[4] ?? '').trim()
     const verdict = /(?:^|·)\s*verdict:\s*(.*)$/i.exec(rest)
     if (verdict) {
@@ -165,7 +172,8 @@ export function digest(text: string): { ticket: string; line: string } | undefin
         status.notes === undefined ? undefined : `${words.notes} ${status.notes}`,
       ].map(p => (p === undefined ? undefined : clip(p, 60)))
     : [ticket, laneOf(text), verdictOf(text)]
-  const question = questionOf(text)
+  // A question asked in the status line's verdict is already in the line.
+  const question = questionOf(status ? text.replace(status.raw, '') : text)
   if (question !== undefined) parts.push(`${words.question}: ${question}`)
   const line = parts.filter(p => p !== undefined).join(' · ')
   return { ticket, line: `${words.marker} ${line} — ${words.fullReport}: /cockpit report ${ticket}` }

@@ -1,7 +1,7 @@
 ---
 id: 01M7WX0C09TC63TKPXT555CS2M
 title: "Ein Worker meldet signoff in einer Zeile mit festen Feldern: Branch, Commits, Guard, offene Notes"
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -18,19 +18,21 @@ related:
   - 01M67RXSPRWC7WVBCCM7MVR4PY
 commits: []
 created-at: 2026-11-20T16:35:33Z
-updated-at: 2026-11-21T19:10:18Z
+updated-at: 2026-11-21T19:14:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2279502
 claimed-at: 2026-11-21T19:00:51Z
-outcome-what: "jaira-worker and jaira-dispatcher end their report with a fixed status line 'jaira: <ID> <from> -> <to> · branch · commits · gates · notes · verdict', documented in their Report sections; the jaira-cockpit's digest.ts reads that line (statusLineOf) and shortens the report to its fields, falling back to the old guessing without it"
+outcome-what: "jaira-worker and jaira-dispatcher end their report with a fixed status line 'jaira: <ID> <from> -> <to> · branch · commits · gates · notes · verdict', documented in their Report sections; the jaira-cockpit's digest.ts reads that line (statusLineOf) and shortens the report to its fields, falling back to the old guessing without it. Round 2: engine frame tags sharing the status line are stripped before matching, and the question is read from the report without the status line"
 outcome-why: "The teamlead read the ticket after every report to find branch, commits and whether it could push; a fixed line answers that from the report alone"
-outcome-resolves: "55CS2M; shares the line prefix with MVR4PY, which can now remove the guessing. Checked: concurrency n/a (pure function); error path: no line -> old path, failure text still keeps the report whole; unusual input: CRLF, lowercase handle/lanes, unicode arrow, '-' values, unknown keys, overlong fields clipped, verdict holding '·' or '->'; permissions: peer text is only displayed, every field clipped to 60"
+outcome-resolves: "55CS2M; shares the line prefix with MVR4PY. Checked: concurrency n/a (pure function); error path: no line -> old path, failure text keeps the report whole; unusual input: CRLF, lowercase, unicode arrow, '-' values, unknown keys, overlong fields clipped, verdict holding '·', '->' or a question, frame tags on either side of the line; permissions: peer text only displayed, every field clipped to 60"
 review-summary: none
-round: 2
-back-from: critique
+round: 3
+back-from: testing
 back-by: lane
 back-count: 1
 review-gaps: "digest.ts: dropped the redundant key !== 'verdict' check and its Exclude cast (verdict is cut off the line before the field loop), STATUS_KEYS -> FIELDS. Searched for an existing key: value line parser in the cockpit (frame.ts, threads.ts, metrics.ts) - none reads this shape; clip() reused. Left: laneOf/verdictOf guessing stays as the fallback by decision (MVR4PY removes it)."
+test-verdict: "pass: go vet + go test -race -count=1 ./core/... RC=0, full go test ./... RC=0 in round 1, shipped-history --check ok, check-ticket-commits ok, claude plugin test (cockpit) 237 pass RC=0. DoD 1-3 verified in the tree (worker SKILL.md:409, dispatcher :556, digest.ts:124/:154, cockpit.test.ts:70). Function: status-line tests drive session.receive end to end - full line, '-' values, unknown key, CRLF, inside task-notification, last of two lines wins, clipping; failure path: '3 failed' above the line keeps the report whole. Writes nothing (pure function), so no two-writer case."
+hunt-verdict: "fail: bughunt done at da4ea383, 2 change: engine frame tag on the status line leaks into verdict (wrong shown result); a question inside verdict shown twice"
 ---
 
 # Ein Worker meldet signoff in einer Zeile mit festen Feldern: Branch, Commits, Guard, offene Notes
@@ -40,9 +42,9 @@ review-gaps: "digest.ts: dropped the redundant key !== 'verdict' check and its E
 - [x] jaira-worker und jaira-dispatcher schreiben die Schlussmeldung im festen Format, dokumentiert im Skill
   proof: core/role/builtin/jaira-worker/SKILL.md:409 (Report: fixed line + field meanings), core/role/builtin/jaira-dispatcher/SKILL.md:556 (same line, points to jaira-worker's Report)
 - [x] Das Cockpit liest die Felder aus dieser Zeile
-  proof: core/mod/builtin/jaira-cockpit/hooks/digest.ts:124 statusLineOf, used in digest() at :154
+  proof: core/mod/builtin/jaira-cockpit/hooks/digest.ts:131 statusLineOf (frame tags stripped per line), used in digest() at :161
 - [x] Eingabeklassen der Zeile im Cockpit-Test: vollständige Zeile, leere Werte '-', fehlender Schlüssel, CRLF, Zeile nicht am Ende, zwei Zeilen (die letzte zählt), Fehlertext bleibt trotz Zeile ganz
-  proof: core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:70 lineCases ('status line: ...' tests, 237 pass)
+  proof: core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts:70 lineCases ('status line: ...' tests incl. frame tags and question once, 241 pass)
 
 ## Options
 
@@ -70,3 +72,7 @@ review-gaps: "digest.ts: dropped the redundant key !== 'verdict' check and its E
 - **2026-11-21 19:00 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/2274544.sock (restarted worker; previous claimer process gone)
 - **2026-11-21 19:03 · Alexander Sacharov** — statusLineOf in digest.ts: last matching line wins (a report quoting an earlier one ends with its own); verdict is last and takes the rest of the line so it may hold '·' or '->'; ticket from the line outranks the handle count. isFailure still runs first, so 'gates: red' alone shortens (the line shows 'gates red'), a '3 failed' in the text keeps it whole.
 - **2026-11-21 19:07 · Alexander Sacharov** — critique: (1) digest.ts hardcodes the labels commits/gates/notes - move them into texts.ts filterWords like marker/question/fullReport. (2) jaira-dispatcher SKILL.md copies the status-line block verbatim from jaira-worker - replace it with a pointer to jaira-worker's Report section, the pattern the dispatcher already uses for 'Before you push'.
+- **2026-11-21 19:11 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/digest.ts:131 - class: verdict takes everything to the end of the physical line, so an engine frame closed on the same line leaks into it (shell is digest(report) in register.tsx:230 on the whole notification/agent-message, not on body()); example: '...· verdict: approve</result>' or '...· verdict: approve</agent-message>' is shown as 'approve</result>' / 'approve</agent-message>' in the chat line; the test fixtures always put the closing tag on its own line, the inline form '<agent-message from="x">text</agent-message>' is already used at cockpit.test.ts:259; ran: node --experimental-strip-types scratch calling digest() on both framings; not a blocker (report kept whole, only the shown verdict is wrong)
+- **2026-11-21 19:12 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/digest.ts:168 - class: questionOf() still scans the whole text, including the status line, so a verdict that carries a question (the worker skill allows any text there) is shown twice; example: 'verdict: approve · question: shall we?' gives '... · approve · question: shall we? · feat/55cs2m · ... · question: shall we?'; ran: node --experimental-strip-types scratch calling digest(); edge, not a blocker
+- **2026-11-21 19:12 · Alexander Sacharov** — bughunt: done at da4ea383 - 2 findings (2 change, 0 pre-existing) in 4 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/digest.ts core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts core/release/notes/55CS2M.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/shipped/shipped.sha256
+- **2026-11-21 19:12 · Alexander Sacharov** — testing: class: the status line is read from the raw physical line, so engine frame tags on the same line (<agent-message ...>…</agent-message>, </result>) either leak into the last field or keep the line from matching at all; example: hunter's 'verdict: approve</result>'; fix: strip leading opening and trailing closing frame tags per line before matching, test over both sides and the single-line inline frame. Second: questionOf must not read the status line itself.

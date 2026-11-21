@@ -104,6 +104,26 @@ describe('session.receive', () => {
       want: SHORT('55CS2M · review → in-progress · sent back, wants review -> signoff later · gates red'),
     },
     {
+      name: 'a closing frame tag on the same line is not part of the verdict',
+      text: `<result>\nDone.\njaira: 55CS2M review -> signoff · verdict: approve</result>\n</task-notification>`,
+      want: SHORT('55CS2M · review → signoff · approve'),
+    },
+    {
+      name: 'a message framed on one line, opening and closing tag around the status line',
+      text: 'Another Claude session sent a message:\n<agent-message from="w">jaira: 55CS2M testing -> human · notes: 2 · verdict: sent back</agent-message>',
+      want: SHORT('55CS2M · testing → human · sent back · notes 2'),
+    },
+    {
+      name: 'a question in the verdict is shown once, a question elsewhere still is',
+      text: 'jaira: 55CS2M critique -> human · verdict: approve · question: shall we?',
+      want: SHORT('55CS2M · critique → human · approve · question: shall we?'),
+    },
+    {
+      name: 'an open question above the status line is kept',
+      text: 'open question: keep the cache?\njaira: 55CS2M critique -> human · verdict: -',
+      want: SHORT('55CS2M · critique → human · question: keep the cache?'),
+    },
+    {
       name: 'every field is clipped, not only the verdict',
       text: `jaira: 55CS2M testing -> review · branch: feat/${'x'.repeat(100)} · verdict: ${'v'.repeat(100)}`,
       want: SHORT(`55CS2M · testing → review · ${'v'.repeat(59)}… · feat/${'x'.repeat(54)}…`),
