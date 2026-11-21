@@ -91,12 +91,18 @@ def check(data):
     return errors
 
 
-def page(data_path, out_path):
-    data = load(data_path)
+def load_checked(path):
+    """data.json, or exit 1 with what check() found: no command runs on bad data."""
+    data = load(path)
     errors = check(data)
     if errors:
         print("\n".join(errors), file=sys.stderr)
         sys.exit(1)
+    return data
+
+
+def page(data_path, out_path):
+    data = load_checked(data_path)
     blob = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
     tpl = (HERE / "template.html").read_text(encoding="utf-8")
     Path(out_path).write_text(tpl.replace("__TITLE__", html.escape(data["title"])).replace("__DATA__", blob), encoding="utf-8")
@@ -135,11 +141,7 @@ def state(data, db):
 
 
 def plan(data_path, db_path):
-    data, db = load(data_path), load(db_path)
-    errors = check(data)
-    if errors:
-        print("\n".join(errors), file=sys.stderr)
-        sys.exit(1)
+    data, db = load_checked(data_path), load(db_path)
     st = state(data, db)
     results, comments, notes = db.get("results", {}), db.get("comments", {}), db.get("notes", {})
     T = {t["id"]: t for t in data["tickets"]}
@@ -215,11 +217,7 @@ REPORT = {
 
 
 def report(data_path, db_path, decisions_path, html_path, md_path):
-    data, db = load(data_path), load(db_path)
-    errors = check(data)
-    if errors:
-        print("\n".join(errors), file=sys.stderr)
-        sys.exit(1)
+    data, db = load_checked(data_path), load(db_path)
     decisions = load(decisions_path)
     st = state(data, db)
     results, comments, notes = db.get("results", {}), db.get("comments", {}), db.get("notes", {})

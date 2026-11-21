@@ -1,7 +1,7 @@
 ---
 id: 01M7ZYF17AVJAEWK40GG3DVVFZ
 title: "Bei TUI-, Cockpit- oder OS-spezifischen Änderungen schreibt pre-process einen DoD-Punkt 'von einer Person angesehen'"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,18 +21,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-21T20:58:45Z
-updated-at: 2026-11-21T21:21:44Z
+updated-at: 2026-11-21T21:23:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3788188
 claimed-at: 2026-11-21T21:19:40Z
 stop-after-fix: "false"
-outcome-what: "Built-in lanes: pre-process adds 'seen by a person: <what, where>' DoD items for terminal-drawn output, platform-dependent behaviour and person-only actions; in-progress adds one when no planning ran and never ticks it; testing leaves it open (agent-ticked = finding, untick); review makes it a review-check step (agent-ticked = blocker). Acceptance (build.py plan) and signoff hand the person one line 'jaira dod <id> <n> --done --proof ... && jaira move ... --force' instead of a bare --force move. shipped.sha256 + release note."
-outcome-why: "02D92C, JDDCEZ, AX8K02 ticked human-only checks with stand-in proofs; and --force on the accept move passes an unticked DoD, so the item would vanish unseen."
-outcome-resolves: "DoD 1-4 with proofs; categories: prompts plus one python print path — no concurrency or writes; input: dod texts with leading spaces handled (strip), a ticket without dod gets the plain move; permissions: the tick is never run by an agent."
-review-summary: "Adds a definition-of-done item kind 'seen by a person:' for changes to what a terminal draws, platform-dependent behaviour, or person-only actions. pre-process now asks for one item per thing to look at; in-progress adds it itself when no planning ran and never ticks it; testing leaves it open and unticks it if an agent ticked it; review makes it a step of review-check and a blocker when agent-ticked. The acceptance role's data gains a required 'person' list (open items only); build.py check() refuses data without it, plan now runs check() and, for an accepted ticket with open person items, prints one line 'jaira dod <id> <n> --done --proof ... && jaira move --force' for the person to run instead of a bare --force move. The signoff role names open person items beside the DoD count and puts their tick in front of the accept line. Release note and shipped.sha256 updated."
-round: 5
-back-from: signoff
-back-by: person
+outcome-what: "build.py reads a missing person list as none, refuses a malformed one in check() (page, plan and report), and the acceptance record lists the open 'seen by a person:' items per block; TestAcceptanceBuildPersonItems covers both"
+outcome-why: "Alex gave it back from signoff: a KeyError at read-back, and a record that hid the very items the ticket exists for"
+outcome-resolves: "DoD 5 and 6 from the signoff give-back"
+review-summary: "core/role/builtin/jaira-role-acceptance/build.py: the check-print-exit block now appears three times (page, plan, report); fold it into one load_checked(path) helper that the three call"
+round: 6
+back-from: critique
+back-by: lane
 back-count: 1
 review-gaps: |-
   note: build.py plan reads p['n'] and p['text'] without checking them — a person entry missing either crashes plan with KeyError instead of check() naming it; fix: check() validates each entry has an int n and a text
@@ -65,13 +65,13 @@ review-check: |-
 - [x] in-progress-, testing- und review-Prompt sagen: diesen Punkt hakt nur eine Person ab
   proof: core/lane/builtin/20-in-progress.md:164, 27-testing.md:57, 40-review.md:107
 - [x] shipped.sha256 und Release-Note core/release/notes/<ID>.md
-  proof: core/shipped/shipped.sha256 (scripts/shipped-history.sh --write, 910 versions), core/release/notes/3DVVFZ.md
+  proof: core/shipped/shipped.sha256 (scripts/shipped-history.sh --write, 911 versions), core/release/notes/3DVVFZ.md
 - [x] Abnahme: jaira-role-acceptance (build.py plan) und jaira-role-signoff geben für einen offenen 'seen by a person:'-Punkt eine Zeile 'dod --done && move --force' an die Person; kein Agent hakt ihn ab
-  proof: core/role/builtin/jaira-role-acceptance/build.py:154 (person line: tick of the open items + move), build.py:61 (check() refuses a malformed person list in page, plan and report), SKILL.md:160,222, jaira-role-signoff/SKILL.md:179
+  proof: core/role/builtin/jaira-role-acceptance/build.py:156 (person line: tick of the open items + move), build.py:61 + load_checked() (a malformed person list is refused in page, plan and report), SKILL.md:160,222, jaira-role-signoff/SKILL.md:179
 - [x] build.py: fehlender person-Eintrag = leere Liste, falsch geformter = klare Fehlermeldung, kein KeyError (Test)
   proof: core/role/builtin/jaira-role-acceptance/build.py:61 (missing person = [], malformed = check() message); TestAcceptanceBuildPersonItems in core/role/acceptance_build_test.go
 - [x] build.py report zeigt die 'seen by a person'-Punkte (Test)
-  proof: core/role/builtin/jaira-role-acceptance/build.py:242 (report block lists open person items); TestAcceptanceBuildPersonItems/report_lists_open_person_items
+  proof: core/role/builtin/jaira-role-acceptance/build.py:240 (report block lists open person items); TestAcceptanceBuildPersonItems/report_lists_open_person_items
 
 ## Options
 
@@ -103,3 +103,4 @@ review-check: |-
 - **2026-11-21 21:14 · Alexander Sacharov** — bughunt: done at 7ccb7c724 - 2 findings (2 change, 0 blocker, 0 pre-existing), follow-up hunt since 2871d8f71: diff of 3 known files (build.py, acceptance SKILL.md, shipped.sha256), no new file; concurrency, error paths, input, permissions checked; go test -count=1 ./core/role/ ./core/shipped/ passes; files: core/lane/builtin/15-pre-process.md core/lane/builtin/20-in-progress.md core/lane/builtin/27-testing.md core/lane/builtin/40-review.md core/release/notes/3DVVFZ.md core/role/builtin/jaira-role-acceptance/SKILL.md core/role/builtin/jaira-role-acceptance/build.py core/role/builtin/jaira-role-signoff/SKILL.md core/shipped/shipped.sha256
 - **2026-11-21 21:18 · Alexander Sacharov** — Given back from signoff (Alex 21.11.): (1) build.py: fehlender oder falsch geformter 'person'-Eintrag darf nicht mit KeyError abstürzen — fehlend = leere Liste (deckt auch Abnahme-Sets von vor dieser Version), falsch geformt = klare Fehlermeldung in check(). Ein Test für beide. (2) build.py report listet die 'seen by a person'-Punkte mit, sonst sieht die Person sie im Bericht nicht — genau der Zweck des Tickets. Note 'jaira update --lanes' bleibt known limit.
 - **2026-11-21 21:21 · Alexander Sacharov** — Give-back round: check() now also runs in report, so a malformed person list never reaches the report loop. Missing key = [] means a pre-key set gets the bare --force move again — Alex's call (21.11.), SKILL.md tells the agent to fill person in when extending such a set.
+- **2026-11-21 21:22 · Alexander Sacharov** — critique (give-back round): build.py repeats check()+print+exit(1) in page, plan and report — fold into one load_checked() helper. Rest stands: report placement per block matches the accepted/open lists beside it.
