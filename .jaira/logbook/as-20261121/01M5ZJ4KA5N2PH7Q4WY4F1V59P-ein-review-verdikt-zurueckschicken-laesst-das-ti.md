@@ -1,7 +1,7 @@
 ---
 id: 01M5ZJ4KA5N2PH7Q4WY4F1V59P
 title: "Ein Review-Verdikt 'zurueckschicken' laesst das Ticket nicht nach signoff"
-status: critique
+status: done
 ready: true
 creator: BeMuCa
 goal: "Steht im review-verdict der Review-Lane 'send back' (oder das Gegenstueck des Boards), nimmt jaira move aus review nur noch in-progress als Ziel; signoff wird mit Exit 3 abgelehnt und nennt das Verdikt."
@@ -19,9 +19,23 @@ blocked-by:
   - 01M6M7EA5EG5TWJSTVNQH6CD33
 related:
   - 01M7WWZWSDHK37DGGHJFDF0YD6
-commits: []
+commits:
+  - 30923924fbf0e8b40bef903361b2f7ec7b735df2
+  - db31aea3a6907af99cc063f1374cd4a8ae1abdbe
+  - 5b8824110a711665b48d8b268eb7c0955b76b0f6
+  - 441596a7a4810f4a81c42f1b7fae14a1c1413bf1
+  - e5182f04c155b3cad3164465e883e08fe6757e2d
+  - d4067a5e4dec89770fac928d230047b810eb19da
+  - 2a0e996e5c450f77bca1a8d45afef03557139e7c
+  - 8081bc2c2b75b87198a10c91894315eefabf0b0a
+  - 31e456f20bce2f81e99903c15ea80b0fdbbe5a0a
+  - e9728301bd2211e9b19eaaccd86aefdfa8f553d6
+  - d395e5f0606df71507f040578ab5cc0c9689b2e7
+  - dc8e91a49c90014dbed68629302b3db5a123dcf7
+  - f5d265af43f03ec5444683c657708a10fbe98bb0
+  - d1083ecc1678aaf497d6cb8970e172b1b524e4cb
 created-at: 2026-10-27T20:51:56Z
-updated-at: 2026-11-21T20:40:53Z
+updated-at: 2026-11-21T20:49:44Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1951983
@@ -29,22 +43,30 @@ claimed-at: 2026-11-21T20:21:19Z
 outcome-what: "review-verdict now starts with a lane-declared word (accept / send-back); jaira move refuses every move past review on a send-back verdict - the word may be followed by ':', the line's end or any non-letter ('Send back, DoD 1'), exit 3 naming the verdict and in-progress; show --for-lane review carries the words as verdicts"
 outcome-why: "a review that wrote 'send back' still let its ticket land in signoff, so a person saw unapproved work as ready"
 outcome-resolves: "TestCLISendBackVerdictRefusesSignoff, TestCLISendBackVerdictGoesBack, TestVerdictWordClasses, TestLaneWithoutVerdictWordsReadsNothing"
-review-summary: "The review lane file (builtin 40-review.md and this board's .jaira/lanes/review.md) now declares two word lists, verdict-accept: [accept] and verdict-send-back: [send-back]. lane.go parses them and refuses a lane that has only one list, an accept word that begins with a send-back word, or the lists without review-verdict in output-produces. lane/verdict.go SendsBackBy takes the verdict's first line up to the first ':', folds case, treats space as dash, drops a trailing full stop, and reads send-back when that head begins with the word followed by its end or a non-letter. gate.CheckAdvance refuses (exit 3, code verdict_sends_back) any non-TUI move that lands past a verdict-declaring lane whose verdict sends back - from review, from blocked, or by skipping - naming the verdict word and the work lane (in-progress) as the way back; moves back and moves into blocked stay free, --force and the TUI stay the person's override. Any other verdict, free text included, passes as before, and a lane without the lists changes nothing. show --for-lane carries the lists as 'verdicts'. Prompt, both SKILL.md copies, demoworld.sh and the release note updated."
+review-summary: "jaira move liest jetzt das review-verdict: die Review-Lane deklariert in ihrer Lane-Datei Woerter (verdict-accept: [accept], verdict-send-back: [send-back]); beginnt die erste Zeile des Verdikts vor dem ersten ':' mit dem Send-back-Wort (Gross/Klein, Leerzeichen statt Bindestrich, Satzzeichen danach egal), lehnt das Gate jeden Agenten-Move hinter die Review-Lane ab - auch aus blocked oder aus einer frueheren Lane - mit Exit 3, Code verdict_sends_back, und nennt Verdikt und Rueckweg (in-progress). Zurueck und Parken bleiben frei, ein Move im Board (Interactive) und --force ebenso. Jeder andere Text, auch altes Freitext-Verdikt, laeuft wie bisher; eine Lane ohne Woerter liest nichts. Die Lane-Datei wird beim Laden abgewiesen, wenn nur eine Liste da ist, ein Accept-Wort mit dem Send-back-Wort beginnt oder review-verdict nicht in output-produces steht. show --for-lane gibt die Woerter als verdicts aus; Prompt, Skills, demoworld und Release-Notiz sind nachgezogen."
 round: 10
 back-from: testing
 back-by: lane
 back-count: 2
-review-gaps: "none - the per-call TrimLeftFunc in SendsBackBy went into normVerdict; TrimRight('.!;,') subsumed by TrimFunc; notWordRune shared by trim and boundary"
-test-verdict: "pass: go test ./... RC=0, -race core/gate core/lane core/shipped internal/cli RC=0; DoD 1-6 hold; scratch board with the branch binary: '**send-back**: x', 'Send back, DoD 1' -> signoff exit 3; 'send-backs: x', 'accept: ok', 'lgtm' -> exit 0; a lane declaring verdict-send-back ['#reject'] refuses '#reject: x' (exit 3); write path unchanged since the parallel-move check"
-hunt-verdict: "fail: 2 change findings at dc8e91a49 - numbered verdict '1. send-back: x' no longer reads (digits kept by the trim); a declared word containing ':' or a newline loads but can never match"
-review-verdict: "accept: DoD 1-6 hold in the code and tests (go test core/gate core/lane core/shipped internal/cli ok); no blocker - the markup-wrapped send-back is a small edge noted in review-gaps"
-review-round: 7
-review-check: "1. cd /home/alex/projects/.worktrees/jaira-f1v59p && go build -o /tmp/jb ./cmd/jaira  2. mkdir /tmp/vb && cd /tmp/vb && git init -q && /tmp/jb init  3. /tmp/jb create \"probe\" --goal g --context c --dod d and note the handle H  4. walk H to review (claim, move through the lanes, tick the DoD with jaira dod H 1 --done --proof x), then /tmp/jb set H review-summary=s review-gaps=none review-check=c review-verdict=\"Send back, DoD 1\"  5. /tmp/jb move H --to signoff -> exit 3, message names \"send-back\" and \"in-progress\"  6. /tmp/jb move H --to in-progress -> succeeds without --force  7. /tmp/jb show H --for-lane review --json | jq .verdicts -> {\"accept\":[\"accept\"],\"send_back\":[\"send-back\"]}  Short path: go test ./core/gate ./core/lane ./internal/cli -run \"Verdict|SendBack\" covers the same"
+review-gaps: |-
+  note: SKILL.md (beide Kopien) sagt fest "back to in-progress only", die Meldung des Gates nennt dagegen die rejects-to-Kanten bzw. die letzte outcome-Lane - auf einem Board mit anderem Ablauf weicht der Skill-Text ab; Fix: "back to the lane the refusal names"
+  note: ein Move von einer Person im Terminal (ByPerson) braucht --force, um ein send-back zu uebergehen, waehrend max-rounds ByPerson ausnimmt - bewusst so laut Meldung, aber nicht getestet; Fix: ein CLI-Test, der --force gegen ein send-back zeigt
+  note: pre-existing: das Arbeitsverzeichnis traegt untracked .jaira/milestones/ (12 Dateien), die nicht zu diesem Ticket gehoeren und nicht mit committet werden duerfen
+test-verdict: "pass: go test ./... RC=0 at f5d265af4 (code = e9728301b); DoD 1-6 hold; scratch board with the branch binary: 'Send back, DoD 1', 'send-back — DoD 1' -> signoff exit 3; 'send-backs: x', 'accept: ok', 'lgtm' -> exit 0; back to in-progress with a send-back verdict exit 0 without --force; markup/numbering/typographic dash a documented known limit (release note line 3)"
+hunt-verdict: "pass with notes: hunt at f5d265af4 found 2 edges, kept as notes per parent decision 20:40 (no further round) - a hand-edited declared word ending in ':' never matches; a digit right after the send-back word counts as a boundary (errs towards send-back)"
+review-verdict: "accept: alle sechs DoD-Punkte sind im Diff erfuellt und getestet (core/gate/verdict_test.go, core/lane/verdict_test.go, internal/cli/verdict_test.go); go test ./core/... ./internal/... gruen; kein Blocker gefunden. Markup um das Wort (**send-back**) bleibt bewusst Freitext - in der Release-Notiz genannt"
+review-round: 10
+review-check: |-
+  1. cd /home/alex/projects/.worktrees/jaira-f1v59p
+  2. go test ./core/gate ./core/lane ./internal/cli -run 'Verdict|ForLaneReview' -count=1 - drei Zeilen "ok"
+  3. go build -o /tmp/j ./cmd/jaira, dann in einem Test-Board ein Ticket nach review bringen und /tmp/j set <id> review-summary=s review-gaps=x review-check=c review-verdict="send-back: DoD 2"
+  4. /tmp/j move <id> --to signoff - Exit 3, Meldung nennt "send-back", "review" und "in-progress"
+  5. /tmp/j move <id> --to in-progress - geht ohne --force durch
+  6. /tmp/j show <id> --for-lane review --json | grep -A3 verdicts - zeigt accept und send-back
 review-verdict-gaps: |-
-  note: a send-back wrapped in markup is read as free text and passes into signoff - "**send-back**: x", "`send-back`: x", "\"send-back: x\"", "> send-back: x" and a Unicode hyphen "Send‐back" all return false from SendsBackBy (probed in core/lane); fix: in SendsBackBy trim leading/trailing runes that are not letters from the head before normVerdict (and map U+2010-2015 to "-"), plus table rows in core/gate/verdict_test.go
-  note: a verdict from an earlier review round stays on the ticket after it is sent back; a new round that forgets to rewrite it keeps the old word (old send-back refuses = safe; old accept passes unread) - pre-existing in kind, the prompt asks for a fresh verdict
-  note: pre-existing: core/gate/gate.go ~470 - a forward move that skips review entirely (in-progress -> signoff with --what/--why/--resolves) checks no review output and no verdict (since 610e33a41a)
-  note: known limit (decision 20:10): a ticket parked from review with free text reaches signoff unchecked; only send-back is enforced on every route
+  note: SKILL.md (beide Kopien) sagt fest "back to in-progress only", die Meldung des Gates nennt dagegen die rejects-to-Kanten bzw. die letzte outcome-Lane - auf einem Board mit anderem Ablauf weicht der Skill-Text ab; Fix: "back to the lane the refusal names"
+  note: ein Move von einer Person im Terminal (ByPerson) braucht --force, um ein send-back zu uebergehen, waehrend max-rounds ByPerson ausnimmt - bewusst so laut Meldung, aber nicht getestet; Fix: ein CLI-Test, der --force gegen ein send-back zeigt
+  note: pre-existing: das Arbeitsverzeichnis traegt untracked .jaira/milestones/ (12 Dateien), die nicht zu diesem Ticket gehoeren und nicht mit committet werden duerfen
 ---
 
 # Ein Review-Verdikt 'zurueckschicken' laesst das Ticket nicht nach signoff
@@ -123,3 +145,7 @@ review-verdict-gaps: |-
 - **2026-11-21 20:39 · Alexander Sacharov** — question (worker, testing sent back 3rd time this give-back cycle - every round on the one normalisation rule: 31e456f20 prefix swallows accept words, d395e5f06 trim only on the verdict side, dc8e91a49 numbering '1. send-back' and words with ':'). Options: 1 (recommended, 'edges grow -> smaller design') revert d395e5f06+dc8e91a49 to e9728301b: exactly Alex's give-back rule (word as prefix, then end or non-letter) plus the accept-word load check; markup/numbering/typographic dash around the word stay a known-limit note - the lane prompt prescribes 'send-back: reason', and they err towards signoff only when the reviewer ignores that format. 2 keep fixing: verdict side trims leading non-letters, declared words must start with a letter and contain no ':' or newline - two more load rules, likely another round. 3 keep dc8e91a49 as is and leave both findings as notes.
 - **2026-11-21 20:40 · Alexander Sacharov** — decision: Variante 1 (Alex' Regel 'Ränder wachsen → kleineres Design', 21.11.): d395e5f06 und dc8e91a49 zurück auf den Stand e9728301b. Markdown-Hervorhebung, Nummerierung und Gedankenstrich vor send-back sind known limit — der Lane-Prompt verlangt 'send-back: Grund'. Keine weitere Normalisierungsregel in diesem Ticket.
 - **2026-11-21 20:40 · Alexander Sacharov** — decision applied: code back to e9728301b (revert of d395e5f06 + dc8e91a49 as one commit, files restored from e9728301b); known limit - markdown, list numbering or a typographic dash in front of the word read as free text - written into core/release/notes/F1V59P.md. Further edges only as notes, no round (parent 20:40).
+- **2026-11-21 20:41 · Alexander Sacharov** — critique round 10: the revert restores e9728301b exactly (git diff e9728301b -- core empty apart from the release-note line); nothing to judge beyond the decision.
+- **2026-11-21 20:42 · Alexander Sacharov** — bughunt: change: blocker: core/lane/verdict.go:23 with core/lane/lane.go:367-368 and verdict.go:41-43 - class: a declared verdict word that keeps a character the verdict head can never contain loads without complaint and never matches, so every send-back on that lane passes into signoff; the head is cut at the first ':' and newline, but normVerdict (since f5d265af4) only trims '.!;,' off the word, so a ':' anywhere in a word ("send-back:", "no: go") survives; example: verdict-send-back: ["send-back:"] parses with no error, words=["send-back:"], and SendsBackBy("send-back: DoD 2 unmet") returns false; ran: scratch test in core/lane calling parse() and SendsBackBy (removed afterwards)
+- **2026-11-21 20:42 · Alexander Sacharov** — bughunt: change: core/lane/verdict.go:59 (beginsWithWord, since f5d265af4) - class: a digit right after the send-back word now counts as a word end, also in the accept/send-back overlap check lane.go:372; example: "send-back2: x" reads as send-back, and with a numeric word "1" the verdict "12: x" sends back; refuses rather than slips through, so an edge, not a blocker; ran: scratch test ("send-back2: x" -> send-back true)
+- **2026-11-21 20:42 · Alexander Sacharov** — bughunt: done at f5d265af4 - 2 findings (2 change, 1 blocker) in 1 module (core/lane), follow-up hunt since dc8e91a49 (diff: core/gate/verdict_test.go core/lane/lane.go core/lane/verdict.go core/lane/verdict_test.go core/release/notes/F1V59P.md; no new files); concurrency, error paths, input, permissions checked; files: .claude/skills/jaira/SKILL.md .jaira/lanes/review.md core/gate/gate.go core/gate/verdict_test.go core/lane/builtin/40-review.md core/lane/lane.go core/lane/verdict.go core/lane/verdict_test.go core/release/notes/F1V59P.md core/role/jaira/SKILL.md core/shipped/shipped.sha256 internal/cli/flow.go internal/cli/verdict_test.go scripts/demoworld.sh .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/release-0-6-0-FWV78J.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md
