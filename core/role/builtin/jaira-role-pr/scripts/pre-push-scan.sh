@@ -132,7 +132,7 @@ lines() {
   # BSD grep (macOS) in a UTF-8 locale matches nothing on a line that is not
   # valid UTF-8; a second pass on bytes finds the ASCII patterns there too.
   [ "$fold" = C ] || LC_ALL=C grep -n -a -i "$2" -f "$1" -- "$3" >>"$tmp/grep" 2>/dev/null || true
-  cut -d: -f1 <"$tmp/grep" | sort -n -u
+  LC_ALL=C cut -d: -f1 <"$tmp/grep" | LC_ALL=C sort -n -u
 }
 
 stops=0
