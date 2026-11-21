@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T09:34:14Z
+updated-at: 2026-11-21T09:34:18Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -48,13 +48,7 @@ claimed-by: DESKTOP-RFTCH11-3584823
 claimed-at: 2026-11-21T09:34:03Z
 review-verdict: "Der Diff erfuellt alle acht DoD-Punkte; go test (board, gitrepo, settings, role, internal/cli, shipped) und claude plugin test im Cockpit (218/218) gruen. Kein Defekt gefunden, der einen Blocker traegt: jede unklare Lage (Tippfehler, fehlende Basis, gh antwortet nicht, Octopus-Merge, altes git) faellt auf person bzw. 'kein Landen' zurueck. Vier Notes, die ein Mensch beim Annehmen abwaegen kann - am ehesten der still auf die Platte zurueckfallende --base."
 review-round: 20
-review-check: |-
-  1. go build -o /tmp/jb ./cmd/jaira
-  2. mkdir /tmp/solo && cd /tmp/solo && git init -b master && git commit --allow-empty -m init && /tmp/jb init
-  3. echo none > .jaira/pr && git add .gitignore AGENTS.md CLAUDE.md && git commit -m "chore(AAAAAA): x" && git checkout -b feat/x
-  4. /tmp/jb roles list | grep '^pr:'  - heute: "none ... shared with the board", obwohl .jaira/ gitignored ist
-  5. /tmp/jb roles pr-gate master; echo $?  - heute: exit 3 "says neither agent nor none ... hand the create line back"; nach dem Fix: die Meldung sagt, dass .jaira/pr in master fehlt (Board nicht geteilt / nicht committet)
-  6. go test ./core/board ./core/settings ./core/gitrepo ./internal/cli -run 'PR|Note|Unnamed|Gate'  - ok
+review-check: "1. mkdir /tmp/solo && cd /tmp/solo && git init -q -b master && jaira init && jaira share  2. echo none > .jaira/pr && git add .jaira/pr && git commit -qm 'chore(AAAAAA): pr none'  3. jaira update - CLAUDE.md enthaelt jetzt '## How work arrives on this board' mit '.jaira/pr says none'  4. jaira roles list --json --base master | jaira json get pr - zeigt none  5. echo nnone > .jaira/pr && jaira roles list --json --base HEAD~0 - pr_source nennt nach dem Commit des Tippfehlers 'nnone ... neither agent nor none', pr ist person  6. Tor im Repo: go test ./internal/cli -run 'TestPRGate' - gruen (deckt --land/not_none, no_pull_requests, unnamed, plain merge)  7. go test ./core/role -run Reap - gruen (reap unter none: Fork-Parent, dangling origin/HEAD)  8. Ohne Datei: rm .jaira/pr && jaira update && jaira validate - Block ohne neuen Absatz, keine Warnung"
 ---
 
 # Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig
