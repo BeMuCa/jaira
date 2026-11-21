@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T09:06:59Z
+updated-at: 2026-11-21T09:07:03Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -47,8 +47,8 @@ test-verdict: "pass (round 12): go vet + go test -race ./... RC=0 at f2287211; c
 hunt-verdict: "pass (round 14 at f2287211): 0 findings"
 claimed-by: DESKTOP-RFTCH11-2127254
 claimed-at: 2026-11-21T08:46:28Z
-review-verdict: "Diff erfuellt alle 8 DoD-Punkte; go build, go vet und go test fuer core/board, core/gitrepo, core/settings, core/role, core/shipped, internal/cli gruen; am Wegwerf-Board nachgestellt (BOM+'None' -> person mit Hinweis, 'none' -> validate-Drift, update schreibt Absatz, pr_when_source sagt none). Kein Defekt gefunden; drei Notes, keine davon blockiert."
-review-round: 15
+review-verdict: "Zurueck nach in-progress: der Kern ist sauber und gut getestet (strenges Parsen, byte-gleicher Block, Gate fail closed, nie --force), alle Tests gruen. Ein Defekt im neuen none-Pfad: auf einem nicht geteilten Board behauptet roles list 'none, shared with the board', das Gate verweigert mit falscher Ursache und verweist auf eine create line, die es unter none nicht gibt. Sicher (nichts landet), aber genau die Solo-Zielgruppe trifft das."
+review-round: 17
 review-check: "1. go build -o /tmp/j ./cmd/jaira  2. mkdir /tmp/b && cd /tmp/b && git init -q && git commit -q --allow-empty -m init && /tmp/j init  3. /tmp/j roles list --json | /tmp/j json get pr -> 'person'  4. echo none > .jaira/pr && /tmp/j validate -> Warnung 'no longer matches this board's lanes or its .jaira/pr'  5. /tmp/j update && grep 'How work arrives' CLAUDE.md -> eine Zeile  6. echo nnone > .jaira/pr && /tmp/j roles list --json | /tmp/j json get pr_source -> nennt \"nnone\", 'neither agent nor none'  7. Gate: go test ./internal/cli -run PRGate -v -> u.a. TestPRGateLetsANoneBoardLandOnlyDoneWork und TestPRGateOnANoneBoardRefusesGitsRevertSubject PASS"
 ---
 
