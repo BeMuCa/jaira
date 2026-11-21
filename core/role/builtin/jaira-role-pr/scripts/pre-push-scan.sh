@@ -13,8 +13,9 @@ pre-push-scan.sh <base>
 Checks every commit of <base>..HEAD — each one, not only the sum, because a
 push publishes the whole history — in every place the push publishes: the
 lines it adds, the names of the files it changes, its message, and its
-author's and committer's name and email. A merge is checked for what it adds itself, a conflict
-resolution, and not for what it brings in from its parents.
+author's and committer's name and email. A merge is checked for what it adds
+itself, a conflict resolution, and not for what it brings in from its
+parents.
 
 Two lists are matched, case-insensitively:
 
@@ -75,8 +76,7 @@ if [ -e "$list" ]; then
   [ -r "$list" ] && [ -f "$list" ] || die "the denylist $list cannot be read" 2
   # Read the list as it was written, or not at all: a pattern dropped on the
   # way reads as "no hit" and the push goes out.
-  head -c 2 "$list" | od -An -tx1 | tr -d ' \n' >"$tmp/bom"
-  case "$(cat "$tmp/bom")" in
+  case "$(head -c 2 "$list" | od -An -tx1 | tr -d ' \n')" in
   fffe | feff)
     command -v iconv >/dev/null || die "the denylist $list is UTF-16 and iconv is missing" 2
     iconv -f UTF-16 -t UTF-8 <"$list" >"$tmp/list" 2>/dev/null || die "the denylist $list is not valid UTF-16" 2
