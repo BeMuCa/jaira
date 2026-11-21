@@ -1,7 +1,7 @@
 ---
 id: 01M7X8VKSZ03QDYFW63CTWRAP8
 title: "Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:58:37Z
+updated-at: 2026-11-21T09:02:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2485785
 claimed-at: 2026-11-21T08:57:23Z
@@ -33,7 +33,7 @@ outcome-what: "signoff: a ❌ on the status line gives back before any table rul
 outcome-why: "fresh review 21.11. blocker: a red CI run or a missing hunt could still end in a bold accept; short shas differ in length between clones"
 outcome-resolves: "the recommendation can no longer contradict its own status line, and the hunt check holds in any clone"
 review-summary: "Ships no code, only role texts. (1) New built-in role jaira-role-signoff (core/role/builtin/jaira-role-signoff/SKILL.md): read-only; per ticket in signoff it prints one status line (DoD x/y, CI of the branch head commit, bughunt note naming that head, blockers, review verdict, counted 'Given back from signoff:' notes), a table that marks every open note red/yellow/white/blue, one bold recommendation following return rules 0-5 (a red check always gives back; after two noted returns yellow edges go into a ready 'jaira create --follows' line instead of a third round), and the accept/give-back lines for the person to paste. It finds the branch head by the handle as a name segment across local and remote copies, choosing the copy all others are ancestors of, and reports ? when none leads. (2) jaira-teamlead: re-read lanes and open PRs before any list of open decisions, show it only when changed, report signoff/human tickets in the role's shape; bughunt check now compares the note sha as a prefix of the full head sha of the handle branch instead of feat/<id> short form. (3) jaira-worker, jaira-dispatcher and jaira-role-pr: run the project's own CI gates locally before every push, read off the repo (workflows, task runner), red gate = no push. (4) README + docs/how-to-work-with-jaira.html role tables, wantRoles in role_test.go, release note TWRAP8.md, shipped.sha256 regenerated."
-round: 14
+round: 15
 review-gaps: |-
   note: core/role/builtin/jaira-role-signoff/SKILL.md:99-101 - the continuation lines of the "bug hunt on HEAD" bullet lost their two-space indent; renders as a lazy continuation, cosmetic only
   note: the role lists signoff tickets on other boards with --lane signoff; a board whose person lane has another name is silently skipped (wording assumption, no wrong result on this repo)
@@ -129,3 +129,4 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-twrap8  2. go test -co
 - **2026-11-21 08:54 · Alexander Sacharov** — bughunt: done at a3af8998 - 0 findings in 3 files read as diff since 390088c7, follow-up hunt, no new files; signoff SKILL.md:98-101 prefix match of the note sha against the full head, return rule 0 (status-line ❌ gives back, ? needs a named reason) agrees with the empty-head ? rule at :79-83, teamlead SKILL.md:212-216 uses the full sha too; both new shipped.sha256 lines equal sha256 of the current files; concurrency, error paths, input, permissions checked; go test ./core/role ./core/shipped -count=1 green; files: .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md README.md core/release/notes/TWRAP8.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-role-signoff/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/role/role_test.go core/shipped/shipped.sha256 docs/how-to-work-with-jaira.html
 - **2026-11-21 08:58 · Alexander Sacharov** — worker: review 21.11. (a3af8998) ohne Blocker. Stehen gelassen fuer signoff: Einrueckung SKILL.md:99-101 = nur Wortlaut (nach der Rolle selbst nie 🟡); note: known limit: --lane signoff / --to done setzen die ausgelieferten Lane-Namen voraus, wie schon in teamlead/acceptance; .jaira/milestones/ untracked, nicht dieses Ticket. Schleifenbremse: keine weitere Runde fuer Wortlaut. Branch gepusht nach go vet + go test ./... + check-ticket-commits gruen.
 - **2026-11-21 08:58 · Alexander Sacharov** — Given back from signoff (Teamlead im Auftrag Alex 21.11.): 1) jaira-role-signoff SKILL.md:99-101 Einrueckung der Fortsetzungszeilen. 2) Andere Boards: statt fest --lane signoff die Personen-Lane(s) jedes Boards aus seiner Lane-Konfiguration lesen (human/terminal-naechste Lane), damit ein Board mit anderem Namen nicht still fehlt. Manifest, Diff-Hunt, review, signoff, push.
+- **2026-11-21 09:02 · Alexander Sacharov** — in-progress nach Rueckgabe 08:58: Klasse = die Rolle setzte die ausgelieferten Lane-Namen voraus (signoff, done, in-progress - in Liste, accept-Zeile, give-back-Zeile und Rueckgabe-Note). Fix: pro Board aus 'jaira lanes --board <name> --json' - accept lane = human_exit && !requires_question, terminal = terminal, work lane = output_produces enthaelt outcome-what; nicht gefunden = ? statt geratenem Namen. Geprueft: dieses Board (signoff/done/in-progress), frisches jaira init, und Scratch-Board mit signoff umbenannt in abnahme -> accept=[abnahme], jaira list --lane abnahme rc=0. --board default funktioniert (rc=0). Einrueckung 99-101 korrigiert.
