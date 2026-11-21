@@ -49,6 +49,12 @@ type World = {
   me?: { identity: string; aliases: string[] }
   // The ticket bodies `jaira show --json` gives, by id.
   bodies: Record<string, string>
+  // The bughunt key `jaira show --brief --json` gives, by id; an id without
+  // one gets a brief without the key, as from a jaira older than it.
+  hunts: Record<string, { at: string; state: string } | null>
+  // The commits `git merge-base --is-ancestor <commit> HEAD` finds in the
+  // checkout it runs in, by directory ('@/...'); any other answers 1.
+  contains: Record<string, string[]>
   // What the plugin submitted to this session's conversation itself.
   submitted: string[]
   // The panes the plugin opened, and closed, by id and title.
@@ -125,6 +131,8 @@ const EXPLANATION = (title: string) =>
   ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-explanation', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as never
 const ANSWER = (title: string) =>
   ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-answer', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as never
+const VERDICT = (title: string) =>
+  ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-verdict', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as never
 const MESSAGE = (title: string) =>
   ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-message', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as never
 
@@ -160,6 +168,8 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     noteFails: false,
     toasts: [],
     bodies: {},
+    hunts: {},
+    contains: {},
     submitted: [],
     opened: [],
     closed: [],
@@ -285,6 +295,10 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
       return { value: { exitCode: 1, stdout: '', stderr: 'jaira: ticket file is locked', isStdoutTruncated: false, isStderrTruncated: false } }
     }
     if (cmd === 'jaira' && args[0] === 'whoami') return ok(w.me === undefined ? '' : JSON.stringify(w.me))
+    if (cmd === 'jaira' && args[0] === 'show' && args.includes('--brief')) {
+      const id = args[1]!
+      return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ id, ...(id in w.hunts ? { bughunt: w.hunts[id] } : {}) }))
+    }
     if (cmd === 'jaira' && args[0] === 'show') {
       const status = (w.tickets.find(x => (x as { handle: string }).handle === args[1]) as { status?: string } | undefined)?.status
       return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ handle: args[1], body: w.bodies[args[1]!] ?? '', ...(status !== undefined ? { status, board: '' } : {}) }))
@@ -293,6 +307,9 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'git' && args[0] === 'rev-parse') return ok('/repo/.git\n')
     if (cmd === 'git' && args[0] === '--exec-path') return ok('C:\\Program Files\\Git\\mingw64\\libexec\\git-core\n')
     if (cmd === 'git' && args[0] === 'worktree') return ok(w.worktrees ?? WORKTREES)
+    if (cmd === 'git' && args[0] === 'merge-base' && args[1] === '--is-ancestor') {
+      return (w.contains[`@${e.init?.cwd ?? ''}`] ?? []).includes(args[2]!) ? ok('') : { value: { exitCode: 1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+    }
     const failed = (stderr: string) => ({ value: { exitCode: 1, stdout: '', stderr, isStdoutTruncated: false, isStderrTruncated: false } })
     // A follow-up gets the next handle, F00001 and on; createFails refuses it.
     if (cmd === 'jaira' && args[0] === 'create') {
@@ -367,6 +384,15 @@ type Test$ = Parameters<Extract<Parameters<typeof test>[1], (...args: never[]) =
 const typed = (args = '') =>
   ({ command: 'cockpit', args, origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 120 } }) as const
 
+// The Verdict pane of a ticket, opened from the band: what the row leaves out.
+async function verdictOf($: Test$, band: { press: (q: { key: string }) => Promise<unknown> }, id: string) {
+  await band.press({ key: `verdict-${id}` })
+  const pane = await $.ui.mount(VERDICT(`Review verdict of ${id}`))
+  const texts = (await pane.findAll({ type: 'Text' })).map(x => x.text)
+  await pane.unmount()
+  return { texts, find: async (q: { type: 'Text'; text: string | RegExp }) => texts.find(x => (typeof q.text === 'string' ? x === q.text : q.text.test(x))) }
+}
+
 async function startSession($: Test$) {
   await $.session.start({ source: 'startup', cwd: '/repo', surface: null, isInteractive: true } as never)
 }
@@ -409,9 +435,91 @@ describe('waiting for you', () => {
     expect((await ui.findAll({ type: 'Box' })).some(x => x.props.borderStyle === 'round')).toBe(true)
     expect(await ui.find({ type: 'Text', text: 'jaira-cockpit' })).toBeDefined()
     expect((await ui.find({ text: 'Waiting for you' }))).toBeDefined()
-    expect((await ui.find({ type: 'Text', text: /MG677R \| signoff \| approve mit Vorbehalt/ }))).toBeDefined()
+    expect((await ui.find({ type: 'Text', text: /MG677R \| signoff \| DoD/ }))).toBeDefined()
     expect((await ui.find({ type: 'Text', text: /K7P2QX \| human/ }))).toBeDefined()
+    // The verdict is a press on Verdict away, not in the row.
+    expect(await ui.find({ text: /approve mit Vorbehalt/ })).toBeUndefined()
     expect(await ui.find({ text: /T8QS1Y/ })).toBeUndefined()
+  })
+
+  test('a ticket in the band is one row: its marks, no verdict, no notes, no question under it', async ($, on) => {
+    const w = world(on)
+    const verdict = 'approve, but the cache key ignores the branch'
+    w.tickets = [
+      { ...SIGNOFF, goal: 'Two branches never share a cache entry.', dod_complete: true, round: 3, review_round: 2, question: 'keep the old key?', review: { verdict, gaps: 'removed a helper', verdict_gaps: 'blocker: the key ignores the branch\nnote: a test is missing\nnote: a comment is stale' } },
+      { ...SIGNOFF, handle: 'AB12CD', dod_complete: false, review: { verdict: 'approve', gaps: 'none' } },
+      { ...SIGNOFF, handle: 'EF34GH', review: { verdict: 'approve' } },
+    ]
+    w.hunts = { MG677R: { at: 'abc1234', state: 'ok' }, AB12CD: null }
+    await startSession($)
+    // Read once the band is up: the hunts are read for the tickets it shows.
+    await w.clock.advance(60_000)
+    const band = await $.ui.mount(BAND)
+    for (const id of ['MG677R', 'AB12CD', 'EF34GH']) {
+      const row = await band.find({ key: `row-${id}` })
+      expect(row?.children.length).toBe(1)
+    }
+    expect(await band.find({ text: /ignores the branch|a test is missing|keep the old key/ })).toBeUndefined()
+    expect(await band.find({ type: 'Text', text: 'MG677R | signoff | DoD ✓ | bughunt ✓ | 1 blocker | 2 notes | review of round 2 | ? ' })).toBeDefined()
+    // No hunt finished is a cross; a jaira that does not say, or a ticket
+    // with no dod_complete, a '?'.
+    expect(await band.find({ type: 'Text', text: 'AB12CD | signoff | DoD ✗ | bughunt ✗ | 0 blockers | 0 notes ' })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: 'EF34GH | signoff | DoD ? | bughunt ? | 0 blockers | 0 notes ' })).toBeDefined()
+    // The hunt is read where the ticket's code is: its own worktree.
+    expect(ran(w, 'jaira', 'show', 'MG677R', '--brief', '--json')[0]?.at(-1)).toBe('@/.worktrees/repo-mg677r')
+    // The marks in the theme's colours.
+    const row = await band.find({ key: 'row-MG677R' })
+    const colours = JSON.stringify(row)
+    expect(colours).toContain('"color":"success"')
+    expect(colours).toContain('"color":"error"')
+    // Everything left out of the row is in the Verdict pane, the goal on top.
+    const { texts } = await verdictOf($, band, 'MG677R')
+    expect(texts.slice(0, 2)).toEqual(['cache key', 'Goal: Two branches never share a cache entry.'])
+    for (const text of ['? keep the old key?', `Verdict: ${verdict}`, '[blocker] blocker: the key ignores the branch', '· note: a test is missing', '· note: a comment is stale']) {
+      expect(texts).toContain(text)
+    }
+    expect(texts.some(x => /review of round 2, changed since/.test(x))).toBe(true)
+  })
+
+  test('a hunt\'s fail is a red cross only in a checkout that holds the hunt\'s commit', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      // In its own worktree, which holds the hunt: the fail stands.
+      { ...SIGNOFF, review: { verdict: 'approve' } },
+      // No worktree of its own: read in the main checkout, which does not.
+      { ...SIGNOFF, handle: 'AB12CD', review: { verdict: 'approve' } },
+    ]
+    w.hunts = { MG677R: { at: 'abc1234', state: 'fail' }, AB12CD: { at: 'def5678', state: 'fail' } }
+    w.contains = { '@/.worktrees/repo-mg677r': ['abc1234'] }
+    await startSession($)
+    await w.clock.advance(60_000)
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ type: 'Text', text: /^MG677R \| signoff \| DoD \? \| bughunt ✗/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /^AB12CD \| signoff \| DoD \? \| bughunt \?/ })).toBeDefined()
+    expect(ran(w, 'git', 'merge-base', '--is-ancestor', 'def5678', 'HEAD')[0]?.at(-1)).toBe('@/repo')
+  })
+
+  test('an earlier review whose notes were not kept counts nothing: unknown, not zero', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, round: 3, review_round: 2, review: { verdict: 'back to in-progress: gap 1', gaps: 'removed a helper' } }]
+    await startSession($)
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ type: 'Text', text: /MG677R \| signoff \| .*\? blockers \| \? notes \| review of round 2/ })).toBeDefined()
+    const { texts } = await verdictOf($, band, 'MG677R')
+    expect(texts).toContain('The notes of that review were not kept: a later lane rewrote them.')
+    expect(texts.some(x => /removed a helper/.test(x))).toBe(false)
+  })
+
+  test('the Explain pane starts with the ticket\'s title and goal', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, goal: 'Two branches never share a cache entry.' }]
+    w.bodies.MG677R = '## Progress\n\n- **2026-10-12 15:00 · Alex** — explain: The key leaves out the branch.'
+    await startSession($)
+    const band = await $.ui.mount(BAND)
+    await band.press({ key: 'read-MG677R' })
+    const texts = (await (await $.ui.mount(EXPLANATION('Explanation of MG677R'))).findAll({ type: 'Text' })).map(x => x.text)
+    expect(texts.slice(0, 2)).toEqual(['cache key', 'Goal: Two branches never share a cache entry.'])
+    expect(texts.indexOf('Explanation of MG677R')).toBeGreaterThan(1)
   })
 
   test('tickets waiting on another board are listed too, each by its own board\'s lanes', async ($, on) => {
@@ -675,7 +783,11 @@ describe('waiting for you', () => {
     const w = world(on, { herdr: true })
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    expect(await ui.find({ type: 'Text', text: /\? Popup oder eigene Seite\?/ })).toBeDefined()
+    // The row marks the question; the question itself is in the Verdict pane.
+    expect(await ui.find({ text: /Popup oder eigene Seite/ })).toBeUndefined()
+    expect(await ui.find({ type: 'Text', text: /K7P2QX \| human \| .* \| \?/ })).toBeDefined()
+    await ui.press({ key: 'verdict-K7P2QX' })
+    expect(await (await $.ui.mount(VERDICT('Review verdict of K7P2QX'))).find({ type: 'Text', text: '? Popup oder eigene Seite?' })).toBeDefined()
     await ui.press({ key: 'discuss-K7P2QX' })
     // The chat sends its decision to this session, by its messaging socket.
     expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 8)).toEqual(['bash', SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'k7p2qx', 'K7P2QX', 'discuss'])
@@ -1113,9 +1225,12 @@ describe('waiting for you', () => {
     await startSession($)
     const band = await $.ui.mount(BAND)
     for (const id of ['OLD123', 'NEW456', 'BLK789']) expect(await band.find({ key: `explain-${id}` })).toBeDefined()
-    expect(await band.find({ type: 'Text', text: /review of round 1, changed since/ })).toBeDefined()
-    expect(await band.find({ type: 'Text', text: /review of round 7, changed since/ })).toBeDefined()
+    // The row marks it; the Verdict pane says it whole.
+    expect(await band.find({ type: 'Text', text: /OLD123 \| signoff \| .*review of round 1/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /BLK789 \| signoff \| .*review of round 7/ })).toBeDefined()
     expect(await band.find({ type: 'Text', text: /review of round 2/ })).toBeUndefined()
+    expect(await (await verdictOf($, band, 'OLD123')).find({ type: 'Text', text: /review of round 1, changed since/ })).toBeDefined()
+    expect(await (await verdictOf($, band, 'NEW456')).find({ type: 'Text', text: /changed since/ })).toBeUndefined()
   })
 
   test('a later round\'s optimize gaps are no review notes under the row', async ($, on) => {
@@ -1126,8 +1241,8 @@ describe('waiting for you', () => {
     ]
     await startSession($)
     const band = await $.ui.mount(BAND)
-    expect(await band.find({ type: 'Text', text: /removed the unused helper|inlined the close element/ })).toBeUndefined()
-    expect(await band.find({ type: 'Text', text: /· note: a test is missing/ })).toBeDefined()
+    expect(await (await verdictOf($, band, 'OPT123')).find({ type: 'Text', text: /removed the unused helper|inlined the close element/ })).toBeUndefined()
+    expect(await (await verdictOf($, band, 'CUR456')).find({ type: 'Text', text: /· note: a test is missing/ })).toBeDefined()
   })
 
   test('a verdict of an earlier round lists the review\'s own notes, kept beside it, not optimize\'s', async ($, on) => {
@@ -1138,8 +1253,10 @@ describe('waiting for you', () => {
     ]
     await startSession($)
     const band = await $.ui.mount(BAND)
-    expect(await band.find({ type: 'Text', text: /· note: the export test covers 1MB/ })).toBeDefined()
-    expect(await band.find({ type: 'Text', text: /removed the unused helper/ })).toBeUndefined()
+    const old = await verdictOf($, band, 'OLD123')
+    expect(await old.find({ type: 'Text', text: /· note: the export test covers 1MB/ })).toBeDefined()
+    expect(await old.find({ type: 'Text', text: /removed the unused helper/ })).toBeUndefined()
+    expect(await (await verdictOf($, band, 'BLK456')).find({ type: 'Text', text: /\[blocker\] blocker: DoD 2 - an empty export writes a header/ })).toBeDefined()
     // the blocker kept beside an earlier verdict offers Explain; notes alone do not
     expect(await band.find({ key: 'explain-BLK456' })).toBeDefined()
     expect(await band.find({ key: 'explain-OLD123' })).toBeUndefined()
@@ -1199,29 +1316,40 @@ describe('waiting for you', () => {
     const open = await $.ui.mount(BAND)
     for (const id of ['BL0CK1', 'BL0CK2', 'BL0CK3', 'BL0CK4', 'BL0CK5', 'BL0CK6', 'RESRV1']) expect(await open.find({ key: `explain-${id}` })).toBeDefined()
     for (const id of ['NOTES1', 'NOTES2', 'NOTES3', 'AB12CD', 'EF34GH', 'GH56JK', 'MN12PQ', 'PQ34RS', 'LM90NP']) expect(await open.find({ key: `explain-${id}` })).toBeUndefined()
-    // The notes stand under their row as text, without a button of their own.
-    expect(await open.find({ type: 'Text', text: /· note: the export test covers 1MB, not 40MB/ })).toBeDefined()
-    expect(await open.find({ type: 'Text', text: /· note: pre-existing: load\.go:41/ })).toBeDefined()
-    expect(await open.find({ type: 'Text', text: /· Minor: the note after a successful move/ })).toBeDefined()
-    expect(await open.find({ type: 'Text', text: /· note: a comment is stale/ })).toBeDefined()
-    // A blocker is no note, and 'none' is no finding.
-    expect(await open.find({ type: 'Text', text: /· blocker:/i })).toBeUndefined()
-    expect(await open.find({ type: 'Text', text: /· none/ })).toBeUndefined()
-    expect(await open.find({ type: 'Text', text: /inlined the single-use/ })).toBeUndefined()
+    // The row counts them; the notes themselves stand in the Verdict pane.
+    expect(await open.find({ text: /export test covers/ })).toBeUndefined()
+    expect(await open.find({ type: 'Text', text: /NOTES1 \| signoff \| .*0 blockers \| 2 notes/ })).toBeDefined()
+    expect(await open.find({ type: 'Text', text: /BL0CK3 \| signoff \| .*1 blocker \| 1 note $/ })).toBeDefined()
+    expect(await open.find({ type: 'Text', text: /AB12CD \| signoff \| .*0 blockers \| 0 notes/ })).toBeDefined()
+    const notes1 = await verdictOf($, open, 'NOTES1')
+    expect(await notes1.find({ type: 'Text', text: /· note: the export test covers 1MB, not 40MB/ })).toBeDefined()
+    expect(await notes1.find({ type: 'Text', text: /· note: pre-existing: load\.go:41/ })).toBeDefined()
+    expect(await (await verdictOf($, open, 'NOTES2')).find({ type: 'Text', text: /· Minor: the note after a successful move/ })).toBeDefined()
+    const block3 = await verdictOf($, open, 'BL0CK3')
+    expect(await block3.find({ type: 'Text', text: /· note: a comment is stale/ })).toBeDefined()
+    // A blocker is listed as one, not as a note, and 'none' is no finding.
+    expect(await block3.find({ type: 'Text', text: /\[blocker\] blocker: data loss on CRLF/ })).toBeDefined()
+    expect(await block3.find({ type: 'Text', text: /· blocker:/i })).toBeUndefined()
+    expect(await (await verdictOf($, open, 'AB12CD')).find({ type: 'Text', text: /none/ })).toBeUndefined()
+    expect(await open.find({ key: 'verdict-LM91NP' })).toBeUndefined()
   })
 
   test('the whole review verdict is read from the band, with no explanation on the ticket', async ($, on) => {
     const w = world(on)
     const long = 'The diff meets all five DoD items; the one weak spot is the cache key, which leaves out the branch, so two branches share an entry.'
-    w.tickets = [{ ...SIGNOFF, review: { verdict: long } }, HUMAN]
+    w.tickets = [{ ...SIGNOFF, review: { verdict: long } }, { ...HUMAN, question: '' }]
     await startSession($)
     const band = await $.ui.mount(BAND)
     expect(await band.find({ key: 'read-MG677R' })).toBeUndefined()
-    // No verdict, no button.
+    // No verdict, no notes, no question: no button.
     expect(await band.find({ key: 'verdict-K7P2QX' })).toBeUndefined()
     await band.press({ key: 'verdict-MG677R' })
-    expect(w.opened).toEqual([{ id: 'cockpit-message', title: 'Review verdict of MG677R', focus: true }])
-    expect(await (await $.ui.mount(MESSAGE('Review verdict of MG677R'))).find({ type: 'Text', text: long })).toBeDefined()
+    expect(w.opened).toEqual([{ id: 'cockpit-verdict', title: 'Review verdict of MG677R', focus: true }])
+    const pane = await $.ui.mount(VERDICT('Review verdict of MG677R'))
+    expect(await pane.find({ type: 'Text', text: `Verdict: ${long}` })).toBeDefined()
+    // It starts with what the ticket is for.
+    const texts = (await pane.findAll({ type: 'Text' })).map(x => x.text)
+    expect(texts[0]).toBe('cache key')
   })
 
   test('the Explain tab closes once its explanation is on the ticket, not on an older one', async ($, on) => {
