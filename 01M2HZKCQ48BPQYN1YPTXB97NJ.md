@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:07:24Z
+updated-at: 2026-11-21T08:07:27Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -66,7 +66,7 @@ review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/solo && cd /
 - [x] Eine Zeile in core/release/notes/XB97NJ.md (die Notiz-Dateien ersetzen seit AR97K9 core/release/NOTES.md).
   proof: core/release/notes/XB97NJ.md
 - [x] Eingabeklassen der Datei .jaira/pr per Tabellentest: fehlt, leer, nur Kommentar, CRLF, Gross-/Kleinschreibung ('None'), Leerzeichen um den Wert, Tippfehler ('nnone'), zwei Zeilen - nur exakt 'none' heisst kein PR, alles Unbekannte bleibt person.
-  proof: core/board/arrival_test.go TestPRModeInTakesOnlyTheExactWord + core/settings/settings_test.go TestPRDefaultsToThePerson (none-Faelle)
+  proof: core/board/arrival_test.go TestPRModeInTakesOnlyTheExactWord (inkl. BOM) + core/settings/settings_test.go TestPRDefaultsToThePerson, TestPRSourceSaysWhenTheFileDidNotTake
 - [x] Der Block ist byte-gleich zu heute, wo .jaira/pr fehlt oder person sagt; ein Board mit none/agent bekommt den passenden Absatz durch jaira update, und jaira validate meldet den Block als veraltet, sobald die Datei sich aendert.
   proof: core/board/arrival_test.go TestNoteSaysHowWorkArrivesAndDriftsWithTheFile (Absatz bei none/agent, NoteIsCurrent stale nach Dateiwechsel, Absatz weg nach Entfernen)
 - [x] Bei none landet die Arbeit nur durch das Tor: jaira roles pr-gate laesst erst durch, wenn jedes Ticket des Zweigs in done ist, liest .jaira/pr vom Basis-Zweig, und das Landen ist ein fast-forward push - ein abgelehnter (nicht fast-forward) Push wird nie mit --force wiederholt.
