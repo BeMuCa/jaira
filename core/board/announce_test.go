@@ -235,12 +235,13 @@ func TestAgentNoteNamesReject(t *testing.T) {
 // code; on a board 'jaira init' keeps out of git there is no file to add, and
 // without this caveat the agent reads the rule as broken rather than as not
 // meant for its board.
-func TestAgentNoteSaysTheTicketCannotRideOnAnUnsharedBoard(t *testing.T) {
+func TestAgentNoteNamesProofAndTheUnsharedBoardCaveat(t *testing.T) {
 	flat := strings.Join(strings.Fields(agentNote), " ")
 	for _, want := range []string{
 		"--done --proof",
-		"This point and the next hold on a shared board only",
+		"On a board not shared yet",
 		"there is no ticket file to add or commit — commit the code alone",
+		"The next point holds there all the more; only its sentences about the ticket file fall away",
 	} {
 		if !strings.Contains(flat, want) {
 			t.Errorf("agentNote does not contain %q", want)
@@ -254,8 +255,9 @@ func TestAgentNoteSaysTheTicketCannotRideOnAnUnsharedBoard(t *testing.T) {
 	}
 	flatSkill := strings.Join(strings.Fields(string(skill)), " ")
 	for _, want := range []string{
-		"This rule and the next hold on a shared board only",
+		"On a board not shared yet",
 		"there is no ticket file to add or commit: commit the code alone",
+		"The next rule holds there all the more; only its sentences about the ticket file fall away",
 	} {
 		if !strings.Contains(flatSkill, want) {
 			t.Errorf("core/role/jaira/SKILL.md does not contain %q", want)

@@ -87,7 +87,8 @@ reads, and reports what it finds to the dispatcher that started it:
   — never `-A`, another session may be working in the same worktree — and name
   the ticket id in the commit subject, `fix(A3K9QP): …`. That handle is what
   jaira derives the ticket's commit list from; without it the move into the last
-  lane is refused.
+  lane is refused. On a board not shared yet (`.jaira/` out of git until
+  `jaira share`) there is no ticket file to add: `git add` the code alone.
 - **did you change no code? Then commit nothing.** A lane that only left a note
   and a lane change has nothing to show a reviewer, and a commit for that alone
   turns the branch history into one entry per lane with the actual work buried
@@ -288,6 +289,9 @@ filled in:
 git add <the files you changed> .jaira/tickets/<this ticket>.md
 git commit -m "fix(A3K9QP): <what changed>"
 ```
+
+On a board not shared yet (`.jaira/` out of git until `jaira share`) leave the
+ticket file out of the `git add`: git refuses it as ignored.
 
 **The handle in the subject is not decoration.** jaira derives the ticket's
 commit list from two places — the ticket file's own history, which is thin on

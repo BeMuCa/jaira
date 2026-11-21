@@ -328,10 +328,10 @@ A reviewer reading that commit then sees the change *and* what it was for. Split
 across two commits, they get a diff whose ticket is still in whatever state the
 previous commit left it, and have to go looking.
 
-This rule and the next hold on a shared board only. Where `.jaira/` is still out
-of git — `jaira init` keeps it there until `jaira share` — there is no ticket
-file to add or commit: commit the code alone, and the handle in its subject is
-the whole link.
+On a board not shared yet — `jaira init` keeps `.jaira/` out of git until
+`jaira share` — there is no ticket file to add or commit: commit the code alone,
+and the handle in its subject is the whole link. The next rule holds there all
+the more; only its sentences about the ticket file fall away.
 
 **A lane that changed no code commits nothing.** critique, testing and review
 leave a note and a lane change and no source change; a commit carrying only that

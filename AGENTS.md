@@ -101,10 +101,11 @@ Working a ticket:
   then `git add` the changed file under `.jaira/tickets/` alongside your source
   changes and commit them together. A reviewer then sees the change and what it
   was for in one place, instead of a diff whose ticket is still in whatever
-  state the last commit left it. This point and the next hold on a shared
-  board only: where `.jaira/` is still out of git (`jaira init` until
-  `jaira share`), there is no ticket file to add or commit — commit the code
-  alone, and the handle in its subject is the whole link
+  state the last commit left it. On a board not shared yet (`.jaira/` stays out
+  of git from `jaira init` until `jaira share`) there is no ticket file to add
+  or commit — commit the code alone, and the handle in its subject is the
+  whole link. The next point holds there all the more; only its sentences
+  about the ticket file fall away
 - **a lane that changed no code commits nothing.** critique, testing and review
   leave a note and a lane change and no source change; a commit carrying only
   that is bookkeeping, and a branch with one of them per lane hides the work
