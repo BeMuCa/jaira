@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:39:08Z
+updated-at: 2026-11-21T08:39:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1876460
 claimed-at: 2026-11-21T08:39:00Z
@@ -41,8 +41,8 @@ review-gaps: |-
 test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at 10348a71; DoD 1-4 verified in the tree; status line now ✅, ❌ or ? in both roles. Roles write nothing - no concurrent-writer case."
 hunt-verdict: "clean: diff hunt at 10348a71 (HEAD), 0 findings"
 question: ""
-review-verdict: "All four DoD items are met by the diff. No blocker: every command and flag the role prescribes exists (jaira list --lane/--board, gh run list --commit/--workflow, glab ci list --sha, jaira create --assignee), the JSON keys it names match jaira show --json, the head lookup on this repo returns 558c8205 = HEAD, and the last bughunt note names that commit. go test ./core/role ./core/shipped green. Uncommitted .jaira/milestones/ files in the worktree are not this ticket's."
-review-round: 11
+review-verdict: "Diff erfuellt alle vier DoD-Punkte; geprueft: jaira show --json hat handle/dod_items[].done/review.verdict, jaira list --lane/--board, jaira create --follows/--assignee, glab ci list --sha existieren, der Cockpit schreibt 'Given back from signoff:'; go test ./core/role ./core/shipped gruen; alle 14 Commits nennen TWRAP8. Keine Blocker, drei Notes."
+review-round: 12
 review-check: |-
   1. cd into the feat/twrap8 checkout and run: go test ./core/role ./core/shipped - both print ok
   2. go run ./cmd/jaira roles install (or jaira update --roles from this build) - ~/.claude/skills/jaira-role-signoff/SKILL.md appears
