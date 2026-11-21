@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T10:04:07Z
+updated-at: 2026-11-21T13:25:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3647270
 claimed-at: 2026-11-21T09:36:24Z
@@ -216,3 +216,8 @@ back-count: 1
 - **2026-11-21 09:59 · Alexander Sacharov** — review round 16 (fresh, 9b94f206): no blocker; 4 notes (ambiguous short hunt sha reads fail, Explain format line still ok|fail, documented squash/conversational limit, untracked .jaira/milestones not this ticket). go test ./... ok, plugin test 220 pass; brief probed: clean -> ok, uncommitted edit to a hunted file -> unknown.
 - **2026-11-21 09:59 · Alexander Sacharov** — worker stopped: ticket in signoff after the fresh review of round 16 without a blocker; feat/df0yd6 pushed at 9b94f206; ticket file carries the review fields uncommitted. Review notes 1-4 stay known limits per the teamlead's final-round ruling (09:37). Report sent to the parent session.
 - **2026-11-21 10:04 · Alexander Sacharov** — after signoff (teamlead 10:00, text only, no loop): review note 2 closed - the Explain format line in texts.ts and spawn.sh reads 'bughunt on HEAD ok|fail|unknown|skipped' and the status sentence no longer opens with 'each check ends in ok or fail' (DoD, tests, blockers: ok|fail; bughunt: four words), so Explain does not write fail where it means unknown. Test asserts both. Notes 1 and 3 stay known limits.
+- **2026-11-21 13:25 · Alexander Sacharov** — explain: Der Review fand keinen Blocker, nur Hinweise. Der wichtigste: ein kurzer Hunt-Commit (7+ Hex) kann in einem gewachsenen Repo mehrdeutig werden, dann liest der Hunt 'fail' statt 'unknown'. Die uebrigen: bekanntes Limit bei Squash/Rebase-Merge, ein fremder untracked Ordner .jaira/milestones; die Format-Zeile im Explain ist schon behoben (1e6a3d7e).
+Warum: Ein falsches Rot ist selten und heilt beim naechsten Hunt; es blockiert nichts und verliert keine Daten.
+1) Zurueckgeben: der Hunt schreibt den vollen sha oder unterscheidet Mehrdeutigkeit von fehlendem Commit [give back]
+2) Ticket so annehmen, das Limit bleibt dokumentiert, .jaira/milestones nicht mitcommitten [accept]
+Empfehlung: 2 - das Risiko ist selten und harmlos, ein weiterer Fix-Durchlauf wuerde nur neue Randfaelle erzeugen.
