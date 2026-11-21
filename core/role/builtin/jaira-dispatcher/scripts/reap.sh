@@ -210,7 +210,7 @@ default_base() {
 landed_head() {
   local base="$3" tip pat
   tip="$(git -C "$root" rev-parse --verify -q "refs/heads/$1" 2>/dev/null || true)"
-  pat="^((Revert|Reapply) \")*[a-z]+\\(([^)]*[, ])?$2([, ][^)]*)?\\)!?:"
+  pat="^[a-z]+\\(([^)]*[, ])?$2([, ][^)]*)?\\)!?:"
   if [ -n "$base" ] && [ -n "$tip" ] && git -C "$root" merge-base --is-ancestor "$tip" "$base" 2>/dev/null \
     && grep -qE "$pat" <<<"$(git -C "$root" log -E --grep="$pat" --format=%s "$tip" --)"; then
     echo "$tip"

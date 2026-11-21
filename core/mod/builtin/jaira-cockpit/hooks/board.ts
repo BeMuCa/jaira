@@ -378,13 +378,11 @@ export function stepAfterAccept(ahead: number, pending: readonly string[], hasPu
 // The tickets a branch carries, off `git log --format=%s <base>..<branch>`:
 // every handle a subject names the way this board's commits do,
 // `type(A3K9QP): ...`, or several at once, `chore(A3K9QP,B7XQ2M): ...`,
-// once each. git's own subject for a revert, `Revert "type(A3K9QP): ..."`
-// (or `Reapply "..."` for reverting that), names the same tickets — the same
-// reading as HandlesInSubjects in core/gitrepo/named.go, which the gate uses.
+// once each.
 export function ticketsNamed(subjects: string): string[] {
   const out: string[] = []
   for (const line of subjects.split('\n')) {
-    const scope = /^(?:(?:Revert|Reapply) ")*[a-z]+\(([^)]*)\)!?:/.exec(line.trim())?.[1] ?? ''
+    const scope = /^[a-z]+\(([^)]*)\)!?:/.exec(line.trim())?.[1] ?? ''
     for (const id of scope.split(/[\s,]+/)) if (/^[0-9A-Z]{6}$/.test(id) && !out.includes(id)) out.push(id)
   }
   return out

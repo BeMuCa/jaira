@@ -13,11 +13,11 @@ var ErrNoSuchRef = errors.New("no such commit")
 
 // subjectScope is the scope of a commit subject the way this board's commits
 // are written: type(A3K9QP): ..., or type(A3K9QP,B7XQ2M)!: ... for several.
-// The subject git itself writes for 'git revert' — Revert "type(A3K9QP): ..."
-// — and for reverting that again — Reapply "...", or Revert "Revert "..."" in
-// a git before 2.43 — names the same tickets: the revert is work on the ticket
-// it undoes, and under .jaira/pr none an unnamed commit holds the gate.
-var subjectScope = regexp.MustCompile(`^(?:(?:Revert|Reapply) ")*[a-z]+\(([^)]*)\)!?:`)
+// The subject git writes for 'git revert', Revert "type(A3K9QP): ...", names
+// no ticket: whose work a revert takes back depends on where the reverted
+// commit sits, which no subject says. A revert is written as
+// fix(A3K9QP): revert ... (jaira-role-pr says so).
+var subjectScope = regexp.MustCompile(`^[a-z]+\(([^)]*)\)!?:`)
 
 var handleShape = regexp.MustCompile(`^[0-9A-Z]{6}$`)
 
@@ -46,9 +46,7 @@ func (r *Repo) TicketsNamed(base string) ([]string, error) {
 }
 
 // UnnamedCommits returns the commits of base..HEAD whose subject names no
-// ticket, as "<short sha> <subject>" in the order git lists them. A revert
-// with git's own subject names a ticket only where it takes back a commit of
-// the branch (revertsBranchWork); a revert of the base's work counts here. A merge
+// ticket, as "<short sha> <subject>" in the order git lists them. A merge
 // that names none passes only when its tree is exactly what git's own merge
 // of its two parents gives ('git merge-tree --write-tree'): such a merge
 // brings in nothing not listed on its own — a branch merged in shows its
@@ -67,17 +65,10 @@ func (r *Repo) UnnamedCommits(base string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	var commits [][]string
-	onBranch := map[string]bool{}
-	for _, line := range strings.Split(out, "\n") {
-		if f := strings.SplitN(strings.TrimSpace(line), "\x00", 4); len(f) == 4 {
-			commits = append(commits, f)
-			onBranch[f[0]] = true
-		}
-	}
 	var unnamed []string
-	for _, f := range commits {
-		if len(HandlesInSubjects(f[3])) > 0 && (!revertSubject.MatchString(f[3]) || r.revertsBranchWork(f[0], onBranch)) {
+	for _, line := range strings.Split(out, "\n") {
+		f := strings.SplitN(strings.TrimSpace(line), "\x00", 4)
+		if len(f) != 4 || len(HandlesInSubjects(f[3])) > 0 {
 			continue
 		}
 		if parents := strings.Fields(f[2]); len(parents) > 1 && r.isPlainMerge(f[0], parents) {
@@ -86,29 +77,6 @@ func (r *Repo) UnnamedCommits(base string) ([]string, error) {
 		unnamed = append(unnamed, f[1]+" "+f[3])
 	}
 	return unnamed, nil
-}
-
-// revertSubject is the subject git writes for 'git revert' and for reverting
-// a revert again, as subjectScope reads it.
-var revertSubject = regexp.MustCompile(`^(?:Revert|Reapply) "`)
-
-// revertedCommit is the line 'git revert' writes into the body.
-var revertedCommit = regexp.MustCompile(`(?m)^This reverts commit ([0-9a-f]{40})\b`)
-
-// revertsBranchWork reports whether the revert sha takes back a commit of
-// the branch itself — one in base..HEAD, the set onBranch — and so names that
-// commit's ticket as its own: the two cancel out on the branch. A revert of
-// work the base already has is new work nobody accepted, whatever ticket the
-// reverted commit named; it needs a ticket of its own. No line saying which
-// commit it reverts, or one that cannot be read, is the same: the gate fails
-// closed.
-func (r *Repo) revertsBranchWork(sha string, onBranch map[string]bool) bool {
-	body, err := r.run("log", "-1", "--format=%b", sha)
-	if err != nil {
-		return false
-	}
-	m := revertedCommit.FindStringSubmatch(body)
-	return m != nil && onBranch[m[1]]
 }
 
 // isPlainMerge reports whether the merge commit sha has exactly two parents

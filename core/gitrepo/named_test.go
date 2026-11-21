@@ -8,14 +8,14 @@ import (
 	"time"
 )
 
-func TestHandlesInSubjectsReadsTheScopeAndGitsRevertSubjects(t *testing.T) {
+func TestHandlesInSubjectsReadsOnlyTheScope(t *testing.T) {
 	for subjects, want := range map[string][]string{
 		"fix(A3K9QP): x":                                  {"A3K9QP"},
 		"chore(A3K9QP,B7XQ2M)!: x":                        {"A3K9QP", "B7XQ2M"},
 		"chore(A3K9QP, B7XQ2M): x\nfix(A3K9QP): y":        {"A3K9QP", "B7XQ2M"},
-		`Revert "fix(A3K9QP): x"`:                         {"A3K9QP"},
-		`Revert "Revert "fix(A3K9QP): x""`:                {"A3K9QP"},
-		`Reapply "fix(A3K9QP): x"`:                        {"A3K9QP"},
+		`Revert "fix(A3K9QP): x"`:                         nil,
+		"fix(A3K9QP): revert the cache":                   {"A3K9QP"},
+		`Reapply "fix(A3K9QP): x"`:                        nil,
 		"fix: no scope":                                   nil,
 		"Fix(A3K9QP): capital type":                       nil,
 		"fix(a3k9qp): lower-case handle":                  nil,
@@ -63,25 +63,12 @@ func TestUnnamedCommitsCountsOnlyWhatNoTicketOwns(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 1 || !strings.HasSuffix(got[0], " tidy up") {
-		t.Errorf("UnnamedCommits = %q, want only the 'tidy up' commit (a revert names what it reverts)", got)
+	// git's own revert subject names no ticket, whatever it quotes.
+	if len(got) != 2 || !strings.Contains(got[0], `Revert "fix(A3K9QP): the work"`) || !strings.HasSuffix(got[1], " tidy up") {
+		t.Errorf("UnnamedCommits = %q, want git's revert and 'tidy up'", got)
 	}
 	if named, _ := repo.TicketsNamed("main"); !reflect.DeepEqual(named, []string{"A3K9QP"}) {
 		t.Errorf("TicketsNamed = %v, want [A3K9QP]", named)
-	}
-	// A revert of the base's own work takes back what nobody on this branch
-	// did: it names no ticket of the branch, whatever its subject says.
-	git("checkout", "-q", "main")
-	fixtureCommit(t, dir, map[string]string{"c": "1\n"}, "chore(BASE01): c", at())
-	git("checkout", "-q", "feat")
-	git("merge", "-q", "--no-edit", "main")
-	git("revert", "--no-edit", "main") // Revert "chore(BASE01): c"
-	got, err = repo.UnnamedCommits("main")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(got) != 2 || !strings.Contains(got[0], `Revert "chore(BASE01): c"`) {
-		t.Errorf("UnnamedCommits = %q, want the revert of the base and 'tidy up'", got)
 	}
 	for _, base := range []string{"", "-p"} {
 		if _, err := repo.UnnamedCommits(base); err != ErrNoSuchRef {

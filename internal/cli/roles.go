@@ -207,7 +207,7 @@ unnamed.`,
 				}
 				if len(unnamed) > 0 {
 					return fail(ExitValidation, "unnamed",
-						"pr-gate: %d commit(s) in %s..HEAD name no ticket, and without a pull request nobody would see them before they land — %s; name a ticket in each (git rebase) or %s",
+						"pr-gate: %d commit(s) in %s..HEAD name no ticket, and without a pull request nobody would see them before they land — %s; name a ticket in each, type(<ID>): ... — a revert too, as fix(<ID>): revert <what> (git rebase -i, reword) — or %s",
 						len(unnamed), args[0], strings.Join(unnamed, "; "), then)
 				}
 			}
