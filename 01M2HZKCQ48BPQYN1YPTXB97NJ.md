@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:46:28Z
+updated-at: 2026-11-21T08:46:32Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -35,10 +35,7 @@ question: ""
 outcome-what: "Board haelt in .jaira/pr fest, wie Arbeit ankommt (person/agent/none); Rollen, pr-gate, reap und der CLAUDE.md-Block richten sich danach; Runde 6: BOM in allen einzeiligen Board-Dateien, roles list nennt ein nicht genommenes Wort, reap misst am Remote, auf das gelandet wird"
 outcome-why: "Ein Solo-Projekt ohne Pull Requests blieb an einem PR haengen, den niemand oeffnet"
 outcome-resolves: "XB97NJ"
-review-summary: |-
-  Eine Datei .jaira/pr mit dem Wort 'none' sagt jetzt: dieses Projekt nimmt keine Pull Requests. core/board/arrival.go liest die Datei (nur exakt 'agent'/'none' zaehlen, BOM/CRLF/Kommentare werden ignoriert, alles andere bleibt 'person') und schreibt bei agent/none einen eigenen Absatz in den jaira-Block von CLAUDE.md/AGENTS.md; ohne Datei bleibt der Block byte-gleich, jaira validate meldet ihn als veraltet, wenn die Datei wechselt. 'jaira roles list' meldet pr=none (und nennt ein Wort, das nicht griff). 'jaira roles pr-gate' laesst unter none einen Zweig landen, wenn .jaira/pr im Basis-Zweig none sagt, jedes genannte Ticket in done/logbook ist und jeder Commit ein Ticket nennt - Merges nur, wenn ihr Baum exakt gits eigener Merge der Eltern ist (core/gitrepo/named.go UnnamedCommits). jaira-role-pr bekommt den Schritt 'Land it' (Gate, Basis mergen, Gate erneut, fast-forward push, nie --force); dispatcher/teamlead erwaehnen none; reap.sh zaehlt einen Zweig unter none als gemerged, sobald der Default-Branch des Ziel-Remotes (origin oder bei einem Fork dessen Parent) seine Spitze enthaelt und ein Commit dort das Ticket nennt. Release-Notiz in core/release/notes/XB97NJ.md.
-  Runde 8: Revert/Reapply-Betreffs nennen das Ticket (Gate, cockpit, reap gleich gelesen); eigene Tests fuer UnnamedCommits/isPlainMerge in core/gitrepo; reap.sh haelt jedes Ticket mit Ursache, wenn 'jaira roles list' scheitert.
-  Runde 10 (Teamlead-Entscheid 2): keine Revert-Lesung im Gate; git's 'Revert "..."' gilt als unbenannt, die Ablehnung nennt die Form fix(<ID>): revert <what>, jaira-role-pr sagt es.
+review-summary: "Ein Board kann jetzt in .jaira/pr 'none' sagen (neben person/agent). core/board/arrival.go liest die Datei streng (nur exakt agent/none zaehlt; BOM, CRLF, Kommentare ignoriert; alles andere = person) und haengt bei agent/none einen Absatz 'How work arrives on this board' an den jaira-Block in CLAUDE.md/AGENTS.md; ohne Datei bleibt der Block byte-gleich, validate meldet Drift bei Dateiwechsel. 'jaira roles list' liefert pr=none, pr_when=done und nennt ein Wort, das nicht griff. 'jaira roles pr-gate' laesst unter none einen Zweig durch, wenn .jaira/pr auf der Basis none sagt, jedes genannte Ticket in done/logbook ist und jeder Commit ein Ticket im Betreff nennt (Merges nur, wenn ihr Baum exakt gits eigener Merge der Eltern ist - core/gitrepo/named.go). jaira-role-pr bekommt 'Land it': Gate, Basis mergen, Gate erneut, fast-forward push, nie --force. reap.sh zaehlt unter none einen Zweig als gemerged, sobald der Default-Branch des Ziel-Remotes (origin oder Fork-Parent) seine Spitze enthaelt. Dispatcher/Teamlead erwaehnen none; drei Release-Zeilen."
 round: 15
 review-gaps: |-
   note: unter none lehnt das Gate einen Revert-Commit ab (Betreff 'Revert "fix(X)..."' passt nicht auf type(ID):) - faellt sicher zu, steht aber nirgends in jaira-role-pr; der Agent muss den Betreff umschreiben
