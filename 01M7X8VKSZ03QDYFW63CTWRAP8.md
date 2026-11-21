@@ -25,14 +25,14 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:11:37Z
+updated-at: 2026-11-21T08:11:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-31394
 claimed-at: 2026-11-21T08:01:32Z
 outcome-what: "jaira-role-signoff names the real keys of jaira show --json; upstream/master merged, manifest by union"
 outcome-why: "signoff give-back 21.11.: the role named keys the JSON does not have, and the branch was stacked on an unmerged branch"
 outcome-resolves: "the role reads verdict, gaps, DoD and notes where they actually are; the branch carries only TWRAP8 on top of master"
-review-summary: "Ships the 20.11 teamlead lessons as roles, no Go code: a new read-only role jaira-role-signoff (status line bound to the branch head commit - branch found by the ticket handle as a name segment, newest of local/remote copies by ancestry, divergence = ?; tests from the CI run of exactly that commit; bughunt note must name HEAD - then a table marking every open note 🔴/🟡/⚪/🔵, one recommendation and paste-ready accept/give-back lines, plus return rules: after two noted 'Given back from signoff:' returns small edges go to a follow-up ticket). jaira-teamlead re-reads lanes and open PRs before any 'waiting for you' list, reports signoff tickets in that shape and points to the signoff role for the rules; its hunt check no longer assumes feat/<id>. jaira-worker gets 'Before you push' (run the project's CI gates locally, read off the repo), jaira-role-pr and jaira-dispatcher point to it. README, docs/how-to-work-with-jaira.html, role_test wantRoles, shipped.sha256 and release note TWRAP8.md follow."
+review-summary: "critique 21.11.: key names now match jaira show --json (checked against the live payload of TWRAP8: status, handle, dod_items[].done, review.verdict/gaps/summary, notes only in body); merge brought no conflict in the roles' own text, only the manifest. Nothing to change."
 round: 9
 review-gaps: |-
   note: jaira-role-signoff tells the agent to read "notes" and "review-verdict" from jaira show --json, but that JSON has no notes key (notes sit in body) and the verdict is .review.verdict - an agent finds it, the wording could name the real keys
