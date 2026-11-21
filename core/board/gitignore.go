@@ -81,43 +81,26 @@ func rawPlace(root string) (inRepo bool, exclude, prefix string) {
 	if err != nil {
 		return false, "", ""
 	}
-	return splitProbe(string(out))
+	return parseProbe(string(out))
 }
 
-// parseProbe reads place's git output: parsePlace's lines, then "true" or
-// "false" for --is-inside-work-tree. A git directory that is no working tree
-// still has its exclude file.
-func parseProbe(out string) (inRepo bool, exclude, line string) {
-	inRepo, exclude, prefix := splitProbe(out)
-	if exclude == "" {
-		return inRepo, "", ""
-	}
-	return inRepo, exclude, entryLine(prefix)
-}
-
-func splitProbe(out string) (inRepo bool, exclude, prefix string) {
+// parseProbe reads rawPlace's git output: parsePlace's lines, then "true"
+// or "false" for --is-inside-work-tree. A git directory that is no working
+// tree still has its exclude file.
+func parseProbe(out string) (inRepo bool, exclude, prefix string) {
 	lines := strings.Split(strings.TrimRight(out, "\r\n"), "\n")
 	inRepo = strings.TrimSpace(lines[len(lines)-1]) == "true"
-	exclude, prefix = splitPlace(strings.Join(lines[:len(lines)-1], "\n"))
+	exclude, prefix = parsePlace(strings.Join(lines[:len(lines)-1], "\n"))
 	return inRepo, exclude, prefix
 }
 
-// parsePlace reads gitPlace's two lines of git output: the common git dir —
+// parsePlace reads two lines of git output: the common git dir —
 // "C:/repo/.git" on Windows, which filepath makes a path of — and the prefix
 // of root below the top of the working tree, "" or "sub/dir/", always with
 // forward slashes, as exclude patterns are written. Only the line ending
 // comes off a line: a space at either end belongs to a directory's name
 // (" sub/"), and an entry without it excludes nothing.
-func parsePlace(out string) (exclude, line string) {
-	exclude, prefix := splitPlace(out)
-	if exclude == "" {
-		return "", ""
-	}
-	return exclude, entryLine(prefix)
-}
-
-// splitPlace is parsePlace before the prefix becomes a pattern.
-func splitPlace(out string) (exclude, prefix string) {
+func parsePlace(out string) (exclude, prefix string) {
 	parts := strings.Split(strings.TrimRight(out, "\r\n"), "\n")
 	common := strings.TrimSuffix(parts[0], "\r")
 	if common == "" {

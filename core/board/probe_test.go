@@ -9,7 +9,7 @@ import (
 	"github.com/BeMuCa/jaira/core/gitrepo"
 )
 
-// parseProbe reads gitPlace's lines with --is-inside-work-tree after them,
+// parseProbe reads rawPlace's lines with --is-inside-work-tree after them,
 // over every shape git prints: LF and CRLF, a board at the top and in a
 // subdirectory, a git directory that is no working tree, and git before 2.31,
 // which prints --path-format back as an extra first line.
@@ -33,7 +33,11 @@ func TestParseProbeReadsWhatGitPrints(t *testing.T) {
 		{"", false, "", ""},
 	}
 	for _, c := range cases {
-		inRepo, ex, line := parseProbe(c.out)
+		inRepo, ex, prefix := parseProbe(c.out)
+		line := ""
+		if ex != "" {
+			line = entryLine(prefix)
+		}
 		if inRepo != c.inRepo || filepath.ToSlash(ex) != c.exclude || line != c.line {
 			t.Errorf("parseProbe(%q) = %v, %q, %q; want %v, %q, %q", c.out, inRepo, ex, line, c.inRepo, c.exclude, c.line)
 		}

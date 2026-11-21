@@ -194,7 +194,11 @@ func TestParsePlaceReadsWhatGitPrints(t *testing.T) {
 		{abs + "\na[1]/b*?/\n", abs + "/info/exclude", `/a\[1]/b\*\?/.jaira/`},
 	}
 	for _, c := range cases {
-		ex, line := parsePlace(c.out)
+		ex, prefix := parsePlace(c.out)
+		line := ""
+		if ex != "" {
+			line = entryLine(prefix)
+		}
 		if filepath.ToSlash(ex) != c.exclude || line != c.line {
 			t.Errorf("parsePlace(%q) = %q, %q; want %q, %q", c.out, ex, line, c.exclude, c.line)
 		}

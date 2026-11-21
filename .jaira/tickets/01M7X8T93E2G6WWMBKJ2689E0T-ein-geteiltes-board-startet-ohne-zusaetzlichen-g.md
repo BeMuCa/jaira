@@ -19,15 +19,15 @@ related: []
 follows: 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-11-20T20:01:56Z
-updated-at: 2026-11-21T08:08:22Z
+updated-at: 2026-11-21T08:09:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-27289
 claimed-at: 2026-11-21T08:01:08Z
 outcome-what: Die Merge-Treiber-Pruefung bei jedem Befehl fragt git in einem rev-parse nach Arbeitsbaum und info/exclude (board.Probe) statt in zwei; ein geteiltes Board startet wieder 2 git-Prozesse wie vor NNV39Y.
 outcome-why: NNV39Y hatte jedem Befehl eines geteilten Boards einen git-Prozess fuer die Ignore-Pruefung hinzugefuegt; Projektregel instant startup.
 outcome-resolves: Der zusaetzliche git-Prozess pro Befehl aus der NNV39Y-review.
-review-summary: "bindDriverIfShared, das bei jedem Befehl laeuft, fragte git bisher zweimal (gitPlace fuer den info/exclude-Eintrag, dann IsRepo); jetzt fragt board.Probe beides mit einem rev-parse (--git-common-dir --show-prefix --is-inside-work-tree), ein .gitignore-Eintrag auf der Platte entscheidet ganz ohne git. gitPlace teilt sich dieselbe place()-Funktion. Nebenbei schneidet parsePlace vom --show-prefix nur noch das Zeilenende ab statt TrimSpace, so dass ein Board in ' sub' den Eintrag '/ sub/.jaira/' bekommt statt des wirkungslosen '/sub/.jaira/'; Release-Note dazu."
-round: 4
+review-summary: "core/board/gitignore.go parseProbe/parsePlace have only test callers since rawPlace calls splitProbe/splitPlace; drop the two wrappers, let parseProbe/parsePlace return the prefix and the tests compare entryLine(prefix)"
+round: 5
 review-gaps: |-
   note: der Zaehltest ruft bindDriverIfShared direkt auf, nicht einen ganzen Befehl; von Hand nachgezaehlt: jaira list auf geteiltem Board 9 git-Prozesse (master e31801dc) -> 8
   note: ein Board in ' sub', das ein aelteres jaira privat gemacht hat, behaelt nach jaira update den alten falschen Eintrag '/sub/.jaira/' in info/exclude neben dem richtigen; er macht stillschweigend ein Board in einem echten Verzeichnis 'sub' privat, falls es eines gibt
@@ -99,3 +99,5 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-689e0t && go test ./in
 - **2026-11-21 08:00 · Alexander Sacharov** — Given back from signoff: Alex 21.11. alle Funde in dieser Runde schliessen. 1) jaira update entfernt den alten falschen Eintrag '/sub/.jaira/' (Board in ' sub') selbst aus info/exclude, statt ihn per Release-Note von Hand loeschen zu lassen - nur die eigene falsche Zeile, nie eine fremde; Release-Note entsprechend. 2) Zaehltest ueber einen ganzen Befehl statt bindDriverIfShared direkt, wenn ohne grossen Umbau moeglich. 3) Probe: inRepo-Semantik so benennen/kommentieren, dass ein kuenftiger Aufrufer nicht falsch liest. Zeilenumbruch im Verzeichnisnamen und gitrepo.Root TrimSpace bleiben note: pre-existing. Diff-Hunt, review, signoff, push.
 - **2026-11-21 08:01 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/4205.sock
 - **2026-11-21 08:08 · Alexander Sacharov** — in-progress (Runde nach signoff): 1) StaleEntry/DropStaleEntry: alte Zeile = '/'+TrimSpace(prefix)+'.jaira/'. Nur --show-prefix mit fuehrendem Leerzeichen war betroffen (Prefix endet immer auf '/', TrimSpace griff am Ende nie). Eigentum = jairas Kommentar direkt ueber JEDER Kopie; eine Kopie ohne -> alles bleibt. Board-Pruefung: <top>/<gekuerzter Pfad>/.jaira existiert (Lstat, jeder Fehler ausser NotExist) -> bleibt. top = realer root minus eine Ebene je '/' im Prefix (resolved, wegen Symlink). Unter Lock nochmal geprueft. Neues JSON-Feld ignore_stale_dropped + Release-Note. 2) Zaehltest ueber 'jaira list': Differenz geteilt vs ohne .gitattributes als Multimenge = genau Probe-rev-parse + config. Huelle loggt jetzt volle Argumente. 3) Probe-Doku. Vier Kategorien: Lock+Recheck (Paralleltest), unlesbares exclude -> nichts, schreibgeschuetzt -> update meldet Fehler wie AddIgnore, CRLF/Glob/verschachtelt im Tabellentest. go test ./... exit 0, GOOS=windows vet ok.
+- **2026-11-21 08:08 · Alexander Sacharov** — critique: parseProbe/parsePlace sind nach der Aufteilung reine Test-Huellen um splitProbe/splitPlace. Huellen weg, parse* liefern den Prefix, Tests pruefen entryLine(prefix). Rest (StaleEntry, update.exclude, Zaehltest) steht.
+- **2026-11-21 08:09 · Alexander Sacharov** — critique-Fund umgesetzt: parseProbe/parsePlace liefern den Prefix, die Huellen sind weg; Tests pruefen entryLine(prefix). core/board gruen.
