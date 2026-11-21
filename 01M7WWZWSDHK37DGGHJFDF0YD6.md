@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZWSDHK37DGGHJFDF0YD6
 title: "Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T07:59:54Z
+updated-at: 2026-11-21T07:59:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-7433
 claimed-at: 2026-11-20T23:21:22Z
@@ -37,7 +37,7 @@ review-gaps: |-
   note: known limit: for a verdict of an earlier round the cockpit lists no notes under the row (they may be optimize's), so DoD 6 'zeigt die alten Funde' holds only through Explain, which needs a blocker: line or a reserving verdict - a clean earlier-round review shows just the 'changed since' line
 test-verdict: "pass: round 3 over the diff since ac850761 (ancestor of HEAD): go test -race core/move internal/tui core/role core/shipped RC=0, claude plugin test 215 pass; both findings checked with a neighbour: TUI plain and force move both pass ByPerson, CLI moves from loop lanes still record lane (TestMoveRecordsWhoSentItBack), current-round notes still listed, stale and pre-review ones not"
 hunt-verdict: "pass: bughunt done at 1789d202, 0 change, 0 pre-existing (follow-up hunt over the diff since ac850761)"
-round: 2
+round: 3
 review-verdict: "The diff meets all ten DoD items; no blocker. go test (core/move, core/ticket, internal/cli, core/role, core/shipped, internal/tui) and claude plugin test (215 pass) green at 1789d202. Three small notes, none needs a round."
 review-round: 2
 review-check: "1. go test ./core/move -run 'TestMoveRecords|TestMoveCountsOne' -v  -> all PASS (send-back record, person at the board, two moves at once)  2. go test ./internal/cli -run 'LoopBrake|BlockerRule|StopAfterFix' -v  -> PASS  3. jaira set <any test ticket> stop-after-fix=yes  -> refused, exit 2, message names stop-after-fix  4. jaira move <ticket in testing> --to in-progress --force, then jaira show <id> --json | jaira json get back  -> from testing, by lane, count 1  5. cd core/mod/builtin/jaira-cockpit && claude plugin test  -> 215 pass  6. in the cockpit (claude --plugin-dir core/mod/builtin/jaira-cockpit), a signoff ticket whose review-gaps holds only note: lines shows them as '· ...' under the row with no Explain button"
