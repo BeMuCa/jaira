@@ -23,14 +23,14 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:04:01Z
+updated-at: 2026-11-21T09:04:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
 outcome-what: "Round 9: bughunt on HEAD is red only on a real change since the hunt: uncommitted files count by their time, .jaira/ untracked never, stop-after-fix reads 'skipped'; Explain no longer reads a blocker out of a later lane's review-gaps."
 outcome-why: "Teamlead for Alex 21.11.: on_head must not be red on a clean ticket - Alex reads red as a catastrophe; the round-8 review listed five ways it was."
 outcome-resolves: "review round 8 notes 1-5. Checked: concurrency (read-only), error paths (stat failure/deleted -> changed, unknown commit -> fail), input (-z paths, spaces, .jaira prefix), permissions (none new). go test ./... RC=0, claude plugin test 218 pass."
-review-summary: "Ticket traegt jetzt blocker-rule (Default: falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke) und stop-after-fix (true/false, set verweigert anderes mit Exit 2, Lesen case-insensitiv); show --json und --for-lane geben blocker_rule, stop_after_fix, back und round aus, testing/review/bughunt/pre-process-Prompts lesen sie. jaira move schreibt bei jedem Rueckweg back-from/back-by/back-count (person bei Personen-Lane, TUI-Move oder CLI-Move am Terminal; Zaehler nur fuer dieselbe Schleifen-Lane in Folge), in-progress stoppt bei count>=3 statt Notes zu zaehlen. jaira set kopiert review-gaps nach review-verdict-gaps in der Runde des Verdikts. show --brief traegt bughunt {at,on_head}: on_head = Hunt-Commit ist Vorfahr von HEAD, kein Nicht-Merge-Commit mit der Ticket-ID seither und keine uncommittete/untracked-nach-Hunt-Aenderung an den gejagten Dateien. Cockpit: Explain nur bei blocker:-Zeile oder Vorbehalt, note:-Zeilen als Liste ohne Knopf, 'review of round N, changed since' fuer ein altes Verdikt; Explain-Vorlage (texts.ts + spawn.sh) schreibt Statuszeile, [Klasse] je Note und eine Empfehlung ohne feste give-back-Reihenfolge; die Explain-Ansicht faerbt Haken/Kreuze, Marken und Empfehlung mit Theme-Farben, alte Notes bleiben Text. Nebenbei: CRLF in jaira set wird zu LF statt den Schreibvorgang zu brechen."
+review-summary: "none"
 review-gaps: |-
   note: bughunt.on_head ist in conversational mode immer false: der Hunt liest uncommittete, getrackte Aenderungen, und ChangedSince (core/gitrepo/git.go, git diff --name-only HEAD) zaehlt jede uncommittete Aenderung an einer gejagten Datei, auch eine von vor dem Hunt - die Statuszeile zeigt dann ein rotes Kreuz auf einem sauberen Ticket; Fix der Klasse: fuer getrackte Aenderungen dieselbe mtime-gegen-Hunt-Zeit-Regel wie untrackedSince sie fuer untracked Dateien schon hat.
   note: bughunt on HEAD ist bei stop-after-fix=true nach einer Fix-Runde absichtlich ohne Hunt und zeigt dann fail (roter Pfeil fuer eine gewollte Abwahl); die Explain-Vorlage koennte bei stop_after_fix 'skipped' statt fail schreiben - dafuer braeuchte der Brief stop_after_fix.
