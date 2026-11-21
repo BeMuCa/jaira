@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-20T23:45:00Z
+updated-at: 2026-11-21T08:00:27Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -144,3 +144,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-20 23:40 · Alexander Sacharov** — bughunt: done at ae1a72ee - 0 findings in 1 module, follow-up hunt since 01e28a76 (diff of core/role/builtin/jaira-dispatcher/scripts/reap.sh, core/role/reap_test.go, core/shipped/shipped.sha256; no new files); concurrency, error paths, input, permissions checked; files: core/board/announce.go core/board/arrival.go core/board/arrival_test.go core/gitrepo/named.go core/release/notes/XB97NJ.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-dispatcher/scripts/reap.sh core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/reap_test.go core/settings/settings.go core/settings/settings_test.go core/shipped/shipped.sha256 internal/cli/prgate_test.go internal/cli/roles.go internal/cli/validate.go
 - **2026-11-20 23:44 · Alexander Sacharov** — review (frische Sicht, 21.11.): keine Blocker, 4 Notes im review-gaps-Feld (Fork-Setup bei reap, BOM in .jaira/pr, Status aus lokalem Store unter none, landed_head-Laufzeit). Tests core/board, settings, gitrepo, role, shipped, internal/cli gruen.
 - **2026-11-20 23:45 · Alexander Sacharov** — Worker-Stand 21.11. 00:45: Ticket in signoff, Branch feat/xb97nj @ ae1a72ee gepusht, -race gruen, Bughunt Runde 7 ohne Fund, zweiter frischer Review ohne Blocker. Review-Notes der zweiten Runde NICHT mehr nachgezogen (Uhrzeit, Rechner geht 02:00 aus): BOM in .jaira/pr liest sich als person (sicher, verwirrend) - Fix waere ein BOM-Strip in board.PRModeIn plus Test-Anpassung; reap.sh misst nur an origin (Fork-Setup wartet ewig, nichts geht verloren); Vertrauen in den lokalen Store = known limit F2. Branch braucht einen PR; ein Agent oeffnet ihn nicht.
+- **2026-11-21 08:00 · Alexander Sacharov** — Given back from signoff: Alex 21.11. alle Funde in dieser Runde schliessen. 1) .jaira/pr mit BOM: board.PRModeIn entfernt BOM; roles list sagt bei unlesbarem Wert, dass eine Datei da ist. 2) reap.sh unter none misst das Landen am Remote, auf das jaira-role-pr landet (Fork-Setup: upstream), nicht fest an origin. 3) landed_head: Historie auf base..tip bzw. begrenzt lesen statt ganzer Historie, wenn ohne Korrektheitsverlust. F2 (pr-gate vertraut done-Tickets im lokalen Store) bleibt known limit. Diff-Hunt, review, signoff, push.
