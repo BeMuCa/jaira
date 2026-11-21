@@ -23,14 +23,14 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:23:21Z
+updated-at: 2026-11-21T08:27:46Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
 outcome-what: "Round 3 as before, plus: both Explain prompts read verdict_gaps only when it is not empty, so a ticket reviewed before jaira kept the copy explains its review-gaps as before."
 outcome-why: "The round-3 bug hunt found the prompts took an empty verdict_gaps on every older reviewed ticket as an earlier-round verdict and reported no notes and 'blockers ok'."
 outcome-resolves: "bughunt change at c8de2b8a (texts.ts:79, spawn.sh:396); claude plugin test 216 pass with the rule asserted; go test core/role core/shipped core/lane RC=0."
-review-summary: "none"
+review-summary: "Ein Ticket traegt jetzt blocker-rule (ein Satz, leer = falsches Ergebnis/Datenverlust/Absturz/Sicherheitsluecke) und stop-after-fix (true/false, jaira set lehnt anderes mit Exit 2 ab); show --json und der --for-lane-Payload geben blocker_rule, stop_after_fix, round und back aus, und testing, review, pre-process und die bughunt-Rolle lesen sie. jaira move schreibt bei jedem Rueckweg back-from, back-by (person: Lane einer Person, jeder Move aus der TUI, oder jaira move an einem Terminal mit stdin+stdout als TTY; sonst lane) und back-count (Rueckgaben in Folge aus derselben Lane, eine Person setzt auf 1); in-progress stoppt bei by=lane und count>=3 statt Notes zu zaehlen. jaira set kopiert review-gaps nach review-verdict-gaps, solange Verdict und Gaps derselben Runde gehoeren, damit ein stehengebliebenes Verdict seine Funde behaelt. CR/CRLF in jedem Frontmatter-Wert wird als LF gespeichert. Im Cockpit gibt es Explain nur noch fuer eine blocker:-Zeile oder ein Verdict mit Vorbehalt, die uebrigen Notes stehen ohne Knopf unter der Zeile, ein Verdict frueherer Runde sagt 'review of round N, changed since' und behaelt Explain; die Explain-Vorlage (texts.ts und spawn.sh) verlangt Statuszeile, eine [Klasse]-Zeile je Note und eine Empfehlung ohne feste Reihenfolge, und das Pane faerbt Haken/Kreuze, Klassenmarken und die Empfehlung mit Theme-Farben; alte Notes bleiben Text."
 review-gaps: "none - 553b37f3 changes two prompt sentences and one assertion"
 test-verdict: "pass: round 4 changed only the two Explain prompt sentences and one assertion - claude plugin test 216 pass (rule asserted in 'without Herdr, Explain asks...'), go test core/role core/shipped core/lane RC=0; writes nothing new, so no parallel-writer case"
 hunt-verdict: "pass: follow-up hunt since c8de2b8a at 553b37f3, 0 findings"
