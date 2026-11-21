@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:37:28Z
+updated-at: 2026-11-21T08:37:38Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-31394
 claimed-at: 2026-11-21T08:01:32Z
@@ -35,7 +35,7 @@ outcome-resolves: "a reader of the first sentence no longer rounds ? to ❌"
 review-summary: "critique 21.11. round 4: one-word change, consistent in both roles; nothing to change."
 round: 12
 review-gaps: "optimize 21.11. round 4: nothing to remove."
-test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at 558c8205; DoD 1-4 verified in the tree; the stale-result rule now reads the same in signoff and teamlead; the follow-up line carries --assignee (flag exists). Roles write nothing - no concurrent-writer case."
+test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at 10348a71; DoD 1-4 verified in the tree; status line now ✅, ❌ or ? in both roles. Roles write nothing - no concurrent-writer case."
 hunt-verdict: "clean: diff hunt at 558c8205 (HEAD), 0 findings"
 question: ""
 review-verdict: "All four DoD items are met by the diff. No blocker: every command and flag the role prescribes exists (jaira list --lane/--board, gh run list --commit/--workflow, glab ci list --sha, jaira create --assignee), the JSON keys it names match jaira show --json, the head lookup on this repo returns 558c8205 = HEAD, and the last bughunt note names that commit. go test ./core/role ./core/shipped green. Uncommitted .jaira/milestones/ files in the worktree are not this ticket's."
