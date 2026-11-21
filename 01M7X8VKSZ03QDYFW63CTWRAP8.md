@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:01:32Z
+updated-at: 2026-11-21T08:01:43Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-31394
 claimed-at: 2026-11-21T08:01:32Z
@@ -116,3 +116,4 @@ review-check: |-
 - **2026-11-20 22:40 · Alexander Sacharov** — worker: aus signoff zurueck nach in-progress nach Interim-Regel 5 - die zwei kleinen Raender aus review-gaps 22:39 (ULID statt Handle im Lookup; mehrere/laufende CI-Laeufe pro Commit) werden in derselben Runde geschlossen statt als note zu Alex zu gehen. Dritte (done-Lane fest) und vierte (hunt-on-HEAD ❌) bleiben notes.
 - **2026-11-20 22:44 · Alexander Sacharov** — review (fresh, at b443a4cb): no blocker; 4 notes in review-gaps - JSON key names in signoff role, bughunt sha behind HEAD (text-only commits, read whole here), branch stacked on unmerged fix/nh788q-windows-rename, pre-existing return-count floor
 - **2026-11-21 08:00 · Alexander Sacharov** — Given back from signoff: Alex 21.11. alle Funde in dieser Runde schliessen. 1) jaira-role-signoff nennt die echten JSON-Schluessel von jaira show --json (Notes im body, Verdict unter .review.verdict). 2) Der letzte Bughunt deckt HEAD nicht - nach dem Fix Diff-Hunt auf den neuen HEAD. 3) master enthaelt fix/nh788q inzwischen: upstream/master einmergen, Manifest per Union aufloesen. Rueckgabezaehler-Untergrenze bleibt note: pre-existing. review, signoff, push.
+- **2026-11-21 08:01 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/4205.sock
