@@ -54,6 +54,10 @@ or is there but not executable, stops the spawn before a tab opens.
 Environment: JAIRA_BRANCH_PREFIX (default feat), JAIRA_NO_WORKTREE, HC_TERMINAL_ID and
 HC_BIN (Herdr App, through herdr-hc.sh),
 HERDR_BIN_PATH, HERDR_WORKSPACE_ID.
+JAIRA_SPAWN_PAUSE: seconds for both waits while claude starts in the tab — between
+two looks at the tab (up to 20 of them) and before the Enter that sends the
+prompt. Unset or empty, they are 2 and 1, which a real terminal needs; the
+tests set 0, because their Herdr stub answers at once.
 USAGE
 }
 
@@ -350,7 +354,7 @@ esac
 
 # The state hook reports idle a few seconds after startup.
 for _ in $(seq 20); do
-  sleep 2
+  sleep "${JAIRA_SPAWN_PAUSE:-2}"
   pj="$("$herdr" pane get "$pane")"
   st="$(jaira json get result.pane.agent --default - <<<"$pj") $(jaira json get result.pane.agent_status --default - <<<"$pj")"
   case "$st" in claude\ idle|claude\ done) break ;; esac
@@ -410,7 +414,7 @@ if [ -n "$chat_dir" ]; then
   prompt="Lies die Datei \"$chat_file\" ganz und tu, was darin steht."
 fi
 "$herdr" pane send-text "$pane" "$prompt" >/dev/null
-sleep 1
+sleep "${JAIRA_SPAWN_PAUSE:-1}"
 "$herdr" pane send-keys "$pane" enter >/dev/null
 
 echo "$pane"
