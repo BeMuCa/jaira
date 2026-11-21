@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZWSDHK37DGGHJFDF0YD6
 title: "Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,13 +23,13 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:31:30Z
+updated-at: 2026-11-21T09:31:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
-outcome-what: "Round 12: the brief's help text and the release note name the stop-after-fix case without a hunt (skipped with an empty at)."
-outcome-why: "The round-11 review found both said null for it, while the brief returns {at: '', skipped: true}."
-outcome-resolves: "review round 11 note 2 (small edge); note 1 kept as known limit (see note). go test internal/cli Brief ok."
+outcome-what: "Round 13: the cockpit recognises a blocker line and an explain class mark also in markdown emphasis."
+outcome-why: "Teamlead for Alex 21.11.: review note 4 - a '**blocker:**' line was listed as a note without Explain."
+outcome-resolves: "review round 12 note 4; claude plugin test 219 pass; go test core/role core/shipped core/lane ok. Checked: input (emphasis, case, list markers, mid-line 'blocker:' stays a note); no concurrency/permission surface (pure parsing)."
 review-summary: "Ein Ticket traegt jetzt drei neue Dinge im Frontmatter: blocker-rule (ein Satz, was hier ein Blocker ist; leer = Default falsches Ergebnis/Datenverlust/Absturz/Sicherheitsluecke), stop-after-fix (true/false/leer, jaira set lehnt alles andere mit Exit 2 ab) und back-from/back-by/back-count, die jaira move bei jedem Rueckweg selbst schreibt (core/move/move.go recordBack) - Rueckgabe aus einer Personen-Lane, aus dem Board (TUI) oder per jaira move an einem Terminal zaehlt als person und setzt die Zaehlung zurueck, sonst zaehlt count die Rueckgaben derselben Lane in Folge; Parken in blocked schreibt nichts. show --json und --for-lane geben blocker_rule, stop_after_fix, back und round aus; die Lane-Prompts (pre-process, in-progress, testing, review, bughunt-Skill) lesen sie statt Notizen zu zaehlen, in-progress stoppt bei back.count >= 3, testing startet bei stop_after_fix ab Runde 2 keinen Hunt. jaira set kopiert review-gaps nach review-verdict-gaps, solange Urteil und Gaps zur selben Runde gehoeren, damit ein spaeter ueberschriebenes review-gaps die Funde des Reviews nicht verliert. show --brief traegt bughunt {at, on_head, skipped}: on_head prueft per git (gitrepo.ChangedSince), ob seit dem Hunt ein Commit dieses Tickets oder eine danach geschriebene uncommittete Datei die gelesenen Dateien beruehrt hat; Merges und Board-Daten zaehlen nicht. Das Cockpit bietet Explain nur noch bei einer blocker:-Zeile oder einem Vorbehalt im Urteil, listet die uebrigen Notes ohne Knopf, sagt bei einem Urteil frueherer Runde 'review of round N, changed since', und die Explain-Vorlage (texts.ts, spawn.sh) schreibt Statuszeile + Klassenmarken + Empfehlung, die das Pane farbig zeichnet; alte Notes bleiben Text. Nebenbei: SetScalar wandelt CR/CRLF in Zeilenumbrueche, statt die Datei unschreibbar zu machen."
 review-gaps: |-
   note: back-count zaehlt nur Rueckgaben derselben Lane in Folge (core/move/move.go recordBack) - ein Ticket, das abwechselnd von critique und testing zurueckkommt, erreicht nie count 3 und die Schleifenbremse in 20-in-progress.md greift nicht; Klasse: Bremse ueber zwei Schleifen-Lanes; Fix: zusaetzlich die Lane-Rueckgaben seit der letzten Personen-Rueckgabe zaehlen, oder das Verhalten im in-progress-Prompt als bekannte Grenze nennen
