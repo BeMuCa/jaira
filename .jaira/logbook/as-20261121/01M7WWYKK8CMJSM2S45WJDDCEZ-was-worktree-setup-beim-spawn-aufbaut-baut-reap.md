@@ -1,7 +1,7 @@
 ---
 id: 01M7WWYKK8CMJSM2S45WJDDCEZ
 title: "Was worktree-setup beim Spawn aufbaut, baut reap.sh beim Aufraeumen wieder ab"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -20,34 +20,44 @@ related:
   - 01M6M72EN4ZZ2JBZJ1Q6DSDPZ4
 commits:
   - 8775720a05dc249662c681c742e07e718cd0e5af
+  - 4dc9c55d2530419aaf9ac749d3d92a17bc9721a2
+  - b3a70827c6941be031e5b4ddb70a1a592d94c9f2
+  - 46ea1b53e5bf53137128b6930807f7496fc97ce4
+  - 348f2397c49e9afaa6a4e5bad7868c541345150c
+  - 79a26fe23e8f33e3de5a281ba59ea520a67ab7b3
+  - f58f6b176b242454c470eb35993e4ab6d4d10173
+  - cb6ada0e2eed2e552f1baaaf60d56ee56b007aa9
   - b3a70827c6941be031e5b4ddb70a1a592d94c9f2 4dc9c55d2530419aaf9ac749d3d92a17bc9721a2 8775720a05dc249662c681c742e07e718cd0e5af
 created-at: 2026-11-20T16:34:35Z
-updated-at: 2026-11-21T19:36:15Z
+updated-at: 2026-11-21T19:45:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3230212
 claimed-at: 2026-11-21T19:17:08Z
 outcome-what: "spawn.sh records the setup's four arguments in the worktree's git dir (jaira-setup); reap.sh calls an executable .jaira/worktree-teardown with exactly those after closing a merged ticket's tabs and before git worktree remove; no record -> no call; failing or non-executable teardown keeps the ticket with the reason; --help of both describe the pair; release note; manifest"
 outcome-why: "worktree-setup starts container stacks, ports and volumes per ticket; reap.sh removed the worktree and left them running, so stacks piled up and collided on ports. Round 2: deriving the slug from the worktree name was wrong for worktrees spawned from another worktree (bughunt)"
 outcome-resolves: "Was worktree-setup beim Spawn aufbaut, baut reap.sh beim Aufraeumen wieder ab — DoD 1-3"
-review-summary: "none"
-review-gaps: "none: 79a26fe2 folds the two checks into the one targs-non-empty block instead of adding a second; the probe runs once per ticket with a due teardown, not per worktree"
-test-verdict: "pass (round 3, diff since 348f2397): go test -race -count=1 ./core/role green (exit 0); go test ./... + go vet ./... + shipped-history --check green at 79a26fe2's tree; DoD 1-5 proofs re-pointed (reap.sh:371/379/416/420) and verified; /not_executable_no_record and /windows_timeout fail on 348f2397 and pass now; the change adds no write"
-hunt-verdict: "fail: bughunt done at 79a26fe2 - 1 change (small edge, closed in this round): reap.sh:374 probes only the first timeout/gtimeout on PATH"
+review-summary: "spawn.sh now writes the four arguments it gave .jaira/worktree-setup (worktree, slug, port offset, root) into the worktree's own git dir as jaira-setup. reap.sh, for a merged ticket, reads that record and - after closing the ticket's tabs and before 'git worktree remove' - calls the main checkout's .jaira/worktree-teardown with exactly those arguments, bounded by timeout -k 10 $JAIRA_TEARDOWN_TIMEOUT (default 300s; probes every timeout/gtimeout on PATH for -k support). Failure, timeout, a non-executable teardown or no usable timeout(1) keeps worktree, branch and records ('kept <t>: ...') so the next round retries; a worktree without a record gets no call and reaps as before. --help of both scripts and the release note describe the pair and warn that $1/$4 may be gone."
+review-gaps: |-
+  note: reap.sh:419 a teardown that itself exits 124 or 137 is reported as 'timed out after Ns' although it ran its course; harmless (kept either way), fix only if it confuses: tell timeout's own 124 apart by elapsed time, or leave it
+  note: known limit: a worktree directory removed by hand (not via reap.sh) drops out of wts at reap.sh:280, so its teardown is never called and the stack it started keeps running silently; the jaira-setup record still sits under <common>/worktrees/<name>/ until git worktree prune - a later ticket could read it
+  note: pre-existing: the ticket frontmatter commits list holds one entry of three space-joined shas (written in 46ea1b53), which the review payload reports as commits_unavailable; every sha is also listed singly, so the diff is whole - jaira commit stamping, not this change
+test-verdict: "pass (round 4, diff since 79a26fe2): go test -race -count=1 ./core/role green; go test ./... + go vet ./... + shipped-history --check green at f58f6b17's tree; DoD proofs re-pointed (reap.sh:371/380/417/421); /windows_timeout_first fails on 79a26fe2 and passes now; the change adds no write"
+hunt-verdict: "pass: bughunt done at f58f6b17, 0 change, 0 pre-existing (follow-up hunt since 79a26fe2)"
 round: 6
 back-from: testing
 back-by: lane
 back-count: 1
-review-verdict: "the diff meets all five definition-of-done items; no blocker: no wrong result, data loss, crash or security hole found in reap.sh/spawn.sh along concurrency (runs under reap.lock), error paths (failure keeps everything and retries), input (quoted paths, recorded args) and trust (teardown from the main checkout, as the setup). Tests and the shipped manifest pass. Three notes, two small edges of this change."
-review-round: 4
+review-verdict: "the diff meets all five definition-of-done items; no blocker. Read reap.sh whole and spawn.sh's record write along concurrency (teardown runs under reap.lock, one ticket at a time), error paths (every failure keeps worktree/branch/records and retries next round; timeout kills the process group), input (paths quoted, args from the record, never from the name; type -ap read line by line) and trust (teardown from the main checkout, same as the setup). The round-4 notes (non-executable without record, Windows timeout.exe first on PATH) are fixed with tests. go test ./role green. Two small notes plus one pre-existing."
+review-round: 6
 review-verdict-gaps: |-
-  note: reap.sh:354 a present but non-executable .jaira/worktree-teardown keeps every merged ticket, also one whose worktrees have no jaira-setup record and would get no call anyway (pre-release worktrees) - the same class 348f2397 fixed for timeout(1); fix: collect the records first and refuse the non-executable file only when targs is non-empty
-  note: reap.sh:369 command -v timeout can resolve to Windows' C:\Windows\System32\timeout.exe in Git Bash when Windows dirs come first on PATH; it rejects '-k 10 300 ...', so every teardown fails with exit 1 and the ticket is kept for good; fix: prefer gtimeout/a coreutils timeout and check it with 'timeout --version' before use
-  note: pre-existing: the ticket frontmatter commits list holds one entry of three space-joined shas (written in 46ea1b53), which the review payload reports as commits_unavailable; the diff is still whole because each sha is also listed singly - the writer of that line is jaira's commit stamping, not this change
+  note: reap.sh:419 a teardown that itself exits 124 or 137 is reported as 'timed out after Ns' although it ran its course; harmless (kept either way), fix only if it confuses: tell timeout's own 124 apart by elapsed time, or leave it
+  note: known limit: a worktree directory removed by hand (not via reap.sh) drops out of wts at reap.sh:280, so its teardown is never called and the stack it started keeps running silently; the jaira-setup record still sits under <common>/worktrees/<name>/ until git worktree prune - a later ticket could read it
+  note: pre-existing: the ticket frontmatter commits list holds one entry of three space-joined shas (written in 46ea1b53), which the review payload reports as commits_unavailable; every sha is also listed singly, so the diff is whole - jaira commit stamping, not this change
 review-check: |-
   1. cd core && go test ./role -run 'TestReapTearsDownWhatTheSetupBuilt|TestSpawnLetsTheRepositorySetUpItsWorktree' -count=1 -v
-  2. Expect PASS for none, succeeds, fails, hangs, no_timeout, no_timeout_no_record, not_executable, no_record and setup
+  2. Expect PASS for every subtest: none, succeeds, fails, hangs, no_timeout, windows_timeout, windows_timeout_first, no_timeout_no_record, not_executable, no_record, not_executable_no_record, setup
   3. bash core/role/builtin/jaira-dispatcher/scripts/reap.sh --help
-  4. Look for the worktree-teardown paragraph, the 'never rely on $4' sentence and JAIRA_TEARDOWN_TIMEOUT under Environment
+  4. Look for the worktree-teardown paragraph, the sentence ending 'never rely on $4' and JAIRA_TEARDOWN_TIMEOUT under Environment
   5. cat core/release/notes/JDDCEZ.md - five lines, the last starting '- !'
 ---
 
@@ -108,3 +118,5 @@ review-check: |-
 - **2026-11-21 19:34 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-dispatcher/scripts/reap.sh:374-377 - class: the -k probe tests only the first binary of each name on PATH (command -v), never one further down; example: Git Bash with C:/Windows/System32 ahead of /usr/bin finds timeout.exe, the probe fails, and the ticket is kept every round with 'no timeout(1) that takes -k ... install coreutils' although coreutils timeout is installed (/usr/bin/timeout); not a blocker - the ticket is kept, nothing is lost, but the advice is wrong and the reap never happens until PATH is reordered; ran: PATH=<dir with a timeout that exits 1>:$PATH bash -c '<the probe loop>' -> tbin=[] while /usr/bin/timeout works (tbin=[/usr/bin/timeout] without the fake)
 - **2026-11-21 19:34 · Alexander Sacharov** — bughunt: done at 79a26fe2 - 1 finding (1 change, not a blocker) - follow-up hunt since 348f2397; diffs read in 4 modules (reap.sh, reap_test.go, release note, shipped.sha256), spawn.sh and role_test.go unchanged since; concurrency, error paths, input, permissions checked; ran: go test ./role -run TestReap, go test ./shipped/... (ok); files: core/release/notes/JDDCEZ.md core/role/builtin/jaira-dispatcher/scripts/reap.sh core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/reap_test.go core/role/role_test.go core/shipped/shipped.sha256
 - **2026-11-21 19:36 · Alexander Sacharov** — bughunt 79a26fe2 finding fixed: the probe walks every timeout/gtimeout on PATH (type -ap, read line by line so a path with spaces holds), not the first of each. /windows_timeout_first (fake timeout.exe first, coreutils behind) fails against 79a26fe2 and passes now. Gates: go test ./..., go vet ./..., shipped-history --check green.
+- **2026-11-21 19:36 · Alexander Sacharov** — critique (bughunt 79a26fe2 finding): read only the new commit; addressed; no finding.
+- **2026-11-21 19:37 · Alexander Sacharov** — bughunt: done at f58f6b17 - 0 findings - follow-up hunt since 79a26fe2; diffs read in 3 modules (reap.sh, reap_test.go, shipped.sha256), spawn.sh, role_test.go and the release note unchanged since; concurrency, error paths, input, permissions checked; ran: type -ap with non-executable first, shell function, empty/relative PATH entry, nothing on PATH under set -euo pipefail (all safe); replaced shipped.sha256 line b53fc46a is on no master or tag; go test ./role -run TestReap, go test ./shipped/... (ok); files: core/release/notes/JDDCEZ.md core/role/builtin/jaira-dispatcher/scripts/reap.sh core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/reap_test.go core/role/role_test.go core/shipped/shipped.sha256
