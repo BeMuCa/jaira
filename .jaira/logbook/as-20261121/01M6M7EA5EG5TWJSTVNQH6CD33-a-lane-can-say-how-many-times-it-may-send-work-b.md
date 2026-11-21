@@ -1,7 +1,7 @@
 ---
 id: 01M6M7EA5EG5TWJSTVNQH6CD33
 title: A lane can say how many times it may send work back before a person decides
-status: critique
+status: done
 ready: true
 creator: berkc
 goal: "A loop lane declares max-rounds: <n>, and once a ticket has been sent back from it n times the next send-back goes to a person instead of to in-progress."
@@ -19,9 +19,13 @@ blocked-by:
 related:
   - 01M7WWZWSDHK37DGGHJFDF0YD6
 follows: 01M67K7GEZF694985EHTENCFVZ
-commits: []
+commits:
+  - b86e9b78f42911e8fea2968626e9ffd5b0b1aa9c
+  - c468f6a452d5442f79d220c569f15db2e87d0532
+  - f4648d8b5b5603368d1e9f5c2e05542c44d4f38d
+  - d1cf9d6ebe5069090baaccb01b8ecc0fb8389522
 created-at: 2026-11-04T21:29:03Z
-updated-at: 2026-11-21T19:18:07Z
+updated-at: 2026-11-21T19:45:22Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2282179
@@ -29,14 +33,22 @@ claimed-at: 2026-11-21T19:01:08Z
 outcome-what: "A lane file may declare max-rounds: <n>; the gate refuses that lane's (n+1)-th send-back in a row (exit 3, code max_rounds) naming the human lane; --for-lane and lanes show carry max_rounds/rounds_left; the shipped critique, optimize and testing lanes declare 3."
 outcome-why: "The three-returns stop lived only in the worker role's prose, so an agent that did not read it looped forever and a board could not pick another limit."
 outcome-resolves: "DoD 1-5: parse refusal (TestParseMaxRounds), gate refusal + rounds_left (internal/cli/maxrounds_test.go, core/gate/maxrounds_test.go), README + core/release/notes/H6CD33.md, edge table (person, other lane, force, parking, no limit), shipped lanes. Checked: concurrency (gate reads, move mutates — same race as every gate), error paths (bad value refused, lane skipped with warning), unusual input (empty, list, quoted, huge, negative), permissions (a faked terminal escapes only what --force already does)."
-review-summary: "none"
+review-summary: "Lane files get an optional max-rounds: <n> (core/lane/lane.go; a missing, zero, negative or non-numeric value stops the lane from loading). Lane.RoundsLeft reads the ticket's existing back-count: only a run of that lane's own send-backs uses rounds up. gate.CheckAdvance gets one new check, CodeMaxRounds: once rounds are used up, the lane's next move to an earlier lane is refused (exit 3) with a message naming the lane a person answers in (PersonLane: the first of the lane's back edges that takes a question and no agent works, else the board's first such lane, today human). The check is skipped for a move made by a person (TUI, or CLI at a real terminal via the new gate.Request.ByPerson), for a move into a lane a person answers in (AsksPerson), and with --force. The send-back test moved from core/move to lane.Set.SendsBack, so the round counter and the gate use one definition. The shipped critique, optimize and testing lanes say max-rounds: 3; their old hashes stay in shipped.sha256, so jaira update --lanes recognises existing board copies as shipped and replaces them; lanesEquivalent counts max-rounds, so a project copy that differs only there counts as an override. --for-lane carries max_rounds/rounds_left, lanes show and the generated agent-file block carry the limit, and README, in-progress prompt, lane template and a release note describe it."
 round: 4
 back-from: testing
 back-by: lane
 back-count: 2
-review-gaps: "none — the fix is one condition at the cause (gate.go) and one test; nothing to fold or remove"
-test-verdict: "pass: go test -race ./... RC=0, go vet, shipped-history --check, windows build; DoD 1-5 verified; scratch board: rounds_left 3→0, 4th send-back exit 3, human with --question lands, bad value → lane skipped, parallel send-backs consistent"
-hunt-verdict: "fail: the max-rounds exemption keys on requires-question alone, so an agentic question lane escapes the limit (bughunt change, gate.go:419)"
+review-gaps: |-
+  note: a person typing `! jaira move` inside a Claude session (no terminal) is treated as the lane, so at the limit they are refused like an agent and must pass --force; the refusal message already says so - known limit of atATerminal, documented in flow.go
+  note: until `jaira update --lanes` runs, an existing board keeps its old critique/optimize/testing copies without max-rounds, so the limit is not active there; the release note says so (this repo's .jaira/lanes included)
+test-verdict: "pass: round 3 — go test -race core/gate core/lane core/move internal/cli RC=0 (full -race suite RC=0 in round 1), shipped-history --check ok; DoD 1-5 verified; hand-off into a person's lane passes, an agentic question lane is refused"
+hunt-verdict: "pass: bughunt done at d1cf9d6e, 0 change, 0 pre-existing"
+review-verdict: "The diff meets all five DoD items. I read the touched modules whole (gate, lane parse/rounds, move recordBack, CLI dry-run/move, TUI pre-check/apply) and looked at concurrency, error paths, unusual input and permissions: no defect. Both edges the bughunt found earlier (a question lane drawn before the loop lane; an agentic lane that requires a question) are closed at the cause with one predicate, AsksPerson, and table rows cover them. go build and go test ./core/... ./internal/... pass at d1cf9d6e."
+review-round: 4
+review-verdict-gaps: |-
+  note: a person typing `! jaira move` inside a Claude session (no terminal) is treated as the lane, so at the limit they are refused like an agent and must pass --force; the refusal message already says so - known limit of atATerminal, documented in flow.go
+  note: until `jaira update --lanes` runs, an existing board keeps its old critique/optimize/testing copies without max-rounds, so the limit is not active there; the release note says so (this repo's .jaira/lanes included)
+review-check: "1. cd into a scratch dir and run: git init && jaira init && jaira create t --goal g --context c --dod d  2. jaira lanes show critique  -> shows 'Max rounds:  3 in a row, then a person decides'  3. move the ticket to critique and send it back to in-progress three times in a row from a non-terminal shell (e.g. append '< /dev/null | cat' to each jaira move); between rounds check jaira show <id> --for-lane critique --json | grep rounds_left -> 2, 1, 0  4. a fourth jaira move <id> --to in-progress from critique (non-terminal) -> exit 3, code max_rounds, message names \"human\"  5. jaira move <id> --to human --question 'loop?' -> goes through  6. go test ./core/gate ./core/lane ./internal/cli -run MaxRounds -> ok"
 ---
 
 # A lane can say how many times it may send work back before a person decides
@@ -88,3 +100,4 @@ hunt-verdict: "fail: the max-rounds exemption keys on requires-question alone, s
 - **2026-11-21 19:16 · Alexander Sacharov** — bughunt: change: core/gate/gate.go:419 - class: the max-rounds exemption keys on the target lane taking a question (target.RequiresQuestion), not on it being a lane a person works (non-agentic), so any agentic lane with requires-question that a loop lane sends back to escapes the limit for good, and a question already on the ticket (gate.go:282 accepts t.Question) satisfies it without a new one; the new test core/gate/maxrounds_test.go:93 even asserts this for in-progress; example: in-progress with requires-question: true, critique at back-count 3..9 moves to in-progress with no --question and is never refused; not a blocker on the shipped board (its only question lane, human, is agentic: false), an edge on boards that mark a work lane requires-question; ran: scratch test in core/gate (CheckAdvance, back-count 3-9, stale t.Question, no CodeMaxRounds)
 - **2026-11-21 19:17 · Alexander Sacharov** — bughunt: done at f4648d8b - 1 finding (1 change, 0 pre-existing) in 2 modules, follow-up hunt (diff since c468f6a4: README.md core/gate/gate.go core/gate/maxrounds_test.go; no new files); concurrency, error paths, input, permissions checked; files: README.md core/board/announce.go core/gate/gate.go core/gate/maxrounds_test.go core/lane/builtin/20-in-progress.md core/lane/builtin/25-critique.md core/lane/builtin/26-optimize.md core/lane/builtin/27-testing.md core/lane/facts.go core/lane/lane.go core/lane/rounds.go core/lane/rounds_test.go core/lane/template.go core/move/move.go core/release/notes/H6CD33.md core/shipped/shipped.sha256 internal/cli/flow.go internal/cli/maxrounds_test.go internal/cli/tickets.go internal/tui/model.go
 - **2026-11-21 19:17 · Alexander Sacharov** — testing: class: the exemption names 'takes a question' where it means 'a person answers there'; example: in-progress with requires-question escapes max-rounds for good; fix: one predicate (lane takes a question and no agent works it) for both the gate exemption and PersonLane; the test row for in-progress flips to refused.
+- **2026-11-21 19:19 · Alexander Sacharov** — bughunt: done at d1cf9d6e - 0 findings in 2 modules, follow-up hunt (diff since f4648d8b: README.md core/gate/gate.go core/gate/maxrounds_test.go core/lane/rounds.go core/lane/rounds_test.go; no new files); concurrency, error paths, input, permissions checked; files: README.md core/board/announce.go core/gate/gate.go core/gate/maxrounds_test.go core/lane/builtin/20-in-progress.md core/lane/builtin/25-critique.md core/lane/builtin/26-optimize.md core/lane/builtin/27-testing.md core/lane/facts.go core/lane/lane.go core/lane/rounds.go core/lane/rounds_test.go core/lane/template.go core/move/move.go core/release/notes/H6CD33.md core/shipped/shipped.sha256 internal/cli/flow.go internal/cli/maxrounds_test.go internal/cli/tickets.go internal/tui/model.go
