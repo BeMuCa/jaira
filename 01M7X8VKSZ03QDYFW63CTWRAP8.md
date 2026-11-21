@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:39:04Z
+updated-at: 2026-11-21T08:39:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1876460
 claimed-at: 2026-11-21T08:39:00Z
@@ -34,7 +34,10 @@ outcome-why: "fresh review 21.11.: the first sentence said ✅ or ❌ only"
 outcome-resolves: "a reader of the first sentence no longer rounds ? to ❌"
 review-summary: "Neue Rolle core/role/builtin/jaira-role-signoff/SKILL.md: liest Tickets in signoff frisch (jaira show --json, gh pr list), findet den Branch-Kopf ueber das Handle als eigenes Segment im Branchnamen und Ancestry aller lokalen/remote Kopien, gibt pro Ticket eine Statuszeile (DoD, CI-Lauf genau fuer den Kopf, Bughunt auf dem Kopf, Blocker, Review, Rueckgaben), eine Tabelle der offenen Punkte mit Marke rot/gelb/weiss/blau und eine fett gesetzte Empfehlung samt accept- und give-back-Zeile aus; nach zwei Rueckgaben akzeptieren plus fertige jaira-create-Zeile fuer die gelben Punkte; schreibt selbst nichts. jaira-teamlead verlangt jetzt das Neu-Lesen von Lanes und offenen PRs vor jeder Liste und verweist fuer signoff/human auf diese Form; der Branch-Lookup im Bughunt-Check folgt derselben Regel statt feat/<id>. jaira-worker, jaira-dispatcher und jaira-role-pr laufen vor jedem Push die CI-Gates des Projekts lokal. Dazu README- und how-to-Zeile, drei Release-Notes, Rolle in wantRoles, Hashes in shipped.sha256."
 round: 12
-review-gaps: "optimize 21.11. round 4: nothing to remove."
+review-gaps: |-
+  note: core/shipped/shipped.sha256 traegt rund zehn Hashes von Zwischenstaenden der Rollen-SKILL.md, die nie ausgeliefert werden - harmlos (jaira update erkennt eine unveraenderte Datei weiterhin), aber Rauschen in einer Liste ausgelieferter Staende
+  note: jaira-role-signoff/SKILL.md:79 sagt bei leerem head sei jeder Check ?, auch DoD x/y und review, die vom Kopf gar nicht abhaengen
+  note: der Inhalt der neuen Rolle ist Prosa und nur durch ihr Vorhandensein in role_test.go wantRoles getestet; die Lookup-Schleife Zeile 66-72 hat keinen Test
 test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at 10348a71; DoD 1-4 verified in the tree; status line now ✅, ❌ or ? in both roles. Roles write nothing - no concurrent-writer case."
 hunt-verdict: "clean: diff hunt at 10348a71 (HEAD), 0 findings"
 question: ""
