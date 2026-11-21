@@ -316,3 +316,35 @@ func (r *Repo) WorktreeDiff() (string, error) {
 	}
 	return b.String(), nil
 }
+
+// ChangedSince reports whether the branch's own work touched paths after
+// commit: a commit on its first-parent line that is not a merge, or a change
+// not committed yet. A merge brings in work other people already reviewed —
+// master merged into a branch moves HEAD without changing what this branch
+// did — so it does not count; what its conflict resolution wrote does not
+// either. Paths are relative to the repository root; none means all code
+// (codeOnly). An unknown commit is an error, never "unchanged".
+func (r *Repo) ChangedSince(commit string, paths []string) (bool, error) {
+	specs := codeOnly
+	if len(paths) > 0 {
+		specs = make([]string, 0, len(paths))
+		for _, p := range paths {
+			specs = append(specs, ":(top,literal)"+p)
+		}
+	}
+	if _, err := r.run("rev-parse", "--verify", "--quiet", commit+"^{commit}"); err != nil {
+		return false, fmt.Errorf("gitrepo: no commit %q: %w", commit, err)
+	}
+	own, err := r.run(append([]string{"log", "--first-parent", "--no-merges", "--format=%h", commit + "..HEAD", "--"}, specs...)...)
+	if err != nil {
+		return false, err
+	}
+	if strings.TrimSpace(own) != "" {
+		return true, nil
+	}
+	open, err := r.run(append([]string{"diff", "--name-only", "HEAD", "--"}, specs...)...)
+	if err != nil {
+		return false, err
+	}
+	return strings.TrimSpace(open) != "", nil
+}

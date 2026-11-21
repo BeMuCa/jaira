@@ -788,7 +788,8 @@ func decodeFields(d *Doc, f *Fields, path string) (*Ticket, error) {
 	t.ReviewRound = count(str(FieldReviewRound))
 	t.ReviewVerdictGaps = str(FieldReviewVerdictGaps)
 	t.BlockerRule = str(FieldBlockerRule)
-	t.StopAfterFix = str(FieldStopAfterFix) == "true"
+	stopAfterFix, _ := CanonicalStopAfterFix(str(FieldStopAfterFix))
+	t.StopAfterFix = stopAfterFix == "true"
 	t.BackFrom = str(FieldBackFrom)
 	t.BackBy = str(FieldBackBy)
 	t.BackCount = count(str(FieldBackCount))

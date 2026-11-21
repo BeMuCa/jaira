@@ -1,6 +1,10 @@
 package cli
 
 import (
+	"encoding/json"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -146,5 +150,60 @@ func TestVerdictKeepsItsGaps(t *testing.T) {
 				t.Errorf("review is %v, want the review's gaps kept beside the verdict and the later round's in gaps", review)
 			}
 		})
+	}
+}
+
+// The brief says whether the newest finished hunt still covers the code, so
+// an Explain chat handed four notes does not have to find the hunt's note.
+func TestBriefCarriesTheHunt(t *testing.T) {
+	dir, h := newModeTicket(t)
+	git := func(args ...string) string {
+		t.Helper()
+		out, err := exec.Command("git", append([]string{"-C", dir, "-c", "user.name=t", "-c", "user.email=t@t"}, args...)...).CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+		return strings.TrimSpace(string(out))
+	}
+	edit := func(content string) {
+		t.Helper()
+		if err := os.WriteFile(filepath.Join(dir, "a.go"), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	hunt := func() any {
+		t.Helper()
+		out, err := runCLI(t, dir, "show", h, "--brief")
+		if err != nil {
+			t.Fatalf("show --brief: %v\n%s", err, out)
+		}
+		var b map[string]any
+		if err := json.Unmarshal([]byte(out[strings.Index(out, "{"):]), &b); err != nil {
+			t.Fatalf("brief is no JSON: %v\n%s", err, out)
+		}
+		return b["bughunt"]
+	}
+	git("init", "-q")
+	edit("a")
+	git("add", "a.go")
+	git("commit", "-q", "-m", "a")
+	if got := hunt(); got != nil {
+		t.Errorf("a ticket without a hunt reports %v, want null", got)
+	}
+	at := git("rev-parse", "--short", "HEAD")
+	if out, err := runCLI(t, dir, "note", h, "bughunt: done at "+at+" - 0 findings; files: a.go"); err != nil {
+		t.Fatalf("note: %v\n%s", err, out)
+	}
+	for i := 0; i < 5; i++ { // the hunt's note scrolls out of notes_last
+		if out, err := runCLI(t, dir, "note", h, "later note"); err != nil {
+			t.Fatalf("note: %v\n%s", err, out)
+		}
+	}
+	if got, _ := hunt().(map[string]any); got["at"] != at || got["on_head"] != true {
+		t.Errorf("right after the hunt: %v, want at %s, on_head true", got, at)
+	}
+	edit("a2")
+	if got, _ := hunt().(map[string]any); got["on_head"] != false {
+		t.Errorf("after an edit to a hunted file: %v, want on_head false", got)
 	}
 }

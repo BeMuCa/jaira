@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -793,8 +794,10 @@ from the ticket, and the count is always printed, so a reader is never left
 thinking they have seen everything.
 
 --brief prints one line of JSON with only what a chat about the ticket needs:
-id, title, goal, question, review, the newest four notes as notes_last and how
-many there are as notes_total.`,
+id, title, goal, question, review, the newest finished bug hunt as bughunt
+(its commit, and on_head: nothing this branch did since touched the files it
+read; null without one), the newest four notes as notes_last and how many
+there are as notes_total.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
@@ -821,7 +824,7 @@ many there are as notes_total.`,
 				return showForLane(cmd, s, env, t, forLane)
 			}
 			if brief {
-				line, err := compactJSON(ticketBrief(ticketJSON(t, env.Lanes), t.Body))
+				line, err := compactJSON(ticketBrief(ticketJSON(t, env.Lanes), t.Body, lastHunt(&gitrepo.Repo{Dir: s.Root}, t.Body)))
 				if err != nil {
 					return err
 				}
@@ -840,7 +843,7 @@ many there are as notes_total.`,
 	}
 	cmd.Flags().StringVar(&forLane, "for-lane", "", "assemble the bounded input a lane's agent should receive")
 	cmd.Flags().IntVar(&notesLast, "notes-last", 0, "show only the newest n progress notes (0 shows all)")
-	cmd.Flags().BoolVar(&brief, "brief", false, "one line of JSON: title, goal, question, review and the newest notes")
+	cmd.Flags().BoolVar(&brief, "brief", false, "one line of JSON: title, goal, question, review, the newest bug hunt and the newest notes")
 	return cmd
 }
 
@@ -862,21 +865,58 @@ const briefNotes = 4
 // proof is most of a chat's context for nothing. spawn.sh used to build it with
 // python3, which a Windows machine may not have (issue #79); notes split where
 // ticket.Notes splits them, at a dated heading, and the fields keep its order.
-func ticketBrief(j map[string]any, body string) any {
+func ticketBrief(j map[string]any, body string, hunt *huntState) any {
 	notes := []string{}
 	for _, n := range ticket.Notes(body) {
 		notes = append(notes, n.Raw)
 	}
 	last := notes[max(0, len(notes)-briefNotes):]
 	return struct {
-		ID         any      `json:"id"`
-		Title      any      `json:"title"`
-		Goal       any      `json:"goal"`
-		Question   any      `json:"question"`
-		Review     any      `json:"review"`
-		NotesLast  []string `json:"notes_last"`
-		NotesTotal int      `json:"notes_total"`
-	}{j["handle"], j["title"], j["goal"], j["question"], j["review"], last, len(notes)}
+		ID         any        `json:"id"`
+		Title      any        `json:"title"`
+		Goal       any        `json:"goal"`
+		Question   any        `json:"question"`
+		Review     any        `json:"review"`
+		Bughunt    *huntState `json:"bughunt"`
+		NotesLast  []string   `json:"notes_last"`
+		NotesTotal int        `json:"notes_total"`
+	}{j["handle"], j["title"], j["goal"], j["question"], j["review"], hunt, last, len(notes)}
+}
+
+// huntState is the newest finished bug hunt: the commit it ran at, and
+// whether it still covers the code — nothing this branch did since touched
+// the files it read. A chat handed four notes cannot work that out: the hunt's
+// note has scrolled out of them by the time a ticket waits for a person, and
+// a merge from master moves HEAD past the hunt's commit without changing
+// anything it read.
+type huntState struct {
+	At     string `json:"at"`
+	OnHead bool   `json:"on_head"`
+}
+
+// huntDone is the closing line a bug hunt writes: "bughunt: done at <commit>
+// ...; files: <path> <path>". The file list is the hunt's own account of what
+// it read; without one the hunt is taken to have read all code.
+var huntDone = regexp.MustCompile(`^bughunt: done at ([0-9a-f]{7,40})\b`)
+
+// lastHunt reads the newest hunt off the notes, nil when none finished. A
+// commit git does not know — rebased away, never fetched — is not on HEAD.
+func lastHunt(repo *gitrepo.Repo, body string) *huntState {
+	notes := ticket.Notes(body)
+	for i := len(notes) - 1; i >= 0; i-- {
+		text := strings.TrimSpace(notes[i].Text)
+		m := huntDone.FindStringSubmatch(text)
+		if m == nil {
+			continue
+		}
+		var files []string
+		if at := strings.LastIndex(text, "files: "); at >= 0 {
+			files = strings.Fields(text[at+len("files: "):])
+		}
+		changed, err := repo.ChangedSince(m[1], files)
+		return &huntState{At: m[1], OnHead: err == nil && !changed}
+	}
+	return nil
 }
 
 // printDetail renders one ticket for a person. notesLast caps how many Progress

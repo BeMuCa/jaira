@@ -650,3 +650,6 @@ b5a5be9ab0ef178ff1999384f2ac62705bb88ba0bfe716d5378b5b2a01ddfe16  core/role/buil
 4bc6cbd9fe43874a0d62affc8c89b29a20bf3415c78f0a26ed19dd0dc4194b1a  core/role/builtin/jaira-dispatcher/SKILL.md
 717dfb5128ec2dd11e2b7530de470627f517a704e7bdbe639c10db29ffca5a69  core/role/builtin/jaira-teamlead/SKILL.md
 d1058a29639feaca6dc5426c076ccc35e838cc203e3934ebb1a347dc5560bb87  core/role/builtin/jaira-role-pr/scripts/pr-round.sh
+7bda6b65f477f66af51d64a64ddc156b03d0f046fd1fb58ba04dd1c04136c858  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
+8f0a238347a9128b7f521b073f9243b72ad548dee5173270d34f9168b8e5f505  core/lane/builtin/20-in-progress.md
+d5a2d3095512edf6277d57b70cc85845d43d242159d44a3cc1d34202eae586ac  core/mod/builtin/jaira-cockpit/hooks/texts.ts

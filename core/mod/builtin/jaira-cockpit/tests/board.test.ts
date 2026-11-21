@@ -739,6 +739,8 @@ describe('waiting for you', () => {
     expect(asked).toContain('Recommendation: ')
     // a ticket reviewed before jaira kept the copy has an empty verdict_gaps: its notes stay in review-gaps
     expect(asked).toContain('Where review.verdict_gaps is not empty and differs from review.gaps')
+    // the hunt's note has scrolled out of the four newest notes by then: the brief says whether it covers the code
+    expect(asked).toContain("bughunt on HEAD is the brief's bughunt.on_head")
     for (const cls of ['[blocker]', '[small edge]', '[known limit]', '[not this ticket]']) expect(asked).toContain(cls)
     expect(asked).toContain('[give back]')
     // Nothing reads as "this must be changed" by its shape alone.

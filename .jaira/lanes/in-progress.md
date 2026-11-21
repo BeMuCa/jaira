@@ -72,7 +72,9 @@ move recorded it:
 - `from` — the lane the ticket came back from
 - `by` — `person` when a person sent it (from signoff, human or any lane no
   agent works, from the board, or with `jaira move` typed at a terminal),
-  `lane` when a loop lane did
+  `lane` when a loop lane did. An agent whose harness runs its commands in a
+  terminal is recorded as a person too, so on such a harness `count` never
+  stops a loop: count the returns from the lane's own notes yourself
 - `count` — how many returns in a row came from that same lane; a person's
   return, or one from another lane, starts it again at 1
 
