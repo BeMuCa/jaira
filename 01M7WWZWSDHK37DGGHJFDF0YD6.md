@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZWSDHK37DGGHJFDF0YD6
 title: "Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt"
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T13:25:04Z
+updated-at: 2026-11-21T13:31:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3647270
 claimed-at: 2026-11-21T09:36:24Z
