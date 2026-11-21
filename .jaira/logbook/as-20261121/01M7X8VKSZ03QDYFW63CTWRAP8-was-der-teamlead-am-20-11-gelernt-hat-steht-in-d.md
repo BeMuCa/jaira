@@ -1,7 +1,7 @@
 ---
 id: 01M7X8VKSZ03QDYFW63CTWRAP8
 title: "Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,24 +23,48 @@ related:
   - 01M7X20YACKGBHD6P1QKMFYM1A
   - 01M7WX0C09TC63TKPXT555CS2M
   - 01M7X0CFXEAEXDHVWTD3QTQW15
-commits: []
+commits:
+  - f55dc254635eb07b2f39090c38ea7109bbad624d
+  - c02bb7eabfe38ddce04c553669c6bbe9a07c24a3
+  - d3a7140524b9a880aadd00a8dc35905c43eb2d40
+  - 4a0033ecf77f3b4de58ab12ea357eafd2e44aa5f
+  - dae1631962fda9368d9f4faf5b6513234bd63c4a
+  - a1b6115895dd23aa5b6256841eda7b75dc30230e
+  - d4da7f7b7d12e5242abe379a93572b46899acd6a
+  - 7e3bc32c1600a7f96dae8a7b3f4fbc3d95a3571b
+  - b443a4cbec11d4cedba1d55bf48f7dd0cc5542f2
+  - dfe620f8b6319fd345d5087e9d717085543bb629
+  - 367d125f411c8c81f98cb7df7fc7d4a011dd054a
+  - 8cdb3a0de4aeed81f70a0fa8f9660085baa0078a
+  - 558c820530a6c14105f8f17bf63d1103d8773f59
+  - 10348a71f2aafcf3f6e35ef25617851df31a150f
+  - 390088c7546ac542227870d826dbdad7ba740ab6
+  - a3af8998c49de1e8f084f65f03d35c7c40c34c14
+  - ec3858d325f8eaa7f4bbd7d38c9d373f6c4a4e04
+  - 025cef0035a4edcbad228ad161e4e98d15ec3c11
+  - 033e06a7c2cb0a0297ce68da164ea3fe2915d03c
+  - dc95045a8bf869f9704dba3e74274200ab6299b5
+  - cb9e353ec92f59d42a882b6612191fb83edbd3d1
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T09:34:45Z
+updated-at: 2026-11-21T13:42:51Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-2485785
-claimed-at: 2026-11-21T08:57:23Z
+claimed-by: DESKTOP-RFTCH11-3769961
+claimed-at: 2026-11-21T09:41:21Z
 outcome-what: "signoff reads the .jaira-only hunt exemption off jaira's own derivation (show --for-lane <diff lane> --json) instead of a git-log scan"
 outcome-why: "teamlead 10:30 option 1: three hunts in a row found edges of the scan, one class - re-implementing jaira's commit derivation in shell"
 outcome-resolves: "the exemption uses exactly the commits jaira counts as the ticket's; no diff stays ?"
-review-summary: "critique 21.11. round 10: exemption now needs positive evidence, matching jaira's own case-insensitive derivation; unknown stays ?. Nothing to change."
+review-summary: "Ships a new read-only role /jaira-role-signoff (core/role/builtin/jaira-role-signoff/SKILL.md): per ticket in a board's accept lane it builds one status line (DoD x/y, CI run for the branch head, bughunt note naming the head, blocker count, review verdict, noted returns), a table that marks every open note 🔴/🟡/⚪/🔵, and one bold recommendation driven by return rules 0-5, with accept, give-back and (after two returns) follow-up lines to paste. Lanes are found by flags (human_exit, terminal, output_produces outcome-what), the branch by the handle segment and ancestry, the .jaira-only hunt exemption from jaira's own show --for-lane diff. The teamlead's 'Report to the human' now re-reads lanes and open PRs before listing anything and uses the same shape, pointing to the role for the rules; worker, dispatcher and jaira-role-pr run the project's CI gates locally before a push. README, docs table, wantRoles, shipped.sha256 and a release note come along."
 round: 19
-review-gaps: "optimize 21.11. round 10: nothing to remove."
-test-verdict: "fail: gates green at dc95045a; bughunt 09:29 change: commit scan also matches jaira/board branch commits (added <ULID>) touching board/*.md"
-hunt-verdict: "change: 1 finding at dc95045a (scan matches jaira/board commits)"
+review-gaps: |-
+  note: known limit (already noted 09:38): a ticket whose commits touch only its ticket or logbook file gets diff "" from jaira show --for-lane, so the hunt check reads ? instead of – ; fails safe, never a false ✅
+  note: the .jaira-only exemption also reads .worktree_diff, which is repo-wide - unrelated uncommitted code in the same checkout turns – into ❌; fails safe, only run it in the ticket's own worktree
+  note: the worktree carries untracked .jaira/milestones/ files that are not part of this ticket - do not git add them with it
+test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at cb9e353e; DoD 1-4 verified in the tree; the role now reads the change off jaira's derivation (checked in this worktree: git+worktree, 20 commits; from master: 0 commits -> ?). Roles write nothing - no concurrent-writer case."
+hunt-verdict: "known limit: 1 finding at cb9e353e (a .jaira-only ticket reads ? not –; fails safe) - sent to signoff as note per teamlead 10:30"
 question: ""
-review-verdict: "All four DoD items are met by the diff. Every CLI field and flag the new role relies on was checked against the binary built from this branch (boards/lanes --json keys, show --json review.*/dod_items/handle/board, list --lane, gh run list --commit/--workflow, glab ci list --sha); lane discovery resolves to signoff/done/in-progress on this board. go test ./core/role ./core/shipped green, last bughunt note names HEAD ec3858d3. No blocker; two notes."
-review-round: 15
-review-check: "1. cd into a checkout of feat/twrap8 and run: go test ./core/role ./core/shipped -count=1 - both print ok  2. go run ./cmd/jaira roles install --project (or jaira update --roles with this build) - .claude/skills/jaira-role-signoff/SKILL.md now exists  3. in a Claude session run /jaira-role-signoff TWRAP8 (ticket must sit in signoff) - you get one status line with ✅/❌/? per check, one table with a mark per note, one bold recommendation and two jaira lines to paste; nothing on the ticket changed (jaira show TWRAP8 shows no new note)  4. open core/role/builtin/jaira-teamlead/SKILL.md, section 'Report to the human' - it starts with re-reading jaira show + gh pr list, and points to jaira-role-signoff for the return rules  5. open core/role/builtin/jaira-worker/SKILL.md, section 'Before you push' - it says to run the repo's CI gates locally before every push"
+review-verdict: "All four DoD items are met. Fresh check against the binary built from cb9e353e: boards/lanes --json keys (human_exit, requires_question, terminal, output_produces, input_requires) resolve to signoff/done/in-progress on this board; show --json handle/dod_items/review.*; list --lane/--board; gh run list --commit/--workflow and glab ci list --sha exist; the cockpit writes 'Given back from ${lane}:' (register.tsx:954) as rule 2 counts. go test -count=1 ./core/role ./core/shipped ok; shipped.sha256 holds the current signoff SKILL.md hash; last bughunt note names HEAD cb9e353e. Diff is role text only, no Go code beyond wantRoles. No blocker; three notes, all fail-safe or housekeeping."
+review-round: 19
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-twrap8  2. go test -count=1 ./core/role ./core/shipped - both print ok (role takes ~90s)  3. go run ./cmd/jaira roles install --project - .claude/skills/jaira-role-signoff/SKILL.md now exists  4. in a Claude session in this worktree run /jaira-role-signoff TWRAP8 - you see one status line (DoD 4/4, tests ✅ or ?, bug hunt ✅ at cb9e353e), one table with a mark per note, one bold recommendation and two jaira lines; jaira show TWRAP8 afterwards has no new note  5. open core/role/builtin/jaira-teamlead/SKILL.md section 'Report to the human' - it starts with re-reading jaira show + gh pr list and points to jaira-role-signoff for the return rules  6. open core/role/builtin/jaira-worker/SKILL.md section 'Before you push' - it says to run the repo's CI gates locally before every push"
 ---
 
 # Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis
@@ -141,3 +165,7 @@ review-check: "1. cd into a checkout of feat/twrap8 and run: go test ./core/role
 - **2026-11-21 09:30 · Alexander Sacharov** — Frage an den Teamlead (testing schickt in dieser Runde zum 3. Mal zurueck, Stopp-Regel): Runde-3-Fund: der git-log-Scan fuer die .jaira/-Ausnahme trifft auch Commits des Branches jaira/board ('added <ULID>', aendern board/*.md) -> Ausnahme greift nie. Einschaetzung: DoD stimmt; die drei Funde (Vorrang, -i/leere Menge, jaira/board) sind eine Klasse: die Rolle baut jairas Commit-Ableitung in Shell nach. Optionen: 1) (empfohlen) Ursache entfernen: Scan streichen, stattdessen 'jaira show <id> --for-lane <lane> --json' .diff/.commits lesen - jairas eigene Ableitung (commits_source git+worktree); danach Diff-Hunt + review. 2) Scan weiter flicken (jaira/board ausschliessen), volle Schleife. 3) .jaira/-Ausnahme aus der Rolle nehmen (Hunt-Check fuer solche Tickets ?), als note an signoff.
 - **2026-11-21 09:30 · Alexander Sacharov** — Teamlead 21.11. 10:30: 1 (scan raus, jaira-Ableitung)
 - **2026-11-21 09:34 · Alexander Sacharov** — in-progress nach Teamlead 10:30: git-log-Scan entfernt; .jaira/-Ausnahme liest jairas eigene Ableitung (show --for-lane <Lane mit input_requires diff> --json: .diff/.worktree_diff/.commits/.commits_source). Gefunden: --for-lane signoff liefert KEIN diff (nur Lanes, die diff verlangen, bekommen es - internal/cli/flow.go:723-745), darum die Lane per input_requires. note: known limit: jaira leitet aus den vom aktuellen Checkout erreichbaren Commits ab (core/gitrepo/derive.go, git log ohne --all) - aus master vor dem Merge: commits_source worktree, 0 Commits, Check bleibt ? (geprueft im Haupt-Checkout). Kein Shell-Flicken darum herum, wie entschieden.
+- **2026-11-21 09:37 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-signoff/SKILL.md:122-133 - the .jaira-only hunt exemption can no longer fire for a ticket whose commits touch only its ticket file or .jaira/logbook: gitrepo.Diff/WorktreeDiff (core/gitrepo/git.go:97-108, codeOnly) exclude .jaira/tickets, logbook and archive, so jaira show --for-lane review --json returns diff "" and drops .commits, .commits_source and .worktree_diff altogether, while .missing says 'the ticket's 2 commit(s) change nothing but ticket files'; the skill then reads 'No diff at all proves nothing: ?' and reports ? for exactly the ticket it means to exempt, and its promise that the call 'hands you .diff, .worktree_diff, .commits and .commits_source' is false in that case; only .jaira changes outside tickets/logbook/archive (lanes, milestones) still reach –. ran: scratch repo, jaira init committed separately, jaira create + two commits 'chore(BYN5DE)'/'docs(BYN5DE)' touching only the ticket file, jaira show BYN5DE --for-lane review --json (exit 0, diff empty, no commits key, missing names the ticket-file-only case)
+- **2026-11-21 09:38 · Alexander Sacharov** — bughunt: done at cb9e353e - 1 finding (1 change, 0 pre-existing) in 2 files read as diff since dc95045a, follow-up hunt, no new files; shipped.sha256 new line equals sha256 of current signoff SKILL.md, go test ./role ./shipped ok; concurrency, error paths, input, permissions checked; files: .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md README.md core/release/notes/TWRAP8.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-role-signoff/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/role/role_test.go core/shipped/shipped.sha256 docs/how-to-work-with-jaira.html
+- **2026-11-21 09:38 · Alexander Sacharov** — note: known limit (nach Teamlead 10:30, weitere Funde dieses Punkts an signoff): bughunt 09:37 - jaira zeigt Ticket-/Logbook-Dateien nicht im diff (core/gitrepo/git.go codeOnly); ein reines .jaira/-Ticket bekommt diff "" und .missing 'change nothing but ticket files', die Rolle liest das als ? statt –. Faellt sicher aus (nie falsches ✅, nur ? und eine benannte Frage nach Regel 0). Moegliche Folgeaenderung: die Rolle wertet genau diesen .missing-Grund als – ; nicht gemacht, weil der Teamlead weitere Runden zu diesem Punkt ausgeschlossen hat.
+- **2026-11-21 09:42 · Alexander Sacharov** — worker: review an cb9e353e ohne Blocker; beide Raender betreffen die .jaira/-Ausnahme (Teamlead 10:30: an signoff als known limit) und fallen sicher aus. Gepusht nach go vet + go test ./... + check-ticket-commits gruen.
