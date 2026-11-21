@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:44:21Z
+updated-at: 2026-11-21T08:46:28Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -49,8 +49,8 @@ review-gaps: |-
   optimize Runde 10: Revert-Code restlos entfernt (revertSubject, revertedCommit, revertsBranchWork); nichts weiter.
 test-verdict: "pass (round 10): go vet + go test -race ./... RC=0 at 221fbba5; DoD 8 proof refreshed (TestPRGateOnANoneBoardRefusesGitsRevertSubject: bare Revert refused naming fix(<ID>): revert <what>, reworded passes); gitrepo UnnamedCommits/isPlainMerge tests; reap names a failing or silent roles list (reap_test); gate writes nothing, nothing to race"
 hunt-verdict: "pass (round 12 at 221fbba5): 0 findings"
-claimed-by: DESKTOP-RFTCH11-30002
-claimed-at: 2026-11-21T08:01:23Z
+claimed-by: DESKTOP-RFTCH11-2127254
+claimed-at: 2026-11-21T08:46:28Z
 review-verdict: "Der Diff erfuellt alle 8 DoD-Punkte; go test fuer core/board, core/settings, core/gitrepo, core/role, internal/cli gruen, go vet sauber. Kein Defekt gefunden: Gate faellt bei Tippfehler, fehlender Datei, unbekanntem Handle, fremdem Commit und nicht-trivialem Merge geschlossen; .jaira/pr kommt aus dem Basis-Zweig. Nur Notes, kein Blocker."
 review-round: 12
 review-check: "1. cd /home/alex/projects/.worktrees/jaira-xb97nj && go build -o /tmp/jaira-x ./cmd/jaira  2. in einem Wegwerf-Repo mit Board: echo none > .jaira/pr && /tmp/jaira-x roles list --json | /tmp/jaira-x json get pr  -> 'none'  3. echo nnone > .jaira/pr && /tmp/jaira-x roles list  -> pr person, Quelle nennt 'nnone'  4. mit none: /tmp/jaira-x update, dann grep -n 'How work arrives' CLAUDE.md -> Absatz da; rm .jaira/pr && /tmp/jaira-x validate -> Warnung 'no longer matches ... .jaira/pr'  5. go test ./internal/cli -run TestPRGate -v -> alle PASS (none laesst nur done durch, lehnt unbenannte Commits und Merges mit eigenem Inhalt ab)"
