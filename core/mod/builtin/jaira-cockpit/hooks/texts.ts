@@ -4,10 +4,12 @@
 import { oneLine } from './board.ts'
 
 // A text a person typed, as part of one line: whitespace collapsed (board.ts
-// oneLine), cut at max characters with an ellipsis.
+// oneLine), cut at max characters with an ellipsis. Counted in code points:
+// a cut by UTF-16 index splits an emoji and leaves a lone surrogate in the
+// prompt this session is handed.
 function inLine(text: string, max: number): string {
-  const flat = oneLine(text)
-  return flat.length <= max ? flat : `${flat.slice(0, max - 1).trimEnd()}…`
+  const chars = Array.from(oneLine(text))
+  return chars.length <= max ? chars.join('') : `${chars.slice(0, max - 1).join('').trimEnd()}…`
 }
 
 export const t = {

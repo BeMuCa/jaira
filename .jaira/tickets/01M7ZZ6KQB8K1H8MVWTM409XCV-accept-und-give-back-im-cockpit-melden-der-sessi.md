@@ -1,7 +1,7 @@
 ---
 id: 01M7ZZ6KQB8K1H8MVWTM409XCV
 title: "Accept und Give back im Cockpit melden der Session eine Zeile, damit der Teamlead sofort weitermacht"
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-21T21:11:37Z
-updated-at: 2026-11-21T21:23:03Z
+updated-at: 2026-11-21T21:29:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3494777
 claimed-at: 2026-11-21T21:13:34Z
@@ -27,6 +27,12 @@ outcome-why: "Die Teamlead-Session erfuhr nichts von einem Klick im Cockpit und 
 outcome-resolves: 409XCV
 review-summary: none
 review-gaps: "texts.ts: own whitespace collapse replaced by board.ts oneLine (was a second copy); the cut with ellipsis stays local as inLine - digest.ts and threads.ts each keep a private clip, pre-existing, left alone. Nothing dead: afterAccept's new return is read by accept, its only caller."
+test-verdict: "pass: claude plugin test 295/295 (RC=0), go test ./... RC=0, DoD 1-3 verified in the tree; failure paths (refused, already in) submit nothing"
+hunt-verdict: "fail: bughunt done at 8694f3345, 1 change - inLine cuts by UTF-16 index and can leave a lone surrogate in the session line"
+round: 2
+back-from: testing
+back-by: lane
+back-count: 1
 ---
 
 # Accept und Give back im Cockpit melden der Session eine Zeile, damit der Teamlead sofort weitermacht
@@ -54,3 +60,7 @@ review-gaps: "texts.ts: own whitespace collapse replaced by board.ts oneLine (wa
 - **2026-11-21 21:16 · Alexander Sacharov** — decisions (settled, no person needed): (1) channel is $.prompt.submit({text}) - the cockpit's decide() already submits a line to this session that way, and a submitted prompt starts the teamlead's turn, which is the goal. (2) Accept: the line goes after afterAccept finished, so a teamlead reading it never starts a PR role beside the one Accept starts. (3) Give back: the line goes in handedTo, once it is known who got the work (old/new/no worker) - otherwise the teamlead may spawn a second worker. Reason: first line, cut to ~120 chars. (4) No person name in the line ('the person accepted'): the cockpit only knows git identity, and the session knows who presses. (5) branch feat/409xcv sits on feat/pdz444's merge (not yet in upstream/master).
 - **2026-11-21 21:21 · Alexander Sacharov** — implemented: accept() submits t.toSessionAccepted after afterAccept (which now returns what it said: PR/landing started, why none, or 'next step failed'); giveBack's handedTo submits t.toSessionGivenBack. oneLine() in texts.ts collapses whitespace and cuts the reason at 120 chars. claude plugin test: 295 pass.
 - **2026-11-21 21:21 · Alexander Sacharov** — critique: none. Channel reuses decide()'s $.prompt.submit (register.tsx decide); afterAccept's return replaces reading noticeAtom back, which would couple to say()/fail() ordering; the who-wording in toSessionGivenBack differs from returnedTo on purpose (the session needs 'new worker started' to not spawn one).
+- **2026-11-21 21:24 · Alexander Sacharov** — testing: function pass ran in the engine's own harness (claude plugin test, 2.1.x): Accept with PR started, Accept whose next step fails, Give back to a new worker with a multi-line 200+ char reason; failure paths: refused dry-run, refused move (jaira 0.3.6), 'already in' x3 presses, gates refusing - each submits nothing. Not run live in a session with a real press: that is the person's hand-check (claude --plugin-dir core/mod/builtin/jaira-cockpit). The change writes no file: prompt.submit only; two presses at once are the 'already in' case.
+- **2026-11-21 21:26 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/texts.ts:10 - class: a text cut by UTF-16 index (slice(0, max-1)) splits a character outside the BMP (emoji, some CJK) and leaves a lone high surrogate in the line prompt.submit sends to the teamlead session; reached by toSessionGivenBack (the reason the person typed, max 120) and toSessionAccepted (the next-step text, max 200); the same cut already sits in older code at digest.ts:184 (report line rewritten into the conversation), threads.ts:43 (clip for the haiku prompt) and board.ts:782 (follow-up title) - pre-existing there, but this change adds two new paths into the session prompt; example: a Give back reason of 118 chars followed by a thumbs-up emoji gives a line ending in 'x\ud83d…', isWellFormed() false; ran: node --experimental-strip-types on t.toSessionGivenBack('MG677R','signoff','new','x'.repeat(118)+'\u{1F44D} passt nicht') (lone surrogate: true). Not a blocker as verified: whether the engine or the API rejects the malformed string (a known 400 'no low surrogate in string' would stall the session) was not reproduced. Fix: cut by code points (Array.from(flat).slice(...)) or drop a trailing high surrogate
+- **2026-11-21 21:26 · Alexander Sacharov** — bughunt: done at 8694f3345 - 1 finding (1 change, 0 pre-existing) in 4 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/409XCV.md core/shipped/shipped.sha256
+- **2026-11-21 21:28 · Alexander Sacharov** — fix round 2: inLine (texts.ts) cuts by code points (Array.from) - the class is any cut by UTF-16 index on a text handed to the session; both new paths (reason, next-step text) go through inLine. Test 'a reason cut at its limit never splits a character outside the BMP'. Older private clips (digest.ts:184, threads.ts:43, board.ts:782) are pre-existing and not touched here.

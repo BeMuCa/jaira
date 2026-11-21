@@ -2662,6 +2662,17 @@ describe('the line a press hands this session', () => {
     expect(line).not.toContain('\n')
     expect(line.endsWith('…')).toBe(true)
   })
+
+  test('a reason cut at its limit never splits a character outside the BMP', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'back-MG677R' })
+    // 118 characters, then emoji: the cut at 119 falls inside a surrogate pair by UTF-16 index.
+    await (await $.ui.mount(GIVE('Give back MG677R'))).input({ key: 'reason-MG677R', text: 'x'.repeat(118) + '\u{1F44D}\u{1F44D}\u{1F44D} passt nicht' })
+    const line = w.submitted[0]!
+    expect(line.endsWith('x\u{1F44D}…')).toBe(true)
+    expect(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(line)).toBe(false)
+  })
 })
 
 describe('give back, the edges', () => {
