@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T09:05:35Z
+updated-at: 2026-11-21T09:05:47Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2485785
 claimed-at: 2026-11-21T08:57:23Z
@@ -35,7 +35,7 @@ outcome-resolves: "every board's waiting tickets are found and its move lines na
 review-summary: "critique 21.11. round 7: lanes found by their flags (human_exit, terminal, output_produces) - the same facts the binary uses (core/lane/lane.go impliedFresh reads human_exit && !question); one sentence maps the shipped names used later in the text onto them, so the rest of the role reads unchanged. Nothing to change."
 round: 15
 review-gaps: "optimize 21.11. round 7: nothing to remove."
-test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at a3af8998; DoD 1-4 verified in the tree; return rule 0 puts a status-line ❌ ahead of the table, sha prefix compare in both roles. Roles write nothing - no concurrent-writer case."
+test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at ec3858d3; DoD 1-4 verified in the tree; lane discovery run on this board (signoff/done/in-progress), a fresh jaira init board, and a scratch board with signoff renamed to abnahme (found, list --lane abnahme rc=0). Roles write nothing - no concurrent-writer case."
 hunt-verdict: "clean: diff hunt at a3af8998 (HEAD), 0 findings"
 question: ""
 review-verdict: "The diff meets all four DoD items; every command the new role tells the person to run exists with the flags it names (jaira list --lane/--board, show --json keys status/handle/dod_items.done/review.*, create --follows/--assignee, gh run list --commit, glab ci list --sha), the 'Given back from signoff:' prefix matches what the cockpit writes, and go test ./core/role ./core/shipped pass with -count=1. No blocker; three cosmetic notes."
