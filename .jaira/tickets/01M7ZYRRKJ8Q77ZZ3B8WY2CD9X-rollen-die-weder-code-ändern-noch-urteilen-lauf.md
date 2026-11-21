@@ -1,7 +1,7 @@
 ---
 id: 01M7ZYRRKJ8Q77ZZ3B8WY2CD9X
 title: "Rollen, die weder Code ändern noch urteilen, laufen auf haiku"
-status: critique
+status: optimize
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,13 +19,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-21T21:04:04Z
-updated-at: 2026-11-21T21:07:09Z
+updated-at: 2026-11-21T21:07:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2840519
 claimed-at: 2026-11-21T21:04:44Z
 outcome-what: "pr, tester and logbook-summary roles carry model: haiku in their SKILL.md header; the pr role hands code-changing review points to an opus agent"
 outcome-why: "pushing, running suites and summarising do not need a strong model; judging and code changes still do"
 outcome-resolves: "PR, CI and test runs cost haiku prices without weakening critique, review or bughunt"
+review-summary: "none"
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # Rollen, die weder Code ändern noch urteilen, laufen auf haiku
@@ -53,3 +58,4 @@ outcome-resolves: "PR, CI and test runs cost haiku prices without weakening crit
 - **2026-11-21 21:05 · Alexander Sacharov** — decision: mechanism = model: haiku in the SKILL.md frontmatter of pr, tester, logbook-summary. Claude Code honours model: in a skill header for the turn the skill runs, so it holds however the role is started (spawn.sh tab, Skill tool, Agent). No board setting, no spawn.sh flag: smallest change, nothing new to configure.
 - **2026-11-21 21:06 · Alexander Sacharov** — decision: Alex 21.11.: Grenze bestätigt — haiku nur für Rollen, die weder Code ändern noch urteilen (pr ohne Codeänderung, tester, CI-Warten, logbook-summary); critique, review, bughunt bleiben strong.
 - **2026-11-21 21:07 · Alexander Sacharov** — decision: code-changing review point goes to Agent(model: opus), named explicitly because a subagent would inherit haiku from the skill. opus = what this account's workers run on; sonnet is only the cockpit chat-model. Not via spawn.sh worker: the ticket is usually in done/signoff by PR time, a full worker run would walk lanes.
+- **2026-11-21 21:07 · Alexander Sacharov** — critique: release note line 1 — replace 'run jaira roles install ... remove the line from the installed SKILL.md' with 'jaira update --roles installs it'. Rest stands: model: header is the smallest mechanism (note above); opus named explicitly in pr step 1 because Agent would inherit haiku. Checked: teamlead/dispatcher start pr/tester as their own session, never inline, so haiku does not leak into a strong session.
