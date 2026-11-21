@@ -460,8 +460,8 @@ times in a row that lane may send a ticket back; the next send-back is refused
 The shipped critique, optimize and testing lanes say `max-rounds: 3`. The count
 is the ticket's `back-count`: a send-back made by a person — in the board, or
 `jaira move` typed at a terminal — is never refused and starts it again, as
-does one from another lane; the hand-off into a lane that takes a question is
-never refused, wherever the board draws it; and `--force` overrides it like any
+does one from another lane; the hand-off into a lane a person answers in (one that
+takes a question and no agent works) is never refused, wherever the board draws it; and `--force` overrides it like any
 refusal.
 `--for-lane` hands on `max_rounds` and `rounds_left` for such a lane. The value
 must be a whole number above 0; anything else is refused when the lane loads.

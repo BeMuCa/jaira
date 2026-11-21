@@ -135,3 +135,14 @@ func TestPersonLane(t *testing.T) {
 		t.Errorf("a board with only a sign-off lane offered %q", got)
 	}
 }
+
+// An agentic lane that requires a question is not where a person answers.
+func TestPersonLaneSkipsAgenticQuestionLanes(t *testing.T) {
+	work := &Lane{ID: "in-progress", Agentic: true, RequiresQuestion: true}
+	human := &Lane{ID: "human", RequiresQuestion: true}
+	loop := &Lane{ID: "testing", RejectsTo: []string{"in-progress"}}
+	set := assemble([]*Lane{work, loop, human}, nil, nil)
+	if got := set.PersonLane(loop); got != "human" {
+		t.Errorf("got %q, want human", got)
+	}
+}

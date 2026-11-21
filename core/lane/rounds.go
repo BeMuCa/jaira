@@ -38,18 +38,26 @@ func (l *Lane) RoundsLeft(t *ticket.Ticket) (int, bool) {
 	return max(l.MaxRounds-used, 0), true
 }
 
+// AsksPerson reports a lane a person answers in: it takes a question and no
+// agent works it. The one reading for both ends of max-rounds — where the
+// refusal sends the ticket, and which move the refusal lets through — so an
+// agentic lane that merely requires a question is never a way around it.
+func (l *Lane) AsksPerson() bool {
+	return l.RequiresQuestion && !l.Agentic
+}
+
 // PersonLane names the lane a person answers in when l has used up its
-// rounds: the first of l's back edges that takes a question, else the board's
-// first lane that does. Empty when the board has none: a sign-off lane is not
+// rounds: the first of l's back edges a person answers in, else the board's
+// first such lane. Empty when the board has none: a sign-off lane is not
 // offered instead, since it is for reviewed work, not an undecided loop.
 func (s *Set) PersonLane(l *Lane) string {
 	for _, id := range l.RejectsTo {
-		if r, ok := s.Get(id); ok && r.RequiresQuestion {
+		if r, ok := s.Get(id); ok && r.AsksPerson() {
 			return r.ID
 		}
 	}
 	for _, r := range s.Lanes {
-		if r.RequiresQuestion {
+		if r.AsksPerson() {
 			return r.ID
 		}
 	}

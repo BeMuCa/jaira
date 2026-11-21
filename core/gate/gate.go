@@ -413,10 +413,10 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 	// a row and hands the next decision to a person. Only a lane's own
 	// send-back is counted and refused: a person sending work back is the
 	// decision this limit exists to bring about, and so is the hand-off into
-	// a lane that takes a question — the very move the refusal prescribes,
+	// a lane a person answers in — the very move the refusal prescribes,
 	// which on a board drawing that lane earlier is itself a send-back.
 	if cur, ok := env.Lanes.Get(t.Status); ok && !req.Interactive && !req.ByPerson &&
-		!target.RequiresQuestion && env.Lanes.SendsBack(t.Status, req.To) {
+		!target.AsksPerson() && env.Lanes.SendsBack(t.Status, req.To) {
 		if left, limited := cur.RoundsLeft(t); limited && left == 0 {
 			where := "the lane a person answers in"
 			if p := env.Lanes.PersonLane(cur); p != "" {

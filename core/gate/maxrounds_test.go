@@ -87,25 +87,40 @@ func TestMaxRoundsFollowsTheLaneFile(t *testing.T) {
 }
 
 // The hand-off the refusal prescribes is never refused itself, wherever the
-// board draws the question lane: earlier than the loop lane, moving there is a
-// send-back too.
-func TestMaxRoundsLetsTheHandOffToAQuestionLaneThrough(t *testing.T) {
-	for _, earlier := range []string{"backlog", "todo", "in-progress"} {
+// board draws the person's lane: earlier than the loop lane, moving there is a
+// send-back too. An agentic lane that merely requires a question is no
+// person's lane and no way around the limit.
+func TestMaxRoundsLetsTheHandOffToAPersonsLaneThrough(t *testing.T) {
+	for _, c := range []struct {
+		lane       string
+		wantRefuse bool
+	}{
+		{"backlog", false},
+		{"todo", false},
+		{"in-progress", true},
+		{"brainstorm", true},
+	} {
 		env := testEnv(t)
-		q, ok := env.Lanes.Get(earlier)
+		q, ok := env.Lanes.Get(c.lane)
 		if !ok {
-			t.Fatalf("no %s lane", earlier)
+			t.Fatalf("no %s lane", c.lane)
 		}
 		q.RequiresQuestion = true
 		crit, _ := env.Lanes.Get("critique")
-		crit.RejectsTo = []string{"in-progress", earlier}
+		crit.RejectsTo = []string{"in-progress", c.lane}
 
-		tk := ticketWith("")
-		tk.Status = "critique"
-		tk.BackFrom, tk.BackBy, tk.BackCount = "critique", ticket.BackByLane, 3
-		vs := CheckAdvance(env, tk, Request{To: earlier, Question: "is the definition of done wrong?"})
-		if v := findViolation(vs, CodeMaxRounds); v != nil {
-			t.Errorf("hand-off to question lane %s refused: %s", earlier, v.Message)
+		for _, question := range []string{"is the definition of done wrong?", ""} {
+			tk := ticketWith("")
+			tk.Status = "critique"
+			tk.Question = "an older question still on the ticket"
+			tk.BackFrom, tk.BackBy, tk.BackCount = "critique", ticket.BackByLane, 3
+			v := findViolation(CheckAdvance(env, tk, Request{To: c.lane, Question: question}), CodeMaxRounds)
+			if c.wantRefuse && v == nil {
+				t.Errorf("agentic question lane %s let a 4th send-back through", c.lane)
+			}
+			if !c.wantRefuse && v != nil {
+				t.Errorf("hand-off to person's lane %s refused: %s", c.lane, v.Message)
+			}
 		}
 	}
 }
