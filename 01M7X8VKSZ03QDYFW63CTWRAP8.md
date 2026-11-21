@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:43:32Z
+updated-at: 2026-11-21T08:43:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1876460
 claimed-at: 2026-11-21T08:39:00Z
@@ -34,10 +34,7 @@ outcome-why: "fresh review 21.11. round 2: the text made DoD and review ? too"
 outcome-resolves: "DoD, blocker, review and returns stay readable when the head is unknown"
 review-summary: "critique 21.11. round 5: scope fix matches what each check reads; nothing to change."
 round: 13
-review-gaps: |-
-  note: core/shipped/shipped.sha256 traegt rund zehn Hashes von Zwischenstaenden der Rollen-SKILL.md, die nie ausgeliefert werden - harmlos (jaira update erkennt eine unveraenderte Datei weiterhin), aber Rauschen in einer Liste ausgelieferter Staende
-  note: jaira-role-signoff/SKILL.md:79 sagt bei leerem head sei jeder Check ?, auch DoD x/y und review, die vom Kopf gar nicht abhaengen
-  note: der Inhalt der neuen Rolle ist Prosa und nur durch ihr Vorhandensein in role_test.go wantRoles getestet; die Lookup-Schleife Zeile 66-72 hat keinen Test
+review-gaps: "optimize 21.11. round 5: nothing to remove."
 test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at 10348a71; DoD 1-4 verified in the tree; status line now ✅, ❌ or ? in both roles. Roles write nothing - no concurrent-writer case."
 hunt-verdict: "clean: diff hunt at 10348a71 (HEAD), 0 findings"
 question: ""
