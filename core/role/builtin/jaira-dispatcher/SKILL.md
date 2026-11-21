@@ -1,6 +1,6 @@
 ---
 name: jaira-dispatcher
-description: "Drive one ticket lane by lane by handing each lane to a separate worker, then report back in three lines. Invoked with a ticket id, normally by a teamlead session. Use when handed a whole ticket to carry to a human lane."
+description: "Drive one ticket lane by lane by handing each lane to a separate worker, then report back in three lines and a status line. Invoked with a ticket id, normally by a teamlead session. Use when handed a whole ticket to carry to a human lane."
 ---
 
 # Dispatcher
@@ -454,8 +454,8 @@ lands the branch on the default branch once every ticket on it is in done.
 
 **Your own tab closes only through `close-tab.sh`.** Do not keep working to
 stay useful — a dispatcher whose ticket has reached a human lane is finished.
-Print the three lines and stop. Started with `--parent`, send them there with
-`SendMessage`, and once it has taken them make this the very last call of your
+Print the three lines and the status line and stop. Started with `--parent`,
+send them there with `SendMessage`, and once it has taken them make this the very last call of your
 turn:
 
 ```bash
@@ -548,6 +548,16 @@ to a human:
   `context unknown` where that tool is not there. The teamlead reads it off
   this line to know what sending the next round back to you would cost
 - what is open, and whether it needs a person
+
+Then one line more, always the last line of the report, in exactly the format
+`jaira-worker` describes under "Report":
+
+```
+jaira: <ID> <from> -> <to> · branch: <branch> · commits: <first>..<last> (<n>) · gates: ok|red|none · notes: <n> · verdict: <text>
+```
+
+`gates` is the result of the gates the worker that pushed ran (see "Before
+anything is pushed"); `<from>` is the lane the ticket was in when you took it.
 
 Everything else — which lanes ran, how long, what the diff was — stays with you
 unless it is asked for.
