@@ -23,32 +23,38 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:36:24Z
+updated-at: 2026-11-21T09:36:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3647270
 claimed-at: 2026-11-21T09:36:24Z
 outcome-what: "Round 13: the cockpit recognises a blocker line and an explain class mark also in markdown emphasis."
 outcome-why: "Teamlead for Alex 21.11.: review note 4 - a '**blocker:**' line was listed as a note without Explain."
 outcome-resolves: "review round 12 note 4; claude plugin test 219 pass; go test core/role core/shipped core/lane ok. Checked: input (emphasis, case, list markers, mid-line 'blocker:' stays a note); no concurrency/permission surface (pure parsing)."
-review-summary: "none"
-review-gaps: "none - two regexes widened, no new code path"
+review-summary: "A ticket now carries blocker-rule (one sentence, default: wrong result/data loss/crash/security hole) and stop-after-fix (true/false/empty, checked by jaira set). jaira move records every send-back itself in back-from/back-by/back-count: a person's lane, a move in the board (TUI) or a CLI move at a terminal counts as person and resets the count; consecutive returns from the same loop lane count up. show --json and the --for-lane payload carry blocker_rule, stop_after_fix, back and round; the in-progress prompt stops at back.count>=3 from one lane, testing skips the hunt in a fix round when stop_after_fix, review/testing/bughunt prompts read blocker_rule. jaira set copies review-gaps into review-verdict-gaps while both belong to the verdict's round, so a verdict a later round left standing keeps its own findings. show --brief gains bughunt {at,on_head,skipped}: on_head is computed by gitrepo.ChangedSince - commits naming the ticket since the hunt, or uncommitted files written after the hunt's note, over the files the hunt listed; merges and .jaira board data (not lane prompts) do not count. Cockpit: Explain only for a blocker: line (bare or markdown-emphasised) or a reserving verdict; other notes listed under the row without a button; an earlier-round verdict says 'review of round N, changed since' and uses the kept gaps. The Explain prompt (texts.ts, spawn.sh) asks for a status line, one [class] line per note and a recommendation in the order recommended; the pane colours ticks/crosses, class marks and the recommendation with theme colours, and an unshaped old note still renders as text. SetScalar normalises CR/CRLF to LF for every field."
+review-gaps: |-
+  note: bughunt on HEAD errs red when an uncommitted file was written in the same minute before the hunt note - core/gitrepo/git.go writtenSince compares mtime with the note stamp, which is truncated to the minute (core/ticket/body.go Notes); fix: compare against the end of that minute, or let the hunt note carry seconds
+  note: bughunt on HEAD errs green for a file edited while the hunt was still running - the reference time is when the hunt finished, not when it read the file; known limit of a note-based stamp, harmless in the usual flow where testing edits nothing
+  note: the third-return stop counts only consecutive returns from one lane (core/move/move.go recordBack) - critique and testing taking turns never reach count 3; matches DoD 4 as written, the in-progress prompt could say so
+  note: a hand-edited stop-after-fix like "yes" reads as off without a warning (core/ticket/schema.go decodeFields); jaira set refuses it, a hand edit does not
+  note: a hunt run on uncommitted work turns bughunt on HEAD red once that same work is committed afterwards (conversational mode commits after the lanes) - errs safe, worth one sentence in the brief help
 test-verdict: "pass: claude plugin test 219 pass at 220d5b51 (BL0CK4-6 offer Explain, NOTES3 does not, '**[blocker]**' drawn red); go test core/role core/shipped core/lane ok; parsing only, no writes"
 hunt-verdict: "pass: follow-up hunt since 058e8d2f at 220d5b51, 0 findings"
 round: 13
-review-verdict: "Der Diff erfuellt alle 11 DoD-Punkte; Go-Tests (go test ./core/... ./internal/...) und Cockpit-Tests (claude plugin test, 218 pass) gruen. Keinen Blocker gefunden: ChangedSince faellt bei Unklarheit (fremder Commit, unlesbare Dateiliste, Note ohne Zeit, Minutengenauigkeit) immer auf 'nicht auf HEAD' zurueck, recordBack laeuft in derselben Mutation wie der round-Zaehler. Vier Notes, davon die wichtigste: die Bremse zaehlt nur Rueckgaben derselben Lane in Folge."
-review-round: 12
+review-verdict: "The diff meets all 11 definition-of-done items; go test ./... and the cockpit's 219 tests pass, and the branch binary shows blocker_rule, stop_after_fix, back and bughunt on this ticket. I found no blocker; the notes are edges of the bughunt-on-HEAD heuristic and the loop count, all erring towards a red mark or documented. Unsure only about the atATerminal rule: an agent harness with a TTY counts as a person, which the in-progress prompt states but nothing enforces."
+review-round: 13
 review-check: |-
-  1. cd /home/alex/projects/.worktrees/jaira-df0yd6 && go build -o /tmp/jaira-df ./cmd/jaira
-  2. /tmp/jaira-df show DF0YD6 --json | /tmp/jaira-df json get back  -> zeigt from/by/count der letzten Rueckgabe
-  3. /tmp/jaira-df set DF0YD6 stop-after-fix=yes  -> Fehler bad_stop_after_fix, Exit 2
-  4. /tmp/jaira-df show DF0YD6 --brief  -> JSON enthaelt bughunt mit at, on_head, skipped
-  5. go test ./core/move -run TestMoveRecordsWhoSentItBack && go test ./internal/cli -run 'TestCLIMoveAtATerminalIsAPersons|TestVerdictKeepsItsGaps|TestBlockerRuleRoundTrip'  -> ok
-  6. claude --plugin-dir core/mod/builtin/jaira-cockpit starten: ein Ticket in signoff nur mit note:-Zeilen in review-gaps zeigt die Notes als graue Liste ohne Explain-Knopf; mit einer blocker:-Zeile erscheint Explain
+  1. cd /home/alex/projects/.worktrees/jaira-df0yd6 && go build -o /tmp/jb ./cmd/jaira
+  2. /tmp/jb show DF0YD6 --json | /tmp/jb json get back  -> shows from/by/count (here: from review, by lane, count 1)
+  3. /tmp/jb set DF0YD6 stop-after-fix=yes  -> refused, exit 2, 'stop-after-fix is true, false or empty'
+  4. /tmp/jb show DF0YD6 --brief  -> the JSON has "bughunt":{"at":"220d5b51","on_head":true,...}
+  5. In the cockpit (claude --plugin-dir <worktree>/core/mod/builtin/jaira-cockpit), with this ticket in signoff: the row lists the review notes with a dot and no Explain button, because review-gaps has no blocker: line
+  6. go test ./core/move ./internal/cli -run 'TestMoveRecordsWhoSentItBack|TestCLIMoveAtATerminalIsAPersons|TestVerdictKeepsItsGaps' -> ok
 review-verdict-gaps: |-
-  blocker: DoD 7 - der Statuspunkt 'bughunt on HEAD' ist im ueblichen Fall falsch rot: die Explain-Vorlage (texts.ts:81, spawn.sh:396) laesst ihn aus der neuesten 'bughunt: done at <commit>'-Note lesen, aber die Explain-Chats bekommen nur show --brief mit den 4 neuesten Notes (tickets.go briefNotes=4) und sollen das Ticket nicht nochmal ganz lesen; nach testing-, review- und Worker-Note ist die Hunt-Note draussen - geprueft: bei N71NVG, K6BGB0, V38STG, X3A8RZ (signoff/human) steht in notes_last keine. Ausserdem ist HEAD hier 9d2e0f59 (Upstream-Merge), der Hunt lief auf 553b37f3 -> fail, obwohl seitdem kein Ticket-Code dazukam. Ein rotes Kreuz auf einem sauberen Ticket ist genau das 'muss geaendert werden'-Gefuehl, das das Ticket abschaffen soll. Fix der Klasse: brief traegt die neueste bughunt-done-Zeile als eigenes Feld (unabhaengig von notes_last), und 'on HEAD' gilt auch, wenn git diff <hunt-commit> HEAD keine der Dateien des Hunts beruehrt; Test in loopbrake_test/role_test.
-  note: atATerminal (internal/cli/flow.go:927) - ein Agent-Harness, das Befehle in einem PTY ausfuehrt, schreibt jede Loop-Rueckgabe als by=person; dann erreicht count nie 3 und die Schleifenbremse ist fuer dieses Harness still aus. Im Code als Grenze benannt; ein Satz dazu in 20-in-progress.md waere ehrlich.
-  note: stop-after-fix wird beim Lesen als exakt 'true' verglichen (schema.go decodeFields); von Hand eingetragenes 'True' oder 'yes' liest still als aus - beim Dekodieren ToLower/TrimSpace wie CanonicalStopAfterFix.
-  note: board.ts explainable nimmt fuer ein Verdict frueherer Runde ohne Kopie review.gaps (dann die von optimize) als Blocker-Quelle; harmlos, solange optimize nie mit 'blocker:' beginnt.
+  note: bughunt on HEAD errs red when an uncommitted file was written in the same minute before the hunt note - core/gitrepo/git.go writtenSince compares mtime with the note stamp, which is truncated to the minute (core/ticket/body.go Notes); fix: compare against the end of that minute, or let the hunt note carry seconds
+  note: bughunt on HEAD errs green for a file edited while the hunt was still running - the reference time is when the hunt finished, not when it read the file; known limit of a note-based stamp, harmless in the usual flow where testing edits nothing
+  note: the third-return stop counts only consecutive returns from one lane (core/move/move.go recordBack) - critique and testing taking turns never reach count 3; matches DoD 4 as written, the in-progress prompt could say so
+  note: a hand-edited stop-after-fix like "yes" reads as off without a warning (core/ticket/schema.go decodeFields); jaira set refuses it, a hand edit does not
+  note: a hunt run on uncommitted work turns bughunt on HEAD red once that same work is committed afterwards (conversational mode commits after the lanes) - errs safe, worth one sentence in the brief help
 back-from: review
 back-by: lane
 back-count: 1
