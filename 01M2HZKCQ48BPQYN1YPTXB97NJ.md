@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T09:47:14Z
+updated-at: 2026-11-21T09:47:18Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -46,8 +46,8 @@ test-verdict: "pass with known limit (round 16): go vet + go test -race ./... RC
 hunt-verdict: "known limit (round 18 at 8747367e): 1 narrow finding (cockpit for-each-ref short name beside a local branch called origin/main), recorded as known limit per teamlead"
 claimed-by: DESKTOP-RFTCH11-3584823
 claimed-at: 2026-11-21T09:34:03Z
-review-verdict: "Der Diff erfuellt alle acht DoD-Punkte; go test (board, gitrepo, settings, role, internal/cli, shipped) und claude plugin test im Cockpit (218/218) gruen. Kein Defekt gefunden, der einen Blocker traegt: jede unklare Lage (Tippfehler, fehlende Basis, gh antwortet nicht, Octopus-Merge, altes git) faellt auf person bzw. 'kein Landen' zurueck. Vier Notes, die ein Mensch beim Annehmen abwaegen kann - am ehesten der still auf die Platte zurueckfallende --base."
-review-round: 20
+review-verdict: "Der Diff erfuellt alle acht DoD-Punkte; kein Defekt gefunden, der die Arbeit zurueckschickt. Gelesen: arrival.go, named.go, roles.go (pr-gate, boardArrival), settings.go, reap.sh-Diff, register.tsx decideStep/afterAccept, jaira-role-pr SKILL.md. Lief: go test ./core/board ./core/gitrepo ./core/settings ./core/role ./internal/cli (ok), claude plugin test . im Cockpit (219 pass), Szenario unten mit einem aus HEAD gebauten Binary (stimmt). Nicht selbst nachgestellt: das echte Landen per Push auf ein Remote und reap gegen einen Fork - das decken die Tests in core/role/reap_test.go und internal/cli/prgate_test.go."
+review-round: 21
 review-check: "1. mkdir /tmp/solo && cd /tmp/solo && git init -q -b master && jaira init && jaira share  2. echo none > .jaira/pr && git add .jaira/pr && git commit -qm 'chore(AAAAAA): pr none'  3. jaira update - CLAUDE.md enthaelt jetzt '## How work arrives on this board' mit '.jaira/pr says none'  4. jaira roles list --json --base master | jaira json get pr - zeigt none  5. echo nnone > .jaira/pr && git commit -qam 'chore(AAAAAA): typo' && jaira roles list --json --base master - pr ist person, pr_source nennt 'nnone ... neither agent nor none'  6. Im jaira-Repo: go test ./internal/cli -run TestPRGate - gruen (deckt --land/not_none, no_pull_requests, unnamed, plain merge)  7. go test ./core/role -run Reap - gruen (reap unter none: Fork-Parent, dangling origin/HEAD)  8. In /tmp/solo: git rm -q .jaira/pr && jaira update && jaira validate - Block ohne den Absatz, keine Warnung"
 ---
 
