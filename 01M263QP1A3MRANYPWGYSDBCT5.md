@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-21T08:07:09Z
+updated-at: 2026-11-21T08:07:13Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -94,3 +94,4 @@ review-check: |-
 - **2026-11-20 23:04 · Alexander Sacharov** — worker stop 21.11. 00:05: in signoff, review verdict pass. Branch feat/sdbct5 pushed (3 commits, last bb02c815). Ticket file modified in the worktree on purpose - no code commit follows; the logbook commit after acceptance carries it. Open for the person: three note: lines in review-gaps (caveat wording also covers 'commits nothing'; commit lines in jaira-worker/jaira-role-lane SKILL.md still name .jaira/tickets/; test name).
 - **2026-11-21 08:00 · Alexander Sacharov** — Given back from signoff: Alex 21.11. alle Funde in dieser Runde schliessen. 1) Fertige Commit-Zeilen in jaira-worker SKILL.md und jaira-role-lane SKILL.md (+ alle Kopien, grep) nennen .jaira/tickets/<ticket>.md auch auf ungeteiltem Board - wie in den anderen Rollen anpassen. 2) Die Einschraenkung 'This point and the next hold on a shared board only' praezise fassen: 'commits nothing' gilt erst recht, nur die Ticketdatei-Saetze fallen weg. 3) Testname nennt auch --done --proof. Manifest-Hashes nachtragen, Diff-Hunt, review, signoff, push.
 - **2026-11-21 08:01 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/4205.sock
+- **2026-11-21 08:07 · Alexander Sacharov** — round after signoff return (21.11.): all three review-gaps notes closed. 1) commit lines in jaira-worker SKILL.md:103 and jaira-role-lane SKILL.md:86/288 now say to leave the ticket file out on an unshared board; grep 'git add.*.jaira/tickets' finds no further live site (rest: .planning, NOTES.md history, testdata). 2) caveat reworded in block and jaira role: no longer 'this point and the next hold on a shared board only', instead 'the next point holds there all the more; only its sentences about the ticket file fall away'. 3) test renamed TestAgentNoteNamesProofAndTheUnsharedBoardCaveat, asserts the new sentence. Manifest: 3 hashes appended. Release note line 2 names jaira-worker and jaira-role-lane.
