@@ -54,7 +54,7 @@ left: say so in one line and stop.
 
 ### 1. The status line
 
-One line, each check with ✅ or ❌. Every check is about the commit that would
+One line, each check with ✅, ❌ or `?`. Every check is about the commit that would
 ship — the head of the ticket's branch — and nothing older:
 
 The ticket's branch is the one whose name carries its six-character handle (`handle` in `jaira show <id> --json`) as
