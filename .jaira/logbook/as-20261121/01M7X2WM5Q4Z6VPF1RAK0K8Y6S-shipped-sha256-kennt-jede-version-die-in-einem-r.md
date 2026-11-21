@@ -1,7 +1,7 @@
 ---
 id: 01M7X2WM5Q4Z6VPF1RAK0K8Y6S
 title: "shipped.sha256 kennt jede Version, die in einem Release-Tag ausgeliefert wurde, und CI haelt das fest"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -17,26 +17,36 @@ tags:
   - release
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 61543e223205bac38f80716a4ce99b433283d735
+  - 5a091b69564906be266af3269fd9ca4e62c67f07
+  - 9c7850405aebb6efd7a85829d00e3223091baf03
+  - 55ae3718ae5679e22c21f97f3c5dd2b4c513c261
+  - 722c9c6e90e62297c65e3a5ae630106ca823c8ee
+  - dea24113026035b904a19f1c3c35ff02292b53c4
+  - 7f2d86fef15892ff2f90053e3cc526e7c4b20d09
+  - 6f5ba8692b1078da72037a210e58040c7697d9a9
+  - 29ee46909d6b60169e83b4b215fe1e9c64f4de76
+  - 53926c5fe6b81a7942e4480fce981586f4207d14
+  - a94719dc54b1decceb1e53ec981f2bda9230048a
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:15:16Z
+updated-at: 2026-11-21T13:42:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
 outcome-what: "Manifest neu erzeugt (8 Tag-Versionen fehlten, u.a. cockpit board.ts v0.5.2/0.5.3); scripts/shipped-history.sh --check haelt es gegen jeden v*-Tag und laeuft in ci.yaml (Job shipped-manifest) und im release-notes-Workflow; .gitattributes merge=union fuer das Manifest; LC_ALL=C im Skript"
 outcome-why: Hand-gemergte Manifest-Konflikte verloren Zeilen; jaira update --roles hielt dann eine unberuehrte Installation fuer handgeaendert und uebersprang sie still
 outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, wenn eine fehlt, und Manifest-Merges konfliktieren nicht mehr"
-review-summary: "scripts/shipped-history.sh got two modes. --check lists every installed-file version in every v* tag (git ls-tree per tag, raw blob bytes hashed, lanes/ and .claude/skills/jaira mapped to today's embed path) and fails with the lines to append when the committed manifest lacks one; it fails on a clone without tags, on an unreadable tag and on an unreadable blob instead of passing. --write builds the manifest into a temp file beside it and renames it only on success. CI got a shipped-manifest job (fetch-depth 0) and the release-notes workflow runs --check before it opens the release PR. .gitattributes merges the manifest with merge=union. The manifest was regenerated: 75 lines added (including the v0.5.2 cockpit board.ts that a hand merge had lost), none removed. A new table test installs the real v0.5.2 board.ts (fixture pinned to the tag's hash) and expects Updated, not Skipped. Test messages now name --write instead of '> manifest'; TestEveryManifestPathExists uses strings.Cut instead of l[66:]."
+review-summary: "scripts/shipped-history.sh bekommt --check (hasht jede Version installierter Dateien aus allen v*-Tags per git cat-file, roh mit CRLF, und meldet fehlende Manifestzeilen mit exit 1; ohne Tags oder bei unlesbarem Tag/Blob ebenfalls exit 1) und --write (erzeugt in eine Temp-Datei neben dem Manifest, mv erst bei Erfolg); set -euo pipefail, LC_ALL=C, fehlende Datei/Blob bricht ab statt leeren Hash zu schreiben. CI-Job shipped-manifest und ein Schritt im release-notes-Workflow (beide fetch-depth 0) fuehren --check aus. .gitattributes setzt merge=union fuer das Manifest. Das Manifest ist regeneriert: 0 Zeilen gegenueber upstream/master verloren, neu u.a. board.ts aus v0.5.2/v0.5.3 (a06a3c1c...), deshalb ersetzt jaira update --roles diese Installation jetzt. Tests: Fixture-Repo mit 3 Tags (geloescht/wieder angelegt, CRLF, Tag ohne Datei), union-Merge, unlesbarer Blob/Tag, fehlende Datei; Install-Tabellentest mit gepinntem v0.5.2-board.ts; TestEveryManifestPathExists ohne Panic; Hinweise nennen --write. Release-Note vorhanden."
 round: 8
 review-gaps: |-
-  note: unclear whether GitHub's own PR merge honours merge=union when it checks for conflicts; a local git merge does (proven by TestManifestMergesWithoutConflict and by commit 29ee4690, where the union left duplicates that the test caught)
-  note: pre-existing: the working-tree loop in generate() (sha256sum <"$f" inside $(...)) prints a line with an empty hash when a file is in the index but gone from disk; it does not stop the script, unlike the blob path this ticket fixed. TestManifestLinesAreWellFormed catches that line, so nothing ships silently
-  note: known limit, written down by the implementer: paths with spaces do not fit the manifest format; no such file exists today
-test-verdict: "pass: go build ./... und go test ./... gruen (rc=0) auf 29ee4690 nach Merge von upstream/master; DoD 1-7 im Baum belegt (Tests aus den proofs einzeln gelaufen); --write: zwei parallele Laeufe ergeben ein sortiertes Manifest ohne Duplikat, flacher Klon exit 1 bei unveraendertem Manifest, unlesbarer Blob per Test (Manifest unveraendert, keine Temp-Datei)"
-hunt-verdict: "pass: bughunt done at 29ee4690, 0 change, 0 pre-existing (Runde davor: 1 change, Duplikate nach union-Merge, behoben in 29ee4690)"
-review-verdict: "All 7 DoD items are met, and I checked them myself: --check passes on all 34 tags; a regenerated manifest is byte-identical to the committed one; no line of the master manifest was lost and none is duplicated; master's manifest lacked the v0.5.2 board.ts hash, so the new test would have failed there; go test ./core/shipped ./core/role ./core/lane passes. No blocker. Error paths (shallow clone, no tags, unreadable tag or blob, a failed --write) stop the script and leave the manifest untouched. Not verified: shellcheck (not installed here) and whether GitHub honours merge=union server-side."
-review-round: 7
-review-check: "1. cd into the repository on branch feat/0k8y6s  2. run: scripts/shipped-history.sh --check  -> it prints 'every version in 34 v* tag(s) is in core/shipped/shipped.sha256' and exits 0  3. run: git show master:core/shipped/shipped.sha256 | grep -c a06a3c1cb1b4  -> 0 (master lacks the v0.5.2 board.ts); the same grep on core/shipped/shipped.sha256 -> 1  4. run: go test ./core/shipped/ ./core/role/ -run 'TestCheck|TestWrite|TestUnreadable|TestManifestMerges|TestInstallReplacesAnOlderShippedVersion' -v  -> every case PASS, including 'cockpit_board.ts_v0.5.2'  5. open .github/workflows/ci.yaml -> a job shipped-manifest runs scripts/shipped-history.sh --check; .github/workflows/release-notes.yaml runs it before 'Push release/<version>'"
+  note: known limit: ob GitHubs PR-Merge merge=union aus .gitattributes beachtet, belegt erst ein echter PR; lokal belegt TestManifestMergesWithoutConflict, und ein union-Duplikat liesse die PR-CI (TestManifestLinesAreWellFormed) vor dem Merge rot werden
+  note: known limit: Pfade mit Leerzeichen kann das Manifestformat nicht abbilden; heute existiert keine solche Datei
+test-verdict: "pass: go build ./... und go test ./... gruen (rc=0) auf 53926c5f; DoD 1-8 im Baum belegt; TestFileMissingFromDiskStopsTheScript rot ohne Fix, gruen mit; Manifest durch den Fix unveraendert, --check gruen auf 34 Tags"
+hunt-verdict: "pass: bughunt done at 53926c5f, 0 change, 0 pre-existing"
+review-verdict: "Diff erfuellt alle 8 DoD-Punkte; keine Defekte gefunden. Selbst geprueft: go test ./shipped/ ./role/ ./lane/ gruen, --check gruen auf 34 Tags, Regenerieren byte-gleich mit dem committeten Manifest, 0 Zeilen gegenueber upstream/master verloren, board.ts v0.5.2/v0.5.3 nur hier im Manifest. Fehlerpfade (unlesbarer Blob/Tag, fehlende Datei, keine Tags, Abbruch bei --write) schlagen geschlossen fehl."
+review-round: 8
+review-check: "1. cd in den Worktree feat/0k8y6s  2. scripts/shipped-history.sh --check -> 'every version in 34 v* tag(s) is in core/shipped/shipped.sha256', exit 0  3. sed -i '/a06a3c1cb1b4/d' core/shipped/shipped.sha256 && scripts/shipped-history.sh --check -> exit 1, nennt die board.ts-Zeile a06a3c1c... zum Anhaengen  4. scripts/shipped-history.sh --write -> 'wrote core/shipped/shipped.sha256 (... versions)'; git diff core/shipped/shipped.sha256 ist leer  5. cd core && go test ./shipped/ ./role/ ./lane/ -> alle ok"
 ---
 
 # shipped.sha256 kennt jede Version, die in einem Release-Tag ausgeliefert wurde, und CI haelt das fest
@@ -105,3 +115,5 @@ review-check: "1. cd into the repository on branch feat/0k8y6s  2. run: scripts/
 - **2026-11-21 08:11 · Alexander Sacharov** — bughunt: done at 29ee4690 - 0 findings in 1 module, follow-up hunt since 6f5ba869 (diff: only core/shipped/shipped.sha256 regenerated; no file new to the list; untracked .jaira/milestones/ are board data, not read); concurrency, error paths, input, permissions checked; ran: go test ./shipped/ ./role/ ./lane/ (pass), scripts/shipped-history.sh --check (pass), comm of manifest entries against 6f5ba869, 7f2d86fe and upstream/master (no entry lost, none added, 0 duplicate keys); files: .gitattributes .github/workflows/ci.yaml .github/workflows/release-notes.yaml core/lane/refresh_test.go core/release/notes/0K8Y6S.md core/role/shipped_test.go core/role/testdata/jaira-cockpit-hooks-board-v0.5.2.ts core/shipped/history_test.go core/shipped/shipped.sha256 core/shipped/shipped_test.go scripts/shipped-history.sh
 - **2026-11-21 08:12 · Alexander Sacharov** — Stand 08:15: in review, Review-Agent per run-lane.sh --no-worktree gestartet; Branch gepusht bis 29ee4690 (inkl. Merge upstream/master).
 - **2026-11-21 08:15 · Alexander Sacharov** — review-gaps 'pre-existing: leerer Hash bei fehlender Datei' nach Alex' Ansage (alle Funde in dieser Runde) behoben statt als note stehen gelassen: gleiche Klasse wie der unlesbare Blob. Geschwister gesucht: keine weitere Hash-Stelle im Skript. GitHub+merge=union und Pfade mit Leerzeichen bleiben known limit.
+- **2026-11-21 08:16 · Alexander Sacharov** — bughunt: done at 53926c5f - 0 findings in 2 modules, follow-up hunt since 29ee4690 (diff: scripts/shipped-history.sh generate() loop, core/shipped/history_test.go new test; no file new to the list); concurrency, error paths, input, permissions checked; ran: go test ./shipped/ ./role/ ./lane/ (pass), scripts/shipped-history.sh --check (pass), in a scratch worktree: chmod 000 on an embedded file (exit 1), rm of an embedded file with --write (fails, manifest byte-identical, no temp file left); files: .gitattributes .github/workflows/ci.yaml .github/workflows/release-notes.yaml core/lane/refresh_test.go core/release/notes/0K8Y6S.md core/role/shipped_test.go core/role/testdata/jaira-cockpit-hooks-board-v0.5.2.ts core/shipped/history_test.go core/shipped/shipped.sha256 core/shipped/shipped_test.go scripts/shipped-history.sh
+- **2026-11-21 08:18 · Alexander Sacharov** — review (fresh, Runde 3): keine Blocker, 2 known-limit-notes. Selbst geprueft: Tests gruen, --check gruen auf 34 Tags, Regenerieren byte-gleich, 0 Zeilen gegenueber upstream/master verloren.
