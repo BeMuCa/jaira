@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:51:32Z
+updated-at: 2026-11-21T08:51:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
@@ -33,7 +33,7 @@ outcome-resolves: "bughunt change at 7d73a41d (core/gitrepo/git.go:353); TestCha
 review-summary: "none"
 review-gaps: "none - 81dcbbee: untrackedSince reuses run/Root, no second ls-files --others reader with these specs"
 test-verdict: "pass: go test -count=1 ./... RC=0 at 81dcbbee; TestChangedSince 16 cases incl. untracked written after/before the hunt and outside the hunted paths; claude plugin test 216 pass (no TS change since round 5); read-only git, no parallel-writer case"
-hunt-verdict: "fail: 1 change finding at 7d73a41d - untracked files edited after the hunt are invisible to git diff HEAD"
+hunt-verdict: "pass: follow-up hunt since 7d73a41d at 81dcbbee, 0 findings"
 round: 8
 review-verdict: "Zurueck an in-progress: ein Blocker. Go-Seite, Lane-Prompts und Cockpit-Logik erfuellen DoD 1-6 und 8-11 (go test ./... gruen, claude plugin test 216 pass); der Statuspunkt 'bughunt on HEAD' der neuen Explain-Statuszeile (DoD 7) kann aus den Daten, die der Explain-Chat bekommt, im Normalfall nicht ok werden."
 review-round: 4
