@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:49:37Z
+updated-at: 2026-11-21T08:49:40Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
@@ -31,7 +31,7 @@ outcome-what: "Round 7: on_head also turns false for an untracked file inside th
 outcome-why: "The round-7 hunter showed git diff HEAD never lists untracked files, so an edited new file left on_head true."
 outcome-resolves: "bughunt change at 7d73a41d (core/gitrepo/git.go:353); TestChangedSince 16 cases; go test core/gitrepo internal/cli RC=0. Checked: error paths (stat failure -> changed), input (-z, --full-name, spaces), concurrency/permissions unchanged (read-only)."
 review-summary: "none"
-review-gaps: "none - 7d73a41d only moves the pattern into namesTicket"
+review-gaps: "none - 81dcbbee: untrackedSince reuses run/Root, no second ls-files --others reader with these specs"
 test-verdict: "pass: go test -count=1 ./... RC=0 at 7d73a41d, -race core/gitrepo RC=0, claude plugin test 216 pass (round 5, no TS change since); DoD 7 checked on a scratch board: no hunt -> bughunt null; hunt with 'files: a b.go' clean -> on_head true, after a commit naming the ticket -> false, new hunt -> true; unknown commit -> false; writes: none (read-only git), so no parallel-writer case"
 hunt-verdict: "fail: 1 change finding at 7d73a41d - untracked files edited after the hunt are invisible to git diff HEAD"
 round: 8
