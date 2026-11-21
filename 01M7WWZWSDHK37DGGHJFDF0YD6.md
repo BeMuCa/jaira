@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZWSDHK37DGGHJFDF0YD6
 title: "Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,13 +23,13 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:44:29Z
+updated-at: 2026-11-21T08:44:39Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
-outcome-what: "Round 5: show --brief carries bughunt {at, on_head} worked out by jaira (core/gitrepo ChangedSince over the hunt's files, merges from master aside); both Explain templates read it; stop-after-fix 'True' reads as on; in-progress prompt names the PTY-harness limit."
-outcome-why: "The fresh review found the Explain status 'bughunt on HEAD' falsely red on clean tickets: the hunt note falls out of the four notes the chat gets, and a master merge moves HEAD past the hunt."
-outcome-resolves: "review blocker DoD 7 and notes 2-3 of round 4; note 4 kept as known limit (see note). Checked: concurrency (read-only git calls), error paths (unknown commit -> on_head false), input (paths with spaces via :(top,literal), CRLF-free note parsing, no files list -> all code), permissions (nothing trusted beyond the ticket's own notes). go test ./... RC=0, -race gitrepo/cli RC=0, claude plugin test 216 pass."
+outcome-what: "Round 6: on_head requires the hunt commit in HEAD's history, counts only non-merge commits naming the ticket since the hunt plus uncommitted changes, and widens to all code when the hunt's file list names a path that does not exist."
+outcome-why: "Testing round 5: the hunter found a main checkout on master read a feature branch's hunt as on HEAD; the scratch run found a file list split at a space read as unchanged."
+outcome-resolves: "both round-5 findings; TestChangedSince (12 cases incl. not-an-ancestor, split list, other ticket's commit, master merge); go test core/gitrepo internal/cli core/ticket RC=0. Checked: concurrency (read-only git), error paths (invalid id/unknown commit -> error -> on_head false; ls-tree error surfaces), input (spaces, -z, literal pathspecs, unknown paths), permissions (handle pattern built only from a ValidID)."
 review-summary: "none"
 review-gaps: "none - 190a55ec: the only Go reader of 'bughunt: done at' is the new huntDone (grep), git helpers reuse runTolerating/codeOnly, nothing orphaned"
 test-verdict: "fail: suite green at 190a55ec, but own scratch run: 'files: a b.go' split at the space read as unchanged (on_head true on a changed file)"
