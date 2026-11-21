@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:16:21Z
+updated-at: 2026-11-21T08:16:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
@@ -29,7 +29,7 @@ outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, w
 review-summary: "Runde 3 nach signoff: keine Funde. 53926c5f folgt der Form des Blob-Falls (sum=$(...) || exit 1, printf mit ${sum%% *}) statt einer neuen; Test im Muster von TestUnreadableBlobStopsTheScript."
 round: 8
 review-gaps: "none: 53926c5f ersetzt eine Zeile durch zwei, das cut in der Pipe faellt weg; nichts verwaist"
-test-verdict: "pass: go build ./... und go test ./... gruen (rc=0) auf 29ee4690 nach Merge von upstream/master; DoD 1-7 im Baum belegt (Tests aus den proofs einzeln gelaufen); --write: zwei parallele Laeufe ergeben ein sortiertes Manifest ohne Duplikat, flacher Klon exit 1 bei unveraendertem Manifest, unlesbarer Blob per Test (Manifest unveraendert, keine Temp-Datei)"
+test-verdict: "pass: go build ./... und go test ./... gruen (rc=0) auf 53926c5f; DoD 1-8 im Baum belegt; TestFileMissingFromDiskStopsTheScript rot ohne Fix, gruen mit; Manifest durch den Fix unveraendert, --check gruen auf 34 Tags"
 hunt-verdict: "pass: bughunt done at 29ee4690, 0 change, 0 pre-existing (Runde davor: 1 change, Duplikate nach union-Merge, behoben in 29ee4690)"
 review-verdict: "All 7 DoD items are met, and I checked them myself: --check passes on all 34 tags; a regenerated manifest is byte-identical to the committed one; no line of the master manifest was lost and none is duplicated; master's manifest lacked the v0.5.2 board.ts hash, so the new test would have failed there; go test ./core/shipped ./core/role ./core/lane passes. No blocker. Error paths (shallow clone, no tags, unreadable tag or blob, a failed --write) stop the script and leave the manifest untouched. Not verified: shellcheck (not installed here) and whether GitHub honours merge=union server-side."
 review-round: 7
