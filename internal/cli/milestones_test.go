@@ -2,7 +2,6 @@ package cli
 
 import (
 	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
@@ -22,19 +21,50 @@ func mkTicket(t *testing.T, dir, title string) string {
 	return firstTitledHandle(t, dir, title)
 }
 
-// milestonePath is the file of the milestone this key names, filed ones
-// included, or the name-only path no file has when none is there.
-func milestonePath(root, key string) string {
-	if ms, err := milestone.Load(root, key); err == nil {
-		return ms.Path(root)
+// milestoneStore is an empty board in a git repository without a remote:
+// milestones live on refs, and such a board keeps them on local ones.
+func milestoneStore(t *testing.T) string {
+	t.Helper()
+	dir := emptyStore(t)
+	gitRun(t, dir, "init", "--quiet")
+	gitRun(t, dir, "config", "user.name", "test")
+	gitRun(t, dir, "config", "user.email", "test@example.test")
+	return dir
+}
+
+// saveMilestone records ms on its ref at dir, as a write there would.
+func saveMilestone(t *testing.T, dir string, ms *milestone.Milestone) {
+	t.Helper()
+	if err := refsOf(t, dir).RecordMilestone(ms.ID, ms.FileName(), ms.Bytes()); err != nil {
+		t.Fatal(err)
 	}
-	return filepath.Join(milestone.Dir(root), key+".md")
+}
+
+// putMilestone puts a milestone on its ref at dir by its file name, the way a
+// teammate's write would arrive.
+func putMilestone(t *testing.T, dir, file, content string) {
+	t.Helper()
+	_, id, _ := milestone.FileIdentity(strings.TrimSuffix(file, ".md"))
+	if err := refsOf(t, dir).RecordMilestone(id, file, []byte(content)); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// milestoneRef is the ref of the milestone this key names, filed ones
+// included.
+func milestoneRef(t *testing.T, root, key string) string {
+	t.Helper()
+	ms, err := milestoneLoad(t, root, key)
+	if err != nil {
+		t.Fatalf("no milestone %s: %v", key, err)
+	}
+	return ms.Ref()
 }
 
 // Grouping twenty tickets has to be one edit of one file — that is the whole
 // reason a milestone is a file and not a field on each ticket.
 func TestOneAddCallWritesOneFileForEveryTicket(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	a := mkTicket(t, dir, "first")
 	b := mkTicket(t, dir, "second")
 	c := mkTicket(t, dir, "third")
@@ -49,7 +79,7 @@ func TestOneAddCallWritesOneFileForEveryTicket(t *testing.T) {
 	if !strings.Contains(out, "holds 3 ticket(s)") {
 		t.Errorf("add did not report all three:\n%s", out)
 	}
-	ms, err := milestone.Load(dir, "round-one")
+	ms, err := milestoneLoad(t, dir, "round-one")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +102,7 @@ func TestOneAddCallWritesOneFileForEveryTicket(t *testing.T) {
 // names for one round of work — the failure 'jaira tags' exists to prevent,
 // happening again one directory over.
 func TestCreateNormalizesTheNameAndSaysSo(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	out, err := runCLI(t, dir, "milestone", "create", "Round One")
 	if err != nil {
 		t.Fatalf("create: %v\n%s", err, out)
@@ -80,8 +110,8 @@ func TestCreateNormalizesTheNameAndSaysSo(t *testing.T) {
 	if !strings.Contains(out, `Filed "Round One" as "round-one"`) {
 		t.Errorf("create did not say what it filed the name as:\n%s", out)
 	}
-	if _, err := os.Stat(milestonePath(dir, "round-one")); err != nil {
-		t.Errorf("no file at %s: %v", milestonePath(dir, "round-one"), err)
+	if _, err := milestoneLoad(t, dir, "round-one"); err != nil {
+		t.Errorf("no milestone round-one: %v", err)
 	}
 	// Creating the same milestone twice is a mistake to report, not a silent
 	// overwrite of a file somebody has been editing.
@@ -102,13 +132,13 @@ func TestCreateNormalizesTheNameAndSaysSo(t *testing.T) {
 // Nobody picks the colour, and the colour is in the milestone's own file —
 // there is no second registry to keep in step with it.
 func TestCreateAssignsAColourIntoTheMilestoneFile(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	for _, name := range []string{"one", "two"} {
 		if out, err := runCLI(t, dir, "milestone", "create", name); err != nil {
 			t.Fatalf("create %s: %v\n%s", name, err, out)
 		}
 	}
-	all, err := milestone.LoadAll(dir)
+	all, err := milestone.LoadAll(refsOf(t, dir))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,7 +158,7 @@ func TestCreateAssignsAColourIntoTheMilestoneFile(t *testing.T) {
 	if out, err := runCLI(t, dir, "milestone", "create", "three", "--color", "40"); err != nil {
 		t.Fatalf("create with --color: %v\n%s", err, out)
 	}
-	ms, err := milestone.Load(dir, "three")
+	ms, err := milestoneLoad(t, dir, "three")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,7 +173,7 @@ func TestCreateAssignsAColourIntoTheMilestoneFile(t *testing.T) {
 // --milestone is how an agent narrows the board to one round of work, and it
 // has to answer exactly the same question the board's own gesture does.
 func TestListFiltersToAMilestoneExactly(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	in := mkTicket(t, dir, "inside the round")
 	mkTicket(t, dir, "outside the round")
 	if out, err := runCLI(t, dir, "milestone", "create", "round-one", in); err != nil {
@@ -183,7 +213,7 @@ func TestListFiltersToAMilestoneExactly(t *testing.T) {
 // rm takes a line out and leaves the milestone standing: an empty milestone is
 // still a plan.
 func TestRmDropsTheLineAndKeepsTheMilestone(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	h := mkTicket(t, dir, "only one")
 	if out, err := runCLI(t, dir, "milestone", "create", "round-one", h); err != nil {
 		t.Fatalf("create: %v\n%s", err, out)
@@ -191,7 +221,7 @@ func TestRmDropsTheLineAndKeepsTheMilestone(t *testing.T) {
 	if out, err := runCLI(t, dir, "milestone", "rm", "round-one", h); err != nil {
 		t.Fatalf("rm: %v\n%s", err, out)
 	}
-	ms, err := milestone.Load(dir, "round-one")
+	ms, err := milestoneLoad(t, dir, "round-one")
 	if err != nil {
 		t.Fatalf("rm removed the milestone itself: %v", err)
 	}
@@ -221,11 +251,11 @@ func TestRmDropsTheLineAndKeepsTheMilestone(t *testing.T) {
 // The rule hangs on emptying a milestone, not on being empty: creating one
 // with no tickets is exactly how a plan starts, and that file has to stay put.
 func TestCreateWithNoTicketsLeavesTheFileLyingThere(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	if out, err := runCLI(t, dir, "milestone", "create", "round-one"); err != nil {
 		t.Fatalf("create: %v\n%s", err, out)
 	}
-	ms, err := milestone.Load(dir, "round-one")
+	ms, err := milestoneLoad(t, dir, "round-one")
 	if err != nil {
 		t.Fatalf("an empty milestone did not survive its own creation: %v", err)
 	}
@@ -243,7 +273,7 @@ func TestCreateWithNoTicketsLeavesTheFileLyingThere(t *testing.T) {
 
 // ls is read before creating, the way 'jaira tags' is read before tagging.
 func TestLsNamesEveryMilestoneWithItsCount(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	out, err := runCLI(t, dir, "milestone", "ls")
 	if err != nil {
 		t.Fatalf("ls on an empty board: %v\n%s", err, out)
@@ -276,7 +306,7 @@ func TestLsNamesEveryMilestoneWithItsCount(t *testing.T) {
 // A line pointing at no ticket is a dead line that looks like a plan, so the
 // whole call is refused rather than half-written.
 func TestAddRefusesAnIDThatNamesNothing(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	h := mkTicket(t, dir, "real one")
 	if out, err := runCLI(t, dir, "milestone", "create", "round-one"); err != nil {
 		t.Fatalf("create: %v\n%s", err, out)
@@ -285,7 +315,7 @@ func TestAddRefusesAnIDThatNamesNothing(t *testing.T) {
 	if err == nil {
 		t.Fatalf("add accepted an unknown id:\n%s", out)
 	}
-	ms, err := milestone.Load(dir, "round-one")
+	ms, err := milestoneLoad(t, dir, "round-one")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -331,12 +361,12 @@ func mkDoneTicket(t *testing.T, dir, title string) string {
 // does — with its ticket list and its colour intact, because a group restored
 // as a different colour is a group nobody recognises on the board.
 func TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	done := mkDoneTicket(t, dir, "finished work")
 	if out, err := runCLI(t, dir, "milestone", "create", "round-one", done); err != nil {
 		t.Fatalf("create: %v\n%s", err, out)
 	}
-	before, err := milestone.Load(dir, "round-one")
+	before, err := milestoneLoad(t, dir, "round-one")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -361,16 +391,16 @@ func TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack(t *testing.T) 
 	if out, err := runCLI(t, dir, "logbook", "round-one"); err != nil {
 		t.Fatalf("logbook: %v\n%s", err, out)
 	}
-	if _, err := milestone.Load(dir, "round-one"); err == nil {
-		t.Error("the milestone is still on the board after being filed")
+	if ms, err := milestoneLoad(t, dir, "round-one"); err != nil || !ms.Filed() {
+		t.Errorf("the milestone is not filed: %v", err)
 	}
 	if out, err := runCLI(t, dir, "milestone", "ls"); err != nil {
 		t.Fatalf("ls: %v\n%s", err, out)
 	} else if strings.Contains(out, "round-one") {
 		t.Errorf("'milestone ls' still names a filed milestone:\n%s", out)
 	}
-	// No card carries its colour any more: the index is built from the files
-	// on the board, and the file is not on it.
+	// No card carries its colour any more: the index is built from the
+	// milestones on the board, and a filed one is not on it.
 	rows, _ := jsonCLI(t, dir, "list", "--lane", "done")["tickets"].([]any)
 	if len(rows) == 0 {
 		t.Fatal("the filed milestone's ticket is not listed, so the colour check would prove nothing")
@@ -381,13 +411,12 @@ func TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack(t *testing.T) 
 			t.Errorf("ticket %v still carries %v", row["title"], names)
 		}
 	}
-	// And the logbook says where it went, or the file is there and the list
-	// denies it.
+	// And the logbook names it, with the way back: it lies nowhere on disk.
 	out, err = runCLI(t, dir, "logbook")
 	if err != nil {
 		t.Fatalf("logbook listing: %v\n%s", err, out)
 	}
-	if !strings.Contains(out, filepath.Join("milestones", before.FileName())) {
+	if !strings.Contains(out, "round-one-"+before.ID) || !strings.Contains(out, "jaira restore <name>-<ID>") {
 		t.Errorf("the logbook listing does not name the filed milestone:\n%s", out)
 	}
 
@@ -395,17 +424,17 @@ func TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack(t *testing.T) 
 	if out, err := runCLI(t, dir, "milestone", "create", "round-one"); err != nil {
 		t.Fatalf("a filed milestone's name could not be used again: %v\n%s", err, out)
 	}
-	if again, err := milestone.Load(dir, "round-one"); err != nil || again.ID == before.ID {
+	if again, err := milestoneLoad(t, dir, "round-one"); err != nil || again.ID == before.ID {
 		t.Fatalf("the new milestone has the filed one's ID: %v %+v", err, again)
 	}
 	if out, err := runCLI(t, dir, "milestone", "rename", "round-one", "round-two"); err != nil {
 		t.Fatalf("freeing the name again: %v\n%s", err, out)
 	}
 
-	if out, err := runCLI(t, dir, "restore", before.FileName()); err != nil {
+	if out, err := runCLI(t, dir, "restore", "round-one-"+before.ID); err != nil {
 		t.Fatalf("restore: %v\n%s", err, out)
 	}
-	after, err := milestone.Load(dir, "round-one")
+	after, err := milestoneLoad(t, dir, "round-one")
 	if err != nil {
 		t.Fatalf("restore did not put the milestone back on the board: %v", err)
 	}
@@ -432,20 +461,18 @@ func TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack(t *testing.T) 
 // local — recordMilestone puts it on the ref, so every clone that fetches sees
 // a milestone its filer took off the board being edited.
 func TestAddAndRmRefuseAFiledMilestoneOnDisk(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	member := mkTicket(t, dir, "in the group")
 	other := mkTicket(t, dir, "not in it yet")
 	if out, err := runCLI(t, dir, "milestone", "create", "round-one", member); err != nil {
 		t.Fatalf("create: %v\n%s", err, out)
 	}
-	ms, err := milestone.Load(dir, "round-one")
+	ms, err := milestoneLoad(t, dir, "round-one")
 	if err != nil {
 		t.Fatal(err)
 	}
 	ms.SetStatus(milestone.StatusFiled)
-	if err := ms.Save(dir); err != nil {
-		t.Fatal(err)
-	}
+	saveMilestone(t, dir, ms)
 
 	for _, verb := range []string{"add", "rm"} {
 		out, err := runCLI(t, dir, "milestone", verb, "round-one", other)
@@ -455,7 +482,7 @@ func TestAddAndRmRefuseAFiledMilestoneOnDisk(t *testing.T) {
 		// The refusal has to name the file, its mark and where the way back
 		// runs — the same three things create's refusal names, because the
 		// reader is standing in front of the same file.
-		for _, want := range []string{milestonePath(dir, "round-one"), milestone.StatusFiled, "jaira restore round-one-"} {
+		for _, want := range []string{milestoneRef(t, dir, "round-one"), milestone.StatusFiled, "jaira restore round-one-"} {
 			if !strings.Contains(err.Error(), want) {
 				t.Errorf("the %s refusal does not mention %q: %v", verb, want, err)
 			}
@@ -464,7 +491,7 @@ func TestAddAndRmRefuseAFiledMilestoneOnDisk(t *testing.T) {
 
 	// And nothing was written: the members are as they were and the mark stands,
 	// so the ref this tree records is still the filed one.
-	after, err := milestone.Load(dir, "round-one")
+	after, err := milestoneLoad(t, dir, "round-one")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -476,12 +503,11 @@ func TestAddAndRmRefuseAFiledMilestoneOnDisk(t *testing.T) {
 	}
 }
 
-// Filed in this very tree, the file is in the logbook and Load answers the same
-// ErrNotExist a name nobody ever used answers with. Pointing at 'create' there
-// walks the reader into create's own refusal: two steps for one answer, and the
-// first one points away from the file.
+// A filed milestone is not a name nobody ever used: pointing at 'create' there
+// walks the reader into a second milestone of that name. The refusal points at
+// the restore instead.
 func TestAddOnAMilestoneFiledInThisTreePointsAtRestore(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	done := mkDoneTicket(t, dir, "finished work")
 	other := mkTicket(t, dir, "something else")
 	if out, err := runCLI(t, dir, "milestone", "create", "round-one", done); err != nil {
@@ -501,8 +527,8 @@ func TestAddOnAMilestoneFiledInThisTreePointsAtRestore(t *testing.T) {
 	if strings.Contains(err.Error(), "milestone create") {
 		t.Errorf("the refusal still sends the reader to 'create', which refuses in turn: %v", err)
 	}
-	if !strings.Contains(err.Error(), "logbook") {
-		t.Errorf("the refusal does not say where the file went: %v", err)
+	if !strings.Contains(err.Error(), milestone.StatusFiled) {
+		t.Errorf("the refusal does not say it is filed: %v", err)
 	}
 }
 
@@ -513,20 +539,18 @@ func TestAddOnAMilestoneFiledInThisTreePointsAtRestore(t *testing.T) {
 // arrive whichever door was used — a door that drops one of them teaches the
 // reader that it is a different problem.
 func TestEveryDoorIntoAFiledMilestoneSaysTheSameThings(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	member := mkTicket(t, dir, "in the group")
 	other := mkTicket(t, dir, "not in it yet")
 	if out, err := runCLI(t, dir, "milestone", "create", "round-one", member); err != nil {
 		t.Fatalf("create: %v\n%s", err, out)
 	}
-	ms, err := milestone.Load(dir, "round-one")
+	ms, err := milestoneLoad(t, dir, "round-one")
 	if err != nil {
 		t.Fatal(err)
 	}
 	ms.SetStatus(milestone.StatusFiled)
-	if err := ms.Save(dir); err != nil {
-		t.Fatal(err)
-	}
+	saveMilestone(t, dir, ms)
 
 	doors := map[string][]string{
 		"add":     {"milestone", "add", "round-one", other},
@@ -539,10 +563,9 @@ func TestEveryDoorIntoAFiledMilestoneSaysTheSameThings(t *testing.T) {
 			t.Fatalf("'%s' went through a filed milestone:\n%s", door, out)
 		}
 		for _, want := range []string{
-			milestonePath(dir, "round-one"),
+			milestoneRef(t, dir, "round-one"),
 			milestone.StatusFiled,
 			"jaira restore round-one-",
-			"the tree that filed it",
 		} {
 			if !strings.Contains(err.Error(), want) {
 				t.Errorf("the %s refusal does not mention %q: %v", door, want, err)
@@ -557,12 +580,12 @@ func TestEveryDoorIntoAFiledMilestoneSaysTheSameThings(t *testing.T) {
 // off, which is exactly what a concurrent 'milestone add' does to the same
 // file. Without the lock one of the two writes is lost.
 func TestRestoreWaitsForTheMilestoneLock(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	done := mkDoneTicket(t, dir, "finished work")
 	if out, err := runCLI(t, dir, "milestone", "create", "round-one", done); err != nil {
 		t.Fatalf("create: %v\n%s", err, out)
 	}
-	filedMS, err := milestone.Load(dir, "round-one")
+	filedMS, err := milestoneLoad(t, dir, "round-one")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -581,7 +604,7 @@ func TestRestoreWaitsForTheMilestoneLock(t *testing.T) {
 
 	restored := make(chan error, 1)
 	go func() {
-		_, err := runCLI(t, dir, "restore", filedMS.FileName())
+		_, err := runCLI(t, dir, "restore", "round-one-"+filedMS.ID)
 		restored <- err
 	}()
 
@@ -591,11 +614,10 @@ func TestRestoreWaitsForTheMilestoneLock(t *testing.T) {
 		t.Fatalf("restore did not wait for the milestone lock (returned %v)", err)
 	case <-time.After(150 * time.Millisecond):
 	}
-	// The file has not moved either: the lock is taken before s.Restore, not
-	// between the move and the unfiling.
-	if _, err := os.Stat(filepath.Join(milestone.Dir(dir), filedMS.FileName())); !os.IsNotExist(err) {
+	// Nothing was unfiled while the lock was held.
+	if ms, _ := milestoneLoad(t, dir, filedMS.ID); !ms.Filed() {
 		unlock()
-		t.Fatalf("the milestone file was moved back while the lock was held (stat: %v)", err)
+		t.Fatal("the milestone was unfiled while the lock was held")
 	}
 
 	unlock()
@@ -607,7 +629,7 @@ func TestRestoreWaitsForTheMilestoneLock(t *testing.T) {
 	case <-time.After(10 * time.Second):
 		t.Fatal("restore never completed after the lock was released")
 	}
-	ms, err := milestone.Load(dir, "round-one")
+	ms, err := milestoneLoad(t, dir, "round-one")
 	if err != nil {
 		t.Fatalf("restore did not put the milestone back: %v", err)
 	}
@@ -617,7 +639,7 @@ func TestRestoreWaitsForTheMilestoneLock(t *testing.T) {
 }
 
 func TestCreateWritesGoalAndAfter(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	if out, err := runCLI(t, dir, "milestone", "create", "api", "--goal", "Version 0.4: out", "--after", ""); err != nil {
 		t.Fatalf("create: %v\n%s", err, out)
 	}
@@ -627,21 +649,21 @@ func TestCreateWritesGoalAndAfter(t *testing.T) {
 	if out, err := runCLI(t, dir, "milestone", "create", "plain"); err != nil {
 		t.Fatalf("create: %v\n%s", err, out)
 	}
-	api, _ := milestone.Load(dir, "api")
+	api, _ := milestoneLoad(t, dir, "api")
 	if api.Goal != "Version 0.4: out" || !api.Placed || len(api.After) != 0 {
 		t.Errorf("api: goal=%q placed=%v after=%v (--after \"\" is a swimlane top)", api.Goal, api.Placed, api.After)
 	}
-	ui, _ := milestone.Load(dir, "ui")
+	ui, _ := milestoneLoad(t, dir, "ui")
 	if !ui.Placed || len(ui.After) != 1 || ui.After[0] != api.ID {
 		t.Errorf("ui: placed=%v after=%v", ui.Placed, ui.After)
 	}
-	if plain, _ := milestone.Load(dir, "plain"); plain.Placed || plain.Goal != "" {
+	if plain, _ := milestoneLoad(t, dir, "plain"); plain.Placed || plain.Goal != "" {
 		t.Error("a milestone created without the flags must stay out of the layer")
 	}
 }
 
 func TestCreateRefusesAnUnknownPredecessorAndWritesNothing(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	out, err := runCLI(t, dir, "milestone", "create", "ui", "--after", "ghost")
 	if err == nil {
 		t.Fatalf("accepted an unknown predecessor:\n%s", out)
@@ -652,13 +674,13 @@ func TestCreateRefusesAnUnknownPredecessorAndWritesNothing(t *testing.T) {
 	if !strings.Contains(err.Error(), `no milestone "ghost"`) {
 		t.Errorf("message: %v", err)
 	}
-	if _, err := os.Stat(milestonePath(dir, "ui")); err == nil {
-		t.Error("the refused create left a file")
+	if _, err := milestoneLoad(t, dir, "ui"); err == nil {
+		t.Error("the refused create left a milestone")
 	}
 }
 
 func TestSetChangesGoalAndPlacement(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	for _, n := range []string{"a", "b"} {
 		if out, err := runCLI(t, dir, "milestone", "create", n); err != nil {
 			t.Fatalf("create: %v\n%s", err, out)
@@ -667,21 +689,21 @@ func TestSetChangesGoalAndPlacement(t *testing.T) {
 	if out, err := runCLI(t, dir, "milestone", "set", "b", "--goal", "second", "--after", "a"); err != nil {
 		t.Fatalf("set: %v\n%s", err, out)
 	}
-	a, _ := milestone.Load(dir, "a")
-	b, _ := milestone.Load(dir, "b")
+	a, _ := milestoneLoad(t, dir, "a")
+	b, _ := milestoneLoad(t, dir, "b")
 	if b.Goal != "second" || !b.Placed || len(b.After) != 1 || b.After[0] != a.ID {
 		t.Errorf("b: goal=%q placed=%v after=%v", b.Goal, b.Placed, b.After)
 	}
 	if out, err := runCLI(t, dir, "milestone", "set", "b", "--no-roadmap"); err != nil {
 		t.Fatalf("set --no-roadmap: %v\n%s", err, out)
 	}
-	if b, _ = milestone.Load(dir, "b"); b.Placed || b.Goal != "second" {
+	if b, _ = milestoneLoad(t, dir, "b"); b.Placed || b.Goal != "second" {
 		t.Errorf("--no-roadmap must remove only the after line: placed=%v goal=%q", b.Placed, b.Goal)
 	}
 	if out, err := runCLI(t, dir, "milestone", "set", "b", "--goal", ""); err != nil {
 		t.Fatalf("set --goal \"\": %v\n%s", err, out)
 	}
-	if b, _ = milestone.Load(dir, "b"); b.Goal != "" {
+	if b, _ = milestoneLoad(t, dir, "b"); b.Goal != "" {
 		t.Error("an empty --goal must remove the goal")
 	}
 	out, err := runCLI(t, dir, "milestone", "set", "b", "--goal", "")
@@ -693,7 +715,7 @@ func TestSetChangesGoalAndPlacement(t *testing.T) {
 // --no-roadmap is the layer's x: the chain behind the milestone closes up, so
 // an agent and a person taking the same milestone out leave the same picture.
 func TestSetNoLayerHangsTheSuccessorsOnThePredecessors(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	for _, args := range [][]string{
 		{"create", "a", "--after", ""}, {"create", "b", "--after", "a"}, {"create", "c", "--after", "b"},
 	} {
@@ -704,14 +726,14 @@ func TestSetNoLayerHangsTheSuccessorsOnThePredecessors(t *testing.T) {
 	if out, err := runCLI(t, dir, "milestone", "set", "b", "--no-roadmap"); err != nil {
 		t.Fatalf("set --no-roadmap: %v\n%s", err, out)
 	}
-	a, _ := milestone.Load(dir, "a")
-	if c, _ := milestone.Load(dir, "c"); len(c.After) != 1 || c.After[0] != a.ID {
+	a, _ := milestoneLoad(t, dir, "a")
+	if c, _ := milestoneLoad(t, dir, "c"); len(c.After) != 1 || c.After[0] != a.ID {
 		t.Errorf("c must now come after a, got %v", c.After)
 	}
 }
 
 func TestSetUsageErrors(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	if out, err := runCLI(t, dir, "milestone", "create", "a"); err != nil {
 		t.Fatalf("create: %v\n%s", err, out)
 	}
@@ -727,7 +749,7 @@ func TestSetUsageErrors(t *testing.T) {
 }
 
 func TestSetRefusesAnUnknownPredecessorAndACycle(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	for _, args := range [][]string{
 		{"create", "a", "--after", ""}, {"create", "b", "--after", "a"}, {"create", "c", "--after", "b"},
 	} {
@@ -746,21 +768,19 @@ func TestSetRefusesAnUnknownPredecessorAndACycle(t *testing.T) {
 	if !strings.Contains(err.Error(), "a -> b -> c -> a") {
 		t.Errorf("the refusal must name the cycle: %v", err)
 	}
-	if a, _ := milestone.Load(dir, "a"); len(a.After) != 0 {
+	if a, _ := milestoneLoad(t, dir, "a"); len(a.After) != 0 {
 		t.Errorf("a refused set still wrote %v", a.After)
 	}
 }
 
 func TestSetRefusesAFiledMilestoneAndAMissingOne(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	if out, err := runCLI(t, dir, "milestone", "create", "a"); err != nil {
 		t.Fatalf("create: %v\n%s", err, out)
 	}
-	ms, _ := milestone.Load(dir, "a")
+	ms, _ := milestoneLoad(t, dir, "a")
 	ms.SetStatus(milestone.StatusFiled)
-	if err := ms.Save(dir); err != nil {
-		t.Fatal(err)
-	}
+	saveMilestone(t, dir, ms)
 	_, err := runCLI(t, dir, "milestone", "set", "a", "--goal", "x")
 	if err == nil || exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "jaira restore a-") {
 		t.Errorf("filed: %v", err)
@@ -772,7 +792,7 @@ func TestSetRefusesAFiledMilestoneAndAMissingOne(t *testing.T) {
 }
 
 func TestLsJSONCarriesGoalAndAfterOnlyWhenSet(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	for _, args := range [][]string{
 		{"create", "top", "--goal", "g", "--after", ""}, {"create", "next", "--after", "top"}, {"create", "plain"},
 	} {
@@ -811,7 +831,7 @@ func TestLsJSONCarriesGoalAndAfterOnlyWhenSet(t *testing.T) {
 // milestone that came after it names the new name, and the old name is free
 // again — so a rename can be taken back.
 func TestRenameMovesTheMilestoneAndItsSuccessorsFollow(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	a := mkTicket(t, dir, "first")
 	for _, args := range [][]string{
 		{"create", "round-one", a, "--goal", "ship it", "--after", ""},
@@ -822,7 +842,7 @@ func TestRenameMovesTheMilestoneAndItsSuccessorsFollow(t *testing.T) {
 			t.Fatalf("%v: %v\n%s", args, err, out)
 		}
 	}
-	one, err := milestone.Load(dir, "round-one")
+	one, err := milestoneLoad(t, dir, "round-one")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -833,10 +853,10 @@ func TestRenameMovesTheMilestoneAndItsSuccessorsFollow(t *testing.T) {
 	if !strings.Contains(out, `Filed "First Round" as "first-round"`) || !strings.Contains(out, `renamed to "first-round"`) {
 		t.Errorf("rename does not say what it did:\n%s", out)
 	}
-	if _, err := os.Stat(one.Path(dir)); !os.IsNotExist(err) {
-		t.Errorf("the old file is still there: %v", err)
+	if _, err := milestoneLoad(t, dir, "round-one"); err == nil {
+		t.Error("the old name is still there")
 	}
-	ms, err := milestone.Load(dir, "first-round")
+	ms, err := milestoneLoad(t, dir, "first-round")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -846,7 +866,7 @@ func TestRenameMovesTheMilestoneAndItsSuccessorsFollow(t *testing.T) {
 	if ms.Goal != "ship it" || len(ms.Members()) != 1 || !ms.Placed || len(ms.After) != 0 {
 		t.Errorf("first-round must keep goal, ticket and place: %s", ms.Bytes())
 	}
-	if two, _ := milestone.Load(dir, "round-two"); strings.Join(two.After, ",") != one.ID {
+	if two, _ := milestoneLoad(t, dir, "round-two"); strings.Join(two.After, ",") != one.ID {
 		t.Errorf("round-two must still come after the milestone by its ID, got %v", two.After)
 	}
 	if out, _ := runCLI(t, dir, "milestone", "ls"); strings.Contains(out, "round-one") || !strings.Contains(out, "first-round") {
@@ -859,7 +879,7 @@ func TestRenameMovesTheMilestoneAndItsSuccessorsFollow(t *testing.T) {
 	if out, err := runCLI(t, dir, "milestone", "rename", "first-round", "round-one"); err != nil {
 		t.Fatalf("renaming back: %v\n%s", err, out)
 	}
-	if two, _ := milestone.Load(dir, "round-two"); strings.Join(two.After, ",") != one.ID {
+	if two, _ := milestoneLoad(t, dir, "round-two"); strings.Join(two.After, ",") != one.ID {
 		t.Errorf("round-two must still come after the milestone by its ID, got %v", two.After)
 	}
 }
@@ -868,7 +888,7 @@ func TestRenameMovesTheMilestoneAndItsSuccessorsFollow(t *testing.T) {
 // is not found; the mark an older build's rename left is moved away by the
 // next write.
 func TestRenameRefusalsAndTheMarkOfARename(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	for _, n := range []string{"a", "b"} {
 		if out, err := runCLI(t, dir, "milestone", "create", n); err != nil {
 			t.Fatalf("create %s: %v\n%s", n, err, out)
@@ -879,7 +899,7 @@ func TestRenameRefusalsAndTheMarkOfARename(t *testing.T) {
 		code int
 		says string
 	}{
-		{[]string{"a", "b"}, ExitValidation, "already exists at " + milestonePath(dir, "b")},
+		{[]string{"a", "b"}, ExitValidation, "already exists (" + milestoneRef(t, dir, "b") + ")"},
 		{[]string{"nope", "c"}, ExitNotFound, `no milestone "nope"`},
 		{[]string{"a", "no/slash"}, ExitUsage, "no/slash"},
 	} {
@@ -892,17 +912,15 @@ func TestRenameRefusalsAndTheMarkOfARename(t *testing.T) {
 		t.Errorf("rename to the same name: %v\n%s", err, out)
 	}
 	for _, n := range []string{"a", "b"} {
-		if _, err := milestone.Load(dir, n); err != nil {
+		if _, err := milestoneLoad(t, dir, n); err != nil {
 			t.Errorf("a refused rename touched %s: %v", n, err)
 		}
 	}
 
 	// What a fetch of somebody's rename of "old" to "a" left here in the
-	// name-keyed days: the next write moves the file away, and there is no
+	// name-keyed days: the next command deletes the file, and there is no
 	// such milestone.
-	if err := os.WriteFile(filepath.Join(milestone.Dir(dir), "old.md"), []byte("---\ncolor: 45\nstatus: filed\nrenamed-to: a\n---\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	oldMilestoneFiles(t, dir, map[string]string{"old.md": "---\ncolor: 45\nstatus: filed\nrenamed-to: a\n---\n"})
 	id := mkTicket(t, dir, "work")
 	for _, args := range [][]string{{"milestone", "add", "old", id}, {"milestone", "rename", "old", "c"}} {
 		_, err := runCLI(t, dir, args...)
@@ -914,7 +932,7 @@ func TestRenameRefusalsAndTheMarkOfARename(t *testing.T) {
 	if out, err := runCLI(t, dir, "milestone", "create", "old"); err != nil {
 		t.Fatalf("create over a rename's mark: %v\n%s", err, out)
 	}
-	if ms, _ := milestone.Load(dir, "old"); ms.Filed() {
+	if ms, _ := milestoneLoad(t, dir, "old"); ms.Filed() {
 		t.Errorf("the new milestone kept the mark: %s", ms.Bytes())
 	}
 }
@@ -922,19 +940,16 @@ func TestRenameRefusalsAndTheMarkOfARename(t *testing.T) {
 // A milestone argument is an ID, a <name>-<ID> or a name, whichever the reader
 // has; a name two milestones carry changes nothing and names both forms.
 func TestMilestoneCommandsTakeIDNameIDAndName(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	if out, err := runCLI(t, dir, "milestone", "create", "dup"); err != nil {
 		t.Fatalf("create: %v\n%s", err, out)
 	}
-	first, _ := milestone.Load(dir, "dup")
-	twin := filepath.Join(milestone.Dir(dir), "dup-ZZZZZ9.md")
-	if err := os.WriteFile(twin, []byte("---\ncolor: 99\ncreated-at: 2026-10-01T10:00:00Z\n---\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	first, _ := milestoneLoad(t, dir, "dup")
+	putMilestone(t, dir, "dup-ZZZZZ9.md", "---\ncolor: 99\ncreated-at: 2026-10-01T10:00:00Z\n---\n")
 	if out, err := runCLI(t, dir, "milestone", "create", "solo"); err != nil {
 		t.Fatalf("create: %v\n%s", err, out)
 	}
-	solo, _ := milestone.Load(dir, "solo")
+	solo, _ := milestoneLoad(t, dir, "solo")
 	one, two := mkTicket(t, dir, "one"), mkTicket(t, dir, "two")
 
 	// ls names a milestone without its ID unless another shares the name
@@ -961,7 +976,7 @@ func TestMilestoneCommandsTakeIDNameIDAndName(t *testing.T) {
 			t.Errorf("%v: want exit 3 naming both forms, got %v", args, err)
 		}
 	}
-	if got, _ := os.ReadFile(twin); strings.Contains(string(got), "goal") {
+	if got, _ := milestoneLoad(t, dir, "ZZZZZ9"); strings.Contains(string(got.Bytes()), "goal") {
 		t.Error("an ambiguous set wrote")
 	}
 	if _, err := runCLI(t, dir, "logbook", "dup"); err == nil || exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "dup-ZZZZZ9") {
@@ -997,7 +1012,7 @@ func TestMilestoneCommandsTakeIDNameIDAndName(t *testing.T) {
 	if out, err := runCLI(t, dir, "milestone", "rename", "ZZZZZ9", "twin"); err != nil || !strings.Contains(out, `"dup-ZZZZZ9" renamed to "twin"`) {
 		t.Errorf("rename by ID: %v\n%s", err, out)
 	}
-	if a, _ := milestone.Load(dir, "dup"); a.ID != first.ID || len(a.Members()) != 1 || !strings.HasSuffix(a.Members()[0], two) {
+	if a, _ := milestoneLoad(t, dir, "dup"); a.ID != first.ID || len(a.Members()) != 1 || !strings.HasSuffix(a.Members()[0], two) {
 		t.Errorf("the name now means the one that kept it: %+v", a)
 	}
 
@@ -1016,7 +1031,7 @@ func TestMilestoneCommandsTakeIDNameIDAndName(t *testing.T) {
 // milestone command and by fetch, with the rename that ends it; --json carries
 // it as a field; a board without twins hears nothing.
 func TestTwinedMilestoneNamesAreWarnedOn(t *testing.T) {
-	dir := emptyStore(t)
+	dir := milestoneStore(t)
 	if out, err := runCLI(t, dir, "milestone", "create", "dup"); err != nil {
 		t.Fatalf("create: %v\n%s", err, out)
 	}
@@ -1027,11 +1042,8 @@ func TestTwinedMilestoneNamesAreWarnedOn(t *testing.T) {
 	if strings.Contains(quiet, "share") {
 		t.Errorf("no twins, yet a warning: %q", quiet)
 	}
-	first, _ := milestone.Load(dir, "dup")
-	twin := filepath.Join(milestone.Dir(dir), "dup-ZZZZZ9.md")
-	if err := os.WriteFile(twin, []byte("---\ncolor: 99\ncreated-at: 2026-10-01T10:00:00Z\n---\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	first, _ := milestoneLoad(t, dir, "dup")
+	putMilestone(t, dir, "dup-ZZZZZ9.md", "---\ncolor: 99\ncreated-at: 2026-10-01T10:00:00Z\n---\n")
 	ids := []string{first.ID, "ZZZZZ9"}
 	sort.Strings(ids)
 	want := `jaira: warning: 2 milestones are named "dup": dup-` + ids[0] + `, dup-` + ids[1] + ` - rename one: jaira milestone rename dup-` + ids[0] + ` <new-name>`
@@ -1056,12 +1068,7 @@ func TestTwinedMilestoneNamesAreWarnedOn(t *testing.T) {
 func TestFetchWarnsOnTwinnedMilestoneNames(t *testing.T) {
 	ada, _ := twoBoards(t)
 	for _, f := range []string{"dup-AAAAA1.md", "dup-BBBBB2.md"} {
-		if err := os.MkdirAll(milestone.Dir(ada), 0o755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(filepath.Join(milestone.Dir(ada), f), []byte("---\ncolor: 99\ncreated-at: 2026-10-01T10:00:00Z\n---\n"), 0o644); err != nil {
-			t.Fatal(err)
-		}
+		putMilestone(t, ada, f, "---\ncolor: 99\ncreated-at: 2026-10-01T10:00:00Z\n---\n")
 	}
 	var out string
 	_, stderr := captureStdio(t, func() { out, _ = runCLI(t, ada, "fetch") })

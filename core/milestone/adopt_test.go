@@ -1,8 +1,6 @@
 package milestone
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -91,58 +89,6 @@ func TestAdoptChangesNothingWhenThereIsNothingToAdopt(t *testing.T) {
 	cur := adoptBase + "- " + idA + "\n"
 	if got, c := adopt(adoptBase, adoptBase, cur); got != cur || c != nil {
 		t.Errorf("changed:\n%s", got)
-	}
-}
-
-// Migrate records the base, and an old file turning up beside the ID file is
-// merged into it instead of being removed.
-func TestMigrateRecordsABaseAndAdoptsALaterOldFile(t *testing.T) {
-	root := t.TempDir()
-	rec := &fakeRec{}
-	writeOld(t, root, "alpha", adoptBase)
-	if _, err := Migrate(root, rec); err != nil {
-		t.Fatal(err)
-	}
-	id := LegacyID("alpha")
-	if b, ok := LoadBase(root, id); !ok || b.Content != adoptBase {
-		t.Fatalf("base %+v %v", b, ok)
-	}
-	rec.names = nil
-	writeOld(t, root, "alpha", adoptBase+"- "+idA+"\n")
-	res, err := Migrate(root, rec)
-	if err != nil {
-		t.Fatal(err)
-	}
-	b, _ := os.ReadFile(filepath.Join(Dir(root), "alpha-"+id+".md"))
-	if !strings.Contains(string(b), idA) || len(res.Adopted) != 1 || len(rec.names) != 1 {
-		t.Errorf("adopted %v, queued %v\n%s", res.Adopted, rec.names, b)
-	}
-	if dirNames(t, root) != "alpha-"+id+".md" {
-		t.Errorf("directory %s", dirNames(t, root))
-	}
-	// the same old file again: nothing to adopt, nothing queued
-	rec.names = nil
-	writeOld(t, root, "alpha", adoptBase+"- "+idA+"\n")
-	if res, _ := Migrate(root, rec); len(res.Adopted) != 0 || len(rec.names) != 0 {
-		t.Errorf("adopted twice: %v %v", res.Adopted, rec.names)
-	}
-}
-
-// One file under two spellings (a case-insensitive file system) is never
-// removed as if it were the old one.
-func TestMigrateLeavesAnOldNameThatIsTheIDFileItself(t *testing.T) {
-	root := t.TempDir()
-	id := LegacyID("alpha")
-	target := filepath.Join(Dir(root), "alpha-"+id+".md")
-	writeFile(t, root, "alpha-"+id+".md", adoptBase)
-	if err := os.Link(target, filepath.Join(Dir(root), "alpha.md")); err != nil {
-		t.Skip("no hard links here")
-	}
-	if _, err := Migrate(root, &fakeRec{}); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := os.Stat(filepath.Join(Dir(root), "alpha.md")); err != nil {
-		t.Errorf("the old name was removed although it is the ID file: %v", err)
 	}
 }
 

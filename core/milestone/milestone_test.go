@@ -46,7 +46,7 @@ func TestSaveKeepsHandEditsVerbatim(t *testing.T) {
 		"not a member line at all\n"
 	write(t, root, "round-one", body)
 
-	m, err := Load(root, "round-one")
+	m, err := Load(refsAt(root), "round-one")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,9 +61,7 @@ func TestSaveKeepsHandEditsVerbatim(t *testing.T) {
 		t.Errorf("Members() = %v, want file order [%s %s]", got, idC, idA)
 	}
 
-	if err := m.Save(root); err != nil {
-		t.Fatal(err)
-	}
+	save(t, root, m)
 	back, err := os.ReadFile(testPath(root, "round-one"))
 	if err != nil {
 		t.Fatal(err)
@@ -80,7 +78,7 @@ func TestAddAndRemoveTouchOneLine(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, "round-two", "---\nname: round-two\ncolor: 33\n---\n\n<!-- keep me -->\n- "+idA+"\n")
 
-	m, err := Load(root, "round-two")
+	m, err := Load(refsAt(root), "round-two")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -96,9 +94,7 @@ func TestAddAndRemoveTouchOneLine(t *testing.T) {
 	if m.Remove(idA) {
 		t.Error("Remove() of a non-member reported a change")
 	}
-	if err := m.Save(root); err != nil {
-		t.Fatal(err)
-	}
+	save(t, root, m)
 	want := "---\nname: round-two\ncolor: 33\n---\n\n<!-- keep me -->\n- " + idB + "\n"
 	back, err := os.ReadFile(testPath(root, "round-two"))
 	if err != nil {
@@ -113,7 +109,7 @@ func TestAddAndRemoveTouchOneLine(t *testing.T) {
 // unreadable file must not be able to stop the board from opening.
 func TestLoadAllToleratesAbsenceAndJunk(t *testing.T) {
 	root := t.TempDir()
-	all, err := LoadAll(root)
+	all, err := LoadAll(refsAt(root))
 	if err != nil || len(all) != 0 {
 		t.Fatalf("LoadAll() on a fresh board = %v, %v; want no milestones and no error", all, err)
 	}
@@ -122,7 +118,7 @@ func TestLoadAllToleratesAbsenceAndJunk(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(Dir(root), "notes.txt"), []byte("ignored"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	all, err = LoadAll(root)
+	all, err = LoadAll(refsAt(root))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,7 +135,7 @@ func TestIndexAnswersPerTicketAndAllowsMultipleMembership(t *testing.T) {
 	write(t, root, "alpha", "---\nname: alpha\ncolor: 33\n---\n- "+idA+"\n- "+idB+"\n")
 	write(t, root, "beta", "---\nname: beta\ncolor: 40\n---\n- "+idA+"\n")
 
-	all, err := LoadAll(root)
+	all, err := LoadAll(refsAt(root))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -188,10 +184,8 @@ func TestNewRoundTrips(t *testing.T) {
 	if !m.Add(idA) {
 		t.Fatal("Add() on a fresh milestone reported no change")
 	}
-	if err := m.Save(root); err != nil {
-		t.Fatal(err)
-	}
-	back, err := Load(root, "round-three")
+	save(t, root, m)
+	back, err := Load(refsAt(root), "round-three")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -216,7 +210,7 @@ func TestSetStatusTouchesOneLineOnly(t *testing.T) {
 		"- " + idA + "\n"
 	write(t, root, "round-one", body)
 
-	m, err := Load(root, "round-one")
+	m, err := Load(refsAt(root), "round-one")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -224,10 +218,8 @@ func TestSetStatusTouchesOneLineOnly(t *testing.T) {
 		t.Error("a file with no status line reports as filed; no line means on the board")
 	}
 	m.SetStatus(StatusFiled)
-	if err := m.Save(root); err != nil {
-		t.Fatal(err)
-	}
-	back, err := Load(root, "round-one")
+	save(t, root, m)
+	back, err := Load(refsAt(root), "round-one")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -253,9 +245,7 @@ func TestSetStatusTouchesOneLineOnly(t *testing.T) {
 	// Clearing it puts the file back exactly as it was: restore has to undo
 	// filing, not leave a spent line behind.
 	back.SetStatus("")
-	if err := back.Save(root); err != nil {
-		t.Fatal(err)
-	}
+	save(t, root, back)
 	raw, err = os.ReadFile(testPath(root, "round-one"))
 	if err != nil {
 		t.Fatal(err)
@@ -272,15 +262,13 @@ func TestSetStatusGivesAFileWithoutFrontmatterOne(t *testing.T) {
 	body := "# round two\n\n- " + idB + "\n"
 	write(t, root, "round-two", body)
 
-	m, err := Load(root, "round-two")
+	m, err := Load(refsAt(root), "round-two")
 	if err != nil {
 		t.Fatal(err)
 	}
 	m.SetStatus(StatusFiled)
-	if err := m.Save(root); err != nil {
-		t.Fatal(err)
-	}
-	back, err := Load(root, "round-two")
+	save(t, root, m)
+	back, err := Load(refsAt(root), "round-two")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -308,7 +296,7 @@ func TestLoadAllLeavesOutAFiledMilestone(t *testing.T) {
 	write(t, root, "open", "---\ncolor: 40\n---\n- "+idA+"\n")
 	write(t, root, "closed", "---\ncolor: 33\nstatus: filed\n---\n- "+idB+"\n")
 
-	all, err := LoadAll(root)
+	all, err := LoadAll(refsAt(root))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -316,7 +304,7 @@ func TestLoadAllLeavesOutAFiledMilestone(t *testing.T) {
 		t.Fatalf("LoadAll() = %v, want only the open milestone", names(all))
 	}
 	// Read by name it is still there, which is what a restore needs.
-	ms, err := Load(root, "closed")
+	ms, err := Load(refsAt(root), "closed")
 	if err != nil || !ms.Filed() {
 		t.Fatalf("Load(closed) = %v, %v; want the filed milestone", ms, err)
 	}
@@ -414,10 +402,8 @@ func TestGoalAndAfterRoundTripThroughSave(t *testing.T) {
 	m := New("c", 45, time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC))
 	m.SetGoal("a: b")
 	m.SetAfter([]string{"x"})
-	if err := m.Save(root); err != nil {
-		t.Fatal(err)
-	}
-	got, err := Load(root, "c")
+	save(t, root, m)
+	got, err := Load(refsAt(root), "c")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -463,7 +449,7 @@ func TestLoadAllReadsIDFilesAndOldFilesAndNeverWritesWhileReading(t *testing.T) 
 	root := t.TempDir()
 	writeFile(t, root, "backend-K3F9QZ.md", "---\ncolor: 45\n---\n")
 	writeFile(t, root, "q4.md", "---\ncolor: 46\n---\n")
-	all, err := LoadAll(root)
+	all, err := LoadAll(refsAt(root))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -484,7 +470,7 @@ func TestTwoFilesWithOneIDAreOneMilestone(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "alpha-K3F9QZ.md", "---\ncolor: 45\n---\n")
 	writeFile(t, root, "beta-K3F9QZ.md", "---\ncolor: 46\n---\n")
-	all, _ := LoadAll(root)
+	all, _ := LoadAll(refsAt(root))
 	if len(all) != 1 || all[0].Name != "alpha" {
 		t.Fatalf("LoadAll = %+v", all)
 	}
@@ -502,19 +488,19 @@ func TestLoadResolvesIDThenNameIDThenName(t *testing.T) {
 		"ui": "ui-B4C5D6.md", "UI": "ui-B4C5D6.md",
 		"old-filed": "old-filed.md", // a filed milestone is loadable: restore needs it
 	} {
-		m, err := Load(root, key)
+		m, err := Load(refsAt(root), key)
 		if err != nil || m.FileName() != want {
 			t.Errorf("Load(%q) = %v, %v; want %s", key, m, err, want)
 		}
 	}
 	// a name and the wrong ID is nothing, not the name's milestone
-	if _, err := Load(root, "ui-K3F9QZ"); !errors.Is(err, os.ErrNotExist) {
+	if _, err := Load(refsAt(root), "ui-K3F9QZ"); !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("Load(ui-K3F9QZ) err = %v, want not-exist", err)
 	}
-	if _, err := Load(root, "nothing"); !errors.Is(err, os.ErrNotExist) || !os.IsNotExist(err) {
+	if _, err := Load(refsAt(root), "nothing"); !errors.Is(err, os.ErrNotExist) || !os.IsNotExist(err) {
 		t.Errorf("Load(nothing) err = %v, want not-exist", err)
 	}
-	_, err := Load(root, "backend")
+	_, err := Load(refsAt(root), "backend")
 	var amb *AmbiguousError
 	if !errors.As(err, &amb) || amb.Name != "backend" || strings.Join(amb.Choices, " ") != "backend-K3F9QZ backend-M7P2RT" {
 		t.Errorf("Load(backend) err = %v, want AmbiguousError naming both", err)
@@ -526,7 +512,7 @@ func TestLoadPrefersTheMilestoneOnTheBoardOverAFiledOne(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "backend-AAAAAA.md", "---\nstatus: filed\n---\n")
 	writeFile(t, root, "backend-BBBBBB.md", "---\ncolor: 45\n---\n")
-	m, err := Load(root, "backend")
+	m, err := Load(refsAt(root), "backend")
 	if err != nil || m.ID != "BBBBBB" {
 		t.Fatalf("Load(backend) = %v, %v", m, err)
 	}
@@ -546,7 +532,7 @@ func TestFromBytesTakesNameAndIDFromTheFileName(t *testing.T) {
 func TestLoadFindsAHandNamedFileAsItStands(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "Q4.md", "---\ncolor: 45\n---\n")
-	if m, err := Load(root, "Q4"); err != nil || m.Name != "Q4" {
+	if m, err := Load(refsAt(root), "Q4"); err != nil || m.Name != "Q4" {
 		t.Errorf("Load(Q4) = %v, %v", m, err)
 	}
 }

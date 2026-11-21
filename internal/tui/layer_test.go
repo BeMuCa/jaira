@@ -31,14 +31,14 @@ func mkPlaced(t *testing.T, m *Model, name string, minute int, after []string, i
 	for _, id := range ids {
 		ms.Add(id)
 	}
-	if err := ms.Save(m.store.Root); err != nil {
+	if err := m.refSync.RecordMilestone(ms.ID, ms.FileName(), ms.Bytes()); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func loadMilestone(t *testing.T, m *Model, name string) *milestone.Milestone {
 	t.Helper()
-	ms, err := milestone.Load(m.store.Root, name)
+	ms, err := milestone.Load(m.refSync, name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -261,7 +261,7 @@ func TestBubbleFillColourCodes(t *testing.T) {
 		ms.SetAfter(nil)
 		ms.Add(titled(t, m, "Add session test harness"))
 		ms.Add(titled(t, m, "Fix session cookie dropped on 302"))
-		if err := ms.Save(m.store.Root); err != nil {
+		if err := m.refSync.RecordMilestone(ms.ID, ms.FileName(), ms.Bytes()); err != nil {
 			t.Fatal(err)
 		}
 		reloadOrFail(t, m)
@@ -512,8 +512,8 @@ func TestEditRenamesAMilestone(t *testing.T) {
 	if m.layer.stage != stageLayer || m.layer.err != "" {
 		t.Fatalf("the rename must close the form, stage %v err %q", m.layer.stage, m.layer.err)
 	}
-	if _, err := os.Stat(filepath.Join(milestone.Dir(m.store.Root), "a-"+lid("a")+".md")); !os.IsNotExist(err) {
-		t.Errorf("the old file is still there: %v", err)
+	if _, err := milestone.Load(m.refSync, "a"); err == nil {
+		t.Error("the old name is still there")
 	}
 	if got := loadMilestone(t, m, "first-round"); got.Goal != "new goal" || !got.Placed || len(got.After) != 0 {
 		t.Errorf("first-round must carry the goal and a's place, got goal %q placed %v after %v", got.Goal, got.Placed, got.After)
@@ -529,8 +529,8 @@ func TestEditRenamesAMilestone(t *testing.T) {
 	}
 }
 
-// A name left as it stood is the file's own: e on a hand-named Q4.md saves
-// the goal and does not rename the file to the normalized q4.
+// A name left as it stood is the milestone's own: e on a hand-named Q4 saves
+// the goal and does not rename it to the normalized q4.
 func TestEditKeepsAHandWrittenName(t *testing.T) {
 	m := newTestModel(t, 160, 40)
 	mkPlaced(t, m, "Q4", 0, nil)
@@ -546,19 +546,8 @@ func TestEditKeepsAHandWrittenName(t *testing.T) {
 	if got := loadMilestone(t, m, "Q4"); got.Goal != "ship" {
 		t.Errorf("Q4 must carry the goal, got %q", got.Goal)
 	}
-	// The directory's own spelling, not os.Stat: a case-insensitive disk
-	// (macOS, Windows) finds Q4.md under the name q4.md.
-	entries, err := os.ReadDir(milestone.Dir(m.store.Root))
-	if err != nil {
-		t.Fatal(err)
-	}
-	var upper, lower bool
-	for _, e := range entries {
-		upper = upper || strings.HasPrefix(e.Name(), "Q4-")
-		lower = lower || strings.HasPrefix(e.Name(), "q4-")
-	}
-	if !upper || lower {
-		t.Errorf("saving the goal must keep Q4.md as it is: Q4.md there %v, q4.md there %v", upper, lower)
+	if got := loadMilestone(t, m, lid("Q4")); !strings.HasPrefix(got.FileName(), "Q4-") {
+		t.Errorf("saving the goal must keep the name Q4 as it is, ref carries %s", got.FileName())
 	}
 }
 
@@ -705,7 +694,7 @@ func TestMilestoneDetail(t *testing.T) {
 	for _, id := range []string{todo, done, old} {
 		ms.Add(id)
 	}
-	if err := ms.Save(m.store.Root); err != nil {
+	if err := m.refSync.RecordMilestone(ms.ID, ms.FileName(), ms.Bytes()); err != nil {
 		t.Fatal(err)
 	}
 	reloadOrFail(t, m)
@@ -772,7 +761,7 @@ func TestRoadmapShowsNameIDsOnlyForTwins(t *testing.T) {
 		ms := milestone.New(c.name, 45, nowish())
 		ms.ID = c.id
 		ms.SetAfter(nil)
-		if err := ms.Save(m.store.Root); err != nil {
+		if err := m.refSync.RecordMilestone(ms.ID, ms.FileName(), ms.Bytes()); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -797,7 +786,7 @@ func TestTwinnedMilestonesAreMarkedAndFlashed(t *testing.T) {
 		ms := milestone.New(name, 45, nowish())
 		ms.ID = id
 		ms.SetAfter(nil)
-		if err := ms.Save(m.store.Root); err != nil {
+		if err := m.refSync.RecordMilestone(ms.ID, ms.FileName(), ms.Bytes()); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -838,7 +827,7 @@ func TestTwinFlashWaitsForAFetchLineStillUp(t *testing.T) {
 		ms := milestone.New("twin", 45, nowish())
 		ms.ID = id
 		ms.SetAfter(nil)
-		if err := ms.Save(m.store.Root); err != nil {
+		if err := m.refSync.RecordMilestone(ms.ID, ms.FileName(), ms.Bytes()); err != nil {
 			t.Fatal(err)
 		}
 	}

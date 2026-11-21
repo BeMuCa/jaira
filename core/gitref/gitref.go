@@ -125,6 +125,23 @@ type Repo struct {
 // use refs" is a permanent property of the checkout, while a refused push is
 // about one ticket at one moment.
 func (r *Repo) Usable() error {
+	if err := r.InRepo(); err != nil {
+		return err
+	}
+	if _, _, err := r.run("", "remote", "get-url", r.remote()); err != nil {
+		if errors.Is(err, ErrNoGit) {
+			return err
+		}
+		return fmt.Errorf("%w: %s", ErrNoRepo, r.NoRemoteHint())
+	}
+	return nil
+}
+
+// InRepo reports whether this working tree is inside a git repository at all,
+// remote or not. A milestone lives on a ref even where there is nobody to send
+// it to: the ref is its only copy, so a board without a remote keeps it on a
+// local ref and sends it once a remote is configured.
+func (r *Repo) InRepo() error {
 	out, _, err := r.run("", "rev-parse", "--is-inside-work-tree")
 	if err != nil {
 		if errors.Is(err, ErrNoGit) {
@@ -134,12 +151,6 @@ func (r *Repo) Usable() error {
 	}
 	if strings.TrimSpace(out) != "true" {
 		return ErrNoGitRepo
-	}
-	if _, _, err := r.run("", "remote", "get-url", r.remote()); err != nil {
-		if errors.Is(err, ErrNoGit) {
-			return err
-		}
-		return fmt.Errorf("%w: %s", ErrNoRepo, r.NoRemoteHint())
 	}
 	return nil
 }
@@ -297,6 +308,154 @@ func (r *Repo) ReadMilestone(key string) (file string, content []byte, sha strin
 		return "", nil, "", err
 	}
 	return entries[0], content, sha, nil
+}
+
+// MilestoneRef is one milestone ref as ReadMilestones reads it: the file name
+// it carries the milestone under, the file, and the commit it points at.
+type MilestoneRef struct {
+	File    string
+	Content []byte
+	SHA     string
+}
+
+// ReadMilestones reads every local milestone ref, keyed as the ref is named,
+// in three git invocations however many there are: one for-each-ref and two
+// cat-file --batch passes, the trees and then the files they name. The board
+// reads every milestone on every refresh, and one show per ref would cost a
+// process start each — the same reason ReadMany exists for tickets. A ref that
+// does not carry exactly one .md file is left out, as ReadMilestone refuses it.
+// known maps a commit to what it carried when the caller read it before; such
+// a ref is not read again, because a commit hash is its content's address.
+func (r *Repo) ReadMilestones(known map[string]MilestoneRef) (map[string]MilestoneRef, error) {
+	out, err := r.value("for-each-ref", "--format=%(objectname) %(refname)", MilestonePrefix)
+	if err != nil {
+		return nil, err
+	}
+	refs := map[string]MilestoneRef{}
+	var keys []string
+	for _, line := range strings.Split(out, "\n") {
+		sha, ref, ok := strings.Cut(strings.TrimSpace(line), " ")
+		key := strings.TrimPrefix(ref, MilestonePrefix)
+		if !ok || key == ref || key == "" {
+			continue
+		}
+		if k, ok := known[sha]; ok {
+			refs[key] = k
+			continue
+		}
+		refs[key] = MilestoneRef{SHA: sha}
+		keys = append(keys, key)
+	}
+	if len(keys) == 0 {
+		return refs, nil
+	}
+	var in strings.Builder
+	for _, k := range keys {
+		fmt.Fprintf(&in, "%s^{tree}\n", refs[k].SHA)
+	}
+	trees, err := r.batch(in.String(), len(keys))
+	if err != nil {
+		return nil, err
+	}
+	in.Reset()
+	var named []string
+	for i, k := range keys {
+		file, ok := onlyEntry(trees[i])
+		if !ok {
+			delete(refs, k)
+			continue
+		}
+		m := refs[k]
+		m.File = file
+		refs[k] = m
+		named = append(named, k)
+		fmt.Fprintf(&in, "%s:%s\n", m.SHA, file)
+	}
+	if len(named) == 0 {
+		return refs, nil
+	}
+	blobs, err := r.batch(in.String(), len(named))
+	if err != nil {
+		return nil, err
+	}
+	for i, k := range named {
+		if blobs[i] == nil {
+			delete(refs, k)
+			continue
+		}
+		m := refs[k]
+		m.Content = blobs[i]
+		refs[k] = m
+	}
+	return refs, nil
+}
+
+// batch runs one cat-file --batch pass and returns each object's bytes in the
+// order asked, nil for one that is missing.
+func (r *Repo) batch(in string, n int) ([][]byte, error) {
+	stdout, _, err := r.run(in, "cat-file", "--batch")
+	if err != nil {
+		if errors.Is(err, ErrNoGit) {
+			return nil, err
+		}
+		return nil, fmt.Errorf("gitref: cat-file --batch: %w", err)
+	}
+	out := make([][]byte, n)
+	rest := stdout
+	for i := 0; i < n; i++ {
+		nl := strings.IndexByte(rest, '\n')
+		if nl < 0 {
+			break
+		}
+		fields := strings.Fields(rest[:nl])
+		rest = rest[nl+1:]
+		if len(fields) < 3 {
+			continue // missing
+		}
+		var size int
+		if _, err := fmt.Sscanf(fields[2], "%d", &size); err != nil || size > len(rest) {
+			break
+		}
+		out[i] = []byte(rest[:size])
+		rest = strings.TrimPrefix(rest[size:], "\n")
+	}
+	return out, nil
+}
+
+// onlyEntry is the name of the one entry a raw tree object holds, when it holds
+// exactly one and that one is a .md file: "<mode> <name>\x00<hash>", where the
+// hash is 20 bytes (SHA-1) or 32 (SHA-256).
+func onlyEntry(tree []byte) (string, bool) {
+	sp := bytes.IndexByte(tree, ' ')
+	nul := bytes.IndexByte(tree, 0)
+	if sp < 0 || nul < sp {
+		return "", false
+	}
+	if rest := len(tree) - nul - 1; rest != 20 && rest != 32 {
+		return "", false
+	}
+	name := string(tree[sp+1 : nul])
+	return name, strings.HasSuffix(name, ".md")
+}
+
+// WriteMilestoneLocal puts a milestone file on its local ref without pushing
+// it, for a board that has no remote: the ref is then the milestone's only
+// copy, and a remote configured later receives it from the outbox. lease is
+// the SHA the local ref is expected to have, "" for none, and the update is
+// refused when it has another — the same compare-and-swap a push makes, done by
+// update-ref.
+func (r *Repo) WriteMilestoneLocal(key, file string, content []byte, lease string) (string, error) {
+	commit, err := r.commitFile(file, content, lease, "jaira: "+strings.TrimSuffix(file, ".md"))
+	if err != nil {
+		return "", err
+	}
+	if _, errb, err := r.run("", "update-ref", MilestoneRefName(key), commit, lease); err != nil {
+		if errors.Is(err, ErrNoGit) {
+			return "", err
+		}
+		return "", fmt.Errorf("gitref: update-ref %s: %s", MilestoneRefName(key), strings.TrimSpace(errb))
+	}
+	return commit, nil
 }
 
 // ReadMilestoneFileAt returns the milestone file the commit sha carries, and
@@ -811,9 +970,6 @@ func (r *Repo) Fetch() error {
 
 // List returns the ticket ids that have a local ref.
 func (r *Repo) List() ([]string, error) { return r.listNames(Prefix) }
-
-// ListMilestones returns the milestone names that have a local ref.
-func (r *Repo) ListMilestones() ([]string, error) { return r.listNames(MilestonePrefix) }
 
 // ListEpics returns the epic names that have a local ref.
 func (r *Repo) ListEpics() ([]string, error) { return r.listNames(EpicPrefix) }

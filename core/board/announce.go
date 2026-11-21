@@ -70,7 +70,8 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  `jaira milestone create <name> [id...]` starts one, `add`/`rm <milestone> <id>...`\n" +
 	"  put tickets in and take them out, `rename <old> <new>` changes only its name,\n" +
 	"  and `jaira logbook <milestone>` files it once its tickets are finished. A\n" +
-	"  milestone lives in `<name>-<ID>.md`; give a command its name, its ID or\n" +
+	"  milestone lives on its own ref, `refs/jaira/milestones/<ID>`, never in a file\n" +
+	"  to commit; give a command its name, its ID or\n" +
 	"  `<name>-<ID>` — a command that writes refuses a name two carry (exit 3) and\n" +
 	"  names both forms, while `jaira list --milestone <name>` shows both.\n" +
 	"  `jaira milestone create|set <name> --after <a,b>` places it on the Milestone\n" +

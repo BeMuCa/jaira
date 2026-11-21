@@ -634,7 +634,7 @@ ticket.`,
 			// JSON rows can say which milestones a ticket is in — an agent
 			// reading the board needs that as much as a person looking at the
 			// right edge of a card.
-			ms, err := milestoneIndex(s.Root)
+			ms, err := milestoneIndex(s)
 			if err != nil {
 				return err
 			}

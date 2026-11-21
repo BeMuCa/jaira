@@ -485,38 +485,6 @@ func (s *Store) Logbook(id, folder string) (string, error) {
 	return dst, s.recordFiled(t.ID, dst)
 }
 
-// LogbookMilestone moves a milestone's file off the board and into a dated
-// logbook folder, returning its new path. The counterpart of Logbook, minus
-// the refs: a milestone's ref deliberately stays up carrying its status, so
-// nothing is recorded here.
-//
-// It lands in a milestones/ subfolder rather than beside the tickets because a
-// milestone's name is chosen freely and could be spelled like a ticket file.
-// Restore has to know from where it found a file where the file belongs, and a
-// folder says that without guessing at names.
-func (s *Store) LogbookMilestone(file, folder string) (string, error) {
-	src := filepath.Join(s.MilestonesDir(), filepath.Base(file))
-	if _, err := os.Stat(src); err != nil {
-		return "", err
-	}
-	dir := filepath.Join(s.LogbookDir(), filepath.Base(folder), MilestonesSubdir)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return "", err
-	}
-	if real, err := filepath.EvalSymlinks(src); err == nil {
-		src = real
-	}
-	dst := filepath.Join(dir, filepath.Base(src))
-	if _, err := os.Stat(dst); err == nil {
-		return "", fmt.Errorf("%s already exists in %s", filepath.Base(dst),
-			filepath.Join(LogbookSubdir, filepath.Base(folder), MilestonesSubdir))
-	}
-	if err := os.Rename(src, dst); err != nil {
-		return "", err
-	}
-	return dst, nil
-}
-
 // logbookFolders lists the per-person dated folders of the logbook as full
 // paths, in deterministic order — those under LogbookDir and, after them,
 // those under the name the logbook used to have, so a folder written by an

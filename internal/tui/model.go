@@ -446,7 +446,7 @@ func (m *Model) reload() error {
 		return err
 	}
 	m.tags = tags
-	all, err := milestone.LoadAll(m.store.Root)
+	all, err := milestone.LoadAll(m.refSync)
 	if err != nil {
 		return err
 	}

@@ -367,7 +367,7 @@ func (m *Model) submitLayerForm() {
 		l.err = err.Error()
 		return
 	}
-	all, err := milestone.LoadAll(m.store.Root)
+	all, err := milestone.LoadAll(m.refSync)
 	if err == nil {
 		_, err = milestone.ResolveRefs(all, f.editID, preds)
 	}
@@ -384,8 +384,8 @@ func (m *Model) submitLayerForm() {
 		}
 		id = renamed.ID
 	}
-	_, err = milestone.Edit(m.store.Root, m.store, m.refSync, id, func(ms *milestone.Milestone) error {
-		all, err := milestone.LoadAll(m.store.Root)
+	_, err = milestone.Edit(m.store, m.refSync, id, func(ms *milestone.Milestone) error {
+		all, err := milestone.LoadAll(m.refSync)
 		if err != nil {
 			return err
 		}
@@ -397,7 +397,7 @@ func (m *Model) submitLayerForm() {
 		ms.SetAfter(ids)
 		return nil
 	})
-	if err := m.recordOnly(err); err != nil {
+	if err := err; err != nil {
 		l.err = err.Error()
 		if name != f.edit {
 			// The rename went through and only the rest was refused: the
@@ -417,8 +417,8 @@ func (m *Model) submitLayerForm() {
 // and a board narrowed to the old name stays narrowed to the milestone.
 func (m *Model) renameMilestone(fromID, to string) (*milestone.Milestone, error) {
 	from := m.milestoneLabel(fromID)
-	renamed, err := milestone.Rename(m.store.Root, m.store, m.refSync, fromID, to)
-	if err := m.recordOnly(err); err != nil {
+	renamed, err := milestone.Rename(m.store, m.refSync, fromID, to)
+	if err := err; err != nil {
 		return nil, err
 	}
 	l := m.layer
@@ -441,10 +441,9 @@ func (m *Model) renameMilestone(fromID, to string) (*milestone.Milestone, error)
 // 'jaira milestone create --goal --after' does: under the lock, with a colour
 // no other milestone uses, refusing a name a milestone on the board has.
 func (m *Model) createMilestone(name, goal string, after []string) (*milestone.Milestone, error) {
-	root := m.store.Root
-	ms, err := milestone.Create(root, m.store, m.refSync, func(existing []*milestone.Milestone) (*milestone.Milestone, error) {
+	ms, err := milestone.Create(m.store, m.refSync, func(existing []*milestone.Milestone) (*milestone.Milestone, error) {
 		var ee *milestone.ExistsError
-		if err := milestone.CheckFree(root, name); errors.As(err, &ee) {
+		if err := milestone.CheckFree(m.refSync, name); errors.As(err, &ee) {
 			return nil, fmt.Errorf("milestone %q already exists — c on a [+] connects it", name)
 		} else if err != nil {
 			return nil, err
@@ -458,19 +457,7 @@ func (m *Model) createMilestone(name, goal string, after []string) (*milestone.M
 		ms.SetAfter(ids)
 		return ms, nil
 	})
-	return ms, m.recordOnly(err)
-}
-
-// recordOnly drops the one error a write may end with although it happened:
-// the file was saved and only its ref could not be queued. That is said, but
-// not as a failure — the CLI warns in the same case and carries on.
-func (m *Model) recordOnly(err error) error {
-	var re *milestone.RecordError
-	if errors.As(err, &re) {
-		m.notify(fmt.Sprintf("Milestone %q was saved here but could not be queued for the remote: %v", re.Name, re.Err), false)
-		return nil
-	}
-	return err
+	return ms, err
 }
 
 // layerWritten reloads after a write and puts the cursor on the milestone it
@@ -546,8 +533,8 @@ func (m *Model) keyLayerPick(s string) {
 // "connect" says.
 func (m *Model) connectMilestone(id string, after []string) {
 	l := m.layer
-	_, err := milestone.Edit(m.store.Root, m.store, m.refSync, id, func(ms *milestone.Milestone) error {
-		all, err := milestone.LoadAll(m.store.Root)
+	_, err := milestone.Edit(m.store, m.refSync, id, func(ms *milestone.Milestone) error {
+		all, err := milestone.LoadAll(m.refSync)
 		if err != nil {
 			return err
 		}
@@ -562,7 +549,7 @@ func (m *Model) connectMilestone(id string, after []string) {
 		ms.SetAfter(next)
 		return nil
 	})
-	if err := m.recordOnly(err); err != nil {
+	if err := err; err != nil {
 		l.err = err.Error()
 		return
 	}
@@ -579,7 +566,7 @@ func (m *Model) nextMilestoneColour(id string) {
 			used[other.Colour] = true
 		}
 	}
-	_, err := milestone.Edit(m.store.Root, m.store, m.refSync, id, func(ms *milestone.Milestone) error {
+	_, err := milestone.Edit(m.store, m.refSync, id, func(ms *milestone.Milestone) error {
 		n := len(milestone.Palette)
 		i := slices.Index(milestone.Palette, ms.Colour)
 		next := milestone.Palette[(i+1)%n]
@@ -592,7 +579,7 @@ func (m *Model) nextMilestoneColour(id string) {
 		ms.SetColour(next)
 		return nil
 	})
-	if err := m.recordOnly(err); err != nil {
+	if err := err; err != nil {
 		m.notify(err.Error(), true)
 		return
 	}
@@ -622,11 +609,11 @@ func (m *Model) removeFromLayer(id string) {
 		}
 		return strings.Compare(a, b)
 	})
-	_, err := milestone.Edit(m.store.Root, m.store, m.refSync, id, func(ms *milestone.Milestone) error {
+	_, err := milestone.Edit(m.store, m.refSync, id, func(ms *milestone.Milestone) error {
 		ms.Unplace()
 		return nil
 	})
-	if err := m.recordOnly(err); err != nil {
+	if err := err; err != nil {
 		m.notify(err.Error(), true)
 		return
 	}

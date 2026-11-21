@@ -2,6 +2,7 @@ package tui
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -20,6 +21,9 @@ func newTestStore(t *testing.T) *ticket.Store {
 	// filesystem, so a test run never writes into the real user's home.
 	t.Setenv("JAIRA_HOME", filepath.Join(dir, "home"))
 	t.Setenv("JAIRA_LANES_DIR", filepath.Join(dir, "no-lanes"))
+	// A git repository without a remote: milestones live on refs, and a board
+	// without a remote keeps them on local ones.
+	gitInit(t, dir)
 
 	s, err := ticket.At(dir)
 	if err != nil {
@@ -395,5 +399,21 @@ func TestWhenRowOmitsTouchedForAFreshTicket(t *testing.T) {
 	}
 	if got := timespan(time.Time{}, now); got != "" {
 		t.Fatalf("a ticket with no creation time should render nothing, got %q", got)
+	}
+}
+
+// gitInit makes dir a git repository with no remote, which is all a milestone
+// needs to live on its local ref.
+func gitInit(t *testing.T, dir string) {
+	t.Helper()
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not on PATH")
+	}
+	for _, args := range [][]string{{"init", "--quiet"}, {"config", "user.name", "test"}, {"config", "user.email", "test@example.test"}} {
+		cmd := exec.Command("git", args...)
+		cmd.Dir = dir
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
 	}
 }

@@ -80,6 +80,20 @@ type Syncer struct {
 	// hour ago says nothing about the milestones made since.
 	fetched atomic.Bool
 
+	// repoOnce caches whether this checkout is a git repository at all,
+	// which is all a milestone needs: without a remote it lives on its local
+	// ref.
+	repoOnce sync.Once
+	inRepo   error
+
+	// msMu guards msCache: what each milestone commit carried, by its hash.
+	msMu    sync.Mutex
+	msCache map[string]gitref.MilestoneRef
+
+	// before is where every milestone ref stood before the first fetch since
+	// the last FetchMilestones, which compares against it.
+	before map[string]string
+
 	// extraMu guards extraCache: the decoded ticket of each ref-only ticket,
 	// with the commit hash it was decoded from. A hash is a content address, so
 	// an equal hash needs no read and no decode, and no safety net behind it.
@@ -200,22 +214,27 @@ func (y *Syncer) RecordFiled(id string, content []byte) error {
 	return y.Record(id, content)
 }
 
-// RecordMilestone queues a milestone file's current bytes for its ref, under
-// the same rules as a ticket: the whole file, leased against the SHA the
-// remote last confirmed, sent later.
+// RecordMilestone queues a milestone's whole document for its ref, under the
+// same rules as a ticket: leased against the SHA the remote last confirmed,
+// sent later.
 //
-// A milestone travels on a ref for the reason it exists at all. It is the one
-// file everybody plans from, and the whole point of planning in a file is that
-// twenty tickets are grouped in one edit — if that edit then waited for a
-// branch to be merged, the file everybody is supposed to read would be the
-// file nobody has.
+// The ref is a milestone's only copy, so a board without a remote puts the
+// document on the local ref straight away as well, and queues it leased on
+// "no ref": a remote configured later is sent it like any other write. A board
+// that is not in a git repository has nowhere to keep it and is refused.
 func (y *Syncer) RecordMilestone(key, file string, content []byte) error {
-	if y == nil || y.Usable() != nil {
-		return nil
+	if err := y.milestonesUsable(); err != nil {
+		return err
 	}
 	lease, err := y.Repo.MilestoneSHA(key)
 	if err != nil && !errors.Is(err, gitref.ErrNoRef) {
 		return err
+	}
+	if y.Usable() != nil {
+		if _, err := y.Repo.WriteMilestoneLocal(key, file, content, lease); err != nil {
+			return err
+		}
+		lease = ""
 	}
 	if err := y.Box.QueueMilestone(key, file, outbox.OpWrite, content, lease, y.Actor); err != nil {
 		return err
@@ -226,10 +245,17 @@ func (y *Syncer) RecordMilestone(key, file string, content []byte) error {
 
 // RecordMigration queues a milestone's move to its ID as the commit of its own
 // the ref's base is derived from: the migrated content, and from, the old name
-// ref's tip it came from.
+// ref's tip it came from. Without a remote it goes on the local ref too, as
+// RecordMilestone does.
 func (y *Syncer) RecordMigration(key, file string, migrated []byte, from string) error {
-	if y == nil || y.Usable() != nil {
-		return nil
+	if err := y.milestonesUsable(); err != nil {
+		return err
+	}
+	if y.Usable() != nil {
+		lease, _ := y.Repo.MilestoneSHA(key)
+		if _, err := y.Repo.WriteMilestoneLocal(key, file, migrated, lease); err != nil {
+			return err
+		}
 	}
 	if from == "" {
 		from = "none"
@@ -243,11 +269,9 @@ func (y *Syncer) RecordMigration(key, file string, migrated []byte, from string)
 
 // MigrationBase is the base the ID ref's migration commit gives: the migrated
 // content and the old ref's tip it came from. A ref without one was created
-// with its ID, or moved there by a build of this change from before the
-// migration commit existed; milestone.AdoptOld merges an old side of such a
-// milestone against an empty base.
+// with its ID.
 func (y *Syncer) MigrationBase(id string) (milestone.Base, bool) {
-	if y == nil || y.Usable() != nil {
+	if y.milestonesUsable() != nil {
 		return milestone.Base{}, false
 	}
 	content, from, err := y.Repo.ReadMigration(id)
@@ -257,184 +281,90 @@ func (y *Syncer) MigrationBase(id string) (milestone.Base, bool) {
 	return milestone.Base{Content: string(content), OldSHA: from}, true
 }
 
-// IncomingMilestones writes to disk every milestone file the refs carry that
-// this working tree does not already have in the same state, and reports the
-// names it wrote.
-//
-// It writes rather than merely reporting because a milestone has no local
-// editor in jaira the way a ticket has a lane: the file IS the interface, and
-// a group somebody planned is of no use as a ref nobody has checked out. The
-// ref is the newer state by construction — it is what the remote accepted —
-// so a local file that differs is overwritten, and the previous content is in
-// git if it was ever committed. The one exception is a milestone with a write
-// still queued in the outbox: that file is newer than the ref and is left
-// alone until the write has been sent or rejected.
-//
-// A milestone's ref is named after its ID and carries the file under its
-// current name, so a rename arrives as the same ref with another file name.
-// That is the one thing a fetch removes: every other file on this disk with
-// the ref's ID is the milestone under its old name — or a copy git merged in
-// beside it — and the ref decides which is right, before the file is compared.
-// A file with another ID is another milestone, whatever it is called, and is
-// never touched. The names removed this way come back as renamed, old name to
-// new.
-//
-// A ref named after an old name — written before IDs existed — is read as the
-// ID LegacyID gives that name. It is skipped once a milestone has moved on
-// from it (the ID ref is here, or is on this disk); the mark a rename of that
-// era left removes the old file this disk may still have and is reported as a
-// rename; otherwise it is taken like an old file and migrated by the next
-// write.
-//
-// A ref whose file says it has been filed is written over a file this tree
-// already has: the marked line is what keeps a milestone off the board, so
-// writing it is how a clone that already has the file learns it was filed at
-// all — which is the one thing that ref exists to carry. Skipping it would
-// leave that clone showing a round of work everybody else has closed. Those
-// names come back separately, because "this group left the board" is
-// different news from "this group changed".
-//
-// A filed milestone this tree does NOT have is not written: there is nothing
-// here to correct, and putting the file on disk would leave a second copy
-// beside the one in the logbook of the tree that filed it — which is the tree
-// 'jaira restore' would then refuse, because the milestone is back on the
-// board.
-func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed map[string]string, conflicts []milestone.Conflict, err error) {
-	if y == nil || y.Usable() != nil {
-		return nil, nil, nil, nil, nil
+// ErrNoMilestoneRefs means the board has nowhere to keep a milestone: it is
+// not in a git repository. A milestone lives on a ref and nowhere else, so
+// there is no local fallback to offer.
+var ErrNoMilestoneRefs = errors.New("milestones live on git refs, and this board is not in a git repository")
+
+// milestonesUsable reports whether this checkout can keep milestones: a git
+// repository, with or without a remote. Without one a milestone lives on its
+// local ref and in the outbox, and goes out once a remote is configured.
+func (y *Syncer) milestonesUsable() error {
+	if y == nil {
+		return ErrNoMilestoneRefs
 	}
-	keys, err := y.Repo.ListMilestones()
+	y.repoOnce.Do(func() { y.inRepo = y.Repo.InRepo() })
+	if y.inRepo != nil {
+		return fmt.Errorf("%w: %v", ErrNoMilestoneRefs, y.inRepo)
+	}
+	return nil
+}
+
+// MilestoneFiles lists every milestone this clone has: an unsent write where
+// the outbox holds one, which is newer than the ref by construction, else the
+// local ref. A ref named after an old name — written before IDs existed — that
+// no ID ref has replaced yet is listed under the ID it moves to, so a
+// milestone nobody has touched since 0.5.0 is still on the board. A board
+// that is not in a git repository has no milestones.
+func (y *Syncer) MilestoneFiles() ([]milestone.File, error) {
+	if y.milestonesUsable() != nil {
+		return nil, nil
+	}
+	refs, err := y.readMilestoneRefs()
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, err
 	}
-	renamed = map[string]string{}
-	// ID keys first: an old name ref's edit is adopted into the ID file in the
-	// same fetch that writes it, whatever the name sorts like.
-	sort.SliceStable(keys, func(i, j int) bool { return milestone.IsID(keys[i]) && !milestone.IsID(keys[j]) })
-	for _, key := range keys {
-		file, content, sha, err := y.Repo.ReadMilestone(key)
-		if err != nil {
+	byID := map[string]milestone.File{}
+	for key, r := range refs {
+		if milestone.IsID(key) && milestone.FromBytes(r.File, nil).ID == key {
+			byID[key] = milestone.File{Name: r.File, Content: r.Content}
+		}
+	}
+	for key, r := range refs {
+		if milestone.IsID(key) || milestone.RenamedTo(r.Content) != "" {
 			continue
 		}
-		ref := milestone.FromBytes(file, content)
-		if milestone.IsID(key) {
-			if ref.ID != key {
+		name := milestone.FromBytes(r.File, nil).Name
+		id := milestone.LegacyID(key)
+		if _, ok := byID[id]; !ok {
+			byID[id] = milestone.File{Name: name + "-" + id + ".md", Content: milestone.MigrateContent(r.Content)}
+		}
+	}
+	if entries, err := y.Box.List(); err == nil {
+		for _, e := range entries {
+			if e.Kind != outbox.KindMilestone || e.Op != outbox.OpWrite || !milestone.IsID(e.ID) {
 				continue
 			}
-		} else if to := milestone.RenamedTo(content); to != "" {
-			// The mark a rename of the name-keyed era left: the milestone is
-			// under its new name now, so the old file goes if this disk still
-			// has it, and nothing is written.
-			if err := os.Remove(filepath.Join(milestone.Dir(root), file)); err == nil {
-				renamed[ref.Name] = to
+			file := e.File
+			if file == "" {
+				file = e.ID + ".md"
 			}
-			continue
-		} else if y.HasMilestoneRef(ref.ID) || diskHasIDFile(root, ref.ID) {
-			// The milestone has moved on to its ID, but an older build may
-			// still write this ref: what it changed since the move is merged
-			// into the ID milestone rather than ignored.
-			adopted, cs, err := y.adoptOldRef(root, key, ref.ID, content, sha)
-			if err != nil {
-				return wrote, filed, renamed, conflicts, err
-			}
-			if adopted && !slices.Contains(wrote, ref.Name) {
-				wrote = append(wrote, ref.Name)
-			}
-			conflicts = append(conflicts, cs...)
-			continue
-		}
-		// A write of this milestone that has not been sent is newer than the
-		// ref. It goes out on the next flush under the lease it was queued
-		// with: if nobody wrote the ref since, it lands; if somebody did, the
-		// flush is refused and mergeRefused merges the edit into theirs.
-		if y.pendingMilestone(key, ref.Name, ref.ID) {
-			continue
-		}
-		path := filepath.Join(milestone.Dir(root), file)
-		others, hadFile := otherFilesWithID(root, ref.ID, file)
-		// A file of the old format that lies beside the ID: the older build's
-		// edits in it are merged into the ID file once the ref is on disk, and
-		// only then is it removed — a merge that fails or a fetch that is
-		// killed leaves it where the next fetch finds it. Another file with
-		// this ID in its name carries nothing but a name, and goes as soon as
-		// the ref is on disk.
-		type oldSide struct {
-			name    string
-			content []byte
-		}
-		var oldSides []oldSide
-		for _, other := range others {
-			if !other.IDNamed {
-				if b, err := os.ReadFile(filepath.Join(milestone.Dir(root), other.File)); err == nil {
-					oldSides = append(oldSides, oldSide{strings.TrimSuffix(other.File, ".md"), b})
-				}
-			}
-		}
-		removeOthers := func(idNamed bool) error {
-			for _, other := range others {
-				if other.IDNamed != idNamed {
-					continue
-				}
-				if err := os.Remove(filepath.Join(milestone.Dir(root), other.File)); err != nil && !os.IsNotExist(err) {
-					return err
-				}
-				if other.Name != ref.Name {
-					renamed[other.Name] = ref.Name
-				}
-			}
-			return nil
-		}
-		adoptOld := func() error {
-			for _, o := range oldSides {
-				if milestone.StaleOld(y, o.name, o.content) {
-					continue
-				}
-				adopted, cs, err := milestone.AdoptOld(root, y, ref.ID, ref.Name, o.content, "")
-				if err != nil {
-					return err
-				}
-				if adopted && !slices.Contains(wrote, ref.Name) {
-					wrote = append(wrote, ref.Name)
-				}
-				conflicts = append(conflicts, cs...)
-			}
-			return removeOthers(false)
-		}
-		have, haveErr := os.ReadFile(path)
-		if haveErr == nil && bytes.Equal(have, content) {
-			if err := removeOthers(true); err != nil {
-				return wrote, filed, renamed, conflicts, err
-			}
-			if err := adoptOld(); err != nil {
-				return wrote, filed, renamed, conflicts, err
-			}
-			continue
-		}
-		isFiled := ref.Filed()
-		if isFiled && !hadFile && len(others) == 0 {
-			continue
-		}
-		if err := os.MkdirAll(milestone.Dir(root), 0o755); err != nil {
-			return wrote, filed, renamed, conflicts, err
-		}
-		if err := ticket.WriteAtomic(path, content); err != nil {
-			return wrote, filed, renamed, conflicts, err
-		}
-		if err := removeOthers(true); err != nil {
-			return wrote, filed, renamed, conflicts, err
-		}
-		if err := adoptOld(); err != nil {
-			return wrote, filed, renamed, conflicts, err
-		}
-		if isFiled {
-			filed = append(filed, ref.Name)
-			continue
-		}
-		if !slices.Contains(wrote, ref.Name) {
-			wrote = append(wrote, ref.Name)
+			byID[e.ID] = milestone.File{Name: file, Content: []byte(e.Content)}
 		}
 	}
-	return wrote, filed, renamed, conflicts, nil
+	out := make([]milestone.File, 0, len(byID))
+	for _, id := range slices.Sorted(maps.Keys(byID)) {
+		out = append(out, byID[id])
+	}
+	return out, nil
+}
+
+// readMilestoneRefs is Repo.ReadMilestones with the commits this syncer has
+// read before handed back in: the board reads every milestone on its refresh
+// timer, and a ref that has not moved needs no git at all.
+func (y *Syncer) readMilestoneRefs() (map[string]gitref.MilestoneRef, error) {
+	y.msMu.Lock()
+	defer y.msMu.Unlock()
+	refs, err := y.Repo.ReadMilestones(y.msCache)
+	if err != nil {
+		return nil, err
+	}
+	cache := make(map[string]gitref.MilestoneRef, len(refs))
+	for _, r := range refs {
+		cache[r.SHA] = r
+	}
+	y.msCache = cache
+	return refs, nil
 }
 
 // pendingMilestone reports whether a write of this milestone is queued, under
@@ -448,121 +378,156 @@ func (y *Syncer) pendingMilestone(keys ...string) bool {
 	return false
 }
 
-// MilestonesFetched is what one fetch of milestones did on disk.
+// MilestonesFetched is what one fetch did to the milestones: which changed,
+// which were filed elsewhere, which were renamed (old name to new), what was
+// moved onto a ref — an old name ref or a file an older build left on this
+// disk — what still waits, and the fields where two sides clashed.
 type MilestonesFetched struct {
 	Wrote, Filed, Moved []string
-	// Published names the milestones whose file was on this disk with no ref
-	// and no write waiting, and which this fetch queued for their ref.
-	Published []string
+	// Waiting names the files under .jaira/milestones/ left for a fetch that
+	// reaches the remote: until then this clone cannot tell its milestone
+	// from a teammate's it has not fetched.
+	Waiting   []string
 	Renamed   map[string]string
 	Conflicts []milestone.Conflict
 }
 
-// FetchMilestones writes the milestone files the refs carry, then moves old
-// files to their ID names (milestone.Migrate), under the milestone lock every
-// other milestone writer takes. It is what 'jaira fetch' and the board's
-// background fetch both run: the lock is only held here, never across the
-// network round trip the caller made before.
-//
-// The error of Migrate comes back as it is, a *milestone.RecordError included:
-// the caller decides how loud a ref that could not be queued is.
+// FetchMilestones reports what the fetch the caller made did to the
+// milestones, moves old name refs to their ID, and takes every file an older
+// build left under .jaira/milestones/ onto its ref (milestone.Import) — under
+// the milestone lock every other milestone writer takes. It is what 'jaira
+// fetch' and the board's background fetch both run: the lock is only held
+// here, never across the network round trip the caller made before.
 func (y *Syncer) FetchMilestones(s *ticket.Store) (MilestonesFetched, error) {
+	out := MilestonesFetched{Renamed: map[string]string{}}
+	if y.milestonesUsable() != nil {
+		return out, nil
+	}
 	unlock, err := s.Lock(milestone.LockName)
 	if err != nil {
-		return MilestonesFetched{}, err
+		return out, err
 	}
 	defer unlock()
-	var out MilestonesFetched
-	out.Wrote, out.Filed, out.Renamed, out.Conflicts, err = y.IncomingMilestones(s.Root)
-	if out.Renamed == nil {
-		out.Renamed = map[string]string{}
-	}
-	if err != nil {
+	if err := y.changedMilestones(&out); err != nil {
 		return out, err
 	}
-	// Taken in after the refs, so a name-keyed ref that only now brought an old
-	// file is moved to its ID in the same fetch.
-	res, err := milestone.Migrate(s.Root, y)
-	out.Moved = res.Moved
+	res, err := milestone.Import(s.Root, y, y.mayPublish())
+	out.Moved = append(out.Moved, res.Moved...)
+	out.Waiting = res.Waiting
 	out.Conflicts = append(out.Conflicts, res.Conflicts...)
-	var re *milestone.RecordError
-	if err != nil && !errors.As(err, &re) {
-		return out, err
-	}
-	// After Migrate, so a file it just moved to its ID is looked at under that
-	// ID. Whether "no ref here" also means none on the remote is the caller's
-	// fetch to say; publishUnsent reads that off the syncer.
-	published, perr := y.publishUnsent(s.Root)
-	out.Published = published
-	if err == nil {
-		err = perr
-	}
 	return out, err
 }
 
-// publishUnsent queues every milestone file named after its ID that has no
-// ref in this tree and no write waiting for one. Such a file was made where
-// nothing could queue it — before the board had a remote, or by hand — and
-// Migrate passes it by, because it only moves files without an ID. Without
-// this it would stay on one disk however often that clone fetches, which is
-// the one thing a milestone ref is there to prevent.
-//
-// It runs only when the last fetch reached the remote. Offline, a missing ref
-// may be a teammate's milestone this clone has not fetched yet, and a write
-// queued against no ref would be merged into theirs from an empty base when it
-// is finally sent — their removals undone, nobody told.
-//
-// An ID carried by two files is left alone: which of them is the milestone is
-// a person's call, and a ref written from either would decide it for them. A
-// file that could not be read or queued does not stop the others; the first
-// such failure comes back as a *milestone.RecordError after all of them.
-func (y *Syncer) publishUnsent(root string) ([]string, error) {
-	if y == nil || y.Usable() != nil || !y.fetched.Load() {
-		return nil, nil
+// ImportMilestones is the import alone, for a command that writes or reads a
+// milestone outside a fetch. The caller holds the milestone lock.
+func (y *Syncer) ImportMilestones(root string) (milestone.Result, error) {
+	if y.milestonesUsable() != nil {
+		return milestone.Result{}, nil
 	}
-	files := milestoneFiles(root)
-	carriers := map[string]int{}
-	for _, m := range files {
-		if m.IDNamed {
-			carriers[m.ID]++
-		}
-	}
-	var sent []string
-	var first error
-	for _, m := range files {
-		if !m.IDNamed || carriers[m.ID] != 1 || y.HasMilestoneRef(m.ID) || y.pendingMilestone(m.ID) {
-			continue
-		}
-		content, err := os.ReadFile(filepath.Join(milestone.Dir(root), m.File))
-		if err == nil {
-			err = y.RecordMilestone(m.ID, m.File, content)
-		}
-		if err != nil {
-			if first == nil {
-				first = &milestone.RecordError{Name: m.Name, Err: err}
-			}
-			continue
-		}
-		sent = append(sent, m.Name)
-	}
-	return sent, first
+	return milestone.Import(root, y, y.mayPublish())
 }
 
-// adoptOldRef merges what an older build wrote to an old name ref since the
-// base recorded when its milestone moved to its ID into the ID file
-// (milestone.AdoptOld). A ref that has not moved since the base is skipped
-// without reading it again.
-func (y *Syncer) adoptOldRef(root, name, id string, content []byte, sha string) (bool, []milestone.Conflict, error) {
-	if base, ok := milestone.BaseFor(root, y, id); ok && sha != "" && sha == base.OldSHA {
-		return false, nil, nil
+// mayPublish says whether "no ref in this tree" means "no ref on the remote":
+// always on a board without a remote, and otherwise only when the last fetch
+// reached it. Offline, a missing ref may be a teammate's milestone this clone
+// has not fetched yet, and a write queued against no ref would be merged into
+// theirs from an empty base when it is finally sent — their removals undone,
+// nobody told. The last fetch, not any: the board fetches on a timer, and one
+// good fetch an hour ago says nothing about the milestones made since.
+func (y *Syncer) mayPublish() bool {
+	return y.Usable() != nil || y.fetched.Load()
+}
+
+// changedMilestones compares the milestone refs with what they were before the
+// fetch (snapshotMilestones) and fills in what changed, and moves every old
+// name ref no ID ref has replaced to its ID. A milestone with a write still
+// queued is not news: what this clone shows is its own edit.
+//
+// Edits an older build still makes to an old name ref after its milestone moved
+// to its ID are not taken any more: 0.5.0 moved them, and the ID ref is the
+// milestone.
+func (y *Syncer) changedMilestones(out *MilestonesFetched) error {
+	before := y.before
+	y.before = nil
+	refs, err := y.readMilestoneRefs()
+	if err != nil {
+		return err
 	}
-	return milestone.AdoptOld(root, y, id, name, content, sha)
+	for _, key := range slices.Sorted(maps.Keys(refs)) {
+		r := refs[key]
+		if !milestone.IsID(key) {
+			if milestone.RenamedTo(r.Content) != "" {
+				continue
+			}
+			id := milestone.LegacyID(key)
+			if _, ok := refs[id]; ok || y.pendingMilestone(id) || !y.mayPublish() {
+				continue
+			}
+			name := milestone.FromBytes(r.File, nil).Name
+			if err := y.RecordMigration(id, name+"-"+id+".md", milestone.MigrateContent(r.Content), r.SHA); err != nil {
+				return err
+			}
+			out.Moved = append(out.Moved, gitref.MilestoneRefName(key)+" -> "+gitref.MilestoneRefName(id))
+			continue
+		}
+		old, had := before[key]
+		if before == nil || (had && old == r.SHA) || y.pendingMilestone(key) {
+			continue
+		}
+		now := milestone.FromBytes(r.File, r.Content)
+		var was *milestone.Milestone
+		if had {
+			if file, content, err := y.Repo.ReadMilestoneFileAt(old); err == nil {
+				was = milestone.FromBytes(file, content)
+			}
+		}
+		switch {
+		case now.Filed() && (was == nil || !was.Filed()):
+			if was != nil {
+				out.Filed = append(out.Filed, now.Name)
+			}
+		case now.Filed():
+		default:
+			if was != nil && was.Name != now.Name {
+				out.Renamed[was.Name] = now.Name
+			}
+			out.Wrote = append(out.Wrote, now.Name)
+		}
+	}
+	return nil
+}
+
+// snapshotMilestones remembers where every milestone ref stood before a
+// fetch, so FetchMilestones can tell what the fetch changed. The first fetch
+// since the last FetchMilestones takes it: the board flushes (which fetches)
+// and then fetches again, and the second must not hide what the first brought.
+func (y *Syncer) snapshotMilestones() {
+	if y.before != nil || y.milestonesUsable() != nil {
+		return
+	}
+	out, err := y.Repo.ReadMilestones(nil)
+	if err != nil {
+		return
+	}
+	y.before = make(map[string]string, len(out))
+	for key, r := range out {
+		y.before[key] = r.SHA
+	}
+}
+
+// MilestoneHad reports whether the ref of this milestone has carried content
+// at some point: a file holding it is a stale copy, not an edit.
+func (y *Syncer) MilestoneHad(key string, content []byte) bool {
+	if y.milestonesUsable() != nil {
+		return false
+	}
+	return y.Repo.MilestoneHad(key, content)
 }
 
 // OldRefSHA is the tip of the ref an old milestone name had before IDs, "" when
-// this tree has none. Migrate records it with the base.
+// this tree has none. Import records it in the migration commit.
 func (y *Syncer) OldRefSHA(name string) string {
-	if y == nil || y.Usable() != nil {
+	if y.milestonesUsable() != nil {
 		return ""
 	}
 	sha, err := y.Repo.MilestoneSHA(name)
@@ -575,7 +540,7 @@ func (y *Syncer) OldRefSHA(name string) string {
 // OldRefHad reports whether content is a state the ref of an old milestone
 // name has carried. Such an old file is a stale copy, not an edit.
 func (y *Syncer) OldRefHad(name string, content []byte) bool {
-	if y == nil || y.Usable() != nil {
+	if y.milestonesUsable() != nil {
 		return false
 	}
 	return y.Repo.MilestoneHad(name, content)
@@ -583,6 +548,7 @@ func (y *Syncer) OldRefHad(name string, content []byte) bool {
 
 // fetch is Repo.Fetch, remembering whether it reached the remote.
 func (y *Syncer) fetch() error {
+	y.snapshotMilestones()
 	err := y.Repo.Fetch()
 	y.fetched.Store(err == nil)
 	return err
@@ -598,65 +564,13 @@ func (y *Syncer) FetchRefs() bool {
 }
 
 // HasMilestoneRef reports whether this tree has the ref of the milestone with
-// this ID. A syncer that is nil or without a remote has no refs.
+// this ID, local or fetched.
 func (y *Syncer) HasMilestoneRef(id string) bool {
-	if y == nil || y.Usable() != nil {
+	if y.milestonesUsable() != nil {
 		return false
 	}
 	_, err := y.Repo.MilestoneSHA(id)
 	return err == nil
-}
-
-// diskHasIDFile reports whether a file named <name>-<ID>.md for this ID lies
-// on the board: the milestone has moved to its ID on this disk already.
-func diskHasIDFile(root, id string) bool {
-	for _, m := range milestoneFiles(root) {
-		if m.ID == id && m.IDNamed {
-			return true
-		}
-	}
-	return false
-}
-
-// otherFilesWithID lists the files on the board that carry this ID under a
-// file name other than file, and whether file itself is there.
-func otherFilesWithID(root, id, file string) (others []diskMilestone, hadFile bool) {
-	for _, m := range milestoneFiles(root) {
-		switch {
-		case m.ID != id:
-		case m.File == file:
-			hadFile = true
-		default:
-			others = append(others, m)
-		}
-	}
-	return others, hadFile
-}
-
-// diskMilestone is one file under .jaira/milestones read for what its name
-// says: the milestone name and ID, and whether the ID is in the file name or
-// was computed for an old one.
-type diskMilestone struct {
-	File, Name, ID string
-	IDNamed        bool
-}
-
-func milestoneFiles(root string) []diskMilestone {
-	entries, err := os.ReadDir(milestone.Dir(root))
-	if err != nil {
-		return nil
-	}
-	var out []diskMilestone
-	for _, e := range entries {
-		base, ok := strings.CutSuffix(e.Name(), ".md")
-		if !ok || e.IsDir() {
-			continue
-		}
-		m := diskMilestone{File: e.Name()}
-		m.Name, m.ID, m.IDNamed = milestone.FileIdentity(base)
-		out = append(out, m)
-	}
-	return out
 }
 
 // Winner describes the state that beat a rejected write, read from the ref
@@ -792,20 +706,18 @@ func (y *Syncer) Flush() ([]Report, error) {
 }
 
 // mergeRefused keeps the edit of a milestone write the remote refused, because
-// a teammate wrote the ref first. Without it the next fetch would replace the
-// file with the teammate's version: the edit would be gone. It is merged into
-// the version that won — the ref as this clone has just fetched it — from the
-// state the write was leased on (for a moving write that has no lease, the base
-// recorded when the file moved), and the result is written to the file and
-// queued again, leased on the winner. A field both sides changed keeps the
-// winner's value and the other is written into the file as a comment; the
-// file name is merged like a field (see mergedFile). It reports whether it
-// merged.
+// a teammate wrote the ref first. Without it the edit would be gone. It is
+// merged into the version that won — the ref as this clone has just fetched
+// it — from the state the write was leased on (for a moving write that has no
+// lease, the migration commit's), and queued again, leased on the winner. A
+// field both sides changed keeps the winner's value and the other is written
+// into the document as a comment; the file name is merged like a field (see
+// mergedFile). It reports whether it merged.
 //
 // It runs under the milestone lock every other milestone writer takes, and the
 // refused entry stays queued until the merged one replaces it (Flush keeps it);
 // a write another session queued since is the newer state and is what gets
-// merged. On any failure the file is left as it is and the entry stays queued.
+// merged. On any failure the entry stays queued.
 func (y *Syncer) mergeRefused(e outbox.Entry) (bool, []milestone.Conflict) {
 	if y.Store == nil {
 		_ = y.Box.DropMilestone(e.ID)
@@ -829,7 +741,7 @@ func (y *Syncer) mergeRefused(e outbox.Entry) (bool, []milestone.Conflict) {
 		if baseFile, base, err = y.Repo.ReadMilestoneFileAt(e.Lease); err != nil {
 			base, baseFile = nil, ""
 		}
-	} else if b, ok := milestone.BaseFor(y.Store.Root, y, e.ID); ok {
+	} else if b, ok := y.MigrationBase(e.ID); ok {
 		base = []byte(b.Content)
 	}
 	if e.Lease == "" && e.Migration != nil {
@@ -837,7 +749,7 @@ func (y *Syncer) mergeRefused(e outbox.Entry) (bool, []milestone.Conflict) {
 		// when it moved: the name a later rename is measured against.
 		baseFile = e.Migration.File
 	}
-	all, err := milestone.LoadAll(y.Store.Root)
+	all, err := milestone.LoadAll(y)
 	if err != nil {
 		return false, nil
 	}
@@ -853,15 +765,6 @@ func (y *Syncer) mergeRefused(e outbox.Entry) (bool, []milestone.Conflict) {
 		// Nothing of the edit is left to send: the winner already says it.
 		_ = y.Box.DropMilestone(e.ID)
 		return false, nil
-	}
-	dir := milestone.Dir(y.Store.Root)
-	if err := ticket.WriteAtomic(filepath.Join(dir, chosen), merged); err != nil {
-		return false, nil
-	}
-	for _, f := range []string{file, e.File} {
-		if f != "" && f != chosen {
-			_ = os.Remove(filepath.Join(dir, f))
-		}
 	}
 	// The merged write replaces the refused one. The box keeps the lease of an
 	// entry that is there, so the old one goes first, and comes back if the new
