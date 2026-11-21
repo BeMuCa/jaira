@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:53:50Z
+updated-at: 2026-11-21T09:53:53Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3647270
 claimed-at: 2026-11-21T09:36:24Z
@@ -32,7 +32,7 @@ outcome-why: "The round-15 hunter showed e1363ba1 turned every git failure into 
 outcome-resolves: "bughunt change at e1363ba1; go test core/gitrepo internal/cli ok."
 review-summary: "none"
 review-gaps: none - one guard added
-test-verdict: "pass: go test -count=1 ./... RC=0 at e1363ba1; a hunt at a missing commit reads fail (gitrepo and CLI tests)"
+test-verdict: "pass: go test -count=1 ./... RC=0 at 9b94f206; no repository / no commit yet -> unknown, missing hunt commit -> fail (gitrepo tests)"
 hunt-verdict: "fail: 1 change finding at e1363ba1 - no git / no repository read fail instead of unknown"
 round: 16
 review-verdict: "The diff meets all 11 definition-of-done items; go test ./... and the cockpit's 219 tests pass, and the branch binary shows blocker_rule, stop_after_fix, back and bughunt on this ticket. I found no blocker; the notes are edges of the bughunt-on-HEAD heuristic and the loop count, all erring towards a red mark or documented. Unsure only about the atATerminal rule: an agent harness with a TTY counts as a person, which the in-progress prompt states but nothing enforces."
