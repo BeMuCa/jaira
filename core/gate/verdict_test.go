@@ -91,6 +91,11 @@ func TestVerdictWordClasses(t *testing.T) {
 		{"zurückschicken: DoD 1", ""},
 		{": empty word", ""},
 		{"accepted: x", ""},
+		{"Send back, DoD 1", CodeVerdictSendBack},
+		{"send-back — DoD 1", CodeVerdictSendBack},
+		{"send back DoD 1 unmet", CodeVerdictSendBack},
+		{"send-backs: x", ""},
+		{"send-backward", ""},
 	}
 	for _, c := range cases {
 		got := verdictViolations(CheckAdvance(testEnv(t), reviewed(c.verdict), Request{To: "signoff"}))

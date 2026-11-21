@@ -93,7 +93,7 @@ Write four things, in this order:
 3. `review-verdict` — your conclusion, starting with one of this lane's two
    words and a colon: `accept` when there is no blocker, `send-back` when there
    is one. The move reads the word: a `send-back` verdict refuses every move
-   on except back to `in-progress`, whichever lane the ticket moves from.
+   past review, whichever lane the ticket moves from; a move back stays free.
 
        jaira set <handle> review-verdict="accept: the diff matches the criteria; no defects found"
        jaira set <handle> review-verdict="send-back: DoD 2 - an empty export still writes a header"

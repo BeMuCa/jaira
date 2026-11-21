@@ -1,7 +1,7 @@
 ---
 id: 01M5ZJ4KA5N2PH7Q4WY4F1V59P
 title: "Ein Review-Verdikt 'zurueckschicken' laesst das Ticket nicht nach signoff"
-status: testing
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Steht im review-verdict der Review-Lane 'send back' (oder das Gegenstueck des Boards), nimmt jaira move aus review nur noch in-progress als Ziel; signoff wird mit Exit 3 abgelehnt und nennt das Verdikt."
@@ -21,22 +21,41 @@ related:
   - 01M7WWZWSDHK37DGGHJFDF0YD6
 commits: []
 created-at: 2026-10-27T20:51:56Z
-updated-at: 2026-11-21T20:14:01Z
+updated-at: 2026-11-21T20:23:35Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-238286
-claimed-at: 2026-11-21T19:47:43Z
-outcome-what: "review-verdict now starts with a lane-declared word (accept / send-back); jaira move reads it and refuses a forward move out of review on send-back or on no known word, exit 3, naming the verdict and the lane to send back to; show --for-lane review carries the words as verdicts"
+claimed-by: DESKTOP-RFTCH11-1951983
+claimed-at: 2026-11-21T20:21:19Z
+outcome-what: "review-verdict now starts with a lane-declared word (accept / send-back); jaira move refuses every move past review on a send-back verdict - the word may be followed by ':', the line's end or any non-letter ('Send back, DoD 1'), exit 3 naming the verdict and in-progress; show --for-lane review carries the words as verdicts"
 outcome-why: "a review that wrote 'send back' still let its ticket land in signoff, so a person saw unapproved work as ready"
 outcome-resolves: "TestCLISendBackVerdictRefusesSignoff, TestCLISendBackVerdictGoesBack, TestVerdictWordClasses, TestLaneWithoutVerdictWordsReadsNothing"
-review-summary: "none"
-round: 5
-back-from: testing
-back-by: lane
-back-count: 3
-review-gaps: "replaced lane.ReadVerdict and its four kind constants by SendsBackBy: after the decision the only caller asks whether the verdict sends back, so accept/unknown/none were a distinction nobody read; updated the Lane field comment that still said 'anything else is no verdict'"
-test-verdict: "pass: round 4 - go test ./... RC=0 at d4067a5e4; DoD 1-6 hold (TestSendBackVerdictHasNoWayAround covers blocked->signoff send-back refused and old free-text verdict let back); gate writes nothing"
-hunt-verdict: "fail: bughunt done at d4067a5e4, 1 change blocker: unknown verdict laundered via blocked (review->blocked->signoff); the round before found the opposite edge - see question"
+review-summary: "review.md (builtin and this board's copy) now names two verdict words, verdict-accept: [accept] and verdict-send-back: [send-back]; lane parsing reads them, normalises case/space/dash/trailing punctuation, and refuses a lane that declares only one list, the same word in both, or the lists without review-verdict in output-produces. The gate (core/gate/gate.go verdictAgainstMove) reads the first word of review-verdict (before the first ':' on the first line) and, when it is the send-back word, refuses with exit 3 / code verdict_sends_back every non-TUI move that lands past review - from review, from blocked or by skipping ahead - naming the verdict and in-progress as the way back; moves back and into parking stay free, --force and a move in the TUI override. Every other verdict, free text included, passes as before (decision note 20:10). A board whose review.md has no lists behaves exactly as today. show --for-lane carries the words as 'verdicts'; lane prompt, both SKILL.md copies, demoworld.sh, the shipped hashes and core/release/notes/F1V59P.md follow."
+round: 6
+back-from: signoff
+back-by: person
+back-count: 1
+review-gaps: |-
+  note: a send-back verdict without a colon but with more text after the word ('Send back, DoD 1', 'send-back — DoD 1') reads as free text and lands in signoff (checked on a scratch board: rc=0); fix: in core/lane/verdict.go SendsBackBy accept the declared word as a prefix of the first line followed by end or a non-letter character, plus two rows in TestVerdictWordClasses
+  note: 40-review.md step 3 says a send-back 'refuses every move on except back to in-progress' - the gate actually allows every move back (testing, critique, ...) and refuses only moves past review; reword to 'refuses every move past review'
+  note: pre-existing: core/gate/gate.go ~470 - a forward move that skips review (in-progress -> signoff) never checks review's outputs, so no verdict is read at all (bughunt 20:01, since 610e33a41a)
+  note: known limit: blocked does not record the lane it was parked from, so the send-back rule is the only verdict rule enforced on every route (decision 20:10, option 3 left out)
+test-verdict: "pass: round 5 at 8081bc2c2 - go test -race ./... RC=0, shipped-history --check ok, GOOS=windows build ok; DoD 1-6 re-verified; scratch board: 'Send back: DoD 1' review->signoff exit 3, review->blocked->signoff exit 3, ->in-progress exit 0 without --force; free text 'looks fine' review->signoff exit 0 (decision option 1). Gate writes nothing."
+hunt-verdict: "pass: bughunt done at 8081bc2c2, 0 change, 0 pre-existing (follow-up hunt since d4067a5e4)"
+review-verdict: "accept: DoD 1-6 hold - send-back refused from review and from blocked (exit 3, names in-progress), back move free, words in the lane file and in show --for-lane, table tests and old-lane test pass; go test core/gate core/lane core/shipped internal/cli green; only small notes"
+review-round: 5
+review-check: |-
+  1. cd into this worktree and run: go build -o /tmp/jt ./cmd/jaira
+  2. in an empty dir: git init; git commit --allow-empty -m init; /tmp/jt init; /tmp/jt create t --goal g --context c --dod d  (note the handle)
+  3. /tmp/jt move <h> --to review --force; /tmp/jt set <h> review-verdict="send-back: DoD 1"
+  4. /tmp/jt move <h> --to signoff  -> exit 3, line 'review-verdict says "send-back" ... Move it back to "in-progress"'
+  5. /tmp/jt move <h> --to blocked --reason x; /tmp/jt move <h> --to signoff  -> exit 3 again
+  6. /tmp/jt move <h> --to in-progress  -> moves, no --force
+  7. /tmp/jt show <h> --for-lane review --json | grep -A3 verdicts  -> accept / send_back lists
+review-verdict-gaps: |-
+  note: a send-back verdict without a colon but with more text after the word ('Send back, DoD 1', 'send-back — DoD 1') reads as free text and lands in signoff (checked on a scratch board: rc=0); fix: in core/lane/verdict.go SendsBackBy accept the declared word as a prefix of the first line followed by end or a non-letter character, plus two rows in TestVerdictWordClasses
+  note: 40-review.md step 3 says a send-back 'refuses every move on except back to in-progress' - the gate actually allows every move back (testing, critique, ...) and refuses only moves past review; reword to 'refuses every move past review'
+  note: pre-existing: core/gate/gate.go ~470 - a forward move that skips review (in-progress -> signoff) never checks review's outputs, so no verdict is read at all (bughunt 20:01, since 610e33a41a)
+  note: known limit: blocked does not record the lane it was parked from, so the send-back rule is the only verdict rule enforced on every route (decision 20:10, option 3 left out)
 ---
 
 # Ein Review-Verdikt 'zurueckschicken' laesst das Ticket nicht nach signoff
@@ -94,3 +113,6 @@ hunt-verdict: "fail: bughunt done at d4067a5e4, 1 change blocker: unknown verdic
 - **2026-11-21 20:10 · Alexander Sacharov** — decision: Variante 1 (Alex' Regel 'Ränder wachsen → kleineres Design', 21.11.): die Weigerung für unbekannte Verdikt-Wörter fällt weg; erzwungen wird nur send-back, auf jedem Weg hinter review (blocked eingeschlossen). Freitext geht durch wie heute. 40-review.md:96-97 entsprechend anpassen. Herkunfts-Lane von blocked aufzeichnen ist nicht Teil dieses Tickets.
 - **2026-11-21 20:12 · Alexander Sacharov** — decision applied: unknown-word refusal and CodeVerdictUnknown removed (gate.go, verdict_test.go table now expects free text to pass); 40-review.md step 3 and the release note say only send-back refuses, from review or from blocked. go test ./... RC=0.
 - **2026-11-21 20:12 · Alexander Sacharov** — critique round 5: read only 2a0e996e5 (the applied decision); matches the decision note, nothing else.
+- **2026-11-21 20:15 · Alexander Sacharov** — bughunt: done at 8081bc2c2 - 0 findings in 3 modules (core/gate, core/lane, lane prompt), follow-up hunt since d4067a5e4 (diff: .jaira/lanes/review.md core/gate/gate.go core/gate/verdict_test.go core/lane/builtin/40-review.md core/lane/lane.go core/lane/verdict.go core/release/notes/F1V59P.md core/shipped/shipped.sha256); no leftover callers of the removed ReadVerdict/VerdictUnknown, shipped hash matches the current 40-review.md, go build + go test core/gate core/lane core/shipped internal/cli pass; concurrency, error paths, input, permissions checked; untracked .jaira/milestones/*.md are board data outside the change and not read; files: .claude/skills/jaira/SKILL.md .jaira/lanes/review.md core/gate/gate.go core/gate/verdict_test.go core/lane/builtin/40-review.md core/lane/lane.go core/lane/verdict.go core/lane/verdict_test.go core/release/notes/F1V59P.md core/role/jaira/SKILL.md core/shipped/shipped.sha256 internal/cli/flow.go internal/cli/verdict_test.go scripts/demoworld.sh
+- **2026-11-21 20:20 · Alexander Sacharov** — Given back from signoff: (1) 'Send back, DoD 1' ohne Doppelpunkt muss als send-back zählen: SendsBackBy nimmt das Wort als Präfix, gefolgt von Ende oder Nicht-Buchstabe, plus 2 Tabellenzeilen — sonst landet ein zurückgeschickter Ticket doch in signoff, genau was das Ticket verhindern soll. (2) 40-review.md Schritt 3: 'every move past review' statt 'except back to in-progress'. Notes 3 (pre-existing) und 4 (known limit) bleiben.
+- **2026-11-21 20:21 · Alexander Sacharov** — give-back round: fixing (1) SendsBackBy prefix match - declared word followed by end or a non-letter rune, after the same normalisation; (2) 40-review.md step 3 wording 'every move past review'.

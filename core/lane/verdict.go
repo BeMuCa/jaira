@@ -1,6 +1,10 @@
 package lane
 
-import "strings"
+import (
+	"strings"
+	"unicode"
+	"unicode/utf8"
+)
 
 // verdictWords normalises the words a lane file declares.
 func verdictWords(ws []string) []string {
@@ -27,17 +31,22 @@ func (l *Lane) DeclaresVerdicts() bool {
 }
 
 // SendsBackBy reports whether review-verdict v sends the work back on this
-// lane, and the word it does it with. The word is everything on the first line
-// before the first ':' — or that whole line when it has none — so
-// "send-back: DoD 2 unmet" and "Send back" both read; a sentence that merely
-// contains the word somewhere does not. Every other verdict, free text
+// lane, and the word it does it with. The verdict's first line, before the
+// first ':', must begin with the word, followed by its end or by anything that
+// is not a letter — so "send-back: DoD 2 unmet", "Send back", "Send back, DoD
+// 1" and "send-back — DoD 1" all read, while "send-backs" and a sentence that
+// merely contains the word somewhere do not. Every other verdict, free text
 // included, sends nothing back.
 func (l *Lane) SendsBackBy(v string) (string, bool) {
 	head, _, _ := strings.Cut(strings.TrimSpace(v), "\n")
 	head, _, _ = strings.Cut(head, ":")
 	n := normVerdict(head)
 	for _, w := range l.VerdictSendBack {
-		if n == w {
+		rest, ok := strings.CutPrefix(n, w)
+		if !ok {
+			continue
+		}
+		if r, _ := utf8.DecodeRuneInString(rest); rest == "" || !unicode.IsLetter(r) {
 			return w, true
 		}
 	}
