@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:44:36Z
+updated-at: 2026-11-21T09:44:40Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3647270
 claimed-at: 2026-11-21T09:36:24Z
@@ -32,7 +32,7 @@ outcome-why: "Teamlead for Alex 21.11. (final round): the mtime comparison cause
 outcome-resolves: "review round 13 notes 1, 2 (cause removed), 3 and 5 (one sentence each), 4 (validate warning). go test ./... RC=0, claude plugin test 220 pass; scratch board: clean ok, uncommitted unknown, ticket commit fail, validate warns on 'yes'."
 review-summary: "none"
 review-gaps: none - 4ddb51bc removed writtenSince/untracked mtime code; anyCode is the one filter for all three git lists
-test-verdict: "pass: claude plugin test 219 pass at 220d5b51 (BL0CK4-6 offer Explain, NOTES3 does not, '**[blocker]**' drawn red); go test core/role core/shipped core/lane ok; parsing only, no writes"
+test-verdict: "pass: go test -count=1 ./... RC=0 at 4ddb51bc, claude plugin test 220 pass; TestHuntCoverage 22 cases, TestUnreadableStopAfterFixIsReported; scratch board end to end: clean -> ok, uncommitted hunted file -> unknown, ticket commit -> fail, hand-written 'stop-after-fix: yes' -> jaira validate warning bad_stop_after_fix; read-only git"
 hunt-verdict: "pass: follow-up hunt since 058e8d2f at 220d5b51, 0 findings"
 round: 14
 review-verdict: "The diff meets all 11 definition-of-done items; go test ./... and the cockpit's 219 tests pass, and the branch binary shows blocker_rule, stop_after_fix, back and bughunt on this ticket. I found no blocker; the notes are edges of the bughunt-on-HEAD heuristic and the loop count, all erring towards a red mark or documented. Unsure only about the atATerminal rule: an agent harness with a TTY counts as a person, which the in-progress prompt states but nothing enforces."
