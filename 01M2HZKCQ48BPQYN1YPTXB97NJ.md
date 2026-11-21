@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T09:01:12Z
+updated-at: 2026-11-21T09:06:26Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -35,9 +35,7 @@ question: ""
 outcome-what: "Board haelt in .jaira/pr fest, wie Arbeit ankommt (person/agent/none); Rollen, pr-gate, reap und der CLAUDE.md-Block richten sich danach; Runde 6: BOM in allen einzeiligen Board-Dateien, roles list nennt ein nicht genommenes Wort, reap misst am Remote, auf das gelandet wird"
 outcome-why: "Ein Solo-Projekt ohne Pull Requests blieb an einem PR haengen, den niemand oeffnet"
 outcome-resolves: "XB97NJ"
-review-summary: |-
-  Ein Board kann jetzt in .jaira/pr 'none' sagen (neben person/agent). core/board/arrival.go liest die Datei streng (nur exakt agent/none zaehlt; BOM, CRLF, Kommentare ignoriert; alles andere = person) und haengt bei agent/none einen Absatz 'How work arrives on this board' an den jaira-Block in CLAUDE.md/AGENTS.md; ohne Datei bleibt der Block byte-gleich, validate meldet Drift bei Dateiwechsel. 'jaira roles list' liefert pr=none, pr_when=done und nennt ein Wort, das nicht griff. 'jaira roles pr-gate' laesst unter none einen Zweig durch, wenn .jaira/pr auf der Basis none sagt, jedes genannte Ticket in done/logbook ist und jeder Commit ein Ticket im Betreff nennt (Merges nur, wenn ihr Baum exakt gits eigener Merge der Eltern ist - core/gitrepo/named.go). jaira-role-pr bekommt 'Land it': Gate, Basis mergen, Gate erneut, fast-forward push, nie --force. reap.sh zaehlt unter none einen Zweig als gemerged, sobald der Default-Branch des Ziel-Remotes (origin oder Fork-Parent) seine Spitze enthaelt. Dispatcher/Teamlead erwaehnen none; drei Release-Zeilen.
-  Runde 11: cockpit Accept liest .jaira/pr und landet unter none ohne Forge (Text 'landing', kein noForge); reap.sh nennt ein nicht antwortendes gh als Ursache des Wartens.
+review-summary: "Ein Board kann jetzt in .jaira/pr 'none' sagen (neben person/agent). core/board/arrival.go liest die Datei streng (nur exakt 'none'/'agent', BOM/CRLF/Kommentar toleriert, alles andere person) und haengt bei none/agent einen Absatz 'How work arrives on this board' an den jaira-Block in CLAUDE.md/AGENTS.md; ohne Datei oder bei person bleibt der Block byte-gleich, validate meldet Drift wenn sich die Datei aendert. settings.PRFor/PRIn delegieren dahin und nennen ein Wort, das nicht greift. 'jaira roles pr-gate' laesst unter none (gelesen vom Basis-Zweig) nur durch, wenn jedes Ticket in done/logbook ist und jeder Commit in base..HEAD ein Ticket nennt; ein Merge ohne Ticket nur, wenn sein Tree exakt gits eigener Merge der Eltern ist (gitrepo.UnnamedCommits/isPlainMerge, fail closed). jaira-role-pr bekommt 'Land it': gate, fetch, merge, gate, git push <remote> HEAD:<default>, nie --force; Revert als fix(<ID>): revert. reap.sh zaehlt unter none einen Zweig als gemerged, wenn der Default-Branch der Landestelle (origin bzw. Fork-Parent) seinen Tip enthaelt; Cockpit-Accept startet unter none 'landing' statt PR. Release-Note mit vier Zeilen."
 round: 17
 review-gaps: |-
   note: cockpit Accept (core/mod/builtin/jaira-cockpit/hooks/register.tsx afterAccept) liest .jaira/pr nicht - unter none startet es trotzdem die pr-Rolle (die dann korrekt landet), meldet aber "opening the pull request" (texts.ts:21), und ohne GitHub/GitLab-origin bricht es mit noForge ab, obwohl Landen keinen Forge braucht
