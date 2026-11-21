@@ -23,10 +23,10 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:33:04Z
+updated-at: 2026-11-21T09:36:24Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-2455354
-claimed-at: 2026-11-21T08:56:28Z
+claimed-by: DESKTOP-RFTCH11-3647270
+claimed-at: 2026-11-21T09:36:24Z
 outcome-what: "Round 13: the cockpit recognises a blocker line and an explain class mark also in markdown emphasis."
 outcome-why: "Teamlead for Alex 21.11.: review note 4 - a '**blocker:**' line was listed as a note without Explain."
 outcome-resolves: "review round 12 note 4; claude plugin test 219 pass; go test core/role core/shipped core/lane ok. Checked: input (emphasis, case, list markers, mid-line 'blocker:' stays a note); no concurrency/permission surface (pure parsing)."
