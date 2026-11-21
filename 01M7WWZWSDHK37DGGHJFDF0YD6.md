@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:38:25Z
+updated-at: 2026-11-21T08:38:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
@@ -31,11 +31,7 @@ outcome-what: "Round 5: show --brief carries bughunt {at, on_head} worked out by
 outcome-why: "The fresh review found the Explain status 'bughunt on HEAD' falsely red on clean tickets: the hunt note falls out of the four notes the chat gets, and a master merge moves HEAD past the hunt."
 outcome-resolves: "review blocker DoD 7 and notes 2-3 of round 4; note 4 kept as known limit (see note). Checked: concurrency (read-only git calls), error paths (unknown commit -> on_head false), input (paths with spaces via :(top,literal), CRLF-free note parsing, no files list -> all code), permissions (nothing trusted beyond the ticket's own notes). go test ./... RC=0, -race gitrepo/cli RC=0, claude plugin test 216 pass."
 review-summary: "none"
-review-gaps: |-
-  blocker: DoD 7 - der Statuspunkt 'bughunt on HEAD' ist im ueblichen Fall falsch rot: die Explain-Vorlage (texts.ts:81, spawn.sh:396) laesst ihn aus der neuesten 'bughunt: done at <commit>'-Note lesen, aber die Explain-Chats bekommen nur show --brief mit den 4 neuesten Notes (tickets.go briefNotes=4) und sollen das Ticket nicht nochmal ganz lesen; nach testing-, review- und Worker-Note ist die Hunt-Note draussen - geprueft: bei N71NVG, K6BGB0, V38STG, X3A8RZ (signoff/human) steht in notes_last keine. Ausserdem ist HEAD hier 9d2e0f59 (Upstream-Merge), der Hunt lief auf 553b37f3 -> fail, obwohl seitdem kein Ticket-Code dazukam. Ein rotes Kreuz auf einem sauberen Ticket ist genau das 'muss geaendert werden'-Gefuehl, das das Ticket abschaffen soll. Fix der Klasse: brief traegt die neueste bughunt-done-Zeile als eigenes Feld (unabhaengig von notes_last), und 'on HEAD' gilt auch, wenn git diff <hunt-commit> HEAD keine der Dateien des Hunts beruehrt; Test in loopbrake_test/role_test.
-  note: atATerminal (internal/cli/flow.go:927) - ein Agent-Harness, das Befehle in einem PTY ausfuehrt, schreibt jede Loop-Rueckgabe als by=person; dann erreicht count nie 3 und die Schleifenbremse ist fuer dieses Harness still aus. Im Code als Grenze benannt; ein Satz dazu in 20-in-progress.md waere ehrlich.
-  note: stop-after-fix wird beim Lesen als exakt 'true' verglichen (schema.go decodeFields); von Hand eingetragenes 'True' oder 'yes' liest still als aus - beim Dekodieren ToLower/TrimSpace wie CanonicalStopAfterFix.
-  note: board.ts explainable nimmt fuer ein Verdict frueherer Runde ohne Kopie review.gaps (dann die von optimize) als Blocker-Quelle; harmlos, solange optimize nie mit 'blocker:' beginnt.
+review-gaps: "none - 190a55ec: the only Go reader of 'bughunt: done at' is the new huntDone (grep), git helpers reuse runTolerating/codeOnly, nothing orphaned"
 test-verdict: "pass: round 4 changed only the two Explain prompt sentences and one assertion - claude plugin test 216 pass (rule asserted in 'without Herdr, Explain asks...'), go test core/role core/shipped core/lane RC=0; writes nothing new, so no parallel-writer case"
 hunt-verdict: "pass: follow-up hunt since c8de2b8a at 553b37f3, 0 findings"
 round: 5
