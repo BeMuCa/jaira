@@ -97,6 +97,8 @@ const READ_FRAMES = 20
 const OVERVIEW_ROWS = 3
 // Between the parts of a line: the band's one separator.
 const SEP = ' | '
+// A filter's choice with one item pressed: out if it was in, in if it was not.
+const toggled = (chosen: string[], x: string) => (chosen.includes(x) ? chosen.filter(y => y !== x) : [...chosen, x])
 
 // ── what this module keeps between events (a reload starts it over) ──────
 
@@ -1626,9 +1628,9 @@ export const register: Register = (on, options) => {
       },
       tab: tab => void showTab($, tab),
       fold: key => void update($, overviewFoldedAtom, f => ({ ...f, [key]: !f[key] })),
-      person: name => void update($, overviewPeopleAtom, p => (p.includes(name) ? p.filter(x => x !== name) : [...p, name])),
+      person: name => void update($, overviewPeopleAtom, p => toggled(p, name)),
       everybody: () => void update($, overviewPeopleAtom, () => []),
-      lane: id => void update($, overviewLanesAtom, l => (l.includes(id) ? l.filter(x => x !== id) : [...l, id])),
+      lane: id => void update($, overviewLanesAtom, l => toggled(l, id)),
       allLanes: () => void update($, overviewLanesAtom, () => []),
     }, {
       walkers: await read($, workersAtom),

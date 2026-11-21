@@ -1,7 +1,7 @@
 ---
 id: 01M7ZPP39H62XRS3R59602D92C
 title: "Cockpit-Log: Filter nach Lane, größerer Close-Knopf, ein Zeichen pro Ereignis"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,18 +24,19 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-21T18:42:48Z
-updated-at: 2026-11-21T19:11:40Z
+updated-at: 2026-11-21T19:12:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2284465
 claimed-at: 2026-11-21T19:01:26Z
 outcome-what: "Overview Log: lane filter row (board order, several, AND with people), Close framed in the tab row, 🆕/🔙 sign first on every Log line; manifest + release note"
 outcome-why: "Alex wants to see only e.g. blocked or signoff, hit Close without scrolling, and read an event's kind at a glance"
 outcome-resolves: Log filters only by person; Close is a small word under long lists; created/put back differ only by colour
-review-summary: "core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx:180 filterRow picks its button-key prefix by testing key === 'people' — hidden coupling on a string; pass the prefix ('overview-person' / 'overview-lane') as the parameter instead of deriving it"
+review-summary: "none"
 round: 2
 back-from: critique
 back-by: lane
 back-count: 1
+review-gaps: "folded the person/lane toggle in register.tsx into one toggled() helper (was the same expression twice); left filterRow's three key parameters (people/lanes keys differ in form) and its look parameter (people colour, lanes none)"
 ---
 
 # Cockpit-Log: Filter nach Lane, größerer Close-Knopf, ein Zeichen pro Ereignis
@@ -66,3 +67,4 @@ back-count: 1
 - **2026-11-21 19:04 · Alexander Sacharov** — decision: Close — Button has no size prop in the engine (ButtonProps, 2.1.330), so Close sits in a round-bordered Box beside the tabs with a padded label; key overview-close and label 'Close' stay. Lane filter: buttons in board order (Overview gets the board's lane order), only lanes with events shown, own 'All', keys overview-lane-<lane>/overview-lanes-all, kept in an atom like people. Glyphs: only single code points with Emoji_Presentation (East Asian Wide, no VS16) — 🆕 created, 🔙 put back — because ↩️ (U+21A9+FE0F) is exactly the ambiguous-width class that shifts columns in Windows Terminal; a test holds every kind's glyph to that class.
 - **2026-11-21 19:09 · Alexander Sacharov** — Windows Terminal: no WT screen reachable from this WSL session (WT_SESSION unset), so the 'geprüft' is by width class, not by eye: 🆕 U+1F195 and 🔙 U+1F519 are East_Asian_Width=W with default emoji presentation — WT, conhost-free WSL terminals and Claude Code's string-width all count them 2 cells. The ambiguous class (↩️ = U+21A9+FE0F, ⏪ etc. with VS16) was avoided on purpose. A person should glance at the Log tab in WT at acceptance.
 - **2026-11-21 19:10 · Alexander Sacharov** — critique round 1: overview-pane.tsx filterRow derives the per-button key prefix from key === 'people'; pass the prefix in. Let stand: two 'All' buttons (one per row, distinct keys), view.lanes ?? [] fallback for an Overview kept in $.state from before this change (hot reload keeps state), lanes not on the board sorted last.
+- **2026-11-21 19:11 · Alexander Sacharov** — critique round 2: the round-1 finding (key prefix) is answered in 82cce911; nothing else raised.
