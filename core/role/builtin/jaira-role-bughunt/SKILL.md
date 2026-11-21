@@ -101,6 +101,14 @@ written onto a ticket costs someone an hour to disprove. For each one:
 What is left is a finding: `path:line`, what goes wrong, the input or timing
 that makes it go wrong, and how you confirmed it (`read`, or `ran: <command>`).
 
+**Name the class and the example.** The input that made it go wrong is one
+example; the fault is a class of inputs or a pattern in the code. Say both —
+`class: amounts with a thousands separator; example: "1.234,56" is read as
+1.234`. A finding that names only the example gets a fix for only the example,
+and the next round finds its neighbour. Where the same pattern sits in other
+places, list them in the same finding: one class is one finding, however many
+places carry it.
+
 ## Change or pre-existing
 
 Mark every finding as one of two, and check it — do not guess:
@@ -134,8 +142,8 @@ not.
 on the board. The mark comes first:
 
 ```bash
-jaira note <id> "bughunt: change: internal/store/save.go:88 - two parallel saves both read v3 and the second overwrites the first; ran: go test -run TestParallelSave -count=20 (fails 7/20)"
-jaira note <id> "bughunt: pre-existing: internal/store/load.go:41 - an empty file is read as a ticket with no id; blame: 2f1c0a7 (before the ticket); ran: touch empty.md && jaira list (exit 0, ghost row)"
+jaira note <id> "bughunt: change: internal/store/save.go:88 - class: read-modify-write without a version check, also in archive.go:52; example: two parallel saves both read v3 and the second overwrites the first; ran: go test -run TestParallelSave -count=20 (fails 7/20)"
+jaira note <id> "bughunt: pre-existing: internal/store/load.go:41 - class: a file without frontmatter is accepted as a ticket; example: an empty file is read as a ticket with no id; blame: 2f1c0a7 (before the ticket); ran: touch empty.md && jaira list (exit 0, ghost row)"
 ```
 
 A finding never becomes a ticket of its own from you.
