@@ -76,15 +76,16 @@ move recorded it:
   terminal is recorded as a person too, so on such a harness `count` never
   stops a loop: count the returns from the lane's own notes yourself
 - `count` — how many returns in a row came from that same lane; a person's
-  return, or one from another lane, starts it again at 1
+  return, or one from another lane, starts it again at 1, so two loop lanes
+  that take turns sending it back never reach 3: count those yourself
 
 `by: person` is the person's word, not a loop: do what they asked, whatever
 the count. Their reason is in the newest `Given back from <lane>:` or
 `decision:` note.
 
 `by: lane` with `count` 3 or more means the same lane has sent it back three
-times or more: do not start another round. Move the ticket to the human lane with the question instead —
-the third round's findings, and whether the definition of done is wrong or the
+times or more: do not start another round. Move the ticket to the human lane
+with the question instead — the third round's findings, and whether the definition of done is wrong or the
 loop reads deeper every round without ending:
 
 ```bash
@@ -93,6 +94,11 @@ jaira move <id> --to human --question "testing sent this back three times: <find
 
 A ticket from before jaira recorded this has an empty `from` and `count` 0:
 it counts as no return.
+
+In conversational mode you hand back commit lines instead of committing, so
+the bug hunt reads your work uncommitted; once that work is committed the
+hunt no longer covers HEAD and `bughunt` in `jaira show <id> --brief` reads
+`fail` until the next hunt.
 
 ## Progress notes
 

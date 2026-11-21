@@ -740,7 +740,7 @@ describe('waiting for you', () => {
     // a ticket reviewed before jaira kept the copy has an empty verdict_gaps: its notes stay in review-gaps
     expect(asked).toContain('Where review.verdict_gaps is not empty and differs from review.gaps')
     // the hunt's note has scrolled out of the four newest notes by then: the brief says whether it covers the code
-    expect(asked).toContain("bughunt on HEAD is the brief's bughunt: skipped when bughunt.skipped is true")
+    expect(asked).toContain("bughunt on HEAD ends in the brief's bughunt.state word as it stands")
     for (const cls of ['[blocker]', '[small edge]', '[known limit]', '[not this ticket]']) expect(asked).toContain(cls)
     expect(asked).toContain('[give back]')
     // Nothing reads as "this must be changed" by its shape alone.
@@ -905,6 +905,18 @@ describe('waiting for you', () => {
     const all = await pane.findAll({ type: 'Text' })
     expect(all.filter(x => x.text === '✗ ')).toHaveLength(0)
     expect(all.filter(x => x.text === '✓ ')).toHaveLength(3)
+  })
+
+  test('a hunt nobody can judge is a dim question mark, not a cross', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = CLASSED.replace('bughunt on HEAD fail', 'bughunt on HEAD unknown')
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    const all = await pane.findAll({ type: 'Text' })
+    expect(all.some(x => x.text === '? ' && x.props.dimColor === true)).toBe(true)
+    expect(all.filter(x => x.text === '✗ ')).toHaveLength(0)
+    expect(await pane.find({ type: 'Text', text: 'bughunt on HEAD' })).toBeDefined()
   })
 
   test('a blocker mark is red', async ($, on) => {

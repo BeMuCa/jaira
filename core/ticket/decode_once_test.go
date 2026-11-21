@@ -56,7 +56,8 @@ func decodeBefore(d *Doc, path string) (*Ticket, error) {
 	t.ReviewRound = count(str(FieldReviewRound))
 	t.ReviewVerdictGaps = str(FieldReviewVerdictGaps)
 	t.BlockerRule = str(FieldBlockerRule)
-	stopAfterFix, _ := CanonicalStopAfterFix(str(FieldStopAfterFix))
+	t.StopAfterFixRaw = str(FieldStopAfterFix)
+	stopAfterFix, _ := CanonicalStopAfterFix(t.StopAfterFixRaw)
 	t.StopAfterFix = stopAfterFix == "true"
 	t.BackFrom = str(FieldBackFrom)
 	t.BackBy = str(FieldBackBy)

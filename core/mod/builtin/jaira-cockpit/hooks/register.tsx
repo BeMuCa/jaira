@@ -1521,7 +1521,7 @@ export const register: Register = (on, options) => {
             ? <Box key={`part-${i}`} flexDirection="row" marginBottom={1}><Text wrap="wrap">{p.checks.map((c, j) => (
                 <Text key={`check-${j}`}>
                   {j > 0 ? '   ' : ''}
-                  {c.ok === undefined ? null : <Text color={c.ok ? 'success' : 'error'}>{c.ok ? '✓ ' : '✗ '}</Text>}
+                  {c.unknown ? <Text dimColor>{'? '}</Text> : c.ok === undefined ? null : <Text color={c.ok ? 'success' : 'error'}>{c.ok ? '✓ ' : '✗ '}</Text>}
                   {c.label}
                 </Text>
               ))}</Text></Box>

@@ -16,7 +16,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -320,47 +319,79 @@ func (r *Repo) WorktreeDiff() (string, error) {
 	return b.String(), nil
 }
 
-// ChangedSince reports whether the ticket's own work touched paths after
-// commit: a commit since then that names the ticket and is no merge, or a
-// file not committed and written after hunted, the time the hunt finished.
-// Every commit of a ticket names it (the house rule its commit list is built
-// from), so master merged into the branch — work other people reviewed —
-// does not count, on the branch or after it was merged; what a merge's
-// conflict resolution wrote does not either. The limit of that rule: a
-// commit of this ticket that does not name it is not seen either. A commit
-// that is no ancestor of HEAD — the hunt ran on a branch this checkout does
-// not have — tells nothing and reads as changed. An uncommitted file counts
-// by its time, not by being uncommitted: in conversational mode the worker
-// does not commit, and the hunt read those changes as they were. Board
-// data — everything under .jaira/ but the lane prompts — never counts,
-// tracked or not: a tag, a milestone or a pulled ticket changes no code.
-// Paths are relative to the
-// repository root; none, or one that is neither in commit nor on disk (a
-// file list split at a space inside a name), means all code (codeOnly).
-func (r *Repo) ChangedSince(commit, ticketID string, hunted time.Time, paths []string) (bool, error) {
+// HuntState is what a bug hunt at one commit says about the code now.
+type HuntState int
+
+const (
+	// HuntCovers: nothing the ticket committed since touched what it read,
+	// and nothing it read is changed and not committed.
+	HuntCovers HuntState = iota
+	// HuntStale: a commit of the ticket since then touched what it read, or
+	// this checkout does not descend from the hunt's commit.
+	HuntStale
+	// HuntUnknown: no commit since, but a file it read is changed and not
+	// committed. Whether the hunt saw that change git cannot tell — in
+	// conversational mode the worker commits after the lanes, and the hunt
+	// read the change as it was — so this is neither covered nor stale.
+	HuntUnknown
+)
+
+// HuntCoverage compares commits only, never clocks: a hunt is stale when a
+// commit since then that names the ticket and is no merge touched the paths
+// it read. Every commit of a ticket names it (the house rule its commit list
+// is built from), so master merged into the branch — work other people
+// reviewed — does not count, on the branch or after it was merged; what a
+// merge's conflict resolution wrote does not either. The limit of that rule:
+// a commit of this ticket that does not name it is not seen. A commit that is
+// no ancestor of HEAD — the hunt ran on a branch this checkout does not have
+// — reads as stale. Board data — everything under .jaira/ but the lane
+// prompts — never counts: a tag, a milestone or a pulled ticket changes no
+// code. Paths are relative to the repository root; none, or one that is
+// neither in commit nor on disk (a file list split at a space inside a
+// name), means all code (codeOnly).
+func (r *Repo) HuntCoverage(commit, ticketID string, paths []string) (HuntState, error) {
 	if !ticket.ValidID(ticketID) {
-		return false, fmt.Errorf("gitrepo: %q is no ticket id", ticketID)
+		return HuntStale, fmt.Errorf("gitrepo: %q is no ticket id", ticketID)
 	}
 	if _, err := r.run("rev-parse", "--verify", "--quiet", commit+"^{commit}"); err != nil {
-		return false, fmt.Errorf("gitrepo: no commit %q: %w", commit, err)
+		return HuntStale, fmt.Errorf("gitrepo: no commit %q: %w", commit, err)
 	}
 	if _, err := r.run("merge-base", "--is-ancestor", commit, "HEAD"); err != nil {
-		return true, nil
+		return HuntStale, nil
 	}
 	specs, err := r.huntedSpecs(commit, paths)
 	if err != nil {
-		return false, err
+		return HuntStale, err
 	}
 	own, err := r.run(append([]string{"-c", "core.quotePath=false", "log", "--no-merges", "--format=", "--name-only", "-z", "--extended-regexp", "--regexp-ignore-case", "--grep=" + namesTicket(ticketID), commit + "..HEAD", "--"}, specs...)...)
 	if err != nil {
-		return false, err
+		return HuntStale, err
 	}
-	for _, p := range strings.Split(own, "\x00") {
+	if anyCode(own) {
+		return HuntStale, nil
+	}
+	changed, err := r.run(append([]string{"-c", "core.quotePath=false", "diff", "--name-only", "-z", "HEAD", "--"}, specs...)...)
+	if err != nil {
+		return HuntStale, err
+	}
+	others, err := r.run(append([]string{"-c", "core.quotePath=false", "ls-files", "--others", "--exclude-standard", "--full-name", "-z", "--"}, specs...)...)
+	if err != nil {
+		return HuntStale, err
+	}
+	if anyCode(changed) || anyCode(others) {
+		return HuntUnknown, nil
+	}
+	return HuntCovers, nil
+}
+
+// anyCode reports a path in git's NUL-separated list that is no board data.
+func anyCode(list string) bool {
+	for _, p := range strings.Split(list, "\x00") {
 		if p = strings.TrimSpace(p); p != "" && !isBoardData(p) {
-			return true, nil
+			return true
 		}
 	}
-	return r.writtenSince(hunted, specs)
+	return false
 }
 
 // isBoardData reports a path under .jaira/ that is no lane prompt: tickets,
@@ -381,37 +412,6 @@ func isBoardData(p string) bool {
 		}
 	}
 	return true
-}
-
-// writtenSince reports a file inside specs that is not committed — changed
-// against HEAD, or untracked — and no board data, written after t. A
-// tracked file deleted since HEAD has no time and counts.
-func (r *Repo) writtenSince(t time.Time, specs []string) (bool, error) {
-	root, err := r.Root()
-	if err != nil {
-		return false, err
-	}
-	changed, err := r.run(append([]string{"-c", "core.quotePath=false", "diff", "--name-only", "-z", "HEAD", "--"}, specs...)...)
-	if err != nil {
-		return false, err
-	}
-	others, err := r.run(append([]string{"-c", "core.quotePath=false", "ls-files", "--others", "--exclude-standard", "--full-name", "-z", "--"}, specs...)...)
-	if err != nil {
-		return false, err
-	}
-	var paths []string
-	for _, p := range strings.Split(changed+"\x00"+others, "\x00") {
-		if p != "" && !isBoardData(p) {
-			paths = append(paths, p)
-		}
-	}
-	for _, p := range paths {
-		fi, err := os.Stat(filepath.Join(root, filepath.FromSlash(p)))
-		if err != nil || fi.ModTime().After(t) {
-			return true, nil
-		}
-	}
-	return false, nil
 }
 
 // huntedSpecs turns a hunt's file list into pathspecs: each one literal, or

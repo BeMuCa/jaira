@@ -795,11 +795,12 @@ thinking they have seen everything.
 
 --brief prints one line of JSON with only what a chat about the ticket needs:
 id, title, goal, question, review, the newest finished bug hunt as bughunt
-(its commit; on_head: no commit naming the ticket since, and no file
-written since and not committed, touched the files it read; skipped: the
-ticket sets stop-after-fix and the hunt does not cover HEAD; null without
-a finished hunt, except on a stop-after-fix ticket, where it is skipped with
-an empty at), the newest four notes as notes_last and how many
+(at: its commit; state: ok when no commit naming the ticket since touched
+the files it read, fail when one did, unknown when a file it read is changed
+and not committed - in conversational mode, committing the hunted work after
+the hunt turns it fail until the next hunt - and skipped on a stop-after-fix
+ticket whose hunt does not cover HEAD; null without a finished hunt, except
+on a stop-after-fix ticket, where it is skipped with an empty at), the newest four notes as notes_last and how many
 there are as notes_total.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -886,20 +887,24 @@ func ticketBrief(j map[string]any, body string, hunt *huntState) any {
 	}{j["handle"], j["title"], j["goal"], j["question"], j["review"], hunt, last, len(notes)}
 }
 
-// huntState is the newest finished bug hunt: the commit it ran at, and
-// whether it still covers the code — nothing this branch did since touched
-// the files it read. A chat handed four notes cannot work that out: the hunt's
-// note has scrolled out of them by the time a ticket waits for a person, and
-// a merge from master moves HEAD past the hunt's commit without changing
-// anything it read.
+// huntState is the newest finished bug hunt: the commit it ran at, and what
+// it says about the code now. A chat handed four notes cannot work that out:
+// the hunt's note has scrolled out of them by the time a ticket waits for a
+// person, and a merge from master moves HEAD past the hunt's commit without
+// changing anything it read. State is one of:
 //
-// Skipped marks a hunt left out on purpose: the ticket sets stop-after-fix,
-// so a fix round runs its tests and no hunt, and a hunt that no longer covers
-// the code — or none at all — is the choice the ticket made, not a fault.
+//   - ok: nothing the ticket committed since touched the files it read
+//   - fail: a commit of the ticket since then did, or this checkout does not
+//     contain the hunt's commit
+//   - unknown: no such commit, but a file it read is changed and not
+//     committed — git cannot tell whether the hunt saw that change; also
+//     when git cannot answer at all. Never drawn red: no clock is read
+//   - skipped: the ticket sets stop-after-fix, so a fix round runs its tests
+//     and no hunt — a hunt that no longer covers the code, or none at all,
+//     is the choice the ticket made, not a fault
 type huntState struct {
-	At      string `json:"at"`
-	OnHead  bool   `json:"on_head"`
-	Skipped bool   `json:"skipped"`
+	At    string `json:"at"`
+	State string `json:"state"`
 }
 
 // huntDone is the closing line a bug hunt writes: "bughunt: done at <commit>
@@ -907,19 +912,25 @@ type huntState struct {
 // it read; without one the hunt is taken to have read all code.
 var huntDone = regexp.MustCompile(`^bughunt: done at ([0-9a-f]{7,40})\b`)
 
-// lastHunt reads the newest hunt off the notes, nil when none finished. A
-// commit git does not know — rebased away, never fetched — is not on HEAD,
-// and neither is one this checkout's HEAD does not descend from.
+// lastHunt reads the newest hunt off the notes, nil when none finished and
+// the ticket does not set stop-after-fix.
 func lastHunt(repo *gitrepo.Repo, t *ticket.Ticket) *huntState {
 	h := newestHunt(repo, t)
-	if t.StopAfterFix && (h == nil || !h.OnHead) {
+	if t.StopAfterFix && (h == nil || h.State == huntFail) {
 		if h == nil {
 			h = &huntState{}
 		}
-		h.Skipped = true
+		h.State = huntSkipped
 	}
 	return h
 }
+
+const (
+	huntOK      = "ok"
+	huntFail    = "fail"
+	huntUnknown = "unknown"
+	huntSkipped = "skipped"
+)
 
 func newestHunt(repo *gitrepo.Repo, t *ticket.Ticket) *huntState {
 	notes := ticket.Notes(t.Body)
@@ -933,8 +944,15 @@ func newestHunt(repo *gitrepo.Repo, t *ticket.Ticket) *huntState {
 		if at := strings.LastIndex(text, "files: "); at >= 0 {
 			files = strings.Fields(text[at+len("files: "):])
 		}
-		changed, err := repo.ChangedSince(m[1], t.ID, notes[i].At, files)
-		return &huntState{At: m[1], OnHead: err == nil && !changed}
+		state, err := repo.HuntCoverage(m[1], t.ID, files)
+		switch {
+		case err != nil || state == gitrepo.HuntUnknown:
+			return &huntState{At: m[1], State: huntUnknown}
+		case state == gitrepo.HuntStale:
+			return &huntState{At: m[1], State: huntFail}
+		default:
+			return &huntState{At: m[1], State: huntOK}
+		}
 	}
 	return nil
 }

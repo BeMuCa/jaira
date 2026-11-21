@@ -390,6 +390,9 @@ type Ticket struct {
 	BlockerRule string
 	// StopAfterFix: a fix round runs the tests only, no new bug hunt.
 	StopAfterFix bool
+	// StopAfterFixRaw is stop-after-fix as written, for validate to name a
+	// value that reads as off without anybody meaning it ("yes").
+	StopAfterFixRaw string
 	// BackFrom, BackBy and BackCount describe the last send-back; empty and 0
 	// when none was recorded.
 	BackFrom  string
@@ -788,7 +791,8 @@ func decodeFields(d *Doc, f *Fields, path string) (*Ticket, error) {
 	t.ReviewRound = count(str(FieldReviewRound))
 	t.ReviewVerdictGaps = str(FieldReviewVerdictGaps)
 	t.BlockerRule = str(FieldBlockerRule)
-	stopAfterFix, _ := CanonicalStopAfterFix(str(FieldStopAfterFix))
+	t.StopAfterFixRaw = str(FieldStopAfterFix)
+	stopAfterFix, _ := CanonicalStopAfterFix(t.StopAfterFixRaw)
 	t.StopAfterFix = stopAfterFix == "true"
 	t.BackFrom = str(FieldBackFrom)
 	t.BackBy = str(FieldBackBy)

@@ -199,24 +199,22 @@ func TestBriefCarriesTheHunt(t *testing.T) {
 			t.Fatalf("note: %v\n%s", err, out)
 		}
 	}
-	if got, _ := hunt().(map[string]any); got["at"] != at || got["on_head"] != true {
-		t.Errorf("right after the hunt: %v, want at %s, on_head true", got, at)
+	state := func(want, when string) {
+		t.Helper()
+		if got, _ := hunt().(map[string]any); got["at"] != at || got["state"] != want {
+			t.Errorf("%s: %v, want at %s, state %s", when, got, at, want)
+		}
 	}
+	state("ok", "right after the hunt")
 	edit("a2")
-	if got, _ := hunt().(map[string]any); got["on_head"] != false || got["skipped"] != false {
-		t.Errorf("after an edit to a hunted file: %v, want on_head false, not skipped", got)
-	}
+	state("unknown", "a hunted file changed, not committed")
+	git("commit", "-q", "-am", "fix("+h+"): a2")
+	state("fail", "a ticket commit on a hunted file")
 	// stop-after-fix: a fix round runs no hunt by choice - skipped, not a fault
 	if out, err := runCLI(t, dir, "set", h, "stop-after-fix=true"); err != nil {
 		t.Fatalf("set: %v\n%s", err, out)
 	}
-	if got, _ := hunt().(map[string]any); got["on_head"] != false || got["skipped"] != true {
-		t.Errorf("stop-after-fix after an edit: %v, want skipped", got)
-	}
-	edit("a")
-	if got, _ := hunt().(map[string]any); got["on_head"] != true || got["skipped"] != false {
-		t.Errorf("stop-after-fix with the hunt on HEAD: %v, want on_head true, not skipped", got)
-	}
+	state("skipped", "stop-after-fix after a ticket commit")
 }
 
 // A ticket that runs no hunt after a fix and has none yet reads skipped.
@@ -236,7 +234,7 @@ func TestBriefSkipsTheHuntOnStopAfterFix(t *testing.T) {
 	if err := json.Unmarshal([]byte(out[strings.Index(out, "{"):]), &b); err != nil {
 		t.Fatalf("brief is no JSON: %v\n%s", err, out)
 	}
-	if got, _ := b["bughunt"].(map[string]any); got["skipped"] != true || got["on_head"] != false {
+	if got, _ := b["bughunt"].(map[string]any); got["state"] != "skipped" || got["at"] != "" {
 		t.Errorf("bughunt is %v, want skipped", b["bughunt"])
 	}
 }

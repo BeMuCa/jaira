@@ -307,7 +307,8 @@ export function explanationNotes(showJson: string): { text: string; decided?: st
 export type Action = 'giveBack' | 'accept'
 export type Option = { key: string; text: string; action?: Action }
 export type NoteClass = 'blocker' | 'edge' | 'limit' | 'elsewhere'
-export type Check = { label: string; ok?: boolean }
+// unknown: the check could not be decided - drawn as a dim '?', never red.
+export type Check = { label: string; ok?: boolean; unknown?: true }
 export type Part =
   | { kind: 'text'; text: string }
   | ({ kind: 'option' } & Option)
@@ -328,6 +329,7 @@ const CLASSES: Record<string, NoteClass> = {
 }
 const PASSED = /^(ok|pass|yes|ja|✓)$/i
 const FAILED = /^(fail|no|nein|✗)$/i
+const UNKNOWN = /^(unknown|unbekannt|\?)$/i
 
 // One check of the status line: its last word says whether it passed, and
 // is drawn as the mark instead; a check with neither word is shown as is.
@@ -336,6 +338,7 @@ function checkOf(segment: string): Check {
   const last = words[words.length - 1] ?? ''
   if (words.length > 1 && PASSED.test(last)) return { label: words.slice(0, -1).join(' '), ok: true }
   if (words.length > 1 && FAILED.test(last)) return { label: words.slice(0, -1).join(' '), ok: false }
+  if (words.length > 1 && UNKNOWN.test(last)) return { label: words.slice(0, -1).join(' '), unknown: true }
   return { label: segment.trim() }
 }
 
