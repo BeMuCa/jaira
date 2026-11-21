@@ -2151,6 +2151,18 @@ describe('give back with the review notes', () => {
     expect((await rows(await openPane($)))[2]).toBe('[accept] [known limit] note: pre-existing: the log rotates at midnight UTC')
   })
 
+  test('a blocker: line stays a blocker whatever class the Explain note gives its position', async ($, on) => {
+    const w = withGaps(on, GAPS)
+    // Every note classed, so position counts - but the first is a known limit there.
+    w.bodies.MG677R = '## Progress\n- **2026-11-21 10:00 · Alex** — explain: Status: DoD 3/3 ok\n[known limit] the header\n[small edge] the size\n[known limit] the clock\n'
+    await startSession($)
+    expect(await rows(await openPane($))).toEqual([
+      '[fix now] [blocker] blocker: DoD 2 - an empty export still writes a header',
+      '[accept] note: the export test covers 1MB, not 40MB',
+      '[accept] [known limit] note: pre-existing: the log rotates at midnight UTC',
+    ])
+  })
+
   test('an Explain note that classes fewer notes than the review wrote is not matched by position', async ($, on) => {
     const w = withGaps(on, GAPS)
     w.bodies.MG677R = '## Progress\n- **2026-11-21 10:00 · Alex** — explain: Status: DoD 3/3 ok\n[known limit] the clock\n'
@@ -2323,8 +2335,8 @@ describe('give back with the review notes', () => {
     ])
   })
 
-  test('the band\'s Accept accepts at once without a blocker, an Explain note that calls a blocker a small edge included', async ($, on) => {
-    const w = withGaps(on, 'blocker: the header')
+  test('the band\'s Accept accepts at once without a blocker', async ($, on) => {
+    const w = withGaps(on, 'note: the header')
     w.bodies.MG677R = '## Progress\n- **2026-11-21 10:00 · Alex** — explain: Status: DoD 3/3 ok\n[small edge] the header\n'
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
@@ -2332,13 +2344,15 @@ describe('give back with the review notes', () => {
     expect(w.opened.map(o => o.id)).not.toContain('cockpit-give-back')
   })
 
-  // A blocker by its prefix, in markdown, or by the Explain note's class.
+  // A blocker by its prefix, in markdown, or by the Explain note's class;
+  // a 'blocker:' line the Explain note calls a small edge stays a blocker.
   for (const [gaps, explain] of [
     ['blocker: the header', ''],
+    ['blocker: the header', '[small edge] the header'],
     ['- **Blocker:** the header\nnote: the size', ''],
     ['note: the header\nnote: the size', '[blocker] the header\n[small edge] the size'],
   ] as const) {
-    test(`the band's Accept with a blocker in the review opens the notes and moves nothing: ${JSON.stringify(gaps)}`, async ($, on) => {
+    test(`the band's Accept with a blocker in the review opens the notes and moves nothing: ${JSON.stringify(gaps)}${explain === '' ? '' : ` (Explain: ${JSON.stringify(explain)})`}`, async ($, on) => {
       const w = withGaps(on, gaps)
       if (explain !== '') w.bodies.MG677R = `## Progress\n- **2026-11-21 10:00 · Alex** — explain: Status: DoD 3/3 ok\n${explain}\n`
       await startSession($)

@@ -659,7 +659,9 @@ const PRESELECTED: Record<NoteClass, Choice> = { blocker: 'now', edge: 'accept',
 // at all; an older review's gaps, without them, are a finding per line.
 // The class comes from the prefix, unless the Explain note classes exactly
 // as many notes as there are findings: then its classes count, in order,
-// which is where a known limit comes from. A note decided before, word for
+// which is where a known limit comes from. A 'blocker:' line stays a blocker
+// whatever the Explain note says at its position: matching by position may
+// be off, and a blocker read as a known limit would be accepted unseen. A note decided before, word for
 // word, starts as it was decided. The acceptance rule: a finding classed
 // wrong is better than one lost or two merged — no line of the gaps but a
 // "none" ever drops out.
@@ -673,7 +675,7 @@ export function gapItems(gaps: string | undefined, explainText?: string, decided
   }
   const explained = explainText === undefined ? [] : explanationOf(explainText).parts.flatMap(p => (p.kind === 'note' ? [p.cls] : []))
   return texts.map((text, i) => {
-    const cls: NoteClass = explained.length === texts.length ? explained[i]! : BLOCKER.test(text) ? 'blocker' : PRE_EXISTING.test(text) ? 'elsewhere' : 'edge'
+    const cls: NoteClass = BLOCKER.test(text) ? 'blocker' : explained.length === texts.length ? explained[i]! : PRE_EXISTING.test(text) ? 'elsewhere' : 'edge'
     const earlier = decided?.get(text)
     if (earlier === undefined) return { text, cls, choice: PRESELECTED[cls] }
     return { text, cls, choice: earlier.choice, earlier: earlier.choice, ...(earlier.follow !== undefined ? { follow: earlier.follow } : {}) }
