@@ -116,7 +116,9 @@ work, so a hunt that does not name the head was not done there, and that is ❌.
 - **bug hunt on HEAD** — the last `— bughunt: done at <sha> ` note names
   `$head` — the note's sha is a prefix of the full `$head`, whatever length
   either clone abbreviates to. An older sha does not cover what a later
-  round changed: ❌
+  round changed: ❌. A ticket whose diff touches nothing outside `.jaira/`
+  has nothing to hunt: `–`, which counts as neither ✅ nor ❌ — the same
+  exemption the teamlead and the testing lane make
 - **blocker** — none, or how many 🔴 the table below holds
 - **review** — `.review.verdict`
 - **returns from signoff** — how many are noted (see return rule 2)
