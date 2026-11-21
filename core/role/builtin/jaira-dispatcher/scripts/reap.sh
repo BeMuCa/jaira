@@ -132,6 +132,8 @@ fi
 # as closed, it would cost the worktree and the record of a tab still open.
 herdr_up=""; "$herdr" tab list >/dev/null 2>&1 && herdr_up=1
 
+field() { sed -n "s/^$1=//p" "$2" | head -1; }
+
 # A worker's tab parked in a person's lane (close-tab.sh wrote parked= into
 # its record) stays while its prompt cache is warm, so a give-back reaches it.
 # close-tab.sh --reap holds the rule when it closes: once the ticket is done or
@@ -140,12 +142,11 @@ herdr_up=""; "$herdr" tab list >/dev/null 2>&1 && herdr_up=1
 if [ -n "$herdr_up" ]; then
   for f in "$panes"/*; do
     [ -f "$f" ] && grep -q '^parked=' "$f" || continue
-    pane="$(sed -n 's/^pane=//p' "$f" | head -1)"
+    pane="$(field pane "$f")"
     [ "$pane" != "${HERDR_PANE_ID:-${HC_TERMINAL_ID:-}}" ] || continue
-    w="$(sed -n 's/^worktree=//p' "$f" | head -1)"
+    w="$(field worktree "$f")"
     [ -d "$w" ] || w="$root"
-    "$here/close-tab.sh" ${dry:+--dry-run} --reap --pane "$pane" \
-      "$(sed -n 's/^ticket=//p' "$f" | head -1)" "$w" || true
+    "$here/close-tab.sh" ${dry:+--dry-run} --reap --pane "$pane" "$(field ticket "$f")" "$w" || true
   done
 fi
 # Physical paths throughout: on macOS the temp directory is a symlink, and git
@@ -284,7 +285,6 @@ else
 fi
 rm -f "$prerr"
 
-field() { sed -n "s/^$1=//p" "$2" | head -1; }
 
 # A worker passes its slug, in lower case, where a teamlead passes the handle:
 # both name the same ticket. No associative array: macOS still ships bash 3.2.

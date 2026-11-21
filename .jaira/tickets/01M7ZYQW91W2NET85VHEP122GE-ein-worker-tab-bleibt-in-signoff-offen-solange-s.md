@@ -1,7 +1,7 @@
 ---
 id: 01M7ZYQW91W2NET85VHEP122GE
 title: "Ein Worker-Tab bleibt in signoff offen, solange sein Cache warm ist, damit ein Give back ihn weiterverwendet"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -18,18 +18,19 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-21T21:03:35Z
-updated-at: 2026-11-21T21:11:48Z
+updated-at: 2026-11-21T21:12:44Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2835032
 claimed-at: 2026-11-21T21:04:38Z
 outcome-what: "close-tab.sh parks a worker's tab in signoff/human (parked=<epoch> in its spawn.sh record) instead of closing; closes at once only in done. reap.sh hands every parked record to close-tab.sh --reap --pane, which closes after JAIRA_CACHE_WINDOW (default 3600 s), on done or filed away, and keeps a working tab or a ticket given back. Skill texts of worker, dispatcher, teamlead say so; release note; shipped.sha256."
 outcome-why: "Since 0.5.15 every give-back from signoff started a new worker that re-read 100-200k of context; the cockpit's same-worker rule found no live tab."
 outcome-resolves: "DoD 1-3: the tab stays while the cache is warm, the next reap closes it after the window or on done, release note and manifest. Four categories: concurrent park/reap via atomic rename and reap.lock, missing record/sed failure keep the tab, odd pane ids sanitized as spawn.sh does, no new trust."
-review-summary: "core/role/builtin/jaira-teamlead/SKILL.md: the sentence 'and whatever is left when it finds the ticket done and its pull request merged' has lost its verb — say 'and closes whatever is left once it finds ...'. Shape otherwise stands: one rule in close-tab.sh, reap only finds parked records (decision note); no simpler carrier for the last-answer time exists in bash than the spawn.sh record."
+review-summary: "none"
 round: 2
 back-from: critique
 back-by: lane
 back-count: 1
+review-gaps: "reap.sh: the parked pass reads its record through the existing field() (moved up beside herdr_up) instead of three inline seds; close-tab.sh: terminal is set in the same lane-flag loop instead of a second jaira json get. Left: the pane-to-record name (tr -c 'A-Za-z0-9_.-' '_') is written in spawn.sh and repeated in close-tab.sh - one line, two scripts, no shared lib between them today."
 ---
 
 # Ein Worker-Tab bleibt in signoff offen, solange sein Cache warm ist, damit ein Give back ihn weiterverwendet

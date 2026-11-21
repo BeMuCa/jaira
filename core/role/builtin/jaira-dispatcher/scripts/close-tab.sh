@@ -122,9 +122,9 @@ for i in $(seq 0 99); do
   [ -n "$id" ] || break
   [ "$id" = "$lane" ] || continue
   for k in human_exit requires_question terminal; do
-    [ "$(jaira json get "lanes.$i.$k" --default false <<<"$lanes")" = true ] && persons=1
+    [ "$(jaira json get "lanes.$i.$k" --default false <<<"$lanes")" = true ] || continue
+    persons=1; [ "$k" != terminal ] || terminal=1
   done
-  [ "$(jaira json get "lanes.$i.terminal" --default false <<<"$lanes")" = true ] && terminal=1
   break
 done
 [ -n "$persons$terminal" ] || kept "the ticket is in $lane, not with a person"
