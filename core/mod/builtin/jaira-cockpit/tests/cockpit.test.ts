@@ -114,9 +114,9 @@ describe('session.receive', () => {
       want: SHORT('55CS2M · testing → human · sent back · notes 2'),
     },
     {
-      name: 'a question in the verdict is shown once, a question elsewhere still is',
+      name: 'a question in the verdict is shown twice (known limit), never dropped',
       text: 'jaira: 55CS2M critique -> human · verdict: approve · question: shall we?',
-      want: SHORT('55CS2M · critique → human · approve · question: shall we?'),
+      want: SHORT('55CS2M · critique → human · approve · question: shall we? · question: shall we?'),
     },
     {
       name: 'an open question above the status line is kept',
@@ -129,9 +129,9 @@ describe('session.receive', () => {
       want: SHORT('55CS2M · critique → human · approve · notes 1 · question: keep cache?'),
     },
     {
-      name: 'a quoted copy of the line above it: the question once',
-      text: '> jaira: 55CS2M critique -> human · verdict: question: keep cache?\njaira: 55CS2M critique -> human · verdict: question: keep cache?',
-      want: SHORT('55CS2M · critique → human · question: keep cache?'),
+      name: 'a short question equal to a shown field is still shown',
+      text: 'Frage: 1\njaira: 55CS2M critique -> human · notes: 1 · verdict: approve',
+      want: SHORT('55CS2M · critique → human · approve · notes 1 · question: 1'),
     },
     {
       name: 'a verdict clipped before its question ends: the question in full beside it',

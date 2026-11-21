@@ -172,9 +172,10 @@ export function digest(text: string): { ticket: string; line: string } | undefin
         status.notes === undefined ? undefined : `${words.notes} ${status.notes}`,
       ].map(p => (p === undefined ? undefined : clip(p, 60)))
     : [ticket, laneOf(text), verdictOf(text)]
-  // A question the status line's verdict already shows is not shown twice.
+  // A question inside the status line's verdict is shown twice, once there
+  // and once here: a known limit, chosen over a dedupe that lost questions.
   const question = questionOf(text)
-  if (question !== undefined && !parts.some(p => p?.includes(question))) parts.push(`${words.question}: ${question}`)
+  if (question !== undefined) parts.push(`${words.question}: ${question}`)
   const line = parts.filter(p => p !== undefined).join(' · ')
   return { ticket, line: `${words.marker} ${line} — ${words.fullReport}: /cockpit report ${ticket}` }
 }
