@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T09:26:59Z
+updated-at: 2026-11-21T09:27:03Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2485785
 claimed-at: 2026-11-21T08:57:23Z
@@ -34,7 +34,7 @@ outcome-why: "bughunt 09:22: a lower-case handle or no found commit made an unhu
 outcome-resolves: "– only for a ticket proven to touch nothing but .jaira/; unknown stays ?"
 review-summary: "critique 21.11. round 10: exemption now needs positive evidence, matching jaira's own case-insensitive derivation; unknown stays ?. Nothing to change."
 round: 18
-review-gaps: "optimize 21.11. round 9: nothing to remove."
+review-gaps: "optimize 21.11. round 10: nothing to remove."
 test-verdict: "fail: gates green at 033e06a7; bughunt 09:22 change: exemption scan case-sensitive and vacuously true when no commit is found"
 hunt-verdict: "change: 1 finding at 033e06a7 (vacuous – exemption)"
 question: ""
