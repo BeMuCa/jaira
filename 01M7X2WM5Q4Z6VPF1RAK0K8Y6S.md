@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:16:37Z
+updated-at: 2026-11-21T08:16:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
@@ -30,7 +30,7 @@ review-summary: "Runde 3 nach signoff: keine Funde. 53926c5f folgt der Form des 
 round: 8
 review-gaps: "none: 53926c5f ersetzt eine Zeile durch zwei, das cut in der Pipe faellt weg; nichts verwaist"
 test-verdict: "pass: go build ./... und go test ./... gruen (rc=0) auf 53926c5f; DoD 1-8 im Baum belegt; TestFileMissingFromDiskStopsTheScript rot ohne Fix, gruen mit; Manifest durch den Fix unveraendert, --check gruen auf 34 Tags"
-hunt-verdict: "pass: bughunt done at 29ee4690, 0 change, 0 pre-existing (Runde davor: 1 change, Duplikate nach union-Merge, behoben in 29ee4690)"
+hunt-verdict: "pass: bughunt done at 53926c5f, 0 change, 0 pre-existing"
 review-verdict: "All 7 DoD items are met, and I checked them myself: --check passes on all 34 tags; a regenerated manifest is byte-identical to the committed one; no line of the master manifest was lost and none is duplicated; master's manifest lacked the v0.5.2 board.ts hash, so the new test would have failed there; go test ./core/shipped ./core/role ./core/lane passes. No blocker. Error paths (shallow clone, no tags, unreadable tag or blob, a failed --write) stop the script and leave the manifest untouched. Not verified: shellcheck (not installed here) and whether GitHub honours merge=union server-side."
 review-round: 7
 review-check: "1. cd into the repository on branch feat/0k8y6s  2. run: scripts/shipped-history.sh --check  -> it prints 'every version in 34 v* tag(s) is in core/shipped/shipped.sha256' and exits 0  3. run: git show master:core/shipped/shipped.sha256 | grep -c a06a3c1cb1b4  -> 0 (master lacks the v0.5.2 board.ts); the same grep on core/shipped/shipped.sha256 -> 1  4. run: go test ./core/shipped/ ./core/role/ -run 'TestCheck|TestWrite|TestUnreadable|TestManifestMerges|TestInstallReplacesAnOlderShippedVersion' -v  -> every case PASS, including 'cockpit_board.ts_v0.5.2'  5. open .github/workflows/ci.yaml -> a job shipped-manifest runs scripts/shipped-history.sh --check; .github/workflows/release-notes.yaml runs it before 'Push release/<version>'"
