@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:27:46Z
+updated-at: 2026-11-21T08:27:50Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
@@ -31,7 +31,11 @@ outcome-what: "Round 3 as before, plus: both Explain prompts read verdict_gaps o
 outcome-why: "The round-3 bug hunt found the prompts took an empty verdict_gaps on every older reviewed ticket as an earlier-round verdict and reported no notes and 'blockers ok'."
 outcome-resolves: "bughunt change at c8de2b8a (texts.ts:79, spawn.sh:396); claude plugin test 216 pass with the rule asserted; go test core/role core/shipped core/lane RC=0."
 review-summary: "Ein Ticket traegt jetzt blocker-rule (ein Satz, leer = falsches Ergebnis/Datenverlust/Absturz/Sicherheitsluecke) und stop-after-fix (true/false, jaira set lehnt anderes mit Exit 2 ab); show --json und der --for-lane-Payload geben blocker_rule, stop_after_fix, round und back aus, und testing, review, pre-process und die bughunt-Rolle lesen sie. jaira move schreibt bei jedem Rueckweg back-from, back-by (person: Lane einer Person, jeder Move aus der TUI, oder jaira move an einem Terminal mit stdin+stdout als TTY; sonst lane) und back-count (Rueckgaben in Folge aus derselben Lane, eine Person setzt auf 1); in-progress stoppt bei by=lane und count>=3 statt Notes zu zaehlen. jaira set kopiert review-gaps nach review-verdict-gaps, solange Verdict und Gaps derselben Runde gehoeren, damit ein stehengebliebenes Verdict seine Funde behaelt. CR/CRLF in jedem Frontmatter-Wert wird als LF gespeichert. Im Cockpit gibt es Explain nur noch fuer eine blocker:-Zeile oder ein Verdict mit Vorbehalt, die uebrigen Notes stehen ohne Knopf unter der Zeile, ein Verdict frueherer Runde sagt 'review of round N, changed since' und behaelt Explain; die Explain-Vorlage (texts.ts und spawn.sh) verlangt Statuszeile, eine [Klasse]-Zeile je Note und eine Empfehlung ohne feste Reihenfolge, und das Pane faerbt Haken/Kreuze, Klassenmarken und die Empfehlung mit Theme-Farben; alte Notes bleiben Text."
-review-gaps: "none - 553b37f3 changes two prompt sentences and one assertion"
+review-gaps: |-
+  blocker: DoD 7 - der Statuspunkt 'bughunt on HEAD' ist im ueblichen Fall falsch rot: die Explain-Vorlage (texts.ts:81, spawn.sh:396) laesst ihn aus der neuesten 'bughunt: done at <commit>'-Note lesen, aber die Explain-Chats bekommen nur show --brief mit den 4 neuesten Notes (tickets.go briefNotes=4) und sollen das Ticket nicht nochmal ganz lesen; nach testing-, review- und Worker-Note ist die Hunt-Note draussen - geprueft: bei N71NVG, K6BGB0, V38STG, X3A8RZ (signoff/human) steht in notes_last keine. Ausserdem ist HEAD hier 9d2e0f59 (Upstream-Merge), der Hunt lief auf 553b37f3 -> fail, obwohl seitdem kein Ticket-Code dazukam. Ein rotes Kreuz auf einem sauberen Ticket ist genau das 'muss geaendert werden'-Gefuehl, das das Ticket abschaffen soll. Fix der Klasse: brief traegt die neueste bughunt-done-Zeile als eigenes Feld (unabhaengig von notes_last), und 'on HEAD' gilt auch, wenn git diff <hunt-commit> HEAD keine der Dateien des Hunts beruehrt; Test in loopbrake_test/role_test.
+  note: atATerminal (internal/cli/flow.go:927) - ein Agent-Harness, das Befehle in einem PTY ausfuehrt, schreibt jede Loop-Rueckgabe als by=person; dann erreicht count nie 3 und die Schleifenbremse ist fuer dieses Harness still aus. Im Code als Grenze benannt; ein Satz dazu in 20-in-progress.md waere ehrlich.
+  note: stop-after-fix wird beim Lesen als exakt 'true' verglichen (schema.go decodeFields); von Hand eingetragenes 'True' oder 'yes' liest still als aus - beim Dekodieren ToLower/TrimSpace wie CanonicalStopAfterFix.
+  note: board.ts explainable nimmt fuer ein Verdict frueherer Runde ohne Kopie review.gaps (dann die von optimize) als Blocker-Quelle; harmlos, solange optimize nie mit 'blocker:' beginnt.
 test-verdict: "pass: round 4 changed only the two Explain prompt sentences and one assertion - claude plugin test 216 pass (rule asserted in 'without Herdr, Explain asks...'), go test core/role core/shipped core/lane RC=0; writes nothing new, so no parallel-writer case"
 hunt-verdict: "pass: follow-up hunt since c8de2b8a at 553b37f3, 0 findings"
 round: 4
