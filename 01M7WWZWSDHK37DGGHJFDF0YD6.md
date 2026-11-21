@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:52:00Z
+updated-at: 2026-11-21T09:52:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3647270
 claimed-at: 2026-11-21T09:36:24Z
@@ -31,7 +31,7 @@ outcome-what: "Round 16: without git, outside a repository or before the first c
 outcome-why: "The round-15 hunter showed e1363ba1 turned every git failure into fail, so a board outside git would show 'bughunt on HEAD fail' forever."
 outcome-resolves: "bughunt change at e1363ba1; go test core/gitrepo internal/cli ok."
 review-summary: "none"
-review-gaps: none - one early return changed
+review-gaps: none - one guard added
 test-verdict: "pass: go test -count=1 ./... RC=0 at e1363ba1; a hunt at a missing commit reads fail (gitrepo and CLI tests)"
 hunt-verdict: "fail: 1 change finding at e1363ba1 - no git / no repository read fail instead of unknown"
 round: 16
