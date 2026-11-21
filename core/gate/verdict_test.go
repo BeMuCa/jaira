@@ -131,7 +131,6 @@ func TestLaneWithoutVerdictWordsReadsNothing(t *testing.T) {
 func TestSendBackVerdictHasNoWayAround(t *testing.T) {
 	for _, c := range []struct{ from, verdict, want string }{
 		{"blocked", "send-back: DoD 2", CodeVerdictSendBack},
-		{"blocked", "looks fine", CodeVerdictUnknown},
 		{"in-progress", "send-back: DoD 2", CodeVerdictSendBack},
 		{"testing", "send back", CodeVerdictSendBack},
 	} {
@@ -147,6 +146,12 @@ func TestSendBackVerdictHasNoWayAround(t *testing.T) {
 	tk.Status = "blocked"
 	if got := verdictViolations(CheckAdvance(testEnv(t), tk, Request{To: "review", Actor: "a"})); len(got) != 0 {
 		t.Errorf("blocked → review refused on the verdict: %v", got)
+	}
+	// Parked from sign-off with a verdict older than the words: it returns.
+	tk = reviewed("pass: looks good")
+	tk.Status = "blocked"
+	if got := verdictViolations(CheckAdvance(testEnv(t), tk, Request{To: "signoff", Actor: "a"})); len(got) != 0 {
+		t.Errorf("blocked → signoff with an old free-text verdict refused: %v", got)
 	}
 	// A ticket that never reached review is not asked for a verdict.
 	tk = reviewed("")

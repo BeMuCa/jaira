@@ -493,8 +493,9 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 // the work back — from that lane, or around it: blocked is drawn last, so
 // blocked → signoff is not even a forward move, and a ticket parked from
 // review would otherwise walk into sign-off past its own send-back. A verdict
-// that is no verdict at all is refused only on the move out of its lane, or
-// out of parking: a ticket that never went through review is another question.
+// that is no verdict at all is refused only on the move out of its lane:
+// blocked does not say where a ticket was parked from, and one parked from
+// sign-off with a verdict written before the words existed must get back.
 func verdictAgainstMove(set *lane.Set, t *ticket.Ticket, target *lane.Lane) Violations {
 	to := set.Index(target.ID)
 	for i, cur := range set.Lanes {
@@ -502,12 +503,7 @@ func verdictAgainstMove(set *lane.Set, t *ticket.Ticket, target *lane.Lane) Viol
 			continue
 		}
 		kind, word := cur.ReadVerdict(t.ReviewVerdict)
-		// Out of a parking lane counts as out of the lane it was parked from:
-		// blocked does not say which that was, and it returns there.
 		leaving := t.Status == cur.ID
-		if l, ok := set.Get(t.Status); ok && l.RequiresBlockedReason {
-			leaving = true
-		}
 		if kind == lane.VerdictSendBack || (kind == lane.VerdictUnknown && leaving) {
 			return verdictRefusal(set, cur, t, target, kind, word)
 		}

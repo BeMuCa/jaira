@@ -1,7 +1,7 @@
 ---
 id: 01M5ZJ4KA5N2PH7Q4WY4F1V59P
 title: "Ein Review-Verdikt 'zurueckschicken' laesst das Ticket nicht nach signoff"
-status: testing
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Steht im review-verdict der Review-Lane 'send back' (oder das Gegenstueck des Boards), nimmt jaira move aus review nur noch in-progress als Ziel; signoff wird mit Exit 3 abgelehnt und nennt das Verdikt."
@@ -21,7 +21,7 @@ related:
   - 01M7WWZWSDHK37DGGHJFDF0YD6
 commits: []
 created-at: 2026-10-27T20:51:56Z
-updated-at: 2026-11-21T20:04:36Z
+updated-at: 2026-11-21T20:08:24Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-238286
@@ -30,13 +30,13 @@ outcome-what: "review-verdict now starts with a lane-declared word (accept / sen
 outcome-why: "a review that wrote 'send back' still let its ticket land in signoff, so a person saw unapproved work as ready"
 outcome-resolves: "TestCLISendBackVerdictRefusesSignoff, TestCLISendBackVerdictGoesBack, TestVerdictWordClasses, TestLaneWithoutVerdictWordsReadsNothing"
 review-summary: "none"
-round: 3
+round: 4
 back-from: testing
 back-by: lane
-back-count: 1
+back-count: 2
 review-gaps: "folded the second ReadVerdict call in verdictRefusal into a parameter (gate.go); left the rest: no dead code after the repair (quoteAll '(none)' branch already removed with the both-lists rule)"
-test-verdict: "pass: go test ./... green earlier, -race on gate/lane/cli/tui RC=0 after the last commits; DoD 1-6 verified in the tree; scratch board: send back -> signoff exit 3 naming send-back and in-progress, ticket stays in review; free text 'looks fine' exit 3; for-lane review carries verdicts accept/send-back; two parallel moves (signoff + in-progress) - signoff refused exit 3, in-progress landed"
-hunt-verdict: "fail: bughunt done at 5b8824110, 2 change (send-back bypass via blocked - blocker; a lane with only one verdict list never lets a ticket on), 1 pre-existing (a move that skips review is not checked - note for the person)"
+test-verdict: "pass: round 3 - full go test ./... green after the fix (RC=0), -race on gate/lane/cli RC=0, shipped-history --check ok, GOOS=windows build ok; DoD 1-6 re-verified; scratch board: review -> blocked (exit 0) -> signoff refused exit 3 naming send-back and in-progress; back to review, accept: -> signoff exit 0. The gate writes nothing; parallel moves checked in round 1"
+hunt-verdict: "fail: bughunt done at e5182f04c, 1 change: parking counted as leaving review, so a ticket parked from signoff/done with a free-text verdict cannot return"
 ---
 
 # Ein Review-Verdikt 'zurueckschicken' laesst das Ticket nicht nach signoff
@@ -84,3 +84,6 @@ hunt-verdict: "fail: bughunt done at 5b8824110, 2 change (send-back bypass via b
 - **2026-11-21 20:02 · Alexander Sacharov** — testing: back to in-progress for the two bughunt change findings. Fix of the class: the send-back rule must hold for every move that lands past the verdict lane, not only a move out of it — blocked is drawn last, so blocked→signoff is not even 'forward'. The unknown-word rule stays on the move out of the verdict lane. A lane declaring only one of the two lists is refused at load.
 - **2026-11-21 20:03 · Alexander Sacharov** — fix round 2: verdictAgainstMove now walks every verdict lane the target lies past (send-back refused from review, blocked or a skip ahead; unknown word refused out of review or out of parking); lane parse refuses one list alone, so quoteAll's '(none)' branch went. For the person (pre-existing, bughunt finding 3, gate.go ~470 since 610e33a41a): a move that skips review entirely (in-progress -> signoff) is not checked for review outputs at all - not this ticket's scope; decide note vs. own ticket.
 - **2026-11-21 20:04 · Alexander Sacharov** — critique round 3: read only the repair (441596a7a) against the two bughunt findings; both addressed; nothing breaking the DoD.
+- **2026-11-21 20:07 · Alexander Sacharov** — bughunt: change: core/gate/gate.go:505-511 (verdictAgainstMove, leaving := true for any parking lane) - class: a ticket in parking is judged on the verdict as if it had just come out of review, wherever it was actually parked from, so any ticket parked from a lane past review (signoff, done) whose verdict does not start with the lane's current words cannot go back to the lane it left. This hits verdicts written before this release (free text) and every verdict after the lane file renames its words. The refusal also tells whoever unparks it to write the review verdict themselves ('jaira set <id> review-verdict=...'), which invites a non-reviewer to certify the review. The same ticket NOT parked moves signoff->done without any verdict check (leaving=false), so only the detour through blocked refuses it. Example: review-verdict='pass: looks good', ticket in signoff, parked by a person, then 'jaira move X --to signoff' exit 3 verdict_unknown, and '--to done --dry-run' exit 3 too; not a blocker: needs a verdict from before the upgrade or renamed words, and a person's --force gets it through; ran: branch binary on a scratch board (jaira init, set, move)
+- **2026-11-21 20:07 · Alexander Sacharov** — bughunt: done at e5182f04c - 1 finding (1 change, 0 blockers; 0 pre-existing) in 3 modules, follow-up hunt since 5b8824110 (diff: core/gate/gate.go core/gate/verdict_test.go core/lane/lane.go core/lane/verdict_test.go; earlier blocker send-back via blocked re-run and now refused exit 3); concurrency, error paths, input, permissions checked; untracked .jaira/milestones/*.md are board data outside the change and not read; files: .claude/skills/jaira/SKILL.md .jaira/lanes/review.md core/gate/gate.go core/gate/verdict_test.go core/lane/builtin/40-review.md core/lane/lane.go core/lane/verdict.go core/lane/verdict_test.go core/release/notes/F1V59P.md core/role/jaira/SKILL.md core/shipped/shipped.sha256 internal/cli/flow.go internal/cli/verdict_test.go scripts/demoworld.sh
+- **2026-11-21 20:08 · Alexander Sacharov** — testing round 3: back for the parking=leaving rule. Smaller design instead of a further rule: the unknown-word refusal holds only on the move out of review itself; the send-back refusal keeps holding on every way past review. Parked-from-review with an unknown or empty verdict then reaches signoff unchecked - same class as the pre-existing skip finding, left for the person.
