@@ -255,9 +255,11 @@ Measured the same day: tickets were given back for notes that, sorted, were
 fine to accept. The shape is the one `/jaira-role-signoff <id>...` produces;
 run it, or write the same yourself:
 
-1. one status line, ✅ or ❌ per check: DoD x/y, tests, bug hunt on the
-   branch head, blockers — each bound to the branch's head commit; a CI run
-   or hunt for an older commit is `?`, never ✅
+1. one status line, ✅ or ❌ per check — the checks and how to read each are
+   the role's, so the two lists cannot drift: DoD x/y, tests, bug hunt on the
+   branch head, blockers, review verdict, returns from signoff — each bound to
+   the branch's head commit; a CI run for an older commit is `?`, a hunt for
+   one is ❌, never ✅
 2. one table, a row per open note — the note in one plain sentence and one
    mark: 🔴 blocker (wrong result, lost data, crash, security), 🟡 small edge
    (one round of ten minutes), ⚪ known limit, 🔵 not from this ticket (and

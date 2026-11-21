@@ -80,7 +80,9 @@ or copies that diverged with none of them leading on from all the others:
 status line names `$refs` — which one ships is the person's to say, not yours
 to guess.
 
-A result that belongs to another commit, or no result at all, is `?`, never ✅.
+A CI result that belongs to another commit, or no result at all, is `?`,
+never ✅ — nobody knows yet. The bug hunt is different: it is the board's own
+work, so a hunt that does not name the head was not done there, and that is ❌.
 
 - **DoD** `x/y` ticked, from `.dod_items[].done`
 - **tests** — the CI run for exactly that commit, of the workflow that runs the
@@ -166,7 +168,7 @@ round signoff forever, each round finding the next smaller edge.
 The follow-up for rule 2, ready to paste and naming the ticket it follows:
 
 ```bash
-jaira create "<what is still missing, as a fact>" --follows <id> --goal "<...>" --context "<the 🟡 rows, each in one line, and that <id> was accepted with them after two returns>" --dod "<...>"
+jaira create "<what is still missing, as a fact>" --follows <id> --goal "<...>" --context "<the 🟡 rows, each in one line, and that <id> was accepted with them after two returns>" --dod "<...>" --assignee "<who owns <id>>"
 ```
 
 ## The report
