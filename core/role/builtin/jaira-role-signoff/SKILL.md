@@ -119,12 +119,15 @@ work, so a hunt that does not name the head was not done there, and that is ❌.
   `$head` — the note's sha is a prefix of the full `$head`, whatever length
   either clone abbreviates to. An older sha does not cover what a later
   round changed: ❌. Decide one thing before that, and before the head: a
-  ticket none of whose commits touch anything outside `.jaira/` — its
-  `.commits`, and `git log --branches --remotes --grep <handle> --name-only`
-  (not `--all`: the ticket refs hold the ticket file outside `.jaira/`) —
-  has nothing to hunt, and usually no branch either, since lanes that change no code
-  commit nothing. Its hunt check is `–`, neither ✅ nor ❌, with or without
-  a head — the same exemption the teamlead and the testing lane make
+  ticket whose commits touch nothing outside `.jaira/` has nothing to hunt.
+  Find them as jaira does — its `.commits`, and
+  `git log --branches --remotes -i --grep <handle> --name-only` (`-i`: a
+  subject may write the handle in lower case; not `--all`: the ticket refs
+  hold the ticket file outside `.jaira/`). At least one commit found and
+  none of them touching anything outside `.jaira/`: the hunt check is `–`,
+  neither ✅ nor ❌, with or without a head — the same exemption the
+  teamlead and the testing lane make. No commit found at all proves nothing:
+  `?`, never `–`
 - **blocker** — none, or how many 🔴 the table below holds
 - **review** — `.review.verdict`
 - **returns from signoff** — how many are noted (see return rule 2)
