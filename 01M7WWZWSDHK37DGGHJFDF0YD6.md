@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:57:35Z
+updated-at: 2026-11-21T08:57:50Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
@@ -165,3 +165,4 @@ back-count: 1
 - **2026-11-21 08:51 · Alexander Sacharov** — testing round 8 passed (hunt 81dcbbee clean); upstream/master has nothing new; pushed 81dcbbee. Moved to review, a fresh agent runs it via run-lane.sh.
 - **2026-11-21 08:56 · Alexander Sacharov** — review (fresh, 81dcbbee): kein Blocker; 5 notes in review-gaps, die wichtigste: on_head ist in conversational mode immer false (git diff HEAD zaehlt Aenderungen von vor dem Hunt). go test ./... RC=0, plugin test 216 pass.
 - **2026-11-21 08:57 · Alexander Sacharov** — worker stopped: ticket in signoff after a fresh review without a blocker (round 8); branch feat/df0yd6 pushed at 81dcbbee; the ticket file carries the review fields uncommitted. Open for the person: review notes 1-2 (on_head falsely red in conversational mode and with stop-after-fix) are small edges, 3-5 known limits; report sent to the parent session.
+- **2026-11-21 08:57 · Alexander Sacharov** — Given back from signoff (Teamlead im Auftrag Alex 21.11.): bughunt.on_head darf auf einem sauberen Ticket nicht rot sein - Alex liest Rot als Katastrophe. Klasse 'falsch rot' an der Ursache schliessen: 1) conversational mode: uncommittete Aenderungen von vor dem Hunt zaehlen nicht (Vergleich gegen den Stand zur Hunt-Zeit, z.B. Hash der gejagten Dateien in der Closing-Note, oder nur Aenderungen nach dem Hunt-Zeitpunkt). 2) stop-after-fix=true ohne Hunt: 'skipped' statt fail, Brief traegt stop_after_fix. 3) untracked Dateien ausserhalb des Codes (.jaira/**) zaehlen nie. 4) ChangedSince-Docstring nennt die Grenze 'Commit ohne ID'. 5) explainable: fuer fruehere Runde ohne verdict_gaps keine review.gaps als Blocker-Quelle. Tests je Fall. Diff-Hunt, review, signoff, push.
