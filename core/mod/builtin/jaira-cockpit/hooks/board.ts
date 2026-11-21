@@ -24,6 +24,9 @@ export type Waiting = {
   // The review's other findings, one per line, listed under the row without
   // a button: notes the person reads, not decisions they must take.
   notes: string[]
+  // The review's own gaps as written, blockers included: what the Give back
+  // pane lists one by one for the person to decide. '' before a review.
+  gaps: string
   // The round the verdict was written in, when the ticket has moved on a
   // round since; undefined while the verdict is this round's.
   reviewedIn?: number
@@ -129,6 +132,7 @@ export function snapshotOf(
       // Before a review there are no review notes; after a later round's
       // optimize lane rewrote review-gaps they are in the copy jaira kept.
       notes: verdict === '' ? [] : notesOf(reviewGaps(t)),
+      gaps: verdict === '' ? '' : reviewGaps(t) ?? '',
       ...(sameRound(t) ? {} : { reviewedIn: t.review_round }),
     })
   }
@@ -623,4 +627,127 @@ export function upgradeCheckOf(json: string): { current: string; latest: string;
   const c = parse<{ current?: unknown; latest?: unknown; up_to_date?: unknown }>(withoutWarnings(json))
   if (typeof c?.current !== 'string' || typeof c.latest !== 'string') return undefined
   return { current: c.current, latest: c.latest, upToDate: c.up_to_date === true }
+}
+
+// ── what the person decides per review note, in the Give back pane ───────
+//
+// Every finding of the review's gaps is a row of its own, and the person
+// gives each one of three answers: fix it now (it goes back to the worker
+// with Give back), later in a follow-up ticket, or accept it as it is. The
+// answers are written onto the ticket in the note Give back or Accept writes
+// anyway, so the next acceptance reads them back instead of asking again.
+
+export type Choice = 'now' | 'later' | 'accept'
+export type GapItem = { text: string; cls: NoteClass; choice: Choice; earlier?: Choice }
+
+// A finding as the review lane writes it: 'blocker:' or 'note:', bare or in
+// markdown emphasis; 'note: pre-existing:' is a fault this change did not make.
+const PREFIXED = /^[*_`]*\s*(blocker|note)\s*[*_`]*\s*:/i
+const PRE_EXISTING = /^[*_`]*\s*note\s*[*_`]*\s*:\s*[*_`]*\s*pre-?existing\b/i
+
+// What each class starts as: what the person would fix in this round now, a
+// boundary drawn on purpose accepted, someone else's subject a follow-up.
+const PRESELECTED: Record<NoteClass, Choice> = { blocker: 'now', edge: 'now', limit: 'accept', elsewhere: 'later' }
+
+// The findings of a review's gaps, each with its class and what it starts
+// as. A line without 'blocker:' or 'note:' continues the finding above it —
+// a note wrapped over two lines — but only where the gaps use the prefixes
+// at all; an older review's gaps, without them, are a finding per line.
+// The class comes from the prefix, unless the Explain note classes exactly
+// as many notes as there are findings: then its classes count, in order,
+// which is where a known limit comes from. A note decided before, word for
+// word, starts as it was decided. The acceptance rule: a finding classed
+// wrong is better than one lost or two merged — no line of the gaps but a
+// "none" ever drops out.
+export function gapItems(gaps: string | undefined, explainText?: string, decided?: ReadonlyMap<string, Choice>): GapItem[] {
+  const lines = (gaps ?? '').split(/\r?\n/).map(l => oneLine(l.replace(MARKER, ''))).filter(l => l !== '' && !NO_GAP.test(l))
+  const prefixed = lines.some(l => PREFIXED.test(l))
+  const texts: string[] = []
+  for (const l of lines) {
+    if (prefixed && !PREFIXED.test(l) && texts.length > 0) texts[texts.length - 1] += ` ${l}`
+    else texts.push(l)
+  }
+  const explained = explainText === undefined ? [] : explanationOf(explainText).parts.flatMap(p => (p.kind === 'note' ? [p.cls] : []))
+  return texts.map((text, i) => {
+    const cls: NoteClass = explained.length === texts.length ? explained[i]! : BLOCKER.test(text) ? 'blocker' : PRE_EXISTING.test(text) ? 'elsewhere' : 'edge'
+    const earlier = decided?.get(text)
+    return { text, cls, choice: earlier ?? PRESELECTED[cls], ...(earlier !== undefined ? { earlier } : {}) }
+  })
+}
+
+// One press on a row: fix now, then later, then accept, then fix now again.
+export function nextChoice(c: Choice): Choice {
+  return c === 'now' ? 'later' : c === 'later' ? 'accept' : 'now'
+}
+
+// The headings of the decision lines, in the words the ticket asked for.
+const HEADINGS: Record<Choice, string> = { now: 'beheben:', later: 'Folge-Ticket:', accept: 'angenommen:' }
+const EXTRA = 'dazu: '
+
+// The decision lines the Give back or Accept note carries: a heading per
+// answer given, each finding word for word under it, a follow-up with the
+// ticket it became (or why none was created), what the person typed last.
+export function decisionLines(items: readonly GapItem[], follows: ReadonlyMap<string, string> = new Map(), extra = ''): string {
+  const out: string[] = []
+  for (const c of ['now', 'later', 'accept'] as const) {
+    const of = items.filter(i => i.choice === c)
+    if (of.length === 0) continue
+    out.push(HEADINGS[c], ...of.map(i => `- ${c === 'later' ? `${follows.get(i.text) ?? '(not created)'}: ` : ''}${i.text}`))
+  }
+  if (extra.trim() !== '') out.push(`${EXTRA}${oneLine(extra)}`)
+  return out.join('\n')
+}
+
+// A note the cockpit wrote when a person gave a ticket back or accepted it
+// with decisions, in the shape decisionLines writes, after its first words.
+const DECIDED_LEAD = /^(?:Given back|Accepted) from [^:\s]+:\s*/
+const NOTE_START = /^- \*\*\d{4}-\d\d-\d\d \d\d:\d\d [^*]*\*\* — /
+const FOLLOW = /^(?:[0-9A-Z]{6}|\(not created[^)]*\)):\s*/
+
+// What was decided before, read off the notes of `jaira show --json`: each
+// finding by its words, the newest decision winning. A note that is not the
+// cockpit's, or a line after the decisions, is read past.
+export function decisionsOf(showJson: string): Map<string, Choice> {
+  const body = parse<{ body?: string }>(withoutWarnings(showJson))?.body ?? ''
+  const out = new Map<string, Choice>()
+  let heading: Choice | undefined
+  let inNote = false
+  for (const raw of body.split('\n')) {
+    let line = raw
+    if (NOTE_START.test(line)) {
+      line = line.replace(NOTE_START, '')
+      inNote = DECIDED_LEAD.test(line)
+      heading = undefined
+      if (!inNote) continue
+      line = line.replace(DECIDED_LEAD, '')
+      if (line === '') continue
+    } else if (!inNote) continue
+    const h = (Object.keys(HEADINGS) as Choice[]).find(c => HEADINGS[c] === line.trim())
+    if (h !== undefined) heading = h
+    else if (heading !== undefined && line.startsWith('- ')) {
+      const text = line.slice(2).trim()
+      out.set(heading === 'later' ? text.replace(FOLLOW, '') : text, heading)
+    } else inNote = false
+  }
+  return out
+}
+
+// The handle `jaira create --json` printed, for the follow-up line.
+export function createdHandle(createJson: string): string | undefined {
+  return parse<{ handle?: string }>(withoutWarnings(createJson))?.handle
+}
+
+// The lane and board `jaira show --json` gives, read again right before
+// decisions are carried out: someone else may have moved the ticket since the
+// pane opened, and a follow-up goes on the ticket's own board.
+export function standOf(showJson: string): { status?: string; board: string } {
+  const s = parse<{ status?: string; board?: string }>(withoutWarnings(showJson))
+  return { ...(s?.status !== undefined ? { status: s.status } : {}), board: s?.board ?? '' }
+}
+
+// A follow-up's title: the finding without its 'note:' and 'pre-existing:',
+// cut to fit a list row; the whole finding is its context.
+export function followTitle(text: string): string {
+  const bare = text.replace(/^[*_`]*\s*(blocker|note)\s*[*_`]*\s*:\s*/i, '').replace(/^[*_`]*\s*pre-?existing\s*[*_`]*\s*:\s*/i, '').trim() || text
+  return bare.length <= 72 ? bare : `${bare.slice(0, 71).trimEnd()}…`
 }

@@ -62,6 +62,11 @@ the next example of a mistake that was fixed for one example only. So:
   edge left as a note reaches the person, who sends the ticket back for it
   anyway. A fault that was there before this change and lies outside its scope
   stays a note.
+- **A give-back with decisions is the list.** A note `Given back from
+  <lane>: beheben:` carries what the person decided per review note, word for
+  word: fix exactly what stands under `beheben:`. What stands under
+  `angenommen:` was accepted as it is, and what stands under `Folge-Ticket:`
+  has a ticket of its own — leave both alone, small edges or not.
 
 ## The third return from the same lane
 

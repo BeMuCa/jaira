@@ -5,7 +5,8 @@ import {
   branchesFor, carrierBranch, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
   explanationNotes, explanationOf, isOlder, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, upgradeCheckOf,
-  type Action, type Agent, type NoteClass, type Option, type Waiting,
+  createdHandle, decisionLines, oneLine, decisionsOf, followTitle, gapItems, nextChoice, standOf,
+  type Action, type Agent, type GapItem, type NoteClass, type Option, type Waiting,
 } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
 import { digest } from './digest.ts'
@@ -46,6 +47,7 @@ const boardAtom = atom({ plugin: 'jaira-cockpit', key: 'board' } as const, null)
 const cacheAtom = atom({ plugin: 'jaira-cockpit', key: 'cache' } as const, { tokens: 0, lastAnswerAt: null, ttl: 0 })
 const threadsAtom = atom({ plugin: 'jaira-cockpit', key: 'threads' } as const, { questions: 0, stale: 0 })
 const givingAtom = atom({ plugin: 'jaira-cockpit', key: 'giving' } as const, null)
+const choosingAtom = atom({ plugin: 'jaira-cockpit', key: 'choosing' } as const, null)
 const paneAtom = atom({ plugin: 'jaira-cockpit', key: 'paneTicket' } as const, null)
 const minuteAtom = atom({ plugin: 'jaira-cockpit', key: 'minute' } as const, 0)
 const noticeAtom = atom({ plugin: 'jaira-cockpit', key: 'notice' } as const, null)
@@ -535,12 +537,16 @@ async function fail($: EngineInterface, what: string, why: string): Promise<void
 // done, never from human past review and signoff. The gates run first as a
 // dry run; --force follows only when the human exit is all they refuse, so
 // an open definition-of-done item or plan step still stops the press.
-async function accept($: EngineInterface, w: Waiting): Promise<void> {
+async function accept($: EngineInterface, w: Waiting, before?: (dir: string) => Promise<void>): Promise<void> {
   if (!board || w.acceptTo === null) return
   const dir = await ticketDir($, board, w.id)
   const dry = await run($, ['jaira', 'move', w.id, '--to', w.acceptTo, '--dry-run', '--json'], dir, 30_000)
   const refused = dry === undefined ? 'jaira did not run' : dry.exitCode === 0 ? undefined : otherRefusal(dry.stderr || dry.stdout)
   if (refused !== undefined) return fail($, `${t.accept} ${w.id}`, refused)
+  // What the person decided on the review's notes goes onto the ticket once
+  // the gates let the move through, and before it: a refused Accept writes
+  // nothing, an accepted ticket carries its decisions.
+  if (before !== undefined) await before(dir)
   const done = await jaira($, dir, ['move', w.id, '--to', w.acceptTo, '--force'])
   if (done.ok) {
     await say($, t.accepted(w.id, w.acceptTo))
@@ -937,8 +943,60 @@ async function decide($: EngineInterface, id: string, text: string, action: Acti
 // back is pressed, and the ring stays on the button.
 async function askWhatIsMissing($: EngineInterface, w: Waiting): Promise<void> {
   await update($, givingAtom, () => w.id)
+  // The review's notes, each with what it starts as: its class, or how it
+  // was decided at an earlier acceptance, read off the ticket's notes.
+  let items: GapItem[] = []
+  if (board && w.gaps.trim() !== '') {
+    const shown = await run($, ['jaira', 'show', w.id, '--json'], await ticketDir($, board, w.id))
+    const json = shown?.exitCode === 0 ? shown.stdout : undefined
+    items = gapItems(w.gaps, json === undefined ? undefined : noteOf(json, 'explain')?.text, json === undefined ? undefined : decisionsOf(json))
+  }
+  await update($, choosingAtom, () => (items.length === 0 ? null : { id: w.id, items, warned: false }))
   const opened = await $.ui.open({ id: GIVE_BACK, title: `${t.giveBack} ${w.id}`, focus: true, closeOnEscape: true })
   if (!opened.isPlaced) await fail($, `${t.giveBack} ${w.id}`, t.noRoom)
+}
+
+// The person's answers on the review's notes, carried out. Both read the
+// ticket's lane again first: a second session or a teammate may have decided
+// it since the pane opened, and then nothing is written twice.
+async function stillIn($: EngineInterface, w: Waiting, what: string): Promise<{ board: string } | undefined> {
+  if (!board) return undefined
+  const shown = await run($, ['jaira', 'show', w.id, '--json'], await ticketDir($, board, w.id))
+  const stand = shown?.exitCode === 0 ? standOf(shown.stdout) : undefined
+  if (stand?.status === w.lane) return { board: stand.board }
+  await fail($, `${what} ${w.id}`, stand?.status === undefined ? output(shown) : t.movedMeanwhile(w.id, w.lane, stand.status))
+  await refreshBoard($)
+  return undefined
+}
+
+// A follow-up ticket per note marked so, following this one, the note word
+// for word as its context; the handle of each, or why it was not created.
+async function createFollowUps($: EngineInterface, dir: string, id: string, onBoard: string, items: readonly GapItem[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>()
+  for (const i of items.filter(x => x.choice === 'later')) {
+    const r = await run($, ['jaira', 'create', followTitle(i.text), '--context', i.text, '--follows', id, ...(onBoard ? ['--board', onBoard] : []), '--json'], dir, 30_000)
+    const handle = r?.exitCode === 0 ? createdHandle(r.stdout) : undefined
+    out.set(i.text, handle ?? `(not created: ${oneLine(withoutWarnings(output(r))).slice(0, 120).replace(/[()]/g, '')})`)
+  }
+  return out
+}
+
+async function giveBackWith($: EngineInterface, w: Waiting, items: readonly GapItem[], extra: string, share: number): Promise<void> {
+  const stand = await stillIn($, w, t.giveBack)
+  if (stand === undefined) return
+  await giveBack($, w.id, w.lane, async dir => decisionLines(items, await createFollowUps($, dir, w.id, stand.board, items), extra), share)
+}
+
+async function acceptWith($: EngineInterface, w: Waiting, items: readonly GapItem[]): Promise<void> {
+  const stand = await stillIn($, w, t.accept)
+  if (stand === undefined) return
+  await accept($, w, async dir => {
+    const lines = decisionLines(items, await createFollowUps($, dir, w.id, stand.board, items))
+    if (lines === '') return
+    const note = `Accepted from ${w.lane}: ${lines}`
+    const noted = await jaira($, dir, ['note', w.id, note])
+    if (!noted.ok) await fail($, t.noteOn(w.id), t.noteLost(w.id, noted.why, note))
+  })
 }
 
 // Every session with a Herdr pane writes where it stands, so the session a
@@ -986,7 +1044,7 @@ async function readRecords($: EngineInterface): Promise<SessionRecord[]> {
 // a ticket never has two worker tabs. The choice and why go onto the ticket.
 // The review lane is not touched here: the worker always hands it to a new
 // agent, whose tab run-lane.sh closes after the lane.
-async function giveBack($: EngineInterface, id: string, lane: string, reason: string, share: number): Promise<void> {
+async function giveBack($: EngineInterface, id: string, lane: string, given: string | ((dir: string) => Promise<string>), share: number): Promise<void> {
   if (!board) return
   const dir = await ticketDir($, board, id)
   // Back to an earlier lane needs no --force since jaira 0.3.7 (MIN_JAIRA),
@@ -994,6 +1052,9 @@ async function giveBack($: EngineInterface, id: string, lane: string, reason: st
   // note written before a refused move would say the ticket went back.
   const moved = await jaira($, dir, ['move', id, '--to', 'in-progress'])
   if (!moved.ok) return fail($, `${t.giveBack} ${id}`, moved.why)
+  // Decisions on the review's notes are written out only now: a follow-up
+  // ticket is created for a ticket that really went back.
+  const reason = typeof given === 'string' ? given : await given(dir)
   // The reason is the one thing the person typed: a note that did not land is
   // shown with its text, and the handover still goes on — the ticket already
   // sits in in-progress, and nothing here could hand it out again.
@@ -1489,27 +1550,75 @@ export const register: Register = (on, options) => {
   on('ui.render', { component: 'Pane', requestId: GIVE_BACK }, async ($, e) => {
     const id = await read($, givingAtom)
     const w = (await read($, boardAtom))?.waiting.find(x => x.id === id)
+    const choosing = await read($, choosingAtom)
     const table = $.ui.resolve(e)
-    const { Box, Text } = table
+    const { Box, Button, Text } = table
     const Input = 'Input' in table ? table.Input : undefined
     if (w === undefined || Input === undefined) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
+    // The review's notes, one row each, when it wrote any: a press changes
+    // what happens to it. Without them the pane asks only what is missing.
+    const items = choosing?.id === w.id ? choosing.items : []
+    const close = () => {
+      void update($, givingAtom, () => null)
+      void update($, choosingAtom, () => null)
+      void $.ui.close({ id: GIVE_BACK })
+    }
+    const toggle = (n: number) =>
+      void update($, choosingAtom, c => (c === null || c.id !== w.id ? c : { ...c, warned: false, items: c.items.map((x, i) => (i === n ? { ...x, choice: nextChoice(x.choice) } : x)) }))
+    const choiceColour = (c: GapItem['choice']) => (c === 'now' ? 'error' : c === 'later' ? 'suggestion' : 'success')
+    const noteMark = (cls: NoteClass) =>
+      cls === 'blocker' ? <Text bold color="error">[blocker] </Text> : cls === 'elsewhere' ? <Text color="suggestion">[not this ticket] </Text> : cls === 'limit' ? <Text dimColor>[known limit] </Text> : null
+    const onAccept = async () => {
+      const c = await read($, choosingAtom)
+      const now = (c?.items ?? []).filter(x => x.choice === 'now')
+      if (now.length > 0) return say($, t.acceptWithNow(w.id, now.length))
+      // A blocker not fixed asks once: the second press accepts.
+      if (c !== null && !c.warned && c.items.some(x => x.cls === 'blocker')) {
+        await update($, choosingAtom, x => (x === null ? x : { ...x, warned: true }))
+        return say($, t.blockerNotFixed(w.id))
+      }
+      close()
+      await acceptWith($, w, c?.items ?? [])
+    }
     return (
       <Box flexDirection="column">
         <Text>{w.id} · {w.lane}{w.verdict !== '' ? ` · ${w.verdict}` : ''}</Text>
+        {items.length > 0 ? <Box marginTop={1}><Text bold>{t.gapsHeading}</Text></Box> : null}
+        {items.map((x, i) => (
+          <Button key={`gap-${w.id}-${i}`} plain label={`${t.choice[x.choice]} ${x.text}`} {...(i === 0 ? { autoFocus: true as const } : {})} onPress={() => toggle(i)}>
+            <Text wrap="wrap">
+              <Text bold color={choiceColour(x.choice)}>{t.choice[x.choice]}</Text>
+              {' '}
+              {noteMark(x.cls)}
+              {x.text}
+              {x.earlier !== undefined ? <Text dimColor>{` ${t.decidedBefore}`}</Text> : null}
+            </Text>
+          </Button>
+        ))}
         <Input
           key={`reason-${w.id}`}
-          label={t.reasonLabel}
-          placeholder={t.reasonPlaceholder}
+          label={items.length > 0 ? t.moreLabel : t.reasonLabel}
+          placeholder={items.length > 0 ? t.morePlaceholder : t.reasonPlaceholder}
           submitLabel={t.giveBack}
-          autoFocus
+          {...(items.length === 0 ? { autoFocus: true as const } : {})}
           onSubmit={(reason: string) => {
-            // Nothing typed: the pane stays open for the reason.
-            if (reason.trim() === '') return
-            void update($, givingAtom, () => null)
-            void $.ui.close({ id: GIVE_BACK })
-            void giveBack($, w.id, w.lane, reason.trim(), share)
+            void (async () => {
+              const c = await read($, choosingAtom)
+              const chosen = c?.id === w.id ? c.items : []
+              // Nothing to fix and nothing typed: the pane stays open.
+              if (reason.trim() === '' && !chosen.some(x => x.choice === 'now')) {
+                if (chosen.length > 0) await say($, t.nothingToFix(w.id))
+                return
+              }
+              close()
+              if (chosen.length === 0) return giveBack($, w.id, w.lane, reason.trim(), share)
+              await giveBackWith($, w, chosen, reason.trim(), share)
+            })()
           }}
         />
+        {items.length > 0 && w.acceptTo !== null
+          ? <Button key={`gaps-accept-${w.id}`} label={t.accept} onPress={() => void once($, w.id, onAccept)} />
+          : null}
       </Box>
     )
   })

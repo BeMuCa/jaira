@@ -1,0 +1,3 @@
+- Press Give back in the cockpit on a reviewed ticket to decide each review note on its own row - fix now, follow-up (jaira creates a ticket that follows this one, the note as its context) or accept; Give back sends only the notes marked fix now, and Accept in the same pane records the rest on the ticket.
+- Expect the next acceptance of the same ticket to start every note decided before as it was decided, marked "(decided before)"; Accept with a blocker not marked fix now asks once before it accepts.
+- Run 'jaira update --lanes' to get the in-progress prompt that fixes exactly the notes under 'beheben:' of a give-back and leaves accepted and follow-up notes alone.

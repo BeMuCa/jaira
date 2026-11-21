@@ -12,6 +12,16 @@ export const t = {
   theirs: (n: number, names: string[]) => `${n} waiting for ${names.join(', ')}`,
   reasonLabel: 'What is missing?',
   reasonPlaceholder: 'goes onto the ticket as a note',
+  // The Give back pane with the review's notes, one row each.
+  gapsHeading: 'Review notes - press a row to change what happens to it:',
+  choice: { now: '[fix now]', later: '[follow-up]', accept: '[accept]' } as Record<string, string>,
+  decidedBefore: '(decided before)',
+  moreLabel: 'Anything else?',
+  morePlaceholder: 'optional, goes onto the ticket with the notes',
+  acceptWithNow: (id: string, n: number) => `${id}: ${n} note${n === 1 ? ' is' : 's are'} marked fix now - press Give back, or mark ${n === 1 ? 'it' : 'them'} follow-up or accept`,
+  blockerNotFixed: (id: string) => `${id}: a blocker is not marked fix now - press Accept again to accept it anyway`,
+  nothingToFix: (id: string) => `${id}: no note is marked fix now and nothing is typed - mark one, type what is missing, or press Accept`,
+  movedMeanwhile: (id: string, lane: string, now: string) => `${id} is no longer in ${lane} but in ${now}: someone else decided it meanwhile. Nothing was written.`,
   accepted: (id: string, lane: string) => `${id} accepted: ${lane}`,
   returnedTo: (id: string, who: 'old' | 'new' | 'none') =>
     who === 'none' ? `${id} back in in-progress; no worker started (the ticket's note says why)` : `${id} given back to ${who === 'old' ? 'the worker that carried it' : 'a new worker'}`,
