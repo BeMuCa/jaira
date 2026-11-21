@@ -20,6 +20,7 @@ export const t = {
   morePlaceholder: 'optional, goes onto the ticket with the notes',
   acceptWithNow: (id: string, n: number) => `${id}: ${n} note${n === 1 ? ' is' : 's are'} marked fix now - press Give back, or mark ${n === 1 ? 'it' : 'them'} follow-up or accept`,
   blockerNeedsWhy: (id: string) => `${id}: a blocker is not marked fix now - type why it is accepted anyway, or mark it fix now and press Give back`,
+  blockerNeedsTyping: (id: string) => `${id}: the review names a blocker - accepting it needs a reason typed in a terminal or on the desktop; nothing was accepted`,
   whyLabel: 'Why accept it with the blocker?',
   whyPlaceholder: 'required - goes onto the ticket as a decision',
   acceptedDespite: 'accepted with a blocker not fixed',

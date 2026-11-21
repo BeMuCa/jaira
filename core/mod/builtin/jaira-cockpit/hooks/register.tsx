@@ -976,11 +976,14 @@ async function reviewItems($: EngineInterface, w: Waiting): Promise<GapItem[]> {
 
 // The band's Accept: at once while the review names no blocker; with one, the
 // Give back pane opens, where a blocker is accepted only with a reason. The
-// class is the pane's own, the Explain note's included, so both agree.
-async function acceptFromBand($: EngineInterface, w: Waiting): Promise<void> {
+// class is the pane's own, the Explain note's included, so both agree. A
+// surface without a text field (mobile) cannot take the reason: it says so
+// and accepts nothing, rather than open a pane that cannot be filled.
+async function acceptFromBand($: EngineInterface, w: Waiting, typing: boolean): Promise<void> {
   const items = await reviewItems($, w)
-  if (items.some(x => x.cls === 'blocker')) return askWhatIsMissing($, w, items)
-  await accept($, w)
+  if (!items.some(x => x.cls === 'blocker')) return accept($, w)
+  if (!typing) return say($, t.blockerNeedsTyping(w.id))
+  await askWhatIsMissing($, w, items)
 }
 
 // The person's answers on the review's notes, carried out. Both read the
@@ -1501,7 +1504,7 @@ export const register: Register = (on, options) => {
                   The engine draws a Button's brackets uncoloured, so the
                   terminal gets them plain and in the label's colour. */}
               {w.acceptTo !== null
-                ? <Button key={`accept-${w.id}`} label={t.accept} plain={plain} onPress={() => void once($, w.id, () => acceptFromBand($, w))}><Text color="success" dimColor={busy[w.id] !== undefined}>{bracketed(t.accept)}</Text></Button>
+                ? <Button key={`accept-${w.id}`} label={t.accept} plain={plain} onPress={() => void once($, w.id, () => acceptFromBand($, w, hasInput))}><Text color="success" dimColor={busy[w.id] !== undefined}>{bracketed(t.accept)}</Text></Button>
                 : null}
               {hasInput
                 ? <Button key={`back-${w.id}`} label={t.giveBack} plain={plain} onPress={() => void once($, w.id, () => askWhatIsMissing($, w))}><Text color="error" dimColor={busy[w.id] !== undefined}>{bracketed(t.giveBack)}</Text></Button>
