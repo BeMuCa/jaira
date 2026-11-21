@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:20:26Z
+updated-at: 2026-11-21T08:23:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
@@ -132,3 +132,4 @@ review-check: "1. go test ./core/move -run 'TestMoveRecords|TestMoveCountsOne' -
 - **2026-11-21 08:19 · Alexander Sacharov** — critique round 4: none - read 553b37f3 only; the prompt rule now matches board.ts reviewGaps (empty copy -> review-gaps).
 - **2026-11-21 08:19 · Alexander Sacharov** — testing round 4: bughunt running over the diff since c8de2b8a at 553b37f3.
 - **2026-11-21 08:20 · Alexander Sacharov** — bughunt: done at 553b37f3 - 0 findings (0 change, 0 pre-existing) in 3 modules, follow-up hunt since c8de2b8a (diff: texts.ts, board.test.ts, spawn.sh, shipped.sha256; no new files); concurrency, error paths, input, permissions checked; ran: go test ./core/shipped/ ./core/role/ ./core/lane/ (ok), sha256 of current texts.ts/spawn.sh match the added manifest lines; files: .jaira/lanes/in-progress.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md core/lane/builtin/15-pre-process.md core/lane/builtin/20-in-progress.md core/lane/builtin/27-testing.md core/lane/builtin/40-review.md core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/move/move.go core/move/move_test.go core/release/notes/DF0YD6.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/builtin/jaira-role-bughunt/SKILL.md core/role/role_test.go core/shipped/shipped.sha256 core/ticket/frontmatter.go core/ticket/schema.go go.mod internal/cli/flow.go internal/cli/loopbrake_test.go internal/cli/tickets.go internal/tui/model.go
+- **2026-11-21 08:23 · Alexander Sacharov** — testing round 4 passed (hunt 553b37f3 clean); upstream/master merged (9d2e0f59, shipped.sha256 by union), go test ./... RC=0, pushed. Moved to review, a fresh agent runs it via run-lane.sh.
