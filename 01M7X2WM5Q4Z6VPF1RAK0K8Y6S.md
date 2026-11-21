@@ -1,7 +1,7 @@
 ---
 id: 01M7X2WM5Q4Z6VPF1RAK0K8Y6S
 title: "shipped.sha256 kennt jede Version, die in einem Release-Tag ausgeliefert wurde, und CI haelt das fest"
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:08:27Z
+updated-at: 2026-11-21T08:08:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
@@ -27,7 +27,7 @@ outcome-what: "Manifest neu erzeugt (8 Tag-Versionen fehlten, u.a. cockpit board
 outcome-why: Hand-gemergte Manifest-Konflikte verloren Zeilen; jaira update --roles hielt dann eine unberuehrte Installation fuer handgeaendert und uebersprang sie still
 outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, wenn eine fehlt, und Manifest-Merges konfliktieren nicht mehr"
 review-summary: "Runde nach signoff (dea24113): keine Funde. --write sitzt im selben Skript wie --check (ein Pfad-Mapping, Note 'Offene Entscheidungen' 1); generate() als Funktion statt zweiter Kopie; stdout-Modus bleibt, weil die Fixture-Tests und Scratch-Vergleiche ihn brauchen; strings.Cut in TestEveryManifestPathExists ueberlaesst das Melden der kaputten Zeile TestManifestLinesAreWellFormed statt es doppelt zu pruefen."
-round: 6
+round: 7
 review-gaps: "manifest=core/shipped/shipped.sha256 stand zweimal (--check, --write) -> einmal oben im Skript; sonst nichts: generate() hat zwei Aufrufer, read() im Test drei, keine verwaiste Stelle"
 test-verdict: "fail: go test ./... rot nur in core/shipped TestManifestLinesAreWellFormed (Duplikate nach union-Merge 6f5ba869); DoD 1-7 sonst im Baum belegt; zwei parallele --write ergeben ein sortiertes Manifest ohne Duplikat; flacher Klon: exit 1, Manifest unveraendert"
 hunt-verdict: "fail: bughunt done at 6f5ba869, 1 change (99 Duplikate nach union-Merge), 0 pre-existing"
