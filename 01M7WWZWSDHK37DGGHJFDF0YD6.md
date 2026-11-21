@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:31:49Z
+updated-at: 2026-11-21T09:31:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
@@ -189,3 +189,4 @@ back-count: 1
 - **2026-11-21 09:26 · Alexander Sacharov** — worker stopped: ticket in signoff after the 4th fresh review without a blocker (round 12); feat/df0yd6 pushed at 058e8d2f; ticket file carries the review fields uncommitted. Open for the person: review note 4 (**blocker:** form) is a small edge, notes 1 and 3 known limits, note 2 = TW5FE2 commits ride on this branch. Report sent to the parent session.
 - **2026-11-21 09:27 · Alexander Sacharov** — Given back from signoff (Teamlead im Auftrag Alex 21.11.): nur Note 4 - cockpit erkennt blocker auch in Markdown-Form ('**blocker:**', '- blocker:', 'Blocker:'), Test. Note 1 (back-count nur gleiche Lane) bleibt known limit wie DoD 4, Note 3 known limit, Note 2 erledigt sich mit PR #150. Danach Diff-Hunt, review, signoff, push.
 - **2026-11-21 09:31 · Alexander Sacharov** — round 13 (teamlead give-back, note 4): class: a marker under markdown emphasis read as a different line; fix: board.ts BLOCKER tolerates emphasis around the label (**blocker:**, **Blocker**:, `blocker`:; '- ' and case were already handled), sibling CLASS for explain marks (**[blocker]**) the same; the only other parser of review gaps is none (grep in Go: no blocker: parsing). Tests: BL0CK4-6 offer Explain, NOTES3 ('**note:** the blocker: rule...') does not, 'a class mark in markdown emphasis is still a class mark'.
+- **2026-11-21 09:31 · Alexander Sacharov** — critique/optimize round 13: none. testing round 13: bughunt running over the diff since 058e8d2f at 220d5b51.
