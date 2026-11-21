@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:12:27Z
+updated-at: 2026-11-21T09:14:35Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
@@ -33,7 +33,7 @@ outcome-resolves: "bughunt change at cf0cdfef (git.go writtenSince); TestChanged
 review-summary: "none"
 review-gaps: "none - a6187478: the two path loops in writtenSince folded into one; nothing orphaned"
 test-verdict: "pass: go test -count=1 ./... RC=0 at a6187478; TestChangedSince 19 cases; scratch board: hunt without a file list, then jaira tag (board data) -> on_head true, then a code edit -> false; read-only git, no parallel-writer case"
-hunt-verdict: "fail: 1 change finding at cf0cdfef - tracked board data (.jaira/tags, milestones) changed after the hunt reads on_head false"
+hunt-verdict: "fail: 1 change finding at a6187478 - a named board's lane prompts (.jaira/boards/<name>/lanes/) read as board data"
 round: 10
 review-verdict: "Kein Blocker. DoD 1-11 sind im Code erfuellt; der Blocker aus Runde 4 (bughunt on HEAD aus 4 Notes nicht ableitbar) ist an der Ursache behoben: --brief traegt bughunt.on_head aus git, und Explain-Vorlage und spawn.sh lesen es. go test -count=1 ./... RC=0, claude plugin test 216 pass. Die fuenf notes sind Raender des on_head-Signals (falsch rot in conversational mode und bei stop-after-fix) und eine bekannte Grenze; keine davon ist ein falsches Ergebnis im Sinn der DoD ausser im conversational mode, wo nur die Statusmarke falsch rot ist."
 review-round: 8
