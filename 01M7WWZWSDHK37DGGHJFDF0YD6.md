@@ -23,10 +23,10 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T07:59:57Z
+updated-at: 2026-11-21T08:01:01Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-7433
-claimed-at: 2026-11-20T23:21:22Z
+claimed-by: DESKTOP-RFTCH11-26190
+claimed-at: 2026-11-21T08:01:01Z
 outcome-what: "As before, plus: a send-back made in the board (TUI move and force move) is recorded as a person's, whatever lane it leaves; the cockpit lists review notes only for a verdict of the current round."
 outcome-why: "The bug hunt found a person's TUI return from a loop lane counted toward the third-return stop, and optimize's rewritten gaps shown as review notes on a later round."
 outcome-resolves: "Both bughunt change findings of ac850761: core/move Request.ByPerson (TestMoveRecordsAPersonAtTheBoard), board.ts notes gated by sameRound (test 'a later round's optimize gaps are no review notes under the row'); go test -race core/move internal/tui RC=0, claude plugin test 215 pass."
