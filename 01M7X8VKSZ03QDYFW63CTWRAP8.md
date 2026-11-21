@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T09:21:22Z
+updated-at: 2026-11-21T09:21:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2485785
 claimed-at: 2026-11-21T08:57:23Z
@@ -34,7 +34,7 @@ outcome-why: "bughunt 09:14: the exemption and the empty-head ? had no stated pr
 outcome-resolves: "a bookkeeping-only ticket reads – on the hunt check whether or not a branch exists"
 review-summary: "critique 21.11. round 9: precedence now explicit in both places (empty-head paragraph points to the exemption; the exemption says 'before the head'); --branches --remotes is required, --all would count the ticket refs. Nothing to change."
 round: 17
-review-gaps: "optimize 21.11. round 8: nothing to remove."
+review-gaps: "optimize 21.11. round 9: nothing to remove."
 test-verdict: "fail: gates green at 025cef00; bughunt 09:14 change: '–' exemption vs empty-head '?' has no stated precedence"
 hunt-verdict: "change: 1 finding at 025cef00 (precedence of .jaira-only exemption)"
 question: ""
