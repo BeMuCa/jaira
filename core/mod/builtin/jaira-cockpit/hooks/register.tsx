@@ -15,7 +15,7 @@ import {
 } from './filter.ts'
 import { body, source } from './frame.ts'
 import { add, appended, emptyTotals, row, rowsOf, type Totals } from './metrics.ts'
-import { COLORS, HATS, overviewOf, pickOf, stepOf, workersOf } from './overview.ts'
+import { COLORS, HATS, overviewOf, pickOf, reportLine, stoneOf, workerKey, workersOf } from './overview.ts'
 import { drawOverview, type OverviewTab } from './overview-pane.tsx'
 import {
   backMessage, carrierOf, carrierTab, chooseWorker, DEFAULT_CONTEXT_SHARE, isExpired, RECORD_PREFIX, selfLine, startOf, tabsOf,
@@ -66,7 +66,9 @@ const overviewLanesAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewLanes' }
 const releaseAtom = atom({ plugin: 'jaira-cockpit', key: 'release' } as const, null)
 const upgradeAtom = atom({ plugin: 'jaira-cockpit', key: 'upgrade' } as const, null)
 const workersAtom = atom({ plugin: 'jaira-cockpit', key: 'workers' } as const, null)
-const workersWhereAtom = atom({ plugin: 'jaira-cockpit', key: 'workersWhere' } as const, {})
+const workersSinceAtom = atom({ plugin: 'jaira-cockpit', key: 'workersSince' } as const, {})
+const workersReportsAtom = atom({ plugin: 'jaira-cockpit', key: 'workersReports' } as const, {})
+const workersStoneAtom = atom({ plugin: 'jaira-cockpit', key: 'workersStone' } as const, { open: -1, fellAt: -1 })
 const workersColorsAtom = atom({ plugin: 'jaira-cockpit', key: 'workersColors' } as const, {})
 const workersHatsAtom = atom({ plugin: 'jaira-cockpit', key: 'workersHats' } as const, {})
 const workersFrameAtom = atom({ plugin: 'jaira-cockpit', key: 'workersFrame' } as const, 0)
@@ -87,12 +89,12 @@ const RELEASE = 'release'
 const BAND_TICKETS = 3
 // How long a pressed row stays locked when its action has not ended by then.
 const BUSY_MS = 20_000
-// The Workers tab's frame: the figures move each frame, and the board is
-// read again every READ_FRAMES, so a ticket that moved on walks without a
-// reopening.
+// The Workers tab's frame: the figures hammer each frame, and the board is
+// read again every READ_FRAMES, so an agent that came or went shows without
+// a reopening.
 const FRAME_MS = 250
 const READ_FRAMES = 20
-// The Overview pane's own rows, beside the Workers tab's tracks: its tab
+// The Overview pane's own rows, beside the Workers tab's picture: its tab
 // row, three high since the framed Close stands in it.
 const OVERVIEW_ROWS = 3
 // Between the parts of a line: the band's one separator.
@@ -861,13 +863,37 @@ function stopFrames(): void {
 async function frame($: EngineInterface): Promise<void> {
   const n = await update($, workersFrameAtom, f => f + 1)
   if (n % READ_FRAMES === 0) await readWorkers($)
-  const walkers = await read($, workersAtom)
-  if (walkers !== null) await update($, workersWhereAtom, where => stepOf(where, walkers))
+}
+
+// How many frames ago the stone lost its last chunk; -1 when none ever fell.
+async function fallingOf($: EngineInterface): Promise<number> {
+  const { fellAt } = await read($, workersStoneAtom)
+  return fellAt < 0 ? -1 : (await read($, workersFrameAtom)) - fellAt
+}
+
+// The first line of the last report kept for each ticket, under the
+// reports' lock like every other read of them; marks none read.
+// A store that cannot be read leaves the lines without reports, not the tab
+// without agents.
+async function lastReports($: EngineInterface, ids: readonly string[]): Promise<Record<string, string>> {
+  return locked(async () => {
+    const lines: Record<string, string> = {}
+    try {
+      const root = await project($)
+      for (const id of ids) {
+        const last = (await stored($, keyOf(root, id)))[0]
+        const line = typeof last?.text === 'string' ? reportLine(last.text) : ''
+        if (line !== '') lines[id] = line
+      }
+    } catch {}
+    return lines
+  })
 }
 
 // Who is on the board: its tickets, Herdr's tabs and this session's
-// subagents. A ticket seen before keeps where its figures have walked to,
-// its colour and its hat; one gone drops out of all three.
+// subagents. A ticket seen before keeps its colour and its hat, an agent
+// the time it was first seen; one gone drops out. The stone loses a chunk
+// when the open work at it is less than at the read before.
 async function readWorkers($: EngineInterface): Promise<void> {
   const dir = overviewDir
   if (dir === undefined || reading) return
@@ -879,12 +905,19 @@ async function readWorkers($: EngineInterface): Promise<void> {
       return
     }
     const { tabs, agents } = await agentsOf($, dir)
-    const walkers = workersOf(lanes.stdout, list.stdout, tabs, agents)
-    const ids = [...new Set(walkers.map(f => f.id))]
-    await update($, workersAtom, () => walkers)
+    const workers = workersOf(lanes.stdout, list.stdout, tabs, agents)
+    const ids = [...new Set(workers.map(f => f.id))]
+    const keys = [...new Set(workers.map(workerKey))]
+    const now = await $.clock.now()
+    const frameNow = await read($, workersFrameAtom)
+    const open = stoneOf(workers)
+    const reports = await lastReports($, ids)
+    await update($, workersReportsAtom, () => reports)
+    await update($, workersAtom, () => workers)
     await update($, workersColorsAtom, kept => pickOf(ids, kept, COLORS))
     await update($, workersHatsAtom, kept => pickOf(ids, kept, Object.keys(HATS)))
-    await update($, workersWhereAtom, where => Object.fromEntries(Object.entries(where).filter(([id]) => ids.includes(id))))
+    await update($, workersSinceAtom, kept => Object.fromEntries(keys.map(k => [k, kept[k] ?? now])))
+    await update($, workersStoneAtom, s => ({ open, fellAt: s.open >= 0 && open < s.open ? frameNow : s.fellAt }))
   } finally {
     reading = false
   }
@@ -1633,10 +1666,13 @@ export const register: Register = (on, options) => {
       lane: id => void update($, overviewLanesAtom, l => toggled(l, id)),
       allLanes: () => void update($, overviewLanesAtom, () => []),
     }, {
-      walkers: await read($, workersAtom),
-      where: await read($, workersWhereAtom),
+      workers: await read($, workersAtom),
       colors: await read($, workersColorsAtom),
       hats: await read($, workersHatsAtom),
+      since: await read($, workersSinceAtom),
+      reports: await read($, workersReportsAtom),
+      now: await $.clock.now(),
+      falling: await fallingOf($),
       frame: await read($, workersFrameAtom),
       columns: e.props.bodyColumns,
       rows: e.props.scroll.bodyRows - OVERVIEW_ROWS,
