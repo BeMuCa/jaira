@@ -70,8 +70,9 @@ jaira counts the returns itself. `back` in this lane's payload
 move recorded it:
 
 - `from` — the lane the ticket came back from
-- `by` — `person` when a person sent it (signoff, human, any lane no agent
-  works), `lane` when a loop lane did
+- `by` — `person` when a person sent it (from signoff, human or any lane no
+  agent works, from the board, or with `jaira move` typed at a terminal),
+  `lane` when a loop lane did
 - `count` — how many returns in a row came from that same lane; a person's
   return, or one from another lane, starts it again at 1
 
@@ -79,8 +80,8 @@ move recorded it:
 the count. Their reason is in the newest `Given back from <lane>:` or
 `decision:` note.
 
-`by: lane` with `count` 3 is the third return from the same lane: do not start
-a fourth round. Move the ticket to the human lane with the question instead —
+`by: lane` with `count` 3 or more means the same lane has sent it back three
+times or more: do not start another round. Move the ticket to the human lane with the question instead —
 the third round's findings, and whether the definition of done is wrong or the
 loop reads deeper every round without ending:
 

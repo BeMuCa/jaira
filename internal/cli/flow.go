@@ -2,11 +2,13 @@ package cli
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/x/term"
 	"github.com/spf13/cobra"
 
 	"github.com/BeMuCa/jaira/core/gate"
@@ -206,6 +208,7 @@ one the real move would have returned.`,
 				Reload: func() (gate.Env, error) {
 					return envFor(s, t)
 				},
+				ByPerson:    atATerminal(),
 				ClaimOnPull: false,
 				Folder:      logbookFolder(),
 				Prepare: func(tk *ticket.Ticket) error {
@@ -911,4 +914,16 @@ func trimmedJSON(ts []ticket.Trimmed) []map[string]any {
 		})
 	}
 	return out
+}
+
+// atATerminal reports a move typed at a terminal: stdin and stdout both a
+// TTY. An agent's shell has neither (Claude Code, Codex and the Herdr tabs
+// run their commands through pipes), so such a move is a person's and a
+// send-back from a loop lane is recorded as theirs. The rule errs only one
+// way that matters: a person's move without a terminal — `! jaira move` in a
+// Claude session, a script — is still recorded as the lane's, as before.
+// ByPerson opens no gate, so an agent that fakes a terminal resets nothing
+// but its own loop count. A variable so tests can stand in for a terminal.
+var atATerminal = func() bool {
+	return term.IsTerminal(os.Stdin.Fd()) && term.IsTerminal(os.Stdout.Fd())
 }

@@ -997,6 +997,9 @@ func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env, notesLast int, kid
 		fmt.Fprintf(w, "\nReview\n")
 		row("  summary", t.ReviewSummary)
 		row("  gaps", t.ReviewGaps)
+		if t.ReviewVerdictGaps != t.ReviewGaps {
+			row("  gaps at verdict", t.ReviewVerdictGaps)
+		}
 		row("  verdict", t.ReviewVerdict)
 		row("  check", t.ReviewCheck)
 	}
@@ -1115,6 +1118,7 @@ its end. Review fields keep their history across loop rounds that way.`,
 			// landed says where a board change put a ticket whose lane the new
 			// board does not have; empty when its lane came along.
 			landed := ""
+			reviewWritten := false
 			t, err := s.Mutate(id, func(t *ticket.Ticket) error {
 				for _, a := range assignments {
 					k, v, ok := strings.Cut(a, "=")
@@ -1221,6 +1225,12 @@ its end. Review fields keep their history across loop rounds that way.`,
 							return err
 						}
 					}
+					if k == ticket.FieldReviewVerdict || k == ticket.FieldReviewGaps {
+						reviewWritten = true
+					}
+				}
+				if reviewWritten {
+					return keepVerdictGaps(t)
 				}
 				return nil
 			})
@@ -1724,6 +1734,9 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		"review": map[string]string{
 			"summary": t.ReviewSummary, "gaps": t.ReviewGaps,
 			"verdict": t.ReviewVerdict, "check": t.ReviewCheck,
+			// The gaps as they stood beside the verdict, for a verdict a
+			// later round left standing (its gaps are the loop lanes' by then).
+			"verdict_gaps": t.ReviewVerdictGaps,
 		},
 		"rejected": rejectionJSON(t.Rejected),
 		// Where this goes when the current step is finished, so the route is not
@@ -1860,4 +1873,19 @@ func rejectionJSON(r ticket.Rejection) map[string]string {
 		at = r.At.UTC().Format(time.RFC3339)
 	}
 	return map[string]string{"kind": r.Kind, "why": r.Why, "by": r.By, "at": at, "duplicate_of": r.DuplicateOf}
+}
+
+// keepVerdictGaps copies review-gaps beside the verdict while both belong to
+// the verdict's round: written in either order, in one call or two, the copy
+// is the review's own findings. From the next round on a loop lane rewrites
+// review-gaps and the copy stays as the review left it.
+func keepVerdictGaps(t *ticket.Ticket) error {
+	d := t.Doc()
+	verdict, _, _ := d.Scalar(ticket.FieldReviewVerdict)
+	round, _, _ := d.Scalar(ticket.FieldReviewRound)
+	if strings.TrimSpace(verdict) == "" || strings.TrimSpace(round) != strconv.Itoa(ticket.CurrentRound(t)) {
+		return nil
+	}
+	gaps, _, _ := d.Scalar(ticket.FieldReviewGaps)
+	return d.SetScalar(ticket.FieldReviewVerdictGaps, gaps)
 }

@@ -39,7 +39,9 @@ type Ticket = {
   next_lane?: string
   question?: string
   assignee?: string
-  review?: { verdict?: string; gaps?: string }
+  // verdict_gaps: review-gaps as the review left them beside its verdict,
+  // kept by jaira when a later round's loop lane rewrites review-gaps.
+  review?: { verdict?: string; gaps?: string; verdict_gaps?: string }
   // The ticket's round, and the round its verdict was written in (0 or
   // absent: unknown, a verdict from before jaira counted rounds).
   round?: number
@@ -123,10 +125,10 @@ export function snapshotOf(
       question: oneLine(t.question),
       acceptTo: next?.terminal === true ? next.id : null,
       assignee,
-      explainable: explainable(verdict, t.review?.gaps),
-      // Before a review, and after a later round's optimize lane rewrote
-      // them, the gaps hold what optimize removed, not the review's notes.
-      notes: verdict === '' || !sameRound(t) ? [] : notesOf(t.review?.gaps),
+      explainable: explainable(verdict, reviewGaps(t) ?? t.review?.gaps),
+      // Before a review there are no review notes; after a later round's
+      // optimize lane rewrote review-gaps they are in the copy jaira kept.
+      notes: verdict === '' ? [] : notesOf(reviewGaps(t)),
       ...(sameRound(t) ? {} : { reviewedIn: t.review_round }),
     })
   }
@@ -194,6 +196,14 @@ function findings(gaps: string | undefined): string[] {
 // The findings that are no blocker: what the band lists under the row.
 function notesOf(gaps: string | undefined): string[] {
   return findings(gaps).filter(l => !BLOCKER.test(l))
+}
+
+// The review's own gaps: review-gaps in the verdict's round, the copy jaira
+// kept beside the verdict after that. Undefined for an earlier-round verdict
+// read by a jaira that keeps no copy: review-gaps then may be optimize's.
+function reviewGaps(t: Ticket): string | undefined {
+  if (sameRound(t)) return t.review?.gaps
+  return t.review?.verdict_gaps || undefined
 }
 
 // Whether the verdict was written in the ticket's current round. A later

@@ -1065,6 +1065,21 @@ describe('waiting for you', () => {
     expect(await band.find({ type: 'Text', text: /· note: a test is missing/ })).toBeDefined()
   })
 
+  test('a verdict of an earlier round lists the review\'s own notes, kept beside it, not optimize\'s', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { ...HUMAN, handle: 'OLD123', question: '', round: 3, review_round: 2, review: { verdict: 'approve', gaps: 'removed the unused helper', verdict_gaps: 'note: the export test covers 1MB, not 40MB' } },
+      { ...SIGNOFF, handle: 'BLK456', round: 2, review_round: 1, review: { verdict: 'approve', gaps: 'none', verdict_gaps: 'blocker: DoD 2 - an empty export writes a header' } },
+    ]
+    await startSession($)
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ type: 'Text', text: /· note: the export test covers 1MB/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /removed the unused helper/ })).toBeUndefined()
+    // the blocker kept beside an earlier verdict offers Explain; notes alone do not
+    expect(await band.find({ key: 'explain-BLK456' })).toBeDefined()
+    expect(await band.find({ key: 'explain-OLD123' })).toBeUndefined()
+  })
+
   test('an explanation stays readable once its verdict is an earlier round\'s', async ($, on) => {
     const w = world(on)
     w.tickets = [{ ...SIGNOFF, round: 2, review_round: 1, review: { verdict: 'approve, but the cache key ignores the branch', gaps: 'note: a test is missing' } }]

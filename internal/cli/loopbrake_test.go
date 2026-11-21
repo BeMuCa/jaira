@@ -83,3 +83,68 @@ func TestSetRefusesUnknownStopAfterFix(t *testing.T) {
 		t.Errorf("after the last good write (empty) and refused ones, stop_after_fix is %v", got)
 	}
 }
+
+// A send-back typed at a terminal is a person's; the same move through a
+// pipe — how every agent runs jaira — is the loop lane's and counts.
+func TestCLIMoveAtATerminalIsAPersons(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		terminal bool
+		by       string
+		count    float64
+	}{
+		{"at a terminal", true, ticket.BackByPerson, 1},
+		{"through a pipe", false, ticket.BackByLane, 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			was := atATerminal
+			atATerminal = func() bool { return tc.terminal }
+			t.Cleanup(func() { atATerminal = was })
+
+			dir, h := newModeTicket(t)
+			for _, to := range []string{"review", "in-progress"} {
+				if out, err := runCLI(t, dir, "move", h, "--to", to, "--force"); err != nil {
+					t.Fatalf("move --to %s: %v\n%s", to, err, out)
+				}
+			}
+			back, _ := jsonCLI(t, dir, "show", h)["back"].(map[string]any)
+			if back["from"] != "review" || back["by"] != tc.by || back["count"] != tc.count {
+				t.Errorf("back is %v, want from review, by %s, count %v", back, tc.by, tc.count)
+			}
+		})
+	}
+}
+
+// The review's gaps stay beside its verdict, whatever order they were
+// written in, while a later round's loop lane rewrites review-gaps.
+func TestVerdictKeepsItsGaps(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		writes [][]string
+	}{
+		{"one call", [][]string{{"review-gaps=note: a\nblocker: b", "review-verdict=back"}}},
+		{"gaps first", [][]string{{"review-gaps=note: a\nblocker: b"}, {"review-verdict=back"}}},
+		{"verdict first", [][]string{{"review-verdict=back"}, {"review-gaps=note: a\nblocker: b"}}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir, h := newModeTicket(t)
+			for _, w := range tc.writes {
+				if out, err := runCLI(t, dir, append([]string{"set", h}, w...)...); err != nil {
+					t.Fatalf("set %v: %v\n%s", w, err, out)
+				}
+			}
+			for _, to := range []string{"review", "in-progress"} {
+				if out, err := runCLI(t, dir, "move", h, "--to", to, "--force"); err != nil {
+					t.Fatalf("move --to %s: %v\n%s", to, err, out)
+				}
+			}
+			if out, err := runCLI(t, dir, "set", h, "review-gaps=removed helper fooBar"); err != nil {
+				t.Fatalf("set: %v\n%s", err, out)
+			}
+			review, _ := jsonCLI(t, dir, "show", h)["review"].(map[string]any)
+			if review["verdict_gaps"] != "note: a\nblocker: b" || review["gaps"] != "removed helper fooBar" {
+				t.Errorf("review is %v, want the review's gaps kept beside the verdict and the later round's in gaps", review)
+			}
+		})
+	}
+}

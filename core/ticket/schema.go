@@ -130,6 +130,13 @@ const (
 	// — and a reader treats the verdict as it always did.
 	FieldReviewRound = "review-round"
 
+	// FieldReviewVerdictGaps is review-gaps as it stood beside the verdict,
+	// copied by the write of either in the verdict's own round. From the next
+	// round on the loop lanes rewrite review-gaps (optimize lists what it
+	// removed), so without the copy a verdict left standing has lost its
+	// findings. Absent: a verdict from before the field.
+	FieldReviewVerdictGaps = "review-verdict-gaps"
+
 	// FieldBlockerRule is the one sentence that says what on this ticket is a
 	// blocker — what alone sends work back — set by pre-process or a person.
 	// Without one every edge a later lane finds reads as a reason for another
@@ -376,6 +383,8 @@ type Ticket struct {
 	Round int
 	// ReviewRound is the round ReviewVerdict was written in, 0 when unknown.
 	ReviewRound int
+	// ReviewVerdictGaps is the review's own gaps, kept beside its verdict.
+	ReviewVerdictGaps string
 	// BlockerRule is the ticket's own blocker rule, "" when it has none;
 	// BlockerRule() falls back to the default.
 	BlockerRule string
@@ -777,6 +786,7 @@ func decodeFields(d *Doc, f *Fields, path string) (*Ticket, error) {
 	t.ReviewCheck = str(FieldReviewCheck)
 	t.Round = count(str(FieldRound))
 	t.ReviewRound = count(str(FieldReviewRound))
+	t.ReviewVerdictGaps = str(FieldReviewVerdictGaps)
 	t.BlockerRule = str(FieldBlockerRule)
 	t.StopAfterFix = str(FieldStopAfterFix) == "true"
 	t.BackFrom = str(FieldBackFrom)
