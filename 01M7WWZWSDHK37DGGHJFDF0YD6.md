@@ -23,14 +23,14 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:44:04Z
+updated-at: 2026-11-21T09:44:13Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3647270
 claimed-at: 2026-11-21T09:36:24Z
 outcome-what: "Round 14: bughunt on HEAD compares commits only - ok, fail, or unknown (uncommitted hunted files, drawn as a dim ?), plus skipped for stop-after-fix; jaira validate warns on an unreadable stop-after-fix; the in-progress prompt and --brief help name the alternating-lanes count and the conversational commit."
 outcome-why: "Teamlead for Alex 21.11. (final round): the mtime comparison caused the last review's falsely red and falsely green edges; remove the cause instead of patching it."
 outcome-resolves: "review round 13 notes 1, 2 (cause removed), 3 and 5 (one sentence each), 4 (validate warning). go test ./... RC=0, claude plugin test 220 pass; scratch board: clean ok, uncommitted unknown, ticket commit fail, validate warns on 'yes'."
-review-summary: "A ticket now carries blocker-rule (one sentence, default: wrong result/data loss/crash/security hole) and stop-after-fix (true/false/empty, checked by jaira set). jaira move records every send-back itself in back-from/back-by/back-count: a person's lane, a move in the board (TUI) or a CLI move at a terminal counts as person and resets the count; consecutive returns from the same loop lane count up. show --json and the --for-lane payload carry blocker_rule, stop_after_fix, back and round; the in-progress prompt stops at back.count>=3 from one lane, testing skips the hunt in a fix round when stop_after_fix, review/testing/bughunt prompts read blocker_rule. jaira set copies review-gaps into review-verdict-gaps while both belong to the verdict's round, so a verdict a later round left standing keeps its own findings. show --brief gains bughunt {at,on_head,skipped}: on_head is computed by gitrepo.ChangedSince - commits naming the ticket since the hunt, or uncommitted files written after the hunt's note, over the files the hunt listed; merges and .jaira board data (not lane prompts) do not count. Cockpit: Explain only for a blocker: line (bare or markdown-emphasised) or a reserving verdict; other notes listed under the row without a button; an earlier-round verdict says 'review of round N, changed since' and uses the kept gaps. The Explain prompt (texts.ts, spawn.sh) asks for a status line, one [class] line per note and a recommendation in the order recommended; the pane colours ticks/crosses, class marks and the recommendation with theme colours, and an unshaped old note still renders as text. SetScalar normalises CR/CRLF to LF for every field."
+review-summary: "none"
 review-gaps: |-
   note: bughunt on HEAD errs red when an uncommitted file was written in the same minute before the hunt note - core/gitrepo/git.go writtenSince compares mtime with the note stamp, which is truncated to the minute (core/ticket/body.go Notes); fix: compare against the end of that minute, or let the hunt note carry seconds
   note: bughunt on HEAD errs green for a file edited while the hunt was still running - the reference time is when the hunt finished, not when it read the file; known limit of a note-based stamp, harmless in the usual flow where testing edits nothing
