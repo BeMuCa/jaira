@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:41:41Z
+updated-at: 2026-11-21T08:41:45Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -46,6 +46,7 @@ review-gaps: |-
   note: reap.sh faellt still auf den PR-Pfad zurueck, wenn 'jaira roles list' scheitert; auf einem none-Board steht dann 'no merged pull request' statt der Ursache
   note: worktree_diff enthaelt nur unversionierte .jaira/milestones/*.md, die nichts mit diesem Ticket zu tun haben - nicht mit in die Ticket-Commits nehmen
   optimize Runde 8: nichts zu entfernen.
+  optimize Runde 10: Revert-Code restlos entfernt (revertSubject, revertedCommit, revertsBranchWork); nichts weiter.
 test-verdict: "fail (round 9): go vet + go test -race ./... RC=0 at bfbb234c; bughunt 2 change findings"
 hunt-verdict: "change (round 11): revert after rebase loses its sha link; sha256 repos never match the 40-hex pattern"
 claimed-by: DESKTOP-RFTCH11-30002
