@@ -54,11 +54,16 @@ Write four things, in this order:
 2. `review-gaps` — what is missing or unconvincing, one finding per line, and
    every line starts with what kind of finding it is:
 
-   - `blocker:` — the diff breaks a definition-of-done item, or ships a
-     defect, whether it was written here or came along with copied or moved
-     code. Nothing else is a blocker.
+   - `blocker:` — the diff breaks a definition-of-done item, or ships one of
+     four things: a wrong result, data loss, a crash, a security hole —
+     whether it was written here or came along with copied or moved code.
+     Nothing else is a blocker.
    - `note:` — everything else: a simpler form, a missing test of something
-     that works, a neighbouring fault, a "would be nice".
+     that works, a neighbouring fault, a "would be nice". Name the class and
+     the fix in the line, so whoever carries the ticket can close a small edge
+     of this change in the same round instead of handing it to the person. A
+     fault that was there before this change and lies outside its scope is
+     `note: pre-existing: <what and where>`.
 
    If you found nothing, write `none` explicitly — an empty field means nobody
    looked, and "none" is you saying you looked and found nothing.
@@ -109,9 +114,11 @@ its criteria and ships no defect has no blocker, however much you could add to
 it.
 
 Then move the ticket on. A blocker sends it back to the lane the work was done
-in (`in-progress` on the default board), with the reason in a note
-(`jaira note <id> <text>`), so the implementer reading the ticket later sees it
-in the trail rather than only in a field the next review overwrites. Without a
+in (`in-progress` on the default board), with the reason in a note that
+starts `review:` (`jaira note <id> "review: <blocker>"`), written last before
+the move, so the implementer reading the ticket later sees it in the trail
+rather than only in a field the next review overwrites, and counts the return
+for this lane. Without a
 blocker it goes on to the person, notes and all. You are not the last word: a
 person reads your verdict alongside the implementer's account and decides. Say
 plainly when you are unsure rather than rounding up to approval.
