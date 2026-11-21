@@ -182,8 +182,8 @@ Without Herdr, start it as a subagent instead — "the worker skill" in place of
 ```
 Agent(subagent_type: "claude",
       prompt: "Read the dispatcher skill and drive ticket <id> until it
-               reaches a human lane or blocks. Report in three lines,
-               plus the numbered options of any question you could not
+               reaches a human lane or blocks. Report in three lines
+               and the status line, plus the numbered options of any question you could not
                ask.")
 ```
 

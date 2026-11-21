@@ -128,6 +128,10 @@ export const filterWords = {
   marker: '[shortened by jaira-cockpit]',
   question: 'question',
   fullReport: 'full report',
+  // The fields of a worker's status line, as the digest names them.
+  commits: 'commits',
+  gates: 'gates',
+  notes: 'notes',
   none: 'No agent reports kept for this project yet.',
   noneFor: (id: string) => `No reports kept for ${id} in this project.`,
   nothingNew: (id: string, older: number) =>
