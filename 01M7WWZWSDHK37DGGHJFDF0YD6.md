@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:14:54Z
+updated-at: 2026-11-21T09:14:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
@@ -31,7 +31,7 @@ outcome-what: "Round 11: a named board's lane prompts count as code for bughunt 
 outcome-why: "The round-10 hunter showed .jaira/boards/<name>/lanes/ prompts were read as board data, so a ticket commit rewriting one left on_head true."
 outcome-resolves: "bughunt change at a6187478; TestChangedSince 21 cases; go test ./... RC=0."
 review-summary: "none"
-review-gaps: "none - a6187478: the two path loops in writtenSince folded into one; nothing orphaned"
+review-gaps: "none - isBoardData mirrors boardLanesDir's layout in one function"
 test-verdict: "pass: go test -count=1 ./... RC=0 at a6187478; TestChangedSince 19 cases; scratch board: hunt without a file list, then jaira tag (board data) -> on_head true, then a code edit -> false; read-only git, no parallel-writer case"
 hunt-verdict: "fail: 1 change finding at a6187478 - a named board's lane prompts (.jaira/boards/<name>/lanes/) read as board data"
 round: 11
