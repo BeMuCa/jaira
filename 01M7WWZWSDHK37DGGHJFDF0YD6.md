@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZWSDHK37DGGHJFDF0YD6
 title: "Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,13 +23,13 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:14:42Z
+updated-at: 2026-11-21T09:14:46Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
-outcome-what: "Round 10: board data under .jaira/ (all but the lane prompts) never takes a hunt off HEAD, tracked or not, listed or not."
-outcome-why: "The round-9 hunter showed jaira tag / milestone writes to tracked board files turned bughunt on HEAD red on an unchanged ticket."
-outcome-resolves: "bughunt change at cf0cdfef (git.go writtenSince); TestChangedSince 19 cases; go test ./... RC=0. Checked: input (-z names, quotePath off), error paths unchanged, read-only."
+outcome-what: "Round 11: a named board's lane prompts count as code for bughunt on HEAD, like today's board's."
+outcome-why: "The round-10 hunter showed .jaira/boards/<name>/lanes/ prompts were read as board data, so a ticket commit rewriting one left on_head true."
+outcome-resolves: "bughunt change at a6187478; TestChangedSince 21 cases; go test ./... RC=0."
 review-summary: "none"
 review-gaps: "none - a6187478: the two path loops in writtenSince folded into one; nothing orphaned"
 test-verdict: "pass: go test -count=1 ./... RC=0 at a6187478; TestChangedSince 19 cases; scratch board: hunt without a file list, then jaira tag (board data) -> on_head true, then a code edit -> false; read-only git, no parallel-writer case"
