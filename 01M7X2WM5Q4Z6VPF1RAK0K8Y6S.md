@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:07:22Z
+updated-at: 2026-11-21T08:07:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
@@ -95,3 +95,4 @@ review-check: "1. cd in den Worktree feat/0k8y6s  2. scripts/shipped-history.sh 
 - **2026-11-21 08:01 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/4205.sock
 - **2026-11-21 08:04 · Alexander Sacharov** — Runde nach signoff: --write statt Umleitung (Temp-Datei neben dem Manifest, chmod 644, mv; trap raeumt bei Fehler). stdout-Modus bleibt fuer Scratch-Vergleiche und die Tests. Alle Hinweise in core/role, core/lane, core/shipped nennen --write; Logbook-Eintraege bleiben Geschichte. Keine Release-Note: Entwickler-Skript, fuer Nutzer nicht sichtbar.
 - **2026-11-21 08:07 · Alexander Sacharov** — Merge upstream/master (Teamlead-Auftrag): union-Merge des Manifests liess 14+ Duplikate (master hatte Zeilen am Ende angehaengt, dieser Branch dieselben eingesortiert) - genau der Fall, den TestManifestLinesAreWellFormed meldet; Abhilfe --write, nach Ende des Bughunts. Einmaliger Effekt: ab jetzt sortiert jeder Branch mit --write, angehaengte Zeilen von Hand bleiben die Quelle solcher Duplikate. Sonst ist go test ./... gruen.
+- **2026-11-21 08:07 · Alexander Sacharov** — bughunt: change: core/shipped/shipped.sha256 (whole file) - HEAD carries 99 duplicate manifest lines, so go test ./shipped/ fails TestManifestLinesAreWellFormed; the merge=union merge 6f5ba869 (upstream/master into feat/0k8y6s, names the ticket via the branch) made them: both parents 7f2d86fe and 6f5ba869^2 have 0 duplicates, the merge has 99; no line is lost or missing (regenerated manifest equals sort -u of the committed one) and scripts/shipped-history.sh --check passes, so CI's check alone would not see it; remedy: scripts/shipped-history.sh --write and commit; ran: cd core && go test ./shipped/ (FAIL), git show <c>:core/shipped/shipped.sha256 | grep -v '^#' | sort | uniq -d | wc -l for 7f2d86fe/6f5ba869^2/6f5ba869 (0/0/99)
