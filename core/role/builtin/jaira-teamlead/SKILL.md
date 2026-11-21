@@ -209,8 +209,11 @@ round does not cover code a later round changed:
 
 ```bash
 jaira show <id> | grep -E -- "— bughunt: done at [0-9a-f]{7,} " | tail -n 1   # the hunt's closing note
-git rev-parse --short <the ticket's branch>               # the commit that ships
+git rev-parse <the ticket's branch>                       # the commit that ships
 ```
+
+The note's sha covers the commit when it is a prefix of that full sha — two
+clones abbreviate to different lengths, so never compare two short forms.
 
 The ticket's branch is the one whose name carries its handle as a segment —
 not necessarily `feat/<id>`; `jaira-role-signoff` holds the lookup, which

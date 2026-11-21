@@ -96,7 +96,8 @@ work, so a hunt that does not name the head was not done there, and that is ❌.
   about this one: `?` — and if the branch is ahead of what was pushed, say
   that is why
 - **bug hunt on HEAD** — the last `— bughunt: done at <sha> ` note names
-  `$head` (compare the short form). An older sha does not cover what a later
+  `$head` — the note's sha is a prefix of the full `$head`, whatever length
+either clone abbreviates to. An older sha does not cover what a later
   round changed: ❌
 - **blocker** — none, or how many 🔴 the table below holds
 - **review** — `.review.verdict`
@@ -143,8 +144,16 @@ that they, not you, run it.
 ## The return rules
 
 These decide the recommendation. They exist because without them a ticket goes
-round signoff forever, each round finding the next smaller edge.
+round signoff forever, each round finding the next smaller edge. The status
+line comes first: the table only sorts notes, and a red check is no note.
 
+0. **A ❌ on the status line → give back, whatever the table says.** Tests
+   failed at the head: give back with the failing run's link. No hunt names
+   the head: give back so the hunt runs on it — the change is not done
+   without one. A `?` is not a ❌, but it is not a ✅ either: never
+   recommend accept over it without saying which check is unknown and what
+   settles it (push and wait for CI, run the hunt), and put that in the
+   recommendation's reason.
 1. **Any 🔴 → give back.** Only the 🔴 rows, and the 🟡 rows with them.
 2. **Only 🟡, ⚪ and 🔵:** count the ticket's earlier returns from signoff —
    the notes that start `Given back from signoff:`, which the cockpit and the
