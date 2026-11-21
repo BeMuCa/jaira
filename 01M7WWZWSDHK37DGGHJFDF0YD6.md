@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:14:13Z
+updated-at: 2026-11-21T08:18:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
@@ -33,7 +33,7 @@ outcome-resolves: "Review notes 1-3 of 1789d202. Checked: concurrency (copy insi
 review-summary: "none"
 review-gaps: "none - c8de2b8a: no second TTY check in the repo (grep IsTerminal/isatty: none), nothing orphaned (sameRound still has callers), no fluff worth a change"
 test-verdict: "pass: go test ./... RC=0 at c8de2b8a (core/lane after the manifest line), go test -race -count=1 internal/cli core/ticket core/move RC=0, claude plugin test 216 pass; DoD 11 verified in the tree; scratch board: pipe move review->in-progress back by=lane, same move under script(1) (real TTY) by=person; verdict+CRLF gaps then a later-round gaps write -> verdict_gaps keeps 'note: a\\nblocker: b', plain show prints 'gaps at verdict'; set on a missing ticket exits 5; parallel set review-gaps + review-verdict both land, verdict_gaps consistent with gaps"
-hunt-verdict: "pass: bughunt done at 1789d202, 0 change, 0 pre-existing (follow-up hunt over the diff since ac850761)"
+hunt-verdict: "fail: 1 change finding at c8de2b8a - Explain prompts (texts.ts:79, spawn.sh:396) read an empty verdict_gaps on a ticket reviewed before the field as 'earlier round'"
 round: 3
 review-verdict: "The diff meets all ten DoD items; no blocker. go test (core/move, core/ticket, internal/cli, core/role, core/shipped, internal/tui) and claude plugin test (215 pass) green at 1789d202. Three small notes, none needs a round."
 review-round: 2
