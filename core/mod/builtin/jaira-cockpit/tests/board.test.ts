@@ -2929,6 +2929,12 @@ describe('the workers tab', () => {
     // Angle brackets inside a line of content are content, never stripped.
     for (const line of ['keyed by Map<string, number> and a < b check > fixed', 'if n<3 then x>2', 'moved <id> to critique', '<b>bold</b> start'])
       expect(reportLine(`<task-notification>\n<result>\n${line}\n</result>`)).toBe(line)
+    // A line an agent wrote to make a pattern backtrack is read in linear time.
+    for (const line of ['<a></a>'.repeat(5000) + 'x', '<a>'.repeat(5000) + 'x', '<a '.repeat(5000) + '>x', `<${'a'.repeat(20000)}>x</b>`]) {
+      const start = performance.now()
+      expect(reportLine(`<result>\n${line}\n</result>`)).toBe(line)
+      expect(performance.now() - start).toBeLessThan(200)
+    }
   })
 
   test('a ticket with an open question and no agent is no figure; one with an agent waits for the answer', async ($, on) => {

@@ -113,10 +113,16 @@ function clip(s: string, n: number): string {
 
 // The first line of a kept report worth reading: a task notification's
 // result, else the text, past blank lines and lines that are nothing but
-// tags and whole elements (`<task-id>a1</task-id>`). A line of content keeps every angle bracket it has: `Map<K, V>` or
-// `n<3 then x>2` is what the agent wrote, not markup.
-const TAGS_ONLY = /^(?:<([a-z][\w-]*)[^<>]*>[^<>]*<\/\1>\s*|<[^<>]*>\s*)+$/i
+// tags and whole elements (`<task-id>a1</task-id> <status>done</status>`).
+// A line of content keeps every angle bracket it has: `Map<K, V>` or
+// `n<3 then x>2` is what the agent wrote, not markup. The line is cut into
+// its tags first and each piece matched alone, with patterns that cannot
+// match one text two ways: an agent writes the report, and a pattern that
+// backtracks on it would hang the session at every read of the tab.
+const TAG = /^<[^<>]*>$/
+const ELEMENT = /^<([a-z][\w-]*)(?:\s[^<>]*)?>[^<>]*<\/\1>$/i
+const tagsOnly = (line: string) => line.replace(/>\s*</g, '>\n<').split('\n').every(p => TAG.test(p) || ELEMENT.test(p))
 export function reportLine(text: string): string {
   const body = /<result>([\s\S]*?)(?:<\/result>|$)/.exec(text)?.[1] ?? text
-  return body.split('\n').map(l => l.replace(/\s+/g, ' ').trim()).find(l => l !== '' && !TAGS_ONLY.test(l)) ?? ''
+  return body.split('\n').map(l => l.replace(/\s+/g, ' ').trim()).find(l => l !== '' && !tagsOnly(l)) ?? ''
 }

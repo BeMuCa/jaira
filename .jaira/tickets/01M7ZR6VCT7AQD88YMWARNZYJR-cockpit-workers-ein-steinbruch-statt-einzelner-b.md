@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-21T19:09:25Z
-updated-at: 2026-11-21T20:08:07Z
+updated-at: 2026-11-21T20:11:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-243922
 claimed-at: 2026-11-21T19:47:52Z
@@ -31,13 +31,13 @@ outcome-what: "Workers-Tab neu: workersOf liefert nur echte Agenten (Herdr-Tab <
 outcome-why: "Bahnen pro Figur brauchten ab 5 Agenten Scrollen, zeigten weder Rolle noch Dauer noch Tätigkeit, und Tickets mit offener Frage ohne Agent (auch fremde, seit Oktober liegende) standen als Figur da."
 outcome-resolves: "DoD 1-5: nur Agenten (Test), ein Stein mit Größenberechnung (Test), eine Zeile pro Agent (Test), live geprüft + Release-Note, 1-30 Agenten passen in 40×100 (parametrisierter Test)."
 review-summary: none
-round: 3
+round: 4
 back-from: testing
 back-by: lane
-back-count: 1
-review-gaps: "sceneRows: placesOf for the big crab is computed once and reused instead of twice (fits lambda gone). Searched for an existing duration formatter (cache.ts, sessions.ts only print whole minutes inline) — none to reuse, durationOf stays. Nothing the change orphaned: progressOf/stepOf/Spot/WALK_STEP, the tests' plan helper and Ticket.next_lane/plan_items went with it. Left the per-read store lookup of reports (one key per ticket every 5 s) as is."
-test-verdict: "fail: go test ./core/role RC=1 — TestEveryInstalledFileIsAShippedVersion: core/shipped/shipped.sha256 lacks the versions of 6 changed cockpit files; cockpit suite itself green (237 pass, RC=0), DoD 1-5 verified in the tree and live"
-hunt-verdict: "fail: bughunt done at 330eb71c4, 1 change (reportLine strips any <…> span from report content), 1 pre-existing (subagent naming two handles counted at both — same subject, note for the person)"
+back-count: 2
+review-gaps: "none — round 2 (c6c748443) adds one regex and manifest lines; nothing to remove. Round 1: big-crab places computed once; no existing duration formatter to reuse."
+test-verdict: "pass: round 2 — cockpit suite RC=0 (237), go test ./core/role ./core/shipped RC=0, go test ./... RC=0 earlier on c6c748443"
+hunt-verdict: "fail: bughunt done at c6c748443, 1 change blocker — TAGS_ONLY in digest.ts backtracks exponentially on '<a></a>'.repeat(n)+'x' (hangs the session on reading the Workers tab)"
 ---
 
 # Cockpit-Workers: ein Steinbruch statt einzelner Bahnen, und nur Tickets mit eigenem Agenten
@@ -82,3 +82,7 @@ hunt-verdict: "fail: bughunt done at 330eb71c4, 1 change (reportLine strips any 
 - **2026-11-21 20:04 · Alexander Sacharov** — bughunt: done at 330eb71c4 - 2 findings (1 change, 1 pre-existing) in 7 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/digest.ts core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx core/mod/builtin/jaira-cockpit/hooks/overview.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/RNZYJR.md
 - **2026-11-21 20:05 · Alexander Sacharov** — testing: class: a generated manifest not regenerated with the change; example: go test ./core/role → TestEveryInstalledFileIsAShippedVersion lists digest.ts, overview-pane.tsx, overview.ts, register.tsx, texts.ts, types/index.d.ts; fix: scripts/shipped-history.sh --write after the last code edit, and run go test ./core/role before every push. Plus bughunt change: reportLine — strip only lines that are nothing but tags, never <…> inside content; test with 'Map<string, number>' and 'n<3 then x>2'.
 - **2026-11-21 20:08 · Alexander Sacharov** — Runde 2 in-progress: reportLine überspringt jetzt nur Zeilen, die ganz aus Tags/ganzen Elementen bestehen (TAGS_ONLY in digest.ts), Inhalt behält seine spitzen Klammern; shipped.sha256 per scripts/shipped-history.sh --write neu; go test ./... RC=0. Der pre-existing Befund (Subagent mit zwei Handles) bleibt als Notiz für die Person: gleiche Stelle wie vor diesem Ticket, ein Fix bräuchte eine Regel, welche Handle in einer Beschreibung 'die eigene' ist.
+- **2026-11-21 20:08 · Alexander Sacharov** — critique (Runde 3): liest nur c6c748443 — TAGS_ONLY-Fix und Manifest; nichts dazu zu sagen.
+- **2026-11-21 20:09 · Alexander Sacharov** — bughunt: change: blocker: core/mod/builtin/jaira-cockpit/hooks/digest.ts:118 - class: catastrophic backtracking in TAGS_ONLY. An empty element (<a></a>, <td></td>, <p> </p>) matches both the first branch whole and the second branch twice, so a line of n empty elements followed by any non-tag text tries 2^n splits before it fails. reportLine runs it synchronously on every line of the last kept report, for every ticket, on each Workers read (register.tsx:885, inside locked()), so one such report freezes the session's JS thread again on every refresh until a newer report replaces it. The report text is written by an agent. Example: '<a></a>'.repeat(26)+'x' takes 3.8 s, and each further pair multiplies that by about 2. Fix direction: make the branches disjoint (the second branch must not match a closing tag or an element that has a matching close), or test with a linear scan. Blocker because it is a hang of the host session (crash class); the trigger is rare. ran: node scratch script running the same regex for n=16..26 (23 ms, 56, 208, 873, 3813 ms); blame: c6c748443 (names RNZYJR)
+- **2026-11-21 20:09 · Alexander Sacharov** — bughunt: done at c6c748443 - 1 finding (1 change, 0 pre-existing), follow-up hunt since 330eb71c4: diff of digest.ts and board.test.ts, shipped.sha256 new and read whole (hashes match, go test ./core/role -run Shipped ok); concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/digest.ts core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx core/mod/builtin/jaira-cockpit/hooks/overview.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/RNZYJR.md core/shipped/shipped.sha256
+- **2026-11-21 20:11 · Alexander Sacharov** — Runde 3 in-progress: TAGS_ONLY ersetzt — Zeile wird an '>\s*<' in Teile geschnitten, jeder Teil gegen TAG oder ELEMENT (Name, dann nur nach Leerzeichen Attribute) geprüft: keine zwei Wege für einen Text, linear. Test misst 4 adversariale Zeilen à 5000-20000 Zeichen < 200 ms. Manifest neu geschrieben.
