@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:43:56Z
+updated-at: 2026-11-21T09:44:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3647270
 claimed-at: 2026-11-21T09:36:24Z
@@ -200,3 +200,4 @@ back-count: 1
 - **2026-11-21 09:33 · Alexander Sacharov** — testing round 13 passed (hunt 220d5b51 clean); pushed 220d5b51. Moved to review, a fresh agent runs it via run-lane.sh.
 - **2026-11-21 09:37 · Alexander Sacharov** — worker stopped: ticket in signoff after the 5th fresh review without a blocker (round 13); feat/df0yd6 pushed at 220d5b51; ticket file carries the review fields uncommitted. Question to the parent: accept, or give back for review notes 1 (same-minute falsely red) and 5 (help sentence; the real fix needs file hashes in the hunt note = jaira-role-bughunt).
 - **2026-11-21 09:37 · Alexander Sacharov** — Given back from signoff (Teamlead im Auftrag Alex 21.11. 10:45, letzte Runde): Notes 1/2 sind Raender der mtime-Heuristik, die meine vorige Rueckgabe ausgeloest hat - nicht weiter flicken, Ursache entfernen: writtenSince/mtime raus. bughunt.on_head vergleicht nur Commits (Hunt-Commit Vorfahr von HEAD und keine gejagte Datei seitdem geaendert); uncommittete Aenderungen an gejagten Dateien ergeben 'unknown' (?) statt fail - nie Rot aus einer Uhrzeit. Note 4: jaira validate warnt bei unlesbarem stop-after-fix. Note 3 und 5: je ein Satz in in-progress-Prompt bzw. --brief-Hilfe. Danach Diff-Hunt + review; was dann kommt, ist known limit - endgueltig.
+- **2026-11-21 09:44 · Alexander Sacharov** — round 14 (teamlead give-back, final): the mtime heuristic is gone. core/gitrepo HuntCoverage compares commits only: ok (no ticket commit on hunted files since), fail (one since, or HEAD not descending from the hunt), unknown (a hunted file changed and not committed, or git cannot answer) - no clock read anywhere, so a clock never makes it red. brief bughunt = {at, state: ok|fail|unknown|skipped}; the pane draws unknown as a dim '?'. jaira validate warns bad_stop_after_fix for a value read as off ('yes'). in-progress prompt: alternating loop lanes never reach count 3 - count yourself; conversational commits after the hunt read fail until the next hunt (also in --brief help). TestHuntCoverage 22 cases (changed_test.go renamed huntcoverage_test.go), TestUnreadableStopAfterFixIsReported.
