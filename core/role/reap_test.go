@@ -706,6 +706,9 @@ func TestReapTearsDownWhatTheSetupBuilt(t *testing.T) {
 		// Git Bash finding Windows' timeout.exe first: it refuses -k.
 		{name: "windows timeout", script: "exit 0", mode: 0o755, record: true, noTimeout: true, fakeTimeout: true,
 			want: "kept AB12CD: no timeout(1) that takes -k to bound <main>/.jaira/worktree-teardown"},
+		// ... and coreutils' own behind it on PATH, which is the one used.
+		{name: "windows timeout first", script: "exit 0", mode: 0o755, record: true, fakeTimeout: true,
+			want: "tore down <wt>", called: true, gone: true},
 		{name: "no timeout no record", script: "exit 0", mode: 0o755, noTimeout: true, gone: true},
 		{name: "not executable", script: "exit 0", mode: 0o644, record: true,
 			want: "kept AB12CD: <main>/.jaira/worktree-teardown is not executable"},
@@ -739,13 +742,18 @@ func TestReapTearsDownWhatTheSetupBuilt(t *testing.T) {
 			if c.timeout != "" {
 				r.env = append(r.env, "JAIRA_TEARDOWN_TIMEOUT="+c.timeout)
 			}
-			if c.noTimeout {
-				dir := pathWithout(t, r.env, "timeout", "gtimeout")
+			if c.noTimeout || c.fakeTimeout {
+				dir := pathOf(r.env)
+				if c.noTimeout {
+					dir = pathWithout(t, r.env, "timeout", "gtimeout")
+				}
 				if c.fakeTimeout {
-					r.write(t, filepath.Join(dir, "timeout"), "#!/usr/bin/env bash\necho 'ERROR: Invalid syntax. Default option is not allowed more than '1' time(s).' >&2\nexit 1\n")
-					if err := os.Chmod(filepath.Join(dir, "timeout"), 0o755); err != nil {
+					fake := t.TempDir()
+					r.write(t, filepath.Join(fake, "timeout"), "#!/usr/bin/env bash\necho 'ERROR: Invalid syntax. Default option is not allowed more than '1' time(s).' >&2\nexit 1\n")
+					if err := os.Chmod(filepath.Join(fake, "timeout"), 0o755); err != nil {
 						t.Fatal(err)
 					}
+					dir = fake + string(os.PathListSeparator) + dir
 				}
 				r.env = append(r.env, "PATH="+dir)
 			}
@@ -801,18 +809,23 @@ func TestReapTearsDownWhatTheSetupBuilt(t *testing.T) {
 	}
 }
 
+// pathOf is env's PATH: the last one is what exec sees.
+func pathOf(env []string) string {
+	var path string
+	for _, e := range env {
+		if v, ok := strings.CutPrefix(e, "PATH="); ok {
+			path = v
+		}
+	}
+	return path
+}
+
 // pathWithout is env's PATH as one directory of links to every program on it
 // but the named ones: the first of each name wins, as in a lookup.
 func pathWithout(t *testing.T, env []string, drop ...string) string {
 	t.Helper()
-	var path string
-	for _, e := range env {
-		if v, ok := strings.CutPrefix(e, "PATH="); ok {
-			path = v // the last one is what exec sees
-		}
-	}
 	dir := t.TempDir()
-	for _, d := range filepath.SplitList(path) {
+	for _, d := range filepath.SplitList(pathOf(env)) {
 		entries, _ := os.ReadDir(d)
 		for _, e := range entries {
 			if slices.Contains(drop, e.Name()) {

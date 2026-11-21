@@ -370,11 +370,12 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
     if [ ! -x "$teardown" ]; then
       echo "kept $t: $teardown is not executable: chmod +x it, or remove it"; continue
     fi
+    # Every one on PATH, not the first: timeout.exe may stand before
+    # coreutils' own.
     tbin=""
-    for c in timeout gtimeout; do
-      c="$(command -v "$c" 2>/dev/null)" || continue
+    while IFS= read -r c; do
       if "$c" -k 1 1 true </dev/null >/dev/null 2>&1; then tbin="$c"; break; fi
-    done
+    done < <(type -ap timeout gtimeout)
     if [ -z "$tbin" ]; then
       echo "kept $t: no timeout(1) that takes -k to bound $teardown: install coreutils"; continue
     fi
