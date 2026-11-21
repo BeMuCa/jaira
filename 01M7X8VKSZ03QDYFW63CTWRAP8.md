@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T09:41:33Z
+updated-at: 2026-11-21T09:41:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3769961
 claimed-at: 2026-11-21T09:41:21Z
@@ -43,7 +43,7 @@ hunt-verdict: "known limit: 1 finding at cb9e353e (a .jaira-only ticket reads ? 
 question: ""
 review-verdict: "All four DoD items are met. Fresh check against the binary built from cb9e353e: boards/lanes --json keys (human_exit, requires_question, terminal, output_produces, input_requires) resolve to signoff/done/in-progress on this board; show --json handle/dod_items/review.*; list --lane/--board; gh run list --commit/--workflow and glab ci list --sha exist; the cockpit writes 'Given back from ${lane}:' (register.tsx:954) as rule 2 counts. go test -count=1 ./core/role ./core/shipped ok; shipped.sha256 holds the current signoff SKILL.md hash; last bughunt note names HEAD cb9e353e. Diff is role text only, no Go code beyond wantRoles. No blocker; three notes, all fail-safe or housekeeping."
 review-round: 19
-review-check: "1. cd into a checkout of feat/twrap8 and run: go test ./core/role ./core/shipped -count=1 - both print ok  2. go run ./cmd/jaira roles install --project (or jaira update --roles with this build) - .claude/skills/jaira-role-signoff/SKILL.md now exists  3. in a Claude session run /jaira-role-signoff TWRAP8 (ticket must sit in signoff) - you get one status line with ✅/❌/? per check, one table with a mark per note, one bold recommendation and two jaira lines to paste; nothing on the ticket changed (jaira show TWRAP8 shows no new note)  4. open core/role/builtin/jaira-teamlead/SKILL.md, section 'Report to the human' - it starts with re-reading jaira show + gh pr list, and points to jaira-role-signoff for the return rules  5. open core/role/builtin/jaira-worker/SKILL.md, section 'Before you push' - it says to run the repo's CI gates locally before every push"
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-twrap8  2. go test -count=1 ./core/role ./core/shipped - both print ok (role takes ~90s)  3. go run ./cmd/jaira roles install --project - .claude/skills/jaira-role-signoff/SKILL.md now exists  4. in a Claude session in this worktree run /jaira-role-signoff TWRAP8 - you see one status line (DoD 4/4, tests ✅ or ?, bug hunt ✅ at cb9e353e), one table with a mark per note, one bold recommendation and two jaira lines; jaira show TWRAP8 afterwards has no new note  5. open core/role/builtin/jaira-teamlead/SKILL.md section 'Report to the human' - it starts with re-reading jaira show + gh pr list and points to jaira-role-signoff for the return rules  6. open core/role/builtin/jaira-worker/SKILL.md section 'Before you push' - it says to run the repo's CI gates locally before every push"
 ---
 
 # Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis
