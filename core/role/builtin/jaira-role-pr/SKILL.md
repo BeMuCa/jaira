@@ -295,14 +295,16 @@ stops stops the push: report what stopped it and push nothing.
 
 1. **Scan what the push would publish.**
    `scripts/pre-push-scan.sh <remote>/<branch>` — every commit of the branch:
-   added lines, file names, commit message, author and committer email,
-   against the denylist (`~/.config/jaira/mention-denylist`, outside the
-   repository on purpose) and this machine's name.
+   added lines, file names, commit message, author's and committer's name and
+   email, against the denylist (`~/.config/jaira/mention-denylist`, UTF-8 or
+   UTF-16 with its BOM, outside the repository on purpose) and this machine's
+   name.
    Stops on: exit 3 — a denylist hit. Report the commit and file the script
    names and nothing more: never the matched text, never the pattern, not in
    the report, not in a note, not in a commit message. Rewriting those commits
-   is the person's call. Exit 2 — the list is unreadable or a pattern is
-   invalid: a scan that cannot read its list never passes.
+   is the person's call. Exit 2 — the list is unreadable, in another
+   encoding, or holds an invalid pattern: a scan that cannot read its list
+   never passes. Any other non-zero exit is git's own: stop and report it.
    Does not stop on: a warning for this machine's name, or a missing list —
    carry both into the report as the script prints them.
 2. **Bring the base in.**

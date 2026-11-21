@@ -127,6 +127,12 @@ func TestPrePushScan(t *testing.T) {
 		{"committer email", func(r *scanRepo) {
 			r.commit("feat: x", nil, "GIT_COMMITTER_EMAIL=me@acme-corp.example")
 		}, "", "", 3, []string{"committer email: matches"}, []string{"author email"}},
+		{"author name", func(r *scanRepo) {
+			r.commit("feat: x", nil, "GIT_AUTHOR_NAME=Alex AcmeCorp")
+		}, "", "", 3, []string{"author name: matches"}, []string{"committer name"}},
+		{"committer name", func(r *scanRepo) {
+			r.commit("feat: x", nil, "GIT_COMMITTER_NAME=Acme-Corp build")
+		}, "", "", 3, []string{"committer name: matches"}, []string{"author name"}},
 		{"this machine's name only warns", func(r *scanRepo) {
 			r.commit("feat: h", map[string]string{"t.md": "claimed-by: DESKTOP-X1-123\n"})
 		}, "", "", 0, []string{"warning: ", "t.md:1: names this machine", "the push may go on"}, []string{"do not push"}},
@@ -180,6 +186,68 @@ func TestPrePushScan(t *testing.T) {
 				if strings.Contains(strings.ToLower(out), strings.ToLower(n)) {
 					t.Errorf("output carries %q\n%s", n, out)
 				}
+			}
+		})
+	}
+}
+
+// The class: the denylist is read differently than it was written, and a
+// pattern lost on the way reads as "no hit" (AX8K02, bughunt 2026-11-21). A
+// list is read as written — UTF-8 with or without a BOM, UTF-16 with its BOM —
+// or refused with exit 2; and a non-ASCII letter folds its case whatever
+// locale the caller runs in.
+func TestPrePushScanReadsTheListAsWritten(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	dir := t.TempDir()
+	if _, err := install(dir, false, true, false); err != nil {
+		t.Fatal(err)
+	}
+	script := filepath.Join(dir, "jaira-role-pr", "scripts", "pre-push-scan.sh")
+	utf16le := func(s string) string {
+		b := []byte{0xff, 0xfe}
+		for _, r := range s {
+			b = append(b, byte(r), byte(r>>8))
+		}
+		return string(b)
+	}
+	for _, c := range []struct {
+		name, list, content, locale string
+		code                        int
+		want                        string
+	}{
+		{"UTF-8", "# names\nmüller\n", "MÜLLER GmbH\n", "", 3, "matches the denylist"},
+		{"UTF-8 with BOM", "\xef\xbb\xbfacmecorp\r\n", "for acmecorp\n", "", 3, "matches the denylist"},
+		{"UTF-16LE with BOM", utf16le("# list\r\nacmecorp\r\n"), "for acmecorp\n", "", 3, "matches the denylist"},
+		{"UTF-16 without BOM", utf16le("acmecorp\n")[2:], "for acmecorp\n", "", 2, "NUL bytes"},
+		{"Latin-1", "acmecorp\nm\xfcller\n", "for acmecorp\n", "", 2, "not UTF-8"},
+		{"C locale still folds non-ASCII", "müller\n", "MÜLLER GmbH\n", "C", 3, "matches the denylist"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			r := newScanRepo(t)
+			r.commit("feat: x", map[string]string{"x.txt": c.content})
+			list := fixtureFile(t, "deny", c.list)
+			cmd := exec.Command(bash, script, "main")
+			cmd.Dir = r.dir
+			cmd.Env = append(append([]string{}, r.env...), "JAIRA_MENTION_DENYLIST="+list, "JAIRA_SCAN_HOSTNAME=")
+			if c.locale != "" {
+				cmd.Env = append(cmd.Env, "LC_ALL="+c.locale, "LANG="+c.locale, "LC_CTYPE="+c.locale)
+			}
+			b, err := cmd.CombinedOutput()
+			out := string(b)
+			code := 0
+			if ee, ok := err.(*exec.ExitError); ok {
+				code = ee.ExitCode()
+			} else if err != nil {
+				t.Fatal(err)
+			}
+			if code != c.code || !strings.Contains(out, c.want) {
+				t.Errorf("exit %d, want %d with %q\n%s", code, c.code, c.want, out)
+			}
+			if strings.Contains(strings.ToLower(out), "acmecorp") || strings.Contains(strings.ToLower(out), "müller") {
+				t.Errorf("output carries the mention\n%s", out)
 			}
 		})
 	}

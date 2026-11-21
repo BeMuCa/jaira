@@ -11,9 +11,9 @@ usage() {
 pre-push-scan.sh <base>
 
 Checks every commit of <base>..HEAD — each one, not only the sum, because a
-push publishes the whole history — in five places: the lines it adds, the
-names of the files it changes, its message, its author email and its
-committer email. A merge is checked for what it adds itself, a conflict
+push publishes the whole history — in every place the push publishes: the
+lines it adds, the names of the files it changes, its message, and its
+author's and committer's name and email. A merge is checked for what it adds itself, a conflict
 resolution, and not for what it brings in from its parents.
 
 Two lists are matched, case-insensitively:
@@ -22,6 +22,8 @@ Two lists are matched, case-insensitively:
                  blank lines ignored, read from $JAIRA_MENTION_DENYLIST or
                  else ~/.config/jaira/mention-denylist. It lives outside the
                  repository on purpose: a list inside it would be the mention.
+                 UTF-8, with or without a BOM, or UTF-16 with its BOM; any
+                 other encoding is refused rather than half read.
                  A hit stops the push. No file, or one with no pattern in it:
                  the scan says the strings were not checked and goes on.
   this machine   its name as 'uname -n' gives it, up to the first dot
@@ -37,7 +39,8 @@ the mention.
 Exit codes: 0 nothing stops the push (warnings may be printed); 3 the
 denylist matched — do not push; 2 usage, <base> is not a commit here, or the
 denylist cannot be read or holds an invalid pattern — fix that, a scan that
-cannot read its list never passes; 1 git failed.
+cannot read its list never passes; any other non-zero code — git's own —
+git failed.
 USAGE
 }
 
@@ -52,17 +55,46 @@ git rev-parse --verify --quiet "$base^{commit}" >/dev/null ||
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
+# grep -i folds the case of a non-ASCII letter only in a UTF-8 locale; the
+# caller's may be C. Take the first locale here that folds Ü to ü.
+fold=C
+fold_state="non-ASCII letters compared case-sensitively (no UTF-8 locale here)"
+for l in "${LC_ALL:-}" "${LC_CTYPE:-}" "${LANG:-}" C.UTF-8 C.utf8 en_US.UTF-8 en_US.utf8; do
+  [ -n "$l" ] || continue
+  if LC_ALL=$l grep -qi "$(printf '\303\274')" <<<"$(printf '\303\234')" 2>/dev/null; then
+    fold=$l fold_state=""
+    break
+  fi
+done
+
 list=${JAIRA_MENTION_DENYLIST:-$HOME/.config/jaira/mention-denylist}
 deny=$tmp/deny
 : >"$deny"
 denylist_state="not found at $list, its strings were not checked"
 if [ -e "$list" ]; then
   [ -r "$list" ] && [ -f "$list" ] || die "the denylist $list cannot be read" 2
-  # A pattern file written on Windows ends its lines in CR, which would make
-  # every pattern demand a CR the content no longer has.
-  tr -d '\r' <"$list" | { grep -v -e '^[[:space:]]*#' -e '^[[:space:]]*$' || true; } >"$deny"
+  # Read the list as it was written, or not at all: a pattern dropped on the
+  # way reads as "no hit" and the push goes out.
+  head -c 2 "$list" | od -An -tx1 | tr -d ' \n' >"$tmp/bom"
+  case "$(cat "$tmp/bom")" in
+  fffe | feff)
+    command -v iconv >/dev/null || die "the denylist $list is UTF-16 and iconv is missing" 2
+    iconv -f UTF-16 -t UTF-8 <"$list" >"$tmp/list" 2>/dev/null || die "the denylist $list is not valid UTF-16" 2
+    ;;
+  *) cat <"$list" >"$tmp/list" ;;
+  esac
+  [ "$(tr -d '\000' <"$tmp/list" | wc -c)" = "$(wc -c <"$tmp/list")" ] ||
+    die "the denylist $list holds NUL bytes — save it as UTF-8" 2
+  if LC_ALL=C grep -q '[^ -~[:space:]]' "$tmp/list"; then
+    command -v iconv >/dev/null || die "the denylist $list holds non-ASCII text and iconv is missing to check it is UTF-8" 2
+    iconv -f UTF-8 -t UTF-8 <"$tmp/list" >/dev/null 2>&1 || die "the denylist $list is not UTF-8 — save it as UTF-8" 2
+  fi
+  # A BOM would stick to the first pattern; a file written on Windows ends its
+  # lines in CR, which would make every pattern demand a CR the content has not.
+  LC_ALL=C sed "1s/^$(printf '\357\273\277')//" "$tmp/list" | tr -d '\r' |
+    { LC_ALL=C grep -a -v -e '^[[:space:]]*#' -e '^[[:space:]]*$' || true; } >"$deny"
   rc=0
-  grep -Eqi -f "$deny" </dev/null 2>/dev/null || rc=$?
+  LC_ALL=$fold grep -Eqi -f "$deny" </dev/null 2>/dev/null || rc=$?
   [ "$rc" -le 1 ] || die "the denylist $list holds a pattern grep cannot read" 2
   if [ -s "$deny" ]; then
     denylist_state="$(wc -l <"$deny" | tr -d ' ') pattern(s) from $list"
@@ -86,7 +118,7 @@ host_state="this machine's name checked"
 lines() {
   [ -s "$1" ] || return 0
   local rc=0
-  grep -n -a -i "$2" -f "$1" -- "$3" >"$tmp/grep" || rc=$?
+  LC_ALL=$fold grep -n -a -i "$2" -f "$1" -- "$3" >"$tmp/grep" || rc=$?
   [ "$rc" -le 1 ] || die "grep failed on $3" 1
   cut -d: -f1 <"$tmp/grep"
 }
@@ -136,7 +168,7 @@ scan() {
   # Into files and read from there, never piped into grep -q: grep stops at
   # its first match, git dies of SIGPIPE, and under pipefail the hit is lost.
   git log -1 --format=%B "$c" >"$tmp/msg"
-  git log -1 --format='%ae%n%ce' "$c" >"$tmp/who"
+  git log -1 --format='%ae%n%ce%n%an%n%cn' "$c" >"$tmp/who"
 
   : >"$tmp/flagged"
   for kind in deny host; do
@@ -164,7 +196,12 @@ scan() {
     [ ! -s "$tmp/n" ] || report "$kind" "$short commit message"
     lines "$pat" "$mode" "$tmp/who" >"$tmp/n"
     while IFS= read -r n; do
-      if [ "$n" = 1 ]; then report "$kind" "$short author email"; else report "$kind" "$short committer email"; fi
+      case $n in
+      1) report "$kind" "$short author email" ;;
+      2) report "$kind" "$short committer email" ;;
+      3) report "$kind" "$short author name" ;;
+      *) report "$kind" "$short committer name" ;;
+      esac
     done <"$tmp/n"
   done
 }
@@ -177,6 +214,7 @@ while IFS= read -r c; do
 done <"$tmp/commits"
 
 echo "pre-push-scan: $count commit(s) of $base..HEAD; denylist: $denylist_state; $host_state"
+[ -z "$fold_state" ] || echo "pre-push-scan: $fold_state"
 if [ "$stops" -gt 0 ]; then
   echo "pre-push-scan: $stops denylist hit(s) — do not push; rewrite the commits named above" >&2
   exit 3
