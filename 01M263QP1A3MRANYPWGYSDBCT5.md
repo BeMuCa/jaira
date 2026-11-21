@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-21T08:25:31Z
+updated-at: 2026-11-21T08:25:34Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -34,8 +34,8 @@ review-gaps: |-
   note: der Test prueft die Rolle core/role/jaira/SKILL.md, nicht die neuen Saetze in jaira-worker, jaira-role-lane, jaira-role-pr und docs/AGENTS.md - die sind reine Prosa, ein Wegfall faellt keinem Test auf
 test-verdict: "pass: no code change since 99be9268; go test -race ./... RC=0 at 24658f47, go test ./core/board ./core/role ./core/shipped RC=0 at 99be9268; DoD 1-7 hold in the tree"
 hunt-verdict: "pass: bughunt done at 99be9268 (diff since d71e5e86: 99be9268 + shipped.sha256 union of 24658f47), 0 change, 0 pre-existing"
-review-verdict: "pass - all 7 DoD items hold in the diff; current hashes of the 4 changed roles are in shipped.sha256; .claude/skills/jaira equals core/role/jaira byte for byte; agent blocks in CLAUDE.md and AGENTS.md are identical; no further live commit line names .jaira/tickets without the caveat; go test core/board core/role core/shipped internal/cli -count=1 green. Two cosmetic notes, no blocker."
-review-round: 4
+review-verdict: "Der Diff erfuellt alle 7 DoD-Punkte; nur Prosa und ein Stringtest, kein Laufzeitcode, kein Defekt gefunden. go test ./... -race gruen. Aussage 'git verweigert die Datei als ignoriert' stimmt (git add auf einen per .git/info/exclude ignorierten Pfad bricht mit Exit 1 ab)."
+review-round: 5
 review-check: "1. cd into the worktree jaira-sdbct5 and run: go build -o /tmp/jaira-sdbct5 ./cmd/jaira  2. mkdir /tmp/t && cd /tmp/t && git init && /tmp/jaira-sdbct5 init  3. open /tmp/t/CLAUDE.md, find the point 'the ticket rides with the code' - it ends with 'On a board not shared yet ... commit the code alone ... The next point holds there all the more'  4. git status in /tmp/t shows no .jaira/ - that is the unshared board the sentence is about  5. in the worktree: go test ./core/board -run TestAgentNoteNamesProofAndTheUnsharedBoardCaveat -count=1 -> ok  6. grep -n 'not shared yet' core/role/builtin/jaira-worker/SKILL.md core/role/builtin/jaira-role-lane/SKILL.md -> one line under each ready-to-paste commit block"
 ---
 
