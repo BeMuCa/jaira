@@ -50,9 +50,10 @@ teardown failed: ...'), and the next round calls it again, so it must bear
 being called twice. One that runs longer than JAIRA_TEARDOWN_TIMEOUT
 seconds (default 300) is stopped with its child processes and counts as
 failed ('... (timed out after 300s)'): the cockpit calls reap.sh every ten
-minutes, and a hung teardown would otherwise hold reap.lock for good. One that
-is there but not executable keeps the ticket before any tab closes, and so
-does a machine without timeout(1) or gtimeout (coreutils).
+minutes, and a hung teardown would otherwise hold reap.lock for good. Where a
+teardown is due, one that is there but not executable keeps the ticket before
+any tab closes, and so does a machine without a timeout(1) or gtimeout that
+takes -k (coreutils; Windows' own timeout.exe does not).
 
 The teardown is always the main checkout's, also for a worktree spawned from
 another one. $1 and $4 are paths as they were when the setup ran and may be
@@ -351,24 +352,31 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
   # down another ticket's stack. A worktree with no record had no setup run by
   # spawn.sh, and its teardown is not called. Checked before a tab closes.
   teardown="$main/.jaira/worktree-teardown"; targs=()
-  if [ -e "$teardown" ] && [ ! -x "$teardown" ]; then
-    echo "kept $t: $teardown is not executable: chmod +x it, or remove it"; continue
-  fi
-  if [ -x "$teardown" ]; then
+  if [ -e "$teardown" ]; then
     for w in "${wts[@]+"${wts[@]}"}"; do
       rec="$(git -C "$w" rev-parse --absolute-git-dir 2>/dev/null)/jaira-setup"
       [ -f "$rec" ] || continue
       targs+=("$(field worktree "$rec")" "$(field slug "$rec")" "$(field offset "$rec")" "$(field root "$rec")")
     done
   fi
+  # What follows is asked only where a teardown is due: a worktree without a
+  # record needs no teardown, and nothing about it keeps the ticket.
   # Bounded: the cockpit runs this every ten minutes under reap.lock, and a
   # teardown that hangs would hold the lock and stop every later round.
-  # timeout(1) is coreutils; macOS ships it as gtimeout, if at all. Asked only
-  # where a teardown will run: a worktree without a record needs none.
+  # timeout(1) is coreutils; macOS ships it as gtimeout, if at all, and Git
+  # Bash may find Windows' own timeout.exe first, which takes no -k: a
+  # candidate is used only once it ran a bounded 'true'.
   if [ "${#targs[@]}" -gt 0 ]; then
-    tbin="$(command -v timeout || command -v gtimeout || true)"
+    if [ ! -x "$teardown" ]; then
+      echo "kept $t: $teardown is not executable: chmod +x it, or remove it"; continue
+    fi
+    tbin=""
+    for c in timeout gtimeout; do
+      c="$(command -v "$c" 2>/dev/null)" || continue
+      if "$c" -k 1 1 true </dev/null >/dev/null 2>&1; then tbin="$c"; break; fi
+    done
     if [ -z "$tbin" ]; then
-      echo "kept $t: no timeout(1) to bound $teardown: install coreutils"; continue
+      echo "kept $t: no timeout(1) that takes -k to bound $teardown: install coreutils"; continue
     fi
   fi
 

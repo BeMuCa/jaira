@@ -680,15 +680,16 @@ func TestReapOnANoneBoardNamesAnUnansweringGh(t *testing.T) {
 func TestReapTearsDownWhatTheSetupBuilt(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
-		name      string
-		script    string // the teardown; "" for none
-		mode      os.FileMode
-		record    bool   // whether spawn.sh left a jaira-setup record
-		want      string // a line reap.sh prints
-		called    bool   // whether the teardown ran
-		gone      bool   // whether the worktree went
-		timeout   string // JAIRA_TEARDOWN_TIMEOUT; "" for the default
-		noTimeout bool   // PATH without timeout and gtimeout
+		name        string
+		script      string // the teardown; "" for none
+		mode        os.FileMode
+		record      bool   // whether spawn.sh left a jaira-setup record
+		want        string // a line reap.sh prints
+		called      bool   // whether the teardown ran
+		gone        bool   // whether the worktree went
+		timeout     string // JAIRA_TEARDOWN_TIMEOUT; "" for the default
+		noTimeout   bool   // PATH without timeout and gtimeout
+		fakeTimeout bool   // a timeout first on PATH that refuses -k, as Windows' does
 	}{
 		{name: "none", record: true, gone: true},
 		{name: "succeeds", script: "exit 0", mode: 0o755, record: true, want: "tore down <wt>", called: true, gone: true},
@@ -701,11 +702,15 @@ func TestReapTearsDownWhatTheSetupBuilt(t *testing.T) {
 		// A machine without timeout(1): a teardown cannot be bounded, so a
 		// worktree that needs one stays; one without a record goes as before.
 		{name: "no timeout", script: "exit 0", mode: 0o755, record: true, noTimeout: true,
-			want: "kept AB12CD: no timeout(1) to bound <main>/.jaira/worktree-teardown"},
+			want: "kept AB12CD: no timeout(1) that takes -k to bound <main>/.jaira/worktree-teardown"},
+		// Git Bash finding Windows' timeout.exe first: it refuses -k.
+		{name: "windows timeout", script: "exit 0", mode: 0o755, record: true, noTimeout: true, fakeTimeout: true,
+			want: "kept AB12CD: no timeout(1) that takes -k to bound <main>/.jaira/worktree-teardown"},
 		{name: "no timeout no record", script: "exit 0", mode: 0o755, noTimeout: true, gone: true},
 		{name: "not executable", script: "exit 0", mode: 0o644, record: true,
 			want: "kept AB12CD: <main>/.jaira/worktree-teardown is not executable"},
 		{name: "no record", script: "exit 0", mode: 0o755, gone: true},
+		{name: "not executable no record", script: "exit 0", mode: 0o644, gone: true},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -735,7 +740,14 @@ func TestReapTearsDownWhatTheSetupBuilt(t *testing.T) {
 				r.env = append(r.env, "JAIRA_TEARDOWN_TIMEOUT="+c.timeout)
 			}
 			if c.noTimeout {
-				r.env = append(r.env, "PATH="+pathWithout(t, r.env, "timeout", "gtimeout"))
+				dir := pathWithout(t, r.env, "timeout", "gtimeout")
+				if c.fakeTimeout {
+					r.write(t, filepath.Join(dir, "timeout"), "#!/usr/bin/env bash\necho 'ERROR: Invalid syntax. Default option is not allowed more than '1' time(s).' >&2\nexit 1\n")
+					if err := os.Chmod(filepath.Join(dir, "timeout"), 0o755); err != nil {
+						t.Fatal(err)
+					}
+				}
+				r.env = append(r.env, "PATH="+dir)
 			}
 			r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
 			r.write(t, r.shown, `{"status":"done"}`)
@@ -766,7 +778,7 @@ func TestReapTearsDownWhatTheSetupBuilt(t *testing.T) {
 			} else if len(b) != 0 {
 				t.Errorf("teardown called: %q\n%s", b, got)
 			}
-			if c.mode == 0o644 && r.closedTabs() != "" {
+			if c.mode == 0o644 && c.record && r.closedTabs() != "" {
 				t.Errorf("a teardown that cannot run closed tabs anyway: %q", r.closedTabs())
 			}
 			_, err := os.Stat(r.wt)
