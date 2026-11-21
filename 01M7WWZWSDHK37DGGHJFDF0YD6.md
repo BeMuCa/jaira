@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZWSDHK37DGGHJFDF0YD6
 title: "Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,13 +23,13 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:49:13Z
+updated-at: 2026-11-21T08:49:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
-outcome-what: "Round 6: on_head requires the hunt commit in HEAD's history, counts only non-merge commits naming the ticket since the hunt plus uncommitted changes, and widens to all code when the hunt's file list names a path that does not exist."
-outcome-why: "Testing round 5: the hunter found a main checkout on master read a feature branch's hunt as on HEAD; the scratch run found a file list split at a space read as unchanged."
-outcome-resolves: "both round-5 findings; TestChangedSince (12 cases incl. not-an-ancestor, split list, other ticket's commit, master merge); go test core/gitrepo internal/cli core/ticket RC=0. Checked: concurrency (read-only git), error paths (invalid id/unknown commit -> error -> on_head false; ls-tree error surfaces), input (spaces, -z, literal pathspecs, unknown paths), permissions (handle pattern built only from a ValidID)."
+outcome-what: "Round 7: on_head also turns false for an untracked file inside the hunted paths written after the hunt finished."
+outcome-why: "The round-7 hunter showed git diff HEAD never lists untracked files, so an edited new file left on_head true."
+outcome-resolves: "bughunt change at 7d73a41d (core/gitrepo/git.go:353); TestChangedSince 16 cases; go test core/gitrepo internal/cli RC=0. Checked: error paths (stat failure -> changed), input (-z, --full-name, spaces), concurrency/permissions unchanged (read-only)."
 review-summary: "none"
 review-gaps: "none - 7d73a41d only moves the pattern into namesTicket"
 test-verdict: "pass: go test -count=1 ./... RC=0 at 7d73a41d, -race core/gitrepo RC=0, claude plugin test 216 pass (round 5, no TS change since); DoD 7 checked on a scratch board: no hunt -> bughunt null; hunt with 'files: a b.go' clean -> on_head true, after a commit naming the ticket -> false, new hunt -> true; unknown commit -> false; writes: none (read-only git), so no parallel-writer case"
