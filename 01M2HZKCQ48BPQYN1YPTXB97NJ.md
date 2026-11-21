@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:08:29Z
+updated-at: 2026-11-21T08:08:33Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -44,6 +44,7 @@ review-gaps: |-
   note: eine .jaira/pr mit BOM (Windows-Notepad) liest sich still als person, und roles list sagt dann 'the default' obwohl eine Datei da ist - sicher, aber verwirrend; ein Hinweis in roles list waere hilfreich
   note: unter none prueft pr-gate die Ticket-Status aus dem lokalen Store, nicht vom Basis-Zweig; ein von Hand auf done gesetztes Ticket-File oder ein Commit, der ein laengst abgelegtes Logbook-Ticket nennt, landet ohne dass ein Mensch es sieht - dieselbe Vertrauensannahme wie bei agent, nur ohne PR dahinter
   note: landed_head liest pro Ticket die ganze Historie der Spitze (git log tip) - auf grossen Repos langsam, korrekt
+  optimize Runde 6: nichts zu entfernen - firstLine bleibt als ein Einzeiler auf PRWordIn (ein Leseweg fuer alle Board-Dateien), land_remote/default_base ersetzen die alte origin-feste Variante ohne Rest.
 test-verdict: "pass: go vet + go test -race ./... RC=0 at 01e28a76 (ae1a72ee only reap.sh + its test, core/role green); DoD 1-8 checked in the tree; scratch board: none ticket not done -> exit 3, unnamed commit -> exit 3, -s ours merge held, non-ff push refused by git, parallel 'jaira update' -> paragraph once"
 hunt-verdict: "pass (round 7 at ae1a72ee): 0 findings"
 claimed-by: DESKTOP-RFTCH11-30002
