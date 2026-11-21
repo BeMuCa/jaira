@@ -1,6 +1,7 @@
 ---
 name: jaira-role-tester
 description: "Run a repository's test suite and report failures without fixing them, on a jaira board when there is one. Invoked as /jaira-role-tester [ticket-id] [target]. Use when handed testing as the whole job, typically by a teamlead session."
+model: haiku
 ---
 
 # Test, report, change nothing

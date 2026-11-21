@@ -1,0 +1,2 @@
+- The pr, tester and logbook-summary roles now run on haiku (`model: haiku` in their SKILL.md); run `jaira roles install` to pick it up, and remove the line from the installed SKILL.md if you want them on your own model.
+- A review comment that asks for a code change is no longer fixed by the pr role itself: it hands the point to a worker on opus and pushes that worker's commit.

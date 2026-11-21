@@ -1,6 +1,7 @@
 ---
 name: jaira-role-logbook-summary
 description: "Summarise a stretch of work for a project lead - what is finished, what is under way, what is open, hours estimated from commit times - as one page with every text ready to copy, and no code in it. Plain by default; a summary.md in the repository or in ~/.jaira says what the reader's own system needs. Invoked as /jaira-role-logbook-summary [period]. Use when someone asks how far the work has come, for a weekly report, or for hours to book."
+model: haiku
 ---
 
 # What happened, for someone who does not read code
