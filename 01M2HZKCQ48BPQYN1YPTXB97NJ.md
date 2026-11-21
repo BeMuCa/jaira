@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T09:27:18Z
+updated-at: 2026-11-21T09:28:56Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -203,3 +203,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-21 09:18 · Alexander Sacharov** — Teamlead 21.11. 10:20: 1 + Basis entscheidet ueberall
 - **2026-11-21 09:26 · Alexander Sacharov** — in-progress (Runde 15, 'Basis entscheidet ueberall'): (a) pr-gate ohne --land beantwortet nur 'darf ein Agent oeffnen' und verweigert eine none-Basis (no_pull_requests, 'land with --land'); --land nur Landen. None-Tests auf --land umgestellt, neuer Test TestPRGateNeverOpensOnABaseThatTakesNone. (b) roles list liest pr/pr-when/pr-reviewer aus der Basis (--base <ref>, sonst origin/HEAD|main|master als volle Refs); pr_source nennt die Basis und 'this branch changes .jaira/pr to X', ohne Basis 'read off this disk'. Test TestRolesListReadsTheBoardFilesFromTheBase. (c) jaira-role-pr liest pr aus der Basis und nach 'Which repository' erneut mit --base <remote>/<branch>. (d) Cockpit liest .jaira/pr per 'git show <base>:.jaira/pr' (Basis = Ziel des PR bzw. lokaler Default), Test: none nur im Checkout -> PR-Pfad; 218 pass. (e) reap.sh: Landing-Remote und -Basis einmal pro Lauf, roles list mit --base dahin; Tests committen .jaira/pr auf master (noneOnBase). Bewusst nicht: CLAUDE.md-Block (announce.go) liest die Platte - er beschreibt die Datei, die jaira update im Checkout schreibt, entscheidet nichts.
 - **2026-11-21 09:27 · Alexander Sacharov** — critique (Runde 18): Ein Prinzip statt Einzelfixes; die eine bewusste Ausnahme (CLAUDE.md-Block) ist begruendet. Nichts zu sagen.
+- **2026-11-21 09:28 · Alexander Sacharov** — bughunt: change: internal/cli/roles.go:557 - 'jaira roles list --base <ref>' with a ref that does not resolve (not fetched, typo, a fork parent remote never fetched) silently falls back to the checkout's own .jaira/pr, skipping origin's default branch too, and exits 0 - the branch's own word, which jaira-role-pr SKILL.md says to act on; an explicit --base that is not a commit should fail, not degrade; ran: scratch repo, origin/master says none, branch says agent: 'roles list --json' -> none, 'roles list --json --base upstream/master' -> pr=agent, source 'read off this disk', exit 0
