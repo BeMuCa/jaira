@@ -64,7 +64,8 @@ the next example of a mistake that was fixed for one example only. So:
   stays a note.
 - **A give-back with decisions is the list.** A note `Given back from
   <lane>: beheben:` carries what the person decided per review note, word for
-  word: fix exactly what stands under `beheben:`. What stands under
+  word: fix exactly what stands under `beheben:`, its `dazu:` line (what
+  the person typed) included. What stands under
   `angenommen:` was accepted as it is, and what stands under `Folge-Ticket:`
   has a ticket of its own — leave both alone, small edges or not.
 

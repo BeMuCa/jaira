@@ -537,18 +537,18 @@ async function fail($: EngineInterface, what: string, why: string): Promise<void
 // done, never from human past review and signoff. The gates run first as a
 // dry run; --force follows only when the human exit is all they refuse, so
 // an open definition-of-done item or plan step still stops the press.
-async function accept($: EngineInterface, w: Waiting, before?: (dir: string) => Promise<void>): Promise<void> {
+async function accept($: EngineInterface, w: Waiting, after?: (dir: string) => Promise<void>): Promise<void> {
   if (!board || w.acceptTo === null) return
   const dir = await ticketDir($, board, w.id)
   const dry = await run($, ['jaira', 'move', w.id, '--to', w.acceptTo, '--dry-run', '--json'], dir, 30_000)
   const refused = dry === undefined ? 'jaira did not run' : dry.exitCode === 0 ? undefined : otherRefusal(dry.stderr || dry.stdout)
   if (refused !== undefined) return fail($, `${t.accept} ${w.id}`, refused)
-  // What the person decided on the review's notes goes onto the ticket once
-  // the gates let the move through, and before it: a refused Accept writes
-  // nothing, an accepted ticket carries its decisions.
-  if (before !== undefined) await before(dir)
   const done = await jaira($, dir, ['move', w.id, '--to', w.acceptTo, '--force'])
   if (done.ok) {
+    // What the person decided on the review's notes goes onto the ticket once
+    // it is accepted, as Give back writes it once the ticket went back: a
+    // refused or failed Accept writes nothing and creates no follow-up.
+    if (after !== undefined) await after(dir)
     await say($, t.accepted(w.id, w.acceptTo))
     await afterAccept($, w.id, w.acceptTo)
   } else await fail($, `${t.accept} ${w.id}`, done.why)
@@ -973,11 +973,18 @@ async function stillIn($: EngineInterface, w: Waiting, what: string): Promise<{ 
 // for word as its context; the handle of each, or why it was not created.
 async function createFollowUps($: EngineInterface, dir: string, id: string, onBoard: string, items: readonly GapItem[]): Promise<Map<string, string>> {
   const out = new Map<string, string>()
-  for (const i of items.filter(x => x.choice === 'later')) {
-    const r = await run($, ['jaira', 'create', followTitle(i.text), '--context', i.text, '--follows', id, ...(onBoard ? ['--board', onBoard] : []), '--json'], dir, 30_000)
+  const lost: string[] = []
+  // A note an earlier acceptance already made a follow-up keeps that ticket.
+  for (const i of items.filter(x => x.choice === 'later' && x.follow === undefined)) {
+    // Every value with '=': a finding that starts with '-' ('-race fails')
+    // is never read as a flag.
+    const r = await run($, ['jaira', 'create', `--title=${followTitle(i.text)}`, `--context=${i.text}`, `--follows=${id}`, ...(onBoard ? [`--board=${onBoard}`] : []), '--json'], dir, 30_000)
     const handle = r?.exitCode === 0 ? createdHandle(r.stdout) : undefined
+    if (handle === undefined) lost.push(i.text)
     out.set(i.text, handle ?? `(not created: ${oneLine(withoutWarnings(output(r))).slice(0, 120).replace(/[()]/g, '')})`)
   }
+  // Not only in the note: the person hears it, as for a note that was lost.
+  if (lost.length > 0) await fail($, t.followUpsOf(id), t.followUpsLost(id, lost))
   return out
 }
 
@@ -1602,7 +1609,9 @@ export const register: Register = (on, options) => {
           submitLabel={t.giveBack}
           {...(items.length === 0 ? { autoFocus: true as const } : {})}
           onSubmit={(reason: string) => {
-            void (async () => {
+            // Locked as the row's buttons are: a second Enter while the
+            // choice is read gives nothing back twice.
+            void once($, w.id, async () => {
               const c = await read($, choosingAtom)
               const chosen = c?.id === w.id ? c.items : []
               // Nothing to fix and nothing typed: the pane stays open.
@@ -1613,7 +1622,7 @@ export const register: Register = (on, options) => {
               close()
               if (chosen.length === 0) return giveBack($, w.id, w.lane, reason.trim(), share)
               await giveBackWith($, w, chosen, reason.trim(), share)
-            })()
+            })
           }}
         />
         {items.length > 0 && w.acceptTo !== null

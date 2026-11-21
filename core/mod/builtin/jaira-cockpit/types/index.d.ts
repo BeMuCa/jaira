@@ -32,7 +32,7 @@ declare module 'claude-code' {
       // The review notes that pane lists, each with what the person chose
       // for it (fix now, follow-up, accept), and whether Accept already
       // warned once about a blocker not marked fix now.
-      choosing: { id: string; items: { text: string; cls: 'blocker' | 'edge' | 'limit' | 'elsewhere'; choice: 'now' | 'later' | 'accept'; earlier?: 'now' | 'later' | 'accept' }[]; warned: boolean } | null
+      choosing: { id: string; items: { text: string; cls: 'blocker' | 'edge' | 'limit' | 'elsewhere'; choice: 'now' | 'later' | 'accept'; earlier?: 'now' | 'later' | 'accept'; follow?: string }[]; warned: boolean } | null
       // The ticket the pane shows.
       paneTicket: string | null
       // Moves once a minute, so the cache countdown redraws.

@@ -638,7 +638,10 @@ export function upgradeCheckOf(json: string): { current: string; latest: string;
 // anyway, so the next acceptance reads them back instead of asking again.
 
 export type Choice = 'now' | 'later' | 'accept'
-export type GapItem = { text: string; cls: NoteClass; choice: Choice; earlier?: Choice }
+// follow: the ticket an earlier follow-up decision already created, so a
+// second acceptance that keeps it a follow-up creates no second ticket.
+export type GapItem = { text: string; cls: NoteClass; choice: Choice; earlier?: Choice; follow?: string }
+export type Decided = { choice: Choice; follow?: string }
 
 // A finding as the review lane writes it: 'blocker:' or 'note:', bare or in
 // markdown emphasis; 'note: pre-existing:' is a fault this change did not make.
@@ -659,7 +662,7 @@ const PRESELECTED: Record<NoteClass, Choice> = { blocker: 'now', edge: 'now', li
 // word, starts as it was decided. The acceptance rule: a finding classed
 // wrong is better than one lost or two merged — no line of the gaps but a
 // "none" ever drops out.
-export function gapItems(gaps: string | undefined, explainText?: string, decided?: ReadonlyMap<string, Choice>): GapItem[] {
+export function gapItems(gaps: string | undefined, explainText?: string, decided?: ReadonlyMap<string, Decided>): GapItem[] {
   const lines = findings(gaps)
   const prefixed = lines.some(l => PREFIXED.test(l))
   const texts: string[] = []
@@ -671,7 +674,8 @@ export function gapItems(gaps: string | undefined, explainText?: string, decided
   return texts.map((text, i) => {
     const cls: NoteClass = explained.length === texts.length ? explained[i]! : BLOCKER.test(text) ? 'blocker' : PRE_EXISTING.test(text) ? 'elsewhere' : 'edge'
     const earlier = decided?.get(text)
-    return { text, cls, choice: earlier ?? PRESELECTED[cls], ...(earlier !== undefined ? { earlier } : {}) }
+    if (earlier === undefined) return { text, cls, choice: PRESELECTED[cls] }
+    return { text, cls, choice: earlier.choice, earlier: earlier.choice, ...(earlier.follow !== undefined ? { follow: earlier.follow } : {}) }
   })
 }
 
@@ -686,15 +690,18 @@ const EXTRA = 'dazu: '
 
 // The decision lines the Give back or Accept note carries: a heading per
 // answer given, each finding word for word under it, a follow-up with the
-// ticket it became (or why none was created), what the person typed last.
+// ticket it became (or why none was created). What the person typed is part
+// of the work to do: it stands under 'beheben:', after the notes to fix, so
+// a give-back with words only still opens with that list.
 export function decisionLines(items: readonly GapItem[], follows: ReadonlyMap<string, string> = new Map(), extra = ''): string {
   const out: string[] = []
+  const typed = extra.trim() === '' ? [] : [`${EXTRA}${oneLine(extra)}`]
   for (const c of ['now', 'later', 'accept'] as const) {
     const of = items.filter(i => i.choice === c)
-    if (of.length === 0) continue
-    out.push(HEADINGS[c], ...of.map(i => `- ${c === 'later' ? `${follows.get(i.text) ?? '(not created)'}: ` : ''}${i.text}`))
+    const more = c === 'now' ? typed : []
+    if (of.length === 0 && more.length === 0) continue
+    out.push(HEADINGS[c], ...of.map(i => `- ${c === 'later' ? `${follows.get(i.text) ?? i.follow ?? '(not created)'}: ` : ''}${i.text}`), ...more)
   }
-  if (extra.trim() !== '') out.push(`${EXTRA}${oneLine(extra)}`)
   return out.join('\n')
 }
 
@@ -702,14 +709,14 @@ export function decisionLines(items: readonly GapItem[], follows: ReadonlyMap<st
 // with decisions, in the shape decisionLines writes, after its first words.
 const DECIDED_LEAD = /^(?:Given back|Accepted) from [^:\s]+:\s*/
 const NOTE_START = /^- \*\*\d{4}-\d\d-\d\d \d\d:\d\d [^*]*\*\* — /
-const FOLLOW = /^(?:[0-9A-Z]{6}|\(not created[^)]*\)):\s*/
+const FOLLOW = /^(?:([0-9A-Z]{6})|\(not created[^)]*\)):\s*/
 
 // What was decided before, read off the notes of `jaira show --json`: each
 // finding by its words, the newest decision winning. A note that is not the
 // cockpit's, or a line after the decisions, is read past.
-export function decisionsOf(showJson: string): Map<string, Choice> {
+export function decisionsOf(showJson: string): Map<string, Decided> {
   const body = parse<{ body?: string }>(withoutWarnings(showJson))?.body ?? ''
-  const out = new Map<string, Choice>()
+  const out = new Map<string, Decided>()
   let heading: Choice | undefined
   let inNote = false
   for (const raw of body.split('\n')) {
@@ -726,8 +733,9 @@ export function decisionsOf(showJson: string): Map<string, Choice> {
     if (h !== undefined) heading = h
     else if (heading !== undefined && line.startsWith('- ')) {
       const text = line.slice(2).trim()
-      out.set(heading === 'later' ? text.replace(FOLLOW, '') : text, heading)
-    } else inNote = false
+      const follow = heading === 'later' ? FOLLOW.exec(text) : null
+      out.set(follow ? text.slice(follow[0].length) : text, { choice: heading, ...(follow?.[1] ? { follow: follow[1] } : {}) })
+    } else if (!line.startsWith(EXTRA)) inNote = false
   }
   return out
 }

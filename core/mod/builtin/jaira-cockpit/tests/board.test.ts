@@ -2184,7 +2184,7 @@ describe('give back with the review notes', () => {
       '- note: the export test covers 1MB, not 40MB',
     ].join('\n'))
     expect(ran(w, 'jaira', 'create')).toEqual([[
-      'jaira', 'create', 'the log rotates at midnight UTC', '--context', 'note: pre-existing: the log rotates at midnight UTC', '--follows', 'MG677R', '--json', '@/.worktrees/repo-mg677r',
+      'jaira', 'create', '--title=the log rotates at midnight UTC', '--context=note: pre-existing: the log rotates at midnight UTC', '--follows=MG677R', '--json', '@/.worktrees/repo-mg677r',
     ]])
     // The move first: a follow-up only for a ticket that really went back.
     const at = (verb: string) => w.ran.findIndex(r => r[0] === 'jaira' && r[1] === verb)
@@ -2216,6 +2216,43 @@ describe('give back with the review notes', () => {
     await startSession($)
     await (await openPane($)).input({ key: 'reason-MG677R', text: '' })
     expect(notes(w)[0]).toBe('Given back from signoff: beheben:\n- note: the size\nFolge-Ticket:\n- (not created: jaira: the board is locked): note: pre-existing: the clock')
+    // Heard, not only noted: the toast after it says the ticket went back.
+    expect(w.opened).toContainEqual({ id: 'cockpit-message', title: 'Follow-up tickets of MG677R failed', focus: true })
+  })
+
+  test('every value of the follow-up goes with =, so a finding starting with - is no flag', async ($, on) => {
+    const w = withGaps(on, '-race fails in core/gitref')
+    await startSession($)
+    const pane = await openPane($)
+    await pane.press({ key: 'gap-MG677R-0' })
+    await pane.input({ key: 'reason-MG677R', text: 'and the docs' })
+    expect(ran(w, 'jaira', 'create')[0]?.slice(2, 5)).toEqual(['--title=-race fails in core/gitref', '--context=-race fails in core/gitref', '--follows=MG677R'])
+  })
+
+  test('a note kept a follow-up at the next acceptance keeps its ticket: no second one is created', async ($, on) => {
+    const w = withGaps(on, 'note: the size\nnote: pre-existing: the clock')
+    w.bodies.MG677R = '## Progress\n- **2026-11-20 10:00 · Alex** — Given back from signoff: beheben:\n- note: the size\nFolge-Ticket:\n- A1B2C3: note: pre-existing: the clock\n'
+    await startSession($)
+    await (await openPane($)).input({ key: 'reason-MG677R', text: '' })
+    expect(ran(w, 'jaira', 'create')).toEqual([])
+    expect(notes(w)[0]).toBe('Given back from signoff: beheben:\n- note: the size\nFolge-Ticket:\n- A1B2C3: note: pre-existing: the clock')
+  })
+
+  test('words typed with no note to fix still open the beheben: list the worker reads', async ($, on) => {
+    const w = withGaps(on, 'note: the size')
+    await startSession($)
+    const pane = await openPane($)
+    await pane.press({ key: 'gap-MG677R-0' })
+    await pane.press({ key: 'gap-MG677R-0' })
+    await pane.input({ key: 'reason-MG677R', text: 'the docs are missing' })
+    expect(notes(w)[0]).toBe('Given back from signoff: beheben:\ndazu: the docs are missing\nangenommen:\n- note: the size')
+  })
+
+  test('the dazu: line does not end the decisions read back after it', async ($, on) => {
+    const w = withGaps(on, 'note: the size')
+    w.bodies.MG677R = '## Progress\n- **2026-11-20 10:00 · Alex** — Given back from signoff: beheben:\ndazu: the docs\nangenommen:\n- note: the size\n'
+    await startSession($)
+    expect(await rows(await openPane($))).toEqual(['[accept] note: the size (decided before)'])
   })
 
   test('Accept with notes still marked fix now is refused and says so', async ($, on) => {
@@ -2227,7 +2264,7 @@ describe('give back with the review notes', () => {
     expect(w.toasts.at(-1)).toBe('MG677R: 1 note is marked fix now - press Give back, or mark it follow-up or accept')
   })
 
-  test('a note that is no blocker, not marked fix now, does not hold Accept: the decisions go onto the ticket before the move', async ($, on) => {
+  test('a note that is no blocker, not marked fix now, does not hold Accept: the decisions go onto the ticket once it is accepted', async ($, on) => {
     const w = withGaps(on, 'note: the size\nnote: pre-existing: the clock')
     await startSession($)
     const pane = await openPane($)
@@ -2238,8 +2275,18 @@ describe('give back with the review notes', () => {
     expect(notes(w)[0]).toBe('Accepted from signoff: Folge-Ticket:\n- F00001: note: pre-existing: the clock\nangenommen:\n- note: the size')
     const forced = w.ran.findIndex(r => r[1] === 'move' && r.includes('--force'))
     const noted = w.ran.findIndex(r => r[1] === 'note')
-    expect(forced).toBeGreaterThan(noted)
-    expect(w.ran.findIndex(r => r[1] === 'move' && r.includes('--dry-run'))).toBeLessThan(noted)
+    expect(forced).toBeLessThan(noted)
+    expect(forced).toBeLessThan(w.ran.findIndex(r => r[1] === 'create'))
+  })
+
+  test('an Accept the gates refuse writes no decisions and creates no follow-up', async ($, on) => {
+    const w = withGaps(on, 'note: pre-existing: the clock')
+    w.refusals.push({ code: 'dod_open', message: 'DoD 2 is not ticked' })
+    await startSession($)
+    await (await openPane($)).press({ key: 'gaps-accept-MG677R' })
+    expect(ran(w, 'jaira', 'note')).toEqual([])
+    expect(ran(w, 'jaira', 'create')).toEqual([])
+    expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toEqual([])
   })
 
   test('a blocker not marked fix now asks once; the second press accepts', async ($, on) => {
