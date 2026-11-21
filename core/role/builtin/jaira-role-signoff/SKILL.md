@@ -95,7 +95,9 @@ head is the commit every other copy leads up to — a local branch ahead of its
 push, or a remote one a teammate pushed after your last fetch. No copy at all,
 or copies that diverged with none of them leading on from all the others:
 `head` stays empty, the two checks bound to it — tests and bug hunt — are
-`?` (DoD, blocker, review and returns are read off the ticket as usual), and the
+`?` (DoD, blocker, review and returns are read off the ticket as usual; the
+`.jaira/`-only exemption under "bug hunt" goes first and holds without a
+head), and the
 status line names `$refs` — which one ships is the person's to say, not yours
 to guess.
 
@@ -116,9 +118,13 @@ work, so a hunt that does not name the head was not done there, and that is ❌.
 - **bug hunt on HEAD** — the last `— bughunt: done at <sha> ` note names
   `$head` — the note's sha is a prefix of the full `$head`, whatever length
   either clone abbreviates to. An older sha does not cover what a later
-  round changed: ❌. A ticket whose diff touches nothing outside `.jaira/`
-  has nothing to hunt: `–`, which counts as neither ✅ nor ❌ — the same
-  exemption the teamlead and the testing lane make
+  round changed: ❌. Decide one thing before that, and before the head: a
+  ticket none of whose commits touch anything outside `.jaira/` — its
+  `.commits`, and `git log --branches --remotes --grep <handle> --name-only`
+  (not `--all`: the ticket refs hold the ticket file outside `.jaira/`) —
+  has nothing to hunt, and usually no branch either, since lanes that change no code
+  commit nothing. Its hunt check is `–`, neither ✅ nor ❌, with or without
+  a head — the same exemption the teamlead and the testing lane make
 - **blocker** — none, or how many 🔴 the table below holds
 - **review** — `.review.verdict`
 - **returns from signoff** — how many are noted (see return rule 2)
