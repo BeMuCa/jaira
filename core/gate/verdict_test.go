@@ -96,6 +96,12 @@ func TestVerdictWordClasses(t *testing.T) {
 		{"send back DoD 1 unmet", CodeVerdictSendBack},
 		{"send-backs: x", ""},
 		{"send-backward", ""},
+		{"**send-back**: x", CodeVerdictSendBack},
+		{"`send-back`: x", CodeVerdictSendBack},
+		{"\"send-back: x\"", CodeVerdictSendBack},
+		{"> send-back: x", CodeVerdictSendBack},
+		{"Send\u2010back: x", CodeVerdictSendBack},
+		{"**accept**: fine", ""},
 		// The word leads, so what follows it cannot undo it: a refusal the
 		// reviewer rewrites, never a send-back that slips into signoff.
 		{"Send back not needed: accept", CodeVerdictSendBack},

@@ -17,10 +17,15 @@ func verdictWords(ws []string) []string {
 	return out
 }
 
-// normVerdict folds case, treats a space like a dash and drops the full stop a
-// sentence ends on, so "Send back", "send-back" and "Accept." are each one word.
+// unicodeDashes are the hyphens and dashes a word processor puts where a
+// person typed '-'.
+var unicodeDashes = strings.NewReplacer("\u2010", "-", "\u2011", "-", "\u2012", "-", "\u2013", "-", "\u2014", "-", "\u2015", "-")
+
+// normVerdict folds case, treats a space or any dash like '-' and drops the
+// full stop a sentence ends on, so "Send back", "send-back", "Send‐back" and
+// "Accept." are each one word.
 func normVerdict(s string) string {
-	s = strings.TrimRight(strings.TrimSpace(s), ".!;,")
+	s = strings.TrimRight(strings.TrimSpace(unicodeDashes.Replace(s)), ".!;,")
 	return strings.Join(strings.Fields(strings.ToLower(strings.ReplaceAll(s, "-", " "))), "-")
 }
 
@@ -34,13 +39,14 @@ func (l *Lane) DeclaresVerdicts() bool {
 // lane, and the word it does it with. The verdict's first line, before the
 // first ':', must begin with the word, followed by its end or by anything that
 // is not a letter — so "send-back: DoD 2 unmet", "Send back", "Send back, DoD
-// 1" and "send-back — DoD 1" all read, while "send-backs" and a sentence that
+// 1" and "send-back — DoD 1" all read — markup in front of it too, as in
+// "**send-back**: x" or "> send-back: x" — while "send-backs" and a sentence that
 // merely contains the word somewhere do not. Every other verdict, free text
 // included, sends nothing back.
 func (l *Lane) SendsBackBy(v string) (string, bool) {
 	head, _, _ := strings.Cut(strings.TrimSpace(v), "\n")
 	head, _, _ = strings.Cut(head, ":")
-	n := normVerdict(head)
+	n := normVerdict(strings.TrimLeftFunc(head, func(r rune) bool { return !unicode.IsLetter(r) }))
 	for _, w := range l.VerdictSendBack {
 		if beginsWithWord(n, w) {
 			return w, true
