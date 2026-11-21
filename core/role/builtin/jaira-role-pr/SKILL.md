@@ -260,8 +260,8 @@ git log --format=%s <that remote>/<its default branch>..HEAD    # type(<ID>): ..
 ```
 
 Every one of them that sits in the board's terminal lane (`jaira show <ID>
---json`, `status`) is filed away now, before the push, and committed with its
-logbook file:
+--json`, `status`) is filed away at step 5 of **Push the branch** — after the
+suite has run, before the push — and committed with its logbook file:
 
 ```bash
 jaira pull <ID>
@@ -286,17 +286,58 @@ A ticket not in the terminal lane yet stays on the board as it is — filing it 
 not yours to decide. Invoked with `--by-person`, every ticket of the branch is
 in done already: the cockpit opens a pull request only then.
 
-## Push the branch
+## Push the branch: the same seven steps every time
 
-First run the project's own gates locally — the checks its CI runs, read off
-its workflow files, task runner and instructions, never from memory. A
-generated file or checksum list that has to change with the code is the gate
-nobody remembers; one local run names it. A red gate is a finding for the
-ticket: stop and say so, do not push.
+Every push runs these steps, in this order, and none of them is left out
+because the branch looks small. `<remote>/<branch>` is the default branch you
+counted the handles against in **File the finished tickets away**. A step that
+stops stops the push: report what stopped it and push nothing.
 
-```bash
-git push -u origin HEAD
-```
+1. **Scan what the push would publish.**
+   `scripts/pre-push-scan.sh <remote>/<branch>` — every commit of the branch:
+   added lines, file names, commit message, author and committer email,
+   against the denylist (`~/.config/jaira/mention-denylist`, outside the
+   repository on purpose) and this machine's name.
+   Stops on: exit 3 — a denylist hit. Report the commit and file the script
+   names and nothing more: never the matched text, never the pattern, not in
+   the report, not in a note, not in a commit message. Rewriting those commits
+   is the person's call. Exit 2 — the list is unreadable or a pattern is
+   invalid: a scan that cannot read its list never passes.
+   Does not stop on: a warning for this machine's name, or a missing list —
+   carry both into the report as the script prints them.
+2. **Bring the base in.**
+   `git fetch <remote> <branch> && git merge --no-edit <remote>/<branch>`
+   Stops on: a conflict. `git merge --abort`, name the files, stop. Settling
+   it is not yours alone.
+3. **Run the full suite once, and every other gate CI runs.** Read them off
+   the repository — its CI workflow, task runner and instructions — never from
+   memory; in Go that is `go test ./... -race -count=1`. A generated file or
+   checksum list that has to change with the code is the gate nobody
+   remembers; one local run names it. This is the one place the full suite
+   runs: the lanes test only the packages they touched.
+   Stops on: a non-zero exit of any of them. Read `$?`, never a grep for
+   `FAIL` — a run whose command aborted prints no `FAIL` either. Name the
+   first failing test or gate.
+4. **Tick the items that waited for this run.** For every ticket on the
+   branch, read its unticked definition-of-done items (`jaira show <ID>
+   --json`, `dod_items`). The ones that ask for the full suite or the race
+   run — the testing lane leaves them open on purpose and names them in its
+   `test-verdict` — are true now:
+   `jaira dod <ID> <n> --done --proof "<the command of step 3> exit 0 at $(git rev-parse --short HEAD)"`
+   Without this the ticket reaches done only with `--force`, which hides
+   every other open item along with it.
+   Stops on: nothing. An unticked item that is not about the suite is not
+   yours to tick: leave it and name the ticket and item in the report.
+5. **File the finished tickets away** — the section above, now and not
+   earlier: `jaira pull <ID>`, `jaira logbook <ID>` and one `chore(<ID>)`
+   commit per ticket in done.
+   Stops on: `jaira logbook` refusing. Report its message for that ticket.
+6. **Scan again.** `scripts/pre-push-scan.sh <remote>/<branch>` — steps 2
+   and 5 made commits the first scan never saw.
+   Stops on: what stops step 1.
+7. **Push.** `git push -u origin HEAD`
+   Stops on: the remote refusing. Never `--force` or `--force-with-lease`:
+   report the refusal.
 
 You push either way. Whether a pull request is then opened, or the create line
 goes back for a person to run, is settled at the create command below and
