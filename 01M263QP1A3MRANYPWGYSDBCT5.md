@@ -1,7 +1,7 @@
 ---
 id: 01M263QP1A3MRANYPWGYSDBCT5
 title: "Der Agent-Block nennt --proof, und die Gitignore-Regel verweist auf die Commit-Regel"
-status: signoff
+status: testing
 ready: true
 creator: BeMuCa
 assignee: Alexander Sacharov
@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-21T08:21:04Z
+updated-at: 2026-11-21T08:21:18Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -28,7 +28,7 @@ outcome-what: "Der generierte Agent-Block sagt im Punkt 'the ticket rides with t
 outcome-why: "Auf einem ungeteilten Board widersprach die Commit-Regel dem Zustand des Boards: ein Agent kann eine ignorierte Datei nicht mitcommitten und las die Regel als kaputt. --proof und 'jaira update' waren schon ausgeliefert (2143e9ad, update.go:257) und brauchten nur den Test."
 outcome-resolves: SDBCT5
 review-summary: "On a board 'jaira init' keeps out of git there is no ticket file to commit, yet every place that tells an agent to commit the ticket with the code read as if .jaira/ were always tracked. The branch adds one caveat sentence to each such place: the generated agent block (core/board/announce.go, regenerated into CLAUDE.md/AGENTS.md), the jaira role and its repo mirror, docs/AGENTS.md, the PR role (a code commit without a ticket file is not a finding there), and the ready-to-paste commit lines in jaira-worker and jaira-role-lane (leave the ticket file out of git add, git refuses it as ignored). The caveat says 'commits nothing' still holds, only the ticket-file sentences fall away. A test pins the wording in block and role, the manifest gets the new role hashes, a release note tells users to run jaira update / --roles."
-round: 4
+round: 5
 review-gaps: |-
   note: core/board/announce_test.go:232 - the doc comment still names the old test TestAgentNoteSaysTheTicketCannotRideOnAnUnsharedBoard; the func is TestAgentNoteNamesProofAndTheUnsharedBoardCaveat
   note: core/release/notes/SDBCT5.md:2 lists jaira, jaira-worker and jaira-role-lane but not jaira-role-pr, whose point 2 also changed and is refreshed by the same jaira update --roles
