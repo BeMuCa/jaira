@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:49:11Z
+updated-at: 2026-11-21T09:49:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3647270
 claimed-at: 2026-11-21T09:36:24Z
@@ -31,7 +31,7 @@ outcome-what: "Round 15: a hunt at a commit this repository does not have reads 
 outcome-why: "The round-14 hunter found it read unknown (dim ?) while the release note and huntState doc promise fail."
 outcome-resolves: "bughunt change at 4ddb51bc; go test ./... RC=0."
 review-summary: "none"
-review-gaps: none - 4ddb51bc removed writtenSince/untracked mtime code; anyCode is the one filter for all three git lists
+review-gaps: none - one early return changed
 test-verdict: "pass: go test -count=1 ./... RC=0 at 4ddb51bc, claude plugin test 220 pass; TestHuntCoverage 22 cases, TestUnreadableStopAfterFixIsReported; scratch board end to end: clean -> ok, uncommitted hunted file -> unknown, ticket commit -> fail, hand-written 'stop-after-fix: yes' -> jaira validate warning bad_stop_after_fix; read-only git"
 hunt-verdict: "fail: 1 change finding at 4ddb51bc - a hunt commit this repository does not have read unknown, the docs promise fail"
 round: 15
