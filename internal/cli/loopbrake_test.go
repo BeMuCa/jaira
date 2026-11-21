@@ -215,6 +215,16 @@ func TestBriefCarriesTheHunt(t *testing.T) {
 		t.Fatalf("set: %v\n%s", err, out)
 	}
 	state("skipped", "stop-after-fix after a ticket commit")
+	if out, err := runCLI(t, dir, "set", h, "stop-after-fix="); err != nil {
+		t.Fatalf("set: %v\n%s", err, out)
+	}
+	// a hunt at a commit this clone does not have (rebased away) is fail
+	if out, err := runCLI(t, dir, "note", h, "bughunt: done at deadbeef1 - 0 findings; files: a.go"); err != nil {
+		t.Fatalf("note: %v\n%s", err, out)
+	}
+	if got, _ := hunt().(map[string]any); got["at"] != "deadbeef1" || got["state"] != "fail" {
+		t.Errorf("a hunt at a missing commit: %v, want state fail", got)
+	}
 }
 
 // A ticket that runs no hunt after a fix and has none yet reads skipped.

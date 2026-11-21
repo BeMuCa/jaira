@@ -353,8 +353,11 @@ func (r *Repo) HuntCoverage(commit, ticketID string, paths []string) (HuntState,
 	if !ticket.ValidID(ticketID) {
 		return HuntStale, fmt.Errorf("gitrepo: %q is no ticket id", ticketID)
 	}
+	// A commit this repository does not have — rebased away and
+	// force-pushed, seen from a fresh clone — is as far from HEAD as one
+	// that is no ancestor: the hunt read code this checkout does not hold.
 	if _, err := r.run("rev-parse", "--verify", "--quiet", commit+"^{commit}"); err != nil {
-		return HuntStale, fmt.Errorf("gitrepo: no commit %q: %w", commit, err)
+		return HuntStale, nil
 	}
 	if _, err := r.run("merge-base", "--is-ancestor", commit, "HEAD"); err != nil {
 		return HuntStale, nil

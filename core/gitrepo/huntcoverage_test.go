@@ -113,11 +113,11 @@ func TestHuntCoverage(t *testing.T) {
 			}
 		})
 	}
-	t.Run("an unknown commit", func(t *testing.T) {
+	t.Run("a commit this repository does not have", func(t *testing.T) {
 		dir, repo := fixtureRepo(t)
 		fixtureCommit(t, dir, map[string]string{"a.go": "a"}, "start", at)
-		if _, err := repo.HuntCoverage("deadbeef", id, []string{"a.go"}); err == nil {
-			t.Error("an unknown commit read without an error")
+		if got, err := repo.HuntCoverage("deadbeef", id, []string{"a.go"}); err != nil || got != HuntStale {
+			t.Errorf("HuntCoverage = %v, %v; want stale, no error", got, err)
 		}
 	})
 }
