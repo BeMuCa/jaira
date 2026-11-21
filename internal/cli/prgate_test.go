@@ -595,3 +595,25 @@ func TestRolesListReadsTheBoardFilesFromTheBase(t *testing.T) {
 		t.Errorf("origin/main: pr=%v source=%v", p["pr"], p["pr_source"])
 	}
 }
+
+// An explicit --base that is no commit here fails with no_such_ref instead of
+// reading the disk; and a branch cut before the base got its .jaira/pr is not
+// said to change it — the comparison is with the merge base (Teamlead 21.11.,
+// last round).
+func TestRolesListBaseMustResolveAndComparesWithTheMergeBase(t *testing.T) {
+	dir, _, _ := prGateFixture(t)
+	_, err := runCLI(t, dir, "--json", "roles", "list", "--base", "upstream/nosuch")
+	if exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "no_such_ref") && !strings.Contains(err.Error(), "is no commit here") {
+		t.Fatalf("--base that does not resolve: exit %d, %v", exitCode(err), err)
+	}
+	// feat/x was cut before master got .jaira/pr none: it changes nothing.
+	setPR(t, dir, "none")
+	out, err := runCLI(t, dir, "--json", "roles", "list", "--base", "master")
+	var p map[string]any
+	if err != nil || json.Unmarshal([]byte(out), &p) != nil {
+		t.Fatalf("roles list --base master: %v\n%s", err, out)
+	}
+	if p["pr"] != "none" || strings.Contains(fmt.Sprint(p["pr_source"]), "this branch changes") {
+		t.Errorf("branch behind the base: pr=%v source=%v, want none and no 'this branch changes'", p["pr"], p["pr_source"])
+	}
+}

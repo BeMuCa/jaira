@@ -75,6 +75,9 @@ type World = {
   // .jaira/pr as the base holds it (`git show <base>:.jaira/pr`); undefined:
   // no such file there.
   basePr?: string
+  // origin's default branch where no forge names it (`git rev-parse
+  // --abbrev-ref origin/HEAD`); undefined: origin/HEAD not set here.
+  originHead?: string
   // The forge answers `repo view` but refuses `pr list`.
   prListFails: boolean
   nextFails: boolean
@@ -276,6 +279,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     }
     if (cmd === 'jaira' && args[0] === 'whoami') return ok(w.me === undefined ? '' : JSON.stringify(w.me))
     if (cmd === 'jaira' && args[0] === 'show') return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ handle: args[1], body: w.bodies[args[1]!] ?? '' }))
+    if (cmd === 'git' && args[0] === 'rev-parse' && args[1] === '--abbrev-ref') return w.originHead === undefined ? { value: { exitCode: 1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } } : ok(`${w.originHead}\n`)
     if (cmd === 'git' && args[0] === 'rev-parse') return ok('/repo/.git\n')
     if (cmd === 'git' && args[0] === '--exec-path') return ok('C:\\Program Files\\Git\\mingw64\\libexec\\git-core\n')
     if (cmd === 'git' && args[0] === 'worktree') return ok(w.worktrees ?? WORKTREES)
@@ -1507,6 +1511,18 @@ describe('after Accept', () => {
     await press($)
     expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(await failure($)).toContain('needs an origin on GitHub or GitLab')
+  })
+
+  test('.jaira/pr says none and no forge names the base: it is read from origin\'s default branch, as the gate reads it, not the local one', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 2
+    w.origin = 'git@git.example.de:acme/repo.git'
+    w.originHead = 'origin/main'
+    w.basePr = 'none\n'
+    await press($)
+    expect(ran(w, 'git', 'show')).toEqual([['git', 'show', 'origin/main:.jaira/pr', '@/repo']])
+    expect(ran(w, 'git', 'log', '--format=%s')).toEqual([['git', 'log', '--format=%s', 'origin/main..feat/mg677r', '@/repo']])
+    expect(prLane(w)).toHaveLength(1)
   })
 
   test('.jaira/pr with a typo is the pull request path: no forge still says so', async ($, on) => {

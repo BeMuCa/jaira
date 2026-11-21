@@ -52,7 +52,8 @@ checkout's files, which may be the branch's own word for itself;
 `.jaira/pr`. Once **Which repository it goes to** has named `<remote>/<branch>`
 — in a fork the parent's default branch, not origin's — read them again with
 `jaira roles list --json --base <remote>/<branch>`; that answer is the one you
-act on. The gates check it once more: `jaira roles pr-gate` refuses to open
+act on. Exit 3 `no_such_ref`: that ref is not here yet — `git fetch <remote>
+<branch>` and read again. The gates check it once more: `jaira roles pr-gate` refuses to open
 where the base says `none`, and `--land` refuses to land where it does not.
 
 - **`person`** — the default, and what a board without `.jaira/pr` says, or

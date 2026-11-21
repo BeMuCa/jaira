@@ -606,7 +606,10 @@ async function decideStep($: EngineInterface, b: { dir: string; repo: string }, 
   // Under none a reason is held until there is something to land: a branch
   // with nothing ahead, or a ticket still open, is no failure.
   const target = typeof asked === 'string' ? undefined : asked
-  const base = target?.base ?? found.base
+  // Without a forge to name it, the base is origin's default branch — what
+  // 'pr-gate --land' and jaira-role-pr read — and the local one only where
+  // origin has none to show.
+  const base = target?.base ?? await originDefault($, b.repo) ?? found.base
   // The base decides, as the gate does: this checkout's .jaira/pr may be the
   // branch's own word for itself.
   const land = base !== undefined && await landsWithoutPullRequest($, b.repo, base)
@@ -682,6 +685,17 @@ async function afterAccept($: EngineInterface, id: string, terminal: string): Pr
   const r = await run($, [...script, '--no-worktree', id.toLowerCase(), id, 'pr', wt], wt, 120_000)
   if (r?.exitCode !== 0) return stuck(`spawn.sh: ${output(r).slice(-160)}`)
   return say($, land ? t.landStarted(id, branch) : t.prStarted(id, branch))
+}
+
+// origin's default branch as a remote-tracking name: origin/HEAD where it
+// resolves, else origin/main or origin/master; undefined when origin has
+// none of them here.
+async function originDefault($: EngineInterface, repo: string): Promise<string | undefined> {
+  const head = await run($, ['git', 'rev-parse', '--abbrev-ref', '--verify', '-q', 'refs/remotes/origin/HEAD'], repo)
+  if (head?.exitCode === 0 && head.stdout.trim()) return head.stdout.trim()
+  const refs = await run($, ['git', 'for-each-ref', '--format=%(refname:short)', 'refs/remotes/origin/main', 'refs/remotes/origin/master'], repo)
+  if (refs?.exitCode !== 0) return undefined
+  return refs.stdout.split('\n').map(l => l.trim()).find(l => l === 'origin/main') ?? refs.stdout.split('\n').map(l => l.trim()).find(l => l === 'origin/master')
 }
 
 // Whether .jaira/pr says none as base holds it, read as jaira reads it: the

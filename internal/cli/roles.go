@@ -98,7 +98,10 @@ source says so. Without any base the disk is read, and the source says that.`,
 			chat, chatSource := cur.ChatModelFor(root)
 			py, pySource := cur.PythonCommand()
 			release, releaseSource := settings.ReleaseFor(root)
-			pr, prSource, reviewer, prWhen, prWhenSource := boardArrival(root, base)
+			pr, prSource, reviewer, prWhen, prWhenSource, err := boardArrival(root, base)
+			if err != nil {
+				return err
+			}
 			if g.jsonOut {
 				arr := make([]map[string]any, 0, len(roles))
 				for _, r := range roles {
@@ -545,8 +548,14 @@ func printRoleResults(w io.Writer, target string, results []role.Result, dry boo
 // checkout's own file says something else, that this branch changes it.
 // base is the ref given, else origin's default branch; with neither, the
 // files are read off this disk and the source says so.
-func boardArrival(root, base string) (pr, prSource, reviewer, prWhen, prWhenSource string) {
+func boardArrival(root, base string) (pr, prSource, reviewer, prWhen, prWhenSource string, err error) {
 	repo := &gitrepo.Repo{Dir: root}
+	// A base named on the command line that is no commit here is an error,
+	// never a reason to read the disk: the disk may be the branch's own word.
+	if base != "" && (root == "" || !repo.IsCommit(base)) {
+		return "", "", "", "", "", fail(ExitValidation, "no_such_ref",
+			"roles list: --base %q is no commit here — fetch the remote first", base)
+	}
 	shown := base
 	if root != "" && base == "" {
 		// Full ref names: a local branch called origin/main must not stand
@@ -574,7 +583,17 @@ func boardArrival(root, base string) (pr, prSource, reviewer, prWhen, prWhenSour
 		default:
 			prSource = fmt.Sprintf("the default — .jaira/pr in %s, the base, says %q, which is neither agent nor none", shown, board.PRWordIn(content))
 		}
+		// Against the merge base, not the base: a branch cut before the base
+		// got its file changes nothing, it only lacks what a merge brings.
+		changed := false
 		if local := board.PRModeFor(root); local != pr {
+			from := settings.PRPerson
+			if mb := repo.MergeBase(base, "HEAD"); mb != "" {
+				from = settings.PRIn(repo.FileAt(mb, settings.BoardPRPath(".")))
+			}
+			changed = local != from
+		}
+		if local := board.PRModeFor(root); changed {
 			prSource += fmt.Sprintf("; this branch changes .jaira/pr to %s, which counts once it is in %s", local, shown)
 			if !repo.Tracks(settings.BoardPRPath(".")) {
 				prSource += " (not committed here; on a board not shared yet, 'jaira share' first)"
@@ -589,7 +608,7 @@ func boardArrival(root, base string) (pr, prSource, reviewer, prWhen, prWhenSour
 	if pr == settings.PRNone {
 		prWhen, prWhenSource = settings.PRWhenDone, "no pull request under .jaira/pr none"
 	}
-	return pr, prSource, reviewer, prWhen, prWhenSource
+	return pr, prSource, reviewer, prWhen, prWhenSource, nil
 }
 
 // originDefault is origin's default branch as a ref this repository has:

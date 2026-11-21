@@ -107,6 +107,19 @@ func (r *Repo) IsCommit(rev string) bool {
 	return err == nil
 }
 
+// MergeBase is the best common ancestor of a and b, or "" when there is
+// none or either is not a commit here.
+func (r *Repo) MergeBase(a, b string) string {
+	if strings.HasPrefix(a, "-") || strings.HasPrefix(b, "-") {
+		return ""
+	}
+	out, err := r.run("merge-base", a, b)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(out)
+}
+
 // SymbolicRef is the full ref name the symbolic ref name points at, or ""
 // when it is not one here.
 func (r *Repo) SymbolicRef(name string) string {
