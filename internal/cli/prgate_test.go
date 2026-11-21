@@ -93,7 +93,7 @@ func TestPRGateReadsTheBoardFilesFromTheBase(t *testing.T) {
 	if err := os.WriteFile(path, []byte("agent\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := runCLI(t, dir, "roles", "pr-gate", "master"); exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "in master says neither agent nor none") {
+	if _, err := runCLI(t, dir, "roles", "pr-gate", "master"); exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "says agent here, but not in master") {
 		t.Fatalf("agent only on disk: exit %d, %v", exitCode(err), err)
 	}
 	if out, err := exec.Command("git", "-C", dir, "add", "-f", path).CombinedOutput(); err != nil {
@@ -322,7 +322,7 @@ func TestPRGateLetsANoneBoardLandOnlyDoneWork(t *testing.T) {
 	if err := os.WriteFile(settings.BoardPRPath(dir), []byte("none\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := runCLI(t, dir, "roles", "pr-gate", "master"); exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "neither agent nor none") {
+	if _, err := runCLI(t, dir, "roles", "pr-gate", "master"); exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "says none here, but not in master") {
 		t.Fatalf("none only on disk: exit %d, %v", exitCode(err), err)
 	}
 
@@ -457,5 +457,37 @@ func TestPRGateOnANoneBoardRefusesGitsRevertSubject(t *testing.T) {
 	}
 	if out, err := runCLI(t, dir, "roles", "pr-gate", "master"); err != nil {
 		t.Fatalf("none, a revert written as fix(<ID>): revert ...: %v\n%s", err, out)
+	}
+}
+
+// A .jaira/pr only on this disk — a board not shared yet keeps .jaira/ out of
+// git — is not what the gate reads. roles list says so, and the gate names
+// the uncommitted file as the cause instead of asking for a create line the
+// board does not want (review, 21.11.).
+func TestAnUncommittedPRFileIsNamedAsSuch(t *testing.T) {
+	dir, ticketIn, commit := prGateFixture(t)
+	done := ticketIn("done")
+	commit("feat(" + done + "): accepted")
+	if err := os.WriteFile(settings.BoardPRPath(dir), []byte("none\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, err := runCLI(t, dir, "roles", "list", "--json")
+	if err != nil {
+		t.Fatalf("roles list: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "on this disk only") || !strings.Contains(out, "jaira share") {
+		t.Errorf("roles list for an uncommitted .jaira/pr:\n%s", out)
+	}
+	_, err = runCLI(t, dir, "roles", "pr-gate", "master")
+	if exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "says none here, but not in master") || strings.Contains(err.Error(), "create line") {
+		t.Fatalf("gate, .jaira/pr none only on disk: exit %d, %v", exitCode(err), err)
+	}
+	// Committed on the base, it takes effect and the words go.
+	setPR(t, dir, "none")
+	if err := os.WriteFile(settings.BoardPRPath(dir), []byte("none\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runCLI(t, dir, "roles", "pr-gate", "master"); err != nil {
+		t.Fatalf("gate, .jaira/pr none committed on master: %v\n%s", err, out)
 	}
 }

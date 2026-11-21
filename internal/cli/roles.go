@@ -92,6 +92,12 @@ Merging and approving stay a person's either way.`,
 			py, pySource := cur.PythonCommand()
 			release, releaseSource := settings.ReleaseFor(root)
 			pr, prSource := settings.PRFor(root)
+			// The gate reads .jaira/pr from the base branch, so a file only
+			// on this disk — a board not shared yet keeps .jaira/ out of git —
+			// takes effect for nothing but the words here. Say so.
+			if pr != settings.PRPerson && root != "" && !(&gitrepo.Repo{Dir: root}).Tracks(settings.BoardPRPath(".")) {
+				prSource = "from .jaira/pr on this disk only — not committed, so 'jaira roles pr-gate' does not see it yet: commit it (on a board not shared yet, 'jaira share' first)"
+			}
 			reviewer := settings.PRReviewerFor(root)
 			prWhen, prWhenSource := settings.PRWhenFor(root)
 			if pr == settings.PRNone {
@@ -183,6 +189,13 @@ unnamed.`,
 			// once it has been merged into the base.
 			pr := settings.PRIn(repo.FileAt(args[0], settings.BoardPRPath(".")))
 			if pr == settings.PRPerson {
+				// This checkout saying otherwise is a file not yet committed
+				// on the base, not a board that wants a person: say that, and
+				// not a create line the board does not want.
+				if local := board.PRModeFor(s.Root); local != settings.PRPerson {
+					return fail(ExitValidation, "pr_person",
+						"pr-gate: .jaira/pr says %s here, but not in %s — it takes effect once it is committed there (on a board not shared yet, 'jaira share' first); until then a person opens the pull request", local, args[0])
+				}
 				return fail(ExitValidation, "pr_person",
 					"pr-gate: .jaira/pr in %s says neither agent nor none — a person opens the pull request; hand the create line back", args[0])
 			}
