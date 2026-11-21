@@ -63,6 +63,30 @@ func (r *fixtureRepo) write(rel, content string) {
 	}
 }
 
+func (r *fixtureRepo) read(rel string) string {
+	r.t.Helper()
+	b, err := os.ReadFile(filepath.Join(r.dir, filepath.FromSlash(rel)))
+	if err != nil {
+		r.t.Fatal(err)
+	}
+	return string(b)
+}
+
+// --write puts exactly what the script prints in place of the manifest.
+func TestWriteReplacesTheManifest(t *testing.T) {
+	r := newFixtureRepo(t)
+	out, err := r.run("bash", "scripts/shipped-history.sh", "--write")
+	if err != nil {
+		t.Fatalf("--write: %v\n%s", err, out)
+	}
+	if got, want := r.read("core/shipped/shipped.sha256"), r.generated(); got != want {
+		t.Errorf("--write wrote\n%s\nwant\n%s", got, want)
+	}
+	if ok, out := r.check(); !ok {
+		t.Errorf("--check after --write failed:\n%s", out)
+	}
+}
+
 func (r *fixtureRepo) run(name string, args ...string) (string, error) {
 	cmd := exec.Command(name, args...)
 	cmd.Dir = r.dir
@@ -221,10 +245,11 @@ func TestCheckFailsOnAnUnreadableTag(t *testing.T) {
 // empty file's hash as the line to append.
 func TestUnreadableBlobStopsTheScript(t *testing.T) {
 	const emptyFile = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-	for _, args := range [][]string{{}, {"--check"}} {
+	for _, args := range [][]string{{}, {"--check"}, {"--write"}} {
 		t.Run(strings.Join(append([]string{"shipped-history.sh"}, args...), " "), func(t *testing.T) {
 			r := newFixtureRepo(t)
-			r.write("core/shipped/shipped.sha256", r.generated())
+			before := r.generated()
+			r.write("core/shipped/shipped.sha256", before)
 			blob := strings.TrimSpace(r.git("rev-parse", "v0.1.0:"+key))
 			if err := os.Remove(filepath.Join(r.dir, ".git", "objects", blob[:2], blob[2:])); err != nil {
 				t.Fatal(err)
@@ -235,6 +260,12 @@ func TestUnreadableBlobStopsTheScript(t *testing.T) {
 			}
 			if strings.Contains(out, emptyFile) {
 				t.Errorf("the script offered the empty file's hash as a version:\n%s", out)
+			}
+			if got := r.read("core/shipped/shipped.sha256"); got != before {
+				t.Errorf("a failed run changed the manifest:\n%s", got)
+			}
+			if left, _ := filepath.Glob(filepath.Join(r.dir, "core", "shipped", "shipped.sha256.*")); len(left) > 0 {
+				t.Errorf("a failed run left %v behind", left)
 			}
 		})
 	}

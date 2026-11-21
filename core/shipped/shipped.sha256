@@ -3,7 +3,7 @@
 # A file on someone's disk equal to one of these was written by jaira and may be
 # replaced by a newer one; anything else was edited by a person and is left alone.
 # Append-only: a line removed here turns a file jaira wrote back into "edited".
-# Regenerate (full clone, not shallow): scripts/shipped-history.sh > core/shipped/shipped.sha256
+# Regenerate (full clone, not shallow): scripts/shipped-history.sh --write
 0d7addf8b729a05a957a09616f049e6b8037d6be4c7ead101159edeb222a2835  core/lane/builtin/00-backlog.md
 c244f36f541edcf0a57d7bac7e75041ed3e81233a62c7a746319d56a41b393cc  core/lane/builtin/05-brainstorm.md
 67d688a426185a775ef6bb2aa7ce7d235c2d3bb0c2b08abddf41ed435be48aac  core/lane/builtin/10-todo.md

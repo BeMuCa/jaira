@@ -3,8 +3,13 @@
 # installs that was ever committed, plus the working tree's own, as
 # "sha256  path in this repository" under the path it is embedded from today.
 #
-#   scripts/shipped-history.sh > core/shipped/shipped.sha256
+#   scripts/shipped-history.sh --write
 #   scripts/shipped-history.sh --check
+#   scripts/shipped-history.sh > somewhere-else
+#
+# --write replaces core/shipped/shipped.sha256 only once the whole manifest is
+# generated. Never redirect into the manifest itself: the shell empties it
+# before the script runs, and a run that then fails leaves it cut short.
 #
 # --check writes nothing: it holds the committed manifest against every v* tag
 # and fails, printing the lines to append, when a version of an installed file
@@ -78,30 +83,47 @@ if [ "${1:-}" = --check ]; then
 	)
 	if [ -n "$missing" ]; then
 		n=$(printf '%s\n' "$missing" | wc -l)
-		printf 'shipped-history: %s lacks %d version(s) a release tag shipped; run scripts/shipped-history.sh > %s, or append:\n%s\n' \
-			"$manifest" "$n" "$manifest" "$missing" >&2
+		printf 'shipped-history: %s lacks %d version(s) a release tag shipped; run scripts/shipped-history.sh --write, or append:\n%s\n' \
+			"$manifest" "$n" "$missing" >&2
 		exit 1
 	fi
 	echo "shipped-history: every version in $(printf '%s\n' "$tags" | wc -l) v* tag(s) is in $manifest"
 	exit 0
 fi
 
-cat <<'HEADER'
+generate() {
+	cat <<'HEADER'
 # Every version of every file jaira installs — the roles, the cockpit mod, the jaira
 # skill and the built-in lanes — as "sha256  path in this repository".
 # A file on someone's disk equal to one of these was written by jaira and may be
 # replaced by a newer one; anything else was edited by a person and is left alone.
 # Append-only: a line removed here turns a file jaira wrote back into "edited".
-# Regenerate (full clone, not shallow): scripts/shipped-history.sh > core/shipped/shipped.sha256
+# Regenerate (full clone, not shallow): scripts/shipped-history.sh --write
 HEADER
 
-{
-	# -m: a conflict resolution on a merge commit is a version that shipped too.
-	# shellcheck disable=SC2086
-	git -c core.quotePath=false log --full-history -m --raw --no-abbrev --no-renames --format= HEAD -- $sources |
-		awk -F'\t' '{ split($1, m, " ") } m[4] !~ /^0+$/ { print m[4], $2 }' | sort -u | hashed
-	# the working tree's own versions, so this script alone makes the tests pass
-	embedded | while read -r f; do
-		printf '%s  %s\n' "$(sha256sum <"$f" | cut -d' ' -f1)" "$f"
-	done
-} | installed | sort -k2,2 -k1,1 -u
+	{
+		# -m: a conflict resolution on a merge commit is a version that shipped too.
+		# shellcheck disable=SC2086
+		git -c core.quotePath=false log --full-history -m --raw --no-abbrev --no-renames --format= HEAD -- $sources |
+			awk -F'\t' '{ split($1, m, " ") } m[4] !~ /^0+$/ { print m[4], $2 }' | sort -u | hashed
+		# the working tree's own versions, so this script alone makes the tests pass
+		embedded | while read -r f; do
+			printf '%s  %s\n' "$(sha256sum <"$f" | cut -d' ' -f1)" "$f"
+		done
+	} | installed | sort -k2,2 -k1,1 -u
+}
+
+if [ "${1:-}" = --write ]; then
+	manifest=core/shipped/shipped.sha256
+	# Beside the manifest, so the mv below is a rename on one file system.
+	tmp=$(mktemp "$manifest.XXXXXX")
+	trap 'rm -f "$tmp"' EXIT
+	# On a line of its own: set -e does not reach a command left of && or ||.
+	generate >"$tmp"
+	chmod 644 "$tmp"
+	mv "$tmp" "$manifest"
+	echo "shipped-history: wrote $manifest ($(grep -cv '^#' "$manifest") versions)"
+	exit 0
+fi
+
+generate

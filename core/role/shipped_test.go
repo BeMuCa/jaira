@@ -21,7 +21,7 @@ func olderAcceptance(t *testing.T) []byte {
 		t.Fatal(err)
 	}
 	if !shipped.Known(roleKey(acceptanceID, acceptanceRel), b) {
-		t.Fatal("the v0.4.0 fixture is not in core/shipped/shipped.sha256; regenerate it: scripts/shipped-history.sh > core/shipped/shipped.sha256")
+		t.Fatal("the v0.4.0 fixture is not in core/shipped/shipped.sha256; regenerate it: scripts/shipped-history.sh --write")
 	}
 	want, err := File(acceptanceID, acceptanceRel)
 	if err != nil {
@@ -71,7 +71,7 @@ func TestEveryInstalledFileIsAShippedVersion(t *testing.T) {
 		}
 	}
 	if len(missing) > 0 {
-		t.Errorf("core/shipped/shipped.sha256 lacks the version of %d file(s) this build installs; run scripts/shipped-history.sh > core/shipped/shipped.sha256, or append:\n%s",
+		t.Errorf("core/shipped/shipped.sha256 lacks the version of %d file(s) this build installs; run scripts/shipped-history.sh --write, or append:\n%s",
 			len(missing), strings.Join(missing, "\n"))
 	}
 	// the hard-coded prefixes must name real files
