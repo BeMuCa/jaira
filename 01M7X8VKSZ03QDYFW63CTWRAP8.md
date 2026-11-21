@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T09:38:11Z
+updated-at: 2026-11-21T09:38:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2485785
 claimed-at: 2026-11-21T08:57:23Z
@@ -35,7 +35,7 @@ outcome-resolves: "the exemption uses exactly the commits jaira counts as the ti
 review-summary: "critique 21.11. round 11: the cause is gone - no git-log in the role; the diff lane is found by input_requires like the other lanes by their flags. Nothing to change."
 round: 19
 review-gaps: "optimize 21.11. round 11: the replacement is shorter than the scan; nothing to remove."
-test-verdict: "fail: gates green at dc95045a; bughunt 09:29 change: commit scan also matches jaira/board branch commits (added <ULID>) touching board/*.md"
+test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at cb9e353e; DoD 1-4 verified in the tree; the role now reads the change off jaira's derivation (checked in this worktree: git+worktree, 20 commits; from master: 0 commits -> ?). Roles write nothing - no concurrent-writer case."
 hunt-verdict: "change: 1 finding at dc95045a (scan matches jaira/board commits)"
 question: ""
 review-verdict: "All four DoD items are met by the diff. Every CLI field and flag the new role relies on was checked against the binary built from this branch (boards/lanes --json keys, show --json review.*/dod_items/handle/board, list --lane, gh run list --commit/--workflow, glab ci list --sha); lane discovery resolves to signoff/done/in-progress on this board. go test ./core/role ./core/shipped green, last bughunt note names HEAD ec3858d3. No blocker; two notes."
