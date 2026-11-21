@@ -168,8 +168,11 @@ export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview
   // ticket stands in now — several of each at once, as `u` does on the board;
   // both filters hold together, and a day left with nothing drops out.
   const events = view.history.flatMap(d => d.events)
-  const names = [...new Set(events.map(ev => ev.who).filter(Boolean))].sort()
-  const present = new Set(events.map(ev => ev.lane).filter(Boolean))
+  // A button for every value in today's events and for every value chosen: a
+  // chosen lane or person with no event left (the ticket moved on, the events
+  // aged out) keeps its button, so the filter it sets can still be undone.
+  const names = [...new Set([...events.map(ev => ev.who), ...state.people].filter(Boolean))].sort()
+  const present = new Set([...events.map(ev => ev.lane), ...state.lanes].filter(Boolean))
   // Board order; a lane the board no longer names (or a view kept from before
   // lanes were read) goes last, so no event is left without its button.
   const order = view.lanes ?? []

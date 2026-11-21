@@ -2787,6 +2787,39 @@ describe('the overview', () => {
     expect((await pane.find({ key: 'overview-lanes-all' }))?.props.variant).toBe('primary')
   })
 
+  test('a lane or person chosen with no event left keeps its button, and pressing it clears the filter', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { handle: 'S1S1S1', title: 'judged', status: 'signoff', creator: 'Alex', created_at: ago(0.03), updated_at: ago(0.03) },
+    ]
+    await startSession($)
+    const open = async () => {
+      await (await $.ui.mount(BAND)).press({ key: 'overview' })
+      const pane = await $.ui.mount(OVERVIEW)
+      await pane.press({ key: 'overview-tab-log' })
+      return pane
+    }
+    let pane = await open()
+    await pane.press({ key: 'overview-lane-signoff' })
+    await pane.press({ key: 'overview-person-Alex' })
+    await pane.press({ key: 'overview-close' })
+    await pane.unmount()
+    // The ticket moves on to done and its events now belong to Berk.
+    w.tickets = [{ handle: 'S1S1S1', title: 'judged', status: 'done', creator: 'Berk', created_at: ago(0.03), updated_at: ago(0.02) }]
+    pane = await open()
+    const handles = async () => (await pane.findAll({ type: 'Text', text: LOG_LINE })).map(x => x.text.replace(LOG_LINE, '').slice(0, 6))
+    expect(await handles()).toEqual([])
+    expect((await pane.find({ key: 'overview-lane-signoff' }))?.props.variant).toBe('primary')
+    expect((await pane.find({ key: 'overview-person-Alex' }))?.props.variant).toBe('primary')
+    await pane.press({ key: 'overview-lane-signoff' })
+    await pane.press({ key: 'overview-person-Alex' })
+    expect(await handles()).toEqual(['S1S1S1'])
+    // Unchosen and without an event, the buttons go again.
+    expect(await pane.find({ key: 'overview-lane-signoff' })).toBeUndefined()
+    expect(await pane.find({ key: 'overview-person-Alex' })).toBeUndefined()
+    expect((await pane.find({ key: 'overview-lanes-all' }))?.props.variant).toBe('primary')
+  })
+
   test('Close stands in the tab row, framed and wider than a tab, on every tab and on an unread board', async ($, on) => {
     const w = world(on)
     w.tickets = [{ ...WORKING, assignee: 'Alex', updated_at: ago(0.1) }]
