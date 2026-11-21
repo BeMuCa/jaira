@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:45:54Z
+updated-at: 2026-11-21T08:45:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1876460
 claimed-at: 2026-11-21T08:39:00Z
@@ -36,7 +36,7 @@ review-summary: "critique 21.11. round 5: scope fix matches what each check read
 round: 13
 review-gaps: "optimize 21.11. round 5: nothing to remove."
 test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at 390088c7; DoD 1-4 verified in the tree; empty head now leaves only tests and hunt as ?. Roles write nothing - no concurrent-writer case."
-hunt-verdict: "clean: diff hunt at 10348a71 (HEAD), 0 findings"
+hunt-verdict: "clean: diff hunt at 390088c7 (HEAD), 0 findings"
 question: ""
 review-verdict: "Diff erfuellt alle vier DoD-Punkte; geprueft: jaira show --json hat handle/dod_items[].done/review.verdict, jaira list --lane/--board, jaira create --follows/--assignee, glab ci list --sha existieren, der Cockpit schreibt 'Given back from signoff:'; go test ./core/role ./core/shipped gruen; alle 14 Commits nennen TWRAP8. Keine Blocker, drei Notes."
 review-round: 12
