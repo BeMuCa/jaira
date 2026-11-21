@@ -228,3 +228,39 @@ func TestAgentNoteNamesReject(t *testing.T) {
 		}
 	}
 }
+
+// TestAgentNoteNamesProofAndTheUnsharedBoardCaveat guards the two rules
+// an agent on a private board cannot follow as written. The block tells it to
+// verify a ticked item with --proof and to commit the ticket file with the
+// code; on a board 'jaira init' keeps out of git there is no file to add, and
+// without this caveat the agent reads the rule as broken rather than as not
+// meant for its board.
+func TestAgentNoteNamesProofAndTheUnsharedBoardCaveat(t *testing.T) {
+	flat := strings.Join(strings.Fields(agentNote), " ")
+	for _, want := range []string{
+		"--done --proof",
+		"On a board not shared yet",
+		"there is no ticket file to add or commit — commit the code alone",
+		"The next point holds there all the more; only its sentences about the ticket file fall away",
+	} {
+		if !strings.Contains(flat, want) {
+			t.Errorf("agentNote does not contain %q", want)
+		}
+	}
+	// The jaira role states the same rule at greater length; a session that
+	// reads the role and not the block must meet the same caveat.
+	skill, err := os.ReadFile(filepath.Join("..", "role", "jaira", "SKILL.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	flatSkill := strings.Join(strings.Fields(string(skill)), " ")
+	for _, want := range []string{
+		"On a board not shared yet",
+		"there is no ticket file to add or commit: commit the code alone",
+		"The next rule holds there all the more; only its sentences about the ticket file fall away",
+	} {
+		if !strings.Contains(flatSkill, want) {
+			t.Errorf("core/role/jaira/SKILL.md does not contain %q", want)
+		}
+	}
+}

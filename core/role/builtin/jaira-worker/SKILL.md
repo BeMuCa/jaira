@@ -104,6 +104,9 @@ never out of the line that started you.
   git commit -m "fix(A3K9QP): <what changed>"
   ```
 
+  On a board not shared yet (`.jaira/` out of git until `jaira share`) leave
+  the ticket file out of the `git add`: git refuses it as ignored.
+
   A lane that changed no code hands back no line — the ticket file waits for
   the next commit that carries code, as it always does.
 - **A critique reads beside you while you implement.** Start a second agent on

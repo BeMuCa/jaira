@@ -135,7 +135,11 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  then `git add` the changed file under `.jaira/tickets/` alongside your source\n" +
 	"  changes and commit them together. A reviewer then sees the change and what it\n" +
 	"  was for in one place, instead of a diff whose ticket is still in whatever\n" +
-	"  state the last commit left it\n" +
+	"  state the last commit left it. On a board not shared yet (`.jaira/` stays out\n" +
+	"  of git from `jaira init` until `jaira share`) there is no ticket file to add\n" +
+	"  or commit — commit the code alone, and the handle in its subject is the\n" +
+	"  whole link. The next point holds there all the more; only its sentences\n" +
+	"  about the ticket file fall away\n" +
 	"- **a lane that changed no code commits nothing.** critique, testing and review\n" +
 	"  leave a note and a lane change and no source change; a commit carrying only\n" +
 	"  that is bookkeeping, and a branch with one of them per lane hides the work\n" +
