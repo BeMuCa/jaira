@@ -1,7 +1,7 @@
 ---
 id: 01M7X20YACKGBHD6P1QKMFYM1A
 title: "In signoff hakt die Person die Notes an, die behoben werden sollen, und Give back nimmt genau diese mit"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,33 +19,45 @@ blocked-by:
 related:
   - 01M7WWZWSDHK37DGGHJFDF0YD6
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
-commits: []
+commits:
+  - 36a787f032752eb9ec34de7abe18d0bba06cddb6
+  - f8ec0a060d2068a0e72b8fd4b2cf7c49a0f987e5
+  - cdc8f51adfce12c6e701ce6a872f52d4391e1bf2
+  - 81052fbd59adaf6d468af6dbf43e73bec8311cd6
+  - cfcc52bb0234f7304289c60c5116e50e6f8b0569
+  - 35c3539cb7abf022bf97ecb315bce0c6a697e338
+  - 8dabf200e78fcd0fc8662f32d9d8da68224bea6e
+  - 014fc85098e1a4a6dd44b1444aacc312312a02a6
+  - 1f5c192664a124316e0e2cb4e5d98c56ce6252e3
+  - 3c53c41ef0b09d5599a9730df1de3e3f494def3d
+  - 2b6080679ca34314aa960e621596a794b77eeb99
+  - dd61804600e4a45fef55110aef23e3bcb2092772
 created-at: 2026-11-20T18:03:14Z
-updated-at: 2026-11-21T20:08:51Z
+updated-at: 2026-11-21T20:33:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1040215
 claimed-at: 2026-11-21T20:04:37Z
 outcome-what: "Round 6 after Alex's give-back: every review note but a blocker starts as accept (no follow-up nobody chose); the band's Accept opens the notes pane when the review (Explain class included) names a blocker; accepting a blocker not fixed in the pane needs a typed reason, written as a decision note; a Give back or Accept whose move jaira answers 'already in' writes nothing."
 outcome-why: "Alex gave it back from signoff: preselected follow-ups filed tickets on a bare Accept, the band's Accept bypassed blockers, and two sessions pressing at once both wrote notes and follow-ups."
 outcome-resolves: "DoD 1, 3, 7 reworded/added per Alex 21.11.; tests in core/mod/builtin/jaira-cockpit/tests/board.test.ts (259 pass); four categories: concurrency (already-in), error paths (note failure shown), input (blank/multiline reason, Explain-classed blocker), permissions (none new)."
-review-summary: "core/mod/builtin/jaira-cockpit/hooks/board.ts:661-663 the new comment sentence runs past the wrap of the block; rewrap it. Otherwise the shape fits: BLOCKER is the same prefix test notesOf/explainable use for the band, so band, notes and pane now agree on 'blocker:' lines."
+review-summary: "Der Give-back-Pane im Cockpit listet jede Zeile aus review-gaps als eigene Schaltflaeche (gapItems in board.ts): Klasse aus dem Praefix, aus der Explain-Note nur bei gleicher Anzahl, 'blocker:' bleibt immer Blocker; Blocker starten als [fix now], alles andere als [accept], ein Druck schaltet fix now -> follow-up -> accept. Give back verschiebt erst nach in-progress, legt dann je follow-up ein Ticket mit follows=<id> an und schreibt die Note 'Given back from <lane>: beheben: / Folge-Ticket: / angenommen:' (decisionLines); Accept im Pane schreibt dieselben Zeilen nach dem Move als 'Accepted from', ein nicht behobener Blocker braucht eine getippte Begruendung, die als decision-Note landet. Accept im Band nimmt ohne Blocker sofort an, mit Blocker oeffnet er den Pane (ohne Textfeld: Toast, nichts angenommen). Eine fruehere Entscheidung wird aus den Cockpit-Notes gelesen (decisionsOf) und als '(decided before)' vorbelegt. Beide Wege lesen die Lane vorher neu und schreiben nichts, wenn jaira move 'already in' meldet. Dazu: in-progress-Prompt (builtin + .jaira/lanes) arbeitet genau 'beheben:' ab, Release-Note, shipped.sha256."
 round: 9
 back-from: critique
 back-by: lane
 back-count: 1
 review-gaps: |-
-  note: a review line prefixed 'blocker:' takes its class from the Explain note by position whenever the counts match (board.ts gapItems): when the Explain note lists the same notes in another order, the blocker becomes edge, starts as accept, and the band's Accept accepts at once without the required reason - fix: a line with a blocker: prefix never classes below blocker, whatever the Explain note says
   note: the band's Accept without a blocker accepts and writes no 'Accepted from' note, so the notes it accepted are asked again at the next acceptance (decided before is read only from cockpit notes) - known limit unless it should write the accept list too
   note: earlier decisions are matched by the finding's exact words (decisionsOf): a later review that rephrases a note starts it fresh - known limit, acceptable
-test-verdict: "pass: round after fix 014fc8509 - claude plugin test . 259 pass 0 fail; go test -count=1 core/role core/shipped core/mod RC=0; shipped-history --check ok; full go test ./... RC=0 at 8dabf200e (014fc8509 touches only cockpit hooks); DoD 1-7 verified in the tree; mobile path (no Input) checked by reading - the test harness renders Input on every surface"
-hunt-verdict: "pass: bughunt done at 014fc8509, 0 change, 0 pre-existing (follow-up hunt since 8dabf200e)"
-review-verdict: "Der Diff erfuellt alle sieben DoD-Punkte; 259 Cockpit-Tests (claude plugin test) und go test ./core/... gruen. Kein Blocker: die Nebenlaeufigkeit (Lane neu lesen, 'already in' schreibt nichts), Fehlerpfade (Folge-Ticket nicht erstellt -> Toast + '(not created: ...)' in der Note, Note nach dem Move) und ungewoehnliche Eingabe (Titel nach --, mehrzeilige Notes, keine Notes) sind abgedeckt. Offen bleibt eine Kante: ein 'blocker:'-Praefix kann durch die Explain-Note per Position herabgestuft werden."
-review-round: 7
+  note: pre-existing: jaira move has no lock (internal/cli/flow.go reads status, then writes) - two moves overlapping by ~100 ms both pass, so the cockpit's 'already in' check catches only a second press after the first move finished
+test-verdict: "pass: claude plugin test core/mod/builtin/jaira-cockpit 261 pass, exit 0; go test ./core/shipped/... ./core/release/... exit 0 (shipped.sha256 matches); give-back note 1 verified: 'a blocker: line stays a blocker whatever class the Explain note gives its position' and the band's Accept case blocker:+[small edge] opens the pane; the change writes nothing new"
+hunt-verdict: "pass: bughunt done at 3c53c41ef - 0 findings in 3 modules (follow-up hunt since 014fc8509)"
+review-verdict: "Der Diff erfuellt alle sieben DoD-Punkte; die Blocker-Kante der letzten Runde ist geschlossen (gapItems prueft BLOCKER vor der Explain-Klasse, Test umgedreht). 261 Cockpit-Tests (claude plugin test .) gruen, go test ./core/shipped ./core/lane gruen, die neuen Hashes aller geaenderten installierten Dateien stehen in shipped.sha256. Kein Blocker: Note-Format von decisionsOf passt zu ticket.AppendNote (Folgezeilen unverschoben), 'already in' entspricht flow.go:114, Folge-Titel nach --. Offen bleiben zwei von Alex als known limit angenommene Kanten und die vorbestehende fehlende Sperre in jaira move."
+review-round: 9
 review-verdict-gaps: |-
-  note: a review line prefixed 'blocker:' takes its class from the Explain note by position whenever the counts match (board.ts gapItems): when the Explain note lists the same notes in another order, the blocker becomes edge, starts as accept, and the band's Accept accepts at once without the required reason - fix: a line with a blocker: prefix never classes below blocker, whatever the Explain note says
   note: the band's Accept without a blocker accepts and writes no 'Accepted from' note, so the notes it accepted are asked again at the next acceptance (decided before is read only from cockpit notes) - known limit unless it should write the accept list too
   note: earlier decisions are matched by the finding's exact words (decisionsOf): a later review that rephrases a note starts it fresh - known limit, acceptable
-review-check: "1. Einen Testticket mit review-gaps 'blocker: x' und 'note: y' in signoff bringen. 2. claude --plugin-dir /home/alex/projects/.worktrees/jaira-mfym1a/core/mod/builtin/jaira-cockpit starten, /tui fullscreen. 3. Im Band [Accept] druecken: es oeffnet sich der Give-back-Pane statt anzunehmen; x steht als [fix now] [blocker], y als [accept]. 4. Auf y druecken: es wird [fix now], nochmal [follow-up]. 5. [Give back] druecken: das Ticket steht in in-progress, jaira show <id> zeigt die Note 'Given back from signoff: beheben: - blocker: x ... Folge-Ticket: - <HANDLE>: note: y', und jaira show <HANDLE> --json hat follows=<id>. 6. Automatisch: cd core/mod/builtin/jaira-cockpit && claude plugin test . -> 259 pass, 0 fail."
+  note: pre-existing: jaira move has no lock (internal/cli/flow.go reads status, then writes) - two moves overlapping by ~100 ms both pass, so the cockpit's 'already in' check catches only a second press after the first move finished
+review-check: "1. Ein Testticket in signoff bringen mit review-gaps 'blocker: x' und 'note: y'. 2. claude --plugin-dir /home/alex/projects/.worktrees/jaira-mfym1a/core/mod/builtin/jaira-cockpit starten, /tui fullscreen. 3. Im Band [Accept] druecken: statt anzunehmen oeffnet der Give-back-Pane; x steht als [fix now] [blocker], y als [accept]. 4. Auf x druecken bis [accept]: unter dem Feld erscheint 'Why accept it with the blocker?'; Enter ohne Text -> Toast, nichts angenommen. 5. x wieder auf [fix now], y einmal auf [fix now] und nochmal auf [follow-up] druecken. 6. Im Feld Enter druecken (Give back): jaira show <id> zeigt lane in-progress und die Note 'Given back from signoff: beheben: - blocker: x / Folge-Ticket: - <HANDLE>: note: y'; jaira show <HANDLE> --json hat follows=<id>. 7. Automatisch: cd core/mod/builtin/jaira-cockpit && claude plugin test . -> 261 pass, 0 fail."
 ---
 
 # In signoff hakt die Person die Notes an, die behoben werden sollen, und Give back nimmt genau diese mit
@@ -131,3 +143,5 @@ review-check: "1. Einen Testticket mit review-gaps 'blocker: x' und 'note: y' in
 - **2026-11-21 20:04 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/2274544.sock (Worker Runde 7 nach Give back 20:03)
 - **2026-11-21 20:07 · Alexander Sacharov** — Runde 7 (Give back 20:03, Review-Note 1): gapItems prueft BLOCKER vor der Explain-Klasse per Position - eine 'blocker:'-Zeile ist immer blocker; die Explain-Klasse gilt nur fuer Zeilen ohne blocker:-Praefix (note:, unpraefixiert). Der Test 'the band's Accept accepts at once ... an Explain note that calls a blocker a small edge included' hielt genau die alte Regel fest und ist umgedreht: derselbe Fall steht jetzt in der Blocker-Schleife (oeffnet den Pane). Umgekehrt bleibt: '[blocker]' in Explain macht eine note:-Zeile zum Blocker. shipped.sha256 neu.
 - **2026-11-21 20:08 · Alexander Sacharov** — critique 8: nur ein Kommentar-Umbruch in board.ts gapItems; Form passt - BLOCKER ist derselbe Praefix-Test, den notesOf/explainable fuers Band nehmen.
+- **2026-11-21 20:08 · Alexander Sacharov** — critique 9: nichts mehr.
+- **2026-11-21 20:10 · Alexander Sacharov** — bughunt: done at 3c53c41ef - 0 findings in 3 modules, follow-up hunt since 014fc8509 (diff: gapItems puts BLOCKER before the Explain class, its comment, two shipped hashes, tests, release note line); concurrency, error paths, input, permissions checked; ran: sha256sum board.ts at 1f5c19266 and 3c53c41ef matches both new shipped.sha256 lines; claude plugin test . (261 pass, exit 0); explainable() and acceptFromBand/the pane's blocker guard read the same BLOCKER regex, so the band, the pane and Explain agree; files: .jaira/lanes/in-progress.md core/lane/builtin/20-in-progress.md core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/sessions.ts core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/MFYM1A.md core/shipped/shipped.sha256
