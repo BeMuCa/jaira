@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:08:37Z
+updated-at: 2026-11-21T08:09:58Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -152,3 +152,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-21 08:07 · Alexander Sacharov** — in-progress (Runde 6, 21.11.): (1) BOM: board.PRWordIn strippt BOM; settings.firstLine laeuft darueber -> gilt fuer pr, pr-when, release, pr-reviewer, chat-model (Klasse, nicht Beispiel). roles list: Quelle nennt das unbekannte Wort bzw. 'says nothing', statt 'the default' wie ohne Datei. (2) reap.sh unter none: land_remote = Remote, dessen URL <owner/repo> nennt (origin oder sein Parent bei GitHub-Fork, wie jaira-role-pr); keiner da -> waiting mit 'git remote add'-Hinweis statt den Fork zu messen. (3) landed_head: git log --grep filtert in git, Shell liest nur Treffer-Subjects; Subject-Check bleibt (Body-Zeile zaehlt nicht, Test). note: known limit: Fork-Erkennung braucht gh (GitHub); ohne gh oder auf GitLab misst reap an origin - nichts geht verloren, ein Fork-Setup wartet nur.
 - **2026-11-21 08:07 · Alexander Sacharov** — critique (Runde 8): settings.PRFor liest .jaira/pr relativ zum cwd, bevor es root=="" prueft - Ergebnis wird verworfen, aber ein Lesen ausserhalb des Boards ist falsch. Zurueck: erst root pruefen. Sonst: land_remote-Muster verankert am [:/] vor dem Owner (kein foo-upstream/jaira-Treffer), case-insensitiv wie GitHub - ok.
 - **2026-11-21 08:08 · Alexander Sacharov** — critique (Runde 9): nichts mehr zu sagen.
+- **2026-11-21 08:09 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-dispatcher/scripts/reap.sh:151-159 (land_remote) + :227 - under .jaira/pr = none, reap never reaps on a GitHub repo that was renamed or transferred: gh repo view <origin URL> answers with the NEW nameWithOwner (redirect), origin's URL still names the old one, so no remote matches [:/]<repo>(.git)?/?$ and every ticket stays 'waiting: no remote here points at <repo>' forever; before 4582d699 the same clone measured origin/HEAD and worked. The hint 'git remote add upstream' is wrong there too: origin IS the repo. Trigger: non-fork clone whose remote URL predates a rename/owner transfer (GitHub keeps redirecting, so nobody updates it). ran: gh repo view https://github.com/zeit/next.js --json nameWithOwner -> vercel/next.js; land_remote with origin=https://github.com/zeit/next.js.git, repo=vercel/next.js -> empty (repo=zeit/next.js -> origin). blame: 4582d699 (names XB97NJ)
