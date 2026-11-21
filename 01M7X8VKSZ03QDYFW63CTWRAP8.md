@@ -1,7 +1,7 @@
 ---
 id: 01M7X8VKSZ03QDYFW63CTWRAP8
 title: "Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,13 +25,13 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T09:02:45Z
+updated-at: 2026-11-21T09:02:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2485785
 claimed-at: 2026-11-21T08:57:23Z
-outcome-what: "signoff: a ❌ on the status line gives back before any table rule, ? is named in the reason; hunt sha compared as a prefix of the full head in signoff and teamlead"
-outcome-why: "fresh review 21.11. blocker: a red CI run or a missing hunt could still end in a bold accept; short shas differ in length between clones"
-outcome-resolves: "the recommendation can no longer contradict its own status line, and the hunt check holds in any clone"
+outcome-what: "signoff role reads each board's accept, terminal and work lane from its lane config instead of the shipped names; indent fixed"
+outcome-why: "teamlead give-back 08:58: a board whose person lane has another name was silently skipped"
+outcome-resolves: "every board's waiting tickets are found and its move lines name its own lanes, or say ? where a lane is missing"
 review-summary: "Ships no code, only role texts. (1) New built-in role jaira-role-signoff (core/role/builtin/jaira-role-signoff/SKILL.md): read-only; per ticket in signoff it prints one status line (DoD x/y, CI of the branch head commit, bughunt note naming that head, blockers, review verdict, counted 'Given back from signoff:' notes), a table that marks every open note red/yellow/white/blue, one bold recommendation following return rules 0-5 (a red check always gives back; after two noted returns yellow edges go into a ready 'jaira create --follows' line instead of a third round), and the accept/give-back lines for the person to paste. It finds the branch head by the handle as a name segment across local and remote copies, choosing the copy all others are ancestors of, and reports ? when none leads. (2) jaira-teamlead: re-read lanes and open PRs before any list of open decisions, show it only when changed, report signoff/human tickets in the role's shape; bughunt check now compares the note sha as a prefix of the full head sha of the handle branch instead of feat/<id> short form. (3) jaira-worker, jaira-dispatcher and jaira-role-pr: run the project's own CI gates locally before every push, read off the repo (workflows, task runner), red gate = no push. (4) README + docs/how-to-work-with-jaira.html role tables, wantRoles in role_test.go, release note TWRAP8.md, shipped.sha256 regenerated."
 round: 15
 review-gaps: |-
