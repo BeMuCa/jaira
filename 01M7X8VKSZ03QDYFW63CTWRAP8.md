@@ -25,10 +25,10 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:54:24Z
+updated-at: 2026-11-21T08:57:23Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-1876460
-claimed-at: 2026-11-21T08:39:00Z
+claimed-by: DESKTOP-RFTCH11-2485785
+claimed-at: 2026-11-21T08:57:23Z
 outcome-what: "signoff: a ❌ on the status line gives back before any table rule, ? is named in the reason; hunt sha compared as a prefix of the full head in signoff and teamlead"
 outcome-why: "fresh review 21.11. blocker: a red CI run or a missing hunt could still end in a bold accept; short shas differ in length between clones"
 outcome-resolves: "the recommendation can no longer contradict its own status line, and the hunt check holds in any clone"
