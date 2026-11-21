@@ -43,12 +43,22 @@ are closed and before the worktree is removed, with the setup's arguments:
   .jaira/worktree-teardown <worktree> <slug> <port-offset 1-40> <repo-root>
 exactly as spawn.sh gave them to the setup and wrote them down in the
 worktree's git directory (jaira-setup). A worktree without that record — no
-setup ran, or spawn.sh predates it — gets no teardown call. The teardown
-called is the main checkout's. Its output goes to stderr. A teardown that
+setup ran, or spawn.sh predates it — gets no teardown call. Its output
+goes to stderr. A teardown that
 fails keeps the worktree, the branch and the records ('kept <ticket>:
 teardown failed: ...'), and the next round calls it again, so it must bear
-being called twice. One that is there but not executable keeps the ticket
-before any tab closes.
+being called twice. One that runs longer than JAIRA_TEARDOWN_TIMEOUT
+seconds (default 300) is stopped with its child processes and counts as
+failed ('... (timed out after 300s)'): the cockpit calls reap.sh every ten
+minutes, and a hung teardown would otherwise hold reap.lock for good. One that
+is there but not executable keeps the ticket before any tab closes, and so
+does a machine without timeout(1) or gtimeout (coreutils).
+
+The teardown is always the main checkout's, also for a worktree spawned from
+another one. $1 and $4 are paths as they were when the setup ran and may be
+gone by now: $4 is another ticket's worktree where spawn.sh ran in one, and $1
+moved after a 'git worktree move'. Use absolute paths inside the teardown, or
+cd into $1 where it is there; never rely on $4.
 
 Output: one line per thing done — 'closed <ticket>/<lane> <pane>', 'tore down
 <worktree>', 'removed <worktree>', 'deleted branch <branch>' — or 'waiting
@@ -57,7 +67,8 @@ four start with 'would' ('would tear down <worktree>'). Exit 0 also when somethi
 kept: keeping is the answer, not a failure.
 
 Environment: HERDR_BIN_PATH, HERDR_PANE_ID (this pane is never closed),
-JAIRA_BRANCH_PREFIX (default feat).
+JAIRA_BRANCH_PREFIX (default feat), JAIRA_TEARDOWN_TIMEOUT (seconds, default
+300).
 USAGE
 }
 
@@ -115,6 +126,9 @@ fi
 herdr_up=""; "$herdr" tab list >/dev/null 2>&1 && herdr_up=1
 # Physical paths throughout: on macOS the temp directory is a symlink, and git
 # reports the resolved path where cd keeps the one it was given.
+# Seconds a .jaira/worktree-teardown may run before it counts as failed.
+tsecs="${JAIRA_TEARDOWN_TIMEOUT:-300}"
+case "$tsecs" in ''|*[!0-9]*|0) echo "JAIRA_TEARDOWN_TIMEOUT must be seconds above 0, not '$tsecs'" >&2; exit 2 ;; esac
 main="$(cd "$(git -C "$root" worktree list --porcelain | sed -n '1s/^worktree //p')" && pwd -P)"
 
 # The forge decides which tool asks about the pull request — the same ladder
@@ -341,6 +355,13 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
     echo "kept $t: $teardown is not executable: chmod +x it, or remove it"; continue
   fi
   if [ -x "$teardown" ]; then
+    # Bounded: the cockpit runs this every ten minutes under reap.lock, and a
+    # teardown that hangs would hold the lock and stop every later round.
+    # timeout(1) is coreutils; macOS ships it as gtimeout, if at all.
+    tbin="$(command -v timeout || command -v gtimeout || true)"
+    if [ -z "$tbin" ]; then
+      echo "kept $t: no timeout(1) to bound $teardown: install coreutils"; continue
+    fi
     for w in "${wts[@]+"${wts[@]}"}"; do
       rec="$(git -C "$w" rev-parse --absolute-git-dir 2>/dev/null)/jaira-setup"
       [ -f "$rec" ] || continue
@@ -379,8 +400,12 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
   while [ "$i" -lt "${#targs[@]}" ]; do
     w="${targs[$i]}"; s="${targs[$((i + 1))]}"; o="${targs[$((i + 2))]}"; r="${targs[$((i + 3))]}"; i=$((i + 4))
     if [ -n "$dry" ]; then echo "would tear down $w"; continue; fi
-    rc=0; "$teardown" "$w" "$s" "$o" "$r" </dev/null >&2 || rc=$?
+    # timeout signals the teardown's whole process group, so what it started
+    # (docker compose) goes with it; -k kills what ignores the TERM.
+    rc=0; "$tbin" -k 10 "$tsecs" "$teardown" "$w" "$s" "$o" "$r" </dev/null >&2 || rc=$?
     if [ "$rc" = 0 ]; then echo "tore down $w"
+    elif [ "$rc" = 124 ] || [ "$rc" = 137 ]; then
+      echo "kept $t: teardown failed: $teardown $w $s $o $r (timed out after ${tsecs}s)"; failed=1; break
     else echo "kept $t: teardown failed: $teardown $w $s $o $r (exit $rc)"; failed=1; break; fi
   done
   [ -z "$failed" ] || continue

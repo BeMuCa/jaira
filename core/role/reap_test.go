@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 )
 
 // reapRig is a repository with one ticket's worktree, opened the way a
@@ -678,18 +679,23 @@ func TestReapOnANoneBoardNamesAnUnansweringGh(t *testing.T) {
 func TestReapTearsDownWhatTheSetupBuilt(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
-		name   string
-		script string // the teardown; "" for none
-		mode   os.FileMode
-		record bool   // whether spawn.sh left a jaira-setup record
-		want   string // a line reap.sh prints
-		called bool   // whether the teardown ran
-		gone   bool   // whether the worktree went
+		name    string
+		script  string // the teardown; "" for none
+		mode    os.FileMode
+		record  bool   // whether spawn.sh left a jaira-setup record
+		want    string // a line reap.sh prints
+		called  bool   // whether the teardown ran
+		gone    bool   // whether the worktree went
+		timeout string // JAIRA_TEARDOWN_TIMEOUT; "" for the default
 	}{
 		{name: "none", record: true, gone: true},
 		{name: "succeeds", script: "exit 0", mode: 0o755, record: true, want: "tore down <wt>", called: true, gone: true},
 		{name: "fails", script: "echo stack busy >&2; exit 3", mode: 0o755, record: true,
 			want: "kept AB12CD: teardown failed: <main>/.jaira/worktree-teardown <wt> bbb 9 <root> (exit 3)", called: true},
+		// A child that would outlive the teardown holds reap.sh's stderr
+		// open: the run returns early only when timeout killed it too.
+		{name: "hangs", script: "sleep 30; exit 0", mode: 0o755, record: true, timeout: "1",
+			want: "kept AB12CD: teardown failed: <main>/.jaira/worktree-teardown <wt> bbb 9 <root> (timed out after 1s)", called: true},
 		{name: "not executable", script: "exit 0", mode: 0o644, record: true,
 			want: "kept AB12CD: <main>/.jaira/worktree-teardown is not executable"},
 		{name: "no record", script: "exit 0", mode: 0o755, gone: true},
@@ -718,6 +724,9 @@ func TestReapTearsDownWhatTheSetupBuilt(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
+			if c.timeout != "" {
+				r.env = append(r.env, "JAIRA_TEARDOWN_TIMEOUT="+c.timeout)
+			}
 			r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
 			r.write(t, r.shown, `{"status":"done"}`)
 
@@ -729,7 +738,11 @@ func TestReapTearsDownWhatTheSetupBuilt(t *testing.T) {
 				t.Errorf("--dry-run does not name the teardown:\n%s", dry)
 			}
 
+			start := time.Now()
 			got := r.run(t, r.repo, "reap.sh")
+			if c.timeout != "" && time.Since(start) > 20*time.Second {
+				t.Errorf("reap.sh waited %v for a teardown bounded to %ss: its child outlived the timeout", time.Since(start), c.timeout)
+			}
 			b, _ := os.ReadFile(calls)
 			want := strings.NewReplacer("<wt>", r.wt, "<main>", r.repo, "<root>", root).Replace(c.want)
 			if want != "" && !strings.Contains(got, want) {
