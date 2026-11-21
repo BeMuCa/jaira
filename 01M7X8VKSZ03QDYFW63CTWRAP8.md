@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:13:27Z
+updated-at: 2026-11-21T08:13:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-31394
 claimed-at: 2026-11-21T08:01:32Z
@@ -36,7 +36,7 @@ review-summary: "critique 21.11.: key names now match jaira show --json (checked
 round: 9
 review-gaps: "optimize 21.11.: the new paragraph is the only addition; nothing duplicated elsewhere, no dead text. Nothing to remove."
 test-verdict: "fail: suite green (go vet, go test ./..., check-ticket-commits RC=0), DoD 1-4 verified in the tree, keys checked against the live payload; bughunt 08:13 change: branch-head loop order-dependent (diverged early copy breaks before a later merge copy)"
-hunt-verdict: "pass: last hunt at a1b61158 found 1 change, fixed in d4da7f7b; no new hunt since by teamlead decision 21:58 - hunt-on-HEAD reads ❌ by design"
+hunt-verdict: "change: 1 finding at 367d125f (order-dependent head loop, fails safe as ?)"
 question: ""
 review-verdict: "All four DoD items met, no blocker. Checked: go test ./core/role ./core/shipped green (shipped fresh, -count=1), every flag the role prescribes exists (jaira list --lane/--board, gh run list --commit/--workflow, glab ci list --sha), the cockpit really writes 'Given back from <lane>:' (core/mod/builtin/jaira-cockpit/hooks/register.tsx:900), the branch lookup handles none/diverged copies by leaving head empty. Role is read-only, so concurrency/permission risk is limited to lines the person runs. Four notes, all small."
 review-round: 8
