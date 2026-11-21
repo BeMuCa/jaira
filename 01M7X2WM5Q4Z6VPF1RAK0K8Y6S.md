@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:10:27Z
+updated-at: 2026-11-21T08:10:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
@@ -28,7 +28,7 @@ outcome-why: Hand-gemergte Manifest-Konflikte verloren Zeilen; jaira update --ro
 outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, wenn eine fehlt, und Manifest-Merges konfliktieren nicht mehr"
 review-summary: "Runde nach signoff: keine Funde. dea24113 (--write, strings.Cut) wie zuvor beurteilt; 29ee4690 ist nur das mit --write neu erzeugte Manifest nach dem union-Merge, keine Form zu beurteilen."
 round: 7
-review-gaps: "manifest=core/shipped/shipped.sha256 stand zweimal (--check, --write) -> einmal oben im Skript; sonst nichts: generate() hat zwei Aufrufer, read() im Test drei, keine verwaiste Stelle"
+review-gaps: "manifest-Pfad einmal oben im Skript (7f2d86fe); 29ee4690 ist reine Regenerierung, nichts zu entfernen"
 test-verdict: "fail: go test ./... rot nur in core/shipped TestManifestLinesAreWellFormed (Duplikate nach union-Merge 6f5ba869); DoD 1-7 sonst im Baum belegt; zwei parallele --write ergeben ein sortiertes Manifest ohne Duplikat; flacher Klon: exit 1, Manifest unveraendert"
 hunt-verdict: "fail: bughunt done at 6f5ba869, 1 change (99 Duplikate nach union-Merge), 0 pre-existing"
 review-verdict: "Diff erfuellt alle 5 DoD-Punkte, keine Defekte gefunden. Selbst geprueft: --check gruen auf 34 Tags, mit dem alten Manifest rot (8 Versionen); Regenerieren ergibt byte-gleich das committete Manifest; 0 Zeilen gegenueber master verloren; TestInstallReplacesAnOlderShippedVersion faellt mit dem alten Manifest, besteht mit dem neuen; go test ./shipped ./role gruen."
