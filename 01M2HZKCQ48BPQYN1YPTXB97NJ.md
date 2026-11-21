@@ -1,7 +1,7 @@
 ---
 id: 01M2HZKCQ48BPQYN1YPTXB97NJ
 title: "Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Wer allein an einem Repository arbeitet, bekommt keine Rolle vorgesetzt, die ihn zu einem Pull Request schickt, den er nicht will - und ein Team, das Pull Requests benutzt, bekommt die Regel weiterhin ueberall, wo ein Agent sie liest."
@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:00:27Z
+updated-at: 2026-11-21T08:01:23Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -36,7 +36,7 @@ outcome-what: "Board-Datei .jaira/pr kennt den dritten Wert none: die Rollen lan
 outcome-why: "Wer allein ohne Pull Requests arbeitet, bekam eine Rolle, die vor einem nie gewollten PR anhaelt (13VMA8); die Einstellung muss mit dem Repository reisen (Teamlead-Entscheidung 20.11.: dritter Wert in .jaira/pr, Laufzeit + Block)."
 outcome-resolves: "Ein Board sagt in .jaira/pr, ob Arbeit durch einen PR (person/agent) oder direkt auf den Hauptzweig (none) kommt; ohne Datei ist alles byte-gleich wie heute."
 review-summary: "Neuer Wert 'none' fuer .jaira/pr: core/board/arrival.go liest die Datei (nur exakt 'none'/'agent' zaehlt, alles andere bleibt person) und haengt bei none/agent einen Absatz 'How work arrives on this board' an den CLAUDE.md/AGENTS.md-Block - ohne Datei bleibt der Block byte-gleich, jaira validate meldet ihn als veraltet, sobald die Datei wechselt. jaira roles list zeigt none (pr_when dann fest done). jaira roles pr-gate laesst unter none (gelesen vom Basis-Zweig) nur durch, wenn jedes Ticket in done/logbook ist UND jeder Commit in base..HEAD ein Ticket nennt; ein unbenannter Merge zaehlt nur, wenn sein Baum exakt gits eigener Merge der Eltern ist (merge-tree --write-tree) - Konfliktloesungen, -s ours und eingeschmuggelte Dateien halten das Tor. jaira-role-pr bekommt 'Land it': Gate, Basis hereinmergen, Gate erneut, fast-forward push auf den Hauptzweig, nie --force. reap.sh fragt unter none keinen Forge, sondern wartet, bis origins Hauptzweig (origin/HEAD, sonst origin/main|master, haengender origin/HEAD = unset) die Spitze enthaelt und ein Commit dort das Ticket nennt. Teamlead/Dispatcher je ein Satz, Release-Note, shipped.sha256 neu."
-round: 9
+round: 10
 review-gaps: |-
   note: reap.sh misst das Landen nur an origin; jaira-role-pr landet auf <remote> - in einem Fork-Setup (Landen auf upstream) wartet reap dann ewig mit 'has not landed'
   note: eine .jaira/pr mit BOM (Windows-Notepad) liest sich still als person, und roles list sagt dann 'the default' obwohl eine Datei da ist - sicher, aber verwirrend; ein Hinweis in roles list waere hilfreich
@@ -44,8 +44,8 @@ review-gaps: |-
   note: landed_head liest pro Ticket die ganze Historie der Spitze (git log tip) - auf grossen Repos langsam, korrekt
 test-verdict: "pass: go vet + go test -race ./... RC=0 at 01e28a76 (ae1a72ee only reap.sh + its test, core/role green); DoD 1-8 checked in the tree; scratch board: none ticket not done -> exit 3, unnamed commit -> exit 3, -s ours merge held, non-ff push refused by git, parallel 'jaira update' -> paragraph once"
 hunt-verdict: "pass (round 7 at ae1a72ee): 0 findings"
-claimed-by: DESKTOP-RFTCH11-29927
-claimed-at: 2026-11-20T23:29:25Z
+claimed-by: DESKTOP-RFTCH11-30002
+claimed-at: 2026-11-21T08:01:23Z
 review-verdict: "Diff erfuellt alle acht DoD-Punkte; keine Blocker gefunden. Tests der beruehrten Pakete gruen (core/board, settings, gitrepo, role, shipped, internal/cli). Die vier Notes sind Randfaelle und Vertrauensgrenzen, keine Defekte des Ausgelieferten."
 review-round: 9
 review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/solo && cd /tmp/solo && git init -q && /tmp/jaira init  3. printf 'none\\n' > .jaira/pr && /tmp/jaira roles list  -> pr zeigt 'none'  4. /tmp/jaira validate  -> Warnung 'no longer matches this board's lanes or its .jaira/pr'  5. /tmp/jaira update && grep -A3 'How work arrives' CLAUDE.md  -> Absatz 'takes no pull requests'  6. rm .jaira/pr && /tmp/jaira update && grep -c 'How work arrives' CLAUDE.md  -> 0  7. Gate-Logik: go test ./internal/cli -run 'TestPRGate.*None' -v  -> alle PASS (done-only, unbenannte Commits/Merges halten, kein create line)"
