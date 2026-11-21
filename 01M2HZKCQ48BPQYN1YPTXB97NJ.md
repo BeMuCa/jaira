@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T09:29:00Z
+updated-at: 2026-11-21T09:29:04Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -205,3 +205,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-21 09:27 · Alexander Sacharov** — critique (Runde 18): Ein Prinzip statt Einzelfixes; die eine bewusste Ausnahme (CLAUDE.md-Block) ist begruendet. Nichts zu sagen.
 - **2026-11-21 09:28 · Alexander Sacharov** — bughunt: change: internal/cli/roles.go:557 - 'jaira roles list --base <ref>' with a ref that does not resolve (not fetched, typo, a fork parent remote never fetched) silently falls back to the checkout's own .jaira/pr, skipping origin's default branch too, and exits 0 - the branch's own word, which jaira-role-pr SKILL.md says to act on; an explicit --base that is not a commit should fail, not degrade; ran: scratch repo, origin/master says none, branch says agent: 'roles list --json' -> none, 'roles list --json --base upstream/master' -> pr=agent, source 'read off this disk', exit 0
 - **2026-11-21 09:29 · Alexander Sacharov** — bughunt: change: internal/cli/roles.go:577 - pr_source claims 'this branch changes .jaira/pr to person ... (not committed here; ... jaira share first)' on any branch cut before the base got its .jaira/pr: the file is merely absent in the old checkout, the branch changes nothing (merge would keep base's file), and the advice to commit/share is wrong; compares the disk with the base instead of with the merge base; ran: scratch repo, feat/old branched before 'chore: none' on master, 'git diff origin/master...feat/old' empty, 'roles list --json' prints that source
+- **2026-11-21 09:29 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:612 - without a forge (pullTarget undefined) base is found.base, the main worktree's LOCAL branch (board.ts:339), so landsWithoutPullRequest reads 'git show master:.jaira/pr' while 'pr-gate --land' and jaira-role-pr read origin/<default>; a local master behind origin (none pushed from another clone) makes Accept say noForge instead of landing, contrary to the comment at register.tsx:690 'read as pr-gate --land reads it'; the reverse case is caught by the gate; read
