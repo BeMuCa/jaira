@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-21T08:25:34Z
+updated-at: 2026-11-21T08:25:38Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -36,7 +36,7 @@ test-verdict: "pass: no code change since 99be9268; go test -race ./... RC=0 at 
 hunt-verdict: "pass: bughunt done at 99be9268 (diff since d71e5e86: 99be9268 + shipped.sha256 union of 24658f47), 0 change, 0 pre-existing"
 review-verdict: "Der Diff erfuellt alle 7 DoD-Punkte; nur Prosa und ein Stringtest, kein Laufzeitcode, kein Defekt gefunden. go test ./... -race gruen. Aussage 'git verweigert die Datei als ignoriert' stimmt (git add auf einen per .git/info/exclude ignorierten Pfad bricht mit Exit 1 ab)."
 review-round: 5
-review-check: "1. cd into the worktree jaira-sdbct5 and run: go build -o /tmp/jaira-sdbct5 ./cmd/jaira  2. mkdir /tmp/t && cd /tmp/t && git init && /tmp/jaira-sdbct5 init  3. open /tmp/t/CLAUDE.md, find the point 'the ticket rides with the code' - it ends with 'On a board not shared yet ... commit the code alone ... The next point holds there all the more'  4. git status in /tmp/t shows no .jaira/ - that is the unshared board the sentence is about  5. in the worktree: go test ./core/board -run TestAgentNoteNamesProofAndTheUnsharedBoardCaveat -count=1 -> ok  6. grep -n 'not shared yet' core/role/builtin/jaira-worker/SKILL.md core/role/builtin/jaira-role-lane/SKILL.md -> one line under each ready-to-paste commit block"
+review-check: "1. go test ./core/board -run TestAgentNoteNamesProofAndTheUnsharedBoardCaveat -v  -> PASS  2. grep -n 'On a board not shared yet' CLAUDE.md core/role/jaira/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/role/builtin/jaira-role-lane/SKILL.md  -> je ein Treffer (role-lane zwei)  3. In einem leeren Testrepo: git init, jaira init, jaira create t --goal g --context c --dod d, dann git add .jaira/tickets/*  -> git meldet 'paths are ignored' - genau der Fall, den der neue Satz abdeckt  4. cat core/release/notes/SDBCT5.md -> zwei Zeilen, jede beginnt mit '- Run'"
 ---
 
 # Der Agent-Block nennt --proof, und die Gitignore-Regel verweist auf die Commit-Regel
