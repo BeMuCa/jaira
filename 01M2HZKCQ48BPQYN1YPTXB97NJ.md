@@ -1,7 +1,7 @@
 ---
 id: 01M2HZKCQ48BPQYN1YPTXB97NJ
 title: "Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Wer allein an einem Repository arbeitet, bekommt keine Rolle vorgesetzt, die ihn zu einem Pull Request schickt, den er nicht will - und ein Team, das Pull Requests benutzt, bekommt die Regel weiterhin ueberall, wo ein Agent sie liest."
@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:07:27Z
+updated-at: 2026-11-21T08:07:39Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -32,9 +32,9 @@ context: |-
 
   Verwandt, aber nicht dasselbe: PWAF22 will, dass 'jaira update' das ganze Setup nachzieht. Wenn dieses Ticket dem Befehl etwas zu schreiben gibt, bekommt PWAF22 einen Grund mehr zu existieren.
 question: ""
-outcome-what: "Board-Datei .jaira/pr kennt den dritten Wert none: die Rollen landen einen Zweig ohne Pull Request per fast-forward push, sobald jaira roles pr-gate jedes Ticket in done findet; jaira update schreibt fuer none/agent einen Absatz 'How work arrives on this board' in den CLAUDE.md/AGENTS.md-Block; reap.sh raeumt bei none auf, sobald origin/HEAD den Zweig enthaelt."
-outcome-why: "Wer allein ohne Pull Requests arbeitet, bekam eine Rolle, die vor einem nie gewollten PR anhaelt (13VMA8); die Einstellung muss mit dem Repository reisen (Teamlead-Entscheidung 20.11.: dritter Wert in .jaira/pr, Laufzeit + Block)."
-outcome-resolves: "Ein Board sagt in .jaira/pr, ob Arbeit durch einen PR (person/agent) oder direkt auf den Hauptzweig (none) kommt; ohne Datei ist alles byte-gleich wie heute."
+outcome-what: "Board haelt in .jaira/pr fest, wie Arbeit ankommt (person/agent/none); Rollen, pr-gate, reap und der CLAUDE.md-Block richten sich danach; Runde 6: BOM in allen einzeiligen Board-Dateien, roles list nennt ein nicht genommenes Wort, reap misst am Remote, auf das gelandet wird"
+outcome-why: "Ein Solo-Projekt ohne Pull Requests blieb an einem PR haengen, den niemand oeffnet"
+outcome-resolves: "XB97NJ"
 review-summary: "Neuer Wert 'none' fuer .jaira/pr: core/board/arrival.go liest die Datei (nur exakt 'none'/'agent' zaehlt, alles andere bleibt person) und haengt bei none/agent einen Absatz 'How work arrives on this board' an den CLAUDE.md/AGENTS.md-Block - ohne Datei bleibt der Block byte-gleich, jaira validate meldet ihn als veraltet, sobald die Datei wechselt. jaira roles list zeigt none (pr_when dann fest done). jaira roles pr-gate laesst unter none (gelesen vom Basis-Zweig) nur durch, wenn jedes Ticket in done/logbook ist UND jeder Commit in base..HEAD ein Ticket nennt; ein unbenannter Merge zaehlt nur, wenn sein Baum exakt gits eigener Merge der Eltern ist (merge-tree --write-tree) - Konfliktloesungen, -s ours und eingeschmuggelte Dateien halten das Tor. jaira-role-pr bekommt 'Land it': Gate, Basis hereinmergen, Gate erneut, fast-forward push auf den Hauptzweig, nie --force. reap.sh fragt unter none keinen Forge, sondern wartet, bis origins Hauptzweig (origin/HEAD, sonst origin/main|master, haengender origin/HEAD = unset) die Spitze enthaelt und ein Commit dort das Ticket nennt. Teamlead/Dispatcher je ein Satz, Release-Note, shipped.sha256 neu."
 round: 10
 review-gaps: |-
