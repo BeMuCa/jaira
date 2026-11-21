@@ -23,14 +23,14 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:11:03Z
+updated-at: 2026-11-21T08:11:38Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
 outcome-what: "Round 3: in-progress stops at back.count 3 or more; jaira move typed at a terminal records a person's send-back; jaira keeps the review's own gaps beside its verdict (review-verdict-gaps, show --json review.verdict_gaps) and the cockpit lists them for an earlier-round verdict, Explain prompts read them."
 outcome-why: "Alex gave the ticket back from signoff on 21.11. to close all three review notes in this round instead of leaving them as notes."
 outcome-resolves: "Review notes 1-3 of 1789d202. Checked: concurrency (copy inside locked Mutate), error paths (unreadable verdict/round -> no copy), input (multiline/CRLF gaps via SetScalar, empty gaps copied empty, three write orders tested), permissions (TTY rule opens no gate). go test ./... RC=0, claude plugin test 216 pass."
-review-summary: "Ticket frontmatter gains blocker-rule (free text, default = wrong result/data loss/crash/security hole) and stop-after-fix (true/false/empty, set refuses anything else); show --json and the --for-lane payload carry blocker_rule, stop_after_fix, round and back. jaira move now writes back-from/back-by/back-count on every send-back inside the locked Mutate: by=person when the lane left is a person's (not agentic, human-exit or question lane) or the move came from the TUI (new Request.ByPerson, set at both TUI move sites), count = returns in a row from the same loop lane, reset by a person or another lane; parking in blocked records nothing. The in-progress prompt reads back.count instead of counting notes; testing skips the hunt in a fix round when stop_after_fix; review, testing and the bughunt skill read blocker_rule. SetScalar turns CR/CRLF into LF for every field. Cockpit: Explain only for a blocker: line in gaps or a reserving/refusing verdict, other gaps listed under the row without a button (only for a current-round verdict), an earlier-round verdict shows 'review of round N, changed since' and keeps its Explain; the Explain template (texts.ts and spawn.sh) asks for a Status line, one [class] line per note and a Recommendation with no fixed give-back-first order, and the pane colours ticks/crosses, class marks and the recommendation with theme colours; lines in neither shape stay plain text."
+review-summary: "none"
 review-gaps: |-
   note: small edge: core/lane/builtin/20-in-progress.md (and twin) stops on 'count 3' - a count above 3 (a stop ignored once) reads as no stop; say 'count 3 or more'
   note: known limit: a person sending back from a loop lane with the plain CLI (jaira move, not the TUI) is recorded as back-by=lane and counts toward the third-return stop - only the TUI sets ByPerson; the release note says 'any move made in the board', which is accurate
