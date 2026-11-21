@@ -37,9 +37,15 @@ have accepted or given it back a minute ago in the board or the browser, and
 nothing tells you:
 
 ```bash
-jaira show <id> --json      # status, dod_items, review, notes, round
+jaira show <id> --json      # status, handle, dod_items, review, body
 gh pr list --state open      # or glab mr list: what is waiting as a pull request
 ```
+
+The keys of that JSON, as this role reads them: `.status` the lane,
+`.handle` the six characters, `.dod_items[]` with `.done` per item,
+`.review.verdict`, `.review.gaps` and `.review.summary` the review lane's
+outputs. There is no `notes` key: the notes are the `- **<date> · <who>** —
+<text>` lines under `## Progress` in `.body`.
 
 A ticket no longer in signoff drops out of the report without a word. Nothing
 left: say so in one line and stop.
@@ -76,7 +82,7 @@ to guess.
 
 A result that belongs to another commit, or no result at all, is `?`, never ✅.
 
-- **DoD** `x/y` ticked, from `dod_items`
+- **DoD** `x/y` ticked, from `.dod_items[].done`
 - **tests** — the CI run for exactly that commit, of the workflow that runs the
   tests (named in `.github/workflows/`): `gh run list --commit "$head"
   --workflow <ci workflow> --json conclusion,headSha`; on GitLab `glab ci list
@@ -90,12 +96,12 @@ A result that belongs to another commit, or no result at all, is `?`, never ✅.
   `$head` (compare the short form). An older sha does not cover what a later
   round changed: ❌
 - **blocker** — none, or how many 🔴 the table below holds
-- **review** — `review-verdict`
+- **review** — `.review.verdict`
 - **returns from signoff** — how many are noted (see return rule 2)
 
 ### 2. The table
 
-Every open point the ticket carries — each line of `review-gaps`, each
+Every open point the ticket carries — each line of `.review.gaps`, each
 `note:` line in it, each finding of the hunt that is still open, each `decision:`
 note the person has not seen — one row:
 
