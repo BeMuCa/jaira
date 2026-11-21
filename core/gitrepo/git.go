@@ -375,7 +375,7 @@ func (r *Repo) HuntCoverage(commit, ticketID string, paths []string) (HuntState,
 	if err != nil {
 		return HuntStale, err
 	}
-	if anyCode(own) {
+	if r.anyCode(own) {
 		return HuntStale, nil
 	}
 	changed, err := r.run(append([]string{"-c", "core.quotePath=false", "diff", "--name-only", "-z", "HEAD", "--"}, specs...)...)
@@ -386,16 +386,26 @@ func (r *Repo) HuntCoverage(commit, ticketID string, paths []string) (HuntState,
 	if err != nil {
 		return HuntStale, err
 	}
-	if anyCode(changed) || anyCode(others) {
+	if r.anyCode(changed) || r.anyCode(others) {
 		return HuntUnknown, nil
 	}
 	return HuntCovers, nil
 }
 
 // anyCode reports a path in git's NUL-separated list that is no board data.
-func anyCode(list string) bool {
+// git names paths from the repository root, and a board may live in a
+// subdirectory of it (init and share support that), so its .jaira/ is
+// matched below the board's own prefix; a path outside the board's
+// directory is code.
+func (r *Repo) anyCode(list string) bool {
+	prefix, _ := r.run("rev-parse", "--show-prefix")
+	prefix = strings.TrimSpace(prefix)
 	for _, p := range strings.Split(list, "\x00") {
-		if p = strings.TrimSpace(p); p != "" && !isBoardData(p) {
+		if p = strings.TrimSpace(p); p == "" {
+			continue
+		}
+		rel, inBoard := strings.CutPrefix(p, prefix)
+		if !inBoard || !isBoardData(rel) {
 			return true
 		}
 	}
