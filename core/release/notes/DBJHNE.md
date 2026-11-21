@@ -1,0 +1,1 @@
+- `spawn.sh` no longer gives two worktrees of one repository the same port offset: a new worktree takes the next offset (1-40) no other worktree holds, so expect a worker's ports to differ from the slug-derived ones; with all 40 taken it stops before making anything — remove a finished worktree first.

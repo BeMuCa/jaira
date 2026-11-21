@@ -47,7 +47,10 @@ Every other lane name starts /jaira-role-lane <ticket-id> <lane>.
 A new worktree is set up by the repository's own .jaira/worktree-setup when it
 is there and executable, called as
   .jaira/worktree-setup <worktree> <slug> <port-offset 1-40> <repo-root>
-and spawn.sh then writes nothing into the worktree itself. Without it, a .env in
+and spawn.sh then writes nothing into the worktree itself. The port offset is
+one no other worktree of the repository holds (0 is the main directory's); a
+worktree keeps it as long as it stands, and with all 40 taken the spawn stops
+before anything is made. Without a setup, a .env in
 the repository is copied and four port lines are appended. A setup that fails,
 or is there but not executable, stops the spawn before a tab opens.
 Its counterpart is .jaira/worktree-teardown, which reap.sh calls with the same
@@ -186,13 +189,72 @@ if [ ! -d "$wt" ]; then
   # feat/, the prefix this board's own branches use. A repository that names
   # them differently sets JAIRA_BRANCH_PREFIX rather than editing this script.
   branch="${JAIRA_BRANCH_PREFIX:-feat}/$slug"
-  git -C "$root" worktree add "$wt" -b "$branch" >&2
 
-  # Deterministic per-slug port offset, so two workers never share a stack.
-  # 0 stays free: it belongs to the main directory's own stack. It stays here
-  # even when the repository sets up its own worktree: that two workers never
-  # share a stack is the one thing a single repository's script cannot promise.
-  off=$(( ( $(printf '%s' "$slug" | cksum | cut -d' ' -f1) % 40 ) + 1 ))
+  # The port offset, 1-40, so two workers never share a stack. 0 stays free:
+  # it belongs to the main directory's own stack. Handed out once, here, when
+  # the worktree is made: a worktree that stands keeps the one it got. The
+  # slug's hash only says where to start looking — on its own it gives 8r8vts,
+  # 32ttss and twb0r6 all the same one — and an offset another worktree of this
+  # repository holds is skipped. It stays here even when the repository sets
+  # up its own worktree: that two workers never share a stack is the one thing
+  # a single repository's script cannot promise. A repository with neither a
+  # setup nor a .env has no ports, and gets none.
+  off=""
+  if [ -x "$setup" ] || [ -f "$root/.env" ]; then
+    common="$(cd "$root" && cd "$(git rev-parse --git-common-dir)" && pwd)"
+    # Looking, making the worktree and writing its offset down are one step,
+    # or two spawns at once both take the same free offset.
+    lock="$common/jaira-offset.lock"
+    tries=0
+    until mkdir "$lock" 2>/dev/null; do
+      tries=$((tries + 1))
+      if [ "$tries" -ge 100 ]; then
+        echo "$lock has stood for 10 seconds: another spawn.sh is making a worktree," \
+             "or one died while it did — remove it when none runs" >&2
+        exit 1
+      fi
+      sleep 0.1
+    done
+    trap 'rmdir "$lock" 2>/dev/null || true' EXIT
+
+    # What every other worktree holds: its jaira-offset, else the offset its
+    # jaira-setup or .env names — a worktree made before offsets were written
+    # down has only those.
+    taken=" "
+    for gd in "$common"/worktrees/*/; do
+      [ -d "$gd" ] || continue
+      o=""
+      if [ -f "$gd/jaira-offset" ]; then
+        o="$(cat "$gd/jaira-offset")"
+      elif [ -f "$gd/jaira-setup" ]; then
+        o="$(sed -n 's/^offset=//p' "$gd/jaira-setup")"
+      elif [ -f "$gd/gitdir" ]; then
+        w="$(dirname "$(cat "$gd/gitdir")")"
+        if [ -f "$w/.env" ]; then
+          o="$(sed -n 's/^# worker stack: .* offset=\([0-9][0-9]*\)$/\1/p' "$w/.env" | tail -n 1)"
+        fi
+      fi
+      taken="$taken$o "
+    done
+    start=$(( $(printf '%s' "$slug" | cksum | cut -d' ' -f1) % 40 ))
+    for (( i = 0; i < 40; i++ )); do
+      o=$(( (start + i) % 40 + 1 ))
+      case "$taken" in *" $o "*) ;; *) off=$o; break ;; esac
+    done
+    if [ -z "$off" ]; then
+      echo "every port offset 1-40 is held by a worktree of $root:" \
+           "remove a finished one (reap.sh) before starting another" >&2
+      exit 1
+    fi
+  fi
+
+  git -C "$root" worktree add "$wt" -b "$branch" >&2
+  if [ -n "$off" ]; then
+    printf '%s\n' "$off" > "$(git -C "$wt" rev-parse --absolute-git-dir)/jaira-offset" \
+      || echo "could not write the offset $off down for $wt: the next worktree may get it too" >&2
+    rmdir "$lock" 2>/dev/null || true
+    trap - EXIT
+  fi
 
   if [ -x "$setup" ]; then
     # Its output goes to stderr: stdout carries the pane id and nothing else.

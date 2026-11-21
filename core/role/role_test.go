@@ -1055,6 +1055,102 @@ esac
 	}
 }
 
+// Two worktrees of one repository never get the same port offset. 8r8vts and
+// 32ttss hash to the same one (cksum % 40 + 1 = 5); the second takes the next
+// free one instead. A worktree made before offsets were written down still
+// holds the one its .env names, and a worktree that stands keeps its offset
+// when spawn.sh is run for it again.
+func TestSpawnGivesEveryWorktreeItsOwnOffset(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	path := jairaPath(t)
+	dir := t.TempDir()
+	if _, err := install(dir, false, true, false); err != nil {
+		t.Fatal(err)
+	}
+	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+
+	base := t.TempDir()
+	root := filepath.Join(base, "repo")
+	bin := t.TempDir()
+	herdr := `#!/usr/bin/env bash
+case "$1 $2" in
+  "tab create") echo '{"result":{"root_pane":{"pane_id":"p1"}}}' ;;
+  "pane get")   echo '{"result":{"pane":{"agent":"claude","agent_status":"idle","tab_id":"t1"}}}' ;;
+esac
+`
+	if err := os.WriteFile(filepath.Join(bin, "herdr"), []byte(herdr), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, ".env"), []byte("APP=1\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	git := func(args ...string) {
+		t.Helper()
+		if b, err := exec.Command("git", append([]string{"-C", root}, args...)...).CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, b)
+		}
+	}
+	git("init", "-q")
+	git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", "x")
+
+	spawnSlug := func(slug string) {
+		t.Helper()
+		cmd := exec.Command(bash, spawn, slug, strings.ToUpper(slug), "review", root)
+		cmd.Dir = root
+		cmd.Env = append(os.Environ(), "HERDR_ENV=1", "HERDR_BIN_PATH="+filepath.Join(bin, "herdr"),
+			"HERDR_WORKSPACE_ID=", "JAIRA_NO_WORKTREE=", "JAIRA_SPAWN_PAUSE=0",
+			"PATH="+bin+string(os.PathListSeparator)+path)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("spawn.sh %s: %v\n%s", slug, err, out)
+		}
+	}
+	offset := func(slug string) string {
+		t.Helper()
+		env, err := os.ReadFile(filepath.Join(base, ".worktrees", "repo-"+slug, ".env"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, off, ok := strings.Cut(string(env), "# worker stack: slug="+slug+" offset=")
+		if !ok {
+			t.Fatalf("the .env of %s names no offset:\n%s", slug, env)
+		}
+		off, _, _ = strings.Cut(off, "\n")
+		return off
+	}
+
+	// A worktree from before: made by hand, its offset only in its .env.
+	legacy := filepath.Join(base, ".worktrees", "repo-twb0r6")
+	git("worktree", "add", "-q", legacy, "-b", "feat/twb0r6")
+	if err := os.WriteFile(filepath.Join(legacy, ".env"), []byte("APP=1\n\n# worker stack: slug=twb0r6 offset=5\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	spawnSlug("8r8vts")
+	spawnSlug("32ttss")
+	if a, b := offset("8r8vts"), offset("32ttss"); a != "6" || b != "7" {
+		t.Errorf("8r8vts and 32ttss got offsets %s and %s, want 6 and 7: 5 is held by twb0r6, then each the next free one", a, b)
+	}
+
+	spawnSlug("8r8vts")
+	if a := offset("8r8vts"); a != "6" {
+		t.Errorf("8r8vts spawned again got offset %s, want the 6 its worktree already has", a)
+	}
+
+	// Gone, its offset is free again.
+	git("worktree", "remove", "--force", legacy)
+	git("branch", "-D", "feat/twb0r6")
+	spawnSlug("twb0r6")
+	if c := offset("twb0r6"); c != "5" {
+		t.Errorf("twb0r6 made again got offset %s, want the free 5", c)
+	}
+}
+
 // shellDir is dir as bash spells it after cd'ing there, the form spawn.sh
 // gives its root: unchanged on Unix, /tmp/... for Git Bash's C:\... on Windows.
 func shellDir(t *testing.T, bash, dir string) string {
