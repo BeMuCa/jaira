@@ -100,7 +100,7 @@ func (r *Repo) HuntCheck(t *ticket.Ticket) HuntReport {
 		return HuntReport{}
 	}
 	files, err := r.run(append([]string{"-c", "core.quotePath=false", "show", "--no-renames", "--format=", "--name-only", "-z"}, shas...)...)
-	if err != nil || !anyCode(files) {
+	if err != nil || !r.anyCode(files) {
 		return HuntReport{}
 	}
 	rep := HuntReport{CodeChanged: true}
