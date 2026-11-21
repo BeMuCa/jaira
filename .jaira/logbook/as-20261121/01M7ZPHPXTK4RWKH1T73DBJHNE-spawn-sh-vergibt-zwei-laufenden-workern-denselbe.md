@@ -1,7 +1,7 @@
 ---
 id: 01M7ZPHPXTK4RWKH1T73DBJHNE
 title: spawn.sh vergibt zwei laufenden Workern denselben Port-Offset
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -20,32 +20,42 @@ tags:
 blocked-by: []
 related: []
 follows: 01M7Z6T8TS8CRXA4FH218R8VTS
-commits: []
+commits:
+  - d82c472b83f660d6115616f2712d2734e0e9d043
+  - 231d2a909df7b74f00519207b101538d6756e8c8
+  - d263a03193c5e87829157deb56fc49bec0ce736f
+  - 35d86c99b4b538264c62587c8a1c110377ea05d5
+  - 5ba3fa8053a0a87b9c6be55cd15d9b082f423908
+  - f280009a9c138b6f54f713da6d60f7f4160d4c10
+  - ef8adc9bd699f92f6cdeaa5f3ba2e67cf6a2a8b2
 created-at: 2026-11-21T18:40:24Z
-updated-at: 2026-11-21T20:16:33Z
+updated-at: 2026-11-21T20:34:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-987290
 claimed-at: 2026-11-21T20:03:04Z
 outcome-what: "spawn.sh hands each new worktree a port offset no other existing worktree of the repository holds: starts at the old slug hash, skips taken ones, under a flock on .git/jaira-offset.lock (as reap.sh) that the kernel drops when spawn.sh dies, and writes it to jaira-offset in the worktree's git dir; an unopenable lock stops spawn.sh at once; worktrees whose directory is gone hold nothing, relative gitdir paths resolved against the worktree's git dir"
 outcome-why: "cksum%40 alone gave 8r8vts, 32ttss and twb0r6 the same offset; two stacks on the same ports. The mkdir lock had no owner (takeover, put-back and rmdir acted on the path); flock removes stale locks by construction"
 outcome-resolves: Zwei gleichzeitig laufende Worker bekommen nie denselben Port-Offset
-review-summary: "none"
-review-gaps: "none: lock_age has two callers (lock and renamed lock), kept; the rmdir after a put-back covers the put-back failing, kept; test setup was already folded into newOffsetRepo for both offset tests; no other mtime/stat helper in core/role/builtin"
-test-verdict: "pass: go build ./... RC=0; go test -race -count=1 ./core/role ./core/shipped ./core/lane RC=0 (files changed since d263a0319); DoD 1-6 verified by TestSpawnGivesEveryWorktreeItsOwnOffset and TestSpawnOffsetLock, the parallel test fails with the lock disabled; live scratch repo: spawn SIGKILLed inside a 30 s post-checkout hook leaves the lock, aged 121 s the next spawn takes it over in 0.07 s (rc=0, lock gone, offset written); read-only .git exits 1 in 0.01 s with 'cannot make the lock', no worktree made; two writers at once: TestSpawnOffsetLock, 8r8vts+32ttss get different offsets"
-hunt-verdict: "fail: bughunt done at 35d86c99b, 1 change (blocker): the mkdir lock has no owner - a takeover, a put-back and the holder's own rmdir act on the path, so 2-3 spawns end up inside at once and can take one offset"
+review-summary: "spawn.sh now hands out a worktree's port offset (1-40) only once, when the worktree is made: it starts at the old cksum%40+1 and takes the next offset no other standing worktree of the repo holds (read from the new <gitdir>/jaira-offset, else legacy jaira-setup offset= or the .env '# worker stack' line; worktrees whose directory is gone hold nothing). Scanning, git worktree add and writing jaira-offset happen under flock on <common>/jaira-offset.lock via fd 9 (perl flock on macOS, unlocked with a warning when neither exists), waiting up to 600 s; git worktree add runs with 9>&- so a hook cannot keep the lock. All 40 taken, or an unopenable lock, stops the spawn before anything is made. Repos with neither setup nor .env get no offset and take no lock. USAGE, release note and manifest updated; two tests in core/role cover collision, keep-on-respawn, parallel spawns, killed spawn and unopenable lock."
+review-gaps: |-
+  note: the perl flock fallback (macOS) has no test - checked by hand that the lock stays held after perl exits while the shell keeps fd 9; a test with flock hidden from PATH would pin it
+  note: spawn.sh ~line 206 - one comment line runs past 150 columns ("or two spawns at once ... held through fd 9 as reap.sh holds its"); rewrap
+  note: known limit: a worktree made by hand without jaira-offset, jaira-setup or a marked .env holds no offset, so a spawn can give its ports to a new worker
+  note: pre-existing: two spawns of the same slug at once both pass [ ! -d "$wt" ]; the second now waits for the lock and then fails at git worktree add (branch exists) - harmless, but the message is git's, not spawn.sh's
+test-verdict: "pass: go test -race -count=1 ./core/role ./core/shipped ./core/lane RC=0 (files changed since 35d86c99b); DoD 1-7 verified by TestSpawnGivesEveryWorktreeItsOwnOffset and TestSpawnOffsetLock - the lock test fails with flock disabled (both got 5) and without 9>&- on worktree add (waited 5 s); live scratch repo: spawn SIGKILLed inside a 20 s checkout hook, next spawn done in 0.07 s rc=0; three spawns at once with a 1 s hook got 5, 6, 7; read-only .git without a lock file exits 1 at once with 'cannot open the lock', no worktree made"
+hunt-verdict: "pass: bughunt done at 5ba3fa805, 0 change, 0 pre-existing; flock on drvfs and the perl fallback checked live; Git Bash on real Windows and macOS perl not run (only WSL here)"
 round: 5
 back-from: human
 back-by: person
 back-count: 1
-review-verdict: "the diff meets all three DoD items; no blocker found. Offset allocation is correct for standing, legacy, deleted and relative-gitdir worktrees, and the lock covers the race the goal is about. Open points are edge cases of the lock (no parallel test, stale-lock and permission paths) - known limits, not wrong results. go test ./core/role ./core/shipped passes."
-review-round: 3
+review-verdict: "All 7 DoD items are met by the code and the tests (go test ./core/role, ./core/shipped pass). The lock is correct: flock lives on the open file description held by fd 9, closed for git worktree add and released before setup runs. No blocker; four small notes, none a wrong result."
+review-round: 5
 review-verdict-gaps: |-
-  note: no test runs two spawn.sh in parallel - the lock is only proven by the bughunt's scratch run; a test with a post-checkout hook that sleeps 1 s and two spawns at once would pin it
-  note: mkdir of the lock failing for another reason than "exists" (read-only common dir, permissions) waits the full 120 s and then blames a dead spawn.sh; fix: stop at once when the lock dir does not exist after a failed mkdir
-  note: a SIGKILLed spawn leaves jaira-offset.lock, and every later spawn waits 120 s and fails until a person removes it (known, accepted in critique); a lock older than 120 s by mtime could be taken over instead
-  note: two spawns of the same slug at once - the second waits for the lock, then fails in git worktree add because the first made the directory; was a race before too, now it is at least serialised
-  note: branch feat/dbjhne carries JDDCEZ's 9 commits under its own 3 (git log master..HEAD) - JDDCEZ must land first or the PR shows both
-review-check: "1. cd /home/alex/projects/.worktrees/jaira-dbjhne  2. go test ./core/role -run TestSpawnGivesEveryWorktreeItsOwnOffset -v  3. expect PASS: 8r8vts and 32ttss (same hash, 5 held by twb0r6) get 6 and 7, 8r8vts respawned keeps 6, a deleted worktree frees its offset, k2x2yk with a relative gitdir gets 8  4. live: from a repo with a .env, run spawn.sh for two slugs that share a hash, then: cat <repo>/.git/worktrees/*/jaira-offset - two different numbers"
+  note: the perl flock fallback (macOS) has no test - checked by hand that the lock stays held after perl exits while the shell keeps fd 9; a test with flock hidden from PATH would pin it
+  note: spawn.sh ~line 206 - one comment line runs past 150 columns ("or two spawns at once ... held through fd 9 as reap.sh holds its"); rewrap
+  note: known limit: a worktree made by hand without jaira-offset, jaira-setup or a marked .env holds no offset, so a spawn can give its ports to a new worker
+  note: pre-existing: two spawns of the same slug at once both pass [ ! -d "$wt" ]; the second now waits for the lock and then fails at git worktree add (branch exists) - harmless, but the message is git's, not spawn.sh's
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-dbjhne  2. go test ./core/role -run 'TestSpawnGivesEveryWorktreeItsOwnOffset|TestSpawnOffsetLock' -count=1 -v  3. you see both PASS: slugs 8r8vts/32ttss get 6/7 beside twb0r6 on 5, a respawn keeps 6, parallel spawns get different offsets, a killed spawn does not block the next, a directory at the lock path fails in under 5 s  4. optional live check: in any repo with a .env, run spawn.sh for two tickets at once and compare 'offset=' in the two worktrees' .env files - they differ"
 question: ""
 ---
 
@@ -103,3 +113,5 @@ question: ""
 - **2026-11-21 20:13 · Alexander Sacharov** — testing: third send-back of testing on the lock rule - stopped for the person. question: Третий возврат testing по одному правилу (lock). Bughunt: у mkdir-lock нет владельца — перехват по mtime, возврат на место и rmdir держателя действуют по пути, 2-3 spawn оказываются внутри одновременно (стенд: 2 из 25 прогонов). Варианты: 1) (Recommended) заменить mkdir+mtime на flock через fd, как reap.sh:105-118 — ядро снимает lock при смерти процесса, перехват и проверка возраста не нужны, нельзя открыть файл lock → сразу ошибка; цена: fd закрыть перед дочерними процессами, без flock(1) и perl — без lock с предупреждением. 2) оставить mkdir, добавить владельца (pid в lock, rmdir только своего, перехват только при мёртвом pid) — ещё одна эвристика, новые края. 3) принять как есть, гонку записать как known limit.
 - **2026-11-21 20:13 · Alexander Sacharov** — decision: Variante 1 (Alex' Regel 'Ränder wachsen → kleineres Design / jaira-Code wiederverwenden', 21.11.): mkdir+mtime-Lock raus, flock über fd wie reap.sh:105-118. Kein Übernehmen nach mtime mehr — der Kernel gibt den Lock beim Tod frei. Lock-Datei nicht zu öffnen → sofort exit 1. Ohne flock(1)/perl: Warnung, ohne Lock, wie reap.sh.
 - **2026-11-21 20:16 · Alexander Sacharov** — variant 1 done: flock on fd 9 (reap.sh pattern), blocking with 600 s cap (flock -w 600, perl alarm 600) - a live slow checkout is waited for, never taken over. 'git worktree add' runs with 9>&- or a checkout hook that keeps running holds the lock (shown: test fails with it removed). The lock file now stays in .git (empty file, harmless; reap.sh's reap.lock does the same). exec 9>> failing (dir at the path, read-only .git) → exit 1 at once. Neither flock nor perl → warning, unlocked, as reap.sh.
+- **2026-11-21 20:16 · Alexander Sacharov** — critique (flock round): same pattern as reap.sh:105-118 (exec 9>>, flock(1) else perl, neither → unlocked); differs on purpose in two places: blocking with -w 600 instead of -n (a spawn must get its offset, not skip), and only 'git worktree add' runs with 9>&- instead of a whole block (everything else between lock and release is cat/sed/rev-parse, which end before the release). Nothing simpler left.
+- **2026-11-21 20:18 · Alexander Sacharov** — bughunt: done at 5ba3fa805 - 0 findings in 4 files, follow-up hunt since 35d86c99b (diff in spawn.sh, role_test.go, shipped.sha256, DBJHNE.md; no new file); concurrency, error paths, input, permissions checked; ran: go test ./role -run 'Offset|Spawn' -count=3 (pass), flock exclusion+release on drvfs /mnt/c, perl flock fallback holds past perl's exit (waiter waited 2 s for the holder shell), 9>&- on an unopened fd under set -e (exit 0); files: core/release/notes/DBJHNE.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/role_test.go core/shipped/shipped.sha256
