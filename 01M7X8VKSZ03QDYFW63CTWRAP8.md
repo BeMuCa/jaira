@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:12:01Z
+updated-at: 2026-11-21T08:13:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-31394
 claimed-at: 2026-11-21T08:01:32Z
@@ -114,3 +114,4 @@ review-check: |-
 - **2026-11-21 08:00 · Alexander Sacharov** — Given back from signoff: Alex 21.11. alle Funde in dieser Runde schliessen. 1) jaira-role-signoff nennt die echten JSON-Schluessel von jaira show --json (Notes im body, Verdict unter .review.verdict). 2) Der letzte Bughunt deckt HEAD nicht - nach dem Fix Diff-Hunt auf den neuen HEAD. 3) master enthaelt fix/nh788q inzwischen: upstream/master einmergen, Manifest per Union aufloesen. Rueckgabezaehler-Untergrenze bleibt note: pre-existing. review, signoff, push.
 - **2026-11-21 08:01 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/4205.sock
 - **2026-11-21 08:11 · Alexander Sacharov** — in-progress Runde 21.11.: jaira-role-signoff nennt jetzt die echten Schluessel (.review.verdict/.gaps, .dod_items[].done, Notes im .body unter ## Progress - es gibt keinen notes-Key). Geschwister geprueft: teamlead liest Notes per 'jaira show <id>' Text + grep, das stimmt. upstream/master gemerged (367d125f), shipped.sha256 per Union + neue Hashes der auto-gemergten SKILL.md; fix/nh788q ist jetzt in master, Stapel-Hinweis aus review 22:44 erledigt. go vet + go test ./... + check-ticket-commits lokal gruen. Rueckgabezaehler-Untergrenze bleibt note: pre-existing.
+- **2026-11-21 08:13 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-signoff/SKILL.md:69-73 - the branch-head loop depends on ref order: it breaks at the first copy that diverged from the head so far, before a later copy that descends from both is seen, so head stays empty and every check reads ? although the text right below says the head is the commit every other copy leads up to. Order is fixed by for-each-ref (heads, then remotes alphabetically): local feat/x with an unpushed commit, origin/feat/x with a teammate's commit, upstream/feat/x with the merge of both -> empty head instead of the upstream commit. Fails safe (only ?, never a wrong ✅). ran: scratch repo with exactly that layout, loop copied verbatim -> head=[] while the merge commit descends both
