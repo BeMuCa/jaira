@@ -25,14 +25,14 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:30:04Z
+updated-at: 2026-11-21T08:31:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-31394
 claimed-at: 2026-11-21T08:01:32Z
 outcome-what: "signoff role: one rule for stale results (CI ?, hunt ❌), follow-up line with --assignee; teamlead lists all six status checks"
 outcome-why: "fresh review 21.11.: the role gave two answers for an older sha, the follow-up ticket could not leave the backlog, and the teamlead's list could drift from the role's"
 outcome-resolves: "both roles read a stale CI run as ? and a stale hunt as ❌; the pasted follow-up is complete; the teamlead names the same checks as the role"
-review-summary: "critique 21.11. round 3: the ?/❌ split is a reason, not a patch - unknown CI is not a failure, a missing hunt is missing work; teamlead now says the same. Nothing to change."
+review-summary: "Ships a new read-only role /jaira-role-signoff that, for every ticket in signoff, reads jaira show --json fresh, finds the branch head by handle segment and ancestry over local and remote copies, and prints one status line (DoD, CI run for exactly that commit, bughunt note naming that commit, blockers, review verdict, noted returns), a table marking each open note 🔴/🟡/⚪/🔵, one recommendation by five return rules, and paste-ready accept/give-back/follow-up lines. The teamlead's 'Report to the human' now re-reads lanes and open PRs before any pending list and uses the same decision shape, pointing to the role for the checks and return rules; its hunt-cover check no longer assumes feat/<id>. Worker, dispatcher and jaira-role-pr run the project's CI gates locally before every push. README, the German how-to page, role_test.go, shipped.sha256 and a release note carry the new role."
 round: 11
 review-gaps: "optimize 21.11. round 3: nothing to remove; teamlead keeps the six check names only, the reading stays in the role."
 test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at 558c8205; DoD 1-4 verified in the tree; the stale-result rule now reads the same in signoff and teamlead; the follow-up line carries --assignee (flag exists). Roles write nothing - no concurrent-writer case."
