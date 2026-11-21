@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:24:52Z
+updated-at: 2026-11-21T08:24:56Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -159,3 +159,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-21 08:18 · Alexander Sacharov** — review (fresh): kein Blocker, 4 Notes in review-gaps; Tests gruen. Weiter nach signoff.
 - **2026-11-21 08:19 · Alexander Sacharov** — Given back from signoff (Teamlead im Auftrag Alex 21.11., alle Funde schliessen): 1) Revert-Commits unter none: Gate erkennt 'Revert "type(ID): ..."' als Commit von ID (oder jaira-role-pr sagt klar, wie der Betreff zu schreiben ist) - lieber im Gate loesen, mit Test. 2) Eigene Tests fuer UnnamedCommits/isPlainMerge in core/gitrepo. 3) reap.sh: scheitert 'jaira roles list', nennt es die Ursache statt still auf den PR-Pfad zu fallen. Note 4 (milestones) ist kein Fund. Diff-Hunt, review, signoff, push.
 - **2026-11-21 08:24 · Alexander Sacharov** — in-progress (Runde 8, 21.11.): (1) Revert im Gate geloest: core/gitrepo subjectScope liest git's eigene Betreffs 'Revert "type(ID): ..."' und 'Reapply "..."' (auch verschachtelt) als Commit von ID; gleiche Lesart in cockpit board.ts ticketsNamed und reap.sh landed_head (Klasse, nicht Beispiel). Ein Revert eines nicht-done Tickets haelt das Tor als dessen Ticket, nicht als unbenannt. Tests: core/gitrepo/named_test.go, internal/cli TestPRGateOnANoneBoardReadsARevertAsItsTicketsCommit; jaira-role-pr 'Land it' sagt es in einem Satz. (2) core/gitrepo/named_test.go: HandlesInSubjects-Tabelle, UnnamedCommits, isPlainMerge (sauber, -s ours, --no-commit + Datei, Konflikt von Hand, Elternzahl, unbekannter sha). (3) reap.sh: scheitert 'jaira roles list' oder 'jaira json get', wird jedes Ticket mit Ursache 'kept' (stderr-Zeile, ohne den older-version-Hinweis), kein stiller PR-Pfad; Test TestReapNamesAFailingRolesListAsTheCause. -race ./... RC=0, cockpit 212 pass.
+- **2026-11-21 08:24 · Alexander Sacharov** — critique (Runde 11): Revert als Commit des Tickets ist die engste Loesung - git schreibt den Betreff selbst, und das Tor prueft dann den Zustand des zurueckgenommenen Tickets statt eine Betreff-Konvention zu verlangen. Nichts zu sagen.
