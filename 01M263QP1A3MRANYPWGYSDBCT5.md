@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-21T08:18:19Z
+updated-at: 2026-11-21T08:18:23Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -36,11 +36,7 @@ test-verdict: "pass: go test ./... -race RC=0; TestAgentNoteNamesProofAndTheUnsh
 hunt-verdict: "pass: bughunt done at d71e5e86 (diff since bb02c815), 0 change, 0 pre-existing"
 review-verdict: "pass - all 7 DoD items hold in the diff; current hashes of the 4 changed roles are in shipped.sha256; .claude/skills/jaira equals core/role/jaira byte for byte; agent blocks in CLAUDE.md and AGENTS.md are identical; no further live commit line names .jaira/tickets without the caveat; go test core/board core/role core/shipped internal/cli -count=1 green. Two cosmetic notes, no blocker."
 review-round: 4
-review-check: |-
-  1. In einem leeren Verzeichnis: git init && jaira init (mit diesem Build)
-  2. grep -n "hold on a shared board only" CLAUDE.md AGENTS.md - je eine Treffer-Zeile im Punkt 'the ticket rides with the code'
-  3. git status --short zeigt nur CLAUDE.md und AGENTS.md, kein .jaira/ - genau der Fall, den der Satz beschreibt
-  4. In einem bestehenden Board: jaira update schreibt denselben Satz in den Block; go test ./core/board -run TestAgentNoteSaysTheTicketCannotRideOnAnUnsharedBoard ist gruen
+review-check: "1. cd into the worktree jaira-sdbct5 and run: go build -o /tmp/jaira-sdbct5 ./cmd/jaira  2. mkdir /tmp/t && cd /tmp/t && git init && /tmp/jaira-sdbct5 init  3. open /tmp/t/CLAUDE.md, find the point 'the ticket rides with the code' - it ends with 'On a board not shared yet ... commit the code alone ... The next point holds there all the more'  4. git status in /tmp/t shows no .jaira/ - that is the unshared board the sentence is about  5. in the worktree: go test ./core/board -run TestAgentNoteNamesProofAndTheUnsharedBoardCaveat -count=1 -> ok  6. grep -n 'not shared yet' core/role/builtin/jaira-worker/SKILL.md core/role/builtin/jaira-role-lane/SKILL.md -> one line under each ready-to-paste commit block"
 ---
 
 # Der Agent-Block nennt --proof, und die Gitignore-Regel verweist auf die Commit-Regel
