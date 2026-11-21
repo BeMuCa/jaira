@@ -151,14 +151,16 @@ This is the part that saves the person's time. Do it with care.
     "steps": [{"id": "b3-s01", "do": "Tab 1: 'Qualität prüfen' → 'Prüfung starten'",
                "expect": "the run starts and shows its progress", "covers": ["Q0G6H8", "6T77WD"], "costly": true}]
   }],
-  "tickets": [{"id": "Q0G6H8", "title": "...", "goal": "...", "dod": ["..."], "round": 1,
+  "tickets": [{"id": "Q0G6H8", "title": "...", "goal": "...", "dod": ["..."], "person": [], "round": 1,
                "next_lane": "review", "return_lane": "in-progress",
                "candidates": ["the export test covers 1MB, not 40MB"]}]
 }
 ```
 
-`dod` is every item's text from `.dod_items[]`, in order and all of them —
-`build.py plan` numbers them from 1 for the `jaira dod` line it prints.
+`person` lists the ticket's **open** definition-of-done items that start with
+`seen by a person:`, as `{"n": <.dod_items[].n>, "text": ...}` — not the
+ticked or superseded ones (`.state` `todo` or `doing` only). `[]` when there
+are none; the key itself is required, and `build.py` refuses data without it.
 `next_lane` is the ticket's `next_lane` from `jaira show --json`;
 `return_lane` is the lane where this board does the work (the lane before the
 review loop, `in-progress` on the default board) — read it off `jaira lanes`,

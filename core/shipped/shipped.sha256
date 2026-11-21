@@ -626,6 +626,7 @@ f51cc6f05021f5c82ecfb25833f7518a3c4a8455f43175070bf7d52348aca454  core/role/buil
 f99828571d42f11692afcb1531049bfdd28015c39abe1a4b3f260a2a655d2416  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
 fdeacaf618a20237298fa33c66a259a9e8757085e4b71ae3779ce6eb027c5879  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
 a5e85fe6229c6ac419240ce9eb4ba56a7ace38e7d160cd7100145c165b3f02a5  core/role/builtin/jaira-dispatcher/scripts/uncommitted.sh
+25d2736b0efd8ad918110f01713114d7dde88973b93810a4907ec650dd5bba22  core/role/builtin/jaira-role-acceptance/SKILL.md
 5961261ed1245eac9b68b196924cc7247926f19bdbf2be4ad55c5974fb95e477  core/role/builtin/jaira-role-acceptance/SKILL.md
 7c1bba7aa1321a1b2ad880b9e192019bd53c1ed2e64e6a8222ddf567cd7152ab  core/role/builtin/jaira-role-acceptance/SKILL.md
 7cf17ba6f6dc9d1fed3d340ccf7dc6fad1bb704731f5b9f1eae0fa24fd483149  core/role/builtin/jaira-role-acceptance/SKILL.md
@@ -634,6 +635,7 @@ ee1cfbedad113f835506bc395766bccc0b87d06495b500fe151bec3c18c25abd  core/role/buil
 fd5a41aeee713af8ffa28ec84f6d3228f18381843fb33c8a4138adc296680e07  core/role/builtin/jaira-role-acceptance/SKILL.md
 17335440dc3747adc817bce85fb9c658bdea28f687f05b861454a304a15a27ce  core/role/builtin/jaira-role-acceptance/build.py
 195c1ef9401d2e6155e1e97babd59aa272ad31c499c59c52dd8f9612f660585c  core/role/builtin/jaira-role-acceptance/build.py
+5aa2039f130cad2ec8ffa08392dffe2178fcd15e89507f613b94fa1fe023a11f  core/role/builtin/jaira-role-acceptance/build.py
 7eee8af43de06ce89683715d46fa3bb60fa12aabdfafd8dc0f6855edb253e397  core/role/builtin/jaira-role-acceptance/build.py
 91e2eec19ed2be1f0352e51aae90292561981a9d5aa1a2f0a97e047be23b5a04  core/role/builtin/jaira-role-acceptance/build.py
 b828373f395635c714bef5002cf3f7a9a571bea0c5a3632fcb0fa26599dedf9e  core/role/builtin/jaira-role-acceptance/build.py

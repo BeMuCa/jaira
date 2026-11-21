@@ -36,9 +36,6 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 LANGS = ("de", "en", "ru")
 
-# A definition-of-done item that starts with this is ticked by a person only.
-PERSON = "seen by a person:"
-
 
 def load(path):
     return json.loads(Path(path).read_text(encoding="utf-8"))
@@ -58,6 +55,10 @@ def check(data):
         for lane in ("next_lane", "return_lane"):
             if not t.get(lane):
                 errors.append(f"ticket {t['id']}: no {lane}; read it off the board")
+        # Required even when empty: a missing list would hand out a bare
+        # --force move past an item only the person ticks.
+        if not isinstance(t.get("person"), list):
+            errors.append(f"ticket {t['id']}: no person list; the open 'seen by a person:' items of .dod_items[], [] for none")
     seen, covered, in_blocks = set(), set(), set()
     for b in data["blocks"]:
         for tid in b["tickets"]:
@@ -131,6 +132,10 @@ def state(data, db):
 
 def plan(data_path, db_path):
     data, db = load(data_path), load(db_path)
+    errors = check(data)
+    if errors:
+        print("\n".join(errors), file=sys.stderr)
+        sys.exit(1)
     st = state(data, db)
     results, comments, notes = db.get("results", {}), db.get("comments", {}), db.get("notes", {})
     T = {t["id"]: t for t in data["tickets"]}
@@ -142,10 +147,10 @@ def plan(data_path, db_path):
             print(f"# {tid}: accepted - every step ok")
             # --force passes an unticked definition of done; an item only a
             # person ticks is handed to them before the move, never run here.
-            seen = [(n, d) for n, d in enumerate(t.get("dod", []), 1) if d.strip().startswith(PERSON)]
-            for n, d in seen:
-                print(f"# {tid}: for the person - {d}")
-            ticks = "".join(f"jaira dod {tid} {n} --done --proof {shlex.quote('<what I saw, where>')} && " for n, _ in seen)
+            seen = t["person"]
+            for p in seen:
+                print(f"# {tid}: for the person - {p['text']}")
+            ticks = "".join(f"jaira dod {tid} {p['n']} --done --proof {shlex.quote('<what I saw, where>')} && " for p in seen)
             print(f"{ticks}jaira move {tid} --to {t['next_lane']} --force" + ("   # the person runs this line" if seen else ""))
             if comment:
                 print(f"jaira note {tid} {shlex.quote(f'acceptance (round {rnd}), accepted: {comment}')}")
