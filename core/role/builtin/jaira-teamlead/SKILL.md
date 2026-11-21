@@ -338,7 +338,8 @@ own tab once its report reached you and its ticket is done (`close-tab.sh`).
 In signoff or another person's lane its tab stays for the prompt cache's
 window (an hour), so a ticket given back within it can go to the same worker;
 `reap.sh` closes the tab after that window or once the ticket is done, and
-whatever is left when it finds the ticket done and its pull request merged.
+closes whatever is left once it finds the ticket done and its pull request
+merged.
 You do not close it by hand.
 
 Its worktree outlives it, and by longer than the pull request: `reap.sh` removes

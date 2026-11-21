@@ -18,13 +18,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-21T21:03:35Z
-updated-at: 2026-11-21T21:10:46Z
+updated-at: 2026-11-21T21:11:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2835032
 claimed-at: 2026-11-21T21:04:38Z
 outcome-what: "close-tab.sh parks a worker's tab in signoff/human (parked=<epoch> in its spawn.sh record) instead of closing; closes at once only in done. reap.sh hands every parked record to close-tab.sh --reap --pane, which closes after JAIRA_CACHE_WINDOW (default 3600 s), on done or filed away, and keeps a working tab or a ticket given back. Skill texts of worker, dispatcher, teamlead say so; release note; shipped.sha256."
 outcome-why: "Since 0.5.15 every give-back from signoff started a new worker that re-read 100-200k of context; the cockpit's same-worker rule found no live tab."
 outcome-resolves: "DoD 1-3: the tab stays while the cache is warm, the next reap closes it after the window or on done, release note and manifest. Four categories: concurrent park/reap via atomic rename and reap.lock, missing record/sed failure keep the tab, odd pane ids sanitized as spawn.sh does, no new trust."
+review-summary: "core/role/builtin/jaira-teamlead/SKILL.md: the sentence 'and whatever is left when it finds the ticket done and its pull request merged' has lost its verb — say 'and closes whatever is left once it finds ...'. Shape otherwise stands: one rule in close-tab.sh, reap only finds parked records (decision note); no simpler carrier for the last-answer time exists in bash than the spawn.sh record."
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # Ein Worker-Tab bleibt in signoff offen, solange sein Cache warm ist, damit ein Give back ihn weiterverwendet
@@ -50,3 +55,4 @@ outcome-resolves: "DoD 1-3: the tab stays while the cache is warm, the next reap
 ## Progress
 - **2026-11-21 21:04 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/2274544.sock
 - **2026-11-21 21:06 · Alexander Sacharov** — decision: no open decisions for the person. Mechanism: close-tab.sh, in a person's lane that is not terminal (signoff, human without question), does not close but writes parked=<epoch> into the tab's spawn.sh record (git common dir jaira/panes/<pane>) and prints 'kept <T>: cache warm until HH:MM'. reap.sh, before any forge question, calls close-tab.sh --reap --pane <pane> <T> <worktree> for every record with parked=; that mode skips the parent check, closes when the ticket is done/filed away or parked is older than JAIRA_CACHE_WINDOW (seconds, default 3600 = the subscription TTL in cockpit/hooks/cache.ts), keeps when the tab's agent works or the ticket went back to an agent's lane (the same worker carries it again and writes parked anew when it finishes). One place holds the closing rules; reap only finds the parked tabs. Why not the cockpit's session records with lastAnswerAt: they live in $.store, which reap.sh (bash) cannot read. Known limit: a person typing into the parked tab refreshes the cache but not parked=, so reap may close up to one window early.
+- **2026-11-21 21:11 · Alexander Sacharov** — critique: teamlead SKILL.md sentence about reap lost its verb; fix wording. Shape checked and left: parked= in the spawn.sh record + close-tab.sh --reap (see decision note); a double close of a parked tab by reap's merged-ticket loop in the same round is harmless (herdr closes once, the second finds no pane).
