@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:47:27Z
+updated-at: 2026-11-21T08:47:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1876460
 claimed-at: 2026-11-21T08:39:00Z
@@ -34,7 +34,10 @@ outcome-why: "fresh review 21.11. round 2: the text made DoD and review ? too"
 outcome-resolves: "DoD, blocker, review and returns stay readable when the head is unknown"
 review-summary: "Ships a new read-only role /jaira-role-signoff (core/role/builtin/jaira-role-signoff/SKILL.md): per signoff ticket it reads jaira show --json fresh, finds the ticket's branch by its handle and takes as head the copy every local/remote copy is an ancestor of, prints one status line (DoD, CI run of exactly that head, bughunt note naming the head, blockers, review verdict, noted returns), a table sorting every open note into blocker/small edge/known limit/not this ticket, and one bold recommendation driven by five return rules, with accept/give-back lines and a follow-up create line after two returns. The teamlead's 'Report to the human' now re-reads lanes and open PRs before listing what waits, and uses that shape for signoff/human tickets, deferring the rules to the role; its hunt check no longer assumes feat/<id>. Worker, dispatcher and jaira-role-pr get a 'run the project's CI gates locally before every push' rule. README, docs/how-to-work-with-jaira.html, role_test.go wantRoles, shipped.sha256 and core/release/notes/TWRAP8.md follow."
 round: 13
-review-gaps: "optimize 21.11. round 5: nothing to remove."
+review-gaps: |-
+  blocker: DoD 2 - the return rules (jaira-role-signoff/SKILL.md '## The return rules') decide only from the table marks; a ❌ on tests (CI failed at the head) or on bug hunt (no hunt names the head) never reaches the recommendation, so a ticket with a red CI run and only ⚪ rows gets rule 3 'accept' printed in bold under its own ❌ status line - the teamlead used to say 'do not report the ticket as ready' for a missing hunt, the role does not; add a rule ahead of 1: ❌ tests or ❌ hunt -> give back / start the hunt, and say what a `?` does to the recommendation
+  note: the hunt check compares short shas ('compare the short form'), but git abbreviates to a length that differs between clones (7 vs 8+); say compare by prefix of the full head sha
+  note: not from this ticket - the untracked .jaira/milestones/*.md in the worktree show up in worktree_diff and in every bughunt 'files:' list; they must not ride in this ticket's commit
 test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at 390088c7; DoD 1-4 verified in the tree; empty head now leaves only tests and hunt as ?. Roles write nothing - no concurrent-writer case."
 hunt-verdict: "clean: diff hunt at 390088c7 (HEAD), 0 findings"
 question: ""
