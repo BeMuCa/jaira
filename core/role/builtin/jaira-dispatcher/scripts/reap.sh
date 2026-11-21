@@ -344,12 +344,12 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
     for w in "${wts[@]+"${wts[@]}"}"; do
       s="$(basename "$w")"; s="${s#"$(basename "$main")-"}"
       if [ "$s" = "$(basename "$w")" ] || [ -z "$s" ]; then
-        dirty="cannot tell the slug $w was set up with, so $teardown cannot be called for it"; break
+        echo "kept $t: cannot tell the slug $w was set up with, so $teardown cannot be called for it"
+        continue 2
       fi
       # The same port offset spawn.sh handed the setup.
       targs+=("$w" "$s" "$(( ( $(printf '%s' "$s" | cksum | cut -d' ' -f1) % 40 ) + 1 ))")
     done
-    if [ -n "$dirty" ]; then echo "kept $t: $dirty"; continue; fi
   fi
 
   failed=""; gone=()

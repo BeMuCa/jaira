@@ -775,9 +775,9 @@ func offsetOf(slug string) string {
 	if err != nil {
 		panic(err)
 	}
-	var n int
-	for _, ch := range strings.TrimSpace(string(out)) {
-		n = (n*10 + int(ch-'0')) % 40
+	n, err := strconv.Atoi(strings.TrimSpace(string(out)))
+	if err != nil {
+		panic(err)
 	}
-	return strconv.Itoa(n + 1)
+	return strconv.Itoa(n%40 + 1)
 }
