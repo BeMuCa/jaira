@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:15:08Z
+updated-at: 2026-11-21T08:15:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
@@ -104,3 +104,4 @@ review-check: "1. cd into the repository on branch feat/0k8y6s  2. run: scripts/
 - **2026-11-21 08:08 · Alexander Sacharov** — bughunt: done at 6f5ba869 - 1 finding (1 change, 0 pre-existing) in 6 modules, follow-up hunt since 722c9c6e (diff: --write in scripts/shipped-history.sh with its tests and messages, the manifest after the upstream merge; core/lane/refresh_test.go new to the list, read whole; untracked .jaira/milestones/ are board data, not read); concurrency, error paths, input, permissions checked; ran: go test ./shipped/ (FAIL) ./role/ ./lane/ (pass), scripts/shipped-history.sh --check (pass), --write in a scratch clone; files: .gitattributes .github/workflows/ci.yaml .github/workflows/release-notes.yaml core/lane/refresh_test.go core/release/notes/0K8Y6S.md core/role/shipped_test.go core/role/testdata/jaira-cockpit-hooks-board-v0.5.2.ts core/shipped/history_test.go core/shipped/shipped.sha256 core/shipped/shipped_test.go scripts/shipped-history.sh
 - **2026-11-21 08:11 · Alexander Sacharov** — bughunt: done at 29ee4690 - 0 findings in 1 module, follow-up hunt since 6f5ba869 (diff: only core/shipped/shipped.sha256 regenerated; no file new to the list; untracked .jaira/milestones/ are board data, not read); concurrency, error paths, input, permissions checked; ran: go test ./shipped/ ./role/ ./lane/ (pass), scripts/shipped-history.sh --check (pass), comm of manifest entries against 6f5ba869, 7f2d86fe and upstream/master (no entry lost, none added, 0 duplicate keys); files: .gitattributes .github/workflows/ci.yaml .github/workflows/release-notes.yaml core/lane/refresh_test.go core/release/notes/0K8Y6S.md core/role/shipped_test.go core/role/testdata/jaira-cockpit-hooks-board-v0.5.2.ts core/shipped/history_test.go core/shipped/shipped.sha256 core/shipped/shipped_test.go scripts/shipped-history.sh
 - **2026-11-21 08:12 · Alexander Sacharov** — Stand 08:15: in review, Review-Agent per run-lane.sh --no-worktree gestartet; Branch gepusht bis 29ee4690 (inkl. Merge upstream/master).
+- **2026-11-21 08:15 · Alexander Sacharov** — review-gaps 'pre-existing: leerer Hash bei fehlender Datei' nach Alex' Ansage (alle Funde in dieser Runde) behoben statt als note stehen gelassen: gleiche Klasse wie der unlesbare Blob. Geschwister gesucht: keine weitere Hash-Stelle im Skript. GitHub+merge=union und Pfade mit Leerzeichen bleiben known limit.
