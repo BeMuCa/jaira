@@ -23,14 +23,14 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:55:44Z
+updated-at: 2026-11-21T09:58:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3647270
 claimed-at: 2026-11-21T09:36:24Z
 outcome-what: "Round 16: without git, outside a repository or before the first commit the hunt state is unknown; only a hunt commit missing from a working repository reads fail."
 outcome-why: "The round-15 hunter showed e1363ba1 turned every git failure into fail, so a board outside git would show 'bughunt on HEAD fail' forever."
 outcome-resolves: "bughunt change at e1363ba1; go test core/gitrepo internal/cli ok."
-review-summary: "none"
+review-summary: "A ticket now carries blocker-rule and stop-after-fix (set checks stop-after-fix, validate warns bad_stop_after_fix for a hand-written 'yes'); show --for-lane hands both to testing, bughunt and review. jaira move records every send-back as back-from/back-by/back-count (person vs loop lane, count only for the same lane), and in-progress stops at count 3. show --brief carries bughunt {at, state}: core/gitrepo HuntCoverage compares commits only - ok when no ticket-named, non-merge commit since the hunt touched the hunted files, fail when one did or the hunt commit is missing / no ancestor of HEAD, unknown when a hunted file is changed uncommitted or git cannot answer (no repo, no commit), skipped on a stop-after-fix ticket; board data under .jaira/ except lane prompts never counts. The cockpit offers Explain only for a blocker: line (also in markdown emphasis) or a reserving verdict, lists note: lines without a button, keeps an earlier round's review gaps (review-verdict-gaps), and draws the Explain status line with ticks/crosses, a dim ? for unknown and coloured class marks; the Explain prompt (texts.ts, spawn.sh) classifies each note first and orders options by recommendation."
 review-gaps: none - one guard added
 test-verdict: "pass: go test -count=1 ./... RC=0 at 9b94f206; no repository / no commit yet -> unknown, missing hunt commit -> fail (gitrepo tests)"
 hunt-verdict: "pass: follow-up hunt since e1363ba1 at 9b94f206, 0 findings"
