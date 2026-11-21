@@ -1,7 +1,7 @@
 ---
 id: 01M7ZZ6KQB8K1H8MVWTM409XCV
 title: "Accept und Give back im Cockpit melden der Session eine Zeile, damit der Teamlead sofort weitermacht"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -18,13 +18,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-21T21:11:37Z
-updated-at: 2026-11-21T21:21:12Z
+updated-at: 2026-11-21T21:23:03Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3494777
 claimed-at: 2026-11-21T21:13:34Z
 outcome-what: "Accept und Give back im Cockpit legen nach einem Move, der durchging, genau eine Zeile per $.prompt.submit in die Session: angenommen (mit dem, was Accept danach startete) bzw. zurueckgegeben (an wen, Grund einzeilig gekuerzt)."
 outcome-why: "Die Teamlead-Session erfuhr nichts von einem Klick im Cockpit und bat weiter um die Annahme-Zeile (PDZ444, 21.11.)."
 outcome-resolves: 409XCV
+review-summary: none
+review-gaps: "texts.ts: own whitespace collapse replaced by board.ts oneLine (was a second copy); the cut with ellipsis stays local as inLine - digest.ts and threads.ts each keep a private clip, pre-existing, left alone. Nothing dead: afterAccept's new return is read by accept, its only caller."
 ---
 
 # Accept und Give back im Cockpit melden der Session eine Zeile, damit der Teamlead sofort weitermacht
@@ -51,3 +53,4 @@ outcome-resolves: 409XCV
 - **2026-11-21 21:13 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/2274544.sock
 - **2026-11-21 21:16 · Alexander Sacharov** — decisions (settled, no person needed): (1) channel is $.prompt.submit({text}) - the cockpit's decide() already submits a line to this session that way, and a submitted prompt starts the teamlead's turn, which is the goal. (2) Accept: the line goes after afterAccept finished, so a teamlead reading it never starts a PR role beside the one Accept starts. (3) Give back: the line goes in handedTo, once it is known who got the work (old/new/no worker) - otherwise the teamlead may spawn a second worker. Reason: first line, cut to ~120 chars. (4) No person name in the line ('the person accepted'): the cockpit only knows git identity, and the session knows who presses. (5) branch feat/409xcv sits on feat/pdz444's merge (not yet in upstream/master).
 - **2026-11-21 21:21 · Alexander Sacharov** — implemented: accept() submits t.toSessionAccepted after afterAccept (which now returns what it said: PR/landing started, why none, or 'next step failed'); giveBack's handedTo submits t.toSessionGivenBack. oneLine() in texts.ts collapses whitespace and cuts the reason at 120 chars. claude plugin test: 295 pass.
+- **2026-11-21 21:21 · Alexander Sacharov** — critique: none. Channel reuses decide()'s $.prompt.submit (register.tsx decide); afterAccept's return replaces reading noticeAtom back, which would couple to say()/fail() ordering; the who-wording in toSessionGivenBack differs from returnedTo on purpose (the session needs 'new worker started' to not spawn one).
