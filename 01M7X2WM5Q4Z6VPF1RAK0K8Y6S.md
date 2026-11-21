@@ -19,14 +19,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:12:21Z
+updated-at: 2026-11-21T08:13:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
 outcome-what: "Manifest neu erzeugt (8 Tag-Versionen fehlten, u.a. cockpit board.ts v0.5.2/0.5.3); scripts/shipped-history.sh --check haelt es gegen jeden v*-Tag und laeuft in ci.yaml (Job shipped-manifest) und im release-notes-Workflow; .gitattributes merge=union fuer das Manifest; LC_ALL=C im Skript"
 outcome-why: Hand-gemergte Manifest-Konflikte verloren Zeilen; jaira update --roles hielt dann eine unberuehrte Installation fuer handgeaendert und uebersprang sie still
 outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, wenn eine fehlt, und Manifest-Merges konfliktieren nicht mehr"
-review-summary: "Runde nach signoff: keine Funde. dea24113 (--write, strings.Cut) wie zuvor beurteilt; 29ee4690 ist nur das mit --write neu erzeugte Manifest nach dem union-Merge, keine Form zu beurteilen."
+review-summary: "scripts/shipped-history.sh got two modes. --check lists every installed-file version in every v* tag (git ls-tree per tag, raw blob bytes hashed, lanes/ and .claude/skills/jaira mapped to today's embed path) and fails with the lines to append when the committed manifest lacks one; it fails on a clone without tags, on an unreadable tag and on an unreadable blob instead of passing. --write builds the manifest into a temp file beside it and renames it only on success. CI got a shipped-manifest job (fetch-depth 0) and the release-notes workflow runs --check before it opens the release PR. .gitattributes merges the manifest with merge=union. The manifest was regenerated: 75 lines added (including the v0.5.2 cockpit board.ts that a hand merge had lost), none removed. A new table test installs the real v0.5.2 board.ts (fixture pinned to the tag's hash) and expects Updated, not Skipped. Test messages now name --write instead of '> manifest'; TestEveryManifestPathExists uses strings.Cut instead of l[66:]."
 round: 7
 review-gaps: "manifest-Pfad einmal oben im Skript (7f2d86fe); 29ee4690 ist reine Regenerierung, nichts zu entfernen"
 test-verdict: "pass: go build ./... und go test ./... gruen (rc=0) auf 29ee4690 nach Merge von upstream/master; DoD 1-7 im Baum belegt (Tests aus den proofs einzeln gelaufen); --write: zwei parallele Laeufe ergeben ein sortiertes Manifest ohne Duplikat, flacher Klon exit 1 bei unveraendertem Manifest, unlesbarer Blob per Test (Manifest unveraendert, keine Temp-Datei)"
