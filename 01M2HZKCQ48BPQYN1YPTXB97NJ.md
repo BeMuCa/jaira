@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:07:09Z
+updated-at: 2026-11-21T08:07:20Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -58,7 +58,7 @@ review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/solo && cd /
 - [x] Ein Board haelt fest, wie Arbeit bei ihm ankommt - durch einen Pull Request oder direkt auf dem Hauptzweig - und die Rollen richten sich danach. Nachgestellt an zwei Boards mit verschiedener Einstellung: auf dem einen schiebt die Rolle den Zweig und haelt an, auf dem anderen fuehrt sie die Arbeit ohne Pull Request zu Ende.
   proof: Nachgestellt 21.11. an zwei Boards (solo: .jaira/pr=none, team: ohne): roles list sagt none/person; pr-gate laesst none bei done durch (internal/cli/prgate_test.go TestPRGateLetsANoneBoardLandOnlyDoneWork); jaira-role-pr/SKILL.md:280 'Land it' nur bei none, sonst push + Zeile zurueck
 - [x] Die Einstellung reist mit dem Repository, nicht mit dem Rechner und nicht mit dem Klon: wer klont, erbt sie. Nachgestellt an einem frischen Klon.
-  proof: frischer Klon eines solo-Boards mit committeter .jaira/pr=none: nach jaira init sagt roles list 'none', jaira update schreibt den Absatz; die Datei liegt in .jaira/ (core/board/arrival.go:52 PRModeFor), nicht in settings.json oder git config
+  proof: frischer Klon eines solo-Boards mit committeter .jaira/pr=none: nach jaira init sagt roles list 'none', jaira update schreibt den Absatz; die Datei liegt in .jaira/ (core/board/arrival.go:60 PRModeFor), nicht in settings.json oder git config
 - [x] Ein ausgelieferter Rollen-Prompt richtet sich danach, obwohl er fuer alle gleich ausgeliefert wird - und wie er davon erfaehrt, steht begruendet im Ticket, nicht nur im Code.
   proof: Begruendung als decision-Note auf dem Ticket (Plan, 20.11.); Laufzeit: jaira-role-pr/SKILL.md:62 liest pr aus roles list; Block: core/board/arrival.go:68 arrivalSection
 - [x] Ein Board ohne Einstellung verhaelt sich wie heute: durch einen Pull Request. Wer nichts tut, merkt nichts.
