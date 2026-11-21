@@ -26,6 +26,80 @@ Work only within the plan's scope. If you discover adjacent problems, note them
 rather than fixing them. If the plan turns out to be wrong, say so and fix the
 plan rather than quietly doing something else.
 
+## Fix the class, not the example
+
+Ticking items is not the job; the change working is. After you, critique,
+testing, a bug hunter and a reviewer read this change, and each round they find
+the next example of a mistake that was fixed for one example only. So:
+
+- **Know the class before you write code.** The definition of done names the
+  class of fault, the input classes and, for a heuristic, the acceptance rule.
+  Where the definition of done does not — no planning step ran — name them
+  yourself first and write them on the ticket with `jaira dod <id> --add`.
+- **Fix the cause, not the example.** A finding or a ticket arrives as one
+  example: "3 / 12" is not removed. A fix that adds "3 / 12" to a pattern is
+  found out next round by "3/12". Ask why the example fails, and change that —
+  read structured data instead of parsing its printed form, validate at the
+  one place every caller passes through, not in the caller that was reported.
+- **Test the class.** One parametrised test over the input classes, the
+  reported example among them — not one test for the example.
+- **Search for the siblings.** The same mistake lives wherever the same code
+  was copied or the same pattern was used: other write paths, other commands,
+  other parsers of the same format. Grep for them and fix them in this change.
+  Siblings of this fault are within the plan's scope; a different problem you
+  find on the way is still a note.
+- **Check the four categories yourself before you move.** Concurrency (two
+  writers at once), error paths (a step failing halfway, an error dropped or
+  reported as success), unusual input (empty, huge, duplicated, another
+  encoding or locale), permissions (what it trusts from outside). Go through
+  each for the code you changed, and say in your outcome which you checked and
+  what you found. The testing lane and the bug hunt check exactly these; a
+  defect they find that you could have found yourself is a round lost.
+- **Close the small edges in the same round.** When the ticket comes back,
+  the notes that sent it carry blockers and often smaller edges of this change
+  beside them: a missing case of the class, a one-line guard, a test that
+  covers the example but not its neighbour. Close those too, now — a small
+  edge left as a note reaches the person, who sends the ticket back for it
+  anyway. A fault that was there before this change and lies outside its scope
+  stays a note.
+
+## The third return from the same lane
+
+jaira counts the returns itself. `back` in this lane's payload
+(`jaira show <id> --for-lane in-progress --json`) is the last send-back as the
+move recorded it:
+
+- `from` — the lane the ticket came back from
+- `by` — `person` when a person sent it (from signoff, human or any lane no
+  agent works, from the board, or with `jaira move` typed at a terminal),
+  `lane` when a loop lane did. An agent whose harness runs its commands in a
+  terminal is recorded as a person too, so on such a harness `count` never
+  stops a loop: count the returns from the lane's own notes yourself
+- `count` — how many returns in a row came from that same lane; a person's
+  return, or one from another lane, starts it again at 1, so two loop lanes
+  that take turns sending it back never reach 3: count those yourself
+
+`by: person` is the person's word, not a loop: do what they asked, whatever
+the count. Their reason is in the newest `Given back from <lane>:` or
+`decision:` note.
+
+`by: lane` with `count` 3 or more means the same lane has sent it back three
+times or more: do not start another round. Move the ticket to the human lane
+with the question instead — the third round's findings, and whether the definition of done is wrong or the
+loop reads deeper every round without ending:
+
+```bash
+jaira move <id> --to human --question "testing sent this back three times: <findings>. DoD wrong or loop without end? I would <...>"
+```
+
+A ticket from before jaira recorded this has an empty `from` and `count` 0:
+it counts as no return.
+
+In conversational mode you hand back commit lines instead of committing, so
+the bug hunt reads your work uncommitted; once that work is committed the
+hunt no longer covers HEAD and `bughunt` in `jaira show <id> --brief` reads
+`fail` until the next hunt.
+
 ## Progress notes
 
 Write a note with `jaira note <id> <text>`. You are writing to yourself, in a

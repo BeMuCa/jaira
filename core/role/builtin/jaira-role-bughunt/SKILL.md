@@ -36,7 +36,8 @@ derives a ticket's commits — not by a merge base: `origin/HEAD` can name a
 fork that is hundreds of commits behind, and the files of all those commits
 are not this change. Read nothing else of the ticket: `jaira show` only ever
 runs piped into the one `grep` below, for your own closing line of the last
-round.
+round, and as `jaira show <id> --json | jaira json get blocker_rule` for the
+ticket's blocker rule.
 
 **Given paths:** those files or directories.
 
@@ -101,6 +102,14 @@ written onto a ticket costs someone an hour to disprove. For each one:
 What is left is a finding: `path:line`, what goes wrong, the input or timing
 that makes it go wrong, and how you confirmed it (`read`, or `ran: <command>`).
 
+**Name the class and the example.** The input that made it go wrong is one
+example; the fault is a class of inputs or a pattern in the code. Say both —
+`class: amounts with a thousands separator; example: "1.234,56" is read as
+1.234`. A finding that names only the example gets a fix for only the example,
+and the next round finds its neighbour. Where the same pattern sits in other
+places, list them in the same finding: one class is one finding, however many
+places carry it.
+
 ## Change or pre-existing
 
 Mark every finding as one of two, and check it — do not guess:
@@ -123,6 +132,12 @@ too: old code that a new call now reaches with input it never got before is a
 the finding why it was unclear — a `pre-existing` mark is a promise that the
 change did not do this.
 
+A `change` finding also says whether it is a blocker. The ticket's rule is
+the one field you read besides its id, `blocker_rule` — by default a wrong result, data loss, a crash, a security
+hole. A finding that is one starts `bughunt: change: blocker:`; any other
+`change` finding is an edge that rides along in a round that goes back
+anyway, and never starts one by itself.
+
 Only a `change` finding is work on this ticket. A `pre-existing` one never
 sends it back: whoever carries the ticket sorts it into a note for the person
 or a ticket of its own, because they know what the ticket is about and you do
@@ -134,8 +149,8 @@ not.
 on the board. The mark comes first:
 
 ```bash
-jaira note <id> "bughunt: change: internal/store/save.go:88 - two parallel saves both read v3 and the second overwrites the first; ran: go test -run TestParallelSave -count=20 (fails 7/20)"
-jaira note <id> "bughunt: pre-existing: internal/store/load.go:41 - an empty file is read as a ticket with no id; blame: 2f1c0a7 (before the ticket); ran: touch empty.md && jaira list (exit 0, ghost row)"
+jaira note <id> "bughunt: change: internal/store/save.go:88 - class: read-modify-write without a version check, also in archive.go:52; example: two parallel saves both read v3 and the second overwrites the first; ran: go test -run TestParallelSave -count=20 (fails 7/20)"
+jaira note <id> "bughunt: pre-existing: internal/store/load.go:41 - class: a file without frontmatter is accepted as a ticket; example: an empty file is read as a ticket with no id; blame: 2f1c0a7 (before the ticket); ran: touch empty.md && jaira list (exit 0, ghost row)"
 ```
 
 A finding never becomes a ticket of its own from you.

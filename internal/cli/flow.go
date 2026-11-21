@@ -2,11 +2,13 @@ package cli
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/x/term"
 	"github.com/spf13/cobra"
 
 	"github.com/BeMuCa/jaira/core/gate"
@@ -206,6 +208,7 @@ one the real move would have returned.`,
 				Reload: func() (gate.Env, error) {
 					return envFor(s, t)
 				},
+				ByPerson:    atATerminal(),
 				ClaimOnPull: false,
 				Folder:      logbookFolder(),
 				Prepare: func(tk *ticket.Ticket) error {
@@ -718,13 +721,22 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			// context sits beside mode for the same reason: it says who runs
 			// the lane. "fresh" means not the session that carried the ticket
 			// here — a new agent that has seen none of its work.
-			"context":  l.Context,
-			"prompt":   l.Prompt,
-			"input":    fields,
-			"diff":     diff,
-			"produces": l.OutputProduces,
-			"missing":  missing,
-			"complete": len(missing) == 0,
+			"context": l.Context,
+			// The loop brake, beside mode for the same reason: it says how
+			// the lane judges, not what with. Every lane gets it — testing,
+			// review and the bug hunt testing starts read it — rather than
+			// through input-requires, which would mean editing every board's
+			// lane files before an older board could hand it on.
+			"blocker_rule":   ticket.BlockerRule(t),
+			"stop_after_fix": t.StopAfterFix,
+			"back":           backJSON(t),
+			"round":          ticket.CurrentRound(t),
+			"prompt":         l.Prompt,
+			"input":          fields,
+			"diff":           diff,
+			"produces":       l.OutputProduces,
+			"missing":        missing,
+			"complete":       len(missing) == 0,
 		}
 		// The uncommitted half rides in a key of its own, and only when there
 		// is one: a key that is always there is read as a field, and an empty
@@ -766,6 +778,15 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 		head += fmt.Sprintf(", context: %s", l.Context)
 	}
 	fmt.Fprintf(w, "# Lane: %s   (%s)\n\n", l.Name, head)
+	// The loop brake under the header, for a lane read as plain text.
+	fmt.Fprintf(w, "blockers: %s\n", ticket.BlockerRule(t))
+	if t.StopAfterFix {
+		fmt.Fprintf(w, "stop-after-fix: a round after a fix runs the tests only, no new bug hunt\n")
+	}
+	if t.BackFrom != "" {
+		fmt.Fprintf(w, "round %d, sent back from %s (%s), %d in a row from that lane\n", ticket.CurrentRound(t), t.BackFrom, t.BackBy, t.BackCount)
+	}
+	fmt.Fprintln(w)
 	if l.Prompt != "" {
 		fmt.Fprintf(w, "%s\n\n", l.Prompt)
 	}
@@ -893,4 +914,16 @@ func trimmedJSON(ts []ticket.Trimmed) []map[string]any {
 		})
 	}
 	return out
+}
+
+// atATerminal reports a move typed at a terminal: stdin and stdout both a
+// TTY. An agent's shell has neither (Claude Code, Codex and the Herdr tabs
+// run their commands through pipes), so such a move is a person's and a
+// send-back from a loop lane is recorded as theirs. The rule errs only one
+// way that matters: a person's move without a terminal — `! jaira move` in a
+// Claude session, a script — is still recorded as the lane's, as before.
+// ByPerson opens no gate, so an agent that fakes a terminal resets nothing
+// but its own loop count. A variable so tests can stand in for a terminal.
+var atATerminal = func() bool {
+	return term.IsTerminal(os.Stdin.Fd()) && term.IsTerminal(os.Stdout.Fd())
 }

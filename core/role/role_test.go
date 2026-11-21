@@ -601,7 +601,7 @@ esac
 		"review":   "/jaira-role-lane ab12cd review",
 		// A person's chats, which the cockpit mod opens: a plain request,
 		// never a role, so the tab answers and never works the ticket.
-		"explain": "Erklaere mir in einfachen Worten den Review-Befund zu Ticket ab12cd …",
+		"explain": "Erklaere mir in einfachen Worten das Review zu Ticket ab12cd …",
 		"discuss": "Ticket ab12cd wartet auf eine Entscheidung von mir …",
 		// The cockpit's Accept, a person's press: the flag is what lets
 		// jaira-role-pr open the pull request instead of handing it back.

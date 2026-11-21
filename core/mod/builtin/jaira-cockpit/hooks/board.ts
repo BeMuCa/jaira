@@ -19,8 +19,14 @@ export type Waiting = {
   // Whose it is; '' for nobody's.
   assignee: string
   // Whether the band offers Explain: the verdict names a reservation, or
-  // the review names a gap.
+  // the review's gaps hold a blocker: line.
   explainable: boolean
+  // The review's other findings, one per line, listed under the row without
+  // a button: notes the person reads, not decisions they must take.
+  notes: string[]
+  // The round the verdict was written in, when the ticket has moved on a
+  // round since; undefined while the verdict is this round's.
+  reviewedIn?: number
 }
 
 export type Counts = { worker: number; review: number; person: number }
@@ -33,7 +39,9 @@ type Ticket = {
   next_lane?: string
   question?: string
   assignee?: string
-  review?: { verdict?: string; gaps?: string }
+  // verdict_gaps: review-gaps as the review left them beside its verdict,
+  // kept by jaira when a later round's loop lane rewrites review-gaps.
+  review?: { verdict?: string; gaps?: string; verdict_gaps?: string }
   // The ticket's round, and the round its verdict was written in (0 or
   // absent: unknown, a verdict from before jaira counted rounds).
   round?: number
@@ -108,15 +116,20 @@ export function snapshotOf(
     if (isMine) counts.person++
     const next = t.next_lane === undefined ? undefined : byId.get(t.next_lane)
     const into = isMine ? waiting : theirs
+    const verdict = oneLine(t.review?.verdict)
     into.push({
       id: t.handle,
       title: t.title,
       lane: t.status,
-      verdict: oneLine(t.review?.verdict),
+      verdict,
       question: oneLine(t.question),
       acceptTo: next?.terminal === true ? next.id : null,
       assignee,
-      explainable: explainable(oneLine(t.review?.verdict), t.review?.gaps, sameRound(t)),
+      explainable: explainable(verdict, reviewGaps(t)),
+      // Before a review there are no review notes; after a later round's
+      // optimize lane rewrote review-gaps they are in the copy jaira kept.
+      notes: verdict === '' ? [] : notesOf(reviewGaps(t)),
+      ...(sameRound(t) ? {} : { reviewedIn: t.review_round }),
     })
   }
   const ids = tickets.map(t => t.handle)
@@ -169,16 +182,34 @@ function hasReservation(verdict: string): boolean {
   return RESERVATION.test(unnegated) || REFUSAL.test(verdict)
 }
 
-// A review's gaps name one unless they are empty or say there is none, alone
-// or before a remark: 'none', 'none — the docs could say more', 'keine
-// (blockierend) ...', 'No gaps found.', 'keine Lücken'. A verdict that
-// reads as a yes ("the one weak spot ... (gap 1)") still has something a
-// person should have explained.
+// The lines of a review's gaps, each on its own, the leading list marker
+// ('- ', '1. ') dropped. A line that says there is nothing — 'none',
+// 'keine Lücken', 'No gaps found.' — is no finding.
 const NO_GAP = /^(none|keine|nothing|nichts|n\/a|-+|no (gaps?|defects?|issues?|findings?)( found)?|keine (lücken?|mängel|befunde))\s*([—–\-:(.,;!]|$)/i
+const MARKER = /^\s*(?:[-*•]|\d+[.)])\s+/
+// A blocker line as a review writes it, bare or in markdown: 'blocker:',
+// 'Blocker:', '**blocker:**', '**Blocker**:', '`blocker`:' - the list marker
+// is gone already (MARKER). Emphasis around the label is formatting, not a
+// different finding.
+const BLOCKER = /^[*_`]*\s*blocker\s*[*_`]*\s*:/i
 
-function namesGap(gaps: string | undefined): boolean {
-  const g = oneLine(gaps)
-  return g !== '' && !NO_GAP.test(g)
+function findings(gaps: string | undefined): string[] {
+  return (gaps ?? '').split(/\r?\n/).map(l => oneLine(l.replace(MARKER, ''))).filter(l => l !== '' && !NO_GAP.test(l))
+}
+
+// The findings that are no blocker: what the band lists under the row.
+function notesOf(gaps: string | undefined): string[] {
+  return findings(gaps).filter(l => !BLOCKER.test(l))
+}
+
+// The review's own gaps: review-gaps in the verdict's round, the copy jaira
+// kept beside the verdict after that. Undefined for an earlier-round verdict
+// without a copy: review-gaps then may be optimize's, and neither the notes
+// under the row nor Explain read a blocker out of them — only a verdict that
+// reserves or refuses still offers Explain.
+function reviewGaps(t: Ticket): string | undefined {
+  if (sameRound(t)) return t.review?.gaps
+  return t.review?.verdict_gaps || undefined
 }
 
 // Whether the verdict was written in the ticket's current round. A later
@@ -189,12 +220,15 @@ function sameRound(t: Ticket): boolean {
   return !t.review_round || t.review_round === (t.round ?? 1)
 }
 
-// Whether the band offers Explain: only for a verdict of the ticket's current
-// round, its reservation as much as the gaps beside it — before this round's
-// review the gaps hold what the optimize lane removed, and the verdict is
-// the last round's, whatever the lane is called.
-function explainable(verdict: string, gaps: string | undefined, current: boolean): boolean {
-  return current && (hasReservation(verdict) || (verdict !== '' && namesGap(gaps)))
+// Whether the band offers Explain: for a blocker the review wrote into its
+// gaps, or a verdict that names a reservation or refuses the work. Notes
+// alone — a review always has a few — are listed, not explained: an Explain
+// on every ticket read as "this must be changed". A verdict of an earlier
+// round keeps its Explain, under a line saying the ticket changed since: a
+// ticket the teamlead moved on past a refusing review must not reach the
+// person silent.
+function explainable(verdict: string, gaps: string | undefined): boolean {
+  return hasReservation(verdict) || (verdict !== '' && findings(gaps).some(l => BLOCKER.test(l)))
 }
 
 // A jaira older than the board it reads says so on a line of its own before
@@ -263,26 +297,72 @@ export function explanationNotes(showJson: string): { text: string; decided?: st
 // apart for the choice with what each does, and the option recommended. A
 // note with no option line — one written before the shape was asked for —
 // is one part, whole, as it was always shown.
+//
+// Since DF0YD6 the note also has a status line, `Status: DoD 7/7 ok | tests
+// ok | blocker fail | bughunt on HEAD ok`, one line per review note opening
+// with its class — `[blocker]`, `[small edge]`, `[known limit]`, `[not this
+// ticket]` — and the recommendation as a part of its own, so the pane can
+// colour each. A line in neither shape stays a text part: an older note reads
+// as it always did.
 export type Action = 'giveBack' | 'accept'
 export type Option = { key: string; text: string; action?: Action }
-export type Part = { kind: 'text'; text: string } | ({ kind: 'option' } & Option)
+export type NoteClass = 'blocker' | 'edge' | 'limit' | 'elsewhere'
+// unknown: the check could not be decided - drawn as a dim '?', never red.
+export type Check = { label: string; ok?: boolean; unknown?: true }
+export type Part =
+  | { kind: 'text'; text: string }
+  | ({ kind: 'option' } & Option)
+  | { kind: 'status'; checks: Check[] }
+  | { kind: 'note'; cls: NoteClass; label: string; text: string }
+  | { kind: 'recommendation'; text: string }
 export type Explanation = { parts: Part[]; options: Option[]; recommended?: string }
 
 const OPTION = /^\s*\(?([1-6]|[a-f])\)\s+(.+)$/
 const MARK = /\s*\[(give back|accept)\]\s*$/i
 const RECOMMENDED = /^\s*(?:empfehlung|recommendation)\s*:\s*\(?([1-6]|[a-f])\b/i
+const RECOMMENDATION = /^\s*(?:empfehlung|recommendation)\s*:/i
+const STATUS = /^\s*(?:status|stand)\s*:\s*(.+)$/i
+const CLASS = /^\s*[*_`]*\[(blocker|small edge|kleiner rand|known limit|bekannte grenze|not this ticket|nicht aus diesem ticket)\][*_`]*\s*(.*)$/i
+const CLASSES: Record<string, NoteClass> = {
+  'blocker': 'blocker', 'small edge': 'edge', 'kleiner rand': 'edge', 'known limit': 'limit',
+  'bekannte grenze': 'limit', 'not this ticket': 'elsewhere', 'nicht aus diesem ticket': 'elsewhere',
+}
+const PASSED = /^(ok|pass|yes|ja|✓)$/i
+const FAILED = /^(fail|no|nein|✗)$/i
+const UNKNOWN = /^(unknown|unbekannt|\?)$/i
 
-export function explanationOf(text: string): Explanation {
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '')
-  const parts: Part[] = lines.map(l => {
-    const m = OPTION.exec(l)
-    if (!m) return { kind: 'text', text: l }
+// One check of the status line: its last word says whether it passed, and
+// is drawn as the mark instead; a check with neither word is shown as is.
+function checkOf(segment: string): Check {
+  const words = segment.trim().split(/\s+/)
+  const last = words[words.length - 1] ?? ''
+  if (words.length > 1 && PASSED.test(last)) return { label: words.slice(0, -1).join(' '), ok: true }
+  if (words.length > 1 && FAILED.test(last)) return { label: words.slice(0, -1).join(' '), ok: false }
+  if (words.length > 1 && UNKNOWN.test(last)) return { label: words.slice(0, -1).join(' '), unknown: true }
+  return { label: segment.trim() }
+}
+
+function partOf(l: string): Part {
+  const m = OPTION.exec(l)
+  if (m) {
     const mark = MARK.exec(m[2]!)?.[1]?.toLowerCase()
     const text = m[2]!.replace(MARK, '').trim()
     return { kind: 'option', key: m[1]!, text, ...(mark ? { action: mark === 'accept' ? 'accept' : 'giveBack' } : {}) }
-  })
-  const options = parts.flatMap(({ kind, ...o }) => (kind === 'option' ? [o as Option] : []))
-  if (options.length === 0) return { parts: [{ kind: 'text', text: text.trim() }], options }
+  }
+  const status = STATUS.exec(l)
+  if (status && status[1]!.includes('|')) return { kind: 'status', checks: status[1]!.split('|').map(checkOf).filter(c => c.label !== '') }
+  const note = CLASS.exec(l)
+  if (note) return { kind: 'note', cls: CLASSES[note[1]!.toLowerCase()]!, label: note[1]!, text: note[2]!.trim() }
+  if (RECOMMENDATION.test(l)) return { kind: 'recommendation', text: l }
+  return { kind: 'text', text: l }
+}
+
+export function explanationOf(text: string): Explanation {
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '')
+  const parts: Part[] = lines.map(partOf)
+  const options = parts.flatMap(p => (p.kind === 'option' ? [{ key: p.key, text: p.text, ...(p.action ? { action: p.action } : {}) }] : []))
+  const shaped = parts.some(p => p.kind === 'status' || p.kind === 'note')
+  if (options.length === 0 && !shaped) return { parts: [{ kind: 'text', text: text.trim() }], options }
   const recommended = lines.map(l => RECOMMENDED.exec(l)?.[1]).find(k => k !== undefined && options.some(o => o.key === k))
   return { parts, options, ...(recommended !== undefined ? { recommended } : {}) }
 }

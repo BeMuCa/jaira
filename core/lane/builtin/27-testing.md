@@ -29,6 +29,13 @@ no hint where to look:
     Agent(subagent_type: "claude", run_in_background: true,
           prompt: "Read the jaira-role-bughunt skill and hunt ticket <handle>.")
 
+**Except after a fix on a ticket that opts out.** `stop_after_fix: true` in
+this lane's payload (`jaira show <handle> --for-lane testing --json`) and
+`round` above 1: start no hunt this round, run your passes over what changed
+since the last hunt, and write
+`hunt-verdict="pass: stop-after-fix, no hunt in round <n>"`. Off — the default
+— the hunt runs every round, over the diff since the last one.
+
 It changes nothing and moves nothing; it leaves one `bughunt:` note per
 verified finding and a closing `bughunt: done at <commit>` line. Do not wait for
 it: run your own passes now, yourself. Where the change touches nothing outside
@@ -38,10 +45,11 @@ after your passes, from that skill, as a reader who has not seen the ticket.
 
 Then your three passes, in this order:
 
-1. **Gates.** Build everything and run the whole suite the way this repository
+1. **Gates.** Build everything and run the suite the way this repository
    does it, with the race detector and a cleared cache where that is the house
-   rule. Red here ends the pass — record the failing output verbatim, never a
-   summary of it.
+   rule — the whole suite the first time, and in a round after a fix only the
+   tests of what changed since the last hunt (see below). Red here ends the
+   pass — record the failing output verbatim, never a summary of it.
 2. **The demand.** Take the definition of done item by item and verify each one
    against the working tree, not against the outcome's account. A proof line
    names a file or a test: open that file, run that test. A criterion you could
@@ -94,20 +102,47 @@ fields are owed: the gate refuses the move out of this lane while either is
 empty. A red suite does not cancel the hunt either: wait for it, so the next
 round fixes both at once.
 
-- **Findings.** A failed pass, or a `change` finding from the hunt. Write the
-  field it belongs to as `fail: <what is wrong, in one line>` —
+**What sends it back is a blocker, and the ticket says what one is:**
+`blocker_rule` in this lane's payload. Where the ticket sets none it is the
+default — a wrong result, data loss, a crash, a security hole — and a failed
+gate or an unmet definition-of-done item is a wrong result under any rule. Anything smaller of this change —
+a missing guard that breaks nothing yet, a test that covers the example but
+not its neighbour — rides along in the note of a round that goes back anyway.
+Otherwise it is a note on the ticket for the review and the person
+(`jaira note <handle> "testing: note: <class; example; fix>"`, the hunter's own
+note where it came from the hunt), counted in a verdict that still passes; it
+alone never starts a round.
+
+- **Findings.** A failed pass, or a `change` finding from the hunt that is a
+  blocker. Write the field it belongs to as `fail: <what is wrong, in one line>` —
   `test-verdict`, `hunt-verdict`, or both. For a failed pass put the detail
   into a note for the implementing agent that picks it up — what is broken,
   the exact evidence (verbatim output, file:line), and how you would fix it.
+  Name the class of fault and the example you saw, both: the input that failed
+  is one example, and a fix for only that example comes back next round as its
+  neighbour ("3 / 12" fixed, "3/12" still broken). The fix you suggest is a fix
+  of the class — at its cause, with a test over the class — not of the example.
   Then send it back:
 
-      jaira note <handle> "testing: <what is wrong, the evidence, the suggested fix>"
+      jaira note <handle> "testing: class: <the fault>; example: <what you saw, the evidence>; fix: <at the cause, test over the class>"
       jaira move <handle> --to in-progress
+
+  When the ticket comes back, a finding is passed only when its class is
+  fixed: try a neighbour of the example as well as the example itself. A
+  neighbour still failing is the same finding again, not a new one.
 
   The hunter's `change` notes are already the brief for whoever fixes them;
   do not copy them. The ticket runs the loop again — implementing, critique,
-  optimize, and back here — until you have nothing left to find. The next
-  hunt reads only what changed since this one, so the loop ends.
+  optimize, and back here — until you have nothing left to find. A round after
+  a fix tests and hunts only what changed since the last hunt — the commit in
+  its `bughunt: done at <commit>` line: pass 1 runs the tests that cover the files
+  `git diff --name-only <commit>` touches, and passes 2 and 3 and the hunt
+  read only that diff, so the loop ends; the whole suite ran in the first
+  round and runs again in CI. When that commit is not an ancestor of `HEAD`
+  (`git merge-base --is-ancestor <commit> HEAD` exits non-zero — the branch
+  was rebased; the old commit may still exist, but a diff against it lists
+  upstream's files, not the change's), run the whole suite as in the first
+  round, the same test the hunt uses. Then the ticket goes on to review.
 - **Pass.** Both fields start with `pass:`. Say what you ran and what you
   saw, and move the ticket on. Never certify what you did not run: "the tests
   probably cover it" is a finding about the tests, not a pass.
