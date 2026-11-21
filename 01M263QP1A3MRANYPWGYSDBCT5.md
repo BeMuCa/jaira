@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-21T08:25:45Z
+updated-at: 2026-11-21T13:24:21Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -96,3 +96,8 @@ review-check: "1. go test ./core/board -run TestAgentNoteNamesProofAndTheUnshare
 - **2026-11-21 08:21 · Alexander Sacharov** — Given back from signoff (Teamlead im Auftrag Alex 21.11., alle Funde schliessen): 1) core/board/announce_test.go:232 Doc-Kommentar nennt den alten Testnamen. 2) core/release/notes/SDBCT5.md:2 auch jaira-role-pr nennen. Danach Diff-Hunt auf HEAD (letzter Hunt deckt d71e5e86, nicht HEAD), review, signoff, push.
 - **2026-11-21 08:21 · Alexander Sacharov** — give-back 21.11. 08:21 by teamlead jaira-31 was a read error (stale review-gaps); 99be9268 already closed both notes. No code change; diff hunt on HEAD and a fresh review follow.
 - **2026-11-21 08:22 · Alexander Sacharov** — bughunt: done at 99be9268 - 0 findings in 3 modules, follow-up hunt (diff since d71e5e86: commit 99be9268 and the shipped.sha256 union of merge 24658f47; the rest of the merge is upstream's); concurrency, error paths, input, permissions checked; ran: sha256sum of core/role/jaira, jaira-role-pr, jaira-role-lane, jaira-worker SKILL.md - each current hash is in shipped.sha256 (613, 614, 611, 612); merge diff vs first parent only adds lines, both sides' hashes kept; scripts/shipped-history.sh output is a superset of the committed file (comm -13 empty); go test -count=1 ./core/shipped ./core/board exit 0; renamed test name in announce_test.go comment matches the func; files: core/board/announce_test.go core/release/notes/SDBCT5.md core/shipped/shipped.sha256
+- **2026-11-21 13:24 · Alexander Sacharov** — explain: Дефектов нет: diff — только проза и строковый тест, go test ./... -race зелёный, все 7 пунктов DoD выполнены. Единственное замечание — две мелочи из review-gaps (лишние хэши в shipped.sha256, тест не покрывает новые фразы в jaira-worker, jaira-role-lane, jaira-role-pr и docs/AGENTS.md).
+Warum: Оба пробела безвредны: хэши только добавляются, а пропавшая фраза в прозе не сломает рантайм, лишь незаметно сотрётся подсказка агентам.
+1) Вернуть и расширить тест на остальные файлы с новыми фразами [give back]
+2) Принять тикет как есть, оба замечания — известные ограничения [accept]
+Empfehlung: 2 - код не затронут, замечания косметические, а расширение теста растит тикет и противоречит правилу «не больше paca».
