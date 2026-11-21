@@ -160,3 +160,18 @@ When you are finished, report:
 Do not claim the definition of done is met unless you can point to the specific
 behaviour that now satisfies it — the `--proof` on each item is where that
 pointer goes.
+
+## Items only a person ticks
+
+A definition-of-done item that starts with `seen by a person:` is never yours
+to tick, however sure you are: a width table, a run on another platform or the
+text of a refusal is a stand-in, not what the person sees. Do the work around
+it — the code, the tests a machine can run — name in your outcome what the
+person should look at, and leave the item open. The person ticks it at
+acceptance.
+
+Where no planning step ran and the change alters what a terminal draws (the
+TUI, colours, widths, glyphs, a plugin's panel), behaves differently by
+operating system, shell or terminal, or needs a person at the keyboard, add
+such an item yourself before you start:
+`jaira dod <id> --add "seen by a person: <what to look at, where>"`.

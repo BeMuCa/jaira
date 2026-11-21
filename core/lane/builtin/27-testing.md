@@ -54,7 +54,11 @@ Then your three passes, in this order:
 2. **The demand.** Take the definition of done item by item and verify each one
    against the working tree, not against the outcome's account. A proof line
    names a file or a test: open that file, run that test. A criterion you could
-   not verify is a finding, not a pass.
+   not verify is a finding, not a pass — except an item that starts with
+   `seen by a person:`. A person ticks that one at acceptance, never you: check
+   what a machine can check around it, leave it open, and name it in
+   `test-verdict` as left for the person. Ticked by an agent, it is a finding:
+   untick it (`jaira dod <handle> <n> --todo`).
 3. **Function.** Exercise the changed behaviour itself: run the binary, hit the
    path, build a scratch fixture if the repository offers one. The goal says
    what it should do — watch it do it, and note what you actually saw. The

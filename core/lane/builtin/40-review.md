@@ -104,6 +104,12 @@ Write four things, in this order:
    "run the tests", no jargon and no preamble. Name what they should see, not
    only what to press: a step whose outcome is unstated cannot be failed.
 
+   Every definition-of-done item that starts with `seen by a person:` is a
+   step of this flow, with what to look at and where. Such an item is the
+   person's to tick, at acceptance: it stays open here and is no blocker for
+   being open. Ticked by an agent, it is a blocker — a stand-in proof counted
+   as what the person saw.
+
    If it cannot be checked by hand at all, say that and say why — a test name
    is a legitimate answer ("go test ./auth -run TestSameSite covers it; there is
    no UI path"). "Review the diff" is not.
