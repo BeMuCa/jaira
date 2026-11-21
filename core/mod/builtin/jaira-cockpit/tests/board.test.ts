@@ -380,7 +380,8 @@ describe('waiting for you', () => {
     await startSession($)
     const ui = await $.ui.mount(BAND)
     // A frame of its own, titled, so it reads as the cockpit and not as chat.
-    expect((await ui.find({ type: 'Box' }))?.props.borderStyle).toBe('round')
+    // Not the first Box: Claude Code 2.1.329 mounts the band inside one of its own.
+    expect((await ui.findAll({ type: 'Box' })).some(x => x.props.borderStyle === 'round')).toBe(true)
     expect(await ui.find({ type: 'Text', text: 'jaira-cockpit' })).toBeDefined()
     expect((await ui.find({ text: 'Waiting for you' }))).toBeDefined()
     expect((await ui.find({ type: 'Text', text: /MG677R \| signoff \| approve mit Vorbehalt/ }))).toBeDefined()
@@ -684,6 +685,43 @@ describe('waiting for you', () => {
     expect(await (await $.ui.mount(BAND)).find({ key: 'decision-K7P2QX' })).toBeUndefined()
   })
 
+  test('a person\'s session runs reap.sh from its first minute on, then every ten minutes', async ($, on) => {
+    const REAP = '/repo/.claude/skills/jaira-dispatcher/scripts/reap.sh'
+    const w = world(on, { herdr: true })
+    await startSession($)
+    await w.clock.settle()
+    expect(ran(w, 'bash', REAP)).toEqual([])
+    await w.clock.advance(60_000)
+    expect(ran(w, 'bash', REAP)).toEqual([['bash', REAP, '/repo', '@/repo']])
+    for (let i = 0; i < 9; i++) await w.clock.advance(60_000)
+    expect(ran(w, 'bash', REAP)).toHaveLength(1)
+    await w.clock.advance(60_000)
+    expect(ran(w, 'bash', REAP)).toHaveLength(2)
+  })
+
+  test('a tab spawn.sh opened runs no reap.sh, though its role line comes only after the start', async ($, on) => {
+    const w = world(on, { herdr: true })
+    await startSession($)
+    await w.clock.advance(30_000)
+    await $.prompt.submit({ text: '/jaira-worker MG677R --parent jaira-4c', origin: { kind: 'composer' }, wait: false })
+    await w.clock.advance(11 * 60_000)
+    expect(ran(w, 'bash', '/repo/.claude/skills/jaira-dispatcher/scripts/reap.sh')).toEqual([])
+  })
+
+  test('a session that carries a ticket runs no reap.sh', async ($, on) => {
+    const w = world(on, { herdr: true, store: { 'carrying:abcdef12': { ticket: 'MG677R', role: 'worker', lane: '' } } })
+    await startSession($)
+    await w.clock.advance(11 * 60_000)
+    expect(ran(w, 'bash', '/repo/.claude/skills/jaira-dispatcher/scripts/reap.sh')).toEqual([])
+  })
+
+  test('without Herdr the cockpit runs no reap.sh: it would keep everything', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    await w.clock.advance(60_000)
+    expect(ran(w, 'bash', '/repo/.claude/skills/jaira-dispatcher/scripts/reap.sh')).toEqual([])
+  })
+
   test('without Herdr, Explain asks this session for a subagent that writes the explain note', async ($, on) => {
     const w = world(on)
     await startSession($)
@@ -757,7 +795,7 @@ describe('waiting for you', () => {
     w.files.set(home, '')
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'explain-MG677R' })
-    expect(ran(w, 'C:/Program Files/Git/bin/bash.exe')).toEqual([['C:/Program Files/Git/bin/bash.exe', home, '--no-worktree', 'mg677r', 'MG677R', 'explain', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+    expect(ran(w, 'C:/Program Files/Git/bin/bash.exe', home)).toEqual([['C:/Program Files/Git/bin/bash.exe', home, '--no-worktree', 'mg677r', 'MG677R', 'explain', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
   })
 
   test('on native Windows, CLAUDE_CODE_GIT_BASH_PATH names the bash', async ($, on) => {
@@ -2257,6 +2295,18 @@ describe('metrics and the pane', () => {
     expect(await pane.find({ type: 'Text', text: /signoff · approve mit Vorbehalt/ })).toBeDefined()
     expect(await pane.find({ type: 'Text', text: 'Ticket MG677R: review -> signoff, review-verdict="approve"' })).toBeDefined()
     expect(await pane.find({ type: 'Text', text: 'worker · cost_eq 38 · peak 90k · 10 min · 12 tools' })).toBeDefined()
+  })
+
+  test('/cockpit ticket reads the reports: the next report has nothing new, a later one is new', async ($, on) => {
+    world(on)
+    await startSession($)
+    await $.session.receive({ origin: { kind: 'peer' }, text: 'Ticket MG677R: review -> signoff, review-verdict="approve"' })
+    await $.command.run(typed('ticket MG677R'))
+    const pane = await $.ui.mount({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-ticket', props: { title: 'Ticket MG677R', isFocused: false, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } } as never)
+    expect(await pane.find({ type: 'Text', text: 'Ticket MG677R: review -> signoff, review-verdict="approve"' })).toBeDefined()
+    expect((await $.command.run(typed('report MG677R'))).text).toStartWith('Nothing new for MG677R')
+    await $.session.receive({ origin: { kind: 'peer' }, text: 'Ticket MG677R: signoff -> review' })
+    expect((await $.command.run(typed('report MG677R'))).text).toContain('signoff -> review')
   })
 })
 

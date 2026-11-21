@@ -109,7 +109,7 @@ export const t = {
   paneUsage: 'Usage per agent',
   paneNothing: 'nothing recorded yet',
   usageText:
-    'Usage: /cockpit <subcommand>\n\n  report [id]   full text of the agent reports shortened for a ticket, newest first; without an id, the tickets that have some\n  threads       the conversation threads of this session and where each stands\n  ticket <id>   a pane with the ticket\'s reports and what its agents used\n  workers       every agent carrying a ticket of this board: lane, context, cache, and whether a new round goes to it',
+    'Usage: /cockpit <subcommand>\n\n  report [id] [all]  full text of the agent reports shortened for a ticket that were not read yet, newest first; all: the older ones too; without an id, the tickets that have some\n  threads            the conversation threads of this session and where each stands\n  ticket <id>        a pane with the ticket\'s reports and what its agents used\n  workers            every agent carrying a ticket of this board: lane, context, cache, and whether a new round goes to it',
 }
 
 // The noise filter's own words: the digest line and /cockpit report.
@@ -121,9 +121,12 @@ export const filterWords = {
   fullReport: 'full report',
   none: 'No agent reports kept for this project yet.',
   noneFor: (id: string) => `No reports kept for ${id} in this project.`,
+  nothingNew: (id: string, older: number) =>
+    `Nothing new for ${id} since it was last read; ${older} older report(s) kept: /cockpit report ${id} all`,
   list: 'Tickets with kept reports in this project, most recent first:',
   hint: '/cockpit report <id> shows one.',
   count: (n: number) => `${n} report(s)`,
+  unread: (n: number) => `${n} new`,
   last: 'last',
   of: 'of',
 }

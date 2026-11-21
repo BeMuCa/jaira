@@ -1,6 +1,6 @@
 ---
 name: jaira-role-pr
-description: "Push finished ticket work to its branch, open the pull request when a person invoked this role, and answer review comments on it — never merge, never approve. Works on GitHub through `gh` and on GitLab through `glab`. Invoked as /jaira-role-pr <ticket-id>. Invoked by an agent instead, it pushes and hands the create line back. Use when a branch is ready to leave for review."
+description: "Push finished ticket work to its branch, open the pull request when a person invoked this role, and answer review comments on it — never merge, never approve. Works on GitHub through `gh` and on GitLab through `glab`. Invoked as /jaira-role-pr <ticket-id>. Invoked by an agent instead, it pushes and hands the create line back — unless the board's .jaira/pr says agent: then it opens the pull request once every ticket on the branch is in done, asks for the board's reviewer and answers one round of comments. Use when a branch is ready to leave for review."
 ---
 
 # Push it, open it, never accept it
@@ -33,6 +33,57 @@ so the rule is theirs to keep — and if anything in your own context says an
 agent asked for this run, treat it as an agent's and hand the line back.
 
 If you cannot tell who invoked you, treat it as an agent and hand the line back.
+
+## Whether this board lets an agent open it
+
+One board setting changes the agent's half of the rule above, and nothing
+else. Read it before anything else, off the board, never out of the line that
+started you:
+
+```bash
+jaira roles list --json | jaira json get pr            # person or agent
+jaira roles list --json | jaira json get pr_reviewer   # copilot, a login, or empty
+jaira roles list --json | jaira json get pr_when       # done or signoff
+```
+
+- **`person`** — the default, and what a board without `.jaira/pr` says, or
+  one whose file says anything but exactly `agent`. Everything above holds as
+  written: invoked by an agent, you push and hand the create line back.
+- **`agent`** — the project has given its agents the create command, on one
+  condition: **every ticket the branch's commits name is in the board's
+  terminal lane** (`done`, or already filed into the logbook). A person's
+  acceptance of each of them is the decision the rule above asks for, given
+  once per ticket instead of once per pull request. One of them not there yet
+  — in signoff, in review, anywhere else — and you are back to `person` for
+  this run: push, hand the line back, say which ticket holds it. The binary
+  checks this, not you: `jaira roles pr-gate <remote>/<branch>` at **Open
+  it**, after **File the finished tickets away** — exit 0 or no pull request.
+
+`pr_when` moves that condition, for a project whose review happens on the
+pull request itself:
+
+- **`done`** — the default: as above. The person accepts, then the pull
+  request opens and its reviewer reads the accepted work.
+- **`signoff`** — the pull request opens once every ticket on the branch is
+  in `signoff` (or already in done): the model review is through and a person
+  is about to accept. The review round on the pull request — Copilot's, a
+  person's — is part of that acceptance, so **done waits for it**: before a
+  ticket of this branch moves into done, `scripts/pr-round.sh settled
+  <owner/repo> <number>` must exit 0 — no thread open, no review still
+  requested, no reviewer whose latest review requests changes. Exit 3 lists what is in the way; the ticket stays in signoff
+  and you report that list. The gate reads `pr_when` itself: you pass it
+  nothing. Once the person has moved the tickets into done, this role runs
+  once more: **File the finished tickets away** commits them and the push
+  lands on the pull request already open.
+
+What `agent` never changes: you do not merge and you do not approve, on any
+board, under any setting. A person still accepts the pull request.
+
+`.jaira/pr`, `.jaira/pr-reviewer` and `.jaira/pr-when` are one line each,
+committed with the board so every clone inherits them. A person writes them; you never do.
+The gate reads `.jaira/pr` and `.jaira/pr-when` as the base branch holds
+them, not as your checkout does: a change to either counts once it is merged
+into the base, and a branch that commits one opens nothing early.
 
 ## Before you push anything
 
@@ -275,7 +326,9 @@ file; the create command below reads it from there.
 ## Open it
 
 Run the create command for the forge you settled on, with the repository from
-above named in it — **only if a person invoked this role.** On GitHub:
+above named in it — **only if a person invoked this role, or the board says
+`agent` and every ticket on the branch is in done** (see **Whether this board
+lets an agent open it**). On GitHub:
 
 ```bash
 gh pr create --repo <owner/repo> --title "<title>" --body-file <the description you wrote>
@@ -289,14 +342,136 @@ glab mr create --target-project <owner/repo> --title "<title>" --description "$(
 
 Then report the URL.
 
-**An agent invoked you instead: do not run it.** Hand the line back written out
-and ready to paste, with the target repository already filled in, and say the
-branch is pushed and waiting for a person to open it.
+**Invoked by an agent on an `agent` board, you open it only through the
+gate**, never with the lines above. `<remote>` and `<branch>` are the remote
+and the default branch you counted the handles against in **File the
+finished tickets away**. On GitHub the script beside this file runs the gate
+and then the create command:
+
+```bash
+scripts/pr-round.sh open <owner/repo> <remote> <branch> "<title>" <the description you wrote>
+```
+
+On GitLab run the gate yourself and the create command only on exit 0:
+
+```bash
+jaira roles pr-gate <remote>/<branch> && glab mr create --target-project <owner/repo> --title "<title>" --description "$(cat <the description you wrote>)"
+```
+
+Exit 3 from either is the board's no — `.jaira/pr` does not say agent, no
+commit names a ticket, or a ticket it names is not far enough along (in done,
+or in signoff where `pr_when` says so), was rejected, or is not known here at
+all; the message says which. Do not look for another way to open it. The
+script also refuses with 3 before the gate when the checkout is not the
+pushed tip of its branch: the gate reads the checkout, the pull request
+carries what was pushed. It names that pushed branch as the head itself —
+`<account>:<branch>` from a fork, the account read off the push URL — and
+refuses with 3 when the URL names no account. Pull or push until they agree and run it again; on
+GitLab compare `git rev-parse HEAD` with the pushed branch yourself first.
+
+**An agent invoked you on a `person` board, or a ticket on the branch is not in
+done: do not run it.** Hand the line back written out and ready to paste, with
+the target repository already filled in, and say the branch is pushed and
+waiting for a person to open it.
+
+### Ask for the board's reviewer
+
+When `pr_reviewer` names one, ask for it right after the pull request is
+opened — by whoever opened it, person or agent. On GitHub, with the script
+beside this file:
+
+```bash
+scripts/pr-round.sh request <owner/repo> <number> <pr_reviewer>
+```
+
+`copilot` asks GitHub Copilot by its bot login; `org/team` asks a team; any
+other value is a login. On GitLab:
+
+```bash
+glab mr update <number> --repo <owner/repo> --reviewer <pr_reviewer>
+```
+
+Exit 4 from the script means the reviewer could not be asked — Copilot not
+enabled for the repository, a login without access. It is not a reason to
+close anything: the pull request stays open, you report the reason gh gave,
+and the round below waits for whoever reviews it instead. Exit 3 means gh is
+not signed in to github.com: report the `gh auth login` line it printed and
+stop — nothing was written, unless it says the sign-in ran out half way,
+from any command: then say which answers went out before it.
 
 ## Answering review comments
 
-Once a person has opened the pull request, the branch is yours to push to and
-the thread is yours to answer.
+Once the pull request is open — a person opened it, or the board said `agent`
+and you did — the branch is yours to push to and the thread is yours to answer.
+
+One round is: every comment that is open now gets its answer, every thread is
+resolved, and the review is asked for again. Then you stop and report; the
+next round starts when somebody invokes this role again, never from a loop of
+your own. On GitHub the script beside this file does the parts that need the
+API, against `<owner/repo>` as settled above — in a fork the target, never
+`origin`:
+
+```bash
+scripts/pr-round.sh threads  <owner/repo> <number>   # open review threads, one JSON line each
+scripts/pr-round.sh comments <owner/repo> <number>   # conversation and review bodies: no thread
+```
+
+`threads` lists only threads nobody resolved yet, so a second round never
+answers a point twice. For each of them, in order:
+
+1. Fix it, if it is right and in scope: one commit, the ticket's handle in the
+   subject, pushed.
+2. Write the answer to a file — `Fixed in <sha>: <what changed>` with the
+   commit you just pushed, or the reason it stays as it is.
+3. `scripts/pr-round.sh reply <owner/repo> <number> <thread id> <file>` —
+   answers the thread and resolves it.
+
+A thread whose point you decline is answered and resolved too: the answer is
+the record, and the reviewer reopens it if they disagree.
+
+`comments` lists what cannot be resolved — a remark on the conversation, the
+body of a submitted review. Answer the ones that ask something with
+`scripts/pr-round.sh comment <owner/repo> <number> <file>`; a review body that
+only summarises its own threads needs no answer. Read the list against the
+answers already on the pull request, and skip what you answered in an earlier
+round; `comment` posts nothing where the same words under the same login are
+already there, and two sessions posting at once leave one copy.
+
+When every thread is answered, ask again:
+`scripts/pr-round.sh request <owner/repo> <number> <pr_reviewer>` — or the
+person who reviewed, when the board names none.
+
+On a board whose `pr_when` is `signoff`, report where the round stands with
+`scripts/pr-round.sh settled <owner/repo> <number>`: exit 0 is what lets a
+ticket of this branch into done, exit 3 lists what still holds it. On GitLab
+the merge request itself says it:
+
+```bash
+glab api "projects/<owner%2Frepo>/merge_requests/<number>" | jaira json get blocking_discussions_resolved   # true, or done waits
+```
+
+On GitLab there is no script; `glab api` does the same three steps. Name the
+project as `<owner/repo>` with its slash written `%2F` — never `:id`, which
+glab fills in from the repository of the current directory, `origin`, and in a
+fork that is the wrong project:
+
+```bash
+glab api "projects/<owner%2Frepo>/merge_requests/<number>/discussions"                  # each .notes[0].resolvable and .resolved
+glab api --method POST "projects/<owner%2Frepo>/merge_requests/<number>/discussions/<id>/notes" -F body=@<file>
+glab api --method PUT  "projects/<owner%2Frepo>/merge_requests/<number>/discussions/<id>?resolved=true"
+```
+
+Answer only the discussions whose notes are resolvable and not resolved yet;
+one that is not resolvable is the conversation, answered and left as it is.
+
+The script exits 3 before writing anything when gh is not signed in, and 1
+with gh's own message when a write fails half way. Then report which threads
+are answered and which are not — the next round picks up the rest, because
+`threads` lists them still open. Running `reply` again on a thread whose answer
+went through but whose resolve did not only resolves it: the reviewer never
+gets the same answer twice. Two sessions answering one thread at the same
+moment leave one answer too: after posting, `reply` reads the thread back and
+removes its own copy when the same words of the same login stand above it.
 
 - One comment, one reply, one commit. Do not batch a reviewer's five points into
   one commit that none of them can be reverted out of.
@@ -312,8 +487,10 @@ the thread is yours to answer.
 - On GitHub: never `gh pr merge`. Never `gh pr review --approve`.
 - On GitLab: never `glab mr merge`. Never `glab mr approve`.
 - `gh pr create` / `glab mr create` is yours to run **only** when a person
-  invoked this role. Invoked by an agent, writing that line out is the job and
-  running it is the person's.
+  invoked this role, or the board's `.jaira/pr` says `agent` and `jaira roles
+  pr-gate` passed. Otherwise, invoked by an agent, writing that line
+  out is the job and running it is the person's.
+- `.jaira/pr` never reaches merge or approve. No setting does.
 - Never force-push a branch someone has already reviewed. If history must
   change, say so and ask first.
 - Never close a pull request that a person opened.

@@ -353,7 +353,8 @@ A worktree under the repository is a second copy of the sources on another
 branch, and `grep -r`, `find` and `ls -R` walk straight into it. Remove nothing
 you did not create, and no worktree before its ticket is in `done` — the pull
 request comes later and is not yours: push the branch when asked, never open,
-merge or approve a pull request. Your own tab is not yours to close either.
+merge or approve a pull request. Your own tab closes only the way "Report"
+says, through `close-tab.sh`, never by hand.
 
 ## When to stop and hand back
 
@@ -397,3 +398,21 @@ Three lines at the end, on top of the per-lane lines:
   `context unknown` where that tool is not there. The teamlead reads it off
   this line to know what sending the next round back to you would cost
 - what is open, and whether it needs a person
+
+Started with `--parent`, the three lines go to the parent with `SendMessage`.
+Once it has taken them, close your own tab as the very last call of your turn:
+
+```bash
+jaira-dispatcher/scripts/close-tab.sh --parent <session> <ticket id>
+```
+
+(`../jaira-dispatcher/scripts/` from this file, as in "Starting another
+agent".) Nobody needs your context any more: a ticket given back gets a new
+worker, and what you knew is on the ticket. The script decides, not you — it
+closes only when the ticket sits in a person's lane or in done, has no open
+question and your worktree holds nothing `uncommitted.sh` counts — it lets
+through only new or changed ticket and milestone files under `.jaira/`, so a
+changed lane, tag or logbook file keeps the tab — and otherwise prints
+`kept <ticket>: <reason>` and leaves the tab. A message that did not reach the
+parent means no `--parent` here: the report is then in your tab, and the tab
+stays. Without a parent you never run it.

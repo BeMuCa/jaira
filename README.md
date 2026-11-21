@@ -245,20 +245,24 @@ and names `jaira update --roles`.
 
 **No update path changes whether the board is shared.** `jaira update`,
 `jaira self upgrade`, `go install` of a newer build, the first command after
-the binary changed, and `jaira init` run again all leave `.gitignore` exactly
-as it was: a shared board stays shared, a private one stays private. Only
-`jaira share` and `jaira share --undo` change it.
+the binary changed, and `jaira init` run again leave a shared board shared and
+a private one private. Only `jaira share` and `jaira share --undo` change it.
+The one thing `jaira update` moves is where a private board is excluded: an
+entry an older jaira wrote into `.gitignore` goes to `.git/info/exclude`, and
+the changed `.gitignore` is yours to commit once.
 
 ## Start
 
 ```bash
 cd your-repo
-jaira init      # creates .jaira/, private and gitignored
+jaira init      # creates .jaira/, private: excluded in .git/info/exclude
 jaira           # opens the board
 ```
 
-**A board starts private.** `init` gitignores it, so your tickets are yours alone.
-When you want the team to have them:
+**A board starts private.** `init` excludes it in `.git/info/exclude`, so your
+tickets are yours alone. That file belongs to the repository's git directory,
+covers every worktree, and never shows up in a diff: the tracked `.gitignore`
+stays untouched. When you want the team to have them:
 
 ```bash
 jaira share
@@ -1267,7 +1271,11 @@ The pull request belongs to the maintainer from the moment it exists. An agent
 pushes its branch and stops there: it does not open the pull request, does not
 merge one, and does not approve one. Opening it is the maintainer's call, given
 as an instruction — so whoever wrote the change is never whoever decides it
-arrives.
+arrives. This repository's board has no `.jaira/pr`; a board
+that commits one saying `agent` lets jaira-role-pr open the pull request once
+`jaira roles pr-gate` finds every ticket on the branch in done, or in signoff
+where `.jaira/pr-when` says so — merging and approving stay the maintainer's
+there too.
 
 Layering is enforced by the module graph: `core/` imports nothing from `cmd/` or
 `internal/`. The CLI and the TUI are peers over the same core, which is the only
