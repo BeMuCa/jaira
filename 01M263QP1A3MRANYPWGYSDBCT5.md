@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-21T08:22:35Z
+updated-at: 2026-11-21T08:22:39Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -32,7 +32,7 @@ round: 5
 review-gaps: |-
   note: core/board/announce_test.go:232 - the doc comment still names the old test TestAgentNoteSaysTheTicketCannotRideOnAnUnsharedBoard; the func is TestAgentNoteNamesProofAndTheUnsharedBoardCaveat
   note: core/release/notes/SDBCT5.md:2 lists jaira, jaira-worker and jaira-role-lane but not jaira-role-pr, whose point 2 also changed and is refreshed by the same jaira update --roles
-test-verdict: "pass: go test ./... -race RC=0; TestAgentNoteNamesProofAndTheUnsharedBoardCaveat RC=0; DoD 1-7 verified in the tree; scratch board (git init + jaira init with this build): CLAUDE.md/AGENTS.md carry the reworded caveat, .jaira/ stays out of git; go test ./core/role ./core/shipped green after appending 3 manifest hashes"
+test-verdict: "pass: no code change since 99be9268; go test -race ./... RC=0 at 24658f47, go test ./core/board ./core/role ./core/shipped RC=0 at 99be9268; DoD 1-7 hold in the tree"
 hunt-verdict: "pass: bughunt done at 99be9268 (diff since d71e5e86: 99be9268 + shipped.sha256 union of 24658f47), 0 change, 0 pre-existing"
 review-verdict: "pass - all 7 DoD items hold in the diff; current hashes of the 4 changed roles are in shipped.sha256; .claude/skills/jaira equals core/role/jaira byte for byte; agent blocks in CLAUDE.md and AGENTS.md are identical; no further live commit line names .jaira/tickets without the caveat; go test core/board core/role core/shipped internal/cli -count=1 green. Two cosmetic notes, no blocker."
 review-round: 4
