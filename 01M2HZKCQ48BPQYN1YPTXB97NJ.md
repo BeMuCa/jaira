@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T09:17:27Z
+updated-at: 2026-11-21T09:17:58Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -43,8 +43,8 @@ review-gaps: |-
   note: isPlainMerge vergleicht mit git merge-tree in Default-Einstellungen; ein Merge mit -X oder anderer Rename-Konfiguration faellt geschlossen durch - sicher, die Meldung nennt ihn dann als Commit ohne Ticket
   note: der Ticket-Status im Gate kommt aus dem Store des Zweigs, nicht aus dem Basis-Zweig; eine selbst auf done gesetzte Ticketdatei kaeme unter none ohne Leser durch - vorbestehend fuer agent, unter none ohne PR als Netz schwerer
   note: go test ./core/... ./internal/... und claude plugin test im Cockpit (217 pass) gruen
-test-verdict: "fail (round 13): -race RC=0 at df8a423f; bughunt change: a branch committing .jaira/pr none over a base saying agent lands without a pull request (role reads pr off disk, agent gate exits 0)"
-hunt-verdict: "change (round 15): landing decided off the branch's .jaira/pr, gate checks the base's agent rules"
+test-verdict: "fail (round 14): -race RC=0 at 613829d0; bughunt change: plain pr-gate (the open question) exits 0 over a base saying none, so a branch committing .jaira/pr agent opens a PR on a no-PR board"
+hunt-verdict: "change (round 16): open gate never refuses a none base"
 claimed-by: DESKTOP-RFTCH11-2127254
 claimed-at: 2026-11-21T08:46:28Z
 review-verdict: "Zurueck nach in-progress: der Kern ist sauber und gut getestet (strenges Parsen, byte-gleicher Block, Gate fail closed, nie --force), alle Tests gruen. Ein Defekt im neuen none-Pfad: auf einem nicht geteilten Board behauptet roles list 'none, shared with the board', das Gate verweigert mit falscher Ursache und verweist auf eine create line, die es unter none nicht gibt. Sicher (nichts landet), aber genau die Solo-Zielgruppe trifft das."
