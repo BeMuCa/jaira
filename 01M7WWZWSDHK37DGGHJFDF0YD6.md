@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:44:40Z
+updated-at: 2026-11-21T09:46:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3647270
 claimed-at: 2026-11-21T09:36:24Z
@@ -198,3 +198,4 @@ back-count: 1
 - **2026-11-21 09:44 · Alexander Sacharov** — round 14 (teamlead give-back, final): the mtime heuristic is gone. core/gitrepo HuntCoverage compares commits only: ok (no ticket commit on hunted files since), fail (one since, or HEAD not descending from the hunt), unknown (a hunted file changed and not committed, or git cannot answer) - no clock read anywhere, so a clock never makes it red. brief bughunt = {at, state: ok|fail|unknown|skipped}; the pane draws unknown as a dim '?'. jaira validate warns bad_stop_after_fix for a value read as off ('yes'). in-progress prompt: alternating loop lanes never reach count 3 - count yourself; conversational commits after the hunt read fail until the next hunt (also in --brief help). TestHuntCoverage 22 cases (changed_test.go renamed huntcoverage_test.go), TestUnreadableStopAfterFixIsReported.
 - **2026-11-21 09:44 · Alexander Sacharov** — critique round 14: none - read 4ddb51bc. One state word instead of on_head/skipped booleans: the templates copy the word, nothing derives it twice; HuntCoverage keeps isBoardData/huntedSpecs/namesTicket, only the clock went. optimize: writtenSince and its time import removed, anyCode serves log, diff and ls-files.
 - **2026-11-21 09:44 · Alexander Sacharov** — testing round 14: bughunt running over the diff since 220d5b51 at 4ddb51bc.
+- **2026-11-21 09:46 · Alexander Sacharov** — bughunt: change: internal/cli/tickets.go:949 (newestHunt) - every HuntCoverage error becomes state unknown, including 'no commit' from core/gitrepo/git.go:357 (rev-parse --verify), so a hunt commit this repository does not have (branch rebased and force-pushed, seen from a fresh clone; short hash gc'd) reads as a dim '?' instead of fail, while one that exists but is not an ancestor reads fail; release note core/release/notes/DF0YD6.md and the huntState doc both promise fail when the checkout does not contain the hunt's commit, and before 4ddb51bc both cases read on_head false; on a stop-after-fix ticket the missing commit also stays unknown instead of skipped; blame: 4ddb51bc (names DF0YD6); ran: scratch repo, branch binary, notes 'bughunt: done at <HEAD>' -> state ok, 'done at deadbee' -> state unknown, 'done at <commit on another branch>' -> state fail
