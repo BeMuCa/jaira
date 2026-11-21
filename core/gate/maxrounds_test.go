@@ -85,3 +85,27 @@ func TestMaxRoundsFollowsTheLaneFile(t *testing.T) {
 		t.Error("max-rounds: 1 let a second send-back through")
 	}
 }
+
+// The hand-off the refusal prescribes is never refused itself, wherever the
+// board draws the question lane: earlier than the loop lane, moving there is a
+// send-back too.
+func TestMaxRoundsLetsTheHandOffToAQuestionLaneThrough(t *testing.T) {
+	for _, earlier := range []string{"backlog", "todo", "in-progress"} {
+		env := testEnv(t)
+		q, ok := env.Lanes.Get(earlier)
+		if !ok {
+			t.Fatalf("no %s lane", earlier)
+		}
+		q.RequiresQuestion = true
+		crit, _ := env.Lanes.Get("critique")
+		crit.RejectsTo = []string{"in-progress", earlier}
+
+		tk := ticketWith("")
+		tk.Status = "critique"
+		tk.BackFrom, tk.BackBy, tk.BackCount = "critique", ticket.BackByLane, 3
+		vs := CheckAdvance(env, tk, Request{To: earlier, Question: "is the definition of done wrong?"})
+		if v := findViolation(vs, CodeMaxRounds); v != nil {
+			t.Errorf("hand-off to question lane %s refused: %s", earlier, v.Message)
+		}
+	}
+}
