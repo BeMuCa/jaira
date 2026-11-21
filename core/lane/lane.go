@@ -146,6 +146,15 @@ type Lane struct {
 	// so a person's send-back, or one from another lane, starts it again.
 	MaxRounds int
 
+	// VerdictAccept and VerdictSendBack are the words review-verdict may
+	// start with on this lane, and what each means: one lets the ticket go on,
+	// the other sends it back. Anything else is no verdict. The gate reads the
+	// word and refuses a move that goes the other way — a reviewer that wrote
+	// "send-back" cannot have its ticket land in sign-off. Both empty means the
+	// lane declares no vocabulary and the verdict is free text, as before.
+	VerdictAccept   []string
+	VerdictSendBack []string
+
 	// RequiresSpecified marks the first lane, in precedence order, that sets
 	// this: the boundary between thinking about a ticket and working on it.
 	// Everything before it is a place a half-formed ticket may sit; nothing at
@@ -354,6 +363,16 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 	l.RequiresCommits = boolOf("requires-commits")
 	l.RequiresOption = strings.TrimSpace(str("requires-option"))
 	l.RejectsTo = rejectsTo(f)
+	l.VerdictAccept = verdictWords(listOrScalar(f, "verdict-accept"))
+	l.VerdictSendBack = verdictWords(listOrScalar(f, "verdict-send-back"))
+	for _, w := range l.VerdictAccept {
+		if slices.Contains(l.VerdictSendBack, w) {
+			return nil, fmt.Errorf("lane %s: verdict %q is both verdict-accept and verdict-send-back", source, w)
+		}
+	}
+	if len(l.VerdictAccept)+len(l.VerdictSendBack) > 0 && !slices.Contains(l.OutputProduces, ticket.FieldReviewVerdict) {
+		return nil, fmt.Errorf("lane %s: verdict-accept and verdict-send-back need %s in output-produces — they are the words that field takes", source, ticket.FieldReviewVerdict)
+	}
 	l.Context = strings.TrimSpace(str("context"))
 	if l.Context != "" && l.Context != ContextFresh && l.Context != ContextShared {
 		// Fresh is the safe reading of a value nobody can read: a typo then
@@ -422,10 +441,16 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 // Scalar refuses a sequence and List refuses a scalar, so asking both
 // and taking whichever answered is the whole of it.
 func rejectsTo(f *ticket.Fields) []string {
+	return listOrScalar(f, "rejects-to")
+}
+
+// listOrScalar reads key as a list or, failing that, as one scalar, and drops
+// empty entries.
+func listOrScalar(f *ticket.Fields, key string) []string {
 	var out []string
-	items, err := f.List("rejects-to")
+	items, err := f.List(key)
 	if err != nil || len(items) == 0 {
-		v, _, err := f.Scalar("rejects-to")
+		v, _, err := f.Scalar(key)
 		if err != nil {
 			return nil
 		}
@@ -936,6 +961,8 @@ func lanesEquivalent(base, replacement *Lane) bool {
 		base.Prompt == replacement.Prompt &&
 		slices.Equal(base.RejectsTo, replacement.RejectsTo) &&
 		base.MaxRounds == replacement.MaxRounds &&
+		slices.Equal(base.VerdictAccept, replacement.VerdictAccept) &&
+		slices.Equal(base.VerdictSendBack, replacement.VerdictSendBack) &&
 		slices.Equal(base.InputRequires, replacement.InputRequires) &&
 		slices.Equal(base.OutputProduces, replacement.OutputProduces)
 }

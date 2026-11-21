@@ -37,6 +37,8 @@ const (
 	CodeStepNotChosen   = "step_not_chosen"
 	CodeNotOwner        = "not_owner"
 	CodeMaxRounds       = "max_rounds"
+	CodeVerdictSendBack = "verdict_sends_back"
+	CodeVerdictUnknown  = "verdict_unknown"
 )
 
 // Violation is one reason a move was refused. Field is set when the fix is to
@@ -475,7 +477,75 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 		}
 	}
 
+	// A verdict says which way the ticket goes, and the move must go that way.
+	// Nothing else read the field before: a review that wrote "send back"
+	// still saw its ticket land in sign-off, in front of a person, unapproved.
+	// Only a lane that declares its words is read — its verdict is not free
+	// text — and only a forward move past it is refused: sending back and
+	// parking accept nothing. A move made in the board is a person deciding.
+	if cur, ok := env.Lanes.Get(t.Status); ok && cur.DeclaresVerdicts() && to > from && !parking && !req.Interactive {
+		vs = append(vs, verdictAgainstMove(env.Lanes, cur, t, target)...)
+	}
+
 	return vs
+}
+
+// verdictAgainstMove refuses a forward move out of cur whose review-verdict
+// sends the work back, or is no verdict at all.
+func verdictAgainstMove(set *lane.Set, cur *lane.Lane, t *ticket.Ticket, target *lane.Lane) Violations {
+	kind, word := cur.ReadVerdict(t.ReviewVerdict)
+	back := sendBackTo(set, cur)
+	switch kind {
+	case lane.VerdictSendBack:
+		return Violations{{
+			Code:  CodeVerdictSendBack,
+			Field: ticket.FieldReviewVerdict,
+			Message: fmt.Sprintf(
+				"%s says %q: lane %q sent %s back, so it may not go on to %q. Move it back to %s — or, as the person deciding, pass --force",
+				ticket.FieldReviewVerdict, word, cur.ID, ticket.Handle(t.ID), target.ID, back),
+		}}
+	case lane.VerdictUnknown:
+		return Violations{{
+			Code:  CodeVerdictUnknown,
+			Field: ticket.FieldReviewVerdict,
+			Message: fmt.Sprintf(
+				"%s starts with %q, which lane %q does not know: begin it with %s to let the ticket go on, or %s and move it to %s — 'jaira set %s %s=\"<word>: <reason>\"'",
+				ticket.FieldReviewVerdict, word, cur.ID, quoteAll(cur.VerdictAccept), quoteAll(cur.VerdictSendBack), back,
+				ticket.Handle(t.ID), ticket.FieldReviewVerdict),
+		}}
+	}
+	return nil
+}
+
+// sendBackTo names where a sent-back ticket goes from cur: its declared back
+// edges, else the last earlier lane that produces the outcome — the lane the
+// work was done in, in-progress on the default board — else "an earlier lane".
+func sendBackTo(set *lane.Set, cur *lane.Lane) string {
+	if len(cur.RejectsTo) > 0 {
+		q := make([]string, len(cur.RejectsTo))
+		for i, id := range cur.RejectsTo {
+			q[i] = fmt.Sprintf("%q", id)
+		}
+		return strings.Join(q, " or ")
+	}
+	at := set.Index(cur.ID)
+	for i := at - 1; i >= 0; i-- {
+		if slices.Contains(set.Lanes[i].OutputProduces, ticket.FieldOutcomeWhat) {
+			return fmt.Sprintf("%q", set.Lanes[i].ID)
+		}
+	}
+	return "an earlier lane"
+}
+
+func quoteAll(ws []string) string {
+	if len(ws) == 0 {
+		return "(none)"
+	}
+	q := make([]string, len(ws))
+	for i, w := range ws {
+		q[i] = fmt.Sprintf("%q", w)
+	}
+	return strings.Join(q, " or ")
 }
 
 // OutputOwed lists the fields lane l declares it produces that ticket t has not

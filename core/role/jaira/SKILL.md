@@ -367,8 +367,9 @@ plus `blocked`.
 - **review** — a second model judges the diff. Write, in this order:
   `jaira set <handle> review-summary="..."` (what the change does, from the
   diff), `jaira set <handle> review-gaps="..."` (what is missing — write
-  "none" if nothing is), `jaira set <handle> review-verdict="..."` (your
-  conclusion), and `jaira set <handle> review-check="..."` — how a person checks
+  "none" if nothing is), `jaira set <handle> review-verdict="accept: ..."`
+  or `"send-back: ..."` (your conclusion; the word decides where the ticket may
+  go — `send-back` lets it go back to in-progress only), and `jaira set <handle> review-check="..."` — how a person checks
   this themselves, as a flow: numbered steps, one action each, exact commands and
   exact paths, and what they should see. Every other field is an account of what
   happened; the check is the only one the reader can act on. All four are
