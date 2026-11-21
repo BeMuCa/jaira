@@ -17,6 +17,7 @@ func TestChangedSince(t *testing.T) {
 	const id = "01M7WWZWSDHK37DGGHJFDF0YD6" // handle DF0YD6
 	at := time.Date(2026, 11, 21, 8, 0, 0, 0, time.UTC)
 	later := at.Add(time.Hour)
+	hunted := time.Now().Add(-time.Minute) // the untracked files below are written after it
 	for _, tc := range []struct {
 		name    string
 		then    func(t *testing.T, dir string)
@@ -45,6 +46,22 @@ func TestChangedSince(t *testing.T) {
 		{"no paths reads all code", func(t *testing.T, dir string) {
 			fixtureCommit(t, dir, map[string]string{"b.go": "b2"}, "fix(DF0YD6): b", later)
 		}, nil, true},
+		{"an untracked file written after the hunt", func(t *testing.T, dir string) {
+			write(t, dir, "new.go", "n")
+		}, nil, true},
+		{"an untracked hunted file written after the hunt", func(t *testing.T, dir string) {
+			write(t, dir, "new.go", "n")
+		}, []string{"a.go", "new.go"}, true},
+		{"an untracked file written before the hunt", func(t *testing.T, dir string) {
+			write(t, dir, "new.go", "n")
+			old := time.Now().Add(-time.Hour)
+			if err := os.Chtimes(filepath.Join(dir, "new.go"), old, old); err != nil {
+				t.Fatal(err)
+			}
+		}, []string{"a.go", "new.go"}, false},
+		{"an untracked file outside the hunted paths", func(t *testing.T, dir string) {
+			write(t, dir, "new.go", "n")
+		}, []string{"a.go"}, false},
 		{"a ticket file only, no paths", func(t *testing.T, dir string) {
 			fixtureCommit(t, dir, map[string]string{".jaira/tickets/x.md": "t2"}, "DF0YD6 note", later)
 		}, nil, false},
@@ -63,7 +80,7 @@ func TestChangedSince(t *testing.T) {
 			dir, repo := fixtureRepo(t)
 			hunt := fixtureCommit(t, dir, map[string]string{"a.go": "a", "b.go": "b", "my dir/c.go": "c", ".jaira/tickets/x.md": "t"}, "feat(DF0YD6): start", at)
 			tc.then(t, dir)
-			got, err := repo.ChangedSince(hunt[:8], id, tc.paths)
+			got, err := repo.ChangedSince(hunt[:8], id, hunted, tc.paths)
 			if err != nil || got != tc.changed {
 				t.Errorf("ChangedSince = %v, %v; want %v", got, err, tc.changed)
 			}
@@ -72,7 +89,7 @@ func TestChangedSince(t *testing.T) {
 	t.Run("an unknown commit", func(t *testing.T) {
 		dir, repo := fixtureRepo(t)
 		fixtureCommit(t, dir, map[string]string{"a.go": "a"}, "start", at)
-		if _, err := repo.ChangedSince("deadbeef", id, []string{"a.go"}); err == nil {
+		if _, err := repo.ChangedSince("deadbeef", id, time.Now(), []string{"a.go"}); err == nil {
 			t.Error("an unknown commit read as unchanged")
 		}
 	})

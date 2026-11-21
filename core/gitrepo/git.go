@@ -16,6 +16,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -326,10 +327,12 @@ func (r *Repo) WorktreeDiff() (string, error) {
 // work other people reviewed — does not count, on the branch or after it was
 // merged; what a merge's conflict resolution wrote does not either. A commit
 // that is no ancestor of HEAD — the hunt ran on a branch this checkout does
-// not have — tells nothing and reads as changed. Paths are relative to the
+// not have — tells nothing and reads as changed. git keeps no history of an
+// untracked file, so one inside paths counts as changed when it was written
+// after hunted, the time the hunt finished. Paths are relative to the
 // repository root; none, or one that is neither in commit nor on disk (a
 // file list split at a space inside a name), means all code (codeOnly).
-func (r *Repo) ChangedSince(commit, ticketID string, paths []string) (bool, error) {
+func (r *Repo) ChangedSince(commit, ticketID string, hunted time.Time, paths []string) (bool, error) {
 	if !ticket.ValidID(ticketID) {
 		return false, fmt.Errorf("gitrepo: %q is no ticket id", ticketID)
 	}
@@ -354,7 +357,32 @@ func (r *Repo) ChangedSince(commit, ticketID string, paths []string) (bool, erro
 	if err != nil {
 		return false, err
 	}
-	return strings.TrimSpace(open) != "", nil
+	if strings.TrimSpace(open) != "" {
+		return true, nil
+	}
+	return r.untrackedSince(hunted, specs)
+}
+
+// untrackedSince reports an untracked file inside specs written after t.
+func (r *Repo) untrackedSince(t time.Time, specs []string) (bool, error) {
+	root, err := r.Root()
+	if err != nil {
+		return false, err
+	}
+	others, err := r.run(append([]string{"-c", "core.quotePath=false", "ls-files", "--others", "--exclude-standard", "--full-name", "-z", "--"}, specs...)...)
+	if err != nil {
+		return false, err
+	}
+	for _, p := range strings.Split(others, "\x00") {
+		if p == "" {
+			continue
+		}
+		fi, err := os.Stat(filepath.Join(root, filepath.FromSlash(p)))
+		if err != nil || fi.ModTime().After(t) {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // huntedSpecs turns a hunt's file list into pathspecs: each one literal, or

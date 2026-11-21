@@ -914,7 +914,7 @@ func lastHunt(repo *gitrepo.Repo, t *ticket.Ticket) *huntState {
 		if at := strings.LastIndex(text, "files: "); at >= 0 {
 			files = strings.Fields(text[at+len("files: "):])
 		}
-		changed, err := repo.ChangedSince(m[1], t.ID, files)
+		changed, err := repo.ChangedSince(m[1], t.ID, notes[i].At, files)
 		return &huntState{At: m[1], OnHead: err == nil && !changed}
 	}
 	return nil
