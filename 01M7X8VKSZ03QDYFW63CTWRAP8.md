@@ -1,7 +1,7 @@
 ---
 id: 01M7X8VKSZ03QDYFW63CTWRAP8
 title: "Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:31:36Z
+updated-at: 2026-11-21T08:32:02Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-31394
 claimed-at: 2026-11-21T08:01:32Z
@@ -33,7 +33,7 @@ outcome-what: "signoff role: one rule for stale results (CI ?, hunt ❌), follow
 outcome-why: "fresh review 21.11.: the role gave two answers for an older sha, the follow-up ticket could not leave the backlog, and the teamlead's list could drift from the role's"
 outcome-resolves: "both roles read a stale CI run as ? and a stale hunt as ❌; the pasted follow-up is complete; the teamlead names the same checks as the role"
 review-summary: "Ships a new read-only role /jaira-role-signoff that, for every ticket in signoff, reads jaira show --json fresh, finds the branch head by handle segment and ancestry over local and remote copies, and prints one status line (DoD, CI run for exactly that commit, bughunt note naming that commit, blockers, review verdict, noted returns), a table marking each open note 🔴/🟡/⚪/🔵, one recommendation by five return rules, and paste-ready accept/give-back/follow-up lines. The teamlead's 'Report to the human' now re-reads lanes and open PRs before any pending list and uses the same decision shape, pointing to the role for the checks and return rules; its hunt-cover check no longer assumes feat/<id>. Worker, dispatcher and jaira-role-pr run the project's CI gates locally before every push. README, the German how-to page, role_test.go, shipped.sha256 and a release note carry the new role."
-round: 11
+round: 12
 review-gaps: |-
   note: jaira-role-signoff '1. The status line' says each check is ✅ or ❌, the paragraphs below add ? for unknown CI and an empty head - one word ('✅, ❌ or ?') would stop a reader of the first sentence from rounding ? to ❌
   note: the accept line hard-codes --to done; correct on the default board, a board with a differently named terminal lane needs the person to change it (already a known limit in the trail)
