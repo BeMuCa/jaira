@@ -51,7 +51,8 @@ and spawn.sh then writes nothing into the worktree itself. Without it, a .env in
 the repository is copied and four port lines are appended. A setup that fails,
 or is there but not executable, stops the spawn before a tab opens.
 Its counterpart is .jaira/worktree-teardown, which reap.sh calls with the same
-four arguments before it removes the worktree, once the ticket's pull request
+four arguments — spawn.sh writes them down in the worktree's git directory,
+as jaira-setup — before it removes the worktree, once the ticket's pull request
 is merged — whatever the setup started (a container stack, its ports and
 volumes) is taken down there. See reap.sh --help.
 
@@ -207,6 +208,15 @@ if [ ! -d "$wt" ]; then
            "no worker started, worktree and branch $branch removed again" >&2
       exit 1
     fi
+    # What the setup was given, for reap.sh to hand .jaira/worktree-teardown
+    # once the ticket is merged. Written down, never worked out again later:
+    # from a name or a path the slug cannot be told for a worktree made from
+    # another worktree, and a wrong slug tears down another ticket's stack.
+    # In the worktree's own git directory, which 'git worktree remove' takes
+    # away with it.
+    rec="$(git -C "$wt" rev-parse --absolute-git-dir)/jaira-setup"
+    printf 'worktree=%s\nslug=%s\noffset=%s\nroot=%s\n' "$wt" "$slug" "$off" "$root" > "$rec" \
+      || echo "could not write $rec: reap.sh will not call .jaira/worktree-teardown for $wt" >&2
   # Only a repo that carries a container stack needs its own ports. A repo
   # without a .env has nothing to offset, and must not fail here.
   elif [ -f "$root/.env" ]; then
