@@ -1,7 +1,7 @@
 ---
 id: 01M7ZR6VCT7AQD88YMWARNZYJR
 title: "Cockpit-Workers: ein Steinbruch statt einzelner Bahnen, und nur Tickets mit eigenem Agenten"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,23 +21,40 @@ tags:
   - tui
 blocked-by: []
 related: []
-commits: []
+commits:
+  - fdccb30e38ff5f2dcdb402fb5434b5db2e107ac3
+  - 52bdc0f092efc097cf095885fc5c5c1100d5a891
+  - 330eb71c49f4193fbf1dd4397305c3832ebb3f68
+  - c6c7484433468c0001cc1a0491113ecf238177f4
+  - 71cb5b8d35d1b7c4759a6267480b1bf0c790fa40
+  - f26ec24615d5c5685d1ca9caa27b404be7488ecd
+  - 51b26c8184732372d1b3e2f67f93584008857706
 created-at: 2026-11-21T19:09:25Z
-updated-at: 2026-11-21T20:11:15Z
+updated-at: 2026-11-21T20:34:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-243922
 claimed-at: 2026-11-21T19:47:52Z
 outcome-what: "Workers-Tab neu: workersOf liefert nur echte Agenten (Herdr-Tab <ID>/<rolle> oder Subagent) mit Rolle und offenen DoD-Punkten; eine Szene mit einem Stein (stoneSize, wächst mit der Wurzel der offenen Punkte), Krabben links/rechts am Boden, kleine Krabben wenn zu viele; ein Brocken fällt, wenn die offenen Punkte weniger werden; darunter eine Zeile pro Agent (ID, Lane, Rolle, Zustand, seit wann, erste Zeile des letzten Berichts). Walk-/Bahn-Logik (progressOf, stepOf, Spot) entfernt."
 outcome-why: "Bahnen pro Figur brauchten ab 5 Agenten Scrollen, zeigten weder Rolle noch Dauer noch Tätigkeit, und Tickets mit offener Frage ohne Agent (auch fremde, seit Oktober liegende) standen als Figur da."
 outcome-resolves: "DoD 1-5: nur Agenten (Test), ein Stein mit Größenberechnung (Test), eine Zeile pro Agent (Test), live geprüft + Release-Note, 1-30 Agenten passen in 40×100 (parametrisierter Test)."
-review-summary: none
+review-summary: "Der Workers-Tab im Cockpit-Overview zeichnet nicht mehr eine ~6-zeilige Bahn pro Figur, sondern eine Szene: ein Stein in der Mitte, alle Agenten links und rechts davon auf einer Bodenlinie (große Krabbe, solange alle passen, sonst kleine; was nicht passt, steht als '+N more' im Bild). Die Steingröße wächst mit der Wurzel der offenen DoD-Punkte (superseded zählt nicht) aller Tickets mit Agent, jedes Ticket einmal (stoneOf/stoneSize in overview.ts); darüber steht 'N open'; sinkt die Zahl zwischen zwei Lesungen, fällt 6 Frames lang ein Brocken. Unter dem Bild eine Zeile pro Agent: ID, Lane, Rolle (Teil nach '/' im Herdr-Tab-Label oder 'subagent'), Zustand, Dauer seit das Cockpit ihn zuerst sah (workersSince je <id>/<rolle>) und die erste Inhaltszeile des letzten gespeicherten Berichts (reportLine in digest.ts, unter dem Reports-Lock gelesen; reine Tag-Zeilen werden übersprungen, spitze Klammern im Inhalt bleiben, kein Backtracking). Bild bekommt nur die Zeilen, die nach den Agent-Zeilen übrig bleiben, daher kein Scrollen. workersOf liefert keine Figur mehr für ein Ticket mit offener Frage ohne Agent; 'working' geht jetzt vor 'question'. Lauf-Logik (stepOf/progressOf/Spot) ist entfernt; Release-Note und shipped.sha256 sind dabei."
 round: 4
 back-from: testing
 back-by: lane
 back-count: 2
-review-gaps: "none — round 2 (c6c748443) adds one regex and manifest lines; nothing to remove. Round 1: big-crab places computed once; no existing duration formatter to reuse."
-test-verdict: "pass: round 2 — cockpit suite RC=0 (237), go test ./core/role ./core/shipped RC=0, go test ./... RC=0 earlier on c6c748443"
-hunt-verdict: "fail: bughunt done at c6c748443, 1 change blocker — TAGS_ONLY in digest.ts backtracks exponentially on '<a></a>'.repeat(n)+'x' (hangs the session on reading the Workers tab)"
+review-gaps: |-
+  note: overview-pane.tsx:219 - '+N more' wird nach den Krabben an x=0 in die oberste Zeile geschrieben; ist die oberste Figurenreihe dort (Szene voll), überschreibt der Text den Kopf der linkesten kleinen Krabbe. Fix: Text vor den Figuren zeichnen oder eine Zeile über top reservieren
+  note: overview-pane.tsx:263 - bei mehr Agenten als Pane-Zeilen (≈35+ bei 40 Zeilen) fällt das Bild weg und die Agent-Zeilen laufen doch über den Bildschirm; Tests decken bis 30 ab. Fix bei Bedarf: Zeilen kappen mit '+N more'
+  note: Dauer misst seit dem ersten Blick des Cockpits, nicht seit Agent-Start (bewusste Entscheidung laut Ticket); ein Agent, der schon Stunden lief, zeigt beim ersten Öffnen '<1m'
+test-verdict: "pass: round 3 on 71cb5b8d3 — cockpit suite RC=0 (237 incl. linear-time test over 4 adversarial lines), go test ./... RC=0; DoD 1-5 verified in the tree, live check 2026-11-21 via tmux + claude --plugin-dir; writes nothing to disk (atoms only)"
+hunt-verdict: "pass: bughunt done at 71cb5b8d3, 0 change; earlier rounds' change findings fixed (c6c748443, 71cb5b8d3); 1 pre-existing (subagent naming two handles counted at both) left as a note for the person — same subject"
+review-verdict: "Der Diff erfüllt alle fünf DoD-Punkte; claude plugin test: 237 pass, 0 fail. Nebenläufigkeit (reading-Sperre, Berichte unter dem Lock, kein verschachteltes locked), Fehlerpfade (Store-Fehler → Zeilen ohne Bericht), ungewöhnliche Eingaben (leerer/Tag-Bericht, 0 offen, viele Agenten) und Rechte (nichts Neues von außen) geprüft. Kein Blocker, nur drei kosmetische/Grenzfall-Notizen."
+review-round: 4
+review-verdict-gaps: |-
+  note: overview-pane.tsx:219 - '+N more' wird nach den Krabben an x=0 in die oberste Zeile geschrieben; ist die oberste Figurenreihe dort (Szene voll), überschreibt der Text den Kopf der linkesten kleinen Krabbe. Fix: Text vor den Figuren zeichnen oder eine Zeile über top reservieren
+  note: overview-pane.tsx:263 - bei mehr Agenten als Pane-Zeilen (≈35+ bei 40 Zeilen) fällt das Bild weg und die Agent-Zeilen laufen doch über den Bildschirm; Tests decken bis 30 ab. Fix bei Bedarf: Zeilen kappen mit '+N more'
+  note: Dauer misst seit dem ersten Blick des Cockpits, nicht seit Agent-Start (bewusste Entscheidung laut Ticket); ein Agent, der schon Stunden lief, zeigt beim ersten Öffnen '<1m'
+review-check: "1. Im Repo mit mehreren laufenden Agenten: claude --plugin-dir /home/alex/projects/.worktrees/jaira-rnzyjr/core/mod/builtin/jaira-cockpit (Terminal mind. 200 Spalten breit)  2. Overview öffnen, Tab 'Workers' klicken  3. Sehen: ein grauer Stein in der Mitte mit 'N open' darüber, alle Agenten als Krabben links/rechts daneben, darunter genau eine Zeile pro Agent mit ID, Lane, Rolle, Zustand, Dauer, Berichtszeile  4. Sehen: nichts muss gescrollt werden  5. Bei einem der Tickets einen DoD-Punkt abhaken (jaira dod <id> <n> --done --proof x): nach ≤5 s sinkt 'N open' um 1 und ein Brocken fällt rechts vom Stein  6. Ein Ticket mit offener Frage, aber ohne Agent, erscheint nicht im Tab"
 ---
 
 # Cockpit-Workers: ein Steinbruch statt einzelner Bahnen, und nur Tickets mit eigenem Agenten
@@ -86,3 +103,5 @@ hunt-verdict: "fail: bughunt done at c6c748443, 1 change blocker — TAGS_ONLY i
 - **2026-11-21 20:09 · Alexander Sacharov** — bughunt: change: blocker: core/mod/builtin/jaira-cockpit/hooks/digest.ts:118 - class: catastrophic backtracking in TAGS_ONLY. An empty element (<a></a>, <td></td>, <p> </p>) matches both the first branch whole and the second branch twice, so a line of n empty elements followed by any non-tag text tries 2^n splits before it fails. reportLine runs it synchronously on every line of the last kept report, for every ticket, on each Workers read (register.tsx:885, inside locked()), so one such report freezes the session's JS thread again on every refresh until a newer report replaces it. The report text is written by an agent. Example: '<a></a>'.repeat(26)+'x' takes 3.8 s, and each further pair multiplies that by about 2. Fix direction: make the branches disjoint (the second branch must not match a closing tag or an element that has a matching close), or test with a linear scan. Blocker because it is a hang of the host session (crash class); the trigger is rare. ran: node scratch script running the same regex for n=16..26 (23 ms, 56, 208, 873, 3813 ms); blame: c6c748443 (names RNZYJR)
 - **2026-11-21 20:09 · Alexander Sacharov** — bughunt: done at c6c748443 - 1 finding (1 change, 0 pre-existing), follow-up hunt since 330eb71c4: diff of digest.ts and board.test.ts, shipped.sha256 new and read whole (hashes match, go test ./core/role -run Shipped ok); concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/digest.ts core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx core/mod/builtin/jaira-cockpit/hooks/overview.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/RNZYJR.md core/shipped/shipped.sha256
 - **2026-11-21 20:11 · Alexander Sacharov** — Runde 3 in-progress: TAGS_ONLY ersetzt — Zeile wird an '>\s*<' in Teile geschnitten, jeder Teil gegen TAG oder ELEMENT (Name, dann nur nach Leerzeichen Attribute) geprüft: keine zwei Wege für einen Text, linear. Test misst 4 adversariale Zeilen à 5000-20000 Zeichen < 200 ms. Manifest neu geschrieben.
+- **2026-11-21 20:11 · Alexander Sacharov** — critique (Runde 4): liest nur 71cb5b8d3 — linearer Tag-Check; nichts dazu.
+- **2026-11-21 20:12 · Alexander Sacharov** — bughunt: done at 71cb5b8d3 - 0 findings, follow-up hunt since c6c748443: diff of digest.ts (tagsOnly/TAG/ELEMENT), board.test.ts and shipped.sha256 (new digest.ts hash matches, go test ./core/role -run Shipped ok); ran: node --experimental-strip-types scratch reportLine cases (whitespace-only elements, attributes, mixed case, '<ab>x</a>', '<a>>', trailing text: same verdict as the old pattern) and 100-200 KB adversarial lines (max 11 ms); concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/digest.ts core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx core/mod/builtin/jaira-cockpit/hooks/overview.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/RNZYJR.md core/shipped/shipped.sha256
