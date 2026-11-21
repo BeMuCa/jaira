@@ -1,6 +1,13 @@
 // Every text the cockpit shows a person, in English whatever language the
 // person speaks with Claude: one set of words, the same on every machine.
 
+// A text a person typed, as one line of a line: its whitespace, line breaks
+// included, collapsed, and cut at max characters with an ellipsis.
+function oneLine(text: string, max: number): string {
+  const flat = text.replace(/\s+/g, ' ').trim()
+  return flat.length <= max ? flat : `${flat.slice(0, max - 1).trimEnd()}…`
+}
+
 export const t = {
   waiting: 'Waiting for you',
   accept: 'Accept',
@@ -32,6 +39,13 @@ export const t = {
   accepted: (id: string, lane: string) => `${id} accepted: ${lane}`,
   returnedTo: (id: string, who: 'old' | 'new' | 'none') =>
     who === 'none' ? `${id} back in in-progress; no worker started (the ticket's note says why)` : `${id} given back to ${who === 'old' ? 'the worker that carried it' : 'a new worker'}`,
+  // The one line Accept and Give back hand this session, the teamlead's,
+  // after a move that went through: what happened, and what already runs.
+  toSessionAccepted: (id: string, from: string, to: string, next: string) =>
+    `jaira-cockpit: the person accepted ${id} in the cockpit (${from} -> ${to})${next ? `; ${oneLine(next, 200)}` : ''}`,
+  toSessionGivenBack: (id: string, from: string, who: 'old' | 'new' | 'none', reason: string) =>
+    `jaira-cockpit: the person gave ${id} back in the cockpit (${from} -> in-progress), ${who === 'old' ? 'handed to the worker that carried it' : who === 'new' ? 'a new worker started' : "no worker started (the ticket's note says why)"}: ${oneLine(reason, 120)}`,
+  afterAcceptFailed: (id: string) => `the next step after ${id} failed, see the cockpit`,
   failed: (what: string) => `${what} failed`,
   afterAccept: (id: string) => `Next step after ${id}`,
   staysDone: (id: string) => `${id} stays in done; start the next step by hand.`,
