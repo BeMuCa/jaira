@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T09:40:23Z
+updated-at: 2026-11-21T09:40:26Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -202,3 +202,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-21 09:34 · Alexander Sacharov** — review (fresh context, 21.11.): kein Blocker. Diff gegen alle 8 DoD gelesen, Module arrival.go, settings.go, gitrepo/named.go, cli/roles.go, reap.sh, Cockpit register.tsx ganz gelesen. go test der fuenf Pakete + claude plugin test (218/218) gruen. Nachgestellt: roles list --base nosuch/ref faellt still auf die Platte zurueck (note in review-gaps); die Tore verweigern das selbst mit no_such_ref.
 - **2026-11-21 09:35 · Alexander Sacharov** — Given back from signoff (Teamlead im Auftrag Alex 21.11. 10:40, letzte Runde): die drei known limits aus Runde 17 sind mechanisch, keine neue Heuristik - schliessen: (1) roles list --base <ref>, das kein Commit ist, scheitert mit Exit 3 und no_such_ref wie die Tore. (2) pr_source vergleicht mit der Merge-Basis (git diff base...HEAD -- .jaira/pr), nicht mit der Basis; kein share-Hinweis, wenn der Zweig nichts aendert. (3) Cockpit liest die Basis wie pr-gate --land (origin/<default>), nicht den lokalen Default-Branch. Je ein Test. Danach Diff-Hunt + review; was dann noch kommt, geht als known limit in signoff - endgueltig.
 - **2026-11-21 09:40 · Alexander Sacharov** — in-progress (Runde 16, letzte laut Teamlead): drei known limits aus Runde 17 geschlossen. (1) roles list --base mit nicht aufloesbarem Ref -> exit 3 no_such_ref, kein Rueckfall auf die Platte; Rolle sagt 'fetch, dann erneut'. (2) 'this branch changes .jaira/pr' nur, wenn die Platte von der Merge-Basis abweicht (gitrepo.MergeBase), nicht von der Basis. (3) Cockpit ohne Forge: Basis = origin/<default> (rev-parse --abbrev-ref origin/HEAD, sonst origin/main|master), lokal nur als letzter Rueckfall. Tests: TestRolesListBaseMustResolveAndComparesWithTheMergeBase; board.test.ts 'no forge names the base' (219 pass).
+- **2026-11-21 09:40 · Alexander Sacharov** — critique (Runde 19): drei mechanische Korrekturen am selben Prinzip, nichts zu sagen.
