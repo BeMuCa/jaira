@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:15:04Z
+updated-at: 2026-11-21T08:15:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
@@ -57,7 +57,8 @@ review-check: "1. cd into the repository on branch feat/0k8y6s  2. run: scripts/
   proof: scripts/shipped-history.sh --write (mktemp + mv); core/shipped/history_test.go TestWriteReplacesTheManifest, TestUnreadableBlobStopsTheScript/shipped-history.sh_--write (manifest unchanged, no temp left)
 - [x] TestEveryManifestPathExists panict nicht bei einer kurzen Manifestzeile
   proof: core/shipped/shipped_test.go TestEveryManifestPathExists (strings.Cut statt l[66:])
-- [ ] Eine Datei im Index, die auf der Platte fehlt, stoppt den Generator statt einer Zeile mit leerem Hash
+- [x] Eine Datei im Index, die auf der Platte fehlt, stoppt den Generator statt einer Zeile mit leerem Hash
+  proof: scripts/shipped-history.sh generate() sum=$(sha256sum <"$f") || exit 1; core/shipped/history_test.go TestFileMissingFromDiskStopsTheScript (rot ohne Fix)
 
 ## Options
 
