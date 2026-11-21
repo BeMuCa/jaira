@@ -147,6 +147,10 @@ func TestPrePushScan(t *testing.T) {
 		{"committer name", func(r *scanRepo) {
 			r.commit("feat: x", nil, "GIT_COMMITTER_NAME=Acme-Corp build")
 		}, "", "", 3, []string{"committer name: matches"}, []string{"author name"}},
+		{"branch name", func(r *scanRepo) {
+			r.git("branch", "-m", "acmecorp-fix")
+			r.commit("feat: b", map[string]string{"b.txt": "clean\n"})
+		}, "", "", 3, []string{"branch name: matches the denylist"}, nil},
 		{"this machine's name only warns", func(r *scanRepo) {
 			r.commit("feat: h", map[string]string{"t.md": "claimed-by: DESKTOP-X1-123\n"})
 		}, "", "", 0, []string{"warning: ", "t.md:1: names this machine", "the push may go on"}, []string{"do not push"}},
@@ -241,6 +245,7 @@ func TestPrePushScanReadsTheListAsWritten(t *testing.T) {
 		{"CRLF", "foo\r\nacmecorp\r\n", "for acmecorp.\n", "", 3, "matches the denylist"},
 		{"C locale still folds non-ASCII", "müller\n", "MÜLLER GmbH\n", "C", 3, "matches the denylist"},
 		{"a pattern is taken as written, its trailing blank included", "acme\\ \n", "for acme corp\n", "", 3, "matches the denylist"},
+		{"a non-ASCII pattern matches UTF-8 text only, as the usage says", "müller\n", "M\xfcller GmbH\n", "", 0, "1 pattern(s)"},
 		{"a commit that is not UTF-8, in a UTF-8 locale", "acmecorp\n", "caf\xe9 acmecorp\n", "C.UTF-8", 3, "matches the denylist"},
 	} {
 		t.Run(c.name, func(t *testing.T) {

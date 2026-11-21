@@ -13,7 +13,8 @@ pre-push-scan.sh <base>
 Checks every commit of <base>..HEAD — each one, not only the sum, because a
 push publishes the whole history — in every place the push publishes: the
 lines it adds, the names of the files it changes, its message, and its
-author's and committer's name and email. A merge is checked for what it adds
+author's and committer's name and email — and the name of the branch the
+push publishes, HEAD's. A merge is checked for what it adds
 itself, a conflict resolution, and not for what it brings in from its
 parents.
 
@@ -26,6 +27,8 @@ Two lists are matched, case-insensitively:
                  UTF-8, with or without a BOM, or UTF-16 with its BOM; any
                  other encoding is refused rather than half read. Lines may
                  end in LF, CRLF or CR; a pattern is taken as written.
+                 A pattern with non-ASCII letters matches text written in
+                 UTF-8 only, not the same word in Latin-1 or UTF-16.
                  A hit stops the push. No file, or one with no pattern in it:
                  the scan says the strings were not checked and goes on.
   this machine   its name as 'uname -n' gives it, up to the first dot
@@ -33,7 +36,7 @@ Two lists are matched, case-insensitively:
                  A hit is a warning: it names the place and does not stop.
 
 A hit is printed as '<commit> <file>:<line>: ...', '<commit> commit
-message: ...' or '<commit> author email: ...'. Where a file's own name
+message: ...', '<commit> author email: ...' or 'branch name: ...'. Where a file's own name
 matches, the file is named by its number in
 'git diff-tree --cc -r --name-only <commit>' instead, because its name is
 the mention.
@@ -219,6 +222,14 @@ while IFS= read -r c; do
   scan "$c"
   count=$((count + 1))
 done <"$tmp/commits"
+
+# The branch name leaves with the push too. A detached HEAD has none.
+git symbolic-ref --short -q HEAD >"$tmp/branch" || true
+for kind in deny host; do
+  if [ "$kind" = deny ]; then pat=$deny mode=-E; else pat=$hostfile mode=-F; fi
+  lines "$pat" "$mode" "$tmp/branch" >"$tmp/n"
+  [ ! -s "$tmp/n" ] || report "$kind" "branch name"
+done
 
 echo "pre-push-scan: $count commit(s) of $base..HEAD; denylist: $denylist_state; $host_state"
 [ -z "$fold_state" ] || echo "pre-push-scan: $fold_state"
