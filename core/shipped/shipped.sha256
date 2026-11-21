@@ -30,6 +30,7 @@ bdcd693c2a44080b9c74f1a1cbe1dde38430f5333b6ed018da01578448637186  core/lane/buil
 5e8109ebd72f3be5d78f0b29643f60991c40a3414179f5816cd9c0e84484b7fb  core/lane/builtin/20-in-progress.md
 745e900478244657930bd7cf1274299b09a12f9676b6dd7b2557af4c5219f465  core/lane/builtin/20-in-progress.md
 78af7a728319da52b9e8c96a118ffc1b7c42467f51c4f9bc0b15706a12a4f02b  core/lane/builtin/20-in-progress.md
+7d8aedbaff4ee9293f04bb241cb42695fa257453743e074fadfae05d261fc950  core/lane/builtin/20-in-progress.md
 8d7c9324c9bef01059dba16a8c07f8deea70ea8c100c3dcf4513bb6383f13a6c  core/lane/builtin/20-in-progress.md
 8e3f96a03b884c27721767b7ec36d918a65702374f500c5d7cf11045cbf62f5f  core/lane/builtin/20-in-progress.md
 8f0a238347a9128b7f521b073f9243b72ad548dee5173270d34f9168b8e5f505  core/lane/builtin/20-in-progress.md
@@ -45,10 +46,12 @@ d3170152c9fb77c5deeef2aa10124acf68157ce6574e41c3947bc642c39cd4ee  core/lane/buil
 d3e1e60962c2a2310155338649d869ce86db4d47c1e1f716633786eeebc0a86d  core/lane/builtin/20-in-progress.md
 dea4f27bb429f6bd1a65bb2abba453146aea1f0413ade312b486cc23a3a93b79  core/lane/builtin/20-in-progress.md
 1a5497ad8cde416fcbed6c315f7d4756e464283348f4d03eb943c75ea7a617a1  core/lane/builtin/25-critique.md
+37d32fbd2fe80053a095a762bcc187bc7095a2c85381b140e5167cc84916267e  core/lane/builtin/25-critique.md
 7d3e33a062df131ce294a631d973fcb9202c9119bae84185affa9248692f3257  core/lane/builtin/25-critique.md
 9532957a8c333e6916324167c58bbf949381b91693be3a55a20c79bccf19afcd  core/lane/builtin/25-critique.md
 bb28d1a25d78659db823bca81617a8c7fc7d425dabd6b57a441e606671fa46b6  core/lane/builtin/25-critique.md
 dabf76d9aa42f5390c85979278d0090c06299cadef60128551c2693aaa27306c  core/lane/builtin/25-critique.md
+04212e036c61800c9740100d4d3b540c5b6df8466bb3f6c6cd7fb12bc805a0bc  core/lane/builtin/26-optimize.md
 430c375348fd618c7f910e371802e1142aac07181e1a338ef19b5dfd427796d5  core/lane/builtin/26-optimize.md
 6395e800b10c8ca28a63d70e92e88bf0c3e3bbf14f5a189fff450881a45b021b  core/lane/builtin/26-optimize.md
 7118f4ba21aaff3649c2a09d3a40bdd84af065267abf7f9c0aef39603b9fd86a  core/lane/builtin/26-optimize.md
@@ -63,6 +66,7 @@ ff24696adad9b7a6e8f96cd844ea3add2b3ff01e28506bbd3831fd7072f24371  core/lane/buil
 a0051c0e49884b9677fc1d8a1147a900ee59cd502edaf0cb982d4c2e90765748  core/lane/builtin/27-testing.md
 b884a80a4264c40a2cb85a59602178b17eb6e47252e6f060a81acc46b2b1b031  core/lane/builtin/27-testing.md
 c5cc9c7468fa5e36ed9a723960cee2bb7c188cf47c3242a6f7ebe83d6a06880f  core/lane/builtin/27-testing.md
+d6a9528cf268a1f732fd63e8972b7fcad23172f9392fb4efa1c61a1952d54c76  core/lane/builtin/27-testing.md
 de09fccd0954bcdfc34386e2d753f363405e78b7a408047855464619d27c46e4  core/lane/builtin/27-testing.md
 e08166def3ea7c06bd6ff3a9c0b277686a65b26b4a696ab943bf66a936dcb733  core/lane/builtin/27-testing.md
 ec553a06d261c42622f960817ef1fe6425b6e1dea8487df246c5be7fda1934ab  core/lane/builtin/27-testing.md

@@ -20,7 +20,7 @@ func (s *Set) Facts() []board.LaneFact {
 			ID: l.ID, Name: l.Name, Description: l.Description,
 			ModelTier: l.ModelTier, Agentic: l.Agentic, Terminal: l.Terminal,
 			HumanExit: l.RequiresHumanExit, Question: l.RequiresQuestion,
-			Parking: l.RequiresBlockedReason, RejectsTo: l.RejectsTo,
+			Parking: l.RequiresBlockedReason, RejectsTo: l.RejectsTo, MaxRounds: l.MaxRounds,
 			Produces: l.OutputProduces, Fresh: l.Context == ContextFresh,
 		})
 	}
