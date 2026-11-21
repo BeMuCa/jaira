@@ -1,11 +1,12 @@
 // Package board holds the logic for making a freshly created board private and
-// telling the agents that work in this repository about it. It depends only on
-// the stdlib so both internal/cli and internal/tui can call it without a cycle.
+// telling the agents that work in this repository about it. It imports only
+// packages that never import it back (core/release, core/ticket), so both
+// internal/cli and internal/tui can call it without a cycle.
 package board
 
 // Prepared reports what preparing a new board did.
 type Prepared struct {
-	Ignored   bool // .gitignore gained the entry on this run
+	Ignored   bool // the ignore file (IgnoreFileName) gained the entry on this run
 	IgnoreErr error
 	Notes     []string // agent files touched, as "NAME (action)"
 	NoteErr   error

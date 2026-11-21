@@ -1,6 +1,7 @@
 package role
 
 import (
+	"bufio"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,6 +18,7 @@ type reapRig struct {
 	closed                  string // every tab the herdr stub closed, a line each
 	merged                  string // what the gh stub answers for feat/ab12cd
 	shown                   string // what 'jaira show AB12CD --json' answers; absent: not found
+	lanes                   string // what 'jaira -C <dir> lanes --json' answers
 	labels                  string // the label of each pane's tab, a file per pane
 	env                     []string
 }
@@ -45,6 +47,7 @@ func newReapRig(t *testing.T) *reapRig {
 		closed:  filepath.Join(tmp, "closed"),
 		merged:  filepath.Join(tmp, "merged.json"),
 		shown:   filepath.Join(tmp, "shown.json"),
+		lanes:   filepath.Join(tmp, "lanes.json"),
 		labels:  filepath.Join(tmp, "labels"),
 	}
 	r.wt = filepath.Join(tmp, "src", ".worktrees", "jaira-ab12cd")
@@ -80,10 +83,18 @@ case "$*" in
 esac
 `,
 		// Everything but 'show' goes to this tree's jaira: the scripts read
-		// their JSON with it.
+		// their JSON with it - unless shown.json.json-fails exists, which
+		// stands for a jaira whose 'json get' refuses (an older build).
 		"jaira": `#!/usr/bin/env bash
+if [ "$1" = json ] && [ -e "` + r.shown + `.json-fails" ]; then
+  exit 7
+fi
 if [ "$1" = -C ] && [ "$3" = show ]; then
   cat "` + r.shown + `" 2>/dev/null || exit 5
+  exit 0
+fi
+if [ "$1" = -C ] && [ "$3" = lanes ]; then
+  cat "` + r.lanes + `" 2>/dev/null || exit 5
   exit 0
 fi
 exec "` + filepath.Join(strings.SplitN(path, string(os.PathListSeparator), 2)[0], "jaira") + `" "$@"
@@ -195,10 +206,19 @@ func TestSpawnRecordsItsTabForReap(t *testing.T) {
 func TestReapClosesAMergedTicket(t *testing.T) {
 	t.Parallel()
 	r := newReapRig(t)
+	// A German title, as ticket files have: git quotes a non-ASCII path
+	// unless told not to, and the filter would miss it.
+	ticket := filepath.Join(r.wt, ".jaira", "tickets", "ab12cd-größe.md")
+	r.write(t, ticket, "in review\n")
+	r.git(t, r.wt, "add", ".jaira/tickets")
+	r.git(t, r.wt, "commit", "-q", "-m", "feat(AB12CD): ticket")
 	r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
 	r.write(t, r.shown, `{"status":"done"}`)
-	// Untracked board files are no work: AYBDJ2's rule.
+	// Untracked milestone files are no work: AYBDJ2's rule; a ref holds them.
 	r.write(t, filepath.Join(r.wt, ".jaira", "milestones", "m.md"), "x\n")
+	// Neither is a ticket file a lane without code left modified: after the
+	// merge no commit comes to carry it, and its state is on the ticket's ref.
+	r.write(t, ticket, "done\n")
 
 	out := r.run(t, r.repo, "reap.sh", "--dry-run")
 	for _, want := range []string{"would close AB12CD/worker p1", "would close AB12CD/review p2",
@@ -229,6 +249,55 @@ func TestReapClosesAMergedTicket(t *testing.T) {
 	}
 	if _, err := os.Stat(r.repo); err != nil {
 		t.Errorf("the main worktree went: %v", err)
+	}
+}
+
+// Every person's cockpit and every teamlead run reap.sh: while one runs, a
+// second skips the round instead of asking the forge again and racing it over
+// 'git worktree remove'. The lock dies with the run that held it.
+func TestReapRunsOneAtATime(t *testing.T) {
+	t.Parallel()
+	if _, err := exec.LookPath("perl"); err != nil {
+		t.Skipf("no perl to hold the lock with: %v", err)
+	}
+	r := newReapRig(t)
+	r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+	r.write(t, r.shown, `{"status":"done"}`)
+	lock := filepath.Join(r.repo, ".git", "jaira", "reap.lock")
+
+	// Another run, as far as the lock can tell: a process holding it.
+	holder := exec.Command("perl", "-MFcntl=:flock", "-e",
+		`open(my $f, ">>", $ARGV[0]) or die; flock($f, LOCK_EX) or die; $| = 1; print "held\n"; sleep 60`, lock)
+	stdout, err := holder.StdoutPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := holder.Start(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = holder.Process.Kill(); _ = holder.Wait() })
+	if line, err := bufio.NewReader(stdout).ReadString('\n'); err != nil || line != "held\n" {
+		t.Fatalf("the holder did not take the lock: %q %v", line, err)
+	}
+
+	out := r.run(t, r.repo, "reap.sh")
+	if !strings.Contains(out, "skipped: reap.sh runs already") {
+		t.Errorf("a second run did not skip:\n%s", out)
+	}
+	if r.closedTabs() != "" || len(r.records(t)) != 2 {
+		t.Fatalf("the skipped run changed something: closed %q, records %v", r.closedTabs(), r.records(t))
+	}
+	// --dry-run changes nothing and waits for nobody.
+	if out := r.run(t, r.repo, "reap.sh", "--dry-run"); !strings.Contains(out, "would remove "+r.wt) {
+		t.Errorf("--dry-run stopped at the lock:\n%s", out)
+	}
+
+	// The holder dies, as a run killed halfway would: the next run goes on.
+	_ = holder.Process.Kill()
+	_ = holder.Wait()
+	out = r.run(t, r.repo, "reap.sh")
+	if _, err := os.Stat(r.wt); !os.IsNotExist(err) {
+		t.Errorf("the lock outlived its holder (%v):\n%s", err, out)
 	}
 }
 

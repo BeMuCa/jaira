@@ -320,3 +320,119 @@ func TestReleaseDefaultsToTheWorker(t *testing.T) {
 		t.Errorf("a file naming worker: source %q, want the default", src)
 	}
 }
+
+// Who opens a pull request is the board's: .jaira/pr. Without it, or with
+// anything but agent in it, an agent pushes and hands the create line back —
+// a typo must never be what lets an agent open one (JG3REW).
+func TestPRDefaultsToThePerson(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if got, src := settings.PRFor(root); got != settings.PRPerson || src != "the default" {
+		t.Errorf("no file: %q (%s), want person, the default", got, src)
+	}
+	if got, _ := settings.PRFor(""); got != settings.PRPerson {
+		t.Errorf("outside a board: %q, want person", got)
+	}
+	for in, want := range map[string]string{
+		"":                            settings.PRPerson,
+		"agent\n":                     settings.PRAgent,
+		"agent\r\n":                   settings.PRAgent,
+		"# agents open\n\n  agent \n": settings.PRAgent,
+		"person\n":                    settings.PRPerson,
+		"Agent\n":                     settings.PRPerson,
+		"agents\n":                    settings.PRPerson,
+		"person\nagent\n":             settings.PRPerson,
+		"agent; rm -rf /\n":           settings.PRPerson,
+	} {
+		if err := os.WriteFile(settings.BoardPRPath(root), []byte(in), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if got, _ := settings.PRFor(root); got != want {
+			t.Errorf(".jaira/pr %q: %q, want %q", in, got, want)
+		}
+		// The gate reads the same content out of the base commit.
+		if got := settings.PRIn(in); got != want {
+			t.Errorf("PRIn(%q): %q, want %q", in, got, want)
+		}
+	}
+	if err := os.WriteFile(settings.BoardPRPath(root), []byte("agent\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, src := settings.PRFor(root); src != "from .jaira/pr, shared with the board" {
+		t.Errorf("a file naming agent: source %q", src)
+	}
+}
+
+// pr-when opens a pull request before acceptance only when the board says
+// exactly signoff; anything else — no file, a typo, a second line — keeps the
+// order this repository runs: done, then the pull request (JG3REW).
+func TestPRWhenDefaultsToDone(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if got, src := settings.PRWhenFor(root); got != settings.PRWhenDone || src != "the default" {
+		t.Errorf("no file: %q (%s), want done, the default", got, src)
+	}
+	if got, _ := settings.PRWhenFor(""); got != settings.PRWhenDone {
+		t.Errorf("outside a board: %q, want done", got)
+	}
+	for in, want := range map[string]string{
+		"":                                  settings.PRWhenDone,
+		"signoff\n":                         settings.PRWhenSignoff,
+		"signoff\r\n":                       settings.PRWhenSignoff,
+		"# review on the PR\n\n signoff \n": settings.PRWhenSignoff,
+		"done\n":                            settings.PRWhenDone,
+		"Signoff\n":                         settings.PRWhenDone,
+		"sign-off\n":                        settings.PRWhenDone,
+		"done\nsignoff\n":                   settings.PRWhenDone,
+		"signoff; rm -rf /\n":               settings.PRWhenDone,
+	} {
+		if err := os.WriteFile(settings.BoardPRWhenPath(root), []byte(in), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if got, _ := settings.PRWhenFor(root); got != want {
+			t.Errorf(".jaira/pr-when %q: %q, want %q", in, got, want)
+		}
+		if got := settings.PRWhenIn(in); got != want {
+			t.Errorf("PRWhenIn(%q): %q, want %q", in, got, want)
+		}
+	}
+}
+
+// The reviewer goes onto a gh or glab command line, so only a login survives.
+func TestPRReviewerIsALoginOrNothing(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if got := settings.PRReviewerFor(root); got != "" {
+		t.Errorf("no file: %q, want empty", got)
+	}
+	if got := settings.PRReviewerFor(""); got != "" {
+		t.Errorf("outside a board: %q, want empty", got)
+	}
+	for in, want := range map[string]string{
+		"":                       "",
+		"copilot\n":              "copilot",
+		"copilot\r\n":            "copilot",
+		"# who reviews\ncopilot": "copilot",
+		"monalisa\n":             "monalisa",
+		"myorg/team-name\n":      "myorg/team-name",
+		"@copilot\n":             "@copilot",
+		"copilot $(id)\n":        "",
+		"copilot;rm\n":           "",
+		"a b\n":                  "",
+		"\"copilot\"\n":          "",
+		"кто-то\n":               "",
+	} {
+		if err := os.WriteFile(settings.BoardPRReviewerPath(root), []byte(in), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if got := settings.PRReviewerFor(root); got != want {
+			t.Errorf(".jaira/pr-reviewer %q: %q, want %q", in, got, want)
+		}
+	}
+}

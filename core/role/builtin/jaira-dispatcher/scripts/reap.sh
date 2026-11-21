@@ -19,14 +19,19 @@ GitLab; 'git config jaira.forge' settles a host that names neither) is left
 alone as 'waiting'. A merged one is kept, with the reason printed, when
   - its local branch is not at the merged head: commits past it, or the head
     never fetched,
-  - one of its worktrees has changes that are not committed (untracked files
-    under .jaira/ do not count),
+  - one of its worktrees has changes that are not committed, as
+    uncommitted.sh beside this file counts them (ticket and milestone files,
+    which the board's refs hold, do not count),
   - one of its worktrees has a detached HEAD,
   - the ticket is back on the board in a lane other than done,
   - herdr does not answer, so an open tab cannot be told from a closed one.
 
   --dry-run   Print what would be closed and removed, change nothing.
   -h, --help  This text.
+
+One run at a time per repository: a second one while the first still runs
+prints 'skipped: reap.sh runs already' and exits 0. The lock is flock on
+reap.lock beside jaira/panes/; a run that dies lets go of it.
 
 Output: one line per thing done — 'closed <ticket>/<lane> <pane>', 'removed
 <worktree>', 'deleted branch <branch>' — or 'waiting <ticket>: <reason>' and
@@ -53,18 +58,41 @@ done
 # The worktree's top, not the directory: started in a subdirectory, it would
 # otherwise not know the worktree it stands in.
 root="$(cd "$(git -C "${1:-$PWD}" rev-parse --show-toplevel)" && pwd -P)"
+here="$(cd "$(dirname "$0")" && pwd)"
 herdr="${HERDR_BIN_PATH:-herdr}"
 # Herdr App (herdr-core) sets no HERDR_ENV and has no herdr binary: its hc runs
 # the same calls through herdr-hc.sh beside this file. HC_TERMINAL_ID is what
 # the app exports into every terminal it starts.
 if [ "${HERDR_ENV:-}" != 1 ] && [ -n "${HC_TERMINAL_ID:-}" ] \
   && command -v "${HC_BIN:-hc}" >/dev/null 2>&1; then
-  herdr="$(cd "$(dirname "$0")" && pwd)/herdr-hc.sh"
+  herdr="$here/herdr-hc.sh"
 fi
 common="$(git -C "$root" rev-parse --git-common-dir)"
 panes="$(cd "$root" && cd "$common" && pwd)/jaira/panes"
 # No record, nothing to ask the forge about: the round costs nothing.
 ls "$panes"/* >/dev/null 2>&1 || exit 0
+# One run at a time per repository: every person's cockpit and every teamlead
+# start this, and two runs ask the forge twice and race each other over
+# 'git worktree remove'. The lock is flock on reap.lock, held through fd 9 for
+# as long as this shell lives: the kernel lets go of it when the run dies, so
+# no lock is ever left over to take over. flock(1) where there is one, perl's
+# flock on macOS, which ships no flock(1); with neither the run goes unlocked,
+# as before. A second run while the first lives skips the round, the next one
+# comes. --dry-run changes nothing and takes no lock.
+if [ -z "$dry" ]; then
+  exec 9>>"$(dirname "$panes")/reap.lock"
+  if command -v flock >/dev/null 2>&1; then
+    flock -n 9 || { echo "skipped: reap.sh runs already"; exit 0; }
+  elif command -v perl >/dev/null 2>&1; then
+    rc=0; perl -MFcntl=:flock -e 'open(my $f, ">>&=", 9) or exit 2; flock($f, LOCK_EX | LOCK_NB) or exit 1' || rc=$?
+    [ "$rc" != 1 ] || { echo "skipped: reap.sh runs already"; exit 0; }
+  fi
+fi
+# Everything below runs with fd 9 closed: bash keeps the lock in a copy no
+# child inherits. An inherited fd 9 would keep the lock held by whatever
+# outlives this run — 'jaira' starts a detached fetch and snapshot when they
+# are due — and the next run would skip with nobody reaping.
+{
 # A herdr that does not answer cannot tell a closed tab from an open one; read
 # as closed, it would cost the worktree and the record of a tab still open.
 herdr_up=""; "$herdr" tab list >/dev/null 2>&1 && herdr_up=1
@@ -166,8 +194,9 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
     # A detached HEAD — a rebase paused, a commit checked out — may carry
     # commits no branch holds, and removing the worktree would lose them.
     if ! git -C "$w" symbolic-ref -q HEAD >/dev/null; then dirty="$w has a detached HEAD"; break; fi
-    if ! st="$(git -C "$w" status --porcelain)"; then dirty="git status failed in $w"; break; fi
-    d="$(printf '%s' "$st" | grep -v '^?? \.jaira/' | cut -c4- | head -3 | tr '\n' ' ' || true)"
+    # What no commit and no ref holds: the rule close-tab.sh asks as well.
+    # --force below would delete it.
+    if ! d="$("$here/uncommitted.sh" "$w")"; then dirty="git status failed in $w"; break; fi
     if [ -n "$d" ]; then dirty="$w has uncommitted changes: $d"; break; fi
   done
   if [ -n "$dirty" ]; then echo "kept $t: ${dirty% }"; continue; fi
@@ -197,7 +226,7 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
 
   for w in "${wts[@]+"${wts[@]}"}"; do
     if [ -n "$dry" ]; then echo "would remove $w"; continue; fi
-    # --force for the untracked .jaira/ files the check above lets through.
+    # --force for the .jaira/ files the check above lets through.
     if git -C "$root" worktree remove --force "$w" >/dev/null; then echo "removed $w"
     else echo "kept $t: removing $w failed"; failed=1; fi
   done
@@ -216,4 +245,5 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
   # failed, where a record gone first left the worktree standing for good.
   [ -n "$dry$failed" ] || rm -f "${gone[@]+"${gone[@]}"}"
 done
+} 9>&-
 exit 0
