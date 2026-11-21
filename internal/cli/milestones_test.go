@@ -2,6 +2,7 @@ package cli
 
 import (
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
@@ -454,13 +455,11 @@ func TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack(t *testing.T) 
 	}
 }
 
-// A marked file lying on the board is the normal outcome of pulling somebody
-// else's filing, not a corner case: core/refsync IncomingMilestones writes a
-// filed ref over a file this tree already has. 'add' and 'rm' are the third
-// door into that file, after create and logbook, and the write would not stay
-// local — recordMilestone puts it on the ref, so every clone that fetches sees
-// a milestone its filer took off the board being edited.
-func TestAddAndRmRefuseAFiledMilestoneOnDisk(t *testing.T) {
+// A filed milestone is what every clone reads after somebody files it.
+// 'add' and 'rm' refuse it: the write would go onto its ref, so every clone
+// that fetches would see a milestone its filer took off the board being
+// edited.
+func TestAddAndRmRefuseAFiledMilestone(t *testing.T) {
 	dir := milestoneStore(t)
 	member := mkTicket(t, dir, "in the group")
 	other := mkTicket(t, dir, "not in it yet")
@@ -1078,5 +1077,16 @@ func TestFetchWarnsOnTwinnedMilestoneNames(t *testing.T) {
 	_, stderr = captureStdio(t, func() { out, _ = runCLI(t, ada, "fetch", "--json") })
 	if !strings.Contains(out, `"milestones_twins"`) || strings.Contains(stderr, "are named") {
 		t.Errorf("fetch --json: stdout %s stderr %q", out, stderr)
+	}
+}
+
+// A board outside git has nowhere to keep a milestone, and says so the way an
+// epic does: exit 3, no_refs.
+func TestAMilestoneOutsideGitIsRefusedLikeAnEpic(t *testing.T) {
+	dir := emptyStore(t)
+	t.Setenv("GIT_CEILING_DIRECTORIES", filepath.Dir(dir))
+	_, err := runCLI(t, dir, "milestone", "create", "q1")
+	if err == nil || exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "git repository") {
+		t.Errorf("create outside git: %v", err)
 	}
 }

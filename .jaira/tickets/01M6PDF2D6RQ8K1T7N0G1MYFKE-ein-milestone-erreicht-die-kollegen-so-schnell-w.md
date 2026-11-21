@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:49Z
-updated-at: 2026-11-21T21:28:02Z
+updated-at: 2026-11-21T21:31:33Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-2695889"
@@ -27,7 +27,10 @@ claimed-at: 2026-11-21T20:57:50Z
 outcome-what: "Milestones live on refs/jaira/milestones/<ID> only. core/milestone reads and writes through a Refs interface (unsent outbox entry, else local ref, read in three git calls); no file is created or read under .jaira/milestones/. Files an older build left there are taken onto their ref once and deleted (milestone.Import): stale copies go without a write, unseen edits are merged, a file with no ref waits for a fetch that reached the remote. A board without a remote keeps milestones on local refs and queues them leased on no-ref, so a later remote receives them. jaira logbook <milestone> only marks the ref filed; jaira restore takes a milestone name/ID; the logbook listing names filed milestones. The adoption of 0.4.x writes to old name refs after migration and the local milestone-bases are gone."
 outcome-why: "Alex 21.11.: milestones were committed back and forth (12 files swept into master by a logbook commit) and a stale file overwrote the ref (KWQCYZ); with the file as a second truth neither can be prevented. The ref as the only copy removes both causes."
 outcome-resolves: "Round 2 give-back: milestone reads and writes only the ref, existing files migrated once and deleted, local ref without a remote, logbook = status filed only; review note 1 (fetch output says queued, not sent)."
-review-summary: "jaira fetch (and the board's background fetch) now also looks for milestone files named <name>-<ID>.md that have no ref and no queued write, and queues them for their ref once; the CLI flush at command end (board: next tick) sends them. This closes the one real gap left in DoD 3: a milestone created before the board had a remote was skipped by milestone.Migrate (it only moves files without an ID) and stayed on one disk forever. It only runs when the most recent fetch actually reached the remote (Syncer.fetch keeps an atomic flag; every Repo.Fetch in refsync now goes through it), so offline a missing local ref is never mistaken for a missing remote ref. An ID carried by two files is skipped; an unreadable file is skipped and reported as a RecordError warning without stopping the others. jaira fetch prints the names, --json adds milestones_published, the board shows a line. DoD 1 and 2 were already true since 0YGWXQ/EBTX6X (ticket notes)."
+review-summary: |-
+  core/milestone/import.go:236 hadBefore takes an anonymous struct that repeats Import's local file type - name the type once (diskFile) and pass it
+  internal/cli/milestones.go: a milestone write on a board outside git surfaces refsync.ErrNoMilestoneRefs as a plain error (exit 1, message repeats itself); map it the way internal/cli/epics.go:65 maps epic.ErrNoRefs: fail(ExitValidation, "no_refs", ...) in editRefusal and create, and say exit 3 in docs/COMMANDS.md
+  internal/cli/milestones_test.go:458 comment still names IncomingMilestones writing files; say what the test now guards
 review-gaps: |-
   note: wording - jaira fetch prints 'now sent to the remote' and the board 'sent to the remote' at the moment the write is only queued; the flush comes after (CLI: at command end, board: next tick). If that flush fails the line was wrong, though flushRefs warns. Fix: say 'queued for the remote' or print after the flush
   note: a filed milestone (marked line, file still in .jaira/milestones) that never had a ref is published too; harmless - other clones skip a filed ref they do not have - but untested
@@ -35,9 +38,9 @@ review-gaps: |-
   note: pre-existing: Syncer.dirty is a plain bool written from the board's fetch goroutine and the command path (refsync.go:74); the new fetched flag is atomic, dirty is not
 test-verdict: "pass: Runde 2 - go vet ./... + GOOS=windows vet gruen, go test ./... RC=0, -race core/refsync RC=0; DoD 1-4 im Baum geprueft; E2E: Milestone vor dem Remote -> erster fetch sendet ihn, Ref auf dem Remote; unerreichbarer Remote -> exit 1, nichts gesendet (Test TestAFailedFetchAfterAGoodOneSendsNothing, TestNothingIsSentWithoutAFetchThatReachedTheRemote); zwei fetch parallel -> genau einer sendet, je ein Commit pro Ref"
 hunt-verdict: "pass: Runde 2 bei 10e5c341c, 0 Befunde in 6 Modulen; die 2 Befunde aus Runde 1 behoben (bdf5a870d, 10e5c341c)"
-round: 5
-back-from: human
-back-by: person
+round: 6
+back-from: critique
+back-by: lane
 back-count: 1
 review-verdict: "DoD 1-4 met: the gap DoD 3 still had (ID-named file without ref) is closed and tested in core/refsync/publish_test.go, including the offline case the first bughunt found. No blocker; four notes, all small. go test -race ./core/refsync ./internal/cli ./internal/tui passes."
 review-round: 3
@@ -105,3 +108,5 @@ mode: ""
 - **2026-11-21 21:07 · Alexander Sacharov** — Stand 23:20: Produktcode kompiliert (gitref, milestone, refsync, cli milestones/logbook/restore/fetch, tui). restore nimmt jetzt auch <name>|<ID>|<name>-<ID>; logbook <milestone> setzt nur status: filed (EditFiled). JSON: milestone 'ref' neu, 'file' = Dateiname im Ref, ls 'dir' -> 'refs', fetch 'milestones_published' -> 'milestones_waiting'. Als naechstes: Tests anpassen.
 - **2026-11-21 21:12 · Alexander Sacharov** — Stand 00:10: Tests core/milestone (fakeRec ueber Verzeichnis, import_test.go ersetzt migrate_test.go), core/gitref (ReadMilestones, WriteMilestoneLocal), core/refsync (milestone_test.go ersetzt milestoneid_test.go+publish_test.go: ohne Remote -> lokaler Ref -> spaeter Remote -> gesendet; stale Datei ueberschreibt Ref nicht; Datei wartet ohne erfolgreichen Fetch) gruen. Offen: tests internal/tui, internal/cli, Doku/Help, Release-Notiz, Bughunt.
 - **2026-11-21 21:24 · Alexander Sacharov** — Stand 01:30: alle Tests gruen (go test ./... exit 0). Doku (COMMANDS.md, AGENTS.md, core/role/jaira/SKILL.md, README, Agentenblock core/board/announce.go) und Release-Notiz neu. Entscheidung: jaira logbook (Liste) nennt abgelegte Milestones aus den Refs (milestones_filed), weil sie sonst nirgends mehr sichtbar sind. ticket.Store.LogbookMilestone und gitref.ListMilestones entfernt (keine Aufrufer). Die Repo-eigene CLAUDE.md wird nicht von Hand regeneriert - das macht jaira update.
+- **2026-11-21 21:29 · Alexander Sacharov** — critique (Runde 2, Pass 1): drei Befunde - (1) core/milestone/import.go hadBefore anonymer struct -> benannter Typ; (2) ErrNoMilestoneRefs in der CLI wie epics.go:65 auf exit 3 'no_refs' abbilden, Doku sagt exit 3; (3) veralteter Kommentar internal/cli/milestones_test.go:458. Design sonst bestaetigt: Refs-Interface folgt core/epic/epic.go:75; Cache in ReadMilestones gerechtfertigt durch den Refresh-Timer des Boards; refuseIfFiled/FiledMilestone bleibt fuer Logbook-Dateien alter Builds ohne Ref.
+- **2026-11-21 21:31 · Alexander Sacharov** — critique Pass 1 erledigt: diskFile benannt (core/milestone/import.go), ErrNoMilestoneRefs -> exit 3 no_refs (internal/cli/milestones.go refuseNoRefs, Test TestAMilestoneOutsideGitIsRefusedLikeAnEpic), Kommentar im Test korrigiert.

@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/BeMuCa/jaira/core/milestone"
+	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/tag"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -188,6 +189,9 @@ a milestone on this board, and the arrows may not form a loop.`,
 				}
 				return ms, nil
 			})
+			if errors.Is(err, refsync.ErrNoMilestoneRefs) {
+				return refuseNoRefs()
+			}
 			if err != nil {
 				return err
 			}
@@ -684,6 +688,8 @@ func editRefusal(s *ticket.Store, name string, err error, inLogbook string) erro
 	switch {
 	case err == nil:
 		return nil
+	case errors.Is(err, refsync.ErrNoMilestoneRefs):
+		return refuseNoRefs()
 	case errors.As(err, &amb):
 		return refuseAmbiguous(amb)
 	case errors.As(err, &fe):
@@ -792,6 +798,14 @@ func milestoneKey(raw string) (string, error) {
 		return "", fail(ExitUsage, "bad_milestone", "%v", err)
 	}
 	return raw, nil
+}
+
+// refuseNoRefs is a milestone write on a board outside git: a milestone lives
+// on a ref and nowhere else, so there is nowhere to put it. The same refusal
+// an epic gives (epicFail).
+func refuseNoRefs() error {
+	return fail(ExitValidation, "no_refs",
+		"milestones live on git refs, and this board is not in a git repository — 'git init' (and 'jaira share' to send them to a remote) sets one up")
 }
 
 // refuseAmbiguous is a name two milestones carry: nothing was written, and the

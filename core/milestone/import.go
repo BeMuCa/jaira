@@ -116,17 +116,13 @@ func Import(root string, refs Refs, mayCreate bool) (Result, error) {
 		}
 		return res, err
 	}
-	type file struct {
-		base, name, id string
-		idNamed        bool
-	}
-	var files []file
+	var files []diskFile
 	for _, e := range entries {
 		base, ok := strings.CutSuffix(e.Name(), ".md")
 		if !ok || e.IsDir() {
 			continue
 		}
-		f := file{base: base}
+		f := diskFile{base: base}
 		f.name, f.id, f.idNamed = FileIdentity(base)
 		files = append(files, f)
 	}
@@ -229,12 +225,17 @@ func Import(root string, refs Refs, mayCreate bool) (Result, error) {
 	return res, first
 }
 
-// hadBefore reports whether a file holds a state the milestone's ref, or the
-// old name ref of a file written before IDs, has carried.
-func hadBefore(refs Refs, f struct {
+// diskFile is one file in the old milestone directory, read for what its name
+// says: its base name, and the milestone name and ID it stands for — the ID in
+// the name, or the one LegacyID computes for a file written before IDs.
+type diskFile struct {
 	base, name, id string
 	idNamed        bool
-}, content, migrated []byte) bool {
+}
+
+// hadBefore reports whether a file holds a state the milestone's ref, or the
+// old name ref of a file written before IDs, has carried.
+func hadBefore(refs Refs, f diskFile, content, migrated []byte) bool {
 	if h, ok := refs.(refHistory); ok && h.MilestoneHad(f.id, migrated) {
 		return true
 	}
