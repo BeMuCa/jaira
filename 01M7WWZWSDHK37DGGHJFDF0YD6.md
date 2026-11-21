@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZWSDHK37DGGHJFDF0YD6
 title: "Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt"
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:14:39Z
+updated-at: 2026-11-21T09:14:42Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
@@ -34,7 +34,7 @@ review-summary: "none"
 review-gaps: "none - a6187478: the two path loops in writtenSince folded into one; nothing orphaned"
 test-verdict: "pass: go test -count=1 ./... RC=0 at a6187478; TestChangedSince 19 cases; scratch board: hunt without a file list, then jaira tag (board data) -> on_head true, then a code edit -> false; read-only git, no parallel-writer case"
 hunt-verdict: "fail: 1 change finding at a6187478 - a named board's lane prompts (.jaira/boards/<name>/lanes/) read as board data"
-round: 10
+round: 11
 review-verdict: "Kein Blocker. DoD 1-11 sind im Code erfuellt; der Blocker aus Runde 4 (bughunt on HEAD aus 4 Notes nicht ableitbar) ist an der Ursache behoben: --brief traegt bughunt.on_head aus git, und Explain-Vorlage und spawn.sh lesen es. go test -count=1 ./... RC=0, claude plugin test 216 pass. Die fuenf notes sind Raender des on_head-Signals (falsch rot in conversational mode und bei stop-after-fix) und eine bekannte Grenze; keine davon ist ein falsches Ergebnis im Sinn der DoD ausser im conversational mode, wo nur die Statusmarke falsch rot ist."
 review-round: 8
 review-check: "1. go build -o /tmp/jaira-b ./cmd/jaira  2. /tmp/jaira-b set <Test-Ticket> stop-after-fix=yes -> Exit 2, 'stop-after-fix is true, false or empty'  3. /tmp/jaira-b show DF0YD6 --brief | grep -o '\"bughunt\":{[^}]*}' -> {\"at\":\"81dcbbee\",\"on_head\":true}  4. echo x >> core/gitrepo/git.go; Schritt 3 wiederholen -> on_head:false; git checkout core/gitrepo/git.go  5. go test ./core/move -run TestMoveRecordsWhoSentItBack -v -> PASS (signoff->in-progress = person, zaehlt nicht)  6. go test ./core/gitrepo -run TestChangedSince -v -> 16 Faelle PASS  7. cd core/mod/builtin/jaira-cockpit && claude plugin test -> 216 pass  8. im Cockpit ein Ticket in signoff mit nur note:-Zeilen: Notes stehen als '· ...' unter der Zeile, kein Explain-Knopf"
