@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:45:52Z
+updated-at: 2026-11-21T08:47:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
@@ -151,3 +151,4 @@ back-count: 1
 - **2026-11-21 08:44 · Alexander Sacharov** — testing round 5: class: on_head trusted git ranges and a file list it could not vouch for; examples: hunt commit not in HEAD's history (cockpit falls back to the main checkout on master) and a file list split at a space; fix: hunt must be an ancestor of HEAD (else on_head false), a listed path neither in the hunt commit nor on disk widens to all code, and own work is now 'non-merge commits naming the ticket' (any ancestor, not first-parent) so a branch already merged into master still sees its unhunted commits; TestChangedSince 12 cases.
 - **2026-11-21 08:45 · Alexander Sacharov** — critique round 6: none - read 076f191b; 'own work = commits naming the ticket' is the same source the ticket's commit list is built from (CommitsForTicket), so it holds wherever that list holds.
 - **2026-11-21 08:45 · Alexander Sacharov** — testing round 7: bughunt running over the diff since 190a55ec at 7d73a41d.
+- **2026-11-21 08:47 · Alexander Sacharov** — bughunt: change: core/gitrepo/git.go:353 - ChangedSince looks for uncommitted work with 'git diff --name-only HEAD', which never lists untracked files; a file the hunt read while it was still untracked (the hunt's own file list includes ls-files --others), edited after the hunt and still not added, leaves on_head true, and so does a new untracked file when the list is empty (codeOnly); huntedSpecs accepts such a path as literal because it exists on disk; ran: git init, commit, create and edit new.go, git diff --name-only HEAD -- ':(top,literal)new.go' ':/' (exit 0, empty output) — needs git ls-files --others --exclude-standard over the same specs as well
