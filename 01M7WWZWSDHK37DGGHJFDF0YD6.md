@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZWSDHK37DGGHJFDF0YD6
 title: "Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:21:13Z
+updated-at: 2026-11-21T09:21:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
@@ -36,7 +36,7 @@ review-gaps: |-
   note: small edge: bei stop-after-fix ohne jeden Hunt liefert --brief {"at":"","on_head":false,"skipped":true} statt null; die Release-Note sagt "null means no hunt finished" - entweder dort erwaehnen oder at weglassen (core/release/notes/DF0YD6.md, internal/cli/tickets.go lastHunt)
 test-verdict: "pass: go test -count=1 ./... RC=0 at c4e1fe34; TestChangedSince 21 cases incl. a named board's lane prompt (counts) and its other data (does not); read-only git"
 hunt-verdict: "pass: follow-up hunt since a6187478 at c4e1fe34, 0 findings"
-round: 11
+round: 12
 review-verdict: "Kein Blocker. DoD 1-11 im Code erfuellt; die Runden 9-11 (on_head aus git statt aus Notes, mtime statt 'uncommitted', Board-Daten ausgenommen, Lane-Prompts benannter Boards als Code) sind korrekt und getestet. Geprueft: go test -count=1 ./core/gitrepo ./internal/cli ./core/move ./core/ticket ok; claude plugin test 218 pass; von Hand: Aenderung an core/gitrepo/derive.go -> on_head false, touch einer .jaira/milestones-Datei -> on_head true. Die zwei notes sind ein bekannter Rand des mtime-Signals und eine Doku-Unschaerfe, kein falsches Ergebnis im Sinn der DoD."
 review-round: 11
 review-check: "1. go build -o /tmp/jaira-b ./cmd/jaira  2. /tmp/jaira-b show DF0YD6 --brief | grep -o '\"bughunt\":{[^}]*}' -> {\"at\":\"c4e1fe34\",\"on_head\":true,\"skipped\":false}  3. echo '// x' >> core/gitrepo/derive.go; Schritt 2 -> on_head:false; git checkout core/gitrepo/derive.go  4. touch .jaira/milestones/pm-web-A79Q9V.md; Schritt 2 -> on_head bleibt true (Board-Daten zaehlen nicht)  5. /tmp/jaira-b set <Test-Ticket> stop-after-fix=yes -> Exit 2  6. go test ./core/move -run TestMoveRecordsWhoSentItBack -v -> PASS  7. cd core/mod/builtin/jaira-cockpit && claude plugin test -> 218 pass  8. im Cockpit ein Ticket in signoff mit nur note:-Zeilen: Notes als '· ...' unter der Zeile, kein Explain-Knopf"
