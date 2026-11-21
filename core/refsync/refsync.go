@@ -443,8 +443,11 @@ func (y *Syncer) pendingMilestone(keys ...string) bool {
 // MilestonesFetched is what one fetch of milestones did on disk.
 type MilestonesFetched struct {
 	Wrote, Filed, Moved []string
-	Renamed             map[string]string
-	Conflicts           []milestone.Conflict
+	// Published names the milestones whose file was on this disk with no ref
+	// and no write waiting, and which this fetch queued for their ref.
+	Published []string
+	Renamed   map[string]string
+	Conflicts []milestone.Conflict
 }
 
 // FetchMilestones writes the milestone files the refs carry, then moves old
@@ -474,7 +477,62 @@ func (y *Syncer) FetchMilestones(s *ticket.Store) (MilestonesFetched, error) {
 	res, err := milestone.Migrate(s.Root, y)
 	out.Moved = res.Moved
 	out.Conflicts = append(out.Conflicts, res.Conflicts...)
+	var re *milestone.RecordError
+	if err != nil && !errors.As(err, &re) {
+		return out, err
+	}
+	// After Migrate, so a file it just moved to its ID is looked at under that
+	// ID, and after the network round trip the caller made, so "no ref here"
+	// means none on the remote either as of this fetch.
+	published, perr := y.publishUnsent(s.Root)
+	out.Published = published
+	if err == nil {
+		err = perr
+	}
 	return out, err
+}
+
+// publishUnsent queues every milestone file named after its ID that has no
+// ref in this tree and no write waiting for one. Such a file was made where
+// nothing could queue it — before the board had a remote, or by hand — and
+// Migrate passes it by, because it only moves files without an ID. Without
+// this it would stay on one disk however often that clone fetches, which is
+// the one thing a milestone ref is there to prevent.
+//
+// An ID carried by two files is left alone: which of them is the milestone is
+// a person's call, and a ref written from either would decide it for them.
+// A file that could not be queued does not stop the others; the first such
+// failure comes back as a *milestone.RecordError after all of them.
+func (y *Syncer) publishUnsent(root string) ([]string, error) {
+	if y == nil || y.Usable() != nil {
+		return nil, nil
+	}
+	files := milestoneFiles(root)
+	carriers := map[string]int{}
+	for _, m := range files {
+		if m.IDNamed {
+			carriers[m.ID]++
+		}
+	}
+	var sent []string
+	var first error
+	for _, m := range files {
+		if !m.IDNamed || carriers[m.ID] != 1 || y.HasMilestoneRef(m.ID) || y.pendingMilestone(m.ID) {
+			continue
+		}
+		content, err := os.ReadFile(filepath.Join(milestone.Dir(root), m.File))
+		if err != nil {
+			return sent, err
+		}
+		if err := y.RecordMilestone(m.ID, m.File, content); err != nil {
+			if first == nil {
+				first = &milestone.RecordError{Name: m.Name, Err: err}
+			}
+			continue
+		}
+		sent = append(sent, m.Name)
+	}
+	return sent, first
 }
 
 // adoptOldRef merges what an older build wrote to an old name ref since the

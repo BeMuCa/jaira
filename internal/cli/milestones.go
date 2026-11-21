@@ -661,9 +661,9 @@ func migrateMilestones(s *ticket.Store) error {
 	// ref is born with it. No network means no fetch, and the move goes ahead:
 	// the base it records lets the next fetch adopt that edit.
 	if milestone.Pending(s.Root) && refs.FetchRefs() {
-		_, _, _, moved, conflicts, err := fetchMilestones(s)
-		reportMigrated(moved)
-		reportConflicts(conflicts)
+		res, err := fetchMilestones(s)
+		reportMigrated(res.Moved)
+		reportConflicts(res.Conflicts)
 		return err
 	}
 	unlock, err := s.Lock(milestoneLockName)

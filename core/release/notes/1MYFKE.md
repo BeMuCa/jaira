@@ -1,0 +1,1 @@
+- A milestone you created before your board had a remote now reaches your teammates: the next `jaira fetch` (or the board's own fetch) sends it to its ref and says so ("now sent to the remote"); `jaira fetch --json` lists these under `milestones_published`.

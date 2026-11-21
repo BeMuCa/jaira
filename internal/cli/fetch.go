@@ -90,11 +90,11 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 			// disk: a milestone has no lane and no editor here, the file IS
 			// the interface, so a group that stayed on a ref would be a group
 			// nobody can open.
-			openedMilestones, filedMilestones, renamedMilestones, migratedMilestones, conflictMilestones, err := fetchMilestones(s)
+			ms, err := fetchMilestones(s)
 			if err != nil {
 				return err
 			}
-			reportConflicts(conflictMilestones)
+			reportConflicts(ms.Conflicts)
 			departed := refs.Departed()
 			stranded := strandedHere()
 			var twins []milestone.Twin
@@ -104,19 +104,21 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 			if g.jsonOut {
 				return emit(cmd.OutOrStdout(), map[string]any{
 					"arrivals": arrivals, "departed": departed, "stranded": stranded,
-					"milestones":           strOrEmpty(openedMilestones),
-					"milestones_filed":     strOrEmpty(filedMilestones),
-					"milestones_renamed":   renamedMilestones,
-					"milestones_migrated":  strOrEmpty(migratedMilestones),
-					"milestones_conflicts": conflictsOrEmpty(conflictMilestones),
+					"milestones":           strOrEmpty(ms.Wrote),
+					"milestones_filed":     strOrEmpty(ms.Filed),
+					"milestones_renamed":   ms.Renamed,
+					"milestones_migrated":  strOrEmpty(ms.Moved),
+					"milestones_published": strOrEmpty(ms.Published),
+					"milestones_conflicts": conflictsOrEmpty(ms.Conflicts),
 					"milestones_twins":     twinsJSON(twins),
 				})
 			}
-			printMilestones(cmd.OutOrStdout(), openedMilestones)
-			printFiledMilestones(cmd.OutOrStdout(), filedMilestones)
-			printRenamedMilestones(cmd.OutOrStdout(), renamedMilestones)
-			printMigratedMilestones(cmd.OutOrStdout(), migratedMilestones)
-			printMilestoneConflicts(cmd.OutOrStdout(), conflictMilestones)
+			printMilestones(cmd.OutOrStdout(), ms.Wrote)
+			printFiledMilestones(cmd.OutOrStdout(), ms.Filed)
+			printRenamedMilestones(cmd.OutOrStdout(), ms.Renamed)
+			printMigratedMilestones(cmd.OutOrStdout(), ms.Moved)
+			printPublishedMilestones(cmd.OutOrStdout(), ms.Published)
+			printMilestoneConflicts(cmd.OutOrStdout(), ms.Conflicts)
 			printTwins(twins)
 			printArrivals(cmd.OutOrStdout(), arrivals)
 			printDeparted(cmd.OutOrStdout(), departed)
@@ -141,9 +143,9 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 // Only this call is inside the lock: refs.Incoming() has already made the
 // network round trip by the time we get here, and holding a store lock across
 // one would block every milestone write for the length of a fetch.
-func fetchMilestones(s *ticket.Store) (opened, filed []string, renamed map[string]string, migrated []string, conflicts []milestone.Conflict, err error) {
+func fetchMilestones(s *ticket.Store) (refsync.MilestonesFetched, error) {
 	res, err := refs.FetchMilestones(s)
-	return res.Wrote, res.Filed, res.Renamed, res.Moved, res.Conflicts, warnIfRecordOnly(err)
+	return res, warnIfRecordOnly(err)
 }
 
 // conflictsOrEmpty keeps the JSON key an array when there is nothing to tell.
@@ -173,6 +175,15 @@ func printMigratedMilestones(w io.Writer, moved []string) {
 		return
 	}
 	fmt.Fprintf(w, "\nMoved %d milestone file(s) to ID names: %s\n", len(moved), strings.Join(moved, ", "))
+}
+
+// printPublishedMilestones says which milestones were on this disk only and
+// now go to their ref: until this fetch nobody else could see them.
+func printPublishedMilestones(w io.Writer, names []string) {
+	if len(names) == 0 {
+		return
+	}
+	fmt.Fprintf(w, "\nMilestones that were on this disk only, now sent to the remote: %s\n", strings.Join(names, ", "))
 }
 
 // printMilestones says which milestone files this fetch put on disk. Named
