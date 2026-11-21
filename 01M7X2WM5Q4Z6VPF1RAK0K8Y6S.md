@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:08:01Z
+updated-at: 2026-11-21T08:08:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
@@ -29,7 +29,7 @@ outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, w
 review-summary: "Runde nach signoff (dea24113): keine Funde. --write sitzt im selben Skript wie --check (ein Pfad-Mapping, Note 'Offene Entscheidungen' 1); generate() als Funktion statt zweiter Kopie; stdout-Modus bleibt, weil die Fixture-Tests und Scratch-Vergleiche ihn brauchen; strings.Cut in TestEveryManifestPathExists ueberlaesst das Melden der kaputten Zeile TestManifestLinesAreWellFormed statt es doppelt zu pruefen."
 round: 6
 review-gaps: "manifest=core/shipped/shipped.sha256 stand zweimal (--check, --write) -> einmal oben im Skript; sonst nichts: generate() hat zwei Aufrufer, read() im Test drei, keine verwaiste Stelle"
-test-verdict: "pass: go vet + go test ./... RC=0 auf 722c9c6e; Runde 4 aendert nur eine Testmeldung"
+test-verdict: "fail: go test ./... rot nur in core/shipped TestManifestLinesAreWellFormed (Duplikate nach union-Merge 6f5ba869); DoD 1-7 sonst im Baum belegt; zwei parallele --write ergeben ein sortiertes Manifest ohne Duplikat; flacher Klon: exit 1, Manifest unveraendert"
 hunt-verdict: "pass: bughunt done at 722c9c6e, 0 change, 0 pre-existing"
 review-verdict: "Diff erfuellt alle 5 DoD-Punkte, keine Defekte gefunden. Selbst geprueft: --check gruen auf 34 Tags, mit dem alten Manifest rot (8 Versionen); Regenerieren ergibt byte-gleich das committete Manifest; 0 Zeilen gegenueber master verloren; TestInstallReplacesAnOlderShippedVersion faellt mit dem alten Manifest, besteht mit dem neuen; go test ./shipped ./role gruen."
 review-round: 5
