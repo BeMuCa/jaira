@@ -1,7 +1,7 @@
 ---
 id: 01M7WX0C09TC63TKPXT555CS2M
 title: "Ein Worker meldet signoff in einer Zeile mit festen Feldern: Branch, Commits, Guard, offene Notes"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -16,23 +16,39 @@ blocked-by:
   - 01M7WX07G4E8ERZ30PH10J88M5
 related:
   - 01M67RXSPRWC7WVBCCM7MVR4PY
-commits: []
+commits:
+  - e7046a407818e2661d880b76b969c8480b6cc2f4
+  - 556133a593668fa9b6b680fae21095589b928720
+  - da4ea383af5542388dcede9983d8a76851ab5380
+  - 23ce7aaad58188fa452ef7218feeec6d46feebf0
+  - c5fd56794f3a0ac4cd37a95af5a8cba68662a8bb
+  - 62a8ee8e9a52d62284ecd0e49845321f860e5371
 created-at: 2026-11-20T16:35:33Z
-updated-at: 2026-11-21T19:21:43Z
+updated-at: 2026-11-21T19:45:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2279502
 claimed-at: 2026-11-21T19:00:51Z
 outcome-what: "jaira-worker and jaira-dispatcher end their report with a fixed status line 'jaira: <ID> <from> -> <to> · branch · commits · gates · notes · verdict', documented in their Report sections; the jaira-cockpit's digest.ts reads that line (statusLineOf) and shortens the report to its fields, falling back to the old guessing without it. Frame tags sharing the line are stripped; a question ends at '·'; no question dedupe (known limit: a question inside the verdict shows twice)"
 outcome-why: "The teamlead read the ticket after every report to find branch, commits and whether it could push; a fixed line answers that from the report alone"
 outcome-resolves: "55CS2M; shares the line prefix with MVR4PY. Checked: concurrency n/a (pure function); error path: no line -> old path, failure text keeps the report whole; unusual input: CRLF, lowercase, unicode arrow, '-' values, unknown keys, overlong fields clipped, verdict holding '·', '->' or a question, short question equal to a field, frame tags on either side; permissions: peer text only displayed, every field clipped"
-review-summary: none
+review-summary: "jaira-worker and jaira-dispatcher SKILL.md now end every report with one fixed last line 'jaira: <ID> <from> -> <to> · branch · commits · gates · notes · verdict' ('-' for empty, verdict last and free text), and the teamlead's spawn prompt asks for it. The cockpit's digest.ts gained statusLineOf(): it takes the last such line (engine frame tags like </result> or <agent-message> on the same line stripped), and digest() then builds the chat line from those fields alone instead of guessing lane and verdict from prose; reports without the line are guessed at as before, and a failure still keeps the report whole. QUESTION now stops at '·' so a question does not swallow the next field. A table test covers full line, dashes, missing/unknown keys, CRLF, line not last, two lines, frame tags, clipping and questions; release note and shipped manifest added."
 round: 5
 back-from: testing
 back-by: lane
 back-count: 3
-review-gaps: "none (round 3: the repair removed the raw field and the replace; one substring check and a '·' in QUESTION's class, nothing left to fold). Earlier rounds: redundant verdict check dropped, clip() reused; laneOf/verdictOf fallback kept by decision (MVR4PY)."
-test-verdict: "pass (round 3, diff since 23ce7aaa: digest.ts, cockpit.test.ts, manifest): claude plugin test 244 pass RC=0, go test core/shipped core/mod RC=0, shipped-history --check ok. Round-2 findings fixed by deleting the raw-line rule: question under an unknown key shown, quoted duplicate line gives the question once, clipped verdict gets the full question beside it - each a lineCases test; the question now ends at '·'. Proofs re-checked (digest.ts:131/:161, test.ts:70). Pure function, writes nothing."
-hunt-verdict: "fail: bughunt done at c5fd5679, 2 change: question dedupe compares a 100-char question against 60-char clipped parts (long question shown twice); plain substring test drops short questions found in any part ('Frage: 1' vs 'notes 1')"
+review-gaps: |-
+  note: known limit (decided 19:20): a question written inside the status line's verdict is shown twice in the digest line; questionOf still takes the first question in the whole report, so 'open question: none' above a verdict carrying a question hides it from the digest line (it stays in /cockpit report and on the ticket)
+  note: core/shipped/shipped.sha256 gains five digest.ts hashes of intermediate branch-only versions that never shipped; harmless (the manifest only recognises unmodified files), could be trimmed to the final hash with scripts/shipped-history.sh before merge
+  note: the parser accepts the status line anywhere (last match wins), not only as the last line the skills demand - lenient on purpose, text after it ('closing tab') does not break it; no test pins that
+test-verdict: "pass (round 4, diff since c5fd5679: digest.ts, cockpit.test.ts, manifest): claude plugin test 244 pass RC=0, go test core/shipped core/mod core/role RC=0, shipped-history --check ok. Round-3 findings gone by option 1: no dedupe, so a short question equal to a field ('Frage: 1' vs 'notes: 1') is shown, and a question in the verdict shows twice as the recorded known limit - both lineCases tests. Proofs re-checked (digest.ts:131/:161, test.ts:70). Pure function, writes nothing."
+hunt-verdict: "pass: bughunt done at 62a8ee8e, 1 change finding judged not a blocker (first-match questionOf, pre-ticket, kept by decision option 1) - note for the person"
+review-verdict: "approve - all three DoD items hold in the diff; cockpit tests 244/244 and go test ./core/shipped ./core/role pass; no blocker, three notes for the person"
+review-round: 5
+review-verdict-gaps: |-
+  note: known limit (decided 19:20): a question written inside the status line's verdict is shown twice in the digest line; questionOf still takes the first question in the whole report, so 'open question: none' above a verdict carrying a question hides it from the digest line (it stays in /cockpit report and on the ticket)
+  note: core/shipped/shipped.sha256 gains five digest.ts hashes of intermediate branch-only versions that never shipped; harmless (the manifest only recognises unmodified files), could be trimmed to the final hash with scripts/shipped-history.sh before merge
+  note: the parser accepts the status line anywhere (last match wins), not only as the last line the skills demand - lenient on purpose, text after it ('closing tab') does not break it; no test pins that
+review-check: "1. cd core/mod/builtin/jaira-cockpit && claude plugin test .  -> '244 pass, 0 fail', incl. the 'status line: ...' cases  2. open core/role/builtin/jaira-worker/SKILL.md at '## Report' (line ~405) -> the fixed line 'jaira: <ID> <from> -> <to> · branch: ... · verdict: ...' with one bullet per field  3. same in core/role/builtin/jaira-dispatcher/SKILL.md near the end (~line 552), pointing to the worker's format  4. live: start a worker on a small ticket with the cockpit loaded (claude --plugin-dir core/mod/builtin/jaira-cockpit); when its report arrives the chat shows '[shortened by jaira-cockpit] <ID> · <from> → <to> · <verdict> · <branch> · commits ... · gates ... · notes ...' and '/cockpit report <ID>' shows the whole report"
 ---
 
 # Ein Worker meldet signoff in einer Zeile mit festen Feldern: Branch, Commits, Guard, offene Notes
@@ -86,3 +102,6 @@ hunt-verdict: "fail: bughunt done at c5fd5679, 2 change: question dedupe compare
 - **2026-11-21 19:20 · Alexander Sacharov** — question (third return from testing, stop rule): all three testing returns hit the same rule - how the digest shows a question when a status line is present (round 1: shown twice; round 2: raw-line cut lost/doubled; round 3: substring dedupe vs clipping). The status line itself, the skills and the frame-tag fix are stable. I think the loop reads deeper every round on a rule I keep inventing, not a wrong DoD. Options: 1) (Recommended) delete the dedupe: back to plain questionOf as before this ticket, keep the '·' stop and the frame-tag fix; a question that sits inside the verdict is shown twice - recorded as a known limit, nothing is ever lost; then testing+review once more. 2) keep patching the dedupe (compare unclipped verdict, word boundaries) - a 4th round. 3) stop here, give the ticket back to a person as it is.
 - **2026-11-21 19:20 · Alexander Sacharov** — decision: Variante 1 (Alex' Regel 'Ränder wachsen → kleineres Design', 21.11.): Dedupe löschen, zurück zum schlichten questionOf; '·'-Stopp und Frame-Tag-Fix bleiben. Ein Frage im Verdict erscheint zweimal = known limit, nichts geht verloren.
 - **2026-11-21 19:21 · Alexander Sacharov** — note: known limit: a question written inside the status line's verdict is shown twice in the cockpit's digest line (once in the verdict, once as 'question:'). Chosen (option 1, teamlead 19:20) over any dedupe: nothing is ever dropped. Test: cockpit.test.ts 'status line: a question in the verdict is shown twice (known limit)'.
+- **2026-11-21 19:23 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/digest.ts:93 (questionOf) with :171 (verdict clip 60) - class: questionOf reads only the FIRST question/Frage/open question match in the whole report, so any earlier match that is a 'none' answer or a quoted older report shadows the status line's own question; once the verdict field is clipped at 60 chars before its question, the question disappears from the digest line entirely (and a stale quoted question is shown instead of the current one). example: 'Open question: none' then 'jaira: 55CS2M critique -> human · verdict: approve with reservations about the cache layer and its eviction · question: keep the cache?' gives '... and its evi…' with no question; without the first line the question is shown. ran: node --experimental-strip-types scratch calling digest() on both texts. mark: questionOf/first-match is from 88982e41 (before the ticket), but the status-line verdict that carries the question and the claim of 62a8ee8e 'none is dropped' are this ticket's, so marked change; not a blocker in my reading because the question still reaches the person via the ticket's --question and /cockpit report, but it is the exact drop this round set out to remove.
+- **2026-11-21 19:23 · Alexander Sacharov** — bughunt: done at 62a8ee8e - 1 finding (1 change, 0 pre-existing) in 1 module, follow-up hunt since c5fd5679 (diff only: digest.ts, cockpit.test.ts, shipped.sha256; no new files); concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/digest.ts core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts core/release/notes/55CS2M.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/shipped/shipped.sha256
+- **2026-11-21 19:23 · Alexander Sacharov** — testing: note: class: questionOf takes the first question match in the whole report (pre-ticket behaviour, kept by decision option 1); example: 'Open question: none' above a status line whose clipped verdict carries the question - the question is not in the digest line; still on the ticket's --question and in /cockpit report. Not a blocker under blocker_rule; for the person at acceptance.
