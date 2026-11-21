@@ -1,7 +1,7 @@
 ---
 id: 01M7ZPP39H62XRS3R59602D92C
 title: "Cockpit-Log: Filter nach Lane, größerer Close-Knopf, ein Zeichen pro Ereignis"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -22,33 +22,35 @@ tags:
   - tui
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 87ada520e40eba11e9f84cd487edb6dfdbe32525
+  - 82cce911b9fb7502666d52a9c385b50f0fd0f251
+  - 3c905a44a0c4d04ffa2203fe17a6d2f9ed8eaa80
+  - 1b3db6c523106cc1de6e034aaea04bf2d6abd9c8
 created-at: 2026-11-21T18:42:48Z
-updated-at: 2026-11-21T19:22:23Z
+updated-at: 2026-11-21T19:45:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3317363
 claimed-at: 2026-11-21T19:18:40Z
 outcome-what: "Overview Log: lane filter row (board order, several, AND with people), Close framed in the tab row, 🆕/🔙 sign first on every Log line; a chosen lane or person without events keeps its button; manifest + release note"
 outcome-why: "Alex wants to see only e.g. blocked or signoff, hit Close without scrolling, and read an event's kind at a glance; a filter that hides its own button cannot be undone"
 outcome-resolves: "Log filters only by person; Close is a small word under long lists; created/put back differ only by colour; bughunt 19:15 stale filter value without a button"
-review-summary: "Overview-Log im Cockpit: unter dem Personenfilter steht jetzt eine zweite Button-Reihe mit den Lanes, die in den Ereignissen der letzten Tage vorkommen (Board-Reihenfolge, unbekannte Lanes alphabetisch hinten, eigenes 'All'); beide Filter wirken zusammen und bleiben über overviewLanesAtom wie die Personen erhalten. overviewOf liefert dafür die Lane-Reihenfolge des Boards mit (Overview.lanes). Close steht nicht mehr unter den Listen, sondern in der Tab-Reihe, in einem runden Rahmen mit Polsterung, daher OVERVIEW_ROWS 2→3 für den Workers-Tab. Jede Log-Zeile beginnt mit 🆕 (created) oder 🔙 (put back) — einzelne Emoji_Presentation-Codepoints ohne VS16, damit die Spalten nicht verrutschen. Toggle-Logik beider Filter in einer Funktion toggled. Release-Note vorhanden; 230 Plugin-Tests grün."
+review-summary: "Im Overview-Log des Cockpits gibt es unter der Personenreihe jetzt eine zweite Knopfreihe mit Lanes (eigenes 'All', Reihenfolge wie auf dem Board, unbekannte Lanes alphabetisch hinten); beide Filter gelten zusammen und filtern nach der Lane, in der ein Ticket jetzt steht. Ein gewählter Wert ohne Ereignis behält seinen Knopf, damit der Filter aufhebbar bleibt. Overview liefert dafür neu 'lanes' (Board-Reihenfolge), der Zustand liegt im neuen Atom overviewLanes, Personen und Lanes teilen sich eine Toggle-Funktion und eine filterRow. Close steht jetzt in der Tab-Reihe oben, in einem runden Rahmen mit gepolstertem Label (Button kennt keine Größe), OVERVIEW_ROWS 2→3 passt die Workers-Höhe an. Jede Log-Zeile beginnt mit 🆕 (angelegt) oder 🔙 (zurückgelegt) — einzelne Emoji_Presentation-Codepoints ohne VS16, damit die Spalten nicht verrutschen. Release-Note und shipped.sha256 sind dabei."
 round: 3
 back-from: signoff
 back-by: person
 back-count: 1
 review-gaps: |-
-  note: Log-Filter behält eine gewählte Lane/Person, für die es keinen Button mehr gibt (overview-pane.tsx:171/:176 bauen Buttons nur aus heutigen Ereignissen, :178 filtert mit dem gespeicherten Atom) — Lane signoff wählen, Ticket geht nach done, Overview neu öffnen: Log zeigt 'none' ohne gedrückten Button, nur ein dimmes 'All' hilft. Fix: gewählte Werte in items mit aufnehmen (items ∪ picked) oder beim Lesen auf vorhandene Werte schneiden
-  note: Lane-Filter filtert nach der Lane, in der das Ticket jetzt steht, nicht der zum Zeitpunkt des Ereignisses — gewollt und im Kommentar benannt (jaira speichert keine Lane-Wechselzeit), für den Nutzer aber nicht sichtbar
-  note: DoD 3 'geprüft' in Windows Terminal ist nur über die Breitenklasse belegt, nicht per Auge (Note 19:09) — Sichtprüfung gehört in die Abnahme
-test-verdict: "pass: claude plugin test (2.1.330) 230/230 RC=0 on 3c905a44's tree; go test shipped/release/role/lane RC=0; shipped-history --check RC=0. DoD 1-4 verified: lane filter test (board order, multi, AND with people, All), Close frame in tab row on all three tabs and on an unread board, sign class + clock column test, notes/02D92C.md present. Failure path: unreadable board still draws the framed Close first. Writes: only session atoms (overviewLanes), no file — no concurrent-writer case. Not checked by eye in Windows Terminal (no WT here) — acceptance step."
-hunt-verdict: "pass: bughunt done at 3c905a44, 1 change (small edge, not a blocker: a chosen lane/person with no button left shows 'none' until All is pressed; note for review and the person), 0 pre-existing"
-review-verdict: "Diff erfüllt alle vier DoD-Punkte; kein Blocker. Eine kleine Kante (verwaister Filterwert ohne Button) ist behebbar, aber 'All' räumt sie auf. Unsicher nur bei der Optik in Windows Terminal, die keiner gesehen hat."
-review-round: 2
-review-check: "1. In einem Repo mit jaira-Board: claude --plugin-dir /home/alex/projects/.worktrees/jaira-02d92c/core/mod/builtin/jaira-cockpit  2. Cockpit-Overview öffnen: oben rechts neben Queue/Log/Workers steht Close in einem runden Rahmen, sichtbar breiter als ein Tab  3. Tab Log öffnen: unter der Personenreihe eine zweite Reihe mit Lane-Buttons in Board-Reihenfolge  4. Zwei Lanes anklicken: nur Ereignisse dieser Lanes bleiben, zusätzlich eine Person wählen: beide Filter gelten  5. 'All' in der Lane-Reihe: alle Lanes wieder da  6. Jede Log-Zeile beginnt mit 🆕 oder 🔙, die Uhrzeiten stehen in Windows Terminal in einer Spalte  7. Close drücken: Overview schließt"
+  note: DoD 3 'geprüft' in Windows Terminal ist nur über die Breitenklasse (East_Asian_Width=W) belegt, nicht mit dem Auge — ein Blick in WT gehört in die Abnahme
+  note: der Lane-Filter filtert nach der aktuellen Lane eines Tickets, nicht nach der Lane zum Zeitpunkt des Ereignisses — so gewollt (Release-Note sagt es nicht ausdrücklich), aber ein 'created' von gestern erscheint heute unter z.B. review
+test-verdict: "pass: round after fix, diff since 3c905a44 (overview-pane.tsx, board.test.ts, shipped.sha256): claude plugin test 231/231 RC=0 at 1b3db6c5; go test role/shipped/release RC=0; shipped-history --check RC=0. DoD 1-4 proofs re-pointed and opened. Function: new test chooses signoff+Alex, ticket moves to done and to Berk, reopened Log shows none with both buttons pressed, pressing them brings the event back and the buttons go; same test fails on the pre-fix code (hunk reverted). Writes: only session atoms, no file — no concurrent-writer case."
+hunt-verdict: "pass: bughunt done at 1b3db6c5, 0 change, 0 pre-existing (follow-up hunt over the diff since 3c905a44)"
+review-verdict: "Der Diff erfüllt alle vier DoD-Punkte; claude plugin test . läuft grün (231 pass), shipped.sha256 enthält die Hashes aller vier ausgelieferten Dateien, Schlüssel der Knopfreihen kollidieren nicht. Keine Defekte gefunden; einzige Unsicherheit ist die WT-Darstellung der Emojis, die nur ein Mensch am echten Terminal bestätigen kann."
+review-round: 3
+review-check: "1. claude --plugin-dir /home/alex/projects/.worktrees/jaira-02d92c/core/mod/builtin/jaira-cockpit in einem Repo mit .jaira starten (am besten in Windows Terminal)  2. Cockpit-Overview öffnen: oben stehen Queue, Log, Workers und daneben ein gerahmter, breiterer 'Close'  3. Tab Log öffnen: unter der Personenreihe eine Reihe Lane-Knöpfe in Board-Reihenfolge, beginnend mit 'All'  4. Eine Lane drücken, dann eine zweite: nur Ereignisse dieser Lanes bleiben; zusätzlich eine Person drücken: beide Filter gelten zusammen  5. Jede Zeile beginnt mit 🆕 oder 🔙, und die Uhrzeitspalte steht in allen Zeilen bündig  6. Close drücken: der Pane geht zu"
 review-verdict-gaps: |-
-  note: Log-Filter behält eine gewählte Lane/Person, für die es keinen Button mehr gibt (overview-pane.tsx:171/:176 bauen Buttons nur aus heutigen Ereignissen, :178 filtert mit dem gespeicherten Atom) — Lane signoff wählen, Ticket geht nach done, Overview neu öffnen: Log zeigt 'none' ohne gedrückten Button, nur ein dimmes 'All' hilft. Fix: gewählte Werte in items mit aufnehmen (items ∪ picked) oder beim Lesen auf vorhandene Werte schneiden
-  note: Lane-Filter filtert nach der Lane, in der das Ticket jetzt steht, nicht der zum Zeitpunkt des Ereignisses — gewollt und im Kommentar benannt (jaira speichert keine Lane-Wechselzeit), für den Nutzer aber nicht sichtbar
-  note: DoD 3 'geprüft' in Windows Terminal ist nur über die Breitenklasse belegt, nicht per Auge (Note 19:09) — Sichtprüfung gehört in die Abnahme
+  note: DoD 3 'geprüft' in Windows Terminal ist nur über die Breitenklasse (East_Asian_Width=W) belegt, nicht mit dem Auge — ein Blick in WT gehört in die Abnahme
+  note: der Lane-Filter filtert nach der aktuellen Lane eines Tickets, nicht nach der Lane zum Zeitpunkt des Ereignisses — so gewollt (Release-Note sagt es nicht ausdrücklich), aber ein 'created' von gestern erscheint heute unter z.B. review
 ---
 
 # Cockpit-Log: Filter nach Lane, größerer Close-Knopf, ein Zeichen pro Ereignis
@@ -84,3 +86,5 @@ review-verdict-gaps: |-
 - **2026-11-21 19:15 · Alexander Sacharov** — bughunt: done at 3c905a44 - 1 finding (1 change, 0 pre-existing) in 4 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx core/mod/builtin/jaira-cockpit/hooks/overview.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/types/index.d.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/02D92C.md core/shipped/shipped.sha256
 - **2026-11-21 19:18 · Alexander Sacharov** — Given back from signoff: Filterknöpfe = vorhandene Werte ∪ gewählte Werte, für Lanes und Personen, damit ein gewählter Wert ohne Ereignis abwählbar bleibt (Bughunt 19:15). Ein Test: signoff wählen, Ticket geht nach done, Knopf signoff ist noch da und hebt den Filter auf.
 - **2026-11-21 19:22 · Alexander Sacharov** — give-back fixed: names/present now take state.people/state.lanes in too (overview-pane.tsx:174-175), so a chosen value with no event keeps a pressed button; once unchosen with no event it goes. New test fails on the old code (checked by reverting the hunk), 232/232 pass; shipped.sha256 regenerated. Release note unchanged: the existing line already promises the lane filter, this only makes it undoable.
+- **2026-11-21 19:22 · Alexander Sacharov** — critique round 3 (after give-back): read only the bughunt 19:15 finding and 1b3db6c5; the union of present and chosen values at overview-pane.tsx:174-175 answers it in place, same pattern for both rows; nothing raised.
+- **2026-11-21 19:24 · Alexander Sacharov** — bughunt: done at 1b3db6c5 - 0 findings in 3 changed files, follow-up hunt since 3c905a44 (diff only: overview-pane.tsx filter buttons, board.test.ts, shipped.sha256); concurrency, error paths, input, permissions checked; ran: claude plugin test . (231 pass); files: core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx core/mod/builtin/jaira-cockpit/hooks/overview.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/types/index.d.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/02D92C.md core/shipped/shipped.sha256
