@@ -1571,7 +1571,7 @@ func newLanesShowCmd() *cobra.Command {
 					"input_requires": l.InputRequires, "output_produces": l.OutputProduces,
 					"source": src, "prompt": l.Prompt, "creator": l.Creator,
 					"after": l.After, "description": l.Description, "overrides": l.Overrides,
-					"rejects_to": l.RejectsTo, "holds": l.Holds,
+					"rejects_to": l.RejectsTo, "max_rounds": l.MaxRounds, "holds": l.Holds,
 					"context": l.Context, "context_implied": l.ContextImplied, "context_invalid": l.ContextInvalid,
 					"human_exit": l.RequiresHumanExit,
 				})
@@ -1584,6 +1584,9 @@ func newLanesShowCmd() *cobra.Command {
 			// are the lane's place in the flow: where it sits, and where it sends
 			// work that is not good enough yet.
 			fmt.Fprintf(w, "Rejects to:  %s\n", dash(board.OrList(l.RejectsTo)))
+			if l.MaxRounds > 0 {
+				fmt.Fprintf(w, "Max rounds:  %d in a row, then a person decides\n", l.MaxRounds)
+			}
 			// Labelled as what it is, not as a position: column order follows
 			// Anchor, above, and never this number.
 			fmt.Fprintf(w, "Merge rank:  %d\n", l.Precedence)
