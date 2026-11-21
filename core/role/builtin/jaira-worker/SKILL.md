@@ -433,8 +433,12 @@ jaira-dispatcher/scripts/close-tab.sh --parent <session> <ticket id>
 ```
 
 (`../jaira-dispatcher/scripts/` from this file, as in "Starting another
-agent".) Nobody needs your context any more: a ticket given back gets a new
-worker, and what you knew is on the ticket. The script decides, not you — it
+agent".) In done nobody needs your context any more, and the tab closes. In
+signoff or another person's lane it stays while your prompt cache is warm —
+`kept <ticket>: cache warm until HH:MM` — so a give-back in that hour comes
+back to you instead of a new worker reading everything again; `reap.sh`
+closes it once the window is over or the ticket is done. What you knew is on
+the ticket either way. The script decides, not you — it
 closes only when the ticket sits in a person's lane or in done, has no open
 question and your worktree holds nothing `uncommitted.sh` counts — it lets
 through only new or changed ticket and milestone files under `.jaira/`, so a
