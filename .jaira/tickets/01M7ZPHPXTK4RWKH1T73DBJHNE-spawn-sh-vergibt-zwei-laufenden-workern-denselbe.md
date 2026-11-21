@@ -22,13 +22,21 @@ related: []
 follows: 01M7Z6T8TS8CRXA4FH218R8VTS
 commits: []
 created-at: 2026-11-21T18:40:24Z
-updated-at: 2026-11-21T19:51:30Z
+updated-at: 2026-11-21T19:56:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-241203
 claimed-at: 2026-11-21T19:47:49Z
-outcome-what: "spawn.sh hands each new worktree a port offset no other worktree of the repository holds: starts at the old slug hash, skips taken ones, under a lock, and writes it to jaira-offset in the worktree's git dir"
+outcome-what: "spawn.sh hands each new worktree a port offset no other existing worktree of the repository holds: starts at the old slug hash, skips taken ones, under a lock that waits up to 120 s, and writes it to jaira-offset in the worktree's git dir; worktrees whose directory is gone hold nothing"
 outcome-why: "cksum%40 alone gave 8r8vts, 32ttss and twb0r6 the same offset; two stacks on the same ports"
 outcome-resolves: Zwei gleichzeitig laufende Worker bekommen nie denselben Port-Offset
+review-summary: "no findings. jaira-offset beside jaira-setup (same place, core/role/builtin/jaira-dispatcher/scripts/spawn.sh) is needed rather than reading jaira-setup/.env only: those are written after the setup ran, outside the lock, and a setup that starts a container stack takes longer than the 10 s another spawn waits. Lock kept: a teamlead spawns several workers at once. Legacy reads (jaira-setup offset=, .env '# worker stack' line) cover worktrees made before this and cost one elif each."
+review-gaps: "none — the jaira-setup offset is read with sed in spawn.sh; reap.sh's field() reads the same file but lives in another script and sharing it would mean a sourced helper for one line, so left as is. No dead code, no hoisting worth it (one pass over at most a few dozen worktree dirs per new worktree)."
+test-verdict: "pass: go build + go test -race ./... with cleared cache green (RC=0); DoD 1-3 verified (TestSpawnGivesEveryWorktreeItsOwnOffset run, USAGE line and core/release/notes/DBJHNE.md read); scratch repo: 4 spawns in parallel (8r8vts, 32ttss, twb0r6 all hash 5, ab12cd 31) got 6, 7, 5, 31 and the lock was gone after; all 40 taken exits 1 with no worktree, no branch, no lock left; a foreign lock exits 1 after 10 s naming it and is left in place"
+hunt-verdict: "fail: bughunt done at d82c472, 2 change: lock wait (10 s) shorter than a slow 'git worktree add' and its message tells to remove a live lock; a prunable worktree's offset stays taken"
+round: 2
+back-from: testing
+back-by: lane
+back-count: 1
 ---
 
 # spawn.sh vergibt zwei laufenden Workern denselben Port-Offset
@@ -38,7 +46,7 @@ outcome-resolves: Zwei gleichzeitig laufende Worker bekommen nie denselben Port-
 - [x] Zwei Slugs mit gleichem cksum-Rest bekommen verschiedene Offsets, solange beide Worktrees existieren (Test in core/role)
   proof: core/role/role_test.go TestSpawnGivesEveryWorktreeItsOwnOffset (8r8vts/32ttss → 6/7 beside twb0r6 on 5)
 - [x] Ein Worktree, der schon steht, behält seinen Offset bei erneutem spawn
-  proof: TestSpawnGivesEveryWorktreeItsOwnOffset: 8r8vts spawned again keeps 6; offset only computed inside spawn.sh's 'if [ ! -d "$wt" ]'
+  proof: TestSpawnGivesEveryWorktreeItsOwnOffset: 8r8vts spawned again keeps 6; the offset is handed out only inside spawn.sh's 'if [ ! -d "$wt" ]'
 - [x] Offset 0 bleibt frei für das Hauptverzeichnis; Bereich 1-40 bleibt, oder die Änderung steht in der USAGE und in einer Release-Note
   proof: spawn.sh: o=$(( (start + i) % 40 + 1 )) stays 1-40; TestSpawnGivesEveryWorktreeItsOwnOffset; USAGE + core/release/notes/DBJHNE.md say the new rule
 
@@ -60,3 +68,8 @@ outcome-resolves: Zwei gleichzeitig laufende Worker bekommen nie denselben Port-
 ## Progress
 - **2026-11-21 19:47 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/2274544.sock
 - **2026-11-21 19:48 · Alexander Sacharov** — decision: no open questions for the person. Offset is allocated when the worktree is made (already the only time spawn.sh computes it, so a standing worktree keeps its own — DoD 2 holds by construction). Start at the old cksum%40+1, take the next free one, wrapping, so a worktree with no collision gets the same number as before. Taken = offsets recorded by the other worktrees of the repo: new file jaira-offset in each worktree git dir (not jaira-setup: its presence is what makes reap.sh run a teardown), plus legacy jaira-setup offset= and the .env '# worker stack: ... offset=' line for worktrees made before this. A mkdir lock in the git common dir covers allocate+worktree add+record, so two spawns at once cannot pick the same free slot. Range stays 1-40, 0 stays the main directory's. All 40 taken: exit 1 before the worktree is made, but only when a setup or .env needs ports.
+- **2026-11-21 19:51 · Alexander Sacharov** — critique: checked whether jaira-offset could be dropped for jaira-setup/.env (no: written after setup, outside the lock) and whether the lock is speculative (no: parallel spawns from a teamlead). Accepted: a SIGKILLed spawn leaves jaira-offset.lock and the next spawn stops after 10 s with a message naming it; a worktree dir deleted without 'git worktree prune' keeps its offset taken until pruned.
+- **2026-11-21 19:54 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:209-217 - class: the offset lock is held across 'git worktree add' (line 251), but a waiting spawn gives up after a fixed 10 s, so any checkout slower than that fails every spawn started beside it; example: a repository whose checkout takes 12 s (large tree, LFS, a post-checkout hook, Git Bash on Windows) - two spawns at once, the second exits 1 before making anything and tells the person to remove a lock that is still rightly held; ran: post-checkout hook 'sleep 12' in a scratch repo, two spawn.sh in parallel -> one rc=0, one rc=1 with 'jaira-offset.lock has stood for 10 seconds'
+- **2026-11-21 19:54 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:224-237 - class: every entry under <common>/worktrees/ counts as holding its offset, including prunable ones whose directory is gone (removed with rm -rf rather than 'git worktree remove'); their offsets stay blocked until 'git worktree prune', and with enough of them spawn.sh refuses with 'every port offset 1-40 is held' while far fewer worktrees exist, and its hint (reap.sh) does not free them; example: worktree repo-bbbbbb deleted by hand, still listed as prunable with jaira-offset 8 - slug eeeeee, which starts at 8, gets 9; ran: scratch repo + spawn.sh with a herdr stub, offsets read back from .git/worktrees/*/jaira-offset
+- **2026-11-21 19:54 · Alexander Sacharov** — bughunt: done at d82c472b8 - 2 findings (2 change, 0 pre-existing, no blocker) in 4 files, first hunt; concurrency, error paths, input, permissions checked; files: core/release/notes/DBJHNE.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/role_test.go core/shipped/shipped.sha256
+- **2026-11-21 19:55 · Alexander Sacharov** — testing: class: the lock timeout is shorter than what it guards; example: post-checkout hook sleeping 12 s, second parallel spawn exits 1 and says to remove the lock the first one holds; fix: wait as long as a worktree add can reasonably take (120 s) and say in the message to remove it only when no spawn.sh runs. Rides along: skip worktree entries whose directory is gone (prunable) when counting taken offsets.

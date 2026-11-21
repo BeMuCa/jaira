@@ -1149,6 +1149,16 @@ esac
 	if c := offset("twb0r6"); c != "5" {
 		t.Errorf("twb0r6 made again got offset %s, want the free 5", c)
 	}
+
+	// Deleted by hand and not pruned, a worktree runs no stack: its 6 is free.
+	// e8x8ye hashes to 5 too, which twb0r6 holds.
+	if err := os.RemoveAll(filepath.Join(base, ".worktrees", "repo-8r8vts")); err != nil {
+		t.Fatal(err)
+	}
+	spawnSlug("e8x8ye")
+	if e := offset("e8x8ye"); e != "6" {
+		t.Errorf("e8x8ye got offset %s, want the 6 a deleted worktree no longer holds", e)
+	}
 }
 
 // shellDir is dir as bash spells it after cd'ing there, the form spawn.sh

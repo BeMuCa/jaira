@@ -205,12 +205,15 @@ if [ ! -d "$wt" ]; then
     # Looking, making the worktree and writing its offset down are one step,
     # or two spawns at once both take the same free offset.
     lock="$common/jaira-offset.lock"
+    # The wait covers a 'git worktree add' with slow checkout hooks; a lock
+    # older than that is one a killed spawn.sh left behind.
     tries=0
     until mkdir "$lock" 2>/dev/null; do
       tries=$((tries + 1))
-      if [ "$tries" -ge 100 ]; then
-        echo "$lock has stood for 10 seconds: another spawn.sh is making a worktree," \
-             "or one died while it did — remove it when none runs" >&2
+      if [ "$tries" -ge 1200 ]; then
+        echo "$lock has stood for 120 seconds: a spawn.sh died while it made a" \
+             "worktree, or one is still making it. Remove the lock only when no" \
+             "spawn.sh runs for $root" >&2
         exit 1
       fi
       sleep 0.1
@@ -219,20 +222,20 @@ if [ ! -d "$wt" ]; then
 
     # What every other worktree holds: its jaira-offset, else the offset its
     # jaira-setup or .env names — a worktree made before offsets were written
-    # down has only those.
+    # down has only those. One whose directory is gone (deleted by hand, not
+    # yet pruned) runs no stack and holds nothing.
     taken=" "
     for gd in "$common"/worktrees/*/; do
-      [ -d "$gd" ] || continue
+      [ -f "$gd/gitdir" ] || continue
+      w="$(dirname "$(cat "$gd/gitdir")")"
+      [ -d "$w" ] || continue
       o=""
       if [ -f "$gd/jaira-offset" ]; then
         o="$(cat "$gd/jaira-offset")"
       elif [ -f "$gd/jaira-setup" ]; then
         o="$(sed -n 's/^offset=//p' "$gd/jaira-setup")"
-      elif [ -f "$gd/gitdir" ]; then
-        w="$(dirname "$(cat "$gd/gitdir")")"
-        if [ -f "$w/.env" ]; then
-          o="$(sed -n 's/^# worker stack: .* offset=\([0-9][0-9]*\)$/\1/p' "$w/.env" | tail -n 1)"
-        fi
+      elif [ -f "$w/.env" ]; then
+        o="$(sed -n 's/^# worker stack: .* offset=\([0-9][0-9]*\)$/\1/p' "$w/.env" | tail -n 1)"
       fi
       taken="$taken$o "
     done
