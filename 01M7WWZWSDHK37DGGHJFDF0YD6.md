@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:19:26Z
+updated-at: 2026-11-21T08:19:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
@@ -32,7 +32,7 @@ outcome-why: "The round-3 bug hunt found the prompts took an empty verdict_gaps 
 outcome-resolves: "bughunt change at c8de2b8a (texts.ts:79, spawn.sh:396); claude plugin test 216 pass with the rule asserted; go test core/role core/shipped core/lane RC=0."
 review-summary: "none"
 review-gaps: "none - 553b37f3 changes two prompt sentences and one assertion"
-test-verdict: "pass: go test ./... RC=0 at c8de2b8a (core/lane after the manifest line), go test -race -count=1 internal/cli core/ticket core/move RC=0, claude plugin test 216 pass; DoD 11 verified in the tree; scratch board: pipe move review->in-progress back by=lane, same move under script(1) (real TTY) by=person; verdict+CRLF gaps then a later-round gaps write -> verdict_gaps keeps 'note: a\\nblocker: b', plain show prints 'gaps at verdict'; set on a missing ticket exits 5; parallel set review-gaps + review-verdict both land, verdict_gaps consistent with gaps"
+test-verdict: "pass: round 4 changed only the two Explain prompt sentences and one assertion - claude plugin test 216 pass (rule asserted in 'without Herdr, Explain asks...'), go test core/role core/shipped core/lane RC=0; writes nothing new, so no parallel-writer case"
 hunt-verdict: "fail: 1 change finding at c8de2b8a - Explain prompts (texts.ts:79, spawn.sh:396) read an empty verdict_gaps on a ticket reviewed before the field as 'earlier round'"
 round: 4
 review-verdict: "The diff meets all ten DoD items; no blocker. go test (core/move, core/ticket, internal/cli, core/role, core/shipped, internal/tui) and claude plugin test (215 pass) green at 1789d202. Three small notes, none needs a round."
