@@ -72,8 +72,9 @@ var roleFiles = map[string][]string{
 	// a lane.
 	"jaira-dispatcher": {"scripts/spawn.sh", "scripts/run-lane.sh"},
 	// pr-round.sh answers one round of review comments when the board lets an
-	// agent open the pull request (JG3REW).
-	"jaira-role-pr": {"scripts/pr-round.sh"},
+	// agent open the pull request (JG3REW); pre-push-scan.sh looks for what
+	// must not leave the machine before every push (AX8K02).
+	"jaira-role-pr": {"scripts/pr-round.sh", "scripts/pre-push-scan.sh"},
 	// build.py writes the page from template.html and the record from
 	// report.html.
 	"jaira-role-acceptance": {"build.py", "template.html", "report.html"},
