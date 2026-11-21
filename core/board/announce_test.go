@@ -229,7 +229,7 @@ func TestAgentNoteNamesReject(t *testing.T) {
 	}
 }
 
-// TestAgentNoteSaysTheTicketCannotRideOnAnUnsharedBoard guards the two rules
+// TestAgentNoteNamesProofAndTheUnsharedBoardCaveat guards the two rules
 // an agent on a private board cannot follow as written. The block tells it to
 // verify a ticked item with --proof and to commit the ticket file with the
 // code; on a board 'jaira init' keeps out of git there is no file to add, and

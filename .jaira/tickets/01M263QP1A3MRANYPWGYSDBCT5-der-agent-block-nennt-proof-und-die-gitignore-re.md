@@ -1,7 +1,7 @@
 ---
 id: 01M263QP1A3MRANYPWGYSDBCT5
 title: "Der Agent-Block nennt --proof, und die Gitignore-Regel verweist auf die Commit-Regel"
-status: review
+status: signoff
 ready: true
 creator: BeMuCa
 assignee: Alexander Sacharov
@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-21T08:15:32Z
+updated-at: 2026-11-21T08:19:10Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -27,18 +27,16 @@ claimed-at: 2026-11-21T08:01:01Z
 outcome-what: "Der generierte Agent-Block sagt im Punkt 'the ticket rides with the code', dass dieser und der naechste Punkt nur auf einem geteilten Board gelten: ohne geteiltes .jaira/ gibt es keine Ticketdatei zum Mitcommitten, der Code geht allein mit dem Handle im Betreff. Test haelt den Satz und --proof fest; CLAUDE.md/AGENTS.md dieses Repos regeneriert; Release-Note."
 outcome-why: "Auf einem ungeteilten Board widersprach die Commit-Regel dem Zustand des Boards: ein Agent kann eine ignorierte Datei nicht mitcommitten und las die Regel als kaputt. --proof und 'jaira update' waren schon ausgeliefert (2143e9ad, update.go:257) und brauchten nur den Test."
 outcome-resolves: SDBCT5
-review-summary: "Round after signoff return: nothing to return. The three new caveat sentences (jaira-worker SKILL.md:107, jaira-role-lane SKILL.md:90/293) sit next to the commit line they qualify, the same placement the block uses (announce.go:138); a shared helper is not possible across markdown roles. Wording in block and jaira role now says the next point holds all the more instead of excluding it. Standing on the 22:58 note for the earlier rounds."
+review-summary: "On a board 'jaira init' keeps out of git there is no ticket file to commit, yet every place that tells an agent to commit the ticket with the code read as if .jaira/ were always tracked. The branch adds one caveat sentence to each such place: the generated agent block (core/board/announce.go, regenerated into CLAUDE.md/AGENTS.md), the jaira role and its repo mirror, docs/AGENTS.md, the PR role (a code commit without a ticket file is not a finding there), and the ready-to-paste commit lines in jaira-worker and jaira-role-lane (leave the ticket file out of git add, git refuses it as ignored). The caveat says 'commits nothing' still holds, only the ticket-file sentences fall away. A test pins the wording in block and role, the manifest gets the new role hashes, a release note tells users to run jaira update / --roles."
 round: 4
-review-gaps: "none: the round adds three sentences and a renamed test; nothing duplicated or unused"
+review-gaps: |-
+  note: core/board/announce_test.go:232 - the doc comment still names the old test TestAgentNoteSaysTheTicketCannotRideOnAnUnsharedBoard; the func is TestAgentNoteNamesProofAndTheUnsharedBoardCaveat
+  note: core/release/notes/SDBCT5.md:2 lists jaira, jaira-worker and jaira-role-lane but not jaira-role-pr, whose point 2 also changed and is refreshed by the same jaira update --roles
 test-verdict: "pass: go test ./... -race RC=0; TestAgentNoteNamesProofAndTheUnsharedBoardCaveat RC=0; DoD 1-7 verified in the tree; scratch board (git init + jaira init with this build): CLAUDE.md/AGENTS.md carry the reworded caveat, .jaira/ stays out of git; go test ./core/role ./core/shipped green after appending 3 manifest hashes"
 hunt-verdict: "pass: bughunt done at d71e5e86 (diff since bb02c815), 0 change, 0 pre-existing"
-review-verdict: pass
-review-round: 3
-review-check: |-
-  1. In einem leeren Verzeichnis: git init && jaira init (mit diesem Build)
-  2. grep -n "hold on a shared board only" CLAUDE.md AGENTS.md - je eine Treffer-Zeile im Punkt 'the ticket rides with the code'
-  3. git status --short zeigt nur CLAUDE.md und AGENTS.md, kein .jaira/ - genau der Fall, den der Satz beschreibt
-  4. In einem bestehenden Board: jaira update schreibt denselben Satz in den Block; go test ./core/board -run TestAgentNoteSaysTheTicketCannotRideOnAnUnsharedBoard ist gruen
+review-verdict: "pass - all 7 DoD items hold in the diff; current hashes of the 4 changed roles are in shipped.sha256; .claude/skills/jaira equals core/role/jaira byte for byte; agent blocks in CLAUDE.md and AGENTS.md are identical; no further live commit line names .jaira/tickets without the caveat; go test core/board core/role core/shipped internal/cli -count=1 green. Two cosmetic notes, no blocker."
+review-round: 4
+review-check: "1. cd into the worktree jaira-sdbct5 and run: go build -o /tmp/jaira-sdbct5 ./cmd/jaira  2. mkdir /tmp/t && cd /tmp/t && git init && /tmp/jaira-sdbct5 init  3. open /tmp/t/CLAUDE.md, find the point 'the ticket rides with the code' - it ends with 'On a board not shared yet ... commit the code alone ... The next point holds there all the more'  4. git status in /tmp/t shows no .jaira/ - that is the unshared board the sentence is about  5. in the worktree: go test ./core/board -run TestAgentNoteNamesProofAndTheUnsharedBoardCaveat -count=1 -> ok  6. grep -n 'not shared yet' core/role/builtin/jaira-worker/SKILL.md core/role/builtin/jaira-role-lane/SKILL.md -> one line under each ready-to-paste commit block"
 ---
 
 # Der Agent-Block nennt --proof, und die Gitignore-Regel verweist auf die Commit-Regel
@@ -93,3 +91,5 @@ review-check: |-
 - **2026-11-21 08:01 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/4205.sock
 - **2026-11-21 08:07 · Alexander Sacharov** — round after signoff return (21.11.): all three review-gaps notes closed. 1) commit lines in jaira-worker SKILL.md:103 and jaira-role-lane SKILL.md:86/288 now say to leave the ticket file out on an unshared board; grep 'git add.*.jaira/tickets' finds no further live site (rest: .planning, NOTES.md history, testdata). 2) caveat reworded in block and jaira role: no longer 'this point and the next hold on a shared board only', instead 'the next point holds there all the more; only its sentences about the ticket file fall away'. 3) test renamed TestAgentNoteNamesProofAndTheUnsharedBoardCaveat, asserts the new sentence. Manifest: 3 hashes appended. Release note line 2 names jaira-worker and jaira-role-lane.
 - **2026-11-21 08:10 · Alexander Sacharov** — bughunt: done at d71e5e86 - 0 findings in 11 modules, follow-up hunt (diff since bb02c815; jaira-worker and jaira-role-lane SKILL.md new, read at the changed sections); concurrency, error paths, input, permissions checked; ran: go test ./... exit 0, sha256sum of the 3 changed roles matches shipped.sha256:580-582, .claude/skills/jaira = core/role/jaira byte-equal, git add <code> <ignored ticket> on an exclude'd .jaira exits 1 and stages the code - as the new lines say; files: .claude/skills/jaira/SKILL.md .jaira/tags AGENTS.md CLAUDE.md core/board/announce.go core/board/announce_test.go core/release/notes/SDBCT5.md core/role/builtin/jaira-role-lane/SKILL.md core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/role/jaira/SKILL.md core/shipped/shipped.sha256 docs/AGENTS.md
+- **2026-11-21 08:18 · Alexander Sacharov** — review (fresh, 21.11.): pass. Read the whole branch diff vs b2349aa1, checked manifest hashes, mirror byte-equality, CLAUDE.md/AGENTS.md block equality, grep for live commit lines without the caveat; go test core/board core/role core/shipped internal/cli green. Two cosmetic notes in review-gaps (stale test name in a doc comment; release note line 2 omits jaira-role-pr).
+- **2026-11-21 08:19 · Alexander Sacharov** — after review (pass): both review-gaps notes closed in the same round - announce_test.go:232 doc comment names the renamed test; release note line 2 names jaira-role-pr too. Text-only, go test ./core/board green; not re-reviewed.
