@@ -1,0 +1,2 @@
+- A repository with `.jaira/worktree-setup` can add an executable `.jaira/worktree-teardown`: `reap.sh` calls it with the same four arguments (worktree, slug, port offset, repo root) after closing a merged ticket's tabs and before removing its worktree — stop the ticket's container stack and delete its volumes there, and make it safe to run twice.
+- `reap.sh` keeps a ticket whose teardown fails (`kept <ticket>: teardown failed: ...`), is not executable, or whose worktree name does not carry its slug, and tries the teardown again next round.

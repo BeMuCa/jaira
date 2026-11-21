@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -667,4 +668,116 @@ func TestReapOnANoneBoardNamesAnUnansweringGh(t *testing.T) {
 	if !strings.Contains(out, "waiting AB12CD: feat/ab12cd has not landed on origin's default branch; gh repo view did not answer (error connecting to api.github.com)") {
 		t.Fatalf("gh down, want it named as the cause:\n%s", out)
 	}
+}
+
+// What .jaira/worktree-setup built, .jaira/worktree-teardown takes down: reap.sh
+// calls it with the setup's arguments once the tabs are closed and before the
+// worktree goes. A teardown that fails, one that cannot be called, or a slug
+// that cannot be told keeps everything, with the reason.
+func TestReapTearsDownWhatTheSetupBuilt(t *testing.T) {
+	t.Parallel()
+	// The offset spawn.sh derives for the slug ab12cd: cksum % 40 + 1.
+	cases := []struct {
+		name   string
+		script string // the teardown; "" for none
+		mode   os.FileMode
+		move   string // the worktree is renamed to this before the run
+		want   string // a line reap.sh prints
+		called bool   // whether the teardown ran
+		gone   bool   // whether the worktree went
+	}{
+		{name: "none", gone: true},
+		{name: "succeeds", script: "exit 0", mode: 0o755, want: "tore down <wt>", called: true, gone: true},
+		{name: "fails", script: "echo stack busy >&2; exit 3", mode: 0o755,
+			want: "kept AB12CD: teardown failed: <main>/.jaira/worktree-teardown <wt> ab12cd <off> <main> (exit 3)", called: true},
+		{name: "not executable", script: "exit 0", mode: 0o644,
+			want: "kept AB12CD: <main>/.jaira/worktree-teardown is not executable"},
+		{name: "slug not in the name", script: "exit 0", mode: 0o755, move: "elsewhere",
+			want: "kept AB12CD: cannot tell the slug <wt> was set up with"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			r := newReapRig(t)
+			if c.move != "" {
+				to := filepath.Join(filepath.Dir(r.wt), c.move)
+				r.git(t, r.repo, "worktree", "move", r.wt, to)
+				for _, f := range r.records(t) {
+					b, _ := os.ReadFile(f)
+					r.write(t, f, strings.ReplaceAll(string(b), r.wt, to))
+				}
+				r.wt = to
+			}
+			calls := filepath.Join(filepath.Dir(r.closed), "teardown-calls")
+			if c.script != "" {
+				// It records its arguments, whether the worktree still stood
+				// and which tabs were closed by then.
+				body := "#!/usr/bin/env bash\n" +
+					"{ printf '%s|' \"$@\"; [ -d \"$1\" ] && printf 'present|'; tr '\\n' ' ' < " + r.closed + "; echo; } >> " + calls + "\n" +
+					c.script + "\n"
+				p := filepath.Join(r.repo, ".jaira", "worktree-teardown")
+				r.write(t, p, body)
+				if err := os.Chmod(p, c.mode); err != nil {
+					t.Fatal(err)
+				}
+			}
+			r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+			r.write(t, r.shown, `{"status":"done"}`)
+			dry := r.run(t, r.repo, "reap.sh", "--dry-run")
+			if _, err := os.Stat(calls); err == nil {
+				t.Fatalf("--dry-run called the teardown:\n%s", dry)
+			}
+			if c.called && !strings.Contains(dry, "would tear down "+r.wt) {
+				t.Errorf("--dry-run does not name the teardown:\n%s", dry)
+			}
+
+			got := r.run(t, r.repo, "reap.sh")
+			b, _ := os.ReadFile(calls)
+			off := offsetOf("ab12cd")
+			want := strings.NewReplacer("<wt>", r.wt, "<main>", r.repo, "<off>", off).Replace(c.want)
+			if want != "" && !strings.Contains(got, want) {
+				t.Errorf("output lacks %q:\n%s", want, got)
+			}
+			if c.called {
+				line := r.wt + "|ab12cd|" + off + "|" + r.repo + "|present|tp1 tp2 \n"
+				if string(b) != line {
+					t.Errorf("teardown called as %q, want %q (args, worktree still there, tabs closed first)", b, line)
+				}
+			} else if len(b) != 0 {
+				t.Errorf("teardown called: %q\n%s", b, got)
+			}
+			if c.script != "" && !c.called && r.closedTabs() != "" {
+				t.Errorf("a teardown that cannot be called closed tabs anyway: %q", r.closedTabs())
+			}
+			_, err := os.Stat(r.wt)
+			if gone := os.IsNotExist(err); gone != c.gone {
+				t.Errorf("worktree gone %v, want %v:\n%s", gone, c.gone, got)
+			}
+			if !c.gone {
+				if len(r.records(t)) != 2 || r.git(t, r.repo, "branch", "--list", "feat/ab12cd") == "" {
+					t.Errorf("kept ticket lost its records or branch:\n%s", got)
+				}
+			}
+			// A failed teardown is called again in the next round.
+			if c.name == "fails" {
+				r.run(t, r.repo, "reap.sh")
+				if b, _ := os.ReadFile(calls); strings.Count(string(b), "\n") != 2 {
+					t.Errorf("the next round did not call the teardown again: %q", b)
+				}
+			}
+		})
+	}
+}
+
+// offsetOf is spawn.sh's port offset for a slug: cksum % 40 + 1.
+func offsetOf(slug string) string {
+	out, err := exec.Command("bash", "-c", `printf '%s' "$1" | cksum | cut -d' ' -f1`, "_", slug).Output()
+	if err != nil {
+		panic(err)
+	}
+	var n int
+	for _, ch := range strings.TrimSpace(string(out)) {
+		n = (n*10 + int(ch-'0')) % 40
+	}
+	return strconv.Itoa(n + 1)
 }

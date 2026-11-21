@@ -36,10 +36,24 @@ One run at a time per repository: a second one while the first still runs
 prints 'skipped: reap.sh runs already' and exits 0. The lock is flock on
 reap.lock beside jaira/panes/; a run that dies lets go of it.
 
-Output: one line per thing done — 'closed <ticket>/<lane> <pane>', 'removed
-<worktree>', 'deleted branch <branch>' — or 'waiting <ticket>: <reason>' and
-'kept <ticket>: <reason>'; with
---dry-run the first three start with 'would'. Exit 0 also when something was
+A repository whose .jaira/worktree-setup builds something for a worktree — a
+container stack, ports, volumes — takes it down in an executable
+.jaira/worktree-teardown beside it. reap.sh calls it after the ticket's tabs
+are closed and before the worktree is removed, with the setup's arguments:
+  .jaira/worktree-teardown <worktree> <slug> <port-offset 1-40> <repo-root>
+where the slug is the worktree's name past '<main checkout's name>-', the
+offset is the one spawn.sh derived from it, and repo-root is the main
+checkout, whose .jaira/worktree-teardown is the one called. Its output goes to
+stderr. A teardown that fails keeps the worktree, the branch and the records
+('kept <ticket>: teardown failed: ...'), and the next round calls it again, so
+it must bear being called twice, and for a worktree its setup never ran in. One that is there but not executable, or a
+worktree whose slug cannot be told from its name, keeps the ticket before any
+tab closes.
+
+Output: one line per thing done — 'closed <ticket>/<lane> <pane>', 'tore down
+<worktree>', 'removed <worktree>', 'deleted branch <branch>' — or 'waiting
+<ticket>: <reason>' and 'kept <ticket>: <reason>'; with --dry-run the first
+four start with 'would' ('would tear down <worktree>'). Exit 0 also when something was
 kept: keeping is the answer, not a failure.
 
 Environment: HERDR_BIN_PATH, HERDR_PANE_ID (this pane is never closed),
@@ -315,6 +329,29 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
   if [ -n "$dirty" ]; then echo "kept $t: ${dirty% }"; continue; fi
   if [ -z "$herdr_up" ]; then echo "kept $t: herdr not reachable ($herdr)"; continue; fi
 
+  # What .jaira/worktree-setup built for a worktree — a container stack, its
+  # ports and volumes — .jaira/worktree-teardown takes down again, called with
+  # the arguments spawn.sh gave the setup. They are worked out here, before a
+  # tab closes: a teardown that cannot be called leaves everything standing.
+  # The slug is the worktree's name past '<main checkout's name>-', exactly as
+  # spawn.sh names it; a worktree named otherwise gets no guess, because a
+  # wrong slug tears down another ticket's stack.
+  teardown="$main/.jaira/worktree-teardown"; targs=()
+  if [ -e "$teardown" ] && [ ! -x "$teardown" ]; then
+    echo "kept $t: $teardown is not executable: chmod +x it, or remove it"; continue
+  fi
+  if [ -x "$teardown" ]; then
+    for w in "${wts[@]+"${wts[@]}"}"; do
+      s="$(basename "$w")"; s="${s#"$(basename "$main")-"}"
+      if [ "$s" = "$(basename "$w")" ] || [ -z "$s" ]; then
+        dirty="cannot tell the slug $w was set up with, so $teardown cannot be called for it"; break
+      fi
+      # The same port offset spawn.sh handed the setup.
+      targs+=("$w" "$s" "$(( ( $(printf '%s' "$s" | cksum | cut -d' ' -f1) % 40 ) + 1 ))")
+    done
+    if [ -n "$dirty" ]; then echo "kept $t: $dirty"; continue; fi
+  fi
+
   failed=""; gone=()
   for f in "${recs[@]}"; do
     pane="$(field pane "$f")"; lane="$(field lane "$f")"
@@ -335,6 +372,21 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
     fi
   done
   # A tab still open has claude sitting in the worktree: leave it standing.
+  [ -z "$failed" ] || continue
+
+  # Torn down once no tab has claude in the worktree any more, and before git
+  # takes the worktree away: a teardown may need what is in it (a compose
+  # file, its .env). Its output goes to stderr — stdout is the line protocol
+  # above. One that fails keeps the worktree, the branch and the records, so
+  # the next round calls it again: a teardown has to bear being called twice.
+  i=0
+  while [ "$i" -lt "${#targs[@]}" ]; do
+    w="${targs[$i]}"; s="${targs[$((i + 1))]}"; o="${targs[$((i + 2))]}"; i=$((i + 3))
+    if [ -n "$dry" ]; then echo "would tear down $w"; continue; fi
+    rc=0; "$teardown" "$w" "$s" "$o" "$main" </dev/null >&2 || rc=$?
+    if [ "$rc" = 0 ]; then echo "tore down $w"
+    else echo "kept $t: teardown failed: $teardown $w $s $o $main (exit $rc)"; failed=1; break; fi
+  done
   [ -z "$failed" ] || continue
 
   for w in "${wts[@]+"${wts[@]}"}"; do

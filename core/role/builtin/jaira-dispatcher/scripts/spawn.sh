@@ -50,6 +50,10 @@ is there and executable, called as
 and spawn.sh then writes nothing into the worktree itself. Without it, a .env in
 the repository is copied and four port lines are appended. A setup that fails,
 or is there but not executable, stops the spawn before a tab opens.
+Its counterpart is .jaira/worktree-teardown, which reap.sh calls with the same
+four arguments before it removes the worktree, once the ticket's pull request
+is merged — whatever the setup started (a container stack, its ports and
+volumes) is taken down there. See reap.sh --help.
 
 Environment: JAIRA_BRANCH_PREFIX (default feat), JAIRA_NO_WORKTREE, HC_TERMINAL_ID and
 HC_BIN (Herdr App, through herdr-hc.sh),
