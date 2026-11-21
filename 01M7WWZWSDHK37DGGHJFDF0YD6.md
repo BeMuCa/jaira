@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:04:39Z
+updated-at: 2026-11-21T09:04:47Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
@@ -32,7 +32,7 @@ outcome-why: "Teamlead for Alex 21.11.: on_head must not be red on a clean ticke
 outcome-resolves: "review round 8 notes 1-5. Checked: concurrency (read-only), error paths (stat failure/deleted -> changed, unknown commit -> fail), input (-z paths, spaces, .jaira prefix), permissions (none new). go test ./... RC=0, claude plugin test 218 pass."
 review-summary: "none"
 review-gaps: "none - cf0cdfef: writtenSince replaces untrackedSince and the diff check (one pass over both lists), nothing left orphaned"
-test-verdict: "pass: go test -count=1 ./... RC=0 at 81dcbbee; TestChangedSince 16 cases incl. untracked written after/before the hunt and outside the hunted paths; claude plugin test 216 pass (no TS change since round 5); read-only git, no parallel-writer case"
+test-verdict: "pass: go test -count=1 ./... RC=0 at cf0cdfef, claude plugin test 218 pass; scratch board end to end: uncommitted edit from before the hunt + untracked .jaira/milestones file -> on_head true; edit after the hunt -> false; stop-after-fix then -> skipped true; read-only git, no parallel-writer case"
 hunt-verdict: "pass: follow-up hunt since 7d73a41d at 81dcbbee, 0 findings"
 round: 9
 review-verdict: "Kein Blocker. DoD 1-11 sind im Code erfuellt; der Blocker aus Runde 4 (bughunt on HEAD aus 4 Notes nicht ableitbar) ist an der Ursache behoben: --brief traegt bughunt.on_head aus git, und Explain-Vorlage und spawn.sh lesen es. go test -count=1 ./... RC=0, claude plugin test 216 pass. Die fuenf notes sind Raender des on_head-Signals (falsch rot in conversational mode und bei stop-after-fix) und eine bekannte Grenze; keine davon ist ein falsches Ergebnis im Sinn der DoD ausser im conversational mode, wo nur die Statusmarke falsch rot ist."
