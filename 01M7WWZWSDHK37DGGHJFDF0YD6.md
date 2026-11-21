@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:56:32Z
+updated-at: 2026-11-21T08:56:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
@@ -31,7 +31,12 @@ outcome-what: "Round 7: on_head also turns false for an untracked file inside th
 outcome-why: "The round-7 hunter showed git diff HEAD never lists untracked files, so an edited new file left on_head true."
 outcome-resolves: "bughunt change at 7d73a41d (core/gitrepo/git.go:353); TestChangedSince 16 cases; go test core/gitrepo internal/cli RC=0. Checked: error paths (stat failure -> changed), input (-z, --full-name, spaces), concurrency/permissions unchanged (read-only)."
 review-summary: "Ticket traegt jetzt blocker-rule (Default: falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke) und stop-after-fix (true/false, set verweigert anderes mit Exit 2, Lesen case-insensitiv); show --json und --for-lane geben blocker_rule, stop_after_fix, back und round aus, testing/review/bughunt/pre-process-Prompts lesen sie. jaira move schreibt bei jedem Rueckweg back-from/back-by/back-count (person bei Personen-Lane, TUI-Move oder CLI-Move am Terminal; Zaehler nur fuer dieselbe Schleifen-Lane in Folge), in-progress stoppt bei count>=3 statt Notes zu zaehlen. jaira set kopiert review-gaps nach review-verdict-gaps in der Runde des Verdikts. show --brief traegt bughunt {at,on_head}: on_head = Hunt-Commit ist Vorfahr von HEAD, kein Nicht-Merge-Commit mit der Ticket-ID seither und keine uncommittete/untracked-nach-Hunt-Aenderung an den gejagten Dateien. Cockpit: Explain nur bei blocker:-Zeile oder Vorbehalt, note:-Zeilen als Liste ohne Knopf, 'review of round N, changed since' fuer ein altes Verdikt; Explain-Vorlage (texts.ts + spawn.sh) schreibt Statuszeile, [Klasse] je Note und eine Empfehlung ohne feste give-back-Reihenfolge; die Explain-Ansicht faerbt Haken/Kreuze, Marken und Empfehlung mit Theme-Farben, alte Notes bleiben Text. Nebenbei: CRLF in jaira set wird zu LF statt den Schreibvorgang zu brechen."
-review-gaps: "none - 81dcbbee: untrackedSince reuses run/Root, no second ls-files --others reader with these specs"
+review-gaps: |-
+  note: bughunt.on_head ist in conversational mode immer false: der Hunt liest uncommittete, getrackte Aenderungen, und ChangedSince (core/gitrepo/git.go, git diff --name-only HEAD) zaehlt jede uncommittete Aenderung an einer gejagten Datei, auch eine von vor dem Hunt - die Statuszeile zeigt dann ein rotes Kreuz auf einem sauberen Ticket; Fix der Klasse: fuer getrackte Aenderungen dieselbe mtime-gegen-Hunt-Zeit-Regel wie untrackedSince sie fuer untracked Dateien schon hat.
+  note: bughunt on HEAD ist bei stop-after-fix=true nach einer Fix-Runde absichtlich ohne Hunt und zeigt dann fail (roter Pfeil fuer eine gewollte Abwahl); die Explain-Vorlage koennte bei stop_after_fix 'skipped' statt fail schreiben - dafuer braeuchte der Brief stop_after_fix.
+  note: ChangedSince erkennt eigene Commits nur an der Ticket-ID in der Message, nicht an der zweiten Quelle der Commit-Liste (Commits, die die Ticket-Datei beruehren); ein Commit ohne ID-Handle, der gejagten Code aendert, laesst on_head true - durch die Hausregel abgedeckt, im Docstring von ChangedSince als Grenze benennbar.
+  note: pre-existing aus Runde 4, unveraendert: board.ts explainable nimmt fuer ein Verdikt frueherer Runde ohne verdict_gaps-Kopie review.gaps (dann optimize-Zeilen) als Blocker-Quelle; harmlos, solange optimize nie mit blocker: beginnt.
+  note: ohne Hunt-Dateiliste (codeOnly) zaehlt jede spaeter geschriebene untracked Datei im ganzen Repo, auch .jaira/milestones/* - ein jaira milestone add aus einer anderen Session faerbt bughunt on HEAD rot; konservativ (nur falsch rot, nie falsch gruen).
 test-verdict: "pass: go test -count=1 ./... RC=0 at 81dcbbee; TestChangedSince 16 cases incl. untracked written after/before the hunt and outside the hunted paths; claude plugin test 216 pass (no TS change since round 5); read-only git, no parallel-writer case"
 hunt-verdict: "pass: follow-up hunt since 7d73a41d at 81dcbbee, 0 findings"
 round: 8
