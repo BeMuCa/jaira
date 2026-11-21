@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:03:57Z
+updated-at: 2026-11-21T08:04:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
@@ -54,7 +54,8 @@ review-check: "1. cd in den Worktree feat/0k8y6s  2. scripts/shipped-history.sh 
   proof: .gitattributes core/shipped/shipped.sha256 merge=union; core/shipped/history_test.go TestManifestMergesWithoutConflict (fails without merge=union)
 - [x] scripts/shipped-history.sh --write ersetzt das Manifest erst nach vollstaendiger Erzeugung; Skript-Hilfe und Testmeldungen nennen diese Form statt '> core/shipped/shipped.sha256'
   proof: scripts/shipped-history.sh --write (mktemp + mv); core/shipped/history_test.go TestWriteReplacesTheManifest, TestUnreadableBlobStopsTheScript/shipped-history.sh_--write (manifest unchanged, no temp left)
-- [ ] TestEveryManifestPathExists panict nicht bei einer kurzen Manifestzeile
+- [x] TestEveryManifestPathExists panict nicht bei einer kurzen Manifestzeile
+  proof: core/shipped/shipped_test.go TestEveryManifestPathExists (strings.Cut statt l[66:])
 
 ## Options
 
