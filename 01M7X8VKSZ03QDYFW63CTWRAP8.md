@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:23:08Z
+updated-at: 2026-11-21T08:23:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-31394
 claimed-at: 2026-11-21T08:01:32Z
@@ -44,12 +44,7 @@ hunt-verdict: "clean: diff hunt at 8cdb3a0d (HEAD), 0 findings; the 08:13 findin
 question: ""
 review-verdict: "All four DoD items are met. go test ./core/role ./core/shipped pass (-count=1). The branch-lookup snippet was run in a scratch repo: linear copies pick the furthest one, diverged copies leave head empty, a handle inside a longer word is not matched. Every jaira/gh flag and JSON key the role names exists (list --lane/--board, show --json .handle/.dod_items/.review.*, gh run list --commit/--workflow), and the cockpit writes the 'Given back from <lane>:' prefix the return count reads (register.tsx:954). No blocker; four small notes."
 review-round: 10
-review-check: |-
-  1. cd /home/alex/projects/.worktrees/jaira-twrap8 && go test ./core/role ./core/shipped -count=1 -> both lines say ok
-  2. go run ./cmd/jaira roles install -> ~/.claude/skills/jaira-role-signoff/SKILL.md exists
-  3. In a Claude session in this repo type /jaira-role-signoff TWRAP8 -> one status line with ✅/❌/? (tests ? while unpushed, bug hunt ❌), a table with 🔴/🟡/⚪/🔵 marks, one bold recommendation, two paste-ready lines; nothing on the ticket changes (git status shows no new ticket edits)
-  4. Ask the teamlead "what waits for me?" twice -> it runs jaira show and gh pr list before each answer and does not repeat an unchanged list
-  5. Open core/role/builtin/jaira-worker/SKILL.md, section "Before you push" -> it says to run the CI gates locally before pushing
+review-check: "1. jaira update --roles (with a binary built from this branch: go build -o /tmp/jaira ./cmd/jaira, then /tmp/jaira update --roles)  2. in Claude Code type /jaira-role-signoff  3. you should see one block per ticket in signoff: a status line with checkmarks/crosses/?, a table with one mark per note (red/yellow/white/blue), one bold recommendation, and two ready lines (move --to done --force, and note + move --to in-progress)  4. confirm nothing changed: git status shows no ticket file modified by the role  5. go test ./core/role ./core/shipped -count=1 -> both ok"
 ---
 
 # Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis
