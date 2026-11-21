@@ -1,0 +1,2 @@
+- In the cockpit's Overview, read the Workers tab as one quarry: every agent stands at one stone whose size and count are the open definition-of-done items of the tickets an agent works, and beneath it one line per agent gives ticket, lane, kind (worker, review, bughunt, subagent), state, how long it has been seen and the first line of its last report — all on one screen, the crabs getting smaller instead of the tab getting longer.
+- A ticket that waits on a question with no agent on it no longer stands on the Workers tab; find it in the band's waiting list.
