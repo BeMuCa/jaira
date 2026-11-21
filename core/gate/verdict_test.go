@@ -96,6 +96,9 @@ func TestVerdictWordClasses(t *testing.T) {
 		{"send back DoD 1 unmet", CodeVerdictSendBack},
 		{"send-backs: x", ""},
 		{"send-backward", ""},
+		// The word leads, so what follows it cannot undo it: a refusal the
+		// reviewer rewrites, never a send-back that slips into signoff.
+		{"Send back not needed: accept", CodeVerdictSendBack},
 	}
 	for _, c := range cases {
 		got := verdictViolations(CheckAdvance(testEnv(t), reviewed(c.verdict), Request{To: "signoff"}))

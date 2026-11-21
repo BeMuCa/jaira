@@ -366,9 +366,13 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 	l.RejectsTo = rejectsTo(f)
 	l.VerdictAccept = verdictWords(listOrScalar(f, "verdict-accept"))
 	l.VerdictSendBack = verdictWords(listOrScalar(f, "verdict-send-back"))
-	for _, w := range l.VerdictAccept {
-		if slices.Contains(l.VerdictSendBack, w) {
-			return nil, fmt.Errorf("lane %s: verdict %q is both verdict-accept and verdict-send-back", source, w)
+	for _, a := range l.VerdictAccept {
+		for _, b := range l.VerdictSendBack {
+			// A send-back word reads as soon as a verdict begins with it, so
+			// an accept word that begins with one could never accept.
+			if beginsWithWord(a, b) {
+				return nil, fmt.Errorf("lane %s: verdict-accept %q begins with verdict-send-back %q and would read as sending back — the two lists need words that do not start alike", source, a, b)
+			}
 		}
 	}
 	if (len(l.VerdictAccept) == 0) != (len(l.VerdictSendBack) == 0) {

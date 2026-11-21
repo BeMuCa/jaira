@@ -42,13 +42,20 @@ func (l *Lane) SendsBackBy(v string) (string, bool) {
 	head, _, _ = strings.Cut(head, ":")
 	n := normVerdict(head)
 	for _, w := range l.VerdictSendBack {
-		rest, ok := strings.CutPrefix(n, w)
-		if !ok {
-			continue
-		}
-		if r, _ := utf8.DecodeRuneInString(rest); rest == "" || !unicode.IsLetter(r) {
+		if beginsWithWord(n, w) {
 			return w, true
 		}
 	}
 	return "", false
+}
+
+// beginsWithWord reports whether the normalised verdict n begins with the word
+// w, followed by its end or by anything that is not a letter.
+func beginsWithWord(n, w string) bool {
+	rest, ok := strings.CutPrefix(n, w)
+	if !ok {
+		return false
+	}
+	r, _ := utf8.DecodeRuneInString(rest)
+	return rest == "" || !unicode.IsLetter(r)
 }
