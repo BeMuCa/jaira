@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T09:14:20Z
+updated-at: 2026-11-21T09:14:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2485785
 claimed-at: 2026-11-21T08:57:23Z
@@ -36,7 +36,7 @@ review-summary: "critique 21.11. round 8: exemption is the teamlead's and testin
 round: 16
 review-gaps: "optimize 21.11. round 8: nothing to remove."
 test-verdict: "fail: gates green at 025cef00; bughunt 09:14 change: '–' exemption vs empty-head '?' has no stated precedence"
-hunt-verdict: "clean: diff hunt at ec3858d3 (HEAD), 0 findings"
+hunt-verdict: "change: 1 finding at 025cef00 (precedence of .jaira-only exemption)"
 question: ""
 review-verdict: "All four DoD items are met by the diff. Every CLI field and flag the new role relies on was checked against the binary built from this branch (boards/lanes --json keys, show --json review.*/dod_items/handle/board, list --lane, gh run list --commit/--workflow, glab ci list --sha); lane discovery resolves to signoff/done/in-progress on this board. go test ./core/role ./core/shipped green, last bughunt note names HEAD ec3858d3. No blocker; two notes."
 review-round: 15
