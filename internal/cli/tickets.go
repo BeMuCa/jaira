@@ -795,8 +795,8 @@ thinking they have seen everything.
 
 --brief prints one line of JSON with only what a chat about the ticket needs:
 id, title, goal, question, review, the newest finished bug hunt as bughunt
-(its commit, and on_head: nothing this branch did since touched the files it
-read; null without one), the newest four notes as notes_last and how many
+(its commit, and on_head: no commit naming the ticket since, and no
+uncommitted change, touched the files it read; null without one), the newest four notes as notes_last and how many
 there are as notes_total.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -824,7 +824,7 @@ there are as notes_total.`,
 				return showForLane(cmd, s, env, t, forLane)
 			}
 			if brief {
-				line, err := compactJSON(ticketBrief(ticketJSON(t, env.Lanes), t.Body, lastHunt(&gitrepo.Repo{Dir: s.Root}, t.Body)))
+				line, err := compactJSON(ticketBrief(ticketJSON(t, env.Lanes), t.Body, lastHunt(&gitrepo.Repo{Dir: s.Root}, t)))
 				if err != nil {
 					return err
 				}
@@ -900,9 +900,10 @@ type huntState struct {
 var huntDone = regexp.MustCompile(`^bughunt: done at ([0-9a-f]{7,40})\b`)
 
 // lastHunt reads the newest hunt off the notes, nil when none finished. A
-// commit git does not know — rebased away, never fetched — is not on HEAD.
-func lastHunt(repo *gitrepo.Repo, body string) *huntState {
-	notes := ticket.Notes(body)
+// commit git does not know — rebased away, never fetched — is not on HEAD,
+// and neither is one this checkout's HEAD does not descend from.
+func lastHunt(repo *gitrepo.Repo, t *ticket.Ticket) *huntState {
+	notes := ticket.Notes(t.Body)
 	for i := len(notes) - 1; i >= 0; i-- {
 		text := strings.TrimSpace(notes[i].Text)
 		m := huntDone.FindStringSubmatch(text)
@@ -913,7 +914,7 @@ func lastHunt(repo *gitrepo.Repo, body string) *huntState {
 		if at := strings.LastIndex(text, "files: "); at >= 0 {
 			files = strings.Fields(text[at+len("files: "):])
 		}
-		changed, err := repo.ChangedSince(m[1], files)
+		changed, err := repo.ChangedSince(m[1], t.ID, files)
 		return &huntState{At: m[1], OnHead: err == nil && !changed}
 	}
 	return nil

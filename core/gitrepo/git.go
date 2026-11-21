@@ -16,6 +16,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // Repo is a git working tree.
@@ -317,25 +319,32 @@ func (r *Repo) WorktreeDiff() (string, error) {
 	return b.String(), nil
 }
 
-// ChangedSince reports whether the branch's own work touched paths after
-// commit: a commit on its first-parent line that is not a merge, or a change
-// not committed yet. A merge brings in work other people already reviewed —
-// master merged into a branch moves HEAD without changing what this branch
-// did — so it does not count; what its conflict resolution wrote does not
-// either. Paths are relative to the repository root; none means all code
-// (codeOnly). An unknown commit is an error, never "unchanged".
-func (r *Repo) ChangedSince(commit string, paths []string) (bool, error) {
-	specs := codeOnly
-	if len(paths) > 0 {
-		specs = make([]string, 0, len(paths))
-		for _, p := range paths {
-			specs = append(specs, ":(top,literal)"+p)
-		}
+// ChangedSince reports whether the ticket's own work touched paths after
+// commit: a commit since then that names the ticket and is no merge, or a
+// change not committed yet. Every commit of a ticket names it (the house
+// rule its commit list is built from), so master merged into the branch —
+// work other people reviewed — does not count, on the branch or after it was
+// merged; what a merge's conflict resolution wrote does not either. A commit
+// that is no ancestor of HEAD — the hunt ran on a branch this checkout does
+// not have — tells nothing and reads as changed. Paths are relative to the
+// repository root; none, or one that is neither in commit nor on disk (a
+// file list split at a space inside a name), means all code (codeOnly).
+func (r *Repo) ChangedSince(commit, ticketID string, paths []string) (bool, error) {
+	if !ticket.ValidID(ticketID) {
+		return false, fmt.Errorf("gitrepo: %q is no ticket id", ticketID)
 	}
 	if _, err := r.run("rev-parse", "--verify", "--quiet", commit+"^{commit}"); err != nil {
 		return false, fmt.Errorf("gitrepo: no commit %q: %w", commit, err)
 	}
-	own, err := r.run(append([]string{"log", "--first-parent", "--no-merges", "--format=%h", commit + "..HEAD", "--"}, specs...)...)
+	if _, err := r.run("merge-base", "--is-ancestor", commit, "HEAD"); err != nil {
+		return true, nil
+	}
+	specs, err := r.huntedSpecs(commit, paths)
+	if err != nil {
+		return false, err
+	}
+	pattern := fmt.Sprintf(`(^|[^0-9A-Za-z])(%s|%s)([^0-9A-Za-z]|$)`, ticketID, ticket.Handle(ticketID))
+	own, err := r.run(append([]string{"log", "--no-merges", "--format=%h", "--extended-regexp", "--regexp-ignore-case", "--grep=" + pattern, commit + "..HEAD", "--"}, specs...)...)
 	if err != nil {
 		return false, err
 	}
@@ -347,4 +356,35 @@ func (r *Repo) ChangedSince(commit string, paths []string) (bool, error) {
 		return false, err
 	}
 	return strings.TrimSpace(open) != "", nil
+}
+
+// huntedSpecs turns a hunt's file list into pathspecs: each one literal, or
+// all code when the list is empty or names a path that is neither in commit
+// nor on disk — a list a reader cannot trust is not narrowed by.
+func (r *Repo) huntedSpecs(commit string, paths []string) ([]string, error) {
+	if len(paths) == 0 {
+		return codeOnly, nil
+	}
+	root, err := r.Root()
+	if err != nil {
+		return nil, err
+	}
+	listed, err := r.run(append([]string{"-c", "core.quotePath=false", "ls-tree", "-r", "--name-only", "--full-tree", "-z", commit, "--"}, paths...)...)
+	if err != nil {
+		return nil, err
+	}
+	known := map[string]bool{}
+	for _, p := range strings.Split(listed, "\x00") {
+		known[p] = true
+	}
+	specs := make([]string, 0, len(paths))
+	for _, p := range paths {
+		if !known[p] {
+			if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(p))); err != nil {
+				return codeOnly, nil
+			}
+		}
+		specs = append(specs, ":(top,literal)"+p)
+	}
+	return specs, nil
 }
