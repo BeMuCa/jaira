@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T09:40:35Z
+updated-at: 2026-11-21T09:42:27Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -203,3 +203,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-21 09:35 · Alexander Sacharov** — Given back from signoff (Teamlead im Auftrag Alex 21.11. 10:40, letzte Runde): die drei known limits aus Runde 17 sind mechanisch, keine neue Heuristik - schliessen: (1) roles list --base <ref>, das kein Commit ist, scheitert mit Exit 3 und no_such_ref wie die Tore. (2) pr_source vergleicht mit der Merge-Basis (git diff base...HEAD -- .jaira/pr), nicht mit der Basis; kein share-Hinweis, wenn der Zweig nichts aendert. (3) Cockpit liest die Basis wie pr-gate --land (origin/<default>), nicht den lokalen Default-Branch. Je ein Test. Danach Diff-Hunt + review; was dann noch kommt, geht als known limit in signoff - endgueltig.
 - **2026-11-21 09:40 · Alexander Sacharov** — in-progress (Runde 16, letzte laut Teamlead): drei known limits aus Runde 17 geschlossen. (1) roles list --base mit nicht aufloesbarem Ref -> exit 3 no_such_ref, kein Rueckfall auf die Platte; Rolle sagt 'fetch, dann erneut'. (2) 'this branch changes .jaira/pr' nur, wenn die Platte von der Merge-Basis abweicht (gitrepo.MergeBase), nicht von der Basis. (3) Cockpit ohne Forge: Basis = origin/<default> (rev-parse --abbrev-ref origin/HEAD, sonst origin/main|master), lokal nur als letzter Rueckfall. Tests: TestRolesListBaseMustResolveAndComparesWithTheMergeBase; board.test.ts 'no forge names the base' (219 pass).
 - **2026-11-21 09:40 · Alexander Sacharov** — critique (Runde 19): drei mechanische Korrekturen am selben Prinzip, nichts zu sagen.
+- **2026-11-21 09:42 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:698 - originDefault's fallback keeps only an exact 'origin/main'/'origin/master' line from for-each-ref %(refname:short); where a local branch named origin/main exists and origin/HEAD is unset, git shortens the remote ref to 'remotes/origin/main', the find returns undefined and decideStep falls back to found.base (the local branch) - the cockpit then reads .jaira/pr from a different base than 'jaira roles' originDefault (internal/cli/roles.go, full ref names, written to guard exactly this case). Narrow trigger, wrong land/PR decision there. Fix: ask for full names (%(refname)) and strip refs/remotes/, as the Go side does. ran: scratch clone with bare origin, git branch origin/main; git remote set-head origin -d; git for-each-ref --format='%(refname:short)' refs/remotes/origin/main -> 'remotes/origin/main'
