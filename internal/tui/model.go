@@ -2006,6 +2006,10 @@ func (m *Model) gateEnv() gate.Env {
 			}
 			return shas
 		},
+		// Asks git only for a move into a lane a person releases.
+		Hunt: func(t *ticket.Ticket) gate.HuntReport {
+			return gate.HuntReport(repo.HuntCheck(t))
+		},
 	}
 }
 

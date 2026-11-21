@@ -61,7 +61,8 @@ func newReapRig(t *testing.T) *reapRig {
 	bin := filepath.Join(tmp, "bin")
 	stubs := map[string]string{
 		// A pane per tab create, numbered; its tab is t<pane>, and the tab's
-		// label is kept in labels/<pane>.
+		// label is kept in labels/<pane>, its agent's state, idle unless
+		// said otherwise, in labels/<pane>.status.
 		"herdr": `#!/usr/bin/env bash
 n="` + tmp + `/panes-made"
 l="` + r.labels + `"
@@ -69,7 +70,8 @@ case "$1 $2" in
   "tab create") echo x >> "$n"; p="p$(wc -l < "$n" | tr -d ' ')"
                 while [ $# -gt 0 ]; do [ "$1" = --label ] && { mkdir -p "$l"; echo "$2" > "$l/$p"; }; shift; done
                 echo "{\"result\":{\"root_pane\":{\"pane_id\":\"$p\"}}}" ;;
-  "pane get")   echo "{\"result\":{\"pane\":{\"agent\":\"claude\",\"agent_status\":\"idle\",\"tab_id\":\"t$3\"}}}" ;;
+  "pane get")   st=idle; [ -f "$l/$3.status" ] && st="$(cat "$l/$3.status")"
+                echo "{\"result\":{\"pane\":{\"agent\":\"claude\",\"agent_status\":\"$st\",\"tab_id\":\"t$3\"}}}" ;;
   "tab get")    echo "{\"result\":{\"tab\":{\"tab_id\":\"$3\",\"label\":\"$(cat "$l/${3#t}")\"}}}" ;;
   "tab close")  echo "$3" >> "` + r.closed + `" ;;
 esac
