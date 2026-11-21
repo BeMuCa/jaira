@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:59:03Z
+updated-at: 2026-11-21T09:59:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3647270
 claimed-at: 2026-11-21T09:36:24Z
@@ -43,11 +43,12 @@ review-verdict: "The diff meets all 11 definition-of-done items. Rounds 14-16 (H
 review-round: 16
 review-check: |-
   1. cd /home/alex/projects/.worktrees/jaira-df0yd6 && go build -o /tmp/jb ./cmd/jaira
-  2. /tmp/jb show DF0YD6 --json | /tmp/jb json get back  -> shows from/by/count (here: from review, by lane, count 1)
-  3. /tmp/jb set DF0YD6 stop-after-fix=yes  -> refused, exit 2, 'stop-after-fix is true, false or empty'
-  4. /tmp/jb show DF0YD6 --brief  -> the JSON has "bughunt":{"at":"220d5b51","on_head":true,...}
-  5. In the cockpit (claude --plugin-dir <worktree>/core/mod/builtin/jaira-cockpit), with this ticket in signoff: the row lists the review notes with a dot and no Explain button, because review-gaps has no blocker: line
-  6. go test ./core/move ./internal/cli -run 'TestMoveRecordsWhoSentItBack|TestCLIMoveAtATerminalIsAPersons|TestVerdictKeepsItsGaps' -> ok
+  2. /tmp/jb show DF0YD6 --brief | /tmp/jb json get bughunt  -> {"at":"9b94f206","state":"ok"}
+  3. echo "// x" >> core/gitrepo/git.go && /tmp/jb show DF0YD6 --brief | /tmp/jb json get bughunt  -> state "unknown" (never fail); then git checkout core/gitrepo/git.go
+  4. /tmp/jb set DF0YD6 stop-after-fix=yes  -> refused, exit 2
+  5. /tmp/jb show DF0YD6 --json | /tmp/jb json get back  -> from/by/count of the last send-back
+  6. claude --plugin-dir /home/alex/projects/.worktrees/jaira-df0yd6/core/mod/builtin/jaira-cockpit, ticket in signoff: the row lists the four review notes with a dot and no Explain button (no blocker: line)
+  7. go test ./core/gitrepo -run TestHuntCoverage && go test ./core/move -run TestMoveRecordsWhoSentItBack  -> ok
 review-verdict-gaps: |-
   note: bughunt on HEAD errs red when an uncommitted file was written in the same minute before the hunt note - core/gitrepo/git.go writtenSince compares mtime with the note stamp, which is truncated to the minute (core/ticket/body.go Notes); fix: compare against the end of that minute, or let the hunt note carry seconds
   note: bughunt on HEAD errs green for a file edited while the hunt was still running - the reference time is when the hunt finished, not when it read the file; known limit of a note-based stamp, harmless in the usual flow where testing edits nothing
