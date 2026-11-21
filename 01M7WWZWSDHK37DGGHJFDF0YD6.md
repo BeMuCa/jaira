@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:10:25Z
+updated-at: 2026-11-21T09:10:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
@@ -31,7 +31,7 @@ outcome-what: "Round 10: board data under .jaira/ (all but the lane prompts) nev
 outcome-why: "The round-9 hunter showed jaira tag / milestone writes to tracked board files turned bughunt on HEAD red on an unchanged ticket."
 outcome-resolves: "bughunt change at cf0cdfef (git.go writtenSince); TestChangedSince 19 cases; go test ./... RC=0. Checked: input (-z names, quotePath off), error paths unchanged, read-only."
 review-summary: "none"
-review-gaps: "none - cf0cdfef: writtenSince replaces untrackedSince and the diff check (one pass over both lists), nothing left orphaned"
+review-gaps: "none - a6187478: the two path loops in writtenSince folded into one; nothing orphaned"
 test-verdict: "pass: go test -count=1 ./... RC=0 at cf0cdfef, claude plugin test 218 pass; scratch board end to end: uncommitted edit from before the hunt + untracked .jaira/milestones file -> on_head true; edit after the hunt -> false; stop-after-fix then -> skipped true; read-only git, no parallel-writer case"
 hunt-verdict: "fail: 1 change finding at cf0cdfef - tracked board data (.jaira/tags, milestones) changed after the hunt reads on_head false"
 round: 10
