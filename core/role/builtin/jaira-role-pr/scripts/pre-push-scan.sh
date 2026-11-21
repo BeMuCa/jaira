@@ -163,7 +163,9 @@ scan() {
     {
       pre = substr($0, 1, n)
       if (index(pre, "-")) next
-      if (index(pre, "+")) {
+      # A line of the commit itself is new against every parent, "+" in every
+      # column. "+ " in a merge was in one parent already and is not its own.
+      if (pre !~ / /) {
         s = substr($0, n + 1); sub(/\r$/, "", s)
         print s > adds; print path "\t" ln > locs
       }

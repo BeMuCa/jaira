@@ -118,6 +118,20 @@ func TestPrePushScan(t *testing.T) {
 			_ = cmd.Run() // conflicts on purpose
 			r.commit("merge main", map[string]string{"c.txt": "resolved for acmecorp\n"})
 		}, "main", "", 3, []string{"c.txt:1: matches"}, []string{"m.txt"}},
+		{"merge: a line kept from one parent inside a conflict hunk is not its own", func(r *scanRepo) {
+			r.git("switch", "-q", "main")
+			r.commit("main: base", map[string]string{"f": "a\nb\nc\n"})
+			r.git("switch", "-q", "feat")
+			r.git("merge", "-q", "--ff-only", "main")
+			r.commit("feat: f", map[string]string{"f": "a\nFEAT\nc\n"})
+			r.git("switch", "-q", "main")
+			r.commit("main: f", map[string]string{"f": "a\nMAIN\nacmecorp\nc\n"})
+			r.git("switch", "-q", "feat")
+			cmd := exec.Command("git", "merge", "-q", "main")
+			cmd.Dir, cmd.Env = r.dir, r.env
+			_ = cmd.Run() // conflicts on purpose
+			r.commit("merge main", map[string]string{"f": "a\nresolved\nacmecorp\nc\n"})
+		}, "main", "", 0, []string{"denylist: 1 pattern(s)"}, []string{"matches"}},
 		{"commit message over 100 KB", func(r *scanRepo) {
 			r.commit(huge, nil)
 		}, "", "", 3, []string{"commit message: matches"}, nil},
