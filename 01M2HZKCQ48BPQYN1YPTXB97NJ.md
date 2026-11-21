@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T09:11:22Z
+updated-at: 2026-11-21T09:11:50Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -43,8 +43,8 @@ review-gaps: |-
   note: isPlainMerge vergleicht mit git merge-tree in Default-Einstellungen; ein Merge mit -X oder anderer Rename-Konfiguration faellt geschlossen durch - sicher, die Meldung nennt ihn dann als Commit ohne Ticket
   note: der Ticket-Status im Gate kommt aus dem Store des Zweigs, nicht aus dem Basis-Zweig; eine selbst auf done gesetzte Ticketdatei kaeme unter none ohne Leser durch - vorbestehend fuer agent, unter none ohne PR als Netz schwerer
   note: go test ./core/... ./internal/... und claude plugin test im Cockpit (217 pass) gruen
-test-verdict: "pass (round 12): go vet + go test -race ./... RC=0 at f2287211; cockpit claude plugin test 217 pass (none: host without forge lands on origin, no origin / forge silent -> pane says why, open ticket -> does not land yet, typo -> PR path); reap names an unanswering gh (reap_test); DoD 1-8 proofs unchanged and valid"
-hunt-verdict: "pass (round 14 at f2287211): 0 findings"
+test-verdict: "fail (round 13): -race RC=0 at df8a423f; bughunt change: a branch committing .jaira/pr none over a base saying agent lands without a pull request (role reads pr off disk, agent gate exits 0)"
+hunt-verdict: "change (round 15): landing decided off the branch's .jaira/pr, gate checks the base's agent rules"
 claimed-by: DESKTOP-RFTCH11-2127254
 claimed-at: 2026-11-21T08:46:28Z
 review-verdict: "Zurueck nach in-progress: der Kern ist sauber und gut getestet (strenges Parsen, byte-gleicher Block, Gate fail closed, nie --force), alle Tests gruen. Ein Defekt im neuen none-Pfad: auf einem nicht geteilten Board behauptet roles list 'none, shared with the board', das Gate verweigert mit falscher Ursache und verweist auf eine create line, die es unter none nicht gibt. Sicher (nichts landet), aber genau die Solo-Zielgruppe trifft das."
