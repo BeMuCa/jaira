@@ -187,7 +187,11 @@ function hasReservation(verdict: string): boolean {
 // 'keine Lücken', 'No gaps found.' — is no finding.
 const NO_GAP = /^(none|keine|nothing|nichts|n\/a|-+|no (gaps?|defects?|issues?|findings?)( found)?|keine (lücken?|mängel|befunde))\s*([—–\-:(.,;!]|$)/i
 const MARKER = /^\s*(?:[-*•]|\d+[.)])\s+/
-const BLOCKER = /^blocker\s*:/i
+// A blocker line as a review writes it, bare or in markdown: 'blocker:',
+// 'Blocker:', '**blocker:**', '**Blocker**:', '`blocker`:' - the list marker
+// is gone already (MARKER). Emphasis around the label is formatting, not a
+// different finding.
+const BLOCKER = /^[*_`]*\s*blocker\s*[*_`]*\s*:/i
 
 function findings(gaps: string | undefined): string[] {
   return (gaps ?? '').split(/\r?\n/).map(l => oneLine(l.replace(MARKER, ''))).filter(l => l !== '' && !NO_GAP.test(l))
@@ -317,7 +321,7 @@ const MARK = /\s*\[(give back|accept)\]\s*$/i
 const RECOMMENDED = /^\s*(?:empfehlung|recommendation)\s*:\s*\(?([1-6]|[a-f])\b/i
 const RECOMMENDATION = /^\s*(?:empfehlung|recommendation)\s*:/i
 const STATUS = /^\s*(?:status|stand)\s*:\s*(.+)$/i
-const CLASS = /^\s*\[(blocker|small edge|kleiner rand|known limit|bekannte grenze|not this ticket|nicht aus diesem ticket)\]\s*(.*)$/i
+const CLASS = /^\s*[*_`]*\[(blocker|small edge|kleiner rand|known limit|bekannte grenze|not this ticket|nicht aus diesem ticket)\][*_`]*\s*(.*)$/i
 const CLASSES: Record<string, NoteClass> = {
   'blocker': 'blocker', 'small edge': 'edge', 'kleiner rand': 'edge', 'known limit': 'limit',
   'bekannte grenze': 'limit', 'not this ticket': 'elsewhere', 'nicht aus diesem ticket': 'elsewhere',

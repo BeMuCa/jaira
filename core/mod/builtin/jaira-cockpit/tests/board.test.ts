@@ -916,6 +916,15 @@ describe('waiting for you', () => {
     expect((await pane.findAll({ type: 'Text' })).some(x => x.text === '[blocker]' && x.props.color === 'error')).toBe(true)
   })
 
+  test('a class mark in markdown emphasis is still a class mark', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = CLASSED.replace('[small edge]', '**[blocker]**')
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    expect((await pane.findAll({ type: 'Text' })).some(x => x.text === '[blocker]' && x.props.color === 'error')).toBe(true)
+  })
+
   test('a shaped explanation reads as paragraphs and one line per option, the recommended one chosen', async ($, on) => {
     const w = world(on)
     w.bodies.MG677R = SHAPED
@@ -1124,11 +1133,16 @@ describe('waiting for you', () => {
       { ...SIGNOFF, handle: 'BL0CK1', review: { verdict, gaps: 'blocker: DoD 2 - an empty export still writes a header\nnote: the export test covers 1MB, not 40MB' } },
       { ...SIGNOFF, handle: 'BL0CK2', review: { verdict, gaps: '1. Blocker: a crash on an empty file' } },
       { ...SIGNOFF, handle: 'BL0CK3', review: { verdict, gaps: '- blocker: data loss on CRLF\r\n- note: a comment is stale' } },
+      // ... and however it is emphasised in markdown.
+      { ...SIGNOFF, handle: 'BL0CK4', review: { verdict, gaps: '**blocker:** a crash on an empty file' } },
+      { ...SIGNOFF, handle: 'BL0CK5', review: { verdict, gaps: '- **Blocker**: data loss on CRLF' } },
+      { ...SIGNOFF, handle: 'BL0CK6', review: { verdict, gaps: '`blocker`: the gate is skipped' } },
       // A reservation in the verdict, notes beside it.
       { ...SIGNOFF, handle: 'RESRV1', review: { verdict: 'approve, but the cache key ignores the branch', gaps: 'note: a test is missing' } },
       // Notes only: listed, no Explain.
       { ...SIGNOFF, handle: 'NOTES1', review: { verdict, gaps: 'note: the export test covers 1MB, not 40MB\nnote: pre-existing: load.go:41 accepts an empty file' } },
       { ...SIGNOFF, handle: 'NOTES2', review: { verdict, gaps: '1. Minor: the note after a successful move is fire-and-forget.' } },
+      { ...SIGNOFF, handle: 'NOTES3', review: { verdict, gaps: '**note:** the blocker: rule reads fine' } },
       // Nothing found, said in many ways.
       { ...SIGNOFF, handle: 'AB12CD', review: { verdict, gaps: 'none' } },
       { ...SIGNOFF, handle: 'EF34GH', review: { verdict: 'approve', gaps: '' } },
@@ -1143,8 +1157,8 @@ describe('waiting for you', () => {
     const band = await $.ui.mount(BAND)
     await band.press({ key: 'more' })
     const open = await $.ui.mount(BAND)
-    for (const id of ['BL0CK1', 'BL0CK2', 'BL0CK3', 'RESRV1']) expect(await open.find({ key: `explain-${id}` })).toBeDefined()
-    for (const id of ['NOTES1', 'NOTES2', 'AB12CD', 'EF34GH', 'GH56JK', 'MN12PQ', 'PQ34RS', 'LM90NP']) expect(await open.find({ key: `explain-${id}` })).toBeUndefined()
+    for (const id of ['BL0CK1', 'BL0CK2', 'BL0CK3', 'BL0CK4', 'BL0CK5', 'BL0CK6', 'RESRV1']) expect(await open.find({ key: `explain-${id}` })).toBeDefined()
+    for (const id of ['NOTES1', 'NOTES2', 'NOTES3', 'AB12CD', 'EF34GH', 'GH56JK', 'MN12PQ', 'PQ34RS', 'LM90NP']) expect(await open.find({ key: `explain-${id}` })).toBeUndefined()
     // The notes stand under their row as text, without a button of their own.
     expect(await open.find({ type: 'Text', text: /· note: the export test covers 1MB, not 40MB/ })).toBeDefined()
     expect(await open.find({ type: 'Text', text: /· note: pre-existing: load\.go:41/ })).toBeDefined()
