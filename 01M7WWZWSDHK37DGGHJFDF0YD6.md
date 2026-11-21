@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:59:54Z
+updated-at: 2026-11-21T10:04:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3647270
 claimed-at: 2026-11-21T09:36:24Z
@@ -215,3 +215,4 @@ back-count: 1
 - **2026-11-21 09:55 · Alexander Sacharov** — testing round 16 passed (hunt 9b94f206 clean); pushed 9b94f206. Moved to review, a fresh agent runs it via run-lane.sh; per the teamlead whatever it finds goes to signoff as a known limit.
 - **2026-11-21 09:59 · Alexander Sacharov** — review round 16 (fresh, 9b94f206): no blocker; 4 notes (ambiguous short hunt sha reads fail, Explain format line still ok|fail, documented squash/conversational limit, untracked .jaira/milestones not this ticket). go test ./... ok, plugin test 220 pass; brief probed: clean -> ok, uncommitted edit to a hunted file -> unknown.
 - **2026-11-21 09:59 · Alexander Sacharov** — worker stopped: ticket in signoff after the fresh review of round 16 without a blocker; feat/df0yd6 pushed at 9b94f206; ticket file carries the review fields uncommitted. Review notes 1-4 stay known limits per the teamlead's final-round ruling (09:37). Report sent to the parent session.
+- **2026-11-21 10:04 · Alexander Sacharov** — after signoff (teamlead 10:00, text only, no loop): review note 2 closed - the Explain format line in texts.ts and spawn.sh reads 'bughunt on HEAD ok|fail|unknown|skipped' and the status sentence no longer opens with 'each check ends in ok or fail' (DoD, tests, blockers: ok|fail; bughunt: four words), so Explain does not write fail where it means unknown. Test asserts both. Notes 1 and 3 stay known limits.
