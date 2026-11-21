@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZWSDHK37DGGHJFDF0YD6
 title: "Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:57:50Z
+updated-at: 2026-11-21T09:03:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
@@ -39,7 +39,7 @@ review-gaps: |-
   note: ohne Hunt-Dateiliste (codeOnly) zaehlt jede spaeter geschriebene untracked Datei im ganzen Repo, auch .jaira/milestones/* - ein jaira milestone add aus einer anderen Session faerbt bughunt on HEAD rot; konservativ (nur falsch rot, nie falsch gruen).
 test-verdict: "pass: go test -count=1 ./... RC=0 at 81dcbbee; TestChangedSince 16 cases incl. untracked written after/before the hunt and outside the hunted paths; claude plugin test 216 pass (no TS change since round 5); read-only git, no parallel-writer case"
 hunt-verdict: "pass: follow-up hunt since 7d73a41d at 81dcbbee, 0 findings"
-round: 8
+round: 9
 review-verdict: "Kein Blocker. DoD 1-11 sind im Code erfuellt; der Blocker aus Runde 4 (bughunt on HEAD aus 4 Notes nicht ableitbar) ist an der Ursache behoben: --brief traegt bughunt.on_head aus git, und Explain-Vorlage und spawn.sh lesen es. go test -count=1 ./... RC=0, claude plugin test 216 pass. Die fuenf notes sind Raender des on_head-Signals (falsch rot in conversational mode und bei stop-after-fix) und eine bekannte Grenze; keine davon ist ein falsches Ergebnis im Sinn der DoD ausser im conversational mode, wo nur die Statusmarke falsch rot ist."
 review-round: 8
 review-check: "1. go build -o /tmp/jaira-b ./cmd/jaira  2. /tmp/jaira-b set <Test-Ticket> stop-after-fix=yes -> Exit 2, 'stop-after-fix is true, false or empty'  3. /tmp/jaira-b show DF0YD6 --brief | grep -o '\"bughunt\":{[^}]*}' -> {\"at\":\"81dcbbee\",\"on_head\":true}  4. echo x >> core/gitrepo/git.go; Schritt 3 wiederholen -> on_head:false; git checkout core/gitrepo/git.go  5. go test ./core/move -run TestMoveRecordsWhoSentItBack -v -> PASS (signoff->in-progress = person, zaehlt nicht)  6. go test ./core/gitrepo -run TestChangedSince -v -> 16 Faelle PASS  7. cd core/mod/builtin/jaira-cockpit && claude plugin test -> 216 pass  8. im Cockpit ein Ticket in signoff mit nur note:-Zeilen: Notes stehen als '· ...' unter der Zeile, kein Explain-Knopf"
@@ -166,3 +166,4 @@ back-count: 1
 - **2026-11-21 08:56 · Alexander Sacharov** — review (fresh, 81dcbbee): kein Blocker; 5 notes in review-gaps, die wichtigste: on_head ist in conversational mode immer false (git diff HEAD zaehlt Aenderungen von vor dem Hunt). go test ./... RC=0, plugin test 216 pass.
 - **2026-11-21 08:57 · Alexander Sacharov** — worker stopped: ticket in signoff after a fresh review without a blocker (round 8); branch feat/df0yd6 pushed at 81dcbbee; the ticket file carries the review fields uncommitted. Open for the person: review notes 1-2 (on_head falsely red in conversational mode and with stop-after-fix) are small edges, 3-5 known limits; report sent to the parent session.
 - **2026-11-21 08:57 · Alexander Sacharov** — Given back from signoff (Teamlead im Auftrag Alex 21.11.): bughunt.on_head darf auf einem sauberen Ticket nicht rot sein - Alex liest Rot als Katastrophe. Klasse 'falsch rot' an der Ursache schliessen: 1) conversational mode: uncommittete Aenderungen von vor dem Hunt zaehlen nicht (Vergleich gegen den Stand zur Hunt-Zeit, z.B. Hash der gejagten Dateien in der Closing-Note, oder nur Aenderungen nach dem Hunt-Zeitpunkt). 2) stop-after-fix=true ohne Hunt: 'skipped' statt fail, Brief traegt stop_after_fix. 3) untracked Dateien ausserhalb des Codes (.jaira/**) zaehlen nie. 4) ChangedSince-Docstring nennt die Grenze 'Commit ohne ID'. 5) explainable: fuer fruehere Runde ohne verdict_gaps keine review.gaps als Blocker-Quelle. Tests je Fall. Diff-Hunt, review, signoff, push.
+- **2026-11-21 09:03 · Alexander Sacharov** — round 9 (teamlead give-back, class 'falsely red'): 1) an uncommitted file counts by its mtime against the hunt note's time, tracked or not (conversational edits before the hunt no longer turn it red; a deleted file has no time and counts); 2) brief bughunt.skipped when the ticket sets stop-after-fix and the hunt does not cover HEAD (or there is none) - templates write 'bughunt on HEAD skipped', the pane draws it without a mark; 3) untracked files under .jaira/ never count; 4) ChangedSince docstring names 'a ticket commit without its id is not seen'; 5) board.ts explainable reads blockers only from the review's own gaps (current round or the kept copy), BLK789 keeps Explain through its refusing verdict. Tests: TestChangedSince +4, TestBriefCarriesTheHunt/TestBriefSkipsTheHuntOnStopAfterFix, cockpit 'earlier-round verdict without a kept copy...' and 'a hunt skipped on purpose...'.
