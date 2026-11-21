@@ -23,14 +23,14 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:22:19Z
+updated-at: 2026-11-21T09:22:22Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
 outcome-what: "Round 12: the brief's help text and the release note name the stop-after-fix case without a hunt (skipped with an empty at)."
 outcome-why: "The round-11 review found both said null for it, while the brief returns {at: '', skipped: true}."
 outcome-resolves: "review round 11 note 2 (small edge); note 1 kept as known limit (see note). go test internal/cli Brief ok."
-review-summary: "Ein Ticket traegt blocker-rule und stop-after-fix (frontmatter, set/show, Lane-Payloads fuer testing/bughunt/review); jaira move schreibt bei jedem Rueckweg Herkunfts-Lane und ob Person oder Schleifen-Lane (back-*), die Schleifenbremse zaehlt nur Rueckgaben derselben Schleifen-Lane und stoppt in-progress ab 3; ein Review-Urteil behaelt seine eigenen gaps in review-verdict-gaps. Das Cockpit bietet Explain nur bei blocker:-Zeile oder Vorbehalt im Urteil, listet note:-Zeilen ohne Knopf, nennt ein Review frueherer Runde, und die Explain-Vorlage ordnet jede Note in eine Klasse ein, ohne feste Optionsreihenfolge, farbig je Pruefung und Klasse. Neu seit Runde 8: --brief traegt bughunt {at, on_head, skipped}; on_head ist false nur, wenn ein Commit mit der Ticket-Id seit dem Hunt oder eine nach dem Hunt geschriebene, nicht committete Datei die gehunteten Dateien beruehrt - Merges, fremde Commits und Board-Daten unter .jaira/ (ausser Lane-Prompts, auch benannter Boards) zaehlen nicht; Explain-Vorlage und spawn.sh lesen das statt der vier neuesten Notes."
+review-summary: "none"
 review-gaps: |-
   note: known limit: writtenSince vergleicht mtime mit der Minute der Hunt-Note (UTC, auf Minute gekuerzt) - eine Datei, die waehrend des Hunts nach dem Lesen, aber vor der Note geaendert wird, gilt als gedeckt (falsch gruen, praktisch nur im conversational mode); exakter waere ein Startzeitpunkt im Hunt-Note-Format
   note: small edge: bei stop-after-fix ohne jeden Hunt liefert --brief {"at":"","on_head":false,"skipped":true} statt null; die Release-Note sagt "null means no hunt finished" - entweder dort erwaehnen oder at weglassen (core/release/notes/DF0YD6.md, internal/cli/tickets.go lastHunt)
