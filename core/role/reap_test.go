@@ -74,6 +74,7 @@ esac
 `,
 		// origin is a fork: the pull requests are asked for on its parent.
 		"gh": `#!/usr/bin/env bash
+if [ -e "` + r.merged + `.gh-down" ]; then echo "error connecting to api.github.com" >&2; exit 1; fi
 case "$*" in
   "repo view git@github.com:someone/jaira.git --json"*)
     if [ -e "` + r.merged + `.notfork" ]; then
@@ -613,5 +614,23 @@ func TestReapNamesAFailingRolesListAsTheCause(t *testing.T) {
 	r.write(t, r.shown+".roles-silent", "")
 	if out := r.run(t, r.repo, "reap.sh"); !strings.Contains(out, "'jaira roles list' failed: no message (exit status only)") {
 		t.Fatalf("roles list failed silently, want it named:\n%s", out)
+	}
+}
+
+// When gh does not answer, whether origin is a fork cannot be told: reap
+// measures at origin, and a ticket that waits there names gh as the cause
+// rather than only saying it has not landed (review note, 21.11.).
+func TestReapOnANoneBoardNamesAnUnansweringGh(t *testing.T) {
+	t.Parallel()
+	r := newReapRig(t)
+	r.write(t, r.merged+".gh-down", "")
+	r.write(t, filepath.Join(r.repo, ".jaira", "pr"), "none\n")
+	r.write(t, filepath.Join(r.repo, ".jaira", "tickets", ".keep"), "")
+	r.write(t, r.shown, `{"status":"done"}`)
+	r.git(t, r.wt, "commit", "-q", "--allow-empty", "-m", "feat(AB12CD): the work")
+	r.git(t, r.repo, "update-ref", "refs/remotes/origin/master", r.git(t, r.repo, "rev-parse", "master"))
+	out := r.run(t, r.repo, "reap.sh")
+	if !strings.Contains(out, "waiting AB12CD: feat/ab12cd has not landed on origin's default branch; gh repo view did not answer (error connecting to api.github.com)") {
+		t.Fatalf("gh down, want it named as the cause:\n%s", out)
 	}
 }

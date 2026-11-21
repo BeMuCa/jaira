@@ -116,9 +116,18 @@ fi
 # Where the pull requests are, as jaira-role-pr settles it: origin's own
 # repository, or its parent when origin is a fork. Named, never left to gh: in
 # a fork clone without an upstream remote gh asks the fork, which has none.
-repo=""; fork=""
-if [ "$forge" = github ] && origin="$(git -C "$root" remote get-url origin 2>/dev/null)" \
-  && view="$(gh repo view "$origin" --json isFork,parent,nameWithOwner 2>/dev/null)"; then
+repo=""; fork=""; ghwhy=""; view=""
+if [ "$forge" = github ] && origin="$(git -C "$root" remote get-url origin 2>/dev/null)"; then
+  gherr="$(mktemp)"
+  if ! view="$(gh repo view "$origin" --json isFork,parent,nameWithOwner 2>"$gherr")"; then
+    # Without an answer whether origin is a fork cannot be told: work is then
+    # measured at origin, and a ticket that waits says why.
+    ghwhy="gh repo view did not answer ($( (tail -1 "$gherr" || true) | tr -d '\r')), so whether origin is a fork cannot be told — if it is, work lands on its parent and this waits until gh works"
+    view=""
+  fi
+  rm -f "$gherr"
+fi
+if [ -n "${view:-}" ]; then
   if [ "$(jaira json get isFork --default false <<<"$view")" = true ]; then
     repo="$(jaira json get parent.owner.login <<<"$view")/$(jaira json get parent.name <<<"$view")"
     fork=1
@@ -256,7 +265,7 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
       echo "waiting $t: cannot tell $lr's default branch; run 'git remote set-head $lr --auto'"; continue
     fi
     head="$(landed_head "$branch" "$t" "$base")"
-    if [ -z "$head" ]; then echo "waiting $t: $branch has not landed on $lr's default branch"; continue; fi
+    if [ -z "$head" ]; then echo "waiting $t: $branch has not landed on $lr's default branch${ghwhy:+; $ghwhy}"; continue; fi
   else
     if [ -z "$forge" ]; then
       echo "kept $t: cannot tell the forge from origin; set it with 'git config jaira.forge github' (or gitlab)"; continue

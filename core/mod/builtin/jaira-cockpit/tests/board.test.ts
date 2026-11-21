@@ -1450,6 +1450,49 @@ describe('after Accept', () => {
     expect(await failure($)).toContain('needs an origin on GitHub or GitLab')
   })
 
+  test('.jaira/pr says none and there is no forge: the press lands the branch through the pr lane, asks no pull request, and says landing', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.origin = null
+    w.files.set('/repo/.jaira/pr', '# solo\nnone\n')
+    await press($)
+    expect(ran(w, 'gh', 'pr')).toEqual([])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'mg677r', 'MG677R', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+    expect(w.toasts.at(-1)).toContain('MG677R: landing feat/mg677r on the default branch')
+    expect(w.toasts.join('\n')).not.toContain('pull request for')
+  })
+
+  test('.jaira/pr says none and the forge does not answer: it still lands', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 2
+    w.prs = null
+    w.files.set('/repo/.jaira/pr', '\uFEFFnone\r\n')
+    await press($)
+    expect(prLane(w)).toHaveLength(1)
+    expect(w.toasts.at(-1)).toContain('landing feat/mg677r')
+  })
+
+  test('.jaira/pr says none and another ticket on the branch is not in done: nothing lands, and the press says which', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 2
+    w.origin = null
+    w.subjects = ['feat(MG677R): cache key', 'fix(T8QS1Y): filter']
+    w.files.set('/repo/.jaira/pr', 'none\n')
+    await press($)
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
+    expect(w.toasts.at(-1)).toBe('MG677R accepted; feat/mg677r does not land yet: T8QS1Y not in done')
+  })
+
+  test('.jaira/pr with a typo is the pull request path: no forge still says so', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.origin = null
+    w.files.set('/repo/.jaira/pr', 'nnone\n')
+    await press($)
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
+    expect(await failure($)).toContain('needs an origin on GitHub or GitLab')
+  })
+
   test('a host neither GitHub nor GitLab: nothing starts, and the pane names the setting that settles it', async ($, on) => {
     const w = world(on, { herdr: true })
     w.ahead = 3

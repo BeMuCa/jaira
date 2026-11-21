@@ -590,12 +590,19 @@ async function pullTarget($: EngineInterface, repoDir: string): Promise<Target |
 // A forge that cannot be asked leaves the pull request unchecked: the rule
 // gets undefined for it, and the hint says why no pull request was looked
 // at. A string is a failure: no pull request is opened, and the pane says why.
-type Decided = { step: StepAfterAccept; branch?: string; hint: string }
+//
+// A board whose .jaira/pr says none (XB97NJ) takes no pull requests: the pr
+// lane lands the branch instead, behind 'jaira roles pr-gate'. Landing needs
+// no forge, so a forge that cannot be told or asked only costs the better
+// base; the step is the same 'pr' and `land` says which of the two it is.
+type Decided = { step: StepAfterAccept; branch?: string; hint: string; land?: boolean }
 
 async function decideStep($: EngineInterface, b: { dir: string; repo: string }, id: string, terminal: string, porcelain: string): Promise<Decided | string> {
   const found = branchesFor(porcelain, id)
-  const target = await pullTarget($, b.repo)
-  if (typeof target === 'string') return { step: stepAfterAccept(0, [], undefined), hint: t.prUnchecked(target) }
+  const land = await landsWithoutPullRequest($, b.dir)
+  const asked = await pullTarget($, b.repo)
+  if (typeof asked === 'string' && !land) return { step: stepAfterAccept(0, [], undefined), hint: t.prUnchecked(asked) }
+  const target = typeof asked === 'string' ? undefined : asked
   const base = target?.base ?? found.base
   let branch = found.ticket
   // No worktree: the branch spawn.sh named <prefix>/<slug>, left behind
@@ -620,7 +627,8 @@ async function decideStep($: EngineInterface, b: { dir: string; repo: string }, 
   const list = await run($, ['jaira', 'list', '--json'], b.dir, 30_000)
   if (list?.exitCode !== 0) return `jaira list: ${withoutWarnings(list?.stderr ?? '') || 'did not run'}`
   const pending = pendingOf(list.stdout, ticketsNamed(subjects.stdout), terminal)
-  if (pending.length > 0) return { step: stepAfterAccept(ahead, pending, false), branch, hint: t.prWaits(branch, pending) }
+  if (pending.length > 0) return { step: stepAfterAccept(ahead, pending, false), branch, hint: land ? t.landWaits(branch, pending) : t.prWaits(branch, pending), land }
+  if (land) return { step: stepAfterAccept(ahead, pending, false), branch, hint: '', land }
   if (target === undefined) return t.noForge(branch)
   const cmd = pullRequestsCommand(target.on, target.repo, branch)
   const listed = await run($, cmd, b.repo, 30_000)
@@ -645,12 +653,12 @@ async function afterAccept($: EngineInterface, id: string, terminal: string): Pr
   const decided = await decideStep($, b, id, terminal, trees?.exitCode === 0 ? trees.stdout : '')
   const stuck = (why: string) => fail($, t.afterAccept(id), `${why}\n${t.staysDone(id)}`)
   if (typeof decided === 'string') return stuck(decided)
-  const { step, branch, hint } = decided
+  const { step, branch, hint, land } = decided
   // No pull request to open: only why not, where there is a reason.
   if (step !== 'pr' || branch === undefined) return hint ? say($, t.acceptedNoPr(id, hint)) : undefined
   const bin = await herdr($)
   const script = await spawnScript($)
-  if (bin === undefined || script === undefined) return stuck(t.prNeedsHerdr(branch))
+  if (bin === undefined || script === undefined) return stuck(land ? t.landNeedsHerdr(branch) : t.prNeedsHerdr(branch))
   // In the worktree that carries the branch — the role pushes from there —
   // checked out again beside the repository where it went after done.
   let wt = trees?.exitCode === 0 ? worktreeOfBranch(trees.stdout, branch) : undefined
@@ -661,7 +669,23 @@ async function afterAccept($: EngineInterface, id: string, terminal: string): Pr
   }
   const r = await run($, [...script, '--no-worktree', id.toLowerCase(), id, 'pr', wt], wt, 120_000)
   if (r?.exitCode !== 0) return stuck(`spawn.sh: ${output(r).slice(-160)}`)
-  return say($, t.prStarted(id, branch))
+  return say($, land ? t.landStarted(id, branch) : t.prStarted(id, branch))
+}
+
+// Whether the board at dir says none in .jaira/pr, read as jaira reads it:
+// the first line that is neither blank nor a comment, a byte order mark
+// dropped, exactly 'none'. A file that is missing or says anything else is
+// the pull request path, as before. The gate the pr lane runs reads the file
+// again from the base branch, so this only picks the words and skips the forge.
+async function landsWithoutPullRequest($: EngineInterface, dir: string): Promise<boolean> {
+  let text: string
+  try {
+    text = await $.fs.read(`${dir}/.jaira/pr`)
+  } catch {
+    return false
+  }
+  const word = text.replace(/^\uFEFF/, '').split('\n').map(l => l.trim()).find(l => l !== '' && !l.startsWith('#'))
+  return word === 'none'
 }
 
 // The person's jaira settings, where jaira reads them: JAIRA_HOME, else
