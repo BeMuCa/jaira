@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T08:40:36Z
+updated-at: 2026-11-21T08:44:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-26190
 claimed-at: 2026-11-21T08:01:01Z
@@ -32,8 +32,8 @@ outcome-why: "The fresh review found the Explain status 'bughunt on HEAD' falsel
 outcome-resolves: "review blocker DoD 7 and notes 2-3 of round 4; note 4 kept as known limit (see note). Checked: concurrency (read-only git calls), error paths (unknown commit -> on_head false), input (paths with spaces via :(top,literal), CRLF-free note parsing, no files list -> all code), permissions (nothing trusted beyond the ticket's own notes). go test ./... RC=0, -race gitrepo/cli RC=0, claude plugin test 216 pass."
 review-summary: "none"
 review-gaps: "none - 190a55ec: the only Go reader of 'bughunt: done at' is the new huntDone (grep), git helpers reuse runTolerating/codeOnly, nothing orphaned"
-test-verdict: "pass: round 4 changed only the two Explain prompt sentences and one assertion - claude plugin test 216 pass (rule asserted in 'without Herdr, Explain asks...'), go test core/role core/shipped core/lane RC=0; writes nothing new, so no parallel-writer case"
-hunt-verdict: "pass: follow-up hunt since c8de2b8a at 553b37f3, 0 findings"
+test-verdict: "fail: suite green at 190a55ec, but own scratch run: 'files: a b.go' split at the space read as unchanged (on_head true on a changed file)"
+hunt-verdict: "fail: 1 change finding at 190a55ec - ChangedSince does not check the hunt commit is an ancestor of HEAD (main checkout on master -> on_head true)"
 round: 5
 review-verdict: "Zurueck an in-progress: ein Blocker. Go-Seite, Lane-Prompts und Cockpit-Logik erfuellen DoD 1-6 und 8-11 (go test ./... gruen, claude plugin test 216 pass); der Statuspunkt 'bughunt on HEAD' der neuen Explain-Statuszeile (DoD 7) kann aus den Daten, die der Explain-Chat bekommt, im Normalfall nicht ok werden."
 review-round: 4
