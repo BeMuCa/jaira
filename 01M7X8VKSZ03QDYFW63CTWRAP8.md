@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:51:54Z
+updated-at: 2026-11-21T08:51:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1876460
 claimed-at: 2026-11-21T08:39:00Z
@@ -34,10 +34,7 @@ outcome-why: "fresh review 21.11. blocker: a red CI run or a missing hunt could 
 outcome-resolves: "the recommendation can no longer contradict its own status line, and the hunt check holds in any clone"
 review-summary: "critique 21.11. round 6: rule 0 is placed ahead of the table rules where it belongs - a check is no note; teamlead keeps pointing to the role, no second copy of the rules. Nothing to change."
 round: 14
-review-gaps: |-
-  blocker: DoD 2 - the return rules (jaira-role-signoff/SKILL.md '## The return rules') decide only from the table marks; a ❌ on tests (CI failed at the head) or on bug hunt (no hunt names the head) never reaches the recommendation, so a ticket with a red CI run and only ⚪ rows gets rule 3 'accept' printed in bold under its own ❌ status line - the teamlead used to say 'do not report the ticket as ready' for a missing hunt, the role does not; add a rule ahead of 1: ❌ tests or ❌ hunt -> give back / start the hunt, and say what a `?` does to the recommendation
-  note: the hunt check compares short shas ('compare the short form'), but git abbreviates to a length that differs between clones (7 vs 8+); say compare by prefix of the full head sha
-  note: not from this ticket - the untracked .jaira/milestones/*.md in the worktree show up in worktree_diff and in every bughunt 'files:' list; they must not ride in this ticket's commit
+review-gaps: "optimize 21.11. round 6: nothing to remove."
 test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at 390088c7; DoD 1-4 verified in the tree; empty head now leaves only tests and hunt as ?. Roles write nothing - no concurrent-writer case."
 hunt-verdict: "clean: diff hunt at 390088c7 (HEAD), 0 findings"
 question: ""
