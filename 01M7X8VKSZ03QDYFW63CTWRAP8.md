@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:31:11Z
+updated-at: 2026-11-21T08:31:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-31394
 claimed-at: 2026-11-21T08:01:32Z
@@ -34,7 +34,10 @@ outcome-why: "fresh review 21.11.: the role gave two answers for an older sha, t
 outcome-resolves: "both roles read a stale CI run as ? and a stale hunt as ❌; the pasted follow-up is complete; the teamlead names the same checks as the role"
 review-summary: "Ships a new read-only role /jaira-role-signoff that, for every ticket in signoff, reads jaira show --json fresh, finds the branch head by handle segment and ancestry over local and remote copies, and prints one status line (DoD, CI run for exactly that commit, bughunt note naming that commit, blockers, review verdict, noted returns), a table marking each open note 🔴/🟡/⚪/🔵, one recommendation by five return rules, and paste-ready accept/give-back/follow-up lines. The teamlead's 'Report to the human' now re-reads lanes and open PRs before any pending list and uses the same decision shape, pointing to the role for the checks and return rules; its hunt-cover check no longer assumes feat/<id>. Worker, dispatcher and jaira-role-pr run the project's CI gates locally before every push. README, the German how-to page, role_test.go, shipped.sha256 and a release note carry the new role."
 round: 11
-review-gaps: "optimize 21.11. round 3: nothing to remove; teamlead keeps the six check names only, the reading stays in the role."
+review-gaps: |-
+  note: jaira-role-signoff '1. The status line' says each check is ✅ or ❌, the paragraphs below add ? for unknown CI and an empty head - one word ('✅, ❌ or ?') would stop a reader of the first sentence from rounding ? to ❌
+  note: the accept line hard-codes --to done; correct on the default board, a board with a differently named terminal lane needs the person to change it (already a known limit in the trail)
+  note: pre-existing: the returns-from-signoff count is a floor because a give-back in the board TUI writes no 'Given back from signoff:' note - the cause sits in the binary, not in the roles
 test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at 558c8205; DoD 1-4 verified in the tree; the stale-result rule now reads the same in signoff and teamlead; the follow-up line carries --assignee (flag exists). Roles write nothing - no concurrent-writer case."
 hunt-verdict: "clean: diff hunt at 558c8205 (HEAD), 0 findings"
 question: ""
