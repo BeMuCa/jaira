@@ -72,6 +72,9 @@ type World = {
   toasts: string[]
   // `git remote -v`.
   remotes: string
+  // .jaira/pr as the base holds it (`git show <base>:.jaira/pr`); undefined:
+  // no such file there.
+  basePr?: string
   // The forge answers `repo view` but refuses `pr list`.
   prListFails: boolean
   nextFails: boolean
@@ -294,6 +297,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
         : { path_with_namespace: 'acme/repo', forked_from_project: { path_with_namespace: 'upstream/repo' }, default_branch: 'master' }))
     }
     if (cmd === 'git' && args[0] === 'remote' && args[1] === '-v') return ok(w.remotes)
+    if (cmd === 'git' && args[0] === 'show' && args[1]?.endsWith(':.jaira/pr')) return w.basePr === undefined ? failed(`fatal: path '.jaira/pr' does not exist in '${args[1].split(':')[0]}'`) : ok(w.basePr)
     if (cmd === 'git' && args[0] === 'branch' && args[1] === '--contains') return ok(w.holders.join('\n'))
     if (cmd === 'git' && args[0] === 'branch') return ok(w.branches.join('\n'))
     // Newest first, as git prints them. A --grep reads the whole message,
@@ -1454,7 +1458,7 @@ describe('after Accept', () => {
     const w = world(on, { herdr: true })
     w.ahead = 3
     w.origin = 'git@git.example.de:acme/repo.git'
-    w.files.set('/repo/.jaira/pr', '# solo\nnone\n')
+    w.basePr = '# solo\nnone\n'
     await press($)
     expect(ran(w, 'gh')).toEqual([])
     expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'mg677r', 'MG677R', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
@@ -1466,7 +1470,7 @@ describe('after Accept', () => {
     const w = world(on, { herdr: true })
     w.ahead = 3
     w.origin = null
-    w.files.set('/repo/.jaira/pr', 'none\n')
+    w.basePr = 'none\n'
     await press($)
     expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(await failure($)).toContain('no remote origin to land on')
@@ -1476,7 +1480,7 @@ describe('after Accept', () => {
     const w = world(on, { herdr: true })
     w.ahead = 2
     w.prs = null
-    w.files.set('/repo/.jaira/pr', '\uFEFFnone\r\n')
+    w.basePr = '\uFEFFnone\r\n'
     await press($)
     expect(prLane(w)).toEqual([])
     const why = await failure($)
@@ -1489,17 +1493,27 @@ describe('after Accept', () => {
     w.ahead = 2
     w.origin = null
     w.subjects = ['feat(MG677R): cache key', 'fix(T8QS1Y): filter']
-    w.files.set('/repo/.jaira/pr', 'none\n')
+    w.basePr = 'none\n'
     await press($)
     expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(w.toasts.at(-1)).toBe('MG677R accepted; feat/mg677r does not land yet: T8QS1Y not in done')
+  })
+
+  test('.jaira/pr says none only in this checkout, not in the base: the base decides, so it is the pull request path', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.origin = null
+    w.files.set('/repo/.jaira/pr', 'none\n')
+    await press($)
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
+    expect(await failure($)).toContain('needs an origin on GitHub or GitLab')
   })
 
   test('.jaira/pr with a typo is the pull request path: no forge still says so', async ($, on) => {
     const w = world(on, { herdr: true })
     w.ahead = 3
     w.origin = null
-    w.files.set('/repo/.jaira/pr', 'nnone\n')
+    w.basePr = 'nnone\n'
     await press($)
     expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(await failure($)).toContain('needs an origin on GitHub or GitLab')

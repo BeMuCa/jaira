@@ -602,13 +602,15 @@ type Decided = { step: StepAfterAccept; branch?: string; hint: string; land?: bo
 
 async function decideStep($: EngineInterface, b: { dir: string; repo: string }, id: string, terminal: string, porcelain: string): Promise<Decided | string> {
   const found = branchesFor(porcelain, id)
-  const land = await landsWithoutPullRequest($, b.dir)
   const asked = await pullTarget($, b.repo)
-  if (typeof asked === 'string' && !land) return { step: stepAfterAccept(0, [], undefined), hint: t.prUnchecked(asked) }
   // Under none a reason is held until there is something to land: a branch
   // with nothing ahead, or a ticket still open, is no failure.
   const target = typeof asked === 'string' ? undefined : asked
   const base = target?.base ?? found.base
+  // The base decides, as the gate does: this checkout's .jaira/pr may be the
+  // branch's own word for itself.
+  const land = base !== undefined && await landsWithoutPullRequest($, b.repo, base)
+  if (typeof asked === 'string' && !land) return { step: stepAfterAccept(0, [], undefined), hint: t.prUnchecked(asked) }
   let branch = found.ticket
   // No worktree: the branch spawn.sh named <prefix>/<slug>, left behind
   // when the worktree went; else the branch whose commits name the ticket,
@@ -682,19 +684,15 @@ async function afterAccept($: EngineInterface, id: string, terminal: string): Pr
   return say($, land ? t.landStarted(id, branch) : t.prStarted(id, branch))
 }
 
-// Whether the board at dir says none in .jaira/pr, read as jaira reads it:
-// the first line that is neither blank nor a comment, a byte order mark
-// dropped, exactly 'none'. A file that is missing or says anything else is
-// the pull request path, as before. The gate the pr lane runs reads the file
-// again from the base branch, so this only picks the words and skips the forge.
-async function landsWithoutPullRequest($: EngineInterface, dir: string): Promise<boolean> {
-  let text: string
-  try {
-    text = await $.fs.read(`${dir}/.jaira/pr`)
-  } catch {
-    return false
-  }
-  const word = text.replace(/^\uFEFF/, '').split('\n').map(l => l.trim()).find(l => l !== '' && !l.startsWith('#'))
+// Whether .jaira/pr says none as base holds it, read as jaira reads it: the
+// first line that is neither blank nor a comment, a byte order mark dropped,
+// exactly 'none'. No such file in base, or anything else in it, is the pull
+// request path, as before. Read from the base, as 'jaira roles pr-gate
+// --land' reads it, never off this checkout's disk.
+async function landsWithoutPullRequest($: EngineInterface, repo: string, base: string): Promise<boolean> {
+  const shown = await run($, ['git', 'show', `${base}:.jaira/pr`], repo)
+  if (shown?.exitCode !== 0) return false
+  const word = shown.stdout.replace(/^\uFEFF/, '').split('\n').map(l => l.trim()).find(l => l !== '' && !l.startsWith('#'))
   return word === 'none'
 }
 

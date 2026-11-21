@@ -155,6 +155,18 @@ func (r *reapRig) git(t *testing.T, dir string, args ...string) string {
 	return strings.TrimSpace(string(out))
 }
 
+// noneOnBase commits .jaira/pr none into master, where 'jaira roles list'
+// reads it — the base decides, never the checkout's disk — and brings the
+// ticket's branch up to it, so every origin ref a test points at master or
+// past it holds the file.
+func (r *reapRig) noneOnBase(t *testing.T) {
+	t.Helper()
+	r.write(t, filepath.Join(r.repo, ".jaira", "pr"), "none\n")
+	r.git(t, r.repo, "add", "-f", ".jaira/pr")
+	r.git(t, r.repo, "commit", "-q", "-m", "chore: no pull requests")
+	r.git(t, r.wt, "merge", "-q", "--ff-only", "master")
+}
+
 func (r *reapRig) write(t *testing.T, path, body string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
@@ -490,7 +502,7 @@ func TestReapNeverRemovesTheWorktreeItRunsIn(t *testing.T) {
 func TestReapOnANoneBoardWaitsForTheDefaultBranch(t *testing.T) {
 	t.Parallel()
 	r := newReapRig(t)
-	r.write(t, filepath.Join(r.repo, ".jaira", "pr"), "none\n")
+	r.noneOnBase(t)
 	r.write(t, filepath.Join(r.repo, ".jaira", "tickets", ".keep"), "")
 	r.write(t, r.shown, `{"status":"done"}`)
 	// origin is a fork (the rig's gh says so): work lands on its parent, and
@@ -575,7 +587,7 @@ func TestReapOnANoneBoardMeasuresARenamedOrigin(t *testing.T) {
 	t.Parallel()
 	r := newReapRig(t)
 	r.write(t, r.merged+".notfork", "")
-	r.write(t, filepath.Join(r.repo, ".jaira", "pr"), "none\n")
+	r.noneOnBase(t)
 	r.write(t, filepath.Join(r.repo, ".jaira", "tickets", ".keep"), "")
 	r.write(t, r.shown, `{"status":"done"}`)
 	r.git(t, r.wt, "commit", "-q", "--allow-empty", "-m", "feat(AB12CD): the work")
@@ -595,7 +607,7 @@ func TestReapOnANoneBoardMeasuresARenamedOrigin(t *testing.T) {
 func TestReapNamesAFailingRolesListAsTheCause(t *testing.T) {
 	t.Parallel()
 	r := newReapRig(t)
-	r.write(t, filepath.Join(r.repo, ".jaira", "pr"), "none\n")
+	r.noneOnBase(t)
 	r.write(t, filepath.Join(r.repo, ".jaira", "tickets", ".keep"), "")
 	r.write(t, r.shown, `{"status":"done"}`)
 	r.write(t, r.shown+".roles-fails", "")
@@ -624,7 +636,7 @@ func TestReapOnANoneBoardNamesAnUnansweringGh(t *testing.T) {
 	t.Parallel()
 	r := newReapRig(t)
 	r.write(t, r.merged+".gh-down", "")
-	r.write(t, filepath.Join(r.repo, ".jaira", "pr"), "none\n")
+	r.noneOnBase(t)
 	r.write(t, filepath.Join(r.repo, ".jaira", "tickets", ".keep"), "")
 	r.write(t, r.shown, `{"status":"done"}`)
 	r.git(t, r.wt, "commit", "-q", "--allow-empty", "-m", "feat(AB12CD): the work")

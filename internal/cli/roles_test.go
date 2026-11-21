@@ -161,7 +161,7 @@ func TestRolesListReportsTheBoardsPR(t *testing.T) {
 		}
 		return p
 	}
-	if p := read(); p["pr"] != "person" || p["pr_source"] != "the default" || p["pr_reviewer"] != "" {
+	if p := read(); p["pr"] != "person" || !strings.HasPrefix(fmt.Sprint(p["pr_source"]), "the default") || p["pr_reviewer"] != "" {
 		t.Errorf("no .jaira/pr: pr=%v source=%v reviewer=%v, want person, the default, none", p["pr"], p["pr_source"], p["pr_reviewer"])
 	}
 	if err := os.WriteFile(settings.BoardPRPath(board), []byte("agent\n"), 0o644); err != nil {

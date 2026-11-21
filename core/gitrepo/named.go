@@ -97,6 +97,26 @@ func (r *Repo) isPlainMerge(sha string, parents []string) bool {
 	return first != "" && strings.TrimSpace(first) == strings.TrimSpace(got)
 }
 
+// IsCommit reports whether rev names a commit here. A rev starting with a
+// dash is never one: git would read it as an option.
+func (r *Repo) IsCommit(rev string) bool {
+	if rev == "" || strings.HasPrefix(rev, "-") {
+		return false
+	}
+	_, err := r.run("rev-parse", "--verify", "--quiet", rev+"^{commit}")
+	return err == nil
+}
+
+// SymbolicRef is the full ref name the symbolic ref name points at, or ""
+// when it is not one here.
+func (r *Repo) SymbolicRef(name string) string {
+	out, err := r.run("symbolic-ref", "-q", name)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(out)
+}
+
 // FileAt returns the content of path, relative to Dir, as the commit rev
 // holds it, and "" when rev holds no such file. rev must already be known to
 // name a commit: any failure to read the file reads as empty, so a caller

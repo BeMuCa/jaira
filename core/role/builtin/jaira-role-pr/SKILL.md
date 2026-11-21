@@ -46,6 +46,15 @@ jaira roles list --json | jaira json get pr_reviewer   # copilot, a login, or em
 jaira roles list --json | jaira json get pr_when       # done or signoff
 ```
 
+All three come from the base — origin's default branch — never from this
+checkout's files, which may be the branch's own word for itself;
+`pr_source` says where they came from and when the branch changes
+`.jaira/pr`. Once **Which repository it goes to** has named `<remote>/<branch>`
+— in a fork the parent's default branch, not origin's — read them again with
+`jaira roles list --json --base <remote>/<branch>`; that answer is the one you
+act on. The gates check it once more: `jaira roles pr-gate` refuses to open
+where the base says `none`, and `--land` refuses to land where it does not.
+
 - **`person`** — the default, and what a board without `.jaira/pr` says, or
   one whose file says anything but exactly `agent` or `none`. Everything above holds as
   written: invoked by an agent, you push and hand the create line back.

@@ -362,6 +362,12 @@ const (
 // yet to accept, and done waits until its review round is finished.
 const prWhenFile = "pr-when"
 
+// PRReviewerIn reads the content of a .jaira/pr-reviewer file taken from a
+// commit the way PRReviewerFor reads the file on disk.
+func PRReviewerIn(content string) string {
+	return word(firstLine(content), "._-[]/@")
+}
+
 // BoardPRWhenPath is where the board at root says when a pull request opens.
 func BoardPRWhenPath(root string) string {
 	return filepath.Join(root, ticket.DirName, prWhenFile)
