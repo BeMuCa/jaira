@@ -224,8 +224,10 @@ func TestPrePushScanReadsTheListAsWritten(t *testing.T) {
 		{"UTF-16 without BOM", utf16le("acmecorp\n")[2:], "for acmecorp\n", "", 2, "NUL bytes"},
 		{"Latin-1", "acmecorp\nm\xfcller\n", "for acmecorp\n", "", 2, "not UTF-8"},
 		{"lines ending in CR only", "foo\racmecorp\r", "for acmecorp\n", "", 3, "matches the denylist"},
-		{"CRLF and trailing blanks", "foo \t\r\nacmecorp  \r\n", "for acmecorp.\n", "", 3, "matches the denylist"},
+		{"CRLF", "foo\r\nacmecorp\r\n", "for acmecorp.\n", "", 3, "matches the denylist"},
 		{"C locale still folds non-ASCII", "müller\n", "MÜLLER GmbH\n", "C", 3, "matches the denylist"},
+		{"a pattern is taken as written, its trailing blank included", "acme\\ \n", "for acme corp\n", "", 3, "matches the denylist"},
+		{"a commit that is not UTF-8, in a UTF-8 locale", "acmecorp\n", "caf\xe9 acmecorp\n", "C.UTF-8", 3, "matches the denylist"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			r := newScanRepo(t)
@@ -250,6 +252,9 @@ func TestPrePushScanReadsTheListAsWritten(t *testing.T) {
 			}
 			if strings.Contains(strings.ToLower(out), "acmecorp") || strings.Contains(strings.ToLower(out), "müller") {
 				t.Errorf("output carries the mention\n%s", out)
+			}
+			if strings.Contains(out, "multibyte") {
+				t.Errorf("a tool complained about the text's encoding\n%s", out)
 			}
 		})
 	}

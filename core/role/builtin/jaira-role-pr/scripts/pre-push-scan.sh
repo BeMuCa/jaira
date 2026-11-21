@@ -25,7 +25,7 @@ Two lists are matched, case-insensitively:
                  repository on purpose: a list inside it would be the mention.
                  UTF-8, with or without a BOM, or UTF-16 with its BOM; any
                  other encoding is refused rather than half read. Lines may
-                 end in LF, CRLF or CR; blanks at a line's end are ignored.
+                 end in LF, CRLF or CR; a pattern is taken as written.
                  A hit stops the push. No file, or one with no pattern in it:
                  the scan says the strings were not checked and goes on.
   this machine   its name as 'uname -n' gives it, up to the first dot
@@ -92,10 +92,9 @@ if [ -e "$list" ]; then
   fi
   # A BOM would stick to the first pattern. A line ends in LF, CRLF or a lone
   # CR (an old Mac file): every CR becomes a line break, and the empty line
-  # CRLF leaves behind is dropped with the blank ones. Trailing blanks are an
-  # editor's, not the pattern's: kept, they would demand a blank in the text.
+  # CRLF leaves behind is dropped with the blank ones. A pattern is taken as
+  # written, a blank at its end included.
   LC_ALL=C sed "1s/^$(printf '\357\273\277')//" "$tmp/list" | tr '\r' '\n' |
-    LC_ALL=C sed 's/[[:blank:]]*$//' |
     { LC_ALL=C grep -a -v -e '^[[:space:]]*#' -e '^[[:space:]]*$' || true; } >"$deny"
   rc=0
   LC_ALL=$fold grep -Eqi -f "$deny" </dev/null 2>/dev/null || rc=$?
@@ -147,7 +146,9 @@ scan() {
   git -c core.quotePath=false diff-tree --cc --root -r --name-only --no-commit-id "$c" >"$tmp/names"
   git -c core.quotePath=false show --format= --cc --unified=0 --no-renames \
     --no-prefix --no-color --no-ext-diff --no-textconv --text "$c" >"$tmp/diff"
-  tr -d '\000' <"$tmp/diff" | awk -v adds="$tmp/adds" -v locs="$tmp/locs" '
+  # Both awks run on bytes: a file that is not UTF-8 is read without
+  # 'Invalid multibyte data' on stderr, and paths and lines stay as git wrote them.
+  tr -d '\000' <"$tmp/diff" | LC_ALL=C awk -v adds="$tmp/adds" -v locs="$tmp/locs" '
     BEGIN { printf "" > adds; printf "" > locs }
     /^diff --(git|cc|combined) / { h = 1; path = ""; next }
     h && /^\+\+\+ / { path = substr($0, 5); sub(/\t$/, "", path); next }
@@ -186,7 +187,7 @@ scan() {
   for kind in deny host; do
     if [ "$kind" = deny ]; then pat=$deny mode=-E; else pat=$hostfile mode=-F; fi
     lines "$pat" "$mode" "$tmp/adds" >"$tmp/hits"
-    awk -v c="$short" '
+    LC_ALL=C awk -v c="$short" '
       FILENAME == ARGV[1] { i = index($0, "\t"); idx[substr($0, i + 1)] = substr($0, 1, i - 1); next }
       FILENAME == ARGV[2] { want[$0] = 1; next }
       FNR in want {
