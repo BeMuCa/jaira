@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZWSDHK37DGGHJFDF0YD6
 title: "Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,13 +23,13 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:10:06Z
+updated-at: 2026-11-21T09:10:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
-outcome-what: "Round 9: bughunt on HEAD is red only on a real change since the hunt: uncommitted files count by their time, .jaira/ untracked never, stop-after-fix reads 'skipped'; Explain no longer reads a blocker out of a later lane's review-gaps."
-outcome-why: "Teamlead for Alex 21.11.: on_head must not be red on a clean ticket - Alex reads red as a catastrophe; the round-8 review listed five ways it was."
-outcome-resolves: "review round 8 notes 1-5. Checked: concurrency (read-only), error paths (stat failure/deleted -> changed, unknown commit -> fail), input (-z paths, spaces, .jaira prefix), permissions (none new). go test ./... RC=0, claude plugin test 218 pass."
+outcome-what: "Round 10: board data under .jaira/ (all but the lane prompts) never takes a hunt off HEAD, tracked or not, listed or not."
+outcome-why: "The round-9 hunter showed jaira tag / milestone writes to tracked board files turned bughunt on HEAD red on an unchanged ticket."
+outcome-resolves: "bughunt change at cf0cdfef (git.go writtenSince); TestChangedSince 19 cases; go test ./... RC=0. Checked: input (-z names, quotePath off), error paths unchanged, read-only."
 review-summary: "none"
 review-gaps: "none - cf0cdfef: writtenSince replaces untrackedSince and the diff check (one pass over both lists), nothing left orphaned"
 test-verdict: "pass: go test -count=1 ./... RC=0 at cf0cdfef, claude plugin test 218 pass; scratch board end to end: uncommitted edit from before the hunt + untracked .jaira/milestones file -> on_head true; edit after the hunt -> false; stop-after-fix then -> skipped true; read-only git, no parallel-writer case"
