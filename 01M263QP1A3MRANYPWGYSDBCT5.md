@@ -18,7 +18,7 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-21T08:07:01Z
+updated-at: 2026-11-21T08:07:05Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
@@ -60,6 +60,7 @@ review-check: |-
   proof: core/role/jaira/SKILL.md:331; TestAgentNoteNamesProofAndTheUnsharedBoardCaveat
 - [x] Die PR-Rolle und docs/AGENTS.md werten einen Code-Commit ohne Ticketdatei auf einem ungeteilten Board nicht als Fehler
   proof: core/role/builtin/jaira-role-pr/SKILL.md:59, docs/AGENTS.md:72; go test ./... -race exit 0
+- [ ] Die fertigen Commit-Zeilen in jaira-worker und jaira-role-lane SKILL.md lassen die Ticketdatei auf einem ungeteilten Board weg; der Vorbehalt sagt, dass der Punkt 'commits nothing' dort erst recht gilt
 
 ## Options
 
