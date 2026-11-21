@@ -364,12 +364,8 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 	l.RequiresCommits = boolOf("requires-commits")
 	l.RequiresOption = strings.TrimSpace(str("requires-option"))
 	l.RejectsTo = rejectsTo(f)
-	if l.VerdictAccept, err = verdictWords(listOrScalar(f, "verdict-accept")); err != nil {
-		return nil, fmt.Errorf("lane %s: verdict-accept: %w", source, err)
-	}
-	if l.VerdictSendBack, err = verdictWords(listOrScalar(f, "verdict-send-back")); err != nil {
-		return nil, fmt.Errorf("lane %s: verdict-send-back: %w", source, err)
-	}
+	l.VerdictAccept = verdictWords(listOrScalar(f, "verdict-accept"))
+	l.VerdictSendBack = verdictWords(listOrScalar(f, "verdict-send-back"))
 	for _, a := range l.VerdictAccept {
 		for _, b := range l.VerdictSendBack {
 			// A send-back word reads as soon as a verdict begins with it, so
