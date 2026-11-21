@@ -1,7 +1,7 @@
 ---
 id: 01M6PDF2D6RQ8K1T7N0G1MYFKE
 title: "Ein Milestone erreicht die Kollegen so schnell wie ein Ticket, ueber einen Ref"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Ein angelegter oder geaenderter Milestone liegt auf einem Ref wie Tickets und Epics und erscheint bei Kollegen mit dem naechsten Fetch, ohne Commit und Merge."
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:49Z
-updated-at: 2026-11-21T20:44:07Z
+updated-at: 2026-11-21T20:45:35Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2112118
@@ -27,12 +27,12 @@ claimed-at: 2026-11-21T20:33:18Z
 outcome-what: "jaira fetch (und der Board-Fetch) schickt eine ID-benannte Milestone-Datei ohne Ref und ohne wartenden Outbox-Eintrag einmal auf refs/jaira/milestones/<ID> und nennt sie (Text, JSON milestones_published, Board-Zeile)."
 outcome-why: "Milestones liegen seit 0YGWXQ/EBTX6X schon auf Refs; die einzige Luecke war eine Datei, die vor dem Remote angelegt wurde - Migrate uebergeht ID-benannte Dateien, so blieb sie fuer immer auf einer Platte."
 outcome-resolves: "Jeder Milestone dieses Boards erreicht die Kollegen mit dem naechsten Fetch, auch einer aus der Zeit ohne Remote."
-review-summary: "keine Befunde. Ort richtig: publishUnsent sitzt in refsync.FetchMilestones nach dem Netz-Fetch, nicht in milestone.Migrate - Migrate laeuft auch ohne Fetch (internal/cli/milestones.go migrateHeld), dort hiesse 'kein lokaler Ref' nicht 'kein Ref auf dem Remote'. Nutzt vorhandene Teile (milestoneFiles, pendingMilestone, RecordMilestone, RecordError). fetch.go: das 6-Tupel aus fetchMilestones ist jetzt MilestonesFetched, sonst waere es ein 7-Tupel geworden. Bewusst stehen gelassen: der Fetch vor der ersten Migration (milestones.go migrateMilestones) sendet ebenfalls, meldet es aber nicht - der naechste fetch wiederholt nichts."
+review-summary: "core/refsync/refsync.go fetch(): der Merker war prozessweit und blieb nach einem guten Fetch true - im Board (Fetch per Timer) haetten spaetere Offline-Ticks wieder gesendet. Behoben: er heisst jetzt 'der letzte Fetch erreichte den Remote' (Store(err == nil)), Test TestAFailedFetchAfterAGoodOneSendsNothing. Sonst keine Befunde; Ort (FetchMilestones statt Migrate) und Wiederverwendung wie in Runde 1."
 review-gaps: "nichts zu entfernen: ~40 Zeilen Kern in core/refsync/refsync.go publishUnsent, je eine Ausgabezeile in internal/cli/fetch.go und internal/tui/refs.go; der Zwillings-Ausschluss ist ein map-Zaehler und hat einen eigenen Test."
 test-verdict: "pass: go vet ./... und GOOS=windows vet gruen, go test ./... RC=0, -race core/refsync RC=0; DoD 1-4 im Baum geprueft; Normalfall: Milestone vor dem Remote angelegt, erster jaira fetch meldet 'now sent to the remote', Ref auf dem Remote, zweiter fetch sendet nichts; Fehlerpfad: unerreichbarer Remote -> fetch exit 1, kein Ref, nichts gemeldet, nach Reparatur kommt er an; zwei fetch parallel: genau einer sendet m1,m2, je ein Commit pro Ref, Outbox leer"
 hunt-verdict: "change: 2 Befunde (1 blocker) - publishUnsent sendet auch ohne erfolgreichen Fetch (ErrOffline), und ein nicht lesbarer Milestone-File bricht den ganzen fetch ab"
-round: 2
-back-from: testing
+round: 3
+back-from: critique
 back-by: lane
 back-count: 1
 ---
@@ -73,3 +73,4 @@ back-count: 1
 - **2026-11-21 20:41 · Alexander Sacharov** — bughunt: change: core/refsync/refsync.go:524-527 (publishUnsent) - class: an error reading one milestone file returns at once with a plain error, not a RecordError. That contradicts its own doc ('a file that could not be queued does not stop the others'). FetchMilestones then returns it, 'jaira fetch' exits with that error and prints nothing, not even arrivals (internal/cli/fetch.go:94-96), and the board's fetch shows the error on every tick. While old-format files are pending, migrateMilestones (internal/cli/milestones.go:663) also makes every writing milestone command fail this way. The files that sort after the bad one are never sent. milestone.LoadAll tolerates the same file, so before this change the fetch did not fail. example: a dangling symlink gone-K3F9QZ.md beside real-M7P2RT.md -> published [] and err 'open .../gone-K3F9QZ.md: no such file or directory' on every fetch; the same happens with a file without read permission, or one that git checkout removes between ReadDir and ReadFile (git takes no jaira lock). ran: scratch test TestScratchDanglingLink in core/refsync (LoadAll err nil, FetchMilestones err non-nil, Published empty)
 - **2026-11-21 20:41 · Alexander Sacharov** — bughunt: done at fd04ce378 - 2 findings (2 change, 1 of them a blocker, 0 pre-existing) in 5 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/refsync/publish_test.go core/refsync/refsync.go core/release/notes/1MYFKE.md internal/cli/fetch.go internal/cli/milestones.go internal/tui/refs.go
 - **2026-11-21 20:44 · Alexander Sacharov** — Runde 2 (Bughunt-Befunde behoben): (1) publishUnsent laeuft nur, wenn ein Fetch in diesem Prozess den Remote erreicht hat - Syncer.fetch() setzt dafuer ein atomic.Bool; alle Repo.Fetch-Aufrufe in refsync gehen jetzt durch ihn. Offline heisst 'kein lokaler Ref' nicht 'kein Ref auf dem Remote'. Test TestNothingIsSentWithoutAFetchThatReachedTheRemote. (2) eine nicht lesbare Datei wird uebersprungen und als RecordError (Warnung) gemeldet, die anderen gehen raus. Test TestAnUnreadableFileDoesNotStopTheOthers.
+- **2026-11-21 20:45 · Alexander Sacharov** — Critique Runde 2: fetched-Merker auf 'letzter Fetch' umgestellt (vorher: irgendein Fetch im Prozess), sonst haette der Board-Timer nach einem guten Fetch offline wieder gesendet.

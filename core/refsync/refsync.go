@@ -73,9 +73,11 @@ type Syncer struct {
 	// a remote.
 	dirty bool
 
-	// fetched records that a fetch in this process reached the remote. Only
-	// then does "no ref in this tree" mean "no ref on the remote" — offline,
-	// it may only mean this clone has not fetched a teammate's milestone yet.
+	// fetched records whether the last fetch reached the remote. Only then
+	// does "no ref in this tree" mean "no ref on the remote" — offline, it may
+	// only mean this clone has not fetched a teammate's milestone yet. The
+	// last fetch, not any: the board fetches on a timer, and one good fetch an
+	// hour ago says nothing about the milestones made since.
 	fetched atomic.Bool
 
 	// extraMu guards extraCache: the decoded ticket of each ref-only ticket,
@@ -505,7 +507,7 @@ func (y *Syncer) FetchMilestones(s *ticket.Store) (MilestonesFetched, error) {
 // this it would stay on one disk however often that clone fetches, which is
 // the one thing a milestone ref is there to prevent.
 //
-// It runs only once a fetch in this process has reached the remote. Offline,
+// It runs only when the last fetch reached the remote. Offline,
 // a missing ref may be a teammate's milestone this clone has not fetched yet,
 // and a write queued against no ref would be merged into theirs from an empty
 // base when it is finally sent — their removals undone, nobody told.
@@ -579,12 +581,10 @@ func (y *Syncer) OldRefHad(name string, content []byte) bool {
 	return y.Repo.MilestoneHad(name, content)
 }
 
-// fetch is Repo.Fetch, remembering that the remote was reached.
+// fetch is Repo.Fetch, remembering whether it reached the remote.
 func (y *Syncer) fetch() error {
 	err := y.Repo.Fetch()
-	if err == nil {
-		y.fetched.Store(true)
-	}
+	y.fetched.Store(err == nil)
 	return err
 }
 

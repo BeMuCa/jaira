@@ -98,3 +98,28 @@ func TestAnUnreadableFileDoesNotStopTheOthers(t *testing.T) {
 		t.Errorf("published %v, want [real]", got.Published)
 	}
 }
+
+// The board fetches on a timer: one fetch that reached the remote an hour ago
+// says nothing about the milestones made since, so a later one that did not
+// reach it sends nothing either.
+func TestAFailedFetchAfterAGoodOneSendsNothing(t *testing.T) {
+	ada, _, remote := twoSides(t)
+	if !ada.syncer.FetchRefs() {
+		t.Fatal("the remote was not reached")
+	}
+	if err := os.Rename(remote, remote+".away"); err != nil {
+		t.Fatal(err)
+	}
+	if ada.syncer.FetchRefs() {
+		t.Fatal("the test is not testing what it says: the remote was reached")
+	}
+	putDisk(t, ada, "late-K3F9QZ.md", body)
+
+	got, err := ada.syncer.FetchMilestones(ada.store)
+	if err != nil {
+		t.Fatalf("fetch: %v", err)
+	}
+	if len(got.Published) != 0 {
+		t.Errorf("sent %v after a fetch that failed", got.Published)
+	}
+}
