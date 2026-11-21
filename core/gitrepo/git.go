@@ -353,6 +353,11 @@ func (r *Repo) HuntCoverage(commit, ticketID string, paths []string) (HuntState,
 	if !ticket.ValidID(ticketID) {
 		return HuntStale, fmt.Errorf("gitrepo: %q is no ticket id", ticketID)
 	}
+	// Without git or outside a repository git cannot answer at all: an
+	// error, which a caller reads as unknown — never as a stale hunt.
+	if _, err := r.run("rev-parse", "--verify", "--quiet", "HEAD^{commit}"); err != nil {
+		return HuntUnknown, fmt.Errorf("gitrepo: cannot read HEAD: %w", err)
+	}
 	// A commit this repository does not have — rebased away and
 	// force-pushed, seen from a fresh clone — is as far from HEAD as one
 	// that is no ancestor: the hunt read code this checkout does not hold.

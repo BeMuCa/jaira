@@ -113,6 +113,18 @@ func TestHuntCoverage(t *testing.T) {
 			}
 		})
 	}
+	t.Run("no repository at all", func(t *testing.T) {
+		repo := &Repo{Dir: t.TempDir()}
+		if got, err := repo.HuntCoverage("deadbeef", id, []string{"a.go"}); err == nil || got != HuntUnknown {
+			t.Errorf("HuntCoverage = %v, %v; want unknown with an error", got, err)
+		}
+	})
+	t.Run("a repository without a commit yet", func(t *testing.T) {
+		_, repo := fixtureRepo(t)
+		if got, err := repo.HuntCoverage("deadbeef", id, []string{"a.go"}); err == nil || got != HuntUnknown {
+			t.Errorf("HuntCoverage = %v, %v; want unknown with an error", got, err)
+		}
+	})
 	t.Run("a commit this repository does not have", func(t *testing.T) {
 		dir, repo := fixtureRepo(t)
 		fixtureCommit(t, dir, map[string]string{"a.go": "a"}, "start", at)
