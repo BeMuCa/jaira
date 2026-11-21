@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:35:27Z
+updated-at: 2026-11-21T08:35:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-31394
 claimed-at: 2026-11-21T08:01:32Z
@@ -34,10 +34,7 @@ outcome-why: "fresh review 21.11.: the first sentence said ✅ or ❌ only"
 outcome-resolves: "a reader of the first sentence no longer rounds ? to ❌"
 review-summary: "critique 21.11. round 4: one-word change, consistent in both roles; nothing to change."
 round: 12
-review-gaps: |-
-  note: jaira-role-signoff '1. The status line' says each check is ✅ or ❌, the paragraphs below add ? for unknown CI and an empty head - one word ('✅, ❌ or ?') would stop a reader of the first sentence from rounding ? to ❌
-  note: the accept line hard-codes --to done; correct on the default board, a board with a differently named terminal lane needs the person to change it (already a known limit in the trail)
-  note: pre-existing: the returns-from-signoff count is a floor because a give-back in the board TUI writes no 'Given back from signoff:' note - the cause sits in the binary, not in the roles
+review-gaps: "optimize 21.11. round 4: nothing to remove."
 test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at 558c8205; DoD 1-4 verified in the tree; the stale-result rule now reads the same in signoff and teamlead; the follow-up line carries --assignee (flag exists). Roles write nothing - no concurrent-writer case."
 hunt-verdict: "clean: diff hunt at 558c8205 (HEAD), 0 findings"
 question: ""
