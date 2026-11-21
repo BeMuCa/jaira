@@ -18,13 +18,20 @@ related:
   - 01M67RXSPRWC7WVBCCM7MVR4PY
 commits: []
 created-at: 2026-11-20T16:35:33Z
-updated-at: 2026-11-21T19:07:02Z
+updated-at: 2026-11-21T19:08:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2279502
 claimed-at: 2026-11-21T19:00:51Z
 outcome-what: "jaira-worker and jaira-dispatcher end their report with a fixed status line 'jaira: <ID> <from> -> <to> · branch · commits · gates · notes · verdict', documented in their Report sections; the jaira-cockpit's digest.ts reads that line (statusLineOf) and shortens the report to its fields, falling back to the old guessing without it"
 outcome-why: "The teamlead read the ticket after every report to find branch, commits and whether it could push; a fixed line answers that from the report alone"
 outcome-resolves: "55CS2M; shares the line prefix with MVR4PY, which can now remove the guessing. Checked: concurrency n/a (pure function); error path: no line -> old path, failure text still keeps the report whole; unusual input: CRLF, lowercase handle/lanes, unicode arrow, '-' values, unknown keys, overlong fields clipped, verdict holding '·' or '->'; permissions: peer text is only displayed, every field clipped to 60"
+review-summary: |-
+  core/mod/builtin/jaira-cockpit/hooks/digest.ts digest(): the labels 'commits', 'gates', 'notes' are hardcoded; every word the cockpit shows lives in hooks/texts.ts (filterWords: marker, question, fullReport) - add them there and use words.*
+  core/role/builtin/jaira-dispatcher/SKILL.md Report: the 20-line status-line block is a verbatim copy of jaira-worker's; the dispatcher already defers to jaira-worker for 'Before you push' - point to jaira-worker's Report section instead of keeping two copies to drift
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # Ein Worker meldet signoff in einer Zeile mit festen Feldern: Branch, Commits, Guard, offene Notes
@@ -32,7 +39,7 @@ outcome-resolves: "55CS2M; shares the line prefix with MVR4PY, which can now rem
 ## Definition of Done
 
 - [x] jaira-worker und jaira-dispatcher schreiben die Schlussmeldung im festen Format, dokumentiert im Skill
-  proof: core/role/builtin/jaira-worker/SKILL.md:409, core/role/builtin/jaira-dispatcher/SKILL.md:556 (Report section, fixed line + field meanings)
+  proof: core/role/builtin/jaira-worker/SKILL.md:409 (Report: fixed line + field meanings), core/role/builtin/jaira-dispatcher/SKILL.md:556 (same line, points to jaira-worker's Report)
 - [x] Das Cockpit liest die Felder aus dieser Zeile
   proof: core/mod/builtin/jaira-cockpit/hooks/digest.ts:124 statusLineOf, used in digest() at :154
 - [x] Eingabeklassen der Zeile im Cockpit-Test: vollständige Zeile, leere Werte '-', fehlender Schlüssel, CRLF, Zeile nicht am Ende, zwei Zeilen (die letzte zählt), Fehlertext bleibt trotz Zeile ganz
@@ -63,3 +70,4 @@ outcome-resolves: "55CS2M; shares the line prefix with MVR4PY, which can now rem
 - **2026-11-21 18:58 · Alexander Sacharov** — decision (worker, no open question left): 1) Format, last line of the report: 'jaira: <ID> <from> -> <to> · branch: <branch> · commits: <first>..<last> (<n>) · gates: ok|red|none · notes: <n> · verdict: <text>'; fixed keys, fixed order, '-' for an empty value. Teamlead's proposal plus MVR4PY's 'jaira: <ID> <from> -> <to>' prefix, so both tickets share one line. 2) notes = count of 'note:' lines in review-gaps. gates = the project's local gates before push: ok/red, none where nothing was run (no code). 3) Cockpit: digest.ts reads lane, verdict and the four fields from that line when it is there; without it the old guessing stays — removing it is MVR4PY's job. 4) Scope: jaira-worker and jaira-dispatcher as the DoD names; jaira-role-lane reports to its dispatcher, which writes the line.
 - **2026-11-21 19:00 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/2274544.sock (restarted worker; previous claimer process gone)
 - **2026-11-21 19:03 · Alexander Sacharov** — statusLineOf in digest.ts: last matching line wins (a report quoting an earlier one ends with its own); verdict is last and takes the rest of the line so it may hold '·' or '->'; ticket from the line outranks the handle count. isFailure still runs first, so 'gates: red' alone shortens (the line shows 'gates red'), a '3 failed' in the text keeps it whole.
+- **2026-11-21 19:07 · Alexander Sacharov** — critique: (1) digest.ts hardcodes the labels commits/gates/notes - move them into texts.ts filterWords like marker/question/fullReport. (2) jaira-dispatcher SKILL.md copies the status-line block verbatim from jaira-worker - replace it with a pointer to jaira-worker's Report section, the pattern the dispatcher already uses for 'Before you push'.

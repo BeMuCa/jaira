@@ -160,9 +160,9 @@ export function digest(text: string): { ticket: string; line: string } | undefin
         `${status.from} → ${status.to}`,
         status.verdict,
         status.branch,
-        status.commits === undefined ? undefined : `commits ${status.commits}`,
-        status.gates === undefined ? undefined : `gates ${status.gates}`,
-        status.notes === undefined ? undefined : `notes ${status.notes}`,
+        status.commits === undefined ? undefined : `${words.commits} ${status.commits}`,
+        status.gates === undefined ? undefined : `${words.gates} ${status.gates}`,
+        status.notes === undefined ? undefined : `${words.notes} ${status.notes}`,
       ].map(p => (p === undefined ? undefined : clip(p, 60)))
     : [ticket, laneOf(text), verdictOf(text)]
   const question = questionOf(text)

@@ -549,27 +549,15 @@ to a human:
   this line to know what sending the next round back to you would cost
 - what is open, and whether it needs a person
 
-Then one line more, always the last line of the report, in a fixed format the
-teamlead and the jaira-cockpit read without opening the ticket:
+Then one line more, always the last line of the report, in exactly the format
+`jaira-worker` describes under "Report":
 
 ```
 jaira: <ID> <from> -> <to> · branch: <branch> · commits: <first>..<last> (<n>) · gates: ok|red|none · notes: <n> · verdict: <text>
 ```
 
-- `<ID>` the six-character handle; `<from> -> <to>` the lane the ticket was in
-  when you took it and the lane it sits in now
-- `branch` the ticket's branch; `commits` the short hashes of its first and
-  last commit on that branch and how many there are
-- `gates` the project's local gates before the push (see "Before anything is pushed"):
-  `ok`, `red`, or `none` where nothing was run because no code changed
-- `notes` how many `note:` lines the review's `review-gaps` carries — what a
-  person still has to weigh at acceptance
-- `verdict` the `review-verdict`, or the lane's outcome where no review ran;
-  it comes last and may hold any text
-
-Keys and their order are fixed; an empty value is `-`, never a missing key.
-The cockpit shortens the report to this line and keeps the rest for
-`/cockpit report <ID>`; a report without it is guessed at, field by field.
+`gates` is the result of the gates the worker that pushed ran (see "Before
+anything is pushed"); `<from>` is the lane the ticket was in when you took it.
 
 Everything else — which lanes ran, how long, what the diff was — stays with you
 unless it is asked for.
