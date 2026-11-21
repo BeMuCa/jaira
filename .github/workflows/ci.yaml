@@ -25,6 +25,19 @@ jobs:
           fetch-depth: 0
       - run: scripts/check-ticket-commits.sh "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
 
+  # core/shipped/shipped.sha256 must hold every version of every installed file
+  # a release tag carried, or 'jaira update --roles' takes an untouched older
+  # install for one a person edited and skips it. The manifest is merged by hand
+  # (or by merge=union), and a merge that drops a line is invisible in review.
+  # fetch-depth: 0 brings the tags; a clone without them fails the check.
+  shipped-manifest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - run: scripts/shipped-history.sh --check
+
   # The page 'jaira web' serves is committed as a build (core/web/ui/dist):
   # go:embed reads the disk and 'go install' has no Node. This rebuilds it from
   # the Svelte sources and fails when the committed build is not what they make,

@@ -127,7 +127,9 @@ ticket, not something you fix here:
    bookkeeping. Leave that file alone here: **File the finished tickets away**
    below commits it, filed into the logbook, for every ticket that is in done —
    the one exception, and the step that settles it. Anything else uncommitted is
-   a finding: stop and say so.
+   a finding: stop and say so. On a board that has not been shared yet,
+   `.jaira/` is out of git and there is no ticket file to carry: a code commit
+   without one is the rule there, not a finding.
 3. **Every commit names the ticket id.** On a board that has not been shared,
    the handle in the commit message is the only thing tying a commit to a
    ticket, and the commit list is derived from it.
@@ -285,6 +287,12 @@ not yours to decide. Invoked with `--by-person`, every ticket of the branch is
 in done already: the cockpit opens a pull request only then.
 
 ## Push the branch
+
+First run the project's own gates locally — the checks its CI runs, read off
+its workflow files, task runner and instructions, never from memory. A
+generated file or checksum list that has to change with the code is the gate
+nobody remembers; one local run names it. A red gate is a finding for the
+ticket: stop and say so, do not push.
 
 ```bash
 git push -u origin HEAD

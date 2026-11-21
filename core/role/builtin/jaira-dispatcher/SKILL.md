@@ -470,6 +470,13 @@ a changed lane, tag or logbook file keeps the tab; otherwise it prints
 parent means no `--parent` here: the report is then in your tab. Without a
 parent you never run it — the person reads you in this tab.
 
+## Before anything is pushed
+
+Whoever pushes the ticket's branch — a worker of yours or `/jaira-role-pr` —
+runs the project's own CI gates locally first, as `jaira-worker` describes under
+"Before you push". Put that line into the brief of the worker that pushes, and
+do not report a pushed branch as ready without its gate result.
+
 ## When to stop and hand back
 
 Stop and report the moment any of these is true:
