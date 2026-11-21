@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:22:26Z
+updated-at: 2026-11-21T09:22:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
@@ -31,9 +31,7 @@ outcome-what: "Round 12: the brief's help text and the release note name the sto
 outcome-why: "The round-11 review found both said null for it, while the brief returns {at: '', skipped: true}."
 outcome-resolves: "review round 11 note 2 (small edge); note 1 kept as known limit (see note). go test internal/cli Brief ok."
 review-summary: "none"
-review-gaps: |-
-  note: known limit: writtenSince vergleicht mtime mit der Minute der Hunt-Note (UTC, auf Minute gekuerzt) - eine Datei, die waehrend des Hunts nach dem Lesen, aber vor der Note geaendert wird, gilt als gedeckt (falsch gruen, praktisch nur im conversational mode); exakter waere ein Startzeitpunkt im Hunt-Note-Format
-  note: small edge: bei stop-after-fix ohne jeden Hunt liefert --brief {"at":"","on_head":false,"skipped":true} statt null; die Release-Note sagt "null means no hunt finished" - entweder dort erwaehnen oder at weglassen (core/release/notes/DF0YD6.md, internal/cli/tickets.go lastHunt)
+review-gaps: none - wording only
 test-verdict: "pass: go test -count=1 ./... RC=0 at c4e1fe34; TestChangedSince 21 cases incl. a named board's lane prompt (counts) and its other data (does not); read-only git"
 hunt-verdict: "pass: follow-up hunt since a6187478 at c4e1fe34, 0 findings"
 round: 12
