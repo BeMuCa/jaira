@@ -7,6 +7,7 @@ precedence: 49
 agentic: true
 model-tier: cheap
 rejects-to: in-progress
+max-rounds: 3
 input-requires: [goal, definition-of-done, outcome-what, outcome-resolves, diff]
 output-produces: [test-verdict, hunt-verdict]
 creator: BeMuCa

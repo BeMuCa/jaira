@@ -190,7 +190,9 @@ type LaneFact struct {
 	Question    bool
 	Parking     bool
 	RejectsTo   []string
-	Produces    []string
+	// MaxRounds is how many send-backs in a row the lane may make; 0 is no limit.
+	MaxRounds int
+	Produces  []string
 	// Fresh marks a lane a new agent works, not the one carrying the ticket.
 	Fresh bool
 }
@@ -246,8 +248,12 @@ func laneSection(facts []LaneFact) string {
 	// cannot infer from an ordered list.
 	for _, f := range facts {
 		if len(f.RejectsTo) > 0 {
-			fmt.Fprintf(&b, "Loop: %s sends work back to %s, and that repeats until %s has nothing left to say.\n",
+			fmt.Fprintf(&b, "Loop: %s sends work back to %s, and that repeats until %s has nothing left to say.",
 				f.ID, OrList(f.RejectsTo), f.ID)
+			if f.MaxRounds > 0 {
+				fmt.Fprintf(&b, " At most %d times in a row: the next send-back is refused, and a person decides.", f.MaxRounds)
+			}
+			b.WriteString("\n")
 		}
 	}
 

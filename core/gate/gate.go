@@ -36,6 +36,7 @@ const (
 	CodeNeedsHuman      = "needs_human"
 	CodeStepNotChosen   = "step_not_chosen"
 	CodeNotOwner        = "not_owner"
+	CodeMaxRounds       = "max_rounds"
 )
 
 // Violation is one reason a move was refused. Field is set when the fix is to
@@ -115,6 +116,13 @@ type Request struct {
 	// drives the CLI, and cannot press a key in someone's terminal. Lanes that
 	// require a human to release a ticket rely on it.
 	Interactive bool
+
+	// ByPerson marks a move a person made — in the board, or typed at a
+	// terminal. It opens no gate a person's hand is needed for (Interactive
+	// does that); it only exempts the move from a loop lane's max-rounds,
+	// because that limit exists to hand the decision to a person, and this
+	// move is that person deciding.
+	ByPerson bool
 
 	// NewAssignee accompanies a move that also hands the ticket to someone
 	// else. A hand-over is always allowed, regardless of who currently owns
@@ -399,6 +407,28 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 				"lane %q is a human checkpoint: open the board and sign this off, or accept it there. An agent cannot move a ticket on from it, only back to an earlier lane",
 				cur.ID),
 		})
+	}
+
+	// A loop lane that keeps finding more stops after max-rounds send-backs in
+	// a row and hands the next decision to a person. Only a lane's own
+	// send-back is counted and refused: a person sending work back is the
+	// decision this limit exists to bring about, and so is the hand-off into
+	// a lane a person answers in — the very move the refusal prescribes,
+	// which on a board drawing that lane earlier is itself a send-back.
+	if cur, ok := env.Lanes.Get(t.Status); ok && !req.Interactive && !req.ByPerson &&
+		!target.AsksPerson() && env.Lanes.SendsBack(t.Status, req.To) {
+		if left, limited := cur.RoundsLeft(t); limited && left == 0 {
+			where := "the lane a person answers in"
+			if p := env.Lanes.PersonLane(cur); p != "" {
+				where = fmt.Sprintf("%q", p)
+			}
+			vs = append(vs, Violation{
+				Code: CodeMaxRounds,
+				Message: fmt.Sprintf(
+					"lane %q has sent %s back %d times in a row, its max-rounds: a person decides now. Move it to %s with --question \"<this round's findings; is the definition of done wrong, or does the loop never end?>\" — or, as the person deciding, send it back anyway with --force",
+					cur.ID, ticket.Handle(t.ID), t.BackCount, where),
+			})
+		}
 	}
 
 	// The plan and the definition of done are not independent. The plan is the
