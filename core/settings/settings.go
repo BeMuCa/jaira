@@ -315,8 +315,11 @@ func PRFor(root string) (who, source string) {
 	}
 	// A file that is there but reads as person must not look like no file at
 	// all: someone who wrote "none" with a typo has to see why it did not take.
+	if root == "" {
+		return PRPerson, "the default"
+	}
 	b, err := os.ReadFile(BoardPRPath(root))
-	if root == "" || err != nil {
+	if err != nil {
 		return PRPerson, "the default"
 	}
 	switch w := board.PRWordIn(string(b)); w {

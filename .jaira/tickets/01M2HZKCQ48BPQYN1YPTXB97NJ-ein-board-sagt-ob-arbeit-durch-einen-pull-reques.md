@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:07:39Z
+updated-at: 2026-11-21T08:08:07Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -36,7 +36,7 @@ outcome-what: "Board haelt in .jaira/pr fest, wie Arbeit ankommt (person/agent/n
 outcome-why: "Ein Solo-Projekt ohne Pull Requests blieb an einem PR haengen, den niemand oeffnet"
 outcome-resolves: "XB97NJ"
 review-summary: "Neuer Wert 'none' fuer .jaira/pr: core/board/arrival.go liest die Datei (nur exakt 'none'/'agent' zaehlt, alles andere bleibt person) und haengt bei none/agent einen Absatz 'How work arrives on this board' an den CLAUDE.md/AGENTS.md-Block - ohne Datei bleibt der Block byte-gleich, jaira validate meldet ihn als veraltet, sobald die Datei wechselt. jaira roles list zeigt none (pr_when dann fest done). jaira roles pr-gate laesst unter none (gelesen vom Basis-Zweig) nur durch, wenn jedes Ticket in done/logbook ist UND jeder Commit in base..HEAD ein Ticket nennt; ein unbenannter Merge zaehlt nur, wenn sein Baum exakt gits eigener Merge der Eltern ist (merge-tree --write-tree) - Konfliktloesungen, -s ours und eingeschmuggelte Dateien halten das Tor. jaira-role-pr bekommt 'Land it': Gate, Basis hereinmergen, Gate erneut, fast-forward push auf den Hauptzweig, nie --force. reap.sh fragt unter none keinen Forge, sondern wartet, bis origins Hauptzweig (origin/HEAD, sonst origin/main|master, haengender origin/HEAD = unset) die Spitze enthaelt und ein Commit dort das Ticket nennt. Teamlead/Dispatcher je ein Satz, Release-Note, shipped.sha256 neu."
-round: 10
+round: 11
 review-gaps: |-
   note: reap.sh misst das Landen nur an origin; jaira-role-pr landet auf <remote> - in einem Fork-Setup (Landen auf upstream) wartet reap dann ewig mit 'has not landed'
   note: eine .jaira/pr mit BOM (Windows-Notepad) liest sich still als person, und roles list sagt dann 'the default' obwohl eine Datei da ist - sicher, aber verwirrend; ein Hinweis in roles list waere hilfreich
@@ -147,3 +147,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-21 08:00 · Alexander Sacharov** — Given back from signoff: Alex 21.11. alle Funde in dieser Runde schliessen. 1) .jaira/pr mit BOM: board.PRModeIn entfernt BOM; roles list sagt bei unlesbarem Wert, dass eine Datei da ist. 2) reap.sh unter none misst das Landen am Remote, auf das jaira-role-pr landet (Fork-Setup: upstream), nicht fest an origin. 3) landed_head: Historie auf base..tip bzw. begrenzt lesen statt ganzer Historie, wenn ohne Korrektheitsverlust. F2 (pr-gate vertraut done-Tickets im lokalen Store) bleibt known limit. Diff-Hunt, review, signoff, push.
 - **2026-11-21 08:02 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/4205.sock (teamlead jaira-31, 21.11.)
 - **2026-11-21 08:07 · Alexander Sacharov** — in-progress (Runde 6, 21.11.): (1) BOM: board.PRWordIn strippt BOM; settings.firstLine laeuft darueber -> gilt fuer pr, pr-when, release, pr-reviewer, chat-model (Klasse, nicht Beispiel). roles list: Quelle nennt das unbekannte Wort bzw. 'says nothing', statt 'the default' wie ohne Datei. (2) reap.sh unter none: land_remote = Remote, dessen URL <owner/repo> nennt (origin oder sein Parent bei GitHub-Fork, wie jaira-role-pr); keiner da -> waiting mit 'git remote add'-Hinweis statt den Fork zu messen. (3) landed_head: git log --grep filtert in git, Shell liest nur Treffer-Subjects; Subject-Check bleibt (Body-Zeile zaehlt nicht, Test). note: known limit: Fork-Erkennung braucht gh (GitHub); ohne gh oder auf GitLab misst reap an origin - nichts geht verloren, ein Fork-Setup wartet nur.
+- **2026-11-21 08:07 · Alexander Sacharov** — critique (Runde 8): settings.PRFor liest .jaira/pr relativ zum cwd, bevor es root=="" prueft - Ergebnis wird verworfen, aber ein Lesen ausserhalb des Boards ist falsch. Zurueck: erst root pruefen. Sonst: land_remote-Muster verankert am [:/] vor dem Owner (kein foo-upstream/jaira-Treffer), case-insensitiv wie GitHub - ok.
