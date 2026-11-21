@@ -826,4 +826,4 @@ ed2fa361d7ca067dc83b00effc018df51e076e9b7ff08bba8caa94854f759497  core/role/jair
 f7edf0c6cbbba221c42eedf7d29ff01620bcb540961975a688e11b28591520f8  core/role/jaira/SKILL.md
 ff3723b545abc2ca383efd8ea3ee8164f094912881a5051b732580015cb4c65e  core/role/jaira/SKILL.md
 86319baf96f2e0ccf5a65c3105d14655cd55ee59359880af1ec8ed565e0263f9  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
-1a76577788c8c98389c95bbf7e0dd0e6d3526d50b032d3d63d930bef96862599  core/role/builtin/jaira-dispatcher/scripts/reap.sh
+4929540a45df2e78c22ec18d6dc6aeb2c379a143b9f8b126ef425b63c021ca1d  core/role/builtin/jaira-dispatcher/scripts/reap.sh

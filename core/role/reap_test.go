@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -679,14 +680,15 @@ func TestReapOnANoneBoardNamesAnUnansweringGh(t *testing.T) {
 func TestReapTearsDownWhatTheSetupBuilt(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
-		name    string
-		script  string // the teardown; "" for none
-		mode    os.FileMode
-		record  bool   // whether spawn.sh left a jaira-setup record
-		want    string // a line reap.sh prints
-		called  bool   // whether the teardown ran
-		gone    bool   // whether the worktree went
-		timeout string // JAIRA_TEARDOWN_TIMEOUT; "" for the default
+		name      string
+		script    string // the teardown; "" for none
+		mode      os.FileMode
+		record    bool   // whether spawn.sh left a jaira-setup record
+		want      string // a line reap.sh prints
+		called    bool   // whether the teardown ran
+		gone      bool   // whether the worktree went
+		timeout   string // JAIRA_TEARDOWN_TIMEOUT; "" for the default
+		noTimeout bool   // PATH without timeout and gtimeout
 	}{
 		{name: "none", record: true, gone: true},
 		{name: "succeeds", script: "exit 0", mode: 0o755, record: true, want: "tore down <wt>", called: true, gone: true},
@@ -696,6 +698,11 @@ func TestReapTearsDownWhatTheSetupBuilt(t *testing.T) {
 		// open: the run returns early only when timeout killed it too.
 		{name: "hangs", script: "sleep 30; exit 0", mode: 0o755, record: true, timeout: "1",
 			want: "kept AB12CD: teardown failed: <main>/.jaira/worktree-teardown <wt> bbb 9 <root> (timed out after 1s)", called: true},
+		// A machine without timeout(1): a teardown cannot be bounded, so a
+		// worktree that needs one stays; one without a record goes as before.
+		{name: "no timeout", script: "exit 0", mode: 0o755, record: true, noTimeout: true,
+			want: "kept AB12CD: no timeout(1) to bound <main>/.jaira/worktree-teardown"},
+		{name: "no timeout no record", script: "exit 0", mode: 0o755, noTimeout: true, gone: true},
 		{name: "not executable", script: "exit 0", mode: 0o644, record: true,
 			want: "kept AB12CD: <main>/.jaira/worktree-teardown is not executable"},
 		{name: "no record", script: "exit 0", mode: 0o755, gone: true},
@@ -726,6 +733,9 @@ func TestReapTearsDownWhatTheSetupBuilt(t *testing.T) {
 			}
 			if c.timeout != "" {
 				r.env = append(r.env, "JAIRA_TEARDOWN_TIMEOUT="+c.timeout)
+			}
+			if c.noTimeout {
+				r.env = append(r.env, "PATH="+pathWithout(t, r.env, "timeout", "gtimeout"))
 			}
 			r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
 			r.write(t, r.shown, `{"status":"done"}`)
@@ -777,4 +787,33 @@ func TestReapTearsDownWhatTheSetupBuilt(t *testing.T) {
 			}
 		})
 	}
+}
+
+// pathWithout is env's PATH as one directory of links to every program on it
+// but the named ones: the first of each name wins, as in a lookup.
+func pathWithout(t *testing.T, env []string, drop ...string) string {
+	t.Helper()
+	var path string
+	for _, e := range env {
+		if v, ok := strings.CutPrefix(e, "PATH="); ok {
+			path = v // the last one is what exec sees
+		}
+	}
+	dir := t.TempDir()
+	for _, d := range filepath.SplitList(path) {
+		entries, _ := os.ReadDir(d)
+		for _, e := range entries {
+			if slices.Contains(drop, e.Name()) {
+				continue
+			}
+			link := filepath.Join(dir, e.Name())
+			if _, err := os.Lstat(link); err == nil {
+				continue
+			}
+			if err := os.Symlink(filepath.Join(d, e.Name()), link); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	return dir
 }

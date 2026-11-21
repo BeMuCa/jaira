@@ -355,18 +355,21 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
     echo "kept $t: $teardown is not executable: chmod +x it, or remove it"; continue
   fi
   if [ -x "$teardown" ]; then
-    # Bounded: the cockpit runs this every ten minutes under reap.lock, and a
-    # teardown that hangs would hold the lock and stop every later round.
-    # timeout(1) is coreutils; macOS ships it as gtimeout, if at all.
-    tbin="$(command -v timeout || command -v gtimeout || true)"
-    if [ -z "$tbin" ]; then
-      echo "kept $t: no timeout(1) to bound $teardown: install coreutils"; continue
-    fi
     for w in "${wts[@]+"${wts[@]}"}"; do
       rec="$(git -C "$w" rev-parse --absolute-git-dir 2>/dev/null)/jaira-setup"
       [ -f "$rec" ] || continue
       targs+=("$(field worktree "$rec")" "$(field slug "$rec")" "$(field offset "$rec")" "$(field root "$rec")")
     done
+  fi
+  # Bounded: the cockpit runs this every ten minutes under reap.lock, and a
+  # teardown that hangs would hold the lock and stop every later round.
+  # timeout(1) is coreutils; macOS ships it as gtimeout, if at all. Asked only
+  # where a teardown will run: a worktree without a record needs none.
+  if [ "${#targs[@]}" -gt 0 ]; then
+    tbin="$(command -v timeout || command -v gtimeout || true)"
+    if [ -z "$tbin" ]; then
+      echo "kept $t: no timeout(1) to bound $teardown: install coreutils"; continue
+    fi
   fi
 
   failed=""; gone=()
