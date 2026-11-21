@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:11:53Z
+updated-at: 2026-11-21T08:11:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-31394
 claimed-at: 2026-11-21T08:01:32Z
@@ -34,11 +34,7 @@ outcome-why: "signoff give-back 21.11.: the role named keys the JSON does not ha
 outcome-resolves: "the role reads verdict, gaps, DoD and notes where they actually are; the branch carries only TWRAP8 on top of master"
 review-summary: "critique 21.11.: key names now match jaira show --json (checked against the live payload of TWRAP8: status, handle, dod_items[].done, review.verdict/gaps/summary, notes only in body); merge brought no conflict in the roles' own text, only the manifest. Nothing to change."
 round: 9
-review-gaps: |-
-  note: jaira-role-signoff tells the agent to read "notes" and "review-verdict" from jaira show --json, but that JSON has no notes key (notes sit in body) and the verdict is .review.verdict - an agent finds it, the wording could name the real keys
-  note: the last bughunt note names a1b61158 while HEAD is b443a4cb; the three later commits change only signoff SKILL.md text and shipped.sha256, which this review read whole - by the role's own rule its status line shows bug hunt ❌ for this ticket
-  note: feat/twrap8 is stacked on fix/nh788q-windows-rename (5b16e491: QFZDY7 CI shards, NH788Q store.go), which is not on master - a PR to master carries those two commits too until that branch is merged; rebase onto master if it lands first
-  note: pre-existing: the return count is a floor because a give-back done as a plain move in the TUI/web board writes no "Given back from signoff:" note - the role says so on the status line
+review-gaps: "optimize 21.11.: the new paragraph is the only addition; nothing duplicated elsewhere, no dead text. Nothing to remove."
 test-verdict: "pass: go test ./core/... green (RC=0) at b443a4cb; text-only change to the lookup comment and the tests check, the lookup itself unchanged since d4da7f7b and exercised there; writes nothing"
 hunt-verdict: "pass: last hunt at a1b61158 found 1 change, fixed in d4da7f7b; no new hunt since by teamlead decision 21:58 - hunt-on-HEAD reads ❌ by design"
 question: ""
