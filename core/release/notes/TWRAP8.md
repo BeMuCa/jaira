@@ -1,0 +1,3 @@
+- Run 'jaira update --roles' to get the new /jaira-role-signoff: it puts each ticket waiting in signoff to you as one status line, a table that marks every open note as blocker, small edge, known limit or not from this ticket, and one recommendation with the accept and give-back lines ready; after two returns from signoff the small edges go into a follow-up ticket instead of a third round.
+- Expect the teamlead to re-read the board and the open pull requests before it lists what waits for you, and to report a ticket in signoff in that same status-line-and-table shape.
+- Expect workers, dispatchers and /jaira-role-pr to run the project's own CI gates locally before every push instead of pushing a branch the CI turns red.

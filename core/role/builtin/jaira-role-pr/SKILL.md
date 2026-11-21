@@ -261,6 +261,12 @@ in done already: the cockpit opens a pull request only then.
 
 ## Push the branch
 
+First run the project's own gates locally — the checks its CI runs, read off
+its workflow files, task runner and instructions, never from memory. A
+generated file or checksum list that has to change with the code is the gate
+nobody remembers; one local run names it. A red gate is a finding for the
+ticket: stop and say so, do not push.
+
 ```bash
 git push -u origin HEAD
 ```
