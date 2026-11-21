@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T09:07:27Z
+updated-at: 2026-11-21T09:07:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2485785
 claimed-at: 2026-11-21T08:57:23Z
@@ -42,7 +42,7 @@ hunt-verdict: "clean: diff hunt at ec3858d3 (HEAD), 0 findings"
 question: ""
 review-verdict: "All four DoD items are met by the diff. Every CLI field and flag the new role relies on was checked against the binary built from this branch (boards/lanes --json keys, show --json review.*/dod_items/handle/board, list --lane, gh run list --commit/--workflow, glab ci list --sha); lane discovery resolves to signoff/done/in-progress on this board. go test ./core/role ./core/shipped green, last bughunt note names HEAD ec3858d3. No blocker; two notes."
 review-round: 15
-review-check: "1. cd /home/alex/projects/.worktrees/jaira-twrap8  2. go test -count=1 ./core/role/ ./core/shipped/ - both print ok (about 90 s)  3. open core/role/builtin/jaira-role-signoff/SKILL.md - it says 'You change nothing', has status line, table with four marks and return rules 0-5  4. in a Claude session in this repo type /jaira-role-signoff with a ticket id that sits in signoff - you get one status line, one table, one bold accept or give back, and two paste-ready lines; nothing on the board changed (git status shows no new ticket change)  5. grep -n 'Before you push' core/role/builtin/jaira-worker/SKILL.md - the pre-push gate section is there"
+review-check: "1. cd into a checkout of feat/twrap8 and run: go test ./core/role ./core/shipped -count=1 - both print ok  2. go run ./cmd/jaira roles install --project (or jaira update --roles with this build) - .claude/skills/jaira-role-signoff/SKILL.md now exists  3. in a Claude session run /jaira-role-signoff TWRAP8 (ticket must sit in signoff) - you get one status line with ✅/❌/? per check, one table with a mark per note, one bold recommendation and two jaira lines to paste; nothing on the ticket changed (jaira show TWRAP8 shows no new note)  4. open core/role/builtin/jaira-teamlead/SKILL.md, section 'Report to the human' - it starts with re-reading jaira show + gh pr list, and points to jaira-role-signoff for the return rules  5. open core/role/builtin/jaira-worker/SKILL.md, section 'Before you push' - it says to run the repo's CI gates locally before every push"
 ---
 
 # Was der Teamlead am 20.11. gelernt hat, steht in den ausgelieferten Rollen statt nur in einem lokalen Gedaechtnis
