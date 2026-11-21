@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T09:00:48Z
+updated-at: 2026-11-21T09:01:08Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -44,8 +44,8 @@ review-gaps: |-
   note: ein Commit, der ein schon im Logbook abgelegtes Ticket nennt (fix(<alteID>): ...), passiert das none-Tor ohne neue Annahme - bekannte Grenze der Betreff-Regel, im Ticket bewusst so entschieden (Runde 10)
   note: reap.sh land_remote faellt auf origin zurueck, wenn gh nicht antwortet; in einem Fork-Klon wartet das Ticket dann dauerhaft mit "has not landed on origin's default branch" - sicher (nichts geloescht), aber die Ursache ist falsch benannt
   optimize Runde 11: nichts zu entfernen.
-test-verdict: "fail (round 11): -race RC=0 at 305549c6, cockpit 216 pass; bughunt change: cockpit lands under none where jaira-role-pr cannot (no origin; forge ladder stops; fork without parent remote)"
-hunt-verdict: "change (round 13): cockpit says landing where the role cannot land"
+test-verdict: "pass (round 12): go vet + go test -race ./... RC=0 at f2287211; cockpit claude plugin test 217 pass (none: host without forge lands on origin, no origin / forge silent -> pane says why, open ticket -> does not land yet, typo -> PR path); reap names an unanswering gh (reap_test); DoD 1-8 proofs unchanged and valid"
+hunt-verdict: "pass (round 14 at f2287211): 0 findings"
 claimed-by: DESKTOP-RFTCH11-2127254
 claimed-at: 2026-11-21T08:46:28Z
 review-verdict: "Diff erfuellt alle 8 DoD-Punkte; go build, go vet und go test fuer core/board, core/gitrepo, core/settings, core/role, core/shipped, internal/cli gruen; am Wegwerf-Board nachgestellt (BOM+'None' -> person mit Hinweis, 'none' -> validate-Drift, update schreibt Absatz, pr_when_source sagt none). Kein Defekt gefunden; drei Notes, keine davon blockiert."
