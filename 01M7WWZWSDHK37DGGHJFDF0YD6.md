@@ -23,7 +23,7 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:22:43Z
+updated-at: 2026-11-21T09:22:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2455354
 claimed-at: 2026-11-21T08:56:28Z
@@ -32,7 +32,7 @@ outcome-why: "The round-11 review found both said null for it, while the brief r
 outcome-resolves: "review round 11 note 2 (small edge); note 1 kept as known limit (see note). go test internal/cli Brief ok."
 review-summary: "none"
 review-gaps: none - wording only
-test-verdict: "pass: go test -count=1 ./... RC=0 at c4e1fe34; TestChangedSince 21 cases incl. a named board's lane prompt (counts) and its other data (does not); read-only git"
+test-verdict: "pass: 058e8d2f changes the show --help text and one release-note line; go build ok, show --help prints the new sentence, go test internal/cli Brief ok, release note still one line per change"
 hunt-verdict: "pass: follow-up hunt since a6187478 at c4e1fe34, 0 findings"
 round: 12
 review-verdict: "Kein Blocker. DoD 1-11 im Code erfuellt; die Runden 9-11 (on_head aus git statt aus Notes, mtime statt 'uncommitted', Board-Daten ausgenommen, Lane-Prompts benannter Boards als Code) sind korrekt und getestet. Geprueft: go test -count=1 ./core/gitrepo ./internal/cli ./core/move ./core/ticket ok; claude plugin test 218 pass; von Hand: Aenderung an core/gitrepo/derive.go -> on_head false, touch einer .jaira/milestones-Datei -> on_head true. Die zwei notes sind ein bekannter Rand des mtime-Signals und eine Doku-Unschaerfe, kein falsches Ergebnis im Sinn der DoD."
