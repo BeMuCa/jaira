@@ -4,7 +4,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -114,20 +113,14 @@ func TestVerdictWordClasses(t *testing.T) {
 // verdict is free text, and nothing reads it.
 func TestLaneWithoutVerdictWordsReadsNothing(t *testing.T) {
 	env := testEnv(t) // loaded afresh: changing its review lane touches no other test
-	l := mustLane(t, env, "review")
+	l, ok := env.Lanes.Get("review")
+	if !ok {
+		t.Fatal("no review lane")
+	}
 	l.VerdictAccept, l.VerdictSendBack = nil, nil
 	for _, v := range []string{"send-back: x", "the diff matches"} {
 		if got := verdictViolations(CheckAdvance(env, reviewed(v), Request{To: "signoff"})); len(got) != 0 {
 			t.Errorf("%q on a lane without words was read: %v", v, got)
 		}
 	}
-}
-
-func mustLane(t *testing.T, env Env, id string) *lane.Lane {
-	t.Helper()
-	l, ok := env.Lanes.Get(id)
-	if !ok {
-		t.Fatalf("no %s lane", id)
-	}
-	return l
 }

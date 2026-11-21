@@ -1,7 +1,7 @@
 ---
 id: 01M5ZJ4KA5N2PH7Q4WY4F1V59P
 title: "Ein Review-Verdikt 'zurueckschicken' laesst das Ticket nicht nach signoff"
-status: critique
+status: testing
 ready: true
 creator: BeMuCa
 goal: "Steht im review-verdict der Review-Lane 'send back' (oder das Gegenstueck des Boards), nimmt jaira move aus review nur noch in-progress als Ziel; signoff wird mit Exit 3 abgelehnt und nennt das Verdikt."
@@ -21,7 +21,7 @@ related:
   - 01M7WWZWSDHK37DGGHJFDF0YD6
 commits: []
 created-at: 2026-10-27T20:51:56Z
-updated-at: 2026-11-21T19:57:23Z
+updated-at: 2026-11-21T19:58:52Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-238286
@@ -29,11 +29,12 @@ claimed-at: 2026-11-21T19:47:43Z
 outcome-what: "review-verdict now starts with a lane-declared word (accept / send-back); jaira move reads it and refuses a forward move out of review on send-back or on no known word, exit 3, naming the verdict and the lane to send back to; show --for-lane review carries the words as verdicts"
 outcome-why: "a review that wrote 'send back' still let its ticket land in signoff, so a person saw unapproved work as ready"
 outcome-resolves: "TestCLISendBackVerdictRefusesSignoff, TestCLISendBackVerdictGoesBack, TestVerdictWordClasses, TestLaneWithoutVerdictWordsReadsNothing"
-review-summary: "core/gate/gate.go sendBackTo quotes cur.RejectsTo with its own loop beside quoteAll, which does exactly that — call quoteAll(cur.RejectsTo)"
+review-summary: "none"
 round: 2
 back-from: critique
 back-by: lane
 back-count: 1
+review-gaps: "inlined the one-use test helper mustLane in core/gate/verdict_test.go; searched for an existing verdict/word normaliser (none - lane.normVerdict is the only one) and for a quote-list helper (quoteAll now serves both messages); no dead code: VerdictNone is the empty-verdict return, the output contract refuses that case"
 ---
 
 # Ein Review-Verdikt 'zurueckschicken' laesst das Ticket nicht nach signoff
@@ -73,3 +74,4 @@ back-count: 1
 - **2026-11-21 19:49 · Alexander Sacharov** — decision (worker, settled from code+context, no open question): (1) verdict words live in the lane file as two lists, verdict-accept: [accept] and verdict-send-back: [send-back]; review-verdict starts with the word, then ':' and the reason ('send-back: DoD 2 unmet'); compare is case-insensitive, space==dash so 'send back' counts. (2) the gate acts only on a lane that declares the lists, so a board whose review.md predates this keeps today's behaviour until 'jaira update --lanes'. (3) on such a lane a forward, non-parking move with a send-back word is refused (exit 3, new code verdict_sends_back) naming the verdict and rejects-to (review gets rejects-to: in-progress); a forward move with a verdict that is neither word is refused too (verdict_unknown) - 'alles andere ist kein Verdikt'. Backward moves and parking stay free; a move in the TUI (Interactive) is a person deciding and is exempt, --force stays the CLI override. (4) show --for-lane carries the lists as 'verdicts'. Not done: validating at 'jaira set' - the gate at move is the one rail.
 - **2026-11-21 19:56 · Alexander Sacharov** — in-progress: dropped rejects-to: in-progress from review.md — TestRejectsToDefaultsEmpty keeps default lanes free of back edges on purpose; the refusal names the work lane instead (last earlier lane producing outcome-what, gate.go sendBackTo). 'Accept.' with a full stop reads as accept (mode_test writes that). Cockpit digest/board.ts not touched: a send-back verdict can no longer reach signoff, so the Explain heuristic there never sees one. Not exempted: ByPerson (typed at a terminal) — --force is the person's override, only a move in the TUI is exempt.
 - **2026-11-21 19:57 · Alexander Sacharov** — critique: gate.go sendBackTo duplicates quoteAll for RejectsTo; reuse quoteAll. Rest let stand: lane-declared words are what DoD 3 and the context's 'Gegenstueck des Boards' ask for; the unknown-verdict refusal is the context's 'alles andere ist kein Verdikt'; listOrScalar is the existing rejectsTo reader generalised, not a new pattern.
+- **2026-11-21 19:57 · Alexander Sacharov** — critique round 2: the one finding (quoteAll reuse) is addressed in db31aea3a; nothing else.
