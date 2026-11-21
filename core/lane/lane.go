@@ -370,6 +370,11 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 			return nil, fmt.Errorf("lane %s: verdict %q is both verdict-accept and verdict-send-back", source, w)
 		}
 	}
+	if (len(l.VerdictAccept) == 0) != (len(l.VerdictSendBack) == 0) {
+		// One list alone is a lane no verdict can ever pass, or one that
+		// sends nothing back: both words or neither.
+		return nil, fmt.Errorf("lane %s: verdict-accept and verdict-send-back come together — a lane with only one of them either never lets a ticket on or never sends one back", source)
+	}
 	if len(l.VerdictAccept)+len(l.VerdictSendBack) > 0 && !slices.Contains(l.OutputProduces, ticket.FieldReviewVerdict) {
 		return nil, fmt.Errorf("lane %s: verdict-accept and verdict-send-back need %s in output-produces — they are the words that field takes", source, ticket.FieldReviewVerdict)
 	}

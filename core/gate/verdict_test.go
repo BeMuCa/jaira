@@ -124,3 +124,34 @@ func TestLaneWithoutVerdictWordsReadsNothing(t *testing.T) {
 		}
 	}
 }
+
+// The send-back holds for every way past the lane, not only the move out of
+// it: parked from review and released into sign-off, or a stale send-back on
+// a ticket that skips ahead from in-progress.
+func TestSendBackVerdictHasNoWayAround(t *testing.T) {
+	for _, c := range []struct{ from, verdict, want string }{
+		{"blocked", "send-back: DoD 2", CodeVerdictSendBack},
+		{"blocked", "looks fine", CodeVerdictUnknown},
+		{"in-progress", "send-back: DoD 2", CodeVerdictSendBack},
+		{"testing", "send back", CodeVerdictSendBack},
+	} {
+		tk := reviewed(c.verdict)
+		tk.Status = c.from
+		got := verdictViolations(CheckAdvance(testEnv(t), tk, Request{To: "signoff", Actor: "a"}))
+		if len(got) != 1 || got[0].Code != c.want {
+			t.Errorf("%s → signoff with %q: got %v, want %s", c.from, c.verdict, got, c.want)
+		}
+	}
+	// Back into review from blocked is where the ticket came from: free.
+	tk := reviewed("send-back: x")
+	tk.Status = "blocked"
+	if got := verdictViolations(CheckAdvance(testEnv(t), tk, Request{To: "review", Actor: "a"})); len(got) != 0 {
+		t.Errorf("blocked → review refused on the verdict: %v", got)
+	}
+	// A ticket that never reached review is not asked for a verdict.
+	tk = reviewed("")
+	tk.Status = "in-progress"
+	if got := verdictViolations(CheckAdvance(testEnv(t), tk, Request{To: "signoff", Actor: "a"})); len(got) != 0 {
+		t.Errorf("in-progress → signoff without a verdict refused on it: %v", got)
+	}
+}

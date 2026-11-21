@@ -18,7 +18,9 @@ func TestVerdictWordsParse(t *testing.T) {
 		{"scalars", "output-produces: [review-verdict]\nverdict-accept: accept\nverdict-send-back: send-back\n", "", []string{"accept"}, []string{"send-back"}},
 		{"none", "output-produces: [review-verdict]\n", "", nil, nil},
 		{"both ways", "output-produces: [review-verdict]\nverdict-accept: [go]\nverdict-send-back: [Go]\n", "both", nil, nil},
-		{"no verdict field", "output-produces: [review-summary]\nverdict-accept: [accept]\n", "output-produces", nil, nil},
+		{"accept alone", "output-produces: [review-verdict]\nverdict-accept: [accept]\n", "come together", nil, nil},
+		{"send-back alone", "output-produces: [review-verdict]\nverdict-send-back: [send-back]\n", "come together", nil, nil},
+		{"no verdict field", "output-produces: [review-summary]\nverdict-accept: [accept]\nverdict-send-back: [no]\n", "output-produces", nil, nil},
 	} {
 		l, err := Parse([]byte(head+c.front+"---\nprompt\n"), c.name)
 		if c.err != "" {

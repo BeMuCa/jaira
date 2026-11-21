@@ -481,18 +481,41 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 	// Nothing else read the field before: a review that wrote "send back"
 	// still saw its ticket land in sign-off, in front of a person, unapproved.
 	// Only a lane that declares its words is read — its verdict is not free
-	// text — and only a forward move past it is refused: sending back and
-	// parking accept nothing. A move made in the board is a person deciding.
-	if cur, ok := env.Lanes.Get(t.Status); ok && cur.DeclaresVerdicts() && to > from && !parking && !req.Interactive {
-		vs = append(vs, verdictAgainstMove(env.Lanes, cur, t, target)...)
+	// text. A move made in the board is a person deciding.
+	if !req.Interactive && !target.RequiresBlockedReason {
+		vs = append(vs, verdictAgainstMove(env.Lanes, t, target)...)
 	}
 
 	return vs
 }
 
-// verdictAgainstMove refuses a forward move out of cur whose review-verdict
-// sends the work back, or is no verdict at all.
-func verdictAgainstMove(set *lane.Set, cur *lane.Lane, t *ticket.Ticket, target *lane.Lane) Violations {
+// verdictAgainstMove refuses a move that lands past a lane whose verdict sent
+// the work back — from that lane, or around it: blocked is drawn last, so
+// blocked → signoff is not even a forward move, and a ticket parked from
+// review would otherwise walk into sign-off past its own send-back. A verdict
+// that is no verdict at all is refused only on the move out of its lane, or
+// out of parking: a ticket that never went through review is another question.
+func verdictAgainstMove(set *lane.Set, t *ticket.Ticket, target *lane.Lane) Violations {
+	to := set.Index(target.ID)
+	for i, cur := range set.Lanes {
+		if !cur.DeclaresVerdicts() || to <= i {
+			continue
+		}
+		kind, _ := cur.ReadVerdict(t.ReviewVerdict)
+		// Out of a parking lane counts as out of the lane it was parked from:
+		// blocked does not say which that was, and it returns there.
+		leaving := t.Status == cur.ID
+		if l, ok := set.Get(t.Status); ok && l.RequiresBlockedReason {
+			leaving = true
+		}
+		if kind == lane.VerdictSendBack || (kind == lane.VerdictUnknown && leaving) {
+			return verdictRefusal(set, cur, t, target)
+		}
+	}
+	return nil
+}
+
+func verdictRefusal(set *lane.Set, cur *lane.Lane, t *ticket.Ticket, target *lane.Lane) Violations {
 	kind, word := cur.ReadVerdict(t.ReviewVerdict)
 	back := sendBackTo(set, cur)
 	switch kind {
@@ -534,9 +557,6 @@ func sendBackTo(set *lane.Set, cur *lane.Lane) string {
 }
 
 func quoteAll(ws []string) string {
-	if len(ws) == 0 {
-		return "(none)"
-	}
 	q := make([]string, len(ws))
 	for i, w := range ws {
 		q[i] = fmt.Sprintf("%q", w)
