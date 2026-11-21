@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-20T23:12:44Z
+updated-at: 2026-11-21T08:00:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2906
 claimed-at: 2026-11-20T22:45:03Z
@@ -89,3 +89,4 @@ review-check: "1. cd in den Worktree feat/0k8y6s  2. scripts/shipped-history.sh 
 - **2026-11-20 23:09 · Alexander Sacharov** — bughunt: done at 722c9c6e - 0 findings in 1 module, follow-up hunt since 55ae3718 (diff: one error message in core/shipped/shipped_test.go; its remedy checked against scripts/shipped-history.sh, whose final sort -u does drop duplicates); concurrency, error paths, input, permissions checked; ran: go test ./shipped/ (pass); files: .gitattributes .github/workflows/ci.yaml .github/workflows/release-notes.yaml core/release/notes/0K8Y6S.md core/role/shipped_test.go core/role/testdata/jaira-cockpit-hooks-board-v0.5.2.ts core/shipped/history_test.go core/shipped/shipped.sha256 core/shipped/shipped_test.go scripts/shipped-history.sh
 - **2026-11-20 23:12 · Alexander Sacharov** — review (fresh): keine Blocker; 2 note-Funde in review-gaps. Selbst nachgeprueft: --check gruen/rot je nach Manifest, Regenerieren byte-gleich, 0 Zeilen verloren.
 - **2026-11-20 23:12 · Alexander Sacharov** — Stand 00:12: signoff. Review Runde 2: alle DoD erfuellt, keine Defekte. Branch feat/0k8y6s gepusht bis 722c9c6e (4 Commits); Ticketdatei mit den Lane-Schreibvorgaengen nur im Worktree, kommt mit dem logbook-Commit. Fuer die Person: 2 review-gaps-notes (GitHub+merge=union unbelegt; '>'-Umleitung kuerzt bei Fehler den Arbeitsbaum).
+- **2026-11-21 08:00 · Alexander Sacharov** — Given back from signoff: Alex 21.11. alle Funde in dieser Runde schliessen. 1) Die empfohlene Zeile 'scripts/shipped-history.sh > core/shipped/shipped.sha256' kuerzt das Manifest vor dem Lauf: das Skript schreibt selbst (z.B. --write: in Temp-Datei, bei Erfolg mv), Skript-Hilfe, Testmeldung und shipped_test.go-Hinweis nennen diese Form. 2) shipped_test.go:65 l[66:] panict bei kurzer Zeile - saubere Fehlermeldung. merge=union auf GitHub bleibt note bis zwei echte PRs. Diff-Hunt, review, signoff, push.
