@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T09:07:19Z
+updated-at: 2026-11-21T09:07:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2485785
 claimed-at: 2026-11-21T08:57:23Z
@@ -34,7 +34,9 @@ outcome-why: "teamlead give-back 08:58: a board whose person lane has another na
 outcome-resolves: "every board's waiting tickets are found and its move lines name its own lanes, or say ? where a lane is missing"
 review-summary: "Ships a new read-only role /jaira-role-signoff: per ticket in a board's accept lane (found by human_exit/terminal/output_produces in 'jaira lanes --json', not by name) it prints one status line (DoD, CI run of the branch head via gh/glab, bughunt note naming the head, blockers, review verdict, noted returns), a table marking every open note 🔴/🟡/⚪/🔵, and one bold recommendation driven by return rules 0-5 (red check or 🔴 gives back; only 🟡 gives back until two noted returns, then accept plus a ready follow-up 'jaira create'), with accept and give-back lines to paste. The teamlead's 'Report to the human' now re-reads lanes and open PRs before listing what waits, uses that shape for signoff/human tickets and points to the role for the rules; its hunt check compares a note sha as prefix of the full branch head instead of assuming feat/<id>. jaira-worker gets 'Before you push' (run the repo's CI gates locally, read off workflows/Taskfile/instructions), jaira-role-pr and jaira-dispatcher point at it. README, the German how-to table, wantRoles, shipped.sha256 and a 3-line release note follow."
 round: 15
-review-gaps: "optimize 21.11. round 7: nothing to remove."
+review-gaps: |-
+  note: jaira-role-signoff marks a missing bughunt on the head as ❌ (give back) for every ticket, while jaira-teamlead SKILL.md exempts tickets whose diff touches only .jaira/ - a bookkeeping-only ticket in signoff would be given back by the role but not by the teamlead
+  note: .jaira/milestones/ is untracked in this worktree and unrelated to TWRAP8 - keep it out of the commit that files the ticket away
 test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at ec3858d3; DoD 1-4 verified in the tree; lane discovery run on this board (signoff/done/in-progress), a fresh jaira init board, and a scratch board with signoff renamed to abnahme (found, list --lane abnahme rc=0). Roles write nothing - no concurrent-writer case."
 hunt-verdict: "clean: diff hunt at ec3858d3 (HEAD), 0 findings"
 question: ""
