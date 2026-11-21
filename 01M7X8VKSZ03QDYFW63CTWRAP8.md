@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T09:11:34Z
+updated-at: 2026-11-21T09:11:38Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2485785
 claimed-at: 2026-11-21T08:57:23Z
@@ -34,9 +34,7 @@ outcome-why: "fresh review: rule 0 would give back a bookkeeping-only ticket the
 outcome-resolves: "signoff, teamlead and testing agree on when a hunt is owed"
 review-summary: "critique 21.11. round 8: exemption is the teamlead's and testing lane's own rule, now stated once more where the check lives. Nothing to change."
 round: 16
-review-gaps: |-
-  note: jaira-role-signoff marks a missing bughunt on the head as ❌ (give back) for every ticket, while jaira-teamlead SKILL.md exempts tickets whose diff touches only .jaira/ - a bookkeeping-only ticket in signoff would be given back by the role but not by the teamlead
-  note: .jaira/milestones/ is untracked in this worktree and unrelated to TWRAP8 - keep it out of the commit that files the ticket away
+review-gaps: "optimize 21.11. round 8: nothing to remove."
 test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at ec3858d3; DoD 1-4 verified in the tree; lane discovery run on this board (signoff/done/in-progress), a fresh jaira init board, and a scratch board with signoff renamed to abnahme (found, list --lane abnahme rc=0). Roles write nothing - no concurrent-writer case."
 hunt-verdict: "clean: diff hunt at ec3858d3 (HEAD), 0 findings"
 question: ""
