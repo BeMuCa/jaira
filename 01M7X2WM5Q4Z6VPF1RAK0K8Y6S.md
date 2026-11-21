@@ -19,14 +19,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:16:44Z
+updated-at: 2026-11-21T08:18:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
 outcome-what: "Manifest neu erzeugt (8 Tag-Versionen fehlten, u.a. cockpit board.ts v0.5.2/0.5.3); scripts/shipped-history.sh --check haelt es gegen jeden v*-Tag und laeuft in ci.yaml (Job shipped-manifest) und im release-notes-Workflow; .gitattributes merge=union fuer das Manifest; LC_ALL=C im Skript"
 outcome-why: Hand-gemergte Manifest-Konflikte verloren Zeilen; jaira update --roles hielt dann eine unberuehrte Installation fuer handgeaendert und uebersprang sie still
 outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, wenn eine fehlt, und Manifest-Merges konfliktieren nicht mehr"
-review-summary: "Runde 3 nach signoff: keine Funde. 53926c5f folgt der Form des Blob-Falls (sum=$(...) || exit 1, printf mit ${sum%% *}) statt einer neuen; Test im Muster von TestUnreadableBlobStopsTheScript."
+review-summary: "scripts/shipped-history.sh bekommt --check (hasht jede Version installierter Dateien aus allen v*-Tags per git cat-file, roh mit CRLF, und meldet fehlende Manifestzeilen mit exit 1; ohne Tags oder bei unlesbarem Tag/Blob ebenfalls exit 1) und --write (erzeugt in eine Temp-Datei neben dem Manifest, mv erst bei Erfolg); set -euo pipefail, LC_ALL=C, fehlende Datei/Blob bricht ab statt leeren Hash zu schreiben. CI-Job shipped-manifest und ein Schritt im release-notes-Workflow (beide fetch-depth 0) fuehren --check aus. .gitattributes setzt merge=union fuer das Manifest. Das Manifest ist regeneriert: 0 Zeilen gegenueber upstream/master verloren, neu u.a. board.ts aus v0.5.2/v0.5.3 (a06a3c1c...), deshalb ersetzt jaira update --roles diese Installation jetzt. Tests: Fixture-Repo mit 3 Tags (geloescht/wieder angelegt, CRLF, Tag ohne Datei), union-Merge, unlesbarer Blob/Tag, fehlende Datei; Install-Tabellentest mit gepinntem v0.5.2-board.ts; TestEveryManifestPathExists ohne Panic; Hinweise nennen --write. Release-Note vorhanden."
 round: 8
 review-gaps: "none: 53926c5f ersetzt eine Zeile durch zwei, das cut in der Pipe faellt weg; nichts verwaist"
 test-verdict: "pass: go build ./... und go test ./... gruen (rc=0) auf 53926c5f; DoD 1-8 im Baum belegt; TestFileMissingFromDiskStopsTheScript rot ohne Fix, gruen mit; Manifest durch den Fix unveraendert, --check gruen auf 34 Tags"
