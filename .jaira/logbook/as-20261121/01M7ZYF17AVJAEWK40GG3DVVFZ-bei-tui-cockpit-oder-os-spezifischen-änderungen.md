@@ -1,7 +1,7 @@
 ---
 id: 01M7ZYF17AVJAEWK40GG3DVVFZ
 title: "Bei TUI-, Cockpit- oder OS-spezifischen Änderungen schreibt pre-process einen DoD-Punkt 'von einer Person angesehen'"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,38 +19,48 @@ tags:
   - gates
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 20b1878883965b3d56b809cac3be3d21b6d65849
+  - 88246fa206c855e6d698755262647b64ae00e1cb
+  - 2871d8f71984817064890f6cbd811651b45411b0
+  - 7ccb7c724b952881294e74d1eb8ce12060b2d672
+  - 9c84dd703ba60cfeca5e3c765b736c09ffc83ef2
+  - 8eb0b2e004d3add5f32a78210ee75703b1c959d5
+  - 05b1626e1b19e23c075b167d5ddfa1ec72cd8a7f
+  - c84aff3f3607bfe90316d56503da740525a27dba
 created-at: 2026-11-21T20:58:45Z
-updated-at: 2026-11-21T21:38:22Z
+updated-at: 2026-11-21T21:58:56Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-3788188
-claimed-at: 2026-11-21T21:19:40Z
+claimed-by: DESKTOP-RFTCH11-557712
+claimed-at: 2026-11-21T21:55:23Z
 stop-after-fix: "false"
 outcome-what: "build.py reads a missing person list as none, refuses a malformed one in check() (page, plan and report), and the acceptance record lists the open 'seen by a person:' items per block; TestAcceptanceBuildPersonItems covers both"
 outcome-why: "Alex gave it back from signoff: a KeyError at read-back, and a record that hid the very items the ticket exists for"
 outcome-resolves: "DoD 5 and 6 from the signoff give-back"
-review-summary: "The pre-process prompt gains a section 'What only a person can check': for changes to what a terminal draws, platform-dependent behaviour, or something only a person can do, it adds DoD items starting 'seen by a person:'. in-progress adds such an item itself when no planning ran and never ticks it; testing leaves it open and unticks one an agent ticked; review makes it a step of review-check and calls an agent-ticked one a blocker. Because acceptance and signoff move with --force (which passes an unticked DoD), jaira-role-acceptance's build.py now takes a 'person' list per ticket ({n, text} of the open items, read off .dod_items) and its plan prints, instead of the bare move, one line for the person: 'jaira dod <id> <n> --done --proof ... && jaira move ... --force'; signoff's accept line is built the same way and its DoD x/y names the open item. build.py check() validates the list (missing = none, malformed = clear message in page, plan and report through one load_checked()), and the report lists open person items per block. Release note 3DVVFZ.md, shipped.sha256 extended, Go test TestAcceptanceBuildPersonItems covers missing/malformed/report."
+review-summary: "Introduces a definition-of-done item kind that only a person ticks: pre-process (and in-progress when no planning ran) adds 'seen by a person: <what, where>' for changes to what a terminal draws, platform-dependent behaviour, or things only a person can do; in-progress, testing and review are told never to tick it (testing unticks it, review treats an agent tick as a blocker). Because acceptance and signoff move with --force, which skips an unticked DoD, both now hand the person one line 'jaira dod <id> <n> --done --proof ... && jaira move ... --force' instead of a bare move: build.py takes a per-ticket 'person' list of {n, text} (missing = [], malformed = refused by check() in page, plan and report via load_checked()), plan prints the tick+move line, report lists open person items per block. Go test TestAcceptanceBuildPersonItems covers missing, four malformed shapes and the report; release note core/release/notes/3DVVFZ.md and shipped.sha256 updated."
 round: 7
 back-from: review
 back-by: lane
 back-count: 1
 review-gaps: |-
-  blocker: the branch is behind upstream/master (F1V59P has landed and changed core/lane/builtin/40-review.md); the merge is textually clean, but on the merged tree go test ./core/lane fails TestEveryBuiltinLaneIsAShippedVersion - shipped.sha256 lacks 9eac34be... core/lane/builtin/40-review.md. The PR CI runs that merge, so it goes red. Fix: rebase feat/3dvvfz onto upstream/master, run scripts/shipped-history.sh --write, commit, re-run go test ./core/lane ./core/shipped ./core/role
-  note: the person list is a snapshot from the first data.json; SKILL.md '3. Next round' does not rebuild it from .dod_items, so a later round lists an already-ticked item again and plan prints its tick line again (bughunt 21:25) - one sentence in that section closes it
-  note: a set without the 'person' key reads as none and gets the bare --force move again - Alex's decision 21.11., SKILL.md tells the agent to fill it in when extending
-  note: this repo's own .jaira/lanes/ keep the old prompts until 'jaira update --lanes' - known limit
-  note: on the merged tree TestReapTearsDownWhatTheSetupBuilt/hangs failed once under load (23s vs 1s bound) and passed on upstream/master alone; unrelated to this diff, looks like a timing flake
-test-verdict: "pass: go build ./... + go test -race -count=1 ./core/role ./core/shipped ./core/release green (RC=0); DoD 5/6 verified in tree and by TestAcceptanceBuildPersonItems; scratch ru set: plan hands the person the dod+move line for AAAAAA and a bare move for BBBBBB (no person key), report shows 'Посмотреть человеку (1)'; failure: n=true is refused with exit 1 and no report file written; two parallel reports into separate files identical (build.py writes only its own output paths)"
-hunt-verdict: "pass: bughunt done at 8eb0b2e00, 1 change (not a blocker: 'person' is a round-1 snapshot, a later round re-lists an item the person already ticked), 0 pre-existing; left as a note for the person"
-review-verdict: "send-back: the diff meets all six DoD items and the code is sound (check/plan/report read correctly, text escaped in the HTML report, tests pass on the branch), but merged with today's upstream/master the shipped-lane test fails on 40-review.md - rebase and regenerate shipped.sha256, nothing else"
-review-round: 6
+  note: the branch is not pushed - origin/feat/3dvvfz is at 7ccb7c724, local HEAD c84aff3f3 carries the upstream merge and regenerated shipped.sha256; push before the PR
+  note: stale person list (bughunt 21:25) still open - SKILL.md '3. Next round' should say: rebuild person from .dod_items for every ticket each round, else a ticked item reappears in plan and report
+  note: the plan tick+move line with a non-empty person list has no Go test (only manual runs); add a case to TestAcceptanceBuildPersonItems asserting 'jaira dod AAAAAA 3 --done' precedes the move
+  note: the acceptance page (template.html) shows a person item only as an ordinary step; nothing on the page marks it as the person's to tick - SKILL.md rule 'always a person step' carries it
+  note: this repo's own .jaira/lanes still runs the old prompts until jaira update --lanes (known limit, recorded 21:01)
+  note: pre-existing: TestReapTearsDownWhatTheSetupBuilt/hangs in core/role fails under heavy load (load avg ~56) on plain upstream/master b00b2e4f2 too - timing test, not this change
+test-verdict: "pass: merged tree go test -count=1 ./core/lane ./core/shipped ./core/role ./core/release green (RC=0), TestEveryBuiltinLaneIsAShippedVersion passes; go vet ./core/... clean, gofmt clean; DoD 1-6 unchanged since last round except proof 3 (950 versions); the round writes nothing but the generated manifest"
+hunt-verdict: "pass: bughunt done at c84aff3f3, 0 findings (merge + regenerated manifest only)"
+review-verdict: "accept: all six DoD items hold in the code (lane prompts, signoff/acceptance lines, build.py person handling and report, test, note, manifest); merged with current upstream/master the lane/shipped/release tests and TestAcceptanceBuildPersonItems pass; no blocker, six notes"
+review-round: 7
 review-verdict-gaps: |-
-  blocker: the branch is behind upstream/master (F1V59P has landed and changed core/lane/builtin/40-review.md); the merge is textually clean, but on the merged tree go test ./core/lane fails TestEveryBuiltinLaneIsAShippedVersion - shipped.sha256 lacks 9eac34be... core/lane/builtin/40-review.md. The PR CI runs that merge, so it goes red. Fix: rebase feat/3dvvfz onto upstream/master, run scripts/shipped-history.sh --write, commit, re-run go test ./core/lane ./core/shipped ./core/role
-  note: the person list is a snapshot from the first data.json; SKILL.md '3. Next round' does not rebuild it from .dod_items, so a later round lists an already-ticked item again and plan prints its tick line again (bughunt 21:25) - one sentence in that section closes it
-  note: a set without the 'person' key reads as none and gets the bare --force move again - Alex's decision 21.11., SKILL.md tells the agent to fill it in when extending
-  note: this repo's own .jaira/lanes/ keep the old prompts until 'jaira update --lanes' - known limit
-  note: on the merged tree TestReapTearsDownWhatTheSetupBuilt/hangs failed once under load (23s vs 1s bound) and passed on upstream/master alone; unrelated to this diff, looks like a timing flake
-review-check: "1. cd /home/alex/projects/.worktrees/jaira-3dvvfz  2. go test -count=1 ./core/role -run TestAcceptanceBuildPersonItems  -> ok  3. open core/lane/builtin/15-pre-process.md, section 'What only a person can check' -> three kinds of change and the 'seen by a person:' prefix  4. open core/role/builtin/jaira-role-signoff/SKILL.md near line 178 -> the accept line starts with 'jaira dod <id> <n> --done --proof' before '--force'  5. after the rebase: go test -count=1 ./core/lane ./core/shipped -> both ok (today on the merged tree core/lane fails on 40-review.md)  6. no 'seen by a person:' item on this ticket: it changes prompts and a script, nothing a terminal draws"
+  note: the branch is not pushed - origin/feat/3dvvfz is at 7ccb7c724, local HEAD c84aff3f3 carries the upstream merge and regenerated shipped.sha256; push before the PR
+  note: stale person list (bughunt 21:25) still open - SKILL.md '3. Next round' should say: rebuild person from .dod_items for every ticket each round, else a ticked item reappears in plan and report
+  note: the plan tick+move line with a non-empty person list has no Go test (only manual runs); add a case to TestAcceptanceBuildPersonItems asserting 'jaira dod AAAAAA 3 --done' precedes the move
+  note: the acceptance page (template.html) shows a person item only as an ordinary step; nothing on the page marks it as the person's to tick - SKILL.md rule 'always a person step' carries it
+  note: this repo's own .jaira/lanes still runs the old prompts until jaira update --lanes (known limit, recorded 21:01)
+  note: pre-existing: TestReapTearsDownWhatTheSetupBuilt/hangs in core/role fails under heavy load (load avg ~56) on plain upstream/master b00b2e4f2 too - timing test, not this change
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-3dvvfz  2. go test -count=1 ./core/role -run TestAcceptanceBuildPersonItems -> ok  3. go test -count=1 ./core/lane/... ./core/shipped/... -> ok  4. write /tmp/d.json: {\"title\":\"t\",\"lang\":\"en\",\"tickets\":[{\"id\":\"AAAAAA\",\"title\":\"x\",\"person\":[{\"n\":2,\"text\":\"seen by a person: it is drawn\"}],\"next_lane\":\"done\",\"return_lane\":\"in-progress\"}],\"blocks\":[{\"n\":1,\"title\":\"b\",\"tickets\":[\"AAAAAA\"],\"steps\":[{\"id\":\"s1\",\"do\":\"d\",\"covers\":[\"AAAAAA\"]}]}]} and /tmp/db.json: {\"results\":{\"s1\":{\"status\":\"ok\"}}}  5. python3 core/role/builtin/jaira-role-acceptance/build.py plan /tmp/d.json /tmp/db.json -> you see 'jaira dod AAAAAA 2 --done --proof ... && jaira move AAAAAA --to done --force   # the person runs this line', not a bare move  6. change person to [\"x\"] and rerun -> exit 1 with 'AAAAAA: person must be a list ...', no Traceback  7. open core/lane/builtin/15-pre-process.md, section 'What only a person can check' -> the three kinds of change and the 'seen by a person:' prefix"
 ---
 
 # Bei TUI-, Cockpit- oder OS-spezifischen Änderungen schreibt pre-process einen DoD-Punkt 'von einer Person angesehen'
@@ -107,3 +117,4 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-3dvvfz  2. go test -co
 - **2026-11-21 21:26 · Alexander Sacharov** — testing: note: the stale-person-list finding (bughunt 21:25) does not send the ticket back — no gate passed, no data lost by build.py itself; the one-line fix is SKILL.md '3. Next round': rebuild person from .dod_items for every ticket. Person's call whether it rides on this ticket.
 - **2026-11-21 21:34 · Alexander Sacharov** — review: blocker: branch behind upstream/master; merged tree fails TestEveryBuiltinLaneIsAShippedVersion (shipped.sha256 lacks the merged 40-review.md). Rebase onto upstream/master, scripts/shipped-history.sh --write, commit, re-run go test ./core/lane ./core/shipped ./core/role. Code itself: no defect found.
 - **2026-11-21 21:38 · Alexander Sacharov** — Review send-back fixed by merging upstream/master (5e4722a06) into feat/3dvvfz, not a rebase: the branch is already on origin at 7ccb7c724, a rebase would need a force-push. shipped.sha256 regenerated (950 versions); go test ./core/lane ./core/shipped ./core/role ./core/release green on the merged tree.
+- **2026-11-21 21:41 · Alexander Sacharov** — bughunt: done at c84aff3f3 - 0 findings, follow-up hunt since 8eb0b2e00: only change is the conflict-free merge of upstream/master (05b1626e1) and the regenerated manifest (c84aff3f3); diff of 2 known files (core/lane/builtin/40-review.md: upstream verdict-word lines, the branch's 'seen by a person:' paragraph intact; core/shipped/shipped.sha256: additions only), no new file; concurrency, error paths, input, permissions checked; go test -count=1 ./core/role/ ./core/shipped/ ./core/lane/... passes; files: core/lane/builtin/15-pre-process.md core/lane/builtin/20-in-progress.md core/lane/builtin/27-testing.md core/lane/builtin/40-review.md core/release/notes/3DVVFZ.md core/role/acceptance_build_test.go core/role/builtin/jaira-role-acceptance/SKILL.md core/role/builtin/jaira-role-acceptance/build.py core/role/builtin/jaira-role-signoff/SKILL.md core/shipped/shipped.sha256
