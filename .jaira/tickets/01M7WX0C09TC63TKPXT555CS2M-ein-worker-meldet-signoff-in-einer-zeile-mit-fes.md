@@ -1,7 +1,7 @@
 ---
 id: 01M7WX0C09TC63TKPXT555CS2M
 title: "Ein Worker meldet signoff in einer Zeile mit festen Feldern: Branch, Commits, Guard, offene Notes"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -18,20 +18,19 @@ related:
   - 01M67RXSPRWC7WVBCCM7MVR4PY
 commits: []
 created-at: 2026-11-20T16:35:33Z
-updated-at: 2026-11-21T19:08:55Z
+updated-at: 2026-11-21T19:10:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2279502
 claimed-at: 2026-11-21T19:00:51Z
 outcome-what: "jaira-worker and jaira-dispatcher end their report with a fixed status line 'jaira: <ID> <from> -> <to> · branch · commits · gates · notes · verdict', documented in their Report sections; the jaira-cockpit's digest.ts reads that line (statusLineOf) and shortens the report to its fields, falling back to the old guessing without it"
 outcome-why: "The teamlead read the ticket after every report to find branch, commits and whether it could push; a fixed line answers that from the report alone"
 outcome-resolves: "55CS2M; shares the line prefix with MVR4PY, which can now remove the guessing. Checked: concurrency n/a (pure function); error path: no line -> old path, failure text still keeps the report whole; unusual input: CRLF, lowercase handle/lanes, unicode arrow, '-' values, unknown keys, overlong fields clipped, verdict holding '·' or '->'; permissions: peer text is only displayed, every field clipped to 60"
-review-summary: |-
-  core/mod/builtin/jaira-cockpit/hooks/digest.ts digest(): the labels 'commits', 'gates', 'notes' are hardcoded; every word the cockpit shows lives in hooks/texts.ts (filterWords: marker, question, fullReport) - add them there and use words.*
-  core/role/builtin/jaira-dispatcher/SKILL.md Report: the 20-line status-line block is a verbatim copy of jaira-worker's; the dispatcher already defers to jaira-worker for 'Before you push' - point to jaira-worker's Report section instead of keeping two copies to drift
+review-summary: none
 round: 2
 back-from: critique
 back-by: lane
 back-count: 1
+review-gaps: "digest.ts: dropped the redundant key !== 'verdict' check and its Exclude cast (verdict is cut off the line before the field loop), STATUS_KEYS -> FIELDS. Searched for an existing key: value line parser in the cockpit (frame.ts, threads.ts, metrics.ts) - none reads this shape; clip() reused. Left: laneOf/verdictOf guessing stays as the fallback by decision (MVR4PY removes it)."
 ---
 
 # Ein Worker meldet signoff in einer Zeile mit festen Feldern: Branch, Commits, Guard, offene Notes

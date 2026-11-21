@@ -112,7 +112,7 @@ export type StatusLine = {
   verdict?: string
 }
 
-const STATUS_KEYS = ['branch', 'commits', 'gates', 'notes', 'verdict'] as const
+const FIELDS = ['branch', 'commits', 'gates', 'notes'] as const
 const STATUS_HEAD = new RegExp(
   `^\\s*jaira:\\s+(${HANDLE})\\s+([a-z][a-z-]*)\\s*(?:->|→)\\s*([a-z][a-z-]*)\\s*(?:·\\s*(.*))?$`,
   'i',
@@ -120,7 +120,7 @@ const STATUS_HEAD = new RegExp(
 
 // The last such line in the report, or undefined when there is none: a
 // report quoting an earlier one still ends with its own. A key that is
-// missing or holds "-" is left out; a key not in STATUS_KEYS is ignored.
+// missing or holds "-" is left out; a key not in FIELDS (or verdict) is ignored.
 export function statusLineOf(text: string): StatusLine | undefined {
   const lines = text.split(/\r?\n/)
   for (let i = lines.length - 1; i >= 0; i--) {
@@ -137,9 +137,9 @@ export function statusLineOf(text: string): StatusLine | undefined {
       const kv = /^\s*([a-z]+):\s*(.*?)\s*$/i.exec(field)
       if (!kv) continue
       const key = kv[1]!.toLowerCase()
-      if (key !== 'verdict' && (STATUS_KEYS as readonly string[]).includes(key)) line[key as Exclude<typeof STATUS_KEYS[number], 'verdict'>] = kv[2]!
+      if ((FIELDS as readonly string[]).includes(key)) line[key as (typeof FIELDS)[number]] = kv[2]!
     }
-    for (const key of STATUS_KEYS) if (line[key] === '' || line[key] === '-') delete line[key]
+    for (const key of [...FIELDS, 'verdict'] as const) if (line[key] === '' || line[key] === '-') delete line[key]
     return line
   }
   return undefined
