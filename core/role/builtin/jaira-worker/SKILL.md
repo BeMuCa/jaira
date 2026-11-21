@@ -197,6 +197,23 @@ whole tree (`task code:format`, `ruff format .`, `npm run format`). A
 whole-tree run rewrites files nobody on this ticket opened, and every one of
 them is a conflict with somebody else's branch.
 
+### Before you push
+
+Run the project's own gates locally before every push — the checks its CI runs
+and that turn a pull request red when they fail. Read them off the repository,
+not from memory: the CI workflow (`.github/workflows/`, `.gitlab-ci.yml`), the
+test and lint tasks in `Taskfile.yml`, `Makefile` or `package.json`, and any
+check the repository's instructions name. A fast local subset that covers what
+this branch touched is enough; a suite that needs a service you do not have is
+named in your report, not skipped silently.
+
+The class this catches is the gate nobody thinks of as a test: a generated file
+or checksum list that has to be regenerated with the change, a formatter or
+linter run in CI only, a manifest that must name every new file. On 2026-11-20
+several pull requests went red for a line missing in such a list that one local
+test run would have named. A red gate is fixed before the push, in a new commit
+— never pushed with a promise.
+
 ## The bug hunt
 
 The bug hunt is part of the `testing` lane: its prompt starts the hunter as a

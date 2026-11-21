@@ -832,6 +832,7 @@ left alone and reported, and `--force` replaces it too.
 | `/jaira-role-research <question>` | Finds the facts out first, each with its source and confidence. |
 | `/jaira-role-tester [id]` | Runs the tests and reports what fails. Fixes nothing. |
 | `/jaira-role-acceptance <id>...` | Builds the acceptance page and reads your marks back. |
+| `/jaira-role-signoff [id]...` | Puts each ticket in signoff to you as a status line, a sorted table of its notes and one recommendation, with the accept and give-back lines ready. Changes nothing. |
 | `/jaira-role-pr <id>` | Pushes the branch, opens the pull request when you typed it, answers review comments. Never merges. |
 | `/jaira-role-logbook-summary [period]` | Writes a report for a project lead, with hours. |
 
