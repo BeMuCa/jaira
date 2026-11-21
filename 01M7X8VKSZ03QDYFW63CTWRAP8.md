@@ -25,7 +25,7 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:31:16Z
+updated-at: 2026-11-21T08:31:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-31394
 claimed-at: 2026-11-21T08:01:32Z
@@ -41,8 +41,8 @@ review-gaps: |-
 test-verdict: "pass: go vet, go test ./..., check-ticket-commits RC=0 at 558c8205; DoD 1-4 verified in the tree; the stale-result rule now reads the same in signoff and teamlead; the follow-up line carries --assignee (flag exists). Roles write nothing - no concurrent-writer case."
 hunt-verdict: "clean: diff hunt at 558c8205 (HEAD), 0 findings"
 question: ""
-review-verdict: "All four DoD items are met. go test ./core/role ./core/shipped pass (-count=1). The branch-lookup snippet was run in a scratch repo: linear copies pick the furthest one, diverged copies leave head empty, a handle inside a longer word is not matched. Every jaira/gh flag and JSON key the role names exists (list --lane/--board, show --json .handle/.dod_items/.review.*, gh run list --commit/--workflow), and the cockpit writes the 'Given back from <lane>:' prefix the return count reads (register.tsx:954). No blocker; four small notes."
-review-round: 10
+review-verdict: "All four DoD items are met by the diff. No blocker: every command and flag the role prescribes exists (jaira list --lane/--board, gh run list --commit/--workflow, glab ci list --sha, jaira create --assignee), the JSON keys it names match jaira show --json, the head lookup on this repo returns 558c8205 = HEAD, and the last bughunt note names that commit. go test ./core/role ./core/shipped green. Uncommitted .jaira/milestones/ files in the worktree are not this ticket's."
+review-round: 11
 review-check: "1. jaira update --roles (with a binary built from this branch: go build -o /tmp/jaira ./cmd/jaira, then /tmp/jaira update --roles)  2. in Claude Code type /jaira-role-signoff  3. you should see one block per ticket in signoff: a status line with checkmarks/crosses/?, a table with one mark per note (red/yellow/white/blue), one bold recommendation, and two ready lines (move --to done --force, and note + move --to in-progress)  4. confirm nothing changed: git status shows no ticket file modified by the role  5. go test ./core/role ./core/shipped -count=1 -> both ok"
 ---
 
