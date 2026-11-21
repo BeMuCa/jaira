@@ -1,7 +1,7 @@
 ---
 id: 01M2HZKCQ48BPQYN1YPTXB97NJ
 title: "Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig"
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Wer allein an einem Repository arbeitet, bekommt keine Rolle vorgesetzt, die ihn zu einem Pull Request schickt, den er nicht will - und ein Team, das Pull Requests benutzt, bekommt die Regel weiterhin ueberall, wo ein Agent sie liest."
@@ -14,7 +14,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-11-21T08:19:34Z
+updated-at: 2026-11-21T08:24:32Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -36,7 +36,7 @@ outcome-what: "Board haelt in .jaira/pr fest, wie Arbeit ankommt (person/agent/n
 outcome-why: "Ein Solo-Projekt ohne Pull Requests blieb an einem PR haengen, den niemand oeffnet"
 outcome-resolves: "XB97NJ"
 review-summary: "Eine Datei .jaira/pr mit dem Wort 'none' sagt jetzt: dieses Projekt nimmt keine Pull Requests. core/board/arrival.go liest die Datei (nur exakt 'agent'/'none' zaehlen, BOM/CRLF/Kommentare werden ignoriert, alles andere bleibt 'person') und schreibt bei agent/none einen eigenen Absatz in den jaira-Block von CLAUDE.md/AGENTS.md; ohne Datei bleibt der Block byte-gleich, jaira validate meldet ihn als veraltet, wenn die Datei wechselt. 'jaira roles list' meldet pr=none (und nennt ein Wort, das nicht griff). 'jaira roles pr-gate' laesst unter none einen Zweig landen, wenn .jaira/pr im Basis-Zweig none sagt, jedes genannte Ticket in done/logbook ist und jeder Commit ein Ticket nennt - Merges nur, wenn ihr Baum exakt gits eigener Merge der Eltern ist (core/gitrepo/named.go UnnamedCommits). jaira-role-pr bekommt den Schritt 'Land it' (Gate, Basis mergen, Gate erneut, fast-forward push, nie --force); dispatcher/teamlead erwaehnen none; reap.sh zaehlt einen Zweig unter none als gemerged, sobald der Default-Branch des Ziel-Remotes (origin oder bei einem Fork dessen Parent) seine Spitze enthaelt und ein Commit dort das Ticket nennt. Release-Notiz in core/release/notes/XB97NJ.md."
-round: 12
+round: 13
 review-gaps: |-
   note: unter none lehnt das Gate einen Revert-Commit ab (Betreff 'Revert "fix(X)..."' passt nicht auf type(ID):) - faellt sicher zu, steht aber nirgends in jaira-role-pr; der Agent muss den Betreff umschreiben
   note: UnnamedCommits/isPlainMerge in core/gitrepo/named.go haben keinen eigenen Test im Paket, nur ueber internal/cli/prgate_test.go
@@ -156,3 +156,4 @@ Den woertlichen Absatz entwerfe ich selbst, er wird im Review sichtbar.
 - **2026-11-21 08:15 · Alexander Sacharov** — bughunt: done at 2bf13dd8 - 0 findings in 2 modules, follow-up hunt since 94b9dcad (diff of core/role/builtin/jaira-dispatcher/scripts/reap.sh core/role/reap_test.go core/shipped/shipped.sha256; no new file in list); concurrency, error paths, input, permissions checked; ran: go test ./core/role -run Reap -count=3 (ok); files: .jaira/milestones/abnahme-2026-11-A4140M.md .jaira/milestones/hackathon-vorbereitung-XD97YV.md .jaira/milestones/jaira-board-fan-out-2H8BYF.md .jaira/milestones/jaira-erweiterungen-abschauen-DM1Y32.md .jaira/milestones/jaira-improvement-findings-1-QXJ7YA.md .jaira/milestones/jaira-improvement-findings-2-J89MM5.md .jaira/milestones/jaira-improvement-findings-3-KGN25M.md .jaira/milestones/pm-web-A79Q9V.md .jaira/milestones/readme-videos-ZDEJZG.md .jaira/milestones/teamlead-intake-2S92X9.md .jaira/milestones/tickets-lanes-improvement-4E3ZYF.md core/board/announce.go core/board/arrival.go core/board/arrival_test.go core/gitrepo/named.go core/release/notes/XB97NJ.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-dispatcher/scripts/reap.sh core/role/builtin/jaira-role-pr/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/reap_test.go core/settings/settings.go core/settings/settings_test.go core/shipped/shipped.sha256 internal/cli/prgate_test.go internal/cli/roles.go internal/cli/validate.go
 - **2026-11-21 08:18 · Alexander Sacharov** — review (fresh): kein Blocker, 4 Notes in review-gaps; Tests gruen. Weiter nach signoff.
 - **2026-11-21 08:19 · Alexander Sacharov** — Given back from signoff (Teamlead im Auftrag Alex 21.11., alle Funde schliessen): 1) Revert-Commits unter none: Gate erkennt 'Revert "type(ID): ..."' als Commit von ID (oder jaira-role-pr sagt klar, wie der Betreff zu schreiben ist) - lieber im Gate loesen, mit Test. 2) Eigene Tests fuer UnnamedCommits/isPlainMerge in core/gitrepo. 3) reap.sh: scheitert 'jaira roles list', nennt es die Ursache statt still auf den PR-Pfad zu fallen. Note 4 (milestones) ist kein Fund. Diff-Hunt, review, signoff, push.
+- **2026-11-21 08:24 · Alexander Sacharov** — in-progress (Runde 8, 21.11.): (1) Revert im Gate geloest: core/gitrepo subjectScope liest git's eigene Betreffs 'Revert "type(ID): ..."' und 'Reapply "..."' (auch verschachtelt) als Commit von ID; gleiche Lesart in cockpit board.ts ticketsNamed und reap.sh landed_head (Klasse, nicht Beispiel). Ein Revert eines nicht-done Tickets haelt das Tor als dessen Ticket, nicht als unbenannt. Tests: core/gitrepo/named_test.go, internal/cli TestPRGateOnANoneBoardReadsARevertAsItsTicketsCommit; jaira-role-pr 'Land it' sagt es in einem Satz. (2) core/gitrepo/named_test.go: HandlesInSubjects-Tabelle, UnnamedCommits, isPlainMerge (sauber, -s ours, --no-commit + Datei, Konflikt von Hand, Elternzahl, unbekannter sha). (3) reap.sh: scheitert 'jaira roles list' oder 'jaira json get', wird jedes Ticket mit Ursache 'kept' (stderr-Zeile, ohne den older-version-Hinweis), kein stiller PR-Pfad; Test TestReapNamesAFailingRolesListAsTheCause. -race ./... RC=0, cockpit 212 pass.
