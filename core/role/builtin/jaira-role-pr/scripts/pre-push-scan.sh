@@ -133,6 +133,11 @@ scan() {
       ln++
     }'
 
+  # Into files and read from there, never piped into grep -q: grep stops at
+  # its first match, git dies of SIGPIPE, and under pipefail the hit is lost.
+  git log -1 --format=%B "$c" >"$tmp/msg"
+  git log -1 --format='%ae%n%ce' "$c" >"$tmp/who"
+
   : >"$tmp/flagged"
   for kind in deny host; do
     if [ "$kind" = deny ]; then pat=$deny mode=-E; else pat=$hostfile mode=-F; fi
@@ -155,18 +160,12 @@ scan() {
         print c " " p ":" ln
       }' "$tmp/flagged" "$tmp/hits" "$tmp/locs" >"$tmp/where"
     while IFS= read -r w; do report "$kind" "$w"; done <"$tmp/where"
-
-    # Into files and read from there, never piped into grep -q: grep stops at
-    # its first match, git dies of SIGPIPE, and under pipefail the hit is lost.
-    git log -1 --format=%B "$c" >"$tmp/msg"
     lines "$pat" "$mode" "$tmp/msg" >"$tmp/n"
     [ ! -s "$tmp/n" ] || report "$kind" "$short commit message"
-    git log -1 --format=%ae "$c" >"$tmp/ae"
-    lines "$pat" "$mode" "$tmp/ae" >"$tmp/n"
-    [ ! -s "$tmp/n" ] || report "$kind" "$short author email"
-    git log -1 --format=%ce "$c" >"$tmp/ce"
-    lines "$pat" "$mode" "$tmp/ce" >"$tmp/n"
-    [ ! -s "$tmp/n" ] || report "$kind" "$short committer email"
+    lines "$pat" "$mode" "$tmp/who" >"$tmp/n"
+    while IFS= read -r n; do
+      if [ "$n" = 1 ]; then report "$kind" "$short author email"; else report "$kind" "$short committer email"; fi
+    done <"$tmp/n"
   done
 }
 

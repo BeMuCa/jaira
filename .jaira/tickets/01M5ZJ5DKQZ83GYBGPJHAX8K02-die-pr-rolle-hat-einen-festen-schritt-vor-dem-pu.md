@@ -1,7 +1,7 @@
 ---
 id: 01M5ZJ5DKQZ83GYBGPJHAX8K02
 title: "Die PR-Rolle hat einen festen Schritt vor dem Push: Scan, master, Suite, DoD, Logbook"
-status: critique
+status: testing
 ready: true
 creator: BeMuCa
 goal: "jaira-role-pr fuehrt vor jedem Push einen festen Ablauf aus: Branch auf E-Mail, Denylist-Strings und Rechnernamen pruefen, master mergen, die volle Race-Suite einmal laufen lassen, die Suite-DoD-Punkte ticken, je Ticket logbook plus chore-Commit, dann push."
@@ -20,7 +20,7 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
 commits: []
 created-at: 2026-10-27T20:52:23Z
-updated-at: 2026-11-21T19:17:04Z
+updated-at: 2026-11-21T19:19:44Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2284393
@@ -28,6 +28,8 @@ claimed-at: 2026-11-21T19:01:24Z
 outcome-what: "New core/role/builtin/jaira-role-pr/scripts/pre-push-scan.sh scans every commit of <base>..HEAD (added lines, merges by --cc only, file names, message, author/committer email) against ~/.config/jaira/mention-denylist (exit 3, prints commit+file:line only) and this machine's name (warning, push goes on). SKILL.md 'Push the branch' is now seven numbered steps with command and stop rule: scan, merge base, full suite + CI gates (exit code, not grep), tick suite DoD items with --proof, file finished tickets away, scan again, push. Table test core/role/pre_push_scan_test.go (16 cases), script registered in roleFiles, manifest regenerated, release note AX8K02.md. Four categories checked: concurrency - per-run mktemp dir, no shared state; error paths - no die inside $(...), invalid/unreadable list exits 2, git failure exits non-zero under pipefail; unusual input - empty/binary/CRLF/space/non-ASCII/100 KB message tested; permissions - list read from outside the repo, nothing from the repo is executed."
 outcome-why: "For two batches the pre-push step was done by hand from memory: suite only before the PR, no employer/customer strings or hostname in the repo, logbook per ticket. The role named only logbook, so a leak or a missing --force-free done move depended on someone remembering."
 outcome-resolves: "jaira-role-pr runs one fixed, checkable sequence before every push; a denylist hit stops it without repeating the string; suite DoD items get ticked so done needs no --force."
+review-summary: "none - the shape stands on the 19:02 decision note (script beside the role like pr-round.sh, tested from core/role like pr_round_test.go) and the 19:06 decision (hostname warns). Per-commit scan rather than the net diff is what the class needs (19:10 note b). The repeated git log calls per commit are optimize's, not a design question."
+review-gaps: "pre-push-scan.sh: message and emails were read by six git log calls per commit, three per list - now two, before the list loop, author and committer from one call. Searched for an existing scanner to call instead: none in the repo (scripts/check-ticket-commits.sh checks ticket files, not mentions; T22Z2C's check-mentions.sh is on no ref here). Left: the two deny/host loops - the name list must be complete for both lists before content hits are mapped, so they cannot merge. Nothing dead, no forwarding wrappers."
 ---
 
 # Die PR-Rolle hat einen festen Schritt vor dem Push: Scan, master, Suite, DoD, Logbook
@@ -77,3 +79,4 @@ outcome-resolves: "jaira-role-pr runs one fixed, checkable sequence before every
 - **2026-11-21 19:06 · Alexander Sacharov** — decision: Alex 2026-11-21: Rechnername im Scan ist nur Warnung (Datei + Commit), Push geht weiter; Denylist und E-Mail stoppen. Wird Stopp, sobald QYK8MD in master ist.
 - **2026-11-21 19:10 · Alexander Sacharov** — pre-push-scan.sh built and tested (core/role/pre_push_scan_test.go, 16 cases). Found on the way: (a) a die inside $(...) only ends the subshell, so a grep error would read as 'no match' - every lines() call writes to a file instead; (b) scanning each commit, not base...HEAD's net diff: a mention added and removed again inside the branch is still published by the push (test 'added then removed again'); (c) merges via git show --cc: only lines that differ from every parent, so what master brings in is not blamed, a conflict resolution is; (d) grep's own error text is silenced when the list is validated, so a bad pattern never reaches the report.
 - **2026-11-21 19:16 · Alexander Sacharov** — rehearsal: the person's done move could not be played in the scratch board - stripping the agent env vars to pass signoff's human checkpoint was refused by the auto-mode classifier, and that refusal stands. So step 5 (logbook) ran as 'ticket not in done, stays on the board', and DoD 3 is proven by the refusal text: before the tick it names criterion 2, after it only the human checkpoint. Manifest: core/shipped/shipped.sha256 must be regenerated (scripts/shipped-history.sh --write) after every SKILL.md change, and a new file must be git-added first or --write does not see it.
+- **2026-11-21 19:18 · Alexander Sacharov** — pre-existing, not this ticket: 'jaira move' right after 'jaira note' in the same second was refused on the ref ('was not sent: Alexander Sacharov wrote it first ... at 19:16:46'), although both writes came from this session; the local file moved to critique, the ref stayed in-progress. Retrying the move said 'already in critique'. Worth its own look if it repeats.

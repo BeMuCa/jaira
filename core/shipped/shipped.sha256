@@ -697,6 +697,7 @@ d1058a29639feaca6dc5426c076ccc35e838cc203e3934ebb1a347dc5560bb87  core/role/buil
 d2ec60af954ad9004ff7e8e05592574fb58d5efb781b874323df7a2fe641c379  core/role/builtin/jaira-role-pr/scripts/pr-round.sh
 f4a2450aa885713596d2458d1b854aade7ff097caa68b1096c839e878a5f70d7  core/role/builtin/jaira-role-pr/scripts/pr-round.sh
 395349499cafd4b130667fd91c3970e83e39111e74db7ac803455503c7ac386e  core/role/builtin/jaira-role-pr/scripts/pre-push-scan.sh
+5137c51182d3f6408b94584a83ddfa64a9fdef855180bee82d1845944aee592c  core/role/builtin/jaira-role-pr/scripts/pre-push-scan.sh
 1cead433a7b491014a3ec0eb3b2c99614d51991b4edb72f5fea53f75516ab69b  core/role/builtin/jaira-role-research/SKILL.md
 092872fed8801c4af159b664a1864fc2404cf97b3c10358379a8dc103f09af9a  core/role/builtin/jaira-role-signoff/SKILL.md
 1483c0155f95e5e3c4295c6d66c591ffc84dabbe94c5c68e6f2b22ca1e114ed6  core/role/builtin/jaira-role-signoff/SKILL.md
