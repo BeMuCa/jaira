@@ -287,7 +287,7 @@ func RemoveIgnore(root string) (changed bool, err error) {
 // right one), the line is not there, a copy of it lacks jaira's comment
 // directly above (a person wrote it), a board stands in the directory the
 // line names in any worktree of the repository (it is that board's entry),
-// or git cannot list those worktrees.
+// or git cannot list those worktrees or names one that is not there.
 func StaleEntry(root string) (exclude, line string) {
 	_, exclude, prefix := rawPlace(root)
 	trimmed := strings.TrimSpace(prefix)
@@ -304,7 +304,12 @@ func StaleEntry(root string) (exclude, line string) {
 	if err != nil {
 		return "", ""
 	}
+	// A worktree git lists at a path that is not there — moved by hand, on
+	// a drive not mounted — may hold a board in sub nobody can look at.
 	for _, top := range tops {
+		if _, err := os.Stat(top); err != nil {
+			return "", ""
+		}
 		if _, err := os.Lstat(filepath.Join(top, filepath.FromSlash(trimmed), ticket.DirName)); !errors.Is(err, fs.ErrNotExist) {
 			return "", ""
 		}
@@ -360,8 +365,11 @@ func DropStaleEntry(root string) (dropped string, err error) {
 	if line == "" {
 		return "", nil
 	}
+	// Every check again under the lock AddIgnore takes: a 'jaira init' in
+	// sub between the first check and the drop finds the line already
+	// written, adds none, and must not lose it here.
 	err = locked(exclude, func() error {
-		if !ownEntry(exclude, line) {
+		if _, again := StaleEntry(root); again != line {
 			return nil
 		}
 		changed, err := dropEntry(exclude, privateMarker, func(t string) bool { return t == line })

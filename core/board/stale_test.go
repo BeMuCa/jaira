@@ -7,6 +7,9 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
+
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // A jaira before 689E0T wrote "/sub/.jaira/" for a board in " sub". The
@@ -163,5 +166,62 @@ func TestDropStaleEntryKeepsTheEntryOfABoardInAnotherWorktree(t *testing.T) {
 	}
 	if dropped, err := DropStaleEntry(board); err != nil || dropped != "/sub/.jaira/" {
 		t.Errorf("DropStaleEntry = %q, %v; want the stale line", dropped, err)
+	}
+}
+
+// A worktree moved without git is listed at a path that is not there; a
+// board in sub of it may rely on the line, so the line stays.
+func TestDropStaleEntryKeepsTheLineWhileAWorktreeIsMissing(t *testing.T) {
+	root, exclude := newRepo(t)
+	for _, args := range [][]string{
+		{"-c", "user.name=a", "-c", "user.email=a@example.test", "commit", "--quiet", "--allow-empty", "-m", "x"},
+		{"worktree", "add", "--quiet", "--detach", "../w 2"},
+	} {
+		if out, err := exec.Command("git", append([]string{"-C", root}, args...)...).CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	if err := os.Rename(filepath.Join(filepath.Dir(root), "w 2"), filepath.Join(filepath.Dir(root), "w 3")); err != nil {
+		t.Fatal(err)
+	}
+	board := filepath.Join(root, " sub")
+	if err := os.MkdirAll(board, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	write(t, exclude, "\n"+privateComment+"\n/sub/.jaira/\n")
+	if dropped, err := DropStaleEntry(board); err != nil || dropped != "" {
+		t.Errorf("DropStaleEntry = %q, %v; a worktree git cannot find may hold a board in sub", dropped, err)
+	}
+}
+
+// A 'jaira init' in sub that lands between the first check and the drop
+// waits for the lock, finds the line and adds none; the drop, checking again
+// under that lock, keeps it.
+func TestDropStaleEntryChecksAgainUnderTheLock(t *testing.T) {
+	root, exclude := newRepo(t)
+	board := filepath.Join(root, " sub")
+	if err := os.MkdirAll(board, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	write(t, exclude, "\n"+privateComment+"\n/sub/.jaira/\n")
+	unlock, err := ticket.LockFile(exclude + ".jaira.lock")
+	if err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan string)
+	go func() {
+		d, err := DropStaleEntry(board)
+		if err != nil {
+			t.Error(err)
+		}
+		done <- d
+	}()
+	time.Sleep(300 * time.Millisecond) // past the first check, waiting for the lock
+	if err := os.MkdirAll(filepath.Join(root, "sub", ".jaira"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	unlock()
+	if d := <-done; d != "" {
+		t.Errorf("DropStaleEntry dropped %q, the line of the board that appeared in sub", d)
 	}
 }
