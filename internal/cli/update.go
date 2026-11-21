@@ -181,8 +181,11 @@ board would silently stop new tickets reaching teammates. A private board
 whose entry an older jaira wrote into the tracked .gitignore has it moved to
 .git/info/exclude, which no worktree shows as a change; commit the .gitignore
 that leaves behind once. A private board excluded nowhere — a teammate whose
-.gitignore lost the line in that commit — is excluded there too. A board with
-.jaira/.gitattributes or committed files under .jaira/ is never touched.
+.gitignore lost the line in that commit — is excluded there too. A private
+board in a directory whose name starts with a space loses the entry an older
+jaira wrote for it without that space, which excluded nothing; an entry a
+person wrote, or one that names a directory holding a board, stays. A board
+with .jaira/.gitattributes or committed files under .jaira/ is never touched.
 
 --roles brings the roles, the cockpit mod and the jaira skill up to date in every
 skills directory that already holds the roles: this repository's and your
@@ -282,7 +285,8 @@ installed.`,
 					"root": s.Root, "version": release.Current, "previous": previous,
 					"agent_notes":  notesWritten,
 					"ignore_moved": ignore.moved, "ignore_added": ignore.added, "ignore_unknown": ignore.unknown,
-					"notes": entriesJSON(notes),
+					"ignore_stale_dropped": ignore.stale,
+					"notes":                entriesJSON(notes),
 				}))
 			}
 
@@ -330,6 +334,7 @@ installed.`,
 type ignoreMove struct {
 	moved, added bool
 	unknown      string // why git could not say whether the board is ignored; nothing was touched
+	stale        string // the entry without the leading space an older jaira wrote, taken out
 }
 
 // moveIgnore keeps a private board private without the tracked .gitignore:
@@ -354,35 +359,62 @@ func moveIgnore(s *ticket.Store, dry bool) (ignoreMove, error) {
 		m.unknown = err.Error()
 		return m, nil
 	}
-	if board.InGitignore(s.Root) {
+	if err := m.exclude(s.Root, by, dry); err != nil {
+		return m, err
+	}
+	// The entry an older jaira wrote for a board in " sub" lacks the space
+	// and excludes nothing; it goes after the right one is in place.
+	if dry {
+		_, m.stale = board.StaleEntry(s.Root)
+		return m, nil
+	}
+	m.stale, err = board.DropStaleEntry(s.Root)
+	return m, err
+}
+
+// exclude moves or writes the board's entry; by is the rule git says
+// ignores the board, "" for none.
+func (m *ignoreMove) exclude(root, by string, dry bool) (err error) {
+	if board.InGitignore(root) {
 		// Where git names no info/exclude — before 2.31 it does not know
 		// --path-format — .gitignore is the place, and there is nothing to move.
-		if board.IgnoreFileName(s.Root) == ".gitignore" {
-			return m, nil
+		if board.IgnoreFileName(root) == ".gitignore" {
+			return nil
 		}
 		if dry {
 			m.moved = true
-			return m, nil
+			return nil
 		}
-		m.moved, err = board.MoveIgnore(s.Root)
-		return m, err
+		m.moved, err = board.MoveIgnore(root)
+		return err
 	}
 	if by != "" {
-		return m, nil
+		return nil
 	}
 	// Not ignored. AddIgnore writes only where jaira's entry is missing: a
 	// "!/.jaira/" a person wrote above it is theirs, and a second entry
 	// would not change it.
 	if dry {
-		m.added = !board.Ignored(s.Root)
-		return m, nil
+		m.added = !board.Ignored(root)
+		return nil
 	}
-	m.added, err = board.AddIgnore(s.Root)
-	return m, err
+	m.added, err = board.AddIgnore(root)
+	return err
 }
 
 // line says what moveIgnore did, "" for nothing.
 func (m ignoreMove) line(root string, dry bool) string {
+	out := m.entryLine(root, dry)
+	switch {
+	case m.stale != "" && dry:
+		out += fmt.Sprintf("Would remove %s from %s: an older jaira wrote it for this board without the leading space, and it excludes nothing.\n", m.stale, board.IgnoreFileName(root))
+	case m.stale != "":
+		out += fmt.Sprintf("Removed %s from %s: an older jaira wrote it for this board without the leading space, and it excluded nothing.\n", m.stale, board.IgnoreFileName(root))
+	}
+	return out
+}
+
+func (m ignoreMove) entryLine(root string, dry bool) string {
 	file := board.IgnoreFileName(root)
 	switch {
 	case m.unknown != "":

@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"testing"
 
@@ -12,8 +13,9 @@ import (
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
-// countGit puts a git first on PATH that writes each call's subcommand as one
-// line into the file it returns, then runs the real git. With old set it also
+// countGit puts a git first on PATH that writes each call's arguments, less
+// a leading "-C <dir>", as one line into the file it returns, then runs the
+// real git. With old set it also
 // acts like git before 2.31, printing --path-format=absolute back in place of
 // using it.
 func countGit(t *testing.T, old bool) (log string) {
@@ -27,7 +29,8 @@ func countGit(t *testing.T, old bool) (log string) {
 	}
 	bin := t.TempDir()
 	log = filepath.Join(bin, "calls")
-	wrapper := "#!/bin/sh\nif [ \"$1\" = -C ]; then echo \"$3\"; else echo \"$1\"; fi >> '" + log + "'\n"
+	wrapper := "#!/bin/sh\nif [ \"$1\" = -C ]; then d=$2; shift 2; echo \"$*\" >> '" + log + "'; set -- -C \"$d\" \"$@\"\n" +
+		"else echo \"$*\" >> '" + log + "'; fi\n"
 	if old {
 		wrapper += "seen=\nn=$#\ni=0\nwhile [ $i -lt $n ]; do a=$1; shift; i=$((i+1))\n" +
 			"  if [ \"$a\" = --path-format=absolute ]; then seen=1; else set -- \"$@\" \"$a\"; fi\ndone\n" +
@@ -114,9 +117,76 @@ func TestTheMergeDriverCheckStartsNoGitForTheIgnoreCheck(t *testing.T) {
 			}
 			log := countGit(t, c.old)
 			bindDriverIfShared(s)
-			got := gitCalls(t, log)
+			var got []string
+			for _, call := range gitCalls(t, log) {
+				got = append(got, strings.Fields(call)[0])
+			}
 			if strings.Join(got, " ") != strings.Join(c.want, " ") {
 				t.Errorf("git calls = %q, want %q", got, c.want)
+			}
+		})
+	}
+}
+
+// The same, over a whole command: 'jaira list' on a shared board starts
+// exactly two git processes more than on the same board without
+// .gitattributes — one rev-parse that answers the working tree and the
+// exclude entry together, one config for the driver — and nothing else of
+// the command changes. Before 689E0T it was three.
+func TestAWholeCommandOnASharedBoardPaysTwoGitCallsForTheDriver(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		sub  bool
+		old  bool
+	}{{name: "top"}, {name: "subdirectory", sub: true}, {name: "git before 2.31", old: true}} {
+		t.Run(c.name, func(t *testing.T) {
+			dir := repoWithCommit(t)
+			root := dir
+			if c.sub {
+				root = filepath.Join(dir, "web app")
+				if err := os.MkdirAll(root, 0o755); err != nil {
+					t.Fatal(err)
+				}
+			}
+			for _, args := range [][]string{{"init"}, {"share"}} {
+				if out, err := runCLI(t, root, args...); err != nil {
+					t.Fatalf("jaira %s: %v\n%s", args[0], err, out)
+				}
+			}
+			log := countGit(t, c.old)
+			calls := func() map[string]int {
+				if err := os.Remove(log); err != nil && !os.IsNotExist(err) {
+					t.Fatal(err)
+				}
+				if out, err := runCLI(t, root, "list"); err != nil {
+					t.Fatalf("jaira list: %v\n%s", err, out)
+				}
+				n := map[string]int{}
+				for _, call := range gitCalls(t, log) {
+					n[call]++
+				}
+				return n
+			}
+			shared := calls()
+			if err := os.Remove(filepath.Join(root, ticket.DirName, ".gitattributes")); err != nil {
+				t.Fatal(err)
+			}
+			for call, k := range calls() {
+				shared[call] -= k
+			}
+			var extra []string
+			for call, k := range shared {
+				for ; k > 0; k-- {
+					extra = append(extra, call)
+				}
+				if k < 0 {
+					t.Errorf("the shared board ran %q fewer times", call)
+				}
+			}
+			sort.Strings(extra)
+			want := []string{"config --local --get merge.jaira.driver", "rev-parse --path-format=absolute --git-common-dir --show-prefix --is-inside-work-tree"}
+			if strings.Join(extra, "\n") != strings.Join(want, "\n") {
+				t.Errorf("git calls a shared board adds:\n%s\nwant:\n%s", strings.Join(extra, "\n"), strings.Join(want, "\n"))
 			}
 		})
 	}

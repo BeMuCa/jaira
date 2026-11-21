@@ -607,3 +607,47 @@ func TestShareWithAnUnreadableGitignoreLeavesTheBoardPrivate(t *testing.T) {
 		t.Errorf("share on a shared board says it stays private: %v\n%s", err, out)
 	}
 }
+
+// A board in " sub" that an older jaira made private carries "/sub/.jaira/",
+// a line that excludes nothing of it. update writes the right entry and takes
+// that one out, and says so; --dry-run only says it would.
+func TestUpdateDropsTheEntryAnOlderJairaWroteWithoutTheLeadingSpace(t *testing.T) {
+	dir := repoWithCommit(t)
+	root := filepath.Join(dir, " sub")
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runCLI(t, root, "init"); err != nil {
+		t.Fatalf("jaira init: %v\n%s", err, out)
+	}
+	// What the older jaira left: its own entry, without the space.
+	common := strings.TrimSpace(gitOut(t, dir, "rev-parse", "--path-format=absolute", "--git-common-dir"))
+	exclude := filepath.Join(common, "info", "exclude")
+	f, err := os.OpenFile(exclude, os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Fprint(f, "\n# jaira board — private to this machine. Run 'jaira share' to publish it.\n/sub/.jaira/\n")
+	f.Close()
+	stale := func() bool { return strings.Contains(readExclude(t, dir), "\n/sub/.jaira/\n") }
+
+	dry, err := runUpdate(t, root, "--dry-run")
+	if err != nil || !strings.Contains(dry, "Would remove /sub/.jaira/") || !stale() {
+		t.Fatalf("--dry-run: %v, stale line there = %v, output:\n%s", err, stale(), dry)
+	}
+	out, err := runUpdate(t, root)
+	if err != nil || !strings.Contains(out, "Removed /sub/.jaira/") {
+		t.Fatalf("jaira update: %v\n%s", err, out)
+	}
+	if stale() || !strings.Contains(readExclude(t, dir), "\n/ sub/.jaira/\n") {
+		t.Errorf("exclude after update:\n%s", readExclude(t, dir))
+	}
+	if again, err := runUpdate(t, root, "--json"); err != nil || !strings.Contains(again, `"ignore_stale_dropped": ""`) {
+		t.Errorf("a second update: %v\n%s", err, again)
+	}
+	for _, line := range statusOf(t, dir) {
+		if strings.Contains(line, ".jaira") {
+			t.Errorf("git sees the board: %q", line)
+		}
+	}
+}

@@ -60,10 +60,20 @@ func gitPlace(root string) (exclude, line string) {
 }
 
 // place is gitPlace and whether root lies inside a working tree, from one
-// git process. --is-inside-work-tree goes last: git before 2.31 prints the
-// --path-format it does not know back as an extra first line, and the last
-// line stays the answer either way.
+// git process.
 func place(root string) (inRepo bool, exclude, line string) {
+	inRepo, exclude, prefix := rawPlace(root)
+	if exclude == "" {
+		return inRepo, "", ""
+	}
+	return inRepo, exclude, entryLine(prefix)
+}
+
+// rawPlace is place with root's prefix below the top of the working tree as
+// git prints it, not yet made an exclude pattern. --is-inside-work-tree goes
+// last: git before 2.31 prints the --path-format it does not know back as an
+// extra first line, and the last line stays the answer either way.
+func rawPlace(root string) (inRepo bool, exclude, prefix string) {
 	if _, err := exec.LookPath("git"); err != nil {
 		return false, "", ""
 	}
@@ -71,17 +81,25 @@ func place(root string) (inRepo bool, exclude, line string) {
 	if err != nil {
 		return false, "", ""
 	}
-	return parseProbe(string(out))
+	return splitProbe(string(out))
 }
 
 // parseProbe reads place's git output: parsePlace's lines, then "true" or
 // "false" for --is-inside-work-tree. A git directory that is no working tree
 // still has its exclude file.
 func parseProbe(out string) (inRepo bool, exclude, line string) {
+	inRepo, exclude, prefix := splitProbe(out)
+	if exclude == "" {
+		return inRepo, "", ""
+	}
+	return inRepo, exclude, entryLine(prefix)
+}
+
+func splitProbe(out string) (inRepo bool, exclude, prefix string) {
 	lines := strings.Split(strings.TrimRight(out, "\r\n"), "\n")
 	inRepo = strings.TrimSpace(lines[len(lines)-1]) == "true"
-	exclude, line = parsePlace(strings.Join(lines[:len(lines)-1], "\n"))
-	return inRepo, exclude, line
+	exclude, prefix = splitPlace(strings.Join(lines[:len(lines)-1], "\n"))
+	return inRepo, exclude, prefix
 }
 
 // parsePlace reads gitPlace's two lines of git output: the common git dir —
@@ -91,12 +109,20 @@ func parseProbe(out string) (inRepo bool, exclude, line string) {
 // comes off a line: a space at either end belongs to a directory's name
 // (" sub/"), and an entry without it excludes nothing.
 func parsePlace(out string) (exclude, line string) {
+	exclude, prefix := splitPlace(out)
+	if exclude == "" {
+		return "", ""
+	}
+	return exclude, entryLine(prefix)
+}
+
+// splitPlace is parsePlace before the prefix becomes a pattern.
+func splitPlace(out string) (exclude, prefix string) {
 	parts := strings.Split(strings.TrimRight(out, "\r\n"), "\n")
 	common := strings.TrimSuffix(parts[0], "\r")
 	if common == "" {
 		return "", ""
 	}
-	prefix := ""
 	if len(parts) > 1 {
 		prefix = strings.TrimSuffix(parts[1], "\r")
 	}
@@ -108,7 +134,12 @@ func parsePlace(out string) (exclude, line string) {
 	if !filepath.IsAbs(common) {
 		return "", ""
 	}
-	return filepath.Join(common, "info", "exclude"), "/" + globEscape.Replace(prefix) + ".jaira/"
+	return filepath.Join(common, "info", "exclude"), prefix
+}
+
+// entryLine is the exclude pattern for the board below prefix.
+func entryLine(prefix string) string {
+	return "/" + globEscape.Replace(prefix) + ".jaira/"
 }
 
 // globEscape keeps a directory name such as "a[1]" literal in an exclude
@@ -184,6 +215,11 @@ func Ignored(root string) bool {
 // command of a shared board; the entry in the root .gitignore, read from
 // disk, settles "ignored" without git at all — inRepo is then false, as
 // nothing about an ignored board needs it.
+//
+// inRepo is therefore only an answer where ignored is false: true then means
+// root lies inside a working tree, false that it does not. Where ignored is
+// true, inRepo says nothing about the repository — a caller that needs it for
+// an ignored board asks gitrepo.Repo.IsRepo.
 func Probe(root string) (inRepo, ignored bool) {
 	if InGitignore(root) {
 		return false, true
@@ -258,6 +294,83 @@ func RemoveIgnore(root string) (changed bool, err error) {
 		return err
 	})
 	return changed, err
+}
+
+// StaleEntry is the entry a jaira before 689E0T wrote into info/exclude for
+// a board whose path below the top of the working tree starts with a space:
+// it cut the space off, so the board in " sub" got "/sub/.jaira/", a line
+// that excludes nothing of it. It is "" wherever that line is not provably
+// this board's own: the path starts with no space (the old entry was the
+// right one), the line is not there, a copy of it lacks jaira's comment
+// directly above (a person wrote it), or a board stands in the directory
+// the line names (it is that board's entry).
+func StaleEntry(root string) (exclude, line string) {
+	_, exclude, prefix := rawPlace(root)
+	trimmed := strings.TrimSpace(prefix)
+	if exclude == "" || trimmed == prefix {
+		return "", ""
+	}
+	line = entryLine(trimmed)
+	if !ownEntry(exclude, line) {
+		return "", ""
+	}
+	// The top of the working tree is root less one directory per "/" in
+	// its prefix; the stale line names the trimmed path below it. git's
+	// prefix runs from the real top, so walk up from root's real path, not
+	// from a symlink to it.
+	top, err := filepath.Abs(resolved(root))
+	if err != nil {
+		return "", ""
+	}
+	for range strings.Count(prefix, "/") {
+		top = filepath.Dir(top)
+	}
+	if _, err := os.Lstat(filepath.Join(top, filepath.FromSlash(trimmed), ticket.DirName)); !errors.Is(err, fs.ErrNotExist) {
+		return "", ""
+	}
+	return exclude, line
+}
+
+// ownEntry reports whether line stands in path, and every time with jaira's
+// comment directly above it.
+func ownEntry(path, line string) bool {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	lines := strings.Split(string(b), "\n")
+	found := false
+	for i, l := range lines {
+		if strings.TrimSpace(l) != line {
+			continue
+		}
+		if i == 0 || !strings.Contains(lines[i-1], privateMarker) {
+			return false
+		}
+		found = true
+	}
+	return found
+}
+
+// DropStaleEntry takes StaleEntry's line out of info/exclude, with its
+// comment, and gives it back; "" where there is none. The line excludes
+// nothing of this board, so taking it out never publishes it.
+func DropStaleEntry(root string) (dropped string, err error) {
+	exclude, line := StaleEntry(root)
+	if line == "" {
+		return "", nil
+	}
+	err = locked(exclude, func() error {
+		if !ownEntry(exclude, line) {
+			return nil
+		}
+		changed, err := dropEntry(exclude, privateMarker, func(t string) bool { return t == line })
+		if changed {
+			dropped = line
+		}
+		return err
+	})
+	return dropped, err
 }
 
 // InGitignore reports whether the root .gitignore excludes the board — the

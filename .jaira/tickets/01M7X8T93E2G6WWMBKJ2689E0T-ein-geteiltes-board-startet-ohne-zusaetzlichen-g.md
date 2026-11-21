@@ -1,7 +1,7 @@
 ---
 id: 01M7X8T93E2G6WWMBKJ2689E0T
 title: Ein geteiltes Board startet ohne zusaetzlichen git-Prozess pro Befehl
-status: signoff
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,15 +19,15 @@ related: []
 follows: 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-11-20T20:01:56Z
-updated-at: 2026-11-20T23:11:38Z
+updated-at: 2026-11-21T08:08:22Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-14124
-claimed-at: 2026-11-20T22:45:18Z
+claimed-by: DESKTOP-RFTCH11-27289
+claimed-at: 2026-11-21T08:01:08Z
 outcome-what: Die Merge-Treiber-Pruefung bei jedem Befehl fragt git in einem rev-parse nach Arbeitsbaum und info/exclude (board.Probe) statt in zwei; ein geteiltes Board startet wieder 2 git-Prozesse wie vor NNV39Y.
 outcome-why: NNV39Y hatte jedem Befehl eines geteilten Boards einen git-Prozess fuer die Ignore-Pruefung hinzugefuegt; Projektregel instant startup.
 outcome-resolves: Der zusaetzliche git-Prozess pro Befehl aus der NNV39Y-review.
 review-summary: "bindDriverIfShared, das bei jedem Befehl laeuft, fragte git bisher zweimal (gitPlace fuer den info/exclude-Eintrag, dann IsRepo); jetzt fragt board.Probe beides mit einem rev-parse (--git-common-dir --show-prefix --is-inside-work-tree), ein .gitignore-Eintrag auf der Platte entscheidet ganz ohne git. gitPlace teilt sich dieselbe place()-Funktion. Nebenbei schneidet parsePlace vom --show-prefix nur noch das Zeilenende ab statt TrimSpace, so dass ein Board in ' sub' den Eintrag '/ sub/.jaira/' bekommt statt des wirkungslosen '/sub/.jaira/'; Release-Note dazu."
-round: 3
+round: 4
 review-gaps: |-
   note: der Zaehltest ruft bindDriverIfShared direkt auf, nicht einen ganzen Befehl; von Hand nachgezaehlt: jaira list auf geteiltem Board 9 git-Prozesse (master e31801dc) -> 8
   note: ein Board in ' sub', das ein aelteres jaira privat gemacht hat, behaelt nach jaira update den alten falschen Eintrag '/sub/.jaira/' in info/exclude neben dem richtigen; er macht stillschweigend ein Board in einem echten Verzeichnis 'sub' privat, falls es eines gibt
@@ -52,6 +52,12 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-689e0t && go test ./in
   proof: TestTheMergeDriverCheckStartsNoGitForTheIgnoreCheck (mit/ohne .gitattributes, Unterverzeichnis 'web app', git<2.31, privat exclude/.gitignore); Windows: TestParseProbeReadsWhatGitPrints (C:/-Pfad, CRLF), GOOS=windows go vet
 - [x] Ein Board in einem Verzeichnis mit fuehrendem oder abschliessendem Leerzeichen im Namen bekommt einen Exclude-Eintrag, der es wirklich ausschliesst (parsePlace kuerzt das --show-prefix nur um das Zeilenende)
   proof: core/board/gitignore.go parsePlace TrimSuffix \r; TestABoardInASubdirectoryIsExcludedByItsOwnPath (' sub', 'sub ', git status sieht kein .jaira), TestParsePlaceReadsWhatGitPrints; alter Code faellt in 4 Faellen
+- [x] jaira update entfernt den alten falschen Eintrag ohne Leerzeichen ('/sub/.jaira/' fuer ein Board in ' sub') selbst aus info/exclude - nur jairas eigene Zeile (Kommentar direkt darueber), nie eine fremde, nie eine, deren Verzeichnis ein Board hat
+  proof: core/board/gitignore.go:307 StaleEntry/DropStaleEntry, internal/cli/update.go moveIgnore; TestDropStaleEntryTakesOutOnlyItsOwnLine (9 Faelle: eigene/fremde/gemischte Zeile, Board in sub, CRLF, verschachtelt, Glob; faellt ohne Eigentums- und Board-Pruefung), TestParallelDropStaleEntry, TestUpdateDropsTheEntryAnOlderJairaWroteWithoutTheLeadingSpace
+- [x] Ein Zaehltest ueber einen ganzen Befehl (jaira list) zeigt: ein geteiltes Board kostet genau rev-parse (Probe) + config mehr als dasselbe Board ohne .gitattributes
+  proof: TestAWholeCommandOnASharedBoardPaysTwoGitCallsForTheDriver (internal/cli/startupgit_test.go; oben, Unterverzeichnis, git<2.31; faellt mit share.go von e31801dc in allen 3)
+- [x] Probe dokumentiert, dass inRepo nur bei ignored=false eine Antwort ist
+  proof: core/board/gitignore.go:219 Probe-Doku: inRepo nur bei ignored=false eine Antwort
 
 ## Options
 
@@ -90,3 +96,6 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-689e0t && go test ./in
 - **2026-11-20 23:08 · Alexander Sacharov** — Stand 00:10: testing pass (Runde 2), Branch feat/689e0t gepusht (cac9bda1), Ticket in review - frische review-Agentin gestartet. Faellt der Rechner vorher aus: neuer Worker startet review neu (run-lane.sh --no-worktree 689E0T review).
 - **2026-11-20 23:10 · Alexander Sacharov** — review: kein Blocker. Von Hand nachgezaehlt: jaira list auf geteiltem Board 9 -> 8 git-Prozesse gegen master e31801dc; Board in ' sub' bekommt '/ sub/.jaira/' und git status zeigt seine .jaira nicht. Vier notes in review-gaps.
 - **2026-11-20 23:11 · Alexander Sacharov** — nach review (Luecke 2): der alte falsche Eintrag '/sub/.jaira/' kann nicht automatisch weg - er koennte einem echten Board in 'sub' gehoeren. Release-Note sagt jetzt, ihn von Hand zu loeschen. Luecken 3 (Probe inRepo=false bei .gitignore-Eintrag, dokumentiert) und 4 (Zeilenumbruch im Verzeichnisnamen, vorbestehend) bleiben bewusst stehen.
+- **2026-11-21 08:00 · Alexander Sacharov** — Given back from signoff: Alex 21.11. alle Funde in dieser Runde schliessen. 1) jaira update entfernt den alten falschen Eintrag '/sub/.jaira/' (Board in ' sub') selbst aus info/exclude, statt ihn per Release-Note von Hand loeschen zu lassen - nur die eigene falsche Zeile, nie eine fremde; Release-Note entsprechend. 2) Zaehltest ueber einen ganzen Befehl statt bindDriverIfShared direkt, wenn ohne grossen Umbau moeglich. 3) Probe: inRepo-Semantik so benennen/kommentieren, dass ein kuenftiger Aufrufer nicht falsch liest. Zeilenumbruch im Verzeichnisnamen und gitrepo.Root TrimSpace bleiben note: pre-existing. Diff-Hunt, review, signoff, push.
+- **2026-11-21 08:01 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/4205.sock
+- **2026-11-21 08:08 · Alexander Sacharov** — in-progress (Runde nach signoff): 1) StaleEntry/DropStaleEntry: alte Zeile = '/'+TrimSpace(prefix)+'.jaira/'. Nur --show-prefix mit fuehrendem Leerzeichen war betroffen (Prefix endet immer auf '/', TrimSpace griff am Ende nie). Eigentum = jairas Kommentar direkt ueber JEDER Kopie; eine Kopie ohne -> alles bleibt. Board-Pruefung: <top>/<gekuerzter Pfad>/.jaira existiert (Lstat, jeder Fehler ausser NotExist) -> bleibt. top = realer root minus eine Ebene je '/' im Prefix (resolved, wegen Symlink). Unter Lock nochmal geprueft. Neues JSON-Feld ignore_stale_dropped + Release-Note. 2) Zaehltest ueber 'jaira list': Differenz geteilt vs ohne .gitattributes als Multimenge = genau Probe-rev-parse + config. Huelle loggt jetzt volle Argumente. 3) Probe-Doku. Vier Kategorien: Lock+Recheck (Paralleltest), unlesbares exclude -> nichts, schreibgeschuetzt -> update meldet Fehler wie AddIgnore, CRLF/Glob/verschachtelt im Tabellentest. go test ./... exit 0, GOOS=windows vet ok.
