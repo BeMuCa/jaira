@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:04:37Z
+updated-at: 2026-11-21T08:04:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
@@ -28,9 +28,7 @@ outcome-why: Hand-gemergte Manifest-Konflikte verloren Zeilen; jaira update --ro
 outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, wenn eine fehlt, und Manifest-Merges konfliktieren nicht mehr"
 review-summary: "Runde nach signoff (dea24113): keine Funde. --write sitzt im selben Skript wie --check (ein Pfad-Mapping, Note 'Offene Entscheidungen' 1); generate() als Funktion statt zweiter Kopie; stdout-Modus bleibt, weil die Fixture-Tests und Scratch-Vergleiche ihn brauchen; strings.Cut in TestEveryManifestPathExists ueberlaesst das Melden der kaputten Zeile TestManifestLinesAreWellFormed statt es doppelt zu pruefen."
 round: 6
-review-gaps: |-
-  note: scripts/shipped-history.sh > core/shipped/shipped.sha256 (die im Skript und in der Testmeldung empfohlene Zeile) kuerzt das Manifest, bevor das Skript laeuft - scheitert es (flacher Klon, unlesbarer Blob), steht danach nur der Header oder ein Teil im Arbeitsbaum; Exit-Code und git diff zeigen es, verloren ist nichts Committetes
-  note: ob GitHubs Mergeability-Pruefung im PR merge=union aus .gitattributes beachtet, ist nur lokal (TestManifestMergesWithoutConflict) belegt; erst zwei echte PRs zeigen es
+review-gaps: "manifest=core/shipped/shipped.sha256 stand zweimal (--check, --write) -> einmal oben im Skript; sonst nichts: generate() hat zwei Aufrufer, read() im Test drei, keine verwaiste Stelle"
 test-verdict: "pass: go vet + go test ./... RC=0 auf 722c9c6e; Runde 4 aendert nur eine Testmeldung"
 hunt-verdict: "pass: bughunt done at 722c9c6e, 0 change, 0 pre-existing"
 review-verdict: "Diff erfuellt alle 5 DoD-Punkte, keine Defekte gefunden. Selbst geprueft: --check gruen auf 34 Tags, mit dem alten Manifest rot (8 Versionen); Regenerieren ergibt byte-gleich das committete Manifest; 0 Zeilen gegenueber master verloren; TestInstallReplacesAnOlderShippedVersion faellt mit dem alten Manifest, besteht mit dem neuen; go test ./shipped ./role gruen."
