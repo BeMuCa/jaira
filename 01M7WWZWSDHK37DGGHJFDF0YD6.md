@@ -1,7 +1,7 @@
 ---
 id: 01M7WWZWSDHK37DGGHJFDF0YD6
 title: "Die Schleifenbremse steht am Ticket: was ein Blocker ist und dass nach einem Fix kein neuer Bughunt kommt"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,13 +23,13 @@ related:
   - 01M7WWZRD7WNC5NT1PS5TW5FE2
 commits: []
 created-at: 2026-11-20T16:35:17Z
-updated-at: 2026-11-21T09:48:59Z
+updated-at: 2026-11-21T09:49:03Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3647270
 claimed-at: 2026-11-21T09:36:24Z
-outcome-what: "Round 14: bughunt on HEAD compares commits only - ok, fail, or unknown (uncommitted hunted files, drawn as a dim ?), plus skipped for stop-after-fix; jaira validate warns on an unreadable stop-after-fix; the in-progress prompt and --brief help name the alternating-lanes count and the conversational commit."
-outcome-why: "Teamlead for Alex 21.11. (final round): the mtime comparison caused the last review's falsely red and falsely green edges; remove the cause instead of patching it."
-outcome-resolves: "review round 13 notes 1, 2 (cause removed), 3 and 5 (one sentence each), 4 (validate warning). go test ./... RC=0, claude plugin test 220 pass; scratch board: clean ok, uncommitted unknown, ticket commit fail, validate warns on 'yes'."
+outcome-what: "Round 15: a hunt at a commit this repository does not have reads fail, as documented."
+outcome-why: "The round-14 hunter found it read unknown (dim ?) while the release note and huntState doc promise fail."
+outcome-resolves: "bughunt change at 4ddb51bc; go test ./... RC=0."
 review-summary: "none"
 review-gaps: none - 4ddb51bc removed writtenSince/untracked mtime code; anyCode is the one filter for all three git lists
 test-verdict: "pass: go test -count=1 ./... RC=0 at 4ddb51bc, claude plugin test 220 pass; TestHuntCoverage 22 cases, TestUnreadableStopAfterFixIsReported; scratch board end to end: clean -> ok, uncommitted hunted file -> unknown, ticket commit -> fail, hand-written 'stop-after-fix: yes' -> jaira validate warning bad_stop_after_fix; read-only git"
