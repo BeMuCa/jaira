@@ -150,7 +150,7 @@ func TestPrePushScan(t *testing.T) {
 		{"branch name", func(r *scanRepo) {
 			r.git("branch", "-m", "acmecorp-fix")
 			r.commit("feat: b", map[string]string{"b.txt": "clean\n"})
-		}, "", "", 3, []string{"branch name: matches the denylist"}, nil},
+		}, "", "", 3, []string{"branch name: matches the denylist", "rename the branch"}, nil},
 		{"this machine's name only warns", func(r *scanRepo) {
 			r.commit("feat: h", map[string]string{"t.md": "claimed-by: DESKTOP-X1-123\n"})
 		}, "", "", 0, []string{"warning: ", "t.md:1: names this machine", "the push may go on"}, []string{"do not push"}},

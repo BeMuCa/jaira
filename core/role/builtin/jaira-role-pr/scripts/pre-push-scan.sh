@@ -223,8 +223,11 @@ while IFS= read -r c; do
   count=$((count + 1))
 done <"$tmp/commits"
 
-# The branch name leaves with the push too. A detached HEAD has none.
-git symbolic-ref --short -q HEAD >"$tmp/branch" || true
+# The branch name leaves with the push too.
+# A detached HEAD has none: exit 1 from symbolic-ref -q. Anything else is an error.
+rc=0
+git symbolic-ref --short -q HEAD >"$tmp/branch" || rc=$?
+[ "$rc" -le 1 ] || die "git symbolic-ref failed" "$rc"
 for kind in deny host; do
   if [ "$kind" = deny ]; then pat=$deny mode=-E; else pat=$hostfile mode=-F; fi
   lines "$pat" "$mode" "$tmp/branch" >"$tmp/n"
@@ -234,7 +237,7 @@ done
 echo "pre-push-scan: $count commit(s) of $base..HEAD; denylist: $denylist_state; $host_state"
 [ -z "$fold_state" ] || echo "pre-push-scan: $fold_state"
 if [ "$stops" -gt 0 ]; then
-  echo "pre-push-scan: $stops denylist hit(s) — do not push; rewrite the commits named above" >&2
+  echo "pre-push-scan: $stops denylist hit(s) — do not push; rewrite the commits or rename the branch named above" >&2
   exit 3
 fi
 [ "$warns" -eq 0 ] || echo "pre-push-scan: $warns warning(s) for this machine's name — the push may go on"
