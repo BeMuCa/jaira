@@ -1,7 +1,7 @@
 ---
 id: 01M263QP1A3MRANYPWGYSDBCT5
 title: "Der Agent-Block nennt --proof, und die Gitignore-Regel verweist auf die Commit-Regel"
-status: signoff
+status: in-progress
 ready: true
 creator: BeMuCa
 assignee: Alexander Sacharov
@@ -18,17 +18,17 @@ blocked-by:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 commits: []
 created-at: 2026-09-10T16:52:07Z
-updated-at: 2026-11-21T08:00:16Z
+updated-at: 2026-11-21T08:01:01Z
 related:
   - 01M7WWY6PX0TRDQSVK7RNNV39Y
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-94615
-claimed-at: 2026-11-20T22:44:44Z
+claimed-by: DESKTOP-RFTCH11-26380
+claimed-at: 2026-11-21T08:01:01Z
 outcome-what: "Der generierte Agent-Block sagt im Punkt 'the ticket rides with the code', dass dieser und der naechste Punkt nur auf einem geteilten Board gelten: ohne geteiltes .jaira/ gibt es keine Ticketdatei zum Mitcommitten, der Code geht allein mit dem Handle im Betreff. Test haelt den Satz und --proof fest; CLAUDE.md/AGENTS.md dieses Repos regeneriert; Release-Note."
 outcome-why: "Auf einem ungeteilten Board widersprach die Commit-Regel dem Zustand des Boards: ein Agent kann eine ignorierte Datei nicht mitcommitten und las die Regel als kaputt. --proof und 'jaira update' waren schon ausgeliefert (2143e9ad, update.go:257) und brauchten nur den Test."
 outcome-resolves: SDBCT5
 review-summary: "Der generierte Agent-Block (core/board/announce.go) sagt jetzt am Punkt 'the ticket rides with the code': dieser und der naechste Punkt gelten nur auf einem geteilten Board; solange .jaira/ ausserhalb von git liegt (jaira init bis jaira share), gibt es keine Ticketdatei zum Mitcommitten - der Code wird allein committet, das Handle im Betreff ist die ganze Verbindung. Derselbe Vorbehalt steht in der jaira-Rolle (core/role/jaira/SKILL.md, Kopie .claude/skills/jaira), in docs/AGENTS.md und in der PR-Rolle, die einen Code-Commit ohne Ticketdatei dort nicht mehr als Befund wertet. --proof stand schon vorher im Block (2143e9ad). CLAUDE.md/AGENTS.md sind regeneriert, shipped.sha256 kennt die neuen Rollen-Hashes, ein Test haelt Block- und Rollensatz fest, die Release-Note sagt 'jaira update' bzw. 'jaira update --roles'."
-round: 3
+round: 4
 review-gaps: |-
   note: "This point and the next hold on a shared board only" erfasst auch den Punkt 'a lane that changed no code commits nothing', dessen Kern (nichts committen) auf einem ungeteilten Board erst recht gilt - nur dessen Ticketdatei-Saetze fallen weg; lesbar, aber nicht ganz praezise
   note: pre-existing: die fertigen Commit-Zeilen in jaira-worker SKILL.md und jaira-role-lane SKILL.md nennen weiter .jaira/tickets/<ticket>.md, das git auf einem ungeteilten Board als ignoriert ablehnt (in critique Runde 3 bewusst stehen gelassen)
