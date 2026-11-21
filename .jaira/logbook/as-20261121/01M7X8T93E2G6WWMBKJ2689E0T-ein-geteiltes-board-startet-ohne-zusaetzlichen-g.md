@@ -1,7 +1,7 @@
 ---
 id: 01M7X8T93E2G6WWMBKJ2689E0T
 title: Ein geteiltes Board startet ohne zusaetzlichen git-Prozess pro Befehl
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -17,23 +17,44 @@ tags:
 blocked-by: []
 related: []
 follows: 01M7WWY6PX0TRDQSVK7RNNV39Y
-commits: []
+commits:
+  - 8f799d238e8ae9dda3ca4132e3c6a1f8797688bb
+  - d786be9b059e6260ef97ae6091b504dc07c94a9f
+  - d91c99865491a6fb8a75a6c1153f2797e0e83033
+  - 2305279bc103c43329722b36bc528e15a53c9195
+  - cac9bda1e70c3369ed069d304251f5dbd7168cd2
+  - 58cf6dd5800fef8b66f3e5c4c74cdba9db3de205
+  - 7e1c61525a856cb554ec55701999fb4e1a27e505
+  - f4fa4ac81127b07ead0162e7d58af2795660acec
+  - 4613e04fab1382a4d4c32293adb1b019251128ca
+  - 7bb25a597fa2bc5c310b3478608168f37cae3d77
+  - fc61dd35668515a0aa129459c6f7cb36e7ac4788
 created-at: 2026-11-20T20:01:56Z
-updated-at: 2026-11-21T08:21:36Z
+updated-at: 2026-11-21T13:42:47Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-27289
 claimed-at: 2026-11-21T08:01:08Z
 outcome-what: Die Merge-Treiber-Pruefung bei jedem Befehl fragt git in einem rev-parse nach Arbeitsbaum und info/exclude (board.Probe) statt in zwei; ein geteiltes Board startet wieder 2 git-Prozesse wie vor NNV39Y.
 outcome-why: NNV39Y hatte jedem Befehl eines geteilten Boards einen git-Prozess fuer die Ignore-Pruefung hinzugefuegt; Projektregel instant startup.
 outcome-resolves: Der zusaetzliche git-Prozess pro Befehl aus der NNV39Y-review.
-review-summary: "none"
+review-summary: "Before: every command on a shared board started two git processes just for the merge-driver check (board.Ignored ran rev-parse, then gitrepo IsRepo ran rev-parse again). Now one new function, board.Probe (core/board/gitignore.go:206), asks git once - rev-parse --git-common-dir --show-prefix --is-inside-work-tree - and answers both questions; an entry in the root .gitignore settles 'ignored' without git at all. bindDriverIfShared (internal/cli/share.go:170) uses it, so a shared board costs exactly rev-parse + config. Along the way: parsePlace no longer trims spaces off git's output, so a board in a directory ' sub' gets the entry '/ sub/.jaira/' that really excludes it (before: '/sub/.jaira/', which excluded nothing). jaira update now removes that old wrong line (board.DropStaleEntry, gitignore.go:363) - only when every copy carries jaira's comment directly above it, no worktree of the repository has a board in 'sub', every listed worktree exists, and the same checks pass again under the info/exclude lock. update --json reports it as ignore_stale_dropped; release note core/release/notes/689E0T.md."
 round: 7
-review-gaps: "none: worktrees() has one caller and no existing helper (grep 'worktree list' finds none outside tests)"
-test-verdict: "fail: suite green (go test ./..., -race core/board+internal/cli RC=0), binary checked (dry-run, two parallel updates, read-only info/ exit 1); bughunt found 2 change defects"
-hunt-verdict: "fail: bughunt done at 4613e04f, 2 change (moved worktree missing path; board check outside the lock), 0 pre-existing"
-review-verdict: "Diff erfuellt alle vier DoD-Punkte; go test ./core/board ./internal/cli gruen, GOOS=windows go vet sauber, gofmt sauber; Ende-zu-Ende geprueft: ein git-Prozess weniger pro Befehl, Board in ' sub' wirklich ausgeschlossen. Kein Blocker."
-review-round: 3
-review-check: "1. cd /home/alex/projects/.worktrees/jaira-689e0t && go test ./internal/cli -run TestTheMergeDriverCheckStartsNoGitForTheIgnoreCheck -v -count=1  -> alle 8 Faelle PASS  2. go test ./core/board -run 'TestABoardInASubdirectoryIsExcludedByItsOwnPath|TestParsePlaceReadsWhatGitPrints|TestParseProbe' -v -count=1  -> PASS  3. Von Hand: mkdir -p /tmp/r/' sub' && cd /tmp/r && git init -q && cd ' sub' && jaira init  4. tail -2 /tmp/r/.git/info/exclude  -> zeigt '/ sub/.jaira/' (mit Leerzeichen)  5. git -C /tmp/r status --short -uall  -> keine Zeile mit ' sub/.jaira'"
+review-gaps: |-
+  note: StaleEntry keeps the old line for as long as git lists a worktree whose directory is gone (prunable) - deliberate and safe, but such a board is never cleaned until git worktree prune
+  note: the git-counting tests (internal/cli/startupgit_test.go) skip on Windows because the wrapper is a shell script; Windows is covered only by the parse tests with CRLF and C:/ output
+  note: DoD 4 names a leading or trailing space, but only a leading one was ever broken - --show-prefix always ends in "/", so a trailing space was never trimmed; the trailing case is a regression guard, not a fix
+  note: the worktree holds untracked .jaira/milestones/ files that have nothing to do with this ticket - they must not be committed with it
+test-verdict: "pass: go test ./... RC=0, -race core/board+internal/cli RC=0, GOOS=windows vet ok; DoD 1-7 verified in the tree; binary: dry-run reports only, two parallel updates drop the line once and keep '/ sub/.jaira/', read-only info/ exits 1 with exclude untouched"
+hunt-verdict: "pass: bughunt done at 7bb25a59, 0 change, 0 pre-existing"
+review-verdict: "The diff meets all seven DoD items and I found no defect. I read gitignore.go, share.go and update.go as whole files: parse paths (CRLF, git before 2.31, empty prefix), the lock around the stale-line drop, and the worktree checks hold. go vet is clean; go test ./core/board ./internal/cli passes."
+review-round: 7
+review-check: |-
+  1. cd /home/alex/projects/.worktrees/jaira-689e0t
+  2. go test -count=1 -v -run 'TestTheMergeDriverCheckStartsNoGitForTheIgnoreCheck|TestAWholeCommandOnASharedBoardPaysTwoGitCalls' ./internal/cli - expect PASS; the table shows a shared board makes only rev-parse + config calls
+  3. go test -count=1 -v -run 'TestUpdateDropsTheEntryAnOlderJairaWroteWithoutTheLeadingSpace' ./internal/cli - expect PASS
+  4. by hand: mkdir /tmp/r && cd /tmp/r && git init && mkdir " sub" && cd " sub" && jaira init (built from this branch: go build -o /tmp/jaira ./cmd/jaira)
+  5. cat /tmp/r/.git/info/exclude - expect the line "/ sub/.jaira/" (with the space)
+  6. cd /tmp/r && git status --short - expect " sub/.jaira" not listed
 ---
 
 # Ein geteiltes Board startet ohne zusaetzlichen git-Prozess pro Befehl
@@ -110,3 +131,6 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-689e0t && go test ./in
 - **2026-11-21 08:18 · Alexander Sacharov** — bughunt: done at 4613e04f - 2 findings (2 change, 0 pre-existing) in 1 module, follow-up hunt since f4fa4ac8 (diff of core/board/gitignore.go core/board/stale_test.go core/release/notes/689E0T.md; nothing new in the list; untracked .jaira/milestones/* are board data, not read); concurrency, error paths, input, permissions checked; ran: scratch test for a moved worktree (removed), go test ./core/board ./internal/cli (ok); files: core/board/exclude_test.go core/board/gitignore.go core/board/probe_test.go core/board/stale_test.go core/release/notes/689E0T.md internal/cli/privateexclude_test.go internal/cli/share.go internal/cli/startupgit_test.go internal/cli/update.go
 - **2026-11-21 08:19 · Alexander Sacharov** — testing (2. Rueckgabe aus testing): beide bughunt-Funde Klasse 'StaleEntry entscheidet auf unvollstaendigem Wissen'. Fix: (1) existiert ein gelisteter Worktree-Top nicht, bleibt die Zeile; (2) DropStaleEntry wiederholt die ganze StaleEntry-Pruefung unter locked(), das AddIgnore ebenfalls nimmt.
 - **2026-11-21 08:21 · Alexander Sacharov** — in-progress: beide Funde behoben; je ein Test, der mit 4613e04f faellt. go test ./... exit 0, GOOS=windows vet ok.
+- **2026-11-21 08:21 · Alexander Sacharov** — critique Runde 4: beide Fixes sitzen in StaleEntry/DropStaleEntry, wo die Entscheidung faellt; nichts zu sagen.
+- **2026-11-21 08:23 · Alexander Sacharov** — bughunt: done at 7bb25a59 - 0 findings in 1 module, follow-up hunt since 4613e04f (diff of core/board/gitignore.go core/board/stale_test.go; nothing new in the list; untracked .jaira/milestones/* are board data, not read); checked the recheck under the lock against init order (st.Init creates .jaira before AddIgnore) and the missing-worktree stat; concurrency, error paths, input, permissions checked; ran: go test ./core/board ./internal/cli (ok), go test ./core/board -run TestDropStaleEntry -count=10 (ok); files: core/board/exclude_test.go core/board/gitignore.go core/board/probe_test.go core/board/stale_test.go core/release/notes/689E0T.md internal/cli/privateexclude_test.go internal/cli/share.go internal/cli/startupgit_test.go internal/cli/update.go
+- **2026-11-21 08:30 · Alexander Sacharov** — nach review: alle vier review-gaps sind note: (known limit / Hinweis), kein Fix noetig. Hinweis zu review-check Schritt 4: das Binary baut mit 'go build -o /tmp/jaira .' (kein ./cmd/jaira). Vorbestehend, anderer Befehl: RemoveIgnore (jaira share) nimmt '/sub/.jaira/' aus dem gemeinsamen exclude, auch wenn ein anderer Worktree ein privates Board in sub hat.
