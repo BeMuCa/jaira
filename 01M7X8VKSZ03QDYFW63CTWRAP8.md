@@ -25,14 +25,14 @@ related:
   - 01M7X0CFXEAEXDHVWTD3QTQW15
 commits: []
 created-at: 2026-11-20T20:02:40Z
-updated-at: 2026-11-21T08:35:19Z
+updated-at: 2026-11-21T08:35:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-31394
 claimed-at: 2026-11-21T08:01:32Z
 outcome-what: "status line allows ? in both roles"
 outcome-why: "fresh review 21.11.: the first sentence said ✅ or ❌ only"
 outcome-resolves: "a reader of the first sentence no longer rounds ? to ❌"
-review-summary: "Ships a new read-only role /jaira-role-signoff that, for every ticket in signoff, reads jaira show --json fresh, finds the branch head by handle segment and ancestry over local and remote copies, and prints one status line (DoD, CI run for exactly that commit, bughunt note naming that commit, blockers, review verdict, noted returns), a table marking each open note 🔴/🟡/⚪/🔵, one recommendation by five return rules, and paste-ready accept/give-back/follow-up lines. The teamlead's 'Report to the human' now re-reads lanes and open PRs before any pending list and uses the same decision shape, pointing to the role for the checks and return rules; its hunt-cover check no longer assumes feat/<id>. Worker, dispatcher and jaira-role-pr run the project's CI gates locally before every push. README, the German how-to page, role_test.go, shipped.sha256 and a release note carry the new role."
+review-summary: "critique 21.11. round 4: one-word change, consistent in both roles; nothing to change."
 round: 12
 review-gaps: |-
   note: jaira-role-signoff '1. The status line' says each check is ✅ or ❌, the paragraphs below add ? for unknown CI and an empty head - one word ('✅, ❌ or ?') would stop a reader of the first sentence from rounding ? to ❌
