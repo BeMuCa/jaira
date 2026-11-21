@@ -119,15 +119,18 @@ work, so a hunt that does not name the head was not done there, and that is ❌.
   `$head` — the note's sha is a prefix of the full `$head`, whatever length
   either clone abbreviates to. An older sha does not cover what a later
   round changed: ❌. Decide one thing before that, and before the head: a
-  ticket whose commits touch nothing outside `.jaira/` has nothing to hunt.
-  Find them as jaira does — its `.commits`, and
-  `git log --branches --remotes -i --grep <handle> --name-only` (`-i`: a
-  subject may write the handle in lower case; not `--all`: the ticket refs
-  hold the ticket file outside `.jaira/`). At least one commit found and
-  none of them touching anything outside `.jaira/`: the hunt check is `–`,
-  neither ✅ nor ❌, with or without a head — the same exemption the
-  teamlead and the testing lane make. No commit found at all proves nothing:
-  `?`, never `–`
+  ticket whose change touches nothing outside `.jaira/` has nothing to hunt.
+  Read the change off jaira, never off a `git log` of your own: `jaira show
+  <id> --for-lane <lane> --json` for a lane of the ticket's board whose
+  `input_requires` holds `diff` (the review lane on the shipped board) hands
+  you `.diff`, `.worktree_diff`, `.commits` and `.commits_source` — the
+  commits jaira itself counts as the ticket's. Every file in `.diff` and
+  `.worktree_diff` under `.jaira/`: the hunt check is `–`, neither ✅ nor ❌,
+  with or without a head — the same exemption the teamlead and the testing
+  lane make. No diff at all proves nothing: `?`, never `–`. jaira derives
+  from the commits the current checkout can reach, so run it in the
+  ticket's worktree or on its branch; from `master` before the merge it
+  finds none, and the check rightly stays `?`
 - **blocker** — none, or how many 🔴 the table below holds
 - **review** — `.review.verdict`
 - **returns from signoff** — how many are noted (see return rule 2)
