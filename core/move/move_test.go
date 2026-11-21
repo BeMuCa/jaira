@@ -372,3 +372,44 @@ func TestMoveRecordsAPersonAtTheBoard(t *testing.T) {
 		t.Fatalf("three returns by a person read %q/%q/%d, want testing/person/1", got.BackFrom, got.BackBy, got.BackCount)
 	}
 }
+
+// A stale bug hunt refuses the move into signoff, and a person's --force
+// carries it through like any other refusal (G8HNHT).
+func TestForceOverridesStaleHunt(t *testing.T) {
+	s, env := fixture(t)
+	lanes, err := lane.Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	env.Lanes = lanes
+	env.Hunt = func(*ticket.Ticket) gate.HuntReport {
+		return gate.HuntReport{CodeChanged: true, State: "unknown", At: "a1b2c3d", Head: "e4f5a6b"}
+	}
+	tk := mk(t, s, map[string]string{ticket.FieldStatus: "review", ticket.FieldAssignee: "berk"})
+	has := func(vs gate.Violations) bool {
+		for _, v := range vs {
+			if v.Code == gate.CodeHuntUncommitted {
+				return true
+			}
+		}
+		return false
+	}
+
+	res, err := Move(s, env, tk.ID, Request{To: "signoff", Actor: "berk"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !has(res.Refused) {
+		t.Fatalf("an uncommitted hunt was not refused: %v", res.Refused)
+	}
+	res, err = Move(s, env, tk.ID, Request{To: "signoff", Actor: "berk", Force: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !has(res.Overrode) {
+		t.Fatalf("force did not report the hunt it overrode: %v", res.Overrode)
+	}
+	if got, _ := s.Load(tk.ID); got.Status != "signoff" {
+		t.Fatalf("forced move landed in %q", got.Status)
+	}
+}
