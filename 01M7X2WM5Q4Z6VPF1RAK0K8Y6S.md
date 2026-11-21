@@ -19,14 +19,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-20T18:18:21Z
-updated-at: 2026-11-21T08:10:14Z
+updated-at: 2026-11-21T08:10:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28671
 claimed-at: 2026-11-21T08:01:15Z
 outcome-what: "Manifest neu erzeugt (8 Tag-Versionen fehlten, u.a. cockpit board.ts v0.5.2/0.5.3); scripts/shipped-history.sh --check haelt es gegen jeden v*-Tag und laeuft in ci.yaml (Job shipped-manifest) und im release-notes-Workflow; .gitattributes merge=union fuer das Manifest; LC_ALL=C im Skript"
 outcome-why: Hand-gemergte Manifest-Konflikte verloren Zeilen; jaira update --roles hielt dann eine unberuehrte Installation fuer handgeaendert und uebersprang sie still
 outcome-resolves: "Jede ausgelieferte Version steht im Manifest, CI bricht ab, wenn eine fehlt, und Manifest-Merges konfliktieren nicht mehr"
-review-summary: "Runde nach signoff (dea24113): keine Funde. --write sitzt im selben Skript wie --check (ein Pfad-Mapping, Note 'Offene Entscheidungen' 1); generate() als Funktion statt zweiter Kopie; stdout-Modus bleibt, weil die Fixture-Tests und Scratch-Vergleiche ihn brauchen; strings.Cut in TestEveryManifestPathExists ueberlaesst das Melden der kaputten Zeile TestManifestLinesAreWellFormed statt es doppelt zu pruefen."
+review-summary: "Runde nach signoff: keine Funde. dea24113 (--write, strings.Cut) wie zuvor beurteilt; 29ee4690 ist nur das mit --write neu erzeugte Manifest nach dem union-Merge, keine Form zu beurteilen."
 round: 7
 review-gaps: "manifest=core/shipped/shipped.sha256 stand zweimal (--check, --write) -> einmal oben im Skript; sonst nichts: generate() hat zwei Aufrufer, read() im Test drei, keine verwaiste Stelle"
 test-verdict: "fail: go test ./... rot nur in core/shipped TestManifestLinesAreWellFormed (Duplikate nach union-Merge 6f5ba869); DoD 1-7 sonst im Baum belegt; zwei parallele --write ergeben ein sortiertes Manifest ohne Duplikat; flacher Klon: exit 1, Manifest unveraendert"
