@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -93,7 +95,7 @@ func TestPRGateReadsTheBoardFilesFromTheBase(t *testing.T) {
 	if err := os.WriteFile(path, []byte("agent\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := runCLI(t, dir, "roles", "pr-gate", "master"); exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "in master does not say agent") {
+	if _, err := runCLI(t, dir, "roles", "pr-gate", "master"); exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "says agent here, but not in master") {
 		t.Fatalf("agent only on disk: exit %d, %v", exitCode(err), err)
 	}
 	if out, err := exec.Command("git", "-C", dir, "add", "-f", path).CombinedOutput(); err != nil {
@@ -306,5 +308,312 @@ func TestPRGateReadsFiledTicketsByWhereTheyAre(t *testing.T) {
 	}
 	if _, err := runCLI(t, dir, "roles", "pr-gate", "master"); exitCode(err) != ExitValidation || !strings.Contains(err.Error(), rejected+" (archive)") {
 		t.Fatalf("a rejected ticket: exit %d, %v", exitCode(err), err)
+	}
+}
+
+// On a board that takes no pull requests the same gate decides whether a
+// branch may land on the default branch: every ticket in done, read off the
+// base, and pr-when is not read — with no pull request there is no review on
+// one to wait for (XB97NJ).
+func TestPRGateLetsANoneBoardLandOnlyDoneWork(t *testing.T) {
+	dir, ticketIn, commit := prGateFixture(t)
+	inSignoff := ticketIn("signoff")
+	commit("feat(" + inSignoff + "): waiting for a person")
+
+	// none only on the branch's disk opens nothing.
+	if err := os.WriteFile(settings.BoardPRPath(dir), []byte("none\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := runCLI(t, dir, "roles", "pr-gate", "master"); exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "says none here, but not in master") {
+		t.Fatalf("none only on disk: exit %d, %v", exitCode(err), err)
+	}
+
+	setPR(t, dir, "none")
+	setPRWhen(t, dir, "signoff")
+	_, err := runCLI(t, dir, "roles", "pr-gate", "--land", "master")
+	if exitCode(err) != ExitValidation || !strings.Contains(err.Error(), inSignoff+" (signoff)") ||
+		!strings.Contains(err.Error(), "push the branch and stop") {
+		t.Fatalf("none, a ticket in signoff with pr-when signoff: exit %d, %v", exitCode(err), err)
+	}
+
+	dir, ticketIn, commit = prGateFixture(t)
+	setPR(t, dir, "none")
+	done := ticketIn("done")
+	commit("feat(" + done + "): accepted")
+	out, err := runCLI(t, dir, "roles", "pr-gate", "--land", "master")
+	if err != nil || !strings.Contains(out, "fast-forward push") || !strings.Contains(out, done) {
+		t.Fatalf("none, every ticket done: %v\n%s", err, out)
+	}
+	out, err = runCLI(t, dir, "roles", "pr-gate", "--land", "master", "--json")
+	if err != nil || !strings.Contains(out, `"pr": "none"`) || !strings.Contains(out, `"pr_when": "done"`) {
+		t.Fatalf("none --json: %v\n%s", err, out)
+	}
+}
+
+// Under none there is no create line to hand back: every refusal tells the
+// agent to push the branch and stop instead (XB97NJ, found in testing).
+func TestPRGateOnANoneBoardNeverAsksForACreateLine(t *testing.T) {
+	dir, _, commit := prGateFixture(t)
+	setPR(t, dir, "none")
+	commit("chore: no ticket")
+	_, err := runCLI(t, dir, "roles", "pr-gate", "--land", "master")
+	if exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "push the branch and stop") ||
+		strings.Contains(err.Error(), "create line") {
+		t.Fatalf("none, no ticket named: exit %d, %v", exitCode(err), err)
+	}
+}
+
+// Under none nothing reads the branch after the gate, so a commit no ticket
+// owns — a wip, a branch merged in without handles — holds it; a merge of the
+// base into the branch does not (XB97NJ, bughunt).
+func TestPRGateOnANoneBoardRefusesCommitsNoTicketOwns(t *testing.T) {
+	dir, ticketIn, commit := prGateFixture(t)
+	setPR(t, dir, "none")
+	done := ticketIn("done")
+	commit("feat(" + done + "): accepted")
+	git := func(args ...string) {
+		t.Helper()
+		if out, err := exec.Command("git", append([]string{"-C", dir}, args...)...).CombinedOutput(); err != nil {
+			t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, out)
+		}
+	}
+	// The base moves on and is merged into the branch: no unnamed commit.
+	git("checkout", "-q", "master")
+	git("commit", "-q", "--allow-empty", "-m", "chore: somebody else's base commit")
+	git("checkout", "-q", "feat/x")
+	git("merge", "-q", "--no-ff", "--no-edit", "master")
+	if out, err := runCLI(t, dir, "roles", "pr-gate", "--land", "master"); err != nil {
+		t.Fatalf("base merged in, every own commit named: %v\n%s", err, out)
+	}
+	for _, subject := range []string{"wip: half a thought", "fix: no scope", "feat(nothandle): lower case"} {
+		commit(subject)
+		_, err := runCLI(t, dir, "roles", "pr-gate", "--land", "master")
+		if exitCode(err) != ExitValidation || !strings.Contains(err.Error(), subject) || !strings.Contains(err.Error(), "name no ticket") {
+			t.Errorf("none, %q on the branch: exit %d, %v", subject, exitCode(err), err)
+		}
+		git("reset", "-q", "--hard", "HEAD~1")
+	}
+	// A merge that names no ticket and carries content of its own — here a
+	// file added during the merge — holds it like any unnamed commit.
+	git("checkout", "-q", "master")
+	git("commit", "-q", "--allow-empty", "-m", "chore: base moves again")
+	git("checkout", "-q", "feat/x")
+	git("merge", "-q", "--no-ff", "--no-commit", "master")
+	if err := os.WriteFile(filepath.Join(dir, "smuggled.txt"), []byte("x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	git("add", "smuggled.txt")
+	git("commit", "-q", "--no-edit", "-m", "Merge branch 'master' into feat/x")
+	_, err := runCLI(t, dir, "roles", "pr-gate", "--land", "master")
+	if exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "Merge branch 'master' into feat/x") {
+		t.Fatalf("none, a merge with content of its own: exit %d, %v", exitCode(err), err)
+	}
+	git("reset", "-q", "--hard", "HEAD~1")
+
+	// A merge that drops the base's work ('-s ours') adds nothing and matches
+	// a parent, so 'diff-tree --cc' shows nothing — yet landing it would undo
+	// the base. It holds the gate as well (bughunt round 3).
+	git("checkout", "-q", "master")
+	if err := os.WriteFile(filepath.Join(dir, "f.txt"), []byte("important\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	git("add", "f.txt")
+	git("commit", "-q", "-m", "feat: important work on the base")
+	git("checkout", "-q", "feat/x")
+	git("merge", "-q", "-s", "ours", "--no-edit", "master")
+	_, err = runCLI(t, dir, "roles", "pr-gate", "--land", "master")
+	if exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "name no ticket") {
+		t.Fatalf("none, a merge that drops the base: exit %d, %v", exitCode(err), err)
+	}
+	git("reset", "-q", "--hard", "HEAD~1")
+	git("merge", "-q", "--no-ff", "--no-edit", "master")
+	if out, err := runCLI(t, dir, "roles", "pr-gate", "--land", "master"); err != nil {
+		t.Fatalf("none, the same base merged plainly: %v\n%s", err, out)
+	}
+
+	// The agent board keeps its rule: a person sees the pull request.
+	setPR(t, dir, "agent")
+	commit("wip: on an agent board")
+	if out, err := runCLI(t, dir, "roles", "pr-gate", "master"); err != nil {
+		t.Fatalf("agent board, an unnamed commit: %v\n%s", err, out)
+	}
+}
+
+// Under none git's own revert subject, Revert "type(ID): ...", names no
+// ticket and holds the gate like any unnamed commit; the refusal says which
+// form a revert takes instead. Written that way, fix(ID): revert ..., it is a
+// commit of ID like any other.
+func TestPRGateOnANoneBoardRefusesGitsRevertSubject(t *testing.T) {
+	dir, ticketIn, commit := prGateFixture(t)
+	setPR(t, dir, "none")
+	done := ticketIn("done")
+	commit("feat(" + done + "): accepted")
+	commit(`Revert "feat(` + done + `): accepted"`)
+	_, err := runCLI(t, dir, "roles", "pr-gate", "--land", "master")
+	if exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "name no ticket") ||
+		!strings.Contains(err.Error(), `Revert "feat(`+done+`): accepted"`) || !strings.Contains(err.Error(), "fix(<ID>): revert <what>") {
+		t.Fatalf("none, git's revert subject: exit %d, %v", exitCode(err), err)
+	}
+	if out, err := exec.Command("git", "-C", dir, "commit", "-q", "--amend", "--allow-empty", "-m", "fix("+done+"): revert the accepted change").CombinedOutput(); err != nil {
+		t.Fatalf("amend: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, dir, "roles", "pr-gate", "--land", "master"); err != nil {
+		t.Fatalf("none, a revert written as fix(<ID>): revert ...: %v\n%s", err, out)
+	}
+}
+
+// A .jaira/pr only on this disk — a board not shared yet keeps .jaira/ out of
+// git — is not what the gate reads. roles list says so, and the gate names
+// the uncommitted file as the cause instead of asking for a create line the
+// board does not want (review, 21.11.).
+func TestAnUncommittedPRFileIsNamedAsSuch(t *testing.T) {
+	dir, ticketIn, commit := prGateFixture(t)
+	done := ticketIn("done")
+	commit("feat(" + done + "): accepted")
+	if err := os.WriteFile(settings.BoardPRPath(dir), []byte("none\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, err := runCLI(t, dir, "roles", "list", "--json")
+	if err != nil {
+		t.Fatalf("roles list: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "on this disk only") || !strings.Contains(out, "jaira share") {
+		t.Errorf("roles list for an uncommitted .jaira/pr:\n%s", out)
+	}
+	_, err = runCLI(t, dir, "roles", "pr-gate", "master")
+	if exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "says none here, but not in master") || strings.Contains(err.Error(), "create line") {
+		t.Fatalf("gate, .jaira/pr none only on disk: exit %d, %v", exitCode(err), err)
+	}
+	// Committed on the base, it takes effect and the words go.
+	setPR(t, dir, "none")
+	if err := os.WriteFile(settings.BoardPRPath(dir), []byte("none\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runCLI(t, dir, "roles", "pr-gate", "--land", "master"); err != nil {
+		t.Fatalf("gate, .jaira/pr none committed on master: %v\n%s", err, out)
+	}
+}
+
+// Landing is the base's decision alone: a branch that commits .jaira/pr none
+// over a base saying agent passes the plain gate on the agent rules, so
+// --land refuses it with not_none — and lets only a base saying none through
+// (bughunt round 15).
+func TestPRGateLandOnlyWhereTheBaseSaysNone(t *testing.T) {
+	dir, ticketIn, commit := prGateFixture(t)
+	setPR(t, dir, "agent")
+	done := ticketIn("done")
+	commit("feat(" + done + "): accepted")
+	path := settings.BoardPRPath(dir)
+	if err := os.WriteFile(path, []byte("none\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := exec.Command("git", "-C", dir, "add", "-f", path).CombinedOutput(); err != nil {
+		t.Fatalf("git add: %v\n%s", err, out)
+	}
+	commit("chore(" + done + "): the branch says none itself")
+	commit("chore: names no ticket")
+	if _, err := runCLI(t, dir, "roles", "pr-gate", "master"); err != nil {
+		t.Fatalf("the plain gate on agent rules should pass here (that is the hole --land closes): %v", err)
+	}
+	_, err := runCLI(t, dir, "roles", "pr-gate", "--land", "master")
+	if exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "says agent, not none") {
+		t.Fatalf("--land over a base saying agent: exit %d, %v", exitCode(err), err)
+	}
+
+	dir, ticketIn, commit = prGateFixture(t)
+	commit("feat(" + ticketIn("done") + "): accepted")
+	if _, err := runCLI(t, dir, "roles", "pr-gate", "--land", "master"); exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "says person, not none") {
+		t.Fatalf("--land over a base with no .jaira/pr: exit %d, %v", exitCode(err), err)
+	}
+	setPR(t, dir, "none")
+	if out, err := runCLI(t, dir, "roles", "pr-gate", "--land", "master"); err != nil {
+		t.Fatalf("--land over a base saying none: %v\n%s", err, out)
+	}
+}
+
+// Without --land the gate answers only whether an agent may open a pull
+// request: a base that takes none never gets one, even where the branch
+// commits .jaira/pr agent for itself (bughunt round 16).
+func TestPRGateNeverOpensOnABaseThatTakesNone(t *testing.T) {
+	dir, ticketIn, commit := prGateFixture(t)
+	setPR(t, dir, "none")
+	done := ticketIn("done")
+	commit("feat(" + done + "): accepted")
+	path := settings.BoardPRPath(dir)
+	if err := os.WriteFile(path, []byte("agent\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := exec.Command("git", "-C", dir, "add", "-f", path).CombinedOutput(); err != nil {
+		t.Fatalf("git add: %v\n%s", err, out)
+	}
+	commit("chore(" + done + "): the branch says agent itself")
+	_, err := runCLI(t, dir, "roles", "pr-gate", "master")
+	if exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "takes no pull requests") || !strings.Contains(err.Error(), "--land master") {
+		t.Fatalf("plain gate over a base saying none: exit %d, %v", exitCode(err), err)
+	}
+}
+
+// roles list reads .jaira/pr, pr-when and pr-reviewer as the base holds them
+// — origin's default branch, or --base — and says when this checkout's own
+// .jaira/pr differs: the base decides, everywhere (Teamlead 21.11.).
+func TestRolesListReadsTheBoardFilesFromTheBase(t *testing.T) {
+	dir, _, _ := prGateFixture(t)
+	setPR(t, dir, "none")
+	onBase(t, dir, settings.BoardPRReviewerPath(dir), "copilot")
+	path := settings.BoardPRPath(dir)
+	if err := os.WriteFile(path, []byte("agent\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	read := func(args ...string) map[string]any {
+		t.Helper()
+		out, err := runCLI(t, dir, append([]string{"--json", "roles", "list"}, args...)...)
+		var p map[string]any
+		if err != nil || json.Unmarshal([]byte(out), &p) != nil {
+			t.Fatalf("roles list --json: %v\n%s", err, out)
+		}
+		return p
+	}
+	// No origin: the disk, and the source says so.
+	if p := read(); p["pr"] != "agent" || !strings.Contains(fmt.Sprint(p["pr_source"]), "this disk") {
+		t.Errorf("no base: pr=%v source=%v, want agent off this disk", p["pr"], p["pr_source"])
+	}
+	// --base: the base's word wins, and the branch's own is named.
+	if p := read("--base", "master"); p["pr"] != "none" || p["pr_reviewer"] != "copilot" ||
+		!strings.Contains(fmt.Sprint(p["pr_source"]), "in master, the base") ||
+		!strings.Contains(fmt.Sprint(p["pr_source"]), "this branch changes .jaira/pr to agent") {
+		t.Errorf("--base master: pr=%v reviewer=%v source=%v", p["pr"], p["pr_reviewer"], p["pr_source"])
+	}
+	// origin's default branch, found by itself.
+	git := func(args ...string) {
+		t.Helper()
+		if out, err := exec.Command("git", append([]string{"-C", dir}, args...)...).CombinedOutput(); err != nil {
+			t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, out)
+		}
+	}
+	git("update-ref", "refs/remotes/origin/main", "master")
+	if p := read(); p["pr"] != "none" || !strings.Contains(fmt.Sprint(p["pr_source"]), "in origin/main, the base") {
+		t.Errorf("origin/main: pr=%v source=%v", p["pr"], p["pr_source"])
+	}
+}
+
+// An explicit --base that is no commit here fails with no_such_ref instead of
+// reading the disk; and a branch cut before the base got its .jaira/pr is not
+// said to change it — the comparison is with the merge base (Teamlead 21.11.,
+// last round).
+func TestRolesListBaseMustResolveAndComparesWithTheMergeBase(t *testing.T) {
+	dir, _, _ := prGateFixture(t)
+	_, err := runCLI(t, dir, "--json", "roles", "list", "--base", "upstream/nosuch")
+	if exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "no_such_ref") && !strings.Contains(err.Error(), "is no commit here") {
+		t.Fatalf("--base that does not resolve: exit %d, %v", exitCode(err), err)
+	}
+	// feat/x was cut before master got .jaira/pr none: it changes nothing.
+	setPR(t, dir, "none")
+	out, err := runCLI(t, dir, "--json", "roles", "list", "--base", "master")
+	var p map[string]any
+	if err != nil || json.Unmarshal([]byte(out), &p) != nil {
+		t.Fatalf("roles list --base master: %v\n%s", err, out)
+	}
+	if p["pr"] != "none" || strings.Contains(fmt.Sprint(p["pr_source"]), "this branch changes") {
+		t.Errorf("branch behind the base: pr=%v source=%v, want none and no 'this branch changes'", p["pr"], p["pr_source"])
 	}
 }

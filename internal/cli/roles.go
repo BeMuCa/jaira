@@ -38,7 +38,8 @@ and the agents they hand lanes to. They are compiled into this binary, and
 }
 
 func newRolesListCmd() *cobra.Command {
-	return &cobra.Command{
+	var base string
+	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List the role prompts built into this binary",
 		Long: `Lists the role prompts built into this binary, and which one a teamlead
@@ -68,11 +69,20 @@ an agent then opens it itself once every ticket on the branch is in done
 ('jaira roles pr-gate' checks that),
 asks for the reviewer .jaira/pr-reviewer names and answers one round of
 comments — and "person" otherwise, an agent pushing the branch and handing
-the create line back. Carried as pr, pr_source and pr_reviewer. And when:
+the create line back. "none" when .jaira/pr says so: the project takes no
+pull requests, and a branch whose tickets are all in done lands on the
+default branch with a fast-forward push ('jaira roles pr-gate' checks that
+too). Carried as pr, pr_source and pr_reviewer. And when:
 "signoff" when the board's .jaira/pr-when says so — the pull request opens
 once every ticket is in signoff, and its review round has to be finished
 before done — and "done" otherwise. Carried as pr_when and pr_when_source.
-Merging and approving stay a person's either way.`,
+Merging and approving stay a person's either way.
+
+All three are read as the base holds them — the branch work arrives on —
+never off this checkout's disk, which may be a branch's own word for itself:
+--base <ref>, else origin's default branch (origin/HEAD, origin/main,
+origin/master). Where the checkout's .jaira/pr says something else, the
+source says so. Without any base the disk is read, and the source says that.`,
 		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			roles, err := role.Builtins()
@@ -88,9 +98,10 @@ Merging and approving stay a person's either way.`,
 			chat, chatSource := cur.ChatModelFor(root)
 			py, pySource := cur.PythonCommand()
 			release, releaseSource := settings.ReleaseFor(root)
-			pr, prSource := settings.PRFor(root)
-			reviewer := settings.PRReviewerFor(root)
-			prWhen, prWhenSource := settings.PRWhenFor(root)
+			pr, prSource, reviewer, prWhen, prWhenSource, err := boardArrival(root, base)
+			if err != nil {
+				return err
+			}
 			if g.jsonOut {
 				arr := make([]map[string]any, 0, len(roles))
 				for _, r := range roles {
@@ -123,15 +134,18 @@ Merging and approving stay a person's either way.`,
 			return nil
 		},
 	}
+	cmd.Flags().StringVar(&base, "base", "", "read .jaira/pr, pr-when and pr-reviewer as this commit holds them (default: origin's default branch)")
+	return cmd
 }
 
 func newRolesPRGateCmd() *cobra.Command {
-	return &cobra.Command{
+	var land bool
+	cmd := &cobra.Command{
 		Use:   "pr-gate <base>",
 		Short: "Say whether an agent may open this branch's pull request",
 		Long: `Says whether an agent may open the pull request of the checked-out branch
 against <base> — the default branch of the repository it goes to, as
-<remote>/<branch>. Exit 0 only when .jaira/pr says agent in <base> itself, at
+<remote>/<branch>. Exit 0 only when .jaira/pr says agent or none in <base> itself, at
 least one commit in <base>..HEAD names a ticket in its subject
 (type(A3K9QP): ...), and every ticket named that is still on the board sits
 in its board's terminal lane — or, where .jaira/pr-when says signoff, in the
@@ -145,9 +159,22 @@ it.
 
 jaira-role-pr runs this before it opens a pull request on its own, so the
 rule does not rest on a role's text alone. A person who invokes the role
-needs no gate: their invocation is the decision. --json carries may_open,
+needs no gate: their invocation is the decision.
+
+Where .jaira/pr says none the same gate decides whether the branch may land
+on <base> without a pull request: every ticket in the terminal lane, and
+.jaira/pr-when is not read — with no pull request there is no review on one
+to wait for. And every commit in <base>..HEAD must name a ticket — a merge
+only when it carries content of its own: nobody reads the branch after the
+gate, so a commit no ticket owns would land unseen. --json carries may_open,
 pr, pr_when and tickets; a refusal is the usual error, its reason
-pr_person, no_ticket, no_signoff_lane, unreadable or pending.`,
+pr_person, no_ticket, no_signoff_lane, unreadable, pending or, under none,
+unnamed.
+
+--land asks the landing question alone: exit 0 only where <base> itself
+says none. jaira-role-pr lands only behind it, so a branch that commits
+.jaira/pr none over a base saying agent or person never lands on the agent
+rules — reason not_none.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
@@ -168,13 +195,55 @@ pr_person, no_ticket, no_signoff_lane, unreadable or pending.`,
 			// otherwise open its own gate. A change to either takes effect
 			// once it has been merged into the base.
 			pr := settings.PRIn(repo.FileAt(args[0], settings.BoardPRPath(".")))
-			if pr != settings.PRAgent {
+			// Landing is decided by the base alone: what this checkout's
+			// .jaira/pr says — and roles list reports — may be the branch's
+			// own word for itself.
+			if land && pr != settings.PRNone {
+				return fail(ExitValidation, "not_none",
+					"pr-gate --land: .jaira/pr in %s says %s, not none — nothing lands without a pull request here; push the branch and stop", args[0], pr)
+			}
+			// The two questions stay apart: without --land the gate answers
+			// only whether an agent may open a pull request, and a base that
+			// takes none never gets one, whatever the branch says.
+			if !land && pr == settings.PRNone {
+				return fail(ExitValidation, "no_pull_requests",
+					"pr-gate: .jaira/pr in %s says none — this board takes no pull requests; land with 'jaira roles pr-gate --land %s'", args[0], args[0])
+			}
+			if pr == settings.PRPerson {
+				// This checkout saying otherwise is a file not yet committed
+				// on the base, not a board that wants a person: say that, and
+				// not a create line the board does not want.
+				if local := board.PRModeFor(s.Root); local != settings.PRPerson {
+					return fail(ExitValidation, "pr_person",
+						"pr-gate: .jaira/pr says %s here, but not in %s — it takes effect once it is committed there (on a board not shared yet, 'jaira share' first); until then a person opens the pull request", local, args[0])
+				}
 				return fail(ExitValidation, "pr_person",
-					"pr-gate: .jaira/pr in %s does not say agent — a person opens the pull request; hand the create line back", args[0])
+					"pr-gate: .jaira/pr in %s says neither agent nor none — a person opens the pull request; hand the create line back", args[0])
+			}
+			// What the agent does on a no: hand the create line back where a
+			// person opens pull requests; under none there is no such line.
+			then := "hand the create line back"
+			if pr == settings.PRNone {
+				then = "push the branch and stop"
 			}
 			if len(named) == 0 {
 				return fail(ExitValidation, "no_ticket",
-					"pr-gate: no commit in %s..HEAD names a ticket — nobody accepted anything on this branch; hand the create line back", args[0])
+					"pr-gate: no commit in %s..HEAD names a ticket — nobody accepted anything on this branch; %s", args[0], then)
+			}
+			// Under none nobody reads the branch after the gate: a pull
+			// request would show a commit that names no ticket to a person
+			// before it merges, a fast-forward push shows it to nobody. So
+			// every commit must belong to a ticket a person accepted.
+			if pr == settings.PRNone {
+				unnamed, err := repo.UnnamedCommits(args[0])
+				if err != nil {
+					return err
+				}
+				if len(unnamed) > 0 {
+					return fail(ExitValidation, "unnamed",
+						"pr-gate: %d commit(s) in %s..HEAD name no ticket, and without a pull request nobody would see them before they land — %s; name a ticket in each, type(<ID>): ... — a revert too, as fix(<ID>): revert <what> (git rebase -i, reword) — or %s",
+						len(unnamed), args[0], strings.Join(unnamed, "; "), then)
+				}
 			}
 			// A ticket file that cannot be read is not a ticket filed away:
 			// it would drop out of the list and look past done. A problem
@@ -187,7 +256,7 @@ pr_person, no_ticket, no_signoff_lane, unreadable or pending.`,
 					for _, h := range named {
 						if strings.Contains(p, h) {
 							return fail(ExitValidation, "unreadable",
-								"pr-gate: %s cannot be read, so whether it is accepted cannot be told — %s; fix it, or hand the create line back", h, p)
+								"pr-gate: %s cannot be read, so whether it is accepted cannot be told — %s; fix it, or %s", h, p, then)
 						}
 					}
 				}
@@ -195,6 +264,12 @@ pr_person, no_ticket, no_signoff_lane, unreadable or pending.`,
 				return err
 			}
 			when := settings.PRWhenIn(repo.FileAt(args[0], settings.BoardPRWhenPath(".")))
+			// Without a pull request there is no review on one to wait for:
+			// under none the branch lands on the default branch, and only a
+			// person's acceptance in done is the go-ahead for that.
+			if pr == settings.PRNone {
+				when = settings.PRWhenDone
+			}
 			// reached is, per board, every lane a ticket may sit in for the
 			// pull request to open: the terminal lane, and under signoff
 			// also signoff and whatever lies between it and the terminal.
@@ -232,17 +307,26 @@ pr_person, no_ticket, no_signoff_lane, unreadable or pending.`,
 				}
 			}
 			if len(pending) > 0 {
+				if pr == settings.PRNone {
+					then = "push the branch and stop; it lands once they are"
+				}
 				return fail(ExitValidation, "pending",
-					"pr-gate: not every ticket on the branch is in %s — %s; hand the create line back", when, strings.Join(pending, ", "))
+					"pr-gate: not every ticket on the branch is in %s — %s; %s", when, strings.Join(pending, ", "), then)
 			}
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
 				return emit(w, map[string]any{"may_open": true, "pr": pr, "pr_when": when, "tickets": named})
 			}
+			if pr == settings.PRNone {
+				fmt.Fprintf(w, "pr-gate: no pull request on this board — the branch may land on %s with a fast-forward push; every ticket on it is in done: %s\n", args[0], strings.Join(named, ", "))
+				return nil
+			}
 			fmt.Fprintf(w, "pr-gate: an agent may open it — every ticket on the branch is in %s: %s\n", when, strings.Join(named, ", "))
 			return nil
 		},
 	}
+	cmd.Flags().BoolVar(&land, "land", false, "exit 0 only where <base> says none: the branch may land without a pull request")
+	return cmd
 }
 
 // filedWhere says where a handle that is not on the board lives: "logbook",
@@ -456,4 +540,88 @@ func printRoleResults(w io.Writer, target string, results []role.Result, dry boo
 	fmt.Fprintf(w, "%d written, %d updated, %d unchanged, %d skipped, %d overwritten\n",
 		counts[role.Written], counts[role.Updated], counts[role.Unchanged], counts[role.Skipped], counts[role.Overwritten])
 	fmt.Fprintf(w, "roles in %s\n", target)
+}
+
+// boardArrival reads .jaira/pr, .jaira/pr-reviewer and .jaira/pr-when as the
+// base holds them — the gate reads them there, so that is what decides —
+// with the source of the first saying where it came from and, where this
+// checkout's own file says something else, that this branch changes it.
+// base is the ref given, else origin's default branch; with neither, the
+// files are read off this disk and the source says so.
+func boardArrival(root, base string) (pr, prSource, reviewer, prWhen, prWhenSource string, err error) {
+	repo := &gitrepo.Repo{Dir: root}
+	// A base named on the command line that is no commit here is an error,
+	// never a reason to read the disk: the disk may be the branch's own word.
+	if base != "" && (root == "" || !repo.IsCommit(base)) {
+		return "", "", "", "", "", fail(ExitValidation, "no_such_ref",
+			"roles list: --base %q is no commit here — fetch the remote first", base)
+	}
+	shown := base
+	if root != "" && base == "" {
+		// Full ref names: a local branch called origin/main must not stand
+		// in for the remote one.
+		base = originDefault(repo)
+		shown = strings.TrimPrefix(base, "refs/remotes/")
+	}
+	if root == "" || base == "" || !repo.IsCommit(base) {
+		pr, prSource = settings.PRFor(root)
+		if pr != settings.PRPerson && root != "" && !repo.Tracks(settings.BoardPRPath(".")) {
+			prSource = "from .jaira/pr on this disk only — not committed, so 'jaira roles pr-gate' does not see it yet: commit it (on a board not shared yet, 'jaira share' first)"
+		} else if root != "" {
+			prSource += " — read off this disk: no base to read it from (origin's default branch, or --base)"
+		}
+		prWhen, prWhenSource = settings.PRWhenFor(root)
+		reviewer = settings.PRReviewerFor(root)
+	} else {
+		content := repo.FileAt(base, settings.BoardPRPath("."))
+		pr = settings.PRIn(content)
+		switch {
+		case pr != settings.PRPerson || board.PRWordIn(content) == settings.PRPerson:
+			prSource = "from .jaira/pr in " + shown + ", the base"
+		case board.PRWordIn(content) == "":
+			prSource = "the default — no .jaira/pr in " + shown + ", the base"
+		default:
+			prSource = fmt.Sprintf("the default — .jaira/pr in %s, the base, says %q, which is neither agent nor none", shown, board.PRWordIn(content))
+		}
+		// Against the merge base, not the base: a branch cut before the base
+		// got its file changes nothing, it only lacks what a merge brings.
+		changed := false
+		if local := board.PRModeFor(root); local != pr {
+			from := settings.PRPerson
+			if mb := repo.MergeBase(base, "HEAD"); mb != "" {
+				from = settings.PRIn(repo.FileAt(mb, settings.BoardPRPath(".")))
+			}
+			changed = local != from
+		}
+		if local := board.PRModeFor(root); changed {
+			prSource += fmt.Sprintf("; this branch changes .jaira/pr to %s, which counts once it is in %s", local, shown)
+			if !repo.Tracks(settings.BoardPRPath(".")) {
+				prSource += " (not committed here; on a board not shared yet, 'jaira share' first)"
+			}
+		}
+		prWhen, prWhenSource = settings.PRWhenIn(repo.FileAt(base, settings.BoardPRWhenPath("."))), "the default"
+		if prWhen == settings.PRWhenSignoff {
+			prWhenSource = "from .jaira/pr-when in " + shown + ", the base"
+		}
+		reviewer = settings.PRReviewerIn(repo.FileAt(base, settings.BoardPRReviewerPath(".")))
+	}
+	if pr == settings.PRNone {
+		prWhen, prWhenSource = settings.PRWhenDone, "no pull request under .jaira/pr none"
+	}
+	return pr, prSource, reviewer, prWhen, prWhenSource, nil
+}
+
+// originDefault is origin's default branch as a ref this repository has:
+// origin/HEAD where it points at a branch that exists, else origin/main or
+// origin/master; "" when none of them is here.
+func originDefault(repo *gitrepo.Repo) string {
+	if head := repo.SymbolicRef("refs/remotes/origin/HEAD"); head != "" && repo.IsCommit(head) {
+		return head
+	}
+	for _, b := range []string{"refs/remotes/origin/main", "refs/remotes/origin/master"} {
+		if repo.IsCommit(b) {
+			return b
+		}
+	}
+	return ""
 }
