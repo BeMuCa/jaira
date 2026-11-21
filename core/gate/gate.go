@@ -522,11 +522,7 @@ func verdictAgainstMove(set *lane.Set, cur *lane.Lane, t *ticket.Ticket, target 
 // work was done in, in-progress on the default board — else "an earlier lane".
 func sendBackTo(set *lane.Set, cur *lane.Lane) string {
 	if len(cur.RejectsTo) > 0 {
-		q := make([]string, len(cur.RejectsTo))
-		for i, id := range cur.RejectsTo {
-			q[i] = fmt.Sprintf("%q", id)
-		}
-		return strings.Join(q, " or ")
+		return quoteAll(cur.RejectsTo)
 	}
 	at := set.Index(cur.ID)
 	for i := at - 1; i >= 0; i-- {
