@@ -21,7 +21,7 @@ related:
   - 01M7WWZWSDHK37DGGHJFDF0YD6
 commits: []
 created-at: 2026-10-27T20:51:56Z
-updated-at: 2026-11-21T20:08:24Z
+updated-at: 2026-11-21T20:12:32Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-238286
@@ -30,13 +30,13 @@ outcome-what: "review-verdict now starts with a lane-declared word (accept / sen
 outcome-why: "a review that wrote 'send back' still let its ticket land in signoff, so a person saw unapproved work as ready"
 outcome-resolves: "TestCLISendBackVerdictRefusesSignoff, TestCLISendBackVerdictGoesBack, TestVerdictWordClasses, TestLaneWithoutVerdictWordsReadsNothing"
 review-summary: "none"
-round: 4
+round: 5
 back-from: testing
 back-by: lane
-back-count: 2
-review-gaps: "folded the second ReadVerdict call in verdictRefusal into a parameter (gate.go); left the rest: no dead code after the repair (quoteAll '(none)' branch already removed with the both-lists rule)"
-test-verdict: "pass: round 3 - full go test ./... green after the fix (RC=0), -race on gate/lane/cli RC=0, shipped-history --check ok, GOOS=windows build ok; DoD 1-6 re-verified; scratch board: review -> blocked (exit 0) -> signoff refused exit 3 naming send-back and in-progress; back to review, accept: -> signoff exit 0. The gate writes nothing; parallel moves checked in round 1"
-hunt-verdict: "fail: bughunt done at e5182f04c, 1 change: parking counted as leaving review, so a ticket parked from signoff/done with a free-text verdict cannot return"
+back-count: 3
+review-gaps: "none - the round-4 change only removes lines"
+test-verdict: "pass: round 4 - go test ./... RC=0 at d4067a5e4; DoD 1-6 hold (TestSendBackVerdictHasNoWayAround covers blocked->signoff send-back refused and old free-text verdict let back); gate writes nothing"
+hunt-verdict: "fail: bughunt done at d4067a5e4, 1 change blocker: unknown verdict laundered via blocked (review->blocked->signoff); the round before found the opposite edge - see question"
 ---
 
 # Ein Review-Verdikt 'zurueckschicken' laesst das Ticket nicht nach signoff
@@ -44,7 +44,7 @@ hunt-verdict: "fail: bughunt done at e5182f04c, 1 change: parking counted as lea
 ## Definition of Done
 
 - [x] Ein Move aus review nach signoff mit review-verdict 'send back' wird mit Exit 3 abgelehnt; die Meldung nennt das Verdikt und die erlaubte Ziellane
-  proof: core/gate/gate.go:486 verdictAgainstMove (every move landing past review, parking included); TestCLISendBackVerdictRefusesSignoff, TestSendBackVerdictRefusesSignoff, TestSendBackVerdictHasNoWayAround
+  proof: core/gate/gate.go verdictAgainstMove (send-back refused on every move landing past review, parking included); TestCLISendBackVerdictRefusesSignoff, TestSendBackVerdictRefusesSignoff, TestSendBackVerdictHasNoWayAround
 - [x] Ein Move aus review nach in-progress mit 'send back' geht ohne --force
   proof: TestCLISendBackVerdictGoesBack; TestSendBackVerdictLetsTheTicketGoBack
 - [x] Die Werte, die review-verdict annimmt, stehen in der Lane-Datei und in jaira show --for-lane review
@@ -87,3 +87,9 @@ hunt-verdict: "fail: bughunt done at e5182f04c, 1 change: parking counted as lea
 - **2026-11-21 20:07 · Alexander Sacharov** — bughunt: change: core/gate/gate.go:505-511 (verdictAgainstMove, leaving := true for any parking lane) - class: a ticket in parking is judged on the verdict as if it had just come out of review, wherever it was actually parked from, so any ticket parked from a lane past review (signoff, done) whose verdict does not start with the lane's current words cannot go back to the lane it left. This hits verdicts written before this release (free text) and every verdict after the lane file renames its words. The refusal also tells whoever unparks it to write the review verdict themselves ('jaira set <id> review-verdict=...'), which invites a non-reviewer to certify the review. The same ticket NOT parked moves signoff->done without any verdict check (leaving=false), so only the detour through blocked refuses it. Example: review-verdict='pass: looks good', ticket in signoff, parked by a person, then 'jaira move X --to signoff' exit 3 verdict_unknown, and '--to done --dry-run' exit 3 too; not a blocker: needs a verdict from before the upgrade or renamed words, and a person's --force gets it through; ran: branch binary on a scratch board (jaira init, set, move)
 - **2026-11-21 20:07 · Alexander Sacharov** — bughunt: done at e5182f04c - 1 finding (1 change, 0 blockers; 0 pre-existing) in 3 modules, follow-up hunt since 5b8824110 (diff: core/gate/gate.go core/gate/verdict_test.go core/lane/lane.go core/lane/verdict_test.go; earlier blocker send-back via blocked re-run and now refused exit 3); concurrency, error paths, input, permissions checked; untracked .jaira/milestones/*.md are board data outside the change and not read; files: .claude/skills/jaira/SKILL.md .jaira/lanes/review.md core/gate/gate.go core/gate/verdict_test.go core/lane/builtin/40-review.md core/lane/lane.go core/lane/verdict.go core/lane/verdict_test.go core/release/notes/F1V59P.md core/role/jaira/SKILL.md core/shipped/shipped.sha256 internal/cli/flow.go internal/cli/verdict_test.go scripts/demoworld.sh
 - **2026-11-21 20:08 · Alexander Sacharov** — testing round 3: back for the parking=leaving rule. Smaller design instead of a further rule: the unknown-word refusal holds only on the move out of review itself; the send-back refusal keeps holding on every way past review. Parked-from-review with an unknown or empty verdict then reaches signoff unchecked - same class as the pre-existing skip finding, left for the person.
+- **2026-11-21 20:08 · Alexander Sacharov** — critique round 4: read only the removal of parking=leaving; addresses the hunt finding, nothing new.
+- **2026-11-21 20:09 · Alexander Sacharov** — bughunt: change: blocker: core/gate/gate.go:506 - class: an unreadable review-verdict (neither accept nor send-back) is refused only when the move starts in review itself, so any detour through a parking lane launders it - d4067a5e4 removed the 'out of parking counts as leaving' clause; also reachable by 'jaira set review-verdict=...' while the ticket sits in blocked; example: review-verdict 'fails: DoD 2 unmet', review -> signoff is refused (verdict-unknown), but review -> blocked (verdict check skipped for parking targets, gate.go:485) then blocked -> signoff yields zero violations and the ticket lands in sign-off with no verdict, contrary to 40-review.md:96-97 ('a verdict that starts with neither word ... refuses the move on too'); ran: scratch test in core/gate calling CheckAdvance for both paths (direct: 1 violation, via blocked: 0); internal/cli/flow.go has no second guard
+- **2026-11-21 20:09 · Alexander Sacharov** — bughunt: done at d4067a5e4 - 1 finding (1 change, 1 blocker; 0 pre-existing) in 1 module, follow-up hunt since e5182f04c (diff: core/gate/gate.go core/gate/verdict_test.go); concurrency, error paths, input, permissions checked; untracked .jaira/milestones/*.md are board data outside the change and not read; files: .claude/skills/jaira/SKILL.md .jaira/lanes/review.md core/gate/gate.go core/gate/verdict_test.go core/lane/builtin/40-review.md core/lane/lane.go core/lane/verdict.go core/lane/verdict_test.go core/release/notes/F1V59P.md core/role/jaira/SKILL.md core/shipped/shipped.sha256 internal/cli/flow.go internal/cli/verdict_test.go scripts/demoworld.sh
+- **2026-11-21 20:10 · Alexander Sacharov** — question (worker, testing would send back a 3rd time - the loop flips on one rule): blocked does not record which lane a ticket was parked from. Round 2 counted any exit from blocked as leaving review -> a ticket parked from signoff with an old free-text verdict cannot get back (finding e5182f04c). Round 3 dropped that -> review->blocked->signoff carries an unknown verdict into signoff (blocker d4067a5e4). The send-back rule itself (DoD 1) holds on every route either way. Options: 1 (recommended) drop the unknown-word refusal: only send-back is enforced, on every route past review; a free-text verdict passes as today, the lane prompt asks for the words - smallest, no edge left, DoD 1-6 hold. 2 restore round 2 (exit from blocked = leaving review): unknown words also refused out of blocked; a ticket parked from signoff/done with a pre-release free-text verdict needs --force once. 3 record the lane a ticket was parked from (new frontmatter field) - closes both edges, bigger, own ticket.
+- **2026-11-21 20:10 · Alexander Sacharov** — decision: Variante 1 (Alex' Regel 'Ränder wachsen → kleineres Design', 21.11.): die Weigerung für unbekannte Verdikt-Wörter fällt weg; erzwungen wird nur send-back, auf jedem Weg hinter review (blocked eingeschlossen). Freitext geht durch wie heute. 40-review.md:96-97 entsprechend anpassen. Herkunfts-Lane von blocked aufzeichnen ist nicht Teil dieses Tickets.
+- **2026-11-21 20:12 · Alexander Sacharov** — decision applied: unknown-word refusal and CodeVerdictUnknown removed (gate.go, verdict_test.go table now expects free text to pass); 40-review.md step 3 and the release note say only send-back refuses, from review or from blocked. go test ./... RC=0.

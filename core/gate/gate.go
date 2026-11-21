@@ -38,7 +38,6 @@ const (
 	CodeNotOwner        = "not_owner"
 	CodeMaxRounds       = "max_rounds"
 	CodeVerdictSendBack = "verdict_sends_back"
-	CodeVerdictUnknown  = "verdict_unknown"
 )
 
 // Violation is one reason a move was refused. Field is set when the fix is to
@@ -480,8 +479,8 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 	// A verdict says which way the ticket goes, and the move must go that way.
 	// Nothing else read the field before: a review that wrote "send back"
 	// still saw its ticket land in sign-off, in front of a person, unapproved.
-	// Only a lane that declares its words is read — its verdict is not free
-	// text. A move made in the board is a person deciding.
+	// Only a lane that declares its words is read, and only its send-back
+	// word refuses. A move made in the board is a person deciding.
 	if !req.Interactive && !target.RequiresBlockedReason {
 		vs = append(vs, verdictAgainstMove(env.Lanes, t, target)...)
 	}
@@ -492,45 +491,23 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 // verdictAgainstMove refuses a move that lands past a lane whose verdict sent
 // the work back — from that lane, or around it: blocked is drawn last, so
 // blocked → signoff is not even a forward move, and a ticket parked from
-// review would otherwise walk into sign-off past its own send-back. A verdict
-// that is no verdict at all is refused only on the move out of its lane:
-// blocked does not say where a ticket was parked from, and one parked from
-// sign-off with a verdict written before the words existed must get back.
+// review would otherwise walk into sign-off past its own send-back. Any other
+// verdict passes, free text included: only the send-back word is a rail.
 func verdictAgainstMove(set *lane.Set, t *ticket.Ticket, target *lane.Lane) Violations {
 	to := set.Index(target.ID)
 	for i, cur := range set.Lanes {
 		if !cur.DeclaresVerdicts() || to <= i {
 			continue
 		}
-		kind, word := cur.ReadVerdict(t.ReviewVerdict)
-		leaving := t.Status == cur.ID
-		if kind == lane.VerdictSendBack || (kind == lane.VerdictUnknown && leaving) {
-			return verdictRefusal(set, cur, t, target, kind, word)
+		if kind, word := cur.ReadVerdict(t.ReviewVerdict); kind == lane.VerdictSendBack {
+			return Violations{{
+				Code:  CodeVerdictSendBack,
+				Field: ticket.FieldReviewVerdict,
+				Message: fmt.Sprintf(
+					"%s says %q: lane %q sent %s back, so it may not go on to %q. Move it back to %s — or, as the person deciding, pass --force",
+					ticket.FieldReviewVerdict, word, cur.ID, ticket.Handle(t.ID), target.ID, sendBackTo(set, cur)),
+			}}
 		}
-	}
-	return nil
-}
-
-func verdictRefusal(set *lane.Set, cur *lane.Lane, t *ticket.Ticket, target *lane.Lane, kind, word string) Violations {
-	back := sendBackTo(set, cur)
-	switch kind {
-	case lane.VerdictSendBack:
-		return Violations{{
-			Code:  CodeVerdictSendBack,
-			Field: ticket.FieldReviewVerdict,
-			Message: fmt.Sprintf(
-				"%s says %q: lane %q sent %s back, so it may not go on to %q. Move it back to %s — or, as the person deciding, pass --force",
-				ticket.FieldReviewVerdict, word, cur.ID, ticket.Handle(t.ID), target.ID, back),
-		}}
-	case lane.VerdictUnknown:
-		return Violations{{
-			Code:  CodeVerdictUnknown,
-			Field: ticket.FieldReviewVerdict,
-			Message: fmt.Sprintf(
-				"%s starts with %q, which lane %q does not know: begin it with %s to let the ticket go on, or %s and move it to %s — 'jaira set %s %s=\"<word>: <reason>\"'",
-				ticket.FieldReviewVerdict, word, cur.ID, quoteAll(cur.VerdictAccept), quoteAll(cur.VerdictSendBack), back,
-				ticket.Handle(t.ID), ticket.FieldReviewVerdict),
-		}}
 	}
 	return nil
 }

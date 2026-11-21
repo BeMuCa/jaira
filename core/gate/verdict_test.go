@@ -21,7 +21,7 @@ func reviewed(verdict string) *ticket.Ticket {
 func verdictViolations(vs Violations) Violations {
 	var out Violations
 	for _, v := range vs {
-		if v.Code == CodeVerdictSendBack || v.Code == CodeVerdictUnknown {
+		if v.Code == CodeVerdictSendBack {
 			out = append(out, v)
 		}
 	}
@@ -67,7 +67,8 @@ func TestSendBackVerdictInteractiveIsAPerson(t *testing.T) {
 }
 
 // The verdict is read off its first word, over the whole class of ways it is
-// written; a sentence that only mentions a word is no verdict.
+// written; a sentence that only mentions the word is not a send-back, and any
+// verdict that is not one passes, free text included.
 func TestVerdictWordClasses(t *testing.T) {
 	cases := []struct {
 		verdict string
@@ -85,11 +86,11 @@ func TestVerdictWordClasses(t *testing.T) {
 		{"send  -  back: x", CodeVerdictSendBack},
 		{"send-back\r\nmore", CodeVerdictSendBack},
 		{"\tsend-back", CodeVerdictSendBack},
-		{"the diff matches the criteria; no defects found", CodeVerdictUnknown},
-		{"I would not accept this", CodeVerdictUnknown},
-		{"zurückschicken: DoD 1", CodeVerdictUnknown},
-		{": empty word", CodeVerdictUnknown},
-		{"accepted: x", CodeVerdictUnknown},
+		{"the diff matches the criteria; no defects found", ""},
+		{"I would not accept this", ""},
+		{"zurückschicken: DoD 1", ""},
+		{": empty word", ""},
+		{"accepted: x", ""},
 	}
 	for _, c := range cases {
 		got := verdictViolations(CheckAdvance(testEnv(t), reviewed(c.verdict), Request{To: "signoff"}))
