@@ -1,7 +1,7 @@
 ---
 id: 01M67RXSPRWC7WVBCCM7MVR4PY
 title: Die Einzeiler des Cockpits lesen Lane und Urteil aus einer festen Schlusszeile statt aus dem ersten passenden Wort
-status: critique
+status: done
 ready: true
 creator: berkc
 assignee: Alexander Sacharov
@@ -16,23 +16,30 @@ tags:
 blocked-by: []
 related:
   - 01M5MNWVKBC8Q193EK7YX6HB6V
-commits: []
+commits:
+  - 37403d24eb2298d0b436c06334dd004377843836
+  - 7b31318f743d06d640b8475303762b7f299a231b
+  - f7d381741929fa423acbd836dfdc98ce734194be
 created-at: 2026-10-31T01:24:29Z
-updated-at: 2026-11-22T16:50:11Z
+updated-at: 2026-11-22T17:03:13Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1092384
 claimed-at: 2026-11-22T16:25:37Z
 outcome-what: "digest.ts no longer guesses: without the closing status line the one-liner shows the ticket id (plus an open question or needs-you line); jaira-role-lane now ends its report with the same status line as worker and dispatcher"
 outcome-why: "laneOf/verdictOf picked the first arrow or verdict word anywhere in a report, so 'reject? reason', 'nothing rejected' or 'all the way to signoff' became a wrong lane or verdict"
 outcome-resolves: "the cockpit one-liner reads lane and verdict only from the fixed closing line; checked: concurrency n/a (pure function), error paths (failure detection unchanged, keeps the report whole), unusual input (empty/no ticket passes whole; CRLF and frame tags covered by the status-line tests), permissions n/a (fewer regexes over agent text)"
-review-summary: "Round 2 adds only text: jaira-worker SKILL.md:465 now says a report without the status line shows only the ticket id (was 'guessed at, field by field'), matching digest.ts; jaira-role-lane SKILL.md puts the status line below a question's numbered list and below a role question, and says it comes after everything else. shipped.sha256 gains the two new file hashes. Round 1 (37403d24e) stays as judged: digest() reads lane and verdict only from the closing 'jaira: <ID> <from> -> <to> ...' line, falls back to the bare id, and jaira-role-lane now writes that line."
-review-gaps: "note: lane ids with digits (qa2, 2-review) are not matched by STATUS_HEAD in core/mod/builtin/jaira-cockpit/hooks/digest.ts - such a status line shows the bare id instead of lane/verdict; fix: lane groups [a-z0-9][a-z0-9-]* plus a test (from bughunt, still open)"
-test-verdict: "pass: round 2 delta (37403d24e..7b31318f7: two skill texts + manifest); go test core/role core/shipped core/release RC=0, shipped-history --check RC=0; DoD 5 verified at worker SKILL:465 and role-lane SKILL:324/333/364; writes nothing, no behaviour to exercise"
-hunt-verdict: "pass: stop-after-fix, no hunt in round 2"
-review-verdict: "accept: DoD 1-5 met; both doc contradictions from round 1 are closed; manifest hashes match the files; 314 cockpit tests green (claude plugin test)"
-review-round: 2
-review-verdict-gaps: "note: lane ids with digits (qa2, 2-review) are not matched by STATUS_HEAD in core/mod/builtin/jaira-cockpit/hooks/digest.ts - such a status line shows the bare id instead of lane/verdict; fix: lane groups [a-z0-9][a-z0-9-]* plus a test (from bughunt, still open)"
-review-check: "1. cd core/mod/builtin/jaira-cockpit && claude plugin test .  -> 314 pass, 0 fail  2. grep -n 'shows only the ticket id' core/role/builtin/jaira-worker/SKILL.md  -> line 465  3. sed -n 320,366p core/role/builtin/jaira-role-lane/SKILL.md  -> both question cases and the status-line item say the status line comes last, below the list  4. in the cockpit, a worker report without a 'jaira: ...' last line shows only '[shortened by jaira-cockpit] <ID>', never a lane or 'rejected'"
+review-summary: "Round 3 on top of the accepted rounds 1-2: the cockpit's status-line pattern (STATUS_HEAD in hooks/digest.ts) and the start-line pattern (START in hooks/sessions.ts) now accept lane ids with digits (qa2, 2-review, qa2->3-ship). Before, such a status line was not recognised at all and - since round 1 removed the free-text guessing - the one-liner fell back to the bare id. Overall the branch: digest() reads lane and verdict only from the closing 'jaira: <ID> <from> -> <to> · ...' line, shows the id alone without it (questions and needs-you still shown), jaira-role-lane ends its report with that line, jaira-worker's text agrees, one release note per change."
+review-gaps: |-
+  note: the comments at hooks/digest.ts:84 and hooks/sessions.ts:38 say the pattern is what core/lane accepts; core/lane/lane.go validID also allows a leading hyphen (-qa), which the cockpit pattern refuses - fix: say "except a leading hyphen" or make validID refuse it (testing note, teamlead ruled no round for wording)
+  note: pre-existing: core/lane/lane.go validID accepts a lane id starting with a hyphen, which the CLI then reads as a flag (jaira move --to -qa)
+test-verdict: "pass: round 3 delta since 37403d24e; claude plugin test 319 pass 0 fail (RC=0) incl. 'status line: lane id with *' (4 cases) and the qa2 start line asserting the stored lane; go vet core + go test core/role core/mod core/shipped core/release RC=0; shipped-history --check RC=0; DoD 1-6 verified in the tree; writes nothing new, two-writer pass n/a"
+hunt-verdict: "pass: bughunt done at f7d381741, 1 change (not a blocker: leading-hyphen lane id, unreachable from the CLI; note for the person), 0 pre-existing"
+review-verdict: "accept: DoD 1-6 met; digit lane ids read in both patterns with table tests; manifest hashes match the four changed files; 319 cockpit tests green (claude plugin test)"
+review-round: 3
+review-verdict-gaps: |-
+  note: the comments at hooks/digest.ts:84 and hooks/sessions.ts:38 say the pattern is what core/lane accepts; core/lane/lane.go validID also allows a leading hyphen (-qa), which the cockpit pattern refuses - fix: say "except a leading hyphen" or make validID refuse it (testing note, teamlead ruled no round for wording)
+  note: pre-existing: core/lane/lane.go validID accepts a lane id starting with a hyphen, which the CLI then reads as a flag (jaira move --to -qa)
+review-check: "1. cd core/mod/builtin/jaira-cockpit && claude plugin test .  -> 319 pass, 0 fail  2. look for the tests 'status line: lane id with a digit at the end' and 'recognises its start line a lane whose id holds digits' in that output -> both (pass)  3. in the cockpit, a worker report ending 'jaira: <ID> qa2 -> signoff · verdict: approve' shows '<ID> · qa2 → signoff · approve'  4. a report without a 'jaira: ...' last line shows only '[shortened by jaira-cockpit] <ID>', never a lane or 'rejected'"
 round: 3
 back-from: signoff
 back-by: person
@@ -80,3 +87,7 @@ stop-after-fix: "false"
 - **2026-11-22 16:44 · Alexander Sacharov** — stop-after-fix set: this round changes only two skill texts and the manifest, no code - a further hunt finds nothing worth a round (teamlead asked for a light round).
 - **2026-11-22 16:47 · Alexander Sacharov** — review (round 2): accept - both doc contradictions closed, manifest hashes match, 314 cockpit tests green; open note: digit lane ids in STATUS_HEAD (bughunt)
 - **2026-11-22 16:48 · Alexander Sacharov** — given back by teamlead (22.11.), round 3: close the last note - STATUS_HEAD in digest.ts also matches lane ids with digits ([a-z0-9][a-z0-9-]*), table test (qa2, 2-review). Testing hunts the delta since 37403d24e so the hunt covers HEAD.
+- **2026-11-22 16:51 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/digest.ts:86 - class: lane ids that core/lane validID (core/lane/lane.go:477) accepts but the cockpit's lane pattern [a-z0-9][a-z0-9-]* rejects, i.e. a lane id starting with a hyphen; same pattern in core/mod/builtin/jaira-cockpit/hooks/sessions.ts:40 (START); example: status line 'jaira: 55CS2M -qa -> signoff · verdict: ok' is not recognised at all, so the one-liner drops lanes and verdict and shows the id alone, and '/jaira-role-lane MG677R -qa' records lane '' - the comments on both lines claim parity with core/lane, which is not true for this input; not a blocker: such a lane id is close to unusable from the CLI anyway (jaira move --to -qa reads as a flag), so either validID should refuse a leading hyphen or the comments should say the cockpit narrows it; blame: f7d3817 (names MVR4PY); ran: node --experimental-strip-types on statusLineOf/startOf (undefined, lane '')
+- **2026-11-22 16:51 · Alexander Sacharov** — bughunt: done at f7d381741 - 1 finding (1 change, 0 pre-existing) in 6 modules, follow-up hunt since 37403d24e; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/digest.ts core/mod/builtin/jaira-cockpit/hooks/sessions.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts core/release/notes/MVR4PY.md core/role/builtin/jaira-role-lane/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/shipped/shipped.sha256
+- **2026-11-22 16:51 · Alexander Sacharov** — testing: note: bughunt round 3 (leading-hyphen lane id '-qa' passes core/lane validID but not LANE/START) is not a blocker - such a lane cannot be reached from the CLI ('--to -qa' reads as a flag), and [a-z0-9][a-z0-9-]* is the pattern the teamlead asked for. Left: the comments at digest.ts:83 and sessions.ts:36 say 'what core/lane accepts' - one word off for that one case. Teamlead ruled no further round for wording.
+- **2026-11-22 16:53 · Alexander Sacharov** — review (round 3): accept - digit lane ids in STATUS_HEAD and START, table tests, manifest ok, 319 cockpit tests green; open note: comment wording vs validID leading hyphen
