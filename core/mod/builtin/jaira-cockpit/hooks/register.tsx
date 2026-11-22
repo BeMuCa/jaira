@@ -1245,19 +1245,22 @@ async function openPullRequest($: EngineInterface, id: string): Promise<boolean>
   const kept = pulls.get(id)
   if (kept !== undefined && now - kept.at < PULL_MS) return kept.pr
   const pr = await askPullRequest($, id)
-  pulls.set(id, { at: now, pr })
-  return pr
+  // Only an answer is kept: a forge that could not be asked is asked again.
+  if (pr !== undefined) pulls.set(id, { at: now, pr })
+  return pr ?? false
 }
 
-async function askPullRequest($: EngineInterface, id: string): Promise<boolean> {
+// undefined where the forge could not be asked or did not answer.
+async function askPullRequest($: EngineInterface, id: string): Promise<boolean | undefined> {
   if (!board) return false
   const trees = await run($, ['git', 'worktree', 'list', '--porcelain'], board.repo)
   const branch = trees?.exitCode === 0 ? branchesFor(trees.stdout, id).ticket : undefined
   if (branch === undefined) return false
   const found = await forgeRepo($, board.repo)
-  if (found === undefined || typeof found === 'string') return false
+  if (found === undefined) return false
+  if (typeof found === 'string') return undefined
   const listed = await run($, pullRequestsCommand(found.on, found.repo, branch), board.repo, 30_000)
-  return listed?.exitCode === 0 && hasPullRequest(listed.stdout) === true
+  return listed?.exitCode === 0 ? hasPullRequest(listed.stdout) : undefined
 }
 
 // Explain on one note: one everyday sentence from the cheap model on why it
@@ -1265,19 +1268,15 @@ async function askPullRequest($: EngineInterface, id: string): Promise<boolean> 
 // second press asks nothing. A press is the person asking: without a
 // language set the sentence comes in the note's own.
 const REASON_PREFIX = 'reason:'
-// The change the ticket made to the files a note names: from before its
-// first commit to HEAD, in the checkout its code is in; '' where it names
-// none or git has nothing to say. A bare file name matches it anywhere.
+// What the ticket's own commits - those naming it - changed in the files a
+// note names, in the checkout its code is in; '' where it names none or git
+// has nothing to say. Each name matches at any depth, whole path or not.
 async function noteDiff($: EngineInterface, id: string, note: string): Promise<string> {
   const paths = notePaths(note)
   if (paths.length === 0) return ''
-  const code = await codeDir($, id)
-  const log = await run($, ['git', 'log', '--format=%h', '-F', `--grep=${id}`, 'HEAD'], code)
-  const first = log?.exitCode === 0 ? log.stdout.trim().split('\n').at(-1) : undefined
-  if (!first) return ''
-  const specs = paths.map(p => (p.includes('/') ? p : `:(glob)**/${p}`))
-  const diff = await run($, ['git', 'diff', `${first}^`, 'HEAD', '--', ...specs], code)
-  return diff?.exitCode === 0 ? clipLines(diff.stdout, DIFF_LINES) : ''
+  const specs = paths.map(p => `:(glob)**/${p}`)
+  const log = await run($, ['git', 'log', '-p', '--format=%h %s', '-F', `--grep=${id}`, 'HEAD', '--', ...specs], await codeDir($, id))
+  return log?.exitCode === 0 ? clipLines(log.stdout, DIFF_LINES) : ''
 }
 
 async function explainNote($: EngineInterface, id: string, title: string, text: string): Promise<void> {
@@ -1302,7 +1301,9 @@ async function explainNote($: EngineInterface, id: string, title: string, text: 
     said = result.isAnswered ? reasonOf(result.text) : undefined
   } catch {}
   await put(said ?? t.noReason)
-  if (said !== undefined) await storeNewest($, REASON_PREFIX, key, { ...kept, [keyOfNote]: said })
+  // Read again and written under locked(), as the reports' store writes are:
+  // a press on another note may have kept its sentence while this one waited.
+  if (said !== undefined) await locked(async () => storeNewest($, REASON_PREFIX, key, { ...((await $.store.get(key)) ?? {}) as Record<string, string>, [keyOfNote]: said }))
 }
 
 // Execute: what the person chose, carried out as executionOf says. The pane

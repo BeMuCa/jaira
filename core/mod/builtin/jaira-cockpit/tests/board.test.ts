@@ -46,8 +46,8 @@ type World = {
   // what `git log --format=%h --name-only --grep=<id>` prints.
   shows: Record<string, Record<string, unknown>>
   idLog: string
-  // What \`git diff\` prints; what a move to in-progress fails with.
-  diffs?: string
+  // What \`git log -p\` prints; what a move to in-progress fails with.
+  patches?: string
   moveFails?: string
   // When set, every cheap-model call waits here, in order, answering with
   // what w.model held when it was made.
@@ -392,7 +392,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     // Newest first, as git prints them. A --grep reads the whole message,
     // body included; --format=%H %s prints the subject alone.
     if (cmd === 'git' && args[0] === 'log' && args[1] === '--format=%h') return ok(w.idLog)
-    if (cmd === 'git' && args[0] === 'diff' && w.diffs !== undefined) return ok(w.diffs)
+    if (cmd === 'git' && args[0] === 'log' && args[1] === '-p') return ok(w.patches ?? '')
     if (cmd === 'git' && args[0] === 'log' && args.includes('--branches')) {
       const grep = args.find(a => a.startsWith('--grep='))
       if (grep) {
@@ -4911,8 +4911,7 @@ describe('the Acceptance pane', () => {
     const w = world(on)
     w.tickets = [{ ...SIGNOFF, review: { verdict: 'accept', gaps: 'note: register.tsx:12 closes the pane early' } }, HUMAN, WORKING]
     w.shows.MG677R = { title: 'cache key', goal: 'a key per branch', outcome: { what: 'the key names the branch', why: 'x' } }
-    w.idLog = 'abc1234\ndef5678\n'
-    w.diffs = '+  closeAcceptance($)\n'
+    w.patches = 'abc1234 fix(MG677R): x\n+  closeAcceptance($)\n'
     w.reason = 'Das Fenster schließt vor dem Schritt.'
     await startSession($)
     const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
@@ -4922,8 +4921,8 @@ describe('the Acceptance pane', () => {
     expect(prompt).toContain("The ticket's goal: a key per branch")
     expect(prompt).toContain('What was done: the key names the branch')
     expect(prompt).toContain('+  closeAcceptance($)')
-    // From before the ticket's first commit, the bare name matched anywhere.
-    expect(ran(w, 'git', 'diff')[0]?.slice(0, 6)).toEqual(['git', 'diff', 'def5678^', 'HEAD', '--', ':(glob)**/register.tsx'])
+    // Only the ticket's own commits, the name matched at any depth.
+    expect(ran(w, 'git', 'log', '-p')[0]?.slice(0, 9)).toEqual(['git', 'log', '-p', '--format=%h %s', '-F', '--grep=MG677R', 'HEAD', '--', ':(glob)**/register.tsx'])
   })
 
   test('a give-back the move refuses keeps the pane open with the person\'s marks', async ($, on) => {
@@ -4963,6 +4962,28 @@ describe('the Acceptance pane', () => {
     await (await acceptancePane($, await $.ui.mount(BAND), 'MG677R')).unmount()
     await w.clock.settle()
     expect(ran(w, 'gh', 'pr', 'list')).toHaveLength(2)
+  })
+
+  test('a forge that does not answer is asked again at the next opening, not taken for no pull request', async ($, on) => {
+    const w = world(on)
+    w.prListFails = true
+    await startSession($)
+    for (let i = 0; i < 2; i++) {
+      await (await acceptancePane($, await $.ui.mount(BAND), 'MG677R')).unmount()
+      await w.clock.settle()
+    }
+    expect(ran(w, 'gh', 'pr', 'list')).toHaveLength(2)
+  })
+
+  test('two notes explained one after the other both keep their sentence in the store', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, review: { verdict: 'accept', gaps: 'note: a\nnote: b' } }, HUMAN, WORKING]
+    w.reason = 'one sentence'
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    await Promise.all([pane.press({ key: 'why-MG677R-0' }), pane.press({ key: 'why-MG677R-1' })])
+    await w.clock.settle()
+    expect(Object.keys((w.store.get('reason:MG677R') ?? {}) as object)).toHaveLength(2)
   })
 
   test('Explain all opens the explaining chat from the pane', async ($, on) => {
