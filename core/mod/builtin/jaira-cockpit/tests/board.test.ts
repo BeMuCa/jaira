@@ -3055,18 +3055,19 @@ describe('a session that carries a ticket', () => {
   // Every way the start line arrives: typed into the pane, and relayed by
   // Herdr App from the teamlead's tab inside an <hc> wrapper.
   const starts = [
-    ['typed', '/jaira-worker MG677R --parent jaira-4c', 'composer'],
-    ['typed with leading space', '  /jaira-worker MG677R', 'composer'],
-    ['relayed by Herdr App', '<hc from="t3">/jaira-worker MG677R --parent uds:/run/user/1000/cc-socks/1.sock</hc>', 'human'],
-    ['relayed with attributes and a newline', '<hc from="t3" via="x">\n/jaira-dispatcher MG677R</hc>', 'human'],
-    ['a lane relayed by Herdr App', '<hc from="t1">/jaira-role-lane MG677R critique</hc>', 'human'],
+    ['typed', '/jaira-worker MG677R --parent jaira-4c', 'composer', ''],
+    ['typed with leading space', '  /jaira-worker MG677R', 'composer', ''],
+    ['relayed by Herdr App', '<hc from="t3">/jaira-worker MG677R --parent uds:/run/user/1000/cc-socks/1.sock</hc>', 'human', ''],
+    ['relayed with attributes and a newline', '<hc from="t3" via="x">\n/jaira-dispatcher MG677R</hc>', 'human', ''],
+    ['a lane relayed by Herdr App', '<hc from="t1">/jaira-role-lane MG677R critique</hc>', 'human', 'critique'],
+    ['a lane whose id holds digits', '/jaira-role-lane MG677R qa2', 'composer', 'qa2'],
   ] as const
-  for (const [name, text, kind] of starts) {
+  for (const [name, text, kind, lane] of starts) {
     test(`recognises its start line ${name}, and a subagent's report reaches it whole`, async ($, on) => {
       const w = world(on, { herdr: true })
       await startSession($)
       await $.prompt.submit({ text, origin: { kind }, wait: false })
-      expect(w.store.get('carrying:abcdef12')).toMatchObject({ ticket: 'MG677R' })
+      expect(w.store.get('carrying:abcdef12')).toMatchObject({ ticket: 'MG677R', lane })
       const report = '<task-notification>Ticket MG677R: bughunt done at b5ec407 - 0 findings</task-notification>'
       expect((await $.prompt.submit({ text: report, origin: { kind: 'task-notification' }, wait: false })).text).toBe(report)
     })
