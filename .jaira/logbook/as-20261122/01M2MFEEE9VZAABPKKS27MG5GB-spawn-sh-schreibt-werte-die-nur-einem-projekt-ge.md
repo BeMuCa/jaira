@@ -1,7 +1,7 @@
 ---
 id: 01M2MFEEE9VZAABPKKS27MG5GB
 title: "spawn.sh schreibt Werte, die nur einem Projekt gehoeren"
-status: review
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,19 +23,31 @@ blocked-by:
   - 01M7WWYKK8CMJSM2S45WJDDCEZ
 related:
   - 01M7WWYKK8CMJSM2S45WJDDCEZ
-commits: []
+commits:
+  - 96d6485320916907813f9a93dda4dc7b82e12bd5
+  - adeca813fbfd7bc64e594506369fd0b45678c996
+  - 85a3632bfefe526bc4ae3f79ce31a835c2c652dd
+  - 948216ef0a2e7edae9ecad926bdc075f73e144e8
+  - c81e83d46174653d667e27d5737c90456985c1e7
+  - 0aa6732092f56b785d6ecfbe551d9919f6c80ae3
+  - 20f1eb39130f764682a8956b919a0b049fe97ac4
+  - abfa818f4da6d7b3054364c6591b4a4122e4af5e
+  - aab7fd86788c2a9e855cbb3812f2a43cb95b9347
+  - 5685528ab937479572c722e2ba2ce9af4bfd3d32
+  - 2a87b857c0946a97ac17714060dfbf084d098ef7
 created-at: 2026-09-16T06:46:09Z
-updated-at: 2026-11-22T11:32:21Z
+updated-at: 2026-11-22T14:42:46Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-33230
 claimed-at: 2026-11-22T11:08:10Z
 outcome-what: "spawn.sh no longer copies .env or writes port names; without .jaira/worktree-setup it makes the worktree only, hands out no offset, and tells a repo with a .env how to get the old behaviour from the shipped worktree-setup.example; roles install --help says an edited file is frozen"
 outcome-why: "Port names like HTTP_PORT belonged to one project; repos forked spawn.sh to add theirs, and an edited spawn.sh never gets jaira's fixes again"
 outcome-resolves: "spawn.sh schreibt Werte, die nur einem Projekt gehoeren - DoD 1-7"
-review-summary: "spawn.sh richtet ohne ausfuehrbares .jaira/worktree-setup nichts mehr ein: keine .env-Kopie, keine vier Portzeilen, kein Port-Versatz und kein Offset-Lock - nur worktree und Branch. Hat die Wurzel eine .env, sagt eine stderr-Zeile, dass sie nicht mehr kopiert wird, und nennt die install-Zeile fuer worktree-setup.example (ohne worktree remove/branch -D). Die alte Logik liegt byte-gleich als scripts/worktree-setup.example neben spawn.sh (inkl. '# worker stack'-Zeile, damit die Offset-Suche alte worktrees weiter erkennt); mit Setup bleibt alles wie bisher (Offset unter flock, Aufruf mit worktree/slug/offset/root, jaira-setup fuer reap.sh). 'roles install --help' sagt jetzt, dass eine bearbeitete Datei eingefroren ist. Dazu: Dispatcher-SKILL.md angepasst, .gitattributes eol=lf fuer *.example, shipped.sha256, Release-Note mit '- !', Tests fuer beide Faelle ohne Setup und fuer das Beispiel in einem Pfad mit Leerzeichen."
+review-summary: "spawn.sh no longer writes a .env or port lines into a new worktree. With an executable .jaira/worktree-setup it still picks a free port offset (under the flock) and calls the script with worktree, slug, offset and root. Without one it makes only the worktree: no offset, no lock, no .env. Where the root has a .env it prints one stderr line with the install -m 755 command for the new scripts/worktree-setup.example, which holds the old .env logic byte for byte. The 'roles install --help' text now says an edited file stops getting fixes; the dispatcher SKILL.md, the release note, shipped.sha256 and .gitattributes are updated to match."
 review-gaps: |-
-  note: der Hinweis ohne Setup erscheint bei jedem neuen worktree erneut, solange die Wurzel eine .env hat - gewollt (DoD 5), aber ein Repo, das die .env bewusst nicht im worktree will, kann ihn nur durch ein leeres .jaira/worktree-setup abstellen; ein Satz dazu in der Release-Note oder im Hinweis waere ehrlich
-  note: nicht von diesem Ticket: im worktree liegen uncommittete Board-Updates (AGENTS.md, CLAUDE.md, .jaira/lanes/*.md, jaira:version 0.6.1) - nicht mit dem Code dieses Tickets committen
+  note: the hint is printed on every new worktree in a repo with a .env, not once per repo; the release note names the empty-setup way to silence it, which is enough
+  note: roles install copies worktree-setup.example as 0644 (modeOf gives 0755 only to *.sh); the hint and release note both say install -m 755, so it works, but running the example straight from the skills directory fails
+  note: pre-existing: spawn.sh:206 is one comment line of about 150 characters (the flock sentence), left over from an earlier rewrap
 test-verdict: "pass: round 4 - core/role, core/shipped, internal/wintrap -race RC=0, shipped-history --check ok; the hint holds no destructive command (test asserts it); round 1 ran the whole suite -race RC=0 and the scratch checks (no setup, failing setup, two parallel spawns)"
 hunt-verdict: "pass: bughunt done at aab7fd867, 0 change, 0 pre-existing"
 round: 4
@@ -43,12 +55,20 @@ back-from: testing
 back-by: lane
 back-count: 3
 question: ""
-review-verdict: "accept: alle 8 DoD-Punkte im Diff erfuellt, go test ./core/role ./core/shipped ./internal/cli gruen; spawn.sh ganz gelesen - Lock nur mit Setup, Fehlerpfade raeumen worktree+Branch, Pfade mit Leerzeichen quotiert; kein Defekt gefunden"
+review-verdict: "accept: all 8 DoD items hold in the code. go test ./core/role ./internal/cli passes. No defect found in spawn.sh's setup, offset or hint paths."
 review-round: 4
 review-verdict-gaps: |-
-  note: der Hinweis ohne Setup erscheint bei jedem neuen worktree erneut, solange die Wurzel eine .env hat - gewollt (DoD 5), aber ein Repo, das die .env bewusst nicht im worktree will, kann ihn nur durch ein leeres .jaira/worktree-setup abstellen; ein Satz dazu in der Release-Note oder im Hinweis waere ehrlich
-  note: nicht von diesem Ticket: im worktree liegen uncommittete Board-Updates (AGENTS.md, CLAUDE.md, .jaira/lanes/*.md, jaira:version 0.6.1) - nicht mit dem Code dieses Tickets committen
-review-check: "1. cd /home/alex/projects/.worktrees/jaira-7mg5gb  2. go test ./core/role -run 'TestSpawnLetsTheRepositorySetUpItsWorktree|TestSpawnGivesEveryWorktreeItsOwnOffset' -v  -> beide PASS  3. sed -n 295,312p core/role/builtin/jaira-dispatcher/scripts/spawn.sh  -> kein cp .env, keine HTTP_PORT/DB_PORT_HOST; nur die echo-Zeile mit install -m 755 ... worktree-setup.example  4. cat core/role/builtin/jaira-dispatcher/scripts/worktree-setup.example  -> die alten Zeilen (.env-Kopie, '# worker stack', COMPOSE_PROJECT_NAME, drei Ports)  5. go run ./cmd/jaira roles install --help | grep -A2 frozen  -> Satz 'Left alone also means frozen ... until --force'  6. cat core/release/notes/7MG5GB.md  -> erste Zeile beginnt mit '- !'"
+  note: the hint is printed on every new worktree in a repo with a .env, not once per repo; the release note names the empty-setup way to silence it, which is enough
+  note: roles install copies worktree-setup.example as 0644 (modeOf gives 0755 only to *.sh); the hint and release note both say install -m 755, so it works, but running the example straight from the skills directory fails
+  note: pre-existing: spawn.sh:206 is one comment line of about 150 characters (the flock sentence), left over from an earlier rewrap
+review-check: |-
+  1. cd into any git repo that has a .env and no .jaira/worktree-setup
+  2. run <skills>/jaira-dispatcher/scripts/spawn.sh test01 7MG5GB testing  (Herdr must be running)
+  3. stderr says 'spawn.sh no longer copies .env into a worktree' plus an install -m 755 line; ../.worktrees/<repo>-test01 has no .env
+  4. run the install -m 755 line it printed, then spawn.sh again with slug test02
+  5. ../.worktrees/<repo>-test02/.env holds your .env plus '# worker stack: slug=test02 offset=N', COMPOSE_PROJECT_NAME, HTTP_PORT, DB_PORT_HOST and DB_PORT_TEST_HOST
+  6. clean up with git worktree remove and git branch -D for feat/test01 and feat/test02
+  Without Herdr: go test ./core/role -run 'TestSpawnLetsTheRepositorySetUpItsWorktree|TestSpawnGivesEveryWorktreeItsOwnOffset' covers all of it
 ---
 
 # spawn.sh schreibt Werte, die nur einem Projekt gehoeren
@@ -138,3 +158,5 @@ Nicht projektspezifisch und daher in spawn.sh gehoerend, nicht in den Hook: --no
 3. Die Dateien per git checkout verwerfen und spaeter auf master per jaira update neu erzeugen - sauberster Zweig, aber verwirft eine Aenderung, deren Urheber unklar ist.
 - **2026-11-22 11:31 · Alexander Sacharov** — question (worker -> parent): review accepted (verdict accept, 8/8 DoD); the move to signoff is refused because uncommitted .jaira/lanes/*.md, AGENTS.md, CLAUDE.md (jaira update to 0.6.1) sit in this worktree - they were there before this worker started (git status at session start), not this ticket's. Options: 1) (Recommended) discard them here (git checkout -- those 8 files); 'jaira update --lanes' regenerates them where the board update belongs, in its own commit. 2) commit them on this branch as a separate chore(7MG5GB) commit - rides into this PR. 3) a person moves it with --force and the files stay.
 - **2026-11-22 11:32 · Alexander Sacharov** — decision (teamlead 22.11.): option 1 - the 8 jaira-update files discarded here (0.6.1 board files go to master in their own PR); plus one release-note line on silencing the hint with an empty .jaira/worktree-setup. Then review runs again with a new agent, since the note changed after review.
+- **2026-11-22 11:34 · Alexander Sacharov** — review: verdict accept, but the move to signoff was refused by the bug-hunt gate. The last hunt covers aab7fd867; HEAD 5685528ab added only one line to core/release/notes/7MG5GB.md. Ticket stays in review. Next: /jaira-role-bughunt 7MG5GB on HEAD, then jaira move 7MG5GB --to signoff (the review fields are already written).
+- **2026-11-22 14:38 · Alexander Sacharov** — bughunt: done at 5685528ab - 0 findings, follow-up hunt since aab7fd867, diff only (one new line in core/release/notes/7MG5GB.md: empty executable .jaira/worktree-setup silences the hint - checked against spawn.sh:185-190 and :305, the hint sits in the elif of the setup branch, a shebang-only script exits 0), no new files; concurrency, error paths, input, permissions checked; files: .gitattributes core/release/notes/7MG5GB.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/builtin/jaira-dispatcher/scripts/worktree-setup.example core/role/role_test.go core/shipped/shipped.sha256 internal/cli/roles.go
