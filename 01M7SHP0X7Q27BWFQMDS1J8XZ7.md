@@ -24,7 +24,7 @@ related:
   - 01M6PDF2D6RQ8K1T7N0G1MYFKE
 commits: []
 created-at: 2026-11-19T09:19:56Z
-updated-at: 2026-11-22T23:06:19Z
+updated-at: 2026-11-22T23:06:26Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-385148
@@ -35,7 +35,7 @@ outcome-resolves: "1J8XZ7: Milestones tab in the cockpit Overview with progress 
 review-summary: none
 review-gaps: "none - pass 2 read only the repair (82710fe25): groupIn is the one place a lane maps to a group for another board, overviewOf keeps its finished/started lists for today's board because the pane needs them per render without a lanes read; board lanes are read once per distinct board, not per ticket"
 test-verdict: "pass: round 2 - claude plugin test . 404 pass 0 fail (exit 0) incl. 'a ticket on another board goes by that board's lanes' and 'an opening that finds no milestone keeps the one chosen'; tsc: no new error in hooks; go build exit 0 (no go test, house rule). Real board via node: same groups as round 1 (release-0-6-0 3 of 3 by logbook). Another board exercised only through the mock (the real repo has one board; round 1's hunter reproduced it on a scratch repo). Writes no board state. DoD 6 (seen by a person) left open for the person."
-hunt-verdict: "fail: bughunt done at e68f3d2ab, 3 change findings (1 blocker: another board's tickets grouped by today's lanes), 0 pre-existing"
+hunt-verdict: "pass: bughunt done at 82710fe25, 0 change, 0 pre-existing (round 2; round 1's 3 change findings fixed in 82710fe25, AGENTS.md/CLAUDE.md drift kept out of every commit)"
 round: 2
 back-from: testing
 back-by: lane
