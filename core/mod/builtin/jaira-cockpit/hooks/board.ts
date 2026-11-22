@@ -803,26 +803,28 @@ export function huntOf(briefJson: string): { state: Hunt; at: string } | undefin
 
 // ── following a pull request (CRASZS) ────────────────────────────────────
 
-// The pull request of this repository a report names by its address:
-// GitHub's /pull/<n> or GitLab's /-/merge_requests/<n>, the first whose
-// host and project a remote here points at (`git remote -v`, https or ssh
-// form) — a report quoting another project's pull request names none of
-// this one's. A bare "#12" is not taken: an issue, a list item and a pull
-// request all write it.
-export function pullRequestIn(text: string, remotes: string): number | undefined {
-  const known = remotes.toLowerCase().replace(/\.git(?=\s|$)/gm, '')
-  for (const m of text.matchAll(/https?:\/\/([^/\s]+)\/(\S+?)\/(?:pull|-\/merge_requests)\/(\d+)\b/g)) {
-    const host = m[1]!.toLowerCase()
-    const path = m[2]!.toLowerCase()
-    const at = [`${host}/${path}`, `${host}:${path}`]
-    if (known.split(/\s+/).some(url => at.some(a => url.endsWith(a)))) return Number(m[3])
+// The pull requests a report names by address — GitHub's /pull/<n>,
+// GitLab's /-/merge_requests/<n> — once each, in order. A bare "#12" is not
+// taken: an issue, a list item and a pull request all write it. Whose they
+// are, jaira pr says (followNamed).
+export function pullRequestsIn(text: string): { number: number; url: string }[] {
+  const out: { number: number; url: string }[] = []
+  for (const m of text.matchAll(/https?:\/\/[^\s)>\]]+?\/(?:pull|-\/merge_requests)\/(\d+)\b/g)) {
+    if (!out.some(x => sameAddress(x.url, m[0]))) out.push({ number: Number(m[1]), url: m[0] })
   }
-  return undefined
+  return out
+}
+
+// Whether two addresses of a pull request are the same one: scheme and case
+// aside.
+export function sameAddress(a: string, b: string): boolean {
+  const norm = (u: string) => u.toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, '')
+  return norm(a) === norm(b)
 }
 
 // One pull request as `jaira pr --json` prints it, as far as the cockpit
 // reads it.
-export type PullRequest = { number: number; tickets: string[]; settled: boolean; unsettled: string[] }
+export type PullRequest = { number: number; url: string; tickets: string[]; settled: boolean; unsettled: string[] }
 
 // The open pull requests `jaira pr --json` lists; undefined where the
 // answer is not that command's.
@@ -831,7 +833,7 @@ export function pullRequestsOf(prJson: string): PullRequest[] | undefined {
   if (!Array.isArray(st?.prs)) return undefined
   return st.prs
     .filter(p => typeof p.number === 'number' && (p.state ?? 'open') === 'open')
-    .map(p => ({ number: p.number!, tickets: p.tickets ?? [], settled: p.settled === true, unsettled: p.unsettled ?? [] }))
+    .map(p => ({ number: p.number!, url: p.url ?? '', tickets: p.tickets ?? [], settled: p.settled === true, unsettled: p.unsettled ?? [] }))
 }
 
 // When a board's pull request opens, from `jaira roles list --json`:

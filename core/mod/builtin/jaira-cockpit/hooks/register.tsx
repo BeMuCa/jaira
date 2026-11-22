@@ -4,7 +4,7 @@ import type { BoardView, CacheState, ThreadTally } from '../types'
 import {
   branchesFor, carrierBranch, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
   explanationNotes, explanationOf, huntOf, isOlder, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
-  offeredRelease, upgradeCheckOf, lanesBetween, prWhenOf, pullRequestIn, pullRequestsOf,
+  offeredRelease, upgradeCheckOf, lanesBetween, prWhenOf, pullRequestsIn, pullRequestsOf, sameAddress,
   createdHandle, decisionLines, oneLine, decisionsOf, followTitle, gapItems, nextChoice, standOf,
   type Action, type Agent, type GapItem, type Hunt, type NoteClass, type Option, type Waiting,
 } from './board.ts'
@@ -245,11 +245,9 @@ async function shorten($: EngineInterface, text: string, origin: string, agent?:
     session: await sessionId($),
     text: report,
   })
-  // A remote is asked only where an address could name a pull request.
-  const remotes = /\/(?:pull|merge_requests)\/\d/.test(report) ? await run($, ['git', 'remote', '-v'], await project($)) : undefined
-  const n = remotes?.exitCode === 0 ? pullRequestIn(report, remotes.stdout) : undefined
-  const follow = n === undefined ? undefined : await followLine($, n, [short.ticket])
-  return text.replace(report, () => follow === undefined ? short.line : `${short.line}\n${follow}`)
+  const named = pullRequestsIn(report)
+  if (named.length > 0) $.clock.after(0, () => void followNamed($, named, short.ticket))
+  return text.replace(report, () => short.line)
 }
 
 async function stored($: EngineInterface, key: string): Promise<Report[]> {
@@ -659,18 +657,18 @@ async function heldInSignoff($: EngineInterface, w: Waiting): Promise<boolean> {
   if (land) return false
   if (branch !== undefined && pending !== undefined && pending.length > 0) return hold(t.prWaitsSignoff(branch, pending))
   if (step === 'pr' && branch !== undefined) {
-    // A second press while the first one's pr lane still opens the pull
-    // request would start a second agent in the same worktree.
-    const key = `${OPENING_PREFIX}${await project($)}:${w.id}`
-    const now = await $.clock.now()
-    const since = (await $.store.get(key)) as number | undefined
-    if (since !== undefined && now - since < PR_LOOKS * PR_LOOK_EVERY_MS) {
+    // A second press while the first one's pr lane still works would start
+    // a second agent in the same worktree. Its Herdr tab, labelled <id>/pr by
+    // spawn.sh, says whether it still works; once it is gone, a press starts
+    // the lane again.
+    const bin = await herdr($)
+    const tabs = bin === undefined ? undefined : await run($, [bin, 'tab', 'list'], b.dir)
+    if (tabs?.exitCode === 0 && tabsOf(tabs.stdout).some(x => x.label === `${w.id}/pr` && x.agent_status !== 'done')) {
       await say($, t.prBeingOpened(w.id, branch))
       return true
     }
     const failed = await startPrLane($, b, w.id, branch, false, porcelain)
     if (failed !== undefined) return hold(failed)
-    await $.store.set(key, now)
     await say($, t.prOpensInSignoff(w.id, branch))
     void $.prompt.submit({ text: t.toSessionPrInSignoff(w.id, branch) })
     return true
@@ -679,6 +677,10 @@ async function heldInSignoff($: EngineInterface, w: Waiting): Promise<boolean> {
     const r = await run($, ['jaira', 'pr', branch, '--json'], b.repo, 60_000)
     const open = r?.exitCode === 0 ? pullRequestsOf(r.stdout) : undefined
     if (open === undefined) return hold(t.prUnchecked(`jaira pr: ${output(r)}`))
+    // The forge lists a pull request of this branch in some state or from
+    // some fork, and none is open from origin: merged, closed, or somebody
+    // else's of the same name. Whose round that is, a person tells.
+    if (open.length === 0) return hold(t.prElsewhere(branch))
     const unsettled = open.flatMap(p => (p.settled ? [] : p.unsettled.map(u => `#${p.number}: ${u}`)))
     return unsettled.length > 0 ? hold(t.notSettled(branch, unsettled)) : false
   }
@@ -853,7 +855,6 @@ async function startPrLane($: EngineInterface, b: { dir: string; repo: string },
 const PR_LOOK_EVERY_MS = 60_000
 const PR_LOOKS = 20
 const FOLLOWED_PREFIX = 'pr-followed:'
-const OPENING_PREFIX = 'pr-opening:'
 
 function followPullRequest($: EngineInterface, id: string, branch: string, repo: string, looks: number): void {
   if (looks <= 0) return
@@ -870,6 +871,24 @@ async function lookForPullRequest($: EngineInterface, id: string, branch: string
   if (open === undefined) return followPullRequest($, id, branch, repo, looks)
   const line = await followLine($, open.number, open.tickets.length > 0 ? open.tickets : [id])
   if (line !== undefined) void $.prompt.submit({ text: line })
+}
+
+// The pull requests a report names by address, asked of jaira one by one:
+// the first that is this repository's own (jaira pr reads the forge origin
+// leads to, a fork's parent included), open, and whose address is the one
+// the report wrote is handed over. A report quoting another project's pull
+// request hands nothing over for it. After the report, not inside it: the
+// forge's answer must not hold up the report reaching this session.
+async function followNamed($: EngineInterface, named: { number: number; url: string }[], ticket: string): Promise<void> {
+  const dir = board?.repo ?? (await project($))
+  for (const { number, url } of named) {
+    const r = await run($, ['jaira', 'pr', '--number', String(number), '--json'], dir, 60_000)
+    const pr = r?.exitCode === 0 ? pullRequestsOf(r.stdout)?.[0] : undefined
+    if (pr === undefined || !sameAddress(pr.url, url)) continue
+    const line = await followLine($, number, pr.tickets.length > 0 ? pr.tickets : [ticket])
+    if (line !== undefined) void $.prompt.submit({ text: line })
+    return
+  }
 }
 
 // The line that hands a pull request to the teamlead, or undefined where

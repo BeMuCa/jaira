@@ -3933,17 +3933,27 @@ describe('following a pull request (CRASZS)', () => {
       expect(text).toContain('MG677R stays in signoff; nothing was moved.')
     })
 
-    for (const [name, read] of [['settled', open(12)], ['merged meanwhile', JSON.stringify({ prs: [] })]] as const) {
-      test(`a pull request ${name}: Accept moves the ticket to done as everywhere`, async ($, on) => {
-        const w = world(on, { herdr: true })
-        w.prWhen = 'signoff'
-        w.ahead = 3
-        w.prs = [{ number: 12 }]
-        w.prReads = [read]
-        await press($)
-        expect(moved(w)).toHaveLength(1)
-      })
-    }
+    test('a pull request settled: Accept moves the ticket to done as everywhere', async ($, on) => {
+      const w = world(on, { herdr: true })
+      w.prWhen = 'signoff'
+      w.ahead = 3
+      w.prs = [{ number: 12 }]
+      w.prReads = [open(12)]
+      await press($)
+      expect(moved(w)).toHaveLength(1)
+    })
+
+    test('the forge lists a pull request jaira pr does not show open from origin: held, a person tells whose it is', async ($, on) => {
+      const w = world(on, { herdr: true })
+      w.prWhen = 'signoff'
+      w.ahead = 3
+      w.prs = [{ number: 12 }]
+      w.prReads = [JSON.stringify({ prs: [] })]
+      await press($)
+      expect(moved(w)).toEqual([])
+      expect(ran(w, 'bash', SPAWN)).toEqual([])
+      expect(await paneText($)).toContain('none is open from this repository')
+    })
 
     test('another ticket on the branch not in signoff yet: nothing opens and nothing moves', async ($, on) => {
       const w = world(on, { herdr: true })
@@ -3957,17 +3967,23 @@ describe('following a pull request (CRASZS)', () => {
       expect(await paneText($)).toContain('the pull request for feat/mg677r waits: AB12CD not in signoff yet')
     })
 
-    test('a second press while the pull request is still being opened starts no second agent', async ($, on) => {
+    test('a second press while the pr lane\'s tab still works starts no second agent; once it is gone, a press starts it again', async ($, on) => {
       const w = world(on, { herdr: true })
       w.prWhen = 'signoff'
       w.ahead = 3
       await press($)
-      await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
+      // spawn.sh's tab for the lane, while its agent works.
+      w.tabs = [{ tab_id: 'w1:t7', label: 'MG677R/pr', agent_status: 'working' }]
       await w.clock.advance(3_000)
       await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
       expect(ran(w, 'bash', SPAWN)).toHaveLength(1)
       expect(moved(w)).toEqual([])
       expect(w.toasts.at(-1)).toContain('is being opened already')
+      // The agent died and its tab went: the next press starts the lane again.
+      w.tabs = []
+      await w.clock.advance(3_000)
+      await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
+      expect(ran(w, 'bash', SPAWN)).toHaveLength(2)
     })
 
     test('pr-when that cannot be read holds the ticket: unread is not done', async ($, on) => {
