@@ -1,7 +1,7 @@
 ---
 id: 01M802EM5FMTDJ9JKE8J50RA6N
 title: "Der Teamlead bringt sein Handwerkszeug mit: angenommene PRs landen, Branches stapeln, saubere Logbook-Commits"
-status: in-progress
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -20,37 +20,42 @@ tags:
   - gates
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 05dd9efc9d81d79e0b42b21d1e8e3b7340607208
+  - c826ccc395a6abfb1d39978179c7bb00d7e60a76
+  - 7ddcf45f39d89261c122c2a277cf9b016b070cf8
+  - acd6d7c18055203745b81aa1e372370e31e04be9
+  - 453ea7000713ac47a1c462b65d74a77dedb41df3
+  - 2105b571352c0bcd0e4089001f86774b77dfc1c3
+  - 0ecdbee7cc227dc2c0ff7d51848020882a831b72
+  - 5e5bb03565dbf40e1c3e816cf42108926b11aec9
+  - 002be5c4e23a22f904ce45a216f4fb343cb4e0a6
 created-at: 2026-11-21T22:08:26Z
-updated-at: 2026-11-22T11:46:05Z
+updated-at: 2026-11-22T11:59:18Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-31706
-claimed-at: 2026-11-22T11:08:04Z
+claimed-by: DESKTOP-RFTCH11-2191673
+claimed-at: 2026-11-22T11:48:52Z
 outcome-what: "New core/role/builtin/jaira-teamlead/scripts/land.sh <pr>: merges the PR's base into the ticket branch, takes conflicts in files .jaira/land-regenerate names from the base and regenerates them, commits merge+regeneration as one chore(<ID>) commit, pushes, waits for gh pr checks, then merges via gh only where 'jaira roles pr-gate --merge' says yes, else prints the merge line (exit 3). New pr-gate --merge reads .jaira/land off the base (agent only) and reuses the existing every-ticket-in-done check. Teamlead SKILL.md: give back as note+move+spawn, decisions as dod --add, landing/stacking/filing-away section."
 outcome-why: "The 2026-11-21 teamlead built these routines by hand (~/.claude/scripts/jaira-land.sh, 20+ PRs landed); a new teamlead would rebuild them, and merging must stay behind a board permission (Alex chose .jaira/land = agent)."
 outcome-resolves: "DoD 1-4: land.sh + TestLandMergesOnlyWhereTheBoardLetsIt (9 cases), pr-gate --merge + two prgate tests, SKILL text, release note + manifest. Four categories checked: concurrency — two land.sh on one worktree not guarded (teamlead lands one after another, written in SKILL); error paths — conflict outside generated files aborts the merge, failed generator resets to the start, red CI stops before the gate, each tested where cheap; unusual input — no regenerate file, comment/blank lines, branch already holding the base tested; permissions — regenerate commands and .jaira/land come from the base, never the PR branch."
-review-summary: "none"
+review-summary: "Neues Skript jaira-teamlead/scripts/land.sh <pr>: prüft Branch/PR (gh, Fork→Parent), holt origin- und Basis-Branch in benannte Refs, merged die Basis, übernimmt Konflikte nur in Dateien aus .jaira/land-regenerate (von der Basis gelesen) von der Basis und regeneriert sie, committet alles als chore(<ID>): merge ..., pusht, wartet auf gh pr checks, fragt jaira roles pr-gate --merge und merged dann mit --match-head-commit + reap.sh oder druckt die Merge-Zeile (exit 3). pr-gate bekommt --merge: exit 0 nur wenn .jaira/land der Basis 'agent' sagt, kein Commit ohne Ticket-Handle und jedes Ticket der Branch in done; sonst not_agent/unnamed/pending. Dazu settings.LandIn/BoardLandPath, SKILL.md-Abschnitte (Give-back-Reihenfolge, Entscheidungen als DoD, Landen/Stapeln/Logbook-Staging), Release-Note, shipped.sha256, Tests mit gestubbtem gh."
 round: 7
 back-from: testing
 back-by: lane
 back-count: 2
-review-gaps: "none: round 5 replaces one ref with a kept FETCH_HEAD value and adds two test cases"
-test-verdict: "pass: round 5 at 0ecdbee7c: go test ./core/role ./core/shipped ./internal/wintrap RC=0 (internal/cli unchanged since round 4, green there); hunt finding of round 4 verified: single-branch clone lands (exit 0, merged) and with origin ahead stops exit 2 with a clean tree; earlier give-back edges still green."
-hunt-verdict: "fail: bughunt done at 0ecdbee7c, 1 change: the base is still read through a tracking ref a narrow refspec never writes (single-branch clone of the feature branch) -> false exit 2"
-review-verdict: "accept: all five DoD items met and tested (11 land.sh cases incl. generator failure, two pr-gate --merge tests); go test ./core/role ./internal/cli ./core/shipped green at 453ea7000; merge stays behind .jaira/land=agent read off the base, tickets in done, named commits, green CI and the judged head; only small error-message edges left as notes"
-review-round: 4
+review-gaps: |-
+  note: SKILL.md (Landing) sagt, rotes CI stoppe "with nothing pushed" - der Merge-Commit ist zu dem Zeitpunkt schon gepusht; Satz korrigieren ("pushed, not merged").
+  note: land.sh:149/151 - schlägt git commit fehl (z.B. Hook), bricht set -e ab und lässt einen halben Merge im Worktree; wie beim Generator-Pfad merge --abort + reset --hard "$before".
+  note: land.sh:139 - reset --hard entfernt keine untracked Dateien, die ein fehlgeschlagener Generator angelegt hat; ggf. benennen oder git clean auf die genpath-Pfade.
+test-verdict: "pass: round 6 at 5e5bb0356: go test ./core/role ./core/shipped ./internal/wintrap RC=0; round-5 hunt finding verified with a fixture whose origin refspec covers neither master nor the branch (narrow_fetch_refspec: merged; with origin ahead: exit 2, clean tree)."
+hunt-verdict: "pass: bughunt done at 5e5bb0356, 0 change, 0 pre-existing"
+review-verdict: "accept: alle 5 DoD-Punkte durch Code und Tests belegt (go test ./core/role ./internal/cli grün); Gate liest .jaira/land und land-regenerate von der Basis, merged nur den geprüften Head; drei kleine Randnotizen, kein Blocker"
+review-round: 7
 review-verdict-gaps: |-
-  note: land.sh:139 compares HEAD with the local refs/remotes/origin/<branch> without fetching it - when someone else pushed to the branch, git push fails non-fast-forward under set -e with git's raw error and a local merge commit stays (exit 1, nothing merged); fix: fetch origin <branch> before the merge and die 1 with a land: message when origin is ahead
-  note: land.sh:160 a failing gh pr merge (head moved, repo disallows merge commits) exits through set -e with gh's own error and no land: line or merge line; fix: on failure die 1 and print $mergeline
-  note: SKILL.md give-back step 3 now says note, move, spawn and then "Close the old tab first" in the same item - the order reads contradictory; put the close-tab sentence before the spawn
-  note: known limit, in notes: a repo with no CI checks reads as not green (gh pr checks exits 1), so land.sh never merges there and the person does
-review-check: |-
-  1. cd /home/alex/projects/.worktrees/jaira-50ra6n
-  2. go test ./core/role -run TestLand -v 2>&1 | grep -E "^ *---" - see 11 subtests PASS (no land file / land person / ticket in signoff -> merge line exit 3; agent+done -> merged; foreign conflict, red CI, deleted generated file, failing generator -> exit 1)
-  3. go test ./internal/cli -run PRGate - see ok
-  4. go run ./cmd/jaira roles pr-gate --merge upstream/master; echo $? - see ".jaira/land in upstream/master does not say agent" and 3
-  5. bash core/role/builtin/jaira-teamlead/scripts/land.sh --help - read steps 1-4 and exit codes 0/1/2/3
-  6. read core/role/builtin/jaira-teamlead/SKILL.md section "Landing, stacking and filing away"
+  note: SKILL.md (Landing) sagt, rotes CI stoppe "with nothing pushed" - der Merge-Commit ist zu dem Zeitpunkt schon gepusht; Satz korrigieren ("pushed, not merged").
+  note: land.sh:149/151 - schlägt git commit fehl (z.B. Hook), bricht set -e ab und lässt einen halben Merge im Worktree; wie beim Generator-Pfad merge --abort + reset --hard "$before".
+  note: land.sh:139 - reset --hard entfernt keine untracked Dateien, die ein fehlgeschlagener Generator angelegt hat; ggf. benennen oder git clean auf die genpath-Pfade.
+review-check: "1. go test ./core/role -run TestLandMergesOnlyWhereTheBoardLetsIt -v  → alle Unterfälle PASS (merge nur bei land=agent, sonst Merge-Zeile exit 3, generator_fails exit 1)  2. go test ./internal/cli -run 'TestPRGateMerge' -v  → PASS  3. go run ./cmd/jaira roles pr-gate --help  → Abschnitt '--merge' beschreibt .jaira/land  4. bash core/role/builtin/jaira-teamlead/scripts/land.sh --help  → Usage mit Exit-Codes 0/1/2/3  5. core/role/builtin/jaira-teamlead/SKILL.md lesen: Abschnitte 'A person's answer goes into the definition of done' und 'Landing, stacking and filing away' vorhanden"
 question: ""
 ---
 
@@ -107,3 +112,4 @@ question: ""
 - **2026-11-22 11:44 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-teamlead/scripts/land.sh:100-102 - class: the base is still read through a remote-tracking ref (refs/remotes/$remote/$basebranch, then "$base" in git show line 111, git merge line 120, pr-gate --merge line 165), which a narrow fetch refspec never writes - the same class 0ecdbee7c fixed only for origin's <branch>; example: a single-branch clone of the feature branch (git clone --single-branch -b feat/x), origin not a fork: git fetch origin master exits 0 but writes only FETCH_HEAD, land.sh dies 2 'origin/master was not fetched' (misleading - it was fetched); the new test case 'single-branch clone' clones the default branch, so origin/master exists and this stays untested; not a blocker (fails closed, nothing merged or pushed); ran: git clone -q --single-branch -b feat/x o c && git fetch -q origin master (exit 0) && git rev-parse -q --verify refs/remotes/origin/master (exit 1); blame: 05dd9efc9d (names 50RA6N)
 - **2026-11-22 11:44 · Alexander Sacharov** — bughunt: done at 0ecdbee7c - 1 finding (1 change, 0 pre-existing) in 3 modules, follow-up hunt since 2105b5713 (diff only: core/role/builtin/jaira-teamlead/scripts/land.sh, core/role/land_test.go, core/shipped/shipped.sha256 - new hash matches land.sh); concurrency, error paths, input, permissions checked; ran: go test ./core/role -run TestLand -count=1 (ok); files: core/release/notes/50RA6N.md core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-teamlead/scripts/land.sh core/role/land_test.go core/settings/settings.go core/shipped/shipped.sha256 internal/cli/prgate_test.go internal/cli/roles.go
 - **2026-11-22 11:46 · Alexander Sacharov** — round 6, class fixed instead of the example: every fetch in land.sh now names its destination (fetchref: +refs/heads/X:refs/remotes/R/X), so both origin/<branch> and <remote>/<base> exist whatever the clone's refspec. Test fixture 'narrow fetch refspec' sets remote.origin.fetch to an unrelated branch and deletes origin/master, covering both refs at once.
+- **2026-11-22 11:47 · Alexander Sacharov** — bughunt: done at 5e5bb0356 - 0 findings in 3 modules, follow-up hunt since 0ecdbee7c (diff only: core/role/builtin/jaira-teamlead/scripts/land.sh, core/role/land_test.go, core/shipped/shipped.sha256 - new hash matches land.sh); concurrency, error paths, input, permissions checked; ran: go test ./core/role -run TestLand -count=1 (ok), go test ./core/shipped/... (ok); files: core/release/notes/50RA6N.md core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-teamlead/scripts/land.sh core/role/land_test.go core/settings/settings.go core/shipped/shipped.sha256 internal/cli/prgate_test.go internal/cli/roles.go
