@@ -388,7 +388,9 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
   # teardown that hangs would hold the lock and stop every later round.
   # timeout(1) is coreutils; macOS ships it as gtimeout, if at all, and Git
   # Bash may find Windows' own timeout.exe first, which takes no -k: a
-  # candidate is used only once it ran a bounded 'true'.
+  # candidate is used only once it ran a bounded 'true'. Ten seconds, not
+  # one: a working timeout returns as soon as 'true' does, and on a loaded
+  # machine a second is too little to start it, which read as no timeout(1).
   if [ "${#targs[@]}" -gt 0 ]; then
     if [ ! -x "$teardown" ]; then
       echo "kept $t: $teardown is not executable: chmod +x it, or remove it"; continue
@@ -397,7 +399,7 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
     # coreutils' own.
     tbin=""
     while IFS= read -r c; do
-      if "$c" -k 1 1 true </dev/null >/dev/null 2>&1; then tbin="$c"; break; fi
+      if "$c" -k 1 10 true </dev/null >/dev/null 2>&1; then tbin="$c"; break; fi
     done < <(type -ap timeout gtimeout)
     if [ -z "$tbin" ]; then
       echo "kept $t: no timeout(1) that takes -k to bound $teardown: install coreutils"; continue

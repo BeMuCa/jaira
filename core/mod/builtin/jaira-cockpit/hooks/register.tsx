@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { ElementTable, EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
 import {
-  branchesFor, carrierBranch, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
+  branchesFor, carrierFor, type Carrier, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
   explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, ownTreeFor, diskOf, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, upgradeCheckOf, lanesBetween, prWhenOf, pullRequestsIn, pullRequestsOf, sameAddress,
   createdHandle, decisionLines, oneLine, decisionsOf, followTitle, gapItems, languageOf, nextChoice, NOTE_MARK, rephrasedOf, rephrasePrompt, standOf,
@@ -540,7 +540,7 @@ async function upgradeJaira($: EngineInterface, dir: string, to: string): Promis
   await show($, t.upgraded(to), withoutWarnings(`${up.stdout}\n${up.stderr}\n${setup === undefined ? 'jaira update did not run' : `${setup.stdout}\n${setup.stderr}`}`))
 }
 
-async function noteOn($: EngineInterface, dir: string, id: string, kind: 'explain' | 'decision') {
+async function noteOn($: EngineInterface, dir: string, id: string, kind: 'explain' | 'decision' | 'parent session') {
   const shown = await run($, ['jaira', 'show', id, '--json'], dir)
   return shown?.exitCode === 0 ? noteOf(shown.stdout, kind) : undefined
 }
@@ -699,6 +699,10 @@ async function accepting($: EngineInterface, w: Waiting, to: string, dir: string
     // all it does: it goes on from there — logbook, the next worker — without
     // the person typing it, and never starts the pull request Accept started.
     void $.prompt.submit({ text: t.toSessionAccepted(w.id, w.lane, to, next) })
+    // The same line on the ticket: a teamlead in another session reads it
+    // there, where the cockpit's own session is not its own.
+    const noted = await jaira($, dir, ['note', w.id, `cockpit: ${t.acceptedNote(w.lane, to)}`])
+    if (!noted.ok) await say($, t.acceptNoteLost(w.id, noted.why))
   } else await fail($, `${t.accept} ${w.id}`, done.why)
   await refreshBoard($)
 }
@@ -829,20 +833,12 @@ async function decideStep($: EngineInterface, b: { dir: string; repo: string }, 
   // branch's own word for itself.
   const land = base !== undefined && await landsWithoutPullRequest($, b.repo, base)
   if (typeof asked === 'string' && !land) return { step: stepAfterAccept(0, [], undefined), hint: t.prUnchecked(asked) }
-  let branch = found.ticket
-  // No worktree: the branch spawn.sh named <prefix>/<slug>, left behind
-  // when the worktree went; else the branch whose commits name the ticket,
-  // where it was worked on another ticket's branch.
-  if (branch === undefined) {
-    const listed = await run($, ['git', 'branch', '--list', '--format=%(refname:short)', `*/${id.toLowerCase()}`], b.repo)
-    if (listed?.exitCode === 0) branch = carrierBranch(listed.stdout, found.base ?? '')
-  }
-  if (branch === undefined && base !== undefined) {
-    const log = await run($, ['git', 'log', '--branches', '--not', base, '--format=%H %s'], b.repo)
-    const sha = log?.exitCode === 0 ? commitNaming(log.stdout, id) : undefined
-    const holders = sha ? await run($, ['git', 'branch', '--contains', sha, '--format=%(refname:short)'], b.repo) : undefined
-    if (holders?.exitCode === 0) branch = carrierBranch(holders.stdout, found.base ?? base)
-  }
+  // Several branches that could each be the ticket's: Accept picks none, as
+  // Give back picks none (Alex, QTQW15) — a pull request for a branch stacked
+  // on the ticket's proposes another ticket's work. The press says which.
+  const carrier = await ticketBranch($, b, id, porcelain, base, found.base ?? '')
+  if (carrier !== undefined && 'ambiguous' in carrier) return { step: 'none', hint: t.branchAmbiguous(id, carrier.ambiguous) }
+  const branch = carrier?.branch
   if (branch === undefined || base === undefined || branch === found.base) return { step: 'none', hint: '' }
   // One subject per commit ahead: the count and the tickets in one walk.
   const subjects = await run($, ['git', 'log', '--format=%s', `${base}..${branch}`], b.repo)
@@ -1492,8 +1488,12 @@ async function readRecords($: EngineInterface): Promise<SessionRecord[]> {
 
 // Give back: move, then note, then the work goes to the worker that
 // carried it while that is cheaper — its tab alive, its cache warm, its
-// context small — else its tab is closed FIRST and a new worker started, so
-// a ticket never has two worker tabs. The choice and why go onto the ticket.
+// context small, and always while it is at work — else its tab is closed
+// FIRST and a new worker started, so a ticket never has two worker tabs. A
+// second press finds the ticket in in-progress already (movedBefore) and
+// starts nothing. A new worker starts on the branch the ticket's commits
+// ride on and reports to the ticket's teamlead (workPlace, spawnWorker).
+// The choice and why go onto the ticket.
 // The review lane is not touched here: the worker always hands it to a new
 // agent, whose tab run-lane.sh closes after the lane.
 async function giveBack($: EngineInterface, id: string, lane: string, given: string | ((dir: string) => Promise<string>), share: number): Promise<void> {
@@ -1525,13 +1525,13 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
   const noted = await jaira($, dir, ['note', id, note])
   if (!noted.ok) await fail($, t.noteOn(id), t.noteLost(id, noted.why, note))
   // Who got it, as it happened: the note and the toast say only that.
-  const handedTo = async (who: 'old' | 'new' | 'none', why: string) => {
+  const handedTo = async (who: 'old' | 'new' | 'none', why: string, worker = '') => {
     const to = who === 'old' ? 'the old worker' : who === 'new' ? 'a new worker' : 'nobody (no worker started)'
     await jaira($, dir, ['note', id, `cockpit: given back to ${to} - ${why}`])
     await say($, t.returnedTo(id, who))
     // One line into this session, the teamlead's: the work is back and who
     // carries it now, so it starts no second worker beside this one.
-    void $.prompt.submit({ text: t.toSessionGivenBack(id, lane, who, reason) })
+    void $.prompt.submit({ text: t.toSessionGivenBack(id, lane, who, reason, worker) })
     await refreshBoard($)
   }
   const bin = await herdr($)
@@ -1540,7 +1540,14 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
   const tabs = await run($, [bin, 'tab', 'list'], dir)
   const tab = tabs?.exitCode === 0 ? carrierTab(tabsOf(tabs.stdout), id) : undefined
   const record = carrierOf(await readRecords($), id)
-  const choice = chooseWorker({ ...(record ? { record } : {}), tabAlive: tab !== undefined, now: await $.clock.now(), share })
+  // A worker at work is never replaced: closing its tab would end it in the
+  // middle of a step, and a new one beside it is the second worker this
+  // press must never make. It gets the decision typed in like any old
+  // worker, whatever its cache and context say.
+  const working = tab?.agent_status === 'working'
+  const choice = working
+    ? { reuse: true, why: 'the old worker is at work in its tab' }
+    : chooseWorker({ ...(record ? { record } : {}), tabAlive: tab !== undefined, now: await $.clock.now(), share })
   let why = choice.why
   if (choice.reuse && record) {
     // The pane may have gone since the tab list: only text that arrived
@@ -1549,19 +1556,98 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
     if (sent?.exitCode === 0) {
       await $.clock.sleep(1000)
       await run($, [bin, 'pane', 'send-keys', record.pane, 'enter'], dir)
-      return handedTo('old', why)
+      return handedTo('old', why, `${tab?.label ?? `${id}/worker`} (pane ${record.pane})`)
     }
     why = `${why}, but its pane took no text`
   }
+  if (working) return handedTo('none', `${why}; nothing recorded reaches its pane, tell it in tab ${tab?.label} - no second worker started`, `${tab?.label} at work, not reached: type the decision into its tab, start no other`)
   const script = await spawnScript($)
   // Nothing to start a new one with: the old tab stays, so the ticket keeps
   // whatever worker it has.
   if (script === undefined) return handedTo('none', `${why}; no spawn.sh found (jaira roles install), old tab left open`)
+  const place = await workPlace($, board, id)
+  // No branch it can tell for the ticket's own: nothing is started, the old
+  // tab stays, and the person hears which branches it is between.
+  if (place.stop) {
+    await handedTo('none', `${why}; ${place.why}, old tab left open`, `none: ${place.why}`)
+    return say($, `${id}: ${place.why}`)
+  }
   if (tab !== undefined) await run($, [bin, 'tab', 'close', tab.tab_id], dir)
-  // In its own tab, like the one after Accept, reporting to this session.
-  const started = await run($, [...script, ...await parentArgs($), id.toLowerCase(), id, 'worker', board.repo], board.repo, 120_000)
-  if (started?.exitCode === 0) return handedTo('new', why)
-  await handedTo('none', `${why}; spawn.sh failed: ${(started?.stderr ?? '').trim().slice(-160)}`)
+  // In its own tab, on the branch the ticket's commits ride on, reporting to
+  // the ticket's teamlead.
+  const started = await spawnWorker($, script, id, place)
+  const where = `${place.why}; ${started.parentWhy}`
+  if (started.ok) return handedTo('new', `${why}; ${where}`, `${id}/worker (${started.pane ? `pane ${started.pane}, ` : ''}on ${place.branch ?? 'a new branch'})`)
+  await handedTo('none', `${why}; ${where}; spawn.sh failed: ${started.err.slice(-160)}`)
+}
+
+// Where a new worker for a ticket starts, and what spawn.sh is handed for
+// it: the worktree of the branch its commits ride on, a new worktree on that
+// branch where it has none, and only where the ticket has no branch at all a
+// new <prefix>/<slug> as before. why goes onto the ticket's note.
+type Place = { args: string[]; slug: string; root: string; branch?: string; why: string; stop?: true }
+
+// The branch a ticket's work rides on, for Accept's pull request and Give
+// back's new worker alike, as carrierFor (board.ts) settles it: its own
+// worktree's, a <prefix>/<slug>, or the one branch holding its newest own
+// commit; git is asked only as far as the answer is still open. base is
+// what the log counts against, origin's default where there is one; never
+// is the branch that is never a carrier: for Give back the local default
+// branch, so the branch the main checkout stands on counts like any other,
+// for Accept the main checkout's branch, as before QTQW15.
+async function ticketBranch($: EngineInterface, b: { dir: string; repo: string }, id: string, porcelain: string, base: string | undefined, never: string): Promise<Carrier | undefined> {
+  const found = branchesFor(porcelain, id)
+  const local = never
+  if (found.ticket !== undefined) return carrierFor({ own: found.ticket, base: local })
+  const listed = await run($, ['git', 'branch', '--list', '--format=%(refname:short)', `*/${id.toLowerCase()}`], b.repo)
+  const slugBranches = listed?.exitCode === 0 ? listed.stdout : undefined
+  const named = carrierFor({ base: local, ...(slugBranches !== undefined ? { slugBranches } : {}) })
+  if (named !== undefined || base === undefined) return named
+  const log = await run($, ['git', 'log', '--branches', '--not', base, '--format=%H %s'], b.repo)
+  const sha = log?.exitCode === 0 ? commitNaming(log.stdout, id) : undefined
+  const held = sha ? await run($, ['git', 'branch', '--contains', sha, '--format=%(refname:short)'], b.repo) : undefined
+  return carrierFor({ base: local, ...(held?.exitCode === 0 ? { holders: held.stdout } : {}) })
+}
+
+async function workPlace($: EngineInterface, b: { dir: string; repo: string }, id: string): Promise<Place> {
+  const slug = id.toLowerCase()
+  const trees = await run($, ['git', 'worktree', 'list', '--porcelain'], b.dir)
+  const porcelain = trees?.exitCode === 0 ? trees.stdout : ''
+  const base = (await originDefault($, b.repo)) ?? branchesFor(porcelain, id).base
+  const carrier = await ticketBranch($, b, id, porcelain, base, (base ?? '').replace(/^[^/]+\//, ''))
+  if (carrier === undefined) return { args: [], slug, root: b.repo, why: 'no branch carries the ticket yet, a new one is made' }
+  if ('ambiguous' in carrier) return { args: [], slug, root: b.repo, why: t.branchAmbiguous(id, carrier.ambiguous), stop: true }
+  const how = carrier.by === 'commit' ? 'holds the newest commit naming the ticket' : carrier.by === 'worktree' ? "is the ticket's worktree's" : 'is named after the ticket'
+  const wt = worktreeOfBranch(porcelain, carrier.branch)
+  if (wt !== undefined) return { args: ['--no-worktree'], slug, root: wt, branch: carrier.branch, why: `branch ${carrier.branch} ${how}, worktree ${wt}` }
+  return { args: ['--branch', carrier.branch], slug, root: b.repo, branch: carrier.branch, why: `branch ${carrier.branch} ${how}, its worktree made again` }
+}
+
+// spawn.sh for a ticket's new worker, with the ticket's teamlead as its
+// parent: the session its newest 'parent session:' note names, else — that
+// session gone, or no note at all — this one, the person's, else none. A
+// parent spawn.sh refuses (exit 2, no session listens there) stops it before
+// a tab is made, so the next one is tried. parentWhy goes onto the note.
+async function spawnWorker($: EngineInterface, script: string[], id: string, place: Place): Promise<{ ok: true; pane: string; parentWhy: string } | { ok: false; err: string; parentWhy: string }> {
+  // The newest 'parent session: <address>' note — what a worker writes the
+  // first time it reads its --parent — names the ticket's teamlead.
+  const noted = (await noteOn($, place.root, id, 'parent session'))?.text.split(/\s/)[0]?.replace(/`/g, '') || undefined
+  // This session only by a socket whose file is still there (T5QN9P).
+  const socket = await $.env.get('CLAUDE_CODE_MESSAGING_SOCKET')
+  const own = socket && await $.fs.exists(socket).catch(() => false) ? socket : undefined
+  const tries: { flags: string[]; why: string }[] = []
+  if (noted !== undefined) tries.push({ flags: ['--parent', noted], why: `reports to ${noted}, the ticket's parent session` })
+  if (own && `uds:${own}` !== noted) tries.push({ flags: ['--parent', `uds:${own}`], why: `reports to this session${noted === undefined ? ' (no parent session noted on the ticket)' : ` (${noted} does not listen)`}` })
+  tries.push({ flags: ['--no-parent'], why: 'no parent session reachable, asks in its own tab' })
+  let err = ''
+  for (const tried of tries) {
+    const r = await run($, [...script, ...place.args, ...tried.flags, place.slug, id, 'worker', place.root], place.root, 120_000)
+    if (r?.exitCode === 0) return { ok: true, pane: r.stdout.trim().split('\n').at(-1) ?? '', parentWhy: tried.why }
+    err = (r?.stderr || r?.stdout || 'spawn.sh did not run').trim()
+    const refusedParent = r?.exitCode === 2 && tried.flags[0] === '--parent' && err.includes(`--parent ${tried.flags[1]}: no `)
+    if (!refusedParent) return { ok: false, err, parentWhy: tried.why }
+  }
+  return { ok: false, err, parentWhy: 'no parent session reachable' }
 }
 
 // The workers of this board, for the teamlead (the tool) and a person

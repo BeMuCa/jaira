@@ -381,7 +381,7 @@ export function otherRefusal(errorJson: string): string | undefined {
 // Discuss chat's `decision:` note, up to the next note or section, and when
 // it was written (jaira stamps notes to the minute, in UTC). undefined when
 // there is none yet.
-export function noteOf(showJson: string, kind: 'explain' | 'decision'): { text: string; at: number; line: number } | undefined {
+export function noteOf(showJson: string, kind: 'explain' | 'decision' | 'parent session'): { text: string; at: number; line: number } | undefined {
   const lead = new RegExp(`^- \\*\\*(\\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d) · [^*]*\\*\\* — ${kind}:\\s*`)
   const body = parse<{ body?: string }>(withoutWarnings(showJson))?.body ?? ''
   const lines = body.split('\n')
@@ -563,6 +563,42 @@ export function worktreeOfBranch(porcelain: string, branch: string): string | un
   return worktreesOf(porcelain).find(w => w.branch === branch)?.path
 }
 
+// Which branch a ticket's work rides on, in this order and nothing more:
+// the branch its own worktree stands on, else a branch named <prefix>/<slug>
+// (its worktree removed), else the one branch that holds the newest commit
+// that is the ticket's own. Several holding that commit, none of them the
+// ticket's by worktree or name, is never guessed at: ambiguous names them and
+// the person picks (Alex, QTQW15). Three rounds of rules that guessed —
+// git's order, the distance to a tip, which tip lies under which — each
+// started a worker in another ticket's worktree in a case the next round
+// found. undefined: no branch of the ticket's at all, and spawn.sh makes
+// <prefix>/<slug>. base is the default branch, never a carrier; holders is
+// `git branch --contains <that commit>`, slugBranches `git branch --list
+// '*/<slug>'`, both as --format=%(refname:short) lists them.
+export type Carrier = { branch: string; by: 'commit' | 'worktree' | 'name' } | { ambiguous: string[] }
+
+export function carrierFor(input: { own?: string; base: string; holders?: string; slugBranches?: string }): Carrier | undefined {
+  const { own, base, holders, slugBranches } = input
+  if (own !== undefined && own !== base) return { branch: own, by: 'worktree' }
+  // Two named after it — feat/<slug> and fix/<slug> — are as much a guess as
+  // two holders: neither is picked.
+  const named = slugBranches === undefined ? [] : holdersOf(slugBranches, base)
+  if (named.length === 1) return { branch: named[0]!, by: 'name' }
+  if (named.length > 1) return { ambiguous: named }
+  const branches = holders === undefined ? [] : holdersOf(holders, base)
+  if (branches.length === 1) return { branch: branches[0]!, by: 'commit' }
+  return branches.length > 1 ? { ambiguous: branches } : undefined
+}
+
+// The branches a `git branch --format=%(refname:short)` listing names, in
+// its order, without the default branch, a detached HEAD — listed as "(HEAD
+// detached at <sha>)", which is no branch — or a branch that only wraps
+// another one listed, Herdr's review/<branch>.
+function holdersOf(holders: string, base: string): string[] {
+  const listed = holders.split('\n').map(l => l.trim()).filter(b => b && b !== base && !b.startsWith('('))
+  return listed.filter(b => !listed.some(o => b.endsWith(`/${o}`)))
+}
+
 export function newWorktreeFor(repo: string, branch: string): string {
   const cut = repo.lastIndexOf('/')
   return `${repo.slice(0, cut)}/.worktrees/${repo.slice(cut + 1)}-${branch.slice(branch.lastIndexOf('/') + 1)}`
@@ -604,14 +640,16 @@ export function ticketsNamed(subjects: string): string[] {
   return out
 }
 
-// The newest commit whose subject names a ticket, off `git log --format=%H
-// %s`, read as ticketsNamed reads a subject: the handle alone or among
-// others in the scope. The body is never read — a merge commit quotes the
-// subjects it brought in there, and would name every ticket it merged.
+// The newest commit that is the ticket's own, off `git log --format=%H %s`:
+// its subject's scope is the handle and nothing else, `fix(A3K9QP): ...`.
+// A scope that lists it beside others — `chore(0GMYQB,A3K9QP)`, a follow-up's
+// commit on the follow-up's branch — is not its own and never counts, nor
+// does the handle in the text (Alex, QTQW15). The body is never read — a
+// merge commit quotes the subjects it brought in there.
 export function commitNaming(log: string, id: string): string | undefined {
   for (const line of log.split('\n')) {
     const cut = line.indexOf(' ')
-    if (cut > 0 && ticketsNamed(line.slice(cut + 1)).includes(id)) return line.slice(0, cut)
+    if (cut > 0 && /^[a-z]+\(([^)]*)\)!?:/.exec(line.slice(cut + 1).trim())?.[1]?.trim() === id) return line.slice(0, cut)
   }
   return undefined
 }
@@ -627,21 +665,6 @@ export function pendingOf(listJson: string, named: readonly string[], arrived: s
     const status = tickets.find(t => t.handle === id)?.status
     return status !== undefined && !lanes.includes(status)
   })
-}
-
-// A ticket's branch without a worktree of its own, off a branch listing
-// (`--format=%(refname:short)`): the first that is not the base. Read from
-// `git branch --list '*/<slug>'` — spawn.sh names it <prefix>/<slug>, and a
-// worktree removed after done leaves it behind — and from `git branch
-// --contains <a commit naming it>`, where it was worked on another ticket's
-// branch. A branch that only wraps another listed one — Herdr's
-// review/<branch> — is passed by: it lists before task/<slug> and
-// work/<slug>. Depth alone decides nothing; in the --contains listing a wip
-// or a detached HEAD has fewer parts than the branch the work rode on. A
-// detached HEAD lists as "(HEAD detached at <sha>)", which is no branch.
-export function carrierBranch(listing: string, base: string): string | undefined {
-  const branches = listing.split('\n').map(l => l.trim()).filter(b => b && b !== base && !b.startsWith('('))
-  return branches.find(b => !branches.some(o => b.endsWith(`/${o}`)))
 }
 
 // The forge jaira-role-pr would open a pull request on: `git config
