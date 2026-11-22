@@ -3967,7 +3967,7 @@ describe('following a pull request (CRASZS)', () => {
       expect(await paneText($)).toContain('the pull request for feat/mg677r waits: AB12CD not in signoff yet')
     })
 
-    test('a second press while the pr lane\'s tab still works starts no second agent; once it is gone, a press starts it again', async ($, on) => {
+    test('a second press while the pr lane\'s tab still works starts no second agent; once it stops working, a press starts it again', async ($, on) => {
       const w = world(on, { herdr: true })
       w.prWhen = 'signoff'
       w.ahead = 3
@@ -3979,8 +3979,9 @@ describe('following a pull request (CRASZS)', () => {
       expect(ran(w, 'bash', SPAWN)).toHaveLength(1)
       expect(moved(w)).toEqual([])
       expect(w.toasts.at(-1)).toContain('is being opened already')
-      // The agent died and its tab went: the next press starts the lane again.
-      w.tabs = []
+      // The agent stopped without a pull request; its tab stays idle: the
+      // next press starts the lane again.
+      w.tabs = [{ tab_id: 'w1:t7', label: 'MG677R/pr', agent_status: 'idle' }]
       await w.clock.advance(3_000)
       await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
       expect(ran(w, 'bash', SPAWN)).toHaveLength(2)

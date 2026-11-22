@@ -659,11 +659,12 @@ async function heldInSignoff($: EngineInterface, w: Waiting): Promise<boolean> {
   if (step === 'pr' && branch !== undefined) {
     // A second press while the first one's pr lane still works would start
     // a second agent in the same worktree. Its Herdr tab, labelled <id>/pr by
-    // spawn.sh, says whether it still works; once it is gone, a press starts
-    // the lane again.
+    // spawn.sh, says whether it still works — 'working', as everywhere in the
+    // cockpit; a tab left idle (the lane stopped without a pull request) or
+    // gone lets the next press start the lane again.
     const bin = await herdr($)
     const tabs = bin === undefined ? undefined : await run($, [bin, 'tab', 'list'], b.dir)
-    if (tabs?.exitCode === 0 && tabsOf(tabs.stdout).some(x => x.label === `${w.id}/pr` && x.agent_status !== 'done')) {
+    if (tabs?.exitCode === 0 && tabsOf(tabs.stdout).some(x => x.label === `${w.id}/pr` && x.agent_status === 'working')) {
       await say($, t.prBeingOpened(w.id, branch))
       return true
     }

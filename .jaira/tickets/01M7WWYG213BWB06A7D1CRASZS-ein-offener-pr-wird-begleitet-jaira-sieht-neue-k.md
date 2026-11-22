@@ -1,7 +1,7 @@
 ---
 id: 01M7WWYG213BWB06A7D1CRASZS
 title: "Ein offener PR wird begleitet: jaira sieht neue Kommentare, CI-Stand und wartende Re-Requests und meldet sie"
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,7 +21,7 @@ related:
   - 01M7WX040JC9Z202EH852EF48S
 commits: []
 created-at: 2026-11-20T16:34:31Z
-updated-at: 2026-11-22T16:57:31Z
+updated-at: 2026-11-22T17:01:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3910889
 claimed-at: 2026-11-22T14:48:02Z
@@ -29,13 +29,13 @@ outcome-what: "Neuer Befehl 'jaira pr [<branch>] [--all|--number n] [--json] [--
 outcome-why: "Den Stand eines PR hielt der Teamlead im Kopf; jaira wusste nichts davon. Alex 22.11.: Befehl im Binary, kein Dauer-Polling im Cockpit, Teamlead beobachtet selbst per Monitor; JG3REW-Rest (Accept in signoff) gehoert hierher."
 outcome-resolves: "DoD 1-7. Vier Kategorien geprueft: Nebenlaeufigkeit - zwei Cockpit-Sessions koennen denselben PR im selben Moment beide melden (Store get/set nicht atomar), schlimmstenfalls eine Zeile doppelt; Fehlerpfade - halber Lauf ist ein Fehler, nie ein PR ohne Threads; Watch sagt einen Lesefehler einmal und liest weiter, verlorener Login beendet ihn (Exit 3); ungewoehnliche Eingabe - Branchnamen gehen als ein Argument an gh/glab bzw. URL-escaped an die GitLab-API, Fenster: 50 PRs, 100 Threads, 20 Kommentare je Thread; Rechte - nur Lesen mit dem gh/glab-Login der Person."
 review-summary: "none"
-round: 3
+round: 5
 back-from: testing
 back-by: lane
-back-count: 1
-review-gaps: "round 2: values() (one caller) folded into gitlab.go pages[T]; pr.go imports trimmed. Left as before: handle regex vs gitrepo handleShape, Go/TS forge detection, pr-round.sh settled (critique note)."
-test-verdict: "pass (round 3): go vet ./... and GOOS=windows vet clean; go test ./... RC=0 (after the fix round), -race core/pr core/role core/shipped internal/cli RC=0; cockpit plugin test 316 pass. DoD 1-7 re-verified against the tree, proofs updated for the new tests. Live on BeMuCa/jaira: --all lists #184/#185, branch feat/aj41sc finds #184 through the origin filter, --number 91 1 answered thread, --number 401 exit 1 (no longer read as sign-in), --watch on merged #179 baseline+merged exit 0, GH_TOKEN=x exit 3. Writes: jaira pr none; cockpit store keys per pull request / per ticket (two sessions: at most one duplicate line)."
-hunt-verdict: "fail: 3 change findings (blocker: hold passes when gh pr list sees a PR that jaira pr does not)"
+back-count: 3
+review-gaps: "round 3: pullRequestIn and the pr-opening store marker are gone with the change (followNamed, Herdr tab); nothing else orphaned. Left as before (round 1 list)."
+test-verdict: "pass (round 4): go vet ./... clean, go test ./... RC=0, cockpit plugin test 316 pass (only cockpit changed this round; Go untouched since round 3's live checks). DoD 1-7 proofs re-read; DoD 4/5 now covered by the reworked tests (report URL checked with jaira pr --number, signoff hold on a PR not open from origin, a second press gated by the pr lane's Herdr tab)."
+hunt-verdict: "fail: 2 change findings, no blocker; #1 (idle pr tab blocks every press) fixed next round, #2 (merged PR held like a fork's) kept as a fail-closed decision for the person"
 ---
 
 # Ein offener PR wird begleitet: jaira sieht neue Kommentare, CI-Stand und wartende Re-Requests und meldet sie
@@ -117,3 +117,8 @@ Selbst entschieden (widersprechen moeglich): Ausloeser = neuer Kommentar/Thread,
 - **2026-11-22 16:53 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:662-675 (OPENING_PREFIX) - class: the 'pr lane is opening it' marker is a timestamp set once startPrLane has spawned the tab and never cleared, so any failure of the pr lane after the spawn (agent killed, push refused, gh error, tab closed) is reported as 'being opened already' on every Accept press for the next 20 minutes (PR_LOOKS * PR_LOOK_EVERY_MS) and the person cannot retry; example: pr lane dies at once, Accept again two minutes later prints prBeingOpened and starts nothing; read (only uses of OPENING_PREFIX are the get and the set at 667/673)
 - **2026-11-22 16:53 · Alexander Sacharov** — bughunt: done at 2ed351b7f - 3 findings (3 change, 1 blocker, 0 pre-existing), follow-up hunt of the diff since 5fc0b0ba5 (no new files); concurrency, error paths, input, permissions checked; files: README.md core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts core/pr/github.go core/pr/gitlab.go core/pr/pr.go core/pr/pr_test.go core/pr/watch.go core/release/notes/CRASZS.md core/shipped/shipped.sha256 docs/COMMANDS.md internal/cli/pr.go internal/cli/pr_test.go internal/cli/root.go
 - **2026-11-22 16:57 · Alexander Sacharov** — Runde 3 (bughunt 2): Kleinerer Entwurf statt neuer Regeln (Erinnerung 'edges grow'): (1) Halt in signoff: zeigt gh pr list einen PR, jaira pr aber keinen offenen aus origin -> festhalten mit Hinweis (gemergt/geschlossen/fremder Fork), statt durchzulassen. (2) PR-URL im Bericht nicht mehr gegen git remote -v geprueft, sondern mit 'jaira pr --number N --json' (gleiche Quelle wie alles andere, Fork-Parent inklusive), Adresse muss gleich sein; laeuft nach dem Bericht (clock.after 0), haelt ihn nicht auf. (3) Store-Marker 'pr-opening' entfernt; der Herdr-Tab <ID>/pr sagt, ob die pr-Lane noch arbeitet. Ungeprueft mangels GitLab-Projekt: glab repo view -F json liefert id (GitLab-Projekt-API hat es), glab api --paginate druckt [] fuer leere Liste.
+- **2026-11-22 16:57 · Alexander Sacharov** — critique 4: Reparatur verkleinert die Form (ein Quellort jaira pr statt gh+remotes+Store-Marker) - nichts.
+- **2026-11-22 17:00 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:666 - class: every Herdr tab status other than 'done' counts as 'the pr lane still works' (idle, unknown, a missing status), while the rest of the cockpit (board.ts:160, register.tsx:416) and close-tab.sh treat only 'working' as working; example: the pr lane agent ends its turn without opening a pull request (push refused, gh not signed in, a question) - its tab <ID>/pr stays open as 'idle' (spawn tabs close only at done or by reap), so every Accept answers 'the pull request for <branch> is being opened already; press Accept again once its review round is settled' and never starts the lane again, although nothing is being opened; the test 'once it is gone, a press starts it again' only covers a tab that disappears; read (blame c323292c3); not a blocker: the ticket is held, not moved
+- **2026-11-22 17:00 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:683 - class: a pull request of the branch that is no longer open (merged or closed) is held like a foreign fork's; example: pr-when signoff, the maintainer merges the pull request, the person then presses Accept - decideStep's forge list (board.ts:587, gh --state all / glab --all) says has=true, 'jaira pr <branch> --json' shows only open ones and returns prs:[], so Accept is refused with prElsewhere ('merged, closed, or another fork's branch ... move the ticket by hand') on the ordinary end of the review round; before c323292c3 a merged pull request moved the ticket to done (the 'merged meanwhile' test was replaced by one asserting the hold); read (blame c323292c3, internal/cli/pr.go:40 'Shows the open pull request'); not a blocker: it fails towards holding, a person can move by hand
+- **2026-11-22 17:00 · Alexander Sacharov** — bughunt: done at c323292c3 - 2 findings (2 change, 0 blocker, 0 pre-existing), follow-up hunt of the diff since 2ed351b7f (no new files; changed: board.ts register.tsx texts.ts board.test.ts cockpit.test.ts shipped.sha256); concurrency, error paths, input, permissions checked; files: README.md core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts core/pr/github.go core/pr/gitlab.go core/pr/pr.go core/pr/pr_test.go core/pr/watch.go core/release/notes/CRASZS.md core/shipped/shipped.sha256 docs/COMMANDS.md internal/cli/pr.go internal/cli/pr_test.go internal/cli/root.go
+- **2026-11-22 17:01 · Alexander Sacharov** — Runde 4: bughunt #1 behoben (nur 'working' haelt einen zweiten Druck auf, wie board.ts/close-tab.sh). bughunt #2 bewusst stehen gelassen: ein PR, den gh pr list --state all findet und jaira pr nicht offen aus origin zeigt, kann gemergt, geschlossen oder ein fremder Fork-Branch gleichen Namens sein - das trennt nur, wer hinsieht; fail-closed mit Hinweis 'move by hand'. Fuer die Person zur Abnahme: gemergter PR vor Accept heisst hier jaira move --to done von Hand.
