@@ -1,7 +1,7 @@
 ---
 id: 01M828DHTRC4J531T5MST5QN9P
 title: "Tabs, die das Cockpit öffnet (pr-Lane nach Accept, Review, Give back), melden Fragen und Ergebnis an die Teamlead-Session"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -16,33 +16,36 @@ tags:
   - cockpit
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 7803b3e4f972cade09aa8b0631be0b6592dbfc8b
+  - f10d21b87ff0733597f43b1e7e4c2849da04d6c2
+  - 972332856ac3c89d671863d5713392becfc15734
+  - ab67c418e3aa3626789333f4d7e5a5a915bea8b5
+  - d7a896e9bf40fb8c9626349a722346c845222728
 created-at: 2026-11-22T18:31:11Z
-updated-at: 2026-11-22T19:15:32Z
+updated-at: 2026-11-22T19:31:21Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2629852
 claimed-at: 2026-11-22T19:14:24Z
 outcome-what: "jaira-role-pr's description now names --parent and that a started-with-parent tab sends its questions and report to that session"
 outcome-why: "give-back from signoff: the description, which is what a caller reads, did not mention --parent"
 outcome-resolves: "DoD 5"
-review-summary: "The cockpit now hands its own session to the tabs it starts as their parent. A new helper parentArgs (register.tsx) reads CLAUDE_CODE_MESSAGING_SOCKET and passes '--parent uds:<socket>' only when that socket file exists; otherwise '--no-parent'. It is used for the pr lane after Accept (before: no parent), the give-back worker (before: always --no-parent, which is why CRASZS's review question stuck) and Discuss (before: a socket was passed unchecked). spawn.sh forwards --parent into the pr prompt (/jaira-role-pr <id> --by-person --parent <s>), and jaira-role-pr gets a section: with --parent, every stop and the final report go onto the ticket as a note and to the parent via SendMessage; an unreachable parent falls back to asking in its own tab. A Review tab is not started by the cockpit (the worker starts it via run-lane.sh), so it reaches the cockpit through its worker, whose parent this now sets."
+review-summary: "Das Cockpit gibt den Tabs, die es selbst startet, seine eigene Session als parent: der pr-Lane nach Accept (afterAccept) und der neue Worker bei Give back bekommen --parent uds:$CLAUDE_CODE_MESSAGING_SOCKET über den neuen Helper parentArgs (register.tsx); Discuss nutzt denselben Helper. Fehlt der Socket oder seine Datei, gibt parentArgs --no-parent zurück und der Tab startet wie früher und fragt in sich selbst - spawn.sh würde einen toten uds:-Parent sonst mit exit 2 ablehnen und gar keinen Tab starten. spawn.sh reicht --parent jetzt auch an den pr-Lane weiter (/jaira-role-pr <id> --by-person --parent <s>), und jaira-role-pr hat einen Abschnitt, der Stopps, Fragen und den Schlussbericht per note + SendMessage an diese Session schickt, mit Rückfall auf den eigenen Tab, wenn sie nicht erreichbar ist. Damit kehrt sich 7V1XPBs --no-parent beim Give back um. Release-Note und shipped.sha256 sind dabei."
 review-gaps: |-
-  note: known limit: every test mocks $.fs.exists; whether the mod engine answers it for a path outside the project (/run/user/1000/cc-socks/*.sock or /tmp) is unverified - if it denies, the .catch turns that into --no-parent and the feature is silently off (tabs behave as before, no breakage); check live once, see review-check
-  note: jaira-role-pr frontmatter description does not mention --parent; harmless, the Arguments line does
-  note: an older installed spawn.sh with the new cockpit drops --parent for the pr lane (prompt without it) - harmless, the release note already says to rerun jaira roles install
-test-verdict: "pass (round 2): cockpit claude plugin test 345 pass incl. 'a socket whose file is gone is no parent' for pr and give-back (neighbour of the example: no socket env at all, also --no-parent); go test ./core/role ./core/shipped ok; round 1 full go -race suite green"
-hunt-verdict: "pass: bughunt done at f10d21b87, 0 change, 0 pre-existing"
+  note: known limit - alle Tests mocken fs.exists für den Socket-Pfad; ob $.fs.exists der Mod-Engine einen Pfad außerhalb des Projekts (/tmp/cc-socks-*, /run/user) sieht, ist ungeprüft - sieht es ihn nicht, ist die Funktion still aus (Tabs verhalten sich wie vor dem Ticket, nichts geht kaputt)
+  note: known limit - ein alter installierter spawn.sh mit dem neuen Cockpit lässt --parent für den pr-Lane fallen (alter Prompt ohne parent); behoben durch jaira roles install, was die Release-Note sagt
+test-verdict: "pass: go test -race ./core/role ./core/shipped RC=0; DoD 1-5 proofs present in the tree, DoD 5 verified: description at SKILL.md:3 names [--parent <session>] and where questions/report go, 784 chars (< 1024 skill limit), its sha256 is in shipped.sha256; change is role text only - no failure path or concurrent writer to exercise"
+hunt-verdict: "pass: 0 findings at 972332856 (follow-up since f10d21b87)"
 round: 3
 back-from: signoff
 back-by: person
 back-count: 1
-review-verdict: "accept: all four DoD items met in the diff (parentArgs for pr/give-back/discuss, role text + TestPRReportsToItsParent, missing/gone socket -> --no-parent with tests, release note + shipped hashes); go test ./core/role ./core/shipped ok, claude plugin test 345 pass; only open point is the live check that $.fs.exists sees the socket path"
-review-round: 2
+review-verdict: "accept: alle 5 DoD-Punkte durch den Diff gedeckt; parentArgs fällt bei fehlendem/totem Socket auf --no-parent zurück, also startet kein Pfad keinen Tab mehr; go test ./core/role ./core/shipped grün, claude plugin test 345/345 grün; kein Defekt bei Concurrency, Fehlerpfaden, Eingaben oder Rechten gefunden"
+review-round: 3
 review-verdict-gaps: |-
-  note: known limit: every test mocks $.fs.exists; whether the mod engine answers it for a path outside the project (/run/user/1000/cc-socks/*.sock or /tmp) is unverified - if it denies, the .catch turns that into --no-parent and the feature is silently off (tabs behave as before, no breakage); check live once, see review-check
-  note: jaira-role-pr frontmatter description does not mention --parent; harmless, the Arguments line does
-  note: an older installed spawn.sh with the new cockpit drops --parent for the pr lane (prompt without it) - harmless, the release note already says to rerun jaira roles install
-review-check: "1. jaira roles install in the repo, then restart the Claude session that runs the cockpit (in Herdr)  2. In the cockpit, Give back a ticket that sits in signoff  3. Look at the first line of the new worker tab: it must contain '--parent uds:' (the socket path). If it says --no-parent, the mod cannot see the socket file - the feature is off  4. Have that worker ask a question: it must arrive in the cockpit session as a message, not only in its tab  5. Optional: Accept a ticket with a branch ahead; the pr tab's prompt reads '/jaira-role-pr <ID> --by-person --parent uds:...'"
+  note: known limit - alle Tests mocken fs.exists für den Socket-Pfad; ob $.fs.exists der Mod-Engine einen Pfad außerhalb des Projekts (/tmp/cc-socks-*, /run/user) sieht, ist ungeprüft - sieht es ihn nicht, ist die Funktion still aus (Tabs verhalten sich wie vor dem Ticket, nichts geht kaputt)
+  note: known limit - ein alter installierter spawn.sh mit dem neuen Cockpit lässt --parent für den pr-Lane fallen (alter Prompt ohne parent); behoben durch jaira roles install, was die Release-Note sagt
+review-check: "1. jaira roles install im Repo, dann claude im Herdr-Tab mit dem jaira-cockpit starten  2. ein Ticket in signoff im Cockpit mit Accept annehmen  3. im neu geöffneten pr-Tab muss die erste Zeile '/jaira-role-pr <ID> --by-person --parent uds:...' lauten  4. stoppt die Rolle (z.B. Konflikt) oder ist sie fertig, kommt in der Cockpit-Session eine Nachricht mit Frage bzw. Bericht an  5. bei einem anderen signoff-Ticket Give back drücken: der neue Worker-Tab startet mit '/jaira-worker <ID> --parent uds:...'  6. ohne Herdr-Tab ist es nicht prüfbar; Tests: cd core/mod/builtin/jaira-cockpit && claude plugin test . (345 pass), go test ./core/role -run 'TestPRReportsToItsParent|TestSpawn'"
 ---
 
 # Tabs, die das Cockpit öffnet (pr-Lane nach Accept, Review, Give back), melden Fragen und Ergebnis an die Teamlead-Session
@@ -89,3 +92,5 @@ Recommendation: 1 - блокеров нет, тикет можно принят�
 - **2026-11-22 19:13 · Alexander Sacharov** — decision: [small edge] В описании jaira-role-pr нет упоминания --parent, но в строке Arguments он есть, так что вреда нет.
 - **2026-11-22 19:14 · Alexander Sacharov** — Given back from signoff: [small edge] В описании jaira-role-pr нет упоминания --parent, но в строке Arguments он есть, так что вреда нет.
 - **2026-11-22 19:14 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
+- **2026-11-22 19:16 · Alexander Sacharov** — testing round 3: suite green, description checked for the 1024-char skill limit (784); waiting for bughunt
+- **2026-11-22 19:16 · Alexander Sacharov** — bughunt: done at 972332856 - 0 findings in 2 modules, follow-up hunt since f10d21b87 (diff only: jaira-role-pr SKILL.md description names --parent, matching body lines 8/39/52; shipped.sha256 entry equals sha256 of the new SKILL.md; go test ./role ./shipped ok); concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/T5QN9P.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/builtin/jaira-role-pr/SKILL.md core/role/pr_round_test.go core/role/role_test.go core/shipped/shipped.sha256
