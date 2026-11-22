@@ -132,12 +132,10 @@ let turn = 0
 let personSaid: string | undefined
 let threads: Thread[] = []
 // The Explain and Discuss chats this session opened, by their tab's label
-// (`<id>/explain`), with when: the tab goes once the chat has done its part.
-const chats = new Map<string, number>()
-// What such a chat leaves behind once it has done its part: the copy pulled
-// into the main checkout for it (ticketHere), by the same label. It stays
-// while the chat runs, since the chat writes its note from there.
-const leaves = new Map<string, () => Promise<void>>()
+// (`<id>/explain`), with when: the tab goes once the chat has done its part,
+// and with it, by leave, the copy pulled into the main checkout for the chat
+// (ticketHere) — it stays while the chat runs, which writes its note there.
+const chats = new Map<string, { since: number; leave: () => Promise<void> }>()
 // The Workers tab's frames, running while it is open and shown, and the
 // board the Overview was opened on.
 let frames: { cancel: () => void } | undefined
@@ -415,7 +413,7 @@ async function refreshBoard($: EngineInterface): Promise<void> {
   // only once its agent stopped working: a Discuss chat notes the decision
   // first and then still moves the ticket and tells this session.
   const open = tabs
-  for (const [label, since] of chats) {
+  for (const [label, { since, leave }] of chats) {
     const [id = '', kind] = label.split('/')
     const tab = open.find(x => x.label === label)
     if (tab?.agent_status === 'working') continue
@@ -427,8 +425,7 @@ async function refreshBoard($: EngineInterface): Promise<void> {
     const done = fresh !== undefined || (kind === 'discuss' && (w === undefined || w.question === ''))
     if (!done) continue
     chats.delete(label)
-    await leaves.get(label)?.()
-    leaves.delete(label)
+    await leave()
     if (kind === 'discuss' && fresh !== undefined) await update($, decidedAtom, d => ({ ...d, [id]: fresh.text }))
     if (tab !== undefined) await run($, [bin!, 'tab', 'close', tab.tab_id], board.dir)
   }
@@ -942,13 +939,11 @@ async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discu
   const label = `${id}/${kind}`
   // A copy pulled into the main checkout goes once the chat has done its
   // part (refreshBoard), not when the press ends; a press that opens no chat
-  // takes it away at once.
-  const opened = async (at: number) => {
-    chats.set(label, at)
-    if (!leaves.has(label)) leaves.set(label, here.leave)
-  }
+  // takes it away at once. A second press on a chat still open finds the
+  // ticket pulled: the first press's leave is the one that counts.
+  const opened = async () => chats.set(label, { since: await $.clock.now(), leave: chats.get(label)?.leave ?? here.leave })
   if ((await herdr($)) === undefined) {
-    await opened(await $.clock.now())
+    await opened()
     await say($, kind === 'explain' ? t.explainAsked(id) : t.discussHere(id))
     void $.prompt.submit({ text: kind === 'explain' ? t.explainBySubagent(id, dir) : t.discussInThisChat(id, dir) })
     return 'hold'
@@ -967,7 +962,7 @@ async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discu
     await here.leave()
     return fail($, what, (r?.stderr || r?.stdout || 'spawn.sh did not run').trim())
   }
-  await opened(await $.clock.now())
+  await opened()
   await say($, t.opened(id))
 }
 
