@@ -529,3 +529,14 @@ func TestSettleWaitsForCI(t *testing.T) {
 		}
 	}
 }
+
+func TestGitLabCI(t *testing.T) {
+	for status, want := range map[string]string{
+		"success": "success", "failed": "failure", "canceled": "failure",
+		"running": "pending", "manual": "pending", "skipped": "none", "": "none",
+	} {
+		if got := gitlabCI(status); got != want {
+			t.Errorf("gitlabCI(%q) = %q, want %q", status, got, want)
+		}
+	}
+}
