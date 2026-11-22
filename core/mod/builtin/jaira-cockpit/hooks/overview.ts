@@ -125,7 +125,6 @@ export type WorkerState = 'working' | 'idle' | 'question'
 // has open — what it adds to the stone.
 export type Worker = { id: string; role: string; state: WorkerState; lane: string; title: string; open: number }
 
-
 // What a subagent is called on the Workers tab, having no tab label.
 export const SUBAGENT = 'subagent'
 

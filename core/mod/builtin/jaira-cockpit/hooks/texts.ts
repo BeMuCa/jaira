@@ -112,9 +112,9 @@ export const t = {
       case 'noHunt': return 'no bughunt on HEAD'
       case 'dodOpen': return `${r.n} DoD item${s(r.n)} open`
       case 'dodIncomplete': return 'DoD not complete'
-      case 'notReviewed': return 'not reviewed yet'
+      case 'notReviewed': return t.noVerdict
       case 'reservation': return 'the review has a reservation'
-      case 'oldReview': return `review of round ${r.round}, changed since`
+      case 'oldReview': return t.reviewedIn(r.round)
       case 'notesUnknown': return 'review notes not kept'
       case 'notes': return `${r.n} review note${s(r.n)} to weigh`
       case 'byAPerson': return `${r.n} 'seen by a person' item${s(r.n)} open`

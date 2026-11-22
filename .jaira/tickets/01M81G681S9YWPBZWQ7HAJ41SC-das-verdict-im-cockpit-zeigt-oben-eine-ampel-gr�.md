@@ -1,7 +1,7 @@
 ---
 id: 01M81G681S9YWPBZWQ7HAJ41SC
 title: "Das Verdict im Cockpit zeigt oben eine Ampel: grün annehmen, gelb ansehen, rot zurückgeben"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -15,20 +15,19 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T11:27:46Z
-updated-at: 2026-11-22T11:36:14Z
+updated-at: 2026-11-22T11:37:39Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1232016
 claimed-at: 2026-11-22T11:29:15Z
 outcome-what: "Verdict-Pane des Cockpits zeigt als erste Zeile eine Ampel (grün/gelb/rot) mit dem ersten Grund und '+N more'"
 outcome-why: "Alex soll ohne Urteil, Gaps und Notizen zu lesen sehen, ob er annehmen kann"
 outcome-resolves: "AJ41SC: fehlende Ampel im Verdict"
-review-summary: |-
-  core/mod/builtin/jaira-cockpit/hooks/board.ts dodOpenOf repeats the open-item filter of overview.ts openOf (done/superseded); move openOf into board.ts (overview.ts already imports board.ts, the other way is a cycle) and count with it
-  core/mod/builtin/jaira-cockpit/hooks/board.ts lightOf pushes the red kind 'dodOpen' with n=0 as a yellow reason for a ticket without dod_items; give it a kind of its own ('dodIncomplete') so texts.ts lightReason needs no n>0 branch
+review-summary: none
 round: 2
 back-from: critique
 back-by: lane
 back-count: 1
+review-gaps: "texts.ts lightReason: 'not reviewed yet' und 'review of round N, changed since' nutzen jetzt t.noVerdict und t.reviewedIn statt Kopien; overview.ts: doppelte Leerzeile nach dem Verschieben von openOf entfernt. Gelassen: lightOf liest dieselben Felder wie explainable/marks, aber entscheidet etwas anderes (Farbe), keine zweite Implementierung. Keine toten Pfade, kein Kostenproblem (eine Berechnung pro Pane-Render)."
 ---
 
 # Das Verdict im Cockpit zeigt oben eine Ampel: grün annehmen, gelb ansehen, rot zurückgeben
@@ -56,3 +55,4 @@ back-count: 1
 - **2026-11-22 11:29 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/25712.sock
 - **2026-11-22 11:30 · Alexander Sacharov** — decision (worker, no open question): Ampel-Regeln. rot: Review lehnt ab (REFUSAL), Blocker in review-gaps, Bughunt fail (fehlt/nicht auf HEAD), ein DoD-Punkt ausser 'seen by a person:' offen (= das Gate des Terminal-Lanes). gelb: Review mit Vorbehalt, note:-Zeilen, offener 'seen by a person:'-Punkt, offene Frage, Review aus frueherer Runde, Notizen unbekannt, Bughunt unknown/unbekannt (aeltere jaira), noch kein Review. gruen: sonst. 'Gates' = DoD-Gate, weil der Worker-Statuszeile-gates-Wert nicht am Ticket liegt; Texte englisch wie texts.ts. Erster Grund in Reihenfolge rot vor gelb wird gezeigt, plus '+N' weitere.
 - **2026-11-22 11:34 · Alexander Sacharov** — critique: (1) openOf aus overview.ts nach board.ts ziehen und in dodOpenOf benutzen statt den Filter zu kopieren; (2) gelber Fallback ohne dod_items bekommt eine eigene kind 'dodIncomplete' statt dodOpen n=0.
+- **2026-11-22 11:36 · Alexander Sacharov** — critique pass 2: beide Befunde beantwortet (openOf in board.ts, kind dodIncomplete); nichts weiter.
