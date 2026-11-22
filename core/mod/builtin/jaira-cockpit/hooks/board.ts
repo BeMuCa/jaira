@@ -1068,10 +1068,11 @@ export function reasonPrompt(language: string | undefined, ctx: NoteContext, not
 
 // The files a note names: words with a file extension, a ':line' after them
 // dropped - 'register.tsx:1214', 'core/release/notes/<ID>.md'. A placeholder
-// with '<' or '>' names no file.
+// with '<' or '>' names no file. An absolute path names the file by its
+// name: it is matched at any depth, and a checkout elsewhere has another root.
 export function notePaths(note: string): string[] {
   const found = note.match(/[\w./-]+\.(?:tsx?|jsx?|go|md|sh|py|json|ya?ml|toml|css|html)(?::\d+)?\b/g) ?? []
-  return [...new Set(found.map(p => p.replace(/:\d+$/, '')))]
+  return [...new Set(found.map(p => p.replace(/:\d+$/, '')).map(p => (p.startsWith('/') ? p.slice(p.lastIndexOf('/') + 1) : p)))]
 }
 
 // A diff cut to its first n lines, with a line saying how many were left out.

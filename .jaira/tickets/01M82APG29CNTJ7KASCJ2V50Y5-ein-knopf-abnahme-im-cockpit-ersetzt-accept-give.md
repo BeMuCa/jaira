@@ -22,21 +22,21 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T19:11:01Z
-updated-at: 2026-11-22T22:16:38Z
+updated-at: 2026-11-22T22:23:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3738988
 claimed-at: 2026-11-22T21:59:26Z
-outcome-what: "noteDiff reads only the ticket's own commits (git log -p --grep) with every path matched at any depth; the reason store is written under locked(); only a forge's real answer is kept."
-outcome-why: "bughunt round 4"
-outcome-resolves: "bughunt notes of round 4"
+outcome-what: "notePaths names a file given by an absolute path by its file name"
+outcome-why: "bughunt round 5"
+outcome-resolves: "bughunt note of round 5"
 review-summary: "none"
-round: 6
+round: 7
 back-from: testing
 back-by: lane
-back-count: 1
-review-gaps: "none: round 5 adds noteDiff/notePaths/clipLines (each one caller, no twin in the repo), the pulls cache and onMoved; earlier rounds removed nextChoice, Waiting.explainable, the Verdict pane, seven unused texts, folded store-and-trim into storeNewest"
-test-verdict: "fail: suite green (414/414 on 2.1.329); bughunt round 4 found 4 change findings in noteDiff, explainNote, openPullRequest"
-hunt-verdict: "fail: 4 change findings - noteDiff paths with a folder and foreign commits, reason store race, a failed forge call cached as no PR"
+back-count: 2
+review-gaps: "none: round 6 shortened noteDiff to one git call and reused locked(); earlier rounds removed nextChoice, Waiting.explainable, the Verdict pane, seven unused texts, folded store-and-trim into storeNewest"
+test-verdict: "fail: suite green (416/416 on 2.1.329); bughunt round 5: one change finding - an absolute path in a note finds no diff"
+hunt-verdict: "fail: 1 change finding - noteDiff with an absolute path"
 review-verdict: "accept: DoD 1-4 and 6-12 are met in the code and covered by tests (executionOf table test, gate refusal in pane, stale explanation, '-' follow-up, stillIn, once); 5 and 13 are a person's to tick; three small notes, no defect blocking"
 review-round: 4
 review-verdict-gaps: |-
@@ -151,3 +151,7 @@ Zusatz: Bau startet erst nach Merge von QTQW15 (signoff), DF46B9 und T5QN9P (don
 - **2026-11-22 22:10 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1243-1249 (openPullRequest) - class: a failed forge call is cached like an answer; askPullRequest returns false on any failure (no network, gh not logged in, timeout) and that false is kept for PULL_MS, so the pane says no pull request for five minutes after the forge is back; example: open the pane offline, reconnect, reopen within 5 min - still no pull request line; read
 - **2026-11-22 22:10 · Alexander Sacharov** — bughunt: done at b7a745079 - 4 findings (4 change, none blocker, 0 pre-existing) in 6 modules, follow-up hunt (diff since a6a6b2419: board.ts notePaths/clipLines/reasonPrompt, register.tsx noteDiff/explainNote/pull request cache/give-back onMoved, board.test.ts, the release note; texts.ts and index.d.ts unchanged); concurrency, error paths, input, permissions checked; claude plugin test: 414 pass; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/2V50Y5.md core/shipped/shipped.sha256
 - **2026-11-22 22:16 · Alexander Sacharov** — testing round 4 -> in-progress, decision (kleineres Design): noteDiff ist jetzt ein 'git log -p --grep=<ID> -- :(glob)**/<pfad>' - nur die eigenen Commits des Tickets, jeder Pfad in jeder Tiefe; kein erster-Commit-Bereich mehr (löst Fund 1 und 2). reason-Store unter locked() gelesen und geschrieben (Fund 3, Test). Nur echte Forge-Antworten werden 5 Minuten gemerkt (Fund 4, Test).
+- **2026-11-22 22:16 · Alexander Sacharov** — critique round 6: die drei Fixes ersetzen Code statt ihn zu ergänzen (noteDiff kürzer, locked() wiederverwendet); nichts weiter.
+- **2026-11-22 22:20 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1277 (noteDiff) - class: a note that names a file by its absolute path gets no diff in the Explain prompt any more, because every name is now wrapped as ':(glob)**/<name>' and '**//home/...' matches nothing, where the plain pathspec before ce1746059 was accepted by git for an absolute path inside the checkout; example: a note naming /home/alex/projects/.worktrees/jaira-2v50y5/core/release/notes/2V50Y5.md; ran: git log -p --format='%h %s' -F --grep=2V50Y5 HEAD -- ':(glob)**/<abs path>' (0 lines) vs the same with the plain absolute path (39 lines); not a blocker - Explain still answers, only without the change behind it
+- **2026-11-22 22:20 · Alexander Sacharov** — bughunt: done at ce1746059 - 1 finding (1 change, none blocker, 0 pre-existing) in 6 modules, follow-up hunt (diff since b7a745079: register.tsx openPullRequest/askPullRequest, noteDiff, explainNote store write under locked(); board.test.ts; shipped.sha256; board.ts, texts.ts, index.d.ts and the release note unchanged); concurrency, error paths, input, permissions checked; claude plugin test: 416 pass; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/2V50Y5.md core/shipped/shipped.sha256
+- **2026-11-22 22:23 · Alexander Sacharov** — testing round 5 -> in-progress: notePaths macht aus einem absoluten Pfad den Dateinamen (wird in jeder Tiefe gesucht, ein anderer Checkout hat eine andere Wurzel); Test in notePaths.

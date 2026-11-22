@@ -4747,6 +4747,7 @@ describe('the Acceptance pane, read alone', () => {
     // A placeholder names no file; a file named twice is one.
     expect(notePaths('note: register.tsx:1214 reads core/release/notes/<ID>.md and hooks/board.ts, not register.tsx')).toEqual(['register.tsx', 'hooks/board.ts'])
     expect(notePaths('nothing named here')).toEqual([])
+    expect(notePaths('see /home/a/repo/core/mod/hooks/register.tsx:9')).toEqual(['register.tsx'])
     expect(clipLines('a\nb\nc\n', 2)).toBe('a\nb\n... 1 more lines')
     expect(clipLines('a\nb', 2)).toBe('a\nb')
     expect(reasonOf('  Это\nважно. ')).toBe('Это важно.')
