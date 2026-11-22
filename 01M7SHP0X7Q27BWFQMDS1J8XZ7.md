@@ -24,7 +24,7 @@ related:
   - 01M6PDF2D6RQ8K1T7N0G1MYFKE
 commits: []
 created-at: 2026-11-19T09:19:56Z
-updated-at: 2026-11-22T22:55:23Z
+updated-at: 2026-11-22T22:55:26Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-385148
@@ -39,7 +39,8 @@ claimed-at: 2026-11-22T22:43:54Z
   proof: core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx:353 tab Milestones, :341 selector [ < ] name [ > ] (Buttons: click, or ring arrows + Enter); paging round the end overview.ts:194 pagedTo; test '< and > page through every milestone round the end...'
 - [x] Unter dem Waehler steht 'x von n fertig' und die Ticketliste mit ID, Titel und Lane: in Arbeit oben, nicht begonnen in der Mitte, fertig unten
   proof: core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx:345 'x of n done' (English like the cockpit), overview.ts:176 standOf groups in work/not started/done in board order; test 'one milestone: x of n done counts the logbook...'
-- [ ] Der zuletzt gewaehlte Milestone bleibt nach Schliessen und Oeffnen des Panes gewaehlt
+- [x] Der zuletzt gewaehlte Milestone bleibt nach Schliessen und Oeffnen des Panes gewaehlt
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:71 overviewMilestoneAtom kept for the session like overviewTab, :1186 showMilestone(0) at each opening; test '< and > page ... the choice outlives closing the pane'
 - [ ] Release-Notiz in core/release/notes/<ID>.md
 - [ ] edge cases: no milestones, a milestone with no tickets, milestone ls failing (older jaira) shows a could-not-read line, a remembered milestone that is gone falls back to the first, a ticket jaira show cannot find stays in the list with lane '?'
 - [ ] seen by a person: the Milestones tab in a real Claude Code terminal - selector paged by click and by arrow keys + Enter, rows readable, head row still on one line at 80 columns
