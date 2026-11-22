@@ -24,7 +24,7 @@ related:
   - 01M6PDF2D6RQ8K1T7N0G1MYFKE
 commits: []
 created-at: 2026-11-19T09:19:56Z
-updated-at: 2026-11-22T22:46:40Z
+updated-at: 2026-11-22T22:46:43Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-385148
@@ -53,6 +53,7 @@ claimed-at: 2026-11-22T22:43:54Z
 - [ ] register.tsx: run milestone ls beside lanes/list/next at open; atoms overviewMilestone (chosen id, remembered) and overviewFiled (show results for handles not in jaira list); on open and on every page run jaira show --json for the chosen milestone's absent handles
 - [ ] overview-pane.tsx: fourth tab Milestones; selector [ < ] name [ > ] as buttons (click, or arrows to focus + Enter), wraps around; 'x of n done' line; rows ID | lane | title in three groups; none/unread states
 - [ ] types/index.d.ts and texts.ts: new state keys and words
+- [ ] tests/board.test.ts: fix the tab-label test, add milestone tests (grouping, logbook count, paging wrap, remembered after reopen, ls failure)
 
 ## Progress
 
