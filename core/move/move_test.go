@@ -413,3 +413,46 @@ func TestForceOverridesStaleHunt(t *testing.T) {
 		t.Fatalf("forced move landed in %q", got.Status)
 	}
 }
+
+// Leaving the implementing lane forward with not one definition-of-done item
+// ticked is reported, and the move lands anyway; one ticked item, a send-back
+// or a parked ticket is not reported (77B4GA).
+func TestMoveReportsUntickedDoDOutOfImplementing(t *testing.T) {
+	body := func(first, second string) string {
+		return "\n# t\n\n## Definition of Done\n\n- [" + first + "] a\n- [" + second + "] b\n\n## Plan\n\n- [x] step\n"
+	}
+	cases := []struct {
+		name, from, to, first, want string
+		unticked                    int
+	}{
+		{"none ticked, forward", "in-progress", "review", " ", "review", 2},
+		{"one ticked, forward", "in-progress", "review", "x", "review", 0},
+		{"one superseded, forward", "in-progress", "review", "-", "review", 0},
+		{"none ticked, sent back", "in-progress", "pre-process", " ", "pre-process", 0},
+		{"none ticked, parked", "in-progress", "blocked", " ", "blocked", 0},
+		{"none ticked, not the implementing lane", "review", "signoff", " ", "signoff", 0},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			s, env := fixture(t)
+			tk, err := s.Create(map[string]string{
+				ticket.FieldID:     ticket.NewID(time.Date(2026, 9, 6, 8, 0, 0, 0, time.UTC)),
+				ticket.FieldTitle:  "t",
+				ticket.FieldStatus: c.from, ticket.FieldAssignee: "berk",
+			}, nil, body(c.first, " "))
+			if err != nil {
+				t.Fatal(err)
+			}
+			res, err := Move(s, env, tk.ID, Request{To: c.to, Actor: "berk", Force: true, Reason: "waiting"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if res.Ticket.Status != c.want {
+				t.Fatalf("status %q, want %q: the warning must not stop the move", res.Ticket.Status, c.want)
+			}
+			if res.DoDUnticked != c.unticked {
+				t.Fatalf("DoDUnticked = %d, want %d", res.DoDUnticked, c.unticked)
+			}
+		})
+	}
+}
