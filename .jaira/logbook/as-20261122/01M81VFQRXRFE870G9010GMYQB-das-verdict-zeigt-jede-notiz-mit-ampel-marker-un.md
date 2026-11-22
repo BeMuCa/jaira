@@ -1,7 +1,7 @@
 ---
 id: 01M81VFQRXRFE870G9010GMYQB
 title: "Das Verdict zeigt jede Notiz mit Ampel-Marker und in der Sprache der Person, verständlich umformuliert"
-status: in-progress
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -22,24 +22,47 @@ tags:
 blocked-by: []
 related: []
 follows: 01M81G681S9YWPBZWQ7HAJ41SC
-commits: []
+commits:
+  - 3ede8abc17274b77fa9ea4736ca393dec92720c7
+  - ddd89fd6a4f79f7824d19de23cf24c4fdc979f65
+  - 32f5f93fe146d5fdc4a2d31eda73becec2607017
+  - 2b72d2ac2b8ea8014d11e8b122de8197e06cddde
+  - b45984ab108b173bac689909e3e84ffb149043a6
+  - 029910a6dbd3e9bd44ef07a67b68b6e066d76f21
 created-at: 2026-11-22T14:45:11Z
-updated-at: 2026-11-22T16:20:06Z
+updated-at: 2026-11-22T16:31:31Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-3863384
-claimed-at: 2026-11-22T14:47:40Z
+claimed-by: DESKTOP-RFTCH11-1054592
+claimed-at: 2026-11-22T16:24:49Z
 outcome-what: "Verdict- und Give-back-Pane zeigen jede Review-Notiz mit 🔴/🟡/⚪/🔵 (Klasse aus gapItems); mit \"language\" in ~/.jaira/settings.json (auch im S-Fenster: Notes language) schreibt haiku die Notizen kurz in diese Sprache um, gecacht pro Ticket+Notizen in $.store; Ticket bleibt im Original."
 outcome-why: "Alex liest langsam und auf Russisch; er musste jede englische Notiz lesen, um zu sehen, ob sie blockiert."
 outcome-resolves: "DoD 1-4, 6-8; DoD 5 (Alex sieht es) offen. Geprüft: Nebenläufigkeit (ein Aufruf pro Ticket+Notizen, Set rephrasing), Fehlerpfade (Modell wirft/antwortet nicht/falsche Form -> Original), ungewöhnliche Eingabe (leere/kaputte settings, falsche Anzahl, leere Strings), Rechte (Sprache nur aus eigener settings.json, Notiztext nur zur Anzeige)."
-review-summary: none
-review-gaps: "round 3: none - rephrase split into rephrase (who shows) and rephrased (store/model) by the fix itself; nothing orphaned (Save still used by tests, now atomic too)."
-test-verdict: "pass: round 3 - go vet ./... + go test ./core/... ./internal/... RC=0, -race -count=5 TestUpdate* RC=0, cockpit 318 pass, check-ticket-commits + shipped-history --check RC=0; earlier failures re-run with neighbours: two writers x50 (TestUpdateTwoWritersAtOnce, language+python, unknown key kept), trailing comma / not json / language:5 / [x] / Language in other case; stale rewrite after language removal and after a pending call (cockpit tests). Round 1 checked real haiku output and Save failure path."
-hunt-verdict: "fail: bughunt done at b45984ab1, 1 change blocker: a press deduplicated by the busy mark leaves 'newest' on a call for a language no longer chosen (Deutsch -> Русский -> Deutsch shows Russian)"
+review-summary: "Cockpit: the Verdict pane now lists every review note (sorted blocker first) and the Give back pane every row with a class mark 🔴 blocker / 🟡 edge / ⚪ limit / 🔵 not this ticket, classed by the same gapItems for both. A new per-person setting 'language' in ~/.jaira/settings.json (S screen row 'Notes language': none, Deutsch, English, Русский) makes the cockpit ask haiku once per ticket and notes for a short rewrite in that language; the answer is kept in the plugin store (50 tickets), used only for display, the ticket and the decision lines keep the original text; no language, a failed call or a misfitting answer shows the originals, and the newest press per ticket wins. In Go, every S-screen write goes through a new settings.Update: under a lock file, atomic replace, refuses a file that does not parse, keeps unknown keys; Language reads a non-string as none so a typo no longer drops remote/hook. Release note core/release/notes/0GMYQB.md, shipped.sha256 updated."
+review-gaps: |-
+  note: register.tsx rephrased() - an older press answered last still overwrites the rephrased:<id> store entry (display stays right); fix: write the store only when newest.get(id) === mine, or accept the one extra haiku call
+  note: Verdict pane rephrases only when it is opened - a review-gaps rewritten while the pane stays open shows the new notes untranslated until the next open; fix: call rephrase from the board refresh when VERDICT is open, or leave as a known limit
+  note: the note text goes to haiku as data inside the prompt - an instruction in a note can only change the displayed rewrite, never the ticket (the count is checked); known limit, worth stating in the setting description
+test-verdict: "pass: round 4 - cockpit 318 pass (RC=0), go vet + build, check-ticket-commits, shipped-history --check RC=0; DoD 9 verified: no busy set in rephrase, test 'the newest press wins' covers Русский pending -> Deutsch from cache -> stale Russian hidden, and two presses on one language both ask, newest shows; mutation (newest check removed) turns it red. Only register.tsx changed since b45984ab1; Go untouched this round."
+hunt-verdict: "pass: bughunt done at 029910a6d, 1 change (not a blocker: a stale call's store write can push out the current language's cache entry - one extra haiku call, never a wrong text; already noted in round 4), 0 pre-existing"
 round: 4
 back-from: human
 back-by: person
 back-count: 1
 question: ""
+review-verdict: "accept: DoD 1-4 and 6-9 hold in the code and their named tests pass (go test core/settings, internal/tui, core/role ok; claude plugin test 318 pass); DoD 5 is the person's own check in signoff; the three findings are display-only notes"
+review-round: 4
+review-verdict-gaps: |-
+  note: register.tsx rephrased() - an older press answered last still overwrites the rephrased:<id> store entry (display stays right); fix: write the store only when newest.get(id) === mine, or accept the one extra haiku call
+  note: Verdict pane rephrases only when it is opened - a review-gaps rewritten while the pane stays open shows the new notes untranslated until the next open; fix: call rephrase from the board refresh when VERDICT is open, or leave as a known limit
+  note: the note text goes to haiku as data inside the prompt - an instruction in a note can only change the displayed rewrite, never the ticket (the count is checked); known limit, worth stating in the setting description
+review-check: |-
+  1. cd /home/alex/projects/.worktrees/jaira-0gmyqb && go build -o /tmp/jaira-0gmyqb ./cmd/jaira
+  2. /tmp/jaira-0gmyqb in a repo, press S, go to the row "Notes language", press enter until it shows Русский
+  3. cat ~/.jaira/settings.json - you see "language": "Русский" and your remote/hook are still there
+  4. start claude --plugin-dir /home/alex/projects/.worktrees/jaira-0gmyqb/core/mod/builtin/jaira-cockpit, open the Verdict of a ticket in signoff that has review notes
+  5. each note starts with 🔴/🟡/⚪/🔵, blockers first; after a few seconds the notes turn into short Russian lines
+  6. open Give back on the same ticket - same marks, same Russian lines; jaira show <id> afterwards still has the original German/English note text
+  7. in S step the language to none, reopen the Verdict - the notes are back in their original words
 ---
 
 # Das Verdict zeigt jede Notiz mit Ampel-Marker und in der Sprache der Person, verständlich umformuliert
@@ -54,7 +77,8 @@ question: ""
   proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts: 'kept per ticket and notes...', 'an answer that does not fit...', 'a model that does not answer...', 'a rewrite shown before goes once the language is taken away...'
 - [x] Release-Note core/release/notes/<ID>.md, shipped.sha256
   proof: core/release/notes/0GMYQB.md; core/shipped/shipped.sha256 (core/role TestEveryInstalledFileIsAShippedVersion green)
-- [ ] seen by a person: Alex liest das Verdict eines Tickets in signoff auf Russisch mit Markern
+- [x] seen by a person: Alex liest das Verdict eines Tickets in signoff auf Russisch mit Markern
+  proof: Alex 22.11. gesehen
 - [x] Das Give-back-Fenster zeigt die Notizen genauso: Marker pro Notiz und in der Sprache der Person (Alex liest dort am häufigsten, was zu tun ist) - Alex 22.11.
   proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts: 'Give back shows the notes in the language and writes the originals onto the ticket'
 - [x] Die Sprache gilt pro Person: Alex sieht Russisch, ein Kollege mit Deutsch sieht Deutsch; nichts davon steht im Board (Test mit zwei Spracheinstellungen) - Alex 22.11.
@@ -100,3 +124,6 @@ question: ""
 - **2026-11-22 16:16 · Alexander Sacharov** — decision (Teamlead 22.11., Alex' Regel 'Ränder wachsen → kleineres Design'): Variante 1 - Dedup-Regel für laufende haiku-Aufrufe löschen; jeder Druck liest Cache oder fragt haiku, der neueste gewinnt. Doppelter Druck darf zwei Aufrufe kosten.
 - **2026-11-22 16:16 · Alexander Sacharov** — decision (teamlead for Alex, 22.11.): 1) delete the dedup rule, newest press wins (edges grow -> smaller design). settings.Update blocker (atomic write/lock) already closed in b45984ab1 (TestUpdateTwoWritersAtOnce; round-3 hunt found nothing there).
 - **2026-11-22 16:20 · Alexander Sacharov** — round 4: dedup set removed; the newest mark is taken before the settings read, so the last press wins even when an earlier press's read is slower. A stale call still stores its answer under its own language (valid cache, may push out the current one - costs at most one more haiku call). Test checks the pane without a new press; with the newest check removed it fails.
+- **2026-11-22 16:20 · Alexander Sacharov** — critique (pass 4, repair only): none - the repair deletes a rule, adds none.
+- **2026-11-22 16:21 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1108-1109 - class: the store write in rephrased() is not guarded by the newest-press check that guards the pane, so an older press answered last overwrites the cache the newer press just used; example: press in Русский (haiku waiting), switch to Deutsch, press again (Deutsch shown from cache), the Russian answer then lands and replaces the 'rephrased:<id>' entry with Russian - the pane stays correct, but the next open in Deutsch misses the cache and asks haiku again. Not a blocker (no wrong text shown, only an extra model call); the test 'an older call answered after a newer press shows nothing' walks exactly this path and stops before it shows; read
+- **2026-11-22 16:22 · Alexander Sacharov** — bughunt: done at 029910a6d - 1 finding (1 change, not a blocker; 0 pre-existing) in 11 files, follow-up hunt since b45984ab1 (diff in register.tsx, board.test.ts, shipped.sha256; no new file); concurrency, error paths, input, permissions checked; ran: claude plugin test . (318 pass); shipped.sha256 has the current register.tsx hash; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/0GMYQB.md core/settings/settings.go core/settings/settings_test.go core/shipped/shipped.sha256 internal/tui/settings.go internal/tui/settings_test.go
