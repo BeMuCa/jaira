@@ -871,11 +871,14 @@ async function herdr($: EngineInterface): Promise<string | undefined> {
 // The parent a tab this mod starts reports to: this session, by its
 // messaging socket — the address spawn.sh and SendMessage take, as a
 // teamlead's spawn.sh hands its workers. A question or a report then arrives
-// here instead of waiting in a tab nobody looks at (T5QN9P). No socket: no
-// parent at all, and the tab asks in itself as before.
+// here instead of waiting in a tab nobody looks at (T5QN9P). No socket, or
+// one whose file is gone: no parent at all, and the tab asks in itself as
+// before — spawn.sh refuses a parent nobody listens on, and would start no
+// tab at all.
 async function parentArgs($: EngineInterface): Promise<string[]> {
   const socket = await $.env.get('CLAUDE_CODE_MESSAGING_SOCKET')
-  return socket ? ['--parent', `uds:${socket}`] : ['--no-parent']
+  const live = socket ? await $.fs.exists(socket).catch(() => false) : false
+  return live ? ['--parent', `uds:${socket}`] : ['--no-parent']
 }
 
 // Explain a review finding, or talk an open question through, in a Herdr tab

@@ -151,7 +151,11 @@ const SPAWN = '/repo/.claude/skills/jaira-dispatcher/scripts/spawn.sh'
 // The release cache jaira writes under ~/.jaira, HOME being /home/a.
 const CACHE = '/home/a/.jaira/update-check.json'
 
-function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<string, unknown>; spawn?: boolean; env?: Record<string, string> } = {}): World {
+// This session's messaging socket, as Herdr tests set it; socket: false in
+// world() is a session whose socket file is gone.
+const SOCKET = '/tmp/cc-socks-1000/77.sock'
+
+function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<string, unknown>; spawn?: boolean; socket?: boolean; env?: Record<string, string> } = {}): World {
   const w: World = {
     ran: [],
     files: new Map(),
@@ -249,7 +253,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
   on('session.repo', () => ({ value: { root: '/repo', remote: null, internal: false, name: null } }))
   on('session.id', () => ({ value: 'abcdef123456' }))
   on('session.usage', () => ({ value: { startedAt: 0, context: { tokens: w.usage.tokens, window: 1_000_000 }, rateLimits: w.usage.rateLimits } }))
-  on('fs.exists', ($, e) => ({ value: (hasBoard && e.path === '/repo/.jaira') || (e.path === SPAWN && opts.spawn !== false) || w.files.has(e.path) }))
+  on('fs.exists', ($, e) => ({ value: (hasBoard && e.path === '/repo/.jaira') || (e.path === SPAWN && opts.spawn !== false) || (e.path === SOCKET && opts.socket !== false) || w.files.has(e.path) }))
   on('fs.read', ($, e) => (w.files.has(e.path) ? { value: w.files.get(e.path)! } : { deny: 'no such file' }))
   on('fs.write', ($, e) => {
     w.files.set(e.path, e.text)
@@ -1861,6 +1865,13 @@ describe('after Accept', () => {
     expect(w.toasts.at(-1)).toBe('MG677R accepted: done')
   })
 
+  test('a socket whose file is gone is no parent: the press still opens the pull request, which asks in its own tab', async ($, on) => {
+    const w = world(on, { herdr: true, socket: false })
+    w.ahead = 3
+    await press($)
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', '--no-parent', 'mg677r', 'MG677R', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+  })
+
   test('Herdr App (HC_TERMINAL_ID, no HERDR_ENV): the press opens the pull request through spawn.sh all the same', async ($, on) => {
     const w = world(on, { herdr: true, env: { HOME: '/home/a', HC_TERMINAL_ID: 't3' } })
     w.ahead = 3
@@ -2030,6 +2041,12 @@ describe('give back', () => {
   })
   test('a session without a messaging socket starts the new worker with no parent: it asks in its own tab', async ($, on) => {
     const w = world(on, { herdr: true, env: { HOME: '/home/a', HERDR_ENV: '1', HERDR_BIN_PATH: 'herdr', HERDR_PANE_ID: 'w1:p1' } })
+    await startSession($)
+    await giveBack($, w)
+    expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 7)).toEqual(['bash', SPAWN, '--no-parent', 'mg677r', 'MG677R', 'worker', '/repo'])
+  })
+  test('a socket whose file is gone is no parent: the new worker still starts, asking in its own tab', async ($, on) => {
+    const w = world(on, { herdr: true, socket: false })
     await startSession($)
     await giveBack($, w)
     expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 7)).toEqual(['bash', SPAWN, '--no-parent', 'mg677r', 'MG677R', 'worker', '/repo'])
