@@ -24,7 +24,7 @@ related:
   - 01M6PDF2D6RQ8K1T7N0G1MYFKE
 commits: []
 created-at: 2026-11-19T09:19:56Z
-updated-at: 2026-11-22T22:56:59Z
+updated-at: 2026-11-22T22:57:02Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-385148
@@ -32,6 +32,7 @@ claimed-at: 2026-11-22T22:43:54Z
 outcome-what: "The cockpit's Overview pane has a fourth tab, Milestones: a selector [ < ] name [ > ] pages through every milestone jaira milestone ls names, 'x of n done' beneath it, then the milestone's tickets (ID | lane | title) in three groups - in work, not started, done (terminal lane or logbook/rejected). The chosen milestone is kept for the session like the tab."
 outcome-why: "Seeing how far a milestone is meant leaving the cockpit for the board (M) or typing jaira list --milestone, and that list leaves out tickets already filed into the logbook."
 outcome-resolves: "1J8XZ7: Milestones tab in the cockpit Overview with progress and tickets sorted by stand; tickets jaira list does not return are read with jaira show, so filed ones count as done."
+review-summary: none
 ---
 
 # Das Cockpit zeigt einen Milestone mit Fortschritt und seinen Tickets nach Stand sortiert
