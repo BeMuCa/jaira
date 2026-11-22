@@ -1,7 +1,7 @@
 ---
 id: 01M7WX040JC9Z202EH852EF48S
 title: "Ein Ticket kann auf den Merge eines PR warten, und nach dem Merge startet sein Worker"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -17,23 +17,48 @@ blocked-by:
 related:
   - 01M7WWYG213BWB06A7D1CRASZS
   - 01M263RFEQMYPPT67D40Y5SW81
-commits: []
+commits:
+  - cca6f9e01ad1c55a51a83765562fe7ac6a3e3bad
+  - b38b1bb09000ff606c43e08598918401610287d6
+  - cee1269c9dc562da3a2e1ff1929eb406235a6bc6
+  - db4be8be7a71c6f7cd9f09c5d3193018ec2f8dfe
+  - 3b15b18c42add621e1b2fb2bc1e23c47a8298a4a
 created-at: 2026-11-20T16:35:24Z
-updated-at: 2026-11-22T20:01:31Z
+updated-at: 2026-11-22T23:23:35Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-81804
 claimed-at: 2026-11-22T19:38:55Z
 outcome-what: "blocked-by takes pr#<n>; list/next/move ask gh or glab for the pull request's state (core/pr State + Checker, cached in ~/.jaira/repo/<key>/pr-state.json: merged for good, open/closed 2 min); list shows [waits for PR #12: open], list --json waiting_on, next --json waiting_on_pr; TUI reads the cache only; teamlead skill starts a worker for tickets a merge freed"
 outcome-why: "a dependency on a pull request lived only in the teamlead's notes, so a merged PR freed nothing and the follow-up waited until somebody remembered"
 outcome-resolves: "2EF48S: a ticket can wait for a PR merge and becomes actionable on the next run after it"
-review-summary: none
+review-summary: "blocked-by now takes pr#<n> beside ticket ids. core/ticket/prref.go parses it (any case, positive decimal up to 2^31-1, stored as pr#<n>); set and create refuse a malformed one with exit 3, and create now resolves ticket handles to full ids like set. core/pr/state.go asks gh (graphql state) or glab (MR state) for just the state, sharing connect() with Read; core/pr/cache.go remembers answers in ~/.jaira/repo/<repo>/pr-state.json (merged for good, open/closed 2 minutes, failures never cached, atomic write, corrupt/unwritable file only costs a call). gate.blockedBy treats pr#<n> through an injected PR hook: only merged clears it, every other answer (open, closed, no tool, signed out, nil hook) keeps the ticket waiting with code waits_on_pr (exit blocked on move). list shows [blocked] [waits for PR #12: open], list --json waiting_on, next prints 'Waiting on a pull request:' and next --json waiting_on_pr. validate, link index, show, TUI link lines and the TUI b key skip pr refs as tickets; the TUI answers from the cache only, the checker reset on reload and on a store root change. The teamlead skill starts a worker for every ticket a merge freed."
 round: 3
 back-from: testing
 back-by: lane
 back-count: 1
-review-gaps: "removed ticket.PRRef (no caller besides its test); core/pr/cache.go store now writes through ticket.WriteAtomic (core/ticket/store.go:1645, temp+rename with the Windows rename retry) instead of its own temp-file dance - cache file is 0644 now, not 0600 as an earlier note said; left: printTable and next call gate.blockedBy two or three times per not-actionable ticket (Waiting + WaitingOnPR + Actionable) - in-memory after the first forge answer, O(tickets) each, not worth a new exported Violations API; gitlab state normalization (opened->open) exists in fromGitLab too, two lines, left"
-test-verdict: "pass: go vet + windows build ok; go test -race on core/pr,gate,ticket,validate,link,role,shipped,internal/tui RC=0; go test ./... RC=0; DoD 1-8 verified by running their named tests; function on a scratch repo with real gh: pr#201 open waits, pr#193 merged handed out by next, cached second run 16ms; gh missing -> 'state unknown', next count 0, nothing cached; pr#abc exit 3; two parallel commands on an empty cache both land, no temp left"
-hunt-verdict: "fail: bughunt done at cee1269c9, 1 change blocker - TUI pr cache path survives switchBoard (internal/tui/model.go:2043)"
+review-gaps: |-
+  note: githubState calls githubTarget (gh repo view) for every PR number, so each uncached PR costs two gh calls instead of one plus one per process - memo the target on the Checker (testing measured 2.3s for 2 PRs on a cold cache)
+  note: an open PR is re-asked every 2 minutes, so on a board with several open pr# blockers every list/next after the window pays ~1s per open PR - acceptable by decision (3), but it is the one place jaira list is no longer instant
+  note: docs/COMMANDS.md says next lists tickets that wait "only" for a pull request, while waitsOnPR also lists a ticket blocked by a PR and a ticket together - drop "only"
+  note: the TUI move gate refuses a ticket whose PR merged but whose cache holds no fresh answer ("not asked here") until list/next runs - intended by decision (6), worth one line in the TUI notice
+test-verdict: "pass: round 2 (diff since cee1269c9: internal/tui only): go test -race ./internal/tui RC=0, TestBoardSwitchReadsTheNewRepositorysPRCache covers the class (store change); round 1: go test ./... RC=0, DoD 1-8 verified, real-gh function pass, failure path and two writers checked"
+hunt-verdict: "pass: bughunt done at db4be8be7, 0 change, 0 pre-existing (round 1 blocker at cee1269c9 fixed in db4be8be7)"
+review-verdict: "accept: all 8 DoD items are met by code and tests; go build, vet and go test ./core/... ./internal/... pass; no blocker found along concurrency, error paths, input and permissions"
+review-round: 3
+review-verdict-gaps: |-
+  note: githubState calls githubTarget (gh repo view) for every PR number, so each uncached PR costs two gh calls instead of one plus one per process - memo the target on the Checker (testing measured 2.3s for 2 PRs on a cold cache)
+  note: an open PR is re-asked every 2 minutes, so on a board with several open pr# blockers every list/next after the window pays ~1s per open PR - acceptable by decision (3), but it is the one place jaira list is no longer instant
+  note: docs/COMMANDS.md says next lists tickets that wait "only" for a pull request, while waitsOnPR also lists a ticket blocked by a PR and a ticket together - drop "only"
+  note: the TUI move gate refuses a ticket whose PR merged but whose cache holds no fresh answer ("not asked here") until list/next runs - intended by decision (6), worth one line in the TUI notice
+review-check: |-
+  1. go build -o /tmp/jaira ./cmd/jaira
+  2. in a clone whose origin is on GitHub with gh signed in: /tmp/jaira create "probe" --goal g --context c --dod d --blocked-by pr#<an open PR number>
+  3. /tmp/jaira list - the row shows [blocked] [waits for PR #<n>: open]
+  4. /tmp/jaira next --json | jq .waiting_on_pr - the ticket is there with waiting_on "waits for PR #<n>: open"
+  5. /tmp/jaira set <id> blocked-by=pr#<a merged PR number>, then /tmp/jaira next --all --json - the ticket is in tickets
+  6. /tmp/jaira set <id> blocked-by=pr#abc - exit 3, nothing written
+  7. PATH=/usr/bin:/bin /tmp/jaira list (gh not on PATH, cache older than 2 min for an open PR) - row says state unknown (forge tool missing ...)
+  8. jaira reject or delete the probe ticket afterwards
 ---
 
 # Ein Ticket kann auf den Merge eines PR warten, und nach dem Merge startet sein Worker
@@ -94,3 +119,9 @@ internal/tui/model.go:2005 adds a package-level sync.Map for the cache path and 
 - **2026-11-22 19:59 · Alexander Sacharov** — bughunt: done at cee1269c9 - 1 finding (1 change, 0 pre-existing) in 9 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/gate/gate.go core/gate/prblock_test.go core/link/link.go core/link/prref_test.go core/pr/cache.go core/pr/cache_test.go core/pr/pr.go core/pr/state.go core/pr/state_test.go core/release/notes/2EF48S.md core/role/builtin/jaira-teamlead/SKILL.md core/shipped/shipped.sha256 core/ticket/id.go core/ticket/prref.go core/ticket/prref_test.go core/validate/prref_test.go core/validate/validate.go docs/COMMANDS.md internal/cli/flow.go internal/cli/pr.go internal/cli/prblock_test.go internal/cli/root.go internal/cli/tickets.go internal/tui/linklines.go internal/tui/model.go internal/tui/prblock_test.go
 - **2026-11-22 20:00 · Alexander Sacharov** — testing: class: TUI state derived from m.store kept across a store change; example: prCacheFile set once per model, switchBoard to another repo answers pr#12 from the old repo's cache (bughunt note); fix: tie the cached path to the store root it was computed for, test switching stores
 - **2026-11-22 20:01 · Alexander Sacharov** — fix for the bughunt blocker: prWait resets prCacheRoot/prCacheFile/prCheck whenever m.store.Root differs from the root the path was computed for - covers switchBoard and any other store change, not only the one path; test internal/tui/prblock_test.go TestBoardSwitchReadsTheNewRepositorysPRCache. Other per-model state of this change: none (the CLI builds its checker per command).
+- **2026-11-22 20:02 · Alexander Sacharov** — bughunt: done at db4be8be7 - 0 findings in 1 module, follow-up hunt since cee1269c9 (diff in internal/tui/model.go prWait and its test only, no new files); concurrency, error paths, input, permissions checked; files: core/gate/gate.go core/gate/prblock_test.go core/link/link.go core/link/prref_test.go core/pr/cache.go core/pr/cache_test.go core/pr/pr.go core/pr/state.go core/pr/state_test.go core/release/notes/2EF48S.md core/role/builtin/jaira-teamlead/SKILL.md core/shipped/shipped.sha256 core/ticket/id.go core/ticket/prref.go core/ticket/prref_test.go core/validate/prref_test.go core/validate/validate.go docs/COMMANDS.md internal/cli/flow.go internal/cli/pr.go internal/cli/prblock_test.go internal/cli/root.go internal/cli/tickets.go internal/tui/linklines.go internal/tui/model.go internal/tui/prblock_test.go
+- **2026-11-22 20:18 · Alexander Sacharov** — Accepted from signoff: angenommen:
+- note: githubState calls githubTarget (gh repo view) for every PR number, so each uncached PR costs two gh calls instead of one plus one per process - memo the target on the Checker (testing measured 2.3s for 2 PRs on a cold cache)
+- note: an open PR is re-asked every 2 minutes, so on a board with several open pr# blockers every list/next after the window pays ~1s per open PR - acceptable by decision (3), but it is the one place jaira list is no longer instant
+- note: docs/COMMANDS.md says next lists tickets that wait "only" for a pull request, while waitsOnPR also lists a ticket blocked by a PR and a ticket together - drop "only"
+- note: the TUI move gate refuses a ticket whose PR merged but whose cache holds no fresh answer ("not asked here") until list/next runs - intended by decision (6), worth one line in the TUI notice
