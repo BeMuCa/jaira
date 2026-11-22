@@ -213,3 +213,46 @@ func TestACatchUpLeavesATwinUnderTheNewName(t *testing.T) {
 		t.Fatalf("the catch-up wrote over the file under the new name:\n%s", b)
 	}
 }
+
+// The rename again, but the file under the new name is the ref itself: the
+// old copy that fell behind goes, so the next write starts from the ref and
+// not from whichever of two files sorts first (a1 before z9).
+func TestACatchUpRemovesAnOldCopyBesideTheRenamedFile(t *testing.T) {
+	ada, _, _ := twoSides(t)
+	ms, err := milestone.Create(ada.store.Root, ada.store, ada.syncer, func([]*milestone.Milestone) (*milestone.Milestone, error) {
+		return milestone.New("a1", 45, time.Now()), nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ada.syncer.Flush(); err != nil {
+		t.Fatal(err)
+	}
+	addTo(t, ada, "a1", tkA)
+	stale, err := os.ReadFile(ms.Path(ada.store.Root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := milestone.Rename(ada.store.Root, ada.store, ada.syncer, "a1", "z9"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ada.syncer.Flush(); err != nil {
+		t.Fatal(err)
+	}
+	addTo(t, ada, "z9", tkB)
+	if err := os.WriteFile(ms.Path(ada.store.Root), stale, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	addTo(t, ada, "z9", tkC)
+	file, content, _, err := ada.syncer.Repo.ReadMilestone(ms.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := milestone.FromBytes(file, content)
+	if want := []string{tkA, tkB, tkC}; got.Name != "z9" || !slices.Equal(got.Members(), want) {
+		t.Fatalf("ref is %s with %v, want z9 with %v", got.Name, got.Members(), want)
+	}
+	if _, err := os.Stat(ms.Path(ada.store.Root)); !os.IsNotExist(err) {
+		t.Fatalf("the old copy %s is still on disk", ms.FileName())
+	}
+}

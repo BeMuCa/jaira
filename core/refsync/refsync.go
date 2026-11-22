@@ -469,11 +469,13 @@ func (y *Syncer) CatchUpMilestones(root string) error {
 			continue
 		}
 		dst := filepath.Join(milestone.Dir(root), file)
-		// Renamed on the ref, and a file under the new name lies here already
-		// — a twin git merged in, or one somebody edited: the fetch decides
-		// between them, not a write.
+		// Renamed on the ref, and a file under the new name lies here already.
+		// One that is the ref, or a state it had, is this milestone too and
+		// is brought up like the old one, which then goes; one edited by hand
+		// is a twin, and which of the two is the milestone is the fetch's
+		// call, not a write's.
 		if dst != path {
-			if _, err := os.Lstat(dst); err == nil {
+			if twin, err := os.ReadFile(dst); err == nil && !bytes.Equal(twin, content) && !y.Repo.MilestoneHad(d.ID, twin) {
 				continue
 			}
 		}
