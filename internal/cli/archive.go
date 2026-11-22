@@ -176,6 +176,15 @@ func unfileMilestone(s *ticket.Store, src, dst string) (string, error) {
 	name, id, _ := milestone.FileIdentity(strings.TrimSuffix(filepath.Base(dst), ".md"))
 	moved, err := migrateHeld(s)
 	reportMigrated(moved)
+	var twin *milestone.TwinFilesError
+	if errors.As(err, &twin) {
+		// The restored file is one of the two: it goes back to the logbook,
+		// so the refusal leaves the board as it found it.
+		if back := os.Rename(dst, src); back != nil {
+			return "", errors.Join(err, back)
+		}
+		return "", fmt.Errorf("%w; %s stays in %s", err, filepath.Base(src), filepath.Dir(src))
+	}
 	if err != nil {
 		return "", err
 	}

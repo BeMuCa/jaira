@@ -87,11 +87,13 @@ func (e *TwinFilesError) Error() string {
 		e.ID, len(e.Files), strings.Join(e.Files, " and "))
 }
 
-// checkTwinFiles is a *TwinFilesError for the first ID that more than one
+// CheckTwinFiles is a *TwinFilesError for the first ID that more than one
 // file named after it carries. Two names for one file where the file system
 // ignores case are one file and listed once; an old-format file without an ID
-// is Migrate's and not looked at.
-func checkTwinFiles(root string) error {
+// is Migrate's and not looked at. lockAndMigrate runs it for every write
+// through Edit, Create and Rename; a command that takes the milestone lock
+// itself (the CLI's logbook and restore) runs it the same way.
+func CheckTwinFiles(root string) error {
 	entries, err := os.ReadDir(Dir(root))
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -230,7 +232,7 @@ func lockAndMigrate(root string, lock Locker, rec Recorder) (func(), error) {
 	// After the catch-up, which removes an old copy beside a renamed file
 	// when that file is the ref, and after Migrate, which moves old files to
 	// their IDs: what is still doubled here is for a person to sort out.
-	if err := checkTwinFiles(root); err != nil {
+	if err := CheckTwinFiles(root); err != nil {
 		unlock()
 		return nil, err
 	}

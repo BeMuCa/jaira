@@ -645,6 +645,11 @@ func migrateHeld(s *ticket.Store) ([]string, error) {
 	res, err := milestone.Migrate(s.Root, refs)
 	err = warnIfRecordOnly(err)
 	reportConflicts(res.Conflicts)
+	if err == nil {
+		// As milestone.Edit does: one ID in two files is a person's to sort
+		// out, not a file for logbook or restore to pick (8TT890).
+		err = milestone.CheckTwinFiles(s.Root)
+	}
 	return res.Moved, err
 }
 

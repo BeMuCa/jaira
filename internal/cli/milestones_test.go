@@ -1120,3 +1120,60 @@ func TestMilestoneWritesRefuseOneIDInTwoFiles(t *testing.T) {
 		t.Error("create wrote a milestone despite the refusal")
 	}
 }
+
+// logbook and restore take the milestone lock themselves rather than going
+// through milestone.Edit, and refuse one ID in two files the same way: logbook
+// files neither, and restore puts the file back in the logbook, still filed.
+func TestLogbookAndRestoreRefuseOneIDInTwoFiles(t *testing.T) {
+	dir := emptyStore(t)
+	if out, err := runCLI(t, dir, "milestone", "create", "q4"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	ms, _ := milestone.Load(dir, "q4")
+	old, err := os.ReadFile(ms.Path(dir))
+	if err != nil {
+		t.Fatal(err)
+	}
+	twin := filepath.Join(milestone.Dir(dir), "q5-"+ms.ID+".md")
+	if err := os.WriteFile(twin, append(old, "\n<!-- edited by hand -->\n"...), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err = runCLI(t, dir, "logbook", ms.ID)
+	if code, reason := classify(err); code != ExitValidation || reason != "milestone_twin_files" || !strings.Contains(err.Error(), "q5-"+ms.ID+".md") {
+		t.Fatalf("logbook beside a twin: exit %d (%s), want 3 naming both: %v", code, reason, err)
+	}
+	for _, p := range []string{ms.Path(dir), twin} {
+		if b, err := os.ReadFile(p); err != nil || milestone.FromBytes(filepath.Base(p), b).Filed() {
+			t.Errorf("%s was filed or went: %v", filepath.Base(p), err)
+		}
+	}
+
+	// Without the twin the milestone files; a twin that turns up on the board
+	// meanwhile keeps the restore from bringing it back.
+	if err := os.Remove(twin); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runCLI(t, dir, "logbook", ms.ID); err != nil {
+		t.Fatalf("logbook: %v\n%s", err, out)
+	}
+	logged, _ := filepath.Glob(filepath.Join(dir, ".jaira", "logbook", "*", "milestones", ms.FileName()))
+	if len(logged) != 1 {
+		t.Fatalf("logbook copy: %v", logged)
+	}
+	if err := os.WriteFile(twin, old, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err = runCLI(t, dir, "restore", ms.FileName())
+	if code, reason := classify(err); code != ExitValidation || reason != "milestone_twin_files" {
+		t.Fatalf("restore beside a twin: exit %d (%s), want 3: %v", code, reason, err)
+	}
+	if b, err := os.ReadFile(logged[0]); err != nil || !milestone.FromBytes(ms.FileName(), b).Filed() {
+		t.Errorf("the restored file is not back in the logbook, filed: %v\n%s", err, b)
+	}
+	if _, err := os.Stat(ms.Path(dir)); !os.IsNotExist(err) {
+		t.Errorf("a copy of the restored file is on the board: %v", err)
+	}
+	if b, _ := os.ReadFile(twin); string(b) != string(old) {
+		t.Errorf("the twin on the board changed:\n%s", b)
+	}
+}

@@ -1,7 +1,7 @@
 ---
 id: 01M827VG20E4159Z9X6R8TT890
 title: Zwei Milestone-Dateien mit derselben ID enden mit einer klaren Fehlermeldung statt still liegen zu bleiben
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T18:21:19Z
-updated-at: 2026-11-22T19:09:15Z
+updated-at: 2026-11-22T19:14:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1868655
 claimed-at: 2026-11-22T19:03:16Z
@@ -26,6 +26,12 @@ outcome-why: "After a rename, a stale old copy beside a hand-edited file under t
 outcome-resolves: 8TT890
 review-summary: "no findings: the check sits in milestone.lockAndMigrate, the one door every milestone write passes (core/milestone/write.go:234), rather than in refsync's catch-up, so it covers twins however they arose and needs no syncer; own TwinFilesError rather than AmbiguousError because that one tells the reader to pick a <name>-<ID>, which is wrong for one ID (decision note); classify() split out of report() is the existing errors.Is mapping moved, not a new pattern. Let stand: checkTwinFiles repeats the ReadDir+FileIdentity loop of refsync.milestoneFiles — milestone cannot import refsync, and moving that helper is a refactor outside this ticket."
 review-gaps: "removed: slices.Sort in checkTwinFiles (os.ReadDir already returns names sorted). Left: checkTwinFiles' ReadDir+FileIdentity loop beside refsync.milestoneFiles and publishUnsent's carriers count (refsync.go) — same listing, but milestone cannot import refsync and publishUnsent skips twins rather than refusing; folding them is a refactor of its own. Cost: one ReadDir per milestone write, under the lock — negligible."
+test-verdict: "pass: go test ./... RC=0 (before optimize), -race on core/milestone, core/refsync, internal/cli RC=0 after it; go vet ./... and GOOS=windows vet green; DoD 1-3 verified in the tree (tests named in proofs run green, notes/8TT890.md is one '- ' line). Built binary on a scratch board: normal rename q4->q5 rc=0 one file; twin q4-<ID>.md + hand-edited q5-<ID>.md -> milestone set rc=3 naming both, --json reason milestone_twin_files, both files' md5 unchanged; two writers in parallel (set + create) both refused rc=3, nothing written; after deleting the stale copy set rc=0."
+hunt-verdict: "fail: bughunt done at 27866b60c, 1 change — logbook and restore bypass the twin check"
+round: 2
+back-from: testing
+back-by: lane
+back-count: 1
 ---
 
 # Zwei Milestone-Dateien mit derselben ID enden mit einer klaren Fehlermeldung statt still liegen zu bleiben
@@ -53,3 +59,6 @@ review-gaps: "removed: slices.Sort in checkTwinFiles (os.ReadDir already returns
 - **2026-11-22 19:04 · Alexander Sacharov** — decision: open decisions — none. Own error type milestone.TwinFilesError{ID, Files} instead of AmbiguousError (review suggestion): AmbiguousError's message is about one name on two milestones and tells the reader to pick a <name>-<ID>, which is wrong for one ID in two files. Mapped to exit 3 (reason milestone_twin_files) centrally in cli.report so every milestone write (create/add/rm/rename/set) refuses alike. Catch-up still brings the other files up and returns the twin error after the loop.
 - **2026-11-22 19:08 · Alexander Sacharov** — in-progress: class = one ID in >1 ID-named file, however it got there (not only the rename case), so the check sits in milestone.lockAndMigrate after catch-up and Migrate and covers create/edit/rename/add/rm/set. Four categories: concurrency — check runs under the milestone lock; error paths — lock released, nothing written/recorded (tests); unusual input — legacy files without ID skipped (Migrate's), case-only names on case-insensitive FS list once; permissions — n/a. Not done: reads (milestone ls, board) still show only the first file of the twin (scan dedups by ID) — reads write nothing, out of scope.
 - **2026-11-22 19:08 · Alexander Sacharov** — critique: nothing to change; see review-summary. Considered and rejected: returning the error from CatchUpMilestones itself (covers only the rename case, and a board without remote never runs the catch-up).
+- **2026-11-22 19:11 · Alexander Sacharov** — bughunt: change: blocker: internal/cli/logbook.go:357 and internal/cli/archive.go:133 (unfileMilestone, archive.go:175) - class: milestone writes that take the milestone lock themselves instead of going through milestone.lockAndMigrate never reach checkTwinFiles, so with one ID in two files they still read whichever file milestone.scan keeps first (core/milestone/milestone.go:333 dedups by ID) and save/record it; core/release/notes/8TT890.md:1 and the TwinFilesError doc (core/milestone/write.go:73) promise every milestone command refuses. example 1: q4-ID.md + hand-edited q5-ID.md, 'jaira logbook q4' exits 0, files q4-ID.md, leaves q5-ID.md live on the board (on a board with a remote the ref would say filed with q4's content). example 2: logbook holds q4-ID.md, board holds a1-ID.md, 'jaira restore q4-ID.md' exits 0 'Restored', but milestone.Load(id) picks a1, so q4-ID.md keeps status: filed and stays off the board, and recordMilestone queues a1's content. ran: scratch repo with built binary - milestone create other exit 3 (guard works), logbook q4 exit 0, restore exit 0 with q4 still filed. why change and not pre-existing although blame says b54bb3a5e (older): the gap is in the scope this change claims; if its definition of done only covers Edit/Rename/Create, re-sort it as pre-existing
+- **2026-11-22 19:11 · Alexander Sacharov** — bughunt: done at 27866b60c - 1 finding (1 change, 0 pre-existing) in 4 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/milestone/write.go core/milestone/write_test.go core/refsync/catchup_test.go core/refsync/refsync.go core/release/notes/8TT890.md internal/cli/milestones_test.go internal/cli/root.go
+- **2026-11-22 19:14 · Alexander Sacharov** — testing: class: milestone writes that take the lock themselves (CLI logbook, restore via migrateHeld) skip CheckTwinFiles; example: bughunt note (logbook q4 exit 0 beside q5-<ID>.md); fix: check in migrateHeld, the CLI's lockAndMigrate, so every caller gets it; restore puts its file back in the logbook on refusal.
