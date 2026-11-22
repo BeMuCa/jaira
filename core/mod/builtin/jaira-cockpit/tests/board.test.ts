@@ -1,6 +1,6 @@
 import type { On, SessionRateLimit } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
-import { lightOf, snapshotOf, type Waiting } from '../hooks/board.ts'
+import { languageOf, lightOf, rephrasedOf, rephrasePrompt, snapshotOf, type Waiting } from '../hooks/board.ts'
 import { reportLine } from '../hooks/digest.ts'
 import { durationOf, stoneSize } from '../hooks/overview.ts'
 
@@ -32,6 +32,10 @@ type World = {
   answer: string
   model: string
   modelCalls: number
+  // The prompts the cheap model was handed, in order.
+  prompts: string[]
+  // The cheap model gives no answer: offline, or the call failed.
+  modelDown?: boolean
   filled: string[]
   store: Map<string, unknown>
   status: (string | undefined)[]
@@ -160,6 +164,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     answer: '',
     model: '',
     modelCalls: 0,
+    prompts: [],
     filled: [],
     store: new Map(Object.entries(opts.store ?? {})),
     status: [],
@@ -368,8 +373,10 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     return { result: { questions, answers: { [questions[0]!.question]: w.answer } }, text: w.answer }
   })
   on('agent.list', () => ({ value: w.agents }) as never)
-  on('model.complete', () => {
+  on('model.complete', ($, e) => {
     w.modelCalls++
+    w.prompts.push((e as { prompt: string }).prompt)
+    if (w.modelDown) return { value: { isAnswered: false } } as never
     return { value: { isAnswered: true, text: w.model, usage: { input_tokens: 1, output_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 } } }
   })
   return w
@@ -481,7 +488,7 @@ describe('waiting for you', () => {
     const title = texts.indexOf('cache key')
     expect(title).toBeGreaterThan(0)
     expect(texts.slice(title, title + 2)).toEqual(['cache key', 'Goal: Two branches never share a cache entry.'])
-    for (const text of ['? keep the old key?', `Verdict: ${verdict}`, '[blocker] blocker: the key ignores the branch', '· note: a test is missing', '· note: a comment is stale']) {
+    for (const text of ['? keep the old key?', `Verdict: ${verdict}`, '🔴 blocker: the key ignores the branch', '🟡 note: a test is missing', '🟡 note: a comment is stale']) {
       expect(texts).toContain(text)
     }
     expect(texts.some(x => /review of round 2, changed since/.test(x))).toBe(true)
@@ -1249,7 +1256,7 @@ describe('waiting for you', () => {
     await startSession($)
     const band = await $.ui.mount(BAND)
     expect(await (await verdictOf($, band, 'OPT123')).find({ type: 'Text', text: /removed the unused helper|inlined the close element/ })).toBeUndefined()
-    expect(await (await verdictOf($, band, 'CUR456')).find({ type: 'Text', text: /· note: a test is missing/ })).toBeDefined()
+    expect(await (await verdictOf($, band, 'CUR456')).find({ type: 'Text', text: /🟡 note: a test is missing/ })).toBeDefined()
   })
 
   test('a verdict of an earlier round lists the review\'s own notes, kept beside it, not optimize\'s', async ($, on) => {
@@ -1261,9 +1268,9 @@ describe('waiting for you', () => {
     await startSession($)
     const band = await $.ui.mount(BAND)
     const old = await verdictOf($, band, 'OLD123')
-    expect(await old.find({ type: 'Text', text: /· note: the export test covers 1MB/ })).toBeDefined()
+    expect(await old.find({ type: 'Text', text: /🟡 note: the export test covers 1MB/ })).toBeDefined()
     expect(await old.find({ type: 'Text', text: /removed the unused helper/ })).toBeUndefined()
-    expect(await (await verdictOf($, band, 'BLK456')).find({ type: 'Text', text: /\[blocker\] blocker: DoD 2 - an empty export writes a header/ })).toBeDefined()
+    expect(await (await verdictOf($, band, 'BLK456')).find({ type: 'Text', text: /🔴 blocker: DoD 2 - an empty export writes a header/ })).toBeDefined()
     // the blocker kept beside an earlier verdict offers Explain; notes alone do not
     expect(await band.find({ key: 'explain-BLK456' })).toBeDefined()
     expect(await band.find({ key: 'explain-OLD123' })).toBeUndefined()
@@ -1329,14 +1336,14 @@ describe('waiting for you', () => {
     expect(await open.find({ type: 'Text', text: /BL0CK3 \| signoff \| .*1 blocker \| 1 note $/ })).toBeDefined()
     expect(await open.find({ type: 'Text', text: /AB12CD \| signoff \| .*0 blockers \| 0 notes/ })).toBeDefined()
     const notes1 = await verdictOf($, open, 'NOTES1')
-    expect(await notes1.find({ type: 'Text', text: /· note: the export test covers 1MB, not 40MB/ })).toBeDefined()
-    expect(await notes1.find({ type: 'Text', text: /· note: pre-existing: load\.go:41/ })).toBeDefined()
-    expect(await (await verdictOf($, open, 'NOTES2')).find({ type: 'Text', text: /· Minor: the note after a successful move/ })).toBeDefined()
+    expect(await notes1.find({ type: 'Text', text: /🟡 note: the export test covers 1MB, not 40MB/ })).toBeDefined()
+    expect(await notes1.find({ type: 'Text', text: /🔵 note: pre-existing: load\.go:41/ })).toBeDefined()
+    expect(await (await verdictOf($, open, 'NOTES2')).find({ type: 'Text', text: /🟡 Minor: the note after a successful move/ })).toBeDefined()
     const block3 = await verdictOf($, open, 'BL0CK3')
-    expect(await block3.find({ type: 'Text', text: /· note: a comment is stale/ })).toBeDefined()
+    expect(await block3.find({ type: 'Text', text: /🟡 note: a comment is stale/ })).toBeDefined()
     // A blocker is listed as one, not as a note, and 'none' is no finding.
-    expect(await block3.find({ type: 'Text', text: /\[blocker\] blocker: data loss on CRLF/ })).toBeDefined()
-    expect(await block3.find({ type: 'Text', text: /· blocker:/i })).toBeUndefined()
+    expect(await block3.find({ type: 'Text', text: /🔴 blocker: data loss on CRLF/ })).toBeDefined()
+    expect(await block3.find({ type: 'Text', text: /🟡 blocker:/i })).toBeUndefined()
     expect(await (await verdictOf($, open, 'AB12CD')).find({ type: 'Text', text: /none/ })).toBeUndefined()
     expect(await open.find({ key: 'verdict-LM91NP' })).toBeUndefined()
   })
@@ -2278,9 +2285,9 @@ describe('give back with the review notes', () => {
     await startSession($)
     const pane = await openPane($)
     expect(await rows(pane)).toEqual([
-      '[fix now] [blocker] blocker: DoD 2 - an empty export still writes a header',
-      '[accept] note: the export test covers 1MB, not 40MB',
-      '[accept] [not this ticket] note: pre-existing: the log rotates at midnight UTC',
+      '[fix now] 🔴 blocker: DoD 2 - an empty export still writes a header',
+      '[accept] 🟡 note: the export test covers 1MB, not 40MB',
+      '[accept] 🔵 note: pre-existing: the log rotates at midnight UTC',
     ])
     // The first row takes the keyboard; the field below is for anything else.
     expect((await pane.find({ key: 'gap-MG677R-0' }))?.props.autoFocus).toBe(true)
@@ -2291,7 +2298,7 @@ describe('give back with the review notes', () => {
     const w = withGaps(on, GAPS)
     w.bodies.MG677R = '## Progress\n- **2026-11-21 10:00 · Alex** — explain: Status: DoD 3/3 ok | tests ok\n[blocker] the header\n[small edge] the size\n[known limit] the clock\n1) fix it [give back]\n'
     await startSession($)
-    expect((await rows(await openPane($)))[2]).toBe('[accept] [known limit] note: pre-existing: the log rotates at midnight UTC')
+    expect((await rows(await openPane($)))[2]).toBe('[accept] ⚪ note: pre-existing: the log rotates at midnight UTC')
   })
 
   test('a blocker: line stays a blocker whatever class the Explain note gives its position', async ($, on) => {
@@ -2300,9 +2307,9 @@ describe('give back with the review notes', () => {
     w.bodies.MG677R = '## Progress\n- **2026-11-21 10:00 · Alex** — explain: Status: DoD 3/3 ok\n[known limit] the header\n[small edge] the size\n[known limit] the clock\n'
     await startSession($)
     expect(await rows(await openPane($))).toEqual([
-      '[fix now] [blocker] blocker: DoD 2 - an empty export still writes a header',
-      '[accept] note: the export test covers 1MB, not 40MB',
-      '[accept] [known limit] note: pre-existing: the log rotates at midnight UTC',
+      '[fix now] 🔴 blocker: DoD 2 - an empty export still writes a header',
+      '[accept] 🟡 note: the export test covers 1MB, not 40MB',
+      '[accept] ⚪ note: pre-existing: the log rotates at midnight UTC',
     ])
   })
 
@@ -2310,7 +2317,7 @@ describe('give back with the review notes', () => {
     const w = withGaps(on, GAPS)
     w.bodies.MG677R = '## Progress\n- **2026-11-21 10:00 · Alex** — explain: Status: DoD 3/3 ok\n[known limit] the clock\n'
     await startSession($)
-    expect((await rows(await openPane($)))[0]).toStartWith('[fix now] [blocker]')
+    expect((await rows(await openPane($)))[0]).toStartWith('[fix now] 🔴')
   })
 
   test('a press changes a row: accept, fix now, follow-up, accept again', async ($, on) => {
@@ -2416,7 +2423,7 @@ describe('give back with the review notes', () => {
     const w = withGaps(on, 'note: the size')
     w.bodies.MG677R = '## Progress\n- **2026-11-20 10:00 · Alex** — Given back from signoff: beheben:\ndazu: the docs\nangenommen:\n- note: the size\n'
     await startSession($)
-    expect(await rows(await openPane($))).toEqual(['[accept] note: the size (decided before)'])
+    expect(await rows(await openPane($))).toEqual(['[accept] 🟡 note: the size (decided before)'])
   })
 
   test('Accept with notes still marked fix now is refused and says so', async ($, on) => {
@@ -2547,9 +2554,9 @@ describe('give back with the review notes', () => {
     ].join('\n')
     await startSession($)
     expect(await rows(await openPane($))).toEqual([
-      '[fix now] [blocker] blocker: DoD 2 - an empty export still writes a header (decided before)',
-      '[follow-up] note: the export test covers 1MB, not 40MB (decided before)',
-      '[accept] [not this ticket] note: pre-existing: the log rotates at midnight UTC (decided before)',
+      '[fix now] 🔴 blocker: DoD 2 - an empty export still writes a header (decided before)',
+      '[follow-up] 🟡 note: the export test covers 1MB, not 40MB (decided before)',
+      '[accept] 🔵 note: pre-existing: the log rotates at midnight UTC (decided before)',
     ])
   })
 
@@ -2564,7 +2571,7 @@ describe('give back with the review notes', () => {
       '- note: the size',
     ].join('\n')
     await startSession($)
-    expect(await rows(await openPane($))).toEqual(['[accept] note: the size (decided before)', '[accept] note: the docs'])
+    expect(await rows(await openPane($))).toEqual(['[accept] 🟡 note: the size (decided before)', '[accept] 🟡 note: the docs'])
   })
 
   // The input classes of the ticket, one row each.
@@ -2580,19 +2587,19 @@ describe('give back with the review notes', () => {
   test('a note wrapped over lines is one row, a blank line and a none dropped, CRLF and emphasis read', async ($, on) => {
     withGaps(on, '- note: a long finding\n  that wraps here\n- **blocker:** the header\r\n\nnone')
     await startSession($)
-    expect(await rows(await openPane($))).toEqual(['[accept] note: a long finding that wraps here', '[fix now] [blocker] **blocker:** the header'])
+    expect(await rows(await openPane($))).toEqual(['[accept] 🟡 note: a long finding that wraps here', '[fix now] 🔴 **blocker:** the header'])
   })
 
   test('gaps without prefixes, as an older review wrote them, are a row per line, none merged', async ($, on) => {
     withGaps(on, 'first finding\nsecond finding')
     await startSession($)
-    expect(await rows(await openPane($))).toEqual(['[accept] first finding', '[accept] second finding'])
+    expect(await rows(await openPane($))).toEqual(['[accept] 🟡 first finding', '[accept] 🟡 second finding'])
   })
 
   test('a review of an earlier round lists its own notes, not what a later lane wrote into review-gaps', async ($, on) => {
     withGaps(on, 'note: optimize says this', { round: 2, review_round: 1, review: { verdict: SIGNOFF.review.verdict, gaps: 'note: optimize says this', verdict_gaps: 'blocker: the review said this' } })
     await startSession($)
-    expect(await rows(await openPane($))).toEqual(['[fix now] [blocker] blocker: the review said this'])
+    expect(await rows(await openPane($))).toEqual(['[fix now] 🔴 blocker: the review said this'])
   })
 
   test('very many notes are all rows', async ($, on) => {
@@ -2600,7 +2607,7 @@ describe('give back with the review notes', () => {
     await startSession($)
     const all = await rows(await openPane($))
     expect(all).toHaveLength(40)
-    expect(all[39]).toBe('[accept] note: finding 39')
+    expect(all[39]).toBe('[accept] 🟡 note: finding 39')
   })
 
   test('decided meanwhile by someone else: nothing is moved, created or noted, and the pane says who was faster', async ($, on) => {
@@ -3880,5 +3887,141 @@ describe('the verdict light', () => {
     const old = JSON.stringify({ lanes: [{ id: 'signoff', agentic: false, context: '', human_exit: true }] })
     const list = JSON.stringify({ tickets: [{ handle: 'MG677R', title: 't', status: 'signoff', dod_complete: true, review: { verdict: 'request changes', gaps: 'none' } }] })
     expect(first(snapshotOf(old, list, [], []).waiting[0]!, { state: 'ok', at: 'abc1234' })).toEqual(['red', 'refused'])
+  })
+})
+
+// Every review note opens with the mark of its class, and reads in the
+// language the person set in their own settings.json - shortened by the
+// cheap model, kept per ticket and notes, the original where there is none.
+describe('review notes as a person reads them', () => {
+  const NOTES = 'blocker: the header is written twice\nnote: the size check is missing\nnote: windows paths over 260 characters\nnote: pre-existing: load.go:41 accepts an empty file'
+  // The Explain note classes every note, so the third is a known limit.
+  const CLASSES = '## Progress\n- **2026-11-21 10:00 · Alex** — explain: Status: DoD 3/3 ok\n[blocker] the header\n[small edge] the size\n[known limit] the paths\n[not this ticket] load.go\n'
+  const SETTINGS = '/home/a/.jaira/settings.json'
+  const ru = ['Заголовок пишется дважды.', 'Нет проверки размера.', 'Пути Windows длиннее 260 символов.', 'load.go:41 принимает пустой файл.']
+  const de = ['Der Header wird doppelt geschrieben.', 'Die Größenprüfung fehlt.', 'Windows-Pfade über 260 Zeichen.', 'load.go:41 nimmt eine leere Datei an.']
+
+  function withNotes(on: On, language?: string, answer: string[] = ru) {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, review: { verdict: SIGNOFF.review.verdict, gaps: NOTES } }, HUMAN, WORKING]
+    w.bodies.MG677R = CLASSES
+    if (language !== undefined) w.files.set(SETTINGS, JSON.stringify({ dispatch: 'worker', language }))
+    w.model = JSON.stringify(answer)
+    return w
+  }
+  async function verdictNotes($: Test$) {
+    const { texts } = await verdictOf($, await $.ui.mount(BAND), 'MG677R')
+    return texts.filter(x => /^\p{Extended_Pictographic}/u.test(x))
+  }
+  async function giveBackRows($: Test$) {
+    await (await $.ui.mount(BAND)).press({ key: 'back-MG677R' })
+    const pane = await $.ui.mount(GIVE('Give back MG677R'))
+    const out: string[] = []
+    for (let i = 0; ; i++) {
+      const row = await pane.find({ key: `gap-MG677R-${i}` })
+      if (row === undefined) return { out, pane }
+      out.push(row.text)
+    }
+  }
+
+  test('each class has its mark, in the Verdict pane and in the Give back pane; without a language nothing is sent', async ($, on) => {
+    const w = withNotes(on)
+    await startSession($)
+    expect(await verdictNotes($)).toEqual([
+      '🔴 blocker: the header is written twice',
+      '🟡 note: the size check is missing',
+      '⚪ note: windows paths over 260 characters',
+      '🔵 note: pre-existing: load.go:41 accepts an empty file',
+    ])
+    expect((await giveBackRows($)).out).toEqual([
+      '[fix now] 🔴 blocker: the header is written twice',
+      '[accept] 🟡 note: the size check is missing',
+      '[accept] ⚪ note: windows paths over 260 characters',
+      '[accept] 🔵 note: pre-existing: load.go:41 accepts an empty file',
+    ])
+    expect(w.modelCalls).toBe(0)
+  })
+
+  // Two people, two machines: one test each, as each has its own settings.
+  for (const [language, answer] of [['Русский', ru], ['Deutsch', de]] as const) {
+    test(`a person who set ${language} reads the notes in it, the ticket keeps its words`, async ($, on) => {
+      const w = withNotes(on, language, answer)
+      await startSession($)
+      expect(await verdictNotes($)).toEqual([`🔴 ${answer[0]}`, `🟡 ${answer[1]}`, `⚪ ${answer[2]}`, `🔵 ${answer[3]}`])
+      expect(w.prompts.at(-1)).toContain(`in ${language}`)
+      expect(w.prompts.at(-1)).toContain('blocker: the header is written twice')
+      // Nothing of it reaches the board: no jaira command writes a word of it.
+      expect(w.ran.filter(r => r[0] === 'jaira' && ['note', 'set', 'move'].includes(r[1]!))).toEqual([])
+      expect(JSON.stringify(w.ran)).not.toContain(answer[0])
+    })
+  }
+
+  test('Give back shows the notes in the language and writes the originals onto the ticket', async ($, on) => {
+    const w = withNotes(on, 'Русский')
+    await startSession($)
+    const { out, pane } = await giveBackRows($)
+    expect(out).toEqual([`[fix now] 🔴 ${ru[0]}`, `[accept] 🟡 ${ru[1]}`, `[accept] ⚪ ${ru[2]}`, `[accept] 🔵 ${ru[3]}`])
+    await pane.input({ key: 'reason-MG677R', text: '' })
+    const written = ran(w, 'jaira', 'note', 'MG677R').map(r => r[3]).join('\n')
+    expect(written).toContain('- blocker: the header is written twice')
+    expect(written).not.toContain(ru[0])
+  })
+
+  test('kept per ticket and notes: a second look asks nothing, other notes or another language ask again', async ($, on) => {
+    const w = withNotes(on, 'Русский')
+    await startSession($)
+    await verdictNotes($)
+    await verdictNotes($)
+    await giveBackRows($)
+    expect(w.modelCalls).toBe(1)
+    w.files.set(SETTINGS, JSON.stringify({ language: 'Deutsch' }))
+    w.model = JSON.stringify(de)
+    expect((await verdictNotes($))[0]).toBe(`🔴 ${de[0]}`)
+    expect(w.modelCalls).toBe(2)
+    w.tickets = [{ ...SIGNOFF, review: { verdict: SIGNOFF.review.verdict, gaps: 'note: only one now' } }, HUMAN, WORKING]
+    w.model = JSON.stringify(['Nur noch eine.'])
+    await w.clock.advance(60_000)
+    expect(await verdictNotes($)).toEqual(['🟡 Nur noch eine.'])
+    expect(w.modelCalls).toBe(3)
+  })
+
+  for (const answer of ['not json at all', JSON.stringify(ru.slice(0, 3)), JSON.stringify(['', ...ru.slice(1)]), JSON.stringify([1, 2, 3, 4]), '{"a": 1}']) {
+    test(`an answer that does not fit leaves the original text with its mark: ${answer.slice(0, 30)}`, async ($, on) => {
+      const w = withNotes(on, 'Русский')
+      w.model = answer
+      await startSession($)
+      expect((await verdictNotes($))[0]).toBe('🔴 blocker: the header is written twice')
+      expect(w.modelCalls).toBe(1)
+    })
+  }
+
+  test('a model that does not answer leaves the original text with its mark', async ($, on) => {
+    const w = withNotes(on, 'Русский')
+    w.modelDown = true
+    await startSession($)
+    expect((await verdictNotes($))[1]).toBe('🟡 note: the size check is missing')
+    expect(w.modelCalls).toBe(1)
+  })
+})
+
+describe('the language and the rephrased answer, read alone', () => {
+  test('the language is the settings file\'s, trimmed; none, an empty one or a broken file is none', () => {
+    expect(languageOf('{"language": " Русский "}')).toBe('Русский')
+    expect(languageOf('{"language": "Deutsch", "dispatch": "worker"}')).toBe('Deutsch')
+    for (const json of [undefined, '', '{}', '{"language": ""}', '{"language": "  "}', '{"language": 7}', 'null', '{broken']) expect(languageOf(json)).toBeUndefined()
+  })
+
+  test('an answer is taken only as an array of exactly as many non-empty strings, prose and fences around it allowed', () => {
+    expect(rephrasedOf('["a", "b"]', 2)).toEqual(['a', 'b'])
+    expect(rephrasedOf('```json\n["a",\n "b  c"]\n```', 2)).toEqual(['a', 'b c'])
+    expect(rephrasedOf('Here: ["a", "b"] - done', 2)).toEqual(['a', 'b'])
+    for (const answer of ['', 'a, b', '["a"]', '["a", "b", "c"]', '["a", " "]', '["a", null]', '["a", "b"']) expect(rephrasedOf(answer, 2)).toBeUndefined()
+  })
+
+  test('the prompt names the language and carries every note word for word', () => {
+    const p = rephrasePrompt('Русский', ['blocker: `x` in a.go:3', 'note: "quoted"'])
+    expect(p).toContain('in Русский')
+    expect(p).toContain('exactly 2 strings')
+    expect(p).toContain(JSON.stringify(['blocker: `x` in a.go:3', 'note: "quoted"']))
   })
 })

@@ -122,6 +122,15 @@ type Settings struct {
 	// costs is the team's choice. Read it through ChatModelFor.
 	ChatModel string `json:"chat-model,omitempty"`
 
+	// Language is the language the cockpit shows a ticket's review notes in,
+	// in the Verdict and Give back panes: a cheap model rewrites them short
+	// and plain in it, for this person only. The ticket keeps its own words.
+	// A language name as a person writes it (Русский, Deutsch, English); it
+	// goes to the model as it stands. Empty means the notes as the ticket has
+	// them, and no model is asked. It lives here and never on the board,
+	// because two people on one board read different languages.
+	Language string `json:"language,omitempty"`
+
 	// Python is the command a role runs its Python scripts with — the
 	// acceptance page, the logbook summary. A command, not a path, so
 	// "uv run python" works as well as "py -3": on Windows python3 is often
@@ -150,6 +159,10 @@ func (s Settings) PythonCommand() (cmd, source string) {
 // ChatModelChoices are the values the settings screen steps through, the
 // empty account default first. Anything else is written by hand.
 var ChatModelChoices = []string{"", "sonnet", "haiku", "opus"}
+
+// LanguageChoices are the values the settings screen steps through, none
+// first. Anything else is written by hand.
+var LanguageChoices = []string{"", "Deutsch", "English", "Русский"}
 
 // chatModelFile is the board's own chat model under .jaira: one line, the
 // model, shared with everybody who works the board. Its own file, like

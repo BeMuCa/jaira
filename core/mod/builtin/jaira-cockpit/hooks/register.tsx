@@ -5,7 +5,7 @@ import {
   branchesFor, carrierBranch, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
   explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, upgradeCheckOf,
-  createdHandle, decisionLines, oneLine, decisionsOf, followTitle, gapItems, nextChoice, standOf,
+  createdHandle, decisionLines, oneLine, decisionsOf, followTitle, gapItems, languageOf, nextChoice, NOTE_MARK, rephrasedOf, rephrasePrompt, standOf,
   type Action, type Agent, type GapItem, type Hunt, type HuntState, type NoteClass, type Option, type Waiting,
 } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
@@ -55,6 +55,7 @@ const messageAtom = atom({ plugin: 'jaira-cockpit', key: 'message' } as const, n
 const explainedAtom = atom({ plugin: 'jaira-cockpit', key: 'explained' } as const, {})
 const decidedAtom = atom({ plugin: 'jaira-cockpit', key: 'decided' } as const, {})
 const verdictAtom = atom({ plugin: 'jaira-cockpit', key: 'verdictTicket' } as const, null)
+const rephrasedAtom = atom({ plugin: 'jaira-cockpit', key: 'rephrased' } as const, {})
 const huntsAtom = atom({ plugin: 'jaira-cockpit', key: 'hunts' } as const, {})
 const explainingAtom = atom({ plugin: 'jaira-cockpit', key: 'explaining' } as const, null)
 const answeringAtom = atom({ plugin: 'jaira-cockpit', key: 'answering' } as const, null)
@@ -583,8 +584,11 @@ function hasVerdict(w: Waiting): boolean {
 async function showVerdict($: EngineInterface, id: string): Promise<void> {
   await update($, verdictAtom, () => id)
   const opened = await $.ui.open({ id: VERDICT, title: t.verdictOf(id), focus: true, closeOnEscape: true })
-  if (opened.isPlaced) return
   const w = (await read($, boardAtom))?.waiting.find(x => x.id === id)
+  if (opened.isPlaced) {
+    if (w !== undefined) await rephrase($, id, gapItems(w.gaps).map(x => x.text))
+    return
+  }
   if (w !== undefined) $.ui.toast(`${t.verdictOf(id)}: ${w.verdict || w.question}`)
 }
 
@@ -1052,7 +1056,58 @@ async function askWhatIsMissing($: EngineInterface, w: Waiting, known?: GapItem[
   const items = known ?? await reviewItems($, w)
   await update($, choosingAtom, () => (items.length === 0 ? null : { id: w.id, items }))
   const opened = await $.ui.open({ id: GIVE_BACK, title: `${t.giveBack} ${w.id}`, focus: true, closeOnEscape: true })
-  if (!opened.isPlaced) await fail($, `${t.giveBack} ${w.id}`, t.noRoom)
+  if (!opened.isPlaced) return fail($, `${t.giveBack} ${w.id}`, t.noRoom)
+  await rephrase($, w.id, items.map(x => x.text))
+}
+
+// ── review notes in the person's language ────────────────────────────────
+
+// The Verdict pane's order: what stops the ticket first.
+const CLASS_ORDER: readonly NoteClass[] = ['blocker', 'edge', 'limit', 'elsewhere']
+const REPHRASED_PREFIX = 'rephrased:'
+const REPHRASED_TICKETS = 50
+const rephrasing = new Set<string>()
+
+// The review notes of a ticket in the language the person set in their own
+// settings.json, short and plain, for the Verdict and Give back panes to show
+// instead of the ticket's words. The ticket is never written: what Give back
+// and Accept write onto it stays the original text. One call of the cheap
+// model per ticket and notes: the answer is kept in the store for as long as
+// the language and the notes stay the same. No language set, a failed call
+// or an answer that does not fit: nothing is shown but the original.
+async function rephrase($: EngineInterface, id: string, texts: readonly string[]): Promise<void> {
+  if (texts.length === 0) return
+  const language = languageOf(await settingsJson($))
+  if (language === undefined) return
+  const key = REPHRASED_PREFIX + id
+  const kept = (await $.store.get(key)) as { language: string; source: string[]; shown: string[] } | undefined
+  const fits = (k: typeof kept): k is NonNullable<typeof kept> =>
+    k !== undefined && k.language === language && k.source.length === texts.length && k.source.every((x, i) => x === texts[i])
+  let shown = fits(kept) ? kept.shown : undefined
+  if (shown === undefined) {
+    // One call at a time per ticket and notes: a second press while the
+    // first waits sends nothing more.
+    const busy = `${key}\n${language}\n${texts.join('\n')}`
+    if (rephrasing.has(busy)) return
+    rephrasing.add(busy)
+    try {
+      const result = await $.model.complete({ model: 'haiku', prompt: rephrasePrompt(language, texts), maxTokens: 4000 })
+      shown = result.isAnswered ? rephrasedOf(result.text, texts.length) : undefined
+    } catch {
+      shown = undefined
+    } finally {
+      rephrasing.delete(busy)
+    }
+    if (shown === undefined) return
+    // Delete first so the key moves to the end of the store's insertion
+    // order, as keep() does; the tickets read longest ago drop out.
+    await $.store.delete(key)
+    await $.store.set(key, { language, source: [...texts], shown })
+    const keys = (await $.store.keys()).filter(k => k.startsWith(REPHRASED_PREFIX))
+    for (const old of keys.slice(0, Math.max(0, keys.length - REPHRASED_TICKETS))) await $.store.delete(old)
+  }
+  const map = Object.fromEntries(texts.map((x, i) => [x, shown![i]!]))
+  await update($, rephrasedAtom, r => ({ ...r, [id]: map }))
 }
 
 // The review's notes, each with what it starts as: its class, or how it was
@@ -1716,8 +1771,7 @@ export const register: Register = (on, options) => {
     const toggle = (n: number) =>
       void update($, choosingAtom, c => (c === null || c.id !== w.id ? c : { ...c, items: c.items.map((x, i) => (i === n ? { ...x, choice: nextChoice(x.choice) } : x)) }))
     const choiceColour = (c: GapItem['choice']) => (c === 'now' ? 'error' : c === 'later' ? 'suggestion' : 'success')
-    const noteMark = (cls: NoteClass) =>
-      cls === 'blocker' ? <Text bold color="error">[blocker] </Text> : cls === 'elsewhere' ? <Text color="suggestion">[not this ticket] </Text> : cls === 'limit' ? <Text dimColor>[known limit] </Text> : null
+    const said = (await read($, rephrasedAtom))[w.id] ?? {}
     // A blocker not marked fix now is accepted only with a reason: the
     // Accept button gives way to a field that will not take an empty one.
     const blockerKept = items.some(x => x.cls === 'blocker' && x.choice !== 'now')
@@ -1735,12 +1789,11 @@ export const register: Register = (on, options) => {
         <Text>{w.id} · {w.lane}{w.verdict !== '' ? ` · ${w.verdict}` : ''}</Text>
         {items.length > 0 ? <Box marginTop={1}><Text bold>{t.gapsHeading}</Text></Box> : null}
         {items.map((x, i) => (
-          <Button key={`gap-${w.id}-${i}`} plain label={`${t.choice[x.choice]} ${x.text}`} {...(i === 0 ? { autoFocus: true as const } : {})} onPress={() => toggle(i)}>
+          <Button key={`gap-${w.id}-${i}`} plain label={`${t.choice[x.choice]} ${NOTE_MARK[x.cls]} ${said[x.text] ?? x.text}`} {...(i === 0 ? { autoFocus: true as const } : {})} onPress={() => toggle(i)}>
             <Text wrap="wrap">
               <Text bold color={choiceColour(x.choice)}>{t.choice[x.choice]}</Text>
-              {' '}
-              {noteMark(x.cls)}
-              {x.text}
+              {` ${NOTE_MARK[x.cls]} `}
+              {said[x.text] ?? x.text}
               {x.earlier !== undefined ? <Text dimColor>{` ${t.decidedBefore}`}</Text> : null}
             </Text>
           </Button>
@@ -1944,6 +1997,10 @@ export const register: Register = (on, options) => {
     // The light first: whether to accept, at a glance, and the reason it names.
     const light = lightOf(w, (await read($, huntsAtom))[w.id])
     const first = light.reasons[0]
+    // Each note with its class mark, classed as the Give back pane classes
+    // it, in the person's language once the cheap model has answered.
+    const notes = gapItems(w.gaps, (await read($, explainedAtom))[w.id]?.text).sort((a, b) => CLASS_ORDER.indexOf(a.cls) - CLASS_ORDER.indexOf(b.cls))
+    const said = (await read($, rephrasedAtom))[w.id] ?? {}
     return (
       <Box flexDirection="column">
         <Text key="light" wrap="wrap">
@@ -1956,8 +2013,7 @@ export const register: Register = (on, options) => {
         <Box marginTop={1}><Text wrap="wrap"><Text bold>{t.verdictHeading}</Text> {w.verdict !== '' ? w.verdict : t.noVerdict}</Text></Box>
         {w.blockers.length + w.notes.length > 0 ? <Box marginTop={1}><Text bold>{t.notesHeading}</Text></Box> : null}
         {!w.findingsKnown ? <Box marginTop={1}><Text dimColor wrap="wrap">{t.notesNotKept}</Text></Box> : null}
-        {w.blockers.map((n, i) => <Text key={`blocker-${i}`} wrap="wrap"><Text bold color="error">[blocker]</Text> {n}</Text>)}
-        {w.notes.map((n, i) => <Text key={`note-${i}`} wrap="wrap">· {n}</Text>)}
+        {notes.map((n, i) => <Text key={`note-${i}`} wrap="wrap">{NOTE_MARK[n.cls]} {said[n.text] ?? n.text}</Text>)}
         <Button key="verdict-close" label={t.close} onPress={() => void $.ui.close({ id: VERDICT })} />
       </Box>
     )

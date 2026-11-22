@@ -1,0 +1,2 @@
+- Read every review note in the cockpit's Verdict and Give back panes by its mark: 🔴 blocker, 🟡 small edge, ⚪ known limit, 🔵 not this ticket.
+- Set your own language for review notes under Notes language in the settings screen (S), or as "language" in ~/.jaira/settings.json: the cockpit then shows the notes rewritten short in it by haiku, kept per ticket, while the ticket keeps its words; without it, or offline, you see the notes as written.
