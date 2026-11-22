@@ -4014,7 +4014,7 @@ describe('review notes as a person reads them', () => {
     expect((await verdictNotes($))[0]).toBe('🔴 blocker: the header is written twice')
   })
 
-  test('an older call answered after the language changed shows nothing', async ($, on) => {
+  test('an older call answered after a newer press shows nothing; the newest press wins', async ($, on) => {
     const w = withNotes(on, 'Deutsch', de)
     w.modelHeld = []
     await startSession($)
@@ -4028,18 +4028,42 @@ describe('review notes as a person reads them', () => {
     w.modelHeld.shift()!()
     await w.clock.settle()
     expect((await verdictNotes($))[0]).toBe('🔴 blocker: the header is written twice')
-    // A second press while one call waits sends no second call.
+    // Русский asked and waiting, then Deutsch again - kept from the first
+    // call, so answered at once: the Russian answer, coming back last, is
+    // the older press's and shows nothing.
     w.files.set(SETTINGS, JSON.stringify({ language: 'Русский' }))
     w.model = JSON.stringify(ru)
     void band.press({ key: 'verdict-MG677R' })
-    void band.press({ key: 'verdict-MG677R' })
     await w.clock.settle()
+    w.files.set(SETTINGS, JSON.stringify({ language: 'Deutsch' }))
+    await band.press({ key: 'verdict-MG677R' })
     expect(w.modelHeld).toHaveLength(1)
     w.modelHeld.shift()!()
     await w.clock.settle()
     w.modelHeld = undefined
-    expect((await verdictNotes($))[0]).toBe(`🔴 ${ru[0]}`)
-    expect(w.modelCalls).toBe(2)
+    // Read off the pane as it stands, without a press that would ask again.
+    const shownNow = async () => {
+      const pane = await $.ui.mount(VERDICT('Review verdict of MG677R'))
+      const first = (await pane.findAll({ type: 'Text' })).map(x => x.text).find(x => x.startsWith('🔴'))
+      await pane.unmount()
+      return first
+    }
+    expect(await shownNow()).toBe(`🔴 ${de[0]}`)
+    // Two presses on one language while nothing is kept: both ask, the
+    // newest shows - no call is held back for another (decision 22.11.).
+    w.files.set(SETTINGS, JSON.stringify({ language: 'English' }))
+    w.model = JSON.stringify(['The header twice.', 'No size check.', 'Long Windows paths.', 'load.go:41 takes an empty file.'])
+    w.modelHeld = []
+    void band.press({ key: 'verdict-MG677R' })
+    void band.press({ key: 'verdict-MG677R' })
+    await w.clock.settle()
+    expect(w.modelHeld).toHaveLength(2)
+    w.modelHeld.splice(1, 1)[0]!()
+    await w.clock.settle()
+    w.modelHeld.shift()!()
+    await w.clock.settle()
+    w.modelHeld = undefined
+    expect(await shownNow()).toBe('🔴 The header twice.')
   })
 
   test('a model that does not answer leaves the original text with its mark', async ($, on) => {

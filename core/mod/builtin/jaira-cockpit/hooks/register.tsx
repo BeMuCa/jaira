@@ -1066,9 +1066,10 @@ async function askWhatIsMissing($: EngineInterface, w: Waiting, known?: GapItem[
 const CLASS_ORDER: readonly NoteClass[] = ['blocker', 'edge', 'limit', 'elsewhere']
 const REPHRASED_PREFIX = 'rephrased:'
 const REPHRASED_TICKETS = 50
-const rephrasing = new Set<string>()
 // The newest rephrase of each ticket: an older one still waiting for the
-// model when the language changed shows nothing once it is answered.
+// model shows nothing once it is answered. No call is held back for one
+// that waits - the newest press wins, a double press may ask twice
+// (decision 22.11.2026: a rule that skips calls kept growing edges).
 const newest = new Map<string, number>()
 let rephrases = 0
 
@@ -1081,19 +1082,13 @@ let rephrases = 0
 // or an answer that does not fit: nothing is shown but the original, a
 // rewrite shown before included - the language may have been taken away.
 async function rephrase($: EngineInterface, id: string, texts: readonly string[]): Promise<void> {
-  const language = texts.length === 0 ? undefined : languageOf(await settingsJson($))
-  const key = REPHRASED_PREFIX + id
-  // One call at a time per ticket, language and notes: a second press while
-  // the first waits sends nothing more, and leaves the first the newest.
-  const busy = `${key}\n${language}\n${texts.join('\n')}`
-  if (rephrasing.has(busy)) return
   const mine = ++rephrases
   newest.set(id, mine)
+  const language = texts.length === 0 ? undefined : languageOf(await settingsJson($))
   const show = (map?: Record<string, string>) =>
     newest.get(id) !== mine ? undefined : update($, rephrasedAtom, ({ [id]: _, ...rest }) => (map === undefined ? rest : { ...rest, [id]: map }))
   if (language === undefined) return show()
-  rephrasing.add(busy)
-  const shown = await rephrased($, key, language, texts).finally(() => rephrasing.delete(busy))
+  const shown = await rephrased($, REPHRASED_PREFIX + id, language, texts)
   await show(shown === undefined ? undefined : Object.fromEntries(texts.map((x, i) => [x, shown[i]!])))
 }
 

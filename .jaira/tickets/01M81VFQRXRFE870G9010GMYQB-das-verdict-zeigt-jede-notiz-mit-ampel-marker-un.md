@@ -24,7 +24,7 @@ related: []
 follows: 01M81G681S9YWPBZWQ7HAJ41SC
 commits: []
 created-at: 2026-11-22T14:45:11Z
-updated-at: 2026-11-22T15:16:01Z
+updated-at: 2026-11-22T16:20:06Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3863384
 claimed-at: 2026-11-22T14:47:40Z
@@ -32,13 +32,14 @@ outcome-what: "Verdict- und Give-back-Pane zeigen jede Review-Notiz mit 🔴/�
 outcome-why: "Alex liest langsam und auf Russisch; er musste jede englische Notiz lesen, um zu sehen, ob sie blockiert."
 outcome-resolves: "DoD 1-4, 6-8; DoD 5 (Alex sieht es) offen. Geprüft: Nebenläufigkeit (ein Aufruf pro Ticket+Notizen, Set rephrasing), Fehlerpfade (Modell wirft/antwortet nicht/falsche Form -> Original), ungewöhnliche Eingabe (leere/kaputte settings, falsche Anzahl, leere Strings), Rechte (Sprache nur aus eigener settings.json, Notiztext nur zur Anzeige)."
 review-summary: none
-review-gaps: "round 2: one error return for the two unmarshals in settings.Update. Left: settings.Save is now called only by tests for setup - kept as the plain writer; earlier round's choices stand (stepAfter, keep() vs rephrase store pattern)."
-test-verdict: "fail: two parallel settings.Update calls corrupt settings.json (in-place write); scratch test 3/3 runs lost remote+hook"
-hunt-verdict: "fail: bughunt done at 2b72d2ac2, 3 change (1 blocker: in-place write wipes on concurrent Update; case-insensitive key kept; stale rephrase lands after language change)"
-round: 3
-back-from: testing
-back-by: lane
-back-count: 2
+review-gaps: "round 3: none - rephrase split into rephrase (who shows) and rephrased (store/model) by the fix itself; nothing orphaned (Save still used by tests, now atomic too)."
+test-verdict: "pass: round 3 - go vet ./... + go test ./core/... ./internal/... RC=0, -race -count=5 TestUpdate* RC=0, cockpit 318 pass, check-ticket-commits + shipped-history --check RC=0; earlier failures re-run with neighbours: two writers x50 (TestUpdateTwoWritersAtOnce, language+python, unknown key kept), trailing comma / not json / language:5 / [x] / Language in other case; stale rewrite after language removal and after a pending call (cockpit tests). Round 1 checked real haiku output and Save failure path."
+hunt-verdict: "fail: bughunt done at b45984ab1, 1 change blocker: a press deduplicated by the busy mark leaves 'newest' on a call for a language no longer chosen (Deutsch -> Русский -> Deutsch shows Russian)"
+round: 4
+back-from: human
+back-by: person
+back-count: 1
+question: ""
 ---
 
 # Das Verdict zeigt jede Notiz mit Ampel-Marker und in der Sprache der Person, verständlich umformuliert
@@ -60,6 +61,8 @@ back-count: 2
   proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts: two tests 'a person who set <language>...'; internal/tui/settings_test.go TestSettingsEnterStepsTheLanguage (two JAIRA_HOMEs, board dir unchanged)
 - [x] Neue Einstellung für die Sprache in ~/.jaira/settings.json und im Settings-Fenster (S); ohne Einstellung bleibt der Originaltext - Alex 22.11.
   proof: core/settings/settings.go Settings.Language + Update; internal/tui/settings.go stepLanguage; TestSettingsEnterStepsTheLanguage, TestSettingsWritesNeverWipeABrokenFile, TestUpdateNeverWipesTheFile; cockpit test 'without a language nothing is sent'
+- [x] Kein Dedup laufender haiku-Aufrufe: jeder Druck liest den Cache oder fragt, der neueste Druck gewinnt (Entscheidung 22.11.)
+  proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts: 'an older call answered after a newer press shows nothing; the newest press wins' (fails with the newest check removed); hooks/register.tsx rephrase has no busy set
 
 ## Options
 
@@ -90,3 +93,10 @@ back-count: 2
 - **2026-11-22 15:11 · Alexander Sacharov** — bughunt: done at 2b72d2ac2 - 3 findings (3 change, 1 of them blocker; 0 pre-existing) in 11 files, follow-up hunt since ddd89fd6a; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/0GMYQB.md core/settings/settings.go core/settings/settings_test.go core/shipped/shipped.sha256 internal/tui/settings.go internal/tui/settings_test.go
 - **2026-11-22 15:11 · Alexander Sacharov** — testing: class: settings.json written in place and read-modify-written without a lock; example: two goroutines Update(language)/Update(dispatch) x50 -> file unparseable, Load {} (3/3 runs); fix: atomic temp+rename under a lock, reuse an existing jaira helper.
 - **2026-11-22 15:16 · Alexander Sacharov** — round 3 fix: settings.Update and Save write through ticket.WriteAtomic under ticket.LockFile(settings.json.lock) - reused from core/ticket, no new lock code; known keys dropped case-insensitively (encoding/json reads them so). rephrase: a per-ticket 'newest' counter - an older call answered after the language changed writes nothing to the panes (its store entry stays, keyed by its language); busy mark taken before the first await, so two presses send one call. Model/store part split into rephrased().
+- **2026-11-22 15:16 · Alexander Sacharov** — critique (pass 3, repair only): none - the repair reuses ticket.LockFile/WriteAtomic instead of a new lock.
+- **2026-11-22 15:18 · Alexander Sacharov** — bughunt: change: blocker: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1088 - class: a press that matches a call already waiting (same ticket, language, notes) returns before it claims newest, so the newest mark stays on a later call for a language that is no longer set, and that call's answer is shown while the waiting call for the current language is dropped (newest.get(id) !== mine); example: press in Deutsch (call A waits), language set to Русский and press (call B waits), language set back to Deutsch and press - returns at rephrasing.has(busy); A answers and is dropped, B answers and the Verdict pane shows the Russian rewrite while settings.json says Deutsch, until the next press; this is the stale rewrite commit b45984ab1 says is never shown; blame: b45984ab1; ran: scratch copy of the mod with an extra test in board.test.ts, claude plugin test (exit 1, expected '🔴 Der Header wird doppelt geschrieben.', received '🔴 Заголовок пишется дважды.')
+- **2026-11-22 15:18 · Alexander Sacharov** — bughunt: done at b45984ab1 - 1 finding (1 change, blocker; 0 pre-existing) in 11 files, follow-up hunt since 2b72d2ac2 (diff in register.tsx, board.test.ts, settings.go, settings_test.go, shipped.sha256; no new file); concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/0GMYQB.md core/settings/settings.go core/settings/settings_test.go core/shipped/shipped.sha256 internal/tui/settings.go internal/tui/settings_test.go
+- **2026-11-22 15:19 · Alexander Sacharov** — question (testing sent back 3 times): round 3 finding: register.tsx:1088 - a press deduplicated by rephrasing.has(busy) returns before newest.set, so Deutsch->Русский->Deutsch shows Russian. The loop reads deeper each round on one rule (dedup of a pending haiku call) while the DoD itself holds. Options: 1) (Recommended) delete the dedup rule - every press asks or reads the cache, newest wins; cost: a double press may send two haiku calls; 2) keep the dedup and hand the newest mark over to the pending call - one more rule, likely more edges; 3) accept as is to signoff - the rare flip shows the wrong language until the next press.
+- **2026-11-22 16:16 · Alexander Sacharov** — decision (Teamlead 22.11., Alex' Regel 'Ränder wachsen → kleineres Design'): Variante 1 - Dedup-Regel für laufende haiku-Aufrufe löschen; jeder Druck liest Cache oder fragt haiku, der neueste gewinnt. Doppelter Druck darf zwei Aufrufe kosten.
+- **2026-11-22 16:16 · Alexander Sacharov** — decision (teamlead for Alex, 22.11.): 1) delete the dedup rule, newest press wins (edges grow -> smaller design). settings.Update blocker (atomic write/lock) already closed in b45984ab1 (TestUpdateTwoWritersAtOnce; round-3 hunt found nothing there).
+- **2026-11-22 16:20 · Alexander Sacharov** — round 4: dedup set removed; the newest mark is taken before the settings read, so the last press wins even when an earlier press's read is slower. A stale call still stores its answer under its own language (valid cache, may push out the current one - costs at most one more haiku call). Test checks the pane without a new press; with the newest check removed it fails.
