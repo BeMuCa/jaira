@@ -1,7 +1,7 @@
 ---
 id: 01M827VCK42HAEPYFCK3DF46B9
 title: "Explain und Discuss im Cockpit holen ein Ticket ohne Worktree oder mit veralteter Kopie zuerst, wie Accept seit 76ERHH"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -15,24 +15,41 @@ tags:
   - cockpit
 blocked-by: []
 related: []
-commits: []
+commits:
+  - e1a13e9090890873785dd8b8f2abd064d261c50d
+  - 31f8c9e0dd7413aa8fdfc2fe17eec01316b5c895
+  - c1cae20d50d4d58a93f1296174343cb602901e49
+  - feed258f46ab6674957b24c8c3f6de5e76fcf5ae
+  - 05331f861f26ff2f01253f538ef1ae3654a284f8
+  - 3523d213d71b671eb85f4ce3444009fbedc1768a
+  - 29d35c6fc7a9690c95b395446f2661a54dbda65f
 created-at: 2026-11-22T18:21:16Z
-updated-at: 2026-11-22T19:24:18Z
+updated-at: 2026-11-22T19:40:19Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-1159000
-claimed-at: 2026-11-22T18:52:19Z
+claimed-by: DESKTOP-RFTCH11-3974809
+claimed-at: 2026-11-22T19:34:41Z
 outcome-what: "Explain and Discuss in the cockpit pull a ref-only or stale ticket through ticketHere before the chat opens; a copy pulled into the main checkout is removed once the chat has done its part (refreshBoard's chats loop), or at once when no chat could be opened"
 outcome-why: "The chat writes its note with jaira note, which refuses a ticket that is only on its ref; Explain/Discuss failed on any ticket without a worktree, as Accept did before 76ERHH"
 outcome-resolves: "DF46B9: Explain/Discuss on ref-only or stale tickets"
-review-summary: "none"
+review-summary: "Explain and Discuss in the cockpit now call ticketHere (the Accept helper from 76ERHH) before a chat opens: a ticket only on its ref, or older on disk, is pulled first; a refused pull stops the press with jaira's reason and never steals. When the pull lands a copy in the main checkout, the chat is registered in the in-memory chats map with that path before spawn.sh runs, and the chat's prompt (spawn.sh --copy for Herdr tabs, texts.ts removeCopy for the no-Herdr subagent/this-session path) tells it to run git clean on the copy as its very last step. The cockpit removes the copy itself only when no chat started (no spawn.sh, or spawn.sh failed without the chat's tab). A minute after a chat is done (its note, or the Discuss question gone) the cockpit checks the path and, if the file is still there, prints the git clean line beside the band. While a chat holds a copy, a second Explain/Discuss on the same ticket is refused with chatHoldsCopy. Release note with a ! line asking for jaira update --roles because older spawn.sh rejects --copy."
 round: 5
 back-from: testing
 back-by: lane
 back-count: 3
-review-gaps: "none removed: the opened() reuse of the previous press's copy is gone with the one-chat rule (feed258f4)"
-test-verdict: "pass: round 3 at feed258f4 - claude plugin test 377/377 RC=0 (new: second chat refused for explain and discuss, spawn failed before/after its tab, Herdr tab gone names the copy), shipped-history --check RC=0; go tests unchanged since round 2 (go test ./... RC=0 at c1cae20d5; this round touched only cockpit TS, release note and manifest). DoD 1-4 verified in the tree. Not run live in Claude Code"
-hunt-verdict: "fail: bughunt done at feed258f4, 2 change blockers - the one-chat guard is set only after spawn.sh returns (a second press after BUSY_MS 20s gets past it), and the tab-gone branch reads a tab snapshot older than a chat opened meanwhile"
+review-gaps: |-
+  note: known limit (teamlead decision 22.11. 19:21): a chat that ends without its note or answer (Herdr tab closed, spawn.sh timed out after its tab and the tab died, non-Herdr chat abandoned) keeps its chats entry - the copy stays, no band line, and every later Explain/Discuss on that ticket is refused until the cockpit session restarts
+  note: chatHoldsCopy (texts.ts) says "Finish that chat first", which the person cannot do in the known-limit case above; fix: add "or, if no chat on <id> runs any more, git clean -fqx -- <path> and restart the session" to the message
+  note: the one-chat guard lives in one cockpit's memory: two Claude sessions with the cockpit on the same repo do not see each other's chats, so the second session's Explain finds the copy 'current', gets no --copy and its later jaira writes are refused once the first chat cleans the copy; rare, same class as the limit above
+test-verdict: "pass: round 4 at 05331f861 - claude plugin test 378/378 RC=0 (new: a second press while spawn.sh waits is refused, a failed spawn.sh frees the ticket), shipped-history --check RC=0; Go untouched since go test ./... RC=0 at c1cae20d5. DoD 1-4 verified in the tree. Not run live in Claude Code"
+hunt-verdict: "pass: bughunt done at 05331f861, 1 change finding carried to signoff as a note by the parent's ruling (one round, then signoff): a chat that ends without its note holds the ticket until the session ends - the known limit noted in round 4"
 question: ""
+review-verdict: "accept: all four DoD items hold in the code and tests (378 cockpit tests and TestSpawn* pass at 05331f861); no blocker - the remaining edges are the known limit the teamlead accepted on 22.11. plus two message/multi-session notes"
+review-round: 5
+review-verdict-gaps: |-
+  note: known limit (teamlead decision 22.11. 19:21): a chat that ends without its note or answer (Herdr tab closed, spawn.sh timed out after its tab and the tab died, non-Herdr chat abandoned) keeps its chats entry - the copy stays, no band line, and every later Explain/Discuss on that ticket is refused until the cockpit session restarts
+  note: chatHoldsCopy (texts.ts) says "Finish that chat first", which the person cannot do in the known-limit case above; fix: add "or, if no chat on <id> runs any more, git clean -fqx -- <path> and restart the session" to the message
+  note: the one-chat guard lives in one cockpit's memory: two Claude sessions with the cockpit on the same repo do not see each other's chats, so the second session's Explain finds the copy 'current', gets no --copy and its later jaira writes are refused once the first chat cleans the copy; rare, same class as the limit above
+review-check: "1. In a session with the cockpit (claude --plugin-dir core/mod/builtin/jaira-cockpit from this worktree), pick a ticket waiting for you that has no worktree and no file in the main checkout (jaira show <id> --json shows \"on-ref-only\": true)  2. Press [Explain] on it  3. You see the tab (or subagent) open instead of \"on its ref and not on your disk\"; ls .jaira/tickets/ in the main checkout shows the pulled file while the chat runs  4. When the chat has written its explain: note, the file is gone from .jaira/tickets/ (the chat ran git clean); [Read explanation] shows the note  5. Press [Explain] again on the same ticket while the first chat still runs: the band refuses with \"The Explain chat on <id> is still open...\"  6. Automated: cd core/mod/builtin/jaira-cockpit && claude plugin test . -> 378 pass; go test ./core/role -run TestSpawnChatRemovesTheCopyItWasHanded -> ok"
 ---
 
 # Explain und Discuss im Cockpit holen ein Ticket ohne Worktree oder mit veralteter Kopie zuerst, wie Accept seit 76ERHH
@@ -81,3 +98,8 @@ question: ""
 - **2026-11-22 19:21 · Alexander Sacharov** — question: testing sent DF46B9 back the third time; every round's findings sit on one rule - the cockpit guessing a chat's lifetime. Recommendation: keep c1cae20d5's design (the chat removes its copy), and in feed258f4 register the chat in chats before spawn.sh runs (closes finding 1) and delete the tab-gone branch (closes finding 2; known limit: a tab closed without a note never gets the band line). Options: 1) yes, do exactly that and run one more round 2) no - the person decides another shape (e.g. jaira note/set writing a ref-only ticket straight to its ref, which makes the copy unnecessary; a jaira core change, own ticket)
 - **2026-11-22 19:21 · Alexander Sacharov** — decision (teamlead 22.11., Schleifenbremse): Option 1 - Chat vor spawn.sh in chats registrieren, Zweig 'Tab verschwunden' streichen; ohne Notiz geschlossener Tab = keine Bandzeile, bekannte Grenze. Ein Runde, danach was noch auftaucht als note an signoff.
 - **2026-11-22 19:24 · Alexander Sacharov** — round 4 (parent: yes, option 1): the chat is registered in chats before spawn.sh runs, so a press after BUSY_MS while spawn.sh waits finds the holder; a failed spawn.sh without the chat's tab deletes the entry and removes the copy. The tab-gone branch is deleted. Known limit: a Herdr tab closed without its note, or a cockpit session ended mid-chat, never counts as done - no band line, and the ticket stays held for further chats until the cockpit restarts. Parent: whatever turns up after this round goes to signoff as a note, not another testing round.
+- **2026-11-22 19:24 · Alexander Sacharov** — critique round 5 (05331f861): nothing left; the change is the two edits the parent agreed to.
+- **2026-11-22 19:31 · Alexander Sacharov** — bughunt: change: blocker: core/mod/builtin/jaira-cockpit/hooks/register.tsx:419-439 - class: a chats entry that holds a copy is released only by the chat's note (explain) or by the question going away (discuss); nothing else ever ends it, so a chat that ends without its note holds the ticket for the rest of the Claude session. Same pattern at :987-993 (spawn.sh failed after its tab came up, the entry is kept, and that tab later dies) and at :963-967 (no Herdr: a subagent or this-session chat that stops without a note). Effect: every later Explain/Discuss on that ticket is refused with chatHoldsCopy ('still open') although no chat runs, and the copy left in the main checkout is never named (copyLeft never fires). 05331f861 removed the only other way out (the 'tab gone -> doneAt' branch). example: Herdr explain chat on a ref-only ticket, its tab closed after 1 min without a note; 30 min later Discuss on the same ticket is refused, spawn.sh not run, no git clean line; ran: scratch test in a copy of the mod via 'claude plugin test' (HEAD: spawns 1->1, title 'Discuss MG677R failed', copyLine []; same test on feed258f4's register.tsx: spawns 1->2, copyLine named)
+- **2026-11-22 19:31 · Alexander Sacharov** — bughunt: done at 05331f861 - 1 finding (1 change, 1 blocker, 0 pre-existing) in 7 files, follow-up hunt since feed258f4 (diff: register.tsx, board.test.ts, release note, shipped.sha256); concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/DF46B9.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/role_test.go core/shipped/shipped.sha256
+- **2026-11-22 19:32 · Alexander Sacharov** — testing: note: known limit, confirmed by the round-4 hunt: a chat that ends without its note (Herdr tab closed, spawn.sh failed after its tab and the tab then died, a non-Herdr chat abandoned) keeps its chats entry - every later Explain/Discuss on that ticket is refused with chatHoldsCopy until the Claude session restarts, and the copy is never named. Carried to signoff per parent, not another testing round.
+- **2026-11-22 19:35 · Alexander Sacharov** — worker: the outcome-what still says 'removed once the chat has done its part (refreshBoard's chats loop)' from round 1; since c1cae20d5 the chat removes the copy itself (spawn.sh --copy / texts.ts removeCopy) and the cockpit removes it only when no chat started. Later lanes cannot rewrite the outcome; read it with this note.
