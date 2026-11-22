@@ -24,7 +24,7 @@ related:
   - 01M6PDF2D6RQ8K1T7N0G1MYFKE
 commits: []
 created-at: 2026-11-19T09:19:56Z
-updated-at: 2026-11-22T23:01:08Z
+updated-at: 2026-11-22T23:04:52Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-385148
@@ -47,7 +47,7 @@ back-count: 1
 ## Definition of Done
 
 - [x] Das Overview-Pane hat einen Tab Milestones mit Waehler '< name >', der mit Pfeiltasten oder Klick durch alle Milestones blaettert
-  proof: core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx:353 tab Milestones, :341 selector [ < ] name [ > ] (Buttons: click, or ring arrows + Enter); paging round the end overview.ts:194 pagedTo; test '< and > page through every milestone round the end...'
+  proof: core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx:353 tab Milestones, :341 selector [ < ] name [ > ] (Buttons: click, or ring arrows + Enter); paging round the end overview.ts:209 pagedTo; test '< and > page through every milestone round the end...'
 - [x] Unter dem Waehler steht 'x von n fertig' und die Ticketliste mit ID, Titel und Lane: in Arbeit oben, nicht begonnen in der Mitte, fertig unten
   proof: core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx:345 'x of n done' (English like the cockpit), overview.ts:176 standOf groups in work/not started/done in board order; test 'one milestone: x of n done counts the logbook...'
 - [x] Der zuletzt gewaehlte Milestone bleibt nach Schliessen und Oeffnen des Panes gewaehlt
