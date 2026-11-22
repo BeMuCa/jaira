@@ -70,10 +70,14 @@ Then:
 **A small change is critiqued and optimized in one pass.** When what you
 judge changes fewer than 50 lines outside `.jaira/` — the diff on a first
 pass; after a review sent the work back, the fix since the commit in its
-`review: done at <commit>` note (`git diff --shortstat <commit> -- .
-':(exclude).jaira'`, and no untracked file outside `.jaira/` in
-`git ls-files --others --exclude-standard`, which `--shortstat` does not
-count) — read it once with both lists —
+`review: done at <commit>` note, when that commit is an ancestor of `HEAD`
+(`git merge-base --is-ancestor <commit> HEAD`; otherwise the diff) —
+counted with `git diff --shortstat <commit> -- :/ ':(exclude,top).jaira'`,
+and no untracked file outside `.jaira/` (`git ls-files --others
+--exclude-standard -- :/ ':(exclude,top).jaira'` prints nothing, which
+`--shortstat` does not count) — and it touches no locking or parser (file
+locks, reading a file format, parsing command output), read it once with
+both lists —
 the four questions above and the optimize lane's four passes (`jaira show
 <handle> --for-lane optimize --json` hands you its prompt). Findings of your
 own send the ticket back as above, and optimize waits for the next round.

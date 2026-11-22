@@ -133,9 +133,9 @@ Write four things, in this order:
 **A delta review, after a small fix round.** When the ticket's notes carry
 an earlier `review: done at <commit>` line, that commit is an ancestor of
 `HEAD` (`git merge-base --is-ancestor <commit> HEAD`), and `git diff
---shortstat <commit> -- . ':(exclude).jaira'` counts fewer than 50 changed
+--shortstat <commit> -- :/ ':(exclude,top).jaira'` counts fewer than 50 changed
 lines, and no file outside `.jaira/` is untracked (`git ls-files --others
---exclude-standard -- . ':(exclude).jaira'` prints nothing — `--shortstat`
+--exclude-standard -- :/ ':(exclude,top).jaira'` prints nothing — `--shortstat`
 does not count a new file nobody added yet), read only that
 diff: check that each finding of the previous review is answered, and look
 along the four lines above at the lines that changed and the functions they
