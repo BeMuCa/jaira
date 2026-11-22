@@ -1,1 +1,2 @@
 - Expect the jaira-cockpit to shorten a report without the closing `jaira: <ID> <from> -> <to> · … · verdict: …` line to the ticket id alone — it no longer guesses a lane or a verdict from the report's text; run `jaira update --roles` so the lane role (`jaira-role-lane`) ends its report with that line too.
+- Expect the jaira-cockpit to read a status line and a `/jaira-role-lane <id> <lane>` start line whose lane id holds digits (`qa2`, `2-review`) on a board with custom lanes; before, such a line lost its lanes and verdict.

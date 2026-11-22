@@ -81,8 +81,11 @@ export type StatusLine = {
 }
 
 const FIELDS = ['branch', 'commits', 'gates', 'notes'] as const
+// A lane id is what core/lane accepts: lowercase letters, digits and hyphens
+// (qa2, 2-review). A narrower pattern drops the whole line on such a board.
+const LANE = '[a-z0-9][a-z0-9-]*'
 const STATUS_HEAD = new RegExp(
-  `^\\s*jaira:\\s+(${HANDLE})\\s+([a-z][a-z-]*)\\s*(?:->|→)\\s*([a-z][a-z-]*)\\s*(?:·\\s*(.*))?$`,
+  `^\\s*jaira:\\s+(${HANDLE})\\s+(${LANE})\\s*(?:->|→)\\s*(${LANE})\\s*(?:·\\s*(.*))?$`,
   'i',
 )
 // The engine's frame around a message — <result>, <agent-message from="…">

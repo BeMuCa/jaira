@@ -193,6 +193,21 @@ describe('session.receive', () => {
     expect(text).toBe(failed)
   })
 
+  // A lane id is what core/lane accepts: digits anywhere, hyphens inside.
+  const laneIds: Array<[string, string, string]> = [
+    ['letters only', 'review -> signoff', 'review → signoff'],
+    ['a digit at the end', 'qa2 -> signoff', 'qa2 → signoff'],
+    ['a digit at the start', '2-review -> signoff', '2-review → signoff'],
+    ['digits on both sides, no spaces', 'qa2->3-ship', 'qa2 → 3-ship'],
+  ]
+  for (const [name, lanes, shown] of laneIds) {
+    test(`status line: lane id with ${name}`, async ($, on) => {
+      session(on)
+      const { text } = await $.session.receive({ origin: { kind: 'peer-send-message' }, text: `jaira: 55CS2M ${lanes} · verdict: request changes` })
+      expect(text).toBe(SHORT(`55CS2M · ${shown} · request changes`))
+    })
+  }
+
   test('status line: lowercase handle and lanes, unicode arrow', async ($, on) => {
     session(on)
     const { text } = await $.session.receive({ origin: { kind: 'peer-send-message' }, text: 'jaira: 55cs2m Testing → Human · notes: 2' })

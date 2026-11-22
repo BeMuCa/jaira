@@ -18,30 +18,26 @@ related:
   - 01M5MNWVKBC8Q193EK7YX6HB6V
 commits: []
 created-at: 2026-10-31T01:24:29Z
-updated-at: 2026-11-22T16:45:06Z
+updated-at: 2026-11-22T16:50:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1092384
 claimed-at: 2026-11-22T16:25:37Z
 outcome-what: "digest.ts no longer guesses: without the closing status line the one-liner shows the ticket id (plus an open question or needs-you line); jaira-role-lane now ends its report with the same status line as worker and dispatcher"
 outcome-why: "laneOf/verdictOf picked the first arrow or verdict word anywhere in a report, so 'reject? reason', 'nothing rejected' or 'all the way to signoff' became a wrong lane or verdict"
 outcome-resolves: "the cockpit one-liner reads lane and verdict only from the fixed closing line; checked: concurrency n/a (pure function), error paths (failure detection unchanged, keeps the report whole), unusual input (empty/no ticket passes whole; CRLF and frame tags covered by the status-line tests), permissions n/a (fewer regexes over agent text)"
-review-summary: "The cockpit's digest (core/mod/builtin/jaira-cockpit/hooks/digest.ts) no longer guesses: laneOf/verdictOf and the LANES list are deleted, so a report without the closing 'jaira: <ID> <from> -> <to> · … · verdict: …' line is shortened to the ticket id (plus an open question / needs-you line if there is one) instead of a lane or verdict picked out of free text. jaira-role-lane SKILL.md now ends every report with that same status line, so lane workers get the full one-liner too. Tests replace the old guessing cases with nine free-text reports (reject inside a question, negated verdict words, a quoted status line, arrows) that must yield only the id; release note and shipped.sha256 updated."
-review-gaps: |-
-  note: core/role/builtin/jaira-worker/SKILL.md:465 still says 'a report without it is guessed at, field by field' - now false; should say the cockpit then shows only the ticket id
-  note: core/role/builtin/jaira-role-lane/SKILL.md:323 (question case: 'numbered list as the last thing in your pane') and :332 (role question 'as the last line') now contradict the new 'always the last line' status-line rule - say the status line comes after the list, or that a role question writes none
-test-verdict: "pass: claude plugin test (2.1.330) 314 pass 0 fail; go vet + go test ./... RC=0; shipped-history --check RC=0. DoD 1-4 verified in the tree: role-lane Boundaries carries the status line, digest() ': [ticket]', 9 free-text cases incl. 'reject? reason' and 'nothing rejected' give the bare id, release note present. Function through the real session.receive/prompt.submit hooks: status line read, no line → id only, failed report stays whole. Writes nothing new: two-writer pass n/a"
-hunt-verdict: "pass: bughunt done at 37403d24e, 1 change (not a blocker: a lane id with digits on a custom board gives the bare id; note for the person), 0 pre-existing"
-review-verdict: "accept: all four DoD items met in the diff; free-text guessing is gone, 314 cockpit tests green; two doc-drift notes only"
-review-round: 1
-review-verdict-gaps: |-
-  note: core/role/builtin/jaira-worker/SKILL.md:465 still says 'a report without it is guessed at, field by field' - now false; should say the cockpit then shows only the ticket id
-  note: core/role/builtin/jaira-role-lane/SKILL.md:323 (question case: 'numbered list as the last thing in your pane') and :332 (role question 'as the last line') now contradict the new 'always the last line' status-line rule - say the status line comes after the list, or that a role question writes none
-review-check: "1. cd core/mod/builtin/jaira-cockpit && claude plugin test .  2. expect '314 pass, 0 fail', including the 9 tests named 'no status line, only the ticket: …'  3. open core/mod/builtin/jaira-cockpit/hooks/digest.ts and search laneOf / verdictOf - no hits  4. live: claude --plugin-dir <worktree>/core/mod/builtin/jaira-cockpit, let a subagent send 'T8QS1Y: moved to human with --question \"reject? reason: dup\"' - the chat shows '[shortened by jaira-cockpit] T8QS1Y · question: reject? reason: dup — …' with no lane and no 'rejected'"
-round: 2
+review-summary: "Round 2 adds only text: jaira-worker SKILL.md:465 now says a report without the status line shows only the ticket id (was 'guessed at, field by field'), matching digest.ts; jaira-role-lane SKILL.md puts the status line below a question's numbered list and below a role question, and says it comes after everything else. shipped.sha256 gains the two new file hashes. Round 1 (37403d24e) stays as judged: digest() reads lane and verdict only from the closing 'jaira: <ID> <from> -> <to> ...' line, falls back to the bare id, and jaira-role-lane now writes that line."
+review-gaps: "note: lane ids with digits (qa2, 2-review) are not matched by STATUS_HEAD in core/mod/builtin/jaira-cockpit/hooks/digest.ts - such a status line shows the bare id instead of lane/verdict; fix: lane groups [a-z0-9][a-z0-9-]* plus a test (from bughunt, still open)"
+test-verdict: "pass: round 2 delta (37403d24e..7b31318f7: two skill texts + manifest); go test core/role core/shipped core/release RC=0, shipped-history --check RC=0; DoD 5 verified at worker SKILL:465 and role-lane SKILL:324/333/364; writes nothing, no behaviour to exercise"
+hunt-verdict: "pass: stop-after-fix, no hunt in round 2"
+review-verdict: "accept: DoD 1-5 met; both doc contradictions from round 1 are closed; manifest hashes match the files; 314 cockpit tests green (claude plugin test)"
+review-round: 2
+review-verdict-gaps: "note: lane ids with digits (qa2, 2-review) are not matched by STATUS_HEAD in core/mod/builtin/jaira-cockpit/hooks/digest.ts - such a status line shows the bare id instead of lane/verdict; fix: lane groups [a-z0-9][a-z0-9-]* plus a test (from bughunt, still open)"
+review-check: "1. cd core/mod/builtin/jaira-cockpit && claude plugin test .  -> 314 pass, 0 fail  2. grep -n 'shows only the ticket id' core/role/builtin/jaira-worker/SKILL.md  -> line 465  3. sed -n 320,366p core/role/builtin/jaira-role-lane/SKILL.md  -> both question cases and the status-line item say the status line comes last, below the list  4. in the cockpit, a worker report without a 'jaira: ...' last line shows only '[shortened by jaira-cockpit] <ID>', never a lane or 'rejected'"
+round: 3
 back-from: signoff
 back-by: person
 back-count: 1
-stop-after-fix: "true"
+stop-after-fix: "false"
 ---
 
 # Die Einzeiler des Cockpits lesen Lane und Urteil aus einer festen Schlusszeile statt aus dem ersten passenden Wort
@@ -58,6 +54,8 @@ stop-after-fix: "true"
   proof: tests/cockpit.test.ts guessCases: every free-text case expects the bare id
 - [x] review notes closed: jaira-worker SKILL no longer says a report without the status line is guessed at; jaira-role-lane question cases put the status line after the list
   proof: core/role/builtin/jaira-worker/SKILL.md:465; core/role/builtin/jaira-role-lane/SKILL.md:324, :333, :364
+- [x] STATUS_HEAD reads lane ids with digits (qa2, 2-review) like core/lane validID; table test
+  proof: core/mod/builtin/jaira-cockpit/hooks/digest.ts LANE/STATUS_HEAD; sibling hooks/sessions.ts START; tests 'status line: lane id with *' (cockpit.test.ts) and 'recognises its start line a lane whose id holds digits' (board.test.ts)
 
 ## Options
 
@@ -80,3 +78,5 @@ stop-after-fix: "true"
 - **2026-11-22 16:42 · Alexander Sacharov** — review: accept - DoD 1-4 met, 314 cockpit tests green; two doc-drift notes (jaira-worker SKILL.md:465 'guessed at', jaira-role-lane question section vs. 'always last line') left for the person
 - **2026-11-22 16:43 · Alexander Sacharov** — given back by teamlead (22.11.): two small text contradictions from review close in this round - worker SKILL:465 'guessed at, field by field' -> 'shows only the ticket id'; role-lane SKILL:323/332 question cases vs 'always the last line' -> the status line comes after the list/question. Then delta review.
 - **2026-11-22 16:44 · Alexander Sacharov** — stop-after-fix set: this round changes only two skill texts and the manifest, no code - a further hunt finds nothing worth a round (teamlead asked for a light round).
+- **2026-11-22 16:47 · Alexander Sacharov** — review (round 2): accept - both doc contradictions closed, manifest hashes match, 314 cockpit tests green; open note: digit lane ids in STATUS_HEAD (bughunt)
+- **2026-11-22 16:48 · Alexander Sacharov** — given back by teamlead (22.11.), round 3: close the last note - STATUS_HEAD in digest.ts also matches lane ids with digits ([a-z0-9][a-z0-9-]*), table test (qa2, 2-review). Testing hunts the delta since 37403d24e so the hunt covers HEAD.
