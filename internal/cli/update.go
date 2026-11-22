@@ -4,13 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
-	"path"
-	"path/filepath"
-	"strconv"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/spf13/cobra"
 
@@ -208,10 +203,6 @@ nothing — not even the version stamp. With --lanes the preview of the jaira
 section is computed from the lanes as --lanes would leave them, so it names
 the same files the real run writes.
 
-It names every file under .jaira/ whose name is not valid UTF-8 — an older
-jaira cut long titles inside a letter like ü, and macOS cannot check such a
-file out — with the git mv that renames it. It renames nothing itself.
-
 This neither downloads anything nor upgrades the jaira binary itself; it
 brings a board's own setup up to date with whichever binary you already have
 installed.`,
@@ -288,8 +279,6 @@ installed.`,
 				}
 			}
 
-			badNames := invalidNames(s.Root)
-
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
 				return emit(w, setup.json(map[string]any{
@@ -298,14 +287,12 @@ installed.`,
 					"ignore_moved": ignore.moved, "ignore_added": ignore.added, "ignore_unknown": ignore.unknown,
 					"ignore_stale_dropped": ignore.stale,
 					"notes":                entriesJSON(notes),
-					"invalid_names":        badNames,
 				}))
 			}
 
 			if setup.lanes {
 				printLaneResults(w, setup.laneResults, setup.dry)
 			}
-			printInvalidNames(w, badNames)
 			if setup.dry {
 				if len(notesWritten) > 0 {
 					fmt.Fprintf(w, "Would tell your agents about this board: %s\n", strings.Join(notesWritten, ", "))
@@ -341,46 +328,6 @@ installed.`,
 	cmd.Flags().BoolVar(&setup.lanes, "lanes", false, "also replace this board's lane files that are an older version of a lane jaira ships")
 	cmd.Flags().BoolVar(&setup.dry, "dry-run", false, "say what would be written and what is left alone, and write nothing")
 	return cmd
-}
-
-// invalidNames lists the files and directories under .jaira/ whose name is
-// not valid UTF-8, relative to root. An older jaira cut ticket slugs at byte 48
-// even inside a letter (BWT53T); git on Linux and Windows takes such a name,
-// macOS refuses to check it out. update only names them: renaming here would
-// collide with every branch that touches the same file, and the slug is a
-// hint nobody reads the title from.
-func invalidNames(root string) []string {
-	bad := []string{} // [], not null, in the JSON payload
-	base := filepath.Join(root, ticket.DirName)
-	_ = filepath.WalkDir(base, func(p string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return nil // unreadable corners are not this check's business
-		}
-		if !utf8.ValidString(d.Name()) {
-			rel, _ := filepath.Rel(root, p)
-			bad = append(bad, filepath.ToSlash(rel))
-		}
-		return nil
-	})
-	return bad
-}
-
-// printInvalidNames tells the reader how to fix each name invalidNames found.
-func printInvalidNames(w io.Writer, bad []string) {
-	for _, p := range bad {
-		fixed := path.Join(path.Dir(p), strings.ToValidUTF8(path.Base(p), ""))
-		fmt.Fprintf(w, "%s: name is not valid UTF-8, macOS cannot check it out — rename it: git mv %s %s\n",
-			shellQuote(p), shellQuote(p), shellQuote(fixed))
-	}
-}
-
-// shellQuote writes s as bash's $'...', which reads back the \xNN escapes
-// strconv.Quote writes for broken bytes; a plain "..." would pass them on
-// literally and the rename would name a file that does not exist.
-func shellQuote(s string) string {
-	q := strconv.Quote(s)
-	q = strings.ReplaceAll(q[1:len(q)-1], `\"`, `"`)
-	return "$'" + strings.ReplaceAll(q, "'", `\'`) + "'"
 }
 
 // ignoreMove is what moveIgnore did, or would do on a dry run.

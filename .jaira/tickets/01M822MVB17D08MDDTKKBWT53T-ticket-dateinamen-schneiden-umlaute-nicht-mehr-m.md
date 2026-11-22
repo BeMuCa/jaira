@@ -18,13 +18,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T16:50:19Z
-updated-at: 2026-11-22T16:56:29Z
+updated-at: 2026-11-22T16:58:44Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1768841
 claimed-at: 2026-11-22T16:50:44Z
-outcome-what: Slug schneidet an einer Zeichengrenze; jaira update nennt Dateien unter .jaira/ mit ungültigem UTF-8-Namen samt git mv
+outcome-what: Slug schneidet an einer Zeichengrenze; jaira validate meldet Dateien unter .jaira/ mit ungültigem UTF-8-Namen samt git mv (exit 3)
 outcome-why: "Ein Schnitt mitten in ü/ß/Kyrillisch erzeugte Dateinamen, die macOS nicht auschecken kann (PR #184)"
-outcome-resolves: Ticket- und Logbook-Dateien sind immer gültiges UTF-8; Altlasten werden gemeldet
+outcome-resolves: Ticket- und Logbook-Dateien sind immer gültiges UTF-8; Altlasten meldet validate
+review-summary: "internal/cli/update.go invalidNames/printInvalidNames: update ist ein Setup-Befehl; der Board-Doktor ist jaira validate (internal/cli/validate.go), der lane_context schon als validate.Problem mit Path meldet - dort als Problem code invalid_name, Severity error (exit 3), ohne eigenen JSON-Schlüssel und eigene Druckfunktion; Release-Note auf jaira validate umstellen"
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # Ticket-Dateinamen schneiden Umlaute nicht mehr mitten im Zeichen ab
@@ -34,7 +39,7 @@ outcome-resolves: Ticket- und Logbook-Dateien sind immer gültiges UTF-8; Altlas
 - [x] Slug kürzt auf höchstens 48 Bytes an einer Zeichengrenze; Tabellentest mit Umlaut, ß, Kyrillisch und Emoji genau an der Grenze, jedes Ergebnis utf8.ValidString
   proof: core/ticket/id.go:59 (Schnitt an utf8.RuneStart); core/ticket/id_test.go TestSlugCutsAtRuneBoundary + TestSlugAlwaysValidUTF8
 - [x] Vorhandene Dateien mit ungültigem Namen: jaira doctor oder update meldet sie (oder benennt sie um) - Entscheidung im Plan, Test
-  proof: internal/cli/update.go invalidNames/printInvalidNames; internal/cli/updatenames_test.go TestUpdateNamesFilesWithInvalidUTF8 (führt das gedruckte git mv per bash aus)
+  proof: internal/cli/validate.go invalidNames (Problem invalid_name, exit 3); internal/cli/validatenames_test.go TestValidateNamesFilesWithInvalidUTF8 (führt das gedruckte git mv per bash aus)
 - [x] Release-Note core/release/notes/<ID>.md
   proof: core/release/notes/BWT53T.md
 
@@ -51,3 +56,5 @@ outcome-resolves: Ticket- und Logbook-Dateien sind immer gültiges UTF-8; Altlas
 - **2026-11-22 16:50 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/25712.sock
 - **2026-11-22 16:51 · Alexander Sacharov** — decision DoD2: jaira update meldet ungültige UTF-8-Dateinamen unter .jaira/ (tickets, logbook, alles) mit git-mv-Hinweis, benennt nicht um. Grund: Umbenennen in update erzeugt Konflikte mit anderen Branches, die dieselbe Datei anfassen; master hat heute keine solche Datei; Dateiname ist nur Hinweis (Slug-Kommentar), der Frontmatter-Titel zählt. Kein doctor-Befehl im Code - kein neuer Befehl dafür.
 - **2026-11-22 16:56 · Alexander Sacharov** — Klasse geprüft: einziger Byte-Schnitt in einem Dateinamen ist ticket.Slug. identity.Slug (Logbook-Ordner) und session.sanitize sind nur ASCII. Emoji ist kein Buchstabe und wird schon zum Bindestrich. Ungültiges UTF-8 im Titel wird von range zu U+FFFD -> Bindestrich, Slug bleibt gültig. Die Ausgabe von update quotet mit bash $'...', weil "..." die \\xNN-Escapes nicht liest; PowerShell-Nutzer müssen umschreiben.
+- **2026-11-22 16:56 · Alexander Sacharov** — critique: Namensprüfung von update nach jaira validate verlegen (validate.Problem code invalid_name, error, Path, Message mit git mv $'...'). validate ist der Doktor-Befehl, den das DoD meint; exit 3 und JSON-Form sind dort schon da. update bleibt unberührt.
+- **2026-11-22 16:58 · Alexander Sacharov** — critique-Befund umgesetzt: Prüfung liegt jetzt in jaira validate, update ist wieder unverändert gegenüber master. Path im Problem ist der Name mit U+FFFD statt der kaputten Bytes (JSON würde ihn ohnehin so ersetzen); der exakte Name steht im git-mv der Message.
