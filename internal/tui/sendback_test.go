@@ -193,3 +193,27 @@ func TestMessageOverTheSendBackPromptReturnsToIt(t *testing.T) {
 		t.Errorf("esc from the prompt left mode %v, want the ticket open", m.mode)
 	}
 }
+
+// After a message over the prompt, the send-back still finishes on the
+// ticket's page, and no key afterwards finds a prompt with nothing behind it.
+func TestSendBackAfterAMessageFinishesCleanly(t *testing.T) {
+	m, tk := signoffModel(t)
+	pickLane(t, m, "in-progress")
+	typeInto(m, "halb")
+	m.notify("fetch failed", true)
+	m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
+	m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+
+	got, err := m.store.Load(tk.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Status != "in-progress" {
+		t.Fatalf("the ticket sits in %q, want in-progress", got.Status)
+	}
+	if m.mode == modeSendBack {
+		t.Fatal("the finished move reopened the reason prompt")
+	}
+	m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
+	m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+}

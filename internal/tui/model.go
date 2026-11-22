@@ -1388,15 +1388,18 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case modeSendBack:
+		if m.sendingBack == nil {
+			// Nothing to send back: a stale way back led here.
+			m.mode, m.input = modeBoard, ""
+			return m, nil
+		}
 		switch s {
 		case "enter":
 			if why := strings.TrimSpace(m.input); why != "" {
 				m.confirmSendBack(why)
 			}
 		case "esc":
-			m.input = ""
-			m.mode = m.sendingBack.back
-			m.sendingBack = nil
+			m.leaveSendBack()
 		case "backspace":
 			if r := []rune(m.input); len(r) > 0 {
 				m.input = string(r[:len(r)-1])
@@ -2084,9 +2087,7 @@ func (m *Model) applyMove() {
 // sits in the lane it was sent back from: a ticket that moved while the
 // reason was typed is not moved again on a reason written for where it was.
 func (m *Model) confirmSendBack(why string) {
-	sb := m.sendingBack
-	m.sendingBack, m.input = nil, ""
-	m.mode = sb.back
+	sb := m.leaveSendBack()
 	t, err := m.store.Load(sb.id)
 	if err != nil {
 		m.notify(err.Error(), true)
@@ -2098,6 +2099,16 @@ func (m *Model) confirmSendBack(why string) {
 		return
 	}
 	m.moveTo(sb.id, sb.target, why)
+}
+
+// leaveSendBack closes the reason prompt onto the page it was opened from.
+// returnTo is set back as well: a message raised over the prompt pointed it
+// at the prompt, and a move that finishes after would reopen it empty.
+func (m *Model) leaveSendBack() *sendBack {
+	sb := m.sendingBack
+	m.sendingBack, m.input = nil, ""
+	m.mode, m.returnTo = sb.back, sb.back
+	return sb
 }
 
 // moveTo runs the same gate checks and the same core mutation the CLI uses.

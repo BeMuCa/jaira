@@ -24,7 +24,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T11:08:36Z
-updated-at: 2026-11-22T19:01:22Z
+updated-at: 2026-11-22T19:04:47Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-910660
 claimed-at: 2026-11-22T18:49:11Z
@@ -32,11 +32,12 @@ outcome-what: "Die Doska schickt ein Ticket aus signoff/human mit m in eine frue
 outcome-why: "Der Gate erlaubt den Rueckweg schon seit Q484YS, aber ohne Begruendung ging der Grund verloren (fe5a979), und der signoff-Schirm nannte den Weg nicht."
 outcome-resolves: "Mensch muss nicht mehr --force oder Folgeticket nehmen, um Nacharbeit auf demselben Ticket anzustossen."
 review-summary: "none"
-round: 3
+round: 4
 back-from: testing
 back-by: lane
-back-count: 1
-review-gaps: "none: modeSendBack-Tastenfall und sendBackPrompt aehneln modeReject/rejectPrompt (internal/tui/model.go, view.go), unterscheiden sich aber in enter/esc und Text - eine gemeinsame Zeileneditor-Hilfe gibt es fuer die anderen Prompts (create, delete) auch nicht, also gelassen; nichts verwaist, kein toter Code"
+back-count: 2
+review-gaps: "none: confirmSendBack/moveTo ersetzen applyMove(why) ohne Rest; sendBack-Struktur hat nur die vier noetigen Felder"
+test-verdict: "pass: go vet + go test ./... gruen (RC=0), -race auf tui/move/gate/board gruen, check-ticket-commits ok; DoD 1-6 im Baum geprueft (gate.go:423, signoff.go:151, announce.go, notes/BQGM6X.md); Verhalten per TUI-Tests: Rueckgabe mit Grund, leerer Grund haelt Prompt, esc bewegt nichts, m nach done abgelehnt; Fehlerpfad: Ticket zwischendurch verschoben -> nichts bewegt, Grund in der Meldung; zwei Schreiber: Note und Lane in einem Mutate, paralleler Move per TestSendBackDoesNotMoveATicketThatMovedMeanwhile"
 ---
 
 # Aus einer Menschen-Lane kann ein Mensch nur vorwaerts oder zur Seite, nicht zurueck
@@ -76,3 +77,7 @@ review-gaps: "none: modeSendBack-Tastenfall und sendBackPrompt aehneln modeRejec
 - **2026-11-22 18:58 · Alexander Sacharov** — bughunt: change: internal/tui/model.go:1937-1950 (notify) reached from the new modeSendBack - class: a background message raised while a text prompt is open takes the prompt down; notify files modeSendBack under default, so returnTo becomes modeBoard, not the ticket screen; the half-typed reason stays in m.input and the next keys act on the board (q dismisses, then letters are board commands). The same holds pre-existing for modeReject and modeCreate. example: prompt open, typed 'half a re', refFetchedMsg{err} arrives (model.go:1135-1142), then q: mode=board, input='half a re', ticket unmoved. ran: scratch test in internal/tui (Update(refFetchedMsg{err}) then q)
 - **2026-11-22 18:58 · Alexander Sacharov** — bughunt: done at 810f63cf5 - 2 findings (2 change, 1 of them blocker) in 4 modules, first hunt; concurrency, error paths, input, permissions checked; files: AGENTS.md CLAUDE.md core/board/announce.go core/board/lanesection_test.go core/move/move.go core/release/notes/BQGM6X.md internal/tui/model.go internal/tui/move_test.go internal/tui/render_test.go internal/tui/returnto_test.go internal/tui/sendback_test.go internal/tui/signoff.go internal/tui/signoff_test.go internal/tui/team_test.go internal/tui/view.go
 - **2026-11-22 18:59 · Alexander Sacharov** — testing: bughunt change-Befunde (Prompt haelt Ticket/Lane nicht; notify schliesst Prompt) -> zurueck nach in-progress. Fix: sendBack-Zustand mit id, from, target und eigenem back-Modus.
+- **2026-11-22 19:01 · Alexander Sacharov** — critique pass 3: nur der Fix 029d1e786 gelesen - sendBack-Struktur folgt dem rejecting-Muster (model.go), nichts zu sagen.
+- **2026-11-22 19:03 · Alexander Sacharov** — bughunt: change: blocker: internal/tui/model.go:1972 (notify sets returnTo=modeSendBack) + model.go:2306 (finishMove: m.mode = m.returnTo) - class: returnTo still says modeSendBack after the prompt has closed and sendingBack is nil, so any later 'm.mode = m.returnTo' reopens a prompt with no send-back behind it, and esc (model.go:1398 m.sendingBack.back) or enter (confirmSendBack model.go:2087 sb.back) dereferences nil and crashes the TUI; the esc-from-prompt path (model.go:1397) leaves the same stale returnTo behind; example: open a signoff ticket, m -> in-progress, type a reason, any message arrives over the prompt (fetch/reload error) and is dismissed, enter -> the ticket is moved, finishMove puts the board back into modeSendBack, next esc or enter panics with nil pointer dereference; ran: scratch test in internal/tui (signoffModel, pickLane, typeInto, notify, esc, enter, then esc / typeInto+enter) - status=in-progress, mode==modeSendBack, sendingBack=nil, both keys panic; blame: 029d1e786 fix(BQGM6X)
+- **2026-11-22 19:03 · Alexander Sacharov** — bughunt: done at 029d1e786 - 1 finding (1 change, blocker) in 2 modules, follow-up hunt since 810f63cf5 (diff of internal/tui/model.go and internal/tui/view.go plus their tests; no new files); concurrency, error paths, input, permissions checked; files: AGENTS.md CLAUDE.md core/board/announce.go core/board/lanesection_test.go core/move/move.go core/release/notes/BQGM6X.md internal/tui/model.go internal/tui/move_test.go internal/tui/render_test.go internal/tui/returnto_test.go internal/tui/sendback_test.go internal/tui/signoff.go internal/tui/signoff_test.go internal/tui/team_test.go internal/tui/view.go
+- **2026-11-22 19:04 · Alexander Sacharov** — testing round 2: bughunt change/blocker - notify ueber dem Prompt liess returnTo=modeSendBack stehen, finishMove oeffnete den Prompt leer, naechste Taste nil-Panic. Fix: leaveSendBack setzt mode und returnTo zurueck; nil-Guard im modeSendBack-Fall; TestSendBackAfterAMessageFinishesCleanly.
