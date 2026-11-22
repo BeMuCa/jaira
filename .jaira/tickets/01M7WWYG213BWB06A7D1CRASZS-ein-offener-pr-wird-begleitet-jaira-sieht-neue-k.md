@@ -1,7 +1,7 @@
 ---
 id: 01M7WWYG213BWB06A7D1CRASZS
 title: "Ein offener PR wird begleitet: jaira sieht neue Kommentare, CI-Stand und wartende Re-Requests und meldet sie"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,24 +21,19 @@ related:
   - 01M7WX040JC9Z202EH852EF48S
 commits: []
 created-at: 2026-11-20T16:34:31Z
-updated-at: 2026-11-22T18:37:07Z
+updated-at: 2026-11-22T18:38:09Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4157260
 claimed-at: 2026-11-22T18:32:13Z
 outcome-what: "Neuer Befehl 'jaira pr [<branch>] [--all|--number n] [--json] [--watch [--every d]]' (core/pr: gh-GraphQL bzw. glab-API; Threads wartend/beantwortet/erledigt, fremde Kommentare, CI, Reviews, Tickets, settled). --watch: Ausgangsstand als erste Zeile, dann eine Zeile je Aenderung, Ende bei merged/closed. Cockpit: reicht einen neuen PR einmal an die Teamlead-Session weiter (nach Accept begrenzte Nachschau 20x60s; Agentenbericht mit PR-URL), Store-Schluessel gegen Doppeltmelden; Accept bei pr-when=signoff oeffnet erst den PR (Ticket bleibt in signoff) und laesst done erst bei settled zu."
 outcome-why: "Den Stand eines PR hielt der Teamlead im Kopf; jaira wusste nichts davon. Alex 22.11.: Befehl im Binary, kein Dauer-Polling im Cockpit, Teamlead beobachtet selbst per Monitor; JG3REW-Rest (Accept in signoff) gehoert hierher."
 outcome-resolves: "DoD 1-7. Vier Kategorien geprueft: Nebenlaeufigkeit - zwei Cockpit-Sessions koennen denselben PR im selben Moment beide melden (Store get/set nicht atomar), schlimmstenfalls eine Zeile doppelt; Fehlerpfade - halber Lauf ist ein Fehler, nie ein PR ohne Threads; Watch sagt einen Lesefehler einmal und liest weiter, verlorener Login beendet ihn (Exit 3); ungewoehnliche Eingabe - Branchnamen gehen als ein Argument an gh/glab bzw. URL-escaped an die GitLab-API, Fenster: 50 PRs, 100 Threads, 20 Kommentare je Thread; Rechte - nur Lesen mit dem gh/glab-Login der Person."
-review-summary: "Adds 'jaira pr [<branch>] [--all|--number N] [--json] [--watch --every d]' (core/pr + internal/cli/pr.go): reads the branch's open pull request through gh (one paged GraphQL query, threads paged) or glab (api --paginate), counts threads waiting/answered/resolved, foreign comments, CI of the head commit, reviews requested/changes requested/approved, the tickets its commits name, and 'settled' as pr-round.sh does; --watch prints a baseline line, then one line per new foreign comment/review, CI red / green again (compared with the last outcome, not the last read), settled, merged/closed, and ends there; exit 3 for no forge/tool/sign-in, 5 for nothing to watch. The cockpit polls nothing: after Accept starts the pr lane it looks up to 20 times a minute for the new PR, and an agent report naming a PR address is checked with 'jaira pr --number'; either hands the teamlead session one 'pull request #N for <ID> is open - follow it' line per PR (store key). On a board with .jaira/pr-when=signoff, Accept first opens the PR (ticket stays in signoff), then holds while the round is unsettled, other tickets on the branch are not in signoff, or the forge cannot be asked; an unreadable pr-when is fail-open. Release note, README and COMMANDS.md updated."
+review-summary: "none - round a7b572953: Known filter sits in core/pr Read, the one place both forges pass through; the CLI check reuses Store.LoadAnywhere as filedWhere (internal/cli/roles.go) does; no new pattern. Crockford regex and cut>0 in ticketsOf are now redundant beside Known - left to optimize"
 round: 9
 back-from: signoff
 back-by: person
 back-count: 1
-review-gaps: |-
-  note: core/mod/builtin/jaira-cockpit/hooks/register.tsx:604 heldInSignoff runs before the --dry-run move gate, so on a pr-when=signoff board Accept on a ticket with an unticked DoD item still starts the pr lane and opens the pull request, and only the later press is refused - run the dry-run (or the DoD check) first
-  note: internal/cli/pr.go:89 a negative --number (jaira pr --number -3) is not refused and reads like --all (checked live: lists PR #187) - reject number < 0 as usage, exit 2
-  note: core/pr/pr.go:199 ticketsOf takes any 6-character last branch segment as a handle - a PR from master or fix/update is labelled (MASTER) / (UPDATE) in jaira pr, --watch lines and the cockpit follow line; only add the branch handle when the subjects name none, or check it against the board
-  note: register.tsx:650 every Accept on every board now waits for jaira roles list --json (up to 30 s) before anything else - cost on boards without pr-when, no wrong result
-  note: known limits kept by decision: a merged/closed PR whose branch is still ahead is held in signoff (documented in the release note); watch.go:55 names only the newest foreign activity per interval; gitlab.go:245 manual pipelines count as pending; a double Accept may start two pr agents (decided 22.11.)
+review-gaps: "reverted the Crockford-only regex and the cut>0 guard in core/pr/pr.go ticketsOf to the original two lines - Query.Known now does that job; trimmed TestTicketsOf to the subject/branch merge; knownHandles reuses Store.LoadAnywhere (as filedWhere in internal/cli/roles.go), no duplicate; LoadAnywhere per label per watch read left - a handful of handles a minute"
 test-verdict: "pass (round 8): text-only change to core/release/notes/CRASZS.md since round 7 (go test ./core/release green); suite and cockpit tests as in round 7 (RC=0, 316 pass)."
 hunt-verdict: "pass: no code changed since the delta hunt at a431e45f8 (release note text only)"
 question: ""

@@ -199,23 +199,22 @@ func firstLine(s string) string {
 }
 
 // ticketsOf names the tickets a pull request may carry: every handle its
-// commit subjects name the way this board's commits do, then the slug of a
-// branch named the way spawn.sh names a ticket's, <prefix>/<slug>, where the
-// slug can be a handle — six characters of Crockford's base32, which has no
-// I, L, O or U. Read keeps only those Query.Known knows.
+// commit subjects name the way this board's commits do, then the branch's
+// last part where it can be a handle — spawn.sh names a ticket's branch
+// <prefix>/<slug>. Read keeps only those Query.Known knows.
 func ticketsOf(subjects []string, branch string) []string {
 	out := gitrepo.HandlesInSubjects(strings.Join(subjects, "\n"))
 	if out == nil {
 		out = []string{}
 	}
-	cut := strings.LastIndexByte(branch, '/')
-	if h := strings.ToUpper(branch[cut+1:]); cut > 0 && handle.MatchString(h) && !slices.Contains(out, h) {
+	last := branch[strings.LastIndexByte(branch, '/')+1:]
+	if h := strings.ToUpper(last); handle.MatchString(h) && !slices.Contains(out, h) {
 		out = append(out, h)
 	}
 	return out
 }
 
-var handle = regexp.MustCompile(`^[0-9A-HJKMNP-TV-Z]{6}$`)
+var handle = regexp.MustCompile(`^[0-9A-Z]{6}$`)
 
 // newer reports whether RFC 3339 time a is after b; an unreadable a never is.
 func newer(a, b string) bool {

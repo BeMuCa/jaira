@@ -502,11 +502,7 @@ func TestTicketsOf(t *testing.T) {
 	}{
 		{[]string{"fix(A3K9QP): x"}, "feat/craszs", []string{"A3K9QP", "CRASZS"}},
 		{[]string{"fix(CRASZS): x"}, "feat/craszs", []string{"CRASZS"}},
-		{nil, "feat/craszs", []string{"CRASZS"}},
-		{[]string{"chore: bump"}, "master", []string{}},
 		{nil, "fix/master", []string{"MASTER"}}, // a candidate: Read drops it unless Query.Known knows it
-		{nil, "feat/hotfix", []string{}},
-		{[]string{"fix(B7XQ2M): y"}, "master", []string{"B7XQ2M"}},
 		{nil, "fix/update-flow", []string{}},
 		{nil, "", []string{}},
 	}
