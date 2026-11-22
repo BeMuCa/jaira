@@ -35,8 +35,9 @@ export type SessionRecord = {
 // `/jaira-worker <id>`, `/jaira-dispatcher <id>`, `/jaira-role-lane <id> <lane>`.
 // Herdr App delivers a line another tab typed wrapped as `<hc from="t3">…</hc>`
 // (origin `human`); missed, the session counts as a person's and its own
-// subagents' reports are shortened to a link it never follows.
-const START = /^\s*(?:<hc\b[^>]*>\s*)?\/jaira-(worker|dispatcher|role-lane)\s+([0-9A-Za-z]{6})\b(?:\s+([a-z][a-z-]*))?/
+// subagents' reports are shortened to a link it never follows. A lane id may
+// hold digits (qa2, 2-review), as core/lane accepts.
+const START = /^\s*(?:<hc\b[^>]*>\s*)?\/jaira-(worker|dispatcher|role-lane)\s+([0-9A-Za-z]{6})\b(?:\s+([a-z0-9][a-z0-9-]*))?/
 
 export function startOf(prompt: string): { ticket: string; role: Role; lane: string } | undefined {
   const m = START.exec(prompt)
