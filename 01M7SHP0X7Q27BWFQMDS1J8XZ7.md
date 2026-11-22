@@ -24,7 +24,9 @@ related:
   - 01M6PDF2D6RQ8K1T7N0G1MYFKE
 commits: []
 created-at: 2026-11-19T09:19:56Z
-updated-at: 2026-11-19T09:19:56Z
+updated-at: 2026-11-22T22:43:34Z
+assignee: BeMuCa
+updated-by: BeMuCa
 ---
 
 # Das Cockpit zeigt einen Milestone mit Fortschritt und seinen Tickets nach Stand sortiert
