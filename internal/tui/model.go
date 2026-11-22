@@ -194,9 +194,12 @@ type Model struct {
 	index *link.Index
 
 	// prCheck answers blocked-by pr#<n> from the pull request cache, read
-	// once per reload like index; prCacheFile is where that cache lives.
+	// once per reload like index. prCacheFile is where the cache of the
+	// repository prCacheRoot lives: a board switch changes m.store, and the
+	// path follows the store rather than the model.
 	prCheck     *pr.Checker
 	prCacheFile string
+	prCacheRoot string
 
 	// layer is the open milestone layer, nil when it is closed; see layer.go.
 	layer *layerView
@@ -2039,9 +2042,12 @@ func (m *Model) gateEnv() gate.Env {
 // a render reads the cache file at most once, and a long-running board sees
 // what a later command wrote.
 func (m *Model) prWait(n int) gate.PRWait {
+	if m.prCacheRoot != m.store.Root {
+		m.prCacheRoot, m.prCacheFile, m.prCheck = m.store.Root, "", nil
+	}
 	if m.prCheck == nil {
 		if m.prCacheFile == "" {
-			// RepoStateDir asks git: once per model, not per reload.
+			// RepoStateDir asks git: once per repository, not per reload.
 			m.prCacheFile = filepath.Join(m.store.RepoStateDir(), pr.CacheFile)
 		}
 		m.prCheck = &pr.Checker{File: m.prCacheFile, Offline: true}

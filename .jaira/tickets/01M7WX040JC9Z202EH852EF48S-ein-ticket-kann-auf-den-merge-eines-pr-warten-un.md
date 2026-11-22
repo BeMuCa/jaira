@@ -1,7 +1,7 @@
 ---
 id: 01M7WX040JC9Z202EH852EF48S
 title: "Ein Ticket kann auf den Merge eines PR warten, und nach dem Merge startet sein Worker"
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,7 +19,7 @@ related:
   - 01M263RFEQMYPPT67D40Y5SW81
 commits: []
 created-at: 2026-11-20T16:35:24Z
-updated-at: 2026-11-22T19:56:49Z
+updated-at: 2026-11-22T20:01:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-81804
 claimed-at: 2026-11-22T19:38:55Z
@@ -27,11 +27,13 @@ outcome-what: "blocked-by takes pr#<n>; list/next/move ask gh or glab for the pu
 outcome-why: "a dependency on a pull request lived only in the teamlead's notes, so a merged PR freed nothing and the follow-up waited until somebody remembered"
 outcome-resolves: "2EF48S: a ticket can wait for a PR merge and becomes actionable on the next run after it"
 review-summary: none
-round: 2
-back-from: critique
+round: 3
+back-from: testing
 back-by: lane
 back-count: 1
 review-gaps: "removed ticket.PRRef (no caller besides its test); core/pr/cache.go store now writes through ticket.WriteAtomic (core/ticket/store.go:1645, temp+rename with the Windows rename retry) instead of its own temp-file dance - cache file is 0644 now, not 0600 as an earlier note said; left: printTable and next call gate.blockedBy two or three times per not-actionable ticket (Waiting + WaitingOnPR + Actionable) - in-memory after the first forge answer, O(tickets) each, not worth a new exported Violations API; gitlab state normalization (opened->open) exists in fromGitLab too, two lines, left"
+test-verdict: "pass: go vet + windows build ok; go test -race on core/pr,gate,ticket,validate,link,role,shipped,internal/tui RC=0; go test ./... RC=0; DoD 1-8 verified by running their named tests; function on a scratch repo with real gh: pr#201 open waits, pr#193 merged handed out by next, cached second run 16ms; gh missing -> 'state unknown', next count 0, nothing cached; pr#abc exit 3; two parallel commands on an empty cache both land, no temp left"
+hunt-verdict: "fail: bughunt done at cee1269c9, 1 change blocker - TUI pr cache path survives switchBoard (internal/tui/model.go:2043)"
 ---
 
 # Ein Ticket kann auf den Merge eines PR warten, und nach dem Merge startet sein Worker
@@ -87,3 +89,8 @@ review-gaps: "removed ticket.PRRef (no caller besides its test); core/pr/cache.g
 - **2026-11-22 19:53 · Alexander Sacharov** — critique (round 1): core/pr/state.go:19-33 repeats the forge/tool/call setup of Read (core/pr/pr.go:113-128: forgeOf, look, classify closure); extract one helper (connect) both call
 internal/tui/model.go:2005 adds a package-level sync.Map for the cache path and builds a new pr.Checker per gateEnv call; the model already caches derived state lazily in fields reset on reload (m.index, linkIndex) - keep one *pr.Checker on the model the same way, reset where m.index is reset; this also gives gateEnv its doc comment back, which the insertion detached
 - **2026-11-22 19:55 · Alexander Sacharov** — critique round 1 answered: core/pr connect() shared by Read and State; TUI keeps one pr.Checker on the model, reset on reload like m.index, cache path computed once per model; gateEnv's doc comment back on gateEnv. TUI test now reloads after writing the cache.
+- **2026-11-22 19:58 · Alexander Sacharov** — testing (function pass, real gh against the fork's parent BeMuCa/jaira): pr#201 open -> list '[waits for PR #201: open]', pr#193 merged -> next hands it out; first list 2.3s (2 PRs x 2 calls), second 16ms from the cache. gh off PATH -> 'state unknown (forge tool missing ...)', next count 0, exit 0, no cache written. set blocked-by=pr#abc exit 3. Two parallel commands on an empty cache: both answers in the file, no temp left. Pitfall: a scratch repo whose origin is the fork pushes every created ticket ref there - two scratch refs (P5VV50, T96HBG) landed on sashasoft90/jaira and were deleted again at once; set the push url to nowhere before creating tickets in a fixture.
+- **2026-11-22 19:59 · Alexander Sacharov** — bughunt: change: blocker: internal/tui/model.go:2043 - class: per-model state derived from m.store that switchBoard (model.go:391) does not reset; prCacheFile is set once per model and reload clears only prCheck, so after a board switch every pr#<n> is answered from the previous repository's pr-state.json; example: repo A caches PR 12 as merged (kept for good), the TUI switches to repo B, a B ticket with blocked-by pr#12 shows as actionable and the TUI move gate (applyMove -> m.gateEnv) lets it through although B's PR 12 never merged; also the reverse (A's open/closed keeps B waiting); blame: b38b1bb (names 2EF48S); ran: scratch test in internal/tui (newTestModel, cache merged in A, switchBoard to a second store, ticket blocked-by pr#12, gate.Actionable == true) - go test failed as predicted, test removed
+- **2026-11-22 19:59 · Alexander Sacharov** — bughunt: done at cee1269c9 - 1 finding (1 change, 0 pre-existing) in 9 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/gate/gate.go core/gate/prblock_test.go core/link/link.go core/link/prref_test.go core/pr/cache.go core/pr/cache_test.go core/pr/pr.go core/pr/state.go core/pr/state_test.go core/release/notes/2EF48S.md core/role/builtin/jaira-teamlead/SKILL.md core/shipped/shipped.sha256 core/ticket/id.go core/ticket/prref.go core/ticket/prref_test.go core/validate/prref_test.go core/validate/validate.go docs/COMMANDS.md internal/cli/flow.go internal/cli/pr.go internal/cli/prblock_test.go internal/cli/root.go internal/cli/tickets.go internal/tui/linklines.go internal/tui/model.go internal/tui/prblock_test.go
+- **2026-11-22 20:00 · Alexander Sacharov** — testing: class: TUI state derived from m.store kept across a store change; example: prCacheFile set once per model, switchBoard to another repo answers pr#12 from the old repo's cache (bughunt note); fix: tie the cached path to the store root it was computed for, test switching stores
+- **2026-11-22 20:01 · Alexander Sacharov** — fix for the bughunt blocker: prWait resets prCacheRoot/prCacheFile/prCheck whenever m.store.Root differs from the root the path was computed for - covers switchBoard and any other store change, not only the one path; test internal/tui/prblock_test.go TestBoardSwitchReadsTheNewRepositorysPRCache. Other per-model state of this change: none (the CLI builds its checker per command).
