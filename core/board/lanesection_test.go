@@ -170,7 +170,7 @@ func TestLaneSectionSaysAQuestionLaneIsPassedBy(t *testing.T) {
 		{ID: "human", Question: true},
 		{ID: "review", Agentic: true},
 	})
-	if !strings.Contains(got, "- `human` — **a person's, not yours** — you may move work in, never out; only with an open question (`--question`); without one, work passes it by") {
+	if !strings.Contains(got, "- `human` — **a person answers here** — you may move work in, and move it on once the question is answered; only with an open question (`--question`); without one, work passes it by") {
 		t.Errorf("the human lane does not say it is passed by without a question:\n%s", got)
 	}
 	if strings.Contains(got, "- `review` — yours to work; only with an open question") {

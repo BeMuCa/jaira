@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Worktree + Herdr pane + claude + role prompt for one jaira lane.
-# Usage: spawn.sh [--no-worktree] [--parent <session> | --no-parent] <slug> <ticket-id> <lane> [repo-root]
+# Usage: spawn.sh [--no-worktree] [--parent <session> | --no-parent] [--copy <path>] <slug> <ticket-id> <lane> [repo-root]
 # Prints the pane id on stdout; everything else goes to stderr.
 set -euo pipefail
 
 usage() {
   cat <<'USAGE'
-spawn.sh [--no-worktree] [--parent <session> | --no-parent] <slug> <ticket-id> <lane> [repo-root]
+spawn.sh [--no-worktree] [--parent <session> | --no-parent] [--copy <path>] <slug> <ticket-id> <lane> [repo-root]
 
   --no-worktree   Start the worker in the repository directory itself: no
                   worktree, no branch of its own. For a one-lane job that
@@ -28,6 +28,12 @@ spawn.sh [--no-worktree] [--parent <session> | --no-parent] <slug> <ticket-id> <
   --no-parent     No parent at all, not even this session: the dispatcher or
                   worker asks in its own tab. The cockpit passes it whenever
                   it starts a dispatcher or worker itself.
+  --copy <path>   Only with the lane <explain> or <discuss>: the ticket file
+                  the cockpit pulled into the main checkout for this chat,
+                  because the ticket was only on its ref there. The chat
+                  removes it itself as its very last step, after its last
+                  jaira write: only the chat knows when that is, and a copy
+                  left there hides the ticket's ref.
   -h, --help      This text.
 
 Five lane names are special. <dispatch> starts the dispatcher itself in the tab
@@ -76,11 +82,13 @@ USAGE
 no_worktree="${JAIRA_NO_WORKTREE:-}"
 parent=""
 no_parent=""
+copy=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --no-worktree) no_worktree=1; shift ;;
     --parent)      parent="${2:?--parent needs a session name}"; no_parent=""; shift 2 ;;
     --no-parent)   parent=""; no_parent=1; shift ;;
+    --copy)        copy="${2:?--copy needs a path}"; shift 2 ;;
     -h|--help)     usage; exit 0 ;;
     --)            shift; break ;;
     -*)            echo "unknown flag: $1" >&2; usage >&2; exit 2 ;;
@@ -488,6 +496,12 @@ elif [ "$lane" = discuss ]; then
   prompt="Ticket $ticket wartet auf eine Entscheidung von mir$src. Erklaere mir die Frage und die Optionen in einfachen Worten und frag mich. Wenn ich entschieden habe: schreibe die Entscheidung in einem Satz mit jaira note $ticket \"decision: <Entscheidung>\" an das Ticket und leere die Frage mit jaira set $ticket question=. Heisst die Entscheidung, dass weitergearbeitet wird, bewege das Ticket selbst zurueck, genau so: jaira move $ticket --to in-progress (ohne --what/--why/--resolves: das Ticket hat sein Ergebnis schon, und die Entscheidung steht in der Note). In die naechste Lane annehmen nur, wenn ich ausdruecklich ja dazu sage.${parent:+ Schicke danach eine Zeile mit der Entscheidung per SendMessage an $parent.} Aendere keinen Code. Der Tab schliesst sich danach von selbst. Antworte in der Sprache, in der ich mit dir spreche."
 else
   prompt="/jaira-role-lane $ticket $lane"
+fi
+# The copy the cockpit pulled for this chat goes last, by the chat itself:
+# the cockpit cannot see when the chat wrote its last line (DF46B9).
+if [ -n "$copy" ] && { [ "$lane" = explain ] || [ "$lane" = discuss ]; }; then
+  copy_q="$(printf %q "$copy")"
+  prompt="$prompt Als allerletzten Schritt, wenn du nichts mehr an das Ticket schreibst, auch wenn nichts entschieden wurde: git clean -fqx -- $copy_q - die Kopie des Tickets, die das Cockpit fuer diesen Chat geholt hat; liegen gelassen verdeckt sie den Ref."
 fi
 if [ -n "$brief" ]; then
   prompt="$prompt Was du vom Ticket brauchst, steht hier - title, goal, question, review, der neueste Bughunt und die letzten Notes als JSON; lies das Ticket nicht noch einmal ganz: $brief"

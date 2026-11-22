@@ -470,6 +470,64 @@ esac
 	}
 }
 
+// TestSpawnChatRemovesTheCopyItWasHanded: the cockpit pulled the ticket into
+// the main checkout for this chat (DF46B9) and only the chat knows when it
+// wrote its last line, so --copy makes removing it the chat's last step,
+// quoted for the shell; without --copy no chat is told to remove anything.
+func TestSpawnChatRemovesTheCopyItWasHanded(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	dir := t.TempDir()
+	if _, err := install(dir, false, true, false); err != nil {
+		t.Fatal(err)
+	}
+	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+	const copy = "/repo/.jaira/tickets/01AB12CD it's.md"
+	for _, lane := range []string{"explain", "discuss"} {
+		for _, with := range []bool{true, false} {
+			typed := filepath.Join(t.TempDir(), "typed")
+			stub := filepath.Join(t.TempDir(), "herdr")
+			script := `#!/usr/bin/env bash
+case "$1 $2" in
+  "tab create") echo '{"result":{"root_pane":{"pane_id":"p1"}}}' ;;
+  "pane get")   echo '{"result":{"pane":{"agent":"claude","agent_status":"idle","tab_id":"t1"}}}' ;;
+  "pane send-text") printf '%s\n' "$4" >> "` + typed + `" ;;
+esac
+`
+			if err := os.WriteFile(stub, []byte(script), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			args := []string{spawn, "--no-worktree"}
+			if with {
+				args = append(args, "--copy", copy)
+			}
+			cmd := exec.Command(bash, append(args, "ab12cd", "AB12CD", lane)...)
+			cmd.Dir = t.TempDir()
+			cmd.Env = append(os.Environ(), "TMPDIR="+t.TempDir(), "HERDR_ENV=1", "HERDR_BIN_PATH="+stub, "HERDR_WORKSPACE_ID=", "PATH="+jairaPath(t))
+			if out, err := cmd.CombinedOutput(); err != nil {
+				t.Fatalf("spawn.sh %s: %v\n%s", lane, err, out)
+			}
+			got, err := os.ReadFile(typed)
+			if err != nil {
+				t.Fatal(err)
+			}
+			line := chatRequest(t, string(got))
+			want := `git clean -fqx -- /repo/.jaira/tickets/01AB12CD\ it\'s.md - `
+			if with && !strings.Contains(line, "Als allerletzten Schritt") {
+				t.Errorf("%s with --copy: no last step that removes the copy:\n%s", lane, line)
+			}
+			if with && !strings.Contains(line, want) {
+				t.Errorf("%s with --copy: lacks %q:\n%s", lane, want, line)
+			}
+			if !with && strings.Contains(line, "git clean") {
+				t.Errorf("%s without --copy: told to remove a copy:\n%s", lane, line)
+			}
+		}
+	}
+}
+
 // fakeSocket stands in for a session's messaging socket. spawn.sh asks only
 // that the address exists, so a plain file does.
 func fakeSocket(t *testing.T) string {
