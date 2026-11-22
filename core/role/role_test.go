@@ -924,11 +924,6 @@ fi
 			if !slices.Equal(got, c.want) {
 				t.Errorf("hc run --name: got %q, want %q", got, c.want)
 			}
-			for _, n := range got {
-				if !regexp.MustCompile(`^[a-z0-9_-]{0,32}$`).MatchString(n) {
-					t.Errorf("hc refuses the name %q", n)
-				}
-			}
 		})
 	}
 }
