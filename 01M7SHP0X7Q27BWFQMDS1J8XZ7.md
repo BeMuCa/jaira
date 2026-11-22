@@ -1,8 +1,8 @@
 ---
 id: 01M7SHP0X7Q27BWFQMDS1J8XZ7
 title: Das Cockpit zeigt einen Milestone mit Fortschritt und seinen Tickets nach Stand sortiert
-status: backlog
-ready: false
+status: todo
+ready: true
 creator: BeMuCa
 goal: "Das Overview-Pane des Cockpits hat einen Tab Milestones: oben ein Waehler '< milestone-name >' zum Durchblaettern, darunter 'x von n fertig' und die Tickets des Milestones mit Lane, in Arbeit ganz oben, nicht begonnene in der Mitte, fertige ganz unten."
 context: |-
@@ -24,7 +24,7 @@ related:
   - 01M6PDF2D6RQ8K1T7N0G1MYFKE
 commits: []
 created-at: 2026-11-19T09:19:56Z
-updated-at: 2026-11-22T22:46:08Z
+updated-at: 2026-11-22T22:46:11Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-385148
