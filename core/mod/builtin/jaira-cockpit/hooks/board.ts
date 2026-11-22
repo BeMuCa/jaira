@@ -580,16 +580,20 @@ export type Carrier = { branch: string; by: 'commit' | 'worktree' | 'name' } | {
 export function carrierFor(input: { own?: string; base: string; holders?: string; slugBranches?: string }): Carrier | undefined {
   const { own, base, holders, slugBranches } = input
   if (own !== undefined && own !== base) return { branch: own, by: 'worktree' }
-  const named = slugBranches === undefined ? undefined : carrierBranch(slugBranches, base)
-  if (named !== undefined) return { branch: named, by: 'name' }
+  // Two named after it — feat/<slug> and fix/<slug> — are as much a guess as
+  // two holders: neither is picked.
+  const named = slugBranches === undefined ? [] : holdersOf(slugBranches, base)
+  if (named.length === 1) return { branch: named[0]!, by: 'name' }
+  if (named.length > 1) return { ambiguous: named }
   const branches = holders === undefined ? [] : holdersOf(holders, base)
   if (branches.length === 1) return { branch: branches[0]!, by: 'commit' }
   return branches.length > 1 ? { ambiguous: branches } : undefined
 }
 
-// The branches a `git branch --contains` listing names, without the default
-// branch, a detached HEAD, or Herdr's review/<branch>, which only wraps
-// another one listed.
+// The branches a `git branch --format=%(refname:short)` listing names, in
+// its order, without the default branch, a detached HEAD — listed as "(HEAD
+// detached at <sha>)", which is no branch — or a branch that only wraps
+// another one listed, Herdr's review/<branch>.
 function holdersOf(holders: string, base: string): string[] {
   const listed = holders.split('\n').map(l => l.trim()).filter(b => b && b !== base && !b.startsWith('('))
   return listed.filter(b => !listed.some(o => b.endsWith(`/${o}`)))
@@ -639,16 +643,15 @@ export function ticketsNamed(subjects: string): string[] {
 // The newest commit that is the ticket's own, off `git log --format=%H %s`:
 // its subject's scope is the handle and nothing else, `fix(A3K9QP): ...`.
 // A scope that lists it beside others — `chore(0GMYQB,A3K9QP)`, a follow-up's
-// commit on the follow-up's branch — never wins over one of its own: that
-// commit's branch is the other ticket's (Alex, QTQW15). Only a ticket with no
-// commit of its own at all is found by such a list, as before: it was worked
-// on the other ticket's branch. The handle in the text alone never counts,
-// and the body is never read — a merge commit quotes the subjects it brought
-// in there, and would name every ticket it merged.
+// commit on the follow-up's branch — is not its own and never counts, nor
+// does the handle in the text (Alex, QTQW15). The body is never read — a
+// merge commit quotes the subjects it brought in there.
 export function commitNaming(log: string, id: string): string | undefined {
-  const lines = log.split('\n').map(line => ({ sha: line.slice(0, Math.max(0, line.indexOf(' '))), subject: line.slice(line.indexOf(' ') + 1) })).filter(c => c.sha !== '')
-  const own = lines.find(c => /^[a-z]+\(([^)]*)\)!?:/.exec(c.subject.trim())?.[1]?.trim() === id)
-  return (own ?? lines.find(c => ticketsNamed(c.subject).includes(id)))?.sha
+  for (const line of log.split('\n')) {
+    const cut = line.indexOf(' ')
+    if (cut > 0 && /^[a-z]+\(([^)]*)\)!?:/.exec(line.slice(cut + 1).trim())?.[1]?.trim() === id) return line.slice(0, cut)
+  }
+  return undefined
 }
 
 // Which of those are not in the terminal lane yet, off `jaira list --json`.
@@ -660,21 +663,6 @@ export function pendingOf(listJson: string, named: readonly string[], terminal: 
     const status = tickets.find(t => t.handle === id)?.status
     return status !== undefined && status !== terminal
   })
-}
-
-// A ticket's branch without a worktree of its own, off a branch listing
-// (`--format=%(refname:short)`): the first that is not the base. Read from
-// `git branch --list '*/<slug>'` — spawn.sh names it <prefix>/<slug>, and a
-// worktree removed after done leaves it behind — and from `git branch
-// --contains <a commit naming it>`, where it was worked on another ticket's
-// branch. A branch that only wraps another listed one — Herdr's
-// review/<branch> — is passed by: it lists before task/<slug> and
-// work/<slug>. Depth alone decides nothing; in the --contains listing a wip
-// or a detached HEAD has fewer parts than the branch the work rode on. A
-// detached HEAD lists as "(HEAD detached at <sha>)", which is no branch.
-export function carrierBranch(listing: string, base: string): string | undefined {
-  const branches = listing.split('\n').map(l => l.trim()).filter(b => b && b !== base && !b.startsWith('('))
-  return branches.find(b => !branches.some(o => b.endsWith(`/${o}`)))
 }
 
 // The forge jaira-role-pr would open a pull request on: `git config

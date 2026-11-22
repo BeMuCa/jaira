@@ -1691,7 +1691,7 @@ describe('after Accept', () => {
     expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
   })
 
-  test('the branch search finds a ticket named beside others in one subject, and never a handle that only starts the same', async ($, on) => {
+  test('a ticket named only beside others in a subject has no commit of its own: no branch, no pull request (Alex, QTQW15)', async ($, on) => {
     const w = world(on, { herdr: true })
     w.ahead = 2
     w.tickets = [{ ...SIGNOFF, handle: 'ZZ99ZZ' }, { ...WORKING, handle: 'MG677R', status: 'done' }]
@@ -1705,8 +1705,8 @@ describe('after Accept', () => {
     await startSession($)
     const ui = await $.ui.mount(BAND)
     await ui.press({ key: 'accept-ZZ99ZZ' })
-    expect(ran(w, 'git', 'branch', '--contains')).toEqual([['git', 'branch', '--contains', 'abc123', '--format=%(refname:short)', '@/repo']])
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+    expect(ran(w, 'git', 'branch', '--contains')).toEqual([])
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
   })
 
   test('the branch search reads subjects only: a merge commit quoting the ticket in its body is passed over', async ($, on) => {
@@ -2220,6 +2220,10 @@ describe('the branch a ticket rides on', () => {
     const got = carrierFor(input)
     expect(got !== undefined && 'branch' in got ? got.branch : undefined).toBe(want)
   })
+  test('two branches named after it, feat/ and fix/, nothing picked', () => {
+    const got = carrierFor({ base: 'master', slugBranches: 'feat/qtqw15\nfix/qtqw15\nreview/feat/qtqw15\n', holders: 'feat/qtqw15\n' })
+    expect(got !== undefined && 'ambiguous' in got ? got.ambiguous : undefined).toEqual(['feat/qtqw15', 'fix/qtqw15'])
+  })
   for (const holders of ['feat/0gmyqb\nfix-login\n', 'fix-login\nfeat/0gmyqb\n', 'fix-login\nreview/fix-login\nwip\n']) {
     test(`several holders, none its own, nothing picked: ${holders.trim().replaceAll('\n', ', ')}`, () => {
       const got = carrierFor({ base: 'master', holders })
@@ -2235,7 +2239,7 @@ describe('the commit that is a ticket\'s own', () => {
     ['breaking mark', log('feat(QTQW15)!: the key'), 'c0'],
     ['a newer follow-up listing it is passed by', log('chore(0GMYQB,QTQW15): stack', 'fix(QTQW15): the key'), 'c1'],
     ['a list with spaces is passed by', log('fix(QTQW15, 0GMYQB): both', 'fix(QTQW15): own'), 'c1'],
-    ['no commit of its own: a list naming it still finds where it was worked', log('fix(0GMYQB): other', 'chore(0GMYQB,QTQW15): both'), 'c1'],
+    ['no commit of its own: a list naming it is still not its own', log('fix(0GMYQB): other', 'chore(0GMYQB,QTQW15): both'), undefined],
     ['the handle in the text only', log('fix(0GMYQB): builds on QTQW15', 'feat(QTQW15): own'), 'c1'],
     ['another handle that contains it', log('fix(XQTQW15): no'), undefined],
     ['no scope at all', log('QTQW15: no scope'), undefined],
