@@ -2350,6 +2350,17 @@ describe('give back with the review notes', () => {
     expect(w.closed).toContain('cockpit-give-back')
   })
 
+  test("a follow-up's title drops the review's fix-now mark as it drops pre-existing", async ($, on) => {
+    const w = withGaps(on, 'blocker: the header\nnote: fix-now: the guard misses an empty name')
+    await startSession($)
+    const pane = await openPane($)
+    await pane.press({ key: 'gap-MG677R-1' })
+    await pane.press({ key: 'gap-MG677R-1' })
+    await pane.input({ key: 'reason-MG677R', text: '' })
+    const create = ran(w, 'jaira', 'create')[0]!
+    expect(create[create.indexOf('--') + 1]).toBe('the guard misses an empty name')
+  })
+
   test('what the person types goes along under the notes, on one line', async ($, on) => {
     const w = withGaps(on, 'note: the size')
     await startSession($)
