@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T17:10:08Z
-updated-at: 2026-11-22T17:39:26Z
+updated-at: 2026-11-22T17:45:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2431680
 claimed-at: 2026-11-22T17:10:39Z
@@ -28,13 +28,13 @@ outcome-what: "jaira reject and R on the board reject a ticket that lives only o
 outcome-why: "A person rejecting HS3K1E had to fetch, then pull it into an unrelated worktree, so the archive file travelled in another ticket's PR. Where a ticket lives is not the rejecter's business."
 outcome-resolves: "DoD 1: TestRejectATicketThatLivesOnlyOnAStaleRef + TUI test; DoD 2: TestRejectATicketWithAFileHereStillArchivesIt; DoD 3: TestRejectOnTheRefRefusals (unknown, already rejected on ref and in archive, archived, unreachable remote, real lost push via pre-push hook) + handle/ulid; DoD 4: core/release/notes/4539MZ.md. Checked: concurrency (lease + race test, TUI off update loop), error paths (nothing written on any refusal, asserted), input (handle/ULID/unknown), permissions (--force gate unchanged, runs before any write)."
 review-summary: "none"
-round: 5
-back-from: human
-back-by: person
+round: 6
+back-from: testing
+back-by: lane
 back-count: 1
-review-gaps: "round 3: removing the taken refusal orphaned nothing (refsync.ErrTaken still serves Pull/Release); earlier: restore's unreject delegates to the shared ticket.Unreject; removed the nil-refSync branch in internal/tui/model.go; left Syncer.Reject's fetch-read-parse prologue that repeats Pull/Release (pre-existing pattern)"
+review-gaps: "round 4 (option 1): the warning text lives once in refsync.HeldByWarning for CLI and TUI; List's two rejected filters folded into one DeleteFunc over files and refs; earlier: restore's unreject delegates to ticket.Unreject, nil-refSync branch removed in the TUI, Syncer.Reject's fetch-read-parse prologue left (pre-existing pattern in Pull/Release)"
 test-verdict: "pass: go test ./... green, -race -count=1 on core/ticket core/refsync internal/tui internal/cli green, go vet linux+windows green, shipped-history ok. DoD 1-4 re-run by their named tests. Binary in a two-clone fixture: reject by handle from a clone that never fetched -> rc 0, no file under .jaira, creator's list drops it after fetch; repeat -> rc 3 already_rejected; two parallel rejects -> one rc 0, other rc 3 race with nothing written; unknown id -> rc 5."
-hunt-verdict: "fail: round 3 - (blocker) a holder's file that pulled the ref rejection stays a live card (List hides only ref-only rejected); pull without a file is refused 'taken' because the rejection leaves the assignee on the ref"
+hunt-verdict: "fail: round 4 - (blocker) a ref-rejected ticket dropped out of List also dropped out of the link index: validate called its blocked ticket 'blocked by X, which exists nowhere'; edge: a hidden rejected file could still be claimed"
 question: ""
 ---
 
@@ -85,3 +85,7 @@ question: ""
 - **2026-11-22 17:36 · Alexander Sacharov** — decision (teamlead 22.11., Schleifenbremse, Regel 'Raender wachsen -> kleineres Design'): Option 1 - Ablehnung auf dem Ref nimmt auch den assignee ab; Board und list verbergen jeden Ticket mit rejected-kind, mit oder ohne Datei; pull bringt ihn jedem zurueck. Danach testing + hunt nur auf dem Diff, dann review.
 - **2026-11-22 17:36 · Alexander Sacharov** — decision: option 1 (teamlead jaira-d0 under the loop brake, 2026-11-22): ref rejection also clears the assignee; board and list hide every ticket with rejected-kind, file or not; pull brings it back for anyone.
 - **2026-11-22 17:39 · Alexander Sacharov** — option 1 done: Syncer.Reject clears the assignee and returns it as heldBy (warning text shared via refsync.HeldByWarning for CLI and TUI R); Store.List drops every ticket with rejected-kind after newest(), so a holder's file behind the ref drops off once fetched (newest swaps in the ref state) - not only after pull. pull's refresh output names the rejection and the way back (delete file, pull again -> full Pull unrejects).
+- **2026-11-22 17:41 · Alexander Sacharov** — bughunt: change: blocker: core/ticket/store.go:1028 (and the ref-only filter from 172d8223b) - class: every consumer that treats List() as the set of tickets that exist loses a rejected ticket that lives on its ref or as a file here, while one rejected through the store stays known via the archive: link.Build (core/link/link.go:150) feeds Known/Satisfied/Relations to validate (internal/cli/validate.go:55, core/validate/validate.go:243), loadBoardEnv (internal/cli/root.go:318) and the link view; delete's referencesTo (internal/cli/delete.go:99) also skips references a rejected file holds; example: A blocked-by B, B rejected on its ref -> 'jaira validate' exits 3 with 'blocked by B, which exists nowhere here' in the rejecting clone and in a clone that pulled B's rejected file, though 'jaira show B' finds it; ran: scratch test in internal/cli (create B, create A --blocked-by B, second clone pulls B, reject B on ref, validate in both clones -> error dangling_dep in both)
+- **2026-11-22 17:41 · Alexander Sacharov** — bughunt: change: core/ticket/store.go:1028 - class: a rejected file here is off List() and the board but every write command still accepts it through Load; example: after 'jaira pull B' brings a ref rejection into grace's file, 'jaira claim B' and 'jaira note B x' exit 0 while 'jaira next --json' and the board show nothing, so work can be claimed and carried on a ticket nobody can see; ran: same scratch test (claim exit 0, note exit 0, next count 0)
+- **2026-11-22 17:41 · Alexander Sacharov** — bughunt: done at 66600c3aa - 2 findings (2 change, 1 of them blocker; 0 pre-existing) in 5 modules, follow-up hunt since f3c902da9; concurrency, error paths, input, permissions checked; files: core/refsync/refsync.go core/release/notes/4539MZ.md core/ticket/store.go docs/COMMANDS.md internal/cli/pull.go internal/cli/reject.go internal/cli/rejectref_test.go internal/tui/model.go internal/tui/rejectref_test.go
+- **2026-11-22 17:45 · Alexander Sacharov** — hunt round 4 fixed: Store.List remembers what it hid (RejectedOffBoard); link.Build adds those to its index like filed tickets, so validate/links/gate see a ref-rejected blocker as existing (not done); delete's referencesTo reads them too. claim refuses a ticket carrying rejected-kind (exit 3 rejected). note/set on such a file stay allowed: annotating is harmless, and 'jaira reject' there still archives it.

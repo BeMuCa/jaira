@@ -158,6 +158,14 @@ func Build(s *ticket.Store, lanes *lane.Set, board []*ticket.Ticket) *Index {
 		ix.board[t.ID] = t
 	}
 	if s != nil {
+		// Rejected and off the board, but there: a link to one is a link to
+		// a ticket that exists, not to nothing. Read off the board's last
+		// listing, which the caller just made to hand us board.
+		for _, t := range s.RejectedOffBoard() {
+			if _, listed := ix.board[t.ID]; !listed {
+				ix.board[t.ID] = t
+			}
+		}
 		for id, path := range s.FiledAwayIDs() {
 			t, listed := ix.board[id]
 			switch {

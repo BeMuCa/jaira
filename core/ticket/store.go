@@ -14,6 +14,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -114,6 +115,15 @@ type Store struct {
 	// cache, when EnableCache was called, remembers each ticket file's decoded
 	// header between listings. A pointer, so a copied Store does not copy a mutex.
 	cache *headerCache
+
+	// rejected holds what the last List left out because it carries a
+	// rejection. A pointer, so a copied Store does not copy a mutex.
+	rejected *rejectedSet
+}
+
+type rejectedSet struct {
+	mu sync.Mutex
+	ts []*Ticket
 }
 
 // TicketSource hands over tickets that exist for this board without a file
@@ -1025,7 +1035,20 @@ func (s *Store) List() ([]*Ticket, error) {
 	// rejection — pulled in before the ticket was rejected on its ref, or
 	// brought up to that ref since — is a leftover, not a card to work on.
 	// Load and show still find both.
-	out = slices.DeleteFunc(out, func(t *Ticket) bool { return t.Rejected.Kind != "" })
+	var rejected []*Ticket
+	out = slices.DeleteFunc(out, func(t *Ticket) bool {
+		if t.Rejected.Kind == "" {
+			return false
+		}
+		rejected = append(rejected, t)
+		return true
+	})
+	if s.rejected == nil {
+		s.rejected = &rejectedSet{}
+	}
+	s.rejected.mu.Lock()
+	s.rejected.ts = rejected
+	s.rejected.mu.Unlock()
 	if len(problems) > 0 {
 		return out, &PartialError{Problems: problems}
 	}
@@ -1078,6 +1101,22 @@ func (s *Store) offBoardDuplicates(onBoard []*Ticket) []string {
 	}
 	sort.Strings(problems)
 	return problems
+}
+
+// RejectedOffBoard returns the rejected tickets the last List left off the
+// board — rejected on their ref, or a file here that carries a rejection.
+//
+// Off the board is not out of existence. A ticket blocked by one of them, or
+// pointing at it, still names a ticket that is there: whoever asks "does this
+// id exist" — the link index, a delete's reference check — reads these beside
+// the board, as it reads the filed-away ones.
+func (s *Store) RejectedOffBoard() []*Ticket {
+	if s.rejected == nil {
+		return nil
+	}
+	s.rejected.mu.Lock()
+	defer s.rejected.mu.Unlock()
+	return slices.Clone(s.rejected.ts)
 }
 
 // FiledAwayIDs maps the ids of tickets filed away here — logged or archived —

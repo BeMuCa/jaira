@@ -105,6 +105,8 @@ func referencesTo(s *ticket.Store, id string) ([]string, error) {
 			return nil, err
 		}
 	}
+	// A rejected ticket that points at id still points at it.
+	all = append(all, s.RejectedOffBoard()...)
 	var out []string
 	for _, o := range all {
 		if o.ID == id {

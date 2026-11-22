@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -405,5 +406,76 @@ func TestRejectOnTheRefTakesTheAssigneeOffAndLeavesEveryBoard(t *testing.T) {
 	}
 	if !onBoard(as) {
 		t.Errorf("the pulled-back ticket is not on ada's board")
+	}
+}
+
+// Off the board is not out of existence. A ticket blocked by one rejected on
+// its ref still names a ticket that is there: validate does not call it
+// missing, and a holder's file carrying the rejection cannot be claimed as
+// work nobody sees.
+func TestATicketRejectedOnItsRefStillExistsForLinksAndCannotBeClaimed(t *testing.T) {
+	t.Setenv("JAIRA_USER", "ada")
+	clone := cloneWithRemotes(t, "origin")
+	b := ticketIn(t, clone, "blocker")
+	if out, err := runCLI(t, clone, "create", "blocked one"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	ids, err := (&gitref.Repo{Dir: clone}).List()
+	if err != nil || len(ids) != 2 {
+		t.Fatalf("refs: %v %v", ids, err)
+	}
+	a := ticket.Handle(ids[0])
+	if a == b {
+		a = ticket.Handle(ids[1])
+	}
+	if out, err := runCLI(t, clone, "pull", a); err != nil {
+		t.Fatalf("pull: %v\n%s", err, out)
+	}
+	bID := ids[0]
+	if ticket.Handle(bID) != b {
+		bID = ids[1]
+	}
+	if out, err := runCLI(t, clone, "set", a, "blocked-by="+bID); err != nil {
+		t.Fatalf("set blocked-by: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, clone, "reject", b, "--why", "not needed", "--force"); err != nil {
+		t.Fatalf("reject: %v\n%s", err, out)
+	}
+	out, err := runCLI(t, clone, "validate")
+	if strings.Contains(out+fmt.Sprint(err), "exists nowhere") {
+		t.Errorf("validate calls a ref-rejected blocker missing: %v\n%s", err, out)
+	}
+
+	// A holder's file that pulled the rejection in.
+	if out, err := runCLI(t, clone, "create", "held elsewhere"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	all, _ := (&gitref.Repo{Dir: clone}).List()
+	c := ""
+	for _, id := range all {
+		if h := ticket.Handle(id); h != a && h != b {
+			c = h
+		}
+	}
+	other := secondClone(t, clone)
+	t.Setenv("JAIRA_USER", "grace")
+	if out, err := runCLI(t, other, "pull", c); err != nil {
+		t.Fatalf("grace pull: %v\n%s", err, out)
+	}
+	t.Setenv("JAIRA_USER", "ada")
+	if out, err := runCLI(t, clone, "reject", c, "--why", "also not", "--force"); err != nil {
+		t.Fatalf("reject c: %v\n%s", err, out)
+	}
+	t.Setenv("JAIRA_USER", "grace")
+	if out, err := runCLI(t, other, "fetch"); err != nil {
+		t.Fatalf("fetch: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, other, "pull", c); err != nil {
+		t.Fatalf("grace refresh: %v\n%s", err, out)
+	}
+	out, err = runCLI(t, other, "claim", c)
+	var ce *codedError
+	if exitCode(err) != ExitValidation || !errors.As(err, &ce) || ce.reason != "rejected" {
+		t.Errorf("claim of a rejected file: exit %d %v\n%s", exitCode(err), err, out)
 	}
 }
