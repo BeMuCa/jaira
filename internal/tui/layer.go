@@ -724,6 +724,8 @@ func (m *Model) openMember(r memberRow) {
 		m.notify(fmt.Sprintf("%s was filed into the logbook before the days the board shows.\n\n'jaira show %s' reads it.", h, h), false)
 	case link.PlaceArchive, link.PlaceUnknown:
 		m.notify(fmt.Sprintf("%s is %s, so there is no card to open.", h, r.where), false)
+	case link.PlaceRejected:
+		m.notify(fmt.Sprintf("%s is rejected and off every board, so there is no card to open.\n\n'jaira show %s' reads it.", h, h), false)
 	default:
 		m.notify(fmt.Sprintf("%s is on the board but the filter %s hides it.\n\nClear the filter with esc on the board, then try again.", h, m.filter), false)
 	}

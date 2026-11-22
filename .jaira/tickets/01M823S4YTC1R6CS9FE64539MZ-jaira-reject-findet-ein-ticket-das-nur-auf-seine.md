@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T17:10:08Z
-updated-at: 2026-11-22T17:49:32Z
+updated-at: 2026-11-22T17:53:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2431680
 claimed-at: 2026-11-22T17:10:39Z
@@ -28,13 +28,13 @@ outcome-what: "jaira reject and R on the board reject a ticket that lives only o
 outcome-why: "A person rejecting HS3K1E had to fetch, then pull it into an unrelated worktree, so the archive file travelled in another ticket's PR. Where a ticket lives is not the rejecter's business."
 outcome-resolves: "DoD 1: TestRejectATicketThatLivesOnlyOnAStaleRef + TUI test; DoD 2: TestRejectATicketWithAFileHereStillArchivesIt; DoD 3: TestRejectOnTheRefRefusals (unknown, already rejected on ref and in archive, archived, unreachable remote, real lost push via pre-push hook) + handle/ulid; DoD 4: core/release/notes/4539MZ.md. Checked: concurrency (lease + race test, TUI off update loop), error paths (nothing written on any refusal, asserted), input (handle/ULID/unknown), permissions (--force gate unchanged, runs before any write)."
 review-summary: "none"
-round: 7
-back-from: testing
-back-by: lane
-back-count: 2
-review-gaps: "round 5: RejectedOffBoard is filled by the List every link.Build caller already makes, so no second listing; claim's refusal reuses codedError; nothing orphaned. Earlier rounds as before (shared HeldByWarning, ticket.Unreject; Syncer.Reject prologue left)"
+round: 8
+back-from: human
+back-by: person
+back-count: 1
+review-gaps: "round 6: PlaceRejected is one constant read in Whereabouts and the TUI milestone rows; nothing orphaned. Earlier rounds as recorded (RejectedOffBoard fed by the existing List, shared HeldByWarning and ticket.Unreject; Syncer.Reject prologue left)"
 test-verdict: "pass: go test ./... green, -race -count=1 on core/ticket core/refsync internal/tui internal/cli green, go vet linux+windows green, shipped-history ok. DoD 1-4 re-run by their named tests. Binary in a two-clone fixture: reject by handle from a clone that never fetched -> rc 0, no file under .jaira, creator's list drops it after fetch; repeat -> rc 3 already_rejected; two parallel rejects -> one rc 0, other rc 3 race with nothing written; unknown id -> rc 5."
-hunt-verdict: "fail: round 5 - (blocker) the link index showed a rejected ticket as 'on its ref · jaira pull', advice that silently takes the rejection off"
+hunt-verdict: "fail: round 6 - internal/tui/layer.go openMember has no case for link.PlaceRejected: Enter on a rejected milestone row says 'on the board but the filter hides it'"
 question: ""
 ---
 
@@ -92,3 +92,8 @@ question: ""
 - **2026-11-22 17:47 · Alexander Sacharov** — bughunt: change: blocker: core/link/link.go:161-168 with link.go:501-516 (Ref.Whereabouts) - class: a rejected ticket now enters the link index as an ordinary board/ref ticket, and every view that prints Whereabouts describes it as live: a ref-rejected one as 'on its ref · jaira pull <h>', a rejected file here as 'on the board · <lane>'; since 1b904de24 'jaira pull' takes the rejection off, so the advice the board prints silently undoes a person's rejection. Same text in 'jaira links', 'jaira show' links/children (internal/cli/tickets.go:902) and the TUI link pane (internal/tui/links.go:58). example: A blocked-by B, 'jaira reject B --force' on the ref, 'jaira links A' prints 'WBQ1TZ blocker — on its ref · jaira pull WBQ1TZ'; running that pull exits 0, prints 'the rejection is taken off', and B is back in 'jaira list'; ran: built ./cmd/jaira, scratch clone with bare origin, the four commands above
 - **2026-11-22 17:47 · Alexander Sacharov** — bughunt: done at 2fa98c03b - 1 finding (1 change, blocker; 0 pre-existing) in 6 modules, follow-up hunt since 66600c3aa (new to the change, read whole: core/link/link.go internal/cli/claim.go internal/cli/delete.go); concurrency, error paths, input, permissions checked; files: core/link/link.go core/refsync/refsync.go core/release/notes/4539MZ.md core/ticket/store.go docs/COMMANDS.md internal/cli/claim.go internal/cli/delete.go internal/cli/pull.go internal/cli/reject.go internal/cli/rejectref_test.go internal/tui/model.go internal/tui/rejectref_test.go
 - **2026-11-22 17:49 · Alexander Sacharov** — hunt round 5 fixed: new link.PlaceRejected for indexed tickets carrying rejected-kind; Whereabouts says 'rejected · off the board', TUI milestone rows say 'rejected'; jumping to it from the links pane already refuses anything not PlaceBoard.
+- **2026-11-22 17:51 · Alexander Sacharov** — bughunt: change: blocker: internal/tui/layer.go:722 - class: a switch on link.Place written before PlaceRejected existed, whose default branch assumes the ticket is on the board; 499be42ec added PlaceRejected to memberRows (layer.go:673) but not to openMember in the same file. example: a milestone holds a ticket rejected on its ref; its row reads 'rejected', enter on it says 'XXXX is on the board but the filter hides it. Clear the filter with esc...' - false: the ticket is off every board and no filter hides it (contradicts the release-note line for this change). Other switches on Place checked: link.Whereabouts, tui/links.go:135, web_source.go (computes its own place) - not affected. blame: 722-729 from 96304e5/9f553b3, reached with PlaceRejected only since 499be42ec; ran: scratch go test in internal/tui (reject a ref-only card, Lookup -> place=rejected, openMember -> that notice)
+- **2026-11-22 17:51 · Alexander Sacharov** — bughunt: done at 499be42ec - 1 finding (1 change, blocker; 0 pre-existing) in 3 modules, follow-up hunt since 2fa98c03b (diff: core/link/link.go core/release/notes/4539MZ.md internal/cli/rejectref_test.go; new to the change, read whole: internal/tui/layer.go; no diff since: the rest); concurrency, error paths, input, permissions checked; files: core/link/link.go core/refsync/refsync.go core/release/notes/4539MZ.md core/ticket/store.go docs/COMMANDS.md internal/cli/claim.go internal/cli/delete.go internal/cli/pull.go internal/cli/reject.go internal/cli/rejectref_test.go internal/tui/layer.go internal/tui/model.go internal/tui/rejectref_test.go
+- **2026-11-22 17:52 · Alexander Sacharov** — question (testing would send back a 3rd time in a row since the decision): round 6 found one missing case - internal/tui/layer.go openMember lacks link.PlaceRejected, so Enter on a rejected milestone row claims a filter hides it. Not deeper this time: a sibling switch of the one changed in round 5. Options: 1 (Recommended) yes - add the case (one branch + test), then testing with a hunt on the delta, review, signoff. 2 no - stop here, the person decides at signoff. Open, not a finding: web /api/tickets/<id> answers not found for a ref-rejected ticket (web_source.go untouched; reads List).
+- **2026-11-22 17:52 · Alexander Sacharov** — decision (teamlead 22.11.): Option 1 - case PlaceRejected in openMember + Test, dann Hunt nur über die Delta, review, signoff. Danach keine weitere testing-Runde für Nachbar-Switches: was dann noch auftaucht, geht als note an signoff. web /api/tickets/<id> not found für abgelehnte: bekannte Grenze, note.
+- **2026-11-22 17:53 · Alexander Sacharov** — decision: option 1, last round (teamlead jaira-d0): openMember gets a PlaceRejected case; anything further (other switches, web API not-found for ref-rejected) goes to signoff as a note, no more testing rounds.

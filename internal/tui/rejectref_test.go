@@ -3,8 +3,10 @@ package tui
 import (
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/BeMuCa/jaira/core/link"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -73,5 +75,15 @@ func TestRejectACardThatLivesOnlyOnItsRef(t *testing.T) {
 	}
 	if got.Rejected.Kind != ticket.RejectWontfix || got.Rejected.Why != "nobody asked for it" {
 		t.Errorf("the ref does not carry the rejection: %+v", got.Rejected)
+	}
+}
+
+// A milestone row for a rejected ticket opens no card, and says why: not that
+// a filter hides it, which would send the reader hunting for one.
+func TestOpeningARejectedMilestoneMemberSaysItIsRejected(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	m.openMember(memberRow{id: "01TESTREJECTEDTICKET0ABCDEF", place: link.PlaceRejected, where: "rejected"})
+	if !strings.Contains(m.message, "rejected and off every board") || strings.Contains(m.message, "filter") {
+		t.Errorf("message for a rejected member: %q", m.message)
 	}
 }
