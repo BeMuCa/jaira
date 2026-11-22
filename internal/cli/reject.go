@@ -177,9 +177,11 @@ func rejectOnRef(cmd *cobra.Command, t *ticket.Ticket, kind, why, duplicateOf st
 	case errors.Is(err, ticket.ErrNotFound):
 		return &codedError{code: ExitNotFound, reason: "not_found",
 			message: fmt.Sprintf("%s: no longer on the remote; nothing was written", h)}
-	case err != nil:
+	case errors.Is(err, gitref.ErrOffline), errors.Is(err, gitref.ErrNoRepo):
 		return &codedError{code: ExitError, reason: "no_remote",
 			message: fmt.Sprintf("%s lives only on its ref, and the ref could not be reached: %v\n  nothing was written; try again when the remote is reachable", h, err)}
+	case err != nil:
+		return err
 	}
 	kind = got.Rejected.Kind
 	if g.jsonOut {

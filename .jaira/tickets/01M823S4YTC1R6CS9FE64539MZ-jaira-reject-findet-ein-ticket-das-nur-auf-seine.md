@@ -20,13 +20,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T17:10:08Z
-updated-at: 2026-11-22T17:19:12Z
+updated-at: 2026-11-22T17:20:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2431680
 claimed-at: 2026-11-22T17:10:39Z
 outcome-what: "jaira reject and R on the board reject a ticket that lives only on its ref: refsync.Syncer.Reject fetches, stamps the rejection (shared ticket.StampRejection) and pushes under lease; no file is written in the checkout. Store.List hides ref tickets carrying rejected-kind; Load/show still find them. CLI fetches once when an id is unknown locally and names already_rejected / filed_away / race / not_found with exit codes."
 outcome-why: "A person rejecting HS3K1E had to fetch, then pull it into an unrelated worktree, so the archive file travelled in another ticket's PR. Where a ticket lives is not the rejecter's business."
 outcome-resolves: "DoD 1: TestRejectATicketThatLivesOnlyOnAStaleRef + TUI test; DoD 2: TestRejectATicketWithAFileHereStillArchivesIt; DoD 3: TestRejectOnTheRefRefusals (unknown, already rejected on ref and in archive, archived, unreachable remote, real lost push via pre-push hook) + handle/ulid; DoD 4: core/release/notes/4539MZ.md. Checked: concurrency (lease + race test, TUI off update loop), error paths (nothing written on any refusal, asserted), input (handle/ULID/unknown), permissions (--force gate unchanged, runs before any write)."
+review-summary: "internal/cli/reject.go rejectOnRef: the final 'case err != nil' labels every error (a ref that is no ticket, a decode error) as 'the ref could not be reached', reason no_remote; match gitref.ErrOffline/ErrNoRepo for that message and return any other error as it is"
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # jaira reject findet ein Ticket, das nur auf seinem Ref liegt, und lehnt es ohne vorheriges pull ab
@@ -55,3 +60,4 @@ outcome-resolves: "DoD 1: TestRejectATicketThatLivesOnlyOnAStaleRef + TUI test; 
 - **2026-11-22 17:10 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/25712.sock
 - **2026-11-22 17:12 · Alexander Sacharov** — decision (worker, settled, no open question): ref-only reject = synchronous fetch+read+stamp+write-with-lease on the ref, like pull/release (core/refsync). The rejected ticket stays on its ref with rejected-* fields; Store.List hides ref tickets carrying rejected-kind, Load/show still find them. Race lost = exit 3 reason race, no auto-retry. Not found locally + usable remote = fetch once and look again (fixes stale-copy case). Already filed away rejected = exit 3 already_rejected. Out of scope: 'jaira restore' of a ref-only rejection (restore takes a file), pull of a rejected ref.
 - **2026-11-22 17:19 · Alexander Sacharov** — found out: TUI forbids network in the update loop (model.go New comment), so R on a ref-only card runs Syncer.Reject as a tea.Cmd (refRejectedMsg). Race test reproduces a real lost push with a pre-push hook that pushes another commit onto the ref first. Siblings left out on purpose (different commands, not this goal): archive, delete, dod, note on ref-only tickets still say 'pull it first'. A ticket pulled by someone else and then rejected on the ref keeps their file; their next write sees the ref ahead.
+- **2026-11-22 17:19 · Alexander Sacharov** — critique: rejectOnRef catch-all mislabels non-network errors as no_remote; narrow to gitref.ErrOffline/ErrNoRepo, return others unchanged. Left alone: ErrUnsent guard in Syncer.Reject (protects a queued write's lease, cheap), TUI duplicate of the on-ref path (different surface: async tea.Cmd).
