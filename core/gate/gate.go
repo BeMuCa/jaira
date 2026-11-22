@@ -430,7 +430,9 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 	}
 
 	// A loop lane that keeps finding more stops after max-rounds send-backs in
-	// a row and hands the next decision to a person. Only a lane's own
+	// a row and hands the next decision on: to the teamlead that started the
+	// worker, where there is one, and to a person otherwise or when the
+	// teamlead cannot take it. Only a lane's own
 	// send-back is counted and refused: a person sending work back is the
 	// decision this limit exists to bring about, and so is the hand-off into
 	// a lane a person answers in — the very move the refusal prescribes,
@@ -445,8 +447,8 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 			vs = append(vs, Violation{
 				Code: CodeMaxRounds,
 				Message: fmt.Sprintf(
-					"lane %q has sent %s back %d times in a row, its max-rounds: a person decides now. Move it to %s with --question \"<this round's findings; is the definition of done wrong, or does the loop never end?>\" — or, as the person deciding, send it back anyway with --force",
-					cur.ID, ticket.Handle(t.ID), t.BackCount, where),
+					"lane %q has sent %s back %d times in a row, its max-rounds: the teamlead decides now, or a person. Started with a parent session, leave it here, set the question with 'jaira set %s question=\"<this round's findings; is the definition of done wrong, or does the loop never end?>\"' and send it to that session; without one, move it to %s with --question and the same text. Whoever decides may send it back anyway with --force",
+					cur.ID, ticket.Handle(t.ID), t.BackCount, ticket.Handle(t.ID), where),
 			})
 		}
 	}

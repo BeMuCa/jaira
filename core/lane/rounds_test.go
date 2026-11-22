@@ -146,3 +146,30 @@ func TestPersonLaneSkipsAgenticQuestionLanes(t *testing.T) {
 		t.Errorf("got %q, want human", got)
 	}
 }
+
+// The third return from one lane goes to the teamlead first: with a parent
+// session the ticket stays in its lane with the question set, and only
+// without one does the shipped prompt still send it to the human lane.
+func TestInProgressPromptHandsTheThirdReturnToTheTeamleadFirst(t *testing.T) {
+	ls, err := Builtins()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var prompt string
+	for _, l := range ls {
+		if l.ID == "in-progress" {
+			prompt = l.Prompt
+		}
+	}
+	for _, want := range []string{
+		"to the teamlead first, a person only",
+		"leave the ticket in this lane, set the question",
+		`jaira set <id> question="testing sent this back three times`,
+		"No parent session, or it cannot be reached",
+		`jaira move <id> --to human --question "testing sent this back three times`,
+	} {
+		if !strings.Contains(prompt, want) {
+			t.Errorf("in-progress prompt does not say %q", want)
+		}
+	}
+}
