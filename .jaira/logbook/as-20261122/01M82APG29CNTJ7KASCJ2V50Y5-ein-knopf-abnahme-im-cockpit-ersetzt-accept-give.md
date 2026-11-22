@@ -1,7 +1,7 @@
 ---
 id: 01M82APG29CNTJ7KASCJ2V50Y5
 title: "Ein Knopf 'Abnahme' im Cockpit ersetzt Accept, Give back und Verdict: pro Notiz ok / beheben / Ticket wählen, dann ausführen"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -20,30 +20,47 @@ tags:
   - cockpit
 blocked-by: []
 related: []
-commits: []
+commits:
+  - f0424c45803fbafac251cf022d4f2d1b86673a20
+  - 269058492f33837da8616d4deefc2ad52d6ce79d
+  - 592e88dc6c45d920693fa6c4606f2e1a5ee94584
+  - 087af7b44b303000fbc5ce8dd8e9ff3089789883
+  - a6a6b2419e70fc0561e9860ca10f8a6c448d837c
+  - b7a74507959147ca44a06927f2af26b63056bd2d
+  - ce17460590d6968430ba9b2b71d2f6bf7b4e517f
+  - 3a061a8dd9a62535454c8d6f8b3feea1d02d5990
 created-at: 2026-11-22T19:11:01Z
-updated-at: 2026-11-22T22:23:30Z
+updated-at: 2026-11-22T22:37:40Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-3738988
-claimed-at: 2026-11-22T21:59:26Z
+claimed-by: DESKTOP-RFTCH11-3984918
+claimed-at: 2026-11-22T22:33:41Z
 outcome-what: "notePaths names a file given by an absolute path by its file name"
 outcome-why: "bughunt round 5"
 outcome-resolves: "bughunt note of round 5"
-review-summary: "none"
+review-summary: "Die Zeile eines wartenden Tickets im Cockpit-Band hat statt Accept / Give back / Explain / Verdict nur noch einen Knopf 'Acceptance'. Er öffnet ein Fenster (register.tsx openAcceptance + Pane ACCEPTANCE): oben Ampel mit Grund, Titel, Ziel, was/warum (in der Sprache der Person über headPrompt/haiku), darunter 'History' (Runde, Rückgaben, Alter, DoD erledigt/superseded/gesamt, Bughunt auf HEAD, Review-Urteil, Commits/Dateien aus git log --grep=<ID>, PR-Stand von der Forge 5 min gemerkt, Release-Note-Zeilen aus core/release/notes/<ID>.md falls vorhanden). Jede Review-Notiz steht mit Marker und den Knöpfen [ok][fix][ticket][?]; die Gesamtampel zählt jetzt die Marker (lightOf mit classes). Eine reine Funktion executionOf(items, typed, acceptTo) entscheidet, was 'Execute' tut: eine 'fix'-Notiz oder getippter Text -> Give back mit genau diesen Notizen (giveBackWith), sonst Accept über dieselben Gates wie bisher (dry-run, dann --force nur für den human-Ausgang), ein behaltener Blocker nur mit getipptem Grund, 'ticket'-Notizen werden zu jaira create --follows. Eine Gate-Verweigerung erscheint rot im Fenster, die Markierungen bleiben, das Fenster schließt erst nach erfolgreichem Move. '?' fragt haiku nach einem Satz, mit goal, outcome-what und dem Diff der genannten Dateien aus den eigenen Commits des Tickets (200 Zeilen). explanationNotes verwirft eine explain:-Notiz, nach der eine 'Given back from'-Notiz steht, damit 'Read explanation' nach Give back verschwindet. Die alten Verdict/Give-back-Panes, explainable und nextChoice sind entfernt; Tests auf das neue Fenster umgestellt (416 grün)."
 round: 7
 back-from: testing
 back-by: lane
 back-count: 2
-review-gaps: "none: round 6 shortened noteDiff to one git call and reused locked(); earlier rounds removed nextChoice, Waiting.explainable, the Verdict pane, seven unused texts, folded store-and-trim into storeNewest"
-test-verdict: "fail: suite green (416/416 on 2.1.329); bughunt round 5: one change finding - an absolute path in a note finds no diff"
-hunt-verdict: "fail: 1 change finding - noteDiff with an absolute path"
-review-verdict: "accept: DoD 1-4 and 6-12 are met in the code and covered by tests (executionOf table test, gate refusal in pane, stale explanation, '-' follow-up, stillIn, once); 5 and 13 are a person's to tick; three small notes, no defect blocking"
-review-round: 4
+review-gaps: |-
+  note: closeAcceptance (register.tsx, execute/onMoved) schließt das Fenster und leert givingAtom/choosingAtom ohne zu prüfen, welches Ticket es gerade zeigt: Execute auf A läuft (nur A gesperrt), die Person öffnet über das Band 'Acceptance' für B, A wird fertig -> B's Fenster geht zu, B's Markierungen sind weg (nur UI-Zustand, nichts auf dem Board). Fix: closeAcceptance(id) schließt nur, wenn givingAtom noch id ist; ein Test dazu
+  note: notePaths schneidet einen absoluten Pfad auf den Dateinamen; bei zwei gleichnamigen Dateien im Ticket bekommt '?' beide Diffs (nur Kontext für haiku, kein Gate) - schon von testing Runde 6 so an die Person gegeben
+  note: der Release-Note-Pfad core/release/notes/<ID>.md (RELEASE_NOTES) ist jairas eigenes Repo-Layout, fest im eingebauten Plugin; in anderen Repos fehlt die Zeile einfach (bewusst so entschieden, Notiz 22:06)
+  note: commitsOf zählt jede Zeile, die wie ein Hex-Hash aussieht, als Commit - eine Datei namens z.B. 'deadbeef' würde als Commit gezählt; harmlos, mit --format=commit:%h eindeutig zu machen
+  note: pre-existing: accept() schaut nicht in die laufende chats-Map wie openChat es tut - Execute kann ein Ticket nach done bringen, während ein Explain-all-Chat noch auf das Ticket schreibt (alter Accept-Knopf hatte dieselbe Lücke; testing Runde 3)
+  note: DoD 13 (seen by a person) ist von einem Agenten abgehakt, Beweis 'Alex 22.11.: im laufenden Cockpit angesehen' - weitergegeben vom Teamlead; Alex bestätigt es bei der Abnahme mit DoD 5
+test-verdict: "pass: suite green - claude plugin test 416/416 on 2.1.330 and on CI's 2.1.329, go test core/shipped core/release RC=0, shipped-history --check ok; DoD 1-4, 6-12, 14 verified against the tests they name; 5 and 13 left for the person; failure paths: a refused gate or a refused give-back move keeps the pane and the marks (tests); two writers: a second session's move first and a busy row write nothing (tests); reason store under locked() (test)"
+hunt-verdict: "pass: round 6 at 3a061a8dd - 1 change finding, no blocker (an absolute path in a note matches every file of that name for the '?' diff), left as a note for the person"
+review-verdict: "accept: alle agentischen DoD-Punkte erfüllt und durch Tests belegt (416 grün); kein Blocker - die Funde sind UI-Kanten und Modell-Kontext, keine falschen Ergebnisse, kein Datenverlust auf dem Board. Unsicher nur bei DoD 13: von einem Agenten mit Alex' Wort abgehakt, Alex soll es bei der Abnahme bestätigen."
+review-round: 7
 review-verdict-gaps: |-
-  note: register.tsx:1214 reads core/release/notes/<ID>.md - this repository's convention, hard-coded in a builtin mod every board gets; on other repos the line is silently absent. Fix: read the path from a board setting, or drop it from the generic pane
-  note: register.tsx:1285 Execute closes the pane before giveBackWith runs stillIn; when the ticket moved meanwhile, the message pane says so but the person's marks are lost (the accept path keeps them). Fix: call stillIn before closeAcceptance
-  note: openPullRequest asks gh/glab twice (30 s timeout each) on every pane open; offline it just leaves the PR line out, no error - acceptable, could reuse a cached answer
-review-check: "1. Build: cd /home/alex/projects/.worktrees/jaira-2v50y5 && go build -o /tmp/jaira ./cmd/jaira  2. Start: claude --plugin-dir /home/alex/projects/.worktrees/jaira-2v50y5/core/mod/builtin/jaira-cockpit in a repo with a ticket in signoff  3. In the band, the ticket's row shows one button [ Acceptance ] and no Accept/Give back/Explain/Verdict  4. Press it: a pane 'Acceptance of <ID>' opens - light with reason on top, title, Goal, Done, Why, a History block, then each review note with [ ok ][ fix ][ ticket ] ?  (DoD 13: check nothing is cut off and the rows line up)  5. Press ? on one note: 'explaining…' then one sentence appears under it  6. Mark one note fix, press Execute: the ticket goes back to in-progress and its note lists exactly that note  7. On another signoff ticket leave all ok, press Execute: it moves to done (DoD 5); if a DoD item is open the pane shows the refusal in red and your marks stay"
+  note: closeAcceptance (register.tsx, execute/onMoved) schließt das Fenster und leert givingAtom/choosingAtom ohne zu prüfen, welches Ticket es gerade zeigt: Execute auf A läuft (nur A gesperrt), die Person öffnet über das Band 'Acceptance' für B, A wird fertig -> B's Fenster geht zu, B's Markierungen sind weg (nur UI-Zustand, nichts auf dem Board). Fix: closeAcceptance(id) schließt nur, wenn givingAtom noch id ist; ein Test dazu
+  note: notePaths schneidet einen absoluten Pfad auf den Dateinamen; bei zwei gleichnamigen Dateien im Ticket bekommt '?' beide Diffs (nur Kontext für haiku, kein Gate) - schon von testing Runde 6 so an die Person gegeben
+  note: der Release-Note-Pfad core/release/notes/<ID>.md (RELEASE_NOTES) ist jairas eigenes Repo-Layout, fest im eingebauten Plugin; in anderen Repos fehlt die Zeile einfach (bewusst so entschieden, Notiz 22:06)
+  note: commitsOf zählt jede Zeile, die wie ein Hex-Hash aussieht, als Commit - eine Datei namens z.B. 'deadbeef' würde als Commit gezählt; harmlos, mit --format=commit:%h eindeutig zu machen
+  note: pre-existing: accept() schaut nicht in die laufende chats-Map wie openChat es tut - Execute kann ein Ticket nach done bringen, während ein Explain-all-Chat noch auf das Ticket schreibt (alter Accept-Knopf hatte dieselbe Lücke; testing Runde 3)
+  note: DoD 13 (seen by a person) ist von einem Agenten abgehakt, Beweis 'Alex 22.11.: im laufenden Cockpit angesehen' - weitergegeben vom Teamlead; Alex bestätigt es bei der Abnahme mit DoD 5
+review-check: "1. Cockpit mit diesem Branch starten: claude --plugin-dir /home/alex/projects/.worktrees/jaira-2v50y5/core/mod/builtin/jaira-cockpit  2. Im Band bei einem Ticket in signoff: die Zeile zeigt nur noch [ Acceptance ] (kein Accept, Give back, Explain, Verdict)  3. Acceptance drücken: oben farbiger Punkt mit Grund, Titel, Goal/Done/Why, darunter History mit Runde, DoD x/y, Bughunt, Review, Commits/Dateien, ggf. Pull request und Release note - nichts abgeschnitten (DoD 13)  4. Bei einer Notiz '?' drücken: nach kurzem 'explaining' ein Satz, der konkret sagt, was der Code tut  5. Alles auf ok lassen und Execute: das Ticket geht nach done (DoD 5 - seen by a person: Alex nimmt ein Ticket über 'Abnahme' ab); bei offenem DoD-Punkt stattdessen rote Zeile im Fenster, Markierungen bleiben, nichts bewegt  6. Bei einem anderen Ticket eine Notiz auf fix stellen, Execute: es geht zurück nach in-progress, die Give-back-Notiz listet genau diese Notiz  7. Automatisch: cd core/mod/builtin/jaira-cockpit && claude plugin test -> 416 pass"
 ---
 
 # Ein Knopf 'Abnahme' im Cockpit ersetzt Accept, Give back und Verdict: pro Notiz ok / beheben / Ticket wählen, dann ausführen
@@ -58,7 +75,7 @@ review-check: "1. Build: cd /home/alex/projects/.worktrees/jaira-2v50y5 && go bu
   proof: tests/board.test.ts 'a gate refusing done is said in the Acceptance pane: nothing moves, nothing is written, the choices stay', 'a refusal is shown whole in the Acceptance pane'
 - [x] Release-Note core/release/notes/<ID>.md, shipped.sha256
   proof: core/release/notes/2V50Y5.md; core/shipped/shipped.sha256 via scripts/shipped-history.sh --write (go test ./core/shipped ok, --check ok)
-- [ ] seen by a person: Alex nimmt ein Ticket über 'Abnahme' ab
+- [-] seen by a person: Alex nimmt ein Ticket über 'Abnahme' ab
 - [x] Kopf des Fensters, schön gesetzt und in der Sprache der Person: Titel, Ziel (goal), was gemacht wurde und warum (outcome-what/why), Ampel mit Grund - Alex 22.11.
   proof: tests/board.test.ts 'the head says what the ticket is for, what was done and why', 'the head comes in the person's language' (headPrompt, board.ts)
 - [x] Verlauf auf einen Blick aus jaira-Daten: Runden (round, Rückgaben je Lane, back-count/back-from), Commits und geänderte Dateien, DoD erledigt/superseded/gesamt, Bughunt auf HEAD, Review-Urteil, Zeit von created bis jetzt, PR-Stand wenn vorhanden (jaira pr), Release-Note-Zeile(n) - Alex 22.11.
@@ -155,3 +172,7 @@ Zusatz: Bau startet erst nach Merge von QTQW15 (signoff), DF46B9 und T5QN9P (don
 - **2026-11-22 22:20 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1277 (noteDiff) - class: a note that names a file by its absolute path gets no diff in the Explain prompt any more, because every name is now wrapped as ':(glob)**/<name>' and '**//home/...' matches nothing, where the plain pathspec before ce1746059 was accepted by git for an absolute path inside the checkout; example: a note naming /home/alex/projects/.worktrees/jaira-2v50y5/core/release/notes/2V50Y5.md; ran: git log -p --format='%h %s' -F --grep=2V50Y5 HEAD -- ':(glob)**/<abs path>' (0 lines) vs the same with the plain absolute path (39 lines); not a blocker - Explain still answers, only without the change behind it
 - **2026-11-22 22:20 · Alexander Sacharov** — bughunt: done at ce1746059 - 1 finding (1 change, none blocker, 0 pre-existing) in 6 modules, follow-up hunt (diff since b7a745079: register.tsx openPullRequest/askPullRequest, noteDiff, explainNote store write under locked(); board.test.ts; shipped.sha256; board.ts, texts.ts, index.d.ts and the release note unchanged); concurrency, error paths, input, permissions checked; claude plugin test: 416 pass; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/2V50Y5.md core/shipped/shipped.sha256
 - **2026-11-22 22:23 · Alexander Sacharov** — testing round 5 -> in-progress: notePaths macht aus einem absoluten Pfad den Dateinamen (wird in jeder Tiefe gesucht, ein anderer Checkout hat eine andere Wurzel); Test in notePaths.
+- **2026-11-22 22:26 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/board.ts:1075 (notePaths, used by noteDiff in register.tsx:1277) - class: an absolute path in a note is cut to its bare file name, so Explain's diff takes every file of that name the ticket's commits touched, not the one the note means; the extra hunks can also push the named file's hunks past the DIFF_LINES clip. Example: a note naming /home/a/repo/core/x/a/index.ts, on a ticket that changed a/index.ts and b/index.ts, gets both diffs. Not a blocker: it changes only the context handed to the cheap model, not a gate or stored data. Possible fix: keep the path tail below the repo root (or try longer suffixes first) instead of the bare name. ran: scratch repo with a/index.ts + b/index.ts, git log -p --grep=ZZ1111 -- ':(glob)**/index.ts' shows both, ':(glob)**/a/index.ts' only a; blame: 3a061a8dd (names the ticket)
+- **2026-11-22 22:26 · Alexander Sacharov** — bughunt: done at 3a061a8dd - 1 finding (1 change, none blocker, 0 pre-existing) in 7 modules, follow-up hunt (diff since ce1746059: board.ts notePaths cutting absolute paths, board.test.ts one assertion, shipped.sha256; register.tsx noteDiff read as the caller, otherwise unchanged; texts.ts, index.d.ts and the release note unchanged); concurrency, error paths, input, permissions checked; claude plugin test: 416 pass; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/2V50Y5.md core/shipped/shipped.sha256
+- **2026-11-22 22:27 · Alexander Sacharov** — testing round 6: pass. Für die Person (change, kein Blocker nach blocker-rule): notePaths macht aus einem absoluten Pfad nur den Dateinamen - bei zwei gleichnamigen Dateien im Ticket bekommt '?' beide Diffs (nur Kontext für haiku, keine Daten, kein Gate). Nicht mehr zurückgegeben: die Schleife fand jede Runde eine feinere Kante an noteDiff; die blocker-rule schickt nur Blocker zurück, und die Runden 4-5 hätten nach ihr schon nicht zurückgehen sollen - mein Fehler.
+- **2026-11-22 22:37 · Alexander Sacharov** — decision (Alex 22.11. 'Да'): DoD 5 (Abnahme über das Fenster selbst) wird nach dem Release geprüft; Ticket angenommen mit den Review-Notizen als bekannte Ränder.
