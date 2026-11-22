@@ -110,16 +110,6 @@ answered with an error.`,
 	return cmd
 }
 
-func maxArgs(n int) cobra.PositionalArgs {
-	return func(cmd *cobra.Command, args []string) error {
-		if len(args) > n {
-			return fail(ExitUsage, "usage", "%s accepts at most %d argument(s), received %d\n\nUsage: %s",
-				cmd.Name(), n, len(args), cmd.UseLine())
-		}
-		return nil
-	}
-}
-
 func currentBranch(dir string) (string, error) {
 	out, err := prRun(dir, "git", "symbolic-ref", "--quiet", "--short", "HEAD")
 	b := strings.TrimSpace(string(out))
