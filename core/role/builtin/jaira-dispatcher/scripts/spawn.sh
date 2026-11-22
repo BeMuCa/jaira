@@ -17,17 +17,18 @@ spawn.sh [--no-worktree] [--parent <session> | --no-parent] <slug> <ticket-id> <
                   nothing it does can collide. The slug is still required but
                   unused: it names a worktree, and there is none.
                   JAIRA_NO_WORKTREE=1 in the environment does the same.
-  --parent <s>    Only with the lane <dispatch>, <worker> or <discuss>: the
-                  session of whoever starts it (a name, as ListAgents shows
-                  it, or a uds: address). A dispatcher or worker hands its
-                  questions there instead of asking the person in its own tab;
-                  a discuss chat sends it the decision. Without it, <dispatch>
-                  and <worker> get the session this script runs in. A name is
-                  passed on as its uds: address, and one that names no running
-                  session stops the spawn before a tab is made.
+  --parent <s>    Only with the lane <dispatch>, <worker>, <pr> or <discuss>:
+                  the session of whoever starts it (a name, as ListAgents
+                  shows it, or a uds: address). A dispatcher, worker or pr
+                  role hands its questions and its report there instead of
+                  asking the person in its own tab; a discuss chat sends it
+                  the decision. Without it, <dispatch> and <worker> get the
+                  session this script runs in. A name is passed on as its
+                  uds: address, and one that names no running session stops
+                  the spawn before a tab is made.
   --no-parent     No parent at all, not even this session: the dispatcher or
-                  worker asks in its own tab. The cockpit passes it whenever
-                  it starts a dispatcher or worker itself.
+                  worker asks in its own tab. The cockpit passes it when its
+                  own session has no messaging socket to hand on.
   -h, --help      This text.
 
 Five lane names are special. <dispatch> starts the dispatcher itself in the tab
@@ -476,8 +477,10 @@ elif [ "$lane" = worker ]; then
 elif [ "$lane" = pr ]; then
   # A person pressed Accept in the cockpit: --by-person tells jaira-role-pr
   # the invocation is theirs, so it opens the pull request instead of handing
-  # the create line back. Only that press passes this lane.
-  prompt="/jaira-role-pr $ticket --by-person"
+  # the create line back. Only that press passes this lane. --parent is the
+  # cockpit's session: the role's stops and report go there, not only to
+  # its own tab.
+  prompt="/jaira-role-pr $ticket --by-person${parent:+ --parent $parent}"
 elif [ "$lane" = explain ]; then
   src=" (jaira show $ticket --json: review.verdict, review.summary, review.gaps, review.verdict_gaps, review.check, dazu die Notes)"
   [ -z "$brief" ] || src=""

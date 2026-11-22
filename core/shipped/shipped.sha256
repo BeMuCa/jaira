@@ -391,6 +391,7 @@ dded4eeb27f890390cce83cb89d69371934f1fc5df3ae0b129cd768dd55abf43  core/mod/built
 de16a2b6c6b98f3365638a503a7ed595ba1360f75f4007c39bed8d89468d7de7  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 e3ca3551af5b1fe786356bdd4ae77ba5beb4ec234df7b090b94563b2330dee76  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 e50aba0a4d0a320737dc70a4bdc8fc80d1998b80be0f6e51c612b16afad3c8e5  core/mod/builtin/jaira-cockpit/hooks/register.tsx
+e6d96a8016dcf295496d80e157ff0a618b24c46eb5cc63062d5085e5a495a0a7  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 e770d371f44730e8a0547bc3f07d98ea9fe5de7a9d0a7aa65cc1e52452dd2838  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 e91f2cbda45a667c80ee6549d15b7c4ddaf83a2491c4d804f5d3a49e6c7b815b  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 ea47961717bd58332700dff1b69f25d69b7ceda1d78e304cf5b40fb85f1e1567  core/mod/builtin/jaira-cockpit/hooks/register.tsx
@@ -648,6 +649,7 @@ e2a39ae0f4e9ac95115f99d3de737c938bf2a317528b396b7de9e26232c72054  core/role/buil
 1096a9a1e01d07292a6689d1044b9b0cc8e51f2b0748bd1ad818a7723eba1f69  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
 1c749bb6b324344dbb5b34ac0802905d87a2fd18ac8fd94cb87551342b04764b  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
 1d20eb154267e9b346c467df7f76bb3439751c23865040a9a677ddb238d87a56  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
+29fc2a7eb982a1c0c4290070a3925df57f0733d7a9b2351ebc5d6aa0374dfba0  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
 2bee8eab214881444f3266e25bc7d645d6b010c61a74f30f40c4cad83f1f9e3c  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
 306692d377cefe3e95b8bc995116075aab2f4d0e33ecc1e1ce4c2b5a2423eb0b  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
 30846293ad7b365c70533178f3e3baefaab4253d793f6e7acdfd593ae7c847fd  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
@@ -808,6 +810,7 @@ f99b6431549e076932aded0fab3f80c7cb5e06ac564b24e2a0233c9ba086fcb8  core/role/buil
 aecc781bcd938ee560d7d7e0b3ea9b607af4651778dd21b0cd40fc8242c7d07f  core/role/builtin/jaira-role-logbook-summary/summary.example.md
 5165da1b61f3d93ac466d12929a05f549204530bfd9c2328f2fb82708a58bce2  core/role/builtin/jaira-role-logbook-summary/template.html
 dafa7bafe668f97be108117ba9a08bfefad164e00006bdd7135ee51a74ed8a2c  core/role/builtin/jaira-role-logbook-summary/template.html
+027db49e3dddb65bf287fe1ffcc54f82673f0be2d47356cdf59ebb0df32059be  core/role/builtin/jaira-role-pr/SKILL.md
 05815a0c28c62ec7c5f9d651a43a325dc6bc5e4bc790d1db20335915b4aeada1  core/role/builtin/jaira-role-pr/SKILL.md
 172a4f6f01952f555cea94b6b772ad65127c79ae4ecd1108962633c2343ac620  core/role/builtin/jaira-role-pr/SKILL.md
 246dfccc87866f0a4ed41f5b0aef922e363c4a90875b039c965ebd40d0aac5a4  core/role/builtin/jaira-role-pr/SKILL.md
