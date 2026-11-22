@@ -1,7 +1,7 @@
 ---
 id: 01M7X0CFXEAEXDHVWTD3QTQW15
 title: "Give back im Cockpit startet den neuen Worker mit Teamlead, im Worktree mit dem Code und nie doppelt"
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,7 +24,7 @@ related:
   - 01M5MNWDKYJGC78B3EKMX2TGXG
 commits: []
 created-at: 2026-11-20T17:34:35Z
-updated-at: 2026-11-22T19:15:28Z
+updated-at: 2026-11-22T19:23:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1167205
 claimed-at: 2026-11-22T18:52:27Z
@@ -32,11 +32,13 @@ outcome-what: "Give back im Cockpit: neuer Worker berichtet an die parent sessio
 outcome-why: "Ein Teamlead eines anderen Projekts sah am 20.11. Worker, die per AskUserQuestion fragten, in leeren feat/<id>-Worktrees starteten und dreifach liefen."
 outcome-resolves: QTQW15 DoD 1-6
 review-summary: none
-round: 2
-back-from: critique
+round: 3
+back-from: testing
 back-by: lane
 back-count: 1
 review-gaps: "removed parentOf (board.ts): noteOf/noteOn already read the newest note of a kind - 'parent session' is now one of their kinds; inlined the one-use 'line' in accepting(). Left: spawnWorker's trailing return (unreachable, TypeScript needs it); ticketBranch now also serves decideStep (done in critique). No pre-existing dead code found in the touched functions."
+test-verdict: "fail: two spawn.sh at once on an existing branch both start (2 tabs, worktree registered twice); suite green otherwise (go test -race core+cli RC=0, mod 370/370), DoD 1-6 verified by their tests"
+hunt-verdict: "fail: bughunt done at 423737a - 2 change (1 blocker: carrierFor picks a stacked branch over feat/<slug> when the ticket has no worktree; 1 small: a shared worktree's other worker is not checked), 0 pre-existing"
 ---
 
 # Give back im Cockpit startet den neuen Worker mit Teamlead, im Worktree mit dem Code und nie doppelt
@@ -44,11 +46,11 @@ review-gaps: "removed parentOf (board.ts): noteOf/noteOn already read the newest
 ## Definition of Done
 
 - [x] Der Start-Prompt eines Give back nennt die parent session des Tickets und verbietet AskUserQuestion; danach geht eine Zeile '<ID> given back: <Entscheidung>, Worker <name>' an den Teamlead (Test im Cockpit)
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1423 + spawn.sh asks=: test 'the new worker reports to the parent session the ticket names, and the teamlead hears who took it'; Go TestSpawnTypesTheRoleForItsLaneName
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1428 + spawn.sh asks=: test 'the new worker reports to the parent session the ticket names, and the teamlead hears who took it'; Go TestSpawnTypesTheRoleForItsLaneName
 - [x] Give back findet den Branch mit den Commits des Tickets (Commits mit der ID, PR-Branch) und dessen Worktree und startet dort; nur ohne solchen Branch entsteht feat/<id> (Test: Branch mit anderem Namen)
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1384 ticketBranch (shared with Accept's decideStep), workPlace; tests 'the branch the ticket\'s commits ride on wins over an empty feat/<id>...', 'a branch whose worktree was removed is checked out again...'; Go TestSpawnTakesUpTheBranchTheWorkRidesOn
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1388 ticketBranch + board.ts carrierFor (own branch wins among holders); tests 'the branch a ticket rides on' (9 cases), 'the branch the ticket\'s commits ride on wins...', 'a branch whose worktree was removed...'; Go TestSpawnTakesUpTheBranchTheWorkRidesOn
 - [x] Laeuft fuer das Ticket schon ein Worker, startet Give back keinen zweiten, sondern schickt ihm die Entscheidung (Test: zweimal Give back hintereinander = ein Worker)
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1343: tests 'a worker at work gets the decision...', 'a worker at work with nothing recorded...', 'Give back twice in a row: one worker...'
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1345, sessions.ts busyIn, spawn.sh mkdir claim: tests 'a worker at work gets the decision...', 'a worktree another ticket\'s agent is at work in...', 'Give back twice in a row: one worker...'; Go 'two at once'
 - [x] Eingabeklassen: Ticket ohne parent-Note, parent-Session tot, zwei Branches mit Commits der ID, Worktree geloescht aber Branch da, zwei Give back gleichzeitig
   proof: tests in core/mod/builtin/jaira-cockpit/tests/board.test.ts 'give back': no parent note -> 'no parent anywhere...'/'reports to this session (no parent noted)'; parent dead -> 'a parent session that is gone...'; two branches -> 'two branches hold the commit...'; worktree deleted -> 'a branch whose worktree was removed...' + Go TestSpawnTakesUpTheBranchTheWorkRidesOn; two at once -> 'Give back twice in a row' + existing 'a move another session made first'
 - [x] Jede Entscheidung der Person im Cockpit (Accept, Give back, Decide) schickt dem Teamlead des Tickets sofort eine Zeile '<ID>: <Entscheidung> (Person, Cockpit)'; heute erfaehrt der Teamlead davon nichts und listet laengst entschiedene Tickets weiter als offen (Alex 20.11.2026: 'du bekommst die Info nicht schnell und wiederholst dich')
@@ -84,3 +86,8 @@ review-gaps: "removed parentOf (board.ts): noteOf/noteOn already read the newest
 - **2026-11-22 19:09 · Alexander Sacharov** — critique: (1) workPlace und decideStep suchen den Branch des Tickets zweimal mit denselben drei git-Abfragen - ein Helfer fuer beide, carrierFor entscheidet. Folge fuer Accept: ein leerer feat/<id>-Worktree verliert gegen den Branch mit den Commits der ID, auch fuer den PR - gewollt, derselbe Fehler. (2) Arbeitender Worker ohne Record: die Zeile an den Teamlead sagt 'worker none' und laedt zum zweiten Worker ein - sie muss den Tab nennen.
 - **2026-11-22 19:12 · Alexander Sacharov** — in-progress (Runde 2): beide critique-Funde behoben - ticketBranch ist der eine Helfer fuer Accept (decideStep) und Give back (workPlace); Accept waehlt damit auch den Branch mit dem neuesten Commit der ID statt eines leeren feat/<id> (Release-Note-Zeile dazu). Arbeitender Worker ohne Record: Zeile an den Teamlead nennt den Tab und 'start no other'. 370/370 Mod-Tests, go test core/role ok.
 - **2026-11-22 19:13 · Alexander Sacharov** — critique (Runde 2): beide Funde aus Runde 1 erledigt - ticketBranch (register.tsx) ist die eine Branch-Suche fuer decideStep und workPlace; die Zeile fuer einen arbeitenden Worker ohne Record nennt den Tab. Nichts Neues.
+- **2026-11-22 19:17 · Alexander Sacharov** — testing: class: zwei spawn.sh gleichzeitig fuer denselben Worktree auf einem schon vorhandenen Branch (neu durch die Wiederaufnahme ohne -b) - beide pruefen [ ! -d $wt ] vor dem Anlegen, beide 'git worktree add' laufen durch; example: spawn.sh --branch fix-login --no-parent ab12cd AB12CD worker <repo> zweimal mit & ... & wait -> beide exit 0, 2 Tabs, 2x /jaira-worker AB12CD getippt, git worktree list zeigt repo-ab12cd zweimal (einmal 0000000 detached). Vorher hielt -b den zweiten auf ('branch already exists'). fix: an der Ursache - das Anlegen des Worktrees immer unter dem flock auf jaira-offset.lock (heute nur mit worktree-setup), und nach dem Lock [ -d $wt ] erneut pruefen: steht er jetzt, bricht der zweite vor dem Tab mit exit 1 ab ('ein anderes spawn.sh hat <wt> gerade angelegt'); Test: zwei parallele Spawns mit und ohne Setup, mit -b und mit vorhandenem Branch -> genau ein Tab, ein Worktree-Eintrag.
+- **2026-11-22 19:19 · Alexander Sacharov** — bughunt: change: blocker: core/mod/builtin/jaira-cockpit/hooks/board.ts:576-583 (carrierFor) with register.tsx ticketBranch (slugBranches only read when holders is undefined) - class: the ticket has no live worktree of its own, so 'own' is undefined, and the newest commit naming it is held by its <prefix>/<slug> branch AND by a branch stacked on top of it; carrierBranch then takes whichever holder sorts first, and the left-behind */<slug> branch is never consulted (before QTQW15 decideStep took */<slug> before the --contains listing). Reaches both Give back (workPlace: the new worker starts on the other ticket's branch, and where that branch has a worktree, with --no-worktree inside the other ticket's worktree) and Accept (decideStep names the stacked branch for the pull request). example: holders 'feat/0gmyqb\nfeat/qtqw15', slugBranches 'feat/qtqw15', no own worktree -> { branch: 'feat/0gmyqb', by: 'commit' }; ran: node --experimental-strip-types on carrierFor with that input. The existing test 'two branches hold the commit' covers only the case with the ticket's own worktree standing; blame: 05a8d99fc, e10ab3abb (QTQW15)
+- **2026-11-22 19:19 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx workPlace (if (wt !== undefined) return { args: ['--no-worktree'], root: wt ... }) - class: Give back starts the new worker with --no-worktree in whatever worktree holds the carrier branch, without asking whether another ticket's worker already works there; spawn.sh only guarded against this by giving every ticket a worktree of its own. example: tickets A and B both committed on branch fix-login (a branch carrying several tickets, which decideStep explicitly supports); giving back A and then B, or B while A's worker is at work, puts two claude workers into /.worktrees/repo-fix-login, each able to commit or reset the other's uncommitted changes. givingBack's working-check looks only at carrierTab(tabs, id) for the ticket being given back. Not marked blocker: needs two tickets on one branch with both workers live; where it happens it can lose uncommitted work. read: workPlace -> spawnWorker -> spawn.sh --no-worktree (wt=root); blame: 05a8d99fc (QTQW15)
+- **2026-11-22 19:19 · Alexander Sacharov** — bughunt: done at 423737a1b - 2 findings (2 change, 1 of them blocker) in 6 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/QTQW15.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/role_test.go core/shipped/shipped.sha256
+- **2026-11-22 19:23 · Alexander Sacharov** — in-progress (Runde 3, nach testing/bughunt): (1) spawn.sh beansprucht den Worktree-Ordner per mkdir vor 'git worktree add' - der zweite von zwei gleichzeitigen bricht mit exit 1 vor dem Tab ab; bewusst kein Lock (DBJHNE hat entschieden: ohne Setup kein Lock), mkdir ist atomar und klein; ein gescheitertes worktree add raeumt seinen Ordner weg. (2) carrierFor: unter mehreren Branches mit dem Commit gewinnt der eigene - Worktree-Branch, sonst <prefix>/<slug> - in jeder Reihenfolge (Tabellentest 9 Faelle). (3) busyIn: ein geteilter Worktree, in dem der Agent eines anderen Tickets arbeitet, bekommt keinen zweiten. 380/380 Mod-Tests, core/role gruen, Parallel-Spawn 5/5 Runden ein Tab.

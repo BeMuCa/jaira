@@ -1127,7 +1127,7 @@ func TestSpawnTakesUpTheBranchTheWorkRidesOn(t *testing.T) {
 		root = filepath.Join(base, "repo")
 		wt = filepath.Join(base, ".worktrees", "repo-ab12cd")
 		bin = t.TempDir()
-		herdr := "#!/usr/bin/env bash\ncase \"$1 $2\" in\n  \"tab create\") touch \"" + filepath.Join(bin, "created") + "\"; echo '{\"result\":{\"root_pane\":{\"pane_id\":\"p1\"}}}' ;;\n  \"pane get\") echo '{\"result\":{\"pane\":{\"agent\":\"claude\",\"agent_status\":\"idle\",\"tab_id\":\"t1\"}}}' ;;\nesac\n"
+		herdr := "#!/usr/bin/env bash\ncase \"$1 $2\" in\n  \"tab create\") touch \"" + filepath.Join(bin, "created") + "\"; echo tab >> \"" + filepath.Join(bin, "tabs") + "\"; echo '{\"result\":{\"root_pane\":{\"pane_id\":\"p1\"}}}' ;;\n  \"pane get\") echo '{\"result\":{\"pane\":{\"agent\":\"claude\",\"agent_status\":\"idle\",\"tab_id\":\"t1\"}}}' ;;\nesac\n"
 		if err := os.WriteFile(filepath.Join(bin, "herdr"), []byte(herdr), 0o755); err != nil {
 			t.Fatal(err)
 		}
@@ -1177,6 +1177,46 @@ func TestSpawnTakesUpTheBranchTheWorkRidesOn(t *testing.T) {
 			}
 			if got := git(t, wt, "log", "-1", "--format=%s"); got != "fix(AB12CD): the work" {
 				t.Errorf("the worktree's newest commit is %q, want the ticket's work", got)
+			}
+		})
+	}
+
+	// Two spawns at once on a branch that is there: no -b fails the second,
+	// so the directory itself is claimed, and only one tab opens (QTQW15).
+	for _, args := range [][]string{nil, {"--branch", "fix-login-page"}} {
+		t.Run("two at once "+strings.Join(args, " "), func(t *testing.T) {
+			branch := "feat/ab12cd"
+			if args != nil {
+				branch = "fix-login-page"
+			}
+			root, _, bin := repo(t, branch, "")
+			errs := make(chan error, 2)
+			outs := make(chan string, 2)
+			for i := 0; i < 2; i++ {
+				go func() {
+					out, err := run(root, bin, args...)
+					outs <- out
+					errs <- err
+				}()
+			}
+			failed := 0
+			for i := 0; i < 2; i++ {
+				if <-errs != nil {
+					failed++
+				}
+			}
+			all := <-outs + <-outs
+			tabs, _ := os.ReadFile(filepath.Join(bin, "tabs"))
+			if n := strings.Count(git(t, root, "worktree", "list"), "repo-ab12cd"); n != 1 {
+				t.Errorf("the worktree is registered %d times, want once:\n%s", n, all)
+			}
+			// The second either lost the claim (exit 1, no tab) or came after
+			// the first had made it and reused it, as a respawn does.
+			if failed == 1 && !strings.Contains(all, "is being made by another spawn.sh") {
+				t.Errorf("the losing spawn does not say why:\n%s", all)
+			}
+			if got := strings.Count(string(tabs), "tab"); got != 2-failed {
+				t.Errorf("%d tabs for %d spawns that went through:\n%s", got, 2-failed, all)
 			}
 		})
 	}

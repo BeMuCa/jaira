@@ -302,12 +302,30 @@ if [ ! -d "$wt" ]; then
     fi
   fi
 
+  # The directory is claimed first, by a plain mkdir, which only one of two
+  # spawns started at once can win: both passed the -d test above, and 'git
+  # worktree add' on a branch that already exists has no -b to fail the second
+  # one — it would register the same worktree twice and open a second tab.
+  # git takes an empty directory. One that fails is removed again, or the next
+  # spawn would take the empty directory for a worktree.
+  mkdir -p "$(dirname "$wt")"
+  if ! mkdir "$wt" 2>/dev/null; then
+    echo "$wt is being made by another spawn.sh right now: no second" \
+         "worker started for it" >&2
+    exit 1
+  fi
   # 9>&-: a checkout hook that leaves something running must not keep the
   # offset lock held through an inherited fd 9.
+  rc=0
   if [ -n "$made_branch" ]; then
-    git -C "$root" worktree add "$wt" -b "$branch" >&2 9>&-
+    git -C "$root" worktree add "$wt" -b "$branch" >&2 9>&- || rc=$?
   else
-    git -C "$root" worktree add "$wt" "$branch" >&2 9>&-
+    git -C "$root" worktree add "$wt" "$branch" >&2 9>&- || rc=$?
+  fi
+  if [ "$rc" != 0 ]; then
+    rm -rf "$wt"
+    echo "git worktree add $wt failed (exit $rc): no worker started" >&2
+    exit 1
   fi
   if [ -n "$off" ]; then
     printf '%s\n' "$off" > "$(git -C "$wt" rev-parse --absolute-git-dir)/jaira-offset" \

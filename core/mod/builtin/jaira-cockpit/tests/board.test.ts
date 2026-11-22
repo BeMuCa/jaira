@@ -1,6 +1,6 @@
 import type { On, SessionRateLimit } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
-import { languageOf, lightOf, rephrasedOf, rephrasePrompt, snapshotOf, type Waiting } from '../hooks/board.ts'
+import { carrierFor, languageOf, lightOf, rephrasedOf, rephrasePrompt, snapshotOf, type Waiting } from '../hooks/board.ts'
 import { reportLine } from '../hooks/digest.ts'
 import { durationOf, stoneSize } from '../hooks/overview.ts'
 
@@ -2088,6 +2088,27 @@ describe('give back', () => {
     expect(lastNote(w)).toContain('branch fix-login holds the newest commit naming the ticket, worktree /.worktrees/repo-fix-login')
   })
 
+  test('a worktree another ticket\'s agent is at work in gets no second agent beside it', async ($, on) => {
+    const w = world(on, { herdr: true, store: { 'session:other': {
+      session: 'other', pane: 'w1:p7', cwd: '/.worktrees/repo-fix-login', repo: '/repo', ticket: 'K7P2QX', role: 'worker', lane: '',
+      lastAnswerAt: 999_000, tokens: 1, ttl: 3_600_000, updatedAt: 999_000,
+    } } })
+    w.worktrees = WORKTREES + '\nworktree /.worktrees/repo-fix-login\nHEAD 3\nbranch refs/heads/fix-login\n'
+    w.branchCommits = [{ sha: 'c2', subject: 'fix(MG677R): the key' }]
+    w.holders = ['fix-login']
+    w.tabs = [{ tab_id: 'w1:t7', label: 'K7P2QX/worker', agent_status: 'working' }]
+    await startSession($)
+    await giveBack($, w)
+    expect(spawned(w)).toEqual([])
+    expect(lastNote(w)).toContain('K7P2QX/worker is at work in that worktree - no worker started beside it')
+    // Idle, the same worktree takes the new worker.
+    w.tabs = [{ tab_id: 'w1:t7', label: 'K7P2QX/worker', agent_status: 'idle' }]
+    w.movedFirst = false
+    await w.clock.advance(60_000)
+    await giveBack($, w)
+    expect(spawned(w).map(a => a.at(-1))).toEqual(['/.worktrees/repo-fix-login'])
+  })
+
   test('a branch whose worktree was removed is checked out again, beside the place an empty feat/<id> holds', async ($, on) => {
     const w = world(on, { herdr: true })
     w.branchCommits = [{ sha: 'c2', subject: 'fix(MG677R): the key' }]
@@ -2179,6 +2200,24 @@ describe('give back', () => {
     expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 8)).toEqual(['bash', SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'mg677r', 'MG677R', 'worker'])
     expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toStartWith('cockpit: given back to a new worker - tab alive, cache warm for 40 more min, context 80k, but its pane took no text; ')
   })
+})
+
+// Of several branches that hold the ticket's newest commit, the ticket's own
+// wins — its worktree's, else the one named after it — so a branch stacked on
+// top of it never takes the work, whatever order git lists them in (QTQW15).
+describe('the branch a ticket rides on', () => {
+  const cases: [string, Parameters<typeof carrierFor>[0], string | undefined][] = [
+    ['stacked listed first, no worktree', { slug: 'qtqw15', base: 'master', holders: 'feat/0gmyqb\nfeat/qtqw15\n' }, 'feat/qtqw15'],
+    ['stacked listed last, no worktree', { slug: 'qtqw15', base: 'master', holders: 'feat/qtqw15\nfeat/0gmyqb\n' }, 'feat/qtqw15'],
+    ['a review wrapper beside it', { slug: 'qtqw15', base: 'master', holders: 'review/feat/qtqw15\nfeat/qtqw15\nfix-x\n' }, 'feat/qtqw15'],
+    ['its worktree on a branch of another name', { slug: 'qtqw15', own: 'fix-login', base: 'master', holders: 'feat/qtqw15\nfix-login\n' }, 'fix-login'],
+    ['only another ticket\'s branch holds it', { slug: 'qtqw15', own: 'feat/qtqw15', base: 'master', holders: 'feat/0gmyqb\n' }, 'feat/0gmyqb'],
+    ['no commit, its worktree', { slug: 'qtqw15', own: 'feat/qtqw15', base: 'master' }, 'feat/qtqw15'],
+    ['no commit, no worktree, its branch left behind', { slug: 'qtqw15', base: 'master', slugBranches: 'review/feat/qtqw15\nfeat/qtqw15\n' }, 'feat/qtqw15'],
+    ['nothing at all', { slug: 'qtqw15', base: 'master', holders: '', slugBranches: '' }, undefined],
+    ['only the base holds it', { slug: 'qtqw15', base: 'master', holders: 'master\n' }, undefined],
+  ]
+  for (const [name, input, want] of cases) test(name, () => expect(carrierFor(input)?.branch).toBe(want))
 })
 
 describe('the jaira it runs beside', () => {

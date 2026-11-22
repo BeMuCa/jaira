@@ -564,18 +564,20 @@ export function worktreeOfBranch(porcelain: string, branch: string): string | un
 }
 
 // Which branch a new worker for a ticket takes up, from what git says: the
-// branch holding the newest commit that names the ticket — the ticket's own
-// worktree's branch where that is one of them, so a stacked branch on top
-// of it does not win — else the ticket's own worktree's branch, else a
-// <prefix>/<slug> left behind without a worktree. undefined: no branch of
-// the ticket's at all, and spawn.sh makes <prefix>/<slug>. holders is
-// `git branch --contains <that commit>`, slugBranches `git branch --list
-// '*/<slug>'`, both as --format=%(refname:short) lists them.
-export function carrierFor(input: { own?: string; base: string; holders?: string; slugBranches?: string }): { branch: string; by: 'commit' | 'worktree' | 'name' } | undefined {
-  const { own, base, holders, slugBranches } = input
+// branch holding the newest commit that names the ticket — and of several
+// that hold it, the ticket's own: its worktree's branch, else one named
+// <prefix>/<slug>, so a branch stacked on top of it never wins, worktree or
+// not — else the ticket's own worktree's branch, else a <prefix>/<slug> left
+// behind without a worktree. undefined: no branch of the ticket's at all,
+// and spawn.sh makes <prefix>/<slug>. holders is `git branch --contains
+// <that commit>`, slugBranches `git branch --list '*/<slug>'`, both as
+// --format=%(refname:short) lists them.
+export function carrierFor(input: { slug: string; own?: string; base: string; holders?: string; slugBranches?: string }): { branch: string; by: 'commit' | 'worktree' | 'name' } | undefined {
+  const { slug, own, base, holders, slugBranches } = input
   if (holders !== undefined && holders.trim() !== '') {
-    const listed = holders.split('\n').map(l => l.trim())
-    const branch = own !== undefined && listed.includes(own) ? own : carrierBranch(holders, base)
+    const listed = holders.split('\n').map(l => l.trim()).filter(Boolean)
+    const named = listed.filter(b => b.endsWith(`/${slug}`) && b !== base)
+    const branch = own !== undefined && listed.includes(own) ? own : carrierBranch(named.join('\n'), base) ?? carrierBranch(holders, base)
     if (branch !== undefined) return { branch, by: 'commit' }
   }
   if (own !== undefined && own !== base) return { branch: own, by: 'worktree' }

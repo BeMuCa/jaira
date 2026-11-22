@@ -19,7 +19,7 @@ import { add, appended, emptyTotals, row, rowsOf, type Totals } from './metrics.
 import { COLORS, HATS, overviewOf, pickOf, stoneOf, workerKey, workersOf } from './overview.ts'
 import { drawOverview, type OverviewTab } from './overview-pane.tsx'
 import {
-  backMessage, carrierOf, carrierTab, chooseWorker, DEFAULT_CONTEXT_SHARE, isExpired, RECORD_PREFIX, selfLine, startOf, tabsOf,
+  backMessage, busyIn, carrierOf, carrierTab, chooseWorker, DEFAULT_CONTEXT_SHARE, isExpired, RECORD_PREFIX, selfLine, startOf, tabsOf,
   workerLines, type Role, type SessionRecord, type Tab,
 } from './sessions.ts'
 import { overviewWords, t } from './texts.ts'
@@ -1333,9 +1333,11 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
   const bin = await herdr($)
   // No Herdr: nobody to hand it to from here; the board says where it is.
   if (bin === undefined) return handedTo('none', 'no Herdr in this session')
-  const tabs = await run($, [bin, 'tab', 'list'], dir)
-  const tab = tabs?.exitCode === 0 ? carrierTab(tabsOf(tabs.stdout), id) : undefined
-  const record = carrierOf(await readRecords($), id)
+  const listed = await run($, [bin, 'tab', 'list'], dir)
+  const tabs = listed?.exitCode === 0 ? tabsOf(listed.stdout) : []
+  const tab = carrierTab(tabs, id)
+  const records = await readRecords($)
+  const record = carrierOf(records, id)
   // A worker at work is never replaced: closing its tab would end it in the
   // middle of a step, and a new one beside it is the second worker this
   // press must never make. It gets the decision typed in like any old
@@ -1362,6 +1364,8 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
   // whatever worker it has.
   if (script === undefined) return handedTo('none', `${why}; no spawn.sh found (jaira roles install), old tab left open`)
   const place = await workPlace($, board, id)
+  const beside = busyIn(records, tabs, place.root, id)
+  if (beside !== undefined) return handedTo('none', `${why}; ${place.why}; ${beside} is at work in that worktree - no worker started beside it, old tab left open`, `none: ${beside} is at work in ${place.root}, start one once it is done`)
   if (tab !== undefined) await run($, [bin, 'tab', 'close', tab.tab_id], dir)
   // In its own tab, on the branch the ticket's commits ride on, reporting to
   // the ticket's teamlead.
@@ -1396,6 +1400,7 @@ async function ticketBranch($: EngineInterface, b: { dir: string; repo: string }
     if (listed?.exitCode === 0) slugBranches = listed.stdout
   }
   return carrierFor({
+    slug: id.toLowerCase(),
     ...(found.ticket !== undefined ? { own: found.ticket } : {}),
     base: found.base ?? base ?? '',
     ...(holders !== undefined ? { holders } : {}),
